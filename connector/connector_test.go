@@ -13,8 +13,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer/clog"
 	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/conslog"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/ctrace"
 )
@@ -242,7 +242,7 @@ func TestBuilder(t *testing.T) {
 		id          component.ID
 		err         func(component.DataType, component.DataType) string
 		nextTraces  ctrace.Traces
-		nextLogs    clog.Logs
+		nextLogs    conslog.Logs
 		nextMetrics cmetric.Metrics
 	}{
 		{
@@ -475,7 +475,7 @@ func createTracesToTraces(context.Context, CreateSettings, component.Config, ctr
 func createTracesToMetrics(context.Context, CreateSettings, component.Config, cmetric.Metrics) (Traces, error) {
 	return nopInstance, nil
 }
-func createTracesToLogs(context.Context, CreateSettings, component.Config, clog.Logs) (Traces, error) {
+func createTracesToLogs(context.Context, CreateSettings, component.Config, conslog.Logs) (Traces, error) {
 	return nopInstance, nil
 }
 
@@ -485,7 +485,7 @@ func createMetricsToTraces(context.Context, CreateSettings, component.Config, ct
 func createMetricsToMetrics(context.Context, CreateSettings, component.Config, cmetric.Metrics) (Metrics, error) {
 	return nopInstance, nil
 }
-func createMetricsToLogs(context.Context, CreateSettings, component.Config, clog.Logs) (Metrics, error) {
+func createMetricsToLogs(context.Context, CreateSettings, component.Config, conslog.Logs) (Metrics, error) {
 	return nopInstance, nil
 }
 
@@ -495,7 +495,7 @@ func createLogsToTraces(context.Context, CreateSettings, component.Config, ctrac
 func createLogsToMetrics(context.Context, CreateSettings, component.Config, cmetric.Metrics) (Logs, error) {
 	return nopInstance, nil
 }
-func createLogsToLogs(context.Context, CreateSettings, component.Config, clog.Logs) (Logs, error) {
+func createLogsToLogs(context.Context, CreateSettings, component.Config, conslog.Logs) (Logs, error) {
 	return nopInstance, nil
 }
 

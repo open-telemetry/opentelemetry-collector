@@ -7,7 +7,7 @@ change_type: deprecation
 component: consumer
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Deprecate `consumer.Traces`, `consumer.Metrics` and `consumer.Logs` in favor of `ctrace.Traces`, `cmetric.Metrics` and `clog.Logs`.
+note: Deprecate `consumer.Traces`, `consumer.Metrics` and `consumer.Logs` in favor of `ctrace.Traces`, `cmetric.Metrics` and `conslog.Logs`.
 
 # One or more tracking issues or pull requests related to the change
 issues: [10220]

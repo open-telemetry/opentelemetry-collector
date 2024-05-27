@@ -26,8 +26,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/clog"
 	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/conslog"
 	"go.opentelemetry.io/collector/consumer/ctrace"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
@@ -334,7 +334,7 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 				n.baseConsumer = cc
 				n.ConsumeMetricsFunc = cc.ConsumeMetrics
 			case component.DataTypeLogs:
-				cc := capabilityconsumer.NewLogs(next.(clog.Logs), capability)
+				cc := capabilityconsumer.NewLogs(next.(conslog.Logs), capability)
 				n.baseConsumer = cc
 				n.ConsumeLogsFunc = cc.ConsumeLogs
 			}
@@ -354,9 +354,9 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 				}
 				n.baseConsumer = fanoutconsumer.NewMetrics(consumers)
 			case component.DataTypeLogs:
-				consumers := make([]clog.Logs, 0, len(nexts))
+				consumers := make([]conslog.Logs, 0, len(nexts))
 				for _, next := range nexts {
-					consumers = append(consumers, next.(clog.Logs))
+					consumers = append(consumers, next.(conslog.Logs))
 				}
 				n.baseConsumer = fanoutconsumer.NewLogs(consumers)
 			}

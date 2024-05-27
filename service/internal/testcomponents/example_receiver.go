@@ -7,8 +7,8 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/clog"
 	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/conslog"
 	"go.opentelemetry.io/collector/consumer/ctrace"
 	"go.opentelemetry.io/collector/receiver"
 )
@@ -55,7 +55,7 @@ func createLogsReceiver(
 	_ context.Context,
 	_ receiver.CreateSettings,
 	cfg component.Config,
-	nextConsumer clog.Logs,
+	nextConsumer conslog.Logs,
 ) (receiver.Logs, error) {
 	lr := createReceiver(cfg)
 	lr.ConsumeLogsFunc = nextConsumer.ConsumeLogs
@@ -82,7 +82,7 @@ type ExampleReceiver struct {
 	componentState
 	ctrace.ConsumeTracesFunc
 	cmetric.ConsumeMetricsFunc
-	clog.ConsumeLogsFunc
+	conslog.ConsumeLogsFunc
 }
 
 // This is the map of already created example receivers for particular configurations.

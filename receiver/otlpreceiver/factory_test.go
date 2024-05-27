@@ -14,8 +14,8 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/consumer/clog"
 	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/conslog"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/ctrace"
 	"go.opentelemetry.io/collector/internal/testutil"
@@ -262,7 +262,7 @@ func TestCreateLogReceiver(t *testing.T) {
 		cfg          *Config
 		wantStartErr bool
 		wantErr      bool
-		sink         clog.Logs
+		sink         conslog.Logs
 	}{
 		{
 			name: "default",

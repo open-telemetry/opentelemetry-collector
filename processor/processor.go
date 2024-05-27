@@ -11,8 +11,8 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/clog"
 	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/conslog"
 	"go.opentelemetry.io/collector/consumer/ctrace"
 )
 
@@ -35,7 +35,7 @@ type Metrics interface {
 // Logs is a processor that can consume logs.
 type Logs interface {
 	component.Component
-	clog.Logs
+	conslog.Logs
 }
 
 // CreateSettings is passed to Create* functions in Factory.
@@ -75,7 +75,7 @@ type Factory interface {
 	// CreateLogsProcessor creates a LogsProcessor based on the config.
 	// If the processor type does not support logs or if the config is not valid,
 	// an error will be returned instead.
-	CreateLogsProcessor(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer clog.Logs) (Logs, error)
+	CreateLogsProcessor(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer conslog.Logs) (Logs, error)
 
 	// LogsProcessorStability gets the stability level of the LogsProcessor.
 	LogsProcessorStability() component.StabilityLevel
@@ -130,14 +130,14 @@ func (f CreateMetricsFunc) CreateMetricsProcessor(
 }
 
 // CreateLogsFunc is the equivalent of Factory.CreateLogs().
-type CreateLogsFunc func(context.Context, CreateSettings, component.Config, clog.Logs) (Logs, error)
+type CreateLogsFunc func(context.Context, CreateSettings, component.Config, conslog.Logs) (Logs, error)
 
 // CreateLogsProcessor implements Factory.CreateLogsProcessor().
 func (f CreateLogsFunc) CreateLogsProcessor(
 	ctx context.Context,
 	set CreateSettings,
 	cfg component.Config,
-	nextConsumer clog.Logs,
+	nextConsumer conslog.Logs,
 ) (Logs, error) {
 	if f == nil {
 		return nil, component.ErrDataTypeIsNotSupported
@@ -273,7 +273,7 @@ func (b *Builder) CreateMetrics(ctx context.Context, set CreateSettings, next cm
 }
 
 // CreateLogs creates a Logs processor based on the settings and config.
-func (b *Builder) CreateLogs(ctx context.Context, set CreateSettings, next clog.Logs) (Logs, error) {
+func (b *Builder) CreateLogs(ctx context.Context, set CreateSettings, next conslog.Logs) (Logs, error) {
 	if next == nil {
 		return nil, errNilNextConsumer
 	}

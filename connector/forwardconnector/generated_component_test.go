@@ -13,8 +13,8 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
-	"go.opentelemetry.io/collector/consumer/clog"
 	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/conslog"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/ctrace"
 )
@@ -38,7 +38,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "logs_to_logs",
 			createFn: func(ctx context.Context, set connector.CreateSettings, cfg component.Config) (component.Component, error) {
-				router := connector.NewLogsRouter(map[component.ID]clog.Logs{component.NewID(component.DataTypeLogs): consumertest.NewNop()})
+				router := connector.NewLogsRouter(map[component.ID]conslog.Logs{component.NewID(component.DataTypeLogs): consumertest.NewNop()})
 				return factory.CreateLogsToLogs(ctx, set, cfg, router)
 			},
 		},

@@ -20,8 +20,8 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/clog"
 	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/conslog"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/ctrace"
 	"go.opentelemetry.io/collector/exporter"
@@ -2462,7 +2462,7 @@ func newErrReceiverFactory() receiver.Factory {
 		receiver.WithTraces(func(context.Context, receiver.CreateSettings, component.Config, ctrace.Traces) (receiver.Traces, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		receiver.WithLogs(func(context.Context, receiver.CreateSettings, component.Config, clog.Logs) (receiver.Logs, error) {
+		receiver.WithLogs(func(context.Context, receiver.CreateSettings, component.Config, conslog.Logs) (receiver.Logs, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
 		receiver.WithMetrics(func(context.Context, receiver.CreateSettings, component.Config, cmetric.Metrics) (receiver.Metrics, error) {
@@ -2477,7 +2477,7 @@ func newErrProcessorFactory() processor.Factory {
 		processor.WithTraces(func(context.Context, processor.CreateSettings, component.Config, ctrace.Traces) (processor.Traces, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		processor.WithLogs(func(context.Context, processor.CreateSettings, component.Config, clog.Logs) (processor.Logs, error) {
+		processor.WithLogs(func(context.Context, processor.CreateSettings, component.Config, conslog.Logs) (processor.Logs, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
 		processor.WithMetrics(func(context.Context, processor.CreateSettings, component.Config, cmetric.Metrics) (processor.Metrics, error) {
@@ -2511,7 +2511,7 @@ func newErrConnectorFactory() connector.Factory {
 		connector.WithTracesToMetrics(func(context.Context, connector.CreateSettings, component.Config, cmetric.Metrics) (connector.Traces, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
-		connector.WithTracesToLogs(func(context.Context, connector.CreateSettings, component.Config, clog.Logs) (connector.Traces, error) {
+		connector.WithTracesToLogs(func(context.Context, connector.CreateSettings, component.Config, conslog.Logs) (connector.Traces, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
 
@@ -2521,7 +2521,7 @@ func newErrConnectorFactory() connector.Factory {
 		connector.WithMetricsToMetrics(func(context.Context, connector.CreateSettings, component.Config, cmetric.Metrics) (connector.Metrics, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
-		connector.WithMetricsToLogs(func(context.Context, connector.CreateSettings, component.Config, clog.Logs) (connector.Metrics, error) {
+		connector.WithMetricsToLogs(func(context.Context, connector.CreateSettings, component.Config, conslog.Logs) (connector.Metrics, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
 
@@ -2531,7 +2531,7 @@ func newErrConnectorFactory() connector.Factory {
 		connector.WithLogsToMetrics(func(context.Context, connector.CreateSettings, component.Config, cmetric.Metrics) (connector.Logs, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
-		connector.WithLogsToLogs(func(context.Context, connector.CreateSettings, component.Config, clog.Logs) (connector.Logs, error) {
+		connector.WithLogsToLogs(func(context.Context, connector.CreateSettings, component.Config, conslog.Logs) (connector.Logs, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
 	)

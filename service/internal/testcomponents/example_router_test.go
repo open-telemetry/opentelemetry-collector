@@ -13,8 +13,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
-	"go.opentelemetry.io/collector/consumer/clog"
 	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/conslog"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/ctrace"
 	"go.opentelemetry.io/collector/pdata/testdata"
@@ -121,7 +121,7 @@ func TestLogsRouter(t *testing.T) {
 	// Many connectors will just call router.ConsumeLogs,
 	// but some implementation will call RouteLogs instead.
 	router := connector.NewLogsRouter(
-		map[component.ID]clog.Logs{
+		map[component.ID]conslog.Logs{
 			leftID:  sinkLeft,
 			rightID: sinkRight,
 		})

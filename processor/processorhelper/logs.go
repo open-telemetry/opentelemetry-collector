@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/clog"
+	"go.opentelemetry.io/collector/consumer/conslog"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor"
 )
@@ -22,7 +22,7 @@ type ProcessLogsFunc func(context.Context, plog.Logs) (plog.Logs, error)
 type logProcessor struct {
 	component.StartFunc
 	component.ShutdownFunc
-	clog.Logs
+	conslog.Logs
 }
 
 // NewLogsProcessor creates a processor.Logs that ensure context propagation and the right tags are set.
@@ -30,7 +30,7 @@ func NewLogsProcessor(
 	_ context.Context,
 	set processor.CreateSettings,
 	_ component.Config,
-	nextConsumer clog.Logs,
+	nextConsumer conslog.Logs,
 	logsFunc ProcessLogsFunc,
 	options ...Option,
 ) (processor.Logs, error) {
@@ -41,7 +41,7 @@ func NewLogsProcessor(
 
 	eventOptions := spanAttributes(set.ID)
 	bs := fromOptions(options)
-	logsConsumer, err := clog.NewLogs(func(ctx context.Context, ld plog.Logs) error {
+	logsConsumer, err := conslog.NewLogs(func(ctx context.Context, ld plog.Logs) error {
 		span := trace.SpanFromContext(ctx)
 		span.AddEvent("Start processing.", eventOptions)
 		var err error
@@ -54,7 +54,7 @@ func NewLogsProcessor(
 			return err
 		}
 		return nextConsumer.ConsumeLogs(ctx, ld)
-	}, clog.WithCapabilities(bs.capabilities))
+	}, conslog.WithCapabilities(bs.capabilities))
 	if err != nil {
 		return nil, err
 	}

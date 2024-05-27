@@ -11,8 +11,8 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/clog"
 	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/conslog"
 	"go.opentelemetry.io/collector/consumer/ctrace"
 )
 
@@ -40,7 +40,7 @@ type Metrics interface {
 
 // Logs receiver receives logs.
 // Its purpose is to translate data from any format to the collector's internal logs data format.
-// LogsReceiver feeds a clog.Logs with data.
+// LogsReceiver feeds a conslog.Logs with data.
 //
 // For example, it could be a receiver that reads syslogs and convert them into plog.Logs.
 type Logs interface {
@@ -84,7 +84,7 @@ type Factory interface {
 	// CreateLogsReceiver creates a LogsReceiver based on this config.
 	// If the receiver type does not support the data type or if the config is not valid
 	// an error will be returned instead. `nextConsumer` is never nil.
-	CreateLogsReceiver(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer clog.Logs) (Logs, error)
+	CreateLogsReceiver(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer conslog.Logs) (Logs, error)
 
 	// LogsReceiverStability gets the stability level of the LogsReceiver.
 	LogsReceiverStability() component.StabilityLevel
@@ -137,14 +137,14 @@ func (f CreateMetricsFunc) CreateMetricsReceiver(
 }
 
 // CreateLogsFunc is the equivalent of ReceiverFactory.CreateLogsReceiver().
-type CreateLogsFunc func(context.Context, CreateSettings, component.Config, clog.Logs) (Logs, error)
+type CreateLogsFunc func(context.Context, CreateSettings, component.Config, conslog.Logs) (Logs, error)
 
 // CreateLogsReceiver implements Factory.CreateLogsReceiver().
 func (f CreateLogsFunc) CreateLogsReceiver(
 	ctx context.Context,
 	set CreateSettings,
 	cfg component.Config,
-	nextConsumer clog.Logs,
+	nextConsumer conslog.Logs,
 ) (Logs, error) {
 	if f == nil {
 		return nil, component.ErrDataTypeIsNotSupported
@@ -280,7 +280,7 @@ func (b *Builder) CreateMetrics(ctx context.Context, set CreateSettings, next cm
 }
 
 // CreateLogs creates a Logs receiver based on the settings and config.
-func (b *Builder) CreateLogs(ctx context.Context, set CreateSettings, next clog.Logs) (Logs, error) {
+func (b *Builder) CreateLogs(ctx context.Context, set CreateSettings, next conslog.Logs) (Logs, error) {
 	if next == nil {
 		return nil, errNilNextConsumer
 	}

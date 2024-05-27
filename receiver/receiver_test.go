@@ -12,8 +12,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer/clog"
 	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/conslog"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/ctrace"
 )
@@ -116,7 +116,7 @@ func TestBuilder(t *testing.T) {
 		id          component.ID
 		err         string
 		nextTraces  ctrace.Traces
-		nextLogs    clog.Logs
+		nextLogs    conslog.Logs
 		nextMetrics cmetric.Metrics
 	}{
 		{
@@ -254,7 +254,7 @@ func createMetrics(context.Context, CreateSettings, component.Config, cmetric.Me
 	return nopInstance, nil
 }
 
-func createLogs(context.Context, CreateSettings, component.Config, clog.Logs) (Logs, error) {
+func createLogs(context.Context, CreateSettings, component.Config, conslog.Logs) (Logs, error) {
 	return nopInstance, nil
 }
 

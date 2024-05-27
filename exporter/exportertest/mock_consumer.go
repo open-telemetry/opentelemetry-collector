@@ -12,8 +12,8 @@ import (
 	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/clog"
 	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/conslog"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/ctrace"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -60,7 +60,7 @@ func randomErrorsConsumeDecision() error {
 
 type mockConsumer struct {
 	ctrace.Traces
-	clog.Logs
+	conslog.Logs
 	cmetric.Metrics
 	reqCounter          *requestCounter
 	mux                 sync.Mutex

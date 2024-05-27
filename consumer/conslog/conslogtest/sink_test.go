@@ -1,4 +1,4 @@
-package clogtest
+package conslogtest
 
 import (
 	"context"

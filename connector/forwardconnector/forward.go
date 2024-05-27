@@ -10,8 +10,8 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/forwardconnector/internal/metadata"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/clog"
 	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/conslog"
 	"go.opentelemetry.io/collector/consumer/ctrace"
 )
 
@@ -58,7 +58,7 @@ func createLogsToLogs(
 	_ context.Context,
 	_ connector.CreateSettings,
 	_ component.Config,
-	nextConsumer clog.Logs,
+	nextConsumer conslog.Logs,
 ) (connector.Logs, error) {
 	return &forward{Logs: nextConsumer}, nil
 }
@@ -69,7 +69,7 @@ func createLogsToLogs(
 type forward struct {
 	ctrace.Traces
 	cmetric.Metrics
-	clog.Logs
+	conslog.Logs
 	component.StartFunc
 	component.ShutdownFunc
 }

@@ -19,8 +19,8 @@ import (
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/clog"
 	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/conslog"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/ctrace"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -110,7 +110,7 @@ type batch interface {
 
 var _ ctrace.Traces = (*batchProcessor)(nil)
 var _ cmetric.Metrics = (*batchProcessor)(nil)
-var _ clog.Logs = (*batchProcessor)(nil)
+var _ conslog.Logs = (*batchProcessor)(nil)
 
 // newBatchProcessor returns a new batch processor component.
 func newBatchProcessor(set processor.CreateSettings, cfg *Config, batchFunc func() batch) (*batchProcessor, error) {
@@ -370,7 +370,7 @@ func newBatchMetricsProcessor(set processor.CreateSettings, next cmetric.Metrics
 }
 
 // newBatchLogsProcessor creates a new batch processor that batches logs by size or with timeout
-func newBatchLogsProcessor(set processor.CreateSettings, next clog.Logs, cfg *Config) (*batchProcessor, error) {
+func newBatchLogsProcessor(set processor.CreateSettings, next conslog.Logs, cfg *Config) (*batchProcessor, error) {
 	return newBatchProcessor(set, cfg, func() batch { return newBatchLogs(next) })
 }
 
@@ -468,13 +468,13 @@ func (bm *batchMetrics) add(item any) {
 }
 
 type batchLogs struct {
-	nextConsumer clog.Logs
+	nextConsumer conslog.Logs
 	logData      plog.Logs
 	logCount     int
 	sizer        plog.Sizer
 }
 
-func newBatchLogs(nextConsumer clog.Logs) *batchLogs {
+func newBatchLogs(nextConsumer conslog.Logs) *batchLogs {
 	return &batchLogs{nextConsumer: nextConsumer, logData: plog.NewLogs(), sizer: &plog.ProtoMarshaler{}}
 }
 

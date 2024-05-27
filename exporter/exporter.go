@@ -10,8 +10,8 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/clog"
 	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/conslog"
 	"go.opentelemetry.io/collector/consumer/ctrace"
 )
 
@@ -30,7 +30,7 @@ type Metrics interface {
 // Logs is an exporter that can consume logs.
 type Logs interface {
 	component.Component
-	clog.Logs
+	conslog.Logs
 }
 
 // CreateSettings configures exporter creators.

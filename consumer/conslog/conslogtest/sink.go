@@ -1,18 +1,18 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package clogtest // import "go.opentelemetry.io/collector/consumer/clogtest"
+package conslogtest // import "go.opentelemetry.io/collector/consumer/conslog/conslogtest"
 
 import (
 	"context"
 	"sync"
 
-	"go.opentelemetry.io/collector/consumer/clog"
+	"go.opentelemetry.io/collector/consumer/conslog"
 	"go.opentelemetry.io/collector/consumer/internal/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-// LogsSink is a clog.Logs that acts like a sink that
+// LogsSink is a conslog.Logs that acts like a sink that
 // stores all logs and allows querying them for testing.
 type LogsSink struct {
 	consumertest.NonMutatingConsumer
@@ -21,7 +21,7 @@ type LogsSink struct {
 	logRecordCount int
 }
 
-var _ clog.Logs = (*LogsSink)(nil)
+var _ conslog.Logs = (*LogsSink)(nil)
 
 // ConsumeLogs stores logs to this sink.
 func (sle *LogsSink) ConsumeLogs(_ context.Context, ld plog.Logs) error {

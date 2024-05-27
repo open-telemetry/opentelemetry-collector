@@ -11,8 +11,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/clog"
 	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/conslog"
 	"go.opentelemetry.io/collector/consumer/ctrace"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -32,7 +32,7 @@ type mockReceiver struct {
 	component.ShutdownFunc
 	ctrace.Traces
 	cmetric.Metrics
-	clog.Logs
+	conslog.Logs
 }
 
 // mockExporterFactory is a factory to create exporters sending data to the mockReceiver.
@@ -100,7 +100,7 @@ func newMockReceiverFactory(mr *mockReceiver) receiver.Factory {
 			mr.Metrics = c
 			return mr, nil
 		}, component.StabilityLevelStable),
-		receiver.WithLogs(func(_ context.Context, _ receiver.CreateSettings, _ component.Config, c clog.Logs) (receiver.Logs, error) {
+		receiver.WithLogs(func(_ context.Context, _ receiver.CreateSettings, _ component.Config, c conslog.Logs) (receiver.Logs, error) {
 			mr.Logs = c
 			return mr, nil
 		}, component.StabilityLevelStable),

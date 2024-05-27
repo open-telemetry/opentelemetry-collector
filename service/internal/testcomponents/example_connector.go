@@ -9,8 +9,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/clog"
 	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/conslog"
 	"go.opentelemetry.io/collector/consumer/ctrace"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -66,7 +66,7 @@ func createExampleTracesToMetrics(_ context.Context, set connector.CreateSetting
 	}, nil
 }
 
-func createExampleTracesToLogs(_ context.Context, set connector.CreateSettings, _ component.Config, logs clog.Logs) (connector.Traces, error) {
+func createExampleTracesToLogs(_ context.Context, set connector.CreateSettings, _ component.Config, logs conslog.Logs) (connector.Traces, error) {
 	return &ExampleConnector{
 		ConsumeTracesFunc: func(ctx context.Context, td ptrace.Traces) error {
 			return logs.ConsumeLogs(ctx, testdata.GenerateLogs(td.SpanCount()))
@@ -91,7 +91,7 @@ func createExampleMetricsToMetrics(_ context.Context, set connector.CreateSettin
 	}, nil
 }
 
-func createExampleMetricsToLogs(_ context.Context, set connector.CreateSettings, _ component.Config, logs clog.Logs) (connector.Metrics, error) {
+func createExampleMetricsToLogs(_ context.Context, set connector.CreateSettings, _ component.Config, logs conslog.Logs) (connector.Metrics, error) {
 	return &ExampleConnector{
 		ConsumeMetricsFunc: func(ctx context.Context, md pmetric.Metrics) error {
 			return logs.ConsumeLogs(ctx, testdata.GenerateLogs(md.MetricCount()))
@@ -118,7 +118,7 @@ func createExampleLogsToMetrics(_ context.Context, set connector.CreateSettings,
 	}, nil
 }
 
-func createExampleLogsToLogs(_ context.Context, set connector.CreateSettings, _ component.Config, logs clog.Logs) (connector.Logs, error) {
+func createExampleLogsToLogs(_ context.Context, set connector.CreateSettings, _ component.Config, logs conslog.Logs) (connector.Logs, error) {
 	return &ExampleConnector{
 		ConsumeLogsFunc: logs.ConsumeLogs,
 		mutatesData:     set.ID.Name() == "mutate",
@@ -129,7 +129,7 @@ type ExampleConnector struct {
 	componentState
 	ctrace.ConsumeTracesFunc
 	cmetric.ConsumeMetricsFunc
-	clog.ConsumeLogsFunc
+	conslog.ConsumeLogsFunc
 	mutatesData bool
 }
 

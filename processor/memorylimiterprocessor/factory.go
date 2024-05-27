@@ -11,8 +11,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/clog"
 	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/conslog"
 	"go.opentelemetry.io/collector/consumer/ctrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor/internal/metadata"
@@ -85,7 +85,7 @@ func (f *factory) createLogsProcessor(
 	ctx context.Context,
 	set processor.CreateSettings,
 	cfg component.Config,
-	nextConsumer clog.Logs,
+	nextConsumer conslog.Logs,
 ) (processor.Logs, error) {
 	memLimiter, err := f.getMemoryLimiter(set, cfg)
 	if err != nil {

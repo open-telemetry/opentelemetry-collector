@@ -5,12 +5,12 @@ package capabilityconsumer // import "go.opentelemetry.io/collector/service/inte
 
 import (
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/clog"
 	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/conslog"
 	"go.opentelemetry.io/collector/consumer/ctrace"
 )
 
-func NewLogs(logs clog.Logs, cap consumer.Capabilities) clog.Logs {
+func NewLogs(logs conslog.Logs, cap consumer.Capabilities) conslog.Logs {
 	if logs.Capabilities() == cap {
 		return logs
 	}
@@ -18,7 +18,7 @@ func NewLogs(logs clog.Logs, cap consumer.Capabilities) clog.Logs {
 }
 
 type capLogs struct {
-	clog.Logs
+	conslog.Logs
 	cap consumer.Capabilities
 }
 

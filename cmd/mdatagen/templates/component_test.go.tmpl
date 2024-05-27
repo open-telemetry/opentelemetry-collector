@@ -44,7 +44,7 @@ import (
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer/ctrace"
 	"go.opentelemetry.io/collector/consumer/cmetric"
-	"go.opentelemetry.io/collector/consumer/clog"
+	"go.opentelemetry.io/collector/consumer/conslog"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	{{- end }}
 	{{- if or isExporter isProcessor }}
@@ -374,7 +374,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "logs_to_logs",
 			createFn: func(ctx context.Context, set connector.CreateSettings, cfg component.Config) (component.Component, error) {
-				router := connector.NewLogsRouter(map[component.ID]clog.Logs{component.NewID(component.DataTypeLogs): consumertest.NewNop()})
+				router := connector.NewLogsRouter(map[component.ID]conslog.Logs{component.NewID(component.DataTypeLogs): consumertest.NewNop()})
 				return factory.CreateLogsToLogs(ctx, set, cfg, router)
 			},
 		},
@@ -401,7 +401,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "metrics_to_logs",
 			createFn: func(ctx context.Context, set connector.CreateSettings, cfg component.Config) (component.Component, error) {
-				router := connector.NewLogsRouter(map[component.ID]clog.Logs{component.NewID(component.DataTypeLogs): consumertest.NewNop()})
+				router := connector.NewLogsRouter(map[component.ID]conslog.Logs{component.NewID(component.DataTypeLogs): consumertest.NewNop()})
 				return factory.CreateMetricsToLogs(ctx, set, cfg, router)
 			},
 		},
@@ -428,7 +428,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "traces_to_logs",
 			createFn: func(ctx context.Context, set connector.CreateSettings, cfg component.Config) (component.Component, error) {
-				router := connector.NewLogsRouter(map[component.ID]clog.Logs{component.NewID(component.DataTypeLogs): consumertest.NewNop()})
+				router := connector.NewLogsRouter(map[component.ID]conslog.Logs{component.NewID(component.DataTypeLogs): consumertest.NewNop()})
 				return factory.CreateTracesToLogs(ctx, set, cfg, router)
 			},
 		},

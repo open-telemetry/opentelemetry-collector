@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/clog"
+	"go.opentelemetry.io/collector/consumer/conslog"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
@@ -23,17 +23,17 @@ var logsUnmarshaler = &plog.ProtoUnmarshaler{}
 
 type logsRequest struct {
 	ld     plog.Logs
-	pusher clog.ConsumeLogsFunc
+	pusher conslog.ConsumeLogsFunc
 }
 
-func newLogsRequest(ld plog.Logs, pusher clog.ConsumeLogsFunc) Request {
+func newLogsRequest(ld plog.Logs, pusher conslog.ConsumeLogsFunc) Request {
 	return &logsRequest{
 		ld:     ld,
 		pusher: pusher,
 	}
 }
 
-func newLogsRequestUnmarshalerFunc(pusher clog.ConsumeLogsFunc) exporterqueue.Unmarshaler[Request] {
+func newLogsRequestUnmarshalerFunc(pusher conslog.ConsumeLogsFunc) exporterqueue.Unmarshaler[Request] {
 	return func(bytes []byte) (Request, error) {
 		logs, err := logsUnmarshaler.UnmarshalLogs(bytes)
 		if err != nil {
@@ -65,7 +65,7 @@ func (req *logsRequest) ItemsCount() int {
 
 type logsExporter struct {
 	*baseExporter
-	clog.Logs
+	conslog.Logs
 }
 
 // NewLogsExporter creates an exporter.Logs that records observability metrics and wraps every request with a Span.
@@ -73,7 +73,7 @@ func NewLogsExporter(
 	ctx context.Context,
 	set exporter.CreateSettings,
 	cfg component.Config,
-	pusher clog.ConsumeLogsFunc,
+	pusher conslog.ConsumeLogsFunc,
 	options ...Option,
 ) (exporter.Logs, error) {
 	if cfg == nil {
@@ -95,7 +95,7 @@ func NewLogsExporter(
 type RequestFromLogsFunc func(context.Context, plog.Logs) (Request, error)
 
 // requestFromLogs returns a RequestFromLogsFunc that converts plog.Logs into a Request.
-func requestFromLogs(pusher clog.ConsumeLogsFunc) RequestFromLogsFunc {
+func requestFromLogs(pusher conslog.ConsumeLogsFunc) RequestFromLogsFunc {
 	return func(_ context.Context, ld plog.Logs) (Request, error) {
 		return newLogsRequest(ld, pusher), nil
 	}
@@ -123,7 +123,7 @@ func NewLogsRequestExporter(
 		return nil, err
 	}
 
-	lc, err := clog.NewLogs(func(ctx context.Context, ld plog.Logs) error {
+	lc, err := conslog.NewLogs(func(ctx context.Context, ld plog.Logs) error {
 		req, cErr := converter(ctx, ld)
 		if cErr != nil {
 			set.Logger.Error("Failed to convert logs. Dropping data.",
@@ -136,7 +136,7 @@ func NewLogsRequestExporter(
 			be.obsrep.recordEnqueueFailure(ctx, component.DataTypeLogs, int64(req.ItemsCount()))
 		}
 		return sErr
-	}, clog.WithCapabilities(be.capabilities))
+	}, conslog.WithCapabilities(be.capabilities))
 
 	return &logsExporter{
 		baseExporter: be,

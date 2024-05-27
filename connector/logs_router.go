@@ -9,25 +9,25 @@ import (
 	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/clog"
+	"go.opentelemetry.io/collector/consumer/conslog"
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
 )
 
-// LogsRouterAndConsumer feeds the first clog.Logs in each of the specified pipelines.
+// LogsRouterAndConsumer feeds the first conslog.Logs in each of the specified pipelines.
 type LogsRouterAndConsumer interface {
-	clog.Logs
-	Consumer(...component.ID) (clog.Logs, error)
+	conslog.Logs
+	Consumer(...component.ID) (conslog.Logs, error)
 	PipelineIDs() []component.ID
 	privateFunc()
 }
 
 type logsRouter struct {
-	clog.Logs
-	baseRouter[clog.Logs]
+	conslog.Logs
+	baseRouter[conslog.Logs]
 }
 
-func NewLogsRouter(cm map[component.ID]clog.Logs) LogsRouterAndConsumer {
-	consumers := make([]clog.Logs, 0, len(cm))
+func NewLogsRouter(cm map[component.ID]conslog.Logs) LogsRouterAndConsumer {
+	consumers := make([]conslog.Logs, 0, len(cm))
 	for _, cons := range cm {
 		consumers = append(consumers, cons)
 	}
@@ -45,11 +45,11 @@ func (r *logsRouter) PipelineIDs() []component.ID {
 	return ids
 }
 
-func (r *logsRouter) Consumer(pipelineIDs ...component.ID) (clog.Logs, error) {
+func (r *logsRouter) Consumer(pipelineIDs ...component.ID) (conslog.Logs, error) {
 	if len(pipelineIDs) == 0 {
 		return nil, fmt.Errorf("missing consumers")
 	}
-	consumers := make([]clog.Logs, 0, len(pipelineIDs))
+	consumers := make([]conslog.Logs, 0, len(pipelineIDs))
 	var errors error
 	for _, pipelineID := range pipelineIDs {
 		c, ok := r.consumers[pipelineID]

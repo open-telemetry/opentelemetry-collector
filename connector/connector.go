@@ -11,8 +11,8 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/clog"
 	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/conslog"
 	"go.opentelemetry.io/collector/consumer/ctrace"
 )
 
@@ -22,7 +22,7 @@ var (
 
 // A Traces connector acts as an exporter from a traces pipeline and a receiver
 // to one or more traces, metrics, or logs pipelines.
-// Traces feeds a ctrace.Traces, cmetric.Metrics, or clog.Logs with data.
+// Traces feeds a ctrace.Traces, cmetric.Metrics, or conslog.Logs with data.
 //
 // Examples:
 //   - Traces could be collected in one pipeline and routed to another traces pipeline
@@ -39,7 +39,7 @@ type Traces interface {
 
 // A Metrics connector acts as an exporter from a metrics pipeline and a receiver
 // to one or more traces, metrics, or logs pipelines.
-// Metrics feeds a ctrace.Traces, cmetric.Metrics, or clog.Logs with data.
+// Metrics feeds a ctrace.Traces, cmetric.Metrics, or conslog.Logs with data.
 //
 // Examples:
 //   - Latency between related data points could be modeled and emitted as traces.
@@ -55,7 +55,7 @@ type Metrics interface {
 
 // A Logs connector acts as an exporter from a logs pipeline and a receiver
 // to one or more traces, metrics, or logs pipelines.
-// Logs feeds a ctrace.Traces, cmetric.Metrics, or clog.Logs with data.
+// Logs feeds a ctrace.Traces, cmetric.Metrics, or conslog.Logs with data.
 //
 // Examples:
 //   - Structured logs containing span information could be consumed and emitted as traces.
@@ -65,7 +65,7 @@ type Metrics interface {
 //     pipeline can then process and export the log to the appropriate backend.
 type Logs interface {
 	component.Component
-	clog.Logs
+	conslog.Logs
 }
 
 // CreateSettings configures Connector creators.
@@ -97,15 +97,15 @@ type Factory interface {
 
 	CreateTracesToTraces(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer ctrace.Traces) (Traces, error)
 	CreateTracesToMetrics(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer cmetric.Metrics) (Traces, error)
-	CreateTracesToLogs(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer clog.Logs) (Traces, error)
+	CreateTracesToLogs(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer conslog.Logs) (Traces, error)
 
 	CreateMetricsToTraces(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer ctrace.Traces) (Metrics, error)
 	CreateMetricsToMetrics(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer cmetric.Metrics) (Metrics, error)
-	CreateMetricsToLogs(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer clog.Logs) (Metrics, error)
+	CreateMetricsToLogs(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer conslog.Logs) (Metrics, error)
 
 	CreateLogsToTraces(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer ctrace.Traces) (Logs, error)
 	CreateLogsToMetrics(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer cmetric.Metrics) (Logs, error)
-	CreateLogsToLogs(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer clog.Logs) (Logs, error)
+	CreateLogsToLogs(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer conslog.Logs) (Logs, error)
 
 	TracesToTracesStability() component.StabilityLevel
 	TracesToMetricsStability() component.StabilityLevel
@@ -169,14 +169,14 @@ func (f CreateTracesToMetricsFunc) CreateTracesToMetrics(
 }
 
 // CreateTracesToLogsFunc is the equivalent of Factory.CreateTracesToLogs().
-type CreateTracesToLogsFunc func(context.Context, CreateSettings, component.Config, clog.Logs) (Traces, error)
+type CreateTracesToLogsFunc func(context.Context, CreateSettings, component.Config, conslog.Logs) (Traces, error)
 
 // CreateTracesToLogs implements Factory.CreateTracesToLogs().
 func (f CreateTracesToLogsFunc) CreateTracesToLogs(
 	ctx context.Context,
 	set CreateSettings,
 	cfg component.Config,
-	nextConsumer clog.Logs,
+	nextConsumer conslog.Logs,
 ) (Traces, error) {
 	if f == nil {
 		return nil, errDataTypes(set.ID, component.DataTypeTraces, component.DataTypeLogs)
@@ -217,14 +217,14 @@ func (f CreateMetricsToMetricsFunc) CreateMetricsToMetrics(
 }
 
 // CreateMetricsToLogsFunc is the equivalent of Factory.CreateMetricsToLogs().
-type CreateMetricsToLogsFunc func(context.Context, CreateSettings, component.Config, clog.Logs) (Metrics, error)
+type CreateMetricsToLogsFunc func(context.Context, CreateSettings, component.Config, conslog.Logs) (Metrics, error)
 
 // CreateMetricsToLogs implements Factory.CreateMetricsToLogs().
 func (f CreateMetricsToLogsFunc) CreateMetricsToLogs(
 	ctx context.Context,
 	set CreateSettings,
 	cfg component.Config,
-	nextConsumer clog.Logs,
+	nextConsumer conslog.Logs,
 ) (Metrics, error) {
 	if f == nil {
 		return nil, errDataTypes(set.ID, component.DataTypeMetrics, component.DataTypeLogs)
@@ -265,14 +265,14 @@ func (f CreateLogsToMetricsFunc) CreateLogsToMetrics(
 }
 
 // CreateLogsToLogsFunc is the equivalent of Factory.CreateLogsToLogs().
-type CreateLogsToLogsFunc func(context.Context, CreateSettings, component.Config, clog.Logs) (Logs, error)
+type CreateLogsToLogsFunc func(context.Context, CreateSettings, component.Config, conslog.Logs) (Logs, error)
 
 // CreateLogsToLogs implements Factory.CreateLogsToLogs().
 func (f CreateLogsToLogsFunc) CreateLogsToLogs(
 	ctx context.Context,
 	set CreateSettings,
 	cfg component.Config,
-	nextConsumer clog.Logs,
+	nextConsumer conslog.Logs,
 ) (Logs, error) {
 	if f == nil {
 		return nil, errDataTypes(set.ID, component.DataTypeLogs, component.DataTypeLogs)
@@ -500,7 +500,7 @@ func (b *Builder) CreateTracesToMetrics(ctx context.Context, set CreateSettings,
 }
 
 // CreateTracesToLogs creates a Traces connector based on the settings and config.
-func (b *Builder) CreateTracesToLogs(ctx context.Context, set CreateSettings, next clog.Logs) (Traces, error) {
+func (b *Builder) CreateTracesToLogs(ctx context.Context, set CreateSettings, next conslog.Logs) (Traces, error) {
 	if next == nil {
 		return nil, errNilNextConsumer
 	}
@@ -557,7 +557,7 @@ func (b *Builder) CreateMetricsToMetrics(ctx context.Context, set CreateSettings
 }
 
 // CreateMetricsToLogs creates a Metrics connector based on the settings and config.
-func (b *Builder) CreateMetricsToLogs(ctx context.Context, set CreateSettings, next clog.Logs) (Metrics, error) {
+func (b *Builder) CreateMetricsToLogs(ctx context.Context, set CreateSettings, next conslog.Logs) (Metrics, error) {
 	if next == nil {
 		return nil, errNilNextConsumer
 	}
@@ -614,7 +614,7 @@ func (b *Builder) CreateLogsToMetrics(ctx context.Context, set CreateSettings, n
 }
 
 // CreateLogsToLogs creates a Logs connector based on the settings and config.
-func (b *Builder) CreateLogsToLogs(ctx context.Context, set CreateSettings, next clog.Logs) (Logs, error) {
+func (b *Builder) CreateLogsToLogs(ctx context.Context, set CreateSettings, next conslog.Logs) (Logs, error) {
 	if next == nil {
 		return nil, errNilNextConsumer
 	}

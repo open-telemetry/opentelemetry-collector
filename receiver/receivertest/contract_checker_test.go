@@ -12,8 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/clog"
 	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/conslog"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/ctrace"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -27,7 +27,7 @@ import (
 // We declare a trivial example receiver, a data generator and then use them in TestConsumeContract().
 
 type exampleReceiver struct {
-	nextLogsConsumer    clog.Logs
+	nextLogsConsumer    conslog.Logs
 	nextTracesConsumer  ctrace.Traces
 	nextMetricsConsumer cmetric.Metrics
 }
@@ -221,7 +221,7 @@ func createLog(
 	_ context.Context,
 	_ receiver.CreateSettings,
 	cfg component.Config,
-	consumer clog.Logs,
+	consumer conslog.Logs,
 ) (receiver.Logs, error) {
 	rcv := &exampleReceiver{nextLogsConsumer: consumer}
 	cfg.(*exampleReceiverConfig).generator.(*exampleLogGenerator).receiver = rcv

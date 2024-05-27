@@ -12,8 +12,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/clog"
 	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/conslog"
 	"go.opentelemetry.io/collector/consumer/ctrace"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
@@ -93,9 +93,9 @@ func (n *receiverNode) buildComponent(ctx context.Context,
 		}
 		n.Component, err = builder.CreateMetrics(ctx, set, fanoutconsumer.NewMetrics(consumers))
 	case component.DataTypeLogs:
-		var consumers []clog.Logs
+		var consumers []conslog.Logs
 		for _, next := range nexts {
-			consumers = append(consumers, next.(clog.Logs))
+			consumers = append(consumers, next.(conslog.Logs))
 		}
 		n.Component, err = builder.CreateLogs(ctx, set, fanoutconsumer.NewLogs(consumers))
 	default:
@@ -145,7 +145,7 @@ func (n *processorNode) buildComponent(ctx context.Context,
 	case component.DataTypeMetrics:
 		n.Component, err = builder.CreateMetrics(ctx, set, next.(cmetric.Metrics))
 	case component.DataTypeLogs:
-		n.Component, err = builder.CreateLogs(ctx, set, next.(clog.Logs))
+		n.Component, err = builder.CreateLogs(ctx, set, next.(conslog.Logs))
 	default:
 		return fmt.Errorf("error creating processor %q in pipeline %q, data type %q is not supported", set.ID, n.pipelineID, n.pipelineID.Type())
 	}
@@ -313,9 +313,9 @@ func (n *connectorNode) buildComponent(
 		}
 	case component.DataTypeLogs:
 		capability := consumer.Capabilities{MutatesData: false}
-		consumers := make(map[component.ID]clog.Logs, len(nexts))
+		consumers := make(map[component.ID]conslog.Logs, len(nexts))
 		for _, next := range nexts {
-			consumers[next.(*capabilitiesNode).pipelineID] = next.(clog.Logs)
+			consumers[next.(*capabilitiesNode).pipelineID] = next.(conslog.Logs)
 			capability.MutatesData = capability.MutatesData || next.Capabilities().MutatesData
 		}
 		next := connector.NewLogsRouter(consumers)
@@ -363,7 +363,7 @@ type capabilitiesNode struct {
 	baseConsumer
 	ctrace.ConsumeTracesFunc
 	cmetric.ConsumeMetricsFunc
-	clog.ConsumeLogsFunc
+	conslog.ConsumeLogsFunc
 }
 
 func newCapabilitiesNode(pipelineID component.ID) *capabilitiesNode {

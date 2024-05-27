@@ -7,8 +7,8 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/clog"
 	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/conslog"
 	"go.opentelemetry.io/collector/consumer/ctrace"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/nopreceiver/internal/metadata"
@@ -32,7 +32,7 @@ func createMetrics(context.Context, receiver.CreateSettings, component.Config, c
 	return nopInstance, nil
 }
 
-func createLogs(context.Context, receiver.CreateSettings, component.Config, clog.Logs) (receiver.Logs, error) {
+func createLogs(context.Context, receiver.CreateSettings, component.Config, conslog.Logs) (receiver.Logs, error) {
 	return nopInstance, nil
 }
 

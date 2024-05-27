@@ -8,14 +8,14 @@ import (
 	"strings"
 	"sync"
 
-	"go.opentelemetry.io/collector/consumer/clog"
+	"go.opentelemetry.io/collector/consumer/conslog"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
 type MockReceiver struct {
 	ProduceCount      int
-	NextConsumer      clog.Logs
+	NextConsumer      conslog.Logs
 	lastConsumeResult error
 	mux               sync.Mutex
 }

@@ -10,8 +10,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer/clog"
 	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/conslog"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/ctrace"
 	"go.opentelemetry.io/collector/processor"
@@ -47,7 +47,7 @@ func createMetricsProcessor(context.Context, processor.CreateSettings, component
 	return nopInstance, nil
 }
 
-func createLogsProcessor(context.Context, processor.CreateSettings, component.Config, clog.Logs) (processor.Logs, error) {
+func createLogsProcessor(context.Context, processor.CreateSettings, component.Config, conslog.Logs) (processor.Logs, error) {
 	return nopInstance, nil
 }
 

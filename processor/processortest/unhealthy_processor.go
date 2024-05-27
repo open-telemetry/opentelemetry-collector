@@ -8,8 +8,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer/clog"
 	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/conslog"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/ctrace"
 	"go.opentelemetry.io/collector/processor"
@@ -50,7 +50,7 @@ func createUnhealthyMetricsProcessor(_ context.Context, set processor.CreateSett
 	}, nil
 }
 
-func createUnhealthyLogsProcessor(_ context.Context, set processor.CreateSettings, _ component.Config, _ clog.Logs) (processor.Logs, error) {
+func createUnhealthyLogsProcessor(_ context.Context, set processor.CreateSettings, _ component.Config, _ conslog.Logs) (processor.Logs, error) {
 	return &unhealthyProcessor{
 		Consumer:  consumertest.NewNop(),
 		telemetry: set.TelemetrySettings,

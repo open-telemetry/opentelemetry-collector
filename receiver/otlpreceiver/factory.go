@@ -10,8 +10,8 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/consumer/clog"
 	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/conslog"
 	"go.opentelemetry.io/collector/consumer/ctrace"
 	"go.opentelemetry.io/collector/internal/localhostgate"
 	"go.opentelemetry.io/collector/internal/sharedcomponent"
@@ -114,7 +114,7 @@ func createLog(
 	_ context.Context,
 	set receiver.CreateSettings,
 	cfg component.Config,
-	consumer clog.Logs,
+	consumer conslog.Logs,
 ) (receiver.Logs, error) {
 	oCfg := cfg.(*Config)
 	r, err := receivers.LoadOrStore(

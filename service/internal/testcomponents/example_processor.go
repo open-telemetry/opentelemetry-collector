@@ -8,8 +8,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/clog"
 	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/conslog"
 	"go.opentelemetry.io/collector/consumer/ctrace"
 	"go.opentelemetry.io/collector/processor"
 )
@@ -43,7 +43,7 @@ func createMetricsProcessor(_ context.Context, set processor.CreateSettings, _ c
 	}, nil
 }
 
-func createLogsProcessor(_ context.Context, set processor.CreateSettings, _ component.Config, nextConsumer clog.Logs) (processor.Logs, error) {
+func createLogsProcessor(_ context.Context, set processor.CreateSettings, _ component.Config, nextConsumer conslog.Logs) (processor.Logs, error) {
 	return &ExampleProcessor{
 		ConsumeLogsFunc: nextConsumer.ConsumeLogs,
 		mutatesData:     set.ID.Name() == "mutate",
@@ -54,7 +54,7 @@ type ExampleProcessor struct {
 	componentState
 	ctrace.ConsumeTracesFunc
 	cmetric.ConsumeMetricsFunc
-	clog.ConsumeLogsFunc
+	conslog.ConsumeLogsFunc
 	mutatesData bool
 }
 

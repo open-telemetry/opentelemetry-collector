@@ -9,8 +9,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/clog"
 	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/conslog"
 	"go.opentelemetry.io/collector/consumer/ctrace"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -58,7 +58,7 @@ func TestShutdownVerifierTracesOnly(t *testing.T) {
 
 type passthroughProcessor struct {
 	processor.Traces
-	nextLogs    clog.Logs
+	nextLogs    conslog.Logs
 	nextMetrics cmetric.Metrics
 	nextTraces  ctrace.Traces
 }
@@ -75,7 +75,7 @@ func (passthroughProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{}
 }
 
-func createPassthroughLogsProcessor(_ context.Context, _ processor.CreateSettings, _ component.Config, logs clog.Logs) (processor.Logs, error) {
+func createPassthroughLogsProcessor(_ context.Context, _ processor.CreateSettings, _ component.Config, logs conslog.Logs) (processor.Logs, error) {
 	return passthroughProcessor{
 		nextLogs: logs,
 	}, nil
