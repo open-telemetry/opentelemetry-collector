@@ -1,0 +1,4 @@
+test_map:
+  extra_list:
+    - "some list value_1"
+    - "${EXTRA_LIST_^VALUE_2}"

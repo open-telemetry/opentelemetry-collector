@@ -47,6 +47,8 @@ func (tID TestID) MarshalText() (text []byte, err error) {
 	return []byte(out), nil
 }
 
+type TestStringLike string
+
 func TestEncode(t *testing.T) {
 	enc := New(&EncoderConfig{
 		EncodeHook: TextMarshalerHookFunc(),
@@ -62,6 +64,22 @@ func TestEncode(t *testing.T) {
 		"WithTextMarshaler": {
 			input: TestID("type"),
 			want:  "type_",
+		},
+		"MapWithTextMarshalerKey": {
+			input: map[TestID]TestSimpleStruct{
+				TestID("type"): {Value: "value"},
+			},
+			want: map[string]any{
+				"type_": map[string]any{"value": "value"},
+			},
+		},
+		"MapWithoutTextMarshalerKey": {
+			input: map[TestStringLike]TestSimpleStruct{
+				TestStringLike("key"): {Value: "value"},
+			},
+			want: map[string]any{
+				"key": map[string]any{"value": "value"},
+			},
 		},
 		"WithSlice": {
 			input: []TestID{

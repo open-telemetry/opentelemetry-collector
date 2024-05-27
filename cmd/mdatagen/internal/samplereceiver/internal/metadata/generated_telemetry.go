@@ -3,6 +3,7 @@
 package metadata
 
 import (
+	"context"
 	"errors"
 
 	"go.opentelemetry.io/otel/metric"
@@ -22,23 +23,45 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	BatchSizeTriggerSend metric.Int64Counter
-	RequestDuration      metric.Float64Histogram
+	BatchSizeTriggerSend                 metric.Int64Counter
+	ProcessRuntimeTotalAllocBytes        metric.Int64ObservableCounter
+	observeProcessRuntimeTotalAllocBytes func() int64
+	RequestDuration                      metric.Float64Histogram
 }
 
 // telemetryBuilderOption applies changes to default builder.
 type telemetryBuilderOption func(*TelemetryBuilder)
 
+// WithProcessRuntimeTotalAllocBytesCallback sets callback for observable ProcessRuntimeTotalAllocBytes metric.
+func WithProcessRuntimeTotalAllocBytesCallback(cb func() int64) telemetryBuilderOption {
+	return func(builder *TelemetryBuilder) {
+		builder.observeProcessRuntimeTotalAllocBytes = cb
+	}
+}
+
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
 // for a component
 func NewTelemetryBuilder(settings component.TelemetrySettings, options ...telemetryBuilderOption) (*TelemetryBuilder, error) {
 	builder := TelemetryBuilder{}
+	for _, op := range options {
+		op(&builder)
+	}
 	var err, errs error
 	meter := Meter(settings)
 	builder.BatchSizeTriggerSend, err = meter.Int64Counter(
 		"batch_size_trigger_send",
 		metric.WithDescription("Number of times the batch was sent due to a size trigger"),
 		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessRuntimeTotalAllocBytes, err = meter.Int64ObservableCounter(
+		"process_runtime_total_alloc_bytes",
+		metric.WithDescription("Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')"),
+		metric.WithUnit("By"),
+		metric.WithInt64Callback(func(_ context.Context, o metric.Int64Observer) error {
+			o.Observe(builder.observeProcessRuntimeTotalAllocBytes())
+			return nil
+		}),
 	)
 	errs = errors.Join(errs, err)
 	builder.RequestDuration, err = meter.Float64Histogram(

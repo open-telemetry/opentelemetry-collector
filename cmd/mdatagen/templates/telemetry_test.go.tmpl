@@ -7,6 +7,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/metric"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	embeddedmetric "go.opentelemetry.io/otel/metric/embedded"
 	noopmetric "go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
@@ -61,3 +63,19 @@ func TestProviders(t *testing.T) {
 		require.Fail(t, "returned Meter not mockTracer")
 	}
 }
+{{- if .Telemetry.Metrics }}
+
+func TestNewTelemetryBuilder(t *testing.T) {
+	set := component.TelemetrySettings{
+		MeterProvider: mockMeterProvider{},
+		TracerProvider: mockTracerProvider{},
+	}
+	applied := false
+	_, err := NewTelemetryBuilder(set, func(b *TelemetryBuilder) {
+		applied = true
+	})
+	require.NoError(t, err)
+	require.True(t, applied)
+}
+
+{{- end }}

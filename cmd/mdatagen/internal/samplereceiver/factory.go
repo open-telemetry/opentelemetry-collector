@@ -26,7 +26,12 @@ func createTraces(context.Context, receiver.CreateSettings, component.Config, co
 	return nopInstance, nil
 }
 
-func createMetrics(context.Context, receiver.CreateSettings, component.Config, consumer.Metrics) (receiver.Metrics, error) {
+func createMetrics(ctx context.Context, set receiver.CreateSettings, _ component.Config, _ consumer.Metrics) (receiver.Metrics, error) {
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings, metadata.WithProcessRuntimeTotalAllocBytesCallback(func() int64 { return 2 }))
+	if err != nil {
+		return nil, err
+	}
+	telemetryBuilder.BatchSizeTriggerSend.Add(ctx, 1)
 	return nopInstance, nil
 }
 

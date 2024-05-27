@@ -27,6 +27,7 @@ type MetricData interface {
 	HasAggregated() bool
 	HasMetricInputType() bool
 	Instrument() string
+	IsAsync() bool
 }
 
 // AggregationTemporality defines a metric aggregation type.
@@ -123,6 +124,7 @@ func (mvt MetricValueType) BasicType() string {
 type gauge struct {
 	MetricValueType `mapstructure:"value_type"`
 	MetricInputType `mapstructure:",squash"`
+	Async           bool `mapstructure:"async,omitempty"`
 }
 
 // Unmarshal is a custom unmarshaler for gauge. Needed mostly to avoid MetricValueType.Unmarshal inheritance.
@@ -146,7 +148,18 @@ func (d gauge) HasAggregated() bool {
 }
 
 func (d gauge) Instrument() string {
-	return ""
+	instrumentName := cases.Title(language.English).String(d.MetricValueType.BasicType())
+
+	if d.Async {
+		instrumentName += "Observable"
+	}
+
+	instrumentName += "Gauge"
+	return instrumentName
+}
+
+func (d gauge) IsAsync() bool {
+	return d.Async
 }
 
 type sum struct {
@@ -154,6 +167,7 @@ type sum struct {
 	Mono                   `mapstructure:",squash"`
 	MetricValueType        `mapstructure:"value_type"`
 	MetricInputType        `mapstructure:",squash"`
+	Async                  bool `mapstructure:"async,omitempty"`
 }
 
 // Unmarshal is a custom unmarshaler for sum. Needed mostly to avoid MetricValueType.Unmarshal inheritance.
@@ -190,6 +204,9 @@ func (d sum) HasAggregated() bool {
 func (d sum) Instrument() string {
 	instrumentName := cases.Title(language.English).String(d.MetricValueType.BasicType())
 
+	if d.Async {
+		instrumentName += "Observable"
+	}
 	if !d.Monotonic {
 		instrumentName += "UpDown"
 	}
@@ -197,11 +214,16 @@ func (d sum) Instrument() string {
 	return instrumentName
 }
 
+func (d sum) IsAsync() bool {
+	return d.Async
+}
+
 type histogram struct {
 	AggregationTemporality `mapstructure:"aggregation_temporality"`
 	Mono                   `mapstructure:",squash"`
 	MetricValueType        `mapstructure:"value_type"`
 	MetricInputType        `mapstructure:",squash"`
+	Async                  bool `mapstructure:"async,omitempty"`
 }
 
 func (d histogram) Type() string {
@@ -227,4 +249,8 @@ func (d *histogram) Unmarshal(parser *confmap.Conf) error {
 		return err
 	}
 	return parser.Unmarshal(d, confmap.WithIgnoreUnused())
+}
+
+func (d histogram) IsAsync() bool {
+	return d.Async
 }

@@ -233,11 +233,6 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 	}, nil
 }
 
-// Deprecated: [v0.99.0] Use ToClient instead.
-func (hcs *ClientConfig) ToClientContext(ctx context.Context, host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
-	return hcs.ToClient(ctx, host, settings)
-}
-
 // Custom RoundTripper that adds headers.
 type headerRoundTripper struct {
 	transport http.RoundTripper
@@ -284,11 +279,6 @@ type ServerConfig struct {
 	// Additional headers attached to each HTTP response sent to the client.
 	// Header values are opaque since they may be sensitive.
 	ResponseHeaders map[string]configopaque.String `mapstructure:"response_headers"`
-}
-
-// Deprecated: [v0.99.0] Use ToListener instead.
-func (hss *ServerConfig) ToListenerContext(ctx context.Context) (net.Listener, error) {
-	return hss.ToListener(ctx)
 }
 
 // ToListener creates a net.Listener.
@@ -339,11 +329,6 @@ func WithDecoder(key string, dec func(body io.ReadCloser) (io.ReadCloser, error)
 		}
 		opts.decoders[key] = dec
 	}
-}
-
-// Deprecated: [v0.99.0] Use ToServer instead.
-func (hss *ServerConfig) ToServerContext(ctx context.Context, host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
-	return hss.ToServer(ctx, host, settings, handler, opts...)
 }
 
 // ToServer creates an http.Server from settings object.

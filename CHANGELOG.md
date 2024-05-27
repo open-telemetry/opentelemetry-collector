@@ -7,6 +7,22 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.8.0/v0.101.0
+
+### 💡 Enhancements 💡
+
+- `mdatagen`: generate documentation for internal telemetry (#10170)
+- `mdatagen`: add ability to use metadata.yaml to automatically generate instruments for components (#10054)
+  The `telemetry` section in metadata.yaml is used to generate
+  instruments for components to measure telemetry about themselves.
+  
+- `confmap`: Allow Converters to write logs during startup (#10135)
+- `otelcol`: Enable logging during configuration resolution (#10056)
+
+### 🧰 Bug fixes 🧰
+
+- `mdatagen`: Run package tests when goleak is skipped (#10125)
+
 ## v1.7.0/v0.100.0
 
 ### 🛑 Breaking changes 🛑

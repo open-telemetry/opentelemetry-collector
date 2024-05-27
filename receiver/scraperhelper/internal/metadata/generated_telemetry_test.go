@@ -61,3 +61,16 @@ func TestProviders(t *testing.T) {
 		require.Fail(t, "returned Meter not mockTracer")
 	}
 }
+
+func TestNewTelemetryBuilder(t *testing.T) {
+	set := component.TelemetrySettings{
+		MeterProvider:  mockMeterProvider{},
+		TracerProvider: mockTracerProvider{},
+	}
+	applied := false
+	_, err := NewTelemetryBuilder(set, func(b *TelemetryBuilder) {
+		applied = true
+	})
+	require.NoError(t, err)
+	require.True(t, applied)
+}
