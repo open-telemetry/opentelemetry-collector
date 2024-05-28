@@ -112,11 +112,9 @@ func TestCheckScraperMetricsViews(t *testing.T) {
 }
 
 func testTelemetry(t *testing.T, id component.ID, testFunc func(t *testing.T, tt componenttest.TestTelemetry)) {
-	t.Run("WithOTel", func(t *testing.T) {
-		tt, err := componenttest.SetupTelemetry(id)
-		require.NoError(t, err)
-		t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+	tt, err := componenttest.SetupTelemetry(id)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-		testFunc(t, tt)
-	})
+	testFunc(t, tt)
 }

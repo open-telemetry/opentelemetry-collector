@@ -248,6 +248,7 @@ func TestLoadMetadata(t *testing.T) {
 							Unit:        strPtr("s"),
 							Histogram: &histogram{
 								MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
+								Boundaries:      []float64{1, 10, 100},
 							},
 						},
 						"process_runtime_total_alloc_bytes": {
