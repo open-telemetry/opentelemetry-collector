@@ -3,6 +3,7 @@
 package metadata
 
 import (
+	"context"
 	"errors"
 
 	"go.opentelemetry.io/otel/metric"
@@ -24,11 +25,13 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	ProcessorBatchBatchSendSize        metric.Int64Histogram
-	ProcessorBatchBatchSendSizeBytes   metric.Int64Histogram
-	ProcessorBatchBatchSizeTriggerSend metric.Int64Counter
-	ProcessorBatchTimeoutTriggerSend   metric.Int64Counter
-	level                              configtelemetry.Level
+	ProcessorBatchBatchSendSize              metric.Int64Histogram
+	ProcessorBatchBatchSendSizeBytes         metric.Int64Histogram
+	ProcessorBatchBatchSizeTriggerSend       metric.Int64Counter
+	ProcessorBatchMetadataCardinality        metric.Int64ObservableUpDownCounter
+	observeProcessorBatchMetadataCardinality func() int64
+	ProcessorBatchTimeoutTriggerSend         metric.Int64Counter
+	level                                    configtelemetry.Level
 }
 
 // telemetryBuilderOption applies changes to default builder.
@@ -38,6 +41,13 @@ type telemetryBuilderOption func(*TelemetryBuilder)
 func WithLevel(lvl configtelemetry.Level) telemetryBuilderOption {
 	return func(builder *TelemetryBuilder) {
 		builder.level = lvl
+	}
+}
+
+// WithProcessorBatchMetadataCardinalityCallback sets callback for observable ProcessorBatchMetadataCardinality metric.
+func WithProcessorBatchMetadataCardinalityCallback(cb func() int64) telemetryBuilderOption {
+	return func(builder *TelemetryBuilder) {
+		builder.observeProcessorBatchMetadataCardinality = cb
 	}
 }
 
@@ -60,19 +70,29 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	builder.ProcessorBatchBatchSendSize, err = meter.Int64Histogram(
 		"processor_batch_batch_send_size",
 		metric.WithDescription("Number of units in the batch"),
-		metric.WithUnit("1"),
+		metric.WithUnit("1"), metric.WithExplicitBucketBoundaries([]float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000}...),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorBatchBatchSendSizeBytes, err = meter.Int64Histogram(
 		"processor_batch_batch_send_size_bytes",
 		metric.WithDescription("Number of bytes in batch that was sent"),
-		metric.WithUnit("By"),
+		metric.WithUnit("By"), metric.WithExplicitBucketBoundaries([]float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000, 200000, 300000, 400000, 500000, 600000, 700000, 800000, 900000, 1e+06, 2e+06, 3e+06, 4e+06, 5e+06, 6e+06, 7e+06, 8e+06, 9e+06}...),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorBatchBatchSizeTriggerSend, err = meter.Int64Counter(
 		"processor_batch_batch_size_trigger_send",
 		metric.WithDescription("Number of times the batch was sent due to a size trigger"),
 		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorBatchMetadataCardinality, err = meter.Int64ObservableUpDownCounter(
+		"processor_batch_metadata_cardinality",
+		metric.WithDescription("Number of distinct metadata value combinations being processed"),
+		metric.WithUnit("1"),
+		metric.WithInt64Callback(func(_ context.Context, o metric.Int64Observer) error {
+			o.Observe(builder.observeProcessorBatchMetadataCardinality())
+			return nil
+		}),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorBatchTimeoutTriggerSend, err = meter.Int64Counter(
