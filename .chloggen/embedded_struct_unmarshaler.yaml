@@ -7,7 +7,7 @@ change_type: deprecation
 component: component
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Deprecate `component.UnmarshalConfig`, use `conf.Unmarshal(&intoCfg)` instead.
+note: Deprecate `component.UnmarshalConfig`, use `(*confmap.Conf).Unmarshal(&intoCfg)` instead.
 
 # One or more tracking issues or pull requests related to the change
 issues: [7102]
