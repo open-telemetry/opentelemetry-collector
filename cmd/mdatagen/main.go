@@ -124,6 +124,23 @@ func run(ymlPath string) error {
 		toGenerate[filepath.Join(tmplDir, "resource.go.tmpl")] = filepath.Join(codeDir, "generated_resource.go")
 		toGenerate[filepath.Join(tmplDir, "resource_test.go.tmpl")] = filepath.Join(codeDir, "generated_resource_test.go")
 	}
+	if err = generateFile(filepath.Join(tmplDir, "match.go.tmpl"),
+		filepath.Join(codeDir, "generated_match.go"), md, "metadata"); err != nil {
+		return err
+	}
+	if err = generateFile(filepath.Join(tmplDir, "match_test.go.tmpl"),
+		filepath.Join(codeDir, "generated_match_test.go"), md, "metadata"); err != nil {
+		return err
+	}
+
+	if err = generateFile(filepath.Join(tmplDir, "config.go.tmpl"),
+		filepath.Join(codeDir, "generated_config.go"), md, "metadata"); err != nil {
+		return err
+	}
+	if err = generateFile(filepath.Join(tmplDir, "config_test.go.tmpl"),
+		filepath.Join(codeDir, "generated_config_test.go"), md, "metadata"); err != nil {
+		return err
+	}
 
 	if len(md.Metrics) > 0 { // only generate metrics if metrics are present
 		toGenerate[filepath.Join(tmplDir, "metrics.go.tmpl")] = filepath.Join(codeDir, "generated_metrics.go")
