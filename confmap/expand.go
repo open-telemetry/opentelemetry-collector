@@ -146,20 +146,13 @@ func (mr *Resolver) expandURI(ctx context.Context, input string) (any, bool, err
 	// strip ${ and }
 	uri := input[2 : len(input)-1]
 
-	var lURI location
-	var err error
-	// If no ':' then we have no scheme, check if there is a default scheme configured
 	if !strings.Contains(uri, ":") {
-		// If we have no default scheme there is nothing that can be expanded, return the original input unchanged
-		if mr.defaultScheme == "" {
-			return input, false, nil
-		}
-		lURI = location{scheme: mr.defaultScheme, opaqueValue: uri}
-	} else {
-		lURI, err = newLocation(uri)
-		if err != nil {
-			return nil, false, err
-		}
+		uri = fmt.Sprintf("%s:%s", mr.defaultScheme, uri)
+	}
+
+	lURI, err := newLocation(uri)
+	if err != nil {
+		return nil, false, err
 	}
 
 	if strings.Contains(lURI.opaqueValue, "$") {
