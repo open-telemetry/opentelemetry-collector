@@ -165,6 +165,7 @@ telemetry:
       unit: s
       histogram:
         value_type: double
+        bucket_boundaries: [1, 10, 100]
     process_runtime_total_alloc_bytes:
       enabled: true
       description: Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')

@@ -157,5 +157,7 @@ telemetry:
         value_type: <int|double>
         # Required for sum metric: whether the metric is monotonic (no negative delta values).
         monotonic: bool
+        # Bucket boundaries are only available to set for histogram metrics.
+        bucket_boundaries: [double]
       # Optional: array of attributes that were defined in the attributes section that are emitted by this metric.
       attributes: [string]
