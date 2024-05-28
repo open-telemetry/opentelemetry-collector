@@ -161,7 +161,7 @@ func (id *PipelineID) UnmarshalText(text []byte) error {
 
 	var err error
 
-	if id.typeVal, err = NewDataType(typeStr); err != nil {
+	if id.typeVal, err = newDataType(typeStr); err != nil {
 		return fmt.Errorf("in %q id: %w", idStr, err)
 	}
 	id.nameVal = nameStr

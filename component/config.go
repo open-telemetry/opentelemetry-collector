@@ -184,7 +184,7 @@ func (dt DataType) MarshalText() (text []byte, err error) {
 	return []byte(dt), nil
 }
 
-func NewDataType(ty string) (DataType, error) {
+func newDataType(ty string) (DataType, error) {
 	if len(ty) == 0 {
 		return "", fmt.Errorf("id must not be empty")
 	}
