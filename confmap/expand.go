@@ -79,7 +79,7 @@ func (mr *Resolver) expandValue(ctx context.Context, value any) (any, bool, erro
 // findURI attempts to find the first potentially expandable URI in input. It returns a potentially expandable
 // URI, or an empty string if none are found.
 // Note: findURI is only called when input contains a closing bracket.
-func findURI(input string, skipNoSchemeUri bool) string {
+func findURI(input string, skipNoSchemeURI bool) string {
 	closeIndex := strings.Index(input, "}")
 	remaining := input[closeIndex+1:]
 	openIndex := strings.LastIndex(input[:closeIndex+1], "${")
@@ -88,12 +88,12 @@ func findURI(input string, skipNoSchemeUri bool) string {
 	//  - a missing "${"
 	//  - no-scheme URIs are not allowed AND the value between `${}` does not contain a `:`
 	// then check the next URI.
-	if openIndex < 0 || (skipNoSchemeUri && !strings.Contains(input[openIndex:closeIndex+1], ":")) {
+	if openIndex < 0 || (skipNoSchemeURI && !strings.Contains(input[openIndex:closeIndex+1], ":")) {
 		// if remaining does not contain "}", there are no URIs left: stop recursion.
 		if !strings.Contains(remaining, "}") {
 			return ""
 		}
-		return findURI(remaining, skipNoSchemeUri)
+		return findURI(remaining, skipNoSchemeURI)
 	}
 
 	return input[openIndex : closeIndex+1]
