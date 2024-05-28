@@ -7,6 +7,14 @@ import (
 	"go.opentelemetry.io/collector/filter"
 )
 
+var MetricNames = []string{
+	"default.metric",
+	"default.metric.to_be_removed",
+	"metric.input_type",
+	"optional.metric",
+	"optional.metric.empty_unit",
+}
+
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
 	Enabled bool `mapstructure:"enabled"`
@@ -53,6 +61,30 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 	}
+}
+
+func (msc *MetricsConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	confStrMap := parser.ToStringMap()
+	expandedConfig, err := expandPatternMap(confStrMap, MetricNames)
+	if err != nil {
+		return err
+	}
+	newParser := confmap.NewFromStringMap(expandedConfig)
+	return newParser.Unmarshal(msc)
+}
+
+var ResourceAttributeNames = []string{
+	"map.resource.attr",
+	"optional.resource.attr",
+	"slice.resource.attr",
+	"string.enum.resource.attr",
+	"string.resource.attr",
+	"string.resource.attr_disable_warning",
+	"string.resource.attr_remove_warning",
+	"string.resource.attr_to_be_removed",
 }
 
 // ResourceAttributeConfig provides common config for a particular resource attribute.
@@ -120,6 +152,19 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 	}
+}
+
+func (rasc *ResourceAttributesConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	confStrMap := parser.ToStringMap()
+	expandedConfig, err := expandPatternMap(confStrMap, ResourceAttributeNames)
+	if err != nil {
+		return err
+	}
+	newParser := confmap.NewFromStringMap(expandedConfig)
+	return newParser.Unmarshal(rasc)
 }
 
 // MetricsBuilderConfig is a configuration for sample metrics builder.
