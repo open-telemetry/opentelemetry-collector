@@ -79,18 +79,21 @@ func (mr *Resolver) expandValue(ctx context.Context, value any) (any, bool, erro
 // findURI attempts to find the first potentially expandable URI in input. It returns a potentially expandable
 // URI, or an empty string if none are found.
 // Note: findURI is only called when input contains a closing bracket.
-func (mr *Resolver) findURI(input string) string {
+func findURI(input string, skipNoSchemeUri bool) string {
 	closeIndex := strings.Index(input, "}")
 	remaining := input[closeIndex+1:]
 	openIndex := strings.LastIndex(input[:closeIndex+1], "${")
 
-	// if there is a missing "${" check the next URI.
-	if openIndex < 0 {
+	// if there is any of:
+	//  - a missing "${"
+	//  - no-scheme URIs are not allowed AND the value between `${}` does not contain a `:`
+	// then check the next URI.
+	if openIndex < 0 || (skipNoSchemeUri && !strings.Contains(input[openIndex:closeIndex+1], ":")) {
 		// if remaining does not contain "}", there are no URIs left: stop recursion.
 		if !strings.Contains(remaining, "}") {
 			return ""
 		}
-		return mr.findURI(remaining)
+		return findURI(remaining, skipNoSchemeUri)
 	}
 
 	return input[openIndex : closeIndex+1]
@@ -100,7 +103,8 @@ func (mr *Resolver) findURI(input string) string {
 // returns the input with the URI expanded, true and nil. Otherwise, it returns the unchanged input, false and the expanding error.
 // This method expects input to start with ${ and end with }
 func (mr *Resolver) findAndExpandURI(ctx context.Context, input string) (any, bool, error) {
-	uri := mr.findURI(input)
+	// no-scheme URIs are skipped if a default scheme is not set
+	uri := findURI(input, mr.defaultScheme == "")
 	if uri == "" {
 		// No URI found, return.
 		return input, false, nil
