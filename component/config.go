@@ -4,6 +4,7 @@
 package component // import "go.opentelemetry.io/collector/component"
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -186,7 +187,7 @@ func (dt DataType) MarshalText() (text []byte, err error) {
 
 func newDataType(ty string) (DataType, error) {
 	if len(ty) == 0 {
-		return "", fmt.Errorf("id must not be empty")
+		return "", errors.New("id must not be empty")
 	}
 	switch ty {
 	case "metrics":
