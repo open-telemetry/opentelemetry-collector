@@ -431,6 +431,27 @@ func TestNewDataType(t *testing.T) {
 	// hopefully this reminds us to update DataType when profiles get included
 	ty, err = newDataType("profiles")
 	assert.Equal(t, err, errors.New("invalid data type profiles"))
+}
+
+func TestDataTypeStringMarshal(t *testing.T) {
+	assert.Equal(t, "metrics", DataTypeMetrics.String())
+	text, err := DataTypeMetrics.MarshalText()
+	assert.Equal(t, []byte("metrics"), text)
+	assert.Nil(t, err)
+}
+
+func TestDataTypeFromSignal(t *testing.T) {
+	dt, err := newDataType("metrics")
+	assert.Nil(t, err)
+	assert.Equal(t, DataTypeMetrics, dt)
+
+	dt, err = newDataType("traces")
+	assert.Equal(t, DataTypeTraces, dt)
+	assert.Nil(t, err)
+
+	dt, err = newDataType("")
+	assert.Equal(t, errors.New("id must not be empty"), err)
+	assert.Equal(t, DataType(""), dt)
 
 }
 
