@@ -13,6 +13,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -165,17 +167,14 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 }
 
 func TestBatchProcessorSentBySize(t *testing.T) {
-	telemetryTest(t, testBatchProcessorSentBySize)
-}
-
-func testBatchProcessorSentBySize(t *testing.T, tel testTelemetry) {
+	tel := setupTestTelemetry()
 	sizer := &ptrace.ProtoMarshaler{}
 	sink := new(consumertest.TracesSink)
 	cfg := createDefaultConfig().(*Config)
 	sendBatchSize := 20
 	cfg.SendBatchSize = uint32(sendBatchSize)
 	cfg.Timeout = 500 * time.Millisecond
-	creationSet := tel.NewProcessorCreateSettings()
+	creationSet := tel.NewCreateSettings()
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg)
 	require.NoError(t, err)
@@ -211,11 +210,76 @@ func testBatchProcessorSentBySize(t *testing.T, tel testTelemetry) {
 		}
 	}
 
-	tel.assertMetrics(t, expectedMetrics{
-		sendCount:        float64(expectedBatchesNum),
-		sendSizeSum:      float64(sink.SpanCount()),
-		sendSizeBytesSum: float64(sizeSum),
-		sizeTrigger:      float64(expectedBatchesNum),
+	tel.assertMetrics(t, []metricdata.Metrics{
+		{
+			Name:        "processor_batch_batch_send_size_bytes",
+			Description: "Number of bytes in batch that was sent",
+			Unit:        "By",
+			Data: metricdata.Histogram[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				DataPoints: []metricdata.HistogramDataPoint[int64]{
+					{
+						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
+						Count:      uint64(expectedBatchesNum),
+						Bounds: []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000,
+							100_000, 200_000, 300_000, 400_000, 500_000, 600_000, 700_000, 800_000, 900_000,
+							1000_000, 2000_000, 3000_000, 4000_000, 5000_000, 6000_000, 7000_000, 8000_000, 9000_000},
+						BucketCounts: []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, uint64(expectedBatchesNum), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+						Sum:          int64(sizeSum),
+						Min:          metricdata.NewExtrema(int64(sizeSum / expectedBatchesNum)),
+						Max:          metricdata.NewExtrema(int64(sizeSum / expectedBatchesNum)),
+					},
+				},
+			},
+		},
+		{
+			Name:        "processor_batch_batch_send_size",
+			Description: "Number of units in the batch",
+			Unit:        "1",
+			Data: metricdata.Histogram[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				DataPoints: []metricdata.HistogramDataPoint[int64]{
+					{
+						Attributes:   attribute.NewSet(attribute.String("processor", "batch")),
+						Count:        uint64(expectedBatchesNum),
+						Bounds:       []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000},
+						BucketCounts: []uint64{0, uint64(expectedBatchesNum), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+						Sum:          int64(sink.SpanCount()),
+						Min:          metricdata.NewExtrema(int64(sendBatchSize)),
+						Max:          metricdata.NewExtrema(int64(sendBatchSize)),
+					},
+				},
+			},
+		},
+		{
+			Name:        "processor_batch_batch_size_trigger_send",
+			Description: "Number of times the batch was sent due to a size trigger",
+			Unit:        "1",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      int64(expectedBatchesNum),
+						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
+					},
+				},
+			},
+		},
+		{
+			Name:        "processor_batch_metadata_cardinality",
+			Description: "Number of distinct metadata value combinations being processed",
+			Unit:        "1",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: false,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value: 1,
+					},
+				},
+			},
+		},
 	})
 }
 
