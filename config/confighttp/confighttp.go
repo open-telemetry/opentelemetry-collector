@@ -180,7 +180,7 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 			return nil, errors.New("extensions configuration not found")
 		}
 
-		httpCustomAuthRoundTripper, aerr := hcs.Auth.GetClientAuthenticatorContext(context.Background(), ext)
+		httpCustomAuthRoundTripper, aerr := hcs.Auth.GetClientAuthenticatorContext(ctx, ext)
 		if aerr != nil {
 			return nil, aerr
 		}
