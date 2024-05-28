@@ -457,5 +457,5 @@ func TestResolverExpandStringValueInvalidReturnValue(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = resolver.Resolve(context.Background())
-	assert.EqualError(t, err, `expanding ${test:PORT}, expected convertable to string value type, got ['ӛ']([]interface {})`)
+	assert.EqualError(t, err, `expanding ${test:PORT}: expected convertable to string value type, got ['ӛ']([]interface {})`)
 }

@@ -113,15 +113,15 @@ func (mr *Resolver) findAndExpandURI(ctx context.Context, input string) (any, bo
 	if err != nil {
 		return input, false, err
 	}
-	repl, err := toString(uri, expanded)
+	repl, err := toString(expanded)
 	if err != nil {
-		return input, false, err
+		return input, false, fmt.Errorf("expanding %v: %w", uri, err)
 	}
 	return strings.ReplaceAll(input, uri, repl), changed, err
 }
 
 // toString attempts to convert input to a string.
-func toString(strURI string, input any) (string, error) {
+func toString(input any) (string, error) {
 	// This list must be kept in sync with checkRawConfType.
 	val := reflect.ValueOf(input)
 	switch val.Kind() {
@@ -134,7 +134,7 @@ func toString(strURI string, input any) (string, error) {
 	case reflect.Bool:
 		return strconv.FormatBool(val.Bool()), nil
 	default:
-		return "", fmt.Errorf("expanding %v, expected convertable to string value type, got %q(%T)", strURI, input, input)
+		return "", fmt.Errorf("expected convertable to string value type, got %q(%T)", input, input)
 	}
 }
 
