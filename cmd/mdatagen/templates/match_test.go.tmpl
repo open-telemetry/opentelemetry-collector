@@ -3,6 +3,7 @@
 package {{ .Package }}
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 )
@@ -430,11 +431,25 @@ func TestApplicationScenarios(t *testing.T) {
 				"http.server.response.body.size": 1,
 			},
 		},
+		{
+			name: "no match",
+			patterns: map[string]any{
+				"a": 1,
+			},
+			names:           []string{"b"},
+			expectedMatches: map[string]any{},
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			result, err := expandPatternMap(tc.patterns, tc.names)
+			if len(tc.expectedMatches) == 0 {
+				if !errors.Is(err, errNoMatch) {
+					t.Fatalf("expected errNoMatch, got %v", err)
+				}
+				return
+			}
 			if err != nil {
 				t.Fatalf("failed to match: %v", err)
 			}

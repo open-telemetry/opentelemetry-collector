@@ -11,6 +11,8 @@ import (
 	"unicode"
 )
 
+var errNoMatch = errors.New("specified patterns don't match any names")
+
 func expandPatternMap(patternMap map[string]any, matchNames []string) (map[string]any, error) {
 	patterns := patternBlocks{}
 
@@ -33,6 +35,9 @@ func expandPatternMap(patternMap map[string]any, matchNames []string) (map[strin
 	expandedMap, err := matchAllPatterns(patterns, matchNames)
 	if err != nil {
 		return nil, err
+	}
+	if len(expandedMap) == 0 {
+		return nil, errNoMatch
 	}
 
 	return expandedMap, nil
