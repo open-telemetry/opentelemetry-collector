@@ -21,7 +21,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # version in this repo are prefixed with v
           latest_version=v$(gh release view \
                                --repo open-telemetry/semantic-conventions \
                                --json tagName \
