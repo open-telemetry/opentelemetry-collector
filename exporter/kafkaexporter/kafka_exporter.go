@@ -97,17 +97,13 @@ type kafkaLogsProducer struct {
 }
 
 func (e *kafkaLogsProducer) logsDataPusher(_ context.Context, ld pdata.Logs) (int, error) {
-	if value, exist := ld.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Attributes().Get("metrics"); exist {
-		metricLen := value.ArrayVal().Len()
-		messages := make([]Message, metricLen)
-		for i := 0; i < value.ArrayVal().Len(); i++ {
-			messages[i].Value = []byte(value.ArrayVal().At(i).StringVal())
-		}
-
-		err := e.producer.SendMessages(producerLogMessages(messages, e.topic, e.messageKey))
-		if err != nil {
-			return ld.LogRecordCount(), err
-		}
+	messages, err := e.marshaller.Marshal(ld)
+	if err != nil {
+		return ld.LogRecordCount(), consumererror.Permanent(err)
+	}
+	err = e.producer.SendMessages(producerLogMessages(messages, e.topic, e.messageKey))
+	if err != nil {
+		return ld.LogRecordCount(), err
 	}
 	return 0, nil
 }
