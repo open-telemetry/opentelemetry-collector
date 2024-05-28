@@ -8,6 +8,7 @@ import (
     "errors"
     {{- end }}
 
+    {{ if hasAsync .Telemetry }}"go.opentelemetry.io/otel/attribute"{{- end }}
 	"go.opentelemetry.io/otel/metric"
     "go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
@@ -35,6 +36,7 @@ type TelemetryBuilder struct {
     {{- end }}
 	{{- end }}
     level configtelemetry.Level
+    {{ if hasAsync .Telemetry }}attributeSet attribute.Set{{- end }}
 }
 
 // telemetryBuilderOption applies changes to default builder.
@@ -47,6 +49,15 @@ func WithLevel(lvl configtelemetry.Level) telemetryBuilderOption {
     }
 }
 
+{{- if hasAsync .Telemetry }}
+// WithAttributeSet applies a set of attributes for asynchronous instruments.
+func WithAttributeSet(set attribute.Set) telemetryBuilderOption {
+	return func(builder *TelemetryBuilder) {
+		builder.attributeSet = set
+	}
+}
+{{- end }}
+
 {{- range $name, $metric := .Telemetry.Metrics }}
     {{ if $metric.Data.Async -}}
 // With{{ $name.Render }}Callback sets callback for observable {{ $name.Render }} metric.
@@ -57,6 +68,7 @@ func With{{ $name.Render }}Callback(cb func() {{ $metric.Data.BasicType }}) tele
 }
     {{- end }}
 {{- end }}
+
 
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
 // for a component
@@ -85,7 +97,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
         {{- end }}
         {{ if $metric.Data.Async -}}
         metric.With{{ casesTitle $metric.Data.BasicType }}Callback(func(_ context.Context, o metric.{{ casesTitle $metric.Data.BasicType }}Observer) error {
-            o.Observe(builder.observe{{ $name.Render }}())
+            o.Observe(builder.observe{{ $name.Render }}(), metric.WithAttributeSet(builder.attributeSet))
             return nil
         }),
         {{- end }}

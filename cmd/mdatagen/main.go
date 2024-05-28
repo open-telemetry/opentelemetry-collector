@@ -189,6 +189,14 @@ func templatize(tmplFile string, md metadata) *template.Template {
 					}
 					return result
 				},
+				"hasAsync": func(t telemetry) bool {
+					for _, m := range t.Metrics {
+						if m.Data().IsAsync() {
+							return true
+						}
+					}
+					return false
+				},
 				"inc": func(i int) int { return i + 1 },
 				"distroURL": func(name string) string {
 					return distros[name]

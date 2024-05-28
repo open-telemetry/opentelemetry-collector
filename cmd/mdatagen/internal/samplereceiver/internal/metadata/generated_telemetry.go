@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
@@ -30,6 +31,7 @@ type TelemetryBuilder struct {
 	observeProcessRuntimeTotalAllocBytes func() int64
 	RequestDuration                      metric.Float64Histogram
 	level                                configtelemetry.Level
+	attributeSet                         attribute.Set
 }
 
 // telemetryBuilderOption applies changes to default builder.
@@ -39,6 +41,13 @@ type telemetryBuilderOption func(*TelemetryBuilder)
 func WithLevel(lvl configtelemetry.Level) telemetryBuilderOption {
 	return func(builder *TelemetryBuilder) {
 		builder.level = lvl
+	}
+}
+
+// WithAttributeSet applies a set of attributes for asynchronous instruments.
+func WithAttributeSet(set attribute.Set) telemetryBuilderOption {
+	return func(builder *TelemetryBuilder) {
+		builder.attributeSet = set
 	}
 }
 
@@ -76,7 +85,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 		metric.WithDescription("Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')"),
 		metric.WithUnit("By"),
 		metric.WithInt64Callback(func(_ context.Context, o metric.Int64Observer) error {
-			o.Observe(builder.observeProcessRuntimeTotalAllocBytes())
+			o.Observe(builder.observeProcessRuntimeTotalAllocBytes(), metric.WithAttributeSet(builder.attributeSet))
 			return nil
 		}),
 	)
