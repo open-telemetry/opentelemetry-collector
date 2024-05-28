@@ -61,6 +61,7 @@ jobs:
         with:
           repository: open-telemetry/semantic-conventions
           path: tmp-semantic-conventions
+          fetch-tags: true
 
       - name: Update version
         env:
