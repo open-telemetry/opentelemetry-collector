@@ -61,6 +61,9 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
         "{{ $name }}",
         metric.WithDescription("{{ $metric.Description }}"),
         metric.WithUnit("{{ $metric.Unit }}"),
+        {{- if eq $metric.Data.Type "Histogram" -}}
+        {{ if $metric.Data.Boundaries -}}metric.WithExplicitBucketBoundaries([]float64{ {{- range $metric.Data.Boundaries }} {{.}}, {{- end }} }...),{{- end }}
+        {{- end }}
         {{ if $metric.Data.Async -}}
         metric.With{{ casesTitle $metric.Data.BasicType }}Callback(func(_ context.Context, o metric.{{ casesTitle $metric.Data.BasicType }}Observer) error {
             o.Observe(builder.observe{{ $name.Render }}())

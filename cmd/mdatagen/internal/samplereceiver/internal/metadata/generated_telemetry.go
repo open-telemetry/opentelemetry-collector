@@ -67,7 +67,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	builder.RequestDuration, err = meter.Float64Histogram(
 		"request_duration",
 		metric.WithDescription("Duration of request"),
-		metric.WithUnit("s"),
+		metric.WithUnit("s"), metric.WithExplicitBucketBoundaries([]float64{1, 10, 100}...),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs

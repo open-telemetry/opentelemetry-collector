@@ -223,7 +223,8 @@ type histogram struct {
 	Mono                   `mapstructure:",squash"`
 	MetricValueType        `mapstructure:"value_type"`
 	MetricInputType        `mapstructure:",squash"`
-	Async                  bool `mapstructure:"async,omitempty"`
+	Async                  bool      `mapstructure:"async,omitempty"`
+	Boundaries             []float64 `mapstructure:"bucket_boundaries"`
 }
 
 func (d histogram) Type() string {
