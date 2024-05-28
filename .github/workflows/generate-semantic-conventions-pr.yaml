@@ -27,8 +27,8 @@ jobs:
                                --jq .tagName \
                              | sed 's/^v//')
 
-          rc=$(find semconv -name $latest_version | grep .)
-          if $rc == 0; then
+          found=$(find semconv -name $latest_version)
+          if [[ $found =~ $latest_version ]]; then
             already_added=true
           fi
 
