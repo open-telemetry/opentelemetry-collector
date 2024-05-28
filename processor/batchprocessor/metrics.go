@@ -66,7 +66,7 @@ func (bpt *batchProcessorTelemetry) createOtelMetrics(set component.TelemetrySet
 		meter = noopmetric.Meter{}
 	}
 
-	bpt.telemetryBuilder, err = metadata.NewTelemetryBuilder(set)
+	bpt.telemetryBuilder, err = metadata.NewTelemetryBuilder(set, metadata.WithLevel(bpt.level))
 	errors = multierr.Append(errors, err)
 
 	bpt.batchMetadataCardinality, err = meter.Int64ObservableUpDownCounter(
