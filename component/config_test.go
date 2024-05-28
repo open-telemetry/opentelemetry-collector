@@ -430,7 +430,7 @@ func TestNewDataType(t *testing.T) {
 
 	// hopefully this reminds us to update DataType when profiles get included
 	ty, err = newDataType("profiles")
-	assert.Equal(t, "", ty)
+	assert.Equal(t, DataType(""), ty)
 	assert.Equal(t, err, errors.New("invalid data type profiles"))
 }
 
