@@ -5,6 +5,7 @@ go 1.21.0
 require (
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/pdata v1.8.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.0.0
 	go.opentelemetry.io/collector/pdata/testdata v0.101.0
 	go.uber.org/goleak v1.3.0
 )
@@ -28,6 +29,7 @@ require (
 )
 
 replace go.opentelemetry.io/collector/pdata => ../pdata
+replace go.opentelemetry.io/collector/pdata/pprofile => ../pdata/pprofile
 
 replace go.opentelemetry.io/collector/pdata/testdata => ../pdata/testdata
 

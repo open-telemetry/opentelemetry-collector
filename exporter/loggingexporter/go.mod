@@ -86,3 +86,4 @@ retract (
 replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
 
 replace go.opentelemetry.io/collector/config/configretry => ../../config/configretry
+replace go.opentelemetry.io/collector/pdata/pprofile => ../../pdata/pprofile 
