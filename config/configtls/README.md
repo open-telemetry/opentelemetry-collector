@@ -123,6 +123,7 @@ Beyond TLS configuration, the following setting can optionally be configured
   RequireAndVerifyClientCert in the TLSConfig. Please refer to
   https://godoc.org/crypto/tls#Config for more information.
 - `client_ca_file_reload` (default = false): Reload the ClientCAs file when it is modified.
+
 Example:
 
 ```yaml
