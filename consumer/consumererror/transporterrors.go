@@ -45,6 +45,7 @@ func (se TransportError) Unwrap() error {
 // HTTPStatus returns an HTTP status code either directly
 // set by the source or derived from a gRPC status code set
 // by the source.
+//
 // If no code has been set, the return value is
 // an HTTP 500 code.
 func (se TransportError) HTTPStatus() int {
@@ -60,6 +61,7 @@ func (se TransportError) HTTPStatus() int {
 // GRPCStatus returns an gRPC status code either directly
 // set by the source or derived from an HTTP status code set
 // by the source.
+//
 // If no code has been set, the return value is set
 // to `false`.
 func (se TransportError) GRPCStatus() *status.Status {
