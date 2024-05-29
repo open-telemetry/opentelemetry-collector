@@ -52,5 +52,5 @@ When making updates to the metadata generator or introducing support for new fun
 
 1. Ensure the [metadata-schema.yaml](./metadata-schema.yaml) and [./metadata.yaml](metadata.yaml) files reflect the changes.
 2. Run `make mdatagen-test`.
-3. Make sure all tests are passing including [generated tests](./internal/metadata/generated_metrics_test.go).
+3. Make sure all tests are passing including [generated tests](./internal/samplereceiver/internal/metadata/generated_metrics_test.go).
 4. Run `make generate`.
