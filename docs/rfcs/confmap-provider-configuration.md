@@ -81,6 +81,11 @@ fragments.
 
 #### Queries
 
+Breaking changes:
+
+- confmap Providers would have breaking changes since they would now consume URI
+  queries. There would be no breaking changes to the confmap API.
+
 Advantages:
 
 - Explicitly intended to specify non-hierarchical data in a URI.
@@ -101,6 +106,11 @@ Disadvantages:
 
 We could specify options in a query parameter-encoded string placed into the URI
 fragment.
+
+Breaking changes:
+
+- confmap Providers would have breaking changes since they would now consume
+  fragments. There would be no breaking changes to the confmap API.
 
 Advantages:
 
@@ -139,11 +149,17 @@ would require we adopt an unconventional format.
 
 ### Separate flags to configure Providers per config URI
 
+Breaking changes:
+
+- Will need factory options if we provide config through a mechanism similar to
+  `component.Factory`, along with making a Provider instance per URI.
+- Otherwise will need to break `confmap.Provider` interface to support providing
+  options in `Retrieve`.
+
 Advantages:
 
 - Allows us to keep config URIs opaque.
 - Options live right next to config URIs on the command line.
-- Does not require breaking changes.
 
 Disadvantages:
 
@@ -158,12 +174,18 @@ Disadvantages:
 We could allow specifying a config file that contains all URIs to obtain the
 Collector's configuration from.
 
+Breaking changes:
+
+- Will need factory options if we provide config through a mechanism similar to
+  `component.Factory`, along with making a Provider instance per URI.
+- Otherwise will need to break `confmap.Provider` interface to support providing
+  options in `Retrieve`.
+
 Advantages:
 
 - Allows us to keep URIs opaque.
 - Map structures are easier to work with than command-line arguments for complex
   config.
-- Shouldn't require any breaking changes.
 
 Disadvantages:
 
@@ -176,6 +198,13 @@ This is a variant of providing a separate config source-only configuration file
 that instead puts those URIs and their options inside the main configuration
 file.
 
+Breaking changes:
+
+- Will need factory options if we provide config through a mechanism similar to
+  `component.Factory`, along with making a Provider instance per URI.
+- Otherwise will need to break `confmap.Provider` interface to support providing
+  options in `Retrieve`.
+
 Advantages:
 
 - Compared to the other option, keeps a single configuration file.
@@ -187,6 +216,19 @@ Disadvantages:
 - Using the existing bracket syntax inside config files does not support
   options, and neither does specifying them through the command line.
 - Complicates the config schema and the config resolution process.
+
+## Per-Provider options
+
+Configuring options for all URI resolutions done by a Provider may be useful for
+cases like providing HTTP(s) options or default behavior for env var resolution.
+To configure Providers for all URIs, we would need to take one of the following
+approaches:
+
+- Config flags that are namespaced per-provider.
+- Put options into a config file.
+
+Both approaches share the breaking changes, advantages, and disadvantages with
+the corresponding approaches for per-URI configuration described above.
 
 ## Exceptions
 
