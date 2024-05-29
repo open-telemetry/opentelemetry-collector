@@ -407,6 +407,8 @@ func TestResolverExpandStringValues(t *testing.T) {
 
 func newEnvProvider() ProviderFactory {
 	return newFakeProvider("env", func(_ context.Context, uri string, _ WatcherFunc) (*Retrieved, error) {
+		// When using `env` as the default scheme for tests, the uri will not include `env:`.
+		// Instead of duplicating the switch cases, the scheme is added instead.
 		if uri[0:4] != "env:" {
 			uri = "env:" + uri
 		}
