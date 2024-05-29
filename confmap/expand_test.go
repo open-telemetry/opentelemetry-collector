@@ -283,6 +283,16 @@ func TestResolverExpandStringValues(t *testing.T) {
 			input:  "${env:HOST${env:PORT}?os=${env:OS&pr=${env:PR}",
 			output: "${env:HOST3044?os=${env:OS&pr=amd",
 		},
+		{
+			name:   "SchemeAfterNoSchemeIsExpanded",
+			input:  "${HOST}${env:PORT}",
+			output: "${HOST}3044",
+		},
+		{
+			name:   "SchemeBeforeNoSchemeIsExpanded",
+			input:  "${env:HOST}${PORT}",
+			output: "localhost${PORT}",
+		},
 	}
 
 	for _, tt := range tests {
