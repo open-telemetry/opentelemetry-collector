@@ -12,6 +12,11 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
+var UseStableExpansionRules = featuregate.GlobalRegistry().MustRegister("otelcol.useStableExpansionRules",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterFromVersion("v0.102.0"),
+	featuregate.WithRegisterDescription("Uses the env provider to expand `${}` instead of the expandconverter and no longer expands $ENV syntax"))
+
 // NewCommand constructs a new cobra.Command using the given CollectorSettings.
 // Any URIs specified in CollectorSettings.ConfigProviderSettings.ResolverSettings.URIs
 // are considered defaults and will be overwritten by config flags passed as
@@ -52,9 +57,7 @@ func updateSettingsUsingFlags(set *CollectorSettings, flags *flag.FlagSet) error
 	if len(resolverSet.URIs) == 0 {
 		return errors.New("at least one config flag must be provided")
 	}
-	// Provide a default set of providers and converters if none have been specified.
-	// TODO: Remove this after CollectorSettings.ConfigProvider is removed and instead
-	// do it in the builder.
+
 	if len(resolverSet.ProviderFactories) == 0 && len(resolverSet.ConverterFactories) == 0 {
 		set.ConfigProviderSettings = newDefaultConfigProviderSettings(resolverSet.URIs)
 	}

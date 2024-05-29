@@ -36,11 +36,16 @@ func main() {
 					httpsprovider.NewFactory(),
 					yamlprovider.NewFactory(),
 				},
-				ConverterFactories: []confmap.ConverterFactory{
-					expandconverter.NewFactory(),
-				},
 			},
 		},
+	}
+
+	if otelcol.UseStableExpansionRules.IsEnabled() && set.ConfigProviderSettings.ResolverSettings.DefaultScheme == "" {
+		set.ConfigProviderSettings.ResolverSettings.DefaultScheme = "env"
+	} else {
+		set.ConfigProviderSettings.ResolverSettings.ConverterFactories = []confmap.ConverterFactory{
+			expandconverter.NewFactory(),
+		}
 	}
 
 	if err := run(set); err != nil {

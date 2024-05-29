@@ -38,13 +38,20 @@ func main() {
 				{{- if .ConfResolver.DefaultURIScheme }}
 				DefaultScheme: "{{ .ConfResolver.DefaultURIScheme }}",
 				{{- end }}
-				ConverterFactories: []confmap.ConverterFactory{
-					expandconverter.NewFactory(),
-				},
 			},
 		},
 		{{- end}}
 	}
+
+    {{ if .Distribution.SupportsConfmapFactories }}
+    if otelcol.UseStableExpansionRules.IsEnabled() && set.ConfigProviderSettings.ResolverSettings.DefaultScheme == "" {
+        set.ConfigProviderSettings.ResolverSettings.DefaultScheme = "env"
+    } else {
+        set.ConfigProviderSettings.ResolverSettings.ConverterFactories = []confmap.ConverterFactory{
+            expandconverter.NewFactory(),
+        }
+    }
+    {{- end}}
 
 	if err := run(set); err != nil {
 		log.Fatal(err)
