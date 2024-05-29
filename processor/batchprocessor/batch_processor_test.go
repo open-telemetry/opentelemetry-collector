@@ -275,7 +275,8 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 				IsMonotonic: false,
 				DataPoints: []metricdata.DataPoint[int64]{
 					{
-						Value: 1,
+						Value:      1,
+						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
 					},
 				},
 			},
