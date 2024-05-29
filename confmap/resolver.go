@@ -10,9 +10,15 @@ import (
 	"regexp"
 	"strings"
 
+	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
+
+var UseUnifiedEnvVarExpansionRules = featuregate.GlobalRegistry().MustRegister("confmap.unifyEnvVarExpansion",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterFromVersion("v0.102.0"),
+	featuregate.WithRegisterDescription("`${FOO}` will now be expanded as if it was `${env:FOO}` and no longer expands $ENV syntax. See https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/env-vars.md for more details. When this feature gate is stable, expandconverter will be removed."))
 
 // follows drive-letter specification:
 // https://datatracker.ietf.org/doc/html/draft-kerwin-file-scheme-07.html#section-2.2
@@ -108,7 +114,8 @@ func NewResolver(set ResolverSettings) (*Resolver, error) {
 
 	converters := make([]Converter, len(set.ConverterFactories))
 	for i, factory := range set.ConverterFactories {
-		converters[i] = factory.Create(set.ConverterSettings)
+		f := factory.Create(set.ConverterSettings)
+		converters[i] = f
 	}
 
 	// Safe copy, ensures the slices and maps cannot be changed from the caller.

@@ -8,6 +8,7 @@ import (
 	"flag"
 
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/collector/confmap"
 
 	"go.opentelemetry.io/collector/featuregate"
 )
@@ -52,6 +53,11 @@ func updateSettingsUsingFlags(set *CollectorSettings, flags *flag.FlagSet) error
 	if len(resolverSet.URIs) == 0 {
 		return errors.New("at least one config flag must be provided")
 	}
+
+	if confmap.UseUnifiedEnvVarExpansionRules.IsEnabled() && set.ConfigProviderSettings.ResolverSettings.DefaultScheme == "" {
+		set.ConfigProviderSettings.ResolverSettings.DefaultScheme = "env"
+	}
+
 	// Provide a default set of providers and converters if none have been specified.
 	// TODO: Remove this after CollectorSettings.ConfigProvider is removed and instead
 	// do it in the builder.

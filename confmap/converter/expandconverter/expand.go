@@ -5,11 +5,11 @@ package expandconverter // import "go.opentelemetry.io/collector/confmap/convert
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"go.uber.org/zap"
 	"os"
 	"regexp"
-
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/internal/envvar"
@@ -80,14 +80,6 @@ func (c converter) expandStringValues(value any) (any, error) {
 func (c converter) expandEnv(s string) (string, error) {
 	var err error
 	res := os.Expand(s, func(str string) string {
-		// Matches on $VAR style environment variables
-		// in order to make sure we don't log a warning for ${VAR}
-		var regex = regexp.MustCompile(fmt.Sprintf(`\$%s`, regexp.QuoteMeta(str)))
-		if _, exists := c.loggedDeprecations[str]; !exists && regex.MatchString(s) {
-			msg := fmt.Sprintf("Variable substitution using $VAR will be deprecated in favor of ${VAR} and ${env:VAR}, please update $%s", str)
-			c.logger.Warn(msg, zap.String("variable", str))
-			c.loggedDeprecations[str] = struct{}{}
-		}
 		// This allows escaping environment variable substitution via $$, e.g.
 		// - $FOO will be substituted with env var FOO
 		// - $$FOO will be replaced with $FOO
@@ -95,6 +87,20 @@ func (c converter) expandEnv(s string) (string, error) {
 		if str == "$" {
 			return "$"
 		}
+
+		// Matches on $VAR style environment variables
+		// in order to make sure we don't log a warning for ${VAR}
+		var regex = regexp.MustCompile(fmt.Sprintf(`\$%s`, regexp.QuoteMeta(str)))
+		if _, exists := c.loggedDeprecations[str]; !exists && regex.MatchString(s) {
+			if confmap.UseUnifiedEnvVarExpansionRules.IsEnabled() {
+				err = errors.New("$VAR expansion is not supported when feature gate confmap.unifyEnvVarExpansion is enabled")
+				return ""
+			}
+			msg := fmt.Sprintf("Variable substitution using $VAR will be deprecated in favor of ${VAR} and ${env:VAR}, please update $%s", str)
+			c.logger.Warn(msg, zap.String("variable", str))
+			c.loggedDeprecations[str] = struct{}{}
+		}
+
 		// For $ENV style environment variables os.Expand returns once it hits a character that isn't an underscore or
 		// an alphanumeric character - so we cannot detect those malformed environment variables.
 		// For ${ENV} style variables we can detect those kinds of env var names!
