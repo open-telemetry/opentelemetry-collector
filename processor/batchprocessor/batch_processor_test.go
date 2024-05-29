@@ -187,7 +187,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 	sizeSum := 0
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		td := testdata.GenerateTraces(spansPerRequest)
-		sizeSum += sizer.TracesSize(td)
+
 		assert.NoError(t, batcher.ConsumeTraces(context.Background(), td))
 	}
 
@@ -203,6 +203,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 	receivedTraces := sink.AllTraces()
 	require.EqualValues(t, expectedBatchesNum, len(receivedTraces))
 	for _, td := range receivedTraces {
+		sizeSum += sizer.TracesSize(td)
 		rss := td.ResourceSpans()
 		require.Equal(t, expectedBatchingFactor, rss.Len())
 		for i := 0; i < expectedBatchingFactor; i++ {
@@ -309,7 +310,6 @@ func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
 	sizeSum := 0
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		td := testdata.GenerateTraces(spansPerRequest)
-		sizeSum += sizer.TracesSize(td)
 		assert.NoError(t, batcher.ConsumeTraces(context.Background(), td))
 	}
 
@@ -324,13 +324,19 @@ func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
 	require.Equal(t, totalSpans, sink.SpanCount())
 	receivedTraces := sink.AllTraces()
 	require.EqualValues(t, expectedBatchesNum, len(receivedTraces))
+	// we have to count the size after it was processed since splitTraces will cause some
+	// repeated ResourceSpan data to be sent through the processor
+	var min, max int
+	for _, td := range receivedTraces {
+		if min == 0 || sizer.TracesSize(td) < min {
+			min = sizer.TracesSize(td)
+		}
+		if sizer.TracesSize(td) > max {
+			max = sizer.TracesSize(td)
+		}
+		sizeSum += sizer.TracesSize(td)
+	}
 
-	// tel.assertMetrics(t, expectedMetrics{
-	// 	sendCount:      float64(expectedBatchesNum),
-	// 	sendSizeSum:    float64(sink.SpanCount()),
-	// 	sizeTrigger:    math.Floor(float64(totalSpans) / float64(sendBatchMaxSize)),
-	// 	timeoutTrigger: 1,
-	// })
 	tel.assertMetrics(t, []metricdata.Metrics{
 		{
 			Name:        "processor_batch_batch_send_size_bytes",
@@ -347,8 +353,8 @@ func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
 							1000_000, 2000_000, 3000_000, 4000_000, 5000_000, 6000_000, 7000_000, 8000_000, 9000_000},
 						BucketCounts: []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, uint64(expectedBatchesNum - 1), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 						Sum:          int64(sizeSum),
-						Min:          metricdata.NewExtrema(int64(sink.SpanCount() / expectedBatchesNum)),
-						Max:          metricdata.NewExtrema(int64(sink.SpanCount() / expectedBatchesNum)),
+						Min:          metricdata.NewExtrema(int64(min)),
+						Max:          metricdata.NewExtrema(int64(max)),
 					},
 				},
 			},
