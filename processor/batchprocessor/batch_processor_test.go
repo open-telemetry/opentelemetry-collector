@@ -285,10 +285,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 }
 
 func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
-	telemetryTest(t, testBatchProcessorSentBySizeWithMaxSize)
-}
-
-func testBatchProcessorSentBySizeWithMaxSize(t *testing.T, tel testTelemetry) {
+	tel := setupTestTelemetry()
 	sink := new(consumertest.TracesSink)
 	cfg := createDefaultConfig().(*Config)
 	sendBatchSize := 20
@@ -296,7 +293,7 @@ func testBatchProcessorSentBySizeWithMaxSize(t *testing.T, tel testTelemetry) {
 	cfg.SendBatchSize = uint32(sendBatchSize)
 	cfg.SendBatchMaxSize = uint32(sendBatchMaxSize)
 	cfg.Timeout = 500 * time.Millisecond
-	creationSet := tel.NewProcessorCreateSettings()
+	creationSet := tel.NewCreateSettings()
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg)
 	require.NoError(t, err)
@@ -324,11 +321,97 @@ func testBatchProcessorSentBySizeWithMaxSize(t *testing.T, tel testTelemetry) {
 	receivedTraces := sink.AllTraces()
 	require.EqualValues(t, expectedBatchesNum, len(receivedTraces))
 
-	tel.assertMetrics(t, expectedMetrics{
-		sendCount:      float64(expectedBatchesNum),
-		sendSizeSum:    float64(sink.SpanCount()),
-		sizeTrigger:    math.Floor(float64(totalSpans) / float64(sendBatchMaxSize)),
-		timeoutTrigger: 1,
+	// tel.assertMetrics(t, expectedMetrics{
+	// 	sendCount:      float64(expectedBatchesNum),
+	// 	sendSizeSum:    float64(sink.SpanCount()),
+	// 	sizeTrigger:    math.Floor(float64(totalSpans) / float64(sendBatchMaxSize)),
+	// 	timeoutTrigger: 1,
+	// })
+	tel.assertMetrics(t, []metricdata.Metrics{
+		{
+			Name:        "processor_batch_batch_send_size_bytes",
+			Description: "Number of bytes in batch that was sent",
+			Unit:        "By",
+			Data: metricdata.Histogram[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				DataPoints: []metricdata.HistogramDataPoint[int64]{
+					{
+						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
+						Count:      uint64(expectedBatchesNum),
+						Bounds: []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000,
+							100_000, 200_000, 300_000, 400_000, 500_000, 600_000, 700_000, 800_000, 900_000,
+							1000_000, 2000_000, 3000_000, 4000_000, 5000_000, 6000_000, 7000_000, 8000_000, 9000_000},
+						BucketCounts: []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, uint64(expectedBatchesNum), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+						Sum:          int64(sink.SpanCount()),
+						Min:          metricdata.NewExtrema(int64(sink.SpanCount() / expectedBatchesNum)),
+						Max:          metricdata.NewExtrema(int64(sink.SpanCount() / expectedBatchesNum)),
+					},
+				},
+			},
+		},
+		{
+			Name:        "processor_batch_batch_send_size",
+			Description: "Number of units in the batch",
+			Unit:        "1",
+			Data: metricdata.Histogram[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				DataPoints: []metricdata.HistogramDataPoint[int64]{
+					{
+						Attributes:   attribute.NewSet(attribute.String("processor", "batch")),
+						Count:        uint64(expectedBatchesNum),
+						Bounds:       []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000},
+						BucketCounts: []uint64{0, 1, uint64(expectedBatchesNum - 1), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+						Sum:          int64(sink.SpanCount()),
+						Min:          metricdata.NewExtrema(int64(sendBatchSize - 1)),
+						Max:          metricdata.NewExtrema(int64(cfg.SendBatchMaxSize)),
+					},
+				},
+			},
+		},
+		{
+			Name:        "processor_batch_batch_size_trigger_send",
+			Description: "Number of times the batch was sent due to a size trigger",
+			Unit:        "1",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      int64(expectedBatchesNum - 1),
+						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
+					},
+				},
+			},
+		},
+		{
+			Name:        "processor_batch_timeout_trigger_send",
+			Description: "Number of times the batch was sent due to a timeout trigger",
+			Unit:        "1",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      1,
+						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
+					},
+				},
+			},
+		},
+		{
+			Name:        "processor_batch_metadata_cardinality",
+			Description: "Number of distinct metadata value combinations being processed",
+			Unit:        "1",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: false,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value: 1,
+					},
+				},
+			},
+		},
 	})
 }
 
@@ -459,10 +542,7 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 }
 
 func TestBatchMetricProcessorBatchSize(t *testing.T) {
-	telemetryTest(t, testBatchMetricProcessorBatchSize)
-}
-
-func testBatchMetricProcessorBatchSize(t *testing.T, tel testTelemetry) {
+	tel := setupTestTelemetry()
 	sizer := &pmetric.ProtoMarshaler{}
 
 	// Instantiate the batch processor with low config values to test data
@@ -478,7 +558,7 @@ func testBatchMetricProcessorBatchSize(t *testing.T, tel testTelemetry) {
 	dataPointsPerRequest := metricsPerRequest * dataPointsPerMetric
 	sink := new(consumertest.MetricsSink)
 
-	creationSet := tel.NewProcessorCreateSettings()
+	creationSet := tel.NewCreateSettings()
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchMetricsProcessor(creationSet, sink, &cfg)
 	require.NoError(t, err)
@@ -509,11 +589,76 @@ func testBatchMetricProcessorBatchSize(t *testing.T, tel testTelemetry) {
 		}
 	}
 
-	tel.assertMetrics(t, expectedMetrics{
-		sendCount:        float64(expectedBatchesNum),
-		sendSizeSum:      float64(sink.DataPointCount()),
-		sendSizeBytesSum: float64(size),
-		sizeTrigger:      20,
+	tel.assertMetrics(t, []metricdata.Metrics{
+		{
+			Name:        "processor_batch_batch_send_size_bytes",
+			Description: "Number of bytes in batch that was sent",
+			Unit:        "By",
+			Data: metricdata.Histogram[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				DataPoints: []metricdata.HistogramDataPoint[int64]{
+					{
+						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
+						Count:      uint64(expectedBatchesNum),
+						Bounds: []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000,
+							100_000, 200_000, 300_000, 400_000, 500_000, 600_000, 700_000, 800_000, 900_000,
+							1000_000, 2000_000, 3000_000, 4000_000, 5000_000, 6000_000, 7000_000, 8000_000, 9000_000},
+						BucketCounts: []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, uint64(expectedBatchesNum), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+						Sum:          int64(size),
+						Min:          metricdata.NewExtrema(int64(size / expectedBatchesNum)),
+						Max:          metricdata.NewExtrema(int64(size / expectedBatchesNum)),
+					},
+				},
+			},
+		},
+		{
+			Name:        "processor_batch_batch_send_size",
+			Description: "Number of units in the batch",
+			Unit:        "1",
+			Data: metricdata.Histogram[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				DataPoints: []metricdata.HistogramDataPoint[int64]{
+					{
+						Attributes:   attribute.NewSet(attribute.String("processor", "batch")),
+						Count:        uint64(expectedBatchesNum),
+						Bounds:       []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000},
+						BucketCounts: []uint64{0, 0, uint64(expectedBatchesNum), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+						Sum:          int64(sink.DataPointCount()),
+						Min:          metricdata.NewExtrema(int64(cfg.SendBatchSize)),
+						Max:          metricdata.NewExtrema(int64(cfg.SendBatchSize)),
+					},
+				},
+			},
+		},
+		{
+			Name:        "processor_batch_batch_size_trigger_send",
+			Description: "Number of times the batch was sent due to a size trigger",
+			Unit:        "1",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      int64(expectedBatchesNum),
+						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
+					},
+				},
+			},
+		},
+		{
+			Name:        "processor_batch_metadata_cardinality",
+			Description: "Number of distinct metadata value combinations being processed",
+			Unit:        "1",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: false,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value: 1,
+					},
+				},
+			},
+		},
 	})
 }
 
@@ -778,10 +923,7 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 }
 
 func TestBatchLogProcessor_BatchSize(t *testing.T) {
-	telemetryTest(t, testBatchLogProcessorBatchSize)
-}
-
-func testBatchLogProcessorBatchSize(t *testing.T, tel testTelemetry) {
+	tel := setupTestTelemetry()
 	sizer := &plog.ProtoMarshaler{}
 
 	// Instantiate the batch processor with low config values to test data
@@ -795,7 +937,7 @@ func testBatchLogProcessorBatchSize(t *testing.T, tel testTelemetry) {
 	logsPerRequest := 5
 	sink := new(consumertest.LogsSink)
 
-	creationSet := tel.NewProcessorCreateSettings()
+	creationSet := tel.NewCreateSettings()
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchLogsProcessor(creationSet, sink, &cfg)
 	require.NoError(t, err)
@@ -826,11 +968,76 @@ func testBatchLogProcessorBatchSize(t *testing.T, tel testTelemetry) {
 		}
 	}
 
-	tel.assertMetrics(t, expectedMetrics{
-		sendCount:        float64(expectedBatchesNum),
-		sendSizeSum:      float64(sink.LogRecordCount()),
-		sendSizeBytesSum: float64(size),
-		sizeTrigger:      float64(expectedBatchesNum),
+	tel.assertMetrics(t, []metricdata.Metrics{
+		{
+			Name:        "processor_batch_batch_send_size_bytes",
+			Description: "Number of bytes in batch that was sent",
+			Unit:        "By",
+			Data: metricdata.Histogram[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				DataPoints: []metricdata.HistogramDataPoint[int64]{
+					{
+						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
+						Count:      uint64(expectedBatchesNum),
+						Bounds: []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000,
+							100_000, 200_000, 300_000, 400_000, 500_000, 600_000, 700_000, 800_000, 900_000,
+							1000_000, 2000_000, 3000_000, 4000_000, 5000_000, 6000_000, 7000_000, 8000_000, 9000_000},
+						BucketCounts: []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, uint64(expectedBatchesNum), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+						Sum:          int64(size),
+						Min:          metricdata.NewExtrema(int64(size / expectedBatchesNum)),
+						Max:          metricdata.NewExtrema(int64(size / expectedBatchesNum)),
+					},
+				},
+			},
+		},
+		{
+			Name:        "processor_batch_batch_send_size",
+			Description: "Number of units in the batch",
+			Unit:        "1",
+			Data: metricdata.Histogram[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				DataPoints: []metricdata.HistogramDataPoint[int64]{
+					{
+						Attributes:   attribute.NewSet(attribute.String("processor", "batch")),
+						Count:        uint64(expectedBatchesNum),
+						Bounds:       []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000},
+						BucketCounts: []uint64{0, 0, uint64(expectedBatchesNum), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+						Sum:          int64(sink.LogRecordCount()),
+						Min:          metricdata.NewExtrema(int64(cfg.SendBatchSize)),
+						Max:          metricdata.NewExtrema(int64(cfg.SendBatchSize)),
+					},
+				},
+			},
+		},
+		{
+			Name:        "processor_batch_batch_size_trigger_send",
+			Description: "Number of times the batch was sent due to a size trigger",
+			Unit:        "1",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      int64(expectedBatchesNum),
+						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
+					},
+				},
+			},
+		},
+		{
+			Name:        "processor_batch_metadata_cardinality",
+			Description: "Number of distinct metadata value combinations being processed",
+			Unit:        "1",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: false,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value: 1,
+					},
+				},
+			},
+		},
 	})
 }
 
