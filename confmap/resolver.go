@@ -12,7 +12,14 @@ import (
 
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+
+	"go.opentelemetry.io/collector/featuregate"
 )
+
+var UseStableExpansionRules = featuregate.GlobalRegistry().MustRegister("confmap.useStableExpansionRules",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterFromVersion("v0.102.0"),
+	featuregate.WithRegisterDescription("Uses the env provider to expand `${}` instead of the expandconverter and no longer expands $ENV syntax"))
 
 // follows drive-letter specification:
 // https://datatracker.ietf.org/doc/html/draft-kerwin-file-scheme-07.html#section-2.2

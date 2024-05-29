@@ -35,13 +35,20 @@ func main() {
 					{{.Name}}.NewFactory(),
 					{{- end}}
 				},
-				ConverterFactories: []confmap.ConverterFactory{
-					expandconverter.NewFactory(),
-				},
 			},
 		},
 		{{- end}}
 	}
+
+    {{ if .Distribution.SupportsConfmapFactories }}
+	if confmap.UseStableExpansionRules.IsEnabled() {
+		set.ConfigProviderSettings.ResolverSettings.DefaultScheme = "env"
+	} else {
+		set.ConfigProviderSettings.ResolverSettings.ConverterFactories = []confmap.ConverterFactory{
+			expandconverter.NewFactory(),
+		}
+	}
+    {{- end}}
 
 	if err := run(set); err != nil {
 		log.Fatal(err)
