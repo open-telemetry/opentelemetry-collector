@@ -17,7 +17,8 @@ var _ error = Partial{}
 
 // NewPartial instantiates a new Partial error.
 // `count` should be a positive number representing
-// the number of failed records.
+// the number of failed records, i.e. spans, data points,
+// or log records.
 func NewPartial(err error, count int) error {
 	return Partial{err: err, count: count}
 }

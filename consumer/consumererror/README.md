@@ -34,7 +34,7 @@ and will not be retried.
 Errors can be joined by passing them to a call to `errors.Join`.
 
 
-### Retryable errors
+### Per-signal retryable errors
 
 If an error is considered transient and data processing should be retried, the data
 that should be retried should be created using `NewTraces`, `NewMetrics` or `NewLogs`
@@ -104,7 +104,7 @@ Using an error:
 
 ```golang
 err := nextConsumer(ctx, traces)
-var status consumererror.NetworkError
+var status consumererror.TransportError
 var retry consumererror.Traces
 
 if errors.As(err, &status) {
