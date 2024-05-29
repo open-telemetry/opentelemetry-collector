@@ -14,8 +14,10 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerlogs"
+	"go.opentelemetry.io/collector/consumer/consumermetrics"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/consumertraces"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
@@ -72,7 +74,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 		cfg          *Config
 		wantStartErr bool
 		wantErr      bool
-		sink         consumer.Traces
+		sink         consumertraces.Traces
 	}{
 		{
 			name: "default",
@@ -166,7 +168,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 		cfg          *Config
 		wantStartErr bool
 		wantErr      bool
-		sink         consumer.Metrics
+		sink         consumermetrics.Metrics
 	}{
 		{
 			name: "default",
@@ -260,7 +262,7 @@ func TestCreateLogReceiver(t *testing.T) {
 		cfg          *Config
 		wantStartErr bool
 		wantErr      bool
-		sink         consumer.Logs
+		sink         consumerlogs.Logs
 	}{
 		{
 			name: "default",

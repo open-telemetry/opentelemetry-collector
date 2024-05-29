@@ -10,6 +10,9 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/forwardconnector/internal/metadata"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerlogs"
+	"go.opentelemetry.io/collector/consumer/consumermetrics"
+	"go.opentelemetry.io/collector/consumer/consumertraces"
 )
 
 // NewFactory returns a connector.Factory.
@@ -35,7 +38,7 @@ func createTracesToTraces(
 	_ context.Context,
 	_ connector.CreateSettings,
 	_ component.Config,
-	nextConsumer consumer.Traces,
+	nextConsumer consumertraces.Traces,
 ) (connector.Traces, error) {
 	return &forward{Traces: nextConsumer}, nil
 }
@@ -45,7 +48,7 @@ func createMetricsToMetrics(
 	_ context.Context,
 	_ connector.CreateSettings,
 	_ component.Config,
-	nextConsumer consumer.Metrics,
+	nextConsumer consumermetrics.Metrics,
 ) (connector.Metrics, error) {
 	return &forward{Metrics: nextConsumer}, nil
 }
@@ -55,7 +58,7 @@ func createLogsToLogs(
 	_ context.Context,
 	_ connector.CreateSettings,
 	_ component.Config,
-	nextConsumer consumer.Logs,
+	nextConsumer consumerlogs.Logs,
 ) (connector.Logs, error) {
 	return &forward{Logs: nextConsumer}, nil
 }
@@ -64,9 +67,9 @@ func createLogsToLogs(
 // This is useful when there is a need to replicate data and process it in more
 // than one way. It can also be used to join pipelines together.
 type forward struct {
-	consumer.Traces
-	consumer.Metrics
-	consumer.Logs
+	consumertraces.Traces
+	consumermetrics.Metrics
+	consumerlogs.Logs
 	component.StartFunc
 	component.ShutdownFunc
 }

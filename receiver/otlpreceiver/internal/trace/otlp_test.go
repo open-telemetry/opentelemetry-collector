@@ -17,9 +17,9 @@ import (
 	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/consumertraces"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -69,7 +69,7 @@ func TestExport_PermanentErrorConsumer(t *testing.T) {
 	assert.Equal(t, ptraceotlp.ExportResponse{}, resp)
 }
 
-func makeTraceServiceClient(t *testing.T, tc consumer.Traces) ptraceotlp.GRPCClient {
+func makeTraceServiceClient(t *testing.T, tc consumertraces.Traces) ptraceotlp.GRPCClient {
 	addr := otlpReceiverOnGRPCServer(t, tc)
 	cc, err := grpc.NewClient(addr.String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err, "Failed to create the TraceServiceClient: %v", err)
@@ -80,7 +80,7 @@ func makeTraceServiceClient(t *testing.T, tc consumer.Traces) ptraceotlp.GRPCCli
 	return ptraceotlp.NewGRPCClient(cc)
 }
 
-func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.Traces) net.Addr {
+func otlpReceiverOnGRPCServer(t *testing.T, tc consumertraces.Traces) net.Addr {
 	ln, err := net.Listen("tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 

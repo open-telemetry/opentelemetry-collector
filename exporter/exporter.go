@@ -10,25 +10,27 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerlogs"
+	"go.opentelemetry.io/collector/consumer/consumermetrics"
+	"go.opentelemetry.io/collector/consumer/consumertraces"
 )
 
 // Traces is an exporter that can consume traces.
 type Traces interface {
 	component.Component
-	consumer.Traces
+	consumertraces.Traces
 }
 
 // Metrics is an exporter that can consume metrics.
 type Metrics interface {
 	component.Component
-	consumer.Metrics
+	consumermetrics.Metrics
 }
 
 // Logs is an exporter that can consume logs.
 type Logs interface {
 	component.Component
-	consumer.Logs
+	consumerlogs.Logs
 }
 
 // CreateSettings configures exporter creators.

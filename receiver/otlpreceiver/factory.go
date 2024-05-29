@@ -10,7 +10,9 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerlogs"
+	"go.opentelemetry.io/collector/consumer/consumermetrics"
+	"go.opentelemetry.io/collector/consumer/consumertraces"
 	"go.opentelemetry.io/collector/internal/localhostgate"
 	"go.opentelemetry.io/collector/internal/sharedcomponent"
 	"go.opentelemetry.io/collector/receiver"
@@ -66,7 +68,7 @@ func createTraces(
 	_ context.Context,
 	set receiver.CreateSettings,
 	cfg component.Config,
-	nextConsumer consumer.Traces,
+	nextConsumer consumertraces.Traces,
 ) (receiver.Traces, error) {
 	oCfg := cfg.(*Config)
 	r, err := receivers.LoadOrStore(
@@ -89,7 +91,7 @@ func createMetrics(
 	_ context.Context,
 	set receiver.CreateSettings,
 	cfg component.Config,
-	consumer consumer.Metrics,
+	consumer consumermetrics.Metrics,
 ) (receiver.Metrics, error) {
 	oCfg := cfg.(*Config)
 	r, err := receivers.LoadOrStore(
@@ -112,7 +114,7 @@ func createLog(
 	_ context.Context,
 	set receiver.CreateSettings,
 	cfg component.Config,
-	consumer consumer.Logs,
+	consumer consumerlogs.Logs,
 ) (receiver.Logs, error) {
 	oCfg := cfg.(*Config)
 	r, err := receivers.LoadOrStore(

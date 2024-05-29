@@ -12,6 +12,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerlogs"
+	"go.opentelemetry.io/collector/consumer/consumermetrics"
+	"go.opentelemetry.io/collector/consumer/consumertraces"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
 	"go.opentelemetry.io/collector/processor"
@@ -78,21 +81,21 @@ func (n *receiverNode) buildComponent(ctx context.Context,
 	var err error
 	switch n.pipelineType {
 	case component.DataTypeTraces:
-		var consumers []consumer.Traces
+		var consumers []consumertraces.Traces
 		for _, next := range nexts {
-			consumers = append(consumers, next.(consumer.Traces))
+			consumers = append(consumers, next.(consumertraces.Traces))
 		}
 		n.Component, err = builder.CreateTraces(ctx, set, fanoutconsumer.NewTraces(consumers))
 	case component.DataTypeMetrics:
-		var consumers []consumer.Metrics
+		var consumers []consumermetrics.Metrics
 		for _, next := range nexts {
-			consumers = append(consumers, next.(consumer.Metrics))
+			consumers = append(consumers, next.(consumermetrics.Metrics))
 		}
 		n.Component, err = builder.CreateMetrics(ctx, set, fanoutconsumer.NewMetrics(consumers))
 	case component.DataTypeLogs:
-		var consumers []consumer.Logs
+		var consumers []consumerlogs.Logs
 		for _, next := range nexts {
-			consumers = append(consumers, next.(consumer.Logs))
+			consumers = append(consumers, next.(consumerlogs.Logs))
 		}
 		n.Component, err = builder.CreateLogs(ctx, set, fanoutconsumer.NewLogs(consumers))
 	default:
@@ -138,11 +141,11 @@ func (n *processorNode) buildComponent(ctx context.Context,
 	var err error
 	switch n.pipelineID.Type() {
 	case component.DataTypeTraces:
-		n.Component, err = builder.CreateTraces(ctx, set, next.(consumer.Traces))
+		n.Component, err = builder.CreateTraces(ctx, set, next.(consumertraces.Traces))
 	case component.DataTypeMetrics:
-		n.Component, err = builder.CreateMetrics(ctx, set, next.(consumer.Metrics))
+		n.Component, err = builder.CreateMetrics(ctx, set, next.(consumermetrics.Metrics))
 	case component.DataTypeLogs:
-		n.Component, err = builder.CreateLogs(ctx, set, next.(consumer.Logs))
+		n.Component, err = builder.CreateLogs(ctx, set, next.(consumerlogs.Logs))
 	default:
 		return fmt.Errorf("error creating processor %q in pipeline %q, data type %q is not supported", set.ID, n.pipelineID, n.pipelineID.Type())
 	}
@@ -239,9 +242,9 @@ func (n *connectorNode) buildComponent(
 	switch n.rcvrPipelineType {
 	case component.DataTypeTraces:
 		capability := consumer.Capabilities{MutatesData: false}
-		consumers := make(map[component.ID]consumer.Traces, len(nexts))
+		consumers := make(map[component.ID]consumertraces.Traces, len(nexts))
 		for _, next := range nexts {
-			consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Traces)
+			consumers[next.(*capabilitiesNode).pipelineID] = next.(consumertraces.Traces)
 			capability.MutatesData = capability.MutatesData || next.Capabilities().MutatesData
 		}
 		next := connector.NewTracesRouter(consumers)
@@ -275,9 +278,9 @@ func (n *connectorNode) buildComponent(
 
 	case component.DataTypeMetrics:
 		capability := consumer.Capabilities{MutatesData: false}
-		consumers := make(map[component.ID]consumer.Metrics, len(nexts))
+		consumers := make(map[component.ID]consumermetrics.Metrics, len(nexts))
 		for _, next := range nexts {
-			consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Metrics)
+			consumers[next.(*capabilitiesNode).pipelineID] = next.(consumermetrics.Metrics)
 			capability.MutatesData = capability.MutatesData || next.Capabilities().MutatesData
 		}
 		next := connector.NewMetricsRouter(consumers)
@@ -310,9 +313,9 @@ func (n *connectorNode) buildComponent(
 		}
 	case component.DataTypeLogs:
 		capability := consumer.Capabilities{MutatesData: false}
-		consumers := make(map[component.ID]consumer.Logs, len(nexts))
+		consumers := make(map[component.ID]consumerlogs.Logs, len(nexts))
 		for _, next := range nexts {
-			consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Logs)
+			consumers[next.(*capabilitiesNode).pipelineID] = next.(consumerlogs.Logs)
 			capability.MutatesData = capability.MutatesData || next.Capabilities().MutatesData
 		}
 		next := connector.NewLogsRouter(consumers)
@@ -358,9 +361,9 @@ type capabilitiesNode struct {
 	nodeID
 	pipelineID component.ID
 	baseConsumer
-	consumer.ConsumeTracesFunc
-	consumer.ConsumeMetricsFunc
-	consumer.ConsumeLogsFunc
+	consumertraces.ConsumeTracesFunc
+	consumermetrics.ConsumeMetricsFunc
+	consumerlogs.ConsumeLogsFunc
 }
 
 func newCapabilitiesNode(pipelineID component.ID) *capabilitiesNode {

@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumermetrics"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/processor"
 )
@@ -22,7 +22,7 @@ type ProcessMetricsFunc func(context.Context, pmetric.Metrics) (pmetric.Metrics,
 type metricsProcessor struct {
 	component.StartFunc
 	component.ShutdownFunc
-	consumer.Metrics
+	consumermetrics.Metrics
 }
 
 // NewMetricsProcessor creates a processor.Metrics that ensure context propagation and the right tags are set.
@@ -30,7 +30,7 @@ func NewMetricsProcessor(
 	_ context.Context,
 	set processor.CreateSettings,
 	_ component.Config,
-	nextConsumer consumer.Metrics,
+	nextConsumer consumermetrics.Metrics,
 	metricsFunc ProcessMetricsFunc,
 	options ...Option,
 ) (processor.Metrics, error) {
@@ -41,7 +41,7 @@ func NewMetricsProcessor(
 
 	eventOptions := spanAttributes(set.ID)
 	bs := fromOptions(options)
-	metricsConsumer, err := consumer.NewMetrics(func(ctx context.Context, md pmetric.Metrics) error {
+	metricsConsumer, err := consumermetrics.NewMetrics(func(ctx context.Context, md pmetric.Metrics) error {
 		span := trace.SpanFromContext(ctx)
 		span.AddEvent("Start processing.", eventOptions)
 		var err error

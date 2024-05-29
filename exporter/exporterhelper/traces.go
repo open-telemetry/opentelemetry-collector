@@ -10,8 +10,8 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/consumer/consumertraces"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/internal/queue"
@@ -23,17 +23,17 @@ var tracesUnmarshaler = &ptrace.ProtoUnmarshaler{}
 
 type tracesRequest struct {
 	td     ptrace.Traces
-	pusher consumer.ConsumeTracesFunc
+	pusher consumertraces.ConsumeTracesFunc
 }
 
-func newTracesRequest(td ptrace.Traces, pusher consumer.ConsumeTracesFunc) Request {
+func newTracesRequest(td ptrace.Traces, pusher consumertraces.ConsumeTracesFunc) Request {
 	return &tracesRequest{
 		td:     td,
 		pusher: pusher,
 	}
 }
 
-func newTraceRequestUnmarshalerFunc(pusher consumer.ConsumeTracesFunc) exporterqueue.Unmarshaler[Request] {
+func newTraceRequestUnmarshalerFunc(pusher consumertraces.ConsumeTracesFunc) exporterqueue.Unmarshaler[Request] {
 	return func(bytes []byte) (Request, error) {
 		traces, err := tracesUnmarshaler.UnmarshalTraces(bytes)
 		if err != nil {
@@ -65,7 +65,7 @@ func (req *tracesRequest) ItemsCount() int {
 
 type traceExporter struct {
 	*baseExporter
-	consumer.Traces
+	consumertraces.Traces
 }
 
 // NewTracesExporter creates an exporter.Traces that records observability metrics and wraps every request with a Span.
@@ -73,7 +73,7 @@ func NewTracesExporter(
 	ctx context.Context,
 	set exporter.CreateSettings,
 	cfg component.Config,
-	pusher consumer.ConsumeTracesFunc,
+	pusher consumertraces.ConsumeTracesFunc,
 	options ...Option,
 ) (exporter.Traces, error) {
 	if cfg == nil {
@@ -95,7 +95,7 @@ func NewTracesExporter(
 type RequestFromTracesFunc func(context.Context, ptrace.Traces) (Request, error)
 
 // requestFromTraces returns a RequestFromTracesFunc that converts ptrace.Traces into a Request.
-func requestFromTraces(pusher consumer.ConsumeTracesFunc) RequestFromTracesFunc {
+func requestFromTraces(pusher consumertraces.ConsumeTracesFunc) RequestFromTracesFunc {
 	return func(_ context.Context, traces ptrace.Traces) (Request, error) {
 		return newTracesRequest(traces, pusher), nil
 	}
@@ -123,7 +123,7 @@ func NewTracesRequestExporter(
 		return nil, err
 	}
 
-	tc, err := consumer.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
+	tc, err := consumertraces.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
 		req, cErr := converter(ctx, td)
 		if cErr != nil {
 			set.Logger.Error("Failed to convert traces. Dropping data.",

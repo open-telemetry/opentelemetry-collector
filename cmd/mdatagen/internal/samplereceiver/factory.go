@@ -8,7 +8,9 @@ import (
 
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/samplereceiver/internal/metadata"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerlogs"
+	"go.opentelemetry.io/collector/consumer/consumermetrics"
+	"go.opentelemetry.io/collector/consumer/consumertraces"
 	"go.opentelemetry.io/collector/receiver"
 )
 
@@ -22,11 +24,11 @@ func NewFactory() receiver.Factory {
 		receiver.WithLogs(createLogs, metadata.LogsStability))
 }
 
-func createTraces(context.Context, receiver.CreateSettings, component.Config, consumer.Traces) (receiver.Traces, error) {
+func createTraces(context.Context, receiver.CreateSettings, component.Config, consumertraces.Traces) (receiver.Traces, error) {
 	return nopInstance, nil
 }
 
-func createMetrics(ctx context.Context, set receiver.CreateSettings, _ component.Config, _ consumer.Metrics) (receiver.Metrics, error) {
+func createMetrics(ctx context.Context, set receiver.CreateSettings, _ component.Config, _ consumermetrics.Metrics) (receiver.Metrics, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings, metadata.WithProcessRuntimeTotalAllocBytesCallback(func() int64 { return 2 }))
 	if err != nil {
 		return nil, err
@@ -35,7 +37,7 @@ func createMetrics(ctx context.Context, set receiver.CreateSettings, _ component
 	return nopInstance, nil
 }
 
-func createLogs(context.Context, receiver.CreateSettings, component.Config, consumer.Logs) (receiver.Logs, error) {
+func createLogs(context.Context, receiver.CreateSettings, component.Config, consumerlogs.Logs) (receiver.Logs, error) {
 	return nopInstance, nil
 }
 

@@ -11,6 +11,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerlogs"
+	"go.opentelemetry.io/collector/consumer/consumermetrics"
+	"go.opentelemetry.io/collector/consumer/consumertraces"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor/internal/metadata"
 	"go.opentelemetry.io/collector/processor/processorhelper"
@@ -48,7 +51,7 @@ func (f *factory) createTracesProcessor(
 	ctx context.Context,
 	set processor.CreateSettings,
 	cfg component.Config,
-	nextConsumer consumer.Traces,
+	nextConsumer consumertraces.Traces,
 ) (processor.Traces, error) {
 	memLimiter, err := f.getMemoryLimiter(set, cfg)
 	if err != nil {
@@ -65,7 +68,7 @@ func (f *factory) createMetricsProcessor(
 	ctx context.Context,
 	set processor.CreateSettings,
 	cfg component.Config,
-	nextConsumer consumer.Metrics,
+	nextConsumer consumermetrics.Metrics,
 ) (processor.Metrics, error) {
 	memLimiter, err := f.getMemoryLimiter(set, cfg)
 	if err != nil {
@@ -82,7 +85,7 @@ func (f *factory) createLogsProcessor(
 	ctx context.Context,
 	set processor.CreateSettings,
 	cfg component.Config,
-	nextConsumer consumer.Logs,
+	nextConsumer consumerlogs.Logs,
 ) (processor.Logs, error) {
 	memLimiter, err := f.getMemoryLimiter(set, cfg)
 	if err != nil {

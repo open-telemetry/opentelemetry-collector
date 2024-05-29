@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/consumertraces"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/internal/queue"
@@ -366,7 +367,7 @@ func TestTracesRequestExporter_WithShutdown_ReturnError(t *testing.T) {
 	assert.Equal(t, te.Shutdown(context.Background()), want)
 }
 
-func newTraceDataPusher(retError error) consumer.ConsumeTracesFunc {
+func newTraceDataPusher(retError error) consumertraces.ConsumeTracesFunc {
 	return func(context.Context, ptrace.Traces) error {
 		return retError
 	}

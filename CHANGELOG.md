@@ -143,7 +143,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
   It's encouraged to have lifecycle tests for all components enadled, but they can be disabled if needed 
   in metadata.yaml with `skip_lifecycle: true` and `skip_shutdown: true` under `tests` section.
   
-- `cmd/mdatagen`: optimize the mdatagen for the case like batchprocessor which use a common struct to implement consumer.Traces, consumer.Metrics, consumer.Logs in the meantime. (#9688)
+- `cmd/mdatagen`: optimize the mdatagen for the case like batchprocessor which use a common struct to implement consumertraces.Traces, consumermetrics.Metrics, consumerlogs.Logs in the meantime. (#9688)
 
 ### 🧰 Bug fixes 🧰
 
@@ -2952,7 +2952,7 @@ This release is marked as "bad" since the metrics pipelines will produce bad dat
 
 ### 🛑 Breaking changes 🛑
 
-- Rename consumer.TraceConsumer to consumer.TracesConsumer #1974
+- Rename consumer.TraceConsumer to consumertraces.TracesConsumer #1974
 - Rename component.TraceReceiver to component.TracesReceiver #1975
 - Rename component.TraceProcessor to component.TracesProcessor #1976
 - Rename component.TraceExporter to component.TracesExporter #1975

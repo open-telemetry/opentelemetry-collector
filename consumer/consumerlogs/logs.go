@@ -1,18 +1,20 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package consumer // import "go.opentelemetry.io/collector/consumer"
+package consumerlogs // import "go.opentelemetry.io/collector/consumer/consumerlogs"
 
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/internal"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
 // Logs is an interface that receives plog.Logs, processes it
 // as needed, and sends it to the next processing node if any or to the destination.
 type Logs interface {
-	baseConsumer
+	internal.BaseConsumer
 	// ConsumeLogs receives plog.Logs for consumption.
 	ConsumeLogs(ctx context.Context, ld plog.Logs) error
 }
@@ -26,17 +28,17 @@ func (f ConsumeLogsFunc) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 }
 
 type baseLogs struct {
-	*baseImpl
+	*internal.BaseImpl
 	ConsumeLogsFunc
 }
 
 // NewLogs returns a Logs configured with the provided options.
-func NewLogs(consume ConsumeLogsFunc, options ...Option) (Logs, error) {
+func NewLogs(consume ConsumeLogsFunc, options ...consumer.Option) (Logs, error) {
 	if consume == nil {
-		return nil, errNilFunc
+		return nil, internal.ErrNilFunc
 	}
 	return &baseLogs{
-		baseImpl:        newBaseImpl(options...),
+		BaseImpl:        internal.NewBaseImpl(options...),
 		ConsumeLogsFunc: consume,
 	}, nil
 }

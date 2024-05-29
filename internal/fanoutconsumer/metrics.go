@@ -9,6 +9,7 @@ import (
 	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumermetrics"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -16,7 +17,7 @@ import (
 // It fanouts the incoming data to all the consumers, and does smart routing:
 //   - Clones only to the consumer that needs to mutate the data.
 //   - If all consumers needs to mutate the data one will get the original mutable data.
-func NewMetrics(mcs []consumer.Metrics) consumer.Metrics {
+func NewMetrics(mcs []consumermetrics.Metrics) consumermetrics.Metrics {
 	// Don't wrap if there is only one non-mutating consumer.
 	if len(mcs) == 1 && !mcs[0].Capabilities().MutatesData {
 		return mcs[0]
@@ -34,8 +35,8 @@ func NewMetrics(mcs []consumer.Metrics) consumer.Metrics {
 }
 
 type metricsConsumer struct {
-	mutable  []consumer.Metrics
-	readonly []consumer.Metrics
+	mutable  []consumermetrics.Metrics
+	readonly []consumermetrics.Metrics
 }
 
 func (msc *metricsConsumer) Capabilities() consumer.Capabilities {

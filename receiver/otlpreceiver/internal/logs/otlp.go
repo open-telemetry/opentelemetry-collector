@@ -6,7 +6,7 @@ package logs // import "go.opentelemetry.io/collector/receiver/otlpreceiver/inte
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerlogs"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -17,12 +17,12 @@ const dataFormatProtobuf = "protobuf"
 // Receiver is the type used to handle logs from OpenTelemetry exporters.
 type Receiver struct {
 	plogotlp.UnimplementedGRPCServer
-	nextConsumer consumer.Logs
+	nextConsumer consumerlogs.Logs
 	obsreport    *receiverhelper.ObsReport
 }
 
 // New creates a new Receiver reference.
-func New(nextConsumer consumer.Logs, obsreport *receiverhelper.ObsReport) *Receiver {
+func New(nextConsumer consumerlogs.Logs, obsreport *receiverhelper.ObsReport) *Receiver {
 	return &Receiver{
 		nextConsumer: nextConsumer,
 		obsreport:    obsreport,

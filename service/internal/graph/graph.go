@@ -26,6 +26,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerlogs"
+	"go.opentelemetry.io/collector/consumer/consumermetrics"
+	"go.opentelemetry.io/collector/consumer/consumertraces"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
 	"go.opentelemetry.io/collector/processor"
@@ -323,15 +326,15 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 			next := g.nextConsumers(n.ID())[0]
 			switch n.pipelineID.Type() {
 			case component.DataTypeTraces:
-				cc := capabilityconsumer.NewTraces(next.(consumer.Traces), capability)
+				cc := capabilityconsumer.NewTraces(next.(consumertraces.Traces), capability)
 				n.baseConsumer = cc
 				n.ConsumeTracesFunc = cc.ConsumeTraces
 			case component.DataTypeMetrics:
-				cc := capabilityconsumer.NewMetrics(next.(consumer.Metrics), capability)
+				cc := capabilityconsumer.NewMetrics(next.(consumermetrics.Metrics), capability)
 				n.baseConsumer = cc
 				n.ConsumeMetricsFunc = cc.ConsumeMetrics
 			case component.DataTypeLogs:
-				cc := capabilityconsumer.NewLogs(next.(consumer.Logs), capability)
+				cc := capabilityconsumer.NewLogs(next.(consumerlogs.Logs), capability)
 				n.baseConsumer = cc
 				n.ConsumeLogsFunc = cc.ConsumeLogs
 			}
@@ -339,21 +342,21 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 			nexts := g.nextConsumers(n.ID())
 			switch n.pipelineID.Type() {
 			case component.DataTypeTraces:
-				consumers := make([]consumer.Traces, 0, len(nexts))
+				consumers := make([]consumertraces.Traces, 0, len(nexts))
 				for _, next := range nexts {
-					consumers = append(consumers, next.(consumer.Traces))
+					consumers = append(consumers, next.(consumertraces.Traces))
 				}
 				n.baseConsumer = fanoutconsumer.NewTraces(consumers)
 			case component.DataTypeMetrics:
-				consumers := make([]consumer.Metrics, 0, len(nexts))
+				consumers := make([]consumermetrics.Metrics, 0, len(nexts))
 				for _, next := range nexts {
-					consumers = append(consumers, next.(consumer.Metrics))
+					consumers = append(consumers, next.(consumermetrics.Metrics))
 				}
 				n.baseConsumer = fanoutconsumer.NewMetrics(consumers)
 			case component.DataTypeLogs:
-				consumers := make([]consumer.Logs, 0, len(nexts))
+				consumers := make([]consumerlogs.Logs, 0, len(nexts))
 				for _, next := range nexts {
-					consumers = append(consumers, next.(consumer.Logs))
+					consumers = append(consumers, next.(consumerlogs.Logs))
 				}
 				n.baseConsumer = fanoutconsumer.NewLogs(consumers)
 			}

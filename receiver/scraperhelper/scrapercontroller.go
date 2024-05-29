@@ -12,7 +12,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumermetrics"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -48,7 +48,7 @@ type controller struct {
 	collectionInterval time.Duration
 	initialDelay       time.Duration
 	timeout            time.Duration
-	nextConsumer       consumer.Metrics
+	nextConsumer       consumermetrics.Metrics
 
 	scrapers    []Scraper
 	obsScrapers []*ObsReport
@@ -67,7 +67,7 @@ type controller struct {
 func NewScraperControllerReceiver(
 	cfg *ControllerConfig,
 	set receiver.CreateSettings,
-	nextConsumer consumer.Metrics,
+	nextConsumer consumermetrics.Metrics,
 	options ...ScraperControllerOption,
 ) (component.Component, error) {
 

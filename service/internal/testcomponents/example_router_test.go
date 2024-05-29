@@ -13,8 +13,10 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
-	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerlogs"
+	"go.opentelemetry.io/collector/consumer/consumermetrics"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/consumertraces"
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
@@ -41,7 +43,7 @@ func TestTracesRouter(t *testing.T) {
 	// Many connectors will just call router.ConsumeTraces,
 	// but some implementation will call RouteTraces instead.
 	router := connector.NewTracesRouter(
-		map[component.ID]consumer.Traces{
+		map[component.ID]consumertraces.Traces{
 			leftID:  sinkLeft,
 			rightID: sinkRight,
 		})
@@ -80,7 +82,7 @@ func TestMetricsRouter(t *testing.T) {
 	// Many connectors will just call router.ConsumeMetrics,
 	// but some implementation will call RouteMetrics instead.
 	router := connector.NewMetricsRouter(
-		map[component.ID]consumer.Metrics{
+		map[component.ID]consumermetrics.Metrics{
 			leftID:  sinkLeft,
 			rightID: sinkRight,
 		})
@@ -119,7 +121,7 @@ func TestLogsRouter(t *testing.T) {
 	// Many connectors will just call router.ConsumeLogs,
 	// but some implementation will call RouteLogs instead.
 	router := connector.NewLogsRouter(
-		map[component.ID]consumer.Logs{
+		map[component.ID]consumerlogs.Logs{
 			leftID:  sinkLeft,
 			rightID: sinkRight,
 		})

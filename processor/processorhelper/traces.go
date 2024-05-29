@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumertraces"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 )
@@ -22,7 +22,7 @@ type ProcessTracesFunc func(context.Context, ptrace.Traces) (ptrace.Traces, erro
 type tracesProcessor struct {
 	component.StartFunc
 	component.ShutdownFunc
-	consumer.Traces
+	consumertraces.Traces
 }
 
 // NewTracesProcessor creates a processor.Traces that ensure context propagation and the right tags are set.
@@ -30,7 +30,7 @@ func NewTracesProcessor(
 	_ context.Context,
 	set processor.CreateSettings,
 	_ component.Config,
-	nextConsumer consumer.Traces,
+	nextConsumer consumertraces.Traces,
 	tracesFunc ProcessTracesFunc,
 	options ...Option,
 ) (processor.Traces, error) {
@@ -41,7 +41,7 @@ func NewTracesProcessor(
 
 	eventOptions := spanAttributes(set.ID)
 	bs := fromOptions(options)
-	traceConsumer, err := consumer.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
+	traceConsumer, err := consumertraces.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
 		span := trace.SpanFromContext(ctx)
 		span.AddEvent("Start processing.", eventOptions)
 		var err error

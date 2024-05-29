@@ -10,8 +10,10 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerlogs"
+	"go.opentelemetry.io/collector/consumer/consumermetrics"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/consumertraces"
 	"go.opentelemetry.io/collector/processor"
 )
 
@@ -37,15 +39,15 @@ func NewNopFactory() processor.Factory {
 	)
 }
 
-func createTracesProcessor(context.Context, processor.CreateSettings, component.Config, consumer.Traces) (processor.Traces, error) {
+func createTracesProcessor(context.Context, processor.CreateSettings, component.Config, consumertraces.Traces) (processor.Traces, error) {
 	return nopInstance, nil
 }
 
-func createMetricsProcessor(context.Context, processor.CreateSettings, component.Config, consumer.Metrics) (processor.Metrics, error) {
+func createMetricsProcessor(context.Context, processor.CreateSettings, component.Config, consumermetrics.Metrics) (processor.Metrics, error) {
 	return nopInstance, nil
 }
 
-func createLogsProcessor(context.Context, processor.CreateSettings, component.Config, consumer.Logs) (processor.Logs, error) {
+func createLogsProcessor(context.Context, processor.CreateSettings, component.Config, consumerlogs.Logs) (processor.Logs, error) {
 	return nopInstance, nil
 }
 

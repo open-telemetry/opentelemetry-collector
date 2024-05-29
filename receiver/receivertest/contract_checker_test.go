@@ -12,8 +12,10 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/consumer/consumerlogs"
+	"go.opentelemetry.io/collector/consumer/consumermetrics"
+	"go.opentelemetry.io/collector/consumer/consumertraces"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -25,9 +27,9 @@ import (
 // We declare a trivial example receiver, a data generator and then use them in TestConsumeContract().
 
 type exampleReceiver struct {
-	nextLogsConsumer    consumer.Logs
-	nextTracesConsumer  consumer.Traces
-	nextMetricsConsumer consumer.Metrics
+	nextLogsConsumer    consumerlogs.Logs
+	nextTracesConsumer  consumertraces.Traces
+	nextMetricsConsumer consumermetrics.Metrics
 }
 
 func (s *exampleReceiver) Start(context.Context, component.Host) error {
@@ -203,13 +205,13 @@ func newExampleFactory() receiver.Factory {
 	)
 }
 
-func createTrace(_ context.Context, _ receiver.CreateSettings, cfg component.Config, consumer consumer.Traces) (receiver.Traces, error) {
+func createTrace(_ context.Context, _ receiver.CreateSettings, cfg component.Config, consumer consumertraces.Traces) (receiver.Traces, error) {
 	rcv := &exampleReceiver{nextTracesConsumer: consumer}
 	cfg.(*exampleReceiverConfig).generator.(*exampleTraceGenerator).receiver = rcv
 	return rcv, nil
 }
 
-func createMetric(_ context.Context, _ receiver.CreateSettings, cfg component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
+func createMetric(_ context.Context, _ receiver.CreateSettings, cfg component.Config, consumer consumermetrics.Metrics) (receiver.Metrics, error) {
 	rcv := &exampleReceiver{nextMetricsConsumer: consumer}
 	cfg.(*exampleReceiverConfig).generator.(*exampleMetricGenerator).receiver = rcv
 	return rcv, nil
@@ -219,7 +221,7 @@ func createLog(
 	_ context.Context,
 	_ receiver.CreateSettings,
 	cfg component.Config,
-	consumer consumer.Logs,
+	consumer consumerlogs.Logs,
 ) (receiver.Logs, error) {
 	rcv := &exampleReceiver{nextLogsConsumer: consumer}
 	cfg.(*exampleReceiverConfig).generator.(*exampleLogGenerator).receiver = rcv

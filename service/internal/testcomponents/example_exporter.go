@@ -51,7 +51,7 @@ type ExampleExporter struct {
 	Logs    []plog.Logs
 }
 
-// ConsumeTraces receives ptrace.Traces for processing by the consumer.Traces.
+// ConsumeTraces receives ptrace.Traces for processing by the consumertraces.Traces.
 func (exp *ExampleExporter) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
 	exp.Traces = append(exp.Traces, td)
 	return nil

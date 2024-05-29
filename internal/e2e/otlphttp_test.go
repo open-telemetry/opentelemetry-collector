@@ -23,8 +23,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerlogs"
+	"go.opentelemetry.io/collector/consumer/consumermetrics"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/consumertraces"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
@@ -325,7 +327,7 @@ func createExporterConfig(baseURL string, defaultCfg component.Config) *otlphttp
 	return cfg
 }
 
-func startTracesReceiver(t *testing.T, addr string, next consumer.Traces) {
+func startTracesReceiver(t *testing.T, addr string, next consumertraces.Traces) {
 	factory := otlpreceiver.NewFactory()
 	cfg := createReceiverConfig(addr, factory.CreateDefaultConfig())
 	recv, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, next)
@@ -333,7 +335,7 @@ func startTracesReceiver(t *testing.T, addr string, next consumer.Traces) {
 	startAndCleanup(t, recv)
 }
 
-func startMetricsReceiver(t *testing.T, addr string, next consumer.Metrics) {
+func startMetricsReceiver(t *testing.T, addr string, next consumermetrics.Metrics) {
 	factory := otlpreceiver.NewFactory()
 	cfg := createReceiverConfig(addr, factory.CreateDefaultConfig())
 	recv, err := factory.CreateMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, next)
@@ -341,7 +343,7 @@ func startMetricsReceiver(t *testing.T, addr string, next consumer.Metrics) {
 	startAndCleanup(t, recv)
 }
 
-func startLogsReceiver(t *testing.T, addr string, next consumer.Logs) {
+func startLogsReceiver(t *testing.T, addr string, next consumerlogs.Logs) {
 	factory := otlpreceiver.NewFactory()
 	cfg := createReceiverConfig(addr, factory.CreateDefaultConfig())
 	recv, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, next)

@@ -7,13 +7,15 @@ import (
 	"context"
 	"sync"
 
-	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerlogs"
+	"go.opentelemetry.io/collector/consumer/consumermetrics"
+	"go.opentelemetry.io/collector/consumer/consumertraces"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-// TracesSink is a consumer.Traces that acts like a sink that
+// TracesSink is a consumertraces.Traces that acts like a sink that
 // stores all traces and allows querying them for testing.
 type TracesSink struct {
 	nonMutatingConsumer
@@ -22,7 +24,7 @@ type TracesSink struct {
 	spanCount int
 }
 
-var _ consumer.Traces = (*TracesSink)(nil)
+var _ consumertraces.Traces = (*TracesSink)(nil)
 
 // ConsumeTraces stores traces to this sink.
 func (ste *TracesSink) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
@@ -61,7 +63,7 @@ func (ste *TracesSink) Reset() {
 	ste.spanCount = 0
 }
 
-// MetricsSink is a consumer.Metrics that acts like a sink that
+// MetricsSink is a consumermetrics.Metrics that acts like a sink that
 // stores all metrics and allows querying them for testing.
 type MetricsSink struct {
 	nonMutatingConsumer
@@ -70,7 +72,7 @@ type MetricsSink struct {
 	dataPointCount int
 }
 
-var _ consumer.Metrics = (*MetricsSink)(nil)
+var _ consumermetrics.Metrics = (*MetricsSink)(nil)
 
 // ConsumeMetrics stores metrics to this sink.
 func (sme *MetricsSink) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
@@ -109,7 +111,7 @@ func (sme *MetricsSink) Reset() {
 	sme.dataPointCount = 0
 }
 
-// LogsSink is a consumer.Logs that acts like a sink that
+// LogsSink is a consumerlogs.Logs that acts like a sink that
 // stores all logs and allows querying them for testing.
 type LogsSink struct {
 	nonMutatingConsumer
@@ -118,7 +120,7 @@ type LogsSink struct {
 	logRecordCount int
 }
 
-var _ consumer.Logs = (*LogsSink)(nil)
+var _ consumerlogs.Logs = (*LogsSink)(nil)
 
 // ConsumeLogs stores logs to this sink.
 func (sle *LogsSink) ConsumeLogs(_ context.Context, ld plog.Logs) error {

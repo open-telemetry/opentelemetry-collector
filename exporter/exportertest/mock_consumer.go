@@ -13,6 +13,9 @@ import (
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/consumer/consumerlogs"
+	"go.opentelemetry.io/collector/consumer/consumermetrics"
+	"go.opentelemetry.io/collector/consumer/consumertraces"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -56,9 +59,9 @@ func randomErrorsConsumeDecision() error {
 }
 
 type mockConsumer struct {
-	consumer.Traces
-	consumer.Logs
-	consumer.Metrics
+	consumertraces.Traces
+	consumerlogs.Logs
+	consumermetrics.Metrics
 	reqCounter          *requestCounter
 	mux                 sync.Mutex
 	exportErrorFunction func() error

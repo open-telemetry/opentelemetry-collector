@@ -8,6 +8,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerlogs"
+	"go.opentelemetry.io/collector/consumer/consumermetrics"
+	"go.opentelemetry.io/collector/consumer/consumertraces"
 	"go.opentelemetry.io/collector/processor"
 )
 
@@ -26,21 +29,21 @@ func createDefaultConfig() component.Config {
 	return &struct{}{}
 }
 
-func createTracesProcessor(_ context.Context, set processor.CreateSettings, _ component.Config, nextConsumer consumer.Traces) (processor.Traces, error) {
+func createTracesProcessor(_ context.Context, set processor.CreateSettings, _ component.Config, nextConsumer consumertraces.Traces) (processor.Traces, error) {
 	return &ExampleProcessor{
 		ConsumeTracesFunc: nextConsumer.ConsumeTraces,
 		mutatesData:       set.ID.Name() == "mutate",
 	}, nil
 }
 
-func createMetricsProcessor(_ context.Context, set processor.CreateSettings, _ component.Config, nextConsumer consumer.Metrics) (processor.Metrics, error) {
+func createMetricsProcessor(_ context.Context, set processor.CreateSettings, _ component.Config, nextConsumer consumermetrics.Metrics) (processor.Metrics, error) {
 	return &ExampleProcessor{
 		ConsumeMetricsFunc: nextConsumer.ConsumeMetrics,
 		mutatesData:        set.ID.Name() == "mutate",
 	}, nil
 }
 
-func createLogsProcessor(_ context.Context, set processor.CreateSettings, _ component.Config, nextConsumer consumer.Logs) (processor.Logs, error) {
+func createLogsProcessor(_ context.Context, set processor.CreateSettings, _ component.Config, nextConsumer consumerlogs.Logs) (processor.Logs, error) {
 	return &ExampleProcessor{
 		ConsumeLogsFunc: nextConsumer.ConsumeLogs,
 		mutatesData:     set.ID.Name() == "mutate",
@@ -49,9 +52,9 @@ func createLogsProcessor(_ context.Context, set processor.CreateSettings, _ comp
 
 type ExampleProcessor struct {
 	componentState
-	consumer.ConsumeTracesFunc
-	consumer.ConsumeMetricsFunc
-	consumer.ConsumeLogsFunc
+	consumertraces.ConsumeTracesFunc
+	consumermetrics.ConsumeMetricsFunc
+	consumerlogs.ConsumeLogsFunc
 	mutatesData bool
 }
 

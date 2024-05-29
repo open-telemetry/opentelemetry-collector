@@ -11,19 +11,20 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumermetrics"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
 func TestMetricsNotMultiplexing(t *testing.T) {
 	nop := consumertest.NewNop()
-	mfc := NewMetrics([]consumer.Metrics{nop})
+	mfc := NewMetrics([]consumermetrics.Metrics{nop})
 	assert.Same(t, nop, mfc)
 }
 
 func TestMetricssNotMultiplexingMutating(t *testing.T) {
 	p := &mutatingMetricsSink{MetricsSink: new(consumertest.MetricsSink)}
-	lfc := NewMetrics([]consumer.Metrics{p})
+	lfc := NewMetrics([]consumermetrics.Metrics{p})
 	assert.True(t, lfc.Capabilities().MutatesData)
 }
 
@@ -32,7 +33,7 @@ func TestMetricsMultiplexingNonMutating(t *testing.T) {
 	p2 := new(consumertest.MetricsSink)
 	p3 := new(consumertest.MetricsSink)
 
-	mfc := NewMetrics([]consumer.Metrics{p1, p2, p3})
+	mfc := NewMetrics([]consumermetrics.Metrics{p1, p2, p3})
 	assert.False(t, mfc.Capabilities().MutatesData)
 	md := testdata.GenerateMetrics(1)
 
@@ -68,7 +69,7 @@ func TestMetricsMultiplexingMutating(t *testing.T) {
 	p2 := &mutatingMetricsSink{MetricsSink: new(consumertest.MetricsSink)}
 	p3 := &mutatingMetricsSink{MetricsSink: new(consumertest.MetricsSink)}
 
-	mfc := NewMetrics([]consumer.Metrics{p1, p2, p3})
+	mfc := NewMetrics([]consumermetrics.Metrics{p1, p2, p3})
 	assert.True(t, mfc.Capabilities().MutatesData)
 	md := testdata.GenerateMetrics(1)
 
@@ -105,7 +106,7 @@ func TestReadOnlyMetricsMultiplexingMixFirstMutating(t *testing.T) {
 	p2 := &mutatingMetricsSink{MetricsSink: new(consumertest.MetricsSink)}
 	p3 := &mutatingMetricsSink{MetricsSink: new(consumertest.MetricsSink)}
 
-	mfc := NewMetrics([]consumer.Metrics{p1, p2, p3})
+	mfc := NewMetrics([]consumermetrics.Metrics{p1, p2, p3})
 	assert.True(t, mfc.Capabilities().MutatesData)
 	mdOrig := testdata.GenerateMetrics(1)
 	md := testdata.GenerateMetrics(1)
@@ -142,7 +143,7 @@ func TestMetricsMultiplexingMixLastMutating(t *testing.T) {
 	p2 := new(consumertest.MetricsSink)
 	p3 := &mutatingMetricsSink{MetricsSink: new(consumertest.MetricsSink)}
 
-	mfc := NewMetrics([]consumer.Metrics{p1, p2, p3})
+	mfc := NewMetrics([]consumermetrics.Metrics{p1, p2, p3})
 	assert.False(t, mfc.Capabilities().MutatesData)
 	md := testdata.GenerateMetrics(1)
 
@@ -180,7 +181,7 @@ func TestMetricsMultiplexingMixLastNonMutating(t *testing.T) {
 	p2 := &mutatingMetricsSink{MetricsSink: new(consumertest.MetricsSink)}
 	p3 := new(consumertest.MetricsSink)
 
-	mfc := NewMetrics([]consumer.Metrics{p1, p2, p3})
+	mfc := NewMetrics([]consumermetrics.Metrics{p1, p2, p3})
 	assert.False(t, mfc.Capabilities().MutatesData)
 	md := testdata.GenerateMetrics(1)
 
@@ -217,7 +218,7 @@ func TestMetricsWhenErrors(t *testing.T) {
 	p2 := consumertest.NewErr(errors.New("my error"))
 	p3 := new(consumertest.MetricsSink)
 
-	mfc := NewMetrics([]consumer.Metrics{p1, p2, p3})
+	mfc := NewMetrics([]consumermetrics.Metrics{p1, p2, p3})
 	md := testdata.GenerateMetrics(1)
 
 	for i := 0; i < 2; i++ {

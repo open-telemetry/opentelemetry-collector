@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package consumer
+package consumerlogs
 
 import (
 	"context"
@@ -10,6 +10,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/internal"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
@@ -17,21 +19,21 @@ func TestDefaultLogs(t *testing.T) {
 	cp, err := NewLogs(func(context.Context, plog.Logs) error { return nil })
 	assert.NoError(t, err)
 	assert.NoError(t, cp.ConsumeLogs(context.Background(), plog.NewLogs()))
-	assert.Equal(t, Capabilities{MutatesData: false}, cp.Capabilities())
+	assert.Equal(t, consumer.Capabilities{MutatesData: false}, cp.Capabilities())
 }
 
 func TestNilFuncLogs(t *testing.T) {
 	_, err := NewLogs(nil)
-	assert.Equal(t, errNilFunc, err)
+	assert.Equal(t, internal.ErrNilFunc, err)
 }
 
 func TestWithCapabilitiesLogs(t *testing.T) {
 	cp, err := NewLogs(
 		func(context.Context, plog.Logs) error { return nil },
-		WithCapabilities(Capabilities{MutatesData: true}))
+		consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}))
 	assert.NoError(t, err)
 	assert.NoError(t, cp.ConsumeLogs(context.Background(), plog.NewLogs()))
-	assert.Equal(t, Capabilities{MutatesData: true}, cp.Capabilities())
+	assert.Equal(t, consumer.Capabilities{MutatesData: true}, cp.Capabilities())
 }
 
 func TestConsumeLogs(t *testing.T) {

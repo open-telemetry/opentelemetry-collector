@@ -10,7 +10,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerlogs"
+	"go.opentelemetry.io/collector/consumer/consumermetrics"
+	"go.opentelemetry.io/collector/consumer/consumertraces"
 	"go.opentelemetry.io/collector/receiver"
 )
 
@@ -56,15 +58,15 @@ func NewNopFactoryForType(dataType component.DataType) receiver.Factory {
 
 type nopConfig struct{}
 
-func createTraces(context.Context, receiver.CreateSettings, component.Config, consumer.Traces) (receiver.Traces, error) {
+func createTraces(context.Context, receiver.CreateSettings, component.Config, consumertraces.Traces) (receiver.Traces, error) {
 	return nopInstance, nil
 }
 
-func createMetrics(context.Context, receiver.CreateSettings, component.Config, consumer.Metrics) (receiver.Metrics, error) {
+func createMetrics(context.Context, receiver.CreateSettings, component.Config, consumermetrics.Metrics) (receiver.Metrics, error) {
 	return nopInstance, nil
 }
 
-func createLogs(context.Context, receiver.CreateSettings, component.Config, consumer.Logs) (receiver.Logs, error) {
+func createLogs(context.Context, receiver.CreateSettings, component.Config, consumerlogs.Logs) (receiver.Logs, error) {
 	return nopInstance, nil
 }
 

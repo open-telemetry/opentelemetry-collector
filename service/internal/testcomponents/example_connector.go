@@ -9,6 +9,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerlogs"
+	"go.opentelemetry.io/collector/consumer/consumermetrics"
+	"go.opentelemetry.io/collector/consumer/consumertraces"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -47,14 +50,14 @@ func createExampleConnectorDefaultConfig() component.Config {
 	return &struct{}{}
 }
 
-func createExampleTracesToTraces(_ context.Context, set connector.CreateSettings, _ component.Config, traces consumer.Traces) (connector.Traces, error) {
+func createExampleTracesToTraces(_ context.Context, set connector.CreateSettings, _ component.Config, traces consumertraces.Traces) (connector.Traces, error) {
 	return &ExampleConnector{
 		ConsumeTracesFunc: traces.ConsumeTraces,
 		mutatesData:       set.ID.Name() == "mutate",
 	}, nil
 }
 
-func createExampleTracesToMetrics(_ context.Context, set connector.CreateSettings, _ component.Config, metrics consumer.Metrics) (connector.Traces, error) {
+func createExampleTracesToMetrics(_ context.Context, set connector.CreateSettings, _ component.Config, metrics consumermetrics.Metrics) (connector.Traces, error) {
 	return &ExampleConnector{
 		ConsumeTracesFunc: func(ctx context.Context, td ptrace.Traces) error {
 			return metrics.ConsumeMetrics(ctx, testdata.GenerateMetrics(td.SpanCount()))
@@ -63,7 +66,7 @@ func createExampleTracesToMetrics(_ context.Context, set connector.CreateSetting
 	}, nil
 }
 
-func createExampleTracesToLogs(_ context.Context, set connector.CreateSettings, _ component.Config, logs consumer.Logs) (connector.Traces, error) {
+func createExampleTracesToLogs(_ context.Context, set connector.CreateSettings, _ component.Config, logs consumerlogs.Logs) (connector.Traces, error) {
 	return &ExampleConnector{
 		ConsumeTracesFunc: func(ctx context.Context, td ptrace.Traces) error {
 			return logs.ConsumeLogs(ctx, testdata.GenerateLogs(td.SpanCount()))
@@ -72,7 +75,7 @@ func createExampleTracesToLogs(_ context.Context, set connector.CreateSettings, 
 	}, nil
 }
 
-func createExampleMetricsToTraces(_ context.Context, set connector.CreateSettings, _ component.Config, traces consumer.Traces) (connector.Metrics, error) {
+func createExampleMetricsToTraces(_ context.Context, set connector.CreateSettings, _ component.Config, traces consumertraces.Traces) (connector.Metrics, error) {
 	return &ExampleConnector{
 		ConsumeMetricsFunc: func(ctx context.Context, md pmetric.Metrics) error {
 			return traces.ConsumeTraces(ctx, testdata.GenerateTraces(md.MetricCount()))
@@ -81,14 +84,14 @@ func createExampleMetricsToTraces(_ context.Context, set connector.CreateSetting
 	}, nil
 }
 
-func createExampleMetricsToMetrics(_ context.Context, set connector.CreateSettings, _ component.Config, metrics consumer.Metrics) (connector.Metrics, error) {
+func createExampleMetricsToMetrics(_ context.Context, set connector.CreateSettings, _ component.Config, metrics consumermetrics.Metrics) (connector.Metrics, error) {
 	return &ExampleConnector{
 		ConsumeMetricsFunc: metrics.ConsumeMetrics,
 		mutatesData:        set.ID.Name() == "mutate",
 	}, nil
 }
 
-func createExampleMetricsToLogs(_ context.Context, set connector.CreateSettings, _ component.Config, logs consumer.Logs) (connector.Metrics, error) {
+func createExampleMetricsToLogs(_ context.Context, set connector.CreateSettings, _ component.Config, logs consumerlogs.Logs) (connector.Metrics, error) {
 	return &ExampleConnector{
 		ConsumeMetricsFunc: func(ctx context.Context, md pmetric.Metrics) error {
 			return logs.ConsumeLogs(ctx, testdata.GenerateLogs(md.MetricCount()))
@@ -97,7 +100,7 @@ func createExampleMetricsToLogs(_ context.Context, set connector.CreateSettings,
 	}, nil
 }
 
-func createExampleLogsToTraces(_ context.Context, set connector.CreateSettings, _ component.Config, traces consumer.Traces) (connector.Logs, error) {
+func createExampleLogsToTraces(_ context.Context, set connector.CreateSettings, _ component.Config, traces consumertraces.Traces) (connector.Logs, error) {
 	return &ExampleConnector{
 		ConsumeLogsFunc: func(ctx context.Context, ld plog.Logs) error {
 			return traces.ConsumeTraces(ctx, testdata.GenerateTraces(ld.LogRecordCount()))
@@ -106,7 +109,7 @@ func createExampleLogsToTraces(_ context.Context, set connector.CreateSettings, 
 	}, nil
 }
 
-func createExampleLogsToMetrics(_ context.Context, set connector.CreateSettings, _ component.Config, metrics consumer.Metrics) (connector.Logs, error) {
+func createExampleLogsToMetrics(_ context.Context, set connector.CreateSettings, _ component.Config, metrics consumermetrics.Metrics) (connector.Logs, error) {
 	return &ExampleConnector{
 		ConsumeLogsFunc: func(ctx context.Context, ld plog.Logs) error {
 			return metrics.ConsumeMetrics(ctx, testdata.GenerateMetrics(ld.LogRecordCount()))
@@ -115,7 +118,7 @@ func createExampleLogsToMetrics(_ context.Context, set connector.CreateSettings,
 	}, nil
 }
 
-func createExampleLogsToLogs(_ context.Context, set connector.CreateSettings, _ component.Config, logs consumer.Logs) (connector.Logs, error) {
+func createExampleLogsToLogs(_ context.Context, set connector.CreateSettings, _ component.Config, logs consumerlogs.Logs) (connector.Logs, error) {
 	return &ExampleConnector{
 		ConsumeLogsFunc: logs.ConsumeLogs,
 		mutatesData:     set.ID.Name() == "mutate",
@@ -124,9 +127,9 @@ func createExampleLogsToLogs(_ context.Context, set connector.CreateSettings, _ 
 
 type ExampleConnector struct {
 	componentState
-	consumer.ConsumeTracesFunc
-	consumer.ConsumeMetricsFunc
-	consumer.ConsumeLogsFunc
+	consumertraces.ConsumeTracesFunc
+	consumermetrics.ConsumeMetricsFunc
+	consumerlogs.ConsumeLogsFunc
 	mutatesData bool
 }
 

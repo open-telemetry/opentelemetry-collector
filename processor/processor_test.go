@@ -12,8 +12,10 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerlogs"
+	"go.opentelemetry.io/collector/consumer/consumermetrics"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/consumertraces"
 )
 
 func TestNewFactory(t *testing.T) {
@@ -113,9 +115,9 @@ func TestBuilder(t *testing.T) {
 		name        string
 		id          component.ID
 		err         string
-		nextTraces  consumer.Traces
-		nextLogs    consumer.Logs
-		nextMetrics consumer.Metrics
+		nextTraces  consumertraces.Traces
+		nextLogs    consumerlogs.Logs
+		nextMetrics consumermetrics.Metrics
 	}{
 		{
 			name:        "unknown",
@@ -244,15 +246,15 @@ type nopProcessor struct {
 	consumertest.Consumer
 }
 
-func createTraces(context.Context, CreateSettings, component.Config, consumer.Traces) (Traces, error) {
+func createTraces(context.Context, CreateSettings, component.Config, consumertraces.Traces) (Traces, error) {
 	return nopInstance, nil
 }
 
-func createMetrics(context.Context, CreateSettings, component.Config, consumer.Metrics) (Metrics, error) {
+func createMetrics(context.Context, CreateSettings, component.Config, consumermetrics.Metrics) (Metrics, error) {
 	return nopInstance, nil
 }
 
-func createLogs(context.Context, CreateSettings, component.Config, consumer.Logs) (Logs, error) {
+func createLogs(context.Context, CreateSettings, component.Config, consumerlogs.Logs) (Logs, error) {
 	return nopInstance, nil
 }
 
