@@ -20,9 +20,10 @@ var driverLetterRegexp = regexp.MustCompile("^[A-z]:")
 
 // Resolver resolves a configuration as a Conf.
 type Resolver struct {
-	uris       []location
-	providers  map[string]Provider
-	converters []Converter
+	uris          []location
+	providers     map[string]Provider
+	defaultScheme string
+	converters    []Converter
 
 	closers []CloseFunc
 	watcher chan error
@@ -34,10 +35,15 @@ type ResolverSettings struct {
 	// It is required to have at least one location.
 	URIs []string
 
-	// ProviderFactories is a list of Provider creation functions.
-	// It is required to have at least one ProviderFactory
-	// if a Provider is not given.
+	// ProviderFactories is a slice of Provider factories.
+	// It is required to have at least one factory.
 	ProviderFactories []ProviderFactory
+
+	// DefaultScheme is the scheme that is used if ${} syntax is used but no schema is provided.
+	// If no DefaultScheme is set, ${} with no schema will not be expanded.
+	// It is strongly recommended to set "env" as the default scheme to align with the
+	// OpenTelemetry Configuration Specification
+	DefaultScheme string
 
 	// ProviderSettings contains settings that will be passed to Provider
 	// factories when instantiating Providers.
@@ -93,6 +99,13 @@ func NewResolver(set ResolverSettings) (*Resolver, error) {
 		providers[provider.Scheme()] = provider
 	}
 
+	if set.DefaultScheme != "" {
+		_, ok := providers[set.DefaultScheme]
+		if !ok {
+			return nil, errors.New("invalid 'confmap.ResolverSettings' configuration: DefaultScheme not found in providers list")
+		}
+	}
+
 	converters := make([]Converter, len(set.ConverterFactories))
 	for i, factory := range set.ConverterFactories {
 		converters[i] = factory.Create(set.ConverterSettings)
@@ -119,10 +132,11 @@ func NewResolver(set ResolverSettings) (*Resolver, error) {
 	}
 
 	return &Resolver{
-		uris:       uris,
-		providers:  providers,
-		converters: converters,
-		watcher:    make(chan error, 1),
+		uris:          uris,
+		providers:     providers,
+		defaultScheme: set.DefaultScheme,
+		converters:    converters,
+		watcher:       make(chan error, 1),
 	}, nil
 }
 
