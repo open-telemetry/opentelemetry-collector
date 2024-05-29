@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
@@ -227,6 +228,7 @@ type tests struct {
 }
 
 type telemetry struct {
+	Level   configtelemetry.Level `mapstructure:"level"`
 	Metrics map[metricName]metric `mapstructure:"metrics"`
 }
 

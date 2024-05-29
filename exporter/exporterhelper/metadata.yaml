@@ -1,7 +1,8 @@
 type: exporterhelper
 
 status:
-  class: pkg
+  class: exporter
+  not_component: true
   stability:
     beta: [traces, metrics, logs]
   distributions: [core, contrib]

@@ -30,6 +30,14 @@ Number of times the batch was sent due to a size trigger
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
+### processor_batch_metadata_cardinality
+
+Number of distinct metadata value combinations being processed
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | false |
+
 ### processor_batch_timeout_trigger_send
 
 Number of times the batch was sent due to a timeout trigger
