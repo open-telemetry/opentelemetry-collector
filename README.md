@@ -112,7 +112,8 @@ Official OpenTelemetry Collector distro binaries may be built with any supported
 
 ## Verifying the images signatures
 
-> **Note**: To verify a signed artifact or blob, first [install Cosign](https://docs.sigstore.dev/system_config/installation/), then follow the instructions below.
+> [!NOTE]
+> To verify a signed artifact or blob, first [install Cosign](https://docs.sigstore.dev/system_config/installation/), then follow the instructions below.
 
 We are signing the images `otel/opentelemetry-collector` and `otel/opentelemetry-collector-contrib` using [sigstore cosign](https://github.com/sigstore/cosign) tool and to verify the signatures you can run the following command:
 
