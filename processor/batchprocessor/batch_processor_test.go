@@ -286,6 +286,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 
 func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
 	tel := setupTestTelemetry()
+	sizer := &ptrace.ProtoMarshaler{}
 	sink := new(consumertest.TracesSink)
 	cfg := createDefaultConfig().(*Config)
 	sendBatchSize := 20
@@ -304,8 +305,11 @@ func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
 	totalSpans := requestCount * spansPerRequest
 
 	start := time.Now()
+
+	sizeSum := 0
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		td := testdata.GenerateTraces(spansPerRequest)
+		sizeSum += sizer.TracesSize(td)
 		assert.NoError(t, batcher.ConsumeTraces(context.Background(), td))
 	}
 
@@ -341,8 +345,8 @@ func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
 						Bounds: []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000,
 							100_000, 200_000, 300_000, 400_000, 500_000, 600_000, 700_000, 800_000, 900_000,
 							1000_000, 2000_000, 3000_000, 4000_000, 5000_000, 6000_000, 7000_000, 8000_000, 9000_000},
-						BucketCounts: []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, uint64(expectedBatchesNum), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-						Sum:          int64(sink.SpanCount()),
+						BucketCounts: []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, uint64(expectedBatchesNum - 1), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+						Sum:          int64(sizeSum),
 						Min:          metricdata.NewExtrema(int64(sink.SpanCount() / expectedBatchesNum)),
 						Max:          metricdata.NewExtrema(int64(sink.SpanCount() / expectedBatchesNum)),
 					},
@@ -407,7 +411,8 @@ func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
 				IsMonotonic: false,
 				DataPoints: []metricdata.DataPoint[int64]{
 					{
-						Value: 1,
+						Value:      1,
+						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
 					},
 				},
 			},
@@ -654,7 +659,8 @@ func TestBatchMetricProcessorBatchSize(t *testing.T) {
 				IsMonotonic: false,
 				DataPoints: []metricdata.DataPoint[int64]{
 					{
-						Value: 1,
+						Value:      1,
+						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
 					},
 				},
 			},
@@ -1033,7 +1039,8 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 				IsMonotonic: false,
 				DataPoints: []metricdata.DataPoint[int64]{
 					{
-						Value: 1,
+						Value:      1,
+						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
 					},
 				},
 			},
