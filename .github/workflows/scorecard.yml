@@ -28,7 +28,7 @@ jobs:
       # actions: read
 
     steps:
-      - name: "Checkout code"
+      - name: Checkout Repo
         uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
         with:
           persist-credentials: false
