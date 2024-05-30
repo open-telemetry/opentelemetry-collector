@@ -963,6 +963,22 @@ func TestClientInfoInterceptors(t *testing.T) {
 	}
 }
 
+type mockAuthData struct {
+	Attributes map[string]string
+}
+
+func (m *mockAuthData) GetAttribute(attr string) any {
+	return m.Attributes[attr]
+}
+
+func (m *mockAuthData) GetAttributeNames() []string {
+	var names []string
+	for name := range m.Attributes {
+		names = append(names, name)
+	}
+	return names
+}
+
 func TestClientMetadataWithAuthInterceptorsAndIncludeMetadata(t *testing.T) {
 	testCases := []struct {
 		desc            string
@@ -1008,9 +1024,12 @@ func TestClientMetadataWithAuthInterceptorsAndIncludeMetadata(t *testing.T) {
 				host := &mockHost{
 					ext: map[component.ID]component.Component{
 						mockID: auth.NewServer(auth.WithServerAuthenticate(func(ctx context.Context, headers map[string][]string) (context.Context, error) {
-							return client.NewContext(ctx, client.Info{
-								Metadata: client.NewMetadata(metadata.Pairs("some-key-set-in-auth", "some-value-set-in-auth")),
-							}), nil
+							cl := client.FromContext(ctx)
+							cl.Auth = &mockAuthData{
+								Attributes: map[string]string{"some-key-set-in-auth": "some-value-set-in-auth"},
+							}
+
+							return client.NewContext(ctx, cl), nil
 						})),
 					},
 				}
@@ -1054,18 +1073,25 @@ func TestClientMetadataWithAuthInterceptorsAndIncludeMetadata(t *testing.T) {
 				ctx, cancelFunc := context.WithTimeout(context.Background(), 2*time.Second)
 				defer cancelFunc()
 
+				// this is what we expect clients to do before making a gRPC call
+				headers := map[string]string{}
+				for k, v := range gcs.Headers {
+					headers[k] = string(v)
+				}
+				md := metadata.New(headers)
+				ctx = metadata.NewOutgoingContext(ctx, md)
+
 				// test
 				tC.tester(ctx, cl)
 			}
 
 			// verify
 			cl := client.FromContext(mock.recordedContext)
-			if tC.includeMetadata == true {
-				// Since IncludeMetadata has been set to true, we will not be able to find
-				// below key in Metadata
-				assert.Nil(t, cl.Metadata.Get("some-key-set-in-auth"))
+			if tC.includeMetadata {
+				require.Len(t, cl.Metadata.Get("header1"), 1)
+				assert.Equal(t, "value1", cl.Metadata.Get("header1")[0])
 			} else {
-				assert.Equal(t, cl.Metadata.Get("some-key-set-in-auth")[0], "some-value-set-in-auth")
+				assert.Nil(t, cl.Metadata.Get("header1"))
 			}
 
 			// the client address is something like 127.0.0.1:41086
