@@ -443,9 +443,10 @@ func TestBatchSender_ShutdownDeadlock(t *testing.T) {
 	waitMerge := make(chan struct{}, 10)
 
 	// blockedBatchMergeFunc blocks until the blockMerge channel is closed
-	blockedBatchMergeFunc := func(_ context.Context, r1 Request, _ Request) (Request, error) {
+	blockedBatchMergeFunc := func(_ context.Context, r1 Request, r2 Request) (Request, error) {
 		waitMerge <- struct{}{}
 		<-blockMerge
+		r1.(*fakeRequest).items += r2.(*fakeRequest).items
 		return r1, nil
 	}
 
@@ -458,18 +459,11 @@ func TestBatchSender_ShutdownDeadlock(t *testing.T) {
 
 	sink := newFakeRequestSink()
 
-	// Send 10 concurrent requests and wait for them to start
-	startWG := sync.WaitGroup{}
-	for i := 0; i < 10; i++ {
-		startWG.Add(1)
-		go func() {
-			startWG.Done()
-			require.NoError(t, be.send(context.Background(), &fakeRequest{items: 4, sink: sink}))
-		}()
-	}
-	startWG.Wait()
+	// Send 2 concurrent requests
+	go func() { require.NoError(t, be.send(context.Background(), &fakeRequest{items: 4, sink: sink})) }()
+	go func() { require.NoError(t, be.send(context.Background(), &fakeRequest{items: 4, sink: sink})) }()
 
-	// Wait for at least one batch to enter the merge function
+	// Wait for the requests to enter the merge function
 	<-waitMerge
 
 	// Initiate the exporter shutdown, unblock the batch merge function to catch possible deadlocks,
@@ -485,12 +479,8 @@ func TestBatchSender_ShutdownDeadlock(t *testing.T) {
 	close(blockMerge)
 	<-doneShutdown
 
-	// The exporter should have sent only one "merged" batch, in some cases it might send two if the shutdown
-	// happens before the batch is fully merged.
-	assert.LessOrEqual(t, uint64(1), sink.requestsCount.Load())
-
-	// blockedBatchMergeFunc just returns the first request, so the items count should be 4 times the requests count.
-	assert.Equal(t, sink.requestsCount.Load()*4, sink.itemsCount.Load())
+	assert.EqualValues(t, 1, sink.requestsCount.Load())
+	assert.EqualValues(t, 8, sink.itemsCount.Load())
 }
 
 func queueBatchExporter(t *testing.T, batchOption Option) *baseExporter {
