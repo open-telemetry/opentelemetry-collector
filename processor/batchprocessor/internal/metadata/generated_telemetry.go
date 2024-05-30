@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
@@ -32,6 +33,7 @@ type TelemetryBuilder struct {
 	observeProcessorBatchMetadataCardinality func() int64
 	ProcessorBatchTimeoutTriggerSend         metric.Int64Counter
 	level                                    configtelemetry.Level
+	attributeSet                             attribute.Set
 }
 
 // telemetryBuilderOption applies changes to default builder.
@@ -41,6 +43,13 @@ type telemetryBuilderOption func(*TelemetryBuilder)
 func WithLevel(lvl configtelemetry.Level) telemetryBuilderOption {
 	return func(builder *TelemetryBuilder) {
 		builder.level = lvl
+	}
+}
+
+// WithAttributeSet applies a set of attributes for asynchronous instruments.
+func WithAttributeSet(set attribute.Set) telemetryBuilderOption {
+	return func(builder *TelemetryBuilder) {
+		builder.attributeSet = set
 	}
 }
 
@@ -90,7 +99,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 		metric.WithDescription("Number of distinct metadata value combinations being processed"),
 		metric.WithUnit("1"),
 		metric.WithInt64Callback(func(_ context.Context, o metric.Int64Observer) error {
-			o.Observe(builder.observeProcessorBatchMetadataCardinality())
+			o.Observe(builder.observeProcessorBatchMetadataCardinality(), metric.WithAttributeSet(builder.attributeSet))
 			return nil
 		}),
 	)
