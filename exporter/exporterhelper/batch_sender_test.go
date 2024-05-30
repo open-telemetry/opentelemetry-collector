@@ -436,6 +436,63 @@ func TestBatchSender_WithBatcherOption(t *testing.T) {
 	}
 }
 
+// TestBatchSender_ShutdownDeadlock tests that the exporter does not deadlock when shutting down while a batch is being
+// merged.
+func TestBatchSender_ShutdownDeadlock(t *testing.T) {
+	blockMerge := make(chan struct{})
+	waitMerge := make(chan struct{}, 10)
+
+	// blockedBatchMergeFunc blocks until the blockMerge channel is closed
+	blockedBatchMergeFunc := func(_ context.Context, r1 Request, _ Request) (Request, error) {
+		waitMerge <- struct{}{}
+		<-blockMerge
+		return r1, nil
+	}
+
+	bCfg := exporterbatcher.NewDefaultConfig()
+	bCfg.FlushTimeout = 10 * time.Minute // high timeout to avoid the timeout to trigger
+	be, err := newBaseExporter(defaultSettings, defaultDataType, newNoopObsrepSender,
+		WithBatcher(bCfg, WithRequestBatchFuncs(blockedBatchMergeFunc, fakeBatchMergeSplitFunc)))
+	require.NoError(t, err)
+	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
+
+	sink := newFakeRequestSink()
+
+	// Send 10 concurrent requests and wait for them to start
+	startWG := sync.WaitGroup{}
+	for i := 0; i < 10; i++ {
+		startWG.Add(1)
+		go func() {
+			startWG.Done()
+			require.NoError(t, be.send(context.Background(), &fakeRequest{items: 4, sink: sink}))
+		}()
+	}
+	startWG.Wait()
+
+	// Wait for at least one batch to enter the merge function
+	<-waitMerge
+
+	// Initiate the exporter shutdown, unblock the batch merge function to catch possible deadlocks,
+	// then wait for the exporter to finish.
+	startShutdown := make(chan struct{})
+	doneShutdown := make(chan struct{})
+	go func() {
+		close(startShutdown)
+		require.Nil(t, be.Shutdown(context.Background()))
+		close(doneShutdown)
+	}()
+	<-startShutdown
+	close(blockMerge)
+	<-doneShutdown
+
+	// The exporter should have sent only one "merged" batch, in some cases it might send two if the shutdown
+	// happens before the batch is fully merged.
+	assert.LessOrEqual(t, uint64(1), sink.requestsCount.Load())
+
+	// blockedBatchMergeFunc just returns the first request, so the items count should be 4 times the requests count.
+	assert.Equal(t, sink.requestsCount.Load()*4, sink.itemsCount.Load())
+}
+
 func queueBatchExporter(t *testing.T, batchOption Option) *baseExporter {
 	be, err := newBaseExporter(defaultSettings, defaultDataType, newNoopObsrepSender, batchOption,
 		WithRequestQueue(exporterqueue.NewDefaultConfig(), exporterqueue.NewMemoryQueueFactory[Request]()))
