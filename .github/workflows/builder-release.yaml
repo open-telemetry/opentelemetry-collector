@@ -3,7 +3,7 @@ name: Builder - Release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 jobs:
   goreleaser:
@@ -13,45 +13,46 @@ jobs:
         uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
         with:
           fetch-depth: 0
-      - name: Setup Go
-        uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
-        with:
-          go-version: ~1.21.5
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@5742e2a039330cbb23ebf35f046f814d4c6ff811 # v5.1.0
-        with:
-          distribution: goreleaser-pro
-          version: latest
-          args: release --rm-dist -f cmd/builder/.goreleaser.yml
-        env:
-          GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # - name: Setup Go
+      #   uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
+      #   with:
+      #     go-version: ~1.21.5
+      # - name: Run GoReleaser
+      #   uses: goreleaser/goreleaser-action@5742e2a039330cbb23ebf35f046f814d4c6ff811 # v5.1.0
+      #   with:
+      #     distribution: goreleaser-pro
+      #     version: latest
+      #     args: release --rm-dist -f cmd/builder/.goreleaser.yml
+      #   env:
+      #     GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Create Github Release
-        run: |
-          gh release create ${{ github.ref_name }} -t ${{ github.ref_name }} -n "### Images and binaries here: https://github.com/open-telemetry/opentelemetry-collector-releases/releases/tag/${{ github.ref_name }}"
         env:
+          REF_NAME: ${{ github.ref_name }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
-        with:
-          script: |
-            const milestones = await github.rest.issues.listMilestones({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: "open"
-            })
-            for (const milestone of milestones.data) {
-              if (milestone.title == "next release") {
-                await github.rest.issues.updateMilestone({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  milestone_number: milestone.number,
-                  title: "${{ github.ref_name }}"
-                });
-                await github.rest.issues.createMilestone({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  title: "next release"
-                });
-                return
-              }
-            }
+        run: ./github/workflows/scripts/release-create-changelog.sh
+
+      # - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+      #   with:
+      #     script:
+      #       const milestones = await github.rest.issues.listMilestones({
+      #         owner: context.repo.owner,
+      #         repo: context.repo.repo,
+      #         state: "open"
+      #       })
+      #       for (const milestone of milestones.data) {
+      #         if (milestone.title == "next release") {
+      #           await github.rest.issues.updateMilestone({
+      #             owner: context.repo.owner,
+      #             repo: context.repo.repo,
+      #             milestone_number: milestone.number,
+      #             title: "${{ github.ref_name }}"
+      #           });
+      #           await github.rest.issues.createMilestone({
+      #             owner: context.repo.owner,
+      #             repo: context.repo.repo,
+      #             title: "next release"
+      #           });
+      #           return
+      #         }
+      #       }
