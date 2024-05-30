@@ -60,7 +60,7 @@ Here's an example output:
 
 ### Normal verbosity
 
-With `verbosity: normal`, the exporter outputs about one line for each telemetry record.
+With `verbosity: normal`, the exporter outputs about one line for each telemetry record, including its body and attributes.
 The "one line per telemetry record" is not a strict rule.
 For example, logs with multiline body will be output as multiple lines.
 
