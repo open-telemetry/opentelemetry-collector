@@ -34,6 +34,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -718,7 +719,7 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = addr
-	cfg.HTTP = nil
+	cfg.HTTP = confmap.None[*HTTPConfig]()
 	recv := newReceiver(t, componenttest.NewNopTelemetrySettings(), cfg, otlpReceiverID, sink)
 	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -750,7 +751,7 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 func TestHTTPInvalidTLSCredentials(t *testing.T) {
 	cfg := &Config{
 		Protocols: Protocols{
-			HTTP: &HTTPConfig{
+			HTTP: confmap.Some(&HTTPConfig{
 				ServerConfig: &confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 					TLSSetting: &configtls.ServerConfig{
@@ -762,7 +763,7 @@ func TestHTTPInvalidTLSCredentials(t *testing.T) {
 				TracesURLPath:  defaultTracesURLPath,
 				MetricsURLPath: defaultMetricsURLPath,
 				LogsURLPath:    defaultLogsURLPath,
-			},
+			}),
 		},
 	}
 
@@ -783,7 +784,7 @@ func testHTTPMaxRequestBodySize(t *testing.T, path string, contentType string, p
 	url := "http://" + addr + path
 	cfg := &Config{
 		Protocols: Protocols{
-			HTTP: &HTTPConfig{
+			HTTP: confmap.Some(&HTTPConfig{
 				ServerConfig: &confighttp.ServerConfig{
 					Endpoint:           addr,
 					MaxRequestBodySize: int64(size),
@@ -791,7 +792,7 @@ func testHTTPMaxRequestBodySize(t *testing.T, path string, contentType string, p
 				TracesURLPath:  defaultTracesURLPath,
 				MetricsURLPath: defaultMetricsURLPath,
 				LogsURLPath:    defaultLogsURLPath,
-			},
+			}),
 		},
 	}
 
@@ -823,13 +824,13 @@ func TestHTTPMaxRequestBodySize(t *testing.T) {
 func newGRPCReceiver(t *testing.T, settings component.TelemetrySettings, endpoint string, c consumertest.Consumer) component.Component {
 	cfg := createDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = endpoint
-	cfg.HTTP = nil
+	cfg.HTTP = confmap.None[*HTTPConfig]()
 	return newReceiver(t, settings, cfg, otlpReceiverID, c)
 }
 
 func newHTTPReceiver(t *testing.T, settings component.TelemetrySettings, endpoint string, c consumertest.Consumer) component.Component {
 	cfg := createDefaultConfig().(*Config)
-	cfg.HTTP.Endpoint = endpoint
+	cfg.HTTP.Value().Endpoint = endpoint
 	cfg.GRPC = nil
 	return newReceiver(t, settings, cfg, otlpReceiverID, c)
 }
@@ -996,7 +997,7 @@ func TestShutdown(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = endpointGrpc
-	cfg.HTTP.Endpoint = endpointHTTP
+	cfg.HTTP.Value().Endpoint = endpointHTTP
 	set := receivertest.NewNopCreateSettings()
 	set.ID = otlpReceiverID
 	r, err := NewFactory().CreateTracesReceiver(
