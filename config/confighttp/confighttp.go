@@ -306,6 +306,24 @@ type ServerConfig struct {
 
 	// CompressionAlgorithms configures the list of compression algorithms the server can accept. Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate"]
 	CompressionAlgorithms []string `mapstructure:"compression_algorithms"`
+
+	// ReadTimeout is the maximum duration for reading the entire
+	// request, including the body. A zero or negative value means
+	// there will be no timeout.
+	//
+	// Because ReadTimeout does not let Handlers make per-request
+	// decisions on each request body's acceptable deadline or
+	// upload rate, most users will prefer to use
+	// ReadHeaderTimeout. It is valid to use them both.
+	ReadTimeout time.Duration `mapstructure:"read_timeout"`
+
+	// ReadHeaderTimeout is the amount of time allowed to read
+	// request headers. The connection's read deadline is reset
+	// after reading the headers and the Handler can decide what
+	// is considered too slow for the body. If ReadHeaderTimeout
+	// is zero, the value of ReadTimeout is used. If both are
+	// zero, there is no timeout.
+	ReadHeaderTimeout time.Duration `mapstructure:"read_header_timeout"`
 }
 
 // ToListener creates a net.Listener.
@@ -429,7 +447,9 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 	}
 
 	return &http.Server{
-		Handler: handler,
+		Handler:           handler,
+		ReadTimeout:       hss.ReadTimeout,
+		ReadHeaderTimeout: hss.ReadHeaderTimeout,
 	}, nil
 }
 
