@@ -68,11 +68,6 @@ type CollectorSettings struct {
 	// and manually handle the signals to shutdown the collector.
 	DisableGracefulShutdown bool
 
-	// Deprecated: [v0.95.0] Use ConfigProviderSettings instead.
-	// ConfigProvider provides the service configuration.
-	// If the provider watches for configuration change, collector may reload the new configuration upon changes.
-	ConfigProvider ConfigProvider
-
 	// ConfigProviderSettings allows configuring the way the Collector retrieves its configuration
 	// The Collector will reload based on configuration changes from the ConfigProvider if any
 	// confmap.Providers watch for configuration changes.
@@ -118,9 +113,6 @@ type Collector struct {
 
 // NewCollector creates and returns a new instance of Collector.
 func NewCollector(set CollectorSettings) (*Collector, error) {
-	var err error
-	configProvider := set.ConfigProvider
-
 	bc := newBufferedCore(zapcore.DebugLevel)
 	cc := &collectorCore{core: bc}
 	options := append([]zap.Option{zap.WithCaller(true)}, set.LoggingOptions...)
@@ -128,11 +120,9 @@ func NewCollector(set CollectorSettings) (*Collector, error) {
 	set.ConfigProviderSettings.ResolverSettings.ProviderSettings = confmap.ProviderSettings{Logger: logger}
 	set.ConfigProviderSettings.ResolverSettings.ConverterSettings = confmap.ConverterSettings{Logger: logger}
 
-	if configProvider == nil {
-		configProvider, err = NewConfigProvider(set.ConfigProviderSettings)
-		if err != nil {
-			return nil, err
-		}
+	configProvider, err := NewConfigProvider(set.ConfigProviderSettings)
+	if err != nil {
+		return nil, err
 	}
 
 	state := &atomic.Int32{}
