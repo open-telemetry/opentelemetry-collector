@@ -15,13 +15,17 @@ import (
 )
 
 type TestComplexStruct struct {
-	Skipped   TestEmptyStruct             `mapstructure:",squash"`
-	Nested    TestSimpleStruct            `mapstructure:",squash"`
-	Slice     []TestSimpleStruct          `mapstructure:"slice,omitempty"`
-	Pointer   *TestSimpleStruct           `mapstructure:"ptr"`
-	Map       map[string]TestSimpleStruct `mapstructure:"map,omitempty"`
-	Remain    map[string]any              `mapstructure:",remain"`
-	Interface encoding.TextMarshaler
+	Skipped               TestEmptyStruct             `mapstructure:",squash"`
+	Nested                TestSimpleStruct            `mapstructure:",squash"`
+	Slice                 []TestSimpleStruct          `mapstructure:"slice,omitempty"`
+	Pointer               *TestSimpleStruct           `mapstructure:"ptr"`
+	Map                   map[string]TestSimpleStruct `mapstructure:"map,omitempty"`
+	Remain                map[string]any              `mapstructure:",remain"`
+	TranslatedYaml        TestYamlStruct              `mapstructure:"translated"`
+	SquashedYaml          TestYamlStruct              `mapstructure:",squash"`
+	PointerTranslatedYaml *TestPtrToYamlStruct        `mapstructure:"translated_ptr"`
+	PointerSquashedYaml   *TestPtrToYamlStruct        `mapstructure:",squash"`
+	Interface             encoding.TextMarshaler
 }
 
 type TestSimpleStruct struct {
@@ -32,6 +36,26 @@ type TestSimpleStruct struct {
 
 type TestEmptyStruct struct {
 	Value string `mapstructure:"-"`
+}
+
+type TestYamlStruct struct {
+	YamlValue     string               `yaml:"yaml_value"`
+	YamlOmitEmpty string               `yaml:"yaml_omit,omitempty"`
+	YamlInline    TestYamlSimpleStruct `yaml:",inline"`
+}
+
+type TestPtrToYamlStruct struct {
+	YamlValue     string                     `yaml:"yaml_value_ptr"`
+	YamlOmitEmpty string                     `yaml:"yaml_omit_ptr,omitempty"`
+	YamlInline    *TestYamlPtrToSimpleStruct `yaml:",inline"`
+}
+
+type TestYamlSimpleStruct struct {
+	Inline string `yaml:"yaml_inline"`
+}
+
+type TestYamlPtrToSimpleStruct struct {
+	InlinePtr string `yaml:"yaml_inline_ptr"`
 }
 
 type TestID string
@@ -51,7 +75,10 @@ type TestStringLike string
 
 func TestEncode(t *testing.T) {
 	enc := New(&EncoderConfig{
-		EncodeHook: TextMarshalerHookFunc(),
+		EncodeHook: mapstructure.ComposeDecodeHookFunc(
+			YamlMarshalerHookFunc(),
+			TextMarshalerHookFunc(),
+		),
 	})
 	testCases := map[string]struct {
 		input any
@@ -116,6 +143,34 @@ func TestEncode(t *testing.T) {
 					"remain2": "value",
 				},
 				Interface: TestID("value"),
+				TranslatedYaml: TestYamlStruct{
+					YamlValue:     "foo_translated",
+					YamlOmitEmpty: "",
+					YamlInline: TestYamlSimpleStruct{
+						Inline: "bar_translated",
+					},
+				},
+				SquashedYaml: TestYamlStruct{
+					YamlValue:     "foo_squashed",
+					YamlOmitEmpty: "",
+					YamlInline: TestYamlSimpleStruct{
+						Inline: "bar_squashed",
+					},
+				},
+				PointerTranslatedYaml: &TestPtrToYamlStruct{
+					YamlValue:     "foo_translated_ptr",
+					YamlOmitEmpty: "",
+					YamlInline: &TestYamlPtrToSimpleStruct{
+						InlinePtr: "bar_translated_ptr",
+					},
+				},
+				PointerSquashedYaml: &TestPtrToYamlStruct{
+					YamlValue:     "foo_squashed_ptr",
+					YamlOmitEmpty: "",
+					YamlInline: &TestYamlPtrToSimpleStruct{
+						InlinePtr: "bar_squashed_ptr",
+					},
+				},
 			},
 			want: map[string]any{
 				"value": "nested",
@@ -123,10 +178,22 @@ func TestEncode(t *testing.T) {
 				"map": map[string]any{
 					"Key": map[string]any{"value": "map"},
 				},
-				"ptr":       map[string]any{"value": "pointer"},
-				"interface": "value_",
-				"remain1":   23,
-				"remain2":   "value",
+				"ptr":         map[string]any{"value": "pointer"},
+				"interface":   "value_",
+				"yaml_value":  "foo_squashed",
+				"yaml_inline": "bar_squashed",
+				"translated": map[string]any{
+					"yaml_value":  "foo_translated",
+					"yaml_inline": "bar_translated",
+				},
+				"yaml_value_ptr":  "foo_squashed_ptr",
+				"yaml_inline_ptr": "bar_squashed_ptr",
+				"translated_ptr": map[string]any{
+					"yaml_value_ptr":  "foo_translated_ptr",
+					"yaml_inline_ptr": "bar_translated_ptr",
+				},
+				"remain1": 23,
+				"remain2": "value",
 			},
 		},
 	}
