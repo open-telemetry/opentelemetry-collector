@@ -12,7 +12,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper/internal/metadata"
@@ -34,8 +33,6 @@ func BuildCustomMetricName(configType, metric string) string {
 
 // ObsReport is a helper to add observability to a processor.
 type ObsReport struct {
-	level configtelemetry.Level
-
 	logger *zap.Logger
 
 	otelAttrs        []attribute.KeyValue
@@ -54,12 +51,11 @@ func NewObsReport(cfg ObsReportSettings) (*ObsReport, error) {
 }
 
 func newObsReport(cfg ObsReportSettings) (*ObsReport, error) {
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(cfg.ProcessorCreateSettings.TelemetrySettings)
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(cfg.ProcessorCreateSettings.TelemetrySettings, metadata.WithLevel(cfg.ProcessorCreateSettings.MetricsLevel))
 	if err != nil {
 		return nil, err
 	}
 	return &ObsReport{
-		level:  cfg.ProcessorCreateSettings.MetricsLevel,
 		logger: cfg.ProcessorCreateSettings.Logger,
 		otelAttrs: []attribute.KeyValue{
 			attribute.String(obsmetrics.ProcessorKey, cfg.ProcessorID.String()),
@@ -92,63 +88,45 @@ func (or *ObsReport) recordData(ctx context.Context, dataType component.DataType
 
 // TracesAccepted reports that the trace data was accepted.
 func (or *ObsReport) TracesAccepted(ctx context.Context, numSpans int) {
-	if or.level != configtelemetry.LevelNone {
-		or.recordData(ctx, component.DataTypeTraces, int64(numSpans), int64(0), int64(0))
-	}
+	or.recordData(ctx, component.DataTypeTraces, int64(numSpans), int64(0), int64(0))
 }
 
 // TracesRefused reports that the trace data was refused.
 func (or *ObsReport) TracesRefused(ctx context.Context, numSpans int) {
-	if or.level != configtelemetry.LevelNone {
-		or.recordData(ctx, component.DataTypeTraces, int64(0), int64(numSpans), int64(0))
-	}
+	or.recordData(ctx, component.DataTypeTraces, int64(0), int64(numSpans), int64(0))
 }
 
 // TracesDropped reports that the trace data was dropped.
 func (or *ObsReport) TracesDropped(ctx context.Context, numSpans int) {
-	if or.level != configtelemetry.LevelNone {
-		or.recordData(ctx, component.DataTypeTraces, int64(0), int64(0), int64(numSpans))
-	}
+	or.recordData(ctx, component.DataTypeTraces, int64(0), int64(0), int64(numSpans))
 }
 
 // MetricsAccepted reports that the metrics were accepted.
 func (or *ObsReport) MetricsAccepted(ctx context.Context, numPoints int) {
-	if or.level != configtelemetry.LevelNone {
-		or.recordData(ctx, component.DataTypeMetrics, int64(numPoints), int64(0), int64(0))
-	}
+	or.recordData(ctx, component.DataTypeMetrics, int64(numPoints), int64(0), int64(0))
 }
 
 // MetricsRefused reports that the metrics were refused.
 func (or *ObsReport) MetricsRefused(ctx context.Context, numPoints int) {
-	if or.level != configtelemetry.LevelNone {
-		or.recordData(ctx, component.DataTypeMetrics, int64(0), int64(numPoints), int64(0))
-	}
+	or.recordData(ctx, component.DataTypeMetrics, int64(0), int64(numPoints), int64(0))
 }
 
 // MetricsDropped reports that the metrics were dropped.
 func (or *ObsReport) MetricsDropped(ctx context.Context, numPoints int) {
-	if or.level != configtelemetry.LevelNone {
-		or.recordData(ctx, component.DataTypeMetrics, int64(0), int64(0), int64(numPoints))
-	}
+	or.recordData(ctx, component.DataTypeMetrics, int64(0), int64(0), int64(numPoints))
 }
 
 // LogsAccepted reports that the logs were accepted.
 func (or *ObsReport) LogsAccepted(ctx context.Context, numRecords int) {
-	if or.level != configtelemetry.LevelNone {
-		or.recordData(ctx, component.DataTypeLogs, int64(numRecords), int64(0), int64(0))
-	}
+	or.recordData(ctx, component.DataTypeLogs, int64(numRecords), int64(0), int64(0))
 }
 
 // LogsRefused reports that the logs were refused.
 func (or *ObsReport) LogsRefused(ctx context.Context, numRecords int) {
-	if or.level != configtelemetry.LevelNone {
-		or.recordData(ctx, component.DataTypeLogs, int64(0), int64(numRecords), int64(0))
-	}
+	or.recordData(ctx, component.DataTypeLogs, int64(0), int64(numRecords), int64(0))
 }
 
 // LogsDropped reports that the logs were dropped.
 func (or *ObsReport) LogsDropped(ctx context.Context, numRecords int) {
-	if or.level != configtelemetry.LevelNone {
-		or.recordData(ctx, component.DataTypeLogs, int64(0), int64(0), int64(numRecords))
-	}
+	or.recordData(ctx, component.DataTypeLogs, int64(0), int64(0), int64(numRecords))
 }
