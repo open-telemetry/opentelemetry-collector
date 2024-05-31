@@ -7,22 +7,19 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/confighttp"
 )
 
 // Config has the configuration for the extension enabling the zPages extension.
 type Config struct {
-	// TCPAddr is the address and port in which the zPages will be listening to.
-	// Use localhost:<port> to make it available only locally, or ":<port>" to
-	// make it available on all network interfaces.
-	TCPAddr confignet.TCPAddrConfig `mapstructure:",squash"`
+	confighttp.ServerConfig `mapstructure:",squash"`
 }
 
 var _ component.Config = (*Config)(nil)
 
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {
-	if cfg.TCPAddr.Endpoint == "" {
+	if cfg.ServerConfig.Endpoint == "" {
 		return errors.New("\"endpoint\" is required when using the \"zpages\" extension")
 	}
 	return nil
