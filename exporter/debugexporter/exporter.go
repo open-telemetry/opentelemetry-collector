@@ -13,6 +13,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/exporter/debugexporter/internal/normal"
 	"go.opentelemetry.io/collector/exporter/internal/otlptext"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -28,12 +29,18 @@ type debugExporter struct {
 }
 
 func newDebugExporter(logger *zap.Logger, verbosity configtelemetry.Level) *debugExporter {
+	var tracesMarshaler ptrace.Marshaler
+	if verbosity == configtelemetry.LevelDetailed {
+		tracesMarshaler = otlptext.NewTextTracesMarshaler()
+	} else {
+		tracesMarshaler = normal.NewNormalTracesMarshaler()
+	}
 	return &debugExporter{
 		verbosity:        verbosity,
 		logger:           logger,
 		logsMarshaler:    otlptext.NewTextLogsMarshaler(),
 		metricsMarshaler: otlptext.NewTextMetricsMarshaler(),
-		tracesMarshaler:  otlptext.NewTextTracesMarshaler(),
+		tracesMarshaler:  tracesMarshaler,
 	}
 }
 
@@ -41,7 +48,7 @@ func (s *debugExporter) pushTraces(_ context.Context, td ptrace.Traces) error {
 	s.logger.Info("TracesExporter",
 		zap.Int("resource spans", td.ResourceSpans().Len()),
 		zap.Int("spans", td.SpanCount()))
-	if s.verbosity != configtelemetry.LevelDetailed {
+	if s.verbosity == configtelemetry.LevelBasic {
 		return nil
 	}
 

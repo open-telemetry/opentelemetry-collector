@@ -60,8 +60,21 @@ Here's an example output:
 
 ### Normal verbosity
 
-With `verbosity: normal`, the exporter's behavior is currently the same as with `verbosity: basic`.
-See above for more details.
+With `verbosity: normal`, the exporter outputs one line for each telemetry record.
+
+> [!IMPORTANT]
+> Currently the `normal` verbosity is only implemented for traces.
+> Logs and metrics are going to be implemented in the future.
+> The current behavior for logs and metrics is the same as in `basic` verbosity.
+
+Here's an example output:
+
+```console
+2024-05-31T13:26:37.531+0200    info    TracesExporter  {"kind": "exporter", "data_type": "traces", "name": "debug", "resource spans": 1, "spans": 2}
+2024-05-31T13:26:37.531+0200    info    okey-dokey-0 082bc2f70f519e32a39fd26ae69b43c0 51201084f4d65159
+lets-go 082bc2f70f519e32a39fd26ae69b43c0 cd321682f3514378
+        {"kind": "exporter", "data_type": "traces", "name": "debug"}
+```
 
 ### Detailed verbosity
 
