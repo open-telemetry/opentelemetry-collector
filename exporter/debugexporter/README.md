@@ -117,10 +117,10 @@ This comes with several consequences:
    - The prefix is the current timestamp and the `info` level marker, similar to `2023-11-10T22:49:03.510-0600    info`
    - The suffix is the exporter's metadata in JSON format, similar to `{"kind": "exporter", "data_type": "traces", "name": "debug"}`
 1. The exporter's output is sent to the same destination as the collector's logs. By default, it is the [standard error][stderr] stream,
-   configurable via the [service.telemetry.logs.output_paths][configure_internal_logs] option.
+   configurable via the [service::telemetry::logs::output_paths][configure_internal_logs] option.
    It is not possible to send the Debug exporter's output to a different stream than the collector's internal logs.
 1. The output from the Debug exporter is sent to the internal logger with the log level `INFO`.
-   This means that if user configures the `service.telemetry.logs.level` to `WARN` or `ERROR`,
+   This means that if user configures the `service::telemetry::logs::level` to `WARN` or `ERROR`,
    they will not see the output from the Debug exporter.
    As a result, it is not possible to configure the collector to see the Debug exporter's output
    and mute collector's INFO logs at the same time.
@@ -131,9 +131,9 @@ This comes with several consequences:
 When `use_internal_logger` is set to `false`, the exporter uses its own logger, independent from the collector's internal logger. This results in the following behavior:
 
 1. The prefix and suffix described above is not present in the exporter's output.
-1. The exporter's output is sent to [standard output][stdout] stream. This will be made configurable in the future. Changing the value of `service.telemetry.logs.output_paths` has no effect on the exporter's output.
-1. Changing the value of `service.telemetry.logs.level` has no effect on the exporter's output.
-1. The exporter's sampling is defined by the exporter's configuration options `sampling_initial` and `sampling_thereafter` and nothing else. The configuration in `service.telemetry.logs.sampling` has no effect on the exporter's output.
+1. The exporter's output is sent to [standard output][stdout] stream. This will be made configurable in the future. Changing the value of `service::telemetry::logs::output_paths` has no effect on the exporter's output.
+1. Changing the value of `service::telemetry::logs::level` has no effect on the exporter's output.
+1. The exporter's sampling is defined by the exporter's configuration options `sampling_initial` and `sampling_thereafter` and nothing else. The configuration in `service::telemetry::logs::sampling` has no effect on the exporter's output.
 
 [internal_telemetry]: https://opentelemetry.io/docs/collector/internal-telemetry/
 [stderr]: https://en.wikipedia.org/wiki/Standard_streams#Standard_error_(stderr)
