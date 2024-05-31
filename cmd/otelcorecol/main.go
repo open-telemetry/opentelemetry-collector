@@ -40,7 +40,7 @@ func main() {
 		},
 	}
 
-	if confmap.UseStableExpansionRules.IsEnabled() {
+	if otelcol.UseStableExpansionRules.IsEnabled() {
 		set.ConfigProviderSettings.ResolverSettings.DefaultScheme = "env"
 	} else {
 		set.ConfigProviderSettings.ResolverSettings.ConverterFactories = []confmap.ConverterFactory{

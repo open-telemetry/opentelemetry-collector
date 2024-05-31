@@ -12,6 +12,11 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
+var UseStableExpansionRules = featuregate.GlobalRegistry().MustRegister("otelcol.useStableExpansionRules",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterFromVersion("v0.102.0"),
+	featuregate.WithRegisterDescription("Uses the env provider to expand `${}` instead of the expandconverter and no longer expands $ENV syntax"))
+
 // NewCommand constructs a new cobra.Command using the given CollectorSettings.
 // Any URIs specified in CollectorSettings.ConfigProviderSettings.ResolverSettings.URIs
 // are considered defaults and will be overwritten by config flags passed as
