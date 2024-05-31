@@ -998,9 +998,9 @@ func verifyHeadersResp(t *testing.T, url string, expected map[string]configopaqu
 }
 
 func ExampleServerConfig() {
-	settings := ServerConfig{
-		Endpoint: "localhost:443",
-	}
+	settings := NewDefaultServerConfig()
+	settings.Endpoint = "localhost:443"
+
 	s, err := settings.ToServer(
 		context.Background(),
 		componenttest.NewNopHost(),
@@ -1266,9 +1266,8 @@ func TestServerWithErrorHandler(t *testing.T) {
 
 func TestServerWithDecoder(t *testing.T) {
 	// prepare
-	hss := ServerConfig{
-		Endpoint: "localhost:0",
-	}
+	hss := NewDefaultServerConfig()
+	hss.Endpoint = "localhost:0"
 	decoder := func(body io.ReadCloser) (io.ReadCloser, error) {
 		return body, nil
 	}

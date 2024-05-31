@@ -39,6 +39,8 @@ func NewFactory() receiver.Factory {
 
 // createDefaultConfig creates the default configuration for receiver.
 func createDefaultConfig() component.Config {
+	serverConfig := confighttp.NewDefaultServerConfig()
+	serverConfig.Endpoint = localhostgate.EndpointForPort(httpPort)
 	return &Config{
 		Protocols: Protocols{
 			GRPC: &configgrpc.ServerConfig{
@@ -50,9 +52,7 @@ func createDefaultConfig() component.Config {
 				ReadBufferSize: 512 * 1024,
 			},
 			HTTP: &HTTPConfig{
-				ServerConfig: &confighttp.ServerConfig{
-					Endpoint: localhostgate.EndpointForPort(httpPort),
-				},
+				ServerConfig:   &serverConfig,
 				TracesURLPath:  defaultTracesURLPath,
 				MetricsURLPath: defaultMetricsURLPath,
 				LogsURLPath:    defaultLogsURLPath,

@@ -308,6 +308,13 @@ type ServerConfig struct {
 	CompressionAlgorithms []string `mapstructure:"compression_algorithms"`
 }
 
+// NewDefaultServerConfig returns ServerConfig type object with default values.
+// Currently, config options are not added as they are initialized with 'zero value' by GoLang as default.
+// We encourage to use this function to create an object of ServerConfig.
+func NewDefaultServerConfig() ServerConfig {
+	return ServerConfig{}
+}
+
 // ToListener creates a net.Listener.
 func (hss *ServerConfig) ToListener(ctx context.Context) (net.Listener, error) {
 	listener, err := net.Listen("tcp", hss.Endpoint)
