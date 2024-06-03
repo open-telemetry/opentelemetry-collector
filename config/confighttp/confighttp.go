@@ -30,6 +30,7 @@ import (
 )
 
 const headerContentEncoding = "Content-Encoding"
+const defaultMaxRequestBodySize = 20 * 1024 * 1024 // 20MiB
 
 // ClientConfig defines settings for creating an HTTP client.
 type ClientConfig struct {
@@ -340,7 +341,11 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 		o(serverOpts)
 	}
 
-	handler = httpContentDecompressor(handler, serverOpts.errHandler, serverOpts.decoders)
+	if hss.MaxRequestBodySize == 0 {
+		hss.MaxRequestBodySize = defaultMaxRequestBodySize
+	}
+
+	handler = httpContentDecompressor(handler, hss.MaxRequestBodySize, serverOpts.errHandler, serverOpts.decoders)
 
 	if hss.MaxRequestBodySize > 0 {
 		handler = maxRequestBodySizeInterceptor(handler, hss.MaxRequestBodySize)

@@ -13,6 +13,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -1308,6 +1309,52 @@ func TestServerWithDecoder(t *testing.T) {
 	// verify
 	assert.Equal(t, response.Result().StatusCode, http.StatusOK)
 
+}
+
+func TestServerWithDecompression(t *testing.T) {
+	// prepare
+	hss := ServerConfig{
+		MaxRequestBodySize: 1000, // 1 KB
+	}
+	body := []byte(strings.Repeat("a", 1000*1000)) // 1 MB
+
+	srv, err := hss.ToServer(
+		context.Background(),
+		componenttest.NewNopHost(),
+		componenttest.NewNopTelemetrySettings(),
+		http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
+			actualBody, err := io.ReadAll(req.Body)
+			assert.ErrorContains(t, err, "http: request body too large")
+			assert.Len(t, actualBody, 1000)
+
+			if err != nil {
+				resp.WriteHeader(http.StatusBadRequest)
+			} else {
+				resp.WriteHeader(http.StatusOK)
+			}
+		}),
+	)
+	require.NoError(t, err)
+
+	testSrv := httptest.NewServer(srv.Handler)
+	defer testSrv.Close()
+
+	req, err := http.NewRequest(http.MethodGet, testSrv.URL, compressZstd(t, body))
+	require.NoError(t, err, "Error creating request: %v", err)
+
+	req.Header.Set("Content-Encoding", "zstd")
+
+	// test
+	c := http.Client{}
+	resp, err := c.Do(req)
+	require.NoError(t, err, "Error sending request: %v", err)
+
+	_, err = io.ReadAll(resp.Body)
+	require.NoError(t, err, "Error reading response body: %v", err)
+
+	// verifications is done mostly within the test, but this is only a sanity check
+	// that we got into the test handler
+	assert.Equal(t, resp.StatusCode, http.StatusBadRequest)
 }
 
 type mockHost struct {
