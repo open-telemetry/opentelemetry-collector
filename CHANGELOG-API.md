@@ -2,7 +2,7 @@
 
 # Go API Changelog
 
-This changelog includes only developer-facing changes.
+This changelog includes only developer-facing changes. Updated
 If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG.md).
 
 <!-- next version -->
@@ -44,7 +44,7 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 - `confighttp`: deprecate ToClientContext, ToServerContext, ToListenerContext, replaced by ToClient, ToServer, ToListener (#9807)
 - `configtls`: Deprecates `ClientConfig.LoadTLSConfigContext` and `ServerConfig.LoadTLSConfigContext`, use `ClientConfig.LoadTLSConfig` and `ServerConfig.LoadTLSConfig` instead. (#9945)
 - `confmap`: Deprecate the `Providers` and `Converters` fields in `confmap.ResolverSettings` (#9516)
-Use the `ProviderFactories` and `ConverterFactories` fields instead.
+  Use the `ProviderFactories` and `ConverterFactories` fields instead.
 
 ### 💡 Enhancements 💡
 
@@ -71,10 +71,9 @@ Use the `ProviderFactories` and `ConverterFactories` fields instead.
 
 - Introduce new module for generating pdata: pdata/testdata (#9886)
 - `exporterhelper`: Make the `WithBatcher` option available for regular exporter helpers based on OTLP data type. (#8122)
-  Now, `WithBatcher` can be used with both regular exporter helper (e.g. NewTracesExporter) and the request-based exporter 
-  helper (e.g. NewTracesRequestExporter). The request-based exporter helpers require `WithRequestBatchFuncs` option 
-  providing batching functions. 
-  
+  Now, `WithBatcher` can be used with both regular exporter helper (e.g. NewTracesExporter) and the request-based exporter
+  helper (e.g. NewTracesRequestExporter). The request-based exporter helpers require `WithRequestBatchFuncs` option
+  providing batching functions.
 - `confmap`: Creates a logger in the confmap.ProviderSettings and uses it to log when there is a missing or blank environment variable referenced in config. For now the noop logger is used everywhere except tests. (#5615)
 
 ## v1.4.0/v0.97.0
@@ -108,7 +107,7 @@ Use the `ProviderFactories` and `ConverterFactories` fields instead.
 
 ### 🚩 Deprecations 🚩
 
-- `configgrpc`: Deprecates `ToServer`.  Use `ToServerContext` instead. (#9624)
+- `configgrpc`: Deprecates `ToServer`. Use `ToServerContext` instead. (#9624)
 - `component`: deprecate component.ErrNilNextConsumer (#9526)
 - `configtls`: Rename TLSClientSetting, TLSServerSetting, and TLSSetting based on the naming convention used in other config packages. (#9474)
 
@@ -140,18 +139,16 @@ Use the `ProviderFactories` and `ConverterFactories` fields instead.
 - `confignet`: Remove deprecated `DialContext` and `ListenContext` functions (#9363)
 - `confmap/converter/expandconverter`: Add `confmap.ConverterSettings` argument to experimental `expandconverter.New` function. (#5615, #9162)
   - The `confmap.ConverterSettings` struct currently has no fields. It will be used to pass a logger.
-  
 - `component`: Remove deprecated funcs and types (#9283)
 - `otlpexporter`: Config struct is moving from embedding the deprecated GRPCClientSettings struct to using ClientConfig instead. (#6767)
 - `otlphttpexporter`: otlphttpexporter.Config embeds the struct confighttp.ClientConfig instead of confighttp.HTTPClientSettings (#6767)
 - `otlpreceiver`: HTTPConfig struct is moving from embedding the deprecated ServerSettings struct to using HTTPServerConfig instead. (#6767)
 - `component`: Validate component.Type at creation and unmarshaling time. (#9208)
-  - A component.Type must start with an ASCII alphabetic character and can only contain ASCII alphanumeric characters and '_'.
-  
+  - A component.Type must start with an ASCII alphabetic character and can only contain ASCII alphanumeric characters and '\_'.
 
 ### 🚩 Deprecations 🚩
 
-- `configcompressions`: Deprecate `IsCompressed`.  Use `CompressionType.IsCompressed instead` instead. (#9435)
+- `configcompressions`: Deprecate `IsCompressed`. Use `CompressionType.IsCompressed instead` instead. (#9435)
 - `configcompression`: Deprecate `CompressionType`, use `Type` instead. (#9416)
 - `confighttp`: Deprecate CORSSettings, use CORSConfig instead (#6767)
 - `configgrpc`: Deprecate `ToListener` function in favor of `ToListenerContext` (#9389)
@@ -160,34 +157,30 @@ Use the `ProviderFactories` and `ConverterFactories` fields instead.
 - `confighttp`: Deprecate HTTPServerSettings, use ServerConfig instead (#6767)
 - `confmap/provider`: Deprecate <provider>.New in favor of <provider>.NewWithSettings for all core providers (#5615, #9162)
   - NewWithSettings now takes an empty confmap.ProviderSettings struct. This will be used to pass a logger in the future.
-  
 
 ### 💡 Enhancements 💡
 
 - `exporter/exporterhelper`: Add API for enabling queue in the new exporter helpers. (#7874)
   The following experimental API is introduced in exporter package:
-    - `exporterhelper.WithRequestQueue`: a new exporter helper option for using a queue.
-    - `exporterqueue.Queue`: an interface for queue implementations.
-    - `exporterqueue.Factory`: a queue factory interface, implementations of this interface are intended to be used with WithRequestQueue option.
-    - `exporterqueue.Settings`: queue factory settings.
-    - `exporterqueue.Config`: common configuration for queue implementations.
-    - `exporterqueue.NewDefaultConfig`: a function for creating a default queue configuration.
-    - `exporterqueue.NewMemoryQueueFactory`: a new factory for creating a memory queue.
-    - `exporterqueue.NewPersistentQueueFactory: a factory for creating a persistent queue.
-  
+  - `exporterhelper.WithRequestQueue`: a new exporter helper option for using a queue.
+  - `exporterqueue.Queue`: an interface for queue implementations.
+  - `exporterqueue.Factory`: a queue factory interface, implementations of this interface are intended to be used with WithRequestQueue option.
+  - `exporterqueue.Settings`: queue factory settings.
+  - `exporterqueue.Config`: common configuration for queue implementations.
+  - `exporterqueue.NewDefaultConfig`: a function for creating a default queue configuration.
+  - `exporterqueue.NewMemoryQueueFactory`: a new factory for creating a memory queue.
+  - `exporterqueue.NewPersistentQueueFactory: a factory for creating a persistent queue.
 - `featuregate`: Add the `featuregate.ErrAlreadyRegistered` error, which is returned by `featuregate.Registry`'s `Register` when adding a feature gate that is already registered. (#8622)
   Use `errors.Is` to check for this error.
-  
 
 ## v0.93.0
 
 ### 🛑 Breaking changes 🛑
 
 - `bug_fix`: Implement `encoding.BinaryMarshaler` interface to prevent `configopaque` -> `[]byte` -> `string` conversions from leaking the value (#9279)
-- `configopaque`: configopaque.String implements `fmt.Stringer` and `fmt.GoStringer`, outputting [REDACTED] when formatted with the %s, %q or %#v verbs` (#9213)
-  This may break applications that rely on the previous behavior of opaque strings with `fmt.Sprintf` to e.g. build URLs or headers.
-  Explicitly cast the opaque string to a string before using it in `fmt.Sprintf` to restore the previous behavior.
-  
+- `configopaque`: configopaque.String implements `fmt.Stringer` and `fmt.GoStringer`, outputting [REDACTED] when formatted with the %s, %q or %#v verbs`(#9213)
+This may break applications that rely on the previous behavior of opaque strings with`fmt.Sprintf`to e.g. build URLs or headers.
+Explicitly cast the opaque string to a string before using it in`fmt.Sprintf` to restore the previous behavior.
 - `all`: Remove obsolete "// +build" directives (#9304)
 - `connectortest`: Remove deprecated connectortest router helpers. (#9278)
 
@@ -199,7 +192,6 @@ Use the `ProviderFactories` and `ConverterFactories` fields instead.
   - obsreporttest.SetupTelemetry -> componenttest.SetupTelemetry
   - obsreporttest.CheckScraperMetrics -> TestTelemetry.CheckScraperMetrics
   - obserporttest.TestTelemetry.TelemetrySettings -> componenttest.TestTelemetry.TelemetrySettings()
-  
 - `confignet`: Deprecates `DialContext` and `ListenContext` functions. Use `Dial` and `Listen` instead. (#9258)
   Unlike the previous `Dial` and `Listen` functions, the new `Dial` and `Listen` functions take a `context.Context` like `DialContext` and `ListenContext`.
 
@@ -245,7 +237,6 @@ Use the `ProviderFactories` and `ConverterFactories` fields instead.
     - Added an optional interface for handling errors that occur during request processing `RequestErrorHandler`.
     - Added a function to unmarshal bytes into a Request `RequestUnmarshaler`.
     - Added a function to marshal a Request into bytes `RequestMarshaler`
-  
 
 ### 🚩 Deprecations 🚩
 
@@ -255,7 +246,6 @@ Use the `ProviderFactories` and `ConverterFactories` fields instead.
 
 - `featuregate`: Add validation for feature gates ID, URL and versions. (#8766)
   Feature gates IDs are now explicitly restricted to ASCII alphanumerics and dots.
-  
 
 ## v1.0.0-rcv0017/v0.88.0
 
@@ -272,7 +262,7 @@ Use the `ProviderFactories` and `ConverterFactories` fields instead.
   - p[metric|trace|log].[Metrics|Traces|Logs].MarkReadOnly() - marks the pdata as read-only. Any subsequent
     mutations will result in a panic.
   - p[metric|trace|log].[Metrics|Traces|Logs].IsReadOnly() - returns true if the pdata is marked as read-only.
-  Currently, all the data is kept mutable. This API will be used by fanout consumer in the following releases. 
+    Currently, all the data is kept mutable. This API will be used by fanout consumer in the following releases.
 
 ### 🛑 Breaking changes 🛑
 
@@ -287,25 +277,22 @@ Use the `ProviderFactories` and `ConverterFactories` fields instead.
 
 ### 🚩 Deprecations 🚩
 
-- `obsreporttest`: deprecate To*CreateSettings funcs in obsreporttest (#8492)
+- `obsreporttest`: deprecate To\*CreateSettings funcs in obsreporttest (#8492)
   The following TestTelemetry methods have been deprecated. Use structs instead:
-  -  ToExporterCreateSettings -> exporter.CreateSettings
-  -  ToProcessorCreateSettings -> processor.CreateSettings
-  -  ToReceiverCreateSettings -> receiver.CreateSettings
-  
+  - ToExporterCreateSettings -> exporter.CreateSettings
+  - ToProcessorCreateSettings -> processor.CreateSettings
+  - ToReceiverCreateSettings -> receiver.CreateSettings
 - `obsreport`: Deprecating `obsreport.Exporter`, `obsreport.ExporterSettings`, `obsreport.NewExporter` (#8492)
   These deprecated methods/structs have been moved to exporterhelper:
   - `obsreport.Exporter` -> `exporterhelper.ObsReport`
   - `obsreport.ExporterSettings` -> `exporterhelper.ObsReportSettings`
   - `obsreport.NewExporter` -> `exporterhelper.NewObsReport`
-  
 - `obsreport`: Deprecating `obsreport.BuildProcessorCustomMetricName`, `obsreport.Processor`, `obsreport.ProcessorSettings`, `obsreport.NewProcessor` (#8492)
   These deprecated methods/structs have been moved to processorhelper:
   - `obsreport.BuildProcessorCustomMetricName` -> `processorhelper.BuildCustomMetricName`
   - `obsreport.Processor` -> `processorhelper.ObsReport`
   - `obsreport.ProcessorSettings` -> `processorhelper.ObsReportSettings`
   - `obsreport.NewProcessor` -> `processorhelper.NewObsReport`
-  
 - `obsreport`: Deprecating obsreport scraper and receiver API (#8492)
   These deprecated methods/structs have been moved to receiverhelper and scraperhelper:
   - `obsreport.Receiver` -> `receiverhelper.ObsReport`
@@ -314,7 +301,6 @@ Use the `ProviderFactories` and `ConverterFactories` fields instead.
   - `obsreport.Scraper` -> `scraperhelper.ObsReport`
   - `obsreport.ScraperSettings` -> `scraperhelper.ObsReportSettings`
   - `obsreport.NewScraper` -> `scraperhelper.NewObsReport`
-  
 
 ### 💡 Enhancements 💡
 
@@ -329,16 +315,15 @@ Use the `ProviderFactories` and `ConverterFactories` fields instead.
 
 - `exporter/exporterhelper`: Introduce a new exporter helper that operates over client-provided requests instead of pdata (#7874)
   The following experimental API is introduced in exporter/exporterhelper package:
-    - `NewLogsRequestExporter`: a new exporter helper for logs.
-    - `NewMetricsRequestExporter`: a new exporter helper for metrics.
-    - `NewTracesRequestExporter`: a new exporter helper for traces.
-    - `Request`: an interface for client-defined requests.
-    - `RequestItemsCounter`: an optional interface for counting the number of items in a Request.
-    - `LogsConverter`: an interface for converting plog.Logs to Request.
-    - `MetricsConverter`: an interface for converting pmetric.Metrics to Request.
-    - `TracesConverter`: an interface for converting ptrace.Traces to Request.
+  - `NewLogsRequestExporter`: a new exporter helper for logs.
+  - `NewMetricsRequestExporter`: a new exporter helper for metrics.
+  - `NewTracesRequestExporter`: a new exporter helper for traces.
+  - `Request`: an interface for client-defined requests.
+  - `RequestItemsCounter`: an optional interface for counting the number of items in a Request.
+  - `LogsConverter`: an interface for converting plog.Logs to Request.
+  - `MetricsConverter`: an interface for converting pmetric.Metrics to Request.
+  - `TracesConverter`: an interface for converting ptrace.Traces to Request.
     All the new APIs are intended to be used by exporters that need to operate over client-provided requests instead of pdata.
-  
 - `otlpreceiver`: Export HTTPConfig as part of the API for creating the otlpreceiver configuration. (#8175)
   Changes signature of receiver/otlpreceiver/config.go type httpServerSettings to HTTPConfig.
 
