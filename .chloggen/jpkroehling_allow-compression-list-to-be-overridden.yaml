@@ -10,9 +10,9 @@ component: confighttp
 note: Allow the compression list to be overridden
 
 # One or more tracking issues or pull requests related to the change
-issues: []
+issues: [10295]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: Allows Collector adminitrators to control which compression algorithms to enable for HTTP-based receivers.
+subtext: Allows Collector administrators to control which compression algorithms to enable for HTTP-based receivers.
