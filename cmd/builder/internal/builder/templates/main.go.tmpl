@@ -35,6 +35,9 @@ func main() {
 					{{.Name}}.NewFactory(),
 					{{- end}}
 				},
+				{{- if .DefaultScheme }}
+				DefaultScheme: "{{ .DefaultScheme }}",
+				{{- end }}
 				ConverterFactories: []confmap.ConverterFactory{
 					expandconverter.NewFactory(),
 				},

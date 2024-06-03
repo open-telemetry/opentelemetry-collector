@@ -174,6 +174,8 @@ func applyCfgFromFile(flags *flag.FlagSet, cfgFromFile builder.Config) {
 	cfg.Replaces = cfgFromFile.Replaces
 	cfg.Excludes = cfgFromFile.Excludes
 
+	cfg.DefaultScheme = cfgFromFile.DefaultScheme
+
 	if !flags.Changed(skipGenerateFlag) && cfgFromFile.SkipGenerate {
 		cfg.SkipGenerate = cfgFromFile.SkipGenerate
 	}

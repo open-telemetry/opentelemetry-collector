@@ -43,6 +43,8 @@ type Config struct {
 	Replaces     []string     `mapstructure:"replaces"`
 	Excludes     []string     `mapstructure:"excludes"`
 
+	DefaultScheme string `mapstructure:"default_scheme"`
+
 	downloadModules retry `mapstructure:"-"`
 }
 
