@@ -12,6 +12,9 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 ### 🛑 Breaking changes 🛑
 
 - `otelcol`: Remove deprecated `ConfigProvider` field from `CollectorSettings` (#10281)
+- `exporterhelper`: remove deprecated RequestMarshaler & RequestUnmarshaler types (#10283)
+- `service`: remove deprecated Telemetry struct and New func (#10285)
+- `configtls`: remove deprecated LoadTLSConfigContext funcs (#10283)
 
 ### 🚩 Deprecations 🚩
 
@@ -23,6 +26,7 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 - `confmap`: Allow setting a default Provider on a Resolver to use when `${}` syntax is used without a scheme (#10182)
 - `pdata`: Introduce string and int64 slices to pcommon (#10148)
 - `pdata`: Introduce generated experimental pdata for profiling signal. (#10195)
+- `confmap`: Remove top level condition when considering struct as Unmarshalers (#7101)
 
 ### 🧰 Bug fixes 🧰
 
