@@ -88,25 +88,29 @@ func Test_applyCfgFromFile(t *testing.T) {
 			args: args{
 				flags: flag.NewFlagSet("version=1.0.0", 1),
 				cfgFromFile: builder.Config{
-					Logger:        zap.NewNop(),
-					Distribution:  testDistribution,
-					Excludes:      testStringTable,
-					Processors:    []builder.Module{testModule},
-					Receivers:     []builder.Module{testModule},
-					Exporters:     []builder.Module{testModule},
-					Replaces:      testStringTable,
-					DefaultScheme: "env",
+					Logger:       zap.NewNop(),
+					Distribution: testDistribution,
+					Excludes:     testStringTable,
+					Processors:   []builder.Module{testModule},
+					Receivers:    []builder.Module{testModule},
+					Exporters:    []builder.Module{testModule},
+					Replaces:     testStringTable,
+					ResolverSettings: builder.ResolverSettings{
+						DefaultURIScheme: "env",
+					},
 				},
 			},
 			want: builder.Config{
-				Logger:        zap.NewNop(),
-				Distribution:  testDistribution,
-				DefaultScheme: "env",
-				Excludes:      testStringTable,
-				Processors:    []builder.Module{testModule},
-				Receivers:     []builder.Module{testModule},
-				Exporters:     []builder.Module{testModule},
-				Replaces:      testStringTable,
+				Logger:       zap.NewNop(),
+				Distribution: testDistribution,
+				ResolverSettings: builder.ResolverSettings{
+					DefaultURIScheme: "env",
+				},
+				Excludes:   testStringTable,
+				Processors: []builder.Module{testModule},
+				Receivers:  []builder.Module{testModule},
+				Exporters:  []builder.Module{testModule},
+				Replaces:   testStringTable,
 			},
 			wantErr: false,
 		},
@@ -248,7 +252,7 @@ func Test_applyCfgFromFile(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			applyCfgFromFile(tt.args.flags, tt.args.cfgFromFile)
-			assert.Equal(t, tt.want.DefaultScheme, cfg.DefaultScheme)
+			assert.Equal(t, tt.want.ResolverSettings.DefaultURIScheme, cfg.ResolverSettings.DefaultURIScheme)
 			assert.Equal(t, tt.want.Distribution, cfg.Distribution)
 			assert.Equal(t, tt.want.SkipGenerate, cfg.SkipGenerate)
 			assert.Equal(t, tt.want.SkipCompilation, cfg.SkipCompilation)

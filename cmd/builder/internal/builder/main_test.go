@@ -317,10 +317,12 @@ func TestGenerateAndCompile(t *testing.T) {
 			},
 		},
 		{
-			testCase: "DefaultScheme set",
+			testCase: "ResolverSettingsDefaultURIScheme set",
 			cfgBuilder: func(t *testing.T) Config {
 				cfg := newTestConfig()
-				cfg.DefaultScheme = "env"
+				cfg.ResolverSettings = ResolverSettings{
+					DefaultURIScheme: "env",
+				}
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				return cfg

@@ -174,7 +174,7 @@ func applyCfgFromFile(flags *flag.FlagSet, cfgFromFile builder.Config) {
 	cfg.Replaces = cfgFromFile.Replaces
 	cfg.Excludes = cfgFromFile.Excludes
 
-	cfg.DefaultScheme = cfgFromFile.DefaultScheme
+	cfg.ResolverSettings.DefaultURIScheme = cfgFromFile.ResolverSettings.DefaultURIScheme
 
 	if !flags.Changed(skipGenerateFlag) && cfgFromFile.SkipGenerate {
 		cfg.SkipGenerate = cfgFromFile.SkipGenerate

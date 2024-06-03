@@ -43,9 +43,13 @@ type Config struct {
 	Replaces     []string     `mapstructure:"replaces"`
 	Excludes     []string     `mapstructure:"excludes"`
 
-	DefaultScheme string `mapstructure:"default_scheme"`
+	ResolverSettings ResolverSettings `mapstructure:"resolver_settings"`
 
 	downloadModules retry `mapstructure:"-"`
+}
+
+type ResolverSettings struct {
+	DefaultURIScheme string `mapstructure:"default_uri_scheme"`
 }
 
 // Distribution holds the parameters for the final binary
