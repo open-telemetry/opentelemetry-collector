@@ -138,8 +138,8 @@ conf_resolver_settings:
    default_uri_scheme: "env"
 ```
 
-This tells the builder to produce a collector that uses the `env` scheme when expanding configuration that does not
-provide a scheme, such as `${HOST}` (instead of doing `${env:HOST}`)
+This tells the builder to produce a Collector that uses the `env` scheme when expanding configuration that does not
+provide a scheme, such as `${HOST}` (instead of doing `${env:HOST}`).
 
 ## Steps
 
