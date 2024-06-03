@@ -43,13 +43,13 @@ type Config struct {
 	Replaces     []string     `mapstructure:"replaces"`
 	Excludes     []string     `mapstructure:"excludes"`
 
-	ResolverSettings ResolverSettings `mapstructure:"resolver_settings"`
+	ConfResolverSettings ConfResolverSettings `mapstructure:"conf_resolver_settings"`
 
 	downloadModules retry `mapstructure:"-"`
 }
 
-type ResolverSettings struct {
-	// When set, will be used to set the CollectorSettings.ResolverSettings.DefaultScheme value,
+type ConfResolverSettings struct {
+	// When set, will be used to set the CollectorSettings.ConfResolverSettings.DefaultScheme value,
 	// which determines how the Collector interprets URIs that have no scheme, such as ${ENV}.
 	// See https://pkg.go.dev/go.opentelemetry.io/collector/confmap#ResolverSettings for more details.
 	DefaultURIScheme string `mapstructure:"default_uri_scheme"`

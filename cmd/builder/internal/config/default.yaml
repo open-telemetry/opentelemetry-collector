@@ -5,7 +5,8 @@ dist:
   version: 0.101.0-dev
   otelcol_version: 0.101.0
 
-default_scheme: "env"
+conf_resolver_settings:
+  default_uri_scheme: "env"
 
 receivers:
   - gomod: go.opentelemetry.io/collector/receiver/nopreceiver v0.101.0

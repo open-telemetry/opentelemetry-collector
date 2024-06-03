@@ -95,7 +95,7 @@ func Test_applyCfgFromFile(t *testing.T) {
 					Receivers:    []builder.Module{testModule},
 					Exporters:    []builder.Module{testModule},
 					Replaces:     testStringTable,
-					ResolverSettings: builder.ResolverSettings{
+					ConfResolverSettings: builder.ConfResolverSettings{
 						DefaultURIScheme: "env",
 					},
 				},
@@ -103,7 +103,7 @@ func Test_applyCfgFromFile(t *testing.T) {
 			want: builder.Config{
 				Logger:       zap.NewNop(),
 				Distribution: testDistribution,
-				ResolverSettings: builder.ResolverSettings{
+				ConfResolverSettings: builder.ConfResolverSettings{
 					DefaultURIScheme: "env",
 				},
 				Excludes:   testStringTable,
@@ -252,7 +252,7 @@ func Test_applyCfgFromFile(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			applyCfgFromFile(tt.args.flags, tt.args.cfgFromFile)
-			assert.Equal(t, tt.want.ResolverSettings.DefaultURIScheme, cfg.ResolverSettings.DefaultURIScheme)
+			assert.Equal(t, tt.want.ConfResolverSettings.DefaultURIScheme, cfg.ConfResolverSettings.DefaultURIScheme)
 			assert.Equal(t, tt.want.Distribution, cfg.Distribution)
 			assert.Equal(t, tt.want.SkipGenerate, cfg.SkipGenerate)
 			assert.Equal(t, tt.want.SkipCompilation, cfg.SkipCompilation)

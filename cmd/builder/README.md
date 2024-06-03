@@ -134,7 +134,7 @@ replaces:
 The builder also allows setting the scheme to use as the default URI scheme via `resolver_settings.default_uri_scheme`:
 
 ```yaml
-resolver_settings:
+conf_resolver_settings:
    default_uri_scheme: "env"
 ```
 
