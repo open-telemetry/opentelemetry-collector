@@ -270,7 +270,7 @@ type ServerConfig struct {
 	// Auth for this receiver
 	Auth *configauth.Authentication `mapstructure:"auth"`
 
-	// MaxRequestBodySize sets the maximum request body size in bytes
+	// MaxRequestBodySize sets the maximum request body size in bytes. Default: 20MiB.
 	MaxRequestBodySize int64 `mapstructure:"max_request_body_size"`
 
 	// IncludeMetadata propagates the client metadata from the incoming requests to the downstream consumers
