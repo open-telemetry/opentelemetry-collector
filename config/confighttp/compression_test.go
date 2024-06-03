@@ -353,7 +353,7 @@ func TestOverrideCompressionList(t *testing.T) {
 	// prepare
 	configuredDecoders := []string{"none", "zlib"}
 
-	srv := httptest.NewServer(httpContentDecompressor(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(httpContentDecompressor(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}), defaultMaxRequestBodySize, defaultErrorHandler, configuredDecoders, nil))
 	t.Cleanup(srv.Close)
