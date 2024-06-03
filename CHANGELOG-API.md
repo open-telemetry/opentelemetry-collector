@@ -7,6 +7,27 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.9.0/v0.103.0
+
+### 🛑 Breaking changes 🛑
+
+- `otelcol`: Remove deprecated `ConfigProvider` field from `CollectorSettings` (#10281)
+
+### 🚩 Deprecations 🚩
+
+- `component`: Deprecate `component.UnmarshalConfig`, use `(*confmap.Conf).Unmarshal(&intoCfg)` instead. (#7102)
+- `service/telemetry`: Deprecate telemetry.New in favor of telemetry.NewFactory (#4970)
+
+### 💡 Enhancements 💡
+
+- `confmap`: Allow setting a default Provider on a Resolver to use when `${}` syntax is used without a scheme (#10182)
+- `pdata`: Introduce string and int64 slices to pcommon (#10148)
+- `pdata`: Introduce generated experimental pdata for profiling signal. (#10195)
+
+### 🧰 Bug fixes 🧰
+
+- `otelcol`: Update validate command to use the new configuration options (#10203)
+
 ## v1.8.0/v0.101.0
 
 ### 🛑 Breaking changes 🛑
