@@ -31,7 +31,7 @@ import (
 
 const headerContentEncoding = "Content-Encoding"
 const defaultMaxRequestBodySize = 20 * 1024 * 1024 // 20MiB
-var defaultCompressionList = []string{"", "gzip", "zstd", "zlib", "snappy", "deflate"}
+var defaultCompressionAlgorithms = []string{"", "gzip", "zstd", "zlib", "snappy", "deflate"}
 
 // ClientConfig defines settings for creating an HTTP client.
 type ClientConfig struct {
@@ -350,7 +350,7 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 	}
 
 	if hss.CompressionAlgorithms == nil {
-		hss.CompressionAlgorithms = defaultCompressionList
+		hss.CompressionAlgorithms = defaultCompressionAlgorithms
 	}
 
 	handler = httpContentDecompressor(handler, hss.MaxRequestBodySize, serverOpts.errHandler, hss.CompressionAlgorithms, serverOpts.decoders)
