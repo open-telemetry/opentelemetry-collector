@@ -4,6 +4,7 @@
 package confighttp
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -1301,7 +1302,7 @@ func TestServerWithDecoder(t *testing.T) {
 	// test
 	response := &httptest.ResponseRecorder{}
 
-	req, err := http.NewRequest(http.MethodGet, srv.Addr, nil)
+	req, err := http.NewRequest(http.MethodGet, srv.Addr, bytes.NewBuffer([]byte("something")))
 	require.NoError(t, err, "Error creating request: %v", err)
 	req.Header.Set("Content-Encoding", "something-else")
 
