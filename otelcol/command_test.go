@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -26,26 +25,6 @@ func TestNewCommandVersion(t *testing.T) {
 func TestNewCommandNoConfigURI(t *testing.T) {
 	cmd := NewCommand(CollectorSettings{Factories: nopFactories})
 	require.Error(t, cmd.Execute())
-}
-
-// This test emulates usage of Collector in Jaeger all-in-one, which
-// allows running the binary with no explicit configuration.
-func TestNewCommandProgrammaticallyPassedConfig(t *testing.T) {
-	cmd := NewCommand(CollectorSettings{Factories: nopFactories})
-	otelRunE := cmd.RunE
-	cmd.RunE = func(c *cobra.Command, args []string) error {
-		configFlag := c.Flag("config")
-		cfg := `
-service:
-  extensions: [invalid_component_name]
-receivers:
-  invalid_component_name:
-`
-		require.NoError(t, configFlag.Value.Set("yaml:"+cfg))
-		return otelRunE(cmd, args)
-	}
-	// verify that cmd.Execute was run with the implicitly provided config.
-	require.ErrorContains(t, cmd.Execute(), "invalid_component_name")
 }
 
 func TestAddFlagToSettings(t *testing.T) {
@@ -67,10 +46,12 @@ func TestAddFlagToSettings(t *testing.T) {
 	require.Len(t, set.ConfigProviderSettings.ResolverSettings.URIs, 1)
 }
 
-func TestAddDefaultConfmapModules(t *testing.T) {
+func TestInvalidCollectorSettingsNoProviders(t *testing.T) {
 	set := CollectorSettings{
 		ConfigProviderSettings: ConfigProviderSettings{
-			ResolverSettings: confmap.ResolverSettings{},
+			ResolverSettings: confmap.ResolverSettings{
+				URIs: []string{filepath.Join("testdata", "otelcol-invalid.yaml")},
+			},
 		},
 	}
 	flgs := flags(featuregate.NewRegistry())
@@ -78,10 +59,7 @@ func TestAddDefaultConfmapModules(t *testing.T) {
 	require.NoError(t, err)
 
 	err = updateSettingsUsingFlags(&set, flgs)
-	require.NoError(t, err)
-	require.Len(t, set.ConfigProviderSettings.ResolverSettings.URIs, 1)
-	require.Len(t, set.ConfigProviderSettings.ResolverSettings.ConverterFactories, 1)
-	require.Len(t, set.ConfigProviderSettings.ResolverSettings.ProviderFactories, 5)
+	require.ErrorContains(t, err, "at least one provider or converter must be provided")
 }
 
 func TestInvalidCollectorSettings(t *testing.T) {
