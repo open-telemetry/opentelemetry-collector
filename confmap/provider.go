@@ -89,7 +89,6 @@ type Provider interface {
 type WatcherFunc func(*ChangeEvent)
 
 // ChangeEvent describes the particular change event that happened with the config.
-// TODO: see if this can be eliminated.
 type ChangeEvent struct {
 	// Error is nil if the config is changed and needs to be re-fetched.
 	// Any non-nil error indicates that there was a problem with watching the config changes.

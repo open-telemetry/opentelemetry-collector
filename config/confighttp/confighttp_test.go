@@ -4,6 +4,7 @@
 package confighttp
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -13,6 +14,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -1300,7 +1302,7 @@ func TestServerWithDecoder(t *testing.T) {
 	// test
 	response := &httptest.ResponseRecorder{}
 
-	req, err := http.NewRequest(http.MethodGet, srv.Addr, nil)
+	req, err := http.NewRequest(http.MethodGet, srv.Addr, bytes.NewBuffer([]byte("something")))
 	require.NoError(t, err, "Error creating request: %v", err)
 	req.Header.Set("Content-Encoding", "something-else")
 
@@ -1308,6 +1310,93 @@ func TestServerWithDecoder(t *testing.T) {
 	// verify
 	assert.Equal(t, response.Result().StatusCode, http.StatusOK)
 
+}
+
+func TestServerWithDecompression(t *testing.T) {
+	// prepare
+	hss := ServerConfig{
+		MaxRequestBodySize: 1000, // 1 KB
+	}
+	body := []byte(strings.Repeat("a", 1000*1000)) // 1 MB
+
+	srv, err := hss.ToServer(
+		context.Background(),
+		componenttest.NewNopHost(),
+		componenttest.NewNopTelemetrySettings(),
+		http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
+			actualBody, err := io.ReadAll(req.Body)
+			assert.ErrorContains(t, err, "http: request body too large")
+			assert.Len(t, actualBody, 1000)
+
+			if err != nil {
+				resp.WriteHeader(http.StatusBadRequest)
+			} else {
+				resp.WriteHeader(http.StatusOK)
+			}
+		}),
+	)
+	require.NoError(t, err)
+
+	testSrv := httptest.NewServer(srv.Handler)
+	defer testSrv.Close()
+
+	req, err := http.NewRequest(http.MethodGet, testSrv.URL, compressZstd(t, body))
+	require.NoError(t, err, "Error creating request: %v", err)
+
+	req.Header.Set("Content-Encoding", "zstd")
+
+	// test
+	c := http.Client{}
+	resp, err := c.Do(req)
+	require.NoError(t, err, "Error sending request: %v", err)
+
+	_, err = io.ReadAll(resp.Body)
+	require.NoError(t, err, "Error reading response body: %v", err)
+
+	// verifications is done mostly within the test, but this is only a sanity check
+	// that we got into the test handler
+	assert.Equal(t, resp.StatusCode, http.StatusBadRequest)
+}
+
+func TestDefaultMaxRequestBodySize(t *testing.T) {
+	tests := []struct {
+		name     string
+		settings ServerConfig
+		expected int64
+	}{
+		{
+			name:     "default",
+			settings: ServerConfig{},
+			expected: defaultMaxRequestBodySize,
+		},
+		{
+			name:     "zero",
+			settings: ServerConfig{MaxRequestBodySize: 0},
+			expected: defaultMaxRequestBodySize,
+		},
+		{
+			name:     "negative",
+			settings: ServerConfig{MaxRequestBodySize: -1},
+			expected: defaultMaxRequestBodySize,
+		},
+		{
+			name:     "custom",
+			settings: ServerConfig{MaxRequestBodySize: 100},
+			expected: 100,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := tt.settings.ToServer(
+				context.Background(),
+				componenttest.NewNopHost(),
+				componenttest.NewNopTelemetrySettings(),
+				http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}),
+			)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, tt.settings.MaxRequestBodySize)
+		})
+	}
 }
 
 type mockHost struct {
