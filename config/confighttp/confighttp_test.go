@@ -1358,6 +1358,47 @@ func TestServerWithDecompression(t *testing.T) {
 	assert.Equal(t, resp.StatusCode, http.StatusBadRequest)
 }
 
+func TestDefaultMaxRequestBodySize(t *testing.T) {
+	tests := []struct {
+		name     string
+		settings ServerConfig
+		expected int64
+	}{
+		{
+			name:     "default",
+			settings: ServerConfig{},
+			expected: defaultMaxRequestBodySize,
+		},
+		{
+			name:     "zero",
+			settings: ServerConfig{MaxRequestBodySize: 0},
+			expected: defaultMaxRequestBodySize,
+		},
+		{
+			name:     "negative",
+			settings: ServerConfig{MaxRequestBodySize: -1},
+			expected: defaultMaxRequestBodySize,
+		},
+		{
+			name:     "custom",
+			settings: ServerConfig{MaxRequestBodySize: 100},
+			expected: 100,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := tt.settings.ToServer(
+				context.Background(),
+				componenttest.NewNopHost(),
+				componenttest.NewNopTelemetrySettings(),
+				http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}),
+			)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, tt.settings.MaxRequestBodySize)
+		})
+	}
+}
+
 type mockHost struct {
 	component.Host
 	ext map[component.ID]component.Component

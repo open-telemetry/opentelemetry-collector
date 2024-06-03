@@ -341,7 +341,7 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 		o(serverOpts)
 	}
 
-	if hss.MaxRequestBodySize == 0 {
+	if hss.MaxRequestBodySize <= 0 {
 		hss.MaxRequestBodySize = defaultMaxRequestBodySize
 	}
 
