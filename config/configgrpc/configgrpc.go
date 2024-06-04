@@ -13,17 +13,6 @@ import (
 
 	"github.com/mostynb/go-grpc-compression/nonclobbering/snappy"
 	"github.com/mostynb/go-grpc-compression/nonclobbering/zstd"
-	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
-	"go.opentelemetry.io/otel"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/balancer"
-	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/encoding/gzip"
-	"google.golang.org/grpc/keepalive"
-	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/peer"
-
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
@@ -34,6 +23,16 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/config/internal"
 	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.opentelemetry.io/otel"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/balancer"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/encoding/gzip"
+	"google.golang.org/grpc/keepalive"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/peer"
 )
 
 var errMetadataNotFound = errors.New("no request metadata found")
@@ -53,6 +52,11 @@ func NewDefaultKeepaliveClientConfig() *KeepaliveClientConfig {
 		Time:    time.Second * 10,
 		Timeout: time.Second * 10,
 	}
+}
+
+// NewDefaultBalancernameClientConfig returns a new instance of BalancernameClientConfig with default values.
+func NewDefaultBalancernameClientConfig() string {
+	return `{"loadBalancingConfig": [{"round_robin":{}}]}`
 }
 
 // ClientConfig defines common settings for a gRPC client configuration.
@@ -102,9 +106,10 @@ type ClientConfig struct {
 // NewDefaultClientConfig returns a new instance of ClientConfig with default values.
 func NewDefaultClientConfig() *ClientConfig {
 	return &ClientConfig{
-		TLSSetting: configtls.NewDefaultClientConfig(),
-		Keepalive:  NewDefaultKeepaliveClientConfig(),
-		Auth:       configauth.NewDefaultAuthentication(),
+		TLSSetting:   configtls.NewDefaultClientConfig(),
+		Keepalive:    NewDefaultKeepaliveClientConfig(),
+		Auth:         configauth.NewDefaultAuthentication(),
+		BalancerName: NewDefaultBalancernameClientConfig(),
 	}
 }
 

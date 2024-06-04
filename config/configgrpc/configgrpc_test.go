@@ -15,13 +15,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest/observer"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/balancer"
-	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/peer"
-
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -33,6 +26,12 @@ import (
 	"go.opentelemetry.io/collector/extension/auth"
 	"go.opentelemetry.io/collector/extension/auth/authtest"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/balancer"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/peer"
 )
 
 func TestNewDefaultKeepaliveClientConfig(t *testing.T) {
@@ -46,9 +45,10 @@ func TestNewDefaultKeepaliveClientConfig(t *testing.T) {
 
 func TestNewDefaultClientConfig(t *testing.T) {
 	expected := &ClientConfig{
-		TLSSetting: configtls.NewDefaultClientConfig(),
-		Keepalive:  NewDefaultKeepaliveClientConfig(),
-		Auth:       configauth.NewDefaultAuthentication(),
+		TLSSetting:   configtls.NewDefaultClientConfig(),
+		Keepalive:    NewDefaultKeepaliveClientConfig(),
+		Auth:         configauth.NewDefaultAuthentication(),
+		BalancerName: NewDefaultBalancernameClientConfig(),
 	}
 
 	result := NewDefaultClientConfig()
@@ -213,7 +213,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				ReadBufferSize:  1024,
 				WriteBufferSize: 1024,
 				WaitForReady:    true,
-				BalancerName:    "configgrpc_balancer_test",
+				BalancerName:    "round_robin",
 				Authority:       "pseudo-authority",
 				Auth:            &configauth.Authentication{AuthenticatorID: testAuthID},
 			},
