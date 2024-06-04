@@ -7,7 +7,7 @@ change_type: enhancement
 component: cmd/builder
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Allow setting `otelcol.CollectorSettings.ResolverSettings.DefaultScheme` via the builder's `conf_resolver_settings.default_uri_scheme` configuration option
+note: Allow setting `otelcol.CollectorSettings.ResolverSettings.DefaultScheme` via the builder's `conf_resolver.default_uri_scheme` configuration option
 
 # One or more tracking issues or pull requests related to the change
 issues: [10296]

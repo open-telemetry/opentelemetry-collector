@@ -131,10 +131,10 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.40.0
 ```
 
-The builder also allows setting the scheme to use as the default URI scheme via `resolver_settings.default_uri_scheme`:
+The builder also allows setting the scheme to use as the default URI scheme via `conf_resolver.default_uri_scheme`:
 
 ```yaml
-conf_resolver_settings:
+conf_resolver:
    default_uri_scheme: "env"
 ```
 

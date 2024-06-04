@@ -5,7 +5,7 @@ dist:
   version: 0.101.0-dev
   otelcol_version: 0.101.0
 
-conf_resolver_settings:
+conf_resolver:
   default_uri_scheme: "env"
 
 receivers:
