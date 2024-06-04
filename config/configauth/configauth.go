@@ -35,7 +35,7 @@ func NewDefaultAuthentication() *Authentication {
 // GetServerAuthenticator attempts to select the appropriate auth.Server from the list of extensions,
 // based on the requested extension name. If an authenticator is not found, an error is returned.
 //
-// Deprecated: [v0.101.0] Use GetServerAuthenticatorContext instead.
+// Deprecated: [v0.103.0] Use GetServerAuthenticatorContext instead.
 func (a Authentication) GetServerAuthenticator(extensions map[component.ID]component.Component) (auth.Server, error) {
 	return a.GetServerAuthenticatorContext(context.Background(), extensions)
 }
@@ -53,7 +53,7 @@ func (a Authentication) GetServerAuthenticatorContext(_ context.Context, extensi
 	return nil, fmt.Errorf("failed to resolve authenticator %q: %w", a.AuthenticatorID, errAuthenticatorNotFound)
 }
 
-// Deprecated: [v0.101.0] Use GetClientAuthenticatorContext instead.
+// Deprecated: [v0.103.0] Use GetClientAuthenticatorContext instead.
 func (a Authentication) GetClientAuthenticator(extensions map[component.ID]component.Component) (auth.Client, error) {
 	return a.GetClientAuthenticatorContext(context.Background(), extensions)
 }
