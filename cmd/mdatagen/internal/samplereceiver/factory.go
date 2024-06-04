@@ -32,7 +32,7 @@ func createMetrics(ctx context.Context, set receiver.Settings, _ component.Confi
 		return nil, err
 	}
 	telemetryBuilder.BatchSizeTriggerSend.Add(ctx, 1)
-	return nopInstance, nil
+	return nopReceiver{telemetryBuilder: telemetryBuilder}, nil
 }
 
 func createLogs(context.Context, receiver.Settings, component.Config, consumer.Logs) (receiver.Logs, error) {
@@ -44,4 +44,9 @@ var nopInstance = &nopReceiver{}
 type nopReceiver struct {
 	component.StartFunc
 	component.ShutdownFunc
+	telemetryBuilder *metadata.TelemetryBuilder
+}
+
+func (r nopReceiver) initOptionalMetric() {
+	_ = r.telemetryBuilder.InitOptionalMetric(func() int64 { return 1 })
 }

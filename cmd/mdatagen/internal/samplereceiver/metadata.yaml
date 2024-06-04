@@ -174,3 +174,12 @@ telemetry:
         async: true
         value_type: int
         monotonic: true
+    optional_metric:
+      enabled: true
+      description: This metric is optional and therefore not initialized in NewTelemetryBuilder.
+      extended_documentation: For example this metric only exists if feature A is enabled.
+      unit: 1
+      optional: true
+      gauge:
+        async: true
+        value_type: int

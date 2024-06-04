@@ -26,7 +26,7 @@ func TestGeneratedMetrics(t *testing.T) {
 func TestComponentTelemetry(t *testing.T) {
 	tt := setupTestTelemetry()
 	factory := NewFactory()
-	_, err := factory.CreateMetricsReceiver(context.Background(), tt.NewSettings(), componenttest.NewNopHost(), new(consumertest.MetricsSink))
+	receiver, err := factory.CreateMetricsReceiver(context.Background(), tt.NewSettings(), componenttest.NewNopHost(), new(consumertest.MetricsSink))
 	require.NoError(t, err)
 	tt.assertMetrics(t, []metricdata.Metrics{
 		{
@@ -58,5 +58,51 @@ func TestComponentTelemetry(t *testing.T) {
 			},
 		},
 	})
+	rcv, ok := receiver.(nopReceiver)
+	require.True(t, ok)
+	rcv.initOptionalMetric()
+	tt.assertMetrics(t, []metricdata.Metrics{
+		{
+			Name:        "batch_size_trigger_send",
+			Description: "Number of times the batch was sent due to a size trigger",
+			Unit:        "1",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value: 1,
+					},
+				},
+			},
+		},
+		{
+			Name:        "process_runtime_total_alloc_bytes",
+			Description: "Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')",
+			Unit:        "By",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value: 2,
+					},
+				},
+			},
+		},
+		{
+			Name:        "optional_metric",
+			Description: "This metric is optional and therefore not initialized in NewTelemetryBuilder.",
+			Unit:        "1",
+			Data: metricdata.Gauge[int64]{
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value: 1,
+					},
+				},
+			},
+		},
+	})
 	require.NoError(t, tt.Shutdown(context.Background()))
+
 }

@@ -263,6 +263,19 @@ func TestLoadMetadata(t *testing.T) {
 								Async: true,
 							},
 						},
+						"optional_metric": {
+							Enabled:               true,
+							Description:           "This metric is optional and therefore not initialized in NewTelemetryBuilder.",
+							ExtendedDocumentation: "For example this metric only exists if feature A is enabled.",
+							Unit:                  strPtr("1"),
+							Optional:              true,
+							Gauge: &gauge{
+								MetricValueType: MetricValueType{
+									ValueType: pmetric.NumberDataPointValueTypeInt,
+								},
+								Async: true,
+							},
+						},
 					},
 				},
 				ScopeName:       "go.opentelemetry.io/collector/internal/receiver/samplereceiver",

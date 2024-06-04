@@ -28,6 +28,7 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 type TelemetryBuilder struct {
 	meter                                metric.Meter
 	BatchSizeTriggerSend                 metric.Int64Counter
+	OptionalMetric                       metric.Int64ObservableGauge
 	ProcessRuntimeTotalAllocBytes        metric.Int64ObservableCounter
 	observeProcessRuntimeTotalAllocBytes func() int64
 	RequestDuration                      metric.Float64Histogram
@@ -50,6 +51,21 @@ func WithAttributeSet(set attribute.Set) telemetryBuilderOption {
 	return func(builder *TelemetryBuilder) {
 		builder.attributeSet = set
 	}
+}
+
+// InitOptionalMetric configures the OptionalMetric metric.
+func (builder *TelemetryBuilder) InitOptionalMetric(cb func() int64) error {
+	var err error
+	builder.OptionalMetric, err = builder.meter.Int64ObservableGauge(
+		"optional_metric",
+		metric.WithDescription("This metric is optional and therefore not initialized in NewTelemetryBuilder."),
+		metric.WithUnit("1"),
+		metric.WithInt64Callback(func(_ context.Context, o metric.Int64Observer) error {
+			o.Observe(cb(), metric.WithAttributeSet(builder.attributeSet))
+			return nil
+		}),
+	)
+	return err
 }
 
 // WithProcessRuntimeTotalAllocBytesCallback sets callback for observable ProcessRuntimeTotalAllocBytes metric.
