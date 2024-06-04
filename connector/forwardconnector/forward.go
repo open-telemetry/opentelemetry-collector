@@ -33,7 +33,7 @@ func createDefaultConfig() component.Config {
 // createTracesToTraces creates a trace receiver based on provided config.
 func createTracesToTraces(
 	_ context.Context,
-	_ connector.CreateSettings,
+	_ component.Settings,
 	_ component.Config,
 	nextConsumer consumer.Traces,
 ) (connector.Traces, error) {
@@ -43,7 +43,7 @@ func createTracesToTraces(
 // createMetricsToMetrics creates a metrics receiver based on provided config.
 func createMetricsToMetrics(
 	_ context.Context,
-	_ connector.CreateSettings,
+	_ component.Settings,
 	_ component.Config,
 	nextConsumer consumer.Metrics,
 ) (connector.Metrics, error) {
@@ -53,7 +53,7 @@ func createMetricsToMetrics(
 // createLogsToLogs creates a log receiver based on provided config.
 func createLogsToLogs(
 	_ context.Context,
-	_ connector.CreateSettings,
+	_ component.Settings,
 	_ component.Config,
 	nextConsumer consumer.Logs,
 ) (connector.Logs, error) {

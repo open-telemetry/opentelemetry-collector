@@ -6,8 +6,6 @@ package connectortest // import "go.opentelemetry.io/collector/connector/connect
 import (
 	"context"
 
-	"github.com/google/uuid"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/connector"
@@ -18,12 +16,10 @@ import (
 var nopType = component.MustNewType("nop")
 
 // NewNopCreateSettings returns a new nop settings for Create* functions.
-func NewNopCreateSettings() connector.CreateSettings {
-	return connector.CreateSettings{
-		ID:                component.NewIDWithName(nopType, uuid.NewString()),
-		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
-		BuildInfo:         component.NewDefaultBuildInfo(),
-	}
+//
+// Deprecated: [v0.103.0] Use connectortest.NewNopSettings instead.
+func NewNopCreateSettings() component.Settings {
+	return componenttest.NewNopSettings()
 }
 
 type nopConfig struct{}
@@ -47,39 +43,39 @@ func NewNopFactory() connector.Factory {
 	)
 }
 
-func createTracesToTracesConnector(context.Context, connector.CreateSettings, component.Config, consumer.Traces) (connector.Traces, error) {
+func createTracesToTracesConnector(context.Context, component.Settings, component.Config, consumer.Traces) (connector.Traces, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 
-func createTracesToMetricsConnector(context.Context, connector.CreateSettings, component.Config, consumer.Metrics) (connector.Traces, error) {
+func createTracesToMetricsConnector(context.Context, component.Settings, component.Config, consumer.Metrics) (connector.Traces, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 
-func createTracesToLogsConnector(context.Context, connector.CreateSettings, component.Config, consumer.Logs) (connector.Traces, error) {
+func createTracesToLogsConnector(context.Context, component.Settings, component.Config, consumer.Logs) (connector.Traces, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 
-func createMetricsToTracesConnector(context.Context, connector.CreateSettings, component.Config, consumer.Traces) (connector.Metrics, error) {
+func createMetricsToTracesConnector(context.Context, component.Settings, component.Config, consumer.Traces) (connector.Metrics, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 
-func createMetricsToMetricsConnector(context.Context, connector.CreateSettings, component.Config, consumer.Metrics) (connector.Metrics, error) {
+func createMetricsToMetricsConnector(context.Context, component.Settings, component.Config, consumer.Metrics) (connector.Metrics, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 
-func createMetricsToLogsConnector(context.Context, connector.CreateSettings, component.Config, consumer.Logs) (connector.Metrics, error) {
+func createMetricsToLogsConnector(context.Context, component.Settings, component.Config, consumer.Logs) (connector.Metrics, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 
-func createLogsToTracesConnector(context.Context, connector.CreateSettings, component.Config, consumer.Traces) (connector.Logs, error) {
+func createLogsToTracesConnector(context.Context, component.Settings, component.Config, consumer.Traces) (connector.Logs, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 
-func createLogsToMetricsConnector(context.Context, connector.CreateSettings, component.Config, consumer.Metrics) (connector.Logs, error) {
+func createLogsToMetricsConnector(context.Context, component.Settings, component.Config, consumer.Metrics) (connector.Logs, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 
-func createLogsToLogsConnector(context.Context, connector.CreateSettings, component.Config, consumer.Logs) (connector.Logs, error) {
+func createLogsToLogsConnector(context.Context, component.Settings, component.Config, consumer.Logs) (connector.Logs, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 
