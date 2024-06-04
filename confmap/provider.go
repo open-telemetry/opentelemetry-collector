@@ -11,9 +11,24 @@ import (
 )
 
 // ProviderSettings are the settings to initialize a Provider.
-// Any Provider should take this as a parameter in its constructor.
 type ProviderSettings struct {
+	// Logger is a zap.Logger that will be passed to Providers.
+	// Providers should be able to rely on the Logger being non-nil;
+	// when instantiating a Provider with a ProviderFactory,
+	// nil Logger references should be replaced with a no-op Logger.
 	Logger *zap.Logger
+}
+
+// ProviderFactory defines a factory that can be used to instantiate
+// new instances of a Provider.
+type ProviderFactory = moduleFactory[Provider, ProviderSettings]
+
+// CreateProviderFunc is a function that creates a Provider instance.
+type CreateProviderFunc = createConfmapFunc[Provider, ProviderSettings]
+
+// NewProviderFactory can be used to create a ProviderFactory.
+func NewProviderFactory(f CreateProviderFunc) ProviderFactory {
+	return newConfmapModuleFactory(f)
 }
 
 // Provider is an interface that helps to retrieve a config map and watch for any
@@ -74,7 +89,6 @@ type Provider interface {
 type WatcherFunc func(*ChangeEvent)
 
 // ChangeEvent describes the particular change event that happened with the config.
-// TODO: see if this can be eliminated.
 type ChangeEvent struct {
 	// Error is nil if the config is changed and needs to be re-fetched.
 	// Any non-nil error indicates that there was a problem with watching the config changes.

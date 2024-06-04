@@ -35,6 +35,60 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
+func TestNewDefaultKeepaliveClientConfig(t *testing.T) {
+	expectedKeepaliveClientConfig := &KeepaliveClientConfig{
+		Time:    time.Second * 10,
+		Timeout: time.Second * 10,
+	}
+	keepaliveClientConfig := NewDefaultKeepaliveClientConfig()
+	assert.Equal(t, expectedKeepaliveClientConfig, keepaliveClientConfig)
+}
+
+func TestNewDefaultClientConfig(t *testing.T) {
+	expected := &ClientConfig{
+		TLSSetting: configtls.NewDefaultClientConfig(),
+		Keepalive:  NewDefaultKeepaliveClientConfig(),
+		Auth:       configauth.NewDefaultAuthentication(),
+	}
+
+	result := NewDefaultClientConfig()
+
+	assert.Equal(t, expected, result)
+}
+func TestNewDefaultKeepaliveServerParameters(t *testing.T) {
+	expectedParams := &KeepaliveServerParameters{}
+	params := NewDefaultKeepaliveServerParameters()
+
+	assert.Equal(t, expectedParams, params)
+}
+func TestNewDefaultKeepaliveEnforcementPolicy(t *testing.T) {
+	expectedPolicy := &KeepaliveEnforcementPolicy{}
+
+	policy := NewDefaultKeepaliveEnforcementPolicy()
+
+	assert.Equal(t, expectedPolicy, policy)
+}
+
+func TestNewDefaultKeepaliveServerConfig(t *testing.T) {
+	expected := &KeepaliveServerConfig{
+		ServerParameters:  NewDefaultKeepaliveServerParameters(),
+		EnforcementPolicy: NewDefaultKeepaliveEnforcementPolicy(),
+	}
+	result := NewDefaultKeepaliveServerConfig()
+	assert.Equal(t, expected, result)
+}
+
+func TestNewDefaultServerConfig(t *testing.T) {
+	expected := &ServerConfig{
+		Keepalive: NewDefaultKeepaliveServerConfig(),
+		Auth:      configauth.NewDefaultAuthentication(),
+	}
+
+	result := NewDefaultServerConfig()
+
+	assert.Equal(t, expected, result)
+}
+
 // testBalancerBuilder facilitates testing validateBalancerName().
 type testBalancerBuilder struct{}
 
@@ -67,7 +121,7 @@ func TestDefaultGrpcClientSettings(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	opts, err := gcs.toDialOptions(componenttest.NewNopHost(), tt.TelemetrySettings())
+	opts, err := gcs.toDialOptions(context.Background(), componenttest.NewNopHost(), tt.TelemetrySettings())
 	assert.NoError(t, err)
 	assert.Len(t, opts, 2)
 }
@@ -172,7 +226,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			opts, err := test.settings.toDialOptions(test.host, tt.TelemetrySettings())
+			opts, err := test.settings.toDialOptions(context.Background(), test.host, tt.TelemetrySettings())
 			assert.NoError(t, err)
 			assert.Len(t, opts, 9)
 		})
@@ -377,7 +431,7 @@ func TestUseSecure(t *testing.T) {
 		TLSSetting:  configtls.ClientConfig{},
 		Keepalive:   nil,
 	}
-	dialOpts, err := gcs.toDialOptions(componenttest.NewNopHost(), tt.TelemetrySettings())
+	dialOpts, err := gcs.toDialOptions(context.Background(), componenttest.NewNopHost(), tt.TelemetrySettings())
 	assert.NoError(t, err)
 	assert.Len(t, dialOpts, 2)
 }

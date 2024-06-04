@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/converter/expandconverter"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/featuregate"
@@ -24,18 +23,14 @@ func TestValidateSubCommandNoConfig(t *testing.T) {
 }
 
 func TestValidateSubCommandInvalidComponents(t *testing.T) {
-	cfgProvider, err := NewConfigProvider(
-		ConfigProviderSettings{
-			ResolverSettings: confmap.ResolverSettings{
-				URIs:       []string{filepath.Join("testdata", "otelcol-invalid-components.yaml")},
-				Providers:  map[string]confmap.Provider{"file": fileprovider.NewWithSettings(confmaptest.NewNopProviderSettings())},
-				Converters: []confmap.Converter{expandconverter.New(confmap.ConverterSettings{})},
-			},
-		})
-	require.NoError(t, err)
-
-	cmd := newValidateSubCommand(CollectorSettings{Factories: nopFactories, ConfigProvider: cfgProvider}, flags(featuregate.GlobalRegistry()))
-	err = cmd.Execute()
+	cmd := newValidateSubCommand(CollectorSettings{Factories: nopFactories, ConfigProviderSettings: ConfigProviderSettings{
+		ResolverSettings: confmap.ResolverSettings{
+			URIs:               []string{filepath.Join("testdata", "otelcol-invalid-components.yaml")},
+			ProviderFactories:  []confmap.ProviderFactory{fileprovider.NewFactory()},
+			ConverterFactories: []confmap.ConverterFactory{expandconverter.NewFactory()},
+		},
+	}}, flags(featuregate.GlobalRegistry()))
+	err := cmd.Execute()
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "unknown type: \"nosuchprocessor\"")
 }

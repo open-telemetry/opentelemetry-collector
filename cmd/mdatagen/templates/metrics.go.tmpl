@@ -135,7 +135,7 @@ type MetricsBuilder struct {
 	metricsCapacity int                  // maximum observed number of metrics per resource.
 	metricsBuffer   pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo       component.BuildInfo  // contains version information.
-	{{ if .ResourceAttributes -}}
+	{{- if .ResourceAttributes }}
 	resourceAttributeIncludeFilter map[string]filter.Filter
 	resourceAttributeExcludeFilter map[string]filter.Filter
 	{{- end }}
@@ -184,7 +184,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 	}
 	{{- end }}
 	{{- if $attr.Warnings.IfConfigured }}
-	if mbc.ResourceAttributes.{{ $name.Render }}.enabledSetByUser {
+	if mbc.ResourceAttributes.{{ $name.Render }}.enabledSetByUser || mbc.ResourceAttributes.{{ $name.Render }}.MetricsInclude != nil || mbc.ResourceAttributes.{{ $name.Render }}.MetricsExclude != nil {
 		settings.Logger.Warn("[WARNING] `{{ $name }}` should not be configured: {{ $attr.Warnings.IfConfigured }}")
 	}
 	{{- end }}
@@ -203,11 +203,11 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		{{- end }}
 	}
 	{{- range $name, $attr := .ResourceAttributes }}
-	if mbc.ResourceAttributes.{{ $name.Render }}.Include != nil {
-		mb.resourceAttributeIncludeFilter["{{ $name }}"] = filter.CreateFilter(mbc.ResourceAttributes.{{ $name.Render }}.Include)
+	if mbc.ResourceAttributes.{{ $name.Render }}.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["{{ $name }}"] = filter.CreateFilter(mbc.ResourceAttributes.{{ $name.Render }}.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.{{ $name.Render }}.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["{{ $name }}"] = filter.CreateFilter(mbc.ResourceAttributes.{{ $name.Render }}.Exclude)
+	if mbc.ResourceAttributes.{{ $name.Render }}.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["{{ $name }}"] = filter.CreateFilter(mbc.ResourceAttributes.{{ $name.Render }}.MetricsExclude)
 	}
 	{{- end }}
 
@@ -284,16 +284,14 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 		op(rm)
 	}
 	{{ if .ResourceAttributes -}}
-	for name, val := range rm.Resource().Attributes().AsRaw() {
-		if filter, ok := mb.resourceAttributeIncludeFilter[name]; ok {
-			if !filter.Matches(val) {
-				return
-			}
+	for attr, filter := range mb.resourceAttributeIncludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && !filter.Matches(val.AsString()) {
+			return
 		}
-		if filter, ok := mb.resourceAttributeExcludeFilter[name]; ok {
-			if filter.Matches(val) {
-				return
-			}
+	}
+	for attr, filter := range mb.resourceAttributeExcludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && filter.Matches(val.AsString()) {
+			return
 		}
 	}
 	{{- end }}

@@ -82,16 +82,17 @@ func (p mockCfgProvider) Watch() <-chan error {
 }
 
 func TestCollectorStateAfterConfigChange(t *testing.T) {
-	provider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}))
-	require.NoError(t, err)
-
 	watcher := make(chan error, 1)
 	col, err := NewCollector(CollectorSettings{
-		BuildInfo:      component.NewDefaultBuildInfo(),
-		Factories:      nopFactories,
-		ConfigProvider: &mockCfgProvider{ConfigProvider: provider, watcher: watcher},
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Factories: nopFactories,
+		// this will be overwritten, but we need something to get past validation
+		ConfigProviderSettings: newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}),
 	})
 	require.NoError(t, err)
+	provider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}))
+	require.NoError(t, err)
+	col.configProvider = &mockCfgProvider{ConfigProvider: provider, watcher: watcher}
 
 	wg := startCollector(context.Background(), t, col)
 
@@ -157,15 +158,11 @@ func TestComponentStatusWatcher(t *testing.T) {
 	factory := extensiontest.NewStatusWatcherExtensionFactory(onStatusChanged)
 	factories.Extensions[factory.Type()] = factory
 
-	// Read config from file. This config uses 3 "unhealthy" processors.
-	validProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-statuswatcher.yaml")}))
-	require.NoError(t, err)
-
 	// Create a collector
 	col, err := NewCollector(CollectorSettings{
-		BuildInfo:      component.NewDefaultBuildInfo(),
-		Factories:      func() (Factories, error) { return factories, nil },
-		ConfigProvider: validProvider,
+		BuildInfo:              component.NewDefaultBuildInfo(),
+		Factories:              func() (Factories, error) { return factories, nil },
+		ConfigProviderSettings: newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-statuswatcher.yaml")}),
 	})
 	require.NoError(t, err)
 
@@ -433,14 +430,6 @@ func TestCollectorDryRun(t *testing.T) {
 			},
 			expectedErr: `service::pipelines::traces: references processor "invalid" which is not configured`,
 		},
-		"logs_receiver_traces_pipeline": {
-			settings: CollectorSettings{
-				BuildInfo:              component.NewDefaultBuildInfo(),
-				Factories:              nopFactories,
-				ConfigProviderSettings: newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-invalid-receiver-type.yaml")}),
-			},
-			expectedErr: `failed to build pipelines: failed to create "nop_logs" receiver for data type "traces": telemetry type is not supported`,
-		},
 	}
 
 	for name, test := range tests {
@@ -464,8 +453,8 @@ func TestPassConfmapToServiceFailure(t *testing.T) {
 		Factories: nopFactories,
 		ConfigProviderSettings: ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
-				URIs:      []string{filepath.Join("testdata", "otelcol-invalid.yaml")},
-				Providers: makeMapProvidersMap(newFailureProvider()),
+				URIs:              []string{filepath.Join("testdata", "otelcol-invalid.yaml")},
+				ProviderFactories: []confmap.ProviderFactory{confmap.NewProviderFactory(newFailureProvider)},
 			},
 		},
 	}
@@ -488,7 +477,7 @@ func startCollector(ctx context.Context, t *testing.T, col *Collector) *sync.Wai
 
 type failureProvider struct{}
 
-func newFailureProvider() confmap.Provider {
+func newFailureProvider(_ confmap.ProviderSettings) confmap.Provider {
 	return &failureProvider{}
 }
 

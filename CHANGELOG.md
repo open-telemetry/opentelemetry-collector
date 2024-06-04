@@ -7,6 +7,118 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.9.0/v0.102.0
+
+### 🛑 Breaking changes 🛑
+
+- `envprovider`: Restricts Environment Variable names.  Environment variable names must now be ASCII only and start with a letter or an underscore, and can only contain underscores, letters, or numbers. (#9531)
+- `confighttp`: Apply MaxRequestBodySize to the result of a decompressed body (#10289)
+  When using compressed payloads, the Collector would verify only the size of the compressed payload. 
+  This change applies the same restriction to the decompressed content. As a security measure, a limit of 20 MiB was added, which makes this a breaking change. 
+  For most clients, this shouldn't be a problem, but if you often have payloads that decompress to more than 20 MiB, you might want to either configure your
+  client to send smaller batches (recommended), or increase the limit using the MaxRequestBodySize option.
+  
+
+### 💡 Enhancements 💡
+
+- `mdatagen`: auto-generate utilities to test component telemetry (#19783)
+- `mdatagen`: support setting an AttributeSet for async instruments (#9674)
+- `mdatagen`: support using telemetry level in telemetry builder (#10234)
+  This allows components to set the minimum level needed for them to produce telemetry. By default, this is set to configtelemetry.LevelBasic. If the telemetry level is below that minimum level, then the noop meter is used for metrics.
+- `mdatagen`: add support for bucket boundaries for histograms (#10218)
+- `releases`: add documentation in how to verify the image signatures using cosign (#9610)
+
+### 🧰 Bug fixes 🧰
+
+- `batchprocessor`: ensure attributes are set on cardinality metadata metric (#9674)
+- `batchprocessor`: Fixing processor_batch_metadata_cardinality which was broken in v0.101.0 (#10231)
+- `batchprocessor`: respect telemetry level for all metrics (#10234)
+- `exporterhelper`: Fix potential deadlocks in BatcherSender shutdown (#10255)
+
+## v1.8.0/v0.101.0
+
+### 💡 Enhancements 💡
+
+- `mdatagen`: generate documentation for internal telemetry (#10170)
+- `mdatagen`: add ability to use metadata.yaml to automatically generate instruments for components (#10054)
+  The `telemetry` section in metadata.yaml is used to generate
+  instruments for components to measure telemetry about themselves.
+  
+- `confmap`: Allow Converters to write logs during startup (#10135)
+- `otelcol`: Enable logging during configuration resolution (#10056)
+
+### 🧰 Bug fixes 🧰
+
+- `mdatagen`: Run package tests when goleak is skipped (#10125)
+
+## v1.7.0/v0.100.0
+
+### 🛑 Breaking changes 🛑
+
+- `service`: The `validate` sub-command no longer validates that each pipeline's type is the same as its component types (#10031)
+
+### 💡 Enhancements 💡
+
+- `semconv`: Add support for v1.25.0 semantic convention (#10072)
+- `builder`: remove the need to go get a module to address ambiguous import paths (#10015)
+- `pmetric`: Support parsing metric.metadata from OTLP JSON. (#10026)
+
+### 🧰 Bug fixes 🧰
+
+- `exporterhelper`: Fix enabled config option for batch sender (#10076)
+
+## v1.6.0/v0.99.0
+
+### 🛑 Breaking changes 🛑
+
+- `builder`: Add strict version checking when using the builder. Add the temporary flag `--skip-strict-versioning `for skipping this check. (#9896)
+  Strict version checking will error on major and minor version mismatches 
+  between the `otelcol_version` configured and the builder version or versions 
+  in the go.mod. This check can be temporarily disabled by using the `--skip-strict-versioning` 
+  flag. This flag will be removed in a future minor version.
+  
+- `telemetry`: Distributed internal metrics across different levels. (#7890)
+  The internal metrics levels are updated along with reported metrics:
+  - The default level is changed from `basic` to `normal`, which can be overridden with `service::telmetry::metrics::level` configuration.
+  - Batch processor metrics are updated to be reported starting from `normal` level:
+    - `processor_batch_batch_send_size` 
+    - `processor_batch_metadata_cardinality`
+    - `processor_batch_timeout_trigger_send`
+    - `processor_batch_size_trigger_send`
+  - GRPC/HTTP server and client metrics are updated to be reported starting from `detailed` level:
+    - http.client.* metrics
+    - http.server.* metrics
+    - rpc.server.* metrics
+    - rpc.client.* metrics
+  
+
+### 💡 Enhancements 💡
+
+- `confighttp`: Disable concurrency in zstd compression (#8216)
+- `cmd/builder`: Allow configuring `confmap.Provider`s in the builder. (#4759)
+  If no providers are specified, the defaults are used.
+  The default providers are: env, file, http, https, and yaml.
+  
+  To configure providers, use the `providers` key in your OCB build
+  manifest with a list of Go modules for your providers.
+  The modules will work the same as other Collector components.
+  
+- `mdatagen`: enable goleak tests by default via mdatagen (#9959)
+- `cmd/mdatagen`: support excluding some metrics based on string and regexes in resource_attributes (#9661)
+- `cmd/mdatagen`: Generate config and factory tests covering their requirements. (#9940)
+  The tests are moved from cmd/builder.
+  
+- `confmap`: Add `ProviderSettings`, `ConverterSettings`, `ProviderFactories`, and `ConverterFactories` fields to `confmap.ResolverSettings` (#9516)
+  This allows configuring providers and converters, which are instantiated by `NewResolver` using the given factories.
+
+### 🧰 Bug fixes 🧰
+
+- `exporter/otlp`: Allow DNS scheme to be used in endpoint (#4274)
+- `service`: fix record sampler configuration (#9968)
+- `service`: ensure the tracer provider is configured via go.opentelemetry.io/contrib/config (#9967)
+- `otlphttpexporter`: Fixes a bug that was preventing the otlp http exporter from propagating status. (#9892)
+- `confmap`: Fix decoding negative configuration values into uints (#9060)
+
 ## v1.5.0/v0.98.0
 
 ### 🛑 Breaking changes 🛑

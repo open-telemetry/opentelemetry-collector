@@ -138,7 +138,7 @@ endif
 # Build the Collector executable.
 .PHONY: otelcorecol
 otelcorecol:
-	pushd cmd/otelcorecol && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/otelcorecol_$(GOOS)_$(GOARCH) \
+	pushd cmd/otelcorecol && CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/otelcorecol_$(GOOS)_$(GOARCH) \
 		-tags $(GO_BUILD_TAGS) ./cmd/otelcorecol && popd
 
 .PHONY: genotelcorecol
@@ -157,10 +157,10 @@ ocb:
 OPENTELEMETRY_PROTO_SRC_DIR=pdata/internal/opentelemetry-proto
 
 # The branch matching the current version of the proto to use
-OPENTELEMETRY_PROTO_VERSION=v1.1.0
+OPENTELEMETRY_PROTO_VERSION=v1.3.1
 
 # Find all .proto files.
-OPENTELEMETRY_PROTO_FILES := $(subst $(OPENTELEMETRY_PROTO_SRC_DIR)/,,$(wildcard $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/*/v1/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/collector/*/v1/*.proto))
+OPENTELEMETRY_PROTO_FILES := $(subst $(OPENTELEMETRY_PROTO_SRC_DIR)/,,$(wildcard $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/*/v1/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/collector/*/v1/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/*/v1experimental/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/collector/*/v1experimental/*.proto))
 
 # Target directory to write generated files to.
 PROTO_TARGET_GEN_DIR=pdata/internal/data/protogen
@@ -237,6 +237,7 @@ gensemconv: $(SEMCONVGEN) $(SEMCONVKIT)
 	$(SEMCONVGEN) -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/model/. --only=resource -p conventionType=resource -f generated_resource.go
 	$(SEMCONVGEN) -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/model/. --only=event -p conventionType=event -f generated_event.go
 	$(SEMCONVGEN) -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/model/. --only=span -p conventionType=trace -f generated_trace.go
+	$(SEMCONVGEN) -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/model/. --only=attribute_group -p conventionType=attribute_group -f generated_attribute_group.go
 	$(SEMCONVKIT) -output "semconv/$(SPECTAG)" -tag "$(SPECTAG)"
 
 # Checks that the HEAD of the contrib repo checked out in CONTRIB_PATH compiles

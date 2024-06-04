@@ -29,41 +29,25 @@ none_set:
       enabled: false
     {{- end }}
   {{- end }}
+{{- if and .Metrics .ResourceAttributes }}
 filter_set_include:
-  {{- if .Metrics }}
-  metrics:
-    {{- range $name, $_ := .Metrics }}
-    {{ $name }}:
-      enabled: true
-    {{- end }}
-  {{- end }}
-  {{- if .ResourceAttributes }}
   resource_attributes:
     {{- range $name, $attr := .ResourceAttributes }}
     {{ $name }}:
       enabled: true
-      {{- if eq $attr.Type.String "Str" }}
-      include:
+      metrics_include:
         - regexp: ".*"
-      {{- end }}
     {{- end }}
-  {{- end }}
 filter_set_exclude:
-  {{- if .Metrics }}
-  metrics:
-    {{- range $name, $_ := .Metrics }}
-    {{ $name }}:
-      enabled: true
-    {{- end }}
-  {{- end }}
-  {{- if .ResourceAttributes }}
   resource_attributes:
     {{- range $name, $attr := .ResourceAttributes }}
     {{ $name }}:
       enabled: true
-      {{- if eq $attr.Type.String "Str" }}
-      exclude:
+      metrics_exclude:
+        {{- if eq $attr.Type.String "Str" }}
         - strict: {{ $attr.TestValue }}
-      {{- end }}
+        {{- else }}
+        - regexp: ".*"
+        {{- end }}
     {{- end }}
-  {{- end }}
+{{- end }}
