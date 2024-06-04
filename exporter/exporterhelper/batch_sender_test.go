@@ -487,7 +487,7 @@ func TestBatchSenderWithTimeout(t *testing.T) {
 	bCfg := exporterbatcher.NewDefaultConfig()
 	bCfg.MinSizeItems = 10
 	tCfg := NewDefaultTimeoutSettings()
-	tCfg.Timeout = 50 * time.Microsecond
+	tCfg.Timeout = 50 * time.Millisecond
 	be, err := newBaseExporter(defaultSettings, defaultDataType, newNoopObsrepSender,
 		WithBatcher(bCfg, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc)),
 		WithTimeout(tCfg))
@@ -496,7 +496,7 @@ func TestBatchSenderWithTimeout(t *testing.T) {
 
 	sink := newFakeRequestSink()
 
-	// Send 3 concurrent requests that should be merged in two batched
+	// Send 3 concurrent requests that should be merged in one batch
 	wg := sync.WaitGroup{}
 	for i := 0; i < 3; i++ {
 		wg.Add(1)
