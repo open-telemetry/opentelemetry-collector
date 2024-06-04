@@ -122,6 +122,7 @@ Beyond TLS configuration, the following setting can optionally be configured
   client certificate. (optional) This sets the ClientCAs and ClientAuth to
   RequireAndVerifyClientCert in the TLSConfig. Please refer to
   https://godoc.org/crypto/tls#Config for more information.
+- `client_ca_file_reload` (default = false): Reload the ClientCAs file when it is modified.
 
 Example:
 
