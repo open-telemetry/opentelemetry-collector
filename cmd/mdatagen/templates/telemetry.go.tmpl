@@ -29,6 +29,7 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry 
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
+    meter metric.Meter
 	{{- range $name, $metric := .Telemetry.Metrics }}
 	{{ $name.Render }} metric.{{ $metric.Data.Instrument }}
     {{- if $metric.Data.Async }}
@@ -77,18 +78,15 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	for _, op := range options {
 		op(&builder)
 	}
-    var (
-        err, errs error
-        meter     metric.Meter
-    )
+    var err, errs error
     if builder.level >= configtelemetry.Level{{ casesTitle .Telemetry.Level.String }} {
-        meter = Meter(settings)
+        builder.meter = Meter(settings)
     } else {
-        meter = noop.Meter{}
+        builder.meter = noop.Meter{}
     }
     
     {{- range $name, $metric := .Telemetry.Metrics }}
-    builder.{{ $name.Render }}, err = meter.{{ $metric.Data.Instrument }}(
+    builder.{{ $name.Render }}, err = builder.meter.{{ $metric.Data.Instrument }}(
         "{{ $name }}",
         metric.WithDescription("{{ $metric.Description }}"),
         metric.WithUnit("{{ $metric.Unit }}"),
