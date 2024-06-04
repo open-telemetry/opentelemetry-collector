@@ -224,6 +224,13 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 		clientTransport = otelhttp.NewTransport(clientTransport, otelOpts...)
 	}
 
+	if hcs.CustomRoundTripper != nil {
+		clientTransport, err = hcs.CustomRoundTripper(clientTransport)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &http.Client{
 		Transport: clientTransport,
 		Timeout:   hcs.Timeout,
