@@ -316,6 +316,18 @@ func TestGenerateAndCompile(t *testing.T) {
 				return cfg
 			},
 		},
+		{
+			testCase: "ConfResolverDefaultURIScheme set",
+			cfgBuilder: func(t *testing.T) Config {
+				cfg := newTestConfig()
+				cfg.ConfResolver = ConfResolver{
+					DefaultURIScheme: "env",
+				}
+				cfg.Distribution.OutputPath = t.TempDir()
+				cfg.Replaces = append(cfg.Replaces, replaces...)
+				return cfg
+			},
+		},
 	}
 
 	for _, tt := range testCases {
