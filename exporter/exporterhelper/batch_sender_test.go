@@ -436,6 +436,15 @@ func TestBatchSender_WithBatcherOption(t *testing.T) {
 	}
 }
 
+func TestBatchSender_UnstartedShutdown(t *testing.T) {
+	be, err := newBaseExporter(defaultSettings, defaultDataType, newNoopObsrepSender,
+		WithBatcher(exporterbatcher.NewDefaultConfig(), WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc)))
+	require.NoError(t, err)
+
+	err = be.Shutdown(context.Background())
+	require.NoError(t, err)
+}
+
 // TestBatchSender_ShutdownDeadlock tests that the exporter does not deadlock when shutting down while a batch is being
 // merged.
 func TestBatchSender_ShutdownDeadlock(t *testing.T) {
