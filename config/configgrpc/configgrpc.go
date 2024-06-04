@@ -218,8 +218,8 @@ func (gcs *ClientConfig) isSchemeHTTPS() bool {
 // a non-blocking dial (the function won't wait for connections to be
 // established, and connecting happens in the background). To make it a blocking
 // dial, use grpc.WithBlock() dial option.
-func (gcs *ClientConfig) ToClientConn(_ context.Context, host component.Host, settings component.TelemetrySettings, extraOpts ...grpc.DialOption) (*grpc.ClientConn, error) {
-	opts, err := gcs.toDialOptions(host, settings)
+func (gcs *ClientConfig) ToClientConn(ctx context.Context, host component.Host, settings component.TelemetrySettings, extraOpts ...grpc.DialOption) (*grpc.ClientConn, error) {
+	opts, err := gcs.toDialOptions(ctx, host, settings)
 	if err != nil {
 		return nil, err
 	}
@@ -227,7 +227,7 @@ func (gcs *ClientConfig) ToClientConn(_ context.Context, host component.Host, se
 	return grpc.NewClient(gcs.sanitizedEndpoint(), opts...)
 }
 
-func (gcs *ClientConfig) toDialOptions(host component.Host, settings component.TelemetrySettings) ([]grpc.DialOption, error) {
+func (gcs *ClientConfig) toDialOptions(ctx context.Context, host component.Host, settings component.TelemetrySettings) ([]grpc.DialOption, error) {
 	var opts []grpc.DialOption
 	if gcs.Compression.IsCompressed() {
 		cp, err := getGRPCCompressionName(gcs.Compression)
@@ -237,7 +237,7 @@ func (gcs *ClientConfig) toDialOptions(host component.Host, settings component.T
 		opts = append(opts, grpc.WithDefaultCallOptions(grpc.UseCompressor(cp)))
 	}
 
-	tlsCfg, err := gcs.TLSSetting.LoadTLSConfig(context.Background())
+	tlsCfg, err := gcs.TLSSetting.LoadTLSConfig(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -271,7 +271,7 @@ func (gcs *ClientConfig) toDialOptions(host component.Host, settings component.T
 			return nil, errors.New("no extensions configuration available")
 		}
 
-		grpcAuthenticator, cerr := gcs.Auth.GetClientAuthenticator(host.GetExtensions())
+		grpcAuthenticator, cerr := gcs.Auth.GetClientAuthenticatorContext(ctx, host.GetExtensions())
 		if cerr != nil {
 			return nil, cerr
 		}
@@ -387,7 +387,7 @@ func (gss *ServerConfig) toServerOption(host component.Host, settings component.
 	var sInterceptors []grpc.StreamServerInterceptor
 
 	if gss.Auth != nil {
-		authenticator, err := gss.Auth.GetServerAuthenticator(host.GetExtensions())
+		authenticator, err := gss.Auth.GetServerAuthenticatorContext(context.Background(), host.GetExtensions())
 		if err != nil {
 			return nil, err
 		}

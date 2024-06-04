@@ -119,7 +119,7 @@ func newEmptyBatch() *batch {
 // Caller must hold the lock.
 func (bs *batchSender) exportActiveBatch() {
 	go func(b *batch) {
-		b.err = b.request.Export(b.ctx)
+		b.err = bs.nextSender.send(b.ctx, b.request)
 		close(b.done)
 	}(bs.activeBatch)
 	bs.activeBatch = newEmptyBatch()
@@ -182,7 +182,7 @@ func (bs *batchSender) sendMergeSplitBatch(ctx context.Context, req Request) err
 	// Intentionally do not put the last request in the active batch to not block it.
 	// TODO: Consider including the partial request in the error to avoid double publishing.
 	for _, r := range reqs {
-		if err := r.Export(ctx); err != nil {
+		if err := bs.nextSender.send(ctx, r); err != nil {
 			return err
 		}
 	}
