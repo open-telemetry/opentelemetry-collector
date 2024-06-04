@@ -54,7 +54,7 @@ func newBatchSender(cfg exporterbatcher.Config, set exporter.CreateSettings,
 		logger:             set.Logger,
 		mergeFunc:          mf,
 		mergeSplitFunc:     msf,
-		shutdownCh:         make(chan struct{}),
+		shutdownCh:         nil,
 		shutdownCompleteCh: make(chan struct{}),
 		stopped:            &atomic.Bool{},
 		resetTimerCh:       make(chan struct{}),
@@ -63,6 +63,7 @@ func newBatchSender(cfg exporterbatcher.Config, set exporter.CreateSettings,
 }
 
 func (bs *batchSender) Start(_ context.Context, _ component.Host) error {
+	bs.shutdownCh = make(chan struct{})
 	timer := time.NewTimer(bs.cfg.FlushTimeout)
 	go func() {
 		for {
@@ -227,7 +228,9 @@ func (bs *batchSender) updateActiveBatch(ctx context.Context, req Request) {
 
 func (bs *batchSender) Shutdown(context.Context) error {
 	bs.stopped.Store(true)
-	close(bs.shutdownCh)
-	<-bs.shutdownCompleteCh
+	if bs.shutdownCh != nil {
+		close(bs.shutdownCh)
+		<-bs.shutdownCompleteCh
+	}
 	return nil
 }
