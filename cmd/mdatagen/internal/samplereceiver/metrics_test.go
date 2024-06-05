@@ -18,7 +18,7 @@ import (
 
 // TestGeneratedMetrics verifies that the internal/metadata API is generated correctly.
 func TestGeneratedMetrics(t *testing.T) {
-	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings())
+	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings())
 	m := mb.Emit()
 	require.Equal(t, 0, m.ResourceMetrics().Len())
 }

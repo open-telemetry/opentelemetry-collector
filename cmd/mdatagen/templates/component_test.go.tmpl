@@ -299,7 +299,7 @@ func TestComponentLifecycle(t *testing.T) {
 	for _, test := range tests {
 		{{- if not .Tests.SkipShutdown }}
 		t.Run(test.name + "-shutdown", func(t *testing.T) {
-			c, err := test.createFn(context.Background(), receivertest.NewNopCreateSettings(), cfg)
+			c, err := test.createFn(context.Background(), receivertest.NewNopSettings(), cfg)
 			require.NoError(t, err)
 			err = c.Shutdown(context.Background())
 			require.NoError(t, err)
@@ -308,13 +308,13 @@ func TestComponentLifecycle(t *testing.T) {
 
 		{{- if not .Tests.SkipLifecycle }}
 		t.Run(test.name + "-lifecycle", func(t *testing.T) {
-			firstRcvr, err := test.createFn(context.Background(), receivertest.NewNopCreateSettings(), cfg)
+			firstRcvr, err := test.createFn(context.Background(), receivertest.NewNopSettings(), cfg)
 			require.NoError(t, err)
 			host := componenttest.NewNopHost()
 			require.NoError(t, err)
 			require.NoError(t, firstRcvr.Start(context.Background(), host))
 			require.NoError(t, firstRcvr.Shutdown(context.Background()))
-			secondRcvr, err := test.createFn(context.Background(), receivertest.NewNopCreateSettings(), cfg)
+			secondRcvr, err := test.createFn(context.Background(), receivertest.NewNopSettings(), cfg)
 			require.NoError(t, err)
 			require.NoError(t, secondRcvr.Start(context.Background(), host))
 			require.NoError(t, secondRcvr.Shutdown(context.Background()))
