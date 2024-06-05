@@ -1,0 +1,13 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: 'bug_fix'
+
+# The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
+component: Use own compressors for zstd
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Before this change, the zstd compressor we used didn't respect the max message size.
+
+# One or more tracking issues or pull requests related to the change
+issues: [10323]
