@@ -7,6 +7,12 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.102.1
+
+### 🧰 Bug fixes 🧰
+
+- `configrpc`: Use own compressors for zstd`. Before this change, the zstd compressor we used didn't respect the max message size. This addresses [GHSA-c74f-6mfw-mm4v](https://github.com/open-telemetry/opentelemetry-collector/security/advisories/GHSA-c74f-6mfw-mm4v) (#10323)
+
 ## v1.9.0/v0.102.0
 
 ### 🛑 Breaking changes 🛑
