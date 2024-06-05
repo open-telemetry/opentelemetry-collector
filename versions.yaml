@@ -10,7 +10,7 @@ module-sets:
       - go.opentelemetry.io/collector/config/configopaque
       - go.opentelemetry.io/collector/config/configcompression
   beta:
-    version: v0.102.0
+    version: v0.102.1
     modules:
       - go.opentelemetry.io/collector
       - go.opentelemetry.io/collector/cmd/builder
