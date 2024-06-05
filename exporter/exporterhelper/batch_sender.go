@@ -33,10 +33,9 @@ type batchSender struct {
 	concurrencyLimit int64
 	activeRequests   atomic.Int64
 
-	resetTimerCh chan struct{}
-
 	mu          sync.Mutex
 	activeBatch *batch
+	lastFlushed time.Time
 
 	logger *zap.Logger
 
@@ -57,7 +56,6 @@ func newBatchSender(cfg exporterbatcher.Config, set exporter.CreateSettings,
 		shutdownCh:         nil,
 		shutdownCompleteCh: make(chan struct{}),
 		stopped:            &atomic.Bool{},
-		resetTimerCh:       make(chan struct{}),
 	}
 	return bs
 }
@@ -87,18 +85,19 @@ func (bs *batchSender) Start(_ context.Context, _ component.Host) error {
 				return
 			case <-timer.C:
 				bs.mu.Lock()
+				nextFlush := bs.cfg.FlushTimeout
 				if bs.activeBatch.request != nil {
-					bs.exportActiveBatch(func(b *batch) {
+					sinceLastFlush := time.Since(bs.lastFlushed)
+					if sinceLastFlush >= bs.cfg.FlushTimeout {
+						bs.exportActiveBatch(func(b *batch) {
 						bs.activeRequests.Add(-b.requests)
 					})
+					} else {
+						nextFlush = bs.cfg.FlushTimeout - sinceLastFlush
+					}
 				}
 				bs.mu.Unlock()
-				timer.Reset(bs.cfg.FlushTimeout)
-			case <-bs.resetTimerCh:
-				if !timer.Stop() {
-					<-timer.C
-				}
-				timer.Reset(bs.cfg.FlushTimeout)
+				timer.Reset(nextFlush)
 			}
 		}
 	}()
@@ -129,13 +128,8 @@ func (bs *batchSender) exportActiveBatch(callback func(*batch)) {
 		b.err = bs.nextSender.send(b.ctx, b.request)
 		close(b.done)
 	}(bs.activeBatch)
+	bs.lastFlushed = time.Now()
 	bs.activeBatch = newEmptyBatch()
-}
-
-func (bs *batchSender) resetTimer() {
-	if !bs.stopped.Load() {
-		bs.resetTimerCh <- struct{}{}
-	}
 }
 
 // isActiveBatchReady returns true if the active batch is ready to be exported.
@@ -185,7 +179,6 @@ func (bs *batchSender) sendMergeSplitBatch(ctx context.Context, req Request) err
 					bs.activeRequests.Add(-b.requests)
 				}
 			})
-			bs.resetTimer()
 		}
 		bs.mu.Unlock()
 		<-b.done
@@ -228,7 +221,6 @@ func (bs *batchSender) sendMergeBatch(ctx context.Context, req Request) error {
 		bs.exportActiveBatch(func(b *batch) {
 			bs.activeRequests.Add(-b.requests)
 		})
-		bs.resetTimer()
 	}
 	bs.mu.Unlock()
 	<-b.done
