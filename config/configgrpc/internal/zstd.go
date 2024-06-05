@@ -5,6 +5,7 @@
 package internal // import "go.opentelemetry.io/collector/config/configgrpc/internal"
 
 import (
+	"errors"
 	"io"
 	"sync"
 
@@ -66,7 +67,7 @@ func (c *compressor) Decompress(r io.Reader) (io.Reader, error) {
 
 func (z *reader) Read(p []byte) (n int, err error) {
 	n, err = z.Decoder.Read(p)
-	if err == io.EOF {
+	if errors.Is(err, io.EOF) {
 		z.pool.Put(z)
 	}
 	return n, err
