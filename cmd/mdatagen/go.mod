@@ -5,22 +5,22 @@ go 1.21.0
 require (
 	github.com/google/go-cmp v0.6.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.101.0
-	go.opentelemetry.io/collector/config/configtelemetry v0.101.0
-	go.opentelemetry.io/collector/confmap v0.101.0
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.101.0
-	go.opentelemetry.io/collector/consumer v0.101.0
-	go.opentelemetry.io/collector/filter v0.101.0
-	go.opentelemetry.io/collector/pdata v1.8.0
-	go.opentelemetry.io/collector/receiver v0.101.0
-	go.opentelemetry.io/collector/semconv v0.101.0
+	go.opentelemetry.io/collector/component v0.102.0
+	go.opentelemetry.io/collector/config/configtelemetry v0.102.0
+	go.opentelemetry.io/collector/confmap v0.102.0
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.102.0
+	go.opentelemetry.io/collector/consumer v0.102.0
+	go.opentelemetry.io/collector/filter v0.102.0
+	go.opentelemetry.io/collector/pdata v1.9.0
+	go.opentelemetry.io/collector/receiver v0.102.0
+	go.opentelemetry.io/collector/semconv v0.102.0
 	go.opentelemetry.io/otel v1.27.0
 	go.opentelemetry.io/otel/metric v1.27.0
 	go.opentelemetry.io/otel/sdk/metric v1.27.0
 	go.opentelemetry.io/otel/trace v1.27.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
-	golang.org/x/text v0.15.0
+	golang.org/x/text v0.16.0
 )
 
 require (
@@ -43,7 +43,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.19.1 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
-	github.com/prometheus/common v0.53.0 // indirect
+	github.com/prometheus/common v0.54.0 // indirect
 	github.com/prometheus/procfs v0.15.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.49.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.27.0 // indirect

@@ -3,14 +3,14 @@ module go.opentelemetry.io/collector
 go 1.21.0
 
 require (
-	github.com/shirou/gopsutil/v3 v3.24.4
+	github.com/shirou/gopsutil/v3 v3.24.5
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.101.0
-	go.opentelemetry.io/collector/confmap v0.101.0
-	go.opentelemetry.io/collector/consumer v0.101.0
-	go.opentelemetry.io/collector/featuregate v1.8.0
-	go.opentelemetry.io/collector/pdata v1.8.0
-	go.opentelemetry.io/collector/pdata/testdata v0.101.0
+	go.opentelemetry.io/collector/component v0.102.0
+	go.opentelemetry.io/collector/confmap v0.102.0
+	go.opentelemetry.io/collector/consumer v0.102.0
+	go.opentelemetry.io/collector/featuregate v1.9.0
+	go.opentelemetry.io/collector/pdata v1.9.0
+	go.opentelemetry.io/collector/pdata/testdata v0.102.0
 	go.opentelemetry.io/contrib/config v0.7.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
@@ -43,12 +43,12 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/prometheus/client_golang v1.19.1 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
-	github.com/prometheus/common v0.53.0 // indirect
+	github.com/prometheus/common v0.54.0 // indirect
 	github.com/prometheus/procfs v0.15.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.101.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.102.0 // indirect
 	go.opentelemetry.io/otel v1.27.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.27.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v1.27.0 // indirect

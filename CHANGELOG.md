@@ -7,6 +7,34 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.9.0/v0.102.0
+
+### 🛑 Breaking changes 🛑
+
+- `envprovider`: Restricts Environment Variable names.  Environment variable names must now be ASCII only and start with a letter or an underscore, and can only contain underscores, letters, or numbers. (#9531)
+- `confighttp`: Apply MaxRequestBodySize to the result of a decompressed body (#10289)
+  When using compressed payloads, the Collector would verify only the size of the compressed payload. 
+  This change applies the same restriction to the decompressed content. As a security measure, a limit of 20 MiB was added, which makes this a breaking change. 
+  For most clients, this shouldn't be a problem, but if you often have payloads that decompress to more than 20 MiB, you might want to either configure your
+  client to send smaller batches (recommended), or increase the limit using the MaxRequestBodySize option.
+  
+
+### 💡 Enhancements 💡
+
+- `mdatagen`: auto-generate utilities to test component telemetry (#19783)
+- `mdatagen`: support setting an AttributeSet for async instruments (#9674)
+- `mdatagen`: support using telemetry level in telemetry builder (#10234)
+  This allows components to set the minimum level needed for them to produce telemetry. By default, this is set to configtelemetry.LevelBasic. If the telemetry level is below that minimum level, then the noop meter is used for metrics.
+- `mdatagen`: add support for bucket boundaries for histograms (#10218)
+- `releases`: add documentation in how to verify the image signatures using cosign (#9610)
+
+### 🧰 Bug fixes 🧰
+
+- `batchprocessor`: ensure attributes are set on cardinality metadata metric (#9674)
+- `batchprocessor`: Fixing processor_batch_metadata_cardinality which was broken in v0.101.0 (#10231)
+- `batchprocessor`: respect telemetry level for all metrics (#10234)
+- `exporterhelper`: Fix potential deadlocks in BatcherSender shutdown (#10255)
+
 ## v1.8.0/v0.101.0
 
 ### 💡 Enhancements 💡
