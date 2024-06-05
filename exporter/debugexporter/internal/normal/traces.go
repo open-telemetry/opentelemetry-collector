@@ -5,7 +5,6 @@ package normal
 
 import (
 	"bytes"
-	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
@@ -28,8 +27,11 @@ func (normalTracesMarshaler) MarshalTraces(md ptrace.Traces) ([]byte, error) {
 			scopeTraces := resourceTraces.ScopeSpans().At(j)
 			for k := 0; k < scopeTraces.Spans().Len(); k++ {
 				span := scopeTraces.Spans().At(k)
-				spanString := fmt.Sprintf("%s %s %s", span.Name(), span.TraceID().String(), span.SpanID().String())
-				buffer.WriteString(spanString)
+				buffer.WriteString(span.Name())
+				buffer.WriteString(" ")
+				buffer.WriteString(span.TraceID().String())
+				buffer.WriteString(" ")
+				buffer.WriteString(span.SpanID().String())
 				buffer.WriteString("\n")
 			}
 		}
