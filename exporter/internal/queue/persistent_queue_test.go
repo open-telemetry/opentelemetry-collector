@@ -324,7 +324,7 @@ func TestInvalidStorageExtensionType(t *testing.T) {
 	// make a test extension
 	factory := extensiontest.NewNopFactory()
 	extConfig := factory.CreateDefaultConfig()
-	settings := extensiontest.NewNopCreateSettings()
+	settings := extensiontest.NewNopSettings()
 	extension, err := factory.CreateExtension(context.Background(), settings, extConfig)
 	assert.NoError(t, err)
 	var extensions = map[component.ID]component.Component{
