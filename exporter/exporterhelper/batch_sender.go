@@ -30,8 +30,8 @@ type batchSender struct {
 	// concurrencyLimit is the maximum number of goroutines that can be blocked by the batcher.
 	// If this number is reached and all the goroutines are busy, the batch will be sent right away.
 	// Populated from the number of queue consumers if queue is enabled.
-	concurrencyLimit uint64
-	activeRequests   atomic.Uint64
+	concurrencyLimit int64
+	activeRequests   atomic.Int64
 
 	resetTimerCh chan struct{}
 
@@ -74,7 +74,9 @@ func (bs *batchSender) Start(_ context.Context, _ component.Host) error {
 				for bs.activeRequests.Load() > 0 {
 					bs.mu.Lock()
 					if bs.activeBatch.request != nil {
-						bs.exportActiveBatch()
+						bs.exportActiveBatch(func(b *batch) {
+							bs.activeRequests.Add(-b.requests)
+						})
 					}
 					bs.mu.Unlock()
 				}
@@ -86,7 +88,9 @@ func (bs *batchSender) Start(_ context.Context, _ component.Host) error {
 			case <-timer.C:
 				bs.mu.Lock()
 				if bs.activeBatch.request != nil {
-					bs.exportActiveBatch()
+					bs.exportActiveBatch(func(b *batch) {
+						bs.activeRequests.Add(-b.requests)
+					})
 				}
 				bs.mu.Unlock()
 				timer.Reset(bs.cfg.FlushTimeout)
@@ -103,10 +107,11 @@ func (bs *batchSender) Start(_ context.Context, _ component.Host) error {
 }
 
 type batch struct {
-	ctx     context.Context
-	request Request
-	done    chan struct{}
-	err     error
+	ctx      context.Context
+	request  Request
+	done     chan struct{}
+	err      error
+	requests int64 // number of requests in this batch
 }
 
 func newEmptyBatch() *batch {
@@ -118,8 +123,9 @@ func newEmptyBatch() *batch {
 
 // exportActiveBatch exports the active batch asynchronously and replaces it with a new one.
 // Caller must hold the lock.
-func (bs *batchSender) exportActiveBatch() {
+func (bs *batchSender) exportActiveBatch(callback func(*batch)) {
 	go func(b *batch) {
+		defer callback(b)
 		b.err = bs.nextSender.send(b.ctx, b.request)
 		close(b.done)
 	}(bs.activeBatch)
@@ -155,28 +161,40 @@ func (bs *batchSender) send(ctx context.Context, req Request) error {
 // sendMergeSplitBatch sends the request to the batch which may be split into multiple requests.
 func (bs *batchSender) sendMergeSplitBatch(ctx context.Context, req Request) error {
 	bs.mu.Lock()
-	bs.activeRequests.Add(1)
-	defer bs.activeRequests.Add(^uint64(0))
 
 	reqs, err := bs.mergeSplitFunc(ctx, bs.cfg.MaxSizeConfig, bs.activeBatch.request, req)
 	if err != nil || len(reqs) == 0 {
 		bs.mu.Unlock()
 		return err
 	}
+
+	bs.activeRequests.Add(1)
 	if len(reqs) == 1 || bs.activeBatch.request != nil {
 		bs.updateActiveBatch(ctx, reqs[0])
-		batch := bs.activeBatch
-		if bs.isActiveBatchReady() || len(reqs) > 1 {
-			bs.exportActiveBatch()
+		b := bs.activeBatch
+		b.requests++
+		leftover := len(reqs) > 1
+		if bs.isActiveBatchReady() || leftover {
+			bs.exportActiveBatch(func(b *batch) {
+				if leftover {
+					// Since there will be some leftover requests after exporting active batch,
+					// release all requests in this batch except one.
+					bs.activeRequests.Add(-b.requests + 1)
+					defer bs.activeRequests.Add(-1)
+				} else {
+					bs.activeRequests.Add(-b.requests)
+				}
+			})
 			bs.resetTimer()
 		}
 		bs.mu.Unlock()
-		<-batch.done
-		if batch.err != nil {
-			return batch.err
+		<-b.done
+		if b.err != nil {
+			return b.err
 		}
 		reqs = reqs[1:]
 	} else {
+		defer bs.activeRequests.Add(-1)
 		bs.mu.Unlock()
 	}
 
@@ -194,7 +212,6 @@ func (bs *batchSender) sendMergeSplitBatch(ctx context.Context, req Request) err
 func (bs *batchSender) sendMergeBatch(ctx context.Context, req Request) error {
 	bs.mu.Lock()
 	bs.activeRequests.Add(1)
-	defer bs.activeRequests.Add(^uint64(0))
 
 	if bs.activeBatch.request != nil {
 		var err error
@@ -205,14 +222,17 @@ func (bs *batchSender) sendMergeBatch(ctx context.Context, req Request) error {
 		}
 	}
 	bs.updateActiveBatch(ctx, req)
-	batch := bs.activeBatch
+	b := bs.activeBatch
+	b.requests++
 	if bs.isActiveBatchReady() {
-		bs.exportActiveBatch()
+		bs.exportActiveBatch(func(b *batch) {
+			bs.activeRequests.Add(-b.requests)
+		})
 		bs.resetTimer()
 	}
 	bs.mu.Unlock()
-	<-batch.done
-	return batch.err
+	<-b.done
+	return b.err
 }
 
 // updateActiveBatch update the active batch to the new merged request and context.
