@@ -22,7 +22,7 @@ func TestExportEnqueueFailure(t *testing.T) {
 
 	obsrep, err := NewObsReport(ObsReportSettings{
 		ExporterID:             exporterID,
-		ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		ExporterCreateSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 	})
 	require.NoError(t, err)
 

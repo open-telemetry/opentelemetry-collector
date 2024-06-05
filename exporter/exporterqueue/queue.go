@@ -25,7 +25,7 @@ type Queue[T any] queue.Queue[T]
 // Settings defines settings for creating a queue.
 type Settings struct {
 	DataType         component.DataType
-	ExporterSettings exporter.CreateSettings
+	ExporterSettings exporter.Settings
 }
 
 // Marshaler is a function that can marshal a request into bytes.

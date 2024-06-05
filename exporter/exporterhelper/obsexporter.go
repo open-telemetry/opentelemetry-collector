@@ -33,7 +33,7 @@ type ObsReport struct {
 // ObsReportSettings are settings for creating an ObsReport.
 type ObsReportSettings struct {
 	ExporterID             component.ID
-	ExporterCreateSettings exporter.CreateSettings
+	ExporterCreateSettings exporter.Settings
 }
 
 // NewObsReport creates a new Exporter.
