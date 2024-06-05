@@ -38,7 +38,7 @@ type ObsReport struct {
 type ObsReportSettings struct {
 	ReceiverID             component.ID
 	Scraper                component.ID
-	ReceiverCreateSettings receiver.CreateSettings
+	ReceiverCreateSettings receiver.Settings
 }
 
 // NewObsReport creates a new ObsReport.

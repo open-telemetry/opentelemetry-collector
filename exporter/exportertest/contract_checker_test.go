@@ -89,15 +89,15 @@ func newMockExporterFactory(mr *mockReceiver) exporter.Factory {
 func newMockReceiverFactory(mr *mockReceiver) receiver.Factory {
 	return receiver.NewFactory(component.MustNewType("pass_through_receiver"),
 		func() component.Config { return &nopConfig{} },
-		receiver.WithTraces(func(_ context.Context, _ receiver.CreateSettings, _ component.Config, c consumer.Traces) (receiver.Traces, error) {
+		receiver.WithTraces(func(_ context.Context, _ receiver.Settings, _ component.Config, c consumer.Traces) (receiver.Traces, error) {
 			mr.Traces = c
 			return mr, nil
 		}, component.StabilityLevelStable),
-		receiver.WithMetrics(func(_ context.Context, _ receiver.CreateSettings, _ component.Config, c consumer.Metrics) (receiver.Metrics, error) {
+		receiver.WithMetrics(func(_ context.Context, _ receiver.Settings, _ component.Config, c consumer.Metrics) (receiver.Metrics, error) {
 			mr.Metrics = c
 			return mr, nil
 		}, component.StabilityLevelStable),
-		receiver.WithLogs(func(_ context.Context, _ receiver.CreateSettings, _ component.Config, c consumer.Logs) (receiver.Logs, error) {
+		receiver.WithLogs(func(_ context.Context, _ receiver.Settings, _ component.Config, c consumer.Logs) (receiver.Logs, error) {
 			mr.Logs = c
 			return mr, nil
 		}, component.StabilityLevelStable),

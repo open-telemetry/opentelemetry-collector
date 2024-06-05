@@ -16,9 +16,9 @@ import (
 
 var defaultComponentType = component.MustNewType("nop")
 
-// NewNopCreateSettings returns a new nop settings for Create*Receiver functions.
-func NewNopCreateSettings() receiver.CreateSettings {
-	return receiver.CreateSettings{
+// NewNopSettings returns a new nop settings for Create*Receiver functions.
+func NewNopSettings() receiver.Settings {
+	return receiver.Settings{
 		ID:                component.NewIDWithName(defaultComponentType, uuid.NewString()),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),
@@ -56,15 +56,15 @@ func NewNopFactoryForType(dataType component.DataType) receiver.Factory {
 
 type nopConfig struct{}
 
-func createTraces(context.Context, receiver.CreateSettings, component.Config, consumer.Traces) (receiver.Traces, error) {
+func createTraces(context.Context, receiver.Settings, component.Config, consumer.Traces) (receiver.Traces, error) {
 	return nopInstance, nil
 }
 
-func createMetrics(context.Context, receiver.CreateSettings, component.Config, consumer.Metrics) (receiver.Metrics, error) {
+func createMetrics(context.Context, receiver.Settings, component.Config, consumer.Metrics) (receiver.Metrics, error) {
 	return nopInstance, nil
 }
 
-func createLogs(context.Context, receiver.CreateSettings, component.Config, consumer.Logs) (receiver.Logs, error) {
+func createLogs(context.Context, receiver.Settings, component.Config, consumer.Logs) (receiver.Logs, error) {
 	return nopInstance, nil
 }
 
