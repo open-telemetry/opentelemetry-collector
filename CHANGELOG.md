@@ -9,11 +9,15 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 ## v0.102.1
 
+**This release addresses [GHSA-c74f-6mfw-mm4v](https://github.com/open-telemetry/opentelemetry-collector/security/advisories/GHSA-c74f-6mfw-mm4v) for `configgrpc`.**
+
 ### 🧰 Bug fixes 🧰
 
 - `configrpc`: Use own compressors for zstd. Before this change, the zstd compressor we used didn't respect the max message size. This addresses [GHSA-c74f-6mfw-mm4v](https://github.com/open-telemetry/opentelemetry-collector/security/advisories/GHSA-c74f-6mfw-mm4v) for `configgrpc` (#10323)
 
 ## v1.9.0/v0.102.0
+
+**This release addresses [GHSA-c74f-6mfw-mm4v](https://github.com/open-telemetry/opentelemetry-collector/security/advisories/GHSA-c74f-6mfw-mm4v) for `confighttp`.**
 
 ### 🛑 Breaking changes 🛑
 
