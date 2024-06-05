@@ -22,15 +22,15 @@ func NewFactory() receiver.Factory {
 		receiver.WithLogs(createLogs, metadata.LogsStability))
 }
 
-func createTraces(context.Context, receiver.CreateSettings, component.Config, consumer.Traces) (receiver.Traces, error) {
+func createTraces(context.Context, receiver.Settings, component.Config, consumer.Traces) (receiver.Traces, error) {
 	return nopInstance, nil
 }
 
-func createMetrics(context.Context, receiver.CreateSettings, component.Config, consumer.Metrics) (receiver.Metrics, error) {
+func createMetrics(context.Context, receiver.Settings, component.Config, consumer.Metrics) (receiver.Metrics, error) {
 	return nopInstance, nil
 }
 
-func createLogs(context.Context, receiver.CreateSettings, component.Config, consumer.Logs) (receiver.Logs, error) {
+func createLogs(context.Context, receiver.Settings, component.Config, consumer.Logs) (receiver.Logs, error) {
 	return nopInstance, nil
 }
 

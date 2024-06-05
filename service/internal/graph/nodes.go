@@ -73,7 +73,7 @@ func (n *receiverNode) buildComponent(ctx context.Context,
 	builder *receiver.Builder,
 	nexts []baseConsumer,
 ) error {
-	set := receiver.CreateSettings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
+	set := receiver.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
 	set.TelemetrySettings.Logger = components.ReceiverLogger(tel.Logger, n.componentID, n.pipelineType)
 	var err error
 	switch n.pipelineType {

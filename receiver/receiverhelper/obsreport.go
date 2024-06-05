@@ -44,7 +44,7 @@ type ObsReportSettings struct {
 	// eg.: a gRPC stream, for which many batches of data are received in individual
 	// operations without a corresponding new context per operation.
 	LongLivedCtx           bool
-	ReceiverCreateSettings receiver.CreateSettings
+	ReceiverCreateSettings receiver.Settings
 }
 
 // NewObsReport creates a new ObsReport.

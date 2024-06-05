@@ -21,6 +21,16 @@ type componentTestTelemetry struct {
 	meterProvider *sdkmetric.MeterProvider
 }
 
+{{- if isReceiver }}
+func (tt *componentTestTelemetry) NewSettings() {{ .Status.Class }}.Settings {
+	settings := {{ .Status.Class }}test.NewNopSettings()
+	settings.MeterProvider = tt.meterProvider
+	settings.ID = component.NewID(component.MustNewType("{{ .Type }}"))
+
+	return settings
+}
+
+{{ else }}
 func (tt *componentTestTelemetry) NewCreateSettings() {{ .Status.Class }}.CreateSettings {
 	settings := {{ .Status.Class }}test.NewNopCreateSettings()
 	settings.MeterProvider = tt.meterProvider
@@ -29,6 +39,7 @@ func (tt *componentTestTelemetry) NewCreateSettings() {{ .Status.Class }}.Create
 	return settings
 }
 
+{{ end }}
 func setupTestTelemetry() componentTestTelemetry {
 	reader := sdkmetric.NewManualReader()
 	return componentTestTelemetry{
