@@ -2,7 +2,7 @@
 // Copyright 2017 gRPC authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal
+package internal // import "go.opentelemetry.io/collector/config/configgrpc/internal"
 
 import (
 	"io"
