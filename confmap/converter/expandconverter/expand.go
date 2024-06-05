@@ -12,6 +12,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/internal/envvar"
 )
 
 type converter struct {
@@ -21,55 +22,64 @@ type converter struct {
 	loggedDeprecations map[string]struct{}
 }
 
-// New returns a confmap.Converter, that expands all environment variables for a given confmap.Conf.
-//
-// Notice: This API is experimental.
-//
-// Deprecated: [v0.99.0] Use NewFactory instead.
-func New(_ confmap.ConverterSettings) confmap.Converter {
-	return converter{
-		loggedDeprecations: make(map[string]struct{}),
-		logger:             zap.NewNop(), // TODO: pass logger in ConverterSettings
-	}
-}
-
 // NewFactory returns a factory for a  confmap.Converter,
 // which expands all environment variables for a given confmap.Conf.
 func NewFactory() confmap.ConverterFactory {
-	return confmap.NewConverterFactory(New)
+	return confmap.NewConverterFactory(newConverter)
+}
+
+func newConverter(set confmap.ConverterSettings) confmap.Converter {
+	return converter{
+		loggedDeprecations: make(map[string]struct{}),
+		logger:             set.Logger,
+	}
 }
 
 func (c converter) Convert(_ context.Context, conf *confmap.Conf) error {
+	var err error
 	out := make(map[string]any)
 	for _, k := range conf.AllKeys() {
-		out[k] = c.expandStringValues(conf.Get(k))
+		out[k], err = c.expandStringValues(conf.Get(k))
+		if err != nil {
+			return err
+		}
 	}
 	return conf.Merge(confmap.NewFromStringMap(out))
 }
 
-func (c converter) expandStringValues(value any) any {
+func (c converter) expandStringValues(value any) (any, error) {
+	var err error
 	switch v := value.(type) {
 	case string:
 		return c.expandEnv(v)
 	case []any:
 		nslice := make([]any, 0, len(v))
 		for _, vint := range v {
-			nslice = append(nslice, c.expandStringValues(vint))
+			var nv any
+			nv, err = c.expandStringValues(vint)
+			if err != nil {
+				return nil, err
+			}
+			nslice = append(nslice, nv)
 		}
-		return nslice
+		return nslice, nil
 	case map[string]any:
 		nmap := map[string]any{}
 		for mk, mv := range v {
-			nmap[mk] = c.expandStringValues(mv)
+			nmap[mk], err = c.expandStringValues(mv)
+			if err != nil {
+				return nil, err
+			}
 		}
-		return nmap
+		return nmap, nil
 	default:
-		return v
+		return v, nil
 	}
 }
 
-func (c converter) expandEnv(s string) string {
-	return os.Expand(s, func(str string) string {
+func (c converter) expandEnv(s string) (string, error) {
+	var err error
+	res := os.Expand(s, func(str string) string {
 		// Matches on $VAR style environment variables
 		// in order to make sure we don't log a warning for ${VAR}
 		var regex = regexp.MustCompile(fmt.Sprintf(`\$%s`, regexp.QuoteMeta(str)))
@@ -85,6 +95,20 @@ func (c converter) expandEnv(s string) string {
 		if str == "$" {
 			return "$"
 		}
-		return os.Getenv(str)
+		// For $ENV style environment variables os.Expand returns once it hits a character that isn't an underscore or
+		// an alphanumeric character - so we cannot detect those malformed environment variables.
+		// For ${ENV} style variables we can detect those kinds of env var names!
+		if !envvar.ValidationRegexp.MatchString(str) {
+			err = fmt.Errorf("environment variable %q has invalid name: must match regex %s", str, envvar.ValidationPattern)
+			return ""
+		}
+		val, exists := os.LookupEnv(str)
+		if !exists {
+			c.logger.Warn("Configuration references unset environment variable", zap.String("name", str))
+		} else if len(val) == 0 {
+			c.logger.Info("Configuration references empty environment variable", zap.String("name", str))
+		}
+		return val
 	})
+	return res, err
 }

@@ -9,9 +9,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/trace"
-	"go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -55,13 +52,15 @@ func TestTelemetryConfiguration(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			telemetry, err := New(context.Background(), Settings{ZapOptions: []zap.Option{}}, *tt.cfg)
+			f := NewFactory()
+			set := Settings{ZapOptions: []zap.Option{}}
+			logger, err := f.CreateLogger(context.Background(), set, tt.cfg)
 			if tt.success {
 				assert.NoError(t, err)
-				assert.NotNil(t, telemetry)
+				assert.NotNil(t, logger)
 			} else {
 				assert.Error(t, err)
-				assert.Nil(t, telemetry)
+				assert.Nil(t, logger)
 			}
 		})
 	}
@@ -111,33 +110,12 @@ func TestSampledLogger(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			telemetry, err := New(context.Background(), Settings{ZapOptions: []zap.Option{}}, *tt.cfg)
+			f := NewFactory()
+			ctx := context.Background()
+			set := Settings{ZapOptions: []zap.Option{}}
+			logger, err := f.CreateLogger(ctx, set, tt.cfg)
 			assert.NoError(t, err)
-			assert.NotNil(t, telemetry)
-			assert.NotNil(t, telemetry.Logger())
-		})
-	}
-}
-
-func TestTelemetryShutdown(t *testing.T) {
-	tests := []struct {
-		name     string
-		provider trace.TracerProvider
-		wantErr  error
-	}{
-		{
-			name: "No provider",
-		},
-		{
-			name:     "Non-SDK provider",
-			provider: noop.NewTracerProvider(),
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			telemetry := Telemetry{tracerProvider: tt.provider}
-			err := telemetry.Shutdown(context.Background())
-			require.Equal(t, tt.wantErr, err)
+			assert.NotNil(t, logger)
 		})
 	}
 }

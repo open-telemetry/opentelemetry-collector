@@ -19,15 +19,16 @@ import (
 
 func TestRunContents(t *testing.T) {
 	tests := []struct {
-		yml                  string
-		wantMetricsGenerated bool
-		wantConfigGenerated  bool
-		wantStatusGenerated  bool
-		wantGoleakIgnore     bool
-		wantGoleakSkip       bool
-		wantGoleakSetup      bool
-		wantGoleakTeardown   bool
-		wantErr              bool
+		yml                    string
+		wantMetricsGenerated   bool
+		wantConfigGenerated    bool
+		wantTelemetryGenerated bool
+		wantStatusGenerated    bool
+		wantGoleakIgnore       bool
+		wantGoleakSkip         bool
+		wantGoleakSetup        bool
+		wantGoleakTeardown     bool
+		wantErr                bool
 	}{
 		{
 			yml:     "invalid.yaml",
@@ -88,6 +89,15 @@ func TestRunContents(t *testing.T) {
 			wantStatusGenerated: true,
 			wantGoleakTeardown:  true,
 		},
+		{
+			yml:                    "with_telemetry.yaml",
+			wantStatusGenerated:    true,
+			wantTelemetryGenerated: true,
+		},
+		{
+			yml:     "invalid_telemetry_missing_value_type_for_histogram.yaml",
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.yml, func(t *testing.T) {
@@ -117,7 +127,6 @@ foo
 			} else {
 				require.NoFileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_metrics.go"))
 				require.NoFileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_metrics_test.go"))
-				require.NoFileExists(t, filepath.Join(tmpdir, "documentation.md"))
 			}
 
 			if tt.wantConfigGenerated {
@@ -126,6 +135,19 @@ foo
 			} else {
 				require.NoFileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_config.go"))
 				require.NoFileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_config_test.go"))
+			}
+
+			if tt.wantTelemetryGenerated {
+				require.FileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_telemetry.go"))
+				require.FileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_telemetry_test.go"))
+				require.FileExists(t, filepath.Join(tmpdir, "documentation.md"))
+			} else {
+				require.NoFileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_telemetry.go"))
+				require.NoFileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_telemetry_test.go"))
+			}
+
+			if !tt.wantMetricsGenerated && !tt.wantTelemetryGenerated {
+				require.NoFileExists(t, filepath.Join(tmpdir, "documentation.md"))
 			}
 
 			var contents []byte
@@ -516,9 +538,12 @@ func TestGenerateTelemetryMetadata(t *testing.T) {
 package metadata
 
 import (
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
+
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -547,9 +572,12 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 package metadata
 
 import (
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
+
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {

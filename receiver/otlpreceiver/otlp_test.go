@@ -566,7 +566,7 @@ func TestOTLPReceiverGRPCTracesIngestTest(t *testing.T) {
 	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
 
-	cc, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	cc, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 	defer func() {
 		assert.NoError(t, cc.Close())
@@ -722,11 +722,12 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 	recv := newReceiver(t, componenttest.NewNopTelemetrySettings(), cfg, otlpReceiverID, sink)
 	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
 
-	cc, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	cc, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 
 	td := testdata.GenerateTraces(50000)
-	require.Error(t, exportTraces(cc, td))
+	err = exportTraces(cc, td)
+	require.Error(t, err)
 	assert.NoError(t, cc.Close())
 	require.NoError(t, recv.Shutdown(context.Background()))
 
@@ -735,7 +736,7 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
 
-	cc, err = grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	cc, err = grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 	defer func() {
 		assert.NoError(t, cc.Close())
@@ -1008,7 +1009,7 @@ func TestShutdown(t *testing.T) {
 	require.NotNil(t, r)
 	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 
-	conn, err := grpc.NewClient(endpointGrpc, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	conn, err := grpc.NewClient(endpointGrpc, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		require.NoError(t, conn.Close())
@@ -1147,7 +1148,7 @@ func (esc *errOrSinkConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Met
 	return esc.MetricsSink.ConsumeMetrics(ctx, md)
 }
 
-// ConsumeMetrics stores metrics to this sink.
+// ConsumeLogs stores metrics to this sink.
 func (esc *errOrSinkConsumer) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	esc.mu.Lock()
 	defer esc.mu.Unlock()

@@ -34,7 +34,7 @@ import (
 	"go.opentelemetry.io/collector/service/pipelines"
 )
 
-var _ component.Component = &testNode{}
+var _ component.Component = (*testNode)(nil)
 
 type testNode struct {
 	id          component.ID

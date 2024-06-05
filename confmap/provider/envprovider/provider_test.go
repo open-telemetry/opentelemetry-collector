@@ -5,6 +5,7 @@ package envprovider
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,6 +15,7 @@ import (
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/internal/envvar"
 )
 
 const envSchemePrefix = schemeName + ":"
@@ -54,7 +56,7 @@ func TestInvalidYAML(t *testing.T) {
 }
 
 func TestEnv(t *testing.T) {
-	const envName = "default-config"
+	const envName = "default_config"
 	t.Setenv(envName, validYAML)
 
 	env := createProvider()
@@ -72,12 +74,12 @@ func TestEnv(t *testing.T) {
 }
 
 func TestEnvWithLogger(t *testing.T) {
-	const envName = "default-config"
+	const envName = "default_config"
 	t.Setenv(envName, validYAML)
 	core, ol := observer.New(zap.WarnLevel)
 	logger := zap.New(core)
 
-	env := NewWithSettings(confmap.ProviderSettings{Logger: logger})
+	env := NewFactory().Create(confmap.ProviderSettings{Logger: logger})
 	ret, err := env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
 	require.NoError(t, err)
 	retMap, err := ret.AsConf()
@@ -93,11 +95,11 @@ func TestEnvWithLogger(t *testing.T) {
 }
 
 func TestUnsetEnvWithLoggerWarn(t *testing.T) {
-	const envName = "default-config"
+	const envName = "default_config"
 	core, ol := observer.New(zap.WarnLevel)
 	logger := zap.New(core)
 
-	env := NewWithSettings(confmap.ProviderSettings{Logger: logger})
+	env := NewFactory().Create(confmap.ProviderSettings{Logger: logger})
 	ret, err := env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
 	require.NoError(t, err)
 	retMap, err := ret.AsConf()
@@ -114,14 +116,25 @@ func TestUnsetEnvWithLoggerWarn(t *testing.T) {
 	assert.Equal(t, envName, logLine.Context[0].String)
 }
 
+func TestEnvVarNameRestriction(t *testing.T) {
+	const envName = "default%config"
+	t.Setenv(envName, validYAML)
+
+	env := createProvider()
+	ret, err := env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
+	assert.Equal(t, err, fmt.Errorf("environment variable \"default%%config\" has invalid name: must match regex %s", envvar.ValidationRegexp))
+	assert.NoError(t, env.Shutdown(context.Background()))
+	assert.Nil(t, ret)
+}
+
 func TestEmptyEnvWithLoggerWarn(t *testing.T) {
-	const envName = "default-config"
+	const envName = "default_config"
 	t.Setenv(envName, "")
 
 	core, ol := observer.New(zap.InfoLevel)
 	logger := zap.New(core)
 
-	env := NewWithSettings(confmap.ProviderSettings{Logger: logger})
+	env := NewFactory().Create(confmap.ProviderSettings{Logger: logger})
 	ret, err := env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
 	require.NoError(t, err)
 	retMap, err := ret.AsConf()

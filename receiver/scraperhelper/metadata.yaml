@@ -1,0 +1,26 @@
+type: scraperhelper
+
+status:
+  class: receiver
+  not_component: true
+  stability:
+    beta: [traces, metrics, logs]
+  distributions: [core, contrib]
+
+telemetry:
+  metrics:
+    scraper_scraped_metric_points:
+      enabled: true
+      description: Number of metric points successfully scraped.
+      unit: 1
+      sum:
+        value_type: int
+        monotonic: true
+
+    scraper_errored_metric_points:
+      enabled: true
+      description: Number of metric points that were unable to be scraped.
+      unit: 1
+      sum:
+        value_type: int
+        monotonic: true

@@ -124,6 +124,7 @@ func TestResolverErrors(t *testing.T) {
 		locations         []string
 		providers         []Provider
 		converters        []Converter
+		defaultScheme     string
 		expectBuildErr    bool
 		expectResolveErr  bool
 		expectWatchErr    bool
@@ -134,6 +135,16 @@ func TestResolverErrors(t *testing.T) {
 			name:           "unsupported location scheme",
 			locations:      []string{"mock:", "notsupported:"},
 			providers:      []Provider{&mockProvider{}},
+			expectBuildErr: true,
+		},
+		{
+			name:      "default scheme not found",
+			locations: []string{"mock:", "err:"},
+			providers: []Provider{
+				&mockProvider{},
+				&mockProvider{scheme: "err", errR: errors.New("retrieve_err")},
+			},
+			defaultScheme:  "missing",
 			expectBuildErr: true,
 		},
 		{
@@ -201,7 +212,7 @@ func TestResolverErrors(t *testing.T) {
 				c := converter
 				converterFuncs[i] = NewConverterFactory(func(_ ConverterSettings) Converter { return c })
 			}
-			resolver, err := NewResolver(ResolverSettings{URIs: tt.locations, ProviderFactories: mockProviderFuncs, ConverterFactories: converterFuncs})
+			resolver, err := NewResolver(ResolverSettings{URIs: tt.locations, ProviderFactories: mockProviderFuncs, DefaultScheme: tt.defaultScheme, ConverterFactories: converterFuncs})
 			if tt.expectBuildErr {
 				assert.Error(t, err)
 				return
@@ -382,50 +393,31 @@ func TestResolverShutdownClosesWatch(t *testing.T) {
 	watcherWG.Wait()
 }
 
-func TestCantConfigureTwoProviderSettings(t *testing.T) {
-	_, err := NewResolver(ResolverSettings{
-		URIs:               []string{filepath.Join("testdata", "config.yaml")},
-		ProviderFactories:  []ProviderFactory{newFileProvider(t)},
-		Providers:          map[string]Provider{"mock": &mockProvider{}},
-		ConverterFactories: nil,
-	})
-	require.Error(t, err)
-}
-
-func TestCantConfigureTwoConverterSettings(t *testing.T) {
-	_, err := NewResolver(ResolverSettings{
-		URIs:               []string{filepath.Join("testdata", "config.yaml")},
-		ProviderFactories:  []ProviderFactory{newFileProvider(t)},
-		ConverterFactories: []ConverterFactory{NewConverterFactory(func(_ ConverterSettings) Converter { return &mockConverter{} })},
-		Converters:         []Converter{&mockConverter{err: errors.New("converter_err")}},
-	})
-	require.Error(t, err)
-}
-
-func TestTakesInstantiatedProviders(t *testing.T) {
-	_, err := NewResolver(ResolverSettings{
-		URIs:               []string{filepath.Join("testdata", "config.yaml")},
-		Providers:          map[string]Provider{"mock": &mockProvider{}},
-		ConverterFactories: nil,
-	})
-	require.NoError(t, err)
-}
-
-func TestTakesInstantiatedConverters(t *testing.T) {
-	_, err := NewResolver(ResolverSettings{
-		URIs:              []string{filepath.Join("testdata", "config.yaml")},
-		ProviderFactories: []ProviderFactory{newFileProvider(t)},
-		Converters:        []Converter{&mockConverter{err: errors.New("converter_err")}},
-	})
-	require.NoError(t, err)
-}
-
 func TestProvidesDefaultLogger(t *testing.T) {
 	factory, provider := newObservableFileProvider(t)
 	_, err := NewResolver(ResolverSettings{
 		URIs:              []string{filepath.Join("testdata", "config.yaml")},
 		ProviderFactories: []ProviderFactory{factory},
+		ConverterFactories: []ConverterFactory{NewConverterFactory(func(set ConverterSettings) Converter {
+			assert.NotNil(t, set.Logger)
+			return &mockConverter{}
+		})},
 	})
 	require.NoError(t, err)
 	require.NotNil(t, provider.logger)
+}
+
+func TestResolverDefaultProviderSet(t *testing.T) {
+	envProvider := newEnvProvider()
+	fileProvider := newFileProvider(t)
+
+	r, err := NewResolver(ResolverSettings{
+		URIs:              []string{"env:"},
+		ProviderFactories: []ProviderFactory{fileProvider, envProvider},
+		DefaultScheme:     "env",
+	})
+	require.NoError(t, err)
+	assert.NotNil(t, r.defaultScheme)
+	_, ok := r.providers["env"]
+	assert.True(t, ok)
 }

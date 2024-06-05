@@ -30,6 +30,7 @@ import (
 )
 
 const headerContentEncoding = "Content-Encoding"
+const defaultMaxRequestBodySize = 20 * 1024 * 1024 // 20MiB
 
 // ClientConfig defines settings for creating an HTTP client.
 type ClientConfig struct {
@@ -57,7 +58,10 @@ type ClientConfig struct {
 	Headers map[string]configopaque.String `mapstructure:"headers"`
 
 	// Custom Round Tripper to allow for individual components to intercept HTTP requests
-	CustomRoundTripper func(next http.RoundTripper) (http.RoundTripper, error)
+	//
+	// Deprecated: [v0.103.0] Set (*http.Client).Transport on the *http.Client returned from ToClient
+	// to configure this.
+	CustomRoundTripper func(next http.RoundTripper) (http.RoundTripper, error) `mapstructure:"-"`
 
 	// Auth configuration for outgoing HTTP calls.
 	Auth *configauth.Authentication `mapstructure:"auth"`
@@ -180,7 +184,7 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 			return nil, errors.New("extensions configuration not found")
 		}
 
-		httpCustomAuthRoundTripper, aerr := hcs.Auth.GetClientAuthenticator(ext)
+		httpCustomAuthRoundTripper, aerr := hcs.Auth.GetClientAuthenticatorContext(ctx, ext)
 		if aerr != nil {
 			return nil, aerr
 		}
@@ -233,11 +237,6 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 	}, nil
 }
 
-// Deprecated: [v0.99.0] Use ToClient instead.
-func (hcs *ClientConfig) ToClientContext(ctx context.Context, host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
-	return hcs.ToClient(ctx, host, settings)
-}
-
 // Custom RoundTripper that adds headers.
 type headerRoundTripper struct {
 	transport http.RoundTripper
@@ -274,7 +273,7 @@ type ServerConfig struct {
 	// Auth for this receiver
 	Auth *configauth.Authentication `mapstructure:"auth"`
 
-	// MaxRequestBodySize sets the maximum request body size in bytes
+	// MaxRequestBodySize sets the maximum request body size in bytes. Default: 20MiB.
 	MaxRequestBodySize int64 `mapstructure:"max_request_body_size"`
 
 	// IncludeMetadata propagates the client metadata from the incoming requests to the downstream consumers
@@ -284,11 +283,6 @@ type ServerConfig struct {
 	// Additional headers attached to each HTTP response sent to the client.
 	// Header values are opaque since they may be sensitive.
 	ResponseHeaders map[string]configopaque.String `mapstructure:"response_headers"`
-}
-
-// Deprecated: [v0.99.0] Use ToListener instead.
-func (hss *ServerConfig) ToListenerContext(ctx context.Context) (net.Listener, error) {
-	return hss.ToListener(ctx)
 }
 
 // ToListener creates a net.Listener.
@@ -341,11 +335,6 @@ func WithDecoder(key string, dec func(body io.ReadCloser) (io.ReadCloser, error)
 	}
 }
 
-// Deprecated: [v0.99.0] Use ToServer instead.
-func (hss *ServerConfig) ToServerContext(ctx context.Context, host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
-	return hss.ToServer(ctx, host, settings, handler, opts...)
-}
-
 // ToServer creates an http.Server from settings object.
 func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
 	internal.WarnOnUnspecifiedHost(settings.Logger, hss.Endpoint)
@@ -355,14 +344,18 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 		o(serverOpts)
 	}
 
-	handler = httpContentDecompressor(handler, serverOpts.errHandler, serverOpts.decoders)
+	if hss.MaxRequestBodySize <= 0 {
+		hss.MaxRequestBodySize = defaultMaxRequestBodySize
+	}
+
+	handler = httpContentDecompressor(handler, hss.MaxRequestBodySize, serverOpts.errHandler, serverOpts.decoders)
 
 	if hss.MaxRequestBodySize > 0 {
 		handler = maxRequestBodySizeInterceptor(handler, hss.MaxRequestBodySize)
 	}
 
 	if hss.Auth != nil {
-		server, err := hss.Auth.GetServerAuthenticator(host.GetExtensions())
+		server, err := hss.Auth.GetServerAuthenticatorContext(context.Background(), host.GetExtensions())
 		if err != nil {
 			return nil, err
 		}

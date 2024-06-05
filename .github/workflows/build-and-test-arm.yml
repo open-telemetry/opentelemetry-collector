@@ -1,0 +1,66 @@
+name: build-and-test-arm
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+  merge_group:
+  pull_request:
+env:
+  TEST_RESULTS: testbed/tests/results/junit/results.xml
+  # Make sure to exit early if cache segment download times out after 2 minutes.
+  # We limit cache download as a whole to 5 minutes.
+  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
+  GOPROXY: https://goproxy1.cncf.selfactuated.dev,direct
+
+permissions:
+  contents: read
+
+# Do not cancel this workflow on main. See https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/16616
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  arm-unittest-matrix:
+    if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run ARM') || github.event_name == 'push' || github.event_name == 'merge_group') }}
+    runs-on: actuated-arm64-4cpu-4gb
+    steps:
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+      - uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
+        with:
+          go-version: "~1.22.4"
+          cache: false
+      - name: Cache Go
+        id: go-cache
+        timeout-minutes: 5
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: go-build-cache-${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+      - name: Install dependencies
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make gomoddownload
+      - name: Install Tools
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make install-tools
+      - name: Run Unit Tests
+        run: make -j4 gotest
+  arm-unittest:
+    if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run ARM') || github.event_name == 'push' || github.event_name == 'merge_group') }}
+    runs-on: actuated-arm64-4cpu-4gb
+    needs: [arm-unittest-matrix]
+    steps:
+      - name: Print result
+        run: echo ${{ needs.arm-unittest-matrix.result }}
+      - name: Interpret result
+        run: |
+          if [[ success == ${{ needs.arm-unittest-matrix.result }} ]]
+          then
+            echo "All matrix jobs passed!"
+          else
+            echo "One or more matrix jobs failed."
+            false
+          fi
