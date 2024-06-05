@@ -46,7 +46,7 @@ type baseExporter struct {
 	userAgent string
 }
 
-func newExporter(cfg component.Config, set exporter.CreateSettings) *baseExporter {
+func newExporter(cfg component.Config, set exporter.Settings) *baseExporter {
 	oCfg := cfg.(*Config)
 
 	userAgent := fmt.Sprintf("%s/%s (%s/%s)",
