@@ -32,7 +32,7 @@ The following settings are optional:
   messages are logged (every Mth message is logged). Refer to [Zap
   docs](https://godoc.org/go.uber.org/zap/zapcore#NewSampler) for more details.
   on how sampling parameters impact number of messages.
-- `use_internal_logger` (default = `true`): if set, uses the collector's internal logger for output. See [below](#using-the-collectors-internal-logger) for description.
+- `use_internal_logger` (default = `true`): uses the collector's internal logger for output. See [below](#using-the-collectors-internal-logger) for description.
 
 Example configuration:
 
