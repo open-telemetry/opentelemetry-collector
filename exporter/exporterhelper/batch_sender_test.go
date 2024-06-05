@@ -271,6 +271,7 @@ func TestBatchSender_PostShutdown(t *testing.T) {
 
 func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
 	cfg := exporterbatcher.NewDefaultConfig()
+	cfg.FlushTimeout = 10 * time.Millisecond
 	tests := []struct {
 		name             string
 		batcherOption    Option
@@ -280,8 +281,8 @@ func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
 		{
 			name:             "merge_only",
 			batcherOption:    WithBatcher(cfg, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc)),
-			expectedRequests: 3,
-			expectedItems:    36,
+			expectedRequests: 6,
+			expectedItems:    51,
 		},
 		{
 			name: "merge_without_split_triggered",
@@ -290,8 +291,8 @@ func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
 				c.MaxSizeItems = 200
 				return WithBatcher(c, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc))
 			}(),
-			expectedRequests: 3,
-			expectedItems:    36,
+			expectedRequests: 6,
+			expectedItems:    51,
 		},
 		{
 			name: "merge_with_split_triggered",
@@ -300,8 +301,8 @@ func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
 				c.MaxSizeItems = 10
 				return WithBatcher(c, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc))
 			}(),
-			expectedRequests: 5,
-			expectedItems:    36,
+			expectedRequests: 8,
+			expectedItems:    51,
 		},
 	}
 	for _, tt := range tests {
@@ -319,19 +320,34 @@ func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
 			})
 
 			sink := newFakeRequestSink()
+			// the 1st and 2nd request should be flushed in the same batched request by max concurrency limit.
 			assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 2, sink: sink}))
-
-			// the second request should be sent by reaching max concurrency limit.
 			assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 2, sink: sink}))
 
 			assert.Eventually(t, func() bool {
 				return sink.requestsCount.Load() == 1 && sink.itemsCount.Load() == 4
 			}, 100*time.Millisecond, 10*time.Millisecond)
 
+			// the 3rd request should be flushed by itself due to flush interval
+			assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 2, sink: sink}))
+			time.Sleep(20 * time.Millisecond)
+			assert.Eventually(t, func() bool {
+				return sink.requestsCount.Load() == 2 && sink.itemsCount.Load() == 6
+			}, 100*time.Millisecond, 10*time.Millisecond)
+
+			// the 4th and 5th request should be flushed in the same batched request by max concurrency limit.
+			assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 2, sink: sink}))
+			assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 2, sink: sink}))
+			assert.Eventually(t, func() bool {
+				return sink.requestsCount.Load() == 3 && sink.itemsCount.Load() == 10
+			}, 100*time.Millisecond, 10*time.Millisecond)
+
 			// do it a few more times to ensure it produces the correct batch size regardless of goroutine scheduling.
-			for i := 0; i < 4; i++ {
-				assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 8, sink: sink}))
-			}
+			assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 5, sink: sink}))
+			assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 6, sink: sink}))
+			assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 4, sink: sink}))
+			assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 6, sink: sink}))
+			assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 20, sink: sink}))
 			assert.Eventually(t, func() bool {
 				return sink.requestsCount.Load() == tt.expectedRequests && sink.itemsCount.Load() == tt.expectedItems
 			}, 100*time.Millisecond, 10*time.Millisecond)
