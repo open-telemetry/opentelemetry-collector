@@ -67,11 +67,6 @@ With `verbosity: normal`, the exporter outputs about one line for each telemetry
 The "one line per telemetry record" is not a strict rule.
 For example, logs with multiline body will be output as multiple lines.
 
-> [!IMPORTANT]
-> Currently the `normal` verbosity is only implemented for logs and traces.
-> Metrics are going to be implemented in the future.
-> The current behavior for metrics is the same as in `basic` verbosity.
-
 Here's an example output:
 
 ```console
