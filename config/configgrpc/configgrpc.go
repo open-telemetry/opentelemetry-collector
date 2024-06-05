@@ -56,7 +56,7 @@ func NewDefaultKeepaliveClientConfig() *KeepaliveClientConfig {
 
 // NewDefaultBalancernameClientConfig returns a new instance of BalancernameClientConfig with default values.
 func NewDefaultBalancernameClientConfig() string {
-	return `{"loadBalancingConfig": [{"round_robin":{}}]}`
+	return "round_robin"
 }
 
 // ClientConfig defines common settings for a gRPC client configuration.
