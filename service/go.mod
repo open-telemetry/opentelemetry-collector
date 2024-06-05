@@ -10,22 +10,22 @@ require (
 	github.com/shirou/gopsutil/v3 v3.24.4
 	github.com/stretchr/testify v1.9.0
 	go.opencensus.io v0.24.0
-	go.opentelemetry.io/collector v0.102.0
-	go.opentelemetry.io/collector/component v0.102.0
-	go.opentelemetry.io/collector/config/confignet v0.102.0
-	go.opentelemetry.io/collector/config/configtelemetry v0.102.0
-	go.opentelemetry.io/collector/confmap v0.102.0
-	go.opentelemetry.io/collector/connector v0.102.0
-	go.opentelemetry.io/collector/consumer v0.102.0
-	go.opentelemetry.io/collector/exporter v0.102.0
-	go.opentelemetry.io/collector/extension v0.102.0
-	go.opentelemetry.io/collector/extension/zpagesextension v0.102.0
+	go.opentelemetry.io/collector v0.102.1
+	go.opentelemetry.io/collector/component v0.102.1
+	go.opentelemetry.io/collector/config/confignet v0.102.1
+	go.opentelemetry.io/collector/config/configtelemetry v0.102.1
+	go.opentelemetry.io/collector/confmap v0.102.1
+	go.opentelemetry.io/collector/connector v0.102.1
+	go.opentelemetry.io/collector/consumer v0.102.1
+	go.opentelemetry.io/collector/exporter v0.102.1
+	go.opentelemetry.io/collector/extension v0.102.1
+	go.opentelemetry.io/collector/extension/zpagesextension v0.102.1
 	go.opentelemetry.io/collector/featuregate v1.9.0
 	go.opentelemetry.io/collector/pdata v1.9.0
-	go.opentelemetry.io/collector/pdata/testdata v0.102.0
-	go.opentelemetry.io/collector/processor v0.102.0
-	go.opentelemetry.io/collector/receiver v0.102.0
-	go.opentelemetry.io/collector/semconv v0.102.0
+	go.opentelemetry.io/collector/pdata/testdata v0.102.1
+	go.opentelemetry.io/collector/processor v0.102.1
+	go.opentelemetry.io/collector/receiver v0.102.1
+	go.opentelemetry.io/collector/semconv v0.102.1
 	go.opentelemetry.io/contrib/config v0.7.0
 	go.opentelemetry.io/contrib/propagators/b3 v1.27.0
 	go.opentelemetry.io/otel v1.27.0
