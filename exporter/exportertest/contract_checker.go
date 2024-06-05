@@ -86,17 +86,17 @@ func checkConsumeContractScenario(t *testing.T, params CheckConsumeContractParam
 	mockConsumerInstance := newMockConsumer(decisionFunc)
 	switch params.DataType {
 	case component.DataTypeLogs:
-		r, err := params.ReceiverFactory.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), params.ReceiverConfig, &mockConsumerInstance)
+		r, err := params.ReceiverFactory.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), params.ReceiverConfig, &mockConsumerInstance)
 		require.NoError(t, err)
 		require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 		checkLogs(t, params, r, &mockConsumerInstance, checkIfTestPassed)
 	case component.DataTypeTraces:
-		r, err := params.ReceiverFactory.CreateTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), params.ReceiverConfig, &mockConsumerInstance)
+		r, err := params.ReceiverFactory.CreateTracesReceiver(context.Background(), receivertest.NewNopSettings(), params.ReceiverConfig, &mockConsumerInstance)
 		require.NoError(t, err)
 		require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 		checkTraces(t, params, r, &mockConsumerInstance, checkIfTestPassed)
 	case component.DataTypeMetrics:
-		r, err := params.ReceiverFactory.CreateMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), params.ReceiverConfig, &mockConsumerInstance)
+		r, err := params.ReceiverFactory.CreateMetricsReceiver(context.Background(), receivertest.NewNopSettings(), params.ReceiverConfig, &mockConsumerInstance)
 		require.NoError(t, err)
 		require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 		checkMetrics(t, params, r, &mockConsumerInstance, checkIfTestPassed)
