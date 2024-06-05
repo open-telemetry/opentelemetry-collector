@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/testutil"
@@ -31,7 +32,7 @@ func TestCreateSameReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
-	cfg.HTTP.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.HTTP.Value().Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	creationSet := receivertest.NewNopCreateSettings()
 	tReceiver, err := factory.CreateTracesReceiver(context.Background(), creationSet, cfg, consumertest.NewNop())
@@ -79,7 +80,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 			cfg: &Config{
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
-					HTTP: defaultHTTPSettings,
+					HTTP: confmap.Some(defaultHTTPSettings),
 				},
 			},
 			sink: consumertest.NewNop(),
@@ -94,7 +95,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 							Transport: confignet.TransportTypeTCP,
 						},
 					},
-					HTTP: defaultHTTPSettings,
+					HTTP: confmap.Some(defaultHTTPSettings),
 				},
 			},
 			wantStartErr: true,
@@ -105,12 +106,12 @@ func TestCreateTracesReceiver(t *testing.T) {
 			cfg: &Config{
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
-					HTTP: &HTTPConfig{
+					HTTP: confmap.Some(&HTTPConfig{
 						ServerConfig: &confighttp.ServerConfig{
 							Endpoint: "localhost:112233",
 						},
 						TracesURLPath: defaultTracesURLPath,
-					},
+					}),
 				},
 			},
 			wantStartErr: true,
@@ -173,7 +174,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 			cfg: &Config{
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
-					HTTP: defaultHTTPSettings,
+					HTTP: confmap.Some(defaultHTTPSettings),
 				},
 			},
 			sink: consumertest.NewNop(),
@@ -188,7 +189,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 							Transport: confignet.TransportTypeTCP,
 						},
 					},
-					HTTP: defaultHTTPSettings,
+					HTTP: confmap.Some(defaultHTTPSettings),
 				},
 			},
 			wantStartErr: true,
@@ -199,12 +200,12 @@ func TestCreateMetricReceiver(t *testing.T) {
 			cfg: &Config{
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
-					HTTP: &HTTPConfig{
+					HTTP: confmap.Some(&HTTPConfig{
 						ServerConfig: &confighttp.ServerConfig{
 							Endpoint: "327.0.0.1:1122",
 						},
 						MetricsURLPath: defaultMetricsURLPath,
-					},
+					}),
 				},
 			},
 			wantStartErr: true,
@@ -267,7 +268,7 @@ func TestCreateLogReceiver(t *testing.T) {
 			cfg: &Config{
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
-					HTTP: defaultHTTPSettings,
+					HTTP: confmap.Some(defaultHTTPSettings),
 				},
 			},
 			sink: consumertest.NewNop(),
@@ -282,7 +283,7 @@ func TestCreateLogReceiver(t *testing.T) {
 							Transport: confignet.TransportTypeTCP,
 						},
 					},
-					HTTP: defaultHTTPSettings,
+					HTTP: confmap.Some(defaultHTTPSettings),
 				},
 			},
 			wantStartErr: true,
@@ -293,12 +294,12 @@ func TestCreateLogReceiver(t *testing.T) {
 			cfg: &Config{
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
-					HTTP: &HTTPConfig{
+					HTTP: confmap.Some(&HTTPConfig{
 						ServerConfig: &confighttp.ServerConfig{
 							Endpoint: "327.0.0.1:1122",
 						},
 						LogsURLPath: defaultLogsURLPath,
-					},
+					}),
 				},
 			},
 			wantStartErr: true,

@@ -37,7 +37,9 @@ type HTTPConfig struct {
 // Protocols is the configuration for the supported protocols.
 type Protocols struct {
 	GRPC *configgrpc.ServerConfig `mapstructure:"grpc"`
-	HTTP *HTTPConfig              `mapstructure:"http"`
+
+	// TODO For now using Optional with pointer, because some tests modify config in place
+	HTTP confmap.Optional[*HTTPConfig] `mapstructure:"http"`
 }
 
 // Config defines configuration for OTLP receiver.
@@ -51,7 +53,7 @@ var _ confmap.Unmarshaler = (*Config)(nil)
 
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {
-	if cfg.GRPC == nil && cfg.HTTP == nil {
+	if cfg.GRPC == nil && !cfg.HTTP.HasValue() {
 		return errors.New("must specify at least one protocol when using the OTLP receiver")
 	}
 	return nil
@@ -70,17 +72,17 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 	}
 
 	if !conf.IsSet(protoHTTP) {
-		cfg.HTTP = nil
+		cfg.HTTP = confmap.None[*HTTPConfig]()
 	} else {
 		var err error
-
-		if cfg.HTTP.TracesURLPath, err = sanitizeURLPath(cfg.HTTP.TracesURLPath); err != nil {
+		httpPtr := cfg.HTTP.Value()
+		if httpPtr.TracesURLPath, err = sanitizeURLPath(httpPtr.TracesURLPath); err != nil {
 			return err
 		}
-		if cfg.HTTP.MetricsURLPath, err = sanitizeURLPath(cfg.HTTP.MetricsURLPath); err != nil {
+		if httpPtr.MetricsURLPath, err = sanitizeURLPath(httpPtr.MetricsURLPath); err != nil {
 			return err
 		}
-		if cfg.HTTP.LogsURLPath, err = sanitizeURLPath(cfg.HTTP.LogsURLPath); err != nil {
+		if httpPtr.LogsURLPath, err = sanitizeURLPath(httpPtr.LogsURLPath); err != nil {
 			return err
 		}
 	}
