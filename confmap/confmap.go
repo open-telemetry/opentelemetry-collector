@@ -191,6 +191,7 @@ func decodeConfig(m *Conf, result any, errorUnused bool, skipTopLevelUnmarshaler
 func encoderConfig(rawVal any) *encoder.EncoderConfig {
 	return &encoder.EncoderConfig{
 		EncodeHook: mapstructure.ComposeDecodeHookFunc(
+			encoder.YamlMarshalerHookFunc(),
 			encoder.TextMarshalerHookFunc(),
 			marshalerHookFunc(rawVal),
 		),
