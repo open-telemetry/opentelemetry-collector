@@ -4,21 +4,119 @@
 package otelcoltest
 
 import (
+	"context"
+	"errors"
+	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/otelcol"
+	"go.uber.org/zap"
+	"gopkg.in/yaml.v3"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/service/pipelines"
 )
 
+type fakeProvider struct {
+	scheme string
+	ret    func(ctx context.Context, uri string, watcher confmap.WatcherFunc) (*confmap.Retrieved, error)
+	logger *zap.Logger
+}
+
+func (f *fakeProvider) Retrieve(ctx context.Context, uri string, watcher confmap.WatcherFunc) (*confmap.Retrieved, error) {
+	return f.ret(ctx, uri, watcher)
+}
+
+func (f *fakeProvider) Scheme() string {
+	return f.scheme
+}
+
+func (f *fakeProvider) Shutdown(context.Context) error {
+	return nil
+}
+
+func newFakeProvider(scheme string, ret func(ctx context.Context, uri string, watcher confmap.WatcherFunc) (*confmap.Retrieved, error)) confmap.ProviderFactory {
+	return confmap.NewProviderFactory(func(ps confmap.ProviderSettings) confmap.Provider {
+		return &fakeProvider{
+			scheme: scheme,
+			ret:    ret,
+			logger: ps.Logger,
+		}
+	})
+}
+
+func newEnvProvider() confmap.ProviderFactory {
+	return newFakeProvider("env", func(_ context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
+		// When using `env` as the default scheme for tests, the uri will not include `env:`.
+		// Instead of duplicating the switch cases, the scheme is added instead.
+		if uri[0:4] != "env:" {
+			uri = "env:" + uri
+		}
+		switch uri {
+		case "env:COMPLEX_VALUE":
+			return confmap.NewRetrieved([]any{"localhost:3042"})
+		case "env:HOST":
+			return confmap.NewRetrieved("localhost")
+		case "env:OS":
+			return confmap.NewRetrieved("ubuntu")
+		case "env:PR":
+			return confmap.NewRetrieved("amd")
+		case "env:PORT":
+			return confmap.NewRetrieved(3044)
+		case "env:INT":
+			return confmap.NewRetrieved(1)
+		case "env:INT32":
+			return confmap.NewRetrieved(32)
+		case "env:INT64":
+			return confmap.NewRetrieved(64)
+		case "env:FLOAT32":
+			return confmap.NewRetrieved(float32(3.25))
+		case "env:FLOAT64":
+			return confmap.NewRetrieved(float64(6.4))
+		case "env:BOOL":
+			return confmap.NewRetrieved(true)
+		}
+		return nil, errors.New("impossible")
+	})
+}
+
+func newDefaultConfigProviderSettings(t testing.TB, uris []string) otelcol.ConfigProviderSettings {
+	fileProvider := newFakeProvider("file", func(_ context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
+		return confmap.NewRetrieved(newConfFromFile(t, uri[5:]))
+	})
+	return otelcol.ConfigProviderSettings{
+		ResolverSettings: confmap.ResolverSettings{
+			URIs: uris,
+			ProviderFactories: []confmap.ProviderFactory{
+				fileProvider,
+				newEnvProvider(),
+			},
+		},
+	}
+}
+
+// newConfFromFile creates a new Conf by reading the given file.
+func newConfFromFile(t testing.TB, fileName string) map[string]any {
+	content, err := os.ReadFile(filepath.Clean(fileName))
+	require.NoErrorf(t, err, "unable to read the file %v", fileName)
+
+	var data map[string]any
+	require.NoError(t, yaml.Unmarshal(content, &data), "unable to parse yaml")
+
+	return confmap.NewFromStringMap(data).ToStringMap()
+}
+
 func TestLoadConfig(t *testing.T) {
 	factories, err := NopFactories()
 	assert.NoError(t, err)
 
-	cfg, err := LoadConfig(filepath.Join("testdata", "config.yaml"), factories)
+	set := newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "config.yaml")})
+
+	cfg, err := LoadConfig(filepath.Join("testdata", "config.yaml"), factories, set)
 	require.NoError(t, err)
 
 	// Verify extensions.
@@ -63,10 +161,12 @@ func TestLoadConfigAndValidate(t *testing.T) {
 	factories, err := NopFactories()
 	assert.NoError(t, err)
 
-	cfgValidate, errValidate := LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
+	set := newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "config.yaml")})
+
+	cfgValidate, errValidate := LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories, set)
 	require.NoError(t, errValidate)
 
-	cfg, errLoad := LoadConfig(filepath.Join("testdata", "config.yaml"), factories)
+	cfg, errLoad := LoadConfig(filepath.Join("testdata", "config.yaml"), factories, set)
 	require.NoError(t, errLoad)
 
 	assert.Equal(t, cfg, cfgValidate)

@@ -9,11 +9,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/converter/expandconverter"
-	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/featuregate"
 )
 
@@ -31,9 +28,8 @@ func TestAddFlagToSettings(t *testing.T) {
 	set := CollectorSettings{
 		ConfigProviderSettings: ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
-				URIs:               []string{filepath.Join("testdata", "otelcol-invalid.yaml")},
-				ProviderFactories:  []confmap.ProviderFactory{fileprovider.NewFactory()},
-				ConverterFactories: []confmap.ConverterFactory{expandconverter.NewFactory()},
+				URIs:              []string{filepath.Join("testdata", "otelcol-invalid.yaml")},
+				ProviderFactories: []confmap.ProviderFactory{newEnvProvider()},
 			},
 		},
 	}
@@ -66,8 +62,7 @@ func TestInvalidCollectorSettings(t *testing.T) {
 	set := CollectorSettings{
 		ConfigProviderSettings: ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
-				ConverterFactories: []confmap.ConverterFactory{expandconverter.NewFactory()},
-				URIs:               []string{"--config=otelcol-nop.yaml"},
+				URIs: []string{"--config=otelcol-nop.yaml"},
 			},
 		},
 	}
@@ -79,9 +74,8 @@ func TestInvalidCollectorSettings(t *testing.T) {
 func TestNewCommandInvalidComponent(t *testing.T) {
 	set := ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
-			URIs:               []string{filepath.Join("testdata", "otelcol-invalid.yaml")},
-			ProviderFactories:  []confmap.ProviderFactory{fileprovider.NewFactory()},
-			ConverterFactories: []confmap.ConverterFactory{expandconverter.NewFactory()},
+			URIs:              []string{filepath.Join("testdata", "otelcol-invalid.yaml")},
+			ProviderFactories: []confmap.ProviderFactory{newEnvProvider()},
 		},
 	}
 

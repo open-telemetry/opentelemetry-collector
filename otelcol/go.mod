@@ -8,12 +8,6 @@ require (
 	go.opentelemetry.io/collector/component v0.102.1
 	go.opentelemetry.io/collector/config/configtelemetry v0.102.1
 	go.opentelemetry.io/collector/confmap v0.102.1
-	go.opentelemetry.io/collector/confmap/converter/expandconverter v0.102.1
-	go.opentelemetry.io/collector/confmap/provider/envprovider v0.102.1
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.102.1
-	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.102.1
-	go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.102.1
-	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.102.1
 	go.opentelemetry.io/collector/connector v0.102.1
 	go.opentelemetry.io/collector/exporter v0.102.1
 	go.opentelemetry.io/collector/extension v0.102.1
