@@ -231,7 +231,7 @@ type baseExporter struct {
 	marshaler   exporterqueue.Marshaler[Request]
 	unmarshaler exporterqueue.Unmarshaler[Request]
 
-	set    exporter.CreateSettings
+	set    exporter.Settings
 	obsrep *ObsReport
 
 	// Message for the user to be added with an export failure message.
@@ -249,7 +249,7 @@ type baseExporter struct {
 	consumerOptions []consumer.Option
 }
 
-func newBaseExporter(set exporter.CreateSettings, signal component.DataType, osf obsrepSenderFactory, options ...Option) (*baseExporter, error) {
+func newBaseExporter(set exporter.Settings, signal component.DataType, osf obsrepSenderFactory, options ...Option) (*baseExporter, error) {
 	obsReport, err := NewObsReport(ObsReportSettings{ExporterID: set.ID, ExporterCreateSettings: set})
 	if err != nil {
 		return nil, err

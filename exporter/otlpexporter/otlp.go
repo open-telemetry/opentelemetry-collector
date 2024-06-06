@@ -46,7 +46,7 @@ type baseExporter struct {
 	userAgent string
 }
 
-func newExporter(cfg component.Config, set exporter.CreateSettings) *baseExporter {
+func newExporter(cfg component.Config, set exporter.Settings) *baseExporter {
 	oCfg := cfg.(*Config)
 
 	userAgent := fmt.Sprintf("%s/%s (%s/%s)",
@@ -151,8 +151,7 @@ func processError(err error) error {
 		return nil
 	}
 
-	// Now, this is this a real error.
-
+	// Now, this is a real error.
 	retryInfo := getRetryInfo(st)
 
 	if !shouldRetry(st.Code(), retryInfo) {
@@ -168,7 +167,6 @@ func processError(err error) error {
 	}
 
 	// Need to retry.
-
 	return err
 }
 
