@@ -12,6 +12,11 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
+var ErrorWhenNoProvidersOrConvertersSet = featuregate.GlobalRegistry().MustRegister("otelcol.errorWhenNoProvidersOrConvertersSet",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterFromVersion("v0.103.0"),
+	featuregate.WithRegisterDescription("When enabled, will error if the `otelcol.CollectorSettings` passed to `otelcol.NewCommand` does not contain at least one provider or converter"))
+
 // NewCommand constructs a new cobra.Command using the given CollectorSettings.
 // Any URIs specified in CollectorSettings.ConfigProviderSettings.ResolverSettings.URIs
 // are considered defaults and will be overwritten by config flags passed as
@@ -56,7 +61,11 @@ func updateSettingsUsingFlags(set *CollectorSettings, flags *flag.FlagSet) error
 	// TODO: Remove this after CollectorSettings.ConfigProvider is removed and instead
 	// do it in the builder.
 	if len(resolverSet.ProviderFactories) == 0 && len(resolverSet.ConverterFactories) == 0 {
-		set.ConfigProviderSettings = newDefaultConfigProviderSettings(resolverSet.URIs)
+		if ErrorWhenNoProvidersOrConvertersSet.IsEnabled() {
+			return errors.New("at least one provider or converter must be provided")
+		} else {
+			set.ConfigProviderSettings = newDefaultConfigProviderSettings(resolverSet.URIs)
+		}
 	}
 	return nil
 }

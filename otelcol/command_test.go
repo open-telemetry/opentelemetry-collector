@@ -110,3 +110,24 @@ func TestNewCommandInvalidComponent(t *testing.T) {
 	cmd := NewCommand(CollectorSettings{Factories: nopFactories, ConfigProviderSettings: set})
 	require.Error(t, cmd.Execute())
 }
+
+func TestNoProvidersReturnsError(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(ErrorWhenNoProvidersOrConvertersSet.ID(), true))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(ErrorWhenNoProvidersOrConvertersSet.ID(), false))
+	})
+
+	set := CollectorSettings{
+		ConfigProviderSettings: ConfigProviderSettings{
+			ResolverSettings: confmap.ResolverSettings{
+				URIs: []string{filepath.Join("testdata", "otelcol-invalid.yaml")},
+			},
+		},
+	}
+	flgs := flags(featuregate.NewRegistry())
+	err := flgs.Parse([]string{"--config=otelcol-nop.yaml"})
+	require.NoError(t, err)
+
+	err = updateSettingsUsingFlags(&set, flgs)
+	require.ErrorContains(t, err, "at least one provider or converter must be provided")
+}
