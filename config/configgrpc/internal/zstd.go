@@ -52,7 +52,7 @@ type reader struct {
 func (c *compressor) Decompress(r io.Reader) (io.Reader, error) {
 	z, inPool := c.poolDecompressor.Get().(*reader)
 	if !inPool {
-		newZ, err := zstd.NewReader(r)
+		newZ, err := zstd.NewReader(r, zstd.WithDecoderConcurrency(1))
 		if err != nil {
 			return nil, err
 		}
