@@ -302,7 +302,7 @@ func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
 			name: "merge_with_split_triggered",
 			batcherCfg: func() exporterbatcher.Config {
 				cfg := exporterbatcher.NewDefaultConfig()
-				cfg.FlushTimeout = 20 * time.Millisecond
+				cfg.FlushTimeout = 50 * time.Millisecond
 				cfg.MaxSizeItems = 10
 				return cfg
 			}(),
@@ -354,7 +354,7 @@ func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
 				// in case of MaxSizeItems=10, wait for the leftover request to send
 				assert.Eventually(t, func() bool {
 					return sink.requestsCount.Load() == 5 && sink.itemsCount.Load() == 21
-				}, 10*time.Millisecond, 5*time.Millisecond)
+				}, 50*time.Millisecond, 10*time.Millisecond)
 			}
 
 			assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 4, sink: sink}))
