@@ -56,7 +56,7 @@ func TestNoDataLoss(t *testing.T) {
 	limiter, err := newMemoryLimiterProcessor(set, cfg)
 	require.NoError(t, err)
 
-	processor, err := processorhelper.NewLogsProcessor(context.Background(), processor.CreateSettings{
+	processor, err := processorhelper.NewLogsProcessor(context.Background(), processor.Settings{
 		ID: component.MustNewID("nop"),
 	}, cfg, exporter,
 		limiter.processLogs,

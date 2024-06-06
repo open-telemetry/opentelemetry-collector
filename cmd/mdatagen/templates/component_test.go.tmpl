@@ -166,12 +166,12 @@ func TestComponentLifecycle(t *testing.T) {
 
 	tests := []struct{
 		name string
-		createFn func(ctx context.Context, set processor.CreateSettings, cfg component.Config) (component.Component, error)
+		createFn func(ctx context.Context, set processor.Settings, cfg component.Config) (component.Component, error)
 	}{
 {{ if supportsLogs }}
 		{
 			name: "logs",
-			createFn: func(ctx context.Context, set processor.CreateSettings, cfg component.Config) (component.Component, error) {
+			createFn: func(ctx context.Context, set processor.Settings, cfg component.Config) (component.Component, error) {
 				return factory.CreateLogsProcessor(ctx, set, cfg, consumertest.NewNop())
 			},
 		},
@@ -179,7 +179,7 @@ func TestComponentLifecycle(t *testing.T) {
 {{ if supportsMetrics }}
 		{
 			name: "metrics",
-			createFn: func(ctx context.Context, set processor.CreateSettings, cfg component.Config) (component.Component, error) {
+			createFn: func(ctx context.Context, set processor.Settings, cfg component.Config) (component.Component, error) {
 				return factory.CreateMetricsProcessor(ctx, set, cfg, consumertest.NewNop())
 			},
 		},
@@ -187,7 +187,7 @@ func TestComponentLifecycle(t *testing.T) {
 {{ if supportsTraces }}
 		{
 			name: "traces",
-			createFn: func(ctx context.Context, set processor.CreateSettings, cfg component.Config) (component.Component, error) {
+			createFn: func(ctx context.Context, set processor.Settings, cfg component.Config) (component.Component, error) {
 				return factory.CreateTracesProcessor(ctx, set, cfg, consumertest.NewNop())
 			},
 		},
