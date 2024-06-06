@@ -21,7 +21,7 @@ type componentTestTelemetry struct {
 	meterProvider *sdkmetric.MeterProvider
 }
 
-{{- if (or isExporter isReceiver) }}
+{{- if (or isExporter isReceiver isProcessor) }}
 func (tt *componentTestTelemetry) NewSettings() {{ .Status.Class }}.Settings {
 	settings := {{ .Status.Class }}test.NewNopSettings()
 	settings.MeterProvider = tt.meterProvider

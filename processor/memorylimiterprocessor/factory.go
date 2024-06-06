@@ -46,7 +46,7 @@ func createDefaultConfig() component.Config {
 
 func (f *factory) createTracesProcessor(
 	ctx context.Context,
-	set processor.CreateSettings,
+	set processor.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (processor.Traces, error) {
@@ -63,7 +63,7 @@ func (f *factory) createTracesProcessor(
 
 func (f *factory) createMetricsProcessor(
 	ctx context.Context,
-	set processor.CreateSettings,
+	set processor.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (processor.Metrics, error) {
@@ -80,7 +80,7 @@ func (f *factory) createMetricsProcessor(
 
 func (f *factory) createLogsProcessor(
 	ctx context.Context,
-	set processor.CreateSettings,
+	set processor.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (processor.Logs, error) {
@@ -97,7 +97,7 @@ func (f *factory) createLogsProcessor(
 
 // getMemoryLimiter checks if we have a cached memoryLimiter with a specific config,
 // otherwise initialize and add one to the store.
-func (f *factory) getMemoryLimiter(set processor.CreateSettings, cfg component.Config) (*memoryLimiterProcessor, error) {
+func (f *factory) getMemoryLimiter(set processor.Settings, cfg component.Config) (*memoryLimiterProcessor, error) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 

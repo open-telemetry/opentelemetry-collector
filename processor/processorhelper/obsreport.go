@@ -42,7 +42,7 @@ type ObsReport struct {
 // ObsReportSettings are settings for creating an ObsReport.
 type ObsReportSettings struct {
 	ProcessorID             component.ID
-	ProcessorCreateSettings processor.CreateSettings
+	ProcessorCreateSettings processor.Settings
 }
 
 // NewObsReport creates a new Processor.

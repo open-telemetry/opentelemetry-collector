@@ -28,7 +28,7 @@ type logProcessor struct {
 // NewLogsProcessor creates a processor.Logs that ensure context propagation and the right tags are set.
 func NewLogsProcessor(
 	_ context.Context,
-	set processor.CreateSettings,
+	set processor.Settings,
 	_ component.Config,
 	nextConsumer consumer.Logs,
 	logsFunc ProcessLogsFunc,
