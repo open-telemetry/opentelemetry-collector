@@ -24,7 +24,7 @@ var componentType = component.MustNewType("debug")
 
 const (
 	defaultSamplingInitial    = 2
-	defaultSamplingThereafter = 500
+	defaultSamplingThereafter = 1
 )
 
 // NewFactory creates a factory for Debug exporter
