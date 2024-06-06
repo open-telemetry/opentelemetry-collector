@@ -14,22 +14,21 @@ jobs:
       already-added: ${{ steps.check-versions.outputs.already-added }}
       already-opened: ${{ steps.check-versions.outputs.already-opened }}
     steps:
-      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
 
       - id: check-versions
         name: Check versions
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # version in this repo are prefixed with v
           latest_version=v$(gh release view \
                                --repo open-telemetry/semantic-conventions \
                                --json tagName \
                                --jq .tagName \
                              | sed 's/^v//')
 
-          rc=$(find semconv -name $latest_version | grep .)
-          if $rc == 0; then
+          found=$(find semconv -name $latest_version)
+          if [[ $found =~ $latest_version ]]; then
             already_added=true
           fi
 
@@ -56,12 +55,13 @@ jobs:
     needs:
       - check-versions
     steps:
-      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
       - name: Checkout semantic-convention
-        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
         with:
-          repository: open-telemetry/semantic-convention
+          repository: open-telemetry/semantic-conventions
           path: tmp-semantic-conventions
+          fetch-depth: 0
 
       - name: Update version
         env:

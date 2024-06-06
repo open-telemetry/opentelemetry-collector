@@ -67,8 +67,8 @@ type configProvider struct {
 	mapResolver *confmap.Resolver
 }
 
-var _ ConfigProvider = &configProvider{}
-var _ ConfmapProvider = &configProvider{}
+var _ ConfigProvider = (*configProvider)(nil)
+var _ ConfmapProvider = (*configProvider)(nil)
 
 // ConfigProviderSettings are the settings to configure the behavior of the ConfigProvider.
 type ConfigProviderSettings struct {

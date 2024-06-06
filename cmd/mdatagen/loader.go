@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
@@ -117,6 +118,8 @@ type metric struct {
 	Sum *sum `mapstructure:"sum,omitempty"`
 	// Gauge stores metadata for gauge metric type
 	Gauge *gauge `mapstructure:"gauge,omitempty"`
+	// Gauge stores metadata for gauge metric type
+	Histogram *histogram `mapstructure:"histogram,omitempty"`
 
 	// Attributes is the list of attributes that the metric emits.
 	Attributes []attributeName `mapstructure:"attributes"`
@@ -134,6 +137,9 @@ func (m metric) Data() MetricData {
 	}
 	if m.Gauge != nil {
 		return m.Gauge
+	}
+	if m.Histogram != nil {
+		return m.Histogram
 	}
 	return nil
 }
@@ -221,6 +227,11 @@ type tests struct {
 	ExpectConsumerError bool   `mapstructure:"expect_consumer_error"`
 }
 
+type telemetry struct {
+	Level   configtelemetry.Level `mapstructure:"level"`
+	Metrics map[metricName]metric `mapstructure:"metrics"`
+}
+
 type metadata struct {
 	// Type of the component.
 	Type string `mapstructure:"type"`
@@ -228,6 +239,8 @@ type metadata struct {
 	Parent string `mapstructure:"parent"`
 	// Status information for the component.
 	Status *Status `mapstructure:"status"`
+	// Telemetry information for the component.
+	Telemetry telemetry `mapstructure:"telemetry"`
 	// SemConvVersion is a version number of OpenTelemetry semantic conventions applied to the scraped metrics.
 	SemConvVersion string `mapstructure:"sem_conv_version"`
 	// ResourceAttributes that can be emitted by the component.

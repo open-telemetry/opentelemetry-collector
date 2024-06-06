@@ -10,13 +10,14 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/go-version"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
-const defaultOtelColVersion = "0.99.0"
+const defaultOtelColVersion = "0.102.1"
 
 // ErrInvalidGoMod indicates an invalid gomod
 var ErrInvalidGoMod = errors.New("invalid gomod specification for module")
@@ -41,6 +42,17 @@ type Config struct {
 	Providers    *[]Module    `mapstructure:"providers"`
 	Replaces     []string     `mapstructure:"replaces"`
 	Excludes     []string     `mapstructure:"excludes"`
+
+	ConfResolver ConfResolver `mapstructure:"conf_resolver"`
+
+	downloadModules retry `mapstructure:"-"`
+}
+
+type ConfResolver struct {
+	// When set, will be used to set the CollectorSettings.ConfResolver.DefaultScheme value,
+	// which determines how the Collector interprets URIs that have no scheme, such as ${ENV}.
+	// See https://pkg.go.dev/go.opentelemetry.io/collector/confmap#ResolverSettings for more details.
+	DefaultURIScheme string `mapstructure:"default_uri_scheme"`
 }
 
 // Distribution holds the parameters for the final binary
@@ -66,6 +78,11 @@ type Module struct {
 	Path   string `mapstructure:"path"`   // an optional path to the local version of this module
 }
 
+type retry struct {
+	numRetries int
+	wait       time.Duration
+}
+
 // NewDefaultConfig creates a new config, with default values
 func NewDefaultConfig() Config {
 	log, err := zap.NewDevelopment()
@@ -84,6 +101,12 @@ func NewDefaultConfig() Config {
 			OutputPath:     outputDir,
 			OtelColVersion: defaultOtelColVersion,
 			Module:         "go.opentelemetry.io/collector/cmd/builder",
+		},
+		// basic retry if error from go mod command (in case of transient network error).
+		// retry 3 times with 5 second spacing interval
+		downloadModules: retry{
+			numRetries: 3,
+			wait:       5 * time.Second,
 		},
 	}
 }

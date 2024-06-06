@@ -9,17 +9,12 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/processor"
-)
-
-var (
-	processorScope = obsmetrics.Scope + obsmetrics.SpanNameSep + obsmetrics.ProcessorKey
+	"go.opentelemetry.io/collector/processor/processorhelper/internal/metadata"
 )
 
 // BuildCustomMetricName is used to be build a metric name following
@@ -38,21 +33,10 @@ func BuildCustomMetricName(configType, metric string) string {
 
 // ObsReport is a helper to add observability to a processor.
 type ObsReport struct {
-	level configtelemetry.Level
-
 	logger *zap.Logger
 
-	otelAttrs []attribute.KeyValue
-
-	acceptedSpansCounter        metric.Int64Counter
-	refusedSpansCounter         metric.Int64Counter
-	droppedSpansCounter         metric.Int64Counter
-	acceptedMetricPointsCounter metric.Int64Counter
-	refusedMetricPointsCounter  metric.Int64Counter
-	droppedMetricPointsCounter  metric.Int64Counter
-	acceptedLogRecordsCounter   metric.Int64Counter
-	refusedLogRecordsCounter    metric.Int64Counter
-	droppedLogRecordsCounter    metric.Int64Counter
+	otelAttrs        []attribute.KeyValue
+	telemetryBuilder *metadata.TelemetryBuilder
 }
 
 // ObsReportSettings are settings for creating an ObsReport.
@@ -67,106 +51,34 @@ func NewObsReport(cfg ObsReportSettings) (*ObsReport, error) {
 }
 
 func newObsReport(cfg ObsReportSettings) (*ObsReport, error) {
-	report := &ObsReport{
-		level:  cfg.ProcessorCreateSettings.MetricsLevel,
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(cfg.ProcessorCreateSettings.TelemetrySettings, metadata.WithLevel(cfg.ProcessorCreateSettings.MetricsLevel))
+	if err != nil {
+		return nil, err
+	}
+	return &ObsReport{
 		logger: cfg.ProcessorCreateSettings.Logger,
 		otelAttrs: []attribute.KeyValue{
 			attribute.String(obsmetrics.ProcessorKey, cfg.ProcessorID.String()),
 		},
-	}
-
-	if err := report.createOtelMetrics(cfg); err != nil {
-		return nil, err
-	}
-
-	return report, nil
-}
-
-func (or *ObsReport) createOtelMetrics(cfg ObsReportSettings) error {
-	meter := cfg.ProcessorCreateSettings.MeterProvider.Meter(processorScope)
-	var errors, err error
-
-	or.acceptedSpansCounter, err = meter.Int64Counter(
-		obsmetrics.ProcessorMetricPrefix+obsmetrics.AcceptedSpansKey,
-		metric.WithDescription("Number of spans successfully pushed into the next component in the pipeline."),
-		metric.WithUnit("1"),
-	)
-	errors = multierr.Append(errors, err)
-
-	or.refusedSpansCounter, err = meter.Int64Counter(
-		obsmetrics.ProcessorMetricPrefix+obsmetrics.RefusedSpansKey,
-		metric.WithDescription("Number of spans that were rejected by the next component in the pipeline."),
-		metric.WithUnit("1"),
-	)
-	errors = multierr.Append(errors, err)
-
-	or.droppedSpansCounter, err = meter.Int64Counter(
-		obsmetrics.ProcessorMetricPrefix+obsmetrics.DroppedSpansKey,
-		metric.WithDescription("Number of spans that were dropped."),
-		metric.WithUnit("1"),
-	)
-	errors = multierr.Append(errors, err)
-
-	or.acceptedMetricPointsCounter, err = meter.Int64Counter(
-		obsmetrics.ProcessorMetricPrefix+obsmetrics.AcceptedMetricPointsKey,
-		metric.WithDescription("Number of metric points successfully pushed into the next component in the pipeline."),
-		metric.WithUnit("1"),
-	)
-	errors = multierr.Append(errors, err)
-
-	or.refusedMetricPointsCounter, err = meter.Int64Counter(
-		obsmetrics.ProcessorMetricPrefix+obsmetrics.RefusedMetricPointsKey,
-		metric.WithDescription("Number of metric points that were rejected by the next component in the pipeline."),
-		metric.WithUnit("1"),
-	)
-	errors = multierr.Append(errors, err)
-
-	or.droppedMetricPointsCounter, err = meter.Int64Counter(
-		obsmetrics.ProcessorMetricPrefix+obsmetrics.DroppedMetricPointsKey,
-		metric.WithDescription("Number of metric points that were dropped."),
-		metric.WithUnit("1"),
-	)
-	errors = multierr.Append(errors, err)
-
-	or.acceptedLogRecordsCounter, err = meter.Int64Counter(
-		obsmetrics.ProcessorMetricPrefix+obsmetrics.AcceptedLogRecordsKey,
-		metric.WithDescription("Number of log records successfully pushed into the next component in the pipeline."),
-		metric.WithUnit("1"),
-	)
-	errors = multierr.Append(errors, err)
-
-	or.refusedLogRecordsCounter, err = meter.Int64Counter(
-		obsmetrics.ProcessorMetricPrefix+obsmetrics.RefusedLogRecordsKey,
-		metric.WithDescription("Number of log records that were rejected by the next component in the pipeline."),
-		metric.WithUnit("1"),
-	)
-	errors = multierr.Append(errors, err)
-
-	or.droppedLogRecordsCounter, err = meter.Int64Counter(
-		obsmetrics.ProcessorMetricPrefix+obsmetrics.DroppedLogRecordsKey,
-		metric.WithDescription("Number of log records that were dropped."),
-		metric.WithUnit("1"),
-	)
-	errors = multierr.Append(errors, err)
-
-	return errors
+		telemetryBuilder: telemetryBuilder,
+	}, nil
 }
 
 func (or *ObsReport) recordData(ctx context.Context, dataType component.DataType, accepted, refused, dropped int64) {
 	var acceptedCount, refusedCount, droppedCount metric.Int64Counter
 	switch dataType {
 	case component.DataTypeTraces:
-		acceptedCount = or.acceptedSpansCounter
-		refusedCount = or.refusedSpansCounter
-		droppedCount = or.droppedSpansCounter
+		acceptedCount = or.telemetryBuilder.ProcessorAcceptedSpans
+		refusedCount = or.telemetryBuilder.ProcessorRefusedSpans
+		droppedCount = or.telemetryBuilder.ProcessorDroppedSpans
 	case component.DataTypeMetrics:
-		acceptedCount = or.acceptedMetricPointsCounter
-		refusedCount = or.refusedMetricPointsCounter
-		droppedCount = or.droppedMetricPointsCounter
+		acceptedCount = or.telemetryBuilder.ProcessorAcceptedMetricPoints
+		refusedCount = or.telemetryBuilder.ProcessorRefusedMetricPoints
+		droppedCount = or.telemetryBuilder.ProcessorDroppedMetricPoints
 	case component.DataTypeLogs:
-		acceptedCount = or.acceptedLogRecordsCounter
-		refusedCount = or.refusedLogRecordsCounter
-		droppedCount = or.droppedLogRecordsCounter
+		acceptedCount = or.telemetryBuilder.ProcessorAcceptedLogRecords
+		refusedCount = or.telemetryBuilder.ProcessorRefusedLogRecords
+		droppedCount = or.telemetryBuilder.ProcessorDroppedLogRecords
 	}
 
 	acceptedCount.Add(ctx, accepted, metric.WithAttributes(or.otelAttrs...))
@@ -176,63 +88,45 @@ func (or *ObsReport) recordData(ctx context.Context, dataType component.DataType
 
 // TracesAccepted reports that the trace data was accepted.
 func (or *ObsReport) TracesAccepted(ctx context.Context, numSpans int) {
-	if or.level != configtelemetry.LevelNone {
-		or.recordData(ctx, component.DataTypeTraces, int64(numSpans), int64(0), int64(0))
-	}
+	or.recordData(ctx, component.DataTypeTraces, int64(numSpans), int64(0), int64(0))
 }
 
 // TracesRefused reports that the trace data was refused.
 func (or *ObsReport) TracesRefused(ctx context.Context, numSpans int) {
-	if or.level != configtelemetry.LevelNone {
-		or.recordData(ctx, component.DataTypeTraces, int64(0), int64(numSpans), int64(0))
-	}
+	or.recordData(ctx, component.DataTypeTraces, int64(0), int64(numSpans), int64(0))
 }
 
 // TracesDropped reports that the trace data was dropped.
 func (or *ObsReport) TracesDropped(ctx context.Context, numSpans int) {
-	if or.level != configtelemetry.LevelNone {
-		or.recordData(ctx, component.DataTypeTraces, int64(0), int64(0), int64(numSpans))
-	}
+	or.recordData(ctx, component.DataTypeTraces, int64(0), int64(0), int64(numSpans))
 }
 
 // MetricsAccepted reports that the metrics were accepted.
 func (or *ObsReport) MetricsAccepted(ctx context.Context, numPoints int) {
-	if or.level != configtelemetry.LevelNone {
-		or.recordData(ctx, component.DataTypeMetrics, int64(numPoints), int64(0), int64(0))
-	}
+	or.recordData(ctx, component.DataTypeMetrics, int64(numPoints), int64(0), int64(0))
 }
 
 // MetricsRefused reports that the metrics were refused.
 func (or *ObsReport) MetricsRefused(ctx context.Context, numPoints int) {
-	if or.level != configtelemetry.LevelNone {
-		or.recordData(ctx, component.DataTypeMetrics, int64(0), int64(numPoints), int64(0))
-	}
+	or.recordData(ctx, component.DataTypeMetrics, int64(0), int64(numPoints), int64(0))
 }
 
 // MetricsDropped reports that the metrics were dropped.
 func (or *ObsReport) MetricsDropped(ctx context.Context, numPoints int) {
-	if or.level != configtelemetry.LevelNone {
-		or.recordData(ctx, component.DataTypeMetrics, int64(0), int64(0), int64(numPoints))
-	}
+	or.recordData(ctx, component.DataTypeMetrics, int64(0), int64(0), int64(numPoints))
 }
 
 // LogsAccepted reports that the logs were accepted.
 func (or *ObsReport) LogsAccepted(ctx context.Context, numRecords int) {
-	if or.level != configtelemetry.LevelNone {
-		or.recordData(ctx, component.DataTypeLogs, int64(numRecords), int64(0), int64(0))
-	}
+	or.recordData(ctx, component.DataTypeLogs, int64(numRecords), int64(0), int64(0))
 }
 
 // LogsRefused reports that the logs were refused.
 func (or *ObsReport) LogsRefused(ctx context.Context, numRecords int) {
-	if or.level != configtelemetry.LevelNone {
-		or.recordData(ctx, component.DataTypeLogs, int64(0), int64(numRecords), int64(0))
-	}
+	or.recordData(ctx, component.DataTypeLogs, int64(0), int64(numRecords), int64(0))
 }
 
 // LogsDropped reports that the logs were dropped.
 func (or *ObsReport) LogsDropped(ctx context.Context, numRecords int) {
-	if or.level != configtelemetry.LevelNone {
-		or.recordData(ctx, component.DataTypeLogs, int64(0), int64(0), int64(numRecords))
-	}
+	or.recordData(ctx, component.DataTypeLogs, int64(0), int64(0), int64(numRecords))
 }

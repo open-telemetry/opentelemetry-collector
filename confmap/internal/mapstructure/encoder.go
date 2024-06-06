@@ -168,11 +168,18 @@ func (e *Encoder) encodeMap(value reflect.Value) (any, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error encoding key: %w", err)
 		}
-		key, ok := encoded.(string)
-		if !ok {
-			return nil, fmt.Errorf("%w key %q, kind: %v", errNonStringEncodedKey, iterator.Key().Interface(), iterator.Key().Kind())
+
+		v := reflect.ValueOf(encoded)
+		var key string
+
+		switch v.Kind() {
+		case reflect.String:
+			key = v.String()
+		default:
+			return nil, fmt.Errorf("%w, key: %q, kind: %v, type: %T", errNonStringEncodedKey, iterator.Key().Interface(), iterator.Key().Kind(), encoded)
 		}
-		if _, ok = result[key]; ok {
+
+		if _, ok := result[key]; ok {
 			return nil, fmt.Errorf("duplicate key %q while encoding", key)
 		}
 		if result[key], err = e.encode(iterator.Value()); err != nil {

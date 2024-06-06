@@ -231,6 +231,40 @@ func TestLoadMetadata(t *testing.T) {
 						Attributes: []attributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
 					},
 				},
+				Telemetry: telemetry{
+					Metrics: map[metricName]metric{
+						"batch_size_trigger_send": {
+							Enabled:     true,
+							Description: "Number of times the batch was sent due to a size trigger",
+							Unit:        strPtr("1"),
+							Sum: &sum{
+								MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeInt},
+								Mono:            Mono{Monotonic: true},
+							},
+						},
+						"request_duration": {
+							Enabled:     true,
+							Description: "Duration of request",
+							Unit:        strPtr("s"),
+							Histogram: &histogram{
+								MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
+								Boundaries:      []float64{1, 10, 100},
+							},
+						},
+						"process_runtime_total_alloc_bytes": {
+							Enabled:     true,
+							Description: "Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')",
+							Unit:        strPtr("By"),
+							Sum: &sum{
+								Mono: Mono{true},
+								MetricValueType: MetricValueType{
+									ValueType: pmetric.NumberDataPointValueTypeInt,
+								},
+								Async: true,
+							},
+						},
+					},
+				},
 				ScopeName:       "go.opentelemetry.io/collector/internal/receiver/samplereceiver",
 				ShortFolderName: "sample",
 			},
@@ -263,11 +297,6 @@ func TestLoadMetadata(t *testing.T) {
 		{
 			name:    "testdata/unknown_value_type.yaml",
 			wantErr: "1 error(s) decoding:\n\n* error decoding 'metrics[system.cpu.time]': 1 error(s) decoding:\n\n* error decoding 'sum': 1 error(s) decoding:\n\n* error decoding 'value_type': invalid value_type: \"unknown\"",
-		},
-		{
-			name:    "testdata/no_aggregation.yaml",
-			want:    metadata{},
-			wantErr: "1 error(s) decoding:\n\n* error decoding 'metrics[default.metric]': 1 error(s) decoding:\n\n* error decoding 'sum': missing required field: `aggregation_temporality`",
 		},
 		{
 			name:    "testdata/invalid_aggregation.yaml",

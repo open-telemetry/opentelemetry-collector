@@ -23,11 +23,11 @@ func TestNewFactory(t *testing.T) {
 		func() component.Config { return &defaultCfg })
 	assert.EqualValues(t, testType, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
-	_, err := factory.CreateTracesExporter(context.Background(), CreateSettings{}, &defaultCfg)
+	_, err := factory.CreateTracesExporter(context.Background(), Settings{}, &defaultCfg)
 	assert.Error(t, err)
-	_, err = factory.CreateMetricsExporter(context.Background(), CreateSettings{}, &defaultCfg)
+	_, err = factory.CreateMetricsExporter(context.Background(), Settings{}, &defaultCfg)
 	assert.Error(t, err)
-	_, err = factory.CreateLogsExporter(context.Background(), CreateSettings{}, &defaultCfg)
+	_, err = factory.CreateLogsExporter(context.Background(), Settings{}, &defaultCfg)
 	assert.Error(t, err)
 }
 
@@ -44,15 +44,15 @@ func TestNewFactoryWithOptions(t *testing.T) {
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
 	assert.Equal(t, component.StabilityLevelDevelopment, factory.TracesExporterStability())
-	_, err := factory.CreateTracesExporter(context.Background(), CreateSettings{}, &defaultCfg)
+	_, err := factory.CreateTracesExporter(context.Background(), Settings{}, &defaultCfg)
 	assert.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelAlpha, factory.MetricsExporterStability())
-	_, err = factory.CreateMetricsExporter(context.Background(), CreateSettings{}, &defaultCfg)
+	_, err = factory.CreateMetricsExporter(context.Background(), Settings{}, &defaultCfg)
 	assert.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelDeprecated, factory.LogsExporterStability())
-	_, err = factory.CreateLogsExporter(context.Background(), CreateSettings{}, &defaultCfg)
+	_, err = factory.CreateLogsExporter(context.Background(), Settings{}, &defaultCfg)
 	assert.NoError(t, err)
 }
 
@@ -220,20 +220,20 @@ type nopExporter struct {
 	consumertest.Consumer
 }
 
-func createTraces(context.Context, CreateSettings, component.Config) (Traces, error) {
+func createTraces(context.Context, Settings, component.Config) (Traces, error) {
 	return nopInstance, nil
 }
 
-func createMetrics(context.Context, CreateSettings, component.Config) (Metrics, error) {
+func createMetrics(context.Context, Settings, component.Config) (Metrics, error) {
 	return nopInstance, nil
 }
 
-func createLogs(context.Context, CreateSettings, component.Config) (Logs, error) {
+func createLogs(context.Context, Settings, component.Config) (Logs, error) {
 	return nopInstance, nil
 }
 
-func createSettings(id component.ID) CreateSettings {
-	return CreateSettings{
+func createSettings(id component.ID) Settings {
+	return Settings{
 		ID:                id,
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),

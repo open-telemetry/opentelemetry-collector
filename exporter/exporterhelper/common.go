@@ -172,6 +172,10 @@ func WithRequestBatchFuncs(mf exporterbatcher.BatchMergeFunc[Request], msf expor
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func WithBatcher(cfg exporterbatcher.Config, opts ...BatcherOption) Option {
 	return func(o *baseExporter) error {
+		if !cfg.Enabled {
+			return nil
+		}
+
 		bs := newBatchSender(cfg, o.set, o.batchMergeFunc, o.batchMergeSplitfunc)
 		for _, opt := range opts {
 			if err := opt(bs); err != nil {
@@ -227,7 +231,7 @@ type baseExporter struct {
 	marshaler   exporterqueue.Marshaler[Request]
 	unmarshaler exporterqueue.Unmarshaler[Request]
 
-	set    exporter.CreateSettings
+	set    exporter.Settings
 	obsrep *ObsReport
 
 	// Message for the user to be added with an export failure message.
@@ -245,7 +249,7 @@ type baseExporter struct {
 	consumerOptions []consumer.Option
 }
 
-func newBaseExporter(set exporter.CreateSettings, signal component.DataType, osf obsrepSenderFactory, options ...Option) (*baseExporter, error) {
+func newBaseExporter(set exporter.Settings, signal component.DataType, osf obsrepSenderFactory, options ...Option) (*baseExporter, error) {
 	obsReport, err := NewObsReport(ObsReportSettings{ExporterID: set.ID, ExporterCreateSettings: set})
 	if err != nil {
 		return nil, err

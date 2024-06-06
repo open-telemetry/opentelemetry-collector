@@ -27,13 +27,8 @@ type Config any
 var configValidatorType = reflect.TypeOf((*ConfigValidator)(nil)).Elem()
 
 // UnmarshalConfig helper function to UnmarshalConfig a Config.
-// It checks if the config implements confmap.Unmarshaler and uses that if available,
-// otherwise uses Map.UnmarshalExact, erroring if a field is nonexistent.
+// Deprecated: [v0.101.0] Use conf.Unmarshal(&intoCfg)
 func UnmarshalConfig(conf *confmap.Conf, intoCfg Config) error {
-	if cu, ok := intoCfg.(confmap.Unmarshaler); ok {
-		return cu.Unmarshal(conf)
-	}
-
 	return conf.Unmarshal(intoCfg)
 }
 
@@ -96,7 +91,7 @@ func callValidateIfPossible(v reflect.Value) error {
 	}
 
 	// If the pointer type implements ConfigValidator call Validate on the pointer to the current value.
-	if reflect.PtrTo(v.Type()).Implements(configValidatorType) {
+	if reflect.PointerTo(v.Type()).Implements(configValidatorType) {
 		// If not addressable, then create a new *V pointer and set the value to current v.
 		if !v.CanAddr() {
 			pv := reflect.New(reflect.PtrTo(v.Type()).Elem())

@@ -7,6 +7,9 @@ import (
 	"errors"
 	"fmt"
 
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -14,6 +17,7 @@ import (
 var (
 	_ MetricData = &gauge{}
 	_ MetricData = &sum{}
+	_ MetricData = &histogram{}
 )
 
 // MetricData is generic interface for all metric datatypes.
@@ -22,6 +26,8 @@ type MetricData interface {
 	HasMonotonic() bool
 	HasAggregated() bool
 	HasMetricInputType() bool
+	Instrument() string
+	IsAsync() bool
 }
 
 // AggregationTemporality defines a metric aggregation type.
@@ -118,6 +124,7 @@ func (mvt MetricValueType) BasicType() string {
 type gauge struct {
 	MetricValueType `mapstructure:"value_type"`
 	MetricInputType `mapstructure:",squash"`
+	Async           bool `mapstructure:"async,omitempty"`
 }
 
 // Unmarshal is a custom unmarshaler for gauge. Needed mostly to avoid MetricValueType.Unmarshal inheritance.
@@ -140,18 +147,31 @@ func (d gauge) HasAggregated() bool {
 	return false
 }
 
+func (d gauge) Instrument() string {
+	instrumentName := cases.Title(language.English).String(d.MetricValueType.BasicType())
+
+	if d.Async {
+		instrumentName += "Observable"
+	}
+
+	instrumentName += "Gauge"
+	return instrumentName
+}
+
+func (d gauge) IsAsync() bool {
+	return d.Async
+}
+
 type sum struct {
 	AggregationTemporality `mapstructure:"aggregation_temporality"`
 	Mono                   `mapstructure:",squash"`
 	MetricValueType        `mapstructure:"value_type"`
 	MetricInputType        `mapstructure:",squash"`
+	Async                  bool `mapstructure:"async,omitempty"`
 }
 
 // Unmarshal is a custom unmarshaler for sum. Needed mostly to avoid MetricValueType.Unmarshal inheritance.
 func (d *sum) Unmarshal(parser *confmap.Conf) error {
-	if !parser.IsSet("aggregation_temporality") {
-		return errors.New("missing required field: `aggregation_temporality`")
-	}
 	if err := d.MetricValueType.Unmarshal(parser); err != nil {
 		return err
 	}
@@ -179,4 +199,59 @@ func (d sum) HasMonotonic() bool {
 
 func (d sum) HasAggregated() bool {
 	return true
+}
+
+func (d sum) Instrument() string {
+	instrumentName := cases.Title(language.English).String(d.MetricValueType.BasicType())
+
+	if d.Async {
+		instrumentName += "Observable"
+	}
+	if !d.Monotonic {
+		instrumentName += "UpDown"
+	}
+	instrumentName += "Counter"
+	return instrumentName
+}
+
+func (d sum) IsAsync() bool {
+	return d.Async
+}
+
+type histogram struct {
+	AggregationTemporality `mapstructure:"aggregation_temporality"`
+	Mono                   `mapstructure:",squash"`
+	MetricValueType        `mapstructure:"value_type"`
+	MetricInputType        `mapstructure:",squash"`
+	Async                  bool      `mapstructure:"async,omitempty"`
+	Boundaries             []float64 `mapstructure:"bucket_boundaries"`
+}
+
+func (d histogram) Type() string {
+	return "Histogram"
+}
+
+func (d histogram) HasMonotonic() bool {
+	return false
+}
+
+func (d histogram) HasAggregated() bool {
+	return false
+}
+
+func (d histogram) Instrument() string {
+	instrumentName := cases.Title(language.English).String(d.MetricValueType.BasicType())
+	return instrumentName + d.Type()
+}
+
+// Unmarshal is a custom unmarshaler for histogram. Needed mostly to avoid MetricValueType.Unmarshal inheritance.
+func (d *histogram) Unmarshal(parser *confmap.Conf) error {
+	if err := d.MetricValueType.Unmarshal(parser); err != nil {
+		return err
+	}
+	return parser.Unmarshal(d, confmap.WithIgnoreUnused())
+}
+
+func (d histogram) IsAsync() bool {
+	return d.Async
 }

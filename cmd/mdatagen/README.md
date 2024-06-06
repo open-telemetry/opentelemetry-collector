@@ -11,7 +11,7 @@ Examples of this metadata about a component are:
 
 The metadata generator defines a schema for specifying this information to ensure it is complete and well-formed.
 The metadata generator is then able to ingest the metadata, validate it against the schema and produce documentation in a standardized format.
-An example of how this generated documentation looks can be found in [documentation.md](./documentation.md).
+An example of how this generated documentation looks can be found in [documentation.md](https://github.com/open-telemetry/opentelemetry-collector/blob/main/cmd/mdatagen/internal/samplereceiver/documentation.md).
 
 ## Using the Metadata Generator
 
@@ -52,5 +52,5 @@ When making updates to the metadata generator or introducing support for new fun
 
 1. Ensure the [metadata-schema.yaml](./metadata-schema.yaml) and [./metadata.yaml](metadata.yaml) files reflect the changes.
 2. Run `make mdatagen-test`.
-3. Make sure all tests are passing including [generated tests](./internal/metadata/generated_metrics_test.go).
+3. Make sure all tests are passing including [generated tests](./internal/samplereceiver/internal/metadata/generated_metrics_test.go).
 4. Run `make generate`.

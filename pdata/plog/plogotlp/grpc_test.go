@@ -15,6 +15,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/resolver"
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 
@@ -36,12 +37,12 @@ func TestGrpc(t *testing.T) {
 		wg.Wait()
 	})
 
-	cc, err := grpc.Dial("bufnet",
+	resolver.SetDefaultScheme("passthrough")
+	cc, err := grpc.NewClient("bufnet",
 		grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
 			return lis.Dial()
 		}),
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithBlock())
+		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	assert.NoError(t, err)
 	t.Cleanup(func() {
 		assert.NoError(t, cc.Close())
@@ -69,12 +70,11 @@ func TestGrpcError(t *testing.T) {
 		wg.Wait()
 	})
 
-	cc, err := grpc.Dial("bufnet",
+	cc, err := grpc.NewClient("bufnet",
 		grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
 			return lis.Dial()
 		}),
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithBlock())
+		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	assert.NoError(t, err)
 	t.Cleanup(func() {
 		assert.NoError(t, cc.Close())
