@@ -233,7 +233,7 @@ func (n *connectorNode) buildComponent(
 	builder *connector.Builder,
 	nexts []baseConsumer,
 ) error {
-	set := connector.CreateSettings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
+	set := connector.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
 	set.TelemetrySettings.Logger = components.ConnectorLogger(set.TelemetrySettings.Logger, n.componentID, n.exprPipelineType, n.rcvrPipelineType)
 
 	switch n.rcvrPipelineType {
