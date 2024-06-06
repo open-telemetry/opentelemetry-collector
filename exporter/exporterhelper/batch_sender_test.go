@@ -271,7 +271,7 @@ func TestBatchSender_PostShutdown(t *testing.T) {
 
 func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
 	cfg := exporterbatcher.NewDefaultConfig()
-	cfg.FlushTimeout = 10 * time.Millisecond
+	cfg.FlushTimeout = 20 * time.Millisecond
 	tests := []struct {
 		name             string
 		batcherOption    Option
@@ -308,7 +308,6 @@ func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
 			qCfg := exporterqueue.NewDefaultConfig()
 			qCfg.NumConsumers = 2
 			be, err := newBaseExporter(defaultSettings, defaultDataType, newNoopObsrepSender,
@@ -332,7 +331,6 @@ func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
 
 			// the 3rd request should be flushed by itself due to flush interval
 			assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 2, sink: sink}))
-			time.Sleep(20 * time.Millisecond)
 			assert.Eventually(t, func() bool {
 				return sink.requestsCount.Load() == 2 && sink.itemsCount.Load() == 6
 			}, 100*time.Millisecond, 10*time.Millisecond)
@@ -347,7 +345,7 @@ func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
 			// do it a few more times to ensure it produces the correct batch size regardless of goroutine scheduling.
 			assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 5, sink: sink}))
 			assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 6, sink: sink}))
-			time.Sleep(5 * time.Millisecond) // in case of MaxSizeItems=10, wait for the leftover request to send
+			time.Sleep(10 * time.Millisecond) // in case of MaxSizeItems=10, wait for the leftover request to send
 
 			assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 4, sink: sink}))
 			assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 6, sink: sink}))
