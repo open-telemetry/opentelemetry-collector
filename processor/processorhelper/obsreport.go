@@ -9,7 +9,6 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
@@ -33,8 +32,6 @@ func BuildCustomMetricName(configType, metric string) string {
 
 // ObsReport is a helper to add observability to a processor.
 type ObsReport struct {
-	logger *zap.Logger
-
 	otelAttrs        []attribute.KeyValue
 	telemetryBuilder *metadata.TelemetryBuilder
 }
@@ -56,7 +53,6 @@ func newObsReport(cfg ObsReportSettings) (*ObsReport, error) {
 		return nil, err
 	}
 	return &ObsReport{
-		logger: cfg.ProcessorCreateSettings.Logger,
 		otelAttrs: []attribute.KeyValue{
 			attribute.String(obsmetrics.ProcessorKey, cfg.ProcessorID.String()),
 		},
