@@ -90,8 +90,8 @@ func (bs *batchSender) Start(_ context.Context, _ component.Host) error {
 					sinceLastFlush := time.Since(bs.lastFlushed)
 					if sinceLastFlush >= bs.cfg.FlushTimeout {
 						bs.exportActiveBatch(func(b *batch) {
-						bs.activeRequests.Add(-b.requests)
-					})
+							bs.activeRequests.Add(-b.requests)
+						})
 					} else {
 						nextFlush = bs.cfg.FlushTimeout - sinceLastFlush
 					}
@@ -204,7 +204,6 @@ func (bs *batchSender) sendMergeSplitBatch(ctx context.Context, req Request) err
 // sendMergeBatch sends the request to the batch and waits for the batch to be exported.
 func (bs *batchSender) sendMergeBatch(ctx context.Context, req Request) error {
 	bs.mu.Lock()
-	bs.activeRequests.Add(1)
 
 	if bs.activeBatch.request != nil {
 		var err error
@@ -214,6 +213,8 @@ func (bs *batchSender) sendMergeBatch(ctx context.Context, req Request) error {
 			return err
 		}
 	}
+
+	bs.activeRequests.Add(1)
 	bs.updateActiveBatch(ctx, req)
 	b := bs.activeBatch
 	b.requests++
