@@ -132,7 +132,7 @@ func (cm *configProvider) GetConfmap(ctx context.Context) (*confmap.Conf, error)
 }
 
 func newDefaultConfigProviderSettings(uris []string) ConfigProviderSettings {
-	set := ConfigProviderSettings{
+	return ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
 			URIs: uris,
 			ProviderFactories: []confmap.ProviderFactory{
@@ -142,14 +142,7 @@ func newDefaultConfigProviderSettings(uris []string) ConfigProviderSettings {
 				httpprovider.NewFactory(),
 				httpsprovider.NewFactory(),
 			},
+			ConverterFactories: []confmap.ConverterFactory{expandconverter.NewFactory()},
 		},
 	}
-
-	if UseStableExpansionRules.IsEnabled() {
-		set.ResolverSettings.DefaultScheme = "env"
-	} else {
-		set.ResolverSettings.ConverterFactories = []confmap.ConverterFactory{expandconverter.NewFactory()}
-	}
-
-	return set
 }

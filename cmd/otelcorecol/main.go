@@ -14,8 +14,14 @@ import (
 	httpprovider "go.opentelemetry.io/collector/confmap/provider/httpprovider"
 	httpsprovider "go.opentelemetry.io/collector/confmap/provider/httpsprovider"
 	yamlprovider "go.opentelemetry.io/collector/confmap/provider/yamlprovider"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/otelcol"
 )
+
+var useStableExpansionRules = featuregate.GlobalRegistry().MustRegister("otelcol.useStableExpansionRules",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterFromVersion("v0.102.0"),
+	featuregate.WithRegisterDescription("Uses the env provider to expand `${}` instead of the expandconverter and no longer expands $ENV syntax"))
 
 func main() {
 	info := component.BuildInfo{
@@ -40,7 +46,7 @@ func main() {
 		},
 	}
 
-	if otelcol.UseStableExpansionRules.IsEnabled() {
+	if useStableExpansionRules.IsEnabled() {
 		set.ConfigProviderSettings.ResolverSettings.DefaultScheme = "env"
 	} else {
 		set.ConfigProviderSettings.ResolverSettings.ConverterFactories = []confmap.ConverterFactory{
