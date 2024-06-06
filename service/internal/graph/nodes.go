@@ -181,7 +181,7 @@ func (n *exporterNode) buildComponent(
 	info component.BuildInfo,
 	builder *exporter.Builder,
 ) error {
-	set := exporter.CreateSettings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
+	set := exporter.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
 	set.TelemetrySettings.Logger = components.ExporterLogger(set.TelemetrySettings.Logger, n.componentID, n.pipelineType)
 	var err error
 	switch n.pipelineType {

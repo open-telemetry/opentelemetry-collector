@@ -21,8 +21,8 @@ type componentTestTelemetry struct {
 	meterProvider *sdkmetric.MeterProvider
 }
 
-func (tt *componentTestTelemetry) NewCreateSettings() exporter.CreateSettings {
-	settings := exportertest.NewNopCreateSettings()
+func (tt *componentTestTelemetry) NewSettings() exporter.Settings {
+	settings := exportertest.NewNopSettings()
 	settings.MeterProvider = tt.meterProvider
 	settings.ID = component.NewID(component.MustNewType("exporterhelper"))
 
