@@ -27,6 +27,7 @@ require (
 	go.opentelemetry.io/collector/extension/ballastextension v0.102.1
 	go.opentelemetry.io/collector/extension/memorylimiterextension v0.102.1
 	go.opentelemetry.io/collector/extension/zpagesextension v0.102.1
+	go.opentelemetry.io/collector/featuregate v1.9.0
 	go.opentelemetry.io/collector/otelcol v0.102.1
 	go.opentelemetry.io/collector/processor v0.102.1
 	go.opentelemetry.io/collector/processor/batchprocessor v0.102.1
@@ -92,7 +93,6 @@ require (
 	go.opentelemetry.io/collector/config/internal v0.102.1 // indirect
 	go.opentelemetry.io/collector/consumer v0.102.1 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.102.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.9.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.9.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.102.1 // indirect
 	go.opentelemetry.io/collector/service v0.102.1 // indirect

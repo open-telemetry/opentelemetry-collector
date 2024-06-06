@@ -10,6 +10,7 @@ import (
 	{{- if .Distribution.SupportsConfmapFactories}}
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/converter/expandconverter"
+	"go.opentelemetry.io/collector/featuregate"
 	{{- range .Providers}}
 	{{.Name}} "{{.Import}}"
 	{{- end}}

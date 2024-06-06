@@ -7,6 +7,7 @@ go 1.21
 require (
 	{{if .Distribution.SupportsConfmapFactories -}}
 	go.opentelemetry.io/collector/confmap/converter/expandconverter v{{.Distribution.OtelColVersion}}
+	go.opentelemetry.io/collector/featuregate v{{.Distribution.OtelColVersion}}
 	{{- range .Providers}}
 	{{if .GoMod}}{{.GoMod}}{{end}}
 	{{- end}}
