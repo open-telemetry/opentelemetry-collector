@@ -2471,13 +2471,13 @@ func newErrReceiverFactory() receiver.Factory {
 func newErrProcessorFactory() processor.Factory {
 	return processor.NewFactory(component.MustNewType("err"),
 		func() component.Config { return &struct{}{} },
-		processor.WithTraces(func(context.Context, processor.CreateSettings, component.Config, consumer.Traces) (processor.Traces, error) {
+		processor.WithTraces(func(context.Context, processor.Settings, component.Config, consumer.Traces) (processor.Traces, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		processor.WithLogs(func(context.Context, processor.CreateSettings, component.Config, consumer.Logs) (processor.Logs, error) {
+		processor.WithLogs(func(context.Context, processor.Settings, component.Config, consumer.Logs) (processor.Logs, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		processor.WithMetrics(func(context.Context, processor.CreateSettings, component.Config, consumer.Metrics) (processor.Metrics, error) {
+		processor.WithMetrics(func(context.Context, processor.Settings, component.Config, consumer.Metrics) (processor.Metrics, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
 	)
@@ -2502,33 +2502,33 @@ func newErrConnectorFactory() connector.Factory {
 	return connector.NewFactory(component.MustNewType("err"), func() component.Config {
 		return &struct{}{}
 	},
-		connector.WithTracesToTraces(func(context.Context, connector.CreateSettings, component.Config, consumer.Traces) (connector.Traces, error) {
+		connector.WithTracesToTraces(func(context.Context, connector.Settings, component.Config, consumer.Traces) (connector.Traces, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
-		connector.WithTracesToMetrics(func(context.Context, connector.CreateSettings, component.Config, consumer.Metrics) (connector.Traces, error) {
+		connector.WithTracesToMetrics(func(context.Context, connector.Settings, component.Config, consumer.Metrics) (connector.Traces, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
-		connector.WithTracesToLogs(func(context.Context, connector.CreateSettings, component.Config, consumer.Logs) (connector.Traces, error) {
-			return &errComponent{}, nil
-		}, component.StabilityLevelUnmaintained),
-
-		connector.WithMetricsToTraces(func(context.Context, connector.CreateSettings, component.Config, consumer.Traces) (connector.Metrics, error) {
-			return &errComponent{}, nil
-		}, component.StabilityLevelUnmaintained),
-		connector.WithMetricsToMetrics(func(context.Context, connector.CreateSettings, component.Config, consumer.Metrics) (connector.Metrics, error) {
-			return &errComponent{}, nil
-		}, component.StabilityLevelUnmaintained),
-		connector.WithMetricsToLogs(func(context.Context, connector.CreateSettings, component.Config, consumer.Logs) (connector.Metrics, error) {
+		connector.WithTracesToLogs(func(context.Context, connector.Settings, component.Config, consumer.Logs) (connector.Traces, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
 
-		connector.WithLogsToTraces(func(context.Context, connector.CreateSettings, component.Config, consumer.Traces) (connector.Logs, error) {
+		connector.WithMetricsToTraces(func(context.Context, connector.Settings, component.Config, consumer.Traces) (connector.Metrics, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
-		connector.WithLogsToMetrics(func(context.Context, connector.CreateSettings, component.Config, consumer.Metrics) (connector.Logs, error) {
+		connector.WithMetricsToMetrics(func(context.Context, connector.Settings, component.Config, consumer.Metrics) (connector.Metrics, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
-		connector.WithLogsToLogs(func(context.Context, connector.CreateSettings, component.Config, consumer.Logs) (connector.Logs, error) {
+		connector.WithMetricsToLogs(func(context.Context, connector.Settings, component.Config, consumer.Logs) (connector.Metrics, error) {
+			return &errComponent{}, nil
+		}, component.StabilityLevelUnmaintained),
+
+		connector.WithLogsToTraces(func(context.Context, connector.Settings, component.Config, consumer.Traces) (connector.Logs, error) {
+			return &errComponent{}, nil
+		}, component.StabilityLevelUnmaintained),
+		connector.WithLogsToMetrics(func(context.Context, connector.Settings, component.Config, consumer.Metrics) (connector.Logs, error) {
+			return &errComponent{}, nil
+		}, component.StabilityLevelUnmaintained),
+		connector.WithLogsToLogs(func(context.Context, connector.Settings, component.Config, consumer.Logs) (connector.Logs, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
 	)

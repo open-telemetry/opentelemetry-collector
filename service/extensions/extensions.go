@@ -183,7 +183,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Extensions, error) {
 			ID:   extID,
 			Kind: component.KindExtension,
 		}
-		extSet := extension.CreateSettings{
+		extSet := extension.Settings{
 			ID:                extID,
 			TelemetrySettings: set.Telemetry.ToComponentTelemetrySettings(instanceID),
 			BuildInfo:         set.BuildInfo,
