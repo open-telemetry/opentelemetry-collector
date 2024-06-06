@@ -270,36 +270,41 @@ func TestBatchSender_PostShutdown(t *testing.T) {
 }
 
 func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
-	cfg := exporterbatcher.NewDefaultConfig()
-	cfg.FlushTimeout = 20 * time.Millisecond
+
 	tests := []struct {
 		name             string
-		batcherOption    Option
+		batcherCfg       exporterbatcher.Config
 		expectedRequests uint64
 		expectedItems    uint64
 	}{
 		{
-			name:             "merge_only",
-			batcherOption:    WithBatcher(cfg, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc)),
+			name: "merge_only",
+			batcherCfg: func() exporterbatcher.Config {
+				cfg := exporterbatcher.NewDefaultConfig()
+				cfg.FlushTimeout = 20 * time.Millisecond
+				return cfg
+			}(),
 			expectedRequests: 6,
 			expectedItems:    51,
 		},
 		{
 			name: "merge_without_split_triggered",
-			batcherOption: func() Option {
-				c := cfg
-				c.MaxSizeItems = 200
-				return WithBatcher(c, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc))
+			batcherCfg: func() exporterbatcher.Config {
+				cfg := exporterbatcher.NewDefaultConfig()
+				cfg.FlushTimeout = 20 * time.Millisecond
+				cfg.MaxSizeItems = 200
+				return cfg
 			}(),
 			expectedRequests: 6,
 			expectedItems:    51,
 		},
 		{
 			name: "merge_with_split_triggered",
-			batcherOption: func() Option {
-				c := cfg
-				c.MaxSizeItems = 10
-				return WithBatcher(c, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc))
+			batcherCfg: func() exporterbatcher.Config {
+				cfg := exporterbatcher.NewDefaultConfig()
+				cfg.FlushTimeout = 20 * time.Millisecond
+				cfg.MaxSizeItems = 10
+				return cfg
 			}(),
 			expectedRequests: 8,
 			expectedItems:    51,
@@ -311,7 +316,7 @@ func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
 			qCfg := exporterqueue.NewDefaultConfig()
 			qCfg.NumConsumers = 2
 			be, err := newBaseExporter(defaultSettings, defaultDataType, newNoopObsrepSender,
-				tt.batcherOption,
+				WithBatcher(tt.batcherCfg, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc)),
 				WithRequestQueue(qCfg, exporterqueue.NewMemoryQueueFactory[Request]()))
 			require.NotNil(t, be)
 			require.NoError(t, err)
@@ -345,7 +350,12 @@ func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
 			// do it a few more times to ensure it produces the correct batch size regardless of goroutine scheduling.
 			assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 5, sink: sink}))
 			assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 6, sink: sink}))
-			time.Sleep(10 * time.Millisecond) // in case of MaxSizeItems=10, wait for the leftover request to send
+			if tt.batcherCfg.MaxSizeItems == 10 {
+				// in case of MaxSizeItems=10, wait for the leftover request to send
+				assert.Eventually(t, func() bool {
+					return sink.requestsCount.Load() == 5 && sink.itemsCount.Load() == 21
+				}, 10*time.Millisecond, 5*time.Millisecond)
+			}
 
 			assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 4, sink: sink}))
 			assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 6, sink: sink}))
