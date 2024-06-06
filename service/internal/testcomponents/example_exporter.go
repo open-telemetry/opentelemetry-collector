@@ -31,15 +31,15 @@ func createExporterDefaultConfig() component.Config {
 	return &struct{}{}
 }
 
-func createTracesExporter(context.Context, exporter.CreateSettings, component.Config) (exporter.Traces, error) {
+func createTracesExporter(context.Context, exporter.Settings, component.Config) (exporter.Traces, error) {
 	return &ExampleExporter{}, nil
 }
 
-func createMetricsExporter(context.Context, exporter.CreateSettings, component.Config) (exporter.Metrics, error) {
+func createMetricsExporter(context.Context, exporter.Settings, component.Config) (exporter.Metrics, error) {
 	return &ExampleExporter{}, nil
 }
 
-func createLogsExporter(context.Context, exporter.CreateSettings, component.Config) (exporter.Logs, error) {
+func createLogsExporter(context.Context, exporter.Settings, component.Config) (exporter.Logs, error) {
 	return &ExampleExporter{}, nil
 }
 

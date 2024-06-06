@@ -63,7 +63,7 @@ func createAndStartTestPersistentQueue(t *testing.T, sizer Sizer[tracesRequest],
 		StorageID:        component.ID{},
 		Marshaler:        marshalTracesRequest,
 		Unmarshaler:      unmarshalTracesRequest,
-		ExporterSettings: exportertest.NewNopCreateSettings(),
+		ExporterSettings: exportertest.NewNopSettings(),
 	})
 	host := &mockHost{ext: map[component.ID]component.Component{
 		{}: NewMockStorageExtension(nil),
@@ -84,7 +84,7 @@ func createTestPersistentQueueWithClient(client storage.Client) *persistentQueue
 		StorageID:        component.ID{},
 		Marshaler:        marshalTracesRequest,
 		Unmarshaler:      unmarshalTracesRequest,
-		ExporterSettings: exportertest.NewNopCreateSettings(),
+		ExporterSettings: exportertest.NewNopSettings(),
 	}).(*persistentQueue[tracesRequest])
 	pq.initClient(context.Background(), client)
 	return pq
@@ -107,7 +107,7 @@ func createTestPersistentQueueWithCapacityLimiter(t testing.TB, ext storage.Exte
 		StorageID:        component.ID{},
 		Marshaler:        marshalTracesRequest,
 		Unmarshaler:      unmarshalTracesRequest,
-		ExporterSettings: exportertest.NewNopCreateSettings(),
+		ExporterSettings: exportertest.NewNopSettings(),
 	}).(*persistentQueue[tracesRequest])
 	require.NoError(t, pq.Start(context.Background(), &mockHost{ext: map[component.ID]component.Component{{}: ext}}))
 	return pq

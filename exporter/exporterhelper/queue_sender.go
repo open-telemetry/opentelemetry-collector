@@ -85,7 +85,7 @@ type queueSender struct {
 	metricSize     otelmetric.Int64ObservableGauge
 }
 
-func newQueueSender(q exporterqueue.Queue[Request], set exporter.CreateSettings, numConsumers int,
+func newQueueSender(q exporterqueue.Queue[Request], set exporter.Settings, numConsumers int,
 	exportFailureMessage string) *queueSender {
 	qs := &queueSender{
 		fullName:       set.ID.String(),

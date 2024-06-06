@@ -45,7 +45,7 @@ type batchSender struct {
 }
 
 // newBatchSender returns a new batch consumer component.
-func newBatchSender(cfg exporterbatcher.Config, set exporter.CreateSettings,
+func newBatchSender(cfg exporterbatcher.Config, set exporter.Settings,
 	mf exporterbatcher.BatchMergeFunc[Request], msf exporterbatcher.BatchMergeSplitFunc[Request]) *batchSender {
 	bs := &batchSender{
 		activeBatch:        newEmptyBatch(),
