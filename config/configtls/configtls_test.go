@@ -377,7 +377,7 @@ func TestLoadTLSServerMultipleConfigs(t *testing.T) {
 	}
 
 	for i := 0; i < 10; i++ {
-		tlsCfg, err := tlsSetting.LoadTLSConfigContext(context.Background())
+		tlsCfg, err := tlsSetting.LoadTLSConfig(context.Background())
 		assert.NoError(t, err)
 		assert.NotNil(t, tlsCfg)
 	}
