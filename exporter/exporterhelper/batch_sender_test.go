@@ -306,7 +306,9 @@ func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			qCfg := exporterqueue.NewDefaultConfig()
 			qCfg.NumConsumers = 2
 			be, err := newBaseExporter(defaultSettings, defaultDataType, newNoopObsrepSender,
