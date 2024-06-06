@@ -63,9 +63,8 @@ func updateSettingsUsingFlags(set *CollectorSettings, flags *flag.FlagSet) error
 	if len(resolverSet.ProviderFactories) == 0 && len(resolverSet.ConverterFactories) == 0 {
 		if ErrorWhenNoProvidersOrConvertersSet.IsEnabled() {
 			return errors.New("at least one provider or converter must be provided")
-		} else {
-			set.ConfigProviderSettings = newDefaultConfigProviderSettings(resolverSet.URIs)
 		}
+		set.ConfigProviderSettings = newDefaultConfigProviderSettings(resolverSet.URIs)
 	}
 	return nil
 }
