@@ -28,7 +28,7 @@ type metricsProcessor struct {
 // NewMetricsProcessor creates a processor.Metrics that ensure context propagation and the right tags are set.
 func NewMetricsProcessor(
 	_ context.Context,
-	set processor.CreateSettings,
+	set processor.Settings,
 	_ component.Config,
 	nextConsumer consumer.Metrics,
 	metricsFunc ProcessMetricsFunc,

@@ -24,6 +24,7 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
+	meter                             metric.Meter
 	ExporterEnqueueFailedLogRecords   metric.Int64Counter
 	ExporterEnqueueFailedMetricPoints metric.Int64Counter
 	ExporterEnqueueFailedSpans        metric.Int64Counter
@@ -53,64 +54,61 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	for _, op := range options {
 		op(&builder)
 	}
-	var (
-		err, errs error
-		meter     metric.Meter
-	)
+	var err, errs error
 	if builder.level >= configtelemetry.LevelBasic {
-		meter = Meter(settings)
+		builder.meter = Meter(settings)
 	} else {
-		meter = noop.Meter{}
+		builder.meter = noop.Meter{}
 	}
-	builder.ExporterEnqueueFailedLogRecords, err = meter.Int64Counter(
+	builder.ExporterEnqueueFailedLogRecords, err = builder.meter.Int64Counter(
 		"exporter_enqueue_failed_log_records",
 		metric.WithDescription("Number of log records failed to be added to the sending queue."),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ExporterEnqueueFailedMetricPoints, err = meter.Int64Counter(
+	builder.ExporterEnqueueFailedMetricPoints, err = builder.meter.Int64Counter(
 		"exporter_enqueue_failed_metric_points",
 		metric.WithDescription("Number of metric points failed to be added to the sending queue."),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ExporterEnqueueFailedSpans, err = meter.Int64Counter(
+	builder.ExporterEnqueueFailedSpans, err = builder.meter.Int64Counter(
 		"exporter_enqueue_failed_spans",
 		metric.WithDescription("Number of spans failed to be added to the sending queue."),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ExporterSendFailedLogRecords, err = meter.Int64Counter(
+	builder.ExporterSendFailedLogRecords, err = builder.meter.Int64Counter(
 		"exporter_send_failed_log_records",
 		metric.WithDescription("Number of log records in failed attempts to send to destination."),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ExporterSendFailedMetricPoints, err = meter.Int64Counter(
+	builder.ExporterSendFailedMetricPoints, err = builder.meter.Int64Counter(
 		"exporter_send_failed_metric_points",
 		metric.WithDescription("Number of metric points in failed attempts to send to destination."),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ExporterSendFailedSpans, err = meter.Int64Counter(
+	builder.ExporterSendFailedSpans, err = builder.meter.Int64Counter(
 		"exporter_send_failed_spans",
 		metric.WithDescription("Number of spans in failed attempts to send to destination."),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ExporterSentLogRecords, err = meter.Int64Counter(
+	builder.ExporterSentLogRecords, err = builder.meter.Int64Counter(
 		"exporter_sent_log_records",
 		metric.WithDescription("Number of log record successfully sent to destination."),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ExporterSentMetricPoints, err = meter.Int64Counter(
+	builder.ExporterSentMetricPoints, err = builder.meter.Int64Counter(
 		"exporter_sent_metric_points",
 		metric.WithDescription("Number of metric points successfully sent to destination."),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ExporterSentSpans, err = meter.Int64Counter(
+	builder.ExporterSentSpans, err = builder.meter.Int64Counter(
 		"exporter_sent_spans",
 		metric.WithDescription("Number of spans successfully sent to destination."),
 		metric.WithUnit("1"),

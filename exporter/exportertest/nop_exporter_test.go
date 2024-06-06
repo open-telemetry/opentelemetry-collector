@@ -24,19 +24,19 @@ func TestNewNopFactory(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, &nopConfig{}, cfg)
 
-	traces, err := factory.CreateTracesExporter(context.Background(), NewNopCreateSettings(), cfg)
+	traces, err := factory.CreateTracesExporter(context.Background(), NewNopSettings(), cfg)
 	require.NoError(t, err)
 	assert.NoError(t, traces.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, traces.ConsumeTraces(context.Background(), ptrace.NewTraces()))
 	assert.NoError(t, traces.Shutdown(context.Background()))
 
-	metrics, err := factory.CreateMetricsExporter(context.Background(), NewNopCreateSettings(), cfg)
+	metrics, err := factory.CreateMetricsExporter(context.Background(), NewNopSettings(), cfg)
 	require.NoError(t, err)
 	assert.NoError(t, metrics.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, metrics.ConsumeMetrics(context.Background(), pmetric.NewMetrics()))
 	assert.NoError(t, metrics.Shutdown(context.Background()))
 
-	logs, err := factory.CreateLogsExporter(context.Background(), NewNopCreateSettings(), cfg)
+	logs, err := factory.CreateLogsExporter(context.Background(), NewNopSettings(), cfg)
 	require.NoError(t, err)
 	assert.NoError(t, logs.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, logs.ConsumeLogs(context.Background(), plog.NewLogs()))
@@ -49,7 +49,7 @@ func TestNewNopBuilder(t *testing.T) {
 
 	factory := NewNopFactory()
 	cfg := factory.CreateDefaultConfig()
-	set := NewNopCreateSettings()
+	set := NewNopSettings()
 	set.ID = component.NewID(nopType)
 
 	traces, err := factory.CreateTracesExporter(context.Background(), set, cfg)

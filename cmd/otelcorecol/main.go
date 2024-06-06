@@ -27,7 +27,7 @@ func main() {
 	info := component.BuildInfo{
 		Command:     "otelcorecol",
 		Description: "Local OpenTelemetry Collector binary, testing only.",
-		Version:     "0.101.0-dev",
+		Version:     "0.102.1-dev",
 	}
 
 	set := otelcol.CollectorSettings{
@@ -46,7 +46,7 @@ func main() {
 		},
 	}
 
-	if useStableExpansionRules.IsEnabled() {
+	if useStableExpansionRules.IsEnabled() && set.ConfigProviderSettings.ResolverSettings.DefaultScheme == "" {
 		set.ConfigProviderSettings.ResolverSettings.DefaultScheme = "env"
 	} else {
 		set.ConfigProviderSettings.ResolverSettings.ConverterFactories = []confmap.ConverterFactory{

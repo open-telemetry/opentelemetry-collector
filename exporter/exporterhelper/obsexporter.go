@@ -10,7 +10,6 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -24,7 +23,6 @@ type ObsReport struct {
 	level          configtelemetry.Level
 	spanNamePrefix string
 	tracer         trace.Tracer
-	logger         *zap.Logger
 
 	otelAttrs        []attribute.KeyValue
 	telemetryBuilder *metadata.TelemetryBuilder
@@ -33,7 +31,7 @@ type ObsReport struct {
 // ObsReportSettings are settings for creating an ObsReport.
 type ObsReportSettings struct {
 	ExporterID             component.ID
-	ExporterCreateSettings exporter.CreateSettings
+	ExporterCreateSettings exporter.Settings
 }
 
 // NewObsReport creates a new Exporter.
@@ -51,7 +49,6 @@ func newExporter(cfg ObsReportSettings) (*ObsReport, error) {
 		level:          cfg.ExporterCreateSettings.TelemetrySettings.MetricsLevel,
 		spanNamePrefix: obsmetrics.ExporterPrefix + cfg.ExporterID.String(),
 		tracer:         cfg.ExporterCreateSettings.TracerProvider.Tracer(cfg.ExporterID.String()),
-		logger:         cfg.ExporterCreateSettings.Logger,
 
 		otelAttrs: []attribute.KeyValue{
 			attribute.String(obsmetrics.ExporterKey, cfg.ExporterID.String()),

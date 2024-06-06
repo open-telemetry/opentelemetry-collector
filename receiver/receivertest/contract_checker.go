@@ -113,11 +113,11 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 	var err error
 	switch params.DataType {
 	case component.DataTypeLogs:
-		receiver, err = params.Factory.CreateLogsReceiver(ctx, NewNopCreateSettings(), params.Config, consumer)
+		receiver, err = params.Factory.CreateLogsReceiver(ctx, NewNopSettings(), params.Config, consumer)
 	case component.DataTypeTraces:
-		receiver, err = params.Factory.CreateTracesReceiver(ctx, NewNopCreateSettings(), params.Config, consumer)
+		receiver, err = params.Factory.CreateTracesReceiver(ctx, NewNopSettings(), params.Config, consumer)
 	case component.DataTypeMetrics:
-		receiver, err = params.Factory.CreateMetricsReceiver(ctx, NewNopCreateSettings(), params.Config, consumer)
+		receiver, err = params.Factory.CreateMetricsReceiver(ctx, NewNopSettings(), params.Config, consumer)
 	default:
 		require.FailNow(params.T, "must specify a valid DataType to test for")
 	}
