@@ -72,9 +72,7 @@ func (bs *batchSender) Start(_ context.Context, _ component.Host) error {
 				for bs.activeRequests.Load() > 0 {
 					bs.mu.Lock()
 					if bs.activeBatch.request != nil {
-						bs.exportActiveBatch(func(b *batch) {
-							bs.activeRequests.Add(-b.requests)
-						})
+						bs.exportActiveBatch()
 					}
 					bs.mu.Unlock()
 				}
@@ -89,9 +87,7 @@ func (bs *batchSender) Start(_ context.Context, _ component.Host) error {
 				if bs.activeBatch.request != nil {
 					sinceLastFlush := time.Since(bs.lastFlushed)
 					if sinceLastFlush >= bs.cfg.FlushTimeout {
-						bs.exportActiveBatch(func(b *batch) {
-							bs.activeRequests.Add(-b.requests)
-						})
+						bs.exportActiveBatch()
 					} else {
 						nextFlush = bs.cfg.FlushTimeout - sinceLastFlush
 					}
@@ -106,11 +102,14 @@ func (bs *batchSender) Start(_ context.Context, _ component.Host) error {
 }
 
 type batch struct {
-	ctx      context.Context
-	request  Request
-	done     chan struct{}
-	err      error
-	requests int64 // number of requests in this batch
+	ctx     context.Context
+	request Request
+	done    chan struct{}
+	err     error
+
+	// requestsBlocked is the number of requests blocked in this batch
+	// that can be immediately released from activeRequests when batch sending completes.
+	requestsBlocked int64
 }
 
 func newEmptyBatch() *batch {
@@ -122,11 +121,11 @@ func newEmptyBatch() *batch {
 
 // exportActiveBatch exports the active batch asynchronously and replaces it with a new one.
 // Caller must hold the lock.
-func (bs *batchSender) exportActiveBatch(callback func(*batch)) {
+func (bs *batchSender) exportActiveBatch() {
 	go func(b *batch) {
-		defer callback(b)
 		b.err = bs.nextSender.send(b.ctx, b.request)
 		close(b.done)
+		bs.activeRequests.Add(-b.requestsBlocked)
 	}(bs.activeBatch)
 	bs.lastFlushed = time.Now()
 	bs.activeBatch = newEmptyBatch()
@@ -165,25 +164,20 @@ func (bs *batchSender) sendMergeSplitBatch(ctx context.Context, req Request) err
 	bs.activeRequests.Add(1)
 	if len(reqs) == 1 || bs.activeBatch.request != nil {
 		bs.updateActiveBatch(ctx, reqs[0])
-		b := bs.activeBatch
-		b.requests++
-		leftover := len(reqs) > 1
-		if bs.isActiveBatchReady() || leftover {
-			bs.exportActiveBatch(func(b *batch) {
-				if leftover {
-					// Since there will be some leftover requests after exporting active batch,
-					// release all requests in this batch except one.
-					bs.activeRequests.Add(-b.requests + 1)
-					defer bs.activeRequests.Add(-1)
-				} else {
-					bs.activeRequests.Add(-b.requests)
-				}
-			})
+		batch := bs.activeBatch
+		batch.requestsBlocked++
+		if bs.isActiveBatchReady() || len(reqs) > 1 {
+			if len(reqs) > 1 {
+				// there will be leftover requests and this request will be active until the function returns.
+				batch.requestsBlocked--
+				defer bs.activeRequests.Add(-1)
+			}
+			bs.exportActiveBatch()
 		}
 		bs.mu.Unlock()
-		<-b.done
-		if b.err != nil {
-			return b.err
+		<-batch.done
+		if batch.err != nil {
+			return batch.err
 		}
 		reqs = reqs[1:]
 	} else {
@@ -216,16 +210,14 @@ func (bs *batchSender) sendMergeBatch(ctx context.Context, req Request) error {
 
 	bs.activeRequests.Add(1)
 	bs.updateActiveBatch(ctx, req)
-	b := bs.activeBatch
-	b.requests++
+	batch := bs.activeBatch
+	batch.requestsBlocked++
 	if bs.isActiveBatchReady() {
-		bs.exportActiveBatch(func(b *batch) {
-			bs.activeRequests.Add(-b.requests)
-		})
+		bs.exportActiveBatch()
 	}
 	bs.mu.Unlock()
-	<-b.done
-	return b.err
+	<-batch.done
+	return batch.err
 }
 
 // updateActiveBatch update the active batch to the new merged request and context.

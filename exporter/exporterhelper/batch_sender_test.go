@@ -345,6 +345,8 @@ func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
 			// do it a few more times to ensure it produces the correct batch size regardless of goroutine scheduling.
 			assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 5, sink: sink}))
 			assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 6, sink: sink}))
+			time.Sleep(5 * time.Millisecond) // in case of MaxSizeItems=10, wait for the leftover request to send
+
 			assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 4, sink: sink}))
 			assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 6, sink: sink}))
 			assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 20, sink: sink}))
