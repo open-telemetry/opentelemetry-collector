@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
 	"golang.org/x/net/http2"
+	"golang.org/x/net/publicsuffix"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
@@ -112,6 +113,10 @@ type ClientConfig struct {
 type CookiesConfig struct {
 	// Enabled if true, cookies from HTTP responses will be reused in further HTTP requests with the same server.
 	Enabled bool `mapstructure:"enabled"`
+	// Insecure if true, the client accepts setting cookies for any domain. This is useful for testing but is insecure:
+	// it means that the HTTP server for foo.co.uk can set a cookie for bar.co.uk.
+	// If false, the client will allow setting cookies based on the list provided by https://publicsuffix.org/
+	Insecure bool `mapstructure:"insecure"`
 }
 
 // NewDefaultClientConfig returns ClientConfig type object with
@@ -242,7 +247,12 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 
 	var jar http.CookieJar
 	if hcs.Cookies != nil && hcs.Cookies.Enabled {
-		jar, err = cookiejar.New(nil)
+		opts := &cookiejar.Options{}
+		if !hcs.Cookies.Insecure {
+			opts.PublicSuffixList = publicsuffix.List
+		}
+
+		jar, err = cookiejar.New(opts)
 		if err != nil {
 			return nil, err
 		}
