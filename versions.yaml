@@ -9,6 +9,7 @@ module-sets:
       - go.opentelemetry.io/collector/pdata
       - go.opentelemetry.io/collector/config/configopaque
       - go.opentelemetry.io/collector/config/configcompression
+      - go.opentelemetry.io/collector/filter
   beta:
     version: v0.102.1
     modules:
@@ -56,7 +57,6 @@ module-sets:
       - go.opentelemetry.io/collector/receiver/otlpreceiver
       - go.opentelemetry.io/collector/semconv
       - go.opentelemetry.io/collector/service
-      - go.opentelemetry.io/collector/filter
 
 excluded-modules:
   - go.opentelemetry.io/collector/cmd/otelcorecol
