@@ -174,7 +174,7 @@ telemetry:
         async: true
         value_type: int
         monotonic: true
-    optional_metric:
+    queue_length:
       enabled: true
       description: This metric is optional and therefore not initialized in NewTelemetryBuilder.
       extended_documentation: For example this metric only exists if feature A is enabled.

@@ -48,5 +48,5 @@ type nopReceiver struct {
 }
 
 func (r nopReceiver) initOptionalMetric() {
-	_ = r.telemetryBuilder.InitOptionalMetric(func() int64 { return 1 })
+	_ = r.telemetryBuilder.InitQueueLength(func() int64 { return 1 })
 }

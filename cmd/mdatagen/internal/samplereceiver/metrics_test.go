@@ -91,7 +91,7 @@ func TestComponentTelemetry(t *testing.T) {
 			},
 		},
 		{
-			Name:        "optional_metric",
+			Name:        "queue_length",
 			Description: "This metric is optional and therefore not initialized in NewTelemetryBuilder.",
 			Unit:        "1",
 			Data: metricdata.Gauge[int64]{

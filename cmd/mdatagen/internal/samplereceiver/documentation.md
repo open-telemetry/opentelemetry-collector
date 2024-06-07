@@ -125,7 +125,15 @@ Number of times the batch was sent due to a size trigger
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### optional_metric
+### process_runtime_total_alloc_bytes
+
+Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| By | Sum | Int | true |
+
+### queue_length
 
 This metric is optional and therefore not initialized in NewTelemetryBuilder.
 
@@ -134,14 +142,6 @@ For example this metric only exists if feature A is enabled.
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Int |
-
-### process_runtime_total_alloc_bytes
-
-Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')
-
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| By | Sum | Int | true |
 
 ### request_duration
 

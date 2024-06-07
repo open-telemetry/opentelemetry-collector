@@ -263,7 +263,7 @@ func TestLoadMetadata(t *testing.T) {
 								Async: true,
 							},
 						},
-						"optional_metric": {
+						"queue_length": {
 							Enabled:               true,
 							Description:           "This metric is optional and therefore not initialized in NewTelemetryBuilder.",
 							ExtendedDocumentation: "For example this metric only exists if feature A is enabled.",
