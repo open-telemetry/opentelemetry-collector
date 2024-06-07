@@ -758,7 +758,7 @@ func TestGRPCValidTLSCredentials(t *testing.T) {
 
 			r, err := NewFactory().CreateTracesReceiver(
 				context.Background(),
-				receivertest.NewNopCreateSettings(),
+				receivertest.NewNopSettings(),
 				cfg,
 				consumertest.NewNop())
 			require.NoError(t, err)
@@ -883,7 +883,7 @@ func TestHTTPTLSCredentials(t *testing.T) {
 
 			r, err := NewFactory().CreateTracesReceiver(
 				context.Background(),
-				receivertest.NewNopCreateSettings(),
+				receivertest.NewNopSettings(),
 				cfg,
 				consumertest.NewNop())
 			require.NoError(t, err)
