@@ -203,13 +203,13 @@ func newExampleFactory() receiver.Factory {
 	)
 }
 
-func createTrace(_ context.Context, _ receiver.CreateSettings, cfg component.Config, consumer consumer.Traces) (receiver.Traces, error) {
+func createTrace(_ context.Context, _ receiver.Settings, cfg component.Config, consumer consumer.Traces) (receiver.Traces, error) {
 	rcv := &exampleReceiver{nextTracesConsumer: consumer}
 	cfg.(*exampleReceiverConfig).generator.(*exampleTraceGenerator).receiver = rcv
 	return rcv, nil
 }
 
-func createMetric(_ context.Context, _ receiver.CreateSettings, cfg component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
+func createMetric(_ context.Context, _ receiver.Settings, cfg component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
 	rcv := &exampleReceiver{nextMetricsConsumer: consumer}
 	cfg.(*exampleReceiverConfig).generator.(*exampleMetricGenerator).receiver = rcv
 	return rcv, nil
@@ -217,7 +217,7 @@ func createMetric(_ context.Context, _ receiver.CreateSettings, cfg component.Co
 
 func createLog(
 	_ context.Context,
-	_ receiver.CreateSettings,
+	_ receiver.Settings,
 	cfg component.Config,
 	consumer consumer.Logs,
 ) (receiver.Logs, error) {

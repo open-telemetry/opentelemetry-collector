@@ -22,7 +22,7 @@ func TestForward(t *testing.T) {
 	assert.Equal(t, &Config{}, cfg)
 
 	ctx := context.Background()
-	set := connectortest.NewNopCreateSettings()
+	set := connectortest.NewNopSettings()
 	host := componenttest.NewNopHost()
 
 	tracesSink := new(consumertest.TracesSink)

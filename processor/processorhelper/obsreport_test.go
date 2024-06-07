@@ -27,7 +27,7 @@ func TestProcessorTraceData(t *testing.T) {
 		const droppedSpans = 13
 		obsrep, err := newObsReport(ObsReportSettings{
 			ProcessorID:             processorID,
-			ProcessorCreateSettings: processor.CreateSettings{ID: processorID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+			ProcessorCreateSettings: processor.Settings{ID: processorID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		})
 		require.NoError(t, err)
 		obsrep.TracesAccepted(context.Background(), acceptedSpans)
@@ -46,7 +46,7 @@ func TestProcessorMetricsData(t *testing.T) {
 
 		obsrep, err := newObsReport(ObsReportSettings{
 			ProcessorID:             processorID,
-			ProcessorCreateSettings: processor.CreateSettings{ID: processorID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+			ProcessorCreateSettings: processor.Settings{ID: processorID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		})
 		require.NoError(t, err)
 		obsrep.MetricsAccepted(context.Background(), acceptedPoints)
@@ -87,7 +87,7 @@ func TestProcessorLogRecords(t *testing.T) {
 
 		obsrep, err := newObsReport(ObsReportSettings{
 			ProcessorID:             processorID,
-			ProcessorCreateSettings: processor.CreateSettings{ID: processorID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+			ProcessorCreateSettings: processor.Settings{ID: processorID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		})
 		require.NoError(t, err)
 		obsrep.LogsAccepted(context.Background(), acceptedRecords)
@@ -105,7 +105,7 @@ func TestCheckProcessorTracesViews(t *testing.T) {
 
 	por, err := NewObsReport(ObsReportSettings{
 		ProcessorID:             processorID,
-		ProcessorCreateSettings: processor.CreateSettings{ID: processorID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		ProcessorCreateSettings: processor.Settings{ID: processorID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 	})
 	assert.NoError(t, err)
 
@@ -130,7 +130,7 @@ func TestCheckProcessorMetricsViews(t *testing.T) {
 
 	por, err := NewObsReport(ObsReportSettings{
 		ProcessorID:             processorID,
-		ProcessorCreateSettings: processor.CreateSettings{ID: processorID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		ProcessorCreateSettings: processor.Settings{ID: processorID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 	})
 	assert.NoError(t, err)
 
@@ -155,7 +155,7 @@ func TestCheckProcessorLogViews(t *testing.T) {
 
 	por, err := NewObsReport(ObsReportSettings{
 		ProcessorID:             processorID,
-		ProcessorCreateSettings: processor.CreateSettings{ID: processorID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		ProcessorCreateSettings: processor.Settings{ID: processorID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 	})
 	assert.NoError(t, err)
 
@@ -184,7 +184,7 @@ func TestNoMetrics(t *testing.T) {
 
 		por, err := NewObsReport(ObsReportSettings{
 			ProcessorID:             processorID,
-			ProcessorCreateSettings: processor.CreateSettings{ID: processorID, TelemetrySettings: set, BuildInfo: component.NewDefaultBuildInfo()},
+			ProcessorCreateSettings: processor.Settings{ID: processorID, TelemetrySettings: set, BuildInfo: component.NewDefaultBuildInfo()},
 		})
 		assert.NoError(t, err)
 
@@ -203,7 +203,7 @@ func TestNoMetrics(t *testing.T) {
 
 		por, err := NewObsReport(ObsReportSettings{
 			ProcessorID:             processorID,
-			ProcessorCreateSettings: processor.CreateSettings{ID: processorID, TelemetrySettings: set, BuildInfo: component.NewDefaultBuildInfo()},
+			ProcessorCreateSettings: processor.Settings{ID: processorID, TelemetrySettings: set, BuildInfo: component.NewDefaultBuildInfo()},
 		})
 		assert.NoError(t, err)
 
@@ -222,7 +222,7 @@ func TestNoMetrics(t *testing.T) {
 
 		por, err := NewObsReport(ObsReportSettings{
 			ProcessorID:             processorID,
-			ProcessorCreateSettings: processor.CreateSettings{ID: processorID, TelemetrySettings: set, BuildInfo: component.NewDefaultBuildInfo()},
+			ProcessorCreateSettings: processor.Settings{ID: processorID, TelemetrySettings: set, BuildInfo: component.NewDefaultBuildInfo()},
 		})
 		assert.NoError(t, err)
 

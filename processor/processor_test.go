@@ -24,11 +24,11 @@ func TestNewFactory(t *testing.T) {
 		func() component.Config { return &defaultCfg })
 	assert.EqualValues(t, testType, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
-	_, err := factory.CreateTracesProcessor(context.Background(), CreateSettings{}, &defaultCfg, consumertest.NewNop())
+	_, err := factory.CreateTracesProcessor(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
 	assert.Error(t, err)
-	_, err = factory.CreateMetricsProcessor(context.Background(), CreateSettings{}, &defaultCfg, consumertest.NewNop())
+	_, err = factory.CreateMetricsProcessor(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
 	assert.Error(t, err)
-	_, err = factory.CreateLogsProcessor(context.Background(), CreateSettings{}, &defaultCfg, consumertest.NewNop())
+	_, err = factory.CreateLogsProcessor(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
 	assert.Error(t, err)
 }
 
@@ -45,15 +45,15 @@ func TestNewFactoryWithOptions(t *testing.T) {
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
 	assert.Equal(t, component.StabilityLevelAlpha, factory.TracesProcessorStability())
-	_, err := factory.CreateTracesProcessor(context.Background(), CreateSettings{}, &defaultCfg, consumertest.NewNop())
+	_, err := factory.CreateTracesProcessor(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
 	assert.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelBeta, factory.MetricsProcessorStability())
-	_, err = factory.CreateMetricsProcessor(context.Background(), CreateSettings{}, &defaultCfg, consumertest.NewNop())
+	_, err = factory.CreateMetricsProcessor(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
 	assert.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelUnmaintained, factory.LogsProcessorStability())
-	_, err = factory.CreateLogsProcessor(context.Background(), CreateSettings{}, &defaultCfg, consumertest.NewNop())
+	_, err = factory.CreateLogsProcessor(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
 	assert.NoError(t, err)
 }
 
@@ -244,20 +244,20 @@ type nopProcessor struct {
 	consumertest.Consumer
 }
 
-func createTraces(context.Context, CreateSettings, component.Config, consumer.Traces) (Traces, error) {
+func createTraces(context.Context, Settings, component.Config, consumer.Traces) (Traces, error) {
 	return nopInstance, nil
 }
 
-func createMetrics(context.Context, CreateSettings, component.Config, consumer.Metrics) (Metrics, error) {
+func createMetrics(context.Context, Settings, component.Config, consumer.Metrics) (Metrics, error) {
 	return nopInstance, nil
 }
 
-func createLogs(context.Context, CreateSettings, component.Config, consumer.Logs) (Logs, error) {
+func createLogs(context.Context, Settings, component.Config, consumer.Logs) (Logs, error) {
 	return nopInstance, nil
 }
 
-func createSettings(id component.ID) CreateSettings {
-	return CreateSettings{
+func createSettings(id component.ID) Settings {
+	return Settings{
 		ID:                id,
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),

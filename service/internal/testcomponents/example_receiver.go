@@ -28,7 +28,7 @@ func createReceiverDefaultConfig() component.Config {
 // createTracesReceiver creates a trace receiver based on this config.
 func createTracesReceiver(
 	_ context.Context,
-	_ receiver.CreateSettings,
+	_ receiver.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
@@ -40,7 +40,7 @@ func createTracesReceiver(
 // createMetricsReceiver creates a metrics receiver based on this config.
 func createMetricsReceiver(
 	_ context.Context,
-	_ receiver.CreateSettings,
+	_ receiver.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -51,7 +51,7 @@ func createMetricsReceiver(
 
 func createLogsReceiver(
 	_ context.Context,
-	_ receiver.CreateSettings,
+	_ receiver.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (receiver.Logs, error) {

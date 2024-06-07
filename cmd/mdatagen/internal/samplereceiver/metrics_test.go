@@ -18,7 +18,7 @@ import (
 
 // TestGeneratedMetrics verifies that the internal/metadata API is generated correctly.
 func TestGeneratedMetrics(t *testing.T) {
-	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings())
+	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings())
 	m := mb.Emit()
 	require.Equal(t, 0, m.ResourceMetrics().Len())
 }
@@ -26,7 +26,7 @@ func TestGeneratedMetrics(t *testing.T) {
 func TestComponentTelemetry(t *testing.T) {
 	tt := setupTestTelemetry()
 	factory := NewFactory()
-	_, err := factory.CreateMetricsReceiver(context.Background(), tt.NewCreateSettings(), componenttest.NewNopHost(), new(consumertest.MetricsSink))
+	_, err := factory.CreateMetricsReceiver(context.Background(), tt.NewSettings(), componenttest.NewNopHost(), new(consumertest.MetricsSink))
 	require.NoError(t, err)
 	tt.assertMetrics(t, []metricdata.Metrics{
 		{

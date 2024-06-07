@@ -22,11 +22,11 @@ func NewFactory() receiver.Factory {
 		receiver.WithLogs(createLogs, metadata.LogsStability))
 }
 
-func createTraces(context.Context, receiver.CreateSettings, component.Config, consumer.Traces) (receiver.Traces, error) {
+func createTraces(context.Context, receiver.Settings, component.Config, consumer.Traces) (receiver.Traces, error) {
 	return nopInstance, nil
 }
 
-func createMetrics(ctx context.Context, set receiver.CreateSettings, _ component.Config, _ consumer.Metrics) (receiver.Metrics, error) {
+func createMetrics(ctx context.Context, set receiver.Settings, _ component.Config, _ consumer.Metrics) (receiver.Metrics, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings, metadata.WithProcessRuntimeTotalAllocBytesCallback(func() int64 { return 2 }))
 	if err != nil {
 		return nil, err
@@ -35,7 +35,7 @@ func createMetrics(ctx context.Context, set receiver.CreateSettings, _ component
 	return nopInstance, nil
 }
 
-func createLogs(context.Context, receiver.CreateSettings, component.Config, consumer.Logs) (receiver.Logs, error) {
+func createLogs(context.Context, receiver.Settings, component.Config, consumer.Logs) (receiver.Logs, error) {
 	return nopInstance, nil
 }
 

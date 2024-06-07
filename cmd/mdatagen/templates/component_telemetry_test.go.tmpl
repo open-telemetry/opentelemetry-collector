@@ -21,8 +21,8 @@ type componentTestTelemetry struct {
 	meterProvider *sdkmetric.MeterProvider
 }
 
-func (tt *componentTestTelemetry) NewCreateSettings() {{ .Status.Class }}.CreateSettings {
-	settings := {{ .Status.Class }}test.NewNopCreateSettings()
+func (tt *componentTestTelemetry) NewSettings() {{ .Status.Class }}.Settings {
+	settings := {{ .Status.Class }}test.NewNopSettings()
 	settings.MeterProvider = tt.meterProvider
 	settings.ID = component.NewID(component.MustNewType("{{ .Type }}"))
 
