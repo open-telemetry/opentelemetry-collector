@@ -111,6 +111,10 @@ type metric struct {
 	// be appended to the description used in generated documentation.
 	ExtendedDocumentation string `mapstructure:"extended_documentation"`
 
+	// Optional can be used to specify metrics that may
+	// or may not be present in all cases, depending on configuration.
+	Optional bool `mapstructure:"optional"`
+
 	// Unit of the metric.
 	Unit *string `mapstructure:"unit"`
 
