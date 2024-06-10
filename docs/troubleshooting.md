@@ -322,3 +322,7 @@ error: `The service process could not connect to the service controller`. In
 this case the `NO_WINDOWS_SERVICE=1` environment variable should be set to force
 the collector to be started as if it were running in an interactive terminal,
 without attempting to run as a Windows service.
+
+### Null Maps in Configuration
+
+If you've ever experienced issues during configuration resolution where sections, like `processors:` from earlier configuration are removed, see https://github.com/open-telemetry/opentelemetry-collector/tree/main/confmap#troubleshooting
