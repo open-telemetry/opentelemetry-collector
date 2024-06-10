@@ -39,6 +39,7 @@ type Status struct {
 	Warnings             []string     `mapstructure:"warnings"`
 	Codeowners           *Codeowners  `mapstructure:"codeowners"`
 	UnsupportedPlatforms []string     `mapstructure:"unsupported_platforms"`
+	NotComponent         bool         `mapstructure:"not_component"`
 }
 
 func (s *Status) SortedDistributions() []string {

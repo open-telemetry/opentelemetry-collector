@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate mdatagen metadata.yaml
+
 package service // import "go.opentelemetry.io/collector/service"
 
 import (
@@ -89,16 +91,27 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		},
 		collectorConf: set.CollectorConf,
 	}
-	tel, err := telemetry.New(ctx, telemetry.Settings{BuildInfo: set.BuildInfo, ZapOptions: set.LoggingOptions}, cfg.Telemetry)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get logger: %w", err)
-	}
 
 	// Fetch data for internal telemetry like instance id and sdk version to provide for internal telemetry.
 	res := resource.New(set.BuildInfo, cfg.Telemetry.Resource)
 	pcommonRes := pdataFromSdk(res)
 
-	logger := tel.Logger()
+	telFactory := telemetry.NewFactory()
+	telset := telemetry.Settings{
+		BuildInfo:  set.BuildInfo,
+		ZapOptions: set.LoggingOptions,
+	}
+
+	logger, err := telFactory.CreateLogger(ctx, telset, &cfg.Telemetry)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create logger: %w", err)
+	}
+
+	tracerProvider, err := telFactory.CreateTracerProvider(ctx, telset, &cfg.Telemetry)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create tracer provider: %w", err)
+	}
+
 	logger.Info("Setting up own telemetry...")
 	mp, err := newMeterProvider(
 		meterProviderSettings{
@@ -116,7 +129,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	srv.telemetrySettings = servicetelemetry.TelemetrySettings{
 		Logger:         logger,
 		MeterProvider:  mp,
-		TracerProvider: tel.TracerProvider(),
+		TracerProvider: tracerProvider,
 		MetricsLevel:   cfg.Telemetry.Metrics.Level,
 		// Construct telemetry attributes from build info and config's resource attributes.
 		Resource: pcommonRes,
@@ -278,7 +291,7 @@ func (srv *Service) initExtensionsAndPipeline(ctx context.Context, set Settings,
 
 	if cfg.Telemetry.Metrics.Level != configtelemetry.LevelNone && cfg.Telemetry.Metrics.Address != "" {
 		// The process telemetry initialization requires the ballast size, which is available after the extensions are initialized.
-		if err = proctelemetry.RegisterProcessMetrics(srv.telemetrySettings.MeterProvider, getBallastSize(srv.host)); err != nil {
+		if err = proctelemetry.RegisterProcessMetrics(srv.telemetrySettings, getBallastSize(srv.host)); err != nil {
 			return fmt.Errorf("failed to register process metrics: %w", err)
 		}
 	}

@@ -7,6 +7,52 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.102.1
+
+No API-only changes on this release. **This release addresses [GHSA-c74f-6mfw-mm4v](https://github.com/open-telemetry/opentelemetry-collector/security/advisories/GHSA-c74f-6mfw-mm4v) for `configgrpc`.**
+
+## v1.9.0/v0.102.0
+
+**This release addresses [GHSA-c74f-6mfw-mm4v](https://github.com/open-telemetry/opentelemetry-collector/security/advisories/GHSA-c74f-6mfw-mm4v) for `confighttp`.**
+
+### 🛑 Breaking changes 🛑
+
+- `otelcol`: Remove deprecated `ConfigProvider` field from `CollectorSettings` (#10281)
+- `exporterhelper`: remove deprecated RequestMarshaler & RequestUnmarshaler types (#10283)
+- `service`: remove deprecated Telemetry struct and New func (#10285)
+- `configtls`: remove deprecated LoadTLSConfigContext funcs (#10283)
+
+### 🚩 Deprecations 🚩
+
+- `component`: Deprecate `component.UnmarshalConfig`, use `(*confmap.Conf).Unmarshal(&intoCfg)` instead. (#7102)
+- `service/telemetry`: Deprecate telemetry.New in favor of telemetry.NewFactory (#4970)
+
+### 💡 Enhancements 💡
+
+- `confmap`: Allow setting a default Provider on a Resolver to use when `${}` syntax is used without a scheme (#10182)
+- `pdata`: Introduce string and int64 slices to pcommon (#10148)
+- `pdata`: Introduce generated experimental pdata for profiling signal. (#10195)
+- `confmap`: Remove top level condition when considering struct as Unmarshalers (#7101)
+
+### 🧰 Bug fixes 🧰
+
+- `otelcol`: Update validate command to use the new configuration options (#10203)
+
+## v1.8.0/v0.101.0
+
+### 🛑 Breaking changes 🛑
+
+- `confighttp`: Removes deprecated functions `ToClientContext`, `ToListenerContext`, and `ToServerContext`. (#10138)
+- `confmap`: Deprecate `NewWithSettings` for all Providers and `New` for all Converters (#10134)
+  Use `NewFactory` instead for all affected modules.
+- `confmap`: Remove deprecated `Providers` and `Converters` from `confmap.ResolverSettings` (#10173)
+  Use `ProviderSettings` and `ConverterSettings` instead.
+
+### 🧰 Bug fixes 🧰
+
+- `otelcol`: Add explicit mapstructure tags to main configuration struct (#10152)
+- `confmap`: Support string-like types as map keys when marshaling (#10137)
+
 ## v1.7.0/v0.100.0
 
 ### 💡 Enhancements 💡
@@ -28,6 +74,8 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 - `confighttp`: deprecate ToClientContext, ToServerContext, ToListenerContext, replaced by ToClient, ToServer, ToListener (#9807)
 - `configtls`: Deprecates `ClientConfig.LoadTLSConfigContext` and `ServerConfig.LoadTLSConfigContext`, use `ClientConfig.LoadTLSConfig` and `ServerConfig.LoadTLSConfig` instead. (#9945)
+- `confmap`: Deprecate the `Providers` and `Converters` fields in `confmap.ResolverSettings` (#9516)
+Use the `ProviderFactories` and `ConverterFactories` fields instead.
 
 ### 💡 Enhancements 💡
 

@@ -10,12 +10,12 @@ import (
 	"testing"
 
 	"github.com/mostynb/go-grpc-compression/nonclobbering/snappy"
-	"github.com/mostynb/go-grpc-compression/nonclobbering/zstd"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/encoding"
 	"google.golang.org/grpc/encoding/gzip"
 	"google.golang.org/grpc/status"
 
+	"go.opentelemetry.io/collector/config/configgrpc/internal"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -27,7 +27,7 @@ func BenchmarkCompressors(b *testing.B) {
 
 	compressors := make([]encoding.Compressor, 0)
 	compressors = append(compressors, encoding.GetCompressor(gzip.Name))
-	compressors = append(compressors, encoding.GetCompressor(zstd.Name))
+	compressors = append(compressors, encoding.GetCompressor(internal.ZstdName))
 	compressors = append(compressors, encoding.GetCompressor(snappy.Name))
 
 	for _, payload := range payloads {

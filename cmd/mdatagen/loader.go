@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
@@ -109,6 +110,10 @@ type metric struct {
 	// ExtendedDocumentation of the metric. If specified, this will
 	// be appended to the description used in generated documentation.
 	ExtendedDocumentation string `mapstructure:"extended_documentation"`
+
+	// Optional can be used to specify metrics that may
+	// or may not be present in all cases, depending on configuration.
+	Optional bool `mapstructure:"optional"`
 
 	// Unit of the metric.
 	Unit *string `mapstructure:"unit"`
@@ -227,6 +232,7 @@ type tests struct {
 }
 
 type telemetry struct {
+	Level   configtelemetry.Level `mapstructure:"level"`
 	Metrics map[metricName]metric `mapstructure:"metrics"`
 }
 

@@ -21,7 +21,7 @@ func main() {
 	info := component.BuildInfo{
 		Command:     "otelcorecol",
 		Description: "Local OpenTelemetry Collector binary, testing only.",
-		Version:     "0.100.0-dev",
+		Version:     "0.102.1-dev",
 	}
 
 	set := otelcol.CollectorSettings{

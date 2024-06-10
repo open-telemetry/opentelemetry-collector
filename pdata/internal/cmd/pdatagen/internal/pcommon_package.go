@@ -24,6 +24,8 @@ var pcommon = &Package{
 		byteSlice,
 		float64Slice,
 		uInt64Slice,
+		int64Slice,
+		stringSlice,
 	},
 }
 
@@ -164,19 +166,51 @@ var resourceField = &messageValueField{
 }
 
 var byteSlice = &primitiveSliceStruct{
-	structName:  "ByteSlice",
-	packageName: "pcommon",
-	itemType:    "byte",
+	structName:           "ByteSlice",
+	packageName:          "pcommon",
+	itemType:             "byte",
+	testOrigVal:          "1, 2, 3",
+	testInterfaceOrigVal: []interface{}{1, 2, 3},
+	testSetVal:           "5",
+	testNewVal:           "1, 5, 3",
 }
 
 var float64Slice = &primitiveSliceStruct{
-	structName:  "Float64Slice",
-	packageName: "pcommon",
-	itemType:    "float64",
+	structName:           "Float64Slice",
+	packageName:          "pcommon",
+	itemType:             "float64",
+	testOrigVal:          "1, 2, 3",
+	testInterfaceOrigVal: []interface{}{1, 2, 3},
+	testSetVal:           "5",
+	testNewVal:           "1, 5, 3",
 }
 
 var uInt64Slice = &primitiveSliceStruct{
-	structName:  "UInt64Slice",
-	packageName: "pcommon",
-	itemType:    "uint64",
+	structName:           "UInt64Slice",
+	packageName:          "pcommon",
+	itemType:             "uint64",
+	testOrigVal:          "1, 2, 3",
+	testInterfaceOrigVal: []interface{}{1, 2, 3},
+	testSetVal:           "5",
+	testNewVal:           "1, 5, 3",
+}
+
+var int64Slice = &primitiveSliceStruct{
+	structName:           "Int64Slice",
+	packageName:          "pcommon",
+	itemType:             "int64",
+	testOrigVal:          "1, 2, 3",
+	testInterfaceOrigVal: []interface{}{1, 2, 3},
+	testSetVal:           "5",
+	testNewVal:           "1, 5, 3",
+}
+
+var stringSlice = &primitiveSliceStruct{
+	structName:           "StringSlice",
+	packageName:          "pcommon",
+	itemType:             "string",
+	testOrigVal:          `"a", "b", "c"`,
+	testInterfaceOrigVal: []interface{}{`"a"`, `"b"`, `"c"`},
+	testSetVal:           `"d"`,
+	testNewVal:           `"a", "d", "c"`,
 }

@@ -1,10 +1,10 @@
 module go.opentelemetry.io/collector/filter
 
-go 1.21
+go 1.21.0
 
 require (
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/confmap v0.100.0
+	go.opentelemetry.io/collector/confmap v0.102.1
 )
 
 require (

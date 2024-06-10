@@ -69,7 +69,7 @@ func composeSignalURL(oCfg *Config, signalOverrideURL string, signalName string)
 
 func createTracesExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
 	oce, err := newExporter(cfg, set)
@@ -95,7 +95,7 @@ func createTracesExporter(
 
 func createMetricsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
 	oce, err := newExporter(cfg, set)
@@ -121,7 +121,7 @@ func createMetricsExporter(
 
 func createLogsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
 	oce, err := newExporter(cfg, set)

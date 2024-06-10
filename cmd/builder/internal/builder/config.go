@@ -17,7 +17,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const defaultOtelColVersion = "0.100.0"
+const defaultOtelColVersion = "0.102.1"
 
 // ErrInvalidGoMod indicates an invalid gomod
 var ErrInvalidGoMod = errors.New("invalid gomod specification for module")
@@ -43,7 +43,16 @@ type Config struct {
 	Replaces     []string     `mapstructure:"replaces"`
 	Excludes     []string     `mapstructure:"excludes"`
 
+	ConfResolver ConfResolver `mapstructure:"conf_resolver"`
+
 	downloadModules retry `mapstructure:"-"`
+}
+
+type ConfResolver struct {
+	// When set, will be used to set the CollectorSettings.ConfResolver.DefaultScheme value,
+	// which determines how the Collector interprets URIs that have no scheme, such as ${ENV}.
+	// See https://pkg.go.dev/go.opentelemetry.io/collector/confmap#ResolverSettings for more details.
+	DefaultURIScheme string `mapstructure:"default_uri_scheme"`
 }
 
 // Distribution holds the parameters for the final binary

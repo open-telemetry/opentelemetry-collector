@@ -131,6 +131,16 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.40.0
 ```
 
+The builder also allows setting the scheme to use as the default URI scheme via `conf_resolver.default_uri_scheme`:
+
+```yaml
+conf_resolver:
+   default_uri_scheme: "env"
+```
+
+This tells the builder to produce a Collector that uses the `env` scheme when expanding configuration that does not
+provide a scheme, such as `${HOST}` (instead of doing `${env:HOST}`).
+
 ## Steps
 
 The builder has 3 steps:

@@ -69,7 +69,7 @@ func TestByteSliceReadOnly(t *testing.T) {
 func TestByteSliceAppend(t *testing.T) {
 	ms := NewByteSlice()
 	ms.FromRaw([]byte{1, 2, 3})
-	ms.Append(4, 5)
+	ms.Append(5, 5)
 	assert.Equal(t, 5, ms.Len())
 	assert.Equal(t, byte(5), ms.At(4))
 }

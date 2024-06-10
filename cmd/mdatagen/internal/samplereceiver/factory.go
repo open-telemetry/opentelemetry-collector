@@ -22,15 +22,20 @@ func NewFactory() receiver.Factory {
 		receiver.WithLogs(createLogs, metadata.LogsStability))
 }
 
-func createTraces(context.Context, receiver.CreateSettings, component.Config, consumer.Traces) (receiver.Traces, error) {
+func createTraces(context.Context, receiver.Settings, component.Config, consumer.Traces) (receiver.Traces, error) {
 	return nopInstance, nil
 }
 
-func createMetrics(context.Context, receiver.CreateSettings, component.Config, consumer.Metrics) (receiver.Metrics, error) {
-	return nopInstance, nil
+func createMetrics(ctx context.Context, set receiver.Settings, _ component.Config, _ consumer.Metrics) (receiver.Metrics, error) {
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings, metadata.WithProcessRuntimeTotalAllocBytesCallback(func() int64 { return 2 }))
+	if err != nil {
+		return nil, err
+	}
+	telemetryBuilder.BatchSizeTriggerSend.Add(ctx, 1)
+	return nopReceiver{telemetryBuilder: telemetryBuilder}, nil
 }
 
-func createLogs(context.Context, receiver.CreateSettings, component.Config, consumer.Logs) (receiver.Logs, error) {
+func createLogs(context.Context, receiver.Settings, component.Config, consumer.Logs) (receiver.Logs, error) {
 	return nopInstance, nil
 }
 
@@ -39,4 +44,9 @@ var nopInstance = &nopReceiver{}
 type nopReceiver struct {
 	component.StartFunc
 	component.ShutdownFunc
+	telemetryBuilder *metadata.TelemetryBuilder
+}
+
+func (r nopReceiver) initOptionalMetric() {
+	_ = r.telemetryBuilder.InitQueueLength(func() int64 { return 1 })
 }
