@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -19,33 +18,13 @@ import (
 )
 
 func TestNewCommandVersion(t *testing.T) {
-	cmd := NewCommand(CollectorSettings{BuildInfo: component.BuildInfo{Version: "test_version"}})
+	cmd := NewCommandMustProviderSettings(CollectorSettings{BuildInfo: component.BuildInfo{Version: "test_version"}})
 	assert.Equal(t, "test_version", cmd.Version)
 }
 
 func TestNewCommandNoConfigURI(t *testing.T) {
-	cmd := NewCommand(CollectorSettings{Factories: nopFactories})
+	cmd := NewCommandMustProviderSettings(CollectorSettings{Factories: nopFactories})
 	require.Error(t, cmd.Execute())
-}
-
-// This test emulates usage of Collector in Jaeger all-in-one, which
-// allows running the binary with no explicit configuration.
-func TestNewCommandProgrammaticallyPassedConfig(t *testing.T) {
-	cmd := NewCommand(CollectorSettings{Factories: nopFactories})
-	otelRunE := cmd.RunE
-	cmd.RunE = func(c *cobra.Command, args []string) error {
-		configFlag := c.Flag("config")
-		cfg := `
-service:
-  extensions: [invalid_component_name]
-receivers:
-  invalid_component_name:
-`
-		require.NoError(t, configFlag.Value.Set("yaml:"+cfg))
-		return otelRunE(cmd, args)
-	}
-	// verify that cmd.Execute was run with the implicitly provided config.
-	require.ErrorContains(t, cmd.Execute(), "invalid_component_name")
 }
 
 func TestAddFlagToSettings(t *testing.T) {
@@ -62,7 +41,7 @@ func TestAddFlagToSettings(t *testing.T) {
 	err := flgs.Parse([]string{"--config=otelcol-nop.yaml"})
 	require.NoError(t, err)
 
-	err = updateSettingsUsingFlags(&set, flgs)
+	err = updateSettingsUsingFlags(&set, flgs, false)
 	require.NoError(t, err)
 	require.Len(t, set.ConfigProviderSettings.ResolverSettings.URIs, 1)
 }
@@ -77,7 +56,7 @@ func TestAddDefaultConfmapModules(t *testing.T) {
 	err := flgs.Parse([]string{"--config=otelcol-nop.yaml"})
 	require.NoError(t, err)
 
-	err = updateSettingsUsingFlags(&set, flgs)
+	err = updateSettingsUsingFlags(&set, flgs, false)
 	require.NoError(t, err)
 	require.Len(t, set.ConfigProviderSettings.ResolverSettings.URIs, 1)
 	require.Len(t, set.ConfigProviderSettings.ResolverSettings.ConverterFactories, 1)
@@ -94,7 +73,7 @@ func TestInvalidCollectorSettings(t *testing.T) {
 		},
 	}
 
-	cmd := NewCommand(set)
+	cmd := NewCommandMustProviderSettings(set)
 	require.Error(t, cmd.Execute())
 }
 
@@ -107,16 +86,11 @@ func TestNewCommandInvalidComponent(t *testing.T) {
 		},
 	}
 
-	cmd := NewCommand(CollectorSettings{Factories: nopFactories, ConfigProviderSettings: set})
+	cmd := NewCommandMustProviderSettings(CollectorSettings{Factories: nopFactories, ConfigProviderSettings: set})
 	require.Error(t, cmd.Execute())
 }
 
 func TestNoProvidersReturnsError(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(ErrorWhenNoProvidersOrConvertersSet.ID(), true))
-	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(ErrorWhenNoProvidersOrConvertersSet.ID(), false))
-	})
-
 	set := CollectorSettings{
 		ConfigProviderSettings: ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
@@ -128,6 +102,6 @@ func TestNoProvidersReturnsError(t *testing.T) {
 	err := flgs.Parse([]string{"--config=otelcol-nop.yaml"})
 	require.NoError(t, err)
 
-	err = updateSettingsUsingFlags(&set, flgs)
+	err = updateSettingsUsingFlags(&set, flgs, true)
 	require.ErrorContains(t, err, "at least one provider or converter must be provided")
 }
