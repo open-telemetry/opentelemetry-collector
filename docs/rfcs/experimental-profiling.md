@@ -10,7 +10,7 @@ otherwise considered stable.
 This document describes:
 
 * The approach we intend to take to introduce profiling with no breaking changes
-* How the migration will happen once profiling goes stable too
+* How the migration will happen once profiling goes stable
 
 ### Discarded approach
 
