@@ -98,6 +98,7 @@ func (bs *batchSender) Start(_ context.Context, _ component.Host) error {
 		}
 	}()
 
+	bs.logger.Debug("Started Batch Sender")
 	return nil
 }
 
@@ -219,10 +220,14 @@ func (bs *batchSender) updateActiveBatch(ctx context.Context, req Request) {
 }
 
 func (bs *batchSender) Shutdown(context.Context) error {
+	bs.logger.Debug("Shutting down Batch Sender")
+
 	bs.stopped.Store(true)
 	if bs.shutdownCh != nil {
 		close(bs.shutdownCh)
 		<-bs.shutdownCompleteCh
 	}
+
+	bs.logger.Debug("Batch Sender has been shutdown")
 	return nil
 }
