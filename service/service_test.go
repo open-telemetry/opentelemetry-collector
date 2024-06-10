@@ -422,7 +422,7 @@ func TestServiceFatalError(t *testing.T) {
 
 	go func() {
 		ev := component.NewFatalErrorEvent(assert.AnError)
-		srv.host.notifyComponentStatusChange(&component.InstanceID{}, ev)
+		srv.host.notifyComponentStatusChange(&pipelines.InstanceID{}, ev)
 	}()
 
 	err = <-srv.host.asyncErrorChannel

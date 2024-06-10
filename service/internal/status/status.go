@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/service/pipelines"
 )
 
 // onTransitionFunc receives a component.StatusEvent on a successful state transition
@@ -84,13 +85,13 @@ func newFSM(onTransition onTransitionFunc) *fsm {
 }
 
 // NotifyStatusFunc is the receiver of status events after successful state transitions
-type NotifyStatusFunc func(*component.InstanceID, *component.StatusEvent)
+type NotifyStatusFunc func(*pipelines.InstanceID, *component.StatusEvent)
 
 // InvalidTransitionFunc is the receiver of invalid transition errors
 type InvalidTransitionFunc func(error)
 
 // ServiceStatusFunc is the expected type of ReportStatus for servicetelemetry.Settings
-type ServiceStatusFunc func(*component.InstanceID, *component.StatusEvent)
+type ServiceStatusFunc func(*pipelines.InstanceID, *component.StatusEvent)
 
 // ErrStatusNotReady is returned when trying to report status before service start
 var ErrStatusNotReady = errors.New("report component status is not ready until service start")
@@ -99,7 +100,7 @@ var ErrStatusNotReady = errors.New("report component status is not ready until s
 type Reporter struct {
 	mu                  sync.Mutex
 	ready               bool
-	fsmMap              map[*component.InstanceID]*fsm
+	fsmMap              map[*pipelines.InstanceID]*fsm
 	onStatusChange      NotifyStatusFunc
 	onInvalidTransition InvalidTransitionFunc
 }
@@ -108,7 +109,7 @@ type Reporter struct {
 // has changed.
 func NewReporter(onStatusChange NotifyStatusFunc, onInvalidTransition InvalidTransitionFunc) *Reporter {
 	return &Reporter{
-		fsmMap:              make(map[*component.InstanceID]*fsm),
+		fsmMap:              make(map[*pipelines.InstanceID]*fsm),
 		onStatusChange:      onStatusChange,
 		onInvalidTransition: onInvalidTransition,
 	}
@@ -123,7 +124,7 @@ func (r *Reporter) Ready() {
 
 // ReportStatus reports status for the given InstanceID
 func (r *Reporter) ReportStatus(
-	id *component.InstanceID,
+	id *pipelines.InstanceID,
 	ev *component.StatusEvent,
 ) {
 	r.mu.Lock()
@@ -137,7 +138,7 @@ func (r *Reporter) ReportStatus(
 	}
 }
 
-func (r *Reporter) ReportOKIfStarting(id *component.InstanceID) {
+func (r *Reporter) ReportOKIfStarting(id *pipelines.InstanceID) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if !r.ready {
@@ -152,7 +153,7 @@ func (r *Reporter) ReportOKIfStarting(id *component.InstanceID) {
 }
 
 // Note: a lock must be acquired before calling this method.
-func (r *Reporter) componentFSM(id *component.InstanceID) *fsm {
+func (r *Reporter) componentFSM(id *pipelines.InstanceID) *fsm {
 	fsm, ok := r.fsmMap[id]
 	if !ok {
 		fsm = newFSM(func(ev *component.StatusEvent) { r.onStatusChange(id, ev) })
@@ -165,7 +166,7 @@ func (r *Reporter) componentFSM(id *component.InstanceID) *fsm {
 // component.TelemetrySettings, which differs from servicetelemetry.Settings in that
 // the component version is tied to specific component instance.
 func NewReportStatusFunc(
-	id *component.InstanceID,
+	id *pipelines.InstanceID,
 	srvStatus ServiceStatusFunc,
 ) func(*component.StatusEvent) {
 	return func(ev *component.StatusEvent) {

@@ -13,6 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/service/pipelines"
 )
 
 var id = component.MustNewID("test")
@@ -108,9 +109,9 @@ func TestSharedComponent(t *testing.T) {
 	assert.Equal(t, 1, calledStop)
 }
 func TestSharedComponentsReportStatus(t *testing.T) {
-	reportedStatuses := make(map[*component.InstanceID][]component.Status)
+	reportedStatuses := make(map[*pipelines.InstanceID][]component.Status)
 	newStatusFunc := func() func(*component.StatusEvent) {
-		instanceID := &component.InstanceID{}
+		instanceID := &pipelines.InstanceID{}
 		return func(ev *component.StatusEvent) {
 			if ev.Status() == component.StatusNone {
 				return
@@ -218,9 +219,9 @@ func TestReportStatusOnStartShutdown(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			reportedStatuses := make(map[*component.InstanceID][]component.Status)
+			reportedStatuses := make(map[*pipelines.InstanceID][]component.Status)
 			newStatusFunc := func() func(*component.StatusEvent) {
-				instanceID := &component.InstanceID{}
+				instanceID := &pipelines.InstanceID{}
 				return func(ev *component.StatusEvent) {
 					reportedStatuses[instanceID] = append(reportedStatuses[instanceID], ev.Status())
 				}

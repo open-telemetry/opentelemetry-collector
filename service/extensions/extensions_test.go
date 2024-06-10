@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/service/internal/servicetelemetry"
 	"go.opentelemetry.io/collector/service/internal/status"
+	"go.opentelemetry.io/collector/service/pipelines"
 )
 
 func TestBuildExtensions(t *testing.T) {
@@ -433,7 +434,7 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 			assert.NoError(t, err)
 
 			var actualStatuses []*component.StatusEvent
-			rep := status.NewReporter(func(_ *component.InstanceID, ev *component.StatusEvent) {
+			rep := status.NewReporter(func(_ *pipelines.InstanceID, ev *component.StatusEvent) {
 				actualStatuses = append(actualStatuses, ev)
 			}, func(err error) {
 				require.NoError(t, err)
