@@ -102,3 +102,60 @@ configuration retrieved via the `Provider` used to retrieve the “initial” co
 ```
 
 The `Resolver` does that by passing an `onChange` func to each `Provider.Retrieve` call and capturing all watch events. 
+
+## Troubleshooting
+
+### Null Maps
+
+Due to how our underlying merge library, [koanf](https://github.com/knadh/koanf), behaves, configuration resolution
+will treat configuration such as 
+
+```yaml
+processors:
+```
+
+as null, which is a valid value. As a result if you have configuration `A`:
+
+```yaml
+receivers:
+    nop:
+
+processors:
+    nop:
+
+exporters:
+    nop:
+
+extensions:
+    nop:
+
+service:
+    extensions: [nop]
+    pipelines:
+        traces:
+            receivers: [nop]
+            processors: [nop]
+            exporters: [nop]
+```
+
+and configuration `B`:
+
+```yaml
+processors:
+```
+
+and do `./otelcorecol --config A.yaml --config B.yaml`
+
+The result will be an error:
+
+```
+Error: invalid configuration: service::pipelines::traces: references processor "nop" which is not configured
+2024/06/10 14:37:14 collector server run finished with error: invalid configuration: service::pipelines::traces: references processor "nop" which is not configured
+```
+
+This happens because configuration `B` sets `processors` to null, removing the `nop` processor defined in configuration `A`,
+so the `nop` processor referenced in configuration `A`'s pipeline no longer exists.
+
+This situation can be remedied 2 ways:
+1. Use `{}` when you want to represent an empty map, such as `processors: {}` instead of `processors:`.
+2. Omit configuration like `processors:` from your configuration.
