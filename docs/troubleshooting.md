@@ -325,4 +325,4 @@ without attempting to run as a Windows service.
 
 ### Null Maps in Configuration
 
-If you've ever experienced issues during configuration resolution where sections, like `processors:` from earlier configuration are removed, see https://github.com/open-telemetry/opentelemetry-collector/tree/main/confmap#troubleshooting
+If you've ever experienced issues during configuration resolution where sections, like `processors:` from earlier configuration are removed, see [confmap](../confmap/README.md#troubleshooting)
