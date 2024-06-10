@@ -122,7 +122,7 @@ func newBatchProcessor(set processor.CreateSettings, cfg *Config, batchFunc func
 
 		sendBatchSize:    int(cfg.SendBatchSize),
 		sendBatchMaxSize: int(cfg.SendBatchMaxSize),
-		timeout:          cfg.Timeout,
+		timeout:          cfg.Timeout.GoDuration(),
 		batchFunc:        batchFunc,
 		shutdownC:        make(chan struct{}, 1),
 		metadataKeys:     mks,

@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/apple/pkl-go/pkl"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
@@ -153,7 +154,7 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 		if sink.SpanCount() == requestCount*spansPerRequest {
 			break
 		}
-		<-time.After(cfg.Timeout)
+		<-time.After(cfg.Timeout.GoDuration())
 	}
 
 	require.NoError(t, batcher.Shutdown(context.Background()))
@@ -173,7 +174,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	sendBatchSize := 20
 	cfg.SendBatchSize = uint32(sendBatchSize)
-	cfg.Timeout = 500 * time.Millisecond
+	cfg.Timeout = &pkl.Duration{Value: 500, Unit: pkl.Millisecond}
 	creationSet := tel.NewCreateSettings()
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg)
@@ -194,7 +195,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 	require.NoError(t, batcher.Shutdown(context.Background()))
 
 	elapsed := time.Since(start)
-	require.LessOrEqual(t, elapsed.Nanoseconds(), cfg.Timeout.Nanoseconds())
+	require.LessOrEqual(t, elapsed.Nanoseconds(), cfg.Timeout.GoDuration().Nanoseconds())
 
 	expectedBatchesNum := requestCount * spansPerRequest / sendBatchSize
 	expectedBatchingFactor := sendBatchSize / spansPerRequest
@@ -294,7 +295,7 @@ func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
 	sendBatchMaxSize := 37
 	cfg.SendBatchSize = uint32(sendBatchSize)
 	cfg.SendBatchMaxSize = uint32(sendBatchMaxSize)
-	cfg.Timeout = 500 * time.Millisecond
+	cfg.Timeout = &pkl.Duration{Value: 500, Unit: pkl.Millisecond}
 	creationSet := tel.NewCreateSettings()
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg)
@@ -316,7 +317,7 @@ func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
 	require.NoError(t, batcher.Shutdown(context.Background()))
 
 	elapsed := time.Since(start)
-	require.LessOrEqual(t, elapsed.Nanoseconds(), cfg.Timeout.Nanoseconds())
+	require.LessOrEqual(t, elapsed.Nanoseconds(), cfg.Timeout.GoDuration().Nanoseconds())
 
 	// The max batch size is not a divisor of the total number of spans
 	expectedBatchesNum := int(math.Ceil(float64(totalSpans) / float64(sendBatchMaxSize)))
@@ -431,7 +432,7 @@ func TestBatchProcessorSentByTimeout(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	sendBatchSize := 100
 	cfg.SendBatchSize = uint32(sendBatchSize)
-	cfg.Timeout = 100 * time.Millisecond
+	cfg.Timeout = &pkl.Duration{Value: 100, Unit: pkl.Millisecond}
 
 	requestCount := 5
 	spansPerRequest := 10
@@ -453,11 +454,11 @@ func TestBatchProcessorSentByTimeout(t *testing.T) {
 		if sink.SpanCount() != 0 {
 			break
 		}
-		<-time.After(cfg.Timeout)
+		<-time.After(cfg.Timeout.GoDuration())
 	}
 
 	elapsed := time.Since(start)
-	require.LessOrEqual(t, cfg.Timeout.Nanoseconds(), elapsed.Nanoseconds())
+	require.LessOrEqual(t, cfg.Timeout.GoDuration().Nanoseconds(), elapsed.Nanoseconds())
 
 	// This should not change the results in the sink, verified by the expectedBatchesNum
 	require.NoError(t, batcher.Shutdown(context.Background()))
@@ -479,7 +480,7 @@ func TestBatchProcessorSentByTimeout(t *testing.T) {
 
 func TestBatchProcessorTraceSendWhenClosing(t *testing.T) {
 	cfg := Config{
-		Timeout:       3 * time.Second,
+		Timeout:       &pkl.Duration{Value: 3, Unit: pkl.Second},
 		SendBatchSize: 1000,
 	}
 	sink := new(consumertest.TracesSink)
@@ -507,7 +508,7 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 	// Instantiate the batch processor with low config values to test data
 	// gets sent through the processor.
 	cfg := Config{
-		Timeout:       200 * time.Millisecond,
+		Timeout:       &pkl.Duration{Value: 200, Unit: pkl.Millisecond},
 		SendBatchSize: 50,
 	}
 
@@ -559,7 +560,7 @@ func TestBatchMetricProcessorBatchSize(t *testing.T) {
 	// Instantiate the batch processor with low config values to test data
 	// gets sent through the processor.
 	cfg := Config{
-		Timeout:       100 * time.Millisecond,
+		Timeout:       &pkl.Duration{Value: 100, Unit: pkl.Millisecond},
 		SendBatchSize: 50,
 	}
 
@@ -585,7 +586,7 @@ func TestBatchMetricProcessorBatchSize(t *testing.T) {
 	require.NoError(t, batcher.Shutdown(context.Background()))
 
 	elapsed := time.Since(start)
-	require.LessOrEqual(t, elapsed.Nanoseconds(), cfg.Timeout.Nanoseconds())
+	require.LessOrEqual(t, elapsed.Nanoseconds(), cfg.Timeout.GoDuration().Nanoseconds())
 
 	expectedBatchesNum := requestCount * dataPointsPerRequest / int(cfg.SendBatchSize)
 	expectedBatchingFactor := int(cfg.SendBatchSize) / dataPointsPerRequest
@@ -695,7 +696,7 @@ func TestBatchMetrics_UnevenBatchMaxSize(t *testing.T) {
 
 func TestBatchMetricsProcessor_Timeout(t *testing.T) {
 	cfg := Config{
-		Timeout:       100 * time.Millisecond,
+		Timeout:       &pkl.Duration{Value: 100, Unit: pkl.Millisecond},
 		SendBatchSize: 101,
 	}
 	requestCount := 5
@@ -719,11 +720,11 @@ func TestBatchMetricsProcessor_Timeout(t *testing.T) {
 		if sink.DataPointCount() != 0 {
 			break
 		}
-		<-time.After(cfg.Timeout)
+		<-time.After(cfg.Timeout.GoDuration())
 	}
 
 	elapsed := time.Since(start)
-	require.LessOrEqual(t, cfg.Timeout.Nanoseconds(), elapsed.Nanoseconds())
+	require.LessOrEqual(t, cfg.Timeout.GoDuration().Nanoseconds(), elapsed.Nanoseconds())
 
 	// This should not change the results in the sink, verified by the expectedBatchesNum
 	require.NoError(t, batcher.Shutdown(context.Background()))
@@ -744,7 +745,7 @@ func TestBatchMetricsProcessor_Timeout(t *testing.T) {
 
 func TestBatchMetricProcessor_Shutdown(t *testing.T) {
 	cfg := Config{
-		Timeout:       3 * time.Second,
+		Timeout:       &pkl.Duration{Value: 3, Unit: pkl.Second},
 		SendBatchSize: 1000,
 	}
 	requestCount := 5
@@ -830,7 +831,7 @@ func BenchmarkTraceSizeSpanCount(b *testing.B) {
 func BenchmarkBatchMetricProcessor(b *testing.B) {
 	b.StopTimer()
 	cfg := Config{
-		Timeout:       100 * time.Millisecond,
+		Timeout:       &pkl.Duration{Value: 100, Unit: pkl.Millisecond},
 		SendBatchSize: 2000,
 	}
 	runMetricsProcessorBenchmark(b, cfg)
@@ -839,7 +840,7 @@ func BenchmarkBatchMetricProcessor(b *testing.B) {
 func BenchmarkMultiBatchMetricProcessor(b *testing.B) {
 	b.StopTimer()
 	cfg := Config{
-		Timeout:       100 * time.Millisecond,
+		Timeout:       &pkl.Duration{Value: 100, Unit: pkl.Millisecond},
 		SendBatchSize: 2000,
 		MetadataKeys:  []string{"test", "test2"},
 	}
@@ -889,7 +890,7 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 	// Instantiate the batch processor with low config values to test data
 	// gets sent through the processor.
 	cfg := Config{
-		Timeout:       200 * time.Millisecond,
+		Timeout:       &pkl.Duration{Value: 200, Unit: pkl.Millisecond},
 		SendBatchSize: 50,
 	}
 
@@ -941,7 +942,7 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 	// Instantiate the batch processor with low config values to test data
 	// gets sent through the processor.
 	cfg := Config{
-		Timeout:       100 * time.Millisecond,
+		Timeout:       &pkl.Duration{Value: 100, Unit: pkl.Millisecond},
 		SendBatchSize: 50,
 	}
 
@@ -965,7 +966,7 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 	require.NoError(t, batcher.Shutdown(context.Background()))
 
 	elapsed := time.Since(start)
-	require.LessOrEqual(t, elapsed.Nanoseconds(), cfg.Timeout.Nanoseconds())
+	require.LessOrEqual(t, elapsed.Nanoseconds(), cfg.Timeout.GoDuration().Nanoseconds())
 
 	expectedBatchesNum := requestCount * logsPerRequest / int(cfg.SendBatchSize)
 	expectedBatchingFactor := int(cfg.SendBatchSize) / logsPerRequest
@@ -1056,7 +1057,7 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 
 func TestBatchLogsProcessor_Timeout(t *testing.T) {
 	cfg := Config{
-		Timeout:       100 * time.Millisecond,
+		Timeout:       &pkl.Duration{Value: 100, Unit: pkl.Millisecond},
 		SendBatchSize: 100,
 	}
 	requestCount := 5
@@ -1080,11 +1081,11 @@ func TestBatchLogsProcessor_Timeout(t *testing.T) {
 		if sink.LogRecordCount() != 0 {
 			break
 		}
-		<-time.After(cfg.Timeout)
+		<-time.After(cfg.Timeout.GoDuration())
 	}
 
 	elapsed := time.Since(start)
-	require.LessOrEqual(t, cfg.Timeout.Nanoseconds(), elapsed.Nanoseconds())
+	require.LessOrEqual(t, cfg.Timeout.GoDuration().Nanoseconds(), elapsed.Nanoseconds())
 
 	// This should not change the results in the sink, verified by the expectedBatchesNum
 	require.NoError(t, batcher.Shutdown(context.Background()))
@@ -1105,7 +1106,7 @@ func TestBatchLogsProcessor_Timeout(t *testing.T) {
 
 func TestBatchLogProcessor_Shutdown(t *testing.T) {
 	cfg := Config{
-		Timeout:       3 * time.Second,
+		Timeout:       &pkl.Duration{Value: 3, Unit: pkl.Second},
 		SendBatchSize: 1000,
 	}
 	requestCount := 5
@@ -1189,7 +1190,7 @@ func TestBatchProcessorSpansBatchedByMetadata(t *testing.T) {
 	}
 	cfg := createDefaultConfig().(*Config)
 	cfg.SendBatchSize = 1000
-	cfg.Timeout = 10 * time.Minute
+	cfg.Timeout = &pkl.Duration{Value: 10, Unit: pkl.Minute}
 	cfg.MetadataKeys = []string{"token1", "token2"}
 	creationSet := processortest.NewNopCreateSettings()
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed

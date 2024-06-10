@@ -7,22 +7,11 @@ package batchprocessor // import "go.opentelemetry.io/collector/processor/batchp
 
 import (
 	"context"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/batchprocessor/internal/metadata"
-)
-
-const (
-	defaultSendBatchSize = uint32(8192)
-	defaultTimeout       = 200 * time.Millisecond
-
-	// defaultMetadataCardinalityLimit should be set to the number
-	// of metadata configurations the user expects to submit to
-	// the collector.
-	defaultMetadataCardinalityLimit = 1000
 )
 
 // NewFactory returns a new factory for the Batch processor.
@@ -36,11 +25,14 @@ func NewFactory() processor.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{
-		SendBatchSize:            defaultSendBatchSize,
-		Timeout:                  defaultTimeout,
-		MetadataCardinalityLimit: defaultMetadataCardinalityLimit,
+	//TODO: Find a way to not have load the Pkl from a file? Load it from a string during an init()?
+	// How would we create the string out of a Pkl file? Can we use Go Generate?
+	cfg, err := LoadFromPath(context.Background(), `/Users/paulintodev/Documents/GitHub/opentelemetry-collector-paulin-f/processor/batchprocessor/config.pkl`)
+	if err != nil {
+		panic(err)
 	}
+
+	return cfg
 }
 
 func createTraces(

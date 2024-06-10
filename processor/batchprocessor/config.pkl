@@ -1,0 +1,58 @@
+@go.Package { name = "go.opentelemetry.io/collector/processor/batchprocessor" }
+module BatchProcessorConfig
+
+import "package://pkg.pkl-lang.org/pkl-go/pkl.golang@0.7.0#/go.pkl"
+import "package://pkg.pkl-lang.org/pkl-pantry/org.openapis.v3.contrib@1.0.3#/SchemaGenerator.pkl"
+
+class MapstructureField extends go.Field {
+  structTags {
+    ["mapstructure"] = "%{name}"
+  }
+}
+
+class Config {
+  /// The time after which a batch will be sent regardless of size.
+  @MapstructureField
+  timeout: Duration(isPositive) = 200.ms
+
+  /// The size of a batch which after hit, will trigger it to be sent.
+  /// When this is set to zero, the batch size is ignored and data will be sent immediately
+  /// subject to only send_batch_max_size.
+  //TODO: The comments above contain "\n" when the OpenAPI schema is generated. Can we remove them?
+  @MapstructureField
+  send_batch_size: UInt32 = 8192
+
+  /// SendBatchMaxSize is the maximum size of a batch. It must be larger than SendBatchSize.
+  /// Larger batches are split into smaller units.
+  /// Default value is 0, that means no maximum size.
+  //TODO: Add a check for send_batch_max_size must be greater or equal to send_batch_size
+  @MapstructureField
+  send_batch_max_size: UInt32 = 0
+
+  /// MetadataKeys is a list of client.Metadata keys that will be
+  /// used to form distinct batchers.  If this setting is empty,
+  /// a single batcher instance will be used.  When this setting
+  /// is not empty, one batcher will be used per distinct
+  /// combination of values for the listed metadata keys.
+  //TODO: Add a check for duplicate entries?
+  @MapstructureField
+  metadata_keys: Listing<String>
+
+  /// MetadataCardinalityLimit indicates the maximum number of
+  /// batcher instances that will be created through a distinct
+  /// combination of MetadataKeys.
+  @MapstructureField
+  metadata_cardinality_limit: UInt32 = 1000
+}
+
+//TODO: Thios creates a Go struct with an "output" field. It seems useless - can we not generate it?
+output = SchemaGenerator.generate(Config).output
+
+//TODO: Delete this later? It's to show how we can "pkl eval" without using a dot in the duration, like "5.ms".
+// output {
+//   renderer = new JsonRenderer {
+//     converters {
+//       [Duration] = (it) -> "\(it.value)\(it.unit)"
+//     }
+//   }
+// }
