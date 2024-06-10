@@ -16,8 +16,15 @@ import (
 var nopType = component.MustNewType("nop")
 
 // NewNopCreateSettings returns a new nop settings for extension.Factory Create* functions.
-func NewNopCreateSettings() extension.CreateSettings {
-	return extension.CreateSettings{
+//
+// Deprecated: [v0.103.0] Use extensiontest.NewNopSettings instead.
+func NewNopCreateSettings() extension.Settings {
+	return NewNopSettings()
+}
+
+// NewNopSettings returns a new nop settings for extension.Factory Create* functions.
+func NewNopSettings() extension.Settings {
+	return extension.Settings{
 		ID:                component.NewIDWithName(nopType, uuid.NewString()),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),
@@ -31,7 +38,7 @@ func NewNopFactory() extension.Factory {
 		func() component.Config {
 			return &nopConfig{}
 		},
-		func(context.Context, extension.CreateSettings, component.Config) (extension.Extension, error) {
+		func(context.Context, extension.Settings, component.Config) (extension.Extension, error) {
 			return nopInstance, nil
 		},
 		component.StabilityLevelStable)

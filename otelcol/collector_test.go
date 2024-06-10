@@ -82,16 +82,17 @@ func (p mockCfgProvider) Watch() <-chan error {
 }
 
 func TestCollectorStateAfterConfigChange(t *testing.T) {
-	provider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}))
-	require.NoError(t, err)
-
 	watcher := make(chan error, 1)
 	col, err := NewCollector(CollectorSettings{
-		BuildInfo:      component.NewDefaultBuildInfo(),
-		Factories:      nopFactories,
-		ConfigProvider: &mockCfgProvider{ConfigProvider: provider, watcher: watcher},
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Factories: nopFactories,
+		// this will be overwritten, but we need something to get past validation
+		ConfigProviderSettings: newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}),
 	})
 	require.NoError(t, err)
+	provider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}))
+	require.NoError(t, err)
+	col.configProvider = &mockCfgProvider{ConfigProvider: provider, watcher: watcher}
 
 	wg := startCollector(context.Background(), t, col)
 
@@ -157,15 +158,11 @@ func TestComponentStatusWatcher(t *testing.T) {
 	factory := extensiontest.NewStatusWatcherExtensionFactory(onStatusChanged)
 	factories.Extensions[factory.Type()] = factory
 
-	// Read config from file. This config uses 3 "unhealthy" processors.
-	validProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-statuswatcher.yaml")}))
-	require.NoError(t, err)
-
 	// Create a collector
 	col, err := NewCollector(CollectorSettings{
-		BuildInfo:      component.NewDefaultBuildInfo(),
-		Factories:      func() (Factories, error) { return factories, nil },
-		ConfigProvider: validProvider,
+		BuildInfo:              component.NewDefaultBuildInfo(),
+		Factories:              func() (Factories, error) { return factories, nil },
+		ConfigProviderSettings: newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-statuswatcher.yaml")}),
 	})
 	require.NoError(t, err)
 

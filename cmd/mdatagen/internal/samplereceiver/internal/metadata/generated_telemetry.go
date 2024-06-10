@@ -6,10 +6,13 @@ import (
 	"context"
 	"errors"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -23,14 +26,32 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
+	meter                                metric.Meter
 	BatchSizeTriggerSend                 metric.Int64Counter
 	ProcessRuntimeTotalAllocBytes        metric.Int64ObservableCounter
 	observeProcessRuntimeTotalAllocBytes func() int64
+	QueueLength                          metric.Int64ObservableGauge
 	RequestDuration                      metric.Float64Histogram
+	level                                configtelemetry.Level
+	attributeSet                         attribute.Set
 }
 
 // telemetryBuilderOption applies changes to default builder.
 type telemetryBuilderOption func(*TelemetryBuilder)
+
+// WithLevel sets the current telemetry level for the component.
+func WithLevel(lvl configtelemetry.Level) telemetryBuilderOption {
+	return func(builder *TelemetryBuilder) {
+		builder.level = lvl
+	}
+}
+
+// WithAttributeSet applies a set of attributes for asynchronous instruments.
+func WithAttributeSet(set attribute.Set) telemetryBuilderOption {
+	return func(builder *TelemetryBuilder) {
+		builder.attributeSet = set
+	}
+}
 
 // WithProcessRuntimeTotalAllocBytesCallback sets callback for observable ProcessRuntimeTotalAllocBytes metric.
 func WithProcessRuntimeTotalAllocBytesCallback(cb func() int64) telemetryBuilderOption {
@@ -39,35 +60,54 @@ func WithProcessRuntimeTotalAllocBytesCallback(cb func() int64) telemetryBuilder
 	}
 }
 
+// InitQueueLength configures the QueueLength metric.
+func (builder *TelemetryBuilder) InitQueueLength(cb func() int64) error {
+	var err error
+	builder.QueueLength, err = builder.meter.Int64ObservableGauge(
+		"queue_length",
+		metric.WithDescription("This metric is optional and therefore not initialized in NewTelemetryBuilder."),
+		metric.WithUnit("1"),
+		metric.WithInt64Callback(func(_ context.Context, o metric.Int64Observer) error {
+			o.Observe(cb(), metric.WithAttributeSet(builder.attributeSet))
+			return nil
+		}),
+	)
+	return err
+}
+
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
 // for a component
 func NewTelemetryBuilder(settings component.TelemetrySettings, options ...telemetryBuilderOption) (*TelemetryBuilder, error) {
-	builder := TelemetryBuilder{}
+	builder := TelemetryBuilder{level: configtelemetry.LevelBasic}
 	for _, op := range options {
 		op(&builder)
 	}
 	var err, errs error
-	meter := Meter(settings)
-	builder.BatchSizeTriggerSend, err = meter.Int64Counter(
+	if builder.level >= configtelemetry.LevelBasic {
+		builder.meter = Meter(settings)
+	} else {
+		builder.meter = noop.Meter{}
+	}
+	builder.BatchSizeTriggerSend, err = builder.meter.Int64Counter(
 		"batch_size_trigger_send",
 		metric.WithDescription("Number of times the batch was sent due to a size trigger"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessRuntimeTotalAllocBytes, err = meter.Int64ObservableCounter(
+	builder.ProcessRuntimeTotalAllocBytes, err = builder.meter.Int64ObservableCounter(
 		"process_runtime_total_alloc_bytes",
 		metric.WithDescription("Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')"),
 		metric.WithUnit("By"),
 		metric.WithInt64Callback(func(_ context.Context, o metric.Int64Observer) error {
-			o.Observe(builder.observeProcessRuntimeTotalAllocBytes())
+			o.Observe(builder.observeProcessRuntimeTotalAllocBytes(), metric.WithAttributeSet(builder.attributeSet))
 			return nil
 		}),
 	)
 	errs = errors.Join(errs, err)
-	builder.RequestDuration, err = meter.Float64Histogram(
+	builder.RequestDuration, err = builder.meter.Float64Histogram(
 		"request_duration",
 		metric.WithDescription("Duration of request"),
-		metric.WithUnit("s"),
+		metric.WithUnit("s"), metric.WithExplicitBucketBoundaries([]float64{1, 10, 100}...),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs

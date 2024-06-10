@@ -376,13 +376,6 @@ func (c Config) loadCert(caPath string) (*x509.CertPool, error) {
 	return certPool, nil
 }
 
-// LoadTLSConfigContext loads the TLS configuration.
-//
-// Deprecated: [v0.99.0] Use LoadTLSConfig instead.
-func (c ClientConfig) LoadTLSConfigContext(ctx context.Context) (*tls.Config, error) {
-	return c.LoadTLSConfig(ctx)
-}
-
 // LoadTLSConfig loads the TLS configuration.
 func (c ClientConfig) LoadTLSConfig(_ context.Context) (*tls.Config, error) {
 	if c.Insecure && !c.hasCA() {
@@ -396,13 +389,6 @@ func (c ClientConfig) LoadTLSConfig(_ context.Context) (*tls.Config, error) {
 	tlsCfg.ServerName = c.ServerName
 	tlsCfg.InsecureSkipVerify = c.InsecureSkipVerify
 	return tlsCfg, nil
-}
-
-// LoadTLSConfigContext loads the TLS configuration.
-//
-// Deprecated: [v0.99.0] Use LoadTLSConfig instead.
-func (c ServerConfig) LoadTLSConfigContext(ctx context.Context) (*tls.Config, error) {
-	return c.LoadTLSConfig(ctx)
 }
 
 // LoadTLSConfig loads the TLS configuration.

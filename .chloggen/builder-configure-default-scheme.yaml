@@ -4,13 +4,13 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: pdata
+component: cmd/builder
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Introduce string and int64 slices to pcommon
+note: Allow setting `otelcol.CollectorSettings.ResolverSettings.DefaultScheme` via the builder's `conf_resolver.default_uri_scheme` configuration option
 
 # One or more tracking issues or pull requests related to the change
-issues: [10148]
+issues: [10296]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
@@ -22,4 +22,4 @@ subtext:
 # Include 'user' if the change is relevant to end users.
 # Include 'api' if there is a change to a library API.
 # Default: '[user]'
-change_logs: [api]
+change_logs: []

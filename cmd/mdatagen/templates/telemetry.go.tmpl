@@ -8,9 +8,13 @@ import (
     "errors"
     {{- end }}
 
-	"go.opentelemetry.io/collector/component"
+    {{ if hasAsync .Telemetry }}"go.opentelemetry.io/otel/attribute"{{- end }}
 	"go.opentelemetry.io/otel/metric"
+    "go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
+
+	"go.opentelemetry.io/collector/component"
+    "go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -25,18 +29,59 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry 
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
+    meter metric.Meter
 	{{- range $name, $metric := .Telemetry.Metrics }}
 	{{ $name.Render }} metric.{{ $metric.Data.Instrument }}
-    {{- if $metric.Data.Async }}
+    {{- if and ($metric.Data.Async) (not $metric.Optional) }}
     observe{{ $name.Render }} func() {{ $metric.Data.BasicType }}
     {{- end }}
 	{{- end }}
+    level configtelemetry.Level
+    {{ if hasAsync .Telemetry }}attributeSet attribute.Set{{- end }}
 }
 
 // telemetryBuilderOption applies changes to default builder.
 type telemetryBuilderOption func(*TelemetryBuilder)
 
+// WithLevel sets the current telemetry level for the component.
+func WithLevel(lvl configtelemetry.Level) telemetryBuilderOption {
+    return func(builder *TelemetryBuilder) {
+        builder.level = lvl
+    }
+}
+
+{{- if hasAsync .Telemetry }}
+// WithAttributeSet applies a set of attributes for asynchronous instruments.
+func WithAttributeSet(set attribute.Set) telemetryBuilderOption {
+	return func(builder *TelemetryBuilder) {
+		builder.attributeSet = set
+	}
+}
+{{- end }}
+
 {{- range $name, $metric := .Telemetry.Metrics }}
+    {{- if $metric.Optional }}
+// Init{{ $name.Render }} configures the {{ $name.Render }} metric.
+func (builder *TelemetryBuilder) Init{{ $name.Render }}({{ if $metric.Data.Async -}}cb func() {{ $metric.Data.BasicType }}{{- end }}) error {
+    var err error
+    builder.{{ $name.Render }}, err = builder.meter.{{ $metric.Data.Instrument }}(
+        "{{ $name }}",
+        metric.WithDescription("{{ $metric.Description }}"),
+        metric.WithUnit("{{ $metric.Unit }}"),
+        {{- if eq $metric.Data.Type "Histogram" -}}
+        {{ if $metric.Data.Boundaries -}}metric.WithExplicitBucketBoundaries([]float64{ {{- range $metric.Data.Boundaries }} {{.}}, {{- end }} }...),{{- end }}
+        {{- end }}
+        {{ if $metric.Data.Async -}}
+        metric.With{{ casesTitle $metric.Data.BasicType }}Callback(func(_ context.Context, o metric.{{ casesTitle $metric.Data.BasicType }}Observer) error {
+            o.Observe(cb(), metric.WithAttributeSet(builder.attributeSet))
+            return nil
+        }),
+        {{- end }}
+    )
+    return err
+}
+
+    {{- else }}
     {{ if $metric.Data.Async -}}
 // With{{ $name.Render }}Callback sets callback for observable {{ $name.Render }} metric.
 func With{{ $name.Render }}Callback(cb func() {{ $metric.Data.BasicType }}) telemetryBuilderOption {
@@ -45,30 +90,42 @@ func With{{ $name.Render }}Callback(cb func() {{ $metric.Data.BasicType }}) tele
     }
 }
     {{- end }}
+    {{- end }}
 {{- end }}
+
 
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
 // for a component
 func NewTelemetryBuilder(settings component.TelemetrySettings, options ...telemetryBuilderOption) (*TelemetryBuilder, error) {
-    builder := TelemetryBuilder{}
+    builder := TelemetryBuilder{level: configtelemetry.LevelBasic}
 	for _, op := range options {
 		op(&builder)
 	}
     var err, errs error
-    meter := Meter(settings)
+    if builder.level >= configtelemetry.Level{{ casesTitle .Telemetry.Level.String }} {
+        builder.meter = Meter(settings)
+    } else {
+        builder.meter = noop.Meter{}
+    }
+    
     {{- range $name, $metric := .Telemetry.Metrics }}
-    builder.{{ $name.Render }}, err = meter.{{ $metric.Data.Instrument }}(
+    {{- if not $metric.Optional }}
+    builder.{{ $name.Render }}, err = builder.meter.{{ $metric.Data.Instrument }}(
         "{{ $name }}",
         metric.WithDescription("{{ $metric.Description }}"),
         metric.WithUnit("{{ $metric.Unit }}"),
+        {{- if eq $metric.Data.Type "Histogram" -}}
+        {{ if $metric.Data.Boundaries -}}metric.WithExplicitBucketBoundaries([]float64{ {{- range $metric.Data.Boundaries }} {{.}}, {{- end }} }...),{{- end }}
+        {{- end }}
         {{ if $metric.Data.Async -}}
         metric.With{{ casesTitle $metric.Data.BasicType }}Callback(func(_ context.Context, o metric.{{ casesTitle $metric.Data.BasicType }}Observer) error {
-            o.Observe(builder.observe{{ $name.Render }}())
+            o.Observe(builder.observe{{ $name.Render }}(), metric.WithAttributeSet(builder.attributeSet))
             return nil
         }),
         {{- end }}
     )
     errs = errors.Join(errs, err)
+    {{- end }}
     {{- end }}
     return &builder, errs
 }

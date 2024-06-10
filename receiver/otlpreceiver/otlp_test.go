@@ -566,7 +566,7 @@ func TestOTLPReceiverGRPCTracesIngestTest(t *testing.T) {
 	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
 
-	cc, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	cc, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 	defer func() {
 		assert.NoError(t, cc.Close())
@@ -701,7 +701,7 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 
 	r, err := NewFactory().CreateTracesReceiver(
 		context.Background(),
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		cfg,
 		consumertest.NewNop())
 	require.NoError(t, err)
@@ -722,11 +722,12 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 	recv := newReceiver(t, componenttest.NewNopTelemetrySettings(), cfg, otlpReceiverID, sink)
 	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
 
-	cc, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	cc, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 
 	td := testdata.GenerateTraces(50000)
-	require.Error(t, exportTraces(cc, td))
+	err = exportTraces(cc, td)
+	require.Error(t, err)
 	assert.NoError(t, cc.Close())
 	require.NoError(t, recv.Shutdown(context.Background()))
 
@@ -735,7 +736,7 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
 
-	cc, err = grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	cc, err = grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 	defer func() {
 		assert.NoError(t, cc.Close())
@@ -769,7 +770,7 @@ func TestHTTPInvalidTLSCredentials(t *testing.T) {
 	// TLS is resolved during Start for HTTP.
 	r, err := NewFactory().CreateTracesReceiver(
 		context.Background(),
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		cfg,
 		consumertest.NewNop())
 	require.NoError(t, err)
@@ -835,7 +836,7 @@ func newHTTPReceiver(t *testing.T, settings component.TelemetrySettings, endpoin
 }
 
 func newReceiver(t *testing.T, settings component.TelemetrySettings, cfg *Config, id component.ID, c consumertest.Consumer) component.Component {
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	set.TelemetrySettings = settings
 	set.ID = id
 	r, err := newOtlpReceiver(cfg, &set)
@@ -997,7 +998,7 @@ func TestShutdown(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = endpointGrpc
 	cfg.HTTP.Endpoint = endpointHTTP
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	set.ID = otlpReceiverID
 	r, err := NewFactory().CreateTracesReceiver(
 		context.Background(),
@@ -1008,7 +1009,7 @@ func TestShutdown(t *testing.T) {
 	require.NotNil(t, r)
 	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 
-	conn, err := grpc.NewClient(endpointGrpc, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	conn, err := grpc.NewClient(endpointGrpc, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		require.NoError(t, conn.Close())

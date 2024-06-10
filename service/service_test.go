@@ -605,7 +605,7 @@ func newConfigWatcherExtensionFactory(name component.Type) extension.Factory {
 		func() component.Config {
 			return &struct{}{}
 		},
-		func(context.Context, extension.CreateSettings, component.Config) (extension.Extension, error) {
+		func(context.Context, extension.Settings, component.Config) (extension.Extension, error) {
 			return &configWatcherExtension{}, nil
 		},
 		component.StabilityLevelDevelopment,

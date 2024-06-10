@@ -10,11 +10,9 @@ import (
 	"strconv"
 	"sync"
 
-	ocmetric "go.opencensus.io/metric"
-	"go.opencensus.io/metric/metricproducer"
 	"go.opentelemetry.io/contrib/config"
 	"go.opentelemetry.io/otel/metric"
-	noopmetric "go.opentelemetry.io/otel/metric/noop"
+	"go.opentelemetry.io/otel/metric/noop"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/multierr"
@@ -32,9 +30,8 @@ const (
 
 type meterProvider struct {
 	*sdkmetric.MeterProvider
-	ocRegistry *ocmetric.Registry
-	servers    []*http.Server
-	serverWG   sync.WaitGroup
+	servers  []*http.Server
+	serverWG sync.WaitGroup
 }
 
 type meterProviderSettings struct {
@@ -45,7 +42,7 @@ type meterProviderSettings struct {
 
 func newMeterProvider(set meterProviderSettings, disableHighCardinality bool) (metric.MeterProvider, error) {
 	if set.cfg.Level == configtelemetry.LevelNone || (set.cfg.Address == "" && len(set.cfg.Readers) == 0) {
-		return noopmetric.NewMeterProvider(), nil
+		return noop.NewMeterProvider(), nil
 	}
 
 	if len(set.cfg.Address) != 0 {
@@ -72,12 +69,8 @@ func newMeterProvider(set meterProviderSettings, disableHighCardinality bool) (m
 		})
 	}
 
-	mp := &meterProvider{
-		// Initialize the ocRegistry, still used by the process metrics.
-		ocRegistry: ocmetric.NewRegistry(),
-	}
-	metricproducer.GlobalManager().AddProducer(mp.ocRegistry)
-	opts := []sdkmetric.Option{}
+	mp := &meterProvider{}
+	var opts []sdkmetric.Option
 	for _, reader := range set.cfg.Readers {
 		// https://github.com/open-telemetry/opentelemetry-collector/issues/8045
 		r, server, err := proctelemetry.InitMetricReader(context.Background(), reader, set.asyncErrorChannel, &mp.serverWG)
@@ -113,8 +106,6 @@ func (mp *meterProvider) LogAboutServers(logger *zap.Logger, cfg telemetry.Metri
 // Shutdown the meter provider and all the associated resources.
 // The type signature of this method matches that of the sdkmetric.MeterProvider.
 func (mp *meterProvider) Shutdown(ctx context.Context) error {
-	metricproducer.GlobalManager().DeleteProducer(mp.ocRegistry)
-
 	var errs error
 	for _, server := range mp.servers {
 		if server != nil {

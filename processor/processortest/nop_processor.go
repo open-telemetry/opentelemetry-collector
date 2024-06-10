@@ -18,8 +18,15 @@ import (
 var nopType = component.MustNewType("nop")
 
 // NewNopCreateSettings returns a new nop settings for Create*Processor functions.
-func NewNopCreateSettings() processor.CreateSettings {
-	return processor.CreateSettings{
+//
+// Deprecated: [v0.103.0] Use processortest.NewNopSettings instead.
+func NewNopCreateSettings() processor.Settings {
+	return NewNopSettings()
+}
+
+// NewNopSettings returns a new nop settings for Create*Processor functions.
+func NewNopSettings() processor.Settings {
+	return processor.Settings{
 		ID:                component.NewIDWithName(nopType, uuid.NewString()),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),
@@ -37,15 +44,15 @@ func NewNopFactory() processor.Factory {
 	)
 }
 
-func createTracesProcessor(context.Context, processor.CreateSettings, component.Config, consumer.Traces) (processor.Traces, error) {
+func createTracesProcessor(context.Context, processor.Settings, component.Config, consumer.Traces) (processor.Traces, error) {
 	return nopInstance, nil
 }
 
-func createMetricsProcessor(context.Context, processor.CreateSettings, component.Config, consumer.Metrics) (processor.Metrics, error) {
+func createMetricsProcessor(context.Context, processor.Settings, component.Config, consumer.Metrics) (processor.Metrics, error) {
 	return nopInstance, nil
 }
 
-func createLogsProcessor(context.Context, processor.CreateSettings, component.Config, consumer.Logs) (processor.Logs, error) {
+func createLogsProcessor(context.Context, processor.Settings, component.Config, consumer.Logs) (processor.Logs, error) {
 	return nopInstance, nil
 }
 

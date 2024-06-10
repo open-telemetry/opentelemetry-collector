@@ -9,9 +9,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/trace"
-	"go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -119,29 +116,6 @@ func TestSampledLogger(t *testing.T) {
 			logger, err := f.CreateLogger(ctx, set, tt.cfg)
 			assert.NoError(t, err)
 			assert.NotNil(t, logger)
-		})
-	}
-}
-
-func TestTelemetryShutdown(t *testing.T) {
-	tests := []struct {
-		name     string
-		provider trace.TracerProvider
-		wantErr  error
-	}{
-		{
-			name: "No provider",
-		},
-		{
-			name:     "Non-SDK provider",
-			provider: noop.NewTracerProvider(),
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			telemetry := Telemetry{tracerProvider: tt.provider}
-			err := telemetry.Shutdown(context.Background())
-			require.Equal(t, tt.wantErr, err)
 		})
 	}
 }
