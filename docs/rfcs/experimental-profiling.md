@@ -47,7 +47,7 @@ The experimental package MAY call its stable implementation.
 In order to boot a functional collector with profiles support, some stable
 packages need to be aware of the experimental ones.
 
-The only package concerned here should be `service`.
+Currently, the only package this applies to is `service`.
 
 To support that case, we will mark new APIs as `experimental` with go docs.
 Every experimental API will be documented as such:
