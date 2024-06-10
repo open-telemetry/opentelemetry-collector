@@ -390,7 +390,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "logs_to_traces",
 			createFn: func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error) {
-				router := connector.NewTracesRouter(map[component.PipelineID]consumer.Traces{component.NewPipelineIDID(component.DataTypeTraces): consumertest.NewNop()})
+				router := connector.NewTracesRouter(map[component.PipelineID]consumer.Traces{component.NewPipelineID(component.DataTypeTraces): consumertest.NewNop()})
 				return factory.CreateLogsToTraces(ctx, set, cfg, router)
 			},
 		},
