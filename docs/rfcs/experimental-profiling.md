@@ -44,7 +44,7 @@ The experimental package MAY call its stable implementation.
 
 ### Mark specific APIs as `experimental`
 
-In order to boot a functional collector with profiles support, the some stable
+In order to boot a functional collector with profiles support, some stable
 packages need to be aware of the experimental ones.
 
 The only package concerned here should be `service`.
