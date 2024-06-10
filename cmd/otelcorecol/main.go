@@ -18,10 +18,10 @@ import (
 	"go.opentelemetry.io/collector/otelcol"
 )
 
-var useStableExpansionRules = featuregate.GlobalRegistry().MustRegister("otelcol.useStableExpansionRules",
+var useUnifiedEnvVarExpansionRules = featuregate.GlobalRegistry().MustRegister("otelcol.unifyEnvVarExpansion",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterFromVersion("v0.102.0"),
-	featuregate.WithRegisterDescription("Uses the env provider to expand `${}` instead of the expandconverter and no longer expands $ENV syntax"))
+	featuregate.WithRegisterDescription("`${FOO}` will now be expanded as if it was `${env:FOO}` and no longer expands $ENV syntax. See https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/env-vars.md for more details."))
 
 func main() {
 	info := component.BuildInfo{
@@ -46,7 +46,7 @@ func main() {
 		},
 	}
 
-	if useStableExpansionRules.IsEnabled() && set.ConfigProviderSettings.ResolverSettings.DefaultScheme == "" {
+	if useUnifiedEnvVarExpansionRules.IsEnabled() && set.ConfigProviderSettings.ResolverSettings.DefaultScheme == "" {
 		set.ConfigProviderSettings.ResolverSettings.DefaultScheme = "env"
 	} else {
 		set.ConfigProviderSettings.ResolverSettings.ConverterFactories = []confmap.ConverterFactory{

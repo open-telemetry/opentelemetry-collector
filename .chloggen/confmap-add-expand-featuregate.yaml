@@ -7,7 +7,7 @@ change_type: enhancement
 component: confmap
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `otelcol.useStableExpansionRules` feature gate to allow enabling stable expansion rules.
+note: Add `otelcol.unifyEnvVarExpansion` feature gate to allow enabling Collector/Configuration SIG environment variable expansion rules.
 
 # One or more tracking issues or pull requests related to the change
 issues: [10259]
@@ -16,7 +16,10 @@ issues: [10259]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  - When enabled, this feature gate will disable the ability to expand `$ENV` syntax. Use `${env:ENV}` instead.
+  When enabled, this feature gate will:
+    - Disable expansion of BASH-style env vars (`$FOO`)
+    - `${FOO}` will be expanded as if it was `${env:FOO}
+  See https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/env-vars.md for more details.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
