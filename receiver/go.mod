@@ -37,7 +37,7 @@ require (
 	github.com/prometheus/procfs v0.15.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.49.0 // indirect
 	golang.org/x/net v0.25.0 // indirect
-	golang.org/x/sys v0.20.0 // indirect
+	golang.org/x/sys v0.21.0 // indirect
 	golang.org/x/text v0.15.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240520151616-dc85e6b867a5 // indirect
 	google.golang.org/grpc v1.64.0 // indirect
@@ -62,3 +62,21 @@ replace go.opentelemetry.io/collector/pdata/testdata => ../pdata/testdata
 retract v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module
 
 replace go.opentelemetry.io/collector/config/configtelemetry => ../config/configtelemetry
+
+replace go.opentelemetry.io/collector/service => ../service
+
+replace go.opentelemetry.io/collector/semconv => ../semconv
+
+replace go.opentelemetry.io/collector/config/confignet => ../config/confignet
+
+replace go.opentelemetry.io/collector/extension/zpagesextension => ../extension/zpagesextension
+
+replace go.opentelemetry.io/collector/config/configretry => ../config/configretry
+
+replace go.opentelemetry.io/collector/extension => ../extension
+
+replace go.opentelemetry.io/collector/exporter => ../exporter
+
+replace go.opentelemetry.io/collector/processor => ../processor
+
+replace go.opentelemetry.io/collector/connector => ../connector

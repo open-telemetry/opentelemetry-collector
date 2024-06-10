@@ -9,8 +9,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"go.opentelemetry.io/collector/service/pipelines"
 )
 
 func TestNewStatusEvent(t *testing.T) {
@@ -54,12 +52,12 @@ func TestStatusEventsWithError(t *testing.T) {
 func TestAggregateStatus(t *testing.T) {
 	for _, tc := range []struct {
 		name           string
-		statusMap      map[*pipelines.InstanceID]*StatusEvent
+		statusMap      map[*ID]*StatusEvent
 		expectedStatus Status
 	}{
 		{
 			name: "aggregate status with fatal is FatalError",
-			statusMap: map[*pipelines.InstanceID]*StatusEvent{
+			statusMap: map[*ID]*StatusEvent{
 				{}: NewStatusEvent(StatusStarting),
 				{}: NewStatusEvent(StatusOK),
 				{}: NewStatusEvent(StatusFatalError),
@@ -69,7 +67,7 @@ func TestAggregateStatus(t *testing.T) {
 		},
 		{
 			name: "aggregate status with permanent is PermanentError",
-			statusMap: map[*pipelines.InstanceID]*StatusEvent{
+			statusMap: map[*ID]*StatusEvent{
 				{}: NewStatusEvent(StatusStarting),
 				{}: NewStatusEvent(StatusOK),
 				{}: NewStatusEvent(StatusPermanentError),
@@ -79,7 +77,7 @@ func TestAggregateStatus(t *testing.T) {
 		},
 		{
 			name: "aggregate status with stopping is Stopping",
-			statusMap: map[*pipelines.InstanceID]*StatusEvent{
+			statusMap: map[*ID]*StatusEvent{
 				{}: NewStatusEvent(StatusStarting),
 				{}: NewStatusEvent(StatusOK),
 				{}: NewStatusEvent(StatusRecoverableError),
@@ -89,7 +87,7 @@ func TestAggregateStatus(t *testing.T) {
 		},
 		{
 			name: "aggregate status with stopped and non-stopped is Stopping",
-			statusMap: map[*pipelines.InstanceID]*StatusEvent{
+			statusMap: map[*ID]*StatusEvent{
 				{}: NewStatusEvent(StatusStarting),
 				{}: NewStatusEvent(StatusOK),
 				{}: NewStatusEvent(StatusRecoverableError),
@@ -99,7 +97,7 @@ func TestAggregateStatus(t *testing.T) {
 		},
 		{
 			name: "aggregate status with all stopped is Stopped",
-			statusMap: map[*pipelines.InstanceID]*StatusEvent{
+			statusMap: map[*ID]*StatusEvent{
 				{}: NewStatusEvent(StatusStopped),
 				{}: NewStatusEvent(StatusStopped),
 				{}: NewStatusEvent(StatusStopped),
@@ -108,7 +106,7 @@ func TestAggregateStatus(t *testing.T) {
 		},
 		{
 			name: "aggregate status with recoverable is RecoverableError",
-			statusMap: map[*pipelines.InstanceID]*StatusEvent{
+			statusMap: map[*ID]*StatusEvent{
 				{}: NewStatusEvent(StatusStarting),
 				{}: NewStatusEvent(StatusOK),
 				{}: NewStatusEvent(StatusRecoverableError),
@@ -117,7 +115,7 @@ func TestAggregateStatus(t *testing.T) {
 		},
 		{
 			name: "aggregate status with starting is Starting",
-			statusMap: map[*pipelines.InstanceID]*StatusEvent{
+			statusMap: map[*ID]*StatusEvent{
 				{}: NewStatusEvent(StatusStarting),
 				{}: NewStatusEvent(StatusOK),
 			},
@@ -125,7 +123,7 @@ func TestAggregateStatus(t *testing.T) {
 		},
 		{
 			name: "aggregate status with all ok is OK",
-			statusMap: map[*pipelines.InstanceID]*StatusEvent{
+			statusMap: map[*ID]*StatusEvent{
 				{}: NewStatusEvent(StatusOK),
 				{}: NewStatusEvent(StatusOK),
 				{}: NewStatusEvent(StatusOK),
@@ -191,12 +189,12 @@ func TestAggregateStatusEvent(t *testing.T) {
 
 	for _, tc := range []struct {
 		name           string
-		statusMap      map[*pipelines.InstanceID]*StatusEvent
+		statusMap      map[*ID]*StatusEvent
 		expectedStatus *StatusEvent
 	}{
 		{
 			name: "FatalError - existing event",
-			statusMap: map[*pipelines.InstanceID]*StatusEvent{
+			statusMap: map[*ID]*StatusEvent{
 				{}: NewStatusEvent(StatusStarting),
 				{}: NewStatusEvent(StatusOK),
 				{}: latest(NewFatalErrorEvent(assert.AnError)),
@@ -210,7 +208,7 @@ func TestAggregateStatusEvent(t *testing.T) {
 		},
 		{
 			name: "FatalError - synthetic event",
-			statusMap: map[*pipelines.InstanceID]*StatusEvent{
+			statusMap: map[*ID]*StatusEvent{
 				{}: NewStatusEvent(StatusStarting),
 				{}: NewStatusEvent(StatusOK),
 				{}: NewFatalErrorEvent(assert.AnError),
@@ -224,7 +222,7 @@ func TestAggregateStatusEvent(t *testing.T) {
 		},
 		{
 			name: "PermanentError - existing event",
-			statusMap: map[*pipelines.InstanceID]*StatusEvent{
+			statusMap: map[*ID]*StatusEvent{
 				{}: NewStatusEvent(StatusStarting),
 				{}: NewStatusEvent(StatusOK),
 				{}: latest(NewPermanentErrorEvent(assert.AnError)),
@@ -238,7 +236,7 @@ func TestAggregateStatusEvent(t *testing.T) {
 		},
 		{
 			name: "PermanentError - synthetic event",
-			statusMap: map[*pipelines.InstanceID]*StatusEvent{
+			statusMap: map[*ID]*StatusEvent{
 				{}: NewStatusEvent(StatusStarting),
 				{}: NewStatusEvent(StatusOK),
 				{}: NewPermanentErrorEvent(assert.AnError),
@@ -252,7 +250,7 @@ func TestAggregateStatusEvent(t *testing.T) {
 		},
 		{
 			name: "Stopping - existing event",
-			statusMap: map[*pipelines.InstanceID]*StatusEvent{
+			statusMap: map[*ID]*StatusEvent{
 				{}: NewStatusEvent(StatusStarting),
 				{}: NewStatusEvent(StatusOK),
 				{}: NewStatusEvent(StatusRecoverableError),
@@ -265,7 +263,7 @@ func TestAggregateStatusEvent(t *testing.T) {
 		},
 		{
 			name: "Stopping - synthetic event",
-			statusMap: map[*pipelines.InstanceID]*StatusEvent{
+			statusMap: map[*ID]*StatusEvent{
 				{}: NewStatusEvent(StatusStarting),
 				{}: NewStatusEvent(StatusOK),
 				{}: NewStatusEvent(StatusRecoverableError),
@@ -278,7 +276,7 @@ func TestAggregateStatusEvent(t *testing.T) {
 		},
 		{
 			name: "Stopped - existing event",
-			statusMap: map[*pipelines.InstanceID]*StatusEvent{
+			statusMap: map[*ID]*StatusEvent{
 				{}: NewStatusEvent(StatusStopped),
 				{}: latest(NewStatusEvent(StatusStopped)),
 				{}: NewStatusEvent(StatusStopped),
@@ -290,7 +288,7 @@ func TestAggregateStatusEvent(t *testing.T) {
 		},
 		{
 			name: "RecoverableError - existing event",
-			statusMap: map[*pipelines.InstanceID]*StatusEvent{
+			statusMap: map[*ID]*StatusEvent{
 				{}: NewStatusEvent(StatusStarting),
 				{}: NewStatusEvent(StatusOK),
 				{}: latest(NewRecoverableErrorEvent(assert.AnError)),
@@ -303,7 +301,7 @@ func TestAggregateStatusEvent(t *testing.T) {
 		},
 		{
 			name: "Starting - synthetic event",
-			statusMap: map[*pipelines.InstanceID]*StatusEvent{
+			statusMap: map[*ID]*StatusEvent{
 				{}: NewStatusEvent(StatusStarting),
 				{}: latest(NewStatusEvent(StatusOK)),
 			},
@@ -314,7 +312,7 @@ func TestAggregateStatusEvent(t *testing.T) {
 		},
 		{
 			name: "OK - existing event",
-			statusMap: map[*pipelines.InstanceID]*StatusEvent{
+			statusMap: map[*ID]*StatusEvent{
 				{}: NewStatusEvent(StatusOK),
 				{}: latest(NewStatusEvent(StatusOK)),
 				{}: NewStatusEvent(StatusOK),
