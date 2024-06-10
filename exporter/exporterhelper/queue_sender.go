@@ -104,8 +104,8 @@ func (qs *queueSender) Start(ctx context.Context, host component.Host) error {
 	}
 
 	return multierr.Append(
-		qs.telemetryBuilder.InitExporterQueueSize(func() int64 { return int64(qs.queue.Size()) }),
-		qs.telemetryBuilder.InitExporterQueueCapacity(func() int64 { return int64(qs.queue.Capacity()) }),
+		qs.telemetryBuilder.InitOtelcolExporterQueueSize(func() int64 { return int64(qs.queue.Size()) }),
+		qs.telemetryBuilder.InitOtelcolExporterQueueCapacity(func() int64 { return int64(qs.queue.Capacity()) }),
 	)
 }
 

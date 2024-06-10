@@ -6,7 +6,7 @@
 
 The following telemetry is emitted by this component.
 
-### scraper_errored_metric_points
+### otelcol_scraper_errored_metric_points
 
 Number of metric points that were unable to be scraped.
 
@@ -14,7 +14,7 @@ Number of metric points that were unable to be scraped.
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### scraper_scraped_metric_points
+### otelcol_scraper_scraped_metric_points
 
 Number of metric points successfully scraped.
 

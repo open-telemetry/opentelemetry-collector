@@ -9,7 +9,7 @@ status:
 
 telemetry:
   metrics:
-    exporter_sent_spans:
+    otelcol_exporter_sent_spans:
       enabled: true
       description: Number of spans successfully sent to destination.
       unit: 1
@@ -17,7 +17,7 @@ telemetry:
         value_type: int
         monotonic: true
 
-    exporter_send_failed_spans:
+    otelcol_exporter_send_failed_spans:
       enabled: true
       description: Number of spans in failed attempts to send to destination.
       unit: 1
@@ -25,7 +25,7 @@ telemetry:
         value_type: int
         monotonic: true
 
-    exporter_enqueue_failed_spans:
+    otelcol_exporter_enqueue_failed_spans:
       enabled: true
       description: Number of spans failed to be added to the sending queue.
       unit: 1
@@ -33,7 +33,7 @@ telemetry:
         value_type: int
         monotonic: true
 
-    exporter_sent_metric_points:
+    otelcol_exporter_sent_metric_points:
       enabled: true
       description: Number of metric points successfully sent to destination.
       unit: 1
@@ -41,7 +41,7 @@ telemetry:
         value_type: int
         monotonic: true
 
-    exporter_send_failed_metric_points:
+    otelcol_exporter_send_failed_metric_points:
       enabled: true
       description: Number of metric points in failed attempts to send to destination.
       unit: 1
@@ -49,7 +49,7 @@ telemetry:
         value_type: int
         monotonic: true
 
-    exporter_enqueue_failed_metric_points:
+    otelcol_exporter_enqueue_failed_metric_points:
       enabled: true
       description: Number of metric points failed to be added to the sending queue.
       unit: 1
@@ -57,7 +57,7 @@ telemetry:
         value_type: int
         monotonic: true
 
-    exporter_sent_log_records:
+    otelcol_exporter_sent_log_records:
       enabled: true
       description: Number of log record successfully sent to destination.
       unit: 1
@@ -65,7 +65,7 @@ telemetry:
         value_type: int
         monotonic: true
 
-    exporter_send_failed_log_records:
+    otelcol_exporter_send_failed_log_records:
       enabled: true
       description: Number of log records in failed attempts to send to destination.
       unit: 1
@@ -73,7 +73,7 @@ telemetry:
         value_type: int
         monotonic: true
 
-    exporter_enqueue_failed_log_records:
+    otelcol_exporter_enqueue_failed_log_records:
       enabled: true
       description: Number of log records failed to be added to the sending queue.
       unit: 1
@@ -81,7 +81,7 @@ telemetry:
         value_type: int
         monotonic: true
 
-    exporter_queue_size:
+    otelcol_exporter_queue_size:
       enabled: true
       description: Current size of the retry queue (in batches)
       unit: 1
@@ -90,7 +90,7 @@ telemetry:
         value_type: int
         async: true
 
-    exporter_queue_capacity:
+    otelcol_exporter_queue_capacity:
       enabled: true
       description: Fixed capacity of the retry queue (in batches)
       unit: 1

@@ -6,7 +6,7 @@
 
 The following telemetry is emitted by this component.
 
-### process_cpu_seconds
+### otelcol_process_cpu_seconds
 
 Total CPU user and system time in seconds
 
@@ -14,7 +14,7 @@ Total CPU user and system time in seconds
 | ---- | ----------- | ---------- | --------- |
 | s | Sum | Double | true |
 
-### process_memory_rss
+### otelcol_process_memory_rss
 
 Total physical memory (resident set size)
 
@@ -22,7 +22,7 @@ Total physical memory (resident set size)
 | ---- | ----------- | ---------- |
 | By | Gauge | Int |
 
-### process_runtime_heap_alloc_bytes
+### otelcol_process_runtime_heap_alloc_bytes
 
 Bytes of allocated heap objects (see 'go doc runtime.MemStats.HeapAlloc')
 
@@ -30,7 +30,7 @@ Bytes of allocated heap objects (see 'go doc runtime.MemStats.HeapAlloc')
 | ---- | ----------- | ---------- |
 | By | Gauge | Int |
 
-### process_runtime_total_alloc_bytes
+### otelcol_process_runtime_total_alloc_bytes
 
 Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')
 
@@ -38,7 +38,7 @@ Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalA
 | ---- | ----------- | ---------- | --------- |
 | By | Sum | Int | true |
 
-### process_runtime_total_sys_memory_bytes
+### otelcol_process_runtime_total_sys_memory_bytes
 
 Total bytes of memory obtained from the OS (see 'go doc runtime.MemStats.Sys')
 
@@ -46,7 +46,7 @@ Total bytes of memory obtained from the OS (see 'go doc runtime.MemStats.Sys')
 | ---- | ----------- | ---------- |
 | By | Gauge | Int |
 
-### process_uptime
+### otelcol_process_uptime
 
 Uptime of the process
 

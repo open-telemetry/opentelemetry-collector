@@ -24,10 +24,10 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                      metric.Meter
-	ScraperErroredMetricPoints metric.Int64Counter
-	ScraperScrapedMetricPoints metric.Int64Counter
-	level                      configtelemetry.Level
+	meter                             metric.Meter
+	OtelcolScraperErroredMetricPoints metric.Int64Counter
+	OtelcolScraperScrapedMetricPoints metric.Int64Counter
+	level                             configtelemetry.Level
 }
 
 // telemetryBuilderOption applies changes to default builder.
@@ -53,14 +53,14 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	} else {
 		builder.meter = noop.Meter{}
 	}
-	builder.ScraperErroredMetricPoints, err = builder.meter.Int64Counter(
-		"scraper_errored_metric_points",
+	builder.OtelcolScraperErroredMetricPoints, err = builder.meter.Int64Counter(
+		"otelcol_scraper_errored_metric_points",
 		metric.WithDescription("Number of metric points that were unable to be scraped."),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ScraperScrapedMetricPoints, err = builder.meter.Int64Counter(
-		"scraper_scraped_metric_points",
+	builder.OtelcolScraperScrapedMetricPoints, err = builder.meter.Int64Counter(
+		"otelcol_scraper_scraped_metric_points",
 		metric.WithDescription("Number of metric points successfully scraped."),
 		metric.WithUnit("1"),
 	)

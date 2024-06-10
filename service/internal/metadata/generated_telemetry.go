@@ -26,21 +26,21 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                                    metric.Meter
-	ProcessCPUSeconds                        metric.Float64ObservableCounter
-	observeProcessCPUSeconds                 func() float64
-	ProcessMemoryRss                         metric.Int64ObservableGauge
-	observeProcessMemoryRss                  func() int64
-	ProcessRuntimeHeapAllocBytes             metric.Int64ObservableGauge
-	observeProcessRuntimeHeapAllocBytes      func() int64
-	ProcessRuntimeTotalAllocBytes            metric.Int64ObservableCounter
-	observeProcessRuntimeTotalAllocBytes     func() int64
-	ProcessRuntimeTotalSysMemoryBytes        metric.Int64ObservableGauge
-	observeProcessRuntimeTotalSysMemoryBytes func() int64
-	ProcessUptime                            metric.Float64ObservableCounter
-	observeProcessUptime                     func() float64
-	level                                    configtelemetry.Level
-	attributeSet                             attribute.Set
+	meter                                           metric.Meter
+	OtelcolProcessCPUSeconds                        metric.Float64ObservableCounter
+	observeOtelcolProcessCPUSeconds                 func() float64
+	OtelcolProcessMemoryRss                         metric.Int64ObservableGauge
+	observeOtelcolProcessMemoryRss                  func() int64
+	OtelcolProcessRuntimeHeapAllocBytes             metric.Int64ObservableGauge
+	observeOtelcolProcessRuntimeHeapAllocBytes      func() int64
+	OtelcolProcessRuntimeTotalAllocBytes            metric.Int64ObservableCounter
+	observeOtelcolProcessRuntimeTotalAllocBytes     func() int64
+	OtelcolProcessRuntimeTotalSysMemoryBytes        metric.Int64ObservableGauge
+	observeOtelcolProcessRuntimeTotalSysMemoryBytes func() int64
+	OtelcolProcessUptime                            metric.Float64ObservableCounter
+	observeOtelcolProcessUptime                     func() float64
+	level                                           configtelemetry.Level
+	attributeSet                                    attribute.Set
 }
 
 // telemetryBuilderOption applies changes to default builder.
@@ -60,45 +60,45 @@ func WithAttributeSet(set attribute.Set) telemetryBuilderOption {
 	}
 }
 
-// WithProcessCPUSecondsCallback sets callback for observable ProcessCPUSeconds metric.
-func WithProcessCPUSecondsCallback(cb func() float64) telemetryBuilderOption {
+// WithOtelcolProcessCPUSecondsCallback sets callback for observable OtelcolProcessCPUSeconds metric.
+func WithOtelcolProcessCPUSecondsCallback(cb func() float64) telemetryBuilderOption {
 	return func(builder *TelemetryBuilder) {
-		builder.observeProcessCPUSeconds = cb
+		builder.observeOtelcolProcessCPUSeconds = cb
 	}
 }
 
-// WithProcessMemoryRssCallback sets callback for observable ProcessMemoryRss metric.
-func WithProcessMemoryRssCallback(cb func() int64) telemetryBuilderOption {
+// WithOtelcolProcessMemoryRssCallback sets callback for observable OtelcolProcessMemoryRss metric.
+func WithOtelcolProcessMemoryRssCallback(cb func() int64) telemetryBuilderOption {
 	return func(builder *TelemetryBuilder) {
-		builder.observeProcessMemoryRss = cb
+		builder.observeOtelcolProcessMemoryRss = cb
 	}
 }
 
-// WithProcessRuntimeHeapAllocBytesCallback sets callback for observable ProcessRuntimeHeapAllocBytes metric.
-func WithProcessRuntimeHeapAllocBytesCallback(cb func() int64) telemetryBuilderOption {
+// WithOtelcolProcessRuntimeHeapAllocBytesCallback sets callback for observable OtelcolProcessRuntimeHeapAllocBytes metric.
+func WithOtelcolProcessRuntimeHeapAllocBytesCallback(cb func() int64) telemetryBuilderOption {
 	return func(builder *TelemetryBuilder) {
-		builder.observeProcessRuntimeHeapAllocBytes = cb
+		builder.observeOtelcolProcessRuntimeHeapAllocBytes = cb
 	}
 }
 
-// WithProcessRuntimeTotalAllocBytesCallback sets callback for observable ProcessRuntimeTotalAllocBytes metric.
-func WithProcessRuntimeTotalAllocBytesCallback(cb func() int64) telemetryBuilderOption {
+// WithOtelcolProcessRuntimeTotalAllocBytesCallback sets callback for observable OtelcolProcessRuntimeTotalAllocBytes metric.
+func WithOtelcolProcessRuntimeTotalAllocBytesCallback(cb func() int64) telemetryBuilderOption {
 	return func(builder *TelemetryBuilder) {
-		builder.observeProcessRuntimeTotalAllocBytes = cb
+		builder.observeOtelcolProcessRuntimeTotalAllocBytes = cb
 	}
 }
 
-// WithProcessRuntimeTotalSysMemoryBytesCallback sets callback for observable ProcessRuntimeTotalSysMemoryBytes metric.
-func WithProcessRuntimeTotalSysMemoryBytesCallback(cb func() int64) telemetryBuilderOption {
+// WithOtelcolProcessRuntimeTotalSysMemoryBytesCallback sets callback for observable OtelcolProcessRuntimeTotalSysMemoryBytes metric.
+func WithOtelcolProcessRuntimeTotalSysMemoryBytesCallback(cb func() int64) telemetryBuilderOption {
 	return func(builder *TelemetryBuilder) {
-		builder.observeProcessRuntimeTotalSysMemoryBytes = cb
+		builder.observeOtelcolProcessRuntimeTotalSysMemoryBytes = cb
 	}
 }
 
-// WithProcessUptimeCallback sets callback for observable ProcessUptime metric.
-func WithProcessUptimeCallback(cb func() float64) telemetryBuilderOption {
+// WithOtelcolProcessUptimeCallback sets callback for observable OtelcolProcessUptime metric.
+func WithOtelcolProcessUptimeCallback(cb func() float64) telemetryBuilderOption {
 	return func(builder *TelemetryBuilder) {
-		builder.observeProcessUptime = cb
+		builder.observeOtelcolProcessUptime = cb
 	}
 }
 
@@ -115,62 +115,62 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	} else {
 		builder.meter = noop.Meter{}
 	}
-	builder.ProcessCPUSeconds, err = builder.meter.Float64ObservableCounter(
-		"process_cpu_seconds",
+	builder.OtelcolProcessCPUSeconds, err = builder.meter.Float64ObservableCounter(
+		"otelcol_process_cpu_seconds",
 		metric.WithDescription("Total CPU user and system time in seconds"),
 		metric.WithUnit("s"),
 		metric.WithFloat64Callback(func(_ context.Context, o metric.Float64Observer) error {
-			o.Observe(builder.observeProcessCPUSeconds(), metric.WithAttributeSet(builder.attributeSet))
+			o.Observe(builder.observeOtelcolProcessCPUSeconds(), metric.WithAttributeSet(builder.attributeSet))
 			return nil
 		}),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessMemoryRss, err = builder.meter.Int64ObservableGauge(
-		"process_memory_rss",
+	builder.OtelcolProcessMemoryRss, err = builder.meter.Int64ObservableGauge(
+		"otelcol_process_memory_rss",
 		metric.WithDescription("Total physical memory (resident set size)"),
 		metric.WithUnit("By"),
 		metric.WithInt64Callback(func(_ context.Context, o metric.Int64Observer) error {
-			o.Observe(builder.observeProcessMemoryRss(), metric.WithAttributeSet(builder.attributeSet))
+			o.Observe(builder.observeOtelcolProcessMemoryRss(), metric.WithAttributeSet(builder.attributeSet))
 			return nil
 		}),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessRuntimeHeapAllocBytes, err = builder.meter.Int64ObservableGauge(
-		"process_runtime_heap_alloc_bytes",
+	builder.OtelcolProcessRuntimeHeapAllocBytes, err = builder.meter.Int64ObservableGauge(
+		"otelcol_process_runtime_heap_alloc_bytes",
 		metric.WithDescription("Bytes of allocated heap objects (see 'go doc runtime.MemStats.HeapAlloc')"),
 		metric.WithUnit("By"),
 		metric.WithInt64Callback(func(_ context.Context, o metric.Int64Observer) error {
-			o.Observe(builder.observeProcessRuntimeHeapAllocBytes(), metric.WithAttributeSet(builder.attributeSet))
+			o.Observe(builder.observeOtelcolProcessRuntimeHeapAllocBytes(), metric.WithAttributeSet(builder.attributeSet))
 			return nil
 		}),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessRuntimeTotalAllocBytes, err = builder.meter.Int64ObservableCounter(
-		"process_runtime_total_alloc_bytes",
+	builder.OtelcolProcessRuntimeTotalAllocBytes, err = builder.meter.Int64ObservableCounter(
+		"otelcol_process_runtime_total_alloc_bytes",
 		metric.WithDescription("Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')"),
 		metric.WithUnit("By"),
 		metric.WithInt64Callback(func(_ context.Context, o metric.Int64Observer) error {
-			o.Observe(builder.observeProcessRuntimeTotalAllocBytes(), metric.WithAttributeSet(builder.attributeSet))
+			o.Observe(builder.observeOtelcolProcessRuntimeTotalAllocBytes(), metric.WithAttributeSet(builder.attributeSet))
 			return nil
 		}),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessRuntimeTotalSysMemoryBytes, err = builder.meter.Int64ObservableGauge(
-		"process_runtime_total_sys_memory_bytes",
+	builder.OtelcolProcessRuntimeTotalSysMemoryBytes, err = builder.meter.Int64ObservableGauge(
+		"otelcol_process_runtime_total_sys_memory_bytes",
 		metric.WithDescription("Total bytes of memory obtained from the OS (see 'go doc runtime.MemStats.Sys')"),
 		metric.WithUnit("By"),
 		metric.WithInt64Callback(func(_ context.Context, o metric.Int64Observer) error {
-			o.Observe(builder.observeProcessRuntimeTotalSysMemoryBytes(), metric.WithAttributeSet(builder.attributeSet))
+			o.Observe(builder.observeOtelcolProcessRuntimeTotalSysMemoryBytes(), metric.WithAttributeSet(builder.attributeSet))
 			return nil
 		}),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessUptime, err = builder.meter.Float64ObservableCounter(
-		"process_uptime",
+	builder.OtelcolProcessUptime, err = builder.meter.Float64ObservableCounter(
+		"otelcol_process_uptime",
 		metric.WithDescription("Uptime of the process"),
 		metric.WithUnit("s"),
 		metric.WithFloat64Callback(func(_ context.Context, o metric.Float64Observer) error {
-			o.Observe(builder.observeProcessUptime(), metric.WithAttributeSet(builder.attributeSet))
+			o.Observe(builder.observeOtelcolProcessUptime(), metric.WithAttributeSet(builder.attributeSet))
 			return nil
 		}),
 	)
