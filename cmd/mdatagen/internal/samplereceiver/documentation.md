@@ -133,6 +133,16 @@ Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalA
 | ---- | ----------- | ---------- | --------- |
 | By | Sum | Int | true |
 
+### queue_length
+
+This metric is optional and therefore not initialized in NewTelemetryBuilder.
+
+For example this metric only exists if feature A is enabled.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
 ### request_duration
 
 Duration of request
