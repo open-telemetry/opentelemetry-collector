@@ -23,10 +23,6 @@ import (
 
 const defaultQueueSize = 1000
 
-var (
-	scopeName = "go.opentelemetry.io/collector/exporterhelper"
-)
-
 // QueueSettings defines configuration for queueing batches before sending to the consumerSender.
 type QueueSettings struct {
 	// Enabled indicates whether to not enqueue batches before sending to the consumerSender.
