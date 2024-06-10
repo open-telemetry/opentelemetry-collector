@@ -21,7 +21,7 @@ func TestProcessTelemetryWithHostProc(t *testing.T) {
 	// Make the sure the environment variable value is not used.
 	t.Setenv("HOST_PROC", "foo/bar")
 
-	require.NoError(t, RegisterProcessMetrics(tel.MeterProvider, 0, WithHostProc("/proc")))
+	require.NoError(t, RegisterProcessMetrics(tel.TelemetrySettings, 0, WithHostProc("/proc")))
 
 	// Check that the metrics are actually filled.
 	time.Sleep(200 * time.Millisecond)
