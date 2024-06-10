@@ -34,7 +34,7 @@ The proposed approach will consist of two main phases:
 
 ### Introduce `experimental` packages
 
-Each package that needs to be signal-aware will have its barebones copied into
+Each package that needs to be profiling signal-aware will have its barebones copied into
 a new `XXexperimental` package (eg: `consumerexperimental`) which will be able
 to handle the profiling signal.
 
