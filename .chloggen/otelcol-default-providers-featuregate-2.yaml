@@ -7,7 +7,7 @@ change_type: enhancement
 component: otelcol
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `otelcol.errorWhenNoProvidersOrConvertersSet` feature gate that enables erroring when `otelcol.NewCommand` is called with no providers or converters.
+note: Deprecate `otelcol.NewCommand`. Use `otelcol.NewCommandMustProviderSettings` instead.
 
 # One or more tracking issues or pull requests related to the change
 issues: [10359]
