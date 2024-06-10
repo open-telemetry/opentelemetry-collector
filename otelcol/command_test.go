@@ -19,19 +19,19 @@ import (
 )
 
 func TestNewCommandVersion(t *testing.T) {
-	cmd := NewCommandMustProviderSettings(CollectorSettings{BuildInfo: component.BuildInfo{Version: "test_version"}})
+	cmd := NewCommandMustSetProvider(CollectorSettings{BuildInfo: component.BuildInfo{Version: "test_version"}})
 	assert.Equal(t, "test_version", cmd.Version)
 }
 
 func TestNewCommandNoConfigURI(t *testing.T) {
-	cmd := NewCommandMustProviderSettings(CollectorSettings{Factories: nopFactories})
+	cmd := NewCommandMustSetProvider(CollectorSettings{Factories: nopFactories})
 	require.Error(t, cmd.Execute())
 }
 
 // This test emulates usage of Collector in Jaeger all-in-one, which
 // allows running the binary with no explicit configuration.
 func TestNewCommandProgrammaticallyPassedConfig(t *testing.T) {
-	cmd := NewCommandMustProviderSettings(CollectorSettings{Factories: nopFactories, ConfigProviderSettings: ConfigProviderSettings{
+	cmd := NewCommandMustSetProvider(CollectorSettings{Factories: nopFactories, ConfigProviderSettings: ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
 			ProviderFactories: []confmap.ProviderFactory{confmap.NewProviderFactory(newFailureProvider)},
 		},
@@ -98,7 +98,7 @@ func TestInvalidCollectorSettings(t *testing.T) {
 		},
 	}
 
-	cmd := NewCommandMustProviderSettings(set)
+	cmd := NewCommandMustSetProvider(set)
 	require.Error(t, cmd.Execute())
 }
 
@@ -111,7 +111,7 @@ func TestNewCommandInvalidComponent(t *testing.T) {
 		},
 	}
 
-	cmd := NewCommandMustProviderSettings(CollectorSettings{Factories: nopFactories, ConfigProviderSettings: set})
+	cmd := NewCommandMustSetProvider(CollectorSettings{Factories: nopFactories, ConfigProviderSettings: set})
 	require.Error(t, cmd.Execute())
 }
 

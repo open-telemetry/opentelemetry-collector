@@ -17,17 +17,17 @@ import (
 // are considered defaults and will be overwritten by config flags passed as
 // command-line arguments to the executable.
 //
-// Deprecated: [v0.103.0] use NewCommandMustProviderSettings instead
+// Deprecated: [v0.103.0] use NewCommandMustSetProvider instead
 func NewCommand(set CollectorSettings) *cobra.Command {
 	return commandHelper(set, false)
 }
 
-// NewCommandMustProviderSettings constructs a new cobra.Command using the given CollectorSettings.
+// NewCommandMustSetProvider constructs a new cobra.Command using the given CollectorSettings.
 // Any URIs specified in CollectorSettings.ConfigProviderSettings.ResolverSettings.URIs
 // are considered defaults and will be overwritten by config flags passed as
 // command-line arguments to the executable.
 // At least one provider or converter must be supplied via CollectorSettings.ConfigProviderSettings.ResolverSettings.
-func NewCommandMustProviderSettings(set CollectorSettings) *cobra.Command {
+func NewCommandMustSetProvider(set CollectorSettings) *cobra.Command {
 	return commandHelper(set, true)
 }
 
