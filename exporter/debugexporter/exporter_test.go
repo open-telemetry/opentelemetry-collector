@@ -21,7 +21,7 @@ import (
 )
 
 func TestTracesExporterNoErrors(t *testing.T) {
-	lte, err := createTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), createDefaultConfig())
+	lte, err := createTracesExporter(context.Background(), exportertest.NewNopSettings(), createDefaultConfig())
 	require.NotNil(t, lte)
 	assert.NoError(t, err)
 
@@ -32,7 +32,7 @@ func TestTracesExporterNoErrors(t *testing.T) {
 }
 
 func TestMetricsExporterNoErrors(t *testing.T) {
-	lme, err := createMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), createDefaultConfig())
+	lme, err := createMetricsExporter(context.Background(), exportertest.NewNopSettings(), createDefaultConfig())
 	require.NotNil(t, lme)
 	assert.NoError(t, err)
 
@@ -46,7 +46,7 @@ func TestMetricsExporterNoErrors(t *testing.T) {
 }
 
 func TestLogsExporterNoErrors(t *testing.T) {
-	lle, err := createLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), createDefaultConfig())
+	lle, err := createLogsExporter(context.Background(), exportertest.NewNopSettings(), createDefaultConfig())
 	require.NotNil(t, lle)
 	assert.NoError(t, err)
 

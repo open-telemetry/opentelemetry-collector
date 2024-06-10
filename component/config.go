@@ -9,8 +9,6 @@ import (
 	"regexp"
 
 	"go.uber.org/multierr"
-
-	"go.opentelemetry.io/collector/confmap"
 )
 
 // Config defines the configuration for a component.Component.
@@ -25,12 +23,6 @@ type Config any
 // As interface types are only used for static typing, a common idiom to find the reflection Type
 // for an interface type Foo is to use a *Foo value.
 var configValidatorType = reflect.TypeOf((*ConfigValidator)(nil)).Elem()
-
-// UnmarshalConfig helper function to UnmarshalConfig a Config.
-// Deprecated: [v0.101.0] Use conf.Unmarshal(&intoCfg)
-func UnmarshalConfig(conf *confmap.Conf, intoCfg Config) error {
-	return conf.Unmarshal(intoCfg)
-}
 
 // ConfigValidator defines an optional interface for configurations to implement to do validation.
 type ConfigValidator interface {
@@ -91,7 +83,7 @@ func callValidateIfPossible(v reflect.Value) error {
 	}
 
 	// If the pointer type implements ConfigValidator call Validate on the pointer to the current value.
-	if reflect.PtrTo(v.Type()).Implements(configValidatorType) {
+	if reflect.PointerTo(v.Type()).Implements(configValidatorType) {
 		// If not addressable, then create a new *V pointer and set the value to current v.
 		if !v.CanAddr() {
 			pv := reflect.New(reflect.PtrTo(v.Type()).Elem())

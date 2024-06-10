@@ -20,7 +20,7 @@ type Host interface {
 	GetFactory(kind Kind, componentType Type) Factory
 
 	// GetExtensions returns the map of extensions. Only enabled and created extensions will be returned.
-	// Typically is used to find an extension by type or by full config name. Both cases
+	// Typically, it is used to find an extension by type or by full config name. Both cases
 	// can be done by iterating the returned map. There are typically very few extensions,
 	// so there are no performance implications due to iteration.
 	//

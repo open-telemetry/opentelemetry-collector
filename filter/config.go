@@ -8,7 +8,7 @@ import (
 	"regexp"
 )
 
-// Config configures the matching behavior of a FilterSet.
+// Config configures the matching behavior of a Filter.
 type Config struct {
 	Strict string `mapstructure:"strict"`
 	Regex  string `mapstructure:"regexp"`
@@ -32,14 +32,17 @@ func (c Config) Validate() error {
 	return nil
 }
 
-type CombinedFilter struct {
+type combinedFilter struct {
 	stricts map[any]struct{}
 	regexes []*regexp.Regexp
 }
 
-// CreateFilter creates a Filter from yaml config.
+// Deprecated: [v0.103.0] This type will be removed in the future.
+type CombinedFilter combinedFilter
+
+// CreateFilter creates a Filter out of a set of Config configuration objects.
 func CreateFilter(configs []Config) Filter {
-	cf := &CombinedFilter{
+	cf := &combinedFilter{
 		stricts: make(map[any]struct{}),
 	}
 	for _, config := range configs {
@@ -56,7 +59,7 @@ func CreateFilter(configs []Config) Filter {
 	return cf
 }
 
-func (cf *CombinedFilter) Matches(toMatch any) bool {
+func (cf *combinedFilter) Matches(toMatch any) bool {
 	_, ok := cf.stricts[toMatch]
 	if ok {
 		return ok

@@ -21,7 +21,7 @@ type memoryLimiterProcessor struct {
 }
 
 // newMemoryLimiter returns a new memorylimiter processor.
-func newMemoryLimiterProcessor(set processor.CreateSettings, cfg *Config) (*memoryLimiterProcessor, error) {
+func newMemoryLimiterProcessor(set processor.Settings, cfg *Config) (*memoryLimiterProcessor, error) {
 	ml, err := memorylimiter.NewMemoryLimiter(cfg, set.Logger)
 	if err != nil {
 		return nil, err
