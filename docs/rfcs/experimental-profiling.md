@@ -25,7 +25,7 @@ signal to impact the road to the collector reaching 1.0.
 
 ## Proposed approach
 
-The proposed approach will consist in two main phases:
+The proposed approach will consist of two main phases:
 
 * Introduce `experimental` packages for each required module of the collector that needs to be profiles-aware.
 	* `consumer`, `receiver`, `connector`, `component`, `processor`
