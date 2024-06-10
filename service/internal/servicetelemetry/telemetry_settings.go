@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/service/internal/status"
+	"go.opentelemetry.io/collector/service/pipelines"
 )
 
 // TelemetrySettings mirrors component.TelemetrySettings except for the mechanism for reporting
@@ -42,7 +43,7 @@ type TelemetrySettings struct {
 
 // ToComponentTelemetrySettings returns a TelemetrySettings for a specific component derived from
 // this service level Settings object.
-func (s TelemetrySettings) ToComponentTelemetrySettings(id *component.InstanceID) component.TelemetrySettings {
+func (s TelemetrySettings) ToComponentTelemetrySettings(id *pipelines.InstanceID) component.TelemetrySettings {
 	statusFunc := status.NewReportStatusFunc(id, s.Status.ReportStatus)
 	return component.TelemetrySettings{
 		Logger:         s.Logger,

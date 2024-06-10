@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/service/pipelines"
 )
 
 func TestNewNopSettings(t *testing.T) {
@@ -27,9 +28,9 @@ func TestNewNopSettings(t *testing.T) {
 	require.Equal(t, configtelemetry.LevelNone, set.MetricsLevel)
 	require.Equal(t, pcommon.NewResource(), set.Resource)
 	set.Status.ReportStatus(
-		&component.InstanceID{},
+		&pipelines.InstanceID{},
 		component.NewStatusEvent(component.StatusStarting),
 	)
-	set.Status.ReportOKIfStarting(&component.InstanceID{})
+	set.Status.ReportOKIfStarting(&pipelines.InstanceID{})
 
 }

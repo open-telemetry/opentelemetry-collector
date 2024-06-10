@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/service/pipelines"
 )
 
 // NewStatusWatcherExtensionCreateSettings returns a new nop settings for Create*Extension functions.
@@ -21,7 +22,7 @@ func NewStatusWatcherExtensionCreateSettings() extension.Settings {
 
 // NewStatusWatcherExtensionFactory returns a component.ExtensionFactory to construct a status watcher extension.
 func NewStatusWatcherExtensionFactory(
-	onStatusChanged func(source *component.InstanceID, event *component.StatusEvent),
+	onStatusChanged func(source *pipelines.InstanceID, event *component.StatusEvent),
 ) extension.Factory {
 	return extension.NewFactory(
 		component.MustNewType("statuswatcher"),
@@ -39,9 +40,9 @@ func NewStatusWatcherExtensionFactory(
 type statusWatcherExtension struct {
 	component.StartFunc
 	component.ShutdownFunc
-	onStatusChanged func(source *component.InstanceID, event *component.StatusEvent)
+	onStatusChanged func(source *pipelines.InstanceID, event *component.StatusEvent)
 }
 
-func (e statusWatcherExtension) ComponentStatusChanged(source *component.InstanceID, event *component.StatusEvent) {
+func (e statusWatcherExtension) ComponentStatusChanged(source *pipelines.InstanceID, event *component.StatusEvent) {
 	e.onStatusChanged(source, event)
 }

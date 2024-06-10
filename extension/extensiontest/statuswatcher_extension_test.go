@@ -13,12 +13,13 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/service/pipelines"
 )
 
 func TestStatusWatcherExtension(t *testing.T) {
 	statusChanged := false
 	factory := NewStatusWatcherExtensionFactory(
-		func(*component.InstanceID, *component.StatusEvent) {
+		func(*pipelines.InstanceID, *component.StatusEvent) {
 			statusChanged = true
 		},
 	)
@@ -32,7 +33,7 @@ func TestStatusWatcherExtension(t *testing.T) {
 	assert.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
 	assert.False(t, statusChanged)
 
-	ext.(extension.StatusWatcher).ComponentStatusChanged(&component.InstanceID{}, &component.StatusEvent{})
+	ext.(extension.StatusWatcher).ComponentStatusChanged(&pipelines.InstanceID{}, &component.StatusEvent{})
 
 	assert.True(t, statusChanged)
 	assert.NoError(t, ext.Shutdown(context.Background()))

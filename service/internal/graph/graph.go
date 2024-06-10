@@ -45,7 +45,7 @@ type Settings struct {
 	ExporterBuilder  *exporter.Builder
 	ConnectorBuilder *connector.Builder
 
-	// PipelineConfigs is a map of component.ID to PipelineConfig.
+	// PipelineConfigs is a map of component.PipelineID to PipelineConfig.
 	PipelineConfigs pipelines.Config
 }
 
@@ -54,10 +54,10 @@ type Graph struct {
 	componentGraph *simple.DirectedGraph
 
 	// Keep track of how nodes relate to pipelines, so we can declare edges in the graph.
-	pipelines map[component.ID]*pipelineNodes
+	pipelines map[component.PipelineID]*pipelineNodes
 
 	// Keep track of status source per node
-	instanceIDs map[int64]*component.InstanceID
+	instanceIDs map[int64]*pipelines.InstanceID
 
 	telemetry servicetelemetry.TelemetrySettings
 }
@@ -67,8 +67,8 @@ type Graph struct {
 func Build(ctx context.Context, set Settings) (*Graph, error) {
 	pipelines := &Graph{
 		componentGraph: simple.NewDirectedGraph(),
-		pipelines:      make(map[component.ID]*pipelineNodes, len(set.PipelineConfigs)),
-		instanceIDs:    make(map[int64]*component.InstanceID),
+		pipelines:      make(map[component.PipelineID]*pipelineNodes, len(set.PipelineConfigs)),
+		instanceIDs:    make(map[int64]*pipelines.InstanceID),
 		telemetry:      set.Telemetry,
 	}
 	for pipelineID := range set.PipelineConfigs {
@@ -90,9 +90,9 @@ func (g *Graph) createNodes(set Settings) error {
 	// Build a list of all connectors for easy reference.
 	connectors := make(map[component.ID]struct{})
 
-	// Keep track of connectors and where they are used. (map[connectorID][]pipelineID).
-	connectorsAsExporter := make(map[component.ID][]component.ID)
-	connectorsAsReceiver := make(map[component.ID][]component.ID)
+	// Keep track of connectors and where they are used. (map[connectorID][]pipelineID)
+	connectorsAsExporter := make(map[component.ID][]component.PipelineID)
+	connectorsAsReceiver := make(map[component.ID][]component.PipelineID)
 
 	// Build each pipelineNodes struct for each pipeline by parsing the pipelineCfg.
 	// Also populates the connectors, connectorsAsExporter and connectorsAsReceiver maps.
@@ -190,54 +190,54 @@ func (g *Graph) createNodes(set Settings) error {
 	return nil
 }
 
-func (g *Graph) createReceiver(pipelineID, recvID component.ID) *receiverNode {
+func (g *Graph) createReceiver(pipelineID component.PipelineID, recvID component.ID) *receiverNode {
 	rcvrNode := newReceiverNode(pipelineID.Type(), recvID)
 	if node := g.componentGraph.Node(rcvrNode.ID()); node != nil {
 		g.instanceIDs[node.ID()].PipelineIDs[pipelineID] = struct{}{}
 		return node.(*receiverNode)
 	}
 	g.componentGraph.AddNode(rcvrNode)
-	g.instanceIDs[rcvrNode.ID()] = &component.InstanceID{
+	g.instanceIDs[rcvrNode.ID()] = &pipelines.InstanceID{
 		ID:   recvID,
 		Kind: component.KindReceiver,
-		PipelineIDs: map[component.ID]struct{}{
+		PipelineIDs: map[component.PipelineID]struct{}{
 			pipelineID: {},
 		},
 	}
 	return rcvrNode
 }
 
-func (g *Graph) createProcessor(pipelineID, procID component.ID) *processorNode {
+func (g *Graph) createProcessor(pipelineID component.PipelineID, procID component.ID) *processorNode {
 	procNode := newProcessorNode(pipelineID, procID)
 	g.componentGraph.AddNode(procNode)
-	g.instanceIDs[procNode.ID()] = &component.InstanceID{
+	g.instanceIDs[procNode.ID()] = &pipelines.InstanceID{
 		ID:   procID,
 		Kind: component.KindProcessor,
-		PipelineIDs: map[component.ID]struct{}{
+		PipelineIDs: map[component.PipelineID]struct{}{
 			pipelineID: {},
 		},
 	}
 	return procNode
 }
 
-func (g *Graph) createExporter(pipelineID, exprID component.ID) *exporterNode {
+func (g *Graph) createExporter(pipelineID component.PipelineID, exprID component.ID) *exporterNode {
 	expNode := newExporterNode(pipelineID.Type(), exprID)
 	if node := g.componentGraph.Node(expNode.ID()); node != nil {
 		g.instanceIDs[expNode.ID()].PipelineIDs[pipelineID] = struct{}{}
 		return node.(*exporterNode)
 	}
 	g.componentGraph.AddNode(expNode)
-	g.instanceIDs[expNode.ID()] = &component.InstanceID{
+	g.instanceIDs[expNode.ID()] = &pipelines.InstanceID{
 		ID:   expNode.componentID,
 		Kind: component.KindExporter,
-		PipelineIDs: map[component.ID]struct{}{
+		PipelineIDs: map[component.PipelineID]struct{}{
 			pipelineID: {},
 		},
 	}
 	return expNode
 }
 
-func (g *Graph) createConnector(exprPipelineID, rcvrPipelineID, connID component.ID) *connectorNode {
+func (g *Graph) createConnector(exprPipelineID, rcvrPipelineID component.PipelineID, connID component.ID) *connectorNode {
 	connNode := newConnectorNode(exprPipelineID.Type(), rcvrPipelineID.Type(), connID)
 	if node := g.componentGraph.Node(connNode.ID()); node != nil {
 		instanceID := g.instanceIDs[connNode.ID()]
@@ -246,10 +246,10 @@ func (g *Graph) createConnector(exprPipelineID, rcvrPipelineID, connID component
 		return node.(*connectorNode)
 	}
 	g.componentGraph.AddNode(connNode)
-	g.instanceIDs[connNode.ID()] = &component.InstanceID{
+	g.instanceIDs[connNode.ID()] = &pipelines.InstanceID{
 		ID:   connNode.componentID,
 		Kind: component.KindConnector,
-		PipelineIDs: map[component.ID]struct{}{
+		PipelineIDs: map[component.PipelineID]struct{}{
 			exprPipelineID: {},
 			rcvrPipelineID: {},
 		},
@@ -537,7 +537,7 @@ func cycleErr(err error, cycles [][]graph.Node) error {
 	return fmt.Errorf("cycle detected: %s", strings.Join(componentDetails, " -> "))
 }
 
-func connectorStability(f connector.Factory, expType, recType component.Type) component.StabilityLevel {
+func connectorStability(f connector.Factory, expType, recType component.DataType) component.StabilityLevel {
 	switch expType {
 	case component.DataTypeTraces:
 		switch recType {

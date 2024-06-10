@@ -111,11 +111,11 @@ var _ consumerNode = (*processorNode)(nil)
 type processorNode struct {
 	nodeID
 	componentID component.ID
-	pipelineID  component.ID
+	pipelineID  component.PipelineID
 	component.Component
 }
 
-func newProcessorNode(pipelineID, procID component.ID) *processorNode {
+func newProcessorNode(pipelineID component.PipelineID, procID component.ID) *processorNode {
 	return &processorNode{
 		nodeID:      newNodeID(processorSeed, pipelineID.String(), procID.String()),
 		componentID: procID,
@@ -239,7 +239,7 @@ func (n *connectorNode) buildComponent(
 	switch n.rcvrPipelineType {
 	case component.DataTypeTraces:
 		capability := consumer.Capabilities{MutatesData: false}
-		consumers := make(map[component.ID]consumer.Traces, len(nexts))
+		consumers := make(map[component.PipelineID]consumer.Traces, len(nexts))
 		for _, next := range nexts {
 			consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Traces)
 			capability.MutatesData = capability.MutatesData || next.Capabilities().MutatesData
@@ -275,7 +275,7 @@ func (n *connectorNode) buildComponent(
 
 	case component.DataTypeMetrics:
 		capability := consumer.Capabilities{MutatesData: false}
-		consumers := make(map[component.ID]consumer.Metrics, len(nexts))
+		consumers := make(map[component.PipelineID]consumer.Metrics, len(nexts))
 		for _, next := range nexts {
 			consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Metrics)
 			capability.MutatesData = capability.MutatesData || next.Capabilities().MutatesData
@@ -310,7 +310,7 @@ func (n *connectorNode) buildComponent(
 		}
 	case component.DataTypeLogs:
 		capability := consumer.Capabilities{MutatesData: false}
-		consumers := make(map[component.ID]consumer.Logs, len(nexts))
+		consumers := make(map[component.PipelineID]consumer.Logs, len(nexts))
 		for _, next := range nexts {
 			consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Logs)
 			capability.MutatesData = capability.MutatesData || next.Capabilities().MutatesData
@@ -356,14 +356,14 @@ var _ consumerNode = (*capabilitiesNode)(nil)
 // The nodeID is derived from "pipeline ID".
 type capabilitiesNode struct {
 	nodeID
-	pipelineID component.ID
+	pipelineID component.PipelineID
 	baseConsumer
 	consumer.ConsumeTracesFunc
 	consumer.ConsumeMetricsFunc
 	consumer.ConsumeLogsFunc
 }
 
-func newCapabilitiesNode(pipelineID component.ID) *capabilitiesNode {
+func newCapabilitiesNode(pipelineID component.PipelineID) *capabilitiesNode {
 	return &capabilitiesNode{
 		nodeID:     newNodeID(capabilitiesSeed, pipelineID.String()),
 		pipelineID: pipelineID,
@@ -380,11 +380,11 @@ var _ consumerNode = (*fanOutNode)(nil)
 // Therefore, nodeID is derived from "pipeline ID".
 type fanOutNode struct {
 	nodeID
-	pipelineID component.ID
+	pipelineID component.PipelineID
 	baseConsumer
 }
 
-func newFanOutNode(pipelineID component.ID) *fanOutNode {
+func newFanOutNode(pipelineID component.PipelineID) *fanOutNode {
 	return &fanOutNode{
 		nodeID:     newNodeID(fanOutToExporters, pipelineID.String()),
 		pipelineID: pipelineID,
