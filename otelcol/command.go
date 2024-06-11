@@ -26,7 +26,7 @@ func NewCommand(set CollectorSettings) *cobra.Command {
 // Any URIs specified in CollectorSettings.ConfigProviderSettings.ResolverSettings.URIs
 // are considered defaults and will be overwritten by config flags passed as
 // command-line arguments to the executable.
-// At least one provider or converter must be supplied via CollectorSettings.ConfigProviderSettings.ResolverSettings.
+// At least one Provider must be supplied via CollectorSettings.ConfigProviderSettings.ResolverSettings.ProviderFactories.
 func NewCommandMustSetProvider(set CollectorSettings) *cobra.Command {
 	return commandHelper(set, true)
 }
@@ -70,7 +70,7 @@ func updateSettingsUsingFlags(set *CollectorSettings, flags *flag.FlagSet, enfor
 
 	if len(resolverSet.ProviderFactories) == 0 && len(resolverSet.ConverterFactories) == 0 {
 		if enforceProviders {
-			return errors.New("at least one provider or converter must be provided")
+			return errors.New("at least one Provider must be supplied")
 		}
 		set.ConfigProviderSettings = newDefaultConfigProviderSettings(resolverSet.URIs)
 	}
