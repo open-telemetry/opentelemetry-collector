@@ -38,7 +38,7 @@ func TestUnmarshalConfig(t *testing.T) {
 		},
 		{
 			filename:    "config_verbosity_typo.yaml",
-			expectedErr: "1 error(s) decoding:\n\n* '' has invalid keys: verBosity",
+			expectedErr: "decoding failed due to the following error(s):\n\n* '' has invalid keys: verBosity",
 		},
 	}
 

@@ -171,7 +171,7 @@ func TestUnmarshalConfigTypoDefaultProtocol(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.EqualError(t, cm.Unmarshal(&cfg), "1 error(s) decoding:\n\n* 'protocols' has invalid keys: htttp")
+	assert.EqualError(t, cm.Unmarshal(&cfg), "decoding failed due to the following error(s):\n\n* 'protocols' has invalid keys: htttp")
 }
 
 func TestUnmarshalConfigInvalidProtocol(t *testing.T) {
@@ -179,7 +179,7 @@ func TestUnmarshalConfigInvalidProtocol(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.EqualError(t, cm.Unmarshal(&cfg), "1 error(s) decoding:\n\n* 'protocols' has invalid keys: thrift")
+	assert.EqualError(t, cm.Unmarshal(&cfg), "decoding failed due to the following error(s):\n\n* 'protocols' has invalid keys: thrift")
 }
 
 func TestUnmarshalConfigEmptyProtocols(t *testing.T) {
