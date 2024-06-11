@@ -12,7 +12,9 @@ This document describes:
 * The approach we intend to take to introduce profiling with no breaking changes
 * How the migration will happen once profiling goes stable
 
-### Discarded approach
+### Discarded approaches
+
+#### Refactor everything into per-signal subpackages
 
 A first approach, discussed in [issue
 10207](https://github.com/open-telemetry/opentelemetry-collector/issues/10207)
@@ -22,6 +24,17 @@ subpackage could have its own stability level, like pdata does.
 
 This has been discarded, as the Collector SIG does not want the profiling
 signal to impact the road to the collector reaching 1.0.
+
+#### Use build tags
+
+An approach would have been to use build tags to limit the availability of
+profiles within packages.
+
+This approach would make the UX very bad though, as most packages are meant to
+be imported and not used in a compiled collector. It would therefore not have
+been possible to specify the appropriate build tags.
+
+This has been discarded, as the usage would have been too difficult.
 
 ## Proposed approach
 
