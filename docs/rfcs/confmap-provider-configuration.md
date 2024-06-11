@@ -45,6 +45,8 @@ requirements:
 2. Can be used as a suggestion for configuring custom providers.
 3. Is consistent between Providers.
 4. Is configurable per config URI.
+5. All valid URIs are still expressible, even if an escaping mechanism is
+   required.
 
 ## Solutions
 
@@ -116,6 +118,7 @@ Advantages:
 
 - Not likely to be used by config backends for any of our supported protocols,
   so has a low chance of conflict.
+- Could be escaped using an invalid fragment character according to RFC 3986.
 - Fits into existing config URIs for URL-based Providers.
 
 Disadvantages:
