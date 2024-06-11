@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/shirou/gopsutil/v3/common"
-	"github.com/shirou/gopsutil/v3/process"
+	"github.com/shirou/gopsutil/v4/common"
+	"github.com/shirou/gopsutil/v4/process"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/service/internal/metadata"
