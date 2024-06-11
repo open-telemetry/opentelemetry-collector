@@ -167,3 +167,4 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 | 2024-09-09 | v0.109.0 | @bogdandrutu    |
 | 2024-09-23 | v0.110.0 | @jpkrohling     |
 | 2024-10-07 | v0.111.0 | @mx-psi         |
+| 2024-10-21 | v0.112.0 | @evan-bradley   |
