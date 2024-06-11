@@ -21,8 +21,8 @@ type componentTestTelemetry struct {
 	meterProvider *sdkmetric.MeterProvider
 }
 
-func (tt *componentTestTelemetry) NewCreateSettings() processor.CreateSettings {
-	settings := processortest.NewNopCreateSettings()
+func (tt *componentTestTelemetry) NewSettings() processor.Settings {
+	settings := processortest.NewNopSettings()
 	settings.MeterProvider = tt.meterProvider
 	settings.ID = component.NewID(component.MustNewType("processorhelper"))
 
