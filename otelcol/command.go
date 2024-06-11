@@ -67,7 +67,9 @@ func updateSettingsUsingFlags(set *CollectorSettings, flags *flag.FlagSet, enfor
 	if len(resolverSet.URIs) == 0 {
 		return errors.New("at least one config flag must be provided")
 	}
-
+	// Provide a default set of providers and converters if none have been specified.
+	// TODO: Remove this after CollectorSettings.ConfigProvider is removed and instead
+	// do it in the builder.
 	if len(resolverSet.ProviderFactories) == 0 && len(resolverSet.ConverterFactories) == 0 {
 		if enforceProviders {
 			return errors.New("at least one Provider must be supplied")
