@@ -20,13 +20,12 @@ import (
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/service/internal/servicetelemetry"
 )
 
 type testTelemetry struct {
-	component.TelemetrySettings
+	servicetelemetry.TelemetrySettings
 	promHandler   http.Handler
 	meterProvider *sdkmetric.MeterProvider
 }
@@ -42,7 +41,7 @@ var expectedMetrics = []string{
 
 func setupTelemetry(t *testing.T) testTelemetry {
 	settings := testTelemetry{
-		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+		TelemetrySettings: servicetelemetry.NewNopTelemetrySettings(),
 	}
 	settings.TelemetrySettings.MetricsLevel = configtelemetry.LevelNormal
 
@@ -79,7 +78,7 @@ func fetchPrometheusMetrics(handler http.Handler) (map[string]*io_prometheus_cli
 func TestProcessTelemetry(t *testing.T) {
 	tel := setupTelemetry(t)
 
-	require.NoError(t, RegisterProcessMetrics(tel.MeterProvider, 0))
+	require.NoError(t, RegisterProcessMetrics(tel.TelemetrySettings, 0))
 
 	mp, err := fetchPrometheusMetrics(tel.promHandler)
 	require.NoError(t, err)
