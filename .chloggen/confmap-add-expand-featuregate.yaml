@@ -7,7 +7,7 @@ change_type: enhancement
 component: confmap
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `otelcol.unifyEnvVarExpansion` feature gate to allow enabling Collector/Configuration SIG environment variable expansion rules.
+note: Add `confmap.unifyEnvVarExpansion` feature gate to allow enabling Collector/Configuration SIG environment variable expansion rules.
 
 # One or more tracking issues or pull requests related to the change
 issues: [10259]
