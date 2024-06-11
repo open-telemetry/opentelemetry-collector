@@ -64,7 +64,7 @@ func TestUnmarshalConfig(t *testing.T) {
 		},
 		{
 			filename:    "config_loglevel_typo.yaml",
-			expectedErr: "1 error(s) decoding:\n\n* '' has invalid keys: logLevel",
+			expectedErr: "decoding failed due to the following error(s):\n\n* '' has invalid keys: logLevel",
 		},
 	}
 
