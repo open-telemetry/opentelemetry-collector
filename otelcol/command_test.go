@@ -128,5 +128,5 @@ func TestNoProvidersReturnsError(t *testing.T) {
 	require.NoError(t, err)
 
 	err = updateSettingsUsingFlags(&set, flgs, true)
-	require.ErrorContains(t, err, "at least one provider or converter must be provided")
+	require.ErrorContains(t, err, "at least one Provider must be supplied")
 }
