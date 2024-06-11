@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/otelcol"
 )
 
-var useUnifiedEnvVarExpansionRules = featuregate.GlobalRegistry().MustRegister("otelcol.unifyEnvVarExpansion",
+var useUnifiedEnvVarExpansionRules = featuregate.GlobalRegistry().MustRegister("confmap.unifyEnvVarExpansion",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterFromVersion("v0.102.0"),
 	featuregate.WithRegisterDescription("`${FOO}` will now be expanded as if it was `${env:FOO}` and no longer expands $ENV syntax. See https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/env-vars.md for more details."))
@@ -46,8 +46,10 @@ func main() {
 		},
 	}
 
-	if useUnifiedEnvVarExpansionRules.IsEnabled() && set.ConfigProviderSettings.ResolverSettings.DefaultScheme == "" {
-		set.ConfigProviderSettings.ResolverSettings.DefaultScheme = "env"
+	if useUnifiedEnvVarExpansionRules.IsEnabled() {
+		if set.ConfigProviderSettings.ResolverSettings.DefaultScheme == "" {
+			set.ConfigProviderSettings.ResolverSettings.DefaultScheme = "env"
+		}
 	} else {
 		set.ConfigProviderSettings.ResolverSettings.ConverterFactories = []confmap.ConverterFactory{
 			expandconverter.NewFactory(),

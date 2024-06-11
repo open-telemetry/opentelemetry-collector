@@ -52,8 +52,10 @@ func main() {
 	}
 
     {{ if .Distribution.SupportsConfmapFactories }}
-    if useUnifiedEnvVarExpansionRules.IsEnabled() && set.ConfigProviderSettings.ResolverSettings.DefaultScheme == "" {
-        set.ConfigProviderSettings.ResolverSettings.DefaultScheme = "env"
+    if useUnifiedEnvVarExpansionRules.IsEnabled() {
+        if set.ConfigProviderSettings.ResolverSettings.DefaultScheme == "" {
+            set.ConfigProviderSettings.ResolverSettings.DefaultScheme = "env"
+        }
     } else {
         set.ConfigProviderSettings.ResolverSettings.ConverterFactories = []confmap.ConverterFactory{
             expandconverter.NewFactory(),
