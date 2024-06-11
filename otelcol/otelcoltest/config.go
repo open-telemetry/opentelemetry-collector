@@ -43,8 +43,8 @@ func LoadConfig(fileName string, factories otelcol.Factories) (*otelcol.Config, 
 	})
 }
 
-// LoadConfigWithSettingsAndValidate loads a config from the provider settings, and validates the configuration.
-func LoadConfigWithSettingsAndValidate(factories otelcol.Factories, set otelcol.ConfigProviderSettings) (*otelcol.Config, error) {
+// LoadConfigAndValidateWithSettings loads a config from the provider settings, and validates the configuration.
+func LoadConfigAndValidateWithSettings(factories otelcol.Factories, set otelcol.ConfigProviderSettings) (*otelcol.Config, error) {
 	cfg, err := LoadConfigWithSettings(factories, set)
 	if err != nil {
 		return nil, err
@@ -54,7 +54,7 @@ func LoadConfigWithSettingsAndValidate(factories otelcol.Factories, set otelcol.
 
 // LoadConfigAndValidate loads a config from the file, and validates the configuration.
 //
-// Deprecated: [v0.103.0] Use LoadConfigWithSettingsAndValidate instead
+// Deprecated: [v0.103.0] Use LoadConfigAndValidateWithSettings instead
 func LoadConfigAndValidate(fileName string, factories otelcol.Factories) (*otelcol.Config, error) {
 	cfg, err := LoadConfigWithSettings(factories, otelcol.ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{

@@ -94,7 +94,7 @@ func TestLoadConfigAndValidate(t *testing.T) {
 		},
 	}
 
-	cfgValidate, errValidate := LoadConfigWithSettingsAndValidate(factories, set)
+	cfgValidate, errValidate := LoadConfigAndValidateWithSettings(factories, set)
 	require.NoError(t, errValidate)
 
 	cfg, errLoad := LoadConfigWithSettings(factories, set)
