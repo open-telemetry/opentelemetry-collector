@@ -235,7 +235,7 @@ func TestNoCancellationContext(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, deadline, d)
 
-	nctx := noCancellationContext{Context: ctx}
+	nctx := context.WithoutCancel(ctx)
 	assert.NoError(t, nctx.Err())
 	d, ok = nctx.Deadline()
 	assert.False(t, ok)

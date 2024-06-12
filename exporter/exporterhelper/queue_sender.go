@@ -6,7 +6,6 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 import (
 	"context"
 	"errors"
-	"time"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -120,7 +119,7 @@ func (qs *queueSender) Shutdown(ctx context.Context) error {
 func (qs *queueSender) send(ctx context.Context, req Request) error {
 	// Prevent cancellation and deadline to propagate to the context stored in the queue.
 	// The grpc/http based receivers will cancel the request context after this function returns.
-	c := noCancellationContext{Context: ctx}
+	c := context.WithoutCancel(ctx)
 
 	span := trace.SpanFromContext(c)
 	if err := qs.queue.Offer(c, req); err != nil {
@@ -129,21 +128,5 @@ func (qs *queueSender) send(ctx context.Context, req Request) error {
 	}
 
 	span.AddEvent("Enqueued item.", trace.WithAttributes(qs.traceAttribute))
-	return nil
-}
-
-type noCancellationContext struct {
-	context.Context
-}
-
-func (noCancellationContext) Deadline() (deadline time.Time, ok bool) {
-	return
-}
-
-func (noCancellationContext) Done() <-chan struct{} {
-	return nil
-}
-
-func (noCancellationContext) Err() error {
 	return nil
 }
