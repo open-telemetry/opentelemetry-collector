@@ -17,8 +17,15 @@ import (
 var nopType = component.MustNewType("nop")
 
 // NewNopCreateSettings returns a new nop settings for Create*Exporter functions.
-func NewNopCreateSettings() exporter.CreateSettings {
-	return exporter.CreateSettings{
+//
+// Deprecated: [v0.103.0] Use exportertest.NewNopSettings instead.
+func NewNopCreateSettings() exporter.Settings {
+	return NewNopSettings()
+}
+
+// NewNopSettings returns a new nop settings for Create*Exporter functions.
+func NewNopSettings() exporter.Settings {
+	return exporter.Settings{
 		ID:                component.NewIDWithName(nopType, uuid.NewString()),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),
@@ -36,15 +43,15 @@ func NewNopFactory() exporter.Factory {
 	)
 }
 
-func createTracesExporter(context.Context, exporter.CreateSettings, component.Config) (exporter.Traces, error) {
+func createTracesExporter(context.Context, exporter.Settings, component.Config) (exporter.Traces, error) {
 	return nopInstance, nil
 }
 
-func createMetricsExporter(context.Context, exporter.CreateSettings, component.Config) (exporter.Metrics, error) {
+func createMetricsExporter(context.Context, exporter.Settings, component.Config) (exporter.Metrics, error) {
 	return nopInstance, nil
 }
 
-func createLogsExporter(context.Context, exporter.CreateSettings, component.Config) (exporter.Logs, error) {
+func createLogsExporter(context.Context, exporter.Settings, component.Config) (exporter.Logs, error) {
 	return nopInstance, nil
 }
 

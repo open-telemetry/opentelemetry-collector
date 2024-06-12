@@ -12,8 +12,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"go.opentelemetry.io/collector/confmap"
 )
 
 var _ fmt.Stringer = Type{}
@@ -421,29 +419,4 @@ func TestNewType(t *testing.T) {
 			}
 		})
 	}
-}
-
-type configWithEmbeddedStruct struct {
-	String string `mapstructure:"string"`
-	Num    int    `mapstructure:"num"`
-	embeddedUnmarshallingConfig
-}
-
-type embeddedUnmarshallingConfig struct {
-}
-
-func (euc *embeddedUnmarshallingConfig) Unmarshal(_ *confmap.Conf) error {
-	return nil // do nothing.
-}
-func TestStructWithEmbeddedUnmarshaling(t *testing.T) {
-	t.Skip("Skipping, to be fixed with https://github.com/open-telemetry/opentelemetry-collector/issues/7102")
-	cfgMap := confmap.NewFromStringMap(map[string]any{
-		"string": "foo",
-		"num":    123,
-	})
-	tc := &configWithEmbeddedStruct{}
-	err := UnmarshalConfig(cfgMap, tc)
-	require.NoError(t, err)
-	assert.Equal(t, "foo", tc.String)
-	assert.Equal(t, 123, tc.Num)
 }

@@ -31,8 +31,13 @@ type Logs interface {
 	consumer.Logs
 }
 
-// CreateSettings configures exporter creators.
-type CreateSettings struct {
+// CreateSettings configures Exporter creators.
+//
+// Deprecated: [v0.103.0] Use exporter.Settings instead.
+type CreateSettings = Settings
+
+// Settings configures exporter creators.
+type Settings struct {
 	// ID returns the ID of the component that will be created.
 	ID component.ID
 
@@ -52,7 +57,7 @@ type Factory interface {
 	// CreateTracesExporter creates a TracesExporter based on this config.
 	// If the exporter type does not support tracing or if the config is not valid,
 	// an error will be returned instead.
-	CreateTracesExporter(ctx context.Context, set CreateSettings, cfg component.Config) (Traces, error)
+	CreateTracesExporter(ctx context.Context, set Settings, cfg component.Config) (Traces, error)
 
 	// TracesExporterStability gets the stability level of the TracesExporter.
 	TracesExporterStability() component.StabilityLevel
@@ -60,7 +65,7 @@ type Factory interface {
 	// CreateMetricsExporter creates a MetricsExporter based on this config.
 	// If the exporter type does not support metrics or if the config is not valid,
 	// an error will be returned instead.
-	CreateMetricsExporter(ctx context.Context, set CreateSettings, cfg component.Config) (Metrics, error)
+	CreateMetricsExporter(ctx context.Context, set Settings, cfg component.Config) (Metrics, error)
 
 	// MetricsExporterStability gets the stability level of the MetricsExporter.
 	MetricsExporterStability() component.StabilityLevel
@@ -68,7 +73,7 @@ type Factory interface {
 	// CreateLogsExporter creates a LogsExporter based on the config.
 	// If the exporter type does not support logs or if the config is not valid,
 	// an error will be returned instead.
-	CreateLogsExporter(ctx context.Context, set CreateSettings, cfg component.Config) (Logs, error)
+	CreateLogsExporter(ctx context.Context, set Settings, cfg component.Config) (Logs, error)
 
 	// LogsExporterStability gets the stability level of the LogsExporter.
 	LogsExporterStability() component.StabilityLevel
@@ -92,10 +97,10 @@ func (f factoryOptionFunc) applyExporterFactoryOption(o *factory) {
 }
 
 // CreateTracesFunc is the equivalent of Factory.CreateTraces.
-type CreateTracesFunc func(context.Context, CreateSettings, component.Config) (Traces, error)
+type CreateTracesFunc func(context.Context, Settings, component.Config) (Traces, error)
 
 // CreateTracesExporter implements ExporterFactory.CreateTracesExporter().
-func (f CreateTracesFunc) CreateTracesExporter(ctx context.Context, set CreateSettings, cfg component.Config) (Traces, error) {
+func (f CreateTracesFunc) CreateTracesExporter(ctx context.Context, set Settings, cfg component.Config) (Traces, error) {
 	if f == nil {
 		return nil, component.ErrDataTypeIsNotSupported
 	}
@@ -103,10 +108,10 @@ func (f CreateTracesFunc) CreateTracesExporter(ctx context.Context, set CreateSe
 }
 
 // CreateMetricsFunc is the equivalent of Factory.CreateMetrics.
-type CreateMetricsFunc func(context.Context, CreateSettings, component.Config) (Metrics, error)
+type CreateMetricsFunc func(context.Context, Settings, component.Config) (Metrics, error)
 
 // CreateMetricsExporter implements ExporterFactory.CreateMetricsExporter().
-func (f CreateMetricsFunc) CreateMetricsExporter(ctx context.Context, set CreateSettings, cfg component.Config) (Metrics, error) {
+func (f CreateMetricsFunc) CreateMetricsExporter(ctx context.Context, set Settings, cfg component.Config) (Metrics, error) {
 	if f == nil {
 		return nil, component.ErrDataTypeIsNotSupported
 	}
@@ -114,10 +119,10 @@ func (f CreateMetricsFunc) CreateMetricsExporter(ctx context.Context, set Create
 }
 
 // CreateLogsFunc is the equivalent of Factory.CreateLogs.
-type CreateLogsFunc func(context.Context, CreateSettings, component.Config) (Logs, error)
+type CreateLogsFunc func(context.Context, Settings, component.Config) (Logs, error)
 
 // CreateLogsExporter implements Factory.CreateLogsExporter().
-func (f CreateLogsFunc) CreateLogsExporter(ctx context.Context, set CreateSettings, cfg component.Config) (Logs, error) {
+func (f CreateLogsFunc) CreateLogsExporter(ctx context.Context, set Settings, cfg component.Config) (Logs, error) {
 	if f == nil {
 		return nil, component.ErrDataTypeIsNotSupported
 	}
@@ -214,7 +219,7 @@ func NewBuilder(cfgs map[component.ID]component.Config, factories map[component.
 }
 
 // CreateTraces creates a Traces exporter based on the settings and config.
-func (b *Builder) CreateTraces(ctx context.Context, set CreateSettings) (Traces, error) {
+func (b *Builder) CreateTraces(ctx context.Context, set Settings) (Traces, error) {
 	cfg, existsCfg := b.cfgs[set.ID]
 	if !existsCfg {
 		return nil, fmt.Errorf("exporter %q is not configured", set.ID)
@@ -230,7 +235,7 @@ func (b *Builder) CreateTraces(ctx context.Context, set CreateSettings) (Traces,
 }
 
 // CreateMetrics creates a Metrics exporter based on the settings and config.
-func (b *Builder) CreateMetrics(ctx context.Context, set CreateSettings) (Metrics, error) {
+func (b *Builder) CreateMetrics(ctx context.Context, set Settings) (Metrics, error) {
 	cfg, existsCfg := b.cfgs[set.ID]
 	if !existsCfg {
 		return nil, fmt.Errorf("exporter %q is not configured", set.ID)
@@ -246,7 +251,7 @@ func (b *Builder) CreateMetrics(ctx context.Context, set CreateSettings) (Metric
 }
 
 // CreateLogs creates a Logs exporter based on the settings and config.
-func (b *Builder) CreateLogs(ctx context.Context, set CreateSettings) (Logs, error) {
+func (b *Builder) CreateLogs(ctx context.Context, set Settings) (Logs, error) {
 	cfg, existsCfg := b.cfgs[set.ID]
 	if !existsCfg {
 		return nil, fmt.Errorf("exporter %q is not configured", set.ID)

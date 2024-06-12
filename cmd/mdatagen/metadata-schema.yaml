@@ -140,6 +140,9 @@ telemetry:
       description:
       # Optional: extended documentation of the metric.
       extended_documentation:
+      # Optional: whether or not this metric is optional. Optional metrics may only be initialized
+      # if certain features are enabled or configured.
+      optional: bool
       # Optional: warnings that will be shown to user under specified conditions.
       warnings:
         # A warning that will be displayed if the metric is enabled in user config.

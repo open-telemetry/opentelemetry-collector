@@ -12,8 +12,8 @@ import (
 )
 
 // NewStatusWatcherExtensionCreateSettings returns a new nop settings for Create*Extension functions.
-func NewStatusWatcherExtensionCreateSettings() extension.CreateSettings {
-	return extension.CreateSettings{
+func NewStatusWatcherExtensionCreateSettings() extension.Settings {
+	return extension.Settings{
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),
 	}
@@ -28,7 +28,7 @@ func NewStatusWatcherExtensionFactory(
 		func() component.Config {
 			return &struct{}{}
 		},
-		func(context.Context, extension.CreateSettings, component.Config) (component.Component, error) {
+		func(context.Context, extension.Settings, component.Config) (component.Component, error) {
 			return &statusWatcherExtension{onStatusChanged: onStatusChanged}, nil
 		},
 		component.StabilityLevelStable)
