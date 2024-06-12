@@ -163,7 +163,7 @@ func (bs *batchSender) sendMergeSplitBatch(ctx context.Context, req Request) err
 
 	bs.activeRequests.Add(1)
 	if len(reqs) == 1 {
-		batch.requestsBlocked++
+		bs.activeBatch.requestsBlocked++
 	} else {
 		// if there was a split, we want to make sure that bs.activeRequests is released once all of the parts are sent instead of using batch.requestsBlocked
 		defer bs.activeRequests.Add(-1)
@@ -181,7 +181,6 @@ func (bs *batchSender) sendMergeSplitBatch(ctx context.Context, req Request) err
 		}
 		reqs = reqs[1:]
 	} else {
-		defer bs.activeRequests.Add(-1)
 		bs.mu.Unlock()
 	}
 
