@@ -9,8 +9,8 @@ import (
 	"strings"
 )
 
-// typeAndNameSeparator is the separator that is used between type and name in type/name composite keys.
-const typeAndNameSeparator = "/"
+// TypeAndNameSeparator is the separator that is used between type and name in type/name composite keys.
+const TypeAndNameSeparator = "/"
 
 // ID represents the identity for a component. It combines two values:
 // * type - the Type of the component.
@@ -63,7 +63,7 @@ func (id ID) MarshalText() (text []byte, err error) {
 // UnmarshalText implements the encoding.TextUnmarshaler interface.
 func (id *ID) UnmarshalText(text []byte) error {
 	idStr := string(text)
-	items := strings.SplitN(idStr, typeAndNameSeparator, 2)
+	items := strings.SplitN(idStr, TypeAndNameSeparator, 2)
 	var typeStr, nameStr string
 	if len(items) >= 1 {
 		typeStr = strings.TrimSpace(items[0])
@@ -74,14 +74,14 @@ func (id *ID) UnmarshalText(text []byte) error {
 	}
 
 	if typeStr == "" {
-		return fmt.Errorf("in %q id: the part before %s should not be empty", idStr, typeAndNameSeparator)
+		return fmt.Errorf("in %q id: the part before %s should not be empty", idStr, TypeAndNameSeparator)
 	}
 
 	if len(items) > 1 {
 		// "name" part is present.
 		nameStr = strings.TrimSpace(items[1])
 		if nameStr == "" {
-			return fmt.Errorf("in %q id: the part after %s should not be empty", idStr, typeAndNameSeparator)
+			return fmt.Errorf("in %q id: the part after %s should not be empty", idStr, TypeAndNameSeparator)
 		}
 	}
 
@@ -100,5 +100,5 @@ func (id ID) String() string {
 		return id.typeVal.String()
 	}
 
-	return id.typeVal.String() + typeAndNameSeparator + id.nameVal
+	return id.typeVal.String() + TypeAndNameSeparator + id.nameVal
 }
