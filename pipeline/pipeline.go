@@ -1,21 +1,23 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package component // import "go.opentelemetry.io/collector/component"
+package pipeline // import "go.opentelemetry.io/collector/pipeline"
 
 import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"go.opentelemetry.io/collector/component"
 )
 
 type PipelineID struct {
-	typeVal DataType `mapstructure:"-"`
-	nameVal string   `mapstructure:"-"`
+	typeVal component.DataType `mapstructure:"-"`
+	nameVal string             `mapstructure:"-"`
 }
 
 // Type returns the type of the component.
-func (id PipelineID) Type() DataType {
+func (id PipelineID) Type() component.DataType {
 	return id.typeVal
 }
 
@@ -25,12 +27,12 @@ func (id PipelineID) Name() string {
 }
 
 // NewPipelineID returns a new PipelineID with the given DataType and empty name.
-func NewPipelineID(typeVal DataType) PipelineID {
+func NewPipelineID(typeVal component.DataType) PipelineID {
 	return PipelineID{typeVal: typeVal}
 }
 
 // NewPipelineIDWithName returns a new PipelineID with the given DataType and name.
-func NewPipelineIDWithName(typeVal DataType, nameVal string) PipelineID {
+func NewPipelineIDWithName(typeVal component.DataType, nameVal string) PipelineID {
 	return PipelineID{typeVal: typeVal, nameVal: nameVal}
 }
 
@@ -43,7 +45,7 @@ func (id PipelineID) MarshalText() (text []byte, err error) {
 // UnmarshalText implements the encoding.TextUnmarshaler interface.
 func (id *PipelineID) UnmarshalText(text []byte) error {
 	idStr := string(text)
-	items := strings.SplitN(idStr, TypeAndNameSeparator, 2)
+	items := strings.SplitN(idStr, component.TypeAndNameSeparator, 2)
 	var typeStr, nameStr string
 	if len(items) >= 1 {
 		typeStr = strings.TrimSpace(items[0])
@@ -54,19 +56,19 @@ func (id *PipelineID) UnmarshalText(text []byte) error {
 	}
 
 	if typeStr == "" {
-		return fmt.Errorf("in %q id: the part before %s should not be empty", idStr, TypeAndNameSeparator)
+		return fmt.Errorf("in %q id: the part before %s should not be empty", idStr, component.TypeAndNameSeparator)
 	}
 
 	if len(items) > 1 {
 		// "name" part is present.
 		nameStr = strings.TrimSpace(items[1])
 		if nameStr == "" {
-			return fmt.Errorf("in %q id: the part after %s should not be empty", idStr, TypeAndNameSeparator)
+			return fmt.Errorf("in %q id: the part after %s should not be empty", idStr, component.TypeAndNameSeparator)
 		}
 	}
 
 	var err error
-	var dt DataType
+	var dt component.DataType
 	if err = dt.UnmarshalText([]byte(typeStr)); err != nil {
 		return fmt.Errorf("in %q id: %w", idStr, err)
 	}
@@ -82,5 +84,5 @@ func (id PipelineID) String() string {
 		return id.typeVal.String()
 	}
 
-	return id.typeVal.String() + TypeAndNameSeparator + id.nameVal
+	return id.typeVal.String() + component.TypeAndNameSeparator + id.nameVal
 }

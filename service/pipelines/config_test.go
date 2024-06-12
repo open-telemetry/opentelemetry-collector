@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 func TestConfigValidate(t *testing.T) {
@@ -28,7 +29,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "duplicate-processor-reference",
 			cfgFn: func() Config {
 				cfg := generateConfig()
-				pipe := cfg[component.NewPipelineID(component.DataTypeTraces)]
+				pipe := cfg[pipeline.NewPipelineID(component.DataTypeTraces)]
 				pipe.Processors = append(pipe.Processors, pipe.Processors...)
 				return cfg
 			},
@@ -38,7 +39,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "missing-pipeline-receivers",
 			cfgFn: func() Config {
 				cfg := generateConfig()
-				cfg[component.NewPipelineID(component.DataTypeTraces)].Receivers = nil
+				cfg[pipeline.NewPipelineID(component.DataTypeTraces)].Receivers = nil
 				return cfg
 			},
 			expected: fmt.Errorf(`pipeline "traces": %w`, errMissingServicePipelineReceivers),
@@ -47,7 +48,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "missing-pipeline-exporters",
 			cfgFn: func() Config {
 				cfg := generateConfig()
-				cfg[component.NewPipelineID(component.DataTypeTraces)].Exporters = nil
+				cfg[pipeline.NewPipelineID(component.DataTypeTraces)].Exporters = nil
 				return cfg
 			},
 			expected: fmt.Errorf(`pipeline "traces": %w`, errMissingServicePipelineExporters),
@@ -63,7 +64,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-service-pipeline-type",
 			cfgFn: func() Config {
 				cfg := generateConfig()
-				cfg[component.NewPipelineID("wrongtype")] = &PipelineConfig{
+				cfg[pipeline.NewPipelineID("wrongtype")] = &PipelineConfig{
 					Receivers:  []component.ID{component.MustNewID("nop")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewID("nop")},
@@ -83,8 +84,8 @@ func TestConfigValidate(t *testing.T) {
 }
 
 func generateConfig() Config {
-	return map[component.PipelineID]*PipelineConfig{
-		component.NewPipelineID(component.DataTypeTraces): {
+	return map[pipeline.PipelineID]*PipelineConfig{
+		pipeline.NewPipelineID(component.DataTypeTraces): {
 			Receivers:  []component.ID{component.MustNewID("nop")},
 			Processors: []component.ID{component.MustNewID("nop")},
 			Exporters:  []component.ID{component.MustNewID("nop")},

@@ -9,6 +9,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 const (
@@ -28,7 +29,7 @@ func ReceiverLogger(logger *zap.Logger, id component.ID, dt component.DataType) 
 		zap.String(zapDataTypeKey, dt.String()))
 }
 
-func ProcessorLogger(logger *zap.Logger, id component.ID, pipelineID component.PipelineID) *zap.Logger {
+func ProcessorLogger(logger *zap.Logger, id component.ID, pipelineID pipeline.PipelineID) *zap.Logger {
 	return logger.With(
 		zap.String(zapKindKey, strings.ToLower(component.KindProcessor.String())),
 		zap.String(zapNameKey, id.String()),

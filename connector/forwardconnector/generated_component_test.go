@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 func TestComponentFactoryType(t *testing.T) {
@@ -36,7 +37,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "logs_to_logs",
 			createFn: func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error) {
-				router := connector.NewLogsRouter(map[component.PipelineID]consumer.Logs{component.NewPipelineID(component.DataTypeLogs): consumertest.NewNop()})
+				router := connector.NewLogsRouter(map[pipeline.PipelineID]consumer.Logs{pipeline.NewPipelineID(component.DataTypeLogs): consumertest.NewNop()})
 				return factory.CreateLogsToLogs(ctx, set, cfg, router)
 			},
 		},
@@ -44,7 +45,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "metrics_to_metrics",
 			createFn: func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error) {
-				router := connector.NewMetricsRouter(map[component.PipelineID]consumer.Metrics{component.NewPipelineID(component.DataTypeMetrics): consumertest.NewNop()})
+				router := connector.NewMetricsRouter(map[pipeline.PipelineID]consumer.Metrics{pipeline.NewPipelineID(component.DataTypeMetrics): consumertest.NewNop()})
 				return factory.CreateMetricsToMetrics(ctx, set, cfg, router)
 			},
 		},
@@ -52,7 +53,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "traces_to_traces",
 			createFn: func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error) {
-				router := connector.NewTracesRouter(map[component.PipelineID]consumer.Traces{component.NewPipelineID(component.DataTypeTraces): consumertest.NewNop()})
+				router := connector.NewTracesRouter(map[pipeline.PipelineID]consumer.Traces{pipeline.NewPipelineID(component.DataTypeTraces): consumertest.NewNop()})
 				return factory.CreateTracesToTraces(ctx, set, cfg, router)
 			},
 		},

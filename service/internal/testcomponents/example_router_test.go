@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/testdata"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 func TestExampleRouter(t *testing.T) {
@@ -31,8 +32,8 @@ func TestExampleRouter(t *testing.T) {
 }
 
 func TestTracesRouter(t *testing.T) {
-	leftID := component.NewPipelineIDWithName(component.DataTypeTraces, "left")
-	rightID := component.NewPipelineIDWithName(component.DataTypeTraces, "right")
+	leftID := pipeline.NewPipelineIDWithName(component.DataTypeTraces, "left")
+	rightID := pipeline.NewPipelineIDWithName(component.DataTypeTraces, "right")
 
 	sinkLeft := new(consumertest.TracesSink)
 	sinkRight := new(consumertest.TracesSink)
@@ -41,7 +42,7 @@ func TestTracesRouter(t *testing.T) {
 	// Many connectors will just call router.ConsumeTraces,
 	// but some implementation will call RouteTraces instead.
 	router := connector.NewTracesRouter(
-		map[component.PipelineID]consumer.Traces{
+		map[pipeline.PipelineID]consumer.Traces{
 			leftID:  sinkLeft,
 			rightID: sinkRight,
 		})
@@ -70,8 +71,8 @@ func TestTracesRouter(t *testing.T) {
 }
 
 func TestMetricsRouter(t *testing.T) {
-	leftID := component.NewPipelineIDWithName(component.DataTypeMetrics, "left")
-	rightID := component.NewPipelineIDWithName(component.DataTypeMetrics, "right")
+	leftID := pipeline.NewPipelineIDWithName(component.DataTypeMetrics, "left")
+	rightID := pipeline.NewPipelineIDWithName(component.DataTypeMetrics, "right")
 
 	sinkLeft := new(consumertest.MetricsSink)
 	sinkRight := new(consumertest.MetricsSink)
@@ -80,7 +81,7 @@ func TestMetricsRouter(t *testing.T) {
 	// Many connectors will just call router.ConsumeMetrics,
 	// but some implementation will call RouteMetrics instead.
 	router := connector.NewMetricsRouter(
-		map[component.PipelineID]consumer.Metrics{
+		map[pipeline.PipelineID]consumer.Metrics{
 			leftID:  sinkLeft,
 			rightID: sinkRight,
 		})
@@ -109,8 +110,8 @@ func TestMetricsRouter(t *testing.T) {
 }
 
 func TestLogsRouter(t *testing.T) {
-	leftID := component.NewPipelineIDWithName(component.DataTypeLogs, "left")
-	rightID := component.NewPipelineIDWithName(component.DataTypeLogs, "right")
+	leftID := pipeline.NewPipelineIDWithName(component.DataTypeLogs, "left")
+	rightID := pipeline.NewPipelineIDWithName(component.DataTypeLogs, "right")
 
 	sinkLeft := new(consumertest.LogsSink)
 	sinkRight := new(consumertest.LogsSink)
@@ -119,7 +120,7 @@ func TestLogsRouter(t *testing.T) {
 	// Many connectors will just call router.ConsumeLogs,
 	// but some implementation will call RouteLogs instead.
 	router := connector.NewLogsRouter(
-		map[component.PipelineID]consumer.Logs{
+		map[pipeline.PipelineID]consumer.Logs{
 			leftID:  sinkLeft,
 			rightID: sinkRight,
 		})

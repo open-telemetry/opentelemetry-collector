@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
@@ -111,11 +112,11 @@ var _ consumerNode = (*processorNode)(nil)
 type processorNode struct {
 	nodeID
 	componentID component.ID
-	pipelineID  component.PipelineID
+	pipelineID  pipeline.PipelineID
 	component.Component
 }
 
-func newProcessorNode(pipelineID component.PipelineID, procID component.ID) *processorNode {
+func newProcessorNode(pipelineID pipeline.PipelineID, procID component.ID) *processorNode {
 	return &processorNode{
 		nodeID:      newNodeID(processorSeed, pipelineID.String(), procID.String()),
 		componentID: procID,
@@ -239,7 +240,7 @@ func (n *connectorNode) buildComponent(
 	switch n.rcvrPipelineType {
 	case component.DataTypeTraces:
 		capability := consumer.Capabilities{MutatesData: false}
-		consumers := make(map[component.PipelineID]consumer.Traces, len(nexts))
+		consumers := make(map[pipeline.PipelineID]consumer.Traces, len(nexts))
 		for _, next := range nexts {
 			consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Traces)
 			capability.MutatesData = capability.MutatesData || next.Capabilities().MutatesData
@@ -275,7 +276,7 @@ func (n *connectorNode) buildComponent(
 
 	case component.DataTypeMetrics:
 		capability := consumer.Capabilities{MutatesData: false}
-		consumers := make(map[component.PipelineID]consumer.Metrics, len(nexts))
+		consumers := make(map[pipeline.PipelineID]consumer.Metrics, len(nexts))
 		for _, next := range nexts {
 			consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Metrics)
 			capability.MutatesData = capability.MutatesData || next.Capabilities().MutatesData
@@ -310,7 +311,7 @@ func (n *connectorNode) buildComponent(
 		}
 	case component.DataTypeLogs:
 		capability := consumer.Capabilities{MutatesData: false}
-		consumers := make(map[component.PipelineID]consumer.Logs, len(nexts))
+		consumers := make(map[pipeline.PipelineID]consumer.Logs, len(nexts))
 		for _, next := range nexts {
 			consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Logs)
 			capability.MutatesData = capability.MutatesData || next.Capabilities().MutatesData
@@ -356,14 +357,14 @@ var _ consumerNode = (*capabilitiesNode)(nil)
 // The nodeID is derived from "pipeline ID".
 type capabilitiesNode struct {
 	nodeID
-	pipelineID component.PipelineID
+	pipelineID pipeline.PipelineID
 	baseConsumer
 	consumer.ConsumeTracesFunc
 	consumer.ConsumeMetricsFunc
 	consumer.ConsumeLogsFunc
 }
 
-func newCapabilitiesNode(pipelineID component.PipelineID) *capabilitiesNode {
+func newCapabilitiesNode(pipelineID pipeline.PipelineID) *capabilitiesNode {
 	return &capabilitiesNode{
 		nodeID:     newNodeID(capabilitiesSeed, pipelineID.String()),
 		pipelineID: pipelineID,
@@ -380,11 +381,11 @@ var _ consumerNode = (*fanOutNode)(nil)
 // Therefore, nodeID is derived from "pipeline ID".
 type fanOutNode struct {
 	nodeID
-	pipelineID component.PipelineID
+	pipelineID pipeline.PipelineID
 	baseConsumer
 }
 
-func newFanOutNode(pipelineID component.PipelineID) *fanOutNode {
+func newFanOutNode(pipelineID pipeline.PipelineID) *fanOutNode {
 	return &fanOutNode{
 		nodeID:     newNodeID(fanOutToExporters, pipelineID.String()),
 		pipelineID: pipelineID,

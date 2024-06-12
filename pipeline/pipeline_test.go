@@ -1,21 +1,23 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package component
+package pipeline
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"go.opentelemetry.io/collector/component"
 )
 
 func TestNewPipelineID(t *testing.T) {
-	id := NewPipelineID(DataTypeMetrics)
+	id := NewPipelineID(component.DataTypeMetrics)
 	assert.Equal(t, "", id.nameVal)
 }
 
 func TestPipelineIDMarshalText(t *testing.T) {
-	id := NewPipelineIDWithName(DataTypeMetrics, "name")
+	id := NewPipelineIDWithName(component.DataTypeMetrics, "name")
 	got, err := id.MarshalText()
 	assert.NoError(t, err)
 	assert.Equal(t, id.String(), string(got))
@@ -29,15 +31,15 @@ func TestPipelineIDUnmarshalText(t *testing.T) {
 	}{
 		{
 			idStr:      "metrics",
-			expectedID: PipelineID{typeVal: DataTypeMetrics, nameVal: ""},
+			expectedID: PipelineID{typeVal: component.DataTypeMetrics, nameVal: ""},
 		},
 		{
 			idStr:      "logs/valid_name",
-			expectedID: PipelineID{typeVal: DataTypeLogs, nameVal: "valid_name"},
+			expectedID: PipelineID{typeVal: component.DataTypeLogs, nameVal: "valid_name"},
 		},
 		{
 			idStr:      "   traces   /   valid_name  ",
-			expectedID: PipelineID{typeVal: DataTypeTraces, nameVal: "valid_name"},
+			expectedID: PipelineID{typeVal: component.DataTypeTraces, nameVal: "valid_name"},
 		},
 		{
 			idStr:       "/valid_name",

@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/testdata"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 type mutatingMetricsSink struct {
@@ -43,13 +44,13 @@ func TestMetricsRouterMultiplexing(t *testing.T) {
 
 func fuzzMetrics(numIDs, numCons, numMetrics int) func(*testing.T) {
 	return func(t *testing.T) {
-		allIDs := make([]component.PipelineID, 0, numCons)
+		allIDs := make([]pipeline.PipelineID, 0, numCons)
 		allCons := make([]consumer.Metrics, 0, numCons)
-		allConsMap := make(map[component.PipelineID]consumer.Metrics)
+		allConsMap := make(map[pipeline.PipelineID]consumer.Metrics)
 
 		// If any consumer is mutating, the router must report mutating
 		for i := 0; i < numCons; i++ {
-			allIDs = append(allIDs, component.NewPipelineIDWithName(component.DataTypeMetrics, strconv.Itoa(numCons)))
+			allIDs = append(allIDs, pipeline.NewPipelineIDWithName(component.DataTypeMetrics, strconv.Itoa(numCons)))
 			// Random chance for each consumer to be mutating
 			if (numCons+numMetrics+i)%4 == 0 {
 				allCons = append(allCons, &mutatingMetricsSink{MetricsSink: new(consumertest.MetricsSink)})
@@ -64,11 +65,11 @@ func fuzzMetrics(numIDs, numCons, numMetrics int) func(*testing.T) {
 
 		// Keep track of how many logs each consumer should receive.
 		// This will be validated after every call to RouteMetrics.
-		expected := make(map[component.PipelineID]int, numCons)
+		expected := make(map[pipeline.PipelineID]int, numCons)
 
 		for i := 0; i < numMetrics; i++ {
 			// Build a random set of ids (no duplicates)
-			randCons := make(map[component.PipelineID]bool, numIDs)
+			randCons := make(map[pipeline.PipelineID]bool, numIDs)
 			for j := 0; j < numIDs; j++ {
 				// This number should be pretty random and less than numCons
 				conNum := (numCons + numIDs + i + j) % numCons
@@ -76,7 +77,7 @@ func fuzzMetrics(numIDs, numCons, numMetrics int) func(*testing.T) {
 			}
 
 			// Convert to slice, update expectations
-			conIDs := make([]component.PipelineID, 0, len(randCons))
+			conIDs := make([]pipeline.PipelineID, 0, len(randCons))
 			for id := range randCons {
 				conIDs = append(conIDs, id)
 				expected[id]++
@@ -109,16 +110,16 @@ func TestMetricsRouterConsumers(t *testing.T) {
 	ctx := context.Background()
 	md := testdata.GenerateMetrics(1)
 
-	fooID := component.NewPipelineID(component.DataTypeMetrics)
-	barID := component.NewPipelineID(component.DataTypeTraces)
+	fooID := pipeline.NewPipelineID(component.DataTypeMetrics)
+	barID := pipeline.NewPipelineID(component.DataTypeTraces)
 
 	foo := new(consumertest.MetricsSink)
 	bar := new(consumertest.MetricsSink)
-	r := NewMetricsRouter(map[component.PipelineID]consumer.Metrics{fooID: foo, barID: bar})
+	r := NewMetricsRouter(map[pipeline.PipelineID]consumer.Metrics{fooID: foo, barID: bar})
 
 	rcs := r.PipelineIDs()
 	assert.Len(t, rcs, 2)
-	assert.ElementsMatch(t, []component.PipelineID{fooID, barID}, rcs)
+	assert.ElementsMatch(t, []pipeline.PipelineID{fooID, barID}, rcs)
 
 	assert.Len(t, foo.AllMetrics(), 0)
 	assert.Len(t, bar.AllMetrics(), 0)
@@ -151,7 +152,7 @@ func TestMetricsRouterConsumers(t *testing.T) {
 	assert.Nil(t, none)
 	assert.Error(t, err)
 
-	fake, err := r.Consumer(component.NewPipelineID(component.DataTypeLogs))
+	fake, err := r.Consumer(pipeline.NewPipelineID(component.DataTypeLogs))
 	assert.Nil(t, fake)
 	assert.Error(t, err)
 }

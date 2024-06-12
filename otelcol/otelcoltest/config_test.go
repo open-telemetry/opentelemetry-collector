@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service/pipelines"
 )
 
@@ -55,7 +56,7 @@ func TestLoadConfig(t *testing.T) {
 			Processors: []component.ID{component.MustNewID("nop")},
 			Exporters:  []component.ID{component.MustNewID("nop")},
 		},
-		cfg.Service.Pipelines[component.NewPipelineID(component.DataTypeTraces)],
+		cfg.Service.Pipelines[pipeline.NewPipelineID(component.DataTypeTraces)],
 		"Did not load pipeline config correctly")
 }
 
