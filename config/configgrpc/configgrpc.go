@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/mostynb/go-grpc-compression/nonclobbering/snappy"
+	"github.com/mostynb/go-grpc-compression/nonclobbering/zstd"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"google.golang.org/grpc"
@@ -27,7 +28,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
-	grpcInternal "go.opentelemetry.io/collector/config/configgrpc/internal"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -432,7 +432,7 @@ func getGRPCCompressionName(compressionType configcompression.Type) (string, err
 	case configcompression.TypeSnappy:
 		return snappy.Name, nil
 	case configcompression.TypeZstd:
-		return grpcInternal.ZstdName, nil
+		return zstd.Name, nil
 	default:
 		return "", fmt.Errorf("unsupported compression type %q", compressionType)
 	}

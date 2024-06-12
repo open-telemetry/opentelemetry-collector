@@ -1,0 +1,68 @@
+type: service
+
+status:
+  class: pkg
+  stability:
+    development: [traces, metrics, logs]
+  distributions: [core, contrib]
+
+tests:
+  goleak:
+    ignore:
+      top:
+        # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.
+        - "go.opencensus.io/stats/view.(*worker).start"
+        - "go.opentelemetry.io/collector/service/internal/proctelemetry.InitPrometheusServer.func1"
+
+telemetry:
+  metrics:
+    process_uptime:
+      enabled: true
+      description: Uptime of the process
+      unit: s
+      sum:
+        async: true
+        value_type: double
+        monotonic: true
+
+    process_runtime_heap_alloc_bytes:
+      enabled: true
+      description: Bytes of allocated heap objects (see 'go doc runtime.MemStats.HeapAlloc')
+      unit: By
+      gauge:
+        async: true
+        value_type: int
+
+    process_runtime_total_alloc_bytes:
+      enabled: true
+      description: Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')
+      unit: By
+      sum:
+        async: true
+        value_type: int
+        monotonic: true
+
+    process_runtime_total_sys_memory_bytes:
+      enabled: true
+      description: Total bytes of memory obtained from the OS (see 'go doc runtime.MemStats.Sys')
+      unit: By
+      gauge:
+        async: true
+        value_type: int
+
+    process_cpu_seconds:
+      enabled: true
+      description: Total CPU user and system time in seconds
+      unit: s
+      sum:
+        async: true
+        value_type: double
+        monotonic: true
+
+    process_memory_rss:
+      enabled: true
+      description: Total physical memory (resident set size)
+      unit: By
+      gauge:
+        async: true
+        value_type: int

@@ -60,13 +60,13 @@ type controller struct {
 	terminated  chan struct{}
 
 	obsrecv      *receiverhelper.ObsReport
-	recvSettings receiver.CreateSettings
+	recvSettings receiver.Settings
 }
 
 // NewScraperControllerReceiver creates a Receiver with the configured options, that can control multiple scrapers.
 func NewScraperControllerReceiver(
 	cfg *ControllerConfig,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	nextConsumer consumer.Metrics,
 	options ...ScraperControllerOption,
 ) (component.Component, error) {

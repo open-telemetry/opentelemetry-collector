@@ -51,12 +51,12 @@ func TestNoDataLoss(t *testing.T) {
 	cfg.MemoryLimitMiB = uint32(ms.Alloc/(1024*1024) + expectedMemoryIncreaseMiB)
 	cfg.MemorySpikeLimitMiB = 1
 
-	set := processortest.NewNopCreateSettings()
+	set := processortest.NewNopSettings()
 
 	limiter, err := newMemoryLimiterProcessor(set, cfg)
 	require.NoError(t, err)
 
-	processor, err := processorhelper.NewLogsProcessor(context.Background(), processor.CreateSettings{
+	processor, err := processorhelper.NewLogsProcessor(context.Background(), processor.Settings{
 		ID: component.MustNewID("nop"),
 	}, cfg, exporter,
 		limiter.processLogs,
@@ -200,11 +200,11 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 				ms.Alloc = tt.memAlloc + tt.ballastSize
 			}
 
-			ml, err := newMemoryLimiterProcessor(processortest.NewNopCreateSettings(), tt.mlCfg)
+			ml, err := newMemoryLimiterProcessor(processortest.NewNopSettings(), tt.mlCfg)
 			require.NoError(t, err)
 			mp, err := processorhelper.NewMetricsProcessor(
 				context.Background(),
-				processortest.NewNopCreateSettings(),
+				processortest.NewNopSettings(),
 				tt.mlCfg,
 				consumertest.NewNop(),
 				ml.processMetrics,
@@ -317,11 +317,11 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 				ms.Alloc = tt.memAlloc + tt.ballastSize
 			}
 
-			ml, err := newMemoryLimiterProcessor(processortest.NewNopCreateSettings(), tt.mlCfg)
+			ml, err := newMemoryLimiterProcessor(processortest.NewNopSettings(), tt.mlCfg)
 			require.NoError(t, err)
 			tp, err := processorhelper.NewTracesProcessor(
 				context.Background(),
-				processortest.NewNopCreateSettings(),
+				processortest.NewNopSettings(),
 				tt.mlCfg,
 				consumertest.NewNop(),
 				ml.processTraces,
@@ -434,11 +434,11 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 				ms.Alloc = tt.memAlloc + tt.ballastSize
 			}
 
-			ml, err := newMemoryLimiterProcessor(processortest.NewNopCreateSettings(), tt.mlCfg)
+			ml, err := newMemoryLimiterProcessor(processortest.NewNopSettings(), tt.mlCfg)
 			require.NoError(t, err)
 			tp, err := processorhelper.NewLogsProcessor(
 				context.Background(),
-				processortest.NewNopCreateSettings(),
+				processortest.NewNopSettings(),
 				tt.mlCfg,
 				consumertest.NewNop(),
 				ml.processLogs,
