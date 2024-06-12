@@ -7,7 +7,7 @@ change_type: enhancement
 component: component
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Changes DataType to be an enum of Otel signals.  Creates a new struct PipelineID - made up of a DataType and an optional string name.  This PipelineID replaces the previous use of component.ID to identify Pipelines."
+note: "Changes DataType to be an enum of Otel signals.  Creates a new module pipeline to centralize types related to pipelines.  Creates a new struct pipeline.ID - made up of a DataType and an optional string name.  This pipeline.ID replaces the previous use of component.ID to identify Pipelines.  Moves InstanceID to pipeline to break import cycles."
 
 # One or more tracking issues or pull requests related to the change
 issues: [9429]
