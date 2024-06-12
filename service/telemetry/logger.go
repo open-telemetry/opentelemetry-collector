@@ -101,6 +101,10 @@ func (w nopSyncSink) Sync() error {
 func setRotationURL(paths []string, rotationSchema string) ([]string, error) {
 	res := make([]string, 0, len(paths))
 	for _, p := range paths {
+		if p == "stdout" || p == "stderr" {
+			res = append(res, p)
+			continue
+		}
 		if runtime.GOOS == "windows" && filepath.IsAbs(p) {
 			res = append(res, rotationSchema+":?path="+url.QueryEscape(p))
 			continue
