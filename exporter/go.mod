@@ -50,7 +50,6 @@ require (
 	github.com/prometheus/procfs v0.15.0 // indirect
 	go.opentelemetry.io/collector/confmap v0.102.1 // indirect
 	go.opentelemetry.io/collector/pipeline v0.102.1 // indirect
-	go.opentelemetry.io/collector/service v0.102.1 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.49.0 // indirect
 	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/text v0.15.0 // indirect

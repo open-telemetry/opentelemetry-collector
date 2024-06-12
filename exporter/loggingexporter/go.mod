@@ -43,7 +43,6 @@ require (
 	go.opentelemetry.io/collector/extension v0.102.1 // indirect
 	go.opentelemetry.io/collector/pipeline v0.102.1 // indirect
 	go.opentelemetry.io/collector/receiver v0.102.1 // indirect
-	go.opentelemetry.io/collector/service v0.102.1 // indirect
 	go.opentelemetry.io/otel v1.27.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.49.0 // indirect
 	go.opentelemetry.io/otel/metric v1.27.0 // indirect
