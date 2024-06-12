@@ -27,8 +27,8 @@ var ExampleRouterFactory = connector.NewFactory(
 )
 
 type LeftRightConfig struct {
-	Left  pipeline.PipelineID `mapstructure:"left"`
-	Right pipeline.PipelineID `mapstructure:"right"`
+	Left  pipeline.ID `mapstructure:"left"`
+	Right pipeline.ID `mapstructure:"right"`
 }
 
 type ExampleRouterConfig struct {

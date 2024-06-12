@@ -18,7 +18,7 @@ var (
 )
 
 // Config defines the configurable settings for service telemetry.
-type Config map[pipeline.PipelineID]*PipelineConfig
+type Config map[pipeline.ID]*PipelineConfig
 
 func (cfg Config) Validate() error {
 	// Must have at least one pipeline.
@@ -77,5 +77,5 @@ func (cfg *PipelineConfig) Validate() error {
 type InstanceID struct {
 	ID          component.ID
 	Kind        component.Kind
-	PipelineIDs map[pipeline.PipelineID]struct{}
+	PipelineIDs map[pipeline.ID]struct{}
 }

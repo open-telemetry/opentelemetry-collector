@@ -84,7 +84,7 @@ func TestConfigValidate(t *testing.T) {
 }
 
 func generateConfig() Config {
-	return map[pipeline.PipelineID]*PipelineConfig{
+	return map[pipeline.ID]*PipelineConfig{
 		pipeline.NewPipelineID(component.DataTypeTraces): {
 			Receivers:  []component.ID{component.MustNewID("nop")},
 			Processors: []component.ID{component.MustNewID("nop")},

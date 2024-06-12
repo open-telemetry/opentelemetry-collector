@@ -42,7 +42,7 @@ func TestTracesRouter(t *testing.T) {
 	// Many connectors will just call router.ConsumeTraces,
 	// but some implementation will call RouteTraces instead.
 	router := connector.NewTracesRouter(
-		map[pipeline.PipelineID]consumer.Traces{
+		map[pipeline.ID]consumer.Traces{
 			leftID:  sinkLeft,
 			rightID: sinkRight,
 		})
@@ -81,7 +81,7 @@ func TestMetricsRouter(t *testing.T) {
 	// Many connectors will just call router.ConsumeMetrics,
 	// but some implementation will call RouteMetrics instead.
 	router := connector.NewMetricsRouter(
-		map[pipeline.PipelineID]consumer.Metrics{
+		map[pipeline.ID]consumer.Metrics{
 			leftID:  sinkLeft,
 			rightID: sinkRight,
 		})
@@ -120,7 +120,7 @@ func TestLogsRouter(t *testing.T) {
 	// Many connectors will just call router.ConsumeLogs,
 	// but some implementation will call RouteLogs instead.
 	router := connector.NewLogsRouter(
-		map[pipeline.PipelineID]consumer.Logs{
+		map[pipeline.ID]consumer.Logs{
 			leftID:  sinkLeft,
 			rightID: sinkRight,
 		})

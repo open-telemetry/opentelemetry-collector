@@ -12,8 +12,8 @@ import (
 // TracesRouterAndConsumer feeds the first consumer.Traces in each of the specified pipelines.
 type TracesRouterAndConsumer interface {
 	consumer.Traces
-	Consumer(...pipeline.PipelineID) (consumer.Traces, error)
-	PipelineIDs() []pipeline.PipelineID
+	Consumer(...pipeline.ID) (consumer.Traces, error)
+	PipelineIDs() []pipeline.ID
 	privateFunc()
 }
 
@@ -22,7 +22,7 @@ type tracesRouter struct {
 	baseRouter[consumer.Traces]
 }
 
-func NewTracesRouter(cm map[pipeline.PipelineID]consumer.Traces) TracesRouterAndConsumer {
+func NewTracesRouter(cm map[pipeline.ID]consumer.Traces) TracesRouterAndConsumer {
 	consumers := make([]consumer.Traces, 0, len(cm))
 	for _, cons := range cm {
 		consumers = append(consumers, cons)

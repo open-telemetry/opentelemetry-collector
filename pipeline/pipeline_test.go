@@ -27,19 +27,19 @@ func TestPipelineIDUnmarshalText(t *testing.T) {
 	var testCases = []struct {
 		idStr       string
 		expectedErr bool
-		expectedID  PipelineID
+		expectedID  ID
 	}{
 		{
 			idStr:      "metrics",
-			expectedID: PipelineID{typeVal: component.DataTypeMetrics, nameVal: ""},
+			expectedID: ID{typeVal: component.DataTypeMetrics, nameVal: ""},
 		},
 		{
 			idStr:      "logs/valid_name",
-			expectedID: PipelineID{typeVal: component.DataTypeLogs, nameVal: "valid_name"},
+			expectedID: ID{typeVal: component.DataTypeLogs, nameVal: "valid_name"},
 		},
 		{
 			idStr:      "   traces   /   valid_name  ",
-			expectedID: PipelineID{typeVal: component.DataTypeTraces, nameVal: "valid_name"},
+			expectedID: ID{typeVal: component.DataTypeTraces, nameVal: "valid_name"},
 		},
 		{
 			idStr:       "/valid_name",
@@ -65,7 +65,7 @@ func TestPipelineIDUnmarshalText(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.idStr, func(t *testing.T) {
-			id := PipelineID{}
+			id := ID{}
 			err := id.UnmarshalText([]byte(test.idStr))
 			if test.expectedErr {
 				assert.Error(t, err)

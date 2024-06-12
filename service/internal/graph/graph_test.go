@@ -771,7 +771,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 
 			assert.NoError(t, pg.StartAll(context.Background(), componenttest.NewNopHost()))
 
-			mutatingPipelines := make(map[pipeline.PipelineID]bool, len(test.pipelineConfigs))
+			mutatingPipelines := make(map[pipeline.ID]bool, len(test.pipelineConfigs))
 
 			// Check each pipeline individually, ensuring that all components are started
 			// and that they have observed no signals yet.
@@ -2390,7 +2390,7 @@ func (g *Graph) getReceivers() map[component.DataType]map[component.ID]component
 // However, within an individual pipeline, we expect:
 // - E instances of the connector as a receiver.
 // - R instances of the connector as an exporter.
-func expectedInstances(m pipelines.Config, pID pipeline.PipelineID) (int, int) {
+func expectedInstances(m pipelines.Config, pID pipeline.ID) (int, int) {
 	exConnectorType := component.MustNewType("exampleconnector")
 	var r, e int
 	for _, rID := range m[pID].Receivers {

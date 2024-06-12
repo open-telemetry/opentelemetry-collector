@@ -43,9 +43,9 @@ func TestLogsRouterMultiplexing(t *testing.T) {
 
 func fuzzLogs(numIDs, numCons, numLogs int) func(*testing.T) {
 	return func(t *testing.T) {
-		allIDs := make([]pipeline.PipelineID, 0, numCons)
+		allIDs := make([]pipeline.ID, 0, numCons)
 		allCons := make([]consumer.Logs, 0, numCons)
-		allConsMap := make(map[pipeline.PipelineID]consumer.Logs)
+		allConsMap := make(map[pipeline.ID]consumer.Logs)
 
 		// If any consumer is mutating, the router must report mutating
 		for i := 0; i < numCons; i++ {
@@ -64,11 +64,11 @@ func fuzzLogs(numIDs, numCons, numLogs int) func(*testing.T) {
 
 		// Keep track of how many logs each consumer should receive.
 		// This will be validated after every call to RouteLogs.
-		expected := make(map[pipeline.PipelineID]int, numCons)
+		expected := make(map[pipeline.ID]int, numCons)
 
 		for i := 0; i < numLogs; i++ {
 			// Build a random set of ids (no duplicates)
-			randCons := make(map[pipeline.PipelineID]bool, numIDs)
+			randCons := make(map[pipeline.ID]bool, numIDs)
 			for j := 0; j < numIDs; j++ {
 				// This number should be pretty random and less than numCons
 				conNum := (numCons + numIDs + i + j) % numCons
@@ -76,7 +76,7 @@ func fuzzLogs(numIDs, numCons, numLogs int) func(*testing.T) {
 			}
 
 			// Convert to slice, update expectations
-			conIDs := make([]pipeline.PipelineID, 0, len(randCons))
+			conIDs := make([]pipeline.ID, 0, len(randCons))
 			for id := range randCons {
 				conIDs = append(conIDs, id)
 				expected[id]++
@@ -114,11 +114,11 @@ func TestLogsRouterConsumers(t *testing.T) {
 
 	foo := new(consumertest.LogsSink)
 	bar := new(consumertest.LogsSink)
-	r := NewLogsRouter(map[pipeline.PipelineID]consumer.Logs{fooID: foo, barID: bar})
+	r := NewLogsRouter(map[pipeline.ID]consumer.Logs{fooID: foo, barID: bar})
 
 	rcs := r.PipelineIDs()
 	assert.Len(t, rcs, 2)
-	assert.ElementsMatch(t, []pipeline.PipelineID{fooID, barID}, rcs)
+	assert.ElementsMatch(t, []pipeline.ID{fooID, barID}, rcs)
 
 	assert.Len(t, foo.AllLogs(), 0)
 	assert.Len(t, bar.AllLogs(), 0)
