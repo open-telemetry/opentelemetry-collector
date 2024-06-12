@@ -18,7 +18,7 @@ import (
 // It allows retrieving a type of error code, converting
 // between the status codes supported by each transport if necessary.
 //
-// It should be created with NewHTTPStatus or NewGRPCStatus.
+// It should be created with NewHTTP or NewGRPC.
 type TransportError struct {
 	err        error
 	httpStatus *int
@@ -74,16 +74,16 @@ func (se TransportError) GRPCStatus() *status.Status {
 	return status.New(codes.Unknown, se.Error())
 }
 
-// NewHTTPError wraps an error with a given HTTP status code.
-func NewHTTPError(err error, code int) error {
+// NewHTTP wraps an error with a given HTTP status code.
+func NewHTTP(err error, code int) error {
 	return TransportError{
 		err:        err,
 		httpStatus: &code,
 	}
 }
 
-// NewGRPCError wraps an error with a given gRPC status code.
-func NewGRPCError(err error, status *status.Status) error {
+// NewGRPC wraps an error with a given gRPC status code.
+func NewGRPC(err error, status *status.Status) error {
 	return TransportError{
 		err:        err,
 		grpcStatus: status,

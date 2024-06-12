@@ -25,8 +25,8 @@ Errors can be created through one of the three constructors provided:
 
 - `consumererror.New[Signal]` for retryable errors.
 - `consumererror.NewPartial` for errors where only some of the items failed.
-- `consumererror.NewHTTPStatus` for errors resulting from an HTTP call with an error status code.
-- `consumererror.NewGRPCStatus` for errors resulting from a gRPC call with an error status code.
+- `consumererror.NewHTTP` for errors resulting from an HTTP call with an error status code.
+- `consumererror.NewGRPC` for errors resulting from a gRPC call with an error status code.
 
 Only retryable errors will be retried, all other errors are considered permanent
 and will not be retried.
@@ -96,7 +96,7 @@ errors.Join(
         traces,
         consumererror.WithRetryDelay(2 * time.Duration)
     ),
-    consumererror.NewHTTPStatus(error, http.StatusTooManyRequests)
+    consumererror.NewHTTP(error, http.StatusTooManyRequests)
 )
 ```
 

@@ -24,11 +24,11 @@ func TestIsPermanent(t *testing.T) {
 			permanent: true,
 		},
 		{
-			err:       NewHTTPError(errors.New("testError"), 500),
+			err:       NewHTTP(errors.New("testError"), 500),
 			permanent: true,
 		},
 		{
-			err:       NewGRPCError(errors.New("testError"), nil),
+			err:       NewGRPC(errors.New("testError"), nil),
 			permanent: true,
 		},
 		{

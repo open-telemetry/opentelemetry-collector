@@ -20,19 +20,19 @@ func TestTransportError_Error(t *testing.T) {
 		validate       func(t *testing.T, se TransportError)
 	}{
 		{
-			transportError: NewHTTPError(errors.New("httperror"), 400),
+			transportError: NewHTTP(errors.New("httperror"), 400),
 			validate: func(t *testing.T, se TransportError) {
 				require.Contains(t, se.Error(), "400")
 			},
 		},
 		{
-			transportError: NewGRPCError(errors.New("status"), status.New(codes.InvalidArgument, "")),
+			transportError: NewGRPC(errors.New("status"), status.New(codes.InvalidArgument, "")),
 			validate: func(t *testing.T, se TransportError) {
 				require.Contains(t, se.Error(), "InvalidArgument")
 			},
 		},
 		{
-			transportError: NewGRPCError(errors.New("nil"), nil),
+			transportError: NewGRPC(errors.New("nil"), nil),
 			validate: func(t *testing.T, se TransportError) {
 				require.NotNil(t, se.Error())
 			},
@@ -47,7 +47,7 @@ func TestTransportError_Error(t *testing.T) {
 
 func TestTransportError_Unwrap(t *testing.T) {
 	var err error = testErrorType{"some error"}
-	se := NewHTTPError(err, 400)
+	se := NewHTTP(err, 400)
 	joinedErr := errors.Join(errors.New("other error"), se)
 	target := testErrorType{}
 	require.NotEqual(t, err, target)
@@ -61,15 +61,15 @@ func TestTransportError_GRPCStatus(t *testing.T) {
 		code           codes.Code
 	}{
 		{
-			transportError: NewHTTPError(errors.New("httperror"), 429),
+			transportError: NewHTTP(errors.New("httperror"), 429),
 			code:           codes.ResourceExhausted,
 		},
 		{
-			transportError: NewGRPCError(errors.New("status"), status.New(codes.ResourceExhausted, "")),
+			transportError: NewGRPC(errors.New("status"), status.New(codes.ResourceExhausted, "")),
 			code:           codes.ResourceExhausted,
 		},
 		{
-			transportError: NewGRPCError(errors.New("nil"), nil),
+			transportError: NewGRPC(errors.New("nil"), nil),
 			code:           codes.Unknown,
 		},
 	}
@@ -88,17 +88,17 @@ func TestTransportError_HTTPStatus(t *testing.T) {
 		ok             bool
 	}{
 		{
-			transportError: NewHTTPError(errors.New("httperror"), http.StatusTooManyRequests),
+			transportError: NewHTTP(errors.New("httperror"), http.StatusTooManyRequests),
 			code:           http.StatusTooManyRequests,
 			ok:             true,
 		},
 		{
-			transportError: NewGRPCError(errors.New("status"), status.New(codes.ResourceExhausted, "")),
+			transportError: NewGRPC(errors.New("status"), status.New(codes.ResourceExhausted, "")),
 			code:           http.StatusTooManyRequests,
 			ok:             true,
 		},
 		{
-			transportError: NewGRPCError(errors.New("nil"), nil),
+			transportError: NewGRPC(errors.New("nil"), nil),
 			code:           http.StatusInternalServerError,
 		},
 	}
