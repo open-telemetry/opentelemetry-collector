@@ -9,10 +9,10 @@ import (
 	"os"
 	"regexp"
 
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/internal/envvar"
-
-	"go.uber.org/zap"
 )
 
 type converter struct {
