@@ -63,22 +63,4 @@ replace go.opentelemetry.io/collector/pdata => ../pdata
 
 replace go.opentelemetry.io/collector/pdata/testdata => ../pdata/testdata
 
-replace go.opentelemetry.io/collector/service => ../service
-
-replace go.opentelemetry.io/collector/receiver => ../receiver
-
-replace go.opentelemetry.io/collector/extension/zpagesextension => ../extension/zpagesextension
-
-replace go.opentelemetry.io/collector/semconv => ../semconv
-
-replace go.opentelemetry.io/collector/exporter => ../exporter
-
-replace go.opentelemetry.io/collector/processor => ../processor
-
-replace go.opentelemetry.io/collector/config/configretry => ../config/configretry
-
-replace go.opentelemetry.io/collector/config/confignet => ../config/confignet
-
-replace go.opentelemetry.io/collector/extension => ../extension
-
 replace go.opentelemetry.io/collector/pipeline => ../pipeline

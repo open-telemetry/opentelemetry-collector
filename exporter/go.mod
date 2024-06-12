@@ -82,16 +82,4 @@ replace go.opentelemetry.io/collector/config/configretry => ../config/configretr
 
 replace go.opentelemetry.io/collector/config/configtelemetry => ../config/configtelemetry
 
-replace go.opentelemetry.io/collector/service => ../service
-
-replace go.opentelemetry.io/collector/processor => ../processor
-
-replace go.opentelemetry.io/collector/extension/zpagesextension => ../extension/zpagesextension
-
-replace go.opentelemetry.io/collector/semconv => ../semconv
-
-replace go.opentelemetry.io/collector/connector => ../connector
-
-replace go.opentelemetry.io/collector/config/confignet => ../config/confignet
-
 replace go.opentelemetry.io/collector/pipeline => ../pipeline

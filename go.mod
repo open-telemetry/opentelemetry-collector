@@ -103,24 +103,4 @@ retract (
 	v0.32.0 // Contains incomplete metrics transition to proto 0.9.0, random components are not working.
 )
 
-replace go.opentelemetry.io/collector/extension/zpagesextension => ./extension/zpagesextension
-
-replace go.opentelemetry.io/collector/exporter => ./exporter
-
-replace go.opentelemetry.io/collector/receiver => ./receiver
-
-replace go.opentelemetry.io/collector/config/configretry => ./config/configretry
-
-replace go.opentelemetry.io/collector/connector => ./connector
-
-replace go.opentelemetry.io/collector/service => ./service
-
-replace go.opentelemetry.io/collector/semconv => ./semconv
-
-replace go.opentelemetry.io/collector/processor => ./processor
-
-replace go.opentelemetry.io/collector/extension => ./extension
-
-replace go.opentelemetry.io/collector/config/confignet => ./config/confignet
-
 replace go.opentelemetry.io/collector/pipeline => ./pipeline
