@@ -12,8 +12,8 @@ import (
 )
 
 type ID struct {
-	typeVal component.DataType `mapstructure:"-"`
-	nameVal string             `mapstructure:"-"`
+	typeVal component.DataType
+	nameVal string
 }
 
 // Type returns the type of the component.
