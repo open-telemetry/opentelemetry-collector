@@ -14,10 +14,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service/internal/components"
 	"go.opentelemetry.io/collector/service/internal/servicetelemetry"
 	"go.opentelemetry.io/collector/service/internal/zpages"
-	"go.opentelemetry.io/collector/service/pipelines"
 )
 
 const zExtensionName = "zextensionname"
@@ -26,7 +26,7 @@ const zExtensionName = "zextensionname"
 type Extensions struct {
 	telemetry    servicetelemetry.TelemetrySettings
 	extMap       map[component.ID]extension.Extension
-	instanceIDs  map[component.ID]*pipelines.InstanceID
+	instanceIDs  map[component.ID]*pipeline.InstanceID
 	extensionIDs []component.ID // start order (and reverse stop order)
 }
 
@@ -119,7 +119,7 @@ func (bes *Extensions) NotifyConfig(ctx context.Context, conf *confmap.Conf) err
 	return errs
 }
 
-func (bes *Extensions) NotifyComponentStatusChange(source *pipelines.InstanceID, event *component.StatusEvent) {
+func (bes *Extensions) NotifyComponentStatusChange(source *pipeline.InstanceID, event *component.StatusEvent) {
 	for _, extID := range bes.extensionIDs {
 		ext := bes.extMap[extID]
 		if sw, ok := ext.(extension.StatusWatcher); ok {
@@ -176,11 +176,11 @@ func New(ctx context.Context, set Settings, cfg Config) (*Extensions, error) {
 	exts := &Extensions{
 		telemetry:    set.Telemetry,
 		extMap:       make(map[component.ID]extension.Extension),
-		instanceIDs:  make(map[component.ID]*pipelines.InstanceID),
+		instanceIDs:  make(map[component.ID]*pipeline.InstanceID),
 		extensionIDs: make([]component.ID, 0, len(cfg)),
 	}
 	for _, extID := range cfg {
-		instanceID := &pipelines.InstanceID{
+		instanceID := &pipeline.InstanceID{
 			ID:   extID,
 			Kind: component.KindExtension,
 		}

@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/service/pipelines"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 func TestStatusFSM(t *testing.T) {
@@ -180,11 +180,11 @@ func TestValidSeqsToStopped(t *testing.T) {
 }
 
 func TestStatusFuncs(t *testing.T) {
-	id1 := &pipelines.InstanceID{}
-	id2 := &pipelines.InstanceID{}
+	id1 := &pipeline.InstanceID{}
+	id2 := &pipeline.InstanceID{}
 
-	actualStatuses := make(map[*pipelines.InstanceID][]component.Status)
-	statusFunc := func(id *pipelines.InstanceID, ev *component.StatusEvent) {
+	actualStatuses := make(map[*pipeline.InstanceID][]component.Status)
+	statusFunc := func(id *pipeline.InstanceID, ev *component.StatusEvent) {
 		actualStatuses[id] = append(actualStatuses[id], ev.Status())
 	}
 
@@ -204,7 +204,7 @@ func TestStatusFuncs(t *testing.T) {
 		component.StatusStopped,
 	}
 
-	expectedStatuses := map[*pipelines.InstanceID][]component.Status{
+	expectedStatuses := map[*pipeline.InstanceID][]component.Status{
 		id1: statuses1,
 		id2: statuses2,
 	}
@@ -229,9 +229,9 @@ func TestStatusFuncs(t *testing.T) {
 }
 
 func TestStatusFuncsConcurrent(t *testing.T) {
-	ids := []*pipelines.InstanceID{{}, {}, {}, {}}
+	ids := []*pipeline.InstanceID{{}, {}, {}, {}}
 	count := 0
-	statusFunc := func(*pipelines.InstanceID, *component.StatusEvent) {
+	statusFunc := func(*pipeline.InstanceID, *component.StatusEvent) {
 		count++
 	}
 	rep := NewReporter(statusFunc,
@@ -261,13 +261,13 @@ func TestStatusFuncsConcurrent(t *testing.T) {
 }
 
 func TestReporterReady(t *testing.T) {
-	statusFunc := func(*pipelines.InstanceID, *component.StatusEvent) {}
+	statusFunc := func(*pipeline.InstanceID, *component.StatusEvent) {}
 	var err error
 	rep := NewReporter(statusFunc,
 		func(e error) {
 			err = e
 		})
-	id := &pipelines.InstanceID{}
+	id := &pipeline.InstanceID{}
 
 	rep.ReportStatus(id, component.NewStatusEvent(component.StatusStarting))
 	require.ErrorIs(t, err, ErrStatusNotReady)
@@ -332,7 +332,7 @@ func TestReportComponentOKIfStarting(t *testing.T) {
 			var receivedStatuses []component.Status
 
 			rep := NewReporter(
-				func(_ *pipelines.InstanceID, ev *component.StatusEvent) {
+				func(_ *pipeline.InstanceID, ev *component.StatusEvent) {
 					receivedStatuses = append(receivedStatuses, ev.Status())
 				},
 				func(err error) {
@@ -341,7 +341,7 @@ func TestReportComponentOKIfStarting(t *testing.T) {
 			)
 			rep.Ready()
 
-			id := &pipelines.InstanceID{}
+			id := &pipeline.InstanceID{}
 			for _, status := range tc.initialStatuses {
 				rep.ReportStatus(id, component.NewStatusEvent(status))
 			}

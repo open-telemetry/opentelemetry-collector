@@ -11,8 +11,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service/internal/status"
-	"go.opentelemetry.io/collector/service/pipelines"
 )
 
 // NewNopTelemetrySettings returns a new nop settings for Create* functions.
@@ -23,6 +23,6 @@ func NewNopTelemetrySettings() TelemetrySettings {
 		MeterProvider:  noopmetric.NewMeterProvider(),
 		MetricsLevel:   configtelemetry.LevelNone,
 		Resource:       pcommon.NewResource(),
-		Status:         status.NewReporter(func(*pipelines.InstanceID, *component.StatusEvent) {}, func(error) {}),
+		Status:         status.NewReporter(func(*pipeline.InstanceID, *component.StatusEvent) {}, func(error) {}),
 	}
 }

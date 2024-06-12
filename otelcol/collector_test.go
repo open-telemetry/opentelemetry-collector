@@ -19,8 +19,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension/extensiontest"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor/processortest"
-	"go.opentelemetry.io/collector/service/pipelines"
 )
 
 func TestStateString(t *testing.T) {
@@ -143,9 +143,9 @@ func TestComponentStatusWatcher(t *testing.T) {
 	factories.Processors[unhealthyProcessorFactory.Type()] = unhealthyProcessorFactory
 
 	// Keep track of all status changes in a map.
-	changedComponents := map[*pipelines.InstanceID][]component.Status{}
+	changedComponents := map[*pipeline.InstanceID][]component.Status{}
 	var mux sync.Mutex
-	onStatusChanged := func(source *pipelines.InstanceID, event *component.StatusEvent) {
+	onStatusChanged := func(source *pipeline.InstanceID, event *component.StatusEvent) {
 		if source.ID.Type() != unhealthyProcessorFactory.Type() {
 			return
 		}

@@ -146,12 +146,12 @@ func TestGraphStartStop(t *testing.T) {
 
 			pg := &Graph{componentGraph: simple.NewDirectedGraph()}
 			pg.telemetry = servicetelemetry.NewNopTelemetrySettings()
-			pg.instanceIDs = make(map[int64]*pipelines.InstanceID)
+			pg.instanceIDs = make(map[int64]*pipeline.InstanceID)
 
 			for _, edge := range tt.edges {
 				f, t := &testNode{id: edge[0]}, &testNode{id: edge[1]}
-				pg.instanceIDs[f.ID()] = &pipelines.InstanceID{}
-				pg.instanceIDs[t.ID()] = &pipelines.InstanceID{}
+				pg.instanceIDs[f.ID()] = &pipeline.InstanceID{}
+				pg.instanceIDs[t.ID()] = &pipeline.InstanceID{}
 				pg.componentGraph.SetEdge(simple.Edge{F: f, T: t})
 			}
 
@@ -177,7 +177,7 @@ func TestGraphStartStopCycle(t *testing.T) {
 	c1 := &testNode{id: component.MustNewIDWithName("c", "1")}
 	e1 := &testNode{id: component.MustNewIDWithName("e", "1")}
 
-	pg.instanceIDs = map[int64]*pipelines.InstanceID{
+	pg.instanceIDs = map[int64]*pipeline.InstanceID{
 		r1.ID(): {},
 		p1.ID(): {},
 		c1.ID(): {},
@@ -209,7 +209,7 @@ func TestGraphStartStopComponentError(t *testing.T) {
 		id:          component.MustNewIDWithName("e", "1"),
 		shutdownErr: errors.New("bar"),
 	}
-	pg.instanceIDs = map[int64]*pipelines.InstanceID{
+	pg.instanceIDs = map[int64]*pipeline.InstanceID{
 		r1.ID(): {},
 		e1.ID(): {},
 	}
@@ -2214,7 +2214,7 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 	eStErr := &testNode{id: component.MustNewIDWithName("e_st_err", "1"), startErr: assert.AnError}
 	eSdErr := &testNode{id: component.MustNewIDWithName("e_sd_err", "1"), shutdownErr: assert.AnError}
 
-	instanceIDs := map[*testNode]*pipelines.InstanceID{
+	instanceIDs := map[*testNode]*pipeline.InstanceID{
 		rNoErr: {ID: rNoErr.id},
 		rStErr: {ID: rStErr.id},
 		rSdErr: {ID: rSdErr.id},
@@ -2224,7 +2224,7 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 	}
 
 	// compare two maps of status events ignoring timestamp
-	assertEqualStatuses := func(t *testing.T, evMap1, evMap2 map[*pipelines.InstanceID][]*component.StatusEvent) {
+	assertEqualStatuses := func(t *testing.T, evMap1, evMap2 map[*pipeline.InstanceID][]*component.StatusEvent) {
 		assert.Equal(t, len(evMap1), len(evMap2))
 		for id, evts1 := range evMap1 {
 			evts2 := evMap2[id]
@@ -2242,14 +2242,14 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 	for _, tc := range []struct {
 		name             string
 		edge             [2]*testNode
-		expectedStatuses map[*pipelines.InstanceID][]*component.StatusEvent
+		expectedStatuses map[*pipeline.InstanceID][]*component.StatusEvent
 		startupErr       error
 		shutdownErr      error
 	}{
 		{
 			name: "successful startup/shutdown",
 			edge: [2]*testNode{rNoErr, eNoErr},
-			expectedStatuses: map[*pipelines.InstanceID][]*component.StatusEvent{
+			expectedStatuses: map[*pipeline.InstanceID][]*component.StatusEvent{
 				instanceIDs[rNoErr]: {
 					component.NewStatusEvent(component.StatusStarting),
 					component.NewStatusEvent(component.StatusOK),
@@ -2267,7 +2267,7 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 		{
 			name: "early startup error",
 			edge: [2]*testNode{rNoErr, eStErr},
-			expectedStatuses: map[*pipelines.InstanceID][]*component.StatusEvent{
+			expectedStatuses: map[*pipeline.InstanceID][]*component.StatusEvent{
 				instanceIDs[eStErr]: {
 					component.NewStatusEvent(component.StatusStarting),
 					component.NewPermanentErrorEvent(assert.AnError),
@@ -2278,7 +2278,7 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 		{
 			name: "late startup error",
 			edge: [2]*testNode{rStErr, eNoErr},
-			expectedStatuses: map[*pipelines.InstanceID][]*component.StatusEvent{
+			expectedStatuses: map[*pipeline.InstanceID][]*component.StatusEvent{
 				instanceIDs[rStErr]: {
 					component.NewStatusEvent(component.StatusStarting),
 					component.NewPermanentErrorEvent(assert.AnError),
@@ -2295,7 +2295,7 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 		{
 			name: "early shutdown error",
 			edge: [2]*testNode{rSdErr, eNoErr},
-			expectedStatuses: map[*pipelines.InstanceID][]*component.StatusEvent{
+			expectedStatuses: map[*pipeline.InstanceID][]*component.StatusEvent{
 				instanceIDs[rSdErr]: {
 					component.NewStatusEvent(component.StatusStarting),
 					component.NewStatusEvent(component.StatusOK),
@@ -2314,7 +2314,7 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 		{
 			name: "late shutdown error",
 			edge: [2]*testNode{rNoErr, eSdErr},
-			expectedStatuses: map[*pipelines.InstanceID][]*component.StatusEvent{
+			expectedStatuses: map[*pipeline.InstanceID][]*component.StatusEvent{
 				instanceIDs[rNoErr]: {
 					component.NewStatusEvent(component.StatusStarting),
 					component.NewStatusEvent(component.StatusOK),
@@ -2335,8 +2335,8 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 			pg := &Graph{componentGraph: simple.NewDirectedGraph()}
 			pg.telemetry = servicetelemetry.NewNopTelemetrySettings()
 
-			actualStatuses := make(map[*pipelines.InstanceID][]*component.StatusEvent)
-			rep := status.NewReporter(func(id *pipelines.InstanceID, ev *component.StatusEvent) {
+			actualStatuses := make(map[*pipeline.InstanceID][]*component.StatusEvent)
+			rep := status.NewReporter(func(id *pipeline.InstanceID, ev *component.StatusEvent) {
 				actualStatuses[id] = append(actualStatuses[id], ev)
 			}, func(error) {
 			})
@@ -2345,7 +2345,7 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 			rep.Ready()
 
 			e0, e1 := tc.edge[0], tc.edge[1]
-			pg.instanceIDs = map[int64]*pipelines.InstanceID{
+			pg.instanceIDs = map[int64]*pipeline.InstanceID{
 				e0.ID(): instanceIDs[e0],
 				e1.ID(): instanceIDs[e1],
 			}

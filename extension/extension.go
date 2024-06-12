@@ -9,7 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/service/pipelines"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 // Extension is the interface for objects hosted by the OpenTelemetry Collector that
@@ -60,7 +60,7 @@ type StatusWatcher interface {
 	// Extensions that implement this interface must be ready that the ComponentStatusChanged
 	// may be called before, after or concurrently with calls to Component.Start() and Component.Shutdown().
 	// The function may be called concurrently with itself.
-	ComponentStatusChanged(source *pipelines.InstanceID, event *component.StatusEvent)
+	ComponentStatusChanged(source *pipeline.InstanceID, event *component.StatusEvent)
 }
 
 // CreateSettings is passed to Factory.Create(...) function.

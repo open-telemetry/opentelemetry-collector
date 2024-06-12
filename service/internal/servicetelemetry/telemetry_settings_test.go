@@ -14,8 +14,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service/internal/status"
-	"go.opentelemetry.io/collector/service/pipelines"
 )
 
 func TestSettings(t *testing.T) {
@@ -26,16 +26,16 @@ func TestSettings(t *testing.T) {
 		MetricsLevel:   configtelemetry.LevelNone,
 		Resource:       pcommon.NewResource(),
 		Status: status.NewReporter(
-			func(*pipelines.InstanceID, *component.StatusEvent) {},
+			func(*pipeline.InstanceID, *component.StatusEvent) {},
 			func(err error) { require.NoError(t, err) }),
 	}
 	set.Status.Ready()
 	set.Status.ReportStatus(
-		&pipelines.InstanceID{},
+		&pipeline.InstanceID{},
 		component.NewStatusEvent(component.StatusStarting),
 	)
-	set.Status.ReportOKIfStarting(&pipelines.InstanceID{})
+	set.Status.ReportOKIfStarting(&pipeline.InstanceID{})
 
-	compSet := set.ToComponentTelemetrySettings(&pipelines.InstanceID{})
+	compSet := set.ToComponentTelemetrySettings(&pipeline.InstanceID{})
 	compSet.ReportStatus(component.NewStatusEvent(component.StatusStarting))
 }

@@ -8,11 +8,11 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/graph"
-	"go.opentelemetry.io/collector/service/pipelines"
 )
 
 // TODO: remove as part of https://github.com/open-telemetry/opentelemetry-collector/issues/7370 for service 1.0
@@ -67,7 +67,7 @@ func (host *serviceHost) GetExporters() map[component.DataType]map[component.ID]
 	return host.pipelines.GetExporters()
 }
 
-func (host *serviceHost) notifyComponentStatusChange(source *pipelines.InstanceID, event *component.StatusEvent) {
+func (host *serviceHost) notifyComponentStatusChange(source *pipeline.InstanceID, event *component.StatusEvent) {
 	host.serviceExtensions.NotifyComponentStatusChange(source, event)
 	if event.Status() == component.StatusFatalError {
 		host.asyncErrorChannel <- event.Err()

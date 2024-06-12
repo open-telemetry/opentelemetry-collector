@@ -13,9 +13,9 @@ import (
 	"github.com/shirou/gopsutil/v3/common"
 	"github.com/shirou/gopsutil/v3/process"
 
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service/internal/metadata"
 	"go.opentelemetry.io/collector/service/internal/servicetelemetry"
-	"go.opentelemetry.io/collector/service/pipelines"
 )
 
 // processMetrics is a struct that contains views related to process metrics (cpu, mem, etc)
@@ -76,7 +76,7 @@ func RegisterProcessMetrics(cfg servicetelemetry.TelemetrySettings, ballastSizeB
 		return err
 	}
 
-	_, err = metadata.NewTelemetryBuilder(cfg.ToComponentTelemetrySettings(&pipelines.InstanceID{}),
+	_, err = metadata.NewTelemetryBuilder(cfg.ToComponentTelemetrySettings(&pipeline.InstanceID{}),
 		metadata.WithProcessUptimeCallback(pm.updateProcessUptime),
 		metadata.WithProcessRuntimeHeapAllocBytesCallback(pm.updateAllocMem),
 		metadata.WithProcessRuntimeTotalAllocBytesCallback(pm.updateTotalAllocMem),

@@ -58,7 +58,7 @@ type Graph struct {
 	pipelines map[pipeline.ID]*pipelineNodes
 
 	// Keep track of status source per node
-	instanceIDs map[int64]*pipelines.InstanceID
+	instanceIDs map[int64]*pipeline.InstanceID
 
 	telemetry servicetelemetry.TelemetrySettings
 }
@@ -69,7 +69,7 @@ func Build(ctx context.Context, set Settings) (*Graph, error) {
 	pipelines := &Graph{
 		componentGraph: simple.NewDirectedGraph(),
 		pipelines:      make(map[pipeline.ID]*pipelineNodes, len(set.PipelineConfigs)),
-		instanceIDs:    make(map[int64]*pipelines.InstanceID),
+		instanceIDs:    make(map[int64]*pipeline.InstanceID),
 		telemetry:      set.Telemetry,
 	}
 	for pipelineID := range set.PipelineConfigs {
@@ -198,7 +198,7 @@ func (g *Graph) createReceiver(pipelineID pipeline.ID, recvID component.ID) *rec
 		return node.(*receiverNode)
 	}
 	g.componentGraph.AddNode(rcvrNode)
-	g.instanceIDs[rcvrNode.ID()] = &pipelines.InstanceID{
+	g.instanceIDs[rcvrNode.ID()] = &pipeline.InstanceID{
 		ID:   recvID,
 		Kind: component.KindReceiver,
 		PipelineIDs: map[pipeline.ID]struct{}{
@@ -211,7 +211,7 @@ func (g *Graph) createReceiver(pipelineID pipeline.ID, recvID component.ID) *rec
 func (g *Graph) createProcessor(pipelineID pipeline.ID, procID component.ID) *processorNode {
 	procNode := newProcessorNode(pipelineID, procID)
 	g.componentGraph.AddNode(procNode)
-	g.instanceIDs[procNode.ID()] = &pipelines.InstanceID{
+	g.instanceIDs[procNode.ID()] = &pipeline.InstanceID{
 		ID:   procID,
 		Kind: component.KindProcessor,
 		PipelineIDs: map[pipeline.ID]struct{}{
@@ -228,7 +228,7 @@ func (g *Graph) createExporter(pipelineID pipeline.ID, exprID component.ID) *exp
 		return node.(*exporterNode)
 	}
 	g.componentGraph.AddNode(expNode)
-	g.instanceIDs[expNode.ID()] = &pipelines.InstanceID{
+	g.instanceIDs[expNode.ID()] = &pipeline.InstanceID{
 		ID:   expNode.componentID,
 		Kind: component.KindExporter,
 		PipelineIDs: map[pipeline.ID]struct{}{
@@ -247,7 +247,7 @@ func (g *Graph) createConnector(exprPipelineID, rcvrPipelineID pipeline.ID, conn
 		return node.(*connectorNode)
 	}
 	g.componentGraph.AddNode(connNode)
-	g.instanceIDs[connNode.ID()] = &pipelines.InstanceID{
+	g.instanceIDs[connNode.ID()] = &pipeline.InstanceID{
 		ID:   connNode.componentID,
 		Kind: component.KindConnector,
 		PipelineIDs: map[pipeline.ID]struct{}{
