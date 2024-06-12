@@ -66,10 +66,11 @@ func (id *PipelineID) UnmarshalText(text []byte) error {
 	}
 
 	var err error
-
-	if id.typeVal, err = newDataType(typeStr); err != nil {
+	var dt DataType
+	if err = dt.UnmarshalText([]byte(typeStr)); err != nil {
 		return fmt.Errorf("in %q id: %w", idStr, err)
 	}
+	id.typeVal = dt
 	id.nameVal = nameStr
 
 	return nil

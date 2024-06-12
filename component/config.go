@@ -172,18 +172,22 @@ func (dt DataType) MarshalText() (text []byte, err error) {
 	return []byte(dt), nil
 }
 
-func newDataType(ty string) (DataType, error) {
-	if len(ty) == 0 {
-		return "", errors.New("id must not be empty")
+func (dt *DataType) UnmarshalText(text []byte) error {
+	if len(text) == 0 {
+		return errors.New("id must not be empty")
 	}
-	switch ty {
+	strText := string(text)
+	switch strText {
 	case "metrics":
-		return DataTypeMetrics, nil
+		*dt = DataTypeMetrics
+		return nil
 	case "logs":
-		return DataTypeLogs, nil
+		*dt = DataTypeLogs
+		return nil
 	case "traces":
-		return DataTypeTraces, nil
+		*dt = DataTypeTraces
+		return nil
 	default:
-		return "", fmt.Errorf("invalid data type %s", ty)
+		return fmt.Errorf("invalid data type %s", strText)
 	}
 }

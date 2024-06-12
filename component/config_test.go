@@ -422,14 +422,16 @@ func TestNewType(t *testing.T) {
 }
 
 func TestNewDataType(t *testing.T) {
-	ty, err := newDataType("logs")
+	var dt DataType
+	err := dt.UnmarshalText([]byte("logs"))
 	require.NoError(t, err)
-	assert.Equal(t, ty, DataTypeLogs)
+	assert.Equal(t, DataTypeLogs, dt)
 
+	var dt2 DataType
 	// hopefully this reminds us to update DataType when profiles get included
-	ty, err = newDataType("profiles")
-	assert.Equal(t, DataType(""), ty)
-	assert.Equal(t, err, errors.New("invalid data type profiles"))
+	err = dt2.UnmarshalText([]byte("profiles"))
+	assert.Equal(t, DataType(""), dt2)
+	assert.Equal(t, errors.New("invalid data type profiles"), err)
 }
 
 func TestDataTypeStringMarshal(t *testing.T) {
@@ -440,16 +442,19 @@ func TestDataTypeStringMarshal(t *testing.T) {
 }
 
 func TestDataTypeFromSignal(t *testing.T) {
-	dt, err := newDataType("metrics")
+	var dt DataType
+	err := dt.UnmarshalText([]byte("metrics"))
 	assert.Nil(t, err)
 	assert.Equal(t, DataTypeMetrics, dt)
 
-	dt, err = newDataType("traces")
-	assert.Equal(t, DataTypeTraces, dt)
+	var dt2 DataType
+	err = dt2.UnmarshalText([]byte("traces"))
+	assert.Equal(t, DataTypeTraces, dt2)
 	assert.Nil(t, err)
 
-	dt, err = newDataType("")
+	var dt3 DataType
+	err = dt3.UnmarshalText([]byte(""))
 	assert.Equal(t, errors.New("id must not be empty"), err)
-	assert.Equal(t, DataType(""), dt)
+	assert.Equal(t, DataType(""), dt3)
 
 }
