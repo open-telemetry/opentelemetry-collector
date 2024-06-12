@@ -115,8 +115,7 @@ func NewResolver(set ResolverSettings) (*Resolver, error) {
 
 	converters := make([]Converter, len(set.ConverterFactories))
 	for i, factory := range set.ConverterFactories {
-		f := factory.Create(set.ConverterSettings)
-		converters[i] = f
+		converters[i] = factory.Create(set.ConverterSettings)
 	}
 
 	// Safe copy, ensures the slices and maps cannot be changed from the caller.
