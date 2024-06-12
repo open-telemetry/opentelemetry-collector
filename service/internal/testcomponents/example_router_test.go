@@ -32,8 +32,8 @@ func TestExampleRouter(t *testing.T) {
 }
 
 func TestTracesRouter(t *testing.T) {
-	leftID := pipeline.NewPipelineIDWithName(component.DataTypeTraces, "left")
-	rightID := pipeline.NewPipelineIDWithName(component.DataTypeTraces, "right")
+	leftID := pipeline.NewIDWithName(component.DataTypeTraces, "left")
+	rightID := pipeline.NewIDWithName(component.DataTypeTraces, "right")
 
 	sinkLeft := new(consumertest.TracesSink)
 	sinkRight := new(consumertest.TracesSink)
@@ -71,8 +71,8 @@ func TestTracesRouter(t *testing.T) {
 }
 
 func TestMetricsRouter(t *testing.T) {
-	leftID := pipeline.NewPipelineIDWithName(component.DataTypeMetrics, "left")
-	rightID := pipeline.NewPipelineIDWithName(component.DataTypeMetrics, "right")
+	leftID := pipeline.NewIDWithName(component.DataTypeMetrics, "left")
+	rightID := pipeline.NewIDWithName(component.DataTypeMetrics, "right")
 
 	sinkLeft := new(consumertest.MetricsSink)
 	sinkRight := new(consumertest.MetricsSink)
@@ -110,8 +110,8 @@ func TestMetricsRouter(t *testing.T) {
 }
 
 func TestLogsRouter(t *testing.T) {
-	leftID := pipeline.NewPipelineIDWithName(component.DataTypeLogs, "left")
-	rightID := pipeline.NewPipelineIDWithName(component.DataTypeLogs, "right")
+	leftID := pipeline.NewIDWithName(component.DataTypeLogs, "left")
+	rightID := pipeline.NewIDWithName(component.DataTypeLogs, "right")
 
 	sinkLeft := new(consumertest.LogsSink)
 	sinkRight := new(consumertest.LogsSink)

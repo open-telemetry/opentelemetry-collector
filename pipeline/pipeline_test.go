@@ -12,12 +12,12 @@ import (
 )
 
 func TestNewPipelineID(t *testing.T) {
-	id := NewPipelineID(component.DataTypeMetrics)
+	id := NewID(component.DataTypeMetrics)
 	assert.Equal(t, "", id.nameVal)
 }
 
 func TestPipelineIDMarshalText(t *testing.T) {
-	id := NewPipelineIDWithName(component.DataTypeMetrics, "name")
+	id := NewIDWithName(component.DataTypeMetrics, "name")
 	got, err := id.MarshalText()
 	assert.NoError(t, err)
 	assert.Equal(t, id.String(), string(got))

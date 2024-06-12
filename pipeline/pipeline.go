@@ -26,13 +26,13 @@ func (id ID) Name() string {
 	return id.nameVal
 }
 
-// NewPipelineID returns a new ID with the given DataType and empty name.
-func NewPipelineID(typeVal component.DataType) ID {
+// NewID returns a new ID with the given DataType and empty name.
+func NewID(typeVal component.DataType) ID {
 	return ID{typeVal: typeVal}
 }
 
-// NewPipelineIDWithName returns a new ID with the given DataType and name.
-func NewPipelineIDWithName(typeVal component.DataType, nameVal string) ID {
+// NewIDWithName returns a new ID with the given DataType and name.
+func NewIDWithName(typeVal component.DataType, nameVal string) ID {
 	return ID{typeVal: typeVal, nameVal: nameVal}
 }
 
