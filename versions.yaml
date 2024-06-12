@@ -16,6 +16,7 @@ module-sets:
       - go.opentelemetry.io/collector/cmd/builder
       - go.opentelemetry.io/collector/cmd/mdatagen
       - go.opentelemetry.io/collector/component
+      - go.opentelemetry.io/collector/componentexperimental
       - go.opentelemetry.io/collector/confmap
       - go.opentelemetry.io/collector/confmap/converter/expandconverter
       - go.opentelemetry.io/collector/confmap/provider/envprovider
@@ -32,9 +33,12 @@ module-sets:
       - go.opentelemetry.io/collector/config/configtls
       - go.opentelemetry.io/collector/config/internal
       - go.opentelemetry.io/collector/connector
+      - go.opentelemetry.io/collector/connectorexperimental
       - go.opentelemetry.io/collector/connector/forwardconnector
       - go.opentelemetry.io/collector/consumer
+      - go.opentelemetry.io/collector/consumerexperimental
       - go.opentelemetry.io/collector/exporter
+      - go.opentelemetry.io/collector/exporterexperimental
       - go.opentelemetry.io/collector/exporter/debugexporter
       - go.opentelemetry.io/collector/exporter/loggingexporter
       - go.opentelemetry.io/collector/exporter/nopexporter
@@ -49,9 +53,11 @@ module-sets:
       - go.opentelemetry.io/collector/pdata/pprofile
       - go.opentelemetry.io/collector/pdata/testdata
       - go.opentelemetry.io/collector/processor
+      - go.opentelemetry.io/collector/processorexperimental
       - go.opentelemetry.io/collector/processor/batchprocessor
       - go.opentelemetry.io/collector/processor/memorylimiterprocessor
       - go.opentelemetry.io/collector/receiver
+      - go.opentelemetry.io/collector/receiverexperimental
       - go.opentelemetry.io/collector/receiver/nopreceiver
       - go.opentelemetry.io/collector/receiver/otlpreceiver
       - go.opentelemetry.io/collector/semconv
