@@ -101,3 +101,5 @@ replace go.opentelemetry.io/collector/extension => ../../extension
 replace go.opentelemetry.io/collector/connector => ../../connector
 
 replace go.opentelemetry.io/collector/config/configretry => ../../config/configretry
+
+replace go.opentelemetry.io/collector/pipeline => ../../pipeline

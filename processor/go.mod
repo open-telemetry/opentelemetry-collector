@@ -79,3 +79,5 @@ replace go.opentelemetry.io/collector/connector => ../connector
 replace go.opentelemetry.io/collector/exporter => ../exporter
 
 replace go.opentelemetry.io/collector/service => ../service
+
+replace go.opentelemetry.io/collector/pipeline => ../pipeline

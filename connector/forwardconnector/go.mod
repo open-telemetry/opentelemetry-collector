@@ -9,6 +9,7 @@ require (
 	go.opentelemetry.io/collector/connector v0.102.1
 	go.opentelemetry.io/collector/consumer v0.102.1
 	go.opentelemetry.io/collector/pdata v1.9.0
+	go.opentelemetry.io/collector/pipeline v0.102.1
 	go.uber.org/goleak v1.3.0
 )
 
@@ -93,3 +94,5 @@ replace go.opentelemetry.io/collector/extension => ../../extension
 replace go.opentelemetry.io/collector/exporter => ../../exporter
 
 replace go.opentelemetry.io/collector/config/configretry => ../../config/configretry
+
+replace go.opentelemetry.io/collector/pipeline => ../../pipeline

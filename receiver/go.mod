@@ -80,3 +80,5 @@ replace go.opentelemetry.io/collector/exporter => ../exporter
 replace go.opentelemetry.io/collector/processor => ../processor
 
 replace go.opentelemetry.io/collector/connector => ../connector
+
+replace go.opentelemetry.io/collector/pipeline => ../pipeline

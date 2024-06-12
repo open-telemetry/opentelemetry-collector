@@ -52,6 +52,7 @@ require (
 	go.opentelemetry.io/collector/confmap v0.102.1 // indirect
 	go.opentelemetry.io/collector/extension v0.102.1 // indirect
 	go.opentelemetry.io/collector/featuregate v1.9.0 // indirect
+	go.opentelemetry.io/collector/pipeline v0.102.1 // indirect
 	go.opentelemetry.io/collector/service v0.102.1 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.49.0 // indirect
 	go.opentelemetry.io/otel/metric v1.27.0 // indirect
@@ -114,3 +115,5 @@ replace go.opentelemetry.io/collector/connector => ../../connector
 replace go.opentelemetry.io/collector/semconv => ../../semconv
 
 replace go.opentelemetry.io/collector/processor => ../../processor
+
+replace go.opentelemetry.io/collector/pipeline => ../../pipeline

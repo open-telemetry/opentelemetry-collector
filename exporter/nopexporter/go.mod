@@ -88,3 +88,5 @@ replace go.opentelemetry.io/collector/extension/zpagesextension => ../../extensi
 replace go.opentelemetry.io/collector/semconv => ../../semconv
 
 replace go.opentelemetry.io/collector/processor => ../../processor
+
+replace go.opentelemetry.io/collector/pipeline => ../../pipeline

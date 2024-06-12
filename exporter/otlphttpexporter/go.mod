@@ -58,6 +58,7 @@ require (
 	go.opentelemetry.io/collector/extension v0.102.1 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.102.1 // indirect
 	go.opentelemetry.io/collector/featuregate v1.9.0 // indirect
+	go.opentelemetry.io/collector/pipeline v0.102.1 // indirect
 	go.opentelemetry.io/collector/receiver v0.102.1 // indirect
 	go.opentelemetry.io/collector/service v0.102.1 // indirect
 	go.opentelemetry.io/contrib/config v0.7.0 // indirect
@@ -138,3 +139,5 @@ replace go.opentelemetry.io/collector/extension/zpagesextension => ../../extensi
 replace go.opentelemetry.io/collector/config/confignet => ../../config/confignet
 
 replace go.opentelemetry.io/collector/processor => ../../processor
+
+replace go.opentelemetry.io/collector/pipeline => ../../pipeline

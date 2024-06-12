@@ -18,6 +18,7 @@ require (
 	go.opentelemetry.io/collector/exporter v0.102.1
 	go.opentelemetry.io/collector/extension v0.102.1
 	go.opentelemetry.io/collector/featuregate v1.9.0
+	go.opentelemetry.io/collector/pipeline v0.102.1
 	go.opentelemetry.io/collector/processor v0.102.1
 	go.opentelemetry.io/collector/receiver v0.102.1
 	go.opentelemetry.io/collector/service v0.102.1
@@ -144,3 +145,5 @@ replace go.opentelemetry.io/collector/featuregate => ../featuregate
 replace go.opentelemetry.io/collector/config/confignet => ../config/confignet
 
 replace go.opentelemetry.io/collector/config/configretry => ../config/configretry
+
+replace go.opentelemetry.io/collector/pipeline => ../pipeline

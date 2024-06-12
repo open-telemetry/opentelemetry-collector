@@ -53,3 +53,5 @@ replace go.opentelemetry.io/collector/config/confignet => ../confignet
 replace go.opentelemetry.io/collector/config/configretry => ../configretry
 
 replace go.opentelemetry.io/collector/connector => ../../connector
+
+replace go.opentelemetry.io/collector/pipeline => ../../pipeline

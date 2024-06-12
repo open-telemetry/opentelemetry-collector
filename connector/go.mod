@@ -10,6 +10,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.102.1
 	go.opentelemetry.io/collector/pdata v1.9.0
 	go.opentelemetry.io/collector/pdata/testdata v0.102.1
+	go.opentelemetry.io/collector/pipeline v0.102.1
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
@@ -79,3 +80,5 @@ replace go.opentelemetry.io/collector/config/configretry => ../config/configretr
 replace go.opentelemetry.io/collector/config/confignet => ../config/confignet
 
 replace go.opentelemetry.io/collector/extension => ../extension
+
+replace go.opentelemetry.io/collector/pipeline => ../pipeline

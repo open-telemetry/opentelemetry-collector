@@ -39,6 +39,7 @@ require (
 	github.com/prometheus/procfs v0.15.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.102.1 // indirect
 	go.opentelemetry.io/collector/pdata v1.9.0 // indirect
+	go.opentelemetry.io/collector/pipeline v0.102.1 // indirect
 	go.opentelemetry.io/collector/service v0.102.1 // indirect
 	go.opentelemetry.io/contrib/config v0.7.0 // indirect
 	go.opentelemetry.io/otel v1.27.0 // indirect
@@ -102,3 +103,5 @@ replace go.opentelemetry.io/collector/receiver => ../../receiver
 replace go.opentelemetry.io/collector/connector => ../../connector
 
 replace go.opentelemetry.io/collector/processor => ../../processor
+
+replace go.opentelemetry.io/collector/pipeline => ../../pipeline
