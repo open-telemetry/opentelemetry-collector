@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/confmap/provider/envprovider"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -109,4 +110,46 @@ func TestNewCommandInvalidComponent(t *testing.T) {
 
 	cmd := NewCommand(CollectorSettings{Factories: nopFactories, ConfigProviderSettings: set})
 	require.Error(t, cmd.Execute())
+}
+
+func Test_UseUnifiedEnvVarExpansionRules(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "default scheme set",
+			input:    "file",
+			expected: "file",
+		},
+		{
+			name:     "default scheme not set",
+			input:    "",
+			expected: "env",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.NoError(t, featuregate.GlobalRegistry().Set(confmap.UseUnifiedEnvVarExpansionRules.ID(), true))
+			t.Cleanup(func() {
+				require.NoError(t, featuregate.GlobalRegistry().Set(confmap.UseUnifiedEnvVarExpansionRules.ID(), false))
+			})
+			set := CollectorSettings{
+				ConfigProviderSettings: ConfigProviderSettings{
+					ResolverSettings: confmap.ResolverSettings{
+						ProviderFactories: []confmap.ProviderFactory{fileprovider.NewFactory(), envprovider.NewFactory()},
+						DefaultScheme:     tt.input,
+					},
+				},
+			}
+			flgs := flags(featuregate.NewRegistry())
+			err := flgs.Parse([]string{"--config=otelcol-nop.yaml"})
+			require.NoError(t, err)
+
+			err = updateSettingsUsingFlags(&set, flgs)
+			require.NoError(t, err)
+			require.Equal(t, tt.expected, set.ConfigProviderSettings.ResolverSettings.DefaultScheme)
+		})
+	}
 }
