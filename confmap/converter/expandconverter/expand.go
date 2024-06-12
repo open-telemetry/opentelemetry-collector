@@ -80,6 +80,14 @@ func (c converter) expandStringValues(value any) (any, error) {
 func (c converter) expandEnv(s string) (string, error) {
 	var err error
 	res := os.Expand(s, func(str string) string {
+		// This allows escaping environment variable substitution via $$, e.g.
+		// - $FOO will be substituted with env var FOO
+		// - $$FOO will be replaced with $FOO
+		// - $$$FOO will be replaced with $ + substituted env var FOO
+		if str == "$" {
+			return "$"
+		}
+
 		// Matches on $VAR style environment variables
 		// in order to make sure we don't log a warning for ${VAR}
 		var regex = regexp.MustCompile(fmt.Sprintf(`\$%s`, regexp.QuoteMeta(str)))
@@ -88,13 +96,7 @@ func (c converter) expandEnv(s string) (string, error) {
 			c.logger.Warn(msg, zap.String("variable", str))
 			c.loggedDeprecations[str] = struct{}{}
 		}
-		// This allows escaping environment variable substitution via $$, e.g.
-		// - $FOO will be substituted with env var FOO
-		// - $$FOO will be replaced with $FOO
-		// - $$$FOO will be replaced with $ + substituted env var FOO
-		if str == "$" {
-			return "$"
-		}
+
 		// For $ENV style environment variables os.Expand returns once it hits a character that isn't an underscore or
 		// an alphanumeric character - so we cannot detect those malformed environment variables.
 		// For ${ENV} style variables we can detect those kinds of env var names!
