@@ -8,8 +8,8 @@ import (
 	"flag"
 
 	"github.com/spf13/cobra"
-	"go.opentelemetry.io/collector/confmap"
 
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/featuregate"
 )
 

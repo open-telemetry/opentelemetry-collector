@@ -10,9 +10,10 @@ import (
 	"regexp"
 	"strings"
 
-	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 var UseUnifiedEnvVarExpansionRules = featuregate.GlobalRegistry().MustRegister("confmap.unifyEnvVarExpansion",
