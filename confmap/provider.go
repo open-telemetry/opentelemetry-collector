@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"go.uber.org/zap"
+	"gopkg.in/yaml.v3"
 )
 
 // ProviderSettings are the settings to initialize a Provider.
@@ -121,11 +122,30 @@ func WithRetrievedClose(closeFunc CloseFunc) RetrievedOption {
 	}
 }
 
-func WithStringRepresentation(stringRepresentation string) RetrievedOption {
+func withStringRepresentation(stringRepresentation string) RetrievedOption {
 	return func(settings *retrievedSettings) {
 		settings.stringRepresentation = stringRepresentation
 		settings.isSetString = true
 	}
+}
+
+// NewRetrievedFromYAML returns a new Retrieved instance that contains the deserialized data from the yaml bytes.
+// * yamlBytes the yaml bytes that will be deserialized.
+// * opts specifies options associated with this Retrieved value, such as CloseFunc.
+func NewRetrievedFromYAML(yamlBytes []byte, opts ...RetrievedOption) (*Retrieved, error) {
+	var rawConf any
+	if err := yaml.Unmarshal(yamlBytes, &rawConf); err != nil {
+		return nil, err
+	}
+
+	switch v := rawConf.(type) {
+	case string:
+		opts = append(opts, withStringRepresentation(v))
+	case int, int32, int64, float32, float64, bool:
+		opts = append(opts, withStringRepresentation(string(yamlBytes)))
+	}
+
+	return NewRetrieved(rawConf, opts...)
 }
 
 // NewRetrieved returns a new Retrieved instance that contains the data from the raw deserialized config.
@@ -169,8 +189,15 @@ func (r *Retrieved) AsRaw() (any, error) {
 	return r.rawConf, nil
 }
 
-func (r *Retrieved) getStringRepr() (string, bool) {
-	return r.stringRepresentation, r.isSetString
+func (r *Retrieved) AsString() (string, error) {
+	if !r.isSetString {
+		switch r.rawConf.(type) {
+		case string:
+			return r.rawConf.(string), nil
+		}
+		return "", fmt.Errorf("retrieved value does not have string representation")
+	}
+	return r.stringRepresentation, nil
 }
 
 // Close and release any watchers that Provider.Retrieve may have created.

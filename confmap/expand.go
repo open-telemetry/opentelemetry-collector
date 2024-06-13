@@ -171,7 +171,7 @@ func toStringStrictType(ret Retrieved) (string, error) {
 		return "", err
 	}
 
-	str, ok := ret.getStringRepr()
+	str, ok := ret.AsString()
 	if !ok {
 		return "", fmt.Errorf("expected convertable to string value type, got %v(%T)", input, input)
 	}

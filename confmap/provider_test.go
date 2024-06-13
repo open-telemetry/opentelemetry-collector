@@ -35,3 +35,35 @@ func TestNewRetrievedUnsupportedType(t *testing.T) {
 	_, err := NewRetrieved(errors.New("my error"))
 	require.Error(t, err)
 }
+
+func TestNewRetrievedFromYAML(t *testing.T) {
+	ret, err := NewRetrievedFromYAML([]byte{})
+	require.NoError(t, err)
+	retMap, err := ret.AsConf()
+	require.NoError(t, err)
+	assert.Equal(t, New(), retMap)
+	assert.NoError(t, ret.Close(context.Background()))
+}
+
+func TestNewRetrievedFromYAMLWithOptions(t *testing.T) {
+	want := errors.New("my error")
+	ret, err := NewRetrievedFromYAML([]byte{}, WithRetrievedClose(func(context.Context) error { return want }))
+	require.NoError(t, err)
+	retMap, err := ret.AsConf()
+	require.NoError(t, err)
+	assert.Equal(t, New(), retMap)
+	assert.Equal(t, want, ret.Close(context.Background()))
+}
+
+func TestNewRetrievedFromYAMLInvalidYAMLBytes(t *testing.T) {
+	_, err := NewRetrievedFromYAML([]byte("[invalid:,"))
+	assert.Error(t, err)
+}
+
+func TestNewRetrievedFromYAMLInvalidAsMap(t *testing.T) {
+	ret, err := NewRetrievedFromYAML([]byte("string"))
+	require.NoError(t, err)
+
+	_, err = ret.AsConf()
+	assert.Error(t, err)
+}
