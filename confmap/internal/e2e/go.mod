@@ -30,3 +30,5 @@ replace go.opentelemetry.io/collector/confmap => ../../
 replace go.opentelemetry.io/collector/confmap/provider/fileprovider => ../../provider/fileprovider
 
 replace go.opentelemetry.io/collector/confmap/provider/envprovider => ../../provider/envprovider
+
+replace go.opentelemetry.io/collector/featuregate => ../../../featuregate
