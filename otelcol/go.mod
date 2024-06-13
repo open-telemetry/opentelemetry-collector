@@ -89,8 +89,8 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.27.0 // indirect
 	go.opentelemetry.io/otel/trace v1.27.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.2.0 // indirect
-	golang.org/x/net v0.25.0 // indirect
-	golang.org/x/text v0.15.0 // indirect
+	golang.org/x/net v0.26.0 // indirect
+	golang.org/x/text v0.16.0 // indirect
 	gonum.org/v1/gonum v0.15.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240520151616-dc85e6b867a5 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240520151616-dc85e6b867a5 // indirect
@@ -141,6 +141,18 @@ replace go.opentelemetry.io/collector/receiver => ../receiver
 
 replace go.opentelemetry.io/collector/featuregate => ../featuregate
 
-replace go.opentelemetry.io/collector/config/confignet => ../config/confignet
-
 replace go.opentelemetry.io/collector/config/configretry => ../config/configretry
+
+replace go.opentelemetry.io/collector/config/confighttp => ../config/confighttp
+
+replace go.opentelemetry.io/collector/config/internal => ../config/internal
+
+replace go.opentelemetry.io/collector/config/configauth => ../config/configauth
+
+replace go.opentelemetry.io/collector/extension/auth => ../extension/auth
+
+replace go.opentelemetry.io/collector/config/configcompression => ../config/configcompression
+
+replace go.opentelemetry.io/collector/config/configtls => ../config/configtls
+
+replace go.opentelemetry.io/collector/config/configopaque => ../config/configopaque
