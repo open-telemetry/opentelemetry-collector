@@ -88,6 +88,9 @@ service:
 			exporters: [otlp]
 ```
 
+When an experimental signal is being used, the collector will log a warning at
+boot.
+
 ## Signal status change
 
 If the profiling signal becomes stable, all the experimental packages will be
