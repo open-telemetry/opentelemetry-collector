@@ -21,7 +21,7 @@ func NewRetrievedFromYAML(yamlBytes []byte, opts ...confmap.RetrievedOption) (*c
 	switch v := rawConf.(type) {
 	case string:
 		opts = append(opts, confmap.WithStringRepresentation(v))
-	default:
+	case int, int32, int64, float32, float64, bool:
 		opts = append(opts, confmap.WithStringRepresentation(string(yamlBytes)))
 	}
 
