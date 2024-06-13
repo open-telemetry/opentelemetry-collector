@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumerexperimental"
 )
 
 var (
@@ -42,6 +43,20 @@ type Metrics interface {
 //
 // For example, it could be a receiver that reads syslogs and convert them into plog.Logs.
 type Logs interface {
+	component.Component
+}
+
+// Profiles receiver receives profiles.
+// Its purpose is to translate data from any format to the collector's internal trace format.
+// ProfilesReceiver feeds a consumerexperimental.Profiles with data.
+//
+// For example, it could be the OTLP data source which translates OTLP spans into pprofile.Profiles.
+//
+// # Experimental
+//
+// Notice: This interface is EXPERIMENTAL and may be changed or removed in a
+// later release.
+type Profiles interface {
 	component.Component
 }
 
@@ -91,6 +106,24 @@ type Factory interface {
 
 	// LogsReceiverStability gets the stability level of the LogsReceiver.
 	LogsReceiverStability() component.StabilityLevel
+
+	// CreateProfilesReceiver creates a ProfilesReceiver based on this config.
+	// If the receiver type does not support tracing or if the config is not valid
+	// an error will be returned instead. `nextConsumer` is never nil.
+	//
+	// # Experimental
+	//
+	// Notice: This method is EXPERIMENTAL and may be changed or removed in a
+	// later release.
+	CreateProfilesReceiver(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer consumerexperimental.Profiles) (Profiles, error)
+
+	// ProfilesReceiverStability gets the stability level of the ProfilesReceiver.
+	//
+	// # Experimental
+	//
+	// Notice: This method is EXPERIMENTAL and may be changed or removed in a
+	// later release.
+	ProfilesReceiverStability() component.StabilityLevel
 
 	unexportedFactoryFunc()
 }
@@ -155,6 +188,31 @@ func (f CreateLogsFunc) CreateLogsReceiver(
 	return f(ctx, set, cfg, nextConsumer)
 }
 
+// CreateProflesFunc is the equivalent of Factory.CreateProfiles.
+//
+// # Experimental
+//
+// Notice: This method is EXPERIMENTAL and may be changed or removed in a
+// later release.
+type CreateProfilesFunc func(context.Context, CreateSettings, component.Config, consumerexperimental.Profiles) (Profiles, error)
+
+// CreateProfilesReceiver implements Factory.CreateProfilesReceiver().
+//
+// # Experimental
+//
+// Notice: This method is EXPERIMENTAL and may be changed or removed in a
+// later release.
+func (f CreateProfilesFunc) CreateProfilesReceiver(
+	ctx context.Context,
+	set CreateSettings,
+	cfg component.Config,
+	nextConsumer consumerexperimental.Profiles) (Profiles, error) {
+	if f == nil {
+		return nil, component.ErrDataTypeIsNotSupported
+	}
+	return f(ctx, set, cfg, nextConsumer)
+}
+
 type factory struct {
 	cfgType component.Type
 	component.CreateDefaultConfigFunc
@@ -164,6 +222,9 @@ type factory struct {
 	metricsStabilityLevel component.StabilityLevel
 	CreateLogsFunc
 	logsStabilityLevel component.StabilityLevel
+
+	CreateProfilesFunc
+	profilesStabilityLevel component.StabilityLevel
 }
 
 func (f *factory) Type() component.Type {
@@ -182,6 +243,14 @@ func (f *factory) MetricsReceiverStability() component.StabilityLevel {
 
 func (f *factory) LogsReceiverStability() component.StabilityLevel {
 	return f.logsStabilityLevel
+}
+
+// # Experimental
+//
+// Notice: This method is EXPERIMENTAL and may be changed or removed in a
+// later release.
+func (f *factory) ProfilesReceiverStability() component.StabilityLevel {
+	return f.profilesStabilityLevel
 }
 
 // WithTraces overrides the default "error not supported" implementation for CreateTracesReceiver and the default "undefined" stability level.
@@ -205,6 +274,20 @@ func WithLogs(createLogsReceiver CreateLogsFunc, sl component.StabilityLevel) Fa
 	return factoryOptionFunc(func(o *factory) {
 		o.logsStabilityLevel = sl
 		o.CreateLogsFunc = createLogsReceiver
+	})
+}
+
+// WithProfiles overrides the default "error not supported" implementation for
+// CreateProfilesReceiver and the default "undefined" stability level.
+//
+// # Experimental
+//
+// Notice: This method is EXPERIMENTAL and may be changed or removed in a
+// later release.
+func WithProfiles(createProfilesReceiver CreateProfilesFunc, sl component.StabilityLevel) FactoryOption {
+	return factoryOptionFunc(func(o *factory) {
+		o.profilesStabilityLevel = sl
+		o.CreateProfilesFunc = createProfilesReceiver
 	})
 }
 
@@ -299,6 +382,30 @@ func (b *Builder) CreateLogs(ctx context.Context, set Settings, next consumer.Lo
 
 	logStabilityLevel(set.Logger, f.LogsReceiverStability())
 	return f.CreateLogsReceiver(ctx, set, cfg, next)
+}
+
+// CreateProfiles creates a Profiles receiver based on the settings and config.
+//
+// # Experimental
+//
+// Notice: This method is EXPERIMENTAL and may be changed or removed in a
+// later release.
+func (b *Builder) CreateProfiles(ctx context.Context, set CreateSettings, next consumerexperimental.Profiles) (Profiles, error) {
+	if next == nil {
+		return nil, errNilNextConsumer
+	}
+	cfg, existsCfg := b.cfgs[set.ID]
+	if !existsCfg {
+		return nil, fmt.Errorf("receiver %q is not configured", set.ID)
+	}
+
+	f, existsFactory := b.factories[set.ID.Type()]
+	if !existsFactory {
+		return nil, fmt.Errorf("receiver factory not available for: %q", set.ID)
+	}
+
+	logStabilityLevel(set.Logger, f.ProfilesReceiverStability())
+	return f.CreateProfilesReceiver(ctx, set, cfg, next)
 }
 
 func (b *Builder) Factory(componentType component.Type) component.Factory {

@@ -14,6 +14,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumerexperimental"
+	"go.opentelemetry.io/collector/consumerexperimental/consumerexperimentaltest"
 )
 
 func TestNewFactory(t *testing.T) {
@@ -30,6 +32,9 @@ func TestNewFactory(t *testing.T) {
 	assert.Error(t, err)
 	_, err = factory.CreateLogsReceiver(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
 	assert.Error(t, err)
+
+	_, err = factory.CreateProfilesReceiver(context.Background(), Settings{}, &defaultCfg, consumerexperimentaltest.NewNop())
+	assert.Error(t, err)
 }
 
 func TestNewFactoryWithOptions(t *testing.T) {
@@ -40,7 +45,10 @@ func TestNewFactoryWithOptions(t *testing.T) {
 		func() component.Config { return &defaultCfg },
 		WithTraces(createTraces, component.StabilityLevelDeprecated),
 		WithMetrics(createMetrics, component.StabilityLevelAlpha),
-		WithLogs(createLogs, component.StabilityLevelStable))
+		WithLogs(createLogs, component.StabilityLevelStable),
+
+		WithProfiles(createProfiles, component.StabilityLevelDeprecated),
+	)
 	assert.EqualValues(t, testType, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
@@ -54,6 +62,10 @@ func TestNewFactoryWithOptions(t *testing.T) {
 
 	assert.Equal(t, component.StabilityLevelStable, factory.LogsReceiverStability())
 	_, err = factory.CreateLogsReceiver(context.Background(), Settings{}, &defaultCfg, nil)
+	assert.NoError(t, err)
+
+	assert.Equal(t, component.StabilityLevelDeprecated, factory.ProfilesReceiverStability())
+	_, err = factory.CreateProfilesReceiver(context.Background(), Settings{}, &defaultCfg, nil)
 	assert.NoError(t, err)
 }
 
@@ -105,6 +117,8 @@ func TestBuilder(t *testing.T) {
 			WithTraces(createTraces, component.StabilityLevelDevelopment),
 			WithMetrics(createMetrics, component.StabilityLevelAlpha),
 			WithLogs(createLogs, component.StabilityLevelDeprecated),
+
+			WithProfiles(createProfiles, component.StabilityLevelDevelopment),
 		),
 	}...)
 	require.NoError(t, err)
@@ -116,6 +130,8 @@ func TestBuilder(t *testing.T) {
 		nextTraces  consumer.Traces
 		nextLogs    consumer.Logs
 		nextMetrics consumer.Metrics
+
+		nextProfiles consumerexperimental.Profiles
 	}{
 		{
 			name:        "unknown",
@@ -124,6 +140,8 @@ func TestBuilder(t *testing.T) {
 			nextTraces:  consumertest.NewNop(),
 			nextLogs:    consumertest.NewNop(),
 			nextMetrics: consumertest.NewNop(),
+
+			nextProfiles: consumerexperimentaltest.NewNop(),
 		},
 		{
 			name:        "err",
@@ -132,6 +150,8 @@ func TestBuilder(t *testing.T) {
 			nextTraces:  consumertest.NewNop(),
 			nextLogs:    consumertest.NewNop(),
 			nextMetrics: consumertest.NewNop(),
+
+			nextProfiles: consumerexperimentaltest.NewNop(),
 		},
 		{
 			name:        "all",
@@ -139,6 +159,8 @@ func TestBuilder(t *testing.T) {
 			nextTraces:  consumertest.NewNop(),
 			nextLogs:    consumertest.NewNop(),
 			nextMetrics: consumertest.NewNop(),
+
+			nextProfiles: consumerexperimentaltest.NewNop(),
 		},
 		{
 			name:        "all/named",
@@ -146,6 +168,8 @@ func TestBuilder(t *testing.T) {
 			nextTraces:  consumertest.NewNop(),
 			nextLogs:    consumertest.NewNop(),
 			nextMetrics: consumertest.NewNop(),
+
+			nextProfiles: consumerexperimentaltest.NewNop(),
 		},
 		{
 			name:        "no next consumer",
@@ -154,6 +178,8 @@ func TestBuilder(t *testing.T) {
 			nextTraces:  nil,
 			nextLogs:    nil,
 			nextMetrics: nil,
+
+			nextProfiles: nil,
 		},
 	}
 
@@ -188,6 +214,15 @@ func TestBuilder(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, nopInstance, le)
 			}
+
+			pe, err := b.CreateProfiles(context.Background(), settings(tt.id), tt.nextProfiles)
+			if tt.err != "" {
+				assert.EqualError(t, err, tt.err)
+				assert.Nil(t, pe)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, nopInstance, pe)
+			}
 		})
 	}
 }
@@ -201,6 +236,8 @@ func TestBuilderMissingConfig(t *testing.T) {
 			WithTraces(createTraces, component.StabilityLevelDevelopment),
 			WithMetrics(createMetrics, component.StabilityLevelAlpha),
 			WithLogs(createLogs, component.StabilityLevelDeprecated),
+
+			WithProfiles(createProfiles, component.StabilityLevelDevelopment),
 		),
 	}...)
 
@@ -220,6 +257,10 @@ func TestBuilderMissingConfig(t *testing.T) {
 	le, err := bErr.CreateLogs(context.Background(), settings(missingID), consumertest.NewNop())
 	assert.EqualError(t, err, "receiver \"all/missing\" is not configured")
 	assert.Nil(t, le)
+
+	pe, err := bErr.CreateProfiles(context.Background(), settings(missingID), consumerexperimentaltest.NewNop())
+	assert.EqualError(t, err, "receiver \"all/missing\" is not configured")
+	assert.Nil(t, pe)
 }
 
 func TestBuilderFactory(t *testing.T) {
@@ -253,6 +294,10 @@ func createMetrics(context.Context, Settings, component.Config, consumer.Metrics
 }
 
 func createLogs(context.Context, Settings, component.Config, consumer.Logs) (Logs, error) {
+	return nopInstance, nil
+}
+
+func createProfiles(context.Context, Settings, component.Config, consumerexperimental.Profiles) (Profiles, error) {
 	return nopInstance, nil
 }
 
