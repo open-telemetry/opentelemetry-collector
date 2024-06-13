@@ -283,6 +283,7 @@ check-contrib:
 		-replace go.opentelemetry.io/collector/otelcol=$(CURDIR)/otelcol  \
 		-replace go.opentelemetry.io/collector/pdata=$(CURDIR)/pdata  \
 		-replace go.opentelemetry.io/collector/pdata/testdata=$(CURDIR)/pdata/testdata  \
+		-replace go.opentelemetry.io/collector/pdata/pprofile=$(CURDIR)/pdata/pprofile  \
 		-replace go.opentelemetry.io/collector/processor=$(CURDIR)/processor  \
 		-replace go.opentelemetry.io/collector/processor/batchprocessor=$(CURDIR)/processor/batchprocessor  \
 		-replace go.opentelemetry.io/collector/processor/memorylimiterprocessor=$(CURDIR)/processor/memorylimiterprocessor  \
@@ -339,6 +340,7 @@ restore-contrib:
 		-dropreplace go.opentelemetry.io/collector/otelcol  \
 		-dropreplace go.opentelemetry.io/collector/pdata  \
 		-dropreplace go.opentelemetry.io/collector/pdata/testdata  \
+		-dropreplace go.opentelemetry.io/collector/pdata/pprofile  \
 		-dropreplace go.opentelemetry.io/collector/processor  \
 		-dropreplace go.opentelemetry.io/collector/processor/batchprocessor  \
 		-dropreplace go.opentelemetry.io/collector/processor/memorylimiterprocessor  \
