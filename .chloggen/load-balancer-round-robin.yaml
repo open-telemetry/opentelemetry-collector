@@ -12,6 +12,11 @@ note: Update the default load balancer strategy to round_robin
 # One or more tracking issues or pull requests related to the change
 issues: [10319]
 
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: To restore the behavior that was previously the default, set `balancer_name` to `pick_first`.
+
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
 # Include 'user' if the change is relevant to end users.

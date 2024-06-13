@@ -49,7 +49,7 @@ func TestNewDefaultClientConfig(t *testing.T) {
 		TLSSetting:   configtls.NewDefaultClientConfig(),
 		Keepalive:    NewDefaultKeepaliveClientConfig(),
 		Auth:         configauth.NewDefaultAuthentication(),
-		BalancerName: NewDefaultBalancernameClientConfig(),
+		BalancerName: BalancerName(),
 	}
 
 	result := NewDefaultClientConfig()

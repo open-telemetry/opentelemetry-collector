@@ -55,8 +55,8 @@ func NewDefaultKeepaliveClientConfig() *KeepaliveClientConfig {
 	}
 }
 
-// NewDefaultBalancernameClientConfig returns a new instance of BalancernameClientConfig with default values.
-func NewDefaultBalancernameClientConfig() string {
+// BalancerName returns a string with default load balancer value
+func BalancerName() string {
 	return "round_robin"
 }
 
@@ -110,7 +110,7 @@ func NewDefaultClientConfig() *ClientConfig {
 		TLSSetting:   configtls.NewDefaultClientConfig(),
 		Keepalive:    NewDefaultKeepaliveClientConfig(),
 		Auth:         configauth.NewDefaultAuthentication(),
-		BalancerName: NewDefaultBalancernameClientConfig(),
+		BalancerName: BalancerName(),
 	}
 }
 
