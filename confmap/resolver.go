@@ -12,14 +12,7 @@ import (
 
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
-
-	"go.opentelemetry.io/collector/featuregate"
 )
-
-var UseUnifiedEnvVarExpansionRules = featuregate.GlobalRegistry().MustRegister("confmap.unifyEnvVarExpansion",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterFromVersion("v0.103.0"),
-	featuregate.WithRegisterDescription("`${FOO}` will now be expanded as if it was `${env:FOO}` and no longer expands $ENV syntax. See https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/env-vars.md for more details. When this feature gate is stable, expandconverter will be removed."))
 
 // follows drive-letter specification:
 // https://datatracker.ietf.org/doc/html/draft-kerwin-file-scheme-07.html#section-2.2
