@@ -28,7 +28,7 @@ type Test struct {
 	value       string
 	targetField TargetField
 	expected    any
-	expectErr   bool
+	expectedErr string
 }
 
 type TargetConfig[T any] struct {
@@ -37,8 +37,8 @@ type TargetConfig[T any] struct {
 
 func AssertExpectedMatch[T any](t *testing.T, tt Test, conf *confmap.Conf, cfg *TargetConfig[T]) {
 	err := conf.Unmarshal(cfg)
-	if tt.expectErr {
-		require.Error(t, err)
+	if tt.expectedErr != "" {
+		require.ErrorContains(t, err, tt.expectedErr)
 		return
 	}
 	require.NoError(t, err)
