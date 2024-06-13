@@ -11,6 +11,7 @@ require (
 	go.opentelemetry.io/collector/config/configretry v0.102.1
 	go.opentelemetry.io/collector/config/configtelemetry v0.102.1
 	go.opentelemetry.io/collector/consumer v0.102.1
+	go.opentelemetry.io/collector/consumerexperimental v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/extension v0.102.1
 	go.opentelemetry.io/collector/pdata v1.9.0
 	go.opentelemetry.io/collector/pdata/testdata v0.102.1
@@ -49,6 +50,7 @@ require (
 	github.com/prometheus/common v0.54.0 // indirect
 	github.com/prometheus/procfs v0.15.0 // indirect
 	go.opentelemetry.io/collector/confmap v0.102.1 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.0.0-20240529223953-eaab76e46d38 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.49.0 // indirect
 	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/text v0.15.0 // indirect
@@ -65,11 +67,15 @@ replace go.opentelemetry.io/collector/confmap => ../confmap
 
 replace go.opentelemetry.io/collector/consumer => ../consumer
 
+replace go.opentelemetry.io/collector/consumerexperimental => ../consumerexperimental
+
 replace go.opentelemetry.io/collector/extension => ../extension
 
 replace go.opentelemetry.io/collector/featuregate => ../featuregate
 
 replace go.opentelemetry.io/collector/pdata => ../pdata
+
+replace go.opentelemetry.io/collector/pdata/ppprofile => ../pdata/pprofile
 
 replace go.opentelemetry.io/collector/pdata/testdata => ../pdata/testdata
 

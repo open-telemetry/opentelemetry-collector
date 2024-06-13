@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumerexperimental/consumerexperimentaltest"
 )
 
 func TestNewFactory(t *testing.T) {
@@ -29,6 +30,9 @@ func TestNewFactory(t *testing.T) {
 	assert.Error(t, err)
 	_, err = factory.CreateLogsExporter(context.Background(), Settings{}, &defaultCfg)
 	assert.Error(t, err)
+
+	_, err = factory.CreateProfilesExporter(context.Background(), Settings{}, &defaultCfg)
+	assert.Error(t, err)
 }
 
 func TestNewFactoryWithOptions(t *testing.T) {
@@ -39,7 +43,10 @@ func TestNewFactoryWithOptions(t *testing.T) {
 		func() component.Config { return &defaultCfg },
 		WithTraces(createTraces, component.StabilityLevelDevelopment),
 		WithMetrics(createMetrics, component.StabilityLevelAlpha),
-		WithLogs(createLogs, component.StabilityLevelDeprecated))
+		WithLogs(createLogs, component.StabilityLevelDeprecated),
+
+		WithProfiles(createProfiles, component.StabilityLevelDevelopment),
+	)
 	assert.EqualValues(t, testType, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
@@ -53,6 +60,10 @@ func TestNewFactoryWithOptions(t *testing.T) {
 
 	assert.Equal(t, component.StabilityLevelDeprecated, factory.LogsExporterStability())
 	_, err = factory.CreateLogsExporter(context.Background(), Settings{}, &defaultCfg)
+	assert.NoError(t, err)
+
+	assert.Equal(t, component.StabilityLevelDevelopment, factory.ProfilesExporterStability())
+	_, err = factory.CreateProfilesExporter(context.Background(), Settings{}, &defaultCfg)
 	assert.NoError(t, err)
 }
 
@@ -104,6 +115,8 @@ func TestBuilder(t *testing.T) {
 			WithTraces(createTraces, component.StabilityLevelDevelopment),
 			WithMetrics(createMetrics, component.StabilityLevelAlpha),
 			WithLogs(createLogs, component.StabilityLevelDeprecated),
+
+			WithProfiles(createProfiles, component.StabilityLevelDevelopment),
 		),
 	}...)
 	require.NoError(t, err)
@@ -164,6 +177,15 @@ func TestBuilder(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, nopInstance, le)
 			}
+
+			pe, err := b.CreateProfiles(context.Background(), createSettings(tt.id))
+			if tt.err != "" {
+				assert.EqualError(t, err, tt.err)
+				assert.Nil(t, pe)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, nopExperimentalInstance, pe)
+			}
 		})
 	}
 }
@@ -177,6 +199,8 @@ func TestBuilderMissingConfig(t *testing.T) {
 			WithTraces(createTraces, component.StabilityLevelDevelopment),
 			WithMetrics(createMetrics, component.StabilityLevelAlpha),
 			WithLogs(createLogs, component.StabilityLevelDeprecated),
+
+			WithProfiles(createProfiles, component.StabilityLevelDevelopment),
 		),
 	}...)
 
@@ -196,6 +220,10 @@ func TestBuilderMissingConfig(t *testing.T) {
 	le, err := bErr.CreateLogs(context.Background(), createSettings(missingID))
 	assert.EqualError(t, err, "exporter \"all/missing\" is not configured")
 	assert.Nil(t, le)
+
+	pe, err := bErr.CreateProfiles(context.Background(), createSettings(missingID))
+	assert.EqualError(t, err, "exporter \"all/missing\" is not configured")
+	assert.Nil(t, pe)
 }
 
 func TestBuilderFactory(t *testing.T) {
@@ -213,11 +241,22 @@ var nopInstance = &nopExporter{
 	Consumer: consumertest.NewNop(),
 }
 
+var nopExperimentalInstance = &nopExperimentalExporter{
+	Consumer: consumerexperimentaltest.NewNop(),
+}
+
 // nopExporter stores consumed traces and metrics for testing purposes.
 type nopExporter struct {
 	component.StartFunc
 	component.ShutdownFunc
 	consumertest.Consumer
+}
+
+// nopExporter stores consumed profiles for testing purposes.
+type nopExperimentalExporter struct {
+	component.StartFunc
+	component.ShutdownFunc
+	consumerexperimentaltest.Consumer
 }
 
 func createTraces(context.Context, Settings, component.Config) (Traces, error) {
@@ -230,6 +269,10 @@ func createMetrics(context.Context, Settings, component.Config) (Metrics, error)
 
 func createLogs(context.Context, Settings, component.Config) (Logs, error) {
 	return nopInstance, nil
+}
+
+func createProfiles(context.Context, Settings, component.Config) (Profiles, error) {
+	return nopExperimentalInstance, nil
 }
 
 func createSettings(id component.ID) Settings {

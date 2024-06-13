@@ -38,7 +38,6 @@ module-sets:
       - go.opentelemetry.io/collector/consumer
       - go.opentelemetry.io/collector/consumerexperimental
       - go.opentelemetry.io/collector/exporter
-      - go.opentelemetry.io/collector/exporterexperimental
       - go.opentelemetry.io/collector/exporter/debugexporter
       - go.opentelemetry.io/collector/exporter/loggingexporter
       - go.opentelemetry.io/collector/exporter/nopexporter

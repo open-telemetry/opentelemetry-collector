@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumerexperimental"
 )
 
 // Traces is an exporter that can consume traces.
@@ -29,6 +30,17 @@ type Metrics interface {
 type Logs interface {
 	component.Component
 	consumer.Logs
+}
+
+// Profiles is an exporter that can consume profiles.
+//
+// # Experimental
+//
+// Notice: This interface is EXPERIMENTAL and may be changed or removed in a
+// later release.
+type Profiles interface {
+	component.Component
+	consumerexperimental.Profiles
 }
 
 // CreateSettings configures Exporter creators.
@@ -77,6 +89,24 @@ type Factory interface {
 
 	// LogsExporterStability gets the stability level of the LogsExporter.
 	LogsExporterStability() component.StabilityLevel
+
+	// CreateProfilesExporter creates a ProfilesExporter based on this config.
+	// If the exporter type does not support tracing or if the config is not valid,
+	// an error will be returned instead.
+	//
+	// # Experimental
+	//
+	// Notice: This method is EXPERIMENTAL and may be changed or removed in a
+	// later release.
+	CreateProfilesExporter(ctx context.Context, set Settings, cfg component.Config) (Profiles, error)
+
+	// ProfilesExporterStability gets the stability level of the ProfilesExporter.
+	//
+	// # Experimental
+	//
+	// Notice: This method is EXPERIMENTAL and may be changed or removed in a
+	// later release.
+	ProfilesExporterStability() component.StabilityLevel
 
 	unexportedFactoryFunc()
 }
@@ -129,6 +159,26 @@ func (f CreateLogsFunc) CreateLogsExporter(ctx context.Context, set Settings, cf
 	return f(ctx, set, cfg)
 }
 
+// CreateProfilesFunc is the equivalent of Factory.CreateProfiles.
+//
+// # Experimental
+//
+// Notice: This method is EXPERIMENTAL and may be changed or removed in a
+// later release.
+type CreateProfilesFunc func(context.Context, Settings, component.Config) (Profiles, error)
+
+// CreateProfilesExporter implements ExporterFactory.CreateProfilesExporter().
+// # Experimental
+//
+// Notice: This method is EXPERIMENTAL and may be changed or removed in a
+// later release.
+func (f CreateProfilesFunc) CreateProfilesExporter(ctx context.Context, set Settings, cfg component.Config) (Profiles, error) {
+	if f == nil {
+		return nil, component.ErrDataTypeIsNotSupported
+	}
+	return f(ctx, set, cfg)
+}
+
 type factory struct {
 	cfgType component.Type
 	component.CreateDefaultConfigFunc
@@ -138,6 +188,8 @@ type factory struct {
 	metricsStabilityLevel component.StabilityLevel
 	CreateLogsFunc
 	logsStabilityLevel component.StabilityLevel
+	CreateProfilesFunc
+	profilesStabilityLevel component.StabilityLevel
 }
 
 func (f *factory) Type() component.Type {
@@ -156,6 +208,14 @@ func (f *factory) MetricsExporterStability() component.StabilityLevel {
 
 func (f *factory) LogsExporterStability() component.StabilityLevel {
 	return f.logsStabilityLevel
+}
+
+// # Experimental
+//
+// Notice: This method is EXPERIMENTAL and may be changed or removed in a
+// later release.
+func (f *factory) ProfilesExporterStability() component.StabilityLevel {
+	return f.profilesStabilityLevel
 }
 
 // WithTraces overrides the default "error not supported" implementation for CreateTracesExporter and the default "undefined" stability level.
@@ -179,6 +239,20 @@ func WithLogs(createLogs CreateLogsFunc, sl component.StabilityLevel) FactoryOpt
 	return factoryOptionFunc(func(o *factory) {
 		o.logsStabilityLevel = sl
 		o.CreateLogsFunc = createLogs
+	})
+}
+
+// WithProfiless overrides the default "error not supported" implementation for
+// CreateProfilesExporter and the default "undefined" stability level.
+//
+// # Experimental
+//
+// Notice: This method is EXPERIMENTAL and may be changed or removed in a
+// later release.
+func WithProfiles(createProfiles CreateProfilesFunc, sl component.StabilityLevel) FactoryOption {
+	return factoryOptionFunc(func(o *factory) {
+		o.profilesStabilityLevel = sl
+		o.CreateProfilesFunc = createProfiles
 	})
 }
 
@@ -264,6 +338,27 @@ func (b *Builder) CreateLogs(ctx context.Context, set Settings) (Logs, error) {
 
 	logStabilityLevel(set.Logger, f.LogsExporterStability())
 	return f.CreateLogsExporter(ctx, set, cfg)
+}
+
+// CreateProfiless creates a Profiless exporter based on the settings and config.
+//
+// # Experimental
+//
+// Notice: This method is EXPERIMENTAL and may be changed or removed in a
+// later release.
+func (b *Builder) CreateProfiles(ctx context.Context, set Settings) (Profiles, error) {
+	cfg, existsCfg := b.cfgs[set.ID]
+	if !existsCfg {
+		return nil, fmt.Errorf("exporter %q is not configured", set.ID)
+	}
+
+	f, existsFactory := b.factories[set.ID.Type()]
+	if !existsFactory {
+		return nil, fmt.Errorf("exporter factory not available for: %q", set.ID)
+	}
+
+	logStabilityLevel(set.Logger, f.ProfilesExporterStability())
+	return f.CreateProfilesExporter(ctx, set, cfg)
 }
 
 func (b *Builder) Factory(componentType component.Type) component.Factory {
