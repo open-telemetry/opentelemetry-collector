@@ -69,10 +69,6 @@ func InitMetricReader(ctx context.Context, reader config.MetricReader, asyncErro
 	}
 	if reader.Periodic != nil {
 		var opts []sdkmetric.PeriodicReaderOption
-
-		if !globalgates.DisableOpenCensusBridge.IsEnabled() {
-			opts = append(opts, sdkmetric.WithProducer(opencensus.NewMetricProducer()))
-		}
 		if reader.Periodic.Interval != nil {
 			opts = append(opts, sdkmetric.WithInterval(time.Duration(*reader.Periodic.Interval)*time.Millisecond))
 		}
