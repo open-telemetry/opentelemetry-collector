@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/featuregates"
 )
 
 func TestNewCommandVersion(t *testing.T) {
@@ -151,9 +152,9 @@ func Test_UseUnifiedEnvVarExpansionRules(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require.NoError(t, featuregate.GlobalRegistry().Set(confmap.UseUnifiedEnvVarExpansionRules.ID(), true))
+			require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.UseUnifiedEnvVarExpansionRules.ID(), true))
 			t.Cleanup(func() {
-				require.NoError(t, featuregate.GlobalRegistry().Set(confmap.UseUnifiedEnvVarExpansionRules.ID(), false))
+				require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.UseUnifiedEnvVarExpansionRules.ID(), false))
 			})
 			set := CollectorSettings{
 				ConfigProviderSettings: ConfigProviderSettings{
