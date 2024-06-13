@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -59,7 +60,7 @@ var testKinds = []struct {
 func TestUnmarshal(t *testing.T) {
 	for _, tk := range testKinds {
 		t.Run(tk.kind, func(t *testing.T) {
-			cfgs := NewConfigs(tk.factories)
+			cfgs := NewConfigs(zap.NewNop(), tk.factories)
 			conf := confmap.NewFromStringMap(map[string]any{
 				"nop":              nil,
 				"nop/my" + tk.kind: nil,
@@ -134,7 +135,7 @@ func TestUnmarshalError(t *testing.T) {
 
 			for _, tt := range testCases {
 				t.Run(tt.name, func(t *testing.T) {
-					cfgs := NewConfigs(tk.factories)
+					cfgs := NewConfigs(zap.NewNop(), tk.factories)
 					err := cfgs.Unmarshal(tt.conf)
 					require.Error(t, err)
 					assert.Contains(t, err.Error(), tt.expectedError)

@@ -16,7 +16,6 @@ import (
 	"github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/v2"
 
-	"go.opentelemetry.io/collector/confmap/internal"
 	encoder "go.opentelemetry.io/collector/confmap/internal/mapstructure"
 )
 
@@ -60,7 +59,8 @@ type UnmarshalOption interface {
 }
 
 type unmarshalOption struct {
-	ignoreUnused bool
+	ignoreUnused       bool
+	strictlyTypedInput bool
 }
 
 // WithIgnoreUnused sets an option to ignore errors if existing
@@ -69,6 +69,15 @@ type unmarshalOption struct {
 func WithIgnoreUnused() UnmarshalOption {
 	return unmarshalOptionFunc(func(uo *unmarshalOption) {
 		uo.ignoreUnused = true
+	})
+}
+
+// WithStrictlyTypedInput sets an option to enable strictly typed input
+// for the decoder. This means that the decoder will not use weakly typed
+// decoding for input values.
+func WithStrictlyTypedInput() UnmarshalOption {
+	return unmarshalOptionFunc(func(uo *unmarshalOption) {
+		uo.strictlyTypedInput = true
 	})
 }
 
@@ -85,7 +94,7 @@ func (l *Conf) Unmarshal(result any, opts ...UnmarshalOption) error {
 	for _, opt := range opts {
 		opt.apply(&set)
 	}
-	return decodeConfig(l, result, !set.ignoreUnused, l.skipTopLevelUnmarshaler)
+	return decodeConfig(l, result, !set.ignoreUnused, l.skipTopLevelUnmarshaler, set.strictlyTypedInput)
 }
 
 type marshalOption struct{}
@@ -145,6 +154,11 @@ func (l *Conf) ToStringMap() map[string]any {
 	return maps.Unflatten(l.k.All(), KeyDelimiter)
 }
 
+// Copy Conf.
+func (l *Conf) Copy() *Conf {
+	return &Conf{k: l.k.Copy()}
+}
+
 // decodeConfig decodes the contents of the Conf into the result argument, using a
 // mapstructure decoder with the following notable behaviors. Ensures that maps whose
 // values are nil pointer structs resolved to the zero value of the target struct (see
@@ -152,12 +166,12 @@ func (l *Conf) ToStringMap() map[string]any {
 // uniqueness of component IDs (see mapKeyStringToMapKeyTextUnmarshalerHookFunc).
 // Decodes time.Duration from strings. Allows custom unmarshaling for structs implementing
 // encoding.TextUnmarshaler. Allows custom unmarshaling for structs implementing confmap.Unmarshaler.
-func decodeConfig(m *Conf, result any, errorUnused bool, skipTopLevelUnmarshaler bool) error {
+func decodeConfig(m *Conf, result any, errorUnused bool, skipTopLevelUnmarshaler bool, strictlyTypeInput bool) error {
 	dc := &mapstructure.DecoderConfig{
 		ErrorUnused:      errorUnused,
 		Result:           result,
 		TagName:          "mapstructure",
-		WeaklyTypedInput: !internal.StrictlyTypedInputGate.IsEnabled(),
+		WeaklyTypedInput: !strictlyTypeInput,
 		MatchName:        caseSensitiveMatchName,
 		DecodeHook: mapstructure.ComposeDecodeHookFunc(
 			expandNilStructPointersHookFunc(),

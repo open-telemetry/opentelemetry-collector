@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal // import "go.opentelemetry.io/collector/confmap/internal"
+package strictlytypedgate // import "go.opentelemetry.io/collector/internal/strictlytypedgate"
 
 import "go.opentelemetry.io/collector/featuregate"
 

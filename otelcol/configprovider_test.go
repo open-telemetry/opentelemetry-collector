@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 
 	"go.opentelemetry.io/collector/confmap"
@@ -28,7 +29,7 @@ func newConfig(yamlBytes []byte, factories Factories) (*Config, error) {
 
 	conf := confmap.NewFromStringMap(stringMap)
 
-	cfg, err := unmarshal(conf, factories)
+	cfg, err := unmarshal(zap.NewNop(), conf, factories)
 	if err != nil {
 		return nil, err
 	}

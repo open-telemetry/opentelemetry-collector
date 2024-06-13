@@ -6,25 +6,33 @@ package configunmarshaler // import "go.opentelemetry.io/collector/otelcol/inter
 import (
 	"fmt"
 
+	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/internal/strictlytypedgate"
 )
 
 type Configs[F component.Factory] struct {
-	cfgs map[component.ID]component.Config
-
+	cfgs      map[component.ID]component.Config
+	logger    *zap.Logger
 	factories map[component.Type]F
 }
 
-func NewConfigs[F component.Factory](factories map[component.Type]F) *Configs[F] {
+func NewConfigs[F component.Factory](logger *zap.Logger, factories map[component.Type]F) *Configs[F] {
 	return &Configs[F]{factories: factories}
 }
 
 func (c *Configs[F]) Unmarshal(conf *confmap.Conf) error {
+	var opts []confmap.UnmarshalOption
+	// If the feature gate is enabled, we will require strictly typed input.
+	if strictlytypedgate.StrictlyTypedInputGate.IsEnabled() {
+		opts = append(opts, confmap.WithStrictlyTypedInput())
+	}
+
 	rawCfgs := make(map[component.ID]map[string]any)
-	if err := conf.Unmarshal(&rawCfgs); err != nil {
+	if err := conf.Unmarshal(&rawCfgs, opts...); err != nil {
 		return err
 	}
 
@@ -43,8 +51,20 @@ func (c *Configs[F]) Unmarshal(conf *confmap.Conf) error {
 
 		// Now that the default config struct is created we can Unmarshal into it,
 		// and it will apply user-defined config on top of the default.
-		if err := confmap.NewFromStringMap(value).Unmarshal(&cfg); err != nil {
+		conf := confmap.NewFromStringMap(value)
+		if err := conf.Unmarshal(&cfg, opts...); err != nil {
 			return errorUnmarshalError(id, err)
+		}
+
+		opts = append(opts, confmap.WithStrictlyTypedInput())
+		confCopy := conf.Copy()
+		cfgCopy := factory.CreateDefaultConfig()
+		if err := confCopy.Unmarshal(&cfgCopy, opts...); err != nil {
+			c.logger.Warn("Configuration will fail to resolve when we require strictly typed input. Enable the feature gate to check your configuration types.",
+				zap.Error(err),
+				zap.Stringer("component id", id),
+				zap.String("feature gate", "confmap.strictlyTypedInput"),
+			)
 		}
 
 		c.cfgs[id] = cfg
