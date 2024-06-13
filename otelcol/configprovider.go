@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/provider/httpprovider"
 	"go.opentelemetry.io/collector/confmap/provider/httpsprovider"
 	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
+	"go.uber.org/zap"
 )
 
 // ConfigProvider provides the service configuration.
@@ -64,6 +65,7 @@ type ConfmapProvider interface {
 }
 
 type configProvider struct {
+	logger      *zap.Logger
 	mapResolver *confmap.Resolver
 }
 
@@ -90,6 +92,7 @@ func NewConfigProvider(set ConfigProviderSettings) (ConfigProvider, error) {
 
 	return &configProvider{
 		mapResolver: mr,
+		logger:      set.ResolverSettings.ProviderSettings.Logger,
 	}, nil
 }
 
@@ -100,7 +103,7 @@ func (cm *configProvider) Get(ctx context.Context, factories Factories) (*Config
 	}
 
 	var cfg *configSettings
-	if cfg, err = unmarshal(conf, factories); err != nil {
+	if cfg, err = unmarshal(cm.logger, conf, factories); err != nil {
 		return nil, fmt.Errorf("cannot unmarshal the configuration: %w", err)
 	}
 

@@ -13,7 +13,6 @@ import (
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/internal/envvar"
-	"go.opentelemetry.io/collector/confmap/provider/internal"
 )
 
 const (
@@ -54,7 +53,7 @@ func (emp *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFu
 		emp.logger.Info("Configuration references empty environment variable", zap.String("name", envVarName))
 	}
 
-	return internal.NewRetrievedFromYAML([]byte(val))
+	return confmap.NewRetrievedFromYAML([]byte(val))
 }
 
 func (*provider) Scheme() string {
