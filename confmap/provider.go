@@ -189,13 +189,16 @@ func (r *Retrieved) AsRaw() (any, error) {
 	return r.rawConf, nil
 }
 
+// AsString returns the retrieved configuration as a string.
+// If the retrieved configuration is not convertible to a string unambiguously, an error is returned.
+// If the retrieved configuration is a string, the string is returned.
+// This method is used to resolve ${} references in inline position.
 func (r *Retrieved) AsString() (string, error) {
 	if !r.isSetString {
-		switch r.rawConf.(type) {
-		case string:
-			return r.rawConf.(string), nil
+		if str, ok := r.rawConf.(string); ok {
+			return str, nil
 		}
-		return "", fmt.Errorf("retrieved value does not have string representation")
+		return "", fmt.Errorf("retrieved value does not have unambiguous string representation: %v", r.rawConf)
 	}
 	return r.stringRepresentation, nil
 }

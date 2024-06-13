@@ -132,7 +132,7 @@ func (mr *Resolver) findAndExpandURI(ctx context.Context, input string) (any, bo
 
 	var repl string
 	if internal.StrictlyTypedInputGate.IsEnabled() {
-		repl, err = toStringStrictType(*expanded)
+		repl, err = expanded.AsString()
 	} else {
 		repl, err = toString(expanded)
 	}
@@ -160,26 +160,6 @@ func toString(ret *Retrieved) (string, error) {
 		return strconv.FormatFloat(val.Float(), 'f', -1, 64), nil
 	case reflect.Bool:
 		return strconv.FormatBool(val.Bool()), nil
-	default:
-		return "", fmt.Errorf("expected convertable to string value type, got %q(%T)", input, input)
-	}
-}
-
-func toStringStrictType(ret Retrieved) (string, error) {
-	input, err := ret.AsRaw()
-	if err != nil {
-		return "", err
-	}
-
-	str, ok := ret.AsString()
-	if !ok {
-		return "", fmt.Errorf("expected convertable to string value type, got %v(%T)", input, input)
-	}
-
-	val := reflect.ValueOf(input)
-	switch val.Kind() {
-	case reflect.String, reflect.Int, reflect.Int32, reflect.Int64, reflect.Float32, reflect.Float64, reflect.Bool:
-		return str, nil
 	default:
 		return "", fmt.Errorf("expected convertable to string value type, got %q(%T)", input, input)
 	}
