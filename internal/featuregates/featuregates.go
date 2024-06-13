@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package featuregates
+package featuregates // import "go.opentelemetry.io/collector/internal/featuregates"
 
 import "go.opentelemetry.io/collector/featuregate"
 
