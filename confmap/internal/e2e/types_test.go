@@ -11,8 +11,10 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/internal"
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 type TargetField string
@@ -128,6 +130,136 @@ func TestTypeCasting(t *testing.T) {
 			expected:    true,
 		},
 	}
+
+	for _, tt := range values {
+		t.Run(tt.value+"/"+string(tt.targetField), func(t *testing.T) {
+			testFile := "types_expand.yaml"
+			if tt.targetField == TargetFieldInlineString {
+				testFile = "types_expand_inline.yaml"
+			}
+
+			resolver, err := confmap.NewResolver(confmap.ResolverSettings{
+				URIs: []string{filepath.Join("testdata", testFile)},
+				ProviderFactories: []confmap.ProviderFactory{
+					fileprovider.NewFactory(),
+					envprovider.NewFactory(),
+				},
+			})
+			require.NoError(t, err)
+			t.Setenv("ENV", tt.value)
+
+			conf, err := resolver.Resolve(context.Background())
+			require.NoError(t, err)
+
+			switch tt.targetField {
+			case TargetFieldInt:
+				var cfg TargetConfig[int]
+				AssertExpectedMatch(t, tt, conf, &cfg)
+			case TargetFieldString, TargetFieldInlineString:
+				var cfg TargetConfig[string]
+				AssertExpectedMatch(t, tt, conf, &cfg)
+			case TargetFieldBool:
+				var cfg TargetConfig[bool]
+				AssertExpectedMatch(t, tt, conf, &cfg)
+			default:
+				t.Fatalf("unexpected target field %q", tt.targetField)
+			}
+
+		})
+	}
+}
+
+func TestStrictTypeCasting(t *testing.T) {
+	values := []Test{
+		{
+			value:       "123",
+			targetField: TargetFieldInt,
+			expected:    123,
+		},
+		{
+			value:       "123",
+			targetField: TargetFieldString,
+			expectedErr: "'field' expected type 'string', got unconvertible type 'int', value: '123'",
+		},
+		{
+			value:       "123",
+			targetField: TargetFieldInlineString,
+			expected:    "inline field with 123 expansion",
+		},
+		{
+			value:       "0123",
+			targetField: TargetFieldInt,
+			expected:    83,
+		},
+		{
+			value:       "0123",
+			targetField: TargetFieldString,
+			expectedErr: "'field' expected type 'string', got unconvertible type 'int', value: '83'",
+		},
+		{
+			value:       "0123",
+			targetField: TargetFieldInlineString,
+			expected:    "inline field with 0123 expansion",
+		},
+		{
+			value:       "0xdeadbeef",
+			targetField: TargetFieldInt,
+			expected:    3735928559,
+		},
+		{
+			value:       "0xdeadbeef",
+			targetField: TargetFieldString,
+			expectedErr: "'field' expected type 'string', got unconvertible type 'int', value: '3735928559'",
+		},
+		{
+			value:       "0xdeadbeef",
+			targetField: TargetFieldInlineString,
+			expected:    "inline field with 0xdeadbeef expansion",
+		},
+		{
+			value:       "\"0123\"",
+			targetField: TargetFieldString,
+			expected:    "0123",
+		},
+		{
+			value:       "\"0123\"",
+			targetField: TargetFieldInt,
+			expectedErr: "'field' expected type 'int', got unconvertible type 'string', value: '0123'",
+		},
+		{
+			value:       "\"0123\"",
+			targetField: TargetFieldInlineString,
+			expected:    "inline field with 0123 expansion",
+		},
+		{
+			value:       "!!str 0123",
+			targetField: TargetFieldString,
+			expected:    "0123",
+		},
+		{
+			value:       "!!str 0123",
+			targetField: TargetFieldInlineString,
+			expected:    "inline field with 0123 expansion",
+		},
+		{
+			value:       "t",
+			targetField: TargetFieldBool,
+			expectedErr: "'field' expected type 'bool', got unconvertible type 'string', value: 't'",
+		},
+		{
+			value:       "23",
+			targetField: TargetFieldBool,
+			expectedErr: "'field' expected type 'bool', got unconvertible type 'int', value: '23'",
+		},
+	}
+
+	previousValue := internal.StrictlyTypedInputGate.IsEnabled()
+	err := featuregate.GlobalRegistry().Set(internal.StrictlyTypedInputID, true)
+	require.NoError(t, err)
+	defer func() {
+		err := featuregate.GlobalRegistry().Set(internal.StrictlyTypedInputID, previousValue)
+		require.NoError(t, err)
+	}()
 
 	for _, tt := range values {
 		t.Run(tt.value+"/"+string(tt.targetField), func(t *testing.T) {

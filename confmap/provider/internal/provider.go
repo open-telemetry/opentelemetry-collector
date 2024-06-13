@@ -17,5 +17,13 @@ func NewRetrievedFromYAML(yamlBytes []byte, opts ...confmap.RetrievedOption) (*c
 	if err := yaml.Unmarshal(yamlBytes, &rawConf); err != nil {
 		return nil, err
 	}
+
+	switch v := rawConf.(type) {
+	case string:
+		opts = append(opts, confmap.WithStringRepresentation(v))
+	default:
+		opts = append(opts, confmap.WithStringRepresentation(string(yamlBytes)))
+	}
+
 	return confmap.NewRetrieved(rawConf, opts...)
 }

@@ -99,10 +99,15 @@ type ChangeEvent struct {
 type Retrieved struct {
 	rawConf   any
 	closeFunc CloseFunc
+
+	stringRepresentation string
+	isSetString          bool
 }
 
 type retrievedSettings struct {
-	closeFunc CloseFunc
+	stringRepresentation string
+	isSetString          bool
+	closeFunc            CloseFunc
 }
 
 // RetrievedOption options to customize Retrieved values.
@@ -113,6 +118,13 @@ type RetrievedOption func(*retrievedSettings)
 func WithRetrievedClose(closeFunc CloseFunc) RetrievedOption {
 	return func(settings *retrievedSettings) {
 		settings.closeFunc = closeFunc
+	}
+}
+
+func WithStringRepresentation(stringRepresentation string) RetrievedOption {
+	return func(settings *retrievedSettings) {
+		settings.stringRepresentation = stringRepresentation
+		settings.isSetString = true
 	}
 }
 
@@ -129,7 +141,12 @@ func NewRetrieved(rawConf any, opts ...RetrievedOption) (*Retrieved, error) {
 	for _, opt := range opts {
 		opt(&set)
 	}
-	return &Retrieved{rawConf: rawConf, closeFunc: set.closeFunc}, nil
+	return &Retrieved{
+		rawConf:              rawConf,
+		closeFunc:            set.closeFunc,
+		stringRepresentation: set.stringRepresentation,
+		isSetString:          set.isSetString,
+	}, nil
 }
 
 // AsConf returns the retrieved configuration parsed as a Conf.
@@ -150,6 +167,10 @@ func (r *Retrieved) AsConf() (*Conf, error) {
 //   - map[string]any - every value follows the same rules as the given any;
 func (r *Retrieved) AsRaw() (any, error) {
 	return r.rawConf, nil
+}
+
+func (r *Retrieved) getStringRepr() (string, bool) {
+	return r.stringRepresentation, r.isSetString
 }
 
 // Close and release any watchers that Provider.Retrieve may have created.

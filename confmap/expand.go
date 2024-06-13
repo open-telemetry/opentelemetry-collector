@@ -11,6 +11,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"go.opentelemetry.io/collector/confmap/internal"
 )
 
 // schemePattern defines the regexp pattern for scheme names.
@@ -111,13 +113,29 @@ func (mr *Resolver) findAndExpandURI(ctx context.Context, input string) (any, bo
 	if uri == input {
 		// If the value is a single URI, then the return value can be anything.
 		// This is the case `foo: ${file:some_extra_config.yml}`.
-		return mr.expandURI(ctx, input)
+		ret, ok, err := mr.expandURI(ctx, input)
+		if err != nil {
+			return input, false, err
+		}
+
+		raw, err := ret.AsRaw()
+		if err != nil {
+			return input, false, err
+		}
+
+		return raw, ok, nil
 	}
 	expanded, changed, err := mr.expandURI(ctx, uri)
 	if err != nil {
 		return input, false, err
 	}
-	repl, err := toString(expanded)
+
+	var repl string
+	if internal.StrictlyTypedInputGate.IsEnabled() {
+		repl, err = toStringStrictType(*expanded)
+	} else {
+		repl, err = toString(expanded)
+	}
 	if err != nil {
 		return input, false, fmt.Errorf("expanding %v: %w", uri, err)
 	}
@@ -125,8 +143,13 @@ func (mr *Resolver) findAndExpandURI(ctx context.Context, input string) (any, bo
 }
 
 // toString attempts to convert input to a string.
-func toString(input any) (string, error) {
+func toString(ret *Retrieved) (string, error) {
 	// This list must be kept in sync with checkRawConfType.
+	input, err := ret.AsRaw()
+	if err != nil {
+		return "", err
+	}
+
 	val := reflect.ValueOf(input)
 	switch val.Kind() {
 	case reflect.String:
@@ -142,7 +165,27 @@ func toString(input any) (string, error) {
 	}
 }
 
-func (mr *Resolver) expandURI(ctx context.Context, input string) (any, bool, error) {
+func toStringStrictType(ret Retrieved) (string, error) {
+	input, err := ret.AsRaw()
+	if err != nil {
+		return "", err
+	}
+
+	str, ok := ret.getStringRepr()
+	if !ok {
+		return "", fmt.Errorf("expected convertable to string value type, got %v(%T)", input, input)
+	}
+
+	val := reflect.ValueOf(input)
+	switch val.Kind() {
+	case reflect.String, reflect.Int, reflect.Int32, reflect.Int64, reflect.Float32, reflect.Float64, reflect.Bool:
+		return str, nil
+	default:
+		return "", fmt.Errorf("expected convertable to string value type, got %q(%T)", input, input)
+	}
+}
+
+func (mr *Resolver) expandURI(ctx context.Context, input string) (*Retrieved, bool, error) {
 	// strip ${ and }
 	uri := input[2 : len(input)-1]
 
@@ -163,8 +206,7 @@ func (mr *Resolver) expandURI(ctx context.Context, input string) (any, bool, err
 		return nil, false, err
 	}
 	mr.closers = append(mr.closers, ret.Close)
-	val, err := ret.AsRaw()
-	return val, true, err
+	return ret, true, nil
 }
 
 type location struct {
