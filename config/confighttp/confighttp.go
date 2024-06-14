@@ -113,10 +113,6 @@ type ClientConfig struct {
 type CookiesConfig struct {
 	// Enabled if true, cookies from HTTP responses will be reused in further HTTP requests with the same server.
 	Enabled bool `mapstructure:"enabled"`
-	// Insecure if true, the client accepts setting cookies for any domain. This is useful for testing but is insecure:
-	// it means that the HTTP server for foo.co.uk can set a cookie for bar.co.uk.
-	// If false, the client will allow setting cookies based on the list provided by https://publicsuffix.org/
-	Insecure bool `mapstructure:"insecure"`
 }
 
 // NewDefaultClientConfig returns ClientConfig type object with
@@ -247,12 +243,7 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 
 	var jar http.CookieJar
 	if hcs.Cookies != nil && hcs.Cookies.Enabled {
-		opts := &cookiejar.Options{}
-		if !hcs.Cookies.Insecure {
-			opts.PublicSuffixList = publicsuffix.List
-		}
-
-		jar, err = cookiejar.New(opts)
+		jar, err = cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
 		if err != nil {
 			return nil, err
 		}

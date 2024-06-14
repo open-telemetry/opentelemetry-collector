@@ -36,9 +36,6 @@ README](../configtls/README.md).
 - [`http2_ping_timeout`](https://pkg.go.dev/golang.org/x/net/http2#Transport)
 - [`cookies`](https://pkg.go.dev/net/http#CookieJar)
   - [`enabled`] if enabled, the client will store cookies from server responses and reuse them in subsequent requests.
-  - [`insecure`] if true, the client accepts setting cookies for any domain. This is useful for testing but is insecure:
-    it means that the HTTP server for foo.co.uk can set a cookie for bar.co.uk.
-    If false, the client will allow setting cookies based on the list provided by https://publicsuffix.org/
 
 Example:
 
