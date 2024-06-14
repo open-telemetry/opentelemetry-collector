@@ -66,4 +66,81 @@ func TestNewRetrievedFromYAMLInvalidAsMap(t *testing.T) {
 
 	_, err = ret.AsConf()
 	assert.Error(t, err)
+
+	str, err := ret.AsString()
+	require.NoError(t, err)
+	assert.Equal(t, "string", str)
+}
+
+func TestNewRetrievedFromYAMLString(t *testing.T) {
+	tests := []struct {
+		yaml       string
+		value      any
+		altStrRepr string
+		strReprErr string
+	}{
+		{
+			yaml:  "string",
+			value: "string",
+		},
+		{
+			yaml:       "\"string\"",
+			value:      "string",
+			altStrRepr: "string",
+		},
+		{
+			yaml:  "123",
+			value: 123,
+		},
+		{
+			yaml:  "true",
+			value: true,
+		},
+		{
+			yaml:  "0123",
+			value: 0o123,
+		},
+		{
+			yaml:  "0x123",
+			value: 0x123,
+		},
+		{
+			yaml:  "0b101",
+			value: 0b101,
+		},
+		{
+			yaml:  "0.123",
+			value: 0.123,
+		},
+		{
+			yaml:       "{key: value}",
+			value:      map[string]any{"key": "value"},
+			strReprErr: "retrieved value does not have unambiguous string representation",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.yaml, func(t *testing.T) {
+			ret, err := NewRetrievedFromYAML([]byte(tt.yaml))
+			require.NoError(t, err)
+
+			raw, err := ret.AsRaw()
+			require.NoError(t, err)
+			assert.Equal(t, tt.value, raw)
+
+			str, err := ret.AsString()
+			if tt.strReprErr != "" {
+				assert.ErrorContains(t, err, tt.strReprErr)
+				return
+			}
+			require.NoError(t, err)
+
+			if tt.altStrRepr != "" {
+				assert.Equal(t, tt.altStrRepr, str)
+			} else {
+				assert.Equal(t, tt.yaml, str)
+			}
+		})
+	}
+
 }
