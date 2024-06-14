@@ -31,6 +31,7 @@ import (
 
 const headerContentEncoding = "Content-Encoding"
 const defaultMaxRequestBodySize = 20 * 1024 * 1024 // 20MiB
+var defaultCompressionAlgorithms = []string{"", "gzip", "zstd", "zlib", "snappy", "deflate"}
 
 // ClientConfig defines settings for creating an HTTP client.
 type ClientConfig struct {
@@ -283,6 +284,9 @@ type ServerConfig struct {
 	// Additional headers attached to each HTTP response sent to the client.
 	// Header values are opaque since they may be sensitive.
 	ResponseHeaders map[string]configopaque.String `mapstructure:"response_headers"`
+
+	// CompressionAlgorithms configures the list of compression algorithms the server can accept. Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate"]
+	CompressionAlgorithms []string `mapstructure:"compression_algorithms"`
 }
 
 // ToListener creates a net.Listener.
@@ -348,7 +352,11 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 		hss.MaxRequestBodySize = defaultMaxRequestBodySize
 	}
 
-	handler = httpContentDecompressor(handler, hss.MaxRequestBodySize, serverOpts.errHandler, serverOpts.decoders)
+	if hss.CompressionAlgorithms == nil {
+		hss.CompressionAlgorithms = defaultCompressionAlgorithms
+	}
+
+	handler = httpContentDecompressor(handler, hss.MaxRequestBodySize, serverOpts.errHandler, hss.CompressionAlgorithms, serverOpts.decoders)
 
 	if hss.MaxRequestBodySize > 0 {
 		handler = maxRequestBodySizeInterceptor(handler, hss.MaxRequestBodySize)
