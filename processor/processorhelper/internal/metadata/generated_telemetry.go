@@ -6,9 +6,11 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -22,6 +24,7 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
+	meter                         metric.Meter
 	ProcessorAcceptedLogRecords   metric.Int64Counter
 	ProcessorAcceptedMetricPoints metric.Int64Counter
 	ProcessorAcceptedSpans        metric.Int64Counter
@@ -31,69 +34,81 @@ type TelemetryBuilder struct {
 	ProcessorRefusedLogRecords    metric.Int64Counter
 	ProcessorRefusedMetricPoints  metric.Int64Counter
 	ProcessorRefusedSpans         metric.Int64Counter
+	level                         configtelemetry.Level
 }
 
 // telemetryBuilderOption applies changes to default builder.
 type telemetryBuilderOption func(*TelemetryBuilder)
 
+// WithLevel sets the current telemetry level for the component.
+func WithLevel(lvl configtelemetry.Level) telemetryBuilderOption {
+	return func(builder *TelemetryBuilder) {
+		builder.level = lvl
+	}
+}
+
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
 // for a component
 func NewTelemetryBuilder(settings component.TelemetrySettings, options ...telemetryBuilderOption) (*TelemetryBuilder, error) {
-	builder := TelemetryBuilder{}
+	builder := TelemetryBuilder{level: configtelemetry.LevelBasic}
 	for _, op := range options {
 		op(&builder)
 	}
 	var err, errs error
-	meter := Meter(settings)
-	builder.ProcessorAcceptedLogRecords, err = meter.Int64Counter(
+	if builder.level >= configtelemetry.LevelBasic {
+		builder.meter = Meter(settings)
+	} else {
+		builder.meter = noop.Meter{}
+	}
+	builder.ProcessorAcceptedLogRecords, err = builder.meter.Int64Counter(
 		"processor_accepted_log_records",
 		metric.WithDescription("Number of log records successfully pushed into the next component in the pipeline."),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorAcceptedMetricPoints, err = meter.Int64Counter(
+	builder.ProcessorAcceptedMetricPoints, err = builder.meter.Int64Counter(
 		"processor_accepted_metric_points",
 		metric.WithDescription("Number of metric points successfully pushed into the next component in the pipeline."),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorAcceptedSpans, err = meter.Int64Counter(
+	builder.ProcessorAcceptedSpans, err = builder.meter.Int64Counter(
 		"processor_accepted_spans",
 		metric.WithDescription("Number of spans successfully pushed into the next component in the pipeline."),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorDroppedLogRecords, err = meter.Int64Counter(
+	builder.ProcessorDroppedLogRecords, err = builder.meter.Int64Counter(
 		"processor_dropped_log_records",
 		metric.WithDescription("Number of log records that were dropped."),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorDroppedMetricPoints, err = meter.Int64Counter(
+	builder.ProcessorDroppedMetricPoints, err = builder.meter.Int64Counter(
 		"processor_dropped_metric_points",
 		metric.WithDescription("Number of metric points that were dropped."),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorDroppedSpans, err = meter.Int64Counter(
+	builder.ProcessorDroppedSpans, err = builder.meter.Int64Counter(
 		"processor_dropped_spans",
 		metric.WithDescription("Number of spans that were dropped."),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorRefusedLogRecords, err = meter.Int64Counter(
+	builder.ProcessorRefusedLogRecords, err = builder.meter.Int64Counter(
 		"processor_refused_log_records",
 		metric.WithDescription("Number of log records that were rejected by the next component in the pipeline."),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorRefusedMetricPoints, err = meter.Int64Counter(
+	builder.ProcessorRefusedMetricPoints, err = builder.meter.Int64Counter(
 		"processor_refused_metric_points",
 		metric.WithDescription("Number of metric points that were rejected by the next component in the pipeline."),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorRefusedSpans, err = meter.Int64Counter(
+	builder.ProcessorRefusedSpans, err = builder.meter.Int64Counter(
 		"processor_refused_spans",
 		metric.WithDescription("Number of spans that were rejected by the next component in the pipeline."),
 		metric.WithUnit("1"),

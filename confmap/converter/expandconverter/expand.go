@@ -5,6 +5,7 @@ package expandconverter // import "go.opentelemetry.io/collector/confmap/convert
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"regexp"
@@ -12,6 +13,8 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/internal/envvar"
+	"go.opentelemetry.io/collector/internal/featuregates"
 )
 
 type converter struct {
@@ -35,50 +38,77 @@ func newConverter(set confmap.ConverterSettings) confmap.Converter {
 }
 
 func (c converter) Convert(_ context.Context, conf *confmap.Conf) error {
+	var err error
 	out := make(map[string]any)
 	for _, k := range conf.AllKeys() {
-		out[k] = c.expandStringValues(conf.Get(k))
+		out[k], err = c.expandStringValues(conf.Get(k))
+		if err != nil {
+			return err
+		}
 	}
 	return conf.Merge(confmap.NewFromStringMap(out))
 }
 
-func (c converter) expandStringValues(value any) any {
+func (c converter) expandStringValues(value any) (any, error) {
+	var err error
 	switch v := value.(type) {
 	case string:
 		return c.expandEnv(v)
 	case []any:
 		nslice := make([]any, 0, len(v))
 		for _, vint := range v {
-			nslice = append(nslice, c.expandStringValues(vint))
+			var nv any
+			nv, err = c.expandStringValues(vint)
+			if err != nil {
+				return nil, err
+			}
+			nslice = append(nslice, nv)
 		}
-		return nslice
+		return nslice, nil
 	case map[string]any:
 		nmap := map[string]any{}
 		for mk, mv := range v {
-			nmap[mk] = c.expandStringValues(mv)
+			nmap[mk], err = c.expandStringValues(mv)
+			if err != nil {
+				return nil, err
+			}
 		}
-		return nmap
+		return nmap, nil
 	default:
-		return v
+		return v, nil
 	}
 }
 
-func (c converter) expandEnv(s string) string {
-	return os.Expand(s, func(str string) string {
-		// Matches on $VAR style environment variables
-		// in order to make sure we don't log a warning for ${VAR}
-		var regex = regexp.MustCompile(fmt.Sprintf(`\$%s`, regexp.QuoteMeta(str)))
-		if _, exists := c.loggedDeprecations[str]; !exists && regex.MatchString(s) {
-			msg := fmt.Sprintf("Variable substitution using $VAR will be deprecated in favor of ${VAR} and ${env:VAR}, please update $%s", str)
-			c.logger.Warn(msg, zap.String("variable", str))
-			c.loggedDeprecations[str] = struct{}{}
-		}
+func (c converter) expandEnv(s string) (string, error) {
+	var err error
+	res := os.Expand(s, func(str string) string {
 		// This allows escaping environment variable substitution via $$, e.g.
 		// - $FOO will be substituted with env var FOO
 		// - $$FOO will be replaced with $FOO
 		// - $$$FOO will be replaced with $ + substituted env var FOO
 		if str == "$" {
 			return "$"
+		}
+
+		// Matches on $VAR style environment variables
+		// in order to make sure we don't log a warning for ${VAR}
+		var regex = regexp.MustCompile(fmt.Sprintf(`\$%s`, regexp.QuoteMeta(str)))
+		if _, exists := c.loggedDeprecations[str]; !exists && regex.MatchString(s) {
+			if featuregates.UseUnifiedEnvVarExpansionRules.IsEnabled() {
+				err = errors.New("$VAR expansion is not supported when feature gate confmap.unifyEnvVarExpansion is enabled")
+				return ""
+			}
+			msg := fmt.Sprintf("Variable substitution using $VAR will be deprecated in favor of ${VAR} and ${env:VAR}, please update $%s", str)
+			c.logger.Warn(msg, zap.String("variable", str))
+			c.loggedDeprecations[str] = struct{}{}
+		}
+
+		// For $ENV style environment variables os.Expand returns once it hits a character that isn't an underscore or
+		// an alphanumeric character - so we cannot detect those malformed environment variables.
+		// For ${ENV} style variables we can detect those kinds of env var names!
+		if !envvar.ValidationRegexp.MatchString(str) {
+			err = fmt.Errorf("environment variable %q has invalid name: must match regex %s", str, envvar.ValidationPattern)
+			return ""
 		}
 		val, exists := os.LookupEnv(str)
 		if !exists {
@@ -88,4 +118,5 @@ func (c converter) expandEnv(s string) string {
 		}
 		return val
 	})
+	return res, err
 }

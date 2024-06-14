@@ -73,7 +73,7 @@ func (n *receiverNode) buildComponent(ctx context.Context,
 	builder *receiver.Builder,
 	nexts []baseConsumer,
 ) error {
-	set := receiver.CreateSettings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
+	set := receiver.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
 	set.TelemetrySettings.Logger = components.ReceiverLogger(tel.Logger, n.componentID, n.pipelineType)
 	var err error
 	switch n.pipelineType {
@@ -104,7 +104,7 @@ func (n *receiverNode) buildComponent(ctx context.Context,
 	return nil
 }
 
-var _ consumerNode = &processorNode{}
+var _ consumerNode = (*processorNode)(nil)
 
 // Every processor instance is unique to one pipeline.
 // Therefore, nodeID is derived from "pipeline ID" and "component ID".
@@ -133,7 +133,7 @@ func (n *processorNode) buildComponent(ctx context.Context,
 	builder *processor.Builder,
 	next baseConsumer,
 ) error {
-	set := processor.CreateSettings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
+	set := processor.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
 	set.TelemetrySettings.Logger = components.ProcessorLogger(set.TelemetrySettings.Logger, n.componentID, n.pipelineID)
 	var err error
 	switch n.pipelineID.Type() {
@@ -152,7 +152,7 @@ func (n *processorNode) buildComponent(ctx context.Context,
 	return nil
 }
 
-var _ consumerNode = &exporterNode{}
+var _ consumerNode = (*exporterNode)(nil)
 
 // An exporter instance can be shared by multiple pipelines of the same type.
 // Therefore, nodeID is derived from "pipeline type" and "component ID".
@@ -181,7 +181,7 @@ func (n *exporterNode) buildComponent(
 	info component.BuildInfo,
 	builder *exporter.Builder,
 ) error {
-	set := exporter.CreateSettings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
+	set := exporter.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
 	set.TelemetrySettings.Logger = components.ExporterLogger(set.TelemetrySettings.Logger, n.componentID, n.pipelineType)
 	var err error
 	switch n.pipelineType {
@@ -200,7 +200,7 @@ func (n *exporterNode) buildComponent(
 	return nil
 }
 
-var _ consumerNode = &connectorNode{}
+var _ consumerNode = (*connectorNode)(nil)
 
 // A connector instance connects one pipeline type to one other pipeline type.
 // Therefore, nodeID is derived from "exporter pipeline type", "receiver pipeline type", and "component ID".
@@ -233,7 +233,7 @@ func (n *connectorNode) buildComponent(
 	builder *connector.Builder,
 	nexts []baseConsumer,
 ) error {
-	set := connector.CreateSettings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
+	set := connector.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
 	set.TelemetrySettings.Logger = components.ConnectorLogger(set.TelemetrySettings.Logger, n.componentID, n.exprPipelineType, n.rcvrPipelineType)
 
 	switch n.rcvrPipelineType {
@@ -347,7 +347,7 @@ func (n *connectorNode) buildComponent(
 	return nil
 }
 
-var _ consumerNode = &capabilitiesNode{}
+var _ consumerNode = (*capabilitiesNode)(nil)
 
 // Every pipeline has a "virtual" capabilities node immediately after the receiver(s).
 // There are two purposes for this node:
@@ -374,7 +374,7 @@ func (n *capabilitiesNode) getConsumer() baseConsumer {
 	return n
 }
 
-var _ consumerNode = &fanOutNode{}
+var _ consumerNode = (*fanOutNode)(nil)
 
 // Each pipeline has one fan-out node before exporters.
 // Therefore, nodeID is derived from "pipeline ID".

@@ -1,7 +1,8 @@
 type: receiverhelper
 
 status:
-  class: pkg
+  class: receiver
+  not_component: true
   stability:
     beta: [traces, metrics, logs]
   distributions: [core, contrib]

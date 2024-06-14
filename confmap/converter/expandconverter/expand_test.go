@@ -17,6 +17,9 @@ import (
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/internal/envvar"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/featuregates"
 )
 
 func TestNewExpandConverter(t *testing.T) {
@@ -53,6 +56,31 @@ func TestNewExpandConverter(t *testing.T) {
 			assert.Equal(t, expectedCfgMap.ToStringMap(), conf.ToStringMap())
 		})
 	}
+}
+
+func TestNewExpandConverter_UseUnifiedEnvVarExpansionRules(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.UseUnifiedEnvVarExpansionRules.ID(), true))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.UseUnifiedEnvVarExpansionRules.ID(), false))
+	})
+
+	const valueExtra = "some string"
+	const valueExtraMapValue = "some map value"
+	const valueExtraListMapValue = "some list map value"
+	const valueExtraListElement = "some list value"
+	t.Setenv("EXTRA", valueExtra)
+	t.Setenv("EXTRA_MAP_VALUE_1", valueExtraMapValue+"_1")
+	t.Setenv("EXTRA_MAP_VALUE_2", valueExtraMapValue+"_2")
+	t.Setenv("EXTRA_LIST_MAP_VALUE_1", valueExtraListMapValue+"_1")
+	t.Setenv("EXTRA_LIST_MAP_VALUE_2", valueExtraListMapValue+"_2")
+	t.Setenv("EXTRA_LIST_VALUE_1", valueExtraListElement+"_1")
+	t.Setenv("EXTRA_LIST_VALUE_2", valueExtraListElement+"_2")
+
+	conf, err := confmaptest.LoadConf(filepath.Join("testdata", "expand-with-all-env.yaml"))
+	require.NoError(t, err, "Unable to get config")
+
+	// Test that expanded configs are the same with the simple config with no env vars.
+	require.ErrorContains(t, createConverter().Convert(context.Background(), conf), "$VAR expansion is not supported when feature gate confmap.unifyEnvVarExpansion is enabled")
 }
 
 func TestNewExpandConverter_EscapedMaps(t *testing.T) {
@@ -176,13 +204,16 @@ func TestDeprecatedWarning(t *testing.T) {
 	t.Setenv("PORT", "4317")
 
 	t.Setenv("HOST_NAME", "127.0.0.2")
-	t.Setenv("HOST.NAME", "127.0.0.3")
+	t.Setenv("HOSTNAME", "127.0.0.3")
+
+	t.Setenv("BAD!HOST", "127.0.0.2")
 
 	var testCases = []struct {
 		name             string
 		input            map[string]any
 		expectedOutput   map[string]any
 		expectedWarnings []string
+		expectedError    error
 	}{
 		{
 			name: "no warning",
@@ -193,6 +224,7 @@ func TestDeprecatedWarning(t *testing.T) {
 				"test": "127.0.0.1:4317",
 			},
 			expectedWarnings: []string{},
+			expectedError:    nil,
 		},
 		{
 			name: "one deprecated var",
@@ -203,6 +235,7 @@ func TestDeprecatedWarning(t *testing.T) {
 				"test": "127.0.0.1:4317",
 			},
 			expectedWarnings: []string{"PORT"},
+			expectedError:    nil,
 		},
 		{
 			name: "two deprecated vars",
@@ -213,6 +246,7 @@ func TestDeprecatedWarning(t *testing.T) {
 				"test": "127.0.0.1:4317",
 			},
 			expectedWarnings: []string{"HOST", "PORT"},
+			expectedError:    nil,
 		},
 		{
 			name: "one depracated serveral times",
@@ -225,30 +259,100 @@ func TestDeprecatedWarning(t *testing.T) {
 				"test2": "127.0.0.1",
 			},
 			expectedWarnings: []string{"HOST"},
+			expectedError:    nil,
 		},
 		{
 			name: "one warning",
 			input: map[string]any{
-				"test": "$HOST_NAME,${HOST.NAME}",
+				"test": "$HOST_NAME,${HOSTNAME}",
 			},
 			expectedOutput: map[string]any{
 				"test": "127.0.0.2,127.0.0.3",
 			},
 			expectedWarnings: []string{"HOST_NAME"},
+			expectedError:    nil,
+		},
+		{
+			name: "malformed environment variable",
+			input: map[string]any{
+				"test": "${BAD!HOST}",
+			},
+			expectedOutput: map[string]any{
+				"test": "blah",
+			},
+			expectedWarnings: []string{},
+			expectedError:    fmt.Errorf("environment variable \"BAD!HOST\" has invalid name: must match regex %s", envvar.ValidationRegexp),
+		},
+		{
+			name: "malformed environment variable number",
+			input: map[string]any{
+				"test": "${2BADHOST}",
+			},
+			expectedOutput: map[string]any{
+				"test": "blah",
+			},
+			expectedWarnings: []string{},
+			expectedError:    fmt.Errorf("environment variable \"2BADHOST\" has invalid name: must match regex %s", envvar.ValidationRegexp),
+		},
+		{
+			name: "malformed environment variable unicode",
+			input: map[string]any{
+				"test": "${😊BADHOST}",
+			},
+			expectedOutput: map[string]any{
+				"test": "blah",
+			},
+			expectedWarnings: []string{},
+			expectedError:    fmt.Errorf("environment variable \"😊BADHOST\" has invalid name: must match regex %s", envvar.ValidationRegexp),
 		},
 	}
+
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			conf := confmap.NewFromStringMap(tt.input)
 			conv, logs := NewTestConverter()
-			require.NoError(t, conv.Convert(context.Background(), conf))
-
-			assert.Equal(t, tt.expectedOutput, conf.ToStringMap())
+			err := conv.Convert(context.Background(), conf)
+			assert.Equal(t, tt.expectedError, err)
+			if tt.expectedError == nil {
+				assert.Equal(t, tt.expectedOutput, conf.ToStringMap())
+			}
 			assert.Equal(t, len(tt.expectedWarnings), len(logs.All()))
 			for i, variable := range tt.expectedWarnings {
 				errorMsg := fmt.Sprintf(msgTemplate, variable)
 				assert.Equal(t, errorMsg, logs.All()[i].Message)
 			}
+		})
+	}
+}
+
+func TestNewExpandConverterWithErrors(t *testing.T) {
+	var testCases = []struct {
+		name          string // test case name (also file name containing config yaml)
+		expectedError error
+	}{
+		{
+			name:          "expand-list-error.yaml",
+			expectedError: fmt.Errorf("environment variable \"EXTRA_LIST_^VALUE_2\" has invalid name: must match regex %s", envvar.ValidationRegexp),
+		},
+		{
+			name:          "expand-list-map-error.yaml",
+			expectedError: fmt.Errorf("environment variable \"EXTRA_LIST_MAP_V#ALUE_2\" has invalid name: must match regex %s", envvar.ValidationRegexp),
+		},
+		{
+			name:          "expand-map-error.yaml",
+			expectedError: fmt.Errorf("environment variable \"EX#TRA\" has invalid name: must match regex %s", envvar.ValidationRegexp),
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			conf, err := confmaptest.LoadConf(filepath.Join("testdata", "errors", test.name))
+			require.NoError(t, err, "Unable to get config")
+
+			// Test that expanded configs are the same with the simple config with no env vars.
+			err = createConverter().Convert(context.Background(), conf)
+
+			assert.Equal(t, test.expectedError, err)
 		})
 	}
 }

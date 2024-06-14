@@ -11,8 +11,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"go.opentelemetry.io/collector/confmap"
 )
 
 var _ encoding.TextMarshaler = String("")
@@ -46,13 +44,6 @@ func TestStringJSON(t *testing.T) {
 	bytes, err := json.Marshal(example)
 	require.NoError(t, err)
 	assert.Equal(t, `{"opaque":"[REDACTED]","plain":"plain"}`, string(bytes))
-}
-
-func TestConfMapMarshalConfigOpaque(t *testing.T) {
-	conf := confmap.New()
-	assert.NoError(t, conf.Marshal(example))
-	assert.Equal(t, "[REDACTED]", conf.Get("opaque"))
-	assert.Equal(t, "plain", conf.Get("plain"))
 }
 
 func TestStringFmt(t *testing.T) {

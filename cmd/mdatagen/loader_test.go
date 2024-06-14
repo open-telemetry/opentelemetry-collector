@@ -248,6 +248,7 @@ func TestLoadMetadata(t *testing.T) {
 							Unit:        strPtr("s"),
 							Histogram: &histogram{
 								MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
+								Boundaries:      []float64{1, 10, 100},
 							},
 						},
 						"process_runtime_total_alloc_bytes": {
@@ -256,6 +257,19 @@ func TestLoadMetadata(t *testing.T) {
 							Unit:        strPtr("By"),
 							Sum: &sum{
 								Mono: Mono{true},
+								MetricValueType: MetricValueType{
+									ValueType: pmetric.NumberDataPointValueTypeInt,
+								},
+								Async: true,
+							},
+						},
+						"queue_length": {
+							Enabled:               true,
+							Description:           "This metric is optional and therefore not initialized in NewTelemetryBuilder.",
+							ExtendedDocumentation: "For example this metric only exists if feature A is enabled.",
+							Unit:                  strPtr("1"),
+							Optional:              true,
+							Gauge: &gauge{
 								MetricValueType: MetricValueType{
 									ValueType: pmetric.NumberDataPointValueTypeInt,
 								},

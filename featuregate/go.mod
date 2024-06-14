@@ -1,9 +1,9 @@
 module go.opentelemetry.io/collector/featuregate
 
-go 1.21
+go 1.21.0
 
 require (
-	github.com/hashicorp/go-version v1.6.0
+	github.com/hashicorp/go-version v1.7.0
 	github.com/stretchr/testify v1.9.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0

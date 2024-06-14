@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -19,7 +18,7 @@ func TestUnmarshalConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	cfg := &Config{}
-	assert.NoError(t, component.UnmarshalConfig(cm, cfg))
+	assert.NoError(t, cm.Unmarshal(&cfg))
 	assert.Equal(t,
 		&Config{
 			CheckInterval:       5 * time.Second,
@@ -98,7 +97,7 @@ func TestUnmarshalInvalidConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "negative_unsigned_limits_config.yaml"))
 	require.NoError(t, err)
 	cfg := &Config{}
-	err = component.UnmarshalConfig(cm, cfg)
+	err = cm.Unmarshal(&cfg)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "error decoding 'limit_mib': cannot convert negative value -2000 to an unsigned integer")
 	require.Contains(t, err.Error(), "error decoding 'spike_limit_mib': cannot convert negative value -2300 to an unsigned integer")

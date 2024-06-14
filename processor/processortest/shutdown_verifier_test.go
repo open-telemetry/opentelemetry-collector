@@ -72,19 +72,19 @@ func (passthroughProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{}
 }
 
-func createPassthroughLogsProcessor(_ context.Context, _ processor.CreateSettings, _ component.Config, logs consumer.Logs) (processor.Logs, error) {
+func createPassthroughLogsProcessor(_ context.Context, _ processor.Settings, _ component.Config, logs consumer.Logs) (processor.Logs, error) {
 	return passthroughProcessor{
 		nextLogs: logs,
 	}, nil
 }
 
-func createPassthroughMetricsProcessor(_ context.Context, _ processor.CreateSettings, _ component.Config, metrics consumer.Metrics) (processor.Metrics, error) {
+func createPassthroughMetricsProcessor(_ context.Context, _ processor.Settings, _ component.Config, metrics consumer.Metrics) (processor.Metrics, error) {
 	return passthroughProcessor{
 		nextMetrics: metrics,
 	}, nil
 }
 
-func createPassthroughTracesProcessor(_ context.Context, _ processor.CreateSettings, _ component.Config, traces consumer.Traces) (processor.Traces, error) {
+func createPassthroughTracesProcessor(_ context.Context, _ processor.Settings, _ component.Config, traces consumer.Traces) (processor.Traces, error) {
 	return passthroughProcessor{
 		nextTraces: traces,
 	}, nil

@@ -30,6 +30,22 @@ Number of spans failed to be added to the sending queue.
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
+### exporter_queue_capacity
+
+Fixed capacity of the retry queue (in batches)
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+### exporter_queue_size
+
+Current size of the retry queue (in batches)
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
 ### exporter_send_failed_log_records
 
 Number of log records in failed attempts to send to destination.

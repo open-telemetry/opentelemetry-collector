@@ -84,7 +84,7 @@ func Test_applyCfgFromFile(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "distribution, excludes, exporters, receivers, processors, replaces are applied correctly",
+			name: "distribution, scheme, excludes, exporters, receivers, processors, replaces are applied correctly",
 			args: args{
 				flags: flag.NewFlagSet("version=1.0.0", 1),
 				cfgFromFile: builder.Config{
@@ -95,16 +95,22 @@ func Test_applyCfgFromFile(t *testing.T) {
 					Receivers:    []builder.Module{testModule},
 					Exporters:    []builder.Module{testModule},
 					Replaces:     testStringTable,
+					ConfResolver: builder.ConfResolver{
+						DefaultURIScheme: "env",
+					},
 				},
 			},
 			want: builder.Config{
 				Logger:       zap.NewNop(),
 				Distribution: testDistribution,
-				Excludes:     testStringTable,
-				Processors:   []builder.Module{testModule},
-				Receivers:    []builder.Module{testModule},
-				Exporters:    []builder.Module{testModule},
-				Replaces:     testStringTable,
+				ConfResolver: builder.ConfResolver{
+					DefaultURIScheme: "env",
+				},
+				Excludes:   testStringTable,
+				Processors: []builder.Module{testModule},
+				Receivers:  []builder.Module{testModule},
+				Exporters:  []builder.Module{testModule},
+				Replaces:   testStringTable,
 			},
 			wantErr: false,
 		},
@@ -246,6 +252,7 @@ func Test_applyCfgFromFile(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			applyCfgFromFile(tt.args.flags, tt.args.cfgFromFile)
+			assert.Equal(t, tt.want.ConfResolver.DefaultURIScheme, cfg.ConfResolver.DefaultURIScheme)
 			assert.Equal(t, tt.want.Distribution, cfg.Distribution)
 			assert.Equal(t, tt.want.SkipGenerate, cfg.SkipGenerate)
 			assert.Equal(t, tt.want.SkipCompilation, cfg.SkipCompilation)

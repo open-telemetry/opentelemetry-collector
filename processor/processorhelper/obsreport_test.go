@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/processor"
 )
 
@@ -26,7 +27,7 @@ func TestProcessorTraceData(t *testing.T) {
 		const droppedSpans = 13
 		obsrep, err := newObsReport(ObsReportSettings{
 			ProcessorID:             processorID,
-			ProcessorCreateSettings: processor.CreateSettings{ID: processorID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+			ProcessorCreateSettings: processor.Settings{ID: processorID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		})
 		require.NoError(t, err)
 		obsrep.TracesAccepted(context.Background(), acceptedSpans)
@@ -45,7 +46,7 @@ func TestProcessorMetricsData(t *testing.T) {
 
 		obsrep, err := newObsReport(ObsReportSettings{
 			ProcessorID:             processorID,
-			ProcessorCreateSettings: processor.CreateSettings{ID: processorID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+			ProcessorCreateSettings: processor.Settings{ID: processorID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		})
 		require.NoError(t, err)
 		obsrep.MetricsAccepted(context.Background(), acceptedPoints)
@@ -86,7 +87,7 @@ func TestProcessorLogRecords(t *testing.T) {
 
 		obsrep, err := newObsReport(ObsReportSettings{
 			ProcessorID:             processorID,
-			ProcessorCreateSettings: processor.CreateSettings{ID: processorID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+			ProcessorCreateSettings: processor.Settings{ID: processorID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		})
 		require.NoError(t, err)
 		obsrep.LogsAccepted(context.Background(), acceptedRecords)
@@ -104,7 +105,7 @@ func TestCheckProcessorTracesViews(t *testing.T) {
 
 	por, err := NewObsReport(ObsReportSettings{
 		ProcessorID:             processorID,
-		ProcessorCreateSettings: processor.CreateSettings{ID: processorID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		ProcessorCreateSettings: processor.Settings{ID: processorID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 	})
 	assert.NoError(t, err)
 
@@ -129,7 +130,7 @@ func TestCheckProcessorMetricsViews(t *testing.T) {
 
 	por, err := NewObsReport(ObsReportSettings{
 		ProcessorID:             processorID,
-		ProcessorCreateSettings: processor.CreateSettings{ID: processorID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		ProcessorCreateSettings: processor.Settings{ID: processorID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 	})
 	assert.NoError(t, err)
 
@@ -154,7 +155,7 @@ func TestCheckProcessorLogViews(t *testing.T) {
 
 	por, err := NewObsReport(ObsReportSettings{
 		ProcessorID:             processorID,
-		ProcessorCreateSettings: processor.CreateSettings{ID: processorID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		ProcessorCreateSettings: processor.Settings{ID: processorID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 	})
 	assert.NoError(t, err)
 
@@ -172,12 +173,71 @@ func TestCheckProcessorLogViews(t *testing.T) {
 	assert.Error(t, tt.CheckProcessorLogs(0, 0, 9))
 }
 
-func testTelemetry(t *testing.T, id component.ID, testFunc func(t *testing.T, tt componenttest.TestTelemetry)) {
-	t.Run("WithOTel", func(t *testing.T) {
-		tt, err := componenttest.SetupTelemetry(id)
-		require.NoError(t, err)
-		t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+func TestNoMetrics(t *testing.T) {
+	// ensure if LevelNone is configured, no metrics are emitted by the component
+	testTelemetry(t, processorID, func(t *testing.T, tt componenttest.TestTelemetry) {
+		const accepted = 29
+		const refused = 11
+		const dropped = 17
+		set := tt.TelemetrySettings()
+		set.MetricsLevel = configtelemetry.LevelNone
 
-		testFunc(t, tt)
+		por, err := NewObsReport(ObsReportSettings{
+			ProcessorID:             processorID,
+			ProcessorCreateSettings: processor.Settings{ID: processorID, TelemetrySettings: set, BuildInfo: component.NewDefaultBuildInfo()},
+		})
+		assert.NoError(t, err)
+
+		por.TracesAccepted(context.Background(), accepted)
+		por.TracesRefused(context.Background(), refused)
+		por.TracesDropped(context.Background(), dropped)
+
+		require.Error(t, tt.CheckProcessorTraces(accepted, refused, dropped))
 	})
+	testTelemetry(t, processorID, func(t *testing.T, tt componenttest.TestTelemetry) {
+		const accepted = 29
+		const refused = 11
+		const dropped = 17
+		set := tt.TelemetrySettings()
+		set.MetricsLevel = configtelemetry.LevelNone
+
+		por, err := NewObsReport(ObsReportSettings{
+			ProcessorID:             processorID,
+			ProcessorCreateSettings: processor.Settings{ID: processorID, TelemetrySettings: set, BuildInfo: component.NewDefaultBuildInfo()},
+		})
+		assert.NoError(t, err)
+
+		por.MetricsAccepted(context.Background(), accepted)
+		por.MetricsRefused(context.Background(), refused)
+		por.MetricsDropped(context.Background(), dropped)
+
+		require.Error(t, tt.CheckProcessorMetrics(accepted, refused, dropped))
+	})
+	testTelemetry(t, processorID, func(t *testing.T, tt componenttest.TestTelemetry) {
+		const accepted = 29
+		const refused = 11
+		const dropped = 17
+		set := tt.TelemetrySettings()
+		set.MetricsLevel = configtelemetry.LevelNone
+
+		por, err := NewObsReport(ObsReportSettings{
+			ProcessorID:             processorID,
+			ProcessorCreateSettings: processor.Settings{ID: processorID, TelemetrySettings: set, BuildInfo: component.NewDefaultBuildInfo()},
+		})
+		assert.NoError(t, err)
+
+		por.LogsAccepted(context.Background(), accepted)
+		por.LogsRefused(context.Background(), refused)
+		por.LogsDropped(context.Background(), dropped)
+
+		require.Error(t, tt.CheckProcessorLogs(accepted, refused, dropped))
+	})
+}
+
+func testTelemetry(t *testing.T, id component.ID, testFunc func(t *testing.T, tt componenttest.TestTelemetry)) {
+	tt, err := componenttest.SetupTelemetry(id)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	testFunc(t, tt)
 }

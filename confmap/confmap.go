@@ -41,6 +41,11 @@ func NewFromStringMap(data map[string]any) *Conf {
 // The confmap.Conf can be unmarshalled into the Collector's config using the "service" package.
 type Conf struct {
 	k *koanf.Koanf
+	// If true, upon unmarshaling do not call the Unmarshal function on the struct
+	// if it implements Unmarshaler and is the top-level struct.
+	// This avoids running into an infinite recursion where Unmarshaler.Unmarshal and
+	// Conf.Unmarshal would call each other.
+	skipTopLevelUnmarshaler bool
 }
 
 // AllKeys returns all keys holding a value, regardless of where they are set.
@@ -79,7 +84,7 @@ func (l *Conf) Unmarshal(result any, opts ...UnmarshalOption) error {
 	for _, opt := range opts {
 		opt.apply(&set)
 	}
-	return decodeConfig(l, result, !set.ignoreUnused)
+	return decodeConfig(l, result, !set.ignoreUnused, l.skipTopLevelUnmarshaler)
 }
 
 type marshalOption struct{}
@@ -146,7 +151,7 @@ func (l *Conf) ToStringMap() map[string]any {
 // uniqueness of component IDs (see mapKeyStringToMapKeyTextUnmarshalerHookFunc).
 // Decodes time.Duration from strings. Allows custom unmarshaling for structs implementing
 // encoding.TextUnmarshaler. Allows custom unmarshaling for structs implementing confmap.Unmarshaler.
-func decodeConfig(m *Conf, result any, errorUnused bool) error {
+func decodeConfig(m *Conf, result any, errorUnused bool, skipTopLevelUnmarshaler bool) error {
 	dc := &mapstructure.DecoderConfig{
 		ErrorUnused:      errorUnused,
 		Result:           result,
@@ -159,7 +164,7 @@ func decodeConfig(m *Conf, result any, errorUnused bool) error {
 			mapKeyStringToMapKeyTextUnmarshalerHookFunc(),
 			mapstructure.StringToTimeDurationHookFunc(),
 			mapstructure.TextUnmarshallerHookFunc(),
-			unmarshalerHookFunc(result),
+			unmarshalerHookFunc(result, skipTopLevelUnmarshaler),
 			// after the main unmarshaler hook is called,
 			// we unmarshal the embedded structs if present to merge with the result:
 			unmarshalerEmbeddedStructsHookFunc(),
@@ -295,7 +300,9 @@ func unmarshalerEmbeddedStructsHookFunc() mapstructure.DecodeHookFuncValue {
 			f := to.Type().Field(i)
 			if f.IsExported() && slices.Contains(strings.Split(f.Tag.Get("mapstructure"), ","), "squash") {
 				if unmarshaler, ok := to.Field(i).Addr().Interface().(Unmarshaler); ok {
-					if err := unmarshaler.Unmarshal(NewFromStringMap(fromAsMap)); err != nil {
+					c := NewFromStringMap(fromAsMap)
+					c.skipTopLevelUnmarshaler = true
+					if err := unmarshaler.Unmarshal(c); err != nil {
 						return nil, err
 					}
 					// the struct we receive from this unmarshaling only contains fields related to the embedded struct.
@@ -317,16 +324,18 @@ func unmarshalerEmbeddedStructsHookFunc() mapstructure.DecodeHookFuncValue {
 }
 
 // Provides a mechanism for individual structs to define their own unmarshal logic,
-// by implementing the Unmarshaler interface.
-func unmarshalerHookFunc(result any) mapstructure.DecodeHookFuncValue {
+// by implementing the Unmarshaler interface, unless skipTopLevelUnmarshaler is
+// true and the struct matches the top level object being unmarshaled.
+func unmarshalerHookFunc(result any, skipTopLevelUnmarshaler bool) mapstructure.DecodeHookFuncValue {
 	return func(from reflect.Value, to reflect.Value) (any, error) {
 		if !to.CanAddr() {
 			return from.Interface(), nil
 		}
 
 		toPtr := to.Addr().Interface()
-		// Need to ignore the top structure to avoid circular dependency.
-		if toPtr == result {
+		// Need to ignore the top structure to avoid running into an infinite recursion
+		// where Unmarshaler.Unmarshal and Conf.Unmarshal would call each other.
+		if toPtr == result && skipTopLevelUnmarshaler {
 			return from.Interface(), nil
 		}
 
@@ -344,7 +353,9 @@ func unmarshalerHookFunc(result any) mapstructure.DecodeHookFuncValue {
 			unmarshaler = reflect.New(to.Type()).Interface().(Unmarshaler)
 		}
 
-		if err := unmarshaler.Unmarshal(NewFromStringMap(from.Interface().(map[string]any))); err != nil {
+		c := NewFromStringMap(from.Interface().(map[string]any))
+		c.skipTopLevelUnmarshaler = true
+		if err := unmarshaler.Unmarshal(c); err != nil {
 			return nil, err
 		}
 
@@ -381,6 +392,7 @@ func marshalerHookFunc(orig any) mapstructure.DecodeHookFuncValue {
 type Unmarshaler interface {
 	// Unmarshal a Conf into the struct in a custom way.
 	// The Conf for this specific component may be nil or empty if no config available.
+	// This method should only be called by decoding hooks when calling Conf.Unmarshal.
 	Unmarshal(component *Conf) error
 }
 
