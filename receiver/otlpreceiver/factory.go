@@ -5,6 +5,7 @@ package otlpreceiver // import "go.opentelemetry.io/collector/receiver/otlprecei
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -15,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/internal/sharedcomponent"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/receiverprofiles"
 )
 
 const (
@@ -28,12 +30,17 @@ const (
 
 // NewFactory creates a new OTLP receiver factory.
 func NewFactory() receiver.Factory {
+	var createProfiles = func(context.Context, receiver.CreateSettings, component.Config, consumer.Profiles) (receiverprofiles.Profiles, error) {
+		return nil, fmt.Errorf("receiver does not support profiles")
+	}
+
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
 		receiver.WithTraces(createTraces, metadata.TracesStability),
 		receiver.WithMetrics(createMetrics, metadata.MetricsStability),
 		receiver.WithLogs(createLog, metadata.LogsStability),
+		receiverprofiles.WithProfiles(createProfiles, component.StabilityLevelAlpha),
 	)
 }
 

@@ -49,6 +49,7 @@ require (
 	github.com/prometheus/common v0.53.0 // indirect
 	github.com/prometheus/procfs v0.15.0 // indirect
 	go.opentelemetry.io/collector/confmap v0.101.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.0.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.49.0 // indirect
 	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/text v0.15.0 // indirect
@@ -72,6 +73,8 @@ replace go.opentelemetry.io/collector/featuregate => ../featuregate
 replace go.opentelemetry.io/collector/pdata => ../pdata
 
 replace go.opentelemetry.io/collector/pdata/testdata => ../pdata/testdata
+
+replace go.opentelemetry.io/collector/pdata/pprofile => ../pdata/pprofile
 
 replace go.opentelemetry.io/collector/receiver => ../receiver
 

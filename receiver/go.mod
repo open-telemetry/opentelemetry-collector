@@ -10,8 +10,7 @@ require (
 	go.opentelemetry.io/collector/config/configtelemetry v0.101.0
 	go.opentelemetry.io/collector/consumer v0.101.0
 	go.opentelemetry.io/collector/pdata v1.8.0
-		go.opentelemetry.io/collector/pdata/pprofile v0.0.0
-
+	go.opentelemetry.io/collector/pdata/pprofile v0.0.0 // indirect
 	go.opentelemetry.io/otel v1.27.0
 	go.opentelemetry.io/otel/metric v1.27.0
 	go.opentelemetry.io/otel/sdk v1.27.0
@@ -65,6 +64,7 @@ replace go.opentelemetry.io/collector/consumer => ../consumer
 replace go.opentelemetry.io/collector/featuregate => ../featuregate
 
 replace go.opentelemetry.io/collector/pdata => ../pdata
+
 replace go.opentelemetry.io/collector/pdata/pprofile => ../pdata/pprofile
 
 replace go.opentelemetry.io/collector/pdata/testdata => ../pdata/testdata

@@ -70,6 +70,7 @@ require (
 	go.opentelemetry.io/collector v0.101.0 // indirect
 	go.opentelemetry.io/collector/consumer v0.101.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.8.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.0.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.101.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.101.0 // indirect
 	go.opentelemetry.io/contrib/config v0.7.0 // indirect
@@ -108,6 +109,8 @@ replace go.opentelemetry.io/collector/component => ../component
 replace go.opentelemetry.io/collector/pdata => ../pdata
 
 replace go.opentelemetry.io/collector/pdata/testdata => ../pdata/testdata
+
+replace go.opentelemetry.io/collector/pdata/pprofile => ../pdata/pprofile
 
 replace go.opentelemetry.io/collector/extension/zpagesextension => ../extension/zpagesextension
 
