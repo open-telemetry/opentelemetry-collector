@@ -27,10 +27,11 @@ const (
 )
 
 type Test struct {
-	value       string
-	targetField TargetField
-	expected    any
-	expectedErr string
+	value        string
+	targetField  TargetField
+	expected     any
+	resolveErr   string
+	unmarshalErr string
 }
 
 type TargetConfig[T any] struct {
@@ -39,8 +40,8 @@ type TargetConfig[T any] struct {
 
 func AssertExpectedMatch[T any](t *testing.T, tt Test, conf *confmap.Conf, cfg *TargetConfig[T]) {
 	err := conf.Unmarshal(cfg)
-	if tt.expectedErr != "" {
-		require.ErrorContains(t, err, tt.expectedErr)
+	if tt.unmarshalErr != "" {
+		require.ErrorContains(t, err, tt.unmarshalErr)
 		return
 	}
 	require.NoError(t, err)
@@ -177,9 +178,9 @@ func TestStrictTypeCasting(t *testing.T) {
 			expected:    123,
 		},
 		{
-			value:       "123",
-			targetField: TargetFieldString,
-			expectedErr: "'field' expected type 'string', got unconvertible type 'int', value: '123'",
+			value:        "123",
+			targetField:  TargetFieldString,
+			unmarshalErr: "'field' expected type 'string', got unconvertible type 'int', value: '123'",
 		},
 		{
 			value:       "123",
@@ -192,9 +193,9 @@ func TestStrictTypeCasting(t *testing.T) {
 			expected:    83,
 		},
 		{
-			value:       "0123",
-			targetField: TargetFieldString,
-			expectedErr: "'field' expected type 'string', got unconvertible type 'int', value: '83'",
+			value:        "0123",
+			targetField:  TargetFieldString,
+			unmarshalErr: "'field' expected type 'string', got unconvertible type 'int', value: '83'",
 		},
 		{
 			value:       "0123",
@@ -207,9 +208,9 @@ func TestStrictTypeCasting(t *testing.T) {
 			expected:    3735928559,
 		},
 		{
-			value:       "0xdeadbeef",
-			targetField: TargetFieldString,
-			expectedErr: "'field' expected type 'string', got unconvertible type 'int', value: '3735928559'",
+			value:        "0xdeadbeef",
+			targetField:  TargetFieldString,
+			unmarshalErr: "'field' expected type 'string', got unconvertible type 'int', value: '3735928559'",
 		},
 		{
 			value:       "0xdeadbeef",
@@ -222,9 +223,9 @@ func TestStrictTypeCasting(t *testing.T) {
 			expected:    "0123",
 		},
 		{
-			value:       "\"0123\"",
-			targetField: TargetFieldInt,
-			expectedErr: "'field' expected type 'int', got unconvertible type 'string', value: '0123'",
+			value:        "\"0123\"",
+			targetField:  TargetFieldInt,
+			unmarshalErr: "'field' expected type 'int', got unconvertible type 'string', value: '0123'",
 		},
 		{
 			value:       "\"0123\"",
@@ -242,14 +243,19 @@ func TestStrictTypeCasting(t *testing.T) {
 			expected:    "inline field with 0123 expansion",
 		},
 		{
-			value:       "t",
-			targetField: TargetFieldBool,
-			expectedErr: "'field' expected type 'bool', got unconvertible type 'string', value: 't'",
+			value:        "t",
+			targetField:  TargetFieldBool,
+			unmarshalErr: "'field' expected type 'bool', got unconvertible type 'string', value: 't'",
 		},
 		{
-			value:       "23",
-			targetField: TargetFieldBool,
-			expectedErr: "'field' expected type 'bool', got unconvertible type 'int', value: '23'",
+			value:        "23",
+			targetField:  TargetFieldBool,
+			unmarshalErr: "'field' expected type 'bool', got unconvertible type 'int', value: '23'",
+		},
+		{
+			value:       "{\"field\": 123}",
+			targetField: TargetFieldInlineString,
+			resolveErr:  "retrieved value does not have unambiguous string representation",
 		},
 	}
 
@@ -279,6 +285,10 @@ func TestStrictTypeCasting(t *testing.T) {
 			t.Setenv("ENV", tt.value)
 
 			conf, err := resolver.Resolve(context.Background())
+			if tt.resolveErr != "" {
+				require.ErrorContains(t, err, tt.resolveErr)
+				return
+			}
 			require.NoError(t, err)
 
 			switch tt.targetField {
