@@ -37,6 +37,7 @@ func fillSpanOne(span ptrace.Span) {
 	span.SetStartTimestamp(spanStartTimestamp)
 	span.SetEndTimestamp(spanEndTimestamp)
 	span.SetDroppedAttributesCount(1)
+	span.TraceState().FromRaw("ot=th:0") // 100% sampling
 	span.SetTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
 	span.SetSpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
 	evs := span.Events()
@@ -59,6 +60,7 @@ func fillSpanTwo(span ptrace.Span) {
 	span.SetName("operationB")
 	span.SetStartTimestamp(spanStartTimestamp)
 	span.SetEndTimestamp(spanEndTimestamp)
+	span.TraceState().FromRaw("ot=th:8") // 50% sampling
 	link0 := span.Links().AppendEmpty()
 	link0.Attributes().PutStr("span-link-attr", "span-link-attr-val")
 	link0.SetDroppedAttributesCount(4)
