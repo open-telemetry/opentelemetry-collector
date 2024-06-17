@@ -12,6 +12,7 @@ The system defines six statuses, listed in the table below:
 | OK               | The component is running without issue.                                                                                                            |
 | RecoverableError | The component has experienced a transient error and may recover.                                                                                   |
 | PermanentError   | The component has detected a condition at runtime that will need human intervention to fix. The collector will continue to run in a degraded mode. |
+| FatalError       | A component has experienced a fatal error and the collecctor will shutdown.                                                                        |
 | Stopping         | The component is in the process of shutting down.                                                                                                  |
 | Stopped          | The component has completed shutdown.                                                                                                              |
 
@@ -26,6 +27,7 @@ Statuses can be categorized into two groups: lifecycle and runtime.
 - OK
 - RecoverableError
 - PermanentError
+- FatalError
 
 ### Transitioning Between Statuses
 
@@ -34,17 +36,17 @@ There is a finite state machine underlying the status reporting API that governs
 
 ![State Diagram](img/component-status-state-diagram.png)
 
-The finite state machine ensures that components progress through the lifecycle properly and it manages transitions through runtime states so that components do not need to track their state internally. Only changes in status result in new events being generated; repeat reports of the same status are ignored. PermanentError is a permanent runtime state. A component in this state can transition to Stopping, but not to OK or RecoverableError.
+The finite state machine ensures that components progress through the lifecycle properly and it manages transitions through runtime states so that components do not need to track their state internally. Only changes in status result in new events being generated; repeat reports of the same status are ignored. PermanentError and FatalError are permanent runtime states. A component in these states cannot make any further state transitions.
 
 ![Status Event Generation](img/component-status-event-generation.png)
 
 ### Automation
 
-The collector is responsible for starting and stopping components. Since it knows when these events occur and their outcomes, it can automate status reporting of lifecycle events for components.
+The collector's service implementation is responsible for starting and stopping components. Since it knows when these events occur and their outcomes, it can automate status reporting of lifecycle events for components.
 
 **Start**
 
-The collector will report a Starting event when starting a component. If an error is returned from Start, the collector will report a PermanentError event. If start returns without an error and the collector hasn't reported status itself, the collector will report an OK event.
+The collector will report a Starting event when starting a component. If an error is returned from Start, the collector will report a PermanentError event. If start returns without an error and the component hasn't reported status itself, the collector will report an OK event.
 
 **Shutdown**
 
@@ -67,7 +69,7 @@ We intend to define guidelines to help component authors distinguish between rec
 
 A component should never have to report explicit status during shutdown. Automated status reporting should handle all cases. To recap, the collector will report Stopping before Shutdown is called. If a component returns an error from shutdown the collector will report a PermanentError and it will report Stopped if Shutdown returns without an error.
 
-### In the Weeds
+### Implmentation Details
 
 There are a couple of implementation details that are worth discussing for those who work on or wish to understand the collector internals.
 
