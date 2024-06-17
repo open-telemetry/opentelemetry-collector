@@ -117,14 +117,14 @@ func (or *ObsReport) recordMetrics(ctx context.Context, dataType component.DataT
 	var sentMeasure, failedMeasure metric.Int64Counter
 	switch dataType {
 	case component.DataTypeTraces:
-		sentMeasure = or.telemetryBuilder.ExporterSentSpans
-		failedMeasure = or.telemetryBuilder.ExporterSendFailedSpans
+		sentMeasure = or.telemetryBuilder.OtelcolExporterSentSpans
+		failedMeasure = or.telemetryBuilder.OtelcolExporterSendFailedSpans
 	case component.DataTypeMetrics:
-		sentMeasure = or.telemetryBuilder.ExporterSentMetricPoints
-		failedMeasure = or.telemetryBuilder.ExporterSendFailedMetricPoints
+		sentMeasure = or.telemetryBuilder.OtelcolExporterSentMetricPoints
+		failedMeasure = or.telemetryBuilder.OtelcolExporterSendFailedMetricPoints
 	case component.DataTypeLogs:
-		sentMeasure = or.telemetryBuilder.ExporterSentLogRecords
-		failedMeasure = or.telemetryBuilder.ExporterSendFailedLogRecords
+		sentMeasure = or.telemetryBuilder.OtelcolExporterSentLogRecords
+		failedMeasure = or.telemetryBuilder.OtelcolExporterSendFailedLogRecords
 	}
 
 	sentMeasure.Add(ctx, sent, metric.WithAttributes(or.otelAttrs...))
@@ -157,11 +157,11 @@ func (or *ObsReport) recordEnqueueFailure(ctx context.Context, dataType componen
 	var enqueueFailedMeasure metric.Int64Counter
 	switch dataType {
 	case component.DataTypeTraces:
-		enqueueFailedMeasure = or.telemetryBuilder.ExporterEnqueueFailedSpans
+		enqueueFailedMeasure = or.telemetryBuilder.OtelcolExporterEnqueueFailedSpans
 	case component.DataTypeMetrics:
-		enqueueFailedMeasure = or.telemetryBuilder.ExporterEnqueueFailedMetricPoints
+		enqueueFailedMeasure = or.telemetryBuilder.OtelcolExporterEnqueueFailedMetricPoints
 	case component.DataTypeLogs:
-		enqueueFailedMeasure = or.telemetryBuilder.ExporterEnqueueFailedLogRecords
+		enqueueFailedMeasure = or.telemetryBuilder.OtelcolExporterEnqueueFailedLogRecords
 	}
 
 	enqueueFailedMeasure.Add(ctx, failed, metric.WithAttributes(or.otelAttrs...))

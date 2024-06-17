@@ -77,12 +77,12 @@ func RegisterProcessMetrics(cfg servicetelemetry.TelemetrySettings, ballastSizeB
 	}
 
 	_, err = metadata.NewTelemetryBuilder(cfg.ToComponentTelemetrySettings(&component.InstanceID{}),
-		metadata.WithProcessUptimeCallback(pm.updateProcessUptime),
-		metadata.WithProcessRuntimeHeapAllocBytesCallback(pm.updateAllocMem),
-		metadata.WithProcessRuntimeTotalAllocBytesCallback(pm.updateTotalAllocMem),
-		metadata.WithProcessRuntimeTotalSysMemoryBytesCallback(pm.updateSysMem),
-		metadata.WithProcessCPUSecondsCallback(pm.updateCPUSeconds),
-		metadata.WithProcessMemoryRssCallback(pm.updateRSSMemory),
+		metadata.WithOtelcolProcessUptimeCallback(pm.updateProcessUptime),
+		metadata.WithOtelcolProcessRuntimeHeapAllocBytesCallback(pm.updateAllocMem),
+		metadata.WithOtelcolProcessRuntimeTotalAllocBytesCallback(pm.updateTotalAllocMem),
+		metadata.WithOtelcolProcessRuntimeTotalSysMemoryBytesCallback(pm.updateSysMem),
+		metadata.WithOtelcolProcessCPUSecondsCallback(pm.updateCPUSeconds),
+		metadata.WithOtelcolProcessMemoryRssCallback(pm.updateRSSMemory),
 	)
 	return err
 }

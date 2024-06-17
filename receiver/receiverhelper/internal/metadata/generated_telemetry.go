@@ -24,14 +24,14 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                        metric.Meter
-	ReceiverAcceptedLogRecords   metric.Int64Counter
-	ReceiverAcceptedMetricPoints metric.Int64Counter
-	ReceiverAcceptedSpans        metric.Int64Counter
-	ReceiverRefusedLogRecords    metric.Int64Counter
-	ReceiverRefusedMetricPoints  metric.Int64Counter
-	ReceiverRefusedSpans         metric.Int64Counter
-	level                        configtelemetry.Level
+	meter                               metric.Meter
+	OtelcolReceiverAcceptedLogRecords   metric.Int64Counter
+	OtelcolReceiverAcceptedMetricPoints metric.Int64Counter
+	OtelcolReceiverAcceptedSpans        metric.Int64Counter
+	OtelcolReceiverRefusedLogRecords    metric.Int64Counter
+	OtelcolReceiverRefusedMetricPoints  metric.Int64Counter
+	OtelcolReceiverRefusedSpans         metric.Int64Counter
+	level                               configtelemetry.Level
 }
 
 // telemetryBuilderOption applies changes to default builder.
@@ -57,38 +57,38 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	} else {
 		builder.meter = noop.Meter{}
 	}
-	builder.ReceiverAcceptedLogRecords, err = builder.meter.Int64Counter(
-		"receiver_accepted_log_records",
+	builder.OtelcolReceiverAcceptedLogRecords, err = builder.meter.Int64Counter(
+		"otelcol_receiver_accepted_log_records",
 		metric.WithDescription("Number of log records successfully pushed into the pipeline."),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ReceiverAcceptedMetricPoints, err = builder.meter.Int64Counter(
-		"receiver_accepted_metric_points",
+	builder.OtelcolReceiverAcceptedMetricPoints, err = builder.meter.Int64Counter(
+		"otelcol_receiver_accepted_metric_points",
 		metric.WithDescription("Number of metric points successfully pushed into the pipeline."),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ReceiverAcceptedSpans, err = builder.meter.Int64Counter(
-		"receiver_accepted_spans",
+	builder.OtelcolReceiverAcceptedSpans, err = builder.meter.Int64Counter(
+		"otelcol_receiver_accepted_spans",
 		metric.WithDescription("Number of spans successfully pushed into the pipeline."),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ReceiverRefusedLogRecords, err = builder.meter.Int64Counter(
-		"receiver_refused_log_records",
+	builder.OtelcolReceiverRefusedLogRecords, err = builder.meter.Int64Counter(
+		"otelcol_receiver_refused_log_records",
 		metric.WithDescription("Number of log records that could not be pushed into the pipeline."),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ReceiverRefusedMetricPoints, err = builder.meter.Int64Counter(
-		"receiver_refused_metric_points",
+	builder.OtelcolReceiverRefusedMetricPoints, err = builder.meter.Int64Counter(
+		"otelcol_receiver_refused_metric_points",
 		metric.WithDescription("Number of metric points that could not be pushed into the pipeline."),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ReceiverRefusedSpans, err = builder.meter.Int64Counter(
-		"receiver_refused_spans",
+	builder.OtelcolReceiverRefusedSpans, err = builder.meter.Int64Counter(
+		"otelcol_receiver_refused_spans",
 		metric.WithDescription("Number of spans that could not be pushed into the pipeline."),
 		metric.WithUnit("1"),
 	)

@@ -9,7 +9,7 @@ status:
 
 telemetry:
   metrics:
-    scraper_scraped_metric_points:
+    otelcol_scraper_scraped_metric_points:
       enabled: true
       description: Number of metric points successfully scraped.
       unit: 1
@@ -17,7 +17,7 @@ telemetry:
         value_type: int
         monotonic: true
 
-    scraper_errored_metric_points:
+    otelcol_scraper_errored_metric_points:
       enabled: true
       description: Number of metric points that were unable to be scraped.
       unit: 1

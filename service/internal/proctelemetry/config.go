@@ -168,7 +168,6 @@ func initPrometheusExporter(prometheusConfig *config.Prometheus, asyncErrorChann
 		otelprom.WithProducer(opencensus.NewMetricProducer()),
 		// This allows us to produce metrics that are backwards compatible w/ opencensus
 		otelprom.WithoutCounterSuffixes(),
-		otelprom.WithNamespace("otelcol"),
 		otelprom.WithResourceAsConstantLabels(attribute.NewDenyKeysFilter()),
 	)
 	if err != nil {

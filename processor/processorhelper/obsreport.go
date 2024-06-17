@@ -64,17 +64,17 @@ func (or *ObsReport) recordData(ctx context.Context, dataType component.DataType
 	var acceptedCount, refusedCount, droppedCount metric.Int64Counter
 	switch dataType {
 	case component.DataTypeTraces:
-		acceptedCount = or.telemetryBuilder.ProcessorAcceptedSpans
-		refusedCount = or.telemetryBuilder.ProcessorRefusedSpans
-		droppedCount = or.telemetryBuilder.ProcessorDroppedSpans
+		acceptedCount = or.telemetryBuilder.OtelcolProcessorAcceptedSpans
+		refusedCount = or.telemetryBuilder.OtelcolProcessorRefusedSpans
+		droppedCount = or.telemetryBuilder.OtelcolProcessorDroppedSpans
 	case component.DataTypeMetrics:
-		acceptedCount = or.telemetryBuilder.ProcessorAcceptedMetricPoints
-		refusedCount = or.telemetryBuilder.ProcessorRefusedMetricPoints
-		droppedCount = or.telemetryBuilder.ProcessorDroppedMetricPoints
+		acceptedCount = or.telemetryBuilder.OtelcolProcessorAcceptedMetricPoints
+		refusedCount = or.telemetryBuilder.OtelcolProcessorRefusedMetricPoints
+		droppedCount = or.telemetryBuilder.OtelcolProcessorDroppedMetricPoints
 	case component.DataTypeLogs:
-		acceptedCount = or.telemetryBuilder.ProcessorAcceptedLogRecords
-		refusedCount = or.telemetryBuilder.ProcessorRefusedLogRecords
-		droppedCount = or.telemetryBuilder.ProcessorDroppedLogRecords
+		acceptedCount = or.telemetryBuilder.OtelcolProcessorAcceptedLogRecords
+		refusedCount = or.telemetryBuilder.OtelcolProcessorRefusedLogRecords
+		droppedCount = or.telemetryBuilder.OtelcolProcessorDroppedLogRecords
 	}
 
 	acceptedCount.Add(ctx, accepted, metric.WithAttributes(or.otelAttrs...))

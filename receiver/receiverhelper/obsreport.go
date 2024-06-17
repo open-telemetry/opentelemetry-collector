@@ -201,14 +201,14 @@ func (rec *ObsReport) recordMetrics(receiverCtx context.Context, dataType compon
 	var acceptedMeasure, refusedMeasure metric.Int64Counter
 	switch dataType {
 	case component.DataTypeTraces:
-		acceptedMeasure = rec.telemetryBuilder.ReceiverAcceptedSpans
-		refusedMeasure = rec.telemetryBuilder.ReceiverRefusedSpans
+		acceptedMeasure = rec.telemetryBuilder.OtelcolReceiverAcceptedSpans
+		refusedMeasure = rec.telemetryBuilder.OtelcolReceiverRefusedSpans
 	case component.DataTypeMetrics:
-		acceptedMeasure = rec.telemetryBuilder.ReceiverAcceptedMetricPoints
-		refusedMeasure = rec.telemetryBuilder.ReceiverRefusedMetricPoints
+		acceptedMeasure = rec.telemetryBuilder.OtelcolReceiverAcceptedMetricPoints
+		refusedMeasure = rec.telemetryBuilder.OtelcolReceiverRefusedMetricPoints
 	case component.DataTypeLogs:
-		acceptedMeasure = rec.telemetryBuilder.ReceiverAcceptedLogRecords
-		refusedMeasure = rec.telemetryBuilder.ReceiverRefusedLogRecords
+		acceptedMeasure = rec.telemetryBuilder.OtelcolReceiverAcceptedLogRecords
+		refusedMeasure = rec.telemetryBuilder.OtelcolReceiverRefusedLogRecords
 	}
 
 	acceptedMeasure.Add(receiverCtx, int64(numAccepted), metric.WithAttributes(rec.otelAttrs...))
