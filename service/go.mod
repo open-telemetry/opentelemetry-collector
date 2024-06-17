@@ -20,8 +20,8 @@ require (
 	go.opentelemetry.io/collector/exporter v0.102.1
 	go.opentelemetry.io/collector/extension v0.102.1
 	go.opentelemetry.io/collector/extension/zpagesextension v0.102.1
-	go.opentelemetry.io/collector/featuregate v1.9.0
-	go.opentelemetry.io/collector/pdata v1.9.0
+	go.opentelemetry.io/collector/featuregate v1.10.0
+	go.opentelemetry.io/collector/pdata v1.10.0
 	go.opentelemetry.io/collector/pdata/testdata v0.102.1
 	go.opentelemetry.io/collector/processor v0.102.1
 	go.opentelemetry.io/collector/receiver v0.102.1
@@ -79,8 +79,8 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.102.1 // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.9.0 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.9.0 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.10.0 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.10.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v0.102.1 // indirect
 	go.opentelemetry.io/collector/config/internal v0.102.1 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.102.1 // indirect
