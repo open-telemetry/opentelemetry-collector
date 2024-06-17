@@ -33,7 +33,6 @@ Span #1
     ID             : 
     Name           : operationB
     Kind           : Unspecified
-    TraceState     : ot=th:8
     Start time     : 2020-02-11 20:26:12.000000321 +0000 UTC
     End time       : 2020-02-11 20:26:13.000000789 +0000 UTC
     Status code    : Unset

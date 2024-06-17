@@ -39,7 +39,9 @@ func (textTracesMarshaler) MarshalTraces(td ptrace.Traces) ([]byte, error) {
 				buf.logAttr("ID", span.SpanID())
 				buf.logAttr("Name", span.Name())
 				buf.logAttr("Kind", span.Kind().String())
-				buf.logAttr("TraceState", span.TraceState().AsRaw())
+				if ts := span.TraceState().AsRaw(); len(ts) != 0 {
+					buf.logAttr("TraceState", ts)
+				}
 				buf.logAttr("Start time", span.StartTimestamp().String())
 				buf.logAttr("End time", span.EndTimestamp().String())
 

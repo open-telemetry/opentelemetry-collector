@@ -60,7 +60,6 @@ func fillSpanTwo(span ptrace.Span) {
 	span.SetName("operationB")
 	span.SetStartTimestamp(spanStartTimestamp)
 	span.SetEndTimestamp(spanEndTimestamp)
-	span.TraceState().FromRaw("ot=th:8") // 50% sampling
 	link0 := span.Links().AppendEmpty()
 	link0.Attributes().PutStr("span-link-attr", "span-link-attr-val")
 	link0.SetDroppedAttributesCount(4)
