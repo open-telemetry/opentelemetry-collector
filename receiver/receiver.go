@@ -45,11 +45,6 @@ type Logs interface {
 	component.Component
 }
 
-// CreateSettings configures Receiver creators.
-//
-// Deprecated: [v0.103.0] Use receiver.Settings instead.
-type CreateSettings = Settings
-
 // Settings configures Receiver creators.
 type Settings struct {
 	// ID returns the ID of the component that will be created.
