@@ -122,32 +122,6 @@ The service gets a slightly different TelemetrySettings object, a servicetelemet
 
 The collector has the concept of a shared component. A shared component is represented as a single component to the collector, but represents multiple logical components elsewhere. The most common usage of this is the OTLP receiver, where a single shared component represents a logical instance for each signal: traces, metrics, and logs (although this can vary based on configuration). When a shared component reports status it must report an event for each of the logical instances it represents. In the current implementation, shared component reports status for all its logical instances during [Start](https://github.com/open-telemetry/opentelemetry-collector/blob/31ac3336d956d93abede6db76453730613e1f076/internal/sharedcomponent/sharedcomponent.go#L89-L98) and [Shutdown](https://github.com/open-telemetry/opentelemetry-collector/blob/31ac3336d956d93abede6db76453730613e1f076/internal/sharedcomponent/sharedcomponent.go#L105-L117). It also [modifies the ReportStatus method](https://github.com/open-telemetry/opentelemetry-collector/blob/31ac3336d956d93abede6db76453730613e1f076/internal/sharedcomponent/sharedcomponent.go#L34-L44) on component.TelemetrySettings to report status for each logical instance when called.
 
-## Open Questions and Proposed Changes
-
-### Remove Fatal Error
-
-There have been [discussions](https://github.com/open-telemetry/opentelemetry-collector/issues/9823) about removing FatalError. The FatalError functionality predates the component status system and was incorporated into it as it provides related functionality. Component Start allows a component to terminate the startup of the collector by returning an error. The FatalError system augments this capability by allowing a component that starts async work in Start to terminate the collector if the async work fails. This is because the async work spawned in Start is indeterminate and not guaranteed to complete before Start returns. We have discussed removing FatalError and using PermanentError in its place. This would be a change in behavior as a PermanentError will not terminate collector execution, but it will result in a status event sent to registered status watchers, which can act on this information in a meaningful way. This would simplify the considerations during Start for component authors and promote more uniformity in outcomes from Start. If we were to remove FatalError before 1.0 we could always decide to add it back in a non-breaking way afterwards.
-
-### Allow Transition from PermanentError to Stopping
-
-In the absence of a FatalError, this change would allow us to ensure a component always completes its lifecycle. A component that is in a PermanentError state will be stopped by the collector and its state should reflect that. This change will allow StatusWatchers to distinguish between a component that is not functioning due to an error vs one that is unavailable because it is in the process of starting or stopping. This was discussed briefly in this [issue](https://github.com/open-telemetry/opentelemetry-collector/issues/10058).
-
-### Remove Status Aggregation from Core
-
-Also discussed in [#10058](https://github.com/open-telemetry/opentelemetry-collector/issues/10058) was the possibility of removing status aggregation from core. It was initially added to core with the assumption that it could be beneficial to StatusWatchers that wish to use it. It did not end up meeting the needs of the healthcheck v2 extension, which needed to reimplement the logic with additional flexibility. In the extension, aggregation is configuration dependent, leading one to question whether or not there is a one size fits all approach to status aggregation. It makes sense for us to consider removing status aggregation from core for now and adding it back in later after we have a better idea of how it should work. See this issue: https://github.com/open-telemetry/opentelemetry-collector/issues/10058 for more discussion.
-
-### Diagram Changes
-
-In order to visually understand the proposed changes, the diagrams have been redrawn to show what they would look like if we both remove FatalError and allow a component to transition from PermanentError to Stopping.
-
-State Diagram (complete)
-
-![component-status-reporting-update](component-status-reporting-update.png)
-
-State Diagram (runtime)
-
-![component-status-reporting-runtime-updated](component-status-reporting-runtime.png)
-
 ## The Goals the Component Health Reporting Should Achieve
 
 The following are the goals, as of June 2024 and with Collector 1.0 looming, for a component health reporting system.
