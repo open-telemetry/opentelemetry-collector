@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package otelcoltest // import "go.opentelemetry.io/collector/otelcol/otelcoltest"
+package otelcoltest // import "go.opentelemetry.io/collector/otelcoltest"
 
 import (
 	"go.opentelemetry.io/collector/connector"
@@ -18,8 +18,6 @@ import (
 )
 
 // NopFactories returns a otelcol.Factories with all nop factories.
-//
-// Deprecated: [v0.103.0] Use go.opentelemetry.io/collector/otelcoltest instead
 func NopFactories() (otelcol.Factories, error) {
 	var factories otelcol.Factories
 	var err error
