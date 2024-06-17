@@ -6,11 +6,11 @@ Since the OpenTelemetry Collector is made up of pipelines with components, it ne
 
 1. The historical state of how components reported health
 2. The current state of how components report health
-3. The goals the component health reporting should achieve
+3. The goals component health reporting should achieve
 4. Existing deviations from those goals
 5. Desired behavior for 1.0
 
-For the sake of simplicity,when `Host` is referenced in this document you can think of the Collector service, which manages all the collector pipelines and the components within.
+For the sake of simplicity, when `Host` is referenced in this document you can think of the Collector service, which manages all the collector pipelines and the components within.
 
 ## Out Of Scope
 
@@ -217,7 +217,6 @@ All deviations for the goals should be addressed so that component 1.0 can be re
   - Merged
     - https://github.com/open-telemetry/opentelemetry-collector/pull/8169
 
-Matt: Little did I know this comment would change my life forever: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8816#issuecomment-1083380460
 
 
 
