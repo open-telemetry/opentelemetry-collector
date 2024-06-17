@@ -45,15 +45,20 @@ The proposed approach will consist of two main phases:
 * Mark specific APIs as `experimental` in their godoc for parts that can't be a new package.
 	* `service`
 
-### Introduce `experimental` packages
+### Introduce "experimental" subpackages
 
-Each package that needs to be profiling signal-aware will have its barebones copied into
-a new `XXexperimental` package (eg: `consumerexperimental`) which will be able
-to handle the profiling signal.
+Each package that needs to be profiling signal-aware will have its public
+methods and interfaces moves into an internal subpackage.
 
-The stable related stable packages MUST not be aware of their experimental
-counterpart.
-The experimental package MAY call its stable implementation.
+Then, the original package will get similar API methods and interfaces as the
+ones currently available on the main branch.
+
+The profiling methods and interfaces will be made available in a `profiles`
+subpackage.
+
+See [PR
+#10253](https://github.com/open-telemetry/opentelemetry-collector/pull/10253)
+for an example.
 
 ### Mark specific APIs as `experimental`
 
