@@ -34,6 +34,7 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.54.0 // indirect
 	github.com/prometheus/procfs v0.15.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.102.1 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.49.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.27.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
@@ -59,5 +60,7 @@ replace go.opentelemetry.io/collector/featuregate => ../featuregate
 replace go.opentelemetry.io/collector/pdata => ../pdata
 
 replace go.opentelemetry.io/collector/pdata/testdata => ../pdata/testdata
+
+replace go.opentelemetry.io/collector/pdata/pprofile => ../pdata/pprofile
 
 replace go.opentelemetry.io/collector/config/configtelemetry => ../config/configtelemetry

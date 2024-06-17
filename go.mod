@@ -57,6 +57,7 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.103.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.102.1 // indirect
 	go.opentelemetry.io/otel v1.27.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.27.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v1.27.0 // indirect
@@ -101,3 +102,5 @@ retract (
 	v0.57.0 // Release failed, use v0.57.2
 	v0.32.0 // Contains incomplete metrics transition to proto 0.9.0, random components are not working.
 )
+
+replace go.opentelemetry.io/collector/pdata/pprofile => ./pdata/pprofile
