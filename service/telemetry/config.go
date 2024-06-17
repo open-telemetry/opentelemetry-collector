@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/contrib/config"
 	"go.uber.org/zap/zapcore"
 
+	"go.opentelemetry.io/collector/config/configrotate"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
@@ -92,6 +93,19 @@ type LogsConfig struct {
 	//
 	// By default, there is no initial field.
 	InitialFields map[string]any `mapstructure:"initial_fields"`
+
+	// Rotation sets the way the log is rotated.
+	// Example:
+	//
+	//     rotation:
+	//         enabled: true
+	//         max_megabytes: 100
+	//         max_days: 0
+	//         max_backups: 100
+	//         localtime: false
+	//
+	// This example is also the default configuration.
+	Rotation *configrotate.Config `mapstructure:"rotation"`
 }
 
 // LogsSamplingConfig sets a sampling strategy for the logger. Sampling caps the
