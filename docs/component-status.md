@@ -69,7 +69,7 @@ We intend to define guidelines to help component authors distinguish between rec
 
 A component should never have to report explicit status during shutdown. Automated status reporting should handle all cases. To recap, the collector will report Stopping before Shutdown is called. If a component returns an error from shutdown the collector will report a PermanentError and it will report Stopped if Shutdown returns without an error.
 
-### Implmentation Details
+### Implementation Details
 
 There are a couple of implementation details that are worth discussing for those who work on or wish to understand the collector internals.
 
