@@ -36,6 +36,7 @@ func TestNewCommandProgrammaticallyPassedConfig(t *testing.T) {
 	cmd := NewCommandMustSetProvider(CollectorSettings{Factories: nopFactories, ConfigProviderSettings: ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
 			ProviderFactories: []confmap.ProviderFactory{confmap.NewProviderFactory(newFailureProvider)},
+			DefaultScheme:     "file",
 		},
 	}})
 	otelRunE := cmd.RunE

@@ -48,6 +48,11 @@ func TestNewExpandConverter(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
+			require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.UseUnifiedEnvVarExpansionRules.ID(), false))
+			t.Cleanup(func() {
+				require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.UseUnifiedEnvVarExpansionRules.ID(), true))
+			})
+
 			conf, err := confmaptest.LoadConf(filepath.Join("testdata", test.name))
 			require.NoError(t, err, "Unable to get config")
 
