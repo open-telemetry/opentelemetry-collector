@@ -4,7 +4,7 @@
 package iruntime // import "go.opentelemetry.io/collector/internal/iruntime"
 
 import (
-	"github.com/shirou/gopsutil/v3/mem"
+	"github.com/shirou/gopsutil/v4/mem"
 )
 
 // readMemInfo returns the total memory

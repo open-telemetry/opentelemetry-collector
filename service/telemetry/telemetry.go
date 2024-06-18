@@ -8,4 +8,4 @@ import (
 )
 
 // Settings holds configuration for building Telemetry.
-type Settings = internal.CreateSettings
+type Settings = internal.Settings

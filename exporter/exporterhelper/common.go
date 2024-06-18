@@ -110,7 +110,7 @@ func WithQueue(config QueueSettings) Option {
 			NumConsumers: config.NumConsumers,
 			QueueSize:    config.QueueSize,
 		})
-		o.queueSender = newQueueSender(q, o.set, config.NumConsumers, o.exportFailureMessage)
+		o.queueSender = newQueueSender(q, o.set, config.NumConsumers, o.exportFailureMessage, o.obsrep.telemetryBuilder)
 		return nil
 	}
 }
@@ -132,7 +132,7 @@ func WithRequestQueue(cfg exporterqueue.Config, queueFactory exporterqueue.Facto
 			DataType:         o.signal,
 			ExporterSettings: o.set,
 		}
-		o.queueSender = newQueueSender(queueFactory(context.Background(), set, cfg), o.set, cfg.NumConsumers, o.exportFailureMessage)
+		o.queueSender = newQueueSender(queueFactory(context.Background(), set, cfg), o.set, cfg.NumConsumers, o.exportFailureMessage, o.obsrep.telemetryBuilder)
 		return nil
 	}
 }
@@ -280,7 +280,7 @@ func newBaseExporter(set exporter.Settings, signal component.DataType, osf obsre
 	if bs, ok := be.batchSender.(*batchSender); ok {
 		// If queue sender is enabled assign to the batch sender the same number of workers.
 		if qs, ok := be.queueSender.(*queueSender); ok {
-			bs.concurrencyLimit = uint64(qs.numConsumers)
+			bs.concurrencyLimit = int64(qs.numConsumers)
 		}
 		// Batcher sender mutates the data.
 		be.consumerOptions = append(be.consumerOptions, consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}))

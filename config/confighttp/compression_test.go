@@ -134,7 +134,7 @@ func TestHTTPCustomDecompression(t *testing.T) {
 			return io.NopCloser(strings.NewReader("decompressed body")), nil
 		},
 	}
-	srv := httptest.NewServer(httpContentDecompressor(handler, defaultMaxRequestBodySize, defaultErrorHandler, decoders))
+	srv := httptest.NewServer(httpContentDecompressor(handler, defaultMaxRequestBodySize, defaultErrorHandler, defaultCompressionAlgorithms, decoders))
 
 	t.Cleanup(srv.Close)
 
@@ -253,7 +253,7 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 				require.NoError(t, err, "failed to read request body: %v", err)
 				assert.EqualValues(t, testBody, string(body))
 				w.WriteHeader(http.StatusOK)
-			}), defaultMaxRequestBodySize, defaultErrorHandler, noDecoders))
+			}), defaultMaxRequestBodySize, defaultErrorHandler, defaultCompressionAlgorithms, noDecoders))
 			t.Cleanup(srv.Close)
 
 			req, err := http.NewRequest(http.MethodGet, srv.URL, tt.reqBody)
@@ -347,6 +347,31 @@ func TestHTTPContentCompressionRequestBodyCloseError(t *testing.T) {
 	require.NoError(t, err)
 	_, err = client.Do(req)
 	require.Error(t, err)
+}
+
+func TestOverrideCompressionList(t *testing.T) {
+	// prepare
+	configuredDecoders := []string{"none", "zlib"}
+
+	srv := httptest.NewServer(httpContentDecompressor(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}), defaultMaxRequestBodySize, defaultErrorHandler, configuredDecoders, nil))
+	t.Cleanup(srv.Close)
+
+	req, err := http.NewRequest(http.MethodGet, srv.URL, compressSnappy(t, []byte("123decompressed body")))
+	require.NoError(t, err, "failed to create request to test handler")
+	req.Header.Set("Content-Encoding", "snappy")
+
+	client := http.Client{}
+
+	// test
+	res, err := client.Do(req)
+	require.NoError(t, err)
+
+	// verify
+	assert.Equal(t, http.StatusBadRequest, res.StatusCode, "test handler returned unexpected status code ")
+	_, err = io.ReadAll(res.Body)
+	require.NoError(t, res.Body.Close(), "failed to close request body: %v", err)
 }
 
 func compressGzip(t testing.TB, body []byte) *bytes.Buffer {

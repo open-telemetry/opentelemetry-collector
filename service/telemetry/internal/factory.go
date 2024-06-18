@@ -13,8 +13,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-// CreateSettings holds configuration for building Telemetry.
-type CreateSettings struct {
+// Settings holds configuration for building Telemetry.
+type Settings struct {
 	BuildInfo         component.BuildInfo
 	AsyncErrorChannel chan error
 	ZapOptions        []zap.Option
@@ -29,10 +29,10 @@ type Factory interface {
 	CreateDefaultConfig() component.Config
 
 	// CreateLogger creates a logger.
-	CreateLogger(ctx context.Context, set CreateSettings, cfg component.Config) (*zap.Logger, error)
+	CreateLogger(ctx context.Context, set Settings, cfg component.Config) (*zap.Logger, error)
 
 	// CreateTracerProvider creates a TracerProvider.
-	CreateTracerProvider(ctx context.Context, set CreateSettings, cfg component.Config) (trace.TracerProvider, error)
+	CreateTracerProvider(ctx context.Context, set Settings, cfg component.Config) (trace.TracerProvider, error)
 
 	// TODO: Add CreateMeterProvider.
 
@@ -69,7 +69,7 @@ func (f *factory) CreateDefaultConfig() component.Config {
 }
 
 // CreateLoggerFunc is the equivalent of Factory.CreateLogger.
-type CreateLoggerFunc func(context.Context, CreateSettings, component.Config) (*zap.Logger, error)
+type CreateLoggerFunc func(context.Context, Settings, component.Config) (*zap.Logger, error)
 
 // WithLogger overrides the default no-op logger.
 func WithLogger(createLogger CreateLoggerFunc) FactoryOption {
@@ -78,7 +78,7 @@ func WithLogger(createLogger CreateLoggerFunc) FactoryOption {
 	})
 }
 
-func (f *factory) CreateLogger(ctx context.Context, set CreateSettings, cfg component.Config) (*zap.Logger, error) {
+func (f *factory) CreateLogger(ctx context.Context, set Settings, cfg component.Config) (*zap.Logger, error) {
 	if f.CreateLoggerFunc == nil {
 		return zap.NewNop(), nil
 	}
@@ -86,7 +86,7 @@ func (f *factory) CreateLogger(ctx context.Context, set CreateSettings, cfg comp
 }
 
 // CreateTracerProviderFunc is the equivalent of Factory.CreateTracerProvider.
-type CreateTracerProviderFunc func(context.Context, CreateSettings, component.Config) (trace.TracerProvider, error)
+type CreateTracerProviderFunc func(context.Context, Settings, component.Config) (trace.TracerProvider, error)
 
 // WithTracerProvider overrides the default no-op tracer provider.
 func WithTracerProvider(createTracerProvider CreateTracerProviderFunc) FactoryOption {
@@ -95,7 +95,7 @@ func WithTracerProvider(createTracerProvider CreateTracerProviderFunc) FactoryOp
 	})
 }
 
-func (f *factory) CreateTracerProvider(ctx context.Context, set CreateSettings, cfg component.Config) (trace.TracerProvider, error) {
+func (f *factory) CreateTracerProvider(ctx context.Context, set Settings, cfg component.Config) (trace.TracerProvider, error) {
 	if f.CreateTracerProviderFunc == nil {
 		return tracenoop.NewTracerProvider(), nil
 	}

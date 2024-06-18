@@ -26,8 +26,8 @@ OpenTelemetry authors reserve the right to introduce API changes breaking compat
   `import .` with OpenTelemetry Collector modules.
 
 Unless otherwise specified in the documentation, the following may change in any way between minor versions:
-* **String representation**. The `String` method of any struct is intended to be human-readable and may change its output
-  in any way.
+* **String representation**. The `String` or `Error` method of any struct is intended to be human-readable and may
+ change its output in any way.
 * **Go version compatibility**. Removing support for an unsupported Go version is not considered a breaking change.
 * **OS version compatibility**. Removing support for an unsupported OS version is not considered a breaking change. Upgrading or downgrading OS version support per the [platform support](docs/platform-support.md) document is not considered a breaking change.
 * **Dependency updates**. Updating dependencies is not considered a breaking change except when their types are part of the

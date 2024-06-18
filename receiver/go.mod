@@ -5,11 +5,11 @@ go 1.21.0
 require (
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector v0.102.1
-	go.opentelemetry.io/collector/component v0.102.1
-	go.opentelemetry.io/collector/config/configtelemetry v0.102.1
-	go.opentelemetry.io/collector/consumer v0.102.1
-	go.opentelemetry.io/collector/pdata v1.9.0
+	go.opentelemetry.io/collector v0.103.0
+	go.opentelemetry.io/collector/component v0.103.0
+	go.opentelemetry.io/collector/config/configtelemetry v0.103.0
+	go.opentelemetry.io/collector/consumer v0.103.0
+	go.opentelemetry.io/collector/pdata v1.10.0
 	go.opentelemetry.io/otel v1.27.0
 	go.opentelemetry.io/otel/metric v1.27.0
 	go.opentelemetry.io/otel/sdk v1.27.0
@@ -41,7 +41,7 @@ require (
 	golang.org/x/text v0.15.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240520151616-dc85e6b867a5 // indirect
 	google.golang.org/grpc v1.64.0 // indirect
-	google.golang.org/protobuf v1.34.1 // indirect
+	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
