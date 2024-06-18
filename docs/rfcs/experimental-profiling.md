@@ -65,8 +65,6 @@ for an example.
 In order to boot a functional collector with profiles support, some stable
 packages need to be aware of the experimental ones.
 
-Currently, the only package this applies to is `service`.
-
 To support that case, we will mark new APIs as `experimental` with go docs.
 Every experimental API will be documented as such:
 
@@ -79,6 +77,9 @@ Every experimental API will be documented as such:
 
 As documented, APIs marked as experimental may changed or removed across
 releases, without it being considered as a breaking change.
+
+There are no symbols that would need to be marked as experimental today. If
+there ever are then implementers may add an experimental comment to them
 
 #### User specified configuration
 
