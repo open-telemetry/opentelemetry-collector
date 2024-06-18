@@ -3,7 +3,7 @@ name: Builder - Release
 on:
   push:
     tags:
-      - 'cmd/builder/v*'
+      - 'v*'
 
 jobs:
   goreleaser:
