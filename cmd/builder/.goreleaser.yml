@@ -36,4 +36,4 @@ checksum:
 snapshot:
   name_template: "{{ .Tag }}-next"
 changelog:
-  disable: true
+  skip: true
