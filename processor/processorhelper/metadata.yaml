@@ -33,6 +33,14 @@ telemetry:
         value_type: int
         monotonic: true
 
+    processor_inserted_spans:
+      enabled: true
+      description: Number of spans that were inserted.
+      unit: 1
+      sum:
+        value_type: int
+        monotonic: true
+
     processor_accepted_metric_points:
       enabled: true
       description: Number of metric points successfully pushed into the next component in the pipeline.
@@ -57,6 +65,14 @@ telemetry:
         value_type: int
         monotonic: true
 
+    processor_inserted_metric_points:
+      enabled: true
+      description: Number of metric points that were inserted.
+      unit: 1
+      sum:
+        value_type: int
+        monotonic: true
+
     processor_accepted_log_records:
       enabled: true
       description: Number of log records successfully pushed into the next component in the pipeline.
@@ -76,6 +92,14 @@ telemetry:
     processor_dropped_log_records:
       enabled: true
       description: Number of log records that were dropped.
+      unit: 1
+      sum:
+        value_type: int
+        monotonic: true
+
+    processor_inserted_log_records:
+      enabled: true
+      description: Number of log records that were inserted.
       unit: 1
       sum:
         value_type: int
