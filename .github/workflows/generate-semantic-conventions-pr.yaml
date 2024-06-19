@@ -94,7 +94,7 @@ jobs:
                              --base main)
 
           pull_request_number=${url//*\//}
-          
+
           # see the template for change log entry file at blob/main/.chloggen/TEMPLATE.yaml
           cat > .chloggen/semconv-$VERSION.yaml << EOF
           change_type: enhancement

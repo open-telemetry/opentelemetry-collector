@@ -50,7 +50,7 @@ jobs:
 
   # Releasing opentelemetry-collector
   prepare-release:
-    needs: 
+    needs:
       - validate-versions
     runs-on: ubuntu-latest
     steps:
@@ -84,7 +84,8 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
         with:
-          go-version: ~1.21.5
+          go-version: '1.21'
+          check-latest: true
       # Prepare Core for release.
       #   - Update CHANGELOG.md file, this is done via chloggen
       #   - Run make prepare-release PREVIOUS_VERSION=1.0.0 RELEASE_CANDIDATE=1.1.0 MODSET=stable
