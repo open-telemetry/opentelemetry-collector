@@ -11,6 +11,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"go.opentelemetry.io/collector/confmap/internal"
 )
 
 // schemePattern defines the regexp pattern for scheme names.
@@ -111,7 +113,12 @@ func (mr *Resolver) findAndExpandURI(ctx context.Context, input string) (any, bo
 	if uri == input {
 		// If the value is a single URI, then the return value can be anything.
 		// This is the case `foo: ${file:some_extra_config.yml}`.
-		expanded, err := mr.expandURI(ctx, input)
+		ret, err := mr.expandURI(ctx, input)
+		if err != nil {
+			return input, false, err
+		}
+
+		expanded, err := ret.AsRaw()
 		if err != nil {
 			return input, false, err
 		}
@@ -121,7 +128,13 @@ func (mr *Resolver) findAndExpandURI(ctx context.Context, input string) (any, bo
 	if err != nil {
 		return input, false, err
 	}
-	repl, err := toString(expanded)
+
+	var repl string
+	if internal.StrictlyTypedInputGate.IsEnabled() {
+		repl, err = expanded.AsString()
+	} else {
+		repl, err = toString(expanded)
+	}
 	if err != nil {
 		return input, false, fmt.Errorf("expanding %v: %w", uri, err)
 	}
@@ -129,8 +142,13 @@ func (mr *Resolver) findAndExpandURI(ctx context.Context, input string) (any, bo
 }
 
 // toString attempts to convert input to a string.
-func toString(input any) (string, error) {
+func toString(ret *Retrieved) (string, error) {
 	// This list must be kept in sync with checkRawConfType.
+	input, err := ret.AsRaw()
+	if err != nil {
+		return "", err
+	}
+
 	val := reflect.ValueOf(input)
 	switch val.Kind() {
 	case reflect.String:
@@ -146,7 +164,7 @@ func toString(input any) (string, error) {
 	}
 }
 
-func (mr *Resolver) expandURI(ctx context.Context, input string) (any, error) {
+func (mr *Resolver) expandURI(ctx context.Context, input string) (*Retrieved, error) {
 	// strip ${ and }
 	uri := input[2 : len(input)-1]
 
@@ -167,7 +185,7 @@ func (mr *Resolver) expandURI(ctx context.Context, input string) (any, error) {
 		return nil, err
 	}
 	mr.closers = append(mr.closers, ret.Close)
-	return ret.AsRaw()
+	return ret, nil
 }
 
 type location struct {
