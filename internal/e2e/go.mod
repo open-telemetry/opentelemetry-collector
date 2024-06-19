@@ -14,12 +14,12 @@ require (
 	go.opentelemetry.io/collector/confmap v0.103.0
 	go.opentelemetry.io/collector/consumer v0.103.0
 	go.opentelemetry.io/collector/exporter v0.103.0
-	go.opentelemetry.io/collector/exporter/otlpexporter v0.102.1
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.102.1
+	go.opentelemetry.io/collector/exporter/otlpexporter v0.103.0
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.103.0
 	go.opentelemetry.io/collector/pdata v1.10.0
 	go.opentelemetry.io/collector/pdata/testdata v0.103.0
 	go.opentelemetry.io/collector/receiver v0.103.0
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.102.1
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.103.0
 	go.uber.org/goleak v1.3.0
 )
 
@@ -39,7 +39,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.20.0 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.17.8 // indirect
+	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
 	github.com/knadh/koanf/v2 v2.1.1 // indirect

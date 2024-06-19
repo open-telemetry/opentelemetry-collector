@@ -55,7 +55,7 @@ require (
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.17.8 // indirect
+	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
 	github.com/knadh/koanf/v2 v2.1.1 // indirect
@@ -73,7 +73,7 @@ require (
 	github.com/rs/cors v1.10.1 // indirect
 	github.com/shirou/gopsutil/v4 v4.24.5 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
-	github.com/spf13/cobra v1.8.0 // indirect
+	github.com/spf13/cobra v1.8.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect

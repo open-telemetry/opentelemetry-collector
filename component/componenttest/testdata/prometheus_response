@@ -25,6 +25,9 @@ processor_refused_spans{processor="fakeProcessor"} 13
 # HELP processor_dropped_spans Number of spans that were dropped.
 # TYPE processor_dropped_spans counter
 processor_dropped_spans{processor="fakeProcessor"} 7
+# HELP processor_inserted_spans Number of spans that were inserted.
+# TYPE processor_inserted_spans counter
+processor_inserted_spans{processor="fakeProcessor"} 5
 # HELP processor_accepted_metric_points Number of metric points successfully pushed into the next component in the pipeline.
 # TYPE processor_accepted_metric_points counter
 processor_accepted_metric_points{processor="fakeProcessor"} 7
@@ -34,6 +37,9 @@ processor_refused_metric_points{processor="fakeProcessor"} 41
 # HELP processor_dropped_metric_points Number of metric points that were dropped.
 # TYPE processor_dropped_metric_points counter
 processor_dropped_metric_points{processor="fakeProcessor"} 13
+# HELP processor_inserted_metric_points Number of metric points that were inserted.
+# TYPE processor_inserted_metric_points counter
+processor_inserted_metric_points{processor="fakeProcessor"} 4
 # HELP processor_accepted_log_records Number of log records successfully pushed into the next component in the pipeline.
 # TYPE processor_accepted_log_records counter
 processor_accepted_log_records{processor="fakeProcessor"} 102
@@ -43,6 +49,9 @@ processor_refused_log_records{processor="fakeProcessor"} 35
 # HELP processor_dropped_log_records Number of log records that were dropped.
 # TYPE processor_dropped_log_records counter
 processor_dropped_log_records{processor="fakeProcessor"} 14
+# HELP processor_inserted_log_records Number of log records that were inserted.
+# TYPE processor_inserted_log_records counter
+processor_inserted_log_records{processor="fakeProcessor"} 3
 # HELP receiver_accepted_log_records Number of log records successfully pushed into the pipeline.
 # TYPE receiver_accepted_log_records counter
 receiver_accepted_log_records{receiver="fakeReceiver",transport="fakeTransport"} 102

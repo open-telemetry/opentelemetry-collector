@@ -3,7 +3,7 @@ module go.opentelemetry.io/collector/otelcol
 go 1.21.0
 
 require (
-	github.com/spf13/cobra v1.8.0
+	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector v0.103.0
 	go.opentelemetry.io/collector/component v0.103.0
