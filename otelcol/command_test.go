@@ -4,18 +4,15 @@
 package otelcol
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/converter/expandconverter"
-	"go.opentelemetry.io/collector/confmap/provider/envprovider"
-	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/featuregates"
 )
@@ -55,12 +52,15 @@ receivers:
 }
 
 func TestAddFlagToSettings(t *testing.T) {
+	filePath := filepath.Join("testdata", "otelcol-invalid.yaml")
+	fileProvider := newFakeProvider("file", func(_ context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
+		return confmap.NewRetrieved(newConfFromFile(t, filePath))
+	})
 	set := CollectorSettings{
 		ConfigProviderSettings: ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
-				URIs:               []string{filepath.Join("testdata", "otelcol-invalid.yaml")},
-				ProviderFactories:  []confmap.ProviderFactory{fileprovider.NewFactory()},
-				ConverterFactories: []confmap.ConverterFactory{expandconverter.NewFactory()},
+				URIs:              []string{filePath},
+				ProviderFactories: []confmap.ProviderFactory{fileProvider},
 			},
 		},
 	}
@@ -77,8 +77,7 @@ func TestInvalidCollectorSettings(t *testing.T) {
 	set := CollectorSettings{
 		ConfigProviderSettings: ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
-				ConverterFactories: []confmap.ConverterFactory{expandconverter.NewFactory()},
-				URIs:               []string{"--config=otelcol-nop.yaml"},
+				URIs: []string{"--config=otelcol-nop.yaml"},
 			},
 		},
 	}
@@ -88,11 +87,14 @@ func TestInvalidCollectorSettings(t *testing.T) {
 }
 
 func TestNewCommandInvalidComponent(t *testing.T) {
+	filePath := filepath.Join("testdata", "otelcol-invalid.yaml")
+	fileProvider := newFakeProvider("file", func(_ context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
+		return confmap.NewRetrieved(newConfFromFile(t, filePath))
+	})
 	set := ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
-			URIs:               []string{filepath.Join("testdata", "otelcol-invalid.yaml")},
-			ProviderFactories:  []confmap.ProviderFactory{fileprovider.NewFactory()},
-			ConverterFactories: []confmap.ConverterFactory{expandconverter.NewFactory()},
+			URIs:              []string{filePath},
+			ProviderFactories: []confmap.ProviderFactory{fileProvider},
 		},
 	}
 
@@ -139,10 +141,13 @@ func Test_UseUnifiedEnvVarExpansionRules(t *testing.T) {
 			t.Cleanup(func() {
 				require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.UseUnifiedEnvVarExpansionRules.ID(), false))
 			})
+			fileProvider := newFakeProvider("file", func(_ context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
+				return &confmap.Retrieved{}, nil
+			})
 			set := CollectorSettings{
 				ConfigProviderSettings: ConfigProviderSettings{
 					ResolverSettings: confmap.ResolverSettings{
-						ProviderFactories: []confmap.ProviderFactory{fileprovider.NewFactory(), envprovider.NewFactory()},
+						ProviderFactories: []confmap.ProviderFactory{fileProvider},
 						DefaultScheme:     tt.input,
 					},
 				},
