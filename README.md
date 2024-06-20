@@ -108,7 +108,7 @@ Support for Go versions on the OpenTelemetry Collector is updated as follows:
 1. The first release after the release of a new Go minor version `N` will add build and tests steps for the new Go minor version.
 2. The first release after the release of a new Go minor version `N` will remove support for Go version `N-2`.
 
-Official OpenTelemetry Collector distro binaries may be built with any supported Go version.
+Official OpenTelemetry Collector distro binaries will be built with the latest stable Go version.
 
 ## Verifying the images signatures
 
