@@ -7,7 +7,7 @@ change_type: breaking
 component: otelcol
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: `otelcol.NewCommand` now requires at least one provider be set.
+note: The `otelcol.NewCommand` now requires at least one provider be set.
 
 # One or more tracking issues or pull requests related to the change
 issues: [10436]
