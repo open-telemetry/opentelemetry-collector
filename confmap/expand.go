@@ -11,6 +11,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"go.opentelemetry.io/collector/confmap/internal"
 )
 
 // schemePattern defines the regexp pattern for scheme names.
@@ -111,22 +113,42 @@ func (mr *Resolver) findAndExpandURI(ctx context.Context, input string) (any, bo
 	if uri == input {
 		// If the value is a single URI, then the return value can be anything.
 		// This is the case `foo: ${file:some_extra_config.yml}`.
-		return mr.expandURI(ctx, input)
+		ret, err := mr.expandURI(ctx, input)
+		if err != nil {
+			return input, false, err
+		}
+
+		expanded, err := ret.AsRaw()
+		if err != nil {
+			return input, false, err
+		}
+		return expanded, true, err
 	}
-	expanded, changed, err := mr.expandURI(ctx, uri)
+	expanded, err := mr.expandURI(ctx, uri)
 	if err != nil {
 		return input, false, err
 	}
-	repl, err := toString(expanded)
+
+	var repl string
+	if internal.StrictlyTypedInputGate.IsEnabled() {
+		repl, err = expanded.AsString()
+	} else {
+		repl, err = toString(expanded)
+	}
 	if err != nil {
 		return input, false, fmt.Errorf("expanding %v: %w", uri, err)
 	}
-	return strings.ReplaceAll(input, uri, repl), changed, err
+	return strings.ReplaceAll(input, uri, repl), true, err
 }
 
 // toString attempts to convert input to a string.
-func toString(input any) (string, error) {
+func toString(ret *Retrieved) (string, error) {
 	// This list must be kept in sync with checkRawConfType.
+	input, err := ret.AsRaw()
+	if err != nil {
+		return "", err
+	}
+
 	val := reflect.ValueOf(input)
 	switch val.Kind() {
 	case reflect.String:
@@ -142,7 +164,7 @@ func toString(input any) (string, error) {
 	}
 }
 
-func (mr *Resolver) expandURI(ctx context.Context, input string) (any, bool, error) {
+func (mr *Resolver) expandURI(ctx context.Context, input string) (*Retrieved, error) {
 	// strip ${ and }
 	uri := input[2 : len(input)-1]
 
@@ -152,19 +174,18 @@ func (mr *Resolver) expandURI(ctx context.Context, input string) (any, bool, err
 
 	lURI, err := newLocation(uri)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
 	if strings.Contains(lURI.opaqueValue, "$") {
-		return nil, false, fmt.Errorf("the uri %q contains unsupported characters ('$')", lURI.asString())
+		return nil, fmt.Errorf("the uri %q contains unsupported characters ('$')", lURI.asString())
 	}
 	ret, err := mr.retrieveValue(ctx, lURI)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 	mr.closers = append(mr.closers, ret.Close)
-	val, err := ret.AsRaw()
-	return val, true, err
+	return ret, nil
 }
 
 type location struct {

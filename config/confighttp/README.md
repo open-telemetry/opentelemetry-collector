@@ -75,6 +75,7 @@ will not be enabled.
   not set, browsers use a default of 5 seconds.
 - `endpoint`: Valid value syntax available [here](https://github.com/grpc/grpc/blob/master/doc/naming.md)
 - `max_request_body_size`: configures the maximum allowed body size in bytes for a single request. Default: `0` (no restriction)
+- `compression_algorithms`: configures the list of compression algorithms the server can accept. Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate"]
 - [`tls`](../configtls/README.md)
 - [`auth`](../configauth/README.md)
 
@@ -98,6 +99,7 @@ receivers:
             - Example-Header
           max_age: 7200
         endpoint: 0.0.0.0:55690
+        compression_algorithms: ["", "gzip"]
 processors:
   attributes:
     actions:

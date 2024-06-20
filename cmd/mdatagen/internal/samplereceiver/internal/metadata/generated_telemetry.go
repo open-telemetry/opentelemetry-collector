@@ -30,6 +30,7 @@ type TelemetryBuilder struct {
 	BatchSizeTriggerSend                 metric.Int64Counter
 	ProcessRuntimeTotalAllocBytes        metric.Int64ObservableCounter
 	observeProcessRuntimeTotalAllocBytes func() int64
+	QueueLength                          metric.Int64ObservableGauge
 	RequestDuration                      metric.Float64Histogram
 	level                                configtelemetry.Level
 	attributeSet                         attribute.Set
@@ -57,6 +58,21 @@ func WithProcessRuntimeTotalAllocBytesCallback(cb func() int64) telemetryBuilder
 	return func(builder *TelemetryBuilder) {
 		builder.observeProcessRuntimeTotalAllocBytes = cb
 	}
+}
+
+// InitQueueLength configures the QueueLength metric.
+func (builder *TelemetryBuilder) InitQueueLength(cb func() int64) error {
+	var err error
+	builder.QueueLength, err = builder.meter.Int64ObservableGauge(
+		"queue_length",
+		metric.WithDescription("This metric is optional and therefore not initialized in NewTelemetryBuilder."),
+		metric.WithUnit("1"),
+		metric.WithInt64Callback(func(_ context.Context, o metric.Int64Observer) error {
+			o.Observe(cb(), metric.WithAttributeSet(builder.attributeSet))
+			return nil
+		}),
+	)
+	return err
 }
 
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
