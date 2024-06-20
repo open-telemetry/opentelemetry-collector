@@ -16,8 +16,6 @@ import (
 )
 
 // LoadConfigWithSettings loads a config.Config from the provider settings, and does NOT validate the configuration.
-//
-// Deprecated: [v0.104.0] Use go.opentelemetry.io/collector/otelcoltest instead
 func LoadConfigWithSettings(factories otelcol.Factories, set otelcol.ConfigProviderSettings) (*otelcol.Config, error) {
 	// Read yaml config from file
 	provider, err := otelcol.NewConfigProvider(set)
@@ -28,8 +26,6 @@ func LoadConfigWithSettings(factories otelcol.Factories, set otelcol.ConfigProvi
 }
 
 // LoadConfig loads a config.Config  from file, and does NOT validate the configuration.
-//
-// Deprecated: [v0.104.0] Use go.opentelemetry.io/collector/otelcoltest instead
 func LoadConfig(fileName string, factories otelcol.Factories) (*otelcol.Config, error) {
 	return LoadConfigWithSettings(factories, otelcol.ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
@@ -46,8 +42,6 @@ func LoadConfig(fileName string, factories otelcol.Factories) (*otelcol.Config, 
 }
 
 // LoadConfigAndValidateWithSettings loads a config from the provider settings, and validates the configuration.
-//
-// Deprecated: [v0.104.0] Use go.opentelemetry.io/collector/otelcoltest instead
 func LoadConfigAndValidateWithSettings(factories otelcol.Factories, set otelcol.ConfigProviderSettings) (*otelcol.Config, error) {
 	cfg, err := LoadConfigWithSettings(factories, set)
 	if err != nil {
@@ -57,8 +51,6 @@ func LoadConfigAndValidateWithSettings(factories otelcol.Factories, set otelcol.
 }
 
 // LoadConfigAndValidate loads a config from the file, and validates the configuration.
-//
-// Deprecated: [v0.104.0] Use go.opentelemetry.io/collector/otelcoltest instead
 func LoadConfigAndValidate(fileName string, factories otelcol.Factories) (*otelcol.Config, error) {
 	cfg, err := LoadConfigWithSettings(factories, otelcol.ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
