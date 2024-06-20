@@ -16,11 +16,6 @@ var (
 )
 
 // GenerateProfiles generates dummy profiling data for tests
-//
-// # Experimental
-//
-// Notice: This method is EXPERIMENTAL and may be changed or removed in a
-// later release.
 func GenerateProfiles(profilesCount int) pprofile.Profiles {
 	td := pprofile.NewProfiles()
 	initResource(td.ResourceProfiles().AppendEmpty().Resource())
