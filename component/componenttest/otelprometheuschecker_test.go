@@ -88,17 +88,17 @@ func TestPromChecker(t *testing.T) {
 	)
 
 	assert.NoError(t,
-		pc.checkProcessorTraces(processor, 42, 13, 7),
+		pc.checkProcessorTraces(processor, 42, 13, 7, 5),
 		"metrics from Receiver Traces should be valid",
 	)
 
 	assert.NoError(t,
-		pc.checkProcessorMetrics(processor, 7, 41, 13),
+		pc.checkProcessorMetrics(processor, 7, 41, 13, 4),
 		"metrics from Receiver Metrics should be valid",
 	)
 
 	assert.NoError(t,
-		pc.checkProcessorLogs(processor, 102, 35, 14),
+		pc.checkProcessorLogs(processor, 102, 35, 14, 3),
 		"metrics from Receiver Logs should be valid",
 	)
 
