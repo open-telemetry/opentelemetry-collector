@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/provider/internal"
 )
 
 const schemeName = "file"
@@ -52,7 +51,7 @@ func (fmp *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFu
 		return nil, fmt.Errorf("unable to read the file %v: %w", uri, err)
 	}
 
-	return internal.NewRetrievedFromYAML(content)
+	return confmap.NewRetrievedFromYAML(content)
 }
 
 func (*provider) Scheme() string {

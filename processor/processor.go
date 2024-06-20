@@ -37,7 +37,12 @@ type Logs interface {
 }
 
 // CreateSettings is passed to Create* functions in Factory.
-type CreateSettings struct {
+//
+// Deprecated: [v0.103.0] Use processor.Settings instead.
+type CreateSettings = Settings
+
+// Settings is passed to Create* functions in Factory.
+type Settings struct {
 	// ID returns the ID of the component that will be created.
 	ID component.ID
 
@@ -57,7 +62,7 @@ type Factory interface {
 	// CreateTracesProcessor creates a TracesProcessor based on this config.
 	// If the processor type does not support tracing or if the config is not valid,
 	// an error will be returned instead.
-	CreateTracesProcessor(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer consumer.Traces) (Traces, error)
+	CreateTracesProcessor(ctx context.Context, set Settings, cfg component.Config, nextConsumer consumer.Traces) (Traces, error)
 
 	// TracesProcessorStability gets the stability level of the TracesProcessor.
 	TracesProcessorStability() component.StabilityLevel
@@ -65,7 +70,7 @@ type Factory interface {
 	// CreateMetricsProcessor creates a MetricsProcessor based on this config.
 	// If the processor type does not support metrics or if the config is not valid,
 	// an error will be returned instead.
-	CreateMetricsProcessor(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer consumer.Metrics) (Metrics, error)
+	CreateMetricsProcessor(ctx context.Context, set Settings, cfg component.Config, nextConsumer consumer.Metrics) (Metrics, error)
 
 	// MetricsProcessorStability gets the stability level of the MetricsProcessor.
 	MetricsProcessorStability() component.StabilityLevel
@@ -73,7 +78,7 @@ type Factory interface {
 	// CreateLogsProcessor creates a LogsProcessor based on the config.
 	// If the processor type does not support logs or if the config is not valid,
 	// an error will be returned instead.
-	CreateLogsProcessor(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer consumer.Logs) (Logs, error)
+	CreateLogsProcessor(ctx context.Context, set Settings, cfg component.Config, nextConsumer consumer.Logs) (Logs, error)
 
 	// LogsProcessorStability gets the stability level of the LogsProcessor.
 	LogsProcessorStability() component.StabilityLevel
@@ -97,12 +102,12 @@ func (f factoryOptionFunc) applyProcessorFactoryOption(o *factory) {
 }
 
 // CreateTracesFunc is the equivalent of Factory.CreateTraces().
-type CreateTracesFunc func(context.Context, CreateSettings, component.Config, consumer.Traces) (Traces, error)
+type CreateTracesFunc func(context.Context, Settings, component.Config, consumer.Traces) (Traces, error)
 
 // CreateTracesProcessor implements Factory.CreateTracesProcessor().
 func (f CreateTracesFunc) CreateTracesProcessor(
 	ctx context.Context,
-	set CreateSettings,
+	set Settings,
 	cfg component.Config,
 	nextConsumer consumer.Traces) (Traces, error) {
 	if f == nil {
@@ -112,12 +117,12 @@ func (f CreateTracesFunc) CreateTracesProcessor(
 }
 
 // CreateMetricsFunc is the equivalent of Factory.CreateMetrics().
-type CreateMetricsFunc func(context.Context, CreateSettings, component.Config, consumer.Metrics) (Metrics, error)
+type CreateMetricsFunc func(context.Context, Settings, component.Config, consumer.Metrics) (Metrics, error)
 
 // CreateMetricsProcessor implements Factory.CreateMetricsProcessor().
 func (f CreateMetricsFunc) CreateMetricsProcessor(
 	ctx context.Context,
-	set CreateSettings,
+	set Settings,
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (Metrics, error) {
@@ -128,12 +133,12 @@ func (f CreateMetricsFunc) CreateMetricsProcessor(
 }
 
 // CreateLogsFunc is the equivalent of Factory.CreateLogs().
-type CreateLogsFunc func(context.Context, CreateSettings, component.Config, consumer.Logs) (Logs, error)
+type CreateLogsFunc func(context.Context, Settings, component.Config, consumer.Logs) (Logs, error)
 
 // CreateLogsProcessor implements Factory.CreateLogsProcessor().
 func (f CreateLogsFunc) CreateLogsProcessor(
 	ctx context.Context,
-	set CreateSettings,
+	set Settings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (Logs, error) {
@@ -233,7 +238,7 @@ func NewBuilder(cfgs map[component.ID]component.Config, factories map[component.
 }
 
 // CreateTraces creates a Traces processor based on the settings and config.
-func (b *Builder) CreateTraces(ctx context.Context, set CreateSettings, next consumer.Traces) (Traces, error) {
+func (b *Builder) CreateTraces(ctx context.Context, set Settings, next consumer.Traces) (Traces, error) {
 	if next == nil {
 		return nil, errNilNextConsumer
 	}
@@ -252,7 +257,7 @@ func (b *Builder) CreateTraces(ctx context.Context, set CreateSettings, next con
 }
 
 // CreateMetrics creates a Metrics processor based on the settings and config.
-func (b *Builder) CreateMetrics(ctx context.Context, set CreateSettings, next consumer.Metrics) (Metrics, error) {
+func (b *Builder) CreateMetrics(ctx context.Context, set Settings, next consumer.Metrics) (Metrics, error) {
 	if next == nil {
 		return nil, errNilNextConsumer
 	}
@@ -271,7 +276,7 @@ func (b *Builder) CreateMetrics(ctx context.Context, set CreateSettings, next co
 }
 
 // CreateLogs creates a Logs processor based on the settings and config.
-func (b *Builder) CreateLogs(ctx context.Context, set CreateSettings, next consumer.Logs) (Logs, error) {
+func (b *Builder) CreateLogs(ctx context.Context, set Settings, next consumer.Logs) (Logs, error) {
 	if next == nil {
 		return nil, errNilNextConsumer
 	}

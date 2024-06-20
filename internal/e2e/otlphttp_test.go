@@ -43,7 +43,7 @@ func TestInvalidConfig(t *testing.T) {
 		},
 	}
 	f := otlphttpexporter.NewFactory()
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	_, err := f.CreateTracesExporter(context.Background(), set, config)
 	require.Error(t, err)
 	_, err = f.CreateMetricsExporter(context.Background(), set, config)
@@ -291,7 +291,7 @@ func startTracesExporter(t *testing.T, baseURL string, overrideURL string) expor
 	factory := otlphttpexporter.NewFactory()
 	cfg := createExporterConfig(baseURL, factory.CreateDefaultConfig())
 	cfg.TracesEndpoint = overrideURL
-	exp, err := factory.CreateTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	exp, err := factory.CreateTracesExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 	startAndCleanup(t, exp)
 	return exp
@@ -301,7 +301,7 @@ func startMetricsExporter(t *testing.T, baseURL string, overrideURL string) expo
 	factory := otlphttpexporter.NewFactory()
 	cfg := createExporterConfig(baseURL, factory.CreateDefaultConfig())
 	cfg.MetricsEndpoint = overrideURL
-	exp, err := factory.CreateMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	exp, err := factory.CreateMetricsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 	startAndCleanup(t, exp)
 	return exp
@@ -311,7 +311,7 @@ func startLogsExporter(t *testing.T, baseURL string, overrideURL string) exporte
 	factory := otlphttpexporter.NewFactory()
 	cfg := createExporterConfig(baseURL, factory.CreateDefaultConfig())
 	cfg.LogsEndpoint = overrideURL
-	exp, err := factory.CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	exp, err := factory.CreateLogsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 	startAndCleanup(t, exp)
 	return exp

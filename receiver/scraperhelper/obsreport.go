@@ -11,7 +11,6 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -27,8 +26,6 @@ type ObsReport struct {
 	receiverID component.ID
 	scraper    component.ID
 	tracer     trace.Tracer
-
-	logger *zap.Logger
 
 	otelAttrs        []attribute.KeyValue
 	telemetryBuilder *metadata.TelemetryBuilder
@@ -57,7 +54,6 @@ func newScraper(cfg ObsReportSettings) (*ObsReport, error) {
 		scraper:    cfg.Scraper,
 		tracer:     cfg.ReceiverCreateSettings.TracerProvider.Tracer(cfg.Scraper.String()),
 
-		logger: cfg.ReceiverCreateSettings.Logger,
 		otelAttrs: []attribute.KeyValue{
 			attribute.String(obsmetrics.ReceiverKey, cfg.ReceiverID.String()),
 			attribute.String(obsmetrics.ScraperKey, cfg.Scraper.String()),

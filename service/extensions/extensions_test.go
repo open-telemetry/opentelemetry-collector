@@ -158,10 +158,10 @@ func (tc testOrderCase) testOrdering(t *testing.T) {
 	var startOrder []string
 	var shutdownOrder []string
 
-	recordingExtensionFactory := newRecordingExtensionFactory(func(set extension.CreateSettings, _ component.Host) error {
+	recordingExtensionFactory := newRecordingExtensionFactory(func(set extension.Settings, _ component.Host) error {
 		startOrder = append(startOrder, set.ID.String())
 		return nil
-	}, func(set extension.CreateSettings) error {
+	}, func(set extension.Settings) error {
 		shutdownOrder = append(shutdownOrder, set.ID.String())
 		return nil
 	})
@@ -326,7 +326,7 @@ func newConfigWatcherExtensionFactory(name component.Type, fn func() error) exte
 		func() component.Config {
 			return &struct{}{}
 		},
-		func(context.Context, extension.CreateSettings, component.Config) (extension.Extension, error) {
+		func(context.Context, extension.Settings, component.Config) (extension.Extension, error) {
 			return newConfigWatcherExtension(fn), nil
 		},
 		component.StabilityLevelDevelopment,
@@ -339,7 +339,7 @@ func newBadExtensionFactory() extension.Factory {
 		func() component.Config {
 			return &struct{}{}
 		},
-		func(context.Context, extension.CreateSettings, component.Config) (extension.Extension, error) {
+		func(context.Context, extension.Settings, component.Config) (extension.Extension, error) {
 			return nil, nil
 		},
 		component.StabilityLevelDevelopment,
@@ -352,7 +352,7 @@ func newCreateErrorExtensionFactory() extension.Factory {
 		func() component.Config {
 			return &struct{}{}
 		},
-		func(context.Context, extension.CreateSettings, component.Config) (extension.Extension, error) {
+		func(context.Context, extension.Settings, component.Config) (extension.Extension, error) {
 			return nil, errors.New("cannot create \"err\" extension type")
 		},
 		component.StabilityLevelDevelopment,
@@ -476,20 +476,20 @@ func newStatusTestExtensionFactory(name component.Type, startErr, shutdownErr er
 		func() component.Config {
 			return &struct{}{}
 		},
-		func(context.Context, extension.CreateSettings, component.Config) (extension.Extension, error) {
+		func(context.Context, extension.Settings, component.Config) (extension.Extension, error) {
 			return newStatusTestExtension(startErr, shutdownErr), nil
 		},
 		component.StabilityLevelDevelopment,
 	)
 }
 
-func newRecordingExtensionFactory(startCallback func(set extension.CreateSettings, host component.Host) error, shutdownCallback func(set extension.CreateSettings) error) extension.Factory {
+func newRecordingExtensionFactory(startCallback func(set extension.Settings, host component.Host) error, shutdownCallback func(set extension.Settings) error) extension.Factory {
 	return extension.NewFactory(
 		component.MustNewType("recording"),
 		func() component.Config {
 			return &recordingExtensionConfig{}
 		},
-		func(_ context.Context, set extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
+		func(_ context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
 			return &recordingExtension{
 				config:           cfg.(recordingExtensionConfig),
 				createSettings:   set,
@@ -507,9 +507,9 @@ type recordingExtensionConfig struct {
 
 type recordingExtension struct {
 	config           recordingExtensionConfig
-	startCallback    func(set extension.CreateSettings, host component.Host) error
-	shutdownCallback func(set extension.CreateSettings) error
-	createSettings   extension.CreateSettings
+	startCallback    func(set extension.Settings, host component.Host) error
+	shutdownCallback func(set extension.Settings) error
+	createSettings   extension.Settings
 }
 
 var _ extension.Dependent = (*recordingExtension)(nil)

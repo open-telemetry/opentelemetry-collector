@@ -3,8 +3,10 @@
 package metadata
 
 import (
+	"context"
 	"errors"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
@@ -28,6 +30,8 @@ type TelemetryBuilder struct {
 	ExporterEnqueueFailedLogRecords   metric.Int64Counter
 	ExporterEnqueueFailedMetricPoints metric.Int64Counter
 	ExporterEnqueueFailedSpans        metric.Int64Counter
+	ExporterQueueCapacity             metric.Int64ObservableGauge
+	ExporterQueueSize                 metric.Int64ObservableGauge
 	ExporterSendFailedLogRecords      metric.Int64Counter
 	ExporterSendFailedMetricPoints    metric.Int64Counter
 	ExporterSendFailedSpans           metric.Int64Counter
@@ -35,6 +39,7 @@ type TelemetryBuilder struct {
 	ExporterSentMetricPoints          metric.Int64Counter
 	ExporterSentSpans                 metric.Int64Counter
 	level                             configtelemetry.Level
+	attributeSet                      attribute.Set
 }
 
 // telemetryBuilderOption applies changes to default builder.
@@ -45,6 +50,43 @@ func WithLevel(lvl configtelemetry.Level) telemetryBuilderOption {
 	return func(builder *TelemetryBuilder) {
 		builder.level = lvl
 	}
+}
+
+// WithAttributeSet applies a set of attributes for asynchronous instruments.
+func WithAttributeSet(set attribute.Set) telemetryBuilderOption {
+	return func(builder *TelemetryBuilder) {
+		builder.attributeSet = set
+	}
+}
+
+// InitExporterQueueCapacity configures the ExporterQueueCapacity metric.
+func (builder *TelemetryBuilder) InitExporterQueueCapacity(cb func() int64) error {
+	var err error
+	builder.ExporterQueueCapacity, err = builder.meter.Int64ObservableGauge(
+		"exporter_queue_capacity",
+		metric.WithDescription("Fixed capacity of the retry queue (in batches)"),
+		metric.WithUnit("1"),
+		metric.WithInt64Callback(func(_ context.Context, o metric.Int64Observer) error {
+			o.Observe(cb(), metric.WithAttributeSet(builder.attributeSet))
+			return nil
+		}),
+	)
+	return err
+}
+
+// InitExporterQueueSize configures the ExporterQueueSize metric.
+func (builder *TelemetryBuilder) InitExporterQueueSize(cb func() int64) error {
+	var err error
+	builder.ExporterQueueSize, err = builder.meter.Int64ObservableGauge(
+		"exporter_queue_size",
+		metric.WithDescription("Current size of the retry queue (in batches)"),
+		metric.WithUnit("1"),
+		metric.WithInt64Callback(func(_ context.Context, o metric.Int64Observer) error {
+			o.Observe(cb(), metric.WithAttributeSet(builder.attributeSet))
+			return nil
+		}),
+	)
+	return err
 }
 
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry

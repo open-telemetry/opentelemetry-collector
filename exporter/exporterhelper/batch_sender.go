@@ -30,8 +30,8 @@ type batchSender struct {
 	// concurrencyLimit is the maximum number of goroutines that can be blocked by the batcher.
 	// If this number is reached and all the goroutines are busy, the batch will be sent right away.
 	// Populated from the number of queue consumers if queue is enabled.
-	concurrencyLimit uint64
-	activeRequests   atomic.Uint64
+	concurrencyLimit int64
+	activeRequests   atomic.Int64
 
 	mu          sync.Mutex
 	activeBatch *batch
@@ -45,7 +45,7 @@ type batchSender struct {
 }
 
 // newBatchSender returns a new batch consumer component.
-func newBatchSender(cfg exporterbatcher.Config, set exporter.CreateSettings,
+func newBatchSender(cfg exporterbatcher.Config, set exporter.Settings,
 	mf exporterbatcher.BatchMergeFunc[Request], msf exporterbatcher.BatchMergeSplitFunc[Request]) *batchSender {
 	bs := &batchSender{
 		activeBatch:        newEmptyBatch(),
@@ -106,6 +106,10 @@ type batch struct {
 	request Request
 	done    chan struct{}
 	err     error
+
+	// requestsBlocked is the number of requests blocked in this batch
+	// that can be immediately released from activeRequests when batch sending completes.
+	requestsBlocked int64
 }
 
 func newEmptyBatch() *batch {
@@ -121,6 +125,7 @@ func (bs *batchSender) exportActiveBatch() {
 	go func(b *batch) {
 		b.err = bs.nextSender.send(b.ctx, b.request)
 		close(b.done)
+		bs.activeRequests.Add(-b.requestsBlocked)
 	}(bs.activeBatch)
 	bs.lastFlushed = time.Now()
 	bs.activeBatch = newEmptyBatch()
@@ -149,13 +154,19 @@ func (bs *batchSender) send(ctx context.Context, req Request) error {
 // sendMergeSplitBatch sends the request to the batch which may be split into multiple requests.
 func (bs *batchSender) sendMergeSplitBatch(ctx context.Context, req Request) error {
 	bs.mu.Lock()
-	bs.activeRequests.Add(1)
-	defer bs.activeRequests.Add(^uint64(0))
 
 	reqs, err := bs.mergeSplitFunc(ctx, bs.cfg.MaxSizeConfig, bs.activeBatch.request, req)
 	if err != nil || len(reqs) == 0 {
 		bs.mu.Unlock()
 		return err
+	}
+
+	bs.activeRequests.Add(1)
+	if len(reqs) == 1 {
+		bs.activeBatch.requestsBlocked++
+	} else {
+		// if there was a split, we want to make sure that bs.activeRequests is released once all of the parts are sent instead of using batch.requestsBlocked
+		defer bs.activeRequests.Add(-1)
 	}
 	if len(reqs) == 1 || bs.activeBatch.request != nil {
 		bs.updateActiveBatch(ctx, reqs[0])
@@ -186,8 +197,6 @@ func (bs *batchSender) sendMergeSplitBatch(ctx context.Context, req Request) err
 // sendMergeBatch sends the request to the batch and waits for the batch to be exported.
 func (bs *batchSender) sendMergeBatch(ctx context.Context, req Request) error {
 	bs.mu.Lock()
-	bs.activeRequests.Add(1)
-	defer bs.activeRequests.Add(^uint64(0))
 
 	if bs.activeBatch.request != nil {
 		var err error
@@ -197,8 +206,11 @@ func (bs *batchSender) sendMergeBatch(ctx context.Context, req Request) error {
 			return err
 		}
 	}
+
+	bs.activeRequests.Add(1)
 	bs.updateActiveBatch(ctx, req)
 	batch := bs.activeBatch
+	batch.requestsBlocked++
 	if bs.isActiveBatchReady() {
 		bs.exportActiveBatch()
 	}

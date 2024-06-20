@@ -41,7 +41,7 @@ type mockExporterFactory struct {
 
 func (mef *mockExporterFactory) createMockTracesExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
 	return exporterhelper.NewTracesExporter(ctx, set, cfg,
@@ -53,7 +53,7 @@ func (mef *mockExporterFactory) createMockTracesExporter(
 
 func (mef *mockExporterFactory) createMockMetricsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
 	return exporterhelper.NewMetricsExporter(ctx, set, cfg,
@@ -65,7 +65,7 @@ func (mef *mockExporterFactory) createMockMetricsExporter(
 
 func (mef *mockExporterFactory) createMockLogsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
 	return exporterhelper.NewLogsExporter(ctx, set, cfg,
