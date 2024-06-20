@@ -23,7 +23,7 @@ func TestValidateSubCommandNoConfig(t *testing.T) {
 
 func TestValidateSubCommandInvalidComponents(t *testing.T) {
 	filePath := filepath.Join("testdata", "otelcol-invalid-components.yaml")
-	fileProvider := newFakeProvider("file", func(_ context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
+	fileProvider := newFakeProvider("file", func(_ context.Context, _ string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
 		return confmap.NewRetrieved(newConfFromFile(t, filePath))
 	})
 	cmd := newValidateSubCommand(CollectorSettings{Factories: nopFactories, ConfigProviderSettings: ConfigProviderSettings{

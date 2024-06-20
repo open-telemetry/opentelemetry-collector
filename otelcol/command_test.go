@@ -54,7 +54,7 @@ receivers:
 
 func TestAddFlagToSettings(t *testing.T) {
 	filePath := filepath.Join("testdata", "otelcol-invalid.yaml")
-	fileProvider := newFakeProvider("file", func(_ context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
+	fileProvider := newFakeProvider("file", func(_ context.Context, _ string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
 		return confmap.NewRetrieved(newConfFromFile(t, filePath))
 	})
 	set := CollectorSettings{
@@ -89,7 +89,7 @@ func TestInvalidCollectorSettings(t *testing.T) {
 
 func TestNewCommandInvalidComponent(t *testing.T) {
 	filePath := filepath.Join("testdata", "otelcol-invalid.yaml")
-	fileProvider := newFakeProvider("file", func(_ context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
+	fileProvider := newFakeProvider("file", func(_ context.Context, _ string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
 		return confmap.NewRetrieved(newConfFromFile(t, filePath))
 	})
 	set := ConfigProviderSettings{
@@ -142,7 +142,7 @@ func Test_UseUnifiedEnvVarExpansionRules(t *testing.T) {
 			t.Cleanup(func() {
 				require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.UseUnifiedEnvVarExpansionRules.ID(), false))
 			})
-			fileProvider := newFakeProvider("file", func(_ context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
+			fileProvider := newFakeProvider("file", func(_ context.Context, _ string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
 				return &confmap.Retrieved{}, nil
 			})
 			set := CollectorSettings{
