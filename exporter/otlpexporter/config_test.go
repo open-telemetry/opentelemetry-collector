@@ -141,8 +141,8 @@ func TestValidDNSEndpoint(t *testing.T) {
 func TestSanitizeEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = "dns://backend.example.com:4317"
-	assert.Equal(t, "backend.example.com:4317", cfg.sanitizedEndpoint())
+	cfg.Endpoint = "dns://authority/backend.example.com:4317"
+	assert.Equal(t, "authority/backend.example.com:4317", cfg.sanitizedEndpoint())
 	cfg.Endpoint = "dns:///backend.example.com:4317"
 	assert.Equal(t, "backend.example.com:4317", cfg.sanitizedEndpoint())
 	cfg.Endpoint = "dns:////backend.example.com:4317"
