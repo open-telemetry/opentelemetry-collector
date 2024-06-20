@@ -124,8 +124,6 @@ replace go.opentelemetry.io/collector/confmap/provider/fileprovider => ../confma
 
 replace go.opentelemetry.io/collector/confmap/provider/httpprovider => ../confmap/provider/httpprovider
 
-replace go.opentelemetry.io/collector/confmap/provider/httpsprovider => ../confmap/provider/httpsprovider
-
 replace go.opentelemetry.io/collector/confmap/provider/yamlprovider => ../confmap/provider/yamlprovider
 
 replace go.opentelemetry.io/collector/config/configtelemetry => ../config/configtelemetry
