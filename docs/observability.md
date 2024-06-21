@@ -57,6 +57,22 @@ See the [example configuration][kitchen-sink] for additional options.
 > This configuration does not support emitting logs as there is no support for
 > [logs] in the OpenTelemetry Go SDK at this time.
 
+You can also configure the Collector to send its own traces using the OTLP
+exporter. Send the traces to an OTLP server running on the same Collector, so it
+goes through configured pipelines. For example:
+
+```yaml
+service:
+  telemetry:
+    traces:
+      processors:
+        batch:
+          exporter:
+            otlp:
+              protocol: grpc/protobuf
+              endpoint: ${MY_POD_IP}:4317
+```
+
 ## Goals of internal telemetry
 
 The Collector's internal telemetry is an important part of fulfilling
