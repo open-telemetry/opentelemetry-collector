@@ -47,9 +47,9 @@ func TestConfigProviderYaml(t *testing.T) {
 
 	uriLocation := "yaml:" + string(yamlBytes)
 
-	yamlProvider := newFakeProvider("yaml", func(_ context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
+	yamlProvider := newFakeProvider("yaml", func(_ context.Context, _ string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
 		var rawConf any
-		if err := yaml.Unmarshal(yamlBytes, &rawConf); err != nil {
+		if err = yaml.Unmarshal(yamlBytes, &rawConf); err != nil {
 			return nil, err
 		}
 		return confmap.NewRetrieved(rawConf)
@@ -79,7 +79,7 @@ func TestConfigProviderYaml(t *testing.T) {
 
 func TestConfigProviderFile(t *testing.T) {
 	uriLocation := "file:" + filepath.Join("testdata", "otelcol-nop.yaml")
-	fileProvider := newFakeProvider("file", func(_ context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
+	fileProvider := newFakeProvider("file", func(_ context.Context, _ string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
 		return confmap.NewRetrieved(newConfFromFile(t, uriLocation[5:]))
 	})
 	set := ConfigProviderSettings{
@@ -109,7 +109,7 @@ func TestConfigProviderFile(t *testing.T) {
 
 func TestGetConfmap(t *testing.T) {
 	uriLocation := "file:" + filepath.Join("testdata", "otelcol-nop.yaml")
-	fileProvider := newFakeProvider("file", func(_ context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
+	fileProvider := newFakeProvider("file", func(_ context.Context, _ string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
 		return confmap.NewRetrieved(newConfFromFile(t, uriLocation[5:]))
 	})
 	set := ConfigProviderSettings{

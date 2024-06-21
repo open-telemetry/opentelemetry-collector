@@ -135,8 +135,6 @@ replace go.opentelemetry.io/collector/pdata/testdata => ../../pdata/testdata
 
 replace go.opentelemetry.io/collector/pdata => ../../pdata
 
-replace go.opentelemetry.io/collector/confmap/provider/httpsprovider => ../../confmap/provider/httpsprovider
-
 replace go.opentelemetry.io/collector/connector => ../../connector
 
 replace go.opentelemetry.io/collector/config/configretry => ../../config/configretry

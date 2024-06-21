@@ -111,16 +111,6 @@ replace go.opentelemetry.io/collector/exporter => ../exporter
 
 replace go.opentelemetry.io/collector/confmap => ../confmap
 
-replace go.opentelemetry.io/collector/confmap/converter/expandconverter => ../confmap/converter/expandconverter
-
-replace go.opentelemetry.io/collector/confmap/provider/envprovider => ../confmap/provider/envprovider
-
-replace go.opentelemetry.io/collector/confmap/provider/fileprovider => ../confmap/provider/fileprovider
-
-replace go.opentelemetry.io/collector/confmap/provider/httpprovider => ../confmap/provider/httpprovider
-
-replace go.opentelemetry.io/collector/confmap/provider/yamlprovider => ../confmap/provider/yamlprovider
-
 replace go.opentelemetry.io/collector/config/configtelemetry => ../config/configtelemetry
 
 replace go.opentelemetry.io/collector/processor => ../processor
