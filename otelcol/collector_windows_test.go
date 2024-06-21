@@ -19,9 +19,12 @@ import (
 func TestNewSvcHandler(t *testing.T) {
 	oldArgs := os.Args
 	defer func() { os.Args = oldArgs }()
-	os.Args = []string{"otelcol", "--config", filepath.Join("testdata", "otelcol-nop.yaml")}
-
-	s := NewSvcHandler(CollectorSettings{BuildInfo: component.NewDefaultBuildInfo(), Factories: nopFactories})
+	filePath := filepath.Join("testdata", "otelcol-nop.yaml")
+	os.Args = []string{"otelcol", "--config", filePath}
+	fileProvider := newFakeProvider("file", func(_ context.Context, _ string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
+		return confmap.NewRetrieved(newConfFromFile(t, filePath))
+	})
+	s := NewSvcHandler(CollectorSettings{BuildInfo: component.NewDefaultBuildInfo(), Factories: nopFactories, ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filePath})})
 
 	colDone := make(chan struct{})
 	requests := make(chan svc.ChangeRequest)
