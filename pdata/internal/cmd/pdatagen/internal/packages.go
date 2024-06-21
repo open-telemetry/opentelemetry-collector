@@ -64,9 +64,7 @@ func (p *Package) GenerateFiles() error {
 		sb.WriteString(newLine)
 
 		path := filepath.Join("pdata", p.path, "generated_"+strings.ToLower(s.getName())+".go")
-		// ignore gosec complain about permissions being `0644`.
-		//nolint:gosec
-		if err := os.WriteFile(path, sb.Bytes(), 0644); err != nil {
+		if err := os.WriteFile(path, sb.Bytes(), 0600); err != nil {
 			return err
 		}
 	}
@@ -99,9 +97,7 @@ func (p *Package) GenerateTestFiles() error {
 		}
 
 		path := filepath.Join("pdata", p.path, "generated_"+strings.ToLower(s.getName())+"_test.go")
-		// ignore gosec complain about permissions being `0644`.
-		//nolint:gosec
-		if err := os.WriteFile(path, sb.Bytes(), 0644); err != nil {
+		if err := os.WriteFile(path, sb.Bytes(), 0600); err != nil {
 			return err
 		}
 	}
@@ -142,9 +138,7 @@ func (p *Package) GenerateInternalFiles() error {
 		sb.WriteString(newLine)
 
 		path := filepath.Join("pdata", "internal", "generated_wrapper_"+strings.ToLower(s.getName())+".go")
-		// ignore gosec complain about permissions being `0644`.
-		//nolint:gosec
-		if err := os.WriteFile(path, sb.Bytes(), 0644); err != nil {
+		if err := os.WriteFile(path, sb.Bytes(), 0600); err != nil {
 			return err
 		}
 	}

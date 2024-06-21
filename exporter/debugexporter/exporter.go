@@ -29,16 +29,19 @@ type debugExporter struct {
 }
 
 func newDebugExporter(logger *zap.Logger, verbosity configtelemetry.Level) *debugExporter {
+	var logsMarshaler plog.Marshaler
 	var tracesMarshaler ptrace.Marshaler
 	if verbosity == configtelemetry.LevelDetailed {
+		logsMarshaler = otlptext.NewTextLogsMarshaler()
 		tracesMarshaler = otlptext.NewTextTracesMarshaler()
 	} else {
+		logsMarshaler = normal.NewNormalLogsMarshaler()
 		tracesMarshaler = normal.NewNormalTracesMarshaler()
 	}
 	return &debugExporter{
 		verbosity:        verbosity,
 		logger:           logger,
-		logsMarshaler:    otlptext.NewTextLogsMarshaler(),
+		logsMarshaler:    logsMarshaler,
 		metricsMarshaler: otlptext.NewTextMetricsMarshaler(),
 		tracesMarshaler:  tracesMarshaler,
 	}
@@ -81,7 +84,8 @@ func (s *debugExporter) pushLogs(_ context.Context, ld plog.Logs) error {
 	s.logger.Info("LogsExporter",
 		zap.Int("resource logs", ld.ResourceLogs().Len()),
 		zap.Int("log records", ld.LogRecordCount()))
-	if s.verbosity != configtelemetry.LevelDetailed {
+
+	if s.verbosity == configtelemetry.LevelBasic {
 		return nil
 	}
 

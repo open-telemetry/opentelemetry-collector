@@ -7,6 +7,83 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.10.0/v0.103.0
+
+### 🛑 Breaking changes 🛑
+
+- `component`: Remove deprecated `component.UnmarshalConfig` (#7102)
+- `confighttp`: Use `confighttp.ServerConfig` as part of zpagesextension.Config. Previously the extension used `confignet.TCPAddrConfig` (#9368)
+
+### 🚩 Deprecations 🚩
+
+- `connector`: Deprecate CreateSettings and NewNopCreateSettings (#9428)
+  The following methods are being renamed:
+  - connector.CreateSettings -> connector.Settings
+  - connector.NewNopCreateSettings -> connector.NewNopSettings
+  
+- `exporter`: Deprecate CreateSettings and NewNopCreateSettings (#9428)
+  The following methods are being renamed:
+  - exporter.CreateSettings -> exporter.Settings
+  - exporter.NewNopCreateSettings -> exporter.NewNopSettings
+  
+- `extension`: Deprecate CreateSettings and NewNopCreateSettings (#9428)
+  The following methods are being renamed:
+  - extension.CreateSettings -> extension.Settings
+  - extension.NewNopCreateSettings -> extension.NewNopSettings
+  
+- `processor`: Deprecate CreateSettings and NewNopCreateSettings (#9428)
+  The following methods are being renamed:
+  - processor.CreateSettings -> processor.Settings
+  - processor.NewNopCreateSettings -> processor.NewNopSettings
+  
+- `receiver`: Deprecate CreateSettings and NewNopCreateSettings (#9428)
+  The following methods are being renamed:
+  - receiver.CreateSettings -> receiver.Settings
+  - receiver.NewNopCreateSettings -> receiver.NewNopSettings
+  
+- `configauth`: Deprecate `GetClientAuthenticator` and `GetServerAuthenticator`, use `GetClientAuthenticatorContext` and `GetServerAuthenticatorContext` instead. (#9808)
+- `confighttp`: Deprecate `ClientConfig.CustomRoundTripper` (#8627)
+  Set the `Transport` field on the `*http.Client` object returned from `(ClientConfig).ToClient` instead.
+- `filter`: Deprecate the `filter.CombinedFilter` struct (#10348)
+- `otelcol`: Deprecate `otelcol.NewCommand`. Use `otelcol.NewCommandMustProviderSettings` instead. (#10359)
+- `otelcoltest`: Deprecate `LoadConfig` and `LoadConfigAndValidate`. Use `LoadConfigWithSettings` and `LoadConfigAndValidateWithSettings` instead (#10359)
+
+### 💡 Enhancements 💡
+
+- `confmap`: Adds `confmap.Retrieved.AsString` method that returns the configuration value as a string (#9532)
+- `confmap`: Adds `confmap.NewRetrievedFromYAML` helper to create `confmap.Retrieved` values from YAML bytes (#9532)
+
+## v0.102.1
+
+No API-only changes on this release. **This release addresses [GHSA-c74f-6mfw-mm4v](https://github.com/open-telemetry/opentelemetry-collector/security/advisories/GHSA-c74f-6mfw-mm4v) for `configgrpc`.**
+
+## v1.9.0/v0.102.0
+
+**This release addresses [GHSA-c74f-6mfw-mm4v](https://github.com/open-telemetry/opentelemetry-collector/security/advisories/GHSA-c74f-6mfw-mm4v) for `confighttp`.**
+
+### 🛑 Breaking changes 🛑
+
+- `otelcol`: Remove deprecated `ConfigProvider` field from `CollectorSettings` (#10281)
+- `exporterhelper`: remove deprecated RequestMarshaler & RequestUnmarshaler types (#10283)
+- `service`: remove deprecated Telemetry struct and New func (#10285)
+- `configtls`: remove deprecated LoadTLSConfigContext funcs (#10283)
+
+### 🚩 Deprecations 🚩
+
+- `component`: Deprecate `component.UnmarshalConfig`, use `(*confmap.Conf).Unmarshal(&intoCfg)` instead. (#7102)
+- `service/telemetry`: Deprecate telemetry.New in favor of telemetry.NewFactory (#4970)
+
+### 💡 Enhancements 💡
+
+- `confmap`: Allow setting a default Provider on a Resolver to use when `${}` syntax is used without a scheme (#10182)
+- `pdata`: Introduce string and int64 slices to pcommon (#10148)
+- `pdata`: Introduce generated experimental pdata for profiling signal. (#10195)
+- `confmap`: Remove top level condition when considering struct as Unmarshalers (#7101)
+
+### 🧰 Bug fixes 🧰
+
+- `otelcol`: Update validate command to use the new configuration options (#10203)
+
 ## v1.8.0/v0.101.0
 
 ### 🛑 Breaking changes 🛑

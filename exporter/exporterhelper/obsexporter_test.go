@@ -32,7 +32,7 @@ func TestExportTraceDataOp(t *testing.T) {
 
 		obsrep, err := newExporter(ObsReportSettings{
 			ExporterID:             exporterID,
-			ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+			ExporterCreateSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		})
 		require.NoError(t, err)
 
@@ -80,7 +80,7 @@ func TestExportMetricsOp(t *testing.T) {
 
 		obsrep, err := newExporter(ObsReportSettings{
 			ExporterID:             exporterID,
-			ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+			ExporterCreateSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		})
 		require.NoError(t, err)
 
@@ -129,7 +129,7 @@ func TestExportLogsOp(t *testing.T) {
 
 		obsrep, err := newExporter(ObsReportSettings{
 			ExporterID:             exporterID,
-			ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+			ExporterCreateSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		})
 		require.NoError(t, err)
 
@@ -178,7 +178,7 @@ func TestCheckExporterTracesViews(t *testing.T) {
 
 	obsrep, err := NewObsReport(ObsReportSettings{
 		ExporterID:             exporterID,
-		ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		ExporterCreateSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 	})
 	require.NoError(t, err)
 	ctx := obsrep.StartTracesOp(context.Background())
@@ -198,7 +198,7 @@ func TestCheckExporterMetricsViews(t *testing.T) {
 
 	obsrep, err := NewObsReport(ObsReportSettings{
 		ExporterID:             exporterID,
-		ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		ExporterCreateSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 	})
 	require.NoError(t, err)
 	ctx := obsrep.StartMetricsOp(context.Background())
@@ -218,7 +218,7 @@ func TestCheckExporterLogsViews(t *testing.T) {
 
 	obsrep, err := NewObsReport(ObsReportSettings{
 		ExporterID:             exporterID,
-		ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		ExporterCreateSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 	})
 	require.NoError(t, err)
 	ctx := obsrep.StartLogsOp(context.Background())

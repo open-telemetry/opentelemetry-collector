@@ -28,9 +28,11 @@ The following settings are optional:
   logged.
 - `sampling_initial` (default = `2`): number of messages initially logged each
   second.
-- `sampling_thereafter` (default = `500`): sampling rate after the initial
-  messages are logged (every Mth message is logged). Refer to [Zap
-  docs](https://godoc.org/go.uber.org/zap/zapcore#NewSampler) for more details.
+- `sampling_thereafter` (default = `1`): sampling rate after the initial
+  messages are logged (every Mth message is logged).
+  The default value of `1` means that sampling is disabled.
+  To enable sampling, change `sampling_thereafter` to a value higher than `1`.
+  Refer to [Zap docs](https://godoc.org/go.uber.org/zap/zapcore#NewSampler) for more details
   on how sampling parameters impact number of messages.
 
 Example configuration:
@@ -60,12 +62,14 @@ Here's an example output:
 
 ### Normal verbosity
 
-With `verbosity: normal`, the exporter outputs one line for each telemetry record.
+With `verbosity: normal`, the exporter outputs about one line for each telemetry record.
+The "one line per telemetry record" is not a strict rule.
+For example, logs with multiline body will be output as multiple lines.
 
 > [!IMPORTANT]
-> Currently the `normal` verbosity is only implemented for traces.
-> Logs and metrics are going to be implemented in the future.
-> The current behavior for logs and metrics is the same as in `basic` verbosity.
+> Currently the `normal` verbosity is only implemented for logs and traces.
+> Metrics are going to be implemented in the future.
+> The current behavior for metrics is the same as in `basic` verbosity.
 
 Here's an example output:
 

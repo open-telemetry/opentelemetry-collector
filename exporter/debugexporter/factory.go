@@ -24,7 +24,7 @@ var componentType = component.MustNewType("debug")
 
 const (
 	defaultSamplingInitial    = 2
-	defaultSamplingThereafter = 500
+	defaultSamplingThereafter = 1
 )
 
 // NewFactory creates a factory for Debug exporter
@@ -46,7 +46,7 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createTracesExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Traces, error) {
+func createTracesExporter(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Traces, error) {
 	cfg := config.(*Config)
 	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
 	debugExporter := newDebugExporter(exporterLogger, cfg.Verbosity)
@@ -58,7 +58,7 @@ func createTracesExporter(ctx context.Context, set exporter.CreateSettings, conf
 	)
 }
 
-func createMetricsExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Metrics, error) {
+func createMetricsExporter(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Metrics, error) {
 	cfg := config.(*Config)
 	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
 	debugExporter := newDebugExporter(exporterLogger, cfg.Verbosity)
@@ -70,7 +70,7 @@ func createMetricsExporter(ctx context.Context, set exporter.CreateSettings, con
 	)
 }
 
-func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Logs, error) {
+func createLogsExporter(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Logs, error) {
 	cfg := config.(*Config)
 	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
 	debugExporter := newDebugExporter(exporterLogger, cfg.Verbosity)

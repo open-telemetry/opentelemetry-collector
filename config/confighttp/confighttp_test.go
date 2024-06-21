@@ -4,6 +4,7 @@
 package confighttp
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -13,6 +14,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -79,9 +81,9 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				MaxIdleConnsPerHost:  &maxIdleConnsPerHost,
 				MaxConnsPerHost:      &maxConnsPerHost,
 				IdleConnTimeout:      &idleConnTimeout,
-				CustomRoundTripper:   func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
 				Compression:          "",
 				DisableKeepAlives:    true,
+				Cookies:              &CookiesConfig{Enabled: true},
 				HTTP2ReadIdleTimeout: idleConnTimeout,
 				HTTP2PingTimeout:     http2PingTimeout,
 			},
@@ -100,7 +102,6 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				MaxIdleConnsPerHost:  &maxIdleConnsPerHost,
 				MaxConnsPerHost:      &maxConnsPerHost,
 				IdleConnTimeout:      &idleConnTimeout,
-				CustomRoundTripper:   func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
 				Compression:          "none",
 				DisableKeepAlives:    true,
 				HTTP2ReadIdleTimeout: idleConnTimeout,
@@ -121,7 +122,6 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				MaxIdleConnsPerHost:  &maxIdleConnsPerHost,
 				MaxConnsPerHost:      &maxConnsPerHost,
 				IdleConnTimeout:      &idleConnTimeout,
-				CustomRoundTripper:   func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
 				Compression:          "gzip",
 				DisableKeepAlives:    true,
 				HTTP2ReadIdleTimeout: idleConnTimeout,
@@ -142,26 +142,12 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				MaxIdleConnsPerHost:  &maxIdleConnsPerHost,
 				MaxConnsPerHost:      &maxConnsPerHost,
 				IdleConnTimeout:      &idleConnTimeout,
-				CustomRoundTripper:   func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
 				Compression:          "gzip",
 				DisableKeepAlives:    true,
 				HTTP2ReadIdleTimeout: idleConnTimeout,
 				HTTP2PingTimeout:     http2PingTimeout,
 			},
 			shouldError: false,
-		},
-		{
-			name: "error_round_tripper_returned",
-			settings: ClientConfig{
-				Endpoint: "localhost:1234",
-				TLSSetting: configtls.ClientConfig{
-					Insecure: false,
-				},
-				ReadBufferSize:     1024,
-				WriteBufferSize:    512,
-				CustomRoundTripper: func(http.RoundTripper) (http.RoundTripper, error) { return nil, errors.New("error") },
-			},
-			shouldError: true,
 		},
 	}
 
@@ -210,9 +196,8 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 				TLSSetting: configtls.ClientConfig{
 					Insecure: false,
 				},
-				ReadBufferSize:     1024,
-				WriteBufferSize:    512,
-				CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
+				ReadBufferSize:  1024,
+				WriteBufferSize: 512,
 			},
 			shouldError: false,
 		},
@@ -726,15 +711,14 @@ func TestHttpReception(t *testing.T) {
 				Endpoint:   prefix + ln.Addr().String(),
 				TLSSetting: *tt.tlsClientCreds,
 			}
-			if tt.forceHTTP1 {
-				expectedProto = "HTTP/1.1"
-				hcs.CustomRoundTripper = func(rt http.RoundTripper) (http.RoundTripper, error) {
-					rt.(*http.Transport).ForceAttemptHTTP2 = false
-					return rt, nil
-				}
-			}
+
 			client, errClient := hcs.ToClient(context.Background(), componenttest.NewNopHost(), component.TelemetrySettings{})
 			require.NoError(t, errClient)
+
+			if tt.forceHTTP1 {
+				expectedProto = "HTTP/1.1"
+				client.Transport.(*http.Transport).ForceAttemptHTTP2 = false
+			}
 
 			resp, errResp := client.Get(hcs.Endpoint)
 			if tt.hasError {
@@ -1300,7 +1284,7 @@ func TestServerWithDecoder(t *testing.T) {
 	// test
 	response := &httptest.ResponseRecorder{}
 
-	req, err := http.NewRequest(http.MethodGet, srv.Addr, nil)
+	req, err := http.NewRequest(http.MethodGet, srv.Addr, bytes.NewBuffer([]byte("something")))
 	require.NoError(t, err, "Error creating request: %v", err)
 	req.Header.Set("Content-Encoding", "something-else")
 
@@ -1308,6 +1292,93 @@ func TestServerWithDecoder(t *testing.T) {
 	// verify
 	assert.Equal(t, response.Result().StatusCode, http.StatusOK)
 
+}
+
+func TestServerWithDecompression(t *testing.T) {
+	// prepare
+	hss := ServerConfig{
+		MaxRequestBodySize: 1000, // 1 KB
+	}
+	body := []byte(strings.Repeat("a", 1000*1000)) // 1 MB
+
+	srv, err := hss.ToServer(
+		context.Background(),
+		componenttest.NewNopHost(),
+		componenttest.NewNopTelemetrySettings(),
+		http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
+			actualBody, err := io.ReadAll(req.Body)
+			assert.ErrorContains(t, err, "http: request body too large")
+			assert.Len(t, actualBody, 1000)
+
+			if err != nil {
+				resp.WriteHeader(http.StatusBadRequest)
+			} else {
+				resp.WriteHeader(http.StatusOK)
+			}
+		}),
+	)
+	require.NoError(t, err)
+
+	testSrv := httptest.NewServer(srv.Handler)
+	defer testSrv.Close()
+
+	req, err := http.NewRequest(http.MethodGet, testSrv.URL, compressZstd(t, body))
+	require.NoError(t, err, "Error creating request: %v", err)
+
+	req.Header.Set("Content-Encoding", "zstd")
+
+	// test
+	c := http.Client{}
+	resp, err := c.Do(req)
+	require.NoError(t, err, "Error sending request: %v", err)
+
+	_, err = io.ReadAll(resp.Body)
+	require.NoError(t, err, "Error reading response body: %v", err)
+
+	// verifications is done mostly within the test, but this is only a sanity check
+	// that we got into the test handler
+	assert.Equal(t, resp.StatusCode, http.StatusBadRequest)
+}
+
+func TestDefaultMaxRequestBodySize(t *testing.T) {
+	tests := []struct {
+		name     string
+		settings ServerConfig
+		expected int64
+	}{
+		{
+			name:     "default",
+			settings: ServerConfig{},
+			expected: defaultMaxRequestBodySize,
+		},
+		{
+			name:     "zero",
+			settings: ServerConfig{MaxRequestBodySize: 0},
+			expected: defaultMaxRequestBodySize,
+		},
+		{
+			name:     "negative",
+			settings: ServerConfig{MaxRequestBodySize: -1},
+			expected: defaultMaxRequestBodySize,
+		},
+		{
+			name:     "custom",
+			settings: ServerConfig{MaxRequestBodySize: 100},
+			expected: 100,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := tt.settings.ToServer(
+				context.Background(),
+				componenttest.NewNopHost(),
+				componenttest.NewNopTelemetrySettings(),
+				http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}),
+			)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, tt.settings.MaxRequestBodySize)
+		})
+	}
 }
 
 type mockHost struct {
@@ -1390,23 +1461,23 @@ func BenchmarkHttpRequest(b *testing.B) {
 			Endpoint:   "https://" + ln.Addr().String(),
 			TLSSetting: *tlsClientCreds,
 		}
-		if bb.forceHTTP1 {
-			hcs.CustomRoundTripper = func(rt http.RoundTripper) (http.RoundTripper, error) {
-				rt.(*http.Transport).ForceAttemptHTTP2 = false
-				return rt, nil
-			}
-		}
+
 		b.Run(bb.name, func(b *testing.B) {
 			var c *http.Client
 			if !bb.clientPerThread {
 				c, err = hcs.ToClient(context.Background(), componenttest.NewNopHost(), component.TelemetrySettings{})
 				require.NoError(b, err)
+
 			}
 			b.RunParallel(func(pb *testing.PB) {
 				if c == nil {
 					c, err = hcs.ToClient(context.Background(), componenttest.NewNopHost(), component.TelemetrySettings{})
 					require.NoError(b, err)
 				}
+				if bb.forceHTTP1 {
+					c.Transport.(*http.Transport).ForceAttemptHTTP2 = false
+				}
+
 				for pb.Next() {
 					resp, errResp := c.Get(hcs.Endpoint)
 					require.NoError(b, errResp)
