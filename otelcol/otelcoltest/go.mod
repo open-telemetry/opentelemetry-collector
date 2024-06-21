@@ -2,8 +2,6 @@ module go.opentelemetry.io/collector/otelcol/otelcoltest
 
 go 1.21.0
 
-toolchain go1.21.11
-
 require (
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.103.0

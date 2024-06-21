@@ -338,6 +338,7 @@ restore-contrib:
 		-dropreplace go.opentelemetry.io/collector/extension/zpagesextension  \
 		-dropreplace go.opentelemetry.io/collector/featuregate  \
 		-dropreplace go.opentelemetry.io/collector/otelcol  \
+		-dropreplace go.opentelemetry.io/collector/otelcol/otelcoltest  \
 		-dropreplace go.opentelemetry.io/collector/pdata  \
 		-dropreplace go.opentelemetry.io/collector/pdata/testdata  \
 		-dropreplace go.opentelemetry.io/collector/processor  \
