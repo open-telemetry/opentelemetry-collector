@@ -17,7 +17,7 @@ Exports data to the console (stderr) via `zap.Logger`.
 
 See also the [Troubleshooting][troubleshooting_docs] document for examples on using this exporter.
 
-[troubleshooting_docs]: ../../docs/troubleshooting.md
+[troubleshooting_docs]: https://opentelemetry.io/docs/collector/troubleshooting/#local-exporters
 
 ## Getting Started
 
