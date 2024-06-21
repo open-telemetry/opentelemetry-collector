@@ -7,7 +7,7 @@ change_type: new_component
 component: otelcoltest
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: move go.opentelemetry.io/collector/otelcol/otelcoltest to its own package, go.opentelemetry.io/collector/otelcoltest
+note: Split off go.opentelemetry.io/collector/otelcol/otelcoltest into its own module
 
 # One or more tracking issues or pull requests related to the change
 issues: [10417]
