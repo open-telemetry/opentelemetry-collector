@@ -1,4 +1,16 @@
-# OpenTelemetry Collector Internal Observability
+# OpenTelemetry Collector internal observability
+
+The [Internal telemetry] page on OpenTelemetry's website contains the
+documentation for the Collector's internal observability, including:
+
+- Which types of observability are emitted by the Collector.
+- How to enable and configure these signals.
+- How to use this telemetry to monitor your Collector instance.
+
+If you need to troubleshoot the Collector, see [Troubleshooting].
+
+Read on to learn about experimental features and the project's overall vision
+for internal telemetry.
 
 ## Experimental trace telemetry
 
@@ -163,6 +175,10 @@ even finer granularity to allow turning on/off specific metrics).
 The default level of observability must be defined in a way that has
 insignificant performance impact on the service.
 
+[Internal telemetry]:
+  https://opentelemetry.io/docs/collector/internal-telemetry/
+[Troubleshooting]:
+  https://opentelemetry.io/docs/collector/troubleshooting/
 [issue7532]:
   https://github.com/open-telemetry/opentelemetry-collector/issues/7532
 [issue7454]:
