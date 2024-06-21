@@ -141,11 +141,22 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		}),
 	}
 
-	// process the configuration and initialize the pipeline
-	if err = srv.initExtensionsAndPipeline(ctx, set, cfg); err != nil {
-		// If pipeline initialization fails then shut down telemetry
+	if err = srv.initGraph(ctx, set, cfg); err != nil {
 		err = multierr.Append(err, srv.shutdownTelemetry(ctx))
 		return nil, err
+	}
+
+	// process the configuration and initialize the pipeline
+	if err = srv.initExtensions(ctx, cfg.Extensions); err != nil {
+		err = multierr.Append(err, srv.shutdownTelemetry(ctx))
+		return nil, err
+	}
+
+	if cfg.Telemetry.Metrics.Level != configtelemetry.LevelNone && cfg.Telemetry.Metrics.Address != "" {
+		// The process telemetry initialization requires the ballast size, which is available after the extensions are initialized.
+		if err = proctelemetry.RegisterProcessMetrics(srv.telemetrySettings, getBallastSize(srv.host)); err != nil {
+			return nil, fmt.Errorf("failed to register process metrics: %w", err)
+		}
 	}
 
 	return srv, nil
@@ -197,7 +208,7 @@ func (srv *Service) Start(ctx context.Context) error {
 		}
 	}
 
-	if err := srv.host.pipelines.StartAll(ctx, srv.host); err != nil {
+	if err := srv.host.pipelines.StartAll(ctx, srv.host, srv.telemetrySettings.Status); err != nil {
 		return fmt.Errorf("cannot start pipelines: %w", err)
 	}
 
@@ -248,7 +259,7 @@ func (srv *Service) Shutdown(ctx context.Context) error {
 		errs = multierr.Append(errs, fmt.Errorf("failed to notify that pipeline is not ready: %w", err))
 	}
 
-	if err := srv.host.pipelines.ShutdownAll(ctx); err != nil {
+	if err := srv.host.pipelines.ShutdownAll(ctx, srv.telemetrySettings.Status); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown pipelines: %w", err))
 	}
 
@@ -263,19 +274,24 @@ func (srv *Service) Shutdown(ctx context.Context) error {
 	return errs
 }
 
-// Creates extensions and then builds the pipeline graph.
-func (srv *Service) initExtensionsAndPipeline(ctx context.Context, set Settings, cfg Config) error {
+// Creates extensions.
+func (srv *Service) initExtensions(ctx context.Context, cfg extensions.Config) error {
 	var err error
 	extensionsSettings := extensions.Settings{
 		Telemetry:  srv.telemetrySettings,
 		BuildInfo:  srv.buildInfo,
 		Extensions: srv.host.extensions,
 	}
-	if srv.host.serviceExtensions, err = extensions.New(ctx, extensionsSettings, cfg.Extensions); err != nil {
+	if srv.host.serviceExtensions, err = extensions.New(ctx, extensionsSettings, cfg); err != nil {
 		return fmt.Errorf("failed to build extensions: %w", err)
 	}
+	return nil
+}
 
-	pSet := graph.Settings{
+// Creates the pipeline graph.
+func (srv *Service) initGraph(ctx context.Context, set Settings, cfg Config) error {
+	var err error
+	if srv.host.pipelines, err = graph.Build(ctx, graph.Settings{
 		Telemetry:        srv.telemetrySettings,
 		BuildInfo:        srv.buildInfo,
 		ReceiverBuilder:  set.Receivers,
@@ -283,19 +299,9 @@ func (srv *Service) initExtensionsAndPipeline(ctx context.Context, set Settings,
 		ExporterBuilder:  set.Exporters,
 		ConnectorBuilder: set.Connectors,
 		PipelineConfigs:  cfg.Pipelines,
-	}
-
-	if srv.host.pipelines, err = graph.Build(ctx, pSet); err != nil {
+	}); err != nil {
 		return fmt.Errorf("failed to build pipelines: %w", err)
 	}
-
-	if cfg.Telemetry.Metrics.Level != configtelemetry.LevelNone && cfg.Telemetry.Metrics.Address != "" {
-		// The process telemetry initialization requires the ballast size, which is available after the extensions are initialized.
-		if err = proctelemetry.RegisterProcessMetrics(srv.telemetrySettings, getBallastSize(srv.host)); err != nil {
-			return fmt.Errorf("failed to register process metrics: %w", err)
-		}
-	}
-
 	return nil
 }
 
