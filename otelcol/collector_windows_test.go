@@ -6,6 +6,7 @@
 package otelcol
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -14,6 +15,7 @@ import (
 	"golang.org/x/sys/windows/svc"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 func TestNewSvcHandler(t *testing.T) {
