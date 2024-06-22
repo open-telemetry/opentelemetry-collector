@@ -309,7 +309,7 @@ type ServerConfig struct {
 }
 
 // NewDefaultServerConfig returns ServerConfig type object with default values.
-// Currently, config options are not added as they are initialized with 'zero value' by GoLang as default.
+// Currently, config options are all initialized as zero values.
 // We encourage to use this function to create an object of ServerConfig.
 func NewDefaultServerConfig() ServerConfig {
 	return ServerConfig{}
