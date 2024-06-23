@@ -4,4 +4,4 @@ status:
   class: extension
   stability:
     beta: [extension]
-  distributions: [core, contrib]
+  distributions: [core, contrib, k8s]
