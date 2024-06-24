@@ -70,7 +70,7 @@ func updateSettingsUsingFlags(set *CollectorSettings, flags *flag.FlagSet) error
 		set.ConfigProviderSettings.ResolverSettings.DefaultScheme = "env"
 	}
 
-	if len(resolverSet.ProviderFactories) == 0 && len(resolverSet.ConverterFactories) == 0 {
+	if len(resolverSet.ProviderFactories) == 0 {
 		return errors.New("at least one Provider must be supplied")
 	}
 	return nil
