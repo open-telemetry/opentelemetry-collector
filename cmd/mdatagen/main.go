@@ -124,10 +124,6 @@ func run(ymlPath string) error {
 		toGenerate[filepath.Join(tmplDir, "resource.go.tmpl")] = filepath.Join(codeDir, "generated_resource.go")
 		toGenerate[filepath.Join(tmplDir, "resource_test.go.tmpl")] = filepath.Join(codeDir, "generated_resource_test.go")
 	}
-	if err = generateFile(filepath.Join(tmplDir, "match.go.tmpl"),
-		filepath.Join(codeDir, "generated_match.go"), md, "metadata"); err != nil {
-		return err
-	}
 	if err = generateFile(filepath.Join(tmplDir, "match_test.go.tmpl"),
 		filepath.Join(codeDir, "generated_match_test.go"), md, "metadata"); err != nil {
 		return err
@@ -145,6 +141,14 @@ func run(ymlPath string) error {
 	if len(md.Metrics) > 0 { // only generate metrics if metrics are present
 		toGenerate[filepath.Join(tmplDir, "metrics.go.tmpl")] = filepath.Join(codeDir, "generated_metrics.go")
 		toGenerate[filepath.Join(tmplDir, "metrics_test.go.tmpl")] = filepath.Join(codeDir, "generated_metrics_test.go")
+	}
+
+	// Only generate name matching API if there are metrics or resource attributes present.
+	if len(md.Metrics) > 0 || len(md.ResourceAttributes) > 0 {
+		if err = generateFile(filepath.Join(tmplDir, "match.go.tmpl"),
+			filepath.Join(codeDir, "generated_match.go"), md, "metadata"); err != nil {
+			return err
+		}
 	}
 
 	for tmpl, dst := range toGenerate {
