@@ -124,10 +124,6 @@ func run(ymlPath string) error {
 		toGenerate[filepath.Join(tmplDir, "resource.go.tmpl")] = filepath.Join(codeDir, "generated_resource.go")
 		toGenerate[filepath.Join(tmplDir, "resource_test.go.tmpl")] = filepath.Join(codeDir, "generated_resource_test.go")
 	}
-	if err = generateFile(filepath.Join(tmplDir, "match_test.go.tmpl"),
-		filepath.Join(codeDir, "generated_match_test.go"), md, "metadata"); err != nil {
-		return err
-	}
 
 	if err = generateFile(filepath.Join(tmplDir, "config.go.tmpl"),
 		filepath.Join(codeDir, "generated_config.go"), md, "metadata"); err != nil {
@@ -147,6 +143,10 @@ func run(ymlPath string) error {
 	if len(md.Metrics) > 0 || len(md.ResourceAttributes) > 0 {
 		if err = generateFile(filepath.Join(tmplDir, "match.go.tmpl"),
 			filepath.Join(codeDir, "generated_match.go"), md, "metadata"); err != nil {
+			return err
+		}
+		if err = generateFile(filepath.Join(tmplDir, "match_test.go.tmpl"),
+			filepath.Join(codeDir, "generated_match_test.go"), md, "metadata"); err != nil {
 			return err
 		}
 	}
