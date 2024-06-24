@@ -65,7 +65,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.103.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.10.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.10.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.102.1 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.103.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.103.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.103.0 // indirect
 	go.opentelemetry.io/contrib/config v0.7.0 // indirect
