@@ -431,7 +431,7 @@ func TestNewDataType(t *testing.T) {
 	// hopefully this reminds us to update DataType when profiles get included
 	err = dt2.UnmarshalText([]byte("profiles"))
 	assert.Equal(t, DataType(""), dt2)
-	assert.Equal(t, errors.New("invalid data type profiles"), err)
+	assert.Equal(t, errors.New("invalid data type \"profiles\""), err)
 }
 
 func TestDataTypeStringMarshal(t *testing.T) {

@@ -188,6 +188,6 @@ func (dt *DataType) UnmarshalText(text []byte) error {
 		*dt = DataTypeTraces
 		return nil
 	default:
-		return fmt.Errorf("invalid data type %s", strText)
+		return fmt.Errorf("invalid data type %q", strText)
 	}
 }
