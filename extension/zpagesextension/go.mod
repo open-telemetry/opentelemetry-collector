@@ -113,3 +113,5 @@ replace go.opentelemetry.io/collector/config/configauth => ../../config/configau
 replace go.opentelemetry.io/collector/extension/auth => ../auth
 
 replace go.opentelemetry.io/collector/config/confighttp => ../../config/confighttp
+
+replace go.opentelemetry.io/collector/pdata/pprofile => ../../pdata/pprofile
