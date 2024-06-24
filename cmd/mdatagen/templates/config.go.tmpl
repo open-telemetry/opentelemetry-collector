@@ -10,12 +10,6 @@ import (
 )
 {{ if .Metrics -}}
 
-var MetricNames = []string{
-	{{- range $name, $metric := .Metrics }}
-	"{{ $name }}",
-	{{- end }}
-}
-
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
 	Enabled bool `mapstructure:"enabled"`
@@ -57,7 +51,11 @@ func (msc *MetricsConfig) Unmarshal(parser *confmap.Conf) error {
 		return nil
 	}
 	confStrMap := parser.ToStringMap()
-	expandedConfig, err := expandPatternMap(confStrMap, MetricNames)
+	expandedConfig, err := expandPatternMap(confStrMap, []string{
+		{{- range $name, $metric := .Metrics }}
+		"{{ $name }}",
+		{{- end }}
+	})
 	if err != nil {
 		return err
 	}
@@ -67,12 +65,6 @@ func (msc *MetricsConfig) Unmarshal(parser *confmap.Conf) error {
 {{- end }}
 
 {{ if .ResourceAttributes -}}
-var ResourceAttributeNames = []string{
-	{{- range $name, $attr := .ResourceAttributes }}
-	"{{ $name }}",
-	{{- end }}
-}
-
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
@@ -123,7 +115,11 @@ func (rasc *ResourceAttributesConfig) Unmarshal(parser *confmap.Conf) error {
 		return nil
 	}
 	confStrMap := parser.ToStringMap()
-	expandedConfig, err := expandPatternMap(confStrMap, ResourceAttributeNames)
+	expandedConfig, err := expandPatternMap(confStrMap, []string{
+		{{- range $name, $attr := .ResourceAttributes }}
+		"{{ $name }}",
+		{{- end }}
+	})
 	if err != nil {
 		return err
 	}
