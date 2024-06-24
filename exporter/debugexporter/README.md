@@ -67,17 +67,12 @@ With `verbosity: normal`, the exporter outputs about one line for each telemetry
 The "one line per telemetry record" is not a strict rule.
 For example, logs with multiline body will be output as multiple lines.
 
-> [!IMPORTANT]
-> Currently the `normal` verbosity is only implemented for logs and traces.
-> Metrics are going to be implemented in the future.
-> The current behavior for metrics is the same as in `basic` verbosity.
-
 Here's an example output:
 
 ```console
-2024-05-31T13:26:37.531+0200    info    TracesExporter  {"kind": "exporter", "data_type": "traces", "name": "debug", "resource spans": 1, "spans": 2}
-2024-05-31T13:26:37.531+0200    info    okey-dokey-0 082bc2f70f519e32a39fd26ae69b43c0 51201084f4d65159
-lets-go 082bc2f70f519e32a39fd26ae69b43c0 cd321682f3514378
+2024-06-24T15:18:58.559+0200    info    TracesExporter  {"kind": "exporter", "data_type": "traces", "name": "debug", "resource spans": 1, "spans": 2}
+2024-06-24T15:18:58.559+0200    info    okey-dokey-0 4bdc558f0f0650e3ccaac8f3ae133954 8b69459f015c164b net.peer.ip=1.2.3.4 peer.service=telemetrygen-client
+lets-go 4bdc558f0f0650e3ccaac8f3ae133954 8820ee5366817639 net.peer.ip=1.2.3.4 peer.service=telemetrygen-server
         {"kind": "exporter", "data_type": "traces", "name": "debug"}
 ```
 
@@ -128,3 +123,5 @@ Attributes:
 ## Warnings
 
 - Unstable Output Format: The output formats for all verbosity levels is not guaranteed and may be changed at any time without a breaking change.
+
+[telemetrygen]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/cmd/telemetrygen
