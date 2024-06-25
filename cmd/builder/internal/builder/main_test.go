@@ -78,6 +78,7 @@ var (
 		"/otelcol",
 		"/pdata",
 		"/pdata/testdata",
+		"/pdata/pprofile",
 		"/semconv",
 		"/service",
 	}

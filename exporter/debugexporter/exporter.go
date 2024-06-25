@@ -30,17 +30,23 @@ type debugExporter struct {
 
 func newDebugExporter(logger *zap.Logger, verbosity configtelemetry.Level) *debugExporter {
 	var logsMarshaler plog.Marshaler
+	var metricsMarshaler pmetric.Marshaler
+	var tracesMarshaler ptrace.Marshaler
 	if verbosity == configtelemetry.LevelDetailed {
 		logsMarshaler = otlptext.NewTextLogsMarshaler()
+		metricsMarshaler = otlptext.NewTextMetricsMarshaler()
+		tracesMarshaler = otlptext.NewTextTracesMarshaler()
 	} else {
 		logsMarshaler = normal.NewNormalLogsMarshaler()
+		metricsMarshaler = normal.NewNormalMetricsMarshaler()
+		tracesMarshaler = normal.NewNormalTracesMarshaler()
 	}
 	return &debugExporter{
 		verbosity:        verbosity,
 		logger:           logger,
 		logsMarshaler:    logsMarshaler,
-		metricsMarshaler: otlptext.NewTextMetricsMarshaler(),
-		tracesMarshaler:  otlptext.NewTextTracesMarshaler(),
+		metricsMarshaler: metricsMarshaler,
+		tracesMarshaler:  tracesMarshaler,
 	}
 }
 
@@ -48,7 +54,7 @@ func (s *debugExporter) pushTraces(_ context.Context, td ptrace.Traces) error {
 	s.logger.Info("TracesExporter",
 		zap.Int("resource spans", td.ResourceSpans().Len()),
 		zap.Int("spans", td.SpanCount()))
-	if s.verbosity != configtelemetry.LevelDetailed {
+	if s.verbosity == configtelemetry.LevelBasic {
 		return nil
 	}
 
@@ -65,7 +71,7 @@ func (s *debugExporter) pushMetrics(_ context.Context, md pmetric.Metrics) error
 		zap.Int("resource metrics", md.ResourceMetrics().Len()),
 		zap.Int("metrics", md.MetricCount()),
 		zap.Int("data points", md.DataPointCount()))
-	if s.verbosity != configtelemetry.LevelDetailed {
+	if s.verbosity == configtelemetry.LevelBasic {
 		return nil
 	}
 

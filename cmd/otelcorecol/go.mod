@@ -203,6 +203,8 @@ replace go.opentelemetry.io/collector/pdata => ../../pdata
 
 replace go.opentelemetry.io/collector/pdata/testdata => ../../pdata/testdata
 
+replace go.opentelemetry.io/collector/pdata/pprofile => ../../pdata/pprofile
+
 replace go.opentelemetry.io/collector/processor => ../../processor
 
 replace go.opentelemetry.io/collector/receiver => ../../receiver
