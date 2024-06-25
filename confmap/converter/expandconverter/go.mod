@@ -4,9 +4,9 @@ go 1.21.0
 
 require (
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector v0.102.1
-	go.opentelemetry.io/collector/confmap v0.102.1
-	go.opentelemetry.io/collector/featuregate v1.9.0
+	go.opentelemetry.io/collector v0.103.0
+	go.opentelemetry.io/collector/confmap v0.103.0
+	go.opentelemetry.io/collector/featuregate v1.10.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 )
@@ -40,3 +40,5 @@ replace go.opentelemetry.io/collector/pdata => ../../../pdata
 replace go.opentelemetry.io/collector/featuregate => ../../../featuregate
 
 replace go.opentelemetry.io/collector/consumer => ../../../consumer
+
+replace go.opentelemetry.io/collector/pdata/pprofile => ../../../pdata/pprofile

@@ -13,6 +13,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/exporter/debugexporter/internal/normal"
 	"go.opentelemetry.io/collector/exporter/internal/otlptext"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -28,12 +29,24 @@ type debugExporter struct {
 }
 
 func newDebugExporter(logger *zap.Logger, verbosity configtelemetry.Level) *debugExporter {
+	var logsMarshaler plog.Marshaler
+	var metricsMarshaler pmetric.Marshaler
+	var tracesMarshaler ptrace.Marshaler
+	if verbosity == configtelemetry.LevelDetailed {
+		logsMarshaler = otlptext.NewTextLogsMarshaler()
+		metricsMarshaler = otlptext.NewTextMetricsMarshaler()
+		tracesMarshaler = otlptext.NewTextTracesMarshaler()
+	} else {
+		logsMarshaler = normal.NewNormalLogsMarshaler()
+		metricsMarshaler = normal.NewNormalMetricsMarshaler()
+		tracesMarshaler = normal.NewNormalTracesMarshaler()
+	}
 	return &debugExporter{
 		verbosity:        verbosity,
 		logger:           logger,
-		logsMarshaler:    otlptext.NewTextLogsMarshaler(),
-		metricsMarshaler: otlptext.NewTextMetricsMarshaler(),
-		tracesMarshaler:  otlptext.NewTextTracesMarshaler(),
+		logsMarshaler:    logsMarshaler,
+		metricsMarshaler: metricsMarshaler,
+		tracesMarshaler:  tracesMarshaler,
 	}
 }
 
@@ -41,7 +54,7 @@ func (s *debugExporter) pushTraces(_ context.Context, td ptrace.Traces) error {
 	s.logger.Info("TracesExporter",
 		zap.Int("resource spans", td.ResourceSpans().Len()),
 		zap.Int("spans", td.SpanCount()))
-	if s.verbosity != configtelemetry.LevelDetailed {
+	if s.verbosity == configtelemetry.LevelBasic {
 		return nil
 	}
 
@@ -58,7 +71,7 @@ func (s *debugExporter) pushMetrics(_ context.Context, md pmetric.Metrics) error
 		zap.Int("resource metrics", md.ResourceMetrics().Len()),
 		zap.Int("metrics", md.MetricCount()),
 		zap.Int("data points", md.DataPointCount()))
-	if s.verbosity != configtelemetry.LevelDetailed {
+	if s.verbosity == configtelemetry.LevelBasic {
 		return nil
 	}
 
@@ -74,7 +87,8 @@ func (s *debugExporter) pushLogs(_ context.Context, ld plog.Logs) error {
 	s.logger.Info("LogsExporter",
 		zap.Int("resource logs", ld.ResourceLogs().Len()),
 		zap.Int("log records", ld.LogRecordCount()))
-	if s.verbosity != configtelemetry.LevelDetailed {
+
+	if s.verbosity == configtelemetry.LevelBasic {
 		return nil
 	}
 
