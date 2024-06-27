@@ -21,8 +21,8 @@ type componentTestTelemetry struct {
 	meterProvider *sdkmetric.MeterProvider
 }
 
-func (tt *componentTestTelemetry) NewCreateSettings() receiver.CreateSettings {
-	settings := receivertest.NewNopCreateSettings()
+func (tt *componentTestTelemetry) NewSettings() receiver.Settings {
+	settings := receivertest.NewNopSettings()
 	settings.MeterProvider = tt.meterProvider
 	settings.ID = component.NewID(component.MustNewType("receiverhelper"))
 

@@ -78,6 +78,7 @@ var (
 		"/otelcol",
 		"/pdata",
 		"/pdata/testdata",
+		"/pdata/pprofile",
 		"/semconv",
 		"/service",
 	}
@@ -313,6 +314,18 @@ func TestGenerateAndCompile(t *testing.T) {
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				cfg.Distribution.OtelColVersion = "0.99.0"
 				cfg.SkipStrictVersioning = true
+				return cfg
+			},
+		},
+		{
+			testCase: "ConfResolverDefaultURIScheme set",
+			cfgBuilder: func(t *testing.T) Config {
+				cfg := newTestConfig()
+				cfg.ConfResolver = ConfResolver{
+					DefaultURIScheme: "env",
+				}
+				cfg.Distribution.OutputPath = t.TempDir()
+				cfg.Replaces = append(cfg.Replaces, replaces...)
 				return cfg
 			},
 		},

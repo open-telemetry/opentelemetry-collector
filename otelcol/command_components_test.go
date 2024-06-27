@@ -17,15 +17,12 @@ import (
 )
 
 func TestNewBuildSubCommand(t *testing.T) {
-	cfgProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}))
-	require.NoError(t, err)
-
 	set := CollectorSettings{
-		BuildInfo:      component.NewDefaultBuildInfo(),
-		Factories:      nopFactories,
-		ConfigProvider: cfgProvider,
+		BuildInfo:              component.NewDefaultBuildInfo(),
+		Factories:              nopFactories,
+		ConfigProviderSettings: newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}),
 	}
-	cmd := NewCommand(set)
+	cmd := NewCommandMustSetProvider(set)
 	cmd.SetArgs([]string{"components"})
 
 	ExpectedOutput, err := os.ReadFile(filepath.Join("testdata", "components-output.yaml"))

@@ -2,7 +2,10 @@ module go.opentelemetry.io/collector/pdata/testdata
 
 go 1.21.0
 
-require go.opentelemetry.io/collector/pdata v1.8.0
+require (
+	go.opentelemetry.io/collector/pdata v1.10.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.103.0
+)
 
 require (
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -15,7 +18,9 @@ require (
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240318140521-94a12d6c2237 // indirect
 	google.golang.org/grpc v1.64.0 // indirect
-	google.golang.org/protobuf v1.34.1 // indirect
+	google.golang.org/protobuf v1.34.2 // indirect
 )
 
 replace go.opentelemetry.io/collector/pdata => ../
+
+replace go.opentelemetry.io/collector/pdata/pprofile => ../pprofile

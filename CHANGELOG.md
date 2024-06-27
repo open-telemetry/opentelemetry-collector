@@ -7,6 +7,87 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.10.0/v0.103.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporter/debug`: Disable sampling by default (#9921)
+  To restore the behavior that was previously the default, set `sampling_thereafter` to `500`.
+
+### 💡 Enhancements 💡
+
+- `cmd/builder`: Allow setting `otelcol.CollectorSettings.ResolverSettings.DefaultScheme` via the builder's `conf_resolver.default_uri_scheme` configuration option (#10296)
+- `mdatagen`: add support for optional internal metrics (#10316)
+- `otelcol/expandconverter`: Add `confmap.unifyEnvVarExpansion` feature gate to allow enabling Collector/Configuration SIG environment variable expansion rules. (#10391)
+  When enabled, this feature gate will:
+  - Disable expansion of BASH-style env vars (`$FOO`)
+  - `${FOO}` will be expanded as if it was `${env:FOO}
+  See https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/env-vars.md for more details.
+  
+- `confmap`: Add `confmap.unifyEnvVarExpansion` feature gate to allow enabling Collector/Configuration SIG environment variable expansion rules. (#10259)
+  When enabled, this feature gate will:
+    - Disable expansion of BASH-style env vars (`$FOO`)
+    - `${FOO}` will be expanded as if it was `${env:FOO}
+  See https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/env-vars.md for more details.
+  
+- `confighttp`: Allow the compression list to be overridden (#10295)
+  Allows Collector administrators to control which compression algorithms to enable for HTTP-based receivers.
+- `configgrpc`: Revert the zstd compression for gRPC to the third-party library we were using previously. (#10394)
+  We switched back to our compression logic for zstd when a CVE was found on the third-party library we were using. Now that the third-party library has been fixed, we can revert to that one. For end-users, this has no practical effect. The reproducers for the CVE were tested against this patch, confirming we are not reintroducing the bugs.
+- `confmap`: Adds alpha `confmap.strictlyTypedInput` feature gate that enables strict type checks during configuration resolution (#9532)
+  When enabled, the configuration resolution system will:
+  - Stop doing most kinds of implicit type casting when resolving configuration values
+  - Use the original string representation of configuration values if the ${} syntax is used in inline position
+  
+- `confighttp`: Use `confighttp.ServerConfig` as part of zpagesextension. See [https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md#server-configuration](server configuration) options. (#9368)
+
+### 🧰 Bug fixes 🧰
+
+- `exporterhelper`: Fix potential deadlock in the batch sender (#10315)
+- `expandconverter`: Fix bug where an warning was logged incorrectly. (#10392)
+- `exporterhelper`: Fix a bug when the retry and timeout logic was not applied with enabled batching. (#10166)
+- `exporterhelper`: Fix a bug where an unstarted batch_sender exporter hangs on shutdown (#10306)
+- `exporterhelper`: Fix small batch due to unfavorable goroutine scheduling in batch sender (#9952)
+- `confmap`: Fix issue where structs with only yaml tags were not marshaled correctly. (#10282)
+
+## v0.102.1
+
+**This release addresses [GHSA-c74f-6mfw-mm4v](https://github.com/open-telemetry/opentelemetry-collector/security/advisories/GHSA-c74f-6mfw-mm4v) for `configgrpc`.**
+
+### 🧰 Bug fixes 🧰
+
+- `configrpc`: Use own compressors for zstd. Before this change, the zstd compressor we used didn't respect the max message size. This addresses [GHSA-c74f-6mfw-mm4v](https://github.com/open-telemetry/opentelemetry-collector/security/advisories/GHSA-c74f-6mfw-mm4v) for `configgrpc` (#10323)
+
+## v1.9.0/v0.102.0
+
+**This release addresses [GHSA-c74f-6mfw-mm4v](https://github.com/open-telemetry/opentelemetry-collector/security/advisories/GHSA-c74f-6mfw-mm4v) for `confighttp`.**
+
+### 🛑 Breaking changes 🛑
+
+- `envprovider`: Restricts Environment Variable names.  Environment variable names must now be ASCII only and start with a letter or an underscore, and can only contain underscores, letters, or numbers. (#9531)
+- `confighttp`: Apply MaxRequestBodySize to the result of a decompressed body. This addresses [GHSA-c74f-6mfw-mm4v](https://github.com/open-telemetry/opentelemetry-collector/security/advisories/GHSA-c74f-6mfw-mm4v) for `confighttp` (#10289)
+  When using compressed payloads, the Collector would verify only the size of the compressed payload. 
+  This change applies the same restriction to the decompressed content. As a security measure, a limit of 20 MiB was added, which makes this a breaking change. 
+  For most clients, this shouldn't be a problem, but if you often have payloads that decompress to more than 20 MiB, you might want to either configure your
+  client to send smaller batches (recommended), or increase the limit using the MaxRequestBodySize option.
+  
+
+### 💡 Enhancements 💡
+
+- `mdatagen`: auto-generate utilities to test component telemetry (#19783)
+- `mdatagen`: support setting an AttributeSet for async instruments (#9674)
+- `mdatagen`: support using telemetry level in telemetry builder (#10234)
+  This allows components to set the minimum level needed for them to produce telemetry. By default, this is set to configtelemetry.LevelBasic. If the telemetry level is below that minimum level, then the noop meter is used for metrics.
+- `mdatagen`: add support for bucket boundaries for histograms (#10218)
+- `releases`: add documentation in how to verify the image signatures using cosign (#9610)
+
+### 🧰 Bug fixes 🧰
+
+- `batchprocessor`: ensure attributes are set on cardinality metadata metric (#9674)
+- `batchprocessor`: Fixing processor_batch_metadata_cardinality which was broken in v0.101.0 (#10231)
+- `batchprocessor`: respect telemetry level for all metrics (#10234)
+- `exporterhelper`: Fix potential deadlocks in BatcherSender shutdown (#10255)
+
 ## v1.8.0/v0.101.0
 
 ### 💡 Enhancements 💡

@@ -26,8 +26,8 @@ var (
 	defaultType     = component.MustNewType("test")
 	defaultDataType = component.DataTypeMetrics
 	defaultID       = component.NewID(defaultType)
-	defaultSettings = func() exporter.CreateSettings {
-		set := exportertest.NewNopCreateSettings()
+	defaultSettings = func() exporter.Settings {
+		set := exportertest.NewNopSettings()
 		set.ID = defaultID
 		return set
 	}()
@@ -67,16 +67,16 @@ func checkStatus(t *testing.T, sd sdktrace.ReadOnlySpan, err error) {
 }
 
 func TestQueueOptionsWithRequestExporter(t *testing.T) {
-	bs, err := newBaseExporter(exportertest.NewNopCreateSettings(), defaultDataType, newNoopObsrepSender,
+	bs, err := newBaseExporter(exportertest.NewNopSettings(), defaultDataType, newNoopObsrepSender,
 		WithRetry(configretry.NewDefaultBackOffConfig()))
 	require.Nil(t, err)
 	require.Nil(t, bs.marshaler)
 	require.Nil(t, bs.unmarshaler)
-	_, err = newBaseExporter(exportertest.NewNopCreateSettings(), defaultDataType, newNoopObsrepSender,
+	_, err = newBaseExporter(exportertest.NewNopSettings(), defaultDataType, newNoopObsrepSender,
 		WithRetry(configretry.NewDefaultBackOffConfig()), WithQueue(NewDefaultQueueSettings()))
 	require.Error(t, err)
 
-	_, err = newBaseExporter(exportertest.NewNopCreateSettings(), defaultDataType, newNoopObsrepSender,
+	_, err = newBaseExporter(exportertest.NewNopSettings(), defaultDataType, newNoopObsrepSender,
 		withMarshaler(mockRequestMarshaler), withUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
 		WithRetry(configretry.NewDefaultBackOffConfig()),
 		WithRequestQueue(exporterqueue.NewDefaultConfig(), exporterqueue.NewMemoryQueueFactory[Request]()))
@@ -84,7 +84,7 @@ func TestQueueOptionsWithRequestExporter(t *testing.T) {
 }
 
 func TestBaseExporterLogging(t *testing.T) {
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	logger, observed := observer.New(zap.DebugLevel)
 	set.Logger = zap.New(logger)
 	rCfg := configretry.NewDefaultBackOffConfig()

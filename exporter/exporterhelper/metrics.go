@@ -71,7 +71,7 @@ type metricsExporter struct {
 // NewMetricsExporter creates an exporter.Metrics that records observability metrics and wraps every request with a Span.
 func NewMetricsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 	pusher consumer.ConsumeMetricsFunc,
 	options ...Option,
@@ -106,7 +106,7 @@ func requestFromMetrics(pusher consumer.ConsumeMetricsFunc) RequestFromMetricsFu
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func NewMetricsRequestExporter(
 	_ context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	converter RequestFromMetricsFunc,
 	options ...Option,
 ) (exporter.Metrics, error) {

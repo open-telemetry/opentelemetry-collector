@@ -4,13 +4,13 @@
 change_type: deprecation
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: component
+component: otelcoltest
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Deprecate `component.UnmarshalConfig`, use `(*confmap.Conf).Unmarshal(&intoCfg)` instead.
+note: Deprecates `LoadConfigWithSettings` and `LoadConfigAndValidateWithSettings`.  Use `LoadConfig` and `LoadConfigAndValidate` instead.
 
 # One or more tracking issues or pull requests related to the change
-issues: [7102]
+issues: [10417]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.

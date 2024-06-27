@@ -73,7 +73,7 @@ func (n *receiverNode) buildComponent(ctx context.Context,
 	builder *receiver.Builder,
 	nexts []baseConsumer,
 ) error {
-	set := receiver.CreateSettings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
+	set := receiver.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
 	set.TelemetrySettings.Logger = components.ReceiverLogger(tel.Logger, n.componentID, n.pipelineType)
 	var err error
 	switch n.pipelineType {
@@ -133,7 +133,7 @@ func (n *processorNode) buildComponent(ctx context.Context,
 	builder *processor.Builder,
 	next baseConsumer,
 ) error {
-	set := processor.CreateSettings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
+	set := processor.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
 	set.TelemetrySettings.Logger = components.ProcessorLogger(set.TelemetrySettings.Logger, n.componentID, n.pipelineID)
 	var err error
 	switch n.pipelineID.Type() {
@@ -181,7 +181,7 @@ func (n *exporterNode) buildComponent(
 	info component.BuildInfo,
 	builder *exporter.Builder,
 ) error {
-	set := exporter.CreateSettings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
+	set := exporter.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
 	set.TelemetrySettings.Logger = components.ExporterLogger(set.TelemetrySettings.Logger, n.componentID, n.pipelineType)
 	var err error
 	switch n.pipelineType {
@@ -233,7 +233,7 @@ func (n *connectorNode) buildComponent(
 	builder *connector.Builder,
 	nexts []baseConsumer,
 ) error {
-	set := connector.CreateSettings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
+	set := connector.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
 	set.TelemetrySettings.Logger = components.ConnectorLogger(set.TelemetrySettings.Logger, n.componentID, n.exprPipelineType, n.rcvrPipelineType)
 
 	switch n.rcvrPipelineType {
