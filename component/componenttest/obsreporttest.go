@@ -78,20 +78,20 @@ func (tts *TestTelemetry) CheckExporterMetricGauge(metric string, val int64) err
 
 // CheckProcessorTraces checks that for the current exported values for trace exporter metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
-func (tts *TestTelemetry) CheckProcessorTraces(acceptedSpans, refusedSpans, droppedSpans int64) error {
-	return tts.prometheusChecker.checkProcessorTraces(tts.id, acceptedSpans, refusedSpans, droppedSpans)
+func (tts *TestTelemetry) CheckProcessorTraces(acceptedSpans, refusedSpans, droppedSpans, insertedSpans int64) error {
+	return tts.prometheusChecker.checkProcessorTraces(tts.id, acceptedSpans, refusedSpans, droppedSpans, insertedSpans)
 }
 
 // CheckProcessorMetrics checks that for the current exported values for metrics exporter metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
-func (tts *TestTelemetry) CheckProcessorMetrics(acceptedMetricPoints, refusedMetricPoints, droppedMetricPoints int64) error {
-	return tts.prometheusChecker.checkProcessorMetrics(tts.id, acceptedMetricPoints, refusedMetricPoints, droppedMetricPoints)
+func (tts *TestTelemetry) CheckProcessorMetrics(acceptedMetricPoints, refusedMetricPoints, droppedMetricPoints, insertedMetricPoints int64) error {
+	return tts.prometheusChecker.checkProcessorMetrics(tts.id, acceptedMetricPoints, refusedMetricPoints, droppedMetricPoints, insertedMetricPoints)
 }
 
 // CheckProcessorLogs checks that for the current exported values for logs exporter metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
-func (tts *TestTelemetry) CheckProcessorLogs(acceptedLogRecords, refusedLogRecords, droppedLogRecords int64) error {
-	return tts.prometheusChecker.checkProcessorLogs(tts.id, acceptedLogRecords, refusedLogRecords, droppedLogRecords)
+func (tts *TestTelemetry) CheckProcessorLogs(acceptedLogRecords, refusedLogRecords, droppedLogRecords, insertedLogRecords int64) error {
+	return tts.prometheusChecker.checkProcessorLogs(tts.id, acceptedLogRecords, refusedLogRecords, droppedLogRecords, insertedLogRecords)
 }
 
 // CheckReceiverTraces checks that for the current exported values for trace receiver metrics match given values.

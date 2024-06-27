@@ -379,12 +379,88 @@ The following limitations are recommended:
 
 ### Observability
 
-Out of the box, your users should be able to observe the state of your component.
-See [observability.md](docs/observability.md) for more details.
+Out of the box, your users should be able to observe the state of your
+component. See [observability.md](docs/observability.md) for more details.
 
 When using the regular helpers, you should have some metrics added around key
-events automatically. For instance, exporters should have `otelcol_exporter_sent_spans`
-tracked without your exporter doing anything.
+events automatically. For instance, exporters should have
+`otelcol_exporter_sent_spans` tracked without your exporter doing anything.
+
+Custom metrics can be defined as part of the `metadata.yaml` for your component.
+The authoritative source of information for this is [the
+schema](https://github.com/open-telemetry/opentelemetry-collector/blob/main/cmd/mdatagen/metadata-schema.yaml),
+but here are a few examples for reference, adapted from the tail sampling
+processor:
+
+```yaml
+telemetry:
+  metrics:
+    # example of a histogram
+    processor.tailsampling.samplingdecision.latency:
+      description: Latency (in microseconds) of a given sampling policy.
+      unit: µs # from https://ucum.org/ucum
+      enabled: true
+      histogram:
+        value_type: int
+        # bucket boundaries can be overridden
+        bucket_boundaries: [1, 2, 5, 10, 25, 50, 75, 100, 150, 200, 300, 400, 500, 750, 1000, 2000, 3000, 4000, 5000, 10000, 20000, 30000, 50000]
+
+    # example of a counter
+    processor.tailsampling.policyevaluation.errors:
+      description: Count of sampling policy evaluation errors.
+      unit: "{errors}"
+      enabled: true
+      sum:
+        value_type: int
+        monotonic: true
+
+    # example of a gauge
+    processor.tailsampling.tracesonmemory:
+      description: Tracks the number of traces current on memory.
+      unit: "{traces}"
+      enabled: true
+      gauge:
+        value_type: int
+```
+
+Running `go generate ./...` at the root of your component should generate the
+following files:
+
+- `documentation.md`, with the metrics and their descriptions
+- `internal/metadata/generated_telemetry.go`, with code that defines the metric
+  using the OTel API
+- `internal/metadata/generated_telemetry_test.go`, with sanity tests for the
+  generated code
+
+On your component's code, you can use the metric by initializing the telemetry
+builder and storing it on a component's field:
+
+```go
+type tailSamplingSpanProcessor struct {
+	ctx context.Context
+
+	telemetry *metadata.TelemetryBuilder
+}
+
+func newTracesProcessor(ctx context.Context, settings component.TelemetrySettings, nextConsumer consumer.Traces, cfg Config, opts ...Option) (processor.Traces, error) {
+	telemetry, err := metadata.NewTelemetryBuilder(settings)
+	if err != nil {
+		return nil, err
+	}
+
+	tsp := &tailSamplingSpanProcessor{
+		ctx:            ctx,
+		telemetry:      telemetry,
+  }
+}
+```
+
+To record the measurement, you can then call the metric stored in the telemetry
+builder:
+
+```go
+tsp.telemetry.ProcessorTailsamplingSamplingdecisionLatency.Record(ctx, ...)
+```
 
 ### Resource Usage
 

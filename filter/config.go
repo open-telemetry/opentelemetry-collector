@@ -37,9 +37,6 @@ type combinedFilter struct {
 	regexes []*regexp.Regexp
 }
 
-// Deprecated: [v0.103.0] This type will be removed in the future.
-type CombinedFilter combinedFilter
-
 // CreateFilter creates a Filter out of a set of Config configuration objects.
 func CreateFilter(configs []Config) Filter {
 	cf := &combinedFilter{

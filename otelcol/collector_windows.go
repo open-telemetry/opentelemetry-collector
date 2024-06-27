@@ -83,7 +83,7 @@ func (s *windowsService) start(elog *eventlog.Log, colErrorChannel chan error) e
 	}
 
 	var err error
-	err = updateSettingsUsingFlags(&s.settings, s.flags)
+	err = updateSettingsUsingFlags(&s.settings, s.flags, false)
 	if err != nil {
 		return err
 	}
