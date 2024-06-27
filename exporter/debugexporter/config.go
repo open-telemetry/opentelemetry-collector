@@ -30,6 +30,9 @@ type Config struct {
 
 	// SamplingThereafter defines the sampling rate after the initial samples are logged.
 	SamplingThereafter int `mapstructure:"sampling_thereafter"`
+
+	// UseInternalLogger defines whether the exporter sends the output to the collector's internal logger.
+	UseInternalLogger bool `mapstructure:"use_internal_logger"`
 }
 
 var _ component.Config = (*Config)(nil)
