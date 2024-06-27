@@ -25,7 +25,7 @@ func TestCreateProcessor(t *testing.T) {
 	factory := NewFactory()
 
 	cfg := factory.CreateDefaultConfig()
-	creationSet := processortest.NewNopCreateSettings()
+	creationSet := processortest.NewNopSettings()
 	tp, err := factory.CreateTracesProcessor(context.Background(), creationSet, cfg, nil)
 	assert.NotNil(t, tp)
 	assert.NoError(t, err, "cannot create trace processor")

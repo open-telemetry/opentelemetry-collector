@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/internal/queue"
@@ -234,7 +235,7 @@ func TestNoCancellationContext(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, deadline, d)
 
-	nctx := noCancellationContext{Context: ctx}
+	nctx := context.WithoutCancel(ctx)
 	assert.NoError(t, nctx.Err())
 	d, ok = nctx.Deadline()
 	assert.False(t, ok)
@@ -424,7 +425,10 @@ func TestQueuedRetryPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 
 func TestQueueSenderNoStartShutdown(t *testing.T) {
 	queue := queue.NewBoundedMemoryQueue[Request](queue.MemoryQueueSettings[Request]{})
-	qs := newQueueSender(queue, exportertest.NewNopSettings(), 1, "")
+	set := exportertest.NewNopSettings()
+	builder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	assert.NoError(t, err)
+	qs := newQueueSender(queue, set, 1, "", builder)
 	assert.NoError(t, qs.Shutdown(context.Background()))
 }
 

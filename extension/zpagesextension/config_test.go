@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -22,6 +22,10 @@ func TestUnmarshalDefaultConfig(t *testing.T) {
 	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
 }
 
+func TestInvalidConfig(t *testing.T) {
+	assert.Error(t, (&Config{}).Validate())
+}
+
 func TestUnmarshalConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
@@ -30,7 +34,7 @@ func TestUnmarshalConfig(t *testing.T) {
 	assert.NoError(t, cm.Unmarshal(&cfg))
 	assert.Equal(t,
 		&Config{
-			TCPAddr: confignet.TCPAddrConfig{
+			ServerConfig: confighttp.ServerConfig{
 				Endpoint: "localhost:56888",
 			},
 		}, cfg)

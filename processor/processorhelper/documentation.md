@@ -54,6 +54,30 @@ Number of spans that were dropped.
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
+### processor_inserted_log_records
+
+Number of log records that were inserted.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
+### processor_inserted_metric_points
+
+Number of metric points that were inserted.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
+### processor_inserted_spans
+
+Number of spans that were inserted.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
 ### processor_refused_log_records
 
 Number of log records that were rejected by the next component in the pipeline.

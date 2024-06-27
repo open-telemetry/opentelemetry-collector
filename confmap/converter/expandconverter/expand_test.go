@@ -18,6 +18,8 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/internal/envvar"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/featuregates"
 )
 
 func TestNewExpandConverter(t *testing.T) {
@@ -54,6 +56,31 @@ func TestNewExpandConverter(t *testing.T) {
 			assert.Equal(t, expectedCfgMap.ToStringMap(), conf.ToStringMap())
 		})
 	}
+}
+
+func TestNewExpandConverter_UseUnifiedEnvVarExpansionRules(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.UseUnifiedEnvVarExpansionRules.ID(), true))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.UseUnifiedEnvVarExpansionRules.ID(), false))
+	})
+
+	const valueExtra = "some string"
+	const valueExtraMapValue = "some map value"
+	const valueExtraListMapValue = "some list map value"
+	const valueExtraListElement = "some list value"
+	t.Setenv("EXTRA", valueExtra)
+	t.Setenv("EXTRA_MAP_VALUE_1", valueExtraMapValue+"_1")
+	t.Setenv("EXTRA_MAP_VALUE_2", valueExtraMapValue+"_2")
+	t.Setenv("EXTRA_LIST_MAP_VALUE_1", valueExtraListMapValue+"_1")
+	t.Setenv("EXTRA_LIST_MAP_VALUE_2", valueExtraListMapValue+"_2")
+	t.Setenv("EXTRA_LIST_VALUE_1", valueExtraListElement+"_1")
+	t.Setenv("EXTRA_LIST_VALUE_2", valueExtraListElement+"_2")
+
+	conf, err := confmaptest.LoadConf(filepath.Join("testdata", "expand-with-all-env.yaml"))
+	require.NoError(t, err, "Unable to get config")
+
+	// Test that expanded configs are the same with the simple config with no env vars.
+	require.ErrorContains(t, createConverter().Convert(context.Background(), conf), "$VAR expansion is not supported when feature gate confmap.unifyEnvVarExpansion is enabled")
 }
 
 func TestNewExpandConverter_EscapedMaps(t *testing.T) {
