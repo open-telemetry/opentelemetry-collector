@@ -5,7 +5,6 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	"go.uber.org/multierr"
@@ -49,8 +48,6 @@ func (cs *concurrencySender) Start(_ context.Context, _ component.Host) error {
 
 func (cs *concurrencySender) send(ctx context.Context, reqs ...Request) error {
 	var errs error
-	fmt.Println("CONC SENDER NUM REQS")
-	fmt.Println(len(reqs))
 	var wg sync.WaitGroup
 	for _, r := range reqs {
 		cs.sem.Acquire(ctx, int64(1))
