@@ -5,7 +5,6 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -74,7 +73,6 @@ func (bs *batchSender) Start(_ context.Context, _ component.Host) error {
 				for bs.activeRequests.Load() > 0 {
 					bs.mu.Lock()
 					if bs.activeBatch.request != nil {
-						fmt.Println("shutdown dupliceate exp3")
 						bs.exportActiveBatch()
 					}
 					bs.mu.Unlock()
@@ -90,7 +88,6 @@ func (bs *batchSender) Start(_ context.Context, _ component.Host) error {
 				if bs.activeBatch.request != nil {
 					sinceLastFlush := time.Since(bs.lastFlushed)
 					if sinceLastFlush >= bs.cfg.FlushTimeout {
-						fmt.Println("timer dupliceate exp4")
 						bs.exportActiveBatch()
 					} else {
 						nextFlush = bs.cfg.FlushTimeout - sinceLastFlush
@@ -126,8 +123,6 @@ func newEmptyBatch() *batch {
 // exportActiveBatch exports the active batch asynchronously and replaces it with a new one.
 // Caller must hold the lock.
 func (bs *batchSender) exportActiveBatch() {
-	fmt.Println("EXPORTING ACTIVE BATCH")
-	fmt.Println(bs.activeBatch.request.ItemsCount())
 	go func(b *batch) {
 		b.err = bs.nextSender.send(b.ctx, b.request)
 		close(b.done)
@@ -141,7 +136,6 @@ func (bs *batchSender) exportActiveBatch() {
 // The batch is ready if it has reached the minimum size or the concurrency limit is reached.
 // Caller must hold the lock.
 func (bs *batchSender) isActiveBatchReady() bool {
-	fmt.Println("IS ACTIVE BATCH READY?")
 	return bs.activeBatch.request.ItemsCount() >= bs.cfg.MinSizeItems ||
 		(bs.concurrencyLimit > 0 && bs.activeRequests.Load() >= bs.concurrencyLimit)
 }
@@ -158,8 +152,6 @@ func (bs *batchSender) send(ctx context.Context, req ...Request) error {
 		err = bs.sendMergeSplitBatch(ctx, req...)
 	} else {
 		// len(req) must be 1 otherwise you need to use mergeSplitFunc to split up reqs according to cfg.MaxSizeConfig.
-		fmt.Println("REQS")
-		fmt.Println(req)
 		err = bs.sendMergeBatch(ctx, req...)
 	}
 
@@ -183,6 +175,8 @@ func (bs *batchSender) sendMergeSplitBatch(ctx context.Context, inReqs ...Reques
 			bs.mu.Unlock()
 			return err
 		}
+		// pop last element which is now updated in newReqs[0]
+		reqs = reqs[:length-1]
 		reqs = append(reqs, newReqs...)
 	}
 
@@ -211,24 +205,13 @@ func (bs *batchSender) sendMergeSplitBatch(ctx context.Context, inReqs ...Reques
 		sendErr := bs.nextSender.send(ctx, reqs...)
 		errs = multierr.Append(errs, sendErr)
 	}
-	// Intentionally do not put the last request in the active batch to not block it.
-	// TODO: Consider including the partial request in the error to avoid double publishing.
-	// for _, r := range reqs {
-	// 	fmt.Println("SEND REQUEST")
-	// 	fmt.Println(r.ItemsCount())
-	// 	sendErr := bs.nextSender.send(ctx, r) 
-	// 	err = multierr.Append(err, sendErr)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// }
+
 	return errs
 }
 
 // sendMergeBatch sends the request to the batch and waits for the batch to be exported.
 func (bs *batchSender) sendMergeBatch(ctx context.Context, reqs ...Request) error {
 	bs.mu.Lock()
-	fmt.Println("SENDMERGEBATCH")
 
 	var req Request
 	if bs.activeBatch.request != nil {
@@ -244,11 +227,9 @@ func (bs *batchSender) sendMergeBatch(ctx context.Context, reqs ...Request) erro
 
 	bs.activeRequests.Add(1)
 	bs.updateActiveBatch(ctx, req)
-	fmt.Println(bs.activeBatch.request)
 	batch := bs.activeBatch
 	batch.requestsBlocked++
 	if bs.isActiveBatchReady() {
-		fmt.Println("WHY IS THIS READY")
 		bs.exportActiveBatch()
 	}
 	bs.mu.Unlock()

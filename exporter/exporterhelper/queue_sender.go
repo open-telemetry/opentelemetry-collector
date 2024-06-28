@@ -6,7 +6,6 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -128,16 +127,12 @@ func (qs *queueSender) send(ctx context.Context, reqs ...Request) error {
 	c := context.WithoutCancel(ctx)
 
 	span := trace.SpanFromContext(c)
-	// go func() error {
-	fmt.Println("OFFERING REQ")
 	for _, r := range reqs {
 		if err := qs.queue.Offer(c, r); err != nil {
 			span.AddEvent("Failed to enqueue item.", trace.WithAttributes(qs.traceAttribute))
 			return err
 		}
 	}
-		// return nil
-	// }()
 
 	span.AddEvent("Enqueued item.", trace.WithAttributes(qs.traceAttribute))
 	return nil
