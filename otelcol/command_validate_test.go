@@ -4,14 +4,13 @@
 package otelcol
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/converter/expandconverter"
-	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/featuregate"
 )
 
@@ -23,11 +22,14 @@ func TestValidateSubCommandNoConfig(t *testing.T) {
 }
 
 func TestValidateSubCommandInvalidComponents(t *testing.T) {
+	filePath := filepath.Join("testdata", "otelcol-invalid-components.yaml")
+	fileProvider := newFakeProvider("file", func(_ context.Context, _ string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
+		return confmap.NewRetrieved(newConfFromFile(t, filePath))
+	})
 	cmd := newValidateSubCommand(CollectorSettings{Factories: nopFactories, ConfigProviderSettings: ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
-			URIs:               []string{filepath.Join("testdata", "otelcol-invalid-components.yaml")},
-			ProviderFactories:  []confmap.ProviderFactory{fileprovider.NewFactory()},
-			ConverterFactories: []confmap.ConverterFactory{expandconverter.NewFactory()},
+			URIs:              []string{filePath},
+			ProviderFactories: []confmap.ProviderFactory{fileProvider},
 		},
 	}}, flags(featuregate.GlobalRegistry()))
 	err := cmd.Execute()

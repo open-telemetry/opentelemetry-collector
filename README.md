@@ -33,7 +33,7 @@
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="https://opentelemetry.io/docs/collector/configuration/">Configuration</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="docs/monitoring.md">Monitoring</a>
+    <a href="https://opentelemetry.io/docs/collector/internal-telemetry/#use-internal-telemetry-to-monitor-the-collector</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="docs/security-best-practices.md">Security</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
@@ -108,7 +108,7 @@ Support for Go versions on the OpenTelemetry Collector is updated as follows:
 1. The first release after the release of a new Go minor version `N` will add build and tests steps for the new Go minor version.
 2. The first release after the release of a new Go minor version `N` will remove support for Go version `N-2`.
 
-Official OpenTelemetry Collector distro binaries may be built with any supported Go version.
+Official OpenTelemetry Collector distro binaries will be built with a release in the latest Go minor version series.
 
 ## Verifying the images signatures
 
@@ -155,7 +155,6 @@ Here is a list of community roles with current and previous members:
 - Triagers ([@open-telemetry/collector-triagers](https://github.com/orgs/open-telemetry/teams/collector-triagers)):
 
   - [Andrzej Stencel](https://github.com/andrzej-stencel), Elastic
-  - [Evan Bradley](https://github.com/evan-bradley), Dynatrace
   - Actively seeking contributors to triage issues
 
 - Emeritus Triagers:
@@ -169,6 +168,7 @@ Here is a list of community roles with current and previous members:
 
    - [Antoine Toulme](https://github.com/atoulme), Splunk
    - [Daniel Jaglowski](https://github.com/djaglowski), observIQ
+   - [Evan Bradley](https://github.com/evan-bradley), Dynatrace
    - [Juraci Paixão Kröhling](https://github.com/jpkrohling), Grafana Labs
    - [Tyler Helmuth](https://github.com/TylerHelmuth), Honeycomb
    - [Yang Song](https://github.com/songy23), Datadog

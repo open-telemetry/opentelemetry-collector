@@ -21,7 +21,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/connector/connectortest"
@@ -291,7 +291,7 @@ func testCollectorStartHelper(t *testing.T, tc ownMetricsTestCase, network strin
 	set := newNopSettings()
 	set.BuildInfo = component.BuildInfo{Version: "test version", Command: otelCommand}
 	set.Extensions = extension.NewBuilder(
-		map[component.ID]component.Config{component.MustNewID("zpages"): &zpagesextension.Config{TCPAddr: confignet.TCPAddrConfig{Endpoint: zpagesAddr}}},
+		map[component.ID]component.Config{component.MustNewID("zpages"): &zpagesextension.Config{ServerConfig: confighttp.ServerConfig{Endpoint: zpagesAddr}}},
 		map[component.Type]extension.Factory{component.MustNewType("zpages"): zpagesextension.NewFactory()})
 	set.LoggingOptions = []zap.Option{zap.Hooks(hook)}
 
@@ -615,7 +615,7 @@ func newConfigWatcherExtensionFactory(name component.Type) extension.Factory {
 		func() component.Config {
 			return &struct{}{}
 		},
-		func(context.Context, extension.CreateSettings, component.Config) (extension.Extension, error) {
+		func(context.Context, extension.Settings, component.Config) (extension.Extension, error) {
 			return &configWatcherExtension{}, nil
 		},
 		component.StabilityLevelDevelopment,

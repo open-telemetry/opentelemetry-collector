@@ -21,39 +21,51 @@ import (
 )
 
 func TestTracesExporterNoErrors(t *testing.T) {
-	lte, err := createTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), createDefaultConfig())
-	require.NotNil(t, lte)
-	assert.NoError(t, err)
+	for _, tc := range createTestCases() {
+		t.Run(tc.name, func(t *testing.T) {
+			lte, err := createTracesExporter(context.Background(), exportertest.NewNopSettings(), tc.config)
+			require.NotNil(t, lte)
+			assert.NoError(t, err)
 
-	assert.NoError(t, lte.ConsumeTraces(context.Background(), ptrace.NewTraces()))
-	assert.NoError(t, lte.ConsumeTraces(context.Background(), testdata.GenerateTraces(10)))
+			assert.NoError(t, lte.ConsumeTraces(context.Background(), ptrace.NewTraces()))
+			assert.NoError(t, lte.ConsumeTraces(context.Background(), testdata.GenerateTraces(10)))
 
-	assert.NoError(t, lte.Shutdown(context.Background()))
+			assert.NoError(t, lte.Shutdown(context.Background()))
+		})
+	}
 }
 
 func TestMetricsExporterNoErrors(t *testing.T) {
-	lme, err := createMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), createDefaultConfig())
-	require.NotNil(t, lme)
-	assert.NoError(t, err)
+	for _, tc := range createTestCases() {
+		t.Run(tc.name, func(t *testing.T) {
+			lme, err := createMetricsExporter(context.Background(), exportertest.NewNopSettings(), tc.config)
+			require.NotNil(t, lme)
+			assert.NoError(t, err)
 
-	assert.NoError(t, lme.ConsumeMetrics(context.Background(), pmetric.NewMetrics()))
-	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsAllTypes()))
-	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsAllTypesEmpty()))
-	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsMetricTypeInvalid()))
-	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetrics(10)))
+			assert.NoError(t, lme.ConsumeMetrics(context.Background(), pmetric.NewMetrics()))
+			assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsAllTypes()))
+			assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsAllTypesEmpty()))
+			assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsMetricTypeInvalid()))
+			assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetrics(10)))
 
-	assert.NoError(t, lme.Shutdown(context.Background()))
+			assert.NoError(t, lme.Shutdown(context.Background()))
+		})
+	}
 }
 
 func TestLogsExporterNoErrors(t *testing.T) {
-	lle, err := createLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), createDefaultConfig())
-	require.NotNil(t, lle)
-	assert.NoError(t, err)
+	for _, tc := range createTestCases() {
+		t.Run(tc.name, func(t *testing.T) {
+			lle, err := createLogsExporter(context.Background(), exportertest.NewNopSettings(), createDefaultConfig())
+			require.NotNil(t, lle)
+			assert.NoError(t, err)
 
-	assert.NoError(t, lle.ConsumeLogs(context.Background(), plog.NewLogs()))
-	assert.NoError(t, lle.ConsumeLogs(context.Background(), testdata.GenerateLogs(10)))
+			assert.NoError(t, lle.ConsumeLogs(context.Background(), plog.NewLogs()))
+			assert.NoError(t, lle.ConsumeLogs(context.Background(), testdata.GenerateLogs(10)))
 
-	assert.NoError(t, lle.Shutdown(context.Background()))
+			assert.NoError(t, lle.Shutdown(context.Background()))
+		})
+	}
 }
 
 func TestExporterErrors(t *testing.T) {
@@ -67,6 +79,30 @@ func TestExporterErrors(t *testing.T) {
 	assert.Equal(t, errWant, le.pushTraces(context.Background(), ptrace.NewTraces()))
 	assert.Equal(t, errWant, le.pushMetrics(context.Background(), pmetric.NewMetrics()))
 	assert.Equal(t, errWant, le.pushLogs(context.Background(), plog.NewLogs()))
+}
+
+type testCase struct {
+	name   string
+	config *Config
+}
+
+func createTestCases() []testCase {
+	return []testCase{
+		{
+			name: "default config",
+			config: func() *Config {
+				return createDefaultConfig().(*Config)
+			}(),
+		},
+		{
+			name: "don't use internal logger",
+			config: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.UseInternalLogger = false
+				return cfg
+			}(),
+		},
+	}
 }
 
 type errMarshaler struct {

@@ -24,7 +24,7 @@ var componentType = component.MustNewType("debug")
 
 const (
 	defaultSamplingInitial    = 2
-	defaultSamplingThereafter = 500
+	defaultSamplingThereafter = 1
 )
 
 // NewFactory creates a factory for Debug exporter
@@ -43,10 +43,11 @@ func createDefaultConfig() component.Config {
 		Verbosity:          configtelemetry.LevelBasic,
 		SamplingInitial:    defaultSamplingInitial,
 		SamplingThereafter: defaultSamplingThereafter,
+		UseInternalLogger:  true,
 	}
 }
 
-func createTracesExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Traces, error) {
+func createTracesExporter(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Traces, error) {
 	cfg := config.(*Config)
 	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
 	debugExporter := newDebugExporter(exporterLogger, cfg.Verbosity)
@@ -58,7 +59,7 @@ func createTracesExporter(ctx context.Context, set exporter.CreateSettings, conf
 	)
 }
 
-func createMetricsExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Metrics, error) {
+func createMetricsExporter(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Metrics, error) {
 	cfg := config.(*Config)
 	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
 	debugExporter := newDebugExporter(exporterLogger, cfg.Verbosity)
@@ -70,7 +71,7 @@ func createMetricsExporter(ctx context.Context, set exporter.CreateSettings, con
 	)
 }
 
-func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Logs, error) {
+func createLogsExporter(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Logs, error) {
 	cfg := config.(*Config)
 	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
 	debugExporter := newDebugExporter(exporterLogger, cfg.Verbosity)
@@ -83,12 +84,38 @@ func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config
 }
 
 func createLogger(cfg *Config, logger *zap.Logger) *zap.Logger {
-	core := zapcore.NewSamplerWithOptions(
-		logger.Core(),
-		1*time.Second,
-		cfg.SamplingInitial,
-		cfg.SamplingThereafter,
-	)
+	var exporterLogger *zap.Logger
+	if cfg.UseInternalLogger {
+		core := zapcore.NewSamplerWithOptions(
+			logger.Core(),
+			1*time.Second,
+			cfg.SamplingInitial,
+			cfg.SamplingThereafter,
+		)
+		exporterLogger = zap.New(core)
+	} else {
+		exporterLogger = createCustomLogger(cfg)
+	}
+	return exporterLogger
+}
 
-	return zap.New(core)
+func createCustomLogger(exporterConfig *Config) *zap.Logger {
+	encoderConfig := zap.NewDevelopmentEncoderConfig()
+	// Do not prefix the output with log level (`info`)
+	encoderConfig.LevelKey = ""
+	// Do not prefix the output with current timestamp.
+	encoderConfig.TimeKey = ""
+	zapConfig := zap.Config{
+		Level:         zap.NewAtomicLevelAt(zap.InfoLevel),
+		DisableCaller: true,
+		Sampling: &zap.SamplingConfig{
+			Initial:    exporterConfig.SamplingInitial,
+			Thereafter: exporterConfig.SamplingThereafter,
+		},
+		Encoding:      "console",
+		EncoderConfig: encoderConfig,
+		// Send exporter's output to stdout. This should be made configurable.
+		OutputPaths: []string{"stdout"},
+	}
+	return zap.Must(zapConfig.Build())
 }

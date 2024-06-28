@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/service/internal/servicetelemetry"
 	"go.opentelemetry.io/collector/service/internal/status"
+	"go.opentelemetry.io/collector/service/internal/status/statustest"
 	"go.opentelemetry.io/collector/service/internal/testcomponents"
 	"go.opentelemetry.io/collector/service/pipelines"
 )
@@ -154,13 +155,13 @@ func TestGraphStartStop(t *testing.T) {
 				pg.componentGraph.SetEdge(simple.Edge{F: f, T: t})
 			}
 
-			require.NoError(t, pg.StartAll(ctx, componenttest.NewNopHost()))
+			require.NoError(t, pg.StartAll(ctx, componenttest.NewNopHost(), statustest.NewNopStatusReporter()))
 			for _, edge := range tt.edges {
 				assert.Greater(t, ctx.order[edge[0]], ctx.order[edge[1]])
 			}
 
 			ctx.order = map[component.ID]int{}
-			require.NoError(t, pg.ShutdownAll(ctx))
+			require.NoError(t, pg.ShutdownAll(ctx, statustest.NewNopStatusReporter()))
 			for _, edge := range tt.edges {
 				assert.Less(t, ctx.order[edge[0]], ctx.order[edge[1]])
 			}
@@ -188,11 +189,11 @@ func TestGraphStartStopCycle(t *testing.T) {
 	pg.componentGraph.SetEdge(simple.Edge{F: c1, T: e1})
 	pg.componentGraph.SetEdge(simple.Edge{F: c1, T: p1}) // loop back
 
-	err := pg.StartAll(context.Background(), componenttest.NewNopHost())
+	err := pg.StartAll(context.Background(), componenttest.NewNopHost(), statustest.NewNopStatusReporter())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), `topo: no topological ordering: cyclic components`)
 
-	err = pg.ShutdownAll(context.Background())
+	err = pg.ShutdownAll(context.Background(), statustest.NewNopStatusReporter())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), `topo: no topological ordering: cyclic components`)
 }
@@ -216,8 +217,8 @@ func TestGraphStartStopComponentError(t *testing.T) {
 		F: r1,
 		T: e1,
 	})
-	assert.EqualError(t, pg.StartAll(context.Background(), componenttest.NewNopHost()), "foo")
-	assert.EqualError(t, pg.ShutdownAll(context.Background()), "bar")
+	assert.EqualError(t, pg.StartAll(context.Background(), componenttest.NewNopHost(), statustest.NewNopStatusReporter()), "foo")
+	assert.EqualError(t, pg.ShutdownAll(context.Background(), statustest.NewNopStatusReporter()), "bar")
 }
 
 func TestConnectorPipelinesGraph(t *testing.T) {
@@ -768,7 +769,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 
 			assert.Equal(t, len(test.pipelineConfigs), len(pg.pipelines))
 
-			assert.NoError(t, pg.StartAll(context.Background(), componenttest.NewNopHost()))
+			assert.NoError(t, pg.StartAll(context.Background(), componenttest.NewNopHost(), statustest.NewNopStatusReporter()))
 
 			mutatingPipelines := make(map[component.ID]bool, len(test.pipelineConfigs))
 
@@ -892,7 +893,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 			}
 
 			// Shut down the entire component graph
-			assert.NoError(t, pg.ShutdownAll(context.Background()))
+			assert.NoError(t, pg.ShutdownAll(context.Background(), statustest.NewNopStatusReporter()))
 
 			// Check each pipeline individually, ensuring that all components are stopped.
 			for pipelineID := range test.pipelineConfigs {
@@ -2148,8 +2149,8 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 			}
 			pipelines, err := Build(context.Background(), set)
 			assert.NoError(t, err)
-			assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost()))
-			assert.Error(t, pipelines.ShutdownAll(context.Background()))
+			assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost(), statustest.NewNopStatusReporter()))
+			assert.Error(t, pipelines.ShutdownAll(context.Background(), statustest.NewNopStatusReporter()))
 		})
 
 		t.Run(dt.String()+"/processor", func(t *testing.T) {
@@ -2162,8 +2163,8 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 			}
 			pipelines, err := Build(context.Background(), set)
 			assert.NoError(t, err)
-			assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost()))
-			assert.Error(t, pipelines.ShutdownAll(context.Background()))
+			assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost(), statustest.NewNopStatusReporter()))
+			assert.Error(t, pipelines.ShutdownAll(context.Background(), statustest.NewNopStatusReporter()))
 		})
 
 		t.Run(dt.String()+"/exporter", func(t *testing.T) {
@@ -2176,8 +2177,8 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 			}
 			pipelines, err := Build(context.Background(), set)
 			assert.NoError(t, err)
-			assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost()))
-			assert.Error(t, pipelines.ShutdownAll(context.Background()))
+			assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost(), statustest.NewNopStatusReporter()))
+			assert.Error(t, pipelines.ShutdownAll(context.Background(), statustest.NewNopStatusReporter()))
 		})
 
 		for _, dt2 := range dataTypes {
@@ -2196,8 +2197,8 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 				}
 				pipelines, err := Build(context.Background(), set)
 				assert.NoError(t, err)
-				assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost()))
-				assert.Error(t, pipelines.ShutdownAll(context.Background()))
+				assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost(), statustest.NewNopStatusReporter()))
+				assert.Error(t, pipelines.ShutdownAll(context.Background(), statustest.NewNopStatusReporter()))
 			})
 		}
 	}
@@ -2350,8 +2351,8 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 			}
 			pg.componentGraph.SetEdge(simple.Edge{F: e0, T: e1})
 
-			assert.Equal(t, tc.startupErr, pg.StartAll(context.Background(), componenttest.NewNopHost()))
-			assert.Equal(t, tc.shutdownErr, pg.ShutdownAll(context.Background()))
+			assert.Equal(t, tc.startupErr, pg.StartAll(context.Background(), componenttest.NewNopHost(), rep))
+			assert.Equal(t, tc.shutdownErr, pg.ShutdownAll(context.Background(), rep))
 			assertEqualStatuses(t, tc.expectedStatuses, actualStatuses)
 		})
 	}
@@ -2471,13 +2472,13 @@ func newErrReceiverFactory() receiver.Factory {
 func newErrProcessorFactory() processor.Factory {
 	return processor.NewFactory(component.MustNewType("err"),
 		func() component.Config { return &struct{}{} },
-		processor.WithTraces(func(context.Context, processor.CreateSettings, component.Config, consumer.Traces) (processor.Traces, error) {
+		processor.WithTraces(func(context.Context, processor.Settings, component.Config, consumer.Traces) (processor.Traces, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		processor.WithLogs(func(context.Context, processor.CreateSettings, component.Config, consumer.Logs) (processor.Logs, error) {
+		processor.WithLogs(func(context.Context, processor.Settings, component.Config, consumer.Logs) (processor.Logs, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		processor.WithMetrics(func(context.Context, processor.CreateSettings, component.Config, consumer.Metrics) (processor.Metrics, error) {
+		processor.WithMetrics(func(context.Context, processor.Settings, component.Config, consumer.Metrics) (processor.Metrics, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
 	)
@@ -2486,13 +2487,13 @@ func newErrProcessorFactory() processor.Factory {
 func newErrExporterFactory() exporter.Factory {
 	return exporter.NewFactory(component.MustNewType("err"),
 		func() component.Config { return &struct{}{} },
-		exporter.WithTraces(func(context.Context, exporter.CreateSettings, component.Config) (exporter.Traces, error) {
+		exporter.WithTraces(func(context.Context, exporter.Settings, component.Config) (exporter.Traces, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		exporter.WithLogs(func(context.Context, exporter.CreateSettings, component.Config) (exporter.Logs, error) {
+		exporter.WithLogs(func(context.Context, exporter.Settings, component.Config) (exporter.Logs, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		exporter.WithMetrics(func(context.Context, exporter.CreateSettings, component.Config) (exporter.Metrics, error) {
+		exporter.WithMetrics(func(context.Context, exporter.Settings, component.Config) (exporter.Metrics, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
 	)
@@ -2502,33 +2503,33 @@ func newErrConnectorFactory() connector.Factory {
 	return connector.NewFactory(component.MustNewType("err"), func() component.Config {
 		return &struct{}{}
 	},
-		connector.WithTracesToTraces(func(context.Context, connector.CreateSettings, component.Config, consumer.Traces) (connector.Traces, error) {
+		connector.WithTracesToTraces(func(context.Context, connector.Settings, component.Config, consumer.Traces) (connector.Traces, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
-		connector.WithTracesToMetrics(func(context.Context, connector.CreateSettings, component.Config, consumer.Metrics) (connector.Traces, error) {
+		connector.WithTracesToMetrics(func(context.Context, connector.Settings, component.Config, consumer.Metrics) (connector.Traces, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
-		connector.WithTracesToLogs(func(context.Context, connector.CreateSettings, component.Config, consumer.Logs) (connector.Traces, error) {
-			return &errComponent{}, nil
-		}, component.StabilityLevelUnmaintained),
-
-		connector.WithMetricsToTraces(func(context.Context, connector.CreateSettings, component.Config, consumer.Traces) (connector.Metrics, error) {
-			return &errComponent{}, nil
-		}, component.StabilityLevelUnmaintained),
-		connector.WithMetricsToMetrics(func(context.Context, connector.CreateSettings, component.Config, consumer.Metrics) (connector.Metrics, error) {
-			return &errComponent{}, nil
-		}, component.StabilityLevelUnmaintained),
-		connector.WithMetricsToLogs(func(context.Context, connector.CreateSettings, component.Config, consumer.Logs) (connector.Metrics, error) {
+		connector.WithTracesToLogs(func(context.Context, connector.Settings, component.Config, consumer.Logs) (connector.Traces, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
 
-		connector.WithLogsToTraces(func(context.Context, connector.CreateSettings, component.Config, consumer.Traces) (connector.Logs, error) {
+		connector.WithMetricsToTraces(func(context.Context, connector.Settings, component.Config, consumer.Traces) (connector.Metrics, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
-		connector.WithLogsToMetrics(func(context.Context, connector.CreateSettings, component.Config, consumer.Metrics) (connector.Logs, error) {
+		connector.WithMetricsToMetrics(func(context.Context, connector.Settings, component.Config, consumer.Metrics) (connector.Metrics, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
-		connector.WithLogsToLogs(func(context.Context, connector.CreateSettings, component.Config, consumer.Logs) (connector.Logs, error) {
+		connector.WithMetricsToLogs(func(context.Context, connector.Settings, component.Config, consumer.Logs) (connector.Metrics, error) {
+			return &errComponent{}, nil
+		}, component.StabilityLevelUnmaintained),
+
+		connector.WithLogsToTraces(func(context.Context, connector.Settings, component.Config, consumer.Traces) (connector.Logs, error) {
+			return &errComponent{}, nil
+		}, component.StabilityLevelUnmaintained),
+		connector.WithLogsToMetrics(func(context.Context, connector.Settings, component.Config, consumer.Metrics) (connector.Logs, error) {
+			return &errComponent{}, nil
+		}, component.StabilityLevelUnmaintained),
+		connector.WithLogsToLogs(func(context.Context, connector.Settings, component.Config, consumer.Logs) (connector.Logs, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
 	)

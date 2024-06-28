@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/provider/internal"
 )
 
 const schemeName = "yaml"
@@ -38,7 +37,7 @@ func (s *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFunc
 		return nil, fmt.Errorf("%q uri is not supported by %q provider", uri, schemeName)
 	}
 
-	return internal.NewRetrievedFromYAML([]byte(uri[len(schemeName)+1:]))
+	return confmap.NewRetrievedFromYAML([]byte(uri[len(schemeName)+1:]))
 }
 
 func (*provider) Scheme() string {
