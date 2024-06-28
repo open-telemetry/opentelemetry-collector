@@ -6,6 +6,7 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -121,16 +122,22 @@ func (qs *queueSender) Shutdown(ctx context.Context) error {
 }
 
 // send implements the requestSender interface. It puts the request in the queue.
-func (qs *queueSender) send(ctx context.Context, req Request) error {
+func (qs *queueSender) send(ctx context.Context, reqs ...Request) error {
 	// Prevent cancellation and deadline to propagate to the context stored in the queue.
 	// The grpc/http based receivers will cancel the request context after this function returns.
 	c := context.WithoutCancel(ctx)
 
 	span := trace.SpanFromContext(c)
-	if err := qs.queue.Offer(c, req); err != nil {
-		span.AddEvent("Failed to enqueue item.", trace.WithAttributes(qs.traceAttribute))
-		return err
+	// go func() error {
+	fmt.Println("OFFERING REQ")
+	for _, r := range reqs {
+		if err := qs.queue.Offer(c, r); err != nil {
+			span.AddEvent("Failed to enqueue item.", trace.WithAttributes(qs.traceAttribute))
+			return err
+		}
 	}
+		// return nil
+	// }()
 
 	span.AddEvent("Enqueued item.", trace.WithAttributes(qs.traceAttribute))
 	return nil

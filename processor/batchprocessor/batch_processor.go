@@ -258,12 +258,15 @@ func (b *shard) resetTimer() {
 }
 
 func (b *shard) sendItems(trigger trigger) {
-	sent, bytes, err := b.batch.export(b.exportCtx, b.processor.sendBatchMaxSize, b.processor.telemetry.detailed)
-	if err != nil {
-		b.processor.logger.Warn("Sender failed", zap.Error(err))
-	} else {
-		b.processor.telemetry.record(trigger, int64(sent), int64(bytes))
-	}
+	go func() {
+
+		sent, bytes, err := b.batch.export(b.exportCtx, b.processor.sendBatchMaxSize, b.processor.telemetry.detailed)
+		if err != nil {
+			b.processor.logger.Warn("Sender failed", zap.Error(err))
+		} else {
+			b.processor.telemetry.record(trigger, int64(sent), int64(bytes))
+		}
+	}()
 }
 
 // singleShardBatcher is used when metadataKeys is empty, to avoid the

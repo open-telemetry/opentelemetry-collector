@@ -21,7 +21,7 @@ import (
 // requestSender is an abstraction of a sender for a request independent of the type of the data (traces, metrics, logs).
 type requestSender interface {
 	component.Component
-	send(context.Context, Request) error
+	send(context.Context, ...Request) error
 	setNextSender(nextSender requestSender)
 }
 
@@ -33,8 +33,8 @@ type baseRequestSender struct {
 
 var _ requestSender = (*baseRequestSender)(nil)
 
-func (b *baseRequestSender) send(ctx context.Context, req Request) error {
-	return b.nextSender.send(ctx, req)
+func (b *baseRequestSender) send(ctx context.Context, req ...Request) error {
+	return b.nextSender.send(ctx, req...)
 }
 
 func (b *baseRequestSender) setNextSender(nextSender requestSender) {
@@ -82,6 +82,21 @@ func WithRetry(config configretry.BackOffConfig) Option {
 			return nil
 		}
 		o.retrySender = newRetrySender(config, o.set)
+		return nil
+	}
+}
+
+// WithRetry overrides the default configretry.BackOffConfig for an exporter.
+// The default configretry.BackOffConfig is to disable retries.
+func WithConcurrency(config ConcurrencySettings) Option {
+	return func(o *baseExporter) error {
+		if !config.Enabled {
+			o.exportFailureMessage += " Try enabling retry_on_failure config option to retry on retryable errors."
+			return nil
+		}
+		fmt.Println("NEW CONC SENDERRRR")
+		fmt.Println(config)
+		o.concurrencySender = newConcurrencySender(config, o.set)
 		return nil
 	}
 }
@@ -240,11 +255,12 @@ type baseExporter struct {
 	// Chain of senders that the exporter helper applies before passing the data to the actual exporter.
 	// The data is handled by each sender in the respective order starting from the queueSender.
 	// Most of the senders are optional, and initialized with a no-op path-through sender.
-	batchSender   requestSender
-	queueSender   requestSender
-	obsrepSender  requestSender
-	retrySender   requestSender
-	timeoutSender *timeoutSender // timeoutSender is always initialized.
+	concurrencySender requestSender
+	batchSender       requestSender
+	queueSender       requestSender
+	obsrepSender      requestSender
+	retrySender       requestSender
+	timeoutSender     *timeoutSender // timeoutSender is always initialized.
 
 	consumerOptions []consumer.Option
 }
@@ -258,6 +274,7 @@ func newBaseExporter(set exporter.Settings, signal component.DataType, osf obsre
 	be := &baseExporter{
 		signal: signal,
 
+		concurrencySender:   &baseRequestSender{},
 		batchSender:   &baseRequestSender{},
 		queueSender:   &baseRequestSender{},
 		obsrepSender:  osf(obsReport),
@@ -302,7 +319,8 @@ func (be *baseExporter) send(ctx context.Context, req Request) error {
 // connectSenders connects the senders in the predefined order.
 func (be *baseExporter) connectSenders() {
 	be.queueSender.setNextSender(be.batchSender)
-	be.batchSender.setNextSender(be.obsrepSender)
+	be.batchSender.setNextSender(be.concurrencySender)
+	be.concurrencySender.setNextSender(be.obsrepSender)
 	be.obsrepSender.setNextSender(be.retrySender)
 	be.retrySender.setNextSender(be.timeoutSender)
 }

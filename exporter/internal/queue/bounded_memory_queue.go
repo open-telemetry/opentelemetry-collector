@@ -7,6 +7,7 @@ package queue // import "go.opentelemetry.io/collector/exporter/internal/queue"
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 )
@@ -37,7 +38,20 @@ func NewBoundedMemoryQueue[T any](set MemoryQueueSettings[T]) Queue[T] {
 
 // Offer is used by the producer to submit new item to the queue. Calling this method on a stopped queue will panic.
 func (q *boundedMemoryQueue[T]) Offer(ctx context.Context, req T) error {
-	return q.sizedChannel.push(memQueueEl[T]{ctx: ctx, req: req}, q.sizer.Sizeof(req), nil)
+	errCh := make(chan error, 1)
+	err := q.sizedChannel.push(memQueueEl[T]{ctx: ctx, req: req, errCh: errCh}, q.sizer.Sizeof(req), nil)
+	if err != nil {
+		return err
+	}
+
+	// return nil
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case err = <-errCh:
+		fmt.Println("AGAIN")
+		return err
+	}
 }
 
 // Consume applies the provided function on the head of queue.
@@ -49,7 +63,10 @@ func (q *boundedMemoryQueue[T]) Consume(consumeFunc func(context.Context, T) err
 		return false
 	}
 	// the memory queue doesn't handle consume errors
-	_ = consumeFunc(item.ctx, item.req)
+	err := consumeFunc(item.ctx, item.req)
+	fmt.Println("THIS IS BOUNDED ERR")
+	fmt.Println(err)
+	item.errCh <- err
 	return true
 }
 
@@ -62,4 +79,5 @@ func (q *boundedMemoryQueue[T]) Shutdown(context.Context) error {
 type memQueueEl[T any] struct {
 	req T
 	ctx context.Context
+	errCh chan error
 }

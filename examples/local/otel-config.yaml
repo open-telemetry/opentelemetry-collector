@@ -20,15 +20,29 @@ processors:
     check_interval: 5s
 
 exporters:
+  otlp:
+    endpoint: ingest.staging.lightstep.com:443
+    headers:
+      "lightstep-access-token": ${LS_TOKEN}
+    batch:
+      enabled: true
+      flush_timeout: 5m
+      min_size_items: 10
+      max_size_items: 50
+    concurrency:
+      enabled: true
+      num_senders: 3
+
+      
   debug:
-    verbosity: detailed
+    verbosity: basic
 
 service:
   pipelines:
     traces:
       receivers: [otlp]
       processors: [memory_limiter, batch]
-      exporters: [debug]
+      exporters: [debug, otlp]
     metrics:
       receivers: [otlp]
       processors: [memory_limiter, batch]

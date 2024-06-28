@@ -66,7 +66,7 @@ func (rs *retrySender) Shutdown(context.Context) error {
 }
 
 // send implements the requestSender interface
-func (rs *retrySender) send(ctx context.Context, req Request) error {
+func (rs *retrySender) send(ctx context.Context, reqs ...Request) error {
 	// Do not use NewExponentialBackOff since it calls Reset and the code here must
 	// call Reset after changing the InitialInterval (this saves an unnecessary call to Now).
 	expBackoff := backoff.ExponentialBackOff{
@@ -86,7 +86,7 @@ func (rs *retrySender) send(ctx context.Context, req Request) error {
 			"Sending request.",
 			trace.WithAttributes(rs.traceAttribute, attribute.Int64("retry_num", retryNum)))
 
-		err := rs.nextSender.send(ctx, req)
+		err := rs.nextSender.send(ctx, reqs...)
 		if err == nil {
 			return nil
 		}
@@ -96,7 +96,9 @@ func (rs *retrySender) send(ctx context.Context, req Request) error {
 			return fmt.Errorf("not retryable error: %w", err)
 		}
 
-		req = extractPartialRequest(req, err)
+		for i := range reqs {
+			reqs[i] = extractPartialRequest(reqs[i], err)
+		}
 
 		backoffDelay := expBackoff.NextBackOff()
 		if backoffDelay == backoff.Stop {

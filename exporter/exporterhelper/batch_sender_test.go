@@ -6,6 +6,7 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -21,7 +22,7 @@ import (
 func TestBatchSender_Merge(t *testing.T) {
 	cfg := exporterbatcher.NewDefaultConfig()
 	cfg.MinSizeItems = 10
-	cfg.FlushTimeout = 100 * time.Millisecond
+	cfg.FlushTimeout = 2 * time.Second
 
 	tests := []struct {
 		name          string
@@ -51,11 +52,16 @@ func TestBatchSender_Merge(t *testing.T) {
 
 			sink := newFakeRequestSink()
 
+			fmt.Println("first send")
 			require.NoError(t, be.send(context.Background(), &fakeRequest{items: 8, sink: sink}))
+			fmt.Println("second send")
 			require.NoError(t, be.send(context.Background(), &fakeRequest{items: 3, sink: sink}))
 
 			// the first two requests should be merged into one and sent by reaching the minimum items size
 			assert.Eventually(t, func() bool {
+				fmt.Println("EVENTUALLY")
+				fmt.Println(sink.requestsCount.Load())
+				fmt.Println(sink.itemsCount.Load())
 				return sink.requestsCount.Load() == 1 && sink.itemsCount.Load() == 11
 			}, 50*time.Millisecond, 10*time.Millisecond)
 
