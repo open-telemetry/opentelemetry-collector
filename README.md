@@ -33,7 +33,7 @@
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="https://opentelemetry.io/docs/collector/configuration/">Configuration</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="docs/monitoring.md">Monitoring</a>
+    <a href="https://opentelemetry.io/docs/collector/internal-telemetry/#use-internal-telemetry-to-monitor-the-collector</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="docs/security-best-practices.md">Security</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
