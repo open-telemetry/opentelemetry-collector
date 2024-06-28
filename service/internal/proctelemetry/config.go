@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -61,9 +62,9 @@ var (
 	errNoValidMetricExporter = errors.New("no valid metric exporter")
 )
 
-func InitMetricReader(ctx context.Context, reader config.MetricReader, asyncErrorChannel chan error) (sdkmetric.Reader, *http.Server, error) {
+func InitMetricReader(ctx context.Context, reader config.MetricReader, asyncErrorChannel chan error, serverWG *sync.WaitGroup) (sdkmetric.Reader, *http.Server, error) {
 	if reader.Pull != nil {
-		return initPullExporter(reader.Pull.Exporter, asyncErrorChannel)
+		return initPullExporter(reader.Pull.Exporter, asyncErrorChannel, serverWG)
 	}
 	if reader.Periodic != nil {
 		opts := []sdkmetric.PeriodicReaderOption{
@@ -93,16 +94,22 @@ func InitOpenTelemetry(res *resource.Resource, options []sdkmetric.Option, disab
 	), nil
 }
 
-func InitPrometheusServer(registry *prometheus.Registry, address string, asyncErrorChannel chan error) *http.Server {
+func InitPrometheusServer(registry *prometheus.Registry, address string, asyncErrorChannel chan error, serverWG *sync.WaitGroup) *http.Server {
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
 	server := &http.Server{
 		Addr:    address,
 		Handler: mux,
 	}
+
+	serverWG.Add(1)
 	go func() {
+		defer serverWG.Done()
 		if serveErr := server.ListenAndServe(); serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) {
-			asyncErrorChannel <- serveErr
+			select {
+			case asyncErrorChannel <- serveErr:
+			case <-time.After(1 * time.Second):
+			}
 		}
 	}()
 	return server
@@ -151,7 +158,7 @@ func cardinalityFilter(kvs ...attribute.KeyValue) attribute.Filter {
 	}
 }
 
-func initPrometheusExporter(prometheusConfig *config.Prometheus, asyncErrorChannel chan error) (sdkmetric.Reader, *http.Server, error) {
+func initPrometheusExporter(prometheusConfig *config.Prometheus, asyncErrorChannel chan error, serverWG *sync.WaitGroup) (sdkmetric.Reader, *http.Server, error) {
 	promRegistry := prometheus.NewRegistry()
 	if prometheusConfig.Host == nil {
 		return nil, nil, fmt.Errorf("host must be specified")
@@ -175,12 +182,12 @@ func initPrometheusExporter(prometheusConfig *config.Prometheus, asyncErrorChann
 		return nil, nil, fmt.Errorf("error creating otel prometheus exporter: %w", err)
 	}
 
-	return exporter, InitPrometheusServer(promRegistry, fmt.Sprintf("%s:%d", *prometheusConfig.Host, *prometheusConfig.Port), asyncErrorChannel), nil
+	return exporter, InitPrometheusServer(promRegistry, fmt.Sprintf("%s:%d", *prometheusConfig.Host, *prometheusConfig.Port), asyncErrorChannel, serverWG), nil
 }
 
-func initPullExporter(exporter config.MetricExporter, asyncErrorChannel chan error) (sdkmetric.Reader, *http.Server, error) {
+func initPullExporter(exporter config.MetricExporter, asyncErrorChannel chan error, serverWG *sync.WaitGroup) (sdkmetric.Reader, *http.Server, error) {
 	if exporter.Prometheus != nil {
-		return initPrometheusExporter(exporter.Prometheus, asyncErrorChannel)
+		return initPrometheusExporter(exporter.Prometheus, asyncErrorChannel, serverWG)
 	}
 	return nil, nil, errNoValidMetricExporter
 }
