@@ -29,3 +29,27 @@ func TestStabilityLevelString(t *testing.T) {
 	assert.EqualValues(t, "Stable", StabilityLevelStable.String())
 	assert.EqualValues(t, "", StabilityLevel(100).String())
 }
+
+func TestInstanceID(t *testing.T) {
+	traces := MustNewID("traces")
+	metrics := MustNewID("metrics")
+	logs := MustNewID("logs")
+	receiver := MustNewID("receiver")
+
+	id1 := NewInstanceID(receiver, KindReceiver, traces)
+	id2 := InstanceIDWithPipelines(id1, metrics, logs)
+
+	assert.Equal(t, receiver, id1.ComponentID())
+	assert.Equal(t, KindReceiver, id1.Kind())
+	assert.Equal(t, map[ID]struct{}{
+		traces: {},
+	}, id1.pipelineIDs)
+
+	assert.Equal(t, receiver, id2.ComponentID())
+	assert.Equal(t, KindReceiver, id2.Kind())
+	assert.Equal(t, map[ID]struct{}{
+		traces:  {},
+		metrics: {},
+		logs:    {},
+	}, id2.pipelineIDs)
+}

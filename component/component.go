@@ -190,9 +190,54 @@ func (f CreateDefaultConfigFunc) CreateDefaultConfig() Config {
 	return f()
 }
 
-// InstanceID uniquely identifies a component instance
+// InstanceID uniquely identifies a component instance.
 type InstanceID struct {
-	ID          ID
-	Kind        Kind
-	PipelineIDs map[ID]struct{}
+	componentID ID
+	kind        Kind
+	pipelineIDs map[ID]struct{}
+}
+
+// ComponentID returns the ComponentID associated with this instance.
+func (id InstanceID) ComponentID() ID {
+	return id.componentID
+}
+
+// Kind returns the component Kind associated with this instance.
+func (id InstanceID) Kind() Kind {
+	return id.kind
+}
+
+// PipelineIDs returns a set of PipelineIDs associated with this instance.
+func (id InstanceID) PipelineIDs() map[ID]struct{} {
+	return id.pipelineIDs
+}
+
+// NewInstanceID returns an ID that uniquely identifies a component.
+func NewInstanceID(componentID ID, kind Kind, pipelineIDs ...ID) *InstanceID {
+	instanceID := InstanceID{
+		componentID: componentID,
+		kind:        kind,
+		pipelineIDs: make(map[ID]struct{}, len(pipelineIDs)),
+	}
+	for _, pid := range pipelineIDs {
+		instanceID.pipelineIDs[pid] = struct{}{}
+	}
+	return &instanceID
+}
+
+// InstanceIDWithPipelines derives a new InstanceID from id with additional
+// pipelineIDs added to it.
+func InstanceIDWithPipelines(id *InstanceID, pipelineIDs ...ID) *InstanceID {
+	instanceID := InstanceID{
+		componentID: id.ComponentID(),
+		kind:        id.Kind(),
+		pipelineIDs: make(map[ID]struct{}, len(id.PipelineIDs())+len(pipelineIDs)),
+	}
+	for pid := range id.PipelineIDs() {
+		instanceID.pipelineIDs[pid] = struct{}{}
+	}
+	for _, pid := range pipelineIDs {
+		instanceID.pipelineIDs[pid] = struct{}{}
+	}
+	return &instanceID
 }

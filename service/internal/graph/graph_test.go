@@ -2215,12 +2215,12 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 	eSdErr := &testNode{id: component.MustNewIDWithName("e_sd_err", "1"), shutdownErr: assert.AnError}
 
 	instanceIDs := map[*testNode]*component.InstanceID{
-		rNoErr: {ID: rNoErr.id},
-		rStErr: {ID: rStErr.id},
-		rSdErr: {ID: rSdErr.id},
-		eNoErr: {ID: eNoErr.id},
-		eStErr: {ID: eStErr.id},
-		eSdErr: {ID: eSdErr.id},
+		rNoErr: component.NewInstanceID(rNoErr.id, component.KindReceiver),
+		rStErr: component.NewInstanceID(rStErr.id, component.KindReceiver),
+		rSdErr: component.NewInstanceID(rSdErr.id, component.KindReceiver),
+		eNoErr: component.NewInstanceID(eNoErr.id, component.KindExporter),
+		eStErr: component.NewInstanceID(eStErr.id, component.KindExporter),
+		eSdErr: component.NewInstanceID(eSdErr.id, component.KindExporter),
 	}
 
 	// compare two maps of status events ignoring timestamp
