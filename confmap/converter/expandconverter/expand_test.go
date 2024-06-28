@@ -48,6 +48,11 @@ func TestNewExpandConverter(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
+			require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.UseUnifiedEnvVarExpansionRules.ID(), false))
+			t.Cleanup(func() {
+				require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.UseUnifiedEnvVarExpansionRules.ID(), true))
+			})
+
 			conf, err := confmaptest.LoadConf(filepath.Join("testdata", test.name))
 			require.NoError(t, err, "Unable to get config")
 
@@ -80,7 +85,7 @@ func TestNewExpandConverter_UseUnifiedEnvVarExpansionRules(t *testing.T) {
 	require.NoError(t, err, "Unable to get config")
 
 	// Test that expanded configs are the same with the simple config with no env vars.
-	require.ErrorContains(t, createConverter().Convert(context.Background(), conf), "$VAR expansion is not supported when feature gate confmap.unifyEnvVarExpansion is enabled")
+	require.ErrorContains(t, createConverter().Convert(context.Background(), conf), "variable substitution using $VAR has been deprecated in favor of ${VAR} and ${env:VAR}")
 }
 
 func TestNewExpandConverter_EscapedMaps(t *testing.T) {
