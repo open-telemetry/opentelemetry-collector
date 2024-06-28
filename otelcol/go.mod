@@ -9,12 +9,6 @@ require (
 	go.opentelemetry.io/collector/component v0.103.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.103.0
 	go.opentelemetry.io/collector/confmap v0.103.0
-	go.opentelemetry.io/collector/confmap/converter/expandconverter v0.103.0
-	go.opentelemetry.io/collector/confmap/provider/envprovider v0.103.0
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.103.0
-	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.103.0
-	go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.103.0
-	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.103.0
 	go.opentelemetry.io/collector/connector v0.103.0
 	go.opentelemetry.io/collector/exporter v0.103.0
 	go.opentelemetry.io/collector/extension v0.103.0
@@ -119,18 +113,6 @@ replace go.opentelemetry.io/collector/extension => ../extension
 replace go.opentelemetry.io/collector/exporter => ../exporter
 
 replace go.opentelemetry.io/collector/confmap => ../confmap
-
-replace go.opentelemetry.io/collector/confmap/converter/expandconverter => ../confmap/converter/expandconverter
-
-replace go.opentelemetry.io/collector/confmap/provider/envprovider => ../confmap/provider/envprovider
-
-replace go.opentelemetry.io/collector/confmap/provider/fileprovider => ../confmap/provider/fileprovider
-
-replace go.opentelemetry.io/collector/confmap/provider/httpprovider => ../confmap/provider/httpprovider
-
-replace go.opentelemetry.io/collector/confmap/provider/httpsprovider => ../confmap/provider/httpsprovider
-
-replace go.opentelemetry.io/collector/confmap/provider/yamlprovider => ../confmap/provider/yamlprovider
 
 replace go.opentelemetry.io/collector/config/configtelemetry => ../config/configtelemetry
 

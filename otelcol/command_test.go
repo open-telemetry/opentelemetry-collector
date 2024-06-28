@@ -4,6 +4,7 @@
 package otelcol
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 
@@ -13,27 +14,24 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/converter/expandconverter"
-	"go.opentelemetry.io/collector/confmap/provider/envprovider"
-	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/featuregates"
 )
 
 func TestNewCommandVersion(t *testing.T) {
-	cmd := NewCommandMustSetProvider(CollectorSettings{BuildInfo: component.BuildInfo{Version: "test_version"}})
+	cmd := NewCommand(CollectorSettings{BuildInfo: component.BuildInfo{Version: "test_version"}})
 	assert.Equal(t, "test_version", cmd.Version)
 }
 
 func TestNewCommandNoConfigURI(t *testing.T) {
-	cmd := NewCommandMustSetProvider(CollectorSettings{Factories: nopFactories})
+	cmd := NewCommand(CollectorSettings{Factories: nopFactories})
 	require.Error(t, cmd.Execute())
 }
 
 // This test emulates usage of Collector in Jaeger all-in-one, which
 // allows running the binary with no explicit configuration.
 func TestNewCommandProgrammaticallyPassedConfig(t *testing.T) {
-	cmd := NewCommandMustSetProvider(CollectorSettings{Factories: nopFactories, ConfigProviderSettings: ConfigProviderSettings{
+	cmd := NewCommand(CollectorSettings{Factories: nopFactories, ConfigProviderSettings: ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
 			ProviderFactories: []confmap.ProviderFactory{confmap.NewProviderFactory(newFailureProvider)},
 			DefaultScheme:     "file",
@@ -56,12 +54,15 @@ receivers:
 }
 
 func TestAddFlagToSettings(t *testing.T) {
+	filePath := filepath.Join("testdata", "otelcol-invalid.yaml")
+	fileProvider := newFakeProvider("file", func(_ context.Context, _ string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
+		return confmap.NewRetrieved(newConfFromFile(t, filePath))
+	})
 	set := CollectorSettings{
 		ConfigProviderSettings: ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
-				URIs:               []string{filepath.Join("testdata", "otelcol-invalid.yaml")},
-				ProviderFactories:  []confmap.ProviderFactory{fileprovider.NewFactory()},
-				ConverterFactories: []confmap.ConverterFactory{expandconverter.NewFactory()},
+				URIs:              []string{filePath},
+				ProviderFactories: []confmap.ProviderFactory{fileProvider},
 			},
 		},
 	}
@@ -69,52 +70,37 @@ func TestAddFlagToSettings(t *testing.T) {
 	err := flgs.Parse([]string{"--config=otelcol-nop.yaml"})
 	require.NoError(t, err)
 
-	err = updateSettingsUsingFlags(&set, flgs, false)
+	err = updateSettingsUsingFlags(&set, flgs)
 	require.NoError(t, err)
 	require.Len(t, set.ConfigProviderSettings.ResolverSettings.URIs, 1)
-}
-
-func TestAddDefaultConfmapModules(t *testing.T) {
-	set := CollectorSettings{
-		ConfigProviderSettings: ConfigProviderSettings{
-			ResolverSettings: confmap.ResolverSettings{},
-		},
-	}
-	flgs := flags(featuregate.NewRegistry())
-	err := flgs.Parse([]string{"--config=otelcol-nop.yaml"})
-	require.NoError(t, err)
-
-	err = updateSettingsUsingFlags(&set, flgs, false)
-	require.NoError(t, err)
-	require.Len(t, set.ConfigProviderSettings.ResolverSettings.URIs, 1)
-	require.Len(t, set.ConfigProviderSettings.ResolverSettings.ConverterFactories, 1)
-	require.Len(t, set.ConfigProviderSettings.ResolverSettings.ProviderFactories, 5)
 }
 
 func TestInvalidCollectorSettings(t *testing.T) {
 	set := CollectorSettings{
 		ConfigProviderSettings: ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
-				ConverterFactories: []confmap.ConverterFactory{expandconverter.NewFactory()},
-				URIs:               []string{"--config=otelcol-nop.yaml"},
+				URIs: []string{"--config=otelcol-nop.yaml"},
 			},
 		},
 	}
 
-	cmd := NewCommandMustSetProvider(set)
+	cmd := NewCommand(set)
 	require.Error(t, cmd.Execute())
 }
 
 func TestNewCommandInvalidComponent(t *testing.T) {
+	filePath := filepath.Join("testdata", "otelcol-invalid.yaml")
+	fileProvider := newFakeProvider("file", func(_ context.Context, _ string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
+		return confmap.NewRetrieved(newConfFromFile(t, filePath))
+	})
 	set := ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
-			URIs:               []string{filepath.Join("testdata", "otelcol-invalid.yaml")},
-			ProviderFactories:  []confmap.ProviderFactory{fileprovider.NewFactory()},
-			ConverterFactories: []confmap.ConverterFactory{expandconverter.NewFactory()},
+			URIs:              []string{filePath},
+			ProviderFactories: []confmap.ProviderFactory{fileProvider},
 		},
 	}
 
-	cmd := NewCommandMustSetProvider(CollectorSettings{Factories: nopFactories, ConfigProviderSettings: set})
+	cmd := NewCommand(CollectorSettings{Factories: nopFactories, ConfigProviderSettings: set})
 	require.Error(t, cmd.Execute())
 }
 
@@ -130,7 +116,7 @@ func TestNoProvidersReturnsError(t *testing.T) {
 	err := flgs.Parse([]string{"--config=otelcol-nop.yaml"})
 	require.NoError(t, err)
 
-	err = updateSettingsUsingFlags(&set, flgs, true)
+	err = updateSettingsUsingFlags(&set, flgs)
 	require.ErrorContains(t, err, "at least one Provider must be supplied")
 }
 
@@ -157,10 +143,13 @@ func Test_UseUnifiedEnvVarExpansionRules(t *testing.T) {
 			t.Cleanup(func() {
 				require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.UseUnifiedEnvVarExpansionRules.ID(), false))
 			})
+			fileProvider := newFakeProvider("file", func(_ context.Context, _ string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
+				return &confmap.Retrieved{}, nil
+			})
 			set := CollectorSettings{
 				ConfigProviderSettings: ConfigProviderSettings{
 					ResolverSettings: confmap.ResolverSettings{
-						ProviderFactories: []confmap.ProviderFactory{fileprovider.NewFactory(), envprovider.NewFactory()},
+						ProviderFactories: []confmap.ProviderFactory{fileProvider},
 						DefaultScheme:     tt.input,
 					},
 				},
@@ -169,7 +158,7 @@ func Test_UseUnifiedEnvVarExpansionRules(t *testing.T) {
 			err := flgs.Parse([]string{"--config=otelcol-nop.yaml"})
 			require.NoError(t, err)
 
-			err = updateSettingsUsingFlags(&set, flgs, true)
+			err = updateSettingsUsingFlags(&set, flgs)
 			require.NoError(t, err)
 			require.Equal(t, tt.expected, set.ConfigProviderSettings.ResolverSettings.DefaultScheme)
 		})
