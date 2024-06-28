@@ -153,9 +153,14 @@ func newMetricsSenderWithObservability(obsrep *ObsReport) requestSender {
 	return &metricsSenderWithObservability{obsrep: obsrep}
 }
 
-func (mewo *metricsSenderWithObservability) send(ctx context.Context, req Request) error {
+func (mewo *metricsSenderWithObservability) send(ctx context.Context, reqs ...Request) error {
 	c := mewo.obsrep.StartMetricsOp(ctx)
-	err := mewo.nextSender.send(c, req)
-	mewo.obsrep.EndMetricsOp(c, req.ItemsCount(), err)
+	err := mewo.nextSender.send(c, reqs...)
+
+	numItems := 0
+	for _, r := range reqs {
+		numItems += r.ItemsCount()
+	}
+	mewo.obsrep.EndMetricsOp(c, numItems, err)
 	return err
 }
