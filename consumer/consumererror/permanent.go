@@ -11,6 +11,8 @@ type permanent struct {
 	err error
 }
 
+var _ error = permanent{}
+
 // NewPermanent wraps an error to indicate that it is a permanent error, i.e. an
 // error that will be always returned if its source receives the same inputs.
 func NewPermanent(err error) error {
@@ -33,5 +35,5 @@ func IsPermanent(err error) bool {
 	if err == nil {
 		return false
 	}
-	return errors.As(err, &permanent{})
+	return errors.As(err, &permanent{}) || errors.As(err, &Partial{}) || errors.As(err, &TransportError{})
 }
