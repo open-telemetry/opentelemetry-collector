@@ -9,11 +9,15 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 ## v1.11.0/v0.104.0
 
+This release includes 2 very important breaking changes.
+1. The `otlpreceiver` will now use `localhost` by default instead of `0.0.0.0`. This may break the receiver in containerized environments like Kubernetes. If you depend on `0.0.0.0` disable the `component.UseLocalHostAsDefaultHost` feature gate or explicitly set the endpoint to `0.0.0.0`.
+2. Expansion of BASH-style environment variables, such as `$FOO` will no longer be supported by default. If you depend on this syntax, disable the `confmap.unifyEnvVarExpansion` feature gate, but know that the feature will be removed in the future in favor of `${env:FOO}`.
+
 ### 🛑 Breaking changes 🛑
 
 - `filter`: Remove deprecated `filter.CombinedFilter` (#10348)
 - `otelcol`: By default, `otelcol.NewCommand` and `otelcol.NewCommandMustSetProvider` will set the `DefaultScheme` to `env`. (#10435)
-- `expandconverter`: By default expandconverter will now error if it is about to expand `$FOO` syntax. Update configuration to use `${env:FOO}` instead or disable the feature gate. (#10435)
+- `expandconverter`: By default expandconverter will now error if it is about to expand `$FOO` syntax. Update configuration to use `${env:FOO}` instead or disable the `confmap.unifyEnvVarExpansion` feature gate. (#10435)
 - `otlpreceiver`: Switch to `localhost` as the default for all endpoints. (#8510)
   Disable the `component.UseLocalHostAsDefaultHost` feature gate to temporarily get the previous default.
   
