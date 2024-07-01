@@ -1,8 +1,8 @@
 # NOTE:
 # This builder configuration is NOT used to build any official binary.
-# To see the builder manifests used for official binaries, 
+# To see the builder manifests used for official binaries,
 # check https://github.com/open-telemetry/opentelemetry-collector-releases
-# 
+#
 # For the OpenTelemetry Collector Core official distribution sources, check
 # https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
 
