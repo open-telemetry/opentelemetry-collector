@@ -4,12 +4,12 @@ go 1.21.0
 
 require (
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector v0.103.0
-	go.opentelemetry.io/collector/component v0.103.0
-	go.opentelemetry.io/collector/config/configauth v0.103.0
-	go.opentelemetry.io/collector/config/confighttp v0.103.0
-	go.opentelemetry.io/collector/confmap v0.103.0
-	go.opentelemetry.io/collector/extension v0.103.0
+	go.opentelemetry.io/collector v0.104.0
+	go.opentelemetry.io/collector/component v0.104.0
+	go.opentelemetry.io/collector/config/configauth v0.104.0
+	go.opentelemetry.io/collector/config/confighttp v0.104.0
+	go.opentelemetry.io/collector/confmap v0.104.0
+	go.opentelemetry.io/collector/extension v0.104.0
 	go.opentelemetry.io/contrib/zpages v0.52.0
 	go.opentelemetry.io/otel/sdk v1.27.0
 	go.opentelemetry.io/otel/trace v1.27.0
@@ -46,10 +46,10 @@ require (
 	github.com/rs/cors v1.10.1 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.11.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.11.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.103.0 // indirect
-	go.opentelemetry.io/collector/config/configtls v0.103.0 // indirect
-	go.opentelemetry.io/collector/config/internal v0.103.0 // indirect
-	go.opentelemetry.io/collector/extension/auth v0.103.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.104.0 // indirect
+	go.opentelemetry.io/collector/config/configtls v0.104.0 // indirect
+	go.opentelemetry.io/collector/config/internal v0.104.0 // indirect
+	go.opentelemetry.io/collector/extension/auth v0.104.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.11.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.11.0 // indirect
 	go.opentelemetry.io/contrib/config v0.7.0 // indirect
