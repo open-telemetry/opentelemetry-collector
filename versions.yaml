@@ -11,7 +11,7 @@ module-sets:
       - go.opentelemetry.io/collector/config/configcompression
       - go.opentelemetry.io/collector/config/configretry
   beta:
-    version: v0.103.0
+    version: v0.104.0
     modules:
       - go.opentelemetry.io/collector
       - go.opentelemetry.io/collector/cmd/builder
