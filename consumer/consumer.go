@@ -9,10 +9,12 @@ import (
 	"go.opentelemetry.io/collector/consumer/internal"
 )
 
+// Capabilities describes the capabilities of a Processor.
 type Capabilities = internal.Capabilities
 
 var errNilFunc = errors.New("nil consumer func")
 
+// Option to construct new consumers.
 type Option = internal.Option
 
 // WithCapabilities overrides the default GetCapabilities function for a processor.
