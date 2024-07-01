@@ -5,6 +5,7 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 
 import (
 	"context"
+	"errors"
 	"sync"
 
 	"go.uber.org/multierr"
@@ -15,15 +16,34 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 )
 
+const defaultNumSenders = 10
+
 type ConcurrencySettings struct {
 	Enabled    bool `mapstructure:"enabled"`
 	NumSenders int  `mapstructure:"num_senders"`
 }
-// batchSender is a component that places requests into batches before passing them to the downstream senders.
-// Batches are sent out with any of the following conditions:
-// - batch size reaches cfg.MinSizeItems
-// - cfg.FlushTimeout is elapsed since the timestamp when the previous batch was sent out.
-// - concurrencyLimit is reached.
+
+func NewDefaultConcurrencySettings() *ConcurrencySettings {
+	return &ConcurrencySettings{
+		Enabled: true,
+		NumSenders: defaultNumSenders,
+	}
+}
+
+func (cCfg *ConcurrencySettings) Validate() error {
+	if !cCfg.Enabled {
+		return nil
+	}
+
+	if cCfg.NumSenders <= 0 {
+		return errors.New("number of concurrent senders must be positive")
+	}
+
+	return nil
+}
+
+// concurrencySender is a component that limits the number of RPC's that can take place concurrently.
+// When used with the batchSender it can also send multiple batches concurrently if the concurrency limit has not been reached.
 type concurrencySender struct {
 	baseRequestSender
 	cfg    ConcurrencySettings
@@ -32,7 +52,7 @@ type concurrencySender struct {
 	sem    *semaphore.Weighted
 }
 
-// newBatchSender returns a new batch consumer component.
+// newConcurrencySender returns a new concurrency consumer component.
 func newConcurrencySender(cfg ConcurrencySettings, set exporter.Settings) *concurrencySender {
 	cs := &concurrencySender{
 		cfg:                cfg,
@@ -50,16 +70,20 @@ func (cs *concurrencySender) send(ctx context.Context, reqs ...Request) error {
 	var errs error
 	var wg sync.WaitGroup
 	for _, r := range reqs {
-		cs.sem.Acquire(ctx, int64(1))
+		err := cs.sem.Acquire(ctx, int64(1))
+		if err != nil {
+			return err
+		}
 
 		wg.Add(1)
 		go func() {
+			defer cs.sem.Release(int64(1))
+			defer wg.Done()
 			err := cs.nextSender.send(ctx, r)
 			errs = multierr.Append(errs, err)
-			cs.sem.Release(int64(1))
-			wg.Done()
 		}()
 	}
+
 	wg.Wait()
 	return errs
 }
