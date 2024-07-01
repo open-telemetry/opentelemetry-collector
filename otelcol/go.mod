@@ -12,7 +12,7 @@ require (
 	go.opentelemetry.io/collector/connector v0.103.0
 	go.opentelemetry.io/collector/exporter v0.103.0
 	go.opentelemetry.io/collector/extension v0.103.0
-	go.opentelemetry.io/collector/featuregate v1.10.0
+	go.opentelemetry.io/collector/featuregate v1.11.0
 	go.opentelemetry.io/collector/processor v0.103.0
 	go.opentelemetry.io/collector/receiver v0.103.0
 	go.opentelemetry.io/collector/service v0.103.0
@@ -63,7 +63,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector/consumer v0.103.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.10.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.11.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.103.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.103.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.103.0 // indirect
