@@ -44,7 +44,7 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.55.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
-	github.com/rs/cors v1.10.1 // indirect
+	github.com/rs/cors v1.11.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.11.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.11.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.104.0 // indirect
