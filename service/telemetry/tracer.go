@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 
+	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
 	"go.opentelemetry.io/contrib/config"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
@@ -25,11 +26,25 @@ var (
 )
 
 // New creates a new Telemetry from Config.
-func newTracerProvider(ctx context.Context, cfg Config) (trace.TracerProvider, error) {
+func newTracerProvider(ctx context.Context, set Settings, cfg Config) (trace.TracerProvider, error) {
+	attrs := map[string]any{}
+	for k, v := range cfg.Resource {
+		attrs[k] = *v
+	}
+	sch := semconv.SchemaURL
+	res := config.Resource{
+		SchemaUrl: &sch,
+		Attributes: &config.Attributes{
+			ServiceName:          &set.BuildInfo.Command,
+			AdditionalProperties: attrs,
+		},
+	}
+
 	sdk, err := config.NewSDK(
 		config.WithContext(ctx),
 		config.WithOpenTelemetryConfiguration(
 			config.OpenTelemetryConfiguration{
+				Resource: &res,
 				TracerProvider: &config.TracerProvider{
 					Processors: cfg.Traces.Processors,
 					// TODO: once https://github.com/open-telemetry/opentelemetry-configuration/issues/83 is resolved,

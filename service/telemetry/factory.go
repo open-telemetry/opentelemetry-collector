@@ -51,9 +51,9 @@ func NewFactory() Factory {
 			c := *cfg.(*Config)
 			return newLogger(c.Logs, set.ZapOptions)
 		}),
-		internal.WithTracerProvider(func(ctx context.Context, _ Settings, cfg component.Config) (trace.TracerProvider, error) {
+		internal.WithTracerProvider(func(ctx context.Context, set Settings, cfg component.Config) (trace.TracerProvider, error) {
 			c := *cfg.(*Config)
-			return newTracerProvider(ctx, c)
+			return newTracerProvider(ctx, set, c)
 		}),
 	)
 }
