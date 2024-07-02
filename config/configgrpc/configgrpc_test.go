@@ -48,9 +48,10 @@ func TestNewDefaultKeepaliveClientConfig(t *testing.T) {
 
 func TestNewDefaultClientConfig(t *testing.T) {
 	expected := &ClientConfig{
-		TLSSetting: configtls.NewDefaultClientConfig(),
-		Keepalive:  NewDefaultKeepaliveClientConfig(),
-		Auth:       configauth.NewDefaultAuthentication(),
+		TLSSetting:   configtls.NewDefaultClientConfig(),
+		Keepalive:    NewDefaultKeepaliveClientConfig(),
+		Auth:         configauth.NewDefaultAuthentication(),
+		BalancerName: BalancerName(),
 	}
 
 	result := NewDefaultClientConfig()
@@ -215,7 +216,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				ReadBufferSize:  1024,
 				WriteBufferSize: 1024,
 				WaitForReady:    true,
-				BalancerName:    "configgrpc_balancer_test",
+				BalancerName:    "round_robin",
 				Authority:       "pseudo-authority",
 				Auth:            &configauth.Authentication{AuthenticatorID: testAuthID},
 			},
