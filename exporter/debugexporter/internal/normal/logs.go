@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"strings"
 
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
@@ -39,14 +38,4 @@ func (normalLogsMarshaler) MarshalLogs(ld plog.Logs) ([]byte, error) {
 		}
 	}
 	return buffer.Bytes(), nil
-}
-
-// writeAttributes returns a slice of strings in the form "attrKey=attrValue"
-func writeAttributes(attributes pcommon.Map) (attributeStrings []string) {
-	attributes.Range(func(k string, v pcommon.Value) bool {
-		attribute := fmt.Sprintf("%s=%s", k, v.AsString())
-		attributeStrings = append(attributeStrings, attribute)
-		return true
-	})
-	return attributeStrings
 }
