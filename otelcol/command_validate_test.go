@@ -30,6 +30,7 @@ func TestValidateSubCommandInvalidComponents(t *testing.T) {
 		ResolverSettings: confmap.ResolverSettings{
 			URIs:              []string{filePath},
 			ProviderFactories: []confmap.ProviderFactory{fileProvider},
+			DefaultScheme:     "file",
 		},
 	}}, flags(featuregate.GlobalRegistry()))
 	err := cmd.Execute()
