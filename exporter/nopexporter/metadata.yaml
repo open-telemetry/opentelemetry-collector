@@ -4,4 +4,4 @@ status:
   class: exporter
   stability:
     beta: [traces, metrics, logs]
-  distributions: [core, contrib]
+  distributions: [core, contrib, k8s]

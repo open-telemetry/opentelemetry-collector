@@ -5,7 +5,7 @@ status:
   stability:
     stable: [traces, metrics]
     beta: [logs]
-  distributions: [core, contrib]
+  distributions: [core, contrib, k8s]
 
 tests:
   config:

@@ -37,7 +37,7 @@ type TelemetrySettings struct {
 
 	// Status contains a Reporter that allows the service to report status on behalf of a
 	// component.
-	Status *status.Reporter
+	Status status.Reporter
 }
 
 // ToComponentTelemetrySettings returns a TelemetrySettings for a specific component derived from

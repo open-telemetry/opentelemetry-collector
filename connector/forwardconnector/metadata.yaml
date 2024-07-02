@@ -4,4 +4,4 @@ status:
   class: connector
   stability:
     beta: [traces_to_traces, metrics_to_metrics, logs_to_logs]
-  distributions: [core, contrib]
+  distributions: [core, contrib, k8s]

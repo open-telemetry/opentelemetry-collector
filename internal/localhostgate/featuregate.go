@@ -23,7 +23,7 @@ const UseLocalHostAsDefaultHostID = "component.UseLocalHostAsDefaultHost"
 var UseLocalHostAsDefaultHostfeatureGate = mustRegisterOrLoad(
 	featuregate.GlobalRegistry(),
 	UseLocalHostAsDefaultHostID,
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("controls whether server-like receivers and extensions such as the OTLP receiver use localhost as the default host for their endpoints"),
 )
 
@@ -60,8 +60,8 @@ func EndpointForPort(port int) string {
 // LogAboutUseLocalHostAsDefault logs about the upcoming change from 0.0.0.0 to localhost on server-like components.
 func LogAboutUseLocalHostAsDefault(logger *zap.Logger) {
 	if !UseLocalHostAsDefaultHostfeatureGate.IsEnabled() {
-		logger.Warn(
-			"The default endpoints for all servers in components will change to use localhost instead of 0.0.0.0 in a future version. Use the feature gate to preview the new default.",
+		logger.Info(
+			"The default endpoints for all servers in components have changed to use localhost instead of 0.0.0.0. Use the feature gate to temporarily revert to the previous default.",
 			zap.String("feature gate ID", UseLocalHostAsDefaultHostID),
 		)
 	}

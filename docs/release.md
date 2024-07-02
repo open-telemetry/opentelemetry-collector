@@ -53,11 +53,13 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
 ## Releasing opentelemetry-collector-contrib
 
 1. Open a PR to Contrib to use the newly released Core version and set it to Ready for Review.
-   - Run `make update-otel OTEL_VERSION=v0.85.0 OTEL_STABLE_VERSION=v1.1.0`
    - Manually update `cmd/otelcontribcol/builder-config.yaml`
    - Manually update `cmd/oteltestbedcol/builder-config.yaml`
-   - Run `make genotelcontribcol`
-   - Push updates to the PR
+   - Run `make genotelcontribcol genoteltestbedcol`
+   - Commit the changes
+   - Run `make update-otel OTEL_VERSION=v0.85.0 OTEL_STABLE_VERSION=v1.1.0`
+   - Commit the changes
+   - Open a PR
    -  🛑 **Do not move forward until this PR is merged.** 🛑
 
 2. Manually run the action [Automation - Prepare Release](https://github.com/open-telemetry/opentelemetry-collector-contrib/actions/workflows/prepare-release.yml). When prompted, enter the version numbers determined in Step 1, but do not include a leading `v`. This action will create a pull request to update the changelog and version numbers in the repo. **While this PR is open all merging in Contrib should be halted**.
@@ -158,8 +160,6 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 
 | Date       | Version  | Release manager                                   |
 |------------|----------|---------------------------------------------------|
-| 2024-06-17 | v0.103.0 | [@djaglowski](https://github.com/djaglowski)      |
-| 2024-07-01 | v0.104.0 | [@TylerHelmuth](https://github.com/TylerHelmuth)  |
 | 2024-07-15 | v0.105.0 | [@atoulme](https://github.com/atoulme)            |
 | 2024-07-29 | v0.106.0 | [@songy23](https://github.com/songy23)            |
 | 2024-08-12 | v0.107.0 | [@dmitryax](https://github.com/dmitryax)          |
@@ -168,3 +168,5 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 | 2024-09-23 | v0.110.0 | [@jpkrohling](https://github.com/jpkrohling)      |
 | 2024-10-07 | v0.111.0 | [@mx-psi](https://github.com/mx-psi)              |
 | 2024-10-21 | v0.112.0 | [@evan-bradley](https://github.com/evan-bradley)  |
+| 2024-11-04 | v0.113.0 | [@djaglowski](https://github.com/djaglowski)      |
+| 2024-11-18 | v0.114.0 | [@TylerHelmuth](https://github.com/TylerHelmuth)  |

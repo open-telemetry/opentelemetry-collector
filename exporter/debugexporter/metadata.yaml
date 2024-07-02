@@ -4,5 +4,5 @@ status:
   class: exporter
   stability:
     development: [traces, metrics, logs]
-  distributions: [core, contrib]
+  distributions: [core, contrib, k8s]
   warnings: [Unstable Output Format]

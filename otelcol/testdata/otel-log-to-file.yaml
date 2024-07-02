@@ -14,7 +14,7 @@ exporters:
 service:
   telemetry:
     logs:
-      level: warn
+      level: info
       output_paths:
         # The folder need to be created prior to starting the collector
         - ${ProgramData}\OpenTelemetry\Collector\Logs\otelcol.log

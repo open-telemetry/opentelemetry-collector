@@ -33,7 +33,7 @@
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="https://opentelemetry.io/docs/collector/configuration/">Configuration</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="docs/monitoring.md">Monitoring</a>
+    <a href="https://opentelemetry.io/docs/collector/internal-telemetry/#use-internal-telemetry-to-monitor-the-collector</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="docs/security-best-practices.md">Security</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
@@ -108,7 +108,7 @@ Support for Go versions on the OpenTelemetry Collector is updated as follows:
 1. The first release after the release of a new Go minor version `N` will add build and tests steps for the new Go minor version.
 2. The first release after the release of a new Go minor version `N` will remove support for Go version `N-2`.
 
-Official OpenTelemetry Collector distro binaries may be built with any supported Go version.
+Official OpenTelemetry Collector distro binaries will be built with a release in the latest Go minor version series.
 
 ## Verifying the images signatures
 

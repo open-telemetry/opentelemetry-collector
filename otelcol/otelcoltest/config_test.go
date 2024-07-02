@@ -11,13 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/converter/expandconverter"
-	"go.opentelemetry.io/collector/confmap/provider/envprovider"
-	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
-	"go.opentelemetry.io/collector/confmap/provider/httpprovider"
-	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
-	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/service/pipelines"
 )
 
@@ -25,18 +18,7 @@ func TestLoadConfig(t *testing.T) {
 	factories, err := NopFactories()
 	assert.NoError(t, err)
 
-	cfg, err := LoadConfigWithSettings(factories, otelcol.ConfigProviderSettings{
-		ResolverSettings: confmap.ResolverSettings{
-			URIs: []string{filepath.Join("testdata", "config.yaml")},
-			ProviderFactories: []confmap.ProviderFactory{
-				fileprovider.NewFactory(),
-				envprovider.NewFactory(),
-				yamlprovider.NewFactory(),
-				httpprovider.NewFactory(),
-			},
-			ConverterFactories: []confmap.ConverterFactory{expandconverter.NewFactory()},
-		},
-	})
+	cfg, err := LoadConfig(filepath.Join("testdata", "config.yaml"), factories)
 	require.NoError(t, err)
 
 	// Verify extensions.
@@ -81,23 +63,10 @@ func TestLoadConfigAndValidate(t *testing.T) {
 	factories, err := NopFactories()
 	assert.NoError(t, err)
 
-	set := otelcol.ConfigProviderSettings{
-		ResolverSettings: confmap.ResolverSettings{
-			URIs: []string{filepath.Join("testdata", "config.yaml")},
-			ProviderFactories: []confmap.ProviderFactory{
-				fileprovider.NewFactory(),
-				envprovider.NewFactory(),
-				yamlprovider.NewFactory(),
-				httpprovider.NewFactory(),
-			},
-			ConverterFactories: []confmap.ConverterFactory{expandconverter.NewFactory()},
-		},
-	}
-
-	cfgValidate, errValidate := LoadConfigAndValidateWithSettings(factories, set)
+	cfgValidate, errValidate := LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 	require.NoError(t, errValidate)
 
-	cfg, errLoad := LoadConfigWithSettings(factories, set)
+	cfg, errLoad := LoadConfig(filepath.Join("testdata", "config.yaml"), factories)
 	require.NoError(t, errLoad)
 
 	assert.Equal(t, cfg, cfgValidate)

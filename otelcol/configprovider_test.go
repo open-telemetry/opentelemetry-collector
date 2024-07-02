@@ -14,8 +14,6 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
-	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
 )
 
 func newConfig(yamlBytes []byte, factories Factories) (*Config, error) {
@@ -48,10 +46,19 @@ func TestConfigProviderYaml(t *testing.T) {
 	require.NoError(t, err)
 
 	uriLocation := "yaml:" + string(yamlBytes)
+
+	yamlProvider := newFakeProvider("yaml", func(_ context.Context, _ string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
+		var rawConf any
+		if err = yaml.Unmarshal(yamlBytes, &rawConf); err != nil {
+			return nil, err
+		}
+		return confmap.NewRetrieved(rawConf)
+	})
+
 	set := ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
 			URIs:              []string{uriLocation},
-			ProviderFactories: []confmap.ProviderFactory{yamlprovider.NewFactory()},
+			ProviderFactories: []confmap.ProviderFactory{yamlProvider},
 		},
 	}
 
@@ -72,10 +79,13 @@ func TestConfigProviderYaml(t *testing.T) {
 
 func TestConfigProviderFile(t *testing.T) {
 	uriLocation := "file:" + filepath.Join("testdata", "otelcol-nop.yaml")
+	fileProvider := newFakeProvider("file", func(_ context.Context, _ string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
+		return confmap.NewRetrieved(newConfFromFile(t, uriLocation[5:]))
+	})
 	set := ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
 			URIs:              []string{uriLocation},
-			ProviderFactories: []confmap.ProviderFactory{fileprovider.NewFactory()},
+			ProviderFactories: []confmap.ProviderFactory{fileProvider},
 		},
 	}
 
@@ -99,10 +109,13 @@ func TestConfigProviderFile(t *testing.T) {
 
 func TestGetConfmap(t *testing.T) {
 	uriLocation := "file:" + filepath.Join("testdata", "otelcol-nop.yaml")
+	fileProvider := newFakeProvider("file", func(_ context.Context, _ string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
+		return confmap.NewRetrieved(newConfFromFile(t, uriLocation[5:]))
+	})
 	set := ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
 			URIs:              []string{uriLocation},
-			ProviderFactories: []confmap.ProviderFactory{fileprovider.NewFactory()},
+			ProviderFactories: []confmap.ProviderFactory{fileProvider},
 		},
 	}
 

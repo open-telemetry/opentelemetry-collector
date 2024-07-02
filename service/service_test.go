@@ -7,6 +7,7 @@ import (
 	"bufio"
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"sync"
@@ -253,13 +254,16 @@ func TestServiceTelemetryCleanupOnError(t *testing.T) {
 
 func TestServiceTelemetry(t *testing.T) {
 	for _, tc := range ownMetricsTestCases() {
-		t.Run(tc.name, func(t *testing.T) {
-			testCollectorStartHelper(t, tc)
+		t.Run(fmt.Sprintf("ipv4_%s", tc.name), func(t *testing.T) {
+			testCollectorStartHelper(t, tc, "tcp4")
+		})
+		t.Run(fmt.Sprintf("ipv6_%s", tc.name), func(t *testing.T) {
+			testCollectorStartHelper(t, tc, "tcp6")
 		})
 	}
 }
 
-func testCollectorStartHelper(t *testing.T, tc ownMetricsTestCase) {
+func testCollectorStartHelper(t *testing.T, tc ownMetricsTestCase, network string) {
 	var once sync.Once
 	loggingHookCalled := false
 	hook := func(zapcore.Entry) error {
@@ -269,8 +273,20 @@ func testCollectorStartHelper(t *testing.T, tc ownMetricsTestCase) {
 		return nil
 	}
 
-	metricsAddr := testutil.GetAvailableLocalAddress(t)
-	zpagesAddr := testutil.GetAvailableLocalAddress(t)
+	var (
+		metricsAddr string
+		zpagesAddr  string
+	)
+	switch network {
+	case "tcp", "tcp4":
+		metricsAddr = testutil.GetAvailableLocalAddress(t)
+		zpagesAddr = testutil.GetAvailableLocalAddress(t)
+	case "tcp6":
+		metricsAddr = testutil.GetAvailableLocalIPv6Address(t)
+		zpagesAddr = testutil.GetAvailableLocalIPv6Address(t)
+	}
+	require.NotZero(t, metricsAddr, "network must be either of tcp, tcp4 or tcp6")
+	require.NotZero(t, zpagesAddr, "network must be either of tcp, tcp4 or tcp6")
 
 	set := newNopSettings()
 	set.BuildInfo = component.BuildInfo{Version: "test version", Command: otelCommand}

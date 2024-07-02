@@ -16,6 +16,8 @@ import (
 )
 
 // LoadConfigWithSettings loads a config.Config from the provider settings, and does NOT validate the configuration.
+//
+// Deprecated: [v0.104.0] Use LoadConfig instead
 func LoadConfigWithSettings(factories otelcol.Factories, set otelcol.ConfigProviderSettings) (*otelcol.Config, error) {
 	// Read yaml config from file
 	provider, err := otelcol.NewConfigProvider(set)
@@ -26,10 +28,8 @@ func LoadConfigWithSettings(factories otelcol.Factories, set otelcol.ConfigProvi
 }
 
 // LoadConfig loads a config.Config  from file, and does NOT validate the configuration.
-//
-// Deprecated: [v0.103.0] use LoadConfigWithSettings instead
 func LoadConfig(fileName string, factories otelcol.Factories) (*otelcol.Config, error) {
-	return LoadConfigWithSettings(factories, otelcol.ConfigProviderSettings{
+	provider, err := otelcol.NewConfigProvider(otelcol.ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
 			URIs: []string{fileName},
 			ProviderFactories: []confmap.ProviderFactory{
@@ -41,9 +41,15 @@ func LoadConfig(fileName string, factories otelcol.Factories) (*otelcol.Config, 
 			ConverterFactories: []confmap.ConverterFactory{expandconverter.NewFactory()},
 		},
 	})
+	if err != nil {
+		return nil, err
+	}
+	return provider.Get(context.Background(), factories)
 }
 
 // LoadConfigAndValidateWithSettings loads a config from the provider settings, and validates the configuration.
+//
+// Deprecated: [v0.104.0] Use LoadConfigAndValidate instead
 func LoadConfigAndValidateWithSettings(factories otelcol.Factories, set otelcol.ConfigProviderSettings) (*otelcol.Config, error) {
 	cfg, err := LoadConfigWithSettings(factories, set)
 	if err != nil {
@@ -53,21 +59,8 @@ func LoadConfigAndValidateWithSettings(factories otelcol.Factories, set otelcol.
 }
 
 // LoadConfigAndValidate loads a config from the file, and validates the configuration.
-//
-// Deprecated: [v0.103.0] Use LoadConfigAndValidateWithSettings instead
 func LoadConfigAndValidate(fileName string, factories otelcol.Factories) (*otelcol.Config, error) {
-	cfg, err := LoadConfigWithSettings(factories, otelcol.ConfigProviderSettings{
-		ResolverSettings: confmap.ResolverSettings{
-			URIs: []string{fileName},
-			ProviderFactories: []confmap.ProviderFactory{
-				fileprovider.NewFactory(),
-				envprovider.NewFactory(),
-				yamlprovider.NewFactory(),
-				httpprovider.NewFactory(),
-			},
-			ConverterFactories: []confmap.ConverterFactory{expandconverter.NewFactory()},
-		},
-	})
+	cfg, err := LoadConfig(fileName, factories)
 	if err != nil {
 		return nil, err
 	}
