@@ -347,13 +347,19 @@ func newObservabilityConsumerSender(*ObsReport) requestSender {
 	}
 }
 
-func (ocs *observabilityConsumerSender) send(ctx context.Context, req Request) error {
-	err := ocs.nextSender.send(ctx, req)
-	if err != nil {
-		ocs.droppedItemsCount.Add(int64(req.ItemsCount()))
-	} else {
-		ocs.sentItemsCount.Add(int64(req.ItemsCount()))
+func (ocs *observabilityConsumerSender) send(ctx context.Context, reqs ...Request) error {
+	err := ocs.nextSender.send(ctx, reqs...)
+
+	numItems := 0
+	for _, r := range reqs {
+		numItems += r.ItemsCount()
 	}
+	if err != nil {
+		ocs.droppedItemsCount.Add(int64(numItems))
+	} else {
+		ocs.sentItemsCount.Add(int64(numItems))
+	}
+
 	ocs.waitGroup.Done()
 	return err
 }

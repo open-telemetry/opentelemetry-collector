@@ -7,6 +7,8 @@ import (
 	"context"
 	"errors"
 	"time"
+
+	"go.uber.org/multierr"
 )
 
 // TimeoutSettings for timeout. The timeout applies to individual attempts to send data to the backend.
@@ -37,14 +39,21 @@ type timeoutSender struct {
 	cfg TimeoutSettings
 }
 
-func (ts *timeoutSender) send(ctx context.Context, req Request) error {
+func (ts *timeoutSender) send(ctx context.Context, reqs ...Request) error {
 	// TODO: Remove this by avoiding to create the timeout sender if timeout is 0.
+	var errs error
 	if ts.cfg.Timeout == 0 {
-		return req.Export(ctx)
+		for _, req := range reqs {
+			errs = multierr.Append(errs, req.Export(ctx))
+		}
+		return errs
 	}
 	// Intentionally don't overwrite the context inside the request, because in case of retries deadline will not be
 	// updated because this deadline most likely is before the next one.
 	tCtx, cancelFunc := context.WithTimeout(ctx, ts.cfg.Timeout)
 	defer cancelFunc()
-	return req.Export(tCtx)
+	for _, req := range reqs {
+		errs = multierr.Append(errs, req.Export(tCtx))
+	}
+	return errs 
 }
