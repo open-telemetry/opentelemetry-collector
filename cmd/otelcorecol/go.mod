@@ -9,7 +9,6 @@ toolchain go1.21.11
 require (
 	go.opentelemetry.io/collector/component v0.104.0
 	go.opentelemetry.io/collector/confmap v0.104.0
-	go.opentelemetry.io/collector/confmap/converter/expandconverter v0.104.0
 	go.opentelemetry.io/collector/confmap/provider/envprovider v0.104.0
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.104.0
 	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.104.0
