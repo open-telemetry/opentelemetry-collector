@@ -10,6 +10,7 @@ module-sets:
       - go.opentelemetry.io/collector/config/configopaque
       - go.opentelemetry.io/collector/config/configcompression
       - go.opentelemetry.io/collector/config/configretry
+      - go.opentelemetry.io/collector/config/configtls
   beta:
     version: v0.104.0
     modules:
@@ -29,7 +30,6 @@ module-sets:
       - go.opentelemetry.io/collector/config/confighttp
       - go.opentelemetry.io/collector/config/confignet
       - go.opentelemetry.io/collector/config/configtelemetry
-      - go.opentelemetry.io/collector/config/configtls
       - go.opentelemetry.io/collector/config/internal
       - go.opentelemetry.io/collector/connector
       - go.opentelemetry.io/collector/connector/forwardconnector
