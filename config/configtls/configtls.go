@@ -86,11 +86,9 @@ type ClientConfig struct {
 
 	// These are config options specific to client connections.
 
-	// In gRPC when set to true, this is used to disable the client transport security.
-	// See https://godoc.org/google.golang.org/grpc#WithInsecure.
-	// In HTTP, this disables verifying the server's certificate chain and host name
-	// (InsecureSkipVerify in the tls Config). Please refer to
-	// https://godoc.org/crypto/tls#Config for more information.
+	// In gRPC and HTTP when set to true, this is used to disable the client transport security.
+	// See https://godoc.org/google.golang.org/grpc#WithInsecure for gRPC.
+	// Please refer to https://godoc.org/crypto/tls#Config for more information.
 	// (optional, default false)
 	Insecure bool `mapstructure:"insecure"`
 	// InsecureSkipVerify will enable TLS but not verify the certificate.
