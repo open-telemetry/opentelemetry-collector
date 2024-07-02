@@ -14,12 +14,12 @@ require (
 	go.opentelemetry.io/collector/confmap v0.104.0
 	go.opentelemetry.io/collector/consumer v0.104.0
 	go.opentelemetry.io/collector/exporter v0.104.0
-	go.opentelemetry.io/collector/exporter/otlpexporter v0.103.0
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.103.0
+	go.opentelemetry.io/collector/exporter/otlpexporter v0.104.0
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.104.0
 	go.opentelemetry.io/collector/pdata v1.11.0
 	go.opentelemetry.io/collector/pdata/testdata v0.104.0
 	go.opentelemetry.io/collector/receiver v0.104.0
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.103.0
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.104.0
 	go.uber.org/goleak v1.3.0
 )
 
@@ -48,11 +48,12 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mostynb/go-grpc-compression v1.2.3 // indirect
+	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.19.1 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
-	github.com/prometheus/common v0.54.0 // indirect
-	github.com/prometheus/procfs v0.15.0 // indirect
+	github.com/prometheus/common v0.55.0 // indirect
+	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/rs/cors v1.10.1 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.104.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.11.0 // indirect
