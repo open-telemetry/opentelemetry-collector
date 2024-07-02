@@ -114,8 +114,6 @@ replace go.opentelemetry.io/collector/otelcol => ../
 
 replace go.opentelemetry.io/collector/confmap/provider/yamlprovider => ../../confmap/provider/yamlprovider
 
-replace go.opentelemetry.io/collector/confmap/converter/expandconverter => ../../confmap/converter/expandconverter
-
 replace go.opentelemetry.io/collector => ../..
 
 replace go.opentelemetry.io/collector/service => ../../service
