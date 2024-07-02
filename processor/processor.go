@@ -36,11 +36,6 @@ type Logs interface {
 	consumer.Logs
 }
 
-// CreateSettings is passed to Create* functions in Factory.
-//
-// Deprecated: [v0.103.0] Use processor.Settings instead.
-type CreateSettings = Settings
-
 // Settings is passed to Create* functions in Factory.
 type Settings struct {
 	// ID returns the ID of the component that will be created.
