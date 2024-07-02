@@ -955,7 +955,7 @@ func verifyCorsResp(t *testing.T, url string, origin string, set *CORSConfig, ex
 	req.Header.Set("Origin", origin)
 	if extraHeader {
 		req.Header.Set("ExtraHeader", "foo")
-		req.Header.Set("Access-Control-Request-Headers", "ExtraHeader")
+		req.Header.Set("Access-Control-Request-Headers", "extraheader")
 	}
 	req.Header.Set("Access-Control-Request-Method", "POST")
 
