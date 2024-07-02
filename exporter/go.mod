@@ -6,15 +6,15 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector v0.103.0
-	go.opentelemetry.io/collector/component v0.103.0
-	go.opentelemetry.io/collector/config/configretry v0.103.0
-	go.opentelemetry.io/collector/config/configtelemetry v0.103.0
-	go.opentelemetry.io/collector/consumer v0.103.0
-	go.opentelemetry.io/collector/extension v0.103.0
-	go.opentelemetry.io/collector/pdata v1.10.0
-	go.opentelemetry.io/collector/pdata/testdata v0.103.0
-	go.opentelemetry.io/collector/receiver v0.103.0
+	go.opentelemetry.io/collector v0.104.0
+	go.opentelemetry.io/collector/component v0.104.0
+	go.opentelemetry.io/collector/config/configretry v1.11.0
+	go.opentelemetry.io/collector/config/configtelemetry v0.104.0
+	go.opentelemetry.io/collector/consumer v0.104.0
+	go.opentelemetry.io/collector/extension v0.104.0
+	go.opentelemetry.io/collector/pdata v1.11.0
+	go.opentelemetry.io/collector/pdata/testdata v0.104.0
+	go.opentelemetry.io/collector/receiver v0.104.0
 	go.opentelemetry.io/otel v1.27.0
 	go.opentelemetry.io/otel/metric v1.27.0
 	go.opentelemetry.io/otel/sdk v1.27.0
@@ -49,9 +49,9 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.54.0 // indirect
 	github.com/prometheus/procfs v0.15.0 // indirect
-	go.opentelemetry.io/collector/confmap v0.103.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.10.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.103.0 // indirect
+	go.opentelemetry.io/collector/confmap v0.104.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.11.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.104.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.49.0 // indirect
 	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/text v0.15.0 // indirect
