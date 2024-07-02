@@ -14,12 +14,12 @@ require (
 	go.opentelemetry.io/collector/confmap v0.104.0
 	go.opentelemetry.io/collector/consumer v0.104.0
 	go.opentelemetry.io/collector/exporter v0.104.0
-	go.opentelemetry.io/collector/exporter/otlpexporter v0.103.0
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.103.0
+	go.opentelemetry.io/collector/exporter/otlpexporter v0.104.0
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.104.0
 	go.opentelemetry.io/collector/pdata v1.11.0
 	go.opentelemetry.io/collector/pdata/testdata v0.104.0
 	go.opentelemetry.io/collector/receiver v0.104.0
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.103.0
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.104.0
 	go.uber.org/goleak v1.3.0
 )
 
