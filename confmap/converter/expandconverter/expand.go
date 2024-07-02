@@ -25,6 +25,8 @@ type converter struct {
 
 // NewFactory returns a factory for a  confmap.Converter,
 // which expands all environment variables for a given confmap.Conf.
+//
+// Deprecated: [v0.105.0] BASH-style env var expansion is deprecated. Use `${FOO}` or `${env:FOO}` instead.
 func NewFactory() confmap.ConverterFactory {
 	return confmap.NewConverterFactory(newConverter)
 }
@@ -36,6 +38,7 @@ func newConverter(set confmap.ConverterSettings) confmap.Converter {
 	}
 }
 
+// Deprecated: [v0.105.0] BASH-style env var expansion is deprecated. Use `${FOO}` or `${env:FOO}` instead.
 func (c converter) Convert(_ context.Context, conf *confmap.Conf) error {
 	var err error
 	out := make(map[string]any)
