@@ -20,3 +20,9 @@ require (
 	google.golang.org/grpc v1.64.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 )
+
+replace go.opentelemetry.io/collector/pdata => ../../pdata
+
+replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
+
+replace go.opentelemetry.io/collector/component => ../
