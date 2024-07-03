@@ -44,6 +44,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.104.0 // indirect
 	go.opentelemetry.io/collector/extension v0.104.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.11.0 // indirect
+	go.opentelemetry.io/collector/internal/featuregates v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/receiver v0.104.0 // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.50.0 // indirect
@@ -62,6 +63,8 @@ require (
 )
 
 replace go.opentelemetry.io/collector => ../../
+
+replace go.opentelemetry.io/collector/internal/featuregates => ../../internal/featuregates
 
 replace go.opentelemetry.io/collector/component => ../../component
 

@@ -52,6 +52,7 @@ require (
 	go.opentelemetry.io/collector/config/internal v0.104.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.104.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.11.0 // indirect
+	go.opentelemetry.io/collector/internal/featuregates v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/pdata v1.11.0 // indirect
 	go.opentelemetry.io/contrib/config v0.7.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.52.0 // indirect
@@ -116,3 +117,5 @@ replace go.opentelemetry.io/collector/extension/auth => ../auth
 replace go.opentelemetry.io/collector/config/confighttp => ../../config/confighttp
 
 replace go.opentelemetry.io/collector/pdata/pprofile => ../../pdata/pprofile
+
+replace go.opentelemetry.io/collector/internal/featuregates => ../../internal/featuregates
