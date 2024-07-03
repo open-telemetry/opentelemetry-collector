@@ -55,6 +55,11 @@ func NewDefaultKeepaliveClientConfig() *KeepaliveClientConfig {
 	}
 }
 
+// BalancerName returns a string with default load balancer value
+func BalancerName() string {
+	return "round_robin"
+}
+
 // ClientConfig defines common settings for a gRPC client configuration.
 type ClientConfig struct {
 	// The target to which the exporter is going to send traces or metrics,
@@ -102,9 +107,10 @@ type ClientConfig struct {
 // NewDefaultClientConfig returns a new instance of ClientConfig with default values.
 func NewDefaultClientConfig() *ClientConfig {
 	return &ClientConfig{
-		TLSSetting: configtls.NewDefaultClientConfig(),
-		Keepalive:  NewDefaultKeepaliveClientConfig(),
-		Auth:       configauth.NewDefaultAuthentication(),
+		TLSSetting:   configtls.NewDefaultClientConfig(),
+		Keepalive:    NewDefaultKeepaliveClientConfig(),
+		Auth:         configauth.NewDefaultAuthentication(),
+		BalancerName: BalancerName(),
 	}
 }
 
