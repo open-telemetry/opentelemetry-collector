@@ -57,20 +57,20 @@ type Internal interface {
 // FactoryOption applies changes to Factory.
 type FactoryOption interface {
 	// apply applies the option.
-	apply(o *Factory)
+	apply(o *factory)
 }
 
 var _ FactoryOption = (*factoryOptionFunc)(nil)
 
 // factoryOptionFunc is an FactoryOption created through a function.
-type factoryOptionFunc func(*Factory)
+type factoryOptionFunc func(*factory)
 
-func (f factoryOptionFunc) apply(o *Factory) {
+func (f factoryOptionFunc) apply(o *factory) {
 	f(o)
 }
 
 // Factory implements the Internal interface.
-type Factory struct {
+type factory struct {
 	cfgType component.Type
 	component.CreateDefaultConfigFunc
 
@@ -243,51 +243,51 @@ func (f CreateLogsToLogsFunc) CreateLogsToLogs(
 }
 
 // Type returns the type of component.
-func (f *Factory) Type() component.Type {
+func (f *factory) Type() component.Type {
 	return f.cfgType
 }
 
-func (f *Factory) unexportedFactoryFunc() {}
+func (f *factory) unexportedFactoryFunc() {}
 
-func (f Factory) TracesToTracesStability() component.StabilityLevel {
+func (f factory) TracesToTracesStability() component.StabilityLevel {
 	return f.tracesToTracesStabilityLevel
 }
 
-func (f Factory) TracesToMetricsStability() component.StabilityLevel {
+func (f factory) TracesToMetricsStability() component.StabilityLevel {
 	return f.tracesToMetricsStabilityLevel
 }
 
-func (f Factory) TracesToLogsStability() component.StabilityLevel {
+func (f factory) TracesToLogsStability() component.StabilityLevel {
 	return f.tracesToLogsStabilityLevel
 }
 
-func (f Factory) MetricsToTracesStability() component.StabilityLevel {
+func (f factory) MetricsToTracesStability() component.StabilityLevel {
 	return f.metricsToTracesStabilityLevel
 }
 
-func (f Factory) MetricsToMetricsStability() component.StabilityLevel {
+func (f factory) MetricsToMetricsStability() component.StabilityLevel {
 	return f.metricsToMetricsStabilityLevel
 }
 
-func (f Factory) MetricsToLogsStability() component.StabilityLevel {
+func (f factory) MetricsToLogsStability() component.StabilityLevel {
 	return f.metricsToLogsStabilityLevel
 }
 
-func (f Factory) LogsToTracesStability() component.StabilityLevel {
+func (f factory) LogsToTracesStability() component.StabilityLevel {
 	return f.logsToTracesStabilityLevel
 }
 
-func (f Factory) LogsToMetricsStability() component.StabilityLevel {
+func (f factory) LogsToMetricsStability() component.StabilityLevel {
 	return f.logsToMetricsStabilityLevel
 }
 
-func (f Factory) LogsToLogsStability() component.StabilityLevel {
+func (f factory) LogsToLogsStability() component.StabilityLevel {
 	return f.logsToLogsStabilityLevel
 }
 
 // NewFactory returns a Factory.
 func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefaultConfigFunc, options ...FactoryOption) Internal {
-	f := &Factory{
+	f := &factory{
 		cfgType:                 cfgType,
 		CreateDefaultConfigFunc: createDefaultConfig,
 	}
@@ -299,7 +299,7 @@ func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefa
 
 // WithTracesToTraces overrides the default "error not supported" implementation for WithTracesToTraces and the default "undefined" stability level.
 func WithTracesToTraces(createTracesToTraces CreateTracesToTracesFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *Factory) {
+	return factoryOptionFunc(func(o *factory) {
 		o.tracesToTracesStabilityLevel = sl
 		o.CreateTracesToTracesFunc = createTracesToTraces
 	})
@@ -307,7 +307,7 @@ func WithTracesToTraces(createTracesToTraces CreateTracesToTracesFunc, sl compon
 
 // WithTracesToMetrics overrides the default "error not supported" implementation for WithTracesToMetrics and the default "undefined" stability level.
 func WithTracesToMetrics(createTracesToMetrics CreateTracesToMetricsFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *Factory) {
+	return factoryOptionFunc(func(o *factory) {
 		o.tracesToMetricsStabilityLevel = sl
 		o.CreateTracesToMetricsFunc = createTracesToMetrics
 	})
@@ -315,7 +315,7 @@ func WithTracesToMetrics(createTracesToMetrics CreateTracesToMetricsFunc, sl com
 
 // WithTracesToLogs overrides the default "error not supported" implementation for WithTracesToLogs and the default "undefined" stability level.
 func WithTracesToLogs(createTracesToLogs CreateTracesToLogsFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *Factory) {
+	return factoryOptionFunc(func(o *factory) {
 		o.tracesToLogsStabilityLevel = sl
 		o.CreateTracesToLogsFunc = createTracesToLogs
 	})
@@ -323,7 +323,7 @@ func WithTracesToLogs(createTracesToLogs CreateTracesToLogsFunc, sl component.St
 
 // WithMetricsToTraces overrides the default "error not supported" implementation for WithMetricsToTraces and the default "undefined" stability level.
 func WithMetricsToTraces(createMetricsToTraces CreateMetricsToTracesFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *Factory) {
+	return factoryOptionFunc(func(o *factory) {
 		o.metricsToTracesStabilityLevel = sl
 		o.CreateMetricsToTracesFunc = createMetricsToTraces
 	})
@@ -331,7 +331,7 @@ func WithMetricsToTraces(createMetricsToTraces CreateMetricsToTracesFunc, sl com
 
 // WithMetricsToMetrics overrides the default "error not supported" implementation for WithMetricsToMetrics and the default "undefined" stability level.
 func WithMetricsToMetrics(createMetricsToMetrics CreateMetricsToMetricsFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *Factory) {
+	return factoryOptionFunc(func(o *factory) {
 		o.metricsToMetricsStabilityLevel = sl
 		o.CreateMetricsToMetricsFunc = createMetricsToMetrics
 	})
@@ -339,7 +339,7 @@ func WithMetricsToMetrics(createMetricsToMetrics CreateMetricsToMetricsFunc, sl 
 
 // WithMetricsToLogs overrides the default "error not supported" implementation for WithMetricsToLogs and the default "undefined" stability level.
 func WithMetricsToLogs(createMetricsToLogs CreateMetricsToLogsFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *Factory) {
+	return factoryOptionFunc(func(o *factory) {
 		o.metricsToLogsStabilityLevel = sl
 		o.CreateMetricsToLogsFunc = createMetricsToLogs
 	})
@@ -347,7 +347,7 @@ func WithMetricsToLogs(createMetricsToLogs CreateMetricsToLogsFunc, sl component
 
 // WithLogsToTraces overrides the default "error not supported" implementation for WithLogsToTraces and the default "undefined" stability level.
 func WithLogsToTraces(createLogsToTraces CreateLogsToTracesFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *Factory) {
+	return factoryOptionFunc(func(o *factory) {
 		o.logsToTracesStabilityLevel = sl
 		o.CreateLogsToTracesFunc = createLogsToTraces
 	})
@@ -355,7 +355,7 @@ func WithLogsToTraces(createLogsToTraces CreateLogsToTracesFunc, sl component.St
 
 // WithLogsToMetrics overrides the default "error not supported" implementation for WithLogsToMetrics and the default "undefined" stability level.
 func WithLogsToMetrics(createLogsToMetrics CreateLogsToMetricsFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *Factory) {
+	return factoryOptionFunc(func(o *factory) {
 		o.logsToMetricsStabilityLevel = sl
 		o.CreateLogsToMetricsFunc = createLogsToMetrics
 	})
@@ -363,7 +363,7 @@ func WithLogsToMetrics(createLogsToMetrics CreateLogsToMetricsFunc, sl component
 
 // WithLogsToLogs overrides the default "error not supported" implementation for WithLogsToLogs and the default "undefined" stability level.
 func WithLogsToLogs(createLogsToLogs CreateLogsToLogsFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *Factory) {
+	return factoryOptionFunc(func(o *factory) {
 		o.logsToLogsStabilityLevel = sl
 		o.CreateLogsToLogsFunc = createLogsToLogs
 	})
