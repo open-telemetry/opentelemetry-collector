@@ -4,7 +4,7 @@ module go.opentelemetry.io/collector/cmd/otelcorecol
 
 go 1.21.0
 
-toolchain go1.21.12
+toolchain go1.22.5
 
 require (
 	go.opentelemetry.io/collector/component v0.104.0
