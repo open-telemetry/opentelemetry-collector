@@ -67,8 +67,8 @@ video calls. Everyone is invited to join those calls, which typically serves the
 
 - meet the humans behind the project
 - get an opinion about specific proposals
-- look for a sponsor for a proposed component
-- get attention to a specific pull-request
+- look for a sponsor for a proposed component after trying already via GitHub and Slack
+- get attention to a specific pull-request that got stuck and is difficult to discuss asynchronously
 
 Between 11 July 2024 and 09 January 2025, we'll have our video calls rotating between three time slots, in order to
 allow everyone to join at least once every three meetings:
