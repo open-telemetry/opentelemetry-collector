@@ -47,9 +47,9 @@ type Factory = internal.Factory
 // NewFactory creates a new Factory.
 func NewFactory() Factory {
 	return internal.NewFactory(createDefaultConfig,
-		internal.WithLogger(func(_ context.Context, set Settings, cfg component.Config) (*zap.Logger, error) {
+		internal.WithLogger(func(ctx context.Context, set Settings, cfg component.Config) (*zap.Logger, error) {
 			c := *cfg.(*Config)
-			return newLogger(c.Logs, set.ZapOptions)
+			return newLogger(ctx, c.Logs, set.ZapOptions)
 		}),
 		internal.WithTracerProvider(func(ctx context.Context, _ Settings, cfg component.Config) (trace.TracerProvider, error) {
 			c := *cfg.(*Config)
