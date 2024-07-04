@@ -19,6 +19,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/featuregates"
 	"go.opentelemetry.io/collector/internal/testutil"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
@@ -42,11 +44,12 @@ func TestTelemetryInit(t *testing.T) {
 	}
 
 	for _, tc := range []struct {
-		name            string
-		disableHighCard bool
-		expectedMetrics map[string]metricValue
-		extendedConfig  bool
-		cfg             *telemetry.Config
+		name                string
+		disableHighCard     bool
+		disableCensusBridge bool
+		expectedMetrics     map[string]metricValue
+		extendedConfig      bool
+		cfg                 *telemetry.Config
 	}{
 		{
 			name: "UseOpenTelemetryForInternalMetrics",
@@ -214,8 +217,55 @@ func TestTelemetryInit(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "DisableOpenCensusBridge",
+			expectedMetrics: map[string]metricValue{
+				metricPrefix + otelPrefix + counterName: {
+					value: 13,
+					labels: map[string]string{
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
+					},
+				},
+				metricPrefix + grpcPrefix + counterName: {
+					value: 11,
+					labels: map[string]string{
+						"net_sock_peer_addr":  "",
+						"net_sock_peer_name":  "",
+						"net_sock_peer_port":  "",
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
+					},
+				},
+				metricPrefix + httpPrefix + counterName: {
+					value: 10,
+					labels: map[string]string{
+						"net_host_name":       "",
+						"net_host_port":       "",
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
+					},
+				},
+				"target_info": {
+					value: 0,
+					labels: map[string]string{
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
+					},
+				},
+			},
+			disableCensusBridge: true,
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.DisableOpenCensusBridge.ID(), tc.disableCensusBridge))
+			t.Cleanup(func() {
+				require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.DisableOpenCensusBridge.ID(), true))
+			})
 			if tc.extendedConfig {
 				tc.cfg.Metrics.Readers = []config.MetricReader{
 					{
