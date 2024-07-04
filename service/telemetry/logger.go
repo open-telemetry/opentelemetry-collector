@@ -10,11 +10,13 @@ import (
 
 func newLogger(cfg LogsConfig, options []zap.Option) (*zap.Logger, error) {
 	// Copied from NewProductionConfig.
+	ec := zap.NewProductionEncoderConfig()
+	ec.EncodeTime = zapcore.ISO8601TimeEncoder
 	zapCfg := &zap.Config{
 		Level:             zap.NewAtomicLevelAt(cfg.Level),
 		Development:       cfg.Development,
 		Encoding:          cfg.Encoding,
-		EncoderConfig:     zap.NewProductionEncoderConfig(),
+		EncoderConfig:     ec,
 		OutputPaths:       cfg.OutputPaths,
 		ErrorOutputPaths:  cfg.ErrorOutputPaths,
 		DisableCaller:     cfg.DisableCaller,
