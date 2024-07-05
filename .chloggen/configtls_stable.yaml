@@ -4,13 +4,13 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: confighttp
+component: configtls
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Use `confighttp.ServerConfig` as part of zpagesextension. See [https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md#server-configuration](server configuration) options.
+note: Mark module as stable.
 
 # One or more tracking issues or pull requests related to the change
-issues: [9368]
+issues: [9377]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
@@ -22,4 +22,4 @@ subtext:
 # Include 'user' if the change is relevant to end users.
 # Include 'api' if there is a change to a library API.
 # Default: '[user]'
-change_logs: [user]
+change_logs: []

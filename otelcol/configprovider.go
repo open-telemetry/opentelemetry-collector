@@ -8,12 +8,6 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/converter/expandconverter"
-	"go.opentelemetry.io/collector/confmap/provider/envprovider"
-	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
-	"go.opentelemetry.io/collector/confmap/provider/httpprovider"
-	"go.opentelemetry.io/collector/confmap/provider/httpsprovider"
-	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
 )
 
 // ConfigProvider provides the service configuration.
@@ -129,20 +123,4 @@ func (cm *configProvider) GetConfmap(ctx context.Context) (*confmap.Conf, error)
 	}
 
 	return conf, nil
-}
-
-func newDefaultConfigProviderSettings(uris []string) ConfigProviderSettings {
-	return ConfigProviderSettings{
-		ResolverSettings: confmap.ResolverSettings{
-			URIs: uris,
-			ProviderFactories: []confmap.ProviderFactory{
-				fileprovider.NewFactory(),
-				envprovider.NewFactory(),
-				yamlprovider.NewFactory(),
-				httpprovider.NewFactory(),
-				httpsprovider.NewFactory(),
-			},
-			ConverterFactories: []confmap.ConverterFactory{expandconverter.NewFactory()},
-		},
-	}
 }

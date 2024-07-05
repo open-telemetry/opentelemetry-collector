@@ -37,6 +37,7 @@ type TelemetrySettings struct {
 
 	// ReportStatus allows a component to report runtime changes in status. The service
 	// will automatically report status for a component during startup and shutdown. Components can
-	// use this method to report status after start and before shutdown.
+	// use this method to report status after start and before shutdown. For more details about
+	// component status reporting see: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-status.md
 	ReportStatus func(*StatusEvent)
 }

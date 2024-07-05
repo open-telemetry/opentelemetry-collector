@@ -5,7 +5,6 @@ package expandconverter // import "go.opentelemetry.io/collector/confmap/convert
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"regexp"
@@ -95,7 +94,7 @@ func (c converter) expandEnv(s string) (string, error) {
 		var regex = regexp.MustCompile(fmt.Sprintf(`\$%s`, regexp.QuoteMeta(str)))
 		if _, exists := c.loggedDeprecations[str]; !exists && regex.MatchString(s) {
 			if featuregates.UseUnifiedEnvVarExpansionRules.IsEnabled() {
-				err = errors.New("$VAR expansion is not supported when feature gate confmap.unifyEnvVarExpansion is enabled")
+				err = fmt.Errorf("variable substitution using $VAR has been deprecated in favor of ${VAR} and ${env:VAR} - please update $%s or temporarily disable the confmap.unifyEnvVarExpansion feature gate", str)
 				return ""
 			}
 			msg := fmt.Sprintf("Variable substitution using $VAR will be deprecated in favor of ${VAR} and ${env:VAR}, please update $%s", str)
