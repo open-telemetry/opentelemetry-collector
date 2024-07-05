@@ -3,6 +3,9 @@
 package {{ if isCommand -}}main{{ else }}{{ .Package }}{{- end }}
 
 import (
+    {{- if .Tests.GoLeak.Skip }}
+    "os"
+    {{- end }}
 	"testing"
 
     {{- if not .Tests.GoLeak.Skip }}
