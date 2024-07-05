@@ -42,8 +42,8 @@ affecting this audience.
 
 A third audience uses the OpenTelemetry Collector as a library to build their own distributions or other projects based
 on the Collector. This audience is the main consumer of modules such as `service` or `otelcol`. They also share the same
-concerns as component developers regarding Go API compatibility, and are interested in behavior stability as end-users
-are. These are our most advanced users and are the most equipped to deal with disruptive changes.
+concerns as component developers regarding Go API compatibility, and are also interested in behavior stability. These
+are our most advanced users and are the most equipped to deal with disruptive changes.
 
 ## How to structure PRs to get expedient reviews?
 
