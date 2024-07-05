@@ -94,6 +94,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.104.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.104.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.11.0 // indirect
+	go.opentelemetry.io/collector/internal/featuregates v0.104.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.11.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.104.0 // indirect
 	go.opentelemetry.io/collector/service v0.104.0 // indirect
@@ -134,6 +135,8 @@ require (
 )
 
 replace go.opentelemetry.io/collector => ../../
+
+replace go.opentelemetry.io/collector/internal/featuregates => ../../internal/featuregates
 
 replace go.opentelemetry.io/collector/otelcol => ../../otelcol
 
