@@ -106,9 +106,11 @@ func (f *factory) CreateTracerProvider(ctx context.Context, set CreateSettings, 
 	return f.CreateTracerProviderFunc(ctx, set, cfg)
 }
 
+// CreateMeterProviderFunc is the equivalent of Factory.CreateMeterProvider.
 type CreateMeterProviderFunc func(context.Context, CreateSettings, component.Config) (metric.MeterProvider, error)
 
-func WithMeterProvier(createMeterProvider CreateMeterProviderFunc) FactoryOption {
+// WithMeterProvider overrides the default no-op meter provider.
+func WithMeterProvider(createMeterProvider CreateMeterProviderFunc) FactoryOption {
 	return factoryOptionFunc(func(o *factory) {
 		o.CreateMeterProviderFunc = createMeterProvider
 	})
