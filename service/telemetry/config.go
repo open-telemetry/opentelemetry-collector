@@ -92,6 +92,10 @@ type LogsConfig struct {
 	//
 	// By default, there is no initial field.
 	InitialFields map[string]any `mapstructure:"initial_fields"`
+
+	// Processors allow configuration of log record processors to emit logs to
+	// any number of suported backends.
+	Processors []config.LogRecordProcessor `mapstructure:"processors"`
 }
 
 // LogsSamplingConfig sets a sampling strategy for the logger. Sampling caps the
