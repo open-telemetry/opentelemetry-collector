@@ -37,7 +37,7 @@ type Factory interface {
 	CreateTracerProvider(ctx context.Context, set Settings, cfg component.Config) (trace.TracerProvider, error)
 
 	// CreateMeterProvider creates a MeterProvider.
-	CreateMeterProvider(ctx context.Context, set CreateSettings, cfg component.Config) (metric.MeterProvider, error)
+	CreateMeterProvider(ctx context.Context, set Settings, cfg component.Config) (metric.MeterProvider, error)
 
 	// unexportedFactoryFunc is used to prevent external implementations of Factory.
 	unexportedFactoryFunc()
@@ -107,7 +107,7 @@ func (f *factory) CreateTracerProvider(ctx context.Context, set Settings, cfg co
 }
 
 // CreateMeterProviderFunc is the equivalent of Factory.CreateMeterProvider.
-type CreateMeterProviderFunc func(context.Context, CreateSettings, component.Config) (metric.MeterProvider, error)
+type CreateMeterProviderFunc func(context.Context, Settings, component.Config) (metric.MeterProvider, error)
 
 // WithMeterProvider overrides the default no-op meter provider.
 func WithMeterProvider(createMeterProvider CreateMeterProviderFunc) FactoryOption {
@@ -116,7 +116,7 @@ func WithMeterProvider(createMeterProvider CreateMeterProviderFunc) FactoryOptio
 	})
 }
 
-func (f *factory) CreateMeterProvider(ctx context.Context, set CreateSettings, cfg component.Config) (metric.MeterProvider, error) {
+func (f *factory) CreateMeterProvider(ctx context.Context, set Settings, cfg component.Config) (metric.MeterProvider, error) {
 	if f.CreateMeterProviderFunc == nil {
 		return metricnoop.NewMeterProvider(), nil
 	}
