@@ -21,11 +21,12 @@ End-users are the target audience for our binary distributions, as made availabl
 [opentelemetry-collector-releases](https://github.com/open-telemetry/opentelemetry-collector-releases) repository, as
 well as distributions created using the [OpenTelemetry Collector
 Builder](https://github.com/open-telemetry/opentelemetry-collector/tree/main/cmd/builder). To them, stability in the
-behavior is important, be it runtime or configuration. They are more numerous and harder to get in touch with, making
-our changes to the Collector more disruptive to them than to other audiences. As a general rule, whenever you are
-developing OpenTelemetry Collector components (extensions, receivers, processors, exporters, connectors), you should
-have end-users' interests in mind. Similarly, changes to code within packages like `config` will have an impact on this
-audience. Make sure to cause minimal disruption when doing changes here.
+behavior is important, be it runtime, configuration or [internal
+telemetry](https://opentelemetry.io/docs/collector/internal-telemetry/). They are more numerous and harder to get in
+touch with, making our changes to the Collector more disruptive to them than to other audiences. As a general rule,
+whenever you are developing OpenTelemetry Collector components (extensions, receivers, processors, exporters,
+connectors), you should have end-users' interests in mind. Similarly, changes to code within packages like `config` will
+have an impact on this audience. Make sure to cause minimal disruption when doing changes here.
 
 ### Component developers
 
@@ -33,7 +34,7 @@ Component developers create new extensions, receivers, processors, exporters and
 OpenTelemetry Collector. They are the primary audience for the opentelemetry-collector repository's public Go API. A
 significant part of them will contribute to opentelemetry-collector-contrib. In addition to the end-user aspect
 mentioned above, this audience also cares about Go API compatibility of Go modules such as the ones in the `pdata`,
-`component`, `consumer`, `confmap`, `exporterhelper` and other modules, even though such changes wouldn't cause any
+`component`, `consumer`, `confmap`, `exporterhelper`, `config*` modules and others, even though such changes wouldn't cause any
 impact to end-users. See the "Breaking changes" in this document for more information on how to perform changes
 affecting this audience.
 
@@ -42,7 +43,7 @@ affecting this audience.
 A third audience uses the OpenTelemetry Collector as a library to build their own distributions or other projects based
 on the Collector. This audience is the main consumer of modules such as `service` or `otelcol`. They also share the same
 concerns as component developers regarding Go API compatibility, and are interested in behavior stability as end-users
-are.
+are. These are our most advanced users and are the most equipped to deal with disruptive changes.
 
 ## How to structure PRs to get expedient reviews?
 
