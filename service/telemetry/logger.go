@@ -48,9 +48,11 @@ func newLogger(ctx context.Context, cfg LogsConfig, options []zap.Option) (*zap.
 
 	logger, err := zapCfg.Build(options...)
 
-	logger = logger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
-		return otelzap.NewCore("my/pkg/name", otelzap.WithLoggerProvider(sdk.LoggerProvider()))
-	}))
+	if len(cfg.Processors) > 0 {
+		logger = logger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+			return otelzap.NewCore("my/pkg/name", otelzap.WithLoggerProvider(sdk.LoggerProvider()))
+		}))
+	}
 
 	if err != nil {
 		return nil, err
