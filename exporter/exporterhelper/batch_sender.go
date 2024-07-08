@@ -21,17 +21,12 @@ import (
 // Batches are sent out with any of the following conditions:
 // - batch size reaches cfg.MinSizeItems
 // - cfg.FlushTimeout is elapsed since the timestamp when the previous batch was sent out.
-// - concurrencyLimit is reached.
 type batchSender struct {
 	baseRequestSender
 	cfg            exporterbatcher.Config
 	mergeFunc      exporterbatcher.BatchMergeFunc[Request]
 	mergeSplitFunc exporterbatcher.BatchMergeSplitFunc[Request]
 
-	// concurrencyLimit is the maximum number of goroutines that can be blocked by the batcher.
-	// If this number is reached and all the goroutines are busy, the batch will be sent right away.
-	// Populated from the number of queue consumers if queue is enabled.
-	concurrencyLimit int64
 	activeRequests   atomic.Int64
 
 	mu          sync.Mutex
@@ -133,11 +128,10 @@ func (bs *batchSender) exportActiveBatch() {
 }
 
 // isActiveBatchReady returns true if the active batch is ready to be exported.
-// The batch is ready if it has reached the minimum size or the concurrency limit is reached.
+// The batch is ready if it has reached the minimum size.
 // Caller must hold the lock.
 func (bs *batchSender) isActiveBatchReady() bool {
-	return bs.activeBatch.request.ItemsCount() >= bs.cfg.MinSizeItems ||
-		(bs.concurrencyLimit > 0 && bs.activeRequests.Load() >= bs.concurrencyLimit)
+	return bs.activeBatch.request.ItemsCount() >= bs.cfg.MinSizeItems
 }
 
 func (bs *batchSender) send(ctx context.Context, req ...Request) error {

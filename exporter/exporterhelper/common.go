@@ -292,11 +292,7 @@ func newBaseExporter(set exporter.Settings, signal component.DataType, osf obsre
 
 	be.connectSenders()
 
-	if bs, ok := be.batchSender.(*batchSender); ok {
-		// If queue sender is enabled assign to the batch sender the same number of workers.
-		if qs, ok := be.queueSender.(*queueSender); ok {
-			bs.concurrencyLimit = int64(qs.numConsumers)
-		}
+	if _, ok := be.batchSender.(*batchSender); ok {
 		// Batcher sender mutates the data.
 		be.consumerOptions = append(be.consumerOptions, consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}))
 	}
