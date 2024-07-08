@@ -66,11 +66,14 @@ func (builder *TelemetryBuilder) InitExporterQueueCapacity(cb func() int64) erro
 		"exporter_queue_capacity",
 		metric.WithDescription("Fixed capacity of the retry queue (in batches)"),
 		metric.WithUnit("1"),
-		metric.WithInt64Callback(func(_ context.Context, o metric.Int64Observer) error {
-			o.Observe(cb(), metric.WithAttributeSet(builder.attributeSet))
-			return nil
-		}),
 	)
+	if err != nil {
+		return err
+	}
+	_, err = builder.meter.RegisterCallback(func(_ context.Context, o metric.Observer) error {
+		o.ObserveInt64(builder.ExporterQueueCapacity, cb(), metric.WithAttributeSet(builder.attributeSet))
+		return nil
+	}, builder.ExporterQueueCapacity)
 	return err
 }
 
@@ -81,11 +84,14 @@ func (builder *TelemetryBuilder) InitExporterQueueSize(cb func() int64) error {
 		"exporter_queue_size",
 		metric.WithDescription("Current size of the retry queue (in batches)"),
 		metric.WithUnit("1"),
-		metric.WithInt64Callback(func(_ context.Context, o metric.Int64Observer) error {
-			o.Observe(cb(), metric.WithAttributeSet(builder.attributeSet))
-			return nil
-		}),
 	)
+	if err != nil {
+		return err
+	}
+	_, err = builder.meter.RegisterCallback(func(_ context.Context, o metric.Observer) error {
+		o.ObserveInt64(builder.ExporterQueueSize, cb(), metric.WithAttributeSet(builder.attributeSet))
+		return nil
+	}, builder.ExporterQueueSize)
 	return err
 }
 
