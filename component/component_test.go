@@ -37,7 +37,7 @@ func TestInstanceID(t *testing.T) {
 	receiver := MustNewID("receiver")
 
 	id1 := NewInstanceID(receiver, KindReceiver, traces)
-	id2 := InstanceIDWithPipelines(id1, metrics, logs)
+	id2 := id1.WithPipelines(metrics, logs)
 
 	assert.Equal(t, receiver, id1.ComponentID())
 	assert.Equal(t, KindReceiver, id1.Kind())

@@ -197,21 +197,6 @@ type InstanceID struct {
 	pipelineIDs map[ID]struct{}
 }
 
-// ComponentID returns the ComponentID associated with this instance.
-func (id InstanceID) ComponentID() ID {
-	return id.componentID
-}
-
-// Kind returns the component Kind associated with this instance.
-func (id InstanceID) Kind() Kind {
-	return id.kind
-}
-
-// PipelineIDs returns a set of PipelineIDs associated with this instance.
-func (id InstanceID) PipelineIDs() map[ID]struct{} {
-	return id.pipelineIDs
-}
-
 // NewInstanceID returns an ID that uniquely identifies a component.
 func NewInstanceID(componentID ID, kind Kind, pipelineIDs ...ID) *InstanceID {
 	instanceID := InstanceID{
@@ -225,9 +210,24 @@ func NewInstanceID(componentID ID, kind Kind, pipelineIDs ...ID) *InstanceID {
 	return &instanceID
 }
 
-// InstanceIDWithPipelines derives a new InstanceID from id with additional
-// pipelineIDs added to it.
-func InstanceIDWithPipelines(id *InstanceID, pipelineIDs ...ID) *InstanceID {
+// ComponentID returns the ComponentID associated with this instance.
+func (id *InstanceID) ComponentID() ID {
+	return id.componentID
+}
+
+// Kind returns the component Kind associated with this instance.
+func (id *InstanceID) Kind() Kind {
+	return id.kind
+}
+
+// PipelineIDs returns a set of PipelineIDs associated with this instance.
+func (id *InstanceID) PipelineIDs() map[ID]struct{} {
+	return id.pipelineIDs
+}
+
+// WithPipelines returns a new InstanceID updated to include the given
+// pipelineIDs.
+func (id *InstanceID) WithPipelines(pipelineIDs ...ID) *InstanceID {
 	instanceID := InstanceID{
 		componentID: id.ComponentID(),
 		kind:        id.Kind(),

@@ -194,7 +194,7 @@ func (g *Graph) createReceiver(pipelineID, recvID component.ID) *receiverNode {
 	rcvrNode := newReceiverNode(pipelineID.Type(), recvID)
 	if node := g.componentGraph.Node(rcvrNode.ID()); node != nil {
 		instanceID := g.instanceIDs[node.ID()]
-		g.instanceIDs[node.ID()] = component.InstanceIDWithPipelines(instanceID, pipelineID)
+		g.instanceIDs[node.ID()] = instanceID.WithPipelines(pipelineID)
 		return node.(*receiverNode)
 	}
 	g.componentGraph.AddNode(rcvrNode)
@@ -217,7 +217,7 @@ func (g *Graph) createExporter(pipelineID, exprID component.ID) *exporterNode {
 	expNode := newExporterNode(pipelineID.Type(), exprID)
 	if node := g.componentGraph.Node(expNode.ID()); node != nil {
 		instanceID := g.instanceIDs[expNode.ID()]
-		g.instanceIDs[expNode.ID()] = component.InstanceIDWithPipelines(instanceID, pipelineID)
+		g.instanceIDs[expNode.ID()] = instanceID.WithPipelines(pipelineID)
 		return node.(*exporterNode)
 	}
 	g.componentGraph.AddNode(expNode)
@@ -231,9 +231,7 @@ func (g *Graph) createConnector(exprPipelineID, rcvrPipelineID, connID component
 	connNode := newConnectorNode(exprPipelineID.Type(), rcvrPipelineID.Type(), connID)
 	if node := g.componentGraph.Node(connNode.ID()); node != nil {
 		instanceID := g.instanceIDs[connNode.ID()]
-		g.instanceIDs[connNode.ID()] = component.InstanceIDWithPipelines(
-			instanceID, exprPipelineID, rcvrPipelineID,
-		)
+		g.instanceIDs[connNode.ID()] = instanceID.WithPipelines(exprPipelineID, rcvrPipelineID)
 		return node.(*connectorNode)
 	}
 	g.componentGraph.AddNode(connNode)
