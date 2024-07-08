@@ -14,8 +14,8 @@ import (
 
 var (
 	strictlyTypedMessageCoda = `Hint: Temporarily restore the previous behavior by disabling 
-       the ` + fmt.Sprintf("`%s`", featuregates.StrictlyTypedInputID) + ` feature gate. More details at:
-       https://github.com/open-telemetry/opentelemetry-collector/issues/10552`
+      the ` + fmt.Sprintf("`%s`", featuregates.StrictlyTypedInputID) + ` feature gate. More details at:
+      https://github.com/open-telemetry/opentelemetry-collector/issues/10552`
 )
 
 // ConfigProvider provides the service configuration.
