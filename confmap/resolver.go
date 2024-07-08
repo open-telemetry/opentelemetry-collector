@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 
+	"go.opentelemetry.io/collector/internal/featuregates"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
@@ -171,7 +172,13 @@ func (mr *Resolver) Resolve(ctx context.Context) (*Conf, error) {
 		if err != nil {
 			return nil, err
 		}
-		cfgMap[k] = val
+
+		if v, ok := val.(string); ok && featuregates.UseUnifiedEnvVarExpansionRules.IsEnabled() {
+			cfgMap[k] = strings.ReplaceAll(v, "$$", "$")
+		} else {
+			cfgMap[k] = val
+		}
+
 	}
 	retMap = NewFromStringMap(cfgMap)
 
