@@ -96,11 +96,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 		"processor_batch_metadata_cardinality",
 		metric.WithDescription("Number of distinct metadata value combinations being processed"),
 		metric.WithUnit("1"),
-		metric.WithInt64Callback(func(_ context.Context, o metric.Int64Observer) error {
-			o.Observe(builder.observeProcessorBatchMetadataCardinality(), metric.WithAttributeSet(builder.attributeSet))
-			return nil
-		}),
 	)
+	errs = errors.Join(errs, err)
+	_, err = builder.meter.RegisterCallback(func(_ context.Context, o metric.Observer) error {
+		o.ObserveInt64(builder.ProcessorBatchMetadataCardinality, builder.observeProcessorBatchMetadataCardinality(), metric.WithAttributeSet(builder.attributeSet))
+		return nil
+	}, builder.ProcessorBatchMetadataCardinality)
 	errs = errors.Join(errs, err)
 	builder.ProcessorBatchTimeoutTriggerSend, err = builder.meter.Int64Counter(
 		"processor_batch_timeout_trigger_send",
