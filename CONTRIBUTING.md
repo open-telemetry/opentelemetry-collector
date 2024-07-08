@@ -35,7 +35,7 @@ OpenTelemetry Collector. They are the primary audience for the opentelemetry-col
 significant part of them will contribute to opentelemetry-collector-contrib. In addition to the end-user aspect
 mentioned above, this audience also cares about Go API compatibility of Go modules such as the ones in the `pdata`,
 `component`, `consumer`, `confmap`, `exporterhelper`, `config*` modules and others, even though such changes wouldn't cause any
-impact to end-users. See the "Breaking changes" in this document for more information on how to perform changes
+impact to end-users. See the [Breaking changes](#breaking-changes) in this document for more information on how to perform changes
 affecting this audience.
 
 ### Collector library users
