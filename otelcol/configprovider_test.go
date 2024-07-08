@@ -182,10 +182,12 @@ func TestStrictlyTypedCoda(t *testing.T) {
 
 			// Save the previous value of the feature gate and restore it after the test.
 			prev := featuregates.StrictlyTypedInputGate.IsEnabled()
-			defer func() { featuregate.GlobalRegistry().Set(featuregates.StrictlyTypedInputID, prev) }()
+			defer func() {
+				require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.StrictlyTypedInputID, prev))
+			}()
 
 			// Ensure the error does not appear with the feature gate disabled.
-			featuregate.GlobalRegistry().Set(featuregates.StrictlyTypedInputID, false)
+			require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.StrictlyTypedInputID, false))
 			_, errWeakTypes := cp.Get(context.Background(), factories)
 			if tt.isErrFromStrictTypes {
 				require.Error(t, errWeakTypes)
@@ -196,7 +198,7 @@ func TestStrictlyTypedCoda(t *testing.T) {
 			}
 
 			// Test with the feature gate enabled.
-			featuregate.GlobalRegistry().Set(featuregates.StrictlyTypedInputID, true)
+			require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.StrictlyTypedInputID, true))
 			_, errStrictTypes := cp.Get(context.Background(), factories)
 			require.Error(t, errStrictTypes)
 			if tt.isErrFromStrictTypes {
