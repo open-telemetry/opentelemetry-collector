@@ -86,12 +86,12 @@ func WithRetry(config configretry.BackOffConfig) Option {
 	}
 }
 
-// WithRetry overrides the default configretry.BackOffConfig for an exporter.
-// The default configretry.BackOffConfig is to disable retries.
+// WithConcurrency overrides the default ConcurrencySettings for the exporter.
+// The default ConcurrencySettings is to enable concurrency with a limit of 10 goroutines.
 func WithConcurrency(config ConcurrencySettings) Option {
 	return func(o *baseExporter) error {
 		if !config.Enabled {
-			o.exportFailureMessage += " Try enabling retry_on_failure config option to retry on retryable errors."
+			o.exportFailureMessage += " Try enabling the concurrency config option to send more requests in parallel."
 			return nil
 		}
 		o.concurrencySender = newConcurrencySender(config, o.set)

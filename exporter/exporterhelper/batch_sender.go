@@ -146,8 +146,6 @@ func (bs *batchSender) send(ctx context.Context, req ...Request) error {
 		return bs.nextSender.send(ctx, req...)
 	}
 
-	// need to wait until we get response back
-	var err error
 	if bs.cfg.MaxSizeItems > 0 || len(req) > 1 {
 		// if len(req) > 1 need to use mergeSplitFunc to split up reqs according to cfg.MaxSizeConfig.
 		return bs.sendMergeSplitBatch(ctx, req...)
