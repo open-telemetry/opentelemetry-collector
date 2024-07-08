@@ -24,7 +24,7 @@ import (
 
 const (
 	zapKeyTelemetryAddress = "address"
-	zapKeyTelemetryLevel   = "level"
+	zapKeyTelemetryLevel   = "metrics level"
 )
 
 type meterProvider struct {
