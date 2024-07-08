@@ -10,9 +10,10 @@ import (
 	"regexp"
 	"strings"
 
-	"go.opentelemetry.io/collector/internal/featuregates"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+
+	"go.opentelemetry.io/collector/internal/featuregates"
 )
 
 // follows drive-letter specification:
