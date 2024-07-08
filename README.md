@@ -78,18 +78,14 @@ allow everyone to join at least once every three meetings:
 - [16:00 UTC](https://dateful.com/convert/utc?t=1600)
 
 Contributors to the project are also welcome to have ad-hoc meetings for synchronous discussions about specific points.
-Here is a list of tools that can be used for this:
+Post a note on #otel-collector inviting others, specifying the topic to be discussed. Unless there are strong reasons to
+keep the meeting private, please make it an open invitation for other contributors to join. Try also to identify who
+would be the other contributors interested on that topic and in which timezones they are.
 
-* [Slack Huddles](https://slack.com/help/articles/4402059015315-Use-huddles-in-Slack)
-* [Jitsi](https://meet.jit.si/)
-* [Google Meet](https://meet.google.com/), requires a free Google account
-* [Microsoft Teams](https://www.microsoft.com/en-us/microsoft-teams/online-meetings), requires a free Microsoft account
-* [Zoom](https://zoom.us/), requires a free Zoom account (limited to 40 minutes)
-
-However, our source of truth is GitHub: every decision made via Slack or video calls has to be recorded in the relevant
-GitHub issue. Ideally, the agenda items from the meeting notes would include a link to the issue or pull request where a
-discussion is happening already. We acknowledge that not everyone can join Slack or the synchronous calls and don't want
-them to feel excluded.
+Remember that our source of truth is GitHub: every decision made via Slack or video calls has to be recorded in the
+relevant GitHub issue. Ideally, the agenda items from the meeting notes would include a link to the issue or pull
+request where a discussion is happening already. We acknowledge that not everyone can join Slack or the synchronous
+calls and don't want them to feel excluded.
 
 ## Supported OTLP version
 
