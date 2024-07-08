@@ -153,6 +153,87 @@ To change the default endpoint to be `localhost`-bound in all components, enable
 
 If `localhost` resolves to a different IP due to your DNS settings then explicitly use the loopback IP instead: `127.0.0.1` for IPv4 or `::1` for IPv6. In IPv6 setups, ensure your system supports both IPv4 and IPv6 loopback addresses to avoid issues.
 
+Using `localhost` may not work in environments like Docker, Kubernetes, and other environments that have non-standard networking setups.  We've documented working example setups for some of these environments:
+
+
+#### Docker
+```yaml
+services:
+  otel-collector01:
+    image: otel/opentelemetry-collector-contrib:0.104.0
+    ports:
+      - "4567:4317"
+```
+
+otel collector config file:
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+         endpoint: otel-collector01:4317 # Using the service name from your Docker compose file
+```
+
+You can connect to this collector from another docker container running alongside the otel-collector by connecting to `otel-collector01:4317`.  You could access it from outside that docker network (for example on a regular program running on the host) by connecting to `127.0.0.1:4567`.
+
+#### Kubernetes
+If you run the collector as a `Daemonset`, you can use a configuration like below:
+```yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: collector
+spec:
+  selector:
+    matchLabels:
+      name: collector
+  template:
+    metadata:
+      labels:
+        name: collector
+    spec:
+      containers:
+        - name: collector
+          image: otel/opentelemetry-collector:0.104.0
+          volumeMounts:
+            - mountPath: /etc/otelcol/
+              name: config
+          ports:
+            - containerPort: 4317
+              hostPort: 4317
+              protocol: TCP
+              name: otlp
+          env:
+            - name: MY_POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+      volumes:
+        - name: config
+          configMap:
+            name: collector-config
+
+```
+In this example, we use the [Kubernetes Downward API](https://kubernetes.io/docs/concepts/workloads/pods/downward-api/) to get your own pod ip, then bind to that network interface.  Then, we use the hostPort option to ensure that the `collector` is exposed on the host.  The collector's config should look like:
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: ${env:MY_POD_IP}:4317
+```
+
+You can access this collector from any pod on the node by accessing `$MY_HOST_IP:4317`, where `MY_HOST_IP` is the Node's IP address.  You can get this IP from the Downwards API:
+
+```yaml
+env:
+  - name: MY_HOST_IP
+    valueFrom:
+      fieldRef:
+        fieldPath: status.hostIP
+```
+
 ## Processors
 
 Processors sit between receivers and exporters. They are responsible for
