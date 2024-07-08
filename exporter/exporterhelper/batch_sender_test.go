@@ -6,7 +6,6 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -73,9 +72,6 @@ func TestBatchSender_Merge(t *testing.T) {
 
 			assert.Equal(t, uint64(1), sink.requestsCount.Load())
 			assert.Eventually(t, func() bool {
-				fmt.Println("EVENTUALLY")
-				fmt.Println(sink.requestsCount.Load())
-				fmt.Println(sink.itemsCount.Load())
 				return sink.requestsCount.Load() == 2 && sink.itemsCount.Load() == 15
 			}, 100*time.Millisecond, 10*time.Millisecond)
 		})

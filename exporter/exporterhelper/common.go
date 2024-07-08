@@ -94,8 +94,6 @@ func WithConcurrency(config ConcurrencySettings) Option {
 			o.exportFailureMessage += " Try enabling retry_on_failure config option to retry on retryable errors."
 			return nil
 		}
-		fmt.Println("NEW CONC SENDERRRR")
-		fmt.Println(config)
 		o.concurrencySender = newConcurrencySender(config, o.set)
 		return nil
 	}
