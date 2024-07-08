@@ -7,11 +7,11 @@ import (
 	"context"
 	"errors"
 
-	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
 	"go.opentelemetry.io/contrib/config"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
+	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -27,17 +27,16 @@ var (
 
 // New creates a new Telemetry from Config.
 func newTracerProvider(ctx context.Context, set Settings, cfg Config) (trace.TracerProvider, error) {
-	attrs := map[string]any{}
+	attrs := map[string]interface{}{
+		string(semconv.ServiceNameKey): set.BuildInfo.Version,
+	}
 	for k, v := range cfg.Resource {
 		attrs[k] = *v
 	}
 	sch := semconv.SchemaURL
 	res := config.Resource{
-		SchemaUrl: &sch,
-		Attributes: &config.Attributes{
-			ServiceName:          &set.BuildInfo.Command,
-			AdditionalProperties: attrs,
-		},
+		SchemaUrl:  &sch,
+		Attributes: attrs,
 	}
 
 	sdk, err := config.NewSDK(
