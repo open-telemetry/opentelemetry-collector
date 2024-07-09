@@ -59,9 +59,9 @@ func EndpointForPort(port int) string {
 
 // LogAboutUseLocalHostAsDefault logs about the upcoming change from 0.0.0.0 to localhost on server-like components.
 func LogAboutUseLocalHostAsDefault(logger *zap.Logger) {
-	if !UseLocalHostAsDefaultHostfeatureGate.IsEnabled() {
+	if UseLocalHostAsDefaultHostfeatureGate.IsEnabled() {
 		logger.Info(
-			"The default endpoints for all servers in components have changed to use localhost instead of 0.0.0.0. Use the feature gate to temporarily revert to the previous default.",
+			"The default endpoints for all servers in components have changed to use localhost instead of 0.0.0.0. Disable the feature gate to temporarily revert to the previous default.",
 			zap.String("feature gate ID", UseLocalHostAsDefaultHostID),
 		)
 	}

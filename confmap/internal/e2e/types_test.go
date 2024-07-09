@@ -11,10 +11,10 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/internal"
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/featuregates"
 )
 
 type TargetField string
@@ -259,11 +259,11 @@ func TestStrictTypeCasting(t *testing.T) {
 		},
 	}
 
-	previousValue := internal.StrictlyTypedInputGate.IsEnabled()
-	err := featuregate.GlobalRegistry().Set(internal.StrictlyTypedInputID, true)
+	previousValue := featuregates.StrictlyTypedInputGate.IsEnabled()
+	err := featuregate.GlobalRegistry().Set(featuregates.StrictlyTypedInputID, true)
 	require.NoError(t, err)
 	defer func() {
-		err := featuregate.GlobalRegistry().Set(internal.StrictlyTypedInputID, previousValue)
+		err := featuregate.GlobalRegistry().Set(featuregates.StrictlyTypedInputID, previousValue)
 		require.NoError(t, err)
 	}()
 
