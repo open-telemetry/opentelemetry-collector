@@ -6,13 +6,14 @@ package consumer // import "go.opentelemetry.io/collector/consumer"
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/consumer/internal"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 // Metrics is an interface that receives pmetric.Metrics, processes it
 // as needed, and sends it to the next processing node if any or to the destination.
 type Metrics interface {
-	baseConsumer
+	internal.BaseConsumer
 	// ConsumeMetrics receives pmetric.Metrics for consumption.
 	ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error
 }
@@ -26,7 +27,7 @@ func (f ConsumeMetricsFunc) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 }
 
 type baseMetrics struct {
-	*baseImpl
+	*internal.BaseImpl
 	ConsumeMetricsFunc
 }
 
@@ -36,7 +37,7 @@ func NewMetrics(consume ConsumeMetricsFunc, options ...Option) (Metrics, error) 
 		return nil, errNilFunc
 	}
 	return &baseMetrics{
-		baseImpl:           newBaseImpl(options...),
+		BaseImpl:           internal.NewBaseImpl(options...),
 		ConsumeMetricsFunc: consume,
 	}, nil
 }
