@@ -153,7 +153,7 @@ To change the default endpoint to be `localhost`-bound in all components, enable
 
 If `localhost` resolves to a different IP due to your DNS settings then explicitly use the loopback IP instead: `127.0.0.1` for IPv4 or `::1` for IPv6. In IPv6 setups, ensure your system supports both IPv4 and IPv6 loopback addresses to avoid issues.
 
-Using `localhost` may not work in environments like Docker, Kubernetes, and other environments that have non-standard networking setups.  We've documented working example setups for some of these environments:
+Using `localhost` may not work in environments like Docker, Kubernetes, and other environments that have non-standard networking setups.  We've documented a few working example setups for the OTLP receiver gRPC endpoint below, but other receivers and other Collector components may need similar configuration.
 
 
 #### Docker
@@ -224,7 +224,7 @@ receivers:
         endpoint: ${env:MY_POD_IP}:4317
 ```
 
-You can access this collector from any pod on the node by accessing `$MY_HOST_IP:4317`, where `MY_HOST_IP` is the Node's IP address.  You can get this IP from the Downwards API:
+You can send OTLP data to this Collector from any Pod on the Node by accessing `$MY_HOST_IP:4317`, where `MY_HOST_IP` is the Node's IP address.  You can get this IP from the Downwards API:
 
 ```yaml
 env:
