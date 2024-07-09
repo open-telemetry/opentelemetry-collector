@@ -27,3 +27,5 @@ test_map:
   recv.13: "env:MAP_VALUE_2}$${MAP_VALUE_2}{"
   # can escape partial
   recv.14: "${env:MAP_VALUE_2$${MAP_VALUE_2}"
+  # $$$ -> escaped $ + substituted env var
+  recv.15: "$$${env:MAP_VALUE_2}"

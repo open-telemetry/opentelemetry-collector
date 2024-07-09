@@ -597,6 +597,7 @@ func Test_EscapedEnvVars(t *testing.T) {
 			"recv.12": "${env:${MAP_VALUE_2}}",
 			"recv.13": "env:MAP_VALUE_2}${MAP_VALUE_2}{",
 			"recv.14": "${env:MAP_VALUE_2${MAP_VALUE_2}",
+			"recv.15": "$" + mapValue2,
 		}}
 
 	fileProvider := newFakeProvider("file", func(_ context.Context, uri string, _ WatcherFunc) (*Retrieved, error) {
