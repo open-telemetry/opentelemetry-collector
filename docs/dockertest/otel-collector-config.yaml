@@ -1,0 +1,15 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: otel-collector01:4317 # Using the service name from your Docker compose file
+
+exporters:
+  debug:
+
+service:
+  pipelines:
+    logs:
+      receivers: [otlp]
+      processors: []
+      exporters: [debug]

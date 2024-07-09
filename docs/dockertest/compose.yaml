@@ -1,0 +1,11 @@
+services:
+  otel-collector01:
+    image: otel/opentelemetry-collector-contrib:0.104.0
+    ports:
+      - "4567:4317"
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml
+
+  telemetrygen:
+    image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen
+    command: ['logs', '--duration', '90s', '--rate', '40', '--workers', '1', '--otlp-endpoint', 'otel-collector01:4317', '--otlp-insecure']

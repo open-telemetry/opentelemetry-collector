@@ -159,7 +159,7 @@ Using `localhost` may not work in environments like Docker, Kubernetes, and othe
 #### Docker
 ```yaml
 services:
-  otel-collector01:
+  otel-collector:
     image: otel/opentelemetry-collector-contrib:0.104.0
     ports:
       - "4567:4317"
@@ -171,10 +171,10 @@ receivers:
   otlp:
     protocols:
       grpc:
-         endpoint: otel-collector01:4317 # Using the service name from your Docker compose file
+         endpoint: otel-collector:4317 # Using the service name from your Docker compose file
 ```
 
-You can connect to this collector from another docker container running alongside the otel-collector by connecting to `otel-collector01:4317`.  You could access it from outside that docker network (for example on a regular program running on the host) by connecting to `127.0.0.1:4567`.
+You can connect to this collector from another Docker container running in the same network as the Collector by connecting to `otel-collector01:4317`.  You could access it from outside that Docker network (for example on a regular program running on the host) by connecting to `127.0.0.1:4567`.
 
 #### Kubernetes
 If you run the collector as a `Daemonset`, you can use a configuration like below:
@@ -214,7 +214,7 @@ spec:
             name: collector-config
 
 ```
-In this example, we use the [Kubernetes Downward API](https://kubernetes.io/docs/concepts/workloads/pods/downward-api/) to get your own pod ip, then bind to that network interface.  Then, we use the hostPort option to ensure that the `collector` is exposed on the host.  The collector's config should look like:
+In this example, we use the [Kubernetes Downward API](https://kubernetes.io/docs/concepts/workloads/pods/downward-api/) to get your own Pod IP, then bind to that network interface.  Then, we use the hostPort option to ensure that the Collector is exposed on the host.  The Collector's config should look like:
 
 ```yaml
 receivers:
