@@ -27,7 +27,7 @@ type batchSender struct {
 	mergeFunc      exporterbatcher.BatchMergeFunc[Request]
 	mergeSplitFunc exporterbatcher.BatchMergeSplitFunc[Request]
 
-	activeRequests   atomic.Int64
+	activeRequests atomic.Int64
 
 	mu          sync.Mutex
 	activeBatch *batch
@@ -139,15 +139,15 @@ func (bs *batchSender) send(ctx context.Context, reqs ...Request) error {
 	if bs.stopped.Load() {
 		return bs.nextSender.send(ctx, reqs...)
 	}
-
-	numReqs := len(reqs)
-	if bs.cfg.MaxSizeItems > 0 || numReqs > 1 {
-		// if len(req) > 1 need to use mergeSplitFunc to split up reqs according to cfg.MaxSizeConfig.
-		return bs.sendMergeSplitBatch(ctx, reqs...)
-	} else if numReqs == 1 {
-		return bs.sendMergeBatch(ctx, reqs[0])
+	if len(reqs) == 0 {
+		bs.logger.Debug("batch sender called without any requests")
+		return nil
 	}
-	return nil
+
+	if bs.cfg.MaxSizeItems > 0 {
+		return bs.sendMergeSplitBatch(ctx, reqs...)
+	}
+	return bs.sendMergeBatch(ctx, reqs...)
 }
 
 // sendMergeSplitBatch sends the request to the batch which may be split into multiple requests.
@@ -201,12 +201,21 @@ func (bs *batchSender) sendMergeSplitBatch(ctx context.Context, inReqs ...Reques
 }
 
 // sendMergeBatch sends the request to the batch and waits for the batch to be exported.
-func (bs *batchSender) sendMergeBatch(ctx context.Context, req Request) error {
+func (bs *batchSender) sendMergeBatch(ctx context.Context, reqs ...Request) error {
 	bs.mu.Lock()
 
+	var req Request
 	if bs.activeBatch.request != nil {
-		var err error
-		req, err = bs.mergeFunc(ctx, bs.activeBatch.request, req)
+		req = bs.activeBatch.request
+	} else {
+		req = reqs[0]
+		reqs = reqs[1:]
+	}
+
+	var err error
+	// Merge all reqs into a single request.
+	for _, r := range reqs {
+		req, err = bs.mergeFunc(ctx, req, r)
 		if err != nil {
 			bs.mu.Unlock()
 			return err

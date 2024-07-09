@@ -55,5 +55,5 @@ func (ts *timeoutSender) send(ctx context.Context, reqs ...Request) error {
 	for _, req := range reqs {
 		errs = multierr.Append(errs, req.Export(tCtx))
 	}
-	return errs 
+	return errs
 }

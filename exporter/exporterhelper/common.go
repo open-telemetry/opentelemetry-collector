@@ -268,12 +268,12 @@ func newBaseExporter(set exporter.Settings, signal component.DataType, osf obsre
 	be := &baseExporter{
 		signal: signal,
 
-		concurrencySender:   &baseRequestSender{},
-		batchSender:   &baseRequestSender{},
-		queueSender:   &baseRequestSender{},
-		obsrepSender:  osf(obsReport),
-		retrySender:   &baseRequestSender{},
-		timeoutSender: &timeoutSender{cfg: NewDefaultTimeoutSettings()},
+		concurrencySender: &baseRequestSender{},
+		batchSender:       &baseRequestSender{},
+		queueSender:       &baseRequestSender{},
+		obsrepSender:      osf(obsReport),
+		retrySender:       &baseRequestSender{},
+		timeoutSender:     &timeoutSender{cfg: NewDefaultTimeoutSettings()},
 
 		set:    set,
 		obsrep: obsReport,

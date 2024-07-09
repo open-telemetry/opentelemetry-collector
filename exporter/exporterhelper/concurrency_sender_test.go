@@ -30,6 +30,7 @@ func TestValidateConcurrencySettings(t *testing.T) {
 }
 
 func TestConcurrencySender(t *testing.T) {
+	var mtx sync.Mutex
 	batcherCfg := exporterbatcher.NewDefaultConfig()
 	batcherCfg.MinSizeItems = 10
 	batcherCfg.FlushTimeout = 100 * time.Millisecond
@@ -39,29 +40,29 @@ func TestConcurrencySender(t *testing.T) {
 	}
 
 	tests := []struct {
-		name          string
-		batcherOption Option
+		name              string
+		batcherOption     Option
 		concurrencyOption Option
-		numRequests int
-		numItems int
-		hasError bool
-		errString string
+		numRequests       int
+		numItems          int
+		hasError          bool
+		errString         string
 	}{
 		{
-			name:          "success",
-			batcherOption: WithBatcher(batcherCfg, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc)),
+			name:              "success",
+			batcherOption:     WithBatcher(batcherCfg, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc)),
 			concurrencyOption: WithConcurrency(cfg),
-			numRequests: cfg.Concurrency + 1,
-			numItems: 100,
+			numRequests:       cfg.Concurrency + 1,
+			numItems:          100,
 		},
 		{
-			name:          "canceled_context",
-			batcherOption: WithBatcher(batcherCfg, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc)),
+			name:              "canceled_context",
+			batcherOption:     WithBatcher(batcherCfg, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc)),
 			concurrencyOption: WithConcurrency(cfg),
-			numRequests: cfg.Concurrency + 1,
-			numItems: 100,
-			hasError: true,
-			errString: "context canceled",
+			numRequests:       cfg.Concurrency + 1,
+			numItems:          100,
+			hasError:          true,
+			errString:         "context canceled",
 		},
 	}
 	for _, tt := range tests {
@@ -83,7 +84,10 @@ func TestConcurrencySender(t *testing.T) {
 			for i := 0; i < tt.numRequests; i++ {
 				reqWG.Add(1)
 				go func() {
-					errs = multierr.Append(errs, be.send(ctx, &fakeRequest{items: tt.numItems, sink: sink}))
+					err := be.send(ctx, &fakeRequest{items: tt.numItems, sink: sink})
+					mtx.Lock()
+					defer mtx.Unlock()
+					errs = multierr.Append(errs, err)
 					reqWG.Done()
 				}()
 
@@ -114,6 +118,7 @@ func TestConcurrencySender(t *testing.T) {
 }
 
 func TestConcurrencySender_RequestError(t *testing.T) {
+	var mtx sync.Mutex
 	batcherCfg := exporterbatcher.NewDefaultConfig()
 	batcherCfg.MinSizeItems = 10
 	batcherCfg.FlushTimeout = 100 * time.Millisecond
@@ -143,7 +148,10 @@ func TestConcurrencySender_RequestError(t *testing.T) {
 	for i := 0; i < numRequests; i++ {
 		reqWG.Add(1)
 		go func() {
-			errs = multierr.Append(errs, be.send(ctx, req))
+			err := be.send(ctx, req)
+			mtx.Lock()
+			defer mtx.Unlock()
+			errs = multierr.Append(errs, err)
 			reqWG.Done()
 		}()
 
@@ -154,15 +162,14 @@ func TestConcurrencySender_RequestError(t *testing.T) {
 	assert.ErrorContains(t, errs, errStr)
 }
 
-
 type blockingSender struct {
 	baseRequestSender
-	blockCh        chan struct{} 
+	blockCh chan struct{}
 }
 
 func newBlockingSender(*ObsReport) requestSender {
 	return &blockingSender{
-		blockCh:        make(chan struct{}), 
+		blockCh: make(chan struct{}),
 	}
 }
 
