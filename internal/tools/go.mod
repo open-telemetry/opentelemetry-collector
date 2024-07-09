@@ -10,7 +10,7 @@ require (
 	github.com/jcchavezs/porto v0.6.0
 	github.com/pavius/impi v0.0.3
 	go.opentelemetry.io/build-tools/checkfile v0.13.0
-	go.opentelemetry.io/build-tools/chloggen v0.13.0
+	go.opentelemetry.io/build-tools/chloggen v0.14.0
 	go.opentelemetry.io/build-tools/crosslink v0.13.0
 	go.opentelemetry.io/build-tools/multimod v0.13.0
 	go.opentelemetry.io/build-tools/semconvgen v0.13.0
@@ -174,7 +174,7 @@ require (
 	github.com/sourcegraph/go-diff v0.7.0 // indirect
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/cast v1.6.0 // indirect
-	github.com/spf13/cobra v1.8.0 // indirect
+	github.com/spf13/cobra v1.8.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.18.2 // indirect
 	github.com/ssgreg/nlreturn/v2 v2.2.1 // indirect
