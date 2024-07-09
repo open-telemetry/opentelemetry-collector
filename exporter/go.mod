@@ -52,7 +52,7 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	go.opentelemetry.io/collector/confmap v0.104.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.11.0 // indirect
-	go.opentelemetry.io/collector/internal/featuregates v0.0.0-00010101000000-000000000000 // indirect
+	go.opentelemetry.io/collector/internal/featuregates v0.0.0-20240705161705-b127da089038 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.104.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.50.0 // indirect
 	golang.org/x/net v0.26.0 // indirect
