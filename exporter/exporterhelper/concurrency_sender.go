@@ -16,26 +16,21 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 )
 
-const defaultNumSenders = 10
+const defaultConcurrency = 100
 
 type ConcurrencySettings struct {
-	Enabled    bool `mapstructure:"enabled"`
-	NumSenders int  `mapstructure:"num_senders"`
+	// Concurrency is a limit on the number of goroutines created for exporting batches.
+	Concurrency int  `mapstructure:"concurrency"`
 }
 
 func NewDefaultConcurrencySettings() *ConcurrencySettings {
 	return &ConcurrencySettings{
-		Enabled: true,
-		NumSenders: defaultNumSenders,
+		Concurrency: defaultConcurrency,
 	}
 }
 
 func (cCfg *ConcurrencySettings) Validate() error {
-	if !cCfg.Enabled {
-		return nil
-	}
-
-	if cCfg.NumSenders <= 0 {
+	if cCfg.Concurrency <= 0 {
 		return errors.New("number of concurrent senders must be positive")
 	}
 
@@ -47,7 +42,6 @@ func (cCfg *ConcurrencySettings) Validate() error {
 type concurrencySender struct {
 	baseRequestSender
 	cfg    ConcurrencySettings
-	mu     sync.Mutex
 	logger *zap.Logger
 	sem    *semaphore.Weighted
 }
@@ -57,7 +51,7 @@ func newConcurrencySender(cfg ConcurrencySettings, set exporter.Settings) *concu
 	cs := &concurrencySender{
 		cfg:                cfg,
 		logger:             set.Logger,
-		sem:                semaphore.NewWeighted(int64(cfg.NumSenders)),
+		sem:                semaphore.NewWeighted(int64(cfg.Concurrency)),
 	}
 	return cs
 }

@@ -22,15 +22,11 @@ func TestValidateConcurrencySettings(t *testing.T) {
 	cCfg := NewDefaultConcurrencySettings()
 	assert.NoError(t, cCfg.Validate())
 
-	cCfg.NumSenders = 0
+	cCfg.Concurrency = 0
 	assert.EqualError(t, cCfg.Validate(), "number of concurrent senders must be positive")
 
-	cCfg.NumSenders = -1
+	cCfg.Concurrency = -1
 	assert.EqualError(t, cCfg.Validate(), "number of concurrent senders must be positive")
-
-	// Confirm Validate doesn't return error with invalid config when feature is disabled
-	cCfg.Enabled = false
-	assert.NoError(t, cCfg.Validate())
 }
 
 func TestConcurrencySender(t *testing.T) {
@@ -39,8 +35,7 @@ func TestConcurrencySender(t *testing.T) {
 	batcherCfg.FlushTimeout = 100 * time.Millisecond
 
 	cfg := ConcurrencySettings{
-		Enabled: true,
-		NumSenders: 10,
+		Concurrency: 10,
 	}
 
 	tests := []struct {
@@ -56,14 +51,14 @@ func TestConcurrencySender(t *testing.T) {
 			name:          "success",
 			batcherOption: WithBatcher(batcherCfg, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc)),
 			concurrencyOption: WithConcurrency(cfg),
-			numRequests: cfg.NumSenders + 1,
+			numRequests: cfg.Concurrency + 1,
 			numItems: 100,
 		},
 		{
 			name:          "canceled_context",
 			batcherOption: WithBatcher(batcherCfg, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc)),
 			concurrencyOption: WithConcurrency(cfg),
-			numRequests: cfg.NumSenders + 1, 
+			numRequests: cfg.Concurrency + 1,
 			numItems: 100,
 			hasError: true,
 			errString: "context canceled",
@@ -72,6 +67,7 @@ func TestConcurrencySender(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
 			be, err := newBaseExporter(defaultSettings, defaultDataType, newBlockingSender, tt.batcherOption, tt.concurrencyOption)
 			require.NotNil(t, be)
 			require.NoError(t, err)
@@ -94,8 +90,8 @@ func TestConcurrencySender(t *testing.T) {
 			}
 
 			assert.Eventually(t, func() bool {
-				items := uint64(cfg.NumSenders) * uint64(100)
-				return sink.requestsCount.Load() == uint64(cfg.NumSenders) && sink.itemsCount.Load() == items
+				items := uint64(cfg.Concurrency) * uint64(100)
+				return sink.requestsCount.Load() == uint64(cfg.Concurrency) && sink.itemsCount.Load() == items
 			}, 100*time.Millisecond, 10*time.Millisecond)
 
 			if tt.hasError {
@@ -125,8 +121,7 @@ func TestConcurrencySender_RequestError(t *testing.T) {
 	errStr := "export test error"
 
 	cfg := ConcurrencySettings{
-		Enabled: true,
-		NumSenders: 10,
+		Concurrency: 10,
 	}
 	batcherOption := WithBatcher(batcherCfg, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc))
 	concurrencyOption := WithConcurrency(cfg)

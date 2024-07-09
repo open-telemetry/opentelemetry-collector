@@ -134,17 +134,20 @@ func (bs *batchSender) isActiveBatchReady() bool {
 	return bs.activeBatch.request.ItemsCount() >= bs.cfg.MinSizeItems
 }
 
-func (bs *batchSender) send(ctx context.Context, req ...Request) error {
+func (bs *batchSender) send(ctx context.Context, reqs ...Request) error {
 	// Stopped batch sender should act as pass-through to allow the queue to be drained.
 	if bs.stopped.Load() {
-		return bs.nextSender.send(ctx, req...)
+		return bs.nextSender.send(ctx, reqs...)
 	}
 
-	if bs.cfg.MaxSizeItems > 0 || len(req) > 1 {
+	numReqs := len(reqs)
+	if bs.cfg.MaxSizeItems > 0 || numReqs > 1 {
 		// if len(req) > 1 need to use mergeSplitFunc to split up reqs according to cfg.MaxSizeConfig.
-		return bs.sendMergeSplitBatch(ctx, req...)
+		return bs.sendMergeSplitBatch(ctx, reqs...)
+	} else if numReqs == 1 {
+		return bs.sendMergeBatch(ctx, reqs[0])
 	}
-	return bs.sendMergeBatch(ctx, req...)
+	return nil
 }
 
 // sendMergeSplitBatch sends the request to the batch which may be split into multiple requests.
@@ -198,19 +201,16 @@ func (bs *batchSender) sendMergeSplitBatch(ctx context.Context, inReqs ...Reques
 }
 
 // sendMergeBatch sends the request to the batch and waits for the batch to be exported.
-func (bs *batchSender) sendMergeBatch(ctx context.Context, reqs ...Request) error {
+func (bs *batchSender) sendMergeBatch(ctx context.Context, req Request) error {
 	bs.mu.Lock()
 
-	var req Request
 	if bs.activeBatch.request != nil {
 		var err error
-		req, err = bs.mergeFunc(ctx, bs.activeBatch.request, reqs[0])
+		req, err = bs.mergeFunc(ctx, bs.activeBatch.request, req)
 		if err != nil {
 			bs.mu.Unlock()
 			return err
 		}
-	} else {
-		req = reqs[0]
 	}
 
 	bs.activeRequests.Add(1)

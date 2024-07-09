@@ -14,17 +14,17 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configretry"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // Config defines configuration for OTLP exporter.
 type Config struct {
-	exporterhelper.TimeoutSettings `mapstructure:",squash"`     // squash ensures fields are correctly decoded in embedded struct.
-	QueueConfig                    exporterhelper.QueueSettings `mapstructure:"sending_queue"`
-	RetryConfig                    configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
-	BatcherConfig                  exporterbatcher.Config       `mapstructure:"batch"`
-	ConcurrencyConfig              exporterhelper.ConcurrencySettings `mapstructure:"concurrency"`
+	exporterhelper.TimeoutSettings     `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	exporterhelper.ConcurrencySettings `mapstructure:",squash"`
+	QueueConfig                        exporterhelper.QueueSettings `mapstructure:"sending_queue"`
+	RetryConfig                        configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
+	BatcherConfig                      exporterbatcher.Config       `mapstructure:"batch"`
 
 	configgrpc.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 }

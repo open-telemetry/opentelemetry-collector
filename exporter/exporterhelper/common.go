@@ -90,10 +90,6 @@ func WithRetry(config configretry.BackOffConfig) Option {
 // The default ConcurrencySettings is to enable concurrency with a limit of 10 goroutines.
 func WithConcurrency(config ConcurrencySettings) Option {
 	return func(o *baseExporter) error {
-		if !config.Enabled {
-			o.exportFailureMessage += " Try enabling the concurrency config option to send more requests in parallel."
-			return nil
-		}
 		o.concurrencySender = newConcurrencySender(config, o.set)
 		return nil
 	}
