@@ -471,8 +471,6 @@ go-simpler.org/musttag v0.12.2 h1:J7lRc2ysXOq7eM8rwaTYnNrHd5JwjppzB6mScysB2Cs=
 go-simpler.org/musttag v0.12.2/go.mod h1:uN1DVIasMTQKk6XSik7yrJoEysGtR2GRqvWnI9S7TYM=
 go-simpler.org/sloglint v0.7.1 h1:qlGLiqHbN5islOxjeLXoPtUdZXb669RW+BDQ+xOSNoU=
 go-simpler.org/sloglint v0.7.1/go.mod h1:OlaVDRh/FKKd4X4sIMbsz8st97vomydceL146Fthh/c=
-go.opentelemetry.io/build-tools v0.13.0 h1:0I3jJQ2zcJU8k4ZjyHNqUBX2Len1UvBIOzVP4b50g9A=
-go.opentelemetry.io/build-tools v0.13.0/go.mod h1:PEtg5iWjNI9WAlKXP/xll/hgbq/Cp4Ma4T1ssKB2T0Q=
 go.opentelemetry.io/build-tools v0.14.0 h1:fcnriXRUVpnVIFXtdlc1fTn9g+YRxzOV0xhw4nN919c=
 go.opentelemetry.io/build-tools v0.14.0/go.mod h1:pxTqOr0uL/0s9+xnpuKTAhmVFDssF3O4UUUuWKQqThE=
 go.opentelemetry.io/build-tools/checkfile v0.13.0 h1:Nq13fOLpF9T+y4birZbfv6JurFC1Pla5UwC+t0GMbAo=
@@ -483,8 +481,6 @@ go.opentelemetry.io/build-tools/crosslink v0.13.0 h1:R0V89bTYzoJpasiOIYiQo6txL/Z
 go.opentelemetry.io/build-tools/crosslink v0.13.0/go.mod h1:aYIwOj9b3Nmgm6nIZZk28tF/JjpicI8xenEVUeoVNp0=
 go.opentelemetry.io/build-tools/multimod v0.13.0 h1:HGAP3zCM8vOTNJSQbjQ5VbKZSctIZxppPBxRTzye7ic=
 go.opentelemetry.io/build-tools/multimod v0.13.0/go.mod h1:CxZp68c4PIN+bYlVOGB2FvE5zZMBuGz7cGSHv2L7pSc=
-go.opentelemetry.io/build-tools/semconvgen v0.13.0 h1:gGCCXzAQa4/9osvjQr/twTSiPFloxJOz01/segikweI=
-go.opentelemetry.io/build-tools/semconvgen v0.13.0/go.mod h1:Xwolx7cXWG3QYYLvDMeO4+IkZGna+4SkI6qadeLDkW4=
 go.opentelemetry.io/build-tools/semconvgen v0.14.0 h1:lOHKG4Tc/mfc6yb0an4hdi9oLbIrf/mUUIF3U8HbM8Q=
 go.opentelemetry.io/build-tools/semconvgen v0.14.0/go.mod h1:JRu+X6WMMK1fvo9toZM5hb7p6Pug7NXLjbq5J0WcS18=
 go.uber.org/automaxprocs v1.5.3 h1:kWazyxZUrS3Gs4qUpbwo5kEIMGe/DAvi5Z4tl2NW4j8=
