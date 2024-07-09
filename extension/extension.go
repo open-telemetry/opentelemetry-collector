@@ -6,6 +6,8 @@ package extension // import "go.opentelemetry.io/collector/extension"
 import (
 	"context"
 	"fmt"
+	"path"
+	"runtime"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -103,6 +105,7 @@ type factory struct {
 	component.CreateDefaultConfigFunc
 	CreateFunc
 	extensionStability component.StabilityLevel
+	goModule           string
 }
 
 func (f *factory) Type() component.Type {
@@ -115,17 +118,27 @@ func (f *factory) ExtensionStability() component.StabilityLevel {
 	return f.extensionStability
 }
 
+func (f *factory) GoModule() string {
+	return f.goModule
+}
+
 // NewFactory returns a new Factory  based on this configuration.
 func NewFactory(
 	cfgType component.Type,
 	createDefaultConfig component.CreateDefaultConfigFunc,
 	createServiceExtension CreateFunc,
 	sl component.StabilityLevel) Factory {
+	goModule := "unknown@v0.0.0"
+	_, caller, _, ok := runtime.Caller(1)
+	if ok {
+		goModule = path.Dir(caller)
+	}
 	return &factory{
 		cfgType:                 cfgType,
 		CreateDefaultConfigFunc: createDefaultConfig,
 		CreateFunc:              createServiceExtension,
 		extensionStability:      sl,
+		goModule:                goModule,
 	}
 }
 

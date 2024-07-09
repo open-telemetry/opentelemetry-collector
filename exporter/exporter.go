@@ -6,6 +6,8 @@ package exporter // import "go.opentelemetry.io/collector/exporter"
 import (
 	"context"
 	"fmt"
+	"path"
+	"runtime"
 
 	"go.uber.org/zap"
 
@@ -138,6 +140,7 @@ type factory struct {
 	metricsStabilityLevel component.StabilityLevel
 	CreateLogsFunc
 	logsStabilityLevel component.StabilityLevel
+	goModule           string
 }
 
 func (f *factory) Type() component.Type {
@@ -156,6 +159,10 @@ func (f *factory) MetricsExporterStability() component.StabilityLevel {
 
 func (f *factory) LogsExporterStability() component.StabilityLevel {
 	return f.logsStabilityLevel
+}
+
+func (f *factory) GoModule() string {
+	return f.goModule
 }
 
 // WithTraces overrides the default "error not supported" implementation for CreateTracesExporter and the default "undefined" stability level.
@@ -184,9 +191,15 @@ func WithLogs(createLogs CreateLogsFunc, sl component.StabilityLevel) FactoryOpt
 
 // NewFactory returns a Factory.
 func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefaultConfigFunc, options ...FactoryOption) Factory {
+	goModule := "unknown@v0.0.0"
+	_, caller, _, ok := runtime.Caller(1)
+	if ok {
+		goModule = path.Dir(caller)
+	}
 	f := &factory{
 		cfgType:                 cfgType,
 		CreateDefaultConfigFunc: createDefaultConfig,
+		goModule:                goModule,
 	}
 	for _, opt := range options {
 		opt.applyExporterFactoryOption(f)

@@ -7,6 +7,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path"
+	"runtime"
 
 	"go.uber.org/zap"
 
@@ -311,6 +313,8 @@ type factory struct {
 	logsToTracesStabilityLevel  component.StabilityLevel
 	logsToMetricsStabilityLevel component.StabilityLevel
 	logsToLogsStabilityLevel    component.StabilityLevel
+
+	goModule string
 }
 
 // Type returns the type of component.
@@ -428,11 +432,21 @@ func (f factory) LogsToLogsStability() component.StabilityLevel {
 	return f.logsToLogsStabilityLevel
 }
 
+func (f factory) GoModule() string {
+	return f.goModule
+}
+
 // NewFactory returns a Factory.
 func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefaultConfigFunc, options ...FactoryOption) Factory {
+	goModule := "unknown@v0.0.0"
+	_, caller, _, ok := runtime.Caller(1)
+	if ok {
+		goModule = path.Dir(caller)
+	}
 	f := &factory{
 		cfgType:                 cfgType,
 		CreateDefaultConfigFunc: createDefaultConfig,
+		goModule:                goModule,
 	}
 	for _, opt := range options {
 		opt.apply(f)

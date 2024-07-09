@@ -180,6 +180,10 @@ type Factory interface {
 	// 'componenttest.CheckConfigStruct'. It is recommended to have these checks in the
 	// tests of any implementation of the Factory interface.
 	CreateDefaultConfig() Config
+
+	// GoModule reports the go module and version of the component.
+	// Example: "go.opentelemetry.io/collector/exporter/otlpexporter@v0.1.0"
+	GoModule() string
 }
 
 // CreateDefaultConfigFunc is the equivalent of Factory.CreateDefaultConfig().
