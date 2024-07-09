@@ -18,7 +18,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.11.0
 	go.opentelemetry.io/collector/pdata v1.11.0
 	go.opentelemetry.io/collector/pdata/testdata v0.104.0
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.52.0
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.53.0
 	go.opentelemetry.io/otel v1.28.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
