@@ -180,7 +180,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 
 	conf := confmap.New()
 
-	if err := conf.Marshal(cfg); err != nil {
+	if err = conf.Marshal(cfg); err != nil {
 		return fmt.Errorf("could not marshal configuration: %w", err)
 	}
 
