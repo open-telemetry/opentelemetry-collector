@@ -92,7 +92,7 @@ For each listed deviation, the solution for unblocking component 1.0 is:
 - `Fatal Error Reporting` :x:: we do not yet have a solution.
 - `No way to identify components that are not reporting status` :white_check_mark:: This can be implemented as a feature addition to component status reporting without blocking component 1.0
 - `Should component health reporting be an opt-in for component.Host implementations?` :x:: we do not yet have a solution.
-- `Component TelemetrySettings Requirements` :white_check_mark:: We have other structs, such as in pdata, that mark fields/methods as experimental. We can do the same for `component.TelemetrySettings.ReportStatus`.
+- `Component TelemetrySettings Requirements` :x:: We want to find a way to not include experimental features on stable structs. This means we still need to figure out how to handle `component.TelemetrySettings.ReportStatus`.
 
 
 ## Reference
