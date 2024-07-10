@@ -16,8 +16,8 @@ import (
 	"github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/v2"
 
-	"go.opentelemetry.io/collector/confmap/internal"
 	encoder "go.opentelemetry.io/collector/confmap/internal/mapstructure"
+	"go.opentelemetry.io/collector/internal/featuregates"
 )
 
 const (
@@ -157,7 +157,7 @@ func decodeConfig(m *Conf, result any, errorUnused bool, skipTopLevelUnmarshaler
 		ErrorUnused:      errorUnused,
 		Result:           result,
 		TagName:          "mapstructure",
-		WeaklyTypedInput: !internal.StrictlyTypedInputGate.IsEnabled(),
+		WeaklyTypedInput: !featuregates.StrictlyTypedInputGate.IsEnabled(),
 		MatchName:        caseSensitiveMatchName,
 		DecodeHook: mapstructure.ComposeDecodeHookFunc(
 			expandNilStructPointersHookFunc(),
