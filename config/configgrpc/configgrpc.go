@@ -277,7 +277,7 @@ func (gcs *ClientConfig) toDialOptions(ctx context.Context, host component.Host,
 			return nil, errors.New("no extensions configuration available")
 		}
 
-		grpcAuthenticator, cerr := gcs.Auth.GetClientAuthenticatorContext(ctx, host.GetExtensions())
+		grpcAuthenticator, cerr := gcs.Auth.GetClientAuthenticator(ctx, host.GetExtensions())
 		if cerr != nil {
 			return nil, cerr
 		}
@@ -393,7 +393,7 @@ func (gss *ServerConfig) toServerOption(host component.Host, settings component.
 	var sInterceptors []grpc.StreamServerInterceptor
 
 	if gss.Auth != nil {
-		authenticator, err := gss.Auth.GetServerAuthenticatorContext(context.Background(), host.GetExtensions())
+		authenticator, err := gss.Auth.GetServerAuthenticator(context.Background(), host.GetExtensions())
 		if err != nil {
 			return nil, err
 		}
