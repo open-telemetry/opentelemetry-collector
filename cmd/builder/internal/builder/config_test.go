@@ -79,7 +79,7 @@ func TestModuleFromCore(t *testing.T) {
 	assert.True(t, strings.HasPrefix(cfg.Extensions[0].Name, "otlpreceiver"))
 }
 
-func TestInvalidModule(t *testing.T) {
+func TestMissingModule(t *testing.T) {
 	type invalidModuleTest struct {
 		cfg Config
 		err error
@@ -89,11 +89,20 @@ func TestInvalidModule(t *testing.T) {
 		{
 			cfg: Config{
 				Logger: zap.NewNop(),
+				Providers: &[]Module{{
+					Import: "invalid",
+				}},
+			},
+			err: ErrMissingGoMod,
+		},
+		{
+			cfg: Config{
+				Logger: zap.NewNop(),
 				Extensions: []Module{{
 					Import: "invalid",
 				}},
 			},
-			err: ErrInvalidGoMod,
+			err: ErrMissingGoMod,
 		},
 		{
 			cfg: Config{
@@ -102,7 +111,7 @@ func TestInvalidModule(t *testing.T) {
 					Import: "invalid",
 				}},
 			},
-			err: ErrInvalidGoMod,
+			err: ErrMissingGoMod,
 		},
 		{
 			cfg: Config{
@@ -111,7 +120,7 @@ func TestInvalidModule(t *testing.T) {
 					Import: "invali",
 				}},
 			},
-			err: ErrInvalidGoMod,
+			err: ErrMissingGoMod,
 		},
 		{
 			cfg: Config{
@@ -120,7 +129,16 @@ func TestInvalidModule(t *testing.T) {
 					Import: "invalid",
 				}},
 			},
-			err: ErrInvalidGoMod,
+			err: ErrMissingGoMod,
+		},
+		{
+			cfg: Config{
+				Logger: zap.NewNop(),
+				Connectors: []Module{{
+					Import: "invalid",
+				}},
+			},
+			err: ErrMissingGoMod,
 		},
 	}
 

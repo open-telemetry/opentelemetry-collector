@@ -414,27 +414,27 @@ func newEnvProvider() ProviderFactory {
 		}
 		switch uri {
 		case "env:COMPLEX_VALUE":
-			return NewRetrieved([]any{"localhost:3042"})
+			return NewRetrievedFromYAML([]byte("[localhost:3042]"))
 		case "env:HOST":
-			return NewRetrieved("localhost")
+			return NewRetrievedFromYAML([]byte("localhost"))
 		case "env:OS":
-			return NewRetrieved("ubuntu")
+			return NewRetrievedFromYAML([]byte("ubuntu"))
 		case "env:PR":
-			return NewRetrieved("amd")
+			return NewRetrievedFromYAML([]byte("amd"))
 		case "env:PORT":
-			return NewRetrieved(3044)
+			return NewRetrievedFromYAML([]byte("3044"))
 		case "env:INT":
-			return NewRetrieved(1)
+			return NewRetrievedFromYAML([]byte("1"))
 		case "env:INT32":
-			return NewRetrieved(32)
+			return NewRetrieved(int32(32), withStringRepresentation("32"))
 		case "env:INT64":
-			return NewRetrieved(64)
+			return NewRetrieved(int64(64), withStringRepresentation("64"))
 		case "env:FLOAT32":
-			return NewRetrieved(float32(3.25))
+			return NewRetrieved(float32(3.25), withStringRepresentation("3.25"))
 		case "env:FLOAT64":
-			return NewRetrieved(float64(6.4))
+			return NewRetrieved(float64(6.4), withStringRepresentation("6.4"))
 		case "env:BOOL":
-			return NewRetrieved(true)
+			return NewRetrievedFromYAML([]byte("true"))
 		}
 		return nil, errors.New("impossible")
 	})
@@ -576,4 +576,47 @@ func TestResolverDefaultProviderExpand(t *testing.T) {
 	cfgMap, err := resolver.Resolve(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, map[string]any{"foo": "localhost"}, cfgMap.ToStringMap())
+}
+
+func Test_EscapedEnvVars(t *testing.T) {
+	const mapValue2 = "some map value"
+
+	expectedMap := map[string]any{
+		"test_map": map[string]any{
+			"recv.1":  "$MAP_VALUE_1",
+			"recv.2":  "$$MAP_VALUE_2",
+			"recv.3":  "$$MAP_VALUE_3",
+			"recv.4":  "$" + mapValue2,
+			"recv.5":  "some${MAP_VALUE_4}text",
+			"recv.6":  "${ONE}${TWO}",
+			"recv.7":  "text$",
+			"recv.8":  "$",
+			"recv.9":  "${1}${env:2}",
+			"recv.10": "some${env:MAP_VALUE_4}text",
+			"recv.11": "${env:" + mapValue2 + "}",
+			"recv.12": "${env:${MAP_VALUE_2}}",
+			"recv.13": "env:MAP_VALUE_2}${MAP_VALUE_2}{",
+			"recv.14": "${env:MAP_VALUE_2${MAP_VALUE_2}",
+			"recv.15": "$" + mapValue2,
+		}}
+
+	fileProvider := newFakeProvider("file", func(_ context.Context, uri string, _ WatcherFunc) (*Retrieved, error) {
+		return NewRetrieved(newConfFromFile(t, uri[5:]))
+	})
+	envProvider := newFakeProvider("env", func(_ context.Context, uri string, _ WatcherFunc) (*Retrieved, error) {
+		if uri == "env:MAP_VALUE_2" {
+			return NewRetrieved(mapValue2)
+		}
+		return nil, errors.New("should not be expanding any other env vars")
+	})
+
+	resolver, err := NewResolver(ResolverSettings{URIs: []string{filepath.Join("testdata", "expand-escaped-env.yaml")}, ProviderFactories: []ProviderFactory{fileProvider, envProvider}, ConverterFactories: nil, DefaultScheme: "env"})
+	require.NoError(t, err)
+
+	// Test that expanded configs are the same with the simple config with no env vars.
+	cfgMap, err := resolver.Resolve(context.Background())
+	require.NoError(t, err)
+	m := cfgMap.ToStringMap()
+	assert.Equal(t, expectedMap, m)
+
 }
