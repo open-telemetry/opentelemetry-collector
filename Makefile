@@ -60,6 +60,16 @@ gotest-with-cover:
 goporto: $(PORTO)
 	$(PORTO) -w --include-internal --skip-dirs "^cmd/mdatagen/third_party$$" ./
 
+.PHONY: for-all
+for-all:
+	@echo "running $${CMD} in root"
+	@$${CMD}
+	@set -e; for dir in $(GOMODULES); do \
+	  (cd "$${dir}" && \
+	  	echo "running $${CMD} in $${dir}" && \
+	 	$${CMD} ); \
+	done
+
 .PHONY: golint
 golint:
 	@$(MAKE) for-all-target TARGET="lint"
@@ -280,6 +290,7 @@ check-contrib:
 		-replace go.opentelemetry.io/collector/extension/memorylimiterextension=$(CURDIR)/extension/memorylimiterextension  \
 		-replace go.opentelemetry.io/collector/extension/zpagesextension=$(CURDIR)/extension/zpagesextension  \
 		-replace go.opentelemetry.io/collector/featuregate=$(CURDIR)/featuregate  \
+		-replace go.opentelemetry.io/collector/internal/featuregates=$(CURDIR)/internal/featuregates \
 		-replace go.opentelemetry.io/collector/otelcol=$(CURDIR)/otelcol  \
 		-replace go.opentelemetry.io/collector/otelcol/otelcoltest=$(CURDIR)/otelcol/otelcoltest  \
 		-replace go.opentelemetry.io/collector/pdata=$(CURDIR)/pdata  \
