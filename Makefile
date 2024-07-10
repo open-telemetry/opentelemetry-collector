@@ -349,6 +349,7 @@ restore-contrib:
 		-dropreplace go.opentelemetry.io/collector/extension/memorylimiterextension  \
 		-dropreplace go.opentelemetry.io/collector/extension/zpagesextension  \
 		-dropreplace go.opentelemetry.io/collector/featuregate  \
+		-dropreplace go.opentelemetry.io/collector/internal/featuregates \
 		-dropreplace go.opentelemetry.io/collector/otelcol  \
 		-dropreplace go.opentelemetry.io/collector/otelcol/otelcoltest  \
 		-dropreplace go.opentelemetry.io/collector/pdata  \
