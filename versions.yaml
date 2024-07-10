@@ -15,6 +15,7 @@ module-sets:
     version: v0.104.0
     modules:
       - go.opentelemetry.io/collector
+      - go.opentelemetry.io/collector/internal/featuregates
       - go.opentelemetry.io/collector/cmd/builder
       - go.opentelemetry.io/collector/cmd/mdatagen
       - go.opentelemetry.io/collector/component
@@ -35,6 +36,7 @@ module-sets:
       - go.opentelemetry.io/collector/connector
       - go.opentelemetry.io/collector/connector/forwardconnector
       - go.opentelemetry.io/collector/consumer
+      - go.opentelemetry.io/collector/consumer/consumerprofiles
       - go.opentelemetry.io/collector/exporter
       - go.opentelemetry.io/collector/exporter/debugexporter
       - go.opentelemetry.io/collector/exporter/loggingexporter

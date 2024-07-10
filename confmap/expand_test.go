@@ -414,27 +414,27 @@ func newEnvProvider() ProviderFactory {
 		}
 		switch uri {
 		case "env:COMPLEX_VALUE":
-			return NewRetrieved([]any{"localhost:3042"})
+			return NewRetrievedFromYAML([]byte("[localhost:3042]"))
 		case "env:HOST":
-			return NewRetrieved("localhost")
+			return NewRetrievedFromYAML([]byte("localhost"))
 		case "env:OS":
-			return NewRetrieved("ubuntu")
+			return NewRetrievedFromYAML([]byte("ubuntu"))
 		case "env:PR":
-			return NewRetrieved("amd")
+			return NewRetrievedFromYAML([]byte("amd"))
 		case "env:PORT":
-			return NewRetrieved(3044)
+			return NewRetrievedFromYAML([]byte("3044"))
 		case "env:INT":
-			return NewRetrieved(1)
+			return NewRetrievedFromYAML([]byte("1"))
 		case "env:INT32":
-			return NewRetrieved(32)
+			return NewRetrieved(int32(32), withStringRepresentation("32"))
 		case "env:INT64":
-			return NewRetrieved(64)
+			return NewRetrieved(int64(64), withStringRepresentation("64"))
 		case "env:FLOAT32":
-			return NewRetrieved(float32(3.25))
+			return NewRetrieved(float32(3.25), withStringRepresentation("3.25"))
 		case "env:FLOAT64":
-			return NewRetrieved(float64(6.4))
+			return NewRetrieved(float64(6.4), withStringRepresentation("6.4"))
 		case "env:BOOL":
-			return NewRetrieved(true)
+			return NewRetrievedFromYAML([]byte("true"))
 		}
 		return nil, errors.New("impossible")
 	})

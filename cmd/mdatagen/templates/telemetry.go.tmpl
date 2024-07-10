@@ -60,7 +60,7 @@ func WithAttributeSet(set attribute.Set) telemetryBuilderOption {
 {{- end }}
 
 {{- range $name, $metric := .Telemetry.Metrics }}
-    {{- if $metric.Optional }}
+{{- if $metric.Optional }}
 // Init{{ $name.Render }} configures the {{ $name.Render }} metric.
 func (builder *TelemetryBuilder) Init{{ $name.Render }}({{ if $metric.Data.Async -}}cb func() {{ $metric.Data.BasicType }}{{- end }}) error {
     var err error
@@ -71,13 +71,16 @@ func (builder *TelemetryBuilder) Init{{ $name.Render }}({{ if $metric.Data.Async
         {{- if eq $metric.Data.Type "Histogram" -}}
         {{ if $metric.Data.Boundaries -}}metric.WithExplicitBucketBoundaries([]float64{ {{- range $metric.Data.Boundaries }} {{.}}, {{- end }} }...),{{- end }}
         {{- end }}
-        {{ if $metric.Data.Async -}}
-        metric.With{{ casesTitle $metric.Data.BasicType }}Callback(func(_ context.Context, o metric.{{ casesTitle $metric.Data.BasicType }}Observer) error {
-            o.Observe(cb(), metric.WithAttributeSet(builder.attributeSet))
-            return nil
-        }),
-        {{- end }}
     )
+    {{- if $metric.Data.Async }}
+    if err != nil {
+        return err
+    }
+    _, err = builder.meter.RegisterCallback(func(_ context.Context, o metric.Observer) error {
+        o.Observe{{ casesTitle $metric.Data.BasicType }}(builder.{{ $name.Render }}, cb(), metric.WithAttributeSet(builder.attributeSet))
+        return nil
+    }, builder.{{ $name.Render }})
+    {{- end }}
     return err
 }
 
@@ -117,14 +120,15 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
         {{- if eq $metric.Data.Type "Histogram" -}}
         {{ if $metric.Data.Boundaries -}}metric.WithExplicitBucketBoundaries([]float64{ {{- range $metric.Data.Boundaries }} {{.}}, {{- end }} }...),{{- end }}
         {{- end }}
-        {{ if $metric.Data.Async -}}
-        metric.With{{ casesTitle $metric.Data.BasicType }}Callback(func(_ context.Context, o metric.{{ casesTitle $metric.Data.BasicType }}Observer) error {
-            o.Observe(builder.observe{{ $name.Render }}(), metric.WithAttributeSet(builder.attributeSet))
-            return nil
-        }),
-        {{- end }}
     )
     errs = errors.Join(errs, err)
+    {{- if $metric.Data.Async }}
+    _, err = builder.meter.RegisterCallback(func(_ context.Context, o metric.Observer) error {
+        o.Observe{{ casesTitle $metric.Data.BasicType }}(builder.{{ $name.Render }}, builder.observe{{ $name.Render }}(), metric.WithAttributeSet(builder.attributeSet))
+        return nil
+    }, builder.{{ $name.Render }})
+    errs = errors.Join(errs, err)
+    {{- end }}
     {{- end }}
     {{- end }}
     return &builder, errs
