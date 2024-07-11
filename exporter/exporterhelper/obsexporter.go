@@ -33,7 +33,7 @@ type ObsReport struct {
 
 // ObsReportSettings are settings for creating an ObsReport.
 //
-// Deprecated: [v0.104.0] Not expected to be used directly.
+// Deprecated: [v0.105.0] Not expected to be used directly.
 // If needed, report your use case in https://github.com/open-telemetry/opentelemetry-collector/issues/10592.
 type ObsReportSettings struct {
 	ExporterID             component.ID
