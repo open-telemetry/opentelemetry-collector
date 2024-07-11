@@ -72,7 +72,7 @@ func newExporter(cfg ObsReportSettings) (*ObsReport, error) {
 // The returned context should be used in other calls to the Exporter functions
 // dealing with the same export operation.
 //
-// Deprecated: [v0.104.0] Not expected to be used directly.
+// Deprecated: [v0.105.0] Not expected to be used directly.
 // If needed, report your use case in https://github.com/open-telemetry/opentelemetry-collector/issues/10592.
 func (or *ObsReport) StartTracesOp(ctx context.Context) context.Context {
 	return or.startOp(ctx, obsmetrics.ExportTraceDataOperationSuffix)
