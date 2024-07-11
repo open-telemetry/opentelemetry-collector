@@ -16,7 +16,7 @@ import (
 	{{- end }}
 
 	"github.com/stretchr/testify/require"
-	{{- if not (and .Tests.SkipLifecycle .Tests.SkipShutdown) }}
+	{{- if and (not (and .Tests.SkipLifecycle .Tests.SkipShutdown)) (not isExtension) }}
 	"go.opentelemetry.io/collector/component"
 	{{- end }}
 	"go.opentelemetry.io/collector/component/componenttest"
