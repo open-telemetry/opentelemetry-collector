@@ -31,7 +31,14 @@ func newTracerProvider(ctx context.Context, set Settings, cfg Config) (trace.Tra
 		string(semconv.ServiceNameKey): set.BuildInfo.Version,
 	}
 	for k, v := range cfg.Resource {
-		attrs[k] = *v
+		if v != nil {
+			attrs[k] = *v
+		}
+
+		// the new value is nil, delete the existing key
+		if _, ok := attrs[k]; ok && v == nil {
+			delete(attrs, k)
+		}
 	}
 	sch := semconv.SchemaURL
 	res := config.Resource{
