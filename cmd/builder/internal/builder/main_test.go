@@ -109,7 +109,7 @@ func TestGenerateDefault(t *testing.T) {
 
 func TestGenerateInvalidOutputPath(t *testing.T) {
 	cfg := newInitializedConfig(t)
-	cfg.Distribution.OutputPath = "/:invalid"
+	cfg.Distribution.OutputPath = ":/invalid"
 	err := Generate(cfg)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to create output path")
