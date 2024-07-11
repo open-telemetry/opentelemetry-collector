@@ -121,7 +121,7 @@ func (or *ObsReport) StartLogsOp(ctx context.Context) context.Context {
 
 // EndLogsOp completes the export operation that was started with StartLogsOp.
 //
-// Deprecated: [v0.104.0] Not expected to be used directly.
+// Deprecated: [v0.105.0] Not expected to be used directly.
 // If needed, report your use case in https://github.com/open-telemetry/opentelemetry-collector/issues/10592.
 func (or *ObsReport) EndLogsOp(ctx context.Context, numLogRecords int, err error) {
 	numSent, numFailedToSend := toNumItems(numLogRecords, err)
