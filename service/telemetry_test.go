@@ -5,8 +5,8 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	io_prometheus_client "github.com/prometheus/client_model/go"
@@ -15,12 +15,10 @@ import (
 	"go.opentelemetry.io/contrib/config"
 	"go.opentelemetry.io/otel/metric"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/testutil"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
-	"go.opentelemetry.io/collector/service/internal/resource"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -77,6 +75,9 @@ func TestTelemetryInit(t *testing.T) {
 						"service_instance_id": testInstanceID,
 					},
 				},
+				"promhttp_metric_handler_errors_total": {
+					value: 0,
+				},
 				"target_info": {
 					value: 0,
 					labels: map[string]string{
@@ -114,6 +115,9 @@ func TestTelemetryInit(t *testing.T) {
 						"service_version":     "latest",
 						"service_instance_id": testInstanceID,
 					},
+				},
+				"promhttp_metric_handler_errors_total": {
+					value: 0,
 				},
 				"target_info": {
 					value: 0,
@@ -177,6 +181,9 @@ func TestTelemetryInit(t *testing.T) {
 						"service_instance_id": testInstanceID,
 					},
 				},
+				"promhttp_metric_handler_errors_total": {
+					value: 0,
+				},
 				"target_info": {
 					value: 0,
 					labels: map[string]string{
@@ -189,12 +196,13 @@ func TestTelemetryInit(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			metricsEndpoint := testutil.GetAvailableLocalAddressPrometheus(t)
 			if tc.extendedConfig {
 				tc.cfg.Metrics.Readers = []config.MetricReader{
 					{
 						Pull: &config.PullMetricReader{
 							Exporter: config.MetricExporter{
-								Prometheus: testutil.GetAvailableLocalAddressPrometheus(t),
+								Prometheus: metricsEndpoint,
 							},
 						},
 					},
@@ -207,16 +215,16 @@ func TestTelemetryInit(t *testing.T) {
 					},
 					Metrics: telemetry.MetricsConfig{
 						Level:   configtelemetry.LevelDetailed,
-						Address: testutil.GetAvailableLocalAddress(t),
+						Address: fmt.Sprintf("%s:%d", *metricsEndpoint.Host, *metricsEndpoint.Port),
 					},
 				}
 			}
-			set := meterProviderSettings{
-				res:               resource.New(component.NewDefaultBuildInfo(), tc.cfg.Resource),
-				cfg:               tc.cfg.Metrics,
-				asyncErrorChannel: make(chan error),
+			set := newNopSettings()
+			telset := telemetry.Settings{
+				BuildInfo:  set.BuildInfo,
+				ZapOptions: set.LoggingOptions,
 			}
-			mp, err := newMeterProvider(set, tc.disableHighCard)
+			mp, err := telemetry.NewFactory().CreateMeterProvider(context.Background(), telset, tc.cfg)
 			require.NoError(t, err)
 			defer func() {
 				if prov, ok := mp.(interface{ Shutdown(context.Context) error }); ok {
@@ -225,8 +233,7 @@ func TestTelemetryInit(t *testing.T) {
 			}()
 
 			createTestMetrics(t, mp)
-
-			metrics := getMetricsFromPrometheus(t, mp.(*meterProvider).servers[0].Handler)
+			metrics := getMetricsFromPrometheus(t, fmt.Sprintf("http://%s:%d/metrics", *metricsEndpoint.Host, *metricsEndpoint.Port))
 			require.Equal(t, len(tc.expectedMetrics), len(metrics))
 
 			for metricName, metricValue := range tc.expectedMetrics {
@@ -262,12 +269,9 @@ func createTestMetrics(t *testing.T, mp metric.MeterProvider) {
 	httpExampleCounter.Add(context.Background(), 10, metric.WithAttributes(proctelemetry.HTTPUnacceptableKeyValues...))
 }
 
-func getMetricsFromPrometheus(t *testing.T, handler http.Handler) map[string]*io_prometheus_client.MetricFamily {
-	req, err := http.NewRequest(http.MethodGet, "/metrics", nil)
+func getMetricsFromPrometheus(t *testing.T, endpoint string) map[string]*io_prometheus_client.MetricFamily {
+	rr, err := http.Get(endpoint)
 	require.NoError(t, err)
-
-	rr := httptest.NewRecorder()
-	handler.ServeHTTP(rr, req)
 
 	var parser expfmt.TextParser
 	parsed, err := parser.TextToMetricFamilies(rr.Body)
