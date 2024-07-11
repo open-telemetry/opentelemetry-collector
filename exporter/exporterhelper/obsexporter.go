@@ -20,7 +20,7 @@ import (
 
 // ObsReport is a helper to add observability to an exporter.
 //
-// Deprecated: [v0.104.0] Not expected to be used directly.
+// Deprecated: [v0.105.0] Not expected to be used directly.
 // If needed, report your use case in https://github.com/open-telemetry/opentelemetry-collector/issues/10592.
 type ObsReport struct {
 	level          configtelemetry.Level
