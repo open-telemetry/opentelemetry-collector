@@ -130,6 +130,16 @@ func TestTypeCasting(t *testing.T) {
 			targetField: TargetFieldBool,
 			expected:    true,
 		},
+		{
+			value:       "foo\nbar",
+			targetField: TargetFieldString,
+			expected:    "foo bar",
+		},
+		{
+			value:       "\"1111:1111:1111:1111:1111::\"",
+			targetField: TargetFieldString,
+			expected:    "1111:1111:1111:1111:1111::",
+		},
 	}
 
 	previousValue := featuregates.StrictlyTypedInputGate.IsEnabled()
@@ -264,6 +274,16 @@ func TestStrictTypeCasting(t *testing.T) {
 			value:       "{\"field\": 123}",
 			targetField: TargetFieldInlineString,
 			resolveErr:  "retrieved value does not have unambiguous string representation",
+		},
+		{
+			value:       "1111:1111:1111:1111:1111::",
+			targetField: TargetFieldInlineString,
+			resolveErr:  "retrieved value does not have unambiguous string representation",
+		},
+		{
+			value:        "1111:1111:1111:1111:1111::",
+			targetField:  TargetFieldString,
+			unmarshalErr: "'field' expected type 'string', got unconvertible type 'map[string]interface {}', value: 'map[1111:1111:1111:1111:1111::<nil>]'",
 		},
 	}
 
