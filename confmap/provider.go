@@ -7,9 +7,10 @@ import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/collector/internal/featuregates"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
+
+	"go.opentelemetry.io/collector/internal/featuregates"
 )
 
 // ProviderSettings are the settings to initialize a Provider.
