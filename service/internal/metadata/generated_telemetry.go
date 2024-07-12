@@ -116,7 +116,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 		builder.meter = noop.Meter{}
 	}
 	builder.ProcessCPUSeconds, err = builder.meter.Float64ObservableCounter(
-		"process_cpu_seconds",
+		"otelcol_process_cpu_seconds",
 		metric.WithDescription("Total CPU user and system time in seconds"),
 		metric.WithUnit("s"),
 	)
@@ -127,7 +127,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	}, builder.ProcessCPUSeconds)
 	errs = errors.Join(errs, err)
 	builder.ProcessMemoryRss, err = builder.meter.Int64ObservableGauge(
-		"process_memory_rss",
+		"otelcol_process_memory_rss",
 		metric.WithDescription("Total physical memory (resident set size)"),
 		metric.WithUnit("By"),
 	)
@@ -138,7 +138,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	}, builder.ProcessMemoryRss)
 	errs = errors.Join(errs, err)
 	builder.ProcessRuntimeHeapAllocBytes, err = builder.meter.Int64ObservableGauge(
-		"process_runtime_heap_alloc_bytes",
+		"otelcol_process_runtime_heap_alloc_bytes",
 		metric.WithDescription("Bytes of allocated heap objects (see 'go doc runtime.MemStats.HeapAlloc')"),
 		metric.WithUnit("By"),
 	)
@@ -149,7 +149,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	}, builder.ProcessRuntimeHeapAllocBytes)
 	errs = errors.Join(errs, err)
 	builder.ProcessRuntimeTotalAllocBytes, err = builder.meter.Int64ObservableCounter(
-		"process_runtime_total_alloc_bytes",
+		"otelcol_process_runtime_total_alloc_bytes",
 		metric.WithDescription("Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')"),
 		metric.WithUnit("By"),
 	)
@@ -160,7 +160,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	}, builder.ProcessRuntimeTotalAllocBytes)
 	errs = errors.Join(errs, err)
 	builder.ProcessRuntimeTotalSysMemoryBytes, err = builder.meter.Int64ObservableGauge(
-		"process_runtime_total_sys_memory_bytes",
+		"otelcol_process_runtime_total_sys_memory_bytes",
 		metric.WithDescription("Total bytes of memory obtained from the OS (see 'go doc runtime.MemStats.Sys')"),
 		metric.WithUnit("By"),
 	)
@@ -171,7 +171,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	}, builder.ProcessRuntimeTotalSysMemoryBytes)
 	errs = errors.Join(errs, err)
 	builder.ProcessUptime, err = builder.meter.Float64ObservableCounter(
-		"process_uptime",
+		"otelcol_process_uptime",
 		metric.WithDescription("Uptime of the process"),
 		metric.WithUnit("s"),
 	)
