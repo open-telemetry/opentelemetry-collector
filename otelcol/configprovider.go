@@ -5,6 +5,7 @@ package otelcol // import "go.opentelemetry.io/collector/otelcol"
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -143,4 +144,8 @@ func (cm *configProvider) Watch() <-chan error {
 
 func (cm *configProvider) Shutdown(ctx context.Context) error {
 	return cm.mapResolver.Shutdown(ctx)
+}
+
+func (cm *configProvider) GetConfmap(ctx context.Context) (*confmap.Conf, error) {
+	return nil, errors.New("the GetConfmap method has been deprecated, please use `(otelcol.Config*).Marshal` to obtain the Collector's configuration. This method will be removed in v0.106.0")
 }
