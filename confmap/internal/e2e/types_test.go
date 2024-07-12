@@ -148,7 +148,7 @@ func TestTypeCasting(t *testing.T) {
 		{
 			value:       "\"1111:1111:1111:1111:1111::\"",
 			targetField: TargetFieldInlineString,
-			expected:    "inline field with 1111:1111:1111:1111:1111::",
+			expected:    "inline field with 1111:1111:1111:1111:1111:: expansion",
 		},
 	}
 
