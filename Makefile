@@ -1,5 +1,10 @@
 include ./Makefile.Common
 
+# Paralellize with 8 jobs and output each command as it finishes.
+# https://stackoverflow.com/a/60413199
+MAKEFLAGS := --jobs=8
+MAKEFLAGS += --output-sync=target
+
 # This is the code that we want to run lint, etc.
 ALL_SRC := $(shell find . -name '*.go' \
 							-not -path './internal/tools/*' \
