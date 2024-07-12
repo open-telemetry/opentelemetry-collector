@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
@@ -31,10 +30,9 @@ type TelemetryBuilder struct {
 	ProcessorBatchBatchSendSizeBytes         metric.Int64Histogram
 	ProcessorBatchBatchSizeTriggerSend       metric.Int64Counter
 	ProcessorBatchMetadataCardinality        metric.Int64ObservableUpDownCounter
-	observeProcessorBatchMetadataCardinality func() int64
+	observeProcessorBatchMetadataCardinality func(context.Context, metric.Observer) error
 	ProcessorBatchTimeoutTriggerSend         metric.Int64Counter
 	level                                    configtelemetry.Level
-	attributeSet                             attribute.Set
 }
 
 // telemetryBuilderOption applies changes to default builder.
@@ -47,17 +45,13 @@ func WithLevel(lvl configtelemetry.Level) telemetryBuilderOption {
 	}
 }
 
-// WithAttributeSet applies a set of attributes for asynchronous instruments.
-func WithAttributeSet(set attribute.Set) telemetryBuilderOption {
-	return func(builder *TelemetryBuilder) {
-		builder.attributeSet = set
-	}
-}
-
 // WithProcessorBatchMetadataCardinalityCallback sets callback for observable ProcessorBatchMetadataCardinality metric.
-func WithProcessorBatchMetadataCardinalityCallback(cb func() int64) telemetryBuilderOption {
+func WithProcessorBatchMetadataCardinalityCallback(cb func() int64, opts ...metric.ObserveOption) telemetryBuilderOption {
 	return func(builder *TelemetryBuilder) {
-		builder.observeProcessorBatchMetadataCardinality = cb
+		builder.observeProcessorBatchMetadataCardinality = func(_ context.Context, o metric.Observer) error {
+			o.ObserveInt64(builder.ProcessorBatchMetadataCardinality, cb(), opts...)
+			return nil
+		}
 	}
 }
 
@@ -98,10 +92,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	_, err = builder.meter.RegisterCallback(func(_ context.Context, o metric.Observer) error {
-		o.ObserveInt64(builder.ProcessorBatchMetadataCardinality, builder.observeProcessorBatchMetadataCardinality(), metric.WithAttributeSet(builder.attributeSet))
-		return nil
-	}, builder.ProcessorBatchMetadataCardinality)
+	_, err = builder.meter.RegisterCallback(builder.observeProcessorBatchMetadataCardinality, builder.ProcessorBatchMetadataCardinality)
 	errs = errors.Join(errs, err)
 	builder.ProcessorBatchTimeoutTriggerSend, err = builder.meter.Int64Counter(
 		"processor_batch_timeout_trigger_send",

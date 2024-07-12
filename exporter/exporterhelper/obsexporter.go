@@ -49,9 +49,7 @@ func NewObsReport(cfg ObsReportSettings) (*ObsReport, error) {
 }
 
 func newExporter(cfg ObsReportSettings) (*ObsReport, error) {
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(cfg.ExporterCreateSettings.TelemetrySettings,
-		metadata.WithAttributeSet(attribute.NewSet(attribute.String(obsmetrics.ExporterKey, cfg.ExporterID.String()))),
-	)
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(cfg.ExporterCreateSettings.TelemetrySettings)
 	if err != nil {
 		return nil, err
 	}
