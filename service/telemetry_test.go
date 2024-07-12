@@ -329,22 +329,22 @@ func TestTelemetryInit(t *testing.T) {
 
 func createTestMetrics(t *testing.T, mp metric.MeterProvider) *view.View {
 	// Creates a OTel Go counter
-	counter, err := mp.Meter("collector_test").Int64Counter(otelPrefix+counterName, metric.WithUnit("ms"))
+	counter, err := mp.Meter("collector_test").Int64Counter(metricPrefix+otelPrefix+counterName, metric.WithUnit("ms"))
 	require.NoError(t, err)
 	counter.Add(context.Background(), 13)
 
-	grpcExampleCounter, err := mp.Meter(proctelemetry.GRPCInstrumentation).Int64Counter(grpcPrefix + counterName)
+	grpcExampleCounter, err := mp.Meter(proctelemetry.GRPCInstrumentation).Int64Counter(metricPrefix + grpcPrefix + counterName)
 	require.NoError(t, err)
 	grpcExampleCounter.Add(context.Background(), 11, metric.WithAttributes(proctelemetry.GRPCUnacceptableKeyValues...))
 
-	httpExampleCounter, err := mp.Meter(proctelemetry.HTTPInstrumentation).Int64Counter(httpPrefix + counterName)
+	httpExampleCounter, err := mp.Meter(proctelemetry.HTTPInstrumentation).Int64Counter(metricPrefix + httpPrefix + counterName)
 	require.NoError(t, err)
 	httpExampleCounter.Add(context.Background(), 10, metric.WithAttributes(proctelemetry.HTTPUnacceptableKeyValues...))
 
 	// Creates a OpenCensus measure
-	ocCounter := stats.Int64(ocPrefix+counterName, counterName, stats.UnitDimensionless)
+	ocCounter := stats.Int64(metricPrefix+ocPrefix+counterName, counterName, stats.UnitDimensionless)
 	v := &view.View{
-		Name:        ocPrefix + counterName,
+		Name:        metricPrefix + ocPrefix + counterName,
 		Description: ocCounter.Description(),
 		Measure:     ocCounter,
 		Aggregation: view.Sum(),
@@ -352,10 +352,10 @@ func createTestMetrics(t *testing.T, mp metric.MeterProvider) *view.View {
 	err = view.Register(v)
 	require.NoError(t, err)
 
-	stats.Record(context.Background(), stats.Int64(ocPrefix+counterName, counterName, stats.UnitDimensionless).M(13))
+	stats.Record(context.Background(), stats.Int64(metricPrefix+ocPrefix+counterName, counterName, stats.UnitDimensionless).M(13))
 
 	// Forces a flush for the view data.
-	_, _ = view.RetrieveData(ocPrefix + counterName)
+	_, _ = view.RetrieveData(metricPrefix + ocPrefix + counterName)
 
 	return v
 }
