@@ -228,27 +228,27 @@ func TestStrictTypeCasting(t *testing.T) {
 		{
 			value:       "\"0123\"",
 			targetField: TargetFieldString,
-			expected:    "0123",
+			expected:    "\"0123\"",
 		},
 		{
 			value:        "\"0123\"",
 			targetField:  TargetFieldInt,
-			unmarshalErr: "'field' expected type 'int', got unconvertible type 'string', value: '0123'",
+			unmarshalErr: "'field' expected type 'int', got unconvertible type 'string', value: '\"0123\"'",
 		},
 		{
 			value:       "\"0123\"",
 			targetField: TargetFieldInlineString,
-			expected:    "inline field with 0123 expansion",
+			expected:    "inline field with \"0123\" expansion",
 		},
 		{
 			value:       "!!str 0123",
 			targetField: TargetFieldString,
-			expected:    "0123",
+			expected:    "!!str 0123",
 		},
 		{
 			value:       "!!str 0123",
 			targetField: TargetFieldInlineString,
-			expected:    "inline field with 0123 expansion",
+			expected:    "inline field with !!str 0123 expansion",
 		},
 		{
 			value:        "t",

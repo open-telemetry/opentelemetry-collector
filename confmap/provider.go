@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 
+	"go.opentelemetry.io/collector/internal/featuregates"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 )
@@ -138,9 +139,14 @@ func NewRetrievedFromYAML(yamlBytes []byte, opts ...RetrievedOption) (*Retrieved
 		return nil, err
 	}
 
-	switch v := rawConf.(type) {
+	switch rawConf.(type) {
 	case string:
-		opts = append(opts, withStringRepresentation(v))
+		if featuregates.UseUnifiedEnvVarExpansionRules.IsEnabled() {
+			// If rawConf is a string, we override it with the raw yamlBytes.
+			// This is the original ${ENV} expansion behavior.
+			rawConf = string(yamlBytes)
+		}
+		opts = append(opts, withStringRepresentation(string(yamlBytes)))
 	case int, int32, int64, float32, float64, bool:
 		opts = append(opts, withStringRepresentation(string(yamlBytes)))
 	}

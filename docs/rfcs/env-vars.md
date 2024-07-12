@@ -216,7 +216,7 @@ loading a field with the braces syntax, `env` syntax.
 | `0123`       | integer    | 83                                       | 83                                             | 83                             | n/a                                   |
 | `0123`       | string     | 0123                                     | 83                                             | 0123                           | 0123                                  |
 | `0xdeadbeef` | string     | 0xdeadbeef                               | 3735928559                                     | 0xdeadbeef                     | 0xdeadbeef                            |
-| `"0123"`     | string     | "0123"                                   | 0123                                           | 0123                           | 0123                                  |
-| `!!str 0123` | string     | !!str 0123                               | 0123                                           | 0123                           | 0123                                  |
+| `"0123"`     | string     | "0123"                                   | 0123                                           | "0123"                         | "0123"                                |
+| `!!str 0123` | string     | !!str 0123                               | 0123                                           | !!str 0123                     | !!str 0123                            |
 | `t`          | boolean    | true                                     | true                                           | Error: mapping string to bool  | n/a                                   |
 | `23`         | boolean    | true                                     | true                                           | Error: mapping integer to bool | n/a                                   |
