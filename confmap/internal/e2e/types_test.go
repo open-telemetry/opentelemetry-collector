@@ -132,6 +132,14 @@ func TestTypeCasting(t *testing.T) {
 		},
 	}
 
+	previousValue := featuregates.StrictlyTypedInputGate.IsEnabled()
+	err := featuregate.GlobalRegistry().Set(featuregates.StrictlyTypedInputID, false)
+	require.NoError(t, err)
+	defer func() {
+		err := featuregate.GlobalRegistry().Set(featuregates.StrictlyTypedInputID, previousValue)
+		require.NoError(t, err)
+	}()
+
 	for _, tt := range values {
 		t.Run(tt.value+"/"+string(tt.targetField), func(t *testing.T) {
 			testFile := "types_expand.yaml"
