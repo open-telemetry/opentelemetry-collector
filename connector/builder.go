@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 )
 
-// Builder processor is a helper struct that given a set of Configs and Factories helps with creating processors.
+// Builder is a helper struct that given a set of Configs and Factories helps with creating connectors.
 type Builder struct {
 	cfgs      map[component.ID]component.Config
 	factories map[component.Type]Factory
