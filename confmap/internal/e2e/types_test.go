@@ -131,6 +131,16 @@ func TestTypeCasting(t *testing.T) {
 			expected:    "inline field with !!str 0123 expansion",
 		},
 		{
+			value:       "''",
+			targetField: TargetFieldString,
+			expected:    "",
+		},
+		{
+			value:       "\"\"",
+			targetField: TargetFieldInlineString,
+			expected:    "inline field with  expansion",
+		},
+		{
 			value:       "t",
 			targetField: TargetFieldBool,
 			expected:    true,
