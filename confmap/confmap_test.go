@@ -279,7 +279,7 @@ func TestUintUnmarshalerFailure(t *testing.T) {
 	err := conf.Unmarshal(cfg)
 
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), fmt.Sprintf("* error decoding 'uint_test': cannot convert negative value %v to an unsigned integer", testValue))
+	assert.Contains(t, err.Error(), fmt.Sprintf("1 error(s) decoding:\n\n* cannot parse 'uint_test', %d overflows uint", testValue))
 }
 
 func TestMapKeyStringToMapKeyTextUnmarshalerHookFuncDuplicateID(t *testing.T) {
