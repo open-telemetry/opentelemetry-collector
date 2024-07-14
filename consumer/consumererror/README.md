@@ -30,7 +30,7 @@ Errors can be created through one of the three constructors provided:
 - `consumererror.NewComponent` for metadata around the component that produced the error.
 
 Only retryable errors will be retried, all other errors are considered permanent
-and will not be retried.
+and should not be retried.
 
 Errors can be joined by passing them to a call to `errors.Join`.
 
