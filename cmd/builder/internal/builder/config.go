@@ -17,10 +17,10 @@ import (
 	"go.uber.org/zap"
 )
 
-const defaultOtelColVersion = "0.101.0"
+const defaultOtelColVersion = "0.104.0"
 
-// ErrInvalidGoMod indicates an invalid gomod
-var ErrInvalidGoMod = errors.New("invalid gomod specification for module")
+// ErrMissingGoMod indicates an empty gomod field
+var ErrMissingGoMod = errors.New("missing gomod specification for module")
 
 // Config holds the builder's configuration
 type Config struct {
@@ -43,7 +43,16 @@ type Config struct {
 	Replaces     []string     `mapstructure:"replaces"`
 	Excludes     []string     `mapstructure:"excludes"`
 
+	ConfResolver ConfResolver `mapstructure:"conf_resolver"`
+
 	downloadModules retry `mapstructure:"-"`
+}
+
+type ConfResolver struct {
+	// When set, will be used to set the CollectorSettings.ConfResolver.DefaultScheme value,
+	// which determines how the Collector interprets URIs that have no scheme, such as ${ENV}.
+	// See https://pkg.go.dev/go.opentelemetry.io/collector/confmap#ResolverSettings for more details.
+	DefaultURIScheme string `mapstructure:"default_uri_scheme"`
 }
 
 // Distribution holds the parameters for the final binary
@@ -106,14 +115,14 @@ func NewDefaultConfig() Config {
 func (c *Config) Validate() error {
 	var providersError error
 	if c.Providers != nil {
-		providersError = validateModules(*c.Providers)
+		providersError = validateModules("provider", *c.Providers)
 	}
 	return multierr.Combine(
-		validateModules(c.Extensions),
-		validateModules(c.Receivers),
-		validateModules(c.Exporters),
-		validateModules(c.Processors),
-		validateModules(c.Connectors),
+		validateModules("extension", c.Extensions),
+		validateModules("receiver", c.Receivers),
+		validateModules("exporter", c.Exporters),
+		validateModules("processor", c.Processors),
+		validateModules("connector", c.Connectors),
 		providersError,
 	)
 }
@@ -226,10 +235,10 @@ func (c *Config) ParseModules() error {
 	return nil
 }
 
-func validateModules(mods []Module) error {
-	for _, mod := range mods {
+func validateModules(name string, mods []Module) error {
+	for i, mod := range mods {
 		if mod.GoMod == "" {
-			return fmt.Errorf("module %q: %w", mod.GoMod, ErrInvalidGoMod)
+			return fmt.Errorf("%s module at index %v: %w", name, i, ErrMissingGoMod)
 		}
 	}
 	return nil

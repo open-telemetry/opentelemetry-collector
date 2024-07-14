@@ -17,6 +17,7 @@ import (
 	"github.com/knadh/koanf/v2"
 
 	encoder "go.opentelemetry.io/collector/confmap/internal/mapstructure"
+	"go.opentelemetry.io/collector/internal/featuregates"
 )
 
 const (
@@ -136,7 +137,7 @@ func (l *Conf) Sub(key string) (*Conf, error) {
 		return NewFromStringMap(v), nil
 	}
 
-	return nil, fmt.Errorf("unexpected sub-config value kind for key:%s value:%v kind:%v)", key, data, reflect.TypeOf(data).Kind())
+	return nil, fmt.Errorf("unexpected sub-config value kind for key:%s value:%v kind:%v", key, data, reflect.TypeOf(data).Kind())
 }
 
 // ToStringMap creates a map[string]any from a Parser.
@@ -156,7 +157,7 @@ func decodeConfig(m *Conf, result any, errorUnused bool, skipTopLevelUnmarshaler
 		ErrorUnused:      errorUnused,
 		Result:           result,
 		TagName:          "mapstructure",
-		WeaklyTypedInput: true,
+		WeaklyTypedInput: !featuregates.StrictlyTypedInputGate.IsEnabled(),
 		MatchName:        caseSensitiveMatchName,
 		DecodeHook: mapstructure.ComposeDecodeHookFunc(
 			expandNilStructPointersHookFunc(),
@@ -191,6 +192,7 @@ func decodeConfig(m *Conf, result any, errorUnused bool, skipTopLevelUnmarshaler
 func encoderConfig(rawVal any) *encoder.EncoderConfig {
 	return &encoder.EncoderConfig{
 		EncodeHook: mapstructure.ComposeDecodeHookFunc(
+			encoder.YamlMarshalerHookFunc(),
 			encoder.TextMarshalerHookFunc(),
 			marshalerHookFunc(rawVal),
 		),

@@ -40,13 +40,13 @@ type otlpReceiver struct {
 	obsrepGRPC *receiverhelper.ObsReport
 	obsrepHTTP *receiverhelper.ObsReport
 
-	settings *receiver.CreateSettings
+	settings *receiver.Settings
 }
 
 // newOtlpReceiver just creates the OpenTelemetry receiver services. It is the caller's
 // responsibility to invoke the respective Start*Reception methods as well
 // as the various Stop*Reception methods to end it.
-func newOtlpReceiver(cfg *Config, set *receiver.CreateSettings) (*otlpReceiver, error) {
+func newOtlpReceiver(cfg *Config, set *receiver.Settings) (*otlpReceiver, error) {
 	r := &otlpReceiver{
 		cfg:         cfg,
 		nextTraces:  nil,

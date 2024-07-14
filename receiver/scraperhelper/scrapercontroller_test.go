@@ -145,7 +145,7 @@ func TestScrapeController(t *testing.T) {
 				cfg = test.scraperControllerSettings
 			}
 
-			mr, err := NewScraperControllerReceiver(cfg, receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, sink, options...)
+			mr, err := NewScraperControllerReceiver(cfg, receiver.Settings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, sink, options...)
 			if test.expectedNewErr != "" {
 				assert.EqualError(t, err, test.expectedNewErr)
 				return
@@ -330,7 +330,7 @@ func TestSingleScrapePerInterval(t *testing.T) {
 
 	receiver, err := NewScraperControllerReceiver(
 		cfg,
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		new(consumertest.MetricsSink),
 		AddScraper(scp),
 		WithTickerChannel(tickerCh),
@@ -375,7 +375,7 @@ func TestScrapeControllerStartsOnInit(t *testing.T) {
 			CollectionInterval: time.Hour,
 			InitialDelay:       0,
 		},
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		new(consumertest.MetricsSink),
 		AddScraper(scp),
 	)
@@ -411,7 +411,7 @@ func TestScrapeControllerInitialDelay(t *testing.T) {
 
 	r, err := NewScraperControllerReceiver(
 		&cfg,
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		new(consumertest.MetricsSink),
 		AddScraper(scp),
 	)

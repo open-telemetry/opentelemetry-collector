@@ -32,6 +32,8 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/extension/auth"
 	"go.opentelemetry.io/collector/extension/auth/authtest"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/localhostgate"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
@@ -46,9 +48,10 @@ func TestNewDefaultKeepaliveClientConfig(t *testing.T) {
 
 func TestNewDefaultClientConfig(t *testing.T) {
 	expected := &ClientConfig{
-		TLSSetting: configtls.NewDefaultClientConfig(),
-		Keepalive:  NewDefaultKeepaliveClientConfig(),
-		Auth:       configauth.NewDefaultAuthentication(),
+		TLSSetting:   configtls.NewDefaultClientConfig(),
+		Keepalive:    NewDefaultKeepaliveClientConfig(),
+		Auth:         configauth.NewDefaultAuthentication(),
+		BalancerName: BalancerName(),
 	}
 
 	result := NewDefaultClientConfig()
@@ -121,7 +124,7 @@ func TestDefaultGrpcClientSettings(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	opts, err := gcs.toDialOptions(componenttest.NewNopHost(), tt.TelemetrySettings())
+	opts, err := gcs.toDialOptions(context.Background(), componenttest.NewNopHost(), tt.TelemetrySettings())
 	assert.NoError(t, err)
 	assert.Len(t, opts, 2)
 }
@@ -213,7 +216,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				ReadBufferSize:  1024,
 				WriteBufferSize: 1024,
 				WaitForReady:    true,
-				BalancerName:    "configgrpc_balancer_test",
+				BalancerName:    "round_robin",
 				Authority:       "pseudo-authority",
 				Auth:            &configauth.Authentication{AuthenticatorID: testAuthID},
 			},
@@ -226,7 +229,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			opts, err := test.settings.toDialOptions(test.host, tt.TelemetrySettings())
+			opts, err := test.settings.toDialOptions(context.Background(), test.host, tt.TelemetrySettings())
 			assert.NoError(t, err)
 			assert.Len(t, opts, 9)
 		})
@@ -431,12 +434,19 @@ func TestUseSecure(t *testing.T) {
 		TLSSetting:  configtls.ClientConfig{},
 		Keepalive:   nil,
 	}
-	dialOpts, err := gcs.toDialOptions(componenttest.NewNopHost(), tt.TelemetrySettings())
+	dialOpts, err := gcs.toDialOptions(context.Background(), componenttest.NewNopHost(), tt.TelemetrySettings())
 	assert.NoError(t, err)
 	assert.Len(t, dialOpts, 2)
 }
 
 func TestGRPCServerWarning(t *testing.T) {
+	prev := localhostgate.UseLocalHostAsDefaultHostfeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(localhostgate.UseLocalHostAsDefaultHostID, false))
+	defer func() {
+		// Restore previous value.
+		require.NoError(t, featuregate.GlobalRegistry().Set(localhostgate.UseLocalHostAsDefaultHostID, prev))
+	}()
+
 	tests := []struct {
 		name     string
 		settings ServerConfig

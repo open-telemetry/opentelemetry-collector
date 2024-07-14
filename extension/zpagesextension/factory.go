@@ -7,7 +7,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/zpagesextension/internal/metadata"
 )
@@ -23,13 +23,13 @@ func NewFactory() extension.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		TCPAddr: confignet.TCPAddrConfig{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: defaultEndpoint,
 		},
 	}
 }
 
 // createExtension creates the extension based on this config.
-func createExtension(_ context.Context, set extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
+func createExtension(_ context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
 	return newServer(cfg.(*Config), set.TelemetrySettings), nil
 }

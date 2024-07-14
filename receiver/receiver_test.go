@@ -24,11 +24,11 @@ func TestNewFactory(t *testing.T) {
 		func() component.Config { return &defaultCfg })
 	assert.EqualValues(t, testType, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
-	_, err := factory.CreateTracesReceiver(context.Background(), CreateSettings{}, &defaultCfg, consumertest.NewNop())
+	_, err := factory.CreateTracesReceiver(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
 	assert.Error(t, err)
-	_, err = factory.CreateMetricsReceiver(context.Background(), CreateSettings{}, &defaultCfg, consumertest.NewNop())
+	_, err = factory.CreateMetricsReceiver(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
 	assert.Error(t, err)
-	_, err = factory.CreateLogsReceiver(context.Background(), CreateSettings{}, &defaultCfg, consumertest.NewNop())
+	_, err = factory.CreateLogsReceiver(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
 	assert.Error(t, err)
 }
 
@@ -45,15 +45,15 @@ func TestNewFactoryWithOptions(t *testing.T) {
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
 	assert.Equal(t, component.StabilityLevelDeprecated, factory.TracesReceiverStability())
-	_, err := factory.CreateTracesReceiver(context.Background(), CreateSettings{}, &defaultCfg, nil)
+	_, err := factory.CreateTracesReceiver(context.Background(), Settings{}, &defaultCfg, nil)
 	assert.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelAlpha, factory.MetricsReceiverStability())
-	_, err = factory.CreateMetricsReceiver(context.Background(), CreateSettings{}, &defaultCfg, nil)
+	_, err = factory.CreateMetricsReceiver(context.Background(), Settings{}, &defaultCfg, nil)
 	assert.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelStable, factory.LogsReceiverStability())
-	_, err = factory.CreateLogsReceiver(context.Background(), CreateSettings{}, &defaultCfg, nil)
+	_, err = factory.CreateLogsReceiver(context.Background(), Settings{}, &defaultCfg, nil)
 	assert.NoError(t, err)
 }
 
@@ -162,7 +162,7 @@ func TestBuilder(t *testing.T) {
 			cfgs := map[component.ID]component.Config{tt.id: defaultCfg}
 			b := NewBuilder(cfgs, factories)
 
-			te, err := b.CreateTraces(context.Background(), createSettings(tt.id), tt.nextTraces)
+			te, err := b.CreateTraces(context.Background(), settings(tt.id), tt.nextTraces)
 			if tt.err != "" {
 				assert.EqualError(t, err, tt.err)
 				assert.Nil(t, te)
@@ -171,7 +171,7 @@ func TestBuilder(t *testing.T) {
 				assert.Equal(t, nopInstance, te)
 			}
 
-			me, err := b.CreateMetrics(context.Background(), createSettings(tt.id), tt.nextMetrics)
+			me, err := b.CreateMetrics(context.Background(), settings(tt.id), tt.nextMetrics)
 			if tt.err != "" {
 				assert.EqualError(t, err, tt.err)
 				assert.Nil(t, me)
@@ -180,7 +180,7 @@ func TestBuilder(t *testing.T) {
 				assert.Equal(t, nopInstance, me)
 			}
 
-			le, err := b.CreateLogs(context.Background(), createSettings(tt.id), tt.nextLogs)
+			le, err := b.CreateLogs(context.Background(), settings(tt.id), tt.nextLogs)
 			if tt.err != "" {
 				assert.EqualError(t, err, tt.err)
 				assert.Nil(t, le)
@@ -209,15 +209,15 @@ func TestBuilderMissingConfig(t *testing.T) {
 	bErr := NewBuilder(map[component.ID]component.Config{}, factories)
 	missingID := component.MustNewIDWithName("all", "missing")
 
-	te, err := bErr.CreateTraces(context.Background(), createSettings(missingID), consumertest.NewNop())
+	te, err := bErr.CreateTraces(context.Background(), settings(missingID), consumertest.NewNop())
 	assert.EqualError(t, err, "receiver \"all/missing\" is not configured")
 	assert.Nil(t, te)
 
-	me, err := bErr.CreateMetrics(context.Background(), createSettings(missingID), consumertest.NewNop())
+	me, err := bErr.CreateMetrics(context.Background(), settings(missingID), consumertest.NewNop())
 	assert.EqualError(t, err, "receiver \"all/missing\" is not configured")
 	assert.Nil(t, me)
 
-	le, err := bErr.CreateLogs(context.Background(), createSettings(missingID), consumertest.NewNop())
+	le, err := bErr.CreateLogs(context.Background(), settings(missingID), consumertest.NewNop())
 	assert.EqualError(t, err, "receiver \"all/missing\" is not configured")
 	assert.Nil(t, le)
 }
@@ -244,20 +244,20 @@ type nopReceiver struct {
 	consumertest.Consumer
 }
 
-func createTraces(context.Context, CreateSettings, component.Config, consumer.Traces) (Traces, error) {
+func createTraces(context.Context, Settings, component.Config, consumer.Traces) (Traces, error) {
 	return nopInstance, nil
 }
 
-func createMetrics(context.Context, CreateSettings, component.Config, consumer.Metrics) (Metrics, error) {
+func createMetrics(context.Context, Settings, component.Config, consumer.Metrics) (Metrics, error) {
 	return nopInstance, nil
 }
 
-func createLogs(context.Context, CreateSettings, component.Config, consumer.Logs) (Logs, error) {
+func createLogs(context.Context, Settings, component.Config, consumer.Logs) (Logs, error) {
 	return nopInstance, nil
 }
 
-func createSettings(id component.ID) CreateSettings {
-	return CreateSettings{
+func settings(id component.ID) Settings {
+	return Settings{
 		ID:                id,
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),

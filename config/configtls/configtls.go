@@ -86,11 +86,9 @@ type ClientConfig struct {
 
 	// These are config options specific to client connections.
 
-	// In gRPC when set to true, this is used to disable the client transport security.
-	// See https://godoc.org/google.golang.org/grpc#WithInsecure.
-	// In HTTP, this disables verifying the server's certificate chain and host name
-	// (InsecureSkipVerify in the tls Config). Please refer to
-	// https://godoc.org/crypto/tls#Config for more information.
+	// In gRPC and HTTP when set to true, this is used to disable the client transport security.
+	// See https://godoc.org/google.golang.org/grpc#WithInsecure for gRPC.
+	// Please refer to https://godoc.org/crypto/tls#Config for more information.
 	// (optional, default false)
 	Insecure bool `mapstructure:"insecure"`
 	// InsecureSkipVerify will enable TLS but not verify the certificate.
@@ -376,13 +374,6 @@ func (c Config) loadCert(caPath string) (*x509.CertPool, error) {
 	return certPool, nil
 }
 
-// LoadTLSConfigContext loads the TLS configuration.
-//
-// Deprecated: [v0.99.0] Use LoadTLSConfig instead.
-func (c ClientConfig) LoadTLSConfigContext(ctx context.Context) (*tls.Config, error) {
-	return c.LoadTLSConfig(ctx)
-}
-
 // LoadTLSConfig loads the TLS configuration.
 func (c ClientConfig) LoadTLSConfig(_ context.Context) (*tls.Config, error) {
 	if c.Insecure && !c.hasCA() {
@@ -396,13 +387,6 @@ func (c ClientConfig) LoadTLSConfig(_ context.Context) (*tls.Config, error) {
 	tlsCfg.ServerName = c.ServerName
 	tlsCfg.InsecureSkipVerify = c.InsecureSkipVerify
 	return tlsCfg, nil
-}
-
-// LoadTLSConfigContext loads the TLS configuration.
-//
-// Deprecated: [v0.99.0] Use LoadTLSConfig instead.
-func (c ServerConfig) LoadTLSConfigContext(ctx context.Context) (*tls.Config, error) {
-	return c.LoadTLSConfig(ctx)
 }
 
 // LoadTLSConfig loads the TLS configuration.

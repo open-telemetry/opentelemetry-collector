@@ -4,6 +4,7 @@
 package configauth
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -48,7 +49,7 @@ func TestGetServer(t *testing.T) {
 				mockID: tC.authenticator,
 			}
 
-			authenticator, err := cfg.GetServerAuthenticator(ext)
+			authenticator, err := cfg.GetServerAuthenticator(context.Background(), ext)
 
 			// verify
 			if tC.expected != nil {
@@ -67,7 +68,7 @@ func TestGetServerFails(t *testing.T) {
 		AuthenticatorID: component.MustNewID("does_not_exist"),
 	}
 
-	authenticator, err := cfg.GetServerAuthenticator(map[component.ID]component.Component{})
+	authenticator, err := cfg.GetServerAuthenticator(context.Background(), map[component.ID]component.Component{})
 	assert.ErrorIs(t, err, errAuthenticatorNotFound)
 	assert.Nil(t, authenticator)
 }
@@ -99,7 +100,7 @@ func TestGetClient(t *testing.T) {
 				mockID: tC.authenticator,
 			}
 
-			authenticator, err := cfg.GetClientAuthenticator(ext)
+			authenticator, err := cfg.GetClientAuthenticator(context.Background(), ext)
 
 			// verify
 			if tC.expected != nil {
@@ -117,7 +118,7 @@ func TestGetClientFails(t *testing.T) {
 	cfg := &Authentication{
 		AuthenticatorID: component.MustNewID("does_not_exist"),
 	}
-	authenticator, err := cfg.GetClientAuthenticator(map[component.ID]component.Component{})
+	authenticator, err := cfg.GetClientAuthenticator(context.Background(), map[component.ID]component.Component{})
 	assert.ErrorIs(t, err, errAuthenticatorNotFound)
 	assert.Nil(t, authenticator)
 }

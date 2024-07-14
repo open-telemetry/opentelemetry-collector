@@ -10,7 +10,6 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -20,29 +19,39 @@ import (
 )
 
 // ObsReport is a helper to add observability to an exporter.
+//
+// Deprecated: [v0.105.0] Not expected to be used directly.
+// If needed, report your use case in https://github.com/open-telemetry/opentelemetry-collector/issues/10592.
 type ObsReport struct {
 	level          configtelemetry.Level
 	spanNamePrefix string
 	tracer         trace.Tracer
-	logger         *zap.Logger
 
 	otelAttrs        []attribute.KeyValue
 	telemetryBuilder *metadata.TelemetryBuilder
 }
 
 // ObsReportSettings are settings for creating an ObsReport.
+//
+// Deprecated: [v0.105.0] Not expected to be used directly.
+// If needed, report your use case in https://github.com/open-telemetry/opentelemetry-collector/issues/10592.
 type ObsReportSettings struct {
 	ExporterID             component.ID
-	ExporterCreateSettings exporter.CreateSettings
+	ExporterCreateSettings exporter.Settings
 }
 
 // NewObsReport creates a new Exporter.
+//
+// Deprecated: [v0.105.0] Not expected to be used directly.
+// If needed, report your use case in https://github.com/open-telemetry/opentelemetry-collector/issues/10592.
 func NewObsReport(cfg ObsReportSettings) (*ObsReport, error) {
 	return newExporter(cfg)
 }
 
 func newExporter(cfg ObsReportSettings) (*ObsReport, error) {
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(cfg.ExporterCreateSettings.TelemetrySettings)
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(cfg.ExporterCreateSettings.TelemetrySettings,
+		metadata.WithAttributeSet(attribute.NewSet(attribute.String(obsmetrics.ExporterKey, cfg.ExporterID.String()))),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +60,6 @@ func newExporter(cfg ObsReportSettings) (*ObsReport, error) {
 		level:          cfg.ExporterCreateSettings.TelemetrySettings.MetricsLevel,
 		spanNamePrefix: obsmetrics.ExporterPrefix + cfg.ExporterID.String(),
 		tracer:         cfg.ExporterCreateSettings.TracerProvider.Tracer(cfg.ExporterID.String()),
-		logger:         cfg.ExporterCreateSettings.Logger,
 
 		otelAttrs: []attribute.KeyValue{
 			attribute.String(obsmetrics.ExporterKey, cfg.ExporterID.String()),
@@ -63,43 +71,61 @@ func newExporter(cfg ObsReportSettings) (*ObsReport, error) {
 // StartTracesOp is called at the start of an Export operation.
 // The returned context should be used in other calls to the Exporter functions
 // dealing with the same export operation.
+//
+// Deprecated: [v0.105.0] Not expected to be used directly.
+// If needed, report your use case in https://github.com/open-telemetry/opentelemetry-collector/issues/10592.
 func (or *ObsReport) StartTracesOp(ctx context.Context) context.Context {
 	return or.startOp(ctx, obsmetrics.ExportTraceDataOperationSuffix)
 }
 
 // EndTracesOp completes the export operation that was started with StartTracesOp.
+//
+// Deprecated: [v0.105.0] Not expected to be used directly.
+// If needed, report your use case in https://github.com/open-telemetry/opentelemetry-collector/issues/10592.
 func (or *ObsReport) EndTracesOp(ctx context.Context, numSpans int, err error) {
 	numSent, numFailedToSend := toNumItems(numSpans, err)
-	or.recordMetrics(noCancellationContext{Context: ctx}, component.DataTypeTraces, numSent, numFailedToSend)
+	or.recordMetrics(context.WithoutCancel(ctx), component.DataTypeTraces, numSent, numFailedToSend)
 	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentSpansKey, obsmetrics.FailedToSendSpansKey)
 }
 
 // StartMetricsOp is called at the start of an Export operation.
 // The returned context should be used in other calls to the Exporter functions
 // dealing with the same export operation.
+//
+// Deprecated: [v0.105.0] Not expected to be used directly.
+// If needed, report your use case in https://github.com/open-telemetry/opentelemetry-collector/issues/10592.
 func (or *ObsReport) StartMetricsOp(ctx context.Context) context.Context {
 	return or.startOp(ctx, obsmetrics.ExportMetricsOperationSuffix)
 }
 
 // EndMetricsOp completes the export operation that was started with
 // StartMetricsOp.
+//
+// Deprecated: [v0.105.0] Not expected to be used directly.
+// If needed, report your use case in https://github.com/open-telemetry/opentelemetry-collector/issues/10592.
 func (or *ObsReport) EndMetricsOp(ctx context.Context, numMetricPoints int, err error) {
 	numSent, numFailedToSend := toNumItems(numMetricPoints, err)
-	or.recordMetrics(noCancellationContext{Context: ctx}, component.DataTypeMetrics, numSent, numFailedToSend)
+	or.recordMetrics(context.WithoutCancel(ctx), component.DataTypeMetrics, numSent, numFailedToSend)
 	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentMetricPointsKey, obsmetrics.FailedToSendMetricPointsKey)
 }
 
 // StartLogsOp is called at the start of an Export operation.
 // The returned context should be used in other calls to the Exporter functions
 // dealing with the same export operation.
+//
+// Deprecated: [v0.105.0] Not expected to be used directly.
+// If needed, report your use case in https://github.com/open-telemetry/opentelemetry-collector/issues/10592.
 func (or *ObsReport) StartLogsOp(ctx context.Context) context.Context {
 	return or.startOp(ctx, obsmetrics.ExportLogsOperationSuffix)
 }
 
 // EndLogsOp completes the export operation that was started with StartLogsOp.
+//
+// Deprecated: [v0.105.0] Not expected to be used directly.
+// If needed, report your use case in https://github.com/open-telemetry/opentelemetry-collector/issues/10592.
 func (or *ObsReport) EndLogsOp(ctx context.Context, numLogRecords int, err error) {
 	numSent, numFailedToSend := toNumItems(numLogRecords, err)
-	or.recordMetrics(noCancellationContext{Context: ctx}, component.DataTypeLogs, numSent, numFailedToSend)
+	or.recordMetrics(context.WithoutCancel(ctx), component.DataTypeLogs, numSent, numFailedToSend)
 	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentLogRecordsKey, obsmetrics.FailedToSendLogRecordsKey)
 }
 

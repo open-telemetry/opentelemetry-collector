@@ -11,8 +11,9 @@ Note that mutual TLS (mTLS) is also supported.
 By default, TLS is enabled:
 
 - `insecure` (default = false): whether to enable client transport security for
-  the exporter's gRPC connection. See
-  [grpc.WithInsecure()](https://godoc.org/google.golang.org/grpc#WithInsecure).
+  the exporter's HTTPs or gRPC connection. See
+  [grpc.WithInsecure()](https://godoc.org/google.golang.org/grpc#WithInsecure)
+  for gRPC.
 
 As a result, the following parameters are also required:
 
@@ -122,6 +123,7 @@ Beyond TLS configuration, the following setting can optionally be configured
   client certificate. (optional) This sets the ClientCAs and ClientAuth to
   RequireAndVerifyClientCert in the TLSConfig. Please refer to
   https://godoc.org/crypto/tls#Config for more information.
+- `client_ca_file_reload` (default = false): Reload the ClientCAs file when it is modified.
 
 Example:
 

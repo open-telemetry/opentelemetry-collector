@@ -105,8 +105,8 @@ func TestJsonHttp(t *testing.T) {
 			name:               "Permanent GRPCError",
 			encoding:           "",
 			contentType:        "application/json",
-			err:                status.New(codes.InvalidArgument, "").Err(),
-			expectedStatus:     &spb.Status{Code: int32(codes.InvalidArgument), Message: ""},
+			err:                status.New(codes.Internal, "").Err(),
+			expectedStatus:     &spb.Status{Code: int32(codes.Internal), Message: ""},
 			expectedStatusCode: http.StatusInternalServerError,
 		},
 		{
@@ -362,7 +362,7 @@ func TestProtoHttp(t *testing.T) {
 			encoding:           "",
 			err:                status.New(codes.InvalidArgument, "").Err(),
 			expectedStatus:     &spb.Status{Code: int32(codes.InvalidArgument), Message: ""},
-			expectedStatusCode: http.StatusInternalServerError,
+			expectedStatusCode: http.StatusBadRequest,
 		},
 		{
 			name:               "Retryable GRPCError",
@@ -702,7 +702,7 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 
 	r, err := NewFactory().CreateTracesReceiver(
 		context.Background(),
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		cfg,
 		consumertest.NewNop())
 	require.NoError(t, err)
@@ -727,7 +727,8 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 	require.NoError(t, err)
 
 	td := testdata.GenerateTraces(50000)
-	require.Error(t, exportTraces(cc, td))
+	err = exportTraces(cc, td)
+	require.Error(t, err)
 	assert.NoError(t, cc.Close())
 	require.NoError(t, recv.Shutdown(context.Background()))
 
@@ -770,7 +771,7 @@ func TestHTTPInvalidTLSCredentials(t *testing.T) {
 	// TLS is resolved during Start for HTTP.
 	r, err := NewFactory().CreateTracesReceiver(
 		context.Background(),
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		cfg,
 		consumertest.NewNop())
 	require.NoError(t, err)
@@ -836,7 +837,7 @@ func newHTTPReceiver(t *testing.T, settings component.TelemetrySettings, endpoin
 }
 
 func newReceiver(t *testing.T, settings component.TelemetrySettings, cfg *Config, id component.ID, c consumertest.Consumer) component.Component {
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	set.TelemetrySettings = settings
 	set.ID = id
 	r, err := newOtlpReceiver(cfg, &set)
@@ -998,7 +999,7 @@ func TestShutdown(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = endpointGrpc
 	cfg.HTTP.Value().Endpoint = endpointHTTP
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	set.ID = otlpReceiverID
 	r, err := NewFactory().CreateTracesReceiver(
 		context.Background(),

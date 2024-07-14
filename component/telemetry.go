@@ -15,8 +15,8 @@ import (
 // TelemetrySettings provides components with APIs to report telemetry.
 //
 // Note: there is a service version of this struct, servicetelemetry.TelemetrySettings, that mirrors
-// this struct with the exception of ReportStatus. When adding or removing anything from
-// this struct consider whether or not the same should be done for the service version.
+// this struct except ReportStatus. When adding or removing anything from
+// this struct consider whether the same should be done for the service version.
 type TelemetrySettings struct {
 	// Logger that the factory can use during creation and can pass to the created
 	// component to be used later as well.
@@ -37,6 +37,7 @@ type TelemetrySettings struct {
 
 	// ReportStatus allows a component to report runtime changes in status. The service
 	// will automatically report status for a component during startup and shutdown. Components can
-	// use this method to report status after start and before shutdown.
+	// use this method to report status after start and before shutdown. For more details about
+	// component status reporting see: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-status.md
 	ReportStatus func(*StatusEvent)
 }

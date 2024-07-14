@@ -229,7 +229,7 @@ func TestQueuedRetry_RetryOnError(t *testing.T) {
 func TestQueueRetryWithNoQueue(t *testing.T) {
 	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.MaxElapsedTime = time.Nanosecond // fail fast
-	be, err := newBaseExporter(exportertest.NewNopCreateSettings(), component.DataTypeLogs, newObservabilityConsumerSender, WithRetry(rCfg))
+	be, err := newBaseExporter(exportertest.NewNopSettings(), component.DataTypeLogs, newObservabilityConsumerSender, WithRetry(rCfg))
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	ocs := be.obsrepSender.(*observabilityConsumerSender)
@@ -247,7 +247,7 @@ func TestQueueRetryWithNoQueue(t *testing.T) {
 func TestQueueRetryWithDisabledRetires(t *testing.T) {
 	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.Enabled = false
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	logger, observed := observer.New(zap.ErrorLevel)
 	set.Logger = zap.New(logger)
 	be, err := newBaseExporter(set, component.DataTypeLogs, newObservabilityConsumerSender, WithRetry(rCfg))

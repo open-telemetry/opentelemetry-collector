@@ -6,6 +6,8 @@ package internal // import "go.opentelemetry.io/collector/service/telemetry/inte
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/metric"
+	metricnoop "go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
 	tracenoop "go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
@@ -13,8 +15,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-// CreateSettings holds configuration for building Telemetry.
-type CreateSettings struct {
+// Settings holds configuration for building Telemetry.
+type Settings struct {
 	BuildInfo         component.BuildInfo
 	AsyncErrorChannel chan error
 	ZapOptions        []zap.Option
@@ -29,12 +31,13 @@ type Factory interface {
 	CreateDefaultConfig() component.Config
 
 	// CreateLogger creates a logger.
-	CreateLogger(ctx context.Context, set CreateSettings, cfg component.Config) (*zap.Logger, error)
+	CreateLogger(ctx context.Context, set Settings, cfg component.Config) (*zap.Logger, error)
 
 	// CreateTracerProvider creates a TracerProvider.
-	CreateTracerProvider(ctx context.Context, set CreateSettings, cfg component.Config) (trace.TracerProvider, error)
+	CreateTracerProvider(ctx context.Context, set Settings, cfg component.Config) (trace.TracerProvider, error)
 
-	// TODO: Add CreateMeterProvider.
+	// CreateMeterProvider creates a MeterProvider.
+	CreateMeterProvider(ctx context.Context, set Settings, cfg component.Config) (metric.MeterProvider, error)
 
 	// unexportedFactoryFunc is used to prevent external implementations of Factory.
 	unexportedFactoryFunc()
@@ -62,6 +65,7 @@ type factory struct {
 	createDefaultConfig component.CreateDefaultConfigFunc
 	CreateLoggerFunc
 	CreateTracerProviderFunc
+	CreateMeterProviderFunc
 }
 
 func (f *factory) CreateDefaultConfig() component.Config {
@@ -69,7 +73,7 @@ func (f *factory) CreateDefaultConfig() component.Config {
 }
 
 // CreateLoggerFunc is the equivalent of Factory.CreateLogger.
-type CreateLoggerFunc func(context.Context, CreateSettings, component.Config) (*zap.Logger, error)
+type CreateLoggerFunc func(context.Context, Settings, component.Config) (*zap.Logger, error)
 
 // WithLogger overrides the default no-op logger.
 func WithLogger(createLogger CreateLoggerFunc) FactoryOption {
@@ -78,7 +82,7 @@ func WithLogger(createLogger CreateLoggerFunc) FactoryOption {
 	})
 }
 
-func (f *factory) CreateLogger(ctx context.Context, set CreateSettings, cfg component.Config) (*zap.Logger, error) {
+func (f *factory) CreateLogger(ctx context.Context, set Settings, cfg component.Config) (*zap.Logger, error) {
 	if f.CreateLoggerFunc == nil {
 		return zap.NewNop(), nil
 	}
@@ -86,7 +90,7 @@ func (f *factory) CreateLogger(ctx context.Context, set CreateSettings, cfg comp
 }
 
 // CreateTracerProviderFunc is the equivalent of Factory.CreateTracerProvider.
-type CreateTracerProviderFunc func(context.Context, CreateSettings, component.Config) (trace.TracerProvider, error)
+type CreateTracerProviderFunc func(context.Context, Settings, component.Config) (trace.TracerProvider, error)
 
 // WithTracerProvider overrides the default no-op tracer provider.
 func WithTracerProvider(createTracerProvider CreateTracerProviderFunc) FactoryOption {
@@ -95,11 +99,28 @@ func WithTracerProvider(createTracerProvider CreateTracerProviderFunc) FactoryOp
 	})
 }
 
-func (f *factory) CreateTracerProvider(ctx context.Context, set CreateSettings, cfg component.Config) (trace.TracerProvider, error) {
+func (f *factory) CreateTracerProvider(ctx context.Context, set Settings, cfg component.Config) (trace.TracerProvider, error) {
 	if f.CreateTracerProviderFunc == nil {
 		return tracenoop.NewTracerProvider(), nil
 	}
 	return f.CreateTracerProviderFunc(ctx, set, cfg)
+}
+
+// CreateMeterProviderFunc is the equivalent of Factory.CreateMeterProvider.
+type CreateMeterProviderFunc func(context.Context, Settings, component.Config) (metric.MeterProvider, error)
+
+// WithMeterProvider overrides the default no-op meter provider.
+func WithMeterProvider(createMeterProvider CreateMeterProviderFunc) FactoryOption {
+	return factoryOptionFunc(func(o *factory) {
+		o.CreateMeterProviderFunc = createMeterProvider
+	})
+}
+
+func (f *factory) CreateMeterProvider(ctx context.Context, set Settings, cfg component.Config) (metric.MeterProvider, error) {
+	if f.CreateMeterProviderFunc == nil {
+		return metricnoop.NewMeterProvider(), nil
+	}
+	return f.CreateMeterProviderFunc(ctx, set, cfg)
 }
 
 func (f *factory) unexportedFactoryFunc() {}

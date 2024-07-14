@@ -110,7 +110,7 @@ metrics:
   optional.metric:
     enabled: false
     description: "[DEPRECATED] Gauge double metric disabled by default."
-    unit: 1
+    unit: "1"
     gauge:
       value_type: double
     attributes: [string_attr, boolean_attr]
@@ -155,7 +155,7 @@ telemetry:
     batch_size_trigger_send:
       enabled: true
       description: Number of times the batch was sent due to a size trigger
-      unit: 1
+      unit: "1"
       sum:
         value_type: int
         monotonic: true
@@ -174,3 +174,12 @@ telemetry:
         async: true
         value_type: int
         monotonic: true
+    queue_length:
+      enabled: true
+      description: This metric is optional and therefore not initialized in NewTelemetryBuilder.
+      extended_documentation: For example this metric only exists if feature A is enabled.
+      unit: "1"
+      optional: true
+      gauge:
+        async: true
+        value_type: int

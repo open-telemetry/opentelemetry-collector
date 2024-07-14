@@ -11,6 +11,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/http/cookiejar"
 	"net/url"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
 	"golang.org/x/net/http2"
+	"golang.org/x/net/publicsuffix"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
@@ -30,6 +32,8 @@ import (
 )
 
 const headerContentEncoding = "Content-Encoding"
+const defaultMaxRequestBodySize = 20 * 1024 * 1024 // 20MiB
+var defaultCompressionAlgorithms = []string{"", "gzip", "zstd", "zlib", "snappy", "deflate"}
 
 // ClientConfig defines settings for creating an HTTP client.
 type ClientConfig struct {
@@ -57,7 +61,10 @@ type ClientConfig struct {
 	Headers map[string]configopaque.String `mapstructure:"headers"`
 
 	// Custom Round Tripper to allow for individual components to intercept HTTP requests
-	CustomRoundTripper func(next http.RoundTripper) (http.RoundTripper, error)
+	//
+	// Deprecated: [v0.103.0] Set (*http.Client).Transport on the *http.Client returned from ToClient
+	// to configure this.
+	CustomRoundTripper func(next http.RoundTripper) (http.RoundTripper, error) `mapstructure:"-"`
 
 	// Auth configuration for outgoing HTTP calls.
 	Auth *configauth.Authentication `mapstructure:"auth"`
@@ -99,6 +106,14 @@ type ClientConfig struct {
 	// HTTP2PingTimeout if there's no response to the ping within the configured value, the connection will be closed.
 	// If not set or set to 0, it defaults to 15s.
 	HTTP2PingTimeout time.Duration `mapstructure:"http2_ping_timeout"`
+	// Cookies configures the cookie management of the HTTP client.
+	Cookies *CookiesConfig `mapstructure:"cookies"`
+}
+
+// CookiesConfig defines the configuration of the HTTP client regarding cookies served by the server.
+type CookiesConfig struct {
+	// Enabled if true, cookies from HTTP responses will be reused in further HTTP requests with the same server.
+	Enabled bool `mapstructure:"enabled"`
 }
 
 // NewDefaultClientConfig returns ClientConfig type object with
@@ -180,7 +195,7 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 			return nil, errors.New("extensions configuration not found")
 		}
 
-		httpCustomAuthRoundTripper, aerr := hcs.Auth.GetClientAuthenticator(ext)
+		httpCustomAuthRoundTripper, aerr := hcs.Auth.GetClientAuthenticator(ctx, ext)
 		if aerr != nil {
 			return nil, aerr
 		}
@@ -227,9 +242,18 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 		}
 	}
 
+	var jar http.CookieJar
+	if hcs.Cookies != nil && hcs.Cookies.Enabled {
+		jar, err = cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &http.Client{
 		Transport: clientTransport,
 		Timeout:   hcs.Timeout,
+		Jar:       jar,
 	}, nil
 }
 
@@ -269,7 +293,7 @@ type ServerConfig struct {
 	// Auth for this receiver
 	Auth *configauth.Authentication `mapstructure:"auth"`
 
-	// MaxRequestBodySize sets the maximum request body size in bytes
+	// MaxRequestBodySize sets the maximum request body size in bytes. Default: 20MiB.
 	MaxRequestBodySize int64 `mapstructure:"max_request_body_size"`
 
 	// IncludeMetadata propagates the client metadata from the incoming requests to the downstream consumers
@@ -279,6 +303,9 @@ type ServerConfig struct {
 	// Additional headers attached to each HTTP response sent to the client.
 	// Header values are opaque since they may be sensitive.
 	ResponseHeaders map[string]configopaque.String `mapstructure:"response_headers"`
+
+	// CompressionAlgorithms configures the list of compression algorithms the server can accept. Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate"]
+	CompressionAlgorithms []string `mapstructure:"compression_algorithms"`
 }
 
 // ToListener creates a net.Listener.
@@ -340,14 +367,22 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 		o(serverOpts)
 	}
 
-	handler = httpContentDecompressor(handler, serverOpts.errHandler, serverOpts.decoders)
+	if hss.MaxRequestBodySize <= 0 {
+		hss.MaxRequestBodySize = defaultMaxRequestBodySize
+	}
+
+	if hss.CompressionAlgorithms == nil {
+		hss.CompressionAlgorithms = defaultCompressionAlgorithms
+	}
+
+	handler = httpContentDecompressor(handler, hss.MaxRequestBodySize, serverOpts.errHandler, hss.CompressionAlgorithms, serverOpts.decoders)
 
 	if hss.MaxRequestBodySize > 0 {
 		handler = maxRequestBodySizeInterceptor(handler, hss.MaxRequestBodySize)
 	}
 
 	if hss.Auth != nil {
-		server, err := hss.Auth.GetServerAuthenticator(host.GetExtensions())
+		server, err := hss.Auth.GetServerAuthenticator(context.Background(), host.GetExtensions())
 		if err != nil {
 			return nil, err
 		}

@@ -3,8 +3,11 @@ name: Generate Semantic Conventions PR
 on:
   schedule:
     # Daily at 01:30 (UTC)
-    - cron: '30 1 * * *'
+    - cron: "30 1 * * *"
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   check-versions:
@@ -14,7 +17,7 @@ jobs:
       already-added: ${{ steps.check-versions.outputs.already-added }}
       already-opened: ${{ steps.check-versions.outputs.already-opened }}
     steps:
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
       - id: check-versions
         name: Check versions
@@ -47,7 +50,7 @@ jobs:
 
   update-semantic-conventions:
     permissions:
-      contents: write  # for Git to git push
+      contents: write # for Git to git push
     runs-on: ubuntu-latest
     if: |
       needs.check-versions.outputs.already-added != 'true' &&
@@ -55,9 +58,9 @@ jobs:
     needs:
       - check-versions
     steps:
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
       - name: Checkout semantic-convention
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           repository: open-telemetry/semantic-conventions
           path: tmp-semantic-conventions
@@ -94,7 +97,7 @@ jobs:
                              --base main)
 
           pull_request_number=${url//*\//}
-          
+
           # see the template for change log entry file at blob/main/.chloggen/TEMPLATE.yaml
           cat > .chloggen/semconv-$VERSION.yaml << EOF
           change_type: enhancement
