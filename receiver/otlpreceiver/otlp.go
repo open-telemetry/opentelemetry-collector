@@ -118,40 +118,40 @@ func (r *otlpReceiver) startGRPCServer(host component.Host) error {
 
 func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host) error {
 	// If HTTP is not enabled, nothing to start.
-	if !r.cfg.HTTP.HasValue() {
+	if r.cfg.HTTP == nil {
 		return nil
 	}
 
 	httpMux := http.NewServeMux()
 	if r.nextTraces != nil {
 		httpTracesReceiver := trace.New(r.nextTraces, r.obsrepHTTP)
-		httpMux.HandleFunc(r.cfg.HTTP.Value().TracesURLPath, func(resp http.ResponseWriter, req *http.Request) {
+		httpMux.HandleFunc(r.cfg.HTTP.TracesURLPath, func(resp http.ResponseWriter, req *http.Request) {
 			handleTraces(resp, req, httpTracesReceiver)
 		})
 	}
 
 	if r.nextMetrics != nil {
 		httpMetricsReceiver := metrics.New(r.nextMetrics, r.obsrepHTTP)
-		httpMux.HandleFunc(r.cfg.HTTP.Value().MetricsURLPath, func(resp http.ResponseWriter, req *http.Request) {
+		httpMux.HandleFunc(r.cfg.HTTP.MetricsURLPath, func(resp http.ResponseWriter, req *http.Request) {
 			handleMetrics(resp, req, httpMetricsReceiver)
 		})
 	}
 
 	if r.nextLogs != nil {
 		httpLogsReceiver := logs.New(r.nextLogs, r.obsrepHTTP)
-		httpMux.HandleFunc(r.cfg.HTTP.Value().LogsURLPath, func(resp http.ResponseWriter, req *http.Request) {
+		httpMux.HandleFunc(r.cfg.HTTP.LogsURLPath, func(resp http.ResponseWriter, req *http.Request) {
 			handleLogs(resp, req, httpLogsReceiver)
 		})
 	}
 
 	var err error
-	if r.serverHTTP, err = r.cfg.HTTP.Value().ToServer(ctx, host, r.settings.TelemetrySettings, httpMux, confighttp.WithErrorHandler(errorHandler)); err != nil {
+	if r.serverHTTP, err = r.cfg.HTTP.ToServer(ctx, host, r.settings.TelemetrySettings, httpMux, confighttp.WithErrorHandler(errorHandler)); err != nil {
 		return err
 	}
 
-	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", r.cfg.HTTP.Value().ServerConfig.Endpoint))
+	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", r.cfg.HTTP.ServerConfig.Endpoint))
 	var hln net.Listener
-	if hln, err = r.cfg.HTTP.Value().ServerConfig.ToListener(ctx); err != nil {
+	if hln, err = r.cfg.HTTP.ServerConfig.ToListener(ctx); err != nil {
 		return err
 	}
 

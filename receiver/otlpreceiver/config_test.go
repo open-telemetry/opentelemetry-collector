@@ -37,7 +37,7 @@ func TestUnmarshalConfigOnlyGRPC(t *testing.T) {
 	assert.NoError(t, cm.Unmarshal(&cfg))
 
 	defaultOnlyGRPC := factory.CreateDefaultConfig().(*Config)
-	defaultOnlyGRPC.HTTP = confmap.None[*HTTPConfig]()
+	defaultOnlyGRPC.HTTP = nil
 	assert.Equal(t, defaultOnlyGRPC, cfg)
 }
 
@@ -115,7 +115,7 @@ func TestUnmarshalConfig(t *testing.T) {
 						},
 					},
 				},
-				HTTP: confmap.Some(&HTTPConfig{
+				HTTP: &HTTPConfig{
 					ServerConfig: &confighttp.ServerConfig{
 						Endpoint: "localhost:4318",
 						TLSSetting: &configtls.ServerConfig{
@@ -132,7 +132,7 @@ func TestUnmarshalConfig(t *testing.T) {
 					TracesURLPath:  "/traces",
 					MetricsURLPath: "/v2/metrics",
 					LogsURLPath:    "/log/ingest",
-				}),
+				},
 			},
 		}, cfg)
 
@@ -154,14 +154,14 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 					},
 					ReadBufferSize: 512 * 1024,
 				},
-				HTTP: confmap.Some(&HTTPConfig{
+				HTTP: &HTTPConfig{
 					ServerConfig: &confighttp.ServerConfig{
 						Endpoint: "/tmp/http_otlp.sock",
 					},
 					TracesURLPath:  defaultTracesURLPath,
 					MetricsURLPath: defaultMetricsURLPath,
 					LogsURLPath:    defaultLogsURLPath,
-				}),
+				},
 			},
 		}, cfg)
 }
