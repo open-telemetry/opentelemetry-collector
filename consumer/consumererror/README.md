@@ -29,7 +29,7 @@ Errors can be created through one of the three constructors provided:
 - `consumererror.NewGRPC` for errors resulting from a gRPC call with an error status code.
 - `consumererror.NewComponent` for metadata around the component that produced the error.
 
-Only retryable errors will be retried, all other errors are considered permanent
+Only retryable errors should be retried, all other errors are considered permanent
 and should not be retried.
 
 Errors can be joined by passing them to a call to `errors.Join`.
