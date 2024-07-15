@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/internal/envvar"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/featuregates"
+	"go.opentelemetry.io/collector/internal/globalgates"
 )
 
 func TestNewExpandConverter(t *testing.T) {
@@ -48,6 +48,11 @@ func TestNewExpandConverter(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
+			require.NoError(t, featuregate.GlobalRegistry().Set(globalgates.UseUnifiedEnvVarExpansionRules.ID(), false))
+			t.Cleanup(func() {
+				require.NoError(t, featuregate.GlobalRegistry().Set(globalgates.UseUnifiedEnvVarExpansionRules.ID(), true))
+			})
+
 			conf, err := confmaptest.LoadConf(filepath.Join("testdata", test.name))
 			require.NoError(t, err, "Unable to get config")
 
@@ -59,9 +64,9 @@ func TestNewExpandConverter(t *testing.T) {
 }
 
 func TestNewExpandConverter_UseUnifiedEnvVarExpansionRules(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.UseUnifiedEnvVarExpansionRules.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(globalgates.UseUnifiedEnvVarExpansionRules.ID(), true))
 	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.UseUnifiedEnvVarExpansionRules.ID(), false))
+		require.NoError(t, featuregate.GlobalRegistry().Set(globalgates.UseUnifiedEnvVarExpansionRules.ID(), false))
 	})
 
 	const valueExtra = "some string"
@@ -80,7 +85,7 @@ func TestNewExpandConverter_UseUnifiedEnvVarExpansionRules(t *testing.T) {
 	require.NoError(t, err, "Unable to get config")
 
 	// Test that expanded configs are the same with the simple config with no env vars.
-	require.ErrorContains(t, createConverter().Convert(context.Background(), conf), "$VAR expansion is not supported when feature gate confmap.unifyEnvVarExpansion is enabled")
+	require.ErrorContains(t, createConverter().Convert(context.Background(), conf), "variable substitution using $VAR has been deprecated in favor of ${VAR} and ${env:VAR}")
 }
 
 func TestNewExpandConverter_EscapedMaps(t *testing.T) {

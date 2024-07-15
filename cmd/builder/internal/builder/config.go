@@ -17,10 +17,10 @@ import (
 	"go.uber.org/zap"
 )
 
-const defaultOtelColVersion = "0.103.0"
+const defaultOtelColVersion = "0.104.0"
 
-// ErrInvalidGoMod indicates an invalid gomod
-var ErrInvalidGoMod = errors.New("invalid gomod specification for module")
+// ErrMissingGoMod indicates an empty gomod field
+var ErrMissingGoMod = errors.New("missing gomod specification for module")
 
 // Config holds the builder's configuration
 type Config struct {
@@ -115,14 +115,14 @@ func NewDefaultConfig() Config {
 func (c *Config) Validate() error {
 	var providersError error
 	if c.Providers != nil {
-		providersError = validateModules(*c.Providers)
+		providersError = validateModules("provider", *c.Providers)
 	}
 	return multierr.Combine(
-		validateModules(c.Extensions),
-		validateModules(c.Receivers),
-		validateModules(c.Exporters),
-		validateModules(c.Processors),
-		validateModules(c.Connectors),
+		validateModules("extension", c.Extensions),
+		validateModules("receiver", c.Receivers),
+		validateModules("exporter", c.Exporters),
+		validateModules("processor", c.Processors),
+		validateModules("connector", c.Connectors),
 		providersError,
 	)
 }
@@ -235,10 +235,10 @@ func (c *Config) ParseModules() error {
 	return nil
 }
 
-func validateModules(mods []Module) error {
-	for _, mod := range mods {
+func validateModules(name string, mods []Module) error {
+	for i, mod := range mods {
 		if mod.GoMod == "" {
-			return fmt.Errorf("module %q: %w", mod.GoMod, ErrInvalidGoMod)
+			return fmt.Errorf("%s module at index %v: %w", name, i, ErrMissingGoMod)
 		}
 	}
 	return nil

@@ -19,6 +19,9 @@ import (
 )
 
 // ObsReport is a helper to add observability to an exporter.
+//
+// Deprecated: [v0.105.0] Not expected to be used directly.
+// If needed, report your use case in https://github.com/open-telemetry/opentelemetry-collector/issues/10592.
 type ObsReport struct {
 	level          configtelemetry.Level
 	spanNamePrefix string
@@ -29,12 +32,18 @@ type ObsReport struct {
 }
 
 // ObsReportSettings are settings for creating an ObsReport.
+//
+// Deprecated: [v0.105.0] Not expected to be used directly.
+// If needed, report your use case in https://github.com/open-telemetry/opentelemetry-collector/issues/10592.
 type ObsReportSettings struct {
 	ExporterID             component.ID
 	ExporterCreateSettings exporter.Settings
 }
 
 // NewObsReport creates a new Exporter.
+//
+// Deprecated: [v0.105.0] Not expected to be used directly.
+// If needed, report your use case in https://github.com/open-telemetry/opentelemetry-collector/issues/10592.
 func NewObsReport(cfg ObsReportSettings) (*ObsReport, error) {
 	return newExporter(cfg)
 }
@@ -62,11 +71,17 @@ func newExporter(cfg ObsReportSettings) (*ObsReport, error) {
 // StartTracesOp is called at the start of an Export operation.
 // The returned context should be used in other calls to the Exporter functions
 // dealing with the same export operation.
+//
+// Deprecated: [v0.105.0] Not expected to be used directly.
+// If needed, report your use case in https://github.com/open-telemetry/opentelemetry-collector/issues/10592.
 func (or *ObsReport) StartTracesOp(ctx context.Context) context.Context {
 	return or.startOp(ctx, obsmetrics.ExportTraceDataOperationSuffix)
 }
 
 // EndTracesOp completes the export operation that was started with StartTracesOp.
+//
+// Deprecated: [v0.105.0] Not expected to be used directly.
+// If needed, report your use case in https://github.com/open-telemetry/opentelemetry-collector/issues/10592.
 func (or *ObsReport) EndTracesOp(ctx context.Context, numSpans int, err error) {
 	numSent, numFailedToSend := toNumItems(numSpans, err)
 	or.recordMetrics(context.WithoutCancel(ctx), component.DataTypeTraces, numSent, numFailedToSend)
@@ -76,12 +91,18 @@ func (or *ObsReport) EndTracesOp(ctx context.Context, numSpans int, err error) {
 // StartMetricsOp is called at the start of an Export operation.
 // The returned context should be used in other calls to the Exporter functions
 // dealing with the same export operation.
+//
+// Deprecated: [v0.105.0] Not expected to be used directly.
+// If needed, report your use case in https://github.com/open-telemetry/opentelemetry-collector/issues/10592.
 func (or *ObsReport) StartMetricsOp(ctx context.Context) context.Context {
 	return or.startOp(ctx, obsmetrics.ExportMetricsOperationSuffix)
 }
 
 // EndMetricsOp completes the export operation that was started with
 // StartMetricsOp.
+//
+// Deprecated: [v0.105.0] Not expected to be used directly.
+// If needed, report your use case in https://github.com/open-telemetry/opentelemetry-collector/issues/10592.
 func (or *ObsReport) EndMetricsOp(ctx context.Context, numMetricPoints int, err error) {
 	numSent, numFailedToSend := toNumItems(numMetricPoints, err)
 	or.recordMetrics(context.WithoutCancel(ctx), component.DataTypeMetrics, numSent, numFailedToSend)
@@ -91,11 +112,17 @@ func (or *ObsReport) EndMetricsOp(ctx context.Context, numMetricPoints int, err 
 // StartLogsOp is called at the start of an Export operation.
 // The returned context should be used in other calls to the Exporter functions
 // dealing with the same export operation.
+//
+// Deprecated: [v0.105.0] Not expected to be used directly.
+// If needed, report your use case in https://github.com/open-telemetry/opentelemetry-collector/issues/10592.
 func (or *ObsReport) StartLogsOp(ctx context.Context) context.Context {
 	return or.startOp(ctx, obsmetrics.ExportLogsOperationSuffix)
 }
 
 // EndLogsOp completes the export operation that was started with StartLogsOp.
+//
+// Deprecated: [v0.105.0] Not expected to be used directly.
+// If needed, report your use case in https://github.com/open-telemetry/opentelemetry-collector/issues/10592.
 func (or *ObsReport) EndLogsOp(ctx context.Context, numLogRecords int, err error) {
 	numSent, numFailedToSend := toNumItems(numLogRecords, err)
 	or.recordMetrics(context.WithoutCancel(ctx), component.DataTypeLogs, numSent, numFailedToSend)

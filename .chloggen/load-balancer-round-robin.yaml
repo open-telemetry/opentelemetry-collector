@@ -4,22 +4,21 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: exporter/debug
+component: configgrpc
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: In `normal` verbosity, display one line of text for each telemetry record (log, data point, span)
+note: Update the default load balancer strategy to round_robin
 
 # One or more tracking issues or pull requests related to the change
-issues: [7806]
+issues: [10319]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext:
+subtext: To restore the behavior that was previously the default, set `balancer_name` to `pick_first`.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
 # Include 'user' if the change is relevant to end users.
 # Include 'api' if there is a change to a library API.
-# Default: '[user]'
-change_logs: []
+change_logs: [user]

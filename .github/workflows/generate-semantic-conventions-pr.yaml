@@ -3,8 +3,11 @@ name: Generate Semantic Conventions PR
 on:
   schedule:
     # Daily at 01:30 (UTC)
-    - cron: '30 1 * * *'
+    - cron: "30 1 * * *"
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   check-versions:
@@ -47,7 +50,7 @@ jobs:
 
   update-semantic-conventions:
     permissions:
-      contents: write  # for Git to git push
+      contents: write # for Git to git push
     runs-on: ubuntu-latest
     if: |
       needs.check-versions.outputs.already-added != 'true' &&
@@ -94,7 +97,7 @@ jobs:
                              --base main)
 
           pull_request_number=${url//*\//}
-          
+
           # see the template for change log entry file at blob/main/.chloggen/TEMPLATE.yaml
           cat > .chloggen/semconv-$VERSION.yaml << EOF
           change_type: enhancement

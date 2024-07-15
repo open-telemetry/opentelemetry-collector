@@ -67,11 +67,14 @@ func (builder *TelemetryBuilder) InitQueueLength(cb func() int64) error {
 		"queue_length",
 		metric.WithDescription("This metric is optional and therefore not initialized in NewTelemetryBuilder."),
 		metric.WithUnit("1"),
-		metric.WithInt64Callback(func(_ context.Context, o metric.Int64Observer) error {
-			o.Observe(cb(), metric.WithAttributeSet(builder.attributeSet))
-			return nil
-		}),
 	)
+	if err != nil {
+		return err
+	}
+	_, err = builder.meter.RegisterCallback(func(_ context.Context, o metric.Observer) error {
+		o.ObserveInt64(builder.QueueLength, cb(), metric.WithAttributeSet(builder.attributeSet))
+		return nil
+	}, builder.QueueLength)
 	return err
 }
 
@@ -98,11 +101,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 		"process_runtime_total_alloc_bytes",
 		metric.WithDescription("Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')"),
 		metric.WithUnit("By"),
-		metric.WithInt64Callback(func(_ context.Context, o metric.Int64Observer) error {
-			o.Observe(builder.observeProcessRuntimeTotalAllocBytes(), metric.WithAttributeSet(builder.attributeSet))
-			return nil
-		}),
 	)
+	errs = errors.Join(errs, err)
+	_, err = builder.meter.RegisterCallback(func(_ context.Context, o metric.Observer) error {
+		o.ObserveInt64(builder.ProcessRuntimeTotalAllocBytes, builder.observeProcessRuntimeTotalAllocBytes(), metric.WithAttributeSet(builder.attributeSet))
+		return nil
+	}, builder.ProcessRuntimeTotalAllocBytes)
 	errs = errors.Join(errs, err)
 	builder.RequestDuration, err = builder.meter.Float64Histogram(
 		"request_duration",
