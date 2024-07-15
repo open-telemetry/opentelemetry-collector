@@ -226,9 +226,9 @@ func TestStrictTypeCasting(t *testing.T) {
 			expected:    123,
 		},
 		{
-			value:        "123",
-			targetField:  TargetFieldString,
-			unmarshalErr: "'field' expected type 'string', got unconvertible type 'int', value: '123'",
+			value:       "123",
+			targetField: TargetFieldString,
+			expected:    "123",
 		},
 		{
 			value:       "123",
@@ -241,9 +241,9 @@ func TestStrictTypeCasting(t *testing.T) {
 			expected:    83,
 		},
 		{
-			value:        "0123",
-			targetField:  TargetFieldString,
-			unmarshalErr: "'field' expected type 'string', got unconvertible type 'int', value: '83'",
+			value:       "0123",
+			targetField: TargetFieldString,
+			expected:    "0123",
 		},
 		{
 			value:       "0123",
@@ -256,9 +256,9 @@ func TestStrictTypeCasting(t *testing.T) {
 			expected:    3735928559,
 		},
 		{
-			value:        "0xdeadbeef",
-			targetField:  TargetFieldString,
-			unmarshalErr: "'field' expected type 'string', got unconvertible type 'int', value: '3735928559'",
+			value:       "0xdeadbeef",
+			targetField: TargetFieldString,
+			expected:    "0xdeadbeef",
 		},
 		{
 			value:       "0xdeadbeef",
@@ -303,17 +303,17 @@ func TestStrictTypeCasting(t *testing.T) {
 		{
 			value:       "{\"field\": 123}",
 			targetField: TargetFieldInlineString,
-			resolveErr:  "retrieved value does not have unambiguous string representation",
+			expected:    "inline field with {\"field\": 123} expansion",
 		},
 		{
 			value:       "1111:1111:1111:1111:1111::",
 			targetField: TargetFieldInlineString,
-			resolveErr:  "retrieved value does not have unambiguous string representation",
+			expected:    "inline field with 1111:1111:1111:1111:1111:: expansion",
 		},
 		{
-			value:        "1111:1111:1111:1111:1111::",
-			targetField:  TargetFieldString,
-			unmarshalErr: "'field' expected type 'string', got unconvertible type 'map[string]interface {}', value: 'map[1111:1111:1111:1111:1111::<nil>]'",
+			value:       "1111:1111:1111:1111:1111::",
+			targetField: TargetFieldString,
+			expected:    "1111:1111:1111:1111:1111::",
 		},
 	}
 

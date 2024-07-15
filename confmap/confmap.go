@@ -108,9 +108,13 @@ func (l *Conf) Marshal(rawVal any, _ ...MarshalOption) error {
 	return l.Merge(NewFromStringMap(out))
 }
 
+func (l *Conf) unsanitizedGet(key string) any {
+	return l.k.Get(key)
+}
+
 // Get can retrieve any value given the key to use.
 func (l *Conf) Get(key string) any {
-	val := l.k.Get(key)
+	val := l.unsanitizedGet(key)
 	if exp, ok := val.(ExpandedValue); ok {
 		return exp.Value
 	}
@@ -132,7 +136,7 @@ func (l *Conf) Merge(in *Conf) error {
 // It returns an error is the sub-config is not a map[string]any (use Get()), and an empty Map if none exists.
 func (l *Conf) Sub(key string) (*Conf, error) {
 	// Code inspired by the koanf "Cut" func, but returns an error instead of empty map for unsupported sub-config type.
-	data := l.Get(key)
+	data := l.unsanitizedGet(key)
 	if data == nil {
 		return New(), nil
 	}
@@ -144,36 +148,34 @@ func (l *Conf) Sub(key string) (*Conf, error) {
 	return nil, fmt.Errorf("unexpected sub-config value kind for key:%s value:%v kind:%v", key, data, reflect.TypeOf(data).Kind())
 }
 
-func sanitize(m map[string]any) map[string]any {
-	c := maps.Copy(m)
-	for k, v := range m {
-		switch val := v.(type) {
-		case map[string]any:
-			c[k] = sanitize(val)
-		case ExpandedValue:
-			c[k] = val.Value
-		case []any:
-			var newSlice []any
-			for _, e := range val {
-				switch eVal := e.(type) {
-				case map[string]any:
-					newSlice = append(newSlice, sanitize(eVal))
-				case ExpandedValue:
-					newSlice = append(newSlice, eVal.Value)
-				default:
-					newSlice = append(newSlice, e)
-				}
-			}
-			c[k] = newSlice
+func sanitize(a any) any {
+	switch m := a.(type) {
+	case map[string]any:
+		c := maps.Copy(m)
+		for k, v := range m {
+			c[k] = sanitize(v)
 		}
+		return c
+	case []any:
+		var newSlice []any
+		for _, e := range m {
+			newSlice = append(newSlice, sanitize(e))
+		}
+		return newSlice
+	case ExpandedValue:
+		return m.Value
 	}
-	return c
+	return a
+}
+
+func (l *Conf) toStringMapWithExpand() map[string]any {
+	m := maps.Unflatten(l.k.All(), KeyDelimiter)
+	return m
 }
 
 // ToStringMap creates a map[string]any from a Parser.
 func (l *Conf) ToStringMap() map[string]any {
-	m := maps.Unflatten(l.k.All(), KeyDelimiter)
-	return sanitize(m)
+	return sanitize(l.toStringMapWithExpand()).(map[string]any)
 }
 
 // decodeConfig decodes the contents of the Conf into the result argument, using a
@@ -191,6 +193,7 @@ func decodeConfig(m *Conf, result any, errorUnused bool, skipTopLevelUnmarshaler
 		WeaklyTypedInput: !globalgates.StrictlyTypedInputGate.IsEnabled(),
 		MatchName:        caseSensitiveMatchName,
 		DecodeHook: mapstructure.ComposeDecodeHookFunc(
+			useExpandValue(),
 			expandNilStructPointersHookFunc(),
 			mapstructure.StringToSliceHookFunc(","),
 			mapKeyStringToMapKeyTextUnmarshalerHookFunc(),
@@ -202,14 +205,13 @@ func decodeConfig(m *Conf, result any, errorUnused bool, skipTopLevelUnmarshaler
 			unmarshalerEmbeddedStructsHookFunc(),
 			zeroSliceHookFunc(),
 			negativeUintHookFunc(),
-			useExpandValue(),
 		),
 	}
 	decoder, err := mapstructure.NewDecoder(dc)
 	if err != nil {
 		return err
 	}
-	if err = decoder.Decode(m.ToStringMap()); err != nil {
+	if err = decoder.Decode(m.toStringMapWithExpand()); err != nil {
 		if strings.HasPrefix(err.Error(), "error decoding ''") {
 			return errors.Unwrap(err)
 		}
@@ -422,17 +424,22 @@ func marshalerHookFunc(orig any) mapstructure.DecodeHookFuncValue {
 	}
 }
 
-func useExpandValue() mapstructure.DecodeHookFuncValue {
-	return func(from reflect.Value, to reflect.Value) (any, error) {
-		if from.Type() == reflect.TypeOf(ExpandedValue{}) {
-			// If the target is a string, set the original value.
-			if to.Kind() == reflect.String {
-				to.Set(reflect.ValueOf(from.Interface().(ExpandedValue).Original))
-			} else {
-				to.Set(reflect.ValueOf(from.Interface().(ExpandedValue).Value))
+func useExpandValue() mapstructure.DecodeHookFuncType {
+	return func(
+		from reflect.Type,
+		to reflect.Type,
+		data any) (any, error) {
+
+		if exp, ok := data.(ExpandedValue); ok {
+			if featuregates.StrictlyTypedInputGate.IsEnabled() && to.Kind() == reflect.String {
+				if !exp.HasOriginal {
+					return nil, fmt.Errorf("cannot expand value to string: original value not set")
+				}
+				return exp.Original, nil
 			}
+			return exp.Value, nil
 		}
-		return from.Interface(), nil
+		return data, nil
 	}
 }
 

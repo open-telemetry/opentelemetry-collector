@@ -141,7 +141,7 @@ func NewRetrievedFromYAML(yamlBytes []byte, opts ...RetrievedOption) (*Retrieved
 	switch v := rawConf.(type) {
 	case string:
 		opts = append(opts, withStringRepresentation(v))
-	case int, int32, int64, float32, float64, bool:
+	case int, int32, int64, float32, float64, bool, map[string]any:
 		opts = append(opts, withStringRepresentation(string(yamlBytes)))
 	}
 
@@ -190,8 +190,9 @@ func (r *Retrieved) AsRaw() (any, error) {
 }
 
 type ExpandedValue struct {
-	Value    any
-	Original string
+	Value       any
+	HasOriginal bool
+	Original    string
 }
 
 func (r *Retrieved) AsExpandedValue() (ExpandedValue, error) {
@@ -200,13 +201,16 @@ func (r *Retrieved) AsExpandedValue() (ExpandedValue, error) {
 		return ExpandedValue{}, err
 	}
 	original, err := r.AsString()
+	hasOriginal := true
 	if err != nil {
+		hasOriginal = false
 		original = ""
 	}
 
 	return ExpandedValue{
-		Value:    val,
-		Original: original,
+		Value:       val,
+		Original:    original,
+		HasOriginal: hasOriginal,
 	}, nil
 }
 
