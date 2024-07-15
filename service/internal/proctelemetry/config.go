@@ -28,7 +28,7 @@ import (
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 
-	"go.opentelemetry.io/collector/internal/featuregates"
+	"go.opentelemetry.io/collector/internal/globalgates"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 )
@@ -70,7 +70,7 @@ func InitMetricReader(ctx context.Context, reader config.MetricReader, asyncErro
 	if reader.Periodic != nil {
 		var opts []sdkmetric.PeriodicReaderOption
 
-		if !featuregates.DisableOpenCensusBridge.IsEnabled() {
+		if !globalgates.DisableOpenCensusBridge.IsEnabled() {
 			opts = append(opts, sdkmetric.WithProducer(opencensus.NewMetricProducer()))
 		}
 		if reader.Periodic.Interval != nil {
@@ -175,7 +175,7 @@ func initPrometheusExporter(prometheusConfig *config.Prometheus, asyncErrorChann
 		otelprom.WithNamespace("otelcol"),
 		otelprom.WithResourceAsConstantLabels(attribute.NewDenyKeysFilter()),
 	}
-	if !featuregates.DisableOpenCensusBridge.IsEnabled() {
+	if !globalgates.DisableOpenCensusBridge.IsEnabled() {
 		opts = append(opts, otelprom.WithProducer(opencensus.NewMetricProducer()))
 	}
 	exporter, err := otelprom.New(opts...)
