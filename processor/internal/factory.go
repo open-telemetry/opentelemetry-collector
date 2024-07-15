@@ -10,11 +10,11 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 )
 
-// Internal is a Factory interface for processors.
+// Factory is a Factory interface for processors.
 //
 // This interface cannot be directly implemented. Implementations must
 // use the NewProcessorFactory to implement it.
-type Internal interface {
+type Factory interface {
 	component.Factory
 
 	// CreateTracesProcessor creates a TracesProcessor based on this config.
@@ -160,7 +160,7 @@ func WithLogs(createLogs CreateLogsFunc, sl component.StabilityLevel) FactoryOpt
 }
 
 // NewFactory returns a Factory.
-func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefaultConfigFunc, options ...FactoryOption) Internal {
+func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefaultConfigFunc, options ...FactoryOption) Factory {
 	f := &factory{
 		cfgType:                 cfgType,
 		CreateDefaultConfigFunc: createDefaultConfig,
