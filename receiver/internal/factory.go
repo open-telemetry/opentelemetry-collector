@@ -10,11 +10,11 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 )
 
-// Internal is a factory interface for receivers.
+// Factory is a factory interface for receivers.
 //
 // This interface cannot be directly implemented. Implementations must
 // use the NewReceiverFactory to implement it.
-type Internal interface {
+type Factory interface {
 	component.Factory
 
 	// CreateTracesReceiver creates a TracesReceiver based on this config.
@@ -158,7 +158,7 @@ func WithLogs(createLogsReceiver CreateLogsFunc, sl component.StabilityLevel) Fa
 }
 
 // NewFactory returns a Factory.
-func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefaultConfigFunc, options ...FactoryOption) Internal {
+func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefaultConfigFunc, options ...FactoryOption) Factory {
 	f := &factory{
 		cfgType:                 cfgType,
 		CreateDefaultConfigFunc: createDefaultConfig,

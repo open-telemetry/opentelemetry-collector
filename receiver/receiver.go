@@ -48,7 +48,7 @@ type Settings = internal.Settings
 //
 // This interface cannot be directly implemented. Implementations must
 // use the NewReceiverFactory to implement it.
-type Factory = internal.Internal
+type Factory = internal.Factory
 
 // FactoryOption apply changes to ReceiverOptions.
 type FactoryOption = internal.FactoryOption
