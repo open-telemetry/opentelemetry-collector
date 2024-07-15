@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/featuregates"
+	"go.opentelemetry.io/collector/internal/globalgates"
 )
 
 type TargetField string
@@ -172,11 +172,11 @@ func TestTypeCasting(t *testing.T) {
 		},
 	}
 
-	previousValue := featuregates.StrictlyTypedInputGate.IsEnabled()
-	err := featuregate.GlobalRegistry().Set(featuregates.StrictlyTypedInputID, false)
+	previousValue := globalgates.StrictlyTypedInputGate.IsEnabled()
+	err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, false)
 	require.NoError(t, err)
 	defer func() {
-		err := featuregate.GlobalRegistry().Set(featuregates.StrictlyTypedInputID, previousValue)
+		err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, previousValue)
 		require.NoError(t, err)
 	}()
 
@@ -317,11 +317,11 @@ func TestStrictTypeCasting(t *testing.T) {
 		},
 	}
 
-	previousValue := featuregates.StrictlyTypedInputGate.IsEnabled()
-	err := featuregate.GlobalRegistry().Set(featuregates.StrictlyTypedInputID, true)
+	previousValue := globalgates.StrictlyTypedInputGate.IsEnabled()
+	err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, true)
 	require.NoError(t, err)
 	defer func() {
-		err := featuregate.GlobalRegistry().Set(featuregates.StrictlyTypedInputID, previousValue)
+		err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, previousValue)
 		require.NoError(t, err)
 	}()
 

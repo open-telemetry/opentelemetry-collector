@@ -19,7 +19,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.11.0 // indirect
-	go.opentelemetry.io/collector/internal/featuregates v0.0.0-20240705161705-b127da089038 // indirect
+	go.opentelemetry.io/collector/internal/globalgates v0.0.0-20240705161705-b127da089038 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
@@ -29,4 +29,4 @@ replace go.opentelemetry.io/collector/confmap => ../../
 
 replace go.opentelemetry.io/collector/featuregate => ../../../featuregate
 
-replace go.opentelemetry.io/collector/internal/featuregates => ../../../internal/featuregates
+replace go.opentelemetry.io/collector/internal/globalgates => ../../../internal/globalgates
