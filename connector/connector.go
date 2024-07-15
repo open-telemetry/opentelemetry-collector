@@ -66,7 +66,7 @@ type Settings = internal.Settings
 //
 // This interface cannot be directly implemented. Implementations must
 // use the NewFactory to implement it.
-type Factory = internal.Internal
+type Factory = internal.Factory
 
 // FactoryOption applies changes to Factory.
 type FactoryOption = internal.FactoryOption

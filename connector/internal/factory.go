@@ -11,11 +11,11 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 )
 
-// Internal is a factory interface for connectors.
+// Factory is a factory interface for connectors.
 //
 // This interface cannot be directly implemented. Implementations must
 // use the NewFactory to implement it.
-type Internal interface {
+type Factory interface {
 	component.Factory
 
 	// CreateDefaultConfig creates the default configuration for the Connector.
@@ -69,7 +69,7 @@ func (f factoryOptionFunc) apply(o *factory) {
 	f(o)
 }
 
-// Factory implements the Internal interface.
+// factory implements the Factory interface.
 type factory struct {
 	cfgType component.Type
 	component.CreateDefaultConfigFunc
@@ -286,7 +286,7 @@ func (f factory) LogsToLogsStability() component.StabilityLevel {
 }
 
 // NewFactory returns a Factory.
-func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefaultConfigFunc, options ...FactoryOption) Internal {
+func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefaultConfigFunc, options ...FactoryOption) Factory {
 	f := &factory{
 		cfgType:                 cfgType,
 		CreateDefaultConfigFunc: createDefaultConfig,
