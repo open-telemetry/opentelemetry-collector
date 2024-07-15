@@ -121,6 +121,26 @@ func TestTypeCasting(t *testing.T) {
 			expected:    "inline field with 0123 expansion",
 		},
 		{
+			value:       "'!!str 0123'",
+			targetField: TargetFieldString,
+			expected:    "!!str 0123",
+		},
+		{
+			value:       "\"!!str 0123\"",
+			targetField: TargetFieldInlineString,
+			expected:    "inline field with !!str 0123 expansion",
+		},
+		{
+			value:       "''",
+			targetField: TargetFieldString,
+			expected:    "",
+		},
+		{
+			value:       "\"\"",
+			targetField: TargetFieldInlineString,
+			expected:    "inline field with  expansion",
+		},
+		{
 			value:       "t",
 			targetField: TargetFieldBool,
 			expected:    true,
@@ -129,6 +149,26 @@ func TestTypeCasting(t *testing.T) {
 			value:       "23",
 			targetField: TargetFieldBool,
 			expected:    true,
+		},
+		{
+			value:       "foo\nbar",
+			targetField: TargetFieldString,
+			expected:    "foo bar",
+		},
+		{
+			value:       "foo\nbar",
+			targetField: TargetFieldInlineString,
+			expected:    "inline field with foo bar expansion",
+		},
+		{
+			value:       "\"1111:1111:1111:1111:1111::\"",
+			targetField: TargetFieldString,
+			expected:    "1111:1111:1111:1111:1111::",
+		},
+		{
+			value:       "\"1111:1111:1111:1111:1111::\"",
+			targetField: TargetFieldInlineString,
+			expected:    "inline field with 1111:1111:1111:1111:1111:: expansion",
 		},
 	}
 
@@ -264,6 +304,16 @@ func TestStrictTypeCasting(t *testing.T) {
 			value:       "{\"field\": 123}",
 			targetField: TargetFieldInlineString,
 			resolveErr:  "retrieved value does not have unambiguous string representation",
+		},
+		{
+			value:       "1111:1111:1111:1111:1111::",
+			targetField: TargetFieldInlineString,
+			resolveErr:  "retrieved value does not have unambiguous string representation",
+		},
+		{
+			value:        "1111:1111:1111:1111:1111::",
+			targetField:  TargetFieldString,
+			unmarshalErr: "'field' expected type 'string', got unconvertible type 'map[string]interface {}', value: 'map[1111:1111:1111:1111:1111::<nil>]'",
 		},
 	}
 
