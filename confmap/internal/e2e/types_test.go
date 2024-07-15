@@ -303,12 +303,12 @@ func TestStrictTypeCasting(t *testing.T) {
 		{
 			value:       "{\"field\": 123}",
 			targetField: TargetFieldInlineString,
-			resolveErr:  "retrieved value does not have unambiguous string representation",
+			expected:    "inline field with {\"field\": 123} expansion",
 		},
 		{
 			value:       "1111:1111:1111:1111:1111::",
 			targetField: TargetFieldInlineString,
-			resolveErr:  "retrieved value does not have unambiguous string representation",
+			expected:    "inline field with 1111:1111:1111:1111:1111:: expansion",
 		},
 		{
 			value:        "1111:1111:1111:1111:1111::",
