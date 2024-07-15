@@ -7,9 +7,10 @@ import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/collector/internal/featuregates"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
+
+	"go.opentelemetry.io/collector/internal/globalgates"
 )
 
 // ProviderSettings are the settings to initialize a Provider.
@@ -142,7 +143,7 @@ func NewRetrievedFromYAML(yamlBytes []byte, opts ...RetrievedOption) (*Retrieved
 	switch v := rawConf.(type) {
 	case string:
 		val := v
-		if featuregates.StrictlyTypedInputGate.IsEnabled() {
+		if globalgates.StrictlyTypedInputGate.IsEnabled() {
 			val = string(yamlBytes)
 		}
 		return NewRetrieved(val, append(opts, withStringRepresentation(val))...)
@@ -192,31 +193,6 @@ func (r *Retrieved) AsConf() (*Conf, error) {
 //   - map[string]any - every value follows the same rules as the given any;
 func (r *Retrieved) AsRaw() (any, error) {
 	return r.rawConf, nil
-}
-
-type ExpandedValue struct {
-	Value       any
-	HasOriginal bool
-	Original    string
-}
-
-func (r *Retrieved) AsExpandedValue() (ExpandedValue, error) {
-	val, err := r.AsRaw()
-	if err != nil {
-		return ExpandedValue{}, err
-	}
-	original, err := r.AsString()
-	hasOriginal := true
-	if err != nil {
-		hasOriginal = false
-		original = ""
-	}
-
-	return ExpandedValue{
-		Value:       val,
-		Original:    original,
-		HasOriginal: hasOriginal,
-	}, nil
 }
 
 // AsString returns the retrieved configuration as a string.

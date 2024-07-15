@@ -43,12 +43,12 @@ func (mr *Resolver) expandValueRecursively(ctx context.Context, value any) (any,
 
 func (mr *Resolver) expandValue(ctx context.Context, value any) (any, bool, error) {
 	switch v := value.(type) {
-	case ExpandedValue:
+	case expandedValue:
 		a, ok, err := mr.expandValue(ctx, v.Value)
 		if err != nil {
 			return nil, false, err
 		}
-		return ExpandedValue{
+		return expandedValue{
 			Value:       a,
 			Original:    v.Original, // TODO: should we expand this?
 			HasOriginal: v.HasOriginal,
@@ -127,6 +127,20 @@ func (mr *Resolver) findURI(input string) string {
 	return input[openIndex : closeIndex+1]
 }
 
+// expandedValue holds the YAML parsed value and original representation of a value.
+// It keeps track of the original representation to be used by the 'useExpandValue' hook
+// if the target field is a string. We need to keep both representations because we don't know
+// what the target field type is until `Unmarshal` is called.
+type expandedValue struct {
+	// Value is the expanded value.
+	Value any
+	// HasOriginal is true if the original representation is set.
+	HasOriginal bool
+	// Original is the original representation of the value.
+	// It is only valid if HasOriginal is true.
+	Original string
+}
+
 // findAndExpandURI attempts to find and expand the first occurrence of an expandable URI in input. If an expandable URI is found it
 // returns the input with the URI expanded, true and nil. Otherwise, it returns the unchanged input, false and the expanding error.
 // This method expects input to start with ${ and end with }
@@ -144,10 +158,17 @@ func (mr *Resolver) findAndExpandURI(ctx context.Context, input string) (any, bo
 			return input, false, err
 		}
 
-		expanded, err := ret.AsExpandedValue()
+		expanded := expandedValue{}
+		expanded.Value, err = ret.AsRaw()
 		if err != nil {
 			return input, false, err
 		}
+
+		if asStr, err := ret.AsString(); err == nil {
+			expanded.HasOriginal = true
+			expanded.Original = asStr
+		}
+
 		return expanded, true, err
 	}
 	expanded, err := mr.expandURI(ctx, uri)

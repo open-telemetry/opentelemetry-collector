@@ -112,13 +112,30 @@ func (l *Conf) unsanitizedGet(key string) any {
 	return l.k.Get(key)
 }
 
+func sanitize(a any) any {
+	switch m := a.(type) {
+	case map[string]any:
+		c := maps.Copy(m)
+		for k, v := range m {
+			c[k] = sanitize(v)
+		}
+		return c
+	case []any:
+		var newSlice []any
+		for _, e := range m {
+			newSlice = append(newSlice, sanitize(e))
+		}
+		return newSlice
+	case expandedValue:
+		return m.Value
+	}
+	return a
+}
+
 // Get can retrieve any value given the key to use.
 func (l *Conf) Get(key string) any {
 	val := l.unsanitizedGet(key)
-	if exp, ok := val.(ExpandedValue); ok {
-		return exp.Value
-	}
-	return val
+	return sanitize(val)
 }
 
 // IsSet checks to see if the key has been set in any of the data locations.
@@ -146,26 +163,6 @@ func (l *Conf) Sub(key string) (*Conf, error) {
 	}
 
 	return nil, fmt.Errorf("unexpected sub-config value kind for key:%s value:%v kind:%v", key, data, reflect.TypeOf(data).Kind())
-}
-
-func sanitize(a any) any {
-	switch m := a.(type) {
-	case map[string]any:
-		c := maps.Copy(m)
-		for k, v := range m {
-			c[k] = sanitize(v)
-		}
-		return c
-	case []any:
-		var newSlice []any
-		for _, e := range m {
-			newSlice = append(newSlice, sanitize(e))
-		}
-		return newSlice
-	case ExpandedValue:
-		return m.Value
-	}
-	return a
 }
 
 func (l *Conf) toStringMapWithExpand() map[string]any {
@@ -238,6 +235,29 @@ func encoderConfig(rawVal any) *encoder.EncoderConfig {
 // which is case-insensitive.
 func caseSensitiveMatchName(a, b string) bool {
 	return a == b
+}
+
+// When a value has been loaded from an external source via a provider, we keep both the
+// parsed value and the original string value. This allows us to expand the value to its
+// original string representation when decoding into a string field, and use the original otherwise.
+func useExpandValue() mapstructure.DecodeHookFuncType {
+	return func(
+		_ reflect.Type,
+		to reflect.Type,
+		data any) (any, error) {
+		if exp, ok := data.(expandedValue); ok {
+			// If the target field is a string, use `exp.Original` or fail if not available.
+			if globalgates.StrictlyTypedInputGate.IsEnabled() && to.Kind() == reflect.String {
+				if !exp.HasOriginal {
+					return nil, fmt.Errorf("cannot expand value to string: original value not set")
+				}
+				return exp.Original, nil
+			}
+			// Otherwise, use the parsed value (previous behavior).
+			return exp.Value, nil
+		}
+		return data, nil
+	}
 }
 
 // In cases where a config has a mapping of something to a struct pointers
@@ -421,25 +441,6 @@ func marshalerHookFunc(orig any) mapstructure.DecodeHookFuncValue {
 			return nil, err
 		}
 		return conf.ToStringMap(), nil
-	}
-}
-
-func useExpandValue() mapstructure.DecodeHookFuncType {
-	return func(
-		from reflect.Type,
-		to reflect.Type,
-		data any) (any, error) {
-
-		if exp, ok := data.(ExpandedValue); ok {
-			if featuregates.StrictlyTypedInputGate.IsEnabled() && to.Kind() == reflect.String {
-				if !exp.HasOriginal {
-					return nil, fmt.Errorf("cannot expand value to string: original value not set")
-				}
-				return exp.Original, nil
-			}
-			return exp.Value, nil
-		}
-		return data, nil
 	}
 }
 
