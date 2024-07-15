@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"go.opentelemetry.io/collector/internal/featuregates"
+	"go.opentelemetry.io/collector/internal/globalgates"
 )
 
 // schemePattern defines the regexp pattern for scheme names.
@@ -146,7 +146,7 @@ func (mr *Resolver) findAndExpandURI(ctx context.Context, input string) (any, bo
 	}
 
 	var repl string
-	if featuregates.StrictlyTypedInputGate.IsEnabled() {
+	if globalgates.StrictlyTypedInputGate.IsEnabled() {
 		repl, err = expanded.AsString()
 	} else {
 		repl, err = toString(expanded)

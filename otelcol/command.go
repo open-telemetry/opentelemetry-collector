@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/featuregates"
+	"go.opentelemetry.io/collector/internal/globalgates"
 )
 
 // NewCommand constructs a new cobra.Command using the given CollectorSettings.
@@ -66,7 +66,7 @@ func updateSettingsUsingFlags(set *CollectorSettings, flags *flag.FlagSet) error
 		return errors.New("at least one config flag must be provided")
 	}
 
-	if featuregates.UseUnifiedEnvVarExpansionRules.IsEnabled() && set.ConfigProviderSettings.ResolverSettings.DefaultScheme == "" {
+	if globalgates.UseUnifiedEnvVarExpansionRules.IsEnabled() && set.ConfigProviderSettings.ResolverSettings.DefaultScheme == "" {
 		set.ConfigProviderSettings.ResolverSettings.DefaultScheme = "env"
 	}
 
