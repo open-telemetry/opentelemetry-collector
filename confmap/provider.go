@@ -189,6 +189,27 @@ func (r *Retrieved) AsRaw() (any, error) {
 	return r.rawConf, nil
 }
 
+type ExpandedValue struct {
+	Value    any
+	Original string
+}
+
+func (r *Retrieved) AsExpandedValue() (ExpandedValue, error) {
+	val, err := r.AsRaw()
+	if err != nil {
+		return ExpandedValue{}, err
+	}
+	original, err := r.AsString()
+	if err != nil {
+		original = ""
+	}
+
+	return ExpandedValue{
+		Value:    val,
+		Original: original,
+	}, nil
+}
+
 // AsString returns the retrieved configuration as a string.
 // If the retrieved configuration is not convertible to a string unambiguously, an error is returned.
 // If the retrieved configuration is a string, the string is returned.

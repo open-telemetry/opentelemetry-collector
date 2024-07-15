@@ -110,7 +110,11 @@ func (l *Conf) Marshal(rawVal any, _ ...MarshalOption) error {
 
 // Get can retrieve any value given the key to use.
 func (l *Conf) Get(key string) any {
-	return l.k.Get(key)
+	val := l.k.Get(key)
+	if exp, ok := val.(ExpandedValue); ok {
+		return exp.Value
+	}
+	return val
 }
 
 // IsSet checks to see if the key has been set in any of the data locations.
@@ -140,9 +144,36 @@ func (l *Conf) Sub(key string) (*Conf, error) {
 	return nil, fmt.Errorf("unexpected sub-config value kind for key:%s value:%v kind:%v", key, data, reflect.TypeOf(data).Kind())
 }
 
+func sanitize(m map[string]any) map[string]any {
+	c := maps.Copy(m)
+	for k, v := range m {
+		switch val := v.(type) {
+		case map[string]any:
+			c[k] = sanitize(val)
+		case ExpandedValue:
+			c[k] = val.Value
+		case []any:
+			var newSlice []any
+			for _, e := range val {
+				switch eVal := e.(type) {
+				case map[string]any:
+					newSlice = append(newSlice, sanitize(eVal))
+				case ExpandedValue:
+					newSlice = append(newSlice, eVal.Value)
+				default:
+					newSlice = append(newSlice, e)
+				}
+			}
+			c[k] = newSlice
+		}
+	}
+	return c
+}
+
 // ToStringMap creates a map[string]any from a Parser.
 func (l *Conf) ToStringMap() map[string]any {
-	return maps.Unflatten(l.k.All(), KeyDelimiter)
+	m := maps.Unflatten(l.k.All(), KeyDelimiter)
+	return sanitize(m)
 }
 
 // decodeConfig decodes the contents of the Conf into the result argument, using a
@@ -171,6 +202,7 @@ func decodeConfig(m *Conf, result any, errorUnused bool, skipTopLevelUnmarshaler
 			unmarshalerEmbeddedStructsHookFunc(),
 			zeroSliceHookFunc(),
 			negativeUintHookFunc(),
+			useExpandValue(),
 		),
 	}
 	decoder, err := mapstructure.NewDecoder(dc)
@@ -387,6 +419,20 @@ func marshalerHookFunc(orig any) mapstructure.DecodeHookFuncValue {
 			return nil, err
 		}
 		return conf.ToStringMap(), nil
+	}
+}
+
+func useExpandValue() mapstructure.DecodeHookFuncValue {
+	return func(from reflect.Value, to reflect.Value) (any, error) {
+		if from.Type() == reflect.TypeOf(ExpandedValue{}) {
+			// If the target is a string, set the original value.
+			if to.Kind() == reflect.String {
+				to.Set(reflect.ValueOf(from.Interface().(ExpandedValue).Original))
+			} else {
+				to.Set(reflect.ValueOf(from.Interface().(ExpandedValue).Value))
+			}
+		}
+		return from.Interface(), nil
 	}
 }
 
