@@ -69,7 +69,7 @@ var (
 		"/extension/auth",
 		"/extension/zpagesextension",
 		"/featuregate",
-		"/internal/featuregates",
+		"/internal/globalgates",
 		"/processor",
 		"/processor/batchprocessor",
 		"/processor/memorylimiterprocessor",

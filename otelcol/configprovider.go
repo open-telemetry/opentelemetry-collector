@@ -9,12 +9,12 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/internal/featuregates"
+	"go.opentelemetry.io/collector/internal/globalgates"
 )
 
 var (
 	strictlyTypedMessageCoda = `Hint: Temporarily restore the previous behavior by disabling 
-      the ` + fmt.Sprintf("`%s`", featuregates.StrictlyTypedInputID) + ` feature gate. More details at:
+      the ` + fmt.Sprintf("`%s`", globalgates.StrictlyTypedInputID) + ` feature gate. More details at:
       https://github.com/open-telemetry/opentelemetry-collector/issues/10552`
 )
 
@@ -107,7 +107,7 @@ func (cm *configProvider) Get(ctx context.Context, factories Factories) (*Config
 	if cfg, err = unmarshal(conf, factories); err != nil {
 		err = fmt.Errorf("cannot unmarshal the configuration: %w", err)
 
-		if featuregates.StrictlyTypedInputGate.IsEnabled() {
+		if globalgates.StrictlyTypedInputGate.IsEnabled() {
 			var shouldAddCoda bool
 			for _, errorStr := range []string{
 				"got unconvertible type",      // https://github.com/mitchellh/mapstructure/blob/8508981/mapstructure.go#L610

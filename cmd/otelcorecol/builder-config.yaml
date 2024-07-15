@@ -41,7 +41,7 @@ providers:
 
 replaces:
   - go.opentelemetry.io/collector => ../../
-  - go.opentelemetry.io/collector/internal/featuregates => ../../internal/featuregates
+  - go.opentelemetry.io/collector/internal/globalgates => ../../internal/globalgates
   - go.opentelemetry.io/collector/otelcol => ../../otelcol
   - go.opentelemetry.io/collector/component => ../../component
   - go.opentelemetry.io/collector/config/configauth => ../../config/configauth
