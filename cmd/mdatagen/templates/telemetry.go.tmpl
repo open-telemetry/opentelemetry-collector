@@ -54,7 +54,7 @@ func WithLevel(lvl configtelemetry.Level) telemetryBuilderOption {
 func (builder *TelemetryBuilder) Init{{ $name.Render }}({{ if $metric.Data.Async -}}cb func() {{ $metric.Data.BasicType }}{{- end }}, opts ...metric.ObserveOption) error {
     var err error
     builder.{{ $name.Render }}, err = builder.meter.{{ $metric.Data.Instrument }}(
-        "{{ $name }}",
+        "otelcol_{{ $name }}",
         metric.WithDescription("{{ $metric.Description }}"),
         metric.WithUnit("{{ $metric.Unit }}"),
         {{- if eq $metric.Data.Type "Histogram" -}}
@@ -106,7 +106,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
     {{- range $name, $metric := .Telemetry.Metrics }}
     {{- if not $metric.Optional }}
     builder.{{ $name.Render }}, err = builder.meter.{{ $metric.Data.Instrument }}(
-        "{{ $name }}",
+        "otelcol_{{ $name }}",
         metric.WithDescription("{{ $metric.Description }}"),
         metric.WithUnit("{{ $metric.Unit }}"),
         {{- if eq $metric.Data.Type "Histogram" -}}

@@ -58,7 +58,7 @@ func WithProcessRuntimeTotalAllocBytesCallback(cb func() int64, opts ...metric.O
 func (builder *TelemetryBuilder) InitQueueLength(cb func() int64, opts ...metric.ObserveOption) error {
 	var err error
 	builder.QueueLength, err = builder.meter.Int64ObservableGauge(
-		"queue_length",
+		"otelcol_queue_length",
 		metric.WithDescription("This metric is optional and therefore not initialized in NewTelemetryBuilder."),
 		metric.WithUnit("1"),
 	)
@@ -86,13 +86,13 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 		builder.meter = noop.Meter{}
 	}
 	builder.BatchSizeTriggerSend, err = builder.meter.Int64Counter(
-		"batch_size_trigger_send",
+		"otelcol_batch_size_trigger_send",
 		metric.WithDescription("Number of times the batch was sent due to a size trigger"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessRuntimeTotalAllocBytes, err = builder.meter.Int64ObservableCounter(
-		"process_runtime_total_alloc_bytes",
+		"otelcol_process_runtime_total_alloc_bytes",
 		metric.WithDescription("Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')"),
 		metric.WithUnit("By"),
 	)
@@ -100,7 +100,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	_, err = builder.meter.RegisterCallback(builder.observeProcessRuntimeTotalAllocBytes, builder.ProcessRuntimeTotalAllocBytes)
 	errs = errors.Join(errs, err)
 	builder.RequestDuration, err = builder.meter.Float64Histogram(
-		"request_duration",
+		"otelcol_request_duration",
 		metric.WithDescription("Duration of request"),
 		metric.WithUnit("s"), metric.WithExplicitBucketBoundaries([]float64{1, 10, 100}...),
 	)
