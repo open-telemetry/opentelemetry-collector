@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
@@ -39,7 +38,6 @@ type TelemetryBuilder struct {
 	ExporterSentMetricPoints          metric.Int64Counter
 	ExporterSentSpans                 metric.Int64Counter
 	level                             configtelemetry.Level
-	attributeSet                      attribute.Set
 }
 
 // telemetryBuilderOption applies changes to default builder.
@@ -52,15 +50,8 @@ func WithLevel(lvl configtelemetry.Level) telemetryBuilderOption {
 	}
 }
 
-// WithAttributeSet applies a set of attributes for asynchronous instruments.
-func WithAttributeSet(set attribute.Set) telemetryBuilderOption {
-	return func(builder *TelemetryBuilder) {
-		builder.attributeSet = set
-	}
-}
-
 // InitExporterQueueCapacity configures the ExporterQueueCapacity metric.
-func (builder *TelemetryBuilder) InitExporterQueueCapacity(cb func() int64) error {
+func (builder *TelemetryBuilder) InitExporterQueueCapacity(cb func() int64, opts ...metric.ObserveOption) error {
 	var err error
 	builder.ExporterQueueCapacity, err = builder.meter.Int64ObservableGauge(
 		"exporter_queue_capacity",
@@ -71,14 +62,14 @@ func (builder *TelemetryBuilder) InitExporterQueueCapacity(cb func() int64) erro
 		return err
 	}
 	_, err = builder.meter.RegisterCallback(func(_ context.Context, o metric.Observer) error {
-		o.ObserveInt64(builder.ExporterQueueCapacity, cb(), metric.WithAttributeSet(builder.attributeSet))
+		o.ObserveInt64(builder.ExporterQueueCapacity, cb(), opts...)
 		return nil
 	}, builder.ExporterQueueCapacity)
 	return err
 }
 
 // InitExporterQueueSize configures the ExporterQueueSize metric.
-func (builder *TelemetryBuilder) InitExporterQueueSize(cb func() int64) error {
+func (builder *TelemetryBuilder) InitExporterQueueSize(cb func() int64, opts ...metric.ObserveOption) error {
 	var err error
 	builder.ExporterQueueSize, err = builder.meter.Int64ObservableGauge(
 		"exporter_queue_size",
@@ -89,7 +80,7 @@ func (builder *TelemetryBuilder) InitExporterQueueSize(cb func() int64) error {
 		return err
 	}
 	_, err = builder.meter.RegisterCallback(func(_ context.Context, o metric.Observer) error {
-		o.ObserveInt64(builder.ExporterQueueSize, cb(), metric.WithAttributeSet(builder.attributeSet))
+		o.ObserveInt64(builder.ExporterQueueSize, cb(), opts...)
 		return nil
 	}, builder.ExporterQueueSize)
 	return err
