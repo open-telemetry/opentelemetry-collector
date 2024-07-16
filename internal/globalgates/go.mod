@@ -1,4 +1,4 @@
-module go.opentelemetry.io/collector/internal/featuregates
+module go.opentelemetry.io/collector/internal/globalgates
 
 go 1.21.0
 

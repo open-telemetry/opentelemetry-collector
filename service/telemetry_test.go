@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/featuregates"
+	"go.opentelemetry.io/collector/internal/globalgates"
 	"go.opentelemetry.io/collector/internal/testutil"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
@@ -262,9 +262,9 @@ func TestTelemetryInit(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.DisableOpenCensusBridge.ID(), tc.disableCensusBridge))
+			require.NoError(t, featuregate.GlobalRegistry().Set(globalgates.DisableOpenCensusBridge.ID(), tc.disableCensusBridge))
 			t.Cleanup(func() {
-				require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.DisableOpenCensusBridge.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(globalgates.DisableOpenCensusBridge.ID(), true))
 			})
 			if tc.extendedConfig {
 				tc.cfg.Metrics.Readers = []config.MetricReader{

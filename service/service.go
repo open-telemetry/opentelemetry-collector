@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/internal/featuregates"
+	"go.opentelemetry.io/collector/internal/globalgates"
 	"go.opentelemetry.io/collector/internal/localhostgate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -115,7 +115,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 
 	logger.Info("Setting up own telemetry...")
 
-	if featuregates.DisableOpenCensusBridge.IsEnabled() {
+	if globalgates.DisableOpenCensusBridge.IsEnabled() {
 		logger.Info("OpenCensus bridge is disabled for Collector telemetry and will be removed in a future version, use --feature-gates=-service.disableOpenCensusBridge to re-enable")
 	}
 	mp, err := newMeterProvider(

@@ -12,7 +12,7 @@ require (
 	go.opentelemetry.io/collector/exporter v0.104.0
 	go.opentelemetry.io/collector/extension v0.104.0
 	go.opentelemetry.io/collector/featuregate v1.11.0
-	go.opentelemetry.io/collector/internal/featuregates v0.0.0-20240705161705-b127da089038
+	go.opentelemetry.io/collector/internal/globalgates v0.0.0-20240715203212-534768cf7a80
 	go.opentelemetry.io/collector/processor v0.104.0
 	go.opentelemetry.io/collector/receiver v0.104.0
 	go.opentelemetry.io/collector/service v0.104.0
@@ -147,4 +147,4 @@ replace go.opentelemetry.io/collector/config/configtls => ../config/configtls
 
 replace go.opentelemetry.io/collector/config/configopaque => ../config/configopaque
 
-replace go.opentelemetry.io/collector/internal/featuregates => ../internal/featuregates
+replace go.opentelemetry.io/collector/internal/globalgates => ../internal/globalgates
