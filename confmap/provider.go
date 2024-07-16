@@ -141,7 +141,7 @@ func NewRetrievedFromYAML(yamlBytes []byte, opts ...RetrievedOption) (*Retrieved
 	switch v := rawConf.(type) {
 	case string:
 		opts = append(opts, withStringRepresentation(v))
-	case int, int32, int64, float32, float64, bool:
+	case int, int32, int64, float32, float64, bool, map[string]any:
 		opts = append(opts, withStringRepresentation(string(yamlBytes)))
 	}
 
