@@ -64,6 +64,7 @@ type Distribution struct {
 	OtelColVersion           string `mapstructure:"otelcol_version"`
 	RequireOtelColModule     bool   `mapstructure:"-"` // required for backwards-compatibility with builds older than 0.86.0
 	SupportsConfmapFactories bool   `mapstructure:"-"` // Required for backwards-compatibility with builds older than 0.99.0
+	SupportsComponentModules bool   `mapstructure:"-"` // Required for backwards-compatibility with builds older than 0.105.0
 	OutputPath               string `mapstructure:"output_path"`
 	Version                  string `mapstructure:"version"`
 	BuildTags                string `mapstructure:"build_tags"`
@@ -144,13 +145,14 @@ func (c *Config) SetGoPath() error {
 }
 
 func (c *Config) SetBackwardsCompatibility() error {
-	// check whether we need to adjust the core API module import
-	constraint, err := version.NewConstraint(">= 0.86.0")
+	// Get the version of the collector
+	otelColVersion, err := version.NewVersion(c.Distribution.OtelColVersion)
 	if err != nil {
 		return err
 	}
 
-	otelColVersion, err := version.NewVersion(c.Distribution.OtelColVersion)
+	// check whether we need to adjust the core API module import
+	constraint, err := version.NewConstraint(">= 0.86.0")
 	if err != nil {
 		return err
 	}
@@ -163,12 +165,15 @@ func (c *Config) SetBackwardsCompatibility() error {
 		return err
 	}
 
-	otelColVersion, err = version.NewVersion(c.Distribution.OtelColVersion)
+	c.Distribution.SupportsConfmapFactories = constraint.Check(otelColVersion)
+
+	// check whether go modules are recorded for components
+	constraint, err = version.NewConstraint(">= 0.105.0")
 	if err != nil {
 		return err
 	}
 
-	c.Distribution.SupportsConfmapFactories = constraint.Check(otelColVersion)
+	c.Distribution.SupportsComponentModules = constraint.Check(otelColVersion)
 
 	return nil
 }
