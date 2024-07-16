@@ -44,15 +44,19 @@ func (mr *Resolver) expandValueRecursively(ctx context.Context, value any) (any,
 func (mr *Resolver) expandValue(ctx context.Context, value any) (any, bool, error) {
 	switch v := value.(type) {
 	case expandedValue:
-		a, ok, err := mr.expandValue(ctx, v.Value)
+		expanded, changed, err := mr.expandValue(ctx, v.Value)
 		if err != nil {
 			return nil, false, err
 		}
+
+		if _, ok := expanded.(expandedValue); ok {
+			return expanded, changed, nil
+		}
 		return expandedValue{
-			Value:       a,
-			Original:    v.Original, // TODO: should we expand this?
+			Value:       expanded,
+			Original:    v.Original,
 			HasOriginal: v.HasOriginal,
-		}, ok, nil
+		}, changed, nil
 	case string:
 		if !strings.Contains(v, "${") || !strings.Contains(v, "}") {
 			// No URIs to expand.
@@ -164,7 +168,7 @@ func (mr *Resolver) findAndExpandURI(ctx context.Context, input string) (any, bo
 			return input, false, err
 		}
 
-		if asStr, err := ret.AsString(); err == nil {
+		if asStr, err2 := ret.AsString(); err2 == nil {
 			expanded.HasOriginal = true
 			expanded.Original = asStr
 		}
