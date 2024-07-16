@@ -210,7 +210,11 @@ func (g *Graph) createReceiver(pipelineID, recvID component.ID) *receiverNode {
 }
 
 func (g *Graph) createProcessor(pipelineID, procID component.ID) *processorNode {
-	procNode := newProcessorNode(pipelineID, procID)
+	procNode := newProcessorNode(pipelineID.Type(), procID)
+	if node := g.componentGraph.Node(procNode.ID()); node != nil {
+		g.instanceIDs[procNode.ID()].PipelineIDs[pipelineID] = struct{}{}
+		return node.(*processorNode)
+	}
 	g.componentGraph.AddNode(procNode)
 	g.instanceIDs[procNode.ID()] = &component.InstanceID{
 		ID:   procID,
@@ -309,7 +313,7 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 			err = n.buildComponent(ctx, telemetrySettings, set.BuildInfo, set.ReceiverBuilder, g.nextConsumers(n.ID()))
 		case *processorNode:
 			// nextConsumers is guaranteed to be length 1.  Either it is the next processor or it is the fanout node for the exporters.
-			err = n.buildComponent(ctx, telemetrySettings, set.BuildInfo, set.ProcessorBuilder, g.nextConsumers(n.ID())[0])
+			err = n.buildComponent(ctx, telemetrySettings, set.BuildInfo, set.ProcessorBuilder, g.nextConsumers(n.ID()))
 		case *exporterNode:
 			err = n.buildComponent(ctx, telemetrySettings, set.BuildInfo, set.ExporterBuilder)
 		case *connectorNode:
@@ -536,7 +540,7 @@ func cycleErr(err error, cycles [][]graph.Node) error {
 	for _, node := range cycle {
 		switch n := node.(type) {
 		case *processorNode:
-			componentDetails = append(componentDetails, fmt.Sprintf("processor %q in pipeline %q", n.componentID, n.pipelineID))
+			componentDetails = append(componentDetails, fmt.Sprintf("processor %q (%s)", n.componentID, n.pipelineType))
 		case *connectorNode:
 			componentDetails = append(componentDetails, fmt.Sprintf("connector %q (%s to %s)", n.componentID, n.exprPipelineType, n.rcvrPipelineType))
 		default:

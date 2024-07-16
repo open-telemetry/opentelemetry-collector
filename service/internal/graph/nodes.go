@@ -106,20 +106,20 @@ func (n *receiverNode) buildComponent(ctx context.Context,
 
 var _ consumerNode = (*processorNode)(nil)
 
-// Every processor instance is unique to one pipeline.
-// Therefore, nodeID is derived from "pipeline ID" and "component ID".
+// A processor instance can be shared by multiple pipelines of the same type.
+// Therefore, nodeID is derived from "pipeline type" and "component ID".
 type processorNode struct {
 	nodeID
-	componentID component.ID
-	pipelineID  component.ID
+	componentID  component.ID
+	pipelineType component.DataType
 	component.Component
 }
 
-func newProcessorNode(pipelineID, procID component.ID) *processorNode {
+func newProcessorNode(pipelineType component.DataType, procID component.ID) *processorNode {
 	return &processorNode{
-		nodeID:      newNodeID(processorSeed, pipelineID.String(), procID.String()),
-		componentID: procID,
-		pipelineID:  pipelineID,
+		nodeID:       newNodeID(processorSeed, pipelineType.String(), procID.String()),
+		componentID:  procID,
+		pipelineType: pipelineType,
 	}
 }
 
@@ -131,23 +131,35 @@ func (n *processorNode) buildComponent(ctx context.Context,
 	tel component.TelemetrySettings,
 	info component.BuildInfo,
 	builder *processor.Builder,
-	next baseConsumer,
+	nexts []baseConsumer,
 ) error {
-	tel.Logger = components.ProcessorLogger(tel.Logger, n.componentID, n.pipelineID)
+	tel.Logger = components.ProcessorLogger(tel.Logger, n.componentID, n.pipelineType)
 	set := processor.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
 	var err error
-	switch n.pipelineID.Type() {
+	switch n.pipelineType {
 	case component.DataTypeTraces:
-		n.Component, err = builder.CreateTraces(ctx, set, next.(consumer.Traces))
+		var consumers []consumer.Traces
+		for _, next := range nexts {
+			consumers = append(consumers, next.(consumer.Traces))
+		}
+		n.Component, err = builder.CreateTraces(ctx, set, fanoutconsumer.NewTraces(consumers))
 	case component.DataTypeMetrics:
-		n.Component, err = builder.CreateMetrics(ctx, set, next.(consumer.Metrics))
+		var consumers []consumer.Metrics
+		for _, next := range nexts {
+			consumers = append(consumers, next.(consumer.Metrics))
+		}
+		n.Component, err = builder.CreateMetrics(ctx, set, fanoutconsumer.NewMetrics(consumers))
 	case component.DataTypeLogs:
-		n.Component, err = builder.CreateLogs(ctx, set, next.(consumer.Logs))
+		var consumers []consumer.Logs
+		for _, next := range nexts {
+			consumers = append(consumers, next.(consumer.Logs))
+		}
+		n.Component, err = builder.CreateLogs(ctx, set, fanoutconsumer.NewLogs(consumers))
 	default:
-		return fmt.Errorf("error creating processor %q in pipeline %q, data type %q is not supported", set.ID, n.pipelineID, n.pipelineID.Type())
+		return fmt.Errorf("error creating processor %q for data type %q is not supported", set.ID, n.pipelineType)
 	}
 	if err != nil {
-		return fmt.Errorf("failed to create %q processor, in pipeline %q: %w", set.ID, n.pipelineID, err)
+		return fmt.Errorf("failed to create %q processor for data type %q: %w", set.ID, n.pipelineType, err)
 	}
 	return nil
 }
