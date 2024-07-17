@@ -8,6 +8,7 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -74,6 +75,7 @@ type queueSender struct {
 	consumers      *queue.Consumers[Request]
 
 	telemetryBuilder *metadata.TelemetryBuilder
+	exporterID       component.ID
 }
 
 func newQueueSender(q exporterqueue.Queue[Request], set exporter.Settings, numConsumers int,
@@ -83,6 +85,7 @@ func newQueueSender(q exporterqueue.Queue[Request], set exporter.Settings, numCo
 		numConsumers:     numConsumers,
 		traceAttribute:   attribute.String(obsmetrics.ExporterKey, set.ID.String()),
 		telemetryBuilder: telemetryBuilder,
+		exporterID:       set.ID,
 	}
 	consumeFunc := func(ctx context.Context, req Request) error {
 		err := qs.nextSender.send(ctx, req)
@@ -102,9 +105,10 @@ func (qs *queueSender) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 
+	opts := metric.WithAttributeSet(attribute.NewSet(attribute.String(obsmetrics.ExporterKey, qs.exporterID.String())))
 	return multierr.Append(
-		qs.telemetryBuilder.InitExporterQueueSize(func() int64 { return int64(qs.queue.Size()) }),
-		qs.telemetryBuilder.InitExporterQueueCapacity(func() int64 { return int64(qs.queue.Capacity()) }),
+		qs.telemetryBuilder.InitExporterQueueSize(func() int64 { return int64(qs.queue.Size()) }, opts),
+		qs.telemetryBuilder.InitExporterQueueCapacity(func() int64 { return int64(qs.queue.Capacity()) }, opts),
 	)
 }
 

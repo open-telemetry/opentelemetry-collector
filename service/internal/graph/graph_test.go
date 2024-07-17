@@ -955,7 +955,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 					expected.MarkReadOnly() // multiple read-only exporters should get read-only pdata
 				}
 				for i := 0; i < test.expectedPerExporter; i++ {
-					assert.EqualValues(t, expected, tracesExporter.Traces[0])
+					assert.EqualValues(t, expected, tracesExporter.Traces[i])
 				}
 			}
 			for _, e := range allExporters[component.DataTypeMetrics] {
@@ -966,7 +966,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 					expected.MarkReadOnly() // multiple read-only exporters should get read-only pdata
 				}
 				for i := 0; i < test.expectedPerExporter; i++ {
-					assert.EqualValues(t, expected, metricsExporter.Metrics[0])
+					assert.EqualValues(t, expected, metricsExporter.Metrics[i])
 				}
 			}
 			for _, e := range allExporters[component.DataTypeLogs] {
@@ -977,7 +977,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 					expected.MarkReadOnly() // multiple read-only exporters should get read-only pdata
 				}
 				for i := 0; i < test.expectedPerExporter; i++ {
-					assert.EqualValues(t, expected, logsExporter.Logs[0])
+					assert.EqualValues(t, expected, logsExporter.Logs[i])
 				}
 			}
 		})

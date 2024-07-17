@@ -216,12 +216,12 @@ func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 
-	require.NoError(t, tt.CheckExporterMetricGauge("exporter_queue_capacity", int64(defaultQueueSize)))
+	require.NoError(t, tt.CheckExporterMetricGauge("otelcol_exporter_queue_capacity", int64(defaultQueueSize)))
 
 	for i := 0; i < 7; i++ {
 		require.NoError(t, be.send(context.Background(), newErrorRequest()))
 	}
-	require.NoError(t, tt.CheckExporterMetricGauge("exporter_queue_size", int64(7)))
+	require.NoError(t, tt.CheckExporterMetricGauge("otelcol_exporter_queue_size", int64(7)))
 
 	assert.NoError(t, be.Shutdown(context.Background()))
 }
