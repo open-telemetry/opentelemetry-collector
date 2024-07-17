@@ -5,7 +5,6 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"go.uber.org/multierr"
@@ -17,6 +16,9 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 // requestSender is an abstraction of a sender for a request independent of the type of the data (traces, metrics, logs).
@@ -219,13 +221,44 @@ func withBatchFuncs(mf exporterbatcher.BatchMergeFunc[Request], msf exporterbatc
 	}
 }
 
-// WithBatchPerResourceAttribute batches data per resource attributes.
-func WithBatchPerResourceAttribute(attrKeys ...string) Option {
+// OrganizingOption apply changes to organize sender.
+type OrganizingOption func(sender *organizeSender) error
+
+// WithLogOrganizingFunc applies a log function to organize log data
+func WithLogOrganizingFunc(fn func(plog.Logs) []plog.Logs) OrganizingOption {
+	return func(sender *organizeSender) error {
+		sender.organizeLogs = fn
+		return nil
+	}
+}
+
+// WithMetricOrganizingFunc applies a metrics function to organize metric data
+func WithMetricOrganizingFunc(fn func(pmetric.Metrics) []pmetric.Metrics) OrganizingOption {
+	return func(sender *organizeSender) error {
+		sender.organizeMetrics = fn
+		return nil
+	}
+}
+
+// WithTraceOrganizingFunc applies a traces function to organize metric data
+func WithTraceOrganizingFunc(fn func(traces ptrace.Traces) []ptrace.Traces) OrganizingOption {
+	return func(sender *organizeSender) error {
+		sender.organizeTraces = fn
+		return nil
+	}
+}
+
+// WithOrganizing organizes data, so it will be consumed in individual batches, sequentially, by the exporter.
+func WithOrganizing(opts ...OrganizingOption) Option {
 	return func(o *baseExporter) error {
-		if len(attrKeys) == 0 {
-			return errors.New("WithBatchPerResourceAttribute must be provided with at least one attribute key")
+		organizeSender := newOrganizeSender()
+		for _, opt := range opts {
+			err := opt(organizeSender)
+			if err != nil {
+				return err
+			}
 		}
-		o.organizeSender = newOrganizeSender(attrKeys)
+		o.organizeSender = organizeSender
 		return nil
 	}
 }

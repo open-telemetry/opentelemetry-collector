@@ -21,6 +21,9 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 var (
@@ -98,15 +101,21 @@ func TestBaseExporterLogging(t *testing.T) {
 	require.Len(t, observed.FilterLevelExact(zap.ErrorLevel).All(), 1)
 }
 
-func TestBaseExporterWithBatchPerResourceAttributeInvalid(t *testing.T) {
-	set := exportertest.NewNopSettings()
-	_, err := newBaseExporter(set, defaultDataType, newNoopObsrepSender, WithBatchPerResourceAttribute())
-	assert.EqualError(t, err, "WithBatchPerResourceAttribute must be provided with at least one attribute key")
-}
-
 func TestBaseExporterWithBatchPerResourceAttribute(t *testing.T) {
 	set := exportertest.NewNopSettings()
-	be, err := newBaseExporter(set, defaultDataType, newNoopObsrepSender, WithBatchPerResourceAttribute("foo"))
+	be, err := newBaseExporter(set, defaultDataType, newNoopObsrepSender,
+		WithOrganizing(
+			WithLogOrganizingFunc(func(logs plog.Logs) []plog.Logs {
+				return []plog.Logs{logs}
+			}),
+			WithMetricOrganizingFunc(func(metrics pmetric.Metrics) []pmetric.Metrics {
+				return []pmetric.Metrics{metrics}
+			}),
+			WithTraceOrganizingFunc(func(traces ptrace.Traces) []ptrace.Traces {
+				return []ptrace.Traces{traces}
+			}),
+		),
+	)
 	assert.NoError(t, err)
 	require.NotNil(t, be)
 }
