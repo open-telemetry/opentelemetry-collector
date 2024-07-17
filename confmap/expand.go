@@ -49,28 +49,35 @@ func (mr *Resolver) expandValue(ctx context.Context, value any) (any, bool, erro
 			return nil, false, err
 		}
 
-		var result expandedValue
 		switch exp := expanded.(type) {
-		case expandedValue:
-			// Return the expanded value as is.
-			result = exp
-		case string:
-			// Use the resulting string as the original representation
-			result = expandedValue{
-				Value:       exp,
-				Original:    exp,
-				HasOriginal: true,
-			}
-		default:
-			// Keep the original representation
-			result = expandedValue{
-				Value:       expanded,
-				Original:    v.Original,
-				HasOriginal: v.HasOriginal,
-			}
+		case expandedValue, string:
+			// Return expanded values or strings verbatim.
+			return exp, changed, nil
 		}
 
-		return result, changed, nil
+		// At this point we don't know the target field type, so we need to expand the original representation as well.
+		originalExpanded, originalChanged, err := mr.expandValue(ctx, v.Original)
+		if err != nil {
+			return nil, false, err
+		}
+
+		switch originalExpanded := originalExpanded.(type) {
+		case string:
+			// If the original representation is a string, return the expanded value with the original representation.
+			return expandedValue{
+				Value:       expanded,
+				Original:    originalExpanded,
+				HasOriginal: true,
+			}, changed || originalChanged, nil
+		}
+
+		result := expandedValue{
+			Value:       expanded,
+			Original:    v.Original,
+			HasOriginal: v.HasOriginal,
+		}
+
+		return result, changed || originalChanged, nil
 	case string:
 		if !strings.Contains(v, "${") || !strings.Contains(v, "}") {
 			// No URIs to expand.
