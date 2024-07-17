@@ -6,7 +6,7 @@
 
 The following telemetry is emitted by this component.
 
-### processor_accepted_log_records
+### otelcol_processor_accepted_log_records
 
 Number of log records successfully pushed into the next component in the pipeline.
 
@@ -14,7 +14,7 @@ Number of log records successfully pushed into the next component in the pipelin
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### processor_accepted_metric_points
+### otelcol_processor_accepted_metric_points
 
 Number of metric points successfully pushed into the next component in the pipeline.
 
@@ -22,7 +22,7 @@ Number of metric points successfully pushed into the next component in the pipel
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### processor_accepted_spans
+### otelcol_processor_accepted_spans
 
 Number of spans successfully pushed into the next component in the pipeline.
 
@@ -30,7 +30,7 @@ Number of spans successfully pushed into the next component in the pipeline.
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### processor_dropped_log_records
+### otelcol_processor_dropped_log_records
 
 Number of log records that were dropped.
 
@@ -38,7 +38,7 @@ Number of log records that were dropped.
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### processor_dropped_metric_points
+### otelcol_processor_dropped_metric_points
 
 Number of metric points that were dropped.
 
@@ -46,7 +46,7 @@ Number of metric points that were dropped.
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### processor_dropped_spans
+### otelcol_processor_dropped_spans
 
 Number of spans that were dropped.
 
@@ -54,7 +54,7 @@ Number of spans that were dropped.
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### processor_inserted_log_records
+### otelcol_processor_inserted_log_records
 
 Number of log records that were inserted.
 
@@ -62,7 +62,7 @@ Number of log records that were inserted.
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### processor_inserted_metric_points
+### otelcol_processor_inserted_metric_points
 
 Number of metric points that were inserted.
 
@@ -70,7 +70,7 @@ Number of metric points that were inserted.
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### processor_inserted_spans
+### otelcol_processor_inserted_spans
 
 Number of spans that were inserted.
 
@@ -78,7 +78,7 @@ Number of spans that were inserted.
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### processor_refused_log_records
+### otelcol_processor_refused_log_records
 
 Number of log records that were rejected by the next component in the pipeline.
 
@@ -86,7 +86,7 @@ Number of log records that were rejected by the next component in the pipeline.
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### processor_refused_metric_points
+### otelcol_processor_refused_metric_points
 
 Number of metric points that were rejected by the next component in the pipeline.
 
@@ -94,7 +94,7 @@ Number of metric points that were rejected by the next component in the pipeline
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### processor_refused_spans
+### otelcol_processor_refused_spans
 
 Number of spans that were rejected by the next component in the pipeline.
 

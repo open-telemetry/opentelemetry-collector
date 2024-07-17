@@ -1,8 +1,8 @@
-module go.opentelemetry.io/collector/internal/featuregates
+module go.opentelemetry.io/collector/internal/globalgates
 
 go 1.21.0
 
-require go.opentelemetry.io/collector/featuregate v1.11.0
+require go.opentelemetry.io/collector/featuregate v1.12.0
 
 require (
 	github.com/hashicorp/go-version v1.7.0 // indirect

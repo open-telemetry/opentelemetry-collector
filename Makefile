@@ -290,7 +290,7 @@ check-contrib:
 		-replace go.opentelemetry.io/collector/extension/memorylimiterextension=$(CURDIR)/extension/memorylimiterextension  \
 		-replace go.opentelemetry.io/collector/extension/zpagesextension=$(CURDIR)/extension/zpagesextension  \
 		-replace go.opentelemetry.io/collector/featuregate=$(CURDIR)/featuregate  \
-		-replace go.opentelemetry.io/collector/internal/featuregates=$(CURDIR)/internal/featuregates \
+		-replace go.opentelemetry.io/collector/internal/globalgates=$(CURDIR)/internal/globalgates \
 		-replace go.opentelemetry.io/collector/otelcol=$(CURDIR)/otelcol  \
 		-replace go.opentelemetry.io/collector/otelcol/otelcoltest=$(CURDIR)/otelcol/otelcoltest  \
 		-replace go.opentelemetry.io/collector/pdata=$(CURDIR)/pdata  \
@@ -349,7 +349,7 @@ restore-contrib:
 		-dropreplace go.opentelemetry.io/collector/extension/memorylimiterextension  \
 		-dropreplace go.opentelemetry.io/collector/extension/zpagesextension  \
 		-dropreplace go.opentelemetry.io/collector/featuregate  \
-		-dropreplace go.opentelemetry.io/collector/internal/featuregates \
+		-dropreplace go.opentelemetry.io/collector/internal/globalgates \
 		-dropreplace go.opentelemetry.io/collector/otelcol  \
 		-dropreplace go.opentelemetry.io/collector/otelcol/otelcoltest  \
 		-dropreplace go.opentelemetry.io/collector/pdata  \
