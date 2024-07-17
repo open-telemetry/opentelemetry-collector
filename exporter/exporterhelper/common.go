@@ -315,7 +315,7 @@ func (be *baseExporter) send(ctx context.Context, req Request) error {
 // connectSenders connects the senders in the predefined order.
 func (be *baseExporter) connectSenders() {
 	be.queueSender.setNextSender(be.organizeSender)
-	be.queueSender.setNextSender(be.batchSender)
+	be.organizeSender.setNextSender(be.batchSender)
 	be.batchSender.setNextSender(be.obsrepSender)
 	be.obsrepSender.setNextSender(be.retrySender)
 	be.retrySender.setNextSender(be.timeoutSender)
