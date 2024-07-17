@@ -426,15 +426,32 @@ func TestRecursiveMaps(t *testing.T) {
 	conf, err := resolver.Resolve(context.Background())
 	require.NoError(t, err)
 
-	var cfg TargetConfig[map[string]any]
+	type Value struct {
+		Value int `mapstructure:"value"`
+	}
+	type ENV2 struct {
+		Env2 Value `mapstructure:"env2"`
+	}
+	type ENV struct {
+		Env    ENV2   `mapstructure:"env"`
+		Inline string `mapstructure:"inline"`
+	}
+	type Target struct {
+		Field ENV `mapstructure:"field"`
+	}
+
+	var cfg Target
 	err = conf.Unmarshal(&cfg)
 	require.NoError(t, err)
 	require.Equal(t,
-		map[string]any{
-			"env":    map[string]any{"env2": map[string]any{"value": 123}},
-			"inline": "inline {value: 123}",
-		},
-		cfg.Field,
+		Target{Field: ENV{
+			Env: ENV2{
+				Env2: Value{
+					Value: 123,
+				}},
+			Inline: "inline {env2: \"{value: 123}\"}",
+		}},
+		cfg,
 	)
 
 	confStr, err := resolver.Resolve(context.Background())

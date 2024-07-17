@@ -237,6 +237,18 @@ func caseSensitiveMatchName(a, b string) bool {
 	return a == b
 }
 
+func castTo(exp expandedValue, useOriginal bool) (any, error) {
+	// If the target field is a string, use `exp.Original` or fail if not available.
+	if globalgates.StrictlyTypedInputGate.IsEnabled() && useOriginal {
+		if !exp.HasOriginal {
+			return nil, fmt.Errorf("cannot expand value to string: original value not set")
+		}
+		return exp.Original, nil
+	}
+	// Otherwise, use the parsed value (previous behavior).
+	return exp.Value, nil
+}
+
 // When a value has been loaded from an external source via a provider, we keep both the
 // parsed value and the original string value. This allows us to expand the value to its
 // original string representation when decoding into a string field, and use the original otherwise.
@@ -246,15 +258,14 @@ func useExpandValue() mapstructure.DecodeHookFuncType {
 		to reflect.Type,
 		data any) (any, error) {
 		if exp, ok := data.(expandedValue); ok {
-			// If the target field is a string, use `exp.Original` or fail if not available.
-			if globalgates.StrictlyTypedInputGate.IsEnabled() && to.Kind() == reflect.String {
-				if !exp.HasOriginal {
-					return nil, fmt.Errorf("cannot expand value to string: original value not set")
-				}
-				return exp.Original, nil
-			}
-			// Otherwise, use the parsed value (previous behavior).
-			return exp.Value, nil
+			return castTo(exp, to.Kind() == reflect.String)
+		}
+
+		// If the target field is a map or slice, sanitize input to remove expandedValue references.
+		switch to.Kind() {
+		case reflect.Array, reflect.Slice, reflect.Map:
+			// This does not handle map[string]string and []string explicitly.
+			return sanitize(data), nil
 		}
 		return data, nil
 	}
