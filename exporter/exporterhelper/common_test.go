@@ -8,6 +8,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/codes"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -95,4 +96,17 @@ func TestBaseExporterLogging(t *testing.T) {
 	require.Error(t, sendErr)
 
 	require.Len(t, observed.FilterLevelExact(zap.ErrorLevel).All(), 1)
+}
+
+func TestBaseExporterWithBatchPerResourceAttributeInvalid(t *testing.T) {
+	set := exportertest.NewNopSettings()
+	_, err := newBaseExporter(set, defaultDataType, newNoopObsrepSender, WithBatchPerResourceAttribute())
+	assert.EqualError(t, err, "WithBatchPerResourceAttribute must be provided with at least one attribute key")
+}
+
+func TestBaseExporterWithBatchPerResourceAttribute(t *testing.T) {
+	set := exportertest.NewNopSettings()
+	be, err := newBaseExporter(set, defaultDataType, newNoopObsrepSender, WithBatchPerResourceAttribute("foo"))
+	assert.NoError(t, err)
+	require.NotNil(t, be)
 }

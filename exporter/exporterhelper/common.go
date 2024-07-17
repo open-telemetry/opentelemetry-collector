@@ -5,6 +5,7 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.uber.org/multierr"
@@ -218,6 +219,17 @@ func withBatchFuncs(mf exporterbatcher.BatchMergeFunc[Request], msf exporterbatc
 	}
 }
 
+// WithBatchPerResourceAttribute batches data per resource attributes.
+func WithBatchPerResourceAttribute(attrKeys ...string) Option {
+	return func(o *baseExporter) error {
+		if len(attrKeys) == 0 {
+			return errors.New("WithBatchPerResourceAttribute must be provided with at least one attribute key")
+		}
+		o.organizeSender = newOrganizeSender(attrKeys)
+		return nil
+	}
+}
+
 // baseExporter contains common fields between different exporter types.
 type baseExporter struct {
 	component.StartFunc
@@ -240,11 +252,12 @@ type baseExporter struct {
 	// Chain of senders that the exporter helper applies before passing the data to the actual exporter.
 	// The data is handled by each sender in the respective order starting from the queueSender.
 	// Most of the senders are optional, and initialized with a no-op path-through sender.
-	batchSender   requestSender
-	queueSender   requestSender
-	obsrepSender  requestSender
-	retrySender   requestSender
-	timeoutSender *timeoutSender // timeoutSender is always initialized.
+	organizeSender requestSender
+	batchSender    requestSender
+	queueSender    requestSender
+	obsrepSender   requestSender
+	retrySender    requestSender
+	timeoutSender  *timeoutSender // timeoutSender is always initialized.
 
 	consumerOptions []consumer.Option
 }
@@ -256,13 +269,13 @@ func newBaseExporter(set exporter.Settings, signal component.DataType, osf obsre
 	}
 
 	be := &baseExporter{
-		signal: signal,
-
-		batchSender:   &baseRequestSender{},
-		queueSender:   &baseRequestSender{},
-		obsrepSender:  osf(obsReport),
-		retrySender:   &baseRequestSender{},
-		timeoutSender: &timeoutSender{cfg: NewDefaultTimeoutSettings()},
+		signal:         signal,
+		organizeSender: &baseRequestSender{},
+		batchSender:    &baseRequestSender{},
+		queueSender:    &baseRequestSender{},
+		obsrepSender:   osf(obsReport),
+		retrySender:    &baseRequestSender{},
+		timeoutSender:  &timeoutSender{cfg: NewDefaultTimeoutSettings()},
 
 		set:    set,
 		obsrep: obsReport,
@@ -301,6 +314,7 @@ func (be *baseExporter) send(ctx context.Context, req Request) error {
 
 // connectSenders connects the senders in the predefined order.
 func (be *baseExporter) connectSenders() {
+	be.queueSender.setNextSender(be.organizeSender)
 	be.queueSender.setNextSender(be.batchSender)
 	be.batchSender.setNextSender(be.obsrepSender)
 	be.obsrepSender.setNextSender(be.retrySender)
