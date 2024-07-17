@@ -49,14 +49,28 @@ func (mr *Resolver) expandValue(ctx context.Context, value any) (any, bool, erro
 			return nil, false, err
 		}
 
-		if _, ok := expanded.(expandedValue); ok {
-			return expanded, changed, nil
+		var result expandedValue
+		switch exp := expanded.(type) {
+		case expandedValue:
+			// Return the expanded value as is.
+			result = exp
+		case string:
+			// Use the resulting string as the original representation
+			result = expandedValue{
+				Value:       exp,
+				Original:    exp,
+				HasOriginal: true,
+			}
+		default:
+			// Keep the original representation
+			result = expandedValue{
+				Value:       expanded,
+				Original:    v.Original,
+				HasOriginal: v.HasOriginal,
+			}
 		}
-		return expandedValue{
-			Value:       expanded,
-			Original:    v.Original,
-			HasOriginal: v.HasOriginal,
-		}, changed, nil
+
+		return result, changed, nil
 	case string:
 		if !strings.Contains(v, "${") || !strings.Contains(v, "}") {
 			// No URIs to expand.
