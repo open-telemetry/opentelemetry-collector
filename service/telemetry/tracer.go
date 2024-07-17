@@ -28,7 +28,8 @@ var (
 // New creates a new Telemetry from Config.
 func newTracerProvider(ctx context.Context, set Settings, cfg Config) (trace.TracerProvider, error) {
 	attrs := map[string]interface{}{
-		string(semconv.ServiceNameKey): set.BuildInfo.Version,
+		string(semconv.ServiceNameKey):    set.BuildInfo.Command,
+		string(semconv.ServiceVersionKey): set.BuildInfo.Version,
 	}
 	for k, v := range cfg.Resource {
 		if v != nil {
