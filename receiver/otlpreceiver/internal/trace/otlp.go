@@ -5,10 +5,12 @@ package trace // import "go.opentelemetry.io/collector/receiver/otlpreceiver/int
 
 import (
 	"context"
+	"errors"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
-	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
+	otlperrors "go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
@@ -49,7 +51,30 @@ func (r *Receiver) Export(ctx context.Context, req ptraceotlp.ExportRequest) (pt
 	// NonPermanent errors will be converted to codes.Unavailable (equivalent to HTTP 503)
 	// Permanent errors will be converted to codes.InvalidArgument (equivalent to HTTP 400)
 	if err != nil {
-		return ptraceotlp.NewExportResponse(), errors.GetStatusFromError(err)
+		// See if an error is retryable.
+		cet := consumererror.Traces{}
+		if errors.As(err, &cet) {
+			retries := 3
+
+			// Retry three times; the real logic would be more complex akin to consumerretry.
+			for i := 0; i < retries; i++ {
+				// Re-use the data that was given to be retried.
+				td = cet.Data()
+
+				// Update the context to include a key that indicates the component to be retried.
+				retryCtx := context.WithValue(ctx, consumererror.ComponentIDKey, cet.ID())
+
+				// Retry the data.
+				err = r.nextConsumer.ConsumeTraces(retryCtx, td)
+
+				if err == nil {
+					return ptraceotlp.NewExportResponse(), nil
+				}
+			}
+
+			return ptraceotlp.NewExportResponse(), otlperrors.GetStatusFromError(err)
+		}
+
 	}
 
 	return ptraceotlp.NewExportResponse(), nil

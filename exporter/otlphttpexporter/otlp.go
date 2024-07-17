@@ -22,7 +22,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/internal/httphelper"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
@@ -212,7 +211,15 @@ func (e *baseExporter) export(ctx context.Context, url string, request []byte, p
 			}
 		}
 
-		return exporterhelper.NewThrottleRetry(formattedErr, time.Duration(retryAfter)*time.Second)
+		return errors.Join(
+			consumererror.NewTraces(
+				formattedErr,
+				data,
+				e.id,
+				consumererror.WithRetryDelay(time.Duration(retryAfter)*time.Second),
+			),
+			consumererror.NewHTTP(formattedErr, resp.StatusCode),
+		)
 	}
 
 	return consumererror.NewPermanent(formattedErr)

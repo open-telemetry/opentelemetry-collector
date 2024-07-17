@@ -6,13 +6,19 @@ package consumererror // import "go.opentelemetry.io/collector/consumer/consumer
 import (
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
+type CompKey string
+
+const ComponentIDKey = CompKey("componentID")
+
 type retryableCommon struct {
 	error
+	id    component.ID
 	delay time.Duration
 }
 
@@ -39,6 +45,12 @@ func (err retryable[V]) Delay() time.Duration {
 	return err.delay
 }
 
+// ID returns the component ID for the component that wants to
+// retry the data.
+func (err retryable[V]) ID() component.ID {
+	return err.id
+}
+
 // RetryableOption allows adding data to a retryable error,
 // e.g. the duration before sending should be retried.
 type RetryableOption func(err *retryableCommon)
@@ -56,11 +68,12 @@ type Traces struct {
 }
 
 // NewTraces creates a Traces that can encapsulate received data that failed to be processed or sent.
-func NewTraces(err error, data ptrace.Traces, options ...RetryableOption) error {
+func NewTraces(err error, data ptrace.Traces, id component.ID, options ...RetryableOption) error {
 	t := Traces{
 		retryable: retryable[ptrace.Traces]{
 			retryableCommon: retryableCommon{
 				error: err,
+				id:    id,
 			},
 			data: data,
 		},
