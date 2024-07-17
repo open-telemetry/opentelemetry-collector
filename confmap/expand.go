@@ -61,8 +61,7 @@ func (mr *Resolver) expandValue(ctx context.Context, value any) (any, bool, erro
 			return nil, false, err
 		}
 
-		switch originalExpanded := originalExpanded.(type) {
-		case string:
+		if originalExpanded, ok := originalExpanded.(string); ok {
 			// If the original representation is a string, return the expanded value with the original representation.
 			return expandedValue{
 				Value:       expanded,
