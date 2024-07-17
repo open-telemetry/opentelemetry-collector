@@ -360,7 +360,7 @@ func TestStrictTypeCasting(t *testing.T) {
 	}
 }
 
-func TestRecursiveString(t *testing.T) {
+func TestRecursiveInlineString(t *testing.T) {
 	values := []Test{
 		{
 			value:       "123",
@@ -406,4 +406,43 @@ func TestRecursiveString(t *testing.T) {
 			AssertResolvesTo(t, resolver, tt)
 		})
 	}
+}
+
+func TestRecursiveMaps(t *testing.T) {
+	value := "{value: 123}"
+
+	previousValue := globalgates.StrictlyTypedInputGate.IsEnabled()
+	err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, true)
+	require.NoError(t, err)
+	defer func() {
+		err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, previousValue)
+		require.NoError(t, err)
+	}()
+
+	resolver := NewResolver(t, "types_expand.yaml")
+	t.Setenv("ENV", `{env: "${env:ENV2}", inline: "inline ${env:ENV2}"}`)
+	t.Setenv("ENV2", `{env2: "${env:ENV3}"}`)
+	t.Setenv("ENV3", value)
+	conf, err := resolver.Resolve(context.Background())
+	require.NoError(t, err)
+
+	var cfg TargetConfig[map[string]any]
+	err = conf.Unmarshal(&cfg)
+	require.NoError(t, err)
+	require.Equal(t,
+		map[string]any{
+			"env":    map[string]any{"env2": map[string]any{"value": 123}},
+			"inline": "inline {value: 123}",
+		},
+		cfg.Field,
+	)
+
+	confStr, err := resolver.Resolve(context.Background())
+	require.NoError(t, err)
+	var cfgStr TargetConfig[string]
+	err = confStr.Unmarshal(&cfgStr)
+	require.NoError(t, err)
+	require.Equal(t, `{env: "{env2: "{value: 123}"}", inline: "inline {env2: "{value: 123}"}"}`,
+		cfgStr.Field,
+	)
 }
