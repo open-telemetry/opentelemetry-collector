@@ -415,8 +415,8 @@ func TestRecursiveMaps(t *testing.T) {
 	err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, true)
 	require.NoError(t, err)
 	defer func() {
-		err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, previousValue)
-		require.NoError(t, err)
+		seterr := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, previousValue)
+		require.NoError(t, seterr)
 	}()
 
 	resolver := NewResolver(t, "types_expand.yaml")
