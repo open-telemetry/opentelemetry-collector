@@ -8,6 +8,9 @@ package component // import "go.opentelemetry.io/collector/component"
 import (
 	"context"
 	"errors"
+	"slices"
+	"sort"
+	"strings"
 )
 
 var (
@@ -190,24 +193,25 @@ func (f CreateDefaultConfigFunc) CreateDefaultConfig() Config {
 	return f()
 }
 
+// pipelineDelim is the delimeter for internal representation of pipeline
+// component IDs.
+const pipelineDelim = byte(0x20)
+
 // InstanceID uniquely identifies a component instance.
 type InstanceID struct {
 	componentID ID
 	kind        Kind
-	pipelineIDs map[ID]struct{}
+	pipelineIDs string // IDs encoded as a string so InstanceID is Comparable.
 }
 
 // NewInstanceID returns an ID that uniquely identifies a component.
 func NewInstanceID(componentID ID, kind Kind, pipelineIDs ...ID) *InstanceID {
-	instanceID := InstanceID{
+	instanceID := &InstanceID{
 		componentID: componentID,
 		kind:        kind,
-		pipelineIDs: make(map[ID]struct{}, len(pipelineIDs)),
 	}
-	for _, pid := range pipelineIDs {
-		instanceID.pipelineIDs[pid] = struct{}{}
-	}
-	return &instanceID
+	instanceID.addPipelines(pipelineIDs)
+	return instanceID
 }
 
 // ComponentID returns the ComponentID associated with this instance.
@@ -220,24 +224,46 @@ func (id *InstanceID) Kind() Kind {
 	return id.kind
 }
 
-// PipelineIDs returns a set of PipelineIDs associated with this instance.
-func (id *InstanceID) PipelineIDs() map[ID]struct{} {
-	return id.pipelineIDs
+// EachPipelineID calls f for each pipeline this instance is associated with. If
+// f returns false it will stop iteration.
+func (id *InstanceID) EachPipelineID(f func(ID) bool) {
+	var bs []byte
+	for _, b := range []byte(id.pipelineIDs) {
+		if b != pipelineDelim {
+			bs = append(bs, b)
+			continue
+		}
+		pipelineID := ID{}
+		err := pipelineID.UnmarshalText(bs)
+		bs = bs[:0]
+		if err != nil {
+			continue
+		}
+		if !f(pipelineID) {
+			break
+		}
+	}
 }
 
 // WithPipelines returns a new InstanceID updated to include the given
 // pipelineIDs.
 func (id *InstanceID) WithPipelines(pipelineIDs ...ID) *InstanceID {
-	instanceID := InstanceID{
-		componentID: id.ComponentID(),
-		kind:        id.Kind(),
-		pipelineIDs: make(map[ID]struct{}, len(id.PipelineIDs())+len(pipelineIDs)),
+	instanceID := &InstanceID{
+		componentID: id.componentID,
+		kind:        id.kind,
+		pipelineIDs: id.pipelineIDs,
 	}
-	for pid := range id.PipelineIDs() {
-		instanceID.pipelineIDs[pid] = struct{}{}
+	instanceID.addPipelines(pipelineIDs)
+	return instanceID
+}
+
+func (id *InstanceID) addPipelines(pipelineIDs []ID) {
+	delim := string(pipelineDelim)
+	strIDs := strings.Split(id.pipelineIDs, delim)
+	for _, pID := range pipelineIDs {
+		strIDs = append(strIDs, pID.String())
 	}
-	for _, pid := range pipelineIDs {
-		instanceID.pipelineIDs[pid] = struct{}{}
-	}
-	return &instanceID
+	sort.Strings(strIDs)
+	strIDs = slices.Compact(strIDs)
+	id.pipelineIDs = strings.Join(strIDs, delim) + delim
 }
