@@ -189,10 +189,10 @@ receivers:
          endpoint: otel-collector:4317 # Using the service name from your Docker compose file
 ```
 
-You can connect to this collector from another Docker container running in the same network as the Collector by connecting to `otel-collector01:4317`.  You could access it from outside that Docker network (for example on a regular program running on the host) by connecting to `127.0.0.1:4567`.
+You can connect to this Collector from another Docker container running in the same network as the Collector by connecting to `otel-collector01:4317`.  You could access it from outside that Docker network (for example on a regular program running on the host) by connecting to `127.0.0.1:4567`.
 
 #### Kubernetes
-If you run the collector as a `Daemonset`, you can use a configuration like below:
+If you run the Collector as a `Daemonset`, you can use a configuration like below:
 ```yaml
 apiVersion: apps/v1
 kind: DaemonSet
