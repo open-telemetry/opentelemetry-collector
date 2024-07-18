@@ -32,6 +32,8 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/extension/auth"
 	"go.opentelemetry.io/collector/extension/auth/authtest"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/localhostgate"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
@@ -46,9 +48,10 @@ func TestNewDefaultKeepaliveClientConfig(t *testing.T) {
 
 func TestNewDefaultClientConfig(t *testing.T) {
 	expected := &ClientConfig{
-		TLSSetting: configtls.NewDefaultClientConfig(),
-		Keepalive:  NewDefaultKeepaliveClientConfig(),
-		Auth:       configauth.NewDefaultAuthentication(),
+		TLSSetting:   configtls.NewDefaultClientConfig(),
+		Keepalive:    NewDefaultKeepaliveClientConfig(),
+		Auth:         configauth.NewDefaultAuthentication(),
+		BalancerName: BalancerName(),
 	}
 
 	result := NewDefaultClientConfig()
@@ -213,7 +216,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				ReadBufferSize:  1024,
 				WriteBufferSize: 1024,
 				WaitForReady:    true,
-				BalancerName:    "configgrpc_balancer_test",
+				BalancerName:    "round_robin",
 				Authority:       "pseudo-authority",
 				Auth:            &configauth.Authentication{AuthenticatorID: testAuthID},
 			},
@@ -437,6 +440,13 @@ func TestUseSecure(t *testing.T) {
 }
 
 func TestGRPCServerWarning(t *testing.T) {
+	prev := localhostgate.UseLocalHostAsDefaultHostfeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(localhostgate.UseLocalHostAsDefaultHostID, false))
+	defer func() {
+		// Restore previous value.
+		require.NoError(t, featuregate.GlobalRegistry().Set(localhostgate.UseLocalHostAsDefaultHostID, prev))
+	}()
+
 	tests := []struct {
 		name     string
 		settings ServerConfig

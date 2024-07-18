@@ -6,6 +6,8 @@ package internal // import "go.opentelemetry.io/collector/service/telemetry/inte
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/metric"
+	metricnoop "go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
 	tracenoop "go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
@@ -34,7 +36,8 @@ type Factory interface {
 	// CreateTracerProvider creates a TracerProvider.
 	CreateTracerProvider(ctx context.Context, set Settings, cfg component.Config) (trace.TracerProvider, error)
 
-	// TODO: Add CreateMeterProvider.
+	// CreateMeterProvider creates a MeterProvider.
+	CreateMeterProvider(ctx context.Context, set Settings, cfg component.Config) (metric.MeterProvider, error)
 
 	// unexportedFactoryFunc is used to prevent external implementations of Factory.
 	unexportedFactoryFunc()
@@ -62,6 +65,7 @@ type factory struct {
 	createDefaultConfig component.CreateDefaultConfigFunc
 	CreateLoggerFunc
 	CreateTracerProviderFunc
+	CreateMeterProviderFunc
 }
 
 func (f *factory) CreateDefaultConfig() component.Config {
@@ -100,6 +104,23 @@ func (f *factory) CreateTracerProvider(ctx context.Context, set Settings, cfg co
 		return tracenoop.NewTracerProvider(), nil
 	}
 	return f.CreateTracerProviderFunc(ctx, set, cfg)
+}
+
+// CreateMeterProviderFunc is the equivalent of Factory.CreateMeterProvider.
+type CreateMeterProviderFunc func(context.Context, Settings, component.Config) (metric.MeterProvider, error)
+
+// WithMeterProvider overrides the default no-op meter provider.
+func WithMeterProvider(createMeterProvider CreateMeterProviderFunc) FactoryOption {
+	return factoryOptionFunc(func(o *factory) {
+		o.CreateMeterProviderFunc = createMeterProvider
+	})
+}
+
+func (f *factory) CreateMeterProvider(ctx context.Context, set Settings, cfg component.Config) (metric.MeterProvider, error) {
+	if f.CreateMeterProviderFunc == nil {
+		return metricnoop.NewMeterProvider(), nil
+	}
+	return f.CreateMeterProviderFunc(ctx, set, cfg)
 }
 
 func (f *factory) unexportedFactoryFunc() {}

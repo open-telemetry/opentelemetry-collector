@@ -69,6 +69,7 @@ var (
 		"/extension/auth",
 		"/extension/zpagesextension",
 		"/featuregate",
+		"/internal/globalgates",
 		"/processor",
 		"/processor/batchprocessor",
 		"/processor/memorylimiterprocessor",
@@ -259,6 +260,8 @@ func TestGenerateAndCompile(t *testing.T) {
 			testCase: "Default Configuration Compilation",
 			cfgBuilder: func(t *testing.T) Config {
 				cfg := newTestConfig()
+				err := cfg.SetBackwardsCompatibility()
+				require.NoError(t, err)
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				return cfg
@@ -268,6 +271,8 @@ func TestGenerateAndCompile(t *testing.T) {
 			testCase: "LDFlags Compilation",
 			cfgBuilder: func(t *testing.T) Config {
 				cfg := newTestConfig()
+				err := cfg.SetBackwardsCompatibility()
+				require.NoError(t, err)
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				cfg.LDFlags = `-X "test.gitVersion=0743dc6c6411272b98494a9b32a63378e84c34da" -X "test.gitTag=local-testing" -X "test.goVersion=go version go1.20.7 darwin/amd64"`
@@ -278,6 +283,8 @@ func TestGenerateAndCompile(t *testing.T) {
 			testCase: "Debug Compilation",
 			cfgBuilder: func(t *testing.T) Config {
 				cfg := newTestConfig()
+				err := cfg.SetBackwardsCompatibility()
+				require.NoError(t, err)
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				cfg.Logger = zap.NewNop()
@@ -289,6 +296,8 @@ func TestGenerateAndCompile(t *testing.T) {
 			testCase: "No providers",
 			cfgBuilder: func(t *testing.T) Config {
 				cfg := newTestConfig()
+				err := cfg.SetBackwardsCompatibility()
+				require.NoError(t, err)
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				cfg.Providers = &[]Module{}
@@ -299,6 +308,8 @@ func TestGenerateAndCompile(t *testing.T) {
 			testCase: "Pre-confmap factories",
 			cfgBuilder: func(t *testing.T) Config {
 				cfg := newTestConfig()
+				err := cfg.SetBackwardsCompatibility()
+				require.NoError(t, err)
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				cfg.Distribution.OtelColVersion = "0.98.0"
@@ -310,6 +321,8 @@ func TestGenerateAndCompile(t *testing.T) {
 			testCase: "With confmap factories",
 			cfgBuilder: func(t *testing.T) Config {
 				cfg := newTestConfig()
+				err := cfg.SetBackwardsCompatibility()
+				require.NoError(t, err)
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				cfg.Distribution.OtelColVersion = "0.99.0"
@@ -321,6 +334,8 @@ func TestGenerateAndCompile(t *testing.T) {
 			testCase: "ConfResolverDefaultURIScheme set",
 			cfgBuilder: func(t *testing.T) Config {
 				cfg := newTestConfig()
+				err := cfg.SetBackwardsCompatibility()
+				require.NoError(t, err)
 				cfg.ConfResolver = ConfResolver{
 					DefaultURIScheme: "env",
 				}

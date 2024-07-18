@@ -10,6 +10,7 @@ import (
 	"sort"
 
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -46,6 +47,8 @@ func (bes *Extensions) Start(ctx context.Context, host component.Host) error {
 				instanceID,
 				component.NewPermanentErrorEvent(err),
 			)
+			// We log with zap.AddStacktrace(zap.DPanicLevel) to avoid adding the stack trace to the error log
+			extLogger.WithOptions(zap.AddStacktrace(zap.DPanicLevel)).Error("Failed to start extension", zap.Error(err))
 			return err
 		}
 		bes.telemetry.Status.ReportOKIfStarting(instanceID)

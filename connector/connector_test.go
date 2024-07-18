@@ -13,6 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/connector/internal"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
@@ -29,25 +30,25 @@ func TestNewFactoryNoOptions(t *testing.T) {
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
 	_, err := factory.CreateTracesToTraces(context.Background(), Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.Equal(t, err, errDataTypes(testID, component.DataTypeTraces, component.DataTypeTraces))
+	assert.Equal(t, err, internal.ErrDataTypes(testID, component.DataTypeTraces, component.DataTypeTraces))
 	_, err = factory.CreateTracesToMetrics(context.Background(), Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.Equal(t, err, errDataTypes(testID, component.DataTypeTraces, component.DataTypeMetrics))
+	assert.Equal(t, err, internal.ErrDataTypes(testID, component.DataTypeTraces, component.DataTypeMetrics))
 	_, err = factory.CreateTracesToLogs(context.Background(), Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.Equal(t, err, errDataTypes(testID, component.DataTypeTraces, component.DataTypeLogs))
+	assert.Equal(t, err, internal.ErrDataTypes(testID, component.DataTypeTraces, component.DataTypeLogs))
 
 	_, err = factory.CreateMetricsToTraces(context.Background(), Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.Equal(t, err, errDataTypes(testID, component.DataTypeMetrics, component.DataTypeTraces))
+	assert.Equal(t, err, internal.ErrDataTypes(testID, component.DataTypeMetrics, component.DataTypeTraces))
 	_, err = factory.CreateMetricsToMetrics(context.Background(), Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.Equal(t, err, errDataTypes(testID, component.DataTypeMetrics, component.DataTypeMetrics))
+	assert.Equal(t, err, internal.ErrDataTypes(testID, component.DataTypeMetrics, component.DataTypeMetrics))
 	_, err = factory.CreateMetricsToLogs(context.Background(), Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.Equal(t, err, errDataTypes(testID, component.DataTypeMetrics, component.DataTypeLogs))
+	assert.Equal(t, err, internal.ErrDataTypes(testID, component.DataTypeMetrics, component.DataTypeLogs))
 
 	_, err = factory.CreateLogsToTraces(context.Background(), Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.Equal(t, err, errDataTypes(testID, component.DataTypeLogs, component.DataTypeTraces))
+	assert.Equal(t, err, internal.ErrDataTypes(testID, component.DataTypeLogs, component.DataTypeTraces))
 	_, err = factory.CreateLogsToMetrics(context.Background(), Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.Equal(t, err, errDataTypes(testID, component.DataTypeLogs, component.DataTypeMetrics))
+	assert.Equal(t, err, internal.ErrDataTypes(testID, component.DataTypeLogs, component.DataTypeMetrics))
 	_, err = factory.CreateLogsToLogs(context.Background(), Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.Equal(t, err, errDataTypes(testID, component.DataTypeLogs, component.DataTypeLogs))
+	assert.Equal(t, err, internal.ErrDataTypes(testID, component.DataTypeLogs, component.DataTypeLogs))
 }
 
 func TestNewFactoryWithSameTypes(t *testing.T) {
@@ -72,19 +73,19 @@ func TestNewFactoryWithSameTypes(t *testing.T) {
 	assert.NoError(t, err)
 
 	_, err = factory.CreateTracesToMetrics(context.Background(), Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.Equal(t, err, errDataTypes(testID, component.DataTypeTraces, component.DataTypeMetrics))
+	assert.Equal(t, err, internal.ErrDataTypes(testID, component.DataTypeTraces, component.DataTypeMetrics))
 	_, err = factory.CreateTracesToLogs(context.Background(), Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.Equal(t, err, errDataTypes(testID, component.DataTypeTraces, component.DataTypeLogs))
+	assert.Equal(t, err, internal.ErrDataTypes(testID, component.DataTypeTraces, component.DataTypeLogs))
 
 	_, err = factory.CreateMetricsToTraces(context.Background(), Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.Equal(t, err, errDataTypes(testID, component.DataTypeMetrics, component.DataTypeTraces))
+	assert.Equal(t, err, internal.ErrDataTypes(testID, component.DataTypeMetrics, component.DataTypeTraces))
 	_, err = factory.CreateMetricsToLogs(context.Background(), Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.Equal(t, err, errDataTypes(testID, component.DataTypeMetrics, component.DataTypeLogs))
+	assert.Equal(t, err, internal.ErrDataTypes(testID, component.DataTypeMetrics, component.DataTypeLogs))
 
 	_, err = factory.CreateLogsToTraces(context.Background(), Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.Equal(t, err, errDataTypes(testID, component.DataTypeLogs, component.DataTypeTraces))
+	assert.Equal(t, err, internal.ErrDataTypes(testID, component.DataTypeLogs, component.DataTypeTraces))
 	_, err = factory.CreateLogsToMetrics(context.Background(), Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.Equal(t, err, errDataTypes(testID, component.DataTypeLogs, component.DataTypeMetrics))
+	assert.Equal(t, err, internal.ErrDataTypes(testID, component.DataTypeLogs, component.DataTypeMetrics))
 }
 
 func TestNewFactoryWithTranslateTypes(t *testing.T) {
@@ -100,11 +101,11 @@ func TestNewFactoryWithTranslateTypes(t *testing.T) {
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
 	_, err := factory.CreateTracesToTraces(context.Background(), Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.Equal(t, err, errDataTypes(testID, component.DataTypeTraces, component.DataTypeTraces))
+	assert.Equal(t, err, internal.ErrDataTypes(testID, component.DataTypeTraces, component.DataTypeTraces))
 	_, err = factory.CreateMetricsToMetrics(context.Background(), Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.Equal(t, err, errDataTypes(testID, component.DataTypeMetrics, component.DataTypeMetrics))
+	assert.Equal(t, err, internal.ErrDataTypes(testID, component.DataTypeMetrics, component.DataTypeMetrics))
 	_, err = factory.CreateLogsToLogs(context.Background(), Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.Equal(t, err, errDataTypes(testID, component.DataTypeLogs, component.DataTypeLogs))
+	assert.Equal(t, err, internal.ErrDataTypes(testID, component.DataTypeLogs, component.DataTypeLogs))
 
 	assert.Equal(t, component.StabilityLevelDevelopment, factory.TracesToMetricsStability())
 	_, err = factory.CreateTracesToMetrics(context.Background(), Settings{ID: testID}, &defaultCfg, consumertest.NewNop())

@@ -19,6 +19,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/globalgates"
 	"go.opentelemetry.io/collector/internal/testutil"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
@@ -42,11 +44,12 @@ func TestTelemetryInit(t *testing.T) {
 	}
 
 	for _, tc := range []struct {
-		name            string
-		disableHighCard bool
-		expectedMetrics map[string]metricValue
-		extendedConfig  bool
-		cfg             *telemetry.Config
+		name                string
+		disableHighCard     bool
+		disableCensusBridge bool
+		expectedMetrics     map[string]metricValue
+		extendedConfig      bool
+		cfg                 *telemetry.Config
 	}{
 		{
 			name: "UseOpenTelemetryForInternalMetrics",
@@ -214,8 +217,55 @@ func TestTelemetryInit(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "DisableOpenCensusBridge",
+			expectedMetrics: map[string]metricValue{
+				metricPrefix + otelPrefix + counterName: {
+					value: 13,
+					labels: map[string]string{
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
+					},
+				},
+				metricPrefix + grpcPrefix + counterName: {
+					value: 11,
+					labels: map[string]string{
+						"net_sock_peer_addr":  "",
+						"net_sock_peer_name":  "",
+						"net_sock_peer_port":  "",
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
+					},
+				},
+				metricPrefix + httpPrefix + counterName: {
+					value: 10,
+					labels: map[string]string{
+						"net_host_name":       "",
+						"net_host_port":       "",
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
+					},
+				},
+				"target_info": {
+					value: 0,
+					labels: map[string]string{
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
+					},
+				},
+			},
+			disableCensusBridge: true,
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			require.NoError(t, featuregate.GlobalRegistry().Set(globalgates.DisableOpenCensusBridge.ID(), tc.disableCensusBridge))
+			t.Cleanup(func() {
+				require.NoError(t, featuregate.GlobalRegistry().Set(globalgates.DisableOpenCensusBridge.ID(), true))
+			})
 			if tc.extendedConfig {
 				tc.cfg.Metrics.Readers = []config.MetricReader{
 					{
@@ -279,22 +329,22 @@ func TestTelemetryInit(t *testing.T) {
 
 func createTestMetrics(t *testing.T, mp metric.MeterProvider) *view.View {
 	// Creates a OTel Go counter
-	counter, err := mp.Meter("collector_test").Int64Counter(otelPrefix+counterName, metric.WithUnit("ms"))
+	counter, err := mp.Meter("collector_test").Int64Counter(metricPrefix+otelPrefix+counterName, metric.WithUnit("ms"))
 	require.NoError(t, err)
 	counter.Add(context.Background(), 13)
 
-	grpcExampleCounter, err := mp.Meter(proctelemetry.GRPCInstrumentation).Int64Counter(grpcPrefix + counterName)
+	grpcExampleCounter, err := mp.Meter(proctelemetry.GRPCInstrumentation).Int64Counter(metricPrefix + grpcPrefix + counterName)
 	require.NoError(t, err)
 	grpcExampleCounter.Add(context.Background(), 11, metric.WithAttributes(proctelemetry.GRPCUnacceptableKeyValues...))
 
-	httpExampleCounter, err := mp.Meter(proctelemetry.HTTPInstrumentation).Int64Counter(httpPrefix + counterName)
+	httpExampleCounter, err := mp.Meter(proctelemetry.HTTPInstrumentation).Int64Counter(metricPrefix + httpPrefix + counterName)
 	require.NoError(t, err)
 	httpExampleCounter.Add(context.Background(), 10, metric.WithAttributes(proctelemetry.HTTPUnacceptableKeyValues...))
 
 	// Creates a OpenCensus measure
-	ocCounter := stats.Int64(ocPrefix+counterName, counterName, stats.UnitDimensionless)
+	ocCounter := stats.Int64(metricPrefix+ocPrefix+counterName, counterName, stats.UnitDimensionless)
 	v := &view.View{
-		Name:        ocPrefix + counterName,
+		Name:        metricPrefix + ocPrefix + counterName,
 		Description: ocCounter.Description(),
 		Measure:     ocCounter,
 		Aggregation: view.Sum(),
@@ -302,10 +352,10 @@ func createTestMetrics(t *testing.T, mp metric.MeterProvider) *view.View {
 	err = view.Register(v)
 	require.NoError(t, err)
 
-	stats.Record(context.Background(), stats.Int64(ocPrefix+counterName, counterName, stats.UnitDimensionless).M(13))
+	stats.Record(context.Background(), stats.Int64(metricPrefix+ocPrefix+counterName, counterName, stats.UnitDimensionless).M(13))
 
 	// Forces a flush for the view data.
-	_, _ = view.RetrieveData(ocPrefix + counterName)
+	_, _ = view.RetrieveData(metricPrefix + ocPrefix + counterName)
 
 	return v
 }

@@ -24,8 +24,8 @@ The following settings are optional:
 
 - `loglevel` (default = `info`): the log level of the logging export
   (debug|info|warn|error). When set to `debug`, pipeline data is verbosely 
-      - **Note**: This option has been deprecated in favor of `verbosity`
   logged.
+  - **Note**: This option has been deprecated in favor of `verbosity`
 - `verbosity` (default = `normal`): the verbosity of the logging export
   (detailed|normal|basic). When set to `detailed`, pipeline data is verbosely
   logged.
@@ -33,7 +33,7 @@ The following settings are optional:
   second.
 - `sampling_thereafter` (default = `500`): sampling rate after the initial
   messages are logged (every Mth message is logged). Refer to [Zap
-  docs](https://godoc.org/go.uber.org/zap/zapcore#NewSampler) for more details.
+  docs](https://godoc.org/go.uber.org/zap/zapcore#NewSampler) for more details
   on how sampling parameters impact number of messages.
 
 ### Note

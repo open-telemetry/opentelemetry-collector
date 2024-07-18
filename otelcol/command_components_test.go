@@ -20,9 +20,9 @@ func TestNewBuildSubCommand(t *testing.T) {
 	set := CollectorSettings{
 		BuildInfo:              component.NewDefaultBuildInfo(),
 		Factories:              nopFactories,
-		ConfigProviderSettings: newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}),
+		ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-nop.yaml")}),
 	}
-	cmd := NewCommandMustSetProvider(set)
+	cmd := NewCommand(set)
 	cmd.SetArgs([]string{"components"})
 
 	ExpectedOutput, err := os.ReadFile(filepath.Join("testdata", "components-output.yaml"))

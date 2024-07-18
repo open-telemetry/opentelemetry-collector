@@ -7,6 +7,48 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.12.0/v0.105.0
+
+### 🛑 Breaking changes 🛑
+
+- `otelcol`: Obtain the Collector's effective config from otelcol.Config (#10139)
+  `otelcol.Collector` will now marshal `confmap.Conf` objects from `otelcol.Config` itself.
+- `otelcoltest`: Remove deprecated methods `LoadConfigWithSettings` and `LoadConfigAndValidateWithSettings` (#10512)
+
+### 🚩 Deprecations 🚩
+
+- `configauth`: Deprecated `Authentication.GetClientAuthenticatorContext` and `Authentication.GetServerAuthenticatorContext` (#10578)
+- `otelcol`: Deprecate `otelcol.ConfmapProvider` (#10139)
+  `otelcol.Collector` will now marshal `confmap.Conf` objects from `otelcol.Config` itself.
+- `otelcol`: Deprecate `(*otelcol.ConfigProvider).GetConfmap` (#10139)
+  Call `(*confmap.Conf).Marshal(*otelcol.Config)` to get the Collector's configuration.
+- `exporterhelper`: Deprecate the obsreport API in the exporterhelper package. (#10592)
+
+### 🚀 New components 🚀
+
+- `consumer/consumerprofiles`: Allow handling profiles in consumer. (#10464)
+
+## v1.11.0/v0.104.0
+
+### 🛑 Breaking changes 🛑
+
+- `otelcol`: The `otelcol.NewCommand` now requires at least one provider be set. (#10436)
+- `component/componenttest`: Added additional "inserted" count to `TestTelemetry.CheckProcessor*` methods. (#10353)
+
+### 🚩 Deprecations 🚩
+
+- `otelcoltest`: Deprecates `LoadConfigWithSettings` and `LoadConfigAndValidateWithSettings`.  Use `LoadConfig` and `LoadConfigAndValidate` instead. (#10417)
+- `otelcol`: The `otelcol.NewCommandMustSetProvider` is deprecated. Use `otelcol.NewCommand` instead. (#10436)
+
+### 🚀 New components 🚀
+
+- `otelcoltest`: Split off go.opentelemetry.io/collector/otelcol/otelcoltest into its own module (#10417)
+
+### 💡 Enhancements 💡
+
+- `pdata/pprofile`: Add pprofile wrapper to convert proto into pprofile. (#10401)
+- `pdata/testdata`: Add pdata testdata for profiles. (#10401)
+
 ## v1.10.0/v0.103.0
 
 ### 🛑 Breaking changes 🛑
