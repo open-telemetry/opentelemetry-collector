@@ -63,6 +63,7 @@ var testStrings = []string{
 	"0xdeadbeef",
 	"0b101",
 	"field:",
+	"2006-01-02T15:04:05Z07:00",
 }
 
 func FuzzNestedString(f *testing.F) {

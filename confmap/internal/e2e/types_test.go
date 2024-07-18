@@ -205,6 +205,16 @@ func TestTypeCasting(t *testing.T) {
 			targetField: TargetFieldInlineString,
 			expected:    "inline field with 1111:1111:1111:1111:1111:: expansion",
 		},
+		{
+			value:       "2006-01-02T15:04:05Z07:00",
+			targetField: TargetFieldString,
+			expected:    "2006-01-02T15:04:05Z07:00",
+		},
+		{
+			value:       "2006-01-02T15:04:05Z07:00",
+			targetField: TargetFieldInlineString,
+			expected:    "inline field with 2006-01-02T15:04:05Z07:00 expansion",
+		},
 	}
 
 	previousValue := globalgates.StrictlyTypedInputGate.IsEnabled()
@@ -324,6 +334,16 @@ func TestStrictTypeCasting(t *testing.T) {
 			value:       "1111:1111:1111:1111:1111::",
 			targetField: TargetFieldString,
 			expected:    "1111:1111:1111:1111:1111::",
+		},
+		{
+			value:       "2006-01-02T15:04:05Z07:00",
+			targetField: TargetFieldString,
+			expected:    "2006-01-02T15:04:05Z07:00",
+		},
+		{
+			value:       "2006-01-02T15:04:05Z07:00",
+			targetField: TargetFieldInlineString,
+			expected:    "inline field with 2006-01-02T15:04:05Z07:00 expansion",
 		},
 	}
 
