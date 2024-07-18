@@ -155,8 +155,23 @@ If `localhost` resolves to a different IP due to your DNS settings then explicit
 
 Using `localhost` may not work in environments like Docker, Kubernetes, and other environments that have non-standard networking setups.  We've documented a few working example setups for the OTLP receiver gRPC endpoint below, but other receivers and other Collector components may need similar configuration.
 
-
 #### Docker
+You can run the Collector in Docker using a configuration like the following:
+
+OTEL Collector config file:
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: my-hostname:4317 # the same hostname from your docker run command
+```
+Docker run command:
+`docker run --hostname my-hostname --name container-name -p 127.0.0.1:4567:4317 -v $(pwd):/etc/otelcol otel/opentelemetry-collector:0.104.0 --config /etc/otelcol/config.yaml`
+
+You could access it from outside that Docker network (for example on a regular program running on the host) by connecting to `127.0.0.1:4567`.
+
+#### Docker Compose
 ```yaml
 services:
   otel-collector:
