@@ -7,6 +7,74 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.12.0/v0.105.0
+
+### 🛑 Breaking changes 🛑
+
+- `service`: add `service.disableOpenCensusBridge` feature gate which is enabled by default to remove the dependency on OpenCensus (#10414)
+- `confmap`: Promote `confmap.strictlyTypedInput` feature gate to beta. (#10552)
+  This feature gate changes the following:
+  - Configurations relying on the implicit type casting behaviors listed on [#9532](https://github.com/open-telemetry/opentelemetry-collector/issues/9532) will start to fail.
+  - Configurations using URI expansion (i.e. `field: ${env:ENV}`) for string-typed fields will use the value passed in `ENV` verbatim without intermediate type casting.
+  
+
+### 💡 Enhancements 💡
+
+- `configtls`: Mark module as stable. (#9377)
+- `confmap`: Remove extra closing parenthesis in sub-config error (#10480)
+- `configgrpc`: Update the default load balancer strategy to round_robin (#10319)
+  To restore the behavior that was previously the default, set `balancer_name` to `pick_first`.
+- `cmd/builder`: Add go module info the builder generated code. (#10570)
+- `otelcol`: Add go module to components subcommand. (#10570)
+- `confmap`: Add explanation to errors related to `confmap.strictlyTypedInput` feature gate. (#9532)
+- `confmap`: Allow using `map[string]any` values in string interpolation (#10605)
+
+### 🧰 Bug fixes 🧰
+
+- `builder`: provide context when a module in the config is missing its gomod value (#10474)
+- `confmap`: Fixes issue where confmap could not escape `$$` when `confmap.unifyEnvVarExpansion` is enabled. (#10560)
+- `mdatagen`: fix generated comp test for extensions and unused imports in templates (#10477)
+- `otlpreceiver`: Fixes a bug where the otlp receiver's http response was not properly translating grpc error codes to http status codes. (#10574)
+- `exporterhelper`: Fix incorrect deduplication of otelcol_exporter_queue_size and otelcol_exporter_queue_capacity metrics if multiple exporters are used. (#10444)
+- `service/telemetry`: Add ability to set service.name for spans emitted by the Collector (#10489)
+- `internal/localhostgate`: Correctly log info message when `component.UseLocalHostAsDefaultHost` is enabled (#8510)
+
+## v1.11.0/v0.104.0
+
+This release includes 2 very important breaking changes.
+1. The `otlpreceiver` will now use `localhost` by default instead of `0.0.0.0`. This may break the receiver in containerized environments like Kubernetes. If you depend on `0.0.0.0` disable the `component.UseLocalHostAsDefaultHost` feature gate or explicitly set the endpoint to `0.0.0.0`.
+2. Expansion of BASH-style environment variables, such as `$FOO` will no longer be supported by default. If you depend on this syntax, disable the `confmap.unifyEnvVarExpansion` feature gate, but know that the feature will be removed in the future in favor of `${env:FOO}`.
+
+### 🛑 Breaking changes 🛑
+
+- `filter`: Remove deprecated `filter.CombinedFilter` (#10348)
+- `otelcol`: By default, `otelcol.NewCommand` and `otelcol.NewCommandMustSetProvider` will set the `DefaultScheme` to `env`. (#10435)
+- `expandconverter`: By default expandconverter will now error if it is about to expand `$FOO` syntax. Update configuration to use `${env:FOO}` instead or disable the `confmap.unifyEnvVarExpansion` feature gate. (#10435)
+- `otlpreceiver`: Switch to `localhost` as the default for all endpoints. (#8510)
+  Disable the `component.UseLocalHostAsDefaultHost` feature gate to temporarily get the previous default.
+  
+
+### 💡 Enhancements 💡
+
+- `confighttp`: Add support for cookies in HTTP clients with `cookies::enabled`. (#10175)
+  The method `confighttp.ToClient` will return a client with a `cookiejar.Jar` which will reuse cookies from server responses in subsequent requests.
+- `exporter/debug`: In `normal` verbosity, display one line of text for each telemetry record (log, data point, span) (#7806)
+- `exporter/debug`: Add option `use_internal_logger` (#10226)
+- `configretry`: Mark module as stable. (#10279)
+- `debugexporter`: Print Span.TraceState() when present. (#10421)
+  Enables viewing sampling threshold information (as by OTEP 235 samplers).
+- `processorhelper`: Add "inserted" metrics for processors. (#10353)
+  This includes the following metrics for processors:
+  - `processor_inserted_spans`
+  - `processor_inserted_metric_points`
+  - `processor_inserted_log_records`
+  
+
+### 🧰 Bug fixes 🧰
+
+- `otlpexporter`: Update validation to support both dns:// and dns:/// (#10449)
+- `service`: Fixed a bug that caused otel-collector to fail to start with ipv6 metrics endpoint service telemetry. (#10011)
+
 ## v1.10.0/v0.103.0
 
 ### 🛑 Breaking changes 🛑

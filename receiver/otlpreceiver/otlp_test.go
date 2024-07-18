@@ -105,8 +105,8 @@ func TestJsonHttp(t *testing.T) {
 			name:               "Permanent GRPCError",
 			encoding:           "",
 			contentType:        "application/json",
-			err:                status.New(codes.InvalidArgument, "").Err(),
-			expectedStatus:     &spb.Status{Code: int32(codes.InvalidArgument), Message: ""},
+			err:                status.New(codes.Internal, "").Err(),
+			expectedStatus:     &spb.Status{Code: int32(codes.Internal), Message: ""},
 			expectedStatusCode: http.StatusInternalServerError,
 		},
 		{
@@ -362,7 +362,7 @@ func TestProtoHttp(t *testing.T) {
 			encoding:           "",
 			err:                status.New(codes.InvalidArgument, "").Err(),
 			expectedStatus:     &spb.Status{Code: int32(codes.InvalidArgument), Message: ""},
-			expectedStatusCode: http.StatusInternalServerError,
+			expectedStatusCode: http.StatusBadRequest,
 		},
 		{
 			name:               "Retryable GRPCError",

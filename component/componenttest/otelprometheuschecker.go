@@ -117,8 +117,7 @@ func (pc *prometheusChecker) checkExporterMetricGauge(exporter component.ID, met
 }
 
 func (pc *prometheusChecker) checkCounter(expectedMetric string, value int64, attrs []attribute.KeyValue) error {
-
-	ts, err := pc.getMetric(expectedMetric, io_prometheus_client.MetricType_COUNTER, attrs)
+	ts, err := pc.getMetric(fmt.Sprintf("otelcol_%s", expectedMetric), io_prometheus_client.MetricType_COUNTER, attrs)
 	if err != nil {
 		return err
 	}

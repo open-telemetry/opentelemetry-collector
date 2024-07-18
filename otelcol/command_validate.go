@@ -10,13 +10,13 @@ import (
 )
 
 // newValidateSubCommand constructs a new validate sub command using the given CollectorSettings.
-func newValidateSubCommand(set CollectorSettings, flagSet *flag.FlagSet, enforceProviders bool) *cobra.Command {
+func newValidateSubCommand(set CollectorSettings, flagSet *flag.FlagSet) *cobra.Command {
 	validateCmd := &cobra.Command{
 		Use:   "validate",
 		Short: "Validates the config without running the collector",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			if err := updateSettingsUsingFlags(&set, flagSet, enforceProviders); err != nil {
+			if err := updateSettingsUsingFlags(&set, flagSet); err != nil {
 				return err
 			}
 			col, err := NewCollector(set)

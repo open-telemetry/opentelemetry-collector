@@ -55,6 +55,11 @@ func NewDefaultKeepaliveClientConfig() *KeepaliveClientConfig {
 	}
 }
 
+// BalancerName returns a string with default load balancer value
+func BalancerName() string {
+	return "round_robin"
+}
+
 // ClientConfig defines common settings for a gRPC client configuration.
 type ClientConfig struct {
 	// The target to which the exporter is going to send traces or metrics,
@@ -102,9 +107,10 @@ type ClientConfig struct {
 // NewDefaultClientConfig returns a new instance of ClientConfig with default values.
 func NewDefaultClientConfig() *ClientConfig {
 	return &ClientConfig{
-		TLSSetting: configtls.NewDefaultClientConfig(),
-		Keepalive:  NewDefaultKeepaliveClientConfig(),
-		Auth:       configauth.NewDefaultAuthentication(),
+		TLSSetting:   configtls.NewDefaultClientConfig(),
+		Keepalive:    NewDefaultKeepaliveClientConfig(),
+		Auth:         configauth.NewDefaultAuthentication(),
+		BalancerName: BalancerName(),
 	}
 }
 
@@ -271,7 +277,7 @@ func (gcs *ClientConfig) toDialOptions(ctx context.Context, host component.Host,
 			return nil, errors.New("no extensions configuration available")
 		}
 
-		grpcAuthenticator, cerr := gcs.Auth.GetClientAuthenticatorContext(ctx, host.GetExtensions())
+		grpcAuthenticator, cerr := gcs.Auth.GetClientAuthenticator(ctx, host.GetExtensions())
 		if cerr != nil {
 			return nil, cerr
 		}
@@ -387,7 +393,7 @@ func (gss *ServerConfig) toServerOption(host component.Host, settings component.
 	var sInterceptors []grpc.StreamServerInterceptor
 
 	if gss.Auth != nil {
-		authenticator, err := gss.Auth.GetServerAuthenticatorContext(context.Background(), host.GetExtensions())
+		authenticator, err := gss.Auth.GetServerAuthenticator(context.Background(), host.GetExtensions())
 		if err != nil {
 			return nil, err
 		}
