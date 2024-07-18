@@ -21,7 +21,7 @@ All stabilized modules will conform to the API expectations outlined in the [VER
 Explicitly, the following are not in the scope of v1 for the purposes of this document:
 
 * stabilization of additional components/APIs needed by distribution maintainers. Vendors are not the audience
-  * This explicitly excludes the `service` and `otelcol` modules.
+  * This explicitly excludes the `service` and `otelcol` modules, for which we only aim to guarantee behavior stability.
 * Collector Builder
 * telemetrygen
 * mdatagen
