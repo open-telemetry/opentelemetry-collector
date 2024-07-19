@@ -279,7 +279,7 @@ func TestUintUnmarshalerFailure(t *testing.T) {
 	err := conf.Unmarshal(cfg)
 
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), fmt.Sprintf("* error decoding 'uint_test': cannot convert negative value %v to an unsigned integer", testValue))
+	assert.Contains(t, err.Error(), fmt.Sprintf("decoding failed due to the following error(s):\n\nerror decoding 'uint_test': cannot convert negative value %v to an unsigned integer", testValue))
 }
 
 func TestMapKeyStringToMapKeyTextUnmarshalerHookFuncDuplicateID(t *testing.T) {
@@ -573,10 +573,6 @@ type testErrConfig struct {
 	Err errConfig `mapstructure:"err"`
 }
 
-func (tc *testErrConfig) Unmarshal(component *Conf) error {
-	return component.Unmarshal(tc)
-}
-
 type errConfig struct {
 	Foo string `mapstructure:"foo"`
 }
@@ -592,10 +588,8 @@ func TestUnmarshalerErr(t *testing.T) {
 		},
 	})
 
-	expectErr := "1 error(s) decoding:\n\n* error decoding 'err': never works"
-
 	tc := &testErrConfig{}
-	assert.EqualError(t, cfgMap.Unmarshal(tc), expectErr)
+	assert.EqualError(t, cfgMap.Unmarshal(tc), "decoding failed due to the following error(s):\n\nerror decoding 'err': never works")
 	assert.Empty(t, tc.Err.Foo)
 }
 
