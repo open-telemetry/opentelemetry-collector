@@ -17,13 +17,6 @@ import (
 
 var nopType = component.MustNewType("nop")
 
-// NewNopCreateSettings returns a new nop settings for Create* functions.
-//
-// Deprecated: [v0.103.0] Use connectortest.NewNopSettings instead.
-func NewNopCreateSettings() connector.Settings {
-	return NewNopSettings()
-}
-
 // NewNopSettings returns a new nop settings for Create* functions.
 func NewNopSettings() connector.Settings {
 	return connector.Settings{

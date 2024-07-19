@@ -82,11 +82,12 @@ will not be enabled.
 - `compression_algorithms`: configures the list of compression algorithms the server can accept. Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate"]
 - [`tls`](../configtls/README.md)
 - [`auth`](../configauth/README.md)
-- [`read_timeout`]: maximum duration for reading the entire request, including the body.
+- `read_timeout`: maximum duration for reading the entire request, including the body.
   A zero or negative value means there will be no timeout. Default: `0` (no timeout)
-- [`read_header_timeout`]: amount of time allowed to read request headers. The connection's read deadline is reset
+- `read_header_timeout`: amount of time allowed to read request headers. The connection's read deadline is reset
   after reading the headers and the Handler can decide what is considered too slow for the body.
   If set to zero, the value of `read_timeout` is used. If both are zero, there is no timeout. Default: `0` (no timeout)
+- `request_params`: a list of query parameter names to add to the auth context, along with the HTTP headers
 
 You can enable [`attribute processor`][attribute-processor] to append any http header to span's attribute using custom key. You also need to enable the "include_metadata"
 
@@ -99,6 +100,8 @@ receivers:
       http:
         include_metadata: true
         auth:
+          request_params:
+          - token
           authenticator: some-authenticator-extension
         cors:
           allowed_origins:
