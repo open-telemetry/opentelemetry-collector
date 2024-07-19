@@ -291,7 +291,7 @@ type ServerConfig struct {
 	CORS *CORSConfig `mapstructure:"cors"`
 
 	// Auth for this receiver
-	Auth *configauth.Authentication `mapstructure:"auth"`
+	Auth *AuthConfig `mapstructure:"auth"`
 
 	// MaxRequestBodySize sets the maximum request body size in bytes. Default: 20MiB.
 	MaxRequestBodySize int64 `mapstructure:"max_request_body_size"`
@@ -306,6 +306,15 @@ type ServerConfig struct {
 
 	// CompressionAlgorithms configures the list of compression algorithms the server can accept. Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate"]
 	CompressionAlgorithms []string `mapstructure:"compression_algorithms"`
+}
+
+type AuthConfig struct {
+	// Auth for this receiver.
+	*configauth.Authentication `mapstructure:"-"`
+
+	// RequestParameters is a list of parameters that should be extracted from the request and added to the context.
+	// When a parameter is found in both the query string and the header, the value from the query string will be used.
+	RequestParameters []string `mapstructure:"request_params"`
 }
 
 // ToListener creates a net.Listener.
@@ -387,7 +396,7 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 			return nil, err
 		}
 
-		handler = authInterceptor(handler, server)
+		handler = authInterceptor(handler, server, hss.Auth.RequestParameters)
 	}
 
 	if hss.CORS != nil && len(hss.CORS.AllowedOrigins) > 0 {
@@ -467,9 +476,16 @@ type CORSConfig struct {
 	MaxAge int `mapstructure:"max_age"`
 }
 
-func authInterceptor(next http.Handler, server auth.Server) http.Handler {
+func authInterceptor(next http.Handler, server auth.Server, requestParams []string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, err := server.Authenticate(r.Context(), r.Header)
+		sources := r.Header
+		query := r.URL.Query()
+		for _, param := range requestParams {
+			if val, ok := query[param]; ok {
+				sources[param] = val
+			}
+		}
+		ctx, err := server.Authenticate(r.Context(), sources)
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
