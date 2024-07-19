@@ -169,7 +169,11 @@ func (tc testOrderCase) testOrdering(t *testing.T) {
 	extCfgs := make(map[component.ID]component.Config)
 	extIDs := make([]component.ID, len(tc.extensions))
 	for i, ext := range tc.extensions {
-		extID := component.NewIDWithName(recordingExtensionFactory.Type(), ext.name)
+		name := component.Name{}
+		if ext.name != "" {
+			name = component.MustNewName(ext.name)
+		}
+		extID := component.NewIDWithName(recordingExtensionFactory.Type(), name)
 		extIDs[i] = extID
 		extCfgs[extID] = recordingExtensionConfig{dependencies: ext.deps}
 	}

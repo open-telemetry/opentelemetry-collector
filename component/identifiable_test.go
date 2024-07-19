@@ -10,7 +10,7 @@ import (
 )
 
 func TestMarshalText(t *testing.T) {
-	id := NewIDWithName(MustNewType("test"), "name")
+	id := NewIDWithName(MustNewType("test"), MustNewName("name"))
 	got, err := id.MarshalText()
 	assert.NoError(t, err)
 	assert.Equal(t, id.String(), string(got))
@@ -18,6 +18,7 @@ func TestMarshalText(t *testing.T) {
 
 func TestUnmarshalText(t *testing.T) {
 	validType := MustNewType("valid_type")
+	validName := MustNewName("valid_name")
 	var testCases = []struct {
 		idStr       string
 		expectedErr bool
@@ -25,15 +26,15 @@ func TestUnmarshalText(t *testing.T) {
 	}{
 		{
 			idStr:      "valid_type",
-			expectedID: ID{typeVal: validType, nameVal: ""},
+			expectedID: ID{typeVal: validType, nameVal: Name{}},
 		},
 		{
 			idStr:      "valid_type/valid_name",
-			expectedID: ID{typeVal: validType, nameVal: "valid_name"},
+			expectedID: ID{typeVal: validType, nameVal: validName},
 		},
 		{
 			idStr:      "   valid_type   /   valid_name  ",
-			expectedID: ID{typeVal: validType, nameVal: "valid_name"},
+			expectedID: ID{typeVal: validType, nameVal: validName},
 		},
 		{
 			idStr:       "/valid_name",
@@ -53,6 +54,14 @@ func TestUnmarshalText(t *testing.T) {
 		},
 		{
 			idStr:       "      ",
+			expectedErr: true,
+		},
+		{
+			idStr:       "valid_type/not valid name",
+			expectedErr: true,
+		},
+		{
+			idStr:       "not valid type/valid_name",
 			expectedErr: true,
 		},
 	}

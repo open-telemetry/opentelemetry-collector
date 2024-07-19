@@ -80,6 +80,7 @@ func TestMakeFactoryMap(t *testing.T) {
 
 func TestBuilder(t *testing.T) {
 	var testType = component.MustNewType("test")
+	var testName = component.MustNewName("foo")
 	defaultCfg := struct{}{}
 	testID := component.NewID(testType)
 	unknownID := component.MustNewID("unknown")
@@ -111,7 +112,7 @@ func TestBuilder(t *testing.T) {
 	assert.EqualError(t, err, "extension factory not available for: \"unknown\"")
 	assert.Nil(t, missingType)
 
-	missingCfg, err := b.Create(context.Background(), createSettings(component.NewIDWithName(testType, "foo")))
+	missingCfg, err := b.Create(context.Background(), createSettings(component.NewIDWithName(testType, testName)))
 	assert.EqualError(t, err, "extension \"test/foo\" is not configured")
 	assert.Nil(t, missingCfg)
 }

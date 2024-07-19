@@ -87,7 +87,7 @@ func TestNewNopBuilder(t *testing.T) {
 	factory := NewNopFactory()
 	cfg := factory.CreateDefaultConfig()
 	set := NewNopSettings()
-	set.ID = component.NewIDWithName(nopType, "conn")
+	set.ID = component.NewIDWithName(nopType, nopName)
 
 	tracesToTraces, err := factory.CreateTracesToTraces(context.Background(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)

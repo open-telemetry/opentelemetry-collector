@@ -15,11 +15,12 @@ import (
 )
 
 var defaultComponentType = component.MustNewType("nop")
+var defaulComponentName = component.MustNewName(uuid.NewString())
 
 // NewNopSettings returns a new nop settings for Create*Receiver functions.
 func NewNopSettings() receiver.Settings {
 	return receiver.Settings{
-		ID:                component.NewIDWithName(defaultComponentType, uuid.NewString()),
+		ID:                component.NewIDWithName(defaultComponentType, defaulComponentName),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),
 	}
