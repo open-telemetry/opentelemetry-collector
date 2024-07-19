@@ -865,8 +865,10 @@ func TestHttpCorsWithSettings(t *testing.T) {
 		CORS: &CORSConfig{
 			AllowedOrigins: []string{"*"},
 		},
-		Auth: &configauth.Authentication{
-			AuthenticatorID: mockID,
+		Auth: &AuthConfig{
+			Authentication: &configauth.Authentication{
+				AuthenticatorID: mockID,
+			},
 		},
 	}
 
@@ -1168,8 +1170,10 @@ func TestServerAuth(t *testing.T) {
 	authCalled := false
 	hss := ServerConfig{
 		Endpoint: "localhost:0",
-		Auth: &configauth.Authentication{
-			AuthenticatorID: mockID,
+		Auth: &AuthConfig{
+			Authentication: &configauth.Authentication{
+				AuthenticatorID: mockID,
+			},
 		},
 	}
 
@@ -1202,8 +1206,10 @@ func TestServerAuth(t *testing.T) {
 
 func TestInvalidServerAuth(t *testing.T) {
 	hss := ServerConfig{
-		Auth: &configauth.Authentication{
-			AuthenticatorID: nonExistingID,
+		Auth: &AuthConfig{
+			Authentication: &configauth.Authentication{
+				AuthenticatorID: nonExistingID,
+			},
 		},
 	}
 
@@ -1216,8 +1222,10 @@ func TestFailedServerAuth(t *testing.T) {
 	// prepare
 	hss := ServerConfig{
 		Endpoint: "localhost:0",
-		Auth: &configauth.Authentication{
-			AuthenticatorID: mockID,
+		Auth: &AuthConfig{
+			Authentication: &configauth.Authentication{
+				AuthenticatorID: mockID,
+			},
 		},
 	}
 	host := &mockHost{
@@ -1388,6 +1396,48 @@ func TestDefaultMaxRequestBodySize(t *testing.T) {
 			assert.Equal(t, tt.expected, tt.settings.MaxRequestBodySize)
 		})
 	}
+}
+
+func TestAuthWithQueryParams(t *testing.T) {
+	// prepare
+	authCalled := false
+	hss := ServerConfig{
+		Endpoint: "localhost:0",
+		Auth: &AuthConfig{
+			RequestParameters: []string{"auth"},
+			Authentication: &configauth.Authentication{
+				AuthenticatorID: mockID,
+			},
+		},
+	}
+
+	host := &mockHost{
+		ext: map[component.ID]component.Component{
+			mockID: auth.NewServer(
+				auth.WithServerAuthenticate(func(ctx context.Context, sources map[string][]string) (context.Context, error) {
+					require.Len(t, sources, 1)
+					assert.Equal(t, "1", sources["auth"][0])
+					authCalled = true
+					return ctx, nil
+				}),
+			),
+		},
+	}
+
+	handlerCalled := false
+	handler := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		handlerCalled = true
+	})
+
+	srv, err := hss.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings(), handler)
+	require.NoError(t, err)
+
+	// test
+	srv.Handler.ServeHTTP(&httptest.ResponseRecorder{}, httptest.NewRequest("GET", "/?auth=1", nil))
+
+	// verify
+	assert.True(t, handlerCalled)
+	assert.True(t, authCalled)
 }
 
 type mockHost struct {

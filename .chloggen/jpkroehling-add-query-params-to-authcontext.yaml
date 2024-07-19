@@ -1,0 +1,10 @@
+change_type: 'breaking'
+component: confighttp
+note: Auth data type signature has changed
+subtext: | 
+  As part of the linked PR, the `auth` attribute was moved from `configauth.Authentication` 
+  to a new `AuthConfig`, which contains a `configauth.Authentication`. For end-users, this
+  is a non-breaking change. For users of the API, create a new AuthConfig using the
+  `configauth.Authentication` instance that was being used before.
+issues: [4806]
+change_logs: [api]
