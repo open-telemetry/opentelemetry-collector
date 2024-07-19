@@ -16,7 +16,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"path"
+	"runtime"
 	"strings"
+	"time"
 
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -25,21 +29,25 @@ import (
 	"gonum.org/v1/gonum/graph/topo"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
-	"go.opentelemetry.io/collector/service/internal/servicetelemetry"
 	"go.opentelemetry.io/collector/service/internal/status"
+	"go.opentelemetry.io/collector/service/internal/zpages"
 	"go.opentelemetry.io/collector/service/pipelines"
 )
 
 // Settings holds configuration for building builtPipelines.
 type Settings struct {
-	Telemetry servicetelemetry.TelemetrySettings
+	Telemetry component.TelemetrySettings
 	BuildInfo component.BuildInfo
 
 	ReceiverBuilder  *receiver.Builder
@@ -61,7 +69,7 @@ type Graph struct {
 	// Keep track of status source per node
 	instanceIDs map[int64]*component.InstanceID
 
-	telemetry servicetelemetry.TelemetrySettings
+	telemetry component.TelemetrySettings
 }
 
 // Build builds a full pipeline graph.
@@ -298,22 +306,16 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 	for i := len(nodes) - 1; i >= 0; i-- {
 		node := nodes[i]
 
-		// skipped for capabilitiesNodes and fanoutNodes as they are not assigned componentIDs.
-		var telemetrySettings component.TelemetrySettings
-		if instanceID, ok := g.instanceIDs[node.ID()]; ok {
-			telemetrySettings = set.Telemetry.ToComponentTelemetrySettings(instanceID)
-		}
-
 		switch n := node.(type) {
 		case *receiverNode:
-			err = n.buildComponent(ctx, telemetrySettings, set.BuildInfo, set.ReceiverBuilder, g.nextConsumers(n.ID()))
+			err = n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ReceiverBuilder, g.nextConsumers(n.ID()))
 		case *processorNode:
 			// nextConsumers is guaranteed to be length 1.  Either it is the next processor or it is the fanout node for the exporters.
-			err = n.buildComponent(ctx, telemetrySettings, set.BuildInfo, set.ProcessorBuilder, g.nextConsumers(n.ID())[0])
+			err = n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ProcessorBuilder, g.nextConsumers(n.ID())[0])
 		case *exporterNode:
-			err = n.buildComponent(ctx, telemetrySettings, set.BuildInfo, set.ExporterBuilder)
+			err = n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ExporterBuilder)
 		case *connectorNode:
-			err = n.buildComponent(ctx, telemetrySettings, set.BuildInfo, set.ConnectorBuilder, g.nextConsumers(n.ID()))
+			err = n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ConnectorBuilder, g.nextConsumers(n.ID()))
 		case *capabilitiesNode:
 			capability := consumer.Capabilities{
 				// The fanOutNode represents the aggregate capabilities of the exporters in the pipeline.
@@ -396,7 +398,7 @@ type pipelineNodes struct {
 	exporters map[int64]graph.Node
 }
 
-func (g *Graph) StartAll(ctx context.Context, host component.Host, reporter status.Reporter) error {
+func (g *Graph) StartAll(ctx context.Context, host *Host) error {
 	nodes, err := topo.Sort(g.componentGraph)
 	if err != nil {
 		return err
@@ -415,15 +417,15 @@ func (g *Graph) StartAll(ctx context.Context, host component.Host, reporter stat
 		}
 
 		instanceID := g.instanceIDs[node.ID()]
-		reporter.ReportStatus(
+		host.Reporter.ReportStatus(
 			instanceID,
-			component.NewStatusEvent(component.StatusStarting),
+			componentstatus.NewStatusEvent(componentstatus.StatusStarting),
 		)
 
-		if compErr := comp.Start(ctx, host); compErr != nil {
-			reporter.ReportStatus(
+		if compErr := comp.Start(ctx, &HostWrapper{Host: host, InstanceID: instanceID}); compErr != nil {
+			host.Reporter.ReportStatus(
 				instanceID,
-				component.NewPermanentErrorEvent(compErr),
+				componentstatus.NewPermanentErrorEvent(compErr),
 			)
 			// We log with zap.AddStacktrace(zap.DPanicLevel) to avoid adding the stack trace to the error log
 			g.telemetry.Logger.WithOptions(zap.AddStacktrace(zap.DPanicLevel)).
@@ -435,7 +437,7 @@ func (g *Graph) StartAll(ctx context.Context, host component.Host, reporter stat
 			return compErr
 		}
 
-		reporter.ReportOKIfStarting(instanceID)
+		host.Reporter.ReportOKIfStarting(instanceID)
 	}
 	return nil
 }
@@ -463,21 +465,21 @@ func (g *Graph) ShutdownAll(ctx context.Context, reporter status.Reporter) error
 		instanceID := g.instanceIDs[node.ID()]
 		reporter.ReportStatus(
 			instanceID,
-			component.NewStatusEvent(component.StatusStopping),
+			componentstatus.NewStatusEvent(componentstatus.StatusStopping),
 		)
 
 		if compErr := comp.Shutdown(ctx); compErr != nil {
 			errs = multierr.Append(errs, compErr)
 			reporter.ReportStatus(
 				instanceID,
-				component.NewPermanentErrorEvent(compErr),
+				componentstatus.NewPermanentErrorEvent(compErr),
 			)
 			continue
 		}
 
 		reporter.ReportStatus(
 			instanceID,
-			component.NewStatusEvent(component.StatusStopped),
+			componentstatus.NewStatusEvent(componentstatus.StatusStopped),
 		)
 	}
 	return errs
@@ -577,4 +579,162 @@ func connectorStability(f connector.Factory, expType, recType component.Type) co
 		}
 	}
 	return component.StabilityLevelUndefined
+}
+
+// TODO: remove as part of https://github.com/open-telemetry/opentelemetry-collector/issues/7370 for service 1.0
+type getExporters interface {
+	GetExporters() map[component.DataType]map[component.ID]component.Component
+}
+
+var _ getExporters = (*Host)(nil)
+var _ component.Host = (*Host)(nil)
+
+type Host struct {
+	AsyncErrorChannel chan error
+	Receivers         *receiver.Builder
+	Processors        *processor.Builder
+	Exporters         *exporter.Builder
+	Connectors        *connector.Builder
+	Extensions        *extension.Builder
+
+	BuildInfo component.BuildInfo
+
+	Pipelines         *Graph
+	ServiceExtensions *extensions.Extensions
+
+	Reporter status.Reporter
+}
+
+func (h *Host) GetFactory(kind component.Kind, componentType component.Type) component.Factory {
+	switch kind {
+	case component.KindReceiver:
+		return h.Receivers.Factory(componentType)
+	case component.KindProcessor:
+		return h.Processors.Factory(componentType)
+	case component.KindExporter:
+		return h.Exporters.Factory(componentType)
+	case component.KindConnector:
+		return h.Connectors.Factory(componentType)
+	case component.KindExtension:
+		return h.Extensions.Factory(componentType)
+	}
+	return nil
+}
+
+func (h *Host) GetExtensions() map[component.ID]component.Component {
+	return h.ServiceExtensions.GetExtensions()
+}
+
+// Deprecated: [0.79.0] This function will be removed in the future.
+// Several components in the contrib repository use this function so it cannot be removed
+// before those cases are removed. In most cases, use of this function can be replaced by a
+// connector. See https://github.com/open-telemetry/opentelemetry-collector/issues/7370 and
+// https://github.com/open-telemetry/opentelemetry-collector/pull/7390#issuecomment-1483710184
+// for additional information.
+func (h *Host) GetExporters() map[component.DataType]map[component.ID]component.Component {
+	return h.Pipelines.GetExporters()
+}
+
+func (h *Host) NotifyComponentStatusChange(source *component.InstanceID, event *componentstatus.StatusEvent) {
+	h.ServiceExtensions.NotifyComponentStatusChange(source, event)
+	if event.Status() == componentstatus.StatusFatalError {
+		h.AsyncErrorChannel <- event.Err()
+	}
+}
+
+var _ getExporters = (*HostWrapper)(nil)
+var _ component.Host = (*HostWrapper)(nil)
+var _ componentstatus.StatusReporter = (*HostWrapper)(nil)
+
+type HostWrapper struct {
+	*Host
+	InstanceID *component.InstanceID
+}
+
+func (host *HostWrapper) ReportStatus(event *componentstatus.StatusEvent) {
+	host.Reporter.ReportStatus(host.InstanceID, event)
+}
+
+const (
+	// Paths
+	zServicePath   = "servicez"
+	zPipelinePath  = "pipelinez"
+	zExtensionPath = "extensionz"
+	zFeaturePath   = "featurez"
+)
+
+var (
+	// InfoVar is a singleton instance of the Info struct.
+	runtimeInfoVar [][2]string
+)
+
+func init() {
+	runtimeInfoVar = [][2]string{
+		{"StartTimestamp", time.Now().String()},
+		{"Go", runtime.Version()},
+		{"OS", runtime.GOOS},
+		{"Arch", runtime.GOARCH},
+		// Add other valuable runtime information here.
+	}
+}
+
+func handleFeaturezRequest(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	zpages.WriteHTMLPageHeader(w, zpages.HeaderData{Title: "Feature Gates"})
+	zpages.WriteHTMLFeaturesTable(w, getFeaturesTableData())
+	zpages.WriteHTMLPageFooter(w)
+}
+
+func getFeaturesTableData() zpages.FeatureGateTableData {
+	data := zpages.FeatureGateTableData{}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		data.Rows = append(data.Rows, zpages.FeatureGateTableRowData{
+			ID:           gate.ID(),
+			Enabled:      gate.IsEnabled(),
+			Description:  gate.Description(),
+			Stage:        gate.Stage().String(),
+			FromVersion:  gate.FromVersion(),
+			ToVersion:    gate.ToVersion(),
+			ReferenceURL: gate.ReferenceURL(),
+		})
+	})
+	return data
+}
+
+func getBuildInfoProperties(buildInfo component.BuildInfo) [][2]string {
+	return [][2]string{
+		{"Command", buildInfo.Command},
+		{"Description", buildInfo.Description},
+		{"Version", buildInfo.Version},
+	}
+}
+
+func (h *Host) RegisterZPages(mux *http.ServeMux, pathPrefix string) {
+	mux.HandleFunc(path.Join(pathPrefix, zServicePath), h.zPagesRequest)
+	mux.HandleFunc(path.Join(pathPrefix, zPipelinePath), h.Pipelines.HandleZPages)
+	mux.HandleFunc(path.Join(pathPrefix, zExtensionPath), h.ServiceExtensions.HandleZPages)
+	mux.HandleFunc(path.Join(pathPrefix, zFeaturePath), handleFeaturezRequest)
+}
+
+func (h *Host) zPagesRequest(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	zpages.WriteHTMLPageHeader(w, zpages.HeaderData{Title: "Service " + h.BuildInfo.Command})
+	zpages.WriteHTMLPropertiesTable(w, zpages.PropertiesTableData{Name: "Build Info", Properties: getBuildInfoProperties(h.BuildInfo)})
+	zpages.WriteHTMLPropertiesTable(w, zpages.PropertiesTableData{Name: "Runtime Info", Properties: runtimeInfoVar})
+	zpages.WriteHTMLComponentHeader(w, zpages.ComponentHeaderData{
+		Name:              "Pipelines",
+		ComponentEndpoint: zPipelinePath,
+		Link:              true,
+	})
+	zpages.WriteHTMLComponentHeader(w, zpages.ComponentHeaderData{
+		Name:              "Extensions",
+		ComponentEndpoint: zExtensionPath,
+		Link:              true,
+	})
+	zpages.WriteHTMLComponentHeader(w, zpages.ComponentHeaderData{
+		Name:              "Features",
+		ComponentEndpoint: zFeaturePath,
+		Link:              true,
+	})
+	zpages.WriteHTMLPageFooter(w)
 }

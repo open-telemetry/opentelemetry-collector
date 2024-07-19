@@ -1,11 +1,19 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package component // import "go.opentelemetry.io/collector/component"
+package componentstatus // import "go.opentelemetry.io/collector/component/componentstatus"
 
 import (
 	"time"
 )
+
+type StatusReporter interface {
+	// ReportStatus allows a component to report runtime changes in status. The service
+	// will automatically report status for a component during startup and shutdown. Components can
+	// use this method to report status after start and before shutdown. For more details about
+	// component status reporting see: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-status.md
+	ReportStatus(*StatusEvent)
+}
 
 type Status int32
 

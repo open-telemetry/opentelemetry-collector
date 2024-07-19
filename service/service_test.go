@@ -21,6 +21,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
@@ -227,6 +228,7 @@ func TestServiceGetExporters(t *testing.T) {
 		assert.NoError(t, srv.Shutdown(context.Background()))
 	})
 
+	// nolint SA1019
 	expMap := srv.host.GetExporters()
 	assert.Len(t, expMap, 3)
 	assert.Len(t, expMap[component.DataTypeTraces], 1)
@@ -437,11 +439,11 @@ func TestServiceFatalError(t *testing.T) {
 	})
 
 	go func() {
-		ev := component.NewFatalErrorEvent(assert.AnError)
-		srv.host.notifyComponentStatusChange(&component.InstanceID{}, ev)
+		ev := componentstatus.NewFatalErrorEvent(assert.AnError)
+		srv.host.NotifyComponentStatusChange(&component.InstanceID{}, ev)
 	}()
 
-	err = <-srv.host.asyncErrorChannel
+	err = <-srv.host.AsyncErrorChannel
 
 	require.ErrorIs(t, err, assert.AnError)
 }

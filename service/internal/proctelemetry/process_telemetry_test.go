@@ -17,15 +17,19 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	otelprom "go.opentelemetry.io/otel/exporters/prometheus"
+	noopmetric "go.opentelemetry.io/otel/metric/noop"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
+	nooptrace "go.opentelemetry.io/otel/trace/noop"
+	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/service/internal/servicetelemetry"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 type testTelemetry struct {
-	servicetelemetry.TelemetrySettings
+	component.TelemetrySettings
 	promHandler   http.Handler
 	meterProvider *sdkmetric.MeterProvider
 }
@@ -41,7 +45,13 @@ var expectedMetrics = []string{
 
 func setupTelemetry(t *testing.T) testTelemetry {
 	settings := testTelemetry{
-		TelemetrySettings: servicetelemetry.NewNopTelemetrySettings(),
+		TelemetrySettings: component.TelemetrySettings{
+			Logger:         zap.NewNop(),
+			TracerProvider: nooptrace.NewTracerProvider(),
+			MeterProvider:  noopmetric.NewMeterProvider(),
+			MetricsLevel:   configtelemetry.LevelNone,
+			Resource:       pcommon.NewResource(),
+		},
 	}
 	settings.TelemetrySettings.MetricsLevel = configtelemetry.LevelNormal
 
