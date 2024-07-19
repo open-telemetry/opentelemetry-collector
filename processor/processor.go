@@ -24,11 +24,6 @@ type Metrics = internal.Metrics
 // Logs is a processor that can consume logs.
 type Logs = internal.Logs
 
-// CreateSettings is passed to Create* functions in Factory.
-//
-// Deprecated: [v0.103.0] Use processor.Settings instead.
-type CreateSettings = internal.Settings
-
 // Settings is passed to Create* functions in Factory.
 type Settings = internal.Settings
 

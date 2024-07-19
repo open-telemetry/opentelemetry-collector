@@ -16,13 +16,6 @@ import (
 
 var nopType = component.MustNewType("nop")
 
-// NewNopCreateSettings returns a new nop settings for Create*Exporter functions.
-//
-// Deprecated: [v0.103.0] Use exportertest.NewNopSettings instead.
-func NewNopCreateSettings() exporter.Settings {
-	return NewNopSettings()
-}
-
 // NewNopSettings returns a new nop settings for Create*Exporter functions.
 func NewNopSettings() exporter.Settings {
 	return exporter.Settings{

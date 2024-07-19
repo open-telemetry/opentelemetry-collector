@@ -17,13 +17,6 @@ import (
 
 var nopType = component.MustNewType("nop")
 
-// NewNopCreateSettings returns a new nop settings for Create*Processor functions.
-//
-// Deprecated: [v0.103.0] Use processortest.NewNopSettings instead.
-func NewNopCreateSettings() processor.Settings {
-	return NewNopSettings()
-}
-
 // NewNopSettings returns a new nop settings for Create*Processor functions.
 func NewNopSettings() processor.Settings {
 	return processor.Settings{
