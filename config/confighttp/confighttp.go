@@ -313,6 +313,7 @@ type AuthConfig struct {
 	*configauth.Authentication `mapstructure:"-"`
 
 	// RequestParameters is a list of parameters that should be extracted from the request and added to the context.
+	// When a parameter is found in both the query string and the header, the value from the query string will be used.
 	RequestParameters []string `mapstructure:"request_params"`
 }
 
