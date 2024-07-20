@@ -148,13 +148,13 @@ func TestCreateMetricReceiver(t *testing.T) {
 	factory := NewFactory()
 	defaultGRPCSettings := &configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
-			Endpoint:  testutil.GetAvailableLocalAddress(t),
+			Endpoint:  "127.0.0.1:0",
 			Transport: confignet.TransportTypeTCP,
 		},
 	}
 	defaultHTTPSettings := &HTTPConfig{
 		ServerConfig: &confighttp.ServerConfig{
-			Endpoint: testutil.GetAvailableLocalAddress(t),
+			Endpoint: "127.0.0.1:0",
 		},
 		TracesURLPath:  defaultTracesURLPath,
 		MetricsURLPath: defaultMetricsURLPath,
