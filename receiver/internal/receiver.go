@@ -14,4 +14,15 @@ type Settings struct {
 
 	// BuildInfo can be used by components for informational purposes.
 	BuildInfo component.BuildInfo
+
+	receiverFactoryFunc func(componentType component.Type) Factory
+}
+
+func NewSettings(id component.ID, telemetrySettings component.TelemetrySettings, buildInfo component.BuildInfo, receiverFactoryFunc func(componentType component.Type) Factory) Settings {
+	return Settings{
+		ID:                  id,
+		TelemetrySettings:   telemetrySettings,
+		BuildInfo:           buildInfo,
+		receiverFactoryFunc: receiverFactoryFunc,
+	}
 }
