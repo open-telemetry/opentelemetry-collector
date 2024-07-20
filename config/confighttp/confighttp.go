@@ -513,6 +513,11 @@ type CORSConfig struct {
 	MaxAge int `mapstructure:"max_age"`
 }
 
+// NewDefaultCORSConfig creates a default cross-origin resource sharing (CORS) configuration.
+func NewDefaultCORSConfig() *CORSConfig {
+	return &CORSConfig{}
+}
+
 func authInterceptor(next http.Handler, server auth.Server, requestParams []string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		sources := r.Header
