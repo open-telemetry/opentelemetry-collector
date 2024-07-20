@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate env GITHUB_PROJECT=open-telemetry/opentelemetry-collector mdatagen metadata.yaml
 
 package main
 
@@ -360,7 +360,12 @@ func inlineReplace(tmplFile string, outputFile string, md metadata, start string
 	tmpl := templatize(tmplFile, md)
 	buf := bytes.Buffer{}
 
-	if err := tmpl.Execute(&buf, templateContext{metadata: md, Package: "metadata"}); err != nil {
+	githubProject := os.Getenv("GITHUB_PROJECT")
+	if githubProject == "" {
+		githubProject = "open-telemetry/opentelemetry-collector-contrib"
+	}
+
+	if err := tmpl.Execute(&buf, templateContext{metadata: md, Package: "metadata", GithubProject: githubProject}); err != nil {
 		return fmt.Errorf("failed executing template: %w", err)
 	}
 

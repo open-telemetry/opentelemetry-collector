@@ -43,7 +43,7 @@ Detailed information about the schema of `metadata.yaml` can be found in [metada
 
 The `go:generate mdatagen` directive is usually defined in a `doc.go` file in the same package as the component, for example:
 ```go
-//go:generate mdatagen metadata.yaml
+//go:generate env GITHUB_PROJECT=open-telemetry/opentelemetry-collector mdatagen metadata.yaml
 
 package main
 ```
