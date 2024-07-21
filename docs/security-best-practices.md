@@ -156,9 +156,11 @@ If `localhost` resolves to a different IP due to your DNS settings then explicit
 Using `localhost` may not work in environments like Docker, Kubernetes, and other environments that have non-standard networking setups.  We've documented a few working example setups for the OTLP receiver gRPC endpoint below, but other receivers and other Collector components may need similar configuration.
 
 #### Docker
-You can run the Collector in Docker using a configuration like the following:
+You can run the Collector in Docker by binding to the correct address.  An OTLP exporter in Docker might look something like this:
 
-OTEL Collector config file:
+Collector config file 
+
+`config.yaml`:
 ```yaml
 receivers:
   otlp:
@@ -172,7 +174,10 @@ Docker run command:
 You could access it from outside that Docker network (for example on a regular program running on the host) by connecting to `127.0.0.1:4567`.
 
 #### Docker Compose
-```yaml
+Similarly to plain Docker, you can run the Collector in Docker by binding to the correct address.
+
+`compose.yaml`:
+```yaml 
 services:
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.104.0
@@ -180,7 +185,9 @@ services:
       - "4567:4317"
 ```
 
-otel collector config file:
+Collector config file:
+
+`config.yaml`:
 ```yaml
 receivers:
   otlp:
@@ -189,7 +196,7 @@ receivers:
          endpoint: otel-collector:4317 # Using the service name from your Docker compose file
 ```
 
-You can connect to this Collector from another Docker container running in the same network as the Collector by connecting to `otel-collector01:4317`.  You could access it from outside that Docker network (for example on a regular program running on the host) by connecting to `127.0.0.1:4567`.
+You can connect to this Collector from another Docker container running in the same network by connecting to `otel-collector:4317`.  You could access it from outside that Docker network (for example on a regular program running on the host) by connecting to `127.0.0.1:4567`.
 
 #### Kubernetes
 If you run the Collector as a `Daemonset`, you can use a configuration like below:
@@ -233,7 +240,7 @@ spec:
             name: collector-config
 
 ```
-In this example, we use the [Kubernetes Downward API](https://kubernetes.io/docs/concepts/workloads/pods/downward-api/) to get your own Pod IP, then bind to that network interface.  Then, we use the hostPort option to ensure that the Collector is exposed on the host.  The Collector's config should look like:
+In this example, we use the [Kubernetes Downward API](https://kubernetes.io/docs/concepts/workloads/pods/downward-api/) to get your own Pod IP, then bind to that network interface.  Then, we use the `hostPort` option to ensure that the Collector is exposed on the host.  The Collector's config should look something like:
 
 ```yaml
 receivers:
