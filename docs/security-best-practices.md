@@ -245,7 +245,7 @@ receivers:
         endpoint: ${env:MY_POD_IP}:4318
 ```
 
-You can send OTLP data to this Collector from any Pod on the Node by accessing `$MY_HOST_IP:4317` to send OTLP over gRPC and `$MY_HOST_IP:4318`  to send OTLP over HTTP, where `MY_HOST_IP` is the Node's IP address.  You can get this IP from the Downwards API:
+You can send OTLP data to this Collector from any Pod on the Node by accessing `${MY_HOST_IP}:4317` to send OTLP over gRPC and `${MY_HOST_IP}:4318`  to send OTLP over HTTP, where `MY_HOST_IP` is the Node's IP address.  You can get this IP from the Downwards API:
 
 ```yaml
 env:
