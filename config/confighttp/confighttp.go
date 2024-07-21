@@ -60,12 +60,6 @@ type ClientConfig struct {
 	// Header values are opaque since they may be sensitive.
 	Headers map[string]configopaque.String `mapstructure:"headers"`
 
-	// Custom Round Tripper to allow for individual components to intercept HTTP requests
-	//
-	// Deprecated: [v0.103.0] Set (*http.Client).Transport on the *http.Client returned from ToClient
-	// to configure this.
-	CustomRoundTripper func(next http.RoundTripper) (http.RoundTripper, error) `mapstructure:"-"`
-
 	// Auth configuration for outgoing HTTP calls.
 	Auth *configauth.Authentication `mapstructure:"auth"`
 
@@ -233,13 +227,6 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 	// wrapping http transport with otelhttp transport to enable otel instrumentation
 	if settings.TracerProvider != nil && settings.MeterProvider != nil {
 		clientTransport = otelhttp.NewTransport(clientTransport, otelOpts...)
-	}
-
-	if hcs.CustomRoundTripper != nil {
-		clientTransport, err = hcs.CustomRoundTripper(clientTransport)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	var jar http.CookieJar
