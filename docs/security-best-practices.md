@@ -171,6 +171,7 @@ receivers:
 Docker run command:
 `docker run --hostname my-hostname --name container-name -p 127.0.0.1:4567:4317 otel/opentelemetry-collector:0.104.0`
 
+The key here is using the `--hostname` argument - that allows the collector to bind to the `my-hostname` address.
 You could access it from outside that Docker network (for example on a regular program running on the host) by connecting to `127.0.0.1:4567`.
 
 #### Docker Compose
