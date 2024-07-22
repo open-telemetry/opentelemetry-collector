@@ -2084,7 +2084,7 @@ func TestGraphBuildErrors(t *testing.T) {
 	}
 }
 
-// This includes all tests from the previous implmentation, plus a new one
+// This includes all tests from the previous implementation, plus a new one
 // relevant only to the new graph-based implementation.
 func TestGraphFailToStartAndShutdown(t *testing.T) {
 	errReceiverFactory := newErrReceiverFactory()
