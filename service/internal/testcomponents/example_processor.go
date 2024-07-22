@@ -29,21 +29,21 @@ func createDefaultConfig() component.Config {
 func createTracesProcessor(_ context.Context, set processor.Settings, _ component.Config, nextConsumer consumer.Traces) (processor.Traces, error) {
 	return &ExampleProcessor{
 		ConsumeTracesFunc: nextConsumer.ConsumeTraces,
-		mutatesData:       set.ID.Name().String() == "mutate",
+		mutatesData:       set.ID.Name() == "mutate",
 	}, nil
 }
 
 func createMetricsProcessor(_ context.Context, set processor.Settings, _ component.Config, nextConsumer consumer.Metrics) (processor.Metrics, error) {
 	return &ExampleProcessor{
 		ConsumeMetricsFunc: nextConsumer.ConsumeMetrics,
-		mutatesData:        set.ID.Name().String() == "mutate",
+		mutatesData:        set.ID.Name() == "mutate",
 	}, nil
 }
 
 func createLogsProcessor(_ context.Context, set processor.Settings, _ component.Config, nextConsumer consumer.Logs) (processor.Logs, error) {
 	return &ExampleProcessor{
 		ConsumeLogsFunc: nextConsumer.ConsumeLogs,
-		mutatesData:     set.ID.Name().String() == "mutate",
+		mutatesData:     set.ID.Name() == "mutate",
 	}, nil
 }
 

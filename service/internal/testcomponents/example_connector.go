@@ -50,7 +50,7 @@ func createExampleConnectorDefaultConfig() component.Config {
 func createExampleTracesToTraces(_ context.Context, set connector.Settings, _ component.Config, traces consumer.Traces) (connector.Traces, error) {
 	return &ExampleConnector{
 		ConsumeTracesFunc: traces.ConsumeTraces,
-		mutatesData:       set.ID.Name().String() == "mutate",
+		mutatesData:       set.ID.Name() == "mutate",
 	}, nil
 }
 
@@ -59,7 +59,7 @@ func createExampleTracesToMetrics(_ context.Context, set connector.Settings, _ c
 		ConsumeTracesFunc: func(ctx context.Context, td ptrace.Traces) error {
 			return metrics.ConsumeMetrics(ctx, testdata.GenerateMetrics(td.SpanCount()))
 		},
-		mutatesData: set.ID.Name().String() == "mutate",
+		mutatesData: set.ID.Name() == "mutate",
 	}, nil
 }
 
@@ -68,7 +68,7 @@ func createExampleTracesToLogs(_ context.Context, set connector.Settings, _ comp
 		ConsumeTracesFunc: func(ctx context.Context, td ptrace.Traces) error {
 			return logs.ConsumeLogs(ctx, testdata.GenerateLogs(td.SpanCount()))
 		},
-		mutatesData: set.ID.Name().String() == "mutate",
+		mutatesData: set.ID.Name() == "mutate",
 	}, nil
 }
 
@@ -77,14 +77,14 @@ func createExampleMetricsToTraces(_ context.Context, set connector.Settings, _ c
 		ConsumeMetricsFunc: func(ctx context.Context, md pmetric.Metrics) error {
 			return traces.ConsumeTraces(ctx, testdata.GenerateTraces(md.MetricCount()))
 		},
-		mutatesData: set.ID.Name().String() == "mutate",
+		mutatesData: set.ID.Name() == "mutate",
 	}, nil
 }
 
 func createExampleMetricsToMetrics(_ context.Context, set connector.Settings, _ component.Config, metrics consumer.Metrics) (connector.Metrics, error) {
 	return &ExampleConnector{
 		ConsumeMetricsFunc: metrics.ConsumeMetrics,
-		mutatesData:        set.ID.Name().String() == "mutate",
+		mutatesData:        set.ID.Name() == "mutate",
 	}, nil
 }
 
@@ -93,7 +93,7 @@ func createExampleMetricsToLogs(_ context.Context, set connector.Settings, _ com
 		ConsumeMetricsFunc: func(ctx context.Context, md pmetric.Metrics) error {
 			return logs.ConsumeLogs(ctx, testdata.GenerateLogs(md.MetricCount()))
 		},
-		mutatesData: set.ID.Name().String() == "mutate",
+		mutatesData: set.ID.Name() == "mutate",
 	}, nil
 }
 
@@ -102,7 +102,7 @@ func createExampleLogsToTraces(_ context.Context, set connector.Settings, _ comp
 		ConsumeLogsFunc: func(ctx context.Context, ld plog.Logs) error {
 			return traces.ConsumeTraces(ctx, testdata.GenerateTraces(ld.LogRecordCount()))
 		},
-		mutatesData: set.ID.Name().String() == "mutate",
+		mutatesData: set.ID.Name() == "mutate",
 	}, nil
 }
 
@@ -111,14 +111,14 @@ func createExampleLogsToMetrics(_ context.Context, set connector.Settings, _ com
 		ConsumeLogsFunc: func(ctx context.Context, ld plog.Logs) error {
 			return metrics.ConsumeMetrics(ctx, testdata.GenerateMetrics(ld.LogRecordCount()))
 		},
-		mutatesData: set.ID.Name().String() == "mutate",
+		mutatesData: set.ID.Name() == "mutate",
 	}, nil
 }
 
 func createExampleLogsToLogs(_ context.Context, set connector.Settings, _ component.Config, logs consumer.Logs) (connector.Logs, error) {
 	return &ExampleConnector{
 		ConsumeLogsFunc: logs.ConsumeLogs,
-		mutatesData:     set.ID.Name().String() == "mutate",
+		mutatesData:     set.ID.Name() == "mutate",
 	}, nil
 }
 

@@ -14,12 +14,11 @@ import (
 )
 
 var nopType = component.MustNewType("nop")
-var nopName = component.MustNewName(uuid.NewString())
 
 // NewNopSettings returns a new nop settings for extension.Factory Create* functions.
 func NewNopSettings() extension.Settings {
 	return extension.Settings{
-		ID:                component.NewIDWithName(nopType, nopName),
+		ID:                component.NewIDWithName(nopType, uuid.NewString()),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),
 	}

@@ -67,8 +67,8 @@ func TestUnmarshal(t *testing.T) {
 			require.NoError(t, cfgs.Unmarshal(conf))
 
 			assert.Equal(t, map[component.ID]component.Config{
-				component.NewID(nopType): tk.factories[nopType].CreateDefaultConfig(),
-				component.NewIDWithName(nopType, component.MustNewName("my"+tk.kind)): tk.factories[nopType].CreateDefaultConfig(),
+				component.NewID(nopType):                       tk.factories[nopType].CreateDefaultConfig(),
+				component.NewIDWithName(nopType, "my"+tk.kind): tk.factories[nopType].CreateDefaultConfig(),
 			}, cfgs.Configs())
 		})
 	}

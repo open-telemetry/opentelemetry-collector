@@ -782,12 +782,12 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 				// Determine independently if the capabilities node should report MutateData as true
 				var expectMutatesData bool
 				for _, expr := range pipelineCfg.Exporters {
-					if strings.Contains(expr.Name().String(), "mutate") {
+					if strings.Contains(expr.Name(), "mutate") {
 						expectMutatesData = true
 					}
 				}
 				for _, proc := range pipelineCfg.Processors {
-					if proc.Name().String() == "mutate" {
+					if proc.Name() == "mutate" {
 						expectMutatesData = true
 					}
 				}
@@ -2128,8 +2128,8 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 			}),
 		ConnectorBuilder: connector.NewBuilder(
 			map[component.ID]component.Config{
-				component.NewIDWithName(nopConnectorFactory.Type(), component.MustNewName("conn")): nopConnectorFactory.CreateDefaultConfig(),
-				component.NewIDWithName(errConnectorFactory.Type(), component.MustNewName("conn")): errConnectorFactory.CreateDefaultConfig(),
+				component.NewIDWithName(nopConnectorFactory.Type(), "conn"): nopConnectorFactory.CreateDefaultConfig(),
+				component.NewIDWithName(errConnectorFactory.Type(), "conn"): errConnectorFactory.CreateDefaultConfig(),
 			},
 			map[component.Type]connector.Factory{
 				nopConnectorFactory.Type(): nopConnectorFactory,
@@ -2184,12 +2184,12 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 		for _, dt2 := range dataTypes {
 			t.Run(dt.String()+"/"+dt2.String()+"/connector", func(t *testing.T) {
 				set.PipelineConfigs = pipelines.Config{
-					component.NewIDWithName(dt, component.MustNewName("in")): {
+					component.NewIDWithName(dt, "in"): {
 						Receivers:  []component.ID{component.MustNewID("nop")},
 						Processors: []component.ID{component.MustNewID("nop")},
 						Exporters:  []component.ID{component.MustNewID("nop"), component.MustNewIDWithName("err", "conn")},
 					},
-					component.NewIDWithName(dt2, component.MustNewName("out")): {
+					component.NewIDWithName(dt2, "out"): {
 						Receivers:  []component.ID{component.MustNewID("nop"), component.MustNewIDWithName("err", "conn")},
 						Processors: []component.ID{component.MustNewID("nop")},
 						Exporters:  []component.ID{component.MustNewID("nop")},

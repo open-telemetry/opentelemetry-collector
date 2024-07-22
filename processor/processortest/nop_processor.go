@@ -16,12 +16,11 @@ import (
 )
 
 var nopType = component.MustNewType("nop")
-var nopName = component.MustNewName(uuid.NewString())
 
 // NewNopSettings returns a new nop settings for Create*Processor functions.
 func NewNopSettings() processor.Settings {
 	return processor.Settings{
-		ID:                component.NewIDWithName(nopType, nopName),
+		ID:                component.NewIDWithName(nopType, uuid.NewString()),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),
 	}

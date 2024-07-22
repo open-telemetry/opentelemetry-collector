@@ -16,12 +16,11 @@ import (
 )
 
 var nopType = component.MustNewType("nop")
-var nopName = component.MustNewName("conn")
 
 // NewNopSettings returns a new nop settings for Create* functions.
 func NewNopSettings() connector.Settings {
 	return connector.Settings{
-		ID:                component.NewIDWithName(nopType, component.MustNewName(uuid.NewString())),
+		ID:                component.NewIDWithName(nopType, uuid.NewString()),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),
 	}
@@ -97,7 +96,7 @@ func NewNopBuilder() *connector.Builder {
 	// Use a different ID than receivertest and exportertest to avoid ambiguous
 	// configuration scenarios. Ambiguous IDs are detected in the 'otelcol' package,
 	// but lower level packages such as 'service' assume that IDs are disambiguated.
-	connID := component.NewIDWithName(nopType, nopName)
+	connID := component.NewIDWithName(nopType, "conn")
 	return connector.NewBuilder(
 		map[component.ID]component.Config{connID: nopFactory.CreateDefaultConfig()},
 		map[component.Type]connector.Factory{nopType: nopFactory})

@@ -10,13 +10,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 var _ fmt.Stringer = Type{}
-var _ fmt.Stringer = Name{}
 
 type configChildStruct struct {
 	Child    errConfig
@@ -418,38 +416,6 @@ func TestNewType(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				assert.Equal(t, tt.name, ty.String())
-			}
-		})
-	}
-}
-func TestNewName(t *testing.T) {
-	tests := []struct {
-		name      string
-		shouldErr bool
-	}{
-		{name: "in"},
-		{name: "contains-dashes"},
-		{name: "0startswithnumber"},
-		{name: "1"},
-		{name: uuid.NewString()},
-		{name: strings.Repeat("a", 63)},
-
-		{name: "", shouldErr: true},
-		{name: "contains spaces", shouldErr: true},
-		{name: "contains/slash", shouldErr: true},
-		{name: "contains:colon", shouldErr: true},
-		{name: "contains#hash", shouldErr: true},
-		{name: strings.Repeat("a", 64), shouldErr: true},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			n, err := NewName(tt.name)
-			if tt.shouldErr {
-				assert.Error(t, err)
-			} else {
-				require.NoError(t, err)
-				assert.Equal(t, tt.name, n.String())
 			}
 		})
 	}

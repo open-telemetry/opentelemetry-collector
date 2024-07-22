@@ -17,8 +17,8 @@ const typeAndNameSeparator = "/"
 // * name - the name of that component.
 // The component ID (combination type + name) is unique for a given component.Kind.
 type ID struct {
-	typeVal Type `mapstructure:"-"`
-	nameVal Name `mapstructure:"-"`
+	typeVal Type   `mapstructure:"-"`
+	nameVal string `mapstructure:"-"`
 }
 
 // NewID returns a new ID with the given Type and empty name.
@@ -33,14 +33,14 @@ func MustNewID(typeVal string) ID {
 }
 
 // NewIDWithName returns a new ID with the given Type and name.
-func NewIDWithName(typeVal Type, nameVal Name) ID {
+func NewIDWithName(typeVal Type, nameVal string) ID {
 	return ID{typeVal: typeVal, nameVal: nameVal}
 }
 
 // MustNewIDWithName builds a Type and returns a new ID with the given Type and name.
 // See MustNewType to check the valid values of typeVal.
 func MustNewIDWithName(typeVal string, nameVal string) ID {
-	return ID{typeVal: MustNewType(typeVal), nameVal: MustNewName(nameVal)}
+	return ID{typeVal: MustNewType(typeVal), nameVal: nameVal}
 }
 
 // Type returns the type of the component.
@@ -49,7 +49,7 @@ func (id ID) Type() Type {
 }
 
 // Name returns the custom name of the component.
-func (id ID) Name() Name {
+func (id ID) Name() string {
 	return id.nameVal
 }
 
@@ -88,21 +88,16 @@ func (id *ID) UnmarshalText(text []byte) error {
 	if id.typeVal, err = NewType(typeStr); err != nil {
 		return fmt.Errorf("in %q id: %w", idStr, err)
 	}
-
-	if nameStr != "" {
-		if id.nameVal, err = NewName(nameStr); err != nil {
-			return fmt.Errorf("in %q id: %w", idStr, err)
-		}
-	}
+	id.nameVal = nameStr
 
 	return nil
 }
 
 // String returns the ID string representation as "type[/name]" format.
 func (id ID) String() string {
-	if id.nameVal.String() == "" {
+	if id.nameVal == "" {
 		return id.typeVal.String()
 	}
 
-	return id.typeVal.String() + typeAndNameSeparator + id.nameVal.String()
+	return id.typeVal.String() + typeAndNameSeparator + id.nameVal
 }
