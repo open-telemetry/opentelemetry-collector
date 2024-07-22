@@ -9,6 +9,7 @@ require (
 	go.opentelemetry.io/collector/component v0.105.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.105.0
 	go.opentelemetry.io/collector/consumer v0.105.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/pdata v1.12.0
 	go.opentelemetry.io/otel v1.28.0
 	go.opentelemetry.io/otel/metric v1.28.0
@@ -71,3 +72,5 @@ replace go.opentelemetry.io/collector/pdata/pprofile => ../pdata/pprofile
 replace go.opentelemetry.io/collector/internal/globalgates => ../internal/globalgates
 
 replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../consumer/consumerprofiles
+
+replace go.opentelemetry.io/collector/consumer/consumertest => ../consumer/consumertest

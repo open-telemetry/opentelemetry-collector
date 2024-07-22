@@ -9,6 +9,7 @@ require (
 	go.opentelemetry.io/collector/config/configtelemetry v0.105.0
 	go.opentelemetry.io/collector/confmap v0.105.0
 	go.opentelemetry.io/collector/consumer v0.105.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/pdata v1.12.0
 	go.opentelemetry.io/collector/pdata/testdata v0.105.0
 	go.opentelemetry.io/collector/processor v0.105.0
@@ -88,3 +89,5 @@ replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/con
 replace go.opentelemetry.io/collector/pdata/pprofile => ../../pdata/pprofile
 
 replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../../consumer/consumerprofiles
+
+replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/consumertest
