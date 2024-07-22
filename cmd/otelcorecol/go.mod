@@ -4,7 +4,7 @@ module go.opentelemetry.io/collector/cmd/otelcorecol
 
 go 1.21.0
 
-toolchain go1.22.5
+toolchain go1.21.12
 
 require (
 	go.opentelemetry.io/collector/component v0.105.0
@@ -92,10 +92,12 @@ require (
 	go.opentelemetry.io/collector/config/configtls v1.12.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.105.0 // indirect
 	go.opentelemetry.io/collector/consumer v0.105.0 // indirect
+	go.opentelemetry.io/collector/consumer/consumerprofiles v0.105.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.105.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.12.0 // indirect
 	go.opentelemetry.io/collector/internal/globalgates v0.105.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.12.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.105.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.105.0 // indirect
 	go.opentelemetry.io/collector/service v0.105.0 // indirect
 	go.opentelemetry.io/contrib/config v0.8.0 // indirect
@@ -177,6 +179,8 @@ replace go.opentelemetry.io/collector/confmap/provider/httpsprovider => ../../co
 replace go.opentelemetry.io/collector/confmap/provider/yamlprovider => ../../confmap/provider/yamlprovider
 
 replace go.opentelemetry.io/collector/consumer => ../../consumer
+
+replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../../consumer/consumerprofiles
 
 replace go.opentelemetry.io/collector/connector => ../../connector
 
