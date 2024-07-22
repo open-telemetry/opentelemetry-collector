@@ -183,6 +183,8 @@ replace go.opentelemetry.io/collector/consumer => ../../consumer
 
 replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../../consumer/consumerprofiles
 
+replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/consumertest
+
 replace go.opentelemetry.io/collector/connector => ../../connector
 
 replace go.opentelemetry.io/collector/connector/forwardconnector => ../../connector/forwardconnector
@@ -232,5 +234,3 @@ replace go.opentelemetry.io/collector/processor/memorylimiterprocessor => ../../
 replace go.opentelemetry.io/collector/semconv => ../../semconv
 
 replace go.opentelemetry.io/collector/service => ../../service
-
-replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/consumertest
