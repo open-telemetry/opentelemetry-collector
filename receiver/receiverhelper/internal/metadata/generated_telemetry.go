@@ -60,37 +60,37 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	builder.ReceiverAcceptedLogRecords, err = builder.meter.Int64Counter(
 		"otelcol_receiver_accepted_log_records",
 		metric.WithDescription("Number of log records successfully pushed into the pipeline."),
-		metric.WithUnit("1"),
+		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ReceiverAcceptedMetricPoints, err = builder.meter.Int64Counter(
 		"otelcol_receiver_accepted_metric_points",
 		metric.WithDescription("Number of metric points successfully pushed into the pipeline."),
-		metric.WithUnit("1"),
+		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ReceiverAcceptedSpans, err = builder.meter.Int64Counter(
 		"otelcol_receiver_accepted_spans",
 		metric.WithDescription("Number of spans successfully pushed into the pipeline."),
-		metric.WithUnit("1"),
+		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ReceiverRefusedLogRecords, err = builder.meter.Int64Counter(
 		"otelcol_receiver_refused_log_records",
 		metric.WithDescription("Number of log records that could not be pushed into the pipeline."),
-		metric.WithUnit("1"),
+		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ReceiverRefusedMetricPoints, err = builder.meter.Int64Counter(
 		"otelcol_receiver_refused_metric_points",
 		metric.WithDescription("Number of metric points that could not be pushed into the pipeline."),
-		metric.WithUnit("1"),
+		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ReceiverRefusedSpans, err = builder.meter.Int64Counter(
 		"otelcol_receiver_refused_spans",
 		metric.WithDescription("Number of spans that could not be pushed into the pipeline."),
-		metric.WithUnit("1"),
+		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs
