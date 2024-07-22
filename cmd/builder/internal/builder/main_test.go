@@ -59,6 +59,7 @@ var (
 		"/confmap/provider/httpsprovider",
 		"/confmap/provider/yamlprovider",
 		"/consumer",
+		"/consumer/consumerprofiles",
 		"/connector",
 		"/exporter",
 		"/exporter/debugexporter",
