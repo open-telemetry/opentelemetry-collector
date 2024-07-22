@@ -164,3 +164,15 @@ var (
 	// DataTypeLogs is the data type tag for logs.
 	DataTypeLogs = mustNewDataType("logs")
 )
+
+// nameRegexp is used to validate the name of a component.
+// A name must start with a Unicode alphanumeric character and
+// can only contain Unicode alphanumeric characters and punctuation.
+var nameRegexp = regexp.MustCompile(`^[\pN\pL][\pN\pL\pP]{0,62}$`)
+
+func validateName(nameStr string) error {
+	if !nameRegexp.MatchString(nameStr) {
+		return fmt.Errorf("invalid character(s) in name %q", nameStr)
+	}
+	return nil
+}
