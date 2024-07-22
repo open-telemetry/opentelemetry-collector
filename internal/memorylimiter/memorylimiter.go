@@ -112,7 +112,7 @@ func (ml *MemoryLimiter) startMonitoring() {
 	}
 }
 
-func (ml *MemoryLimiter) Start(_ context.Context, host component.Host) error {
+func (ml *MemoryLimiter) Start(_ context.Context, _ component.Host) error {
 	ml.startMonitoring()
 	return nil
 }
