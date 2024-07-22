@@ -97,8 +97,6 @@ replace go.opentelemetry.io/collector/config/configtelemetry => ./config/configt
 
 replace go.opentelemetry.io/collector/consumer => ./consumer
 
-replace go.opentelemetry.io/collector/consumer/consumerprofiles => ./consumer/consumerprofiles
-
 replace go.opentelemetry.io/collector/consumer/consumertest => ./consumer/consumertest
 
 replace go.opentelemetry.io/collector/featuregate => ./featuregate
@@ -118,3 +116,5 @@ retract (
 replace go.opentelemetry.io/collector/pdata/pprofile => ./pdata/pprofile
 
 replace go.opentelemetry.io/collector/internal/globalgates => ./internal/globalgates
+
+replace go.opentelemetry.io/collector/consumer/consumerprofiles => ./consumer/consumerprofiles
