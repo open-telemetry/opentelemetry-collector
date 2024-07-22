@@ -21,8 +21,9 @@ of components, this will be better discussed in a future document.
 
 This document is not intending to provide a comprehensive plan for how
 the Collector or the health of telemetry pipelines should be monitored. There
-is an OpenTelemetry Enhancement Proposal that has already started the process
-to provide this information.
+is an [OpenTelemetry Enhancement Proposal](https://github.com/open-telemetry/oteps/pull/259) that has already started the process
+to provide this information. The information in this document will be updated once
+the OTEP lands to follow its recommendations.
 
 ## Internal telemetry properties
 
