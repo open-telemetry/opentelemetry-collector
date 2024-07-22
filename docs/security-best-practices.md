@@ -169,7 +169,7 @@ receivers:
         endpoint: my-hostname:4317 # the same hostname from your docker run command
 ```
 Docker run command:
-`docker run --hostname my-hostname --name container-name -p 127.0.0.1:4567:4317 -v $(pwd):/etc/otelcol otel/opentelemetry-collector:0.104.0 --config /etc/otelcol/config.yaml`
+`docker run --hostname my-hostname --name container-name -p 127.0.0.1:4567:4317 otel/opentelemetry-collector:0.104.0`
 
 You could access it from outside that Docker network (for example on a regular program running on the host) by connecting to `127.0.0.1:4567`.
 
@@ -217,9 +217,6 @@ spec:
       containers:
         - name: collector
           image: otel/opentelemetry-collector:0.104.0
-          volumeMounts:
-            - mountPath: /etc/otelcol/
-              name: config
           ports:
             - containerPort: 4317
               hostPort: 4317
@@ -234,10 +231,6 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
-      volumes:
-        - name: config
-          configMap:
-            name: collector-config
 
 ```
 In this example, we use the [Kubernetes Downward API](https://kubernetes.io/docs/concepts/workloads/pods/downward-api/) to get your own Pod IP, then bind to that network interface.  Then, we use the `hostPort` option to ensure that the Collector is exposed on the host.  The Collector's config should look something like:
