@@ -62,11 +62,6 @@ type StatusWatcher interface {
 	ComponentStatusChanged(source *component.InstanceID, event *component.StatusEvent)
 }
 
-// CreateSettings is passed to Factory.Create(...) function.
-//
-// Deprecated: [v0.103.0] Use extension.Settings instead.
-type CreateSettings = Settings
-
 // Settings is passed to Factory.Create(...) function.
 type Settings struct {
 	// ID returns the ID of the component that will be created.

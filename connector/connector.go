@@ -54,11 +54,6 @@ type Metrics = internal.Metrics
 //     pipeline can then process and export the log to the appropriate backend.
 type Logs = internal.Logs
 
-// CreateSettings configures Connector creators.
-//
-// Deprecated: [v0.103.0] Use connector.Settings instead.
-type CreateSettings = internal.Settings
-
 // Settings configures Connector creators.
 type Settings = internal.Settings
 
