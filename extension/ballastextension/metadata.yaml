@@ -1,7 +1,0 @@
-type: memory_ballast
-
-status:
-  class: extension
-  stability:
-    deprecated: [extension]
-  distributions: [core, contrib]

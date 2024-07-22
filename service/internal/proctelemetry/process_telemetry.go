@@ -21,7 +21,6 @@ import (
 // processMetrics is a struct that contains views related to process metrics (cpu, mem, etc)
 type processMetrics struct {
 	startTimeUnixNano int64
-	ballastSizeBytes  uint64
 	proc              *process.Process
 	context           context.Context
 
@@ -54,7 +53,7 @@ func WithHostProc(hostProc string) RegisterOption {
 
 // RegisterProcessMetrics creates a new set of processMetrics (mem, cpu) that can be used to measure
 // basic information about this process.
-func RegisterProcessMetrics(cfg servicetelemetry.TelemetrySettings, ballastSizeBytes uint64, opts ...RegisterOption) error {
+func RegisterProcessMetrics(cfg servicetelemetry.TelemetrySettings, opts ...RegisterOption) error {
 	set := registerOption{}
 	for _, opt := range opts {
 		opt.apply(&set)
@@ -62,7 +61,6 @@ func RegisterProcessMetrics(cfg servicetelemetry.TelemetrySettings, ballastSizeB
 	var err error
 	pm := &processMetrics{
 		startTimeUnixNano: time.Now().UnixNano(),
-		ballastSizeBytes:  ballastSizeBytes,
 		ms:                &runtime.MemStats{},
 	}
 
@@ -139,10 +137,4 @@ func (pm *processMetrics) readMemStatsIfNeeded() {
 	}
 	pm.lastMsRead = now
 	runtime.ReadMemStats(pm.ms)
-	if pm.ballastSizeBytes > 0 {
-		pm.ms.Alloc -= pm.ballastSizeBytes
-		pm.ms.HeapAlloc -= pm.ballastSizeBytes
-		pm.ms.HeapSys -= pm.ballastSizeBytes
-		pm.ms.HeapInuse -= pm.ballastSizeBytes
-	}
 }

@@ -313,7 +313,6 @@ func TestNewType(t *testing.T) {
 		{name: "loki"},
 		{name: "mdatagen"},
 		{name: "memcached"},
-		{name: "memory_ballast"},
 		{name: "memory_limiter"},
 		{name: "metricstransform"},
 		{name: "mezmo"},
