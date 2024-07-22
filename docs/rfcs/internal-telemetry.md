@@ -36,6 +36,7 @@ The following units should be used for metrics emitted by the Collector
 for the purpose of its internal telemetry:
 
 | Field type                                                       | Unit           |
+| -- | -- |
 | Metric about receiving, processing, exporting log records        | `{records}`    |
 | Metric about receiving, processing, exporting spans              | `{spans}`      |
 | Metric about receiving, processing, exporting metric data points | `{datapoints}` |
