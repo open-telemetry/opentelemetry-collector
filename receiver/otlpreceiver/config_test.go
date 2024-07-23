@@ -138,6 +138,17 @@ func TestUnmarshalConfig(t *testing.T) {
 
 }
 
+func TestSetDefaultConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	assert.NoError(t, cm.Unmarshal(&cfg))
+	assert.Equal(t, 60*time.Second, (cfg.(*Config)).HTTP.WriteTimeout)
+	assert.Equal(t, 60*time.Second, (cfg.(*Config)).HTTP.WriteTimeout)
+
+}
+
 func TestUnmarshalConfigUnix(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "uds.yaml"))
 	require.NoError(t, err)
