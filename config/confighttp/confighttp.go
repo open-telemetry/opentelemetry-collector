@@ -138,10 +138,6 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 		return nil, err
 	}
 	transport := http.DefaultTransport.(*http.Transport).Clone()
-	oldDialContext := transport.DialContext
-	transport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
-		return oldDialContext(ctx, network, addr)
-	}
 	if tlsCfg != nil {
 		transport.TLSClientConfig = tlsCfg
 	}
