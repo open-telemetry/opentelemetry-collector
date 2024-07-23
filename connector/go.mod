@@ -7,7 +7,9 @@ require (
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector v0.105.0
 	go.opentelemetry.io/collector/component v0.105.0
+	go.opentelemetry.io/collector/component/componentprofiles v0.0.0-20240723122248-8b5e2318374d
 	go.opentelemetry.io/collector/consumer v0.105.0
+	go.opentelemetry.io/collector/consumer/consumerprofiles v0.105.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.105.0
 	go.opentelemetry.io/collector/pdata v1.12.0
 	go.opentelemetry.io/collector/pdata/testdata v0.105.0
@@ -33,7 +35,6 @@ require (
 	github.com/prometheus/common v0.55.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.105.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumerprofiles v0.105.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.105.0 // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.50.0 // indirect
@@ -73,3 +74,5 @@ replace go.opentelemetry.io/collector/internal/globalgates => ../internal/global
 replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../consumer/consumerprofiles
 
 replace go.opentelemetry.io/collector/consumer/consumertest => ../consumer/consumertest
+
+replace go.opentelemetry.io/collector/component/componentprofiles => ../component/componentprofiles

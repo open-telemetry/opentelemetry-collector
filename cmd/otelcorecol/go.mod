@@ -81,6 +81,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector v0.105.0 // indirect
+	go.opentelemetry.io/collector/component/componentprofiles v0.0.0-20240723122248-8b5e2318374d // indirect
 	go.opentelemetry.io/collector/config/configauth v0.105.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.12.0 // indirect
 	go.opentelemetry.io/collector/config/configgrpc v0.105.0 // indirect
@@ -234,3 +235,5 @@ replace go.opentelemetry.io/collector/processor/memorylimiterprocessor => ../../
 replace go.opentelemetry.io/collector/semconv => ../../semconv
 
 replace go.opentelemetry.io/collector/service => ../../service
+
+replace go.opentelemetry.io/collector/component/componentprofiles => ../../component/componentprofiles
