@@ -38,7 +38,7 @@ func TestUnmarshalConfig(t *testing.T) {
 		},
 		{
 			filename:    "config_verbosity_typo.yaml",
-			expectedErr: "1 error(s) decoding:\n\n* '' has invalid keys: verBosity",
+			expectedErr: "'' has invalid keys: verBosity",
 		},
 	}
 
@@ -50,7 +50,7 @@ func TestUnmarshalConfig(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
 			err = cm.Unmarshal(&cfg)
 			if tt.expectedErr != "" {
-				assert.EqualError(t, err, tt.expectedErr)
+				assert.ErrorContains(t, err, tt.expectedErr)
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.cfg, cfg)

@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/featuregates"
+	"go.opentelemetry.io/collector/internal/globalgates"
 )
 
 type TargetField string
@@ -121,6 +121,26 @@ func TestTypeCasting(t *testing.T) {
 			expected:    "inline field with 0123 expansion",
 		},
 		{
+			value:       "'!!str 0123'",
+			targetField: TargetFieldString,
+			expected:    "!!str 0123",
+		},
+		{
+			value:       "\"!!str 0123\"",
+			targetField: TargetFieldInlineString,
+			expected:    "inline field with !!str 0123 expansion",
+		},
+		{
+			value:       "''",
+			targetField: TargetFieldString,
+			expected:    "",
+		},
+		{
+			value:       "\"\"",
+			targetField: TargetFieldInlineString,
+			expected:    "inline field with  expansion",
+		},
+		{
 			value:       "t",
 			targetField: TargetFieldBool,
 			expected:    true,
@@ -130,7 +150,35 @@ func TestTypeCasting(t *testing.T) {
 			targetField: TargetFieldBool,
 			expected:    true,
 		},
+		{
+			value:       "foo\nbar",
+			targetField: TargetFieldString,
+			expected:    "foo bar",
+		},
+		{
+			value:       "foo\nbar",
+			targetField: TargetFieldInlineString,
+			expected:    "inline field with foo bar expansion",
+		},
+		{
+			value:       "\"1111:1111:1111:1111:1111::\"",
+			targetField: TargetFieldString,
+			expected:    "1111:1111:1111:1111:1111::",
+		},
+		{
+			value:       "\"1111:1111:1111:1111:1111::\"",
+			targetField: TargetFieldInlineString,
+			expected:    "inline field with 1111:1111:1111:1111:1111:: expansion",
+		},
 	}
+
+	previousValue := globalgates.StrictlyTypedInputGate.IsEnabled()
+	err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, false)
+	require.NoError(t, err)
+	defer func() {
+		err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, previousValue)
+		require.NoError(t, err)
+	}()
 
 	for _, tt := range values {
 		t.Run(tt.value+"/"+string(tt.targetField), func(t *testing.T) {
@@ -255,15 +303,25 @@ func TestStrictTypeCasting(t *testing.T) {
 		{
 			value:       "{\"field\": 123}",
 			targetField: TargetFieldInlineString,
-			resolveErr:  "retrieved value does not have unambiguous string representation",
+			expected:    "inline field with {\"field\": 123} expansion",
+		},
+		{
+			value:       "1111:1111:1111:1111:1111::",
+			targetField: TargetFieldInlineString,
+			expected:    "inline field with 1111:1111:1111:1111:1111:: expansion",
+		},
+		{
+			value:        "1111:1111:1111:1111:1111::",
+			targetField:  TargetFieldString,
+			unmarshalErr: "'field' expected type 'string', got unconvertible type 'map[string]interface {}', value: 'map[1111:1111:1111:1111:1111::<nil>]'",
 		},
 	}
 
-	previousValue := featuregates.StrictlyTypedInputGate.IsEnabled()
-	err := featuregate.GlobalRegistry().Set(featuregates.StrictlyTypedInputID, true)
+	previousValue := globalgates.StrictlyTypedInputGate.IsEnabled()
+	err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, true)
 	require.NoError(t, err)
 	defer func() {
-		err := featuregate.GlobalRegistry().Set(featuregates.StrictlyTypedInputID, previousValue)
+		err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, previousValue)
 		require.NoError(t, err)
 	}()
 

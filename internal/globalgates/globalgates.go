@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package featuregates // import "go.opentelemetry.io/collector/internal/featuregates"
+package globalgates // import "go.opentelemetry.io/collector/internal/globalgates"
 
 import "go.opentelemetry.io/collector/featuregate"
 
@@ -13,7 +13,7 @@ var UseUnifiedEnvVarExpansionRules = featuregate.GlobalRegistry().MustRegister("
 const StrictlyTypedInputID = "confmap.strictlyTypedInput"
 
 var StrictlyTypedInputGate = featuregate.GlobalRegistry().MustRegister(StrictlyTypedInputID,
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterFromVersion("v0.103.0"),
 	featuregate.WithRegisterDescription("Makes type casting rules during configuration unmarshaling stricter. See https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/env-vars.md for more details."),
 )

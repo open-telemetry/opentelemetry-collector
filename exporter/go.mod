@@ -6,15 +6,16 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector v0.104.0
-	go.opentelemetry.io/collector/component v0.104.0
-	go.opentelemetry.io/collector/config/configretry v1.11.0
-	go.opentelemetry.io/collector/config/configtelemetry v0.104.0
-	go.opentelemetry.io/collector/consumer v0.104.0
-	go.opentelemetry.io/collector/extension v0.104.0
-	go.opentelemetry.io/collector/pdata v1.11.0
-	go.opentelemetry.io/collector/pdata/testdata v0.104.0
-	go.opentelemetry.io/collector/receiver v0.104.0
+	go.opentelemetry.io/collector v0.105.0
+	go.opentelemetry.io/collector/component v0.105.0
+	go.opentelemetry.io/collector/config/configretry v1.12.0
+	go.opentelemetry.io/collector/config/configtelemetry v0.105.0
+	go.opentelemetry.io/collector/consumer v0.105.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.105.0
+	go.opentelemetry.io/collector/extension v0.105.0
+	go.opentelemetry.io/collector/pdata v1.12.0
+	go.opentelemetry.io/collector/pdata/testdata v0.105.0
+	go.opentelemetry.io/collector/receiver v0.105.0
 	go.opentelemetry.io/otel v1.28.0
 	go.opentelemetry.io/otel/metric v1.28.0
 	go.opentelemetry.io/otel/sdk v1.28.0
@@ -33,7 +34,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/go-viper/mapstructure/v2 v2.0.0-alpha.1 // indirect
+	github.com/go-viper/mapstructure/v2 v2.0.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -50,10 +51,11 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.55.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
-	go.opentelemetry.io/collector/confmap v0.104.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.11.0 // indirect
-	go.opentelemetry.io/collector/internal/featuregates v0.0.0-20240705161705-b127da089038 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.104.0 // indirect
+	go.opentelemetry.io/collector/confmap v0.105.0 // indirect
+	go.opentelemetry.io/collector/consumer/consumerprofiles v0.105.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.12.0 // indirect
+	go.opentelemetry.io/collector/internal/globalgates v0.105.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.105.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.50.0 // indirect
 	golang.org/x/net v0.26.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
@@ -64,7 +66,7 @@ require (
 
 replace go.opentelemetry.io/collector => ../
 
-replace go.opentelemetry.io/collector/internal/featuregates => ../internal/featuregates
+replace go.opentelemetry.io/collector/internal/globalgates => ../internal/globalgates
 
 replace go.opentelemetry.io/collector/component => ../component
 
@@ -89,3 +91,7 @@ retract v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module
 replace go.opentelemetry.io/collector/config/configretry => ../config/configretry
 
 replace go.opentelemetry.io/collector/config/configtelemetry => ../config/configtelemetry
+
+replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../consumer/consumerprofiles
+
+replace go.opentelemetry.io/collector/consumer/consumertest => ../consumer/consumertest
