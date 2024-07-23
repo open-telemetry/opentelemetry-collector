@@ -44,6 +44,7 @@ replaces:
   - go.opentelemetry.io/collector/internal/globalgates => ../../internal/globalgates
   - go.opentelemetry.io/collector/otelcol => ../../otelcol
   - go.opentelemetry.io/collector/component => ../../component
+  - go.opentelemetry.io/collector/component/componentprofiles => ../../component/componentprofiles
   - go.opentelemetry.io/collector/config/configauth => ../../config/configauth
   - go.opentelemetry.io/collector/config/configcompression => ../../config/configcompression
   - go.opentelemetry.io/collector/config/configgrpc => ../../config/configgrpc
