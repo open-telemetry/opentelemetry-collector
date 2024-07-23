@@ -2,7 +2,7 @@ module go.opentelemetry.io/collector/component/componentprofiles
 
 go 1.21.0
 
-require go.opentelemetry.io/collector/component v0.104.0
+require go.opentelemetry.io/collector/component v0.105.0
 
 require (
 	github.com/gogo/protobuf v1.3.2 // indirect
