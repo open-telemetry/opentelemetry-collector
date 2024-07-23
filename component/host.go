@@ -17,6 +17,8 @@ type Host interface {
 	// GetFactory can be called by the component anytime after Component.Start() begins and
 	// until Component.Shutdown() ends. Note that the component is responsible for destroying
 	// other components that it creates.
+	//
+	// Deprecated: [v0.106.0] component.Host no longer requires implementors to expose a GetFactory function.
 	GetFactory(kind Kind, componentType Type) Factory
 
 	// GetExtensions returns the map of extensions. Only enabled and created extensions will be returned.
