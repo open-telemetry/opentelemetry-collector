@@ -62,6 +62,8 @@ replaces:
   - go.opentelemetry.io/collector/confmap/provider/httpsprovider => ../../confmap/provider/httpsprovider
   - go.opentelemetry.io/collector/confmap/provider/yamlprovider => ../../confmap/provider/yamlprovider
   - go.opentelemetry.io/collector/consumer => ../../consumer
+  - go.opentelemetry.io/collector/consumer/consumerprofiles => ../../consumer/consumerprofiles
+  - go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/consumertest
   - go.opentelemetry.io/collector/connector => ../../connector
   - go.opentelemetry.io/collector/connector/forwardconnector => ../../connector/forwardconnector
   - go.opentelemetry.io/collector/exporter => ../../exporter

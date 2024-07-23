@@ -38,6 +38,7 @@ replaces:
   - go.opentelemetry.io/collector/confmap/provider/httpsprovider => ${WORKSPACE_DIR}/confmap/provider/httpsprovider
   - go.opentelemetry.io/collector/confmap/provider/yamlprovider => ${WORKSPACE_DIR}/confmap/provider/yamlprovider
   - go.opentelemetry.io/collector/consumer => ${WORKSPACE_DIR}/consumer
+  - go.opentelemetry.io/collector/consumer/consumertest => ${WORKSPACE_DIR}/consumer/consumertest
   - go.opentelemetry.io/collector/connector => ${WORKSPACE_DIR}/connector
   - go.opentelemetry.io/collector/exporter => ${WORKSPACE_DIR}/exporter
   - go.opentelemetry.io/collector/exporter/debugexporter => ${WORKSPACE_DIR}/exporter/debugexporter
