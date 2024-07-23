@@ -165,10 +165,10 @@ var (
 	DataTypeLogs = mustNewDataType("logs")
 )
 
-// nameRegexp is used to validate the name of a component.
-// A name must start with a Unicode alphanumeric character and
-// can only contain Unicode alphanumeric characters and punctuation.
-var nameRegexp = regexp.MustCompile(`^[\pN\pL][\pN\pL\pP]{0,62}$`)
+// nameRegexp is used to validate the name of a component. A name must start
+// with a Unicode alphanumeric character followed by Unicode alphanumeric
+// characters or punctuation and is limited to 63 characters.
+var nameRegexp = regexp.MustCompile(`^[\pNumber\pLetter][\pNumber\pLetter\pPunctuation]{0,62}$`)
 
 func validateName(nameStr string) error {
 	if !nameRegexp.MatchString(nameStr) {
