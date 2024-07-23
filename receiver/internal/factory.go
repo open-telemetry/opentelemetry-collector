@@ -19,7 +19,7 @@ type Factory interface {
 
 	// CreateTracesReceiver creates a TracesReceiver based on this config.
 	// If the receiver type does not support traces,
-	// this function returns the error component.ErrDataTypeIsNotSupported.
+	// this function returns the error [component.ErrDataTypeIsNotSupported].
 	// Implementers can assume `nextConsumer` is never nil.
 	CreateTracesReceiver(ctx context.Context, set Settings, cfg component.Config, nextConsumer consumer.Traces) (Traces, error)
 
@@ -28,7 +28,7 @@ type Factory interface {
 
 	// CreateMetricsReceiver creates a MetricsReceiver based on this config.
 	// If the receiver type does not support metrics,
-	// this function returns the error component.ErrDataTypeIsNotSupported.
+	// this function returns the error [component.ErrDataTypeIsNotSupported].
 	// Implementers can assume `nextConsumer` is never nil.
 	CreateMetricsReceiver(ctx context.Context, set Settings, cfg component.Config, nextConsumer consumer.Metrics) (Metrics, error)
 
@@ -37,7 +37,7 @@ type Factory interface {
 
 	// CreateLogsReceiver creates a LogsReceiver based on this config.
 	// If the receiver type does not support logs,
-	// this function returns the error component.ErrDataTypeIsNotSupported.
+	// this function returns the error [component.ErrDataTypeIsNotSupported].
 	// Implementers can assume `nextConsumer` is never nil.
 	CreateLogsReceiver(ctx context.Context, set Settings, cfg component.Config, nextConsumer consumer.Logs) (Logs, error)
 

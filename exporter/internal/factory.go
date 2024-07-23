@@ -17,7 +17,7 @@ type Factory interface {
 
 	// CreateTracesExporter creates a TracesExporter based on this config.
 	// If the exporter type does not support tracing,
-	// this function returns the error component.ErrDataTypeIsNotSupported.
+	// this function returns the error [component.ErrDataTypeIsNotSupported].
 	CreateTracesExporter(ctx context.Context, set Settings, cfg component.Config) (Traces, error)
 
 	// TracesExporterStability gets the stability level of the TracesExporter.
@@ -25,7 +25,7 @@ type Factory interface {
 
 	// CreateMetricsExporter creates a MetricsExporter based on this config.
 	// If the exporter type does not support metrics,
-	// this function returns the error component.ErrDataTypeIsNotSupported.
+	// this function returns the error [component.ErrDataTypeIsNotSupported].
 	CreateMetricsExporter(ctx context.Context, set Settings, cfg component.Config) (Metrics, error)
 
 	// MetricsExporterStability gets the stability level of the MetricsExporter.
@@ -33,7 +33,7 @@ type Factory interface {
 
 	// CreateLogsExporter creates a LogsExporter based on the config.
 	// If the exporter type does not support logs,
-	// this function returns the error component.ErrDataTypeIsNotSupported.
+	// this function returns the error [component.ErrDataTypeIsNotSupported].
 	CreateLogsExporter(ctx context.Context, set Settings, cfg component.Config) (Logs, error)
 
 	// LogsExporterStability gets the stability level of the LogsExporter.

@@ -19,7 +19,7 @@ type Factory interface {
 
 	// CreateTracesProcessor creates a TracesProcessor based on this config.
 	// If the processor type does not support traces,
-	// this function returns the error component.ErrDataTypeIsNotSupported.
+	// this function returns the error [component.ErrDataTypeIsNotSupported].
 	// Implementers can assume `nextConsumer` is never nil.
 	CreateTracesProcessor(ctx context.Context, set Settings, cfg component.Config, nextConsumer consumer.Traces) (Traces, error)
 
@@ -28,7 +28,7 @@ type Factory interface {
 
 	// CreateMetricsProcessor creates a MetricsProcessor based on this config.
 	// If the processor type does not support metrics,
-	// this function returns the error component.ErrDataTypeIsNotSupported.
+	// this function returns the error [component.ErrDataTypeIsNotSupported].
 	// Implementers can assume `nextConsumer` is never nil.
 	CreateMetricsProcessor(ctx context.Context, set Settings, cfg component.Config, nextConsumer consumer.Metrics) (Metrics, error)
 
@@ -37,7 +37,7 @@ type Factory interface {
 
 	// CreateLogsProcessor creates a LogsProcessor based on the config.
 	// If the processor type does not support logs,
-	// this function returns the error component.ErrDataTypeIsNotSupported.
+	// this function returns the error [component.ErrDataTypeIsNotSupported].
 	// Implementers can assume `nextConsumer` is never nil.
 	CreateLogsProcessor(ctx context.Context, set Settings, cfg component.Config, nextConsumer consumer.Logs) (Logs, error)
 
