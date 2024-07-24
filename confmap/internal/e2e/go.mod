@@ -5,8 +5,10 @@ go 1.21.0
 require (
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/confmap v0.105.0
+	go.opentelemetry.io/collector/confmap/converter/expandconverter v0.105.0
 	go.opentelemetry.io/collector/confmap/provider/envprovider v0.105.0
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.105.0
+	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.105.0
 	go.opentelemetry.io/collector/featuregate v1.12.0
 	go.opentelemetry.io/collector/internal/globalgates v0.105.0
 )
@@ -32,6 +34,10 @@ replace go.opentelemetry.io/collector/confmap/provider/fileprovider => ../../pro
 
 replace go.opentelemetry.io/collector/confmap/provider/envprovider => ../../provider/envprovider
 
+replace go.opentelemetry.io/collector/confmap/provider/yamlprovider => ../../provider/yamlprovider
+
 replace go.opentelemetry.io/collector/featuregate => ../../../featuregate
 
 replace go.opentelemetry.io/collector/internal/globalgates => ../../../internal/globalgates
+
+replace go.opentelemetry.io/collector/confmap/converter/expandconverter => ../../converter/expandconverter
