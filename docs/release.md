@@ -160,7 +160,6 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 
 | Date       | Version  | Release manager                                   |
 |------------|----------|---------------------------------------------------|
-| 2024-07-15 | v0.105.0 | [@atoulme](https://github.com/atoulme)            |
 | 2024-07-29 | v0.106.0 | [@songy23](https://github.com/songy23)            |
 | 2024-08-12 | v0.107.0 | [@dmitryax](https://github.com/dmitryax)          |
 | 2024-08-26 | v0.108.0 | [@codeboten](https://github.com/codeboten)        |
@@ -170,3 +169,4 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 | 2024-10-21 | v0.112.0 | [@evan-bradley](https://github.com/evan-bradley)  |
 | 2024-11-04 | v0.113.0 | [@djaglowski](https://github.com/djaglowski)      |
 | 2024-11-18 | v0.114.0 | [@TylerHelmuth](https://github.com/TylerHelmuth)  |
+| 2024-12-02 | v0.115.0 | [@atoulme](https://github.com/atoulme)            |
