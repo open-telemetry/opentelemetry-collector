@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"go.opentelemetry.io/collector/internal/featuregates"
+	"go.opentelemetry.io/collector/internal/globalgates"
 )
 
 // schemePattern defines the regexp pattern for scheme names.
@@ -28,7 +28,7 @@ var (
 )
 
 func (mr *Resolver) expandValueRecursively(ctx context.Context, value any) (any, error) {
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 1000; i++ {
 		val, changed, err := mr.expandValue(ctx, value)
 		if err != nil {
 			return nil, err
@@ -81,6 +81,7 @@ func (mr *Resolver) expandValue(ctx context.Context, value any) (any, bool, erro
 // findURI attempts to find the first potentially expandable URI in input. It returns a potentially expandable
 // URI, or an empty string if none are found.
 // Note: findURI is only called when input contains a closing bracket.
+// We do not support escaping nested URIs (such as ${env:$${FOO}}, since that would result in an invalid outer URI (${env:${FOO}}).
 func (mr *Resolver) findURI(input string) string {
 	closeIndex := strings.Index(input, "}")
 	remaining := input[closeIndex+1:]
@@ -96,6 +97,21 @@ func (mr *Resolver) findURI(input string) string {
 			return ""
 		}
 		return mr.findURI(remaining)
+	}
+
+	index := openIndex - 1
+	currentRune := '$'
+	count := 0
+	for index >= 0 && currentRune == '$' {
+		currentRune = rune(input[index])
+		if currentRune == '$' {
+			count++
+		}
+		index--
+	}
+	// if we found an odd number of immediately $ preceding ${, then the expansion is escaped
+	if count%2 == 1 {
+		return ""
 	}
 
 	return input[openIndex : closeIndex+1]
@@ -130,7 +146,7 @@ func (mr *Resolver) findAndExpandURI(ctx context.Context, input string) (any, bo
 	}
 
 	var repl string
-	if featuregates.StrictlyTypedInputGate.IsEnabled() {
+	if globalgates.StrictlyTypedInputGate.IsEnabled() {
 		repl, err = expanded.AsString()
 	} else {
 		repl, err = toString(expanded)

@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 	"gonum.org/v1/gonum/graph"
 	"gonum.org/v1/gonum/graph/simple"
 	"gonum.org/v1/gonum/graph/topo"
@@ -70,6 +71,7 @@ func Build(ctx context.Context, set Settings) (*Graph, error) {
 		componentGraph: simple.NewDirectedGraph(),
 		pipelines:      make(map[component.ID]*pipelineNodes, len(set.PipelineConfigs)),
 		instanceIDs:    make(map[int64]*component.InstanceID),
+		telemetry:      set.Telemetry,
 	}
 	for pipelineID := range set.PipelineConfigs {
 		pipelines.pipelines[pipelineID] = &pipelineNodes{
@@ -423,6 +425,13 @@ func (g *Graph) StartAll(ctx context.Context, host component.Host, reporter stat
 				instanceID,
 				component.NewPermanentErrorEvent(compErr),
 			)
+			// We log with zap.AddStacktrace(zap.DPanicLevel) to avoid adding the stack trace to the error log
+			g.telemetry.Logger.WithOptions(zap.AddStacktrace(zap.DPanicLevel)).
+				Error("Failed to start component",
+					zap.Error(compErr),
+					zap.String("type", instanceID.Kind.String()),
+					zap.String("id", instanceID.ID.String()),
+				)
 			return compErr
 		}
 

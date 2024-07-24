@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/internal/featuregates"
+	"go.opentelemetry.io/collector/internal/globalgates"
 	"go.opentelemetry.io/collector/internal/localhostgate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -115,7 +115,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 
 	logger.Info("Setting up own telemetry...")
 
-	if featuregates.DisableOpenCensusBridge.IsEnabled() {
+	if globalgates.DisableOpenCensusBridge.IsEnabled() {
 		logger.Info("OpenCensus bridge is disabled for Collector telemetry and will be removed in a future version, use --feature-gates=-service.disableOpenCensusBridge to re-enable")
 	}
 	mp, err := newMeterProvider(
@@ -159,7 +159,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 
 	if cfg.Telemetry.Metrics.Level != configtelemetry.LevelNone && cfg.Telemetry.Metrics.Address != "" {
 		// The process telemetry initialization requires the ballast size, which is available after the extensions are initialized.
-		if err = proctelemetry.RegisterProcessMetrics(srv.telemetrySettings, getBallastSize(srv.host)); err != nil {
+		if err = proctelemetry.RegisterProcessMetrics(srv.telemetrySettings); err != nil {
 			return nil, fmt.Errorf("failed to register process metrics: %w", err)
 		}
 	}
@@ -314,15 +314,6 @@ func (srv *Service) initGraph(ctx context.Context, set Settings, cfg Config) err
 // This is a temporary API that may be removed soon after investigating how the collector should record different events.
 func (srv *Service) Logger() *zap.Logger {
 	return srv.telemetrySettings.Logger
-}
-
-func getBallastSize(host component.Host) uint64 {
-	for _, ext := range host.GetExtensions() {
-		if bExt, ok := ext.(interface{ GetBallastSize() uint64 }); ok {
-			return bExt.GetBallastSize()
-		}
-	}
-	return 0
 }
 
 func pdataFromSdk(res *sdkresource.Resource) pcommon.Resource {

@@ -40,6 +40,18 @@ func GetHTTPStatusCodeFromStatus(s *status.Status) int {
 	case codes.ResourceExhausted:
 		return http.StatusTooManyRequests
 	// Not Retryable
+	case codes.InvalidArgument:
+		return http.StatusBadRequest
+	// Not Retryable
+	case codes.Unauthenticated:
+		return http.StatusUnauthorized
+	// Not Retryable
+	case codes.PermissionDenied:
+		return http.StatusForbidden
+	// Not Retryable
+	case codes.Unimplemented:
+		return http.StatusNotFound
+	// Not Retryable
 	default:
 		return http.StatusInternalServerError
 	}
