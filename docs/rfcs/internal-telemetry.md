@@ -46,7 +46,7 @@ for the purpose of its internal telemetry:
 
 | Field type                                                       | Unit           |
 | ---------------------------------------------------------------- | -------------- |
-| Metric about receiving, processing, exporting log records        | `{records}`    |
+| Metric counting the number of log records received, processed, or exported        | `{records}`    |
 | Metric about receiving, processing, exporting spans              | `{spans}`      |
 | Metric about receiving, processing, exporting metric data points | `{datapoints}` |
 
