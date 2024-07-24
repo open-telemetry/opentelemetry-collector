@@ -36,7 +36,7 @@ Telemetry produced by the Collector have the following properties:
 - code is instrumented using the OpenTelemetry API and telemetry is produced via the OpenTelemetry Go SDK
 - instrumentation scope is defined via configuration in `metadata.yaml`
 - metrics are defined via `metadata.yaml` except in components that have specific cases where
-  it is not possible to do so. See the [issue](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33523)
+  it is not possible to do so. See [contrib issue #33523](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33523)
   which list such components
 
 ## Units
