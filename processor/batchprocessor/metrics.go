@@ -37,8 +37,9 @@ func newBatchProcessorTelemetry(set processor.Settings, currentMetadataCardinali
 
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings,
 		metadata.WithLevel(set.MetricsLevel),
-		metadata.WithProcessorBatchMetadataCardinalityCallback(func() int64 { return int64(currentMetadataCardinality()) }),
-		metadata.WithAttributeSet(attrs),
+		metadata.WithProcessorBatchMetadataCardinalityCallback(func() int64 {
+			return int64(currentMetadataCardinality())
+		}, metric.WithAttributeSet(attrs)),
 	)
 
 	if err != nil {

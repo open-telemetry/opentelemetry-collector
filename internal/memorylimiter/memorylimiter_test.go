@@ -4,17 +4,14 @@
 package memorylimiter
 
 import (
-	"context"
 	"runtime"
 	"sync/atomic"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/internal/iruntime"
 )
 
@@ -42,22 +39,6 @@ func TestMemoryPressureResponse(t *testing.T) {
 	currentMemAlloc = 1800
 	ml.CheckMemLimits()
 	assert.True(t, ml.MustRefuse())
-
-	// Check ballast effect
-	ml.ballastSize = 1000
-
-	// Below memAllocLimit accounting for ballast.
-	currentMemAlloc = 800 + ml.ballastSize
-	ml.CheckMemLimits()
-	assert.False(t, ml.MustRefuse())
-
-	// Above memAllocLimit even accounting for ballast.
-	currentMemAlloc = 1800 + ml.ballastSize
-	ml.CheckMemLimits()
-	assert.True(t, ml.MustRefuse())
-
-	// Restore ballast to default.
-	ml.ballastSize = 0
 
 	// Check spike limit
 	ml.usageChecker.memSpikeLimit = 512
@@ -150,39 +131,4 @@ func TestRefuseDecision(t *testing.T) {
 			assert.Equal(t, test.shouldRefuse, shouldRefuse)
 		})
 	}
-}
-
-func TestBallastSize(t *testing.T) {
-	cfg := &Config{
-		CheckInterval:  10 * time.Second,
-		MemoryLimitMiB: 1024,
-	}
-	got, err := NewMemoryLimiter(cfg, zap.NewNop())
-	require.NoError(t, err)
-
-	got.startMonitoring()
-	require.NoError(t, got.Start(context.Background(), &host{ballastSize: 113}))
-	assert.Equal(t, uint64(113), got.ballastSize)
-	require.NoError(t, got.Shutdown(context.Background()))
-}
-
-type host struct {
-	ballastSize uint64
-	component.Host
-}
-
-func (h *host) GetExtensions() map[component.ID]component.Component {
-	ret := make(map[component.ID]component.Component)
-	ret[component.MustNewID("ballast")] = &ballastExtension{ballastSize: h.ballastSize}
-	return ret
-}
-
-type ballastExtension struct {
-	ballastSize uint64
-	component.StartFunc
-	component.ShutdownFunc
-}
-
-func (be *ballastExtension) GetBallastSize() uint64 {
-	return be.ballastSize
 }

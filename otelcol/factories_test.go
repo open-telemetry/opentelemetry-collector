@@ -24,21 +24,41 @@ func nopFactories() (Factories, error) {
 	if factories.Connectors, err = connector.MakeFactoryMap(connectortest.NewNopFactory()); err != nil {
 		return Factories{}, err
 	}
+	factories.ConnectorModules = make(map[component.Type]string, len(factories.Connectors))
+	for _, con := range factories.Connectors {
+		factories.ConnectorModules[con.Type()] = "go.opentelemetry.io/collector/connector/connectortest v1.2.3"
+	}
 
 	if factories.Extensions, err = extension.MakeFactoryMap(extensiontest.NewNopFactory()); err != nil {
 		return Factories{}, err
+	}
+	factories.ExtensionModules = make(map[component.Type]string, len(factories.Extensions))
+	for _, ext := range factories.Extensions {
+		factories.ExtensionModules[ext.Type()] = "go.opentelemetry.io/collector/extension/extensiontest v1.2.3"
 	}
 
 	if factories.Receivers, err = receiver.MakeFactoryMap(receivertest.NewNopFactory(), receivertest.NewNopFactoryForType(component.DataTypeLogs)); err != nil {
 		return Factories{}, err
 	}
+	factories.ReceiverModules = make(map[component.Type]string, len(factories.Receivers))
+	for _, rec := range factories.Receivers {
+		factories.ReceiverModules[rec.Type()] = "go.opentelemetry.io/collector/receiver/receivertest v1.2.3"
+	}
 
 	if factories.Exporters, err = exporter.MakeFactoryMap(exportertest.NewNopFactory()); err != nil {
 		return Factories{}, err
 	}
+	factories.ExporterModules = make(map[component.Type]string, len(factories.Exporters))
+	for _, exp := range factories.Exporters {
+		factories.ExporterModules[exp.Type()] = "go.opentelemetry.io/collector/exporter/exportertest v1.2.3"
+	}
 
 	if factories.Processors, err = processor.MakeFactoryMap(processortest.NewNopFactory()); err != nil {
 		return Factories{}, err
+	}
+	factories.ProcessorModules = make(map[component.Type]string, len(factories.Processors))
+	for _, proc := range factories.Processors {
+		factories.ProcessorModules[proc.Type()] = "go.opentelemetry.io/collector/processor/processortest v1.2.3"
 	}
 
 	return factories, err

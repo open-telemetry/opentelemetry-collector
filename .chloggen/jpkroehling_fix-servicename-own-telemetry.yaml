@@ -1,4 +1,0 @@
-change_type: bug_fix
-component: service/telemetry
-note: Add ability to set service.name for spans emitted by the Collector
-issues: [10489]

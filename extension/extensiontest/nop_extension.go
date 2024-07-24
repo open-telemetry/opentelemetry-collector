@@ -15,13 +15,6 @@ import (
 
 var nopType = component.MustNewType("nop")
 
-// NewNopCreateSettings returns a new nop settings for extension.Factory Create* functions.
-//
-// Deprecated: [v0.103.0] Use extensiontest.NewNopSettings instead.
-func NewNopCreateSettings() extension.Settings {
-	return NewNopSettings()
-}
-
 // NewNopSettings returns a new nop settings for extension.Factory Create* functions.
 func NewNopSettings() extension.Settings {
 	return extension.Settings{

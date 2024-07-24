@@ -8,6 +8,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.opentelemetry.io/otel/attribute"
 	otelprom "go.opentelemetry.io/otel/exporters/prometheus"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -72,8 +73,10 @@ func (tts *TestTelemetry) CheckExporterLogs(sentLogRecords, sendFailedLogRecords
 	return tts.prometheusChecker.checkExporterLogs(tts.id, sentLogRecords, sendFailedLogRecords)
 }
 
-func (tts *TestTelemetry) CheckExporterMetricGauge(metric string, val int64) error {
-	return tts.prometheusChecker.checkExporterMetricGauge(tts.id, metric, val)
+func (tts *TestTelemetry) CheckExporterMetricGauge(metric string, val int64, extraAttrs ...attribute.KeyValue) error {
+	attrs := attributesForExporterMetrics(tts.id)
+	attrs = append(attrs, extraAttrs...)
+	return tts.prometheusChecker.checkGauge(metric, val, attrs)
 }
 
 // CheckProcessorTraces checks that for the current exported values for trace exporter metrics match given values.

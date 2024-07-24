@@ -40,7 +40,7 @@ func TestValidate(t *testing.T) {
 		},
 		{
 			name:    "testdata/invalid_stability.yaml",
-			wantErr: "1 error(s) decoding:\n\n* error decoding 'status.stability': invalid stability level: incorrectstability",
+			wantErr: "decoding failed due to the following error(s):\n\nerror decoding 'status.stability': invalid stability level: incorrectstability",
 		},
 		{
 			name:    "testdata/no_stability_component.yaml",

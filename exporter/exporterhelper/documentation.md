@@ -6,7 +6,7 @@
 
 The following telemetry is emitted by this component.
 
-### exporter_enqueue_failed_log_records
+### otelcol_exporter_enqueue_failed_log_records
 
 Number of log records failed to be added to the sending queue.
 
@@ -14,7 +14,7 @@ Number of log records failed to be added to the sending queue.
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### exporter_enqueue_failed_metric_points
+### otelcol_exporter_enqueue_failed_metric_points
 
 Number of metric points failed to be added to the sending queue.
 
@@ -22,7 +22,7 @@ Number of metric points failed to be added to the sending queue.
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### exporter_enqueue_failed_spans
+### otelcol_exporter_enqueue_failed_spans
 
 Number of spans failed to be added to the sending queue.
 
@@ -30,7 +30,7 @@ Number of spans failed to be added to the sending queue.
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### exporter_queue_capacity
+### otelcol_exporter_queue_capacity
 
 Fixed capacity of the retry queue (in batches)
 
@@ -38,7 +38,7 @@ Fixed capacity of the retry queue (in batches)
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Int |
 
-### exporter_queue_size
+### otelcol_exporter_queue_size
 
 Current size of the retry queue (in batches)
 
@@ -46,7 +46,7 @@ Current size of the retry queue (in batches)
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Int |
 
-### exporter_send_failed_log_records
+### otelcol_exporter_send_failed_log_records
 
 Number of log records in failed attempts to send to destination.
 
@@ -54,7 +54,7 @@ Number of log records in failed attempts to send to destination.
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### exporter_send_failed_metric_points
+### otelcol_exporter_send_failed_metric_points
 
 Number of metric points in failed attempts to send to destination.
 
@@ -62,7 +62,7 @@ Number of metric points in failed attempts to send to destination.
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### exporter_send_failed_spans
+### otelcol_exporter_send_failed_spans
 
 Number of spans in failed attempts to send to destination.
 
@@ -70,7 +70,7 @@ Number of spans in failed attempts to send to destination.
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### exporter_sent_log_records
+### otelcol_exporter_sent_log_records
 
 Number of log record successfully sent to destination.
 
@@ -78,7 +78,7 @@ Number of log record successfully sent to destination.
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### exporter_sent_metric_points
+### otelcol_exporter_sent_metric_points
 
 Number of metric points successfully sent to destination.
 
@@ -86,7 +86,7 @@ Number of metric points successfully sent to destination.
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### exporter_sent_spans
+### otelcol_exporter_sent_spans
 
 Number of spans successfully sent to destination.
 

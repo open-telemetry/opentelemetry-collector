@@ -15,7 +15,7 @@ import (
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/featuregates"
+	"go.opentelemetry.io/collector/internal/globalgates"
 )
 
 func newConfig(yamlBytes []byte, factories Factories) (*Config, error) {
@@ -181,13 +181,13 @@ func TestStrictlyTypedCoda(t *testing.T) {
 			require.NoError(t, err)
 
 			// Save the previous value of the feature gate and restore it after the test.
-			prev := featuregates.StrictlyTypedInputGate.IsEnabled()
+			prev := globalgates.StrictlyTypedInputGate.IsEnabled()
 			defer func() {
-				require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.StrictlyTypedInputID, prev))
+				require.NoError(t, featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, prev))
 			}()
 
 			// Ensure the error does not appear with the feature gate disabled.
-			require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.StrictlyTypedInputID, false))
+			require.NoError(t, featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, false))
 			_, errWeakTypes := cp.Get(context.Background(), factories)
 			if tt.isErrFromStrictTypes {
 				require.Error(t, errWeakTypes)
@@ -198,7 +198,7 @@ func TestStrictlyTypedCoda(t *testing.T) {
 			}
 
 			// Test with the feature gate enabled.
-			require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.StrictlyTypedInputID, true))
+			require.NoError(t, featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, true))
 			_, errStrictTypes := cp.Get(context.Background(), factories)
 			require.Error(t, errStrictTypes)
 			if tt.isErrFromStrictTypes {

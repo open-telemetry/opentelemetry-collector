@@ -13,7 +13,7 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/internal/featuregates"
+	"go.opentelemetry.io/collector/internal/globalgates"
 )
 
 // follows drive-letter specification:
@@ -174,7 +174,7 @@ func (mr *Resolver) Resolve(ctx context.Context) (*Conf, error) {
 			return nil, err
 		}
 
-		if v, ok := val.(string); ok && featuregates.UseUnifiedEnvVarExpansionRules.IsEnabled() {
+		if v, ok := val.(string); ok && globalgates.UseUnifiedEnvVarExpansionRules.IsEnabled() {
 			cfgMap[k] = strings.ReplaceAll(v, "$$", "$")
 		} else {
 			cfgMap[k] = val

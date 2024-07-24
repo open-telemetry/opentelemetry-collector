@@ -26,6 +26,7 @@ type ObsReport struct {
 	level          configtelemetry.Level
 	spanNamePrefix string
 	tracer         trace.Tracer
+	dataType       component.DataType
 
 	otelAttrs        []attribute.KeyValue
 	telemetryBuilder *metadata.TelemetryBuilder
@@ -38,6 +39,7 @@ type ObsReport struct {
 type ObsReportSettings struct {
 	ExporterID             component.ID
 	ExporterCreateSettings exporter.Settings
+	DataType               component.DataType
 }
 
 // NewObsReport creates a new Exporter.
@@ -49,9 +51,7 @@ func NewObsReport(cfg ObsReportSettings) (*ObsReport, error) {
 }
 
 func newExporter(cfg ObsReportSettings) (*ObsReport, error) {
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(cfg.ExporterCreateSettings.TelemetrySettings,
-		metadata.WithAttributeSet(attribute.NewSet(attribute.String(obsmetrics.ExporterKey, cfg.ExporterID.String()))),
-	)
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(cfg.ExporterCreateSettings.TelemetrySettings)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +60,7 @@ func newExporter(cfg ObsReportSettings) (*ObsReport, error) {
 		level:          cfg.ExporterCreateSettings.TelemetrySettings.MetricsLevel,
 		spanNamePrefix: obsmetrics.ExporterPrefix + cfg.ExporterID.String(),
 		tracer:         cfg.ExporterCreateSettings.TracerProvider.Tracer(cfg.ExporterID.String()),
-
+		dataType:       cfg.DataType,
 		otelAttrs: []attribute.KeyValue{
 			attribute.String(obsmetrics.ExporterKey, cfg.ExporterID.String()),
 		},

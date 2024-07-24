@@ -32,8 +32,8 @@ func BuildCustomMetricName(configType, metric string) string {
 
 // ObsReport is a helper to add observability to a processor.
 type ObsReport struct {
-	otelAttrs        []attribute.KeyValue
-	telemetryBuilder *metadata.TelemetryBuilder
+	otelAttrs  []attribute.KeyValue
+	telBuilder *metadata.TelemetryBuilder
 }
 
 // ObsReportSettings are settings for creating an ObsReport.
@@ -48,7 +48,7 @@ func NewObsReport(cfg ObsReportSettings) (*ObsReport, error) {
 }
 
 func newObsReport(cfg ObsReportSettings) (*ObsReport, error) {
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(cfg.ProcessorCreateSettings.TelemetrySettings, metadata.WithLevel(cfg.ProcessorCreateSettings.MetricsLevel))
+	telBuilder, err := metadata.NewTelemetryBuilder(cfg.ProcessorCreateSettings.TelemetrySettings, metadata.WithLevel(cfg.ProcessorCreateSettings.MetricsLevel))
 	if err != nil {
 		return nil, err
 	}
@@ -56,92 +56,66 @@ func newObsReport(cfg ObsReportSettings) (*ObsReport, error) {
 		otelAttrs: []attribute.KeyValue{
 			attribute.String(obsmetrics.ProcessorKey, cfg.ProcessorID.String()),
 		},
-		telemetryBuilder: telemetryBuilder,
+		telBuilder: telBuilder,
 	}, nil
-}
-
-func (or *ObsReport) recordData(ctx context.Context, dataType component.DataType, accepted, refused, dropped, inserted int64) {
-	var acceptedCount, refusedCount, droppedCount, insertedCount metric.Int64Counter
-	switch dataType {
-	case component.DataTypeTraces:
-		acceptedCount = or.telemetryBuilder.ProcessorAcceptedSpans
-		refusedCount = or.telemetryBuilder.ProcessorRefusedSpans
-		droppedCount = or.telemetryBuilder.ProcessorDroppedSpans
-		insertedCount = or.telemetryBuilder.ProcessorInsertedSpans
-	case component.DataTypeMetrics:
-		acceptedCount = or.telemetryBuilder.ProcessorAcceptedMetricPoints
-		refusedCount = or.telemetryBuilder.ProcessorRefusedMetricPoints
-		droppedCount = or.telemetryBuilder.ProcessorDroppedMetricPoints
-		insertedCount = or.telemetryBuilder.ProcessorInsertedMetricPoints
-	case component.DataTypeLogs:
-		acceptedCount = or.telemetryBuilder.ProcessorAcceptedLogRecords
-		refusedCount = or.telemetryBuilder.ProcessorRefusedLogRecords
-		droppedCount = or.telemetryBuilder.ProcessorDroppedLogRecords
-		insertedCount = or.telemetryBuilder.ProcessorInsertedLogRecords
-	}
-
-	acceptedCount.Add(ctx, accepted, metric.WithAttributes(or.otelAttrs...))
-	refusedCount.Add(ctx, refused, metric.WithAttributes(or.otelAttrs...))
-	droppedCount.Add(ctx, dropped, metric.WithAttributes(or.otelAttrs...))
-	insertedCount.Add(ctx, inserted, metric.WithAttributes(or.otelAttrs...))
 }
 
 // TracesAccepted reports that the trace data was accepted.
 func (or *ObsReport) TracesAccepted(ctx context.Context, numSpans int) {
-	or.recordData(ctx, component.DataTypeTraces, int64(numSpans), int64(0), int64(0), int64(0))
+	or.telBuilder.ProcessorAcceptedSpans.Add(ctx, int64(numSpans), metric.WithAttributes(or.otelAttrs...))
 }
 
 // TracesRefused reports that the trace data was refused.
 func (or *ObsReport) TracesRefused(ctx context.Context, numSpans int) {
-	or.recordData(ctx, component.DataTypeTraces, int64(0), int64(numSpans), int64(0), int64(0))
+	or.telBuilder.ProcessorRefusedSpans.Add(ctx, int64(numSpans), metric.WithAttributes(or.otelAttrs...))
 }
 
 // TracesDropped reports that the trace data was dropped.
 func (or *ObsReport) TracesDropped(ctx context.Context, numSpans int) {
-	or.recordData(ctx, component.DataTypeTraces, int64(0), int64(0), int64(numSpans), int64(0))
+	or.telBuilder.ProcessorDroppedSpans.Add(ctx, int64(numSpans), metric.WithAttributes(or.otelAttrs...))
 }
 
 // TracesInserted reports that the trace data was inserted.
 func (or *ObsReport) TracesInserted(ctx context.Context, numSpans int) {
-	or.recordData(ctx, component.DataTypeTraces, int64(0), int64(0), int64(0), int64(numSpans))
+	or.telBuilder.ProcessorInsertedSpans.Add(ctx, int64(numSpans), metric.WithAttributes(or.otelAttrs...))
 }
 
 // MetricsAccepted reports that the metrics were accepted.
 func (or *ObsReport) MetricsAccepted(ctx context.Context, numPoints int) {
-	or.recordData(ctx, component.DataTypeMetrics, int64(numPoints), int64(0), int64(0), int64(0))
+	or.telBuilder.ProcessorAcceptedMetricPoints.Add(ctx, int64(numPoints), metric.WithAttributes(or.otelAttrs...))
 }
 
 // MetricsRefused reports that the metrics were refused.
 func (or *ObsReport) MetricsRefused(ctx context.Context, numPoints int) {
-	or.recordData(ctx, component.DataTypeMetrics, int64(0), int64(numPoints), int64(0), int64(0))
+	or.telBuilder.ProcessorRefusedMetricPoints.Add(ctx, int64(numPoints), metric.WithAttributes(or.otelAttrs...))
 }
 
 // MetricsDropped reports that the metrics were dropped.
 func (or *ObsReport) MetricsDropped(ctx context.Context, numPoints int) {
-	or.recordData(ctx, component.DataTypeMetrics, int64(0), int64(0), int64(numPoints), int64(0))
+	or.telBuilder.ProcessorDroppedMetricPoints.Add(ctx, int64(numPoints), metric.WithAttributes(or.otelAttrs...))
 }
 
 // MetricsInserted reports that the metrics were inserted.
 func (or *ObsReport) MetricsInserted(ctx context.Context, numPoints int) {
-	or.recordData(ctx, component.DataTypeMetrics, int64(0), int64(0), int64(0), int64(numPoints))
+	or.telBuilder.ProcessorInsertedMetricPoints.Add(ctx, int64(numPoints), metric.WithAttributes(or.otelAttrs...))
 }
 
 // LogsAccepted reports that the logs were accepted.
 func (or *ObsReport) LogsAccepted(ctx context.Context, numRecords int) {
-	or.recordData(ctx, component.DataTypeLogs, int64(numRecords), int64(0), int64(0), int64(0))
+	or.telBuilder.ProcessorAcceptedLogRecords.Add(ctx, int64(numRecords), metric.WithAttributes(or.otelAttrs...))
 }
 
 // LogsRefused reports that the logs were refused.
 func (or *ObsReport) LogsRefused(ctx context.Context, numRecords int) {
-	or.recordData(ctx, component.DataTypeLogs, int64(0), int64(numRecords), int64(0), int64(0))
+	or.telBuilder.ProcessorRefusedLogRecords.Add(ctx, int64(numRecords), metric.WithAttributes(or.otelAttrs...))
 }
 
 // LogsDropped reports that the logs were dropped.
 func (or *ObsReport) LogsDropped(ctx context.Context, numRecords int) {
-	or.recordData(ctx, component.DataTypeLogs, int64(0), int64(0), int64(numRecords), int64(0))
+	or.telBuilder.ProcessorDroppedLogRecords.Add(ctx, int64(numRecords), metric.WithAttributes(or.otelAttrs...))
 }
 
 // LogsInserted reports that the logs were inserted.
 func (or *ObsReport) LogsInserted(ctx context.Context, numRecords int) {
-	or.recordData(ctx, component.DataTypeLogs, int64(0), int64(0), int64(0), int64(numRecords))
+	or.telBuilder.ProcessorInsertedLogRecords.Add(ctx, int64(numRecords), metric.WithAttributes(or.otelAttrs...))
 }

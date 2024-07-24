@@ -7,8 +7,10 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -29,12 +31,16 @@ type Consumer interface {
 	// ConsumeLogs to implement the consumer.Logs.
 	ConsumeLogs(context.Context, plog.Logs) error
 
+	// ConsumeProfiles to implement the consumerprofiles.Profiles.
+	ConsumeProfiles(context.Context, pprofile.Profiles) error
+
 	unexported()
 }
 
 var _ consumer.Logs = (Consumer)(nil)
 var _ consumer.Metrics = (Consumer)(nil)
 var _ consumer.Traces = (Consumer)(nil)
+var _ consumerprofiles.Profiles = (Consumer)(nil)
 
 type nonMutatingConsumer struct{}
 
@@ -48,6 +54,7 @@ type baseConsumer struct {
 	consumer.ConsumeTracesFunc
 	consumer.ConsumeMetricsFunc
 	consumer.ConsumeLogsFunc
+	consumerprofiles.ConsumeProfilesFunc
 }
 
 func (bc baseConsumer) unexported() {}

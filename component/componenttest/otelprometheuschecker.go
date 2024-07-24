@@ -100,10 +100,8 @@ func (pc *prometheusChecker) checkExporterEnqueueFailed(exporter component.ID, d
 	return pc.checkCounter(fmt.Sprintf("exporter_enqueue_failed_%s", datatype), enqueueFailed, exporterAttrs)
 }
 
-func (pc *prometheusChecker) checkExporterMetricGauge(exporter component.ID, metric string, val int64) error {
-	exporterAttrs := attributesForExporterMetrics(exporter)
-
-	ts, err := pc.getMetric(metric, io_prometheus_client.MetricType_GAUGE, exporterAttrs)
+func (pc *prometheusChecker) checkGauge(metric string, val int64, attrs []attribute.KeyValue) error {
+	ts, err := pc.getMetric(metric, io_prometheus_client.MetricType_GAUGE, attrs)
 	if err != nil {
 		return err
 	}
@@ -117,8 +115,7 @@ func (pc *prometheusChecker) checkExporterMetricGauge(exporter component.ID, met
 }
 
 func (pc *prometheusChecker) checkCounter(expectedMetric string, value int64, attrs []attribute.KeyValue) error {
-
-	ts, err := pc.getMetric(expectedMetric, io_prometheus_client.MetricType_COUNTER, attrs)
+	ts, err := pc.getMetric(fmt.Sprintf("otelcol_%s", expectedMetric), io_prometheus_client.MetricType_COUNTER, attrs)
 	if err != nil {
 		return err
 	}

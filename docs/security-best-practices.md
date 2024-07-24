@@ -153,6 +153,109 @@ To change the default endpoint to be `localhost`-bound in all components, enable
 
 If `localhost` resolves to a different IP due to your DNS settings then explicitly use the loopback IP instead: `127.0.0.1` for IPv4 or `::1` for IPv6. In IPv6 setups, ensure your system supports both IPv4 and IPv6 loopback addresses to avoid issues.
 
+Using `localhost` may not work in environments like Docker, Kubernetes, and other environments that have non-standard networking setups.  We've documented a few working example setups for the OTLP receiver gRPC endpoint below, but other receivers and other Collector components may need similar configuration.
+
+#### Docker
+You can run the Collector in Docker by binding to the correct address.  An OTLP exporter in Docker might look something like this:
+
+Collector config file 
+
+`config.yaml`:
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: my-hostname:4317 # the same hostname from your docker run command
+```
+Docker run command:
+`docker run --hostname my-hostname --name container-name -p 127.0.0.1:4567:4317 otel/opentelemetry-collector:0.104.0`
+
+The key here is using the `--hostname` argument - that allows the collector to bind to the `my-hostname` address.
+You could access it from outside that Docker network (for example on a regular program running on the host) by connecting to `127.0.0.1:4567`.
+
+#### Docker Compose
+Similarly to plain Docker, you can run the Collector in Docker by binding to the correct address.
+
+`compose.yaml`:
+```yaml 
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.104.0
+    ports:
+      - "4567:4317"
+```
+
+Collector config file:
+
+`config.yaml`:
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+         endpoint: otel-collector:4317 # Using the service name from your Docker compose file
+```
+
+You can connect to this Collector from another Docker container running in the same network by connecting to `otel-collector:4317`.  You could access it from outside that Docker network (for example on a regular program running on the host) by connecting to `127.0.0.1:4567`.
+
+#### Kubernetes
+If you run the Collector as a `Daemonset`, you can use a configuration like below:
+```yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: collector
+spec:
+  selector:
+    matchLabels:
+      name: collector
+  template:
+    metadata:
+      labels:
+        name: collector
+    spec:
+      containers:
+        - name: collector
+          image: otel/opentelemetry-collector:0.104.0
+          ports:
+            - containerPort: 4317
+              hostPort: 4317
+              protocol: TCP
+              name: otlp-grpc
+            - containerPort: 4318
+              hostPort: 4318
+              protocol: TCP
+              name: otlp-http
+          env:
+            - name: MY_POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+
+```
+In this example, we use the [Kubernetes Downward API](https://kubernetes.io/docs/concepts/workloads/pods/downward-api/) to get your own Pod IP, then bind to that network interface.  Then, we use the `hostPort` option to ensure that the Collector is exposed on the host.  The Collector's config should look something like:
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: ${env:MY_POD_IP}:4317
+      http:
+        endpoint: ${env:MY_POD_IP}:4318
+```
+
+You can send OTLP data to this Collector from any Pod on the Node by accessing `${MY_HOST_IP}:4317` to send OTLP over gRPC and `${MY_HOST_IP}:4318`  to send OTLP over HTTP, where `MY_HOST_IP` is the Node's IP address.  You can get this IP from the Downwards API:
+
+```yaml
+env:
+  - name: MY_HOST_IP
+    valueFrom:
+      fieldRef:
+        fieldPath: status.hostIP
+```
+
 ## Processors
 
 Processors sit between receivers and exporters. They are responsible for

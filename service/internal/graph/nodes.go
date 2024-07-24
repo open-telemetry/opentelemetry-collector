@@ -73,8 +73,8 @@ func (n *receiverNode) buildComponent(ctx context.Context,
 	builder *receiver.Builder,
 	nexts []baseConsumer,
 ) error {
+	tel.Logger = components.ReceiverLogger(tel.Logger, n.componentID, n.pipelineType)
 	set := receiver.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
-	set.TelemetrySettings.Logger = components.ReceiverLogger(tel.Logger, n.componentID, n.pipelineType)
 	var err error
 	switch n.pipelineType {
 	case component.DataTypeTraces:
@@ -133,8 +133,8 @@ func (n *processorNode) buildComponent(ctx context.Context,
 	builder *processor.Builder,
 	next baseConsumer,
 ) error {
+	tel.Logger = components.ProcessorLogger(tel.Logger, n.componentID, n.pipelineID)
 	set := processor.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
-	set.TelemetrySettings.Logger = components.ProcessorLogger(set.TelemetrySettings.Logger, n.componentID, n.pipelineID)
 	var err error
 	switch n.pipelineID.Type() {
 	case component.DataTypeTraces:
@@ -181,8 +181,8 @@ func (n *exporterNode) buildComponent(
 	info component.BuildInfo,
 	builder *exporter.Builder,
 ) error {
+	tel.Logger = components.ExporterLogger(tel.Logger, n.componentID, n.pipelineType)
 	set := exporter.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
-	set.TelemetrySettings.Logger = components.ExporterLogger(set.TelemetrySettings.Logger, n.componentID, n.pipelineType)
 	var err error
 	switch n.pipelineType {
 	case component.DataTypeTraces:
@@ -233,8 +233,8 @@ func (n *connectorNode) buildComponent(
 	builder *connector.Builder,
 	nexts []baseConsumer,
 ) error {
+	tel.Logger = components.ConnectorLogger(tel.Logger, n.componentID, n.exprPipelineType, n.rcvrPipelineType)
 	set := connector.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
-	set.TelemetrySettings.Logger = components.ConnectorLogger(set.TelemetrySettings.Logger, n.componentID, n.exprPipelineType, n.rcvrPipelineType)
 
 	switch n.rcvrPipelineType {
 	case component.DataTypeTraces:

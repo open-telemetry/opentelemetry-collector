@@ -163,17 +163,6 @@ func (col *Collector) Shutdown() {
 func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	col.setCollectorState(StateStarting)
 
-	var conf *confmap.Conf
-
-	if cp, ok := col.configProvider.(ConfmapProvider); ok {
-		var err error
-		conf, err = cp.GetConfmap(ctx)
-
-		if err != nil {
-			return fmt.Errorf("failed to resolve config: %w", err)
-		}
-	}
-
 	factories, err := col.set.Factories()
 	if err != nil {
 		return fmt.Errorf("failed to initialize factories: %w", err)
@@ -188,6 +177,12 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	}
 
 	col.serviceConfig = &cfg.Service
+
+	conf := confmap.New()
+
+	if err = conf.Marshal(cfg); err != nil {
+		return fmt.Errorf("could not marshal configuration: %w", err)
+	}
 
 	col.service, err = service.New(ctx, service.Settings{
 		BuildInfo:         col.set.BuildInfo,

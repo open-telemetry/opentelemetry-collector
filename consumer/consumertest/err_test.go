@@ -13,6 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -24,4 +25,5 @@ func TestErr(t *testing.T) {
 	assert.Equal(t, err, ec.ConsumeLogs(context.Background(), plog.NewLogs()))
 	assert.Equal(t, err, ec.ConsumeMetrics(context.Background(), pmetric.NewMetrics()))
 	assert.Equal(t, err, ec.ConsumeTraces(context.Background(), ptrace.NewTraces()))
+	assert.Equal(t, err, ec.ConsumeProfiles(context.Background(), pprofile.NewProfiles()))
 }

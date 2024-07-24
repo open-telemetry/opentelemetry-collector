@@ -29,4 +29,19 @@ type Factories struct {
 
 	// Connectors maps connector type names in the config to the respective factory.
 	Connectors map[component.Type]connector.Factory
+
+	// ReceiverModules maps receiver types to their respective go modules.
+	ReceiverModules map[component.Type]string
+
+	// ProcessorModules maps processor types to their respective go modules.
+	ProcessorModules map[component.Type]string
+
+	// ExporterModules maps exporter types to their respective go modules.
+	ExporterModules map[component.Type]string
+
+	// ExtensionModules maps extension types to their respective go modules.
+	ExtensionModules map[component.Type]string
+
+	// ConnectorModules maps connector types to their respective go modules.
+	ConnectorModules map[component.Type]string
 }

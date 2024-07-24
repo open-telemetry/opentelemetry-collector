@@ -6,7 +6,7 @@
 
 The following telemetry is emitted by this component.
 
-### processor_batch_batch_send_size
+### otelcol_processor_batch_batch_send_size
 
 Number of units in the batch
 
@@ -14,7 +14,7 @@ Number of units in the batch
 | ---- | ----------- | ---------- |
 | 1 | Histogram | Int |
 
-### processor_batch_batch_send_size_bytes
+### otelcol_processor_batch_batch_send_size_bytes
 
 Number of bytes in batch that was sent
 
@@ -22,7 +22,7 @@ Number of bytes in batch that was sent
 | ---- | ----------- | ---------- |
 | By | Histogram | Int |
 
-### processor_batch_batch_size_trigger_send
+### otelcol_processor_batch_batch_size_trigger_send
 
 Number of times the batch was sent due to a size trigger
 
@@ -30,7 +30,7 @@ Number of times the batch was sent due to a size trigger
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### processor_batch_metadata_cardinality
+### otelcol_processor_batch_metadata_cardinality
 
 Number of distinct metadata value combinations being processed
 
@@ -38,7 +38,7 @@ Number of distinct metadata value combinations being processed
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | false |
 
-### processor_batch_timeout_trigger_send
+### otelcol_processor_batch_timeout_trigger_send
 
 Number of times the batch was sent due to a timeout trigger
 

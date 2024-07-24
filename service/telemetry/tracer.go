@@ -25,10 +25,10 @@ var (
 	errUnsupportedPropagator = errors.New("unsupported trace propagator")
 )
 
-// New creates a new Telemetry from Config.
-func newTracerProvider(ctx context.Context, set Settings, cfg Config) (trace.TracerProvider, error) {
+func attributes(set Settings, cfg Config) map[string]interface{} {
 	attrs := map[string]interface{}{
-		string(semconv.ServiceNameKey): set.BuildInfo.Version,
+		string(semconv.ServiceNameKey):    set.BuildInfo.Command,
+		string(semconv.ServiceVersionKey): set.BuildInfo.Version,
 	}
 	for k, v := range cfg.Resource {
 		if v != nil {
@@ -40,10 +40,15 @@ func newTracerProvider(ctx context.Context, set Settings, cfg Config) (trace.Tra
 			delete(attrs, k)
 		}
 	}
+	return attrs
+}
+
+// New creates a new Telemetry from Config.
+func newTracerProvider(ctx context.Context, set Settings, cfg Config) (trace.TracerProvider, error) {
 	sch := semconv.SchemaURL
 	res := config.Resource{
 		SchemaUrl:  &sch,
-		Attributes: attrs,
+		Attributes: attributes(set, cfg),
 	}
 
 	sdk, err := config.NewSDK(

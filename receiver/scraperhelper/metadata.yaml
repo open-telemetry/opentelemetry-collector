@@ -12,7 +12,7 @@ telemetry:
     scraper_scraped_metric_points:
       enabled: true
       description: Number of metric points successfully scraped.
-      unit: "1"
+      unit: "{datapoints}"
       sum:
         value_type: int
         monotonic: true
@@ -20,7 +20,7 @@ telemetry:
     scraper_errored_metric_points:
       enabled: true
       description: Number of metric points that were unable to be scraped.
-      unit: "1"
+      unit: "{datapoints}"
       sum:
         value_type: int
         monotonic: true
