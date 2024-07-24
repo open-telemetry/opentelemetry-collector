@@ -5,6 +5,10 @@ package component // import "go.opentelemetry.io/collector/component"
 
 // Host represents the entity that is hosting a Component. It is used to allow communication
 // between the Component and its host (normally the service.Collector is the host).
+//
+// Components may require `component.Host` to implement additional interfaces to properly function.
+// The component is expected to cast the `component.Host` to the interface it needs and return
+// an error if the type assertion fails.
 type Host interface {
 	// GetFactory of the specified kind. Returns the factory for a component type.
 	// This allows components to create other components. For example:
