@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/service/internal/servicetelemetry"
 	"go.opentelemetry.io/collector/service/internal/status"
+	"go.opentelemetry.io/collector/service/internal/status/statustest"
 	"go.opentelemetry.io/collector/service/internal/testcomponents"
 	"go.opentelemetry.io/collector/service/pipelines"
 )
@@ -154,13 +155,13 @@ func TestGraphStartStop(t *testing.T) {
 				pg.componentGraph.SetEdge(simple.Edge{F: f, T: t})
 			}
 
-			require.NoError(t, pg.StartAll(ctx, componenttest.NewNopHost()))
+			require.NoError(t, pg.StartAll(ctx, componenttest.NewNopHost(), statustest.NewNopStatusReporter()))
 			for _, edge := range tt.edges {
 				assert.Greater(t, ctx.order[edge[0]], ctx.order[edge[1]])
 			}
 
 			ctx.order = map[component.ID]int{}
-			require.NoError(t, pg.ShutdownAll(ctx))
+			require.NoError(t, pg.ShutdownAll(ctx, statustest.NewNopStatusReporter()))
 			for _, edge := range tt.edges {
 				assert.Less(t, ctx.order[edge[0]], ctx.order[edge[1]])
 			}
@@ -188,11 +189,11 @@ func TestGraphStartStopCycle(t *testing.T) {
 	pg.componentGraph.SetEdge(simple.Edge{F: c1, T: e1})
 	pg.componentGraph.SetEdge(simple.Edge{F: c1, T: p1}) // loop back
 
-	err := pg.StartAll(context.Background(), componenttest.NewNopHost())
+	err := pg.StartAll(context.Background(), componenttest.NewNopHost(), statustest.NewNopStatusReporter())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), `topo: no topological ordering: cyclic components`)
 
-	err = pg.ShutdownAll(context.Background())
+	err = pg.ShutdownAll(context.Background(), statustest.NewNopStatusReporter())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), `topo: no topological ordering: cyclic components`)
 }
@@ -216,8 +217,8 @@ func TestGraphStartStopComponentError(t *testing.T) {
 		F: r1,
 		T: e1,
 	})
-	assert.EqualError(t, pg.StartAll(context.Background(), componenttest.NewNopHost()), "foo")
-	assert.EqualError(t, pg.ShutdownAll(context.Background()), "bar")
+	assert.EqualError(t, pg.StartAll(context.Background(), componenttest.NewNopHost(), statustest.NewNopStatusReporter()), "foo")
+	assert.EqualError(t, pg.ShutdownAll(context.Background(), statustest.NewNopStatusReporter()), "bar")
 }
 
 func TestConnectorPipelinesGraph(t *testing.T) {
@@ -768,7 +769,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 
 			assert.Equal(t, len(test.pipelineConfigs), len(pg.pipelines))
 
-			assert.NoError(t, pg.StartAll(context.Background(), componenttest.NewNopHost()))
+			assert.NoError(t, pg.StartAll(context.Background(), componenttest.NewNopHost(), statustest.NewNopStatusReporter()))
 
 			mutatingPipelines := make(map[component.ID]bool, len(test.pipelineConfigs))
 
@@ -892,7 +893,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 			}
 
 			// Shut down the entire component graph
-			assert.NoError(t, pg.ShutdownAll(context.Background()))
+			assert.NoError(t, pg.ShutdownAll(context.Background(), statustest.NewNopStatusReporter()))
 
 			// Check each pipeline individually, ensuring that all components are stopped.
 			for pipelineID := range test.pipelineConfigs {
@@ -954,7 +955,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 					expected.MarkReadOnly() // multiple read-only exporters should get read-only pdata
 				}
 				for i := 0; i < test.expectedPerExporter; i++ {
-					assert.EqualValues(t, expected, tracesExporter.Traces[0])
+					assert.EqualValues(t, expected, tracesExporter.Traces[i])
 				}
 			}
 			for _, e := range allExporters[component.DataTypeMetrics] {
@@ -965,7 +966,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 					expected.MarkReadOnly() // multiple read-only exporters should get read-only pdata
 				}
 				for i := 0; i < test.expectedPerExporter; i++ {
-					assert.EqualValues(t, expected, metricsExporter.Metrics[0])
+					assert.EqualValues(t, expected, metricsExporter.Metrics[i])
 				}
 			}
 			for _, e := range allExporters[component.DataTypeLogs] {
@@ -976,7 +977,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 					expected.MarkReadOnly() // multiple read-only exporters should get read-only pdata
 				}
 				for i := 0; i < test.expectedPerExporter; i++ {
-					assert.EqualValues(t, expected, logsExporter.Logs[0])
+					assert.EqualValues(t, expected, logsExporter.Logs[i])
 				}
 			}
 		})
@@ -2083,7 +2084,7 @@ func TestGraphBuildErrors(t *testing.T) {
 	}
 }
 
-// This includes all tests from the previous implmentation, plus a new one
+// This includes all tests from the previous implementation, plus a new one
 // relevant only to the new graph-based implementation.
 func TestGraphFailToStartAndShutdown(t *testing.T) {
 	errReceiverFactory := newErrReceiverFactory()
@@ -2148,8 +2149,8 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 			}
 			pipelines, err := Build(context.Background(), set)
 			assert.NoError(t, err)
-			assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost()))
-			assert.Error(t, pipelines.ShutdownAll(context.Background()))
+			assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost(), statustest.NewNopStatusReporter()))
+			assert.Error(t, pipelines.ShutdownAll(context.Background(), statustest.NewNopStatusReporter()))
 		})
 
 		t.Run(dt.String()+"/processor", func(t *testing.T) {
@@ -2162,8 +2163,8 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 			}
 			pipelines, err := Build(context.Background(), set)
 			assert.NoError(t, err)
-			assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost()))
-			assert.Error(t, pipelines.ShutdownAll(context.Background()))
+			assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost(), statustest.NewNopStatusReporter()))
+			assert.Error(t, pipelines.ShutdownAll(context.Background(), statustest.NewNopStatusReporter()))
 		})
 
 		t.Run(dt.String()+"/exporter", func(t *testing.T) {
@@ -2176,8 +2177,8 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 			}
 			pipelines, err := Build(context.Background(), set)
 			assert.NoError(t, err)
-			assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost()))
-			assert.Error(t, pipelines.ShutdownAll(context.Background()))
+			assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost(), statustest.NewNopStatusReporter()))
+			assert.Error(t, pipelines.ShutdownAll(context.Background(), statustest.NewNopStatusReporter()))
 		})
 
 		for _, dt2 := range dataTypes {
@@ -2196,8 +2197,8 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 				}
 				pipelines, err := Build(context.Background(), set)
 				assert.NoError(t, err)
-				assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost()))
-				assert.Error(t, pipelines.ShutdownAll(context.Background()))
+				assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost(), statustest.NewNopStatusReporter()))
+				assert.Error(t, pipelines.ShutdownAll(context.Background(), statustest.NewNopStatusReporter()))
 			})
 		}
 	}
@@ -2350,8 +2351,8 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 			}
 			pg.componentGraph.SetEdge(simple.Edge{F: e0, T: e1})
 
-			assert.Equal(t, tc.startupErr, pg.StartAll(context.Background(), componenttest.NewNopHost()))
-			assert.Equal(t, tc.shutdownErr, pg.ShutdownAll(context.Background()))
+			assert.Equal(t, tc.startupErr, pg.StartAll(context.Background(), componenttest.NewNopHost(), rep))
+			assert.Equal(t, tc.shutdownErr, pg.ShutdownAll(context.Background(), rep))
 			assertEqualStatuses(t, tc.expectedStatuses, actualStatuses)
 		})
 	}

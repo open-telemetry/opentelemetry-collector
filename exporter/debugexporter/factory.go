@@ -43,6 +43,7 @@ func createDefaultConfig() component.Config {
 		Verbosity:          configtelemetry.LevelBasic,
 		SamplingInitial:    defaultSamplingInitial,
 		SamplingThereafter: defaultSamplingThereafter,
+		UseInternalLogger:  true,
 	}
 }
 
@@ -83,12 +84,38 @@ func createLogsExporter(ctx context.Context, set exporter.Settings, config compo
 }
 
 func createLogger(cfg *Config, logger *zap.Logger) *zap.Logger {
-	core := zapcore.NewSamplerWithOptions(
-		logger.Core(),
-		1*time.Second,
-		cfg.SamplingInitial,
-		cfg.SamplingThereafter,
-	)
+	var exporterLogger *zap.Logger
+	if cfg.UseInternalLogger {
+		core := zapcore.NewSamplerWithOptions(
+			logger.Core(),
+			1*time.Second,
+			cfg.SamplingInitial,
+			cfg.SamplingThereafter,
+		)
+		exporterLogger = zap.New(core)
+	} else {
+		exporterLogger = createCustomLogger(cfg)
+	}
+	return exporterLogger
+}
 
-	return zap.New(core)
+func createCustomLogger(exporterConfig *Config) *zap.Logger {
+	encoderConfig := zap.NewDevelopmentEncoderConfig()
+	// Do not prefix the output with log level (`info`)
+	encoderConfig.LevelKey = ""
+	// Do not prefix the output with current timestamp.
+	encoderConfig.TimeKey = ""
+	zapConfig := zap.Config{
+		Level:         zap.NewAtomicLevelAt(zap.InfoLevel),
+		DisableCaller: true,
+		Sampling: &zap.SamplingConfig{
+			Initial:    exporterConfig.SamplingInitial,
+			Thereafter: exporterConfig.SamplingThereafter,
+		},
+		Encoding:      "console",
+		EncoderConfig: encoderConfig,
+		// Send exporter's output to stdout. This should be made configurable.
+		OutputPaths: []string{"stdout"},
+	}
+	return zap.Must(zapConfig.Build())
 }

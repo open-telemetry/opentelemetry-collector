@@ -6,14 +6,16 @@ package otelcol // import "go.opentelemetry.io/collector/otelcol"
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/converter/expandconverter"
-	"go.opentelemetry.io/collector/confmap/provider/envprovider"
-	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
-	"go.opentelemetry.io/collector/confmap/provider/httpprovider"
-	"go.opentelemetry.io/collector/confmap/provider/httpsprovider"
-	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
+	"go.opentelemetry.io/collector/internal/globalgates"
+)
+
+var (
+	strictlyTypedMessageCoda = `Hint: Temporarily restore the previous behavior by disabling 
+      the ` + fmt.Sprintf("`%s`", globalgates.StrictlyTypedInputID) + ` feature gate. More details at:
+      https://github.com/open-telemetry/opentelemetry-collector/issues/10552`
 )
 
 // ConfigProvider provides the service configuration.
@@ -56,6 +58,9 @@ type ConfigProvider interface {
 //
 // The purpose of this interface is that otelcol.ConfigProvider structs do not
 // necessarily need to use confmap.Conf as their underlying config structure.
+//
+// Deprecated: [v0.105.0] This interface is deprecated. otelcol.Collector will now obtain
+// a confmap.Conf object from the unmarshaled config itself.
 type ConfmapProvider interface {
 	// GetConfmap resolves the Collector's configuration and provides it as a confmap.Conf object.
 	//
@@ -68,7 +73,6 @@ type configProvider struct {
 }
 
 var _ ConfigProvider = (*configProvider)(nil)
-var _ ConfmapProvider = (*configProvider)(nil)
 
 // ConfigProviderSettings are the settings to configure the behavior of the ConfigProvider.
 type ConfigProviderSettings struct {
@@ -101,7 +105,26 @@ func (cm *configProvider) Get(ctx context.Context, factories Factories) (*Config
 
 	var cfg *configSettings
 	if cfg, err = unmarshal(conf, factories); err != nil {
-		return nil, fmt.Errorf("cannot unmarshal the configuration: %w", err)
+		err = fmt.Errorf("cannot unmarshal the configuration: %w", err)
+
+		if globalgates.StrictlyTypedInputGate.IsEnabled() {
+			var shouldAddCoda bool
+			for _, errorStr := range []string{
+				"got unconvertible type",      // https://github.com/mitchellh/mapstructure/blob/8508981/mapstructure.go#L610
+				"source data must be",         // https://github.com/mitchellh/mapstructure/blob/8508981/mapstructure.go#L1114
+				"expected a map, got 'slice'", // https://github.com/mitchellh/mapstructure/blob/8508981/mapstructure.go#L831
+			} {
+				shouldAddCoda = strings.Contains(err.Error(), errorStr)
+				if shouldAddCoda {
+					break
+				}
+			}
+			if shouldAddCoda {
+				err = fmt.Errorf("%w\n\n%s", err, strictlyTypedMessageCoda)
+			}
+		}
+
+		return nil, err
 	}
 
 	return &Config{
@@ -122,27 +145,14 @@ func (cm *configProvider) Shutdown(ctx context.Context) error {
 	return cm.mapResolver.Shutdown(ctx)
 }
 
+// Deprecated: [v0.105.0] Call `(*confmap.Conf).Marshal(*otelcol.Config)` to get
+// the Collector's configuration instead.
 func (cm *configProvider) GetConfmap(ctx context.Context) (*confmap.Conf, error) {
 	conf, err := cm.mapResolver.Resolve(ctx)
+
 	if err != nil {
 		return nil, fmt.Errorf("cannot resolve the configuration: %w", err)
 	}
 
 	return conf, nil
-}
-
-func newDefaultConfigProviderSettings(uris []string) ConfigProviderSettings {
-	return ConfigProviderSettings{
-		ResolverSettings: confmap.ResolverSettings{
-			URIs: uris,
-			ProviderFactories: []confmap.ProviderFactory{
-				fileprovider.NewFactory(),
-				envprovider.NewFactory(),
-				yamlprovider.NewFactory(),
-				httpprovider.NewFactory(),
-				httpsprovider.NewFactory(),
-			},
-			ConverterFactories: []confmap.ConverterFactory{expandconverter.NewFactory()},
-		},
-	}
 }

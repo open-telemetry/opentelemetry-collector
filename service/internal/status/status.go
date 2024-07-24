@@ -96,7 +96,13 @@ type ServiceStatusFunc func(*component.InstanceID, *component.StatusEvent)
 var ErrStatusNotReady = errors.New("report component status is not ready until service start")
 
 // Reporter handles component status reporting
-type Reporter struct {
+type Reporter interface {
+	Ready()
+	ReportStatus(id *component.InstanceID, ev *component.StatusEvent)
+	ReportOKIfStarting(id *component.InstanceID)
+}
+
+type reporter struct {
 	mu                  sync.Mutex
 	ready               bool
 	fsmMap              map[*component.InstanceID]*fsm
@@ -106,8 +112,8 @@ type Reporter struct {
 
 // NewReporter returns a reporter that will invoke the NotifyStatusFunc when a component's status
 // has changed.
-func NewReporter(onStatusChange NotifyStatusFunc, onInvalidTransition InvalidTransitionFunc) *Reporter {
-	return &Reporter{
+func NewReporter(onStatusChange NotifyStatusFunc, onInvalidTransition InvalidTransitionFunc) Reporter {
+	return &reporter{
 		fsmMap:              make(map[*component.InstanceID]*fsm),
 		onStatusChange:      onStatusChange,
 		onInvalidTransition: onInvalidTransition,
@@ -115,14 +121,14 @@ func NewReporter(onStatusChange NotifyStatusFunc, onInvalidTransition InvalidTra
 }
 
 // Ready enables status reporting
-func (r *Reporter) Ready() {
+func (r *reporter) Ready() {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.ready = true
 }
 
 // ReportStatus reports status for the given InstanceID
-func (r *Reporter) ReportStatus(
+func (r *reporter) ReportStatus(
 	id *component.InstanceID,
 	ev *component.StatusEvent,
 ) {
@@ -137,7 +143,7 @@ func (r *Reporter) ReportStatus(
 	}
 }
 
-func (r *Reporter) ReportOKIfStarting(id *component.InstanceID) {
+func (r *reporter) ReportOKIfStarting(id *component.InstanceID) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if !r.ready {
@@ -152,7 +158,7 @@ func (r *Reporter) ReportOKIfStarting(id *component.InstanceID) {
 }
 
 // Note: a lock must be acquired before calling this method.
-func (r *Reporter) componentFSM(id *component.InstanceID) *fsm {
+func (r *reporter) componentFSM(id *component.InstanceID) *fsm {
 	fsm, ok := r.fsmMap[id]
 	if !ok {
 		fsm = newFSM(func(ev *component.StatusEvent) { r.onStatusChange(id, ev) })

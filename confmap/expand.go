@@ -11,6 +11,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"go.opentelemetry.io/collector/internal/globalgates"
 )
 
 // schemePattern defines the regexp pattern for scheme names.
@@ -26,7 +28,7 @@ var (
 )
 
 func (mr *Resolver) expandValueRecursively(ctx context.Context, value any) (any, error) {
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 1000; i++ {
 		val, changed, err := mr.expandValue(ctx, value)
 		if err != nil {
 			return nil, err
@@ -79,6 +81,7 @@ func (mr *Resolver) expandValue(ctx context.Context, value any) (any, bool, erro
 // findURI attempts to find the first potentially expandable URI in input. It returns a potentially expandable
 // URI, or an empty string if none are found.
 // Note: findURI is only called when input contains a closing bracket.
+// We do not support escaping nested URIs (such as ${env:$${FOO}}, since that would result in an invalid outer URI (${env:${FOO}}).
 func (mr *Resolver) findURI(input string) string {
 	closeIndex := strings.Index(input, "}")
 	remaining := input[closeIndex+1:]
@@ -96,6 +99,21 @@ func (mr *Resolver) findURI(input string) string {
 		return mr.findURI(remaining)
 	}
 
+	index := openIndex - 1
+	currentRune := '$'
+	count := 0
+	for index >= 0 && currentRune == '$' {
+		currentRune = rune(input[index])
+		if currentRune == '$' {
+			count++
+		}
+		index--
+	}
+	// if we found an odd number of immediately $ preceding ${, then the expansion is escaped
+	if count%2 == 1 {
+		return ""
+	}
+
 	return input[openIndex : closeIndex+1]
 }
 
@@ -111,22 +129,42 @@ func (mr *Resolver) findAndExpandURI(ctx context.Context, input string) (any, bo
 	if uri == input {
 		// If the value is a single URI, then the return value can be anything.
 		// This is the case `foo: ${file:some_extra_config.yml}`.
-		return mr.expandURI(ctx, input)
+		ret, err := mr.expandURI(ctx, input)
+		if err != nil {
+			return input, false, err
+		}
+
+		expanded, err := ret.AsRaw()
+		if err != nil {
+			return input, false, err
+		}
+		return expanded, true, err
 	}
-	expanded, changed, err := mr.expandURI(ctx, uri)
+	expanded, err := mr.expandURI(ctx, uri)
 	if err != nil {
 		return input, false, err
 	}
-	repl, err := toString(expanded)
+
+	var repl string
+	if globalgates.StrictlyTypedInputGate.IsEnabled() {
+		repl, err = expanded.AsString()
+	} else {
+		repl, err = toString(expanded)
+	}
 	if err != nil {
 		return input, false, fmt.Errorf("expanding %v: %w", uri, err)
 	}
-	return strings.ReplaceAll(input, uri, repl), changed, err
+	return strings.ReplaceAll(input, uri, repl), true, err
 }
 
 // toString attempts to convert input to a string.
-func toString(input any) (string, error) {
+func toString(ret *Retrieved) (string, error) {
 	// This list must be kept in sync with checkRawConfType.
+	input, err := ret.AsRaw()
+	if err != nil {
+		return "", err
+	}
+
 	val := reflect.ValueOf(input)
 	switch val.Kind() {
 	case reflect.String:
@@ -142,7 +180,7 @@ func toString(input any) (string, error) {
 	}
 }
 
-func (mr *Resolver) expandURI(ctx context.Context, input string) (any, bool, error) {
+func (mr *Resolver) expandURI(ctx context.Context, input string) (*Retrieved, error) {
 	// strip ${ and }
 	uri := input[2 : len(input)-1]
 
@@ -152,19 +190,18 @@ func (mr *Resolver) expandURI(ctx context.Context, input string) (any, bool, err
 
 	lURI, err := newLocation(uri)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
 	if strings.Contains(lURI.opaqueValue, "$") {
-		return nil, false, fmt.Errorf("the uri %q contains unsupported characters ('$')", lURI.asString())
+		return nil, fmt.Errorf("the uri %q contains unsupported characters ('$')", lURI.asString())
 	}
 	ret, err := mr.retrieveValue(ctx, lURI)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 	mr.closers = append(mr.closers, ret.Close)
-	val, err := ret.AsRaw()
-	return val, true, err
+	return ret, nil
 }
 
 type location struct {

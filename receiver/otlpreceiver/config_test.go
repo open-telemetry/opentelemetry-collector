@@ -88,7 +88,7 @@ func TestUnmarshalConfig(t *testing.T) {
 			Protocols: Protocols{
 				GRPC: &configgrpc.ServerConfig{
 					NetAddr: confignet.AddrConfig{
-						Endpoint:  "0.0.0.0:4317",
+						Endpoint:  "localhost:4317",
 						Transport: confignet.TransportTypeTCP,
 					},
 					TLSSetting: &configtls.ServerConfig{
@@ -117,7 +117,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				},
 				HTTP: &HTTPConfig{
 					ServerConfig: &confighttp.ServerConfig{
-						Endpoint: "0.0.0.0:4318",
+						Endpoint: "localhost:4318",
 						TLSSetting: &configtls.ServerConfig{
 							Config: configtls.Config{
 								CertFile: "test.crt",
@@ -171,7 +171,7 @@ func TestUnmarshalConfigTypoDefaultProtocol(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.EqualError(t, cm.Unmarshal(&cfg), "1 error(s) decoding:\n\n* 'protocols' has invalid keys: htttp")
+	assert.ErrorContains(t, cm.Unmarshal(&cfg), "'protocols' has invalid keys: htttp")
 }
 
 func TestUnmarshalConfigInvalidProtocol(t *testing.T) {
@@ -179,7 +179,7 @@ func TestUnmarshalConfigInvalidProtocol(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.EqualError(t, cm.Unmarshal(&cfg), "1 error(s) decoding:\n\n* 'protocols' has invalid keys: thrift")
+	assert.ErrorContains(t, cm.Unmarshal(&cfg), "'protocols' has invalid keys: thrift")
 }
 
 func TestUnmarshalConfigEmptyProtocols(t *testing.T) {

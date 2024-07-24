@@ -7,6 +7,117 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.12.0/v0.105.0
+
+### 🛑 Breaking changes 🛑
+
+- `service`: add `service.disableOpenCensusBridge` feature gate which is enabled by default to remove the dependency on OpenCensus (#10414)
+- `confmap`: Promote `confmap.strictlyTypedInput` feature gate to beta. (#10552)
+  This feature gate changes the following:
+  - Configurations relying on the implicit type casting behaviors listed on [#9532](https://github.com/open-telemetry/opentelemetry-collector/issues/9532) will start to fail.
+  - Configurations using URI expansion (i.e. `field: ${env:ENV}`) for string-typed fields will use the value passed in `ENV` verbatim without intermediate type casting.
+  
+
+### 💡 Enhancements 💡
+
+- `configtls`: Mark module as stable. (#9377)
+- `confmap`: Remove extra closing parenthesis in sub-config error (#10480)
+- `configgrpc`: Update the default load balancer strategy to round_robin (#10319)
+  To restore the behavior that was previously the default, set `balancer_name` to `pick_first`.
+- `cmd/builder`: Add go module info the builder generated code. (#10570)
+- `otelcol`: Add go module to components subcommand. (#10570)
+- `confmap`: Add explanation to errors related to `confmap.strictlyTypedInput` feature gate. (#9532)
+- `confmap`: Allow using `map[string]any` values in string interpolation (#10605)
+
+### 🧰 Bug fixes 🧰
+
+- `builder`: provide context when a module in the config is missing its gomod value (#10474)
+- `confmap`: Fixes issue where confmap could not escape `$$` when `confmap.unifyEnvVarExpansion` is enabled. (#10560)
+- `mdatagen`: fix generated comp test for extensions and unused imports in templates (#10477)
+- `otlpreceiver`: Fixes a bug where the otlp receiver's http response was not properly translating grpc error codes to http status codes. (#10574)
+- `exporterhelper`: Fix incorrect deduplication of otelcol_exporter_queue_size and otelcol_exporter_queue_capacity metrics if multiple exporters are used. (#10444)
+- `service/telemetry`: Add ability to set service.name for spans emitted by the Collector (#10489)
+- `internal/localhostgate`: Correctly log info message when `component.UseLocalHostAsDefaultHost` is enabled (#8510)
+
+## v1.11.0/v0.104.0
+
+This release includes 2 very important breaking changes.
+1. The `otlpreceiver` will now use `localhost` by default instead of `0.0.0.0`. This may break the receiver in containerized environments like Kubernetes. If you depend on `0.0.0.0` disable the `component.UseLocalHostAsDefaultHost` feature gate or explicitly set the endpoint to `0.0.0.0`.
+2. Expansion of BASH-style environment variables, such as `$FOO` will no longer be supported by default. If you depend on this syntax, disable the `confmap.unifyEnvVarExpansion` feature gate, but know that the feature will be removed in the future in favor of `${env:FOO}`.
+
+### 🛑 Breaking changes 🛑
+
+- `filter`: Remove deprecated `filter.CombinedFilter` (#10348)
+- `otelcol`: By default, `otelcol.NewCommand` and `otelcol.NewCommandMustSetProvider` will set the `DefaultScheme` to `env`. (#10435)
+- `expandconverter`: By default expandconverter will now error if it is about to expand `$FOO` syntax. Update configuration to use `${env:FOO}` instead or disable the `confmap.unifyEnvVarExpansion` feature gate. (#10435)
+- `otlpreceiver`: Switch to `localhost` as the default for all endpoints. (#8510)
+  Disable the `component.UseLocalHostAsDefaultHost` feature gate to temporarily get the previous default.
+  
+
+### 💡 Enhancements 💡
+
+- `confighttp`: Add support for cookies in HTTP clients with `cookies::enabled`. (#10175)
+  The method `confighttp.ToClient` will return a client with a `cookiejar.Jar` which will reuse cookies from server responses in subsequent requests.
+- `exporter/debug`: In `normal` verbosity, display one line of text for each telemetry record (log, data point, span) (#7806)
+- `exporter/debug`: Add option `use_internal_logger` (#10226)
+- `configretry`: Mark module as stable. (#10279)
+- `debugexporter`: Print Span.TraceState() when present. (#10421)
+  Enables viewing sampling threshold information (as by OTEP 235 samplers).
+- `processorhelper`: Add "inserted" metrics for processors. (#10353)
+  This includes the following metrics for processors:
+  - `processor_inserted_spans`
+  - `processor_inserted_metric_points`
+  - `processor_inserted_log_records`
+  
+
+### 🧰 Bug fixes 🧰
+
+- `otlpexporter`: Update validation to support both dns:// and dns:/// (#10449)
+- `service`: Fixed a bug that caused otel-collector to fail to start with ipv6 metrics endpoint service telemetry. (#10011)
+
+## v1.10.0/v0.103.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporter/debug`: Disable sampling by default (#9921)
+  To restore the behavior that was previously the default, set `sampling_thereafter` to `500`.
+
+### 💡 Enhancements 💡
+
+- `cmd/builder`: Allow setting `otelcol.CollectorSettings.ResolverSettings.DefaultScheme` via the builder's `conf_resolver.default_uri_scheme` configuration option (#10296)
+- `mdatagen`: add support for optional internal metrics (#10316)
+- `otelcol/expandconverter`: Add `confmap.unifyEnvVarExpansion` feature gate to allow enabling Collector/Configuration SIG environment variable expansion rules. (#10391)
+  When enabled, this feature gate will:
+  - Disable expansion of BASH-style env vars (`$FOO`)
+  - `${FOO}` will be expanded as if it was `${env:FOO}
+  See https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/env-vars.md for more details.
+  
+- `confmap`: Add `confmap.unifyEnvVarExpansion` feature gate to allow enabling Collector/Configuration SIG environment variable expansion rules. (#10259)
+  When enabled, this feature gate will:
+    - Disable expansion of BASH-style env vars (`$FOO`)
+    - `${FOO}` will be expanded as if it was `${env:FOO}
+  See https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/env-vars.md for more details.
+  
+- `confighttp`: Allow the compression list to be overridden (#10295)
+  Allows Collector administrators to control which compression algorithms to enable for HTTP-based receivers.
+- `configgrpc`: Revert the zstd compression for gRPC to the third-party library we were using previously. (#10394)
+  We switched back to our compression logic for zstd when a CVE was found on the third-party library we were using. Now that the third-party library has been fixed, we can revert to that one. For end-users, this has no practical effect. The reproducers for the CVE were tested against this patch, confirming we are not reintroducing the bugs.
+- `confmap`: Adds alpha `confmap.strictlyTypedInput` feature gate that enables strict type checks during configuration resolution (#9532)
+  When enabled, the configuration resolution system will:
+  - Stop doing most kinds of implicit type casting when resolving configuration values
+  - Use the original string representation of configuration values if the ${} syntax is used in inline position
+  
+- `confighttp`: Use `confighttp.ServerConfig` as part of zpagesextension. See [https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md#server-configuration](server configuration) options. (#9368)
+
+### 🧰 Bug fixes 🧰
+
+- `exporterhelper`: Fix potential deadlock in the batch sender (#10315)
+- `expandconverter`: Fix bug where an warning was logged incorrectly. (#10392)
+- `exporterhelper`: Fix a bug when the retry and timeout logic was not applied with enabled batching. (#10166)
+- `exporterhelper`: Fix a bug where an unstarted batch_sender exporter hangs on shutdown (#10306)
+- `exporterhelper`: Fix small batch due to unfavorable goroutine scheduling in batch sender (#9952)
+- `confmap`: Fix issue where structs with only yaml tags were not marshaled correctly. (#10282)
+
 ## v0.102.1
 
 **This release addresses [GHSA-c74f-6mfw-mm4v](https://github.com/open-telemetry/opentelemetry-collector/security/advisories/GHSA-c74f-6mfw-mm4v) for `configgrpc`.**

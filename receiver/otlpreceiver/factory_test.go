@@ -58,10 +58,10 @@ func TestCreateTracesReceiver(t *testing.T) {
 			Transport: confignet.TransportTypeTCP,
 		},
 	}
+	defaultServerConfig := confighttp.NewDefaultServerConfig()
+	defaultServerConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 	defaultHTTPSettings := &HTTPConfig{
-		ServerConfig: &confighttp.ServerConfig{
-			Endpoint: testutil.GetAvailableLocalAddress(t),
-		},
+		ServerConfig:   &defaultServerConfig,
 		TracesURLPath:  defaultTracesURLPath,
 		MetricsURLPath: defaultMetricsURLPath,
 		LogsURLPath:    defaultLogsURLPath,
@@ -152,10 +152,10 @@ func TestCreateMetricReceiver(t *testing.T) {
 			Transport: confignet.TransportTypeTCP,
 		},
 	}
+	defaultServerConfig := confighttp.NewDefaultServerConfig()
+	defaultServerConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 	defaultHTTPSettings := &HTTPConfig{
-		ServerConfig: &confighttp.ServerConfig{
-			Endpoint: testutil.GetAvailableLocalAddress(t),
-		},
+		ServerConfig:   &defaultServerConfig,
 		TracesURLPath:  defaultTracesURLPath,
 		MetricsURLPath: defaultMetricsURLPath,
 		LogsURLPath:    defaultLogsURLPath,
@@ -246,10 +246,10 @@ func TestCreateLogReceiver(t *testing.T) {
 			Transport: confignet.TransportTypeTCP,
 		},
 	}
+	defaultServerConfig := confighttp.NewDefaultServerConfig()
+	defaultServerConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 	defaultHTTPSettings := &HTTPConfig{
-		ServerConfig: &confighttp.ServerConfig{
-			Endpoint: testutil.GetAvailableLocalAddress(t),
-		},
+		ServerConfig:   &defaultServerConfig,
 		TracesURLPath:  defaultTracesURLPath,
 		MetricsURLPath: defaultMetricsURLPath,
 		LogsURLPath:    defaultLogsURLPath,

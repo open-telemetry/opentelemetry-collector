@@ -30,7 +30,7 @@ func TestComponentTelemetry(t *testing.T) {
 	require.NoError(t, err)
 	tt.assertMetrics(t, []metricdata.Metrics{
 		{
-			Name:        "batch_size_trigger_send",
+			Name:        "otelcol_batch_size_trigger_send",
 			Description: "Number of times the batch was sent due to a size trigger",
 			Unit:        "1",
 			Data: metricdata.Sum[int64]{
@@ -44,7 +44,7 @@ func TestComponentTelemetry(t *testing.T) {
 			},
 		},
 		{
-			Name:        "process_runtime_total_alloc_bytes",
+			Name:        "otelcol_process_runtime_total_alloc_bytes",
 			Description: "Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')",
 			Unit:        "By",
 			Data: metricdata.Sum[int64]{
@@ -63,7 +63,7 @@ func TestComponentTelemetry(t *testing.T) {
 	rcv.initOptionalMetric()
 	tt.assertMetrics(t, []metricdata.Metrics{
 		{
-			Name:        "batch_size_trigger_send",
+			Name:        "otelcol_batch_size_trigger_send",
 			Description: "Number of times the batch was sent due to a size trigger",
 			Unit:        "1",
 			Data: metricdata.Sum[int64]{
@@ -77,7 +77,7 @@ func TestComponentTelemetry(t *testing.T) {
 			},
 		},
 		{
-			Name:        "process_runtime_total_alloc_bytes",
+			Name:        "otelcol_process_runtime_total_alloc_bytes",
 			Description: "Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')",
 			Unit:        "By",
 			Data: metricdata.Sum[int64]{
@@ -91,7 +91,7 @@ func TestComponentTelemetry(t *testing.T) {
 			},
 		},
 		{
-			Name:        "queue_length",
+			Name:        "otelcol_queue_length",
 			Description: "This metric is optional and therefore not initialized in NewTelemetryBuilder.",
 			Unit:        "1",
 			Data: metricdata.Gauge[int64]{
