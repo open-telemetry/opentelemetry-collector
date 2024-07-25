@@ -288,9 +288,17 @@ func newBaseExporter(set exporter.Settings, signal component.DataType, osf obsre
 
 	be.connectSenders()
 
-	if _, ok := be.batchSender.(*batchSender); ok {
+	if bs, ok := be.batchSender.(*batchSender); ok {
 		// Batcher sender mutates the data.
 		be.consumerOptions = append(be.consumerOptions, consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}))
+
+		if qs, ok := be.queueSender.(*queueSender); ok {
+			// Let the batch sender have access to the queue_sender's queue so it can read and
+			// form batches without being limited by the queue_senders numConsumers limit.
+			bs.queue = qs.queue
+			bs.queueEnabled = true
+			qs.batcherEnabled = true
+		}
 	}
 
 	return be, nil

@@ -72,6 +72,7 @@ type queueSender struct {
 	numConsumers   int
 	traceAttribute attribute.KeyValue
 	consumers      *queue.Consumers[Request]
+	batcherEnabled bool
 
 	obsrep     *ObsReport
 	exporterID component.ID
@@ -100,7 +101,15 @@ func newQueueSender(q exporterqueue.Queue[Request], set exporter.Settings, numCo
 
 // Start is invoked during service startup.
 func (qs *queueSender) Start(ctx context.Context, host component.Host) error {
-	if err := qs.consumers.Start(ctx, host); err != nil {
+	var err error
+	if qs.batcherEnabled {
+		// Start queue only. No need to start consumers because batch_sender will consume directly from the queue.
+		err = qs.queue.Start(ctx, host)
+	} else {
+		err = qs.consumers.Start(ctx, host)
+	}
+
+	if err != nil {
 		return err
 	}
 

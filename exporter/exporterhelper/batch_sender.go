@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/exporter/exporterqueue"
 )
 
 // batchSender is a component that places requests into batches before passing them to the downstream senders.
@@ -28,6 +29,7 @@ type batchSender struct {
 	mergeSplitFunc exporterbatcher.BatchMergeSplitFunc[Request]
 
 	activeRequests atomic.Int64
+	queueEnabled   bool
 
 	mu          sync.Mutex
 	activeBatch *batch
@@ -38,6 +40,8 @@ type batchSender struct {
 	shutdownCh         chan struct{}
 	shutdownCompleteCh chan struct{}
 	stopped            *atomic.Bool
+
+	queue          exporterqueue.Queue[Request]
 }
 
 // newBatchSender returns a new batch consumer component.
@@ -90,6 +94,19 @@ func (bs *batchSender) Start(_ context.Context, _ component.Host) error {
 				}
 				bs.mu.Unlock()
 				timer.Reset(nextFlush)
+			default:
+				// if we have a queue enabled then create batches by reading directly from queue.
+				if bs.queueEnabled && bs.queue.Size() > 0 {
+
+					go bs.queue.Consume(func(ctx context.Context, req Request) error {
+						err := bs.send(ctx, req)
+						if err != nil {
+							bs.logger.Error("Exporting failed. Dropping data.",
+								zap.Error(err), zap.Int("dropped_items", req.ItemsCount()))
+						}
+						return err
+					})
+				}
 			}
 		}
 	}()
