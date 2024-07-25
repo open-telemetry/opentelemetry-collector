@@ -46,7 +46,7 @@ Errors can be created by calling `consumererror.New(err, opts...)` where `err`
 is the underlying error, and `opts` is one of the provided options for supplying
 additional metadata:
 
-- `consumererror.WithRetry[Signal]`
+- `consumererror.WithRetry`
 - `consumererror.WithPartial`
 - `consumererror.WithGRPCStatus`
 - `consumererror.WithHTTPStatus`
@@ -54,10 +54,14 @@ additional metadata:
 
 ### Retrying data submission
 
+*NOTE*: This section is a draft and will be developed separately from the rest of this proposal.
+
 If an error is transient, the `WithRetry` option corresponding to the relevant
 signal should be used to indicate that the error is retryable and to pass on any
 retry settings. These settings can come from the data sink or be determined by
 the component, such as through runtime conditions or from user settings.
+
+The data for the retry will be provided by the component performing the retry.
 
 **Note**: If retry information is not included in an error, the error will be
 considered permanent and will not be retried.
@@ -147,7 +151,7 @@ if errors.As(err, &cerr) {
 
   for _, data := range errData {
     data.HTTPStatus()
-    data.RetryableTraces()
+    data.Retryable()
     data.Partial()
   }
 }
@@ -169,33 +173,41 @@ type ErrorData interface {
   GRPCStatus() *status.Status
 
   // Returns nil if the error contains no retry information.
-  RetryableTraces() *RetryableTraces
-  
-  // Returns nil if the error contains no retry information.
-  RetryableMetrics() *RetryableMetrics
-
-  // Returns nil if the error contains no retry information.
-  RetryableLogs() *RetryableLogs
+  Retryable() *Retryable
 
   // Returns a count of failed records or nil if no partial success information was recorded. 
   Partial() *int
 }
 
-type RetryableTraces struct {}
+type Retryable struct {}
 
-func (r *RetryableTraces) Component() component.ID {}
-func (r *RetryableTraces) GetData() ptrace.Traces {}
+func (r *Retryable) Component() component.ID {}
 
 // Returns nil if no delay was set, indicating to use the default.
 // This makes it so a delay of `0` indicates to resend immediately.
-func (r *RetryableTraces) Delay() *time.Duration {}
+func (r *Retryable) Delay() *time.Duration {}
 ```
 
 ## Other considerations
 
+### Mixed error classes
+
+When a receiver sees a mixture of permanent and retryable errors from downstream
+in the pipeline, it must first consider whether retries are enabled within the
+Collector.
+
+**Retries are enabled**: Ignore the permanent errors, retry data submission for
+only components that indicated retryable errors.
+
+**Retries are disabled**: In an asynchronous pipeline, simply do not retry any
+data. In a synchronous pipeline, the receiver should return a permanent error
+code indicating to the caller that it should not retry the data submission. This
+is intended to not induce extra failures where we know the data submission will
+fail, but this behavior could be made configurable by the user.
+
 ### Signal conversion
 
-When converting between signals in a pipeline, it is expected that the component
+When converting between signals in a pipeline, it is expected that the connector
 performing the conversion should perform the translation necessary in the error
 for any signal item counts. If the converted count cannot be determined, the full
 count of pre-converted signals should be returned.
