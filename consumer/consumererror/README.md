@@ -52,6 +52,18 @@ additional metadata:
 - `consumererror.WithHTTPStatus`
 - `consumererror.WithMetadata`
 
+**Example**:
+
+```go
+consumererror.New(err,
+  consumererror.WithRetry(
+    componentID,
+    consumerrerror.WithRetryDelay(10 * time.Second)
+  ),
+  consumererror.WithGRPCStatus(codes.InvalidArgument),
+)
+```
+
 ### Retrying data submission
 
 *NOTE*: This section is a draft and will be developed separately from the rest of this proposal.
