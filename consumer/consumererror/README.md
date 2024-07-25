@@ -12,7 +12,8 @@ component in its `consume` function should be from this package.
 in a successful submission.
 
 **Permanent**: Errors are permanent if submission will always fail for the
-current data.
+current data. Errors are considered permanent unless they are explicitly marked
+as retryable.
 
 ## Use cases
 
@@ -57,6 +58,9 @@ If an error is transient, the `WithRetry` option corresponding to the relevant
 signal should be used to indicate that the error is retryable and to pass on any
 retry settings. These settings can come from the data sink or be determined by
 the component, such as through runtime conditions or from user settings.
+
+**Note**: If retry information is not included in an error, the error will be
+considered permanent and will not be retried.
 
 **Usage:**
 
@@ -142,11 +146,49 @@ if errors.As(err, &cerr) {
   errData := cerr.Data()
 
   for _, data := range errData {
-    data.HTTPCode()
+    data.HTTPStatus()
     data.RetryableTraces()
     data.Partial()
   }
 }
+```
+
+### Error data
+
+Obtaining data from an error can be done using an interface that looks something like this:
+
+```go
+type ErrorData interface {
+  // Returns the underlying error
+  Error() error
+
+  // Returns nil if a status is not available.
+  HTTPStatus() *int
+
+  // Returns nil if a status is not available.
+  GRPCStatus() *status.Status
+
+  // Returns nil if the error contains no retry information.
+  RetryableTraces() *RetryableTraces
+  
+  // Returns nil if the error contains no retry information.
+  RetryableMetrics() *RetryableMetrics
+
+  // Returns nil if the error contains no retry information.
+  RetryableLogs() *RetryableLogs
+
+  // Returns a count of failed records or nil if no partial success information was recorded. 
+  Partial() *int
+}
+
+type RetryableTraces struct {}
+
+func (r *RetryableTraces) Component() component.ID {}
+func (r *RetryableTraces) GetData() ptrace.Traces {}
+
+// Returns nil if no delay was set, indicating to use the default.
+// This makes it so a delay of `0` indicates to resend immediately.
+func (r *RetryableTraces) Delay() *time.Duration {}
 ```
 
 ## Other considerations
