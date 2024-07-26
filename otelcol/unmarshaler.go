@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
-type configSettings struct {
+type ConfigSettings struct {
 	Receivers  *configunmarshaler.Configs[receiver.Factory]  `mapstructure:"receivers"`
 	Processors *configunmarshaler.Configs[processor.Factory] `mapstructure:"processors"`
 	Exporters  *configunmarshaler.Configs[exporter.Factory]  `mapstructure:"exporters"`
@@ -24,15 +24,15 @@ type configSettings struct {
 	Service    service.Config                                `mapstructure:"service"`
 }
 
-// unmarshal the configSettings from a confmap.Conf.
+// Unmarshal the ConfigSettings from a confmap.Conf.
 // After the config is unmarshalled, `Validate()` must be called to validate.
-func unmarshal(v *confmap.Conf, factories Factories) (*configSettings, error) {
+func Unmarshal(v *confmap.Conf, factories Factories) (*ConfigSettings, error) {
 
 	telFactory := telemetry.NewFactory()
 	defaultTelConfig := *telFactory.CreateDefaultConfig().(*telemetry.Config)
 
 	// Unmarshal top level sections and validate.
-	cfg := &configSettings{
+	cfg := &ConfigSettings{
 		Receivers:  configunmarshaler.NewConfigs(factories.Receivers),
 		Processors: configunmarshaler.NewConfigs(factories.Processors),
 		Exporters:  configunmarshaler.NewConfigs(factories.Exporters),

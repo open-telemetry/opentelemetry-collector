@@ -9,7 +9,6 @@ require (
 	github.com/prometheus/common v0.55.0
 	github.com/shirou/gopsutil/v4 v4.24.6
 	github.com/stretchr/testify v1.9.0
-	go.opencensus.io v0.24.0
 	go.opentelemetry.io/collector v0.105.0
 	go.opentelemetry.io/collector/component v0.105.0
 	go.opentelemetry.io/collector/config/confighttp v0.105.0
@@ -80,6 +79,7 @@ require (
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
+	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.105.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.12.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.12.0 // indirect

@@ -21,7 +21,7 @@ func TestUnmarshalEmpty(t *testing.T) {
 	factories, err := nopFactories()
 	assert.NoError(t, err)
 
-	_, err = unmarshal(confmap.New(), factories)
+	_, err = Unmarshal(confmap.New(), factories)
 	assert.NoError(t, err)
 }
 
@@ -37,7 +37,7 @@ func TestUnmarshalEmptyAllSections(t *testing.T) {
 		"extensions": nil,
 		"service":    nil,
 	})
-	cfg, err := unmarshal(conf, factories)
+	cfg, err := Unmarshal(conf, factories)
 	assert.NoError(t, err)
 
 	zapProdCfg := zap.NewProductionConfig()
@@ -66,7 +66,7 @@ func TestUnmarshalUnknownTopLevel(t *testing.T) {
 	conf := confmap.NewFromStringMap(map[string]any{
 		"unknown_section": nil,
 	})
-	_, err = unmarshal(conf, factories)
+	_, err = Unmarshal(conf, factories)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "'' has invalid keys: unknown_section")
 }

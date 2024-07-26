@@ -28,7 +28,7 @@ func newConfig(yamlBytes []byte, factories Factories) (*Config, error) {
 
 	conf := confmap.NewFromStringMap(stringMap)
 
-	cfg, err := unmarshal(conf, factories)
+	cfg, err := Unmarshal(conf, factories)
 	if err != nil {
 		return nil, err
 	}
