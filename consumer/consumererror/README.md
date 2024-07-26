@@ -52,12 +52,30 @@ additional metadata:
 - `consumererror.WithHTTPStatus`
 - `consumererror.WithMetadata`
 
+All options can be combined, we assume that the component knows what it is doing
+when seemingly conflicting options.
+
+Two examples:
+
+- `WithRetry` and `WithPartial` are included together: Partial successes are
+  considered permanent errors in OTLP, which conflicts with making an error
+  retryable by including `WithRetry`. However, per our definition of what makes
+  a permanent error, this error has been marked as retryable, and therefore we
+  assume the component producing this error supports retyable partial success
+  errors.
+- `WithGRPCStatus` and `WithHTTPStatus` are included together: While the
+  component likely only sent data over one of these transports, our errors will
+  produce the given status if it is included on the error, otherwise it will
+  translate a status from the status for the other transport. If both of these
+  are given, we assume the component wanted to perform its own status
+  conversion, and we will simply give the status for the requested transport
+  without performing any conversion.
+
 **Example**:
 
 ```go
 consumererror.New(err,
   consumererror.WithRetry(
-    componentID,
     consumerrerror.WithRetryDelay(10 * time.Second)
   ),
   consumererror.WithGRPCStatus(codes.InvalidArgument),
@@ -66,7 +84,8 @@ consumererror.New(err,
 
 ### Retrying data submission
 
-*NOTE*: This section is a draft and will be developed separately from the rest of this proposal.
+*NOTE*: This section is a draft and will be developed separately from the rest
+of this proposal.
 
 If an error is transient, the `WithRetry` option corresponding to the relevant
 signal should be used to indicate that the error is retryable and to pass on any
@@ -74,6 +93,13 @@ retry settings. These settings can come from the data sink or be determined by
 the component, such as through runtime conditions or from user settings.
 
 The data for the retry will be provided by the component performing the retry.
+This will require all processing to be completely redone; in the future,
+including data from the failed component so as to not retry this processing may
+be made as an available option.
+
+To ensure only the failed pipeline branch is retried, the sequence of components
+that created the error will be recorded by a pipeline utility as the error goes
+back up the pipeline.
 
 **Note**: If retry information is not included in an error, the error will be
 considered permanent and will not be retried.
@@ -82,14 +108,11 @@ considered permanent and will not be retried.
 
 ```go
 consumererror.WithRetry(
-  componentID,
   consumerrerror.WithRetryDelay(10 * time.Second)
 )
 ```
 
-`componentID` should be the ID of the component creating the error, so it is
-known which components to retry submission on. The delay is an optional setting
-that can be provided if it is available.
+The delay is an optional setting that can be provided if it is available.
 
 ### Indicating partial success
 
@@ -143,7 +166,7 @@ special considerations may need to be made.
 
 ### Fanouts
 
-When fanouts receive multiple errors, they will combine them with
+When a fanout receives multiple errors, it will combine them with
 `(consumererror.Error).Combine(errs...)` and pass them upstream. The upstream
 component can then later pull all errors out for analysis.
 
