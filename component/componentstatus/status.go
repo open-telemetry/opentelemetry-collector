@@ -5,6 +5,8 @@ package componentstatus // import "go.opentelemetry.io/collector/component/compo
 
 import (
 	"time"
+
+	"go.opentelemetry.io/collector/component"
 )
 
 type StatusReporter interface {
@@ -205,4 +207,13 @@ func AggregateStatusEvent[K comparable](eventMap map[K]*StatusEvent) *StatusEven
 	}
 
 	return aggregateEvent
+}
+
+// ReportStatus is a helper function that handles checking if the component.Host has implemented StatusReporter.
+// If it has, the StatusEvent is reported. Otherwise, nothing happens.
+func ReportStatus(host component.Host, e *StatusEvent) {
+	statusReporter, ok := host.(StatusReporter)
+	if ok {
+		statusReporter.ReportStatus(e)
+	}
 }

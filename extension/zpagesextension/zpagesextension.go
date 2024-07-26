@@ -84,10 +84,7 @@ func (zpe *zpagesExtension) Start(ctx context.Context, host component.Host) erro
 		defer close(zpe.stopCh)
 
 		if errHTTP := zpe.server.Serve(ln); errHTTP != nil && !errors.Is(errHTTP, http.ErrServerClosed) {
-			statusReporter, ok := host.(componentstatus.StatusReporter)
-			if ok {
-				statusReporter.ReportStatus(componentstatus.NewFatalErrorEvent(errHTTP))
-			}
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 		}
 	}()
 

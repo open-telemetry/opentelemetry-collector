@@ -111,10 +111,7 @@ func (r *otlpReceiver) startGRPCServer(host component.Host) error {
 		defer r.shutdownWG.Done()
 
 		if errGrpc := r.serverGRPC.Serve(gln); errGrpc != nil && !errors.Is(errGrpc, grpc.ErrServerStopped) {
-			statusReporter, ok := host.(componentstatus.StatusReporter)
-			if ok {
-				statusReporter.ReportStatus(componentstatus.NewFatalErrorEvent(errGrpc))
-			}
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errGrpc))
 		}
 	}()
 	return nil
@@ -164,10 +161,7 @@ func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host)
 		defer r.shutdownWG.Done()
 
 		if errHTTP := r.serverHTTP.Serve(hln); errHTTP != nil && !errors.Is(errHTTP, http.ErrServerClosed) {
-			statusReporter, ok := host.(componentstatus.StatusReporter)
-			if ok {
-				statusReporter.ReportStatus(componentstatus.NewFatalErrorEvent(errHTTP))
-			}
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 		}
 	}()
 	return nil
