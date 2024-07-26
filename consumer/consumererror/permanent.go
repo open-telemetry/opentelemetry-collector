@@ -36,5 +36,5 @@ func IsPermanent(err error) bool {
 	if err == nil {
 		return false
 	}
-	return errors.As(err, &permanent{}) || errors.As(err, &Partial{}) || errors.As(err, &TransportError{})
+	return errors.As(err, &permanent{})
 }

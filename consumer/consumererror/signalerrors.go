@@ -39,16 +39,6 @@ func (err retryable[V]) Delay() time.Duration {
 	return err.delay
 }
 
-// RetryableOption allows adding data to a retryable error,
-// e.g. the duration before sending should be retried.
-type RetryableOption func(err *retryableCommon)
-
-func WithRetryDelay(delay time.Duration) RetryableOption {
-	return func(err *retryableCommon) {
-		err.delay = delay
-	}
-}
-
 // Traces is an error that may carry associated Trace data for a subset of received data
 // that failed to be processed or sent.
 type Traces struct {
@@ -56,7 +46,7 @@ type Traces struct {
 }
 
 // NewTraces creates a Traces that can encapsulate received data that failed to be processed or sent.
-func NewTraces(err error, data ptrace.Traces, options ...RetryableOption) error {
+func NewTraces(err error, data ptrace.Traces) error {
 	t := Traces{
 		retryable: retryable[ptrace.Traces]{
 			retryableCommon: retryableCommon{
@@ -64,10 +54,6 @@ func NewTraces(err error, data ptrace.Traces, options ...RetryableOption) error 
 			},
 			data: data,
 		},
-	}
-
-	for _, opt := range options {
-		opt(&t.retryableCommon)
 	}
 
 	return t
@@ -80,7 +66,7 @@ type Logs struct {
 }
 
 // NewLogs creates a Logs that can encapsulate received data that failed to be processed or sent.
-func NewLogs(err error, data plog.Logs, options ...RetryableOption) error {
+func NewLogs(err error, data plog.Logs) error {
 	l := Logs{
 		retryable: retryable[plog.Logs]{
 			retryableCommon: retryableCommon{
@@ -88,10 +74,6 @@ func NewLogs(err error, data plog.Logs, options ...RetryableOption) error {
 			},
 			data: data,
 		},
-	}
-
-	for _, opt := range options {
-		opt(&l.retryableCommon)
 	}
 
 	return l
@@ -104,7 +86,7 @@ type Metrics struct {
 }
 
 // NewMetrics creates a Metrics that can encapsulate received data that failed to be processed or sent.
-func NewMetrics(err error, data pmetric.Metrics, options ...RetryableOption) error {
+func NewMetrics(err error, data pmetric.Metrics) error {
 	m := Metrics{
 		retryable: retryable[pmetric.Metrics]{
 			retryableCommon: retryableCommon{
@@ -112,10 +94,6 @@ func NewMetrics(err error, data pmetric.Metrics, options ...RetryableOption) err
 			},
 			data: data,
 		},
-	}
-
-	for _, opt := range options {
-		opt(&m.retryableCommon)
 	}
 
 	return m

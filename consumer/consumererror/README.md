@@ -221,8 +221,6 @@ type ErrorData interface {
 
 type Retryable struct {}
 
-func (r *Retryable) Component() component.ID {}
-
 // Returns nil if no delay was set, indicating to use the default.
 // This makes it so a delay of `0` indicates to resend immediately.
 func (r *Retryable) Delay() *time.Duration {}

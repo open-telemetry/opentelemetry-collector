@@ -24,18 +24,6 @@ func TestIsPermanent(t *testing.T) {
 			permanent: true,
 		},
 		{
-			err:       NewHTTP(errors.New("testError"), 500),
-			permanent: true,
-		},
-		{
-			err:       NewGRPC(errors.New("testError"), nil),
-			permanent: true,
-		},
-		{
-			err:       NewPartial(errors.New("testError"), 123),
-			permanent: true,
-		},
-		{
 			err:       fmt.Errorf("%w", NewPermanent(errors.New("testError"))),
 			permanent: true,
 		},
