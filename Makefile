@@ -258,6 +258,7 @@ check-contrib:
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit \
 		-replace go.opentelemetry.io/collector=$(CURDIR) \
 		-replace go.opentelemetry.io/collector/component=$(CURDIR)/component  \
+		-replace go.opentelemetry.io/collector/component/componentstatus=$(CURDIR)/component/componentstatus  \
 		-replace go.opentelemetry.io/collector/config/configauth=$(CURDIR)/config/configauth  \
 		-replace go.opentelemetry.io/collector/config/configcompression=$(CURDIR)/config/configcompression  \
 		-replace go.opentelemetry.io/collector/config/configgrpc=$(CURDIR)/config/configgrpc  \
@@ -319,6 +320,7 @@ restore-contrib:
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit \
 		-dropreplace go.opentelemetry.io/collector \
 		-dropreplace go.opentelemetry.io/collector/component \
+		-dropreplace go.opentelemetry.io/collector/component/componentstatus \
 		-dropreplace go.opentelemetry.io/collector/config/configauth  \
 		-dropreplace go.opentelemetry.io/collector/config/configcompression  \
 		-dropreplace go.opentelemetry.io/collector/config/configgrpc  \

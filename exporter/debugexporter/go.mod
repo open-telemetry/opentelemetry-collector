@@ -41,6 +41,7 @@ require (
 	github.com/prometheus/common v0.55.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
 	go.opentelemetry.io/collector v0.105.0 // indirect
+	go.opentelemetry.io/collector/component/componentstatus v0.105.0 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.12.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.105.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.105.0 // indirect
@@ -96,3 +97,5 @@ replace go.opentelemetry.io/collector/config/configretry => ../../config/configr
 replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../../consumer/consumerprofiles
 
 replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/consumertest
+
+replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus

@@ -41,6 +41,7 @@ var (
 	replaceModules = []string{
 		"",
 		"/component",
+		"/component/componentstatus",
 		"/config/configauth",
 		"/config/configcompression",
 		"/config/configgrpc",

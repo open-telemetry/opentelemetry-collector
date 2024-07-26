@@ -21,6 +21,7 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	go.opentelemetry.io/collector/component/componentstatus v0.105.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.105.0 // indirect
 	go.opentelemetry.io/collector/confmap v0.105.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.12.0 // indirect
@@ -45,6 +46,8 @@ replace go.opentelemetry.io/collector/pdata => ../../pdata
 replace go.opentelemetry.io/collector/confmap => ../../confmap
 
 replace go.opentelemetry.io/collector/component => ../../component
+
+replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
 
 replace go.opentelemetry.io/collector/config/configtelemetry => ../configtelemetry
 
