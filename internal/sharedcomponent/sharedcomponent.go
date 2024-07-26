@@ -75,31 +75,34 @@ func (c *Component[V]) Unwrap() V {
 // Start starts the underlying component if it never started before.
 func (c *Component[V]) Start(ctx context.Context, host component.Host) error {
 	if c.hostWrapper == nil {
-		c.hostWrapper = &hostWrapper{
-			host:           host,
-			sources:        make([]componentstatus.Reporter, 0),
-			previousEvents: make([]*componentstatus.Event, 0),
-		}
-	}
+		var err error
+		c.startOnce.Do(func() {
+			c.hostWrapper = &hostWrapper{
+				host:           host,
+				sources:        make([]componentstatus.Reporter, 0),
+				previousEvents: make([]*componentstatus.Event, 0),
+			}
+			statusReporter, isStatusReporter := host.(componentstatus.Reporter)
+			if isStatusReporter {
+				c.hostWrapper.addSource(statusReporter)
+			}
 
+			// It's important that status for a shared component is reported through its
+			// telemetry settings to keep status in sync and avoid race conditions. This logic duplicates
+			// and takes priority over the automated status reporting that happens in graph, making the
+			// status reporting in graph a no-op.
+			c.hostWrapper.Report(componentstatus.NewStatusEvent(componentstatus.StatusStarting))
+			if err = c.component.Start(ctx, c.hostWrapper); err != nil {
+				c.hostWrapper.Report(componentstatus.NewPermanentErrorEvent(err))
+			}
+		})
+		return err
+	}
 	statusReporter, isStatusReporter := host.(componentstatus.Reporter)
 	if isStatusReporter {
 		c.hostWrapper.addSource(statusReporter)
 	}
-
-	var err error
-	c.startOnce.Do(func() {
-		// It's important that status for a shared component is reported through its
-		// telemetry settings to keep status in sync and avoid race conditions. This logic duplicates
-		// and takes priority over the automated status reporting that happens in graph, making the
-		// status reporting in graph a no-op.
-		c.hostWrapper.Report(componentstatus.NewStatusEvent(componentstatus.StatusStarting))
-		if err = c.component.Start(ctx, c.hostWrapper); err != nil {
-			c.hostWrapper.Report(componentstatus.NewPermanentErrorEvent(err))
-		}
-	})
-
-	return err
+	return nil
 }
 
 var _ component.Host = (*hostWrapper)(nil)
