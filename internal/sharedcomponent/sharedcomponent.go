@@ -93,13 +93,9 @@ func (c *Component[V]) Start(ctx context.Context, host component.Host) error {
 		// telemetry settings to keep status in sync and avoid race conditions. This logic duplicates
 		// and takes priority over the automated status reporting that happens in graph, making the
 		// status reporting in graph a no-op.
-		if c.hostWrapper != nil {
-			c.hostWrapper.Report(componentstatus.NewStatusEvent(componentstatus.StatusStarting))
-		}
+		c.hostWrapper.Report(componentstatus.NewStatusEvent(componentstatus.StatusStarting))
 		if err = c.component.Start(ctx, c.hostWrapper); err != nil {
-			if c.hostWrapper != nil {
-				c.hostWrapper.Report(componentstatus.NewPermanentErrorEvent(err))
-			}
+			c.hostWrapper.Report(componentstatus.NewPermanentErrorEvent(err))
 		}
 	})
 
@@ -124,7 +120,8 @@ func (h *hostWrapper) GetExtensions() map[component.ID]component.Component {
 }
 
 func (h *hostWrapper) Report(e *componentstatus.Event) {
-	if !slices.Contains(h.previousEvents, e) {
+	// Only remember an event if it will be emitted and it has not been sent already.
+	if len(h.sources) > 0 && !slices.Contains(h.previousEvents, e) {
 		h.previousEvents = append(h.previousEvents, e)
 	}
 
