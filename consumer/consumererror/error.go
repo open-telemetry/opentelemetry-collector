@@ -22,6 +22,8 @@ type ErrorData interface {
 
 	// Returns nil if a status is not available.
 	GRPCStatus() (*status.Status, bool)
+
+	Metadata() []any
 }
 
 type errorData struct {
