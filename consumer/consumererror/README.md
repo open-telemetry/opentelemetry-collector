@@ -40,6 +40,11 @@ retry queue by returning a retryable network code with relevant information.
 exporterhelper can use this information to manage the sending queue if it is
 enabled. Permanent errors will be forwarded back up the pipeline.
 
+**obsreport**: Recording partial success information can ensure we correctly
+track the number of failed telemetry records in the pipeline. Right now, all
+records will be considered to be failed, which isn't accurate when partial
+successes occur.
+
 ## Creating Errors
 
 Errors can be created by calling `consumererror.New(err, opts...)` where `err`
