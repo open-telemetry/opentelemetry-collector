@@ -26,9 +26,9 @@ type ErrorData interface {
 
 type errorData struct {
 	error
-	httpStatus  *int
-	grpcStatus  *status.Status
-	extraErrors []error
+	httpStatus *int
+	grpcStatus *status.Status
+	metadata   []any
 }
 
 // ErrorOption allows annotating an Error with metadata.
@@ -90,9 +90,9 @@ func WithGRPCStatus(status *status.Status) ErrorOption {
 	}
 }
 
-func WithMetadata(err error) ErrorOption {
+func WithMetadata(data any) ErrorOption {
 	return func(errData *errorData) {
-		errData.extraErrors = append(errData.extraErrors, err)
+		errData.metadata = append(errData.metadata, data)
 	}
 }
 
@@ -135,4 +135,9 @@ func (ed *errorData) GRPCStatus() (*status.Status, bool) {
 	}
 
 	return nil, false
+}
+
+// Returns any extra user-defined metadata that has been propagated upstream.
+func (ed *errorData) Metadata() []any {
+	return ed.metadata
 }
