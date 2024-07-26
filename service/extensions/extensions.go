@@ -27,7 +27,7 @@ const zExtensionName = "zextensionname"
 type Extensions struct {
 	telemetry    component.TelemetrySettings
 	extMap       map[component.ID]extension.Extension
-	instanceIDs  map[component.ID]*component.InstanceID
+	instanceIDs  map[component.ID]*componentstatus.InstanceID
 	extensionIDs []component.ID // start order (and reverse stop order)
 
 	reporter status.Reporter
@@ -141,7 +141,7 @@ func (bes *Extensions) NotifyConfig(ctx context.Context, conf *confmap.Conf) err
 	return errs
 }
 
-func (bes *Extensions) NotifyComponentStatusChange(source *component.InstanceID, event *componentstatus.Event) {
+func (bes *Extensions) NotifyComponentStatusChange(source *componentstatus.InstanceID, event *componentstatus.Event) {
 	for _, extID := range bes.extensionIDs {
 		ext := bes.extMap[extID]
 		if sw, ok := ext.(extension.StatusWatcher); ok {
@@ -206,7 +206,7 @@ func New(ctx context.Context, set Settings, cfg Config, options ...Option) (*Ext
 	exts := &Extensions{
 		telemetry:    set.Telemetry,
 		extMap:       make(map[component.ID]extension.Extension),
-		instanceIDs:  make(map[component.ID]*component.InstanceID),
+		instanceIDs:  make(map[component.ID]*componentstatus.InstanceID),
 		extensionIDs: make([]component.ID, 0, len(cfg)),
 	}
 
@@ -215,7 +215,7 @@ func New(ctx context.Context, set Settings, cfg Config, options ...Option) (*Ext
 	}
 
 	for _, extID := range cfg {
-		instanceID := &component.InstanceID{
+		instanceID := &componentstatus.InstanceID{
 			ID:   extID,
 			Kind: component.KindExtension,
 		}

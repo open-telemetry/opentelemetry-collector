@@ -4,7 +4,6 @@
 package statustest // import "go.opentelemetry.io/collector/service/internal/status/statustest"
 
 import (
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/service/internal/status"
 )
@@ -17,6 +16,6 @@ type nopStatusReporter struct{}
 
 func (r *nopStatusReporter) Ready() {}
 
-func (r *nopStatusReporter) ReportStatus(*component.InstanceID, *componentstatus.Event) {}
+func (r *nopStatusReporter) ReportStatus(*componentstatus.InstanceID, *componentstatus.Event) {}
 
-func (r *nopStatusReporter) ReportOKIfStarting(*component.InstanceID) {}
+func (r *nopStatusReporter) ReportOKIfStarting(*componentstatus.InstanceID) {}

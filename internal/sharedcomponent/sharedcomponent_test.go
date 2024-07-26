@@ -152,8 +152,8 @@ func TestReportStatusOnStartShutdown(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			reportedStatuses := make(map[*component.InstanceID][]componentstatus.Status)
-			newStatusFunc := func(id *component.InstanceID, ev *componentstatus.Event) {
+			reportedStatuses := make(map[*componentstatus.InstanceID][]componentstatus.Status)
+			newStatusFunc := func(id *componentstatus.InstanceID, ev *componentstatus.Event) {
 				reportedStatuses[id] = append(reportedStatuses[id], ev.Status())
 			}
 			base := &baseComponent{}
@@ -185,7 +185,7 @@ func TestReportStatusOnStartShutdown(t *testing.T) {
 
 			baseHost := componenttest.NewNopHost()
 			for i := 0; i < 3; i++ {
-				err = comp.Start(context.Background(), &testHost{Host: baseHost, InstanceID: &component.InstanceID{}, newStatusFunc: newStatusFunc})
+				err = comp.Start(context.Background(), &testHost{Host: baseHost, InstanceID: &componentstatus.InstanceID{}, newStatusFunc: newStatusFunc})
 				if err != nil {
 					break
 				}
@@ -220,8 +220,8 @@ var _ componentstatus.Reporter = (*testHost)(nil)
 
 type testHost struct {
 	component.Host
-	*component.InstanceID
-	newStatusFunc func(id *component.InstanceID, ev *componentstatus.Event)
+	*componentstatus.InstanceID
+	newStatusFunc func(id *componentstatus.InstanceID, ev *componentstatus.Event)
 }
 
 func (h *testHost) Report(e *componentstatus.Event) {
