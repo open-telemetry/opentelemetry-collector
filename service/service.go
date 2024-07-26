@@ -73,7 +73,7 @@ type Service struct {
 	host              *serviceHost
 	collectorConf     *confmap.Conf
 
-	Reporter status.Reporter
+	reporter status.Reporter
 }
 
 // New creates a new Service, its telemetry, and Components.
@@ -140,7 +140,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		// Construct telemetry attributes from build info and config's resource attributes.
 		Resource: pcommonRes,
 	}
-	srv.Reporter = status.NewReporter(srv.host.notifyComponentStatusChange, func(err error) {
+	srv.reporter = status.NewReporter(srv.host.notifyComponentStatusChange, func(err error) {
 		if errors.Is(err, status.ErrStatusNotReady) {
 			logger.Warn("Invalid transition", zap.Error(err))
 		}
@@ -202,7 +202,7 @@ func (srv *Service) Start(ctx context.Context) error {
 	)
 
 	// enable status reporting
-	srv.Reporter.Ready()
+	srv.reporter.Ready()
 
 	if err := srv.host.serviceExtensions.Start(ctx, srv.host); err != nil {
 		return fmt.Errorf("failed to start extensions: %w", err)
@@ -214,7 +214,7 @@ func (srv *Service) Start(ctx context.Context) error {
 		}
 	}
 
-	if err := srv.host.pipelines.StartAll(ctx, srv.host, srv.Reporter); err != nil {
+	if err := srv.host.pipelines.StartAll(ctx, srv.host, srv.reporter); err != nil {
 		return fmt.Errorf("cannot start pipelines: %w", err)
 	}
 
@@ -265,7 +265,7 @@ func (srv *Service) Shutdown(ctx context.Context) error {
 		errs = multierr.Append(errs, fmt.Errorf("failed to notify that pipeline is not ready: %w", err))
 	}
 
-	if err := srv.host.pipelines.ShutdownAll(ctx, srv.Reporter); err != nil {
+	if err := srv.host.pipelines.ShutdownAll(ctx, srv.reporter); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown pipelines: %w", err))
 	}
 
@@ -288,7 +288,7 @@ func (srv *Service) initExtensions(ctx context.Context, cfg extensions.Config) e
 		BuildInfo:  srv.buildInfo,
 		Extensions: srv.host.extensions,
 	}
-	if srv.host.serviceExtensions, err = extensions.New(ctx, extensionsSettings, cfg, extensions.WithReporter(srv.Reporter)); err != nil {
+	if srv.host.serviceExtensions, err = extensions.New(ctx, extensionsSettings, cfg, extensions.WithReporter(srv.reporter)); err != nil {
 		return fmt.Errorf("failed to build extensions: %w", err)
 	}
 	return nil
@@ -305,7 +305,7 @@ func (srv *Service) initGraph(ctx context.Context, set Settings, cfg Config) err
 		ExporterBuilder:  set.Exporters,
 		ConnectorBuilder: set.Connectors,
 		PipelineConfigs:  cfg.Pipelines,
-		ReportStatus:     srv.Reporter.ReportStatus,
+		ReportStatus:     srv.reporter.ReportStatus,
 	}); err != nil {
 		return fmt.Errorf("failed to build pipelines: %w", err)
 	}
