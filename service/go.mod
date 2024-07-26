@@ -81,6 +81,7 @@ require (
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
+	go.opentelemetry.io/collector/client v0.105.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.105.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.12.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.12.0 // indirect
@@ -162,3 +163,5 @@ replace go.opentelemetry.io/collector/internal/globalgates => ../internal/global
 replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../consumer/consumerprofiles
 
 replace go.opentelemetry.io/collector/consumer/consumertest => ../consumer/consumertest
+
+replace go.opentelemetry.io/collector/client => ../client

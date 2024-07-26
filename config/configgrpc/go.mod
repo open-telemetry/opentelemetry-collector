@@ -6,6 +6,7 @@ require (
 	github.com/mostynb/go-grpc-compression v1.2.3
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector v0.105.0
+	go.opentelemetry.io/collector/client v0.105.0
 	go.opentelemetry.io/collector/component v0.105.0
 	go.opentelemetry.io/collector/config/configauth v0.105.0
 	go.opentelemetry.io/collector/config/configcompression v1.12.0
@@ -73,6 +74,8 @@ require (
 replace go.opentelemetry.io/collector => ../../
 
 replace go.opentelemetry.io/collector/internal/globalgates => ../../internal/globalgates
+
+replace go.opentelemetry.io/collector/client => ../../client
 
 replace go.opentelemetry.io/collector/config/configauth => ../configauth
 
