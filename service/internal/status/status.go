@@ -12,23 +12,23 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 )
 
-// onTransitionFunc receives a component.StatusEvent on a successful state transition
-type onTransitionFunc func(*componentstatus.StatusEvent)
+// onTransitionFunc receives a componentstatus.Event on a successful state transition
+type onTransitionFunc func(*componentstatus.Event)
 
 // errInvalidStateTransition is returned for invalid state transitions
 var errInvalidStateTransition = errors.New("invalid state transition")
 
 // fsm is a finite state machine that models transitions for component status
 type fsm struct {
-	current      *componentstatus.StatusEvent
+	current      *componentstatus.Event
 	transitions  map[componentstatus.Status]map[componentstatus.Status]struct{}
 	onTransition onTransitionFunc
 }
 
 // transition will attempt to execute a state transition. If it's successful, it calls the
-// onTransitionFunc with a StatusEvent representing the new state. Returns an error if the arguments
+// onTransitionFunc with a componentstatus.Event representing the new state. Returns an error if the arguments
 // result in an invalid status, or if the state transition is not valid.
-func (m *fsm) transition(ev *componentstatus.StatusEvent) error {
+func (m *fsm) transition(ev *componentstatus.Event) error {
 	if _, ok := m.transitions[m.current.Status()][ev.Status()]; !ok {
 		return fmt.Errorf(
 			"cannot transition from %s to %s: %w",
@@ -85,13 +85,13 @@ func newFSM(onTransition onTransitionFunc) *fsm {
 }
 
 // NotifyStatusFunc is the receiver of status events after successful state transitions
-type NotifyStatusFunc func(*component.InstanceID, *componentstatus.StatusEvent)
+type NotifyStatusFunc func(*component.InstanceID, *componentstatus.Event)
 
 // InvalidTransitionFunc is the receiver of invalid transition errors
 type InvalidTransitionFunc func(error)
 
-// ServiceStatusFunc is the expected type of ReportStatus for servicetelemetry.Settings
-type ServiceStatusFunc func(*component.InstanceID, *componentstatus.StatusEvent)
+// ServiceStatusFunc is the expected type of Reporter.ReportStatus
+type ServiceStatusFunc func(*component.InstanceID, *componentstatus.Event)
 
 // ErrStatusNotReady is returned when trying to report status before service start
 var ErrStatusNotReady = errors.New("report component status is not ready until service start")
@@ -99,7 +99,7 @@ var ErrStatusNotReady = errors.New("report component status is not ready until s
 // Reporter handles component status reporting
 type Reporter interface {
 	Ready()
-	ReportStatus(id *component.InstanceID, ev *componentstatus.StatusEvent)
+	ReportStatus(id *component.InstanceID, ev *componentstatus.Event)
 	ReportOKIfStarting(id *component.InstanceID)
 }
 
@@ -131,7 +131,7 @@ func (r *reporter) Ready() {
 // ReportStatus reports status for the given InstanceID
 func (r *reporter) ReportStatus(
 	id *component.InstanceID,
-	ev *componentstatus.StatusEvent,
+	ev *componentstatus.Event,
 ) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -162,20 +162,18 @@ func (r *reporter) ReportOKIfStarting(id *component.InstanceID) {
 func (r *reporter) componentFSM(id *component.InstanceID) *fsm {
 	fsm, ok := r.fsmMap[id]
 	if !ok {
-		fsm = newFSM(func(ev *componentstatus.StatusEvent) { r.onStatusChange(id, ev) })
+		fsm = newFSM(func(ev *componentstatus.Event) { r.onStatusChange(id, ev) })
 		r.fsmMap[id] = fsm
 	}
 	return fsm
 }
 
-// NewReportStatusFunc returns a function to be used as ReportStatus for
-// component.TelemetrySettings, which differs from servicetelemetry.Settings in that
-// the component version is tied to specific component instance.
+// NewReportStatusFunc returns a function to be used as Report for componentstatus.Reporter implementations
 func NewReportStatusFunc(
 	id *component.InstanceID,
 	srvStatus ServiceStatusFunc,
-) func(*componentstatus.StatusEvent) {
-	return func(ev *componentstatus.StatusEvent) {
+) func(*componentstatus.Event) {
+	return func(ev *componentstatus.Event) {
 		srvStatus(id, ev)
 	}
 }

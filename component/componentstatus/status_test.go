@@ -35,7 +35,7 @@ func TestNewStatusEvent(t *testing.T) {
 }
 
 func TestStatusEventsWithError(t *testing.T) {
-	statusConstructorMap := map[Status]func(error) *StatusEvent{
+	statusConstructorMap := map[Status]func(error) *Event{
 		StatusRecoverableError: NewRecoverableErrorEvent,
 		StatusPermanentError:   NewPermanentErrorEvent,
 		StatusFatalError:       NewFatalErrorEvent,
@@ -54,12 +54,12 @@ func TestStatusEventsWithError(t *testing.T) {
 func TestAggregateStatus(t *testing.T) {
 	for _, tc := range []struct {
 		name           string
-		statusMap      map[*component.InstanceID]*StatusEvent
+		statusMap      map[*component.InstanceID]*Event
 		expectedStatus Status
 	}{
 		{
 			name: "aggregate status with fatal is FatalError",
-			statusMap: map[*component.InstanceID]*StatusEvent{
+			statusMap: map[*component.InstanceID]*Event{
 				{}: NewStatusEvent(StatusStarting),
 				{}: NewStatusEvent(StatusOK),
 				{}: NewStatusEvent(StatusFatalError),
@@ -69,7 +69,7 @@ func TestAggregateStatus(t *testing.T) {
 		},
 		{
 			name: "aggregate status with permanent is PermanentError",
-			statusMap: map[*component.InstanceID]*StatusEvent{
+			statusMap: map[*component.InstanceID]*Event{
 				{}: NewStatusEvent(StatusStarting),
 				{}: NewStatusEvent(StatusOK),
 				{}: NewStatusEvent(StatusPermanentError),
@@ -79,7 +79,7 @@ func TestAggregateStatus(t *testing.T) {
 		},
 		{
 			name: "aggregate status with stopping is Stopping",
-			statusMap: map[*component.InstanceID]*StatusEvent{
+			statusMap: map[*component.InstanceID]*Event{
 				{}: NewStatusEvent(StatusStarting),
 				{}: NewStatusEvent(StatusOK),
 				{}: NewStatusEvent(StatusRecoverableError),
@@ -89,7 +89,7 @@ func TestAggregateStatus(t *testing.T) {
 		},
 		{
 			name: "aggregate status with stopped and non-stopped is Stopping",
-			statusMap: map[*component.InstanceID]*StatusEvent{
+			statusMap: map[*component.InstanceID]*Event{
 				{}: NewStatusEvent(StatusStarting),
 				{}: NewStatusEvent(StatusOK),
 				{}: NewStatusEvent(StatusRecoverableError),
@@ -99,7 +99,7 @@ func TestAggregateStatus(t *testing.T) {
 		},
 		{
 			name: "aggregate status with all stopped is Stopped",
-			statusMap: map[*component.InstanceID]*StatusEvent{
+			statusMap: map[*component.InstanceID]*Event{
 				{}: NewStatusEvent(StatusStopped),
 				{}: NewStatusEvent(StatusStopped),
 				{}: NewStatusEvent(StatusStopped),
@@ -108,7 +108,7 @@ func TestAggregateStatus(t *testing.T) {
 		},
 		{
 			name: "aggregate status with recoverable is RecoverableError",
-			statusMap: map[*component.InstanceID]*StatusEvent{
+			statusMap: map[*component.InstanceID]*Event{
 				{}: NewStatusEvent(StatusStarting),
 				{}: NewStatusEvent(StatusOK),
 				{}: NewStatusEvent(StatusRecoverableError),
@@ -117,7 +117,7 @@ func TestAggregateStatus(t *testing.T) {
 		},
 		{
 			name: "aggregate status with starting is Starting",
-			statusMap: map[*component.InstanceID]*StatusEvent{
+			statusMap: map[*component.InstanceID]*Event{
 				{}: NewStatusEvent(StatusStarting),
 				{}: NewStatusEvent(StatusOK),
 			},
@@ -125,7 +125,7 @@ func TestAggregateStatus(t *testing.T) {
 		},
 		{
 			name: "aggregate status with all ok is OK",
-			statusMap: map[*component.InstanceID]*StatusEvent{
+			statusMap: map[*component.InstanceID]*Event{
 				{}: NewStatusEvent(StatusOK),
 				{}: NewStatusEvent(StatusOK),
 				{}: NewStatusEvent(StatusOK),
@@ -184,25 +184,25 @@ func TestAggregateStatusEvent(t *testing.T) {
 	// maxTime is used to make sure we select the event with the latest timestamp
 	maxTime := time.Unix(1<<63-62135596801, 999999999)
 	// latest sets the timestamp for an event to maxTime
-	latest := func(ev *StatusEvent) *StatusEvent {
+	latest := func(ev *Event) *Event {
 		ev.timestamp = maxTime
 		return ev
 	}
 
 	for _, tc := range []struct {
 		name           string
-		statusMap      map[*component.InstanceID]*StatusEvent
-		expectedStatus *StatusEvent
+		statusMap      map[*component.InstanceID]*Event
+		expectedStatus *Event
 	}{
 		{
 			name: "FatalError - existing event",
-			statusMap: map[*component.InstanceID]*StatusEvent{
+			statusMap: map[*component.InstanceID]*Event{
 				{}: NewStatusEvent(StatusStarting),
 				{}: NewStatusEvent(StatusOK),
 				{}: latest(NewFatalErrorEvent(assert.AnError)),
 				{}: NewStatusEvent(StatusRecoverableError),
 			},
-			expectedStatus: &StatusEvent{
+			expectedStatus: &Event{
 				status:    StatusFatalError,
 				timestamp: maxTime,
 				err:       assert.AnError,
@@ -210,13 +210,13 @@ func TestAggregateStatusEvent(t *testing.T) {
 		},
 		{
 			name: "FatalError - synthetic event",
-			statusMap: map[*component.InstanceID]*StatusEvent{
+			statusMap: map[*component.InstanceID]*Event{
 				{}: NewStatusEvent(StatusStarting),
 				{}: NewStatusEvent(StatusOK),
 				{}: NewFatalErrorEvent(assert.AnError),
 				{}: latest(NewStatusEvent(StatusRecoverableError)),
 			},
-			expectedStatus: &StatusEvent{
+			expectedStatus: &Event{
 				status:    StatusFatalError,
 				timestamp: maxTime,
 				err:       assert.AnError,
@@ -224,13 +224,13 @@ func TestAggregateStatusEvent(t *testing.T) {
 		},
 		{
 			name: "PermanentError - existing event",
-			statusMap: map[*component.InstanceID]*StatusEvent{
+			statusMap: map[*component.InstanceID]*Event{
 				{}: NewStatusEvent(StatusStarting),
 				{}: NewStatusEvent(StatusOK),
 				{}: latest(NewPermanentErrorEvent(assert.AnError)),
 				{}: NewStatusEvent(StatusRecoverableError),
 			},
-			expectedStatus: &StatusEvent{
+			expectedStatus: &Event{
 				status:    StatusPermanentError,
 				timestamp: maxTime,
 				err:       assert.AnError,
@@ -238,13 +238,13 @@ func TestAggregateStatusEvent(t *testing.T) {
 		},
 		{
 			name: "PermanentError - synthetic event",
-			statusMap: map[*component.InstanceID]*StatusEvent{
+			statusMap: map[*component.InstanceID]*Event{
 				{}: NewStatusEvent(StatusStarting),
 				{}: NewStatusEvent(StatusOK),
 				{}: NewPermanentErrorEvent(assert.AnError),
 				{}: latest(NewStatusEvent(StatusRecoverableError)),
 			},
-			expectedStatus: &StatusEvent{
+			expectedStatus: &Event{
 				status:    StatusPermanentError,
 				timestamp: maxTime,
 				err:       assert.AnError,
@@ -252,50 +252,50 @@ func TestAggregateStatusEvent(t *testing.T) {
 		},
 		{
 			name: "Stopping - existing event",
-			statusMap: map[*component.InstanceID]*StatusEvent{
+			statusMap: map[*component.InstanceID]*Event{
 				{}: NewStatusEvent(StatusStarting),
 				{}: NewStatusEvent(StatusOK),
 				{}: NewStatusEvent(StatusRecoverableError),
 				{}: latest(NewStatusEvent(StatusStopping)),
 			},
-			expectedStatus: &StatusEvent{
+			expectedStatus: &Event{
 				status:    StatusStopping,
 				timestamp: maxTime,
 			},
 		},
 		{
 			name: "Stopping - synthetic event",
-			statusMap: map[*component.InstanceID]*StatusEvent{
+			statusMap: map[*component.InstanceID]*Event{
 				{}: NewStatusEvent(StatusStarting),
 				{}: NewStatusEvent(StatusOK),
 				{}: NewStatusEvent(StatusRecoverableError),
 				{}: latest(NewStatusEvent(StatusStopped)),
 			},
-			expectedStatus: &StatusEvent{
+			expectedStatus: &Event{
 				status:    StatusStopping,
 				timestamp: maxTime,
 			},
 		},
 		{
 			name: "Stopped - existing event",
-			statusMap: map[*component.InstanceID]*StatusEvent{
+			statusMap: map[*component.InstanceID]*Event{
 				{}: NewStatusEvent(StatusStopped),
 				{}: latest(NewStatusEvent(StatusStopped)),
 				{}: NewStatusEvent(StatusStopped),
 			},
-			expectedStatus: &StatusEvent{
+			expectedStatus: &Event{
 				status:    StatusStopped,
 				timestamp: maxTime,
 			},
 		},
 		{
 			name: "RecoverableError - existing event",
-			statusMap: map[*component.InstanceID]*StatusEvent{
+			statusMap: map[*component.InstanceID]*Event{
 				{}: NewStatusEvent(StatusStarting),
 				{}: NewStatusEvent(StatusOK),
 				{}: latest(NewRecoverableErrorEvent(assert.AnError)),
 			},
-			expectedStatus: &StatusEvent{
+			expectedStatus: &Event{
 				status:    StatusRecoverableError,
 				timestamp: maxTime,
 				err:       assert.AnError,
@@ -303,23 +303,23 @@ func TestAggregateStatusEvent(t *testing.T) {
 		},
 		{
 			name: "Starting - synthetic event",
-			statusMap: map[*component.InstanceID]*StatusEvent{
+			statusMap: map[*component.InstanceID]*Event{
 				{}: NewStatusEvent(StatusStarting),
 				{}: latest(NewStatusEvent(StatusOK)),
 			},
-			expectedStatus: &StatusEvent{
+			expectedStatus: &Event{
 				status:    StatusStarting,
 				timestamp: maxTime,
 			},
 		},
 		{
 			name: "OK - existing event",
-			statusMap: map[*component.InstanceID]*StatusEvent{
+			statusMap: map[*component.InstanceID]*Event{
 				{}: NewStatusEvent(StatusOK),
 				{}: latest(NewStatusEvent(StatusOK)),
 				{}: NewStatusEvent(StatusOK),
 			},
-			expectedStatus: &StatusEvent{
+			expectedStatus: &Event{
 				status:    StatusOK,
 				timestamp: maxTime,
 			},

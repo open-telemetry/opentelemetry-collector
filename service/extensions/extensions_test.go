@@ -362,7 +362,7 @@ func newCreateErrorExtensionFactory() extension.Factory {
 
 func TestStatusReportedOnStartupShutdown(t *testing.T) {
 	// compare two slices of status events ignoring timestamp
-	assertEqualStatuses := func(t *testing.T, evts1, evts2 []*componentstatus.StatusEvent) {
+	assertEqualStatuses := func(t *testing.T, evts1, evts2 []*componentstatus.Event) {
 		assert.Equal(t, len(evts1), len(evts2))
 		for i := 0; i < len(evts1); i++ {
 			ev1 := evts1[i]
@@ -374,13 +374,13 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 
 	for _, tc := range []struct {
 		name             string
-		expectedStatuses []*componentstatus.StatusEvent
+		expectedStatuses []*componentstatus.Event
 		startErr         error
 		shutdownErr      error
 	}{
 		{
 			name: "successful startup/shutdown",
-			expectedStatuses: []*componentstatus.StatusEvent{
+			expectedStatuses: []*componentstatus.Event{
 				componentstatus.NewStatusEvent(componentstatus.StatusStarting),
 				componentstatus.NewStatusEvent(componentstatus.StatusOK),
 				componentstatus.NewStatusEvent(componentstatus.StatusStopping),
@@ -391,7 +391,7 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 		},
 		{
 			name: "start error",
-			expectedStatuses: []*componentstatus.StatusEvent{
+			expectedStatuses: []*componentstatus.Event{
 				componentstatus.NewStatusEvent(componentstatus.StatusStarting),
 				componentstatus.NewPermanentErrorEvent(assert.AnError),
 			},
@@ -400,7 +400,7 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 		},
 		{
 			name: "shutdown error",
-			expectedStatuses: []*componentstatus.StatusEvent{
+			expectedStatuses: []*componentstatus.Event{
 				componentstatus.NewStatusEvent(componentstatus.StatusStarting),
 				componentstatus.NewStatusEvent(componentstatus.StatusOK),
 				componentstatus.NewStatusEvent(componentstatus.StatusStopping),
@@ -422,8 +422,8 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 				statusType: factory,
 			}
 
-			var actualStatuses []*componentstatus.StatusEvent
-			rep := status.NewReporter(func(_ *component.InstanceID, ev *componentstatus.StatusEvent) {
+			var actualStatuses []*componentstatus.Event
+			rep := status.NewReporter(func(_ *component.InstanceID, ev *componentstatus.Event) {
 				actualStatuses = append(actualStatuses, ev)
 			}, func(err error) {
 				require.NoError(t, err)

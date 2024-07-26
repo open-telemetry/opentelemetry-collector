@@ -22,7 +22,7 @@ func NewStatusWatcherExtensionCreateSettings() extension.Settings {
 
 // NewStatusWatcherExtensionFactory returns a component.ExtensionFactory to construct a status watcher extension.
 func NewStatusWatcherExtensionFactory(
-	onStatusChanged func(source *component.InstanceID, event *componentstatus.StatusEvent),
+	onStatusChanged func(source *component.InstanceID, event *componentstatus.Event),
 ) extension.Factory {
 	return extension.NewFactory(
 		component.MustNewType("statuswatcher"),
@@ -40,9 +40,9 @@ func NewStatusWatcherExtensionFactory(
 type statusWatcherExtension struct {
 	component.StartFunc
 	component.ShutdownFunc
-	onStatusChanged func(source *component.InstanceID, event *componentstatus.StatusEvent)
+	onStatusChanged func(source *component.InstanceID, event *componentstatus.Event)
 }
 
-func (e statusWatcherExtension) ComponentStatusChanged(source *component.InstanceID, event *componentstatus.StatusEvent) {
+func (e statusWatcherExtension) ComponentStatusChanged(source *component.InstanceID, event *componentstatus.Event) {
 	e.onStatusChanged(source, event)
 }

@@ -77,12 +77,12 @@ func (c *Component[V]) Start(ctx context.Context, host component.Host) error {
 	if c.hostWrapper == nil {
 		c.hostWrapper = &hostWrapper{
 			host:           host,
-			sources:        make([]componentstatus.StatusReporter, 0),
-			previousEvents: make([]*componentstatus.StatusEvent, 0),
+			sources:        make([]componentstatus.Reporter, 0),
+			previousEvents: make([]*componentstatus.Event, 0),
 		}
 	}
 
-	statusReporter, isStatusReporter := host.(componentstatus.StatusReporter)
+	statusReporter, isStatusReporter := host.(componentstatus.Reporter)
 	if isStatusReporter {
 		c.hostWrapper.addSource(statusReporter)
 	}
@@ -94,11 +94,11 @@ func (c *Component[V]) Start(ctx context.Context, host component.Host) error {
 		// and takes priority over the automated status reporting that happens in graph, making the
 		// status reporting in graph a no-op.
 		if c.hostWrapper != nil {
-			c.hostWrapper.ReportStatus(componentstatus.NewStatusEvent(componentstatus.StatusStarting))
+			c.hostWrapper.Report(componentstatus.NewStatusEvent(componentstatus.StatusStarting))
 		}
 		if err = c.component.Start(ctx, c.hostWrapper); err != nil {
 			if c.hostWrapper != nil {
-				c.hostWrapper.ReportStatus(componentstatus.NewPermanentErrorEvent(err))
+				c.hostWrapper.Report(componentstatus.NewPermanentErrorEvent(err))
 			}
 		}
 	})
@@ -107,12 +107,12 @@ func (c *Component[V]) Start(ctx context.Context, host component.Host) error {
 }
 
 var _ component.Host = (*hostWrapper)(nil)
-var _ componentstatus.StatusReporter = (*hostWrapper)(nil)
+var _ componentstatus.Reporter = (*hostWrapper)(nil)
 
 type hostWrapper struct {
 	host           component.Host
-	sources        []componentstatus.StatusReporter
-	previousEvents []*componentstatus.StatusEvent
+	sources        []componentstatus.Reporter
+	previousEvents []*componentstatus.Event
 }
 
 func (h *hostWrapper) GetFactory(kind component.Kind, componentType component.Type) component.Factory {
@@ -123,19 +123,19 @@ func (h *hostWrapper) GetExtensions() map[component.ID]component.Component {
 	return h.host.GetExtensions()
 }
 
-func (h *hostWrapper) ReportStatus(e *componentstatus.StatusEvent) {
+func (h *hostWrapper) Report(e *componentstatus.Event) {
 	if !slices.Contains(h.previousEvents, e) {
 		h.previousEvents = append(h.previousEvents, e)
 	}
 
 	for _, s := range h.sources {
-		s.ReportStatus(e)
+		s.Report(e)
 	}
 }
 
-func (h *hostWrapper) addSource(s componentstatus.StatusReporter) {
+func (h *hostWrapper) addSource(s componentstatus.Reporter) {
 	for _, e := range h.previousEvents {
-		s.ReportStatus(e)
+		s.Report(e)
 	}
 	h.sources = append(h.sources, s)
 }
@@ -149,14 +149,14 @@ func (c *Component[V]) Shutdown(ctx context.Context) error {
 		// and takes priority over the automated status reporting that happens in graph, making the
 		// status reporting in graph a no-op.
 		if c.hostWrapper != nil {
-			c.hostWrapper.ReportStatus(componentstatus.NewStatusEvent(componentstatus.StatusStopping))
+			c.hostWrapper.Report(componentstatus.NewStatusEvent(componentstatus.StatusStopping))
 		}
 		err = c.component.Shutdown(ctx)
 		if c.hostWrapper != nil {
 			if err != nil {
-				c.hostWrapper.ReportStatus(componentstatus.NewPermanentErrorEvent(err))
+				c.hostWrapper.Report(componentstatus.NewPermanentErrorEvent(err))
 			} else {
-				c.hostWrapper.ReportStatus(componentstatus.NewStatusEvent(componentstatus.StatusStopped))
+				c.hostWrapper.Report(componentstatus.NewStatusEvent(componentstatus.StatusStopped))
 			}
 		}
 		c.removeFunc()

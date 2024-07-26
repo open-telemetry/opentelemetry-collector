@@ -635,7 +635,7 @@ func (h *Host) GetExporters() map[component.DataType]map[component.ID]component.
 	return h.Pipelines.GetExporters()
 }
 
-func (h *Host) NotifyComponentStatusChange(source *component.InstanceID, event *componentstatus.StatusEvent) {
+func (h *Host) NotifyComponentStatusChange(source *component.InstanceID, event *componentstatus.Event) {
 	h.ServiceExtensions.NotifyComponentStatusChange(source, event)
 	if event.Status() == componentstatus.StatusFatalError {
 		h.AsyncErrorChannel <- event.Err()
@@ -644,14 +644,14 @@ func (h *Host) NotifyComponentStatusChange(source *component.InstanceID, event *
 
 var _ getExporters = (*HostWrapper)(nil)
 var _ component.Host = (*HostWrapper)(nil)
-var _ componentstatus.StatusReporter = (*HostWrapper)(nil)
+var _ componentstatus.Reporter = (*HostWrapper)(nil)
 
 type HostWrapper struct {
 	*Host
 	InstanceID *component.InstanceID
 }
 
-func (host *HostWrapper) ReportStatus(event *componentstatus.StatusEvent) {
+func (host *HostWrapper) Report(event *componentstatus.Event) {
 	host.Reporter.ReportStatus(host.InstanceID, event)
 }
 

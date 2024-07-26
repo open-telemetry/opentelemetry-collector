@@ -9,12 +9,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-type StatusReporter interface {
-	// ReportStatus allows a component to report runtime changes in status. The service
+type Reporter interface {
+	// Report allows a component to report runtime changes in status. The service
 	// will automatically report status for a component during startup and shutdown. Components can
 	// use this method to report status after start and before shutdown. For more details about
 	// component status reporting see: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-status.md
-	ReportStatus(*StatusEvent)
+	Report(*Event)
 }
 
 type Status int32
@@ -60,59 +60,59 @@ func (s Status) String() string {
 	return "StatusNone"
 }
 
-// StatusEvent contains a status and timestamp, and can contain an error
-type StatusEvent struct {
+// Event contains a status and timestamp, and can contain an error
+type Event struct {
 	status    Status
 	err       error
 	timestamp time.Time
 }
 
-// Status returns the Status (enum) associated with the StatusEvent
-func (ev *StatusEvent) Status() Status {
+// Status returns the Status (enum) associated with the Event
+func (ev *Event) Status() Status {
 	return ev.status
 }
 
-// Err returns the error associated with the StatusEvent.
-func (ev *StatusEvent) Err() error {
+// Err returns the error associated with the Event.
+func (ev *Event) Err() error {
 	return ev.err
 }
 
-// Timestamp returns the timestamp associated with the StatusEvent
-func (ev *StatusEvent) Timestamp() time.Time {
+// Timestamp returns the timestamp associated with the Event
+func (ev *Event) Timestamp() time.Time {
 	return ev.timestamp
 }
 
-// NewStatusEvent creates and returns a StatusEvent with the specified status and sets the timestamp
+// NewStatusEvent creates and returns a Event with the specified status and sets the timestamp
 // time.Now(). To set an error on the event for an error status use one of the dedicated
 // constructors (e.g. NewRecoverableErrorEvent, NewPermanentErrorEvent, NewFatalErrorEvent)
-func NewStatusEvent(status Status) *StatusEvent {
-	return &StatusEvent{
+func NewStatusEvent(status Status) *Event {
+	return &Event{
 		status:    status,
 		timestamp: time.Now(),
 	}
 }
 
 // NewRecoverableErrorEvent wraps a transient error
-// passed as argument as a StatusEvent with a status StatusRecoverableError
+// passed as argument as a Event with a status StatusRecoverableError
 // and a timestamp set to time.Now().
-func NewRecoverableErrorEvent(err error) *StatusEvent {
+func NewRecoverableErrorEvent(err error) *Event {
 	ev := NewStatusEvent(StatusRecoverableError)
 	ev.err = err
 	return ev
 }
 
 // NewPermanentErrorEvent wraps an error requiring human intervention to fix
-// passed as argument as a StatusEvent with a status StatusPermanentError
+// passed as argument as a Event with a status StatusPermanentError
 // and a timestamp set to time.Now().
-func NewPermanentErrorEvent(err error) *StatusEvent {
+func NewPermanentErrorEvent(err error) *Event {
 	ev := NewStatusEvent(StatusPermanentError)
 	ev.err = err
 	return ev
 }
 
-// NewFatalErrorEvent wraps the fatal runtime error passed as argument as a StatusEvent
+// NewFatalErrorEvent wraps the fatal runtime error passed as argument as a Event
 // with a status StatusFatalError and a timestamp set to time.Now().
-func NewFatalErrorEvent(err error) *StatusEvent {
+func NewFatalErrorEvent(err error) *Event {
 	ev := NewStatusEvent(StatusFatalError)
 	ev.err = err
 	return ev
@@ -126,7 +126,7 @@ func NewFatalErrorEvent(err error) *StatusEvent {
 //  5. An instance is Stopped, but not all instances are Stopped, we must be in the process of Stopping the component.
 //  6. If any instance is in a Recoverable Error state, the component status is Recoverable Error.
 //  7. By process of elimination, the only remaining state is starting.
-func AggregateStatus[K comparable](eventMap map[K]*StatusEvent) Status {
+func AggregateStatus[K comparable](eventMap map[K]*Event) Status {
 	seen := make(map[Status]struct{})
 	for _, ev := range eventMap {
 		seen[ev.Status()] = struct{}{}
@@ -178,8 +178,8 @@ func StatusIsError(status Status) bool {
 //   - The timestamp is set to the latest timestamp of the events in the eventMap
 //   - For an error status, the event will have same error as the most current event of the same
 //     error type from the eventMap
-func AggregateStatusEvent[K comparable](eventMap map[K]*StatusEvent) *StatusEvent {
-	var lastEvent, lastMatchingEvent *StatusEvent
+func AggregateStatusEvent[K comparable](eventMap map[K]*Event) *Event {
+	var lastEvent, lastMatchingEvent *Event
 	aggregateStatus := AggregateStatus[K](eventMap)
 
 	for _, ev := range eventMap {
@@ -198,7 +198,7 @@ func AggregateStatusEvent[K comparable](eventMap map[K]*StatusEvent) *StatusEven
 	}
 
 	// the effective status requires a synthetic event
-	aggregateEvent := &StatusEvent{
+	aggregateEvent := &Event{
 		status:    aggregateStatus,
 		timestamp: lastEvent.timestamp,
 	}
@@ -209,11 +209,11 @@ func AggregateStatusEvent[K comparable](eventMap map[K]*StatusEvent) *StatusEven
 	return aggregateEvent
 }
 
-// ReportStatus is a helper function that handles checking if the component.Host has implemented StatusReporter.
-// If it has, the StatusEvent is reported. Otherwise, nothing happens.
-func ReportStatus(host component.Host, e *StatusEvent) {
-	statusReporter, ok := host.(StatusReporter)
+// ReportStatus is a helper function that handles checking if the component.Host has implemented Reporter.
+// If it has, the Event is reported. Otherwise, nothing happens.
+func ReportStatus(host component.Host, e *Event) {
+	statusReporter, ok := host.(Reporter)
 	if ok {
-		statusReporter.ReportStatus(e)
+		statusReporter.Report(e)
 	}
 }

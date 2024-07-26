@@ -153,7 +153,7 @@ func TestReportStatusOnStartShutdown(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			reportedStatuses := make(map[*component.InstanceID][]componentstatus.Status)
-			newStatusFunc := func(id *component.InstanceID, ev *componentstatus.StatusEvent) {
+			newStatusFunc := func(id *component.InstanceID, ev *componentstatus.Event) {
 				reportedStatuses[id] = append(reportedStatuses[id], ev.Status())
 			}
 			base := &baseComponent{}
@@ -194,7 +194,7 @@ func TestReportStatusOnStartShutdown(t *testing.T) {
 			require.Equal(t, tc.startErr, err)
 
 			if tc.startErr == nil {
-				comp.hostWrapper.ReportStatus(componentstatus.NewStatusEvent(componentstatus.StatusOK))
+				comp.hostWrapper.Report(componentstatus.NewStatusEvent(componentstatus.StatusOK))
 
 				err = comp.Shutdown(context.Background())
 				require.Equal(t, tc.shutdownErr, err)
@@ -216,14 +216,14 @@ func newNopTelemetrySettings() *component.TelemetrySettings {
 }
 
 var _ component.Host = (*testHost)(nil)
-var _ componentstatus.StatusReporter = (*testHost)(nil)
+var _ componentstatus.Reporter = (*testHost)(nil)
 
 type testHost struct {
 	component.Host
 	*component.InstanceID
-	newStatusFunc func(id *component.InstanceID, ev *componentstatus.StatusEvent)
+	newStatusFunc func(id *component.InstanceID, ev *componentstatus.Event)
 }
 
-func (h *testHost) ReportStatus(e *componentstatus.StatusEvent) {
+func (h *testHost) Report(e *componentstatus.Event) {
 	h.newStatusFunc(h.InstanceID, e)
 }

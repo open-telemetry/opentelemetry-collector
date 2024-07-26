@@ -126,7 +126,7 @@ func TestStatusFSM(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			var receivedStatuses []componentstatus.Status
 			fsm := newFSM(
-				func(ev *componentstatus.StatusEvent) {
+				func(ev *componentstatus.Event) {
 					receivedStatuses = append(receivedStatuses, ev.Status())
 				},
 			)
@@ -146,7 +146,7 @@ func TestStatusFSM(t *testing.T) {
 }
 
 func TestValidSeqsToStopped(t *testing.T) {
-	events := []*componentstatus.StatusEvent{
+	events := []*componentstatus.Event{
 		componentstatus.NewStatusEvent(componentstatus.StatusStarting),
 		componentstatus.NewStatusEvent(componentstatus.StatusOK),
 		componentstatus.NewStatusEvent(componentstatus.StatusRecoverableError),
@@ -157,7 +157,7 @@ func TestValidSeqsToStopped(t *testing.T) {
 	for _, ev := range events {
 		name := fmt.Sprintf("transition from: %s to: %s invalid", ev.Status(), componentstatus.StatusStopped)
 		t.Run(name, func(t *testing.T) {
-			fsm := newFSM(func(*componentstatus.StatusEvent) {})
+			fsm := newFSM(func(*componentstatus.Event) {})
 			if ev.Status() != componentstatus.StatusStarting {
 				require.NoError(t, fsm.transition(componentstatus.NewStatusEvent(componentstatus.StatusStarting)))
 			}
@@ -184,7 +184,7 @@ func TestStatusFuncs(t *testing.T) {
 	id2 := &component.InstanceID{}
 
 	actualStatuses := make(map[*component.InstanceID][]componentstatus.Status)
-	statusFunc := func(id *component.InstanceID, ev *componentstatus.StatusEvent) {
+	statusFunc := func(id *component.InstanceID, ev *componentstatus.Event) {
 		actualStatuses[id] = append(actualStatuses[id], ev.Status())
 	}
 
@@ -231,7 +231,7 @@ func TestStatusFuncs(t *testing.T) {
 func TestStatusFuncsConcurrent(t *testing.T) {
 	ids := []*component.InstanceID{{}, {}, {}, {}}
 	count := 0
-	statusFunc := func(*component.InstanceID, *componentstatus.StatusEvent) {
+	statusFunc := func(*component.InstanceID, *componentstatus.Event) {
 		count++
 	}
 	rep := NewReporter(statusFunc,
@@ -261,7 +261,7 @@ func TestStatusFuncsConcurrent(t *testing.T) {
 }
 
 func TestReporterReady(t *testing.T) {
-	statusFunc := func(*component.InstanceID, *componentstatus.StatusEvent) {}
+	statusFunc := func(*component.InstanceID, *componentstatus.Event) {}
 	var err error
 	rep := NewReporter(statusFunc,
 		func(e error) {
@@ -332,7 +332,7 @@ func TestReportComponentOKIfStarting(t *testing.T) {
 			var receivedStatuses []componentstatus.Status
 
 			rep := NewReporter(
-				func(_ *component.InstanceID, ev *componentstatus.StatusEvent) {
+				func(_ *component.InstanceID, ev *componentstatus.Event) {
 					receivedStatuses = append(receivedStatuses, ev.Status())
 				},
 				func(err error) {
