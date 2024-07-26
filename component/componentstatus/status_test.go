@@ -324,7 +324,7 @@ func TestAggregateStatusEvent(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.expectedStatus, AggregateStatusEvent(tc.statusMap))
+			assert.Equal(t, tc.expectedStatus, AggregateEvent(tc.statusMap))
 		})
 	}
 }

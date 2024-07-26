@@ -174,12 +174,12 @@ func StatusIsError(status Status) bool {
 		status == StatusFatalError
 }
 
-// AggregateStatusEvent returns a status event where:
+// AggregateEvent returns a status event where:
 //   - The status is set to the aggregate status of the events in the eventMap
 //   - The timestamp is set to the latest timestamp of the events in the eventMap
 //   - For an error status, the event will have same error as the most current event of the same
 //     error type from the eventMap
-func AggregateStatusEvent[K comparable](eventMap map[K]*Event) *Event {
+func AggregateEvent[K comparable](eventMap map[K]*Event) *Event {
 	var lastEvent, lastMatchingEvent *Event
 	aggregateStatus := AggregateStatus[K](eventMap)
 
