@@ -34,6 +34,8 @@ README](../configtls/README.md).
 - [`disable_keep_alives`](https://golang.org/pkg/net/http/#Transport)
 - [`http2_read_idle_timeout`](https://pkg.go.dev/golang.org/x/net/http2#Transport)
 - [`http2_ping_timeout`](https://pkg.go.dev/golang.org/x/net/http2#Transport)
+- [`cookies`](https://pkg.go.dev/net/http#CookieJar)
+  - [`enabled`] if enabled, the client will store cookies from server responses and reuse them in subsequent requests.
 
 Example:
 
@@ -51,6 +53,8 @@ exporter:
       test1: "value1"
       "test 2": "value 2"
     compression: zstd
+    cookies:
+      enabled: true
 ```
 
 ## Server Configuration
@@ -78,6 +82,7 @@ will not be enabled.
 - `compression_algorithms`: configures the list of compression algorithms the server can accept. Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate"]
 - [`tls`](../configtls/README.md)
 - [`auth`](../configauth/README.md)
+  - `request_params`: a list of query parameter names to add to the auth context, along with the HTTP headers
 
 You can enable [`attribute processor`][attribute-processor] to append any http header to span's attribute using custom key. You also need to enable the "include_metadata"
 
@@ -90,6 +95,8 @@ receivers:
       http:
         include_metadata: true
         auth:
+          request_params:
+          - token
           authenticator: some-authenticator-extension
         cors:
           allowed_origins:

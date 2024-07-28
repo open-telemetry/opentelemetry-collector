@@ -85,8 +85,8 @@ func TestNewRetrievedFromYAMLString(t *testing.T) {
 		},
 		{
 			yaml:       "\"string\"",
-			value:      "string",
-			altStrRepr: "string",
+			value:      "\"string\"",
+			altStrRepr: "\"string\"",
 		},
 		{
 			yaml:  "123",
@@ -113,9 +113,8 @@ func TestNewRetrievedFromYAMLString(t *testing.T) {
 			value: 0.123,
 		},
 		{
-			yaml:       "{key: value}",
-			value:      map[string]any{"key": "value"},
-			strReprErr: "retrieved value does not have unambiguous string representation",
+			yaml:  "{key: value}",
+			value: map[string]any{"key": "value"},
 		},
 	}
 

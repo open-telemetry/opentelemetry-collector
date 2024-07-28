@@ -15,8 +15,8 @@ configuration parameters are also defined under `tls` like server
 configuration. For more information, see [configtls
 README](../configtls/README.md).
 
-- [`balancer_name`](https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md)
-- `compression` Compression type to use among `gzip`, `snappy`, `zstd`, and `none`.
+- [`balancer_name`](https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md): Default before v0.103.0 is `pick_first`, default for v0.103.0 is `round_robin`. See [issue](https://github.com/open-telemetry/opentelemetry-collector/issues/10298). To restore the previous behavior, set `balancer_name` to `pick_first`.
+- `compression`: Compression type to use among `gzip`, `snappy`, `zstd`, and `none`.
 - `endpoint`: Valid value syntax available [here](https://github.com/grpc/grpc/blob/master/doc/naming.md)
 - [`tls`](../configtls/README.md)
 - `headers`: name/value pairs added to the request

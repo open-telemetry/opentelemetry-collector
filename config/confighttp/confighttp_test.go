@@ -33,6 +33,8 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/extension/auth"
 	"go.opentelemetry.io/collector/extension/auth/authtest"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/localhostgate"
 )
 
 type customRoundTripper struct {
@@ -83,6 +85,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				IdleConnTimeout:      &idleConnTimeout,
 				Compression:          "",
 				DisableKeepAlives:    true,
+				Cookies:              &CookiesConfig{Enabled: true},
 				HTTP2ReadIdleTimeout: idleConnTimeout,
 				HTTP2PingTimeout:     http2PingTimeout,
 			},
@@ -514,6 +517,13 @@ func TestHTTPServerSettingsError(t *testing.T) {
 }
 
 func TestHTTPServerWarning(t *testing.T) {
+	prev := localhostgate.UseLocalHostAsDefaultHostfeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(localhostgate.UseLocalHostAsDefaultHostID, false))
+	defer func() {
+		// Restore previous value.
+		require.NoError(t, featuregate.GlobalRegistry().Set(localhostgate.UseLocalHostAsDefaultHostID, prev))
+	}()
+
 	tests := []struct {
 		name     string
 		settings ServerConfig
@@ -855,8 +865,10 @@ func TestHttpCorsWithSettings(t *testing.T) {
 		CORS: &CORSConfig{
 			AllowedOrigins: []string{"*"},
 		},
-		Auth: &configauth.Authentication{
-			AuthenticatorID: mockID,
+		Auth: &AuthConfig{
+			Authentication: &configauth.Authentication{
+				AuthenticatorID: mockID,
+			},
 		},
 	}
 
@@ -945,7 +957,7 @@ func verifyCorsResp(t *testing.T, url string, origin string, set *CORSConfig, ex
 	req.Header.Set("Origin", origin)
 	if extraHeader {
 		req.Header.Set("ExtraHeader", "foo")
-		req.Header.Set("Access-Control-Request-Headers", "ExtraHeader")
+		req.Header.Set("Access-Control-Request-Headers", "extraheader")
 	}
 	req.Header.Set("Access-Control-Request-Method", "POST")
 
@@ -997,9 +1009,9 @@ func verifyHeadersResp(t *testing.T, url string, expected map[string]configopaqu
 }
 
 func ExampleServerConfig() {
-	settings := ServerConfig{
-		Endpoint: "localhost:443",
-	}
+	settings := NewDefaultServerConfig()
+	settings.Endpoint = "localhost:443"
+
 	s, err := settings.ToServer(
 		context.Background(),
 		componenttest.NewNopHost(),
@@ -1158,8 +1170,10 @@ func TestServerAuth(t *testing.T) {
 	authCalled := false
 	hss := ServerConfig{
 		Endpoint: "localhost:0",
-		Auth: &configauth.Authentication{
-			AuthenticatorID: mockID,
+		Auth: &AuthConfig{
+			Authentication: &configauth.Authentication{
+				AuthenticatorID: mockID,
+			},
 		},
 	}
 
@@ -1192,8 +1206,10 @@ func TestServerAuth(t *testing.T) {
 
 func TestInvalidServerAuth(t *testing.T) {
 	hss := ServerConfig{
-		Auth: &configauth.Authentication{
-			AuthenticatorID: nonExistingID,
+		Auth: &AuthConfig{
+			Authentication: &configauth.Authentication{
+				AuthenticatorID: nonExistingID,
+			},
 		},
 	}
 
@@ -1206,8 +1222,10 @@ func TestFailedServerAuth(t *testing.T) {
 	// prepare
 	hss := ServerConfig{
 		Endpoint: "localhost:0",
-		Auth: &configauth.Authentication{
-			AuthenticatorID: mockID,
+		Auth: &AuthConfig{
+			Authentication: &configauth.Authentication{
+				AuthenticatorID: mockID,
+			},
 		},
 	}
 	host := &mockHost{
@@ -1265,9 +1283,8 @@ func TestServerWithErrorHandler(t *testing.T) {
 
 func TestServerWithDecoder(t *testing.T) {
 	// prepare
-	hss := ServerConfig{
-		Endpoint: "localhost:0",
-	}
+	hss := NewDefaultServerConfig()
+	hss.Endpoint = "localhost:0"
 	decoder := func(body io.ReadCloser) (io.ReadCloser, error) {
 		return body, nil
 	}
@@ -1378,6 +1395,48 @@ func TestDefaultMaxRequestBodySize(t *testing.T) {
 			assert.Equal(t, tt.expected, tt.settings.MaxRequestBodySize)
 		})
 	}
+}
+
+func TestAuthWithQueryParams(t *testing.T) {
+	// prepare
+	authCalled := false
+	hss := ServerConfig{
+		Endpoint: "localhost:0",
+		Auth: &AuthConfig{
+			RequestParameters: []string{"auth"},
+			Authentication: &configauth.Authentication{
+				AuthenticatorID: mockID,
+			},
+		},
+	}
+
+	host := &mockHost{
+		ext: map[component.ID]component.Component{
+			mockID: auth.NewServer(
+				auth.WithServerAuthenticate(func(ctx context.Context, sources map[string][]string) (context.Context, error) {
+					require.Len(t, sources, 1)
+					assert.Equal(t, "1", sources["auth"][0])
+					authCalled = true
+					return ctx, nil
+				}),
+			),
+		},
+	}
+
+	handlerCalled := false
+	handler := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		handlerCalled = true
+	})
+
+	srv, err := hss.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings(), handler)
+	require.NoError(t, err)
+
+	// test
+	srv.Handler.ServeHTTP(&httptest.ResponseRecorder{}, httptest.NewRequest("GET", "/?auth=1", nil))
+
+	// verify
+	assert.True(t, handlerCalled)
+	assert.True(t, authCalled)
 }
 
 type mockHost struct {
@@ -1491,4 +1550,15 @@ func BenchmarkHttpRequest(b *testing.B) {
 			<-time.After(10 * time.Millisecond)
 		})
 	}
+}
+
+func TestDefaultHTTPServerSettings(t *testing.T) {
+	httpServerSettings := NewDefaultServerConfig()
+	assert.NotNil(t, httpServerSettings.ResponseHeaders)
+	assert.NotNil(t, httpServerSettings.CORS)
+	assert.NotNil(t, httpServerSettings.TLSSetting)
+	assert.Equal(t, 1*time.Minute, httpServerSettings.IdleTimeout)
+	assert.Equal(t, 30*time.Second, httpServerSettings.WriteTimeout)
+	assert.Equal(t, time.Duration(0), httpServerSettings.ReadTimeout)
+	assert.Equal(t, 1*time.Minute, httpServerSettings.ReadHeaderTimeout)
 }

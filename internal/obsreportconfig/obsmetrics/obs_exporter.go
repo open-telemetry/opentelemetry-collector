@@ -7,6 +7,9 @@ const (
 	// ExporterKey used to identify exporters in metrics and traces.
 	ExporterKey = "exporter"
 
+	// DataTypeKey used to identify the data type in the queue size metric.
+	DataTypeKey = "data_type"
+
 	// SentSpansKey used to track spans sent by exporters.
 	SentSpansKey = "sent_spans"
 	// FailedToSendSpansKey used to track spans that failed to be sent by exporters.

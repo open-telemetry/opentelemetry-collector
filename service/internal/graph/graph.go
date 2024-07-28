@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 	"gonum.org/v1/gonum/graph"
 	"gonum.org/v1/gonum/graph/simple"
 	"gonum.org/v1/gonum/graph/topo"
@@ -32,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
 	"go.opentelemetry.io/collector/service/internal/servicetelemetry"
+	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/pipelines"
 )
 
@@ -394,7 +396,7 @@ type pipelineNodes struct {
 	exporters map[int64]graph.Node
 }
 
-func (g *Graph) StartAll(ctx context.Context, host component.Host) error {
+func (g *Graph) StartAll(ctx context.Context, host component.Host, reporter status.Reporter) error {
 	nodes, err := topo.Sort(g.componentGraph)
 	if err != nil {
 		return err
@@ -413,25 +415,32 @@ func (g *Graph) StartAll(ctx context.Context, host component.Host) error {
 		}
 
 		instanceID := g.instanceIDs[node.ID()]
-		g.telemetry.Status.ReportStatus(
+		reporter.ReportStatus(
 			instanceID,
 			component.NewStatusEvent(component.StatusStarting),
 		)
 
 		if compErr := comp.Start(ctx, host); compErr != nil {
-			g.telemetry.Status.ReportStatus(
+			reporter.ReportStatus(
 				instanceID,
 				component.NewPermanentErrorEvent(compErr),
 			)
+			// We log with zap.AddStacktrace(zap.DPanicLevel) to avoid adding the stack trace to the error log
+			g.telemetry.Logger.WithOptions(zap.AddStacktrace(zap.DPanicLevel)).
+				Error("Failed to start component",
+					zap.Error(compErr),
+					zap.String("type", instanceID.Kind.String()),
+					zap.String("id", instanceID.ID.String()),
+				)
 			return compErr
 		}
 
-		g.telemetry.Status.ReportOKIfStarting(instanceID)
+		reporter.ReportOKIfStarting(instanceID)
 	}
 	return nil
 }
 
-func (g *Graph) ShutdownAll(ctx context.Context) error {
+func (g *Graph) ShutdownAll(ctx context.Context, reporter status.Reporter) error {
 	nodes, err := topo.Sort(g.componentGraph)
 	if err != nil {
 		return err
@@ -452,21 +461,21 @@ func (g *Graph) ShutdownAll(ctx context.Context) error {
 		}
 
 		instanceID := g.instanceIDs[node.ID()]
-		g.telemetry.Status.ReportStatus(
+		reporter.ReportStatus(
 			instanceID,
 			component.NewStatusEvent(component.StatusStopping),
 		)
 
 		if compErr := comp.Shutdown(ctx); compErr != nil {
 			errs = multierr.Append(errs, compErr)
-			g.telemetry.Status.ReportStatus(
+			reporter.ReportStatus(
 				instanceID,
 				component.NewPermanentErrorEvent(compErr),
 			)
 			continue
 		}
 
-		g.telemetry.Status.ReportStatus(
+		reporter.ReportStatus(
 			instanceID,
 			component.NewStatusEvent(component.StatusStopped),
 		)
