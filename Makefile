@@ -257,6 +257,7 @@ check-contrib:
 	@echo Setting contrib at $(CONTRIB_PATH) to use this core checkout
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit \
 		-replace go.opentelemetry.io/collector=$(CURDIR) \
+		-replace go.opentelemetry.io/collector/client=$(CURDIR)/client \
 		-replace go.opentelemetry.io/collector/component=$(CURDIR)/component  \
 		-replace go.opentelemetry.io/collector/config/configauth=$(CURDIR)/config/configauth  \
 		-replace go.opentelemetry.io/collector/config/configcompression=$(CURDIR)/config/configcompression  \
@@ -278,6 +279,8 @@ check-contrib:
 		-replace go.opentelemetry.io/collector/connector=$(CURDIR)/connector  \
 		-replace go.opentelemetry.io/collector/connector/forwardconnector=$(CURDIR)/connector/forwardconnector  \
 		-replace go.opentelemetry.io/collector/consumer=$(CURDIR)/consumer  \
+		-replace go.opentelemetry.io/collector/consumer/consumerprofiles=$(CURDIR)/consumer/consumerprofiles  \
+		-replace go.opentelemetry.io/collector/consumer/consumertest=$(CURDIR)/consumer/consumertest  \
 		-replace go.opentelemetry.io/collector/exporter=$(CURDIR)/exporter  \
 		-replace go.opentelemetry.io/collector/exporter/debugexporter=$(CURDIR)/exporter/debugexporter  \
 		-replace go.opentelemetry.io/collector/exporter/loggingexporter=$(CURDIR)/exporter/loggingexporter  \
@@ -316,6 +319,7 @@ restore-contrib:
 	@echo Restoring contrib at $(CONTRIB_PATH) to its original state
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit \
 		-dropreplace go.opentelemetry.io/collector \
+		-dropreplace go.opentelemetry.io/collector/client \
 		-dropreplace go.opentelemetry.io/collector/component \
 		-dropreplace go.opentelemetry.io/collector/config/configauth  \
 		-dropreplace go.opentelemetry.io/collector/config/configcompression  \
@@ -337,6 +341,8 @@ restore-contrib:
 		-dropreplace go.opentelemetry.io/collector/connector  \
 		-dropreplace go.opentelemetry.io/collector/connector/forwardconnector  \
 		-dropreplace go.opentelemetry.io/collector/consumer  \
+		-dropreplace go.opentelemetry.io/collector/consumer/consumerprofiles  \
+		-dropreplace go.opentelemetry.io/collector/consumer/consumertest  \
 		-dropreplace go.opentelemetry.io/collector/exporter  \
 		-dropreplace go.opentelemetry.io/collector/exporter/debugexporter  \
 		-dropreplace go.opentelemetry.io/collector/exporter/loggingexporter  \

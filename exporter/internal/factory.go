@@ -7,31 +7,33 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-) // Factory is a factory interface for exporters.
+)
+
+// Factory is a factory interface for exporters.
 // This interface cannot be directly implemented. Implementations must
 // use the NewFactory to implement it.
 type Factory interface {
 	component.Factory
 
 	// CreateTracesExporter creates a TracesExporter based on this config.
-	// If the exporter type does not support tracing or if the config is not valid,
-	// an error will be returned instead.
+	// If the exporter type does not support tracing,
+	// this function returns the error [component.ErrDataTypeIsNotSupported].
 	CreateTracesExporter(ctx context.Context, set Settings, cfg component.Config) (Traces, error)
 
 	// TracesExporterStability gets the stability level of the TracesExporter.
 	TracesExporterStability() component.StabilityLevel
 
 	// CreateMetricsExporter creates a MetricsExporter based on this config.
-	// If the exporter type does not support metrics or if the config is not valid,
-	// an error will be returned instead.
+	// If the exporter type does not support metrics,
+	// this function returns the error [component.ErrDataTypeIsNotSupported].
 	CreateMetricsExporter(ctx context.Context, set Settings, cfg component.Config) (Metrics, error)
 
 	// MetricsExporterStability gets the stability level of the MetricsExporter.
 	MetricsExporterStability() component.StabilityLevel
 
 	// CreateLogsExporter creates a LogsExporter based on the config.
-	// If the exporter type does not support logs or if the config is not valid,
-	// an error will be returned instead.
+	// If the exporter type does not support logs,
+	// this function returns the error [component.ErrDataTypeIsNotSupported].
 	CreateLogsExporter(ctx context.Context, set Settings, cfg component.Config) (Logs, error)
 
 	// LogsExporterStability gets the stability level of the LogsExporter.

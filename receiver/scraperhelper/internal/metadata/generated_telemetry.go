@@ -56,13 +56,13 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	builder.ScraperErroredMetricPoints, err = builder.meter.Int64Counter(
 		"otelcol_scraper_errored_metric_points",
 		metric.WithDescription("Number of metric points that were unable to be scraped."),
-		metric.WithUnit("1"),
+		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ScraperScrapedMetricPoints, err = builder.meter.Int64Counter(
 		"otelcol_scraper_scraped_metric_points",
 		metric.WithDescription("Number of metric points successfully scraped."),
-		metric.WithUnit("1"),
+		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs

@@ -66,73 +66,73 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	builder.ProcessorAcceptedLogRecords, err = builder.meter.Int64Counter(
 		"otelcol_processor_accepted_log_records",
 		metric.WithDescription("Number of log records successfully pushed into the next component in the pipeline."),
-		metric.WithUnit("1"),
+		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorAcceptedMetricPoints, err = builder.meter.Int64Counter(
 		"otelcol_processor_accepted_metric_points",
 		metric.WithDescription("Number of metric points successfully pushed into the next component in the pipeline."),
-		metric.WithUnit("1"),
+		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorAcceptedSpans, err = builder.meter.Int64Counter(
 		"otelcol_processor_accepted_spans",
 		metric.WithDescription("Number of spans successfully pushed into the next component in the pipeline."),
-		metric.WithUnit("1"),
+		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorDroppedLogRecords, err = builder.meter.Int64Counter(
 		"otelcol_processor_dropped_log_records",
 		metric.WithDescription("Number of log records that were dropped."),
-		metric.WithUnit("1"),
+		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorDroppedMetricPoints, err = builder.meter.Int64Counter(
 		"otelcol_processor_dropped_metric_points",
 		metric.WithDescription("Number of metric points that were dropped."),
-		metric.WithUnit("1"),
+		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorDroppedSpans, err = builder.meter.Int64Counter(
 		"otelcol_processor_dropped_spans",
 		metric.WithDescription("Number of spans that were dropped."),
-		metric.WithUnit("1"),
+		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorInsertedLogRecords, err = builder.meter.Int64Counter(
 		"otelcol_processor_inserted_log_records",
 		metric.WithDescription("Number of log records that were inserted."),
-		metric.WithUnit("1"),
+		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorInsertedMetricPoints, err = builder.meter.Int64Counter(
 		"otelcol_processor_inserted_metric_points",
 		metric.WithDescription("Number of metric points that were inserted."),
-		metric.WithUnit("1"),
+		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorInsertedSpans, err = builder.meter.Int64Counter(
 		"otelcol_processor_inserted_spans",
 		metric.WithDescription("Number of spans that were inserted."),
-		metric.WithUnit("1"),
+		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorRefusedLogRecords, err = builder.meter.Int64Counter(
 		"otelcol_processor_refused_log_records",
 		metric.WithDescription("Number of log records that were rejected by the next component in the pipeline."),
-		metric.WithUnit("1"),
+		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorRefusedMetricPoints, err = builder.meter.Int64Counter(
 		"otelcol_processor_refused_metric_points",
 		metric.WithDescription("Number of metric points that were rejected by the next component in the pipeline."),
-		metric.WithUnit("1"),
+		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorRefusedSpans, err = builder.meter.Int64Counter(
 		"otelcol_processor_refused_spans",
 		metric.WithDescription("Number of spans that were rejected by the next component in the pipeline."),
-		metric.WithUnit("1"),
+		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs
