@@ -28,7 +28,6 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/service/internal/servicetelemetry"
 	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/internal/status/statustest"
 	"go.opentelemetry.io/collector/service/internal/testcomponents"
@@ -145,7 +144,7 @@ func TestGraphStartStop(t *testing.T) {
 			}
 
 			pg := &Graph{componentGraph: simple.NewDirectedGraph()}
-			pg.telemetry = servicetelemetry.NewNopTelemetrySettings()
+			pg.telemetry = componenttest.NewNopTelemetrySettings()
 			pg.instanceIDs = make(map[int64]*component.InstanceID)
 
 			for _, edge := range tt.edges {
@@ -200,7 +199,7 @@ func TestGraphStartStopCycle(t *testing.T) {
 
 func TestGraphStartStopComponentError(t *testing.T) {
 	pg := &Graph{componentGraph: simple.NewDirectedGraph()}
-	pg.telemetry = servicetelemetry.NewNopTelemetrySettings()
+	pg.telemetry = componenttest.NewNopTelemetrySettings()
 	r1 := &testNode{
 		id:       component.MustNewIDWithName("r", "1"),
 		startErr: errors.New("foo"),
@@ -719,7 +718,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			// Build the pipeline
 			set := Settings{
-				Telemetry: servicetelemetry.NewNopTelemetrySettings(),
+				Telemetry: componenttest.NewNopTelemetrySettings(),
 				BuildInfo: component.NewDefaultBuildInfo(),
 				ReceiverBuilder: receiver.NewBuilder(
 					map[component.ID]component.Config{
@@ -1006,7 +1005,7 @@ func TestConnectorRouter(t *testing.T) {
 
 	ctx := context.Background()
 	set := Settings{
-		Telemetry: servicetelemetry.NewNopTelemetrySettings(),
+		Telemetry: componenttest.NewNopTelemetrySettings(),
 		BuildInfo: component.NewDefaultBuildInfo(),
 		ReceiverBuilder: receiver.NewBuilder(
 			map[component.ID]component.Config{
@@ -2050,7 +2049,7 @@ func TestGraphBuildErrors(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			set := Settings{
 				BuildInfo: component.NewDefaultBuildInfo(),
-				Telemetry: servicetelemetry.NewNopTelemetrySettings(),
+				Telemetry: componenttest.NewNopTelemetrySettings(),
 				ReceiverBuilder: receiver.NewBuilder(
 					test.receiverCfgs,
 					map[component.Type]receiver.Factory{
@@ -2097,7 +2096,7 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 	nopConnectorFactory := connectortest.NewNopFactory()
 
 	set := Settings{
-		Telemetry: servicetelemetry.NewNopTelemetrySettings(),
+		Telemetry: componenttest.NewNopTelemetrySettings(),
 		BuildInfo: component.NewDefaultBuildInfo(),
 		ReceiverBuilder: receiver.NewBuilder(
 			map[component.ID]component.Config{
@@ -2333,7 +2332,7 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			pg := &Graph{componentGraph: simple.NewDirectedGraph()}
-			pg.telemetry = servicetelemetry.NewNopTelemetrySettings()
+			pg.telemetry = componenttest.NewNopTelemetrySettings()
 
 			actualStatuses := make(map[*component.InstanceID][]*component.StatusEvent)
 			rep := status.NewReporter(func(id *component.InstanceID, ev *component.StatusEvent) {
@@ -2341,7 +2340,6 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 			}, func(error) {
 			})
 
-			pg.telemetry.Status = rep
 			rep.Ready()
 
 			e0, e1 := tc.edge[0], tc.edge[1]
