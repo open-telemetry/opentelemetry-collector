@@ -236,7 +236,7 @@ func TestLoadMetadata(t *testing.T) {
 						"batch_size_trigger_send": {
 							Enabled:     true,
 							Description: "Number of times the batch was sent due to a size trigger",
-							Unit:        strPtr("1"),
+							Unit:        strPtr("{times}"),
 							Sum: &sum{
 								MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeInt},
 								Mono:            Mono{Monotonic: true},
@@ -267,7 +267,7 @@ func TestLoadMetadata(t *testing.T) {
 							Enabled:               true,
 							Description:           "This metric is optional and therefore not initialized in NewTelemetryBuilder.",
 							ExtendedDocumentation: "For example this metric only exists if feature A is enabled.",
-							Unit:                  strPtr("1"),
+							Unit:                  strPtr("{items}"),
 							Optional:              true,
 							Gauge: &gauge{
 								MetricValueType: MetricValueType{
