@@ -60,9 +60,45 @@ func newBatchSender(cfg exporterbatcher.Config, set exporter.Settings,
 	return bs
 }
 
+func (bs *batchSender) startQueueBatcher() error {
+	var reqs []Request
+	sz := 0
+	for i := 0; i < bs.cfg.NumBatchers; i++ {
+		go func() {
+			for {
+				// what if this blocks for too long trying to pop from queue? Needs something to timeout
+				res := bs.queue.Consume(func(ctx context.Context, req Request) error {
+					var err error
+					reqs = append(reqs, req)
+					sz += req.ItemsCount()
+					if sz > bs.cfg.MinSizeItems {
+						err = bs.send(ctx, reqs...)
+						reqs = []Request{}
+						sz = 0
+					} else {
+						// If using persistant queue, make sure items are not marked for deletion until the batch is sent.
+						ctx = exporterbatcher.SetBatchingKeyInContext(ctx)
+					}
+					return err
+				})
+				if !res {
+					return
+				}
+			}
+		}()
+	}
+
+	return nil
+}
+
 func (bs *batchSender) Start(_ context.Context, _ component.Host) error {
 	bs.shutdownCh = make(chan struct{})
 	timer := time.NewTimer(bs.cfg.FlushTimeout)
+
+	if bs.queueEnabled {
+		bs.startQueueBatcher()
+	}
+
 	go func() {
 		for {
 			select {
@@ -94,19 +130,35 @@ func (bs *batchSender) Start(_ context.Context, _ component.Host) error {
 				}
 				bs.mu.Unlock()
 				timer.Reset(nextFlush)
-			default:
-				// if we have a queue enabled then create batches by reading directly from queue.
-				if bs.queueEnabled && bs.queue.Size() > 0 {
+			// default:
+			// 	// if we have a queue enabled then create batches by reading directly from queue.
+			// 	if bs.queueEnabled && bs.queue.Size() > 0 {
+			// 		// var reqs []Request
+			// 		// sz := 0
+			// 		// for {
+			// 		// 	// what if this blocks for too long trying to pop from queue? Needs something to timeout
+			// 		// 	bs.queue.Consume(func(ctx context.Context, req Request) error {
+			// 		// 		reqs = append(reqs, req)
+			// 		// 		sz += req.ItemsCount()
+			// 		// 		if sz > bs.cfg.MinSizeItems {
+			// 		// 			bs.send(ctx, reqs...)
+			// 		// 			reqs = []Request{}
+			// 		// 			sz = 0
+			// 		// 		}
+			// 		// 	})
+			// 		// }
 
-					go bs.queue.Consume(func(ctx context.Context, req Request) error {
-						err := bs.send(ctx, req)
-						if err != nil {
-							bs.logger.Error("Exporting failed. Dropping data.",
-								zap.Error(err), zap.Int("dropped_items", req.ItemsCount()))
-						}
-						return err
-					})
-				}
+			// 		// bs.send(ctx, req...)
+					// go bs.queue.Consume(func(ctx context.Context, req Request) error {
+
+					// 	err := bs.send(ctx, req)
+					// 	if err != nil {
+					// 		bs.logger.Error("Exporting failed. Dropping data.",
+					// 			zap.Error(err), zap.Int("dropped_items", req.ItemsCount()))
+					// 	}
+					// 	return err
+					// })
+				// }
 			}
 		}
 	}()

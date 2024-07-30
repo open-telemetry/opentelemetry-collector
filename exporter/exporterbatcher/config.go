@@ -19,6 +19,9 @@ type Config struct {
 	// FlushTimeout sets the time after which a batch will be sent regardless of its size.
 	FlushTimeout time.Duration `mapstructure:"flush_timeout"`
 
+	// NumBatchers sets the number of goroutines creating batches when the queue is enabled.
+	NumBatchers int `mapstructure:"num_batchers`
+
 	MinSizeConfig `mapstructure:",squash"`
 	MaxSizeConfig `mapstructure:",squash"`
 }
@@ -56,6 +59,9 @@ func (c Config) Validate() error {
 	if c.FlushTimeout <= 0 {
 		return errors.New("timeout must be greater than zero")
 	}
+	if c.NumBatchers <= 0 {
+		return errors.New("num_batchers must be greater than to zero")
+	}
 	return nil
 }
 
@@ -63,6 +69,7 @@ func NewDefaultConfig() Config {
 	return Config{
 		Enabled:      true,
 		FlushTimeout: 200 * time.Millisecond,
+		NumBatchers: 1,
 		MinSizeConfig: MinSizeConfig{
 			MinSizeItems: 8192,
 		},

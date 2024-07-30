@@ -16,6 +16,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/internal/experr"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
@@ -195,7 +196,7 @@ func (pq *persistentQueue[T]) Consume(consumeFunc func(context.Context, T) error
 	for {
 		var (
 			req                  T
-			onProcessingFinished func(error)
+			onProcessingFinished func(error, bool)
 			consumed             bool
 		)
 
@@ -212,7 +213,14 @@ func (pq *persistentQueue[T]) Consume(consumeFunc func(context.Context, T) error
 			return false
 		}
 		if consumed {
-			onProcessingFinished(consumeFunc(context.Background(), req))
+			ctx := context.Background()
+			consumeErr := consumeFunc(ctx, req)
+			ctx = exporterbatcher.SetBatchingKeyInContext(ctx)
+			// Check the context to know whether batching is in progress or the pending requests have been sent.
+			batchingInProgress := exporterbatcher.GetBatchingKeyFromContext(ctx)
+			fmt.Println("batching in progress")
+			fmt.Println(batchingInProgress)
+			onProcessingFinished(consumeErr, batchingInProgress)
 			return true
 		}
 	}
@@ -304,7 +312,7 @@ func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
 
 // getNextItem pulls the next available item from the persistent storage along with a callback function that should be
 // called after the item is processed to clean up the storage. If no new item is available, returns false.
-func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (T, func(error), bool) {
+func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (T, func(error, bool), bool) {
 	pq.mu.Lock()
 	defer pq.mu.Unlock()
 
@@ -345,7 +353,7 @@ func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (T, func(error), 
 	// Increase the reference count, so the client is not closed while the request is being processed.
 	// The client cannot be closed because we hold the lock since last we checked `stopped`.
 	pq.refClient++
-	return request, func(consumeErr error) {
+	return request, func(consumeErr error, batchingInProgress bool) {
 		// Delete the item from the persistent storage after it was processed.
 		pq.mu.Lock()
 		// Always unref client even if the consumer is shutdown because we always ref it for every valid request.
@@ -356,9 +364,10 @@ func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (T, func(error), 
 			pq.mu.Unlock()
 		}()
 
-		if experr.IsShutdownErr(consumeErr) {
+		if experr.IsShutdownErr(consumeErr) || batchingInProgress {
 			// The queue is shutting down, don't mark the item as dispatched, so it's picked up again after restart.
 			// TODO: Handle partially delivered requests by updating their values in the storage.
+			// Otherwise batching is still in progress so the request has not been sent and should not be marked as dispatched.
 			return
 		}
 
