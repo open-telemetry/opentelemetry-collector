@@ -21,7 +21,9 @@ as retryable.
 perform retries.
 
 **Indicating partial success**: Errors can indicate that not all items were
-accepted, for example as in an OTLP partial success message.
+accepted, for example as in an OTLP partial success message. OTLP backends
+will return failed item counts if a partial success occurs, and this information
+can be propagated up to a receiver and returned to the caller.
 
 **Communicating network error codes**: Errors should allow embedding information
 necessary for the Collector to act as a proxy for a backend, i.e. relay a status
@@ -35,6 +37,11 @@ and determine the best course of action based on the user's configuration. This
 may entail either keeping the retry queue inside of the Collector by having the
 receiver keep track of retries, or may involve having the caller manage the
 retry queue by returning a retryable network code with relevant information.
+
+**scraperhelper**: The scraper helper can use information about errors from
+downstream to affect scraping. For example, if the backend is struggling with
+the volume of data, scraping could be slowed, or the amount of data collected
+could be reduced. 
 
 **exporterhelper**: When an exporter returns a retryable error, the
 exporterhelper can use this information to manage the sending queue if it is
