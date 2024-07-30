@@ -16,6 +16,23 @@ These modules depend on a list of other modules, the full list is available in i
 
 All stabilized modules will conform to the API expectations outlined in the [VERSIONING.md](../VERSIONING.md) document.
 
+### Scope within each module
+
+The Collector is already used in production at scale and has been tested in a variety of
+environments. The focus of the stabilization is primarily not to add missing features but to ensure
+the maintainability of the project and to provide a predictable and consistent experience for
+end-users.
+
+In particular when considering enhancement proposals we will focus on:
+1. Binary end-users impact above other audiences.
+2. Parts of the proposals that imply breaking changes to end-users.
+3. Small, predictable or self-contained changes that don't imply a major change in the end-user
+   experience.
+
+Additionally, when considering bug reports we will prioritize:
+1. [Critical bugs](release.md#bugfix-release-criteria) that affect the stability of the Collector.
+2. Regressions from previous behavior caused by 1.0-related changes.
+
 ## Out of scope
 
 Explicitly, the following are not in the scope of v1 for the purposes of this document:
