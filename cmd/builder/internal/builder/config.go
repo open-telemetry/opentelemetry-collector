@@ -64,7 +64,7 @@ type Distribution struct {
 	OtelColVersion           string `mapstructure:"otelcol_version"`
 	RequireOtelColModule     bool   `mapstructure:"-"` // required for backwards-compatibility with builds older than 0.86.0
 	SupportsConfmapFactories bool   `mapstructure:"-"` // Required for backwards-compatibility with builds older than 0.99.0
-	SupportsComponentModules bool   `mapstructure:"-"` // Required for backwards-compatibility with builds older than 0.106.1
+	SupportsComponentModules bool   `mapstructure:"-"` // Required for backwards-compatibility with builds older than 0.106.0
 	OutputPath               string `mapstructure:"output_path"`
 	Version                  string `mapstructure:"version"`
 	BuildTags                string `mapstructure:"build_tags"`
