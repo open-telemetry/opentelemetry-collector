@@ -85,8 +85,8 @@ func TestNewRetrievedFromYAMLString(t *testing.T) {
 		},
 		{
 			yaml:       "\"string\"",
-			value:      "string",
-			altStrRepr: "string",
+			value:      "\"string\"",
+			altStrRepr: "\"string\"",
 		},
 		{
 			yaml:  "123",

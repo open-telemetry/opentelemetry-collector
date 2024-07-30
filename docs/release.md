@@ -42,7 +42,7 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
 
 5. Make sure you are on `release/<release-series>`. Tag the module groups with the new release version by running:
    - `make push-tags MODSET=beta` for beta modules group,
-   - `make push-tags MODSET=stable` beta stable modules group, only if there were changes since the last release.
+   - `make push-tags MODSET=stable` for stable modules group, only if there were changes since the last release.
    
    If you set your remote using `https` you need to include `REMOTE=https://github.com/open-telemetry/opentelemetry-collector.git` in each command. Wait for the new tag build to pass successfully.
 
@@ -53,11 +53,12 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
 ## Releasing opentelemetry-collector-contrib
 
 1. Open a PR to Contrib to use the newly released Core version and set it to Ready for Review.
-   - Manually update `cmd/otelcontribcol/builder-config.yaml`
-   - Manually update `cmd/oteltestbedcol/builder-config.yaml`
+   - Manually update `dist.version`, `dist.otelcol_version` and core collector module versions in `cmd/otelcontribcol/builder-config.yaml`
+   - Manually update `dist.version`, `dist.otelcol_version` and core collector module versions in `cmd/oteltestbedcol/builder-config.yaml`
    - Run `make genotelcontribcol genoteltestbedcol`
    - Commit the changes
    - Run `make update-otel OTEL_VERSION=v0.85.0 OTEL_STABLE_VERSION=v1.1.0`
+     - If there is no new stable version released in core collector, use the current stable module version in contrib as `OTEL_STABLE_VERSION`.
    - Commit the changes
    - Open a PR
    -  🛑 **Do not move forward until this PR is merged.** 🛑
@@ -160,7 +161,6 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 
 | Date       | Version  | Release manager                                   |
 |------------|----------|---------------------------------------------------|
-| 2024-07-15 | v0.105.0 | [@atoulme](https://github.com/atoulme)            |
 | 2024-07-29 | v0.106.0 | [@songy23](https://github.com/songy23)            |
 | 2024-08-12 | v0.107.0 | [@dmitryax](https://github.com/dmitryax)          |
 | 2024-08-26 | v0.108.0 | [@codeboten](https://github.com/codeboten)        |
@@ -170,3 +170,4 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 | 2024-10-21 | v0.112.0 | [@evan-bradley](https://github.com/evan-bradley)  |
 | 2024-11-04 | v0.113.0 | [@djaglowski](https://github.com/djaglowski)      |
 | 2024-11-18 | v0.114.0 | [@TylerHelmuth](https://github.com/TylerHelmuth)  |
+| 2024-12-02 | v0.115.0 | [@atoulme](https://github.com/atoulme)            |
