@@ -168,7 +168,7 @@ func (c *Config) SetBackwardsCompatibility() error {
 	c.Distribution.SupportsConfmapFactories = constraint.Check(otelColVersion)
 
 	// check whether go modules are recorded for components
-	constraint, err = version.NewConstraint(">= 0.106.1")
+	constraint, err = version.NewConstraint(">= 0.106.0")
 	if err != nil {
 		return err
 	}
