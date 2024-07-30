@@ -17,7 +17,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const defaultOtelColVersion = "0.105.0"
+const defaultOtelColVersion = "0.106.0"
 
 // ErrMissingGoMod indicates an empty gomod field
 var ErrMissingGoMod = errors.New("missing gomod specification for module")
@@ -64,7 +64,7 @@ type Distribution struct {
 	OtelColVersion           string `mapstructure:"otelcol_version"`
 	RequireOtelColModule     bool   `mapstructure:"-"` // required for backwards-compatibility with builds older than 0.86.0
 	SupportsConfmapFactories bool   `mapstructure:"-"` // Required for backwards-compatibility with builds older than 0.99.0
-	SupportsComponentModules bool   `mapstructure:"-"` // Required for backwards-compatibility with builds older than 0.105.0
+	SupportsComponentModules bool   `mapstructure:"-"` // Required for backwards-compatibility with builds older than 0.106.0
 	OutputPath               string `mapstructure:"output_path"`
 	Version                  string `mapstructure:"version"`
 	BuildTags                string `mapstructure:"build_tags"`
@@ -168,7 +168,7 @@ func (c *Config) SetBackwardsCompatibility() error {
 	c.Distribution.SupportsConfmapFactories = constraint.Check(otelColVersion)
 
 	// check whether go modules are recorded for components
-	constraint, err = version.NewConstraint(">= 0.105.0")
+	constraint, err = version.NewConstraint(">= 0.106.0")
 	if err != nil {
 		return err
 	}
