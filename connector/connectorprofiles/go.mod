@@ -6,7 +6,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.106.0
 	go.opentelemetry.io/collector/component/componentprofiles v0.0.0-20240723122248-8b5e2318374d
-	go.opentelemetry.io/collector/connector v0.105.0
+	go.opentelemetry.io/collector/connector v0.106.0
 	go.opentelemetry.io/collector/consumer v0.106.0
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.106.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.106.0
