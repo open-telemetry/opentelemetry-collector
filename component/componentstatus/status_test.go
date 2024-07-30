@@ -5,7 +5,6 @@ package componentstatus
 import (
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -49,7 +48,6 @@ func TestStatusEventsWithError(t *testing.T) {
 	}
 }
 
-
 func TestStatusIsError(t *testing.T) {
 	for _, tc := range []struct {
 		status  Status
@@ -90,4 +88,3 @@ func TestStatusIsError(t *testing.T) {
 		})
 	}
 }
-

@@ -119,3 +119,10 @@ func NewFatalErrorEvent(err error) *Event {
 	return ev
 }
 
+// StatusIsError returns true for error statuses (e.g. StatusRecoverableError,
+// StatusPermanentError, or StatusFatalError)
+func StatusIsError(status Status) bool {
+	return status == StatusRecoverableError ||
+		status == StatusPermanentError ||
+		status == StatusFatalError
+}
