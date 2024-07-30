@@ -85,6 +85,7 @@ func (c converter) expandEnv(s string) (string, error) {
 		// - $FOO will be substituted with env var FOO
 		// - $$FOO will be replaced with $FOO
 		// - $$$FOO will be replaced with $ + substituted env var FOO
+		// TODO: Move the escaping of $$ out from the expand converter to the resolver.
 		if str == "$" {
 			return "$"
 		}

@@ -36,6 +36,18 @@ func TestUnmarshalText(t *testing.T) {
 			expectedID: ID{typeVal: validType, nameVal: "valid_name"},
 		},
 		{
+			idStr:      "valid_type/中文好",
+			expectedID: ID{typeVal: validType, nameVal: "中文好"},
+		},
+		{
+			idStr:      "valid_type/name-with-dashes",
+			expectedID: ID{typeVal: validType, nameVal: "name-with-dashes"},
+		},
+		{
+			idStr:      "valid_type/1",
+			expectedID: ID{typeVal: validType, nameVal: "1"},
+		},
+		{
 			idStr:       "/valid_name",
 			expectedErr: true,
 		},
@@ -53,6 +65,10 @@ func TestUnmarshalText(t *testing.T) {
 		},
 		{
 			idStr:       "      ",
+			expectedErr: true,
+		},
+		{
+			idStr:       "valid_type/invalid name",
 			expectedErr: true,
 		},
 	}
