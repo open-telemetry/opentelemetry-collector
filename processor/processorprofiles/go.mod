@@ -7,7 +7,7 @@ require (
 	go.opentelemetry.io/collector/component v0.106.0
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.106.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.106.0
-	go.opentelemetry.io/collector/processor v0.105.0
+	go.opentelemetry.io/collector/processor v0.106.0
 )
 
 require (
