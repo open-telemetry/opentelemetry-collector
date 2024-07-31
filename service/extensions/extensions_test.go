@@ -11,6 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/component/componentstatus"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap"
@@ -360,7 +362,7 @@ func newCreateErrorExtensionFactory() extension.Factory {
 
 func TestStatusReportedOnStartupShutdown(t *testing.T) {
 	// compare two slices of status events ignoring timestamp
-	assertEqualStatuses := func(t *testing.T, evts1, evts2 []*component.StatusEvent) {
+	assertEqualStatuses := func(t *testing.T, evts1, evts2 []*componentstatus.Event) {
 		assert.Equal(t, len(evts1), len(evts2))
 		for i := 0; i < len(evts1); i++ {
 			ev1 := evts1[i]
@@ -372,37 +374,37 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 
 	for _, tc := range []struct {
 		name             string
-		expectedStatuses []*component.StatusEvent
+		expectedStatuses []*componentstatus.Event
 		startErr         error
 		shutdownErr      error
 	}{
 		{
 			name: "successful startup/shutdown",
-			expectedStatuses: []*component.StatusEvent{
-				component.NewStatusEvent(component.StatusStarting),
-				component.NewStatusEvent(component.StatusOK),
-				component.NewStatusEvent(component.StatusStopping),
-				component.NewStatusEvent(component.StatusStopped),
+			expectedStatuses: []*componentstatus.Event{
+				componentstatus.NewEvent(componentstatus.StatusStarting),
+				componentstatus.NewEvent(componentstatus.StatusOK),
+				componentstatus.NewEvent(componentstatus.StatusStopping),
+				componentstatus.NewEvent(componentstatus.StatusStopped),
 			},
 			startErr:    nil,
 			shutdownErr: nil,
 		},
 		{
 			name: "start error",
-			expectedStatuses: []*component.StatusEvent{
-				component.NewStatusEvent(component.StatusStarting),
-				component.NewPermanentErrorEvent(assert.AnError),
+			expectedStatuses: []*componentstatus.Event{
+				componentstatus.NewEvent(componentstatus.StatusStarting),
+				componentstatus.NewPermanentErrorEvent(assert.AnError),
 			},
 			startErr:    assert.AnError,
 			shutdownErr: nil,
 		},
 		{
 			name: "shutdown error",
-			expectedStatuses: []*component.StatusEvent{
-				component.NewStatusEvent(component.StatusStarting),
-				component.NewStatusEvent(component.StatusOK),
-				component.NewStatusEvent(component.StatusStopping),
-				component.NewPermanentErrorEvent(assert.AnError),
+			expectedStatuses: []*componentstatus.Event{
+				componentstatus.NewEvent(componentstatus.StatusStarting),
+				componentstatus.NewEvent(componentstatus.StatusOK),
+				componentstatus.NewEvent(componentstatus.StatusStopping),
+				componentstatus.NewPermanentErrorEvent(assert.AnError),
 			},
 			startErr:    nil,
 			shutdownErr: assert.AnError,
@@ -420,8 +422,8 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 				statusType: factory,
 			}
 
-			var actualStatuses []*component.StatusEvent
-			rep := status.NewReporter(func(_ *component.InstanceID, ev *component.StatusEvent) {
+			var actualStatuses []*componentstatus.Event
+			rep := status.NewReporter(func(_ *componentstatus.InstanceID, ev *componentstatus.Event) {
 				actualStatuses = append(actualStatuses, ev)
 			}, func(err error) {
 				require.NoError(t, err)

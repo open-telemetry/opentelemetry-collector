@@ -13,6 +13,8 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
+	"go.opentelemetry.io/collector/component/componentstatus"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
@@ -110,7 +112,7 @@ func (r *otlpReceiver) startGRPCServer(host component.Host) error {
 		defer r.shutdownWG.Done()
 
 		if errGrpc := r.serverGRPC.Serve(gln); errGrpc != nil && !errors.Is(errGrpc, grpc.ErrServerStopped) {
-			r.settings.ReportStatus(component.NewFatalErrorEvent(errGrpc))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errGrpc))
 		}
 	}()
 	return nil
@@ -160,7 +162,7 @@ func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host)
 		defer r.shutdownWG.Done()
 
 		if errHTTP := r.serverHTTP.Serve(hln); errHTTP != nil && !errors.Is(errHTTP, http.ErrServerClosed) {
-			r.settings.ReportStatus(component.NewFatalErrorEvent(errHTTP))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 		}
 	}()
 	return nil

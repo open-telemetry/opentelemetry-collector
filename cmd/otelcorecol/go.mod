@@ -82,6 +82,7 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector v0.106.1 // indirect
 	go.opentelemetry.io/collector/client v0.106.1 // indirect
+	go.opentelemetry.io/collector/component/componentstatus v0.106.1 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.106.1 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.12.0 // indirect
 	go.opentelemetry.io/collector/config/configgrpc v0.106.1 // indirect
@@ -147,6 +148,8 @@ replace go.opentelemetry.io/collector/client => ../../client
 replace go.opentelemetry.io/collector/otelcol => ../../otelcol
 
 replace go.opentelemetry.io/collector/component => ../../component
+
+replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
 
 replace go.opentelemetry.io/collector/config/configauth => ../../config/configauth
 

@@ -13,6 +13,8 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component/componentstatus"
+
 	"go.opentelemetry.io/collector/component"
 )
 
@@ -83,7 +85,7 @@ func (zpe *zpagesExtension) Start(ctx context.Context, host component.Host) erro
 		defer close(zpe.stopCh)
 
 		if errHTTP := zpe.server.Serve(ln); errHTTP != nil && !errors.Is(errHTTP, http.ErrServerClosed) {
-			zpe.telemetry.ReportStatus(component.NewFatalErrorEvent(errHTTP))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 		}
 	}()
 

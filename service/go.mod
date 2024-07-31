@@ -12,6 +12,7 @@ require (
 	go.opencensus.io v0.24.0
 	go.opentelemetry.io/collector v0.106.1
 	go.opentelemetry.io/collector/component v0.106.1
+	go.opentelemetry.io/collector/component/componentstatus v0.106.1
 	go.opentelemetry.io/collector/config/confighttp v0.106.1
 	go.opentelemetry.io/collector/config/configtelemetry v0.106.1
 	go.opentelemetry.io/collector/confmap v0.106.1
@@ -115,6 +116,8 @@ replace go.opentelemetry.io/collector => ../
 replace go.opentelemetry.io/collector/connector => ../connector
 
 replace go.opentelemetry.io/collector/component => ../component
+
+replace go.opentelemetry.io/collector/component/componentstatus => ../component/componentstatus
 
 replace go.opentelemetry.io/collector/pdata => ../pdata
 
