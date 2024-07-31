@@ -53,11 +53,12 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
 ## Releasing opentelemetry-collector-contrib
 
 1. Open a PR to Contrib to use the newly released Core version and set it to Ready for Review.
-   - Manually update `cmd/otelcontribcol/builder-config.yaml`
-   - Manually update `cmd/oteltestbedcol/builder-config.yaml`
+   - Manually update `dist.version`, `dist.otelcol_version` and core collector module versions in `cmd/otelcontribcol/builder-config.yaml`
+   - Manually update `dist.version`, `dist.otelcol_version` and core collector module versions in `cmd/oteltestbedcol/builder-config.yaml`
    - Run `make genotelcontribcol genoteltestbedcol`
    - Commit the changes
    - Run `make update-otel OTEL_VERSION=v0.85.0 OTEL_STABLE_VERSION=v1.1.0`
+     - If there is no new stable version released in core collector, use the current stable module version in contrib as `OTEL_STABLE_VERSION`.
    - Commit the changes
    - Open a PR
    -  🛑 **Do not move forward until this PR is merged.** 🛑
@@ -85,11 +86,11 @@ The last step of the release process creates artifacts for the new version of th
 
 4. Check out the commit created by merging the PR and tag with the new release version by running the `make push-tags TAG=v0.85.0` command. If you set your remote using `https` you need to include `REMOTE=https://github.com/open-telemetry/opentelemetry-collector-releases.git` in each command. Wait for the new tag build to pass successfully.
 
-5. Ensure the "Release" action passes, this will
+5. Ensure the "Release Core", "Release Contrib" and "Release k8s" actions pass, this will
 
-    1. push new container images to `https://hub.docker.com/repository/docker/otel/opentelemetry-collector` and `https://hub.docker.com/repository/docker/otel/opentelemetry-collector-contrib`
+    1. push new container images to `https://hub.docker.com/repository/docker/otel/opentelemetry-collector`, `https://hub.docker.com/repository/docker/otel/opentelemetry-collector-contrib` and `https://hub.docker.com/repository/docker/otel/opentelemetry-collector-k8s`
 
-    2. create a Github release for the tag and push all the build artifacts to the Github release. See [example](https://github.com/open-telemetry/opentelemetry-collector-releases/actions/runs/5869052077).
+    2. create a Github release for the tag and push all the build artifacts to the Github release. See [example](https://github.com/open-telemetry/opentelemetry-collector-releases/actions/workflows/release-core.yaml).
 
 ## Troubleshooting
 
@@ -160,7 +161,6 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 
 | Date       | Version  | Release manager                                   |
 |------------|----------|---------------------------------------------------|
-| 2024-07-29 | v0.106.0 | [@songy23](https://github.com/songy23)            |
 | 2024-08-12 | v0.107.0 | [@dmitryax](https://github.com/dmitryax)          |
 | 2024-08-26 | v0.108.0 | [@codeboten](https://github.com/codeboten)        |
 | 2024-09-09 | v0.109.0 | [@bogdandrutu](https://github.com/bogdandrutu)    |
@@ -170,3 +170,4 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 | 2024-11-04 | v0.113.0 | [@djaglowski](https://github.com/djaglowski)      |
 | 2024-11-18 | v0.114.0 | [@TylerHelmuth](https://github.com/TylerHelmuth)  |
 | 2024-12-02 | v0.115.0 | [@atoulme](https://github.com/atoulme)            |
+| 2024-12-16 | v0.116.0 | [@songy23](https://github.com/songy23)            |
