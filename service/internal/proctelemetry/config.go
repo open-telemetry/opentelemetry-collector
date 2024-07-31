@@ -255,12 +255,14 @@ func initOTLPgRPCExporter(ctx context.Context, otlpConfig *config.OTLPMetric) (s
 	}
 	if otlpConfig.TemporalityPreference != nil {
 		switch *otlpConfig.TemporalityPreference {
+		case "delta":
+			opts = append(opts, otlpmetricgrpc.WithTemporalitySelector(temporalityPreferenceDelta))
 		case "cumulative":
 			opts = append(opts, otlpmetricgrpc.WithTemporalitySelector(temporalityPreferenceCumulative))
-		case "delta":
-			opts = append(opts, otlpmetricgrpc.WithTemporalitySelector(temporalityPreferenceDeltaPreferred))
 		case "lowmemory":
 			opts = append(opts, otlpmetricgrpc.WithTemporalitySelector(temporalityPreferenceLowMemory))
+		default:
+			return nil, fmt.Errorf("unsupported temporality preference %q", *otlpConfig.TemporalityPreference)
 		}
 	}
 	if otlpConfig.DefaultHistogramAggregation != nil {
@@ -310,12 +312,14 @@ func initOTLPHTTPExporter(ctx context.Context, otlpConfig *config.OTLPMetric) (s
 	}
 	if otlpConfig.TemporalityPreference != nil {
 		switch *otlpConfig.TemporalityPreference {
+		case "delta":
+			opts = append(opts, otlpmetrichttp.WithTemporalitySelector(temporalityPreferenceDelta))
 		case "cumulative":
 			opts = append(opts, otlpmetrichttp.WithTemporalitySelector(temporalityPreferenceCumulative))
-		case "delta":
-			opts = append(opts, otlpmetrichttp.WithTemporalitySelector(temporalityPreferenceDeltaPreferred))
 		case "lowmemory":
 			opts = append(opts, otlpmetrichttp.WithTemporalitySelector(temporalityPreferenceLowMemory))
+		default:
+			return nil, fmt.Errorf("unsupported temporality preference %q", *otlpConfig.TemporalityPreference)
 		}
 	}
 	if otlpConfig.DefaultHistogramAggregation != nil {
@@ -351,7 +355,7 @@ func temporalityPreferenceCumulative(ik sdkmetric.InstrumentKind) metricdata.Tem
 	return metricdata.CumulativeTemporality
 }
 
-func temporalityPreferenceDeltaPreferred(ik sdkmetric.InstrumentKind) metricdata.Temporality {
+func temporalityPreferenceDelta(ik sdkmetric.InstrumentKind) metricdata.Temporality {
 	switch ik {
 	case sdkmetric.InstrumentKindCounter, sdkmetric.InstrumentKindObservableCounter, sdkmetric.InstrumentKindHistogram:
 		return metricdata.DeltaTemporality
