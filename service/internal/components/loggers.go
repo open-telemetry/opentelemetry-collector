@@ -28,11 +28,11 @@ func ReceiverLogger(logger *zap.Logger, id component.ID, dt component.DataType) 
 		zap.String(zapDataTypeKey, dt.String()))
 }
 
-func ProcessorLogger(logger *zap.Logger, id component.ID, pipelineID component.ID) *zap.Logger {
+func ProcessorLogger(logger *zap.Logger, id component.ID, dt component.DataType) *zap.Logger {
 	return logger.With(
 		zap.String(zapKindKey, strings.ToLower(component.KindProcessor.String())),
 		zap.String(zapNameKey, id.String()),
-		zap.String(zapPipelineKey, pipelineID.String()))
+		zap.String(zapPipelineKey, dt.String()))
 }
 
 func ExporterLogger(logger *zap.Logger, id component.ID, dt component.DataType) *zap.Logger {
