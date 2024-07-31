@@ -12,7 +12,7 @@ module-sets:
       - go.opentelemetry.io/collector/config/configretry
       - go.opentelemetry.io/collector/config/configtls
   beta:
-    version: v0.106.0
+    version: v0.106.1
     modules:
       - go.opentelemetry.io/collector
       - go.opentelemetry.io/collector/internal/globalgates
@@ -58,6 +58,7 @@ module-sets:
       - go.opentelemetry.io/collector/processor
       - go.opentelemetry.io/collector/processor/batchprocessor
       - go.opentelemetry.io/collector/processor/memorylimiterprocessor
+      - go.opentelemetry.io/collector/processor/processorprofiles
       - go.opentelemetry.io/collector/receiver
       - go.opentelemetry.io/collector/receiver/nopreceiver
       - go.opentelemetry.io/collector/receiver/otlpreceiver
