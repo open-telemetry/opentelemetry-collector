@@ -38,6 +38,7 @@ Additionally, when considering bug reports we will prioritize:
 Explicitly, the following are not in the scope of v1 for the purposes of this document:
 
 * stabilization of additional components/APIs needed by distribution maintainers. Vendors are not the audience
+  * This explicitly excludes the `service` and `otelcol` modules, for which we will only guarantee that there are no breaking changes impacting end-users of the binary after 1.0, while Go API only changes will continue to be admissible until these modules are tagged as 1.0.
 * Collector Builder
 * telemetrygen
 * mdatagen
