@@ -259,6 +259,7 @@ check-contrib:
 		-replace go.opentelemetry.io/collector=$(CURDIR) \
 		-replace go.opentelemetry.io/collector/client=$(CURDIR)/client \
 		-replace go.opentelemetry.io/collector/component=$(CURDIR)/component  \
+		-replace go.opentelemetry.io/collector/component/componentprofiles=$(CURDIR)/component/componentprofiles  \
 		-replace go.opentelemetry.io/collector/component/componentstatus=$(CURDIR)/component/componentstatus  \
 		-replace go.opentelemetry.io/collector/config/configauth=$(CURDIR)/config/configauth  \
 		-replace go.opentelemetry.io/collector/config/configcompression=$(CURDIR)/config/configcompression  \
@@ -322,6 +323,7 @@ restore-contrib:
 		-dropreplace go.opentelemetry.io/collector \
 		-dropreplace go.opentelemetry.io/collector/client \
 		-dropreplace go.opentelemetry.io/collector/component \
+		-dropreplace go.opentelemetry.io/collector/component/componentprofiles \
 		-dropreplace go.opentelemetry.io/collector/component/componentstatus \
 		-dropreplace go.opentelemetry.io/collector/config/configauth  \
 		-dropreplace go.opentelemetry.io/collector/config/configcompression  \
