@@ -1,6 +1,12 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+// Package componentstatus is an experimental module that defines how components should
+// report health statues, how collector hosts should facilitate component status reporting,
+// and how extensions should watch for new component statuses.
+//
+// This package is currently under development and is exempt from the Collector SIG's
+// breaking change policy.
 package componentstatus // import "go.opentelemetry.io/collector/component/componentstatus"
 
 import (
@@ -10,6 +16,9 @@ import (
 // Watcher is an extra interface for Extension hosted by the OpenTelemetry
 // Collector that is to be implemented by extensions interested in changes to component
 // status.
+//
+// TODO: consider moving this interface to a new package/module like `extension/statuswatcher`
+// https://github.com/open-telemetry/opentelemetry-collector/issues/10764
 type Watcher interface {
 	// ComponentStatusChanged notifies about a change in the source component status.
 	// Extensions that implement this interface must be ready that the ComponentStatusChanged
@@ -63,8 +72,10 @@ func (s Status) String() string {
 
 // Event contains a status and timestamp, and can contain an error
 type Event struct {
-	status    Status
-	err       error
+	status Status
+	err    error
+	// TODO: consider if a timestamp is necessary in the default Event struct or is needed only for the healthcheckv2 extension
+	// https://github.com/open-telemetry/opentelemetry-collector/issues/10763
 	timestamp time.Time
 }
 
