@@ -48,7 +48,6 @@ require (
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/go-viper/mapstructure/v2 v2.0.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.20.0 // indirect
@@ -79,9 +78,9 @@ require (
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
-	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector v0.106.1 // indirect
 	go.opentelemetry.io/collector/client v0.106.1 // indirect
+	go.opentelemetry.io/collector/component/componentprofiles v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.106.1 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.12.0 // indirect
 	go.opentelemetry.io/collector/config/configgrpc v0.106.1 // indirect
@@ -108,7 +107,6 @@ require (
 	go.opentelemetry.io/contrib/propagators/b3 v1.28.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.53.0 // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
-	go.opentelemetry.io/otel/bridge/opencensus v1.28.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp v0.4.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.28.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v1.28.0 // indirect
@@ -147,6 +145,8 @@ replace go.opentelemetry.io/collector/client => ../../client
 replace go.opentelemetry.io/collector/otelcol => ../../otelcol
 
 replace go.opentelemetry.io/collector/component => ../../component
+
+replace go.opentelemetry.io/collector/component/componentprofiles => ../../component/componentprofiles
 
 replace go.opentelemetry.io/collector/config/configauth => ../../config/configauth
 
