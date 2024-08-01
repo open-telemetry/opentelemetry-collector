@@ -7,7 +7,7 @@ change_type: breaking
 component: component
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Remove `ReportStatus` from `TelemetrySettings`
+note: Remove `ReportStatus` from `TelemetrySettings`. Use `componentstatus.ReportStatus` instead.
 
 # One or more tracking issues or pull requests related to the change
 issues: [10777]
