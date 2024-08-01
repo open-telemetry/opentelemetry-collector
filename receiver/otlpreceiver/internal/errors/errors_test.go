@@ -58,13 +58,33 @@ func Test_GetHTTPStatusCodeFromStatus(t *testing.T) {
 		},
 		{
 			name:     "Non-retryable Status",
-			input:    status.New(codes.InvalidArgument, "test"),
+			input:    status.New(codes.Internal, "test"),
 			expected: http.StatusInternalServerError,
 		},
 		{
 			name:     "Specifically 429",
 			input:    status.New(codes.ResourceExhausted, "test"),
 			expected: http.StatusTooManyRequests,
+		},
+		{
+			name:     "Specifically 400",
+			input:    status.New(codes.InvalidArgument, "test"),
+			expected: http.StatusBadRequest,
+		},
+		{
+			name:     "Specifically 401",
+			input:    status.New(codes.Unauthenticated, "test"),
+			expected: http.StatusUnauthorized,
+		},
+		{
+			name:     "Specifically 403",
+			input:    status.New(codes.PermissionDenied, "test"),
+			expected: http.StatusForbidden,
+		},
+		{
+			name:     "Specifically 404",
+			input:    status.New(codes.Unimplemented, "test"),
+			expected: http.StatusNotFound,
 		},
 	}
 	for _, tt := range tests {

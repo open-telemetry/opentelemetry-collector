@@ -16,13 +16,6 @@ import (
 
 var defaultComponentType = component.MustNewType("nop")
 
-// NewNopCreateSettings returns a new nop settings for Create*Receiver functions.
-//
-// Deprecated: [v0.103.0] Use receivertest.NewNopSettings instead.
-func NewNopCreateSettings() receiver.Settings {
-	return NewNopSettings()
-}
-
 // NewNopSettings returns a new nop settings for Create*Receiver functions.
 func NewNopSettings() receiver.Settings {
 	return receiver.Settings{

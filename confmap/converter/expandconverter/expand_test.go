@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/internal/envvar"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/featuregates"
+	"go.opentelemetry.io/collector/internal/globalgates"
 )
 
 func TestNewExpandConverter(t *testing.T) {
@@ -48,9 +48,9 @@ func TestNewExpandConverter(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.UseUnifiedEnvVarExpansionRules.ID(), false))
+			require.NoError(t, featuregate.GlobalRegistry().Set(globalgates.UseUnifiedEnvVarExpansionRules.ID(), false))
 			t.Cleanup(func() {
-				require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.UseUnifiedEnvVarExpansionRules.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(globalgates.UseUnifiedEnvVarExpansionRules.ID(), true))
 			})
 
 			conf, err := confmaptest.LoadConf(filepath.Join("testdata", test.name))
@@ -64,9 +64,9 @@ func TestNewExpandConverter(t *testing.T) {
 }
 
 func TestNewExpandConverter_UseUnifiedEnvVarExpansionRules(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.UseUnifiedEnvVarExpansionRules.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(globalgates.UseUnifiedEnvVarExpansionRules.ID(), true))
 	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.UseUnifiedEnvVarExpansionRules.ID(), false))
+		require.NoError(t, featuregate.GlobalRegistry().Set(globalgates.UseUnifiedEnvVarExpansionRules.ID(), false))
 	})
 
 	const valueExtra = "some string"

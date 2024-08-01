@@ -13,7 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/internal/envvar"
-	"go.opentelemetry.io/collector/internal/featuregates"
+	"go.opentelemetry.io/collector/internal/globalgates"
 )
 
 type converter struct {
@@ -88,6 +88,7 @@ func (c converter) expandEnv(s string) (string, error) {
 		// - $FOO will be substituted with env var FOO
 		// - $$FOO will be replaced with $FOO
 		// - $$$FOO will be replaced with $ + substituted env var FOO
+		// TODO: Move the escaping of $$ out from the expand converter to the resolver.
 		if str == "$" {
 			return "$"
 		}
@@ -96,7 +97,7 @@ func (c converter) expandEnv(s string) (string, error) {
 		// in order to make sure we don't log a warning for ${VAR}
 		var regex = regexp.MustCompile(fmt.Sprintf(`\$%s`, regexp.QuoteMeta(str)))
 		if _, exists := c.loggedDeprecations[str]; !exists && regex.MatchString(s) {
-			if featuregates.UseUnifiedEnvVarExpansionRules.IsEnabled() {
+			if globalgates.UseUnifiedEnvVarExpansionRules.IsEnabled() {
 				err = fmt.Errorf("variable substitution using $VAR has been deprecated in favor of ${VAR} and ${env:VAR} - please update $%s or temporarily disable the confmap.unifyEnvVarExpansion feature gate", str)
 				return ""
 			}
