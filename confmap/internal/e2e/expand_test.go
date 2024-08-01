@@ -20,6 +20,7 @@ import (
 )
 
 // Test_EscapedEnvVars tests that the resolver supports escaped env vars working together with expand converter.
+// nolint
 func Test_EscapedEnvVars(t *testing.T) {
 	tests := []struct {
 		name   string
