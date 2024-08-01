@@ -13,9 +13,8 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/component/componentstatus"
-
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 )
 
 const (
