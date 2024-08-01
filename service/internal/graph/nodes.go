@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
 	"go.opentelemetry.io/collector/service/internal/components"
 )
@@ -230,7 +231,7 @@ func (n *connectorNode) buildComponent(
 	ctx context.Context,
 	tel component.TelemetrySettings,
 	info component.BuildInfo,
-	builder *connector.Builder,
+	builder *builders.ConnectorBuilder,
 	nexts []baseConsumer,
 ) error {
 	tel.Logger = components.ConnectorLogger(tel.Logger, n.componentID, n.exprPipelineType, n.rcvrPipelineType)

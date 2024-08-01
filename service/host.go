@@ -5,12 +5,12 @@ package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/extensions"
+	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/graph"
 )
 
@@ -27,7 +27,7 @@ type serviceHost struct {
 	receivers         *receiver.Builder
 	processors        *processor.Builder
 	exporters         *exporter.Builder
-	connectors        *connector.Builder
+	connectors        *builders.ConnectorBuilder
 	extensions        *extension.Builder
 
 	buildInfo component.BuildInfo
