@@ -80,16 +80,16 @@ type ClientConfig struct {
 	MaxIdleConns *int `mapstructure:"max_idle_conns"`
 
 	// MaxIdleConnsPerHost is used to set a limit to the maximum idle HTTP connections the host can keep open.
-	// By default, it is set to http.DefaultTransport.MaxIdleConnsPerHost (2).
+	// By default, it is set to [http.DefaultTransport.MaxIdleConnsPerHost].
 	MaxIdleConnsPerHost *int `mapstructure:"max_idle_conns_per_host"`
 
 	// MaxConnsPerHost limits the total number of connections per host, including connections in the dialing,
 	// active, and idle states.
-	// By default, it is set to http.DefaultTransport.MaxConnsPerHost (0, unlimited).
+	// By default, it is set to [http.DefaultTransport.MaxConnsPerHost].
 	MaxConnsPerHost *int `mapstructure:"max_conns_per_host"`
 
 	// IdleConnTimeout is the maximum amount of time a connection will remain open before closing itself.
-	// By default, it is set to http.DefaultTransport.IdleConnTimeout (90s)
+	// By default, it is set to [http.DefaultTransport.IdleConnTimeout]
 	IdleConnTimeout *time.Duration `mapstructure:"idle_conn_timeout"`
 
 	// DisableKeepAlives, if true, disables HTTP keep-alives and will only use the connection to the server
@@ -120,7 +120,7 @@ type CookiesConfig struct {
 }
 
 // NewDefaultClientConfig returns ClientConfig type object with
-// the default values of 'MaxIdleConns' and 'IdleConnTimeout', as well as http.DefaultTransport values.
+// the default values of 'MaxIdleConns' and 'IdleConnTimeout', as well as [http.DefaultTransport] values.
 // Other config options are not added as they are initialized with 'zero value' by GoLang as default.
 // We encourage to use this function to create an object of ClientConfig.
 func NewDefaultClientConfig() ClientConfig {
