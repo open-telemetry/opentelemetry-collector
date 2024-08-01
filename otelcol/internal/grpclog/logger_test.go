@@ -17,7 +17,7 @@ func TestGRPCLogger(t *testing.T) {
 		cfg                 zap.Config
 		infoLogged          bool
 		warnLogged          bool
-		checkcallerlocation bool
+		checkCallerLocation bool
 	}{
 		{
 			"collector_info_level_grpc_log_warn",
@@ -62,7 +62,7 @@ func TestGRPCLogger(t *testing.T) {
 				case zapcore.WarnLevel:
 					obsWarn = true
 				}
-				if test.checkcallerlocation {
+				if test.checkCallerLocation {
 					CallerInfo = entry.Caller.TrimmedPath()
 				}
 				return nil
@@ -75,10 +75,11 @@ func TestGRPCLogger(t *testing.T) {
 			// create colGRPCLogger
 			glogger := SetLogger(logger, test.cfg.Level.Level())
 			assert.NotNil(t, glogger)
+
 			glogger.Info(test.name)
 			glogger.Warning(test.name)
 			// create a wrapper function to test the caller location
-			if test.checkcallerlocation {
+			if test.checkCallerLocation {
 				wrapper := func() {
 					glogger.Info("test message")
 				}
@@ -92,7 +93,7 @@ func TestGRPCLogger(t *testing.T) {
 					wrapper2()
 				}
 				wrapper3()
-				assert.Contains(t, CallerInfo, "grpclog/logger_test.go:94") // change line number to the line where wrapper3() is called in case of making changes
+				assert.Contains(t, CallerInfo, "grpclog/logger_test.go:95") // change line number to the line where wrapper3() is called in case of making changes
 			}
 			assert.Equal(t, obsInfo, test.infoLogged)
 			assert.Equal(t, obsWarn, test.warnLogged)
