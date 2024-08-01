@@ -114,11 +114,6 @@ type hostWrapper struct {
 	previousEvents []*componentstatus.Event
 }
 
-func (h *hostWrapper) GetFactory(kind component.Kind, componentType component.Type) component.Factory {
-	// nolint
-	return h.host.GetFactory(kind, componentType)
-}
-
 func (h *hostWrapper) GetExtensions() map[component.ID]component.Component {
 	return h.host.GetExtensions()
 }
