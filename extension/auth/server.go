@@ -18,7 +18,7 @@ import (
 type Server interface {
 	extension.Extension
 
-	// Authenticate checks whether the given headers map contains valid auth data. Successfully authenticated calls will always return a nil error.
+	// Authenticate checks whether the given map contains valid auth data. Successfully authenticated calls will always return a nil error.
 	// When the authentication fails, an error must be returned and the caller must not retry. This function is typically called from interceptors,
 	// on behalf of receivers, but receivers can still call this directly if the usage of interceptors isn't suitable.
 	// The deadline and cancellation given to this function must be respected, but note that authentication data has to be part of the map, not context.
@@ -26,7 +26,7 @@ type Server interface {
 	// authentication data (if possible). This will allow other components in the pipeline to make decisions based on that data, such as routing based
 	// on tenancy as determined by the group membership, or passing through the authentication data to the next collector/backend.
 	// The context keys to be used are not defined yet.
-	Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error)
+	Authenticate(ctx context.Context, sources map[string][]string) (context.Context, error)
 }
 
 type defaultServer struct {
@@ -39,14 +39,14 @@ type defaultServer struct {
 type ServerOption func(*defaultServer)
 
 // ServerAuthenticateFunc defines the signature for the function responsible for performing the authentication based
-// on the given headers map. See Server.Authenticate.
-type ServerAuthenticateFunc func(ctx context.Context, headers map[string][]string) (context.Context, error)
+// on the given sources map. See Server.Authenticate.
+type ServerAuthenticateFunc func(ctx context.Context, sources map[string][]string) (context.Context, error)
 
-func (f ServerAuthenticateFunc) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
+func (f ServerAuthenticateFunc) Authenticate(ctx context.Context, sources map[string][]string) (context.Context, error) {
 	if f == nil {
 		return ctx, nil
 	}
-	return f(ctx, headers)
+	return f(ctx, sources)
 }
 
 // WithServerAuthenticate specifies which function to use to perform the authentication.

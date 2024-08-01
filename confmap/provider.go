@@ -9,6 +9,8 @@ import (
 
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
+
+	"go.opentelemetry.io/collector/internal/globalgates"
 )
 
 // ProviderSettings are the settings to initialize a Provider.
@@ -140,8 +142,12 @@ func NewRetrievedFromYAML(yamlBytes []byte, opts ...RetrievedOption) (*Retrieved
 
 	switch v := rawConf.(type) {
 	case string:
-		opts = append(opts, withStringRepresentation(v))
-	case int, int32, int64, float32, float64, bool:
+		val := v
+		if globalgates.StrictlyTypedInputGate.IsEnabled() {
+			val = string(yamlBytes)
+		}
+		return NewRetrieved(val, append(opts, withStringRepresentation(val))...)
+	case int, int32, int64, float32, float64, bool, map[string]any:
 		opts = append(opts, withStringRepresentation(string(yamlBytes)))
 	}
 

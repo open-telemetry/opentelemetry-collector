@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 	"gonum.org/v1/gonum/graph"
 	"gonum.org/v1/gonum/graph/simple"
 	"gonum.org/v1/gonum/graph/topo"
@@ -31,14 +32,13 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
-	"go.opentelemetry.io/collector/service/internal/servicetelemetry"
 	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/pipelines"
 )
 
 // Settings holds configuration for building builtPipelines.
 type Settings struct {
-	Telemetry servicetelemetry.TelemetrySettings
+	Telemetry component.TelemetrySettings
 	BuildInfo component.BuildInfo
 
 	ReceiverBuilder  *receiver.Builder
@@ -48,6 +48,8 @@ type Settings struct {
 
 	// PipelineConfigs is a map of component.ID to PipelineConfig.
 	PipelineConfigs pipelines.Config
+
+	ReportStatus status.ServiceStatusFunc
 }
 
 type Graph struct {
@@ -60,7 +62,7 @@ type Graph struct {
 	// Keep track of status source per node
 	instanceIDs map[int64]*component.InstanceID
 
-	telemetry servicetelemetry.TelemetrySettings
+	telemetry component.TelemetrySettings
 }
 
 // Build builds a full pipeline graph.
@@ -70,6 +72,7 @@ func Build(ctx context.Context, set Settings) (*Graph, error) {
 		componentGraph: simple.NewDirectedGraph(),
 		pipelines:      make(map[component.ID]*pipelineNodes, len(set.PipelineConfigs)),
 		instanceIDs:    make(map[int64]*component.InstanceID),
+		telemetry:      set.Telemetry,
 	}
 	for pipelineID := range set.PipelineConfigs {
 		pipelines.pipelines[pipelineID] = &pipelineNodes{
@@ -299,7 +302,8 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 		// skipped for capabilitiesNodes and fanoutNodes as they are not assigned componentIDs.
 		var telemetrySettings component.TelemetrySettings
 		if instanceID, ok := g.instanceIDs[node.ID()]; ok {
-			telemetrySettings = set.Telemetry.ToComponentTelemetrySettings(instanceID)
+			telemetrySettings = set.Telemetry
+			telemetrySettings.ReportStatus = status.NewReportStatusFunc(instanceID, set.ReportStatus)
 		}
 
 		switch n := node.(type) {
@@ -423,6 +427,13 @@ func (g *Graph) StartAll(ctx context.Context, host component.Host, reporter stat
 				instanceID,
 				component.NewPermanentErrorEvent(compErr),
 			)
+			// We log with zap.AddStacktrace(zap.DPanicLevel) to avoid adding the stack trace to the error log
+			g.telemetry.Logger.WithOptions(zap.AddStacktrace(zap.DPanicLevel)).
+				Error("Failed to start component",
+					zap.Error(compErr),
+					zap.String("type", instanceID.Kind.String()),
+					zap.String("id", instanceID.ID.String()),
+				)
 			return compErr
 		}
 

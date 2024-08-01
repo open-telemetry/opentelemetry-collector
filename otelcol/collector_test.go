@@ -450,24 +450,6 @@ func TestCollectorDryRun(t *testing.T) {
 	}
 }
 
-func TestPassConfmapToServiceFailure(t *testing.T) {
-	set := CollectorSettings{
-		BuildInfo: component.NewDefaultBuildInfo(),
-		Factories: nopFactories,
-		ConfigProviderSettings: ConfigProviderSettings{
-			ResolverSettings: confmap.ResolverSettings{
-				URIs:              []string{filepath.Join("testdata", "otelcol-invalid.yaml")},
-				ProviderFactories: []confmap.ProviderFactory{confmap.NewProviderFactory(newFailureProvider)},
-			},
-		},
-	}
-	col, err := NewCollector(set)
-	require.NoError(t, err)
-
-	err = col.Run(context.Background())
-	require.Error(t, err)
-}
-
 func startCollector(ctx context.Context, t *testing.T, col *Collector) *sync.WaitGroup {
 	wg := &sync.WaitGroup{}
 	wg.Add(1)

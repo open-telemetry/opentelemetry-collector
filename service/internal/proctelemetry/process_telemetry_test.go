@@ -20,28 +20,29 @@ import (
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/service/internal/servicetelemetry"
 )
 
 type testTelemetry struct {
-	servicetelemetry.TelemetrySettings
+	component.TelemetrySettings
 	promHandler   http.Handler
 	meterProvider *sdkmetric.MeterProvider
 }
 
 var expectedMetrics = []string{
-	"process_uptime",
-	"process_runtime_heap_alloc_bytes",
-	"process_runtime_total_alloc_bytes",
-	"process_runtime_total_sys_memory_bytes",
-	"process_cpu_seconds",
-	"process_memory_rss",
+	"otelcol_process_uptime",
+	"otelcol_process_runtime_heap_alloc_bytes",
+	"otelcol_process_runtime_total_alloc_bytes",
+	"otelcol_process_runtime_total_sys_memory_bytes",
+	"otelcol_process_cpu_seconds",
+	"otelcol_process_memory_rss",
 }
 
 func setupTelemetry(t *testing.T) testTelemetry {
 	settings := testTelemetry{
-		TelemetrySettings: servicetelemetry.NewNopTelemetrySettings(),
+		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 	}
 	settings.TelemetrySettings.MetricsLevel = configtelemetry.LevelNormal
 
@@ -78,7 +79,7 @@ func fetchPrometheusMetrics(handler http.Handler) (map[string]*io_prometheus_cli
 func TestProcessTelemetry(t *testing.T) {
 	tel := setupTelemetry(t)
 
-	require.NoError(t, RegisterProcessMetrics(tel.TelemetrySettings, 0))
+	require.NoError(t, RegisterProcessMetrics(tel.TelemetrySettings))
 
 	mp, err := fetchPrometheusMetrics(tel.promHandler)
 	require.NoError(t, err)
@@ -93,7 +94,7 @@ func TestProcessTelemetry(t *testing.T) {
 		} else {
 			metricValue = metric.Metric[0].GetGauge().GetValue()
 		}
-		if strings.HasPrefix(metricName, "process_uptime") || strings.HasPrefix(metricName, "process_cpu_seconds") {
+		if strings.HasPrefix(metricName, "otelcol_process_uptime") || strings.HasPrefix(metricName, "otelcol_process_cpu_seconds") {
 			// This likely will still be zero when running the test.
 			assert.GreaterOrEqual(t, metricValue, float64(0), metricName)
 			continue
