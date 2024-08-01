@@ -29,8 +29,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
-	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
 	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/pipelines"
@@ -42,7 +42,7 @@ type Settings struct {
 	BuildInfo component.BuildInfo
 
 	ReceiverBuilder  *receiver.Builder
-	ProcessorBuilder *processor.Builder
+	ProcessorBuilder *builders.ProcessorBuilder
 	ExporterBuilder  *exporter.Builder
 	ConnectorBuilder *connector.Builder
 

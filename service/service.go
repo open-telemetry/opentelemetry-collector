@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/extensions"
+	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/graph"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
 	"go.opentelemetry.io/collector/service/internal/resource"
@@ -46,8 +47,9 @@ type Settings struct {
 	// Receivers builder for receivers.
 	Receivers *receiver.Builder
 
-	// Processors builder for processors.
-	Processors *processor.Builder
+	// Processors configuration to its builder.
+	ProcessorsConfigs   map[component.ID]component.Config
+	ProcessorsFactories map[component.Type]processor.Factory
 
 	// Exporters builder for exporters.
 	Exporters *exporter.Builder
@@ -83,7 +85,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		buildInfo: set.BuildInfo,
 		host: &serviceHost{
 			receivers:         set.Receivers,
-			processors:        set.Processors,
+			processors:        builders.NewProcessorBuilder(set.ProcessorsConfigs, set.ProcessorsFactories),
 			exporters:         set.Exporters,
 			connectors:        set.Connectors,
 			extensions:        set.Extensions,
@@ -297,7 +299,7 @@ func (srv *Service) initGraph(ctx context.Context, set Settings, cfg Config) err
 		Telemetry:        srv.telemetrySettings,
 		BuildInfo:        srv.buildInfo,
 		ReceiverBuilder:  set.Receivers,
-		ProcessorBuilder: set.Processors,
+		ProcessorBuilder: srv.host.processors,
 		ExporterBuilder:  set.Exporters,
 		ConnectorBuilder: set.Connectors,
 		PipelineConfigs:  cfg.Pipelines,

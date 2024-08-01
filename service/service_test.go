@@ -31,9 +31,9 @@ import (
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/service/extensions"
+	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/pipelines"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
@@ -188,7 +188,7 @@ func TestServiceGetFactory(t *testing.T) {
 	assert.Equal(t, set.Receivers.Factory(nopType), srv.host.GetFactory(component.KindReceiver, nopType))
 
 	assert.Nil(t, srv.host.GetFactory(component.KindProcessor, wrongType))
-	assert.Equal(t, set.Processors.Factory(nopType), srv.host.GetFactory(component.KindProcessor, nopType))
+	assert.Equal(t, srv.host.processors.Factory(nopType), srv.host.GetFactory(component.KindProcessor, nopType))
 
 	assert.Nil(t, srv.host.GetFactory(component.KindExporter, wrongType))
 	assert.Equal(t, set.Exporters.Factory(nopType), srv.host.GetFactory(component.KindExporter, nopType))
@@ -535,14 +535,17 @@ func assertZPages(t *testing.T, zpagesAddr string) {
 }
 
 func newNopSettings() Settings {
+	processorsConfigs, processorsFactories := builders.NewNopProcessorConfigsAndFactories()
+
 	return Settings{
-		BuildInfo:     component.NewDefaultBuildInfo(),
-		CollectorConf: confmap.New(),
-		Receivers:     receivertest.NewNopBuilder(),
-		Processors:    processortest.NewNopBuilder(),
-		Exporters:     exportertest.NewNopBuilder(),
-		Connectors:    connectortest.NewNopBuilder(),
-		Extensions:    extensiontest.NewNopBuilder(),
+		BuildInfo:           component.NewDefaultBuildInfo(),
+		CollectorConf:       confmap.New(),
+		Receivers:           receivertest.NewNopBuilder(),
+		ProcessorsConfigs:   processorsConfigs,
+		ProcessorsFactories: processorsFactories,
+		Exporters:           exportertest.NewNopBuilder(),
+		Connectors:          connectortest.NewNopBuilder(),
+		Extensions:          extensiontest.NewNopBuilder(),
 	}
 }
 
