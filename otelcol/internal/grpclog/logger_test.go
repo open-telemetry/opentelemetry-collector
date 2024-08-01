@@ -13,10 +13,11 @@ import (
 
 func TestGRPCLogger(t *testing.T) {
 	tests := []struct {
-		name       string
-		cfg        zap.Config
-		infoLogged bool
-		warnLogged bool
+		name                string
+		cfg                 zap.Config
+		infoLogged          bool
+		warnLogged          bool
+		checkcallerlocation bool
 	}{
 		{
 			"collector_info_level_grpc_log_warn",
@@ -26,6 +27,7 @@ func TestGRPCLogger(t *testing.T) {
 			},
 			false,
 			true,
+			false,
 		},
 		{
 			"collector_debug_level_grpc_log_debug",
@@ -33,6 +35,7 @@ func TestGRPCLogger(t *testing.T) {
 				Level:    zap.NewAtomicLevelAt(zapcore.DebugLevel),
 				Encoding: "console",
 			},
+			true,
 			true,
 			true,
 		},
@@ -45,17 +48,22 @@ func TestGRPCLogger(t *testing.T) {
 			},
 			false,
 			true,
+			false,
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			obsInfo, obsWarn := false, false
+			CallerInfo := ""
 			hook := zap.Hooks(func(entry zapcore.Entry) error {
 				switch entry.Level {
 				case zapcore.InfoLevel:
 					obsInfo = true
 				case zapcore.WarnLevel:
 					obsWarn = true
+				}
+				if test.checkcallerlocation {
+					CallerInfo = entry.Caller.TrimmedPath()
 				}
 				return nil
 			})
@@ -67,10 +75,25 @@ func TestGRPCLogger(t *testing.T) {
 			// create colGRPCLogger
 			glogger := SetLogger(logger, test.cfg.Level.Level())
 			assert.NotNil(t, glogger)
-
 			glogger.Info(test.name)
 			glogger.Warning(test.name)
-
+			// create a wrapper function to test the caller location
+			if test.checkcallerlocation {
+				wrapper := func() {
+					glogger.Info("test message")
+				}
+				wrapper1 := func() {
+					wrapper()
+				}
+				wrapper2 := func() {
+					wrapper1()
+				}
+				wrapper3 := func() {
+					wrapper2()
+				}
+				wrapper3()
+				assert.Contains(t, CallerInfo, "grpclog/logger_test.go:94") // change line number to the line where wrapper3() is called in case of making changes
+			}
 			assert.Equal(t, obsInfo, test.infoLogged)
 			assert.Equal(t, obsWarn, test.warnLogged)
 		})
