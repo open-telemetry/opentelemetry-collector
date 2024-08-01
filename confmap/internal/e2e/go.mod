@@ -32,10 +32,6 @@ replace go.opentelemetry.io/collector/confmap/provider/fileprovider => ../../pro
 
 replace go.opentelemetry.io/collector/confmap/provider/envprovider => ../../provider/envprovider
 
-replace go.opentelemetry.io/collector/confmap/provider/yamlprovider => ../../provider/yamlprovider
-
 replace go.opentelemetry.io/collector/featuregate => ../../../featuregate
 
 replace go.opentelemetry.io/collector/internal/globalgates => ../../../internal/globalgates
-
-replace go.opentelemetry.io/collector/confmap/converter/expandconverter => ../../converter/expandconverter
