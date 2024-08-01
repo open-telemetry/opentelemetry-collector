@@ -13,9 +13,8 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
-	"go.opentelemetry.io/collector/component/componentstatus"
-
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
