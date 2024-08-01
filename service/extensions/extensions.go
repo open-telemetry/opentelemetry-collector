@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/components"
 	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/internal/zpages"
@@ -171,7 +172,7 @@ type Settings struct {
 	BuildInfo component.BuildInfo
 
 	// Extensions builder for extensions.
-	Extensions *extension.Builder
+	Extensions *builders.ExtensionBuilder
 }
 
 type Option func(*Extensions)

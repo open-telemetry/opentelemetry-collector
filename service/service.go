@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/extensions"
+	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/graph"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
 	"go.opentelemetry.io/collector/service/internal/resource"
@@ -55,8 +56,9 @@ type Settings struct {
 	// Connectors builder for connectors.
 	Connectors *connector.Builder
 
-	// Extensions builder for extensions.
-	Extensions *extension.Builder
+	// Extensions configuration to its builder.
+	ExtensionsConfigs   map[component.ID]component.Config
+	ExtensionsFactories map[component.Type]extension.Factory
 
 	// AsyncErrorChannel is the channel that is used to report fatal errors.
 	AsyncErrorChannel chan error
@@ -86,7 +88,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 			processors:        set.Processors,
 			exporters:         set.Exporters,
 			connectors:        set.Connectors,
-			extensions:        set.Extensions,
+			extensions:        builders.NewExtensionBuilder(set.ExtensionsConfigs, set.ExtensionsFactories),
 			buildInfo:         set.BuildInfo,
 			asyncErrorChannel: set.AsyncErrorChannel,
 		},
