@@ -341,7 +341,7 @@ func NewDefaultServerConfig() ServerConfig {
 
 type AuthConfig struct {
 	// Auth for this receiver.
-	*configauth.Authentication `mapstructure:"-"`
+	configauth.Authentication `mapstructure:",squash"`
 
 	// RequestParameters is a list of parameters that should be extracted from the request and added to the context.
 	// When a parameter is found in both the query string and the header, the value from the query string will be used.
