@@ -15,9 +15,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"gonum.org/v1/gonum/graph/simple"
 
-	"go.opentelemetry.io/collector/component/componentstatus"
-
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
