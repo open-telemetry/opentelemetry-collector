@@ -75,11 +75,3 @@ type nopReceiver struct {
 	component.StartFunc
 	component.ShutdownFunc
 }
-
-// NewNopBuilder returns a receiver.Builder that constructs nop receivers.
-func NewNopBuilder() *receiver.Builder {
-	nopFactory := NewNopFactory()
-	return receiver.NewBuilder(
-		map[component.ID]component.Config{component.NewID(defaultComponentType): nopFactory.CreateDefaultConfig()},
-		map[component.Type]receiver.Factory{defaultComponentType: nopFactory})
-}

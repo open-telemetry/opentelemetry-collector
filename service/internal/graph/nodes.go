@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
 	"go.opentelemetry.io/collector/service/internal/components"
 )
@@ -70,7 +71,7 @@ func newReceiverNode(pipelineType component.DataType, recvID component.ID) *rece
 func (n *receiverNode) buildComponent(ctx context.Context,
 	tel component.TelemetrySettings,
 	info component.BuildInfo,
-	builder *receiver.Builder,
+	builder *builders.ReceiverBuilder,
 	nexts []baseConsumer,
 ) error {
 	tel.Logger = components.ReceiverLogger(tel.Logger, n.componentID, n.pipelineType)

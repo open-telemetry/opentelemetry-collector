@@ -1,31 +1,41 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package receiver // import "go.opentelemetry.io/collector/receiver"
+package builders // import "go.opentelemetry.io/collector/service/internal/builders"
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
-// Builder receiver is a helper struct that given a set of Configs and Factories helps with creating receivers.
-type Builder struct {
+var (
+	errNilNextConsumer = errors.New("nil next Consumer")
+	nopType            = component.MustNewType("nop")
+)
+
+// ReceiverBuilder receiver is a helper struct that given a set of Configs and
+// Factories helps with creating receivers.
+type ReceiverBuilder struct {
 	cfgs      map[component.ID]component.Config
-	factories map[component.Type]Factory
+	factories map[component.Type]receiver.Factory
 }
 
-// NewBuilder creates a new receiver.Builder to help with creating components form a set of configs and factories.
-func NewBuilder(cfgs map[component.ID]component.Config, factories map[component.Type]Factory) *Builder {
-	return &Builder{cfgs: cfgs, factories: factories}
+// NewReceiverBuilder creates a new ReceiverBuilder to help with creating
+// components form a set of configs and factories.
+func NewReceiverBuilder(cfgs map[component.ID]component.Config, factories map[component.Type]receiver.Factory) *ReceiverBuilder {
+	return &ReceiverBuilder{cfgs: cfgs, factories: factories}
 }
 
 // CreateTraces creates a Traces receiver based on the settings and config.
-func (b *Builder) CreateTraces(ctx context.Context, set Settings, next consumer.Traces) (Traces, error) {
+func (b *ReceiverBuilder) CreateTraces(ctx context.Context, set receiver.Settings, next consumer.Traces) (receiver.Traces, error) {
 	if next == nil {
 		return nil, errNilNextConsumer
 	}
@@ -44,7 +54,7 @@ func (b *Builder) CreateTraces(ctx context.Context, set Settings, next consumer.
 }
 
 // CreateMetrics creates a Metrics receiver based on the settings and config.
-func (b *Builder) CreateMetrics(ctx context.Context, set Settings, next consumer.Metrics) (Metrics, error) {
+func (b *ReceiverBuilder) CreateMetrics(ctx context.Context, set receiver.Settings, next consumer.Metrics) (receiver.Metrics, error) {
 	if next == nil {
 		return nil, errNilNextConsumer
 	}
@@ -63,7 +73,7 @@ func (b *Builder) CreateMetrics(ctx context.Context, set Settings, next consumer
 }
 
 // CreateLogs creates a Logs receiver based on the settings and config.
-func (b *Builder) CreateLogs(ctx context.Context, set Settings, next consumer.Logs) (Logs, error) {
+func (b *ReceiverBuilder) CreateLogs(ctx context.Context, set receiver.Settings, next consumer.Logs) (receiver.Logs, error) {
 	if next == nil {
 		return nil, errNilNextConsumer
 	}
@@ -81,7 +91,7 @@ func (b *Builder) CreateLogs(ctx context.Context, set Settings, next consumer.Lo
 	return f.CreateLogsReceiver(ctx, set, cfg, next)
 }
 
-func (b *Builder) Factory(componentType component.Type) component.Factory {
+func (b *ReceiverBuilder) Factory(componentType component.Type) component.Factory {
 	return b.factories[componentType]
 }
 
@@ -94,4 +104,17 @@ func logStabilityLevel(logger *zap.Logger, sl component.StabilityLevel) {
 	} else {
 		logger.Info(sl.LogMessage())
 	}
+}
+
+// NewNopReceiverConfigsAndFactories returns a configuration and factories that allows building a new nop receiver.
+func NewNopReceiverConfigsAndFactories() (map[component.ID]component.Config, map[component.Type]receiver.Factory) {
+	nopFactory := receivertest.NewNopFactory()
+	configs := map[component.ID]component.Config{
+		component.NewID(nopType): nopFactory.CreateDefaultConfig(),
+	}
+	factories := map[component.Type]receiver.Factory{
+		nopType: nopFactory,
+	}
+
+	return configs, factories
 }

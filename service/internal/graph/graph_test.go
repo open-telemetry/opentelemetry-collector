@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/internal/status/statustest"
 	"go.opentelemetry.io/collector/service/internal/testcomponents"
@@ -720,7 +721,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 			set := Settings{
 				Telemetry: componenttest.NewNopTelemetrySettings(),
 				BuildInfo: component.NewDefaultBuildInfo(),
-				ReceiverBuilder: receiver.NewBuilder(
+				ReceiverBuilder: builders.NewReceiverBuilder(
 					map[component.ID]component.Config{
 						component.MustNewID("examplereceiver"):              testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
 						component.MustNewIDWithName("examplereceiver", "1"): testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
@@ -1007,7 +1008,7 @@ func TestConnectorRouter(t *testing.T) {
 	set := Settings{
 		Telemetry: componenttest.NewNopTelemetrySettings(),
 		BuildInfo: component.NewDefaultBuildInfo(),
-		ReceiverBuilder: receiver.NewBuilder(
+		ReceiverBuilder: builders.NewReceiverBuilder(
 			map[component.ID]component.Config{
 				rcvrID: testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
 			},
@@ -2050,7 +2051,7 @@ func TestGraphBuildErrors(t *testing.T) {
 			set := Settings{
 				BuildInfo: component.NewDefaultBuildInfo(),
 				Telemetry: componenttest.NewNopTelemetrySettings(),
-				ReceiverBuilder: receiver.NewBuilder(
+				ReceiverBuilder: builders.NewReceiverBuilder(
 					test.receiverCfgs,
 					map[component.Type]receiver.Factory{
 						nopReceiverFactory.Type(): nopReceiverFactory,
@@ -2098,7 +2099,7 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 	set := Settings{
 		Telemetry: componenttest.NewNopTelemetrySettings(),
 		BuildInfo: component.NewDefaultBuildInfo(),
-		ReceiverBuilder: receiver.NewBuilder(
+		ReceiverBuilder: builders.NewReceiverBuilder(
 			map[component.ID]component.Config{
 				component.NewID(nopReceiverFactory.Type()): nopReceiverFactory.CreateDefaultConfig(),
 				component.NewID(errReceiverFactory.Type()): errReceiverFactory.CreateDefaultConfig(),
