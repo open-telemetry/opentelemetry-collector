@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/internal/status/statustest"
 	"go.opentelemetry.io/collector/service/internal/testcomponents"
@@ -738,7 +739,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 						testcomponents.ExampleProcessorFactory.Type(): testcomponents.ExampleProcessorFactory,
 					},
 				),
-				ExporterBuilder: exporter.NewBuilder(
+				ExporterBuilder: builders.NewExporterBuilder(
 					map[component.ID]component.Config{
 						component.MustNewID("exampleexporter"):              testcomponents.ExampleExporterFactory.CreateDefaultConfig(),
 						component.MustNewIDWithName("exampleexporter", "1"): testcomponents.ExampleExporterFactory.CreateDefaultConfig(),
@@ -1015,7 +1016,7 @@ func TestConnectorRouter(t *testing.T) {
 				testcomponents.ExampleReceiverFactory.Type(): testcomponents.ExampleReceiverFactory,
 			},
 		),
-		ExporterBuilder: exporter.NewBuilder(
+		ExporterBuilder: builders.NewExporterBuilder(
 			map[component.ID]component.Config{
 				expRightID: testcomponents.ExampleExporterFactory.CreateDefaultConfig(),
 				expLeftID:  testcomponents.ExampleExporterFactory.CreateDefaultConfig(),
@@ -2062,7 +2063,7 @@ func TestGraphBuildErrors(t *testing.T) {
 						nopProcessorFactory.Type(): nopProcessorFactory,
 						badProcessorFactory.Type(): badProcessorFactory,
 					}),
-				ExporterBuilder: exporter.NewBuilder(
+				ExporterBuilder: builders.NewExporterBuilder(
 					test.exporterCfgs,
 					map[component.Type]exporter.Factory{
 						nopExporterFactory.Type(): nopExporterFactory,
@@ -2116,7 +2117,7 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 				nopProcessorFactory.Type(): nopProcessorFactory,
 				errProcessorFactory.Type(): errProcessorFactory,
 			}),
-		ExporterBuilder: exporter.NewBuilder(
+		ExporterBuilder: builders.NewExporterBuilder(
 			map[component.ID]component.Config{
 				component.NewID(nopExporterFactory.Type()): nopExporterFactory.CreateDefaultConfig(),
 				component.NewID(errExporterFactory.Type()): errExporterFactory.CreateDefaultConfig(),

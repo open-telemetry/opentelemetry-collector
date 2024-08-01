@@ -27,10 +27,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
 	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/pipelines"
@@ -43,7 +43,7 @@ type Settings struct {
 
 	ReceiverBuilder  *receiver.Builder
 	ProcessorBuilder *processor.Builder
-	ExporterBuilder  *exporter.Builder
+	ExporterBuilder  *builders.ExporterBuilder
 	ConnectorBuilder *connector.Builder
 
 	// PipelineConfigs is a map of component.ID to PipelineConfig.
