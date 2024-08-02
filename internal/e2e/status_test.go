@@ -77,8 +77,7 @@ func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 				InitialFields:     map[string]any(nil),
 			},
 			Metrics: telemetry.MetricsConfig{
-				Level:   configtelemetry.LevelBasic,
-				Address: "localhost:8888",
+				Level: configtelemetry.LevelNone,
 			},
 		},
 		Pipelines: pipelines.Config{
