@@ -28,9 +28,9 @@ type ReceiverBuilder struct {
 	factories map[component.Type]receiver.Factory
 }
 
-// NewReceiverBuilder creates a new ReceiverBuilder to help with creating
+// NewReceiver creates a new ReceiverBuilder to help with creating
 // components form a set of configs and factories.
-func NewReceiverBuilder(cfgs map[component.ID]component.Config, factories map[component.Type]receiver.Factory) *ReceiverBuilder {
+func NewReceiver(cfgs map[component.ID]component.Config, factories map[component.Type]receiver.Factory) *ReceiverBuilder {
 	return &ReceiverBuilder{cfgs: cfgs, factories: factories}
 }
 

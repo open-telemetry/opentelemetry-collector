@@ -84,7 +84,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	srv := &Service{
 		buildInfo: set.BuildInfo,
 		host: &serviceHost{
-			receivers:         builders.NewReceiverBuilder(set.ReceiversConfigs, set.ReceiversFactories),
+			receivers:         builders.NewReceiver(set.ReceiversConfigs, set.ReceiversFactories),
 			processors:        set.Processors,
 			exporters:         set.Exporters,
 			connectors:        set.Connectors,

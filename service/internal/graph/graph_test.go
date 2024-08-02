@@ -721,7 +721,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 			set := Settings{
 				Telemetry: componenttest.NewNopTelemetrySettings(),
 				BuildInfo: component.NewDefaultBuildInfo(),
-				ReceiverBuilder: builders.NewReceiverBuilder(
+				ReceiverBuilder: builders.NewReceiver(
 					map[component.ID]component.Config{
 						component.MustNewID("examplereceiver"):              testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
 						component.MustNewIDWithName("examplereceiver", "1"): testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
@@ -1008,7 +1008,7 @@ func TestConnectorRouter(t *testing.T) {
 	set := Settings{
 		Telemetry: componenttest.NewNopTelemetrySettings(),
 		BuildInfo: component.NewDefaultBuildInfo(),
-		ReceiverBuilder: builders.NewReceiverBuilder(
+		ReceiverBuilder: builders.NewReceiver(
 			map[component.ID]component.Config{
 				rcvrID: testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
 			},
@@ -2051,7 +2051,7 @@ func TestGraphBuildErrors(t *testing.T) {
 			set := Settings{
 				BuildInfo: component.NewDefaultBuildInfo(),
 				Telemetry: componenttest.NewNopTelemetrySettings(),
-				ReceiverBuilder: builders.NewReceiverBuilder(
+				ReceiverBuilder: builders.NewReceiver(
 					test.receiverCfgs,
 					map[component.Type]receiver.Factory{
 						nopReceiverFactory.Type(): nopReceiverFactory,
@@ -2099,7 +2099,7 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 	set := Settings{
 		Telemetry: componenttest.NewNopTelemetrySettings(),
 		BuildInfo: component.NewDefaultBuildInfo(),
-		ReceiverBuilder: builders.NewReceiverBuilder(
+		ReceiverBuilder: builders.NewReceiver(
 			map[component.ID]component.Config{
 				component.NewID(nopReceiverFactory.Type()): nopReceiverFactory.CreateDefaultConfig(),
 				component.NewID(errReceiverFactory.Type()): errReceiverFactory.CreateDefaultConfig(),

@@ -83,7 +83,7 @@ func TestBuilder(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			cfgs := map[component.ID]component.Config{tt.id: defaultCfg}
-			b := NewReceiverBuilder(cfgs, factories)
+			b := NewReceiver(cfgs, factories)
 
 			te, err := b.CreateTraces(context.Background(), settings(tt.id), tt.nextTraces)
 			if tt.err != "" {
@@ -129,7 +129,7 @@ func TestBuilderMissingConfig(t *testing.T) {
 
 	require.NoError(t, err)
 
-	bErr := NewReceiverBuilder(map[component.ID]component.Config{}, factories)
+	bErr := NewReceiver(map[component.ID]component.Config{}, factories)
 	missingID := component.MustNewIDWithName("all", "missing")
 
 	te, err := bErr.CreateTraces(context.Background(), settings(missingID), consumertest.NewNop())
@@ -150,7 +150,7 @@ func TestBuilderFactory(t *testing.T) {
 	require.NoError(t, err)
 
 	cfgs := map[component.ID]component.Config{component.MustNewID("foo"): struct{}{}}
-	b := NewReceiverBuilder(cfgs, factories)
+	b := NewReceiver(cfgs, factories)
 
 	assert.NotNil(t, b.Factory(component.MustNewID("foo").Type()))
 	assert.Nil(t, b.Factory(component.MustNewID("bar").Type()))
@@ -158,7 +158,7 @@ func TestBuilderFactory(t *testing.T) {
 
 func TestNewNopReceiverConfigsAndFactories(t *testing.T) {
 	configs, factories := NewNopReceiverConfigsAndFactories()
-	builder := NewReceiverBuilder(configs, factories)
+	builder := NewReceiver(configs, factories)
 	require.NotNil(t, builder)
 
 	factory := receivertest.NewNopFactory()
