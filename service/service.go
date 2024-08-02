@@ -50,6 +50,12 @@ type Settings struct {
 	// Processors builder for processors.
 	Processors *processor.Builder
 
+	// Exporters builder for exporters.
+	//
+	// Deprecated: use the [ReceiversConfigs] and [ReceiversFactories] options
+	// instead.
+	Exporters builders.Exporter
+
 	// exporters configuration to its builder.
 	ExportersConfigs   map[component.ID]component.Config
 	ExportersFactories map[component.Type]exporter.Factory
@@ -81,12 +87,18 @@ type Service struct {
 func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	disableHighCard := obsreportconfig.DisableHighCardinalityMetricsfeatureGate.IsEnabled()
 	extendedConfig := obsreportconfig.UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate.IsEnabled()
+
+	exporters := set.Exporters
+	if exporters == nil {
+		exporters = builders.NewExporter(set.ExportersConfigs, set.ExportersFactories)
+	}
+
 	srv := &Service{
 		buildInfo: set.BuildInfo,
 		host: &serviceHost{
 			receivers:         set.Receivers,
 			processors:        set.Processors,
-			exporters:         builders.NewExporter(set.ExportersConfigs, set.ExportersFactories),
+			exporters:         exporters,
 			connectors:        set.Connectors,
 			extensions:        set.Extensions,
 			buildInfo:         set.BuildInfo,

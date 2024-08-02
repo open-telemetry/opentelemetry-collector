@@ -26,7 +26,7 @@ type serviceHost struct {
 	asyncErrorChannel chan error
 	receivers         *receiver.Builder
 	processors        *processor.Builder
-	exporters         *builders.ExporterBuilder
+	exporters         builders.Exporter
 	connectors        *connector.Builder
 	extensions        *extension.Builder
 
