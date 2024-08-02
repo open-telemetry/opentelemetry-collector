@@ -112,8 +112,7 @@ type hostWrapper struct {
 	host           component.Host
 	sources        []componentstatus.Reporter
 	previousEvents []*componentstatus.Event
-	eventLock      sync.Mutex
-	sourceLock     sync.Mutex
+	lock           sync.Mutex
 }
 
 func (h *hostWrapper) GetExtensions() map[component.ID]component.Component {
@@ -122,29 +121,29 @@ func (h *hostWrapper) GetExtensions() map[component.ID]component.Component {
 
 func (h *hostWrapper) Report(e *componentstatus.Event) {
 	// Only remember an event if it will be emitted and it has not been sent already.
-	h.eventLock.Lock()
+	h.lock.Lock()
 	if len(h.sources) > 0 && !slices.Contains(h.previousEvents, e) {
 		h.previousEvents = append(h.previousEvents, e)
 	}
-	h.eventLock.Unlock()
+	h.lock.Unlock()
 
-	h.sourceLock.Lock()
+	h.lock.Lock()
 	for _, s := range h.sources {
 		s.Report(e)
 	}
-	h.sourceLock.Unlock()
+	h.lock.Unlock()
 }
 
 func (h *hostWrapper) addSource(s componentstatus.Reporter) {
-	h.eventLock.Lock()
+	h.lock.Lock()
 	for _, e := range h.previousEvents {
 		s.Report(e)
 	}
-	h.eventLock.Unlock()
+	h.lock.Unlock()
 
-	h.sourceLock.Lock()
+	h.lock.Lock()
 	h.sources = append(h.sources, s)
-	h.sourceLock.Unlock()
+	h.lock.Unlock()
 }
 
 // Shutdown shuts down the underlying component.
