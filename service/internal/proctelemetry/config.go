@@ -265,14 +265,6 @@ func initOTLPgRPCExporter(ctx context.Context, otlpConfig *config.OTLPMetric) (s
 			return nil, fmt.Errorf("unsupported temporality preference %q", *otlpConfig.TemporalityPreference)
 		}
 	}
-	if otlpConfig.DefaultHistogramAggregation != nil {
-		switch *otlpConfig.DefaultHistogramAggregation {
-		case "explicit_bucket_histogram":
-			opts = append(opts, otlpmetricgrpc.WithAggregationSelector(aggregationPreferenceExplicitBucketHistogram))
-		case "base2_exponential_bucket_histogram":
-			opts = append(opts, otlpmetricgrpc.WithAggregationSelector(aggregationPreferenceExponentialHistogram))
-		}
-	}
 
 	return otlpmetricgrpc.New(ctx, opts...)
 }
@@ -322,33 +314,8 @@ func initOTLPHTTPExporter(ctx context.Context, otlpConfig *config.OTLPMetric) (s
 			return nil, fmt.Errorf("unsupported temporality preference %q", *otlpConfig.TemporalityPreference)
 		}
 	}
-	if otlpConfig.DefaultHistogramAggregation != nil {
-		switch *otlpConfig.DefaultHistogramAggregation {
-		case "explicit_bucket_histogram":
-			opts = append(opts, otlpmetrichttp.WithAggregationSelector(aggregationPreferenceExplicitBucketHistogram))
-		case "base2_exponential_bucket_histogram":
-			opts = append(opts, otlpmetrichttp.WithAggregationSelector(aggregationPreferenceExponentialHistogram))
-		}
-	}
 
 	return otlpmetrichttp.New(ctx, opts...)
-}
-
-func aggregationPreferenceExplicitBucketHistogram(ik sdkmetric.InstrumentKind) sdkmetric.Aggregation {
-	if ik == sdkmetric.InstrumentKindHistogram {
-		return sdkmetric.AggregationExplicitBucketHistogram{
-			Boundaries: []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
-			NoMinMax:   false,
-		}
-	}
-	return sdkmetric.DefaultAggregationSelector(ik)
-}
-
-func aggregationPreferenceExponentialHistogram(ik sdkmetric.InstrumentKind) sdkmetric.Aggregation {
-	if ik == sdkmetric.InstrumentKindHistogram {
-		return sdkmetric.AggregationBase2ExponentialHistogram{}
-	}
-	return sdkmetric.DefaultAggregationSelector(ik)
 }
 
 func temporalityPreferenceCumulative(ik sdkmetric.InstrumentKind) metricdata.Temporality {
