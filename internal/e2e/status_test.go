@@ -99,8 +99,9 @@ func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 
 	err = s.Start(context.Background())
 	require.NoError(t, err)
-
-	time.Sleep(10 * time.Second)
+	time.Sleep(15 * time.Second)
+	err = s.Shutdown(context.Background())
+	require.NoError(t, err)
 
 	assert.Equal(t, 5, len(eventsReceived))
 
@@ -116,7 +117,13 @@ func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 				if i == 2 {
 					assert.Equal(t, componentstatus.StatusOK, e.Status())
 				}
-				if i >= 3 {
+				if i == 3 {
+					assert.Equal(t, componentstatus.StatusStopping, e.Status())
+				}
+				if i == 4 {
+					assert.Equal(t, componentstatus.StatusStopped, e.Status())
+				}
+				if i >= 5 {
 					assert.Fail(t, "received too many events")
 				}
 			}
@@ -139,7 +146,6 @@ func (t *testReceiver) Start(_ context.Context, host component.Host) error {
 	if statusReporter, ok := host.(componentstatus.Reporter); ok {
 		statusReporter.Report(componentstatus.NewRecoverableErrorEvent(errors.New("test recoverable error")))
 		go func() {
-			time.Sleep(5 * time.Second)
 			statusReporter.Report(componentstatus.NewEvent(componentstatus.StatusOK))
 		}()
 	}
