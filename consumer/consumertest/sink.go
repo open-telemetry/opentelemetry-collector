@@ -8,8 +8,10 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -155,4 +157,42 @@ func (sle *LogsSink) Reset() {
 
 	sle.logs = nil
 	sle.logRecordCount = 0
+}
+
+// ProfilesSink is a consumerprofiles.Profiles that acts like a sink that
+// stores all profiles and allows querying them for testing.
+type ProfilesSink struct {
+	nonMutatingConsumer
+	mu       sync.Mutex
+	profiles []pprofile.Profiles
+}
+
+var _ consumerprofiles.Profiles = (*ProfilesSink)(nil)
+
+// ConsumeProfiles stores profiles to this sink.
+func (ste *ProfilesSink) ConsumeProfiles(_ context.Context, td pprofile.Profiles) error {
+	ste.mu.Lock()
+	defer ste.mu.Unlock()
+
+	ste.profiles = append(ste.profiles, td)
+
+	return nil
+}
+
+// AllProfiles returns the profiles stored by this sink since last Reset.
+func (ste *ProfilesSink) AllProfiles() []pprofile.Profiles {
+	ste.mu.Lock()
+	defer ste.mu.Unlock()
+
+	copyProfiles := make([]pprofile.Profiles, len(ste.profiles))
+	copy(copyProfiles, ste.profiles)
+	return copyProfiles
+}
+
+// Reset deletes any stored data.
+func (ste *ProfilesSink) Reset() {
+	ste.mu.Lock()
+	defer ste.mu.Unlock()
+
+	ste.profiles = nil
 }
