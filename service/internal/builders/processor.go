@@ -28,8 +28,8 @@ type ProcessorBuilder struct {
 	factories map[component.Type]processor.Factory
 }
 
-// NewProcessorBuilder creates a new ProcessorBuilder to help with creating components form a set of configs and factories.
-func NewProcessorBuilder(cfgs map[component.ID]component.Config, factories map[component.Type]processor.Factory) *ProcessorBuilder {
+// NewProcessor creates a new ProcessorBuilder to help with creating components form a set of configs and factories.
+func NewProcessor(cfgs map[component.ID]component.Config, factories map[component.Type]processor.Factory) *ProcessorBuilder {
 	return &ProcessorBuilder{cfgs: cfgs, factories: factories}
 }
 

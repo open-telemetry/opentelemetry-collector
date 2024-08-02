@@ -85,7 +85,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		buildInfo: set.BuildInfo,
 		host: &serviceHost{
 			receivers:         set.Receivers,
-			processors:        builders.NewProcessorBuilder(set.ProcessorsConfigs, set.ProcessorsFactories),
+			processors:        builders.NewProcessor(set.ProcessorsConfigs, set.ProcessorsFactories),
 			exporters:         set.Exporters,
 			connectors:        set.Connectors,
 			extensions:        set.Extensions,
