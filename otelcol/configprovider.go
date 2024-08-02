@@ -6,16 +6,8 @@ package otelcol // import "go.opentelemetry.io/collector/otelcol"
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/internal/globalgates"
-)
-
-var (
-	strictlyTypedMessageCoda = `Hint: Temporarily restore the previous behavior by disabling 
-      the ` + fmt.Sprintf("`%s`", globalgates.StrictlyTypedInputID) + ` feature gate. More details at:
-      https://github.com/open-telemetry/opentelemetry-collector/issues/10552`
 )
 
 // ConfigProvider provides the service configuration.
@@ -105,26 +97,7 @@ func (cm *configProvider) Get(ctx context.Context, factories Factories) (*Config
 
 	var cfg *configSettings
 	if cfg, err = unmarshal(conf, factories); err != nil {
-		err = fmt.Errorf("cannot unmarshal the configuration: %w", err)
-
-		if globalgates.StrictlyTypedInputGate.IsEnabled() {
-			var shouldAddCoda bool
-			for _, errorStr := range []string{
-				"got unconvertible type",      // https://github.com/mitchellh/mapstructure/blob/8508981/mapstructure.go#L610
-				"source data must be",         // https://github.com/mitchellh/mapstructure/blob/8508981/mapstructure.go#L1114
-				"expected a map, got 'slice'", // https://github.com/mitchellh/mapstructure/blob/8508981/mapstructure.go#L831
-			} {
-				shouldAddCoda = strings.Contains(err.Error(), errorStr)
-				if shouldAddCoda {
-					break
-				}
-			}
-			if shouldAddCoda {
-				err = fmt.Errorf("%w\n\n%s", err, strictlyTypedMessageCoda)
-			}
-		}
-
-		return nil, err
+		return nil, fmt.Errorf("cannot unmarshal the configuration: %w", err)
 	}
 
 	return &Config{
