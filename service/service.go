@@ -44,6 +44,12 @@ type Settings struct {
 	// CollectorConf contains the Collector's current configuration
 	CollectorConf *confmap.Conf
 
+	// Receivers builder for receivers.
+	//
+	// Deprecated: use the [ReceiversConfigs] and [ReceiversFactories] options
+	// instead.
+	Receivers builders.Receiver
+
 	// Receivers configuration to its builder.
 	ReceiversConfigs   map[component.ID]component.Config
 	ReceiversFactories map[component.Type]receiver.Factory
@@ -81,10 +87,16 @@ type Service struct {
 func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	disableHighCard := obsreportconfig.DisableHighCardinalityMetricsfeatureGate.IsEnabled()
 	extendedConfig := obsreportconfig.UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate.IsEnabled()
+
+	receivers := set.Receivers
+	if receivers == nil {
+		receivers = builders.NewReceiver(set.ReceiversConfigs, set.ReceiversFactories)
+	}
+
 	srv := &Service{
 		buildInfo: set.BuildInfo,
 		host: &serviceHost{
-			receivers:         builders.NewReceiver(set.ReceiversConfigs, set.ReceiversFactories),
+			receivers:         receivers,
 			processors:        set.Processors,
 			exporters:         set.Exporters,
 			connectors:        set.Connectors,

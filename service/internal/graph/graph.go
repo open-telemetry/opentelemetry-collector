@@ -41,7 +41,7 @@ type Settings struct {
 	Telemetry component.TelemetrySettings
 	BuildInfo component.BuildInfo
 
-	ReceiverBuilder  *builders.ReceiverBuilder
+	ReceiverBuilder  builders.Receiver
 	ProcessorBuilder *processor.Builder
 	ExporterBuilder  *exporter.Builder
 	ConnectorBuilder *connector.Builder
