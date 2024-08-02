@@ -24,8 +24,8 @@ type ExporterBuilder struct {
 	factories map[component.Type]exporter.Factory
 }
 
-// NewExporterBuilder creates a new ExporterBuilder to help with creating components form a set of configs and factories.
-func NewExporterBuilder(cfgs map[component.ID]component.Config, factories map[component.Type]exporter.Factory) *ExporterBuilder {
+// NewExporter creates a new ExporterBuilder to help with creating components form a set of configs and factories.
+func NewExporter(cfgs map[component.ID]component.Config, factories map[component.Type]exporter.Factory) *ExporterBuilder {
 	return &ExporterBuilder{cfgs: cfgs, factories: factories}
 }
 

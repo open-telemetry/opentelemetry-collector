@@ -59,7 +59,7 @@ func TestBuilder(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			cfgs := map[component.ID]component.Config{tt.id: defaultCfg}
-			b := NewExporterBuilder(cfgs, factories)
+			b := NewExporter(cfgs, factories)
 
 			te, err := b.CreateTraces(context.Background(), createExporterSettings(tt.id))
 			if tt.err != "" {
@@ -105,7 +105,7 @@ func TestBuilderMissingConfig(t *testing.T) {
 
 	require.NoError(t, err)
 
-	bErr := NewExporterBuilder(map[component.ID]component.Config{}, factories)
+	bErr := NewExporter(map[component.ID]component.Config{}, factories)
 	missingID := component.MustNewIDWithName("all", "missing")
 
 	te, err := bErr.CreateTraces(context.Background(), createExporterSettings(missingID))
@@ -126,7 +126,7 @@ func TestBuilderFactory(t *testing.T) {
 	require.NoError(t, err)
 
 	cfgs := map[component.ID]component.Config{component.MustNewID("foo"): struct{}{}}
-	b := NewExporterBuilder(cfgs, factories)
+	b := NewExporter(cfgs, factories)
 
 	assert.NotNil(t, b.Factory(component.MustNewID("foo").Type()))
 	assert.Nil(t, b.Factory(component.MustNewID("bar").Type()))
@@ -134,7 +134,7 @@ func TestBuilderFactory(t *testing.T) {
 
 func TestNewNopExporterConfigsAndFactories(t *testing.T) {
 	configs, factories := NewNopExporterConfigsAndFactories()
-	builder := NewExporterBuilder(configs, factories)
+	builder := NewExporter(configs, factories)
 	require.NotNil(t, builder)
 
 	factory := exportertest.NewNopFactory()
