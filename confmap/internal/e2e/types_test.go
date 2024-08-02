@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/confmap"
@@ -497,5 +498,58 @@ func TestRecursiveMaps(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, `{env: "{env2: "{value: 123}"}", inline: "inline {env2: "{value: 123}"}"}`,
 		cfgStr.Field,
+	)
+}
+
+// Test that comments with invalid ${env:...} references do not prevent configuration from loading.
+func TestIssue10787(t *testing.T) {
+	previousValue := globalgates.StrictlyTypedInputGate.IsEnabled()
+	err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, true)
+	require.NoError(t, err)
+	defer func() {
+		seterr := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, previousValue)
+		require.NoError(t, seterr)
+	}()
+
+	resolver := NewResolver(t, "issue-10787-main.yaml")
+	conf, err := resolver.Resolve(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, conf.ToStringMap(),
+		map[string]any{
+			"exporters": map[string]any{
+				"logging": map[string]any{
+					"verbosity": "detailed",
+				},
+			},
+			"processors": map[string]any{
+				"batch": nil,
+			},
+			"receivers": map[string]any{
+				"otlp": map[string]any{
+					"protocols": map[string]any{
+						"grpc": map[string]any{
+							"endpoint": "0.0.0.0:4317",
+						},
+						"http": map[string]any{
+							"endpoint": "0.0.0.0:4318",
+						},
+					},
+				},
+			},
+			"service": map[string]any{
+				"pipelines": map[string]any{
+					"traces": map[string]any{
+						"exporters":  []any{"logging"},
+						"processors": []any{"batch"},
+						"receivers":  []any{"otlp"},
+					},
+				},
+				"telemetry": map[string]any{
+					"metrics": map[string]any{
+						"level": "detailed",
+					},
+				},
+			},
+		},
 	)
 }
