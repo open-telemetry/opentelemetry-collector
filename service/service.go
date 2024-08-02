@@ -53,6 +53,12 @@ type Settings struct {
 	// Exporters builder for exporters.
 	Exporters *exporter.Builder
 
+	// Connectors builder for connectors.
+	//
+	// Deprecated: use the [ConnectorsConfigs] and [ConnectorsFactories] options
+	// instead.
+	Connectors builders.Connector
+
 	// Connectors configuration to its builder.
 	ConnectorsConfigs   map[component.ID]component.Config
 	ConnectorsFactories map[component.Type]connector.Factory
@@ -81,6 +87,12 @@ type Service struct {
 func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	disableHighCard := obsreportconfig.DisableHighCardinalityMetricsfeatureGate.IsEnabled()
 	extendedConfig := obsreportconfig.UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate.IsEnabled()
+
+	connectors := set.Connectors
+	if connectors == nil {
+		connectors = builders.NewConnector(set.ConnectorsConfigs, set.ConnectorsFactories)
+	}
+
 	srv := &Service{
 		buildInfo: set.BuildInfo,
 		host: &serviceHost{

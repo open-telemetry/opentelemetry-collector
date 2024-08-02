@@ -45,7 +45,7 @@ type Settings struct {
 	ReceiverBuilder  *receiver.Builder
 	ProcessorBuilder *processor.Builder
 	ExporterBuilder  *exporter.Builder
-	ConnectorBuilder *builders.ConnectorBuilder
+	ConnectorBuilder builders.Connector
 
 	// PipelineConfigs is a map of component.ID to PipelineConfig.
 	PipelineConfigs pipelines.Config

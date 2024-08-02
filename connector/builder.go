@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package builders // import "go.opentelemetry.io/collector/service/internal/builders"
+package connector // import "go.opentelemetry.io/collector/connector"
 
 import (
 	"context"
@@ -11,48 +11,30 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/connector"
-	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 )
 
-var (
-	errNilNextConsumer = errors.New("nil next Consumer")
-	nopType            = component.MustNewType("nop")
-)
+var errNilNextConsumer = errors.New("nil next Consumer")
 
-// Connector is an interface that allows using implementations of the builder
-// from different packages.
-type Connector interface {
-	CreateTracesToTraces(context.Context, connector.Settings, consumer.Traces) (connector.Traces, error)
-	CreateTracesToMetrics(context.Context, connector.Settings, consumer.Metrics) (connector.Traces, error)
-	CreateTracesToLogs(context.Context, connector.Settings, consumer.Logs) (connector.Traces, error)
-
-	CreateMetricsToTraces(context.Context, connector.Settings, consumer.Traces) (connector.Metrics, error)
-	CreateMetricsToMetrics(context.Context, connector.Settings, consumer.Metrics) (connector.Metrics, error)
-	CreateMetricsToLogs(context.Context, connector.Settings, consumer.Logs) (connector.Metrics, error)
-
-	CreateLogsToTraces(context.Context, connector.Settings, consumer.Traces) (connector.Logs, error)
-	CreateLogsToMetrics(context.Context, connector.Settings, consumer.Metrics) (connector.Logs, error)
-	CreateLogsToLogs(context.Context, connector.Settings, consumer.Logs) (connector.Logs, error)
-
-	IsConfigured(component.ID) bool
-	Factory(component.Type) component.Factory
-}
-
-// ConnectorBuilder is a helper struct that given a set of Configs and Factories helps with creating connectors.
-type ConnectorBuilder struct {
+// Builder is a helper struct that given a set of Configs and Factories helps with creating connectors.
+//
+// Deprecated: this builder is being internalized within the service module,
+// and will be removed soon.
+type Builder struct {
 	cfgs      map[component.ID]component.Config
-	factories map[component.Type]connector.Factory
+	factories map[component.Type]Factory
 }
 
-// NewConnector creates a new ConnectorBuilder to help with creating components form a set of configs and factories.
-func NewConnector(cfgs map[component.ID]component.Config, factories map[component.Type]connector.Factory) *ConnectorBuilder {
-	return &ConnectorBuilder{cfgs: cfgs, factories: factories}
+// NewBuilder creates a new connector.Builder to help with creating components form a set of configs and factories.
+//
+// Deprecated: this builder is being internalized within the service module,
+// and will be removed soon.
+func NewBuilder(cfgs map[component.ID]component.Config, factories map[component.Type]Factory) *Builder {
+	return &Builder{cfgs: cfgs, factories: factories}
 }
 
 // CreateTracesToTraces creates a Traces connector based on the settings and config.
-func (b *ConnectorBuilder) CreateTracesToTraces(ctx context.Context, set connector.Settings, next consumer.Traces) (connector.Traces, error) {
+func (b *Builder) CreateTracesToTraces(ctx context.Context, set Settings, next consumer.Traces) (Traces, error) {
 	if next == nil {
 		return nil, errNilNextConsumer
 	}
@@ -71,7 +53,7 @@ func (b *ConnectorBuilder) CreateTracesToTraces(ctx context.Context, set connect
 }
 
 // CreateTracesToMetrics creates a Traces connector based on the settings and config.
-func (b *ConnectorBuilder) CreateTracesToMetrics(ctx context.Context, set connector.Settings, next consumer.Metrics) (connector.Traces, error) {
+func (b *Builder) CreateTracesToMetrics(ctx context.Context, set Settings, next consumer.Metrics) (Traces, error) {
 	if next == nil {
 		return nil, errNilNextConsumer
 	}
@@ -90,7 +72,7 @@ func (b *ConnectorBuilder) CreateTracesToMetrics(ctx context.Context, set connec
 }
 
 // CreateTracesToLogs creates a Traces connector based on the settings and config.
-func (b *ConnectorBuilder) CreateTracesToLogs(ctx context.Context, set connector.Settings, next consumer.Logs) (connector.Traces, error) {
+func (b *Builder) CreateTracesToLogs(ctx context.Context, set Settings, next consumer.Logs) (Traces, error) {
 	if next == nil {
 		return nil, errNilNextConsumer
 	}
@@ -109,7 +91,7 @@ func (b *ConnectorBuilder) CreateTracesToLogs(ctx context.Context, set connector
 }
 
 // CreateMetricsToTraces creates a Metrics connector based on the settings and config.
-func (b *ConnectorBuilder) CreateMetricsToTraces(ctx context.Context, set connector.Settings, next consumer.Traces) (connector.Metrics, error) {
+func (b *Builder) CreateMetricsToTraces(ctx context.Context, set Settings, next consumer.Traces) (Metrics, error) {
 	if next == nil {
 		return nil, errNilNextConsumer
 	}
@@ -128,7 +110,7 @@ func (b *ConnectorBuilder) CreateMetricsToTraces(ctx context.Context, set connec
 }
 
 // CreateMetricsToMetrics creates a Metrics connector based on the settings and config.
-func (b *ConnectorBuilder) CreateMetricsToMetrics(ctx context.Context, set connector.Settings, next consumer.Metrics) (connector.Metrics, error) {
+func (b *Builder) CreateMetricsToMetrics(ctx context.Context, set Settings, next consumer.Metrics) (Metrics, error) {
 	if next == nil {
 		return nil, errNilNextConsumer
 	}
@@ -147,7 +129,7 @@ func (b *ConnectorBuilder) CreateMetricsToMetrics(ctx context.Context, set conne
 }
 
 // CreateMetricsToLogs creates a Metrics connector based on the settings and config.
-func (b *ConnectorBuilder) CreateMetricsToLogs(ctx context.Context, set connector.Settings, next consumer.Logs) (connector.Metrics, error) {
+func (b *Builder) CreateMetricsToLogs(ctx context.Context, set Settings, next consumer.Logs) (Metrics, error) {
 	if next == nil {
 		return nil, errNilNextConsumer
 	}
@@ -166,7 +148,7 @@ func (b *ConnectorBuilder) CreateMetricsToLogs(ctx context.Context, set connecto
 }
 
 // CreateLogsToTraces creates a Logs connector based on the settings and config.
-func (b *ConnectorBuilder) CreateLogsToTraces(ctx context.Context, set connector.Settings, next consumer.Traces) (connector.Logs, error) {
+func (b *Builder) CreateLogsToTraces(ctx context.Context, set Settings, next consumer.Traces) (Logs, error) {
 	if next == nil {
 		return nil, errNilNextConsumer
 	}
@@ -185,7 +167,7 @@ func (b *ConnectorBuilder) CreateLogsToTraces(ctx context.Context, set connector
 }
 
 // CreateLogsToMetrics creates a Logs connector based on the settings and config.
-func (b *ConnectorBuilder) CreateLogsToMetrics(ctx context.Context, set connector.Settings, next consumer.Metrics) (connector.Logs, error) {
+func (b *Builder) CreateLogsToMetrics(ctx context.Context, set Settings, next consumer.Metrics) (Logs, error) {
 	if next == nil {
 		return nil, errNilNextConsumer
 	}
@@ -204,7 +186,7 @@ func (b *ConnectorBuilder) CreateLogsToMetrics(ctx context.Context, set connecto
 }
 
 // CreateLogsToLogs creates a Logs connector based on the settings and config.
-func (b *ConnectorBuilder) CreateLogsToLogs(ctx context.Context, set connector.Settings, next consumer.Logs) (connector.Logs, error) {
+func (b *Builder) CreateLogsToLogs(ctx context.Context, set Settings, next consumer.Logs) (Logs, error) {
 	if next == nil {
 		return nil, errNilNextConsumer
 	}
@@ -222,31 +204,13 @@ func (b *ConnectorBuilder) CreateLogsToLogs(ctx context.Context, set connector.S
 	return f.CreateLogsToLogs(ctx, set, cfg, next)
 }
 
-func (b *ConnectorBuilder) IsConfigured(componentID component.ID) bool {
+func (b *Builder) IsConfigured(componentID component.ID) bool {
 	_, ok := b.cfgs[componentID]
 	return ok
 }
 
-func (b *ConnectorBuilder) Factory(componentType component.Type) component.Factory {
+func (b *Builder) Factory(componentType component.Type) component.Factory {
 	return b.factories[componentType]
-}
-
-// NewNopConnectorConfigsAndFactories returns a configuration and factories that allows building a new nop connector.
-func NewNopConnectorConfigsAndFactories() (map[component.ID]component.Config, map[component.Type]connector.Factory) {
-	nopFactory := connectortest.NewNopFactory()
-	// Use a different ID than receivertest and exportertest to avoid ambiguous
-	// configuration scenarios. Ambiguous IDs are detected in the 'otelcol' package,
-	// but lower level packages such as 'service' assume that IDs are disambiguated.
-	connID := component.NewIDWithName(nopType, "conn")
-
-	configs := map[component.ID]component.Config{
-		connID: nopFactory.CreateDefaultConfig(),
-	}
-	factories := map[component.Type]connector.Factory{
-		nopType: nopFactory,
-	}
-
-	return configs, factories
 }
 
 // logStabilityLevel logs the stability level of a component. The log level is set to info for

@@ -27,7 +27,7 @@ type serviceHost struct {
 	receivers         *receiver.Builder
 	processors        *processor.Builder
 	exporters         *exporter.Builder
-	connectors        *builders.ConnectorBuilder
+	connectors        builders.Connector
 	extensions        *extension.Builder
 
 	buildInfo component.BuildInfo
