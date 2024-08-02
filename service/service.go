@@ -56,6 +56,9 @@ type Settings struct {
 	// Connectors builder for connectors.
 	Connectors *connector.Builder
 
+	// Extensions builder for extensions.
+	Extensions builders.Extension
+
 	// Extensions configuration to its builder.
 	ExtensionsConfigs   map[component.ID]component.Config
 	ExtensionsFactories map[component.Type]extension.Factory
@@ -81,6 +84,12 @@ type Service struct {
 func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	disableHighCard := obsreportconfig.DisableHighCardinalityMetricsfeatureGate.IsEnabled()
 	extendedConfig := obsreportconfig.UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate.IsEnabled()
+
+	extensions := set.Extensions
+	if extensions == nil {
+		extensions = builders.NewExtension(set.ExtensionsConfigs, set.ExtensionsFactories)
+	}
+
 	srv := &Service{
 		buildInfo: set.BuildInfo,
 		host: &serviceHost{
@@ -88,7 +97,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 			processors:        set.Processors,
 			exporters:         set.Exporters,
 			connectors:        set.Connectors,
-			extensions:        builders.NewExtensionBuilder(set.ExtensionsConfigs, set.ExtensionsFactories),
+			extensions:        extensions,
 			buildInfo:         set.BuildInfo,
 			asyncErrorChannel: set.AsyncErrorChannel,
 		},

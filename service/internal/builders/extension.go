@@ -14,15 +14,22 @@ import (
 
 var nopType = component.MustNewType("nop")
 
+// Extension is an interface that allows using implementations of the builder
+// from different packages.
+type Extension interface {
+	Create(context.Context, extension.Settings) (extension.Extension, error)
+	Factory(component.Type) component.Factory
+}
+
 // ExtensionBuilder is a helper struct that given a set of Configs and Factories helps with creating extensions.
 type ExtensionBuilder struct {
 	cfgs      map[component.ID]component.Config
 	factories map[component.Type]extension.Factory
 }
 
-// NewExtensionBuilder creates a new ExtensionBuilder to help with creating
+// NewExtension creates a new ExtensionBuilder to help with creating
 // components form a set of configs and factories.
-func NewExtensionBuilder(cfgs map[component.ID]component.Config, factories map[component.Type]extension.Factory) *ExtensionBuilder {
+func NewExtension(cfgs map[component.ID]component.Config, factories map[component.Type]extension.Factory) *ExtensionBuilder {
 	return &ExtensionBuilder{cfgs: cfgs, factories: factories}
 }
 

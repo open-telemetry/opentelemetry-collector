@@ -34,7 +34,7 @@ func TestExtensionBuilder(t *testing.T) {
 	require.NoError(t, err)
 
 	cfgs := map[component.ID]component.Config{testID: defaultCfg, unknownID: defaultCfg}
-	b := NewExtensionBuilder(cfgs, factories)
+	b := NewExtension(cfgs, factories)
 
 	e, err := b.Create(context.Background(), createExtensionSettings(testID))
 	assert.NoError(t, err)
@@ -59,7 +59,7 @@ func TestExtensionBuilderFactory(t *testing.T) {
 	require.NoError(t, err)
 
 	cfgs := map[component.ID]component.Config{component.MustNewID("foo"): struct{}{}}
-	b := NewExtensionBuilder(cfgs, factories)
+	b := NewExtension(cfgs, factories)
 
 	assert.NotNil(t, b.Factory(component.MustNewID("foo").Type()))
 	assert.Nil(t, b.Factory(component.MustNewID("bar").Type()))
@@ -67,7 +67,7 @@ func TestExtensionBuilderFactory(t *testing.T) {
 
 func TestNewNopExtensionConfigsAndFactories(t *testing.T) {
 	configs, factories := NewNopExtensionConfigsAndFactories()
-	builder := NewExtensionBuilder(configs, factories)
+	builder := NewExtension(configs, factories)
 	require.NotNil(t, builder)
 
 	factory := extensiontest.NewNopFactory()

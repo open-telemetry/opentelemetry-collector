@@ -172,7 +172,7 @@ type Settings struct {
 	BuildInfo component.BuildInfo
 
 	// Extensions builder for extensions.
-	Extensions *builders.ExtensionBuilder
+	Extensions builders.Extension
 }
 
 type Option func(*Extensions)
