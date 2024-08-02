@@ -118,6 +118,11 @@ func TestNewResolverInvalidSchemeInURI(t *testing.T) {
 	assert.EqualError(t, err, `invalid uri: "s_3:has invalid char"`)
 }
 
+func TestNewResolverDuplicateScheme(t *testing.T) {
+	_, err := NewResolver(ResolverSettings{URIs: []string{"mock:something"}, ProviderFactories: []ProviderFactory{newMockProvider(&mockProvider{scheme: "mock"}), newMockProvider(&mockProvider{scheme: "mock"})}})
+	assert.EqualError(t, err, `duplicate 'confmap.Provider' scheme "mock"`)
+}
+
 func TestResolverErrors(t *testing.T) {
 	tests := []struct {
 		name              string
