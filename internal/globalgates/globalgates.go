@@ -13,8 +13,9 @@ var UseUnifiedEnvVarExpansionRules = featuregate.GlobalRegistry().MustRegister("
 const StrictlyTypedInputID = "confmap.strictlyTypedInput"
 
 var StrictlyTypedInputGate = featuregate.GlobalRegistry().MustRegister(StrictlyTypedInputID,
-	featuregate.StageBeta,
+	featuregate.StageStable,
 	featuregate.WithRegisterFromVersion("v0.103.0"),
+	featuregate.WithRegisterToVersion("v0.109.0"),
 	featuregate.WithRegisterDescription("Makes type casting rules during configuration unmarshaling stricter. See https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/env-vars.md for more details."),
 )
 
