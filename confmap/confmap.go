@@ -240,9 +240,6 @@ func caseSensitiveMatchName(a, b string) bool {
 func castTo(exp expandedValue, useOriginal bool) (any, error) {
 	// If the target field is a string, use `exp.Original` or fail if not available.
 	if globalgates.StrictlyTypedInputGate.IsEnabled() && useOriginal {
-		if !exp.HasOriginal {
-			return nil, fmt.Errorf("cannot expand value to string: original value not set")
-		}
 		return exp.Original, nil
 	}
 	// Otherwise, use the parsed value (previous behavior).

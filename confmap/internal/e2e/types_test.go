@@ -345,6 +345,22 @@ func TestStrictTypeCasting(t *testing.T) {
 			targetField: TargetFieldInlineString,
 			expected:    "inline field with 2006-01-02T15:04:05Z07:00 expansion",
 		},
+		// issue 10787
+		{
+			value:       "true # comment with a ${env:hello.world} reference",
+			targetField: TargetFieldBool,
+			expected:    true,
+		},
+		{
+			value:        "true # comment with a ${env:hello.world} reference",
+			targetField:  TargetFieldString,
+			unmarshalErr: `expected type 'string', got unconvertible type 'bool'`,
+		},
+		{
+			value:       "true # comment with a ${env:hello.world} reference",
+			targetField: TargetFieldInlineString,
+			resolveErr:  `environment variable "hello.world" has invalid name`,
+		},
 	}
 
 	previousValue := globalgates.StrictlyTypedInputGate.IsEnabled()
