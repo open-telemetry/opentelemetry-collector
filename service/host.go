@@ -25,7 +25,7 @@ var _ component.Host = (*serviceHost)(nil)
 type serviceHost struct {
 	asyncErrorChannel chan error
 	receivers         *receiver.Builder
-	processors        *builders.ProcessorBuilder
+	processors        builders.Processor
 	exporters         *exporter.Builder
 	connectors        *connector.Builder
 	extensions        *extension.Builder

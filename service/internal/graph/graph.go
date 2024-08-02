@@ -42,7 +42,7 @@ type Settings struct {
 	BuildInfo component.BuildInfo
 
 	ReceiverBuilder  *receiver.Builder
-	ProcessorBuilder *builders.ProcessorBuilder
+	ProcessorBuilder builders.Processor
 	ExporterBuilder  *exporter.Builder
 	ConnectorBuilder *connector.Builder
 

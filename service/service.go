@@ -47,6 +47,12 @@ type Settings struct {
 	// Receivers builder for receivers.
 	Receivers *receiver.Builder
 
+	// Processors builder for processors.
+	//
+	// Deprecated: use the [ProcessorsConfigs] and [ProcessorsFactories] options
+	// instead.
+	Processors builders.Processor
+
 	// Processors configuration to its builder.
 	ProcessorsConfigs   map[component.ID]component.Config
 	ProcessorsFactories map[component.Type]processor.Factory
@@ -81,11 +87,17 @@ type Service struct {
 func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	disableHighCard := obsreportconfig.DisableHighCardinalityMetricsfeatureGate.IsEnabled()
 	extendedConfig := obsreportconfig.UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate.IsEnabled()
+
+	processors := set.Processors
+	if processors == nil {
+		processors = builders.NewProcessor(set.ProcessorsConfigs, set.ProcessorsFactories)
+	}
+
 	srv := &Service{
 		buildInfo: set.BuildInfo,
 		host: &serviceHost{
 			receivers:         set.Receivers,
-			processors:        builders.NewProcessor(set.ProcessorsConfigs, set.ProcessorsFactories),
+			processors:        processors,
 			exporters:         set.Exporters,
 			connectors:        set.Connectors,
 			extensions:        set.Extensions,
