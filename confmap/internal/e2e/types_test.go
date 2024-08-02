@@ -345,6 +345,17 @@ func TestStrictTypeCasting(t *testing.T) {
 			targetField: TargetFieldInlineString,
 			expected:    "inline field with 2006-01-02T15:04:05Z07:00 expansion",
 		},
+		// issue 10759
+		{
+			value:       `["a",`,
+			targetField: TargetFieldString,
+			expected:    `["a",`,
+		},
+		{
+			value:       `["a",`,
+			targetField: TargetFieldInlineString,
+			expected:    `inline field with ["a", expansion`,
+		},
 	}
 
 	previousValue := globalgates.StrictlyTypedInputGate.IsEnabled()

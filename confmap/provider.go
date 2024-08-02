@@ -137,6 +137,11 @@ func withStringRepresentation(stringRepresentation string) RetrievedOption {
 func NewRetrievedFromYAML(yamlBytes []byte, opts ...RetrievedOption) (*Retrieved, error) {
 	var rawConf any
 	if err := yaml.Unmarshal(yamlBytes, &rawConf); err != nil {
+		if globalgates.StrictlyTypedInputGate.IsEnabled() {
+			// If the string is not valid YAML, we try to use it verbatim as a string.
+			strRep := string(yamlBytes)
+			return NewRetrieved(strRep, append(opts, withStringRepresentation(strRep))...)
+		}
 		return nil, err
 	}
 
