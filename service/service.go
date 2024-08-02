@@ -87,7 +87,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 			receivers:         set.Receivers,
 			processors:        set.Processors,
 			exporters:         set.Exporters,
-			connectors:        builders.NewConnectorBuilder(set.ConnectorsConfigs, set.ConnectorsFactories),
+			connectors:        builders.NewConnector(set.ConnectorsConfigs, set.ConnectorsFactories),
 			extensions:        set.Extensions,
 			buildInfo:         set.BuildInfo,
 			asyncErrorChannel: set.AsyncErrorChannel,

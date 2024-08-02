@@ -27,8 +27,8 @@ type ConnectorBuilder struct {
 	factories map[component.Type]connector.Factory
 }
 
-// NewConnectorBuilder creates a new ConnectorBuilder to help with creating components form a set of configs and factories.
-func NewConnectorBuilder(cfgs map[component.ID]component.Config, factories map[component.Type]connector.Factory) *ConnectorBuilder {
+// NewConnector creates a new ConnectorBuilder to help with creating components form a set of configs and factories.
+func NewConnector(cfgs map[component.ID]component.Config, factories map[component.Type]connector.Factory) *ConnectorBuilder {
 	return &ConnectorBuilder{cfgs: cfgs, factories: factories}
 }
 

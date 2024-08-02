@@ -102,7 +102,7 @@ func TestBuilder(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			cfgs := map[component.ID]component.Config{tt.id: defaultCfg}
-			b := NewConnectorBuilder(cfgs, factories)
+			b := NewConnector(cfgs, factories)
 
 			t2t, err := b.CreateTracesToTraces(context.Background(), createConnectorSettings(tt.id), tt.nextTraces)
 			if expectedErr := tt.err(component.DataTypeTraces, component.DataTypeTraces); expectedErr != "" {
@@ -206,7 +206,7 @@ func TestBuilderMissingConfig(t *testing.T) {
 
 	require.NoError(t, err)
 
-	bErr := NewConnectorBuilder(map[component.ID]component.Config{}, factories)
+	bErr := NewConnector(map[component.ID]component.Config{}, factories)
 	missingID := component.MustNewIDWithName("all", "missing")
 
 	t2t, err := bErr.CreateTracesToTraces(context.Background(), createConnectorSettings(missingID), consumertest.NewNop())
@@ -251,7 +251,7 @@ func TestBuilderGetters(t *testing.T) {
 	require.NoError(t, err)
 
 	cfgs := map[component.ID]component.Config{component.MustNewID("foo"): struct{}{}}
-	b := NewConnectorBuilder(cfgs, factories)
+	b := NewConnector(cfgs, factories)
 
 	assert.True(t, b.IsConfigured(component.MustNewID("foo")))
 	assert.False(t, b.IsConfigured(component.MustNewID("bar")))
@@ -262,7 +262,7 @@ func TestBuilderGetters(t *testing.T) {
 
 func TestNewNopConnectorConfigsAndFactories(t *testing.T) {
 	configs, factories := NewNopConnectorConfigsAndFactories()
-	builder := NewConnectorBuilder(configs, factories)
+	builder := NewConnector(configs, factories)
 	require.NotNil(t, builder)
 
 	factory := connectortest.NewNopFactory()
