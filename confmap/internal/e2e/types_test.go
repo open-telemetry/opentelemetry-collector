@@ -553,3 +553,53 @@ func TestIssue10787(t *testing.T) {
 		},
 	)
 }
+
+func TestStructMappingIssue10787(t *testing.T) {
+	previousValue := globalgates.StrictlyTypedInputGate.IsEnabled()
+	err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, true)
+	require.NoError(t, err)
+	defer func() {
+		seterr := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, previousValue)
+		require.NoError(t, seterr)
+	}()
+
+	resolver := NewResolver(t, "types_expand.yaml")
+	t.Setenv("ENV", `# ${hello.world}
+logging:
+  verbosity: detailed`)
+	conf, err := resolver.Resolve(context.Background())
+	require.NoError(t, err)
+
+	type Logging struct {
+		Verbosity string `mapstructure:"verbosity"`
+	}
+	type Exporters struct {
+		Logging Logging `mapstructure:"logging"`
+	}
+	type Target struct {
+		Field Exporters `mapstructure:"field"`
+	}
+
+	var cfg Target
+	err = conf.Unmarshal(&cfg)
+	require.NoError(t, err)
+	require.Equal(t,
+		Target{Field: Exporters{
+			Logging: Logging{
+				Verbosity: "detailed",
+			},
+		}},
+		cfg,
+	)
+
+	confStr, err := resolver.Resolve(context.Background())
+	require.NoError(t, err)
+	var cfgStr TargetConfig[string]
+	err = confStr.Unmarshal(&cfgStr)
+	require.NoError(t, err)
+	require.Equal(t, `# ${hello.world}
+logging:
+  verbosity: detailed`,
+		cfgStr.Field,
+	)
+}
