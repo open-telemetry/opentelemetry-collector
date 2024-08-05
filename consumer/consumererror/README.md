@@ -2,9 +2,9 @@
 
 This package contains error types that should be returned by a consumer when an
 error occurs while processing telemetry. The error types included in this
-package provide functionality for communicating details about
-the error for use upstream in the pipeline. Ideally the error returned by a
-component in its `consume` function should be from this package.
+package provide functionality for communicating details about the error for use
+upstream in the pipeline. Ideally the error returned by a component in its
+`consume` function should be from this package.
 
 ## Error classes
 
@@ -21,9 +21,9 @@ as retryable.
 perform retries.
 
 **Indicating partial success**: Errors can indicate that not all items were
-accepted, for example as in an OTLP partial success message. OTLP backends
-will return failed item counts if a partial success occurs, and this information
-can be propagated up to a receiver and returned to the caller.
+accepted, for example as in an OTLP partial success message. OTLP backends will
+return failed item counts if a partial success occurs, and this information can
+be propagated up to a receiver and returned to the caller.
 
 **Communicating network error codes**: Errors should allow embedding information
 necessary for the Collector to act as a proxy for a backend, i.e. relay a status
@@ -58,10 +58,14 @@ Errors can be created by calling `consumererror.New(err, opts...)` where `err`
 is the underlying error, and `opts` is one of the provided options for supplying
 additional metadata:
 
-- `consumererror.WithRetry`
-- `consumererror.WithPartial`
 - `consumererror.WithGRPCStatus`
 - `consumererror.WithHTTPStatus`
+
+The following options are not currently available, but may be made available in
+the future:
+
+- `consumererror.WithRetry`
+- `consumererror.WithPartial`
 - `consumererror.WithMetadata`
 
 All options can be combined, we assume that the component knows what it is doing
@@ -96,8 +100,8 @@ consumererror.New(err,
 
 ### Retrying data submission
 
-*NOTE*: This section is a draft and will be developed separately from the rest
-of this proposal.
+> [!WARNING] This function is currently in the design phase. It is not available
+> and may not be added. The below is a design describing how this may work.
 
 If an error is transient, the `WithRetry` option corresponding to the relevant
 signal should be used to indicate that the error is retryable and to pass on any
@@ -127,6 +131,9 @@ consumererror.WithRetry(
 The delay is an optional setting that can be provided if it is available.
 
 ### Indicating partial success
+
+> [!WARNING] This function is currently in the design phase. It is not available
+> and may not be added. The below is a design describing how this may work.
 
 If the component receives an OTLP partial success message (or other indication
 of partial success), it should include this information with a count of the
@@ -159,6 +166,9 @@ consumererror.WithHTTPStatus(http.StatusTooManyRequests)
 
 ### Including custom data
 
+> [!WARNING] This function is currently in the design phase. It is not available
+> and may not be added. The below is a design describing how this may work.
+
 Custom data can be included as well for any additional information that needs to
 be propagated back up the pipeline. It is up to the consuming component if or
 how this data will be used.
@@ -184,6 +194,9 @@ component can then later pull all errors out for analysis.
 
 ### Retrieving errors
 
+> [!WARNING] This functionality is currently experimental, and the description
+> here is for design purposes. The code snippet may not work as-written.
+
 When a receiver gets a response that includes an error, it can get the data out
 by doing something similar to the following. Note that this uses the `ErrorData`
 type, which is for reading error data, as opposed to the `Error` type, which is
@@ -206,24 +219,29 @@ if errors.As(err, &cerr) {
 
 ### Error data
 
-Obtaining data from an error can be done using an interface that looks something like this:
+> [!WARNING] The description below is a design proposal for how this
+> functionality may work. See `error.go` within this package for the current
+> functionality.
+
+Obtaining data from an error can be done using an interface that looks something
+like this:
 
 ```go
 type ErrorData interface {
   // Returns the underlying error
   Error() error
 
-  // Returns nil if a status is not available.
-  HTTPStatus() *int
+  // Second argument is `false` if no code is available.
+  HTTPStatus() (int, bool)
 
-  // Returns nil if a status is not available.
-  GRPCStatus() *status.Status
+  // Second argument is `false` if no code is available.
+  GRPCStatus() (*status.Status, bool)
 
-  // Returns nil if the error contains no retry information.
-  Retryable() *Retryable
+  // Second argument is `false` if no retry information is available.
+  Retryable() (Retryable, bool)
 
-  // Returns a count of failed records or nil if no partial success information was recorded. 
-  Partial() *int
+  // Second argument is `false` if no partial counts were recorded.
+  Partial() (Partial, bool)
 }
 
 type Retryable struct {}
@@ -231,6 +249,8 @@ type Retryable struct {}
 // Returns nil if no delay was set, indicating to use the default.
 // This makes it so a delay of `0` indicates to resend immediately.
 func (r *Retryable) Delay() *time.Duration {}
+
+type Partial struct {}
 ```
 
 ## Other considerations
@@ -254,8 +274,8 @@ fail, but this behavior could be made configurable by the user.
 
 When converting between signals in a pipeline, it is expected that the connector
 performing the conversion should perform the translation necessary in the error
-for any signal item counts. If the converted count cannot be determined, the full
-count of pre-converted signals should be returned.
+for any signal item counts. If the converted count cannot be determined, the
+full count of pre-converted signals should be returned.
 
 ### Asynchronous processing
 

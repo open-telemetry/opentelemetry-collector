@@ -17,20 +17,19 @@ type ErrorData interface {
 
 	Unwrap() error
 
-	// Returns nil if a status is not available.
+	// Returns a status code and a boolean indicating whether a status was set
+	// by the error creator.
 	HTTPStatus() (int, bool)
 
-	// Returns nil if a status is not available.
+	// Returns a status code and a boolean indicating whether a status was set
+	// by the error creator.
 	GRPCStatus() (*status.Status, bool)
-
-	Metadata() []any
 }
 
 type errorData struct {
 	error
 	httpStatus *int
 	grpcStatus *status.Status
-	metadata   []any
 }
 
 // ErrorOption allows annotating an Error with metadata.
@@ -92,12 +91,6 @@ func WithGRPCStatus(status *status.Status) ErrorOption {
 	}
 }
 
-func WithMetadata(data any) ErrorOption {
-	return func(errData *errorData) {
-		errData.metadata = append(errData.metadata, data)
-	}
-}
-
 var _ error = &errorData{}
 
 func (e *errorData) Error() string {
@@ -137,9 +130,4 @@ func (ed *errorData) GRPCStatus() (*status.Status, bool) {
 	}
 
 	return nil, false
-}
-
-// Returns any extra user-defined metadata that has been propagated upstream.
-func (ed *errorData) Metadata() []any {
-	return ed.metadata
 }
