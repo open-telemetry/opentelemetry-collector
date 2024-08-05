@@ -141,8 +141,6 @@ replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/con
 
 replace go.opentelemetry.io/collector/config/configretry => ../../config/configretry
 
-replace go.opentelemetry.io/collector/internal/globalgates => ../../internal/globalgates
-
 replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../../consumer/consumerprofiles
 
 replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/consumertest

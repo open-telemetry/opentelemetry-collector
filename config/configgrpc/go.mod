@@ -72,8 +72,6 @@ require (
 
 replace go.opentelemetry.io/collector => ../../
 
-replace go.opentelemetry.io/collector/internal/globalgates => ../../internal/globalgates
-
 replace go.opentelemetry.io/collector/client => ../../client
 
 replace go.opentelemetry.io/collector/config/configauth => ../configauth

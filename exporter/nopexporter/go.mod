@@ -73,8 +73,6 @@ replace go.opentelemetry.io/collector/receiver => ../../receiver
 
 replace go.opentelemetry.io/collector => ../..
 
-replace go.opentelemetry.io/collector/internal/globalgates => ../../internal/globalgates
-
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 
 replace go.opentelemetry.io/collector/confmap => ../../confmap
