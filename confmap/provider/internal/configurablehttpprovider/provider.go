@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -82,6 +83,10 @@ func (fmp *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFu
 
 	if !strings.HasPrefix(uri, string(fmp.scheme)+":") {
 		return nil, fmt.Errorf("%q uri is not supported by %q provider", uri, string(fmp.scheme))
+	}
+
+	if _, err := url.ParseRequestURI(uri); err != nil {
+		return nil, fmt.Errorf("invalid uri %q: %w", uri, err)
 	}
 
 	client, err := fmp.createClient()

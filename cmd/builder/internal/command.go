@@ -123,7 +123,7 @@ configuration is provided, ocb will generate a default Collector.
 
 func initConfig(flags *flag.FlagSet) error {
 	cfg.Logger.Info("OpenTelemetry Collector Builder",
-		zap.String("version", version), zap.String("date", date))
+		zap.String("version", version))
 
 	var provider koanf.Provider
 

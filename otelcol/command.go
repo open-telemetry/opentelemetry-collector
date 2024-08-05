@@ -43,17 +43,6 @@ func NewCommand(set CollectorSettings) *cobra.Command {
 	return rootCmd
 }
 
-// NewCommandMustSetProvider constructs a new cobra.Command using the given CollectorSettings.
-// Any URIs specified in CollectorSettings.ConfigProviderSettings.ResolverSettings.URIs
-// are considered defaults and will be overwritten by config flags passed as
-// command-line arguments to the executable.
-// At least one Provider must be supplied via CollectorSettings.ConfigProviderSettings.ResolverSettings.ProviderFactories.
-//
-// Deprecated: [v0.104.0] use NewCommand instead
-func NewCommandMustSetProvider(set CollectorSettings) *cobra.Command {
-	return NewCommand(set)
-}
-
 // Puts command line flags from flags into the CollectorSettings, to be used during config resolution.
 func updateSettingsUsingFlags(set *CollectorSettings, flags *flag.FlagSet) error {
 	resolverSet := &set.ConfigProviderSettings.ResolverSettings

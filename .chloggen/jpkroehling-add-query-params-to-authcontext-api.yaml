@@ -1,4 +1,0 @@
-change_type: 'enhancement'
-component: confighttp
-note: Add option to include query params in auth context
-issues: [4806]

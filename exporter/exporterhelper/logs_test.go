@@ -191,6 +191,21 @@ func TestLogsExporter_WithRecordMetrics(t *testing.T) {
 	checkRecordedMetricsForLogsExporter(t, tt, le, nil)
 }
 
+func TestLogsExporter_pLogModifiedDownStream_WithRecordMetrics(t *testing.T) {
+	tt, err := componenttest.SetupTelemetry(fakeLogsExporterName)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	le, err := NewLogsExporter(context.Background(), exporter.Settings{ID: fakeLogsExporterName, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, &fakeLogsExporterConfig, newPushLogsDataModifiedDownstream(nil), WithCapabilities(consumer.Capabilities{MutatesData: true}))
+	assert.NotNil(t, le)
+	assert.NoError(t, err)
+	ld := testdata.GenerateLogs(2)
+
+	assert.NoError(t, le.ConsumeLogs(context.Background(), ld))
+	assert.Equal(t, 0, ld.LogRecordCount())
+	require.NoError(t, tt.CheckExporterLogs(int64(2), 0))
+}
+
 func TestLogsRequestExporter_WithRecordMetrics(t *testing.T) {
 	tt, err := componenttest.SetupTelemetry(fakeLogsExporterName)
 	require.NoError(t, err)
@@ -357,6 +372,13 @@ func TestLogsRequestExporter_WithShutdown_ReturnError(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, le.Shutdown(context.Background()), want)
+}
+
+func newPushLogsDataModifiedDownstream(retError error) consumer.ConsumeLogsFunc {
+	return func(_ context.Context, log plog.Logs) error {
+		log.ResourceLogs().MoveAndAppendTo(plog.NewResourceLogsSlice())
+		return retError
+	}
 }
 
 func newPushLogsData(retError error) consumer.ConsumeLogsFunc {

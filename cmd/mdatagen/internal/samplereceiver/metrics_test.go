@@ -32,7 +32,7 @@ func TestComponentTelemetry(t *testing.T) {
 		{
 			Name:        "otelcol_batch_size_trigger_send",
 			Description: "Number of times the batch was sent due to a size trigger",
-			Unit:        "1",
+			Unit:        "{times}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
 				IsMonotonic: true,
@@ -65,7 +65,7 @@ func TestComponentTelemetry(t *testing.T) {
 		{
 			Name:        "otelcol_batch_size_trigger_send",
 			Description: "Number of times the batch was sent due to a size trigger",
-			Unit:        "1",
+			Unit:        "{times}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
 				IsMonotonic: true,
@@ -93,7 +93,7 @@ func TestComponentTelemetry(t *testing.T) {
 		{
 			Name:        "otelcol_queue_length",
 			Description: "This metric is optional and therefore not initialized in NewTelemetryBuilder.",
-			Unit:        "1",
+			Unit:        "{items}",
 			Data: metricdata.Gauge[int64]{
 				DataPoints: []metricdata.DataPoint[int64]{
 					{

@@ -192,6 +192,21 @@ func TestMetricsExporter_WithRecordMetrics(t *testing.T) {
 	checkRecordedMetricsForMetricsExporter(t, tt, me, nil)
 }
 
+func TestMetricsExporter_pMetricModifiedDownStream_WithRecordMetrics(t *testing.T) {
+	tt, err := componenttest.SetupTelemetry(fakeMetricsExporterName)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	me, err := NewMetricsExporter(context.Background(), exporter.Settings{ID: fakeMetricsExporterName, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, &fakeMetricsExporterConfig, newPushMetricsDataModifiedDownstream(nil), WithCapabilities(consumer.Capabilities{MutatesData: true}))
+	require.NoError(t, err)
+	require.NotNil(t, me)
+	md := testdata.GenerateMetrics(2)
+
+	assert.NoError(t, me.ConsumeMetrics(context.Background(), md))
+	assert.Equal(t, 0, md.MetricCount())
+	require.NoError(t, tt.CheckExporterMetrics(int64(4), 0))
+}
+
 func TestMetricsRequestExporter_WithRecordMetrics(t *testing.T) {
 	tt, err := componenttest.SetupTelemetry(fakeMetricsExporterName)
 	require.NoError(t, err)
@@ -367,6 +382,12 @@ func TestMetricsRequestExporter_WithShutdown_ReturnError(t *testing.T) {
 
 func newPushMetricsData(retError error) consumer.ConsumeMetricsFunc {
 	return func(_ context.Context, _ pmetric.Metrics) error {
+		return retError
+	}
+}
+func newPushMetricsDataModifiedDownstream(retError error) consumer.ConsumeMetricsFunc {
+	return func(_ context.Context, metric pmetric.Metrics) error {
+		metric.ResourceMetrics().MoveAndAppendTo(pmetric.NewResourceMetricsSlice())
 		return retError
 	}
 }

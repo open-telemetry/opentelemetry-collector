@@ -60,12 +60,6 @@ type ClientConfig struct {
 	// Header values are opaque since they may be sensitive.
 	Headers map[string]configopaque.String `mapstructure:"headers"`
 
-	// Custom Round Tripper to allow for individual components to intercept HTTP requests
-	//
-	// Deprecated: [v0.103.0] Set (*http.Client).Transport on the *http.Client returned from ToClient
-	// to configure this.
-	CustomRoundTripper func(next http.RoundTripper) (http.RoundTripper, error) `mapstructure:"-"`
-
 	// Auth configuration for outgoing HTTP calls.
 	Auth *configauth.Authentication `mapstructure:"auth"`
 
@@ -235,13 +229,6 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 		clientTransport = otelhttp.NewTransport(clientTransport, otelOpts...)
 	}
 
-	if hcs.CustomRoundTripper != nil {
-		clientTransport, err = hcs.CustomRoundTripper(clientTransport)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	var jar http.CookieJar
 	if hcs.Cookies != nil && hcs.Cookies.Enabled {
 		jar, err = cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
@@ -354,7 +341,7 @@ func NewDefaultServerConfig() ServerConfig {
 
 type AuthConfig struct {
 	// Auth for this receiver.
-	*configauth.Authentication `mapstructure:"-"`
+	configauth.Authentication `mapstructure:",squash"`
 
 	// RequestParameters is a list of parameters that should be extracted from the request and added to the context.
 	// When a parameter is found in both the query string and the header, the value from the query string will be used.

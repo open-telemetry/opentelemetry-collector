@@ -60,7 +60,7 @@ func (builder *TelemetryBuilder) InitQueueLength(cb func() int64, opts ...metric
 	builder.QueueLength, err = builder.meter.Int64ObservableGauge(
 		"otelcol_queue_length",
 		metric.WithDescription("This metric is optional and therefore not initialized in NewTelemetryBuilder."),
-		metric.WithUnit("1"),
+		metric.WithUnit("{items}"),
 	)
 	if err != nil {
 		return err
@@ -88,7 +88,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	builder.BatchSizeTriggerSend, err = builder.meter.Int64Counter(
 		"otelcol_batch_size_trigger_send",
 		metric.WithDescription("Number of times the batch was sent due to a size trigger"),
-		metric.WithUnit("1"),
+		metric.WithUnit("{times}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessRuntimeTotalAllocBytes, err = builder.meter.Int64ObservableCounter(

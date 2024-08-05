@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -117,6 +118,11 @@ func TestUnmarshalConfig(t *testing.T) {
 				},
 				HTTP: &HTTPConfig{
 					ServerConfig: &confighttp.ServerConfig{
+						Auth: &confighttp.AuthConfig{
+							Authentication: configauth.Authentication{
+								AuthenticatorID: component.MustNewID("test"),
+							},
+						},
 						Endpoint: "localhost:4318",
 						TLSSetting: &configtls.ServerConfig{
 							Config: configtls.Config{

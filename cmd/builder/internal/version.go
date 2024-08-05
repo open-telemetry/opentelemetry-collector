@@ -12,21 +12,12 @@ import (
 
 var (
 	version = ""
-	date    = "unknown"
 )
 
-// binVersion returns the version of the binary.
-// If the version is not set, it attempts to read the build information.
-// Returns an error if the build information cannot be read.
-func binVersion() (string, error) {
-	if version != "" {
-		return version, nil
-	}
-	info, ok := debug.ReadBuildInfo()
-	if !ok {
-		return "", fmt.Errorf("failed to read build info")
-	}
-	return info.Main.Version, nil
+func init() {
+	// the second returned value is a boolean, which is true if the binaries are built with module support.
+	info, _ := debug.ReadBuildInfo()
+	version = info.Main.Version
 }
 
 func versionCommand() *cobra.Command {
@@ -35,10 +26,6 @@ func versionCommand() *cobra.Command {
 		Short: "Version of ocb",
 		Long:  "Prints the version of the ocb binary",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			version, err := binVersion()
-			if err != nil {
-				return err
-			}
 			cmd.Println(fmt.Sprintf("%s version %s", cmd.Parent().Name(), version))
 			return nil
 		},

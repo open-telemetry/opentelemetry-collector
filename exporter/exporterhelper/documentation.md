@@ -12,7 +12,7 @@ Number of log records failed to be added to the sending queue.
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| {records} | Sum | Int | true |
 
 ### otelcol_exporter_enqueue_failed_metric_points
 
@@ -20,7 +20,7 @@ Number of metric points failed to be added to the sending queue.
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| {datapoints} | Sum | Int | true |
 
 ### otelcol_exporter_enqueue_failed_spans
 
@@ -28,7 +28,7 @@ Number of spans failed to be added to the sending queue.
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| {spans} | Sum | Int | true |
 
 ### otelcol_exporter_queue_capacity
 
@@ -36,7 +36,7 @@ Fixed capacity of the retry queue (in batches)
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {batches} | Gauge | Int |
 
 ### otelcol_exporter_queue_size
 
@@ -44,7 +44,7 @@ Current size of the retry queue (in batches)
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {batches} | Gauge | Int |
 
 ### otelcol_exporter_send_failed_log_records
 
@@ -52,7 +52,7 @@ Number of log records in failed attempts to send to destination.
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| {records} | Sum | Int | true |
 
 ### otelcol_exporter_send_failed_metric_points
 
@@ -60,7 +60,7 @@ Number of metric points in failed attempts to send to destination.
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| {datapoints} | Sum | Int | true |
 
 ### otelcol_exporter_send_failed_spans
 
@@ -68,7 +68,7 @@ Number of spans in failed attempts to send to destination.
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| {spans} | Sum | Int | true |
 
 ### otelcol_exporter_sent_log_records
 
@@ -76,7 +76,7 @@ Number of log record successfully sent to destination.
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| {records} | Sum | Int | true |
 
 ### otelcol_exporter_sent_metric_points
 
@@ -84,7 +84,7 @@ Number of metric points successfully sent to destination.
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| {datapoints} | Sum | Int | true |
 
 ### otelcol_exporter_sent_spans
 
@@ -92,4 +92,4 @@ Number of spans successfully sent to destination.
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| {spans} | Sum | Int | true |

@@ -19,6 +19,7 @@ var StrictlyTypedInputGate = featuregate.GlobalRegistry().MustRegister(StrictlyT
 )
 
 var DisableOpenCensusBridge = featuregate.GlobalRegistry().MustRegister("service.disableOpenCensusBridge",
-	featuregate.StageBeta,
+	featuregate.StageStable,
 	featuregate.WithRegisterFromVersion("v0.105.0"),
+	featuregate.WithRegisterToVersion("v0.109.0"),
 	featuregate.WithRegisterDescription("`Disables the OpenCensus bridge meaning any component still using the OpenCensus SDK will no longer be able to produce telemetry."))

@@ -39,6 +39,14 @@ type Factory interface {
 	// LogsExporterStability gets the stability level of the LogsExporter.
 	LogsExporterStability() component.StabilityLevel
 
+	// CreateProfilesExporter creates a ProfilesExporter based on this config.
+	// If the exporter type does not support tracing,
+	// this function returns the error [component.ErrDataTypeIsNotSupported].
+	CreateProfilesExporter(ctx context.Context, set Settings, cfg component.Config) (Profiles, error)
+
+	// ProfilesExporterStability gets the stability level of the ProfilesExporter.
+	ProfilesExporterStability() component.StabilityLevel
+
 	unexportedFactoryFunc()
 }
 
@@ -90,6 +98,17 @@ func (f CreateLogsFunc) CreateLogsExporter(ctx context.Context, set Settings, cf
 	return f(ctx, set, cfg)
 }
 
+// CreateProfilesFunc is the equivalent of Factory.CreateProfiles.
+type CreateProfilesFunc func(context.Context, Settings, component.Config) (Profiles, error)
+
+// CreateProfilesExporter implements ExporterFactory.CreateProfilesExporter().
+func (f CreateProfilesFunc) CreateProfilesExporter(ctx context.Context, set Settings, cfg component.Config) (Profiles, error) {
+	if f == nil {
+		return nil, component.ErrDataTypeIsNotSupported
+	}
+	return f(ctx, set, cfg)
+}
+
 type factory struct {
 	cfgType component.Type
 	component.CreateDefaultConfigFunc
@@ -99,6 +118,8 @@ type factory struct {
 	metricsStabilityLevel component.StabilityLevel
 	CreateLogsFunc
 	logsStabilityLevel component.StabilityLevel
+	CreateProfilesFunc
+	profilesStabilityLevel component.StabilityLevel
 }
 
 func (f *factory) Type() component.Type {
@@ -117,6 +138,10 @@ func (f *factory) MetricsExporterStability() component.StabilityLevel {
 
 func (f *factory) LogsExporterStability() component.StabilityLevel {
 	return f.logsStabilityLevel
+}
+
+func (f *factory) ProfilesExporterStability() component.StabilityLevel {
+	return f.profilesStabilityLevel
 }
 
 // WithTraces overrides the default "error not supported" implementation for CreateTracesExporter and the default "undefined" stability level.
@@ -140,6 +165,14 @@ func WithLogs(createLogs CreateLogsFunc, sl component.StabilityLevel) FactoryOpt
 	return factoryOptionFunc(func(o *factory) {
 		o.logsStabilityLevel = sl
 		o.CreateLogsFunc = createLogs
+	})
+}
+
+// WithProfiles overrides the default "error not supported" implementation for CreateProfilesExporter and the default "undefined" stability level.
+func WithProfiles(createProfiles CreateProfilesFunc, sl component.StabilityLevel) FactoryOption {
+	return factoryOptionFunc(func(o *factory) {
+		o.profilesStabilityLevel = sl
+		o.CreateProfilesFunc = createProfiles
 	})
 }
 

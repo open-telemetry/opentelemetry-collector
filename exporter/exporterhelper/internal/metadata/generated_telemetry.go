@@ -56,7 +56,7 @@ func (builder *TelemetryBuilder) InitExporterQueueCapacity(cb func() int64, opts
 	builder.ExporterQueueCapacity, err = builder.meter.Int64ObservableGauge(
 		"otelcol_exporter_queue_capacity",
 		metric.WithDescription("Fixed capacity of the retry queue (in batches)"),
-		metric.WithUnit("1"),
+		metric.WithUnit("{batches}"),
 	)
 	if err != nil {
 		return err
@@ -74,7 +74,7 @@ func (builder *TelemetryBuilder) InitExporterQueueSize(cb func() int64, opts ...
 	builder.ExporterQueueSize, err = builder.meter.Int64ObservableGauge(
 		"otelcol_exporter_queue_size",
 		metric.WithDescription("Current size of the retry queue (in batches)"),
-		metric.WithUnit("1"),
+		metric.WithUnit("{batches}"),
 	)
 	if err != nil {
 		return err
@@ -102,55 +102,55 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	builder.ExporterEnqueueFailedLogRecords, err = builder.meter.Int64Counter(
 		"otelcol_exporter_enqueue_failed_log_records",
 		metric.WithDescription("Number of log records failed to be added to the sending queue."),
-		metric.WithUnit("1"),
+		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterEnqueueFailedMetricPoints, err = builder.meter.Int64Counter(
 		"otelcol_exporter_enqueue_failed_metric_points",
 		metric.WithDescription("Number of metric points failed to be added to the sending queue."),
-		metric.WithUnit("1"),
+		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterEnqueueFailedSpans, err = builder.meter.Int64Counter(
 		"otelcol_exporter_enqueue_failed_spans",
 		metric.WithDescription("Number of spans failed to be added to the sending queue."),
-		metric.WithUnit("1"),
+		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterSendFailedLogRecords, err = builder.meter.Int64Counter(
 		"otelcol_exporter_send_failed_log_records",
 		metric.WithDescription("Number of log records in failed attempts to send to destination."),
-		metric.WithUnit("1"),
+		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterSendFailedMetricPoints, err = builder.meter.Int64Counter(
 		"otelcol_exporter_send_failed_metric_points",
 		metric.WithDescription("Number of metric points in failed attempts to send to destination."),
-		metric.WithUnit("1"),
+		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterSendFailedSpans, err = builder.meter.Int64Counter(
 		"otelcol_exporter_send_failed_spans",
 		metric.WithDescription("Number of spans in failed attempts to send to destination."),
-		metric.WithUnit("1"),
+		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterSentLogRecords, err = builder.meter.Int64Counter(
 		"otelcol_exporter_sent_log_records",
 		metric.WithDescription("Number of log record successfully sent to destination."),
-		metric.WithUnit("1"),
+		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterSentMetricPoints, err = builder.meter.Int64Counter(
 		"otelcol_exporter_sent_metric_points",
 		metric.WithDescription("Number of metric points successfully sent to destination."),
-		metric.WithUnit("1"),
+		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterSentSpans, err = builder.meter.Int64Counter(
 		"otelcol_exporter_sent_spans",
 		metric.WithDescription("Number of spans successfully sent to destination."),
-		metric.WithUnit("1"),
+		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs

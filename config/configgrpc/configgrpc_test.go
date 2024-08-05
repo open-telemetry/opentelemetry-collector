@@ -19,8 +19,10 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
+	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
@@ -1022,7 +1024,8 @@ func TestDefaultUnaryInterceptorAuthFailure(t *testing.T) {
 
 	// verify
 	assert.Nil(t, res)
-	assert.Equal(t, expectedErr, err)
+	assert.ErrorContains(t, err, expectedErr.Error())
+	assert.Equal(t, codes.Unauthenticated, status.Code(err))
 	assert.True(t, authCalled)
 }
 
@@ -1098,7 +1101,8 @@ func TestDefaultStreamInterceptorAuthFailure(t *testing.T) {
 	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, auth.NewServer(auth.WithServerAuthenticate(authFunc)))
 
 	// verify
-	assert.Equal(t, expectedErr, err)
+	assert.ErrorContains(t, err, expectedErr.Error()) // unfortunately, grpc errors don't wrap the original ones
+	assert.Equal(t, codes.Unauthenticated, status.Code(err))
 	assert.True(t, authCalled)
 }
 

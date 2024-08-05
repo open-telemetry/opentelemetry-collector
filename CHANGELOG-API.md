@@ -7,6 +7,61 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.106.0
+
+### 🛑 Breaking changes 🛑
+
+- `configauth`: removing deprecated methods GetServerAuthenticatorContext and GetClientAuthenticatorContext (#9808)
+- `connector,exporter,receiver,extension,processor`: Remove deprecated funcs/structs (#10423)
+  Remove the following funcs & structs:
+  - connector.CreateSettings -> connector.Settings
+  - connectortest.NewNopCreateSettings -> connectortest.NewNopSettings
+  - exporter.CreateSettings -> exporter.Settings
+  - exportertest.NewNopCreateSettings -> exportertest.NewNopSettings
+  - extension.CreateSettings -> extension.Settings
+  - extensiontest.NewNopCreateSettings -> extensiontest.NewNopSettings
+  - processor.CreateSettings -> processor.Settings
+  - processortest.NewNopCreateSettings -> processortest.NewNopSettings
+  - receiver.CreateSettings -> receiver.Settings
+  - receivertest.NewNopCreateSettings -> receivertest.NewNopSettings
+  
+- `component/componenttest`: Add optional ...attribute.KeyValue argument to TestTelemetry.CheckExporterMetricGauge. (#10593)
+- `confighttp`: Auth data type signature has changed (#4806)
+  As part of the linked PR, the `auth` attribute was moved from `configauth.Authentication` 
+  to a new `AuthConfig`, which contains a `configauth.Authentication`. For end-users, this
+  is a non-breaking change. For users of the API, create a new AuthConfig using the
+  `configauth.Authentication` instance that was being used before.
+  
+- `mdatagen`: Remove WithAttributes option from the telemetry builder constructor. (#10608)
+  Attribute sets for async instruments now can be set as options to callback setters and async instruments initializers.
+  This allows each async instrument to have its own attribute set.
+  
+- `service/extensions`: Adds `Options` to `extensions.New`. (#10728)
+  This is only a breaking change if you are depending on `extensions.New`'s signature. Calls to `extensions.New` are not broken.
+
+### 🚩 Deprecations 🚩
+
+- `component`: Deprecates Host.GetFactory. (#10709)
+
+### 🚀 New components 🚀
+
+- `component/componentprofiles`: Add componentprofiles module. (#10525)
+
+### 💡 Enhancements 💡
+
+- `exporter, processor, receiver`: Document factory functions. (#9323)
+- `component`: Document status enums and New constructors (#9822)
+- `confighttp, configgrpc`: Remove the experimental comment on `IncludeMetadata` in confighttp and configgrpc (#9381)
+- `confighttp`: Add `confighttp.NewDefaultServerConfig()` to instantiate the default HTTP server configuration (#9655)
+- `consumer/consumertest`: Allow testing profiles with consumertest. (#10692)
+
+### 🧰 Bug fixes 🧰
+
+- `confmap`: Fix wrong expansion of environment variables escaped with `$$`, e.g. `$${ENV_VAR}` and `$$ENV_VAR`. (#10713)
+  This change fixes the issue where environment variables escaped with $$ were expanded. 
+  The collector now converts `$${ENV_VAR}` to `${ENV_VAR}` and `$$ENV_VAR` to `$ENV_VAR` without further expansion.
+  
+
 ## v1.12.0/v0.105.0
 
 ### 🛑 Breaking changes 🛑

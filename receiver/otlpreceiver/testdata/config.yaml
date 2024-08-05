@@ -26,6 +26,8 @@ protocols:
         min_time: 10s
         permit_without_stream: true
   http:
+    auth:
+      authenticator: test
     # The following entry demonstrates how to specify TLS credentials for the server.
     # Note: These files do not exist. If the receiver is started with this configuration, it will fail.
     tls:

@@ -189,6 +189,21 @@ func TestTracesExporter_WithRecordMetrics(t *testing.T) {
 	checkRecordedMetricsForTracesExporter(t, tt, te, nil)
 }
 
+func TestTracesExporter_pLogModifiedDownStream_WithRecordMetrics(t *testing.T) {
+	tt, err := componenttest.SetupTelemetry(fakeTracesExporterName)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	te, err := NewTracesExporter(context.Background(), exporter.Settings{ID: fakeTracesExporterName, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, &fakeTracesExporterConfig, newTraceDataPusherModifiedDownstream(nil), WithCapabilities(consumer.Capabilities{MutatesData: true}))
+	assert.NotNil(t, te)
+	assert.NoError(t, err)
+	td := testdata.GenerateTraces(2)
+
+	assert.NoError(t, te.ConsumeTraces(context.Background(), td))
+	assert.Equal(t, 0, td.SpanCount())
+	require.NoError(t, tt.CheckExporterTraces(int64(2), 0))
+}
+
 func TestTracesRequestExporter_WithRecordMetrics(t *testing.T) {
 	tt, err := componenttest.SetupTelemetry(fakeTracesExporterName)
 	require.NoError(t, err)
@@ -368,6 +383,13 @@ func TestTracesRequestExporter_WithShutdown_ReturnError(t *testing.T) {
 
 func newTraceDataPusher(retError error) consumer.ConsumeTracesFunc {
 	return func(context.Context, ptrace.Traces) error {
+		return retError
+	}
+}
+
+func newTraceDataPusherModifiedDownstream(retError error) consumer.ConsumeTracesFunc {
+	return func(_ context.Context, trace ptrace.Traces) error {
+		trace.ResourceSpans().MoveAndAppendTo(ptrace.NewResourceSpansSlice())
 		return retError
 	}
 }

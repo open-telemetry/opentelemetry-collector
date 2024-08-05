@@ -20,6 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'Skip Contrib Tests') }}
     strategy:
+      fail-fast: false
       matrix:
         group:
           - receiver-0
