@@ -28,7 +28,6 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/service/internal/servicetelemetry"
 	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/internal/status/statustest"
 	"go.opentelemetry.io/collector/service/internal/testcomponents"
@@ -145,7 +144,7 @@ func TestGraphStartStop(t *testing.T) {
 			}
 
 			pg := &Graph{componentGraph: simple.NewDirectedGraph()}
-			pg.telemetry = servicetelemetry.NewNopTelemetrySettings()
+			pg.telemetry = componenttest.NewNopTelemetrySettings()
 			pg.instanceIDs = make(map[int64]*component.InstanceID)
 
 			for _, edge := range tt.edges {
@@ -200,7 +199,7 @@ func TestGraphStartStopCycle(t *testing.T) {
 
 func TestGraphStartStopComponentError(t *testing.T) {
 	pg := &Graph{componentGraph: simple.NewDirectedGraph()}
-	pg.telemetry = servicetelemetry.NewNopTelemetrySettings()
+	pg.telemetry = componenttest.NewNopTelemetrySettings()
 	r1 := &testNode{
 		id:       component.MustNewIDWithName("r", "1"),
 		startErr: errors.New("foo"),
@@ -570,7 +569,43 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 			expectedPerExporter: 1,
 		},
 		{
-			name: "pipelines_conn_matrix.yaml",
+			name: "pipelines_conn_matrix_immutable.yaml",
+			pipelineConfigs: pipelines.Config{
+				component.MustNewIDWithName("traces", "in"): {
+					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("exampleconnector")},
+				},
+				component.MustNewIDWithName("metrics", "in"): {
+					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("exampleconnector")},
+				},
+				component.MustNewIDWithName("logs", "in"): {
+					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("exampleconnector")},
+				},
+				component.MustNewIDWithName("traces", "out"): {
+					Receivers:  []component.ID{component.MustNewID("exampleconnector")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+				},
+				component.MustNewIDWithName("metrics", "out"): {
+					Receivers:  []component.ID{component.MustNewID("exampleconnector")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+				},
+				component.MustNewIDWithName("logs", "out"): {
+					Receivers:  []component.ID{component.MustNewID("exampleconnector")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+				},
+			},
+			expectedPerExporter: 3,
+		},
+		{
+			name: "pipelines_conn_matrix_mutable.yaml",
 			pipelineConfigs: pipelines.Config{
 				component.MustNewIDWithName("traces", "in"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
@@ -719,7 +754,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			// Build the pipeline
 			set := Settings{
-				Telemetry: servicetelemetry.NewNopTelemetrySettings(),
+				Telemetry: componenttest.NewNopTelemetrySettings(),
 				BuildInfo: component.NewDefaultBuildInfo(),
 				ReceiverBuilder: receiver.NewBuilder(
 					map[component.ID]component.Config{
@@ -950,34 +985,43 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 			for _, e := range allExporters[component.DataTypeTraces] {
 				tracesExporter := e.(*testcomponents.ExampleExporter)
 				assert.Equal(t, test.expectedPerExporter, len(tracesExporter.Traces))
-				expected := testdata.GenerateTraces(1)
-				if len(allExporters[component.DataTypeTraces]) > 1 {
-					expected.MarkReadOnly() // multiple read-only exporters should get read-only pdata
-				}
+				expectedMutable := testdata.GenerateTraces(1)
+				expectedReadOnly := testdata.GenerateTraces(1)
+				expectedReadOnly.MarkReadOnly()
 				for i := 0; i < test.expectedPerExporter; i++ {
-					assert.EqualValues(t, expected, tracesExporter.Traces[i])
+					if tracesExporter.Traces[i].IsReadOnly() {
+						assert.EqualValues(t, expectedReadOnly, tracesExporter.Traces[i])
+					} else {
+						assert.EqualValues(t, expectedMutable, tracesExporter.Traces[i])
+					}
 				}
 			}
 			for _, e := range allExporters[component.DataTypeMetrics] {
 				metricsExporter := e.(*testcomponents.ExampleExporter)
 				assert.Equal(t, test.expectedPerExporter, len(metricsExporter.Metrics))
-				expected := testdata.GenerateMetrics(1)
-				if len(allExporters[component.DataTypeMetrics]) > 1 {
-					expected.MarkReadOnly() // multiple read-only exporters should get read-only pdata
-				}
+				expectedMutable := testdata.GenerateMetrics(1)
+				expectedReadOnly := testdata.GenerateMetrics(1)
+				expectedReadOnly.MarkReadOnly()
 				for i := 0; i < test.expectedPerExporter; i++ {
-					assert.EqualValues(t, expected, metricsExporter.Metrics[i])
+					if metricsExporter.Metrics[i].IsReadOnly() {
+						assert.EqualValues(t, expectedReadOnly, metricsExporter.Metrics[i])
+					} else {
+						assert.EqualValues(t, expectedMutable, metricsExporter.Metrics[i])
+					}
 				}
 			}
 			for _, e := range allExporters[component.DataTypeLogs] {
 				logsExporter := e.(*testcomponents.ExampleExporter)
 				assert.Equal(t, test.expectedPerExporter, len(logsExporter.Logs))
-				expected := testdata.GenerateLogs(1)
-				if len(allExporters[component.DataTypeLogs]) > 1 {
-					expected.MarkReadOnly() // multiple read-only exporters should get read-only pdata
-				}
+				expectedMutable := testdata.GenerateLogs(1)
+				expectedReadOnly := testdata.GenerateLogs(1)
+				expectedReadOnly.MarkReadOnly()
 				for i := 0; i < test.expectedPerExporter; i++ {
-					assert.EqualValues(t, expected, logsExporter.Logs[i])
+					if logsExporter.Logs[i].IsReadOnly() {
+						assert.EqualValues(t, expectedReadOnly, logsExporter.Logs[i])
+					} else {
+						assert.EqualValues(t, expectedMutable, logsExporter.Logs[i])
+					}
 				}
 			}
 		})
@@ -1006,7 +1050,7 @@ func TestConnectorRouter(t *testing.T) {
 
 	ctx := context.Background()
 	set := Settings{
-		Telemetry: servicetelemetry.NewNopTelemetrySettings(),
+		Telemetry: componenttest.NewNopTelemetrySettings(),
 		BuildInfo: component.NewDefaultBuildInfo(),
 		ReceiverBuilder: receiver.NewBuilder(
 			map[component.ID]component.Config{
@@ -2050,7 +2094,7 @@ func TestGraphBuildErrors(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			set := Settings{
 				BuildInfo: component.NewDefaultBuildInfo(),
-				Telemetry: servicetelemetry.NewNopTelemetrySettings(),
+				Telemetry: componenttest.NewNopTelemetrySettings(),
 				ReceiverBuilder: receiver.NewBuilder(
 					test.receiverCfgs,
 					map[component.Type]receiver.Factory{
@@ -2084,7 +2128,7 @@ func TestGraphBuildErrors(t *testing.T) {
 	}
 }
 
-// This includes all tests from the previous implmentation, plus a new one
+// This includes all tests from the previous implementation, plus a new one
 // relevant only to the new graph-based implementation.
 func TestGraphFailToStartAndShutdown(t *testing.T) {
 	errReceiverFactory := newErrReceiverFactory()
@@ -2097,7 +2141,7 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 	nopConnectorFactory := connectortest.NewNopFactory()
 
 	set := Settings{
-		Telemetry: servicetelemetry.NewNopTelemetrySettings(),
+		Telemetry: componenttest.NewNopTelemetrySettings(),
 		BuildInfo: component.NewDefaultBuildInfo(),
 		ReceiverBuilder: receiver.NewBuilder(
 			map[component.ID]component.Config{
@@ -2333,7 +2377,7 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			pg := &Graph{componentGraph: simple.NewDirectedGraph()}
-			pg.telemetry = servicetelemetry.NewNopTelemetrySettings()
+			pg.telemetry = componenttest.NewNopTelemetrySettings()
 
 			actualStatuses := make(map[*component.InstanceID][]*component.StatusEvent)
 			rep := status.NewReporter(func(id *component.InstanceID, ev *component.StatusEvent) {
@@ -2341,7 +2385,6 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 			}, func(error) {
 			})
 
-			pg.telemetry.Status = rep
 			rep.Ready()
 
 			e0, e1 := tc.edge[0], tc.edge[1]
