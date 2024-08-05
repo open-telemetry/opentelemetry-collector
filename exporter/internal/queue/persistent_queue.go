@@ -215,7 +215,6 @@ func (pq *persistentQueue[T]) Consume(consumeFunc func(context.Context, T) error
 		if consumed {
 			ctx := context.Background()
 			consumeErr := consumeFunc(ctx, req)
-			ctx = exporterbatcher.SetBatchingKeyInContext(ctx)
 			// Check the context to know whether batching is in progress or the pending requests have been sent.
 			batchingInProgress := exporterbatcher.GetBatchingKeyFromContext(ctx)
 			fmt.Println("batching in progress")

@@ -473,7 +473,7 @@ func TestPersistentQueue_CurrentlyProcessedItems(t *testing.T) {
 	requireCurrentlyDispatchedItemsEqual(t, ps, []uint64{0, 1})
 
 	// Lets mark item 1 as finished, it will remove it from the currently dispatched items list.
-	onProcessingFinished(nil)
+	onProcessingFinished(nil, false)
 	requireCurrentlyDispatchedItemsEqual(t, ps, []uint64{0})
 
 	// Reload the storage. Since items 0 was not finished, this should be re-enqueued at the end.
@@ -675,7 +675,7 @@ func TestPersistentQueue_ShutdownWhileConsuming(t *testing.T) {
 	assert.False(t, ps.client.(*mockStorageClient).isClosed())
 	assert.NoError(t, ps.Shutdown(context.Background()))
 	assert.False(t, ps.client.(*mockStorageClient).isClosed())
-	onProcessingFinished(nil)
+	onProcessingFinished(nil, false)
 	assert.True(t, ps.client.(*mockStorageClient).isClosed())
 }
 
