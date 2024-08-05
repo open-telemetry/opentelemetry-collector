@@ -2,12 +2,10 @@ package exporterhelper
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 )
 
@@ -43,16 +41,12 @@ func (b *batcher) merge(ctx context.Context, req Request) ([]Request, error) {
 	var err error
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	b.activeRequests.Add(1)
 	if b.cfg.MaxSizeItems > 0 {
 		reqs, err = b.mergeSplitFunc(ctx, b.cfg.MaxSizeConfig, b.activeBatch.request, req)
 	} else {
 		var mergedReq Request
 		mergedReq, err = b.mergeFunc(ctx, b.activeBatch.request, req)
-		// b.activeBatch.ctx = ctx
-		// b.activeBatch.request = mergedReq
 		reqs = []Request{mergedReq}
-		// b.updateActiveBatch(ctx, mergedReq)
 	}
 	return reqs, err
 }
@@ -63,36 +57,31 @@ func (bs *batchSender) startQueueBatchers() error {
 		bs.batchers[i] = newBatcher(bs.cfg, bs.mergeFunc, bs.mergeSplitFunc)
 
 		go func(index int) {
-			// batcher := bs.batchers[index]
+			batcher := bs.batchers[index]
 			for {
-				// what if this blocks for too long trying to pop from queue? Needs something to timeout
 				ok := bs.queue.Consume(func(ctx context.Context, req Request) error {
 					var err error
+					batcher.activeRequests.Add(1)
 					// take the request split it up if necessary and send all requests
 					reqs, err := bs.batchers[index].merge(ctx, req)
 					if err != nil || len(reqs) == 0 || reqs[0] == nil {
-						bs.batchers[index].mu.Lock()
-						bs.batchers[index].activeRequests.Add(-1)
-						bs.batchers[index].mu.Unlock()
+						batcher.activeRequests.Add(-1)
 						return err
 					}
 
-					bs.batchers[index].mu.Lock()
-					bs.batchers[index].updateActiveBatch(ctx, reqs[0])
+					batcher.mu.Lock()
+					batcher.updateActiveBatch(ctx, reqs[0])
 
-					fmt.Println("ITEMCOUNT")
-					fmt.Println(reqs[0].ItemsCount())
 					if len(reqs) > 1 || reqs[0].ItemsCount() >= bs.cfg.MinSizeItems {
-						fmt.Println("SENDDDDD")
 						err = bs.nextSender.send(ctx, reqs...)
-						bs.batchers[index].activeRequests.Store(0)
-						bs.batchers[index].activeBatch = newEmptyBatch()
+						batcher.activeRequests.Store(0)
+						batcher.activeBatch = newEmptyBatch()
 						bs.lastFlushed = time.Now()
 					} else {
 						// If using persistant queue, make sure items are not marked for deletion until the batch is sent.
 						ctx = exporterbatcher.SetBatchingKeyInContext(ctx)
 					}
-					bs.batchers[index].mu.Unlock()
+					batcher.mu.Unlock()
 					return err
 				})
 
@@ -115,7 +104,6 @@ func (bs *batchSender) shutdownAllBatchers(timer *time.Timer) {
 			b.mu.Lock()
 			if b.activeBatch.request != nil {
 				bs.nextSender.send(b.activeBatch.ctx, b.activeBatch.request)
-				// b.activeRequests.Add(-1)
 			}
 			b.activeRequests.Add(-1)
 			b.mu.Unlock()
@@ -134,10 +122,9 @@ func (bs *batchSender) flushAllBatchers(timer *time.Timer) {
 			bs.nextSender.send(bs.batchers[i].activeBatch.ctx, bs.batchers[i].activeBatch.request)
 			bs.batchers[i].activeRequests.Store(0)
 			bs.batchers[i].activeBatch = newEmptyBatch()
-			// bs.batchers[i].mu.Unlock()
+			bs.lastFlushed = time.Now()
 		}
 		bs.batchers[i].mu.Unlock()
-		bs.lastFlushed = time.Now()
 	}
 }
 
