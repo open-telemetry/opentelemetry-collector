@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/confmap"
@@ -24,6 +25,7 @@ const (
 	TargetFieldString       TargetField = "string_field"
 	TargetFieldBool         TargetField = "bool_field"
 	TargetFieldInlineString TargetField = "inline_string_field"
+	TargetFieldSlice        TargetField = "slice_field"
 )
 
 type Test struct {
@@ -77,6 +79,9 @@ func AssertResolvesTo(t *testing.T, resolver *confmap.Resolver, tt Test) {
 		AssertExpectedMatch(t, tt, conf, &cfg)
 	case TargetFieldBool:
 		var cfg TargetConfig[bool]
+		AssertExpectedMatch(t, tt, conf, &cfg)
+	case TargetFieldSlice:
+		var cfg TargetConfig[[]any]
 		AssertExpectedMatch(t, tt, conf, &cfg)
 	default:
 		t.Fatalf("unexpected target field %q", tt.targetField)
@@ -189,6 +194,39 @@ func TestStrictTypeCasting(t *testing.T) {
 			value:       "2006-01-02T15:04:05Z07:00",
 			targetField: TargetFieldInlineString,
 			expected:    "inline field with 2006-01-02T15:04:05Z07:00 expansion",
+		},
+		// issue 10787
+		{
+			value:       "true # comment with a ${env:hello.world} reference",
+			targetField: TargetFieldBool,
+			expected:    true,
+		},
+		{
+			value:        "true # comment with a ${env:hello.world} reference",
+			targetField:  TargetFieldString,
+			unmarshalErr: `expected type 'string', got unconvertible type 'bool'`,
+		},
+		{
+			value:       "true # comment with a ${env:hello.world} reference",
+			targetField: TargetFieldInlineString,
+			resolveErr:  `environment variable "hello.world" has invalid name`,
+		},
+		// issue 10759
+		{
+			value:       `["a",`,
+			targetField: TargetFieldString,
+			expected:    `["a",`,
+		},
+		{
+			value:       `["a",`,
+			targetField: TargetFieldInlineString,
+			expected:    `inline field with ["a", expansion`,
+		},
+		// issue 10799
+		{
+			value:       `[filelog,windowseventlog/application]`,
+			targetField: TargetFieldSlice,
+			expected:    []any{"filelog", "windowseventlog/application"},
 		},
 	}
 
@@ -317,6 +355,109 @@ func TestRecursiveMaps(t *testing.T) {
 	err = confStr.Unmarshal(&cfgStr)
 	require.NoError(t, err)
 	require.Equal(t, `{env: "{env2: "{value: 123}"}", inline: "inline {env2: "{value: 123}"}"}`,
+		cfgStr.Field,
+	)
+}
+
+// Test that comments with invalid ${env:...} references do not prevent configuration from loading.
+func TestIssue10787(t *testing.T) {
+	previousValue := globalgates.StrictlyTypedInputGate.IsEnabled()
+	err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, true)
+	require.NoError(t, err)
+	defer func() {
+		seterr := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, previousValue)
+		require.NoError(t, seterr)
+	}()
+
+	resolver := NewResolver(t, "issue-10787-main.yaml")
+	conf, err := resolver.Resolve(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, conf.ToStringMap(),
+		map[string]any{
+			"exporters": map[string]any{
+				"logging": map[string]any{
+					"verbosity": "detailed",
+				},
+			},
+			"processors": map[string]any{
+				"batch": nil,
+			},
+			"receivers": map[string]any{
+				"otlp": map[string]any{
+					"protocols": map[string]any{
+						"grpc": map[string]any{
+							"endpoint": "0.0.0.0:4317",
+						},
+						"http": map[string]any{
+							"endpoint": "0.0.0.0:4318",
+						},
+					},
+				},
+			},
+			"service": map[string]any{
+				"pipelines": map[string]any{
+					"traces": map[string]any{
+						"exporters":  []any{"logging"},
+						"processors": []any{"batch"},
+						"receivers":  []any{"otlp"},
+					},
+				},
+				"telemetry": map[string]any{
+					"metrics": map[string]any{
+						"level": "detailed",
+					},
+				},
+			},
+		},
+	)
+}
+
+func TestStructMappingIssue10787(t *testing.T) {
+	previousValue := globalgates.StrictlyTypedInputGate.IsEnabled()
+	err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, true)
+	require.NoError(t, err)
+	defer func() {
+		seterr := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, previousValue)
+		require.NoError(t, seterr)
+	}()
+
+	resolver := NewResolver(t, "types_expand.yaml")
+	t.Setenv("ENV", `# ${hello.world}
+logging:
+  verbosity: detailed`)
+	conf, err := resolver.Resolve(context.Background())
+	require.NoError(t, err)
+
+	type Logging struct {
+		Verbosity string `mapstructure:"verbosity"`
+	}
+	type Exporters struct {
+		Logging Logging `mapstructure:"logging"`
+	}
+	type Target struct {
+		Field Exporters `mapstructure:"field"`
+	}
+
+	var cfg Target
+	err = conf.Unmarshal(&cfg)
+	require.NoError(t, err)
+	require.Equal(t,
+		Target{Field: Exporters{
+			Logging: Logging{
+				Verbosity: "detailed",
+			},
+		}},
+		cfg,
+	)
+
+	confStr, err := resolver.Resolve(context.Background())
+	require.NoError(t, err)
+	var cfgStr TargetConfig[string]
+	err = confStr.Unmarshal(&cfgStr)
+	require.NoError(t, err)
+	require.Equal(t, `# ${hello.world}
+logging:
+  verbosity: detailed`,
 		cfgStr.Field,
 	)
 }

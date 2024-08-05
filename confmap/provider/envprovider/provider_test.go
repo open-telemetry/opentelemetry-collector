@@ -47,11 +47,14 @@ func TestUnsupportedScheme(t *testing.T) {
 }
 
 func TestInvalidYAML(t *testing.T) {
-	const envName = "invalid-yaml"
+	const envName = "invalid_yaml"
 	t.Setenv(envName, "[invalid,")
 	env := createProvider()
-	_, err := env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
-	assert.Error(t, err)
+	ret, err := env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
+	require.NoError(t, err)
+	raw, err := ret.AsRaw()
+	require.NoError(t, err)
+	assert.IsType(t, "", raw)
 	assert.NoError(t, env.Shutdown(context.Background()))
 }
 
