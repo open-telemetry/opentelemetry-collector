@@ -383,6 +383,16 @@ func TestStrictTypeCasting(t *testing.T) {
 			targetField: TargetFieldSlice,
 			expected:    []any{"filelog", "windowseventlog/application"},
 		},
+		{
+			value:       `[filelog,windowseventlog/application]`,
+			targetField: TargetFieldString,
+			expected:    "[filelog,windowseventlog/application]",
+		},
+		{
+			value:       `[filelog,windowseventlog/application]`,
+			targetField: TargetFieldInlineString,
+			expected:    "inline field with [filelog,windowseventlog/application] expansion",
+		},
 	}
 
 	previousValue := globalgates.StrictlyTypedInputGate.IsEnabled()
