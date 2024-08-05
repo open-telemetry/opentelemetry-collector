@@ -361,6 +361,16 @@ func TestStrictTypeCasting(t *testing.T) {
 			value:       "true # comment with a ${env:hello.world} reference",
 			targetField: TargetFieldInlineString,
 			resolveErr:  `environment variable "hello.world" has invalid name`,
+		// issue 10759
+		{
+			value:       `["a",`,
+			targetField: TargetFieldString,
+			expected:    `["a",`,
+		},
+		{
+			value:       `["a",`,
+			targetField: TargetFieldInlineString,
+			expected:    `inline field with ["a", expansion`,
 		},
 	}
 
