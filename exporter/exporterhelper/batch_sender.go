@@ -5,7 +5,7 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 
 import (
 	"context"
-	"fmt"
+	// "fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -14,7 +14,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 )
@@ -35,6 +34,7 @@ type batchSender struct {
 	mu          sync.Mutex
 	activeBatch *batch
 	lastFlushed time.Time
+	batchers    []*batcher
 
 	logger *zap.Logger
 
@@ -61,60 +61,12 @@ func newBatchSender(cfg exporterbatcher.Config, set exporter.Settings,
 	return bs
 }
 
-func (bs *batchSender) merge(ctx context.Context, req Request) ([]Request, error) {
-	var reqs []Request
-	var err error
-	if bs.cfg.MaxSizeItems > 0 {
-		bs.mu.Lock()
-		reqs, err = bs.mergeSplitFunc(ctx, bs.cfg.MaxSizeConfig, bs.activeBatch.request, req)
-		bs.activeBatch = newEmptyBatch()
-		bs.mu.Unlock()
-	} else {
-		var req Request
-		bs.mu.Lock()
-		req, err = bs.mergeFunc(ctx, bs.activeBatch.request, req)
-		reqs = []Request{req}
-		bs.mu.Unlock()
-	}
-	return reqs, err
-}
-
-func (bs *batchSender) startQueueBatchers() error {
-	// for i := 0; i < bs.cfg.NumBatchers; i++ {
-	go func() {
-		for {
-			// what if this blocks for too long trying to pop from queue? Needs something to timeout
-			_ = bs.queue.Consume(func(ctx context.Context, req Request) error {
-				var err error
-				// take the request split it up if necessary and send all requests
-				reqs, err := bs.merge(ctx, req)
-				if err != nil || len(reqs) == 0 || reqs[0] == nil {
-					return err
-				}
-				fmt.Println(len(reqs))
-				fmt.Println(reqs[0])
-
-				if len(reqs) > 1 || reqs[0].ItemsCount() >= bs.cfg.MinSizeItems {
-					err = bs.nextSender.send(ctx, reqs...)
-				} else {
-					// If using persistant queue, make sure items are not marked for deletion until the batch is sent.
-					ctx = exporterbatcher.SetBatchingKeyInContext(ctx)
-				}
-				return err
-			})
-		}
-	}()
-// }
-
-	return nil
-}
-
 func (bs *batchSender) Start(_ context.Context, _ component.Host) error {
 	bs.shutdownCh = make(chan struct{})
 	timer := time.NewTimer(bs.cfg.FlushTimeout)
 
 	if bs.queueEnabled {
-		bs.startQueueBatchers()
+		return bs.startQueueBatchers()
 	}
 
 	go func() {
@@ -148,35 +100,6 @@ func (bs *batchSender) Start(_ context.Context, _ component.Host) error {
 				}
 				bs.mu.Unlock()
 				timer.Reset(nextFlush)
-			// default:
-			// 	// if we have a queue enabled then create batches by reading directly from queue.
-			// 	if bs.queueEnabled && bs.queue.Size() > 0 {
-			// 		// var reqs []Request
-			// 		// sz := 0
-			// 		// for {
-			// 		// 	// what if this blocks for too long trying to pop from queue? Needs something to timeout
-			// 		// 	bs.queue.Consume(func(ctx context.Context, req Request) error {
-			// 		// 		reqs = append(reqs, req)
-			// 		// 		sz += req.ItemsCount()
-			// 		// 		if sz > bs.cfg.MinSizeItems {
-			// 		// 			bs.send(ctx, reqs...)
-			// 		// 			reqs = []Request{}
-			// 		// 			sz = 0
-			// 		// 		}
-			// 		// 	})
-			// 		// }
-
-			// 		// bs.send(ctx, req...)
-					// go bs.queue.Consume(func(ctx context.Context, req Request) error {
-
-					// 	err := bs.send(ctx, req)
-					// 	if err != nil {
-					// 		bs.logger.Error("Exporting failed. Dropping data.",
-					// 			zap.Error(err), zap.Int("dropped_items", req.ItemsCount()))
-					// 	}
-					// 	return err
-					// })
-				// }
 			}
 		}
 	}()

@@ -22,6 +22,7 @@ func TestBatchSender_Merge(t *testing.T) {
 	cfg := exporterbatcher.NewDefaultConfig()
 	cfg.MinSizeItems = 10
 	cfg.FlushTimeout = 100 * time.Millisecond
+	cfg.NumBatchers = 1
 
 	tests := []struct {
 		name          string
