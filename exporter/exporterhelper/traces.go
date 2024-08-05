@@ -153,11 +153,15 @@ func newTracesExporterWithObservability(obsrep *ObsReport) requestSender {
 	return &tracesExporterWithObservability{obsrep: obsrep}
 }
 
-func (tewo *tracesExporterWithObservability) send(ctx context.Context, req Request) error {
+func (tewo *tracesExporterWithObservability) send(ctx context.Context, reqs ...Request) error {
 	c := tewo.obsrep.StartTracesOp(ctx)
-	numTraceSpans := req.ItemsCount()
+	numItems := 0
+	for _, r := range reqs {
+		numItems += r.ItemsCount()
+	}
+
 	// Forward the data to the next consumer (this pusher is the next).
-	err := tewo.nextSender.send(c, req)
-	tewo.obsrep.EndTracesOp(c, numTraceSpans, err)
+	err := tewo.nextSender.send(c, reqs...)
+	tewo.obsrep.EndTracesOp(c, numItems, err)
 	return err
 }

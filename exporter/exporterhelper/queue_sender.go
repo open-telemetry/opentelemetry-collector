@@ -72,6 +72,7 @@ type queueSender struct {
 	numConsumers   int
 	traceAttribute attribute.KeyValue
 	consumers      *queue.Consumers[Request]
+	batcherEnabled bool
 
 	obsrep     *ObsReport
 	exporterID component.ID
@@ -100,7 +101,15 @@ func newQueueSender(q exporterqueue.Queue[Request], set exporter.Settings, numCo
 
 // Start is invoked during service startup.
 func (qs *queueSender) Start(ctx context.Context, host component.Host) error {
-	if err := qs.consumers.Start(ctx, host); err != nil {
+	var err error
+	if qs.batcherEnabled {
+		// Start queue only. No need to start consumers because batch_sender will consume directly from the queue.
+		err = qs.queue.Start(ctx, host)
+	} else {
+		err = qs.consumers.Start(ctx, host)
+	}
+
+	if err != nil {
 		return err
 	}
 
@@ -121,15 +130,17 @@ func (qs *queueSender) Shutdown(ctx context.Context) error {
 }
 
 // send implements the requestSender interface. It puts the request in the queue.
-func (qs *queueSender) send(ctx context.Context, req Request) error {
+func (qs *queueSender) send(ctx context.Context, reqs ...Request) error {
 	// Prevent cancellation and deadline to propagate to the context stored in the queue.
 	// The grpc/http based receivers will cancel the request context after this function returns.
 	c := context.WithoutCancel(ctx)
 
 	span := trace.SpanFromContext(c)
-	if err := qs.queue.Offer(c, req); err != nil {
-		span.AddEvent("Failed to enqueue item.", trace.WithAttributes(qs.traceAttribute))
-		return err
+	for _, r := range reqs {
+		if err := qs.queue.Offer(c, r); err != nil {
+			span.AddEvent("Failed to enqueue item.", trace.WithAttributes(qs.traceAttribute))
+			return err
+		}
 	}
 
 	span.AddEvent("Enqueued item.", trace.WithAttributes(qs.traceAttribute))

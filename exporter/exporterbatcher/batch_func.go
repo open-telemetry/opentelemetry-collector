@@ -22,3 +22,14 @@ type BatchMergeFunc[T any] func(context.Context, T, T) (T, error)
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 type BatchMergeSplitFunc[T any] func(ctx context.Context, cfg MaxSizeConfig, optionalReq T, req T) ([]T, error)
+
+type batchingInProgressKey struct{}
+
+func GetBatchingKeyFromContext(ctx context.Context) bool {
+	batchingInProgress, ok := ctx.Value(batchingInProgressKey{}).(bool)
+	return batchingInProgress && ok
+}
+
+func SetBatchingKeyInContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, batchingInProgressKey{}, true)
+}

@@ -21,7 +21,7 @@ import (
 // requestSender is an abstraction of a sender for a request independent of the type of the data (traces, metrics, logs).
 type requestSender interface {
 	component.Component
-	send(context.Context, Request) error
+	send(context.Context, ...Request) error
 	setNextSender(nextSender requestSender)
 }
 
@@ -33,8 +33,8 @@ type baseRequestSender struct {
 
 var _ requestSender = (*baseRequestSender)(nil)
 
-func (b *baseRequestSender) send(ctx context.Context, req Request) error {
-	return b.nextSender.send(ctx, req)
+func (b *baseRequestSender) send(ctx context.Context, req ...Request) error {
+	return b.nextSender.send(ctx, req...)
 }
 
 func (b *baseRequestSender) setNextSender(nextSender requestSender) {
@@ -82,6 +82,15 @@ func WithRetry(config configretry.BackOffConfig) Option {
 			return nil
 		}
 		o.retrySender = newRetrySender(config, o.set)
+		return nil
+	}
+}
+
+// WithConcurrency overrides the default ConcurrencySettings for the exporter.
+// The default ConcurrencySettings is to enable concurrency with a limit of 10 goroutines.
+func WithConcurrency(config ConcurrencySettings) Option {
+	return func(o *baseExporter) error {
+		o.concurrencySender = newConcurrencySender(config, o.set)
 		return nil
 	}
 }
@@ -240,11 +249,12 @@ type baseExporter struct {
 	// Chain of senders that the exporter helper applies before passing the data to the actual exporter.
 	// The data is handled by each sender in the respective order starting from the queueSender.
 	// Most of the senders are optional, and initialized with a no-op path-through sender.
-	batchSender   requestSender
-	queueSender   requestSender
-	obsrepSender  requestSender
-	retrySender   requestSender
-	timeoutSender *timeoutSender // timeoutSender is always initialized.
+	concurrencySender requestSender
+	batchSender       requestSender
+	queueSender       requestSender
+	obsrepSender      requestSender
+	retrySender       requestSender
+	timeoutSender     *timeoutSender // timeoutSender is always initialized.
 
 	consumerOptions []consumer.Option
 }
@@ -258,11 +268,12 @@ func newBaseExporter(set exporter.Settings, signal component.DataType, osf obsre
 	be := &baseExporter{
 		signal: signal,
 
-		batchSender:   &baseRequestSender{},
-		queueSender:   &baseRequestSender{},
-		obsrepSender:  osf(obsReport),
-		retrySender:   &baseRequestSender{},
-		timeoutSender: &timeoutSender{cfg: NewDefaultTimeoutSettings()},
+		concurrencySender: &baseRequestSender{},
+		batchSender:       &baseRequestSender{},
+		queueSender:       &baseRequestSender{},
+		obsrepSender:      osf(obsReport),
+		retrySender:       &baseRequestSender{},
+		timeoutSender:     &timeoutSender{cfg: NewDefaultTimeoutSettings()},
 
 		set:    set,
 		obsrep: obsReport,
@@ -278,12 +289,16 @@ func newBaseExporter(set exporter.Settings, signal component.DataType, osf obsre
 	be.connectSenders()
 
 	if bs, ok := be.batchSender.(*batchSender); ok {
-		// If queue sender is enabled assign to the batch sender the same number of workers.
-		if qs, ok := be.queueSender.(*queueSender); ok {
-			bs.concurrencyLimit = int64(qs.numConsumers)
-		}
 		// Batcher sender mutates the data.
 		be.consumerOptions = append(be.consumerOptions, consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}))
+
+		if qs, ok := be.queueSender.(*queueSender); ok {
+			// Let the batch sender have access to the queue_sender's queue so it can read and
+			// form batches without being limited by the queue_senders numConsumers limit.
+			bs.queue = qs.queue
+			bs.queueEnabled = true
+			qs.batcherEnabled = true
+		}
 	}
 
 	return be, nil
@@ -302,7 +317,8 @@ func (be *baseExporter) send(ctx context.Context, req Request) error {
 // connectSenders connects the senders in the predefined order.
 func (be *baseExporter) connectSenders() {
 	be.queueSender.setNextSender(be.batchSender)
-	be.batchSender.setNextSender(be.obsrepSender)
+	be.batchSender.setNextSender(be.concurrencySender)
+	be.concurrencySender.setNextSender(be.obsrepSender)
 	be.obsrepSender.setNextSender(be.retrySender)
 	be.retrySender.setNextSender(be.timeoutSender)
 }

@@ -5,43 +5,45 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 
 import (
 	"context"
+	// "fmt"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/exporter/exporterqueue"
 )
 
 // batchSender is a component that places requests into batches before passing them to the downstream senders.
 // Batches are sent out with any of the following conditions:
 // - batch size reaches cfg.MinSizeItems
 // - cfg.FlushTimeout is elapsed since the timestamp when the previous batch was sent out.
-// - concurrencyLimit is reached.
 type batchSender struct {
 	baseRequestSender
 	cfg            exporterbatcher.Config
 	mergeFunc      exporterbatcher.BatchMergeFunc[Request]
 	mergeSplitFunc exporterbatcher.BatchMergeSplitFunc[Request]
 
-	// concurrencyLimit is the maximum number of goroutines that can be blocked by the batcher.
-	// If this number is reached and all the goroutines are busy, the batch will be sent right away.
-	// Populated from the number of queue consumers if queue is enabled.
-	concurrencyLimit int64
-	activeRequests   atomic.Int64
+	activeRequests atomic.Int64
+	queueEnabled   bool
 
 	mu          sync.Mutex
 	activeBatch *batch
 	lastFlushed time.Time
+	batchers    []*batcher
 
 	logger *zap.Logger
 
 	shutdownCh         chan struct{}
 	shutdownCompleteCh chan struct{}
 	stopped            *atomic.Bool
+
+	queue exporterqueue.Queue[Request]
 }
 
 // newBatchSender returns a new batch consumer component.
@@ -63,6 +65,11 @@ func newBatchSender(cfg exporterbatcher.Config, set exporter.Settings,
 func (bs *batchSender) Start(_ context.Context, _ component.Host) error {
 	bs.shutdownCh = make(chan struct{})
 	timer := time.NewTimer(bs.cfg.FlushTimeout)
+
+	if bs.queueEnabled {
+		return bs.startQueueBatchers()
+	}
+
 	go func() {
 		for {
 			select {
@@ -132,33 +139,47 @@ func (bs *batchSender) exportActiveBatch() {
 }
 
 // isActiveBatchReady returns true if the active batch is ready to be exported.
-// The batch is ready if it has reached the minimum size or the concurrency limit is reached.
+// The batch is ready if it has reached the minimum size.
 // Caller must hold the lock.
 func (bs *batchSender) isActiveBatchReady() bool {
-	return bs.activeBatch.request.ItemsCount() >= bs.cfg.MinSizeItems ||
-		(bs.concurrencyLimit > 0 && bs.activeRequests.Load() >= bs.concurrencyLimit)
+	return bs.activeBatch.request.ItemsCount() >= bs.cfg.MinSizeItems
 }
 
-func (bs *batchSender) send(ctx context.Context, req Request) error {
+func (bs *batchSender) send(ctx context.Context, reqs ...Request) error {
 	// Stopped batch sender should act as pass-through to allow the queue to be drained.
 	if bs.stopped.Load() {
-		return bs.nextSender.send(ctx, req)
+		return bs.nextSender.send(ctx, reqs...)
+	}
+	if len(reqs) == 0 {
+		bs.logger.Debug("batch sender called without any requests")
+		return nil
 	}
 
 	if bs.cfg.MaxSizeItems > 0 {
-		return bs.sendMergeSplitBatch(ctx, req)
+		return bs.sendMergeSplitBatch(ctx, reqs...)
 	}
-	return bs.sendMergeBatch(ctx, req)
+	return bs.sendMergeBatch(ctx, reqs...)
 }
 
 // sendMergeSplitBatch sends the request to the batch which may be split into multiple requests.
-func (bs *batchSender) sendMergeSplitBatch(ctx context.Context, req Request) error {
+func (bs *batchSender) sendMergeSplitBatch(ctx context.Context, inReqs ...Request) error {
 	bs.mu.Lock()
 
-	reqs, err := bs.mergeSplitFunc(ctx, bs.cfg.MaxSizeConfig, bs.activeBatch.request, req)
-	if err != nil || len(reqs) == 0 {
-		bs.mu.Unlock()
-		return err
+	var errs error
+	reqs := []Request{
+		bs.activeBatch.request,
+	}
+
+	for _, r := range inReqs {
+		length := len(reqs)
+		newReqs, err := bs.mergeSplitFunc(ctx, bs.cfg.MaxSizeConfig, reqs[length-1], r)
+		if err != nil || len(newReqs) == 0 {
+			bs.mu.Unlock()
+			return err
+		}
+		// pop last element which is now updated in newReqs[0]
+		reqs = reqs[:length-1]
+		reqs = append(reqs, newReqs...)
 	}
 
 	bs.activeRequests.Add(1)
@@ -176,31 +197,36 @@ func (bs *batchSender) sendMergeSplitBatch(ctx context.Context, req Request) err
 		}
 		bs.mu.Unlock()
 		<-batch.done
-		if batch.err != nil {
-			return batch.err
-		}
+		errs = multierr.Append(errs, batch.err)
 		reqs = reqs[1:]
 	} else {
 		bs.mu.Unlock()
 	}
 
-	// Intentionally do not put the last request in the active batch to not block it.
-	// TODO: Consider including the partial request in the error to avoid double publishing.
-	for _, r := range reqs {
-		if err := bs.nextSender.send(ctx, r); err != nil {
-			return err
-		}
+	if len(reqs) > 0 {
+		sendErr := bs.nextSender.send(ctx, reqs...)
+		errs = multierr.Append(errs, sendErr)
 	}
-	return nil
+
+	return errs
 }
 
 // sendMergeBatch sends the request to the batch and waits for the batch to be exported.
-func (bs *batchSender) sendMergeBatch(ctx context.Context, req Request) error {
+func (bs *batchSender) sendMergeBatch(ctx context.Context, reqs ...Request) error {
 	bs.mu.Lock()
 
+	var req Request
 	if bs.activeBatch.request != nil {
-		var err error
-		req, err = bs.mergeFunc(ctx, bs.activeBatch.request, req)
+		req = bs.activeBatch.request
+	} else {
+		req = reqs[0]
+		reqs = reqs[1:]
+	}
+
+	var err error
+	// Merge all reqs into a single request.
+	for _, r := range reqs {
+		req, err = bs.mergeFunc(ctx, req, r)
 		if err != nil {
 			bs.mu.Unlock()
 			return err
