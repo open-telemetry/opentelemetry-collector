@@ -44,8 +44,8 @@ the volume of data, scraping could be slowed, or the amount of data collected
 could be reduced. 
 
 **exporterhelper**: When an exporter returns a retryable error, the
-exporterhelper can use this information to manage the sending queue if it is
-enabled. Permanent errors will be forwarded back up the pipeline.
+exporterhelper can use this information to retry. Permanent errors will be
+forwarded back up the pipeline.
 
 **obsreport**: Recording partial success information can ensure we correctly
 track the number of failed telemetry records in the pipeline. Right now, all
