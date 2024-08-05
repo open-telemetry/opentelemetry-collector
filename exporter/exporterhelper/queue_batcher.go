@@ -23,14 +23,13 @@ type batcher struct {
 
 func newBatcher(cfg exporterbatcher.Config, mf exporterbatcher.BatchMergeFunc[Request], msf exporterbatcher.BatchMergeSplitFunc[Request]) *batcher {
 	return &batcher{
-		activeBatch: newEmptyBatch(),
-		cfg: cfg,
-		mergeFunc:          mf,
-		mergeSplitFunc:     msf,
-		exportCtx: context.Background(),
+		activeBatch:    newEmptyBatch(),
+		cfg:            cfg,
+		mergeFunc:      mf,
+		mergeSplitFunc: msf,
+		exportCtx:      context.Background(),
 	}
 }
-
 
 func (b *batcher) updateActiveBatch(ctx context.Context, req Request) {
 	if b.activeBatch.request == nil {
@@ -62,7 +61,7 @@ func (bs *batchSender) startQueueBatchers() error {
 	bs.batchers = make([]*batcher, bs.cfg.NumBatchers)
 	for i := 0; i < bs.cfg.NumBatchers; i++ {
 		bs.batchers[i] = newBatcher(bs.cfg, bs.mergeFunc, bs.mergeSplitFunc)
-		
+
 		go func(index int) {
 			// batcher := bs.batchers[index]
 			for {
@@ -134,7 +133,7 @@ func (bs *batchSender) flushAllBatchers(timer *time.Timer) {
 		if bs.batchers[i].activeBatch.request != nil {
 			bs.nextSender.send(bs.batchers[i].activeBatch.ctx, bs.batchers[i].activeBatch.request)
 			bs.batchers[i].activeRequests.Store(0)
-			bs.batchers[i].activeBatch = newEmptyBatch()	
+			bs.batchers[i].activeBatch = newEmptyBatch()
 			// bs.batchers[i].mu.Unlock()
 		}
 		bs.batchers[i].mu.Unlock()

@@ -42,7 +42,7 @@ type batchSender struct {
 	shutdownCompleteCh chan struct{}
 	stopped            *atomic.Bool
 
-	queue          exporterqueue.Queue[Request]
+	queue exporterqueue.Queue[Request]
 }
 
 // newBatchSender returns a new batch consumer component.
