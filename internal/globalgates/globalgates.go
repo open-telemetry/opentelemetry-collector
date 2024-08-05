@@ -12,7 +12,7 @@ var UseUnifiedEnvVarExpansionRules = featuregate.GlobalRegistry().MustRegister("
 
 const StrictlyTypedInputID = "confmap.strictlyTypedInput"
 
-var StrictlyTypedInputGate = featuregate.GlobalRegistry().MustRegister(StrictlyTypedInputID,
+var _ = featuregate.GlobalRegistry().MustRegister(StrictlyTypedInputID,
 	featuregate.StageStable,
 	featuregate.WithRegisterFromVersion("v0.103.0"),
 	featuregate.WithRegisterToVersion("v0.109.0"),

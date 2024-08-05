@@ -14,8 +14,6 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
-	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/globalgates"
 )
 
 type TargetField string
@@ -279,14 +277,6 @@ func TestRecursiveInlineString(t *testing.T) {
 		},
 	}
 
-	previousValue := globalgates.StrictlyTypedInputGate.IsEnabled()
-	err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, true)
-	require.NoError(t, err)
-	defer func() {
-		err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, previousValue)
-		require.NoError(t, err)
-	}()
-
 	for _, tt := range values {
 		t.Run(tt.value+"/"+string(tt.targetField), func(t *testing.T) {
 			testFile := "types_expand.yaml"
@@ -305,15 +295,6 @@ func TestRecursiveInlineString(t *testing.T) {
 
 func TestRecursiveMaps(t *testing.T) {
 	value := "{value: 123}"
-
-	previousValue := globalgates.StrictlyTypedInputGate.IsEnabled()
-	err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, true)
-	require.NoError(t, err)
-	defer func() {
-		seterr := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, previousValue)
-		require.NoError(t, seterr)
-	}()
-
 	resolver := NewResolver(t, "types_expand.yaml")
 	t.Setenv("ENV", `{env: "${env:ENV2}", inline: "inline ${env:ENV2}"}`)
 	t.Setenv("ENV2", `{env2: "${env:ENV3}"}`)
@@ -361,14 +342,6 @@ func TestRecursiveMaps(t *testing.T) {
 
 // Test that comments with invalid ${env:...} references do not prevent configuration from loading.
 func TestIssue10787(t *testing.T) {
-	previousValue := globalgates.StrictlyTypedInputGate.IsEnabled()
-	err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, true)
-	require.NoError(t, err)
-	defer func() {
-		seterr := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, previousValue)
-		require.NoError(t, seterr)
-	}()
-
 	resolver := NewResolver(t, "issue-10787-main.yaml")
 	conf, err := resolver.Resolve(context.Background())
 	require.NoError(t, err)
@@ -413,14 +386,6 @@ func TestIssue10787(t *testing.T) {
 }
 
 func TestStructMappingIssue10787(t *testing.T) {
-	previousValue := globalgates.StrictlyTypedInputGate.IsEnabled()
-	err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, true)
-	require.NoError(t, err)
-	defer func() {
-		seterr := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, previousValue)
-		require.NoError(t, seterr)
-	}()
-
 	resolver := NewResolver(t, "types_expand.yaml")
 	t.Setenv("ENV", `# ${hello.world}
 logging:
