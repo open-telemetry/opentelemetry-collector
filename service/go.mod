@@ -9,7 +9,6 @@ require (
 	github.com/prometheus/common v0.55.0
 	github.com/shirou/gopsutil/v4 v4.24.6
 	github.com/stretchr/testify v1.9.0
-	go.opencensus.io v0.24.0
 	go.opentelemetry.io/collector v0.106.1
 	go.opentelemetry.io/collector/component v0.106.1
 	go.opentelemetry.io/collector/config/confighttp v0.106.1
@@ -22,7 +21,6 @@ require (
 	go.opentelemetry.io/collector/extension v0.106.1
 	go.opentelemetry.io/collector/extension/zpagesextension v0.106.1
 	go.opentelemetry.io/collector/featuregate v1.12.0
-	go.opentelemetry.io/collector/internal/globalgates v0.106.1
 	go.opentelemetry.io/collector/pdata v1.12.0
 	go.opentelemetry.io/collector/pdata/testdata v0.106.1
 	go.opentelemetry.io/collector/processor v0.106.1
@@ -31,7 +29,6 @@ require (
 	go.opentelemetry.io/contrib/config v0.8.0
 	go.opentelemetry.io/contrib/propagators/b3 v1.28.0
 	go.opentelemetry.io/otel v1.28.0
-	go.opentelemetry.io/otel/bridge/opencensus v1.28.0
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.28.0
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v1.28.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.50.0
@@ -58,7 +55,6 @@ require (
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/go-viper/mapstructure/v2 v2.0.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.20.0 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
@@ -82,6 +78,7 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/collector/client v0.106.1 // indirect
+	go.opentelemetry.io/collector/component/componentprofiles v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.106.1 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.12.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.12.0 // indirect
@@ -89,6 +86,7 @@ require (
 	go.opentelemetry.io/collector/config/internal v0.106.1 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.106.1 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.106.1 // indirect
+	go.opentelemetry.io/collector/internal/globalgates v0.106.1 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.106.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.53.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.53.0 // indirect
@@ -163,5 +161,7 @@ replace go.opentelemetry.io/collector/internal/globalgates => ../internal/global
 replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../consumer/consumerprofiles
 
 replace go.opentelemetry.io/collector/consumer/consumertest => ../consumer/consumertest
+
+replace go.opentelemetry.io/collector/component/componentprofiles => ../component/componentprofiles
 
 replace go.opentelemetry.io/collector/client => ../client
