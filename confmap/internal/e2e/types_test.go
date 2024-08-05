@@ -25,6 +25,7 @@ const (
 	TargetFieldString       TargetField = "string_field"
 	TargetFieldBool         TargetField = "bool_field"
 	TargetFieldInlineString TargetField = "inline_string_field"
+	TargetFieldSlice        TargetField = "slice_field"
 )
 
 type Test struct {
@@ -78,6 +79,9 @@ func AssertResolvesTo(t *testing.T, resolver *confmap.Resolver, tt Test) {
 		AssertExpectedMatch(t, tt, conf, &cfg)
 	case TargetFieldBool:
 		var cfg TargetConfig[bool]
+		AssertExpectedMatch(t, tt, conf, &cfg)
+	case TargetFieldSlice:
+		var cfg TargetConfig[[]any]
 		AssertExpectedMatch(t, tt, conf, &cfg)
 	default:
 		t.Fatalf("unexpected target field %q", tt.targetField)
@@ -372,6 +376,12 @@ func TestStrictTypeCasting(t *testing.T) {
 			value:       `["a",`,
 			targetField: TargetFieldInlineString,
 			expected:    `inline field with ["a", expansion`,
+		},
+		// issue 10799
+		{
+			value:       `[filelog,windowseventlog/application]`,
+			targetField: TargetFieldSlice,
+			expected:    []any{"filelog", "windowseventlog/application"},
 		},
 	}
 

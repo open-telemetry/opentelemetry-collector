@@ -70,12 +70,7 @@ func (mr *Resolver) expandValue(ctx context.Context, value any) (any, bool, erro
 			}, changed || originalChanged, nil
 		}
 
-		result := expandedValue{
-			Value:    expanded,
-			Original: v.Original,
-		}
-
-		return result, changed || originalChanged, nil
+		return expanded, changed, nil
 	case string:
 		if !strings.Contains(v, "${") || !strings.Contains(v, "}") {
 			// No URIs to expand.
