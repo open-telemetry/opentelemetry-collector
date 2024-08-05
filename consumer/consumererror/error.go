@@ -24,6 +24,10 @@ type ErrorData interface {
 	// Returns a status code and a boolean indicating whether a status was set
 	// by the error creator.
 	GRPCStatus() (*status.Status, bool)
+
+	// Disallow implementations outside this package to allow later extending
+	// the interface.
+	unexported()
 }
 
 type errorData struct {

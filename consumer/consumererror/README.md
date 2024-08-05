@@ -282,3 +282,25 @@ full count of pre-converted signals should be returned.
 The use of any components that do asynchronous processing in a pipeline will cut
 off error backpropagation at the asynchronous component. The asynchronous
 component may communicate error information using the Collector's own signals.
+
+## Transitioning
+
+> [!WARNING] This functionality is currently in the design phase. It is not
+> available and may not be added. The below is a design describing how this may
+> work.
+
+The following describes how to transition to these error types:
+
+- `NewPermanent`: To transition to new permanent errors, call
+  `consumererror.New` with the relevant metadata included in the invocation.
+  Errors will be permanent by default going forward.
+- `New[Traces|Metrics|Logs]`: These functions will be deprecated in favor of
+  having the caller provide the data to retry. Current uses can invoke
+  `consumererror.New` with the `WithRetry` option to retry a request.
+- `exporterhelper.NewThrottleRetry`: This will be replaced with `WithRetry`, and
+  can follow a similar approach as above.
+
+`consumererror.IsPermanent` will be deprecated in favor of checking whether
+retry information is available, and only retrying if it has been provided. This
+will be possible by calling `ErrorData.Retryable()` and checking for retry
+information.
