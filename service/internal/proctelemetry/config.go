@@ -318,7 +318,7 @@ func initOTLPHTTPExporter(ctx context.Context, otlpConfig *config.OTLPMetric) (s
 	return otlpmetrichttp.New(ctx, opts...)
 }
 
-func temporalityPreferenceCumulative(ik sdkmetric.InstrumentKind) metricdata.Temporality {
+func temporalityPreferenceCumulative(_ sdkmetric.InstrumentKind) metricdata.Temporality {
 	return metricdata.CumulativeTemporality
 }
 
