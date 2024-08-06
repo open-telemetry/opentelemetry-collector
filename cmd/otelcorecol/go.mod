@@ -34,7 +34,7 @@ require (
 	go.opentelemetry.io/collector/receiver v0.106.1
 	go.opentelemetry.io/collector/receiver/nopreceiver v0.106.1
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.106.1
-	golang.org/x/sys v0.22.0
+	golang.org/x/sys v0.23.0
 )
 
 require (
@@ -71,7 +71,7 @@ require (
 	github.com/prometheus/common v0.55.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/rs/cors v1.11.0 // indirect
-	github.com/shirou/gopsutil/v4 v4.24.6 // indirect
+	github.com/shirou/gopsutil/v4 v4.24.7 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/spf13/cobra v1.8.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
@@ -80,7 +80,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/collector v0.106.1 // indirect
 	go.opentelemetry.io/collector/client v0.106.1 // indirect
-	go.opentelemetry.io/collector/component/componentprofiles v0.0.0-00010101000000-000000000000 // indirect
+	go.opentelemetry.io/collector/component/componentprofiles v0.106.1 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.106.1 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.12.0 // indirect
 	go.opentelemetry.io/collector/config/configgrpc v0.106.1 // indirect
