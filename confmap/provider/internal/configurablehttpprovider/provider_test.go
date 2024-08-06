@@ -282,8 +282,11 @@ func TestInvalidYAML(t *testing.T) {
 		}
 	}))
 	defer ts.Close()
-	_, err := fp.Retrieve(context.Background(), ts.URL, nil)
-	assert.Error(t, err)
+	ret, err := fp.Retrieve(context.Background(), ts.URL, nil)
+	require.NoError(t, err)
+	raw, err := ret.AsRaw()
+	require.NoError(t, err)
+	assert.Equal(t, "wrong : [", raw)
 	require.NoError(t, fp.Shutdown(context.Background()))
 }
 

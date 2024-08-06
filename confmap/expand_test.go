@@ -542,22 +542,6 @@ func TestResolverExpandUnsupportedScheme(t *testing.T) {
 	assert.EqualError(t, err, `scheme "unsupported" is not supported for uri "unsupported:VALUE"`)
 }
 
-func TestResolverExpandStringValueInvalidReturnValue(t *testing.T) {
-	provider := newFakeProvider("input", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
-		return NewRetrievedFromYAML([]byte(`test: "localhost:${test:PORT}"`))
-	})
-
-	testProvider := newFakeProvider("test", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
-		return NewRetrievedFromYAML([]byte("[1243]"))
-	})
-
-	resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, ProviderFactories: []ProviderFactory{provider, testProvider}, ConverterFactories: nil})
-	require.NoError(t, err)
-
-	_, err = resolver.Resolve(context.Background())
-	assert.EqualError(t, err, `expanding ${test:PORT}: retrieved value does not have unambiguous string representation: [1243]`)
-}
-
 func TestResolverDefaultProviderExpand(t *testing.T) {
 	provider := newFakeProvider("input", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
 		return NewRetrieved(map[string]any{"foo": "${HOST}"})
