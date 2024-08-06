@@ -204,7 +204,7 @@ func escapeDollarSign(val any) any {
 		v.Value = escapeDollarSign(v.Value)
 		return v
 	case []any:
-		nslice := make([]any, len(v), len(v))
+		nslice := make([]any, len(v))
 		for i, x := range v {
 			nslice[i] = escapeDollarSign(x)
 		}
