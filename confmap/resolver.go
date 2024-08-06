@@ -200,7 +200,6 @@ func escapeDollarSign(val any) any {
 	case string:
 		return strings.ReplaceAll(v, "$$", "$")
 	case expandedValue:
-		v.Original = strings.ReplaceAll(v.Original, "$$", "$")
 		v.Value = escapeDollarSign(v.Value)
 		return v
 	case []any:
