@@ -849,9 +849,8 @@ func TestRecursiveUnmarshaling(t *testing.T) {
 func TestExpandedValue(t *testing.T) {
 	cm := NewFromStringMap(map[string]any{
 		"key": expandedValue{
-			Value:       0xdeadbeef,
-			HasOriginal: true,
-			Original:    "original",
+			Value:    0xdeadbeef,
+			Original: "original",
 		}})
 	assert.Equal(t, 0xdeadbeef, cm.Get("key"))
 	assert.Equal(t, map[string]any{"key": 0xdeadbeef}, cm.ToStringMap())

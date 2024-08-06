@@ -569,7 +569,43 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 			expectedPerExporter: 1,
 		},
 		{
-			name: "pipelines_conn_matrix.yaml",
+			name: "pipelines_conn_matrix_immutable.yaml",
+			pipelineConfigs: pipelines.Config{
+				component.MustNewIDWithName("traces", "in"): {
+					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("exampleconnector")},
+				},
+				component.MustNewIDWithName("metrics", "in"): {
+					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("exampleconnector")},
+				},
+				component.MustNewIDWithName("logs", "in"): {
+					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("exampleconnector")},
+				},
+				component.MustNewIDWithName("traces", "out"): {
+					Receivers:  []component.ID{component.MustNewID("exampleconnector")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+				},
+				component.MustNewIDWithName("metrics", "out"): {
+					Receivers:  []component.ID{component.MustNewID("exampleconnector")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+				},
+				component.MustNewIDWithName("logs", "out"): {
+					Receivers:  []component.ID{component.MustNewID("exampleconnector")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+				},
+			},
+			expectedPerExporter: 3,
+		},
+		{
+			name: "pipelines_conn_matrix_mutable.yaml",
 			pipelineConfigs: pipelines.Config{
 				component.MustNewIDWithName("traces", "in"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
@@ -949,34 +985,43 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 			for _, e := range allExporters[component.DataTypeTraces] {
 				tracesExporter := e.(*testcomponents.ExampleExporter)
 				assert.Equal(t, test.expectedPerExporter, len(tracesExporter.Traces))
-				expected := testdata.GenerateTraces(1)
-				if len(allExporters[component.DataTypeTraces]) > 1 {
-					expected.MarkReadOnly() // multiple read-only exporters should get read-only pdata
-				}
+				expectedMutable := testdata.GenerateTraces(1)
+				expectedReadOnly := testdata.GenerateTraces(1)
+				expectedReadOnly.MarkReadOnly()
 				for i := 0; i < test.expectedPerExporter; i++ {
-					assert.EqualValues(t, expected, tracesExporter.Traces[i])
+					if tracesExporter.Traces[i].IsReadOnly() {
+						assert.EqualValues(t, expectedReadOnly, tracesExporter.Traces[i])
+					} else {
+						assert.EqualValues(t, expectedMutable, tracesExporter.Traces[i])
+					}
 				}
 			}
 			for _, e := range allExporters[component.DataTypeMetrics] {
 				metricsExporter := e.(*testcomponents.ExampleExporter)
 				assert.Equal(t, test.expectedPerExporter, len(metricsExporter.Metrics))
-				expected := testdata.GenerateMetrics(1)
-				if len(allExporters[component.DataTypeMetrics]) > 1 {
-					expected.MarkReadOnly() // multiple read-only exporters should get read-only pdata
-				}
+				expectedMutable := testdata.GenerateMetrics(1)
+				expectedReadOnly := testdata.GenerateMetrics(1)
+				expectedReadOnly.MarkReadOnly()
 				for i := 0; i < test.expectedPerExporter; i++ {
-					assert.EqualValues(t, expected, metricsExporter.Metrics[i])
+					if metricsExporter.Metrics[i].IsReadOnly() {
+						assert.EqualValues(t, expectedReadOnly, metricsExporter.Metrics[i])
+					} else {
+						assert.EqualValues(t, expectedMutable, metricsExporter.Metrics[i])
+					}
 				}
 			}
 			for _, e := range allExporters[component.DataTypeLogs] {
 				logsExporter := e.(*testcomponents.ExampleExporter)
 				assert.Equal(t, test.expectedPerExporter, len(logsExporter.Logs))
-				expected := testdata.GenerateLogs(1)
-				if len(allExporters[component.DataTypeLogs]) > 1 {
-					expected.MarkReadOnly() // multiple read-only exporters should get read-only pdata
-				}
+				expectedMutable := testdata.GenerateLogs(1)
+				expectedReadOnly := testdata.GenerateLogs(1)
+				expectedReadOnly.MarkReadOnly()
 				for i := 0; i < test.expectedPerExporter; i++ {
-					assert.EqualValues(t, expected, logsExporter.Logs[i])
+					if logsExporter.Logs[i].IsReadOnly() {
+						assert.EqualValues(t, expectedReadOnly, logsExporter.Logs[i])
+					} else {
+						assert.EqualValues(t, expectedMutable, logsExporter.Logs[i])
+					}
 				}
 			}
 		})

@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/resource"
 
 	"go.opentelemetry.io/collector/processor/processorhelper"
@@ -252,6 +253,18 @@ func initOTLPgRPCExporter(ctx context.Context, otlpConfig *config.OTLPMetric) (s
 	if len(otlpConfig.Headers) > 0 {
 		opts = append(opts, otlpmetricgrpc.WithHeaders(otlpConfig.Headers))
 	}
+	if otlpConfig.TemporalityPreference != nil {
+		switch *otlpConfig.TemporalityPreference {
+		case "delta":
+			opts = append(opts, otlpmetricgrpc.WithTemporalitySelector(temporalityPreferenceDelta))
+		case "cumulative":
+			opts = append(opts, otlpmetricgrpc.WithTemporalitySelector(temporalityPreferenceCumulative))
+		case "lowmemory":
+			opts = append(opts, otlpmetricgrpc.WithTemporalitySelector(temporalityPreferenceLowMemory))
+		default:
+			return nil, fmt.Errorf("unsupported temporality preference %q", *otlpConfig.TemporalityPreference)
+		}
+	}
 
 	return otlpmetricgrpc.New(ctx, opts...)
 }
@@ -289,6 +302,44 @@ func initOTLPHTTPExporter(ctx context.Context, otlpConfig *config.OTLPMetric) (s
 	if len(otlpConfig.Headers) > 0 {
 		opts = append(opts, otlpmetrichttp.WithHeaders(otlpConfig.Headers))
 	}
+	if otlpConfig.TemporalityPreference != nil {
+		switch *otlpConfig.TemporalityPreference {
+		case "delta":
+			opts = append(opts, otlpmetrichttp.WithTemporalitySelector(temporalityPreferenceDelta))
+		case "cumulative":
+			opts = append(opts, otlpmetrichttp.WithTemporalitySelector(temporalityPreferenceCumulative))
+		case "lowmemory":
+			opts = append(opts, otlpmetrichttp.WithTemporalitySelector(temporalityPreferenceLowMemory))
+		default:
+			return nil, fmt.Errorf("unsupported temporality preference %q", *otlpConfig.TemporalityPreference)
+		}
+	}
 
 	return otlpmetrichttp.New(ctx, opts...)
+}
+
+func temporalityPreferenceCumulative(_ sdkmetric.InstrumentKind) metricdata.Temporality {
+	return metricdata.CumulativeTemporality
+}
+
+func temporalityPreferenceDelta(ik sdkmetric.InstrumentKind) metricdata.Temporality {
+	switch ik {
+	case sdkmetric.InstrumentKindCounter, sdkmetric.InstrumentKindObservableCounter, sdkmetric.InstrumentKindHistogram:
+		return metricdata.DeltaTemporality
+	case sdkmetric.InstrumentKindObservableUpDownCounter, sdkmetric.InstrumentKindUpDownCounter:
+		return metricdata.CumulativeTemporality
+	default:
+		return metricdata.DeltaTemporality
+	}
+}
+
+func temporalityPreferenceLowMemory(ik sdkmetric.InstrumentKind) metricdata.Temporality {
+	switch ik {
+	case sdkmetric.InstrumentKindCounter, sdkmetric.InstrumentKindHistogram:
+		return metricdata.DeltaTemporality
+	case sdkmetric.InstrumentKindObservableCounter, sdkmetric.InstrumentKindObservableUpDownCounter, sdkmetric.InstrumentKindUpDownCounter:
+		return metricdata.CumulativeTemporality
+	default:
+		return metricdata.DeltaTemporality
+	}
 }
