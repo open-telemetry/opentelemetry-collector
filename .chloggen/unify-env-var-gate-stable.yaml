@@ -7,7 +7,7 @@ change_type: breaking
 component: confmap
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Set the `confmap.unifyEnvVarExpansion` feature gate to Stable. Expansion of `$FOO` env vars is no longer supporter.  Use `${FOO}` or `${env:FOO}` instead.
+note: Set the `confmap.unifyEnvVarExpansion` feature gate to Stable. Expansion of `$FOO` env vars is no longer supported.  Use `${FOO}` or `${env:FOO}` instead.
 
 # One or more tracking issues or pull requests related to the change
 issues: [10508]

@@ -59,7 +59,6 @@ func Test_EscapedEnvVars_NoDefaultScheme(t *testing.T) {
 	assert.Equal(t, expectedMap, m)
 }
 
-// Test_EscapedEnvVars tests that the resolver supports escaped env vars working together with expand converter.
 func Test_EscapedEnvVars_DefaultScheme(t *testing.T) {
 	const expandedValue = "some expanded value"
 	t.Setenv("ENV_VALUE", expandedValue)

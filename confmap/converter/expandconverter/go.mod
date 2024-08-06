@@ -3,7 +3,7 @@ module go.opentelemetry.io/collector/confmap/converter/expandconverter
 go 1.21.0
 
 require (
-	go.opentelemetry.io/collector/confmap v0.104.0
+	go.opentelemetry.io/collector/confmap v0.106.1
 	go.opentelemetry.io/collector/internal/globalgates v0.106.1
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
