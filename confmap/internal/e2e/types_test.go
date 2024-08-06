@@ -658,7 +658,7 @@ func TestStructMappingIssue10787(t *testing.T) {
 	}()
 
 	resolver := NewResolver(t, "types_expand.yaml")
-	t.Setenv("ENV", `# ${hello.world}
+	t.Setenv("ENV", `# this is a comment
 logging:
   verbosity: detailed`)
 	conf, err := resolver.Resolve(context.Background())
@@ -691,7 +691,58 @@ logging:
 	var cfgStr TargetConfig[string]
 	err = confStr.Unmarshal(&cfgStr)
 	require.NoError(t, err)
-	require.Equal(t, `# ${hello.world}
+	require.Equal(t, `# this is a comment
+logging:
+  verbosity: detailed`,
+		cfgStr.Field,
+	)
+}
+
+func TestStructMappingIssue10787_ExpandComment(t *testing.T) {
+	previousValue := globalgates.StrictlyTypedInputGate.IsEnabled()
+	err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, true)
+	require.NoError(t, err)
+	defer func() {
+		seterr := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, previousValue)
+		require.NoError(t, seterr)
+	}()
+
+	resolver := NewResolver(t, "types_expand.yaml")
+	t.Setenv("EXPAND_ME", "an expanded env var")
+	t.Setenv("ENV", `# this is a comment with ${EXPAND_ME}
+logging:
+  verbosity: detailed`)
+	conf, err := resolver.Resolve(context.Background())
+	require.NoError(t, err)
+
+	type Logging struct {
+		Verbosity string `mapstructure:"verbosity"`
+	}
+	type Exporters struct {
+		Logging Logging `mapstructure:"logging"`
+	}
+	type Target struct {
+		Field Exporters `mapstructure:"field"`
+	}
+
+	var cfg Target
+	err = conf.Unmarshal(&cfg)
+	require.NoError(t, err)
+	require.Equal(t,
+		Target{Field: Exporters{
+			Logging: Logging{
+				Verbosity: "detailed",
+			},
+		}},
+		cfg,
+	)
+
+	confStr, err := resolver.Resolve(context.Background())
+	require.NoError(t, err)
+	var cfgStr TargetConfig[string]
+	err = confStr.Unmarshal(&cfgStr)
+	require.NoError(t, err)
+	require.Equal(t, `# this is a comment with an expanded env var
 logging:
   verbosity: detailed`,
 		cfgStr.Field,
