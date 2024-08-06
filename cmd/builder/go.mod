@@ -9,7 +9,7 @@ require (
 	github.com/hashicorp/go-version v1.7.0
 	github.com/knadh/koanf/parsers/yaml v0.1.0
 	github.com/knadh/koanf/providers/env v0.1.0
-	github.com/knadh/koanf/providers/file v1.0.0
+	github.com/knadh/koanf/providers/file v1.1.0
 	github.com/knadh/koanf/providers/fs v0.1.0
 	github.com/knadh/koanf/v2 v2.1.1
 	github.com/spf13/cobra v1.8.1
@@ -18,7 +18,7 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
-	golang.org/x/mod v0.18.0
+	golang.org/x/mod v0.20.0
 )
 
 require (

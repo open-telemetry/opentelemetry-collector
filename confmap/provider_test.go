@@ -56,8 +56,19 @@ func TestNewRetrievedFromYAMLWithOptions(t *testing.T) {
 }
 
 func TestNewRetrievedFromYAMLInvalidYAMLBytes(t *testing.T) {
-	_, err := NewRetrievedFromYAML([]byte("[invalid:,"))
+	ret, err := NewRetrievedFromYAML([]byte("[invalid:,"))
+	require.NoError(t, err)
+
+	_, err = ret.AsConf()
 	assert.Error(t, err)
+
+	str, err := ret.AsString()
+	require.NoError(t, err)
+	assert.Equal(t, "[invalid:,", str)
+
+	raw, err := ret.AsRaw()
+	require.NoError(t, err)
+	assert.Equal(t, "[invalid:,", raw)
 }
 
 func TestNewRetrievedFromYAMLInvalidAsMap(t *testing.T) {
@@ -85,8 +96,8 @@ func TestNewRetrievedFromYAMLString(t *testing.T) {
 		},
 		{
 			yaml:       "\"string\"",
-			value:      "string",
-			altStrRepr: "string",
+			value:      "\"string\"",
+			altStrRepr: "\"string\"",
 		},
 		{
 			yaml:  "123",
@@ -113,9 +124,8 @@ func TestNewRetrievedFromYAMLString(t *testing.T) {
 			value: 0.123,
 		},
 		{
-			yaml:       "{key: value}",
-			value:      map[string]any{"key": "value"},
-			strReprErr: "retrieved value does not have unambiguous string representation",
+			yaml:  "{key: value}",
+			value: map[string]any{"key": "value"},
 		},
 	}
 

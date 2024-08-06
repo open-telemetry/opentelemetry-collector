@@ -17,10 +17,10 @@ import (
 	"go.uber.org/zap"
 )
 
-const defaultOtelColVersion = "0.104.0"
+const defaultOtelColVersion = "0.106.1"
 
-// ErrInvalidGoMod indicates an invalid gomod
-var ErrInvalidGoMod = errors.New("invalid gomod specification for module")
+// ErrMissingGoMod indicates an empty gomod field
+var ErrMissingGoMod = errors.New("missing gomod specification for module")
 
 // Config holds the builder's configuration
 type Config struct {
@@ -64,6 +64,7 @@ type Distribution struct {
 	OtelColVersion           string `mapstructure:"otelcol_version"`
 	RequireOtelColModule     bool   `mapstructure:"-"` // required for backwards-compatibility with builds older than 0.86.0
 	SupportsConfmapFactories bool   `mapstructure:"-"` // Required for backwards-compatibility with builds older than 0.99.0
+	SupportsComponentModules bool   `mapstructure:"-"` // Required for backwards-compatibility with builds older than 0.106.0
 	OutputPath               string `mapstructure:"output_path"`
 	Version                  string `mapstructure:"version"`
 	BuildTags                string `mapstructure:"build_tags"`
@@ -115,14 +116,14 @@ func NewDefaultConfig() Config {
 func (c *Config) Validate() error {
 	var providersError error
 	if c.Providers != nil {
-		providersError = validateModules(*c.Providers)
+		providersError = validateModules("provider", *c.Providers)
 	}
 	return multierr.Combine(
-		validateModules(c.Extensions),
-		validateModules(c.Receivers),
-		validateModules(c.Exporters),
-		validateModules(c.Processors),
-		validateModules(c.Connectors),
+		validateModules("extension", c.Extensions),
+		validateModules("receiver", c.Receivers),
+		validateModules("exporter", c.Exporters),
+		validateModules("processor", c.Processors),
+		validateModules("connector", c.Connectors),
 		providersError,
 	)
 }
@@ -144,13 +145,14 @@ func (c *Config) SetGoPath() error {
 }
 
 func (c *Config) SetBackwardsCompatibility() error {
-	// check whether we need to adjust the core API module import
-	constraint, err := version.NewConstraint(">= 0.86.0")
+	// Get the version of the collector
+	otelColVersion, err := version.NewVersion(c.Distribution.OtelColVersion)
 	if err != nil {
 		return err
 	}
 
-	otelColVersion, err := version.NewVersion(c.Distribution.OtelColVersion)
+	// check whether we need to adjust the core API module import
+	constraint, err := version.NewConstraint(">= 0.86.0")
 	if err != nil {
 		return err
 	}
@@ -163,12 +165,15 @@ func (c *Config) SetBackwardsCompatibility() error {
 		return err
 	}
 
-	otelColVersion, err = version.NewVersion(c.Distribution.OtelColVersion)
+	c.Distribution.SupportsConfmapFactories = constraint.Check(otelColVersion)
+
+	// check whether go modules are recorded for components
+	constraint, err = version.NewConstraint(">= 0.106.0")
 	if err != nil {
 		return err
 	}
 
-	c.Distribution.SupportsConfmapFactories = constraint.Check(otelColVersion)
+	c.Distribution.SupportsComponentModules = constraint.Check(otelColVersion)
 
 	return nil
 }
@@ -235,10 +240,10 @@ func (c *Config) ParseModules() error {
 	return nil
 }
 
-func validateModules(mods []Module) error {
-	for _, mod := range mods {
+func validateModules(name string, mods []Module) error {
+	for i, mod := range mods {
 		if mod.GoMod == "" {
-			return fmt.Errorf("module %q: %w", mod.GoMod, ErrInvalidGoMod)
+			return fmt.Errorf("%s module at index %v: %w", name, i, ErrMissingGoMod)
 		}
 	}
 	return nil

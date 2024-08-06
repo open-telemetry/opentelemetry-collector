@@ -89,7 +89,7 @@ type NotifyStatusFunc func(*component.InstanceID, *component.StatusEvent)
 // InvalidTransitionFunc is the receiver of invalid transition errors
 type InvalidTransitionFunc func(error)
 
-// ServiceStatusFunc is the expected type of ReportStatus for servicetelemetry.Settings
+// ServiceStatusFunc is the expected type of ReportStatus
 type ServiceStatusFunc func(*component.InstanceID, *component.StatusEvent)
 
 // ErrStatusNotReady is returned when trying to report status before service start
@@ -167,9 +167,7 @@ func (r *reporter) componentFSM(id *component.InstanceID) *fsm {
 	return fsm
 }
 
-// NewReportStatusFunc returns a function to be used as ReportStatus for
-// component.TelemetrySettings, which differs from servicetelemetry.Settings in that
-// the component version is tied to specific component instance.
+// NewReportStatusFunc returns a function to be used as ReportStatus for component.TelemetrySettings
 func NewReportStatusFunc(
 	id *component.InstanceID,
 	srvStatus ServiceStatusFunc,
