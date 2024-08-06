@@ -5,12 +5,14 @@ package configtls // import "go.opentelemetry.io/collector/config/configtls"
 
 import (
 	"context"
+	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -37,6 +39,9 @@ type Config struct {
 
 	// In memory PEM encoded cert. (optional)
 	CAPem configopaque.String `mapstructure:"ca_pem"`
+
+	// A set of SHA256 fingerprints that represent the client certificates we should trust.
+	TrustedKeys []string `mapstructure:"trusted_keys"`
 
 	// If true, load system CA certificates pool in addition to the certificates
 	// configured in this struct.
@@ -177,6 +182,19 @@ func (r *certReloader) GetCertificate() (*tls.Certificate, error) {
 	return r.cert, nil
 }
 
+func (c Config) verifyPeerCertificate(_ [][]byte, verifiedChains [][]*x509.Certificate) error {
+	for _, chain := range verifiedChains {
+		hash := fingerprintCertificate(chain[0])
+		for _, trusted := range c.TrustedKeys {
+			if hash == trusted {
+				return nil
+			}
+		}
+	}
+
+	return fmt.Errorf("key not in trusted_keys")
+}
+
 func (c Config) Validate() error {
 	if c.hasCAFile() && c.hasCAPem() {
 		return fmt.Errorf("provide either a CA file or the PEM-encoded string, but not both")
@@ -232,13 +250,19 @@ func (c Config) loadTLSConfig() (*tls.Config, error) {
 		return nil, err
 	}
 
+	var verifyPeerCertificate func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error
+	if len(c.TrustedKeys) > 0 {
+		verifyPeerCertificate = c.verifyPeerCertificate
+	}
+
 	return &tls.Config{
-		RootCAs:              certPool,
-		GetCertificate:       getCertificate,
-		GetClientCertificate: getClientCertificate,
-		MinVersion:           minTLS,
-		MaxVersion:           maxTLS,
-		CipherSuites:         cipherSuites,
+		RootCAs:               certPool,
+		GetCertificate:        getCertificate,
+		GetClientCertificate:  getClientCertificate,
+		MinVersion:            minTLS,
+		MaxVersion:            maxTLS,
+		CipherSuites:          cipherSuites,
+		VerifyPeerCertificate: verifyPeerCertificate,
 	}, nil
 }
 
@@ -447,4 +471,21 @@ var tlsVersions = map[string]uint16{
 	"1.1": tls.VersionTLS11,
 	"1.2": tls.VersionTLS12,
 	"1.3": tls.VersionTLS13,
+}
+
+// Returns a SHA256 hash of the given certificate.
+func fingerprintCertificate(cert *x509.Certificate) string {
+	sha := sha256.New()
+	sha.Write(cert.Raw)
+	fingerprint := sha.Sum(nil)
+
+	var buf strings.Builder
+	for i, f := range fingerprint {
+		if i > 0 {
+			fmt.Fprintf(&buf, ":")
+		}
+		fmt.Fprintf(&buf, "%02X", f)
+	}
+
+	return buf.String()
 }
