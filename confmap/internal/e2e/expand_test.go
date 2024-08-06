@@ -16,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 )
 
-// Test_EscapedEnvVars tests that the resolver supports escaped env vars working together with expand converter.
 func Test_EscapedEnvVars_NoDefaultScheme(t *testing.T) {
 	const expandedValue = "some expanded value"
 	t.Setenv("ENV_VALUE", expandedValue)
