@@ -29,3 +29,7 @@ test_map:
   key14: "$$${env:ENV_VALUE}"
   # $ -> $
   key15: "$ENV_VALUE"
+  # list is escaped
+  key16: "${env:ENV_LIST}"
+  # map is escaped
+  key17: "${env:ENV_MAP}"

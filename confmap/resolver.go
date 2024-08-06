@@ -181,11 +181,7 @@ func (mr *Resolver) Resolve(ctx context.Context) (*Conf, error) {
 		if err != nil {
 			return nil, err
 		}
-		if v, ok := val.(string); ok {
-			cfgMap[k] = strings.ReplaceAll(v, "$$", "$")
-		} else {
-			cfgMap[k] = val
-		}
+		cfgMap[k] = escapeDollarSign(val)
 	}
 	retMap = NewFromStringMap(cfgMap)
 
@@ -197,6 +193,31 @@ func (mr *Resolver) Resolve(ctx context.Context) (*Conf, error) {
 	}
 
 	return retMap, nil
+}
+
+func escapeDollarSign(val any) any {
+	switch v := val.(type) {
+	case string:
+		return strings.ReplaceAll(v, "$$", "$")
+	case expandedValue:
+		v.Original = strings.ReplaceAll(v.Original, "$$", "$")
+		v.Value = escapeDollarSign(v.Value)
+		return v
+	case []any:
+		nslice := make([]any, len(v), len(v))
+		for i, x := range v {
+			nslice[i] = escapeDollarSign(x)
+		}
+		return nslice
+	case map[string]any:
+		nmap := make(map[string]any, len(v))
+		for k, x := range v {
+			nmap[k] = escapeDollarSign(x)
+		}
+		return nmap
+	default:
+		return val
+	}
 }
 
 // Watch blocks until any configuration change was detected or an unrecoverable error
