@@ -89,10 +89,10 @@ Or should we refactor `component` somehow to remove `ReportStatus` from `compone
 
 For each listed deviation, the solution for unblocking component 1.0 is:
 
-- `Fatal Error Reporting` :x:: we do not yet have a solution.
-- `No way to identify components that are not reporting status` :white_check_mark:: This can be implemented as a feature addition to component status reporting without blocking component 1.0
-- `Should component health reporting be an opt-in for component.Host implementations?` :x:: we do not yet have a solution.
-- `Component TelemetrySettings Requirements` :x:: We want to find a way to not include experimental features on stable structs. This means we still need to figure out how to handle `component.TelemetrySettings.ReportStatus`.
+- `Fatal Error Reporting` :white_check_mark:: The `component` module provides no mechanism for a component to stop a collector after it has started. It is expected that an error returned from `Start` will terminate a starting Collector, but it is ultimately up to the caller of `Start` how to handle the returned error. A `component.Host` implementation may choose to provide a mechanism to stop a running collector via a different Interface, but doing so is not required.
+- `No way to identify components that are not reporting status` :white_check_mark:: This can be implemented as a feature addition to component status reporting without blocking `component` 1.0
+- `Should component health reporting be an opt-in for component.Host implementations?` :white_check_mark:: Yes. A `component.Host` implementation is not required to provide a component status reporting feature. They may do so via an additional interface, such as `componentstatus.Reporter`.
+- `Component TelemetrySettings Requirements` :white_check_mark:: `component.TelemetrySettings.ReportStatus` will be removed. Instead, component status reporting is expected to be provided via an additional interface that `component.Host` implements. Components can check if the `component.Host` implements the desired interface, such as `componentstatus.Reporter` to access component status reporting features.
 
 
 ## Reference
