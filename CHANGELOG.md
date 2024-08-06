@@ -7,6 +7,12 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.106.1
+
+### 🧰 Bug fixes 🧰
+
+- `configauth`: Fix unmarshaling of authentication in HTTP servers. (#10750)
+
 ## v0.106.0
 
 ### 🛑 Breaking changes 🛑
