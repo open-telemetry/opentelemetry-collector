@@ -166,9 +166,9 @@ var (
 )
 
 // nameRegexp is used to validate the name of a component. A name can consist of
-// 1 to 63 unicode characters excluding whitespace, control characters, and
+// 1 to 127 unicode characters excluding whitespace, control characters, and
 // symbols.
-var nameRegexp = regexp.MustCompile(`^[^\pZ\pC\pS]{1,63}$`)
+var nameRegexp = regexp.MustCompile(`^[^\pZ\pC\pS]{1,127}$`)
 
 func validateName(nameStr string) error {
 	if !nameRegexp.MatchString(nameStr) {
