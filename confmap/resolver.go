@@ -96,7 +96,17 @@ func NewResolver(set ResolverSettings) (*Resolver, error) {
 	providers := make(map[string]Provider, len(set.ProviderFactories))
 	for _, factory := range set.ProviderFactories {
 		provider := factory.Create(set.ProviderSettings)
-		providers[provider.Scheme()] = provider
+		scheme := provider.Scheme()
+		// Check that the scheme follows the pattern.
+		if !regexp.MustCompile(schemePattern).MatchString(scheme) {
+			return nil, fmt.Errorf("invalid 'confmap.Provider' scheme %q", scheme)
+		}
+		// Check that the scheme is unique.
+		if _, ok := providers[scheme]; ok {
+			return nil, fmt.Errorf("duplicate 'confmap.Provider' scheme %q", scheme)
+		}
+
+		providers[scheme] = provider
 	}
 
 	if set.DefaultScheme != "" {

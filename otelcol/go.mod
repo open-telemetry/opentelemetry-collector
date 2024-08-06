@@ -20,7 +20,7 @@ require (
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842
-	golang.org/x/sys v0.22.0
+	golang.org/x/sys v0.23.0
 	google.golang.org/grpc v1.65.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -35,7 +35,6 @@ require (
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/go-viper/mapstructure/v2 v2.0.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.20.0 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
@@ -56,14 +55,14 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.55.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
-	github.com/shirou/gopsutil/v4 v4.24.6 // indirect
+	github.com/shirou/gopsutil/v4 v4.24.7 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
-	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector v0.106.1 // indirect
+	go.opentelemetry.io/collector/component/componentprofiles v0.106.1 // indirect
 	go.opentelemetry.io/collector/consumer v0.106.1 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.106.1 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.106.1 // indirect
@@ -74,7 +73,6 @@ require (
 	go.opentelemetry.io/contrib/config v0.8.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.28.0 // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
-	go.opentelemetry.io/otel/bridge/opencensus v1.28.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp v0.4.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.28.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v1.28.0 // indirect
@@ -154,5 +152,7 @@ replace go.opentelemetry.io/collector/internal/globalgates => ../internal/global
 replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../consumer/consumerprofiles
 
 replace go.opentelemetry.io/collector/consumer/consumertest => ../consumer/consumertest
+
+replace go.opentelemetry.io/collector/component/componentprofiles => ../component/componentprofiles
 
 replace go.opentelemetry.io/collector/client => ../client
