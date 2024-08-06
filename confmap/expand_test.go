@@ -61,11 +61,8 @@ func TestResolverDoneNotExpandOldEnvVars(t *testing.T) {
 	envProvider := newFakeProvider("env", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
 		return NewRetrieved("some string")
 	})
-	emptySchemeProvider := newFakeProvider("", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
-		return NewRetrieved("some string")
-	})
 
-	resolver, err := NewResolver(ResolverSettings{URIs: []string{"test:"}, ProviderFactories: []ProviderFactory{fileProvider, envProvider, emptySchemeProvider}, ConverterFactories: nil})
+	resolver, err := NewResolver(ResolverSettings{URIs: []string{"test:"}, ProviderFactories: []ProviderFactory{fileProvider, envProvider}, ConverterFactories: nil})
 	require.NoError(t, err)
 
 	// Test that expanded configs are the same with the simple config with no env vars.
@@ -509,12 +506,8 @@ func TestResolverExpandInvalidScheme(t *testing.T) {
 		panic("must not be called")
 	})
 
-	resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, ProviderFactories: []ProviderFactory{provider, testProvider}, ConverterFactories: nil})
-	require.NoError(t, err)
-
-	_, err = resolver.Resolve(context.Background())
-
-	assert.EqualError(t, err, `invalid uri: "g_c_s:VALUE"`)
+	_, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, ProviderFactories: []ProviderFactory{provider, testProvider}, ConverterFactories: nil})
+	assert.ErrorContains(t, err, "invalid 'confmap.Provider' scheme")
 }
 
 func TestResolverExpandInvalidOpaqueValue(t *testing.T) {
@@ -547,22 +540,6 @@ func TestResolverExpandUnsupportedScheme(t *testing.T) {
 
 	_, err = resolver.Resolve(context.Background())
 	assert.EqualError(t, err, `scheme "unsupported" is not supported for uri "unsupported:VALUE"`)
-}
-
-func TestResolverExpandStringValueInvalidReturnValue(t *testing.T) {
-	provider := newFakeProvider("input", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
-		return NewRetrieved(map[string]any{"test": "localhost:${test:PORT}"})
-	})
-
-	testProvider := newFakeProvider("test", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
-		return NewRetrieved([]any{1243})
-	})
-
-	resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, ProviderFactories: []ProviderFactory{provider, testProvider}, ConverterFactories: nil})
-	require.NoError(t, err)
-
-	_, err = resolver.Resolve(context.Background())
-	assert.EqualError(t, err, `expanding ${test:PORT}: expected convertable to string value type, got ['ӛ']([]interface {})`)
 }
 
 func TestResolverDefaultProviderExpand(t *testing.T) {

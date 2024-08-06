@@ -19,7 +19,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/contrib/config"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/bridge/opencensus"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	otelprom "go.opentelemetry.io/otel/exporters/prometheus"
@@ -28,7 +27,6 @@ import (
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 
-	"go.opentelemetry.io/collector/internal/featuregates"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 )
@@ -69,10 +67,6 @@ func InitMetricReader(ctx context.Context, reader config.MetricReader, asyncErro
 	}
 	if reader.Periodic != nil {
 		var opts []sdkmetric.PeriodicReaderOption
-
-		if !featuregates.DisableOpenCensusBridge.IsEnabled() {
-			opts = append(opts, sdkmetric.WithProducer(opencensus.NewMetricProducer()))
-		}
 		if reader.Periodic.Interval != nil {
 			opts = append(opts, sdkmetric.WithInterval(time.Duration(*reader.Periodic.Interval)*time.Millisecond))
 		}
@@ -172,11 +166,7 @@ func initPrometheusExporter(prometheusConfig *config.Prometheus, asyncErrorChann
 		otelprom.WithoutScopeInfo(),
 		// This allows us to produce metrics that are backwards compatible w/ opencensus
 		otelprom.WithoutCounterSuffixes(),
-		otelprom.WithNamespace("otelcol"),
 		otelprom.WithResourceAsConstantLabels(attribute.NewDenyKeysFilter()),
-	}
-	if !featuregates.DisableOpenCensusBridge.IsEnabled() {
-		opts = append(opts, otelprom.WithProducer(opencensus.NewMetricProducer()))
 	}
 	exporter, err := otelprom.New(opts...)
 	if err != nil {

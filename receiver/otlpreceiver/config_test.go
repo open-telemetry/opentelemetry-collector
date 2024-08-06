@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -117,6 +118,11 @@ func TestUnmarshalConfig(t *testing.T) {
 				},
 				HTTP: &HTTPConfig{
 					ServerConfig: &confighttp.ServerConfig{
+						Auth: &confighttp.AuthConfig{
+							Authentication: configauth.Authentication{
+								AuthenticatorID: component.MustNewID("test"),
+							},
+						},
 						Endpoint: "localhost:4318",
 						TLSSetting: &configtls.ServerConfig{
 							Config: configtls.Config{
@@ -171,7 +177,7 @@ func TestUnmarshalConfigTypoDefaultProtocol(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.EqualError(t, cm.Unmarshal(&cfg), "1 error(s) decoding:\n\n* 'protocols' has invalid keys: htttp")
+	assert.ErrorContains(t, cm.Unmarshal(&cfg), "'protocols' has invalid keys: htttp")
 }
 
 func TestUnmarshalConfigInvalidProtocol(t *testing.T) {
@@ -179,7 +185,7 @@ func TestUnmarshalConfigInvalidProtocol(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.EqualError(t, cm.Unmarshal(&cfg), "1 error(s) decoding:\n\n* 'protocols' has invalid keys: thrift")
+	assert.ErrorContains(t, cm.Unmarshal(&cfg), "'protocols' has invalid keys: thrift")
 }
 
 func TestUnmarshalConfigEmptyProtocols(t *testing.T) {
