@@ -20,8 +20,8 @@ import (
 func Test_EscapedEnvVars_NoDefaultScheme(t *testing.T) {
 	const expandedValue = "some expanded value"
 	t.Setenv("ENV_VALUE", expandedValue)
-	t.Setenv("ENV_LIST", "['$$ESCAPE_ME','$$ESCAPE_ME']")
-	t.Setenv("ENV_MAP", "{'key': '$$ESCAPE_ME'}")
+	t.Setenv("ENV_LIST", "['$$ESCAPE_ME','$${ESCAPE_ME}','$${env:ESCAPE_ME}']")
+	t.Setenv("ENV_MAP", "{'key1':'$$ESCAPE_ME','key2':'$${ESCAPE_ME}','key3':'$${env:ESCAPE_ME}'}")
 
 	expectedMap := map[string]any{
 		"test_map": map[string]any{
@@ -40,8 +40,8 @@ func Test_EscapedEnvVars_NoDefaultScheme(t *testing.T) {
 			"key13": "env:MAP_VALUE_2}${ENV_VALUE}{",
 			"key14": "$" + expandedValue,
 			"key15": "$ENV_VALUE",
-			"key16": []any{"$ESCAPE_ME", "$ESCAPE_ME"},
-			"key17": map[string]any{"key": "$ESCAPE_ME"},
+			"key16": []any{"$ESCAPE_ME", "${ESCAPE_ME}", "${env:ESCAPE_ME}"},
+			"key17": map[string]any{"key1": "$ESCAPE_ME", "key2": "${ESCAPE_ME}", "key3": "${env:ESCAPE_ME}"},
 		},
 	}
 
@@ -63,8 +63,8 @@ func Test_EscapedEnvVars_NoDefaultScheme(t *testing.T) {
 func Test_EscapedEnvVars_DefaultScheme(t *testing.T) {
 	const expandedValue = "some expanded value"
 	t.Setenv("ENV_VALUE", expandedValue)
-	t.Setenv("ENV_LIST", "['$$ESCAPE_ME','$$ESCAPE_ME']")
-	t.Setenv("ENV_MAP", "{'key': '$$ESCAPE_ME'}")
+	t.Setenv("ENV_LIST", "['$$ESCAPE_ME','$${ESCAPE_ME}','$${env:ESCAPE_ME}']")
+	t.Setenv("ENV_MAP", "{'key1':'$$ESCAPE_ME','key2':'$${ESCAPE_ME}','key3':'$${env:ESCAPE_ME}'}")
 
 	expectedMap := map[string]any{
 		"test_map": map[string]any{
@@ -83,8 +83,8 @@ func Test_EscapedEnvVars_DefaultScheme(t *testing.T) {
 			"key13": "env:MAP_VALUE_2}${ENV_VALUE}{",
 			"key14": "$" + expandedValue,
 			"key15": "$ENV_VALUE",
-			"key16": []any{"$ESCAPE_ME", "$ESCAPE_ME"},
-			"key17": map[string]any{"key": "$ESCAPE_ME"},
+			"key16": []any{"$ESCAPE_ME", "${ESCAPE_ME}", "${env:ESCAPE_ME}"},
+			"key17": map[string]any{"key1": "$ESCAPE_ME", "key2": "${ESCAPE_ME}", "key3": "${env:ESCAPE_ME}"},
 		},
 	}
 
