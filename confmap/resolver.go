@@ -181,7 +181,7 @@ func (mr *Resolver) Resolve(ctx context.Context) (*Conf, error) {
 		if err != nil {
 			return nil, err
 		}
-		cfgMap[k] = escapeDollarSign(val)
+		cfgMap[k] = escapeDollarSigns(val)
 	}
 	retMap = NewFromStringMap(cfgMap)
 
@@ -195,23 +195,24 @@ func (mr *Resolver) Resolve(ctx context.Context) (*Conf, error) {
 	return retMap, nil
 }
 
-func escapeDollarSign(val any) any {
+func escapeDollarSigns(val any) any {
 	switch v := val.(type) {
 	case string:
 		return strings.ReplaceAll(v, "$$", "$")
 	case expandedValue:
-		v.Value = escapeDollarSign(v.Value)
+		v.Original = strings.ReplaceAll(v.Original, "$$", "$")
+		v.Value = escapeDollarSigns(v.Value)
 		return v
 	case []any:
 		nslice := make([]any, len(v))
 		for i, x := range v {
-			nslice[i] = escapeDollarSign(x)
+			nslice[i] = escapeDollarSigns(x)
 		}
 		return nslice
 	case map[string]any:
 		nmap := make(map[string]any, len(v))
 		for k, x := range v {
-			nmap[k] = escapeDollarSign(x)
+			nmap[k] = escapeDollarSigns(x)
 		}
 		return nmap
 	default:

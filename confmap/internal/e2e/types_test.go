@@ -47,6 +47,7 @@ func NewResolver(t testing.TB, path string) *confmap.Resolver {
 			fileprovider.NewFactory(),
 			envprovider.NewFactory(),
 		},
+		DefaultScheme: "env",
 	})
 	require.NoError(t, err)
 	return resolver
@@ -244,6 +245,8 @@ func TestTypeCasting(t *testing.T) {
 }
 
 func TestStrictTypeCasting(t *testing.T) {
+	t.Setenv("ENV_VALUE", "testreceiver")
+
 	values := []Test{
 		{
 			value:       "123",
@@ -392,6 +395,66 @@ func TestStrictTypeCasting(t *testing.T) {
 			value:       `[filelog,windowseventlog/application]`,
 			targetField: TargetFieldInlineString,
 			expected:    "inline field with [filelog,windowseventlog/application] expansion",
+		},
+		{
+			value:       "$$ENV",
+			targetField: TargetFieldString,
+			expected:    "$ENV",
+		},
+		{
+			value:       "$$ENV",
+			targetField: TargetFieldInlineString,
+			expected:    "inline field with $ENV expansion",
+		},
+		{
+			value:       "$${ENV}",
+			targetField: TargetFieldString,
+			expected:    "${ENV}",
+		},
+		{
+			value:       "$${ENV}",
+			targetField: TargetFieldInlineString,
+			expected:    "inline field with ${ENV} expansion",
+		},
+		{
+			value:       "$${env:ENV}",
+			targetField: TargetFieldString,
+			expected:    "${env:ENV}",
+		},
+		{
+			value:       "$${env:ENV}",
+			targetField: TargetFieldInlineString,
+			expected:    "inline field with ${env:ENV} expansion",
+		},
+		{
+			value:       `[filelog,${env:ENV_VALUE}]`,
+			targetField: TargetFieldString,
+			expected:    "[filelog,testreceiver]",
+		},
+		{
+			value:       `[filelog,${ENV_VALUE}]`,
+			targetField: TargetFieldString,
+			expected:    "[filelog,testreceiver]",
+		},
+		{
+			value:       `["filelog","$${env:ENV_VALUE}"]`,
+			targetField: TargetFieldString,
+			expected:    `["filelog","${env:ENV_VALUE}"]`,
+		},
+		{
+			value:       `["filelog","$${ENV_VALUE}"]`,
+			targetField: TargetFieldString,
+			expected:    `["filelog","${ENV_VALUE}"]`,
+		},
+		{
+			value:       `["filelog","$$ENV_VALUE"]`,
+			targetField: TargetFieldString,
+			expected:    `["filelog","$ENV_VALUE"]`,
+		},
+		{
+			value:       `["filelog","$ENV_VALUE"]`,
+			targetField: TargetFieldString,
+			expected:    `["filelog","$ENV_VALUE"]`,
 		},
 	}
 
