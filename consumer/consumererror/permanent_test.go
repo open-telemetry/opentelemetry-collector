@@ -10,40 +10,28 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-func TestIsPermanent(t *testing.T) {
-	tests := []struct {
-		err       error
-		permanent bool
-	}{
-		{
-			err:       NewPermanent(errors.New("testError")),
-			permanent: true,
-		},
-		{
-			err:       fmt.Errorf("%w", NewPermanent(errors.New("testError"))),
-			permanent: true,
-		},
-		{
-			err:       errors.New("testError"),
-			permanent: false,
-		},
-		{
-			err:       NewTraces(errors.New("testError"), ptrace.Traces{}),
-			permanent: false,
-		},
-		{
-			err:       NewTraces(NewPermanent(errors.New("testError")), ptrace.Traces{}),
-			permanent: true,
-		},
-	}
+type testErrorType struct {
+	s string
+}
 
-	for _, tt := range tests {
-		assert.Equal(t, tt.permanent, IsPermanent(tt.err))
-	}
+func (t testErrorType) Error() string {
+	return ""
+}
+
+func TestIsPermanent(t *testing.T) {
+	var err error
+	assert.False(t, IsPermanent(err))
+
+	err = errors.New("testError")
+	assert.False(t, IsPermanent(err))
+
+	err = NewPermanent(err)
+	assert.True(t, IsPermanent(err))
+
+	err = fmt.Errorf("%w", err)
+	assert.True(t, IsPermanent(err))
 }
 
 func TestPermanent_Unwrap(t *testing.T) {

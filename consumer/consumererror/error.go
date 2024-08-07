@@ -4,6 +4,8 @@
 package consumererror // import "go.opentelemetry.io/collector/consumer/consumererror"
 
 import (
+	"errors"
+
 	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/consumer/consumererror/internal/statusconversion"
@@ -72,8 +74,9 @@ func (e *Error) Unwrap() []error {
 
 func (e *Error) Combine(errs ...error) {
 	for _, err := range errs {
-		if ne, ok := err.(*Error); ok {
-			e.errors = append(e.errors, ne.errors...)
+		var otherErr *Error
+		if errors.As(err, &otherErr) {
+			e.errors = append(e.errors, otherErr.errors...)
 		} else {
 			e.errors = append(e.errors, &errorData{error: err})
 		}
@@ -98,15 +101,15 @@ func WithGRPCStatus(status *status.Status) ErrorOption {
 
 var _ error = &errorData{}
 
-func (e *errorData) unexported() {}
+func (ed *errorData) unexported() {}
 
-func (e *errorData) Error() string {
-	return e.error.Error()
+func (ed *errorData) Error() string {
+	return ed.error.Error()
 }
 
 // Unwrap returns the wrapped error for use by `errors.Is` and `errors.As`.
-func (e *errorData) Unwrap() error {
-	return e.error
+func (ed *errorData) Unwrap() error {
+	return ed.error
 }
 
 // HTTPStatus returns an HTTP status code either directly
