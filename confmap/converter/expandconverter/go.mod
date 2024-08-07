@@ -1,4 +1,5 @@
-// Deprecated: [v0.107.0] BASH-style env var expansion is deprecated. Use `${FOO}` or `${env:FOO}` instead.
+// Deprecated: [v0.107.0] BASH-style env var expansion is deprecated. Use the `envprovider` instead to expand `${FOO}` and `${env:FOO}`.
+// Using the expandconverter will cause double escaping, so `$$$$` -> `$` instead of `$$`.                                                                                                           //// Using the expandconverter will cause double escaping, so `$$$$` -> `$` instead of `$$`.
 module go.opentelemetry.io/collector/confmap/converter/expandconverter
 
 go 1.21.0
