@@ -635,7 +635,7 @@ logging:
 	)
 }
 
-func TestIssue10799(t *testing.T) {
+func TestIndirectSliceEnvVar(t *testing.T) {
 	previousValue := globalgates.StrictlyTypedInputGate.IsEnabled()
 	err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, true)
 	require.NoError(t, err)
@@ -644,10 +644,12 @@ func TestIssue10799(t *testing.T) {
 		require.NoError(t, seterr)
 	}()
 
+	// This replicates the situation in https://github.com/open-telemetry/opentelemetry-collector/issues/10799
+	// where a configuration file is loaded that contains a reference to a slice of strings in an environment variable.
 	t.Setenv("BASE_FOLDER", "testdata")
 	t.Setenv("OTEL_LOGS_RECEIVER", "[nop, otlp]")
 	t.Setenv("OTEL_LOGS_EXPORTER", "[otlp, nop]")
-	resolver := NewResolver(t, "issue-10799-main.yaml")
+	resolver := NewResolver(t, "indirect-slice-env-var-main.yaml")
 	conf, err := resolver.Resolve(context.Background())
 	require.NoError(t, err)
 

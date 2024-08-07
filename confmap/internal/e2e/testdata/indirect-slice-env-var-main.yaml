@@ -10,4 +10,4 @@ exporters:
     endpoint: localhost:4317
 
 service:
-  pipelines: ${file:${env:BASE_FOLDER}/issue-10799-pipelines.yaml}
+  pipelines: ${file:${env:BASE_FOLDER}/indirect-slice-env-var-pipelines.yaml}
