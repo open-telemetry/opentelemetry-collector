@@ -4,8 +4,9 @@
 package consumererror // import "go.opentelemetry.io/collector/consumer/consumererror"
 
 import (
-	"go.opentelemetry.io/collector/consumer/consumererror/internal/statusconversion"
 	"google.golang.org/grpc/status"
+
+	"go.opentelemetry.io/collector/consumer/consumererror/internal/statusconversion"
 )
 
 type Error struct {
