@@ -4,7 +4,6 @@
 package grpclog
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -52,7 +51,7 @@ func TestGRPCLogger(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			obsInfo, obsWarn := false, false
-			CallerInfo := ""
+			callerInfo := ""
 			hook := zap.Hooks(func(entry zapcore.Entry) error {
 				switch entry.Level {
 				case zapcore.InfoLevel:
@@ -60,7 +59,7 @@ func TestGRPCLogger(t *testing.T) {
 				case zapcore.WarnLevel:
 					obsWarn = true
 				}
-				CallerInfo = entry.Caller.String()
+				callerInfo = entry.Caller.String()
 				return nil
 			})
 
@@ -68,107 +67,29 @@ func TestGRPCLogger(t *testing.T) {
 			logger, err := test.cfg.Build(hook)
 			assert.NoError(t, err)
 
-			// create colGRPCLogger
+			// create GRPCLogger
 			glogger := SetLogger(logger, test.cfg.Level.Level())
 			assert.NotNil(t, glogger)
-			alogger := grpclog.Component("channelz")
-			glogger.Info(test.name)
-			glogger.Warning(test.name)
-			Warning(alogger, nil, "Hello World Warning")
-			Info(alogger, nil, "Hello World")
-			if obsInfo && obsWarn {
-				assert.Contains(t, CallerInfo, "grpclog/logger_test.go:78")
-			} else {
-				assert.Contains(t, CallerInfo, "grpclog/logger_test.go:77")
-			}
+			// grpc does not usually call the logger directly, but through various wrappers that add extra depth
+			component := &mockComponent{logger: grpclog.Component("channelz")}
+			component.Info(test.name)
+			component.Warning(test.name)
 			assert.Equal(t, obsInfo, test.infoLogged)
 			assert.Equal(t, obsWarn, test.warnLogged)
+			// match the file name and line number of Warning() call above
+			assert.Contains(t, callerInfo, "internal/grpclog/logger_test.go:76")
 		})
 	}
 }
 
-// This is to emulate how logging happens in the channelz of grpc
-type Entity interface {
-	isEntity()
-	fmt.Stringer
-	id() int64
+type mockComponent struct {
+	logger grpclog.DepthLoggerV2
 }
 
-type Severity int
-
-const (
-	// CtUnknown indicates unknown severity of a trace event.
-	CtUnknown Severity = iota
-	// CtInfo indicates info level severity of a trace event.
-	CtInfo
-	// CtWarning indicates warning level severity of a trace event.
-	CtWarning
-	// CtError indicates error level severity of a trace event.
-	CtError
-)
-
-type TraceEvent struct {
-	Desc     string
-	Severity Severity
-	Parent   *TraceEvent
+func (c *mockComponent) Info(args ...any) {
+	c.logger.Info(args...)
 }
 
-func AddTraceEvent(l grpclog.DepthLoggerV2, e Entity, depth int, desc *TraceEvent) {
-	// Log only the trace description associated with the bottom most entity.
-	d := fmt.Sprintf("[%s]%s", e, desc.Desc)
-	switch desc.Severity {
-	case CtUnknown, CtInfo:
-		l.InfoDepth(depth+1, d)
-	case CtWarning:
-		l.WarningDepth(depth+1, d)
-	case CtError:
-		l.ErrorDepth(depth+1, d)
-	}
-}
-
-// Info logs and adds a trace event if channelz is on.
-func Info(l grpclog.DepthLoggerV2, e Entity, args ...any) {
-	AddTraceEvent(l, e, 1, &TraceEvent{
-		Desc:     fmt.Sprint(args...),
-		Severity: 1,
-	})
-}
-
-// Infof logs and adds a trace event if channelz is on.
-func Infof(l grpclog.DepthLoggerV2, e Entity, format string, args ...any) {
-	AddTraceEvent(l, e, 1, &TraceEvent{
-		Desc:     fmt.Sprintf(format, args...),
-		Severity: CtInfo,
-	})
-}
-
-func Warning(l grpclog.DepthLoggerV2, e Entity, args ...any) {
-	AddTraceEvent(l, e, 1, &TraceEvent{
-		Desc:     fmt.Sprint(args...),
-		Severity: CtWarning,
-	})
-}
-
-// Warningf logs and adds a trace event if channelz is on.
-func Warningf(l grpclog.DepthLoggerV2, e Entity, format string, args ...any) {
-	AddTraceEvent(l, e, 1, &TraceEvent{
-		Desc:     fmt.Sprintf(format, args...),
-		Severity: CtWarning,
-	})
-}
-
-// Error logs and adds a trace event if channelz is on.
-func Error(l grpclog.DepthLoggerV2, e Entity, args ...any) {
-	AddTraceEvent(l, e, 1, &TraceEvent{
-		Desc:     fmt.Sprint(args...),
-		Severity: CtError,
-	})
-}
-
-// Errorf logs and adds a trace event if channelz is on.
-func Errorf(l grpclog.DepthLoggerV2, e Entity, format string, args ...any) {
-	AddTraceEvent(l, e, 1, &TraceEvent{
-		Desc:     fmt.Sprintf(format, args...),
-		Severity: CtError,
-	})
+func (c *mockComponent) Warning(args ...any) {
+	c.logger.Warning(args...)
 }
