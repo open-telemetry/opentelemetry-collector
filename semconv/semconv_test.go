@@ -22,6 +22,9 @@ func TestAllSemConvFilesAreCrated(t *testing.T) {
 	constraints, err := version.NewConstraint("> v1.16.0")
 	assert.NoError(t, err)
 
+	attrgroupconstraints, err := version.NewConstraint("> v1.22.0")
+	assert.NoError(t, err)
+
 	for _, f := range files {
 		if !f.IsDir() {
 			continue
@@ -35,6 +38,10 @@ func TestAllSemConvFilesAreCrated(t *testing.T) {
 
 		if constraints.Check(ver) {
 			expected[len(expected)-1] = "generated_event.go"
+		}
+
+		if attrgroupconstraints.Check(ver) {
+			assert.FileExists(t, filepath.Join(".", f.Name(), "generated_attribute_group.go"))
 		}
 
 		for _, ef := range expected {
