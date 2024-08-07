@@ -41,6 +41,8 @@ var (
 	replaceModules = []string{
 		"",
 		"/component",
+		"/component/componentprofiles",
+		"/client",
 		"/config/configauth",
 		"/config/configcompression",
 		"/config/configgrpc",
@@ -59,6 +61,8 @@ var (
 		"/confmap/provider/httpsprovider",
 		"/confmap/provider/yamlprovider",
 		"/consumer",
+		"/consumer/consumerprofiles",
+		"/consumer/consumertest",
 		"/connector",
 		"/exporter",
 		"/exporter/debugexporter",

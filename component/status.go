@@ -11,13 +11,21 @@ type Status int32
 
 // Enumeration of possible component statuses
 const (
+	// StatusNone indicates absence of component status.
 	StatusNone Status = iota
+	// StatusStarting indicates the component is starting.
 	StatusStarting
+	// StatusOK indicates the component is running without issues.
 	StatusOK
+	// StatusRecoverableError indicates that the component has experienced a transient error and may recover.
 	StatusRecoverableError
+	// StatusPermanentError indicates that the component has detected a condition at runtime that will need human intervention to fix. The collector will continue to run in a degraded mode.
 	StatusPermanentError
+	// StatusFatalError indicates that the collector has experienced a fatal runtime error and will shut down.
 	StatusFatalError
+	// StatusStopping indicates that the component is in the process of shutting down.
 	StatusStopping
+	// StatusStopped indicates that the component has completed shutdown.
 	StatusStopped
 )
 
@@ -74,24 +82,26 @@ func NewStatusEvent(status Status) *StatusEvent {
 	}
 }
 
-// NewRecoverableErrorEvent creates and returns a StatusEvent with StatusRecoverableError, the
-// specified error, and a timestamp set to time.Now().
+// NewRecoverableErrorEvent wraps a transient error
+// passed as argument as a StatusEvent with a status StatusRecoverableError
+// and a timestamp set to time.Now().
 func NewRecoverableErrorEvent(err error) *StatusEvent {
 	ev := NewStatusEvent(StatusRecoverableError)
 	ev.err = err
 	return ev
 }
 
-// NewPermanentErrorEvent creates and returns a StatusEvent with StatusPermanentError, the
-// specified error, and a timestamp set to time.Now().
+// NewPermanentErrorEvent wraps an error requiring human intervention to fix
+// passed as argument as a StatusEvent with a status StatusPermanentError
+// and a timestamp set to time.Now().
 func NewPermanentErrorEvent(err error) *StatusEvent {
 	ev := NewStatusEvent(StatusPermanentError)
 	ev.err = err
 	return ev
 }
 
-// NewFatalErrorEvent creates and returns a StatusEvent with StatusFatalError, the
-// specified error, and a timestamp set to time.Now().
+// NewFatalErrorEvent wraps the fatal runtime error passed as argument as a StatusEvent
+// with a status StatusFatalError and a timestamp set to time.Now().
 func NewFatalErrorEvent(err error) *StatusEvent {
 	ev := NewStatusEvent(StatusFatalError)
 	ev.err = err

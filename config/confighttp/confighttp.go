@@ -63,12 +63,6 @@ type ClientConfig struct {
 	// Header values are opaque since they may be sensitive.
 	Headers map[string]configopaque.String `mapstructure:"headers"`
 
-	// Custom Round Tripper to allow for individual components to intercept HTTP requests
-	//
-	// Deprecated: [v0.103.0] Set (*http.Client).Transport on the *http.Client returned from ToClient
-	// to configure this.
-	CustomRoundTripper func(next http.RoundTripper) (http.RoundTripper, error) `mapstructure:"-"`
-
 	// Auth configuration for outgoing HTTP calls.
 	Auth *configauth.Authentication `mapstructure:"auth"`
 
@@ -242,13 +236,6 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 		clientTransport = otelhttp.NewTransport(clientTransport, otelOpts...)
 	}
 
-	if hcs.CustomRoundTripper != nil {
-		clientTransport, err = hcs.CustomRoundTripper(clientTransport)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	var jar http.CookieJar
 	if hcs.Cookies != nil && hcs.Cookies.Enabled {
 		jar, err = cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
@@ -304,7 +291,6 @@ type ServerConfig struct {
 	MaxRequestBodySize int64 `mapstructure:"max_request_body_size"`
 
 	// IncludeMetadata propagates the client metadata from the incoming requests to the downstream consumers
-	// Experimental: *NOTE* this option is subject to change or removal in the future.
 	IncludeMetadata bool `mapstructure:"include_metadata"`
 
 	// Additional headers attached to each HTTP response sent to the client.
@@ -313,11 +299,56 @@ type ServerConfig struct {
 
 	// CompressionAlgorithms configures the list of compression algorithms the server can accept. Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate"]
 	CompressionAlgorithms []string `mapstructure:"compression_algorithms"`
+
+	// ReadTimeout is the maximum duration for reading the entire
+	// request, including the body. A zero or negative value means
+	// there will be no timeout.
+	//
+	// Because ReadTimeout does not let Handlers make per-request
+	// decisions on each request body's acceptable deadline or
+	// upload rate, most users will prefer to use
+	// ReadHeaderTimeout. It is valid to use them both.
+	ReadTimeout time.Duration `mapstructure:"read_timeout"`
+
+	// ReadHeaderTimeout is the amount of time allowed to read
+	// request headers. The connection's read deadline is reset
+	// after reading the headers and the Handler can decide what
+	// is considered too slow for the body. If ReadHeaderTimeout
+	// is zero, the value of ReadTimeout is used. If both are
+	// zero, there is no timeout.
+	ReadHeaderTimeout time.Duration `mapstructure:"read_header_timeout"`
+
+	// WriteTimeout is the maximum duration before timing out
+	// writes of the response. It is reset whenever a new
+	// request's header is read. Like ReadTimeout, it does not
+	// let Handlers make decisions on a per-request basis.
+	// A zero or negative value means there will be no timeout.
+	WriteTimeout time.Duration `mapstructure:"write_timeout"`
+
+	// IdleTimeout is the maximum amount of time to wait for the
+	// next request when keep-alives are enabled. If IdleTimeout
+	// is zero, the value of ReadTimeout is used. If both are
+	// zero, there is no timeout.
+	IdleTimeout time.Duration `mapstructure:"idle_timeout"`
+}
+
+// NewDefaultServerConfig returns ServerConfig type object with default values.
+// We encourage to use this function to create an object of ServerConfig.
+func NewDefaultServerConfig() ServerConfig {
+	tlsDefaultServerConfig := configtls.NewDefaultServerConfig()
+	return ServerConfig{
+		ResponseHeaders:   map[string]configopaque.String{},
+		TLSSetting:        &tlsDefaultServerConfig,
+		CORS:              &CORSConfig{},
+		WriteTimeout:      30 * time.Second,
+		ReadHeaderTimeout: 1 * time.Minute,
+		IdleTimeout:       1 * time.Minute,
+	}
 }
 
 type AuthConfig struct {
 	// Auth for this receiver.
-	*configauth.Authentication `mapstructure:"-"`
+	configauth.Authentication `mapstructure:",squash"`
 
 	// RequestParameters is a list of parameters that should be extracted from the request and added to the context.
 	// When a parameter is found in both the query string and the header, the value from the query string will be used.
@@ -444,9 +475,15 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 		includeMetadata: hss.IncludeMetadata,
 	}
 
-	return &http.Server{
+	server := &http.Server{
 		Handler: handler,
-	}, nil
+	}
+	server.ReadTimeout = hss.ReadTimeout
+	server.ReadHeaderTimeout = hss.ReadHeaderTimeout
+	server.WriteTimeout = hss.WriteTimeout
+	server.IdleTimeout = hss.IdleTimeout
+
+	return server, nil
 }
 
 func responseHeadersHandler(handler http.Handler, headers map[string]configopaque.String) http.Handler {

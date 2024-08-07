@@ -12,8 +12,6 @@ import (
 
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
-
-	"go.opentelemetry.io/collector/internal/globalgates"
 )
 
 // follows drive-letter specification:
@@ -98,7 +96,17 @@ func NewResolver(set ResolverSettings) (*Resolver, error) {
 	providers := make(map[string]Provider, len(set.ProviderFactories))
 	for _, factory := range set.ProviderFactories {
 		provider := factory.Create(set.ProviderSettings)
-		providers[provider.Scheme()] = provider
+		scheme := provider.Scheme()
+		// Check that the scheme follows the pattern.
+		if !regexp.MustCompile(schemePattern).MatchString(scheme) {
+			return nil, fmt.Errorf("invalid 'confmap.Provider' scheme %q", scheme)
+		}
+		// Check that the scheme is unique.
+		if _, ok := providers[scheme]; ok {
+			return nil, fmt.Errorf("duplicate 'confmap.Provider' scheme %q", scheme)
+		}
+
+		providers[scheme] = provider
 	}
 
 	if set.DefaultScheme != "" {
@@ -169,17 +177,11 @@ func (mr *Resolver) Resolve(ctx context.Context) (*Conf, error) {
 
 	cfgMap := make(map[string]any)
 	for _, k := range retMap.AllKeys() {
-		val, err := mr.expandValueRecursively(ctx, retMap.Get(k))
+		val, err := mr.expandValueRecursively(ctx, retMap.unsanitizedGet(k))
 		if err != nil {
 			return nil, err
 		}
-
-		if v, ok := val.(string); ok && globalgates.UseUnifiedEnvVarExpansionRules.IsEnabled() {
-			cfgMap[k] = strings.ReplaceAll(v, "$$", "$")
-		} else {
-			cfgMap[k] = val
-		}
-
+		cfgMap[k] = val
 	}
 	retMap = NewFromStringMap(cfgMap)
 
