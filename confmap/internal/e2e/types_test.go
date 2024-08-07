@@ -47,6 +47,7 @@ func NewResolver(t testing.TB, path string) *confmap.Resolver {
 			fileprovider.NewFactory(),
 			envprovider.NewFactory(),
 		},
+		DefaultScheme: "env",
 	})
 	require.NoError(t, err)
 	return resolver
@@ -244,6 +245,8 @@ func TestTypeCasting(t *testing.T) {
 }
 
 func TestStrictTypeCasting(t *testing.T) {
+	t.Setenv("ENV_VALUE", "testreceiver")
+
 	values := []Test{
 		{
 			value:       "123",
@@ -392,6 +395,66 @@ func TestStrictTypeCasting(t *testing.T) {
 			value:       `[filelog,windowseventlog/application]`,
 			targetField: TargetFieldInlineString,
 			expected:    "inline field with [filelog,windowseventlog/application] expansion",
+		},
+		{
+			value:       "$$ENV",
+			targetField: TargetFieldString,
+			expected:    "$ENV",
+		},
+		{
+			value:       "$$ENV",
+			targetField: TargetFieldInlineString,
+			expected:    "inline field with $ENV expansion",
+		},
+		{
+			value:       "$${ENV}",
+			targetField: TargetFieldString,
+			expected:    "${ENV}",
+		},
+		{
+			value:       "$${ENV}",
+			targetField: TargetFieldInlineString,
+			expected:    "inline field with ${ENV} expansion",
+		},
+		{
+			value:       "$${env:ENV}",
+			targetField: TargetFieldString,
+			expected:    "${env:ENV}",
+		},
+		{
+			value:       "$${env:ENV}",
+			targetField: TargetFieldInlineString,
+			expected:    "inline field with ${env:ENV} expansion",
+		},
+		{
+			value:       `[filelog,${env:ENV_VALUE}]`,
+			targetField: TargetFieldString,
+			expected:    "[filelog,testreceiver]",
+		},
+		{
+			value:       `[filelog,${ENV_VALUE}]`,
+			targetField: TargetFieldString,
+			expected:    "[filelog,testreceiver]",
+		},
+		{
+			value:       `["filelog","$${env:ENV_VALUE}"]`,
+			targetField: TargetFieldString,
+			expected:    `["filelog","${env:ENV_VALUE}"]`,
+		},
+		{
+			value:       `["filelog","$${ENV_VALUE}"]`,
+			targetField: TargetFieldString,
+			expected:    `["filelog","${ENV_VALUE}"]`,
+		},
+		{
+			value:       `["filelog","$$ENV_VALUE"]`,
+			targetField: TargetFieldString,
+			expected:    `["filelog","$ENV_VALUE"]`,
+		},
+		{
+			value:       `["filelog","$ENV_VALUE"]`,
+			targetField: TargetFieldString,
+			expected:    `["filelog","$ENV_VALUE"]`,
 		},
 	}
 
@@ -595,7 +658,7 @@ func TestStructMappingIssue10787(t *testing.T) {
 	}()
 
 	resolver := NewResolver(t, "types_expand.yaml")
-	t.Setenv("ENV", `# ${hello.world}
+	t.Setenv("ENV", `# this is a comment
 logging:
   verbosity: detailed`)
 	conf, err := resolver.Resolve(context.Background())
@@ -628,9 +691,111 @@ logging:
 	var cfgStr TargetConfig[string]
 	err = confStr.Unmarshal(&cfgStr)
 	require.NoError(t, err)
-	require.Equal(t, `# ${hello.world}
+	require.Equal(t, `# this is a comment
 logging:
   verbosity: detailed`,
 		cfgStr.Field,
 	)
+}
+
+func TestStructMappingIssue10787_ExpandComment(t *testing.T) {
+	previousValue := globalgates.StrictlyTypedInputGate.IsEnabled()
+	err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, true)
+	require.NoError(t, err)
+	defer func() {
+		seterr := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, previousValue)
+		require.NoError(t, seterr)
+	}()
+
+	resolver := NewResolver(t, "types_expand.yaml")
+	t.Setenv("EXPAND_ME", "an expanded env var")
+	t.Setenv("ENV", `# this is a comment with ${EXPAND_ME}
+logging:
+  verbosity: detailed`)
+	conf, err := resolver.Resolve(context.Background())
+	require.NoError(t, err)
+
+	type Logging struct {
+		Verbosity string `mapstructure:"verbosity"`
+	}
+	type Exporters struct {
+		Logging Logging `mapstructure:"logging"`
+	}
+	type Target struct {
+		Field Exporters `mapstructure:"field"`
+	}
+
+	var cfg Target
+	err = conf.Unmarshal(&cfg)
+	require.NoError(t, err)
+	require.Equal(t,
+		Target{Field: Exporters{
+			Logging: Logging{
+				Verbosity: "detailed",
+			},
+		}},
+		cfg,
+	)
+
+	confStr, err := resolver.Resolve(context.Background())
+	require.NoError(t, err)
+	var cfgStr TargetConfig[string]
+	err = confStr.Unmarshal(&cfgStr)
+	require.NoError(t, err)
+	require.Equal(t, `# this is a comment with an expanded env var
+logging:
+  verbosity: detailed`,
+		cfgStr.Field,
+	)
+}
+
+func TestIndirectSliceEnvVar(t *testing.T) {
+	previousValue := globalgates.StrictlyTypedInputGate.IsEnabled()
+	err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, true)
+	require.NoError(t, err)
+	defer func() {
+		seterr := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, previousValue)
+		require.NoError(t, seterr)
+	}()
+
+	// This replicates the situation in https://github.com/open-telemetry/opentelemetry-collector/issues/10799
+	// where a configuration file is loaded that contains a reference to a slice of strings in an environment variable.
+	t.Setenv("BASE_FOLDER", "testdata")
+	t.Setenv("OTEL_LOGS_RECEIVER", "[nop, otlp]")
+	t.Setenv("OTEL_LOGS_EXPORTER", "[otlp, nop]")
+	resolver := NewResolver(t, "indirect-slice-env-var-main.yaml")
+	conf, err := resolver.Resolve(context.Background())
+	require.NoError(t, err)
+
+	type CollectorConf struct {
+		Exporters struct {
+			OTLP struct {
+				Endpoint string `mapstructure:"endpoint"`
+			} `mapstructure:"otlp"`
+			Nop struct{} `mapstructure:"nop"`
+		} `mapstructure:"exporters"`
+		Receivers struct {
+			OTLP struct {
+				Protocols struct {
+					GRPC struct{} `mapstructure:"grpc"`
+				} `mapstructure:"protocols"`
+			} `mapstructure:"otlp"`
+			Nop struct{} `mapstructure:"nop"`
+		} `mapstructure:"receivers"`
+		Service struct {
+			Pipelines struct {
+				Logs struct {
+					Exporters []string `mapstructure:"exporters"`
+					Receivers []string `mapstructure:"receivers"`
+				} `mapstructure:"logs"`
+			} `mapstructure:"pipelines"`
+		} `mapstructure:"service"`
+	}
+
+	var collectorConf CollectorConf
+	err = conf.Unmarshal(&collectorConf)
+	require.NoError(t, err)
+	assert.Equal(t, collectorConf.Exporters.OTLP.Endpoint, "localhost:4317")
+	assert.Equal(t, collectorConf.Service.Pipelines.Logs.Receivers, []string{"nop", "otlp"})
+	assert.Equal(t, collectorConf.Service.Pipelines.Logs.Exporters, []string{"otlp", "nop"})
 }
