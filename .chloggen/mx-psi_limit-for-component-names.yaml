@@ -7,7 +7,7 @@ change_type: bug_fix
 component: component
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Allow component names of up to 127 characters in length.
+note: Allow component names of up to 1024 characters in length.
 
 # One or more tracking issues or pull requests related to the change
 issues: [10816]

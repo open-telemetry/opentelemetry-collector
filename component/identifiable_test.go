@@ -78,7 +78,7 @@ func TestUnmarshalText(t *testing.T) {
 			expectedErr: true,
 		},
 		{
-			idStr:       "valid_type/" + strings.Repeat("a", 128),
+			idStr:       "valid_type/" + strings.Repeat("a", 1025),
 			expectedErr: true,
 		},
 	}
