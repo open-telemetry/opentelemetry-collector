@@ -8,6 +8,9 @@ package component // import "go.opentelemetry.io/collector/component"
 import (
 	"context"
 	"errors"
+	"slices"
+	"sort"
+	"strings"
 )
 
 var (
@@ -190,9 +193,77 @@ func (f CreateDefaultConfigFunc) CreateDefaultConfig() Config {
 	return f()
 }
 
-// InstanceID uniquely identifies a component instance
+// pipelineDelim is the delimeter for internal representation of pipeline
+// component IDs.
+const pipelineDelim = byte(0x20)
+
+// InstanceID uniquely identifies a component instance.
 type InstanceID struct {
-	ID          ID
-	Kind        Kind
-	PipelineIDs map[ID]struct{}
+	componentID ID
+	kind        Kind
+	pipelineIDs string // IDs encoded as a string so InstanceID is Comparable.
+}
+
+// NewInstanceID returns an ID that uniquely identifies a component.
+func NewInstanceID(componentID ID, kind Kind, pipelineIDs ...ID) *InstanceID {
+	instanceID := &InstanceID{
+		componentID: componentID,
+		kind:        kind,
+	}
+	instanceID.addPipelines(pipelineIDs)
+	return instanceID
+}
+
+// ComponentID returns the ComponentID associated with this instance.
+func (id *InstanceID) ComponentID() ID {
+	return id.componentID
+}
+
+// Kind returns the component Kind associated with this instance.
+func (id *InstanceID) Kind() Kind {
+	return id.kind
+}
+
+// EachPipelineID calls f for each pipeline this instance is associated with. If
+// f returns false it will stop iteration.
+func (id *InstanceID) EachPipelineID(f func(ID) bool) {
+	var bs []byte
+	for _, b := range []byte(id.pipelineIDs) {
+		if b != pipelineDelim {
+			bs = append(bs, b)
+			continue
+		}
+		pipelineID := ID{}
+		err := pipelineID.UnmarshalText(bs)
+		bs = bs[:0]
+		if err != nil {
+			continue
+		}
+		if !f(pipelineID) {
+			break
+		}
+	}
+}
+
+// WithPipelines returns a new InstanceID updated to include the given
+// pipelineIDs.
+func (id *InstanceID) WithPipelines(pipelineIDs ...ID) *InstanceID {
+	instanceID := &InstanceID{
+		componentID: id.componentID,
+		kind:        id.kind,
+		pipelineIDs: id.pipelineIDs,
+	}
+	instanceID.addPipelines(pipelineIDs)
+	return instanceID
+}
+
+func (id *InstanceID) addPipelines(pipelineIDs []ID) {
+	delim := string(pipelineDelim)
+	strIDs := strings.Split(id.pipelineIDs, delim)
+	for _, pID := range pipelineIDs {
+		strIDs = append(strIDs, pID.String())
+	}
+	sort.Strings(strIDs)
+	strIDs = slices.Compact(strIDs)
+	id.pipelineIDs = strings.Join(strIDs, delim) + delim
 }
