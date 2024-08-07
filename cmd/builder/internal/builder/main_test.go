@@ -250,7 +250,7 @@ func TestGenerateAndCompile(t *testing.T) {
 				cfg := NewDefaultConfig()
 				cfg.Receivers = append(cfg.Receivers,
 					Module{
-						GoMod: "go.opentelemetry.io/collector/receiver/otlpreceiver v0.102.1",
+						GoMod: "go.opentelemetry.io/collector/receiver/otlpreceiver v0.106.0",
 					},
 				)
 				tempDir := t.TempDir()
@@ -527,7 +527,7 @@ func TestGetModules(t *testing.T) {
 				cfg.Distribution.Go = "go"
 				cfg.Receivers = append(cfg.Receivers,
 					Module{
-						GoMod: "go.opentelemetry.io/collector/receiver/otlpreceiver v0.100.1",
+						GoMod: "go.opentelemetry.io/collector/receiver/otlpreceiver v0.105.0",
 					},
 				)
 				tempDir := t.TempDir()
@@ -548,7 +548,7 @@ func TestGetModules(t *testing.T) {
 				cfg.Distribution.Go = "go"
 				cfg.Receivers = append(cfg.Receivers,
 					Module{
-						GoMod: "go.opentelemetry.io/collector/receiver/otlpreceiver v0.103.0",
+						GoMod: "go.opentelemetry.io/collector/receiver/otlpreceiver v0.106.1",
 					},
 				)
 				tempDir := t.TempDir()
@@ -568,7 +568,7 @@ func TestGetModules(t *testing.T) {
 				cfg.Distribution.Go = "go"
 				cfg.Exporters = append(cfg.Exporters,
 					Module{
-						GoMod: "go.opentelemetry.io/collector/exporter/otlpexporter v0.102.1",
+						GoMod: "go.opentelemetry.io/collector/exporter/otlpexporter v0.106.0",
 					},
 				)
 				tempDir := t.TempDir()
@@ -588,7 +588,7 @@ func TestGetModules(t *testing.T) {
 				cfg.Distribution.Go = "go"
 				cfg.Receivers = append(cfg.Receivers,
 					Module{
-						GoMod: "go.opentelemetry.io/collector/receiver/otlpreceiver v0.102.2",
+						GoMod: "go.opentelemetry.io/collector/receiver/otlpreceiver v0.106.2",
 					},
 				)
 				tempDir := t.TempDir()
