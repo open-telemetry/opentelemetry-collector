@@ -97,6 +97,8 @@ func WithGRPCStatus(status *status.Status) ErrorOption {
 
 var _ error = &errorData{}
 
+func (e *errorData) unexported() {}
+
 func (e *errorData) Error() string {
 	return e.error.Error()
 }
