@@ -37,8 +37,6 @@ require (
 
 replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../../consumer/consumerprofiles
 
-replace go.opentelemetry.io/collector/internal/globalgates => ../../internal/globalgates
-
 replace go.opentelemetry.io/collector/extension => ../../extension
 
 replace go.opentelemetry.io/collector => ../..

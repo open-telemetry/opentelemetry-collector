@@ -86,7 +86,6 @@ require (
 	go.opentelemetry.io/collector/config/internal v0.106.1 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.106.1 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.106.1 // indirect
-	go.opentelemetry.io/collector/internal/globalgates v0.106.1 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.106.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.53.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.53.0 // indirect
@@ -155,8 +154,6 @@ replace go.opentelemetry.io/collector/config/configtls => ../config/configtls
 replace go.opentelemetry.io/collector/config/configcompression => ../config/configcompression
 
 replace go.opentelemetry.io/collector/pdata/pprofile => ../pdata/pprofile
-
-replace go.opentelemetry.io/collector/internal/globalgates => ../internal/globalgates
 
 replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../consumer/consumerprofiles
 
