@@ -52,6 +52,11 @@ jobs:
             validate_stable_version "${{ inputs.candidate-stable }}" "candidate-stable"
           fi
           validate_stable_version "${{ inputs.current-stable }}" "current-stable"
+          
+          if [[ -z "${{ inputs.candidate-beta }}" && -z "${{ inputs.candidate-stable }}" ]]; then
+            echo "Candidate version is not set for beta or stable. Please set a version to proceed."
+            exit 1
+          fi
 
   # Releasing opentelemetry-collector
   prepare-release:
