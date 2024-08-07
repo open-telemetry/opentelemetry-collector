@@ -25,7 +25,7 @@ type converter struct {
 // which expands all environment variables for a given confmap.Conf.
 //
 // Deprecated: [v0.107.0] BASH-style env var expansion is deprecated. Use the `envprovider` instead to expand `${FOO}` and `${env:FOO}`.
-// Using the expandconverter will cause double escaping, so `$$$$` -> `$` instead of `$$`.
+// Using the expandconverter with `confmap.Resolver` will cause double escaping, so `$$$$` -> `$` instead of `$$`.
 func NewFactory() confmap.ConverterFactory {
 	return confmap.NewConverterFactory(newConverter)
 }
@@ -38,7 +38,7 @@ func newConverter(set confmap.ConverterSettings) confmap.Converter {
 }
 
 // Deprecated: [v0.107.0] BASH-style env var expansion is deprecated. Use the `envprovider` instead to expand `${FOO}` and `${env:FOO}`.
-// Using the expandconverter will cause double escaping, so `$$$$` -> `$` instead of `$$`.
+// Using the expandconverter with `confmap.Resolver` will cause double escaping, so `$$$$` -> `$` instead of `$$`.
 func (c converter) Convert(_ context.Context, conf *confmap.Conf) error {
 	var err error
 	out := make(map[string]any)
