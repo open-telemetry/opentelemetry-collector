@@ -1,0 +1,3 @@
+logs:
+  receivers: ${env:OTEL_LOGS_RECEIVER}
+  exporters: ${env:OTEL_LOGS_EXPORTER}
