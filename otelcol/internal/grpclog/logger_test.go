@@ -15,11 +15,10 @@ import (
 
 func TestGRPCLogger(t *testing.T) {
 	tests := []struct {
-		name                string
-		cfg                 zap.Config
-		infoLogged          bool
-		warnLogged          bool
-		checkCallerLocation bool
+		name       string
+		cfg        zap.Config
+		infoLogged bool
+		warnLogged bool
 	}{
 		{
 			"collector_info_level_grpc_log_warn",
@@ -29,7 +28,6 @@ func TestGRPCLogger(t *testing.T) {
 			},
 			false,
 			true,
-			true,
 		},
 		{
 			"collector_debug_level_grpc_log_debug",
@@ -37,7 +35,6 @@ func TestGRPCLogger(t *testing.T) {
 				Level:    zap.NewAtomicLevelAt(zapcore.DebugLevel),
 				Encoding: "console",
 			},
-			true,
 			true,
 			true,
 		},
@@ -49,7 +46,6 @@ func TestGRPCLogger(t *testing.T) {
 				Encoding:    "console",
 			},
 			false,
-			true,
 			true,
 		},
 	}
@@ -64,9 +60,7 @@ func TestGRPCLogger(t *testing.T) {
 				case zapcore.WarnLevel:
 					obsWarn = true
 				}
-				if test.checkCallerLocation {
-					CallerInfo = entry.Caller.String()
-				}
+				CallerInfo = entry.Caller.String()
 				return nil
 			})
 
@@ -80,14 +74,12 @@ func TestGRPCLogger(t *testing.T) {
 			alogger := grpclog.Component("channelz")
 			glogger.Info(test.name)
 			glogger.Warning(test.name)
+			Warning(alogger, nil, "Hello World Warning")
 			Info(alogger, nil, "Hello World")
-			if test.name != "collector_debug_level_grpc_log_debug" { // As info logs will only be logged in the zapcore.DebugLevel config logger
-				Warning(alogger, nil, "Hello World Warning") // and for the other 2 tests will only log warning logs so for testing infof we dont call this at last
-			}
 			if obsInfo && obsWarn {
-				assert.Contains(t, CallerInfo, "grpclog/logger_test.go:83")
+				assert.Contains(t, CallerInfo, "grpclog/logger_test.go:78")
 			} else {
-				assert.Contains(t, CallerInfo, "grpclog/logger_test.go:85")
+				assert.Contains(t, CallerInfo, "grpclog/logger_test.go:77")
 			}
 			assert.Equal(t, obsInfo, test.infoLogged)
 			assert.Equal(t, obsWarn, test.warnLogged)
