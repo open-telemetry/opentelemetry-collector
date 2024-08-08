@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/extensions"
+	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/graph"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
 	"go.opentelemetry.io/collector/service/internal/resource"
@@ -50,7 +51,14 @@ type Settings struct {
 	Processors *processor.Builder
 
 	// Exporters builder for exporters.
-	Exporters *exporter.Builder
+	//
+	// Deprecated: use the [ReceiversConfigs] and [ReceiversFactories] options
+	// instead.
+	Exporters builders.Exporter
+
+	// exporters configuration to its builder.
+	ExportersConfigs   map[component.ID]component.Config
+	ExportersFactories map[component.Type]exporter.Factory
 
 	// Connectors builder for connectors.
 	Connectors *connector.Builder
@@ -79,12 +87,18 @@ type Service struct {
 func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	disableHighCard := obsreportconfig.DisableHighCardinalityMetricsfeatureGate.IsEnabled()
 	extendedConfig := obsreportconfig.UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate.IsEnabled()
+
+	exporters := set.Exporters
+	if exporters == nil {
+		exporters = builders.NewExporter(set.ExportersConfigs, set.ExportersFactories)
+	}
+
 	srv := &Service{
 		buildInfo: set.BuildInfo,
 		host: &serviceHost{
 			receivers:         set.Receivers,
 			processors:        set.Processors,
-			exporters:         set.Exporters,
+			exporters:         exporters,
 			connectors:        set.Connectors,
 			extensions:        set.Extensions,
 			buildInfo:         set.BuildInfo,
@@ -298,7 +312,7 @@ func (srv *Service) initGraph(ctx context.Context, set Settings, cfg Config) err
 		BuildInfo:        srv.buildInfo,
 		ReceiverBuilder:  set.Receivers,
 		ProcessorBuilder: set.Processors,
-		ExporterBuilder:  set.Exporters,
+		ExporterBuilder:  srv.host.exporters,
 		ConnectorBuilder: set.Connectors,
 		PipelineConfigs:  cfg.Pipelines,
 		ReportStatus:     srv.reporter.ReportStatus,

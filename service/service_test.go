@@ -25,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/connector/connectortest"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
@@ -34,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/service/extensions"
+	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/pipelines"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
@@ -191,7 +191,7 @@ func TestServiceGetFactory(t *testing.T) {
 	assert.Equal(t, set.Processors.Factory(nopType), srv.host.GetFactory(component.KindProcessor, nopType))
 
 	assert.Nil(t, srv.host.GetFactory(component.KindExporter, wrongType))
-	assert.Equal(t, set.Exporters.Factory(nopType), srv.host.GetFactory(component.KindExporter, nopType))
+	assert.Equal(t, srv.host.exporters.Factory(nopType), srv.host.GetFactory(component.KindExporter, nopType))
 
 	assert.Nil(t, srv.host.GetFactory(component.KindConnector, wrongType))
 	assert.Equal(t, set.Connectors.Factory(nopType), srv.host.GetFactory(component.KindConnector, nopType))
@@ -535,14 +535,17 @@ func assertZPages(t *testing.T, zpagesAddr string) {
 }
 
 func newNopSettings() Settings {
+	exportersConfigs, exportersFactories := builders.NewNopExporterConfigsAndFactories()
+
 	return Settings{
-		BuildInfo:     component.NewDefaultBuildInfo(),
-		CollectorConf: confmap.New(),
-		Receivers:     receivertest.NewNopBuilder(),
-		Processors:    processortest.NewNopBuilder(),
-		Exporters:     exportertest.NewNopBuilder(),
-		Connectors:    connectortest.NewNopBuilder(),
-		Extensions:    extensiontest.NewNopBuilder(),
+		BuildInfo:          component.NewDefaultBuildInfo(),
+		CollectorConf:      confmap.New(),
+		Receivers:          receivertest.NewNopBuilder(),
+		Processors:         processortest.NewNopBuilder(),
+		ExportersConfigs:   exportersConfigs,
+		ExportersFactories: exportersFactories,
+		Connectors:         connectortest.NewNopBuilder(),
+		Extensions:         extensiontest.NewNopBuilder(),
 	}
 }
 

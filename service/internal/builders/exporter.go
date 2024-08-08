@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package exporter // import "go.opentelemetry.io/collector/exporter"
+package builders // import "go.opentelemetry.io/collector/service/internal/builders"
 
 import (
 	"context"
@@ -10,27 +10,36 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
-// Builder exporter is a helper struct that given a set of Configs and Factories helps with creating exporters.
-//
-// Deprecated: this builder is being internalized within the service module,
-// and will be removed soon.
-type Builder struct {
-	cfgs      map[component.ID]component.Config
-	factories map[component.Type]Factory
+var (
+	nopType = component.MustNewType("nop")
+)
+
+// Exporter is an interface that allows using implementations of the builder
+// from different packages.
+type Exporter interface {
+	CreateTraces(context.Context, exporter.Settings) (exporter.Traces, error)
+	CreateMetrics(context.Context, exporter.Settings) (exporter.Metrics, error)
+	CreateLogs(context.Context, exporter.Settings) (exporter.Logs, error)
+	Factory(component.Type) component.Factory
 }
 
-// NewBuilder creates a new exporter.Builder to help with creating components form a set of configs and factories.
-//
-// Deprecated: this builder is being internalized within the service module,
-// and will be removed soon.
-func NewBuilder(cfgs map[component.ID]component.Config, factories map[component.Type]Factory) *Builder {
-	return &Builder{cfgs: cfgs, factories: factories}
+// ExporterBuilder is a helper struct that given a set of Configs and Factories helps with creating exporters.
+type ExporterBuilder struct {
+	cfgs      map[component.ID]component.Config
+	factories map[component.Type]exporter.Factory
+}
+
+// NewExporter creates a new ExporterBuilder to help with creating components form a set of configs and factories.
+func NewExporter(cfgs map[component.ID]component.Config, factories map[component.Type]exporter.Factory) *ExporterBuilder {
+	return &ExporterBuilder{cfgs: cfgs, factories: factories}
 }
 
 // CreateTraces creates a Traces exporter based on the settings and config.
-func (b *Builder) CreateTraces(ctx context.Context, set Settings) (Traces, error) {
+func (b *ExporterBuilder) CreateTraces(ctx context.Context, set exporter.Settings) (exporter.Traces, error) {
 	cfg, existsCfg := b.cfgs[set.ID]
 	if !existsCfg {
 		return nil, fmt.Errorf("exporter %q is not configured", set.ID)
@@ -46,7 +55,7 @@ func (b *Builder) CreateTraces(ctx context.Context, set Settings) (Traces, error
 }
 
 // CreateMetrics creates a Metrics exporter based on the settings and config.
-func (b *Builder) CreateMetrics(ctx context.Context, set Settings) (Metrics, error) {
+func (b *ExporterBuilder) CreateMetrics(ctx context.Context, set exporter.Settings) (exporter.Metrics, error) {
 	cfg, existsCfg := b.cfgs[set.ID]
 	if !existsCfg {
 		return nil, fmt.Errorf("exporter %q is not configured", set.ID)
@@ -62,7 +71,7 @@ func (b *Builder) CreateMetrics(ctx context.Context, set Settings) (Metrics, err
 }
 
 // CreateLogs creates a Logs exporter based on the settings and config.
-func (b *Builder) CreateLogs(ctx context.Context, set Settings) (Logs, error) {
+func (b *ExporterBuilder) CreateLogs(ctx context.Context, set exporter.Settings) (exporter.Logs, error) {
 	cfg, existsCfg := b.cfgs[set.ID]
 	if !existsCfg {
 		return nil, fmt.Errorf("exporter %q is not configured", set.ID)
@@ -77,8 +86,21 @@ func (b *Builder) CreateLogs(ctx context.Context, set Settings) (Logs, error) {
 	return f.CreateLogsExporter(ctx, set, cfg)
 }
 
-func (b *Builder) Factory(componentType component.Type) component.Factory {
+func (b *ExporterBuilder) Factory(componentType component.Type) component.Factory {
 	return b.factories[componentType]
+}
+
+// NewNopExporterConfigsAndFactories returns a configuration and factories that allows building a new nop exporter.
+func NewNopExporterConfigsAndFactories() (map[component.ID]component.Config, map[component.Type]exporter.Factory) {
+	nopFactory := exportertest.NewNopFactory()
+	configs := map[component.ID]component.Config{
+		component.NewID(nopType): nopFactory.CreateDefaultConfig(),
+	}
+	factories := map[component.Type]exporter.Factory{
+		nopType: nopFactory,
+	}
+
+	return configs, factories
 }
 
 // logStabilityLevel logs the stability level of a component. The log level is set to info for
