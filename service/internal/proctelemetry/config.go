@@ -41,8 +41,9 @@ const (
 	HTTPInstrumentation = "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
 	// supported protocols
-	protocolProtobufHTTP = "http/protobuf"
-	protocolProtobufGRPC = "grpc/protobuf"
+	protocolProtobufHTTP     = "http/protobuf"
+	protocolProtobufGRPC     = "grpc/protobuf"
+	defaultReadHeaderTimeout = 10 * time.Second
 )
 
 var (
@@ -96,8 +97,9 @@ func InitPrometheusServer(registry *prometheus.Registry, address string, asyncEr
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
 	server := &http.Server{
-		Addr:    address,
-		Handler: mux,
+		Addr:              address,
+		Handler:           mux,
+		ReadHeaderTimeout: defaultReadHeaderTimeout,
 	}
 	go func() {
 		if serveErr := server.ListenAndServe(); serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) {
