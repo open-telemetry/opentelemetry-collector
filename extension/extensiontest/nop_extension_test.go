@@ -26,19 +26,3 @@ func TestNewNopFactory(t *testing.T) {
 	assert.NoError(t, traces.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, traces.Shutdown(context.Background()))
 }
-
-func TestNewNopBuilder(t *testing.T) {
-	builder := NewNopBuilder()
-	require.NotNil(t, builder)
-
-	factory := NewNopFactory()
-	cfg := factory.CreateDefaultConfig()
-	set := NewNopSettings()
-	set.ID = component.NewID(nopType)
-
-	ext, err := factory.CreateExtension(context.Background(), set, cfg)
-	require.NoError(t, err)
-	bExt, err := builder.Create(context.Background(), set)
-	require.NoError(t, err)
-	assert.IsType(t, ext, bExt)
-}

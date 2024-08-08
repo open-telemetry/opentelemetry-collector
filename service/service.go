@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/extensions"
+	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/graph"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
 	"go.opentelemetry.io/collector/service/internal/resource"
@@ -56,7 +57,11 @@ type Settings struct {
 	Connectors *connector.Builder
 
 	// Extensions builder for extensions.
-	Extensions *extension.Builder
+	Extensions builders.Extension
+
+	// Extensions configuration to its builder.
+	ExtensionsConfigs   map[component.ID]component.Config
+	ExtensionsFactories map[component.Type]extension.Factory
 
 	// AsyncErrorChannel is the channel that is used to report fatal errors.
 	AsyncErrorChannel chan error
@@ -79,6 +84,12 @@ type Service struct {
 func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	disableHighCard := obsreportconfig.DisableHighCardinalityMetricsfeatureGate.IsEnabled()
 	extendedConfig := obsreportconfig.UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate.IsEnabled()
+
+	extensions := set.Extensions
+	if extensions == nil {
+		extensions = builders.NewExtension(set.ExtensionsConfigs, set.ExtensionsFactories)
+	}
+
 	srv := &Service{
 		buildInfo: set.BuildInfo,
 		host: &serviceHost{
@@ -86,7 +97,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 			processors:        set.Processors,
 			exporters:         set.Exporters,
 			connectors:        set.Connectors,
-			extensions:        set.Extensions,
+			extensions:        extensions,
 			buildInfo:         set.BuildInfo,
 			asyncErrorChannel: set.AsyncErrorChannel,
 		},
