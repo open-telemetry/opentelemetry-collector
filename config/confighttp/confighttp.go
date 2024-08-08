@@ -332,7 +332,7 @@ func NewDefaultServerConfig() ServerConfig {
 	return ServerConfig{
 		ResponseHeaders:   map[string]configopaque.String{},
 		TLSSetting:        &tlsDefaultServerConfig,
-		CORS:              &CORSConfig{},
+		CORS:              NewDefaultCORSConfig(),
 		WriteTimeout:      30 * time.Second,
 		ReadHeaderTimeout: 1 * time.Minute,
 		IdleTimeout:       1 * time.Minute,
@@ -511,6 +511,11 @@ type CORSConfig struct {
 	// Set it to the number of seconds that browsers should cache a CORS
 	// preflight response for.
 	MaxAge int `mapstructure:"max_age"`
+}
+
+// NewDefaultCORSConfig creates a default cross-origin resource sharing (CORS) configuration.
+func NewDefaultCORSConfig() *CORSConfig {
+	return &CORSConfig{}
 }
 
 func authInterceptor(next http.Handler, server auth.Server, requestParams []string) http.Handler {
