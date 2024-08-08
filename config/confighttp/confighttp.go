@@ -469,12 +469,12 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 	}
 
 	server := &http.Server{
-		Handler: handler,
+		Handler:           handler,
+		ReadTimeout:       hss.ReadTimeout,
+		ReadHeaderTimeout: hss.ReadHeaderTimeout,
+		WriteTimeout:      hss.WriteTimeout,
+		IdleTimeout:       hss.IdleTimeout,
 	}
-	server.ReadTimeout = hss.ReadTimeout
-	server.ReadHeaderTimeout = hss.ReadHeaderTimeout
-	server.WriteTimeout = hss.WriteTimeout
-	server.IdleTimeout = hss.IdleTimeout
 
 	return server, nil
 }
