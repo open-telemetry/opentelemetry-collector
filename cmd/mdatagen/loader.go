@@ -272,6 +272,8 @@ type templateContext struct {
 	metadata
 	// Package name for generated code.
 	Package string
+	// GithubProject is the github project in the form of `org/project`
+	GithubProject string
 }
 
 func loadMetadata(filePath string) (metadata, error) {
