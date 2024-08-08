@@ -642,7 +642,7 @@ When renaming or removing a configuration option:
 - a WARN level message should be logged, with a link to a place within the component's repository where the change is
   documented and a migration path is provided
 - the option MUST be kept for at least N+1 version and MAY be hidden behind a feature gate in N+2
-- the option and the WARN level message MAY be removed after N+2 or 6 months, whichever comes later
+- the option and the WARN level message MUST NOT be removed earlier than N+2 or 6 months, whichever comes later
 
 Additionally, when removing an option:
 - the option MAY be made non-operational already by the same version where it is deprecated
