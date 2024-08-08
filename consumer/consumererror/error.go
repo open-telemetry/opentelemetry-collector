@@ -30,7 +30,6 @@ type Error struct {
 // out by an upstream component by calling `Error.Data`.
 //
 // Experimental: This API is at the early stage of development and may change without backward compatibility
-
 type ErrorData interface {
 	Error() string
 
