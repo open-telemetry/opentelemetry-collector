@@ -65,3 +65,5 @@ replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/con
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 
 replace go.opentelemetry.io/collector/internal/globalgates => ../../internal/globalgates
+
+replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus

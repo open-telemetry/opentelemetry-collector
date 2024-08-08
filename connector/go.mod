@@ -76,3 +76,5 @@ replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../consumer/c
 replace go.opentelemetry.io/collector/consumer/consumertest => ../consumer/consumertest
 
 replace go.opentelemetry.io/collector/component/componentprofiles => ../component/componentprofiles
+
+replace go.opentelemetry.io/collector/component/componentstatus => ../component/componentstatus

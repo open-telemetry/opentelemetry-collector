@@ -144,3 +144,5 @@ replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../../consume
 replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/consumertest
 
 replace go.opentelemetry.io/collector/client => ../../client
+
+replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus

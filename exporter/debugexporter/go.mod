@@ -96,3 +96,5 @@ replace go.opentelemetry.io/collector/config/configretry => ../../config/configr
 replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../../consumer/consumerprofiles
 
 replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/consumertest
+
+replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus

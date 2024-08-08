@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 )
 
@@ -107,123 +108,53 @@ func TestSharedComponent(t *testing.T) {
 	assert.NoError(t, got.Shutdown(context.Background()))
 	assert.Equal(t, 1, calledStop)
 }
-func TestSharedComponentsReportStatus(t *testing.T) {
-	reportedStatuses := make(map[*component.InstanceID][]component.Status)
-	newStatusFunc := func() func(*component.StatusEvent) {
-		instanceID := &component.InstanceID{}
-		return func(ev *component.StatusEvent) {
-			if ev.Status() == component.StatusNone {
-				return
-			}
-			reportedStatuses[instanceID] = append(reportedStatuses[instanceID], ev.Status())
-		}
-	}
-
-	comp := &baseComponent{}
-	comps := NewMap[component.ID, *baseComponent]()
-	var telemetrySettings *component.TelemetrySettings
-
-	// make a shared component that represents three instances
-	for i := 0; i < 3; i++ {
-		telemetrySettings = newNopTelemetrySettings()
-		telemetrySettings.ReportStatus = newStatusFunc()
-		// The initial settings for the shared component need to match the ones passed to the first
-		// invocation of LoadOrStore so that underlying telemetry settings reference can be used to
-		// wrap ReportStatus for subsequently added "instances".
-		if i == 0 {
-			comp.telemetry = telemetrySettings
-		}
-		got, err := comps.LoadOrStore(
-			id,
-			func() (*baseComponent, error) { return comp, nil },
-			telemetrySettings,
-		)
-		require.NoError(t, err)
-		assert.Len(t, comps.components, 1)
-		assert.Same(t, comp, got.Unwrap())
-	}
-
-	// make sure we don't try to represent a fourth instance if we reuse a telemetrySettings
-	_, _ = comps.LoadOrStore(
-		id,
-		func() (*baseComponent, error) { return comp, nil },
-		telemetrySettings,
-	)
-
-	comp.telemetry.ReportStatus(component.NewStatusEvent(component.StatusStarting))
-
-	comp.telemetry.ReportStatus(component.NewStatusEvent(component.StatusOK))
-
-	// simulate an error
-	comp.telemetry.ReportStatus(component.NewStatusEvent(component.StatusNone))
-
-	// stopping
-	comp.telemetry.ReportStatus(component.NewStatusEvent(component.StatusStopping))
-
-	// stopped
-	comp.telemetry.ReportStatus(component.NewStatusEvent(component.StatusStopped))
-
-	// The shared component represents 3 component instances. Reporting status for the shared
-	// component should report status for each of the instances it represents.
-	expectedStatuses := []component.Status{
-		component.StatusStarting,
-		component.StatusOK,
-		component.StatusStopping,
-		component.StatusStopped,
-	}
-
-	require.Equal(t, 3, len(reportedStatuses))
-
-	for _, actualStatuses := range reportedStatuses {
-		require.Equal(t, expectedStatuses, actualStatuses)
-	}
-}
 
 func TestReportStatusOnStartShutdown(t *testing.T) {
 	for _, tc := range []struct {
-		name             string
-		startErr         error
-		shutdownErr      error
-		expectedStatuses []component.Status
+		name                         string
+		startErr                     error
+		shutdownErr                  error
+		expectedStatuses             []componentstatus.Status
+		expectedNumReporterInstances int
 	}{
 		{
 			name:        "successful start/stop",
 			startErr:    nil,
 			shutdownErr: nil,
-			expectedStatuses: []component.Status{
-				component.StatusStarting,
-				component.StatusOK,
-				component.StatusStopping,
-				component.StatusStopped,
+			expectedStatuses: []componentstatus.Status{
+				componentstatus.StatusStarting,
+				componentstatus.StatusOK,
+				componentstatus.StatusStopping,
+				componentstatus.StatusStopped,
 			},
+			expectedNumReporterInstances: 3,
 		},
 		{
 			name:        "start error",
 			startErr:    assert.AnError,
 			shutdownErr: nil,
-			expectedStatuses: []component.Status{
-				component.StatusStarting,
-				component.StatusPermanentError,
+			expectedStatuses: []componentstatus.Status{
+				componentstatus.StatusStarting,
+				componentstatus.StatusPermanentError,
 			},
+			expectedNumReporterInstances: 1,
 		},
 		{
 			name:        "shutdown error",
 			shutdownErr: assert.AnError,
-			expectedStatuses: []component.Status{
-				component.StatusStarting,
-				component.StatusOK,
-				component.StatusStopping,
-				component.StatusPermanentError,
+			expectedStatuses: []componentstatus.Status{
+				componentstatus.StatusStarting,
+				componentstatus.StatusOK,
+				componentstatus.StatusStopping,
+				componentstatus.StatusPermanentError,
 			},
+			expectedNumReporterInstances: 3,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			reportedStatuses := make(map[*component.InstanceID][]component.Status)
-			newStatusFunc := func() func(*component.StatusEvent) {
-				instanceID := &component.InstanceID{}
-				return func(ev *component.StatusEvent) {
-					reportedStatuses[instanceID] = append(reportedStatuses[instanceID], ev.Status())
-				}
+			reportedStatuses := make(map[*componentstatus.InstanceID][]componentstatus.Status)
+			newStatusFunc := func(id *componentstatus.InstanceID, ev *componentstatus.Event) {
+				reportedStatuses[id] = append(reportedStatuses[id], ev.Status())
 			}
 			base := &baseComponent{}
 			if tc.startErr != nil {
@@ -241,7 +172,6 @@ func TestReportStatusOnStartShutdown(t *testing.T) {
 			var err error
 			for i := 0; i < 3; i++ {
 				telemetrySettings := newNopTelemetrySettings()
-				telemetrySettings.ReportStatus = newStatusFunc()
 				if i == 0 {
 					base.telemetry = telemetrySettings
 				}
@@ -253,17 +183,24 @@ func TestReportStatusOnStartShutdown(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			err = comp.Start(context.Background(), componenttest.NewNopHost())
+			baseHost := componenttest.NewNopHost()
+			for i := 0; i < 3; i++ {
+				err = comp.Start(context.Background(), &testHost{Host: baseHost, InstanceID: &componentstatus.InstanceID{}, newStatusFunc: newStatusFunc})
+				if err != nil {
+					break
+				}
+			}
+
 			require.Equal(t, tc.startErr, err)
 
 			if tc.startErr == nil {
-				comp.telemetry.ReportStatus(component.NewStatusEvent(component.StatusOK))
+				comp.hostWrapper.Report(componentstatus.NewEvent(componentstatus.StatusOK))
 
 				err = comp.Shutdown(context.Background())
 				require.Equal(t, tc.shutdownErr, err)
 			}
 
-			require.Equal(t, 3, len(reportedStatuses))
+			require.Equal(t, tc.expectedNumReporterInstances, len(reportedStatuses))
 
 			for _, actualStatuses := range reportedStatuses {
 				require.Equal(t, tc.expectedStatuses, actualStatuses)
@@ -276,4 +213,17 @@ func TestReportStatusOnStartShutdown(t *testing.T) {
 func newNopTelemetrySettings() *component.TelemetrySettings {
 	set := componenttest.NewNopTelemetrySettings()
 	return &set
+}
+
+var _ component.Host = (*testHost)(nil)
+var _ componentstatus.Reporter = (*testHost)(nil)
+
+type testHost struct {
+	component.Host
+	*componentstatus.InstanceID
+	newStatusFunc func(id *componentstatus.InstanceID, ev *componentstatus.Event)
+}
+
+func (h *testHost) Report(e *componentstatus.Event) {
+	h.newStatusFunc(h.InstanceID, e)
 }
