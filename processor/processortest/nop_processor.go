@@ -61,11 +61,3 @@ type nopProcessor struct {
 	component.ShutdownFunc
 	consumertest.Consumer
 }
-
-// NewNopBuilder returns a processor.Builder that constructs nop processors.
-func NewNopBuilder() *processor.Builder {
-	nopFactory := NewNopFactory()
-	return processor.NewBuilder(
-		map[component.ID]component.Config{component.NewID(nopType): nopFactory.CreateDefaultConfig()},
-		map[component.Type]processor.Factory{nopType: nopFactory})
-}

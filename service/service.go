@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/extensions"
+	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/graph"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
 	"go.opentelemetry.io/collector/service/internal/resource"
@@ -47,7 +48,14 @@ type Settings struct {
 	Receivers *receiver.Builder
 
 	// Processors builder for processors.
-	Processors *processor.Builder
+	//
+	// Deprecated: use the [ProcessorsConfigs] and [ProcessorsFactories] options
+	// instead.
+	Processors builders.Processor
+
+	// Processors configuration to its builder.
+	ProcessorsConfigs   map[component.ID]component.Config
+	ProcessorsFactories map[component.Type]processor.Factory
 
 	// Exporters builder for exporters.
 	Exporters *exporter.Builder
@@ -79,11 +87,17 @@ type Service struct {
 func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	disableHighCard := obsreportconfig.DisableHighCardinalityMetricsfeatureGate.IsEnabled()
 	extendedConfig := obsreportconfig.UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate.IsEnabled()
+
+	processors := set.Processors
+	if processors == nil {
+		processors = builders.NewProcessor(set.ProcessorsConfigs, set.ProcessorsFactories)
+	}
+
 	srv := &Service{
 		buildInfo: set.BuildInfo,
 		host: &serviceHost{
 			receivers:         set.Receivers,
-			processors:        set.Processors,
+			processors:        processors,
 			exporters:         set.Exporters,
 			connectors:        set.Connectors,
 			extensions:        set.Extensions,
@@ -297,7 +311,7 @@ func (srv *Service) initGraph(ctx context.Context, set Settings, cfg Config) err
 		Telemetry:        srv.telemetrySettings,
 		BuildInfo:        srv.buildInfo,
 		ReceiverBuilder:  set.Receivers,
-		ProcessorBuilder: set.Processors,
+		ProcessorBuilder: srv.host.processors,
 		ExporterBuilder:  set.Exporters,
 		ConnectorBuilder: set.Connectors,
 		PipelineConfigs:  cfg.Pipelines,

@@ -4,15 +4,10 @@
 package processor // import "go.opentelemetry.io/collector/processor"
 
 import (
-	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/processor/internal"
-)
-
-var (
-	errNilNextConsumer = errors.New("nil next Consumer")
 )
 
 // Traces is a processor that can consume traces.

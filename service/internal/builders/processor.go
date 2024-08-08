@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package processor // import "go.opentelemetry.io/collector/processor"
+package builders // import "go.opentelemetry.io/collector/service/internal/builders"
 
 import (
 	"context"
@@ -12,23 +12,38 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processortest"
 )
 
-var errNilNextConsumer = errors.New("nil next Consumer")
+var (
+	errNilNextConsumer = errors.New("nil next Consumer")
+	nopType            = component.MustNewType("nop")
+)
 
-// Builder processor is a helper struct that given a set of Configs and Factories helps with creating processors.
-type Builder struct {
-	cfgs      map[component.ID]component.Config
-	factories map[component.Type]Factory
+// Processor is an interface that allows using implementations of the builder
+// from different packages.
+type Processor interface {
+	CreateTraces(context.Context, processor.Settings, consumer.Traces) (processor.Traces, error)
+	CreateMetrics(context.Context, processor.Settings, consumer.Metrics) (processor.Metrics, error)
+	CreateLogs(context.Context, processor.Settings, consumer.Logs) (processor.Logs, error)
+	Factory(component.Type) component.Factory
 }
 
-// NewBuilder creates a new processor.Builder to help with creating components form a set of configs and factories.
-func NewBuilder(cfgs map[component.ID]component.Config, factories map[component.Type]Factory) *Builder {
-	return &Builder{cfgs: cfgs, factories: factories}
+// ProcessorBuilder processor is a helper struct that given a set of Configs
+// and Factories helps with creating processors.
+type ProcessorBuilder struct {
+	cfgs      map[component.ID]component.Config
+	factories map[component.Type]processor.Factory
+}
+
+// NewProcessor creates a new ProcessorBuilder to help with creating components form a set of configs and factories.
+func NewProcessor(cfgs map[component.ID]component.Config, factories map[component.Type]processor.Factory) *ProcessorBuilder {
+	return &ProcessorBuilder{cfgs: cfgs, factories: factories}
 }
 
 // CreateTraces creates a Traces processor based on the settings and config.
-func (b *Builder) CreateTraces(ctx context.Context, set Settings, next consumer.Traces) (Traces, error) {
+func (b *ProcessorBuilder) CreateTraces(ctx context.Context, set processor.Settings, next consumer.Traces) (processor.Traces, error) {
 	if next == nil {
 		return nil, errNilNextConsumer
 	}
@@ -47,7 +62,7 @@ func (b *Builder) CreateTraces(ctx context.Context, set Settings, next consumer.
 }
 
 // CreateMetrics creates a Metrics processor based on the settings and config.
-func (b *Builder) CreateMetrics(ctx context.Context, set Settings, next consumer.Metrics) (Metrics, error) {
+func (b *ProcessorBuilder) CreateMetrics(ctx context.Context, set processor.Settings, next consumer.Metrics) (processor.Metrics, error) {
 	if next == nil {
 		return nil, errNilNextConsumer
 	}
@@ -66,7 +81,7 @@ func (b *Builder) CreateMetrics(ctx context.Context, set Settings, next consumer
 }
 
 // CreateLogs creates a Logs processor based on the settings and config.
-func (b *Builder) CreateLogs(ctx context.Context, set Settings, next consumer.Logs) (Logs, error) {
+func (b *ProcessorBuilder) CreateLogs(ctx context.Context, set processor.Settings, next consumer.Logs) (processor.Logs, error) {
 	if next == nil {
 		return nil, errNilNextConsumer
 	}
@@ -84,8 +99,21 @@ func (b *Builder) CreateLogs(ctx context.Context, set Settings, next consumer.Lo
 	return f.CreateLogsProcessor(ctx, set, cfg, next)
 }
 
-func (b *Builder) Factory(componentType component.Type) component.Factory {
+func (b *ProcessorBuilder) Factory(componentType component.Type) component.Factory {
 	return b.factories[componentType]
+}
+
+// NewNopProcessorConfigsAndFactories returns a configuration and factories that allows building a new nop processor.
+func NewNopProcessorConfigsAndFactories() (map[component.ID]component.Config, map[component.Type]processor.Factory) {
+	nopFactory := processortest.NewNopFactory()
+	configs := map[component.ID]component.Config{
+		component.NewID(nopType): nopFactory.CreateDefaultConfig(),
+	}
+	factories := map[component.Type]processor.Factory{
+		nopType: nopFactory,
+	}
+
+	return configs, factories
 }
 
 // logStabilityLevel logs the stability level of a component. The log level is set to info for

@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/internal/status/statustest"
 	"go.opentelemetry.io/collector/service/internal/testcomponents"
@@ -765,7 +766,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 						testcomponents.ExampleReceiverFactory.Type(): testcomponents.ExampleReceiverFactory,
 					},
 				),
-				ProcessorBuilder: processor.NewBuilder(
+				ProcessorBuilder: builders.NewProcessor(
 					map[component.ID]component.Config{
 						component.MustNewID("exampleprocessor"):                   testcomponents.ExampleProcessorFactory.CreateDefaultConfig(),
 						component.MustNewIDWithName("exampleprocessor", "mutate"): testcomponents.ExampleProcessorFactory.CreateDefaultConfig(),
@@ -2101,7 +2102,7 @@ func TestGraphBuildErrors(t *testing.T) {
 						nopReceiverFactory.Type(): nopReceiverFactory,
 						badReceiverFactory.Type(): badReceiverFactory,
 					}),
-				ProcessorBuilder: processor.NewBuilder(
+				ProcessorBuilder: builders.NewProcessor(
 					test.processorCfgs,
 					map[component.Type]processor.Factory{
 						nopProcessorFactory.Type(): nopProcessorFactory,
@@ -2152,7 +2153,7 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 				nopReceiverFactory.Type(): nopReceiverFactory,
 				errReceiverFactory.Type(): errReceiverFactory,
 			}),
-		ProcessorBuilder: processor.NewBuilder(
+		ProcessorBuilder: builders.NewProcessor(
 			map[component.ID]component.Config{
 				component.NewID(nopProcessorFactory.Type()): nopProcessorFactory.CreateDefaultConfig(),
 				component.NewID(errProcessorFactory.Type()): errProcessorFactory.CreateDefaultConfig(),
