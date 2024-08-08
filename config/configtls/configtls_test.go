@@ -7,9 +7,12 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
@@ -873,6 +876,92 @@ func TestSystemCertPool_loadCert(t *testing.T) {
 				assert.Equal(t, test.wantErr, err)
 			} else {
 				assert.NotNil(t, certPool)
+			}
+		})
+	}
+}
+
+func TestTrustedKeys(t *testing.T) {
+	trustedClientCertPem := readFilePanics("testdata/client-1.crt")
+	block, _ := pem.Decode([]byte(trustedClientCertPem))
+	cert, err := x509.ParseCertificate(block.Bytes)
+	require.NoError(t, err)
+
+	tests := []struct {
+		Name           string
+		ClientCertPath string
+		ClientKeyPath  string
+		CACertPath     string
+		TrustedCerts   []string
+		ExpectSuccess  bool
+	}{
+		{
+			Name:           "trusted cert",
+			ClientCertPath: "testdata/client-1.crt",
+			ClientKeyPath:  "testdata/client-1.key",
+			CACertPath:     "testdata/ca-1.crt",
+			TrustedCerts:   []string{fingerprintCertificate(cert)},
+			ExpectSuccess:  true,
+		},
+		{
+			Name:           "untrusted cert",
+			ClientCertPath: "testdata/client-2.crt",
+			ClientKeyPath:  "testdata/client-2.key",
+			CACertPath:     "testdata/ca-2.crt",
+			TrustedCerts:   []string{fingerprintCertificate(cert)},
+			ExpectSuccess:  false,
+		},
+		{
+			Name:           "no trusted certs",
+			ClientCertPath: "testdata/client-2.crt",
+			ClientKeyPath:  "testdata/client-2.key",
+			CACertPath:     "testdata/ca-2.crt",
+			TrustedCerts:   []string{},
+			ExpectSuccess:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			config := NewDefaultServerConfig()
+			config.TrustedKeys = tt.TrustedCerts
+			config.IncludeSystemCACertsPool = true
+			config.CertFile = "testdata/server-1.crt"
+			config.KeyFile = "testdata/server-1.key"
+			config.ClientCAFile = tt.CACertPath
+			tlsConf, err := config.LoadTLSConfig(context.Background())
+			require.NoError(t, err)
+
+			server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(http.StatusNotFound)
+			}))
+
+			server.TLS = tlsConf
+			server.StartTLS()
+			defer server.Close()
+
+			clientCert, err := tls.LoadX509KeyPair(tt.ClientCertPath, tt.ClientKeyPath)
+			require.NoError(t, err)
+
+			client := http.Client{
+				Transport: &http.Transport{
+					TLSClientConfig: &tls.Config{
+						Certificates:       []tls.Certificate{clientCert},
+						InsecureSkipVerify: true,
+					},
+				},
+			}
+
+			request, err := http.NewRequest(http.MethodGet, server.URL, nil)
+			require.NoError(t, err)
+
+			resp, err := client.Do(request)
+			if tt.ExpectSuccess {
+				require.NoError(t, err)
+				require.NotNil(t, resp)
+				assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+			} else {
+				assert.Error(t, err)
 			}
 		})
 	}

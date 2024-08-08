@@ -72,6 +72,14 @@ Additionally certificates may be reloaded by setting the below configuration.
    Accepts a [duration string](https://pkg.go.dev/time#ParseDuration),
    valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
 
+- `trusted_keys` (optional) : TrustedKeys allows specifying a list of SHA256 hashes to trust when verifying client certificates. This allows only trusting a specific set of keys, rather than all the keys signed by a given CA. Note: The client certificate still has to pass standard TLS verification, so you must still set the required CA values.
+
+Example:
+```
+  trusted_keys:
+    - "29:9D:39:8E:26:E7:72:88:D7:5D:2D:34:FE:8C:41:FA:9F:F1:C3:D7"
+```
+
 How TLS/mTLS is configured depends on whether configuring the client or server.
 See below for examples.
 
