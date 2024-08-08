@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/extensions"
+	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/graph"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
 	"go.opentelemetry.io/collector/service/internal/resource"
@@ -53,7 +54,14 @@ type Settings struct {
 	Exporters *exporter.Builder
 
 	// Connectors builder for connectors.
-	Connectors *connector.Builder
+	//
+	// Deprecated: use the [ConnectorsConfigs] and [ConnectorsFactories] options
+	// instead.
+	Connectors builders.Connector
+
+	// Connectors configuration to its builder.
+	ConnectorsConfigs   map[component.ID]component.Config
+	ConnectorsFactories map[component.Type]connector.Factory
 
 	// Extensions builder for extensions.
 	Extensions *extension.Builder
@@ -79,13 +87,19 @@ type Service struct {
 func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	disableHighCard := obsreportconfig.DisableHighCardinalityMetricsfeatureGate.IsEnabled()
 	extendedConfig := obsreportconfig.UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate.IsEnabled()
+
+	connectors := set.Connectors
+	if connectors == nil {
+		connectors = builders.NewConnector(set.ConnectorsConfigs, set.ConnectorsFactories)
+	}
+
 	srv := &Service{
 		buildInfo: set.BuildInfo,
 		host: &serviceHost{
 			receivers:         set.Receivers,
 			processors:        set.Processors,
 			exporters:         set.Exporters,
-			connectors:        set.Connectors,
+			connectors:        builders.NewConnector(set.ConnectorsConfigs, set.ConnectorsFactories),
 			extensions:        set.Extensions,
 			buildInfo:         set.BuildInfo,
 			asyncErrorChannel: set.AsyncErrorChannel,
@@ -299,7 +313,7 @@ func (srv *Service) initGraph(ctx context.Context, set Settings, cfg Config) err
 		ReceiverBuilder:  set.Receivers,
 		ProcessorBuilder: set.Processors,
 		ExporterBuilder:  set.Exporters,
-		ConnectorBuilder: set.Connectors,
+		ConnectorBuilder: srv.host.connectors,
 		PipelineConfigs:  cfg.Pipelines,
 		ReportStatus:     srv.reporter.ReportStatus,
 	}); err != nil {

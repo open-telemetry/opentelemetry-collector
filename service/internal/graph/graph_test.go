@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/internal/status/statustest"
 	"go.opentelemetry.io/collector/service/internal/testcomponents"
@@ -783,7 +784,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 						testcomponents.ExampleExporterFactory.Type(): testcomponents.ExampleExporterFactory,
 					},
 				),
-				ConnectorBuilder: connector.NewBuilder(
+				ConnectorBuilder: builders.NewConnector(
 					map[component.ID]component.Config{
 						component.MustNewID("exampleconnector"):                           testcomponents.ExampleConnectorFactory.CreateDefaultConfig(),
 						component.MustNewIDWithName("exampleconnector", "merge"):          testcomponents.ExampleConnectorFactory.CreateDefaultConfig(),
@@ -1069,7 +1070,7 @@ func TestConnectorRouter(t *testing.T) {
 				testcomponents.ExampleExporterFactory.Type(): testcomponents.ExampleExporterFactory,
 			},
 		),
-		ConnectorBuilder: connector.NewBuilder(
+		ConnectorBuilder: builders.NewConnector(
 			map[component.ID]component.Config{
 				routeTracesID: testcomponents.ExampleRouterConfig{
 					Traces: &testcomponents.LeftRightConfig{
@@ -2113,7 +2114,7 @@ func TestGraphBuildErrors(t *testing.T) {
 						nopExporterFactory.Type(): nopExporterFactory,
 						badExporterFactory.Type(): badExporterFactory,
 					}),
-				ConnectorBuilder: connector.NewBuilder(
+				ConnectorBuilder: builders.NewConnector(
 					test.connectorCfgs,
 					map[component.Type]connector.Factory{
 						nopConnectorFactory.Type(): nopConnectorFactory,
@@ -2170,7 +2171,7 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 				nopExporterFactory.Type(): nopExporterFactory,
 				errExporterFactory.Type(): errExporterFactory,
 			}),
-		ConnectorBuilder: connector.NewBuilder(
+		ConnectorBuilder: builders.NewConnector(
 			map[component.ID]component.Config{
 				component.NewIDWithName(nopConnectorFactory.Type(), "conn"): nopConnectorFactory.CreateDefaultConfig(),
 				component.NewIDWithName(errConnectorFactory.Type(), "conn"): errConnectorFactory.CreateDefaultConfig(),
