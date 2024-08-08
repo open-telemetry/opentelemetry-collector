@@ -703,6 +703,46 @@ func TestBatchSenderTimerFlush(t *testing.T) {
 	require.NoError(t, be.Shutdown(context.Background()))
 }
 
+func TestBatchSenderTimerFlushWithUseTimerFlushAlignment(t *testing.T) {
+	bCfg := exporterbatcher.NewDefaultConfig()
+	bCfg.MinSizeItems = 8
+	bCfg.FlushTimeout = 100 * time.Millisecond
+	bCfg.UseFlushTimeoutAlignment = true // Use flush timeout alignment
+	be, err := newBaseExporter(defaultSettings, defaultDataType, newNoopObsrepSender,
+		WithBatcher(bCfg, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc)))
+	require.NoError(t, err)
+	now := time.Now()
+	wait := now.Truncate(bCfg.FlushTimeout).Add(bCfg.FlushTimeout + 10*time.Millisecond).Sub(now)
+	time.Sleep(wait)
+	// Start the exporter at 10ms mark.
+	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
+	sink := newFakeRequestSink()
+	time.Sleep(50 * time.Millisecond)
+
+	// Send 2 concurrent requests that should be merged in one batch and sent immediately
+	go func() {
+		require.NoError(t, be.send(context.Background(), &fakeRequest{items: 4, sink: sink}))
+	}()
+	go func() {
+		require.NoError(t, be.send(context.Background(), &fakeRequest{items: 4, sink: sink}))
+	}()
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		assert.LessOrEqual(c, uint64(1), sink.requestsCount.Load())
+		assert.EqualValues(c, 8, sink.itemsCount.Load())
+	}, 30*time.Millisecond, 5*time.Millisecond)
+
+	// Send another request that should be flushed at the 100ms mark instead of waiting for 100ms since last flush
+	go func() {
+		require.NoError(t, be.send(context.Background(), &fakeRequest{items: 4, sink: sink}))
+	}()
+
+	// Confirm that it is flushed in 50ms
+	time.Sleep(50 * time.Millisecond)
+	assert.LessOrEqual(t, uint64(2), sink.requestsCount.Load())
+	assert.EqualValues(t, 12, sink.itemsCount.Load())
+	require.NoError(t, be.Shutdown(context.Background()))
+}
+
 func queueBatchExporter(t *testing.T, batchOption Option) *baseExporter {
 	be, err := newBaseExporter(defaultSettings, defaultDataType, newNoopObsrepSender, batchOption,
 		WithRequestQueue(exporterqueue.NewDefaultConfig(), exporterqueue.NewMemoryQueueFactory[Request]()))

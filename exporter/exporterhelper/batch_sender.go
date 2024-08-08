@@ -60,9 +60,17 @@ func newBatchSender(cfg exporterbatcher.Config, set exporter.Settings,
 	return bs
 }
 
+func (bs *batchSender) nextTimeout() time.Duration {
+	if bs.cfg.UseFlushTimeoutAlignment {
+		now := time.Now()
+		return now.Truncate(bs.cfg.FlushTimeout).Add(bs.cfg.FlushTimeout).Sub(now)
+	}
+	return bs.cfg.FlushTimeout
+}
+
 func (bs *batchSender) Start(_ context.Context, _ component.Host) error {
 	bs.shutdownCh = make(chan struct{})
-	timer := time.NewTimer(bs.cfg.FlushTimeout)
+	timer := time.NewTimer(bs.nextTimeout())
 	go func() {
 		for {
 			select {
@@ -83,13 +91,17 @@ func (bs *batchSender) Start(_ context.Context, _ component.Host) error {
 				return
 			case <-timer.C:
 				bs.mu.Lock()
-				nextFlush := bs.cfg.FlushTimeout
+				nextFlush := bs.nextTimeout()
 				if bs.activeBatch.request != nil {
-					sinceLastFlush := time.Since(bs.lastFlushed)
-					if sinceLastFlush >= bs.cfg.FlushTimeout {
+					if bs.cfg.UseFlushTimeoutAlignment {
 						bs.exportActiveBatch()
 					} else {
-						nextFlush = bs.cfg.FlushTimeout - sinceLastFlush
+						sinceLastFlush := time.Since(bs.lastFlushed)
+						if sinceLastFlush >= bs.cfg.FlushTimeout {
+							bs.exportActiveBatch()
+						} else {
+							nextFlush = bs.cfg.FlushTimeout - sinceLastFlush
+						}
 					}
 				}
 				bs.mu.Unlock()

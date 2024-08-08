@@ -742,6 +742,58 @@ func TestBatchMetricsProcessor_Timeout(t *testing.T) {
 	}
 }
 
+func TestBatchMetricsProcessor_Timeout_UseTimeoutAlignment(t *testing.T) {
+	cfg := Config{
+		Timeout:             100 * time.Millisecond,
+		SendBatchSize:       100000000, // very large number to not trigger size-based batching
+		UseTimeoutAlignment: true,
+	}
+	requestCount := 5
+	metricsPerRequest := 10
+	sink := new(consumertest.MetricsSink)
+
+	creationSet := processortest.NewNopSettings()
+	creationSet.MetricsLevel = configtelemetry.LevelDetailed
+
+	timePoint := time.Now()
+	// sleep until the time is over the half line [timePoint.Truncate(cfg.Timeout), timePoint.Truncate(cfg.Timeout).Add(cfg.Timeout)]
+	durationUntilNextTimeoutBoundary := timePoint.Truncate(cfg.Timeout).Add(cfg.Timeout).Sub(timePoint) - cfg.Timeout/2
+	time.Sleep(durationUntilNextTimeoutBoundary)
+
+	// create the batcher at [cfg.Timeout / 2, cfg.Timeout] mark
+	start := time.Now()
+	batcher, err := newBatchMetricsProcessor(creationSet, sink, &cfg)
+	require.NoError(t, err)
+	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+	for requestNum := 0; requestNum < requestCount; requestNum++ {
+		md := testdata.GenerateMetrics(metricsPerRequest)
+		assert.NoError(t, batcher.ConsumeMetrics(context.Background(), md))
+	}
+
+	// One batch must be sent within [cfg.Timeout / 2, cfg.Timeout) since the batcher creation instead of cfg.Timeout when UseTimeoutAlignment is true.
+	<-time.After(cfg.Timeout * 3 / 5)
+	require.Greaterf(t, sink.DataPointCount(), 0, "timePoint=%v start=%v check=%v", timePoint, start, time.Now())
+
+	elapsed := time.Since(start)
+	require.Less(t, elapsed.Nanoseconds(), cfg.Timeout.Nanoseconds())
+
+	// This should not change the results in the sink, verified by the expectedBatchesNum
+	require.NoError(t, batcher.Shutdown(context.Background()))
+
+	expectedBatchesNum := 1
+	expectedBatchingFactor := 5
+
+	require.Equal(t, requestCount*2*metricsPerRequest, sink.DataPointCount())
+	receivedMds := sink.AllMetrics()
+	require.Equal(t, expectedBatchesNum, len(receivedMds))
+	for _, md := range receivedMds {
+		require.Equal(t, expectedBatchingFactor, md.ResourceMetrics().Len())
+		for i := 0; i < expectedBatchingFactor; i++ {
+			require.Equal(t, metricsPerRequest, md.ResourceMetrics().At(i).ScopeMetrics().At(0).Metrics().Len())
+		}
+	}
+}
+
 func TestBatchMetricProcessor_Shutdown(t *testing.T) {
 	cfg := Config{
 		Timeout:       3 * time.Second,

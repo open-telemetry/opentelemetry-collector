@@ -37,6 +37,22 @@ func TestUnmarshalConfig(t *testing.T) {
 		}, cfg)
 }
 
+func TestUnmarshalConfig_UseTimeoutAlignment(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config2.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	assert.NoError(t, cm.Unmarshal(&cfg))
+	assert.Equal(t,
+		&Config{
+			SendBatchSize:            uint32(10000),
+			SendBatchMaxSize:         uint32(11000),
+			Timeout:                  time.Second * 10,
+			MetadataCardinalityLimit: 1000,
+			UseTimeoutAlignment:      true,
+		}, cfg)
+}
+
 func TestValidateConfig_DefaultBatchMaxSize(t *testing.T) {
 	cfg := &Config{
 		SendBatchSize:    100,

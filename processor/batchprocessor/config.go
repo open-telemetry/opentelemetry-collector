@@ -18,6 +18,9 @@ type Config struct {
 	// When this is set to zero, batched data will be sent immediately.
 	Timeout time.Duration `mapstructure:"timeout"`
 
+	// UseTimeoutAlignment indicates if a batch should be sent at the timeout boundary.
+	UseTimeoutAlignment bool `mapstructure:"use_timeout_alignment"`
+
 	// SendBatchSize is the size of a batch which after hit, will trigger it to be sent.
 	// When this is set to zero, the batch size is ignored and data will be sent immediately
 	// subject to only send_batch_max_size.

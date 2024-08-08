@@ -38,10 +38,11 @@ var errTooManyBatchers = consumererror.NewPermanent(errors.New("too many batcher
 // - batch size reaches cfg.SendBatchSize
 // - cfg.Timeout is elapsed since the timestamp when the previous batch was sent out.
 type batchProcessor struct {
-	logger           *zap.Logger
-	timeout          time.Duration
-	sendBatchSize    int
-	sendBatchMaxSize int
+	logger              *zap.Logger
+	timeout             time.Duration
+	useTimeoutAlignment bool
+	sendBatchSize       int
+	sendBatchMaxSize    int
 
 	// batchFunc is a factory for new batch objects corresponding
 	// with the appropriate signal.
@@ -120,13 +121,14 @@ func newBatchProcessor(set processor.Settings, cfg *Config, batchFunc func() bat
 	bp := &batchProcessor{
 		logger: set.Logger,
 
-		sendBatchSize:    int(cfg.SendBatchSize),
-		sendBatchMaxSize: int(cfg.SendBatchMaxSize),
-		timeout:          cfg.Timeout,
-		batchFunc:        batchFunc,
-		shutdownC:        make(chan struct{}, 1),
-		metadataKeys:     mks,
-		metadataLimit:    int(cfg.MetadataCardinalityLimit),
+		sendBatchSize:       int(cfg.SendBatchSize),
+		sendBatchMaxSize:    int(cfg.SendBatchMaxSize),
+		timeout:             cfg.Timeout,
+		useTimeoutAlignment: cfg.UseTimeoutAlignment,
+		batchFunc:           batchFunc,
+		shutdownC:           make(chan struct{}, 1),
+		metadataKeys:        mks,
+		metadataLimit:       int(cfg.MetadataCardinalityLimit),
 	}
 	if len(bp.metadataKeys) == 0 {
 		s := bp.newShard(nil)
@@ -184,6 +186,14 @@ func (b *shard) start() {
 	go b.startLoop()
 }
 
+func (b *shard) nextTimeout() time.Duration {
+	if b.processor.useTimeoutAlignment {
+		now := time.Now()
+		return now.Truncate(b.processor.timeout).Add(b.processor.timeout).Sub(now)
+	}
+	return b.processor.timeout
+}
+
 func (b *shard) startLoop() {
 	defer b.processor.goroutines.Done()
 
@@ -191,7 +201,7 @@ func (b *shard) startLoop() {
 	// timer, since <- from a nil channel is blocking.
 	var timerCh <-chan time.Time
 	if b.processor.timeout != 0 && b.processor.sendBatchSize != 0 {
-		b.timer = time.NewTimer(b.processor.timeout)
+		b.timer = time.NewTimer(b.nextTimeout())
 		timerCh = b.timer.C
 	}
 	for {
@@ -253,7 +263,7 @@ func (b *shard) stopTimer() {
 
 func (b *shard) resetTimer() {
 	if b.hasTimer() {
-		b.timer.Reset(b.processor.timeout)
+		b.timer.Reset(b.nextTimeout())
 	}
 }
 

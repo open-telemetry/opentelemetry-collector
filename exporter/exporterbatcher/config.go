@@ -19,6 +19,9 @@ type Config struct {
 	// FlushTimeout sets the time after which a batch will be sent regardless of its size.
 	FlushTimeout time.Duration `mapstructure:"flush_timeout"`
 
+	// UseFlushTimeoutAlignment indicates if the flush timeout should be aligned at the timeout boundary.
+	UseFlushTimeoutAlignment bool `mapstructure:"use_flush_timeout_alignment"`
+
 	MinSizeConfig `mapstructure:",squash"`
 	MaxSizeConfig `mapstructure:",squash"`
 }
