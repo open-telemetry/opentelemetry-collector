@@ -11,9 +11,25 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror/internal/statusconversion"
 )
 
+// Error acts as a container for errors coming from pipeline components.
+// It may hold multiple errors from downstream components, and is designed
+// to act as a way to accumulate errors as it travels upstream in a pipeline.
+// `Error` should be obtained using `errors.As` and as a result, ideally
+// a single instance should exist in an error stack. If this is not possible,
+// the most `Error` object should be highest on the stack.
+//
+// Experimental: This API is at the early stage of development and may change without backward compatibility
 type Error struct {
 	errors []ErrorData
 }
+
+// ErrorData is intended to be used to encapsulate various information
+// that can add context to an error that occurred within a pipeline component.
+// ErrorData objects are constructed through calling `New` with the relevant
+// options to capture data around the error that occurred. It can then be pulled
+// out by an upstream component by calling `Error.Data`.
+//
+// Experimental: This API is at the early stage of development and may change without backward compatibility
 
 type ErrorData interface {
 	Error() string
@@ -42,11 +58,13 @@ type errorData struct {
 // ErrorOption allows annotating an Error with metadata.
 type ErrorOption func(error *errorData)
 
-// NewConsumerError wraps an error that happened while consuming telemetry
+// New wraps an error that happened while consuming telemetry
 // and adds metadata onto it to be passed back up the pipeline.
-func NewConsumerError(origErr error, options ...ErrorOption) error {
-	err := &Error{}
+//
+// Experimental: This API is at the early stage of development and may change without backward compatibility
+func New(origErr error, options ...ErrorOption) error {
 	errData := &errorData{error: origErr}
+	err := &Error{errors: []ErrorData{errData}}
 
 	for _, option := range options {
 		option(errData)
@@ -57,6 +75,7 @@ func NewConsumerError(origErr error, options ...ErrorOption) error {
 
 var _ error = &Error{}
 
+// Error implements the `error` interface.
 func (e *Error) Error() string {
 	return e.errors[len(e.errors)-1].Error()
 }
@@ -72,7 +91,19 @@ func (e *Error) Unwrap() []error {
 	return errors
 }
 
-func (e *Error) Combine(errs ...error) {
+// Data returns all the accumulated ErrorData errors
+// emitted by components downstream in the pipeline.
+// These can then be aggregated or worked with individually.
+func (e *Error) Data() []ErrorData {
+	return e.errors
+}
+
+// Combine joins errors that occur at a fanout into a single
+// `Error` object. The component that created the data submission
+// can then work with the `Error` object to understand the failure.
+func Combine(errs ...error) *Error {
+	e := &Error{errors: make([]ErrorData, 0, len(errs))}
+
 	for _, err := range errs {
 		var otherErr *Error
 		if errors.As(err, &otherErr) {
@@ -81,18 +112,20 @@ func (e *Error) Combine(errs ...error) {
 			e.errors = append(e.errors, &errorData{error: err})
 		}
 	}
+
+	return e
 }
 
-func (e *Error) Data() []ErrorData {
-	return e.errors
-}
-
+// WithHTTPStatus records an HTTP status code that was received
+// from a server during data submission.
 func WithHTTPStatus(status int) ErrorOption {
 	return func(err *errorData) {
 		err.httpStatus = &status
 	}
 }
 
+// WithGRPCStatus records a gRPC status code that was received
+// from a server during data submission.
 func WithGRPCStatus(status *status.Status) ErrorOption {
 	return func(err *errorData) {
 		err.grpcStatus = status
@@ -103,6 +136,7 @@ var _ error = &errorData{}
 
 func (ed *errorData) unexported() {}
 
+// Error implements the error interface.
 func (ed *errorData) Error() string {
 	return ed.error.Error()
 }
@@ -114,7 +148,8 @@ func (ed *errorData) Unwrap() error {
 
 // HTTPStatus returns an HTTP status code either directly
 // set by the source or derived from a gRPC status code set
-// by the source.
+// by the source. If both statuses are set, the HTTP status
+// code is returned.
 //
 // If no code has been set, the second return value is `false`.
 func (ed *errorData) HTTPStatus() (int, bool) {
@@ -129,7 +164,8 @@ func (ed *errorData) HTTPStatus() (int, bool) {
 
 // GRPCStatus returns an gRPC status code either directly
 // set by the source or derived from an HTTP status code set
-// by the source.
+// by the source. If both statuses are set, the gRPC status
+// code is returned.
 //
 // If no code has been set, the second return value is `false`.
 func (ed *errorData) GRPCStatus() (*status.Status, bool) {
