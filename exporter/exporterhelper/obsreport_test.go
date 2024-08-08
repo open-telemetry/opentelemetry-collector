@@ -19,9 +19,9 @@ func TestExportEnqueueFailure(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	obsrep, err := NewObsReport(ObsReportSettings{
-		ExporterID:             exporterID,
-		ExporterCreateSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+	obsrep, err := newObsReport(obsReportSettings{
+		exporterID:             exporterID,
+		exporterCreateSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 	})
 	require.NoError(t, err)
 

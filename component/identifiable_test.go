@@ -4,6 +4,7 @@
 package component
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -43,6 +44,11 @@ func TestUnmarshalText(t *testing.T) {
 			idStr:      "valid_type/name-with-dashes",
 			expectedID: ID{typeVal: validType, nameVal: "name-with-dashes"},
 		},
+		// issue 10816
+		{
+			idStr:      "valid_type/Linux-Messages-File_01J49HCH3SWFXRVASWFZFRT3J2__processor0__logs",
+			expectedID: ID{typeVal: validType, nameVal: "Linux-Messages-File_01J49HCH3SWFXRVASWFZFRT3J2__processor0__logs"},
+		},
 		{
 			idStr:      "valid_type/1",
 			expectedID: ID{typeVal: validType, nameVal: "1"},
@@ -69,6 +75,10 @@ func TestUnmarshalText(t *testing.T) {
 		},
 		{
 			idStr:       "valid_type/invalid name",
+			expectedErr: true,
+		},
+		{
+			idStr:       "valid_type/" + strings.Repeat("a", 1025),
 			expectedErr: true,
 		},
 	}

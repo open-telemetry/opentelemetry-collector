@@ -33,6 +33,9 @@ jobs:
             ~\go\pkg\mod
             ~\AppData\Local\go-build
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+      - name: Ensure required ports in the dynamic range are available
+        run: |
+          & ${{ github.workspace }}\.github\workflows\scripts\win-required-ports.ps1
       - name: Run Unit Tests
         run: make gotest
 
@@ -55,6 +58,9 @@ jobs:
             ~\go\pkg\mod
             ~\AppData\Local\go-build
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+      - name: Ensure required ports in the dynamic range are available
+        run: |
+          & ${{ github.workspace }}\.github\workflows\scripts\win-required-ports.ps1
 
       - name: Make otelcorecol
         run: make otelcorecol
