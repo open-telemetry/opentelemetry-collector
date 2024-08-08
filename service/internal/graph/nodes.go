@@ -74,7 +74,9 @@ func (n *receiverNode) buildComponent(ctx context.Context,
 	nexts []baseConsumer,
 ) error {
 	tel.Logger = components.ReceiverLogger(tel.Logger, n.componentID, n.pipelineType)
-	set := receiver.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
+	set := receiver.NewSettings(n.componentID, tel, info, func(componentType component.Type) receiver.Factory {
+		return builder.Factory(componentType).(receiver.Factory)
+	})
 	var err error
 	switch n.pipelineType {
 	case component.DataTypeTraces:

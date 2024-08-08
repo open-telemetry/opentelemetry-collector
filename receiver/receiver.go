@@ -39,6 +39,9 @@ type Logs = internal.Logs
 // Settings configures Receiver creators.
 type Settings = internal.Settings
 
+// NewSettings creates a new Settings object
+var NewSettings = internal.NewSettings
+
 // Factory is factory interface for receivers.
 //
 // This interface cannot be directly implemented. Implementations must
