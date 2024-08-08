@@ -15,10 +15,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCannotShutdownIfNotWatching(t *testing.T) {
+func TestCanShutdownIfNotWatching(t *testing.T) {
 	reloader, _, _ := createReloader(t)
 	err := reloader.shutdown()
-	assert.Error(t, err)
+	assert.NoError(t, err)
 }
 
 func TestCannotStartIfAlreadyWatching(t *testing.T) {
