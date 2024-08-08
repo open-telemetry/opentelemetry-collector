@@ -90,13 +90,6 @@ jobs:
 
           git checkout -b $branch
           git add semconv/
-          git commit -m "$message"
-          git push --set-upstream origin $branch
-          url=$(gh pr create --title "$message" \
-                             --body "$body" \
-                             --base main)
-
-          pull_request_number=${url//*\//}
 
           # see the template for change log entry file at blob/main/.chloggen/TEMPLATE.yaml
           cat > .chloggen/semconv-$VERSION.yaml << EOF
@@ -108,5 +101,10 @@ jobs:
 
           git add .chloggen/semconv-$VERSION.yaml
 
-          git commit -m "Add change log entry"
-          git push
+          git commit -m "$message"
+          git push --set-upstream origin $branch
+          url=$(gh pr create --title "$message" \
+                             --body "$body" \
+                             --base main)
+
+          pull_request_number=${url//*\//}

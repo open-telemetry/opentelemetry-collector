@@ -54,7 +54,6 @@ var (
 		"/config/configtls",
 		"/config/internal",
 		"/confmap",
-		"/confmap/converter/expandconverter",
 		"/confmap/provider/envprovider",
 		"/confmap/provider/fileprovider",
 		"/confmap/provider/httpprovider",
