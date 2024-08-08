@@ -845,3 +845,34 @@ func TestRecursiveUnmarshaling(t *testing.T) {
 	require.NoError(t, conf.Unmarshal(r))
 	require.Equal(t, "something", r.Foo)
 }
+
+func TestExpandedValue(t *testing.T) {
+	cm := NewFromStringMap(map[string]any{
+		"key": expandedValue{
+			Value:    0xdeadbeef,
+			Original: "original",
+		}})
+	assert.Equal(t, 0xdeadbeef, cm.Get("key"))
+	assert.Equal(t, map[string]any{"key": 0xdeadbeef}, cm.ToStringMap())
+
+	type ConfigStr struct {
+		Key string `mapstructure:"key"`
+	}
+
+	cfgStr := ConfigStr{}
+	assert.NoError(t, cm.Unmarshal(&cfgStr))
+	assert.Equal(t, "original", cfgStr.Key)
+
+	type ConfigInt struct {
+		Key int `mapstructure:"key"`
+	}
+	cfgInt := ConfigInt{}
+	assert.NoError(t, cm.Unmarshal(&cfgInt))
+	assert.Equal(t, 0xdeadbeef, cfgInt.Key)
+
+	type ConfigBool struct {
+		Key bool `mapstructure:"key"`
+	}
+	cfgBool := ConfigBool{}
+	assert.Error(t, cm.Unmarshal(&cfgBool))
+}

@@ -113,9 +113,14 @@ func (m *mockConverter) Convert(context.Context, *Conf) error {
 	return errors.New("converter_err")
 }
 
-func TestNewResolverInvalidScheme(t *testing.T) {
-	_, err := NewResolver(ResolverSettings{URIs: []string{"s_3:has invalid char"}, ProviderFactories: []ProviderFactory{newMockProvider(&mockProvider{scheme: "s_3"})}})
+func TestNewResolverInvalidSchemeInURI(t *testing.T) {
+	_, err := NewResolver(ResolverSettings{URIs: []string{"s_3:has invalid char"}, ProviderFactories: []ProviderFactory{newMockProvider(&mockProvider{scheme: "s3"})}})
 	assert.EqualError(t, err, `invalid uri: "s_3:has invalid char"`)
+}
+
+func TestNewResolverDuplicateScheme(t *testing.T) {
+	_, err := NewResolver(ResolverSettings{URIs: []string{"mock:something"}, ProviderFactories: []ProviderFactory{newMockProvider(&mockProvider{scheme: "mock"}), newMockProvider(&mockProvider{scheme: "mock"})}})
+	assert.EqualError(t, err, `duplicate 'confmap.Provider' scheme "mock"`)
 }
 
 func TestResolverErrors(t *testing.T) {

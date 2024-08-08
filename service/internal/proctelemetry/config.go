@@ -19,16 +19,15 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/contrib/config"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/bridge/opencensus"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	otelprom "go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/resource"
 
-	"go.opentelemetry.io/collector/internal/globalgates"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 )
@@ -42,8 +41,9 @@ const (
 	HTTPInstrumentation = "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
 	// supported protocols
-	protocolProtobufHTTP = "http/protobuf"
-	protocolProtobufGRPC = "grpc/protobuf"
+	protocolProtobufHTTP     = "http/protobuf"
+	protocolProtobufGRPC     = "grpc/protobuf"
+	defaultReadHeaderTimeout = 10 * time.Second
 )
 
 var (
@@ -69,10 +69,6 @@ func InitMetricReader(ctx context.Context, reader config.MetricReader, asyncErro
 	}
 	if reader.Periodic != nil {
 		var opts []sdkmetric.PeriodicReaderOption
-
-		if !globalgates.DisableOpenCensusBridge.IsEnabled() {
-			opts = append(opts, sdkmetric.WithProducer(opencensus.NewMetricProducer()))
-		}
 		if reader.Periodic.Interval != nil {
 			opts = append(opts, sdkmetric.WithInterval(time.Duration(*reader.Periodic.Interval)*time.Millisecond))
 		}
@@ -101,8 +97,9 @@ func InitPrometheusServer(registry *prometheus.Registry, address string, asyncEr
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
 	server := &http.Server{
-		Addr:    address,
-		Handler: mux,
+		Addr:              address,
+		Handler:           mux,
+		ReadHeaderTimeout: defaultReadHeaderTimeout,
 	}
 	go func() {
 		if serveErr := server.ListenAndServe(); serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) {
@@ -173,9 +170,6 @@ func initPrometheusExporter(prometheusConfig *config.Prometheus, asyncErrorChann
 		// This allows us to produce metrics that are backwards compatible w/ opencensus
 		otelprom.WithoutCounterSuffixes(),
 		otelprom.WithResourceAsConstantLabels(attribute.NewDenyKeysFilter()),
-	}
-	if !globalgates.DisableOpenCensusBridge.IsEnabled() {
-		opts = append(opts, otelprom.WithProducer(opencensus.NewMetricProducer()))
 	}
 	exporter, err := otelprom.New(opts...)
 	if err != nil {
@@ -261,6 +255,18 @@ func initOTLPgRPCExporter(ctx context.Context, otlpConfig *config.OTLPMetric) (s
 	if len(otlpConfig.Headers) > 0 {
 		opts = append(opts, otlpmetricgrpc.WithHeaders(otlpConfig.Headers))
 	}
+	if otlpConfig.TemporalityPreference != nil {
+		switch *otlpConfig.TemporalityPreference {
+		case "delta":
+			opts = append(opts, otlpmetricgrpc.WithTemporalitySelector(temporalityPreferenceDelta))
+		case "cumulative":
+			opts = append(opts, otlpmetricgrpc.WithTemporalitySelector(temporalityPreferenceCumulative))
+		case "lowmemory":
+			opts = append(opts, otlpmetricgrpc.WithTemporalitySelector(temporalityPreferenceLowMemory))
+		default:
+			return nil, fmt.Errorf("unsupported temporality preference %q", *otlpConfig.TemporalityPreference)
+		}
+	}
 
 	return otlpmetricgrpc.New(ctx, opts...)
 }
@@ -298,6 +304,44 @@ func initOTLPHTTPExporter(ctx context.Context, otlpConfig *config.OTLPMetric) (s
 	if len(otlpConfig.Headers) > 0 {
 		opts = append(opts, otlpmetrichttp.WithHeaders(otlpConfig.Headers))
 	}
+	if otlpConfig.TemporalityPreference != nil {
+		switch *otlpConfig.TemporalityPreference {
+		case "delta":
+			opts = append(opts, otlpmetrichttp.WithTemporalitySelector(temporalityPreferenceDelta))
+		case "cumulative":
+			opts = append(opts, otlpmetrichttp.WithTemporalitySelector(temporalityPreferenceCumulative))
+		case "lowmemory":
+			opts = append(opts, otlpmetrichttp.WithTemporalitySelector(temporalityPreferenceLowMemory))
+		default:
+			return nil, fmt.Errorf("unsupported temporality preference %q", *otlpConfig.TemporalityPreference)
+		}
+	}
 
 	return otlpmetrichttp.New(ctx, opts...)
+}
+
+func temporalityPreferenceCumulative(_ sdkmetric.InstrumentKind) metricdata.Temporality {
+	return metricdata.CumulativeTemporality
+}
+
+func temporalityPreferenceDelta(ik sdkmetric.InstrumentKind) metricdata.Temporality {
+	switch ik {
+	case sdkmetric.InstrumentKindCounter, sdkmetric.InstrumentKindObservableCounter, sdkmetric.InstrumentKindHistogram:
+		return metricdata.DeltaTemporality
+	case sdkmetric.InstrumentKindObservableUpDownCounter, sdkmetric.InstrumentKindUpDownCounter:
+		return metricdata.CumulativeTemporality
+	default:
+		return metricdata.DeltaTemporality
+	}
+}
+
+func temporalityPreferenceLowMemory(ik sdkmetric.InstrumentKind) metricdata.Temporality {
+	switch ik {
+	case sdkmetric.InstrumentKindCounter, sdkmetric.InstrumentKindHistogram:
+		return metricdata.DeltaTemporality
+	case sdkmetric.InstrumentKindObservableCounter, sdkmetric.InstrumentKindObservableUpDownCounter, sdkmetric.InstrumentKindUpDownCounter:
+		return metricdata.CumulativeTemporality
+	default:
+		return metricdata.DeltaTemporality
+	}
 }

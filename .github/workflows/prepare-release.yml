@@ -44,7 +44,9 @@ jobs:
 
           validate_beta_version "${{ inputs.candidate-beta }}" "candidate-beta"
           validate_beta_version "${{ inputs.current-beta }}" "current-beta"
-          validate_stable_version "${{ inputs.candidate-stable }}" "candidate-stable"
+          if [[ ! -z "${{ inputs.candidate-stable }}" ]]; then
+            validate_stable_version "${{ inputs.candidate-stable }}" "candidate-stable"
+          fi
           validate_stable_version "${{ inputs.current-stable }}" "current-stable"
         shell: bash
 

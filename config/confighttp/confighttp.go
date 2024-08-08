@@ -60,12 +60,6 @@ type ClientConfig struct {
 	// Header values are opaque since they may be sensitive.
 	Headers map[string]configopaque.String `mapstructure:"headers"`
 
-	// Custom Round Tripper to allow for individual components to intercept HTTP requests
-	//
-	// Deprecated: [v0.103.0] Set (*http.Client).Transport on the *http.Client returned from ToClient
-	// to configure this.
-	CustomRoundTripper func(next http.RoundTripper) (http.RoundTripper, error) `mapstructure:"-"`
-
 	// Auth configuration for outgoing HTTP calls.
 	Auth *configauth.Authentication `mapstructure:"auth"`
 
@@ -235,13 +229,6 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 		clientTransport = otelhttp.NewTransport(clientTransport, otelOpts...)
 	}
 
-	if hcs.CustomRoundTripper != nil {
-		clientTransport, err = hcs.CustomRoundTripper(clientTransport)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	var jar http.CookieJar
 	if hcs.Cookies != nil && hcs.Cookies.Enabled {
 		jar, err = cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
@@ -297,7 +284,6 @@ type ServerConfig struct {
 	MaxRequestBodySize int64 `mapstructure:"max_request_body_size"`
 
 	// IncludeMetadata propagates the client metadata from the incoming requests to the downstream consumers
-	// Experimental: *NOTE* this option is subject to change or removal in the future.
 	IncludeMetadata bool `mapstructure:"include_metadata"`
 
 	// Additional headers attached to each HTTP response sent to the client.
@@ -346,7 +332,7 @@ func NewDefaultServerConfig() ServerConfig {
 	return ServerConfig{
 		ResponseHeaders:   map[string]configopaque.String{},
 		TLSSetting:        &tlsDefaultServerConfig,
-		CORS:              &CORSConfig{},
+		CORS:              NewDefaultCORSConfig(),
 		WriteTimeout:      30 * time.Second,
 		ReadHeaderTimeout: 1 * time.Minute,
 		IdleTimeout:       1 * time.Minute,
@@ -355,7 +341,7 @@ func NewDefaultServerConfig() ServerConfig {
 
 type AuthConfig struct {
 	// Auth for this receiver.
-	*configauth.Authentication `mapstructure:"-"`
+	configauth.Authentication `mapstructure:",squash"`
 
 	// RequestParameters is a list of parameters that should be extracted from the request and added to the context.
 	// When a parameter is found in both the query string and the header, the value from the query string will be used.
@@ -483,12 +469,12 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 	}
 
 	server := &http.Server{
-		Handler: handler,
+		Handler:           handler,
+		ReadTimeout:       hss.ReadTimeout,
+		ReadHeaderTimeout: hss.ReadHeaderTimeout,
+		WriteTimeout:      hss.WriteTimeout,
+		IdleTimeout:       hss.IdleTimeout,
 	}
-	server.ReadTimeout = hss.ReadTimeout
-	server.ReadHeaderTimeout = hss.ReadHeaderTimeout
-	server.WriteTimeout = hss.WriteTimeout
-	server.IdleTimeout = hss.IdleTimeout
 
 	return server, nil
 }
@@ -525,6 +511,11 @@ type CORSConfig struct {
 	// Set it to the number of seconds that browsers should cache a CORS
 	// preflight response for.
 	MaxAge int `mapstructure:"max_age"`
+}
+
+// NewDefaultCORSConfig creates a default cross-origin resource sharing (CORS) configuration.
+func NewDefaultCORSConfig() *CORSConfig {
+	return &CORSConfig{}
 }
 
 func authInterceptor(next http.Handler, server auth.Server, requestParams []string) http.Handler {
