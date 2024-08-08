@@ -85,7 +85,7 @@ jobs:
           GH_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
         run: |
           message="Add semantic conventions version $VERSION"
-          body="Add semantic conventions version \`$VERSION\`."
+          body="Add semantic conventions version \`$VERSION\`. Related to #10842"
           branch="opentelemetrybot/add-semantic-conventions-${VERSION}"
 
           git checkout -b $branch
@@ -96,7 +96,7 @@ jobs:
           change_type: enhancement
           component: semconv
           note: Add semantic conventions version $VERSION
-          issues: [ $pull_request_number ]
+          issues: [10842]
           EOF
 
           git add .chloggen/semconv-$VERSION.yaml

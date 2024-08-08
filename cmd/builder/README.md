@@ -24,8 +24,6 @@ processors:
 providers:
   - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v0.99.0
 
-converters:
-  - gomod: go.opentelemetry.io/collector/confmap/converter/expandconverter v0.99.0
 EOF
 $ builder --config=otelcol-builder.yaml
 $ cat > /tmp/otelcol.yaml <<EOF
