@@ -131,7 +131,7 @@ func WithGRPCStatus(status *status.Status) ErrorOption {
 	}
 }
 
-var _ error = &errorData{}
+var _ error = (*errorData)(nil)
 
 func (ed *errorData) unexported() {}
 
