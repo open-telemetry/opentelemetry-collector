@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/url"
 	"path"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -17,8 +18,9 @@ import (
 
 const (
 	// Protocol values.
-	protoGRPC = "protocols::grpc"
-	protoHTTP = "protocols::http"
+	protoGRPC      = "protocols::grpc"
+	protoHTTP      = "protocols::http"
+	defaultTimeout = 60 * time.Second
 )
 
 type HTTPConfig struct {
@@ -82,6 +84,14 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 		}
 		if cfg.HTTP.LogsURLPath, err = sanitizeURLPath(cfg.HTTP.LogsURLPath); err != nil {
 			return err
+		}
+		//set default  server config value
+		if cfg.HTTP.ReadTimeout == 0 {
+			cfg.HTTP.ReadTimeout = defaultTimeout
+		}
+
+		if cfg.HTTP.WriteTimeout == 0 {
+			cfg.HTTP.WriteTimeout = defaultTimeout
 		}
 	}
 
