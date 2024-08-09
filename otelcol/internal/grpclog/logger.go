@@ -27,7 +27,7 @@ func SetLogger(baseLogger *zap.Logger, loglevel zapcore.Level) *zapgrpc.Logger {
 			c = core
 		}
 		return c.With([]zapcore.Field{zap.Bool("grpc_log", true)})
-	})))
+	}), zap.AddCallerSkip(5)))
 
 	grpclog.SetLoggerV2(logger)
 	return logger
