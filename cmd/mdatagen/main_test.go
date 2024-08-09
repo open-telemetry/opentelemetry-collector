@@ -546,12 +546,14 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
+const ScopeName = ""
+
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("")
+	return settings.MeterProvider.Meter(ScopeName)
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("")
+	return settings.TracerProvider.Tracer(ScopeName)
 }
 `,
 		},
@@ -580,12 +582,14 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
+const ScopeName = ""
+
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("")
+	return settings.MeterProvider.Meter(ScopeName)
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("")
+	return settings.TracerProvider.Tracer(ScopeName)
 }
 `,
 		},
