@@ -11,26 +11,26 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror/internal/statusconversion"
 )
 
-// Error acts as a container for errors coming from pipeline components.
+// ErrorContainer acts as a container for errors coming from pipeline components.
 // It may hold multiple errors from downstream components, and is designed
 // to act as a way to accumulate errors as it travels upstream in a pipeline.
-// `Error` should be obtained using `errors.As` and as a result, ideally
+// `ErrorContainer` should be obtained using `errors.As` and as a result, ideally
 // a single instance should exist in an error stack. If this is not possible,
-// the most `Error` object should be highest on the stack.
+// the most `ErrorContainer` object should be highest on the stack.
 //
 // Experimental: This API is at the early stage of development and may change without backward compatibility
-type Error struct {
-	errors []ErrorData
+type ErrorContainer struct {
+	errors []Error
 }
 
-// ErrorData is intended to be used to encapsulate various information
+// Error is intended to be used to encapsulate various information
 // that can add context to an error that occurred within a pipeline component.
-// ErrorData objects are constructed through calling `New` with the relevant
+// Error objects are constructed through calling `New` with the relevant
 // options to capture data around the error that occurred. It can then be pulled
 // out by an upstream component by calling `Error.Data`.
 //
 // Experimental: This API is at the early stage of development and may change without backward compatibility
-type ErrorData interface {
+type Error interface {
 	Error() string
 
 	Unwrap() error
@@ -55,7 +55,15 @@ type errorData struct {
 }
 
 // ErrorOption allows annotating an Error with metadata.
-type ErrorOption func(error *errorData)
+type ErrorOption interface {
+	applyOption(*errorData)
+}
+
+type errorOptionFunc func(*errorData)
+
+func (f errorOptionFunc) applyOption(e *errorData) {
+	f(e)
+}
 
 // New wraps an error that happened while consuming telemetry
 // and adds metadata onto it to be passed back up the pipeline.
@@ -63,24 +71,24 @@ type ErrorOption func(error *errorData)
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 func New(origErr error, options ...ErrorOption) error {
 	errData := &errorData{error: origErr}
-	err := &Error{errors: []ErrorData{errData}}
+	err := &ErrorContainer{errors: []Error{errData}}
 
 	for _, option := range options {
-		option(errData)
+		option.applyOption(errData)
 	}
 
 	return err
 }
 
-var _ error = &Error{}
+var _ error = (*ErrorContainer)(nil)
 
 // Error implements the `error` interface.
-func (e *Error) Error() string {
+func (e *ErrorContainer) Error() string {
 	return e.errors[len(e.errors)-1].Error()
 }
 
 // Unwrap returns the wrapped error for use by `errors.Is` and `errors.As`.
-func (e *Error) Unwrap() []error {
+func (e *ErrorContainer) Unwrap() []error {
 	errors := make([]error, 0, len(e.errors))
 
 	for _, err := range e.errors {
@@ -90,21 +98,21 @@ func (e *Error) Unwrap() []error {
 	return errors
 }
 
-// Data returns all the accumulated ErrorData errors
+// Errors returns all the accumulated Error objects
 // emitted by components downstream in the pipeline.
 // These can then be aggregated or worked with individually.
-func (e *Error) Data() []ErrorData {
+func (e *ErrorContainer) Errors() []Error {
 	return e.errors
 }
 
 // Combine joins errors that occur at a fanout into a single
 // `Error` object. The component that created the data submission
 // can then work with the `Error` object to understand the failure.
-func Combine(errs ...error) *Error {
-	e := &Error{errors: make([]ErrorData, 0, len(errs))}
+func Combine(errs ...error) *ErrorContainer {
+	e := &ErrorContainer{errors: make([]Error, 0, len(errs))}
 
 	for _, err := range errs {
-		var otherErr *Error
+		var otherErr *ErrorContainer
 		if errors.As(err, &otherErr) {
 			e.errors = append(e.errors, otherErr.errors...)
 		} else {
@@ -118,17 +126,17 @@ func Combine(errs ...error) *Error {
 // WithHTTPStatus records an HTTP status code that was received
 // from a server during data submission.
 func WithHTTPStatus(status int) ErrorOption {
-	return func(err *errorData) {
+	return errorOptionFunc(func(err *errorData) {
 		err.httpStatus = &status
-	}
+	})
 }
 
 // WithGRPCStatus records a gRPC status code that was received
 // from a server during data submission.
 func WithGRPCStatus(status *status.Status) ErrorOption {
-	return func(err *errorData) {
+	return errorOptionFunc(func(err *errorData) {
 		err.grpcStatus = status
-	}
+	})
 }
 
 var _ error = (*errorData)(nil)

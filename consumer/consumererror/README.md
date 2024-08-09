@@ -198,21 +198,20 @@ component can then later pull all errors out for analysis.
 > here is for design purposes. The code snippet may not work as-written.
 
 When a receiver gets a response that includes an error, it can get the data out
-by doing something similar to the following. Note that this uses the `ErrorData`
-type, which is for reading error data, as opposed to the `Error` type, which is
-for recording errors.
+by doing something similar to the following. Note that this uses the `Error`
+type, which is for reading error data, as opposed to the `ErrorContainer` type,
+which is for recording errors.
 
 ```go
-cerr := consumererror.Error{}
-var errData []consumerError.ErrorData 
+cerr := consumererror.ErrorContainer{}
 
 if errors.As(err, &cerr) {
-  errData := cerr.Data()
+  errs := cerr.Errors()
 
-  for _, data := range errData {
-    data.HTTPStatus()
-    data.Retryable()
-    data.Partial()
+  for _, e := range errs {
+    e.HTTPStatus()
+    e.Retryable()
+    e.Partial()
   }
 }
 ```
@@ -227,7 +226,7 @@ Obtaining data from an error can be done using an interface that looks something
 like this:
 
 ```go
-type ErrorData interface {
+type Error interface {
   // Returns the underlying error
   Error() error
 
@@ -302,5 +301,5 @@ The following describes how to transition to these error types:
 
 `consumererror.IsPermanent` will be deprecated in favor of checking whether
 retry information is available, and only retrying if it has been provided. This
-will be possible by calling `ErrorData.Retryable()` and checking for retry
+will be possible by calling `Error.Retryable()` and checking for retry
 information.

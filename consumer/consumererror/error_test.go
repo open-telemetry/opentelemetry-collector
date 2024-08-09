@@ -18,8 +18,8 @@ var errTest = errors.New("consumererror testing error")
 func Test_New(t *testing.T) {
 	httpStatus := 500
 	grpcStatus := status.New(codes.Aborted, "aborted")
-	wantErr := &Error{
-		errors: []ErrorData{
+	wantErr := &ErrorContainer{
+		errors: []Error{
 			&errorData{
 				error:      errTest,
 				httpStatus: &httpStatus,
@@ -43,8 +43,8 @@ func Test_Error(t *testing.T) {
 }
 
 func TestUnwrap(t *testing.T) {
-	err := &Error{
-		errors: []ErrorData{
+	err := &ErrorContainer{
+		errors: []Error{
 			&errorData{
 				error: errTest,
 			},
@@ -65,8 +65,8 @@ func TestUnwrap(t *testing.T) {
 
 func TestData(t *testing.T) {
 	httpStatus := 500
-	err := &Error{
-		errors: []ErrorData{
+	err := &ErrorContainer{
+		errors: []Error{
 			&errorData{
 				error:      errTest,
 				httpStatus: &httpStatus,
@@ -78,7 +78,7 @@ func TestData(t *testing.T) {
 		},
 	}
 
-	data := err.Data()
+	data := err.Errors()
 
 	require.Len(t, data, 2)
 
@@ -89,16 +89,47 @@ func TestData(t *testing.T) {
 	}
 }
 
+func TestErrorSliceIsCopy(t *testing.T) {
+	httpStatus := 500
+	err := &ErrorContainer{
+		errors: []Error{
+			&errorData{
+				error:      errTest,
+				httpStatus: &httpStatus,
+			},
+			&errorData{
+				error:      errTest,
+				httpStatus: &httpStatus,
+			},
+		},
+	}
+
+	errs := err.Errors()
+
+	require.Len(t, errs, 2)
+
+	for _, e := range errs {
+		status, ok := e.HTTPStatus()
+		require.True(t, ok)
+		require.Equal(t, httpStatus, status)
+	}
+
+	errs = append(errs, &errorData{error: errTest})
+
+	require.Len(t, errs, 3)
+	require.Len(t, err.errors, 2)
+}
+
 func TestCombine(t *testing.T) {
-	err0 := &Error{
-		errors: []ErrorData{
+	err0 := &ErrorContainer{
+		errors: []Error{
 			&errorData{
 				error: errTest,
 			},
 		},
 	}
-	err1 := &Error{
-		errors: []ErrorData{
+	err1 := &ErrorContainer{
+		errors: []Error{
 			&errorData{
 				error: errTest,
 			},
@@ -107,8 +138,8 @@ func TestCombine(t *testing.T) {
 			},
 		},
 	}
-	want := &Error{
-		errors: []ErrorData{
+	want := &ErrorContainer{
+		errors: []Error{
 			&errorData{
 				error: errTest,
 			},
@@ -129,7 +160,7 @@ func TestCombine(t *testing.T) {
 	require.Equal(t, want, err)
 }
 
-func TestErrorDataError(t *testing.T) {
+func TestError_Error(t *testing.T) {
 	err := &errorData{
 		error: errTest,
 	}
@@ -137,7 +168,7 @@ func TestErrorDataError(t *testing.T) {
 	require.Equal(t, errTest.Error(), err.Error())
 }
 
-func TestErrorDataUnwrap(t *testing.T) {
+func TestError_Unwrap(t *testing.T) {
 	err := &errorData{
 		error: errTest,
 	}
@@ -145,7 +176,7 @@ func TestErrorDataUnwrap(t *testing.T) {
 	require.Equal(t, errTest, err.Unwrap())
 }
 
-func TestErrorDataHTTPStatus(t *testing.T) {
+func TestError_HTTPStatus(t *testing.T) {
 	serverErr := http.StatusTooManyRequests
 	testCases := []struct {
 		name       string
@@ -195,7 +226,7 @@ func TestErrorDataHTTPStatus(t *testing.T) {
 	}
 }
 
-func TestErrorDataGRPCStatus(t *testing.T) {
+func TestError_GRPCStatus(t *testing.T) {
 	httpStatus := http.StatusTooManyRequests
 	otherHTTPStatus := http.StatusOK
 	serverErr := status.New(codes.ResourceExhausted, errTest.Error())
