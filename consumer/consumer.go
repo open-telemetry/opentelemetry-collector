@@ -12,6 +12,9 @@ import (
 // Capabilities describes the capabilities of a Processor.
 type Capabilities = internal.Capabilities
 
+// ObsReport describes the observability report of a consumer.
+type ObsReport = internal.ObsReport
+
 var errNilFunc = errors.New("nil consumer func")
 
 // Option to construct new consumers.
@@ -25,7 +28,7 @@ func WithCapabilities(capabilities Capabilities) Option {
 	}
 }
 
-func WithObsReport(report internal.ObsReport) Option {
+func WithObsReport(report ObsReport) Option {
 	return func(o *internal.BaseImpl) {
 		o.ObsReport = report
 	}

@@ -34,6 +34,17 @@ func TestWithCapabilitiesTraces(t *testing.T) {
 	assert.Equal(t, Capabilities{MutatesData: true}, cp.Capabilities())
 }
 
+func TestWithWithObsReportTraces(t *testing.T) {
+	obsr := &mockObsReport{}
+	cp, err := NewTraces(
+		func(context.Context, ptrace.Traces) error { return nil },
+		WithObsReport(obsr))
+	assert.NoError(t, err)
+	assert.NoError(t, cp.ConsumeTraces(context.Background(), ptrace.NewTraces()))
+	assert.Equal(t, 1, obsr.StartTracesOpCalled)
+	assert.Equal(t, 1, obsr.EndTracesOpCalled)
+}
+
 func TestConsumeTraces(t *testing.T) {
 	consumeCalled := false
 	cp, err := NewTraces(func(context.Context, ptrace.Traces) error { consumeCalled = true; return nil })
