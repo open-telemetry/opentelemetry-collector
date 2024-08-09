@@ -18,7 +18,8 @@ type BaseConsumer interface {
 }
 
 type BaseImpl struct {
-	Cap Capabilities
+	Cap       Capabilities
+	ObsReport ObsReport
 }
 
 // Option to construct new consumers.
@@ -31,7 +32,8 @@ func (bs BaseImpl) Capabilities() Capabilities {
 
 func NewBaseImpl(options ...Option) *BaseImpl {
 	bs := &BaseImpl{
-		Cap: Capabilities{MutatesData: false},
+		Cap:       Capabilities{MutatesData: false},
+		ObsReport: noopObsReport,
 	}
 
 	for _, op := range options {

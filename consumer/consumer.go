@@ -24,3 +24,9 @@ func WithCapabilities(capabilities Capabilities) Option {
 		o.Cap = capabilities
 	}
 }
+
+func WithObsReport(report internal.ObsReport) Option {
+	return func(o *internal.BaseImpl) {
+		o.ObsReport = report
+	}
+}
