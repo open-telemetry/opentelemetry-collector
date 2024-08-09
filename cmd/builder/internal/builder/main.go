@@ -27,6 +27,7 @@ var (
 	errDownloadFailed  = errors.New("failed to download go modules")
 	errCompileFailed   = errors.New("failed to compile the OpenTelemetry Collector distribution")
 	skipStrictMsg      = "Use --skip-strict-versioning to temporarily disable this check. This flag will be removed in a future minor version"
+	DefaultLDFlags     = "-s -w"
 )
 
 func runGoCommand(cfg Config, args ...string) ([]byte, error) {
@@ -110,16 +111,18 @@ func Compile(cfg Config) error {
 
 	cfg.Logger.Info("Compiling")
 
-	var ldflags = "-s -w"
-
+	ldflags := cfg.LDFlags
 	args := []string{"build", "-trimpath", "-o", cfg.Distribution.Name}
 	if cfg.Distribution.DebugCompilation {
 		cfg.Logger.Info("Debug compilation is enabled, the debug symbols will be left on the resulting binary")
-		ldflags = cfg.LDFlags
 		args = append(args, "-gcflags=all=-N -l")
-	} else if len(cfg.LDFlags) > 0 {
-		ldflags += " " + cfg.LDFlags
+
+		if cfg.LDFlags == DefaultLDFlags {
+			// debug_compilation enabled should not strip native debug and DWARF symbols
+			ldflags = ""
+		}
 	}
+
 	args = append(args, "-ldflags="+ldflags)
 	if cfg.Distribution.BuildTags != "" {
 		args = append(args, "-tags", cfg.Distribution.BuildTags)
