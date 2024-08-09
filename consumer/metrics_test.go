@@ -34,6 +34,17 @@ func TestWithCapabilitiesMetrics(t *testing.T) {
 	assert.Equal(t, Capabilities{MutatesData: true}, cp.Capabilities())
 }
 
+func TestWithObsReportMetrics(t *testing.T) {
+	obsr := &mockObsReport{}
+	cp, err := NewMetrics(
+		func(context.Context, pmetric.Metrics) error { return nil },
+		WithObsReport(obsr))
+	assert.NoError(t, err)
+	assert.NoError(t, cp.ConsumeMetrics(context.Background(), pmetric.NewMetrics()))
+	assert.Equal(t, 1, obsr.StartTracesOpCalled)
+	assert.Equal(t, 1, obsr.EndTracesOpCalled)
+}
+
 func TestConsumeMetrics(t *testing.T) {
 	consumeCalled := false
 	cp, err := NewMetrics(func(context.Context, pmetric.Metrics) error { consumeCalled = true; return nil })
