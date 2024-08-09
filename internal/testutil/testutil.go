@@ -86,6 +86,10 @@ func GetAvailableLocalIPv6Address(t testing.TB) string {
 	return endpoint
 }
 
+func ptr[T any](v T) *T {
+	return &v
+}
+
 func GetAvailableLocalAddressPrometheus(t testing.TB) *config.Prometheus {
 	address := GetAvailableLocalAddress(t)
 	host, port, err := net.SplitHostPort(address)
@@ -97,8 +101,14 @@ func GetAvailableLocalAddressPrometheus(t testing.TB) *config.Prometheus {
 		return nil
 	}
 	return &config.Prometheus{
-		Host: &host,
-		Port: &portInt,
+		Host:              &host,
+		Port:              &portInt,
+		WithoutScopeInfo:  ptr(true),
+		WithoutTypeSuffix: ptr(true),
+		WithoutUnits:      ptr(true),
+		WithResourceConstantLabels: &config.IncludeExclude{
+			Included: []string{"*"},
+		},
 	}
 }
 

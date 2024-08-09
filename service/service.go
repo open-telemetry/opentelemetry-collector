@@ -77,7 +77,7 @@ type Service struct {
 
 // New creates a new Service, its telemetry, and Components.
 func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
-	disableHighCard := obsreportconfig.DisableHighCardinalityMetricsfeatureGate.IsEnabled()
+	// disableHighCard := obsreportconfig.DisableHighCardinalityMetricsfeatureGate.IsEnabled()
 	extendedConfig := obsreportconfig.UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate.IsEnabled()
 	srv := &Service{
 		buildInfo: set.BuildInfo,
@@ -115,14 +115,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 
 	logger.Info("Setting up own telemetry...")
 
-	mp, err := newMeterProvider(
-		meterProviderSettings{
-			res:               res,
-			cfg:               cfg.Telemetry.Metrics,
-			asyncErrorChannel: set.AsyncErrorChannel,
-		},
-		disableHighCard,
-	)
+	mp, err := telFactory.CreateMeterProvider(ctx, telset, &cfg.Telemetry)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create metric provider: %w", err)
 	}
