@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("zpages")
+	Type      = component.MustNewType("zpages")
+	ScopeName = "go.opentelemetry.io/collector/extension/zpagesextension"
 )
 
 const (

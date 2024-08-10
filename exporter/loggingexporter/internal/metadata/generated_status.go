@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("logging")
+	Type      = component.MustNewType("logging")
+	ScopeName = "go.opentelemetry.io/collector/exporter/loggingexporter"
 )
 
 const (
