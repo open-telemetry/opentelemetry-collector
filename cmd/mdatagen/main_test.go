@@ -462,7 +462,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("foo")
+	Type      = component.MustNewType("foo")
+	ScopeName = ""
 )
 
 const (
@@ -491,7 +492,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("foo")
+	Type      = component.MustNewType("foo")
+	ScopeName = ""
 )
 
 const (
