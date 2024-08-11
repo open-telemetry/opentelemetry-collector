@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("debug")
+	Type      = component.MustNewType("debug")
+	ScopeName = "go.opentelemetry.io/collector/exporter/debugexporter"
 )
 
 const (

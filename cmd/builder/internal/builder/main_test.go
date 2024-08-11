@@ -55,7 +55,6 @@ var (
 		"/config/configtls",
 		"/config/internal",
 		"/confmap",
-		"/confmap/converter/expandconverter",
 		"/confmap/provider/envprovider",
 		"/confmap/provider/fileprovider",
 		"/confmap/provider/httpprovider",
@@ -114,7 +113,7 @@ func TestGenerateDefault(t *testing.T) {
 
 func TestGenerateInvalidOutputPath(t *testing.T) {
 	cfg := newInitializedConfig(t)
-	cfg.Distribution.OutputPath = "/:invalid"
+	cfg.Distribution.OutputPath = ":/invalid"
 	err := Generate(cfg)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to create output path")
@@ -292,13 +291,7 @@ func TestGenerateReplaceDirectives(t *testing.T) {
 
 			require.NoError(t, Generate(cfg))
 
-			// TODO remove duplication in these next few lines
-			gomodpath := path.Join(outputPath, "go.mod")
-			// #nosec G304 We control this path and generate the file inside, so we can assume it is safe.
-			gomod, err := os.ReadFile(gomodpath)
-			require.NoError(t, err)
-
-			mod, err := modfile.Parse(gomodpath, gomod, nil)
+			mod, err := parseGoMod(outputPath)
 			require.NoError(t, err)
 
 			require.Len(t, mod.Replace, len(tc.expectedReplacements))
@@ -646,13 +639,18 @@ func TestReplaceStatementsAreComplete(t *testing.T) {
 	}
 }
 
-func verifyGoMod(t *testing.T, dir string, replaceMods map[string]bool) {
+func parseGoMod(dir string) (*modfile.File, error) {
 	gomodpath := path.Join(dir, "go.mod")
 	// #nosec G304 We control this path and generate the file inside, so we can assume it is safe.
 	gomod, err := os.ReadFile(gomodpath)
-	require.NoError(t, err)
+	if err != nil {
+		return nil, err
+	}
+	return modfile.Parse(gomodpath, gomod, nil)
+}
 
-	mod, err := modfile.Parse(gomodpath, gomod, nil)
+func verifyGoMod(t *testing.T, dir string, replaceMods map[string]bool) {
+	mod, err := parseGoMod(dir)
 	require.NoError(t, err)
 
 	for _, req := range mod.Require {
