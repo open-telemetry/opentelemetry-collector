@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"golang.org/x/mod/modfile"
+	"golang.org/x/mod/module"
 )
 
 const (
@@ -117,6 +118,200 @@ func TestGenerateInvalidOutputPath(t *testing.T) {
 	err := Generate(cfg)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to create output path")
+}
+
+func TestGenerateReplaceDirectives(t *testing.T) {
+	cases := []struct {
+		description          string
+		cfgBuilder           func() Config
+		expectedReplacements []modfile.Replace
+	}{
+		{
+			description: "no replacements generated",
+			cfgBuilder: func() Config {
+				return newTestConfig()
+			},
+		},
+		{
+			description: "provider replacements generated",
+			cfgBuilder: func() Config {
+				cfg := newTestConfig()
+				cfg.Providers = &[]Module{
+					{GoMod: "old/1 v0.0.0", Path: "/new/1"},
+					{GoMod: "old/2 v0.0.0", Path: "/new/2"},
+				}
+				return cfg
+			},
+			expectedReplacements: []modfile.Replace{
+				{
+					Old: module.Version{Path: "old/1", Version: "v0.0.0"},
+					New: module.Version{Path: "/new/1"},
+				},
+				{
+					Old: module.Version{Path: "old/2", Version: "v0.0.0"},
+					New: module.Version{Path: "/new/2"},
+				},
+			},
+		},
+		{
+			description: "connector replacements generated",
+			cfgBuilder: func() Config {
+				cfg := newTestConfig()
+				cfg.Connectors = []Module{
+					{GoMod: "old/1 v0.0.0", Path: "/new/1"},
+					{GoMod: "old/2 v0.0.0", Path: "/new/2"},
+				}
+				return cfg
+			},
+			expectedReplacements: []modfile.Replace{
+				{
+					Old: module.Version{Path: "old/1", Version: "v0.0.0"},
+					New: module.Version{Path: "/new/1"},
+				},
+				{
+					Old: module.Version{Path: "old/2", Version: "v0.0.0"},
+					New: module.Version{Path: "/new/2"},
+				},
+			},
+		},
+		{
+			description: "extension replacements generated",
+			cfgBuilder: func() Config {
+				cfg := newTestConfig()
+				cfg.Extensions = []Module{
+					{GoMod: "old/1 v0.0.0", Path: "/new/1"},
+					{GoMod: "old/2 v0.0.0", Path: "/new/2"},
+				}
+				return cfg
+			},
+			expectedReplacements: []modfile.Replace{
+				{
+					Old: module.Version{Path: "old/1", Version: "v0.0.0"},
+					New: module.Version{Path: "/new/1"},
+				},
+				{
+					Old: module.Version{Path: "old/2", Version: "v0.0.0"},
+					New: module.Version{Path: "/new/2"},
+				},
+			},
+		},
+		{
+			description: "receiver replacements generated",
+			cfgBuilder: func() Config {
+				cfg := newTestConfig()
+				cfg.Receivers = []Module{
+					{GoMod: "old/1 v0.0.0", Path: "/new/1"},
+					{GoMod: "old/2 v0.0.0", Path: "/new/2"},
+				}
+				return cfg
+			},
+			expectedReplacements: []modfile.Replace{
+				{
+					Old: module.Version{Path: "old/1", Version: "v0.0.0"},
+					New: module.Version{Path: "/new/1"},
+				},
+				{
+					Old: module.Version{Path: "old/2", Version: "v0.0.0"},
+					New: module.Version{Path: "/new/2"},
+				},
+			},
+		},
+		{
+			description: "exporter replacements generated",
+			cfgBuilder: func() Config {
+				cfg := newTestConfig()
+				cfg.Exporters = []Module{
+					{GoMod: "old/1 v0.0.0", Path: "/new/1"},
+					{GoMod: "old/2 v0.0.0", Path: "/new/2"},
+				}
+				return cfg
+			},
+			expectedReplacements: []modfile.Replace{
+				{
+					Old: module.Version{Path: "old/1", Version: "v0.0.0"},
+					New: module.Version{Path: "/new/1"},
+				},
+				{
+					Old: module.Version{Path: "old/2", Version: "v0.0.0"},
+					New: module.Version{Path: "/new/2"},
+				},
+			},
+		},
+		{
+			description: "processor replacements generated",
+			cfgBuilder: func() Config {
+				cfg := newTestConfig()
+				cfg.Processors = []Module{
+					{GoMod: "old/1 v0.0.0", Path: "/new/1"},
+					{GoMod: "old/2 v0.0.0", Path: "/new/2"},
+				}
+				return cfg
+			},
+			expectedReplacements: []modfile.Replace{
+				{
+					Old: module.Version{Path: "old/1", Version: "v0.0.0"},
+					New: module.Version{Path: "/new/1"},
+				},
+				{
+					Old: module.Version{Path: "old/2", Version: "v0.0.0"},
+					New: module.Version{Path: "/new/2"},
+				},
+			},
+		},
+		{
+			description: "generic replacements generated",
+			cfgBuilder: func() Config {
+				cfg := newTestConfig()
+				cfg.Replaces = []string{
+					"old/1 v1.2.3 => new/1 v4.5.6", // module => module
+					"old/2 v1.2.3 => /new/2",       // module => path
+				}
+				return cfg
+			},
+			expectedReplacements: []modfile.Replace{
+				{
+					Old: module.Version{Path: "old/1", Version: "v1.2.3"},
+					New: module.Version{Path: "new/1", Version: "v4.5.6"},
+				},
+				{
+					Old: module.Version{Path: "old/2", Version: "v1.2.3"},
+					New: module.Version{Path: "/new/2"},
+				},
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.description, func(t *testing.T) {
+			outputPath := t.TempDir()
+
+			cfg := tc.cfgBuilder()
+			cfg.Distribution.OutputPath = outputPath
+			require.NoError(t, cfg.ParseModules())
+			require.NoError(t, cfg.Validate())
+
+			require.NoError(t, Generate(cfg))
+
+			// TODO remove duplication in these next few lines
+			gomodpath := path.Join(outputPath, "go.mod")
+			// #nosec G304 We control this path and generate the file inside, so we can assume it is safe.
+			gomod, err := os.ReadFile(gomodpath)
+			require.NoError(t, err)
+
+			mod, err := modfile.Parse(gomodpath, gomod, nil)
+			require.NoError(t, err)
+
+			require.Len(t, mod.Replace, len(tc.expectedReplacements))
+
+			for i := 0; i < len(tc.expectedReplacements); i++ {
+				actual := mod.Replace[i]
+				expected := tc.expectedReplacements[i]
+
+				require.Equal(t, expected.Old, actual.Old)
+				require.Equal(t, expected.New, actual.New)
+			}
+		})
+	}
 }
 
 func TestVersioning(t *testing.T) {
