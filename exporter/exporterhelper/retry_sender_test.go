@@ -339,7 +339,7 @@ type observabilityConsumerSender struct {
 	droppedItemsCount *atomic.Int64
 }
 
-func newObservabilityConsumerSender(*ObsReport) requestSender {
+func newObservabilityConsumerSender(*obsReport) requestSender {
 	return &observabilityConsumerSender{
 		waitGroup:         new(sync.WaitGroup),
 		droppedItemsCount: &atomic.Int64{},
