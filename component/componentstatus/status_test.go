@@ -104,6 +104,9 @@ func Test_ReportStatus(t *testing.T) {
 	})
 }
 
+var _ = (component.Host)(nil)
+var _ = (Reporter)(nil)
+
 type reporter struct {
 	reportStatusCalled bool
 }
@@ -115,6 +118,8 @@ func (r *reporter) GetExtensions() map[component.ID]component.Component {
 func (r *reporter) Report(_ *Event) {
 	r.reportStatusCalled = true
 }
+
+var _ = (component.Host)(nil)
 
 type host struct {
 	reportStatusCalled bool
