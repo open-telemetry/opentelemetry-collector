@@ -51,33 +51,38 @@ func newTracerProvider(ctx context.Context, set Settings, cfg Config) (trace.Tra
 		Attributes: attributes(set, cfg),
 	}
 
+	var tracerProviderCfg *config.TracerProvider
+	if len(cfg.Traces.Processors) > 0 {
+		tracerProviderCfg = &config.TracerProvider{
+			Processors: cfg.Traces.Processors,
+			// TODO: once https://github.com/open-telemetry/opentelemetry-configuration/issues/83 is resolved,
+			// configuration for sampler should be done here via something like the following:
+			//
+			// Sampler: &config.Sampler{
+			// 	ParentBased: &config.SamplerParentBased{
+			// 		LocalParentSampled: &config.Sampler{
+			// 			AlwaysOn: config.SamplerAlwaysOn{},
+			// 		},
+			// 		LocalParentNotSampled: &config.Sampler{
+			//	        RecordOnly: config.SamplerRecordOnly{},
+			//      },
+			// 		RemoteParentSampled: &config.Sampler{
+			// 			AlwaysOn: config.SamplerAlwaysOn{},
+			// 		},
+			// 		RemoteParentNotSampled: &config.Sampler{
+			//	        RecordOnly: config.SamplerRecordOnly{},
+			//      },
+			// 	},
+			// },
+		}
+	}
+
 	sdk, err := config.NewSDK(
 		config.WithContext(ctx),
 		config.WithOpenTelemetryConfiguration(
 			config.OpenTelemetryConfiguration{
-				Resource: &res,
-				TracerProvider: &config.TracerProvider{
-					Processors: cfg.Traces.Processors,
-					// TODO: once https://github.com/open-telemetry/opentelemetry-configuration/issues/83 is resolved,
-					// configuration for sampler should be done here via something like the following:
-					//
-					// Sampler: &config.Sampler{
-					// 	ParentBased: &config.SamplerParentBased{
-					// 		LocalParentSampled: &config.Sampler{
-					// 			AlwaysOn: config.SamplerAlwaysOn{},
-					// 		},
-					// 		LocalParentNotSampled: &config.Sampler{
-					//	        RecordOnly: config.SamplerRecordOnly{},
-					//      },
-					// 		RemoteParentSampled: &config.Sampler{
-					// 			AlwaysOn: config.SamplerAlwaysOn{},
-					// 		},
-					// 		RemoteParentNotSampled: &config.Sampler{
-					//	        RecordOnly: config.SamplerRecordOnly{},
-					//      },
-					// 	},
-					// },
-				},
+				Resource:       &res,
+				TracerProvider: tracerProviderCfg,
 			},
 		),
 	)

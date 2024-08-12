@@ -4,9 +4,13 @@
 package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/contrib/config"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/trace/noop"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/service/telemetry/internal"
@@ -52,6 +56,44 @@ func TestAttributes(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			attrs := attributes(internal.Settings{BuildInfo: tt.buildInfo}, tt.cfg)
 			require.Equal(t, tt.wantAttributes, attrs)
+		})
+	}
+}
+
+func TestNewTracerProvider(t *testing.T) {
+	tests := []struct {
+		name               string
+		cfg                Config
+		wantTracerProvider any
+	}{
+		{
+			name:               "no processors",
+			wantTracerProvider: noop.TracerProvider{},
+		},
+		{
+			name: "some processors",
+			cfg: Config{
+				Resource: map[string]*string{"service.name": ptr("resource.name"), "service.version": ptr("resource.version"), "test": ptr("test")},
+				Traces: TracesConfig{
+					Processors: []config.SpanProcessor{
+						{
+							Simple: &config.SimpleSpanProcessor{
+								Exporter: config.SpanExporter{
+									Console: config.Console{},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantTracerProvider: &sdktrace.TracerProvider{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			provider, err := newTracerProvider(context.TODO(), internal.Settings{}, tt.cfg)
+			require.NoError(t, err)
+			require.IsType(t, tt.wantTracerProvider, provider)
 		})
 	}
 }
