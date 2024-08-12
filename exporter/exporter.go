@@ -19,11 +19,6 @@ type Metrics = internal.Metrics
 // Logs is an exporter that can consume logs.
 type Logs = internal.Logs
 
-// CreateSettings configures Exporter creators.
-//
-// Deprecated: [v0.103.0] Use exporter.Settings instead.
-type CreateSettings = internal.Settings
-
 // Settings configures exporter creators.
 type Settings = internal.Settings
 

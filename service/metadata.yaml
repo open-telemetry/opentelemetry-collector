@@ -6,13 +6,6 @@ status:
     development: [traces, metrics, logs]
   distributions: [core, contrib]
 
-tests:
-  goleak:
-    ignore:
-      top:
-        # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.
-        - "go.opencensus.io/stats/view.(*worker).start"
-
 telemetry:
   metrics:
     process_uptime:

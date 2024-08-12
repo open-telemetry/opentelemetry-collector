@@ -11,14 +11,15 @@ module go.opentelemetry.io/collector
 go 1.21.0
 
 require (
-	github.com/shirou/gopsutil/v4 v4.24.6
+	github.com/shirou/gopsutil/v4 v4.24.7
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.105.0
-	go.opentelemetry.io/collector/confmap v0.105.0
-	go.opentelemetry.io/collector/consumer v0.105.0
+	go.opentelemetry.io/collector/component v0.106.1
+	go.opentelemetry.io/collector/confmap v0.106.1
+	go.opentelemetry.io/collector/consumer v0.106.1
+	go.opentelemetry.io/collector/consumer/consumertest v0.106.1
 	go.opentelemetry.io/collector/featuregate v1.12.0
 	go.opentelemetry.io/collector/pdata v1.12.0
-	go.opentelemetry.io/collector/pdata/testdata v0.105.0
+	go.opentelemetry.io/collector/pdata/testdata v0.106.1
 	go.opentelemetry.io/contrib/config v0.8.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
@@ -58,9 +59,10 @@ require (
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.105.0 // indirect
-	go.opentelemetry.io/collector/internal/globalgates v0.105.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.105.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.106.1 // indirect
+	go.opentelemetry.io/collector/consumer/consumerprofiles v0.106.1 // indirect
+	go.opentelemetry.io/collector/internal/globalgates v0.106.1 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.106.1 // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp v0.4.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.28.0 // indirect
@@ -79,7 +81,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.28.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.3.1 // indirect
 	golang.org/x/net v0.26.0 // indirect
-	golang.org/x/sys v0.21.0 // indirect
+	golang.org/x/sys v0.22.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240701130421-f6361c86f094 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240701130421-f6361c86f094 // indirect
@@ -94,6 +96,8 @@ replace go.opentelemetry.io/collector/confmap => ./confmap
 replace go.opentelemetry.io/collector/config/configtelemetry => ./config/configtelemetry
 
 replace go.opentelemetry.io/collector/consumer => ./consumer
+
+replace go.opentelemetry.io/collector/consumer/consumertest => ./consumer/consumertest
 
 replace go.opentelemetry.io/collector/featuregate => ./featuregate
 
@@ -112,3 +116,5 @@ retract (
 replace go.opentelemetry.io/collector/pdata/pprofile => ./pdata/pprofile
 
 replace go.opentelemetry.io/collector/internal/globalgates => ./internal/globalgates
+
+replace go.opentelemetry.io/collector/consumer/consumerprofiles => ./consumer/consumerprofiles

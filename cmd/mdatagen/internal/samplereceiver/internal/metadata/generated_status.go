@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("sample")
+	Type      = component.MustNewType("sample")
+	ScopeName = "go.opentelemetry.io/collector/internal/receiver/samplereceiver"
 )
 
 const (

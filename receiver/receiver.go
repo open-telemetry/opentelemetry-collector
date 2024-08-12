@@ -36,11 +36,6 @@ type Metrics = internal.Metrics
 // For example, it could be a receiver that reads syslogs and convert them into plog.Logs.
 type Logs = internal.Logs
 
-// CreateSettings configures Receiver creators.
-//
-// Deprecated: [v0.103.0] Use receiver.Settings instead.
-type CreateSettings = internal.Settings
-
 // Settings configures Receiver creators.
 type Settings = internal.Settings
 

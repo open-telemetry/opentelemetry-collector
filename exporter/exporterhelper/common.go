@@ -41,7 +41,7 @@ func (b *baseRequestSender) setNextSender(nextSender requestSender) {
 	b.nextSender = nextSender
 }
 
-type obsrepSenderFactory func(obsrep *ObsReport) requestSender
+type obsrepSenderFactory func(obsrep *obsReport) requestSender
 
 // Option apply changes to baseExporter.
 type Option func(*baseExporter) error
@@ -110,7 +110,7 @@ func WithQueue(config QueueSettings) Option {
 			NumConsumers: config.NumConsumers,
 			QueueSize:    config.QueueSize,
 		})
-		o.queueSender = newQueueSender(q, o.set, config.NumConsumers, o.exportFailureMessage, o.obsrep.telemetryBuilder)
+		o.queueSender = newQueueSender(q, o.set, config.NumConsumers, o.exportFailureMessage, o.obsrep)
 		return nil
 	}
 }
@@ -132,7 +132,7 @@ func WithRequestQueue(cfg exporterqueue.Config, queueFactory exporterqueue.Facto
 			DataType:         o.signal,
 			ExporterSettings: o.set,
 		}
-		o.queueSender = newQueueSender(queueFactory(context.Background(), set, cfg), o.set, cfg.NumConsumers, o.exportFailureMessage, o.obsrep.telemetryBuilder)
+		o.queueSender = newQueueSender(queueFactory(context.Background(), set, cfg), o.set, cfg.NumConsumers, o.exportFailureMessage, o.obsrep)
 		return nil
 	}
 }
@@ -232,7 +232,7 @@ type baseExporter struct {
 	unmarshaler exporterqueue.Unmarshaler[Request]
 
 	set    exporter.Settings
-	obsrep *ObsReport
+	obsrep *obsReport
 
 	// Message for the user to be added with an export failure message.
 	exportFailureMessage string
@@ -250,7 +250,7 @@ type baseExporter struct {
 }
 
 func newBaseExporter(set exporter.Settings, signal component.DataType, osf obsrepSenderFactory, options ...Option) (*baseExporter, error) {
-	obsReport, err := NewObsReport(ObsReportSettings{ExporterID: set.ID, ExporterCreateSettings: set})
+	obsReport, err := newObsReport(obsReportSettings{exporterID: set.ID, exporterCreateSettings: set, dataType: signal})
 	if err != nil {
 		return nil, err
 	}

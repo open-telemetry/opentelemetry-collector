@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -26,8 +27,12 @@ func TestEmpty(t *testing.T) {
 
 func TestInvalidYAML(t *testing.T) {
 	sp := createProvider()
-	_, err := sp.Retrieve(context.Background(), "yaml:[invalid,", nil)
-	assert.Error(t, err)
+	ret, err := sp.Retrieve(context.Background(), "yaml:[invalid,", nil)
+	require.NoError(t, err)
+	raw, err := ret.AsRaw()
+	require.NoError(t, err)
+	assert.IsType(t, "", raw)
+
 	assert.NoError(t, sp.Shutdown(context.Background()))
 }
 

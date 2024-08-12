@@ -146,16 +146,17 @@ func NewLogsRequestExporter(
 
 type logsExporterWithObservability struct {
 	baseRequestSender
-	obsrep *ObsReport
+	obsrep *obsReport
 }
 
-func newLogsExporterWithObservability(obsrep *ObsReport) requestSender {
+func newLogsExporterWithObservability(obsrep *obsReport) requestSender {
 	return &logsExporterWithObservability{obsrep: obsrep}
 }
 
 func (lewo *logsExporterWithObservability) send(ctx context.Context, req Request) error {
-	c := lewo.obsrep.StartLogsOp(ctx)
+	c := lewo.obsrep.startLogsOp(ctx)
+	numLogRecords := req.ItemsCount()
 	err := lewo.nextSender.send(c, req)
-	lewo.obsrep.EndLogsOp(c, req.ItemsCount(), err)
+	lewo.obsrep.endLogsOp(c, numLogRecords, err)
 	return err
 }
