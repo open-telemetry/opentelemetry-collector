@@ -13,6 +13,9 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
+
+	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 const (
@@ -45,44 +48,42 @@ func attributes(set Settings, cfg Config) map[string]interface{} {
 
 // New creates a new Telemetry from Config.
 func newTracerProvider(ctx context.Context, set Settings, cfg Config) (trace.TracerProvider, error) {
+	if cfg.Traces.Level == configtelemetry.LevelNone {
+		return noop.NewTracerProvider(), nil
+	}
 	sch := semconv.SchemaURL
 	res := config.Resource{
 		SchemaUrl:  &sch,
 		Attributes: attributes(set, cfg),
 	}
 
-	var tracerProviderCfg *config.TracerProvider
-	if len(cfg.Traces.Processors) > 0 {
-		tracerProviderCfg = &config.TracerProvider{
-			Processors: cfg.Traces.Processors,
-			// TODO: once https://github.com/open-telemetry/opentelemetry-configuration/issues/83 is resolved,
-			// configuration for sampler should be done here via something like the following:
-			//
-			// Sampler: &config.Sampler{
-			// 	ParentBased: &config.SamplerParentBased{
-			// 		LocalParentSampled: &config.Sampler{
-			// 			AlwaysOn: config.SamplerAlwaysOn{},
-			// 		},
-			// 		LocalParentNotSampled: &config.Sampler{
-			//	        RecordOnly: config.SamplerRecordOnly{},
-			//      },
-			// 		RemoteParentSampled: &config.Sampler{
-			// 			AlwaysOn: config.SamplerAlwaysOn{},
-			// 		},
-			// 		RemoteParentNotSampled: &config.Sampler{
-			//	        RecordOnly: config.SamplerRecordOnly{},
-			//      },
-			// 	},
-			// },
-		}
-	}
-
 	sdk, err := config.NewSDK(
 		config.WithContext(ctx),
 		config.WithOpenTelemetryConfiguration(
 			config.OpenTelemetryConfiguration{
-				Resource:       &res,
-				TracerProvider: tracerProviderCfg,
+				Resource: &res,
+				TracerProvider: &config.TracerProvider{
+					Processors: cfg.Traces.Processors,
+					// TODO: once https://github.com/open-telemetry/opentelemetry-configuration/issues/83 is resolved,
+					// configuration for sampler should be done here via something like the following:
+					//
+					// Sampler: &config.Sampler{
+					// 	ParentBased: &config.SamplerParentBased{
+					// 		LocalParentSampled: &config.Sampler{
+					// 			AlwaysOn: config.SamplerAlwaysOn{},
+					// 		},
+					// 		LocalParentNotSampled: &config.Sampler{
+					//	        RecordOnly: config.SamplerRecordOnly{},
+					//      },
+					// 		RemoteParentSampled: &config.Sampler{
+					// 			AlwaysOn: config.SamplerAlwaysOn{},
+					// 		},
+					// 		RemoteParentNotSampled: &config.Sampler{
+					//	        RecordOnly: config.SamplerRecordOnly{},
+					//      },
+					// 	},
+					// },
+				},
 			},
 		),
 	)

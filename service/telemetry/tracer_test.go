@@ -8,11 +8,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/contrib/config"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace/noop"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/service/telemetry/internal"
 )
 
@@ -67,7 +67,12 @@ func TestNewTracerProvider(t *testing.T) {
 		wantTracerProvider any
 	}{
 		{
-			name:               "no processors",
+			name: "no processors",
+			cfg: Config{
+				Traces: TracesConfig{
+					Level: configtelemetry.LevelNone,
+				},
+			},
 			wantTracerProvider: noop.TracerProvider{},
 		},
 		{
@@ -75,15 +80,7 @@ func TestNewTracerProvider(t *testing.T) {
 			cfg: Config{
 				Resource: map[string]*string{"service.name": ptr("resource.name"), "service.version": ptr("resource.version"), "test": ptr("test")},
 				Traces: TracesConfig{
-					Processors: []config.SpanProcessor{
-						{
-							Simple: &config.SimpleSpanProcessor{
-								Exporter: config.SpanExporter{
-									Console: config.Console{},
-								},
-							},
-						},
-					},
+					Level: configtelemetry.LevelBasic,
 				},
 			},
 			wantTracerProvider: &sdktrace.TracerProvider{},

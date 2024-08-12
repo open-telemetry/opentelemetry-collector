@@ -7,7 +7,7 @@ change_type: bug_fix
 component: service
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Ensure a noop tracer provider is returned if no processors are configured
+note: "Allow users to set a level for the `service::telemetry::trace` configuration to disable all trace providers"
 
 # One or more tracking issues or pull requests related to the change
 issues: [10858]
