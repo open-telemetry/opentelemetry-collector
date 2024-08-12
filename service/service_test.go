@@ -438,10 +438,10 @@ func TestServiceFatalError(t *testing.T) {
 
 	go func() {
 		ev := component.NewFatalErrorEvent(assert.AnError)
-		srv.host.notifyComponentStatusChange(&component.InstanceID{}, ev)
+		srv.host.NotifyComponentStatusChange(&component.InstanceID{}, ev)
 	}()
 
-	err = <-srv.host.asyncErrorChannel
+	err = <-srv.host.AsyncErrorChannel
 
 	require.ErrorIs(t, err, assert.AnError)
 }
