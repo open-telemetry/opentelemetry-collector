@@ -7,7 +7,7 @@ change_type: bug_fix
 component: service
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Allow users to set a level for the `service::telemetry::trace` configuration to disable all trace providers"
+note: "Allow users to disable the tracer provider via the feature gate `service.noopTracerProvider`"
 
 # One or more tracking issues or pull requests related to the change
 issues: [10858]
@@ -15,7 +15,7 @@ issues: [10858]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: Previously the service was returning an instance of a SDK tracer provider regardless of whether there were any processors configured causing resources to be consumed unnecessarily.
+subtext: The service is returning an instance of a SDK tracer provider regardless of whether there were any processors configured causing resources to be consumed unnecessarily.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
