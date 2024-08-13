@@ -6,12 +6,6 @@ status:
     development: [traces, metrics, logs]
   distributions: [core, contrib]
 
-tests:
-  goleak:
-    ignore:
-      top:
-        - "go.opentelemetry.io/collector/service/internal/proctelemetry.InitPrometheusServer.func1"
-
 telemetry:
   metrics:
     process_uptime:

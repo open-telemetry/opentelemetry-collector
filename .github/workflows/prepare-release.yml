@@ -25,6 +25,7 @@ jobs:
 
     steps:
       - name: Validate version format
+        shell: bash
         run: |
           validate_beta_version() {
             local regex_pattern_beta='^[0-9]+\.[0-9]+\.[0-9]+$'
@@ -42,13 +43,20 @@ jobs:
             fi
           }
 
-          validate_beta_version "${{ inputs.candidate-beta }}" "candidate-beta"
+          if [[ ! -z "${{ inputs.candidate-beta }}" ]]; then
+            validate_beta_version "${{ inputs.candidate-beta }}" "candidate-beta"
+          fi
           validate_beta_version "${{ inputs.current-beta }}" "current-beta"
+
           if [[ ! -z "${{ inputs.candidate-stable }}" ]]; then
             validate_stable_version "${{ inputs.candidate-stable }}" "candidate-stable"
           fi
           validate_stable_version "${{ inputs.current-stable }}" "current-stable"
-        shell: bash
+
+          if [[ -z "${{ inputs.candidate-beta }}" && -z "${{ inputs.candidate-stable }}" ]]; then
+            echo "Candidate version is not set for beta or stable. Please set a version to proceed."
+            exit 1
+          fi
 
   # Releasing opentelemetry-collector
   prepare-release:
@@ -86,7 +94,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
         with:
-          go-version: ~1.21.5
+          go-version: ~1.21.13
       # Prepare Core for release.
       #   - Update CHANGELOG.md file, this is done via chloggen
       #   - Run make prepare-release PREVIOUS_VERSION=1.0.0 RELEASE_CANDIDATE=1.1.0 MODSET=stable
