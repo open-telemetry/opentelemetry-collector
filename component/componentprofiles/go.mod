@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/component/componentprofiles
 
-go 1.21.0
+go 1.22.0
 
 require go.opentelemetry.io/collector/component v0.107.0
 

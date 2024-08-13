@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/confmap
 
-go 1.21.0
+go 1.22.0
 
 require (
 	github.com/go-viper/mapstructure/v2 v2.1.0

@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/pdata
 
-go 1.21.0
+go 1.22.0
 
 require (
 	github.com/gogo/protobuf v1.3.2
