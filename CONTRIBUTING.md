@@ -153,7 +153,7 @@ Remember to always work in a branch of your local copy, as you might otherwise
 have to contend with conflicts in `main`.
 
 Please also see [GitHub
-workflow](https://github.com/open-telemetry/community/blob/main/CONTRIBUTING.md#github-workflow)
+workflow](https://github.com/open-telemetry/community/blob/main/guides/contributor/processes.md#github-workflow)
 section of the general project contributing guide.
 
 ## Required Tools
