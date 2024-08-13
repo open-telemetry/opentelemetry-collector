@@ -12,17 +12,17 @@ dist:
   description: Local OpenTelemetry Collector binary
   output_path: /tmp/dist
 exporters:
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.99.0
-  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.99.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter latest
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter latest
 
 receivers:
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.99.0
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver latest
 
 processors:
-  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.99.0
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor latest
 
 providers:
-  - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v0.99.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider latest
 
 EOF
 $ builder --config=otelcol-builder.yaml
