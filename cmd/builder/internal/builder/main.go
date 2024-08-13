@@ -74,7 +74,7 @@ func Generate(cfg Config) error {
 	}
 	// create a warning message for non-aligned builder and collector base
 	if cfg.Distribution.OtelColVersion != defaultOtelColVersion {
-		cfg.Logger.Info("You're building a distribution with non-aligned version of the builder. Compilation may fail due to API changes. Please upgrade your builder or API", zap.String("builder-version", defaultOtelColVersion))
+		cfg.Logger.Info("You're building a distribution with non-aligned version of the builder. The version mismatch may cause a compilation failure. It's recommended to use the same version.", zap.String("collector-version", cfg.Distribution.OtelColVersion), zap.String("builder-version", defaultOtelColVersion))
 	}
 	// if the file does not exist, try to create it
 	if _, err := os.Stat(cfg.Distribution.OutputPath); os.IsNotExist(err) {

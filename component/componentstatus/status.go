@@ -15,6 +15,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+// Reporter is an extra interface for `component.Host` implementations.
+// A Reporter defines how to report a `componentstatus.Event`.
 type Reporter interface {
 	// Report allows a component to report runtime changes in status. The service
 	// will automatically report status for a component during startup and shutdown. Components can
