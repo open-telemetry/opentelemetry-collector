@@ -6,6 +6,7 @@ package extensions
 import (
 	"context"
 	"errors"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -193,16 +194,9 @@ func (tc testOrderCase) testOrdering(t *testing.T) {
 	err = exts.Shutdown(context.Background())
 	require.NoError(t, err)
 
-	// TODO From Go 1.21 can use slices.Reverse()
-	reverseSlice := func(s []string) {
-		for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
-			s[i], s[j] = s[j], s[i]
-		}
-	}
-
 	if len(tc.order) > 0 {
 		require.Equal(t, tc.order, startOrder)
-		reverseSlice(shutdownOrder)
+		slices.Reverse(shutdownOrder)
 		require.Equal(t, tc.order, shutdownOrder)
 	}
 }
