@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/internal/globalgates
 
-go 1.21.0
+go 1.22.0
 
 require go.opentelemetry.io/collector/featuregate v1.13.0
 
