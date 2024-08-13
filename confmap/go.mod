@@ -21,7 +21,7 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.12.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.13.0 // indirect
 )
 
 retract (

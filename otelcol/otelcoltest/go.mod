@@ -63,9 +63,9 @@ require (
 	go.opentelemetry.io/collector/consumer v0.106.1 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.106.1 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.106.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.12.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.13.0 // indirect
 	go.opentelemetry.io/collector/internal/globalgates v0.106.1 // indirect
-	go.opentelemetry.io/collector/pdata v1.12.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.13.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.106.1 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.106.1 // indirect
 	go.opentelemetry.io/collector/semconv v0.106.1 // indirect

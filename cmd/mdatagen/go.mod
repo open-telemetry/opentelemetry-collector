@@ -12,7 +12,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.106.1
 	go.opentelemetry.io/collector/consumer/consumertest v0.106.1
 	go.opentelemetry.io/collector/filter v0.106.1
-	go.opentelemetry.io/collector/pdata v1.12.0
+	go.opentelemetry.io/collector/pdata v1.13.0
 	go.opentelemetry.io/collector/receiver v0.106.1
 	go.opentelemetry.io/collector/semconv v0.106.1
 	go.opentelemetry.io/otel/metric v1.28.0
@@ -48,7 +48,7 @@ require (
 	github.com/prometheus/common v0.55.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.106.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.12.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.13.0 // indirect
 	go.opentelemetry.io/collector/internal/globalgates v0.106.1 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.106.1 // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
