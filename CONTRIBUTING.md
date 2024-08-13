@@ -101,7 +101,7 @@ Reporting bugs is an important contribution. Please make sure to include:
 ### Before you start
 
 Please read the project contribution
-[guide](https://github.com/open-telemetry/community/blob/main/CONTRIBUTING.md)
+[guide](https://github.com/open-telemetry/community/tree/main/guides/contributor)
 for general practices for the OpenTelemetry project.
 
 Select a good issue from the links below (ordered by difficulty/complexity):
