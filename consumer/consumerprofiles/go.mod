@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/consumer/consumerprofiles
 
-go 1.21.0
+go 1.22.0
 
 replace go.opentelemetry.io/collector/pdata => ../../pdata
 
