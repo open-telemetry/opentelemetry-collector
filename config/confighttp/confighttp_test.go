@@ -370,7 +370,7 @@ func TestMaxRedirects(t *testing.T) {
 		counter := 0
 		for resp != nil {
 			resp = resp.Request.Response
-			counter += 1
+			counter++
 		}
 		return counter
 	}
