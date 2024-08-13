@@ -31,8 +31,11 @@ import (
 	"go.opentelemetry.io/collector/extension/auth"
 )
 
-const headerContentEncoding = "Content-Encoding"
-const defaultMaxRequestBodySize = 20 * 1024 * 1024 // 20MiB
+const (
+	headerContentEncoding     = "Content-Encoding"
+	defaultMaxRequestBodySize = 20 * 1024 * 1024 // 20MiB
+)
+
 var defaultCompressionAlgorithms = []string{"", "gzip", "zstd", "zlib", "snappy", "deflate"}
 
 // ClientConfig defines settings for creating an HTTP client.
@@ -102,6 +105,9 @@ type ClientConfig struct {
 	HTTP2PingTimeout time.Duration `mapstructure:"http2_ping_timeout"`
 	// Cookies configures the cookie management of the HTTP client.
 	Cookies *CookiesConfig `mapstructure:"cookies"`
+
+	// Maximum number of redirections to follow, if not defined, the Client uses its default policy, which is to stop after 10 consecutive requests.
+	MaxRedirects *int `mapstructure:"max_redirects"`
 }
 
 // CookiesConfig defines the configuration of the HTTP client regarding cookies served by the server.
@@ -238,10 +244,29 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 	}
 
 	return &http.Client{
-		Transport: clientTransport,
-		Timeout:   hcs.Timeout,
-		Jar:       jar,
+		CheckRedirect: makeCheckRedirect(hcs.MaxRedirects),
+		Transport:     clientTransport,
+		Timeout:       hcs.Timeout,
+		Jar:           jar,
 	}, nil
+}
+
+// makeCheckRedirect checks if max redirects are exceeded
+func makeCheckRedirect(max *int) func(*http.Request, []*http.Request) error {
+	if max == nil {
+		return nil
+	} else if *max == 0 {
+		return func(_ *http.Request, _ []*http.Request) error {
+			return http.ErrUseLastResponse
+		}
+	}
+
+	return func(r *http.Request, via []*http.Request) error {
+		if *max == len(via) {
+			return http.ErrUseLastResponse
+		}
+		return nil
+	}
 }
 
 // Custom RoundTripper that adds headers.
