@@ -70,6 +70,7 @@ type Settings struct {
 	// BuildInfo can be used by components for informational purposes
 	BuildInfo component.BuildInfo
 
+	// ModuleInfo describes the go module for each component.
 	ModuleInfo ModuleInfo
 }
 

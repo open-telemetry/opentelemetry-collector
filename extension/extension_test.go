@@ -132,5 +132,6 @@ func createSettings(id component.ID) Settings {
 		ID:                id,
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),
+		ModuleInfo:        ModuleInfo{},
 	}
 }
