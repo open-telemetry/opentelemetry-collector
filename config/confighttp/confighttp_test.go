@@ -37,7 +37,7 @@ import (
 	"go.opentelemetry.io/collector/internal/localhostgate"
 )
 
-type customRoundTripper struct{
+type customRoundTripper struct {
 }
 
 var _ http.RoundTripper = (*customRoundTripper)(nil)
