@@ -3,7 +3,7 @@
 
 module go.opentelemetry.io/collector/cmd/builder
 
-go 1.21.0
+go 1.22.0
 
 require (
 	github.com/hashicorp/go-version v1.7.0

@@ -1,24 +1,24 @@
 module go.opentelemetry.io/collector/receiver/otlpreceiver
 
-go 1.21.0
+go 1.22.0
 
 require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/klauspost/compress v1.17.9
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector v0.106.1
-	go.opentelemetry.io/collector/component v0.106.1
-	go.opentelemetry.io/collector/config/configauth v0.106.1
-	go.opentelemetry.io/collector/config/configgrpc v0.106.1
-	go.opentelemetry.io/collector/config/confighttp v0.106.1
-	go.opentelemetry.io/collector/config/confignet v0.106.1
-	go.opentelemetry.io/collector/config/configtls v1.12.0
-	go.opentelemetry.io/collector/confmap v0.106.1
-	go.opentelemetry.io/collector/consumer v0.106.1
-	go.opentelemetry.io/collector/consumer/consumertest v0.106.1
-	go.opentelemetry.io/collector/pdata v1.12.0
-	go.opentelemetry.io/collector/pdata/testdata v0.106.1
-	go.opentelemetry.io/collector/receiver v0.106.1
+	go.opentelemetry.io/collector v0.107.0
+	go.opentelemetry.io/collector/component v0.107.0
+	go.opentelemetry.io/collector/config/configauth v0.107.0
+	go.opentelemetry.io/collector/config/configgrpc v0.107.0
+	go.opentelemetry.io/collector/config/confighttp v0.107.0
+	go.opentelemetry.io/collector/config/confignet v0.107.0
+	go.opentelemetry.io/collector/config/configtls v1.13.0
+	go.opentelemetry.io/collector/confmap v0.107.0
+	go.opentelemetry.io/collector/consumer v0.107.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.107.0
+	go.opentelemetry.io/collector/pdata v1.13.0
+	go.opentelemetry.io/collector/pdata/testdata v0.107.0
+	go.opentelemetry.io/collector/receiver v0.107.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240701130421-f6361c86f094
@@ -35,7 +35,7 @@ require (
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/go-viper/mapstructure/v2 v2.0.0 // indirect
+	github.com/go-viper/mapstructure/v2 v2.1.0 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.20.0 // indirect
@@ -56,17 +56,17 @@ require (
 	github.com/prometheus/common v0.55.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/rs/cors v1.11.0 // indirect
-	go.opentelemetry.io/collector/client v0.106.1 // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.12.0 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.12.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.106.1 // indirect
-	go.opentelemetry.io/collector/config/internal v0.106.1 // indirect
-	go.opentelemetry.io/collector/consumer/consumerprofiles v0.106.1 // indirect
-	go.opentelemetry.io/collector/extension v0.106.1 // indirect
-	go.opentelemetry.io/collector/extension/auth v0.106.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.12.0 // indirect
-	go.opentelemetry.io/collector/internal/globalgates v0.106.1 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.106.1 // indirect
+	go.opentelemetry.io/collector/client v1.13.0 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.13.0 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.13.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.107.0 // indirect
+	go.opentelemetry.io/collector/config/internal v0.107.0 // indirect
+	go.opentelemetry.io/collector/consumer/consumerprofiles v0.107.0 // indirect
+	go.opentelemetry.io/collector/extension v0.107.0 // indirect
+	go.opentelemetry.io/collector/extension/auth v0.107.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.13.0 // indirect
+	go.opentelemetry.io/collector/internal/globalgates v0.107.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.107.0 // indirect
 	go.opentelemetry.io/contrib/config v0.8.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.53.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.53.0 // indirect
