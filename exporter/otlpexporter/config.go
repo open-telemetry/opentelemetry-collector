@@ -25,7 +25,7 @@ type Config struct {
 	RetryConfig                    configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
 
 	// Experimental: This configuration is at the early stage of development and may change without backward compatibility
-	// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+	// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved
 	BatcherConfig exporterbatcher.Config `mapstructure:"batcher"`
 
 	configgrpc.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
