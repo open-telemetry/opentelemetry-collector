@@ -7,7 +7,7 @@ change_type: bug_fix
 component: mdatagen
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Fix generated telemetry to only include context & errors imports when needed.
+note: Update generated telemetry template to only include context import when there are async metrics.
 
 # One or more tracking issues or pull requests related to the change
 issues: [10883]
