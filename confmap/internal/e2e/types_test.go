@@ -501,14 +501,6 @@ logging:
 }
 
 func TestStructMappingIssue10787_ExpandComment(t *testing.T) {
-	previousValue := globalgates.StrictlyTypedInputGate.IsEnabled()
-	err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, true)
-	require.NoError(t, err)
-	defer func() {
-		seterr := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, previousValue)
-		require.NoError(t, seterr)
-	}()
-
 	resolver := NewResolver(t, "types_expand.yaml")
 	t.Setenv("EXPAND_ME", "an expanded env var")
 	t.Setenv("ENV", `# this is a comment with ${EXPAND_ME}
@@ -552,14 +544,6 @@ logging:
 }
 
 func TestIndirectSliceEnvVar(t *testing.T) {
-	previousValue := globalgates.StrictlyTypedInputGate.IsEnabled()
-	err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, true)
-	require.NoError(t, err)
-	defer func() {
-		seterr := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, previousValue)
-		require.NoError(t, seterr)
-	}()
-
 	// This replicates the situation in https://github.com/open-telemetry/opentelemetry-collector/issues/10799
 	// where a configuration file is loaded that contains a reference to a slice of strings in an environment variable.
 	t.Setenv("BASE_FOLDER", "testdata")
