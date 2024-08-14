@@ -11,7 +11,19 @@ package componentstatus // import "go.opentelemetry.io/collector/component/compo
 
 import (
 	"time"
+
+	"go.opentelemetry.io/collector/component"
 )
+
+// Reporter is an extra interface for `component.Host` implementations.
+// A Reporter defines how to report a `componentstatus.Event`.
+type Reporter interface {
+	// Report allows a component to report runtime changes in status. The service
+	// will automatically report status for a component during startup and shutdown. Components can
+	// use this method to report status after start and before shutdown. For more details about
+	// component status reporting see: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-status.md
+	Report(*Event)
+}
 
 // Watcher is an extra interface for Extension hosted by the OpenTelemetry
 // Collector that is to be implemented by extensions interested in changes to component
@@ -136,4 +148,13 @@ func StatusIsError(status Status) bool {
 	return status == StatusRecoverableError ||
 		status == StatusPermanentError ||
 		status == StatusFatalError
+}
+
+// ReportStatus is a helper function that handles checking if the component.Host has implemented Reporter.
+// If it has, the Event is reported. Otherwise, nothing happens.
+func ReportStatus(host component.Host, e *Event) {
+	statusReporter, ok := host.(Reporter)
+	if ok {
+		statusReporter.Report(e)
+	}
 }
