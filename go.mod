@@ -8,7 +8,7 @@ module go.opentelemetry.io/collector
 // For the OpenTelemetry Collector Core distribution specifically, see
 // https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
 
-go 1.21.0
+go 1.22.0
 
 require (
 	github.com/shirou/gopsutil/v4 v4.24.7

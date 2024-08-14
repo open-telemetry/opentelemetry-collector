@@ -22,29 +22,6 @@ import (
 	"go.opentelemetry.io/collector/service/internal/zpages"
 )
 
-const (
-	// Paths
-	zServicePath   = "servicez"
-	zPipelinePath  = "pipelinez"
-	zExtensionPath = "extensionz"
-	zFeaturePath   = "featurez"
-)
-
-var (
-	// InfoVar is a singleton instance of the Info struct.
-	runtimeInfoVar [][2]string
-)
-
-func init() {
-	runtimeInfoVar = [][2]string{
-		{"StartTimestamp", time.Now().String()},
-		{"Go", runtime.Version()},
-		{"OS", runtime.GOOS},
-		{"Arch", runtime.GOARCH},
-		// Add other valuable runtime information here.
-	}
-}
-
 // TODO: remove as part of https://github.com/open-telemetry/opentelemetry-collector/issues/7370 for service 1.0
 type getExporters interface {
 	GetExporters() map[component.DataType]map[component.ID]component.Component
@@ -103,6 +80,29 @@ func (host *Host) NotifyComponentStatusChange(source *componentstatus.InstanceID
 	host.ServiceExtensions.NotifyComponentStatusChange(source, event)
 	if event.Status() == componentstatus.StatusFatalError {
 		host.AsyncErrorChannel <- event.Err()
+	}
+}
+
+const (
+	// Paths
+	zServicePath   = "servicez"
+	zPipelinePath  = "pipelinez"
+	zExtensionPath = "extensionz"
+	zFeaturePath   = "featurez"
+)
+
+var (
+	// InfoVar is a singleton instance of the Info struct.
+	runtimeInfoVar [][2]string
+)
+
+func init() {
+	runtimeInfoVar = [][2]string{
+		{"StartTimestamp", time.Now().String()},
+		{"Go", runtime.Version()},
+		{"OS", runtime.GOOS},
+		{"Arch", runtime.GOARCH},
+		// Add other valuable runtime information here.
 	}
 }
 

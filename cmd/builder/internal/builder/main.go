@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"text/template"
 	"time"
@@ -139,7 +140,7 @@ func GetModules(cfg Config) error {
 		return nil
 	}
 
-	if _, err := runGoCommand(cfg, "mod", "tidy", "-compat=1.21"); err != nil {
+	if _, err := runGoCommand(cfg, "mod", "tidy", "-compat=1.22"); err != nil {
 		return fmt.Errorf("failed to update go.mod: %w", err)
 	}
 
@@ -221,13 +222,8 @@ func (c *Config) coreModuleAndVersion() (string, string) {
 }
 
 func (c *Config) allComponents() []Module {
-	// TODO: Use slices.Concat when we drop support for Go 1.21
-	return append(c.Exporters,
-		append(c.Receivers,
-			append(c.Processors,
-				append(c.Extensions,
-					append(c.Connectors,
-						*c.Providers...)...)...)...)...)
+	return slices.Concat[[]Module](c.Exporters, c.Receivers, c.Processors,
+		c.Extensions, c.Connectors, *c.Providers)
 }
 
 func (c *Config) readGoModFile() (string, map[string]string, error) {
