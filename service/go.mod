@@ -163,3 +163,5 @@ replace go.opentelemetry.io/collector/consumer/consumertest => ../consumer/consu
 replace go.opentelemetry.io/collector/component/componentprofiles => ../component/componentprofiles
 
 replace go.opentelemetry.io/collector/client => ../client
+
+replace go.opentelemetry.io/collector/internal/globalgates => ../internal/globalgates
