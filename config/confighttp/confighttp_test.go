@@ -364,10 +364,6 @@ func TestMaxRedirects(t *testing.T) {
 		},
 	}
 
-	host := &mockHost{
-		ext: map[component.ID]component.Component{},
-	}
-
 	countRequests := func(resp *http.Response) int {
 		counter := 0
 		for resp != nil {
@@ -379,7 +375,7 @@ func TestMaxRedirects(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			client, err := test.settings.ToClient(context.Background(), host, componenttest.NewNopTelemetrySettings())
+			client, err := test.settings.ToClient(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 			require.NoError(t, err)
 
 			hss := &ServerConfig{
