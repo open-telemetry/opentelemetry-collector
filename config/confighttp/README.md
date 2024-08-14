@@ -36,6 +36,7 @@ README](../configtls/README.md).
 - [`http2_ping_timeout`](https://pkg.go.dev/golang.org/x/net/http2#Transport)
 - [`cookies`](https://pkg.go.dev/net/http#CookieJar)
   - [`enabled`] if enabled, the client will store cookies from server responses and reuse them in subsequent requests.
+- `max_redirects`: Maximum number of redirections to follow, if not defined, the [Client uses its default policy](https://pkg.go.dev/net/http#Client), which is to stop after 10 consecutive requests.
 
 Example:
 
@@ -55,6 +56,7 @@ exporter:
     compression: zstd
     cookies:
       enabled: true
+    max_redirects: 5
 ```
 
 ## Server Configuration
