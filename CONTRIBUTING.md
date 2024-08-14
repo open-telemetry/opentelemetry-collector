@@ -101,7 +101,7 @@ Reporting bugs is an important contribution. Please make sure to include:
 ### Before you start
 
 Please read the project contribution
-[guide](https://github.com/open-telemetry/community/blob/main/CONTRIBUTING.md)
+[guide](https://github.com/open-telemetry/community/tree/main/guides/contributor)
 for general practices for the OpenTelemetry project.
 
 Select a good issue from the links below (ordered by difficulty/complexity):
@@ -153,7 +153,7 @@ Remember to always work in a branch of your local copy, as you might otherwise
 have to contend with conflicts in `main`.
 
 Please also see [GitHub
-workflow](https://github.com/open-telemetry/community/blob/main/CONTRIBUTING.md#github-workflow)
+workflow](https://github.com/open-telemetry/community/blob/main/guides/contributor/processes.md#github-workflow)
 section of the general project contributing guide.
 
 ## Required Tools
@@ -161,7 +161,7 @@ section of the general project contributing guide.
 Working with the project sources requires the following tools:
 
 1. [git](https://git-scm.com/)
-2. [go](https://golang.org/) (version 1.21 and up)
+2. [go](https://golang.org/) (version 1.22 and up)
 3. [make](https://www.gnu.org/software/make/)
 4. [docker](https://www.docker.com/)
 
@@ -218,7 +218,7 @@ before merging (but see the above paragraph about writing good commit messages i
 
 ## General Notes
 
-This project uses Go 1.21.* and [Github Actions.](https://github.com/features/actions)
+This project uses Go 1.22.* and [Github Actions.](https://github.com/features/actions)
 
 It is recommended to run `make gofmt all` before submitting your PR.
 
