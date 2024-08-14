@@ -37,7 +37,8 @@ import (
 	"go.opentelemetry.io/collector/internal/localhostgate"
 )
 
-type customRoundTripper struct{}
+type customRoundTripper struct{
+}
 
 var _ http.RoundTripper = (*customRoundTripper)(nil)
 
@@ -218,6 +219,7 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 			assert.EqualValues(t, 0, transport.MaxConnsPerHost)
 			assert.EqualValues(t, 90*time.Second, transport.IdleConnTimeout)
 			assert.EqualValues(t, false, transport.DisableKeepAlives)
+
 		})
 	}
 }
@@ -518,8 +520,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
 					mockID: &authtest.MockClient{
-						ResultRoundTripper: &customRoundTripper{}, MustError: true,
-					},
+						ResultRoundTripper: &customRoundTripper{}, MustError: true},
 				},
 			},
 		},
@@ -649,6 +650,7 @@ func TestHTTPServerWarning(t *testing.T) {
 			require.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), test.len)
 		})
 	}
+
 }
 
 func TestHttpReception(t *testing.T) {
@@ -1395,6 +1397,7 @@ func TestServerWithDecoder(t *testing.T) {
 	srv.Handler.ServeHTTP(response, req)
 	// verify
 	assert.Equal(t, response.Result().StatusCode, http.StatusOK)
+
 }
 
 func TestServerWithDecompression(t *testing.T) {

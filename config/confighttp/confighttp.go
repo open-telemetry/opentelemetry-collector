@@ -31,11 +31,8 @@ import (
 	"go.opentelemetry.io/collector/extension/auth"
 )
 
-const (
-	headerContentEncoding     = "Content-Encoding"
-	defaultMaxRequestBodySize = 20 * 1024 * 1024 // 20MiB
-)
-
+const headerContentEncoding = "Content-Encoding"
+const defaultMaxRequestBodySize = 20 * 1024 * 1024 // 20MiB
 var defaultCompressionAlgorithms = []string{"", "gzip", "zstd", "zlib", "snappy", "deflate"}
 
 // ClientConfig defines settings for creating an HTTP client.
