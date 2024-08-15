@@ -17,7 +17,6 @@ func NewStatusWatcherExtensionCreateSettings() extension.Settings {
 	return extension.Settings{
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),
-		ModuleInfo:        extension.ModuleInfo{},
 	}
 }
 

@@ -21,7 +21,6 @@ func NewNopSettings() extension.Settings {
 		ID:                component.NewIDWithName(nopType, uuid.NewString()),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),
-		ModuleInfo:        extension.ModuleInfo{},
 	}
 }
 

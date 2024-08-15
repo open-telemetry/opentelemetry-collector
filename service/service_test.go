@@ -550,7 +550,6 @@ func newNopSettings() Settings {
 		Exporters:         exportertest.NewNopBuilder(),
 		Connectors:        connectortest.NewNopBuilder(),
 		Extensions:        extensiontest.NewNopBuilder(),
-		ModuleInfo:        extension.ModuleInfo{},
 		AsyncErrorChannel: make(chan error),
 	}
 }
