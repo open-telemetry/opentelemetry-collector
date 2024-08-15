@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Generate a test metrics builder from a sample metrics set covering all configuration options.
-//go:generate env GITHUB_PROJECT=open-telemetry/opentelemetry-collector mdatagen metadata.yaml
+//go:generate mdatagen metadata.yaml
 
 // Deprecated: This package is moving to https://github.com/open-telemetry/opentelemetry-collector and will eventually be removed.
 // Please see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30497

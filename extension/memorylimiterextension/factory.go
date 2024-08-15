@@ -3,7 +3,7 @@
 
 package memorylimiterextension // import "go.opentelemetry.io/collector/extension/memorylimiterextension"
 
-//go:generate env GITHUB_PROJECT=open-telemetry/opentelemetry-collector mdatagen metadata.yaml
+//go:generate mdatagen metadata.yaml
 
 import (
 	"context"
