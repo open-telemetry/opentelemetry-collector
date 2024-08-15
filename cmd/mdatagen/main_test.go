@@ -156,6 +156,13 @@ foo
 				require.FileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_telemetry.go"))
 				require.FileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_telemetry_test.go"))
 				require.FileExists(t, filepath.Join(tmpdir, "documentation.md"))
+				contents, err = os.ReadFile(filepath.Join(tmpdir, "internal/metadata/generated_telemetry.go")) // nolint: gosec
+				require.NoError(t, err)
+				if tt.wantMetricsContext {
+					require.Contains(t, string(contents), "\"context\"")
+				} else {
+					require.NotContains(t, string(contents), "\"context\"")
+				}
 			} else {
 				require.NoFileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_telemetry.go"))
 				require.NoFileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_telemetry_test.go"))
