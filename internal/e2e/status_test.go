@@ -105,7 +105,7 @@ func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 	assert.Equal(t, 5, len(eventsReceived))
 
 	for instanceID, events := range eventsReceived {
-		if instanceID.ID == component.NewID(component.MustNewType("test")) {
+		if instanceID.ComponentID() == component.NewID(component.MustNewType("test")) {
 			for i, e := range events {
 				if i == 0 {
 					assert.Equal(t, componentstatus.StatusStarting, e.Status())

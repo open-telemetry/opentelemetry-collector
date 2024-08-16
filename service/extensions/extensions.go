@@ -198,10 +198,7 @@ func New(ctx context.Context, set Settings, cfg Config, options ...Option) (*Ext
 	}
 
 	for _, extID := range cfg {
-		instanceID := &componentstatus.InstanceID{
-			ID:   extID,
-			Kind: component.KindExtension,
-		}
+		instanceID := componentstatus.NewInstanceID(extID, component.KindExtension)
 		extSet := extension.Settings{
 			ID:                extID,
 			TelemetrySettings: set.Telemetry,
