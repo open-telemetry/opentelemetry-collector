@@ -100,3 +100,5 @@ replace go.opentelemetry.io/collector/internal/globalgates => ../../internal/glo
 replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../../consumer/consumerprofiles
 
 replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/consumertest
+
+replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus

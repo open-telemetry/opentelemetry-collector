@@ -6,6 +6,7 @@ require (
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.107.0
+	go.opentelemetry.io/collector/component/componentstatus v0.107.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.107.0
 	go.opentelemetry.io/collector/confmap v0.107.0
 	go.opentelemetry.io/collector/connector v0.107.0
@@ -20,7 +21,7 @@ require (
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842
-	golang.org/x/sys v0.24.0
+	golang.org/x/sys v0.23.0
 	google.golang.org/grpc v1.65.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -156,3 +157,5 @@ replace go.opentelemetry.io/collector/consumer/consumertest => ../consumer/consu
 replace go.opentelemetry.io/collector/component/componentprofiles => ../component/componentprofiles
 
 replace go.opentelemetry.io/collector/client => ../client
+
+replace go.opentelemetry.io/collector/component/componentstatus => ../component/componentstatus

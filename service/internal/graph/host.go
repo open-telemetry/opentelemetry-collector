@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
@@ -17,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/extensions"
+	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/internal/zpages"
 )
 
@@ -40,6 +42,8 @@ type Host struct {
 
 	Pipelines         *Graph
 	ServiceExtensions *extensions.Extensions
+
+	Reporter status.Reporter
 }
 
 func (host *Host) GetFactory(kind component.Kind, componentType component.Type) component.Factory {
@@ -72,9 +76,9 @@ func (host *Host) GetExporters() map[component.DataType]map[component.ID]compone
 	return host.Pipelines.GetExporters()
 }
 
-func (host *Host) NotifyComponentStatusChange(source *component.InstanceID, event *component.StatusEvent) {
+func (host *Host) NotifyComponentStatusChange(source *componentstatus.InstanceID, event *componentstatus.Event) {
 	host.ServiceExtensions.NotifyComponentStatusChange(source, event)
-	if event.Status() == component.StatusFatalError {
+	if event.Status() == componentstatus.StatusFatalError {
 		host.AsyncErrorChannel <- event.Err()
 	}
 }
