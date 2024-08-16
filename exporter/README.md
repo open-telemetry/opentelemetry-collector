@@ -10,7 +10,7 @@ traces, metrics and logs pipelines (sorted alphabetically):
 - [OTLP HTTP](otlphttpexporter/README.md)
 
 The [contrib
-repository](https://github.com/open-telemetry/opentelemetry-collector-contrib)
+repository](https://github.com/open-telemetry/opentelemetry-collector-contrib) 
 has more exporters available in its builds.
 
 ## Configuring Exporters
