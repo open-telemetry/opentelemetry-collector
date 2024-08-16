@@ -76,6 +76,8 @@ Telemetry produced by the Collector has the following properties:
 - metrics are defined via `metadata.yaml` except in components that have specific cases where
   it is not possible to do so. See the [issue](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33523)
   which list such components
+- whenever possible, components should leverage core components or helper libraries to capture
+  telemetry, ensuring that all components of the collector can be consistently observed.
 
 #### Units
 
