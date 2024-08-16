@@ -77,7 +77,9 @@ Telemetry produced by the Collector has the following properties:
   it is not possible to do so. See the [issue](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33523)
   which list such components
 - whenever possible, components should leverage core components or helper libraries to capture
-  telemetry, ensuring that all components of the collector can be consistently observed.
+  telemetry, ensuring that all components of the collector can be consistently observed
+- telemetry produced by components should include attributes that identify specific instances
+  of the components
 
 #### Units
 
