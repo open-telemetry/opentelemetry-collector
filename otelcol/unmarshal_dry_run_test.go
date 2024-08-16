@@ -22,7 +22,7 @@ type ValidateTestConfig struct {
 
 var genericType component.Type = component.MustNewType("generic")
 
-func NewFactories(t *testing.T) func() (Factories, error) {
+func NewFactories(_ *testing.T) func() (Factories, error) {
 	return func() (Factories, error) {
 		factories, err := nopFactories()
 		if err != nil {
