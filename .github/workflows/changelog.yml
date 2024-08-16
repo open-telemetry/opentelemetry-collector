@@ -77,7 +77,7 @@ jobs:
       - name: Render .chloggen changelog entries
         run: make chlog-preview > changelog_preview.md
       - name: Install markdown-link-check
-        run: npm install -g markdown-link-check
+        run: npm install
       - name: Run markdown-link-check
         run: |
           markdown-link-check \
