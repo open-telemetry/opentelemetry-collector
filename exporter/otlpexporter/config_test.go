@@ -56,12 +56,12 @@ func TestUnmarshalConfig(t *testing.T) {
 			},
 			BatcherConfig: exporterbatcher.Config{
 				Enabled:      true,
-				FlushTimeout: time.Second,
+				FlushTimeout: 200 * time.Millisecond,
 				MinSizeConfig: exporterbatcher.MinSizeConfig{
-					MinSizeItems: 1,
+					MinSizeItems: 1000,
 				},
 				MaxSizeConfig: exporterbatcher.MaxSizeConfig{
-					MaxSizeItems: 10,
+					MaxSizeItems: 10000,
 				},
 			},
 			ClientConfig: configgrpc.ClientConfig{
