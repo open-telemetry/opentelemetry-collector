@@ -80,7 +80,7 @@ jobs:
         run: npm install
       - name: Run markdown-link-check
         run: |
-          markdown-link-check \
+          npx --no -- markdown-link-check \
             --verbose \
             --config .github/workflows/check_links_config.json \
             changelog_preview.md \
