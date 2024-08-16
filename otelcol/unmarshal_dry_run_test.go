@@ -93,7 +93,7 @@ func TestDryRunWithExpandedValues(t *testing.T) {
 							newFakeProvider("mock", func(_ context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
 								return confmap.NewRetrievedFromYAML([]byte(tt.mockMap[uri[len("mock:"):]]))
 							}),
-							newFakeProvider("file", func(_ context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
+							newFakeProvider("file", func(_ context.Context, _ string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
 								return confmap.NewRetrievedFromYAML([]byte(tt.yamlConfig))
 							}),
 						},
