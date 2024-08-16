@@ -12,6 +12,97 @@ If you need to troubleshoot the Collector, see [Troubleshooting].
 Read on to learn about experimental features and the project's overall vision
 for internal telemetry.
 
+<!-- toc -->
+
+- [Goals of internal telemetry](#goals-of-internal-telemetry)
+  * [Observable elements](#observable-elements)
+  * [Impact](#impact)
+  * [Configurable level of observability](#configurable-level-of-observability)
+  * [Internal telemetry properties](#internal-telemetry-properties)
+    + [Units](#units)
+    + [Process for defining new metrics](#process-for-defining-new-metrics)
+- [Experimental trace telemetry](#experimental-trace-telemetry)
+
+<!-- tocstop -->
+
+## Goals of internal telemetry
+
+The Collector's internal telemetry is an important part of fulfilling
+OpenTelemetry's [project vision](vision.md). The following section explains the
+priorities for making the Collector an observable service.
+
+### Observable elements
+
+The following aspects of the Collector need to be observable.
+
+- [Current values]
+  - Some of the current values and rates might be calculated as derivatives of
+    cumulative values in the backend, so it's an open question whether to expose
+    them separately or not.
+- [Cumulative values]
+- [Trace or log events]
+  - For start or stop events, an appropriate hysteresis must be defined to avoid
+    generating too many events. Note that start and stop events can't be
+    detected in the backend simply as derivatives of current rates. The events
+    include additional data that is not present in the current value.
+- [Host metrics]
+  - Host metrics can help users determine if the observed problem in a service
+    is caused by a different process on the same host.
+
+### Impact
+
+The impact of these observability improvements on the core performance of the
+Collector must be assessed.
+
+### Configurable level of observability
+
+Some metrics and traces can be high volume and users might not always want to
+observe them. An observability verboseness “level” allows configuration of the
+Collector to send more or less observability data or with even finer
+granularity, to allow turning on or off specific metrics.
+
+The default level of observability must be defined in a way that has
+insignificant performance impact on the service.
+
+### Internal telemetry properties
+
+Telemetry produced by the Collector has the following properties:
+
+- metrics produced by Collector components use the prefix `otelcol_`
+- metrics produced by any instrumentation library used by Collector components will *not* be prefixed with `otelcol_`
+- code is instrumented using the OpenTelemetry API and telemetry is produced via the OpenTelemetry Go SDK
+- instrumentation scope defaults to the package name of the component recording telemetry. It can be configured
+  via the `scope_name` option in mdatagen, but the recommendation is to keep the default
+- metrics are defined via `metadata.yaml` except in components that have specific cases where
+  it is not possible to do so. See the [issue](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33523)
+  which list such components
+
+#### Units
+
+The following units should be used for metrics emitted by the Collector
+for the purpose of its internal telemetry:
+
+| Field type                                                                 | Unit           |
+| -------------------------------------------------------------------------- | -------------- |
+| Metric counting the number of log records received, processed, or exported | `{records}`    |
+| Metric counting the number of spans received, processed, or exported       | `{spans}`      |
+| Metric counting the number of data points received, processed, or exported | `{datapoints}` |
+
+#### Process for defining new metrics
+
+Metrics in the Collector are defined via `metadata.yaml`, which is used by [mdatagen] to
+produce:
+
+- code to create metric instruments that can be used by components
+- documentation for internal metrics
+- a consistent prefix for all internal metrics
+- convenience accessors for meter and tracer
+- a consistent instrumentation scope for components
+- test methods for validating the telemetry
+
+The process to generate new metrics is to configure them via
+`metadata.yaml`, and run `go generate` on the component.
+
 ## Experimental trace telemetry
 
 The Collector does not expose traces by default, but an effort is underway to
@@ -73,45 +164,6 @@ service:
               endpoint: ${MY_POD_IP}:4317
 ```
 
-## Goals of internal telemetry
-
-The Collector's internal telemetry is an important part of fulfilling
-OpenTelemetry's [project vision](vision.md). The following section explains the
-priorities for making the Collector an observable service.
-
-### Observable elements
-
-The following aspects of the Collector need to be observable.
-
-- [Current values]
-  - Some of the current values and rates might be calculated as derivatives of
-    cumulative values in the backend, so it's an open question whether to expose
-    them separately or not.
-- [Cumulative values]
-- [Trace or log events]
-  - For start or stop events, an appropriate hysteresis must be defined to avoid
-    generating too many events. Note that start and stop events can't be
-    detected in the backend simply as derivatives of current rates. The events
-    include additional data that is not present in the current value.
-- [Host metrics]
-  - Host metrics can help users determine if the observed problem in a service
-    is caused by a different process on the same host.
-
-### Impact
-
-The impact of these observability improvements on the core performance of the
-Collector must be assessed.
-
-### Configurable level of observability
-
-Some metrics and traces can be high volume and users might not always want to
-observe them. An observability verboseness “level” allows configuration of the
-Collector to send more or less observability data or with even finer
-granularity, to allow turning on or off specific metrics.
-
-The default level of observability must be defined in a way that has
-insignificant performance impact on the service.
-
 [Internal telemetry]:
   https://opentelemetry.io/docs/collector/internal-telemetry/
 [Troubleshooting]: https://opentelemetry.io/docs/collector/troubleshooting/
@@ -132,3 +184,5 @@ insignificant performance impact on the service.
   https://opentelemetry.io/docs/collector/internal-telemetry/#events-observable-with-internal-logs
 [Host metrics]:
   https://opentelemetry.io/docs/collector/internal-telemetry/#lists-of-internal-metrics
+[mdatagen]:
+  https://github.com/open-telemetry/opentelemetry-collector/tree/main/cmd/mdatagen
