@@ -15,7 +15,7 @@ import (
 //
 // TODO: consider moving this struct to a new package/module like `extension/statuswatcher`
 // https://github.com/open-telemetry/opentelemetry-collector/issues/10764
-// pipelineDelim is the delimeter for internal representation of pipeline
+// pipelineDelim is the delimiter for internal representation of pipeline
 // component IDs.
 const pipelineDelim = byte(0x20)
 
