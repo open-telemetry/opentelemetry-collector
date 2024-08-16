@@ -11,15 +11,14 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-// InstanceID uniquely identifies a component instance
-//
-// TODO: consider moving this struct to a new package/module like `extension/statuswatcher`
-// https://github.com/open-telemetry/opentelemetry-collector/issues/10764
 // pipelineDelim is the delimiter for internal representation of pipeline
 // component IDs.
 const pipelineDelim = byte(0x20)
 
-// InstanceID uniquely identifies a component instance.
+// InstanceID uniquely identifies a component instance
+//
+// TODO: consider moving this struct to a new package/module like `extension/statuswatcher`
+// https://github.com/open-telemetry/opentelemetry-collector/issues/10764
 type InstanceID struct {
 	componentID component.ID
 	kind        component.Kind
