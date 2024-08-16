@@ -16,9 +16,9 @@ retry_on_failure:
   max_elapsed_time: 10m
 batcher:
     enabled: true
-    flush_timeout: 1s
-    min_size_items: 1
-    max_size_items: 10
+    flush_timeout: 200ms
+    min_size_items: 1000
+    max_size_items: 10000
 auth:
   authenticator: nop
 headers:
