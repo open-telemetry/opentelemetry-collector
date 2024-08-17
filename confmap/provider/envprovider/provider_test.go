@@ -205,8 +205,8 @@ func TestEnvWithErrorMessage(t *testing.T) {
 			ret, err := env.Retrieve(context.Background(), test.uri, nil)
 			if test.expectedErr == "" {
 				require.NoError(t, err)
-				str, err := ret.AsString()
-				require.NoError(t, err)
+				str, err2 := ret.AsString()
+				require.NoError(t, err2)
 				assert.Equal(t, test.varValue, str)
 			} else {
 				assert.ErrorContains(t, err, test.expectedErr)
@@ -214,12 +214,6 @@ func TestEnvWithErrorMessage(t *testing.T) {
 		})
 	}
 	assert.NoError(t, env.Shutdown(context.Background()))
-	// const envName = "default_config"
-	// const errorMessage = "environment variable is not set"
-	// env := createProvider()
-	// _, err := env.Retrieve(context.Background(), envSchemePrefix+envName+":?"+errorMessage, nil)
-	// assert.EqualError(t, err, fmt.Sprintf("environment variable %q is not set: %s", envName, errorMessage))
-	// assert.NoError(t, env.Shutdown(context.Background()))
 }
 
 func createProvider() confmap.Provider {
