@@ -154,6 +154,74 @@ func TestEmptyEnvWithLoggerWarn(t *testing.T) {
 	assert.Equal(t, envName, logLine.Context[0].String)
 }
 
+func TestEnvWithDefaultValue(t *testing.T) {
+	env := createProvider()
+	tests := []struct {
+		name     string
+		unset    bool
+		varValue string
+		uri      string
+		expected string
+	}{
+		{name: "unset", unset: true, uri: "env:MY_VAR:-default % value", expected: "default % value"},
+		{name: "unset2", unset: true, uri: "env:MY_VAR:-", expected: ""}, // empty default still applies
+		{name: "empty", varValue: "", uri: "env:MY_VAR:-foo", expected: ""},
+		{name: "not empty", varValue: "value", uri: "env:MY_VAR:-", expected: "value"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if !test.unset {
+				t.Setenv("MY_VAR", test.varValue)
+			}
+			ret, err := env.Retrieve(context.Background(), test.uri, nil)
+			require.NoError(t, err)
+			str, err := ret.AsString()
+			require.NoError(t, err)
+			assert.Equal(t, test.expected, str)
+		})
+	}
+	assert.NoError(t, env.Shutdown(context.Background()))
+}
+
+func TestEnvWithErrorMessage(t *testing.T) {
+	env := createProvider()
+	tests := []struct {
+		name        string
+		unset       bool
+		varValue    string
+		uri         string
+		expectedErr string
+	}{
+		{name: "unset", unset: true, uri: "env:MY_VAR:?foobar", expectedErr: "foobar"},
+		{name: "unset2", unset: true, uri: "env:MY_VAR:?", expectedErr: "empty error message"},
+		{name: "empty", varValue: "", uri: "env:MY_VAR:?foo", expectedErr: ""}, // empty value does not cause error
+		{name: "not empty", varValue: "value", uri: "env:MY_VAR:?foo", expectedErr: ""},
+	}
+	for _, test := range tests {
+		t.Run(test.varValue, func(t *testing.T) {
+			if !test.unset {
+				t.Setenv("MY_VAR", test.varValue)
+			}
+			ret, err := env.Retrieve(context.Background(), test.uri, nil)
+			if test.expectedErr == "" {
+				require.NoError(t, err)
+				str, err := ret.AsString()
+				require.NoError(t, err)
+				assert.Equal(t, test.varValue, str)
+			} else {
+				assert.ErrorContains(t, err, test.expectedErr)
+			}
+		})
+	}
+	assert.NoError(t, env.Shutdown(context.Background()))
+	// const envName = "default_config"
+	// const errorMessage = "environment variable is not set"
+	// env := createProvider()
+	// _, err := env.Retrieve(context.Background(), envSchemePrefix+envName+":?"+errorMessage, nil)
+	// assert.EqualError(t, err, fmt.Sprintf("environment variable %q is not set: %s", envName, errorMessage))
+	// assert.NoError(t, env.Shutdown(context.Background()))
+}
+
 func createProvider() confmap.Provider {
 	return NewFactory().Create(confmaptest.NewNopProviderSettings())
 }
