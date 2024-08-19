@@ -73,12 +73,12 @@ type queueSender struct {
 	traceAttribute attribute.KeyValue
 	consumers      *queue.Consumers[Request]
 
-	obsrep     *ObsReport
+	obsrep     *obsReport
 	exporterID component.ID
 }
 
 func newQueueSender(q exporterqueue.Queue[Request], set exporter.Settings, numConsumers int,
-	exportFailureMessage string, obsrep *ObsReport) *queueSender {
+	exportFailureMessage string, obsrep *obsReport) *queueSender {
 	qs := &queueSender{
 		queue:          q,
 		numConsumers:   numConsumers,
