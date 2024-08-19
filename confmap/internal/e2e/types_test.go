@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/confmap"
@@ -24,6 +25,7 @@ const (
 	TargetFieldString       TargetField = "string_field"
 	TargetFieldBool         TargetField = "bool_field"
 	TargetFieldInlineString TargetField = "inline_string_field"
+	TargetFieldSlice        TargetField = "slice_field"
 )
 
 type Test struct {
@@ -45,6 +47,7 @@ func NewResolver(t testing.TB, path string) *confmap.Resolver {
 			fileprovider.NewFactory(),
 			envprovider.NewFactory(),
 		},
+		DefaultScheme: "env",
 	})
 	require.NoError(t, err)
 	return resolver
@@ -77,6 +80,9 @@ func AssertResolvesTo(t *testing.T, resolver *confmap.Resolver, tt Test) {
 		AssertExpectedMatch(t, tt, conf, &cfg)
 	case TargetFieldBool:
 		var cfg TargetConfig[bool]
+		AssertExpectedMatch(t, tt, conf, &cfg)
+	case TargetFieldSlice:
+		var cfg TargetConfig[[]any]
 		AssertExpectedMatch(t, tt, conf, &cfg)
 	default:
 		t.Fatalf("unexpected target field %q", tt.targetField)
@@ -239,6 +245,8 @@ func TestTypeCasting(t *testing.T) {
 }
 
 func TestStrictTypeCasting(t *testing.T) {
+	t.Setenv("ENV_VALUE", "testreceiver")
+
 	values := []Test{
 		{
 			value:       "123",
@@ -344,6 +352,109 @@ func TestStrictTypeCasting(t *testing.T) {
 			value:       "2006-01-02T15:04:05Z07:00",
 			targetField: TargetFieldInlineString,
 			expected:    "inline field with 2006-01-02T15:04:05Z07:00 expansion",
+		},
+		// issue 10787
+		{
+			value:       "true # comment with a ${env:hello.world} reference",
+			targetField: TargetFieldBool,
+			expected:    true,
+		},
+		{
+			value:        "true # comment with a ${env:hello.world} reference",
+			targetField:  TargetFieldString,
+			unmarshalErr: `expected type 'string', got unconvertible type 'bool'`,
+		},
+		{
+			value:       "true # comment with a ${env:hello.world} reference",
+			targetField: TargetFieldInlineString,
+			resolveErr:  `environment variable "hello.world" has invalid name`,
+		},
+		// issue 10759
+		{
+			value:       `["a",`,
+			targetField: TargetFieldString,
+			expected:    `["a",`,
+		},
+		{
+			value:       `["a",`,
+			targetField: TargetFieldInlineString,
+			expected:    `inline field with ["a", expansion`,
+		},
+		// issue 10799
+		{
+			value:       `[filelog,windowseventlog/application]`,
+			targetField: TargetFieldSlice,
+			expected:    []any{"filelog", "windowseventlog/application"},
+		},
+		{
+			value:       `[filelog,windowseventlog/application]`,
+			targetField: TargetFieldString,
+			expected:    "[filelog,windowseventlog/application]",
+		},
+		{
+			value:       `[filelog,windowseventlog/application]`,
+			targetField: TargetFieldInlineString,
+			expected:    "inline field with [filelog,windowseventlog/application] expansion",
+		},
+		{
+			value:       "$$ENV",
+			targetField: TargetFieldString,
+			expected:    "$ENV",
+		},
+		{
+			value:       "$$ENV",
+			targetField: TargetFieldInlineString,
+			expected:    "inline field with $ENV expansion",
+		},
+		{
+			value:       "$${ENV}",
+			targetField: TargetFieldString,
+			expected:    "${ENV}",
+		},
+		{
+			value:       "$${ENV}",
+			targetField: TargetFieldInlineString,
+			expected:    "inline field with ${ENV} expansion",
+		},
+		{
+			value:       "$${env:ENV}",
+			targetField: TargetFieldString,
+			expected:    "${env:ENV}",
+		},
+		{
+			value:       "$${env:ENV}",
+			targetField: TargetFieldInlineString,
+			expected:    "inline field with ${env:ENV} expansion",
+		},
+		{
+			value:       `[filelog,${env:ENV_VALUE}]`,
+			targetField: TargetFieldString,
+			expected:    "[filelog,testreceiver]",
+		},
+		{
+			value:       `[filelog,${ENV_VALUE}]`,
+			targetField: TargetFieldString,
+			expected:    "[filelog,testreceiver]",
+		},
+		{
+			value:       `["filelog","$${env:ENV_VALUE}"]`,
+			targetField: TargetFieldString,
+			expected:    `["filelog","${env:ENV_VALUE}"]`,
+		},
+		{
+			value:       `["filelog","$${ENV_VALUE}"]`,
+			targetField: TargetFieldString,
+			expected:    `["filelog","${ENV_VALUE}"]`,
+		},
+		{
+			value:       `["filelog","$$ENV_VALUE"]`,
+			targetField: TargetFieldString,
+			expected:    `["filelog","$ENV_VALUE"]`,
+		},
+		{
+			value:       `["filelog","$ENV_VALUE"]`,
+			targetField: TargetFieldString,
+			expected:    `["filelog","$ENV_VALUE"]`,
 		},
 	}
 
@@ -482,4 +593,209 @@ func TestRecursiveMaps(t *testing.T) {
 	require.Equal(t, `{env: "{env2: "{value: 123}"}", inline: "inline {env2: "{value: 123}"}"}`,
 		cfgStr.Field,
 	)
+}
+
+// Test that comments with invalid ${env:...} references do not prevent configuration from loading.
+func TestIssue10787(t *testing.T) {
+	previousValue := globalgates.StrictlyTypedInputGate.IsEnabled()
+	err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, true)
+	require.NoError(t, err)
+	defer func() {
+		seterr := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, previousValue)
+		require.NoError(t, seterr)
+	}()
+
+	resolver := NewResolver(t, "issue-10787-main.yaml")
+	conf, err := resolver.Resolve(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, conf.ToStringMap(),
+		map[string]any{
+			"exporters": map[string]any{
+				"logging": map[string]any{
+					"verbosity": "detailed",
+				},
+			},
+			"processors": map[string]any{
+				"batch": nil,
+			},
+			"receivers": map[string]any{
+				"otlp": map[string]any{
+					"protocols": map[string]any{
+						"grpc": map[string]any{
+							"endpoint": "0.0.0.0:4317",
+						},
+						"http": map[string]any{
+							"endpoint": "0.0.0.0:4318",
+						},
+					},
+				},
+			},
+			"service": map[string]any{
+				"pipelines": map[string]any{
+					"traces": map[string]any{
+						"exporters":  []any{"logging"},
+						"processors": []any{"batch"},
+						"receivers":  []any{"otlp"},
+					},
+				},
+				"telemetry": map[string]any{
+					"metrics": map[string]any{
+						"level": "detailed",
+					},
+				},
+			},
+		},
+	)
+}
+
+func TestStructMappingIssue10787(t *testing.T) {
+	previousValue := globalgates.StrictlyTypedInputGate.IsEnabled()
+	err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, true)
+	require.NoError(t, err)
+	defer func() {
+		seterr := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, previousValue)
+		require.NoError(t, seterr)
+	}()
+
+	resolver := NewResolver(t, "types_expand.yaml")
+	t.Setenv("ENV", `# this is a comment
+logging:
+  verbosity: detailed`)
+	conf, err := resolver.Resolve(context.Background())
+	require.NoError(t, err)
+
+	type Logging struct {
+		Verbosity string `mapstructure:"verbosity"`
+	}
+	type Exporters struct {
+		Logging Logging `mapstructure:"logging"`
+	}
+	type Target struct {
+		Field Exporters `mapstructure:"field"`
+	}
+
+	var cfg Target
+	err = conf.Unmarshal(&cfg)
+	require.NoError(t, err)
+	require.Equal(t,
+		Target{Field: Exporters{
+			Logging: Logging{
+				Verbosity: "detailed",
+			},
+		}},
+		cfg,
+	)
+
+	confStr, err := resolver.Resolve(context.Background())
+	require.NoError(t, err)
+	var cfgStr TargetConfig[string]
+	err = confStr.Unmarshal(&cfgStr)
+	require.NoError(t, err)
+	require.Equal(t, `# this is a comment
+logging:
+  verbosity: detailed`,
+		cfgStr.Field,
+	)
+}
+
+func TestStructMappingIssue10787_ExpandComment(t *testing.T) {
+	previousValue := globalgates.StrictlyTypedInputGate.IsEnabled()
+	err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, true)
+	require.NoError(t, err)
+	defer func() {
+		seterr := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, previousValue)
+		require.NoError(t, seterr)
+	}()
+
+	resolver := NewResolver(t, "types_expand.yaml")
+	t.Setenv("EXPAND_ME", "an expanded env var")
+	t.Setenv("ENV", `# this is a comment with ${EXPAND_ME}
+logging:
+  verbosity: detailed`)
+	conf, err := resolver.Resolve(context.Background())
+	require.NoError(t, err)
+
+	type Logging struct {
+		Verbosity string `mapstructure:"verbosity"`
+	}
+	type Exporters struct {
+		Logging Logging `mapstructure:"logging"`
+	}
+	type Target struct {
+		Field Exporters `mapstructure:"field"`
+	}
+
+	var cfg Target
+	err = conf.Unmarshal(&cfg)
+	require.NoError(t, err)
+	require.Equal(t,
+		Target{Field: Exporters{
+			Logging: Logging{
+				Verbosity: "detailed",
+			},
+		}},
+		cfg,
+	)
+
+	confStr, err := resolver.Resolve(context.Background())
+	require.NoError(t, err)
+	var cfgStr TargetConfig[string]
+	err = confStr.Unmarshal(&cfgStr)
+	require.NoError(t, err)
+	require.Equal(t, `# this is a comment with an expanded env var
+logging:
+  verbosity: detailed`,
+		cfgStr.Field,
+	)
+}
+
+func TestIndirectSliceEnvVar(t *testing.T) {
+	previousValue := globalgates.StrictlyTypedInputGate.IsEnabled()
+	err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, true)
+	require.NoError(t, err)
+	defer func() {
+		seterr := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, previousValue)
+		require.NoError(t, seterr)
+	}()
+
+	// This replicates the situation in https://github.com/open-telemetry/opentelemetry-collector/issues/10799
+	// where a configuration file is loaded that contains a reference to a slice of strings in an environment variable.
+	t.Setenv("BASE_FOLDER", "testdata")
+	t.Setenv("OTEL_LOGS_RECEIVER", "[nop, otlp]")
+	t.Setenv("OTEL_LOGS_EXPORTER", "[otlp, nop]")
+	resolver := NewResolver(t, "indirect-slice-env-var-main.yaml")
+	conf, err := resolver.Resolve(context.Background())
+	require.NoError(t, err)
+
+	type CollectorConf struct {
+		Exporters struct {
+			OTLP struct {
+				Endpoint string `mapstructure:"endpoint"`
+			} `mapstructure:"otlp"`
+			Nop struct{} `mapstructure:"nop"`
+		} `mapstructure:"exporters"`
+		Receivers struct {
+			OTLP struct {
+				Protocols struct {
+					GRPC struct{} `mapstructure:"grpc"`
+				} `mapstructure:"protocols"`
+			} `mapstructure:"otlp"`
+			Nop struct{} `mapstructure:"nop"`
+		} `mapstructure:"receivers"`
+		Service struct {
+			Pipelines struct {
+				Logs struct {
+					Exporters []string `mapstructure:"exporters"`
+					Receivers []string `mapstructure:"receivers"`
+				} `mapstructure:"logs"`
+			} `mapstructure:"pipelines"`
+		} `mapstructure:"service"`
+	}
+
+	var collectorConf CollectorConf
+	err = conf.Unmarshal(&collectorConf)
+	require.NoError(t, err)
+	assert.Equal(t, collectorConf.Exporters.OTLP.Endpoint, "localhost:4317")
+	assert.Equal(t, collectorConf.Service.Pipelines.Logs.Receivers, []string{"nop", "otlp"})
+	assert.Equal(t, collectorConf.Service.Pipelines.Logs.Exporters, []string{"otlp", "nop"})
 }

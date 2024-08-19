@@ -6,6 +6,7 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 import (
 	"context"
 	"errors"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -19,6 +20,9 @@ import (
 )
 
 func TestBatchSender_Merge(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping flaky test on Windows, see https://github.com/open-telemetry/opentelemetry-collector/issues/10758")
+	}
 	cfg := exporterbatcher.NewDefaultConfig()
 	cfg.MinSizeItems = 10
 	cfg.FlushTimeout = 100 * time.Millisecond
@@ -270,7 +274,9 @@ func TestBatchSender_PostShutdown(t *testing.T) {
 }
 
 func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
-
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping flaky test on Windows, see https://github.com/open-telemetry/opentelemetry-collector/issues/10810")
+	}
 	tests := []struct {
 		name             string
 		batcherCfg       exporterbatcher.Config
@@ -655,6 +661,9 @@ func TestBatchSenderTimerResetNoConflict(t *testing.T) {
 }
 
 func TestBatchSenderTimerFlush(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping flaky test on Windows, see https://github.com/open-telemetry/opentelemetry-collector/issues/10802")
+	}
 	bCfg := exporterbatcher.NewDefaultConfig()
 	bCfg.MinSizeItems = 8
 	bCfg.FlushTimeout = 100 * time.Millisecond
