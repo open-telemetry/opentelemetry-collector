@@ -110,6 +110,8 @@ linters-settings:
             desc: "Use 'errors' or 'fmt' instead of github.com/pkg/errors"
           - pkg: github.com/hashicorp/go-multierror
             desc: "Use go.uber.org/multierr instead of github.com/hashicorp/go-multierror"
+          - pkg: "math/rand$"
+            desc: "Use the newer 'math/rand/v2' instead of math/rand"
         # Add a different guard rule so that we can ignore tests.
       ignore-in-test:
           deny:
@@ -145,10 +147,6 @@ issues:
       linters:
         - gosec
     - text: "G402:"
-      linters:
-        - gosec
-    # https://github.com/open-telemetry/opentelemetry-collector/issues/5699
-    - text: "G112:"
       linters:
         - gosec
 

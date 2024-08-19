@@ -1,0 +1,5 @@
+{
+  "devDependencies": {
+    "markdown-link-check": "^3.11.2"
+  }
+}

@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"text/template"
 	"time"
@@ -74,7 +75,7 @@ func Generate(cfg Config) error {
 	}
 	// create a warning message for non-aligned builder and collector base
 	if cfg.Distribution.OtelColVersion != defaultOtelColVersion {
-		cfg.Logger.Info("You're building a distribution with non-aligned version of the builder. Compilation may fail due to API changes. Please upgrade your builder or API", zap.String("builder-version", defaultOtelColVersion))
+		cfg.Logger.Info("You're building a distribution with non-aligned version of the builder. The version mismatch may cause a compilation failure. It's recommended to use the same version.", zap.String("collector-version", cfg.Distribution.OtelColVersion), zap.String("builder-version", defaultOtelColVersion))
 	}
 	// if the file does not exist, try to create it
 	if _, err := os.Stat(cfg.Distribution.OutputPath); os.IsNotExist(err) {
@@ -139,7 +140,7 @@ func GetModules(cfg Config) error {
 		return nil
 	}
 
-	if _, err := runGoCommand(cfg, "mod", "tidy", "-compat=1.21"); err != nil {
+	if _, err := runGoCommand(cfg, "mod", "tidy", "-compat=1.22"); err != nil {
 		return fmt.Errorf("failed to update go.mod: %w", err)
 	}
 
@@ -221,13 +222,8 @@ func (c *Config) coreModuleAndVersion() (string, string) {
 }
 
 func (c *Config) allComponents() []Module {
-	// TODO: Use slices.Concat when we drop support for Go 1.21
-	return append(c.Exporters,
-		append(c.Receivers,
-			append(c.Processors,
-				append(c.Extensions,
-					append(c.Connectors,
-						*c.Providers...)...)...)...)...)
+	return slices.Concat[[]Module](c.Exporters, c.Receivers, c.Processors,
+		c.Extensions, c.Connectors, *c.Providers)
 }
 
 func (c *Config) readGoModFile() (string, map[string]string, error) {
