@@ -46,3 +46,14 @@ type nopExtension struct {
 	component.StartFunc
 	component.ShutdownFunc
 }
+
+// NewNopBuilder returns a extension.Builder that constructs nop extension.
+//
+// Deprecated: this builder is being internalized within the service module,
+// and will be removed soon.
+func NewNopBuilder() *extension.Builder {
+	nopFactory := NewNopFactory()
+	return extension.NewBuilder(
+		map[component.ID]component.Config{component.NewID(nopType): nopFactory.CreateDefaultConfig()},
+		map[component.Type]extension.Factory{nopType: nopFactory})
+}
