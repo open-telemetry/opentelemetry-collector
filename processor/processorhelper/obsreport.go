@@ -61,29 +61,23 @@ func newObsReport(cfg ObsReportSettings) (*ObsReport, error) {
 }
 
 func (or *ObsReport) recordData(ctx context.Context, dataType component.DataType, accepted, refused, dropped, inserted int64) {
-	var acceptedCount, refusedCount, droppedCount, insertedCount metric.Int64Counter
 	switch dataType {
 	case component.DataTypeTraces:
-		acceptedCount = or.telemetryBuilder.ProcessorAcceptedSpans
-		refusedCount = or.telemetryBuilder.ProcessorRefusedSpans
-		droppedCount = or.telemetryBuilder.ProcessorDroppedSpans
-		insertedCount = or.telemetryBuilder.ProcessorInsertedSpans
+		or.telemetryBuilder.RecordProcessorAcceptedSpans(ctx, accepted, metric.WithAttributes(or.otelAttrs...))
+		or.telemetryBuilder.RecordProcessorRefusedSpans(ctx, refused, metric.WithAttributes(or.otelAttrs...))
+		or.telemetryBuilder.RecordProcessorDroppedSpans(ctx, dropped, metric.WithAttributes(or.otelAttrs...))
+		or.telemetryBuilder.RecordProcessorInsertedSpans(ctx, inserted, metric.WithAttributes(or.otelAttrs...))
 	case component.DataTypeMetrics:
-		acceptedCount = or.telemetryBuilder.ProcessorAcceptedMetricPoints
-		refusedCount = or.telemetryBuilder.ProcessorRefusedMetricPoints
-		droppedCount = or.telemetryBuilder.ProcessorDroppedMetricPoints
-		insertedCount = or.telemetryBuilder.ProcessorInsertedMetricPoints
+		or.telemetryBuilder.RecordProcessorAcceptedMetricPoints(ctx, accepted, metric.WithAttributes(or.otelAttrs...))
+		or.telemetryBuilder.RecordProcessorRefusedMetricPoints(ctx, refused, metric.WithAttributes(or.otelAttrs...))
+		or.telemetryBuilder.RecordProcessorDroppedMetricPoints(ctx, dropped, metric.WithAttributes(or.otelAttrs...))
+		or.telemetryBuilder.RecordProcessorInsertedMetricPoints(ctx, inserted, metric.WithAttributes(or.otelAttrs...))
 	case component.DataTypeLogs:
-		acceptedCount = or.telemetryBuilder.ProcessorAcceptedLogRecords
-		refusedCount = or.telemetryBuilder.ProcessorRefusedLogRecords
-		droppedCount = or.telemetryBuilder.ProcessorDroppedLogRecords
-		insertedCount = or.telemetryBuilder.ProcessorInsertedLogRecords
+		or.telemetryBuilder.RecordProcessorAcceptedLogRecords(ctx, accepted, metric.WithAttributes(or.otelAttrs...))
+		or.telemetryBuilder.RecordProcessorRefusedLogRecords(ctx, refused, metric.WithAttributes(or.otelAttrs...))
+		or.telemetryBuilder.RecordProcessorDroppedLogRecords(ctx, dropped, metric.WithAttributes(or.otelAttrs...))
+		or.telemetryBuilder.RecordProcessorInsertedLogRecords(ctx, inserted, metric.WithAttributes(or.otelAttrs...))
 	}
-
-	acceptedCount.Add(ctx, accepted, metric.WithAttributes(or.otelAttrs...))
-	refusedCount.Add(ctx, refused, metric.WithAttributes(or.otelAttrs...))
-	droppedCount.Add(ctx, dropped, metric.WithAttributes(or.otelAttrs...))
-	insertedCount.Add(ctx, inserted, metric.WithAttributes(or.otelAttrs...))
 }
 
 // TracesAccepted reports that the trace data was accepted.

@@ -3,6 +3,7 @@
 package metadata
 
 import (
+	"context"
 	"errors"
 
 	"go.opentelemetry.io/otel/metric"
@@ -99,4 +100,28 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs
+}
+
+func (b *TelemetryBuilder) RecordReceiverAcceptedLogRecords(ctx context.Context, val int64, opts ...metric.AddOption) {
+	b.ReceiverAcceptedLogRecords.Add(ctx, val, opts...)
+}
+
+func (b *TelemetryBuilder) RecordReceiverAcceptedMetricPoints(ctx context.Context, val int64, opts ...metric.AddOption) {
+	b.ReceiverAcceptedMetricPoints.Add(ctx, val, opts...)
+}
+
+func (b *TelemetryBuilder) RecordReceiverAcceptedSpans(ctx context.Context, val int64, opts ...metric.AddOption) {
+	b.ReceiverAcceptedSpans.Add(ctx, val, opts...)
+}
+
+func (b *TelemetryBuilder) RecordReceiverRefusedLogRecords(ctx context.Context, val int64, opts ...metric.AddOption) {
+	b.ReceiverRefusedLogRecords.Add(ctx, val, opts...)
+}
+
+func (b *TelemetryBuilder) RecordReceiverRefusedMetricPoints(ctx context.Context, val int64, opts ...metric.AddOption) {
+	b.ReceiverRefusedMetricPoints.Add(ctx, val, opts...)
+}
+
+func (b *TelemetryBuilder) RecordReceiverRefusedSpans(ctx context.Context, val int64, opts ...metric.AddOption) {
+	b.ReceiverRefusedSpans.Add(ctx, val, opts...)
 }

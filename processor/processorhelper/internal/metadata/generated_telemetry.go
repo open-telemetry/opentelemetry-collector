@@ -3,6 +3,7 @@
 package metadata
 
 import (
+	"context"
 	"errors"
 
 	"go.opentelemetry.io/otel/metric"
@@ -141,4 +142,52 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs
+}
+
+func (b *TelemetryBuilder) RecordProcessorAcceptedLogRecords(ctx context.Context, val int64, opts ...metric.AddOption) {
+	b.ProcessorAcceptedLogRecords.Add(ctx, val, opts...)
+}
+
+func (b *TelemetryBuilder) RecordProcessorAcceptedMetricPoints(ctx context.Context, val int64, opts ...metric.AddOption) {
+	b.ProcessorAcceptedMetricPoints.Add(ctx, val, opts...)
+}
+
+func (b *TelemetryBuilder) RecordProcessorAcceptedSpans(ctx context.Context, val int64, opts ...metric.AddOption) {
+	b.ProcessorAcceptedSpans.Add(ctx, val, opts...)
+}
+
+func (b *TelemetryBuilder) RecordProcessorDroppedLogRecords(ctx context.Context, val int64, opts ...metric.AddOption) {
+	b.ProcessorDroppedLogRecords.Add(ctx, val, opts...)
+}
+
+func (b *TelemetryBuilder) RecordProcessorDroppedMetricPoints(ctx context.Context, val int64, opts ...metric.AddOption) {
+	b.ProcessorDroppedMetricPoints.Add(ctx, val, opts...)
+}
+
+func (b *TelemetryBuilder) RecordProcessorDroppedSpans(ctx context.Context, val int64, opts ...metric.AddOption) {
+	b.ProcessorDroppedSpans.Add(ctx, val, opts...)
+}
+
+func (b *TelemetryBuilder) RecordProcessorInsertedLogRecords(ctx context.Context, val int64, opts ...metric.AddOption) {
+	b.ProcessorInsertedLogRecords.Add(ctx, val, opts...)
+}
+
+func (b *TelemetryBuilder) RecordProcessorInsertedMetricPoints(ctx context.Context, val int64, opts ...metric.AddOption) {
+	b.ProcessorInsertedMetricPoints.Add(ctx, val, opts...)
+}
+
+func (b *TelemetryBuilder) RecordProcessorInsertedSpans(ctx context.Context, val int64, opts ...metric.AddOption) {
+	b.ProcessorInsertedSpans.Add(ctx, val, opts...)
+}
+
+func (b *TelemetryBuilder) RecordProcessorRefusedLogRecords(ctx context.Context, val int64, opts ...metric.AddOption) {
+	b.ProcessorRefusedLogRecords.Add(ctx, val, opts...)
+}
+
+func (b *TelemetryBuilder) RecordProcessorRefusedMetricPoints(ctx context.Context, val int64, opts ...metric.AddOption) {
+	b.ProcessorRefusedMetricPoints.Add(ctx, val, opts...)
+}
+
+func (b *TelemetryBuilder) RecordProcessorRefusedSpans(ctx context.Context, val int64, opts ...metric.AddOption) {
+	b.ProcessorRefusedSpans.Add(ctx, val, opts...)
 }

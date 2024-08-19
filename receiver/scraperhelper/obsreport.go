@@ -112,6 +112,6 @@ func (s *ObsReport) EndMetricsOp(
 }
 
 func (s *ObsReport) recordMetrics(scraperCtx context.Context, numScrapedMetrics, numErroredMetrics int) {
-	s.telemetryBuilder.ScraperScrapedMetricPoints.Add(scraperCtx, int64(numScrapedMetrics), metric.WithAttributes(s.otelAttrs...))
-	s.telemetryBuilder.ScraperErroredMetricPoints.Add(scraperCtx, int64(numErroredMetrics), metric.WithAttributes(s.otelAttrs...))
+	s.telemetryBuilder.RecordScraperScrapedMetricPoints(scraperCtx, int64(numScrapedMetrics), metric.WithAttributes(s.otelAttrs...))
+	s.telemetryBuilder.RecordScraperErroredMetricPoints(scraperCtx, int64(numErroredMetrics), metric.WithAttributes(s.otelAttrs...))
 }

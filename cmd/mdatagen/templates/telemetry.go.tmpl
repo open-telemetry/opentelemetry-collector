@@ -133,4 +133,14 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
     return &builder, errs
 }
 
+{{- range $name, $metric := .Telemetry.Metrics }}
+{{- if not $metric.Data.Async }}
+
+func (b *TelemetryBuilder) Record{{ $name.Render }}(ctx context.Context, val {{ $metric.Data.BasicType }}, opts ...metric.{{- if eq $metric.Data.Type "Histogram" -}}Record{{- else -}}Add{{- end -}}Option) {
+    b.{{ $name.Render }}.{{- if eq $metric.Data.Type "Histogram" -}}Record{{- else -}}Add{{- end -}}(ctx, val, opts...)
+}
+
+{{- end }}
+{{- end }}
+
 {{- end }}

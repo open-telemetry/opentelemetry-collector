@@ -107,3 +107,19 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	errs = errors.Join(errs, err)
 	return &builder, errs
 }
+
+func (b *TelemetryBuilder) RecordProcessorBatchBatchSendSize(ctx context.Context, val int64, opts ...metric.RecordOption) {
+	b.ProcessorBatchBatchSendSize.Record(ctx, val, opts...)
+}
+
+func (b *TelemetryBuilder) RecordProcessorBatchBatchSendSizeBytes(ctx context.Context, val int64, opts ...metric.RecordOption) {
+	b.ProcessorBatchBatchSendSizeBytes.Record(ctx, val, opts...)
+}
+
+func (b *TelemetryBuilder) RecordProcessorBatchBatchSizeTriggerSend(ctx context.Context, val int64, opts ...metric.AddOption) {
+	b.ProcessorBatchBatchSizeTriggerSend.Add(ctx, val, opts...)
+}
+
+func (b *TelemetryBuilder) RecordProcessorBatchTimeoutTriggerSend(ctx context.Context, val int64, opts ...metric.AddOption) {
+	b.ProcessorBatchTimeoutTriggerSend.Add(ctx, val, opts...)
+}

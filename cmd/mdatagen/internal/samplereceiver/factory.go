@@ -31,7 +31,7 @@ func createMetrics(ctx context.Context, set receiver.Settings, _ component.Confi
 	if err != nil {
 		return nil, err
 	}
-	telemetryBuilder.BatchSizeTriggerSend.Add(ctx, 1)
+	telemetryBuilder.RecordBatchSizeTriggerSend(ctx, 1)
 	return nopReceiver{telemetryBuilder: telemetryBuilder}, nil
 }
 

@@ -116,21 +116,17 @@ func (or *obsReport) recordMetrics(ctx context.Context, dataType component.DataT
 	if or.level == configtelemetry.LevelNone {
 		return
 	}
-	var sentMeasure, failedMeasure metric.Int64Counter
 	switch dataType {
 	case component.DataTypeTraces:
-		sentMeasure = or.telemetryBuilder.ExporterSentSpans
-		failedMeasure = or.telemetryBuilder.ExporterSendFailedSpans
+		or.telemetryBuilder.RecordExporterSentSpans(ctx, sent, metric.WithAttributes(or.otelAttrs...))
+		or.telemetryBuilder.RecordExporterSendFailedSpans(ctx, failed, metric.WithAttributes(or.otelAttrs...))
 	case component.DataTypeMetrics:
-		sentMeasure = or.telemetryBuilder.ExporterSentMetricPoints
-		failedMeasure = or.telemetryBuilder.ExporterSendFailedMetricPoints
+		or.telemetryBuilder.RecordExporterSentMetricPoints(ctx, sent, metric.WithAttributes(or.otelAttrs...))
+		or.telemetryBuilder.RecordExporterSendFailedMetricPoints(ctx, failed, metric.WithAttributes(or.otelAttrs...))
 	case component.DataTypeLogs:
-		sentMeasure = or.telemetryBuilder.ExporterSentLogRecords
-		failedMeasure = or.telemetryBuilder.ExporterSendFailedLogRecords
+		or.telemetryBuilder.RecordExporterSentLogRecords(ctx, sent, metric.WithAttributes(or.otelAttrs...))
+		or.telemetryBuilder.RecordExporterSendFailedLogRecords(ctx, failed, metric.WithAttributes(or.otelAttrs...))
 	}
-
-	sentMeasure.Add(ctx, sent, metric.WithAttributes(or.otelAttrs...))
-	failedMeasure.Add(ctx, failed, metric.WithAttributes(or.otelAttrs...))
 }
 
 func endSpan(ctx context.Context, err error, numSent, numFailedToSend int64, sentItemsKey, failedToSendItemsKey string) {
@@ -156,15 +152,12 @@ func toNumItems(numExportedItems int, err error) (int64, int64) {
 }
 
 func (or *obsReport) recordEnqueueFailure(ctx context.Context, dataType component.DataType, failed int64) {
-	var enqueueFailedMeasure metric.Int64Counter
 	switch dataType {
 	case component.DataTypeTraces:
-		enqueueFailedMeasure = or.telemetryBuilder.ExporterEnqueueFailedSpans
+		or.telemetryBuilder.RecordExporterEnqueueFailedSpans(ctx, failed, metric.WithAttributes(or.otelAttrs...))
 	case component.DataTypeMetrics:
-		enqueueFailedMeasure = or.telemetryBuilder.ExporterEnqueueFailedMetricPoints
+		or.telemetryBuilder.RecordExporterEnqueueFailedMetricPoints(ctx, failed, metric.WithAttributes(or.otelAttrs...))
 	case component.DataTypeLogs:
-		enqueueFailedMeasure = or.telemetryBuilder.ExporterEnqueueFailedLogRecords
+		or.telemetryBuilder.RecordExporterEnqueueFailedLogRecords(ctx, failed, metric.WithAttributes(or.otelAttrs...))
 	}
-
-	enqueueFailedMeasure.Add(ctx, failed, metric.WithAttributes(or.otelAttrs...))
 }

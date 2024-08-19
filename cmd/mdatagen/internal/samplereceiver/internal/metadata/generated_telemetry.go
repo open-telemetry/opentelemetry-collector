@@ -112,3 +112,11 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	errs = errors.Join(errs, err)
 	return &builder, errs
 }
+
+func (b *TelemetryBuilder) RecordBatchSizeTriggerSend(ctx context.Context, val int64, opts ...metric.AddOption) {
+	b.BatchSizeTriggerSend.Add(ctx, val, opts...)
+}
+
+func (b *TelemetryBuilder) RecordRequestDuration(ctx context.Context, val float64, opts ...metric.RecordOption) {
+	b.RequestDuration.Record(ctx, val, opts...)
+}

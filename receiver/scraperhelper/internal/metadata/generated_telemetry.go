@@ -3,6 +3,7 @@
 package metadata
 
 import (
+	"context"
 	"errors"
 
 	"go.opentelemetry.io/otel/metric"
@@ -71,4 +72,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs
+}
+
+func (b *TelemetryBuilder) RecordScraperErroredMetricPoints(ctx context.Context, val int64, opts ...metric.AddOption) {
+	b.ScraperErroredMetricPoints.Add(ctx, val, opts...)
+}
+
+func (b *TelemetryBuilder) RecordScraperScrapedMetricPoints(ctx context.Context, val int64, opts ...metric.AddOption) {
+	b.ScraperScrapedMetricPoints.Add(ctx, val, opts...)
 }
