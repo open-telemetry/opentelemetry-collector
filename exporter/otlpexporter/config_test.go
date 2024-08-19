@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -52,6 +53,16 @@ func TestUnmarshalConfig(t *testing.T) {
 				Enabled:      true,
 				NumConsumers: 2,
 				QueueSize:    10,
+			},
+			BatcherConfig: exporterbatcher.Config{
+				Enabled:      true,
+				FlushTimeout: 200 * time.Millisecond,
+				MinSizeConfig: exporterbatcher.MinSizeConfig{
+					MinSizeItems: 1000,
+				},
+				MaxSizeConfig: exporterbatcher.MaxSizeConfig{
+					MaxSizeItems: 10000,
+				},
 			},
 			ClientConfig: configgrpc.ClientConfig{
 				Headers: map[string]configopaque.String{

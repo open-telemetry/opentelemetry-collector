@@ -21,6 +21,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
@@ -443,8 +444,8 @@ func TestServiceFatalError(t *testing.T) {
 	})
 
 	go func() {
-		ev := component.NewFatalErrorEvent(assert.AnError)
-		srv.host.NotifyComponentStatusChange(&component.InstanceID{}, ev)
+		ev := componentstatus.NewFatalErrorEvent(assert.AnError)
+		srv.host.NotifyComponentStatusChange(&componentstatus.InstanceID{}, ev)
 	}()
 
 	err = <-srv.host.AsyncErrorChannel
