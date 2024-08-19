@@ -8,9 +8,11 @@ package sharedcomponent // import "go.opentelemetry.io/collector/internal/shared
 
 import (
 	"context"
+	"slices"
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 )
 
 func NewMap[K comparable, V component.Component]() *Map[K, V] {
@@ -31,17 +33,6 @@ func (m *Map[K, V]) LoadOrStore(key K, create func() (V, error), telemetrySettin
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	if c, ok := m.components[key]; ok {
-		// If we haven't already seen this telemetry settings, this shared component represents
-		// another instance. Wrap ReportStatus to report for all instances this shared
-		// component represents.
-		if _, ok := c.seenSettings[telemetrySettings]; !ok {
-			c.seenSettings[telemetrySettings] = struct{}{}
-			prev := c.telemetry.ReportStatus
-			c.telemetry.ReportStatus = func(ev *component.StatusEvent) {
-				telemetrySettings.ReportStatus(ev)
-				prev(ev)
-			}
-		}
 		return c, nil
 	}
 	comp, err := create()
@@ -57,9 +48,6 @@ func (m *Map[K, V]) LoadOrStore(key K, create func() (V, error), telemetrySettin
 			delete(m.components, key)
 		},
 		telemetry: telemetrySettings,
-		seenSettings: map[*component.TelemetrySettings]struct{}{
-			telemetrySettings: {},
-		},
 	}
 	m.components[key] = newComp
 	return newComp, nil
@@ -74,8 +62,9 @@ type Component[V component.Component] struct {
 	stopOnce   sync.Once
 	removeFunc func()
 
-	telemetry    *component.TelemetrySettings
-	seenSettings map[*component.TelemetrySettings]struct{}
+	telemetry *component.TelemetrySettings
+
+	hostWrapper *hostWrapper
 }
 
 // Unwrap returns the original component.
@@ -85,18 +74,76 @@ func (c *Component[V]) Unwrap() V {
 
 // Start starts the underlying component if it never started before.
 func (c *Component[V]) Start(ctx context.Context, host component.Host) error {
-	var err error
-	c.startOnce.Do(func() {
-		// It's important that status for a shared component is reported through its
-		// telemetry settings to keep status in sync and avoid race conditions. This logic duplicates
-		// and takes priority over the automated status reporting that happens in graph, making the
-		// status reporting in graph a no-op.
-		c.telemetry.ReportStatus(component.NewStatusEvent(component.StatusStarting))
-		if err = c.component.Start(ctx, host); err != nil {
-			c.telemetry.ReportStatus(component.NewPermanentErrorEvent(err))
-		}
-	})
-	return err
+	if c.hostWrapper == nil {
+		var err error
+		c.startOnce.Do(func() {
+			c.hostWrapper = &hostWrapper{
+				host:           host,
+				sources:        make([]componentstatus.Reporter, 0),
+				previousEvents: make([]*componentstatus.Event, 0),
+			}
+			statusReporter, isStatusReporter := host.(componentstatus.Reporter)
+			if isStatusReporter {
+				c.hostWrapper.addSource(statusReporter)
+			}
+
+			// It's important that status for a shared component is reported through its
+			// telemetry settings to keep status in sync and avoid race conditions. This logic duplicates
+			// and takes priority over the automated status reporting that happens in graph, making the
+			// status reporting in graph a no-op.
+			c.hostWrapper.Report(componentstatus.NewEvent(componentstatus.StatusStarting))
+			if err = c.component.Start(ctx, c.hostWrapper); err != nil {
+				c.hostWrapper.Report(componentstatus.NewPermanentErrorEvent(err))
+			}
+		})
+		return err
+	}
+	statusReporter, isStatusReporter := host.(componentstatus.Reporter)
+	if isStatusReporter {
+		c.hostWrapper.addSource(statusReporter)
+	}
+	return nil
+}
+
+var _ component.Host = (*hostWrapper)(nil)
+var _ componentstatus.Reporter = (*hostWrapper)(nil)
+
+type hostWrapper struct {
+	host           component.Host
+	sources        []componentstatus.Reporter
+	previousEvents []*componentstatus.Event
+	lock           sync.Mutex
+}
+
+func (h *hostWrapper) GetExtensions() map[component.ID]component.Component {
+	return h.host.GetExtensions()
+}
+
+func (h *hostWrapper) Report(e *componentstatus.Event) {
+	// Only remember an event if it will be emitted and it has not been sent already.
+	h.lock.Lock()
+	if len(h.sources) > 0 && !slices.Contains(h.previousEvents, e) {
+		h.previousEvents = append(h.previousEvents, e)
+	}
+	h.lock.Unlock()
+
+	h.lock.Lock()
+	for _, s := range h.sources {
+		s.Report(e)
+	}
+	h.lock.Unlock()
+}
+
+func (h *hostWrapper) addSource(s componentstatus.Reporter) {
+	h.lock.Lock()
+	for _, e := range h.previousEvents {
+		s.Report(e)
+	}
+	h.lock.Unlock()
+
+	h.lock.Lock()
+	h.sources = append(h.sources, s)
+	h.lock.Unlock()
 }
 
 // Shutdown shuts down the underlying component.
@@ -107,12 +154,16 @@ func (c *Component[V]) Shutdown(ctx context.Context) error {
 		// telemetry settings to keep status in sync and avoid race conditions. This logic duplicates
 		// and takes priority over the automated status reporting that happens in graph, making the
 		// status reporting in graph a no-op.
-		c.telemetry.ReportStatus(component.NewStatusEvent(component.StatusStopping))
+		if c.hostWrapper != nil {
+			c.hostWrapper.Report(componentstatus.NewEvent(componentstatus.StatusStopping))
+		}
 		err = c.component.Shutdown(ctx)
-		if err != nil {
-			c.telemetry.ReportStatus(component.NewPermanentErrorEvent(err))
-		} else {
-			c.telemetry.ReportStatus(component.NewStatusEvent(component.StatusStopped))
+		if c.hostWrapper != nil {
+			if err != nil {
+				c.hostWrapper.Report(componentstatus.NewPermanentErrorEvent(err))
+			} else {
+				c.hostWrapper.Report(componentstatus.NewEvent(componentstatus.StatusStopped))
+			}
 		}
 		c.removeFunc()
 	})

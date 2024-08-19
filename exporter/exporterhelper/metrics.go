@@ -146,16 +146,17 @@ func NewMetricsRequestExporter(
 
 type metricsSenderWithObservability struct {
 	baseRequestSender
-	obsrep *ObsReport
+	obsrep *obsReport
 }
 
-func newMetricsSenderWithObservability(obsrep *ObsReport) requestSender {
+func newMetricsSenderWithObservability(obsrep *obsReport) requestSender {
 	return &metricsSenderWithObservability{obsrep: obsrep}
 }
 
 func (mewo *metricsSenderWithObservability) send(ctx context.Context, req Request) error {
-	c := mewo.obsrep.StartMetricsOp(ctx)
+	c := mewo.obsrep.startMetricsOp(ctx)
+	numMetricDataPoints := req.ItemsCount()
 	err := mewo.nextSender.send(c, req)
-	mewo.obsrep.EndMetricsOp(c, req.ItemsCount(), err)
+	mewo.obsrep.endMetricsOp(c, numMetricDataPoints, err)
 	return err
 }

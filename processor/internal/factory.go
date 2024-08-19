@@ -8,6 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 )
 
 // Factory is a Factory interface for processors.
@@ -18,28 +19,39 @@ type Factory interface {
 	component.Factory
 
 	// CreateTracesProcessor creates a TracesProcessor based on this config.
-	// If the processor type does not support tracing or if the config is not valid,
-	// an error will be returned instead.
+	// If the processor type does not support traces,
+	// this function returns the error [component.ErrDataTypeIsNotSupported].
+	// Implementers can assume `nextConsumer` is never nil.
 	CreateTracesProcessor(ctx context.Context, set Settings, cfg component.Config, nextConsumer consumer.Traces) (Traces, error)
 
 	// TracesProcessorStability gets the stability level of the TracesProcessor.
 	TracesProcessorStability() component.StabilityLevel
 
 	// CreateMetricsProcessor creates a MetricsProcessor based on this config.
-	// If the processor type does not support metrics or if the config is not valid,
-	// an error will be returned instead.
+	// If the processor type does not support metrics,
+	// this function returns the error [component.ErrDataTypeIsNotSupported].
+	// Implementers can assume `nextConsumer` is never nil.
 	CreateMetricsProcessor(ctx context.Context, set Settings, cfg component.Config, nextConsumer consumer.Metrics) (Metrics, error)
 
 	// MetricsProcessorStability gets the stability level of the MetricsProcessor.
 	MetricsProcessorStability() component.StabilityLevel
 
 	// CreateLogsProcessor creates a LogsProcessor based on the config.
-	// If the processor type does not support logs or if the config is not valid,
-	// an error will be returned instead.
+	// If the processor type does not support logs,
+	// this function returns the error [component.ErrDataTypeIsNotSupported].
+	// Implementers can assume `nextConsumer` is never nil.
 	CreateLogsProcessor(ctx context.Context, set Settings, cfg component.Config, nextConsumer consumer.Logs) (Logs, error)
 
 	// LogsProcessorStability gets the stability level of the LogsProcessor.
 	LogsProcessorStability() component.StabilityLevel
+
+	// CreateProfilesProcessor creates a ProfilesProcessor based on this config.
+	// If the processor type does not support tracing or if the config is not valid,
+	// an error will be returned instead.
+	CreateProfilesProcessor(ctx context.Context, set Settings, cfg component.Config, nextConsumer consumerprofiles.Profiles) (Profiles, error)
+
+	// ProfilesProcessorStability gets the stability level of the ProfilesProcessor.
+	ProfilesProcessorStability() component.StabilityLevel
 
 	unexportedFactoryFunc()
 }
@@ -106,6 +118,21 @@ func (f CreateLogsFunc) CreateLogsProcessor(
 	return f(ctx, set, cfg, nextConsumer)
 }
 
+// CreateProfilesFunc is the equivalent of Factory.CreateProfiles().
+type CreateProfilesFunc func(context.Context, Settings, component.Config, consumerprofiles.Profiles) (Profiles, error)
+
+// CreateProfilesProcessor implements Factory.CreateProfilesProcessor().
+func (f CreateProfilesFunc) CreateProfilesProcessor(
+	ctx context.Context,
+	set Settings,
+	cfg component.Config,
+	nextConsumer consumerprofiles.Profiles) (Profiles, error) {
+	if f == nil {
+		return nil, component.ErrDataTypeIsNotSupported
+	}
+	return f(ctx, set, cfg, nextConsumer)
+}
+
 type factory struct {
 	cfgType component.Type
 	component.CreateDefaultConfigFunc
@@ -115,6 +142,8 @@ type factory struct {
 	metricsStabilityLevel component.StabilityLevel
 	CreateLogsFunc
 	logsStabilityLevel component.StabilityLevel
+	CreateProfilesFunc
+	profilesStabilityLevel component.StabilityLevel
 }
 
 func (f *factory) Type() component.Type {
@@ -133,6 +162,10 @@ func (f factory) MetricsProcessorStability() component.StabilityLevel {
 
 func (f factory) LogsProcessorStability() component.StabilityLevel {
 	return f.logsStabilityLevel
+}
+
+func (f factory) ProfilesProcessorStability() component.StabilityLevel {
+	return f.profilesStabilityLevel
 }
 
 // WithTraces overrides the default "error not supported" implementation for CreateTraces and the default "undefined" stability level.
@@ -156,6 +189,14 @@ func WithLogs(createLogs CreateLogsFunc, sl component.StabilityLevel) FactoryOpt
 	return factoryOptionFunc(func(o *factory) {
 		o.logsStabilityLevel = sl
 		o.CreateLogsFunc = createLogs
+	})
+}
+
+// WithProfiles overrides the default "error not supported" implementation for CreateProfiles and the default "undefined" stability level.
+func WithProfiles(createProfiles CreateProfilesFunc, sl component.StabilityLevel) FactoryOption {
+	return factoryOptionFunc(func(o *factory) {
+		o.profilesStabilityLevel = sl
+		o.CreateProfilesFunc = createProfiles
 	})
 }
 

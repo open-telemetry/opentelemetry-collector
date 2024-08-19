@@ -236,7 +236,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 		{
 			Name:        "otelcol_processor_batch_batch_send_size",
 			Description: "Number of units in the batch",
-			Unit:        "1",
+			Unit:        "{units}",
 			Data: metricdata.Histogram[int64]{
 				Temporality: metricdata.CumulativeTemporality,
 				DataPoints: []metricdata.HistogramDataPoint[int64]{
@@ -255,7 +255,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 		{
 			Name:        "otelcol_processor_batch_batch_size_trigger_send",
 			Description: "Number of times the batch was sent due to a size trigger",
-			Unit:        "1",
+			Unit:        "{times}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
 				IsMonotonic: true,
@@ -270,7 +270,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 		{
 			Name:        "otelcol_processor_batch_metadata_cardinality",
 			Description: "Number of distinct metadata value combinations being processed",
-			Unit:        "1",
+			Unit:        "{combinations}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
 				IsMonotonic: false,
@@ -362,7 +362,7 @@ func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
 		{
 			Name:        "otelcol_processor_batch_batch_send_size",
 			Description: "Number of units in the batch",
-			Unit:        "1",
+			Unit:        "{units}",
 			Data: metricdata.Histogram[int64]{
 				Temporality: metricdata.CumulativeTemporality,
 				DataPoints: []metricdata.HistogramDataPoint[int64]{
@@ -381,7 +381,7 @@ func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
 		{
 			Name:        "otelcol_processor_batch_batch_size_trigger_send",
 			Description: "Number of times the batch was sent due to a size trigger",
-			Unit:        "1",
+			Unit:        "{times}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
 				IsMonotonic: true,
@@ -396,7 +396,7 @@ func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
 		{
 			Name:        "otelcol_processor_batch_timeout_trigger_send",
 			Description: "Number of times the batch was sent due to a timeout trigger",
-			Unit:        "1",
+			Unit:        "{times}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
 				IsMonotonic: true,
@@ -411,7 +411,7 @@ func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
 		{
 			Name:        "otelcol_processor_batch_metadata_cardinality",
 			Description: "Number of distinct metadata value combinations being processed",
-			Unit:        "1",
+			Unit:        "{combinations}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
 				IsMonotonic: false,
@@ -625,7 +625,7 @@ func TestBatchMetricProcessorBatchSize(t *testing.T) {
 		{
 			Name:        "otelcol_processor_batch_batch_send_size",
 			Description: "Number of units in the batch",
-			Unit:        "1",
+			Unit:        "{units}",
 			Data: metricdata.Histogram[int64]{
 				Temporality: metricdata.CumulativeTemporality,
 				DataPoints: []metricdata.HistogramDataPoint[int64]{
@@ -644,7 +644,7 @@ func TestBatchMetricProcessorBatchSize(t *testing.T) {
 		{
 			Name:        "otelcol_processor_batch_batch_size_trigger_send",
 			Description: "Number of times the batch was sent due to a size trigger",
-			Unit:        "1",
+			Unit:        "{times}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
 				IsMonotonic: true,
@@ -659,7 +659,7 @@ func TestBatchMetricProcessorBatchSize(t *testing.T) {
 		{
 			Name:        "otelcol_processor_batch_metadata_cardinality",
 			Description: "Number of distinct metadata value combinations being processed",
-			Unit:        "1",
+			Unit:        "{combinations}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
 				IsMonotonic: false,
@@ -1005,7 +1005,7 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 		{
 			Name:        "otelcol_processor_batch_batch_send_size",
 			Description: "Number of units in the batch",
-			Unit:        "1",
+			Unit:        "{units}",
 			Data: metricdata.Histogram[int64]{
 				Temporality: metricdata.CumulativeTemporality,
 				DataPoints: []metricdata.HistogramDataPoint[int64]{
@@ -1024,7 +1024,7 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 		{
 			Name:        "otelcol_processor_batch_batch_size_trigger_send",
 			Description: "Number of times the batch was sent due to a size trigger",
-			Unit:        "1",
+			Unit:        "{times}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
 				IsMonotonic: true,
@@ -1039,7 +1039,7 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 		{
 			Name:        "otelcol_processor_batch_metadata_cardinality",
 			Description: "Number of distinct metadata value combinations being processed",
-			Unit:        "1",
+			Unit:        "{combinations}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
 				IsMonotonic: false,

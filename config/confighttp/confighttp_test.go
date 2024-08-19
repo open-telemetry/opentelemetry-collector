@@ -762,7 +762,7 @@ func TestHttpCors(t *testing.T) {
 		},
 		{
 			name:             "emptyCORS",
-			CORSConfig:       &CORSConfig{},
+			CORSConfig:       NewDefaultCORSConfig(),
 			allowedWorks:     false,
 			disallowedWorks:  false,
 			extraHeaderWorks: false,
@@ -866,7 +866,7 @@ func TestHttpCorsWithSettings(t *testing.T) {
 			AllowedOrigins: []string{"*"},
 		},
 		Auth: &AuthConfig{
-			Authentication: &configauth.Authentication{
+			Authentication: configauth.Authentication{
 				AuthenticatorID: mockID,
 			},
 		},
@@ -1009,9 +1009,9 @@ func verifyHeadersResp(t *testing.T, url string, expected map[string]configopaqu
 }
 
 func ExampleServerConfig() {
-	settings := ServerConfig{
-		Endpoint: "localhost:443",
-	}
+	settings := NewDefaultServerConfig()
+	settings.Endpoint = "localhost:443"
+
 	s, err := settings.ToServer(
 		context.Background(),
 		componenttest.NewNopHost(),
@@ -1171,7 +1171,7 @@ func TestServerAuth(t *testing.T) {
 	hss := ServerConfig{
 		Endpoint: "localhost:0",
 		Auth: &AuthConfig{
-			Authentication: &configauth.Authentication{
+			Authentication: configauth.Authentication{
 				AuthenticatorID: mockID,
 			},
 		},
@@ -1207,7 +1207,7 @@ func TestServerAuth(t *testing.T) {
 func TestInvalidServerAuth(t *testing.T) {
 	hss := ServerConfig{
 		Auth: &AuthConfig{
-			Authentication: &configauth.Authentication{
+			Authentication: configauth.Authentication{
 				AuthenticatorID: nonExistingID,
 			},
 		},
@@ -1223,7 +1223,7 @@ func TestFailedServerAuth(t *testing.T) {
 	hss := ServerConfig{
 		Endpoint: "localhost:0",
 		Auth: &AuthConfig{
-			Authentication: &configauth.Authentication{
+			Authentication: configauth.Authentication{
 				AuthenticatorID: mockID,
 			},
 		},
@@ -1283,9 +1283,8 @@ func TestServerWithErrorHandler(t *testing.T) {
 
 func TestServerWithDecoder(t *testing.T) {
 	// prepare
-	hss := ServerConfig{
-		Endpoint: "localhost:0",
-	}
+	hss := NewDefaultServerConfig()
+	hss.Endpoint = "localhost:0"
 	decoder := func(body io.ReadCloser) (io.ReadCloser, error) {
 		return body, nil
 	}
@@ -1405,7 +1404,7 @@ func TestAuthWithQueryParams(t *testing.T) {
 		Endpoint: "localhost:0",
 		Auth: &AuthConfig{
 			RequestParameters: []string{"auth"},
-			Authentication: &configauth.Authentication{
+			Authentication: configauth.Authentication{
 				AuthenticatorID: mockID,
 			},
 		},
@@ -1551,4 +1550,15 @@ func BenchmarkHttpRequest(b *testing.B) {
 			<-time.After(10 * time.Millisecond)
 		})
 	}
+}
+
+func TestDefaultHTTPServerSettings(t *testing.T) {
+	httpServerSettings := NewDefaultServerConfig()
+	assert.NotNil(t, httpServerSettings.ResponseHeaders)
+	assert.NotNil(t, httpServerSettings.CORS)
+	assert.NotNil(t, httpServerSettings.TLSSetting)
+	assert.Equal(t, 1*time.Minute, httpServerSettings.IdleTimeout)
+	assert.Equal(t, 30*time.Second, httpServerSettings.WriteTimeout)
+	assert.Equal(t, time.Duration(0), httpServerSettings.ReadTimeout)
+	assert.Equal(t, 1*time.Minute, httpServerSettings.ReadHeaderTimeout)
 }

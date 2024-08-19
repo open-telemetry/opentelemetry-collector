@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("memory_limiter")
+	Type      = component.MustNewType("memory_limiter")
+	ScopeName = "go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 )
 
 const (

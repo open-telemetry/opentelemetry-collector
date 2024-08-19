@@ -11,14 +11,14 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/extension"
 )
 
 func TestStatusWatcherExtension(t *testing.T) {
 	statusChanged := false
 	factory := NewStatusWatcherExtensionFactory(
-		func(*component.InstanceID, *component.StatusEvent) {
+		func(*componentstatus.InstanceID, *componentstatus.Event) {
 			statusChanged = true
 		},
 	)
@@ -32,7 +32,7 @@ func TestStatusWatcherExtension(t *testing.T) {
 	assert.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
 	assert.False(t, statusChanged)
 
-	ext.(extension.StatusWatcher).ComponentStatusChanged(&component.InstanceID{}, &component.StatusEvent{})
+	ext.(componentstatus.Watcher).ComponentStatusChanged(&componentstatus.InstanceID{}, &componentstatus.Event{})
 
 	assert.True(t, statusChanged)
 	assert.NoError(t, ext.Shutdown(context.Background()))

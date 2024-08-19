@@ -7,6 +7,95 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.13.0/v0.107.0
+
+### 🛑 Breaking changes 🛑
+
+- `service`: Remove OpenCensus bridge completely, mark feature gate as stable. (#10414)
+- `confmap`: Set the `confmap.unifyEnvVarExpansion` feature gate to Stable. Expansion of `$FOO` env vars is no longer supported.  Use `${FOO}` or `${env:FOO}` instead. (#10508)
+
+### 💡 Enhancements 💡
+
+- `mdatagen`: export ScopeName in internal/metadata package (#10845)
+  This can be used by components that need to set their scope name manually. Will save component owners from having to store a variable, which may diverge from the scope name used by the component for emitting its own telemetry.
+- `semconv`: Add v1.26.0 semantic conventions package (#10249, #10829)
+- `mdatagen`: Expose a setting on tests::host to set up your own host initialization code (#10765)
+  Some receivers require a host that has additional capabilities such as exposing exporters.
+  For those, we can expose a setting that allows them to place a different host in the generated code.
+  
+- `confmap`: Allow using any YAML structure as a string when loading configuration. (#10800)
+  Previous to this change, slices could not be used as strings in configuration.
+  
+- `ocb`: migrate build and release of ocb binaries to opentelemetry-collector-releases repository (#10710)
+  ocb binaries will now be released under open-telemetry/opentelemetry-collector-releases tagged as "cmd/builder/vX.XXX.X"
+- `semconv`: Add semantic conventions version v1.27.0 (#10837)
+- `client`: Mark module as stable. (#10775)
+
+### 🧰 Bug fixes 🧰
+
+- `configtelemetry`: Add 10s read header timeout on the configtelemetry Prometheus HTTP server. (#5699)
+- `service`: Allow users to disable the tracer provider via the feature gate `service.noopTracerProvider` (#10858)
+  The service is returning an instance of a SDK tracer provider regardless of whether there were any processors configured causing resources to be consumed unnecessarily.
+- `processorhelper`: Fix processor metrics not being reported initially with 0 values. (#10855)
+- `service`: Implement the `temporality_preference` setting for internal telemetry exported via OTLP (#10745)
+- `configauth`: Fix unmarshaling of authentication in HTTP servers. (#10750)
+- `confmap`: If loading an invalid YAML string through a provider, use it verbatim instead of erroring out. (#10759)
+  This makes the ${env:ENV} syntax closer to how ${ENV} worked before unifying syntaxes.
+  
+- `component`: Allow component names of up to 1024 characters in length. (#10816)
+- `confmap`: Remove original string representation if invalid. (#10787)
+
+## v0.106.1
+
+### 🧰 Bug fixes 🧰
+
+- `configauth`: Fix unmarshaling of authentication in HTTP servers. (#10750)
+
+## v0.106.0
+
+### 🛑 Breaking changes 🛑
+
+- `service`: Update all metrics to include `otelcol_` prefix to ensure consistency across OTLP and Prometheus metrics (#9759)
+  This change is marked as a breaking change as anyone that was using OTLP for metrics will
+  see the new prefix which was not present before. Prometheus generated metrics remain
+  unchanged.
+  
+- `confighttp`: Delete `ClientConfig.CustomRoundTripper` (#8627)
+  Set (*http.Client).Transport on the *http.Client returned from ToClient to configure this.
+- `confmap`: When passing configuration for a string field using any provider, use the verbatim string representation as the value. (#10605, #10405)
+  This matches the behavior of `${ENV}` syntax prior to the promotion of the `confmap.unifyEnvVarExpansion` feature gate
+  to beta. It changes the behavior of the `${env:ENV}` syntax with escaped strings.
+  
+- `component`: Adds restrictions on the character set for component.ID name. (#10673)
+- `processor/memorylimiter`: The memory limiter processor will no longer account for ballast size. (#10696)
+  If you are already using GOMEMLIMIT instead of the ballast extension this does not affect you.
+- `extension/memorylimiter`: The memory limiter extension will no longer account for ballast size. (#10696)
+  If you are already using GOMEMLIMIT instead of the ballast extension this does not affect you.
+- `service`: The service will no longer be able to get a ballast size from the deprecated ballast extension. (#10696)
+  If you are already using GOMEMLIMIT instead of the ballast extension this does not affect you.
+
+### 🚀 New components 🚀
+
+- `client`: Create a new go module `go.opentelemetry.io/collector/client` (#9804)
+  This module contains generic representations of clients connecting to different receivers.
+
+### 💡 Enhancements 💡
+
+- `exporterhelper`: Add data_type attribute to `otelcol_exporter_queue_size` metric to report the type of data being processed. (#9943)
+- `confighttp`: Add option to include query params in auth context (#4806)
+- `configgrpc`: gRPC auth errors now return gRPC status code UNAUTHENTICATED (16) (#7646)
+- `httpprovider, httpsprovider`: Validate URIs in HTTP and HTTPS providers before fetching. (#10468)
+
+### 🧰 Bug fixes 🧰
+
+- `processorhelper`: update units for internal telemetry (#10647)
+- `confmap`: Increase the amount of recursion and URI expansions allowed in a single line (#10712)
+- `exporterhelper`: There is no guarantee that after the exporterhelper sends the plog/pmetric/ptrace data downstream that the data won't be mutated in some way. (e.g by the batch_sender) This mutation could result in the proceeding call to req.ItemsCount() to provide inaccurate information to be logged. (#10033)
+- `exporterhelper`: Update units for internal telemetry (#10648)
+- `receiverhelper`: Update units for internal telemetry (#10650)
+- `scraperhelper`: Update units for internal telemetry (#10649)
+- `service`: Use Command/Version to populate service name/version attributes (#10644)
+
 ## v1.12.0/v0.105.0
 
 ### 🛑 Breaking changes 🛑
