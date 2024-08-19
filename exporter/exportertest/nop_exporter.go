@@ -60,3 +60,14 @@ type nopExporter struct {
 	component.ShutdownFunc
 	consumertest.Consumer
 }
+
+// NewNopBuilder returns an exporter.Builder that constructs nop receivers.
+//
+// Deprecated: this builder is being internalized within the service module,
+// and will be removed soon.
+func NewNopBuilder() *exporter.Builder {
+	nopFactory := NewNopFactory()
+	return exporter.NewBuilder(
+		map[component.ID]component.Config{component.NewID(nopType): nopFactory.CreateDefaultConfig()},
+		map[component.Type]exporter.Factory{nopType: nopFactory})
+}
