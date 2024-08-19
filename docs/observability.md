@@ -70,7 +70,7 @@ Telemetry produced by the Collector has the following properties:
 
 - metrics produced by Collector components use the prefix `otelcol_`
 - metrics produced by any instrumentation library used by Collector components will *not* be prefixed with `otelcol_`
-- code is instrumented using the OpenTelemetry API and telemetry is produced via the OpenTelemetry Go SDK
+- code is instrumented using the OpenTelemetry API for metrics, and traces. Logs are instrumented using zap. Telemetry is collected and produced via the OpenTelemetry Go SDK
 - instrumentation scope defaults to the package name of the component recording telemetry. It can be configured
   via the `scope_name` option in mdatagen, but the recommendation is to keep the default
 - metrics are defined via `metadata.yaml` except in components that have specific cases where
