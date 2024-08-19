@@ -5,7 +5,7 @@ package exportertest // import "go.opentelemetry.io/collector/exporter/exportert
 import (
 	"context"
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"sync"
 
 	"google.golang.org/grpc/codes"

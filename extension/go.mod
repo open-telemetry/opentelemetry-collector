@@ -6,6 +6,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.107.0
+	go.opentelemetry.io/collector/component/componentstatus v0.0.0-20240731165531-6d32c09daf9f
 	go.opentelemetry.io/collector/confmap v0.107.0
 	go.uber.org/goleak v1.3.0
 )
@@ -55,3 +56,5 @@ replace go.opentelemetry.io/collector/confmap => ../confmap
 replace go.opentelemetry.io/collector/pdata => ../pdata
 
 replace go.opentelemetry.io/collector/config/configtelemetry => ../config/configtelemetry
+
+replace go.opentelemetry.io/collector/component/componentstatus => ../component/componentstatus

@@ -14,6 +14,7 @@ require (
 	github.com/shirou/gopsutil/v4 v4.24.7
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.107.0
+	go.opentelemetry.io/collector/component/componentstatus v0.107.0
 	go.opentelemetry.io/collector/confmap v0.107.0
 	go.opentelemetry.io/collector/consumer v0.107.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.107.0
@@ -89,6 +90,8 @@ require (
 )
 
 replace go.opentelemetry.io/collector/component => ./component
+
+replace go.opentelemetry.io/collector/component/componentstatus => ./component/componentstatus
 
 replace go.opentelemetry.io/collector/confmap => ./confmap
 
