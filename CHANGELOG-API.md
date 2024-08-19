@@ -7,6 +7,33 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.13.0/v0.107.0
+
+### 🛑 Breaking changes 🛑
+
+- `otelcol`: Delete deprecated NewCommandMustSetProvider (#10778)
+- `component`: Removes the deprecated `Host.GetFactory` method. (#10771)
+- `otelcoltest`: The `otelcol.LoadConfig` method no longer sets the `expandconverter`. (#10510)
+- `ocb`: Collectors built with OCB will no longer include the `expandconverter` (#10510)
+- `exporterhelper`: Delete deprecated `exporterhelper.ObsReport` and `exporterhelper.NewObsReport` (#10779, #10592)
+
+### 🚩 Deprecations 🚩
+
+- `expandconverter`: Deprecate `expandconverter`. (#10510)
+
+### 🚀 New components 🚀
+
+- `componentstatus`: Adds new componentstatus module that will soon replace status content in component. (#10730)
+- `connector/connectorprofiles`: Allow handling profiles in connector. (#10703)
+- `exporter/exporterprofiles`: Allow handling profiles in exporter. (#10702)
+- `processor/processorprofiles`: Allow handling profiles in processor. (#10691)
+- `receiver/receiverprofiles`: Allow handling profiles in receiver. (#10690)
+
+### 💡 Enhancements 💡
+
+- `confmap`: Check that providers have a correct scheme when building a confmap.Resolver. (#10786)
+- `confighttp`: Add `NewDefaultCORSConfig` function to initialize the default `confighttp.CORSConfig` (#9655)
+
 ## v0.106.0
 
 ### 🛑 Breaking changes 🛑

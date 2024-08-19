@@ -280,6 +280,7 @@ func TestLoadMetadata(t *testing.T) {
 				},
 				ScopeName:       "go.opentelemetry.io/collector/internal/receiver/samplereceiver",
 				ShortFolderName: "sample",
+				Tests:           tests{Host: "componenttest.NewNopHost()"},
 			},
 		},
 		{
@@ -289,6 +290,7 @@ func TestLoadMetadata(t *testing.T) {
 				Parent:          "parentComponent",
 				ScopeName:       "go.opentelemetry.io/collector/cmd/mdatagen",
 				ShortFolderName: "testdata",
+				Tests:           tests{Host: "componenttest.NewNopHost()"},
 			},
 		},
 		{

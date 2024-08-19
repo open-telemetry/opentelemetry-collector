@@ -229,6 +229,7 @@ type tests struct {
 	SkipShutdown        bool   `mapstructure:"skip_shutdown"`
 	GoLeak              goLeak `mapstructure:"goleak"`
 	ExpectConsumerError bool   `mapstructure:"expect_consumer_error"`
+	Host                string `mapstructure:"host"`
 }
 
 type telemetry struct {
@@ -257,7 +258,7 @@ type metadata struct {
 	ScopeName string `mapstructure:"scope_name"`
 	// ShortFolderName is the shortened folder name of the component, removing class if present
 	ShortFolderName string `mapstructure:"-"`
-
+	// Tests is the set of tests generated with the component
 	Tests tests `mapstructure:"tests"`
 }
 
@@ -285,7 +286,7 @@ func loadMetadata(filePath string) (metadata, error) {
 		return metadata{}, err
 	}
 
-	md := metadata{ShortFolderName: shortFolderName(filePath)}
+	md := metadata{ShortFolderName: shortFolderName(filePath), Tests: tests{Host: "componenttest.NewNopHost()"}}
 	if err = conf.Unmarshal(&md); err != nil {
 		return md, err
 	}
