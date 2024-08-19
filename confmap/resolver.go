@@ -96,7 +96,17 @@ func NewResolver(set ResolverSettings) (*Resolver, error) {
 	providers := make(map[string]Provider, len(set.ProviderFactories))
 	for _, factory := range set.ProviderFactories {
 		provider := factory.Create(set.ProviderSettings)
-		providers[provider.Scheme()] = provider
+		scheme := provider.Scheme()
+		// Check that the scheme follows the pattern.
+		if !regexp.MustCompile(schemePattern).MatchString(scheme) {
+			return nil, fmt.Errorf("invalid 'confmap.Provider' scheme %q", scheme)
+		}
+		// Check that the scheme is unique.
+		if _, ok := providers[scheme]; ok {
+			return nil, fmt.Errorf("duplicate 'confmap.Provider' scheme %q", scheme)
+		}
+
+		providers[scheme] = provider
 	}
 
 	if set.DefaultScheme != "" {
@@ -171,7 +181,7 @@ func (mr *Resolver) Resolve(ctx context.Context) (*Conf, error) {
 		if err != nil {
 			return nil, err
 		}
-		cfgMap[k] = val
+		cfgMap[k] = escapeDollarSigns(val)
 	}
 	retMap = NewFromStringMap(cfgMap)
 
@@ -183,6 +193,31 @@ func (mr *Resolver) Resolve(ctx context.Context) (*Conf, error) {
 	}
 
 	return retMap, nil
+}
+
+func escapeDollarSigns(val any) any {
+	switch v := val.(type) {
+	case string:
+		return strings.ReplaceAll(v, "$$", "$")
+	case expandedValue:
+		v.Original = strings.ReplaceAll(v.Original, "$$", "$")
+		v.Value = escapeDollarSigns(v.Value)
+		return v
+	case []any:
+		nslice := make([]any, len(v))
+		for i, x := range v {
+			nslice[i] = escapeDollarSigns(x)
+		}
+		return nslice
+	case map[string]any:
+		nmap := make(map[string]any, len(v))
+		for k, x := range v {
+			nmap[k] = escapeDollarSigns(x)
+		}
+		return nmap
+	default:
+		return val
+	}
 }
 
 // Watch blocks until any configuration change was detected or an unrecoverable error

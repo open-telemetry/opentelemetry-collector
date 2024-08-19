@@ -41,7 +41,7 @@ func (b *baseRequestSender) setNextSender(nextSender requestSender) {
 	b.nextSender = nextSender
 }
 
-type obsrepSenderFactory func(obsrep *ObsReport) requestSender
+type obsrepSenderFactory func(obsrep *obsReport) requestSender
 
 // Option apply changes to baseExporter.
 type Option func(*baseExporter) error
@@ -232,7 +232,7 @@ type baseExporter struct {
 	unmarshaler exporterqueue.Unmarshaler[Request]
 
 	set    exporter.Settings
-	obsrep *ObsReport
+	obsrep *obsReport
 
 	// Message for the user to be added with an export failure message.
 	exportFailureMessage string
@@ -250,7 +250,7 @@ type baseExporter struct {
 }
 
 func newBaseExporter(set exporter.Settings, signal component.DataType, osf obsrepSenderFactory, options ...Option) (*baseExporter, error) {
-	obsReport, err := NewObsReport(ObsReportSettings{ExporterID: set.ID, ExporterCreateSettings: set, DataType: signal})
+	obsReport, err := newObsReport(obsReportSettings{exporterID: set.ID, exporterCreateSettings: set, dataType: signal})
 	if err != nil {
 		return nil, err
 	}

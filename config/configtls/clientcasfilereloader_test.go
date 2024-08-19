@@ -106,7 +106,7 @@ func (r *testLoader) loadClientCAFile() (*x509.CertPool, error) {
 }
 
 func (r *testLoader) returnErrorOnSubsequentCalls(msg string) {
-	r.err.Store(fmt.Errorf(msg))
+	r.err.Store(fmt.Errorf("%s", msg))
 }
 
 func (r *testLoader) reloadNumber() int {

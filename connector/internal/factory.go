@@ -389,11 +389,11 @@ func (f CreateProfilesToLogsFunc) CreateProfilesToLogs(
 }
 
 // Type returns the type of component.
-func (f *factory) Type() component.Type {
+func (f factory) Type() component.Type {
 	return f.cfgType
 }
 
-func (f *factory) unexportedFactoryFunc() {}
+func (f factory) unexportedFactoryFunc() {}
 
 func (f factory) TracesToTracesStability() component.StabilityLevel {
 	return f.tracesToTracesStabilityLevel
