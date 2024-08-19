@@ -51,19 +51,13 @@ type TelemetryBuilder struct {
 // telemetryBuilderOption applies changes to default builder.
 type telemetryBuilderOption func(*TelemetryBuilder)
 
-// WithLevel sets the current telemetry level for the component.
-func WithLevel(lvl configtelemetry.Level) telemetryBuilderOption {
-    return func(builder *TelemetryBuilder) {
-        builder.level = lvl
-    }
-}
-
 {{- range $name, $metric := .Telemetry.Metrics }}
 {{- if $metric.Optional }}
 // Init{{ $name.Render }} configures the {{ $name.Render }} metric.
 func (builder *TelemetryBuilder) Init{{ $name.Render }}({{ if $metric.Data.Async -}}cb func() {{ $metric.Data.BasicType }}{{- end }}, opts ...metric.ObserveOption) error {
     var err error
-    builder.{{ $name.Render }}, err = builder.meter.{{ $metric.Data.Instrument }}(
+    meter := LeveledMeter(settings, configtelemetry.Level{{ casesTitle $metric.Level.String }})
+    builder.{{ $name.Render }}, err = meter.{{ $metric.Data.Instrument }}(
         "otelcol_{{ $name }}",
         metric.WithDescription("{{ $metric.Description }}"),
         metric.WithUnit("{{ $metric.Unit }}"),
@@ -75,7 +69,7 @@ func (builder *TelemetryBuilder) Init{{ $name.Render }}({{ if $metric.Data.Async
     if err != nil {
         return err
     }
-    _, err = builder.meter.RegisterCallback(func(_ context.Context, o metric.Observer) error {
+    _, err = meter.RegisterCallback(func(_ context.Context, o metric.Observer) error {
         o.Observe{{ casesTitle $metric.Data.BasicType }}(builder.{{ $name.Render }}, cb(), opts...)
         return nil
     }, builder.{{ $name.Render }})
@@ -107,15 +101,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 		op(&builder)
 	}
     var err, errs error
-    if builder.level >= configtelemetry.Level{{ casesTitle .Telemetry.Level.String }} {
-        builder.meter = Meter(settings)
-    } else {
-        builder.meter = noop.Meter{}
-    }
-    
+
+    var meter metric.Meter
     {{- range $name, $metric := .Telemetry.Metrics }}
     {{- if not $metric.Optional }}
-    builder.{{ $name.Render }}, err = builder.meter.{{ $metric.Data.Instrument }}(
+    meter = LeveledMeter(settings, configtelemetry.Level{{ casesTitle $metric.Level.String }})
+    builder.{{ $name.Render }}, err = meter.{{ $metric.Data.Instrument }}(
         "otelcol_{{ $name }}",
         metric.WithDescription("{{ $metric.Description }}"),
         metric.WithUnit("{{ $metric.Unit }}"),
@@ -125,7 +116,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
     )
     errs = errors.Join(errs, err)
     {{- if $metric.Data.Async }}
-    _, err = builder.meter.RegisterCallback(builder.observe{{ $name.Render }}, builder.{{ $name.Render }})
+    _, err = meter.RegisterCallback(builder.observe{{ $name.Render }}, builder.{{ $name.Render }})
     errs = errors.Join(errs, err)
     {{- end }}
     {{- end }}
