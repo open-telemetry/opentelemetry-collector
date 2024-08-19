@@ -57,7 +57,7 @@ Collector must be assessed.
 ### Configurable level of observability
 
 Some metrics and traces can be high volume and users might not always want to
-observe them. An observability verboseness “level” allows configuration of the
+observe them. An observability verbosity “level” allows configuration of the
 Collector to send more or less observability data or with even finer
 granularity, to allow turning on or off specific metrics.
 
@@ -77,7 +77,7 @@ Telemetry produced by the Collector has the following properties:
   it is not possible to do so. See the [issue](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33523)
   which list such components
 - whenever possible, components should leverage core components or helper libraries to capture
-  telemetry, ensuring that all components of the collector can be consistently observed
+  telemetry, ensuring that all components of the Collector can be consistently observed
 - telemetry produced by components should include attributes that identify specific instances
   of the components
 
