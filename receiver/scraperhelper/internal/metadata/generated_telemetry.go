@@ -31,7 +31,7 @@ type TelemetryBuilder struct {
 	meter                      metric.Meter
 	ScraperErroredMetricPoints metric.Int64Counter
 	ScraperScrapedMetricPoints metric.Int64Counter
-	level                      configtelemetry.Level
+	meters                     map[configtelemetry.Level]metric.Meter
 }
 
 // telemetryBuilderOption applies changes to default builder.
@@ -40,22 +40,19 @@ type telemetryBuilderOption func(*TelemetryBuilder)
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
 // for a component
 func NewTelemetryBuilder(settings component.TelemetrySettings, options ...telemetryBuilderOption) (*TelemetryBuilder, error) {
-	builder := TelemetryBuilder{level: configtelemetry.LevelBasic}
+	builder := TelemetryBuilder{meters: map[configtelemetry.Level]metric.Meter{}}
 	for _, op := range options {
 		op(&builder)
 	}
+	builder.meters[configtelemetry.LevelBasic] = LeveledMeter(settings, configtelemetry.LevelBasic)
 	var err, errs error
-
-	var meter metric.Meter
-	meter = LeveledMeter(settings, configtelemetry.LevelBasic)
-	builder.ScraperErroredMetricPoints, err = meter.Int64Counter(
+	builder.ScraperErroredMetricPoints, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_scraper_errored_metric_points",
 		metric.WithDescription("Number of metric points that were unable to be scraped."),
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
-	meter = LeveledMeter(settings, configtelemetry.LevelBasic)
-	builder.ScraperScrapedMetricPoints, err = meter.Int64Counter(
+	builder.ScraperScrapedMetricPoints, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_scraper_scraped_metric_points",
 		metric.WithDescription("Number of metric points successfully scraped."),
 		metric.WithUnit("{datapoints}"),

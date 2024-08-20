@@ -35,6 +35,7 @@ import (
 	"go.opentelemetry.io/collector/extension/auth/authtest"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/localhostgate"
+	"go.opentelemetry.io/otel/metric"
 )
 
 type customRoundTripper struct {
@@ -52,7 +53,7 @@ var (
 	dummyID       = component.MustNewID("dummy")
 	nonExistingID = component.MustNewID("nonexisting")
 	// Omit TracerProvider and MeterProvider in TelemetrySettings as otelhttp.Transport cannot be introspected
-	nilProvidersSettings = component.TelemetrySettings{Logger: zap.NewNop(), MetricsLevel: configtelemetry.LevelNone}
+	nilProvidersSettings = component.TelemetrySettings{Logger: zap.NewNop(), MetricsLevel: configtelemetry.LevelNone, LeveledMeterProvider: func(level configtelemetry.Level) metric.MeterProvider { return nil }}
 )
 
 func TestAllHTTPClientSettings(t *testing.T) {

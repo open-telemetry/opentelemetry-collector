@@ -242,6 +242,14 @@ type telemetry struct {
 	Metrics map[metricName]metric `mapstructure:"metrics"`
 }
 
+func (t telemetry) Levels() map[string]interface{} {
+	levels := map[string]interface{}{}
+	for _, m := range t.Metrics {
+		levels[m.Level.String()] = nil
+	}
+	return levels
+}
+
 type metadata struct {
 	// Type of the component.
 	Type string `mapstructure:"type"`

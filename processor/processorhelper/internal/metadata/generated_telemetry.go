@@ -41,7 +41,7 @@ type TelemetryBuilder struct {
 	ProcessorRefusedLogRecords    metric.Int64Counter
 	ProcessorRefusedMetricPoints  metric.Int64Counter
 	ProcessorRefusedSpans         metric.Int64Counter
-	level                         configtelemetry.Level
+	meters                        map[configtelemetry.Level]metric.Meter
 }
 
 // telemetryBuilderOption applies changes to default builder.
@@ -50,92 +50,79 @@ type telemetryBuilderOption func(*TelemetryBuilder)
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
 // for a component
 func NewTelemetryBuilder(settings component.TelemetrySettings, options ...telemetryBuilderOption) (*TelemetryBuilder, error) {
-	builder := TelemetryBuilder{level: configtelemetry.LevelBasic}
+	builder := TelemetryBuilder{meters: map[configtelemetry.Level]metric.Meter{}}
 	for _, op := range options {
 		op(&builder)
 	}
+	builder.meters[configtelemetry.LevelBasic] = LeveledMeter(settings, configtelemetry.LevelBasic)
 	var err, errs error
-
-	var meter metric.Meter
-	meter = LeveledMeter(settings, configtelemetry.LevelBasic)
-	builder.ProcessorAcceptedLogRecords, err = meter.Int64Counter(
+	builder.ProcessorAcceptedLogRecords, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_processor_accepted_log_records",
 		metric.WithDescription("Number of log records successfully pushed into the next component in the pipeline."),
 		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
-	meter = LeveledMeter(settings, configtelemetry.LevelBasic)
-	builder.ProcessorAcceptedMetricPoints, err = meter.Int64Counter(
+	builder.ProcessorAcceptedMetricPoints, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_processor_accepted_metric_points",
 		metric.WithDescription("Number of metric points successfully pushed into the next component in the pipeline."),
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
-	meter = LeveledMeter(settings, configtelemetry.LevelBasic)
-	builder.ProcessorAcceptedSpans, err = meter.Int64Counter(
+	builder.ProcessorAcceptedSpans, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_processor_accepted_spans",
 		metric.WithDescription("Number of spans successfully pushed into the next component in the pipeline."),
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
-	meter = LeveledMeter(settings, configtelemetry.LevelBasic)
-	builder.ProcessorDroppedLogRecords, err = meter.Int64Counter(
+	builder.ProcessorDroppedLogRecords, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_processor_dropped_log_records",
 		metric.WithDescription("Number of log records that were dropped."),
 		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
-	meter = LeveledMeter(settings, configtelemetry.LevelBasic)
-	builder.ProcessorDroppedMetricPoints, err = meter.Int64Counter(
+	builder.ProcessorDroppedMetricPoints, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_processor_dropped_metric_points",
 		metric.WithDescription("Number of metric points that were dropped."),
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
-	meter = LeveledMeter(settings, configtelemetry.LevelBasic)
-	builder.ProcessorDroppedSpans, err = meter.Int64Counter(
+	builder.ProcessorDroppedSpans, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_processor_dropped_spans",
 		metric.WithDescription("Number of spans that were dropped."),
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
-	meter = LeveledMeter(settings, configtelemetry.LevelBasic)
-	builder.ProcessorInsertedLogRecords, err = meter.Int64Counter(
+	builder.ProcessorInsertedLogRecords, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_processor_inserted_log_records",
 		metric.WithDescription("Number of log records that were inserted."),
 		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
-	meter = LeveledMeter(settings, configtelemetry.LevelBasic)
-	builder.ProcessorInsertedMetricPoints, err = meter.Int64Counter(
+	builder.ProcessorInsertedMetricPoints, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_processor_inserted_metric_points",
 		metric.WithDescription("Number of metric points that were inserted."),
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
-	meter = LeveledMeter(settings, configtelemetry.LevelBasic)
-	builder.ProcessorInsertedSpans, err = meter.Int64Counter(
+	builder.ProcessorInsertedSpans, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_processor_inserted_spans",
 		metric.WithDescription("Number of spans that were inserted."),
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
-	meter = LeveledMeter(settings, configtelemetry.LevelBasic)
-	builder.ProcessorRefusedLogRecords, err = meter.Int64Counter(
+	builder.ProcessorRefusedLogRecords, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_processor_refused_log_records",
 		metric.WithDescription("Number of log records that were rejected by the next component in the pipeline."),
 		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
-	meter = LeveledMeter(settings, configtelemetry.LevelBasic)
-	builder.ProcessorRefusedMetricPoints, err = meter.Int64Counter(
+	builder.ProcessorRefusedMetricPoints, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_processor_refused_metric_points",
 		metric.WithDescription("Number of metric points that were rejected by the next component in the pipeline."),
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
-	meter = LeveledMeter(settings, configtelemetry.LevelBasic)
-	builder.ProcessorRefusedSpans, err = meter.Int64Counter(
+	builder.ProcessorRefusedSpans, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_processor_refused_spans",
 		metric.WithDescription("Number of spans that were rejected by the next component in the pipeline."),
 		metric.WithUnit("{spans}"),

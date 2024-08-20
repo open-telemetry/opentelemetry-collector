@@ -16,6 +16,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/noop"
 )
 
 var (
@@ -218,7 +220,6 @@ func TestNoMetrics(t *testing.T) {
 		const inserted = 5
 
 		set := tt.TelemetrySettings()
-		set.MetricsLevel = configtelemetry.LevelNone
 		set.LeveledMeterProvider = func(_ configtelemetry.Level) metric.MeterProvider {
 			return noop.MeterProvider{}
 		}
@@ -243,7 +244,6 @@ func TestNoMetrics(t *testing.T) {
 		const inserted = 4
 
 		set := tt.TelemetrySettings()
-		set.MetricsLevel = configtelemetry.LevelNone
 		set.LeveledMeterProvider = func(_ configtelemetry.Level) metric.MeterProvider {
 			return noop.MeterProvider{}
 		}
@@ -268,7 +268,6 @@ func TestNoMetrics(t *testing.T) {
 		const inserted = 3
 
 		set := tt.TelemetrySettings()
-		set.MetricsLevel = configtelemetry.LevelNone
 		set.LeveledMeterProvider = func(_ configtelemetry.Level) metric.MeterProvider {
 			return noop.MeterProvider{}
 		}
