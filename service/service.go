@@ -49,7 +49,7 @@ type Settings struct {
 
 	// Processors builder for processors.
 	//
-	// Deprecated: use the [ProcessorsConfigs] and [ProcessorsFactories] options
+	// Deprecated: [v0.108.0] use the [ProcessorsConfigs] and [ProcessorsFactories] options
 	// instead.
 	Processors builders.Processor
 

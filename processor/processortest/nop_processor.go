@@ -64,7 +64,7 @@ type nopProcessor struct {
 
 // NewNopBuilder returns a processor.Builder that constructs nop processors.
 //
-// Deprecated: this builder is being internalized within the service module,
+// Deprecated: [v0.108.0] this builder is being internalized within the service module,
 // and will be removed soon.
 func NewNopBuilder() *processor.Builder {
 	nopFactory := NewNopFactory()
