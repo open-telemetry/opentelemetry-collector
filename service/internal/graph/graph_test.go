@@ -16,6 +16,7 @@ import (
 	"gonum.org/v1/gonum/graph/simple"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
@@ -28,7 +29,6 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/service/internal/servicetelemetry"
 	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/internal/status/statustest"
 	"go.opentelemetry.io/collector/service/internal/testcomponents"
@@ -145,17 +145,17 @@ func TestGraphStartStop(t *testing.T) {
 			}
 
 			pg := &Graph{componentGraph: simple.NewDirectedGraph()}
-			pg.telemetry = servicetelemetry.NewNopTelemetrySettings()
-			pg.instanceIDs = make(map[int64]*component.InstanceID)
+			pg.telemetry = componenttest.NewNopTelemetrySettings()
+			pg.instanceIDs = make(map[int64]*componentstatus.InstanceID)
 
 			for _, edge := range tt.edges {
 				f, t := &testNode{id: edge[0]}, &testNode{id: edge[1]}
-				pg.instanceIDs[f.ID()] = &component.InstanceID{}
-				pg.instanceIDs[t.ID()] = &component.InstanceID{}
+				pg.instanceIDs[f.ID()] = &componentstatus.InstanceID{}
+				pg.instanceIDs[t.ID()] = &componentstatus.InstanceID{}
 				pg.componentGraph.SetEdge(simple.Edge{F: f, T: t})
 			}
 
-			require.NoError(t, pg.StartAll(ctx, componenttest.NewNopHost(), statustest.NewNopStatusReporter()))
+			require.NoError(t, pg.StartAll(ctx, &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}))
 			for _, edge := range tt.edges {
 				assert.Greater(t, ctx.order[edge[0]], ctx.order[edge[1]])
 			}
@@ -177,7 +177,7 @@ func TestGraphStartStopCycle(t *testing.T) {
 	c1 := &testNode{id: component.MustNewIDWithName("c", "1")}
 	e1 := &testNode{id: component.MustNewIDWithName("e", "1")}
 
-	pg.instanceIDs = map[int64]*component.InstanceID{
+	pg.instanceIDs = map[int64]*componentstatus.InstanceID{
 		r1.ID(): {},
 		p1.ID(): {},
 		c1.ID(): {},
@@ -189,7 +189,7 @@ func TestGraphStartStopCycle(t *testing.T) {
 	pg.componentGraph.SetEdge(simple.Edge{F: c1, T: e1})
 	pg.componentGraph.SetEdge(simple.Edge{F: c1, T: p1}) // loop back
 
-	err := pg.StartAll(context.Background(), componenttest.NewNopHost(), statustest.NewNopStatusReporter())
+	err := pg.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), `topo: no topological ordering: cyclic components`)
 
@@ -200,7 +200,7 @@ func TestGraphStartStopCycle(t *testing.T) {
 
 func TestGraphStartStopComponentError(t *testing.T) {
 	pg := &Graph{componentGraph: simple.NewDirectedGraph()}
-	pg.telemetry = servicetelemetry.NewNopTelemetrySettings()
+	pg.telemetry = componenttest.NewNopTelemetrySettings()
 	r1 := &testNode{
 		id:       component.MustNewIDWithName("r", "1"),
 		startErr: errors.New("foo"),
@@ -209,7 +209,7 @@ func TestGraphStartStopComponentError(t *testing.T) {
 		id:          component.MustNewIDWithName("e", "1"),
 		shutdownErr: errors.New("bar"),
 	}
-	pg.instanceIDs = map[int64]*component.InstanceID{
+	pg.instanceIDs = map[int64]*componentstatus.InstanceID{
 		r1.ID(): {},
 		e1.ID(): {},
 	}
@@ -217,7 +217,7 @@ func TestGraphStartStopComponentError(t *testing.T) {
 		F: r1,
 		T: e1,
 	})
-	assert.EqualError(t, pg.StartAll(context.Background(), componenttest.NewNopHost(), statustest.NewNopStatusReporter()), "foo")
+	assert.EqualError(t, pg.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}), "foo")
 	assert.EqualError(t, pg.ShutdownAll(context.Background(), statustest.NewNopStatusReporter()), "bar")
 }
 
@@ -225,7 +225,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 	tests := []struct {
 		name                string
 		pipelineConfigs     pipelines.Config
-		expectedPerExporter int // requires symmetry in pipelines
+		expectedPerExporter int // requires symmetry in Pipelines
 	}{
 		{
 			name: "pipelines_simple.yaml",
@@ -570,7 +570,43 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 			expectedPerExporter: 1,
 		},
 		{
-			name: "pipelines_conn_matrix.yaml",
+			name: "pipelines_conn_matrix_immutable.yaml",
+			pipelineConfigs: pipelines.Config{
+				component.MustNewIDWithName("traces", "in"): {
+					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("exampleconnector")},
+				},
+				component.MustNewIDWithName("metrics", "in"): {
+					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("exampleconnector")},
+				},
+				component.MustNewIDWithName("logs", "in"): {
+					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("exampleconnector")},
+				},
+				component.MustNewIDWithName("traces", "out"): {
+					Receivers:  []component.ID{component.MustNewID("exampleconnector")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+				},
+				component.MustNewIDWithName("metrics", "out"): {
+					Receivers:  []component.ID{component.MustNewID("exampleconnector")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+				},
+				component.MustNewIDWithName("logs", "out"): {
+					Receivers:  []component.ID{component.MustNewID("exampleconnector")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+				},
+			},
+			expectedPerExporter: 3,
+		},
+		{
+			name: "pipelines_conn_matrix_mutable.yaml",
 			pipelineConfigs: pipelines.Config{
 				component.MustNewIDWithName("traces", "in"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
@@ -719,7 +755,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			// Build the pipeline
 			set := Settings{
-				Telemetry: servicetelemetry.NewNopTelemetrySettings(),
+				Telemetry: componenttest.NewNopTelemetrySettings(),
 				BuildInfo: component.NewDefaultBuildInfo(),
 				ReceiverBuilder: receiver.NewBuilder(
 					map[component.ID]component.Config{
@@ -769,7 +805,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 
 			assert.Equal(t, len(test.pipelineConfigs), len(pg.pipelines))
 
-			assert.NoError(t, pg.StartAll(context.Background(), componenttest.NewNopHost(), statustest.NewNopStatusReporter()))
+			assert.NoError(t, pg.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}))
 
 			mutatingPipelines := make(map[component.ID]bool, len(test.pipelineConfigs))
 
@@ -846,7 +882,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 				}
 			}
 
-			// Check that connectors are correctly inheriting mutability from downstream pipelines
+			// Check that Connectors are correctly inheriting mutability from downstream Pipelines
 			for expPipelineID, expPipeline := range pg.pipelines {
 				for _, exp := range expPipeline.exporters {
 					expConn, ok := exp.(*connectorNode)
@@ -856,7 +892,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 					if expConn.getConsumer().Capabilities().MutatesData {
 						continue
 					}
-					// find all the pipelines of the same type where this connector is a receiver
+					// find all the Pipelines of the same type where this connector is a receiver
 					var inheritMutatesData bool
 					for recPipelineID, recPipeline := range pg.pipelines {
 						if recPipelineID == expPipelineID || recPipelineID.Type() != expPipelineID.Type() {
@@ -874,9 +910,9 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 				}
 			}
 
-			// Push data into the pipelines. The list of receivers is retrieved directly from the overall
-			// component graph because we do not want to duplicate signal inputs to receivers that are
-			// shared between pipelines. The `allReceivers` function also excludes connectors, which we do
+			// Push data into the Pipelines. The list of Receivers is retrieved directly from the overall
+			// component graph because we do not want to duplicate signal inputs to Receivers that are
+			// shared between Pipelines. The `allReceivers` function also excludes Connectors, which we do
 			// not want to directly inject with signals.
 			allReceivers := pg.getReceivers()
 			for _, c := range allReceivers[component.DataTypeTraces] {
@@ -944,40 +980,49 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 				}
 			}
 
-			// Get the list of exporters directly from the overall component graph. Like receivers,
-			// exclude connectors and validate each exporter once regardless of sharing between pipelines.
+			// Get the list of Exporters directly from the overall component graph. Like Receivers,
+			// exclude Connectors and validate each exporter once regardless of sharing between Pipelines.
 			allExporters := pg.GetExporters()
 			for _, e := range allExporters[component.DataTypeTraces] {
 				tracesExporter := e.(*testcomponents.ExampleExporter)
 				assert.Equal(t, test.expectedPerExporter, len(tracesExporter.Traces))
-				expected := testdata.GenerateTraces(1)
-				if len(allExporters[component.DataTypeTraces]) > 1 {
-					expected.MarkReadOnly() // multiple read-only exporters should get read-only pdata
-				}
+				expectedMutable := testdata.GenerateTraces(1)
+				expectedReadOnly := testdata.GenerateTraces(1)
+				expectedReadOnly.MarkReadOnly()
 				for i := 0; i < test.expectedPerExporter; i++ {
-					assert.EqualValues(t, expected, tracesExporter.Traces[0])
+					if tracesExporter.Traces[i].IsReadOnly() {
+						assert.EqualValues(t, expectedReadOnly, tracesExporter.Traces[i])
+					} else {
+						assert.EqualValues(t, expectedMutable, tracesExporter.Traces[i])
+					}
 				}
 			}
 			for _, e := range allExporters[component.DataTypeMetrics] {
 				metricsExporter := e.(*testcomponents.ExampleExporter)
 				assert.Equal(t, test.expectedPerExporter, len(metricsExporter.Metrics))
-				expected := testdata.GenerateMetrics(1)
-				if len(allExporters[component.DataTypeMetrics]) > 1 {
-					expected.MarkReadOnly() // multiple read-only exporters should get read-only pdata
-				}
+				expectedMutable := testdata.GenerateMetrics(1)
+				expectedReadOnly := testdata.GenerateMetrics(1)
+				expectedReadOnly.MarkReadOnly()
 				for i := 0; i < test.expectedPerExporter; i++ {
-					assert.EqualValues(t, expected, metricsExporter.Metrics[0])
+					if metricsExporter.Metrics[i].IsReadOnly() {
+						assert.EqualValues(t, expectedReadOnly, metricsExporter.Metrics[i])
+					} else {
+						assert.EqualValues(t, expectedMutable, metricsExporter.Metrics[i])
+					}
 				}
 			}
 			for _, e := range allExporters[component.DataTypeLogs] {
 				logsExporter := e.(*testcomponents.ExampleExporter)
 				assert.Equal(t, test.expectedPerExporter, len(logsExporter.Logs))
-				expected := testdata.GenerateLogs(1)
-				if len(allExporters[component.DataTypeLogs]) > 1 {
-					expected.MarkReadOnly() // multiple read-only exporters should get read-only pdata
-				}
+				expectedMutable := testdata.GenerateLogs(1)
+				expectedReadOnly := testdata.GenerateLogs(1)
+				expectedReadOnly.MarkReadOnly()
 				for i := 0; i < test.expectedPerExporter; i++ {
-					assert.EqualValues(t, expected, logsExporter.Logs[0])
+					if logsExporter.Logs[i].IsReadOnly() {
+						assert.EqualValues(t, expectedReadOnly, logsExporter.Logs[i])
+					} else {
+						assert.EqualValues(t, expectedMutable, logsExporter.Logs[i])
+					}
 				}
 			}
 		})
@@ -1006,7 +1051,7 @@ func TestConnectorRouter(t *testing.T) {
 
 	ctx := context.Background()
 	set := Settings{
-		Telemetry: servicetelemetry.NewNopTelemetrySettings(),
+		Telemetry: componenttest.NewNopTelemetrySettings(),
 		BuildInfo: component.NewDefaultBuildInfo(),
 		ReceiverBuilder: receiver.NewBuilder(
 			map[component.ID]component.Config{
@@ -1098,7 +1143,7 @@ func TestConnectorRouter(t *testing.T) {
 
 	assert.Equal(t, len(set.PipelineConfigs), len(pg.pipelines))
 
-	// Get a handle for the traces receiver and both exporters
+	// Get a handle for the traces receiver and both Exporters
 	tracesReceiver := allReceivers[component.DataTypeTraces][rcvrID].(*testcomponents.ExampleReceiver)
 	tracesRight := allExporters[component.DataTypeTraces][expRightID].(*testcomponents.ExampleExporter)
 	tracesLeft := allExporters[component.DataTypeTraces][expLeftID].(*testcomponents.ExampleExporter)
@@ -1120,7 +1165,7 @@ func TestConnectorRouter(t *testing.T) {
 	assert.Equal(t, 3, len(tracesRight.Traces))
 	assert.Equal(t, 2, len(tracesLeft.Traces))
 
-	// Get a handle for the metrics receiver and both exporters
+	// Get a handle for the metrics receiver and both Exporters
 	metricsReceiver := allReceivers[component.DataTypeMetrics][rcvrID].(*testcomponents.ExampleReceiver)
 	metricsRight := allExporters[component.DataTypeMetrics][expRightID].(*testcomponents.ExampleExporter)
 	metricsLeft := allExporters[component.DataTypeMetrics][expLeftID].(*testcomponents.ExampleExporter)
@@ -1142,7 +1187,7 @@ func TestConnectorRouter(t *testing.T) {
 	assert.Equal(t, 3, len(metricsRight.Metrics))
 	assert.Equal(t, 2, len(metricsLeft.Metrics))
 
-	// Get a handle for the logs receiver and both exporters
+	// Get a handle for the logs receiver and both Exporters
 	logsReceiver := allReceivers[component.DataTypeLogs][rcvrID].(*testcomponents.ExampleReceiver)
 	logsRight := allExporters[component.DataTypeLogs][expRightID].(*testcomponents.ExampleExporter)
 	logsLeft := allExporters[component.DataTypeLogs][expLeftID].(*testcomponents.ExampleExporter)
@@ -2050,7 +2095,7 @@ func TestGraphBuildErrors(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			set := Settings{
 				BuildInfo: component.NewDefaultBuildInfo(),
-				Telemetry: servicetelemetry.NewNopTelemetrySettings(),
+				Telemetry: componenttest.NewNopTelemetrySettings(),
 				ReceiverBuilder: receiver.NewBuilder(
 					test.receiverCfgs,
 					map[component.Type]receiver.Factory{
@@ -2084,7 +2129,7 @@ func TestGraphBuildErrors(t *testing.T) {
 	}
 }
 
-// This includes all tests from the previous implmentation, plus a new one
+// This includes all tests from the previous implementation, plus a new one
 // relevant only to the new graph-based implementation.
 func TestGraphFailToStartAndShutdown(t *testing.T) {
 	errReceiverFactory := newErrReceiverFactory()
@@ -2097,7 +2142,7 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 	nopConnectorFactory := connectortest.NewNopFactory()
 
 	set := Settings{
-		Telemetry: servicetelemetry.NewNopTelemetrySettings(),
+		Telemetry: componenttest.NewNopTelemetrySettings(),
 		BuildInfo: component.NewDefaultBuildInfo(),
 		ReceiverBuilder: receiver.NewBuilder(
 			map[component.ID]component.Config{
@@ -2149,7 +2194,7 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 			}
 			pipelines, err := Build(context.Background(), set)
 			assert.NoError(t, err)
-			assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost(), statustest.NewNopStatusReporter()))
+			assert.Error(t, pipelines.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}))
 			assert.Error(t, pipelines.ShutdownAll(context.Background(), statustest.NewNopStatusReporter()))
 		})
 
@@ -2163,7 +2208,7 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 			}
 			pipelines, err := Build(context.Background(), set)
 			assert.NoError(t, err)
-			assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost(), statustest.NewNopStatusReporter()))
+			assert.Error(t, pipelines.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}))
 			assert.Error(t, pipelines.ShutdownAll(context.Background(), statustest.NewNopStatusReporter()))
 		})
 
@@ -2177,7 +2222,7 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 			}
 			pipelines, err := Build(context.Background(), set)
 			assert.NoError(t, err)
-			assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost(), statustest.NewNopStatusReporter()))
+			assert.Error(t, pipelines.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}))
 			assert.Error(t, pipelines.ShutdownAll(context.Background(), statustest.NewNopStatusReporter()))
 		})
 
@@ -2197,7 +2242,7 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 				}
 				pipelines, err := Build(context.Background(), set)
 				assert.NoError(t, err)
-				assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost(), statustest.NewNopStatusReporter()))
+				assert.Error(t, pipelines.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}))
 				assert.Error(t, pipelines.ShutdownAll(context.Background(), statustest.NewNopStatusReporter()))
 			})
 		}
@@ -2214,7 +2259,7 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 	eStErr := &testNode{id: component.MustNewIDWithName("e_st_err", "1"), startErr: assert.AnError}
 	eSdErr := &testNode{id: component.MustNewIDWithName("e_sd_err", "1"), shutdownErr: assert.AnError}
 
-	instanceIDs := map[*testNode]*component.InstanceID{
+	instanceIDs := map[*testNode]*componentstatus.InstanceID{
 		rNoErr: {ID: rNoErr.id},
 		rStErr: {ID: rStErr.id},
 		rSdErr: {ID: rSdErr.id},
@@ -2224,7 +2269,7 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 	}
 
 	// compare two maps of status events ignoring timestamp
-	assertEqualStatuses := func(t *testing.T, evMap1, evMap2 map[*component.InstanceID][]*component.StatusEvent) {
+	assertEqualStatuses := func(t *testing.T, evMap1, evMap2 map[*componentstatus.InstanceID][]*componentstatus.Event) {
 		assert.Equal(t, len(evMap1), len(evMap2))
 		for id, evts1 := range evMap1 {
 			evts2 := evMap2[id]
@@ -2242,35 +2287,35 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 	for _, tc := range []struct {
 		name             string
 		edge             [2]*testNode
-		expectedStatuses map[*component.InstanceID][]*component.StatusEvent
+		expectedStatuses map[*componentstatus.InstanceID][]*componentstatus.Event
 		startupErr       error
 		shutdownErr      error
 	}{
 		{
 			name: "successful startup/shutdown",
 			edge: [2]*testNode{rNoErr, eNoErr},
-			expectedStatuses: map[*component.InstanceID][]*component.StatusEvent{
+			expectedStatuses: map[*componentstatus.InstanceID][]*componentstatus.Event{
 				instanceIDs[rNoErr]: {
-					component.NewStatusEvent(component.StatusStarting),
-					component.NewStatusEvent(component.StatusOK),
-					component.NewStatusEvent(component.StatusStopping),
-					component.NewStatusEvent(component.StatusStopped),
+					componentstatus.NewEvent(componentstatus.StatusStarting),
+					componentstatus.NewEvent(componentstatus.StatusOK),
+					componentstatus.NewEvent(componentstatus.StatusStopping),
+					componentstatus.NewEvent(componentstatus.StatusStopped),
 				},
 				instanceIDs[eNoErr]: {
-					component.NewStatusEvent(component.StatusStarting),
-					component.NewStatusEvent(component.StatusOK),
-					component.NewStatusEvent(component.StatusStopping),
-					component.NewStatusEvent(component.StatusStopped),
+					componentstatus.NewEvent(componentstatus.StatusStarting),
+					componentstatus.NewEvent(componentstatus.StatusOK),
+					componentstatus.NewEvent(componentstatus.StatusStopping),
+					componentstatus.NewEvent(componentstatus.StatusStopped),
 				},
 			},
 		},
 		{
 			name: "early startup error",
 			edge: [2]*testNode{rNoErr, eStErr},
-			expectedStatuses: map[*component.InstanceID][]*component.StatusEvent{
+			expectedStatuses: map[*componentstatus.InstanceID][]*componentstatus.Event{
 				instanceIDs[eStErr]: {
-					component.NewStatusEvent(component.StatusStarting),
-					component.NewPermanentErrorEvent(assert.AnError),
+					componentstatus.NewEvent(componentstatus.StatusStarting),
+					componentstatus.NewPermanentErrorEvent(assert.AnError),
 				},
 			},
 			startupErr: assert.AnError,
@@ -2278,16 +2323,16 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 		{
 			name: "late startup error",
 			edge: [2]*testNode{rStErr, eNoErr},
-			expectedStatuses: map[*component.InstanceID][]*component.StatusEvent{
+			expectedStatuses: map[*componentstatus.InstanceID][]*componentstatus.Event{
 				instanceIDs[rStErr]: {
-					component.NewStatusEvent(component.StatusStarting),
-					component.NewPermanentErrorEvent(assert.AnError),
+					componentstatus.NewEvent(componentstatus.StatusStarting),
+					componentstatus.NewPermanentErrorEvent(assert.AnError),
 				},
 				instanceIDs[eNoErr]: {
-					component.NewStatusEvent(component.StatusStarting),
-					component.NewStatusEvent(component.StatusOK),
-					component.NewStatusEvent(component.StatusStopping),
-					component.NewStatusEvent(component.StatusStopped),
+					componentstatus.NewEvent(componentstatus.StatusStarting),
+					componentstatus.NewEvent(componentstatus.StatusOK),
+					componentstatus.NewEvent(componentstatus.StatusStopping),
+					componentstatus.NewEvent(componentstatus.StatusStopped),
 				},
 			},
 			startupErr: assert.AnError,
@@ -2295,18 +2340,18 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 		{
 			name: "early shutdown error",
 			edge: [2]*testNode{rSdErr, eNoErr},
-			expectedStatuses: map[*component.InstanceID][]*component.StatusEvent{
+			expectedStatuses: map[*componentstatus.InstanceID][]*componentstatus.Event{
 				instanceIDs[rSdErr]: {
-					component.NewStatusEvent(component.StatusStarting),
-					component.NewStatusEvent(component.StatusOK),
-					component.NewStatusEvent(component.StatusStopping),
-					component.NewPermanentErrorEvent(assert.AnError),
+					componentstatus.NewEvent(componentstatus.StatusStarting),
+					componentstatus.NewEvent(componentstatus.StatusOK),
+					componentstatus.NewEvent(componentstatus.StatusStopping),
+					componentstatus.NewPermanentErrorEvent(assert.AnError),
 				},
 				instanceIDs[eNoErr]: {
-					component.NewStatusEvent(component.StatusStarting),
-					component.NewStatusEvent(component.StatusOK),
-					component.NewStatusEvent(component.StatusStopping),
-					component.NewStatusEvent(component.StatusStopped),
+					componentstatus.NewEvent(componentstatus.StatusStarting),
+					componentstatus.NewEvent(componentstatus.StatusOK),
+					componentstatus.NewEvent(componentstatus.StatusStopping),
+					componentstatus.NewEvent(componentstatus.StatusStopped),
 				},
 			},
 			shutdownErr: assert.AnError,
@@ -2314,18 +2359,18 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 		{
 			name: "late shutdown error",
 			edge: [2]*testNode{rNoErr, eSdErr},
-			expectedStatuses: map[*component.InstanceID][]*component.StatusEvent{
+			expectedStatuses: map[*componentstatus.InstanceID][]*componentstatus.Event{
 				instanceIDs[rNoErr]: {
-					component.NewStatusEvent(component.StatusStarting),
-					component.NewStatusEvent(component.StatusOK),
-					component.NewStatusEvent(component.StatusStopping),
-					component.NewStatusEvent(component.StatusStopped),
+					componentstatus.NewEvent(componentstatus.StatusStarting),
+					componentstatus.NewEvent(componentstatus.StatusOK),
+					componentstatus.NewEvent(componentstatus.StatusStopping),
+					componentstatus.NewEvent(componentstatus.StatusStopped),
 				},
 				instanceIDs[eSdErr]: {
-					component.NewStatusEvent(component.StatusStarting),
-					component.NewStatusEvent(component.StatusOK),
-					component.NewStatusEvent(component.StatusStopping),
-					component.NewPermanentErrorEvent(assert.AnError),
+					componentstatus.NewEvent(componentstatus.StatusStarting),
+					componentstatus.NewEvent(componentstatus.StatusOK),
+					componentstatus.NewEvent(componentstatus.StatusStopping),
+					componentstatus.NewPermanentErrorEvent(assert.AnError),
 				},
 			},
 			shutdownErr: assert.AnError,
@@ -2333,25 +2378,24 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			pg := &Graph{componentGraph: simple.NewDirectedGraph()}
-			pg.telemetry = servicetelemetry.NewNopTelemetrySettings()
+			pg.telemetry = componenttest.NewNopTelemetrySettings()
 
-			actualStatuses := make(map[*component.InstanceID][]*component.StatusEvent)
-			rep := status.NewReporter(func(id *component.InstanceID, ev *component.StatusEvent) {
+			actualStatuses := make(map[*componentstatus.InstanceID][]*componentstatus.Event)
+			rep := status.NewReporter(func(id *componentstatus.InstanceID, ev *componentstatus.Event) {
 				actualStatuses[id] = append(actualStatuses[id], ev)
 			}, func(error) {
 			})
 
-			pg.telemetry.Status = rep
 			rep.Ready()
 
 			e0, e1 := tc.edge[0], tc.edge[1]
-			pg.instanceIDs = map[int64]*component.InstanceID{
+			pg.instanceIDs = map[int64]*componentstatus.InstanceID{
 				e0.ID(): instanceIDs[e0],
 				e1.ID(): instanceIDs[e1],
 			}
 			pg.componentGraph.SetEdge(simple.Edge{F: e0, T: e1})
 
-			assert.Equal(t, tc.startupErr, pg.StartAll(context.Background(), componenttest.NewNopHost(), rep))
+			assert.Equal(t, tc.startupErr, pg.StartAll(context.Background(), &Host{Reporter: rep}))
 			assert.Equal(t, tc.shutdownErr, pg.ShutdownAll(context.Background(), rep))
 			assertEqualStatuses(t, tc.expectedStatuses, actualStatuses)
 		})
@@ -2381,7 +2425,7 @@ func (g *Graph) getReceivers() map[component.DataType]map[component.ID]component
 //
 // Expect one instance of each receiver and exporter, unless it is a connector.
 //
-// For connectors:
+// For Connectors:
 // - Let E equal the number of pipeline types in which the connector is used as an exporter.
 // - Let R equal the number of pipeline types in which the connector is used as a receiver.
 //

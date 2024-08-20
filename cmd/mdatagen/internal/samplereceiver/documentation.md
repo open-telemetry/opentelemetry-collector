@@ -117,15 +117,15 @@ metrics:
 
 The following telemetry is emitted by this component.
 
-### batch_size_trigger_send
+### otelcol_batch_size_trigger_send
 
 Number of times the batch was sent due to a size trigger
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| {times} | Sum | Int | true |
 
-### process_runtime_total_alloc_bytes
+### otelcol_process_runtime_total_alloc_bytes
 
 Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')
 
@@ -133,7 +133,7 @@ Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalA
 | ---- | ----------- | ---------- | --------- |
 | By | Sum | Int | true |
 
-### queue_length
+### otelcol_queue_length
 
 This metric is optional and therefore not initialized in NewTelemetryBuilder.
 
@@ -141,9 +141,9 @@ For example this metric only exists if feature A is enabled.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {items} | Gauge | Int |
 
-### request_duration
+### otelcol_request_duration
 
 Duration of request
 

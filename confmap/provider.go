@@ -135,13 +135,16 @@ func withStringRepresentation(stringRepresentation string) RetrievedOption {
 func NewRetrievedFromYAML(yamlBytes []byte, opts ...RetrievedOption) (*Retrieved, error) {
 	var rawConf any
 	if err := yaml.Unmarshal(yamlBytes, &rawConf); err != nil {
-		return nil, err
+		// If the string is not valid YAML, we try to use it verbatim as a string.
+		strRep := string(yamlBytes)
+		return NewRetrieved(strRep, append(opts, withStringRepresentation(strRep))...)
 	}
 
-	switch v := rawConf.(type) {
+	switch rawConf.(type) {
 	case string:
-		opts = append(opts, withStringRepresentation(v))
-	case int, int32, int64, float32, float64, bool:
+		val := string(yamlBytes)
+		return NewRetrieved(val, append(opts, withStringRepresentation(val))...)
+	default:
 		opts = append(opts, withStringRepresentation(string(yamlBytes)))
 	}
 

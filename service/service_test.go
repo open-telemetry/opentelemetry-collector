@@ -21,6 +21,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
@@ -227,6 +228,7 @@ func TestServiceGetExporters(t *testing.T) {
 		assert.NoError(t, srv.Shutdown(context.Background()))
 	})
 
+	// nolint
 	expMap := srv.host.GetExporters()
 	assert.Len(t, expMap, 3)
 	assert.Len(t, expMap[component.DataTypeTraces], 1)
@@ -340,6 +342,10 @@ func TestServiceTelemetryRestart(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, resp.Body.Close())
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	// Response body must be closed now instead of defer as the test
+	// restarts the server on the same port. Leaving response open
+	// leaks a goroutine.
+	resp.Body.Close()
 
 	// Shutdown the service
 	require.NoError(t, srvOne.Shutdown(context.Background()))
@@ -362,6 +368,7 @@ func TestServiceTelemetryRestart(t *testing.T) {
 		100*time.Millisecond,
 		"Must get a valid response from the service",
 	)
+	defer resp.Body.Close()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 	// Shutdown the new service
@@ -437,11 +444,11 @@ func TestServiceFatalError(t *testing.T) {
 	})
 
 	go func() {
-		ev := component.NewFatalErrorEvent(assert.AnError)
-		srv.host.notifyComponentStatusChange(&component.InstanceID{}, ev)
+		ev := componentstatus.NewFatalErrorEvent(assert.AnError)
+		srv.host.NotifyComponentStatusChange(&componentstatus.InstanceID{}, ev)
 	}()
 
-	err = <-srv.host.asyncErrorChannel
+	err = <-srv.host.AsyncErrorChannel
 
 	require.ErrorIs(t, err, assert.AnError)
 }
@@ -536,13 +543,14 @@ func assertZPages(t *testing.T, zpagesAddr string) {
 
 func newNopSettings() Settings {
 	return Settings{
-		BuildInfo:     component.NewDefaultBuildInfo(),
-		CollectorConf: confmap.New(),
-		Receivers:     receivertest.NewNopBuilder(),
-		Processors:    processortest.NewNopBuilder(),
-		Exporters:     exportertest.NewNopBuilder(),
-		Connectors:    connectortest.NewNopBuilder(),
-		Extensions:    extensiontest.NewNopBuilder(),
+		BuildInfo:         component.NewDefaultBuildInfo(),
+		CollectorConf:     confmap.New(),
+		Receivers:         receivertest.NewNopBuilder(),
+		Processors:        processortest.NewNopBuilder(),
+		Exporters:         exportertest.NewNopBuilder(),
+		Connectors:        connectortest.NewNopBuilder(),
+		Extensions:        extensiontest.NewNopBuilder(),
+		AsyncErrorChannel: make(chan error),
 	}
 }
 

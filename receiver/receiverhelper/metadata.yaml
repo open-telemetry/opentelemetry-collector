@@ -12,7 +12,7 @@ telemetry:
     receiver_accepted_spans:
       enabled: true
       description: Number of spans successfully pushed into the pipeline.
-      unit: "1"
+      unit: "{spans}"
       sum:
         value_type: int
         monotonic: true
@@ -20,7 +20,7 @@ telemetry:
     receiver_refused_spans:
       enabled: true
       description: Number of spans that could not be pushed into the pipeline.
-      unit: "1"
+      unit: "{spans}"
       sum:
         value_type: int
         monotonic: true
@@ -28,7 +28,7 @@ telemetry:
     receiver_accepted_metric_points:
       enabled: true
       description: Number of metric points successfully pushed into the pipeline.
-      unit: "1"
+      unit: "{datapoints}"
       sum:
         value_type: int
         monotonic: true
@@ -36,7 +36,7 @@ telemetry:
     receiver_refused_metric_points:
       enabled: true
       description: Number of metric points that could not be pushed into the pipeline.
-      unit: "1"
+      unit: "{datapoints}"
       sum:
         value_type: int
         monotonic: true
@@ -44,7 +44,7 @@ telemetry:
     receiver_accepted_log_records:
       enabled: true
       description: Number of log records successfully pushed into the pipeline.
-      unit: "1"
+      unit: "{records}"
       sum:
         value_type: int
         monotonic: true
@@ -52,7 +52,7 @@ telemetry:
     receiver_refused_log_records:
       enabled: true
       description: Number of log records that could not be pushed into the pipeline.
-      unit: "1"
+      unit: "{records}"
       sum:
         value_type: int
         monotonic: true

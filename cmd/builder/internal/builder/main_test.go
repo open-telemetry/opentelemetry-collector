@@ -41,6 +41,9 @@ var (
 	replaceModules = []string{
 		"",
 		"/component",
+		"/component/componentprofiles",
+		"/component/componentstatus",
+		"/client",
 		"/config/configauth",
 		"/config/configcompression",
 		"/config/configgrpc",
@@ -52,13 +55,14 @@ var (
 		"/config/configtls",
 		"/config/internal",
 		"/confmap",
-		"/confmap/converter/expandconverter",
 		"/confmap/provider/envprovider",
 		"/confmap/provider/fileprovider",
 		"/confmap/provider/httpprovider",
 		"/confmap/provider/httpsprovider",
 		"/confmap/provider/yamlprovider",
 		"/consumer",
+		"/consumer/consumerprofiles",
+		"/consumer/consumertest",
 		"/connector",
 		"/exporter",
 		"/exporter/debugexporter",
@@ -109,7 +113,7 @@ func TestGenerateDefault(t *testing.T) {
 
 func TestGenerateInvalidOutputPath(t *testing.T) {
 	cfg := newInitializedConfig(t)
-	cfg.Distribution.OutputPath = "/:invalid"
+	cfg.Distribution.OutputPath = ":/invalid"
 	err := Generate(cfg)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to create output path")
