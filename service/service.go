@@ -12,6 +12,7 @@ import (
 	"runtime"
 
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/noop"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -127,6 +128,12 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 
 	logsAboutMeterProvider(logger, cfg.Telemetry.Metrics, mp, extendedConfig)
 	srv.telemetrySettings = component.TelemetrySettings{
+		LeveledMeterProvider: func(level configtelemetry.Level) metric.MeterProvider {
+			if level <= cfg.Telemetry.Metrics.Level {
+				return mp
+			}
+			return noop.MeterProvider{}
+		},
 		Logger:         logger,
 		MeterProvider:  mp,
 		TracerProvider: tracerProvider,
