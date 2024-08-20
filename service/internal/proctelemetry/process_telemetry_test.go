@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	otelprom "go.opentelemetry.io/otel/exporters/prometheus"
+	"go.opentelemetry.io/otel/metric"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 
@@ -55,6 +56,10 @@ func setupTelemetry(t *testing.T) testTelemetry {
 		sdkmetric.WithReader(exporter),
 	)
 	settings.TelemetrySettings.MeterProvider = settings.meterProvider
+
+	settings.TelemetrySettings.LeveledMeterProvider = func(_ configtelemetry.Level) metric.MeterProvider {
+		return settings.meterProvider
+	}
 
 	settings.promHandler = promhttp.HandlerFor(promReg, promhttp.HandlerOpts{})
 

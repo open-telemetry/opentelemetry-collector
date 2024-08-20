@@ -44,22 +44,6 @@ type ConfigProvider interface {
 	Shutdown(ctx context.Context) error
 }
 
-// ConfmapProvider is an optional interface to be implemented by ConfigProviders
-// to provide confmap.Conf objects representing a marshaled version of the
-// Collector's configuration.
-//
-// The purpose of this interface is that otelcol.ConfigProvider structs do not
-// necessarily need to use confmap.Conf as their underlying config structure.
-//
-// Deprecated: [v0.105.0] This interface is deprecated. otelcol.Collector will now obtain
-// a confmap.Conf object from the unmarshaled config itself.
-type ConfmapProvider interface {
-	// GetConfmap resolves the Collector's configuration and provides it as a confmap.Conf object.
-	//
-	// Should never be called concurrently with itself or any ConfigProvider method.
-	GetConfmap(ctx context.Context) (*confmap.Conf, error)
-}
-
 type configProvider struct {
 	mapResolver *confmap.Resolver
 }
@@ -116,16 +100,4 @@ func (cm *configProvider) Watch() <-chan error {
 
 func (cm *configProvider) Shutdown(ctx context.Context) error {
 	return cm.mapResolver.Shutdown(ctx)
-}
-
-// Deprecated: [v0.105.0] Call `(*confmap.Conf).Marshal(*otelcol.Config)` to get
-// the Collector's configuration instead.
-func (cm *configProvider) GetConfmap(ctx context.Context) (*confmap.Conf, error) {
-	conf, err := cm.mapResolver.Resolve(ctx)
-
-	if err != nil {
-		return nil, fmt.Errorf("cannot resolve the configuration: %w", err)
-	}
-
-	return conf, nil
 }
