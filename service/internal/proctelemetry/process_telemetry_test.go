@@ -54,7 +54,7 @@ func setupTelemetry(t *testing.T) testTelemetry {
 		sdkmetric.WithReader(exporter),
 	)
 
-	settings.LeveledMeterProvider = func(level configtelemetry.Level) metric.MeterProvider {
+	settings.LeveledMeterProvider = func(_ configtelemetry.Level) metric.MeterProvider {
 		return meterProvider
 	}
 

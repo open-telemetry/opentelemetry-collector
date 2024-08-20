@@ -18,7 +18,7 @@ import (
 func NewNopTelemetrySettings() component.TelemetrySettings {
 	return component.TelemetrySettings{
 		Logger: zap.NewNop(),
-		LeveledMeterProvider: func(level configtelemetry.Level) metric.MeterProvider {
+		LeveledMeterProvider: func(_ configtelemetry.Level) metric.MeterProvider {
 			return noopmetric.NewMeterProvider()
 		},
 		TracerProvider: nooptrace.NewTracerProvider(),

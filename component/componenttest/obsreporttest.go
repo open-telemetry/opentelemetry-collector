@@ -150,7 +150,6 @@ func SetupTelemetry(id component.ID) (TestTelemetry, error) {
 		SpanRecorder: sr,
 	}
 	settings.ts.TracerProvider = tp
-	settings.ts.MetricsLevel = configtelemetry.LevelNormal
 
 	promRegOtel := prometheus.NewRegistry()
 
@@ -163,7 +162,7 @@ func SetupTelemetry(id component.ID) (TestTelemetry, error) {
 		sdkmetric.WithResource(resource.Empty()),
 		sdkmetric.WithReader(exp),
 	)
-	settings.ts.LeveledMeterProvider = func(level configtelemetry.Level) metric.MeterProvider {
+	settings.ts.LeveledMeterProvider = func(_ configtelemetry.Level) metric.MeterProvider {
 		return settings.meterProvider
 	}
 
