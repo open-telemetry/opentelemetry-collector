@@ -19,7 +19,6 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.1.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
 	github.com/knadh/koanf/v2 v2.1.1 // indirect
@@ -32,8 +31,6 @@ require (
 	github.com/prometheus/common v0.55.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.107.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.13.0 // indirect
-	go.opentelemetry.io/collector/internal/globalgates v0.107.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.13.0 // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.50.0 // indirect
@@ -59,9 +56,5 @@ replace go.opentelemetry.io/collector/confmap => ../confmap
 replace go.opentelemetry.io/collector/pdata => ../pdata
 
 replace go.opentelemetry.io/collector/config/configtelemetry => ../config/configtelemetry
-
-replace go.opentelemetry.io/collector/featuregate => ../featuregate
-
-replace go.opentelemetry.io/collector/internal/globalgates => ../internal/globalgates
 
 replace go.opentelemetry.io/collector/component/componentstatus => ../component/componentstatus
