@@ -47,15 +47,15 @@ Note: {{ attr.note | render_markdown(paragraph="{0}", code="{0}", link="{1}", em
 package semconv
 
 {% for semconv in semconvs -%}
-{%- if semconvs[semconv].attributes | rejectattr("ref") | selectattr("is_local") | sort(attribute=fqn) | length > 0 -%}
+{%- if semconvs[semconv].attributes | rejectattr("ref") | rejectattr("deprecated") | selectattr("is_local") | sort(attribute=fqn) | length > 0 -%}
 // {{ sentence_case(semconvs[semconv].brief | replace("This document defines ", "")) | wordwrap(76, break_long_words=false, break_on_hyphens=false, wrapstring="\n// ") }}
 const (
-{% for attr in semconvs[semconv].attributes if attr.is_local and not attr.ref -%}
+{% for attr in semconvs[semconv].attributes if attr.is_local and not attr.ref and not attr.deprecated -%}
     // {{ godoc(attr) | wordwrap | indent(3) | replace("   ", "\t// ") | replace("// //", "//") }}
     Attribute{{to_go_name(attr.fqn)}} = "{{attr.fqn}}"
 {% endfor %}
 )
-{%- for attr in semconvs[semconv].attributes if attr.is_local and not attr.ref -%}
+{%- for attr in semconvs[semconv].attributes if attr.is_local and not attr.ref and not attr.deprecated -%}
 {%- if attr.attr_type is not string %}
 
 const (
@@ -73,7 +73,7 @@ const (
 func Get{{ conventionType | title }}SemanticConventionAttributeNames() []string {
     return []string{
         {% for semconv in semconvs -%}
-        {%- for attr in semconvs[semconv].attributes if attr.is_local and not attr.ref -%}
+        {%- for attr in semconvs[semconv].attributes if attr.is_local and not attr.ref and not attr.deprecated -%}
         Attribute{{to_go_name(attr.fqn)}},
         {% endfor %}
         {%- endfor %}

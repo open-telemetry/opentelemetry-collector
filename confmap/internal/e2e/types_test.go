@@ -14,8 +14,6 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
-	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/globalgates"
 )
 
 type TargetField string
@@ -47,6 +45,7 @@ func NewResolver(t testing.TB, path string) *confmap.Resolver {
 			fileprovider.NewFactory(),
 			envprovider.NewFactory(),
 		},
+		DefaultScheme: "env",
 	})
 	require.NoError(t, err)
 	return resolver
@@ -88,162 +87,9 @@ func AssertResolvesTo(t *testing.T, resolver *confmap.Resolver, tt Test) {
 	}
 }
 
-func TestTypeCasting(t *testing.T) {
-	values := []Test{
-		{
-			value:       "123",
-			targetField: TargetFieldInt,
-			expected:    123,
-		},
-		{
-			value:       "123",
-			targetField: TargetFieldString,
-			expected:    "123",
-		},
-		{
-			value:       "123",
-			targetField: TargetFieldInlineString,
-			expected:    "inline field with 123 expansion",
-		},
-		{
-			value:       "0123",
-			targetField: TargetFieldInt,
-			expected:    83,
-		},
-		{
-			value:       "0123",
-			targetField: TargetFieldString,
-			expected:    "83",
-		},
-		{
-			value:       "0123",
-			targetField: TargetFieldInlineString,
-			expected:    "inline field with 83 expansion",
-		},
-		{
-			value:       "0xdeadbeef",
-			targetField: TargetFieldInt,
-			expected:    3735928559,
-		},
-		{
-			value:       "0xdeadbeef",
-			targetField: TargetFieldString,
-			expected:    "3735928559",
-		},
-		{
-			value:       "0xdeadbeef",
-			targetField: TargetFieldInlineString,
-			expected:    "inline field with 3735928559 expansion",
-		},
-		{
-			value:       "\"0123\"",
-			targetField: TargetFieldString,
-			expected:    "0123",
-		},
-		{
-			value:       "\"0123\"",
-			targetField: TargetFieldInt,
-			expected:    83,
-		},
-		{
-			value:       "\"0123\"",
-			targetField: TargetFieldInlineString,
-			expected:    "inline field with 0123 expansion",
-		},
-		{
-			value:       "!!str 0123",
-			targetField: TargetFieldString,
-			expected:    "0123",
-		},
-		{
-			value:       "!!str 0123",
-			targetField: TargetFieldInlineString,
-			expected:    "inline field with 0123 expansion",
-		},
-		{
-			value:       "'!!str 0123'",
-			targetField: TargetFieldString,
-			expected:    "!!str 0123",
-		},
-		{
-			value:       "\"!!str 0123\"",
-			targetField: TargetFieldInlineString,
-			expected:    "inline field with !!str 0123 expansion",
-		},
-		{
-			value:       "''",
-			targetField: TargetFieldString,
-			expected:    "",
-		},
-		{
-			value:       "\"\"",
-			targetField: TargetFieldInlineString,
-			expected:    "inline field with  expansion",
-		},
-		{
-			value:       "t",
-			targetField: TargetFieldBool,
-			expected:    true,
-		},
-		{
-			value:       "23",
-			targetField: TargetFieldBool,
-			expected:    true,
-		},
-		{
-			value:       "foo\nbar",
-			targetField: TargetFieldString,
-			expected:    "foo bar",
-		},
-		{
-			value:       "foo\nbar",
-			targetField: TargetFieldInlineString,
-			expected:    "inline field with foo bar expansion",
-		},
-		{
-			value:       "\"1111:1111:1111:1111:1111::\"",
-			targetField: TargetFieldString,
-			expected:    "1111:1111:1111:1111:1111::",
-		},
-		{
-			value:       "\"1111:1111:1111:1111:1111::\"",
-			targetField: TargetFieldInlineString,
-			expected:    "inline field with 1111:1111:1111:1111:1111:: expansion",
-		},
-		{
-			value:       "2006-01-02T15:04:05Z07:00",
-			targetField: TargetFieldString,
-			expected:    "2006-01-02T15:04:05Z07:00",
-		},
-		{
-			value:       "2006-01-02T15:04:05Z07:00",
-			targetField: TargetFieldInlineString,
-			expected:    "inline field with 2006-01-02T15:04:05Z07:00 expansion",
-		},
-	}
-
-	previousValue := globalgates.StrictlyTypedInputGate.IsEnabled()
-	err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, false)
-	require.NoError(t, err)
-	defer func() {
-		err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, previousValue)
-		require.NoError(t, err)
-	}()
-
-	for _, tt := range values {
-		t.Run(tt.value+"/"+string(tt.targetField), func(t *testing.T) {
-			testFile := "types_expand.yaml"
-			if tt.targetField == TargetFieldInlineString {
-				testFile = "types_expand_inline.yaml"
-			}
-			resolver := NewResolver(t, testFile)
-			t.Setenv("ENV", tt.value)
-			AssertResolvesTo(t, resolver, tt)
-		})
-	}
-}
-
 func TestStrictTypeCasting(t *testing.T) {
+	t.Setenv("ENV_VALUE", "testreceiver")
+
 	values := []Test{
 		{
 			value:       "123",
@@ -393,15 +239,67 @@ func TestStrictTypeCasting(t *testing.T) {
 			targetField: TargetFieldInlineString,
 			expected:    "inline field with [filelog,windowseventlog/application] expansion",
 		},
+		{
+			value:       "$$ENV",
+			targetField: TargetFieldString,
+			expected:    "$ENV",
+		},
+		{
+			value:       "$$ENV",
+			targetField: TargetFieldInlineString,
+			expected:    "inline field with $ENV expansion",
+		},
+		{
+			value:       "$${ENV}",
+			targetField: TargetFieldString,
+			expected:    "${ENV}",
+		},
+		{
+			value:       "$${ENV}",
+			targetField: TargetFieldInlineString,
+			expected:    "inline field with ${ENV} expansion",
+		},
+		{
+			value:       "$${env:ENV}",
+			targetField: TargetFieldString,
+			expected:    "${env:ENV}",
+		},
+		{
+			value:       "$${env:ENV}",
+			targetField: TargetFieldInlineString,
+			expected:    "inline field with ${env:ENV} expansion",
+		},
+		{
+			value:       `[filelog,${env:ENV_VALUE}]`,
+			targetField: TargetFieldString,
+			expected:    "[filelog,testreceiver]",
+		},
+		{
+			value:       `[filelog,${ENV_VALUE}]`,
+			targetField: TargetFieldString,
+			expected:    "[filelog,testreceiver]",
+		},
+		{
+			value:       `["filelog","$${env:ENV_VALUE}"]`,
+			targetField: TargetFieldString,
+			expected:    `["filelog","${env:ENV_VALUE}"]`,
+		},
+		{
+			value:       `["filelog","$${ENV_VALUE}"]`,
+			targetField: TargetFieldString,
+			expected:    `["filelog","${ENV_VALUE}"]`,
+		},
+		{
+			value:       `["filelog","$$ENV_VALUE"]`,
+			targetField: TargetFieldString,
+			expected:    `["filelog","$ENV_VALUE"]`,
+		},
+		{
+			value:       `["filelog","$ENV_VALUE"]`,
+			targetField: TargetFieldString,
+			expected:    `["filelog","$ENV_VALUE"]`,
+		},
 	}
-
-	previousValue := globalgates.StrictlyTypedInputGate.IsEnabled()
-	err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, true)
-	require.NoError(t, err)
-	defer func() {
-		err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, previousValue)
-		require.NoError(t, err)
-	}()
 
 	for _, tt := range values {
 		t.Run(tt.value+"/"+string(tt.targetField)+"/"+"direct", func(t *testing.T) {
@@ -452,14 +350,6 @@ func TestRecursiveInlineString(t *testing.T) {
 		},
 	}
 
-	previousValue := globalgates.StrictlyTypedInputGate.IsEnabled()
-	err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, true)
-	require.NoError(t, err)
-	defer func() {
-		err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, previousValue)
-		require.NoError(t, err)
-	}()
-
 	for _, tt := range values {
 		t.Run(tt.value+"/"+string(tt.targetField), func(t *testing.T) {
 			testFile := "types_expand.yaml"
@@ -478,15 +368,6 @@ func TestRecursiveInlineString(t *testing.T) {
 
 func TestRecursiveMaps(t *testing.T) {
 	value := "{value: 123}"
-
-	previousValue := globalgates.StrictlyTypedInputGate.IsEnabled()
-	err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, true)
-	require.NoError(t, err)
-	defer func() {
-		seterr := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, previousValue)
-		require.NoError(t, seterr)
-	}()
-
 	resolver := NewResolver(t, "types_expand.yaml")
 	t.Setenv("ENV", `{env: "${env:ENV2}", inline: "inline ${env:ENV2}"}`)
 	t.Setenv("ENV2", `{env2: "${env:ENV3}"}`)
@@ -534,14 +415,6 @@ func TestRecursiveMaps(t *testing.T) {
 
 // Test that comments with invalid ${env:...} references do not prevent configuration from loading.
 func TestIssue10787(t *testing.T) {
-	previousValue := globalgates.StrictlyTypedInputGate.IsEnabled()
-	err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, true)
-	require.NoError(t, err)
-	defer func() {
-		seterr := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, previousValue)
-		require.NoError(t, seterr)
-	}()
-
 	resolver := NewResolver(t, "issue-10787-main.yaml")
 	conf, err := resolver.Resolve(context.Background())
 	require.NoError(t, err)
@@ -586,16 +459,8 @@ func TestIssue10787(t *testing.T) {
 }
 
 func TestStructMappingIssue10787(t *testing.T) {
-	previousValue := globalgates.StrictlyTypedInputGate.IsEnabled()
-	err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, true)
-	require.NoError(t, err)
-	defer func() {
-		seterr := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, previousValue)
-		require.NoError(t, seterr)
-	}()
-
 	resolver := NewResolver(t, "types_expand.yaml")
-	t.Setenv("ENV", `# ${hello.world}
+	t.Setenv("ENV", `# this is a comment
 logging:
   verbosity: detailed`)
 	conf, err := resolver.Resolve(context.Background())
@@ -628,7 +493,50 @@ logging:
 	var cfgStr TargetConfig[string]
 	err = confStr.Unmarshal(&cfgStr)
 	require.NoError(t, err)
-	require.Equal(t, `# ${hello.world}
+	require.Equal(t, `# this is a comment
+logging:
+  verbosity: detailed`,
+		cfgStr.Field,
+	)
+}
+
+func TestStructMappingIssue10787_ExpandComment(t *testing.T) {
+	resolver := NewResolver(t, "types_expand.yaml")
+	t.Setenv("EXPAND_ME", "an expanded env var")
+	t.Setenv("ENV", `# this is a comment with ${EXPAND_ME}
+logging:
+  verbosity: detailed`)
+	conf, err := resolver.Resolve(context.Background())
+	require.NoError(t, err)
+
+	type Logging struct {
+		Verbosity string `mapstructure:"verbosity"`
+	}
+	type Exporters struct {
+		Logging Logging `mapstructure:"logging"`
+	}
+	type Target struct {
+		Field Exporters `mapstructure:"field"`
+	}
+
+	var cfg Target
+	err = conf.Unmarshal(&cfg)
+	require.NoError(t, err)
+	require.Equal(t,
+		Target{Field: Exporters{
+			Logging: Logging{
+				Verbosity: "detailed",
+			},
+		}},
+		cfg,
+	)
+
+	confStr, err := resolver.Resolve(context.Background())
+	require.NoError(t, err)
+	var cfgStr TargetConfig[string]
+	err = confStr.Unmarshal(&cfgStr)
+	require.NoError(t, err)
+	require.Equal(t, `# this is a comment with an expanded env var
 logging:
   verbosity: detailed`,
 		cfgStr.Field,
@@ -636,14 +544,6 @@ logging:
 }
 
 func TestIndirectSliceEnvVar(t *testing.T) {
-	previousValue := globalgates.StrictlyTypedInputGate.IsEnabled()
-	err := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, true)
-	require.NoError(t, err)
-	defer func() {
-		seterr := featuregate.GlobalRegistry().Set(globalgates.StrictlyTypedInputID, previousValue)
-		require.NoError(t, seterr)
-	}()
-
 	// This replicates the situation in https://github.com/open-telemetry/opentelemetry-collector/issues/10799
 	// where a configuration file is loaded that contains a reference to a slice of strings in an environment variable.
 	t.Setenv("BASE_FOLDER", "testdata")
