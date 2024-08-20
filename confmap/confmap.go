@@ -17,7 +17,6 @@ import (
 	"github.com/knadh/koanf/v2"
 
 	encoder "go.opentelemetry.io/collector/confmap/internal/mapstructure"
-	"go.opentelemetry.io/collector/internal/globalgates"
 )
 
 const (
@@ -187,7 +186,7 @@ func decodeConfig(m *Conf, result any, errorUnused bool, skipTopLevelUnmarshaler
 		ErrorUnused:      errorUnused,
 		Result:           result,
 		TagName:          "mapstructure",
-		WeaklyTypedInput: !globalgates.StrictlyTypedInputGate.IsEnabled(),
+		WeaklyTypedInput: false,
 		MatchName:        caseSensitiveMatchName,
 		DecodeHook: mapstructure.ComposeDecodeHookFunc(
 			useExpandValue(),
@@ -239,7 +238,7 @@ func caseSensitiveMatchName(a, b string) bool {
 
 func castTo(exp expandedValue, useOriginal bool) (any, error) {
 	// If the target field is a string, use `exp.Original` or fail if not available.
-	if globalgates.StrictlyTypedInputGate.IsEnabled() && useOriginal {
+	if useOriginal {
 		return exp.Original, nil
 	}
 	// Otherwise, use the parsed value (previous behavior).
