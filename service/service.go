@@ -46,7 +46,7 @@ type Settings struct {
 
 	// Receivers builder for receivers.
 	//
-	// Deprecated: use the [ReceiversConfigs] and [ReceiversFactories] options
+	// Deprecated: [v0.108.0] use the [ReceiversConfigs] and [ReceiversFactories] options
 	// instead.
 	Receivers builders.Receiver
 
