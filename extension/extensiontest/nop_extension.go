@@ -49,7 +49,7 @@ type nopExtension struct {
 
 // NewNopBuilder returns a extension.Builder that constructs nop extension.
 //
-// Deprecated: this builder is being internalized within the service module,
+// Deprecated: [v0.108.0] this builder is being internalized within the service module,
 // and will be removed soon.
 func NewNopBuilder() *extension.Builder {
 	nopFactory := NewNopFactory()
