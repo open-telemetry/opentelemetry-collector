@@ -55,7 +55,7 @@ type Settings struct {
 
 	// Connectors builder for connectors.
 	//
-	// Deprecated: use the [ConnectorsConfigs] and [ConnectorsFactories] options
+	// Deprecated: [v0.108.0] use the [ConnectorsConfigs] and [ConnectorsFactories] options
 	// instead.
 	Connectors builders.Connector
 
