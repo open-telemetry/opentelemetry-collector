@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
 	"go.opentelemetry.io/collector/component"
 )
 
@@ -78,14 +79,14 @@ func TestAllPipelineIDs(t *testing.T) {
 	)
 
 	count := 0
-	instanceID.AllPipelineIDs(func(id component.ID) bool {
+	instanceID.AllPipelineIDs(func(component.ID) bool {
 		count++
 		return true
 	})
 	assert.Equal(t, 3, count)
 
 	count = 0
-	instanceID.AllPipelineIDs(func(id component.ID) bool {
+	instanceID.AllPipelineIDs(func(component.ID) bool {
 		count++
 		return false
 	})
