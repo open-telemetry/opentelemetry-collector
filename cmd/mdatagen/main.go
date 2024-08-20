@@ -28,6 +28,10 @@ const (
 )
 
 func main() {
+	flag.Usage = func() {
+		fmt.Fprintf(flag.CommandLine.Output(), "Usage: %s metadata.yaml\n", os.Args[0])
+		flag.PrintDefaults()
+	}
 	flag.Parse()
 	yml := flag.Arg(0)
 	if err := run(yml); err != nil {
