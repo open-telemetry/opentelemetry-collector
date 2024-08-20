@@ -52,7 +52,7 @@ type Settings struct {
 
 	// Exporters builder for exporters.
 	//
-	// Deprecated: use the [ReceiversConfigs] and [ReceiversFactories] options
+	// Deprecated: [v0.108.0] use the [ReceiversConfigs] and [ReceiversFactories] options
 	// instead.
 	Exporters builders.Exporter
 

@@ -14,7 +14,7 @@ import (
 
 // Builder exporter is a helper struct that given a set of Configs and Factories helps with creating exporters.
 //
-// Deprecated: this builder is being internalized within the service module,
+// Deprecated: [v0.108.0] this builder is being internalized within the service module,
 // and will be removed soon.
 type Builder struct {
 	cfgs      map[component.ID]component.Config
@@ -23,7 +23,7 @@ type Builder struct {
 
 // NewBuilder creates a new exporter.Builder to help with creating components form a set of configs and factories.
 //
-// Deprecated: this builder is being internalized within the service module,
+// Deprecated: [v0.108.0] this builder is being internalized within the service module,
 // and will be removed soon.
 func NewBuilder(cfgs map[component.ID]component.Config, factories map[component.Type]Factory) *Builder {
 	return &Builder{cfgs: cfgs, factories: factories}
