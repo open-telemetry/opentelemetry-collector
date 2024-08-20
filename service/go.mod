@@ -159,8 +159,6 @@ replace go.opentelemetry.io/collector/config/configcompression => ../config/conf
 
 replace go.opentelemetry.io/collector/pdata/pprofile => ../pdata/pprofile
 
-replace go.opentelemetry.io/collector/internal/globalgates => ../internal/globalgates
-
 replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../consumer/consumerprofiles
 
 replace go.opentelemetry.io/collector/consumer/consumertest => ../consumer/consumertest
@@ -168,3 +166,5 @@ replace go.opentelemetry.io/collector/consumer/consumertest => ../consumer/consu
 replace go.opentelemetry.io/collector/component/componentprofiles => ../component/componentprofiles
 
 replace go.opentelemetry.io/collector/client => ../client
+
+replace go.opentelemetry.io/collector/internal/globalgates => ../internal/globalgates

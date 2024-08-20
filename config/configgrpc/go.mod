@@ -55,7 +55,6 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	go.opentelemetry.io/collector/confmap v0.107.0 // indirect
 	go.opentelemetry.io/collector/extension v0.107.0 // indirect
-	go.opentelemetry.io/collector/internal/globalgates v0.107.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.107.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.50.0 // indirect
 	go.opentelemetry.io/otel/metric v1.28.0 // indirect
@@ -72,8 +71,6 @@ require (
 )
 
 replace go.opentelemetry.io/collector => ../../
-
-replace go.opentelemetry.io/collector/internal/globalgates => ../../internal/globalgates
 
 replace go.opentelemetry.io/collector/client => ../../client
 
