@@ -38,13 +38,12 @@ func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 	set := service.Settings{
 		BuildInfo:     component.NewDefaultBuildInfo(),
 		CollectorConf: confmap.New(),
-		Receivers: receiver.NewBuilder(
-			map[component.ID]component.Config{
-				component.NewID(component.MustNewType("test")): &receiverConfig{},
-			},
-			map[component.Type]receiver.Factory{
-				component.MustNewType("test"): newReceiverFactory(),
-			}),
+		ReceiversConfigs: map[component.ID]component.Config{
+			component.NewID(component.MustNewType("test")): &receiverConfig{},
+		},
+		ReceiversFactories: map[component.Type]receiver.Factory{
+			component.MustNewType("test"): newReceiverFactory(),
+		},
 		Processors: processortest.NewNopBuilder(),
 		Exporters:  exportertest.NewNopBuilder(),
 		Connectors: connectortest.NewNopBuilder(),
@@ -105,7 +104,7 @@ func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 	assert.Equal(t, 5, len(eventsReceived))
 
 	for instanceID, events := range eventsReceived {
-		if instanceID.ID == component.NewID(component.MustNewType("test")) {
+		if instanceID.ComponentID() == component.NewID(component.MustNewType("test")) {
 			for i, e := range events {
 				if i == 0 {
 					assert.Equal(t, componentstatus.StatusStarting, e.Status())
