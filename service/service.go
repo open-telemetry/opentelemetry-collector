@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/extensions"
+	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/graph"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
 	"go.opentelemetry.io/collector/service/internal/resource"
@@ -45,7 +46,14 @@ type Settings struct {
 	CollectorConf *confmap.Conf
 
 	// Receivers builder for receivers.
-	Receivers *receiver.Builder
+	//
+	// Deprecated: [v0.108.0] use the [ReceiversConfigs] and [ReceiversFactories] options
+	// instead.
+	Receivers builders.Receiver
+
+	// Receivers configuration to its builder.
+	ReceiversConfigs   map[component.ID]component.Config
+	ReceiversFactories map[component.Type]receiver.Factory
 
 	// Processors builder for processors.
 	Processors *processor.Builder
@@ -81,10 +89,16 @@ type Service struct {
 func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	disableHighCard := obsreportconfig.DisableHighCardinalityMetricsfeatureGate.IsEnabled()
 	extendedConfig := obsreportconfig.UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate.IsEnabled()
+
+	receivers := set.Receivers
+	if receivers == nil {
+		receivers = builders.NewReceiver(set.ReceiversConfigs, set.ReceiversFactories)
+	}
+
 	srv := &Service{
 		buildInfo: set.BuildInfo,
 		host: &graph.Host{
-			Receivers:         set.Receivers,
+			Receivers:         receivers,
 			Processors:        set.Processors,
 			Exporters:         set.Exporters,
 			Connectors:        set.Connectors,
@@ -306,7 +320,7 @@ func (srv *Service) initGraph(ctx context.Context, set Settings, cfg Config) err
 	if srv.host.Pipelines, err = graph.Build(ctx, graph.Settings{
 		Telemetry:        srv.telemetrySettings,
 		BuildInfo:        srv.buildInfo,
-		ReceiverBuilder:  set.Receivers,
+		ReceiverBuilder:  srv.host.Receivers,
 		ProcessorBuilder: set.Processors,
 		ExporterBuilder:  set.Exporters,
 		ConnectorBuilder: set.Connectors,

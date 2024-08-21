@@ -33,8 +33,8 @@ import (
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor/processortest"
-	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/service/extensions"
+	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/pipelines"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
@@ -186,7 +186,7 @@ func TestServiceGetFactory(t *testing.T) {
 	})
 
 	assert.Nil(t, srv.host.GetFactory(component.KindReceiver, wrongType))
-	assert.Equal(t, set.Receivers.Factory(nopType), srv.host.GetFactory(component.KindReceiver, nopType))
+	assert.Equal(t, srv.host.Receivers.Factory(nopType), srv.host.GetFactory(component.KindReceiver, nopType))
 
 	assert.Nil(t, srv.host.GetFactory(component.KindProcessor, wrongType))
 	assert.Equal(t, set.Processors.Factory(nopType), srv.host.GetFactory(component.KindProcessor, nopType))
@@ -542,15 +542,18 @@ func assertZPages(t *testing.T, zpagesAddr string) {
 }
 
 func newNopSettings() Settings {
+	receiversConfigs, receiversFactories := builders.NewNopReceiverConfigsAndFactories()
+
 	return Settings{
-		BuildInfo:         component.NewDefaultBuildInfo(),
-		CollectorConf:     confmap.New(),
-		Receivers:         receivertest.NewNopBuilder(),
-		Processors:        processortest.NewNopBuilder(),
-		Exporters:         exportertest.NewNopBuilder(),
-		Connectors:        connectortest.NewNopBuilder(),
-		Extensions:        extensiontest.NewNopBuilder(),
-		AsyncErrorChannel: make(chan error),
+		BuildInfo:          component.NewDefaultBuildInfo(),
+		CollectorConf:      confmap.New(),
+		ReceiversConfigs:   receiversConfigs,
+		ReceiversFactories: receiversFactories,
+		Processors:         processortest.NewNopBuilder(),
+		Exporters:          exportertest.NewNopBuilder(),
+		Connectors:         connectortest.NewNopBuilder(),
+		Extensions:         extensiontest.NewNopBuilder(),
+		AsyncErrorChannel:  make(chan error),
 	}
 }
 
