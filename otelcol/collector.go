@@ -191,9 +191,16 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		ProcessorsConfigs:   cfg.Processors,
 		ProcessorsFactories: factories.Processors,
 
-		Exporters:         exporter.NewBuilder(cfg.Exporters, factories.Exporters),
-		Connectors:        connector.NewBuilder(cfg.Connectors, factories.Connectors),
-		Extensions:        extension.NewBuilder(cfg.Extensions, factories.Extensions),
+		Exporters:  exporter.NewBuilder(cfg.Exporters, factories.Exporters),
+		Connectors: connector.NewBuilder(cfg.Connectors, factories.Connectors),
+		Extensions: extension.NewBuilder(cfg.Extensions, factories.Extensions),
+		ModuleInfo: extension.ModuleInfo{
+			Receiver:  factories.ReceiverModules,
+			Processor: factories.ProcessorModules,
+			Exporter:  factories.ExporterModules,
+			Extension: factories.ExtensionModules,
+			Connector: factories.ConnectorModules,
+		},
 		AsyncErrorChannel: col.asyncErrorChannel,
 		LoggingOptions:    col.set.LoggingOptions,
 	}, cfg.Service)
