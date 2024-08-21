@@ -46,7 +46,14 @@ type Settings struct {
 	CollectorConf *confmap.Conf
 
 	// Receivers builder for receivers.
-	Receivers *receiver.Builder
+	//
+	// Deprecated: [v0.108.0] use the [ReceiversConfigs] and [ReceiversFactories] options
+	// instead.
+	Receivers builders.Receiver
+
+	// Receivers configuration to its builder.
+	ReceiversConfigs   map[component.ID]component.Config
+	ReceiversFactories map[component.Type]receiver.Factory
 
 	// Processors builder for processors.
 	Processors *processor.Builder
@@ -90,6 +97,11 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	disableHighCard := obsreportconfig.DisableHighCardinalityMetricsfeatureGate.IsEnabled()
 	extendedConfig := obsreportconfig.UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate.IsEnabled()
 
+	receivers := set.Receivers
+	if receivers == nil {
+		receivers = builders.NewReceiver(set.ReceiversConfigs, set.ReceiversFactories)
+	}
+
 	exporters := set.Exporters
 	if exporters == nil {
 		exporters = builders.NewExporter(set.ExportersConfigs, set.ExportersFactories)
@@ -98,7 +110,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	srv := &Service{
 		buildInfo: set.BuildInfo,
 		host: &graph.Host{
-			Receivers:         set.Receivers,
+			Receivers:         receivers,
 			Processors:        set.Processors,
 			Exporters:         exporters,
 			Connectors:        set.Connectors,
@@ -320,7 +332,7 @@ func (srv *Service) initGraph(ctx context.Context, set Settings, cfg Config) err
 	if srv.host.Pipelines, err = graph.Build(ctx, graph.Settings{
 		Telemetry:        srv.telemetrySettings,
 		BuildInfo:        srv.buildInfo,
-		ReceiverBuilder:  set.Receivers,
+		ReceiverBuilder:  srv.host.Receivers,
 		ProcessorBuilder: set.Processors,
 		ExporterBuilder:  srv.host.Exporters,
 		ConnectorBuilder: set.Connectors,

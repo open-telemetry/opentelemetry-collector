@@ -71,7 +71,7 @@ func newReceiverNode(pipelineType component.DataType, recvID component.ID) *rece
 func (n *receiverNode) buildComponent(ctx context.Context,
 	tel component.TelemetrySettings,
 	info component.BuildInfo,
-	builder *receiver.Builder,
+	builder builders.Receiver,
 	nexts []baseConsumer,
 ) error {
 	tel.Logger = components.ReceiverLogger(tel.Logger, n.componentID, n.pipelineType)
