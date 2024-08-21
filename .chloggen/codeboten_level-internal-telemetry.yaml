@@ -7,7 +7,7 @@ change_type: deprecation
 component: configtelemetry
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Deprecating `TelemetrySettings.MetricsLevel` and `TelemetrySettings.MeterProvider` in favour of `TelemetrySettings.LeveledMeterProvider`"
+note: "Deprecating `TelemetrySettings.MeterProvider` in favour of `TelemetrySettings.LeveledMeterProvider`"
 
 # One or more tracking issues or pull requests related to the change
 issues: [10912]
