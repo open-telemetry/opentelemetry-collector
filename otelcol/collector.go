@@ -184,16 +184,25 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	}
 
 	col.service, err = service.New(ctx, service.Settings{
-		BuildInfo:          col.set.BuildInfo,
-		CollectorConf:      conf,
-		Receivers:          receiver.NewBuilder(cfg.Receivers, factories.Receivers),
-		Processors:         processor.NewBuilder(cfg.Processors, factories.Processors),
+		BuildInfo:     col.set.BuildInfo,
+		CollectorConf: conf,
+		Receivers:     receiver.NewBuilder(cfg.Receivers, factories.Receivers),
+		Processors:    processor.NewBuilder(cfg.Processors, factories.Processors),
+
 		ExportersConfigs:   cfg.Exporters,
 		ExportersFactories: factories.Exporters,
-		Connectors:         connector.NewBuilder(cfg.Connectors, factories.Connectors),
-		Extensions:         extension.NewBuilder(cfg.Extensions, factories.Extensions),
-		AsyncErrorChannel:  col.asyncErrorChannel,
-		LoggingOptions:     col.set.LoggingOptions,
+
+		Connectors: connector.NewBuilder(cfg.Connectors, factories.Connectors),
+		Extensions: extension.NewBuilder(cfg.Extensions, factories.Extensions),
+		ModuleInfo: extension.ModuleInfo{
+			Receiver:  factories.ReceiverModules,
+			Processor: factories.ProcessorModules,
+			Exporter:  factories.ExporterModules,
+			Extension: factories.ExtensionModules,
+			Connector: factories.ConnectorModules,
+		},
+		AsyncErrorChannel: col.asyncErrorChannel,
+		LoggingOptions:    col.set.LoggingOptions,
 	}, cfg.Service)
 	if err != nil {
 		return err
