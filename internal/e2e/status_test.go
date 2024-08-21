@@ -106,13 +106,13 @@ func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 	require.Equal(t, 2, len(eventsReceived))
 
 	for instanceID, events := range eventsReceived {
-		pipelineIds := ""
+		pipelineIDs := ""
 		instanceID.AllPipelineIDs(func(id component.ID) bool {
-			pipelineIds += id.String() + ","
+			pipelineIDs += id.String() + ","
 			return true
 		})
 
-		t.Logf("checking errors for %v - %v - %v", pipelineIds, instanceID.Kind().String(), instanceID.ComponentID().String())
+		t.Logf("checking errors for %v - %v - %v", pipelineIDs, instanceID.Kind().String(), instanceID.ComponentID().String())
 
 		eventStr := ""
 		for i, e := range events {
