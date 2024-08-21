@@ -97,14 +97,12 @@ var ErrStatusNotReady = errors.New("report component status is not ready until s
 
 // Reporter handles component status reporting
 type Reporter interface {
-	Ready()
 	ReportStatus(id *componentstatus.InstanceID, ev *componentstatus.Event)
 	ReportOKIfStarting(id *componentstatus.InstanceID)
 }
 
 type reporter struct {
 	mu                  sync.Mutex
-	ready               bool
 	fsmMap              map[*componentstatus.InstanceID]*fsm
 	onStatusChange      NotifyStatusFunc
 	onInvalidTransition InvalidTransitionFunc
@@ -120,13 +118,6 @@ func NewReporter(onStatusChange NotifyStatusFunc, onInvalidTransition InvalidTra
 	}
 }
 
-// Ready enables status reporting
-func (r *reporter) Ready() {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	r.ready = true
-}
-
 // ReportStatus reports status for the given InstanceID
 func (r *reporter) ReportStatus(
 	id *componentstatus.InstanceID,
@@ -134,21 +125,15 @@ func (r *reporter) ReportStatus(
 ) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	if !r.ready {
-		r.onInvalidTransition(ErrStatusNotReady)
-	} else {
-		if err := r.componentFSM(id).transition(ev); err != nil {
-			r.onInvalidTransition(err)
-		}
+
+	if err := r.componentFSM(id).transition(ev); err != nil {
+		r.onInvalidTransition(err)
 	}
 }
 
 func (r *reporter) ReportOKIfStarting(id *componentstatus.InstanceID) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	if !r.ready {
-		r.onInvalidTransition(ErrStatusNotReady)
-	}
 	fsm := r.componentFSM(id)
 	if fsm.current.Status() == componentstatus.StatusStarting {
 		if err := fsm.transition(componentstatus.NewEvent(componentstatus.StatusOK)); err != nil {

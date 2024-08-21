@@ -436,8 +436,6 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			rep.Ready()
-
 			assert.Equal(t, tt.startErr, extensions.Start(context.Background(), componenttest.NewNopHost()))
 			if tt.startErr == nil {
 				assert.Equal(t, tt.shutdownErr, extensions.Shutdown(context.Background()))
