@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/service/extensions"
