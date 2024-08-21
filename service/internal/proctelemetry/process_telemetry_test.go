@@ -59,7 +59,7 @@ func setupTelemetry(t *testing.T) testTelemetry {
 	}
 
 	settings.TelemetrySettings.LeveledMeterProvider = func(_ configtelemetry.Level) metric.MeterProvider {
-		return settings.meterProvider
+		return meterProvider
 	}
 
 	settings.promHandler = promhttp.HandlerFor(promReg, promhttp.HandlerOpts{})
