@@ -38,13 +38,12 @@ func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 	set := service.Settings{
 		BuildInfo:     component.NewDefaultBuildInfo(),
 		CollectorConf: confmap.New(),
-		Receivers: receiver.NewBuilder(
-			map[component.ID]component.Config{
-				component.NewID(component.MustNewType("test")): &receiverConfig{},
-			},
-			map[component.Type]receiver.Factory{
-				component.MustNewType("test"): newReceiverFactory(),
-			}),
+		ReceiversConfigs: map[component.ID]component.Config{
+			component.NewID(component.MustNewType("test")): &receiverConfig{},
+		},
+		ReceiversFactories: map[component.Type]receiver.Factory{
+			component.MustNewType("test"): newReceiverFactory(),
+		},
 		Processors: processortest.NewNopBuilder(),
 		Exporters:  exportertest.NewNopBuilder(),
 		Connectors: connectortest.NewNopBuilder(),
