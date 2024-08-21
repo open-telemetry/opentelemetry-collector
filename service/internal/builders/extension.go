@@ -12,8 +12,6 @@ import (
 	"go.opentelemetry.io/collector/extension/extensiontest"
 )
 
-var nopType = component.MustNewType("nop")
-
 // Extension is an interface that allows using implementations of the builder
 // from different packages.
 type Extension interface {
