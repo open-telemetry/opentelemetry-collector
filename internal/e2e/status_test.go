@@ -107,7 +107,13 @@ func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 	require.Equal(t, 2, len(eventsReceived))
 
 	for instanceID, events := range eventsReceived {
-		t.Logf("checking errors for %v - %v - %v", instanceID.PipelineIDs, instanceID.Kind.String(), instanceID.ID.String())
+		pipelineIds := ""
+		instanceID.AllPipelineIDs(func(id component.ID) bool {
+			pipelineIds += id.String() + ","
+			return true
+		})
+
+		t.Logf("checking errors for %v - %v - %v", pipelineIds, instanceID.Kind().String(), instanceID.ComponentID().String())
 
 		eventStr := ""
 		for i, e := range events {
@@ -254,7 +260,7 @@ func (t *testExtension) ComponentStatusChanged(
 ) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
-	if source.ID == component.NewID(component.MustNewType("test")) {
+	if source.ComponentID() == component.NewID(component.MustNewType("test")) {
 		t.eventsReceived[source] = append(t.eventsReceived[source], event)
 	}
 }
