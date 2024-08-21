@@ -38,7 +38,8 @@ type Host struct {
 	Connectors        *connector.Builder
 	Extensions        builders.Extension
 
-	BuildInfo component.BuildInfo
+	ModuleInfo extension.ModuleInfo
+	BuildInfo  component.BuildInfo
 
 	Pipelines         *Graph
 	ServiceExtensions *extensions.Extensions

@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/otelcol/internal/grpclog"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
@@ -184,16 +185,25 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	}
 
 	col.service, err = service.New(ctx, service.Settings{
-		BuildInfo:           col.set.BuildInfo,
-		CollectorConf:       conf,
-		Receivers:           receiver.NewBuilder(cfg.Receivers, factories.Receivers),
-		Processors:          processor.NewBuilder(cfg.Processors, factories.Processors),
-		Exporters:           exporter.NewBuilder(cfg.Exporters, factories.Exporters),
-		Connectors:          connector.NewBuilder(cfg.Connectors, factories.Connectors),
+		BuildInfo:     col.set.BuildInfo,
+		CollectorConf: conf,
+		Receivers:     receiver.NewBuilder(cfg.Receivers, factories.Receivers),
+		Processors:    processor.NewBuilder(cfg.Processors, factories.Processors),
+		Exporters:     exporter.NewBuilder(cfg.Exporters, factories.Exporters),
+		Connectors:    connector.NewBuilder(cfg.Connectors, factories.Connectors),
+
 		ExtensionsConfigs:   cfg.Extensions,
 		ExtensionsFactories: factories.Extensions,
-		AsyncErrorChannel:   col.asyncErrorChannel,
-		LoggingOptions:      col.set.LoggingOptions,
+
+		ModuleInfo: extension.ModuleInfo{
+			Receiver:  factories.ReceiverModules,
+			Processor: factories.ProcessorModules,
+			Exporter:  factories.ExporterModules,
+			Extension: factories.ExtensionModules,
+			Connector: factories.ConnectorModules,
+		},
+		AsyncErrorChannel: col.asyncErrorChannel,
+		LoggingOptions:    col.set.LoggingOptions,
 	}, cfg.Service)
 	if err != nil {
 		return err
