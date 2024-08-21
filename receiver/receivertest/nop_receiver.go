@@ -77,6 +77,9 @@ type nopReceiver struct {
 }
 
 // NewNopBuilder returns a receiver.Builder that constructs nop receivers.
+//
+// Deprecated: [v0.108.0] this builder is being internalized within the service module,
+// and will be removed soon.
 func NewNopBuilder() *receiver.Builder {
 	nopFactory := NewNopFactory()
 	return receiver.NewBuilder(
