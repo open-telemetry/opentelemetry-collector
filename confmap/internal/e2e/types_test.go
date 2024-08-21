@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
@@ -584,4 +585,17 @@ func TestIndirectSliceEnvVar(t *testing.T) {
 	assert.Equal(t, collectorConf.Exporters.OTLP.Endpoint, "localhost:4317")
 	assert.Equal(t, collectorConf.Service.Pipelines.Logs.Receivers, []string{"nop", "otlp"})
 	assert.Equal(t, collectorConf.Service.Pipelines.Logs.Exporters, []string{"otlp", "nop"})
+}
+
+func TestIssue10937_MapType(t *testing.T) {
+	t.Setenv("VALUE", "1234")
+
+	resolver := NewResolver(t, "types_map.yaml")
+	conf, err := resolver.Resolve(context.Background())
+	require.NoError(t, err)
+
+	var cfg TargetConfig[map[string]configopaque.String]
+	err = conf.Unmarshal(&cfg)
+	require.NoError(t, err)
+	require.Equal(t, map[string]configopaque.String{"key": "1234"}, cfg.Field)
 }
