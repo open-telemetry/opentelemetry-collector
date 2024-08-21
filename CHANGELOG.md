@@ -13,6 +13,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 - `service`: Remove OpenCensus bridge completely, mark feature gate as stable. (#10414)
 - `confmap`: Set the `confmap.unifyEnvVarExpansion` feature gate to Stable. Expansion of `$FOO` env vars is no longer supported.  Use `${FOO}` or `${env:FOO}` instead. (#10508)
+- `service`: Remove `otelcol` from Prometheus configuration. This means that any metric that isn't explicitly prefixed with `otelcol_` no longer have that prefix. (#9759)
 
 ### 💡 Enhancements 💡
 
