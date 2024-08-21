@@ -24,6 +24,10 @@ type TelemetrySettings struct {
 	// MeterProvider that the factory can pass to other instrumented third-party libraries.
 	MeterProvider metric.MeterProvider
 
+	// LeveledMeterProvider returns a MeterProvider for a Level that the factory can
+	// pass to other instrumented third-party libraries.
+	LeveledMeterProvider func(level configtelemetry.Level) metric.MeterProvider
+
 	// MetricsLevel controls the level of detail for metrics emitted by the collector.
 	// Experimental: *NOTE* this field is experimental and may be changed or removed.
 	MetricsLevel configtelemetry.Level

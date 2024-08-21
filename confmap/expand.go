@@ -7,12 +7,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
 	"regexp"
-	"strconv"
 	"strings"
-
-	"go.opentelemetry.io/collector/internal/globalgates"
 )
 
 // schemePattern defines the regexp pattern for scheme names.
@@ -192,39 +188,11 @@ func (mr *Resolver) findAndExpandURI(ctx context.Context, input string) (any, bo
 		return input, false, err
 	}
 
-	var repl string
-	if globalgates.StrictlyTypedInputGate.IsEnabled() {
-		repl, err = expanded.AsString()
-	} else {
-		repl, err = toString(expanded)
-	}
+	repl, err := expanded.AsString()
 	if err != nil {
 		return input, false, fmt.Errorf("expanding %v: %w", uri, err)
 	}
 	return strings.ReplaceAll(input, uri, repl), true, err
-}
-
-// toString attempts to convert input to a string.
-func toString(ret *Retrieved) (string, error) {
-	// This list must be kept in sync with checkRawConfType.
-	input, err := ret.AsRaw()
-	if err != nil {
-		return "", err
-	}
-
-	val := reflect.ValueOf(input)
-	switch val.Kind() {
-	case reflect.String:
-		return val.String(), nil
-	case reflect.Int, reflect.Int32, reflect.Int64:
-		return strconv.FormatInt(val.Int(), 10), nil
-	case reflect.Float32, reflect.Float64:
-		return strconv.FormatFloat(val.Float(), 'f', -1, 64), nil
-	case reflect.Bool:
-		return strconv.FormatBool(val.Bool()), nil
-	default:
-		return "", fmt.Errorf("expected convertable to string value type, got %q(%T)", input, input)
-	}
 }
 
 func (mr *Resolver) expandURI(ctx context.Context, input string) (*Retrieved, error) {

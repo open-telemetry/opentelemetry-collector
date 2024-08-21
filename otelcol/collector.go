@@ -190,10 +190,17 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		ReceiversConfigs:   cfg.Receivers,
 		ReceiversFactories: factories.Receivers,
 
-		Processors:        processor.NewBuilder(cfg.Processors, factories.Processors),
-		Exporters:         exporter.NewBuilder(cfg.Exporters, factories.Exporters),
-		Connectors:        connector.NewBuilder(cfg.Connectors, factories.Connectors),
-		Extensions:        extension.NewBuilder(cfg.Extensions, factories.Extensions),
+		Processors: processor.NewBuilder(cfg.Processors, factories.Processors),
+		Exporters:  exporter.NewBuilder(cfg.Exporters, factories.Exporters),
+		Connectors: connector.NewBuilder(cfg.Connectors, factories.Connectors),
+		Extensions: extension.NewBuilder(cfg.Extensions, factories.Extensions),
+		ModuleInfo: extension.ModuleInfo{
+			Receiver:  factories.ReceiverModules,
+			Processor: factories.ProcessorModules,
+			Exporter:  factories.ExporterModules,
+			Extension: factories.ExtensionModules,
+			Connector: factories.ConnectorModules,
+		},
 		AsyncErrorChannel: col.asyncErrorChannel,
 		LoggingOptions:    col.set.LoggingOptions,
 	}, cfg.Service)
