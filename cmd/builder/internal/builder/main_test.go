@@ -228,12 +228,13 @@ func TestSkipGenerate(t *testing.T) {
 
 func TestGenerateAndCompile(t *testing.T) {
 	replaces := generateReplaces()
-	testCases := []struct {
+	type testDesc struct {
 		testCase    string
 		cfgBuilder  func(t *testing.T) Config
 		verifyFiles func(t *testing.T, dir string)
 		expectedErr string
-	}{
+	}
+	testCases := []testDesc{
 		{
 			testCase: "Default Configuration Compilation",
 			cfgBuilder: func(t *testing.T) Config {
@@ -385,19 +386,6 @@ func TestGenerateAndCompile(t *testing.T) {
 			},
 		},
 		{
-			testCase: "No Dir Permissions",
-			cfgBuilder: func(t *testing.T) Config {
-				cfg := newTestConfig()
-				err := cfg.SetBackwardsCompatibility()
-				require.NoError(t, err)
-				cfg.Distribution.OutputPath = t.TempDir()
-				assert.NoError(t, os.Chmod(cfg.Distribution.OutputPath, 0400))
-				cfg.Replaces = append(cfg.Replaces, replaces...)
-				return cfg
-			},
-			expectedErr: "failed to generate source file",
-		},
-		{
 			testCase: "Invalid Output Path",
 			cfgBuilder: func(t *testing.T) Config {
 				cfg := newInitializedConfig(t)
@@ -427,6 +415,23 @@ func TestGenerateAndCompile(t *testing.T) {
 			},
 			expectedErr: "ill-formatted modspec",
 		},
+	}
+
+	// file permissions don't work the same on windows systems, so this test always passes.
+	if runtime.GOOS != "windows" {
+		testCases = append(testCases, testDesc{
+			testCase: "No Dir Permissions",
+			cfgBuilder: func(t *testing.T) Config {
+				cfg := newTestConfig()
+				err := cfg.SetBackwardsCompatibility()
+				require.NoError(t, err)
+				cfg.Distribution.OutputPath = t.TempDir()
+				assert.NoError(t, os.Chmod(cfg.Distribution.OutputPath, 0400))
+				cfg.Replaces = append(cfg.Replaces, replaces...)
+				return cfg
+			},
+			expectedErr: "failed to generate source file",
+		})
 	}
 
 	for _, tt := range testCases {
