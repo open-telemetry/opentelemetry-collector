@@ -5,20 +5,12 @@ package builders // import "go.opentelemetry.io/collector/service/internal/build
 
 import (
 	"context"
-	"errors"
 	"fmt"
-
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
-)
-
-var (
-	errNilNextConsumer = errors.New("nil next Consumer")
-	nopType            = component.MustNewType("nop")
 )
 
 // Connector is an interface that allows using implementations of the builder
@@ -247,15 +239,4 @@ func NewNopConnectorConfigsAndFactories() (map[component.ID]component.Config, ma
 	}
 
 	return configs, factories
-}
-
-// logStabilityLevel logs the stability level of a component. The log level is set to info for
-// undefined, unmaintained, deprecated and development. The log level is set to debug
-// for alpha, beta and stable.
-func logStabilityLevel(logger *zap.Logger, sl component.StabilityLevel) {
-	if sl >= component.StabilityLevelAlpha {
-		logger.Debug(sl.LogMessage())
-	} else {
-		logger.Info(sl.LogMessage())
-	}
 }
