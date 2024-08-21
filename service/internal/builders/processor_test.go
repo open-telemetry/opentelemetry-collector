@@ -156,7 +156,7 @@ func TestProcessorBuilderFactory(t *testing.T) {
 	assert.Nil(t, b.Factory(component.MustNewID("bar").Type()))
 }
 
-func TestNewNopBuilder(t *testing.T) {
+func TestNewNopProcessorBuilder(t *testing.T) {
 	configs, factories := NewNopProcessorConfigsAndFactories()
 	builder := NewProcessor(configs, factories)
 	require.NotNil(t, builder)
