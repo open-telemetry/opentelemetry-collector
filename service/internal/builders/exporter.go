@@ -7,15 +7,9 @@ import (
 	"context"
 	"fmt"
 
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-)
-
-var (
-	nopType = component.MustNewType("nop")
 )
 
 // Exporter is an interface that allows using implementations of the builder
@@ -101,15 +95,4 @@ func NewNopExporterConfigsAndFactories() (map[component.ID]component.Config, map
 	}
 
 	return configs, factories
-}
-
-// logStabilityLevel logs the stability level of a component. The log level is set to info for
-// undefined, unmaintained, deprecated and development. The log level is set to debug
-// for alpha, beta and stable.
-func logStabilityLevel(logger *zap.Logger, sl component.StabilityLevel) {
-	if sl >= component.StabilityLevelAlpha {
-		logger.Debug(sl.LogMessage())
-	} else {
-		logger.Info(sl.LogMessage())
-	}
 }
