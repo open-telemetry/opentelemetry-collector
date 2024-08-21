@@ -118,7 +118,7 @@ func NewTracesRequestExporter(
 		return nil, errNilTracesConverter
 	}
 
-	be, err := newBaseExporter(set, component.DataTypeTraces, newTracesExporterWithObservability, options...)
+	be, err := newBaseExporter(set, component.SignalTraces, newTracesExporterWithObservability, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +133,7 @@ func NewTracesRequestExporter(
 		}
 		sErr := be.send(ctx, req)
 		if errors.Is(sErr, queue.ErrQueueIsFull) {
-			be.obsrep.recordEnqueueFailure(ctx, component.DataTypeTraces, int64(req.ItemsCount()))
+			be.obsrep.recordEnqueueFailure(ctx, component.SignalTraces, int64(req.ItemsCount()))
 		}
 		return sErr
 	}, be.consumerOptions...)

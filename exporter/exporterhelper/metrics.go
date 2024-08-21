@@ -118,7 +118,7 @@ func NewMetricsRequestExporter(
 		return nil, errNilMetricsConverter
 	}
 
-	be, err := newBaseExporter(set, component.DataTypeMetrics, newMetricsSenderWithObservability, options...)
+	be, err := newBaseExporter(set, component.SignalMetrics, newMetricsSenderWithObservability, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +133,7 @@ func NewMetricsRequestExporter(
 		}
 		sErr := be.send(ctx, req)
 		if errors.Is(sErr, queue.ErrQueueIsFull) {
-			be.obsrep.recordEnqueueFailure(ctx, component.DataTypeMetrics, int64(req.ItemsCount()))
+			be.obsrep.recordEnqueueFailure(ctx, component.SignalMetrics, int64(req.ItemsCount()))
 		}
 		return sErr
 	}, be.consumerOptions...)

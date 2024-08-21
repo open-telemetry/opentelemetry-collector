@@ -26,14 +26,14 @@ func TestExportEnqueueFailure(t *testing.T) {
 	require.NoError(t, err)
 
 	logRecords := int64(7)
-	obsrep.recordEnqueueFailure(context.Background(), component.DataTypeLogs, logRecords)
+	obsrep.recordEnqueueFailure(context.Background(), component.SignalLogs, logRecords)
 	require.NoError(t, tt.CheckExporterEnqueueFailedLogs(logRecords))
 
 	spans := int64(12)
-	obsrep.recordEnqueueFailure(context.Background(), component.DataTypeTraces, spans)
+	obsrep.recordEnqueueFailure(context.Background(), component.SignalTraces, spans)
 	require.NoError(t, tt.CheckExporterEnqueueFailedTraces(spans))
 
 	metricPoints := int64(21)
-	obsrep.recordEnqueueFailure(context.Background(), component.DataTypeMetrics, metricPoints)
+	obsrep.recordEnqueueFailure(context.Background(), component.SignalMetrics, metricPoints)
 	require.NoError(t, tt.CheckExporterEnqueueFailedMetrics(metricPoints))
 }

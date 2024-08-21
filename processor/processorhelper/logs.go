@@ -63,7 +63,7 @@ func NewLogsProcessor(
 			return err
 		}
 		recordsOut := ld.LogRecordCount()
-		obs.recordInOut(ctx, component.DataTypeLogs, recordsIn, recordsOut)
+		obs.recordInOut(ctx, component.SignalLogs, recordsIn, recordsOut)
 		return nextConsumer.ConsumeLogs(ctx, ld)
 	}, bs.consumerOptions...)
 	if err != nil {

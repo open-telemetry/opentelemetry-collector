@@ -82,7 +82,7 @@ func (rec *ObsReport) EndTracesOp(
 	numReceivedSpans int,
 	err error,
 ) {
-	rec.endOp(receiverCtx, format, numReceivedSpans, err, component.DataTypeTraces)
+	rec.endOp(receiverCtx, format, numReceivedSpans, err, component.SignalTraces)
 }
 
 // StartLogsOp is called when a request is received from a client.
@@ -100,7 +100,7 @@ func (rec *ObsReport) EndLogsOp(
 	numReceivedLogRecords int,
 	err error,
 ) {
-	rec.endOp(receiverCtx, format, numReceivedLogRecords, err, component.DataTypeLogs)
+	rec.endOp(receiverCtx, format, numReceivedLogRecords, err, component.SignalLogs)
 }
 
 // StartMetricsOp is called when a request is received from a client.
@@ -118,7 +118,7 @@ func (rec *ObsReport) EndMetricsOp(
 	numReceivedPoints int,
 	err error,
 ) {
-	rec.endOp(receiverCtx, format, numReceivedPoints, err, component.DataTypeMetrics)
+	rec.endOp(receiverCtx, format, numReceivedPoints, err, component.SignalMetrics)
 }
 
 // startOp creates the span used to trace the operation. Returning
@@ -152,7 +152,7 @@ func (rec *ObsReport) endOp(
 	format string,
 	numReceivedItems int,
 	err error,
-	dataType component.DataType,
+	dataType component.Signal,
 ) {
 	numAccepted := numReceivedItems
 	numRefused := 0
@@ -169,13 +169,13 @@ func (rec *ObsReport) endOp(
 	if span.IsRecording() {
 		var acceptedItemsKey, refusedItemsKey string
 		switch dataType {
-		case component.DataTypeTraces:
+		case component.SignalTraces:
 			acceptedItemsKey = obsmetrics.AcceptedSpansKey
 			refusedItemsKey = obsmetrics.RefusedSpansKey
-		case component.DataTypeMetrics:
+		case component.SignalMetrics:
 			acceptedItemsKey = obsmetrics.AcceptedMetricPointsKey
 			refusedItemsKey = obsmetrics.RefusedMetricPointsKey
-		case component.DataTypeLogs:
+		case component.SignalLogs:
 			acceptedItemsKey = obsmetrics.AcceptedLogRecordsKey
 			refusedItemsKey = obsmetrics.RefusedLogRecordsKey
 		}
@@ -192,16 +192,16 @@ func (rec *ObsReport) endOp(
 	span.End()
 }
 
-func (rec *ObsReport) recordMetrics(receiverCtx context.Context, dataType component.DataType, numAccepted, numRefused int) {
+func (rec *ObsReport) recordMetrics(receiverCtx context.Context, dataType component.Signal, numAccepted, numRefused int) {
 	var acceptedMeasure, refusedMeasure metric.Int64Counter
 	switch dataType {
-	case component.DataTypeTraces:
+	case component.SignalTraces:
 		acceptedMeasure = rec.telemetryBuilder.ReceiverAcceptedSpans
 		refusedMeasure = rec.telemetryBuilder.ReceiverRefusedSpans
-	case component.DataTypeMetrics:
+	case component.SignalMetrics:
 		acceptedMeasure = rec.telemetryBuilder.ReceiverAcceptedMetricPoints
 		refusedMeasure = rec.telemetryBuilder.ReceiverRefusedMetricPoints
-	case component.DataTypeLogs:
+	case component.SignalLogs:
 		acceptedMeasure = rec.telemetryBuilder.ReceiverAcceptedLogRecords
 		refusedMeasure = rec.telemetryBuilder.ReceiverRefusedLogRecords
 	}

@@ -208,7 +208,7 @@ type baseExporter struct {
 	component.StartFunc
 	component.ShutdownFunc
 
-	signal component.DataType
+	signal component.Signal
 
 	batchMergeFunc      exporterbatcher.BatchMergeFunc[Request]
 	batchMergeSplitfunc exporterbatcher.BatchMergeSplitFunc[Request]
@@ -239,7 +239,7 @@ type baseExporter struct {
 	batcherOpts  []BatcherOption
 }
 
-func newBaseExporter(set exporter.Settings, signal component.DataType, osf obsrepSenderFactory, options ...Option) (*baseExporter, error) {
+func newBaseExporter(set exporter.Settings, signal component.Signal, osf obsrepSenderFactory, options ...Option) (*baseExporter, error) {
 	obsReport, err := newExporter(obsReportSettings{exporterID: set.ID, exporterCreateSettings: set, dataType: signal})
 	if err != nil {
 		return nil, err

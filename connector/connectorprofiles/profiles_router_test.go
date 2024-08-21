@@ -43,13 +43,13 @@ func TestProfilesRouterMultiplexing(t *testing.T) {
 
 func fuzzProfiles(numIDs, numCons, numProfiles int) func(*testing.T) {
 	return func(t *testing.T) {
-		allIDs := make([]component.ID, 0, numCons)
+		allIDs := make([]component.PipelineID, 0, numCons)
 		allCons := make([]consumerprofiles.Profiles, 0, numCons)
-		allConsMap := make(map[component.ID]consumerprofiles.Profiles)
+		allConsMap := make(map[component.PipelineID]consumerprofiles.Profiles)
 
 		// If any consumer is mutating, the router must report mutating
 		for i := 0; i < numCons; i++ {
-			allIDs = append(allIDs, component.MustNewIDWithName("sink", strconv.Itoa(numCons)))
+			allIDs = append(allIDs, component.NewPipelineIDWithName("sink", strconv.Itoa(numCons)))
 			// Random chance for each consumer to be mutating
 			if (numCons+numProfiles+i)%4 == 0 {
 				allCons = append(allCons, &mutatingProfilesSink{ProfilesSink: new(consumertest.ProfilesSink)})
@@ -64,11 +64,11 @@ func fuzzProfiles(numIDs, numCons, numProfiles int) func(*testing.T) {
 
 		// Keep track of how many logs each consumer should receive.
 		// This will be validated after every call to RouteProfiles.
-		expected := make(map[component.ID]int, numCons)
+		expected := make(map[component.PipelineID]int, numCons)
 
 		for i := 0; i < numProfiles; i++ {
 			// Build a random set of ids (no duplicates)
-			randCons := make(map[component.ID]bool, numIDs)
+			randCons := make(map[component.PipelineID]bool, numIDs)
 			for j := 0; j < numIDs; j++ {
 				// This number should be pretty random and less than numCons
 				conNum := (numCons + numIDs + i + j) % numCons
@@ -76,7 +76,7 @@ func fuzzProfiles(numIDs, numCons, numProfiles int) func(*testing.T) {
 			}
 
 			// Convert to slice, update expectations
-			conIDs := make([]component.ID, 0, len(randCons))
+			conIDs := make([]component.PipelineID, 0, len(randCons))
 			for id := range randCons {
 				conIDs = append(conIDs, id)
 				expected[id]++
@@ -109,16 +109,16 @@ func TestProfilessRouterConsumer(t *testing.T) {
 	ctx := context.Background()
 	td := testdata.GenerateProfiles(1)
 
-	fooID := component.MustNewID("foo")
-	barID := component.MustNewID("bar")
+	fooID := component.NewPipelineID("foo")
+	barID := component.NewPipelineID("bar")
 
 	foo := new(consumertest.ProfilesSink)
 	bar := new(consumertest.ProfilesSink)
-	r := NewProfilesRouter(map[component.ID]consumerprofiles.Profiles{fooID: foo, barID: bar})
+	r := NewProfilesRouter(map[component.PipelineID]consumerprofiles.Profiles{fooID: foo, barID: bar})
 
 	rcs := r.PipelineIDs()
 	assert.Len(t, rcs, 2)
-	assert.ElementsMatch(t, []component.ID{fooID, barID}, rcs)
+	assert.ElementsMatch(t, []component.PipelineID{fooID, barID}, rcs)
 
 	assert.Len(t, foo.AllProfiles(), 0)
 	assert.Len(t, bar.AllProfiles(), 0)
@@ -151,7 +151,7 @@ func TestProfilessRouterConsumer(t *testing.T) {
 	assert.Nil(t, none)
 	assert.Error(t, err)
 
-	fake, err := r.Consumer(component.MustNewID("fake"))
+	fake, err := r.Consumer(component.NewPipelineID("fake"))
 	assert.Nil(t, fake)
 	assert.Error(t, err)
 }

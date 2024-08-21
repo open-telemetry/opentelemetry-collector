@@ -24,7 +24,7 @@ import (
 
 var (
 	defaultType     = component.MustNewType("test")
-	defaultDataType = component.DataTypeMetrics
+	defaultDataType = component.SignalMetrics
 	defaultID       = component.NewID(defaultType)
 	defaultSettings = func() exporter.Settings {
 		set := exportertest.NewNopSettings()

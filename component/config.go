@@ -4,6 +4,7 @@
 package component // import "go.opentelemetry.io/collector/component"
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -147,6 +148,8 @@ func MustNewType(strType string) Type {
 
 // DataType is a special Type that represents the data types supported by the collector. We currently support
 // collecting metrics, traces and logs, this can expand in the future.
+//
+// Deprecated: [v0.108.0] Use Signal instead
 type DataType = Type
 
 func mustNewDataType(strType string) DataType {
@@ -156,12 +159,18 @@ func mustNewDataType(strType string) DataType {
 // Currently supported data types. Add new data types here when new types are supported in the future.
 var (
 	// DataTypeTraces is the data type tag for traces.
+	//
+	// Deprecated: [v0.108.0] Use SignalTraces instead
 	DataTypeTraces = mustNewDataType("traces")
 
 	// DataTypeMetrics is the data type tag for metrics.
+	//
+	// Deprecated: [v0.108.0] Use SignalMetrics instead
 	DataTypeMetrics = mustNewDataType("metrics")
 
 	// DataTypeLogs is the data type tag for logs.
+	//
+	// Deprecated: [v0.108.0] Use SignalLogs instead
 	DataTypeLogs = mustNewDataType("logs")
 )
 
@@ -178,4 +187,40 @@ func validateName(nameStr string) error {
 		return fmt.Errorf("invalid character(s) in name %q", nameStr)
 	}
 	return nil
+}
+
+type Signal string
+
+const (
+	SignalTraces  Signal = "traces"
+	SignalMetrics Signal = "metrics"
+	SignalLogs    Signal = "logs"
+)
+
+func (s Signal) String() string {
+	return string(s)
+}
+
+func (s Signal) MarshalText() (text []byte, err error) {
+	return []byte(s), nil
+}
+
+func (s *Signal) UnmarshalText(text []byte) error {
+	if len(text) == 0 {
+		return errors.New("id must not be empty")
+	}
+	strText := string(text)
+	switch strText {
+	case "traces":
+		*s = SignalTraces
+		return nil
+	case "metrics":
+		*s = SignalMetrics
+		return nil
+	case "logs":
+		*s = SignalLogs
+		return nil
+	default:
+		return fmt.Errorf("invalid signal %q", strText)
+	}
 }

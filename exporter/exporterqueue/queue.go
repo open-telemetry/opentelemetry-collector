@@ -24,7 +24,7 @@ type Queue[T any] queue.Queue[T]
 
 // Settings defines settings for creating a queue.
 type Settings struct {
-	DataType         component.DataType
+	DataType         component.Signal
 	ExporterSettings exporter.Settings
 }
 

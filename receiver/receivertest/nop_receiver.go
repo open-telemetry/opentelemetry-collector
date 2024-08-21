@@ -41,14 +41,14 @@ func NewNopFactory() receiver.Factory {
 
 // NewNopFactoryForType returns a receiver.Factory that constructs nop receivers supporting only the
 // given data type.
-func NewNopFactoryForType(dataType component.DataType) receiver.Factory {
+func NewNopFactoryForType(dataType component.Signal) receiver.Factory {
 	var factoryOpt receiver.FactoryOption
 	switch dataType {
-	case component.DataTypeTraces:
+	case component.SignalTraces:
 		factoryOpt = receiver.WithTraces(createTraces, component.StabilityLevelStable)
-	case component.DataTypeMetrics:
+	case component.SignalMetrics:
 		factoryOpt = receiver.WithMetrics(createMetrics, component.StabilityLevelStable)
-	case component.DataTypeLogs:
+	case component.SignalLogs:
 		factoryOpt = receiver.WithLogs(createLogs, component.StabilityLevelStable)
 	default:
 		panic("unsupported data type for creating nop receiver factory: " + dataType.String())

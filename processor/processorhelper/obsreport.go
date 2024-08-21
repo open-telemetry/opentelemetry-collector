@@ -60,16 +60,16 @@ func newObsReport(cfg ObsReportSettings) (*ObsReport, error) {
 	}, nil
 }
 
-func (or *ObsReport) recordInOut(ctx context.Context, dataType component.DataType, incoming, outgoing int) {
+func (or *ObsReport) recordInOut(ctx context.Context, dataType component.Signal, incoming, outgoing int) {
 	var incomingCount, outgoingCount metric.Int64Counter
 	switch dataType {
-	case component.DataTypeTraces:
+	case component.SignalTraces:
 		incomingCount = or.telemetryBuilder.ProcessorIncomingSpans
 		outgoingCount = or.telemetryBuilder.ProcessorOutgoingSpans
-	case component.DataTypeMetrics:
+	case component.SignalMetrics:
 		incomingCount = or.telemetryBuilder.ProcessorIncomingMetricPoints
 		outgoingCount = or.telemetryBuilder.ProcessorOutgoingMetricPoints
-	case component.DataTypeLogs:
+	case component.SignalLogs:
 		incomingCount = or.telemetryBuilder.ProcessorIncomingLogRecords
 		outgoingCount = or.telemetryBuilder.ProcessorOutgoingLogRecords
 	}
@@ -78,20 +78,20 @@ func (or *ObsReport) recordInOut(ctx context.Context, dataType component.DataTyp
 	outgoingCount.Add(ctx, int64(outgoing), metric.WithAttributes(or.otelAttrs...))
 }
 
-func (or *ObsReport) recordData(ctx context.Context, dataType component.DataType, accepted, refused, dropped, inserted int64) {
+func (or *ObsReport) recordData(ctx context.Context, dataType component.Signal, accepted, refused, dropped, inserted int64) {
 	var acceptedCount, refusedCount, droppedCount, insertedCount metric.Int64Counter
 	switch dataType {
-	case component.DataTypeTraces:
+	case component.SignalTraces:
 		acceptedCount = or.telemetryBuilder.ProcessorAcceptedSpans
 		refusedCount = or.telemetryBuilder.ProcessorRefusedSpans
 		droppedCount = or.telemetryBuilder.ProcessorDroppedSpans
 		insertedCount = or.telemetryBuilder.ProcessorInsertedSpans
-	case component.DataTypeMetrics:
+	case component.SignalMetrics:
 		acceptedCount = or.telemetryBuilder.ProcessorAcceptedMetricPoints
 		refusedCount = or.telemetryBuilder.ProcessorRefusedMetricPoints
 		droppedCount = or.telemetryBuilder.ProcessorDroppedMetricPoints
 		insertedCount = or.telemetryBuilder.ProcessorInsertedMetricPoints
-	case component.DataTypeLogs:
+	case component.SignalLogs:
 		acceptedCount = or.telemetryBuilder.ProcessorAcceptedLogRecords
 		refusedCount = or.telemetryBuilder.ProcessorRefusedLogRecords
 		droppedCount = or.telemetryBuilder.ProcessorDroppedLogRecords
@@ -106,60 +106,60 @@ func (or *ObsReport) recordData(ctx context.Context, dataType component.DataType
 
 // TracesAccepted reports that the trace data was accepted.
 func (or *ObsReport) TracesAccepted(ctx context.Context, numSpans int) {
-	or.recordData(ctx, component.DataTypeTraces, int64(numSpans), int64(0), int64(0), int64(0))
+	or.recordData(ctx, component.SignalTraces, int64(numSpans), int64(0), int64(0), int64(0))
 }
 
 // TracesRefused reports that the trace data was refused.
 func (or *ObsReport) TracesRefused(ctx context.Context, numSpans int) {
-	or.recordData(ctx, component.DataTypeTraces, int64(0), int64(numSpans), int64(0), int64(0))
+	or.recordData(ctx, component.SignalTraces, int64(0), int64(numSpans), int64(0), int64(0))
 }
 
 // TracesDropped reports that the trace data was dropped.
 func (or *ObsReport) TracesDropped(ctx context.Context, numSpans int) {
-	or.recordData(ctx, component.DataTypeTraces, int64(0), int64(0), int64(numSpans), int64(0))
+	or.recordData(ctx, component.SignalTraces, int64(0), int64(0), int64(numSpans), int64(0))
 }
 
 // TracesInserted reports that the trace data was inserted.
 func (or *ObsReport) TracesInserted(ctx context.Context, numSpans int) {
-	or.recordData(ctx, component.DataTypeTraces, int64(0), int64(0), int64(0), int64(numSpans))
+	or.recordData(ctx, component.SignalTraces, int64(0), int64(0), int64(0), int64(numSpans))
 }
 
 // MetricsAccepted reports that the metrics were accepted.
 func (or *ObsReport) MetricsAccepted(ctx context.Context, numPoints int) {
-	or.recordData(ctx, component.DataTypeMetrics, int64(numPoints), int64(0), int64(0), int64(0))
+	or.recordData(ctx, component.SignalMetrics, int64(numPoints), int64(0), int64(0), int64(0))
 }
 
 // MetricsRefused reports that the metrics were refused.
 func (or *ObsReport) MetricsRefused(ctx context.Context, numPoints int) {
-	or.recordData(ctx, component.DataTypeMetrics, int64(0), int64(numPoints), int64(0), int64(0))
+	or.recordData(ctx, component.SignalMetrics, int64(0), int64(numPoints), int64(0), int64(0))
 }
 
 // MetricsDropped reports that the metrics were dropped.
 func (or *ObsReport) MetricsDropped(ctx context.Context, numPoints int) {
-	or.recordData(ctx, component.DataTypeMetrics, int64(0), int64(0), int64(numPoints), int64(0))
+	or.recordData(ctx, component.SignalMetrics, int64(0), int64(0), int64(numPoints), int64(0))
 }
 
 // MetricsInserted reports that the metrics were inserted.
 func (or *ObsReport) MetricsInserted(ctx context.Context, numPoints int) {
-	or.recordData(ctx, component.DataTypeMetrics, int64(0), int64(0), int64(0), int64(numPoints))
+	or.recordData(ctx, component.SignalMetrics, int64(0), int64(0), int64(0), int64(numPoints))
 }
 
 // LogsAccepted reports that the logs were accepted.
 func (or *ObsReport) LogsAccepted(ctx context.Context, numRecords int) {
-	or.recordData(ctx, component.DataTypeLogs, int64(numRecords), int64(0), int64(0), int64(0))
+	or.recordData(ctx, component.SignalLogs, int64(numRecords), int64(0), int64(0), int64(0))
 }
 
 // LogsRefused reports that the logs were refused.
 func (or *ObsReport) LogsRefused(ctx context.Context, numRecords int) {
-	or.recordData(ctx, component.DataTypeLogs, int64(0), int64(numRecords), int64(0), int64(0))
+	or.recordData(ctx, component.SignalLogs, int64(0), int64(numRecords), int64(0), int64(0))
 }
 
 // LogsDropped reports that the logs were dropped.
 func (or *ObsReport) LogsDropped(ctx context.Context, numRecords int) {
-	or.recordData(ctx, component.DataTypeLogs, int64(0), int64(0), int64(numRecords), int64(0))
+	or.recordData(ctx, component.SignalLogs, int64(0), int64(0), int64(numRecords), int64(0))
 }
 
 // LogsInserted reports that the logs were inserted.
 func (or *ObsReport) LogsInserted(ctx context.Context, numRecords int) {
-	or.recordData(ctx, component.DataTypeLogs, int64(0), int64(0), int64(0), int64(numRecords))
+	or.recordData(ctx, component.SignalLogs, int64(0), int64(0), int64(0), int64(numRecords))
 }

@@ -13,8 +13,8 @@ import (
 // ProfilesRouterAndConsumer feeds the first consumerprofiles.Profiles in each of the specified pipelines.
 type ProfilesRouterAndConsumer interface {
 	consumerprofiles.Profiles
-	Consumer(...component.ID) (consumerprofiles.Profiles, error)
-	PipelineIDs() []component.ID
+	Consumer(...component.PipelineID) (consumerprofiles.Profiles, error)
+	PipelineIDs() []component.PipelineID
 	privateFunc()
 }
 
@@ -23,7 +23,7 @@ type profilesRouter struct {
 	internal.BaseRouter[consumerprofiles.Profiles]
 }
 
-func NewProfilesRouter(cm map[component.ID]consumerprofiles.Profiles) ProfilesRouterAndConsumer {
+func NewProfilesRouter(cm map[component.PipelineID]consumerprofiles.Profiles) ProfilesRouterAndConsumer {
 	consumers := make([]consumerprofiles.Profiles, 0, len(cm))
 	for _, cons := range cm {
 		consumers = append(consumers, cons)

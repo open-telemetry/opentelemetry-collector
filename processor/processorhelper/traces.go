@@ -63,7 +63,7 @@ func NewTracesProcessor(
 			return err
 		}
 		spansOut := td.SpanCount()
-		obs.recordInOut(ctx, component.DataTypeTraces, spansIn, spansOut)
+		obs.recordInOut(ctx, component.SignalTraces, spansIn, spansOut)
 		return nextConsumer.ConsumeTraces(ctx, td)
 	}, bs.consumerOptions...)
 

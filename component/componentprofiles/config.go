@@ -5,11 +5,6 @@ package componentprofiles // import "go.opentelemetry.io/collector/component/com
 
 import "go.opentelemetry.io/collector/component"
 
-func mustNewDataType(strType string) component.DataType {
-	return component.MustNewType(strType)
-}
-
-var (
-	// DataTypeProfiles is the data type tag for profiles.
-	DataTypeProfiles = mustNewDataType("profiles")
+const (
+	SignalProfiles = component.Signal("profiles")
 )

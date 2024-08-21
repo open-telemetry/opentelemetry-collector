@@ -118,7 +118,7 @@ func NewLogsRequestExporter(
 		return nil, errNilLogsConverter
 	}
 
-	be, err := newBaseExporter(set, component.DataTypeLogs, newLogsExporterWithObservability, options...)
+	be, err := newBaseExporter(set, component.SignalLogs, newLogsExporterWithObservability, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +133,7 @@ func NewLogsRequestExporter(
 		}
 		sErr := be.send(ctx, req)
 		if errors.Is(sErr, queue.ErrQueueIsFull) {
-			be.obsrep.recordEnqueueFailure(ctx, component.DataTypeLogs, int64(req.ItemsCount()))
+			be.obsrep.recordEnqueueFailure(ctx, component.SignalLogs, int64(req.ItemsCount()))
 		}
 		return sErr
 	}, be.consumerOptions...)

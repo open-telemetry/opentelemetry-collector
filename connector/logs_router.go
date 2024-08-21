@@ -17,8 +17,8 @@ import (
 // LogsRouterAndConsumer feeds the first consumer.Logs in each of the specified pipelines.
 type LogsRouterAndConsumer interface {
 	consumer.Logs
-	Consumer(...component.ID) (consumer.Logs, error)
-	PipelineIDs() []component.ID
+	Consumer(...component.PipelineID) (consumer.Logs, error)
+	PipelineIDs() []component.PipelineID
 	privateFunc()
 }
 
@@ -27,7 +27,7 @@ type logsRouter struct {
 	internal.BaseRouter[consumer.Logs]
 }
 
-func NewLogsRouter(cm map[component.ID]consumer.Logs) LogsRouterAndConsumer {
+func NewLogsRouter(cm map[component.PipelineID]consumer.Logs) LogsRouterAndConsumer {
 	consumers := make([]consumer.Logs, 0, len(cm))
 	for _, cons := range cm {
 		consumers = append(consumers, cons)
@@ -38,15 +38,15 @@ func NewLogsRouter(cm map[component.ID]consumer.Logs) LogsRouterAndConsumer {
 	}
 }
 
-func (r *logsRouter) PipelineIDs() []component.ID {
-	ids := make([]component.ID, 0, len(r.Consumers))
+func (r *logsRouter) PipelineIDs() []component.PipelineID {
+	ids := make([]component.PipelineID, 0, len(r.Consumers))
 	for id := range r.Consumers {
 		ids = append(ids, id)
 	}
 	return ids
 }
 
-func (r *logsRouter) Consumer(pipelineIDs ...component.ID) (consumer.Logs, error) {
+func (r *logsRouter) Consumer(pipelineIDs ...component.PipelineID) (consumer.Logs, error) {
 	if len(pipelineIDs) == 0 {
 		return nil, fmt.Errorf("missing consumers")
 	}

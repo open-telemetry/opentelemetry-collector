@@ -21,7 +21,7 @@ import (
 type obsReport struct {
 	spanNamePrefix string
 	tracer         trace.Tracer
-	dataType       component.DataType
+	dataType       component.Signal
 
 	otelAttrs        []attribute.KeyValue
 	telemetryBuilder *metadata.TelemetryBuilder
@@ -31,7 +31,7 @@ type obsReport struct {
 type obsReportSettings struct {
 	exporterID             component.ID
 	exporterCreateSettings exporter.Settings
-	dataType               component.DataType
+	dataType               component.Signal
 }
 
 func newExporter(cfg obsReportSettings) (*obsReport, error) {
@@ -61,7 +61,7 @@ func (or *obsReport) startTracesOp(ctx context.Context) context.Context {
 // endTracesOp completes the export operation that was started with startTracesOp.
 func (or *obsReport) endTracesOp(ctx context.Context, numSpans int, err error) {
 	numSent, numFailedToSend := toNumItems(numSpans, err)
-	or.recordMetrics(context.WithoutCancel(ctx), component.DataTypeTraces, numSent, numFailedToSend)
+	or.recordMetrics(context.WithoutCancel(ctx), component.SignalTraces, numSent, numFailedToSend)
 	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentSpansKey, obsmetrics.FailedToSendSpansKey)
 }
 
@@ -78,7 +78,7 @@ func (or *obsReport) startMetricsOp(ctx context.Context) context.Context {
 // If needed, report your use case in https://github.com/open-telemetry/opentelemetry-collector/issues/10592.
 func (or *obsReport) endMetricsOp(ctx context.Context, numMetricPoints int, err error) {
 	numSent, numFailedToSend := toNumItems(numMetricPoints, err)
-	or.recordMetrics(context.WithoutCancel(ctx), component.DataTypeMetrics, numSent, numFailedToSend)
+	or.recordMetrics(context.WithoutCancel(ctx), component.SignalMetrics, numSent, numFailedToSend)
 	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentMetricPointsKey, obsmetrics.FailedToSendMetricPointsKey)
 }
 
@@ -92,7 +92,7 @@ func (or *obsReport) startLogsOp(ctx context.Context) context.Context {
 // endLogsOp completes the export operation that was started with startLogsOp.
 func (or *obsReport) endLogsOp(ctx context.Context, numLogRecords int, err error) {
 	numSent, numFailedToSend := toNumItems(numLogRecords, err)
-	or.recordMetrics(context.WithoutCancel(ctx), component.DataTypeLogs, numSent, numFailedToSend)
+	or.recordMetrics(context.WithoutCancel(ctx), component.SignalLogs, numSent, numFailedToSend)
 	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentLogRecordsKey, obsmetrics.FailedToSendLogRecordsKey)
 }
 
@@ -104,16 +104,16 @@ func (or *obsReport) startOp(ctx context.Context, operationSuffix string) contex
 	return ctx
 }
 
-func (or *obsReport) recordMetrics(ctx context.Context, dataType component.DataType, sent, failed int64) {
+func (or *obsReport) recordMetrics(ctx context.Context, dataType component.Signal, sent, failed int64) {
 	var sentMeasure, failedMeasure metric.Int64Counter
 	switch dataType {
-	case component.DataTypeTraces:
+	case component.SignalTraces:
 		sentMeasure = or.telemetryBuilder.ExporterSentSpans
 		failedMeasure = or.telemetryBuilder.ExporterSendFailedSpans
-	case component.DataTypeMetrics:
+	case component.SignalMetrics:
 		sentMeasure = or.telemetryBuilder.ExporterSentMetricPoints
 		failedMeasure = or.telemetryBuilder.ExporterSendFailedMetricPoints
-	case component.DataTypeLogs:
+	case component.SignalLogs:
 		sentMeasure = or.telemetryBuilder.ExporterSentLogRecords
 		failedMeasure = or.telemetryBuilder.ExporterSendFailedLogRecords
 	}
@@ -144,14 +144,14 @@ func toNumItems(numExportedItems int, err error) (int64, int64) {
 	return int64(numExportedItems), 0
 }
 
-func (or *obsReport) recordEnqueueFailure(ctx context.Context, dataType component.DataType, failed int64) {
+func (or *obsReport) recordEnqueueFailure(ctx context.Context, dataType component.Signal, failed int64) {
 	var enqueueFailedMeasure metric.Int64Counter
 	switch dataType {
-	case component.DataTypeTraces:
+	case component.SignalTraces:
 		enqueueFailedMeasure = or.telemetryBuilder.ExporterEnqueueFailedSpans
-	case component.DataTypeMetrics:
+	case component.SignalMetrics:
 		enqueueFailedMeasure = or.telemetryBuilder.ExporterEnqueueFailedMetricPoints
-	case component.DataTypeLogs:
+	case component.SignalLogs:
 		enqueueFailedMeasure = or.telemetryBuilder.ExporterEnqueueFailedLogRecords
 	}
 

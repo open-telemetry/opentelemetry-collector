@@ -55,7 +55,7 @@ type CheckConsumeContractParams struct {
 	// Factory that allows to create a receiver.
 	Factory receiver.Factory
 	// DataType to test for.
-	DataType component.DataType
+	DataType component.Signal
 	// Config of the receiver to use.
 	Config component.Config
 	// Generator that can send data to the receiver.
@@ -112,11 +112,11 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 	var receiver component.Component
 	var err error
 	switch params.DataType {
-	case component.DataTypeLogs:
+	case component.SignalLogs:
 		receiver, err = params.Factory.CreateLogsReceiver(ctx, NewNopSettings(), params.Config, consumer)
-	case component.DataTypeTraces:
+	case component.SignalTraces:
 		receiver, err = params.Factory.CreateTracesReceiver(ctx, NewNopSettings(), params.Config, consumer)
-	case component.DataTypeMetrics:
+	case component.SignalMetrics:
 		receiver, err = params.Factory.CreateMetricsReceiver(ctx, NewNopSettings(), params.Config, consumer)
 	default:
 		require.FailNow(params.T, "must specify a valid DataType to test for")

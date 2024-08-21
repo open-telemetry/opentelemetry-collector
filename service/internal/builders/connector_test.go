@@ -52,7 +52,7 @@ func TestConnectorBuilder(t *testing.T) {
 	testCases := []struct {
 		name         string
 		id           component.ID
-		err          func(component.DataType, component.DataType) string
+		err          func(component.Signal, component.Signal) string
 		nextTraces   consumer.Traces
 		nextLogs     consumer.Logs
 		nextMetrics  consumer.Metrics
@@ -61,7 +61,7 @@ func TestConnectorBuilder(t *testing.T) {
 		{
 			name: "unknown",
 			id:   component.MustNewID("unknown"),
-			err: func(component.DataType, component.DataType) string {
+			err: func(component.Signal, component.Signal) string {
 				return "connector factory not available for: \"unknown\""
 			},
 			nextTraces:   consumertest.NewNop(),
@@ -72,7 +72,7 @@ func TestConnectorBuilder(t *testing.T) {
 		{
 			name: "err",
 			id:   component.MustNewID("err"),
-			err: func(expType, rcvType component.DataType) string {
+			err: func(expType, rcvType component.Signal) string {
 				return fmt.Sprintf("connector \"err\" cannot connect from %s to %s: telemetry type is not supported", expType, rcvType)
 			},
 			nextTraces:   consumertest.NewNop(),
@@ -83,7 +83,7 @@ func TestConnectorBuilder(t *testing.T) {
 		{
 			name: "all",
 			id:   component.MustNewID("all"),
-			err: func(component.DataType, component.DataType) string {
+			err: func(component.Signal, component.Signal) string {
 				return ""
 			},
 			nextTraces:   consumertest.NewNop(),
@@ -94,7 +94,7 @@ func TestConnectorBuilder(t *testing.T) {
 		{
 			name: "all/named",
 			id:   component.MustNewIDWithName("all", "named"),
-			err: func(component.DataType, component.DataType) string {
+			err: func(component.Signal, component.Signal) string {
 				return ""
 			},
 			nextTraces:   consumertest.NewNop(),
@@ -105,7 +105,7 @@ func TestConnectorBuilder(t *testing.T) {
 		{
 			name: "no next consumer",
 			id:   component.MustNewID("unknown"),
-			err: func(_, _ component.DataType) string {
+			err: func(_, _ component.Signal) string {
 				return "nil next Consumer"
 			},
 			nextTraces:   nil,
@@ -121,7 +121,7 @@ func TestConnectorBuilder(t *testing.T) {
 			b := NewConnector(cfgs, factories)
 
 			t2t, err := b.CreateTracesToTraces(context.Background(), createConnectorSettings(tt.id), tt.nextTraces)
-			if expectedErr := tt.err(component.DataTypeTraces, component.DataTypeTraces); expectedErr != "" {
+			if expectedErr := tt.err(component.SignalTraces, component.SignalTraces); expectedErr != "" {
 				assert.EqualError(t, err, expectedErr)
 				assert.Nil(t, t2t)
 			} else {
@@ -129,7 +129,7 @@ func TestConnectorBuilder(t *testing.T) {
 				assert.Equal(t, nopConnectorInstance, t2t)
 			}
 			t2m, err := b.CreateTracesToMetrics(context.Background(), createConnectorSettings(tt.id), tt.nextMetrics)
-			if expectedErr := tt.err(component.DataTypeTraces, component.DataTypeMetrics); expectedErr != "" {
+			if expectedErr := tt.err(component.SignalTraces, component.SignalMetrics); expectedErr != "" {
 				assert.EqualError(t, err, expectedErr)
 				assert.Nil(t, t2m)
 			} else {
@@ -137,7 +137,7 @@ func TestConnectorBuilder(t *testing.T) {
 				assert.Equal(t, nopConnectorInstance, t2m)
 			}
 			t2l, err := b.CreateTracesToLogs(context.Background(), createConnectorSettings(tt.id), tt.nextLogs)
-			if expectedErr := tt.err(component.DataTypeTraces, component.DataTypeLogs); expectedErr != "" {
+			if expectedErr := tt.err(component.SignalTraces, component.SignalLogs); expectedErr != "" {
 				assert.EqualError(t, err, expectedErr)
 				assert.Nil(t, t2l)
 			} else {
@@ -145,7 +145,7 @@ func TestConnectorBuilder(t *testing.T) {
 				assert.Equal(t, nopConnectorInstance, t2l)
 			}
 			t2p, err := b.CreateTracesToProfiles(context.Background(), createConnectorSettings(tt.id), tt.nextProfiles)
-			if expectedErr := tt.err(component.DataTypeTraces, componentprofiles.DataTypeProfiles); expectedErr != "" {
+			if expectedErr := tt.err(component.SignalTraces, componentprofiles.SignalProfiles); expectedErr != "" {
 				assert.EqualError(t, err, expectedErr)
 				assert.Nil(t, t2p)
 			} else {
@@ -154,7 +154,7 @@ func TestConnectorBuilder(t *testing.T) {
 			}
 
 			m2t, err := b.CreateMetricsToTraces(context.Background(), createConnectorSettings(tt.id), tt.nextTraces)
-			if expectedErr := tt.err(component.DataTypeMetrics, component.DataTypeTraces); expectedErr != "" {
+			if expectedErr := tt.err(component.SignalMetrics, component.SignalTraces); expectedErr != "" {
 				assert.EqualError(t, err, expectedErr)
 				assert.Nil(t, m2t)
 			} else {
@@ -163,7 +163,7 @@ func TestConnectorBuilder(t *testing.T) {
 			}
 
 			m2m, err := b.CreateMetricsToMetrics(context.Background(), createConnectorSettings(tt.id), tt.nextMetrics)
-			if expectedErr := tt.err(component.DataTypeMetrics, component.DataTypeMetrics); expectedErr != "" {
+			if expectedErr := tt.err(component.SignalMetrics, component.SignalMetrics); expectedErr != "" {
 				assert.EqualError(t, err, expectedErr)
 				assert.Nil(t, m2m)
 			} else {
@@ -172,7 +172,7 @@ func TestConnectorBuilder(t *testing.T) {
 			}
 
 			m2l, err := b.CreateMetricsToLogs(context.Background(), createConnectorSettings(tt.id), tt.nextLogs)
-			if expectedErr := tt.err(component.DataTypeMetrics, component.DataTypeLogs); expectedErr != "" {
+			if expectedErr := tt.err(component.SignalMetrics, component.SignalLogs); expectedErr != "" {
 				assert.EqualError(t, err, expectedErr)
 				assert.Nil(t, m2l)
 			} else {
@@ -180,7 +180,7 @@ func TestConnectorBuilder(t *testing.T) {
 				assert.Equal(t, nopConnectorInstance, m2l)
 			}
 			m2p, err := b.CreateMetricsToProfiles(context.Background(), createConnectorSettings(tt.id), tt.nextProfiles)
-			if expectedErr := tt.err(component.DataTypeMetrics, componentprofiles.DataTypeProfiles); expectedErr != "" {
+			if expectedErr := tt.err(component.SignalMetrics, componentprofiles.SignalProfiles); expectedErr != "" {
 				assert.EqualError(t, err, expectedErr)
 				assert.Nil(t, m2p)
 			} else {
@@ -189,7 +189,7 @@ func TestConnectorBuilder(t *testing.T) {
 			}
 
 			l2t, err := b.CreateLogsToTraces(context.Background(), createConnectorSettings(tt.id), tt.nextTraces)
-			if expectedErr := tt.err(component.DataTypeLogs, component.DataTypeTraces); expectedErr != "" {
+			if expectedErr := tt.err(component.SignalLogs, component.SignalTraces); expectedErr != "" {
 				assert.EqualError(t, err, expectedErr)
 				assert.Nil(t, l2t)
 			} else {
@@ -198,7 +198,7 @@ func TestConnectorBuilder(t *testing.T) {
 			}
 
 			l2m, err := b.CreateLogsToMetrics(context.Background(), createConnectorSettings(tt.id), tt.nextMetrics)
-			if expectedErr := tt.err(component.DataTypeLogs, component.DataTypeMetrics); expectedErr != "" {
+			if expectedErr := tt.err(component.SignalLogs, component.SignalMetrics); expectedErr != "" {
 				assert.EqualError(t, err, expectedErr)
 				assert.Nil(t, l2m)
 			} else {
@@ -207,7 +207,7 @@ func TestConnectorBuilder(t *testing.T) {
 			}
 
 			l2l, err := b.CreateLogsToLogs(context.Background(), createConnectorSettings(tt.id), tt.nextLogs)
-			if expectedErr := tt.err(component.DataTypeLogs, component.DataTypeLogs); expectedErr != "" {
+			if expectedErr := tt.err(component.SignalLogs, component.SignalLogs); expectedErr != "" {
 				assert.EqualError(t, err, expectedErr)
 				assert.Nil(t, l2l)
 			} else {
@@ -215,7 +215,7 @@ func TestConnectorBuilder(t *testing.T) {
 				assert.Equal(t, nopConnectorInstance, l2l)
 			}
 			l2p, err := b.CreateLogsToProfiles(context.Background(), createConnectorSettings(tt.id), tt.nextProfiles)
-			if expectedErr := tt.err(component.DataTypeLogs, componentprofiles.DataTypeProfiles); expectedErr != "" {
+			if expectedErr := tt.err(component.SignalLogs, componentprofiles.SignalProfiles); expectedErr != "" {
 				assert.EqualError(t, err, expectedErr)
 				assert.Nil(t, l2p)
 			} else {
@@ -224,7 +224,7 @@ func TestConnectorBuilder(t *testing.T) {
 			}
 
 			p2t, err := b.CreateProfilesToTraces(context.Background(), createConnectorSettings(tt.id), tt.nextTraces)
-			if expectedErr := tt.err(componentprofiles.DataTypeProfiles, component.DataTypeTraces); expectedErr != "" {
+			if expectedErr := tt.err(componentprofiles.SignalProfiles, component.SignalTraces); expectedErr != "" {
 				assert.EqualError(t, err, expectedErr)
 				assert.Nil(t, p2t)
 			} else {
@@ -232,7 +232,7 @@ func TestConnectorBuilder(t *testing.T) {
 				assert.Equal(t, nopConnectorInstance, p2t)
 			}
 			p2m, err := b.CreateProfilesToMetrics(context.Background(), createConnectorSettings(tt.id), tt.nextMetrics)
-			if expectedErr := tt.err(componentprofiles.DataTypeProfiles, component.DataTypeMetrics); expectedErr != "" {
+			if expectedErr := tt.err(componentprofiles.SignalProfiles, component.SignalMetrics); expectedErr != "" {
 				assert.EqualError(t, err, expectedErr)
 				assert.Nil(t, p2m)
 			} else {
@@ -240,7 +240,7 @@ func TestConnectorBuilder(t *testing.T) {
 				assert.Equal(t, nopConnectorInstance, p2m)
 			}
 			p2l, err := b.CreateProfilesToLogs(context.Background(), createConnectorSettings(tt.id), tt.nextLogs)
-			if expectedErr := tt.err(componentprofiles.DataTypeProfiles, component.DataTypeLogs); expectedErr != "" {
+			if expectedErr := tt.err(componentprofiles.SignalProfiles, component.SignalLogs); expectedErr != "" {
 				assert.EqualError(t, err, expectedErr)
 				assert.Nil(t, p2l)
 			} else {
@@ -248,7 +248,7 @@ func TestConnectorBuilder(t *testing.T) {
 				assert.Equal(t, nopConnectorInstance, p2l)
 			}
 			p2p, err := b.CreateProfilesToProfiles(context.Background(), createConnectorSettings(tt.id), tt.nextProfiles)
-			if expectedErr := tt.err(componentprofiles.DataTypeProfiles, componentprofiles.DataTypeProfiles); expectedErr != "" {
+			if expectedErr := tt.err(componentprofiles.SignalProfiles, componentprofiles.SignalProfiles); expectedErr != "" {
 				assert.EqualError(t, err, expectedErr)
 				assert.Nil(t, p2p)
 			} else {

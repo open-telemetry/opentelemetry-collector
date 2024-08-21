@@ -63,7 +63,7 @@ func NewMetricsProcessor(
 			return err
 		}
 		pointsOut := md.DataPointCount()
-		obs.recordInOut(ctx, component.DataTypeMetrics, pointsIn, pointsOut)
+		obs.recordInOut(ctx, component.SignalMetrics, pointsIn, pointsOut)
 		return nextConsumer.ConsumeMetrics(ctx, md)
 	}, bs.consumerOptions...)
 	if err != nil {

@@ -85,7 +85,7 @@ var (
 type PersistentQueueSettings[T any] struct {
 	Sizer            Sizer[T]
 	Capacity         int64
-	DataType         component.DataType
+	DataType         component.Signal
 	StorageID        component.ID
 	Marshaler        func(req T) ([]byte, error)
 	Unmarshaler      func([]byte) (T, error)
@@ -485,7 +485,7 @@ func (pq *persistentQueue[T]) itemDispatchingFinish(ctx context.Context, index u
 	return nil
 }
 
-func toStorageClient(ctx context.Context, storageID component.ID, host component.Host, ownerID component.ID, signal component.DataType) (storage.Client, error) {
+func toStorageClient(ctx context.Context, storageID component.ID, host component.Host, ownerID component.ID, signal component.Signal) (storage.Client, error) {
 	ext, found := host.GetExtensions()[storageID]
 	if !found {
 		return nil, errNoStorageClient

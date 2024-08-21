@@ -109,7 +109,7 @@ func TestCheckConsumeContractLogs(t *testing.T) {
 	params := CheckConsumeContractParams{
 		T:                    t,
 		ExporterFactory:      newMockExporterFactory(mr),
-		DataType:             component.DataTypeLogs,
+		DataType:             component.SignalLogs,
 		ExporterConfig:       nopConfig{},
 		NumberOfTestElements: 10,
 		ReceiverFactory:      newMockReceiverFactory(mr),
@@ -123,7 +123,7 @@ func TestCheckConsumeContractMetrics(t *testing.T) {
 	CheckConsumeContract(CheckConsumeContractParams{
 		T:                    t,
 		ExporterFactory:      newMockExporterFactory(mr),
-		DataType:             component.DataTypeMetrics, // Change to the appropriate data type
+		DataType:             component.SignalMetrics, // Change to the appropriate data type
 		ExporterConfig:       nopConfig{},
 		NumberOfTestElements: 10,
 		ReceiverFactory:      newMockReceiverFactory(mr),
@@ -135,7 +135,7 @@ func TestCheckConsumeContractTraces(t *testing.T) {
 	CheckConsumeContract(CheckConsumeContractParams{
 		T:                    t,
 		ExporterFactory:      newMockExporterFactory(mr),
-		DataType:             component.DataTypeTraces,
+		DataType:             component.SignalTraces,
 		ExporterConfig:       nopConfig{},
 		NumberOfTestElements: 10,
 		ReceiverFactory:      newMockReceiverFactory(mr),

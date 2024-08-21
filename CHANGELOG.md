@@ -1383,8 +1383,8 @@ and hope to make a v1.0.0 release soon.
 - `config`: Deprecate multiple types and funcs in `config` package (#6422)
   - config.ComponentID => component.ID
   - config.Type => component.Type
-  - config.DataType => component.DataType
-  - config.[Traces|Metrics|Logs]DataType => component.DataType[Traces|Metrics|Logs]
+  - config.DataType => component.Signal
+  - config.[Traces|Metrics|Logs]DataType => component.Signal[Traces|Metrics|Logs]
   - config.Receiver => component.ReceiverConfig
   - config.UnmarshalReceiver => component.UnmarshalReceiverConfig
   - config.Processor => component.ProcessorConfig

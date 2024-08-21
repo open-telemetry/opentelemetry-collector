@@ -228,21 +228,21 @@ func TestServiceGetExporters(t *testing.T) {
 	// nolint
 	expMap := srv.host.GetExporters()
 	assert.Len(t, expMap, 4)
-	assert.Len(t, expMap[component.DataTypeTraces], 1)
-	assert.Contains(t, expMap[component.DataTypeTraces], component.NewID(nopType))
-	assert.Len(t, expMap[component.DataTypeMetrics], 1)
-	assert.Contains(t, expMap[component.DataTypeMetrics], component.NewID(nopType))
-	assert.Len(t, expMap[component.DataTypeLogs], 1)
-	assert.Contains(t, expMap[component.DataTypeLogs], component.NewID(nopType))
-	assert.Len(t, expMap[componentprofiles.DataTypeProfiles], 1)
-	assert.Contains(t, expMap[componentprofiles.DataTypeProfiles], component.NewID(nopType))
+	assert.Len(t, expMap[component.SignalTraces], 1)
+	assert.Contains(t, expMap[component.SignalTraces], component.NewID(nopType))
+	assert.Len(t, expMap[component.SignalMetrics], 1)
+	assert.Contains(t, expMap[component.SignalMetrics], component.NewID(nopType))
+	assert.Len(t, expMap[component.SignalLogs], 1)
+	assert.Contains(t, expMap[component.SignalLogs], component.NewID(nopType))
+	assert.Len(t, expMap[componentprofiles.SignalProfiles], 1)
+	assert.Contains(t, expMap[componentprofiles.SignalProfiles], component.NewID(nopType))
 }
 
 // TestServiceTelemetryCleanupOnError tests that if newService errors due to an invalid config telemetry is cleaned up
 // and another service with a valid config can be started right after.
 func TestServiceTelemetryCleanupOnError(t *testing.T) {
 	invalidCfg := newNopConfig()
-	invalidCfg.Pipelines[component.MustNewID("traces")].Processors[0] = component.MustNewID("invalid")
+	invalidCfg.Pipelines[component.NewPipelineID("traces")].Processors[0] = component.MustNewID("invalid")
 	// Create a service with an invalid config and expect an error
 	_, err := New(context.Background(), newNopSettings(), invalidCfg)
 	require.Error(t, err)
@@ -567,22 +567,22 @@ func newNopSettings() Settings {
 
 func newNopConfig() Config {
 	return newNopConfigPipelineConfigs(pipelines.Config{
-		component.MustNewID("traces"): {
+		component.NewPipelineID("traces"): {
 			Receivers:  []component.ID{component.NewID(nopType)},
 			Processors: []component.ID{component.NewID(nopType)},
 			Exporters:  []component.ID{component.NewID(nopType)},
 		},
-		component.MustNewID("metrics"): {
+		component.NewPipelineID("metrics"): {
 			Receivers:  []component.ID{component.NewID(nopType)},
 			Processors: []component.ID{component.NewID(nopType)},
 			Exporters:  []component.ID{component.NewID(nopType)},
 		},
-		component.MustNewID("logs"): {
+		component.NewPipelineID("logs"): {
 			Receivers:  []component.ID{component.NewID(nopType)},
 			Processors: []component.ID{component.NewID(nopType)},
 			Exporters:  []component.ID{component.NewID(nopType)},
 		},
-		component.MustNewID("profiles"): {
+		component.NewPipelineID("profiles"): {
 			Receivers:  []component.ID{component.NewID(nopType)},
 			Processors: []component.ID{component.NewID(nopType)},
 			Exporters:  []component.ID{component.NewID(nopType)},

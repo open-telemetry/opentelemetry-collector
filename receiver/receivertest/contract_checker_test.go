@@ -239,7 +239,7 @@ func TestConsumeContract(t *testing.T) {
 	params := CheckConsumeContractParams{
 		T:             t,
 		Factory:       newExampleFactory(),
-		DataType:      component.DataTypeLogs,
+		DataType:      component.SignalLogs,
 		Config:        cfg,
 		Generator:     generator,
 		GenerateCount: logsPerTest,
@@ -262,7 +262,7 @@ func TestConsumeMetricsContract(t *testing.T) {
 	params := CheckConsumeContractParams{
 		T:             t,
 		Factory:       newExampleFactory(),
-		DataType:      component.DataTypeMetrics,
+		DataType:      component.SignalMetrics,
 		Config:        cfg,
 		Generator:     generator,
 		GenerateCount: metricsPerTest,
@@ -285,7 +285,7 @@ func TestConsumeTracesContract(t *testing.T) {
 	params := CheckConsumeContractParams{
 		T:             t,
 		Factory:       newExampleFactory(),
-		DataType:      component.DataTypeTraces,
+		DataType:      component.SignalTraces,
 		Config:        cfg,
 		Generator:     generator,
 		GenerateCount: spansPerTest,

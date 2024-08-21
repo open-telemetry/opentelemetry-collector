@@ -33,7 +33,7 @@ type CheckConsumeContractParams struct {
 	T                    *testing.T
 	NumberOfTestElements int
 	// DataType to test for.
-	DataType component.DataType
+	DataType component.Signal
 	// ExporterFactory to create an exporter to be tested.
 	ExporterFactory exporter.Factory
 	ExporterConfig  component.Config
@@ -85,17 +85,17 @@ func CheckConsumeContract(params CheckConsumeContractParams) {
 func checkConsumeContractScenario(t *testing.T, params CheckConsumeContractParams, decisionFunc func() error, checkIfTestPassed func(*testing.T, int, requestCounter)) {
 	mockConsumerInstance := newMockConsumer(decisionFunc)
 	switch params.DataType {
-	case component.DataTypeLogs:
+	case component.SignalLogs:
 		r, err := params.ReceiverFactory.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), params.ReceiverConfig, &mockConsumerInstance)
 		require.NoError(t, err)
 		require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 		checkLogs(t, params, r, &mockConsumerInstance, checkIfTestPassed)
-	case component.DataTypeTraces:
+	case component.SignalTraces:
 		r, err := params.ReceiverFactory.CreateTracesReceiver(context.Background(), receivertest.NewNopSettings(), params.ReceiverConfig, &mockConsumerInstance)
 		require.NoError(t, err)
 		require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 		checkTraces(t, params, r, &mockConsumerInstance, checkIfTestPassed)
-	case component.DataTypeMetrics:
+	case component.SignalMetrics:
 		r, err := params.ReceiverFactory.CreateMetricsReceiver(context.Background(), receivertest.NewNopSettings(), params.ReceiverConfig, &mockConsumerInstance)
 		require.NoError(t, err)
 		require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
