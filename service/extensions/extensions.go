@@ -173,6 +173,7 @@ type Settings struct {
 
 	// Extensions builder for extensions.
 	Extensions *extension.Builder
+	ModuleInfo extension.ModuleInfo
 }
 
 type Option func(*Extensions)
@@ -203,6 +204,7 @@ func New(ctx context.Context, set Settings, cfg Config, options ...Option) (*Ext
 			ID:                extID,
 			TelemetrySettings: set.Telemetry,
 			BuildInfo:         set.BuildInfo,
+			ModuleInfo:        set.ModuleInfo,
 		}
 		extSet.TelemetrySettings.Logger = components.ExtensionLogger(set.Telemetry.Logger, extID)
 

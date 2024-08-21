@@ -59,6 +59,9 @@ type Settings struct {
 	// Extensions builder for extensions.
 	Extensions *extension.Builder
 
+	// ModuleInfo describes the go module for each component.
+	ModuleInfo extension.ModuleInfo
+
 	// AsyncErrorChannel is the channel that is used to report fatal errors.
 	AsyncErrorChannel chan error
 
@@ -86,6 +89,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 			Exporters:         set.Exporters,
 			Connectors:        set.Connectors,
 			Extensions:        set.Extensions,
+			ModuleInfo:        set.ModuleInfo,
 			BuildInfo:         set.BuildInfo,
 			AsyncErrorChannel: set.AsyncErrorChannel,
 		},
@@ -288,6 +292,7 @@ func (srv *Service) initExtensions(ctx context.Context, cfg extensions.Config) e
 		Telemetry:  srv.telemetrySettings,
 		BuildInfo:  srv.buildInfo,
 		Extensions: srv.host.Extensions,
+		ModuleInfo: srv.host.ModuleInfo,
 	}
 	if srv.host.ServiceExtensions, err = extensions.New(ctx, extensionsSettings, cfg, extensions.WithReporter(srv.host.Reporter)); err != nil {
 		return fmt.Errorf("failed to build extensions: %w", err)
