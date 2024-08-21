@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
-func TestBuilder(t *testing.T) {
+func TestExporterBuilder(t *testing.T) {
 	defaultCfg := struct{}{}
 	factories, err := exporter.MakeFactoryMap([]exporter.Factory{
 		exporter.NewFactory(component.MustNewType("err"), nil),
@@ -91,7 +91,7 @@ func TestBuilder(t *testing.T) {
 	}
 }
 
-func TestBuilderMissingConfig(t *testing.T) {
+func TestExporterBuilderMissingConfig(t *testing.T) {
 	defaultCfg := struct{}{}
 	factories, err := exporter.MakeFactoryMap([]exporter.Factory{
 		exporter.NewFactory(
@@ -121,7 +121,7 @@ func TestBuilderMissingConfig(t *testing.T) {
 	assert.Nil(t, le)
 }
 
-func TestBuilderFactory(t *testing.T) {
+func TestExporterBuilderFactory(t *testing.T) {
 	factories, err := exporter.MakeFactoryMap([]exporter.Factory{exporter.NewFactory(component.MustNewType("foo"), nil)}...)
 	require.NoError(t, err)
 
