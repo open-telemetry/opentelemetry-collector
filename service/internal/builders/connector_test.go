@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
 
-func TestBuilder(t *testing.T) {
+func TestConnectorBuilder(t *testing.T) {
 	defaultCfg := struct{}{}
 	factories, err := connector.MakeFactoryMap([]connector.Factory{
 		connector.NewFactory(component.MustNewType("err"), nil),
@@ -186,7 +186,7 @@ func TestBuilder(t *testing.T) {
 	}
 }
 
-func TestBuilderMissingConfig(t *testing.T) {
+func TestConnectorBuilderMissingConfig(t *testing.T) {
 	defaultCfg := struct{}{}
 	factories, err := connector.MakeFactoryMap([]connector.Factory{
 		connector.NewFactory(
@@ -246,7 +246,7 @@ func TestBuilderMissingConfig(t *testing.T) {
 	assert.Nil(t, l2l)
 }
 
-func TestBuilderGetters(t *testing.T) {
+func TestConnectorBuilderGetters(t *testing.T) {
 	factories, err := connector.MakeFactoryMap([]connector.Factory{connector.NewFactory(component.MustNewType("foo"), nil)}...)
 	require.NoError(t, err)
 
