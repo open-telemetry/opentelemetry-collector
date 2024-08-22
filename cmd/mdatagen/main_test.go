@@ -569,6 +569,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
+// Deprecated: [v0.108.0] use LeveledMeter instead.
 func Meter(settings component.TelemetrySettings) metric.Meter {
 	return settings.MeterProvider.Meter("")
 }
@@ -607,6 +608,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
+// Deprecated: [v0.108.0] use LeveledMeter instead.
 func Meter(settings component.TelemetrySettings) metric.Meter {
 	return settings.MeterProvider.Meter("")
 }

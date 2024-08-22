@@ -11,7 +11,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
-	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/featuregate"
@@ -35,8 +34,8 @@ type Host struct {
 	Receivers         builders.Receiver
 	Processors        *processor.Builder
 	Exporters         *exporter.Builder
-	Connectors        *connector.Builder
-	Extensions        *extension.Builder
+	Connectors        builders.Connector
+	Extensions        builders.Extension
 
 	ModuleInfo extension.ModuleInfo
 	BuildInfo  component.BuildInfo
