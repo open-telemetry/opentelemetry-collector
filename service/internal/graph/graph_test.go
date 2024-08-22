@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/internal/status/statustest"
 	"go.opentelemetry.io/collector/service/internal/testcomponents"
@@ -757,7 +758,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 			set := Settings{
 				Telemetry: componenttest.NewNopTelemetrySettings(),
 				BuildInfo: component.NewDefaultBuildInfo(),
-				ReceiverBuilder: receiver.NewBuilder(
+				ReceiverBuilder: builders.NewReceiver(
 					map[component.ID]component.Config{
 						component.MustNewID("examplereceiver"):              testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
 						component.MustNewIDWithName("examplereceiver", "1"): testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
@@ -775,7 +776,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 						testcomponents.ExampleProcessorFactory.Type(): testcomponents.ExampleProcessorFactory,
 					},
 				),
-				ExporterBuilder: exporter.NewBuilder(
+				ExporterBuilder: builders.NewExporter(
 					map[component.ID]component.Config{
 						component.MustNewID("exampleexporter"):              testcomponents.ExampleExporterFactory.CreateDefaultConfig(),
 						component.MustNewIDWithName("exampleexporter", "1"): testcomponents.ExampleExporterFactory.CreateDefaultConfig(),
@@ -784,7 +785,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 						testcomponents.ExampleExporterFactory.Type(): testcomponents.ExampleExporterFactory,
 					},
 				),
-				ConnectorBuilder: connector.NewBuilder(
+				ConnectorBuilder: builders.NewConnector(
 					map[component.ID]component.Config{
 						component.MustNewID("exampleconnector"):                           testcomponents.ExampleConnectorFactory.CreateDefaultConfig(),
 						component.MustNewIDWithName("exampleconnector", "merge"):          testcomponents.ExampleConnectorFactory.CreateDefaultConfig(),
@@ -1053,7 +1054,7 @@ func TestConnectorRouter(t *testing.T) {
 	set := Settings{
 		Telemetry: componenttest.NewNopTelemetrySettings(),
 		BuildInfo: component.NewDefaultBuildInfo(),
-		ReceiverBuilder: receiver.NewBuilder(
+		ReceiverBuilder: builders.NewReceiver(
 			map[component.ID]component.Config{
 				rcvrID: testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
 			},
@@ -1061,7 +1062,7 @@ func TestConnectorRouter(t *testing.T) {
 				testcomponents.ExampleReceiverFactory.Type(): testcomponents.ExampleReceiverFactory,
 			},
 		),
-		ExporterBuilder: exporter.NewBuilder(
+		ExporterBuilder: builders.NewExporter(
 			map[component.ID]component.Config{
 				expRightID: testcomponents.ExampleExporterFactory.CreateDefaultConfig(),
 				expLeftID:  testcomponents.ExampleExporterFactory.CreateDefaultConfig(),
@@ -1070,7 +1071,7 @@ func TestConnectorRouter(t *testing.T) {
 				testcomponents.ExampleExporterFactory.Type(): testcomponents.ExampleExporterFactory,
 			},
 		),
-		ConnectorBuilder: connector.NewBuilder(
+		ConnectorBuilder: builders.NewConnector(
 			map[component.ID]component.Config{
 				routeTracesID: testcomponents.ExampleRouterConfig{
 					Traces: &testcomponents.LeftRightConfig{
@@ -2096,7 +2097,7 @@ func TestGraphBuildErrors(t *testing.T) {
 			set := Settings{
 				BuildInfo: component.NewDefaultBuildInfo(),
 				Telemetry: componenttest.NewNopTelemetrySettings(),
-				ReceiverBuilder: receiver.NewBuilder(
+				ReceiverBuilder: builders.NewReceiver(
 					test.receiverCfgs,
 					map[component.Type]receiver.Factory{
 						nopReceiverFactory.Type(): nopReceiverFactory,
@@ -2108,13 +2109,13 @@ func TestGraphBuildErrors(t *testing.T) {
 						nopProcessorFactory.Type(): nopProcessorFactory,
 						badProcessorFactory.Type(): badProcessorFactory,
 					}),
-				ExporterBuilder: exporter.NewBuilder(
+				ExporterBuilder: builders.NewExporter(
 					test.exporterCfgs,
 					map[component.Type]exporter.Factory{
 						nopExporterFactory.Type(): nopExporterFactory,
 						badExporterFactory.Type(): badExporterFactory,
 					}),
-				ConnectorBuilder: connector.NewBuilder(
+				ConnectorBuilder: builders.NewConnector(
 					test.connectorCfgs,
 					map[component.Type]connector.Factory{
 						nopConnectorFactory.Type(): nopConnectorFactory,
@@ -2144,7 +2145,7 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 	set := Settings{
 		Telemetry: componenttest.NewNopTelemetrySettings(),
 		BuildInfo: component.NewDefaultBuildInfo(),
-		ReceiverBuilder: receiver.NewBuilder(
+		ReceiverBuilder: builders.NewReceiver(
 			map[component.ID]component.Config{
 				component.NewID(nopReceiverFactory.Type()): nopReceiverFactory.CreateDefaultConfig(),
 				component.NewID(errReceiverFactory.Type()): errReceiverFactory.CreateDefaultConfig(),
@@ -2162,7 +2163,7 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 				nopProcessorFactory.Type(): nopProcessorFactory,
 				errProcessorFactory.Type(): errProcessorFactory,
 			}),
-		ExporterBuilder: exporter.NewBuilder(
+		ExporterBuilder: builders.NewExporter(
 			map[component.ID]component.Config{
 				component.NewID(nopExporterFactory.Type()): nopExporterFactory.CreateDefaultConfig(),
 				component.NewID(errExporterFactory.Type()): errExporterFactory.CreateDefaultConfig(),
@@ -2171,7 +2172,7 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 				nopExporterFactory.Type(): nopExporterFactory,
 				errExporterFactory.Type(): errExporterFactory,
 			}),
-		ConnectorBuilder: connector.NewBuilder(
+		ConnectorBuilder: builders.NewConnector(
 			map[component.ID]component.Config{
 				component.NewIDWithName(nopConnectorFactory.Type(), "conn"): nopConnectorFactory.CreateDefaultConfig(),
 				component.NewIDWithName(errConnectorFactory.Type(), "conn"): errConnectorFactory.CreateDefaultConfig(),
@@ -2260,12 +2261,12 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 	eSdErr := &testNode{id: component.MustNewIDWithName("e_sd_err", "1"), shutdownErr: assert.AnError}
 
 	instanceIDs := map[*testNode]*componentstatus.InstanceID{
-		rNoErr: {ID: rNoErr.id},
-		rStErr: {ID: rStErr.id},
-		rSdErr: {ID: rSdErr.id},
-		eNoErr: {ID: eNoErr.id},
-		eStErr: {ID: eStErr.id},
-		eSdErr: {ID: eSdErr.id},
+		rNoErr: componentstatus.NewInstanceID(rNoErr.id, component.KindReceiver),
+		rStErr: componentstatus.NewInstanceID(rStErr.id, component.KindReceiver),
+		rSdErr: componentstatus.NewInstanceID(rSdErr.id, component.KindReceiver),
+		eNoErr: componentstatus.NewInstanceID(eNoErr.id, component.KindExporter),
+		eStErr: componentstatus.NewInstanceID(eStErr.id, component.KindExporter),
+		eSdErr: componentstatus.NewInstanceID(eSdErr.id, component.KindExporter),
 	}
 
 	// compare two maps of status events ignoring timestamp

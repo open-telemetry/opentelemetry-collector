@@ -98,7 +98,15 @@ func TestBuilder(t *testing.T) {
 	cfgs := map[component.ID]component.Config{testID: defaultCfg, unknownID: defaultCfg}
 	b := NewBuilder(cfgs, factories)
 
-	e, err := b.Create(context.Background(), createSettings(testID))
+	testIDSettings := createSettings(testID)
+	testIDModuleInfo := ModuleInfo{
+		Extension: map[component.Type]string{
+			testType: "go.opentelemetry.io/collector/extension/extensiontest v1.2.3",
+		},
+	}
+	testIDSettings.ModuleInfo = testIDModuleInfo
+
+	e, err := b.Create(context.Background(), testIDSettings)
 	assert.NoError(t, err)
 	assert.NotNil(t, e)
 
@@ -106,6 +114,9 @@ func TestBuilder(t *testing.T) {
 	nop, ok := e.(nopExtension)
 	assert.True(t, ok)
 	assert.Equal(t, nop.Settings.Resource.Attributes().Len(), 0)
+
+	// Check that the extension has access to the module info.
+	assert.Equal(t, testIDModuleInfo, nop.ModuleInfo)
 
 	missingType, err := b.Create(context.Background(), createSettings(unknownID))
 	assert.EqualError(t, err, "extension factory not available for: \"unknown\"")
