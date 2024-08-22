@@ -10,7 +10,7 @@ component: configgrpc
 note: Change the value of max_recv_msg_size_mib from uint64 to int to avoid a case where misconfiguration caused an integer overflow.
 
 # One or more tracking issues or pull requests related to the change
-issues: []
+issues: [10948]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
