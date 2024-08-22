@@ -8,6 +8,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -322,7 +323,7 @@ func validateBalancerName(balancerName string) bool {
 
 func (gss *ServerConfig) Validate() error {
 	if gss.MaxRecvMsgSizeMiB*1024*1024 < 0 {
-		return fmt.Errorf("invalid max_recv_msg_size_mib value: %d", gss.MaxRecvMsgSizeMiB)
+		return fmt.Errorf("invalid max_recv_msg_size_mib value, must be between 1 and %d: %d", math.MaxInt/1024/1024, gss.MaxRecvMsgSizeMiB)
 	}
 
 	if gss.ReadBufferSize < 0 {

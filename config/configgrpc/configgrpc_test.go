@@ -261,7 +261,7 @@ func TestGrpcServerValidate(t *testing.T) {
 					Endpoint: "0.0.0.0:1234",
 				},
 			},
-			err: "invalid max_recv_msg_size_mib value: -1",
+			err: "invalid max_recv_msg_size_mib value",
 		},
 		{
 			gss: &ServerConfig{
