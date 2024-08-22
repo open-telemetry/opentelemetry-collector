@@ -10,7 +10,7 @@ Since the OpenTelemetry Collector is made up of pipelines with components, it ne
 4. Existing deviations from those goals
 5. Desired behavior for 1.0
 
-For context throughout this document, component defines a `component.Host` interface, which components may use to interact with the struct that is managing all the collector pipelines and the components. In this repository, our implementation of `component.Host` can be found in `graph.Host`.
+For context throughout this document, component defines a `component.Host` interface, which components may use to interact with the struct that is managing all the collector pipelines and the components. In this repository, our implementation of `component.Host` can be found in `service/internal/graph.Host`.
 
 ## Out Of Scope
 
@@ -42,11 +42,11 @@ See [Component Status Reporting](../component-status.md)
 
 The following are the goals, as of June 2024 and with Collector 1.0 looming, for a component health reporting system.
 
-1. A `component.Host` implementation, such as `graph.Host`, may report statuses Starting, Ok, Stopping and PermanentError on behalf of components.
+1. A `component.Host` implementation, such as `service/internal/graph.Host`, may report statuses Starting, Ok, Stopping and PermanentError on behalf of components.
     - Additional status may be reported in the future
 2. Components may opt-in to reporting health status at runtime. Components must not be required to report health statuses themselves.
     - The consumers of the health reporting system must be able to identify which components are and are not opting to report their own statuses.
-3. Component health reporting must be opt-in for collector users.  While the underlying components are always allowed to report their health via the system, the `component.Host` implementation, such as `graph.Host`, or any other listener may only take action when the user has configured the collector accordingly.
+3. Component health reporting must be opt-in for collector users.  While the underlying components are always allowed to report their health via the system, the `component.Host` implementation, such as `service/internal/graph.Host`, or any other listener may only take action when the user has configured the collector accordingly.
    - As one example of compliance, the current health reporting system is dependent on the user configuring an extension that can watch for status updates.
 4. Component health must be representable as a finite state machine with clear transitions between states.
 5. Component health reporting must only be a mechanism for reporting health - it should have no mechanisms for taking actions on the health it reports. How consumers of the health reporting system respond to component updates is not a concern of the health reporting system.
@@ -67,7 +67,7 @@ Goal 2 states that consumers of component status reporting must be able to ident
 
 ### Should component health reporting be an opt-in for `component.Host` implementations?
 
-The current implementation of component status reporting does not add anything to `component.Host` to force a `component.Host` implementation, such as `graph.Host`, to be compatible with component status reporting.  Instead, it adds `ReportStatus func(*StatusEvent)` to `component.TelemetrySettings` and things that instantiate components, such as `graph.Host`, should, but are not required, to pass in a value for `ReportStatus`.
+The current implementation of component status reporting does not add anything to `component.Host` to force a `component.Host` implementation, such as `service/internal/graph.Host`, to be compatible with component status reporting.  Instead, it adds `ReportStatus func(*StatusEvent)` to `component.TelemetrySettings` and things that instantiate components, such as `service/internal/graph.Host`, should, but are not required, to pass in a value for `ReportStatus`.
 
 As a result, `component.Host` implementation is not required to engage with the component status reporting system.  This could lead to situations where a user adds a status watcher extension that can do nothing because the `component.Host` is not reporting component status updates.
 
