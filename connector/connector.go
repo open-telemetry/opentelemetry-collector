@@ -4,15 +4,10 @@
 package connector // import "go.opentelemetry.io/collector/connector"
 
 import (
-	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector/internal"
-)
-
-var (
-	errNilNextConsumer = errors.New("nil next Consumer")
 )
 
 // A Traces connector acts as an exporter from a traces pipeline and a receiver
