@@ -10,8 +10,10 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentprofiles"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
 	"go.opentelemetry.io/collector/processor"
@@ -96,6 +98,14 @@ func (n *receiverNode) buildComponent(ctx context.Context,
 			consumers = append(consumers, next.(consumer.Logs))
 		}
 		n.Component, err = builder.CreateLogs(ctx, set, fanoutconsumer.NewLogs(consumers))
+	case componentprofiles.DataTypeProfiles:
+		if b, ok := builder.(*builders.ReceiverBuilder); ok {
+			var consumers []consumerprofiles.Profiles
+			for _, next := range nexts {
+				consumers = append(consumers, next.(consumerprofiles.Profiles))
+			}
+			n.Component, err = b.CreateProfiles(ctx, set, fanoutconsumer.NewProfiles(consumers))
+		}
 	default:
 		return fmt.Errorf("error creating receiver %q for data type %q is not supported", set.ID, n.pipelineType)
 	}
