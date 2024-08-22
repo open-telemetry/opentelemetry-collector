@@ -11,7 +11,7 @@
 //
 // 1. configtelemetry.None
 //
-// No telemetry data should be collected.
+// No telemetry data is recorded.
 //
 // 2. configtelemetry.Basic
 //
