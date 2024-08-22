@@ -192,7 +192,8 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		Exporters:           exporter.NewBuilder(cfg.Exporters, factories.Exporters),
 		ConnectorsConfigs:   cfg.Connectors,
 		ConnectorsFactories: factories.Connectors,
-		Extensions:          extension.NewBuilder(cfg.Extensions, factories.Extensions),
+		ExtensionsConfigs:   cfg.Extensions,
+		ExtensionsFactories: factories.Extensions,
 
 		ModuleInfo: extension.ModuleInfo{
 			Receiver:  factories.ReceiverModules,

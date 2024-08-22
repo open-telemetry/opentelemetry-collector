@@ -79,7 +79,11 @@ type Settings struct {
 	ConnectorsFactories map[component.Type]connector.Factory
 
 	// Extensions builder for extensions.
-	Extensions *extension.Builder
+	Extensions builders.Extension
+
+	// Extensions configuration to its builder.
+	ExtensionsConfigs   map[component.ID]component.Config
+	ExtensionsFactories map[component.Type]extension.Factory
 
 	// ModuleInfo describes the go module for each component.
 	ModuleInfo extension.ModuleInfo
@@ -119,6 +123,11 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		connectors = builders.NewConnector(set.ConnectorsConfigs, set.ConnectorsFactories)
 	}
 
+	extensions := set.Extensions
+	if extensions == nil {
+		extensions = builders.NewExtension(set.ExtensionsConfigs, set.ExtensionsFactories)
+	}
+
 	srv := &Service{
 		buildInfo: set.BuildInfo,
 		host: &graph.Host{
@@ -126,7 +135,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 			Processors:        processors,
 			Exporters:         set.Exporters,
 			Connectors:        connectors,
-			Extensions:        set.Extensions,
+			Extensions:        extensions,
 			ModuleInfo:        set.ModuleInfo,
 			BuildInfo:         set.BuildInfo,
 			AsyncErrorChannel: set.AsyncErrorChannel,
