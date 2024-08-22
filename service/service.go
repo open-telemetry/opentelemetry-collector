@@ -211,7 +211,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		// ignore other errors as they represent invalid state transitions and are considered benign.
 	})
 
-	if err = srv.initGraph(ctx, set, cfg); err != nil {
+	if err = srv.initGraph(ctx, cfg); err != nil {
 		err = multierr.Append(err, srv.shutdownTelemetry(ctx))
 		return nil, err
 	}
@@ -360,7 +360,7 @@ func (srv *Service) initExtensions(ctx context.Context, cfg extensions.Config) e
 }
 
 // Creates the pipeline graph.
-func (srv *Service) initGraph(ctx context.Context, set Settings, cfg Config) error {
+func (srv *Service) initGraph(ctx context.Context, cfg Config) error {
 	var err error
 	if srv.host.Pipelines, err = graph.Build(ctx, graph.Settings{
 		Telemetry:        srv.telemetrySettings,
