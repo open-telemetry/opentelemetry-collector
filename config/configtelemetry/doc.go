@@ -21,7 +21,7 @@
 //
 // 3. configtelemetry.Normal
 //
-// Signals associated with this level cover the complete coverage of the component telemetry.
+// Telemetry associated with this level provides complete coverage of the collector telemetry.
 // It should be the default for component authors.
 //
 // Signals using this telemetry level can use this guidance:
