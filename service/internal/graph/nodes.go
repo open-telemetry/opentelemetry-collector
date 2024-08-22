@@ -231,7 +231,7 @@ func (n *connectorNode) buildComponent(
 	ctx context.Context,
 	tel component.TelemetrySettings,
 	info component.BuildInfo,
-	builder *connector.Builder,
+	builder builders.Connector,
 	nexts []baseConsumer,
 ) error {
 	tel.Logger = components.ConnectorLogger(tel.Logger, n.componentID, n.exprPipelineType, n.rcvrPipelineType)

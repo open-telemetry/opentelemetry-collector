@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -34,6 +35,11 @@ var nopType = component.MustNewType("nop")
 
 func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 	eventsReceived := make(map[*componentstatus.InstanceID][]*componentstatus.Event)
+	connectorFactory := connectortest.NewNopFactory()
+	// Use a different ID than receivertest and exportertest to avoid ambiguous
+	// configuration scenarios. Ambiguous IDs are detected in the 'otelcol' package,
+	// but lower level packages such as 'service' assume that IDs are disambiguated.
+	connID := component.NewIDWithName(nopType, "conn")
 
 	set := service.Settings{
 		BuildInfo:     component.NewDefaultBuildInfo(),
@@ -46,7 +52,12 @@ func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 		},
 		Processors: processortest.NewNopBuilder(),
 		Exporters:  exportertest.NewNopBuilder(),
-		Connectors: connectortest.NewNopBuilder(),
+		ConnectorsConfigs: map[component.ID]component.Config{
+			connID: connectorFactory.CreateDefaultConfig(),
+		},
+		ConnectorsFactories: map[component.Type]connector.Factory{
+			nopType: connectorFactory,
+		},
 		ExtensionsConfigs: map[component.ID]component.Config{
 			component.NewID(component.MustNewType("watcher")): &extensionConfig{eventsReceived},
 		},

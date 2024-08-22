@@ -21,7 +21,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/otelcol/internal/grpclog"
@@ -191,7 +190,8 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		ReceiversFactories:  factories.Receivers,
 		Processors:          processor.NewBuilder(cfg.Processors, factories.Processors),
 		Exporters:           exporter.NewBuilder(cfg.Exporters, factories.Exporters),
-		Connectors:          connector.NewBuilder(cfg.Connectors, factories.Connectors),
+		ConnectorsConfigs:   cfg.Connectors,
+		ConnectorsFactories: factories.Connectors,
 		ExtensionsConfigs:   cfg.Extensions,
 		ExtensionsFactories: factories.Extensions,
 
