@@ -23,7 +23,6 @@ require (
 	go.opentelemetry.io/collector/extension v0.107.0
 	go.opentelemetry.io/collector/pdata v1.13.0
 	go.opentelemetry.io/collector/pdata/testdata v0.107.0
-	go.opentelemetry.io/collector/processor v0.107.0
 	go.opentelemetry.io/collector/receiver v0.107.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.107.0
 	go.opentelemetry.io/collector/service v0.107.0
@@ -82,6 +81,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.13.0 // indirect
 	go.opentelemetry.io/collector/internal/globalgates v0.107.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.107.0 // indirect
+	go.opentelemetry.io/collector/processor v0.107.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.107.0 // indirect
 	go.opentelemetry.io/contrib/config v0.8.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.53.0 // indirect
