@@ -15,7 +15,7 @@
 //
 // 2. configtelemetry.Basic
 //
-// Signals associated with this level cover the essential coverage of the collector telemetry.
+// Signals associated with this level provide the essential coverage of the collector telemetry.
 // It should only be used for internal collector telemetry.
 //
 // This is the default level recommended when running the Collector.
