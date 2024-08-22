@@ -253,7 +253,17 @@ func useExpandValue() mapstructure.DecodeHookFuncType {
 		to reflect.Type,
 		data any) (any, error) {
 		if exp, ok := data.(expandedValue); ok {
-			return castTo(exp, to.Kind() == reflect.String)
+			v, err := castTo(exp, to.Kind() == reflect.String)
+			if err != nil {
+				return v, err
+			}
+			// See https://github.com/open-telemetry/opentelemetry-collector/issues/10949
+			// If the `to.Kind` is not a string, then expandValue's original value is useless and
+			// the casted-to value will be nil. In that scenario, we need to use the default value of `to`'s kind.
+			if v == nil {
+				return reflect.Zero(to).Interface(), nil
+			}
+			return v, nil
 		}
 
 		// If the target field is a map or slice, sanitize input to remove expandedValue references.
