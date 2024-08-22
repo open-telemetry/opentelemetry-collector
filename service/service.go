@@ -59,7 +59,14 @@ type Settings struct {
 	Processors *processor.Builder
 
 	// Exporters builder for exporters.
-	Exporters *exporter.Builder
+	//
+	// Deprecated: [v0.108.0] use the [ReceiversConfigs] and [ReceiversFactories] options
+	// instead.
+	Exporters builders.Exporter
+
+	// exporters configuration to its builder.
+	ExportersConfigs   map[component.ID]component.Config
+	ExportersFactories map[component.Type]exporter.Factory
 
 	// Connectors builder for connectors.
 	//
@@ -106,6 +113,11 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		receivers = builders.NewReceiver(set.ReceiversConfigs, set.ReceiversFactories)
 	}
 
+	exporters := set.Exporters
+	if exporters == nil {
+		exporters = builders.NewExporter(set.ExportersConfigs, set.ExportersFactories)
+	}
+
 	connectors := set.Connectors
 	if connectors == nil {
 		connectors = builders.NewConnector(set.ConnectorsConfigs, set.ConnectorsFactories)
@@ -121,7 +133,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		host: &graph.Host{
 			Receivers:         receivers,
 			Processors:        set.Processors,
-			Exporters:         set.Exporters,
+			Exporters:         exporters,
 			Connectors:        connectors,
 			Extensions:        extensions,
 			ModuleInfo:        set.ModuleInfo,
@@ -343,7 +355,7 @@ func (srv *Service) initGraph(ctx context.Context, set Settings, cfg Config) err
 		BuildInfo:        srv.buildInfo,
 		ReceiverBuilder:  srv.host.Receivers,
 		ProcessorBuilder: set.Processors,
-		ExporterBuilder:  set.Exporters,
+		ExporterBuilder:  srv.host.Exporters,
 		ConnectorBuilder: srv.host.Connectors,
 		PipelineConfigs:  cfg.Pipelines,
 		ReportStatus:     srv.host.Reporter.ReportStatus,
