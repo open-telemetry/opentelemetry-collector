@@ -15,7 +15,8 @@
 //
 // 2. configtelemetry.Basic
 //
-// Signals associated with this level cover the essential coverage of the component telemetry.
+// Signals associated with this level cover the essential coverage of the collector telemetry.
+// It should only be used for internal collector telemetry.
 //
 // This is the default level recommended when running the Collector.
 //
@@ -30,6 +31,7 @@
 // 3. configtelemetry.Normal
 //
 // Signals associated with this level cover the complete coverage of the component telemetry.
+// It should be the default for component authors.
 //
 // Signals using this telemetry level can use this guidance:
 //   - The signals associated with this level must control cardinality.
