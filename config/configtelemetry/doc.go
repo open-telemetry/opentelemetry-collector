@@ -33,8 +33,6 @@
 //
 // This is the default level recommended when running the Collector.
 //
-// * All signals defined in the component telemetry are active.
-//
 // 4. configtelemetry.Detailed
 //
 // Telemetry associated with this level provides complete coverage of the collector telemetry.
