@@ -25,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
@@ -194,7 +193,7 @@ func TestServiceGetFactory(t *testing.T) {
 	assert.Equal(t, srv.host.Exporters.Factory(nopType), srv.host.GetFactory(component.KindExporter, nopType))
 
 	assert.Nil(t, srv.host.GetFactory(component.KindConnector, wrongType))
-	assert.Equal(t, set.Connectors.Factory(nopType), srv.host.GetFactory(component.KindConnector, nopType))
+	assert.Equal(t, srv.host.Connectors.Factory(nopType), srv.host.GetFactory(component.KindConnector, nopType))
 
 	assert.Nil(t, srv.host.GetFactory(component.KindExtension, wrongType))
 	assert.Equal(t, set.Extensions.Factory(nopType), srv.host.GetFactory(component.KindExtension, nopType))
@@ -542,19 +541,21 @@ func assertZPages(t *testing.T, zpagesAddr string) {
 
 func newNopSettings() Settings {
 	receiversConfigs, receiversFactories := builders.NewNopReceiverConfigsAndFactories()
+	connectorsConfigs, connectorsFactories := builders.NewNopConnectorConfigsAndFactories()
 	exportersConfigs, exportersFactories := builders.NewNopExporterConfigsAndFactories()
 
 	return Settings{
-		BuildInfo:          component.NewDefaultBuildInfo(),
-		CollectorConf:      confmap.New(),
-		ReceiversConfigs:   receiversConfigs,
-		ReceiversFactories: receiversFactories,
-		Processors:         processortest.NewNopBuilder(),
-		ExportersConfigs:   exportersConfigs,
-		ExportersFactories: exportersFactories,
-		Connectors:         connectortest.NewNopBuilder(),
-		Extensions:         extensiontest.NewNopBuilder(),
-		AsyncErrorChannel:  make(chan error),
+		BuildInfo:           component.NewDefaultBuildInfo(),
+		CollectorConf:       confmap.New(),
+		ReceiversConfigs:    receiversConfigs,
+		ReceiversFactories:  receiversFactories,
+		Processors:          processortest.NewNopBuilder(),
+		ExportersConfigs:    exportersConfigs,
+		ExportersFactories:  exportersFactories,
+		ConnectorsConfigs:   connectorsConfigs,
+		ConnectorsFactories: connectorsFactories,
+		Extensions:          extensiontest.NewNopBuilder(),
+		AsyncErrorChannel:   make(chan error),
 	}
 }
 
