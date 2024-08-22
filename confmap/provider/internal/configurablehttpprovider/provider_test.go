@@ -282,8 +282,11 @@ func TestInvalidYAML(t *testing.T) {
 		}
 	}))
 	defer ts.Close()
-	_, err := fp.Retrieve(context.Background(), ts.URL, nil)
-	assert.Error(t, err)
+	ret, err := fp.Retrieve(context.Background(), ts.URL, nil)
+	require.NoError(t, err)
+	raw, err := ret.AsRaw()
+	require.NoError(t, err)
+	assert.Equal(t, "wrong : [", raw)
 	require.NoError(t, fp.Shutdown(context.Background()))
 }
 
@@ -297,9 +300,31 @@ func TestValidateProviderScheme(t *testing.T) {
 	assert.NoError(t, confmaptest.ValidateProviderScheme(New(HTTPScheme, confmaptest.NewNopProviderSettings())))
 }
 
-func TestInvalidTransport(t *testing.T) {
-	fp := New("foo", confmaptest.NewNopProviderSettings())
+func TestInvalidURI(t *testing.T) {
+	fp := New(HTTPScheme, confmaptest.NewNopProviderSettings())
 
-	_, err := fp.Retrieve(context.Background(), "foo://..", nil)
-	assert.Error(t, err)
+	tests := []struct {
+		uri string
+		err string
+	}{
+		{
+			uri: "foo://..",
+			err: "uri is not supported by \"http\" provider",
+		},
+		{
+			uri: "http://",
+			err: "no Host in request URL",
+		},
+		{
+			uri: "http://{}",
+			err: "invalid character \"{\" in host name",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.uri, func(t *testing.T) {
+			_, err := fp.Retrieve(context.Background(), tt.uri, nil)
+			assert.ErrorContains(t, err, tt.err)
+		})
+	}
 }

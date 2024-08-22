@@ -28,6 +28,10 @@ const (
 )
 
 func main() {
+	flag.Usage = func() {
+		fmt.Fprintf(flag.CommandLine.Output(), "Usage: %s metadata.yaml\n", os.Args[0])
+		flag.PrintDefaults()
+	}
 	flag.Parse()
 	yml := flag.Arg(0)
 	if err := run(yml); err != nil {
@@ -188,14 +192,6 @@ func templatize(tmplFile string, md metadata) *template.Template {
 						result += caser(part)
 					}
 					return result
-				},
-				"hasAsync": func(t telemetry) bool {
-					for _, m := range t.Metrics {
-						if m.Data().IsAsync() {
-							return true
-						}
-					}
-					return false
 				},
 				"inc": func(i int) int { return i + 1 },
 				"distroURL": func(name string) string {

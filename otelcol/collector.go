@@ -21,12 +21,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/connector"
-	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/otelcol/internal/grpclog"
-	"go.opentelemetry.io/collector/processor"
-	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service"
 )
 
@@ -163,17 +159,6 @@ func (col *Collector) Shutdown() {
 func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	col.setCollectorState(StateStarting)
 
-	var conf *confmap.Conf
-
-	if cp, ok := col.configProvider.(ConfmapProvider); ok {
-		var err error
-		conf, err = cp.GetConfmap(ctx)
-
-		if err != nil {
-			return fmt.Errorf("failed to resolve config: %w", err)
-		}
-	}
-
 	factories, err := col.set.Factories()
 	if err != nil {
 		return fmt.Errorf("failed to initialize factories: %w", err)
@@ -189,14 +174,34 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 
 	col.serviceConfig = &cfg.Service
 
+	conf := confmap.New()
+
+	if err = conf.Marshal(cfg); err != nil {
+		return fmt.Errorf("could not marshal configuration: %w", err)
+	}
+
 	col.service, err = service.New(ctx, service.Settings{
-		BuildInfo:         col.set.BuildInfo,
-		CollectorConf:     conf,
-		Receivers:         receiver.NewBuilder(cfg.Receivers, factories.Receivers),
-		Processors:        processor.NewBuilder(cfg.Processors, factories.Processors),
-		Exporters:         exporter.NewBuilder(cfg.Exporters, factories.Exporters),
-		Connectors:        connector.NewBuilder(cfg.Connectors, factories.Connectors),
-		Extensions:        extension.NewBuilder(cfg.Extensions, factories.Extensions),
+		BuildInfo:     col.set.BuildInfo,
+		CollectorConf: conf,
+
+		ReceiversConfigs:    cfg.Receivers,
+		ReceiversFactories:  factories.Receivers,
+		ProcessorsConfigs:   cfg.Processors,
+		ProcessorsFactories: factories.Processors,
+		ExportersConfigs:    cfg.Exporters,
+		ExportersFactories:  factories.Exporters,
+		ConnectorsConfigs:   cfg.Connectors,
+		ConnectorsFactories: factories.Connectors,
+		ExtensionsConfigs:   cfg.Extensions,
+		ExtensionsFactories: factories.Extensions,
+
+		ModuleInfo: extension.ModuleInfo{
+			Receiver:  factories.ReceiverModules,
+			Processor: factories.ProcessorModules,
+			Exporter:  factories.ExporterModules,
+			Extension: factories.ExtensionModules,
+			Connector: factories.ConnectorModules,
+		},
 		AsyncErrorChannel: col.asyncErrorChannel,
 		LoggingOptions:    col.set.LoggingOptions,
 	}, cfg.Service)

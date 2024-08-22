@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -62,9 +63,9 @@ type unhealthyProcessor struct {
 	telemetry component.TelemetrySettings
 }
 
-func (p unhealthyProcessor) Start(context.Context, component.Host) error {
+func (p unhealthyProcessor) Start(_ context.Context, host component.Host) error {
 	go func() {
-		p.telemetry.ReportStatus(component.NewStatusEvent(component.StatusRecoverableError))
+		componentstatus.ReportStatus(host, componentstatus.NewEvent(componentstatus.StatusRecoverableError))
 	}()
 	return nil
 }

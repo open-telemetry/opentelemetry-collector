@@ -17,13 +17,6 @@ import (
 
 var nopType = component.MustNewType("nop")
 
-// NewNopCreateSettings returns a new nop settings for Create* functions.
-//
-// Deprecated: [v0.103.0] Use connectortest.NewNopSettings instead.
-func NewNopCreateSettings() connector.Settings {
-	return NewNopSettings()
-}
-
 // NewNopSettings returns a new nop settings for Create* functions.
 func NewNopSettings() connector.Settings {
 	return connector.Settings{
@@ -98,6 +91,9 @@ type nopConnector struct {
 }
 
 // NewNopBuilder returns a connector.Builder that constructs nop receivers.
+//
+// Deprecated: [v0.108.0] this builder is being internalized within the service module,
+// and will be removed soon.
 func NewNopBuilder() *connector.Builder {
 	nopFactory := NewNopFactory()
 	// Use a different ID than receivertest and exportertest to avoid ambiguous

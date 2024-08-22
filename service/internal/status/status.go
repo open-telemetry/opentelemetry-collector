@@ -8,26 +8,26 @@ import (
 	"fmt"
 	"sync"
 
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 )
 
-// onTransitionFunc receives a component.StatusEvent on a successful state transition
-type onTransitionFunc func(*component.StatusEvent)
+// onTransitionFunc receives a componentstatus.Event on a successful state transition
+type onTransitionFunc func(*componentstatus.Event)
 
 // errInvalidStateTransition is returned for invalid state transitions
 var errInvalidStateTransition = errors.New("invalid state transition")
 
 // fsm is a finite state machine that models transitions for component status
 type fsm struct {
-	current      *component.StatusEvent
-	transitions  map[component.Status]map[component.Status]struct{}
+	current      *componentstatus.Event
+	transitions  map[componentstatus.Status]map[componentstatus.Status]struct{}
 	onTransition onTransitionFunc
 }
 
 // transition will attempt to execute a state transition. If it's successful, it calls the
-// onTransitionFunc with a StatusEvent representing the new state. Returns an error if the arguments
+// onTransitionFunc with a Event representing the new state. Returns an error if the arguments
 // result in an invalid status, or if the state transition is not valid.
-func (m *fsm) transition(ev *component.StatusEvent) error {
+func (m *fsm) transition(ev *componentstatus.Event) error {
 	if _, ok := m.transitions[m.current.Status()][ev.Status()]; !ok {
 		return fmt.Errorf(
 			"cannot transition from %s to %s: %w",
@@ -41,90 +41,96 @@ func (m *fsm) transition(ev *component.StatusEvent) error {
 	return nil
 }
 
-// newFSM creates a state machine with all valid transitions for component.Status.
-// The initial state is set to component.StatusNone.
+// newFSM creates a state machine with all valid transitions for componentstatus.Status.
+// The initial state is set to componentstatus.StatusNone.
 func newFSM(onTransition onTransitionFunc) *fsm {
 	return &fsm{
-		current:      component.NewStatusEvent(component.StatusNone),
+		current:      componentstatus.NewEvent(componentstatus.StatusNone),
 		onTransition: onTransition,
-		transitions: map[component.Status]map[component.Status]struct{}{
-			component.StatusNone: {
-				component.StatusStarting: {},
+		transitions: map[componentstatus.Status]map[componentstatus.Status]struct{}{
+			componentstatus.StatusNone: {
+				componentstatus.StatusStarting: {},
 			},
-			component.StatusStarting: {
-				component.StatusOK:               {},
-				component.StatusRecoverableError: {},
-				component.StatusPermanentError:   {},
-				component.StatusFatalError:       {},
-				component.StatusStopping:         {},
+			componentstatus.StatusStarting: {
+				componentstatus.StatusOK:               {},
+				componentstatus.StatusRecoverableError: {},
+				componentstatus.StatusPermanentError:   {},
+				componentstatus.StatusFatalError:       {},
+				componentstatus.StatusStopping:         {},
 			},
-			component.StatusOK: {
-				component.StatusRecoverableError: {},
-				component.StatusPermanentError:   {},
-				component.StatusFatalError:       {},
-				component.StatusStopping:         {},
+			componentstatus.StatusOK: {
+				componentstatus.StatusRecoverableError: {},
+				componentstatus.StatusPermanentError:   {},
+				componentstatus.StatusFatalError:       {},
+				componentstatus.StatusStopping:         {},
 			},
-			component.StatusRecoverableError: {
-				component.StatusOK:             {},
-				component.StatusPermanentError: {},
-				component.StatusFatalError:     {},
-				component.StatusStopping:       {},
+			componentstatus.StatusRecoverableError: {
+				componentstatus.StatusOK:             {},
+				componentstatus.StatusPermanentError: {},
+				componentstatus.StatusFatalError:     {},
+				componentstatus.StatusStopping:       {},
 			},
-			component.StatusPermanentError: {},
-			component.StatusFatalError:     {},
-			component.StatusStopping: {
-				component.StatusRecoverableError: {},
-				component.StatusPermanentError:   {},
-				component.StatusFatalError:       {},
-				component.StatusStopped:          {},
+			componentstatus.StatusPermanentError: {},
+			componentstatus.StatusFatalError:     {},
+			componentstatus.StatusStopping: {
+				componentstatus.StatusRecoverableError: {},
+				componentstatus.StatusPermanentError:   {},
+				componentstatus.StatusFatalError:       {},
+				componentstatus.StatusStopped:          {},
 			},
-			component.StatusStopped: {},
+			componentstatus.StatusStopped: {},
 		},
 	}
 }
 
 // NotifyStatusFunc is the receiver of status events after successful state transitions
-type NotifyStatusFunc func(*component.InstanceID, *component.StatusEvent)
+type NotifyStatusFunc func(*componentstatus.InstanceID, *componentstatus.Event)
 
 // InvalidTransitionFunc is the receiver of invalid transition errors
 type InvalidTransitionFunc func(error)
 
-// ServiceStatusFunc is the expected type of ReportStatus for servicetelemetry.Settings
-type ServiceStatusFunc func(*component.InstanceID, *component.StatusEvent)
+// ServiceStatusFunc is the expected type of ReportStatus
+type ServiceStatusFunc func(*componentstatus.InstanceID, *componentstatus.Event)
 
 // ErrStatusNotReady is returned when trying to report status before service start
 var ErrStatusNotReady = errors.New("report component status is not ready until service start")
 
 // Reporter handles component status reporting
-type Reporter struct {
+type Reporter interface {
+	Ready()
+	ReportStatus(id *componentstatus.InstanceID, ev *componentstatus.Event)
+	ReportOKIfStarting(id *componentstatus.InstanceID)
+}
+
+type reporter struct {
 	mu                  sync.Mutex
 	ready               bool
-	fsmMap              map[*component.InstanceID]*fsm
+	fsmMap              map[*componentstatus.InstanceID]*fsm
 	onStatusChange      NotifyStatusFunc
 	onInvalidTransition InvalidTransitionFunc
 }
 
 // NewReporter returns a reporter that will invoke the NotifyStatusFunc when a component's status
 // has changed.
-func NewReporter(onStatusChange NotifyStatusFunc, onInvalidTransition InvalidTransitionFunc) *Reporter {
-	return &Reporter{
-		fsmMap:              make(map[*component.InstanceID]*fsm),
+func NewReporter(onStatusChange NotifyStatusFunc, onInvalidTransition InvalidTransitionFunc) Reporter {
+	return &reporter{
+		fsmMap:              make(map[*componentstatus.InstanceID]*fsm),
 		onStatusChange:      onStatusChange,
 		onInvalidTransition: onInvalidTransition,
 	}
 }
 
 // Ready enables status reporting
-func (r *Reporter) Ready() {
+func (r *reporter) Ready() {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.ready = true
 }
 
 // ReportStatus reports status for the given InstanceID
-func (r *Reporter) ReportStatus(
-	id *component.InstanceID,
-	ev *component.StatusEvent,
+func (r *reporter) ReportStatus(
+	id *componentstatus.InstanceID,
+	ev *componentstatus.Event,
 ) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -137,38 +143,36 @@ func (r *Reporter) ReportStatus(
 	}
 }
 
-func (r *Reporter) ReportOKIfStarting(id *component.InstanceID) {
+func (r *reporter) ReportOKIfStarting(id *componentstatus.InstanceID) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if !r.ready {
 		r.onInvalidTransition(ErrStatusNotReady)
 	}
 	fsm := r.componentFSM(id)
-	if fsm.current.Status() == component.StatusStarting {
-		if err := fsm.transition(component.NewStatusEvent(component.StatusOK)); err != nil {
+	if fsm.current.Status() == componentstatus.StatusStarting {
+		if err := fsm.transition(componentstatus.NewEvent(componentstatus.StatusOK)); err != nil {
 			r.onInvalidTransition(err)
 		}
 	}
 }
 
 // Note: a lock must be acquired before calling this method.
-func (r *Reporter) componentFSM(id *component.InstanceID) *fsm {
+func (r *reporter) componentFSM(id *componentstatus.InstanceID) *fsm {
 	fsm, ok := r.fsmMap[id]
 	if !ok {
-		fsm = newFSM(func(ev *component.StatusEvent) { r.onStatusChange(id, ev) })
+		fsm = newFSM(func(ev *componentstatus.Event) { r.onStatusChange(id, ev) })
 		r.fsmMap[id] = fsm
 	}
 	return fsm
 }
 
-// NewReportStatusFunc returns a function to be used as ReportStatus for
-// component.TelemetrySettings, which differs from servicetelemetry.Settings in that
-// the component version is tied to specific component instance.
+// NewReportStatusFunc returns a function to be used as ReportStatus for componentstatus.TelemetrySettings
 func NewReportStatusFunc(
-	id *component.InstanceID,
+	id *componentstatus.InstanceID,
 	srvStatus ServiceStatusFunc,
-) func(*component.StatusEvent) {
-	return func(ev *component.StatusEvent) {
+) func(*componentstatus.Event) {
+	return func(ev *componentstatus.Event) {
 		srvStatus(id, ev)
 	}
 }

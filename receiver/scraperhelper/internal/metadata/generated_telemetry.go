@@ -13,8 +13,13 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
+// Deprecated: [v0.108.0] use LeveledMeter instead.
 func Meter(settings component.TelemetrySettings) metric.Meter {
 	return settings.MeterProvider.Meter("go.opentelemetry.io/collector/receiver/scraperhelper")
+}
+
+func LeveledMeter(settings component.TelemetrySettings, level configtelemetry.Level) metric.Meter {
+	return settings.LeveledMeterProvider(level).Meter("go.opentelemetry.io/collector/receiver/scraperhelper")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
@@ -54,15 +59,15 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 		builder.meter = noop.Meter{}
 	}
 	builder.ScraperErroredMetricPoints, err = builder.meter.Int64Counter(
-		"scraper_errored_metric_points",
+		"otelcol_scraper_errored_metric_points",
 		metric.WithDescription("Number of metric points that were unable to be scraped."),
-		metric.WithUnit("1"),
+		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ScraperScrapedMetricPoints, err = builder.meter.Int64Counter(
-		"scraper_scraped_metric_points",
+		"otelcol_scraper_scraped_metric_points",
 		metric.WithDescription("Number of metric points successfully scraped."),
-		metric.WithUnit("1"),
+		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs

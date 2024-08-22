@@ -30,6 +30,7 @@ Unless otherwise specified in the documentation, the following may change in any
  change its output in any way.
 * **Go version compatibility**. Removing support for an unsupported Go version is not considered a breaking change.
 * **OS version compatibility**. Removing support for an unsupported OS version is not considered a breaking change. Upgrading or downgrading OS version support per the [platform support](docs/platform-support.md) document is not considered a breaking change.
+* **Protocol compatibility**. Changing the default minimum version of a supported protocol (e.g. TLS) or dropping support for protocols when there are security concerns is not considered a breaking change.
 * **Dependency updates**. Updating dependencies is not considered a breaking change except when their types are part of the
 public API or the update may change the behavior of applications in an incompatible way.
 

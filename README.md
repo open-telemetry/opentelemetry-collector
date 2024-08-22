@@ -33,7 +33,7 @@
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="https://opentelemetry.io/docs/collector/configuration/">Configuration</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="docs/monitoring.md">Monitoring</a>
+    <a href="https://opentelemetry.io/docs/collector/internal-telemetry/#use-internal-telemetry-to-monitor-the-collector</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="docs/security-best-practices.md">Security</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
@@ -58,6 +58,34 @@ Objectives:
 - Observable: An exemplar of an observable service.
 - Extensible: Customizable without touching the core code.
 - Unified: Single codebase, deployable as an agent or collector with support for traces, metrics and logs.
+
+## Community
+
+The OpenTelemetry Collector SIG is present at the [#otel-collector](https://cloud-native.slack.com/archives/C01N6P7KR6W)
+channel on the CNCF Slack and [meets once a week](https://github.com/open-telemetry/community#implementation-sigs) via
+video calls. Everyone is invited to join those calls, which typically serves the following purposes:
+
+- meet the humans behind the project
+- get an opinion about specific proposals
+- look for a sponsor for a proposed component after trying already via GitHub and Slack
+- get attention to a specific pull-request that got stuck and is difficult to discuss asynchronously
+
+Between 11 July 2024 and 09 January 2025, we'll have our video calls rotating between three time slots, in order to
+allow everyone to join at least once every three meetings:
+
+- [00:00 UTC](https://dateful.com/convert/utc?t=0000)
+- [12:00 UTC](https://dateful.com/convert/utc?t=1200)
+- [16:00 UTC](https://dateful.com/convert/utc?t=1600)
+
+Contributors to the project are also welcome to have ad-hoc meetings for synchronous discussions about specific points.
+Post a note in #otel-collector on Slack inviting others, specifying the topic to be discussed. Unless there are strong
+reasons to keep the meeting private, please make it an open invitation for other contributors to join. Try also to
+identify who would be the other contributors interested on that topic and in which timezones they are.
+
+Remember that our source of truth is GitHub: every decision made via Slack or video calls has to be recorded in the
+relevant GitHub issue. Ideally, the agenda items from the meeting notes would include a link to the issue or pull
+request where a discussion is happening already. We acknowledge that not everyone can join Slack or the synchronous
+calls and don't want them to feel excluded.
 
 ## Supported OTLP version
 
@@ -108,7 +136,7 @@ Support for Go versions on the OpenTelemetry Collector is updated as follows:
 1. The first release after the release of a new Go minor version `N` will add build and tests steps for the new Go minor version.
 2. The first release after the release of a new Go minor version `N` will remove support for Go version `N-2`.
 
-Official OpenTelemetry Collector distro binaries may be built with any supported Go version.
+Official OpenTelemetry Collector distro binaries will be built with a release in the latest Go minor version series.
 
 ## Verifying the images signatures
 

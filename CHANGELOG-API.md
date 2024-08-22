@@ -7,6 +7,130 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.13.0/v0.107.0
+
+### 🛑 Breaking changes 🛑
+
+- `otelcol`: Delete deprecated NewCommandMustSetProvider (#10778)
+- `component`: Removes the deprecated `Host.GetFactory` method. (#10771)
+- `otelcoltest`: The `otelcol.LoadConfig` method no longer sets the `expandconverter`. (#10510)
+- `ocb`: Collectors built with OCB will no longer include the `expandconverter` (#10510)
+- `exporterhelper`: Delete deprecated `exporterhelper.ObsReport` and `exporterhelper.NewObsReport` (#10779, #10592)
+
+### 🚩 Deprecations 🚩
+
+- `expandconverter`: Deprecate `expandconverter`. (#10510)
+
+### 🚀 New components 🚀
+
+- `componentstatus`: Adds new componentstatus module that will soon replace status content in component. (#10730)
+- `connector/connectorprofiles`: Allow handling profiles in connector. (#10703)
+- `exporter/exporterprofiles`: Allow handling profiles in exporter. (#10702)
+- `processor/processorprofiles`: Allow handling profiles in processor. (#10691)
+- `receiver/receiverprofiles`: Allow handling profiles in receiver. (#10690)
+
+### 💡 Enhancements 💡
+
+- `confmap`: Check that providers have a correct scheme when building a confmap.Resolver. (#10786)
+- `confighttp`: Add `NewDefaultCORSConfig` function to initialize the default `confighttp.CORSConfig` (#9655)
+
+## v0.106.0
+
+### 🛑 Breaking changes 🛑
+
+- `configauth`: removing deprecated methods GetServerAuthenticatorContext and GetClientAuthenticatorContext (#9808)
+- `connector,exporter,receiver,extension,processor`: Remove deprecated funcs/structs (#10423)
+  Remove the following funcs & structs:
+  - connector.CreateSettings -> connector.Settings
+  - connectortest.NewNopCreateSettings -> connectortest.NewNopSettings
+  - exporter.CreateSettings -> exporter.Settings
+  - exportertest.NewNopCreateSettings -> exportertest.NewNopSettings
+  - extension.CreateSettings -> extension.Settings
+  - extensiontest.NewNopCreateSettings -> extensiontest.NewNopSettings
+  - processor.CreateSettings -> processor.Settings
+  - processortest.NewNopCreateSettings -> processortest.NewNopSettings
+  - receiver.CreateSettings -> receiver.Settings
+  - receivertest.NewNopCreateSettings -> receivertest.NewNopSettings
+  
+- `component/componenttest`: Add optional ...attribute.KeyValue argument to TestTelemetry.CheckExporterMetricGauge. (#10593)
+- `confighttp`: Auth data type signature has changed (#4806)
+  As part of the linked PR, the `auth` attribute was moved from `configauth.Authentication` 
+  to a new `AuthConfig`, which contains a `configauth.Authentication`. For end-users, this
+  is a non-breaking change. For users of the API, create a new AuthConfig using the
+  `configauth.Authentication` instance that was being used before.
+  
+- `mdatagen`: Remove WithAttributes option from the telemetry builder constructor. (#10608)
+  Attribute sets for async instruments now can be set as options to callback setters and async instruments initializers.
+  This allows each async instrument to have its own attribute set.
+  
+- `service/extensions`: Adds `Options` to `extensions.New`. (#10728)
+  This is only a breaking change if you are depending on `extensions.New`'s signature. Calls to `extensions.New` are not broken.
+
+### 🚩 Deprecations 🚩
+
+- `component`: Deprecates Host.GetFactory. (#10709)
+
+### 🚀 New components 🚀
+
+- `component/componentprofiles`: Add componentprofiles module. (#10525)
+
+### 💡 Enhancements 💡
+
+- `exporter, processor, receiver`: Document factory functions. (#9323)
+- `component`: Document status enums and New constructors (#9822)
+- `confighttp, configgrpc`: Remove the experimental comment on `IncludeMetadata` in confighttp and configgrpc (#9381)
+- `confighttp`: Add `confighttp.NewDefaultServerConfig()` to instantiate the default HTTP server configuration (#9655)
+- `consumer/consumertest`: Allow testing profiles with consumertest. (#10692)
+
+### 🧰 Bug fixes 🧰
+
+- `confmap`: Fix wrong expansion of environment variables escaped with `$$`, e.g. `$${ENV_VAR}` and `$$ENV_VAR`. (#10713)
+  This change fixes the issue where environment variables escaped with $$ were expanded. 
+  The collector now converts `$${ENV_VAR}` to `${ENV_VAR}` and `$$ENV_VAR` to `$ENV_VAR` without further expansion.
+  
+
+## v1.12.0/v0.105.0
+
+### 🛑 Breaking changes 🛑
+
+- `otelcol`: Obtain the Collector's effective config from otelcol.Config (#10139)
+  `otelcol.Collector` will now marshal `confmap.Conf` objects from `otelcol.Config` itself.
+- `otelcoltest`: Remove deprecated methods `LoadConfigWithSettings` and `LoadConfigAndValidateWithSettings` (#10512)
+
+### 🚩 Deprecations 🚩
+
+- `configauth`: Deprecated `Authentication.GetClientAuthenticatorContext` and `Authentication.GetServerAuthenticatorContext` (#10578)
+- `otelcol`: Deprecate `otelcol.ConfmapProvider` (#10139)
+  `otelcol.Collector` will now marshal `confmap.Conf` objects from `otelcol.Config` itself.
+- `otelcol`: Deprecate `(*otelcol.ConfigProvider).GetConfmap` (#10139)
+  Call `(*confmap.Conf).Marshal(*otelcol.Config)` to get the Collector's configuration.
+- `exporterhelper`: Deprecate the obsreport API in the exporterhelper package. (#10592)
+
+### 🚀 New components 🚀
+
+- `consumer/consumerprofiles`: Allow handling profiles in consumer. (#10464)
+
+## v1.11.0/v0.104.0
+
+### 🛑 Breaking changes 🛑
+
+- `otelcol`: The `otelcol.NewCommand` now requires at least one provider be set. (#10436)
+- `component/componenttest`: Added additional "inserted" count to `TestTelemetry.CheckProcessor*` methods. (#10353)
+
+### 🚩 Deprecations 🚩
+
+- `otelcoltest`: Deprecates `LoadConfigWithSettings` and `LoadConfigAndValidateWithSettings`.  Use `LoadConfig` and `LoadConfigAndValidate` instead. (#10417)
+- `otelcol`: The `otelcol.NewCommandMustSetProvider` is deprecated. Use `otelcol.NewCommand` instead. (#10436)
+
+### 🚀 New components 🚀
+
+- `otelcoltest`: Split off go.opentelemetry.io/collector/otelcol/otelcoltest into its own module (#10417)
+
+### 💡 Enhancements 💡
+
+- `pdata/pprofile`: Add pprofile wrapper to convert proto into pprofile. (#10401)
+- `pdata/testdata`: Add pdata testdata for profiles. (#10401)
+
 ## v1.10.0/v0.103.0
 
 ### 🛑 Breaking changes 🛑

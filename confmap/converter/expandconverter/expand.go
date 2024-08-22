@@ -5,16 +5,13 @@ package expandconverter // import "go.opentelemetry.io/collector/confmap/convert
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
-	"regexp"
 
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/internal/envvar"
-	"go.opentelemetry.io/collector/internal/featuregates"
 )
 
 type converter struct {
@@ -26,6 +23,9 @@ type converter struct {
 
 // NewFactory returns a factory for a  confmap.Converter,
 // which expands all environment variables for a given confmap.Conf.
+//
+// Deprecated: [v0.107.0] BASH-style env var expansion is deprecated. Use the `envprovider` instead to expand `${FOO}` and `${env:FOO}`.
+// Using the expandconverter with `confmap.Resolver` will cause double escaping, so `$$$$` -> `$` instead of `$$`.
 func NewFactory() confmap.ConverterFactory {
 	return confmap.NewConverterFactory(newConverter)
 }
@@ -37,6 +37,8 @@ func newConverter(set confmap.ConverterSettings) confmap.Converter {
 	}
 }
 
+// Deprecated: [v0.107.0] BASH-style env var expansion is deprecated. Use the `envprovider` instead to expand `${FOO}` and `${env:FOO}`.
+// Using the expandconverter with `confmap.Resolver` will cause double escaping, so `$$$$` -> `$` instead of `$$`.
 func (c converter) Convert(_ context.Context, conf *confmap.Conf) error {
 	var err error
 	out := make(map[string]any)
@@ -86,21 +88,9 @@ func (c converter) expandEnv(s string) (string, error) {
 		// - $FOO will be substituted with env var FOO
 		// - $$FOO will be replaced with $FOO
 		// - $$$FOO will be replaced with $ + substituted env var FOO
+		// TODO: Move the escaping of $$ out from the expand converter to the resolver.
 		if str == "$" {
 			return "$"
-		}
-
-		// Matches on $VAR style environment variables
-		// in order to make sure we don't log a warning for ${VAR}
-		var regex = regexp.MustCompile(fmt.Sprintf(`\$%s`, regexp.QuoteMeta(str)))
-		if _, exists := c.loggedDeprecations[str]; !exists && regex.MatchString(s) {
-			if featuregates.UseUnifiedEnvVarExpansionRules.IsEnabled() {
-				err = errors.New("$VAR expansion is not supported when feature gate confmap.unifyEnvVarExpansion is enabled")
-				return ""
-			}
-			msg := fmt.Sprintf("Variable substitution using $VAR will be deprecated in favor of ${VAR} and ${env:VAR}, please update $%s", str)
-			c.logger.Warn(msg, zap.String("variable", str))
-			c.loggedDeprecations[str] = struct{}{}
 		}
 
 		// For $ENV style environment variables os.Expand returns once it hits a character that isn't an underscore or

@@ -5,7 +5,7 @@
       "dependencies"
     ],
     "constraints": {
-      "go": "1.21"
+      "go": "1.22"
     },
     "extends": ["config:recommended"],
     "schedule": ["every tuesday"],
@@ -62,7 +62,7 @@
       },
       {
         "matchManagers": ["gomod"],
-        "matchSourceUrlPrefixes": ["https://go.opentelemetry.io/build-tools"],
+        "matchPackagePrefixes": ["go.opentelemetry.io/build-tools"],
         "groupName": "All go.opentelemetry.io/build-tools packages"
       }
     ],

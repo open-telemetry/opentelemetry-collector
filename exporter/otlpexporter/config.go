@@ -7,12 +7,14 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"regexp"
 	"strconv"
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -21,6 +23,10 @@ type Config struct {
 	exporterhelper.TimeoutSettings `mapstructure:",squash"`     // squash ensures fields are correctly decoded in embedded struct.
 	QueueConfig                    exporterhelper.QueueSettings `mapstructure:"sending_queue"`
 	RetryConfig                    configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
+
+	// Experimental: This configuration is at the early stage of development and may change without backward compatibility
+	// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved
+	BatcherConfig exporterbatcher.Config `mapstructure:"batcher"`
 
 	configgrpc.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 }
@@ -49,8 +55,9 @@ func (c *Config) sanitizedEndpoint() string {
 		return strings.TrimPrefix(c.Endpoint, "http://")
 	case strings.HasPrefix(c.Endpoint, "https://"):
 		return strings.TrimPrefix(c.Endpoint, "https://")
-	case strings.HasPrefix(c.Endpoint, "dns:///"):
-		return strings.TrimPrefix(c.Endpoint, "dns:///")
+	case strings.HasPrefix(c.Endpoint, "dns://"):
+		r := regexp.MustCompile("^dns://[/]?")
+		return r.ReplaceAllString(c.Endpoint, "")
 	default:
 		return c.Endpoint
 	}

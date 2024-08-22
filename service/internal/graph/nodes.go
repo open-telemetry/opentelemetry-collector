@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
 	"go.opentelemetry.io/collector/service/internal/components"
 )
@@ -70,11 +71,11 @@ func newReceiverNode(pipelineType component.DataType, recvID component.ID) *rece
 func (n *receiverNode) buildComponent(ctx context.Context,
 	tel component.TelemetrySettings,
 	info component.BuildInfo,
-	builder *receiver.Builder,
+	builder builders.Receiver,
 	nexts []baseConsumer,
 ) error {
+	tel.Logger = components.ReceiverLogger(tel.Logger, n.componentID, n.pipelineType)
 	set := receiver.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
-	set.TelemetrySettings.Logger = components.ReceiverLogger(tel.Logger, n.componentID, n.pipelineType)
 	var err error
 	switch n.pipelineType {
 	case component.DataTypeTraces:
@@ -130,11 +131,11 @@ func (n *processorNode) getConsumer() baseConsumer {
 func (n *processorNode) buildComponent(ctx context.Context,
 	tel component.TelemetrySettings,
 	info component.BuildInfo,
-	builder *processor.Builder,
+	builder builders.Processor,
 	next baseConsumer,
 ) error {
+	tel.Logger = components.ProcessorLogger(tel.Logger, n.componentID, n.pipelineID)
 	set := processor.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
-	set.TelemetrySettings.Logger = components.ProcessorLogger(set.TelemetrySettings.Logger, n.componentID, n.pipelineID)
 	var err error
 	switch n.pipelineID.Type() {
 	case component.DataTypeTraces:
@@ -179,10 +180,10 @@ func (n *exporterNode) buildComponent(
 	ctx context.Context,
 	tel component.TelemetrySettings,
 	info component.BuildInfo,
-	builder *exporter.Builder,
+	builder builders.Exporter,
 ) error {
+	tel.Logger = components.ExporterLogger(tel.Logger, n.componentID, n.pipelineType)
 	set := exporter.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
-	set.TelemetrySettings.Logger = components.ExporterLogger(set.TelemetrySettings.Logger, n.componentID, n.pipelineType)
 	var err error
 	switch n.pipelineType {
 	case component.DataTypeTraces:
@@ -230,11 +231,11 @@ func (n *connectorNode) buildComponent(
 	ctx context.Context,
 	tel component.TelemetrySettings,
 	info component.BuildInfo,
-	builder *connector.Builder,
+	builder builders.Connector,
 	nexts []baseConsumer,
 ) error {
+	tel.Logger = components.ConnectorLogger(tel.Logger, n.componentID, n.exprPipelineType, n.rcvrPipelineType)
 	set := connector.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
-	set.TelemetrySettings.Logger = components.ConnectorLogger(set.TelemetrySettings.Logger, n.componentID, n.exprPipelineType, n.rcvrPipelineType)
 
 	switch n.rcvrPipelineType {
 	case component.DataTypeTraces:

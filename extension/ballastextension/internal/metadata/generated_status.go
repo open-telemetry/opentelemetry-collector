@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("memory_ballast")
+	Type      = component.MustNewType("memory_ballast")
+	ScopeName = "go.opentelemetry.io/collector/extension/ballastextension"
 )
 
 const (

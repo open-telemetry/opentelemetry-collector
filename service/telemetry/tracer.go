@@ -11,7 +11,11 @@ import (
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
+	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
+
+	"go.opentelemetry.io/collector/internal/globalgates"
 )
 
 const (
@@ -24,12 +28,40 @@ var (
 	errUnsupportedPropagator = errors.New("unsupported trace propagator")
 )
 
+func attributes(set Settings, cfg Config) map[string]interface{} {
+	attrs := map[string]interface{}{
+		string(semconv.ServiceNameKey):    set.BuildInfo.Command,
+		string(semconv.ServiceVersionKey): set.BuildInfo.Version,
+	}
+	for k, v := range cfg.Resource {
+		if v != nil {
+			attrs[k] = *v
+		}
+
+		// the new value is nil, delete the existing key
+		if _, ok := attrs[k]; ok && v == nil {
+			delete(attrs, k)
+		}
+	}
+	return attrs
+}
+
 // New creates a new Telemetry from Config.
-func newTracerProvider(ctx context.Context, cfg Config) (trace.TracerProvider, error) {
+func newTracerProvider(ctx context.Context, set Settings, cfg Config) (trace.TracerProvider, error) {
+	if globalgates.NoopTracerProvider.IsEnabled() {
+		return noop.NewTracerProvider(), nil
+	}
+	sch := semconv.SchemaURL
+	res := config.Resource{
+		SchemaUrl:  &sch,
+		Attributes: attributes(set, cfg),
+	}
+
 	sdk, err := config.NewSDK(
 		config.WithContext(ctx),
 		config.WithOpenTelemetryConfiguration(
 			config.OpenTelemetryConfiguration{
+				Resource: &res,
 				TracerProvider: &config.TracerProvider{
 					Processors: cfg.Traces.Processors,
 					// TODO: once https://github.com/open-telemetry/opentelemetry-configuration/issues/83 is resolved,
