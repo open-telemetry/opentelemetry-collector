@@ -11,6 +11,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector v0.107.0
 	go.opentelemetry.io/collector/component v0.107.0
+	go.opentelemetry.io/collector/component/componentprofiles v0.107.0
 	go.opentelemetry.io/collector/component/componentstatus v0.107.0
 	go.opentelemetry.io/collector/config/confighttp v0.107.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.107.0
@@ -82,7 +83,6 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/collector/client v1.13.0 // indirect
-	go.opentelemetry.io/collector/component/componentprofiles v0.107.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.107.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.13.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.13.0 // indirect
@@ -169,3 +169,5 @@ replace go.opentelemetry.io/collector/component/componentprofiles => ../componen
 replace go.opentelemetry.io/collector/client => ../client
 
 replace go.opentelemetry.io/collector/internal/globalgates => ../internal/globalgates
+
+replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../receiver/receiverprofiles

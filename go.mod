@@ -17,9 +17,11 @@ require (
 	go.opentelemetry.io/collector/component/componentstatus v0.107.0
 	go.opentelemetry.io/collector/confmap v0.107.0
 	go.opentelemetry.io/collector/consumer v0.107.0
+	go.opentelemetry.io/collector/consumer/consumerprofiles v0.107.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.107.0
 	go.opentelemetry.io/collector/featuregate v1.13.0
 	go.opentelemetry.io/collector/pdata v1.13.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.107.0
 	go.opentelemetry.io/collector/pdata/testdata v0.107.0
 	go.opentelemetry.io/contrib/config v0.8.0
 	go.uber.org/goleak v1.3.0
@@ -62,8 +64,6 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.107.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumerprofiles v0.107.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.107.0 // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp v0.4.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.28.0 // indirect
