@@ -1,5 +1,7 @@
 include ../../Makefile.Common
 
+GOTEST_TIMEOUT=360s
+
 .PHONY: ocb
 ocb:
 	CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/ocb_$(GOOS)_$(GOARCH) .

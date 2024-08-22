@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/components"
 	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/internal/zpages"
@@ -168,12 +169,12 @@ func (bes *Extensions) HandleZPages(w http.ResponseWriter, r *http.Request) {
 
 // Settings holds configuration for building Extensions.
 type Settings struct {
-	Telemetry component.TelemetrySettings
-	BuildInfo component.BuildInfo
+	Telemetry  component.TelemetrySettings
+	BuildInfo  component.BuildInfo
+	ModuleInfo extension.ModuleInfo
 
 	// Extensions builder for extensions.
-	Extensions *extension.Builder
-	ModuleInfo extension.ModuleInfo
+	Extensions builders.Extension
 }
 
 type Option func(*Extensions)

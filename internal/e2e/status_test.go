@@ -65,13 +65,12 @@ func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 		ConnectorsFactories: map[component.Type]connector.Factory{
 			nopType: connectorFactory,
 		},
-		Extensions: extension.NewBuilder(
-			map[component.ID]component.Config{
-				component.NewID(component.MustNewType("watcher")): &extensionConfig{eventsReceived},
-			},
-			map[component.Type]extension.Factory{
-				component.MustNewType("watcher"): newExtensionFactory(),
-			}),
+		ExtensionsConfigs: map[component.ID]component.Config{
+			component.NewID(component.MustNewType("watcher")): &extensionConfig{eventsReceived},
+		},
+		ExtensionsFactories: map[component.Type]extension.Factory{
+			component.MustNewType("watcher"): newExtensionFactory(),
+		},
 	}
 	set.BuildInfo = component.BuildInfo{Version: "test version", Command: "otelcoltest"}
 
