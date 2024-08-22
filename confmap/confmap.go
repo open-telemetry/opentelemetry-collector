@@ -235,13 +235,13 @@ func caseSensitiveMatchName(a, b string) bool {
 	return a == b
 }
 
-func castTo(exp expandedValue, useOriginal bool) (any, error) {
+func castTo(exp expandedValue, useOriginal bool) any {
 	// If the target field is a string, use `exp.Original` or fail if not available.
 	if useOriginal {
-		return exp.Original, nil
+		return exp.Original
 	}
 	// Otherwise, use the parsed value (previous behavior).
-	return exp.Value, nil
+	return exp.Value
 }
 
 // When a value has been loaded from an external source via a provider, we keep both the
@@ -253,10 +253,7 @@ func useExpandValue() mapstructure.DecodeHookFuncType {
 		to reflect.Type,
 		data any) (any, error) {
 		if exp, ok := data.(expandedValue); ok {
-			v, err := castTo(exp, to.Kind() == reflect.String)
-			if err != nil {
-				return v, err
-			}
+			v := castTo(exp, to.Kind() == reflect.String)
 			// See https://github.com/open-telemetry/opentelemetry-collector/issues/10949
 			// If the `to.Kind` is not a string, then expandValue's original value is useless and
 			// the casted-to value will be nil. In that scenario, we need to use the default value of `to`'s kind.
