@@ -40,6 +40,4 @@
 // The signals associated with this level may exhibit high cardinality and/or high dimensionality.
 //
 // There is no limit on data volume.
-//
-// All signals defined in the component telemetry are active.
 package configtelemetry // import "go.opentelemetry.io/collector/config/configtelemetry"
