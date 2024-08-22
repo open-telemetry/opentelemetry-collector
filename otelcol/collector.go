@@ -183,15 +183,18 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	}
 
 	col.service, err = service.New(ctx, service.Settings{
-		BuildInfo:           col.set.BuildInfo,
-		CollectorConf:       conf,
+		BuildInfo:     col.set.BuildInfo,
+		CollectorConf: conf,
+
 		ReceiversConfigs:    cfg.Receivers,
 		ReceiversFactories:  factories.Receivers,
 		Processors:          processor.NewBuilder(cfg.Processors, factories.Processors),
 		Exporters:           exporter.NewBuilder(cfg.Exporters, factories.Exporters),
 		ConnectorsConfigs:   cfg.Connectors,
 		ConnectorsFactories: factories.Connectors,
-		Extensions:          extension.NewBuilder(cfg.Extensions, factories.Extensions),
+		ExtensionsConfigs:   cfg.Extensions,
+		ExtensionsFactories: factories.Extensions,
+
 		ModuleInfo: extension.ModuleInfo{
 			Receiver:  factories.ReceiverModules,
 			Processor: factories.ProcessorModules,

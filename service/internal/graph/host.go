@@ -35,7 +35,7 @@ type Host struct {
 	Processors        *processor.Builder
 	Exporters         *exporter.Builder
 	Connectors        builders.Connector
-	Extensions        *extension.Builder
+	Extensions        builders.Extension
 
 	ModuleInfo extension.ModuleInfo
 	BuildInfo  component.BuildInfo
