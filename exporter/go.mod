@@ -55,6 +55,7 @@ require (
 	go.opentelemetry.io/collector/component/componentstatus v0.107.0 // indirect
 	go.opentelemetry.io/collector/confmap v0.107.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.107.0 // indirect
+	go.opentelemetry.io/collector/receiver/receiverprofiles v0.107.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.50.0 // indirect
 	golang.org/x/net v0.26.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
@@ -94,3 +95,5 @@ replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../consumer/c
 replace go.opentelemetry.io/collector/consumer/consumertest => ../consumer/consumertest
 
 replace go.opentelemetry.io/collector/component/componentstatus => ../component/componentstatus
+
+replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../receiver/receiverprofiles

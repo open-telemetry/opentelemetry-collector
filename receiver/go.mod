@@ -12,6 +12,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.107.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.107.0
 	go.opentelemetry.io/collector/pdata v1.13.0
+	go.opentelemetry.io/collector/receiver/receiverprofiles v0.107.0
 	go.opentelemetry.io/otel v1.28.0
 	go.opentelemetry.io/otel/metric v1.28.0
 	go.opentelemetry.io/otel/sdk v1.28.0
@@ -75,3 +76,5 @@ replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../consumer/c
 replace go.opentelemetry.io/collector/consumer/consumertest => ../consumer/consumertest
 
 replace go.opentelemetry.io/collector/component/componentstatus => ../component/componentstatus
+
+replace go.opentelemetry.io/collector/receiver/receiverprofiles => ./receiverprofiles
