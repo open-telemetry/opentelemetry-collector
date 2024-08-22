@@ -24,7 +24,7 @@
 // Telemetry associated with this level provides complete coverage of the collector telemetry.
 // It should be the default for component authors.
 //
-// Signals using this telemetry level can use this guidance:
+// Component authors using this telemetry level can use this guidance:
 //   - The signals associated with this level must control cardinality.
 //     It is acceptable at this level for cardinality to scale linearly with the monitored resources.
 //   - The signals associated with this level must represent a controlled data volume. Examples follow:
