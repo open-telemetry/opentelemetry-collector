@@ -37,7 +37,7 @@
 //
 // 4. configtelemetry.Detailed
 //
-// Signals associated with this level cover the complete coverage of the component telemetry.
+// Telemetry associated with this level provides complete coverage of the collector telemetry.
 //
 // The signals associated with this level may exhibit high cardinality and/or high dimensionality.
 //
