@@ -38,7 +38,7 @@
 //
 // Signals associated with this level cover the complete coverage of the component telemetry.
 //
-// The signals associated with this level may exhibit high cardinality.
+// The signals associated with this level may exhibit high cardinality and/or high dimensionality.
 //
 // There is no limit on data volume.
 //
