@@ -69,7 +69,14 @@ type Settings struct {
 	Exporters *exporter.Builder
 
 	// Connectors builder for connectors.
-	Connectors *connector.Builder
+	//
+	// Deprecated: [v0.108.0] use the [ConnectorsConfigs] and [ConnectorsFactories] options
+	// instead.
+	Connectors builders.Connector
+
+	// Connectors configuration to its builder.
+	ConnectorsConfigs   map[component.ID]component.Config
+	ConnectorsFactories map[component.Type]connector.Factory
 
 	// Extensions builder for extensions.
 	Extensions *extension.Builder
@@ -107,13 +114,18 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		processors = builders.NewProcessor(set.ProcessorsConfigs, set.ProcessorsFactories)
 	}
 
+	connectors := set.Connectors
+	if connectors == nil {
+		connectors = builders.NewConnector(set.ConnectorsConfigs, set.ConnectorsFactories)
+	}
+
 	srv := &Service{
 		buildInfo: set.BuildInfo,
 		host: &graph.Host{
 			Receivers:         receivers,
 			Processors:        processors,
 			Exporters:         set.Exporters,
-			Connectors:        set.Connectors,
+			Connectors:        connectors,
 			Extensions:        set.Extensions,
 			ModuleInfo:        set.ModuleInfo,
 			BuildInfo:         set.BuildInfo,
@@ -335,7 +347,7 @@ func (srv *Service) initGraph(ctx context.Context, set Settings, cfg Config) err
 		ReceiverBuilder:  srv.host.Receivers,
 		ProcessorBuilder: srv.host.Processors,
 		ExporterBuilder:  set.Exporters,
-		ConnectorBuilder: set.Connectors,
+		ConnectorBuilder: srv.host.Connectors,
 		PipelineConfigs:  cfg.Pipelines,
 		ReportStatus:     srv.host.Reporter.ReportStatus,
 	}); err != nil {
