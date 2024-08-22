@@ -6,7 +6,7 @@
 // to enable metrics only when necessary.
 //
 // This document provides guidance on which telemetry level to adopt for Collector metrics.
-// When adopting a telemetry level, the developer is expected to rely on this guidance to
+// When adopting a telemetry level, component authors are expected to rely on this guidance to
 // justify their choice of telemetry level.
 //
 // 1. configtelemetry.None
