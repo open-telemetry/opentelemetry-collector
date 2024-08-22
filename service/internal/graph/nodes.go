@@ -131,7 +131,7 @@ func (n *processorNode) getConsumer() baseConsumer {
 func (n *processorNode) buildComponent(ctx context.Context,
 	tel component.TelemetrySettings,
 	info component.BuildInfo,
-	builder *processor.Builder,
+	builder builders.Processor,
 	next baseConsumer,
 ) error {
 	tel.Logger = components.ProcessorLogger(tel.Logger, n.componentID, n.pipelineID)

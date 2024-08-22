@@ -24,7 +24,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/internal/sharedcomponent"
-	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/extensions"
@@ -52,7 +51,6 @@ func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 		ReceiversFactories: map[component.Type]receiver.Factory{
 			component.MustNewType("test"): newReceiverFactory(),
 		},
-		Processors: processortest.NewNopBuilder(),
 		ExportersConfigs: map[component.ID]component.Config{
 			component.NewID(nopType): exporterFactory.CreateDefaultConfig(),
 		},
