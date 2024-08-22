@@ -29,7 +29,7 @@
 //     It is acceptable at this level for cardinality to scale linearly with the monitored resources.
 //   - The signals associated with this level must represent a controlled data volume. Examples follow:
 //     - A max cardinality (total possible combinations of dimension values) for a given metric of at most 100.
-//     - At most 5 spans actively recording simultaneously.
+//     - At most 5 spans actively recording simultaneously per active request.
 //
 // This is the default level recommended when running the Collector.
 //
