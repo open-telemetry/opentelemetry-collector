@@ -180,7 +180,7 @@ func (n *exporterNode) buildComponent(
 	ctx context.Context,
 	tel component.TelemetrySettings,
 	info component.BuildInfo,
-	builder *exporter.Builder,
+	builder builders.Exporter,
 ) error {
 	tel.Logger = components.ExporterLogger(tel.Logger, n.componentID, n.pipelineType)
 	set := exporter.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}

@@ -25,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 	"go.opentelemetry.io/collector/internal/testutil"
@@ -189,7 +188,7 @@ func TestServiceGetFactory(t *testing.T) {
 	assert.Equal(t, srv.host.Processors.Factory(nopType), srv.host.GetFactory(component.KindProcessor, nopType))
 
 	assert.Nil(t, srv.host.GetFactory(component.KindExporter, wrongType))
-	assert.Equal(t, set.Exporters.Factory(nopType), srv.host.GetFactory(component.KindExporter, nopType))
+	assert.Equal(t, srv.host.Exporters.Factory(nopType), srv.host.GetFactory(component.KindExporter, nopType))
 
 	assert.Nil(t, srv.host.GetFactory(component.KindConnector, wrongType))
 	assert.Equal(t, srv.host.Connectors.Factory(nopType), srv.host.GetFactory(component.KindConnector, nopType))
@@ -543,6 +542,7 @@ func newNopSettings() Settings {
 	receiversConfigs, receiversFactories := builders.NewNopReceiverConfigsAndFactories()
 	processorsConfigs, processorsFactories := builders.NewNopProcessorConfigsAndFactories()
 	connectorsConfigs, connectorsFactories := builders.NewNopConnectorConfigsAndFactories()
+	exportersConfigs, exportersFactories := builders.NewNopExporterConfigsAndFactories()
 	extensionsConfigs, extensionsFactories := builders.NewNopExtensionConfigsAndFactories()
 
 	return Settings{
@@ -552,7 +552,8 @@ func newNopSettings() Settings {
 		ReceiversFactories:  receiversFactories,
 		ProcessorsConfigs:   processorsConfigs,
 		ProcessorsFactories: processorsFactories,
-		Exporters:           exportertest.NewNopBuilder(),
+		ExportersConfigs:    exportersConfigs,
+		ExportersFactories:  exportersFactories,
 		ConnectorsConfigs:   connectorsConfigs,
 		ConnectorsFactories: connectorsFactories,
 		ExtensionsConfigs:   extensionsConfigs,
