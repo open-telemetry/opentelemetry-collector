@@ -50,6 +50,7 @@ var (
 		"/connector",
 		"/exporter",
 		"/exporter/debugexporter",
+		"/exporter/exporterprofiles",
 		"/exporter/nopexporter",
 		"/exporter/otlpexporter",
 		"/exporter/otlphttpexporter",

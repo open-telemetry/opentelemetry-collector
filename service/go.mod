@@ -169,3 +169,5 @@ replace go.opentelemetry.io/collector/component/componentprofiles => ../componen
 replace go.opentelemetry.io/collector/client => ../client
 
 replace go.opentelemetry.io/collector/internal/globalgates => ../internal/globalgates
+
+replace go.opentelemetry.io/collector/exporter/exporterprofiles => ../exporter/exporterprofiles
