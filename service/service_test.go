@@ -29,7 +29,6 @@ import (
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/pipelines"
@@ -186,7 +185,7 @@ func TestServiceGetFactory(t *testing.T) {
 	assert.Equal(t, srv.host.Receivers.Factory(nopType), srv.host.GetFactory(component.KindReceiver, nopType))
 
 	assert.Nil(t, srv.host.GetFactory(component.KindProcessor, wrongType))
-	assert.Equal(t, set.Processors.Factory(nopType), srv.host.GetFactory(component.KindProcessor, nopType))
+	assert.Equal(t, srv.host.Processors.Factory(nopType), srv.host.GetFactory(component.KindProcessor, nopType))
 
 	assert.Nil(t, srv.host.GetFactory(component.KindExporter, wrongType))
 	assert.Equal(t, srv.host.Exporters.Factory(nopType), srv.host.GetFactory(component.KindExporter, nopType))
@@ -541,6 +540,7 @@ func assertZPages(t *testing.T, zpagesAddr string) {
 
 func newNopSettings() Settings {
 	receiversConfigs, receiversFactories := builders.NewNopReceiverConfigsAndFactories()
+	processorsConfigs, processorsFactories := builders.NewNopProcessorConfigsAndFactories()
 	connectorsConfigs, connectorsFactories := builders.NewNopConnectorConfigsAndFactories()
 	exportersConfigs, exportersFactories := builders.NewNopExporterConfigsAndFactories()
 	extensionsConfigs, extensionsFactories := builders.NewNopExtensionConfigsAndFactories()
@@ -550,7 +550,8 @@ func newNopSettings() Settings {
 		CollectorConf:       confmap.New(),
 		ReceiversConfigs:    receiversConfigs,
 		ReceiversFactories:  receiversFactories,
-		Processors:          processortest.NewNopBuilder(),
+		ProcessorsConfigs:   processorsConfigs,
+		ProcessorsFactories: processorsFactories,
 		ExportersConfigs:    exportersConfigs,
 		ExportersFactories:  exportersFactories,
 		ConnectorsConfigs:   connectorsConfigs,

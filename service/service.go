@@ -56,7 +56,14 @@ type Settings struct {
 	ReceiversFactories map[component.Type]receiver.Factory
 
 	// Processors builder for processors.
-	Processors *processor.Builder
+	//
+	// Deprecated: [v0.108.0] use the [ProcessorsConfigs] and [ProcessorsFactories] options
+	// instead.
+	Processors builders.Processor
+
+	// Processors configuration to its builder.
+	ProcessorsConfigs   map[component.ID]component.Config
+	ProcessorsFactories map[component.Type]processor.Factory
 
 	// Exporters builder for exporters.
 	//
@@ -113,6 +120,11 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		receivers = builders.NewReceiver(set.ReceiversConfigs, set.ReceiversFactories)
 	}
 
+	processors := set.Processors
+	if processors == nil {
+		processors = builders.NewProcessor(set.ProcessorsConfigs, set.ProcessorsFactories)
+	}
+
 	exporters := set.Exporters
 	if exporters == nil {
 		exporters = builders.NewExporter(set.ExportersConfigs, set.ExportersFactories)
@@ -132,7 +144,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		buildInfo: set.BuildInfo,
 		host: &graph.Host{
 			Receivers:         receivers,
-			Processors:        set.Processors,
+			Processors:        processors,
 			Exporters:         exporters,
 			Connectors:        connectors,
 			Extensions:        extensions,
@@ -199,7 +211,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		// ignore other errors as they represent invalid state transitions and are considered benign.
 	})
 
-	if err = srv.initGraph(ctx, set, cfg); err != nil {
+	if err = srv.initGraph(ctx, cfg); err != nil {
 		err = multierr.Append(err, srv.shutdownTelemetry(ctx))
 		return nil, err
 	}
@@ -348,13 +360,13 @@ func (srv *Service) initExtensions(ctx context.Context, cfg extensions.Config) e
 }
 
 // Creates the pipeline graph.
-func (srv *Service) initGraph(ctx context.Context, set Settings, cfg Config) error {
+func (srv *Service) initGraph(ctx context.Context, cfg Config) error {
 	var err error
 	if srv.host.Pipelines, err = graph.Build(ctx, graph.Settings{
 		Telemetry:        srv.telemetrySettings,
 		BuildInfo:        srv.buildInfo,
 		ReceiverBuilder:  srv.host.Receivers,
-		ProcessorBuilder: set.Processors,
+		ProcessorBuilder: srv.host.Processors,
 		ExporterBuilder:  srv.host.Exporters,
 		ConnectorBuilder: srv.host.Connectors,
 		PipelineConfigs:  cfg.Pipelines,
