@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterprofiles"
 )
 
 var nopType = component.MustNewType("nop")
@@ -33,6 +34,7 @@ func NewNopFactory() exporter.Factory {
 		exporter.WithTraces(createTracesExporter, component.StabilityLevelStable),
 		exporter.WithMetrics(createMetricsExporter, component.StabilityLevelStable),
 		exporter.WithLogs(createLogsExporter, component.StabilityLevelStable),
+		exporterprofiles.WithProfiles(createProfilesExporter, component.StabilityLevelAlpha),
 	)
 }
 
@@ -48,13 +50,17 @@ func createLogsExporter(context.Context, exporter.Settings, component.Config) (e
 	return nopInstance, nil
 }
 
+func createProfilesExporter(context.Context, exporter.Settings, component.Config) (exporterprofiles.Profiles, error) {
+	return nopInstance, nil
+}
+
 type nopConfig struct{}
 
 var nopInstance = &nopExporter{
 	Consumer: consumertest.NewNop(),
 }
 
-// nopExporter stores consumed traces and metrics for testing purposes.
+// nopExporter stores consumed traces, metrics, logs and profiles for testing purposes.
 type nopExporter struct {
 	component.StartFunc
 	component.ShutdownFunc
