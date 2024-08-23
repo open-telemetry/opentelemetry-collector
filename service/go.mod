@@ -19,6 +19,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.107.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.107.0
 	go.opentelemetry.io/collector/exporter v0.107.0
+	go.opentelemetry.io/collector/exporter/exporterprofiles v0.107.0
 	go.opentelemetry.io/collector/extension v0.107.0
 	go.opentelemetry.io/collector/extension/zpagesextension v0.107.0
 	go.opentelemetry.io/collector/featuregate v1.13.0
