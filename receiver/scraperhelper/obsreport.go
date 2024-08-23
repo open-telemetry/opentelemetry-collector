@@ -37,6 +37,8 @@ type ObsReportSettings struct {
 }
 
 // NewObsReport creates a new ObsReport.
+//
+// Deprecated: [v0.108.0] will be removed, scrapers should use NewScraperControllerReceiver instead.
 func NewObsReport(cfg ObsReportSettings) (*ObsReport, error) {
 	return newScraper(cfg)
 }
