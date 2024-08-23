@@ -14,6 +14,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumertest v0.107.0
 	go.opentelemetry.io/collector/pdata v1.13.0
 	go.opentelemetry.io/collector/pdata/testdata v0.107.0
+	go.opentelemetry.io/collector/processor/processorprofiles v0.107.0
 	go.opentelemetry.io/otel v1.28.0
 	go.opentelemetry.io/otel/metric v1.28.0
 	go.opentelemetry.io/otel/sdk/metric v1.28.0
