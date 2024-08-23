@@ -1,4 +1,5 @@
 type: receiverhelper
+github_project: open-telemetry/opentelemetry-collector
 
 status:
   class: receiver

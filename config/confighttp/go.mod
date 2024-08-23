@@ -1,23 +1,23 @@
 module go.opentelemetry.io/collector/config/confighttp
 
-go 1.21.0
+go 1.22.0
 
 require (
 	github.com/golang/snappy v0.0.4
 	github.com/klauspost/compress v1.17.9
 	github.com/rs/cors v1.11.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector v0.106.1
-	go.opentelemetry.io/collector/client v0.106.1
-	go.opentelemetry.io/collector/component v0.106.1
-	go.opentelemetry.io/collector/config/configauth v0.106.1
-	go.opentelemetry.io/collector/config/configcompression v1.12.0
-	go.opentelemetry.io/collector/config/configopaque v1.12.0
-	go.opentelemetry.io/collector/config/configtelemetry v0.106.1
-	go.opentelemetry.io/collector/config/configtls v1.12.0
-	go.opentelemetry.io/collector/config/internal v0.106.1
-	go.opentelemetry.io/collector/extension/auth v0.106.1
-	go.opentelemetry.io/collector/featuregate v1.12.0
+	go.opentelemetry.io/collector v0.107.0
+	go.opentelemetry.io/collector/client v1.13.0
+	go.opentelemetry.io/collector/component v0.107.0
+	go.opentelemetry.io/collector/config/configauth v0.107.0
+	go.opentelemetry.io/collector/config/configcompression v1.13.0
+	go.opentelemetry.io/collector/config/configopaque v1.13.0
+	go.opentelemetry.io/collector/config/configtelemetry v0.107.0
+	go.opentelemetry.io/collector/config/configtls v1.13.0
+	go.opentelemetry.io/collector/config/internal v0.107.0
+	go.opentelemetry.io/collector/extension/auth v0.107.0
+	go.opentelemetry.io/collector/featuregate v1.13.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.53.0
 	go.opentelemetry.io/otel v1.28.0
 	go.uber.org/goleak v1.3.0
@@ -33,7 +33,7 @@ require (
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/go-viper/mapstructure/v2 v2.0.0 // indirect
+	github.com/go-viper/mapstructure/v2 v2.1.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
@@ -44,14 +44,13 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/prometheus/client_golang v1.19.1 // indirect
+	github.com/prometheus/client_golang v1.20.1 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.55.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
-	go.opentelemetry.io/collector/confmap v0.106.1 // indirect
-	go.opentelemetry.io/collector/extension v0.106.1 // indirect
-	go.opentelemetry.io/collector/internal/globalgates v0.106.1 // indirect
-	go.opentelemetry.io/collector/pdata v1.12.0 // indirect
+	go.opentelemetry.io/collector/confmap v0.107.0 // indirect
+	go.opentelemetry.io/collector/extension v0.107.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.13.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.50.0 // indirect
 	go.opentelemetry.io/otel/metric v1.28.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.28.0 // indirect
@@ -67,8 +66,6 @@ require (
 )
 
 replace go.opentelemetry.io/collector => ../../
-
-replace go.opentelemetry.io/collector/internal/globalgates => ../../internal/globalgates
 
 replace go.opentelemetry.io/collector/config/configauth => ../configauth
 
@@ -105,3 +102,5 @@ replace go.opentelemetry.io/collector/pdata/pprofile => ../../pdata/pprofile
 replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../../consumer/consumerprofiles
 
 replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/consumertest
+
+replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus

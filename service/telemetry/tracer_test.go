@@ -4,11 +4,16 @@
 package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/trace/noop"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/globalgates"
 	"go.opentelemetry.io/collector/service/telemetry/internal"
 )
 
@@ -52,6 +57,38 @@ func TestAttributes(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			attrs := attributes(internal.Settings{BuildInfo: tt.buildInfo}, tt.cfg)
 			require.Equal(t, tt.wantAttributes, attrs)
+		})
+	}
+}
+
+func TestNewTracerProvider(t *testing.T) {
+	tests := []struct {
+		name               string
+		wantTracerProvider any
+		noopTracer         bool
+	}{
+		{
+			name:               "noop tracer provider",
+			noopTracer:         true,
+			wantTracerProvider: noop.TracerProvider{},
+		},
+		{
+			name:               "tracer provider",
+			wantTracerProvider: &sdktrace.TracerProvider{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			previousValue := globalgates.NoopTracerProvider.IsEnabled()
+			err := featuregate.GlobalRegistry().Set(globalgates.NoopTracerProvider.ID(), tt.noopTracer)
+			require.NoError(t, err)
+			defer func() {
+				err = featuregate.GlobalRegistry().Set(globalgates.NoopTracerProvider.ID(), previousValue)
+				require.NoError(t, err)
+			}()
+			provider, err := newTracerProvider(context.TODO(), internal.Settings{}, Config{})
+			require.NoError(t, err)
+			require.IsType(t, tt.wantTracerProvider, provider)
 		})
 	}
 }
