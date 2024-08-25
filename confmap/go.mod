@@ -29,4 +29,5 @@ retract (
 	v0.69.0 // Release failed, use v0.69.1
 )
 
+// @nocommit
 replace github.com/go-viper/mapstructure/v2 => /Users/ysh/dev/go-viper/mapstructure
