@@ -188,6 +188,7 @@ func decodeConfig(m *Conf, result any, errorUnused bool, skipTopLevelUnmarshaler
 		TagName:          "mapstructure",
 		WeaklyTypedInput: false,
 		MatchName:        caseSensitiveMatchName,
+		DecodeNil:        true,
 		DecodeHook: mapstructure.ComposeDecodeHookFunc(
 			useExpandValue(),
 			expandNilStructPointersHookFunc(),
