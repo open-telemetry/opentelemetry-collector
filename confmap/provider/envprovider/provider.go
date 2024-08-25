@@ -46,10 +46,7 @@ func (emp *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFu
 	if !strings.HasPrefix(uri, schemeName+":") {
 		return nil, fmt.Errorf("%q uri is not supported by %q provider", uri, schemeName)
 	}
-	envVarName, defaultValuePtr, err := parseEnvVarURI(uri[len(schemeName)+1:])
-	if err != nil {
-		return nil, err
-	}
+	envVarName, defaultValuePtr := parseEnvVarURI(uri[len(schemeName)+1:])
 	if !envvar.ValidationRegexp.MatchString(envVarName) {
 		return nil, fmt.Errorf("environment variable %q has invalid name: must match regex %s", envVarName, envvar.ValidationPattern)
 	}
@@ -76,12 +73,12 @@ func (*provider) Shutdown(context.Context) error {
 	return nil
 }
 
-// returns (var name, default value, parse error)
-func parseEnvVarURI(uri string) (string, *string, error) {
+// returns (var name, default value)
+func parseEnvVarURI(uri string) (string, *string) {
 	const defaultSuffix = ":-"
 	if strings.Contains(uri, defaultSuffix) {
 		parts := strings.SplitN(uri, defaultSuffix, 2)
-		return parts[0], &parts[1], nil
+		return parts[0], &parts[1]
 	}
-	return uri, nil, nil
+	return uri, nil
 }
