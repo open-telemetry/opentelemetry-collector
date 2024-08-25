@@ -31,9 +31,6 @@ type provider struct {
 // A default value for unset variable can be provided after :- suffix, for example:
 // `env:NAME_OF_ENVIRONMENT_VARIABLE:-default_value`
 //
-// An error message for unset variable can be provided after :? suffix, for example:
-// `env:NAME_OF_ENVIRONMENT_VARIABLE:?error_message`
-//
 // See also: https://opentelemetry.io/docs/specs/otel/configuration/file-configuration/#environment-variable-substitution
 func NewFactory() confmap.ProviderFactory {
 	return confmap.NewProviderFactory(newProvider)
@@ -49,7 +46,7 @@ func (emp *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFu
 	if !strings.HasPrefix(uri, schemeName+":") {
 		return nil, fmt.Errorf("%q uri is not supported by %q provider", uri, schemeName)
 	}
-	envVarName, defaultValuePtr, errorMessagePtr, err := parseEnvVarURI(uri[len(schemeName)+1:])
+	envVarName, defaultValuePtr, err := parseEnvVarURI(uri[len(schemeName)+1:])
 	if err != nil {
 		return nil, err
 	}
@@ -59,9 +56,6 @@ func (emp *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFu
 
 	val, exists := os.LookupEnv(envVarName)
 	if !exists {
-		if errorMessagePtr != nil {
-			return nil, fmt.Errorf("environment variable %q is not set: %s", envVarName, *errorMessagePtr)
-		}
 		if defaultValuePtr != nil {
 			val = *defaultValuePtr
 		} else {
@@ -82,21 +76,13 @@ func (*provider) Shutdown(context.Context) error {
 	return nil
 }
 
-// returns (var name, default value, error message, parse error)
-func parseEnvVarURI(uri string) (string, *string, *string, error) {
+// returns (var name, default value, parse error)
+func parseEnvVarURI(uri string) (string, *string, error) {
 	const defaultSuffix = ":-"
 	const errorSuffix = ":?"
 	if strings.Contains(uri, defaultSuffix) {
 		parts := strings.SplitN(uri, defaultSuffix, 2)
-		return parts[0], &parts[1], nil, nil
+		return parts[0], &parts[1], nil
 	}
-	if strings.Contains(uri, errorSuffix) {
-		parts := strings.SplitN(uri, errorSuffix, 2)
-		errMsg := parts[1]
-		if errMsg == "" {
-			return "", nil, nil, fmt.Errorf("empty error message for unset environment variable: %q", uri)
-		}
-		return parts[0], nil, &errMsg, nil
-	}
-	return uri, nil, nil, nil
+	return uri, nil, nil
 }
