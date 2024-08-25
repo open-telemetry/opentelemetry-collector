@@ -28,10 +28,8 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
-	"go.opentelemetry.io/collector/processor"
-	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
 	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/pipelines"
@@ -42,10 +40,10 @@ type Settings struct {
 	Telemetry component.TelemetrySettings
 	BuildInfo component.BuildInfo
 
-	ReceiverBuilder  *receiver.Builder
-	ProcessorBuilder *processor.Builder
-	ExporterBuilder  *exporter.Builder
-	ConnectorBuilder *connector.Builder
+	ReceiverBuilder  builders.Receiver
+	ProcessorBuilder builders.Processor
+	ExporterBuilder  builders.Exporter
+	ConnectorBuilder builders.Connector
 
 	// PipelineConfigs is a map of component.ID to PipelineConfig.
 	PipelineConfigs pipelines.Config
@@ -197,47 +195,37 @@ func (g *Graph) createNodes(set Settings) error {
 func (g *Graph) createReceiver(pipelineID, recvID component.ID) *receiverNode {
 	rcvrNode := newReceiverNode(pipelineID.Type(), recvID)
 	if node := g.componentGraph.Node(rcvrNode.ID()); node != nil {
-		g.instanceIDs[node.ID()].PipelineIDs[pipelineID] = struct{}{}
+		instanceID := g.instanceIDs[node.ID()]
+		g.instanceIDs[node.ID()] = instanceID.WithPipelines(pipelineID)
 		return node.(*receiverNode)
 	}
 	g.componentGraph.AddNode(rcvrNode)
-	g.instanceIDs[rcvrNode.ID()] = &componentstatus.InstanceID{
-		ID:   recvID,
-		Kind: component.KindReceiver,
-		PipelineIDs: map[component.ID]struct{}{
-			pipelineID: {},
-		},
-	}
+	g.instanceIDs[rcvrNode.ID()] = componentstatus.NewInstanceID(
+		recvID, component.KindReceiver, pipelineID,
+	)
 	return rcvrNode
 }
 
 func (g *Graph) createProcessor(pipelineID, procID component.ID) *processorNode {
 	procNode := newProcessorNode(pipelineID, procID)
 	g.componentGraph.AddNode(procNode)
-	g.instanceIDs[procNode.ID()] = &componentstatus.InstanceID{
-		ID:   procID,
-		Kind: component.KindProcessor,
-		PipelineIDs: map[component.ID]struct{}{
-			pipelineID: {},
-		},
-	}
+	g.instanceIDs[procNode.ID()] = componentstatus.NewInstanceID(
+		procID, component.KindProcessor, pipelineID,
+	)
 	return procNode
 }
 
 func (g *Graph) createExporter(pipelineID, exprID component.ID) *exporterNode {
 	expNode := newExporterNode(pipelineID.Type(), exprID)
 	if node := g.componentGraph.Node(expNode.ID()); node != nil {
-		g.instanceIDs[expNode.ID()].PipelineIDs[pipelineID] = struct{}{}
+		instanceID := g.instanceIDs[expNode.ID()]
+		g.instanceIDs[expNode.ID()] = instanceID.WithPipelines(pipelineID)
 		return node.(*exporterNode)
 	}
 	g.componentGraph.AddNode(expNode)
-	g.instanceIDs[expNode.ID()] = &componentstatus.InstanceID{
-		ID:   expNode.componentID,
-		Kind: component.KindExporter,
-		PipelineIDs: map[component.ID]struct{}{
-			pipelineID: {},
-		},
-	}
+	g.instanceIDs[expNode.ID()] = componentstatus.NewInstanceID(
+		expNode.componentID, component.KindExporter, pipelineID,
+	)
 	return expNode
 }
 
@@ -245,19 +233,13 @@ func (g *Graph) createConnector(exprPipelineID, rcvrPipelineID, connID component
 	connNode := newConnectorNode(exprPipelineID.Type(), rcvrPipelineID.Type(), connID)
 	if node := g.componentGraph.Node(connNode.ID()); node != nil {
 		instanceID := g.instanceIDs[connNode.ID()]
-		instanceID.PipelineIDs[exprPipelineID] = struct{}{}
-		instanceID.PipelineIDs[rcvrPipelineID] = struct{}{}
+		g.instanceIDs[connNode.ID()] = instanceID.WithPipelines(exprPipelineID, rcvrPipelineID)
 		return node.(*connectorNode)
 	}
 	g.componentGraph.AddNode(connNode)
-	g.instanceIDs[connNode.ID()] = &componentstatus.InstanceID{
-		ID:   connNode.componentID,
-		Kind: component.KindConnector,
-		PipelineIDs: map[component.ID]struct{}{
-			exprPipelineID: {},
-			rcvrPipelineID: {},
-		},
-	}
+	g.instanceIDs[connNode.ID()] = componentstatus.NewInstanceID(
+		connNode.componentID, component.KindConnector, exprPipelineID, rcvrPipelineID,
+	)
 	return connNode
 }
 
@@ -429,8 +411,8 @@ func (g *Graph) StartAll(ctx context.Context, host *Host) error {
 			g.telemetry.Logger.WithOptions(zap.AddStacktrace(zap.DPanicLevel)).
 				Error("Failed to start component",
 					zap.Error(compErr),
-					zap.String("type", instanceID.Kind.String()),
-					zap.String("id", instanceID.ID.String()),
+					zap.String("type", instanceID.Kind().String()),
+					zap.String("id", instanceID.ComponentID().String()),
 				)
 			return compErr
 		}

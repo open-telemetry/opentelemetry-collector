@@ -17,7 +17,6 @@ import (
 	"github.com/knadh/koanf/v2"
 
 	encoder "go.opentelemetry.io/collector/confmap/internal/mapstructure"
-	"go.opentelemetry.io/collector/internal/globalgates"
 )
 
 const (
@@ -187,7 +186,7 @@ func decodeConfig(m *Conf, result any, errorUnused bool, skipTopLevelUnmarshaler
 		ErrorUnused:      errorUnused,
 		Result:           result,
 		TagName:          "mapstructure",
-		WeaklyTypedInput: !globalgates.StrictlyTypedInputGate.IsEnabled(),
+		WeaklyTypedInput: false,
 		MatchName:        caseSensitiveMatchName,
 		DecodeHook: mapstructure.ComposeDecodeHookFunc(
 			useExpandValue(),
@@ -201,7 +200,6 @@ func decodeConfig(m *Conf, result any, errorUnused bool, skipTopLevelUnmarshaler
 			// we unmarshal the embedded structs if present to merge with the result:
 			unmarshalerEmbeddedStructsHookFunc(),
 			zeroSliceHookFunc(),
-			negativeUintHookFunc(),
 		),
 	}
 	decoder, err := mapstructure.NewDecoder(dc)
@@ -239,7 +237,7 @@ func caseSensitiveMatchName(a, b string) bool {
 
 func castTo(exp expandedValue, useOriginal bool) (any, error) {
 	// If the target field is a string, use `exp.Original` or fail if not available.
-	if globalgates.StrictlyTypedInputGate.IsEnabled() && useOriginal {
+	if useOriginal {
 		return exp.Original, nil
 	}
 	// Otherwise, use the parsed value (previous behavior).
@@ -496,19 +494,6 @@ func zeroSliceHookFunc() mapstructure.DecodeHookFuncValue {
 			to.Set(reflect.MakeSlice(to.Type(), from.Len(), from.Cap()))
 		}
 
-		return from.Interface(), nil
-	}
-}
-
-// This hook is used to solve the issue: https://github.com/open-telemetry/opentelemetry-collector/issues/9060
-// Decoding should fail when converting a negative integer to any type of unsigned integer. This prevents
-// negative values being decoded as large uint values.
-// TODO: This should be removed as a part of https://github.com/open-telemetry/opentelemetry-collector/issues/9532
-func negativeUintHookFunc() mapstructure.DecodeHookFuncValue {
-	return func(from reflect.Value, to reflect.Value) (interface{}, error) {
-		if from.CanInt() && from.Int() < 0 && to.CanUint() {
-			return nil, fmt.Errorf("cannot convert negative value %v to an unsigned integer", from.Int())
-		}
 		return from.Interface(), nil
 	}
 }
