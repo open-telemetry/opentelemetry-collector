@@ -18,8 +18,6 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/internal/envvar"
-	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/featuregates"
 )
 
 func TestNewExpandConverter(t *testing.T) {
@@ -48,11 +46,6 @@ func TestNewExpandConverter(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.UseUnifiedEnvVarExpansionRules.ID(), false))
-			t.Cleanup(func() {
-				require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.UseUnifiedEnvVarExpansionRules.ID(), true))
-			})
-
 			conf, err := confmaptest.LoadConf(filepath.Join("testdata", test.name))
 			require.NoError(t, err, "Unable to get config")
 
@@ -61,31 +54,6 @@ func TestNewExpandConverter(t *testing.T) {
 			assert.Equal(t, expectedCfgMap.ToStringMap(), conf.ToStringMap())
 		})
 	}
-}
-
-func TestNewExpandConverter_UseUnifiedEnvVarExpansionRules(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.UseUnifiedEnvVarExpansionRules.ID(), true))
-	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.UseUnifiedEnvVarExpansionRules.ID(), false))
-	})
-
-	const valueExtra = "some string"
-	const valueExtraMapValue = "some map value"
-	const valueExtraListMapValue = "some list map value"
-	const valueExtraListElement = "some list value"
-	t.Setenv("EXTRA", valueExtra)
-	t.Setenv("EXTRA_MAP_VALUE_1", valueExtraMapValue+"_1")
-	t.Setenv("EXTRA_MAP_VALUE_2", valueExtraMapValue+"_2")
-	t.Setenv("EXTRA_LIST_MAP_VALUE_1", valueExtraListMapValue+"_1")
-	t.Setenv("EXTRA_LIST_MAP_VALUE_2", valueExtraListMapValue+"_2")
-	t.Setenv("EXTRA_LIST_VALUE_1", valueExtraListElement+"_1")
-	t.Setenv("EXTRA_LIST_VALUE_2", valueExtraListElement+"_2")
-
-	conf, err := confmaptest.LoadConf(filepath.Join("testdata", "expand-with-all-env.yaml"))
-	require.NoError(t, err, "Unable to get config")
-
-	// Test that expanded configs are the same with the simple config with no env vars.
-	require.ErrorContains(t, createConverter().Convert(context.Background(), conf), "variable substitution using $VAR has been deprecated in favor of ${VAR} and ${env:VAR}")
 }
 
 func TestNewExpandConverter_EscapedMaps(t *testing.T) {
@@ -232,52 +200,6 @@ func TestDeprecatedWarning(t *testing.T) {
 			expectedError:    nil,
 		},
 		{
-			name: "one deprecated var",
-			input: map[string]any{
-				"test": "${HOST}:$PORT",
-			},
-			expectedOutput: map[string]any{
-				"test": "127.0.0.1:4317",
-			},
-			expectedWarnings: []string{"PORT"},
-			expectedError:    nil,
-		},
-		{
-			name: "two deprecated vars",
-			input: map[string]any{
-				"test": "$HOST:$PORT",
-			},
-			expectedOutput: map[string]any{
-				"test": "127.0.0.1:4317",
-			},
-			expectedWarnings: []string{"HOST", "PORT"},
-			expectedError:    nil,
-		},
-		{
-			name: "one depracated serveral times",
-			input: map[string]any{
-				"test":  "$HOST,$HOST",
-				"test2": "$HOST",
-			},
-			expectedOutput: map[string]any{
-				"test":  "127.0.0.1,127.0.0.1",
-				"test2": "127.0.0.1",
-			},
-			expectedWarnings: []string{"HOST"},
-			expectedError:    nil,
-		},
-		{
-			name: "one warning",
-			input: map[string]any{
-				"test": "$HOST_NAME,${HOSTNAME}",
-			},
-			expectedOutput: map[string]any{
-				"test": "127.0.0.2,127.0.0.3",
-			},
-			expectedWarnings: []string{"HOST_NAME"},
-			expectedError:    nil,
-		},
-		{
 			name: "malformed environment variable",
 			input: map[string]any{
 				"test": "${BAD!HOST}",
@@ -363,5 +285,6 @@ func TestNewExpandConverterWithErrors(t *testing.T) {
 }
 
 func createConverter() confmap.Converter {
+	// nolint
 	return NewFactory().Create(confmap.ConverterSettings{Logger: zap.NewNop()})
 }

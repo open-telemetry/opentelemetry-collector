@@ -6,15 +6,15 @@
 
 The following telemetry is emitted by this component.
 
-### processor_batch_batch_send_size
+### otelcol_processor_batch_batch_send_size
 
 Number of units in the batch
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Histogram | Int |
+| {units} | Histogram | Int |
 
-### processor_batch_batch_send_size_bytes
+### otelcol_processor_batch_batch_send_size_bytes
 
 Number of bytes in batch that was sent
 
@@ -22,26 +22,26 @@ Number of bytes in batch that was sent
 | ---- | ----------- | ---------- |
 | By | Histogram | Int |
 
-### processor_batch_batch_size_trigger_send
+### otelcol_processor_batch_batch_size_trigger_send
 
 Number of times the batch was sent due to a size trigger
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| {times} | Sum | Int | true |
 
-### processor_batch_metadata_cardinality
+### otelcol_processor_batch_metadata_cardinality
 
 Number of distinct metadata value combinations being processed
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | false |
+| {combinations} | Sum | Int | false |
 
-### processor_batch_timeout_trigger_send
+### otelcol_processor_batch_timeout_trigger_send
 
 Number of times the batch was sent due to a timeout trigger
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| {times} | Sum | Int | true |

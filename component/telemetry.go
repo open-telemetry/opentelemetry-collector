@@ -13,10 +13,6 @@ import (
 )
 
 // TelemetrySettings provides components with APIs to report telemetry.
-//
-// Note: there is a service version of this struct, servicetelemetry.TelemetrySettings, that mirrors
-// this struct except ReportStatus. When adding or removing anything from
-// this struct consider whether the same should be done for the service version.
 type TelemetrySettings struct {
 	// Logger that the factory can use during creation and can pass to the created
 	// component to be used later as well.
@@ -28,16 +24,14 @@ type TelemetrySettings struct {
 	// MeterProvider that the factory can pass to other instrumented third-party libraries.
 	MeterProvider metric.MeterProvider
 
+	// LeveledMeterProvider returns a MeterProvider for a Level that the factory can
+	// pass to other instrumented third-party libraries.
+	LeveledMeterProvider func(level configtelemetry.Level) metric.MeterProvider
+
 	// MetricsLevel controls the level of detail for metrics emitted by the collector.
 	// Experimental: *NOTE* this field is experimental and may be changed or removed.
 	MetricsLevel configtelemetry.Level
 
 	// Resource contains the resource attributes for the collector's telemetry.
 	Resource pcommon.Resource
-
-	// ReportStatus allows a component to report runtime changes in status. The service
-	// will automatically report status for a component during startup and shutdown. Components can
-	// use this method to report status after start and before shutdown. For more details about
-	// component status reporting see: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-status.md
-	ReportStatus func(*StatusEvent)
 }

@@ -13,7 +13,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -22,7 +21,6 @@ import (
 
 // ObsReport is a helper to add observability to a scraper.
 type ObsReport struct {
-	level      configtelemetry.Level
 	receiverID component.ID
 	scraper    component.ID
 	tracer     trace.Tracer
@@ -49,7 +47,6 @@ func newScraper(cfg ObsReportSettings) (*ObsReport, error) {
 		return nil, err
 	}
 	return &ObsReport{
-		level:      cfg.ReceiverCreateSettings.TelemetrySettings.MetricsLevel,
 		receiverID: cfg.ReceiverID,
 		scraper:    cfg.Scraper,
 		tracer:     cfg.ReceiverCreateSettings.TracerProvider.Tracer(cfg.Scraper.String()),
@@ -91,9 +88,7 @@ func (s *ObsReport) EndMetricsOp(
 
 	span := trace.SpanFromContext(scraperCtx)
 
-	if s.level != configtelemetry.LevelNone {
-		s.recordMetrics(scraperCtx, numScrapedMetrics, numErroredMetrics)
-	}
+	s.recordMetrics(scraperCtx, numScrapedMetrics, numErroredMetrics)
 
 	// end span according to errors
 	if span.IsRecording() {

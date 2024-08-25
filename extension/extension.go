@@ -51,21 +51,14 @@ type ConfigWatcher interface {
 	NotifyConfig(ctx context.Context, conf *confmap.Conf) error
 }
 
-// StatusWatcher is an extra interface for Extension hosted by the OpenTelemetry
-// Collector that is to be implemented by extensions interested in changes to component
-// status.
-type StatusWatcher interface {
-	// ComponentStatusChanged notifies about a change in the source component status.
-	// Extensions that implement this interface must be ready that the ComponentStatusChanged
-	// may be called before, after or concurrently with calls to Component.Start() and Component.Shutdown().
-	// The function may be called concurrently with itself.
-	ComponentStatusChanged(source *component.InstanceID, event *component.StatusEvent)
+// ModuleInfo describes the go module for each component.
+type ModuleInfo struct {
+	Receiver  map[component.Type]string
+	Processor map[component.Type]string
+	Exporter  map[component.Type]string
+	Extension map[component.Type]string
+	Connector map[component.Type]string
 }
-
-// CreateSettings is passed to Factory.Create(...) function.
-//
-// Deprecated: [v0.103.0] Use extension.Settings instead.
-type CreateSettings = Settings
 
 // Settings is passed to Factory.Create(...) function.
 type Settings struct {
@@ -76,6 +69,9 @@ type Settings struct {
 
 	// BuildInfo can be used by components for informational purposes
 	BuildInfo component.BuildInfo
+
+	// ModuleInfo describes the go module for each component.
+	ModuleInfo ModuleInfo
 }
 
 // CreateFunc is the equivalent of Factory.Create(...) function.
@@ -143,12 +139,18 @@ func MakeFactoryMap(factories ...Factory) (map[component.Type]Factory, error) {
 }
 
 // Builder extension is a helper struct that given a set of Configs and Factories helps with creating extensions.
+//
+// Deprecated: [v0.108.0] this builder is being internalized within the service module,
+// and will be removed soon.
 type Builder struct {
 	cfgs      map[component.ID]component.Config
 	factories map[component.Type]Factory
 }
 
 // NewBuilder creates a new extension.Builder to help with creating components form a set of configs and factories.
+//
+// Deprecated: [v0.108.0] this builder is being internalized within the service module,
+// and will be removed soon.
 func NewBuilder(cfgs map[component.ID]component.Config, factories map[component.Type]Factory) *Builder {
 	return &Builder{cfgs: cfgs, factories: factories}
 }

@@ -2,6 +2,7 @@
 
 type: sample
 scope_name: go.opentelemetry.io/collector/internal/receiver/samplereceiver
+github_project: open-telemetry/opentelemetry-collector
 
 sem_conv_version: 1.9.0
 
@@ -155,7 +156,7 @@ telemetry:
     batch_size_trigger_send:
       enabled: true
       description: Number of times the batch was sent due to a size trigger
-      unit: "1"
+      unit: "{times}"
       sum:
         value_type: int
         monotonic: true
@@ -178,7 +179,7 @@ telemetry:
       enabled: true
       description: This metric is optional and therefore not initialized in NewTelemetryBuilder.
       extended_documentation: For example this metric only exists if feature A is enabled.
-      unit: "1"
+      unit: "{items}"
       optional: true
       gauge:
         async: true

@@ -31,3 +31,8 @@ benchmarks.txt
 
 # golang
 go.work*
+
+# npm (used for markdown-link-check)
+node_modules/*
+package-lock.json
+

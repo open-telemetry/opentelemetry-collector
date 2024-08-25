@@ -16,13 +16,6 @@ import (
 
 var nopType = component.MustNewType("nop")
 
-// NewNopCreateSettings returns a new nop settings for Create*Exporter functions.
-//
-// Deprecated: [v0.103.0] Use exportertest.NewNopSettings instead.
-func NewNopCreateSettings() exporter.Settings {
-	return NewNopSettings()
-}
-
 // NewNopSettings returns a new nop settings for Create*Exporter functions.
 func NewNopSettings() exporter.Settings {
 	return exporter.Settings{
@@ -69,6 +62,9 @@ type nopExporter struct {
 }
 
 // NewNopBuilder returns an exporter.Builder that constructs nop receivers.
+//
+// Deprecated: [v0.108.0] this builder is being internalized within the service module,
+// and will be removed soon.
 func NewNopBuilder() *exporter.Builder {
 	nopFactory := NewNopFactory()
 	return exporter.NewBuilder(

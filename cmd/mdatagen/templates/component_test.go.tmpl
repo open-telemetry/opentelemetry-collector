@@ -20,8 +20,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	{{- end }}
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 	{{- if not (and .Tests.SkipLifecycle .Tests.SkipShutdown) }}
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	{{- if isExporter }}
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -118,7 +118,7 @@ func TestComponentLifecycle(t *testing.T) {
 		t.Run(test.name + "-lifecycle", func(t *testing.T) {
 			c, err := test.createFn(context.Background(), exportertest.NewNopSettings(), cfg)
 			require.NoError(t, err)
-			host := componenttest.NewNopHost()
+			host := {{ .Tests.Host }}
 			err = c.Start(context.Background(), host)
 			require.NoError(t, err)
 			require.NotPanics(t, func() {
@@ -215,7 +215,7 @@ func TestComponentLifecycle(t *testing.T) {
 		t.Run(test.name + "-lifecycle", func(t *testing.T) {
 			c, err := test.createFn(context.Background(), processortest.NewNopSettings(), cfg)
 			require.NoError(t, err)
-			host := componenttest.NewNopHost()
+			host := {{ .Tests.Host }}
 			err = c.Start(context.Background(), host)
 			require.NoError(t, err)
 			require.NotPanics(t, func() {
@@ -310,7 +310,7 @@ func TestComponentLifecycle(t *testing.T) {
 		t.Run(test.name + "-lifecycle", func(t *testing.T) {
 			firstRcvr, err := test.createFn(context.Background(), receivertest.NewNopSettings(), cfg)
 			require.NoError(t, err)
-			host := componenttest.NewNopHost()
+			host := {{ .Tests.Host }}
 			require.NoError(t, err)
 			require.NoError(t, firstRcvr.Start(context.Background(), host))
 			require.NoError(t, firstRcvr.Shutdown(context.Background()))
@@ -348,12 +348,12 @@ func TestComponentLifecycle(t *testing.T) {
 	t.Run("lifecycle", func(t *testing.T) {
 		firstExt, err := factory.CreateExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
 		require.NoError(t, err)
-		require.NoError(t, firstExt.Start(context.Background(), componenttest.NewNopHost()))
+		require.NoError(t, firstExt.Start(context.Background(), {{ .Tests.Host }}))
 		require.NoError(t, firstExt.Shutdown(context.Background()))
 
 		secondExt, err := factory.CreateExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
 		require.NoError(t, err)
-		require.NoError(t, secondExt.Start(context.Background(), componenttest.NewNopHost()))
+		require.NoError(t, secondExt.Start(context.Background(), {{ .Tests.Host }}))
 		require.NoError(t, secondExt.Shutdown(context.Background()))
 	})
 	{{- end }}
@@ -472,7 +472,7 @@ func TestComponentLifecycle(t *testing.T) {
 		t.Run(test.name + "-lifecycle", func(t *testing.T) {
 			firstConnector, err := test.createFn(context.Background(), connectortest.NewNopSettings(), cfg)
 			require.NoError(t, err)
-			host := componenttest.NewNopHost()
+			host := {{ .Tests.Host }}
 			require.NoError(t, err)
 			require.NoError(t, firstConnector.Start(context.Background(), host))
 			require.NoError(t, firstConnector.Shutdown(context.Background()))

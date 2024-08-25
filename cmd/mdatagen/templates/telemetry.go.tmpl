@@ -4,11 +4,15 @@ package {{ .Package }}
 
 import (
     {{- if .Telemetry.Metrics }}
+    {{- range $_, $metric := .Telemetry.Metrics }}
+    {{- if $metric.Data.Async }}
     "context"
+    {{- break}}
+    {{- end }}
+    {{- end }}
     "errors"
     {{- end }}
 
-    {{ if hasAsync .Telemetry }}"go.opentelemetry.io/otel/attribute"{{- end }}
 	"go.opentelemetry.io/otel/metric"
     "go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
@@ -17,8 +21,13 @@ import (
     "go.opentelemetry.io/collector/config/configtelemetry"
 )
 
+// Deprecated: [v0.108.0] use LeveledMeter instead.
 func Meter(settings component.TelemetrySettings) metric.Meter {
 	return settings.MeterProvider.Meter("{{ .ScopeName }}")
+}
+
+func LeveledMeter(settings component.TelemetrySettings, level configtelemetry.Level) metric.Meter {
+	return settings.LeveledMeterProvider(level).Meter("{{ .ScopeName }}")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
@@ -33,11 +42,10 @@ type TelemetryBuilder struct {
 	{{- range $name, $metric := .Telemetry.Metrics }}
 	{{ $name.Render }} metric.{{ $metric.Data.Instrument }}
     {{- if and ($metric.Data.Async) (not $metric.Optional) }}
-    observe{{ $name.Render }} func() {{ $metric.Data.BasicType }}
+    observe{{ $name.Render }} func(context.Context, metric.Observer) error
     {{- end }}
 	{{- end }}
     level configtelemetry.Level
-    {{ if hasAsync .Telemetry }}attributeSet attribute.Set{{- end }}
 }
 
 // telemetryBuilderOption applies changes to default builder.
@@ -50,22 +58,13 @@ func WithLevel(lvl configtelemetry.Level) telemetryBuilderOption {
     }
 }
 
-{{- if hasAsync .Telemetry }}
-// WithAttributeSet applies a set of attributes for asynchronous instruments.
-func WithAttributeSet(set attribute.Set) telemetryBuilderOption {
-	return func(builder *TelemetryBuilder) {
-		builder.attributeSet = set
-	}
-}
-{{- end }}
-
 {{- range $name, $metric := .Telemetry.Metrics }}
 {{- if $metric.Optional }}
 // Init{{ $name.Render }} configures the {{ $name.Render }} metric.
-func (builder *TelemetryBuilder) Init{{ $name.Render }}({{ if $metric.Data.Async -}}cb func() {{ $metric.Data.BasicType }}{{- end }}) error {
+func (builder *TelemetryBuilder) Init{{ $name.Render }}({{ if $metric.Data.Async -}}cb func() {{ $metric.Data.BasicType }}{{- end }}, opts ...metric.ObserveOption) error {
     var err error
     builder.{{ $name.Render }}, err = builder.meter.{{ $metric.Data.Instrument }}(
-        "{{ $name }}",
+        "otelcol_{{ $name }}",
         metric.WithDescription("{{ $metric.Description }}"),
         metric.WithUnit("{{ $metric.Unit }}"),
         {{- if eq $metric.Data.Type "Histogram" -}}
@@ -77,7 +76,7 @@ func (builder *TelemetryBuilder) Init{{ $name.Render }}({{ if $metric.Data.Async
         return err
     }
     _, err = builder.meter.RegisterCallback(func(_ context.Context, o metric.Observer) error {
-        o.Observe{{ casesTitle $metric.Data.BasicType }}(builder.{{ $name.Render }}, cb(), metric.WithAttributeSet(builder.attributeSet))
+        o.Observe{{ casesTitle $metric.Data.BasicType }}(builder.{{ $name.Render }}, cb(), opts...)
         return nil
     }, builder.{{ $name.Render }})
     {{- end }}
@@ -87,9 +86,12 @@ func (builder *TelemetryBuilder) Init{{ $name.Render }}({{ if $metric.Data.Async
     {{- else }}
     {{ if $metric.Data.Async -}}
 // With{{ $name.Render }}Callback sets callback for observable {{ $name.Render }} metric.
-func With{{ $name.Render }}Callback(cb func() {{ $metric.Data.BasicType }}) telemetryBuilderOption {
+func With{{ $name.Render }}Callback(cb func() {{ $metric.Data.BasicType }}, opts ...metric.ObserveOption) telemetryBuilderOption {
     return func(builder *TelemetryBuilder) {
-        builder.observe{{ $name.Render }} = cb
+        builder.observe{{ $name.Render }} = func(_ context.Context, o metric.Observer) error {
+            o.Observe{{ casesTitle $metric.Data.BasicType }}(builder.{{ $name.Render }}, cb(), opts...)
+            return nil
+        }
     }
 }
     {{- end }}
@@ -114,7 +116,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
     {{- range $name, $metric := .Telemetry.Metrics }}
     {{- if not $metric.Optional }}
     builder.{{ $name.Render }}, err = builder.meter.{{ $metric.Data.Instrument }}(
-        "{{ $name }}",
+        "otelcol_{{ $name }}",
         metric.WithDescription("{{ $metric.Description }}"),
         metric.WithUnit("{{ $metric.Unit }}"),
         {{- if eq $metric.Data.Type "Histogram" -}}
@@ -123,10 +125,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
     )
     errs = errors.Join(errs, err)
     {{- if $metric.Data.Async }}
-    _, err = builder.meter.RegisterCallback(func(_ context.Context, o metric.Observer) error {
-        o.Observe{{ casesTitle $metric.Data.BasicType }}(builder.{{ $name.Render }}, builder.observe{{ $name.Render }}(), metric.WithAttributeSet(builder.attributeSet))
-        return nil
-    }, builder.{{ $name.Render }})
+    _, err = builder.meter.RegisterCallback(builder.observe{{ $name.Render }}, builder.{{ $name.Render }})
     errs = errors.Join(errs, err)
     {{- end }}
     {{- end }}

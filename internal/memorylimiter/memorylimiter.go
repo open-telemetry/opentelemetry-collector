@@ -44,7 +44,6 @@ type MemoryLimiter struct {
 	usageChecker memUsageChecker
 
 	memCheckWait time.Duration
-	ballastSize  uint64
 
 	// mustRefuse is used to indicate when data should be refused.
 	mustRefuse *atomic.Bool
@@ -58,8 +57,7 @@ type MemoryLimiter struct {
 	readMemStatsFn func(m *runtime.MemStats)
 
 	// Fields used for logging.
-	logger                 *zap.Logger
-	configMismatchedLogged bool
+	logger *zap.Logger
 
 	refCounterLock sync.Mutex
 	refCounter     int
@@ -114,14 +112,7 @@ func (ml *MemoryLimiter) startMonitoring() {
 	}
 }
 
-func (ml *MemoryLimiter) Start(_ context.Context, host component.Host) error {
-	extensions := host.GetExtensions()
-	for _, extension := range extensions {
-		if ext, ok := extension.(interface{ GetBallastSize() uint64 }); ok {
-			ml.ballastSize = ext.GetBallastSize()
-			break
-		}
-	}
+func (ml *MemoryLimiter) Start(_ context.Context, _ component.Host) error {
 	ml.startMonitoring()
 	return nil
 }
@@ -168,16 +159,6 @@ func getMemUsageChecker(cfg *Config, logger *zap.Logger) (*memUsageChecker, erro
 func (ml *MemoryLimiter) readMemStats() *runtime.MemStats {
 	ms := &runtime.MemStats{}
 	ml.readMemStatsFn(ms)
-	// If proper configured ms.Alloc should be at least ml.ballastSize but since
-	// a misconfiguration is possible check for that here.
-	if ms.Alloc >= ml.ballastSize {
-		ms.Alloc -= ml.ballastSize
-	} else if !ml.configMismatchedLogged {
-		// This indicates misconfiguration. Log it once.
-		ml.configMismatchedLogged = true
-		ml.logger.Warn(`"size_mib" in ballast extension is likely incorrectly configured.`)
-	}
-
 	return ms
 }
 

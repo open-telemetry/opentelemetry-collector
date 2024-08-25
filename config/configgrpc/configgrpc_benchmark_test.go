@@ -32,7 +32,7 @@ func BenchmarkCompressors(b *testing.B) {
 
 	for _, payload := range payloads {
 		for _, compressor := range compressors {
-			fmt.Printf(payload.name)
+			fmt.Println(payload.name)
 			messageBytes, err := payload.marshaler.marshal(payload.message)
 			if err != nil {
 				b.Errorf("marshal(_) returned an error")
