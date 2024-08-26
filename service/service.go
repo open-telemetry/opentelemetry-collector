@@ -211,13 +211,13 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		// ignore other errors as they represent invalid state transitions and are considered benign.
 	})
 
-	if err = srv.initGraph(ctx, cfg); err != nil {
+	// process the configuration and initialize the pipeline
+	if err = srv.initExtensions(ctx, cfg.Extensions); err != nil {
 		err = multierr.Append(err, srv.shutdownTelemetry(ctx))
 		return nil, err
 	}
 
-	// process the configuration and initialize the pipeline
-	if err = srv.initExtensions(ctx, cfg.Extensions); err != nil {
+	if err = srv.initGraph(ctx, cfg); err != nil {
 		err = multierr.Append(err, srv.shutdownTelemetry(ctx))
 		return nil, err
 	}
@@ -371,6 +371,7 @@ func (srv *Service) initGraph(ctx context.Context, cfg Config) error {
 		ConnectorBuilder: srv.host.Connectors,
 		PipelineConfigs:  cfg.Pipelines,
 		ReportStatus:     srv.host.Reporter.ReportStatus,
+		Extensions:       srv.host.ServiceExtensions.GetExtensions,
 	}); err != nil {
 		return fmt.Errorf("failed to build pipelines: %w", err)
 	}

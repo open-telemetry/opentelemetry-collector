@@ -14,4 +14,7 @@ type Settings struct {
 
 	// BuildInfo can be used by components for informational purposes
 	BuildInfo component.BuildInfo
+
+	// Extensions can be used by components to interact with extensions
+	Extensions func() map[component.ID]component.Component
 }

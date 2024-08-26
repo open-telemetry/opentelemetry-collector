@@ -49,6 +49,8 @@ type Settings struct {
 	PipelineConfigs pipelines.Config
 
 	ReportStatus status.ServiceStatusFunc
+
+	Extensions func() map[component.ID]component.Component
 }
 
 type Graph struct {
@@ -287,7 +289,7 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 			err = n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ReceiverBuilder, g.nextConsumers(n.ID()))
 		case *processorNode:
 			// nextConsumers is guaranteed to be length 1.  Either it is the next processor or it is the fanout node for the exporters.
-			err = n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ProcessorBuilder, g.nextConsumers(n.ID())[0])
+			err = n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ProcessorBuilder, set.Extensions, g.nextConsumers(n.ID())[0])
 		case *exporterNode:
 			err = n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ExporterBuilder)
 		case *connectorNode:
