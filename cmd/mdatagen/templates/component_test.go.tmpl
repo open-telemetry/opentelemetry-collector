@@ -20,8 +20,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	{{- end }}
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 	{{- if not (and .Tests.SkipLifecycle .Tests.SkipShutdown) }}
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	{{- if isExporter }}
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
