@@ -29,4 +29,5 @@ var DisableOpenCensusBridge = featuregate.GlobalRegistry().MustRegister("service
 var NoopTracerProvider = featuregate.GlobalRegistry().MustRegister("service.noopTracerProvider",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterFromVersion("v0.107.0"),
+	featuregate.WithRegisterToVersion("v0.109.0"),
 	featuregate.WithRegisterDescription("Sets a Noop OpenTelemetry TracerProvider to reduce memory allocations. This featuregate is incompatible with the zPages extension."))
