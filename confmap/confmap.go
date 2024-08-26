@@ -259,14 +259,15 @@ func castTo(exp expandedValue, useOriginal bool) (any, error) {
 	return exp.Value, nil
 }
 
-// Check if a reflect.Type is of the form T:
-// T = string | map[string]T | []T | [n]T
+// Check if a reflect.Type is of the form T, where:
+// X is any type or interface
+// T = string | map[X]T | []T | [n]T
 func isStringyStructure(t reflect.Type) bool {
 	if t.Kind() == reflect.String {
 		return true
 	}
 	if t.Kind() == reflect.Map {
-		return t.Key().Kind() == reflect.String && isStringyStructure(t.Elem())
+		return isStringyStructure(t.Elem())
 	}
 	if t.Kind() == reflect.Slice || t.Kind() == reflect.Array {
 		return isStringyStructure(t.Elem())
