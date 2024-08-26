@@ -91,6 +91,9 @@ type nopConnector struct {
 }
 
 // NewNopBuilder returns a connector.Builder that constructs nop receivers.
+//
+// Deprecated: [v0.108.0] this builder is being internalized within the service module,
+// and will be removed soon.
 func NewNopBuilder() *connector.Builder {
 	nopFactory := NewNopFactory()
 	// Use a different ID than receivertest and exportertest to avoid ambiguous

@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
+	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/status"
 )
 
@@ -86,7 +87,7 @@ func TestBuildExtensions(t *testing.T) {
 			_, err := New(context.Background(), Settings{
 				Telemetry:  componenttest.NewNopTelemetrySettings(),
 				BuildInfo:  component.NewDefaultBuildInfo(),
-				Extensions: extension.NewBuilder(tt.extensionsConfigs, tt.factories),
+				Extensions: builders.NewExtension(tt.extensionsConfigs, tt.factories),
 			}, tt.config)
 			require.Error(t, err)
 			assert.EqualError(t, err, tt.wantErrMsg)
@@ -178,7 +179,7 @@ func (tc testOrderCase) testOrdering(t *testing.T) {
 	exts, err := New(context.Background(), Settings{
 		Telemetry: componenttest.NewNopTelemetrySettings(),
 		BuildInfo: component.NewDefaultBuildInfo(),
-		Extensions: extension.NewBuilder(
+		Extensions: builders.NewExtension(
 			extCfgs,
 			map[component.Type]extension.Factory{
 				recordingExtensionFactory.Type(): recordingExtensionFactory,
@@ -280,7 +281,7 @@ func TestNotifyConfig(t *testing.T) {
 			extensions, err := New(context.Background(), Settings{
 				Telemetry:  componenttest.NewNopTelemetrySettings(),
 				BuildInfo:  component.NewDefaultBuildInfo(),
-				Extensions: extension.NewBuilder(tt.extensionsConfigs, tt.factories),
+				Extensions: builders.NewExtension(tt.extensionsConfigs, tt.factories),
 			}, tt.serviceExtensions)
 			assert.NoError(t, err)
 			errs := extensions.NotifyConfig(context.Background(), confmap.NewFromStringMap(map[string]interface{}{}))
@@ -427,7 +428,7 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 				Settings{
 					Telemetry:  componenttest.NewNopTelemetrySettings(),
 					BuildInfo:  component.NewDefaultBuildInfo(),
-					Extensions: extension.NewBuilder(extensionsConfigs, factories),
+					Extensions: builders.NewExtension(extensionsConfigs, factories),
 				},
 				[]component.ID{compID},
 				WithReporter(rep),

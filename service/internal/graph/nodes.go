@@ -131,7 +131,7 @@ func (n *processorNode) getConsumer() baseConsumer {
 func (n *processorNode) buildComponent(ctx context.Context,
 	tel component.TelemetrySettings,
 	info component.BuildInfo,
-	builder *processor.Builder,
+	builder builders.Processor,
 	next baseConsumer,
 ) error {
 	tel.Logger = components.ProcessorLogger(tel.Logger, n.componentID, n.pipelineID)
@@ -180,7 +180,7 @@ func (n *exporterNode) buildComponent(
 	ctx context.Context,
 	tel component.TelemetrySettings,
 	info component.BuildInfo,
-	builder *exporter.Builder,
+	builder builders.Exporter,
 ) error {
 	tel.Logger = components.ExporterLogger(tel.Logger, n.componentID, n.pipelineType)
 	set := exporter.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
@@ -231,7 +231,7 @@ func (n *connectorNode) buildComponent(
 	ctx context.Context,
 	tel component.TelemetrySettings,
 	info component.BuildInfo,
-	builder *connector.Builder,
+	builder builders.Connector,
 	nexts []baseConsumer,
 ) error {
 	tel.Logger = components.ConnectorLogger(tel.Logger, n.componentID, n.exprPipelineType, n.rcvrPipelineType)
