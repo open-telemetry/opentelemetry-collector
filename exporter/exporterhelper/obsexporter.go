@@ -12,7 +12,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
@@ -20,7 +19,6 @@ import (
 
 // obsReport is a helper to add observability to an exporter.
 type obsReport struct {
-	level          configtelemetry.Level
 	spanNamePrefix string
 	tracer         trace.Tracer
 	dataType       component.DataType
@@ -48,7 +46,6 @@ func newExporter(cfg obsReportSettings) (*obsReport, error) {
 	}
 
 	return &obsReport{
-		level:          cfg.exporterCreateSettings.TelemetrySettings.MetricsLevel,
 		spanNamePrefix: obsmetrics.ExporterPrefix + cfg.exporterID.String(),
 		tracer:         cfg.exporterCreateSettings.TracerProvider.Tracer(cfg.exporterID.String()),
 		dataType:       cfg.dataType,
@@ -113,9 +110,6 @@ func (or *obsReport) startOp(ctx context.Context, operationSuffix string) contex
 }
 
 func (or *obsReport) recordMetrics(ctx context.Context, dataType component.DataType, sent, failed int64) {
-	if or.level == configtelemetry.LevelNone {
-		return
-	}
 	var sentMeasure, failedMeasure metric.Int64Counter
 	switch dataType {
 	case component.DataTypeTraces:
