@@ -4,6 +4,7 @@ go 1.22.0
 
 require (
 	github.com/stretchr/testify v1.9.0
+	go.opentelemetry.io/collector/config/configopaque v1.13.0
 	go.opentelemetry.io/collector/confmap v0.107.0
 	go.opentelemetry.io/collector/confmap/provider/envprovider v0.107.0
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.107.0
@@ -28,3 +29,5 @@ replace go.opentelemetry.io/collector/confmap => ../../
 replace go.opentelemetry.io/collector/confmap/provider/fileprovider => ../../provider/fileprovider
 
 replace go.opentelemetry.io/collector/confmap/provider/envprovider => ../../provider/envprovider
+
+replace go.opentelemetry.io/collector/config/configopaque => ../../../config/configopaque
