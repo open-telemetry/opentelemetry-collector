@@ -12,6 +12,7 @@ dist:
   description: Local OpenTelemetry Collector binary, testing only.
   version: 0.107.0-dev
   otelcol_version: 0.107.0
+  output_path: .
 
 receivers:
   - gomod: go.opentelemetry.io/collector/receiver/nopreceiver v0.107.0
@@ -26,6 +27,7 @@ extensions:
   - gomod: go.opentelemetry.io/collector/extension/ballastextension v0.107.0
   - gomod: go.opentelemetry.io/collector/extension/memorylimiterextension v0.107.0
   - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.107.0
+  - gomod: go.opentelemetry.io/collector/extension/remotetapextension v0.107.0
 processors:
   - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.107.0
   - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.107.0
@@ -79,6 +81,7 @@ replaces:
   - go.opentelemetry.io/collector/extension/ballastextension => ../../extension/ballastextension
   - go.opentelemetry.io/collector/extension/memorylimiterextension => ../../extension/memorylimiterextension
   - go.opentelemetry.io/collector/extension/zpagesextension => ../../extension/zpagesextension
+  - go.opentelemetry.io/collector/extension/remotetapextension => ../../extension/remotetapextension
   - go.opentelemetry.io/collector/featuregate => ../../featuregate
   - go.opentelemetry.io/collector/pdata => ../../pdata
   - go.opentelemetry.io/collector/pdata/testdata => ../../pdata/testdata

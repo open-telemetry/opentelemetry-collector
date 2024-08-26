@@ -26,6 +26,7 @@ extensions:
   - gomod: go.opentelemetry.io/collector/extension/ballastextension v0.107.0
   - gomod: go.opentelemetry.io/collector/extension/memorylimiterextension v0.107.0
   - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.107.0
+  - gomod: go.opentelemetry.io/collector/extension/remotetapextension v0.107.0
 processors:
   - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.107.0
   - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.107.0

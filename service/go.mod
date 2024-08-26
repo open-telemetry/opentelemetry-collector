@@ -123,6 +123,8 @@ replace go.opentelemetry.io/collector/pdata/testdata => ../pdata/testdata
 
 replace go.opentelemetry.io/collector/extension/zpagesextension => ../extension/zpagesextension
 
+replace go.opentelemetry.io/collector/extension/remotetap => ../../extension/remotetap
+
 replace go.opentelemetry.io/collector/extension => ../extension
 
 replace go.opentelemetry.io/collector/exporter => ../exporter

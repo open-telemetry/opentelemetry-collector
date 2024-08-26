@@ -1,0 +1,13 @@
+type: remotetap
+scope_name: otelcol/remotetap
+
+status:
+  class: extension
+  stability:
+    development: [extension]
+  distributions: []
+  codeowners:
+    active: [wildum]
+
+tests:
+  config:

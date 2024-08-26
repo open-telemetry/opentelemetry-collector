@@ -182,6 +182,8 @@ replace go.opentelemetry.io/collector/processor => ../../processor
 
 replace go.opentelemetry.io/collector/extension/zpagesextension => ../../extension/zpagesextension
 
+replace go.opentelemetry.io/collector/extension/remotetap => ../../extension/remotetap
+
 replace go.opentelemetry.io/collector/service => ../../service
 
 replace go.opentelemetry.io/collector/component/componentprofiles => ../../component/componentprofiles

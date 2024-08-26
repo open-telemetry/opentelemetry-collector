@@ -4,7 +4,7 @@ module go.opentelemetry.io/collector/cmd/otelcorecol
 
 go 1.22.0
 
-toolchain go1.22.6
+toolchain go1.22.2
 
 require (
 	go.opentelemetry.io/collector/component v0.107.0
@@ -25,6 +25,7 @@ require (
 	go.opentelemetry.io/collector/extension v0.107.0
 	go.opentelemetry.io/collector/extension/ballastextension v0.107.0
 	go.opentelemetry.io/collector/extension/memorylimiterextension v0.107.0
+	go.opentelemetry.io/collector/extension/remotetapextension v0.107.0
 	go.opentelemetry.io/collector/extension/zpagesextension v0.107.0
 	go.opentelemetry.io/collector/otelcol v0.107.0
 	go.opentelemetry.io/collector/processor v0.107.0
@@ -217,6 +218,8 @@ replace go.opentelemetry.io/collector/extension/ballastextension => ../../extens
 replace go.opentelemetry.io/collector/extension/memorylimiterextension => ../../extension/memorylimiterextension
 
 replace go.opentelemetry.io/collector/extension/zpagesextension => ../../extension/zpagesextension
+
+replace go.opentelemetry.io/collector/extension/remotetapextension => ../../extension/remotetapextension
 
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 

@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor"
 )
@@ -41,11 +42,19 @@ func NewLogsProcessor(
 
 	eventOptions := spanAttributes(set.ID)
 	bs := fromOptions(options)
+	remoteTapType, _ := component.NewType("remotetap")
+	remoteTapId := component.NewID(remoteTapType)
 	logsConsumer, err := consumer.NewLogs(func(ctx context.Context, ld plog.Logs) error {
 		span := trace.SpanFromContext(ctx)
 		span.AddEvent("Start processing.", eventOptions)
 		var err error
 		ld, err = logsFunc(ctx, ld)
+
+		// Publish logs to the remotetap extension if active.
+		if remotetap := set.Extensions()[remoteTapId]; remotetap != nil && remotetap.(pdata.Publisher).IsActive(pdata.ComponentID(set.ID.String())) {
+			remotetap.(pdata.Publisher).PublishLogs(pdata.ComponentID(set.ID.String()), ld)
+		}
+
 		span.AddEvent("End processing.", eventOptions)
 		if err != nil {
 			if errors.Is(err, ErrSkipProcessingData) {

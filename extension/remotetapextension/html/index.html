@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<!--
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remote Tap Data Viewer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        #dataContainer {
+            border: 1px solid #ccc;
+            padding: 10px;
+            min-height: 200px;
+            max-height: 800px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        #controlPanel {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Remote Tap Data Viewer</h1>
+    <div id="controlPanel">
+        <label for="componentSelect">Component:</label>
+        <select id="componentSelect">
+            <!-- Options will be populated dynamically -->
+        </select>
+        <button onclick="togglePause()">Pause</button>
+        <button onclick="copyToClipboard()">Copy to Clipboard</button>
+        <div id="status"></div>
+    </div>
+    <h2>Incoming Data:</h2>
+    <div id="dataContainer"></div>
+
+    <script>
+        let eventSource;
+        let isPaused = false;
+        const dataBuffer = [];
+        const BUFFER_SIZE = 1000;
+
+        function populateComponentSelect() {
+            fetch('/components/')
+                .then(response => response.json())
+                .then(data => {
+                    const select = document.getElementById('componentSelect');
+                    select.innerHTML = '<option value="" disabled selected>Select a component</option>';
+                    data.forEach(component => {
+                        const option = document.createElement('option');
+                        option.value = component;
+                        option.textContent = component;
+                        select.appendChild(option);
+                    });
+                })
+                .catch(error => console.error('Error fetching components:', error));
+        }
+
+        function connect() {
+            const componentId = document.getElementById('componentSelect').value;
+            if (!componentId) {
+                alert('Please select a component');
+                return;
+            }
+
+            clearData();
+            disconnect(); // Close any existing connection
+
+            const url = `/tap/${componentId}`;
+            eventSource = new EventSource(url);
+
+            eventSource.onopen = function() {
+                document.getElementById('status').textContent = 'Connected';
+            };
+
+            eventSource.onerror = function(error) {
+                console.error('EventSource failed:', error);
+                document.getElementById('status').textContent = 'Error: ' + error.type;
+            };
+
+            eventSource.onmessage = function(event) {
+                if (isPaused) return;
+                const chunks = JSON.parse(event.data).split('|;|');
+                chunks.forEach(chunk => {
+                    if (chunk.trim()) {
+                        dataBuffer.push(chunk);
+
+                        if (dataBuffer.length > BUFFER_SIZE) {
+                            dataBuffer.shift(); // Remove the oldest entry
+                        }
+
+                        appendDataToContainer(chunk);
+                    }
+                });
+            };
+        }
+
+        function disconnect() {
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+                document.getElementById('status').textContent = 'Disconnected';
+            }
+        }
+
+        function togglePause() {
+            isPaused = !isPaused;
+            document.querySelector('button[onclick="togglePause()"]').textContent = isPaused ? 'Unpause' : 'Pause';
+        }
+
+        function clearData() {
+            const dataContainer = document.getElementById('dataContainer');
+            dataContainer.innerHTML = '';
+        }
+
+        function appendDataToContainer(data) {
+            const dataContainer = document.getElementById('dataContainer');
+            const p = document.createElement('p');
+            p.textContent = data;
+            dataContainer.appendChild(p);
+            dataContainer.scrollTop = dataContainer.scrollHeight;
+        }
+
+        function copyToClipboard() {
+            const bufferText = dataBuffer.join('\n');
+            navigator.clipboard.writeText(bufferText)
+        }
+
+        window.onload = () => {
+            populateComponentSelect();
+            document.getElementById('componentSelect').addEventListener('change', connect);
+        };
+
+        // Disconnect when the page is closed
+        window.onbeforeunload = disconnect;
+    </script>
+</body>
+</html>

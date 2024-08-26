@@ -150,6 +150,8 @@ replace go.opentelemetry.io/collector/config/configopaque => ../../config/config
 
 replace go.opentelemetry.io/collector/extension/zpagesextension => ../../extension/zpagesextension
 
+replace go.opentelemetry.io/collector/extension/remotetap => ../../extension/remotetap
+
 replace go.opentelemetry.io/collector/confmap/provider/fileprovider => ../../confmap/provider/fileprovider
 
 replace go.opentelemetry.io/collector/confmap/provider/envprovider => ../../confmap/provider/envprovider

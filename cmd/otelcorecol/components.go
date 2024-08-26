@@ -5,22 +5,23 @@ package main
 import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
-	forwardconnector "go.opentelemetry.io/collector/connector/forwardconnector"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/otelcol"
+	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/receiver"
+	forwardconnector "go.opentelemetry.io/collector/connector/forwardconnector"
 	debugexporter "go.opentelemetry.io/collector/exporter/debugexporter"
 	loggingexporter "go.opentelemetry.io/collector/exporter/loggingexporter"
 	nopexporter "go.opentelemetry.io/collector/exporter/nopexporter"
 	otlpexporter "go.opentelemetry.io/collector/exporter/otlpexporter"
 	otlphttpexporter "go.opentelemetry.io/collector/exporter/otlphttpexporter"
-	"go.opentelemetry.io/collector/extension"
 	ballastextension "go.opentelemetry.io/collector/extension/ballastextension"
 	memorylimiterextension "go.opentelemetry.io/collector/extension/memorylimiterextension"
 	zpagesextension "go.opentelemetry.io/collector/extension/zpagesextension"
-	"go.opentelemetry.io/collector/otelcol"
-	"go.opentelemetry.io/collector/processor"
+	remotetapextension "go.opentelemetry.io/collector/extension/remotetapextension"
 	batchprocessor "go.opentelemetry.io/collector/processor/batchprocessor"
 	memorylimiterprocessor "go.opentelemetry.io/collector/processor/memorylimiterprocessor"
-	"go.opentelemetry.io/collector/receiver"
 	nopreceiver "go.opentelemetry.io/collector/receiver/nopreceiver"
 	otlpreceiver "go.opentelemetry.io/collector/receiver/otlpreceiver"
 )
@@ -33,6 +34,7 @@ func components() (otelcol.Factories, error) {
 		ballastextension.NewFactory(),
 		memorylimiterextension.NewFactory(),
 		zpagesextension.NewFactory(),
+		remotetapextension.NewFactory(),
 	)
 	if err != nil {
 		return otelcol.Factories{}, err
@@ -41,6 +43,7 @@ func components() (otelcol.Factories, error) {
 	factories.ExtensionModules[ballastextension.NewFactory().Type()] = "go.opentelemetry.io/collector/extension/ballastextension v0.107.0"
 	factories.ExtensionModules[memorylimiterextension.NewFactory().Type()] = "go.opentelemetry.io/collector/extension/memorylimiterextension v0.107.0"
 	factories.ExtensionModules[zpagesextension.NewFactory().Type()] = "go.opentelemetry.io/collector/extension/zpagesextension v0.107.0"
+	factories.ExtensionModules[remotetapextension.NewFactory().Type()] = "go.opentelemetry.io/collector/extension/remotetapextension v0.107.0"
 
 	factories.Receivers, err = receiver.MakeFactoryMap(
 		nopreceiver.NewFactory(),

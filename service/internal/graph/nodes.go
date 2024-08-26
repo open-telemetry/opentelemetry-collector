@@ -132,10 +132,11 @@ func (n *processorNode) buildComponent(ctx context.Context,
 	tel component.TelemetrySettings,
 	info component.BuildInfo,
 	builder builders.Processor,
+	extensions func() map[component.ID]component.Component,
 	next baseConsumer,
 ) error {
 	tel.Logger = components.ProcessorLogger(tel.Logger, n.componentID, n.pipelineID)
-	set := processor.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
+	set := processor.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info, Extensions: extensions}
 	var err error
 	switch n.pipelineID.Type() {
 	case component.DataTypeTraces:

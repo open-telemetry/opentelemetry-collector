@@ -12,6 +12,7 @@ Supported service extensions (sorted alphabetically):
 
 - [Memory Ballast](ballastextension/README.md)
 - [zPages](zpagesextension/README.md)
+- [Remote Tap](remotetap/README.md)
 
 The [contributors
 repository](https://github.com/open-telemetry/opentelemetry-collector-contrib)
@@ -28,5 +29,5 @@ will be shutdown. The ordering is determined in the `extensions` tag under the
 service:
   # Extensions specified below are going to be loaded by the service in the
   # order given below, and shutdown on reverse order.
-  extensions: [memory_ballast, zpages]
+  extensions: [memory_ballast, zpages, remotetap]
 ```
