@@ -114,7 +114,6 @@ func TestExpandNilStructPointersHookFunc(t *testing.T) {
 	// assert.False(t, *cfg.Boolean)
 	assert.Nil(t, cfg.Struct)
 	assert.NotNil(t, cfg.MapStruct)
-	// TODO: Investigate this unexpected result.
 	assert.Equal(t, &Struct{}, cfg.MapStruct["struct"])
 }
 
@@ -141,7 +140,6 @@ func TestExpandNilStructPointersHookFuncDefaultNotNilConfigNil(t *testing.T) {
 	assert.NotNil(t, cfg.Struct)
 	assert.Equal(t, s1, cfg.Struct)
 	assert.NotNil(t, cfg.MapStruct)
-	// TODO: Investigate this unexpected result.
 	assert.Equal(t, &Struct{}, cfg.MapStruct["struct"])
 }
 
