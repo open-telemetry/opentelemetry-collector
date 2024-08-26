@@ -645,3 +645,14 @@ func TestIssue10937_ComplexType(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, []map[string][]any{{"key": {1234}}}, cfgNotStringy.Field)
 }
+
+func TestIssue10949_UnsetVar(t *testing.T) {
+	resolver := NewResolver(t, "types_expand.yaml")
+	conf, err := resolver.Resolve(context.Background())
+	require.NoError(t, err)
+
+	var cfg TargetConfig[int]
+	err = conf.Unmarshal(&cfg)
+	require.NoError(t, err)
+	require.Equal(t, 0, cfg.Field)
+}
