@@ -47,7 +47,6 @@ func (o Optional[T]) Value() T {
 }
 
 func (o *Optional[T]) Unmarshal(conf *confmap.Conf) error {
-	// we assume that Unmarshal will not be called if conf has no value.
 	if o.defaultFn != nil {
 		o.value = o.defaultFn()
 		o.hasValue = true

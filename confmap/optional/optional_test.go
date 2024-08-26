@@ -91,7 +91,7 @@ func TestConfigValidateNoBackends(t *testing.T) {
 				}),
 			},
 			expectedSub: true,
-			expectedFoo: "barbar", // default applies
+			expectedFoo: "foobar", // default applies
 		},
 	}
 
