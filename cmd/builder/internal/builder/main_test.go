@@ -61,7 +61,7 @@ var (
 		"/processor",
 		"/processor/batchprocessor",
 		"/processor/memorylimiterprocessor",
-		"/processor/profilesprocessor",
+		"/processor/processorprofiles",
 		"/receiver",
 		"/receiver/nopreceiver",
 		"/receiver/otlpreceiver",

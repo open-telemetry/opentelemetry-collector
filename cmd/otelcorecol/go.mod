@@ -233,7 +233,7 @@ replace go.opentelemetry.io/collector/processor/batchprocessor => ../../processo
 
 replace go.opentelemetry.io/collector/processor/memorylimiterprocessor => ../../processor/memorylimiterprocessor
 
-replace go.opentelemetry.io/collector/processor/profilesprocessor => ../../processor/profilesprocessor
+replace go.opentelemetry.io/collector/processor/processorprofiles => ../../processor/processorprofiles
 
 replace go.opentelemetry.io/collector/receiver => ../../receiver
 
