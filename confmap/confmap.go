@@ -111,21 +111,36 @@ func (l *Conf) unsanitizedGet(key string) any {
 	return l.k.Get(key)
 }
 
+// sanitize recursively removes expandedValue references from the given data.
+// It uses the expandedValue.Value field to replace the expandedValue references.
 func sanitize(a any) any {
+	return sanitizeExpanded(a, false)
+}
+
+// sanitizeToStringMap recursively removes expandedValue references from the given data.
+// It uses the expandedValue.Original field to replace the expandedValue references.
+func sanitizeToStr(a any) any {
+	return sanitizeExpanded(a, true)
+}
+
+func sanitizeExpanded(a any, useOriginal bool) any {
 	switch m := a.(type) {
 	case map[string]any:
 		c := maps.Copy(m)
 		for k, v := range m {
-			c[k] = sanitize(v)
+			c[k] = sanitizeExpanded(v, useOriginal)
 		}
 		return c
 	case []any:
 		var newSlice []any
 		for _, e := range m {
-			newSlice = append(newSlice, sanitize(e))
+			newSlice = append(newSlice, sanitizeExpanded(e, useOriginal))
 		}
 		return newSlice
 	case expandedValue:
+		if useOriginal {
+			return m.Original
+		}
 		return m.Value
 	}
 	return a
@@ -134,7 +149,7 @@ func sanitize(a any) any {
 // Get can retrieve any value given the key to use.
 func (l *Conf) Get(key string) any {
 	val := l.unsanitizedGet(key)
-	return sanitize(val)
+	return sanitizeExpanded(val, false)
 }
 
 // IsSet checks to see if the key has been set in any of the data locations.
@@ -235,13 +250,29 @@ func caseSensitiveMatchName(a, b string) bool {
 	return a == b
 }
 
-func castTo(exp expandedValue, useOriginal bool) (any, error) {
+func castTo(exp expandedValue, useOriginal bool) any {
 	// If the target field is a string, use `exp.Original` or fail if not available.
 	if useOriginal {
-		return exp.Original, nil
+		return exp.Original
 	}
 	// Otherwise, use the parsed value (previous behavior).
-	return exp.Value, nil
+	return exp.Value
+}
+
+// Check if a reflect.Type is of the form T, where:
+// X is any type or interface
+// T = string | map[X]T | []T | [n]T
+func isStringyStructure(t reflect.Type) bool {
+	if t.Kind() == reflect.String {
+		return true
+	}
+	if t.Kind() == reflect.Map {
+		return isStringyStructure(t.Elem())
+	}
+	if t.Kind() == reflect.Slice || t.Kind() == reflect.Array {
+		return isStringyStructure(t.Elem())
+	}
+	return false
 }
 
 // When a value has been loaded from an external source via a provider, we keep both the
@@ -253,13 +284,23 @@ func useExpandValue() mapstructure.DecodeHookFuncType {
 		to reflect.Type,
 		data any) (any, error) {
 		if exp, ok := data.(expandedValue); ok {
-			return castTo(exp, to.Kind() == reflect.String)
+			v := castTo(exp, to.Kind() == reflect.String)
+			// See https://github.com/open-telemetry/opentelemetry-collector/issues/10949
+			// If the `to.Kind` is not a string, then expandValue's original value is useless and
+			// the casted-to value will be nil. In that scenario, we need to use the default value of `to`'s kind.
+			if v == nil {
+				return reflect.Zero(to).Interface(), nil
+			}
+			return v, nil
 		}
 
-		// If the target field is a map or slice, sanitize input to remove expandedValue references.
 		switch to.Kind() {
 		case reflect.Array, reflect.Slice, reflect.Map:
-			// This does not handle map[string]string and []string explicitly.
+			if isStringyStructure(to) {
+				// If the target field is a stringy structure, sanitize to use the original string value everywhere.
+				return sanitizeToStr(data), nil
+			}
+			// Otherwise, sanitize to use the parsed value everywhere.
 			return sanitize(data), nil
 		}
 		return data, nil
