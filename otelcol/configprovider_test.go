@@ -106,34 +106,3 @@ func TestConfigProviderFile(t *testing.T) {
 
 	assert.EqualValues(t, configNop, cfg)
 }
-
-func TestGetConfmap(t *testing.T) {
-	uriLocation := "file:" + filepath.Join("testdata", "otelcol-nop.yaml")
-	fileProvider := newFakeProvider("file", func(_ context.Context, _ string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
-		return confmap.NewRetrieved(newConfFromFile(t, uriLocation[5:]))
-	})
-	set := ConfigProviderSettings{
-		ResolverSettings: confmap.ResolverSettings{
-			URIs:              []string{uriLocation},
-			ProviderFactories: []confmap.ProviderFactory{fileProvider},
-		},
-	}
-
-	configBytes, err := os.ReadFile(filepath.Join("testdata", "otelcol-nop.yaml"))
-	require.NoError(t, err)
-
-	yamlMap := map[string]any{}
-	err = yaml.Unmarshal(configBytes, yamlMap)
-	require.NoError(t, err)
-
-	cp, err := NewConfigProvider(set)
-	require.NoError(t, err)
-
-	cmp, ok := cp.(ConfmapProvider)
-	require.True(t, ok)
-
-	cmap, err := cmp.GetConfmap(context.Background())
-	require.NoError(t, err)
-
-	assert.EqualValues(t, yamlMap, cmap.ToStringMap())
-}
