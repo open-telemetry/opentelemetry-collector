@@ -157,24 +157,6 @@ ocb --skip-generate --skip-get-modules --config=config.yaml
 ```
 to only execute the compilation step.
 
-### Avoiding the use of a new go.mod file
-
-You can optionally skip creating a new `go.mod` file. This is helpful when 
-using a monorepo setup with a shared go.mod file. When the `--skip-new-go-module` 
-command-line flag is supplied, the build process issues a `go get` command for 
-each component, relying on the Go toolchain to update the enclosing Go module 
-appropriately.
-
-This command will avoid downgrading a dependency in the enclosing
-module, according to
-[`semver.Compare()`](https://pkg.go.dev/golang.org/x/mod/semver#Compare),
-and will instead issue a log indicating that the component was not
-upgraded.
-
-`--skip-new-go-module` is incompatible with `replaces`, `excludes`,
-and the component `path` override.  For each of these features, users
-are expected to modify the enclosing `go.mod` directly.
-
 ### Strict versioning checks
 
 The builder checks the relevant `go.mod`
