@@ -14,16 +14,16 @@ require (
 	go.opentelemetry.io/collector/component/componentstatus v0.108.0
 	go.opentelemetry.io/collector/config/confighttp v0.108.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.108.0
-	go.opentelemetry.io/collector/confmap v1.14.0
+	go.opentelemetry.io/collector/confmap v1.14.1
 	go.opentelemetry.io/collector/connector v0.108.0
 	go.opentelemetry.io/collector/consumer v0.108.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.108.0
 	go.opentelemetry.io/collector/exporter v0.108.0
 	go.opentelemetry.io/collector/extension v0.108.0
 	go.opentelemetry.io/collector/extension/zpagesextension v0.108.0
-	go.opentelemetry.io/collector/featuregate v1.14.0
+	go.opentelemetry.io/collector/featuregate v1.14.1
 	go.opentelemetry.io/collector/internal/globalgates v0.108.0
-	go.opentelemetry.io/collector/pdata v1.14.0
+	go.opentelemetry.io/collector/pdata v1.14.1
 	go.opentelemetry.io/collector/pdata/testdata v0.108.0
 	go.opentelemetry.io/collector/processor v0.108.0
 	go.opentelemetry.io/collector/receiver v0.108.0
@@ -79,12 +79,12 @@ require (
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
-	go.opentelemetry.io/collector/client v1.14.0 // indirect
+	go.opentelemetry.io/collector/client v1.14.1 // indirect
 	go.opentelemetry.io/collector/component/componentprofiles v0.108.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.108.0 // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.14.0 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.14.0 // indirect
-	go.opentelemetry.io/collector/config/configtls v1.14.0 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.14.1 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.14.1 // indirect
+	go.opentelemetry.io/collector/config/configtls v1.14.1 // indirect
 	go.opentelemetry.io/collector/config/internal v0.108.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.108.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.108.0 // indirect
