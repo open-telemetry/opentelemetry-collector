@@ -13,6 +13,7 @@ module-sets:
       - go.opentelemetry.io/collector/config/configcompression
       - go.opentelemetry.io/collector/config/configretry
       - go.opentelemetry.io/collector/config/configtls
+      - go.opentelemetry.io/collector/confmap/provider/envprovider
   beta:
     version: v0.108.0
     modules:
@@ -24,7 +25,6 @@ module-sets:
       - go.opentelemetry.io/collector/component/componentstatus
       - go.opentelemetry.io/collector/component/componentprofiles
       - go.opentelemetry.io/collector/confmap/converter/expandconverter
-      - go.opentelemetry.io/collector/confmap/provider/envprovider
       - go.opentelemetry.io/collector/confmap/provider/fileprovider
       - go.opentelemetry.io/collector/confmap/provider/httpprovider
       - go.opentelemetry.io/collector/confmap/provider/httpsprovider
