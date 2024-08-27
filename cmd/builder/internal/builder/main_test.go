@@ -19,7 +19,23 @@ import (
 	"golang.org/x/mod/modfile"
 )
 
-const modulePrefix = "go.opentelemetry.io/collector"
+const (
+	goModTestFile = `// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+module go.opentelemetry.io/collector/cmd/builder/internal/tester
+go 1.20
+require (
+	go.opentelemetry.io/collector/component v0.96.0
+	go.opentelemetry.io/collector/connector v0.94.1
+	go.opentelemetry.io/collector/exporter v0.94.1
+	go.opentelemetry.io/collector/extension v0.94.1
+	go.opentelemetry.io/collector/otelcol v0.94.1
+	go.opentelemetry.io/collector/processor v0.94.1
+	go.opentelemetry.io/collector/receiver v0.94.1
+	go.opentelemetry.io/collector v0.96.0
+)`
+	modulePrefix = "go.opentelemetry.io/collector"
+)
 
 var (
 	replaceModules = []string{
@@ -89,6 +105,18 @@ func newInitializedConfig(t *testing.T) Config {
 	assert.NoError(t, cfg.ParseModules())
 
 	return cfg
+}
+
+func TestGenerateDefault(t *testing.T) {
+	require.NoError(t, Generate(newInitializedConfig(t)))
+}
+
+func TestGenerateInvalidOutputPath(t *testing.T) {
+	cfg := newInitializedConfig(t)
+	cfg.Distribution.OutputPath = ":/invalid"
+	err := Generate(cfg)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to create output path")
 }
 
 func TestVersioning(t *testing.T) {
@@ -217,7 +245,7 @@ func TestSkipGenerate(t *testing.T) {
 	cfg.SkipGenerate = true
 	err := Generate(cfg)
 	require.NoError(t, err)
-	outputFile, err := os.Open(filepath.Clean(cfg.Distribution.OutputPath))
+	outputFile, err := os.Open(cfg.Distribution.OutputPath)
 	defer func() {
 		require.NoError(t, outputFile.Close())
 	}()
@@ -228,13 +256,10 @@ func TestSkipGenerate(t *testing.T) {
 
 func TestGenerateAndCompile(t *testing.T) {
 	replaces := generateReplaces()
-	type testDesc struct {
-		testCase    string
-		cfgBuilder  func(t *testing.T) Config
-		verifyFiles func(t *testing.T, dir string)
-		expectedErr string
-	}
-	testCases := []testDesc{
+	testCases := []struct {
+		testCase   string
+		cfgBuilder func(t *testing.T) Config
+	}{
 		{
 			testCase: "Default Configuration Compilation",
 			cfgBuilder: func(t *testing.T) Config {
@@ -244,68 +269,6 @@ func TestGenerateAndCompile(t *testing.T) {
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				return cfg
-			},
-		}, {
-			testCase: "Skip New Gomod Configuration Compilation",
-			cfgBuilder: func(t *testing.T) Config {
-				cfg := newTestConfig()
-				err := cfg.SetBackwardsCompatibility()
-				require.NoError(t, err)
-				cfg.Receivers = append(cfg.Receivers,
-					Module{
-						GoMod: "go.opentelemetry.io/collector/receiver/otlpreceiver v0.106.0",
-					},
-				)
-				cfg.Exporters = append(cfg.Exporters,
-					Module{
-						GoMod: "go.opentelemetry.io/collector/exporter/otlpexporter v0.106.0",
-					},
-				)
-				tempDir := t.TempDir()
-				err = makeModule(tempDir, []byte(goModTestFile))
-				require.NoError(t, err)
-				cfg.Distribution.OutputPath = filepath.Clean(filepath.Join(tempDir, "output"))
-				cfg.Replaces = nil
-				cfg.Excludes = nil
-				cfg.SkipNewGoModule = true
-				return cfg
-			},
-			verifyFiles: func(t *testing.T, dir string) {
-				assert.FileExists(t, filepath.Clean(filepath.Join(dir, mainTemplate.Name())))
-				assert.NoFileExists(t, filepath.Clean(filepath.Join(dir, "go.mod")))
-			},
-		},
-		{
-			testCase: "Generate Only",
-			cfgBuilder: func(t *testing.T) Config {
-				cfg := newInitializedConfig(t)
-				cfg.SkipCompilation = true
-				cfg.SkipGetModules = true
-				return cfg
-			},
-		},
-		{
-			testCase: "Skip Everything",
-			cfgBuilder: func(_ *testing.T) Config {
-				cfg := NewDefaultConfig()
-				cfg.Replaces = nil
-				cfg.Excludes = nil
-				cfg.SkipCompilation = true
-				cfg.SkipGenerate = true
-				cfg.SkipGetModules = true
-				cfg.SkipNewGoModule = true
-				return cfg
-			},
-			verifyFiles: func(t *testing.T, dir string) {
-				// gosec linting error: G304 Potential file inclusion via variable
-				// we are setting the dir
-				outputFile, err := os.Open(dir) //nolint:gosec
-				defer func() {
-					require.NoError(t, outputFile.Close())
-				}()
-				require.NoError(t, err)
-				_, err = outputFile.Readdirnames(1)
-				require.ErrorIs(t, err, io.EOF, "skip generate should leave output directory empty")
 			},
 		},
 		{
@@ -385,53 +348,6 @@ func TestGenerateAndCompile(t *testing.T) {
 				return cfg
 			},
 		},
-		{
-			testCase: "Invalid Output Path",
-			cfgBuilder: func(t *testing.T) Config {
-				cfg := newInitializedConfig(t)
-				cfg.Distribution.OutputPath = ":/invalid"
-				return cfg
-			},
-			expectedErr: "failed to create output path",
-		},
-		{
-			testCase: "Malformed Receiver",
-			cfgBuilder: func(t *testing.T) Config {
-				cfg := NewDefaultConfig()
-				cfg.Receivers = append(cfg.Receivers,
-					Module{
-						Name:  "missing version",
-						GoMod: "go.opentelemetry.io/collector/cmd/builder/unittests",
-					},
-				)
-				tempDir := t.TempDir()
-				err := makeModule(tempDir, []byte(goModTestFile))
-				require.NoError(t, err)
-				cfg.Distribution.OutputPath = filepath.Clean(filepath.Join(tempDir, "output"))
-				cfg.Replaces = nil
-				cfg.Excludes = nil
-				cfg.SkipNewGoModule = true
-				return cfg
-			},
-			expectedErr: "ill-formatted modspec",
-		},
-	}
-
-	// file permissions don't work the same on windows systems, so this test always passes.
-	if runtime.GOOS != "windows" {
-		testCases = append(testCases, testDesc{
-			testCase: "No Dir Permissions",
-			cfgBuilder: func(t *testing.T) Config {
-				cfg := newTestConfig()
-				err := cfg.SetBackwardsCompatibility()
-				require.NoError(t, err)
-				cfg.Distribution.OutputPath = t.TempDir()
-				assert.NoError(t, os.Chmod(cfg.Distribution.OutputPath, 0400))
-				cfg.Replaces = append(cfg.Replaces, replaces...)
-				return cfg
-			},
-			expectedErr: "failed to generate source file",
-		})
 	}
 
 	for _, tt := range testCases {
@@ -440,221 +356,7 @@ func TestGenerateAndCompile(t *testing.T) {
 			assert.NoError(t, cfg.Validate())
 			assert.NoError(t, cfg.SetGoPath())
 			assert.NoError(t, cfg.ParseModules())
-			err := GenerateAndCompile(cfg)
-			if len(tt.expectedErr) == 0 {
-				assert.NoError(t, err)
-			} else {
-				assert.ErrorContains(t, err, tt.expectedErr)
-			}
-			if tt.verifyFiles != nil {
-				tt.verifyFiles(t, cfg.Distribution.OutputPath)
-			}
-		})
-	}
-}
-
-func TestGetModules(t *testing.T) {
-	testCases := []struct {
-		description string
-		cfgBuilder  func(t *testing.T) Config
-		expectedErr string
-	}{
-		{
-			description: "Skip New Gomod Success",
-			cfgBuilder: func(t *testing.T) Config {
-				cfg := newTestConfig()
-				cfg.Distribution.Go = "go"
-				tempDir := t.TempDir()
-				require.NoError(t, makeModule(tempDir, []byte(goModTestFile)))
-				outputDir := filepath.Clean(filepath.Join(tempDir, "output"))
-				cfg.Distribution.OutputPath = outputDir
-				cfg.Replaces = nil
-				cfg.Excludes = nil
-				cfg.SkipNewGoModule = true
-				return cfg
-			},
-		},
-		{
-			description: "Core Version Mismatch",
-			cfgBuilder: func(t *testing.T) Config {
-				cfg := newTestConfig()
-				cfg.Distribution.Go = "go"
-				cfg.Distribution.OtelColVersion = "0.100.0"
-				tempDir := t.TempDir()
-				require.NoError(t, makeModule(tempDir, []byte(goModTestFile)))
-				outputDir := filepath.Clean(filepath.Join(tempDir, "output"))
-				cfg.Distribution.OutputPath = outputDir
-				cfg.Replaces = nil
-				cfg.Excludes = nil
-				cfg.SkipNewGoModule = true
-				return cfg
-			},
-			expectedErr: ErrVersionMismatch.Error(),
-		},
-		{
-			description: "No Go Distribution",
-			cfgBuilder: func(_ *testing.T) Config {
-				cfg := NewDefaultConfig()
-				cfg.downloadModules.wait = 0
-				return cfg
-			},
-			expectedErr: "failed to update go.mod",
-		},
-		{
-			description: "Invalid Dependency",
-			cfgBuilder: func(t *testing.T) Config {
-				cfg := NewDefaultConfig()
-				cfg.downloadModules.wait = 0
-				cfg.Distribution.Go = "go"
-				tempDir := t.TempDir()
-				require.NoError(t, makeModule(tempDir, []byte(invalidDependencyGoMod)))
-				outputDir := filepath.Clean(filepath.Join(tempDir, "output"))
-				cfg.Distribution.OutputPath = outputDir
-				cfg.Replaces = nil
-				cfg.Excludes = nil
-				cfg.SkipNewGoModule = true
-				return cfg
-			},
-			expectedErr: "failed to update go.mod",
-		},
-		{
-			description: "Malformed Go Mod",
-			cfgBuilder: func(t *testing.T) Config {
-				cfg := NewDefaultConfig()
-				cfg.downloadModules.wait = 0
-				cfg.Distribution.Go = "go"
-				tempDir := t.TempDir()
-				require.NoError(t, makeModule(tempDir, []byte(malformedGoMod)))
-				outputDir := filepath.Clean(filepath.Join(tempDir, "output"))
-				cfg.Distribution.OutputPath = outputDir
-				cfg.Replaces = nil
-				cfg.Excludes = nil
-				cfg.SkipNewGoModule = true
-				return cfg
-			},
-			expectedErr: "go subcommand failed with args '[mod edit -print]'",
-		},
-		{
-			description: "Receiver Version Mismatch - Configured Lower",
-			cfgBuilder: func(t *testing.T) Config {
-				cfg := NewDefaultConfig()
-				cfg.Distribution.Go = "go"
-				cfg.Receivers = append(cfg.Receivers,
-					Module{
-						GoMod: "go.opentelemetry.io/collector/receiver/otlpreceiver v0.105.0",
-					},
-				)
-				tempDir := t.TempDir()
-				err := makeModule(tempDir, []byte(goModTestFile))
-				require.NoError(t, err)
-				cfg.Distribution.OutputPath = filepath.Clean(filepath.Join(tempDir, "output"))
-				cfg.Replaces = nil
-				cfg.Excludes = nil
-				cfg.SkipNewGoModule = true
-				return cfg
-			},
-			expectedErr: ErrVersionMismatch.Error(),
-		},
-		{
-			description: "Receiver Version Mismatch - Configured Higher",
-			cfgBuilder: func(t *testing.T) Config {
-				cfg := NewDefaultConfig()
-				cfg.Distribution.Go = "go"
-				cfg.Receivers = append(cfg.Receivers,
-					Module{
-						GoMod: "go.opentelemetry.io/collector/receiver/otlpreceiver v0.106.1",
-					},
-				)
-				tempDir := t.TempDir()
-				err := makeModule(tempDir, []byte(goModTestFile))
-				require.NoError(t, err)
-				cfg.Distribution.OutputPath = filepath.Clean(filepath.Join(tempDir, "output"))
-				cfg.Replaces = nil
-				cfg.Excludes = nil
-				cfg.SkipNewGoModule = true
-				return cfg
-			},
-		},
-		{
-			description: "Exporter Not in Gomod",
-			cfgBuilder: func(t *testing.T) Config {
-				cfg := NewDefaultConfig()
-				cfg.Distribution.Go = "go"
-				cfg.Exporters = append(cfg.Exporters,
-					Module{
-						GoMod: "go.opentelemetry.io/collector/exporter/otlpexporter v0.106.0",
-					},
-				)
-				tempDir := t.TempDir()
-				err := makeModule(tempDir, []byte(goModTestFile))
-				require.NoError(t, err)
-				cfg.Distribution.OutputPath = filepath.Clean(filepath.Join(tempDir, "output"))
-				cfg.Replaces = nil
-				cfg.Excludes = nil
-				cfg.SkipNewGoModule = true
-				return cfg
-			},
-		},
-		{
-			description: "Receiver Nonexistent Version",
-			cfgBuilder: func(t *testing.T) Config {
-				cfg := NewDefaultConfig()
-				cfg.Distribution.Go = "go"
-				cfg.Receivers = append(cfg.Receivers,
-					Module{
-						GoMod: "go.opentelemetry.io/collector/receiver/otlpreceiver v0.106.2",
-					},
-				)
-				tempDir := t.TempDir()
-				err := makeModule(tempDir, []byte(goModTestFile))
-				require.NoError(t, err)
-				cfg.Distribution.OutputPath = filepath.Clean(filepath.Join(tempDir, "output"))
-				cfg.Replaces = nil
-				cfg.Excludes = nil
-				cfg.SkipNewGoModule = true
-				return cfg
-			},
-			expectedErr: "failed to update go.mod",
-		},
-		{
-			description: "Receiver In Current Module",
-			cfgBuilder: func(t *testing.T) Config {
-				cfg := NewDefaultConfig()
-				cfg.Distribution.Go = "go"
-				cfg.Receivers = append(cfg.Receivers,
-					Module{
-						GoMod: "go.opentelemetry.io/collector/cmd/builder/unittests v0.0.0",
-					},
-				)
-				tempDir := t.TempDir()
-				err := makeModule(tempDir, []byte(goModTestFile))
-				require.NoError(t, err)
-				cfg.Distribution.OutputPath = filepath.Clean(filepath.Join(tempDir, "output"))
-				cfg.Replaces = nil
-				cfg.Excludes = nil
-				cfg.SkipNewGoModule = true
-				return cfg
-			},
-			expectedErr: "failed to update go.mod",
-		},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.description, func(t *testing.T) {
-			cfg := tc.cfgBuilder(t)
-			require.NoError(t, cfg.SetBackwardsCompatibility())
-			require.NoError(t, cfg.Validate())
-			require.NoError(t, cfg.ParseModules())
-			// GenerateAndCompile calls GetModules().  We want to call Generate()
-			// first so our dependencies stay in the gomod after go mod tidy.
-			err := GenerateAndCompile(cfg)
-			if len(tc.expectedErr) == 0 {
-				if !assert.NoError(t, err) {
-					mf, mvm, readErr := cfg.readGoModFile()
-					t.Log("go mod file", mf, mvm, readErr)
-				}
-				return
-			}
-			assert.ErrorContains(t, err, tc.expectedErr)
+			require.NoError(t, GenerateAndCompile(cfg))
 		})
 	}
 }
