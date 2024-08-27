@@ -5,13 +5,13 @@ go 1.22.0
 require (
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector v0.107.0
-	go.opentelemetry.io/collector/component v0.107.0
-	go.opentelemetry.io/collector/config/configtelemetry v0.107.0
-	go.opentelemetry.io/collector/consumer v0.107.0
-	go.opentelemetry.io/collector/consumer/consumerprofiles v0.107.0
-	go.opentelemetry.io/collector/consumer/consumertest v0.107.0
-	go.opentelemetry.io/collector/pdata v1.13.0
+	go.opentelemetry.io/collector v0.108.0
+	go.opentelemetry.io/collector/component v0.108.0
+	go.opentelemetry.io/collector/config/configtelemetry v0.108.0
+	go.opentelemetry.io/collector/consumer v0.108.0
+	go.opentelemetry.io/collector/consumer/consumerprofiles v0.108.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.108.0
+	go.opentelemetry.io/collector/pdata v1.14.0
 	go.opentelemetry.io/otel v1.28.0
 	go.opentelemetry.io/otel/metric v1.28.0
 	go.opentelemetry.io/otel/sdk v1.28.0
@@ -39,7 +39,7 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.55.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.107.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.108.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.50.0 // indirect
 	golang.org/x/net v0.26.0 // indirect
 	golang.org/x/sys v0.22.0 // indirect
