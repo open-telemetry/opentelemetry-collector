@@ -21,6 +21,7 @@ func TestRunContents(t *testing.T) {
 	tests := []struct {
 		yml                    string
 		wantMetricsGenerated   bool
+		wantMetricsContext     bool
 		wantConfigGenerated    bool
 		wantTelemetryGenerated bool
 		wantStatusGenerated    bool
@@ -98,6 +99,12 @@ func TestRunContents(t *testing.T) {
 			yml:     "invalid_telemetry_missing_value_type_for_histogram.yaml",
 			wantErr: true,
 		},
+		{
+			yml:                  "async_metric.yaml",
+			wantMetricsGenerated: true,
+			wantConfigGenerated:  true,
+			wantStatusGenerated:  true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.yml, func(t *testing.T) {
@@ -120,10 +127,18 @@ foo
 			}
 			require.NoError(t, err)
 
+			var contents []byte
 			if tt.wantMetricsGenerated {
 				require.FileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_metrics.go"))
 				require.FileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_metrics_test.go"))
 				require.FileExists(t, filepath.Join(tmpdir, "documentation.md"))
+				contents, err = os.ReadFile(filepath.Join(tmpdir, "internal/metadata/generated_metrics.go")) // nolint: gosec
+				require.NoError(t, err)
+				if tt.wantMetricsContext {
+					require.Contains(t, string(contents), "\"context\"")
+				} else {
+					require.NotContains(t, string(contents), "\"context\"")
+				}
 			} else {
 				require.NoFileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_metrics.go"))
 				require.NoFileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_metrics_test.go"))
@@ -141,6 +156,13 @@ foo
 				require.FileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_telemetry.go"))
 				require.FileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_telemetry_test.go"))
 				require.FileExists(t, filepath.Join(tmpdir, "documentation.md"))
+				contents, err = os.ReadFile(filepath.Join(tmpdir, "internal/metadata/generated_telemetry.go")) // nolint: gosec
+				require.NoError(t, err)
+				if tt.wantMetricsContext {
+					require.Contains(t, string(contents), "\"context\"")
+				} else {
+					require.NotContains(t, string(contents), "\"context\"")
+				}
 			} else {
 				require.NoFileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_telemetry.go"))
 				require.NoFileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_telemetry_test.go"))
@@ -150,7 +172,6 @@ foo
 				require.NoFileExists(t, filepath.Join(tmpdir, "documentation.md"))
 			}
 
-			var contents []byte
 			if tt.wantStatusGenerated {
 				require.FileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_status.go"))
 				contents, err = os.ReadFile(filepath.Join(tmpdir, "README.md")) // nolint: gosec
@@ -245,6 +266,7 @@ func TestInlineReplace(t *testing.T) {
 		stability      map[component.StabilityLevel][]string
 		distros        []string
 		codeowners     *Codeowners
+		githubProject  string
 	}{
 		{
 			name: "readme with empty status",
@@ -258,6 +280,7 @@ Some info about a component
 			outputFile:     "readme_with_status.md",
 			componentClass: "receiver",
 			distros:        []string{"contrib"},
+			githubProject:  "open-telemetry/opentelemetry-collector",
 		},
 		{
 			name: "readme with status for extension",
@@ -336,6 +359,7 @@ Some info about a component
 			outputFile:     "readme_with_status.md",
 			componentClass: "receiver",
 			distros:        []string{"contrib"},
+			githubProject:  "open-telemetry/opentelemetry-collector",
 		},
 		{
 			name: "readme with no status",
@@ -402,6 +426,7 @@ Some info about a component
 				stability = tt.stability
 			}
 			md := metadata{
+				GithubProject:   tt.githubProject,
 				Type:            "foo",
 				ShortFolderName: "foo",
 				Status: &Status{
@@ -548,8 +573,13 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
+// Deprecated: [v0.108.0] use LeveledMeter instead.
 func Meter(settings component.TelemetrySettings) metric.Meter {
 	return settings.MeterProvider.Meter("")
+}
+
+func LeveledMeter(settings component.TelemetrySettings, level configtelemetry.Level) metric.Meter {
+	return settings.LeveledMeterProvider(level).Meter("")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
@@ -582,8 +612,13 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
+// Deprecated: [v0.108.0] use LeveledMeter instead.
 func Meter(settings component.TelemetrySettings) metric.Meter {
 	return settings.MeterProvider.Meter("")
+}
+
+func LeveledMeter(settings component.TelemetrySettings, level configtelemetry.Level) metric.Meter {
+	return settings.LeveledMeterProvider(level).Meter("")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {

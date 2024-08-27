@@ -4,7 +4,12 @@ package {{ .Package }}
 
 import (
     {{- if .Telemetry.Metrics }}
+    {{- range $_, $metric := .Telemetry.Metrics }}
+    {{- if $metric.Data.Async }}
     "context"
+    {{- break}}
+    {{- end }}
+    {{- end }}
     "errors"
     {{- end }}
 
@@ -16,8 +21,13 @@ import (
     "go.opentelemetry.io/collector/config/configtelemetry"
 )
 
+// Deprecated: [v0.108.0] use LeveledMeter instead.
 func Meter(settings component.TelemetrySettings) metric.Meter {
 	return settings.MeterProvider.Meter("{{ .ScopeName }}")
+}
+
+func LeveledMeter(settings component.TelemetrySettings, level configtelemetry.Level) metric.Meter {
+	return settings.LeveledMeterProvider(level).Meter("{{ .ScopeName }}")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {

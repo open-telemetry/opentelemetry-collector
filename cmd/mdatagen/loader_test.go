@@ -22,6 +22,7 @@ func TestLoadMetadata(t *testing.T) {
 		{
 			name: "internal/samplereceiver/metadata.yaml",
 			want: metadata{
+				GithubProject:  "open-telemetry/opentelemetry-collector",
 				Type:           "sample",
 				SemConvVersion: "1.9.0",
 				Status: &Status{

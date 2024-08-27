@@ -28,6 +28,10 @@ const (
 )
 
 func main() {
+	flag.Usage = func() {
+		fmt.Fprintf(flag.CommandLine.Output(), "Usage: %s metadata.yaml\n", os.Args[0])
+		flag.PrintDefaults()
+	}
 	flag.Parse()
 	yml := flag.Arg(0)
 	if err := run(yml); err != nil {
@@ -355,6 +359,10 @@ func inlineReplace(tmplFile string, outputFile string, md metadata, start string
 
 	tmpl := templatize(tmplFile, md)
 	buf := bytes.Buffer{}
+
+	if md.GithubProject == "" {
+		md.GithubProject = "open-telemetry/opentelemetry-collector-contrib"
+	}
 
 	if err := tmpl.Execute(&buf, templateContext{metadata: md, Package: "metadata"}); err != nil {
 		return fmt.Errorf("failed executing template: %w", err)

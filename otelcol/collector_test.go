@@ -20,6 +20,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/processor/processortest"
@@ -145,10 +146,10 @@ func TestComponentStatusWatcher(t *testing.T) {
 	factories.Processors[unhealthyProcessorFactory.Type()] = unhealthyProcessorFactory
 
 	// Keep track of all status changes in a map.
-	changedComponents := map[*component.InstanceID][]component.Status{}
+	changedComponents := map[*componentstatus.InstanceID][]componentstatus.Status{}
 	var mux sync.Mutex
-	onStatusChanged := func(source *component.InstanceID, event *component.StatusEvent) {
-		if source.ID.Type() != unhealthyProcessorFactory.Type() {
+	onStatusChanged := func(source *componentstatus.InstanceID, event *componentstatus.Event) {
+		if source.ComponentID().Type() != unhealthyProcessorFactory.Type() {
 			return
 		}
 		mux.Lock()
@@ -174,17 +175,17 @@ func TestComponentStatusWatcher(t *testing.T) {
 
 	// An unhealthy processor asynchronously reports a recoverable error. Depending on the Go
 	// Scheduler the statuses reported at startup will be one of the two valid sequnces below.
-	startupStatuses1 := []component.Status{
-		component.StatusStarting,
-		component.StatusOK,
-		component.StatusRecoverableError,
+	startupStatuses1 := []componentstatus.Status{
+		componentstatus.StatusStarting,
+		componentstatus.StatusOK,
+		componentstatus.StatusRecoverableError,
 	}
-	startupStatuses2 := []component.Status{
-		component.StatusStarting,
-		component.StatusRecoverableError,
+	startupStatuses2 := []componentstatus.Status{
+		componentstatus.StatusStarting,
+		componentstatus.StatusRecoverableError,
 	}
 	// the modulus of the actual statuses will match the modulus of the startup statuses
-	startupStatuses := func(actualStatuses []component.Status) []component.Status {
+	startupStatuses := func(actualStatuses []componentstatus.Status) []componentstatus.Status {
 		if len(actualStatuses)%2 == 1 {
 			return startupStatuses1
 		}
@@ -199,7 +200,7 @@ func TestComponentStatusWatcher(t *testing.T) {
 
 		for k, v := range changedComponents {
 			// All processors must report a status change with the same ID
-			assert.EqualValues(t, component.NewID(unhealthyProcessorFactory.Type()), k.ID)
+			assert.EqualValues(t, component.NewID(unhealthyProcessorFactory.Type()), k.ComponentID())
 			// And all must have a valid startup sequence
 			assert.Equal(t, startupStatuses(v), v)
 		}
@@ -216,8 +217,8 @@ func TestComponentStatusWatcher(t *testing.T) {
 
 	// Check for additional statuses after Shutdown.
 	for _, v := range changedComponents {
-		expectedStatuses := append([]component.Status{}, startupStatuses(v)...)
-		expectedStatuses = append(expectedStatuses, component.StatusStopping, component.StatusStopped)
+		expectedStatuses := append([]componentstatus.Status{}, startupStatuses(v)...)
+		expectedStatuses = append(expectedStatuses, componentstatus.StatusStopping, componentstatus.StatusStopped)
 		assert.Equal(t, expectedStatuses, v)
 	}
 

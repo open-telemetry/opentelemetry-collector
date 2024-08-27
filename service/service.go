@@ -12,6 +12,7 @@ import (
 	"runtime"
 
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/noop"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -28,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/extensions"
+	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/graph"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
 	"go.opentelemetry.io/collector/service/internal/resource"
@@ -44,19 +46,54 @@ type Settings struct {
 	CollectorConf *confmap.Conf
 
 	// Receivers builder for receivers.
-	Receivers *receiver.Builder
+	//
+	// Deprecated: [v0.108.0] use the [ReceiversConfigs] and [ReceiversFactories] options
+	// instead.
+	Receivers builders.Receiver
+
+	// Receivers configuration to its builder.
+	ReceiversConfigs   map[component.ID]component.Config
+	ReceiversFactories map[component.Type]receiver.Factory
 
 	// Processors builder for processors.
-	Processors *processor.Builder
+	//
+	// Deprecated: [v0.108.0] use the [ProcessorsConfigs] and [ProcessorsFactories] options
+	// instead.
+	Processors builders.Processor
+
+	// Processors configuration to its builder.
+	ProcessorsConfigs   map[component.ID]component.Config
+	ProcessorsFactories map[component.Type]processor.Factory
 
 	// Exporters builder for exporters.
-	Exporters *exporter.Builder
+	//
+	// Deprecated: [v0.108.0] use the [ReceiversConfigs] and [ReceiversFactories] options
+	// instead.
+	Exporters builders.Exporter
+
+	// exporters configuration to its builder.
+	ExportersConfigs   map[component.ID]component.Config
+	ExportersFactories map[component.Type]exporter.Factory
 
 	// Connectors builder for connectors.
-	Connectors *connector.Builder
+	//
+	// Deprecated: [v0.108.0] use the [ConnectorsConfigs] and [ConnectorsFactories] options
+	// instead.
+	Connectors builders.Connector
+
+	// Connectors configuration to its builder.
+	ConnectorsConfigs   map[component.ID]component.Config
+	ConnectorsFactories map[component.Type]connector.Factory
 
 	// Extensions builder for extensions.
-	Extensions *extension.Builder
+	Extensions builders.Extension
+
+	// Extensions configuration to its builder.
+	ExtensionsConfigs   map[component.ID]component.Config
+	ExtensionsFactories map[component.Type]extension.Factory
+
+	// ModuleInfo describes the go module for each component.
+	ModuleInfo extension.ModuleInfo
 
 	// AsyncErrorChannel is the channel that is used to report fatal errors.
 	AsyncErrorChannel chan error
@@ -69,26 +106,51 @@ type Settings struct {
 type Service struct {
 	buildInfo         component.BuildInfo
 	telemetrySettings component.TelemetrySettings
-	host              *serviceHost
+	host              *graph.Host
 	collectorConf     *confmap.Conf
-
-	reporter status.Reporter
 }
 
 // New creates a new Service, its telemetry, and Components.
 func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	disableHighCard := obsreportconfig.DisableHighCardinalityMetricsfeatureGate.IsEnabled()
 	extendedConfig := obsreportconfig.UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate.IsEnabled()
+
+	receivers := set.Receivers
+	if receivers == nil {
+		receivers = builders.NewReceiver(set.ReceiversConfigs, set.ReceiversFactories)
+	}
+
+	processors := set.Processors
+	if processors == nil {
+		processors = builders.NewProcessor(set.ProcessorsConfigs, set.ProcessorsFactories)
+	}
+
+	exporters := set.Exporters
+	if exporters == nil {
+		exporters = builders.NewExporter(set.ExportersConfigs, set.ExportersFactories)
+	}
+
+	connectors := set.Connectors
+	if connectors == nil {
+		connectors = builders.NewConnector(set.ConnectorsConfigs, set.ConnectorsFactories)
+	}
+
+	extensions := set.Extensions
+	if extensions == nil {
+		extensions = builders.NewExtension(set.ExtensionsConfigs, set.ExtensionsFactories)
+	}
+
 	srv := &Service{
 		buildInfo: set.BuildInfo,
-		host: &serviceHost{
-			receivers:         set.Receivers,
-			processors:        set.Processors,
-			exporters:         set.Exporters,
-			connectors:        set.Connectors,
-			extensions:        set.Extensions,
-			buildInfo:         set.BuildInfo,
-			asyncErrorChannel: set.AsyncErrorChannel,
+		host: &graph.Host{
+			Receivers:         receivers,
+			Processors:        processors,
+			Exporters:         exporters,
+			Connectors:        connectors,
+			Extensions:        extensions,
+			ModuleInfo:        set.ModuleInfo,
+			BuildInfo:         set.BuildInfo,
+			AsyncErrorChannel: set.AsyncErrorChannel,
 		},
 		collectorConf: set.CollectorConf,
 	}
@@ -129,6 +191,12 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 
 	logsAboutMeterProvider(logger, cfg.Telemetry.Metrics, mp, extendedConfig)
 	srv.telemetrySettings = component.TelemetrySettings{
+		LeveledMeterProvider: func(level configtelemetry.Level) metric.MeterProvider {
+			if level <= cfg.Telemetry.Metrics.Level {
+				return mp
+			}
+			return noop.MeterProvider{}
+		},
 		Logger:         logger,
 		MeterProvider:  mp,
 		TracerProvider: tracerProvider,
@@ -136,14 +204,14 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		// Construct telemetry attributes from build info and config's resource attributes.
 		Resource: pcommonRes,
 	}
-	srv.reporter = status.NewReporter(srv.host.notifyComponentStatusChange, func(err error) {
+	srv.host.Reporter = status.NewReporter(srv.host.NotifyComponentStatusChange, func(err error) {
 		if errors.Is(err, status.ErrStatusNotReady) {
 			logger.Warn("Invalid transition", zap.Error(err))
 		}
 		// ignore other errors as they represent invalid state transitions and are considered benign.
 	})
 
-	if err = srv.initGraph(ctx, set, cfg); err != nil {
+	if err = srv.initGraph(ctx, cfg); err != nil {
 		err = multierr.Append(err, srv.shutdownTelemetry(ctx))
 		return nil, err
 	}
@@ -198,23 +266,23 @@ func (srv *Service) Start(ctx context.Context) error {
 	)
 
 	// enable status reporting
-	srv.reporter.Ready()
+	srv.host.Reporter.Ready()
 
-	if err := srv.host.serviceExtensions.Start(ctx, srv.host); err != nil {
+	if err := srv.host.ServiceExtensions.Start(ctx, srv.host); err != nil {
 		return fmt.Errorf("failed to start extensions: %w", err)
 	}
 
 	if srv.collectorConf != nil {
-		if err := srv.host.serviceExtensions.NotifyConfig(ctx, srv.collectorConf); err != nil {
+		if err := srv.host.ServiceExtensions.NotifyConfig(ctx, srv.collectorConf); err != nil {
 			return err
 		}
 	}
 
-	if err := srv.host.pipelines.StartAll(ctx, srv.host, srv.reporter); err != nil {
+	if err := srv.host.Pipelines.StartAll(ctx, srv.host); err != nil {
 		return fmt.Errorf("cannot start pipelines: %w", err)
 	}
 
-	if err := srv.host.serviceExtensions.NotifyPipelineReady(); err != nil {
+	if err := srv.host.ServiceExtensions.NotifyPipelineReady(); err != nil {
 		return err
 	}
 
@@ -257,15 +325,15 @@ func (srv *Service) Shutdown(ctx context.Context) error {
 	// Begin shutdown sequence.
 	srv.telemetrySettings.Logger.Info("Starting shutdown...")
 
-	if err := srv.host.serviceExtensions.NotifyPipelineNotReady(); err != nil {
+	if err := srv.host.ServiceExtensions.NotifyPipelineNotReady(); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to notify that pipeline is not ready: %w", err))
 	}
 
-	if err := srv.host.pipelines.ShutdownAll(ctx, srv.reporter); err != nil {
+	if err := srv.host.Pipelines.ShutdownAll(ctx, srv.host.Reporter); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown pipelines: %w", err))
 	}
 
-	if err := srv.host.serviceExtensions.Shutdown(ctx); err != nil {
+	if err := srv.host.ServiceExtensions.Shutdown(ctx); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown extensions: %w", err))
 	}
 
@@ -282,26 +350,27 @@ func (srv *Service) initExtensions(ctx context.Context, cfg extensions.Config) e
 	extensionsSettings := extensions.Settings{
 		Telemetry:  srv.telemetrySettings,
 		BuildInfo:  srv.buildInfo,
-		Extensions: srv.host.extensions,
+		Extensions: srv.host.Extensions,
+		ModuleInfo: srv.host.ModuleInfo,
 	}
-	if srv.host.serviceExtensions, err = extensions.New(ctx, extensionsSettings, cfg, extensions.WithReporter(srv.reporter)); err != nil {
+	if srv.host.ServiceExtensions, err = extensions.New(ctx, extensionsSettings, cfg, extensions.WithReporter(srv.host.Reporter)); err != nil {
 		return fmt.Errorf("failed to build extensions: %w", err)
 	}
 	return nil
 }
 
 // Creates the pipeline graph.
-func (srv *Service) initGraph(ctx context.Context, set Settings, cfg Config) error {
+func (srv *Service) initGraph(ctx context.Context, cfg Config) error {
 	var err error
-	if srv.host.pipelines, err = graph.Build(ctx, graph.Settings{
+	if srv.host.Pipelines, err = graph.Build(ctx, graph.Settings{
 		Telemetry:        srv.telemetrySettings,
 		BuildInfo:        srv.buildInfo,
-		ReceiverBuilder:  set.Receivers,
-		ProcessorBuilder: set.Processors,
-		ExporterBuilder:  set.Exporters,
-		ConnectorBuilder: set.Connectors,
+		ReceiverBuilder:  srv.host.Receivers,
+		ProcessorBuilder: srv.host.Processors,
+		ExporterBuilder:  srv.host.Exporters,
+		ConnectorBuilder: srv.host.Connectors,
 		PipelineConfigs:  cfg.Pipelines,
-		ReportStatus:     srv.reporter.ReportStatus,
+		ReportStatus:     srv.host.Reporter.ReportStatus,
 	}); err != nil {
 		return fmt.Errorf("failed to build pipelines: %w", err)
 	}
