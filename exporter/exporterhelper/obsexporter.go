@@ -34,11 +34,6 @@ type obsReportSettings struct {
 	dataType               component.DataType
 }
 
-// newObsReport creates a new Exporter.
-func newObsReport(cfg obsReportSettings) (*obsReport, error) {
-	return newExporter(cfg)
-}
-
 func newExporter(cfg obsReportSettings) (*obsReport, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(cfg.exporterCreateSettings.TelemetrySettings)
 	if err != nil {
