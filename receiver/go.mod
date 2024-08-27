@@ -40,7 +40,7 @@ require (
 	github.com/prometheus/common v0.55.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.108.1 // indirect
-	go.opentelemetry.io/otel/exporters/prometheus v0.50.0 // indirect
+	go.opentelemetry.io/otel/exporters/prometheus v0.51.0 // indirect
 	golang.org/x/net v0.26.0 // indirect
 	golang.org/x/sys v0.24.0 // indirect
 	golang.org/x/text v0.16.0 // indirect

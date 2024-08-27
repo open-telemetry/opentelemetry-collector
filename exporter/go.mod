@@ -55,7 +55,7 @@ require (
 	go.opentelemetry.io/collector/component/componentstatus v0.108.1 // indirect
 	go.opentelemetry.io/collector/confmap v1.14.1 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.108.1 // indirect
-	go.opentelemetry.io/otel/exporters/prometheus v0.50.0 // indirect
+	go.opentelemetry.io/otel/exporters/prometheus v0.51.0 // indirect
 	golang.org/x/net v0.26.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240701130421-f6361c86f094 // indirect

@@ -49,7 +49,7 @@ require (
 	go.opentelemetry.io/collector/component/componentstatus v0.108.1 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.108.1 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.108.1 // indirect
-	go.opentelemetry.io/otel/exporters/prometheus v0.50.0 // indirect
+	go.opentelemetry.io/otel/exporters/prometheus v0.51.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.29.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.26.0 // indirect
