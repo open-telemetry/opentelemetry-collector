@@ -7,6 +7,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	{{- if or isConnector isExporter isExtension isProcessor isReceiver }}
+	"go.opentelemetry.io/otel/metric"
+	{{- end }}
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
