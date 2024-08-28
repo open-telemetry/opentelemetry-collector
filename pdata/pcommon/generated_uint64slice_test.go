@@ -69,7 +69,7 @@ func TestUInt64SliceReadOnly(t *testing.T) {
 func TestUInt64SliceAppend(t *testing.T) {
 	ms := NewUInt64Slice()
 	ms.FromRaw([]uint64{1, 2, 3})
-	ms.Append(4, 5)
+	ms.Append(5, 5)
 	assert.Equal(t, 5, ms.Len())
 	assert.Equal(t, uint64(5), ms.At(4))
 }

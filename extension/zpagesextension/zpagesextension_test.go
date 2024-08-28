@@ -16,7 +16,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configauth"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/internal/testutil"
 )
 
@@ -48,7 +49,7 @@ func newZpagesTelemetrySettings() component.TelemetrySettings {
 
 func TestZPagesExtensionUsage(t *testing.T) {
 	cfg := &Config{
-		TCPAddr: confignet.TCPAddrConfig{
+		confighttp.ServerConfig{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 	}
@@ -62,7 +63,7 @@ func TestZPagesExtensionUsage(t *testing.T) {
 	// Give a chance for the server goroutine to run.
 	runtime.Gosched()
 
-	_, zpagesPort, err := net.SplitHostPort(cfg.TCPAddr.Endpoint)
+	_, zpagesPort, err := net.SplitHostPort(cfg.ServerConfig.Endpoint)
 	require.NoError(t, err)
 
 	client := &http.Client{}
@@ -73,6 +74,21 @@ func TestZPagesExtensionUsage(t *testing.T) {
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
+func TestZPagesExtensionBadAuthExtension(t *testing.T) {
+	cfg := &Config{
+		confighttp.ServerConfig{
+			Endpoint: "localhost:0",
+			Auth: &confighttp.AuthConfig{
+				Authentication: configauth.Authentication{
+					AuthenticatorID: component.MustNewIDWithName("foo", "bar"),
+				},
+			},
+		},
+	}
+	zpagesExt := newServer(cfg, newZpagesTelemetrySettings())
+	require.EqualError(t, zpagesExt.Start(context.Background(), componenttest.NewNopHost()), `failed to resolve authenticator "foo/bar": authenticator not found`)
+}
+
 func TestZPagesExtensionPortAlreadyInUse(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	ln, err := net.Listen("tcp", endpoint)
@@ -80,7 +96,7 @@ func TestZPagesExtensionPortAlreadyInUse(t *testing.T) {
 	defer ln.Close()
 
 	cfg := &Config{
-		TCPAddr: confignet.TCPAddrConfig{
+		confighttp.ServerConfig{
 			Endpoint: endpoint,
 		},
 	}
@@ -92,7 +108,7 @@ func TestZPagesExtensionPortAlreadyInUse(t *testing.T) {
 
 func TestZPagesMultipleStarts(t *testing.T) {
 	cfg := &Config{
-		TCPAddr: confignet.TCPAddrConfig{
+		confighttp.ServerConfig{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 	}
@@ -109,7 +125,7 @@ func TestZPagesMultipleStarts(t *testing.T) {
 
 func TestZPagesMultipleShutdowns(t *testing.T) {
 	cfg := &Config{
-		TCPAddr: confignet.TCPAddrConfig{
+		confighttp.ServerConfig{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 	}
@@ -124,7 +140,7 @@ func TestZPagesMultipleShutdowns(t *testing.T) {
 
 func TestZPagesShutdownWithoutStart(t *testing.T) {
 	cfg := &Config{
-		TCPAddr: confignet.TCPAddrConfig{
+		confighttp.ServerConfig{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 	}

@@ -9,8 +9,6 @@ import (
 	"regexp"
 
 	"go.uber.org/multierr"
-
-	"go.opentelemetry.io/collector/confmap"
 )
 
 // Config defines the configuration for a component.Component.
@@ -25,17 +23,6 @@ type Config any
 // As interface types are only used for static typing, a common idiom to find the reflection Type
 // for an interface type Foo is to use a *Foo value.
 var configValidatorType = reflect.TypeOf((*ConfigValidator)(nil)).Elem()
-
-// UnmarshalConfig helper function to UnmarshalConfig a Config.
-// It checks if the config implements confmap.Unmarshaler and uses that if available,
-// otherwise uses Map.UnmarshalExact, erroring if a field is nonexistent.
-func UnmarshalConfig(conf *confmap.Conf, intoCfg Config) error {
-	if cu, ok := intoCfg.(confmap.Unmarshaler); ok {
-		return cu.Unmarshal(conf)
-	}
-
-	return conf.Unmarshal(intoCfg)
-}
 
 // ConfigValidator defines an optional interface for configurations to implement to do validation.
 type ConfigValidator interface {
@@ -96,7 +83,7 @@ func callValidateIfPossible(v reflect.Value) error {
 	}
 
 	// If the pointer type implements ConfigValidator call Validate on the pointer to the current value.
-	if reflect.PtrTo(v.Type()).Implements(configValidatorType) {
+	if reflect.PointerTo(v.Type()).Implements(configValidatorType) {
 		// If not addressable, then create a new *V pointer and set the value to current v.
 		if !v.CanAddr() {
 			pv := reflect.New(reflect.PtrTo(v.Type()).Elem())
@@ -119,11 +106,16 @@ func (t Type) String() string {
 	return t.name
 }
 
+// MarshalText marshals returns the Type name.
+func (t Type) MarshalText() ([]byte, error) {
+	return []byte(t.name), nil
+}
+
 // typeRegexp is used to validate the type of a component.
 // A type must start with an ASCII alphabetic character and
 // can only contain ASCII alphanumeric characters and '_'.
 // This must be kept in sync with the regex in cmd/mdatagen/validate.go.
-var typeRegexp = regexp.MustCompile(`^[a-zA-Z][0-9a-zA-Z_]*$`)
+var typeRegexp = regexp.MustCompile(`^[a-zA-Z][0-9a-zA-Z_]{0,62}$`)
 
 // NewType creates a type. It returns an error if the type is invalid.
 // A type must
@@ -172,3 +164,18 @@ var (
 	// DataTypeLogs is the data type tag for logs.
 	DataTypeLogs = mustNewDataType("logs")
 )
+
+// nameRegexp is used to validate the name of a component. A name can consist of
+// 1 to 1024 unicode characters excluding whitespace, control characters, and
+// symbols.
+var nameRegexp = regexp.MustCompile(`^[^\pZ\pC\pS]+$`)
+
+func validateName(nameStr string) error {
+	if len(nameStr) > 1024 {
+		return fmt.Errorf("name %q is longer than 1024 characters (%d characters)", nameStr, len(nameStr))
+	}
+	if !nameRegexp.MatchString(nameStr) {
+		return fmt.Errorf("invalid character(s) in name %q", nameStr)
+	}
+	return nil
+}

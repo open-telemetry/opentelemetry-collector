@@ -22,6 +22,7 @@ func TestLoadMetadata(t *testing.T) {
 		{
 			name: "internal/samplereceiver/metadata.yaml",
 			want: metadata{
+				GithubProject:  "open-telemetry/opentelemetry-collector",
 				Type:           "sample",
 				SemConvVersion: "1.9.0",
 				Status: &Status{
@@ -35,7 +36,8 @@ func TestLoadMetadata(t *testing.T) {
 					Codeowners: &Codeowners{
 						Active: []string{"dmitryax"},
 					},
-					Warnings: []string{"Any additional information that should be brought to the consumer's attention"},
+					Warnings:             []string{"Any additional information that should be brought to the consumer's attention"},
+					UnsupportedPlatforms: []string{"freebsd", "illumos"},
 				},
 				ResourceAttributes: map[attributeName]attribute{
 					"string.resource.attr": {
@@ -230,8 +232,56 @@ func TestLoadMetadata(t *testing.T) {
 						Attributes: []attributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
 					},
 				},
+				Telemetry: telemetry{
+					Metrics: map[metricName]metric{
+						"batch_size_trigger_send": {
+							Enabled:     true,
+							Description: "Number of times the batch was sent due to a size trigger",
+							Unit:        strPtr("{times}"),
+							Sum: &sum{
+								MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeInt},
+								Mono:            Mono{Monotonic: true},
+							},
+						},
+						"request_duration": {
+							Enabled:     true,
+							Description: "Duration of request",
+							Unit:        strPtr("s"),
+							Histogram: &histogram{
+								MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
+								Boundaries:      []float64{1, 10, 100},
+							},
+						},
+						"process_runtime_total_alloc_bytes": {
+							Enabled:     true,
+							Description: "Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')",
+							Unit:        strPtr("By"),
+							Sum: &sum{
+								Mono: Mono{true},
+								MetricValueType: MetricValueType{
+									ValueType: pmetric.NumberDataPointValueTypeInt,
+								},
+								Async: true,
+							},
+						},
+						"queue_length": {
+							Enabled:               true,
+							Description:           "This metric is optional and therefore not initialized in NewTelemetryBuilder.",
+							ExtendedDocumentation: "For example this metric only exists if feature A is enabled.",
+							Unit:                  strPtr("{items}"),
+							Optional:              true,
+							Gauge: &gauge{
+								MetricValueType: MetricValueType{
+									ValueType: pmetric.NumberDataPointValueTypeInt,
+								},
+								Async: true,
+							},
+						},
+					},
+				},
 				ScopeName:       "go.opentelemetry.io/collector/internal/receiver/samplereceiver",
 				ShortFolderName: "sample",
+				Tests:           tests{Host: "componenttest.NewNopHost()"},
 			},
 		},
 		{
@@ -241,42 +291,38 @@ func TestLoadMetadata(t *testing.T) {
 				Parent:          "parentComponent",
 				ScopeName:       "go.opentelemetry.io/collector/cmd/mdatagen",
 				ShortFolderName: "testdata",
+				Tests:           tests{Host: "componenttest.NewNopHost()"},
 			},
 		},
 		{
 			name:    "testdata/invalid_type_rattr.yaml",
 			want:    metadata{},
-			wantErr: "1 error(s) decoding:\n\n* error decoding 'resource_attributes[string.resource.attr].type': invalid type: \"invalidtype\"",
+			wantErr: "decoding failed due to the following error(s):\n\nerror decoding 'resource_attributes[string.resource.attr].type': invalid type: \"invalidtype\"",
 		},
 		{
 			name:    "testdata/no_enabled.yaml",
 			want:    metadata{},
-			wantErr: "1 error(s) decoding:\n\n* error decoding 'metrics[system.cpu.time]': missing required field: `enabled`",
+			wantErr: "decoding failed due to the following error(s):\n\nerror decoding 'metrics[system.cpu.time]': missing required field: `enabled`",
 		},
 		{
 			name: "testdata/no_value_type.yaml",
 			want: metadata{},
-			wantErr: "1 error(s) decoding:\n\n* error decoding 'metrics[system.cpu.time]': 1 error(s) decoding:\n\n" +
-				"* error decoding 'sum': missing required field: `value_type`",
+			wantErr: "decoding failed due to the following error(s):\n\nerror decoding 'metrics[system.cpu.time]': decoding failed due to the following error(s):\n\n" +
+				"error decoding 'sum': missing required field: `value_type`",
 		},
 		{
 			name:    "testdata/unknown_value_type.yaml",
-			wantErr: "1 error(s) decoding:\n\n* error decoding 'metrics[system.cpu.time]': 1 error(s) decoding:\n\n* error decoding 'sum': 1 error(s) decoding:\n\n* error decoding 'value_type': invalid value_type: \"unknown\"",
-		},
-		{
-			name:    "testdata/no_aggregation.yaml",
-			want:    metadata{},
-			wantErr: "1 error(s) decoding:\n\n* error decoding 'metrics[default.metric]': 1 error(s) decoding:\n\n* error decoding 'sum': missing required field: `aggregation_temporality`",
+			wantErr: "decoding failed due to the following error(s):\n\nerror decoding 'metrics[system.cpu.time]': decoding failed due to the following error(s):\n\nerror decoding 'sum': decoding failed due to the following error(s):\n\nerror decoding 'value_type': invalid value_type: \"unknown\"",
 		},
 		{
 			name:    "testdata/invalid_aggregation.yaml",
 			want:    metadata{},
-			wantErr: "1 error(s) decoding:\n\n* error decoding 'metrics[default.metric]': 1 error(s) decoding:\n\n* error decoding 'sum': 1 error(s) decoding:\n\n* error decoding 'aggregation_temporality': invalid aggregation: \"invalidaggregation\"",
+			wantErr: "decoding failed due to the following error(s):\n\nerror decoding 'metrics[default.metric]': decoding failed due to the following error(s):\n\nerror decoding 'sum': decoding failed due to the following error(s):\n\nerror decoding 'aggregation_temporality': invalid aggregation: \"invalidaggregation\"",
 		},
 		{
 			name:    "testdata/invalid_type_attr.yaml",
 			want:    metadata{},
-			wantErr: "1 error(s) decoding:\n\n* error decoding 'attributes[used_attr].type': invalid type: \"invalidtype\"",
+			wantErr: "decoding failed due to the following error(s):\n\nerror decoding 'attributes[used_attr].type': invalid type: \"invalidtype\"",
 		},
 	}
 	for _, tt := range tests {

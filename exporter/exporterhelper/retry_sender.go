@@ -51,7 +51,7 @@ type retrySender struct {
 	logger         *zap.Logger
 }
 
-func newRetrySender(config configretry.BackOffConfig, set exporter.CreateSettings) *retrySender {
+func newRetrySender(config configretry.BackOffConfig, set exporter.Settings) *retrySender {
 	return &retrySender{
 		traceAttribute: attribute.String(obsmetrics.ExporterKey, set.ID.String()),
 		cfg:            config,

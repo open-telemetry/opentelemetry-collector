@@ -37,6 +37,41 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
+const tracesTelemetryType = "traces"
+const metricsTelemetryType = "metrics"
+const logsTelemetryType = "logs"
+
+type responseSerializer interface {
+	MarshalJSON() ([]byte, error)
+	MarshalProto() ([]byte, error)
+}
+
+type responseSerializerProvider = func() responseSerializer
+
+func provideTracesResponseSerializer() responseSerializer {
+	response := ptraceotlp.NewExportResponse()
+	partial := response.PartialSuccess()
+	partial.SetErrorMessage("hello")
+	partial.SetRejectedSpans(1)
+	return response
+}
+
+func provideMetricsResponseSerializer() responseSerializer {
+	response := pmetricotlp.NewExportResponse()
+	partial := response.PartialSuccess()
+	partial.SetErrorMessage("hello")
+	partial.SetRejectedDataPoints(1)
+	return response
+}
+
+func provideLogsResponseSerializer() responseSerializer {
+	response := plogotlp.NewExportResponse()
+	partial := response.PartialSuccess()
+	partial.SetErrorMessage("hello")
+	partial.SetRejectedLogRecords(1)
+	return response
+}
+
 func TestErrorResponses(t *testing.T) {
 	errMsgPrefix := func(srv *httptest.Server) string {
 		return fmt.Sprintf("error exporting items, request to %s/v1/traces responded with HTTP Status Code ", srv.URL)
@@ -93,12 +128,12 @@ func TestErrorResponses(t *testing.T) {
 			isPermErr:      true,
 		},
 		{
-			name:           "419",
+			name:           "429",
 			responseStatus: http.StatusTooManyRequests,
-			responseBody:   status.New(codes.InvalidArgument, "Quota exceeded"),
+			responseBody:   status.New(codes.ResourceExhausted, "Quota exceeded"),
 			err: func(srv *httptest.Server) error {
 				return exporterhelper.NewThrottleRetry(
-					errors.New(errMsgPrefix(srv)+"429, Message=Quota exceeded, Details=[]"),
+					status.New(codes.ResourceExhausted, errMsgPrefix(srv)+"429, Message=Quota exceeded, Details=[]").Err(),
 					time.Duration(0)*time.Second)
 			},
 		},
@@ -114,7 +149,7 @@ func TestErrorResponses(t *testing.T) {
 			responseBody:   status.New(codes.InvalidArgument, "Bad gateway"),
 			err: func(srv *httptest.Server) error {
 				return exporterhelper.NewThrottleRetry(
-					errors.New(errMsgPrefix(srv)+"502, Message=Bad gateway, Details=[]"),
+					status.New(codes.Unavailable, errMsgPrefix(srv)+"502, Message=Bad gateway, Details=[]").Err(),
 					time.Duration(0)*time.Second)
 			},
 		},
@@ -124,7 +159,7 @@ func TestErrorResponses(t *testing.T) {
 			responseBody:   status.New(codes.InvalidArgument, "Server overloaded"),
 			err: func(srv *httptest.Server) error {
 				return exporterhelper.NewThrottleRetry(
-					errors.New(errMsgPrefix(srv)+"503, Message=Server overloaded, Details=[]"),
+					status.New(codes.Unavailable, errMsgPrefix(srv)+"503, Message=Server overloaded, Details=[]").Err(),
 					time.Duration(0)*time.Second)
 			},
 		},
@@ -135,7 +170,7 @@ func TestErrorResponses(t *testing.T) {
 			headers:        map[string]string{"Retry-After": "30"},
 			err: func(srv *httptest.Server) error {
 				return exporterhelper.NewThrottleRetry(
-					errors.New(errMsgPrefix(srv)+"503, Message=Server overloaded, Details=[]"),
+					status.New(codes.Unavailable, errMsgPrefix(srv)+"503, Message=Server overloaded, Details=[]").Err(),
 					time.Duration(30)*time.Second)
 			},
 		},
@@ -145,7 +180,7 @@ func TestErrorResponses(t *testing.T) {
 			responseBody:   status.New(codes.InvalidArgument, "Gateway timeout"),
 			err: func(srv *httptest.Server) error {
 				return exporterhelper.NewThrottleRetry(
-					errors.New(errMsgPrefix(srv)+"504, Message=Gateway timeout, Details=[]"),
+					status.New(codes.Unavailable, errMsgPrefix(srv)+"504, Message=Gateway timeout, Details=[]").Err(),
 					time.Duration(0)*time.Second)
 			},
 		},
@@ -155,7 +190,7 @@ func TestErrorResponses(t *testing.T) {
 			responseBody:   status.New(codes.InvalidArgument, strings.Repeat("a", maxHTTPResponseReadBytes+1)),
 			err: func(srv *httptest.Server) error {
 				return exporterhelper.NewThrottleRetry(
-					errors.New(errMsgPrefix(srv)+"503"),
+					status.New(codes.Unavailable, errMsgPrefix(srv)+"503").Err(),
 					time.Duration(0)*time.Second)
 			},
 		},
@@ -183,7 +218,7 @@ func TestErrorResponses(t *testing.T) {
 				// Create without QueueSettings and RetryConfig so that ConsumeTraces
 				// returns the errors that we want to check immediately.
 			}
-			exp, err := createTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+			exp, err := createTracesExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 			require.NoError(t, err)
 
 			// start the exporter
@@ -218,7 +253,7 @@ func TestErrorResponseInvalidResponseBody(t *testing.T) {
 }
 
 func TestUserAgent(t *testing.T) {
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	set.BuildInfo.Description = "Collector"
 	set.BuildInfo.Version = "1.2.3test"
 
@@ -350,7 +385,7 @@ func TestUserAgent(t *testing.T) {
 
 func TestPartialSuccessInvalidBody(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	exp, err := newExporter(cfg, set)
 	require.NoError(t, err)
 	invalidBodyCases := []struct {
@@ -380,7 +415,7 @@ func TestPartialSuccessInvalidBody(t *testing.T) {
 
 func TestPartialSuccessUnsupportedContentType(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	exp, err := newExporter(cfg, set)
 	require.NoError(t, err)
 	unsupportedContentTypeCases := []struct {
@@ -438,7 +473,7 @@ func TestPartialSuccess_logs(t *testing.T) {
 		LogsEndpoint: fmt.Sprintf("%s/v1/logs", srv.URL),
 		ClientConfig: confighttp.ClientConfig{},
 	}
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 
 	logger, observed := observer.New(zap.DebugLevel)
 	set.TelemetrySettings.Logger = zap.New(logger)
@@ -463,49 +498,124 @@ func TestPartialSuccess_logs(t *testing.T) {
 
 func TestPartialResponse_missingHeaderButHasBody(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	exp, err := newExporter(cfg, set)
 	require.NoError(t, err)
 
-	response := ptraceotlp.NewExportResponse()
-	partial := response.PartialSuccess()
-	partial.SetErrorMessage("hello")
-	partial.SetRejectedSpans(1)
-	data, err := response.MarshalProto()
-	require.NoError(t, err)
-	resp := &http.Response{
-		// `-1` indicates a missing Content-Length header in the Go http standard library
-		ContentLength: -1,
-		Body:          io.NopCloser(bytes.NewReader(data)),
-		Header: map[string][]string{
-			"Content-Type": {"application/x-protobuf"},
+	contentTypes := []struct {
+		contentType string
+	}{
+		{contentType: protobufContentType},
+		{contentType: jsonContentType},
+	}
+
+	telemetryTypes := []struct {
+		telemetryType string
+		handler       partialSuccessHandler
+		serializer    responseSerializerProvider
+	}{
+		{
+			telemetryType: tracesTelemetryType,
+			handler:       exp.tracesPartialSuccessHandler,
+			serializer:    provideTracesResponseSerializer,
+		},
+		{
+			telemetryType: metricsTelemetryType,
+			handler:       exp.metricsPartialSuccessHandler,
+			serializer:    provideMetricsResponseSerializer,
+		},
+		{
+			telemetryType: logsTelemetryType,
+			handler:       exp.logsPartialSuccessHandler,
+			serializer:    provideLogsResponseSerializer,
 		},
 	}
-	err = handlePartialSuccessResponse(resp, exp.tracesPartialSuccessHandler)
-	assert.NoError(t, err)
+
+	for _, ct := range contentTypes {
+		for _, tt := range telemetryTypes {
+			t.Run(tt.telemetryType+" "+ct.contentType, func(t *testing.T) {
+				serializer := tt.serializer()
+
+				var data []byte
+				var err error
+
+				switch ct.contentType {
+				case jsonContentType:
+					data, err = serializer.MarshalJSON()
+				case protobufContentType:
+					data, err = serializer.MarshalProto()
+				default:
+					require.Fail(t, "unsupported content type: %s", ct.contentType)
+				}
+				require.NoError(t, err)
+
+				resp := &http.Response{
+					// `-1` indicates a missing Content-Length header in the Go http standard library
+					ContentLength: -1,
+					Body:          io.NopCloser(bytes.NewReader(data)),
+					Header: map[string][]string{
+						"Content-Type": {ct.contentType},
+					},
+				}
+				err = handlePartialSuccessResponse(resp, tt.handler)
+				assert.NoError(t, err)
+			})
+		}
+	}
 }
 
 func TestPartialResponse_missingHeaderAndBody(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	exp, err := newExporter(cfg, set)
 	require.NoError(t, err)
 
-	resp := &http.Response{
-		// `-1` indicates a missing Content-Length header in the Go http standard library
-		ContentLength: -1,
-		Body:          io.NopCloser(bytes.NewReader([]byte{})),
-		Header: map[string][]string{
-			"Content-Type": {"application/x-protobuf"},
+	contentTypes := []struct {
+		contentType string
+	}{
+		{contentType: protobufContentType},
+		{contentType: jsonContentType},
+	}
+
+	telemetryTypes := []struct {
+		telemetryType string
+		handler       partialSuccessHandler
+	}{
+		{
+			telemetryType: tracesTelemetryType,
+			handler:       exp.tracesPartialSuccessHandler,
+		},
+		{
+			telemetryType: metricsTelemetryType,
+			handler:       exp.metricsPartialSuccessHandler,
+		},
+		{
+			telemetryType: logsTelemetryType,
+			handler:       exp.logsPartialSuccessHandler,
 		},
 	}
-	err = handlePartialSuccessResponse(resp, exp.tracesPartialSuccessHandler)
-	assert.Nil(t, err)
+
+	for _, ct := range contentTypes {
+		for _, tt := range telemetryTypes {
+			t.Run(tt.telemetryType+" "+ct.contentType, func(t *testing.T) {
+				resp := &http.Response{
+					// `-1` indicates a missing Content-Length header in the Go http standard library
+					ContentLength: -1,
+					Body:          io.NopCloser(bytes.NewReader([]byte{})),
+					Header: map[string][]string{
+						"Content-Type": {ct.contentType},
+					},
+				}
+				err = handlePartialSuccessResponse(resp, tt.handler)
+				assert.Nil(t, err)
+			})
+		}
+	}
 }
 
 func TestPartialResponse_nonErrUnexpectedEOFError(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	exp, err := newExporter(cfg, set)
 	require.NoError(t, err)
 
@@ -520,62 +630,156 @@ func TestPartialResponse_nonErrUnexpectedEOFError(t *testing.T) {
 
 func TestPartialSuccess_shortContentLengthHeader(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	exp, err := newExporter(cfg, set)
 	require.NoError(t, err)
 
-	response := ptraceotlp.NewExportResponse()
-	partial := response.PartialSuccess()
-	partial.SetErrorMessage("hello")
-	partial.SetRejectedSpans(1)
-	data, err := response.MarshalProto()
-	require.NoError(t, err)
-	resp := &http.Response{
-		ContentLength: 3,
-		Body:          io.NopCloser(bytes.NewReader(data)),
-		Header: map[string][]string{
-			"Content-Type": {"application/x-protobuf"},
+	contentTypes := []struct {
+		contentType string
+	}{
+		{contentType: protobufContentType},
+		{contentType: jsonContentType},
+	}
+
+	telemetryTypes := []struct {
+		telemetryType string
+		handler       partialSuccessHandler
+		serializer    responseSerializerProvider
+	}{
+		{
+			telemetryType: tracesTelemetryType,
+			handler:       exp.tracesPartialSuccessHandler,
+			serializer:    provideTracesResponseSerializer,
+		},
+		{
+			telemetryType: metricsTelemetryType,
+			handler:       exp.metricsPartialSuccessHandler,
+			serializer:    provideMetricsResponseSerializer,
+		},
+		{
+			telemetryType: logsTelemetryType,
+			handler:       exp.logsPartialSuccessHandler,
+			serializer:    provideLogsResponseSerializer,
 		},
 	}
-	// For short content-length, a real error happens.
-	err = handlePartialSuccessResponse(resp, exp.tracesPartialSuccessHandler)
-	assert.Error(t, err)
+
+	for _, ct := range contentTypes {
+		for _, tt := range telemetryTypes {
+			t.Run(tt.telemetryType+" "+ct.contentType, func(t *testing.T) {
+				serializer := tt.serializer()
+
+				var data []byte
+				var err error
+
+				switch ct.contentType {
+				case jsonContentType:
+					data, err = serializer.MarshalJSON()
+				case protobufContentType:
+					data, err = serializer.MarshalProto()
+				default:
+					require.Fail(t, "unsupported content type: %s", ct.contentType)
+				}
+				require.NoError(t, err)
+
+				resp := &http.Response{
+					ContentLength: 3,
+					Body:          io.NopCloser(bytes.NewReader(data)),
+					Header: map[string][]string{
+						"Content-Type": {ct.contentType},
+					},
+				}
+				// For short content-length, a real error happens.
+				err = handlePartialSuccessResponse(resp, tt.handler)
+				assert.Error(t, err)
+			})
+		}
+	}
 }
 
 func TestPartialSuccess_longContentLengthHeader(t *testing.T) {
-	cfg := createDefaultConfig()
-	set := exportertest.NewNopCreateSettings()
+	contentTypes := []struct {
+		contentType string
+	}{
+		{contentType: protobufContentType},
+		{contentType: jsonContentType},
+	}
 
-	logger, observed := observer.New(zap.DebugLevel)
-	set.TelemetrySettings.Logger = zap.New(logger)
-
-	exp, err := newExporter(cfg, set)
-	require.NoError(t, err)
-
-	response := ptraceotlp.NewExportResponse()
-	partial := response.PartialSuccess()
-	partial.SetErrorMessage("hello")
-	partial.SetRejectedSpans(1)
-	data, err := response.MarshalProto()
-	require.NoError(t, err)
-	resp := &http.Response{
-		ContentLength: 4096,
-		Body:          io.NopCloser(bytes.NewReader(data)),
-		Header: map[string][]string{
-			"Content-Type": {"application/x-protobuf"},
+	telemetryTypes := []struct {
+		telemetryType string
+		serializer    responseSerializerProvider
+	}{
+		{
+			telemetryType: tracesTelemetryType,
+			serializer:    provideTracesResponseSerializer,
+		},
+		{
+			telemetryType: metricsTelemetryType,
+			serializer:    provideMetricsResponseSerializer,
+		},
+		{
+			telemetryType: logsTelemetryType,
+			serializer:    provideLogsResponseSerializer,
 		},
 	}
-	// No real error happens for long content length, so the partial
-	// success is handled as success with a warning.
-	err = handlePartialSuccessResponse(resp, exp.tracesPartialSuccessHandler)
-	assert.NoError(t, err)
-	assert.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), 1)
-	assert.Contains(t, observed.FilterLevelExact(zap.WarnLevel).All()[0].Message, "Partial success")
+
+	for _, ct := range contentTypes {
+		for _, tt := range telemetryTypes {
+			t.Run(tt.telemetryType+" "+ct.contentType, func(t *testing.T) {
+				cfg := createDefaultConfig()
+				set := exportertest.NewNopSettings()
+				logger, observed := observer.New(zap.DebugLevel)
+				set.TelemetrySettings.Logger = zap.New(logger)
+				exp, err := newExporter(cfg, set)
+				require.NoError(t, err)
+
+				serializer := tt.serializer()
+
+				var handler partialSuccessHandler
+
+				switch tt.telemetryType {
+				case tracesTelemetryType:
+					handler = exp.tracesPartialSuccessHandler
+				case metricsTelemetryType:
+					handler = exp.metricsPartialSuccessHandler
+				case logsTelemetryType:
+					handler = exp.logsPartialSuccessHandler
+				default:
+					require.Fail(t, "unsupported telemetry type: %s", ct.contentType)
+				}
+
+				var data []byte
+
+				switch ct.contentType {
+				case jsonContentType:
+					data, err = serializer.MarshalJSON()
+				case protobufContentType:
+					data, err = serializer.MarshalProto()
+				default:
+					require.Fail(t, "unsupported content type: %s", ct.contentType)
+				}
+				require.NoError(t, err)
+
+				resp := &http.Response{
+					ContentLength: 4096,
+					Body:          io.NopCloser(bytes.NewReader(data)),
+					Header: map[string][]string{
+						"Content-Type": {ct.contentType},
+					},
+				}
+				// No real error happens for long content length, so the partial
+				// success is handled as success with a warning.
+				err = handlePartialSuccessResponse(resp, handler)
+				assert.NoError(t, err)
+				assert.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), 1)
+				assert.Contains(t, observed.FilterLevelExact(zap.WarnLevel).All()[0].Message, "Partial success")
+			})
+		}
+	}
 }
 
 func TestPartialSuccessInvalidResponseBody(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	exp, err := newExporter(cfg, set)
 	require.NoError(t, err)
 
@@ -609,7 +813,7 @@ func TestPartialSuccess_traces(t *testing.T) {
 		TracesEndpoint: fmt.Sprintf("%s/v1/traces", srv.URL),
 		ClientConfig:   confighttp.ClientConfig{},
 	}
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	logger, observed := observer.New(zap.DebugLevel)
 	set.TelemetrySettings.Logger = zap.New(logger)
 	exp, err := createTracesExporter(context.Background(), set, cfg)
@@ -649,7 +853,7 @@ func TestPartialSuccess_metrics(t *testing.T) {
 		MetricsEndpoint: fmt.Sprintf("%s/v1/metrics", srv.URL),
 		ClientConfig:    confighttp.ClientConfig{},
 	}
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	logger, observed := observer.New(zap.DebugLevel)
 	set.TelemetrySettings.Logger = zap.New(logger)
 	exp, err := createMetricsExporter(context.Background(), set, cfg)
@@ -671,7 +875,7 @@ func TestPartialSuccess_metrics(t *testing.T) {
 }
 
 func TestEncoding(t *testing.T) {
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	set.BuildInfo.Description = "Collector"
 	set.BuildInfo.Version = "1.2.3test"
 

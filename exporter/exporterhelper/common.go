@@ -41,7 +41,7 @@ func (b *baseRequestSender) setNextSender(nextSender requestSender) {
 	b.nextSender = nextSender
 }
 
-type obsrepSenderFactory func(obsrep *ObsReport) requestSender
+type obsrepSenderFactory func(obsrep *obsReport) requestSender
 
 // Option apply changes to baseExporter.
 type Option func(*baseExporter) error
@@ -110,7 +110,7 @@ func WithQueue(config QueueSettings) Option {
 			NumConsumers: config.NumConsumers,
 			QueueSize:    config.QueueSize,
 		})
-		o.queueSender = newQueueSender(q, o.set, config.NumConsumers, o.exportFailureMessage)
+		o.queueSender = newQueueSender(q, o.set, config.NumConsumers, o.exportFailureMessage, o.obsrep)
 		return nil
 	}
 }
@@ -132,7 +132,7 @@ func WithRequestQueue(cfg exporterqueue.Config, queueFactory exporterqueue.Facto
 			DataType:         o.signal,
 			ExporterSettings: o.set,
 		}
-		o.queueSender = newQueueSender(queueFactory(context.Background(), set, cfg), o.set, cfg.NumConsumers, o.exportFailureMessage)
+		o.queueSender = newQueueSender(queueFactory(context.Background(), set, cfg), o.set, cfg.NumConsumers, o.exportFailureMessage, o.obsrep)
 		return nil
 	}
 }
@@ -148,27 +148,39 @@ func WithCapabilities(capabilities consumer.Capabilities) Option {
 }
 
 // BatcherOption apply changes to batcher sender.
-type BatcherOption func(*batchSender)
+type BatcherOption func(*batchSender) error
 
 // WithRequestBatchFuncs sets the functions for merging and splitting batches for an exporter built for custom request types.
 func WithRequestBatchFuncs(mf exporterbatcher.BatchMergeFunc[Request], msf exporterbatcher.BatchMergeSplitFunc[Request]) BatcherOption {
-	return func(bs *batchSender) {
+	return func(bs *batchSender) error {
+		if mf == nil || msf == nil {
+			return fmt.Errorf("WithRequestBatchFuncs must be provided with non-nil functions")
+		}
+		if bs.mergeFunc != nil || bs.mergeSplitFunc != nil {
+			return fmt.Errorf("WithRequestBatchFuncs can only be used once with request-based exporters")
+		}
 		bs.mergeFunc = mf
 		bs.mergeSplitFunc = msf
+		return nil
 	}
 }
 
 // WithBatcher enables batching for an exporter based on custom request types.
 // For now, it can be used only with the New[Traces|Metrics|Logs]RequestExporter exporter helpers and
 // WithRequestBatchFuncs provided.
-// TODO: Add OTLP-based batch functions applied by default so it can be used with New[Traces|Metrics|Logs]Exporter exporter helpers.
 // This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func WithBatcher(cfg exporterbatcher.Config, opts ...BatcherOption) Option {
 	return func(o *baseExporter) error {
-		bs := newBatchSender(cfg, o.set)
+		if !cfg.Enabled {
+			return nil
+		}
+
+		bs := newBatchSender(cfg, o.set, o.batchMergeFunc, o.batchMergeSplitfunc)
 		for _, opt := range opts {
-			opt(bs)
+			if err := opt(bs); err != nil {
+				return err
+			}
 		}
 		if bs.mergeFunc == nil || bs.mergeSplitFunc == nil {
 			return fmt.Errorf("WithRequestBatchFuncs must be provided for the batcher applied to the request-based exporters")
@@ -196,17 +208,31 @@ func withUnmarshaler(unmarshaler exporterqueue.Unmarshaler[Request]) Option {
 	}
 }
 
+// withBatchFuncs is used to set the functions for merging and splitting batches for OLTP-based exporters.
+// It must be provided as the first option when creating a new exporter helper.
+func withBatchFuncs(mf exporterbatcher.BatchMergeFunc[Request], msf exporterbatcher.BatchMergeSplitFunc[Request]) Option {
+	return func(o *baseExporter) error {
+		o.batchMergeFunc = mf
+		o.batchMergeSplitfunc = msf
+		return nil
+	}
+}
+
 // baseExporter contains common fields between different exporter types.
 type baseExporter struct {
 	component.StartFunc
 	component.ShutdownFunc
 
+	signal component.DataType
+
+	batchMergeFunc      exporterbatcher.BatchMergeFunc[Request]
+	batchMergeSplitfunc exporterbatcher.BatchMergeSplitFunc[Request]
+
 	marshaler   exporterqueue.Marshaler[Request]
 	unmarshaler exporterqueue.Unmarshaler[Request]
-	signal      component.DataType
 
-	set    exporter.CreateSettings
-	obsrep *ObsReport
+	set    exporter.Settings
+	obsrep *obsReport
 
 	// Message for the user to be added with an export failure message.
 	exportFailureMessage string
@@ -223,8 +249,8 @@ type baseExporter struct {
 	consumerOptions []consumer.Option
 }
 
-func newBaseExporter(set exporter.CreateSettings, signal component.DataType, osf obsrepSenderFactory, options ...Option) (*baseExporter, error) {
-	obsReport, err := NewObsReport(ObsReportSettings{ExporterID: set.ID, ExporterCreateSettings: set})
+func newBaseExporter(set exporter.Settings, signal component.DataType, osf obsrepSenderFactory, options ...Option) (*baseExporter, error) {
+	obsReport, err := newExporter(obsReportSettings{exporterID: set.ID, exporterCreateSettings: set, dataType: signal})
 	if err != nil {
 		return nil, err
 	}
@@ -251,11 +277,13 @@ func newBaseExporter(set exporter.CreateSettings, signal component.DataType, osf
 
 	be.connectSenders()
 
-	// If queue sender is enabled assign to the batch sender the same number of workers.
-	if qs, ok := be.queueSender.(*queueSender); ok {
-		if bs, ok := be.batchSender.(*batchSender); ok {
-			bs.concurrencyLimit = uint64(qs.numConsumers)
+	if bs, ok := be.batchSender.(*batchSender); ok {
+		// If queue sender is enabled assign to the batch sender the same number of workers.
+		if qs, ok := be.queueSender.(*queueSender); ok {
+			bs.concurrencyLimit = int64(qs.numConsumers)
 		}
+		// Batcher sender mutates the data.
+		be.consumerOptions = append(be.consumerOptions, consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}))
 	}
 
 	return be, nil

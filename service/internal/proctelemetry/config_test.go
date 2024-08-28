@@ -7,10 +7,18 @@ import (
 	"context"
 	"errors"
 	"net/url"
+	"reflect"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/contrib/config"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
+	otelprom "go.opentelemetry.io/otel/exporters/prometheus"
+	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 )
 
 func strPtr(s string) *string {
@@ -22,15 +30,28 @@ func intPtr(i int) *int {
 }
 
 func TestMetricReader(t *testing.T) {
+	consoleExporter, err := stdoutmetric.New(
+		stdoutmetric.WithPrettyPrint(),
+	)
+	require.NoError(t, err)
+	ctx := context.Background()
+	otlpGRPCExporter, err := otlpmetricgrpc.New(ctx)
+	require.NoError(t, err)
+	otlpHTTPExporter, err := otlpmetrichttp.New(ctx)
+	require.NoError(t, err)
+	promExporter, err := otelprom.New()
+	require.NoError(t, err)
+
 	testCases := []struct {
-		name   string
-		reader config.MetricReader
-		args   any
-		err    error
+		name       string
+		reader     config.MetricReader
+		args       any
+		wantErr    error
+		wantReader sdkmetric.Reader
 	}{
 		{
-			name: "noreader",
-			err:  errors.New("unsupported metric reader type {<nil> <nil>}"),
+			name:    "noreader",
+			wantErr: errors.New("unsupported metric reader type {<nil> <nil>}"),
 		},
 		{
 			name: "pull prometheus invalid exporter",
@@ -41,7 +62,7 @@ func TestMetricReader(t *testing.T) {
 					},
 				},
 			},
-			err: errNoValidMetricExporter,
+			wantErr: errNoValidMetricExporter,
 		},
 		{
 			name: "pull/prometheus-invalid-config-no-host",
@@ -52,7 +73,7 @@ func TestMetricReader(t *testing.T) {
 					},
 				},
 			},
-			err: errors.New("host must be specified"),
+			wantErr: errors.New("host must be specified"),
 		},
 		{
 			name: "pull/prometheus-invalid-config-no-port",
@@ -65,10 +86,10 @@ func TestMetricReader(t *testing.T) {
 					},
 				},
 			},
-			err: errors.New("port must be specified"),
+			wantErr: errors.New("port must be specified"),
 		},
 		{
-			name: "pull/prometheus-invalid-config-no-port",
+			name: "pull/prometheus-valid",
 			reader: config.MetricReader{
 				Pull: &config.PullMetricReader{
 					Exporter: config.MetricExporter{
@@ -79,6 +100,7 @@ func TestMetricReader(t *testing.T) {
 					},
 				},
 			},
+			wantReader: promExporter,
 		},
 		{
 			name: "periodic/invalid-exporter",
@@ -92,14 +114,14 @@ func TestMetricReader(t *testing.T) {
 					},
 				},
 			},
-			err: errNoValidMetricExporter,
+			wantErr: errNoValidMetricExporter,
 		},
 		{
 			name: "periodic/no-exporter",
 			reader: config.MetricReader{
 				Periodic: &config.PeriodicMetricReader{},
 			},
-			err: errNoValidMetricExporter,
+			wantErr: errNoValidMetricExporter,
 		},
 		{
 			name: "periodic/console-exporter",
@@ -110,6 +132,7 @@ func TestMetricReader(t *testing.T) {
 					},
 				},
 			},
+			wantReader: sdkmetric.NewPeriodicReader(consoleExporter),
 		},
 		{
 			name: "periodic/console-exporter-with-timeout-interval",
@@ -122,6 +145,7 @@ func TestMetricReader(t *testing.T) {
 					},
 				},
 			},
+			wantReader: sdkmetric.NewPeriodicReader(consoleExporter),
 		},
 		{
 			name: "periodic/otlp-exporter-invalid-protocol",
@@ -134,7 +158,7 @@ func TestMetricReader(t *testing.T) {
 					},
 				},
 			},
-			err: errors.New("unsupported protocol http/invalid"),
+			wantErr: errors.New("unsupported protocol http/invalid"),
 		},
 		{
 			name: "periodic/otlp-grpc-exporter-no-endpoint",
@@ -152,6 +176,7 @@ func TestMetricReader(t *testing.T) {
 					},
 				},
 			},
+			wantReader: sdkmetric.NewPeriodicReader(otlpGRPCExporter),
 		},
 		{
 			name: "periodic/otlp-grpc-exporter",
@@ -170,6 +195,7 @@ func TestMetricReader(t *testing.T) {
 					},
 				},
 			},
+			wantReader: sdkmetric.NewPeriodicReader(otlpGRPCExporter),
 		},
 		{
 			name: "periodic/otlp-grpc-exporter-no-scheme",
@@ -188,6 +214,7 @@ func TestMetricReader(t *testing.T) {
 					},
 				},
 			},
+			wantReader: sdkmetric.NewPeriodicReader(otlpGRPCExporter),
 		},
 		{
 			name: "periodic/otlp-grpc-invalid-endpoint",
@@ -206,7 +233,7 @@ func TestMetricReader(t *testing.T) {
 					},
 				},
 			},
-			err: &url.Error{Op: "parse", URL: "http:// ", Err: url.InvalidHostError(" ")},
+			wantErr: &url.Error{Op: "parse", URL: "http:// ", Err: url.InvalidHostError(" ")},
 		},
 		{
 			name: "periodic/otlp-grpc-invalid-compression",
@@ -225,7 +252,87 @@ func TestMetricReader(t *testing.T) {
 					},
 				},
 			},
-			err: errors.New("unsupported compression \"invalid\""),
+			wantErr: errors.New("unsupported compression \"invalid\""),
+		},
+		{
+			name: "periodic/otlp-grpc-delta-temporality",
+			reader: config.MetricReader{
+				Periodic: &config.PeriodicMetricReader{
+					Exporter: config.MetricExporter{
+						OTLP: &config.OTLPMetric{
+							Protocol:    "grpc/protobuf",
+							Endpoint:    "localhost:4318",
+							Compression: strPtr("none"),
+							Timeout:     intPtr(1000),
+							Headers: map[string]string{
+								"test": "test1",
+							},
+							TemporalityPreference: strPtr("delta"),
+						},
+					},
+				},
+			},
+			wantReader: sdkmetric.NewPeriodicReader(otlpGRPCExporter),
+		},
+		{
+			name: "periodic/otlp-grpc-cumulative-temporality",
+			reader: config.MetricReader{
+				Periodic: &config.PeriodicMetricReader{
+					Exporter: config.MetricExporter{
+						OTLP: &config.OTLPMetric{
+							Protocol:    "grpc/protobuf",
+							Endpoint:    "localhost:4318",
+							Compression: strPtr("none"),
+							Timeout:     intPtr(1000),
+							Headers: map[string]string{
+								"test": "test1",
+							},
+							TemporalityPreference: strPtr("cumulative"),
+						},
+					},
+				},
+			},
+			wantReader: sdkmetric.NewPeriodicReader(otlpGRPCExporter),
+		},
+		{
+			name: "periodic/otlp-grpc-lowmemory-temporality",
+			reader: config.MetricReader{
+				Periodic: &config.PeriodicMetricReader{
+					Exporter: config.MetricExporter{
+						OTLP: &config.OTLPMetric{
+							Protocol:    "grpc/protobuf",
+							Endpoint:    "localhost:4318",
+							Compression: strPtr("none"),
+							Timeout:     intPtr(1000),
+							Headers: map[string]string{
+								"test": "test1",
+							},
+							TemporalityPreference: strPtr("lowmemory"),
+						},
+					},
+				},
+			},
+			wantReader: sdkmetric.NewPeriodicReader(otlpGRPCExporter),
+		},
+		{
+			name: "periodic/otlp-grpc-invalid-temporality",
+			reader: config.MetricReader{
+				Periodic: &config.PeriodicMetricReader{
+					Exporter: config.MetricExporter{
+						OTLP: &config.OTLPMetric{
+							Protocol:    "grpc/protobuf",
+							Endpoint:    "localhost:4318",
+							Compression: strPtr("none"),
+							Timeout:     intPtr(1000),
+							Headers: map[string]string{
+								"test": "test1",
+							},
+							TemporalityPreference: strPtr("invalid"),
+						},
+					},
+				},
+			},
+			wantErr: errors.New("unsupported temporality preference \"invalid\""),
 		},
 		{
 			name: "periodic/otlp-http-exporter",
@@ -244,6 +351,7 @@ func TestMetricReader(t *testing.T) {
 					},
 				},
 			},
+			wantReader: sdkmetric.NewPeriodicReader(otlpHTTPExporter),
 		},
 		{
 			name: "periodic/otlp-http-exporter-with-path",
@@ -262,6 +370,7 @@ func TestMetricReader(t *testing.T) {
 					},
 				},
 			},
+			wantReader: sdkmetric.NewPeriodicReader(otlpHTTPExporter),
 		},
 		{
 			name: "periodic/otlp-http-exporter-no-endpoint",
@@ -279,6 +388,7 @@ func TestMetricReader(t *testing.T) {
 					},
 				},
 			},
+			wantReader: sdkmetric.NewPeriodicReader(otlpHTTPExporter),
 		},
 		{
 			name: "periodic/otlp-http-exporter-no-scheme",
@@ -297,6 +407,7 @@ func TestMetricReader(t *testing.T) {
 					},
 				},
 			},
+			wantReader: sdkmetric.NewPeriodicReader(otlpHTTPExporter),
 		},
 		{
 			name: "periodic/otlp-http-invalid-endpoint",
@@ -315,7 +426,7 @@ func TestMetricReader(t *testing.T) {
 					},
 				},
 			},
-			err: &url.Error{Op: "parse", URL: "http:// ", Err: url.InvalidHostError(" ")},
+			wantErr: &url.Error{Op: "parse", URL: "http:// ", Err: url.InvalidHostError(" ")},
 		},
 		{
 			name: "periodic/otlp-http-invalid-compression",
@@ -334,378 +445,115 @@ func TestMetricReader(t *testing.T) {
 					},
 				},
 			},
-			err: errors.New("unsupported compression \"invalid\""),
-		},
-	}
-	for _, tt := range testCases {
-		t.Run(tt.name, func(t *testing.T) {
-			reader, server, err := InitMetricReader(context.Background(), tt.reader, make(chan error))
-			defer func() {
-				if reader != nil {
-					assert.NoError(t, reader.Shutdown(context.Background()))
-				}
-				if server != nil {
-					assert.NoError(t, server.Shutdown(context.Background()))
-				}
-			}()
-			assert.Equal(t, tt.err, err)
-		})
-	}
-}
-
-func TestSpanProcessor(t *testing.T) {
-	testCases := []struct {
-		name      string
-		processor config.SpanProcessor
-		args      any
-		err       error
-	}{
-		{
-			name: "no processor",
-			err:  errors.New("unsupported span processor type {<nil> <nil>}"),
+			wantErr: errors.New("unsupported compression \"invalid\""),
 		},
 		{
-			name: "batch processor invalid exporter",
-			processor: config.SpanProcessor{
-				Batch: &config.BatchSpanProcessor{
-					Exporter: config.SpanExporter{},
-				},
-			},
-			err: errNoValidSpanExporter,
-		},
-		{
-			name: "batch processor invalid batch size console exporter",
-			processor: config.SpanProcessor{
-				Batch: &config.BatchSpanProcessor{
-					MaxExportBatchSize: intPtr(-1),
-					Exporter: config.SpanExporter{
-						Console: config.Console{},
-					},
-				},
-			},
-			err: errors.New("invalid batch size -1"),
-		},
-		{
-			name: "batch processor invalid export timeout console exporter",
-			processor: config.SpanProcessor{
-				Batch: &config.BatchSpanProcessor{
-					ExportTimeout: intPtr(-2),
-					Exporter: config.SpanExporter{
-						Console: config.Console{},
-					},
-				},
-			},
-			err: errors.New("invalid export timeout -2"),
-		},
-		{
-			name: "batch processor invalid queue size console exporter",
-			processor: config.SpanProcessor{
-				Batch: &config.BatchSpanProcessor{
-					MaxQueueSize: intPtr(-3),
-					Exporter: config.SpanExporter{
-						Console: config.Console{},
-					},
-				},
-			},
-			err: errors.New("invalid queue size -3"),
-		},
-		{
-			name: "batch processor invalid schedule delay console exporter",
-			processor: config.SpanProcessor{
-				Batch: &config.BatchSpanProcessor{
-					ScheduleDelay: intPtr(-4),
-					Exporter: config.SpanExporter{
-						Console: config.Console{},
-					},
-				},
-			},
-			err: errors.New("invalid schedule delay -4"),
-		},
-		{
-			name: "batch processor console exporter",
-			processor: config.SpanProcessor{
-				Batch: &config.BatchSpanProcessor{
-					MaxExportBatchSize: intPtr(0),
-					ExportTimeout:      intPtr(0),
-					MaxQueueSize:       intPtr(0),
-					ScheduleDelay:      intPtr(0),
-					Exporter: config.SpanExporter{
-						Console: config.Console{},
-					},
-				},
-			},
-		},
-		{
-			name: "batch/otlp-exporter-invalid-protocol",
-			processor: config.SpanProcessor{
-				Batch: &config.BatchSpanProcessor{
-					MaxExportBatchSize: intPtr(0),
-					ExportTimeout:      intPtr(0),
-					MaxQueueSize:       intPtr(0),
-					ScheduleDelay:      intPtr(0),
-					Exporter: config.SpanExporter{
-						OTLP: &config.OTLP{
-							Protocol: *strPtr("http/invalid"),
-						},
-					},
-				},
-			},
-			err: errors.New("unsupported protocol \"http/invalid\""),
-		},
-		{
-			name: "batch/otlp-grpc-exporter-no-endpoint",
-			processor: config.SpanProcessor{
-				Batch: &config.BatchSpanProcessor{
-					MaxExportBatchSize: intPtr(0),
-					ExportTimeout:      intPtr(0),
-					MaxQueueSize:       intPtr(0),
-					ScheduleDelay:      intPtr(0),
-					Exporter: config.SpanExporter{
-						OTLP: &config.OTLP{
-							Protocol:    "grpc/protobuf",
-							Compression: strPtr("gzip"),
-							Timeout:     intPtr(1000),
-							Headers: map[string]string{
-								"test": "test1",
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "batch/otlp-grpc-exporter",
-			processor: config.SpanProcessor{
-				Batch: &config.BatchSpanProcessor{
-					MaxExportBatchSize: intPtr(0),
-					ExportTimeout:      intPtr(0),
-					MaxQueueSize:       intPtr(0),
-					ScheduleDelay:      intPtr(0),
-					Exporter: config.SpanExporter{
-						OTLP: &config.OTLP{
-							Protocol:    "grpc/protobuf",
-							Endpoint:    "http://localhost:4317",
-							Compression: strPtr("gzip"),
-							Timeout:     intPtr(1000),
-							Headers: map[string]string{
-								"test": "test1",
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "batch/otlp-grpc-exporter-no-scheme",
-			processor: config.SpanProcessor{
-				Batch: &config.BatchSpanProcessor{
-					MaxExportBatchSize: intPtr(0),
-					ExportTimeout:      intPtr(0),
-					MaxQueueSize:       intPtr(0),
-					ScheduleDelay:      intPtr(0),
-					Exporter: config.SpanExporter{
-						OTLP: &config.OTLP{
-							Protocol:    "grpc/protobuf",
-							Endpoint:    "localhost:4317",
-							Compression: strPtr("gzip"),
-							Timeout:     intPtr(1000),
-							Headers: map[string]string{
-								"test": "test1",
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "batch/otlp-grpc-invalid-endpoint",
-			processor: config.SpanProcessor{
-				Batch: &config.BatchSpanProcessor{
-					MaxExportBatchSize: intPtr(0),
-					ExportTimeout:      intPtr(0),
-					MaxQueueSize:       intPtr(0),
-					ScheduleDelay:      intPtr(0),
-					Exporter: config.SpanExporter{
-						OTLP: &config.OTLP{
-							Protocol:    "grpc/protobuf",
-							Endpoint:    " ",
-							Compression: strPtr("gzip"),
-							Timeout:     intPtr(1000),
-							Headers: map[string]string{
-								"test": "test1",
-							},
-						},
-					},
-				},
-			},
-			err: &url.Error{Op: "parse", URL: "http:// ", Err: url.InvalidHostError(" ")},
-		},
-		{
-			name: "batch/otlp-grpc-invalid-compression",
-			processor: config.SpanProcessor{
-				Batch: &config.BatchSpanProcessor{
-					MaxExportBatchSize: intPtr(0),
-					ExportTimeout:      intPtr(0),
-					MaxQueueSize:       intPtr(0),
-					ScheduleDelay:      intPtr(0),
-					Exporter: config.SpanExporter{
-						OTLP: &config.OTLP{
-							Protocol:    "grpc/protobuf",
-							Endpoint:    "localhost:4317",
-							Compression: strPtr("invalid"),
-							Timeout:     intPtr(1000),
-							Headers: map[string]string{
-								"test": "test1",
-							},
-						},
-					},
-				},
-			},
-			err: errors.New("unsupported compression \"invalid\""),
-		},
-		{
-			name: "batch/otlp-http-exporter",
-			processor: config.SpanProcessor{
-				Batch: &config.BatchSpanProcessor{
-					MaxExportBatchSize: intPtr(0),
-					ExportTimeout:      intPtr(0),
-					MaxQueueSize:       intPtr(0),
-					ScheduleDelay:      intPtr(0),
-					Exporter: config.SpanExporter{
-						OTLP: &config.OTLP{
+			name: "periodic/otlp-http-cumulative-temporality",
+			reader: config.MetricReader{
+				Periodic: &config.PeriodicMetricReader{
+					Exporter: config.MetricExporter{
+						OTLP: &config.OTLPMetric{
 							Protocol:    "http/protobuf",
-							Endpoint:    "http://localhost:4318",
-							Compression: strPtr("gzip"),
-							Timeout:     intPtr(1000),
-							Headers: map[string]string{
-								"test": "test1",
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "batch/otlp-http-exporter-with-path",
-			processor: config.SpanProcessor{
-				Batch: &config.BatchSpanProcessor{
-					MaxExportBatchSize: intPtr(0),
-					ExportTimeout:      intPtr(0),
-					MaxQueueSize:       intPtr(0),
-					ScheduleDelay:      intPtr(0),
-					Exporter: config.SpanExporter{
-						OTLP: &config.OTLP{
-							Protocol:    "http/protobuf",
-							Endpoint:    "http://localhost:4318/path/123",
+							Endpoint:    "localhost:4318",
 							Compression: strPtr("none"),
 							Timeout:     intPtr(1000),
 							Headers: map[string]string{
 								"test": "test1",
 							},
+							TemporalityPreference: strPtr("cumulative"),
 						},
 					},
 				},
 			},
+			wantReader: sdkmetric.NewPeriodicReader(otlpHTTPExporter),
 		},
 		{
-			name: "batch/otlp-http-exporter-no-endpoint",
-			processor: config.SpanProcessor{
-				Batch: &config.BatchSpanProcessor{
-					MaxExportBatchSize: intPtr(0),
-					ExportTimeout:      intPtr(0),
-					MaxQueueSize:       intPtr(0),
-					ScheduleDelay:      intPtr(0),
-					Exporter: config.SpanExporter{
-						OTLP: &config.OTLP{
-							Protocol:    "http/protobuf",
-							Compression: strPtr("gzip"),
-							Timeout:     intPtr(1000),
-							Headers: map[string]string{
-								"test": "test1",
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "batch/otlp-http-exporter-no-scheme",
-			processor: config.SpanProcessor{
-				Batch: &config.BatchSpanProcessor{
-					MaxExportBatchSize: intPtr(0),
-					ExportTimeout:      intPtr(0),
-					MaxQueueSize:       intPtr(0),
-					ScheduleDelay:      intPtr(0),
-					Exporter: config.SpanExporter{
-						OTLP: &config.OTLP{
+			name: "periodic/otlp-http-lowmemory-temporality",
+			reader: config.MetricReader{
+				Periodic: &config.PeriodicMetricReader{
+					Exporter: config.MetricExporter{
+						OTLP: &config.OTLPMetric{
 							Protocol:    "http/protobuf",
 							Endpoint:    "localhost:4318",
-							Compression: strPtr("gzip"),
+							Compression: strPtr("none"),
 							Timeout:     intPtr(1000),
 							Headers: map[string]string{
 								"test": "test1",
 							},
+							TemporalityPreference: strPtr("lowmemory"),
 						},
 					},
 				},
 			},
+			wantReader: sdkmetric.NewPeriodicReader(otlpHTTPExporter),
 		},
 		{
-			name: "batch/otlp-http-invalid-endpoint",
-			processor: config.SpanProcessor{
-				Batch: &config.BatchSpanProcessor{
-					MaxExportBatchSize: intPtr(0),
-					ExportTimeout:      intPtr(0),
-					MaxQueueSize:       intPtr(0),
-					ScheduleDelay:      intPtr(0),
-					Exporter: config.SpanExporter{
-						OTLP: &config.OTLP{
-							Protocol:    "http/protobuf",
-							Endpoint:    " ",
-							Compression: strPtr("gzip"),
-							Timeout:     intPtr(1000),
-							Headers: map[string]string{
-								"test": "test1",
-							},
-						},
-					},
-				},
-			},
-			err: &url.Error{Op: "parse", URL: "http:// ", Err: url.InvalidHostError(" ")},
-		},
-		{
-			name: "batch/otlp-http-invalid-compression",
-			processor: config.SpanProcessor{
-				Batch: &config.BatchSpanProcessor{
-					MaxExportBatchSize: intPtr(0),
-					ExportTimeout:      intPtr(0),
-					MaxQueueSize:       intPtr(0),
-					ScheduleDelay:      intPtr(0),
-					Exporter: config.SpanExporter{
-						OTLP: &config.OTLP{
+			name: "periodic/otlp-http-delta-temporality",
+			reader: config.MetricReader{
+				Periodic: &config.PeriodicMetricReader{
+					Exporter: config.MetricExporter{
+						OTLP: &config.OTLPMetric{
 							Protocol:    "http/protobuf",
 							Endpoint:    "localhost:4318",
-							Compression: strPtr("invalid"),
+							Compression: strPtr("none"),
 							Timeout:     intPtr(1000),
 							Headers: map[string]string{
 								"test": "test1",
 							},
+							TemporalityPreference: strPtr("delta"),
 						},
 					},
 				},
 			},
-			err: errors.New("unsupported compression \"invalid\""),
+			wantReader: sdkmetric.NewPeriodicReader(otlpHTTPExporter),
+		},
+		{
+			name: "periodic/otlp-http-invalid-temporality",
+			reader: config.MetricReader{
+				Periodic: &config.PeriodicMetricReader{
+					Exporter: config.MetricExporter{
+						OTLP: &config.OTLPMetric{
+							Protocol:    "http/protobuf",
+							Endpoint:    "localhost:4318",
+							Compression: strPtr("none"),
+							Timeout:     intPtr(1000),
+							Headers: map[string]string{
+								"test": "test1",
+							},
+							TemporalityPreference: strPtr("invalid"),
+						},
+					},
+				},
+			},
+			wantErr: errors.New("unsupported temporality preference \"invalid\""),
 		},
 	}
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			processor, err := InitSpanProcessor(context.Background(), tt.processor)
+			gotReader, server, err := InitMetricReader(context.Background(), tt.reader, make(chan error), &sync.WaitGroup{})
+
 			defer func() {
-				if processor != nil {
-					assert.NoError(t, processor.Shutdown(context.Background()))
+				if gotReader != nil {
+					assert.NoError(t, gotReader.Shutdown(context.Background()))
+				}
+				if server != nil {
+					assert.NoError(t, server.Shutdown(context.Background()))
 				}
 			}()
-			assert.Equal(t, tt.err, err)
+
+			assert.Equal(t, tt.wantErr, err)
+
+			if tt.wantReader == nil {
+				assert.Nil(t, gotReader)
+			} else {
+				assert.Equal(t, reflect.TypeOf(tt.wantReader), reflect.TypeOf(gotReader))
+
+				if reflect.TypeOf(tt.wantReader).String() == "*metric.PeriodicReader" {
+					wantExporterType := reflect.Indirect(reflect.ValueOf(tt.wantReader)).FieldByName("exporter").Elem().Type()
+					gotExporterType := reflect.Indirect(reflect.ValueOf(gotReader)).FieldByName("exporter").Elem().Type()
+					assert.Equal(t, wantExporterType, gotExporterType)
+				}
+			}
 		})
 	}
 }

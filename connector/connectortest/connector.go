@@ -17,9 +17,9 @@ import (
 
 var nopType = component.MustNewType("nop")
 
-// NewNopCreateSettings returns a new nop settings for Create* functions.
-func NewNopCreateSettings() connector.CreateSettings {
-	return connector.CreateSettings{
+// NewNopSettings returns a new nop settings for Create* functions.
+func NewNopSettings() connector.Settings {
+	return connector.Settings{
 		ID:                component.NewIDWithName(nopType, uuid.NewString()),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),
@@ -47,39 +47,39 @@ func NewNopFactory() connector.Factory {
 	)
 }
 
-func createTracesToTracesConnector(context.Context, connector.CreateSettings, component.Config, consumer.Traces) (connector.Traces, error) {
+func createTracesToTracesConnector(context.Context, connector.Settings, component.Config, consumer.Traces) (connector.Traces, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 
-func createTracesToMetricsConnector(context.Context, connector.CreateSettings, component.Config, consumer.Metrics) (connector.Traces, error) {
+func createTracesToMetricsConnector(context.Context, connector.Settings, component.Config, consumer.Metrics) (connector.Traces, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 
-func createTracesToLogsConnector(context.Context, connector.CreateSettings, component.Config, consumer.Logs) (connector.Traces, error) {
+func createTracesToLogsConnector(context.Context, connector.Settings, component.Config, consumer.Logs) (connector.Traces, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 
-func createMetricsToTracesConnector(context.Context, connector.CreateSettings, component.Config, consumer.Traces) (connector.Metrics, error) {
+func createMetricsToTracesConnector(context.Context, connector.Settings, component.Config, consumer.Traces) (connector.Metrics, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 
-func createMetricsToMetricsConnector(context.Context, connector.CreateSettings, component.Config, consumer.Metrics) (connector.Metrics, error) {
+func createMetricsToMetricsConnector(context.Context, connector.Settings, component.Config, consumer.Metrics) (connector.Metrics, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 
-func createMetricsToLogsConnector(context.Context, connector.CreateSettings, component.Config, consumer.Logs) (connector.Metrics, error) {
+func createMetricsToLogsConnector(context.Context, connector.Settings, component.Config, consumer.Logs) (connector.Metrics, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 
-func createLogsToTracesConnector(context.Context, connector.CreateSettings, component.Config, consumer.Traces) (connector.Logs, error) {
+func createLogsToTracesConnector(context.Context, connector.Settings, component.Config, consumer.Traces) (connector.Logs, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 
-func createLogsToMetricsConnector(context.Context, connector.CreateSettings, component.Config, consumer.Metrics) (connector.Logs, error) {
+func createLogsToMetricsConnector(context.Context, connector.Settings, component.Config, consumer.Metrics) (connector.Logs, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 
-func createLogsToLogsConnector(context.Context, connector.CreateSettings, component.Config, consumer.Logs) (connector.Logs, error) {
+func createLogsToLogsConnector(context.Context, connector.Settings, component.Config, consumer.Logs) (connector.Logs, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 
@@ -91,6 +91,9 @@ type nopConnector struct {
 }
 
 // NewNopBuilder returns a connector.Builder that constructs nop receivers.
+//
+// Deprecated: [v0.108.0] this builder is being internalized within the service module,
+// and will be removed soon.
 func NewNopBuilder() *connector.Builder {
 	nopFactory := NewNopFactory()
 	// Use a different ID than receivertest and exportertest to avoid ambiguous

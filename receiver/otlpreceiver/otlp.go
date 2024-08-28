@@ -14,6 +14,7 @@ import (
 	"google.golang.org/grpc"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
@@ -40,13 +41,13 @@ type otlpReceiver struct {
 	obsrepGRPC *receiverhelper.ObsReport
 	obsrepHTTP *receiverhelper.ObsReport
 
-	settings *receiver.CreateSettings
+	settings *receiver.Settings
 }
 
 // newOtlpReceiver just creates the OpenTelemetry receiver services. It is the caller's
 // responsibility to invoke the respective Start*Reception methods as well
 // as the various Stop*Reception methods to end it.
-func newOtlpReceiver(cfg *Config, set *receiver.CreateSettings) (*otlpReceiver, error) {
+func newOtlpReceiver(cfg *Config, set *receiver.Settings) (*otlpReceiver, error) {
 	r := &otlpReceiver{
 		cfg:         cfg,
 		nextTraces:  nil,
@@ -83,7 +84,7 @@ func (r *otlpReceiver) startGRPCServer(host component.Host) error {
 	}
 
 	var err error
-	if r.serverGRPC, err = r.cfg.GRPC.ToServerContext(context.Background(), host, r.settings.TelemetrySettings); err != nil {
+	if r.serverGRPC, err = r.cfg.GRPC.ToServer(context.Background(), host, r.settings.TelemetrySettings); err != nil {
 		return err
 	}
 
@@ -110,13 +111,13 @@ func (r *otlpReceiver) startGRPCServer(host component.Host) error {
 		defer r.shutdownWG.Done()
 
 		if errGrpc := r.serverGRPC.Serve(gln); errGrpc != nil && !errors.Is(errGrpc, grpc.ErrServerStopped) {
-			r.settings.ReportStatus(component.NewFatalErrorEvent(errGrpc))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errGrpc))
 		}
 	}()
 	return nil
 }
 
-func (r *otlpReceiver) startHTTPServer(host component.Host) error {
+func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host) error {
 	// If HTTP is not enabled, nothing to start.
 	if r.cfg.HTTP == nil {
 		return nil
@@ -145,13 +146,13 @@ func (r *otlpReceiver) startHTTPServer(host component.Host) error {
 	}
 
 	var err error
-	if r.serverHTTP, err = r.cfg.HTTP.ToServer(host, r.settings.TelemetrySettings, httpMux, confighttp.WithErrorHandler(errorHandler)); err != nil {
+	if r.serverHTTP, err = r.cfg.HTTP.ToServer(ctx, host, r.settings.TelemetrySettings, httpMux, confighttp.WithErrorHandler(errorHandler)); err != nil {
 		return err
 	}
 
 	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", r.cfg.HTTP.ServerConfig.Endpoint))
 	var hln net.Listener
-	if hln, err = r.cfg.HTTP.ServerConfig.ToListener(); err != nil {
+	if hln, err = r.cfg.HTTP.ServerConfig.ToListener(ctx); err != nil {
 		return err
 	}
 
@@ -160,7 +161,7 @@ func (r *otlpReceiver) startHTTPServer(host component.Host) error {
 		defer r.shutdownWG.Done()
 
 		if errHTTP := r.serverHTTP.Serve(hln); errHTTP != nil && !errors.Is(errHTTP, http.ErrServerClosed) {
-			r.settings.ReportStatus(component.NewFatalErrorEvent(errHTTP))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 		}
 	}()
 	return nil
@@ -172,7 +173,7 @@ func (r *otlpReceiver) Start(ctx context.Context, host component.Host) error {
 	if err := r.startGRPCServer(host); err != nil {
 		return err
 	}
-	if err := r.startHTTPServer(host); err != nil {
+	if err := r.startHTTPServer(ctx, host); err != nil {
 		// It's possible that a valid GRPC server configuration was specified,
 		// but an invalid HTTP configuration. If that's the case, the successfully
 		// started GRPC server must be shutdown to ensure no goroutines are leaked.

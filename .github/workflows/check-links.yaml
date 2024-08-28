@@ -1,7 +1,7 @@
 name: check-links
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
 
 concurrency:
@@ -21,7 +21,7 @@ jobs:
       md: ${{ steps.changes.outputs.md }}
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           fetch-depth: 0
       - name: Get changed files
@@ -34,16 +34,16 @@ jobs:
     if: ${{needs.changedfiles.outputs.md}}
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           fetch-depth: 0
 
       - name: Install markdown-link-check
-        run: npm install -g markdown-link-check
+        run: npm install
 
       - name: Run markdown-link-check
         run: |
-          markdown-link-check \
+          npx --no -- markdown-link-check \
             --verbose \
             --config .github/workflows/check_links_config.json \
             ${{needs.changedfiles.outputs.md}} \

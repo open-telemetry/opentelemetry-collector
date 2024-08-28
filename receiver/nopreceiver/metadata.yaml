@@ -1,7 +1,8 @@
 type: nop
+github_project: open-telemetry/opentelemetry-collector
 
 status:
   class: receiver
   stability:
-    development: [traces, metrics, logs]
-  distributions: []
+    beta: [traces, metrics, logs]
+  distributions: [core, contrib]

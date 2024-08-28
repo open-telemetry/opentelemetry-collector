@@ -18,12 +18,12 @@ import (
 
 const UseLocalHostAsDefaultHostID = "component.UseLocalHostAsDefaultHost"
 
-// useLocalHostAsDefaultHostfeatureGate is the feature gate that controls whether
+// UseLocalHostAsDefaultHostfeatureGate is the feature gate that controls whether
 // server-like receivers and extensions such as the OTLP receiver use localhost as the default host for their endpoints.
-var useLocalHostAsDefaultHostfeatureGate = mustRegisterOrLoad(
+var UseLocalHostAsDefaultHostfeatureGate = mustRegisterOrLoad(
 	featuregate.GlobalRegistry(),
 	UseLocalHostAsDefaultHostID,
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("controls whether server-like receivers and extensions such as the OTLP receiver use localhost as the default host for their endpoints"),
 )
 
@@ -51,7 +51,7 @@ func mustRegisterOrLoad(reg *featuregate.Registry, id string, stage featuregate.
 // EndpointForPort gets the endpoint for a given port using localhost or 0.0.0.0 depending on the feature gate.
 func EndpointForPort(port int) string {
 	host := "localhost"
-	if !useLocalHostAsDefaultHostfeatureGate.IsEnabled() {
+	if !UseLocalHostAsDefaultHostfeatureGate.IsEnabled() {
 		host = "0.0.0.0"
 	}
 	return fmt.Sprintf("%s:%d", host, port)
@@ -59,9 +59,9 @@ func EndpointForPort(port int) string {
 
 // LogAboutUseLocalHostAsDefault logs about the upcoming change from 0.0.0.0 to localhost on server-like components.
 func LogAboutUseLocalHostAsDefault(logger *zap.Logger) {
-	if !useLocalHostAsDefaultHostfeatureGate.IsEnabled() {
-		logger.Warn(
-			"The default endpoints for all servers in components will change to use localhost instead of 0.0.0.0 in a future version. Use the feature gate to preview the new default.",
+	if UseLocalHostAsDefaultHostfeatureGate.IsEnabled() {
+		logger.Info(
+			"The default endpoints for all servers in components have changed to use localhost instead of 0.0.0.0. Disable the feature gate to temporarily revert to the previous default.",
 			zap.String("feature gate ID", UseLocalHostAsDefaultHostID),
 		)
 	}

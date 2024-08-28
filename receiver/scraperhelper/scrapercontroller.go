@@ -33,7 +33,7 @@ func AddScraper(scraper Scraper) ScraperControllerOption {
 	}
 }
 
-// WithTickerChannel allows you to override the scraper controllers ticker
+// WithTickerChannel allows you to override the scraper controller's ticker
 // channel to specify when scrape is called. This is only expected to be
 // used by tests.
 func WithTickerChannel(tickerCh <-chan time.Time) ScraperControllerOption {
@@ -60,13 +60,13 @@ type controller struct {
 	terminated  chan struct{}
 
 	obsrecv      *receiverhelper.ObsReport
-	recvSettings receiver.CreateSettings
+	recvSettings receiver.Settings
 }
 
 // NewScraperControllerReceiver creates a Receiver with the configured options, that can control multiple scrapers.
 func NewScraperControllerReceiver(
 	cfg *ControllerConfig,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	nextConsumer consumer.Metrics,
 	options ...ScraperControllerOption,
 ) (component.Component, error) {
@@ -103,7 +103,7 @@ func NewScraperControllerReceiver(
 
 	sc.obsScrapers = make([]*ObsReport, len(sc.scrapers))
 	for i, scraper := range sc.scrapers {
-		scrp, err := NewObsReport(ObsReportSettings{
+		scrp, err := newScraper(ObsReportSettings{
 			ReceiverID:             sc.id,
 			Scraper:                scraper.ID(),
 			ReceiverCreateSettings: sc.recvSettings,
@@ -163,7 +163,7 @@ func (sc *controller) startScraping() {
 
 			sc.tickerCh = ticker.C
 		}
-		// Call scrape method on initialision to ensure
+		// Call scrape method on initialization to ensure
 		// that scrapers start from when the component starts
 		// instead of waiting for the full duration to start.
 		sc.scrapeMetricsAndReport()

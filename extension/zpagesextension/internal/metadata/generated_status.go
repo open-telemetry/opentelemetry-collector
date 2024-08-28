@@ -3,24 +3,14 @@
 package metadata
 
 import (
-	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/trace"
-
 	"go.opentelemetry.io/collector/component"
 )
 
 var (
-	Type = component.MustNewType("zpages")
+	Type      = component.MustNewType("zpages")
+	ScopeName = "go.opentelemetry.io/collector/extension/zpagesextension"
 )
 
 const (
 	ExtensionStability = component.StabilityLevelBeta
 )
-
-func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("go.opentelemetry.io/collector/extension/zpagesextension")
-}
-
-func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("go.opentelemetry.io/collector/extension/zpagesextension")
-}

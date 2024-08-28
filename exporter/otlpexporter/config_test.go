@@ -19,13 +19,14 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 func TestUnmarshalDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, component.UnmarshalConfig(confmap.New(), cfg))
+	assert.NoError(t, confmap.New().Unmarshal(&cfg))
 	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
 }
 
@@ -34,7 +35,7 @@ func TestUnmarshalConfig(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, component.UnmarshalConfig(cm, cfg))
+	assert.NoError(t, cm.Unmarshal(&cfg))
 	assert.Equal(t,
 		&Config{
 			TimeoutSettings: exporterhelper.TimeoutSettings{
@@ -53,6 +54,16 @@ func TestUnmarshalConfig(t *testing.T) {
 				NumConsumers: 2,
 				QueueSize:    10,
 			},
+			BatcherConfig: exporterbatcher.Config{
+				Enabled:      true,
+				FlushTimeout: 200 * time.Millisecond,
+				MinSizeConfig: exporterbatcher.MinSizeConfig{
+					MinSizeItems: 1000,
+				},
+				MaxSizeConfig: exporterbatcher.MaxSizeConfig{
+					MaxSizeItems: 10000,
+				},
+			},
 			ClientConfig: configgrpc.ClientConfig{
 				Headers: map[string]configopaque.String{
 					"can you have a . here?": "F0000000-0000-0000-0000-000000000000",
@@ -62,7 +73,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				Endpoint:    "1.2.3.4:1234",
 				Compression: "gzip",
 				TLSSetting: configtls.ClientConfig{
-					TLSSetting: configtls.Config{
+					Config: configtls.Config{
 						CAFile: "/var/lib/mycert.pem",
 					},
 					Insecure: false,
@@ -111,14 +122,40 @@ func TestUnmarshalInvalidConfig(t *testing.T) {
 			name:     "invalid_tls",
 			errorMsg: `invalid TLS min_version: unsupported TLS version: "asd"`,
 		},
+		{
+			name:     "missing_port",
+			errorMsg: `missing port in address`,
+		},
+		{
+			name:     "invalid_port",
+			errorMsg: `invalid port "port"`,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
 			sub, err := cm.Sub(test.name)
 			require.NoError(t, err)
-			assert.NoError(t, component.UnmarshalConfig(sub, cfg))
+			assert.NoError(t, sub.Unmarshal(&cfg))
 			assert.ErrorContains(t, component.ValidateConfig(cfg), test.errorMsg)
 		})
 	}
 
+}
+
+func TestValidDNSEndpoint(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Endpoint = "dns://authority/backend.example.com:4317"
+	assert.NoError(t, cfg.Validate())
+}
+
+func TestSanitizeEndpoint(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Endpoint = "dns://authority/backend.example.com:4317"
+	assert.Equal(t, "authority/backend.example.com:4317", cfg.sanitizedEndpoint())
+	cfg.Endpoint = "dns:///backend.example.com:4317"
+	assert.Equal(t, "backend.example.com:4317", cfg.sanitizedEndpoint())
+	cfg.Endpoint = "dns:////backend.example.com:4317"
+	assert.Equal(t, "/backend.example.com:4317", cfg.sanitizedEndpoint())
 }

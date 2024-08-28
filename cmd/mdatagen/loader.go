@@ -11,8 +11,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
+	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -108,6 +111,10 @@ type metric struct {
 	// be appended to the description used in generated documentation.
 	ExtendedDocumentation string `mapstructure:"extended_documentation"`
 
+	// Optional can be used to specify metrics that may
+	// or may not be present in all cases, depending on configuration.
+	Optional bool `mapstructure:"optional"`
+
 	// Unit of the metric.
 	Unit *string `mapstructure:"unit"`
 
@@ -115,6 +122,8 @@ type metric struct {
 	Sum *sum `mapstructure:"sum,omitempty"`
 	// Gauge stores metadata for gauge metric type
 	Gauge *gauge `mapstructure:"gauge,omitempty"`
+	// Gauge stores metadata for gauge metric type
+	Histogram *histogram `mapstructure:"histogram,omitempty"`
 
 	// Attributes is the list of attributes that the metric emits.
 	Attributes []attributeName `mapstructure:"attributes"`
@@ -132,6 +141,9 @@ func (m metric) Data() MetricData {
 	}
 	if m.Gauge != nil {
 		return m.Gauge
+	}
+	if m.Histogram != nil {
+		return m.Histogram
 	}
 	return nil
 }
@@ -152,6 +164,10 @@ type attribute struct {
 	NameOverride string `mapstructure:"name_override"`
 	// Enabled defines whether the attribute is enabled by default.
 	Enabled bool `mapstructure:"enabled"`
+	// Include can be used to filter attributes.
+	Include []filter.Config `mapstructure:"include"`
+	// Include can be used to filter attributes.
+	Exclude []filter.Config `mapstructure:"exclude"`
 	// Enum can optionally describe the set of values to which the attribute can belong.
 	Enum []string `mapstructure:"enum"`
 	// Type is an attribute type.
@@ -195,11 +211,30 @@ func (a attribute) TestValue() string {
 	return ""
 }
 
+type ignore struct {
+	Top []string `mapstructure:"top"`
+	Any []string `mapstructure:"any"`
+}
+
+type goLeak struct {
+	Skip     bool   `mapstructure:"skip"`
+	Ignore   ignore `mapstructure:"ignore"`
+	Setup    string `mapstructure:"setup"`
+	Teardown string `mapstructure:"teardown"`
+}
+
 type tests struct {
-	Config              any  `mapstructure:"config"`
-	SkipLifecycle       bool `mapstructure:"skip_lifecycle"`
-	SkipShutdown        bool `mapstructure:"skip_shutdown"`
-	ExpectConsumerError bool `mapstructure:"expect_consumer_error"`
+	Config              any    `mapstructure:"config"`
+	SkipLifecycle       bool   `mapstructure:"skip_lifecycle"`
+	SkipShutdown        bool   `mapstructure:"skip_shutdown"`
+	GoLeak              goLeak `mapstructure:"goleak"`
+	ExpectConsumerError bool   `mapstructure:"expect_consumer_error"`
+	Host                string `mapstructure:"host"`
+}
+
+type telemetry struct {
+	Level   configtelemetry.Level `mapstructure:"level"`
+	Metrics map[metricName]metric `mapstructure:"metrics"`
 }
 
 type metadata struct {
@@ -209,6 +244,8 @@ type metadata struct {
 	Parent string `mapstructure:"parent"`
 	// Status information for the component.
 	Status *Status `mapstructure:"status"`
+	// Telemetry information for the component.
+	Telemetry telemetry `mapstructure:"telemetry"`
 	// SemConvVersion is a version number of OpenTelemetry semantic conventions applied to the scraped metrics.
 	SemConvVersion string `mapstructure:"sem_conv_version"`
 	// ResourceAttributes that can be emitted by the component.
@@ -217,11 +254,13 @@ type metadata struct {
 	Attributes map[attributeName]attribute `mapstructure:"attributes"`
 	// Metrics that can be emitted by the component.
 	Metrics map[metricName]metric `mapstructure:"metrics"`
+	// GithubProject is the project where the component README lives in the format of org/repo, defaults to open-telemetry/opentelemetry-collector-contrib
+	GithubProject string `mapstructure:"github_project"`
 	// ScopeName of the metrics emitted by the component.
 	ScopeName string `mapstructure:"scope_name"`
 	// ShortFolderName is the shortened folder name of the component, removing class if present
 	ShortFolderName string `mapstructure:"-"`
-
+	// Tests is the set of tests generated with the component
 	Tests tests `mapstructure:"tests"`
 }
 
@@ -239,7 +278,7 @@ type templateContext struct {
 }
 
 func loadMetadata(filePath string) (metadata, error) {
-	cp, err := fileprovider.NewWithSettings(confmap.ProviderSettings{}).Retrieve(context.Background(), "file:"+filePath, nil)
+	cp, err := fileprovider.NewFactory().Create(confmaptest.NewNopProviderSettings()).Retrieve(context.Background(), "file:"+filePath, nil)
 	if err != nil {
 		return metadata{}, err
 	}
@@ -249,7 +288,7 @@ func loadMetadata(filePath string) (metadata, error) {
 		return metadata{}, err
 	}
 
-	md := metadata{ShortFolderName: shortFolderName(filePath)}
+	md := metadata{ShortFolderName: shortFolderName(filePath), Tests: tests{Host: "componenttest.NewNopHost()"}}
 	if err = conf.Unmarshal(&md); err != nil {
 		return md, err
 	}

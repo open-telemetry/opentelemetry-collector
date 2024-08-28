@@ -3,14 +3,12 @@
 package metadata
 
 import (
-	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/trace"
-
 	"go.opentelemetry.io/collector/component"
 )
 
 var (
-	Type = component.MustNewType("sample")
+	Type      = component.MustNewType("sample")
+	ScopeName = "go.opentelemetry.io/collector/internal/receiver/samplereceiver"
 )
 
 const (
@@ -18,11 +16,3 @@ const (
 	TracesStability  = component.StabilityLevelBeta
 	MetricsStability = component.StabilityLevelStable
 )
-
-func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("go.opentelemetry.io/collector/internal/receiver/samplereceiver")
-}
-
-func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("go.opentelemetry.io/collector/internal/receiver/samplereceiver")
-}

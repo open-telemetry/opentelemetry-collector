@@ -17,9 +17,9 @@ import (
 
 var nopType = component.MustNewType("nop")
 
-// NewNopCreateSettings returns a new nop settings for Create*Processor functions.
-func NewNopCreateSettings() processor.CreateSettings {
-	return processor.CreateSettings{
+// NewNopSettings returns a new nop settings for Create*Processor functions.
+func NewNopSettings() processor.Settings {
+	return processor.Settings{
 		ID:                component.NewIDWithName(nopType, uuid.NewString()),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),
@@ -37,15 +37,15 @@ func NewNopFactory() processor.Factory {
 	)
 }
 
-func createTracesProcessor(context.Context, processor.CreateSettings, component.Config, consumer.Traces) (processor.Traces, error) {
+func createTracesProcessor(context.Context, processor.Settings, component.Config, consumer.Traces) (processor.Traces, error) {
 	return nopInstance, nil
 }
 
-func createMetricsProcessor(context.Context, processor.CreateSettings, component.Config, consumer.Metrics) (processor.Metrics, error) {
+func createMetricsProcessor(context.Context, processor.Settings, component.Config, consumer.Metrics) (processor.Metrics, error) {
 	return nopInstance, nil
 }
 
-func createLogsProcessor(context.Context, processor.CreateSettings, component.Config, consumer.Logs) (processor.Logs, error) {
+func createLogsProcessor(context.Context, processor.Settings, component.Config, consumer.Logs) (processor.Logs, error) {
 	return nopInstance, nil
 }
 
@@ -63,6 +63,9 @@ type nopProcessor struct {
 }
 
 // NewNopBuilder returns a processor.Builder that constructs nop processors.
+//
+// Deprecated: [v0.108.0] this builder is being internalized within the service module,
+// and will be removed soon.
 func NewNopBuilder() *processor.Builder {
 	nopFactory := NewNopFactory()
 	return processor.NewBuilder(

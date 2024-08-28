@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/internal/httphelper"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -53,7 +54,7 @@ const (
 )
 
 // Create new exporter.
-func newExporter(cfg component.Config, set exporter.CreateSettings) (*baseExporter, error) {
+func newExporter(cfg component.Config, set exporter.Settings) (*baseExporter, error) {
 	oCfg := cfg.(*Config)
 
 	if oCfg.Endpoint != "" {
@@ -77,8 +78,8 @@ func newExporter(cfg component.Config, set exporter.CreateSettings) (*baseExport
 
 // start actually creates the HTTP client. The client construction is deferred till this point as this
 // is the only place we get hold of Extensions which are required to construct auth round tripper.
-func (e *baseExporter) start(_ context.Context, host component.Host) error {
-	client, err := e.config.ClientConfig.ToClient(host, e.settings)
+func (e *baseExporter) start(ctx context.Context, host component.Host) error {
+	client, err := e.config.ClientConfig.ToClient(ctx, host, e.settings)
 	if err != nil {
 		return err
 	}
@@ -184,16 +185,18 @@ func (e *baseExporter) export(ctx context.Context, url string, request []byte, p
 	respStatus := readResponseStatus(resp)
 
 	// Format the error message. Use the status if it is present in the response.
+	var errString string
 	var formattedErr error
 	if respStatus != nil {
-		formattedErr = fmt.Errorf(
+		errString = fmt.Sprintf(
 			"error exporting items, request to %s responded with HTTP Status Code %d, Message=%s, Details=%v",
 			url, resp.StatusCode, respStatus.Message, respStatus.Details)
 	} else {
-		formattedErr = fmt.Errorf(
+		errString = fmt.Sprintf(
 			"error exporting items, request to %s responded with HTTP Status Code %d",
 			url, resp.StatusCode)
 	}
+	formattedErr = httphelper.NewStatusFromMsgAndHTTPCode(errString, resp.StatusCode).Err()
 
 	if isRetryableStatusCode(resp.StatusCode) {
 		// A retry duration of 0 seconds will trigger the default backoff policy
@@ -301,6 +304,9 @@ func handlePartialSuccessResponse(resp *http.Response, partialSuccessHandler par
 type partialSuccessHandler func(bytes []byte, contentType string) error
 
 func (e *baseExporter) tracesPartialSuccessHandler(protoBytes []byte, contentType string) error {
+	if protoBytes == nil {
+		return nil
+	}
 	exportResponse := ptraceotlp.NewExportResponse()
 	switch contentType {
 	case protobufContentType:
@@ -328,6 +334,9 @@ func (e *baseExporter) tracesPartialSuccessHandler(protoBytes []byte, contentTyp
 }
 
 func (e *baseExporter) metricsPartialSuccessHandler(protoBytes []byte, contentType string) error {
+	if protoBytes == nil {
+		return nil
+	}
 	exportResponse := pmetricotlp.NewExportResponse()
 	switch contentType {
 	case protobufContentType:
@@ -355,6 +364,9 @@ func (e *baseExporter) metricsPartialSuccessHandler(protoBytes []byte, contentTy
 }
 
 func (e *baseExporter) logsPartialSuccessHandler(protoBytes []byte, contentType string) error {
+	if protoBytes == nil {
+		return nil
+	}
 	exportResponse := plogotlp.NewExportResponse()
 	switch contentType {
 	case protobufContentType:

@@ -30,9 +30,9 @@ func TestExportTraceDataOp(t *testing.T) {
 		parentCtx, parentSpan := tt.TelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
-		obsrep, err := newExporter(ObsReportSettings{
-			ExporterID:             exporterID,
-			ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		obsrep, err := newExporter(obsReportSettings{
+			exporterID:             exporterID,
+			exporterCreateSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		})
 		require.NoError(t, err)
 
@@ -41,9 +41,9 @@ func TestExportTraceDataOp(t *testing.T) {
 			{items: 14, err: errFake},
 		}
 		for i := range params {
-			ctx := obsrep.StartTracesOp(parentCtx)
+			ctx := obsrep.startTracesOp(parentCtx)
 			assert.NotNil(t, ctx)
-			obsrep.EndTracesOp(ctx, params[i].items, params[i].err)
+			obsrep.endTracesOp(ctx, params[i].items, params[i].err)
 		}
 
 		spans := tt.SpanRecorder.Ended()
@@ -78,9 +78,9 @@ func TestExportMetricsOp(t *testing.T) {
 		parentCtx, parentSpan := tt.TelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
-		obsrep, err := newExporter(ObsReportSettings{
-			ExporterID:             exporterID,
-			ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		obsrep, err := newExporter(obsReportSettings{
+			exporterID:             exporterID,
+			exporterCreateSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		})
 		require.NoError(t, err)
 
@@ -89,10 +89,10 @@ func TestExportMetricsOp(t *testing.T) {
 			{items: 23, err: errFake},
 		}
 		for i := range params {
-			ctx := obsrep.StartMetricsOp(parentCtx)
+			ctx := obsrep.startMetricsOp(parentCtx)
 			assert.NotNil(t, ctx)
 
-			obsrep.EndMetricsOp(ctx, params[i].items, params[i].err)
+			obsrep.endMetricsOp(ctx, params[i].items, params[i].err)
 		}
 
 		spans := tt.SpanRecorder.Ended()
@@ -127,9 +127,9 @@ func TestExportLogsOp(t *testing.T) {
 		parentCtx, parentSpan := tt.TelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
-		obsrep, err := newExporter(ObsReportSettings{
-			ExporterID:             exporterID,
-			ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		obsrep, err := newExporter(obsReportSettings{
+			exporterID:             exporterID,
+			exporterCreateSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		})
 		require.NoError(t, err)
 
@@ -138,10 +138,10 @@ func TestExportLogsOp(t *testing.T) {
 			{items: 23, err: errFake},
 		}
 		for i := range params {
-			ctx := obsrep.StartLogsOp(parentCtx)
+			ctx := obsrep.startLogsOp(parentCtx)
 			assert.NotNil(t, ctx)
 
-			obsrep.EndLogsOp(ctx, params[i].items, params[i].err)
+			obsrep.endLogsOp(ctx, params[i].items, params[i].err)
 		}
 
 		spans := tt.SpanRecorder.Ended()
@@ -176,14 +176,14 @@ func TestCheckExporterTracesViews(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	obsrep, err := NewObsReport(ObsReportSettings{
-		ExporterID:             exporterID,
-		ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+	obsrep, err := newExporter(obsReportSettings{
+		exporterID:             exporterID,
+		exporterCreateSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 	})
 	require.NoError(t, err)
-	ctx := obsrep.StartTracesOp(context.Background())
+	ctx := obsrep.startTracesOp(context.Background())
 	require.NotNil(t, ctx)
-	obsrep.EndTracesOp(ctx, 7, nil)
+	obsrep.endTracesOp(ctx, 7, nil)
 
 	assert.NoError(t, tt.CheckExporterTraces(7, 0))
 	assert.Error(t, tt.CheckExporterTraces(7, 7))
@@ -196,14 +196,14 @@ func TestCheckExporterMetricsViews(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	obsrep, err := NewObsReport(ObsReportSettings{
-		ExporterID:             exporterID,
-		ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+	obsrep, err := newExporter(obsReportSettings{
+		exporterID:             exporterID,
+		exporterCreateSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 	})
 	require.NoError(t, err)
-	ctx := obsrep.StartMetricsOp(context.Background())
+	ctx := obsrep.startMetricsOp(context.Background())
 	require.NotNil(t, ctx)
-	obsrep.EndMetricsOp(ctx, 7, nil)
+	obsrep.endMetricsOp(ctx, 7, nil)
 
 	assert.NoError(t, tt.CheckExporterMetrics(7, 0))
 	assert.Error(t, tt.CheckExporterMetrics(7, 7))
@@ -216,14 +216,14 @@ func TestCheckExporterLogsViews(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	obsrep, err := NewObsReport(ObsReportSettings{
-		ExporterID:             exporterID,
-		ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+	obsrep, err := newExporter(obsReportSettings{
+		exporterID:             exporterID,
+		exporterCreateSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 	})
 	require.NoError(t, err)
-	ctx := obsrep.StartLogsOp(context.Background())
+	ctx := obsrep.startLogsOp(context.Background())
 	require.NotNil(t, ctx)
-	obsrep.EndLogsOp(ctx, 7, nil)
+	obsrep.endLogsOp(ctx, 7, nil)
 
 	assert.NoError(t, tt.CheckExporterLogs(7, 0))
 	assert.Error(t, tt.CheckExporterLogs(7, 7))
@@ -237,11 +237,9 @@ type testParams struct {
 }
 
 func testTelemetry(t *testing.T, id component.ID, testFunc func(t *testing.T, tt componenttest.TestTelemetry)) {
-	t.Run("WithOTel", func(t *testing.T) {
-		tt, err := componenttest.SetupTelemetry(id)
-		require.NoError(t, err)
-		t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+	tt, err := componenttest.SetupTelemetry(id)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-		testFunc(t, tt)
-	})
+	testFunc(t, tt)
 }

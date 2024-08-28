@@ -6,17 +6,19 @@ package extensions
 import (
 	"context"
 	"errors"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
-	"go.opentelemetry.io/collector/service/internal/servicetelemetry"
+	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/status"
 )
 
@@ -83,9 +85,9 @@ func TestBuildExtensions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := New(context.Background(), Settings{
-				Telemetry:  servicetelemetry.NewNopTelemetrySettings(),
+				Telemetry:  componenttest.NewNopTelemetrySettings(),
 				BuildInfo:  component.NewDefaultBuildInfo(),
-				Extensions: extension.NewBuilder(tt.extensionsConfigs, tt.factories),
+				Extensions: builders.NewExtension(tt.extensionsConfigs, tt.factories),
 			}, tt.config)
 			require.Error(t, err)
 			assert.EqualError(t, err, tt.wantErrMsg)
@@ -158,10 +160,10 @@ func (tc testOrderCase) testOrdering(t *testing.T) {
 	var startOrder []string
 	var shutdownOrder []string
 
-	recordingExtensionFactory := newRecordingExtensionFactory(func(set extension.CreateSettings, _ component.Host) error {
+	recordingExtensionFactory := newRecordingExtensionFactory(func(set extension.Settings, _ component.Host) error {
 		startOrder = append(startOrder, set.ID.String())
 		return nil
-	}, func(set extension.CreateSettings) error {
+	}, func(set extension.Settings) error {
 		shutdownOrder = append(shutdownOrder, set.ID.String())
 		return nil
 	})
@@ -175,9 +177,9 @@ func (tc testOrderCase) testOrdering(t *testing.T) {
 	}
 
 	exts, err := New(context.Background(), Settings{
-		Telemetry: servicetelemetry.NewNopTelemetrySettings(),
+		Telemetry: componenttest.NewNopTelemetrySettings(),
 		BuildInfo: component.NewDefaultBuildInfo(),
-		Extensions: extension.NewBuilder(
+		Extensions: builders.NewExtension(
 			extCfgs,
 			map[component.Type]extension.Factory{
 				recordingExtensionFactory.Type(): recordingExtensionFactory,
@@ -194,16 +196,9 @@ func (tc testOrderCase) testOrdering(t *testing.T) {
 	err = exts.Shutdown(context.Background())
 	require.NoError(t, err)
 
-	// TODO From Go 1.21 can use slices.Reverse()
-	reverseSlice := func(s []string) {
-		for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
-			s[i], s[j] = s[j], s[i]
-		}
-	}
-
 	if len(tc.order) > 0 {
 		require.Equal(t, tc.order, startOrder)
-		reverseSlice(shutdownOrder)
+		slices.Reverse(shutdownOrder)
 		require.Equal(t, tc.order, shutdownOrder)
 	}
 }
@@ -284,9 +279,9 @@ func TestNotifyConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			extensions, err := New(context.Background(), Settings{
-				Telemetry:  servicetelemetry.NewNopTelemetrySettings(),
+				Telemetry:  componenttest.NewNopTelemetrySettings(),
 				BuildInfo:  component.NewDefaultBuildInfo(),
-				Extensions: extension.NewBuilder(tt.extensionsConfigs, tt.factories),
+				Extensions: builders.NewExtension(tt.extensionsConfigs, tt.factories),
 			}, tt.serviceExtensions)
 			assert.NoError(t, err)
 			errs := extensions.NotifyConfig(context.Background(), confmap.NewFromStringMap(map[string]interface{}{}))
@@ -326,7 +321,7 @@ func newConfigWatcherExtensionFactory(name component.Type, fn func() error) exte
 		func() component.Config {
 			return &struct{}{}
 		},
-		func(context.Context, extension.CreateSettings, component.Config) (extension.Extension, error) {
+		func(context.Context, extension.Settings, component.Config) (extension.Extension, error) {
 			return newConfigWatcherExtension(fn), nil
 		},
 		component.StabilityLevelDevelopment,
@@ -339,7 +334,7 @@ func newBadExtensionFactory() extension.Factory {
 		func() component.Config {
 			return &struct{}{}
 		},
-		func(context.Context, extension.CreateSettings, component.Config) (extension.Extension, error) {
+		func(context.Context, extension.Settings, component.Config) (extension.Extension, error) {
 			return nil, nil
 		},
 		component.StabilityLevelDevelopment,
@@ -352,7 +347,7 @@ func newCreateErrorExtensionFactory() extension.Factory {
 		func() component.Config {
 			return &struct{}{}
 		},
-		func(context.Context, extension.CreateSettings, component.Config) (extension.Extension, error) {
+		func(context.Context, extension.Settings, component.Config) (extension.Extension, error) {
 			return nil, errors.New("cannot create \"err\" extension type")
 		},
 		component.StabilityLevelDevelopment,
@@ -361,7 +356,7 @@ func newCreateErrorExtensionFactory() extension.Factory {
 
 func TestStatusReportedOnStartupShutdown(t *testing.T) {
 	// compare two slices of status events ignoring timestamp
-	assertEqualStatuses := func(t *testing.T, evts1, evts2 []*component.StatusEvent) {
+	assertEqualStatuses := func(t *testing.T, evts1, evts2 []*componentstatus.Event) {
 		assert.Equal(t, len(evts1), len(evts2))
 		for i := 0; i < len(evts1); i++ {
 			ev1 := evts1[i]
@@ -373,37 +368,37 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 
 	for _, tc := range []struct {
 		name             string
-		expectedStatuses []*component.StatusEvent
+		expectedStatuses []*componentstatus.Event
 		startErr         error
 		shutdownErr      error
 	}{
 		{
 			name: "successful startup/shutdown",
-			expectedStatuses: []*component.StatusEvent{
-				component.NewStatusEvent(component.StatusStarting),
-				component.NewStatusEvent(component.StatusOK),
-				component.NewStatusEvent(component.StatusStopping),
-				component.NewStatusEvent(component.StatusStopped),
+			expectedStatuses: []*componentstatus.Event{
+				componentstatus.NewEvent(componentstatus.StatusStarting),
+				componentstatus.NewEvent(componentstatus.StatusOK),
+				componentstatus.NewEvent(componentstatus.StatusStopping),
+				componentstatus.NewEvent(componentstatus.StatusStopped),
 			},
 			startErr:    nil,
 			shutdownErr: nil,
 		},
 		{
 			name: "start error",
-			expectedStatuses: []*component.StatusEvent{
-				component.NewStatusEvent(component.StatusStarting),
-				component.NewPermanentErrorEvent(assert.AnError),
+			expectedStatuses: []*componentstatus.Event{
+				componentstatus.NewEvent(componentstatus.StatusStarting),
+				componentstatus.NewPermanentErrorEvent(assert.AnError),
 			},
 			startErr:    assert.AnError,
 			shutdownErr: nil,
 		},
 		{
 			name: "shutdown error",
-			expectedStatuses: []*component.StatusEvent{
-				component.NewStatusEvent(component.StatusStarting),
-				component.NewStatusEvent(component.StatusOK),
-				component.NewStatusEvent(component.StatusStopping),
-				component.NewPermanentErrorEvent(assert.AnError),
+			expectedStatuses: []*componentstatus.Event{
+				componentstatus.NewEvent(componentstatus.StatusStarting),
+				componentstatus.NewEvent(componentstatus.StatusOK),
+				componentstatus.NewEvent(componentstatus.StatusStopping),
+				componentstatus.NewPermanentErrorEvent(assert.AnError),
 			},
 			startErr:    nil,
 			shutdownErr: assert.AnError,
@@ -420,25 +415,26 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 			factories := map[component.Type]extension.Factory{
 				statusType: factory,
 			}
-			extensions, err := New(
-				context.Background(),
-				Settings{
-					Telemetry:  servicetelemetry.NewNopTelemetrySettings(),
-					BuildInfo:  component.NewDefaultBuildInfo(),
-					Extensions: extension.NewBuilder(extensionsConfigs, factories),
-				},
-				[]component.ID{compID},
-			)
 
-			assert.NoError(t, err)
-
-			var actualStatuses []*component.StatusEvent
-			rep := status.NewReporter(func(_ *component.InstanceID, ev *component.StatusEvent) {
+			var actualStatuses []*componentstatus.Event
+			rep := status.NewReporter(func(_ *componentstatus.InstanceID, ev *componentstatus.Event) {
 				actualStatuses = append(actualStatuses, ev)
 			}, func(err error) {
 				require.NoError(t, err)
 			})
-			extensions.telemetry.Status = rep
+
+			extensions, err := New(
+				context.Background(),
+				Settings{
+					Telemetry:  componenttest.NewNopTelemetrySettings(),
+					BuildInfo:  component.NewDefaultBuildInfo(),
+					Extensions: builders.NewExtension(extensionsConfigs, factories),
+				},
+				[]component.ID{compID},
+				WithReporter(rep),
+			)
+			assert.NoError(t, err)
+
 			rep.Ready()
 
 			assert.Equal(t, tc.startErr, extensions.Start(context.Background(), componenttest.NewNopHost()))
@@ -476,20 +472,20 @@ func newStatusTestExtensionFactory(name component.Type, startErr, shutdownErr er
 		func() component.Config {
 			return &struct{}{}
 		},
-		func(context.Context, extension.CreateSettings, component.Config) (extension.Extension, error) {
+		func(context.Context, extension.Settings, component.Config) (extension.Extension, error) {
 			return newStatusTestExtension(startErr, shutdownErr), nil
 		},
 		component.StabilityLevelDevelopment,
 	)
 }
 
-func newRecordingExtensionFactory(startCallback func(set extension.CreateSettings, host component.Host) error, shutdownCallback func(set extension.CreateSettings) error) extension.Factory {
+func newRecordingExtensionFactory(startCallback func(set extension.Settings, host component.Host) error, shutdownCallback func(set extension.Settings) error) extension.Factory {
 	return extension.NewFactory(
 		component.MustNewType("recording"),
 		func() component.Config {
 			return &recordingExtensionConfig{}
 		},
-		func(_ context.Context, set extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
+		func(_ context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
 			return &recordingExtension{
 				config:           cfg.(recordingExtensionConfig),
 				createSettings:   set,
@@ -507,9 +503,9 @@ type recordingExtensionConfig struct {
 
 type recordingExtension struct {
 	config           recordingExtensionConfig
-	startCallback    func(set extension.CreateSettings, host component.Host) error
-	shutdownCallback func(set extension.CreateSettings) error
-	createSettings   extension.CreateSettings
+	startCallback    func(set extension.Settings, host component.Host) error
+	shutdownCallback func(set extension.Settings) error
+	createSettings   extension.Settings
 }
 
 var _ extension.Dependent = (*recordingExtension)(nil)

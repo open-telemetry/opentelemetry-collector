@@ -80,13 +80,13 @@ func (ms {{ .structName }}) EnsureCapacity(newCap int) {
 }
 
 // Append appends extra elements to {{ .structName }}.
-// Equivalent of {{ .lowerStructName }} = append({{ .lowerStructName }}, elms...) 
+// Equivalent of {{ .lowerStructName }} = append({{ .lowerStructName }}, elms...)
 func (ms {{ .structName }}) Append(elms ...{{ .itemType }}) {
 	ms.getState().AssertMutable()
 	*ms.getOrig() = append(*ms.getOrig(), elms...)
 }
 
-// MoveTo moves all elements from the current slice overriding the destination and 
+// MoveTo moves all elements from the current slice overriding the destination and
 // resetting the current instance to its zero value.
 func (ms {{ .structName }}) MoveTo(dest {{ .structName }}) {
 	ms.getState().AssertMutable()
@@ -109,42 +109,42 @@ func copy{{ .structName }}(dst, src []{{ .itemType }}) []{{ .itemType }} {
 const immutableSliceTestTemplate = `func TestNew{{ .structName }}(t *testing.T) {
 	ms := New{{ .structName }}()
 	assert.Equal(t, 0, ms.Len())
-	ms.FromRaw([]{{ .itemType }}{1, 2, 3})
+	ms.FromRaw([]{{ .itemType }}{ {{ .testOrigVal }} })
 	assert.Equal(t, 3, ms.Len())
-	assert.Equal(t, []{{ .itemType }}{1, 2, 3}, ms.AsRaw())
-	ms.SetAt(1, {{ .itemType }}(5))
-	assert.Equal(t, []{{ .itemType }}{1, 5, 3}, ms.AsRaw())
-	ms.FromRaw([]{{ .itemType }}{3})
+	assert.Equal(t, []{{ .itemType }}{ {{ .testOrigVal }} }, ms.AsRaw())
+	ms.SetAt(1, {{ .itemType }}( {{ .testSetVal }} ))
+	assert.Equal(t, []{{ .itemType }}{ {{ .testNewVal }} }, ms.AsRaw())
+	ms.FromRaw([]{{ .itemType }}{ {{ index .testInterfaceOrigVal 2 }} })
 	assert.Equal(t, 1, ms.Len())
-	assert.Equal(t, {{ .itemType }}(3), ms.At(0))
-	
+	assert.Equal(t, {{ .itemType }}( {{ index .testInterfaceOrigVal 2 }} ), ms.At(0))
+
 	cp := New{{ .structName }}()
 	ms.CopyTo(cp)
-	ms.SetAt(0, {{ .itemType }}(2))
-	assert.Equal(t, {{ .itemType }}(2), ms.At(0))
-	assert.Equal(t, {{ .itemType }}(3), cp.At(0))
+	ms.SetAt(0, {{ .itemType }}( {{ index .testInterfaceOrigVal 1 }} ))
+	assert.Equal(t, {{ .itemType }}( {{ index .testInterfaceOrigVal 1 }} ), ms.At(0))
+	assert.Equal(t, {{ .itemType }}({{ index .testInterfaceOrigVal 2 }}), cp.At(0))
 	ms.CopyTo(cp)
-	assert.Equal(t, {{ .itemType }}(2), cp.At(0))
-	
+	assert.Equal(t, {{ .itemType }}({{ index .testInterfaceOrigVal 1 }}), cp.At(0))
+
 	mv := New{{ .structName }}()
 	ms.MoveTo(mv)
 	assert.Equal(t, 0, ms.Len())
 	assert.Equal(t, 1, mv.Len())
-	assert.Equal(t, {{ .itemType }}(2), mv.At(0))
-	ms.FromRaw([]{{ .itemType }}{1, 2, 3})
+	assert.Equal(t, {{ .itemType }}({{ index .testInterfaceOrigVal 1 }}), mv.At(0))
+	ms.FromRaw([]{{ .itemType }}{ {{ .testOrigVal }} })
 	ms.MoveTo(mv)
 	assert.Equal(t, 3, mv.Len())
-	assert.Equal(t, {{ .itemType }}(1), mv.At(0))
+	assert.Equal(t, {{ .itemType }}({{ index .testInterfaceOrigVal 0 }}), mv.At(0))
 }
 
 func Test{{ .structName }}ReadOnly(t *testing.T) {
-	raw := []{{ .itemType }}{1, 2, 3}
+	raw := []{{ .itemType }}{ {{ .testOrigVal }}}
 	state := internal.StateReadOnly
 	ms := {{ .structName }}(internal.New{{ .structName }}(&raw, &state))
 
 	assert.Equal(t, 3, ms.Len())
-	assert.Equal(t, {{ .itemType }}(1), ms.At(0))
-	assert.Panics(t, func() { ms.Append(1) })
+	assert.Equal(t, {{ .itemType }}({{ index .testInterfaceOrigVal 0 }}), ms.At(0))
+	assert.Panics(t, func() { ms.Append({{ index .testInterfaceOrigVal 0 }}) })
 	assert.Panics(t, func() { ms.EnsureCapacity(2) })
 	assert.Equal(t, raw, ms.AsRaw())
 	assert.Panics(t, func() { ms.FromRaw(raw) })
@@ -153,17 +153,17 @@ func Test{{ .structName }}ReadOnly(t *testing.T) {
 	ms.CopyTo(ms2)
 	assert.Equal(t, ms.AsRaw(), ms2.AsRaw())
 	assert.Panics(t, func() { ms2.CopyTo(ms) })
-	
+
 	assert.Panics(t, func() { ms.MoveTo(ms2) })
 	assert.Panics(t, func() { ms2.MoveTo(ms) })
 }
 
 func Test{{ .structName }}Append(t *testing.T) {
 	ms := New{{ .structName }}()
-	ms.FromRaw([]{{ .itemType }}{1, 2, 3})
-	ms.Append(4, 5)
+	ms.FromRaw([]{{ .itemType }}{ {{ .testOrigVal }} })
+	ms.Append({{ .testSetVal }}, {{ .testSetVal }})
 	assert.Equal(t, 5, ms.Len())
-	assert.Equal(t, {{ .itemType }}(5), ms.At(4))
+	assert.Equal(t, {{ .itemType }}({{ .testSetVal }}), ms.At(4))
 }
 
 func Test{{ .structName }}EnsureCapacity(t *testing.T) {
@@ -190,6 +190,16 @@ func Get{{ .structName }}State(ms {{ .structName }}) *State {
 
 func New{{ .structName }}(orig *[]{{ .itemType }}, state *State) {{ .structName }} {
 	return {{ .structName }}{orig: orig, state: state}
+}
+
+func FillTest{{ .structName }}(tv {{ .structName}}) {
+}
+
+func GenerateTest{{ .structName }}() {{ .structName }} {
+	state := StateMutable
+	var orig []{{ .itemType }} = nil
+
+	return {{ .structName }}{&orig, &state}
 }`
 
 // primitiveSliceStruct generates a struct for a slice of primitive value elements. The structs are always generated
@@ -198,6 +208,11 @@ type primitiveSliceStruct struct {
 	structName  string
 	packageName string
 	itemType    string
+
+	testOrigVal          string
+	testInterfaceOrigVal []interface{}
+	testSetVal           string
+	testNewVal           string
 }
 
 func (iss *primitiveSliceStruct) getName() string {
@@ -233,8 +248,12 @@ func (iss *primitiveSliceStruct) generateInternal(sb *bytes.Buffer) {
 
 func (iss *primitiveSliceStruct) templateFields() map[string]any {
 	return map[string]any{
-		"structName":      iss.structName,
-		"itemType":        iss.itemType,
-		"lowerStructName": strings.ToLower(iss.structName[:1]) + iss.structName[1:],
+		"structName":           iss.structName,
+		"itemType":             iss.itemType,
+		"lowerStructName":      strings.ToLower(iss.structName[:1]) + iss.structName[1:],
+		"testOrigVal":          iss.testOrigVal,
+		"testInterfaceOrigVal": iss.testInterfaceOrigVal,
+		"testSetVal":           iss.testSetVal,
+		"testNewVal":           iss.testNewVal,
 	}
 }

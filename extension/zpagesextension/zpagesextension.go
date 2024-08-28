@@ -14,6 +14,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 )
 
 const (
@@ -24,7 +25,7 @@ type zpagesExtension struct {
 	config              *Config
 	telemetry           component.TelemetrySettings
 	zpagesSpanProcessor *zpages.SpanProcessor
-	server              http.Server
+	server              *http.Server
 	stopCh              chan struct{}
 }
 
@@ -43,7 +44,8 @@ type registerableTracerProvider interface {
 	UnregisterSpanProcessor(SpanProcessor trace.SpanProcessor)
 }
 
-func (zpe *zpagesExtension) Start(_ context.Context, host component.Host) error {
+func (zpe *zpagesExtension) Start(ctx context.Context, host component.Host) error {
+
 	zPagesMux := http.NewServeMux()
 
 	sdktracer, ok := zpe.telemetry.TracerProvider.(registerableTracerProvider)
@@ -67,19 +69,22 @@ func (zpe *zpagesExtension) Start(_ context.Context, host component.Host) error 
 
 	// Start the listener here so we can have earlier failure if port is
 	// already in use.
-	ln, err := zpe.config.TCPAddr.Listen(context.Background())
+	ln, err := zpe.config.ToListener(ctx)
 	if err != nil {
 		return err
 	}
 
 	zpe.telemetry.Logger.Info("Starting zPages extension", zap.Any("config", zpe.config))
-	zpe.server = http.Server{Handler: zPagesMux}
+	zpe.server, err = zpe.config.ToServer(ctx, host, zpe.telemetry, zPagesMux)
+	if err != nil {
+		return err
+	}
 	zpe.stopCh = make(chan struct{})
 	go func() {
 		defer close(zpe.stopCh)
 
 		if errHTTP := zpe.server.Serve(ln); errHTTP != nil && !errors.Is(errHTTP, http.ErrServerClosed) {
-			zpe.telemetry.ReportStatus(component.NewFatalErrorEvent(errHTTP))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 		}
 	}()
 
@@ -87,6 +92,9 @@ func (zpe *zpagesExtension) Start(_ context.Context, host component.Host) error 
 }
 
 func (zpe *zpagesExtension) Shutdown(context.Context) error {
+	if zpe.server == nil {
+		return nil
+	}
 	err := zpe.server.Close()
 	if zpe.stopCh != nil {
 		<-zpe.stopCh

@@ -17,7 +17,7 @@ import (
 // memHandler returns the total memory of the target host/vm
 var memHandler = iruntime.TotalMemory
 
-// NewFactory creates a factory for FluentBit extension.
+// NewFactory creates a factory for ballast extension.
 func NewFactory() extension.Factory {
 	return extension.NewFactory(metadata.Type, createDefaultConfig, createExtension, metadata.ExtensionStability)
 }
@@ -26,6 +26,6 @@ func createDefaultConfig() component.Config {
 	return &Config{}
 }
 
-func createExtension(_ context.Context, set extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
+func createExtension(_ context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
 	return newMemoryBallast(cfg.(*Config), set.TelemetrySettings.Logger, memHandler), nil
 }

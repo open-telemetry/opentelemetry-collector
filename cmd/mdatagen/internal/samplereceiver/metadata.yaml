@@ -2,6 +2,7 @@
 
 type: sample
 scope_name: go.opentelemetry.io/collector/internal/receiver/samplereceiver
+github_project: open-telemetry/opentelemetry-collector
 
 sem_conv_version: 1.9.0
 
@@ -12,6 +13,7 @@ status:
     beta: [traces]
     stable: [metrics]
   distributions: []
+  unsupported_platforms: [freebsd, illumos]
   codeowners:
     active: [dmitryax]
   warnings:
@@ -109,7 +111,7 @@ metrics:
   optional.metric:
     enabled: false
     description: "[DEPRECATED] Gauge double metric disabled by default."
-    unit: 1
+    unit: "1"
     gauge:
       value_type: double
     attributes: [string_attr, boolean_attr]
@@ -148,3 +150,37 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [ string_attr, overridden_int_attr, enum_attr, slice_attr, map_attr ]
+
+telemetry:
+  metrics:
+    batch_size_trigger_send:
+      enabled: true
+      description: Number of times the batch was sent due to a size trigger
+      unit: "{times}"
+      sum:
+        value_type: int
+        monotonic: true
+    request_duration:
+      enabled: true
+      description: Duration of request
+      unit: s
+      histogram:
+        value_type: double
+        bucket_boundaries: [1, 10, 100]
+    process_runtime_total_alloc_bytes:
+      enabled: true
+      description: Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')
+      unit: By
+      sum:
+        async: true
+        value_type: int
+        monotonic: true
+    queue_length:
+      enabled: true
+      description: This metric is optional and therefore not initialized in NewTelemetryBuilder.
+      extended_documentation: For example this metric only exists if feature A is enabled.
+      unit: "{items}"
+      optional: true
+      gauge:
+        async: true
+        value_type: int

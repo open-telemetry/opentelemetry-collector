@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -21,13 +22,14 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/internal/queue"
+	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
 func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
 	rCfg := configretry.NewDefaultBackOffConfig()
-	be, err := newBaseExporter(defaultSettings, defaultType, newObservabilityConsumerSender,
+	be, err := newBaseExporter(defaultSettings, defaultDataType, newObservabilityConsumerSender,
 		withMarshaler(mockRequestMarshaler), withUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
 		WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
@@ -61,7 +63,7 @@ func TestQueuedRetry_DoNotPreserveCancellation(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
 	rCfg := configretry.NewDefaultBackOffConfig()
-	be, err := newBaseExporter(defaultSettings, defaultType, newObservabilityConsumerSender,
+	be, err := newBaseExporter(defaultSettings, defaultDataType, newObservabilityConsumerSender,
 		withMarshaler(mockRequestMarshaler), withUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
 		WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
@@ -90,10 +92,10 @@ func TestQueuedRetry_RejectOnFull(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	qCfg.QueueSize = 0
 	qCfg.NumConsumers = 0
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	logger, observed := observer.New(zap.ErrorLevel)
 	set.Logger = zap.New(logger)
-	be, err := newBaseExporter(set, defaultType, newNoopObsrepSender,
+	be, err := newBaseExporter(set, defaultDataType, newNoopObsrepSender,
 		withMarshaler(mockRequestMarshaler), withUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
 		WithQueue(qCfg))
 	require.NoError(t, err)
@@ -165,8 +167,8 @@ func TestQueuedRetryHappyPath(t *testing.T) {
 			require.NoError(t, err)
 			t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
 
-			set := exporter.CreateSettings{ID: defaultID, TelemetrySettings: tel.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}
-			be, err := newBaseExporter(set, defaultType, newObservabilityConsumerSender, tt.queueOptions...)
+			set := exporter.Settings{ID: defaultID, TelemetrySettings: tel.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}
+			be, err := newBaseExporter(set, defaultDataType, newObservabilityConsumerSender, tt.queueOptions...)
 			require.NoError(t, err)
 			ocs := be.obsrepSender.(*observabilityConsumerSender)
 
@@ -201,28 +203,33 @@ func TestQueuedRetryHappyPath(t *testing.T) {
 		})
 	}
 }
+
 func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(defaultID)
-	require.NoError(t, err)
+	dataTypes := []component.DataType{component.DataTypeLogs, component.DataTypeTraces, component.DataTypeMetrics}
+	for _, dataType := range dataTypes {
+		tt, err := componenttest.SetupTelemetry(defaultID)
+		require.NoError(t, err)
 
-	qCfg := NewDefaultQueueSettings()
-	qCfg.NumConsumers = 0 // to make every request go straight to the queue
-	rCfg := configretry.NewDefaultBackOffConfig()
-	set := exporter.CreateSettings{ID: defaultID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}
-	be, err := newBaseExporter(set, defaultType, newObservabilityConsumerSender,
-		withMarshaler(mockRequestMarshaler), withUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
-		WithRetry(rCfg), WithQueue(qCfg))
-	require.NoError(t, err)
-	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
+		qCfg := NewDefaultQueueSettings()
+		qCfg.NumConsumers = 0 // to make every request go straight to the queue
+		rCfg := configretry.NewDefaultBackOffConfig()
+		set := exporter.Settings{ID: defaultID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}
+		be, err := newBaseExporter(set, dataType, newObservabilityConsumerSender,
+			withMarshaler(mockRequestMarshaler), withUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
+			WithRetry(rCfg), WithQueue(qCfg))
+		require.NoError(t, err)
+		require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 
-	require.NoError(t, tt.CheckExporterMetricGauge("exporter_queue_capacity", int64(defaultQueueSize)))
+		require.NoError(t, tt.CheckExporterMetricGauge("otelcol_exporter_queue_capacity", int64(defaultQueueSize)))
 
-	for i := 0; i < 7; i++ {
-		require.NoError(t, be.send(context.Background(), newErrorRequest()))
+		for i := 0; i < 7; i++ {
+			require.NoError(t, be.send(context.Background(), newErrorRequest()))
+		}
+		require.NoError(t, tt.CheckExporterMetricGauge("otelcol_exporter_queue_size", int64(7),
+			attribute.String(obsmetrics.DataTypeKey, dataType.String())))
+
+		assert.NoError(t, be.Shutdown(context.Background()))
 	}
-	require.NoError(t, tt.CheckExporterMetricGauge("exporter_queue_size", int64(7)))
-
-	assert.NoError(t, be.Shutdown(context.Background()))
 }
 
 func TestNoCancellationContext(t *testing.T) {
@@ -234,7 +241,7 @@ func TestNoCancellationContext(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, deadline, d)
 
-	nctx := noCancellationContext{Context: ctx}
+	nctx := context.WithoutCancel(ctx)
 	assert.NoError(t, nctx.Err())
 	d, ok = nctx.Deadline()
 	assert.False(t, ok)
@@ -289,7 +296,7 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			set := exportertest.NewNopCreateSettings()
+			set := exportertest.NewNopSettings()
 			logger, observed := observer.New(zap.ErrorLevel)
 			set.Logger = zap.New(logger)
 			be, err := newBaseExporter(set, component.DataTypeLogs, newObservabilityConsumerSender, tt.queueOptions...)
@@ -313,7 +320,7 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 }
 
 func TestQueueFailedRequestDropped(t *testing.T) {
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	logger, observed := observer.New(zap.ErrorLevel)
 	set.Logger = zap.New(logger)
 	be, err := newBaseExporter(set, component.DataTypeLogs, newNoopObsrepSender,
@@ -337,8 +344,8 @@ func TestQueuedRetryPersistenceEnabled(t *testing.T) {
 	storageID := component.MustNewIDWithName("file_storage", "storage")
 	qCfg.StorageID = &storageID // enable persistence
 	rCfg := configretry.NewDefaultBackOffConfig()
-	set := exporter.CreateSettings{ID: defaultID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}
-	be, err := newBaseExporter(set, defaultType, newObservabilityConsumerSender,
+	set := exporter.Settings{ID: defaultID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}
+	be, err := newBaseExporter(set, defaultDataType, newObservabilityConsumerSender,
 		withMarshaler(mockRequestMarshaler), withUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
 		WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
@@ -363,8 +370,8 @@ func TestQueuedRetryPersistenceEnabledStorageError(t *testing.T) {
 	storageID := component.MustNewIDWithName("file_storage", "storage")
 	qCfg.StorageID = &storageID // enable persistence
 	rCfg := configretry.NewDefaultBackOffConfig()
-	set := exporter.CreateSettings{ID: defaultID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}
-	be, err := newBaseExporter(set, defaultType, newObservabilityConsumerSender, withMarshaler(mockRequestMarshaler),
+	set := exporter.Settings{ID: defaultID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}
+	be, err := newBaseExporter(set, defaultDataType, newObservabilityConsumerSender, withMarshaler(mockRequestMarshaler),
 		withUnmarshaler(mockRequestUnmarshaler(&mockRequest{})), WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 
@@ -388,7 +395,7 @@ func TestQueuedRetryPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 	rCfg.MaxElapsedTime = 0 // retry infinitely so shutdown can be triggered
 
 	mockReq := newErrorRequest()
-	be, err := newBaseExporter(defaultSettings, defaultType, newNoopObsrepSender, withMarshaler(mockRequestMarshaler),
+	be, err := newBaseExporter(defaultSettings, defaultDataType, newNoopObsrepSender, withMarshaler(mockRequestMarshaler),
 		withUnmarshaler(mockRequestUnmarshaler(mockReq)), WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 
@@ -412,7 +419,7 @@ func TestQueuedRetryPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 
 	// start the exporter again replacing the preserved mockRequest in the unmarshaler with a new one that doesn't fail.
 	replacedReq := newMockRequest(1, nil)
-	be, err = newBaseExporter(defaultSettings, defaultType, newNoopObsrepSender, withMarshaler(mockRequestMarshaler),
+	be, err = newBaseExporter(defaultSettings, defaultDataType, newNoopObsrepSender, withMarshaler(mockRequestMarshaler),
 		withUnmarshaler(mockRequestUnmarshaler(replacedReq)), WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), host))
@@ -424,7 +431,13 @@ func TestQueuedRetryPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 
 func TestQueueSenderNoStartShutdown(t *testing.T) {
 	queue := queue.NewBoundedMemoryQueue[Request](queue.MemoryQueueSettings[Request]{})
-	qs := newQueueSender(queue, exportertest.NewNopCreateSettings(), 1, "")
+	set := exportertest.NewNopSettings()
+	obsrep, err := newExporter(obsReportSettings{
+		exporterID:             exporterID,
+		exporterCreateSettings: exportertest.NewNopSettings(),
+	})
+	assert.NoError(t, err)
+	qs := newQueueSender(queue, set, 1, "", obsrep)
 	assert.NoError(t, qs.Shutdown(context.Background()))
 }
 

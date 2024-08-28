@@ -28,10 +28,10 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
-	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
+	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
@@ -43,7 +43,7 @@ func TestInvalidConfig(t *testing.T) {
 		},
 	}
 	f := otlphttpexporter.NewFactory()
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	_, err := f.CreateTracesExporter(context.Background(), set, config)
 	require.Error(t, err)
 	_, err = f.CreateMetricsExporter(context.Background(), set, config)
@@ -291,7 +291,7 @@ func startTracesExporter(t *testing.T, baseURL string, overrideURL string) expor
 	factory := otlphttpexporter.NewFactory()
 	cfg := createExporterConfig(baseURL, factory.CreateDefaultConfig())
 	cfg.TracesEndpoint = overrideURL
-	exp, err := factory.CreateTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	exp, err := factory.CreateTracesExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 	startAndCleanup(t, exp)
 	return exp
@@ -301,7 +301,7 @@ func startMetricsExporter(t *testing.T, baseURL string, overrideURL string) expo
 	factory := otlphttpexporter.NewFactory()
 	cfg := createExporterConfig(baseURL, factory.CreateDefaultConfig())
 	cfg.MetricsEndpoint = overrideURL
-	exp, err := factory.CreateMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	exp, err := factory.CreateMetricsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 	startAndCleanup(t, exp)
 	return exp
@@ -311,7 +311,7 @@ func startLogsExporter(t *testing.T, baseURL string, overrideURL string) exporte
 	factory := otlphttpexporter.NewFactory()
 	cfg := createExporterConfig(baseURL, factory.CreateDefaultConfig())
 	cfg.LogsEndpoint = overrideURL
-	exp, err := factory.CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	exp, err := factory.CreateLogsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 	startAndCleanup(t, exp)
 	return exp
@@ -328,7 +328,7 @@ func createExporterConfig(baseURL string, defaultCfg component.Config) *otlphttp
 func startTracesReceiver(t *testing.T, addr string, next consumer.Traces) {
 	factory := otlpreceiver.NewFactory()
 	cfg := createReceiverConfig(addr, factory.CreateDefaultConfig())
-	recv, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, next)
+	recv, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopSettings(), cfg, next)
 	require.NoError(t, err)
 	startAndCleanup(t, recv)
 }
@@ -336,7 +336,7 @@ func startTracesReceiver(t *testing.T, addr string, next consumer.Traces) {
 func startMetricsReceiver(t *testing.T, addr string, next consumer.Metrics) {
 	factory := otlpreceiver.NewFactory()
 	cfg := createReceiverConfig(addr, factory.CreateDefaultConfig())
-	recv, err := factory.CreateMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, next)
+	recv, err := factory.CreateMetricsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, next)
 	require.NoError(t, err)
 	startAndCleanup(t, recv)
 }
@@ -344,7 +344,7 @@ func startMetricsReceiver(t *testing.T, addr string, next consumer.Metrics) {
 func startLogsReceiver(t *testing.T, addr string, next consumer.Logs) {
 	factory := otlpreceiver.NewFactory()
 	cfg := createReceiverConfig(addr, factory.CreateDefaultConfig())
-	recv, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, next)
+	recv, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, next)
 	require.NoError(t, err)
 	startAndCleanup(t, recv)
 }

@@ -48,24 +48,26 @@ func (pc *prometheusChecker) checkReceiver(receiver component.ID, datatype, prot
 		pc.checkCounter(fmt.Sprintf("receiver_refused_%s", datatype), droppedMetricPoints, receiverAttrs))
 }
 
-func (pc *prometheusChecker) checkProcessorTraces(processor component.ID, accepted, refused, dropped int64) error {
-	return pc.checkProcessor(processor, "spans", accepted, refused, dropped)
+func (pc *prometheusChecker) checkProcessorTraces(processor component.ID, accepted, refused, dropped, inserted int64) error {
+	return pc.checkProcessor(processor, "spans", accepted, refused, dropped, inserted)
 }
 
-func (pc *prometheusChecker) checkProcessorMetrics(processor component.ID, accepted, refused, dropped int64) error {
-	return pc.checkProcessor(processor, "metric_points", accepted, refused, dropped)
+func (pc *prometheusChecker) checkProcessorMetrics(processor component.ID, accepted, refused, dropped, inserted int64) error {
+	return pc.checkProcessor(processor, "metric_points", accepted, refused, dropped, inserted)
 }
 
-func (pc *prometheusChecker) checkProcessorLogs(processor component.ID, accepted, refused, dropped int64) error {
-	return pc.checkProcessor(processor, "log_records", accepted, refused, dropped)
+func (pc *prometheusChecker) checkProcessorLogs(processor component.ID, accepted, refused, dropped, inserted int64) error {
+	return pc.checkProcessor(processor, "log_records", accepted, refused, dropped, inserted)
 }
 
-func (pc *prometheusChecker) checkProcessor(processor component.ID, datatype string, accepted, refused, dropped int64) error {
+func (pc *prometheusChecker) checkProcessor(processor component.ID, datatype string, accepted, refused, dropped, inserted int64) error {
 	processorAttrs := attributesForProcessorMetrics(processor)
 	return multierr.Combine(
 		pc.checkCounter(fmt.Sprintf("processor_accepted_%s", datatype), accepted, processorAttrs),
 		pc.checkCounter(fmt.Sprintf("processor_refused_%s", datatype), refused, processorAttrs),
-		pc.checkCounter(fmt.Sprintf("processor_dropped_%s", datatype), dropped, processorAttrs))
+		pc.checkCounter(fmt.Sprintf("processor_dropped_%s", datatype), dropped, processorAttrs),
+		pc.checkCounter(fmt.Sprintf("processor_inserted_%s", datatype), inserted, processorAttrs),
+	)
 }
 
 func (pc *prometheusChecker) checkExporterTraces(exporter component.ID, sent, sendFailed int64) error {
@@ -98,10 +100,8 @@ func (pc *prometheusChecker) checkExporterEnqueueFailed(exporter component.ID, d
 	return pc.checkCounter(fmt.Sprintf("exporter_enqueue_failed_%s", datatype), enqueueFailed, exporterAttrs)
 }
 
-func (pc *prometheusChecker) checkExporterMetricGauge(exporter component.ID, metric string, val int64) error {
-	exporterAttrs := attributesForExporterMetrics(exporter)
-
-	ts, err := pc.getMetric(metric, io_prometheus_client.MetricType_GAUGE, exporterAttrs)
+func (pc *prometheusChecker) checkGauge(metric string, val int64, attrs []attribute.KeyValue) error {
+	ts, err := pc.getMetric(metric, io_prometheus_client.MetricType_GAUGE, attrs)
 	if err != nil {
 		return err
 	}
@@ -115,8 +115,7 @@ func (pc *prometheusChecker) checkExporterMetricGauge(exporter component.ID, met
 }
 
 func (pc *prometheusChecker) checkCounter(expectedMetric string, value int64, attrs []attribute.KeyValue) error {
-
-	ts, err := pc.getMetric(expectedMetric, io_prometheus_client.MetricType_COUNTER, attrs)
+	ts, err := pc.getMetric(fmt.Sprintf("otelcol_%s", expectedMetric), io_prometheus_client.MetricType_COUNTER, attrs)
 	if err != nil {
 		return err
 	}
@@ -196,7 +195,7 @@ func attributesForProcessorMetrics(processor component.ID) []attribute.KeyValue 
 	return []attribute.KeyValue{attribute.String(processorTag, processor.String())}
 }
 
-// attributesForReceiverMetrics returns the attributes that are needed for the receiver metrics.
+// attributesForExporterMetrics returns the attributes that are needed for the receiver metrics.
 func attributesForExporterMetrics(exporter component.ID) []attribute.KeyValue {
 	return []attribute.KeyValue{attribute.String(exporterTag, exporter.String())}
 }

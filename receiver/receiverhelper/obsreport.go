@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate mdatagen metadata.yaml
+
 package receiverhelper // import "go.opentelemetry.io/collector/receiver/receiverhelper"
 
 import (
@@ -10,37 +12,22 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/multierr"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/receiver"
-)
-
-const (
-	receiverScope = obsmetrics.Scope + obsmetrics.NameSep + obsmetrics.ReceiverKey
+	"go.opentelemetry.io/collector/receiver/receiverhelper/internal/metadata"
 )
 
 // ObsReport is a helper to add observability to a receiver.
 type ObsReport struct {
-	level          configtelemetry.Level
 	spanNamePrefix string
 	transport      string
 	longLivedCtx   bool
 	tracer         trace.Tracer
-	meter          metric.Meter
-	logger         *zap.Logger
 
-	otelAttrs []attribute.KeyValue
-
-	acceptedSpansCounter        metric.Int64Counter
-	refusedSpansCounter         metric.Int64Counter
-	acceptedMetricPointsCounter metric.Int64Counter
-	refusedMetricPointsCounter  metric.Int64Counter
-	acceptedLogRecordsCounter   metric.Int64Counter
-	refusedLogRecordsCounter    metric.Int64Counter
+	otelAttrs        []attribute.KeyValue
+	telemetryBuilder *metadata.TelemetryBuilder
 }
 
 // ObsReportSettings are settings for creating an ObsReport.
@@ -53,7 +40,7 @@ type ObsReportSettings struct {
 	// eg.: a gRPC stream, for which many batches of data are received in individual
 	// operations without a corresponding new context per operation.
 	LongLivedCtx           bool
-	ReceiverCreateSettings receiver.CreateSettings
+	ReceiverCreateSettings receiver.Settings
 }
 
 // NewObsReport creates a new ObsReport.
@@ -62,74 +49,22 @@ func NewObsReport(cfg ObsReportSettings) (*ObsReport, error) {
 }
 
 func newReceiver(cfg ObsReportSettings) (*ObsReport, error) {
-	rec := &ObsReport{
-		level:          cfg.ReceiverCreateSettings.TelemetrySettings.MetricsLevel,
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(cfg.ReceiverCreateSettings.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
+	return &ObsReport{
 		spanNamePrefix: obsmetrics.ReceiverPrefix + cfg.ReceiverID.String(),
 		transport:      cfg.Transport,
 		longLivedCtx:   cfg.LongLivedCtx,
 		tracer:         cfg.ReceiverCreateSettings.TracerProvider.Tracer(cfg.ReceiverID.String()),
-		meter:          cfg.ReceiverCreateSettings.MeterProvider.Meter(receiverScope),
-		logger:         cfg.ReceiverCreateSettings.Logger,
 
 		otelAttrs: []attribute.KeyValue{
 			attribute.String(obsmetrics.ReceiverKey, cfg.ReceiverID.String()),
 			attribute.String(obsmetrics.TransportKey, cfg.Transport),
 		},
-	}
-
-	if err := rec.createOtelMetrics(); err != nil {
-		return nil, err
-	}
-
-	return rec, nil
-}
-
-func (rec *ObsReport) createOtelMetrics() error {
-	var errors, err error
-
-	rec.acceptedSpansCounter, err = rec.meter.Int64Counter(
-		obsmetrics.ReceiverPrefix+obsmetrics.AcceptedSpansKey,
-		metric.WithDescription("Number of spans successfully pushed into the pipeline."),
-		metric.WithUnit("1"),
-	)
-	errors = multierr.Append(errors, err)
-
-	rec.refusedSpansCounter, err = rec.meter.Int64Counter(
-		obsmetrics.ReceiverPrefix+obsmetrics.RefusedSpansKey,
-		metric.WithDescription("Number of spans that could not be pushed into the pipeline."),
-		metric.WithUnit("1"),
-	)
-	errors = multierr.Append(errors, err)
-
-	rec.acceptedMetricPointsCounter, err = rec.meter.Int64Counter(
-		obsmetrics.ReceiverPrefix+obsmetrics.AcceptedMetricPointsKey,
-		metric.WithDescription("Number of metric points successfully pushed into the pipeline."),
-		metric.WithUnit("1"),
-	)
-	errors = multierr.Append(errors, err)
-
-	rec.refusedMetricPointsCounter, err = rec.meter.Int64Counter(
-		obsmetrics.ReceiverPrefix+obsmetrics.RefusedMetricPointsKey,
-		metric.WithDescription("Number of metric points that could not be pushed into the pipeline."),
-		metric.WithUnit("1"),
-	)
-	errors = multierr.Append(errors, err)
-
-	rec.acceptedLogRecordsCounter, err = rec.meter.Int64Counter(
-		obsmetrics.ReceiverPrefix+obsmetrics.AcceptedLogRecordsKey,
-		metric.WithDescription("Number of log records successfully pushed into the pipeline."),
-		metric.WithUnit("1"),
-	)
-	errors = multierr.Append(errors, err)
-
-	rec.refusedLogRecordsCounter, err = rec.meter.Int64Counter(
-		obsmetrics.ReceiverPrefix+obsmetrics.RefusedLogRecordsKey,
-		metric.WithDescription("Number of log records that could not be pushed into the pipeline."),
-		metric.WithUnit("1"),
-	)
-	errors = multierr.Append(errors, err)
-
-	return errors
+		telemetryBuilder: telemetryBuilder,
+	}, nil
 }
 
 // StartTracesOp is called when a request is received from a client.
@@ -228,9 +163,7 @@ func (rec *ObsReport) endOp(
 
 	span := trace.SpanFromContext(receiverCtx)
 
-	if rec.level != configtelemetry.LevelNone {
-		rec.recordMetrics(receiverCtx, dataType, numAccepted, numRefused)
-	}
+	rec.recordMetrics(receiverCtx, dataType, numAccepted, numRefused)
 
 	// end span according to errors
 	if span.IsRecording() {
@@ -263,14 +196,14 @@ func (rec *ObsReport) recordMetrics(receiverCtx context.Context, dataType compon
 	var acceptedMeasure, refusedMeasure metric.Int64Counter
 	switch dataType {
 	case component.DataTypeTraces:
-		acceptedMeasure = rec.acceptedSpansCounter
-		refusedMeasure = rec.refusedSpansCounter
+		acceptedMeasure = rec.telemetryBuilder.ReceiverAcceptedSpans
+		refusedMeasure = rec.telemetryBuilder.ReceiverRefusedSpans
 	case component.DataTypeMetrics:
-		acceptedMeasure = rec.acceptedMetricPointsCounter
-		refusedMeasure = rec.refusedMetricPointsCounter
+		acceptedMeasure = rec.telemetryBuilder.ReceiverAcceptedMetricPoints
+		refusedMeasure = rec.telemetryBuilder.ReceiverRefusedMetricPoints
 	case component.DataTypeLogs:
-		acceptedMeasure = rec.acceptedLogRecordsCounter
-		refusedMeasure = rec.refusedLogRecordsCounter
+		acceptedMeasure = rec.telemetryBuilder.ReceiverAcceptedLogRecords
+		refusedMeasure = rec.telemetryBuilder.ReceiverRefusedLogRecords
 	}
 
 	acceptedMeasure.Add(receiverCtx, int64(numAccepted), metric.WithAttributes(rec.otelAttrs...))

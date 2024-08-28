@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -14,8 +15,8 @@ import (
 )
 
 // NewUnhealthyProcessorCreateSettings returns a new nop settings for Create*Processor functions.
-func NewUnhealthyProcessorCreateSettings() processor.CreateSettings {
-	return processor.CreateSettings{
+func NewUnhealthyProcessorCreateSettings() processor.Settings {
+	return processor.Settings{
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),
 	}
@@ -34,21 +35,21 @@ func NewUnhealthyProcessorFactory() processor.Factory {
 	)
 }
 
-func createUnhealthyTracesProcessor(_ context.Context, set processor.CreateSettings, _ component.Config, _ consumer.Traces) (processor.Traces, error) {
+func createUnhealthyTracesProcessor(_ context.Context, set processor.Settings, _ component.Config, _ consumer.Traces) (processor.Traces, error) {
 	return &unhealthyProcessor{
 		Consumer:  consumertest.NewNop(),
 		telemetry: set.TelemetrySettings,
 	}, nil
 }
 
-func createUnhealthyMetricsProcessor(_ context.Context, set processor.CreateSettings, _ component.Config, _ consumer.Metrics) (processor.Metrics, error) {
+func createUnhealthyMetricsProcessor(_ context.Context, set processor.Settings, _ component.Config, _ consumer.Metrics) (processor.Metrics, error) {
 	return &unhealthyProcessor{
 		Consumer:  consumertest.NewNop(),
 		telemetry: set.TelemetrySettings,
 	}, nil
 }
 
-func createUnhealthyLogsProcessor(_ context.Context, set processor.CreateSettings, _ component.Config, _ consumer.Logs) (processor.Logs, error) {
+func createUnhealthyLogsProcessor(_ context.Context, set processor.Settings, _ component.Config, _ consumer.Logs) (processor.Logs, error) {
 	return &unhealthyProcessor{
 		Consumer:  consumertest.NewNop(),
 		telemetry: set.TelemetrySettings,
@@ -62,9 +63,9 @@ type unhealthyProcessor struct {
 	telemetry component.TelemetrySettings
 }
 
-func (p unhealthyProcessor) Start(context.Context, component.Host) error {
+func (p unhealthyProcessor) Start(_ context.Context, host component.Host) error {
 	go func() {
-		p.telemetry.ReportStatus(component.NewStatusEvent(component.StatusRecoverableError))
+		componentstatus.ReportStatus(host, componentstatus.NewEvent(componentstatus.StatusRecoverableError))
 	}()
 	return nil
 }

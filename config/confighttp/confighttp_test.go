@@ -4,6 +4,7 @@
 package confighttp
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -13,6 +14,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -31,6 +33,8 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/extension/auth"
 	"go.opentelemetry.io/collector/extension/auth/authtest"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/localhostgate"
 )
 
 type customRoundTripper struct {
@@ -47,6 +51,8 @@ var (
 	mockID        = component.MustNewID("mock")
 	dummyID       = component.MustNewID("dummy")
 	nonExistingID = component.MustNewID("nonexisting")
+	// Omit TracerProvider and MeterProvider in TelemetrySettings as otelhttp.Transport cannot be introspected
+	nilProvidersSettings = component.TelemetrySettings{Logger: zap.NewNop(), MetricsLevel: configtelemetry.LevelNone}
 )
 
 func TestAllHTTPClientSettings(t *testing.T) {
@@ -79,9 +85,9 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				MaxIdleConnsPerHost:  &maxIdleConnsPerHost,
 				MaxConnsPerHost:      &maxConnsPerHost,
 				IdleConnTimeout:      &idleConnTimeout,
-				CustomRoundTripper:   func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
 				Compression:          "",
 				DisableKeepAlives:    true,
+				Cookies:              &CookiesConfig{Enabled: true},
 				HTTP2ReadIdleTimeout: idleConnTimeout,
 				HTTP2PingTimeout:     http2PingTimeout,
 			},
@@ -100,7 +106,6 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				MaxIdleConnsPerHost:  &maxIdleConnsPerHost,
 				MaxConnsPerHost:      &maxConnsPerHost,
 				IdleConnTimeout:      &idleConnTimeout,
-				CustomRoundTripper:   func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
 				Compression:          "none",
 				DisableKeepAlives:    true,
 				HTTP2ReadIdleTimeout: idleConnTimeout,
@@ -121,7 +126,6 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				MaxIdleConnsPerHost:  &maxIdleConnsPerHost,
 				MaxConnsPerHost:      &maxConnsPerHost,
 				IdleConnTimeout:      &idleConnTimeout,
-				CustomRoundTripper:   func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
 				Compression:          "gzip",
 				DisableKeepAlives:    true,
 				HTTP2ReadIdleTimeout: idleConnTimeout,
@@ -142,7 +146,6 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				MaxIdleConnsPerHost:  &maxIdleConnsPerHost,
 				MaxConnsPerHost:      &maxConnsPerHost,
 				IdleConnTimeout:      &idleConnTimeout,
-				CustomRoundTripper:   func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
 				Compression:          "gzip",
 				DisableKeepAlives:    true,
 				HTTP2ReadIdleTimeout: idleConnTimeout,
@@ -150,26 +153,13 @@ func TestAllHTTPClientSettings(t *testing.T) {
 			},
 			shouldError: false,
 		},
-		{
-			name: "error_round_tripper_returned",
-			settings: ClientConfig{
-				Endpoint: "localhost:1234",
-				TLSSetting: configtls.ClientConfig{
-					Insecure: false,
-				},
-				ReadBufferSize:     1024,
-				WriteBufferSize:    512,
-				CustomRoundTripper: func(http.RoundTripper) (http.RoundTripper, error) { return nil, errors.New("error") },
-			},
-			shouldError: true,
-		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			tt := componenttest.NewNopTelemetrySettings()
 			tt.TracerProvider = nil
-			client, err := test.settings.ToClient(host, tt)
+			client, err := test.settings.ToClient(context.Background(), host, tt)
 			if test.shouldError {
 				assert.Error(t, err)
 				return
@@ -210,9 +200,8 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 				TLSSetting: configtls.ClientConfig{
 					Insecure: false,
 				},
-				ReadBufferSize:     1024,
-				WriteBufferSize:    512,
-				CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
+				ReadBufferSize:  1024,
+				WriteBufferSize: 512,
 			},
 			shouldError: false,
 		},
@@ -222,7 +211,7 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tt := componenttest.NewNopTelemetrySettings()
 			tt.TracerProvider = nil
-			client, err := test.settings.ToClient(host, tt)
+			client, err := test.settings.ToClient(context.Background(), host, tt)
 			assert.NoError(t, err)
 			transport := client.Transport.(*http.Transport)
 			assert.EqualValues(t, 1024, transport.ReadBufferSize)
@@ -272,7 +261,7 @@ func TestProxyURL(t *testing.T) {
 
 			tt := componenttest.NewNopTelemetrySettings()
 			tt.TracerProvider = nil
-			client, err := s.ToClient(componenttest.NewNopHost(), tt)
+			client, err := s.ToClient(context.Background(), componenttest.NewNopHost(), tt)
 
 			if tC.err {
 				require.Error(t, err)
@@ -311,7 +300,7 @@ func TestHTTPClientSettingsError(t *testing.T) {
 			settings: ClientConfig{
 				Endpoint: "",
 				TLSSetting: configtls.ClientConfig{
-					TLSSetting: configtls.Config{
+					Config: configtls.Config{
 						CAFile: "/doesnt/exist",
 					},
 					Insecure:   false,
@@ -324,7 +313,7 @@ func TestHTTPClientSettingsError(t *testing.T) {
 			settings: ClientConfig{
 				Endpoint: "",
 				TLSSetting: configtls.ClientConfig{
-					TLSSetting: configtls.Config{
+					Config: configtls.Config{
 						CertFile: "/doesnt/exist",
 					},
 					Insecure:   false,
@@ -342,7 +331,7 @@ func TestHTTPClientSettingsError(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.err, func(t *testing.T) {
-			_, err := test.settings.ToClient(host, componenttest.NewNopTelemetrySettings())
+			_, err := test.settings.ToClient(context.Background(), host, componenttest.NewNopTelemetrySettings())
 			assert.Regexp(t, test.err, err)
 		})
 	}
@@ -451,7 +440,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// Omit TracerProvider and MeterProvider in TelemetrySettings as otelhttp.Transport cannot be introspected
-			client, err := test.settings.ToClient(test.host, component.TelemetrySettings{Logger: zap.NewNop(), MetricsLevel: configtelemetry.LevelNone})
+			client, err := test.settings.ToClient(context.Background(), test.host, nilProvidersSettings)
 			if test.shouldErr {
 				assert.Error(t, err)
 				return
@@ -494,7 +483,7 @@ func TestHTTPServerSettingsError(t *testing.T) {
 			settings: ServerConfig{
 				Endpoint: "localhost:0",
 				TLSSetting: &configtls.ServerConfig{
-					TLSSetting: configtls.Config{
+					Config: configtls.Config{
 						CAFile: "/doesnt/exist",
 					},
 				},
@@ -505,7 +494,7 @@ func TestHTTPServerSettingsError(t *testing.T) {
 			settings: ServerConfig{
 				Endpoint: "localhost:0",
 				TLSSetting: &configtls.ServerConfig{
-					TLSSetting: configtls.Config{
+					Config: configtls.Config{
 						CertFile: "/doesnt/exist",
 					},
 				},
@@ -523,13 +512,20 @@ func TestHTTPServerSettingsError(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.err, func(t *testing.T) {
-			_, err := test.settings.ToListener()
+			_, err := test.settings.ToListener(context.Background())
 			assert.Regexp(t, test.err, err)
 		})
 	}
 }
 
 func TestHTTPServerWarning(t *testing.T) {
+	prev := localhostgate.UseLocalHostAsDefaultHostfeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(localhostgate.UseLocalHostAsDefaultHostID, false))
+	defer func() {
+		// Restore previous value.
+		require.NoError(t, featuregate.GlobalRegistry().Set(localhostgate.UseLocalHostAsDefaultHostID, prev))
+	}()
+
 	tests := []struct {
 		name     string
 		settings ServerConfig
@@ -555,6 +551,7 @@ func TestHTTPServerWarning(t *testing.T) {
 			set.Logger = zap.New(logger)
 
 			_, err := test.settings.ToServer(
+				context.Background(),
 				componenttest.NewNopHost(),
 				set,
 				http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -586,14 +583,14 @@ func TestHttpReception(t *testing.T) {
 		{
 			name: "TLS",
 			tlsServerCreds: &configtls.ServerConfig{
-				TLSSetting: configtls.Config{
+				Config: configtls.Config{
 					CAFile:   filepath.Join("testdata", "ca.crt"),
 					CertFile: filepath.Join("testdata", "server.crt"),
 					KeyFile:  filepath.Join("testdata", "server.key"),
 				},
 			},
 			tlsClientCreds: &configtls.ClientConfig{
-				TLSSetting: configtls.Config{
+				Config: configtls.Config{
 					CAFile: filepath.Join("testdata", "ca.crt"),
 				},
 				ServerName: "localhost",
@@ -602,14 +599,14 @@ func TestHttpReception(t *testing.T) {
 		{
 			name: "TLS (HTTP/1.1)",
 			tlsServerCreds: &configtls.ServerConfig{
-				TLSSetting: configtls.Config{
+				Config: configtls.Config{
 					CAFile:   filepath.Join("testdata", "ca.crt"),
 					CertFile: filepath.Join("testdata", "server.crt"),
 					KeyFile:  filepath.Join("testdata", "server.key"),
 				},
 			},
 			tlsClientCreds: &configtls.ClientConfig{
-				TLSSetting: configtls.Config{
+				Config: configtls.Config{
 					CAFile: filepath.Join("testdata", "ca.crt"),
 				},
 				ServerName: "localhost",
@@ -619,12 +616,12 @@ func TestHttpReception(t *testing.T) {
 		{
 			name: "NoServerCertificates",
 			tlsServerCreds: &configtls.ServerConfig{
-				TLSSetting: configtls.Config{
+				Config: configtls.Config{
 					CAFile: filepath.Join("testdata", "ca.crt"),
 				},
 			},
 			tlsClientCreds: &configtls.ClientConfig{
-				TLSSetting: configtls.Config{
+				Config: configtls.Config{
 					CAFile: filepath.Join("testdata", "ca.crt"),
 				},
 				ServerName: "localhost",
@@ -634,7 +631,7 @@ func TestHttpReception(t *testing.T) {
 		{
 			name: "mTLS",
 			tlsServerCreds: &configtls.ServerConfig{
-				TLSSetting: configtls.Config{
+				Config: configtls.Config{
 					CAFile:   filepath.Join("testdata", "ca.crt"),
 					CertFile: filepath.Join("testdata", "server.crt"),
 					KeyFile:  filepath.Join("testdata", "server.key"),
@@ -642,7 +639,7 @@ func TestHttpReception(t *testing.T) {
 				ClientCAFile: filepath.Join("testdata", "ca.crt"),
 			},
 			tlsClientCreds: &configtls.ClientConfig{
-				TLSSetting: configtls.Config{
+				Config: configtls.Config{
 					CAFile:   filepath.Join("testdata", "ca.crt"),
 					CertFile: filepath.Join("testdata", "client.crt"),
 					KeyFile:  filepath.Join("testdata", "client.key"),
@@ -653,7 +650,7 @@ func TestHttpReception(t *testing.T) {
 		{
 			name: "NoClientCertificate",
 			tlsServerCreds: &configtls.ServerConfig{
-				TLSSetting: configtls.Config{
+				Config: configtls.Config{
 					CAFile:   filepath.Join("testdata", "ca.crt"),
 					CertFile: filepath.Join("testdata", "server.crt"),
 					KeyFile:  filepath.Join("testdata", "server.key"),
@@ -661,7 +658,7 @@ func TestHttpReception(t *testing.T) {
 				ClientCAFile: filepath.Join("testdata", "ca.crt"),
 			},
 			tlsClientCreds: &configtls.ClientConfig{
-				TLSSetting: configtls.Config{
+				Config: configtls.Config{
 					CAFile: filepath.Join("testdata", "ca.crt"),
 				},
 				ServerName: "localhost",
@@ -671,7 +668,7 @@ func TestHttpReception(t *testing.T) {
 		{
 			name: "WrongClientCA",
 			tlsServerCreds: &configtls.ServerConfig{
-				TLSSetting: configtls.Config{
+				Config: configtls.Config{
 					CAFile:   filepath.Join("testdata", "ca.crt"),
 					CertFile: filepath.Join("testdata", "server.crt"),
 					KeyFile:  filepath.Join("testdata", "server.key"),
@@ -679,7 +676,7 @@ func TestHttpReception(t *testing.T) {
 				ClientCAFile: filepath.Join("testdata", "server.crt"),
 			},
 			tlsClientCreds: &configtls.ClientConfig{
-				TLSSetting: configtls.Config{
+				Config: configtls.Config{
 					CAFile:   filepath.Join("testdata", "ca.crt"),
 					CertFile: filepath.Join("testdata", "client.crt"),
 					KeyFile:  filepath.Join("testdata", "client.key"),
@@ -697,10 +694,11 @@ func TestHttpReception(t *testing.T) {
 				Endpoint:   "localhost:0",
 				TLSSetting: tt.tlsServerCreds,
 			}
-			ln, err := hss.ToListener()
+			ln, err := hss.ToListener(context.Background())
 			require.NoError(t, err)
 
 			s, err := hss.ToServer(
+				context.Background(),
 				componenttest.NewNopHost(),
 				componenttest.NewNopTelemetrySettings(),
 				http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -724,15 +722,14 @@ func TestHttpReception(t *testing.T) {
 				Endpoint:   prefix + ln.Addr().String(),
 				TLSSetting: *tt.tlsClientCreds,
 			}
+
+			client, errClient := hcs.ToClient(context.Background(), componenttest.NewNopHost(), nilProvidersSettings)
+			require.NoError(t, errClient)
+
 			if tt.forceHTTP1 {
 				expectedProto = "HTTP/1.1"
-				hcs.CustomRoundTripper = func(rt http.RoundTripper) (http.RoundTripper, error) {
-					rt.(*http.Transport).ForceAttemptHTTP2 = false
-					return rt, nil
-				}
+				client.Transport.(*http.Transport).ForceAttemptHTTP2 = false
 			}
-			client, errClient := hcs.ToClient(componenttest.NewNopHost(), component.TelemetrySettings{})
-			require.NoError(t, errClient)
 
 			resp, errResp := client.Get(hcs.Endpoint)
 			if tt.hasError {
@@ -767,7 +764,7 @@ func TestHttpCors(t *testing.T) {
 		},
 		{
 			name:             "emptyCORS",
-			CORSConfig:       &CORSConfig{},
+			CORSConfig:       NewDefaultCORSConfig(),
 			allowedWorks:     false,
 			disallowedWorks:  false,
 			extraHeaderWorks: false,
@@ -810,10 +807,11 @@ func TestHttpCors(t *testing.T) {
 				CORS:     tt.CORSConfig,
 			}
 
-			ln, err := hss.ToListener()
+			ln, err := hss.ToListener(context.Background())
 			require.NoError(t, err)
 
 			s, err := hss.ToServer(
+				context.Background(),
 				componenttest.NewNopHost(),
 				componenttest.NewNopTelemetrySettings(),
 				http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -854,6 +852,7 @@ func TestHttpCorsInvalidSettings(t *testing.T) {
 
 	// This effectively does not enable CORS but should also not cause an error
 	s, err := hss.ToServer(
+		context.Background(),
 		componenttest.NewNopHost(),
 		componenttest.NewNopTelemetrySettings(),
 		http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
@@ -868,8 +867,10 @@ func TestHttpCorsWithSettings(t *testing.T) {
 		CORS: &CORSConfig{
 			AllowedOrigins: []string{"*"},
 		},
-		Auth: &configauth.Authentication{
-			AuthenticatorID: mockID,
+		Auth: &AuthConfig{
+			Authentication: configauth.Authentication{
+				AuthenticatorID: mockID,
+			},
 		},
 	}
 
@@ -883,7 +884,7 @@ func TestHttpCorsWithSettings(t *testing.T) {
 		},
 	}
 
-	srv, err := hss.ToServer(host, componenttest.NewNopTelemetrySettings(), nil)
+	srv, err := hss.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings(), nil)
 	require.NoError(t, err)
 	require.NotNil(t, srv)
 
@@ -926,10 +927,11 @@ func TestHttpServerHeaders(t *testing.T) {
 				ResponseHeaders: tt.headers,
 			}
 
-			ln, err := hss.ToListener()
+			ln, err := hss.ToListener(context.Background())
 			require.NoError(t, err)
 
 			s, err := hss.ToServer(
+				context.Background(),
 				componenttest.NewNopHost(),
 				componenttest.NewNopTelemetrySettings(),
 				http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -957,7 +959,7 @@ func verifyCorsResp(t *testing.T, url string, origin string, set *CORSConfig, ex
 	req.Header.Set("Origin", origin)
 	if extraHeader {
 		req.Header.Set("ExtraHeader", "foo")
-		req.Header.Set("Access-Control-Request-Headers", "ExtraHeader")
+		req.Header.Set("Access-Control-Request-Headers", "extraheader")
 	}
 	req.Header.Set("Access-Control-Request-Method", "POST")
 
@@ -1009,10 +1011,11 @@ func verifyHeadersResp(t *testing.T, url string, expected map[string]configopaqu
 }
 
 func ExampleServerConfig() {
-	settings := ServerConfig{
-		Endpoint: "localhost:443",
-	}
+	settings := NewDefaultServerConfig()
+	settings.Endpoint = "localhost:443"
+
 	s, err := settings.ToServer(
+		context.Background(),
 		componenttest.NewNopHost(),
 		componenttest.NewNopTelemetrySettings(),
 		http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
@@ -1020,7 +1023,7 @@ func ExampleServerConfig() {
 		panic(err)
 	}
 
-	l, err := settings.ToListener()
+	l, err := settings.ToListener(context.Background())
 	if err != nil {
 		panic(err)
 	}
@@ -1059,7 +1062,7 @@ func TestHttpClientHeaders(t *testing.T) {
 				Timeout:         0,
 				Headers:         tt.headers,
 			}
-			client, _ := setting.ToClient(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+			client, _ := setting.ToClient(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 			req, err := http.NewRequest(http.MethodGet, setting.Endpoint, nil)
 			assert.NoError(t, err)
 			_, err = client.Do(req)
@@ -1089,13 +1092,13 @@ func TestHttpClientHostHeader(t *testing.T) {
 		serverURL, _ := url.Parse(server.URL)
 		setting := ClientConfig{
 			Endpoint:        serverURL.String(),
-			TLSSetting:      configtls.TLSClientSetting{},
+			TLSSetting:      configtls.ClientConfig{},
 			ReadBufferSize:  0,
 			WriteBufferSize: 0,
 			Timeout:         0,
 			Headers:         tt.headers,
 		}
-		client, _ := setting.ToClient(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+		client, _ := setting.ToClient(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 		req, err := http.NewRequest(http.MethodGet, setting.Endpoint, nil)
 		assert.NoError(t, err)
 		_, err = client.Do(req)
@@ -1169,8 +1172,10 @@ func TestServerAuth(t *testing.T) {
 	authCalled := false
 	hss := ServerConfig{
 		Endpoint: "localhost:0",
-		Auth: &configauth.Authentication{
-			AuthenticatorID: mockID,
+		Auth: &AuthConfig{
+			Authentication: configauth.Authentication{
+				AuthenticatorID: mockID,
+			},
 		},
 	}
 
@@ -1190,7 +1195,7 @@ func TestServerAuth(t *testing.T) {
 		handlerCalled = true
 	})
 
-	srv, err := hss.ToServer(host, componenttest.NewNopTelemetrySettings(), handler)
+	srv, err := hss.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings(), handler)
 	require.NoError(t, err)
 
 	// test
@@ -1203,12 +1208,14 @@ func TestServerAuth(t *testing.T) {
 
 func TestInvalidServerAuth(t *testing.T) {
 	hss := ServerConfig{
-		Auth: &configauth.Authentication{
-			AuthenticatorID: nonExistingID,
+		Auth: &AuthConfig{
+			Authentication: configauth.Authentication{
+				AuthenticatorID: nonExistingID,
+			},
 		},
 	}
 
-	srv, err := hss.ToServer(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), http.NewServeMux())
+	srv, err := hss.ToServer(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), http.NewServeMux())
 	require.Error(t, err)
 	require.Nil(t, srv)
 }
@@ -1217,8 +1224,10 @@ func TestFailedServerAuth(t *testing.T) {
 	// prepare
 	hss := ServerConfig{
 		Endpoint: "localhost:0",
-		Auth: &configauth.Authentication{
-			AuthenticatorID: mockID,
+		Auth: &AuthConfig{
+			Authentication: configauth.Authentication{
+				AuthenticatorID: mockID,
+			},
 		},
 	}
 	host := &mockHost{
@@ -1231,7 +1240,7 @@ func TestFailedServerAuth(t *testing.T) {
 		},
 	}
 
-	srv, err := hss.ToServer(host, componenttest.NewNopTelemetrySettings(), http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	srv, err := hss.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings(), http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	require.NoError(t, err)
 
 	// test
@@ -1255,6 +1264,7 @@ func TestServerWithErrorHandler(t *testing.T) {
 	}
 
 	srv, err := hss.ToServer(
+		context.Background(),
 		componenttest.NewNopHost(),
 		componenttest.NewNopTelemetrySettings(),
 		http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}),
@@ -1275,14 +1285,14 @@ func TestServerWithErrorHandler(t *testing.T) {
 
 func TestServerWithDecoder(t *testing.T) {
 	// prepare
-	hss := ServerConfig{
-		Endpoint: "localhost:0",
-	}
+	hss := NewDefaultServerConfig()
+	hss.Endpoint = "localhost:0"
 	decoder := func(body io.ReadCloser) (io.ReadCloser, error) {
 		return body, nil
 	}
 
 	srv, err := hss.ToServer(
+		context.Background(),
 		componenttest.NewNopHost(),
 		componenttest.NewNopTelemetrySettings(),
 		http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}),
@@ -1292,7 +1302,7 @@ func TestServerWithDecoder(t *testing.T) {
 	// test
 	response := &httptest.ResponseRecorder{}
 
-	req, err := http.NewRequest(http.MethodGet, srv.Addr, nil)
+	req, err := http.NewRequest(http.MethodGet, srv.Addr, bytes.NewBuffer([]byte("something")))
 	require.NoError(t, err, "Error creating request: %v", err)
 	req.Header.Set("Content-Encoding", "something-else")
 
@@ -1300,6 +1310,135 @@ func TestServerWithDecoder(t *testing.T) {
 	// verify
 	assert.Equal(t, response.Result().StatusCode, http.StatusOK)
 
+}
+
+func TestServerWithDecompression(t *testing.T) {
+	// prepare
+	hss := ServerConfig{
+		MaxRequestBodySize: 1000, // 1 KB
+	}
+	body := []byte(strings.Repeat("a", 1000*1000)) // 1 MB
+
+	srv, err := hss.ToServer(
+		context.Background(),
+		componenttest.NewNopHost(),
+		componenttest.NewNopTelemetrySettings(),
+		http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
+			actualBody, err := io.ReadAll(req.Body)
+			assert.ErrorContains(t, err, "http: request body too large")
+			assert.Len(t, actualBody, 1000)
+
+			if err != nil {
+				resp.WriteHeader(http.StatusBadRequest)
+			} else {
+				resp.WriteHeader(http.StatusOK)
+			}
+		}),
+	)
+	require.NoError(t, err)
+
+	testSrv := httptest.NewServer(srv.Handler)
+	defer testSrv.Close()
+
+	req, err := http.NewRequest(http.MethodGet, testSrv.URL, compressZstd(t, body))
+	require.NoError(t, err, "Error creating request: %v", err)
+
+	req.Header.Set("Content-Encoding", "zstd")
+
+	// test
+	c := http.Client{}
+	resp, err := c.Do(req)
+	require.NoError(t, err, "Error sending request: %v", err)
+
+	_, err = io.ReadAll(resp.Body)
+	require.NoError(t, err, "Error reading response body: %v", err)
+
+	// verifications is done mostly within the test, but this is only a sanity check
+	// that we got into the test handler
+	assert.Equal(t, resp.StatusCode, http.StatusBadRequest)
+}
+
+func TestDefaultMaxRequestBodySize(t *testing.T) {
+	tests := []struct {
+		name     string
+		settings ServerConfig
+		expected int64
+	}{
+		{
+			name:     "default",
+			settings: ServerConfig{},
+			expected: defaultMaxRequestBodySize,
+		},
+		{
+			name:     "zero",
+			settings: ServerConfig{MaxRequestBodySize: 0},
+			expected: defaultMaxRequestBodySize,
+		},
+		{
+			name:     "negative",
+			settings: ServerConfig{MaxRequestBodySize: -1},
+			expected: defaultMaxRequestBodySize,
+		},
+		{
+			name:     "custom",
+			settings: ServerConfig{MaxRequestBodySize: 100},
+			expected: 100,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := tt.settings.ToServer(
+				context.Background(),
+				componenttest.NewNopHost(),
+				componenttest.NewNopTelemetrySettings(),
+				http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}),
+			)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, tt.settings.MaxRequestBodySize)
+		})
+	}
+}
+
+func TestAuthWithQueryParams(t *testing.T) {
+	// prepare
+	authCalled := false
+	hss := ServerConfig{
+		Endpoint: "localhost:0",
+		Auth: &AuthConfig{
+			RequestParameters: []string{"auth"},
+			Authentication: configauth.Authentication{
+				AuthenticatorID: mockID,
+			},
+		},
+	}
+
+	host := &mockHost{
+		ext: map[component.ID]component.Component{
+			mockID: auth.NewServer(
+				auth.WithServerAuthenticate(func(ctx context.Context, sources map[string][]string) (context.Context, error) {
+					require.Len(t, sources, 1)
+					assert.Equal(t, "1", sources["auth"][0])
+					authCalled = true
+					return ctx, nil
+				}),
+			),
+		},
+	}
+
+	handlerCalled := false
+	handler := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		handlerCalled = true
+	})
+
+	srv, err := hss.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings(), handler)
+	require.NoError(t, err)
+
+	// test
+	srv.Handler.ServeHTTP(&httptest.ResponseRecorder{}, httptest.NewRequest("GET", "/?auth=1", nil))
+
+	// verify
+	assert.True(t, handlerCalled)
+	assert.True(t, authCalled)
 }
 
 type mockHost struct {
@@ -1340,14 +1479,14 @@ func BenchmarkHttpRequest(b *testing.B) {
 	}
 
 	tlsServerCreds := &configtls.ServerConfig{
-		TLSSetting: configtls.Config{
+		Config: configtls.Config{
 			CAFile:   filepath.Join("testdata", "ca.crt"),
 			CertFile: filepath.Join("testdata", "server.crt"),
 			KeyFile:  filepath.Join("testdata", "server.key"),
 		},
 	}
 	tlsClientCreds := &configtls.ClientConfig{
-		TLSSetting: configtls.Config{
+		Config: configtls.Config{
 			CAFile: filepath.Join("testdata", "ca.crt"),
 		},
 		ServerName: "localhost",
@@ -1359,6 +1498,7 @@ func BenchmarkHttpRequest(b *testing.B) {
 	}
 
 	s, err := hss.ToServer(
+		context.Background(),
 		componenttest.NewNopHost(),
 		componenttest.NewNopTelemetrySettings(),
 		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -1366,7 +1506,7 @@ func BenchmarkHttpRequest(b *testing.B) {
 			require.NoError(b, errWrite)
 		}))
 	require.NoError(b, err)
-	ln, err := hss.ToListener()
+	ln, err := hss.ToListener(context.Background())
 	require.NoError(b, err)
 
 	go func() {
@@ -1381,23 +1521,23 @@ func BenchmarkHttpRequest(b *testing.B) {
 			Endpoint:   "https://" + ln.Addr().String(),
 			TLSSetting: *tlsClientCreds,
 		}
-		if bb.forceHTTP1 {
-			hcs.CustomRoundTripper = func(rt http.RoundTripper) (http.RoundTripper, error) {
-				rt.(*http.Transport).ForceAttemptHTTP2 = false
-				return rt, nil
-			}
-		}
+
 		b.Run(bb.name, func(b *testing.B) {
 			var c *http.Client
 			if !bb.clientPerThread {
-				c, err = hcs.ToClient(componenttest.NewNopHost(), component.TelemetrySettings{})
+				c, err = hcs.ToClient(context.Background(), componenttest.NewNopHost(), nilProvidersSettings)
 				require.NoError(b, err)
+
 			}
 			b.RunParallel(func(pb *testing.PB) {
 				if c == nil {
-					c, err = hcs.ToClient(componenttest.NewNopHost(), component.TelemetrySettings{})
+					c, err = hcs.ToClient(context.Background(), componenttest.NewNopHost(), nilProvidersSettings)
 					require.NoError(b, err)
 				}
+				if bb.forceHTTP1 {
+					c.Transport.(*http.Transport).ForceAttemptHTTP2 = false
+				}
+
 				for pb.Next() {
 					resp, errResp := c.Get(hcs.Endpoint)
 					require.NoError(b, errResp)
@@ -1412,4 +1552,15 @@ func BenchmarkHttpRequest(b *testing.B) {
 			<-time.After(10 * time.Millisecond)
 		})
 	}
+}
+
+func TestDefaultHTTPServerSettings(t *testing.T) {
+	httpServerSettings := NewDefaultServerConfig()
+	assert.NotNil(t, httpServerSettings.ResponseHeaders)
+	assert.NotNil(t, httpServerSettings.CORS)
+	assert.NotNil(t, httpServerSettings.TLSSetting)
+	assert.Equal(t, 1*time.Minute, httpServerSettings.IdleTimeout)
+	assert.Equal(t, 30*time.Second, httpServerSettings.WriteTimeout)
+	assert.Equal(t, time.Duration(0), httpServerSettings.ReadTimeout)
+	assert.Equal(t, 1*time.Minute, httpServerSettings.ReadHeaderTimeout)
 }

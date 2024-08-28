@@ -12,11 +12,8 @@ import (
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/stats"
-	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/contrib/config"
 	"go.opentelemetry.io/otel/metric"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -30,7 +27,6 @@ import (
 const (
 	metricPrefix = "otelcol_"
 	otelPrefix   = "otel_sdk_"
-	ocPrefix     = "oc_sdk_"
 	grpcPrefix   = "gprc_"
 	httpPrefix   = "http_"
 	counterName  = "test_counter"
@@ -52,14 +48,6 @@ func TestTelemetryInit(t *testing.T) {
 		{
 			name: "UseOpenTelemetryForInternalMetrics",
 			expectedMetrics: map[string]metricValue{
-				metricPrefix + ocPrefix + counterName: {
-					value: 13,
-					labels: map[string]string{
-						"service_name":        "otelcol",
-						"service_version":     "latest",
-						"service_instance_id": testInstanceID,
-					},
-				},
 				metricPrefix + otelPrefix + counterName: {
 					value: 13,
 					labels: map[string]string{
@@ -103,14 +91,6 @@ func TestTelemetryInit(t *testing.T) {
 			name:            "DisableHighCardinalityWithOtel",
 			disableHighCard: true,
 			expectedMetrics: map[string]metricValue{
-				metricPrefix + ocPrefix + counterName: {
-					value: 13,
-					labels: map[string]string{
-						"service_name":        "otelcol",
-						"service_version":     "latest",
-						"service_instance_id": testInstanceID,
-					},
-				},
 				metricPrefix + otelPrefix + counterName: {
 					value: 13,
 					labels: map[string]string{
@@ -168,14 +148,6 @@ func TestTelemetryInit(t *testing.T) {
 				},
 			},
 			expectedMetrics: map[string]metricValue{
-				metricPrefix + ocPrefix + counterName: {
-					value: 13,
-					labels: map[string]string{
-						"service_name":        "otelcol",
-						"service_version":     "latest",
-						"service_instance_id": testInstanceID,
-					},
-				},
 				metricPrefix + otelPrefix + counterName: {
 					value: 13,
 					labels: map[string]string{
@@ -241,11 +213,10 @@ func TestTelemetryInit(t *testing.T) {
 			}
 			set := meterProviderSettings{
 				res:               resource.New(component.NewDefaultBuildInfo(), tc.cfg.Resource),
-				logger:            zap.NewNop(),
 				cfg:               tc.cfg.Metrics,
 				asyncErrorChannel: make(chan error),
 			}
-			mp, err := newMeterProvider(set, tc.disableHighCard, tc.extendedConfig)
+			mp, err := newMeterProvider(set, tc.disableHighCard)
 			require.NoError(t, err)
 			defer func() {
 				if prov, ok := mp.(interface{ Shutdown(context.Context) error }); ok {
@@ -253,10 +224,7 @@ func TestTelemetryInit(t *testing.T) {
 				}
 			}()
 
-			v := createTestMetrics(t, mp)
-			defer func() {
-				view.Unregister(v)
-			}()
+			createTestMetrics(t, mp)
 
 			metrics := getMetricsFromPrometheus(t, mp.(*meterProvider).servers[0].Handler)
 			require.Equal(t, len(tc.expectedMetrics), len(metrics))
@@ -279,37 +247,19 @@ func TestTelemetryInit(t *testing.T) {
 	}
 }
 
-func createTestMetrics(t *testing.T, mp metric.MeterProvider) *view.View {
+func createTestMetrics(t *testing.T, mp metric.MeterProvider) {
 	// Creates a OTel Go counter
-	counter, err := mp.Meter("collector_test").Int64Counter(otelPrefix+counterName, metric.WithUnit("ms"))
+	counter, err := mp.Meter("collector_test").Int64Counter(metricPrefix+otelPrefix+counterName, metric.WithUnit("ms"))
 	require.NoError(t, err)
 	counter.Add(context.Background(), 13)
 
-	grpcExampleCounter, err := mp.Meter(proctelemetry.GRPCInstrumentation).Int64Counter(grpcPrefix + counterName)
+	grpcExampleCounter, err := mp.Meter(proctelemetry.GRPCInstrumentation).Int64Counter(metricPrefix + grpcPrefix + counterName)
 	require.NoError(t, err)
 	grpcExampleCounter.Add(context.Background(), 11, metric.WithAttributes(proctelemetry.GRPCUnacceptableKeyValues...))
 
-	httpExampleCounter, err := mp.Meter(proctelemetry.HTTPInstrumentation).Int64Counter(httpPrefix + counterName)
+	httpExampleCounter, err := mp.Meter(proctelemetry.HTTPInstrumentation).Int64Counter(metricPrefix + httpPrefix + counterName)
 	require.NoError(t, err)
 	httpExampleCounter.Add(context.Background(), 10, metric.WithAttributes(proctelemetry.HTTPUnacceptableKeyValues...))
-
-	// Creates a OpenCensus measure
-	ocCounter := stats.Int64(ocPrefix+counterName, counterName, stats.UnitDimensionless)
-	v := &view.View{
-		Name:        ocPrefix + counterName,
-		Description: ocCounter.Description(),
-		Measure:     ocCounter,
-		Aggregation: view.Sum(),
-	}
-	err = view.Register(v)
-	require.NoError(t, err)
-
-	stats.Record(context.Background(), stats.Int64(ocPrefix+counterName, counterName, stats.UnitDimensionless).M(13))
-
-	// Forces a flush for the view data.
-	_, _ = view.RetrieveData(ocPrefix + counterName)
-
-	return v
 }
 
 func getMetricsFromPrometheus(t *testing.T, handler http.Handler) map[string]*io_prometheus_client.MetricFamily {

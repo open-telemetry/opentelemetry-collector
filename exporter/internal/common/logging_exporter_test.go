@@ -13,14 +13,14 @@ import (
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
 func TestLoggingTracesExporterNoErrors(t *testing.T) {
-	lte, err := CreateTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), createDefaultConfig(), &Common{})
+	lte, err := CreateTracesExporter(context.Background(), exportertest.NewNopSettings(), createDefaultConfig(), &Common{})
 	require.NotNil(t, lte)
 	assert.NoError(t, err)
 
@@ -31,7 +31,7 @@ func TestLoggingTracesExporterNoErrors(t *testing.T) {
 }
 
 func TestLoggingMetricsExporterNoErrors(t *testing.T) {
-	lme, err := CreateMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), createDefaultConfig(), &Common{})
+	lme, err := CreateMetricsExporter(context.Background(), exportertest.NewNopSettings(), createDefaultConfig(), &Common{})
 	require.NotNil(t, lme)
 	assert.NoError(t, err)
 
@@ -45,7 +45,7 @@ func TestLoggingMetricsExporterNoErrors(t *testing.T) {
 }
 
 func TestLoggingLogsExporterNoErrors(t *testing.T) {
-	lle, err := CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), createDefaultConfig(), &Common{})
+	lle, err := CreateLogsExporter(context.Background(), exportertest.NewNopSettings(), createDefaultConfig(), &Common{})
 	require.NotNil(t, lle)
 	assert.NoError(t, err)
 

@@ -12,28 +12,29 @@ import (
 )
 
 var (
-	errMissingExporters = errors.New("no exporter configuration specified in config")
-	errMissingReceivers = errors.New("no receiver configuration specified in config")
+	errMissingExporters       = errors.New("no exporter configuration specified in config")
+	errMissingReceivers       = errors.New("no receiver configuration specified in config")
+	errEmptyConfigurationFile = errors.New("empty configuration file")
 )
 
 // Config defines the configuration for the various elements of collector or agent.
 type Config struct {
 	// Receivers is a map of ComponentID to Receivers.
-	Receivers map[component.ID]component.Config
+	Receivers map[component.ID]component.Config `mapstructure:"receivers"`
 
 	// Exporters is a map of ComponentID to Exporters.
-	Exporters map[component.ID]component.Config
+	Exporters map[component.ID]component.Config `mapstructure:"exporters"`
 
 	// Processors is a map of ComponentID to Processors.
-	Processors map[component.ID]component.Config
+	Processors map[component.ID]component.Config `mapstructure:"processors"`
 
 	// Connectors is a map of ComponentID to connectors.
-	Connectors map[component.ID]component.Config
+	Connectors map[component.ID]component.Config `mapstructure:"connectors"`
 
 	// Extensions is a map of ComponentID to extensions.
-	Extensions map[component.ID]component.Config
+	Extensions map[component.ID]component.Config `mapstructure:"extensions"`
 
-	Service service.Config
+	Service service.Config `mapstructure:"service"`
 }
 
 // Validate returns an error if the config is invalid.
@@ -42,6 +43,11 @@ type Config struct {
 // invalid cases that we currently don't check for but which we may want to add in
 // the future (e.g. disallowing receiving and exporting on the same endpoint).
 func (cfg *Config) Validate() error {
+	// There must be at least one property set in the configuration	file.
+	if len(cfg.Receivers) == 0 && len(cfg.Exporters) == 0 && len(cfg.Processors) == 0 && len(cfg.Connectors) == 0 && len(cfg.Extensions) == 0 {
+		return errEmptyConfigurationFile
+	}
+
 	// Currently, there is no default receiver enabled.
 	// The configuration must specify at least one receiver to be valid.
 	if len(cfg.Receivers) == 0 {

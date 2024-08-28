@@ -50,7 +50,7 @@ func TestEndpointForPort(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.endpoint, func(t *testing.T) {
-			defer setFeatureGateForTest(t, useLocalHostAsDefaultHostfeatureGate, tt.enabled)()
+			defer setFeatureGateForTest(t, UseLocalHostAsDefaultHostfeatureGate, tt.enabled)()
 			assert.Equal(t, EndpointForPort(tt.port), tt.endpoint)
 		})
 	}

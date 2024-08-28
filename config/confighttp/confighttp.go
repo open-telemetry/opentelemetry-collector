@@ -4,12 +4,14 @@
 package confighttp // import "go.opentelemetry.io/collector/config/confighttp"
 
 import (
+	"context"
 	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
+	"net/http/cookiejar"
 	"net/url"
 	"time"
 
@@ -17,17 +19,21 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
 	"golang.org/x/net/http2"
+	"golang.org/x/net/publicsuffix"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/config/internal"
 	"go.opentelemetry.io/collector/extension/auth"
 )
 
 const headerContentEncoding = "Content-Encoding"
+const defaultMaxRequestBodySize = 20 * 1024 * 1024 // 20MiB
+var defaultCompressionAlgorithms = []string{"", "gzip", "zstd", "zlib", "snappy", "deflate"}
 
 // ClientConfig defines settings for creating an HTTP client.
 type ClientConfig struct {
@@ -41,21 +47,21 @@ type ClientConfig struct {
 	TLSSetting configtls.ClientConfig `mapstructure:"tls"`
 
 	// ReadBufferSize for HTTP client. See http.Transport.ReadBufferSize.
+	// Default is 0.
 	ReadBufferSize int `mapstructure:"read_buffer_size"`
 
 	// WriteBufferSize for HTTP client. See http.Transport.WriteBufferSize.
+	// Default is 0.
 	WriteBufferSize int `mapstructure:"write_buffer_size"`
 
 	// Timeout parameter configures `http.Client.Timeout`.
+	// Default is 0 (unlimited).
 	Timeout time.Duration `mapstructure:"timeout"`
 
 	// Additional headers attached to each HTTP request sent by the client.
 	// Existing header values are overwritten if collision happens.
 	// Header values are opaque since they may be sensitive.
 	Headers map[string]configopaque.String `mapstructure:"headers"`
-
-	// Custom Round Tripper to allow for individual components to intercept HTTP requests
-	CustomRoundTripper func(next http.RoundTripper) (http.RoundTripper, error)
 
 	// Auth configuration for outgoing HTTP calls.
 	Auth *configauth.Authentication `mapstructure:"auth"`
@@ -64,20 +70,20 @@ type ClientConfig struct {
 	Compression configcompression.Type `mapstructure:"compression"`
 
 	// MaxIdleConns is used to set a limit to the maximum idle HTTP connections the client can keep open.
-	// There's an already set value, and we want to override it only if an explicit value provided
+	// By default, it is set to 100.
 	MaxIdleConns *int `mapstructure:"max_idle_conns"`
 
 	// MaxIdleConnsPerHost is used to set a limit to the maximum idle HTTP connections the host can keep open.
-	// There's an already set value, and we want to override it only if an explicit value provided
+	// By default, it is set to [http.DefaultTransport.MaxIdleConnsPerHost].
 	MaxIdleConnsPerHost *int `mapstructure:"max_idle_conns_per_host"`
 
 	// MaxConnsPerHost limits the total number of connections per host, including connections in the dialing,
 	// active, and idle states.
-	// There's an already set value, and we want to override it only if an explicit value provided
+	// By default, it is set to [http.DefaultTransport.MaxConnsPerHost].
 	MaxConnsPerHost *int `mapstructure:"max_conns_per_host"`
 
 	// IdleConnTimeout is the maximum amount of time a connection will remain open before closing itself.
-	// There's an already set value, and we want to override it only if an explicit value provided
+	// By default, it is set to [http.DefaultTransport.IdleConnTimeout]
 	IdleConnTimeout *time.Duration `mapstructure:"idle_conn_timeout"`
 
 	// DisableKeepAlives, if true, disables HTTP keep-alives and will only use the connection to the server
@@ -97,26 +103,38 @@ type ClientConfig struct {
 	// HTTP2PingTimeout if there's no response to the ping within the configured value, the connection will be closed.
 	// If not set or set to 0, it defaults to 15s.
 	HTTP2PingTimeout time.Duration `mapstructure:"http2_ping_timeout"`
+	// Cookies configures the cookie management of the HTTP client.
+	Cookies *CookiesConfig `mapstructure:"cookies"`
+}
+
+// CookiesConfig defines the configuration of the HTTP client regarding cookies served by the server.
+type CookiesConfig struct {
+	// Enabled if true, cookies from HTTP responses will be reused in further HTTP requests with the same server.
+	Enabled bool `mapstructure:"enabled"`
 }
 
 // NewDefaultClientConfig returns ClientConfig type object with
-// the default values of 'MaxIdleConns' and 'IdleConnTimeout'.
+// the default values of 'MaxIdleConns' and 'IdleConnTimeout', as well as [http.DefaultTransport] values.
 // Other config options are not added as they are initialized with 'zero value' by GoLang as default.
 // We encourage to use this function to create an object of ClientConfig.
 func NewDefaultClientConfig() ClientConfig {
 	// The default values are taken from the values of 'DefaultTransport' of 'http' package.
-	maxIdleConns := 100
-	idleConnTimeout := 90 * time.Second
+	defaultTransport := http.DefaultTransport.(*http.Transport)
 
 	return ClientConfig{
-		MaxIdleConns:    &maxIdleConns,
-		IdleConnTimeout: &idleConnTimeout,
+		ReadBufferSize:      defaultTransport.ReadBufferSize,
+		WriteBufferSize:     defaultTransport.WriteBufferSize,
+		Headers:             map[string]configopaque.String{},
+		MaxIdleConns:        &defaultTransport.MaxIdleConns,
+		MaxIdleConnsPerHost: &defaultTransport.MaxIdleConnsPerHost,
+		MaxConnsPerHost:     &defaultTransport.MaxConnsPerHost,
+		IdleConnTimeout:     &defaultTransport.IdleConnTimeout,
 	}
 }
 
 // ToClient creates an HTTP client.
-func (hcs *ClientConfig) ToClient(host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
-	tlsCfg, err := hcs.TLSSetting.LoadTLSConfig()
+func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
+	tlsCfg, err := hcs.TLSSetting.LoadTLSConfig(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +196,7 @@ func (hcs *ClientConfig) ToClient(host component.Host, settings component.Teleme
 			return nil, errors.New("extensions configuration not found")
 		}
 
-		httpCustomAuthRoundTripper, aerr := hcs.Auth.GetClientAuthenticator(ext)
+		httpCustomAuthRoundTripper, aerr := hcs.Auth.GetClientAuthenticator(ctx, ext)
 		if aerr != nil {
 			return nil, aerr
 		}
@@ -205,18 +223,22 @@ func (hcs *ClientConfig) ToClient(host component.Host, settings component.Teleme
 		}
 	}
 
-	// wrapping http transport with otelhttp transport to enable otel instrumentation
-	if settings.TracerProvider != nil && settings.MeterProvider != nil {
-		clientTransport = otelhttp.NewTransport(
-			clientTransport,
-			otelhttp.WithTracerProvider(settings.TracerProvider),
-			otelhttp.WithMeterProvider(settings.MeterProvider),
-			otelhttp.WithPropagators(otel.GetTextMapPropagator()),
-		)
+	otelOpts := []otelhttp.Option{
+		otelhttp.WithTracerProvider(settings.TracerProvider),
+		otelhttp.WithPropagators(otel.GetTextMapPropagator()),
+	}
+	if settings.MetricsLevel >= configtelemetry.LevelDetailed {
+		otelOpts = append(otelOpts, otelhttp.WithMeterProvider(settings.MeterProvider))
 	}
 
-	if hcs.CustomRoundTripper != nil {
-		clientTransport, err = hcs.CustomRoundTripper(clientTransport)
+	// wrapping http transport with otelhttp transport to enable otel instrumentation
+	if settings.TracerProvider != nil && settings.MeterProvider != nil {
+		clientTransport = otelhttp.NewTransport(clientTransport, otelOpts...)
+	}
+
+	var jar http.CookieJar
+	if hcs.Cookies != nil && hcs.Cookies.Enabled {
+		jar, err = cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
 		if err != nil {
 			return nil, err
 		}
@@ -225,6 +247,7 @@ func (hcs *ClientConfig) ToClient(host component.Host, settings component.Teleme
 	return &http.Client{
 		Transport: clientTransport,
 		Timeout:   hcs.Timeout,
+		Jar:       jar,
 	}, nil
 }
 
@@ -262,22 +285,78 @@ type ServerConfig struct {
 	CORS *CORSConfig `mapstructure:"cors"`
 
 	// Auth for this receiver
-	Auth *configauth.Authentication `mapstructure:"auth"`
+	Auth *AuthConfig `mapstructure:"auth"`
 
-	// MaxRequestBodySize sets the maximum request body size in bytes
+	// MaxRequestBodySize sets the maximum request body size in bytes. Default: 20MiB.
 	MaxRequestBodySize int64 `mapstructure:"max_request_body_size"`
 
 	// IncludeMetadata propagates the client metadata from the incoming requests to the downstream consumers
-	// Experimental: *NOTE* this option is subject to change or removal in the future.
 	IncludeMetadata bool `mapstructure:"include_metadata"`
 
 	// Additional headers attached to each HTTP response sent to the client.
 	// Header values are opaque since they may be sensitive.
 	ResponseHeaders map[string]configopaque.String `mapstructure:"response_headers"`
+
+	// CompressionAlgorithms configures the list of compression algorithms the server can accept. Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate"]
+	CompressionAlgorithms []string `mapstructure:"compression_algorithms"`
+
+	// ReadTimeout is the maximum duration for reading the entire
+	// request, including the body. A zero or negative value means
+	// there will be no timeout.
+	//
+	// Because ReadTimeout does not let Handlers make per-request
+	// decisions on each request body's acceptable deadline or
+	// upload rate, most users will prefer to use
+	// ReadHeaderTimeout. It is valid to use them both.
+	ReadTimeout time.Duration `mapstructure:"read_timeout"`
+
+	// ReadHeaderTimeout is the amount of time allowed to read
+	// request headers. The connection's read deadline is reset
+	// after reading the headers and the Handler can decide what
+	// is considered too slow for the body. If ReadHeaderTimeout
+	// is zero, the value of ReadTimeout is used. If both are
+	// zero, there is no timeout.
+	ReadHeaderTimeout time.Duration `mapstructure:"read_header_timeout"`
+
+	// WriteTimeout is the maximum duration before timing out
+	// writes of the response. It is reset whenever a new
+	// request's header is read. Like ReadTimeout, it does not
+	// let Handlers make decisions on a per-request basis.
+	// A zero or negative value means there will be no timeout.
+	WriteTimeout time.Duration `mapstructure:"write_timeout"`
+
+	// IdleTimeout is the maximum amount of time to wait for the
+	// next request when keep-alives are enabled. If IdleTimeout
+	// is zero, the value of ReadTimeout is used. If both are
+	// zero, there is no timeout.
+	IdleTimeout time.Duration `mapstructure:"idle_timeout"`
+}
+
+// NewDefaultServerConfig returns ServerConfig type object with default values.
+// We encourage to use this function to create an object of ServerConfig.
+func NewDefaultServerConfig() ServerConfig {
+	tlsDefaultServerConfig := configtls.NewDefaultServerConfig()
+	return ServerConfig{
+		ResponseHeaders:   map[string]configopaque.String{},
+		TLSSetting:        &tlsDefaultServerConfig,
+		CORS:              NewDefaultCORSConfig(),
+		WriteTimeout:      30 * time.Second,
+		ReadHeaderTimeout: 1 * time.Minute,
+		IdleTimeout:       1 * time.Minute,
+	}
+}
+
+type AuthConfig struct {
+	// Auth for this receiver.
+	configauth.Authentication `mapstructure:",squash"`
+
+	// RequestParameters is a list of parameters that should be extracted from the request and added to the context.
+	// When a parameter is found in both the query string and the header, the value from the query string will be used.
+	RequestParameters []string `mapstructure:"request_params"`
 }
 
 // ToListener creates a net.Listener.
-func (hss *ServerConfig) ToListener() (net.Listener, error) {
+func (hss *ServerConfig) ToListener(ctx context.Context) (net.Listener, error) {
 	listener, err := net.Listen("tcp", hss.Endpoint)
 	if err != nil {
 		return nil, err
@@ -285,13 +364,14 @@ func (hss *ServerConfig) ToListener() (net.Listener, error) {
 
 	if hss.TLSSetting != nil {
 		var tlsCfg *tls.Config
-		tlsCfg, err = hss.TLSSetting.LoadTLSConfig()
+		tlsCfg, err = hss.TLSSetting.LoadTLSConfig(ctx)
 		if err != nil {
 			return nil, err
 		}
 		tlsCfg.NextProtos = []string{http2.NextProtoTLS, "http/1.1"}
 		listener = tls.NewListener(listener, tlsCfg)
 	}
+
 	return listener, nil
 }
 
@@ -326,7 +406,7 @@ func WithDecoder(key string, dec func(body io.ReadCloser) (io.ReadCloser, error)
 }
 
 // ToServer creates an http.Server from settings object.
-func (hss *ServerConfig) ToServer(host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
+func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
 	internal.WarnOnUnspecifiedHost(settings.Logger, hss.Endpoint)
 
 	serverOpts := &toServerOptions{}
@@ -334,19 +414,27 @@ func (hss *ServerConfig) ToServer(host component.Host, settings component.Teleme
 		o(serverOpts)
 	}
 
-	handler = httpContentDecompressor(handler, serverOpts.errHandler, serverOpts.decoders)
+	if hss.MaxRequestBodySize <= 0 {
+		hss.MaxRequestBodySize = defaultMaxRequestBodySize
+	}
+
+	if hss.CompressionAlgorithms == nil {
+		hss.CompressionAlgorithms = defaultCompressionAlgorithms
+	}
+
+	handler = httpContentDecompressor(handler, hss.MaxRequestBodySize, serverOpts.errHandler, hss.CompressionAlgorithms, serverOpts.decoders)
 
 	if hss.MaxRequestBodySize > 0 {
 		handler = maxRequestBodySizeInterceptor(handler, hss.MaxRequestBodySize)
 	}
 
 	if hss.Auth != nil {
-		server, err := hss.Auth.GetServerAuthenticator(host.GetExtensions())
+		server, err := hss.Auth.GetServerAuthenticator(context.Background(), host.GetExtensions())
 		if err != nil {
 			return nil, err
 		}
 
-		handler = authInterceptor(handler, server)
+		handler = authInterceptor(handler, server, hss.Auth.RequestParameters)
 	}
 
 	if hss.CORS != nil && len(hss.CORS.AllowedOrigins) > 0 {
@@ -366,18 +454,20 @@ func (hss *ServerConfig) ToServer(host component.Host, settings component.Teleme
 		handler = responseHeadersHandler(handler, hss.ResponseHeaders)
 	}
 
-	// Enable OpenTelemetry observability plugin.
-	// TODO: Consider to use component ID string as prefix for all the operations.
-	handler = otelhttp.NewHandler(
-		handler,
-		"",
+	otelOpts := []otelhttp.Option{
 		otelhttp.WithTracerProvider(settings.TracerProvider),
-		otelhttp.WithMeterProvider(settings.MeterProvider),
 		otelhttp.WithPropagators(otel.GetTextMapPropagator()),
 		otelhttp.WithSpanNameFormatter(func(_ string, r *http.Request) string {
 			return r.URL.Path
 		}),
-	)
+	}
+	if settings.MetricsLevel >= configtelemetry.LevelDetailed {
+		otelOpts = append(otelOpts, otelhttp.WithMeterProvider(settings.MeterProvider))
+	}
+
+	// Enable OpenTelemetry observability plugin.
+	// TODO: Consider to use component ID string as prefix for all the operations.
+	handler = otelhttp.NewHandler(handler, "", otelOpts...)
 
 	// wrap the current handler in an interceptor that will add client.Info to the request's context
 	handler = &clientInfoHandler{
@@ -385,9 +475,15 @@ func (hss *ServerConfig) ToServer(host component.Host, settings component.Teleme
 		includeMetadata: hss.IncludeMetadata,
 	}
 
-	return &http.Server{
-		Handler: handler,
-	}, nil
+	server := &http.Server{
+		Handler:           handler,
+		ReadTimeout:       hss.ReadTimeout,
+		ReadHeaderTimeout: hss.ReadHeaderTimeout,
+		WriteTimeout:      hss.WriteTimeout,
+		IdleTimeout:       hss.IdleTimeout,
+	}
+
+	return server, nil
 }
 
 func responseHeadersHandler(handler http.Handler, headers map[string]configopaque.String) http.Handler {
@@ -424,9 +520,21 @@ type CORSConfig struct {
 	MaxAge int `mapstructure:"max_age"`
 }
 
-func authInterceptor(next http.Handler, server auth.Server) http.Handler {
+// NewDefaultCORSConfig creates a default cross-origin resource sharing (CORS) configuration.
+func NewDefaultCORSConfig() *CORSConfig {
+	return &CORSConfig{}
+}
+
+func authInterceptor(next http.Handler, server auth.Server, requestParams []string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, err := server.Authenticate(r.Context(), r.Header)
+		sources := r.Header
+		query := r.URL.Query()
+		for _, param := range requestParams {
+			if val, ok := query[param]; ok {
+				sources[param] = val
+			}
+		}
+		ctx, err := server.Authenticate(r.Context(), sources)
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return

@@ -7,6 +7,7 @@
 package configauth // import "go.opentelemetry.io/collector/config/configauth"
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -26,9 +27,14 @@ type Authentication struct {
 	AuthenticatorID component.ID `mapstructure:"authenticator"`
 }
 
+// NewDefaultAuthentication returns a default authentication configuration.
+func NewDefaultAuthentication() *Authentication {
+	return &Authentication{}
+}
+
 // GetServerAuthenticator attempts to select the appropriate auth.Server from the list of extensions,
 // based on the requested extension name. If an authenticator is not found, an error is returned.
-func (a Authentication) GetServerAuthenticator(extensions map[component.ID]component.Component) (auth.Server, error) {
+func (a Authentication) GetServerAuthenticator(_ context.Context, extensions map[component.ID]component.Component) (auth.Server, error) {
 	if ext, found := extensions[a.AuthenticatorID]; found {
 		if server, ok := ext.(auth.Server); ok {
 			return server, nil
@@ -42,7 +48,7 @@ func (a Authentication) GetServerAuthenticator(extensions map[component.ID]compo
 // GetClientAuthenticator attempts to select the appropriate auth.Client from the list of extensions,
 // based on the component id of the extension. If an authenticator is not found, an error is returned.
 // This should be only used by HTTP clients.
-func (a Authentication) GetClientAuthenticator(extensions map[component.ID]component.Component) (auth.Client, error) {
+func (a Authentication) GetClientAuthenticator(_ context.Context, extensions map[component.ID]component.Component) (auth.Client, error) {
 	if ext, found := extensions[a.AuthenticatorID]; found {
 		if client, ok := ext.(auth.Client); ok {
 			return client, nil

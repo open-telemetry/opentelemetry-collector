@@ -51,19 +51,17 @@ type ConfigWatcher interface {
 	NotifyConfig(ctx context.Context, conf *confmap.Conf) error
 }
 
-// StatusWatcher is an extra interface for Extension hosted by the OpenTelemetry
-// Collector that is to be implemented by extensions interested in changes to component
-// status.
-type StatusWatcher interface {
-	// ComponentStatusChanged notifies about a change in the source component status.
-	// Extensions that implement this interface must be ready that the ComponentStatusChanged
-	// may be called before, after or concurrently with calls to Component.Start() and Component.Shutdown().
-	// The function may be called concurrently with itself.
-	ComponentStatusChanged(source *component.InstanceID, event *component.StatusEvent)
+// ModuleInfo describes the go module for each component.
+type ModuleInfo struct {
+	Receiver  map[component.Type]string
+	Processor map[component.Type]string
+	Exporter  map[component.Type]string
+	Extension map[component.Type]string
+	Connector map[component.Type]string
 }
 
-// CreateSettings is passed to Factory.Create(...) function.
-type CreateSettings struct {
+// Settings is passed to Factory.Create(...) function.
+type Settings struct {
 	// ID returns the ID of the component that will be created.
 	ID component.ID
 
@@ -71,13 +69,16 @@ type CreateSettings struct {
 
 	// BuildInfo can be used by components for informational purposes
 	BuildInfo component.BuildInfo
+
+	// ModuleInfo describes the go module for each component.
+	ModuleInfo ModuleInfo
 }
 
 // CreateFunc is the equivalent of Factory.Create(...) function.
-type CreateFunc func(context.Context, CreateSettings, component.Config) (Extension, error)
+type CreateFunc func(context.Context, Settings, component.Config) (Extension, error)
 
 // CreateExtension implements Factory.Create.
-func (f CreateFunc) CreateExtension(ctx context.Context, set CreateSettings, cfg component.Config) (Extension, error) {
+func (f CreateFunc) CreateExtension(ctx context.Context, set Settings, cfg component.Config) (Extension, error) {
 	return f(ctx, set, cfg)
 }
 
@@ -85,7 +86,7 @@ type Factory interface {
 	component.Factory
 
 	// CreateExtension creates an extension based on the given config.
-	CreateExtension(ctx context.Context, set CreateSettings, cfg component.Config) (Extension, error)
+	CreateExtension(ctx context.Context, set Settings, cfg component.Config) (Extension, error)
 
 	// ExtensionStability gets the stability level of the Extension.
 	ExtensionStability() component.StabilityLevel
@@ -138,18 +139,24 @@ func MakeFactoryMap(factories ...Factory) (map[component.Type]Factory, error) {
 }
 
 // Builder extension is a helper struct that given a set of Configs and Factories helps with creating extensions.
+//
+// Deprecated: [v0.108.0] this builder is being internalized within the service module,
+// and will be removed soon.
 type Builder struct {
 	cfgs      map[component.ID]component.Config
 	factories map[component.Type]Factory
 }
 
 // NewBuilder creates a new extension.Builder to help with creating components form a set of configs and factories.
+//
+// Deprecated: [v0.108.0] this builder is being internalized within the service module,
+// and will be removed soon.
 func NewBuilder(cfgs map[component.ID]component.Config, factories map[component.Type]Factory) *Builder {
 	return &Builder{cfgs: cfgs, factories: factories}
 }
 
 // Create creates an extension based on the settings and configs available.
-func (b *Builder) Create(ctx context.Context, set CreateSettings) (Extension, error) {
+func (b *Builder) Create(ctx context.Context, set Settings) (Extension, error) {
 	cfg, existsCfg := b.cfgs[set.ID]
 	if !existsCfg {
 		return nil, fmt.Errorf("extension %q is not configured", set.ID)

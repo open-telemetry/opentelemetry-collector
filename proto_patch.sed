@@ -1,6 +1,6 @@
 s+go.opentelemetry.io/proto/otlp/+go.opentelemetry.io/collector/pdata/internal/data/protogen/+g
 
-s+package opentelemetry.proto.\(.*\).v1;+package opentelemetry.proto.\1.v1;\
+s+package opentelemetry.proto.\(.*\).v\(.*\);+package opentelemetry.proto.\1.v\2;\
 \
 import "gogoproto/gogo.proto";+g
 
@@ -46,4 +46,40 @@ s+Buckets \(.*\)tive = \(.*\);+Buckets \1tive = \2\
 s+optional \(.*\) \(.*\) = \(.*\);+ oneof \2_ { \1 \2 = \3;}+g
 
 s+\(.*\)PartialSuccess partial_success = \(.*\);+\1PartialSuccess partial_success = \2\
+  [ (gogoproto.nullable) = false ];+g
+
+#
+# Profiles replacements
+#
+s+opentelemetry.proto.profiles.v1experimental.Profile \(.*\);+opentelemetry.proto.profiles.v1experimental.Profile \1\
+  [ (gogoproto.nullable) = false ];+g
+
+s+repeated ValueType \(.*\);+repeated ValueType \1\
+  [ (gogoproto.nullable) = false ];+g
+
+s+repeated Sample \(.*\);+repeated Sample \1\
+  [ (gogoproto.nullable) = false ];+g
+
+s+repeated Mapping \(.*\);+repeated Mapping \1\
+  [ (gogoproto.nullable) = false ];+g
+
+s+repeated Location \(.*\);+repeated Location \1\
+  [ (gogoproto.nullable) = false ];+g
+
+s+repeated Label \(.*\);+repeated Label \1\
+  [ (gogoproto.nullable) = false ];+g
+
+s+repeated Function \(.*\);+repeated Function \1\
+  [ (gogoproto.nullable) = false ];+g
+
+s+repeated AttributeUnit \(.*\);+repeated AttributeUnit \1\
+  [ (gogoproto.nullable) = false ];+g
+
+s+repeated Link link_table \(.*\);+repeated Link link_table \1\
+  [ (gogoproto.nullable) = false ];+g
+
+s+repeated Line \(.*\);+repeated Line \1\
+  [ (gogoproto.nullable) = false ];+g
+
+s+ValueType period_type \(.*\);+ValueType period_type \1\
   [ (gogoproto.nullable) = false ];+g

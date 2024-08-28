@@ -71,7 +71,7 @@ type metricsExporter struct {
 // NewMetricsExporter creates an exporter.Metrics that records observability metrics and wraps every request with a Span.
 func NewMetricsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 	pusher consumer.ConsumeMetricsFunc,
 	options ...Option,
@@ -82,7 +82,10 @@ func NewMetricsExporter(
 	if pusher == nil {
 		return nil, errNilPushMetricsData
 	}
-	metricsOpts := []Option{withMarshaler(metricsRequestMarshaler), withUnmarshaler(newMetricsRequestUnmarshalerFunc(pusher))}
+	metricsOpts := []Option{
+		withMarshaler(metricsRequestMarshaler), withUnmarshaler(newMetricsRequestUnmarshalerFunc(pusher)),
+		withBatchFuncs(mergeMetrics, mergeSplitMetrics),
+	}
 	return NewMetricsRequestExporter(ctx, set, requestFromMetrics(pusher), append(metricsOpts, options...)...)
 }
 
@@ -103,7 +106,7 @@ func requestFromMetrics(pusher consumer.ConsumeMetricsFunc) RequestFromMetricsFu
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func NewMetricsRequestExporter(
 	_ context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	converter RequestFromMetricsFunc,
 	options ...Option,
 ) (exporter.Metrics, error) {
@@ -143,16 +146,17 @@ func NewMetricsRequestExporter(
 
 type metricsSenderWithObservability struct {
 	baseRequestSender
-	obsrep *ObsReport
+	obsrep *obsReport
 }
 
-func newMetricsSenderWithObservability(obsrep *ObsReport) requestSender {
+func newMetricsSenderWithObservability(obsrep *obsReport) requestSender {
 	return &metricsSenderWithObservability{obsrep: obsrep}
 }
 
 func (mewo *metricsSenderWithObservability) send(ctx context.Context, req Request) error {
-	c := mewo.obsrep.StartMetricsOp(ctx)
+	c := mewo.obsrep.startMetricsOp(ctx)
+	numMetricDataPoints := req.ItemsCount()
 	err := mewo.nextSender.send(c, req)
-	mewo.obsrep.EndMetricsOp(c, req.ItemsCount(), err)
+	mewo.obsrep.endMetricsOp(c, numMetricDataPoints, err)
 	return err
 }

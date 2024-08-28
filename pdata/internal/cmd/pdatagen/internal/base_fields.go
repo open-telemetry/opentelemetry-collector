@@ -9,10 +9,10 @@ import (
 	"text/template"
 )
 
-const accessorSliceTemplate = `// {{ .fieldName }} returns the {{ .fieldName }} associated with this {{ .structName }}.
+const accessorSliceTemplate = `// {{ .fieldName }} returns the {{ .originFieldName }} associated with this {{ .structName }}.
 func (ms {{ .structName }}) {{ .fieldName }}() {{ .packageName }}{{ .returnType }} {
 	{{- if .isCommon }}
-	return {{ .packageName }}{{ .returnType }}(internal.New{{ .returnType }}(&ms.{{ .origAccessor }}.{{ .fieldName }}
+	return {{ .packageName }}{{ .returnType }}(internal.New{{ .returnType }}(&ms.{{ .origAccessor }}.{{ .originFieldName }}
 	{{- if .isBaseStructCommon -}}
 	, internal.Get{{ .structName }}State(internal.{{ .structName }}(ms))
 	{{- else -}}
@@ -20,7 +20,7 @@ func (ms {{ .structName }}) {{ .fieldName }}() {{ .packageName }}{{ .returnType 
 	{{- end -}}
 	))
 	{{- else }}
-	return new{{ .returnType }}(&ms.{{ .origAccessor }}.{{ .fieldName }}, ms.state)
+	return new{{ .returnType }}(&ms.{{ .origAccessor }}.{{ .originFieldName }}, ms.state)
 	{{- end }}
 }`
 
@@ -42,7 +42,7 @@ const setTestValueTemplate = `{{ if .isCommon -}}
 	{{- else -}}
 	fillTest{{ .returnType }}(new
 	{{-	end -}}
-	{{ .returnType }}(&tv.orig.{{ .fieldName }}, tv.state))`
+	{{ .returnType }}(&tv.orig.{{ .originFieldName }}, tv.state))`
 
 const accessorsMessageValueTemplate = `// {{ .fieldName }} returns the {{ .lowerFieldName }} associated with this {{ .structName }}.
 func (ms {{ .structName }}) {{ .fieldName }}() {{ .packageName }}{{ .returnType }} {
@@ -66,13 +66,13 @@ const accessorsMessageValueTestTemplate = `func Test{{ .structName }}_{{ .fieldN
 
 const accessorsPrimitiveTemplate = `// {{ .fieldName }} returns the {{ .lowerFieldName }} associated with this {{ .structName }}.
 func (ms {{ .structName }}) {{ .fieldName }}() {{ .packageName }}{{ .returnType }} {
-	return ms.{{ .origAccessor }}.{{ .fieldName }}
+	return ms.{{ .origAccessor }}.{{ .originFieldName }}
 }
 
 // Set{{ .fieldName }} replaces the {{ .lowerFieldName }} associated with this {{ .structName }}.
 func (ms {{ .structName }}) Set{{ .fieldName }}(v {{ .returnType }}) {
 	ms.{{ .stateAccessor }}.AssertMutable()
-	ms.{{ .origAccessor }}.{{ .fieldName }} = v
+	ms.{{ .origAccessor }}.{{ .originFieldName }} = v
 }`
 
 const accessorsPrimitiveSliceTemplate = `// {{ .fieldName }} returns the {{ .lowerFieldName }} associated with this {{ .structName }}.
@@ -106,7 +106,7 @@ const oneOfTypeAccessorTestTemplate = `func Test{{ .structName }}_{{ .typeFuncNa
 
 const accessorsOneOfMessageTemplate = `// {{ .fieldName }} returns the {{ .lowerFieldName }} associated with this {{ .structName }}.
 //
-// Calling this function when {{ .originOneOfTypeFuncName }}() != {{ .typeName }} returns an invalid 
+// Calling this function when {{ .originOneOfTypeFuncName }}() != {{ .typeName }} returns an invalid
 // zero-initialized instance of {{ .returnType }}. Note that using such {{ .returnType }} instance can cause panic.
 //
 // Calling this function on zero-initialized {{ .structName }} will cause a panic.
@@ -254,8 +254,9 @@ type baseField interface {
 }
 
 type sliceField struct {
-	fieldName   string
-	returnSlice baseSlice
+	fieldName       string
+	originFieldName string
+	returnSlice     baseSlice
 }
 
 func (sf *sliceField) GenerateAccessors(ms *messageValueStruct) string {
@@ -304,6 +305,12 @@ func (sf *sliceField) templateFields(ms *messageValueStruct) map[string]any {
 		"stateAccessor":      stateAccessor(ms),
 		"isCommon":           usedByOtherDataTypes(sf.returnSlice.getPackageName()),
 		"isBaseStructCommon": usedByOtherDataTypes(ms.packageName),
+		"originFieldName": func() string {
+			if sf.originFieldName == "" {
+				return sf.fieldName
+			}
+			return sf.originFieldName
+		}(),
 	}
 }
 
@@ -347,11 +354,12 @@ func (mf *messageValueField) GenerateCopyToValue(*messageValueStruct) string {
 
 func (mf *messageValueField) templateFields(ms *messageValueStruct) map[string]any {
 	return map[string]any{
-		"isCommon":       usedByOtherDataTypes(mf.returnMessage.packageName),
-		"structName":     ms.getName(),
-		"fieldName":      mf.fieldName,
-		"lowerFieldName": strings.ToLower(mf.fieldName),
-		"returnType":     mf.returnMessage.getName(),
+		"isCommon":        usedByOtherDataTypes(mf.returnMessage.packageName),
+		"structName":      ms.getName(),
+		"fieldName":       mf.fieldName,
+		"originFieldName": mf.fieldName,
+		"lowerFieldName":  strings.ToLower(mf.fieldName),
+		"returnType":      mf.returnMessage.getName(),
 		"packageName": func() string {
 			if mf.returnMessage.packageName != ms.packageName {
 				return mf.returnMessage.packageName + "."
@@ -366,10 +374,11 @@ func (mf *messageValueField) templateFields(ms *messageValueStruct) map[string]a
 var _ baseField = (*messageValueField)(nil)
 
 type primitiveField struct {
-	fieldName  string
-	returnType string
-	defaultVal string
-	testVal    string
+	fieldName       string
+	originFieldName string
+	returnType      string
+	defaultVal      string
+	testVal         string
 }
 
 func (pf *primitiveField) GenerateAccessors(ms *messageValueStruct) string {
@@ -391,7 +400,11 @@ func (pf *primitiveField) GenerateAccessorsTest(ms *messageValueStruct) string {
 }
 
 func (pf *primitiveField) GenerateSetWithTestValue(*messageValueStruct) string {
-	return "\ttv.orig." + pf.fieldName + " = " + pf.testVal
+	originFieldName := pf.fieldName
+	if pf.originFieldName != "" {
+		originFieldName = pf.originFieldName
+	}
+	return "\ttv.orig." + originFieldName + " = " + pf.testVal
 }
 
 func (pf *primitiveField) GenerateCopyToValue(*messageValueStruct) string {
@@ -410,6 +423,12 @@ func (pf *primitiveField) templateFields(ms *messageValueStruct) map[string]any 
 		"origAccessor":     origAccessor(ms),
 		"stateAccessor":    stateAccessor(ms),
 		"originStructName": ms.originFullName,
+		"originFieldName": func() string {
+			if pf.originFieldName == "" {
+				return pf.fieldName
+			}
+			return pf.originFieldName
+		}(),
 	}
 }
 

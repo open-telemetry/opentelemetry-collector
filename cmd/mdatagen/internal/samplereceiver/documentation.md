@@ -112,3 +112,41 @@ metrics:
 | string.resource.attr_disable_warning | Resource attribute with any string value. | Any Str | true |
 | string.resource.attr_remove_warning | Resource attribute with any string value. | Any Str | false |
 | string.resource.attr_to_be_removed | Resource attribute with any string value. | Any Str | true |
+
+## Internal Telemetry
+
+The following telemetry is emitted by this component.
+
+### otelcol_batch_size_trigger_send
+
+Number of times the batch was sent due to a size trigger
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {times} | Sum | Int | true |
+
+### otelcol_process_runtime_total_alloc_bytes
+
+Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| By | Sum | Int | true |
+
+### otelcol_queue_length
+
+This metric is optional and therefore not initialized in NewTelemetryBuilder.
+
+For example this metric only exists if feature A is enabled.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {items} | Gauge | Int |
+
+### otelcol_request_duration
+
+Duration of request
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Histogram | Double |

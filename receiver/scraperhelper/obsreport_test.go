@@ -47,7 +47,7 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 			scrp, err := newScraper(ObsReportSettings{
 				ReceiverID:             receiverID,
 				Scraper:                scraperID,
-				ReceiverCreateSettings: receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+				ReceiverCreateSettings: receiver.Settings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 			})
 			require.NoError(t, err)
 			ctx := scrp.StartMetricsOp(parentCtx)
@@ -95,10 +95,10 @@ func TestCheckScraperMetricsViews(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	s, err := NewObsReport(ObsReportSettings{
+	s, err := newScraper(ObsReportSettings{
 		ReceiverID:             receiverID,
 		Scraper:                scraperID,
-		ReceiverCreateSettings: receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		ReceiverCreateSettings: receiver.Settings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 	})
 	require.NoError(t, err)
 	ctx := s.StartMetricsOp(context.Background())
@@ -112,11 +112,9 @@ func TestCheckScraperMetricsViews(t *testing.T) {
 }
 
 func testTelemetry(t *testing.T, id component.ID, testFunc func(t *testing.T, tt componenttest.TestTelemetry)) {
-	t.Run("WithOTel", func(t *testing.T) {
-		tt, err := componenttest.SetupTelemetry(id)
-		require.NoError(t, err)
-		t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+	tt, err := componenttest.SetupTelemetry(id)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-		testFunc(t, tt)
-	})
+	testFunc(t, tt)
 }

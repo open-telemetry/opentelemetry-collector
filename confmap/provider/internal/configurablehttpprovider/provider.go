@@ -10,12 +10,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/provider/internal"
 )
 
 type SchemeType string
@@ -85,6 +85,10 @@ func (fmp *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFu
 		return nil, fmt.Errorf("%q uri is not supported by %q provider", uri, string(fmp.scheme))
 	}
 
+	if _, err := url.ParseRequestURI(uri); err != nil {
+		return nil, fmt.Errorf("invalid uri %q: %w", uri, err)
+	}
+
 	client, err := fmp.createClient()
 
 	if err != nil {
@@ -109,7 +113,7 @@ func (fmp *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFu
 		return nil, fmt.Errorf("fail to read the response body from uri %q: %w", uri, err)
 	}
 
-	return internal.NewRetrievedFromYAML(body)
+	return confmap.NewRetrievedFromYAML(body)
 }
 
 func (fmp *provider) Scheme() string {

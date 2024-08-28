@@ -71,7 +71,7 @@ type traceExporter struct {
 // NewTracesExporter creates an exporter.Traces that records observability metrics and wraps every request with a Span.
 func NewTracesExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 	pusher consumer.ConsumeTracesFunc,
 	options ...Option,
@@ -82,7 +82,10 @@ func NewTracesExporter(
 	if pusher == nil {
 		return nil, errNilPushTraceData
 	}
-	tracesOpts := []Option{withMarshaler(tracesRequestMarshaler), withUnmarshaler(newTraceRequestUnmarshalerFunc(pusher))}
+	tracesOpts := []Option{
+		withMarshaler(tracesRequestMarshaler), withUnmarshaler(newTraceRequestUnmarshalerFunc(pusher)),
+		withBatchFuncs(mergeTraces, mergeSplitTraces),
+	}
 	return NewTracesRequestExporter(ctx, set, requestFromTraces(pusher), append(tracesOpts, options...)...)
 }
 
@@ -103,7 +106,7 @@ func requestFromTraces(pusher consumer.ConsumeTracesFunc) RequestFromTracesFunc 
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func NewTracesRequestExporter(
 	_ context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	converter RequestFromTracesFunc,
 	options ...Option,
 ) (exporter.Traces, error) {
@@ -143,17 +146,18 @@ func NewTracesRequestExporter(
 
 type tracesExporterWithObservability struct {
 	baseRequestSender
-	obsrep *ObsReport
+	obsrep *obsReport
 }
 
-func newTracesExporterWithObservability(obsrep *ObsReport) requestSender {
+func newTracesExporterWithObservability(obsrep *obsReport) requestSender {
 	return &tracesExporterWithObservability{obsrep: obsrep}
 }
 
 func (tewo *tracesExporterWithObservability) send(ctx context.Context, req Request) error {
-	c := tewo.obsrep.StartTracesOp(ctx)
+	c := tewo.obsrep.startTracesOp(ctx)
+	numTraceSpans := req.ItemsCount()
 	// Forward the data to the next consumer (this pusher is the next).
 	err := tewo.nextSender.send(c, req)
-	tewo.obsrep.EndTracesOp(c, req.ItemsCount(), err)
+	tewo.obsrep.endTracesOp(c, numTraceSpans, err)
 	return err
 }

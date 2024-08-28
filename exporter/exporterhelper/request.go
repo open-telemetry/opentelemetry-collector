@@ -32,14 +32,6 @@ type RequestErrorHandler interface {
 	OnError(error) Request
 }
 
-// RequestMarshaler is a function that can marshal a Request into bytes.
-// Deprecated: [v0.94.0] Use exporterqueue.Marshaler[Request] instead.
-type RequestMarshaler func(req Request) ([]byte, error)
-
-// RequestUnmarshaler is a function that can unmarshal bytes into a Request.
-// Deprecated: [v0.94.0] Use exporterqueue.Unmarshaler[Request] instead.
-type RequestUnmarshaler func(data []byte) (Request, error)
-
 // extractPartialRequest returns a new Request that may contain the items left to be sent
 // if only some items failed to process and can be retried. Otherwise, it returns the original Request.
 func extractPartialRequest(req Request, err error) Request {

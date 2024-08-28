@@ -31,13 +31,13 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
+	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
 type mockReceiver struct {
@@ -246,7 +246,7 @@ func TestSendTraces(t *testing.T) {
 			"header": "header-value",
 		},
 	}
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	set.BuildInfo.Description = "Collector"
 	set.BuildInfo.Version = "1.2.3test"
 
@@ -365,7 +365,7 @@ func TestSendTracesWhenEndpointHasHttpScheme(t *testing.T) {
 			if test.useTLS {
 				cfg.ClientConfig.TLSSetting.InsecureSkipVerify = true
 			}
-			set := exportertest.NewNopCreateSettings()
+			set := exportertest.NewNopSettings()
 			exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
 			require.NoError(t, err)
 			require.NotNil(t, exp)
@@ -418,7 +418,7 @@ func TestSendMetrics(t *testing.T) {
 			"header": "header-value",
 		},
 	}
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	set.BuildInfo.Description = "Collector"
 	set.BuildInfo.Version = "1.2.3test"
 
@@ -523,7 +523,7 @@ func TestSendTraceDataServerDownAndUp(t *testing.T) {
 		// Do not rely on external retry logic here, if that is intended set InitialInterval to 100ms.
 		WaitForReady: true,
 	}
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
@@ -580,7 +580,7 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
@@ -631,7 +631,7 @@ func TestSendTracesOnResourceExhaustion(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
@@ -712,7 +712,7 @@ func TestSendLogData(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	set.BuildInfo.Description = "Collector"
 	set.BuildInfo.Version = "1.2.3test"
 

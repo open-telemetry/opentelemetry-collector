@@ -7,17 +7,21 @@
 package {{ .Package }}
 
 import (
+	{{- if not (and .Tests.SkipLifecycle .Tests.SkipShutdown) }}
 	"context"
+	{{- end }}
 	"testing"
-	{{- if or isExporter isProcessor }}
+	{{- if and (not (and .Tests.SkipLifecycle .Tests.SkipShutdown)) (or isExporter isProcessor) }}
 	"time"
 	{{- end }}
 
 	"github.com/stretchr/testify/require"
+	{{- if and (not (and .Tests.SkipLifecycle .Tests.SkipShutdown)) (not isExtension) }}
 	"go.opentelemetry.io/collector/component"
-	{{- if not .Tests.SkipLifecycle }}
-	"go.opentelemetry.io/collector/component/componenttest"
 	{{- end }}
+	"go.opentelemetry.io/collector/component/componenttest"
+	{{- if not (and .Tests.SkipLifecycle .Tests.SkipShutdown) }}
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	{{- if isExporter }}
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -36,31 +40,41 @@ import (
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	{{- end }}
 	{{- if isConnector }}
-	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	{{- end }}
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 	{{- if or isExporter isProcessor }}
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	{{- end }}
+	{{- end }}
 )
 
+func TestComponentFactoryType(t *testing.T) {
+	require.Equal(t, "{{ .Type }}", NewFactory().Type().String())
+}
+
+func TestComponentConfigStruct(t *testing.T) {
+	require.NoError(t, componenttest.CheckConfigStruct(NewFactory().CreateDefaultConfig()))
+}
+
+{{ if not (and .Tests.SkipLifecycle .Tests.SkipShutdown) -}}
 {{ if isExporter -}}
 func TestComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
 
 	tests := []struct{
 		name string
-		createFn func(ctx context.Context, set exporter.CreateSettings, cfg component.Config) (component.Component, error)
+		createFn func(ctx context.Context, set exporter.Settings, cfg component.Config) (component.Component, error)
 	}{
 {{ if supportsLogs }}
 		{
 			name: "logs",
-			createFn: func(ctx context.Context, set exporter.CreateSettings, cfg component.Config) (component.Component, error) {
+			createFn: func(ctx context.Context, set exporter.Settings, cfg component.Config) (component.Component, error) {
 				return factory.CreateLogsExporter(ctx, set, cfg)
 			},
 		},
@@ -68,7 +82,7 @@ func TestComponentLifecycle(t *testing.T) {
 {{ if supportsMetrics }}
 		{
 			name: "metrics",
-			createFn: func(ctx context.Context, set exporter.CreateSettings, cfg component.Config) (component.Component, error) {
+			createFn: func(ctx context.Context, set exporter.Settings, cfg component.Config) (component.Component, error) {
 				return factory.CreateMetricsExporter(ctx, set, cfg)
 			},
 		},
@@ -76,7 +90,7 @@ func TestComponentLifecycle(t *testing.T) {
 {{ if supportsTraces }}
 		{
 			name: "traces",
-			createFn: func(ctx context.Context, set exporter.CreateSettings, cfg component.Config) (component.Component, error) {
+			createFn: func(ctx context.Context, set exporter.Settings, cfg component.Config) (component.Component, error) {
 				return factory.CreateTracesExporter(ctx, set, cfg)
 			},
 		},
@@ -88,12 +102,12 @@ func TestComponentLifecycle(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	sub, err := cm.Sub("tests::config")
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(&cfg))
 
 	for _, test := range tests {
 		{{- if not .Tests.SkipShutdown }}
 		t.Run(test.name + "-shutdown", func(t *testing.T) {
-			c, err := test.createFn(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+			c, err := test.createFn(context.Background(), exportertest.NewNopSettings(), cfg)
 			require.NoError(t, err)
 			err = c.Shutdown(context.Background())
 			require.NoError(t, err)
@@ -102,9 +116,9 @@ func TestComponentLifecycle(t *testing.T) {
 
 		{{- if not .Tests.SkipLifecycle }}
 		t.Run(test.name + "-lifecycle", func(t *testing.T) {
-			c, err := test.createFn(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+			c, err := test.createFn(context.Background(), exportertest.NewNopSettings(), cfg)
 			require.NoError(t, err)
-			host := componenttest.NewNopHost()
+			host := {{ .Tests.Host }}
 			err = c.Start(context.Background(), host)
 			require.NoError(t, err)
 			require.NotPanics(t, func() {
@@ -152,12 +166,12 @@ func TestComponentLifecycle(t *testing.T) {
 
 	tests := []struct{
 		name string
-		createFn func(ctx context.Context, set processor.CreateSettings, cfg component.Config) (component.Component, error)
+		createFn func(ctx context.Context, set processor.Settings, cfg component.Config) (component.Component, error)
 	}{
 {{ if supportsLogs }}
 		{
 			name: "logs",
-			createFn: func(ctx context.Context, set processor.CreateSettings, cfg component.Config) (component.Component, error) {
+			createFn: func(ctx context.Context, set processor.Settings, cfg component.Config) (component.Component, error) {
 				return factory.CreateLogsProcessor(ctx, set, cfg, consumertest.NewNop())
 			},
 		},
@@ -165,7 +179,7 @@ func TestComponentLifecycle(t *testing.T) {
 {{ if supportsMetrics }}
 		{
 			name: "metrics",
-			createFn: func(ctx context.Context, set processor.CreateSettings, cfg component.Config) (component.Component, error) {
+			createFn: func(ctx context.Context, set processor.Settings, cfg component.Config) (component.Component, error) {
 				return factory.CreateMetricsProcessor(ctx, set, cfg, consumertest.NewNop())
 			},
 		},
@@ -173,7 +187,7 @@ func TestComponentLifecycle(t *testing.T) {
 {{ if supportsTraces }}
 		{
 			name: "traces",
-			createFn: func(ctx context.Context, set processor.CreateSettings, cfg component.Config) (component.Component, error) {
+			createFn: func(ctx context.Context, set processor.Settings, cfg component.Config) (component.Component, error) {
 				return factory.CreateTracesProcessor(ctx, set, cfg, consumertest.NewNop())
 			},
 		},
@@ -185,12 +199,12 @@ func TestComponentLifecycle(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	sub, err := cm.Sub("tests::config")
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(&cfg))
 
 	for _, test := range tests {
 		{{- if not .Tests.SkipShutdown }}
 		t.Run(test.name + "-shutdown", func(t *testing.T) {
-			c, err := test.createFn(context.Background(), processortest.NewNopCreateSettings(), cfg)
+			c, err := test.createFn(context.Background(), processortest.NewNopSettings(), cfg)
 			require.NoError(t, err)
 			err = c.Shutdown(context.Background())
 			require.NoError(t, err)
@@ -199,9 +213,9 @@ func TestComponentLifecycle(t *testing.T) {
 
 		{{- if not .Tests.SkipLifecycle }}
 		t.Run(test.name + "-lifecycle", func(t *testing.T) {
-			c, err := test.createFn(context.Background(), processortest.NewNopCreateSettings(), cfg)
+			c, err := test.createFn(context.Background(), processortest.NewNopSettings(), cfg)
 			require.NoError(t, err)
-			host := componenttest.NewNopHost()
+			host := {{ .Tests.Host }}
 			err = c.Start(context.Background(), host)
 			require.NoError(t, err)
 			require.NotPanics(t, func() {
@@ -247,12 +261,12 @@ func TestComponentLifecycle(t *testing.T) {
 
 	tests := []struct{
 		name string
-		createFn func(ctx context.Context, set receiver.CreateSettings, cfg component.Config) (component.Component, error)
+		createFn func(ctx context.Context, set receiver.Settings, cfg component.Config) (component.Component, error)
 	}{
 {{ if supportsLogs }}
 		{
 			name: "logs",
-			createFn: func(ctx context.Context, set receiver.CreateSettings, cfg component.Config) (component.Component, error) {
+			createFn: func(ctx context.Context, set receiver.Settings, cfg component.Config) (component.Component, error) {
 				return factory.CreateLogsReceiver(ctx, set, cfg, consumertest.NewNop())
 			},
 		},
@@ -260,7 +274,7 @@ func TestComponentLifecycle(t *testing.T) {
 {{ if supportsMetrics }}
 		{
 			name: "metrics",
-			createFn: func(ctx context.Context, set receiver.CreateSettings, cfg component.Config) (component.Component, error) {
+			createFn: func(ctx context.Context, set receiver.Settings, cfg component.Config) (component.Component, error) {
 				return factory.CreateMetricsReceiver(ctx, set, cfg, consumertest.NewNop())
 			},
 		},
@@ -268,7 +282,7 @@ func TestComponentLifecycle(t *testing.T) {
 {{ if supportsTraces }}
 		{
 			name: "traces",
-			createFn: func(ctx context.Context, set receiver.CreateSettings, cfg component.Config) (component.Component, error) {
+			createFn: func(ctx context.Context, set receiver.Settings, cfg component.Config) (component.Component, error) {
 				return factory.CreateTracesReceiver(ctx, set, cfg, consumertest.NewNop())
 			},
 		},
@@ -280,12 +294,12 @@ func TestComponentLifecycle(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	sub, err := cm.Sub("tests::config")
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(&cfg))
 
 	for _, test := range tests {
 		{{- if not .Tests.SkipShutdown }}
 		t.Run(test.name + "-shutdown", func(t *testing.T) {
-			c, err := test.createFn(context.Background(), receivertest.NewNopCreateSettings(), cfg)
+			c, err := test.createFn(context.Background(), receivertest.NewNopSettings(), cfg)
 			require.NoError(t, err)
 			err = c.Shutdown(context.Background())
 			require.NoError(t, err)
@@ -294,13 +308,13 @@ func TestComponentLifecycle(t *testing.T) {
 
 		{{- if not .Tests.SkipLifecycle }}
 		t.Run(test.name + "-lifecycle", func(t *testing.T) {
-			firstRcvr, err := test.createFn(context.Background(), receivertest.NewNopCreateSettings(), cfg)
+			firstRcvr, err := test.createFn(context.Background(), receivertest.NewNopSettings(), cfg)
 			require.NoError(t, err)
-			host := componenttest.NewNopHost()
+			host := {{ .Tests.Host }}
 			require.NoError(t, err)
 			require.NoError(t, firstRcvr.Start(context.Background(), host))
 			require.NoError(t, firstRcvr.Shutdown(context.Background()))
-			secondRcvr, err := test.createFn(context.Background(), receivertest.NewNopCreateSettings(), cfg)
+			secondRcvr, err := test.createFn(context.Background(), receivertest.NewNopSettings(), cfg)
 			require.NoError(t, err)
 			require.NoError(t, secondRcvr.Start(context.Background(), host))
 			require.NoError(t, secondRcvr.Shutdown(context.Background()))
@@ -319,11 +333,11 @@ func TestComponentLifecycle(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	sub, err := cm.Sub("tests::config")
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(&cfg))
 
 	{{- if not .Tests.SkipShutdown }}
 	t.Run("shutdown", func(t *testing.T) {
-		e, err := factory.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
+		e, err := factory.CreateExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
 		require.NoError(t, err)
 		err = e.Shutdown(context.Background())
 		require.NoError(t, err)
@@ -332,14 +346,14 @@ func TestComponentLifecycle(t *testing.T) {
 
 	{{- if not .Tests.SkipLifecycle }}
 	t.Run("lifecycle", func(t *testing.T) {
-		firstExt, err := factory.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
+		firstExt, err := factory.CreateExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
 		require.NoError(t, err)
-		require.NoError(t, firstExt.Start(context.Background(), componenttest.NewNopHost()))
+		require.NoError(t, firstExt.Start(context.Background(), {{ .Tests.Host }}))
 		require.NoError(t, firstExt.Shutdown(context.Background()))
 
-		secondExt, err := factory.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
+		secondExt, err := factory.CreateExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
 		require.NoError(t, err)
-		require.NoError(t, secondExt.Start(context.Background(), componenttest.NewNopHost()))
+		require.NoError(t, secondExt.Start(context.Background(), {{ .Tests.Host }}))
 		require.NoError(t, secondExt.Shutdown(context.Background()))
 	})
 	{{- end }}
@@ -352,77 +366,86 @@ func TestComponentLifecycle(t *testing.T) {
 
 	tests := []struct{
 		name string
-		createFn func(ctx context.Context, set connector.CreateSettings, cfg component.Config) (component.Component, error)
+		createFn func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error)
 	}{
 {{ if supportsLogsToLogs }}
 		{
 			name: "logs_to_logs",
-			createFn: func(ctx context.Context, set connector.CreateSettings, cfg component.Config) (component.Component, error) {
-				return factory.CreateLogsToLogs(ctx, set, cfg, consumertest.NewNop())
+			createFn: func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error) {
+				router := connector.NewLogsRouter(map[component.ID]consumer.Logs{component.NewID(component.DataTypeLogs): consumertest.NewNop()})
+				return factory.CreateLogsToLogs(ctx, set, cfg, router)
 			},
 		},
 {{ end }}
 {{ if supportsLogsToMetrics }}
 		{
 			name: "logs_to_metrics",
-			createFn: func(ctx context.Context, set connector.CreateSettings, cfg component.Config) (component.Component, error) {
-				return factory.CreateLogsToMetrics(ctx, set, cfg, consumertest.NewNop())
+			createFn: func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error) {
+				router := connector.NewMetricsRouter(map[component.ID]consumer.Metrics{component.NewID(component.DataTypeMetrics): consumertest.NewNop()})
+				return factory.CreateLogsToMetrics(ctx, set, cfg, router)
 			},
 		},
 {{ end }}
 {{ if supportsLogsToTraces }}
 		{
 			name: "logs_to_traces",
-			createFn: func(ctx context.Context, set connector.CreateSettings, cfg component.Config) (component.Component, error) {
-				return factory.CreateLogsToTraces(ctx, set, cfg, consumertest.NewNop())
+			createFn: func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error) {
+				router := connector.NewTracesRouter(map[component.ID]consumer.Traces{component.NewID(component.DataTypeTraces): consumertest.NewNop()})
+				return factory.CreateLogsToTraces(ctx, set, cfg, router)
 			},
 		},
 {{ end }}
 {{ if supportsMetricsToLogs }}
 		{
 			name: "metrics_to_logs",
-			createFn: func(ctx context.Context, set connector.CreateSettings, cfg component.Config) (component.Component, error) {
-				return factory.CreateMetricsToLogs(ctx, set, cfg, consumertest.NewNop())
+			createFn: func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error) {
+				router := connector.NewLogsRouter(map[component.ID]consumer.Logs{component.NewID(component.DataTypeLogs): consumertest.NewNop()})
+				return factory.CreateMetricsToLogs(ctx, set, cfg, router)
 			},
 		},
 {{ end }}
 {{ if supportsMetricsToMetrics }}
 		{
 			name: "metrics_to_metrics",
-			createFn: func(ctx context.Context, set connector.CreateSettings, cfg component.Config) (component.Component, error) {
-				return factory.CreateMetricsToMetrics(ctx, set, cfg, consumertest.NewNop())
+			createFn: func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error) {
+				router := connector.NewMetricsRouter(map[component.ID]consumer.Metrics{component.NewID(component.DataTypeMetrics): consumertest.NewNop()})
+				return factory.CreateMetricsToMetrics(ctx, set, cfg, router)
 			},
 		},
 {{ end }}
 {{ if supportsMetricsToTraces }}
 		{
 			name: "metrics_to_traces",
-			createFn: func(ctx context.Context, set connector.CreateSettings, cfg component.Config) (component.Component, error) {
-				return factory.CreateMetricsToTraces(ctx, set, cfg, consumertest.NewNop())
+			createFn: func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error) {
+				router := connector.NewTracesRouter(map[component.ID]consumer.Traces{component.NewID(component.DataTypeTraces): consumertest.NewNop()})
+				return factory.CreateMetricsToTraces(ctx, set, cfg, router)
 			},
 		},
 {{ end }}
 {{ if supportsTracesToLogs }}
 		{
 			name: "traces_to_logs",
-			createFn: func(ctx context.Context, set connector.CreateSettings, cfg component.Config) (component.Component, error) {
-				return factory.CreateTracesToLogs(ctx, set, cfg, consumertest.NewNop())
+			createFn: func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error) {
+				router := connector.NewLogsRouter(map[component.ID]consumer.Logs{component.NewID(component.DataTypeLogs): consumertest.NewNop()})
+				return factory.CreateTracesToLogs(ctx, set, cfg, router)
 			},
 		},
 {{ end }}
 {{ if supportsTracesToMetrics }}
 		{
 			name: "traces_to_metrics",
-			createFn: func(ctx context.Context, set connector.CreateSettings, cfg component.Config) (component.Component, error) {
-				return factory.CreateTracesToMetrics(ctx, set, cfg, consumertest.NewNop())
+			createFn: func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error) {
+				router := connector.NewMetricsRouter(map[component.ID]consumer.Metrics{component.NewID(component.DataTypeMetrics): consumertest.NewNop()})
+				return factory.CreateTracesToMetrics(ctx, set, cfg, router)
 			},
 		},
 {{ end }}
 {{ if supportsTracesToTraces }}
 		{
 			name: "traces_to_traces",
-			createFn: func(ctx context.Context, set connector.CreateSettings, cfg component.Config) (component.Component, error) {
-				return factory.CreateTracesToTraces(ctx, set, cfg, consumertest.NewNop())
+			createFn: func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error) {
+				router := connector.NewTracesRouter(map[component.ID]consumer.Traces{component.NewID(component.DataTypeTraces): consumertest.NewNop()})
+				return factory.CreateTracesToTraces(ctx, set, cfg, router)
 			},
 		},
 {{ end }}
@@ -433,12 +456,12 @@ func TestComponentLifecycle(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	sub, err := cm.Sub("tests::config")
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(&cfg))
 
 	for _, test := range tests {
 		{{- if not .Tests.SkipShutdown }}
 		t.Run(test.name + "-shutdown", func(t *testing.T) {
-			c, err := test.createFn(context.Background(), connectortest.NewNopCreateSettings(), cfg)
+			c, err := test.createFn(context.Background(), connectortest.NewNopSettings(), cfg)
 			require.NoError(t, err)
 			err = c.Shutdown(context.Background())
 			require.NoError(t, err)
@@ -447,13 +470,13 @@ func TestComponentLifecycle(t *testing.T) {
 
 		{{- if not .Tests.SkipLifecycle }}
 		t.Run(test.name + "-lifecycle", func(t *testing.T) {
-			firstConnector, err := test.createFn(context.Background(), connectortest.NewNopCreateSettings(), cfg)
+			firstConnector, err := test.createFn(context.Background(), connectortest.NewNopSettings(), cfg)
 			require.NoError(t, err)
-			host := componenttest.NewNopHost()
+			host := {{ .Tests.Host }}
 			require.NoError(t, err)
 			require.NoError(t, firstConnector.Start(context.Background(), host))
 			require.NoError(t, firstConnector.Shutdown(context.Background()))
-			secondConnector, err := test.createFn(context.Background(), connectortest.NewNopCreateSettings(), cfg)
+			secondConnector, err := test.createFn(context.Background(), connectortest.NewNopSettings(), cfg)
 			require.NoError(t, err)
 			require.NoError(t, secondConnector.Start(context.Background(), host))
 			require.NoError(t, secondConnector.Shutdown(context.Background()))
@@ -498,4 +521,5 @@ func generateLifecycleTestTraces() ptrace.Traces {
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	return traces
 }
+{{- end }}
 {{- end }}

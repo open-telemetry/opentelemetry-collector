@@ -33,7 +33,7 @@ func TestCreateSameReceiver(t *testing.T) {
 	cfg.GRPC.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 	cfg.HTTP.Endpoint = testutil.GetAvailableLocalAddress(t)
 
-	creationSet := receivertest.NewNopCreateSettings()
+	creationSet := receivertest.NewNopSettings()
 	tReceiver, err := factory.CreateTracesReceiver(context.Background(), creationSet, cfg, consumertest.NewNop())
 	assert.NotNil(t, tReceiver)
 	assert.NoError(t, err)
@@ -58,10 +58,10 @@ func TestCreateTracesReceiver(t *testing.T) {
 			Transport: confignet.TransportTypeTCP,
 		},
 	}
+	defaultServerConfig := confighttp.NewDefaultServerConfig()
+	defaultServerConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 	defaultHTTPSettings := &HTTPConfig{
-		ServerConfig: &confighttp.ServerConfig{
-			Endpoint: testutil.GetAvailableLocalAddress(t),
-		},
+		ServerConfig:   &defaultServerConfig,
 		TracesURLPath:  defaultTracesURLPath,
 		MetricsURLPath: defaultMetricsURLPath,
 		LogsURLPath:    defaultLogsURLPath,
@@ -125,7 +125,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	creationSet := receivertest.NewNopCreateSettings()
+	creationSet := receivertest.NewNopSettings()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tr, err := factory.CreateTracesReceiver(ctx, creationSet, tt.cfg, tt.sink)
@@ -148,14 +148,14 @@ func TestCreateMetricReceiver(t *testing.T) {
 	factory := NewFactory()
 	defaultGRPCSettings := &configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
-			Endpoint:  testutil.GetAvailableLocalAddress(t),
+			Endpoint:  "127.0.0.1:0",
 			Transport: confignet.TransportTypeTCP,
 		},
 	}
+	defaultServerConfig := confighttp.NewDefaultServerConfig()
+	defaultServerConfig.Endpoint = "127.0.0.1:0"
 	defaultHTTPSettings := &HTTPConfig{
-		ServerConfig: &confighttp.ServerConfig{
-			Endpoint: testutil.GetAvailableLocalAddress(t),
-		},
+		ServerConfig:   &defaultServerConfig,
 		TracesURLPath:  defaultTracesURLPath,
 		MetricsURLPath: defaultMetricsURLPath,
 		LogsURLPath:    defaultLogsURLPath,
@@ -219,7 +219,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	creationSet := receivertest.NewNopCreateSettings()
+	creationSet := receivertest.NewNopSettings()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mr, err := factory.CreateMetricsReceiver(ctx, creationSet, tt.cfg, tt.sink)
@@ -246,10 +246,10 @@ func TestCreateLogReceiver(t *testing.T) {
 			Transport: confignet.TransportTypeTCP,
 		},
 	}
+	defaultServerConfig := confighttp.NewDefaultServerConfig()
+	defaultServerConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 	defaultHTTPSettings := &HTTPConfig{
-		ServerConfig: &confighttp.ServerConfig{
-			Endpoint: testutil.GetAvailableLocalAddress(t),
-		},
+		ServerConfig:   &defaultServerConfig,
 		TracesURLPath:  defaultTracesURLPath,
 		MetricsURLPath: defaultMetricsURLPath,
 		LogsURLPath:    defaultLogsURLPath,
@@ -313,7 +313,7 @@ func TestCreateLogReceiver(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	creationSet := receivertest.NewNopCreateSettings()
+	creationSet := receivertest.NewNopSettings()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mr, err := factory.CreateLogsReceiver(ctx, creationSet, tt.cfg, tt.sink)

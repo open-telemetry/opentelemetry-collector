@@ -7,13 +7,14 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension"
 )
 
 // NewStatusWatcherExtensionCreateSettings returns a new nop settings for Create*Extension functions.
-func NewStatusWatcherExtensionCreateSettings() extension.CreateSettings {
-	return extension.CreateSettings{
+func NewStatusWatcherExtensionCreateSettings() extension.Settings {
+	return extension.Settings{
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),
 	}
@@ -21,14 +22,14 @@ func NewStatusWatcherExtensionCreateSettings() extension.CreateSettings {
 
 // NewStatusWatcherExtensionFactory returns a component.ExtensionFactory to construct a status watcher extension.
 func NewStatusWatcherExtensionFactory(
-	onStatusChanged func(source *component.InstanceID, event *component.StatusEvent),
+	onStatusChanged func(source *componentstatus.InstanceID, event *componentstatus.Event),
 ) extension.Factory {
 	return extension.NewFactory(
 		component.MustNewType("statuswatcher"),
 		func() component.Config {
 			return &struct{}{}
 		},
-		func(context.Context, extension.CreateSettings, component.Config) (component.Component, error) {
+		func(context.Context, extension.Settings, component.Config) (component.Component, error) {
 			return &statusWatcherExtension{onStatusChanged: onStatusChanged}, nil
 		},
 		component.StabilityLevelStable)
@@ -39,9 +40,9 @@ func NewStatusWatcherExtensionFactory(
 type statusWatcherExtension struct {
 	component.StartFunc
 	component.ShutdownFunc
-	onStatusChanged func(source *component.InstanceID, event *component.StatusEvent)
+	onStatusChanged func(source *componentstatus.InstanceID, event *componentstatus.Event)
 }
 
-func (e statusWatcherExtension) ComponentStatusChanged(source *component.InstanceID, event *component.StatusEvent) {
+func (e statusWatcherExtension) ComponentStatusChanged(source *componentstatus.InstanceID, event *componentstatus.Event) {
 	e.onStatusChanged(source, event)
 }

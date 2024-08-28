@@ -8,12 +8,11 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"sync"
 
-	ocmetric "go.opencensus.io/metric"
-	"go.opencensus.io/metric/metricproducer"
 	"go.opentelemetry.io/contrib/config"
 	"go.opentelemetry.io/otel/metric"
-	noopmetric "go.opentelemetry.io/otel/metric/noop"
+	"go.opentelemetry.io/otel/metric/noop"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/multierr"
@@ -26,37 +25,27 @@ import (
 
 const (
 	zapKeyTelemetryAddress = "address"
-	zapKeyTelemetryLevel   = "level"
+	zapKeyTelemetryLevel   = "metrics level"
 )
 
 type meterProvider struct {
 	*sdkmetric.MeterProvider
-	ocRegistry *ocmetric.Registry
-	servers    []*http.Server
+	servers  []*http.Server
+	serverWG sync.WaitGroup
 }
 
 type meterProviderSettings struct {
 	res               *resource.Resource
-	logger            *zap.Logger
 	cfg               telemetry.MetricsConfig
 	asyncErrorChannel chan error
 }
 
-func newMeterProvider(set meterProviderSettings, disableHighCardinality bool, extendedConfig bool) (metric.MeterProvider, error) {
+func newMeterProvider(set meterProviderSettings, disableHighCardinality bool) (metric.MeterProvider, error) {
 	if set.cfg.Level == configtelemetry.LevelNone || (set.cfg.Address == "" && len(set.cfg.Readers) == 0) {
-		set.logger.Info(
-			"Skipping telemetry setup.",
-			zap.String(zapKeyTelemetryAddress, set.cfg.Address),
-			zap.String(zapKeyTelemetryLevel, set.cfg.Level.String()),
-		)
-		return noopmetric.NewMeterProvider(), nil
+		return noop.NewMeterProvider(), nil
 	}
 
-	set.logger.Info("Setting up own telemetry...")
 	if len(set.cfg.Address) != 0 {
-		if extendedConfig {
-			set.logger.Warn("service::telemetry::metrics::address is being deprecated in favor of service::telemetry::metrics::readers")
-		}
 		host, port, err := net.SplitHostPort(set.cfg.Address)
 		if err != nil {
 			return nil, err
@@ -80,25 +69,17 @@ func newMeterProvider(set meterProviderSettings, disableHighCardinality bool, ex
 		})
 	}
 
-	mp := &meterProvider{
-		// Initialize the ocRegistry, still used by the process metrics.
-		ocRegistry: ocmetric.NewRegistry(),
-	}
-	metricproducer.GlobalManager().AddProducer(mp.ocRegistry)
-	opts := []sdkmetric.Option{}
+	mp := &meterProvider{}
+	var opts []sdkmetric.Option
 	for _, reader := range set.cfg.Readers {
 		// https://github.com/open-telemetry/opentelemetry-collector/issues/8045
-		r, server, err := proctelemetry.InitMetricReader(context.Background(), reader, set.asyncErrorChannel)
+		r, server, err := proctelemetry.InitMetricReader(context.Background(), reader, set.asyncErrorChannel, &mp.serverWG)
 		if err != nil {
 			return nil, err
 		}
 		if server != nil {
 			mp.servers = append(mp.servers, server)
-			set.logger.Info(
-				"Serving metrics",
-				zap.String(zapKeyTelemetryAddress, server.Addr),
-				zap.String(zapKeyTelemetryLevel, set.cfg.Level.String()),
-			)
+
 		}
 		opts = append(opts, sdkmetric.WithReader(r))
 	}
@@ -111,16 +92,28 @@ func newMeterProvider(set meterProviderSettings, disableHighCardinality bool, ex
 	return mp, nil
 }
 
+// LogAboutServers logs about the servers that are serving metrics.
+func (mp *meterProvider) LogAboutServers(logger *zap.Logger, cfg telemetry.MetricsConfig) {
+	for _, server := range mp.servers {
+		logger.Info(
+			"Serving metrics",
+			zap.String(zapKeyTelemetryAddress, server.Addr),
+			zap.Stringer(zapKeyTelemetryLevel, cfg.Level),
+		)
+	}
+}
+
 // Shutdown the meter provider and all the associated resources.
 // The type signature of this method matches that of the sdkmetric.MeterProvider.
 func (mp *meterProvider) Shutdown(ctx context.Context) error {
-	metricproducer.GlobalManager().DeleteProducer(mp.ocRegistry)
-
 	var errs error
 	for _, server := range mp.servers {
 		if server != nil {
 			errs = multierr.Append(errs, server.Close())
 		}
 	}
-	return multierr.Append(errs, mp.MeterProvider.Shutdown(ctx))
+	errs = multierr.Append(errs, mp.MeterProvider.Shutdown(ctx))
+	mp.serverWG.Wait()
+
+	return errs
 }

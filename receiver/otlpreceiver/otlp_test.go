@@ -37,12 +37,12 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
+	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
@@ -52,10 +52,12 @@ var otlpReceiverID = component.MustNewIDWithName("otlp", otlpReceiverName)
 
 func TestJsonHttp(t *testing.T) {
 	tests := []struct {
-		name        string
-		encoding    string
-		contentType string
-		err         error
+		name               string
+		encoding           string
+		contentType        string
+		err                error
+		expectedStatus     *spb.Status
+		expectedStatusCode int
 	}{
 		{
 			name:        "JSONUncompressed",
@@ -83,16 +85,36 @@ func TestJsonHttp(t *testing.T) {
 			contentType: "application/json",
 		},
 		{
-			name:        "NotGRPCError",
-			encoding:    "",
-			contentType: "application/json",
-			err:         errors.New("my error"),
+			name:               "Permanent NotGRPCError",
+			encoding:           "",
+			contentType:        "application/json",
+			err:                consumererror.NewPermanent(errors.New("my error")),
+			expectedStatus:     &spb.Status{Code: int32(codes.Internal), Message: "Permanent error: my error"},
+			expectedStatusCode: http.StatusInternalServerError,
 		},
 		{
-			name:        "GRPCError",
-			encoding:    "",
-			contentType: "application/json",
-			err:         status.New(codes.Unavailable, "").Err(),
+			name:               "Retryable NotGRPCError",
+			encoding:           "",
+			contentType:        "application/json",
+			err:                errors.New("my error"),
+			expectedStatus:     &spb.Status{Code: int32(codes.Unavailable), Message: "my error"},
+			expectedStatusCode: http.StatusServiceUnavailable,
+		},
+		{
+			name:               "Permanent GRPCError",
+			encoding:           "",
+			contentType:        "application/json",
+			err:                status.New(codes.Internal, "").Err(),
+			expectedStatus:     &spb.Status{Code: int32(codes.Internal), Message: ""},
+			expectedStatusCode: http.StatusInternalServerError,
+		},
+		{
+			name:               "Retryable GRPCError",
+			encoding:           "",
+			contentType:        "application/json",
+			err:                status.New(codes.Unavailable, "").Err(),
+			expectedStatus:     &spb.Status{Code: int32(codes.Unavailable), Message: ""},
+			expectedStatusCode: http.StatusServiceUnavailable,
 		},
 	}
 	addr := testutil.GetAvailableLocalAddress(t)
@@ -108,7 +130,7 @@ func TestJsonHttp(t *testing.T) {
 
 			for _, dr := range generateDataRequests(t) {
 				url := "http://" + addr + dr.path
-				respBytes := doHTTPRequest(t, url, tt.encoding, tt.contentType, dr.jsonBytes, tt.err != nil)
+				respBytes := doHTTPRequest(t, url, tt.encoding, tt.contentType, dr.jsonBytes, tt.expectedStatusCode)
 				if tt.err == nil {
 					tr := ptraceotlp.NewExportResponse()
 					assert.NoError(t, tr.UnmarshalJSON(respBytes), "Unable to unmarshal response to Response")
@@ -120,7 +142,7 @@ func TestJsonHttp(t *testing.T) {
 						assert.True(t, proto.Equal(errStatus, s.Proto()))
 					} else {
 						fmt.Println(errStatus)
-						assert.True(t, proto.Equal(errStatus, &spb.Status{Code: int32(codes.Unavailable), Message: "my error"}))
+						assert.True(t, proto.Equal(errStatus, tt.expectedStatus))
 					}
 					sink.checkData(t, dr.data, 0)
 				}
@@ -302,9 +324,11 @@ func TestHandleInvalidRequests(t *testing.T) {
 
 func TestProtoHttp(t *testing.T) {
 	tests := []struct {
-		name     string
-		encoding string
-		err      error
+		name               string
+		encoding           string
+		err                error
+		expectedStatus     *spb.Status
+		expectedStatusCode int
 	}{
 		{
 			name:     "ProtoUncompressed",
@@ -319,14 +343,32 @@ func TestProtoHttp(t *testing.T) {
 			encoding: "zstd",
 		},
 		{
-			name:     "NotGRPCError",
-			encoding: "",
-			err:      errors.New("my error"),
+			name:               "Permanent NotGRPCError",
+			encoding:           "",
+			err:                consumererror.NewPermanent(errors.New("my error")),
+			expectedStatus:     &spb.Status{Code: int32(codes.Internal), Message: "Permanent error: my error"},
+			expectedStatusCode: http.StatusInternalServerError,
 		},
 		{
-			name:     "GRPCError",
-			encoding: "",
-			err:      status.New(codes.Unavailable, "").Err(),
+			name:               "Retryable NotGRPCError",
+			encoding:           "",
+			err:                errors.New("my error"),
+			expectedStatus:     &spb.Status{Code: int32(codes.Unavailable), Message: "my error"},
+			expectedStatusCode: http.StatusServiceUnavailable,
+		},
+		{
+			name:               "Permanent GRPCError",
+			encoding:           "",
+			err:                status.New(codes.InvalidArgument, "").Err(),
+			expectedStatus:     &spb.Status{Code: int32(codes.InvalidArgument), Message: ""},
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			name:               "Retryable GRPCError",
+			encoding:           "",
+			err:                status.New(codes.Unavailable, "").Err(),
+			expectedStatus:     &spb.Status{Code: int32(codes.Unavailable), Message: ""},
+			expectedStatusCode: http.StatusServiceUnavailable,
 		},
 	}
 	addr := testutil.GetAvailableLocalAddress(t)
@@ -345,7 +387,7 @@ func TestProtoHttp(t *testing.T) {
 
 			for _, dr := range generateDataRequests(t) {
 				url := "http://" + addr + dr.path
-				respBytes := doHTTPRequest(t, url, tt.encoding, "application/x-protobuf", dr.protoBytes, tt.err != nil)
+				respBytes := doHTTPRequest(t, url, tt.encoding, "application/x-protobuf", dr.protoBytes, tt.expectedStatusCode)
 				if tt.err == nil {
 					tr := ptraceotlp.NewExportResponse()
 					assert.NoError(t, tr.UnmarshalProto(respBytes))
@@ -356,7 +398,7 @@ func TestProtoHttp(t *testing.T) {
 					if s, ok := status.FromError(tt.err); ok {
 						assert.True(t, proto.Equal(errStatus, s.Proto()))
 					} else {
-						assert.True(t, proto.Equal(errStatus, &spb.Status{Code: int32(codes.Unavailable), Message: "my error"}))
+						assert.True(t, proto.Equal(errStatus, tt.expectedStatus))
 					}
 					sink.checkData(t, dr.data, 0)
 				}
@@ -524,7 +566,7 @@ func TestOTLPReceiverGRPCTracesIngestTest(t *testing.T) {
 	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
 
-	cc, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	cc, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 	defer func() {
 		assert.NoError(t, cc.Close())
@@ -552,7 +594,7 @@ func TestOTLPReceiverGRPCTracesIngestTest(t *testing.T) {
 	require.NoError(t, tt.CheckReceiverTraces("grpc", int64(expectedReceivedBatches), int64(expectedIngestionBlockedRPCs)))
 }
 
-// TestOTLPReceiverHTTPTracesNextConsumerResponse checks that the HTTP trace receiver
+// TestOTLPReceiverHTTPTracesIngestTest checks that the HTTP trace receiver
 // is returning the proper response (return and metrics) when the next consumer
 // in the pipeline reports error. The test changes the responses returned by the
 // next trace consumer, checks if data was passed down the pipeline and if
@@ -560,20 +602,30 @@ func TestOTLPReceiverGRPCTracesIngestTest(t *testing.T) {
 // trace receiver.
 func TestOTLPReceiverHTTPTracesIngestTest(t *testing.T) {
 	type ingestionStateTest struct {
-		okToIngest   bool
-		expectedCode codes.Code
+		okToIngest         bool
+		err                error
+		expectedCode       codes.Code
+		expectedStatusCode int
 	}
 
 	expectedReceivedBatches := 2
-	expectedIngestionBlockedRPCs := 1
+	expectedIngestionBlockedRPCs := 2
 	ingestionStates := []ingestionStateTest{
 		{
 			okToIngest:   true,
 			expectedCode: codes.OK,
 		},
 		{
-			okToIngest:   false,
-			expectedCode: codes.Unavailable,
+			okToIngest:         false,
+			err:                consumererror.NewPermanent(errors.New("consumer error")),
+			expectedCode:       codes.Internal,
+			expectedStatusCode: http.StatusInternalServerError,
+		},
+		{
+			okToIngest:         false,
+			err:                errors.New("consumer error"),
+			expectedCode:       codes.Unavailable,
+			expectedStatusCode: http.StatusServiceUnavailable,
 		},
 		{
 			okToIngest:   true,
@@ -599,7 +651,7 @@ func TestOTLPReceiverHTTPTracesIngestTest(t *testing.T) {
 		if ingestionState.okToIngest {
 			sink.SetConsumeError(nil)
 		} else {
-			sink.SetConsumeError(errors.New("consumer error"))
+			sink.SetConsumeError(ingestionState.err)
 		}
 
 		pbMarshaler := ptrace.ProtoMarshaler{}
@@ -620,7 +672,7 @@ func TestOTLPReceiverHTTPTracesIngestTest(t *testing.T) {
 		} else {
 			errStatus := &spb.Status{}
 			assert.NoError(t, proto.Unmarshal(respBytes, errStatus))
-			assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+			assert.Equal(t, ingestionState.expectedStatusCode, resp.StatusCode)
 			assert.Equal(t, ingestionState.expectedCode, codes.Code(errStatus.Code))
 		}
 	}
@@ -639,7 +691,7 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 					Transport: confignet.TransportTypeTCP,
 				},
 				TLSSetting: &configtls.ServerConfig{
-					TLSSetting: configtls.Config{
+					Config: configtls.Config{
 						CertFile: "willfail",
 					},
 				},
@@ -649,7 +701,7 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 
 	r, err := NewFactory().CreateTracesReceiver(
 		context.Background(),
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		cfg,
 		consumertest.NewNop())
 	require.NoError(t, err)
@@ -670,11 +722,12 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 	recv := newReceiver(t, componenttest.NewNopTelemetrySettings(), cfg, otlpReceiverID, sink)
 	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
 
-	cc, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	cc, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 
 	td := testdata.GenerateTraces(50000)
-	require.Error(t, exportTraces(cc, td))
+	err = exportTraces(cc, td)
+	require.Error(t, err)
 	assert.NoError(t, cc.Close())
 	require.NoError(t, recv.Shutdown(context.Background()))
 
@@ -683,7 +736,7 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
 
-	cc, err = grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	cc, err = grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 	defer func() {
 		assert.NoError(t, cc.Close())
@@ -702,7 +755,7 @@ func TestHTTPInvalidTLSCredentials(t *testing.T) {
 				ServerConfig: &confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 					TLSSetting: &configtls.ServerConfig{
-						TLSSetting: configtls.Config{
+						Config: configtls.Config{
 							CertFile: "willfail",
 						},
 					},
@@ -717,7 +770,7 @@ func TestHTTPInvalidTLSCredentials(t *testing.T) {
 	// TLS is resolved during Start for HTTP.
 	r, err := NewFactory().CreateTracesReceiver(
 		context.Background(),
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		cfg,
 		consumertest.NewNop())
 	require.NoError(t, err)
@@ -783,7 +836,7 @@ func newHTTPReceiver(t *testing.T, settings component.TelemetrySettings, endpoin
 }
 
 func newReceiver(t *testing.T, settings component.TelemetrySettings, cfg *Config, id component.ID, c consumertest.Consumer) component.Component {
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	set.TelemetrySettings = settings
 	set.ID = id
 	r, err := newOtlpReceiver(cfg, &set)
@@ -853,7 +906,7 @@ func doHTTPRequest(
 	encoding string,
 	contentType string,
 	data []byte,
-	expectErr bool,
+	expectStatusCode int,
 ) []byte {
 	req := createHTTPRequest(t, url, encoding, contentType, data)
 	resp, err := http.DefaultClient.Do(req)
@@ -866,10 +919,10 @@ func doHTTPRequest(
 	// For cases like "application/json; charset=utf-8", the response will be only "application/json"
 	require.True(t, strings.HasPrefix(strings.ToLower(contentType), resp.Header.Get("Content-Type")))
 
-	if !expectErr {
+	if expectStatusCode == 0 {
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 	} else {
-		require.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+		require.Equal(t, expectStatusCode, resp.StatusCode)
 	}
 
 	return respBytes
@@ -945,7 +998,7 @@ func TestShutdown(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = endpointGrpc
 	cfg.HTTP.Endpoint = endpointHTTP
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	set.ID = otlpReceiverID
 	r, err := NewFactory().CreateTracesReceiver(
 		context.Background(),
@@ -956,7 +1009,7 @@ func TestShutdown(t *testing.T) {
 	require.NotNil(t, r)
 	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 
-	conn, err := grpc.Dial(endpointGrpc, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	conn, err := grpc.NewClient(endpointGrpc, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		require.NoError(t, conn.Close())
@@ -1095,7 +1148,7 @@ func (esc *errOrSinkConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Met
 	return esc.MetricsSink.ConsumeMetrics(ctx, md)
 }
 
-// ConsumeMetrics stores metrics to this sink.
+// ConsumeLogs stores metrics to this sink.
 func (esc *errOrSinkConsumer) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	esc.mu.Lock()
 	defer esc.mu.Unlock()
