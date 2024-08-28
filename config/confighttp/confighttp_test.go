@@ -173,7 +173,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				assert.EqualValues(t, 40, transport.MaxIdleConnsPerHost)
 				assert.EqualValues(t, 45, transport.MaxConnsPerHost)
 				assert.EqualValues(t, 30*time.Second, transport.IdleConnTimeout)
-				assert.EqualValues(t, true, transport.DisableKeepAlives)
+				assert.True(t, transport.DisableKeepAlives)
 			case *compressRoundTripper:
 				assert.EqualValues(t, "gzip", transport.compressionType)
 			}
@@ -220,7 +220,7 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 			assert.EqualValues(t, 0, transport.MaxIdleConnsPerHost)
 			assert.EqualValues(t, 0, transport.MaxConnsPerHost)
 			assert.EqualValues(t, 90*time.Second, transport.IdleConnTimeout)
-			assert.EqualValues(t, false, transport.DisableKeepAlives)
+			assert.False(t, transport.DisableKeepAlives)
 
 		})
 	}
