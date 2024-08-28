@@ -47,12 +47,15 @@ type ClientConfig struct {
 	TLSSetting configtls.ClientConfig `mapstructure:"tls"`
 
 	// ReadBufferSize for HTTP client. See http.Transport.ReadBufferSize.
+	// Default is 0.
 	ReadBufferSize int `mapstructure:"read_buffer_size"`
 
 	// WriteBufferSize for HTTP client. See http.Transport.WriteBufferSize.
+	// Default is 0.
 	WriteBufferSize int `mapstructure:"write_buffer_size"`
 
 	// Timeout parameter configures `http.Client.Timeout`.
+	// Default is 0 (unlimited).
 	Timeout time.Duration `mapstructure:"timeout"`
 
 	// Additional headers attached to each HTTP request sent by the client.
@@ -67,20 +70,20 @@ type ClientConfig struct {
 	Compression configcompression.Type `mapstructure:"compression"`
 
 	// MaxIdleConns is used to set a limit to the maximum idle HTTP connections the client can keep open.
-	// There's an already set value, and we want to override it only if an explicit value provided
+	// By default, it is set to 100.
 	MaxIdleConns *int `mapstructure:"max_idle_conns"`
 
 	// MaxIdleConnsPerHost is used to set a limit to the maximum idle HTTP connections the host can keep open.
-	// There's an already set value, and we want to override it only if an explicit value provided
+	// By default, it is set to [http.DefaultTransport.MaxIdleConnsPerHost].
 	MaxIdleConnsPerHost *int `mapstructure:"max_idle_conns_per_host"`
 
 	// MaxConnsPerHost limits the total number of connections per host, including connections in the dialing,
 	// active, and idle states.
-	// There's an already set value, and we want to override it only if an explicit value provided
+	// By default, it is set to [http.DefaultTransport.MaxConnsPerHost].
 	MaxConnsPerHost *int `mapstructure:"max_conns_per_host"`
 
 	// IdleConnTimeout is the maximum amount of time a connection will remain open before closing itself.
-	// There's an already set value, and we want to override it only if an explicit value provided
+	// By default, it is set to [http.DefaultTransport.IdleConnTimeout]
 	IdleConnTimeout *time.Duration `mapstructure:"idle_conn_timeout"`
 
 	// DisableKeepAlives, if true, disables HTTP keep-alives and will only use the connection to the server
@@ -111,17 +114,21 @@ type CookiesConfig struct {
 }
 
 // NewDefaultClientConfig returns ClientConfig type object with
-// the default values of 'MaxIdleConns' and 'IdleConnTimeout'.
+// the default values of 'MaxIdleConns' and 'IdleConnTimeout', as well as [http.DefaultTransport] values.
 // Other config options are not added as they are initialized with 'zero value' by GoLang as default.
 // We encourage to use this function to create an object of ClientConfig.
 func NewDefaultClientConfig() ClientConfig {
 	// The default values are taken from the values of 'DefaultTransport' of 'http' package.
-	maxIdleConns := 100
-	idleConnTimeout := 90 * time.Second
+	defaultTransport := http.DefaultTransport.(*http.Transport)
 
 	return ClientConfig{
-		MaxIdleConns:    &maxIdleConns,
-		IdleConnTimeout: &idleConnTimeout,
+		ReadBufferSize:      defaultTransport.ReadBufferSize,
+		WriteBufferSize:     defaultTransport.WriteBufferSize,
+		Headers:             map[string]configopaque.String{},
+		MaxIdleConns:        &defaultTransport.MaxIdleConns,
+		MaxIdleConnsPerHost: &defaultTransport.MaxIdleConnsPerHost,
+		MaxConnsPerHost:     &defaultTransport.MaxConnsPerHost,
+		IdleConnTimeout:     &defaultTransport.IdleConnTimeout,
 	}
 }
 
@@ -332,7 +339,7 @@ func NewDefaultServerConfig() ServerConfig {
 	return ServerConfig{
 		ResponseHeaders:   map[string]configopaque.String{},
 		TLSSetting:        &tlsDefaultServerConfig,
-		CORS:              &CORSConfig{},
+		CORS:              NewDefaultCORSConfig(),
 		WriteTimeout:      30 * time.Second,
 		ReadHeaderTimeout: 1 * time.Minute,
 		IdleTimeout:       1 * time.Minute,
@@ -469,12 +476,12 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 	}
 
 	server := &http.Server{
-		Handler: handler,
+		Handler:           handler,
+		ReadTimeout:       hss.ReadTimeout,
+		ReadHeaderTimeout: hss.ReadHeaderTimeout,
+		WriteTimeout:      hss.WriteTimeout,
+		IdleTimeout:       hss.IdleTimeout,
 	}
-	server.ReadTimeout = hss.ReadTimeout
-	server.ReadHeaderTimeout = hss.ReadHeaderTimeout
-	server.WriteTimeout = hss.WriteTimeout
-	server.IdleTimeout = hss.IdleTimeout
 
 	return server, nil
 }
@@ -511,6 +518,11 @@ type CORSConfig struct {
 	// Set it to the number of seconds that browsers should cache a CORS
 	// preflight response for.
 	MaxAge int `mapstructure:"max_age"`
+}
+
+// NewDefaultCORSConfig creates a default cross-origin resource sharing (CORS) configuration.
+func NewDefaultCORSConfig() *CORSConfig {
+	return &CORSConfig{}
 }
 
 func authInterceptor(next http.Handler, server auth.Server, requestParams []string) http.Handler {

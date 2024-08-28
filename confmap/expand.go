@@ -7,12 +7,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
 	"regexp"
-	"strconv"
 	"strings"
-
-	"go.opentelemetry.io/collector/internal/globalgates"
 )
 
 // schemePattern defines the regexp pattern for scheme names.
@@ -58,25 +54,19 @@ func (mr *Resolver) expandValue(ctx context.Context, value any) (any, bool, erro
 		// At this point we don't know the target field type, so we need to expand the original representation as well.
 		originalExpanded, originalChanged, err := mr.expandValue(ctx, v.Original)
 		if err != nil {
-			return nil, false, err
+			// The original representation is not valid, return the expanded value.
+			return expanded, changed, nil
 		}
 
 		if originalExpanded, ok := originalExpanded.(string); ok {
 			// If the original representation is a string, return the expanded value with the original representation.
 			return expandedValue{
-				Value:       expanded,
-				Original:    originalExpanded,
-				HasOriginal: true,
+				Value:    expanded,
+				Original: originalExpanded,
 			}, changed || originalChanged, nil
 		}
 
-		result := expandedValue{
-			Value:       expanded,
-			Original:    v.Original,
-			HasOriginal: v.HasOriginal,
-		}
-
-		return result, changed || originalChanged, nil
+		return expanded, changed, nil
 	case string:
 		if !strings.Contains(v, "${") || !strings.Contains(v, "}") {
 			// No URIs to expand.
@@ -158,10 +148,7 @@ func (mr *Resolver) findURI(input string) string {
 type expandedValue struct {
 	// Value is the expanded value.
 	Value any
-	// HasOriginal is true if the original representation is set.
-	HasOriginal bool
 	// Original is the original representation of the value.
-	// It is only valid if HasOriginal is true.
 	Original string
 }
 
@@ -182,57 +169,30 @@ func (mr *Resolver) findAndExpandURI(ctx context.Context, input string) (any, bo
 			return input, false, err
 		}
 
-		expanded := expandedValue{}
-		expanded.Value, err = ret.AsRaw()
+		val, err := ret.AsRaw()
 		if err != nil {
 			return input, false, err
 		}
 
 		if asStr, err2 := ret.AsString(); err2 == nil {
-			expanded.HasOriginal = true
-			expanded.Original = asStr
+			return expandedValue{
+				Value:    val,
+				Original: asStr,
+			}, true, nil
 		}
 
-		return expanded, true, err
+		return val, true, nil
 	}
 	expanded, err := mr.expandURI(ctx, uri)
 	if err != nil {
 		return input, false, err
 	}
 
-	var repl string
-	if globalgates.StrictlyTypedInputGate.IsEnabled() {
-		repl, err = expanded.AsString()
-	} else {
-		repl, err = toString(expanded)
-	}
+	repl, err := expanded.AsString()
 	if err != nil {
 		return input, false, fmt.Errorf("expanding %v: %w", uri, err)
 	}
 	return strings.ReplaceAll(input, uri, repl), true, err
-}
-
-// toString attempts to convert input to a string.
-func toString(ret *Retrieved) (string, error) {
-	// This list must be kept in sync with checkRawConfType.
-	input, err := ret.AsRaw()
-	if err != nil {
-		return "", err
-	}
-
-	val := reflect.ValueOf(input)
-	switch val.Kind() {
-	case reflect.String:
-		return val.String(), nil
-	case reflect.Int, reflect.Int32, reflect.Int64:
-		return strconv.FormatInt(val.Int(), 10), nil
-	case reflect.Float32, reflect.Float64:
-		return strconv.FormatFloat(val.Float(), 'f', -1, 64), nil
-	case reflect.Bool:
-		return strconv.FormatBool(val.Bool()), nil
-	default:
-		return "", fmt.Errorf("expected convertable to string value type, got %q(%T)", input, input)
-	}
 }
 
 func (mr *Resolver) expandURI(ctx context.Context, input string) (*Retrieved, error) {

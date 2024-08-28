@@ -99,6 +99,6 @@ func TestUnmarshalInvalidConfig(t *testing.T) {
 	cfg := &Config{}
 	err = cm.Unmarshal(&cfg)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "error decoding 'limit_mib': cannot convert negative value -2000 to an unsigned integer")
-	require.Contains(t, err.Error(), "error decoding 'spike_limit_mib': cannot convert negative value -2300 to an unsigned integer")
+	require.Contains(t, err.Error(), "cannot parse 'limit_mib', -2000 overflows uint")
+	require.Contains(t, err.Error(), "cannot parse 'spike_limit_mib', -2300 overflows uint")
 }

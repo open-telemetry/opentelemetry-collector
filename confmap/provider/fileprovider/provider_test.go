@@ -47,10 +47,18 @@ func TestNonExistent(t *testing.T) {
 
 func TestInvalidYAML(t *testing.T) {
 	fp := createProvider()
-	_, err := fp.Retrieve(context.Background(), fileSchemePrefix+filepath.Join("testdata", "invalid-yaml.yaml"), nil)
-	assert.Error(t, err)
-	_, err = fp.Retrieve(context.Background(), fileSchemePrefix+absolutePath(t, filepath.Join("testdata", "invalid-yaml.yaml")), nil)
-	assert.Error(t, err)
+	ret, err := fp.Retrieve(context.Background(), fileSchemePrefix+filepath.Join("testdata", "invalid-yaml.yaml"), nil)
+	require.NoError(t, err)
+	raw, err := ret.AsRaw()
+	require.NoError(t, err)
+	assert.IsType(t, "", raw)
+
+	ret, err = fp.Retrieve(context.Background(), fileSchemePrefix+absolutePath(t, filepath.Join("testdata", "invalid-yaml.yaml")), nil)
+	require.NoError(t, err)
+	raw, err = ret.AsRaw()
+	require.NoError(t, err)
+	assert.IsType(t, "", raw)
+
 	require.NoError(t, fp.Shutdown(context.Background()))
 }
 

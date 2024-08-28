@@ -4,15 +4,10 @@
 package receiver // import "go.opentelemetry.io/collector/receiver"
 
 import (
-	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver/internal"
-)
-
-var (
-	errNilNextConsumer = errors.New("nil next Consumer")
 )
 
 // Traces receiver receives traces.

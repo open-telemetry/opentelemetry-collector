@@ -5,6 +5,7 @@ package connector // import "go.opentelemetry.io/collector/connector"
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -13,13 +14,21 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 )
 
+var errNilNextConsumer = errors.New("nil next Consumer")
+
 // Builder is a helper struct that given a set of Configs and Factories helps with creating connectors.
+//
+// Deprecated: [v0.108.0] this builder is being internalized within the service module,
+// and will be removed soon.
 type Builder struct {
 	cfgs      map[component.ID]component.Config
 	factories map[component.Type]Factory
 }
 
 // NewBuilder creates a new connector.Builder to help with creating components form a set of configs and factories.
+//
+// Deprecated: [v0.108.0] this builder is being internalized within the service module,
+// and will be removed soon.
 func NewBuilder(cfgs map[component.ID]component.Config, factories map[component.Type]Factory) *Builder {
 	return &Builder{cfgs: cfgs, factories: factories}
 }
