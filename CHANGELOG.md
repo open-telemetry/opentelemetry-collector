@@ -7,6 +7,12 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.14.1/v0.108.1
+
+### 🧰 Bug fixes 🧰
+
+- `mdatagen`: Fix a missing import in the generated test file (#10969)
+
 ## v1.14.0/v0.108.0
 
 ### 🛑 Breaking changes 🛑
