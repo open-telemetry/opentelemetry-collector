@@ -23,7 +23,7 @@ type TelemetrySettings struct {
 
 	// MeterProvider that the factory can pass to other instrumented third-party libraries.
 	//
-	// Deprecated [v0.108.0]: use LeveledMeterProvider instead.
+	// Deprecated [v0.109.0]: use LeveledMeterProvider instead.
 	MeterProvider metric.MeterProvider
 
 	// LeveledMeterProvider returns a MeterProvider for a Level that the factory can
