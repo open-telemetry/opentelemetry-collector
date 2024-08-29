@@ -17,19 +17,16 @@ import (
 // are constructed through calling `New` with the relevant options to capture
 // data around the error that occurred.
 //
-// It may hold multiple errors from downstream components, and can
-// be merged with other errors as it travels upstream using `Combine`. `Error`
-// should be obtained using `errors.As`. If this is not possible, the most
-// `ErrorContainer` object should be highest on the stack.
+// It may hold multiple errors from downstream components, and can be merged
+// with other errors as it travels upstream using `Combine`. The `Error` should
+// be obtained from a given `error` object using `errors.As`.
 //
 // Experimental: This API is at the early stage of development and may change
 // without backward compatibility
 type Error struct {
 	error
-	httpStatus *int
+	httpStatus int
 	grpcStatus *status.Status
-
-	errors []*Error
 }
 
 var _ error = (*Error)(nil)
@@ -64,27 +61,23 @@ func New(origErr error, options ...ErrorOption) error {
 // initiated the data submission can then work with the `Error` object to
 // understand the failure.
 func Combine(errs ...error) error {
-	e := &Error{errors: make([]*Error, 0, len(errs))}
+	e := &Error{error: errors.Join(errs...)}
 
 	resultingStatus := 0
 
 	for _, err := range errs {
 		var otherErr *Error
 		if errors.As(err, &otherErr) {
-			if otherErr.httpStatus != nil {
-				resultingStatus = aggregateStatuses(resultingStatus, *otherErr.httpStatus)
+			if otherErr.httpStatus != 0 {
+				resultingStatus = aggregateStatuses(resultingStatus, otherErr.httpStatus)
 			} else if otherErr.grpcStatus != nil {
 				resultingStatus = aggregateStatuses(resultingStatus, statusconversion.GetHTTPStatusCodeFromStatus(otherErr.grpcStatus))
 			}
-
-			e.errors = append(e.errors, otherErr.errors...)
-		} else {
-			e.errors = append(e.errors, &Error{error: err})
 		}
 	}
 
 	if resultingStatus != 0 {
-		e.httpStatus = &resultingStatus
+		e.httpStatus = resultingStatus
 	}
 
 	return e
@@ -94,7 +87,7 @@ func Combine(errs ...error) error {
 // during data submission.
 func WithHTTPStatus(status int) ErrorOption {
 	return errorOptionFunc(func(err *Error) {
-		err.httpStatus = &status
+		err.httpStatus = status
 	})
 }
 
@@ -107,21 +100,13 @@ func WithGRPCStatus(status *status.Status) ErrorOption {
 }
 
 // Error implements the error interface.
-func (ed *Error) Error() string {
-	return ed.error.Error()
+func (e *Error) Error() string {
+	return e.error.Error()
 }
 
 // Unwrap returns the wrapped error for use by `errors.Is` and `errors.As`.
-func (e *Error) Unwrap() []error {
-	errors := make([]error, 0, len(e.errors)+1)
-
-	errors = append(errors, e.error)
-
-	for _, err := range e.errors {
-		errors = append(errors, err)
-	}
-
-	return errors
+func (e *Error) Unwrap() error {
+	return e.error
 }
 
 // HTTPStatus returns an HTTP status code either directly set by the source or
@@ -129,11 +114,11 @@ func (e *Error) Unwrap() []error {
 // the HTTP status code is returned.
 //
 // If no code has been set, the second return value is `false`.
-func (ed *Error) HTTPStatus() (int, bool) {
-	if ed.httpStatus != nil {
-		return *ed.httpStatus, true
-	} else if ed.grpcStatus != nil {
-		return statusconversion.GetHTTPStatusCodeFromStatus(ed.grpcStatus), true
+func (e *Error) HTTPStatus() (int, bool) {
+	if e.httpStatus != 0 {
+		return e.httpStatus, true
+	} else if e.grpcStatus != nil {
+		return statusconversion.GetHTTPStatusCodeFromStatus(e.grpcStatus), true
 	}
 
 	return 0, false
@@ -144,11 +129,11 @@ func (ed *Error) HTTPStatus() (int, bool) {
 // the gRPC status code is returned.
 //
 // If no code has been set, the second return value is `false`.
-func (ed *Error) GRPCStatus() (*status.Status, bool) {
-	if ed.grpcStatus != nil {
-		return ed.grpcStatus, true
-	} else if ed.httpStatus != nil {
-		return statusconversion.NewStatusFromMsgAndHTTPCode(ed.Error(), *ed.httpStatus), true
+func (e *Error) GRPCStatus() (*status.Status, bool) {
+	if e.grpcStatus != nil {
+		return e.grpcStatus, true
+	} else if e.httpStatus != 0 {
+		return statusconversion.NewStatusFromMsgAndHTTPCode(e.Error(), e.httpStatus), true
 	}
 
 	return nil, false

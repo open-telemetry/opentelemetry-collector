@@ -20,7 +20,7 @@ func Test_New(t *testing.T) {
 	grpcStatus := status.New(codes.Aborted, "aborted")
 	wantErr := &Error{
 		error:      errTest,
-		httpStatus: &httpStatus,
+		httpStatus: httpStatus,
 		grpcStatus: grpcStatus,
 	}
 
@@ -41,128 +41,22 @@ func Test_Error(t *testing.T) {
 func TestUnwrap(t *testing.T) {
 	err := &Error{
 		error: errTest,
-		errors: []*Error{
-			{
-				error: errTest,
-			},
-			{
-				error: errTest,
-			},
-		},
 	}
 
 	unwrapped := err.Unwrap()
 
-	require.Len(t, unwrapped, 3)
-
-	for _, e := range unwrapped {
-		require.ErrorIs(t, e, errTest)
-	}
-}
-
-func TestData(t *testing.T) {
-	httpStatus := 500
-	err := &Error{
-		error: errTest,
-		errors: []*Error{
-			{
-				error:      errTest,
-				httpStatus: &httpStatus,
-			},
-			{
-				error:      errTest,
-				httpStatus: &httpStatus,
-			},
-		},
-	}
-
-	errs := err.Unwrap()
-
-	require.Len(t, errs, 3)
-
-	for _, e := range errs {
-		ce := &Error{}
-		if errors.As(e, &ce) {
-			status, ok := ce.HTTPStatus()
-			require.True(t, ok)
-			require.Equal(t, httpStatus, status)
-		}
-	}
-}
-
-func TestErrorSliceIsCopy(t *testing.T) {
-	httpStatus := 500
-	err := &Error{
-		error: errTest,
-		errors: []*Error{
-			{
-				error:      errTest,
-				httpStatus: &httpStatus,
-			},
-			{
-				error:      errTest,
-				httpStatus: &httpStatus,
-			},
-		},
-	}
-
-	errs := err.Unwrap()
-
-	require.Len(t, errs, 3)
-
-	for _, e := range errs {
-		ce := &Error{}
-		if errors.As(e, &ce) {
-			status, ok := ce.HTTPStatus()
-			require.True(t, ok)
-			require.Equal(t, httpStatus, status)
-		}
-	}
-
-	errs = append(errs, &Error{error: errTest})
-
-	require.Len(t, errs, 4)
-	require.Len(t, err.errors, 2)
+	require.Equal(t, errTest, unwrapped)
 }
 
 func TestCombine(t *testing.T) {
-	err0 := &Error{
-		errors: []*Error{
-			{
-				error: errTest,
-			},
-		},
-	}
-	err1 := &Error{
-		errors: []*Error{
-			{
-				error: errTest,
-			},
-			{
-				error: errTest,
-			},
-		},
-	}
-	want := &Error{
-		errors: []*Error{
-			{
-				error: errTest,
-			},
-			{
-				error: errTest,
-			},
-			{
-				error: errTest,
-			},
-			{
-				error: errTest,
-			},
-		},
-	}
+	err0 := &Error{}
+	err1 := &Error{}
+	want := &Error{error: errors.Join(err0, err1, errTest)}
 
 	err := Combine(err0, err1, errTest)
 
 	require.Equal(t, want, err)
+
 }
 
 func TestError_Error(t *testing.T) {
@@ -185,14 +79,14 @@ func TestError_HTTPStatus(t *testing.T) {
 	serverErr := http.StatusTooManyRequests
 	testCases := []struct {
 		name       string
-		httpStatus *int
+		httpStatus int
 		grpcStatus *status.Status
 		want       int
 		hasCode    bool
 	}{
 		{
 			name:       "Passes through HTTP status",
-			httpStatus: &serverErr,
+			httpStatus: serverErr,
 			want:       serverErr,
 			hasCode:    true,
 		},
@@ -204,7 +98,7 @@ func TestError_HTTPStatus(t *testing.T) {
 		},
 		{
 			name:       "Passes through HTTP status when gRPC status also present",
-			httpStatus: &serverErr,
+			httpStatus: serverErr,
 			grpcStatus: status.New(codes.OK, errTest.Error()),
 			want:       serverErr,
 			hasCode:    true,
@@ -237,14 +131,14 @@ func TestError_GRPCStatus(t *testing.T) {
 	serverErr := status.New(codes.ResourceExhausted, errTest.Error())
 	testCases := []struct {
 		name       string
-		httpStatus *int
+		httpStatus int
 		grpcStatus *status.Status
 		want       *status.Status
 		hasCode    bool
 	}{
 		{
 			name:       "Converts HTTP status",
-			httpStatus: &httpStatus,
+			httpStatus: httpStatus,
 			want:       serverErr,
 			hasCode:    true,
 		},
@@ -256,7 +150,7 @@ func TestError_GRPCStatus(t *testing.T) {
 		},
 		{
 			name:       "Passes through gRPC status when gRPC status also present",
-			httpStatus: &otherHTTPStatus,
+			httpStatus: otherHTTPStatus,
 			grpcStatus: serverErr,
 			want:       serverErr,
 			hasCode:    true,
