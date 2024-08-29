@@ -95,7 +95,7 @@ func TestCheckScraperMetricsViews(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	s, err := NewObsReport(ObsReportSettings{
+	s, err := newScraper(ObsReportSettings{
 		ReceiverID:             receiverID,
 		Scraper:                scraperID,
 		ReceiverCreateSettings: receiver.Settings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},

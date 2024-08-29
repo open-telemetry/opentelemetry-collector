@@ -149,7 +149,7 @@ func TestComponentStatusWatcher(t *testing.T) {
 	changedComponents := map[*componentstatus.InstanceID][]componentstatus.Status{}
 	var mux sync.Mutex
 	onStatusChanged := func(source *componentstatus.InstanceID, event *componentstatus.Event) {
-		if source.ID.Type() != unhealthyProcessorFactory.Type() {
+		if source.ComponentID().Type() != unhealthyProcessorFactory.Type() {
 			return
 		}
 		mux.Lock()
@@ -200,7 +200,7 @@ func TestComponentStatusWatcher(t *testing.T) {
 
 		for k, v := range changedComponents {
 			// All processors must report a status change with the same ID
-			assert.EqualValues(t, component.NewID(unhealthyProcessorFactory.Type()), k.ID)
+			assert.EqualValues(t, component.NewID(unhealthyProcessorFactory.Type()), k.ComponentID())
 			// And all must have a valid startup sequence
 			assert.Equal(t, startupStatuses(v), v)
 		}

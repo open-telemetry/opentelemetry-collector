@@ -360,6 +360,10 @@ func inlineReplace(tmplFile string, outputFile string, md metadata, start string
 	tmpl := templatize(tmplFile, md)
 	buf := bytes.Buffer{}
 
+	if md.GithubProject == "" {
+		md.GithubProject = "open-telemetry/opentelemetry-collector-contrib"
+	}
+
 	if err := tmpl.Execute(&buf, templateContext{metadata: md, Package: "metadata"}); err != nil {
 		return fmt.Errorf("failed executing template: %w", err)
 	}

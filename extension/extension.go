@@ -51,6 +51,15 @@ type ConfigWatcher interface {
 	NotifyConfig(ctx context.Context, conf *confmap.Conf) error
 }
 
+// ModuleInfo describes the go module for each component.
+type ModuleInfo struct {
+	Receiver  map[component.Type]string
+	Processor map[component.Type]string
+	Exporter  map[component.Type]string
+	Extension map[component.Type]string
+	Connector map[component.Type]string
+}
+
 // Settings is passed to Factory.Create(...) function.
 type Settings struct {
 	// ID returns the ID of the component that will be created.
@@ -60,6 +69,9 @@ type Settings struct {
 
 	// BuildInfo can be used by components for informational purposes
 	BuildInfo component.BuildInfo
+
+	// ModuleInfo describes the go module for each component.
+	ModuleInfo ModuleInfo
 }
 
 // CreateFunc is the equivalent of Factory.Create(...) function.
@@ -127,12 +139,18 @@ func MakeFactoryMap(factories ...Factory) (map[component.Type]Factory, error) {
 }
 
 // Builder extension is a helper struct that given a set of Configs and Factories helps with creating extensions.
+//
+// Deprecated: [v0.108.0] this builder is being internalized within the service module,
+// and will be removed soon.
 type Builder struct {
 	cfgs      map[component.ID]component.Config
 	factories map[component.Type]Factory
 }
 
 // NewBuilder creates a new extension.Builder to help with creating components form a set of configs and factories.
+//
+// Deprecated: [v0.108.0] this builder is being internalized within the service module,
+// and will be removed soon.
 func NewBuilder(cfgs map[component.ID]component.Config, factories map[component.Type]Factory) *Builder {
 	return &Builder{cfgs: cfgs, factories: factories}
 }

@@ -13,9 +13,10 @@ var UseUnifiedEnvVarExpansionRules = featuregate.GlobalRegistry().MustRegister("
 
 const StrictlyTypedInputID = "confmap.strictlyTypedInput"
 
-var StrictlyTypedInputGate = featuregate.GlobalRegistry().MustRegister(StrictlyTypedInputID,
-	featuregate.StageBeta,
+var _ = featuregate.GlobalRegistry().MustRegister(StrictlyTypedInputID,
+	featuregate.StageStable,
 	featuregate.WithRegisterFromVersion("v0.103.0"),
+	featuregate.WithRegisterToVersion("v0.109.0"),
 	featuregate.WithRegisterDescription("Makes type casting rules during configuration unmarshaling stricter. See https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/env-vars.md for more details."),
 )
 
@@ -28,4 +29,5 @@ var DisableOpenCensusBridge = featuregate.GlobalRegistry().MustRegister("service
 var NoopTracerProvider = featuregate.GlobalRegistry().MustRegister("service.noopTracerProvider",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterFromVersion("v0.107.0"),
+	featuregate.WithRegisterToVersion("v0.109.0"),
 	featuregate.WithRegisterDescription("Sets a Noop OpenTelemetry TracerProvider to reduce memory allocations. This featuregate is incompatible with the zPages extension."))

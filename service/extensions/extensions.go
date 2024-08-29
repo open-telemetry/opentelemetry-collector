@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/components"
 	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/internal/zpages"
@@ -168,11 +169,12 @@ func (bes *Extensions) HandleZPages(w http.ResponseWriter, r *http.Request) {
 
 // Settings holds configuration for building Extensions.
 type Settings struct {
-	Telemetry component.TelemetrySettings
-	BuildInfo component.BuildInfo
+	Telemetry  component.TelemetrySettings
+	BuildInfo  component.BuildInfo
+	ModuleInfo extension.ModuleInfo
 
 	// Extensions builder for extensions.
-	Extensions *extension.Builder
+	Extensions builders.Extension
 }
 
 type Option func(*Extensions)
@@ -198,14 +200,12 @@ func New(ctx context.Context, set Settings, cfg Config, options ...Option) (*Ext
 	}
 
 	for _, extID := range cfg {
-		instanceID := &componentstatus.InstanceID{
-			ID:   extID,
-			Kind: component.KindExtension,
-		}
+		instanceID := componentstatus.NewInstanceID(extID, component.KindExtension)
 		extSet := extension.Settings{
 			ID:                extID,
 			TelemetrySettings: set.Telemetry,
 			BuildInfo:         set.BuildInfo,
+			ModuleInfo:        set.ModuleInfo,
 		}
 		extSet.TelemetrySettings.Logger = components.ExtensionLogger(set.Telemetry.Logger, extID)
 
