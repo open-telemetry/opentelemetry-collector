@@ -28,8 +28,7 @@ import (
 
 type testTelemetry struct {
 	component.TelemetrySettings
-	promHandler   http.Handler
-	meterProvider *sdkmetric.MeterProvider
+	promHandler http.Handler
 }
 
 var expectedMetrics = []string{
@@ -45,25 +44,27 @@ func setupTelemetry(t *testing.T) testTelemetry {
 	settings := testTelemetry{
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 	}
-	settings.TelemetrySettings.MetricsLevel = configtelemetry.LevelNormal
 
 	promReg := prometheus.NewRegistry()
 	exporter, err := otelprom.New(otelprom.WithRegisterer(promReg), otelprom.WithoutUnits(), otelprom.WithoutCounterSuffixes())
 	require.NoError(t, err)
 
-	settings.meterProvider = sdkmetric.NewMeterProvider(
+	meterProvider := sdkmetric.NewMeterProvider(
 		sdkmetric.WithResource(resource.Empty()),
 		sdkmetric.WithReader(exporter),
 	)
-	settings.TelemetrySettings.MeterProvider = settings.meterProvider
+
+	settings.LeveledMeterProvider = func(_ configtelemetry.Level) metric.MeterProvider {
+		return meterProvider
+	}
 
 	settings.TelemetrySettings.LeveledMeterProvider = func(_ configtelemetry.Level) metric.MeterProvider {
-		return settings.meterProvider
+		return meterProvider
 	}
 
 	settings.promHandler = promhttp.HandlerFor(promReg, promhttp.HandlerOpts{})
 
-	t.Cleanup(func() { assert.NoError(t, settings.meterProvider.Shutdown(context.Background())) })
+	t.Cleanup(func() { assert.NoError(t, meterProvider.Shutdown(context.Background())) })
 
 	return settings
 }
