@@ -23,7 +23,6 @@ const (
 	skipGenerateFlag               = "skip-generate"
 	skipCompilationFlag            = "skip-compilation"
 	skipGetModulesFlag             = "skip-get-modules"
-	skipNewGoModuleFlag            = "skip-new-go-module"
 	skipStrictVersioningFlag       = "skip-strict-versioning"
 	ldflagsFlag                    = "ldflags"
 	distributionNameFlag           = "name"
@@ -85,7 +84,6 @@ configuration is provided, ocb will generate a default Collector.
 	cmd.Flags().BoolVar(&cfg.SkipGenerate, skipGenerateFlag, false, "Whether builder should skip generating go code (default false)")
 	cmd.Flags().BoolVar(&cfg.SkipCompilation, skipCompilationFlag, false, "Whether builder should only generate go code with no compile of the collector (default false)")
 	cmd.Flags().BoolVar(&cfg.SkipGetModules, skipGetModulesFlag, false, "Whether builder should skip updating go.mod and retrieve Go module list (default false)")
-	cmd.Flags().BoolVar(&cfg.SkipNewGoModule, skipNewGoModuleFlag, false, "Whether builder should skip generating a new go.mod file, using the enclosing Go module instead (default false)")
 	cmd.Flags().BoolVar(&cfg.SkipStrictVersioning, skipStrictVersioningFlag, false, "Whether builder should skip strictly checking the calculated versions following dependency resolution")
 	cmd.Flags().BoolVar(&cfg.Verbose, verboseFlag, false, "Whether builder should print verbose output (default false)")
 	cmd.Flags().StringVar(&cfg.LDFlags, ldflagsFlag, "", `ldflags to include in the "go build" command`)
@@ -186,9 +184,6 @@ func applyCfgFromFile(flags *flag.FlagSet, cfgFromFile builder.Config) {
 	}
 	if !flags.Changed(skipGetModulesFlag) && cfgFromFile.SkipGetModules {
 		cfg.SkipGetModules = cfgFromFile.SkipGetModules
-	}
-	if !flags.Changed(skipNewGoModuleFlag) && cfgFromFile.SkipNewGoModule {
-		cfg.SkipNewGoModule = cfgFromFile.SkipNewGoModule
 	}
 	if !flags.Changed(skipStrictVersioningFlag) && cfgFromFile.SkipStrictVersioning {
 		cfg.SkipStrictVersioning = cfgFromFile.SkipStrictVersioning

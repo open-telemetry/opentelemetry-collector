@@ -17,14 +17,10 @@ import (
 	"go.uber.org/zap"
 )
 
-const defaultOtelColVersion = "0.107.0"
+const defaultOtelColVersion = "0.108.1"
 
-var (
-	// ErrMissingGoMod indicates an empty gomod field
-	ErrMissingGoMod = errors.New("missing gomod specification for module")
-	// ErrIncompatibleConfigurationValues indicates that there is configuration that cannot be combined
-	ErrIncompatibleConfigurationValues = errors.New("cannot combine configuration values")
-)
+// ErrMissingGoMod indicates an empty gomod field
+var ErrMissingGoMod = errors.New("missing gomod specification for module")
 
 // Config holds the builder's configuration
 type Config struct {
@@ -33,7 +29,6 @@ type Config struct {
 	SkipGenerate         bool   `mapstructure:"-"`
 	SkipCompilation      bool   `mapstructure:"-"`
 	SkipGetModules       bool   `mapstructure:"-"`
-	SkipNewGoModule      bool   `mapstructure:"-"`
 	SkipStrictVersioning bool   `mapstructure:"-"`
 	LDFlags              string `mapstructure:"-"`
 	Verbose              bool   `mapstructure:"-"`
@@ -121,15 +116,14 @@ func NewDefaultConfig() Config {
 func (c *Config) Validate() error {
 	var providersError error
 	if c.Providers != nil {
-		providersError = c.validateModules("provider", *c.Providers)
+		providersError = validateModules("provider", *c.Providers)
 	}
 	return multierr.Combine(
-		c.validateModules("extension", c.Extensions),
-		c.validateModules("receiver", c.Receivers),
-		c.validateModules("exporter", c.Exporters),
-		c.validateModules("processor", c.Processors),
-		c.validateModules("connector", c.Connectors),
-		c.validateFlags(),
+		validateModules("extension", c.Extensions),
+		validateModules("receiver", c.Receivers),
+		validateModules("exporter", c.Exporters),
+		validateModules("processor", c.Processors),
+		validateModules("connector", c.Connectors),
 		providersError,
 	)
 }
@@ -246,20 +240,10 @@ func (c *Config) ParseModules() error {
 	return nil
 }
 
-func (c *Config) validateFlags() error {
-	if c.SkipNewGoModule && (len(c.Replaces) != 0 || len(c.Excludes) != 0) {
-		return fmt.Errorf("%w excludes or replaces with --skip-new-go-module; please modify the enclosing go.mod file directly", ErrIncompatibleConfigurationValues)
-	}
-	return nil
-}
-
-func (c *Config) validateModules(name string, mods []Module) error {
+func validateModules(name string, mods []Module) error {
 	for i, mod := range mods {
 		if mod.GoMod == "" {
 			return fmt.Errorf("%s module at index %v: %w", name, i, ErrMissingGoMod)
-		}
-		if mod.Path != "" && c.SkipNewGoModule {
-			return fmt.Errorf("%w cannot modify mod.path %q combined with --skip-new-go-module; please modify the enclosing go.mod file directly", ErrIncompatibleConfigurationValues, mod.Path)
 		}
 	}
 	return nil
