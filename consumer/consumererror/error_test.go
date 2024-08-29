@@ -18,14 +18,10 @@ var errTest = errors.New("consumererror testing error")
 func Test_New(t *testing.T) {
 	httpStatus := 500
 	grpcStatus := status.New(codes.Aborted, "aborted")
-	wantErr := &ErrorContainer{
-		errors: []Error{
-			&errorData{
-				error:      errTest,
-				httpStatus: &httpStatus,
-				grpcStatus: grpcStatus,
-			},
-		},
+	wantErr := &Error{
+		error:      errTest,
+		httpStatus: &httpStatus,
+		grpcStatus: grpcStatus,
 	}
 
 	newErr := New(errTest,
@@ -43,12 +39,13 @@ func Test_Error(t *testing.T) {
 }
 
 func TestUnwrap(t *testing.T) {
-	err := &ErrorContainer{
-		errors: []Error{
-			&errorData{
+	err := &Error{
+		error: errTest,
+		errors: []*Error{
+			{
 				error: errTest,
 			},
-			&errorData{
+			{
 				error: errTest,
 			},
 		},
@@ -56,7 +53,7 @@ func TestUnwrap(t *testing.T) {
 
 	unwrapped := err.Unwrap()
 
-	require.Len(t, unwrapped, 2)
+	require.Len(t, unwrapped, 3)
 
 	for _, e := range unwrapped {
 		require.ErrorIs(t, e, errTest)
@@ -65,91 +62,99 @@ func TestUnwrap(t *testing.T) {
 
 func TestData(t *testing.T) {
 	httpStatus := 500
-	err := &ErrorContainer{
-		errors: []Error{
-			&errorData{
+	err := &Error{
+		error: errTest,
+		errors: []*Error{
+			{
 				error:      errTest,
 				httpStatus: &httpStatus,
 			},
-			&errorData{
+			{
 				error:      errTest,
 				httpStatus: &httpStatus,
 			},
 		},
 	}
 
-	data := err.Errors()
+	errs := err.Unwrap()
 
-	require.Len(t, data, 2)
+	require.Len(t, errs, 3)
 
-	for _, e := range data {
-		status, ok := e.HTTPStatus()
-		require.True(t, ok)
-		require.Equal(t, httpStatus, status)
+	for _, e := range errs {
+		ce := &Error{}
+		if errors.As(e, &ce) {
+			status, ok := ce.HTTPStatus()
+			require.True(t, ok)
+			require.Equal(t, httpStatus, status)
+		}
 	}
 }
 
 func TestErrorSliceIsCopy(t *testing.T) {
 	httpStatus := 500
-	err := &ErrorContainer{
-		errors: []Error{
-			&errorData{
+	err := &Error{
+		error: errTest,
+		errors: []*Error{
+			{
 				error:      errTest,
 				httpStatus: &httpStatus,
 			},
-			&errorData{
+			{
 				error:      errTest,
 				httpStatus: &httpStatus,
 			},
 		},
 	}
 
-	errs := err.Errors()
-
-	require.Len(t, errs, 2)
-
-	for _, e := range errs {
-		status, ok := e.HTTPStatus()
-		require.True(t, ok)
-		require.Equal(t, httpStatus, status)
-	}
-
-	errs = append(errs, &errorData{error: errTest})
+	errs := err.Unwrap()
 
 	require.Len(t, errs, 3)
+
+	for _, e := range errs {
+		ce := &Error{}
+		if errors.As(e, &ce) {
+			status, ok := ce.HTTPStatus()
+			require.True(t, ok)
+			require.Equal(t, httpStatus, status)
+		}
+	}
+
+	errs = append(errs, &Error{error: errTest})
+
+	require.Len(t, errs, 4)
 	require.Len(t, err.errors, 2)
 }
 
 func TestCombine(t *testing.T) {
-	err0 := &ErrorContainer{
-		errors: []Error{
-			&errorData{
+	err0 := &Error{
+		errors: []*Error{
+			{
 				error: errTest,
 			},
 		},
 	}
-	err1 := &ErrorContainer{
-		errors: []Error{
-			&errorData{
+	err1 := &Error{
+		errors: []*Error{
+			{
 				error: errTest,
 			},
-			&errorData{
+			{
 				error: errTest,
 			},
 		},
 	}
-	want := &ErrorContainer{
-		errors: []Error{
-			&errorData{
+	want := &Error{
+		errors: []*Error{
+			{
 				error: errTest,
 			},
-			&errorData{
+			{
 				error: errTest,
 			},
-			&errorData{
+			{
 				error: errTest,
 			},
-			&errorData{
+			{
 				error: errTest,
 			},
 		},
@@ -161,7 +166,7 @@ func TestCombine(t *testing.T) {
 }
 
 func TestError_Error(t *testing.T) {
-	err := &errorData{
+	err := &Error{
 		error: errTest,
 	}
 
@@ -169,11 +174,11 @@ func TestError_Error(t *testing.T) {
 }
 
 func TestError_Unwrap(t *testing.T) {
-	err := &errorData{
+	err := &Error{
 		error: errTest,
 	}
 
-	require.Equal(t, errTest, err.Unwrap())
+	require.Equal(t, []error{errTest}, err.Unwrap())
 }
 
 func TestError_HTTPStatus(t *testing.T) {
@@ -212,7 +217,7 @@ func TestError_HTTPStatus(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			err := errorData{
+			err := Error{
 				error:      errTest,
 				httpStatus: tt.httpStatus,
 				grpcStatus: tt.grpcStatus,
@@ -264,7 +269,7 @@ func TestError_GRPCStatus(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			err := errorData{
+			err := Error{
 				error:      errTest,
 				httpStatus: tt.httpStatus,
 				grpcStatus: tt.grpcStatus,
