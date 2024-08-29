@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/otel/trace/noop"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/globalgates"
 	"go.opentelemetry.io/collector/service/telemetry/internal"
@@ -65,11 +66,22 @@ func TestNewTracerProvider(t *testing.T) {
 	tests := []struct {
 		name               string
 		wantTracerProvider any
-		noopTracer         bool
+		noopTracerGate     bool
+		cfg                Config
 	}{
 		{
-			name:               "noop tracer provider",
-			noopTracer:         true,
+			name: "trace level none",
+			cfg: Config{
+				Traces: TracesConfig{
+					Level: configtelemetry.LevelNone,
+				},
+			},
+			wantTracerProvider: noop.TracerProvider{},
+		},
+		{
+			name:               "noop tracer feature gate",
+			cfg:                Config{},
+			noopTracerGate:     true,
 			wantTracerProvider: noop.TracerProvider{},
 		},
 		{
@@ -80,13 +92,12 @@ func TestNewTracerProvider(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			previousValue := globalgates.NoopTracerProvider.IsEnabled()
-			err := featuregate.GlobalRegistry().Set(globalgates.NoopTracerProvider.ID(), tt.noopTracer)
-			require.NoError(t, err)
+			// expect error due to deprecated flag
+			require.NoError(t, featuregate.GlobalRegistry().Set(globalgates.NoopTracerProvider.ID(), tt.noopTracerGate))
 			defer func() {
-				err = featuregate.GlobalRegistry().Set(globalgates.NoopTracerProvider.ID(), previousValue)
-				require.NoError(t, err)
+				require.NoError(t, featuregate.GlobalRegistry().Set(globalgates.NoopTracerProvider.ID(), previousValue))
 			}()
-			provider, err := newTracerProvider(context.TODO(), internal.Settings{}, Config{})
+			provider, err := newTracerProvider(context.TODO(), internal.Settings{}, tt.cfg)
 			require.NoError(t, err)
 			require.IsType(t, tt.wantTracerProvider, provider)
 		})

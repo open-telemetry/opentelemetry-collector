@@ -64,6 +64,11 @@
         "matchManagers": ["gomod"],
         "matchPackagePrefixes": ["go.opentelemetry.io/build-tools"],
         "groupName": "All go.opentelemetry.io/build-tools packages"
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchDepTypes": ["toolchain"],
+        "enabled": false
       }
     ],
     "ignoreDeps": [
