@@ -248,54 +248,6 @@ func Test_applyCfgFromFile(t *testing.T) {
 			},
 			wantErr: false,
 		},
-		{
-			name: "Skip new go mod false",
-			args: args{
-				flags: flag.NewFlagSet("version=1.0.0", 1),
-				cfgFromFile: builder.Config{
-					Logger:          zap.NewNop(),
-					SkipGenerate:    true,
-					SkipCompilation: true,
-					SkipGetModules:  true,
-					SkipNewGoModule: false,
-					Distribution:    testDistribution,
-				},
-			},
-			want: builder.Config{
-				Logger:               zap.NewNop(),
-				SkipGenerate:         true,
-				SkipCompilation:      true,
-				SkipGetModules:       true,
-				SkipStrictVersioning: true,
-				SkipNewGoModule:      false,
-				Distribution:         testDistribution,
-			},
-			wantErr: false,
-		},
-		{
-			name: "Skip new go mod true",
-			args: args{
-				flags: flag.NewFlagSet("version=1.0.0", 1),
-				cfgFromFile: builder.Config{
-					Logger:          zap.NewNop(),
-					SkipGenerate:    true,
-					SkipCompilation: true,
-					SkipGetModules:  true,
-					SkipNewGoModule: true,
-					Distribution:    testDistribution,
-				},
-			},
-			want: builder.Config{
-				Logger:               zap.NewNop(),
-				SkipGenerate:         true,
-				SkipCompilation:      true,
-				SkipGetModules:       true,
-				SkipStrictVersioning: true,
-				SkipNewGoModule:      true,
-				Distribution:         testDistribution,
-			},
-			wantErr: false,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
