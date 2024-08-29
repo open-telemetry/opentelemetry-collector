@@ -38,6 +38,11 @@ func TestNewNopFactory(t *testing.T) {
 	require.NoError(t, err)
 	assert.NoError(t, logs.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, logs.Shutdown(context.Background()))
+
+	profiles, err := factory.CreateProfilesReceiver(context.Background(), NewNopSettings(), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	assert.NoError(t, profiles.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, profiles.Shutdown(context.Background()))
 }
 
 func TestNewNopBuilder(t *testing.T) {

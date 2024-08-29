@@ -80,6 +80,7 @@ var (
 		"/receiver",
 		"/receiver/nopreceiver",
 		"/receiver/otlpreceiver",
+		"/receiver/receiverprofiles",
 		"/otelcol",
 		"/pdata",
 		"/pdata/testdata",

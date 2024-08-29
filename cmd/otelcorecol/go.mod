@@ -103,6 +103,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.14.1 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.108.1 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.108.1 // indirect
+	go.opentelemetry.io/collector/receiver/receiverprofiles v0.108.1 // indirect
 	go.opentelemetry.io/collector/semconv v0.108.1 // indirect
 	go.opentelemetry.io/collector/service v0.108.1 // indirect
 	go.opentelemetry.io/contrib/config v0.9.0 // indirect
@@ -234,6 +235,8 @@ replace go.opentelemetry.io/collector/receiver => ../../receiver
 replace go.opentelemetry.io/collector/receiver/nopreceiver => ../../receiver/nopreceiver
 
 replace go.opentelemetry.io/collector/receiver/otlpreceiver => ../../receiver/otlpreceiver
+
+replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../../receiver/receiverprofiles
 
 replace go.opentelemetry.io/collector/processor/batchprocessor => ../../processor/batchprocessor
 
