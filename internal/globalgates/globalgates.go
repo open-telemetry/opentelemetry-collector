@@ -20,12 +20,6 @@ var _ = featuregate.GlobalRegistry().MustRegister(StrictlyTypedInputID,
 	featuregate.WithRegisterDescription("Makes type casting rules during configuration unmarshaling stricter. See https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/env-vars.md for more details."),
 )
 
-var DisableOpenCensusBridge = featuregate.GlobalRegistry().MustRegister("service.disableOpenCensusBridge",
-	featuregate.StageStable,
-	featuregate.WithRegisterFromVersion("v0.105.0"),
-	featuregate.WithRegisterToVersion("v0.109.0"),
-	featuregate.WithRegisterDescription("`Disables the OpenCensus bridge meaning any component still using the OpenCensus SDK will no longer be able to produce telemetry."))
-
 var NoopTracerProvider = featuregate.GlobalRegistry().MustRegister("service.noopTracerProvider",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterFromVersion("v0.107.0"),
