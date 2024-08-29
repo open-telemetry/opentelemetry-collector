@@ -20,6 +20,8 @@ import (
 )
 
 // ObsReport is a helper to add observability to a scraper.
+//
+// Deprecated: [v0.108.0] will be removed.
 type ObsReport struct {
 	receiverID component.ID
 	scraper    component.ID
@@ -30,6 +32,8 @@ type ObsReport struct {
 }
 
 // ObsReportSettings are settings for creating an ObsReport.
+//
+// Deprecated: [v0.108.0] will be removed.
 type ObsReportSettings struct {
 	ReceiverID             component.ID
 	Scraper                component.ID
@@ -37,6 +41,8 @@ type ObsReportSettings struct {
 }
 
 // NewObsReport creates a new ObsReport.
+//
+// Deprecated: [v0.108.0] will be removed, scrapers should use NewScraperControllerReceiver instead.
 func NewObsReport(cfg ObsReportSettings) (*ObsReport, error) {
 	return newScraper(cfg)
 }

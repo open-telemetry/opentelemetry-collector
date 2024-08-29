@@ -10,34 +10,34 @@ dist:
   module: go.opentelemetry.io/collector/cmd/otelcorecol
   name: otelcorecol
   description: Local OpenTelemetry Collector binary, testing only.
-  version: 0.107.0-dev
-  otelcol_version: 0.107.0
+  version: 0.108.1-dev
+  otelcol_version: 0.108.1
 
 receivers:
-  - gomod: go.opentelemetry.io/collector/receiver/nopreceiver v0.107.0
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.107.0
+  - gomod: go.opentelemetry.io/collector/receiver/nopreceiver v0.108.1
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.108.1
 exporters:
-  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.107.0
-  - gomod: go.opentelemetry.io/collector/exporter/loggingexporter v0.107.0
-  - gomod: go.opentelemetry.io/collector/exporter/nopexporter v0.107.0
-  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.107.0
-  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.107.0
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.108.1
+  - gomod: go.opentelemetry.io/collector/exporter/loggingexporter v0.108.1
+  - gomod: go.opentelemetry.io/collector/exporter/nopexporter v0.108.1
+  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.108.1
+  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.108.1
 extensions:
-  - gomod: go.opentelemetry.io/collector/extension/ballastextension v0.107.0
-  - gomod: go.opentelemetry.io/collector/extension/memorylimiterextension v0.107.0
-  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.107.0
+  - gomod: go.opentelemetry.io/collector/extension/ballastextension v0.108.1
+  - gomod: go.opentelemetry.io/collector/extension/memorylimiterextension v0.108.1
+  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.108.1
 processors:
-  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.107.0
-  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.107.0
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.108.1
+  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.108.1
 connectors:
-  - gomod: go.opentelemetry.io/collector/connector/forwardconnector v0.107.0
+  - gomod: go.opentelemetry.io/collector/connector/forwardconnector v0.108.1
 
 providers:
-  - gomod: go.opentelemetry.io/collector/confmap/provider/envprovider v0.107.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v0.107.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/httpprovider v0.107.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.107.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.107.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/envprovider v0.108.1
+  - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v0.108.1
+  - gomod: go.opentelemetry.io/collector/confmap/provider/httpprovider v0.108.1
+  - gomod: go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.108.1
+  - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.108.1
 
 replaces:
   - go.opentelemetry.io/collector => ../../

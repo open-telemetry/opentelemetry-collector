@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/trace/noop"
 
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/globalgates"
 )
 
@@ -48,9 +49,10 @@ func attributes(set Settings, cfg Config) map[string]interface{} {
 
 // New creates a new Telemetry from Config.
 func newTracerProvider(ctx context.Context, set Settings, cfg Config) (trace.TracerProvider, error) {
-	if globalgates.NoopTracerProvider.IsEnabled() {
+	if globalgates.NoopTracerProvider.IsEnabled() || cfg.Traces.Level == configtelemetry.LevelNone {
 		return noop.NewTracerProvider(), nil
 	}
+
 	sch := semconv.SchemaURL
 	res := config.Resource{
 		SchemaUrl:  &sch,
