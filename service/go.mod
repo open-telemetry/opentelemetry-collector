@@ -28,6 +28,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.14.1
 	go.opentelemetry.io/collector/pdata/testdata v0.108.1
 	go.opentelemetry.io/collector/processor v0.108.1
+	go.opentelemetry.io/collector/processor/processorprofiles v0.108.1
 	go.opentelemetry.io/collector/receiver v0.108.1
 	go.opentelemetry.io/collector/receiver/receiverprofiles v0.108.1
 	go.opentelemetry.io/collector/semconv v0.108.1
@@ -173,5 +174,7 @@ replace go.opentelemetry.io/collector/client => ../client
 replace go.opentelemetry.io/collector/internal/globalgates => ../internal/globalgates
 
 replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../receiver/receiverprofiles
+
+replace go.opentelemetry.io/collector/processor/processorprofiles => ../processor/processorprofiles
 
 replace go.opentelemetry.io/collector/exporter/exporterprofiles => ../exporter/exporterprofiles
