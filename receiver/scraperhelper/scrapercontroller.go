@@ -103,7 +103,7 @@ func NewScraperControllerReceiver(
 
 	sc.obsScrapers = make([]*ObsReport, len(sc.scrapers))
 	for i, scraper := range sc.scrapers {
-		scrp, err := NewObsReport(ObsReportSettings{
+		scrp, err := newScraper(ObsReportSettings{
 			ReceiverID:             sc.id,
 			Scraper:                scraper.ID(),
 			ReceiverCreateSettings: sc.recvSettings,

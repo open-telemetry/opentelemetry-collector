@@ -6,6 +6,8 @@ package e2e
 import (
 	"context"
 	"errors"
+	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -17,12 +19,13 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/internal/sharedcomponent"
-	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/extensions"
@@ -34,27 +37,40 @@ var nopType = component.MustNewType("nop")
 
 func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 	eventsReceived := make(map[*componentstatus.InstanceID][]*componentstatus.Event)
+	exporterFactory := exportertest.NewNopFactory()
+	connectorFactory := connectortest.NewNopFactory()
+	// Use a different ID than receivertest and exportertest to avoid ambiguous
+	// configuration scenarios. Ambiguous IDs are detected in the 'otelcol' package,
+	// but lower level packages such as 'service' assume that IDs are disambiguated.
+	connID := component.NewIDWithName(nopType, "conn")
 
 	set := service.Settings{
 		BuildInfo:     component.NewDefaultBuildInfo(),
 		CollectorConf: confmap.New(),
-		Receivers: receiver.NewBuilder(
-			map[component.ID]component.Config{
-				component.NewID(component.MustNewType("test")): &receiverConfig{},
-			},
-			map[component.Type]receiver.Factory{
-				component.MustNewType("test"): newReceiverFactory(),
-			}),
-		Processors: processortest.NewNopBuilder(),
-		Exporters:  exportertest.NewNopBuilder(),
-		Connectors: connectortest.NewNopBuilder(),
-		Extensions: extension.NewBuilder(
-			map[component.ID]component.Config{
-				component.NewID(component.MustNewType("watcher")): &extensionConfig{eventsReceived},
-			},
-			map[component.Type]extension.Factory{
-				component.MustNewType("watcher"): newExtensionFactory(),
-			}),
+		ReceiversConfigs: map[component.ID]component.Config{
+			component.NewID(component.MustNewType("test")): &receiverConfig{},
+		},
+		ReceiversFactories: map[component.Type]receiver.Factory{
+			component.MustNewType("test"): newReceiverFactory(),
+		},
+		ExportersConfigs: map[component.ID]component.Config{
+			component.NewID(nopType): exporterFactory.CreateDefaultConfig(),
+		},
+		ExportersFactories: map[component.Type]exporter.Factory{
+			nopType: exporterFactory,
+		},
+		ConnectorsConfigs: map[component.ID]component.Config{
+			connID: connectorFactory.CreateDefaultConfig(),
+		},
+		ConnectorsFactories: map[component.Type]connector.Factory{
+			nopType: connectorFactory,
+		},
+		ExtensionsConfigs: map[component.ID]component.Config{
+			component.NewID(component.MustNewType("watcher")): &extensionConfig{eventsReceived},
+		},
+		ExtensionsFactories: map[component.Type]extension.Factory{
+			component.MustNewType("watcher"): newExtensionFactory(),
+		},
 	}
 	set.BuildInfo = component.BuildInfo{Version: "test version", Command: "otelcoltest"}
 
@@ -102,31 +118,40 @@ func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 	err = s.Shutdown(context.Background())
 	require.NoError(t, err)
 
-	assert.Equal(t, 5, len(eventsReceived))
+	require.Equal(t, 2, len(eventsReceived))
 
 	for instanceID, events := range eventsReceived {
-		if instanceID.ID == component.NewID(component.MustNewType("test")) {
-			for i, e := range events {
-				if i == 0 {
-					assert.Equal(t, componentstatus.StatusStarting, e.Status())
-				}
-				if i == 1 {
-					assert.Equal(t, componentstatus.StatusRecoverableError, e.Status())
-				}
-				if i == 2 {
-					assert.Equal(t, componentstatus.StatusOK, e.Status())
-				}
-				if i == 3 {
-					assert.Equal(t, componentstatus.StatusStopping, e.Status())
-				}
-				if i == 4 {
-					assert.Equal(t, componentstatus.StatusStopped, e.Status())
-				}
-				if i >= 5 {
-					assert.Fail(t, "received too many events")
-				}
+		pipelineIDs := ""
+		instanceID.AllPipelineIDs(func(id component.ID) bool {
+			pipelineIDs += id.String() + ","
+			return true
+		})
+
+		t.Logf("checking errors for %v - %v - %v", pipelineIDs, instanceID.Kind().String(), instanceID.ComponentID().String())
+
+		eventStr := ""
+		for i, e := range events {
+			eventStr += fmt.Sprintf("%v,", e.Status())
+			if i == 0 {
+				assert.Equal(t, componentstatus.StatusStarting, e.Status())
+			}
+			if i == 1 {
+				assert.Equal(t, componentstatus.StatusRecoverableError, e.Status())
+			}
+			if i == 2 {
+				assert.Equal(t, componentstatus.StatusOK, e.Status())
+			}
+			if i == 3 {
+				assert.Equal(t, componentstatus.StatusStopping, e.Status())
+			}
+			if i == 4 {
+				assert.Equal(t, componentstatus.StatusStopped, e.Status())
+			}
+			if i >= 5 {
+				assert.Fail(t, "received too many events")
 			}
 		}
+		t.Logf("events received: %v", eventStr)
 	}
 }
 
@@ -142,12 +167,10 @@ func newReceiverFactory() receiver.Factory {
 type testReceiver struct{}
 
 func (t *testReceiver) Start(_ context.Context, host component.Host) error {
-	if statusReporter, ok := host.(componentstatus.Reporter); ok {
-		statusReporter.Report(componentstatus.NewRecoverableErrorEvent(errors.New("test recoverable error")))
-		go func() {
-			statusReporter.Report(componentstatus.NewEvent(componentstatus.StatusOK))
-		}()
-	}
+	componentstatus.ReportStatus(host, componentstatus.NewRecoverableErrorEvent(errors.New("test recoverable error")))
+	go func() {
+		componentstatus.ReportStatus(host, componentstatus.NewEvent(componentstatus.StatusOK))
+	}()
 	return nil
 }
 
@@ -223,6 +246,7 @@ func createExtension(_ context.Context, _ extension.Settings, cfg component.Conf
 
 type testExtension struct {
 	eventsReceived map[*componentstatus.InstanceID][]*componentstatus.Event
+	lock           sync.Mutex
 }
 
 type extensionConfig struct {
@@ -248,7 +272,11 @@ func (t *testExtension) ComponentStatusChanged(
 	source *componentstatus.InstanceID,
 	event *componentstatus.Event,
 ) {
-	t.eventsReceived[source] = append(t.eventsReceived[source], event)
+	t.lock.Lock()
+	defer t.lock.Unlock()
+	if source.ComponentID() == component.NewID(component.MustNewType("test")) {
+		t.eventsReceived[source] = append(t.eventsReceived[source], event)
+	}
 }
 
 // NotifyConfig implements the extension.ConfigWatcher interface.

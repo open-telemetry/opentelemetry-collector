@@ -266,6 +266,7 @@ func TestInlineReplace(t *testing.T) {
 		stability      map[component.StabilityLevel][]string
 		distros        []string
 		codeowners     *Codeowners
+		githubProject  string
 	}{
 		{
 			name: "readme with empty status",
@@ -279,6 +280,7 @@ Some info about a component
 			outputFile:     "readme_with_status.md",
 			componentClass: "receiver",
 			distros:        []string{"contrib"},
+			githubProject:  "open-telemetry/opentelemetry-collector",
 		},
 		{
 			name: "readme with status for extension",
@@ -357,6 +359,7 @@ Some info about a component
 			outputFile:     "readme_with_status.md",
 			componentClass: "receiver",
 			distros:        []string{"contrib"},
+			githubProject:  "open-telemetry/opentelemetry-collector",
 		},
 		{
 			name: "readme with no status",
@@ -423,6 +426,7 @@ Some info about a component
 				stability = tt.stability
 			}
 			md := metadata{
+				GithubProject:   tt.githubProject,
 				Type:            "foo",
 				ShortFolderName: "foo",
 				Status: &Status{
@@ -569,8 +573,13 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
+// Deprecated: [v0.108.0] use LeveledMeter instead.
 func Meter(settings component.TelemetrySettings) metric.Meter {
 	return settings.MeterProvider.Meter("")
+}
+
+func LeveledMeter(settings component.TelemetrySettings, level configtelemetry.Level) metric.Meter {
+	return settings.LeveledMeterProvider(level).Meter("")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
@@ -603,8 +612,13 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
+// Deprecated: [v0.108.0] use LeveledMeter instead.
 func Meter(settings component.TelemetrySettings) metric.Meter {
 	return settings.MeterProvider.Meter("")
+}
+
+func LeveledMeter(settings component.TelemetrySettings, level configtelemetry.Level) metric.Meter {
+	return settings.LeveledMeterProvider(level).Meter("")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {

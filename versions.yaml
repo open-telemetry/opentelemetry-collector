@@ -3,17 +3,18 @@
 
 module-sets:
   stable:
-    version: v1.13.0
+    version: v1.14.1
     modules:
       - go.opentelemetry.io/collector/client
       - go.opentelemetry.io/collector/featuregate
       - go.opentelemetry.io/collector/pdata
+      - go.opentelemetry.io/collector/confmap
       - go.opentelemetry.io/collector/config/configopaque
       - go.opentelemetry.io/collector/config/configcompression
       - go.opentelemetry.io/collector/config/configretry
       - go.opentelemetry.io/collector/config/configtls
   beta:
-    version: v0.107.0
+    version: v0.108.1
     modules:
       - go.opentelemetry.io/collector
       - go.opentelemetry.io/collector/internal/globalgates
@@ -22,7 +23,6 @@ module-sets:
       - go.opentelemetry.io/collector/component
       - go.opentelemetry.io/collector/component/componentstatus
       - go.opentelemetry.io/collector/component/componentprofiles
-      - go.opentelemetry.io/collector/confmap
       - go.opentelemetry.io/collector/confmap/converter/expandconverter
       - go.opentelemetry.io/collector/confmap/provider/envprovider
       - go.opentelemetry.io/collector/confmap/provider/fileprovider
