@@ -13,6 +13,7 @@ import (
 	"slices"
 	"strings"
 	"text/template"
+	"time"
 
 	"go.uber.org/zap"
 	"golang.org/x/mod/modfile"
@@ -24,6 +25,7 @@ var (
 	ErrGoNotFound      = errors.New("go binary not found")
 	ErrDepNotFound     = errors.New("dependency not found in go mod file")
 	ErrVersionMismatch = errors.New("mismatch in go.mod and builder configuration versions")
+	errDownloadFailed  = errors.New("failed to download go modules")
 	errCompileFailed   = errors.New("failed to compile the OpenTelemetry Collector distribution")
 	skipStrictMsg      = "Use --skip-strict-versioning to temporarily disable this check. This flag will be removed in a future minor version"
 )
@@ -84,28 +86,16 @@ func Generate(cfg Config) error {
 		return fmt.Errorf("failed to create output path: %w", err)
 	}
 
-	allTemplates := []*template.Template{
+	for _, tmpl := range []*template.Template{
 		mainTemplate,
 		mainOthersTemplate,
 		mainWindowsTemplate,
 		componentsTemplate,
-	}
-
-	// Add the go.mod template unless that file is skipped.
-	if !cfg.SkipNewGoModule {
-		allTemplates = append(allTemplates, goModTemplate)
-	}
-
-	for _, tmpl := range allTemplates {
+		goModTemplate,
+	} {
 		if err := processAndWrite(cfg, tmpl, tmpl.Name(), cfg); err != nil {
 			return fmt.Errorf("failed to generate source file %q: %w", tmpl.Name(), err)
 		}
-	}
-
-	// when not creating a new go.mod file, update modules one-by-one in the
-	// enclosing go module.
-	if err := cfg.updateModules(); err != nil {
-		return err
 	}
 
 	cfg.Logger.Info("Sources created", zap.String("path", cfg.Distribution.OutputPath))
@@ -155,7 +145,7 @@ func GetModules(cfg Config) error {
 	}
 
 	if cfg.SkipStrictVersioning {
-		return nil
+		return downloadModules(cfg)
 	}
 
 	// Perform strict version checking.  For each component listed and the
@@ -195,7 +185,22 @@ func GetModules(cfg Config) error {
 		}
 	}
 
-	return nil
+	return downloadModules(cfg)
+}
+
+func downloadModules(cfg Config) error {
+	cfg.Logger.Info("Getting go modules")
+	failReason := "unknown"
+	for i := 1; i <= cfg.downloadModules.numRetries; i++ {
+		if _, err := runGoCommand(cfg, "mod", "download"); err != nil {
+			failReason = err.Error()
+			cfg.Logger.Info("Failed modules download", zap.String("retry", fmt.Sprintf("%d/%d", i, cfg.downloadModules.numRetries)))
+			time.Sleep(cfg.downloadModules.wait)
+			continue
+		}
+		return nil
+	}
+	return fmt.Errorf("%w: %s", errDownloadFailed, failReason)
 }
 
 func processAndWrite(cfg Config, tmpl *template.Template, outFile string, tmplParams any) error {
@@ -219,68 +224,6 @@ func (c *Config) coreModuleAndVersion() (string, string) {
 func (c *Config) allComponents() []Module {
 	return slices.Concat[[]Module](c.Exporters, c.Receivers, c.Processors,
 		c.Extensions, c.Connectors, *c.Providers)
-}
-
-func (c *Config) updateModules() error {
-	if !c.SkipNewGoModule {
-		return nil
-	}
-
-	// Build the main service dependency
-	coremod, corever := c.coreModuleAndVersion()
-	corespec := coremod + " " + corever
-
-	if err := c.updateGoModule(corespec); err != nil {
-		return err
-	}
-
-	for _, comp := range c.allComponents() {
-		if err := c.updateGoModule(comp.GoMod); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (c *Config) updateGoModule(modspec string) error {
-	mod, ver, found := strings.Cut(modspec, " ")
-	if !found {
-		return fmt.Errorf("ill-formatted modspec %q: missing space separator", modspec)
-	}
-
-	// Re-parse the go.mod file on each iteration, since it can
-	// change each time.
-	modulePath, dependencyVersions, err := c.readGoModFile()
-	if err != nil {
-		return err
-	}
-
-	if mod == modulePath {
-		// this component is part of the same module, nothing to update.
-		return nil
-	}
-
-	// check for exact match
-	hasVer, ok := dependencyVersions[mod]
-	if ok && hasVer == ver {
-		c.Logger.Info("Component version match", zap.String("module", mod), zap.String("version", ver))
-		return nil
-	}
-
-	scomp := semver.Compare(hasVer, ver)
-	if scomp > 0 {
-		// version in enclosing module is newer, do not change
-		c.Logger.Info("Not upgrading component, enclosing module is newer.", zap.String("module", mod), zap.String("existing", hasVer), zap.String("config_version", ver))
-		return nil
-	}
-
-	// upgrading or changing version
-	updatespec := "-require=" + mod + "@" + ver
-
-	if _, err := runGoCommand(*c, "mod", "edit", updatespec); err != nil {
-		return err
-	}
-	return nil
 }
 
 func (c *Config) readGoModFile() (string, map[string]string, error) {
