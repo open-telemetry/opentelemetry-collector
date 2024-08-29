@@ -82,6 +82,7 @@ require (
 	go.opentelemetry.io/collector/internal/globalgates v0.108.1 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.108.1 // indirect
 	go.opentelemetry.io/collector/processor v0.108.1 // indirect
+	go.opentelemetry.io/collector/processor/processorprofiles v0.108.1 // indirect
 	go.opentelemetry.io/collector/receiver/receiverprofiles v0.108.1 // indirect
 	go.opentelemetry.io/collector/semconv v0.108.1 // indirect
 	go.opentelemetry.io/contrib/config v0.9.0 // indirect
@@ -191,3 +192,5 @@ replace go.opentelemetry.io/collector/component/componentprofiles => ../../compo
 replace go.opentelemetry.io/collector/internal/globalgates => ../globalgates
 
 replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../../receiver/receiverprofiles
+
+replace go.opentelemetry.io/collector/processor/processorprofiles => ../../processor/processorprofiles
