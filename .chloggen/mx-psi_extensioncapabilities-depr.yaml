@@ -7,7 +7,7 @@ change_type: deprecation
 component: extension
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Deprecate `extension.ConfigWatcher`, `extension.PipelineWatcher` and `extension.Dependent` in favor of `extensioncapabilities` module.
+note: Deprecate `extension.ConfigWatcher`, `extension.PipelineWatcher` and `extension.Dependent` in favor of equivalents in the `extensioncapabilities` module.
 
 # One or more tracking issues or pull requests related to the change
 issues: [11000]
