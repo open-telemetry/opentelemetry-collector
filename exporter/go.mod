@@ -56,6 +56,7 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.108.1 // indirect
 	go.opentelemetry.io/collector/confmap v1.14.1 // indirect
+	go.opentelemetry.io/collector/receiver/receiverprofiles v0.108.1 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.51.0 // indirect
 	golang.org/x/net v0.28.0 // indirect
 	golang.org/x/text v0.17.0 // indirect
@@ -95,5 +96,7 @@ replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../consumer/c
 replace go.opentelemetry.io/collector/consumer/consumertest => ../consumer/consumertest
 
 replace go.opentelemetry.io/collector/component/componentstatus => ../component/componentstatus
+
+replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../receiver/receiverprofiles
 
 replace go.opentelemetry.io/collector/exporter/exporterprofiles => ./exporterprofiles
