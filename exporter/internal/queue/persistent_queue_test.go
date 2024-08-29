@@ -497,8 +497,8 @@ func TestPersistentQueue_CurrentlyProcessedItems(t *testing.T) {
 	require.EqualValues(t, 6, newPs.writeIndex)
 
 	// There should be no items left in the storage
-	for i := 0; i < int(newPs.writeIndex); i++ {
-		bb, err := newPs.client.Get(context.Background(), getItemKey(uint64(i)))
+	for i := uint64(0); i < newPs.writeIndex; i++ {
+		bb, err := newPs.client.Get(context.Background(), getItemKey(i))
 		require.NoError(t, err)
 		require.Nil(t, bb)
 	}
