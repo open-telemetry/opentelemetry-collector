@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/status"
@@ -508,7 +509,7 @@ type recordingExtension struct {
 	createSettings   extension.Settings
 }
 
-var _ extension.Dependent = (*recordingExtension)(nil)
+var _ extensioncapabilities.Dependent = (*recordingExtension)(nil)
 
 func (ext *recordingExtension) Dependencies() []component.ID {
 	if len(ext.config.dependencies) == 0 {

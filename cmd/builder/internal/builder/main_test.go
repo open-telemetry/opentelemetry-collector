@@ -71,6 +71,7 @@ var (
 		"/exporter/otlphttpexporter",
 		"/extension",
 		"/extension/auth",
+		"/extension/extensioncapabilities",
 		"/extension/zpagesextension",
 		"/featuregate",
 		"/internal/globalgates",
