@@ -1,16 +1,11 @@
 type: service
+github_project: open-telemetry/opentelemetry-collector
 
 status:
   class: pkg
   stability:
     development: [traces, metrics, logs]
   distributions: [core, contrib]
-
-tests:
-  goleak:
-    ignore:
-      top:
-        - "go.opentelemetry.io/collector/service/internal/proctelemetry.InitPrometheusServer.func1"
 
 telemetry:
   metrics:

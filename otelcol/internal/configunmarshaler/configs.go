@@ -31,11 +31,17 @@ func (c *Configs[F]) Unmarshal(conf *confmap.Conf) error {
 	// Prepare resulting map.
 	c.cfgs = make(map[component.ID]component.Config)
 	// Iterate over raw configs and create a config for each.
-	for id, value := range rawCfgs {
+	for id := range rawCfgs {
 		// Find factory based on component kind and type that we read from config source.
 		factory, ok := c.factories[id.Type()]
 		if !ok {
 			return errorUnknownType(id, maps.Keys(c.factories))
+		}
+
+		// Get the configuration from the confmap.Conf to preserve internal representation.
+		sub, err := conf.Sub(id.String())
+		if err != nil {
+			return errorUnmarshalError(id, err)
 		}
 
 		// Create the default config for this component.
@@ -43,7 +49,7 @@ func (c *Configs[F]) Unmarshal(conf *confmap.Conf) error {
 
 		// Now that the default config struct is created we can Unmarshal into it,
 		// and it will apply user-defined config on top of the default.
-		if err := confmap.NewFromStringMap(value).Unmarshal(&cfg); err != nil {
+		if err := sub.Unmarshal(&cfg); err != nil {
 			return errorUnmarshalError(id, err)
 		}
 
