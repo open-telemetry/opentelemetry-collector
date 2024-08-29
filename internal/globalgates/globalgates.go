@@ -5,15 +5,6 @@ package globalgates // import "go.opentelemetry.io/collector/internal/globalgate
 
 import "go.opentelemetry.io/collector/featuregate"
 
-const StrictlyTypedInputID = "confmap.strictlyTypedInput"
-
-var _ = featuregate.GlobalRegistry().MustRegister(StrictlyTypedInputID,
-	featuregate.StageStable,
-	featuregate.WithRegisterFromVersion("v0.103.0"),
-	featuregate.WithRegisterToVersion("v0.109.0"),
-	featuregate.WithRegisterDescription("Makes type casting rules during configuration unmarshaling stricter. See https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/env-vars.md for more details."),
-)
-
 var DisableOpenCensusBridge = featuregate.GlobalRegistry().MustRegister("service.disableOpenCensusBridge",
 	featuregate.StageStable,
 	featuregate.WithRegisterFromVersion("v0.105.0"),
