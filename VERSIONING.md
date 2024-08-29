@@ -18,7 +18,7 @@ These artifacts are versioned according to the [semantic versioning v2.0.0](http
 
 Binary distributions produced by the Collector SIG contain components and features with varying [levels of stability](README.md#stability-levels). We abide by the following principles to relate the Collector's version to the stability of its components and features:
 
-* The Collector's core framework MUST be stable in order for a Collector distribution to be v1.0.0 or higher.
+* The Collector's core framework behavior MUST be stable in order for a Collector distribution to be v1.0.0 or higher.
 * Users can easily understand when they are opting in to use a component or feature that is not stable.
     * The Collector MUST provide a configuration or CLI flag to be able to opt out of using unstable components or features.
     * The Collector's telemetry (e.g. Collector logs) MUST provide the ability to identify usage of unstable components or features.
@@ -28,8 +28,7 @@ Binary distributions produced by the Collector SIG contain components and featur
 The OpenTelemetry Collector SIG provides long term support for binary distributions of the OpenTelemetry Collector and its components. The following policies apply to long term support for any major version starting on v1:
 
 * A binary distribution of the OpenTelemetry Collector MUST be supported for a minimum of **one year** after the release of the next major version of said distribution.
-* Components MUST be supported for a minimum of **6 months** after the release of the next major version of said component or after the component has been marked as deprecated.
-* Components MAY be removed from a binary distribution of the OpenTelemetry Collector after the component has been marked as deprecated for a minimum of **6 months**.
+* Components MUST be supported for a minimum of **6 months** after the release of the next major version of said component or after the component has been marked as deprecated. If a component has been deprecated for 6 months it MAY be removed from a binary distribution of the OpenTelemetry Collector.
 
 ## Go modules
 
