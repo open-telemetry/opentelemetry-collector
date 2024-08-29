@@ -242,7 +242,7 @@ func TestUintUnmarshalerSuccess(t *testing.T) {
 			err := conf.Unmarshal(cfg)
 
 			assert.NoError(t, err)
-			assert.Equal(t, cfg.UintTest, uint32(tt.testValue))
+			assert.Equal(t, cfg.UintTest, tt.testValue)
 		})
 	}
 }
