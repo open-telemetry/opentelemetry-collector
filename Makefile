@@ -56,6 +56,10 @@ gotest-with-cover:
 	@$(MAKE) for-all-target TARGET="test-with-cover"
 	$(GOCMD) tool covdata textfmt -i=./coverage/unit -o ./coverage.txt
 
+.PHONY: gotestifylint-fix
+gotestifylint-fix:
+	$(MAKE) for-all-target TARGET="testifylint-fix"
+
 .PHONY: goporto
 goporto: $(PORTO)
 	$(PORTO) -w --include-internal --skip-dirs "^cmd/mdatagen/third_party$$" ./

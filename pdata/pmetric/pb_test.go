@@ -43,7 +43,7 @@ func BenchmarkMetricsToProto(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		buf, err := marshaler.MarshalMetrics(metrics)
 		require.NoError(b, err)
-		assert.NotEqual(b, 0, len(buf))
+		assert.NotEmpty(b, buf)
 	}
 }
 
@@ -53,7 +53,7 @@ func BenchmarkMetricsFromProto(b *testing.B) {
 	baseMetrics := generateBenchmarkMetrics(128)
 	buf, err := marshaler.MarshalMetrics(baseMetrics)
 	require.NoError(b, err)
-	assert.NotEqual(b, 0, len(buf))
+	assert.NotEmpty(b, buf)
 	b.ResetTimer()
 	b.ReportAllocs()
 	for n := 0; n < b.N; n++ {
