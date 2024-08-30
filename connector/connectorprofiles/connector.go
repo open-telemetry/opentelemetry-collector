@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package connector // import "go.opentelemetry.io/collector/connector/connectorprofiles"
+package connectorprofiles // import "go.opentelemetry.io/collector/connector/connectorprofiles"
 
 import (
 	"go.opentelemetry.io/collector/component"

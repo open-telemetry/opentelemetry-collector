@@ -165,9 +165,6 @@ func (sl StabilityLevel) LogMessage() string {
 }
 
 // Factory is implemented by all Component factories.
-//
-// This interface cannot be directly implemented. Implementations must
-// use the factory helpers for the appropriate component type.
 type Factory interface {
 	// Type gets the type of the component created by this factory.
 	Type() Type

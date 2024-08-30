@@ -279,6 +279,7 @@ check-contrib:
 		-replace go.opentelemetry.io/collector/confmap/provider/httpsprovider=$(CURDIR)/confmap/provider/httpsprovider  \
 		-replace go.opentelemetry.io/collector/confmap/provider/yamlprovider=$(CURDIR)/confmap/provider/yamlprovider  \
 		-replace go.opentelemetry.io/collector/connector=$(CURDIR)/connector  \
+		-replace go.opentelemetry.io/collector/connector/connectorprofiles=$(CURDIR)/connector/connectorprofiles  \
 		-replace go.opentelemetry.io/collector/connector/forwardconnector=$(CURDIR)/connector/forwardconnector  \
 		-replace go.opentelemetry.io/collector/consumer=$(CURDIR)/consumer  \
 		-replace go.opentelemetry.io/collector/consumer/consumerprofiles=$(CURDIR)/consumer/consumerprofiles  \
@@ -343,6 +344,7 @@ restore-contrib:
 		-dropreplace go.opentelemetry.io/collector/confmap/provider/httpsprovider  \
 		-dropreplace go.opentelemetry.io/collector/confmap/provider/yamlprovider  \
 		-dropreplace go.opentelemetry.io/collector/connector  \
+		-dropreplace go.opentelemetry.io/collector/connector/connectorprofiles  \
 		-dropreplace go.opentelemetry.io/collector/connector/forwardconnector  \
 		-dropreplace go.opentelemetry.io/collector/consumer  \
 		-dropreplace go.opentelemetry.io/collector/consumer/consumerprofiles  \
