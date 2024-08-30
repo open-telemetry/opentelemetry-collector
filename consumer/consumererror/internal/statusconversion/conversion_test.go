@@ -26,7 +26,7 @@ func Test_GetHTTPStatusCodeFromStatus(t *testing.T) {
 		{
 			name:     "Non-retryable Status",
 			input:    status.New(codes.InvalidArgument, "test"),
-			expected: http.StatusInternalServerError,
+			expected: http.StatusBadRequest,
 		},
 		{
 			name:     "Specifically 429",

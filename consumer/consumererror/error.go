@@ -141,20 +141,17 @@ func (e *Error) GRPCStatus() (*status.Status, bool) {
 
 func aggregateStatuses(a int, b int) int {
 	switch {
-	// If a is unset, keep b
+	// If a is unset, keep b. b is guaranteed to be non-zero by the caller.
 	case a == 0:
 		return b
-	// If b is unset, keep a
-	case b == 0:
-		return a
-	// If a and b have been set and one is a 4xx code, the correct code is
-	// ambiguous, so return a 400, which is permanent.
-	case (a >= 400 && a < 500) || (b >= 400 && b < 500):
-		return http.StatusBadRequest
 	// If a and b have been set and one is a 5xx code, the correct code is
 	// ambiguous, so return a 500, which is permanent.
 	case a >= 500 || b >= 500:
 		return http.StatusInternalServerError
+	// If a and b have been set and one is a 4xx code, the correct code is
+	// ambiguous, so return a 400, which is permanent.
+	case (a >= 400 && a < 500) || (b >= 400 && b < 500):
+		return http.StatusBadRequest
 	default:
 		return http.StatusInternalServerError
 	}

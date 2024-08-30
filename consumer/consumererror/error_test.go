@@ -59,6 +59,134 @@ func TestCombine(t *testing.T) {
 
 }
 
+func TestCombineStatusAggregation(t *testing.T) {
+	cases := []struct {
+		name     string
+		errors   []error
+		wantHTTP int
+		wantGRPC codes.Code
+	}{
+		{
+			name:   "No status codes",
+			errors: []error{},
+		},
+		{
+			name: "One status code first",
+			errors: []error{
+				New(errTest, WithHTTPStatus(http.StatusTooManyRequests)),
+				New(errTest),
+			},
+			wantHTTP: http.StatusTooManyRequests,
+			wantGRPC: codes.ResourceExhausted,
+		},
+		{
+			name: "One status code second",
+			errors: []error{
+				New(errTest),
+				New(errTest, WithHTTPStatus(http.StatusTooManyRequests)),
+			},
+			wantHTTP: http.StatusTooManyRequests,
+			wantGRPC: codes.ResourceExhausted,
+		},
+		{
+			name: "Two HTTP statuses",
+			errors: []error{
+				New(errTest, WithHTTPStatus(http.StatusTooManyRequests)),
+				New(errTest, WithHTTPStatus(http.StatusNotFound)),
+			},
+			wantHTTP: http.StatusBadRequest,
+			wantGRPC: codes.InvalidArgument,
+		},
+		{
+			name: "Three HTTP statuses",
+			errors: []error{
+				New(errTest, WithHTTPStatus(http.StatusTooManyRequests)),
+				New(errTest, WithHTTPStatus(http.StatusNotFound)),
+				New(errTest, WithHTTPStatus(http.StatusUnauthorized)),
+			},
+			wantHTTP: http.StatusBadRequest,
+			wantGRPC: codes.InvalidArgument,
+		},
+		{
+			name: "Two gRPC statuses",
+			errors: []error{
+				New(errTest, WithGRPCStatus(status.New(codes.PermissionDenied, ""))),
+				New(errTest, WithGRPCStatus(status.New(codes.Unauthenticated, ""))),
+			},
+			wantHTTP: http.StatusBadRequest,
+			wantGRPC: codes.InvalidArgument,
+		},
+		{
+			name: "One HTTP, one gRPC status",
+			errors: []error{
+				New(errTest, WithHTTPStatus(http.StatusTooManyRequests)),
+				New(errTest, WithGRPCStatus(status.New(codes.PermissionDenied, ""))),
+			},
+			wantHTTP: http.StatusBadRequest,
+			wantGRPC: codes.InvalidArgument,
+		},
+		{
+			name: "Two 4xx",
+			errors: []error{
+				New(errTest, WithHTTPStatus(http.StatusTooManyRequests)),
+				New(errTest, WithHTTPStatus(http.StatusUnauthorized)),
+			},
+			wantHTTP: http.StatusBadRequest,
+			wantGRPC: codes.InvalidArgument,
+		},
+		{
+			name: "One 4xx, one 5xx",
+			errors: []error{
+				New(errTest, WithHTTPStatus(http.StatusTooManyRequests)),
+				New(errTest, WithHTTPStatus(http.StatusServiceUnavailable)),
+			},
+			wantHTTP: http.StatusInternalServerError,
+			wantGRPC: codes.Unknown,
+		},
+		{
+			name: "Two 5xx",
+			errors: []error{
+				New(errTest, WithGRPCStatus(status.New(codes.DeadlineExceeded, ""))),
+				New(errTest, WithHTTPStatus(http.StatusBadGateway)),
+			},
+			wantHTTP: http.StatusInternalServerError,
+			wantGRPC: codes.Unknown,
+		},
+		{
+			name: "Neither 4xx nor 5xx",
+			errors: []error{
+				New(errTest, WithHTTPStatus(http.StatusPermanentRedirect)),
+				New(errTest, WithHTTPStatus(http.StatusTemporaryRedirect)),
+			},
+			wantHTTP: http.StatusInternalServerError,
+			wantGRPC: codes.Unknown,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			e := Combine(tt.errors...)
+			ce := &Error{}
+
+			if errors.As(e, &ce) {
+				if tt.wantHTTP != 0 {
+					status, ok := ce.HTTPStatus()
+					require.True(t, ok)
+					require.Equal(t, tt.wantHTTP, status)
+				}
+
+				if tt.wantGRPC != codes.OK {
+					status, ok := ce.GRPCStatus()
+					require.True(t, ok)
+					require.Equal(t, tt.wantGRPC, status.Code())
+				}
+			} else {
+				require.Fail(t, "Combine did not return an Error type")
+			}
+		})
+	}
+}
+
 func TestError_Error(t *testing.T) {
 	err := &Error{
 		error: errTest,
@@ -72,7 +200,7 @@ func TestError_Unwrap(t *testing.T) {
 		error: errTest,
 	}
 
-	require.Equal(t, []error{errTest}, err.Unwrap())
+	require.Equal(t, errTest, err.Unwrap())
 }
 
 func TestError_HTTPStatus(t *testing.T) {
