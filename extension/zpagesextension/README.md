@@ -82,7 +82,7 @@ Example URL: http://localhost:55679/debug/tracez
 
 This extension registers a SpanProcessor to record all the spans created inside
 the Collector. This depends on a TracerProvider that supports
-the SDK methods RegisterSpanProcessor and UnregisterSpanProcessor. Settings
-the trace level to `none` in the service configuration configures a No-Op
+the SDK methods RegisterSpanProcessor and UnregisterSpanProcessor. Setting
+`service::telemetry::traces::level` to `none` configures a No-Op
 TracerProvider that does not support these methods, and therefore the zPages
 extension cannot work in this mode.
