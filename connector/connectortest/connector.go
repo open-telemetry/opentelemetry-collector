@@ -123,18 +123,3 @@ type nopConnector struct {
 	component.ShutdownFunc
 	consumertest.Consumer
 }
-
-// NewNopBuilder returns a connector.Builder that constructs nop receivers.
-//
-// Deprecated: [v0.108.0] this builder is being internalized within the service module,
-// and will be removed soon.
-func NewNopBuilder() *connector.Builder {
-	nopFactory := NewNopFactory()
-	// Use a different ID than receivertest and exportertest to avoid ambiguous
-	// configuration scenarios. Ambiguous IDs are detected in the 'otelcol' package,
-	// but lower level packages such as 'service' assume that IDs are disambiguated.
-	connID := component.NewIDWithName(nopType, "conn")
-	return connector.NewBuilder(
-		map[component.ID]component.Config{connID: nopFactory.CreateDefaultConfig()},
-		map[component.Type]connector.Factory{nopType: nopFactory})
-}
