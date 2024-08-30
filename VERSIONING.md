@@ -4,7 +4,7 @@ The OpenTelemetry Collector SIG produces several artifacts for [a variety of aud
 
 **Users are provided software artifacts of value that are stable and secure.**
 
-The policies are divided depending on the artifact's target audience. While an artifact is supported, [critical bugs](docs/release.md#bugfix-release-criteria) and security vulnerabilities MUST be addressed. The main criteria for the length of support for an artifact is  how easy it is for an artifact's target audience to adapt to disruptive changes.
+The policies are divided depending on the artifact's target audience. While an artifact is supported, [critical bugs](docs/release.md#bugfix-release-criteria) and security vulnerabilities MUST be addressed. The main criteria for the length of support for an artifact is how easy it is for an artifact's target audience to adapt to disruptive changes.
 
 ## End-user focused software artifacts
 
