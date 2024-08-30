@@ -198,21 +198,16 @@ component can then later pull all errors out for analysis.
 > here is for design purposes. The code snippet may not work as-written.
 
 When a receiver gets a response that includes an error, it can get the data out
-by doing something similar to the following. Note that this uses the `Error`
-type, which is for reading error data, as opposed to the `ErrorContainer` type,
-which is for recording errors.
+by doing something similar to the following:
 
 ```go
-cerr := consumererror.ErrorContainer{}
+err := nextConsumer.ConsumeLogs(ctx, ld)
+cerr := &consumererror.Error{}
 
 if errors.As(err, &cerr) {
-  errs := cerr.Errors()
-
-  for _, e := range errs {
-    e.HTTPStatus()
-    e.Retryable()
-    e.Partial()
-  }
+  e.HTTPStatus()
+  e.Retryable()
+  e.Partial()
 }
 ```
 
