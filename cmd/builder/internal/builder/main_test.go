@@ -453,6 +453,67 @@ func TestReplaceStatementsAreComplete(t *testing.T) {
 	}
 }
 
+func TestCompileArgs(t *testing.T) {
+	testCases := []struct {
+		testCase     string
+		cfgBuilder   func(t *testing.T) Config
+		expectedArgs []string
+	}{
+		{
+			testCase: "Default ldflags with disabled debug compilation",
+			cfgBuilder: func(t *testing.T) Config {
+				cfg := newTestConfig()
+				cfg.Distribution.DebugCompilation = false
+				cfg.LDFlags = DefaultLDFlags
+				cfg.Distribution.Name = "cmd_builder"
+				return cfg
+			},
+			expectedArgs: []string{"build", "-trimpath", "-o", "cmd_builder", "-ldflags=-s -w"},
+		},
+		{
+			testCase: "Default ldflags with enabled debug compilation",
+			cfgBuilder: func(t *testing.T) Config {
+				cfg := newTestConfig()
+				cfg.Distribution.DebugCompilation = true
+				cfg.LDFlags = DefaultLDFlagsDebug
+				cfg.Distribution.Name = "cmd_builder"
+				return cfg
+			},
+			expectedArgs: []string{"build", "-trimpath", "-o", "cmd_builder", "-gcflags=all=-N -l", "-ldflags="},
+		},
+		{
+			testCase: "Custom ldflags with disabled debug compilation",
+			cfgBuilder: func(t *testing.T) Config {
+				cfg := newTestConfig()
+				cfg.Distribution.DebugCompilation = false
+				cfg.LDFlags = "-w"
+				cfg.Distribution.Name = "cmd_builder"
+				return cfg
+			},
+			expectedArgs: []string{"build", "-trimpath", "-o", "cmd_builder", "-ldflags=-w"},
+		},
+		{
+			testCase: "Custom ldflags with enabled debug compilation",
+			cfgBuilder: func(t *testing.T) Config {
+				cfg := newTestConfig()
+				cfg.Distribution.DebugCompilation = true
+				cfg.LDFlags = "-w"
+				cfg.Distribution.Name = "cmd_builder"
+				return cfg
+			},
+			expectedArgs: []string{"build", "-trimpath", "-o", "cmd_builder", "-gcflags=all=-N -l", "-ldflags=-w"},
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.testCase, func(t *testing.T) {
+			cfg := tt.cfgBuilder(t)
+			require.NoError(t, cfg.Validate())
+			require.Equal(t, tt.expectedArgs, compileArgs(cfg))
+		})
+	}
+}
+
 func verifyGoMod(t *testing.T, dir string, replaceMods map[string]bool) {
 	gomodpath := path.Join(dir, "go.mod")
 	// #nosec G304 We control this path and generate the file inside, so we can assume it is safe.

@@ -28,6 +28,9 @@ var (
 	errDownloadFailed  = errors.New("failed to download go modules")
 	errCompileFailed   = errors.New("failed to compile the OpenTelemetry Collector distribution")
 	skipStrictMsg      = "Use --skip-strict-versioning to temporarily disable this check. This flag will be removed in a future minor version"
+
+	DefaultLDFlags      = "-s -w"
+	DefaultLDFlagsDebug = ""
 )
 
 func runGoCommand(cfg Config, args ...string) ([]byte, error) {
@@ -102,6 +105,28 @@ func Generate(cfg Config) error {
 	return nil
 }
 
+func compileArgs(cfg Config) []string {
+	ldflags := cfg.LDFlags
+
+	args := []string{"build", "-trimpath", "-o", cfg.Distribution.Name}
+	if cfg.Distribution.DebugCompilation {
+		cfg.Logger.Info("Debug compilation is enabled, the debug symbols will be left on the resulting binary")
+		args = append(args, "-gcflags=all=-N -l")
+
+		// if cfg.LDFlags is unchanged and debug_compilation=true, then
+		// it should use a different default LDFlags
+		if cfg.LDFlags == DefaultLDFlags {
+			cfg.LDFlags = DefaultLDFlagsDebug
+		}
+	}
+	args = append(args, "-ldflags="+ldflags)
+	if cfg.Distribution.BuildTags != "" {
+		args = append(args, "-tags", cfg.Distribution.BuildTags)
+	}
+
+	return args
+}
+
 // Compile generates a binary from the sources based on the configuration
 func Compile(cfg Config) error {
 	if cfg.SkipCompilation {
@@ -111,21 +136,7 @@ func Compile(cfg Config) error {
 
 	cfg.Logger.Info("Compiling")
 
-	var ldflags = "-s -w"
-
-	args := []string{"build", "-trimpath", "-o", cfg.Distribution.Name}
-	if cfg.Distribution.DebugCompilation {
-		cfg.Logger.Info("Debug compilation is enabled, the debug symbols will be left on the resulting binary")
-		ldflags = cfg.LDFlags
-		args = append(args, "-gcflags=all=-N -l")
-	} else if len(cfg.LDFlags) > 0 {
-		ldflags += " " + cfg.LDFlags
-	}
-	args = append(args, "-ldflags="+ldflags)
-	if cfg.Distribution.BuildTags != "" {
-		args = append(args, "-tags", cfg.Distribution.BuildTags)
-	}
-	if _, err := runGoCommand(cfg, args...); err != nil {
+	if _, err := runGoCommand(cfg, compileArgs(cfg)...); err != nil {
 		return fmt.Errorf("%w: %s", errCompileFailed, err.Error())
 	}
 	cfg.Logger.Info("Compiled", zap.String("binary", fmt.Sprintf("%s/%s", cfg.Distribution.OutputPath, cfg.Distribution.Name)))
