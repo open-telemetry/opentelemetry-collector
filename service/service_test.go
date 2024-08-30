@@ -227,7 +227,7 @@ func TestServiceGetExporters(t *testing.T) {
 
 	// nolint
 	expMap := srv.host.GetExporters()
-	assert.Len(t, expMap, 3)
+	assert.Len(t, expMap, 4)
 	assert.Len(t, expMap[component.DataTypeTraces], 1)
 	assert.Contains(t, expMap[component.DataTypeTraces], component.NewID(nopType))
 	assert.Len(t, expMap[component.DataTypeMetrics], 1)
