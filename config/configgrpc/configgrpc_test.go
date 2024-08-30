@@ -249,6 +249,58 @@ func TestDefaultGrpcServerSettings(t *testing.T) {
 	assert.Len(t, opts, 3)
 }
 
+func TestGrpcServerValidate(t *testing.T) {
+	tests := []struct {
+		gss *ServerConfig
+		err string
+	}{
+		{
+			gss: &ServerConfig{
+				MaxRecvMsgSizeMiB: -1,
+				NetAddr: confignet.AddrConfig{
+					Endpoint: "0.0.0.0:1234",
+				},
+			},
+			err: "invalid max_recv_msg_size_mib value",
+		},
+		{
+			gss: &ServerConfig{
+				MaxRecvMsgSizeMiB: 9223372036854775807,
+				NetAddr: confignet.AddrConfig{
+					Endpoint: "0.0.0.0:1234",
+				},
+			},
+			err: "invalid max_recv_msg_size_mib value",
+		},
+		{
+			gss: &ServerConfig{
+				ReadBufferSize: -1,
+				NetAddr: confignet.AddrConfig{
+					Endpoint: "0.0.0.0:1234",
+				},
+			},
+			err: "invalid read_buffer_size value",
+		},
+		{
+			gss: &ServerConfig{
+				WriteBufferSize: -1,
+				NetAddr: confignet.AddrConfig{
+					Endpoint: "0.0.0.0:1234",
+				},
+			},
+			err: "invalid write_buffer_size value",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.err, func(t *testing.T) {
+			err := tt.gss.Validate()
+			assert.Error(t, err)
+			assert.Regexp(t, tt.err, err)
+		})
+	}
+}
+
 func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
 	gss := &ServerConfig{
 		NetAddr: confignet.AddrConfig{

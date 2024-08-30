@@ -43,6 +43,7 @@ replaces:
   - go.opentelemetry.io/collector/consumer/consumerprofiles => ${WORKSPACE_DIR}/consumer/consumerprofiles
   - go.opentelemetry.io/collector/consumer/consumertest => ${WORKSPACE_DIR}/consumer/consumertest
   - go.opentelemetry.io/collector/connector => ${WORKSPACE_DIR}/connector
+  - go.opentelemetry.io/collector/connector/connectorprofiles => ${WORKSPACE_DIR}/connector/connectorprofiles
   - go.opentelemetry.io/collector/exporter => ${WORKSPACE_DIR}/exporter
   - go.opentelemetry.io/collector/exporter/debugexporter => ${WORKSPACE_DIR}/exporter/debugexporter
   - go.opentelemetry.io/collector/exporter/loggingexporter => ${WORKSPACE_DIR}/exporter/loggingexporter
