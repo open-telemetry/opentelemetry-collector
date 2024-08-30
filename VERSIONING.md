@@ -23,9 +23,9 @@ Binary distributions produced by the Collector SIG contain components and featur
     * The Collector MUST be configurable in a way that does not use unstable components or features.
     * The Collector's telemetry (e.g. Collector logs) MUST provide the ability to identify usage of unstable components or features.
 
-### Long term support
+### Long term support after v1
 
-The OpenTelemetry Collector SIG provides long term support for binary distributions of the OpenTelemetry Collector and its components. The following policies apply to long term support for any major version starting on v1:
+The OpenTelemetry Collector SIG provides long term support for stable binary distributions of the OpenTelemetry Collector and its components. The following policies apply to long term support for any major version starting on v1:
 
 * A binary distribution of the OpenTelemetry Collector MUST be supported for a minimum of **one year** after the release of the next major version of said distribution.
 * Components MUST be supported for a minimum of **6 months** after the release of the next major version of said component or after the component has been marked as deprecated. If a component has been deprecated for 6 months it MAY be removed from a binary distribution of the OpenTelemetry Collector. This does not imply a major version change in the Collector distribution.
@@ -163,9 +163,9 @@ on its intended usage (e.g. when calling a method or when passed to any method o
 * GitHub releases will be made for all releases.
 * Go modules will be made available at Go package mirrors.
 
-### Long term support
+### Long term support after v1
 
-The OpenTelemetry Collector SIG provides long term support for Go modules. Support for modules depend on the module's [target audiences](CONTRIBUTING.md#target-audiences):
+The OpenTelemetry Collector SIG provides long term support for stable Go modules. Support for modules depend on the module's [target audiences](CONTRIBUTING.md#target-audiences). The following policies apply to long term support for any major version starting on v1:
 
 - Modules intended for **component developers** MUST be supported for a minimum of **1 year** after the release of the next major version of said module or after the module has been marked as deprecated.
 - Modules intended for **Collector library users** MUST be supported for a minimum of **6 months** after the release of the next major version of said module or after the module has been marked as deprecated.
