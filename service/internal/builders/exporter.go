@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterprofiles"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
@@ -78,6 +79,22 @@ func (b *ExporterBuilder) CreateLogs(ctx context.Context, set exporter.Settings)
 
 	logStabilityLevel(set.Logger, f.LogsExporterStability())
 	return f.CreateLogsExporter(ctx, set, cfg)
+}
+
+// CreateProfiles creates a Profiles exporter based on the settings and config.
+func (b *ExporterBuilder) CreateProfiles(ctx context.Context, set exporter.Settings) (exporterprofiles.Profiles, error) {
+	cfg, existsCfg := b.cfgs[set.ID]
+	if !existsCfg {
+		return nil, fmt.Errorf("exporter %q is not configured", set.ID)
+	}
+
+	f, existsFactory := b.factories[set.ID.Type()]
+	if !existsFactory {
+		return nil, fmt.Errorf("exporter factory not available for: %q", set.ID)
+	}
+
+	logStabilityLevel(set.Logger, f.ProfilesExporterStability())
+	return f.CreateProfilesExporter(ctx, set, cfg)
 }
 
 func (b *ExporterBuilder) Factory(componentType component.Type) component.Factory {

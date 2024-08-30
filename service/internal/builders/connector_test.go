@@ -12,10 +12,13 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentprofiles"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/connector"
+	"go.opentelemetry.io/collector/connector/connectorprofiles"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
 
@@ -29,23 +32,31 @@ func TestConnectorBuilder(t *testing.T) {
 			connector.WithTracesToTraces(createConnectorTracesToTraces, component.StabilityLevelDevelopment),
 			connector.WithTracesToMetrics(createConnectorTracesToMetrics, component.StabilityLevelDevelopment),
 			connector.WithTracesToLogs(createConnectorTracesToLogs, component.StabilityLevelDevelopment),
+			connectorprofiles.WithTracesToProfiles(createConnectorTracesToProfiles, component.StabilityLevelDevelopment),
 			connector.WithMetricsToTraces(createConnectorMetricsToTraces, component.StabilityLevelAlpha),
 			connector.WithMetricsToMetrics(createConnectorMetricsToMetrics, component.StabilityLevelAlpha),
 			connector.WithMetricsToLogs(createConnectorMetricsToLogs, component.StabilityLevelAlpha),
+			connectorprofiles.WithMetricsToProfiles(createConnectorMetricsToProfiles, component.StabilityLevelAlpha),
 			connector.WithLogsToTraces(createConnectorLogsToTraces, component.StabilityLevelDeprecated),
 			connector.WithLogsToMetrics(createConnectorLogsToMetrics, component.StabilityLevelDeprecated),
 			connector.WithLogsToLogs(createConnectorLogsToLogs, component.StabilityLevelDeprecated),
+			connectorprofiles.WithLogsToProfiles(createConnectorLogsToProfiles, component.StabilityLevelDeprecated),
+			connectorprofiles.WithProfilesToTraces(createConnectorProfilesToTraces, component.StabilityLevelDevelopment),
+			connectorprofiles.WithProfilesToMetrics(createConnectorProfilesToMetrics, component.StabilityLevelDevelopment),
+			connectorprofiles.WithProfilesToLogs(createConnectorProfilesToLogs, component.StabilityLevelDevelopment),
+			connectorprofiles.WithProfilesToProfiles(createConnectorProfilesToProfiles, component.StabilityLevelDevelopment),
 		),
 	}...)
 	require.NoError(t, err)
 
 	testCases := []struct {
-		name        string
-		id          component.ID
-		err         func(component.DataType, component.DataType) string
-		nextTraces  consumer.Traces
-		nextLogs    consumer.Logs
-		nextMetrics consumer.Metrics
+		name         string
+		id           component.ID
+		err          func(component.DataType, component.DataType) string
+		nextTraces   consumer.Traces
+		nextLogs     consumer.Logs
+		nextMetrics  consumer.Metrics
+		nextProfiles consumerprofiles.Profiles
 	}{
 		{
 			name: "unknown",
@@ -53,9 +64,10 @@ func TestConnectorBuilder(t *testing.T) {
 			err: func(component.DataType, component.DataType) string {
 				return "connector factory not available for: \"unknown\""
 			},
-			nextTraces:  consumertest.NewNop(),
-			nextLogs:    consumertest.NewNop(),
-			nextMetrics: consumertest.NewNop(),
+			nextTraces:   consumertest.NewNop(),
+			nextLogs:     consumertest.NewNop(),
+			nextMetrics:  consumertest.NewNop(),
+			nextProfiles: consumertest.NewNop(),
 		},
 		{
 			name: "err",
@@ -63,9 +75,10 @@ func TestConnectorBuilder(t *testing.T) {
 			err: func(expType, rcvType component.DataType) string {
 				return fmt.Sprintf("connector \"err\" cannot connect from %s to %s: telemetry type is not supported", expType, rcvType)
 			},
-			nextTraces:  consumertest.NewNop(),
-			nextLogs:    consumertest.NewNop(),
-			nextMetrics: consumertest.NewNop(),
+			nextTraces:   consumertest.NewNop(),
+			nextLogs:     consumertest.NewNop(),
+			nextMetrics:  consumertest.NewNop(),
+			nextProfiles: consumertest.NewNop(),
 		},
 		{
 			name: "all",
@@ -73,9 +86,10 @@ func TestConnectorBuilder(t *testing.T) {
 			err: func(component.DataType, component.DataType) string {
 				return ""
 			},
-			nextTraces:  consumertest.NewNop(),
-			nextLogs:    consumertest.NewNop(),
-			nextMetrics: consumertest.NewNop(),
+			nextTraces:   consumertest.NewNop(),
+			nextLogs:     consumertest.NewNop(),
+			nextMetrics:  consumertest.NewNop(),
+			nextProfiles: consumertest.NewNop(),
 		},
 		{
 			name: "all/named",
@@ -83,9 +97,10 @@ func TestConnectorBuilder(t *testing.T) {
 			err: func(component.DataType, component.DataType) string {
 				return ""
 			},
-			nextTraces:  consumertest.NewNop(),
-			nextLogs:    consumertest.NewNop(),
-			nextMetrics: consumertest.NewNop(),
+			nextTraces:   consumertest.NewNop(),
+			nextLogs:     consumertest.NewNop(),
+			nextMetrics:  consumertest.NewNop(),
+			nextProfiles: consumertest.NewNop(),
 		},
 		{
 			name: "no next consumer",
@@ -93,9 +108,10 @@ func TestConnectorBuilder(t *testing.T) {
 			err: func(_, _ component.DataType) string {
 				return "nil next Consumer"
 			},
-			nextTraces:  nil,
-			nextLogs:    nil,
-			nextMetrics: nil,
+			nextTraces:   nil,
+			nextLogs:     nil,
+			nextMetrics:  nil,
+			nextProfiles: nil,
 		},
 	}
 
@@ -128,6 +144,14 @@ func TestConnectorBuilder(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, nopConnectorInstance, t2l)
 			}
+			t2p, err := b.CreateTracesToProfiles(context.Background(), createConnectorSettings(tt.id), tt.nextProfiles)
+			if expectedErr := tt.err(component.DataTypeTraces, componentprofiles.DataTypeProfiles); expectedErr != "" {
+				assert.EqualError(t, err, expectedErr)
+				assert.Nil(t, t2p)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, nopConnectorInstance, t2p)
+			}
 
 			m2t, err := b.CreateMetricsToTraces(context.Background(), createConnectorSettings(tt.id), tt.nextTraces)
 			if expectedErr := tt.err(component.DataTypeMetrics, component.DataTypeTraces); expectedErr != "" {
@@ -154,6 +178,14 @@ func TestConnectorBuilder(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, nopConnectorInstance, m2l)
+			}
+			m2p, err := b.CreateMetricsToProfiles(context.Background(), createConnectorSettings(tt.id), tt.nextProfiles)
+			if expectedErr := tt.err(component.DataTypeMetrics, componentprofiles.DataTypeProfiles); expectedErr != "" {
+				assert.EqualError(t, err, expectedErr)
+				assert.Nil(t, m2p)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, nopConnectorInstance, m2p)
 			}
 
 			l2t, err := b.CreateLogsToTraces(context.Background(), createConnectorSettings(tt.id), tt.nextTraces)
@@ -182,6 +214,47 @@ func TestConnectorBuilder(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, nopConnectorInstance, l2l)
 			}
+			l2p, err := b.CreateLogsToProfiles(context.Background(), createConnectorSettings(tt.id), tt.nextProfiles)
+			if expectedErr := tt.err(component.DataTypeLogs, componentprofiles.DataTypeProfiles); expectedErr != "" {
+				assert.EqualError(t, err, expectedErr)
+				assert.Nil(t, l2p)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, nopConnectorInstance, l2p)
+			}
+
+			p2t, err := b.CreateProfilesToTraces(context.Background(), createConnectorSettings(tt.id), tt.nextTraces)
+			if expectedErr := tt.err(componentprofiles.DataTypeProfiles, component.DataTypeTraces); expectedErr != "" {
+				assert.EqualError(t, err, expectedErr)
+				assert.Nil(t, p2t)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, nopConnectorInstance, p2t)
+			}
+			p2m, err := b.CreateProfilesToMetrics(context.Background(), createConnectorSettings(tt.id), tt.nextMetrics)
+			if expectedErr := tt.err(componentprofiles.DataTypeProfiles, component.DataTypeMetrics); expectedErr != "" {
+				assert.EqualError(t, err, expectedErr)
+				assert.Nil(t, p2m)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, nopConnectorInstance, p2m)
+			}
+			p2l, err := b.CreateProfilesToLogs(context.Background(), createConnectorSettings(tt.id), tt.nextLogs)
+			if expectedErr := tt.err(componentprofiles.DataTypeProfiles, component.DataTypeLogs); expectedErr != "" {
+				assert.EqualError(t, err, expectedErr)
+				assert.Nil(t, p2l)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, nopConnectorInstance, p2l)
+			}
+			p2p, err := b.CreateProfilesToProfiles(context.Background(), createConnectorSettings(tt.id), tt.nextProfiles)
+			if expectedErr := tt.err(componentprofiles.DataTypeProfiles, componentprofiles.DataTypeProfiles); expectedErr != "" {
+				assert.EqualError(t, err, expectedErr)
+				assert.Nil(t, p2p)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, nopConnectorInstance, p2p)
+			}
 		})
 	}
 }
@@ -195,12 +268,19 @@ func TestConnectorBuilderMissingConfig(t *testing.T) {
 			connector.WithTracesToTraces(createConnectorTracesToTraces, component.StabilityLevelDevelopment),
 			connector.WithTracesToMetrics(createConnectorTracesToMetrics, component.StabilityLevelDevelopment),
 			connector.WithTracesToLogs(createConnectorTracesToLogs, component.StabilityLevelDevelopment),
+			connectorprofiles.WithTracesToProfiles(createConnectorTracesToProfiles, component.StabilityLevelDevelopment),
 			connector.WithMetricsToTraces(createConnectorMetricsToTraces, component.StabilityLevelAlpha),
 			connector.WithMetricsToMetrics(createConnectorMetricsToMetrics, component.StabilityLevelAlpha),
 			connector.WithMetricsToLogs(createConnectorMetricsToLogs, component.StabilityLevelAlpha),
+			connectorprofiles.WithMetricsToProfiles(createConnectorMetricsToProfiles, component.StabilityLevelAlpha),
 			connector.WithLogsToTraces(createConnectorLogsToTraces, component.StabilityLevelDeprecated),
 			connector.WithLogsToMetrics(createConnectorLogsToMetrics, component.StabilityLevelDeprecated),
 			connector.WithLogsToLogs(createConnectorLogsToLogs, component.StabilityLevelDeprecated),
+			connectorprofiles.WithLogsToProfiles(createConnectorLogsToProfiles, component.StabilityLevelDeprecated),
+			connectorprofiles.WithProfilesToTraces(createConnectorProfilesToTraces, component.StabilityLevelDevelopment),
+			connectorprofiles.WithProfilesToMetrics(createConnectorProfilesToMetrics, component.StabilityLevelDevelopment),
+			connectorprofiles.WithProfilesToLogs(createConnectorProfilesToLogs, component.StabilityLevelDevelopment),
+			connectorprofiles.WithProfilesToProfiles(createConnectorProfilesToProfiles, component.StabilityLevelDevelopment),
 		),
 	}...)
 
@@ -221,6 +301,10 @@ func TestConnectorBuilderMissingConfig(t *testing.T) {
 	assert.EqualError(t, err, "connector \"all/missing\" is not configured")
 	assert.Nil(t, t2l)
 
+	t2p, err := bErr.CreateTracesToProfiles(context.Background(), createConnectorSettings(missingID), consumertest.NewNop())
+	assert.EqualError(t, err, "connector \"all/missing\" is not configured")
+	assert.Nil(t, t2p)
+
 	m2t, err := bErr.CreateMetricsToTraces(context.Background(), createConnectorSettings(missingID), consumertest.NewNop())
 	assert.EqualError(t, err, "connector \"all/missing\" is not configured")
 	assert.Nil(t, m2t)
@@ -233,6 +317,10 @@ func TestConnectorBuilderMissingConfig(t *testing.T) {
 	assert.EqualError(t, err, "connector \"all/missing\" is not configured")
 	assert.Nil(t, m2l)
 
+	m2p, err := bErr.CreateMetricsToProfiles(context.Background(), createConnectorSettings(missingID), consumertest.NewNop())
+	assert.EqualError(t, err, "connector \"all/missing\" is not configured")
+	assert.Nil(t, m2p)
+
 	l2t, err := bErr.CreateLogsToTraces(context.Background(), createConnectorSettings(missingID), consumertest.NewNop())
 	assert.EqualError(t, err, "connector \"all/missing\" is not configured")
 	assert.Nil(t, l2t)
@@ -244,6 +332,26 @@ func TestConnectorBuilderMissingConfig(t *testing.T) {
 	l2l, err := bErr.CreateLogsToLogs(context.Background(), createConnectorSettings(missingID), consumertest.NewNop())
 	assert.EqualError(t, err, "connector \"all/missing\" is not configured")
 	assert.Nil(t, l2l)
+
+	l2p, err := bErr.CreateLogsToProfiles(context.Background(), createConnectorSettings(missingID), consumertest.NewNop())
+	assert.EqualError(t, err, "connector \"all/missing\" is not configured")
+	assert.Nil(t, l2p)
+
+	p2t, err := bErr.CreateProfilesToTraces(context.Background(), createConnectorSettings(missingID), consumertest.NewNop())
+	assert.EqualError(t, err, "connector \"all/missing\" is not configured")
+	assert.Nil(t, p2t)
+
+	p2m, err := bErr.CreateProfilesToMetrics(context.Background(), createConnectorSettings(missingID), consumertest.NewNop())
+	assert.EqualError(t, err, "connector \"all/missing\" is not configured")
+	assert.Nil(t, p2m)
+
+	p2l, err := bErr.CreateProfilesToLogs(context.Background(), createConnectorSettings(missingID), consumertest.NewNop())
+	assert.EqualError(t, err, "connector \"all/missing\" is not configured")
+	assert.Nil(t, p2l)
+
+	p2p, err := bErr.CreateProfilesToProfiles(context.Background(), createConnectorSettings(missingID), consumertest.NewNop())
+	assert.EqualError(t, err, "connector \"all/missing\" is not configured")
+	assert.Nil(t, p2p)
 }
 
 func TestConnectorBuilderGetters(t *testing.T) {
@@ -288,6 +396,12 @@ func TestNewNopConnectorConfigsAndFactories(t *testing.T) {
 	require.NoError(t, err)
 	assert.IsType(t, tracesToLogs, bTracesToLogs)
 
+	tracesToProfiles, err := factory.CreateTracesToProfiles(context.Background(), set, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	bTracesToProfiles, err := builder.CreateTracesToProfiles(context.Background(), set, consumertest.NewNop())
+	require.NoError(t, err)
+	assert.IsType(t, tracesToProfiles, bTracesToProfiles)
+
 	metricsToTraces, err := factory.CreateMetricsToTraces(context.Background(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	bMetricsToTraces, err := builder.CreateMetricsToTraces(context.Background(), set, consumertest.NewNop())
@@ -306,6 +420,12 @@ func TestNewNopConnectorConfigsAndFactories(t *testing.T) {
 	require.NoError(t, err)
 	assert.IsType(t, metricsToLogs, bMetricsToLogs)
 
+	metricsToProfiles, err := factory.CreateMetricsToProfiles(context.Background(), set, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	bMetricsToProfiles, err := builder.CreateMetricsToProfiles(context.Background(), set, consumertest.NewNop())
+	require.NoError(t, err)
+	assert.IsType(t, metricsToProfiles, bMetricsToProfiles)
+
 	logsToTraces, err := factory.CreateLogsToTraces(context.Background(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	bLogsToTraces, err := builder.CreateLogsToTraces(context.Background(), set, consumertest.NewNop())
@@ -323,6 +443,36 @@ func TestNewNopConnectorConfigsAndFactories(t *testing.T) {
 	bLogsToLogs, err := builder.CreateLogsToLogs(context.Background(), set, consumertest.NewNop())
 	require.NoError(t, err)
 	assert.IsType(t, logsToLogs, bLogsToLogs)
+
+	logsToProfiles, err := factory.CreateLogsToProfiles(context.Background(), set, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	bLogsToProfiles, err := builder.CreateLogsToProfiles(context.Background(), set, consumertest.NewNop())
+	require.NoError(t, err)
+	assert.IsType(t, logsToProfiles, bLogsToProfiles)
+
+	profilesToTraces, err := factory.CreateProfilesToTraces(context.Background(), set, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	bProfilesToTraces, err := builder.CreateProfilesToTraces(context.Background(), set, consumertest.NewNop())
+	require.NoError(t, err)
+	assert.IsType(t, profilesToTraces, bProfilesToTraces)
+
+	profilesToMetrics, err := factory.CreateProfilesToMetrics(context.Background(), set, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	bProfilesToMetrics, err := builder.CreateProfilesToMetrics(context.Background(), set, consumertest.NewNop())
+	require.NoError(t, err)
+	assert.IsType(t, profilesToMetrics, bProfilesToMetrics)
+
+	profilesToLogs, err := factory.CreateProfilesToLogs(context.Background(), set, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	bProfilesToLogs, err := builder.CreateProfilesToLogs(context.Background(), set, consumertest.NewNop())
+	require.NoError(t, err)
+	assert.IsType(t, profilesToLogs, bProfilesToLogs)
+
+	profilesToProfiles, err := factory.CreateProfilesToProfiles(context.Background(), set, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	bProfilesToProfiles, err := builder.CreateProfilesToProfiles(context.Background(), set, consumertest.NewNop())
+	require.NoError(t, err)
+	assert.IsType(t, profilesToProfiles, bProfilesToProfiles)
 }
 
 var nopConnectorInstance = &nopConnector{
@@ -345,6 +495,9 @@ func createConnectorTracesToMetrics(context.Context, connector.Settings, compone
 func createConnectorTracesToLogs(context.Context, connector.Settings, component.Config, consumer.Logs) (connector.Traces, error) {
 	return nopConnectorInstance, nil
 }
+func createConnectorTracesToProfiles(context.Context, connector.Settings, component.Config, consumerprofiles.Profiles) (connector.Traces, error) {
+	return nopConnectorInstance, nil
+}
 
 func createConnectorMetricsToTraces(context.Context, connector.Settings, component.Config, consumer.Traces) (connector.Metrics, error) {
 	return nopConnectorInstance, nil
@@ -355,6 +508,9 @@ func createConnectorMetricsToMetrics(context.Context, connector.Settings, compon
 func createConnectorMetricsToLogs(context.Context, connector.Settings, component.Config, consumer.Logs) (connector.Metrics, error) {
 	return nopConnectorInstance, nil
 }
+func createConnectorMetricsToProfiles(context.Context, connector.Settings, component.Config, consumerprofiles.Profiles) (connector.Metrics, error) {
+	return nopConnectorInstance, nil
+}
 
 func createConnectorLogsToTraces(context.Context, connector.Settings, component.Config, consumer.Traces) (connector.Logs, error) {
 	return nopConnectorInstance, nil
@@ -363,6 +519,22 @@ func createConnectorLogsToMetrics(context.Context, connector.Settings, component
 	return nopConnectorInstance, nil
 }
 func createConnectorLogsToLogs(context.Context, connector.Settings, component.Config, consumer.Logs) (connector.Logs, error) {
+	return nopConnectorInstance, nil
+}
+func createConnectorLogsToProfiles(context.Context, connector.Settings, component.Config, consumerprofiles.Profiles) (connector.Logs, error) {
+	return nopConnectorInstance, nil
+}
+
+func createConnectorProfilesToTraces(context.Context, connector.Settings, component.Config, consumer.Traces) (connectorprofiles.Profiles, error) {
+	return nopConnectorInstance, nil
+}
+func createConnectorProfilesToMetrics(context.Context, connector.Settings, component.Config, consumer.Metrics) (connectorprofiles.Profiles, error) {
+	return nopConnectorInstance, nil
+}
+func createConnectorProfilesToLogs(context.Context, connector.Settings, component.Config, consumer.Logs) (connectorprofiles.Profiles, error) {
+	return nopConnectorInstance, nil
+}
+func createConnectorProfilesToProfiles(context.Context, connector.Settings, component.Config, consumerprofiles.Profiles) (connectorprofiles.Profiles, error) {
 	return nopConnectorInstance, nil
 }
 

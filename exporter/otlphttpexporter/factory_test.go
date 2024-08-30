@@ -30,11 +30,11 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, ocfg.ClientConfig.Endpoint, "")
 	assert.Equal(t, ocfg.ClientConfig.Timeout, 30*time.Second, "default timeout is 30 second")
-	assert.Equal(t, ocfg.RetryConfig.Enabled, true, "default retry is enabled")
+	assert.True(t, ocfg.RetryConfig.Enabled, "default retry is enabled")
 	assert.Equal(t, ocfg.RetryConfig.MaxElapsedTime, 300*time.Second, "default retry MaxElapsedTime")
 	assert.Equal(t, ocfg.RetryConfig.InitialInterval, 5*time.Second, "default retry InitialInterval")
 	assert.Equal(t, ocfg.RetryConfig.MaxInterval, 30*time.Second, "default retry MaxInterval")
-	assert.Equal(t, ocfg.QueueConfig.Enabled, true, "default sending queue is enabled")
+	assert.True(t, ocfg.QueueConfig.Enabled, "default sending queue is enabled")
 	assert.Equal(t, ocfg.Encoding, EncodingProto)
 	assert.Equal(t, ocfg.Compression, configcompression.TypeGzip)
 }
