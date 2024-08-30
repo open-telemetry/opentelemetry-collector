@@ -20,7 +20,7 @@ Binary distributions produced by the Collector SIG contain components and featur
 
 * The Collector's core framework behavior MUST be stable in order for a Collector distribution to be v1.0.0 or higher.
 * Users can easily understand when they are opting in to use a component or feature that is not stable.
-    * The Collector MUST provide a configuration or CLI flag to be able to opt out of using unstable components or features.
+    * The Collector MUST be configurable in a way that does not use unstable components or features.
     * The Collector's telemetry (e.g. Collector logs) MUST provide the ability to identify usage of unstable components or features.
 
 ### Long term support
