@@ -84,10 +84,12 @@ replaces:
   - go.opentelemetry.io/collector/pdata/testdata => ../../pdata/testdata
   - go.opentelemetry.io/collector/pdata/pprofile => ../../pdata/pprofile
   - go.opentelemetry.io/collector/processor => ../../processor
+  - go.opentelemetry.io/collector/processor/batchprocessor => ../../processor/batchprocessor
+  - go.opentelemetry.io/collector/processor/memorylimiterprocessor => ../../processor/memorylimiterprocessor
+  - go.opentelemetry.io/collector/processor/processorprofiles => ../../processor/processorprofiles
   - go.opentelemetry.io/collector/receiver => ../../receiver
   - go.opentelemetry.io/collector/receiver/nopreceiver => ../../receiver/nopreceiver
   - go.opentelemetry.io/collector/receiver/otlpreceiver => ../../receiver/otlpreceiver
-  - go.opentelemetry.io/collector/processor/batchprocessor => ../../processor/batchprocessor
-  - go.opentelemetry.io/collector/processor/memorylimiterprocessor => ../../processor/memorylimiterprocessor
+  - go.opentelemetry.io/collector/receiver/receiverprofiles => ../../receiver/receiverprofiles
   - go.opentelemetry.io/collector/semconv => ../../semconv
   - go.opentelemetry.io/collector/service => ../../service
