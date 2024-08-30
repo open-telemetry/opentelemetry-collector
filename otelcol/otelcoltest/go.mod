@@ -62,14 +62,17 @@ require (
 	go.opentelemetry.io/collector/component/componentprofiles v0.108.1 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.108.1 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.108.1 // indirect
+	go.opentelemetry.io/collector/connector/connectorprofiles v0.108.1 // indirect
 	go.opentelemetry.io/collector/consumer v0.108.1 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.108.1 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.108.1 // indirect
+	go.opentelemetry.io/collector/exporter/exporterprofiles v0.108.1 // indirect
 	go.opentelemetry.io/collector/featuregate v1.14.1 // indirect
 	go.opentelemetry.io/collector/internal/globalgates v0.108.1 // indirect
 	go.opentelemetry.io/collector/pdata v1.14.1 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.108.1 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.108.1 // indirect
+	go.opentelemetry.io/collector/processor/processorprofiles v0.108.1 // indirect
 	go.opentelemetry.io/collector/receiver/receiverprofiles v0.108.1 // indirect
 	go.opentelemetry.io/collector/semconv v0.108.1 // indirect
 	go.opentelemetry.io/contrib/config v0.9.0 // indirect
@@ -181,3 +184,9 @@ replace go.opentelemetry.io/collector/client => ../../client
 replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
 
 replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../../receiver/receiverprofiles
+
+replace go.opentelemetry.io/collector/processor/processorprofiles => ../../processor/processorprofiles
+
+replace go.opentelemetry.io/collector/connector/connectorprofiles => ../../connector/connectorprofiles
+
+replace go.opentelemetry.io/collector/exporter/exporterprofiles => ../../exporter/exporterprofiles

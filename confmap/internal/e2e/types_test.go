@@ -422,7 +422,7 @@ func TestIssue10787(t *testing.T) {
 	assert.Equal(t, conf.ToStringMap(),
 		map[string]any{
 			"exporters": map[string]any{
-				"logging": map[string]any{
+				"debug": map[string]any{
 					"verbosity": "detailed",
 				},
 			},
@@ -444,7 +444,7 @@ func TestIssue10787(t *testing.T) {
 			"service": map[string]any{
 				"pipelines": map[string]any{
 					"traces": map[string]any{
-						"exporters":  []any{"logging"},
+						"exporters":  []any{"debug"},
 						"processors": []any{"batch"},
 						"receivers":  []any{"otlp"},
 					},
@@ -462,16 +462,16 @@ func TestIssue10787(t *testing.T) {
 func TestStructMappingIssue10787(t *testing.T) {
 	resolver := NewResolver(t, "types_expand.yaml")
 	t.Setenv("ENV", `# this is a comment
-logging:
+debug:
   verbosity: detailed`)
 	conf, err := resolver.Resolve(context.Background())
 	require.NoError(t, err)
 
-	type Logging struct {
+	type Debug struct {
 		Verbosity string `mapstructure:"verbosity"`
 	}
 	type Exporters struct {
-		Logging Logging `mapstructure:"logging"`
+		Debug Debug `mapstructure:"debug"`
 	}
 	type Target struct {
 		Field Exporters `mapstructure:"field"`
@@ -482,7 +482,7 @@ logging:
 	require.NoError(t, err)
 	require.Equal(t,
 		Target{Field: Exporters{
-			Logging: Logging{
+			Debug: Debug{
 				Verbosity: "detailed",
 			},
 		}},
@@ -495,7 +495,7 @@ logging:
 	err = confStr.Unmarshal(&cfgStr)
 	require.NoError(t, err)
 	require.Equal(t, `# this is a comment
-logging:
+debug:
   verbosity: detailed`,
 		cfgStr.Field,
 	)
@@ -505,16 +505,16 @@ func TestStructMappingIssue10787_ExpandComment(t *testing.T) {
 	resolver := NewResolver(t, "types_expand.yaml")
 	t.Setenv("EXPAND_ME", "an expanded env var")
 	t.Setenv("ENV", `# this is a comment with ${EXPAND_ME}
-logging:
+debug:
   verbosity: detailed`)
 	conf, err := resolver.Resolve(context.Background())
 	require.NoError(t, err)
 
-	type Logging struct {
+	type Debug struct {
 		Verbosity string `mapstructure:"verbosity"`
 	}
 	type Exporters struct {
-		Logging Logging `mapstructure:"logging"`
+		Debug Debug `mapstructure:"debug"`
 	}
 	type Target struct {
 		Field Exporters `mapstructure:"field"`
@@ -525,7 +525,7 @@ logging:
 	require.NoError(t, err)
 	require.Equal(t,
 		Target{Field: Exporters{
-			Logging: Logging{
+			Debug: Debug{
 				Verbosity: "detailed",
 			},
 		}},
@@ -538,7 +538,7 @@ logging:
 	err = confStr.Unmarshal(&cfgStr)
 	require.NoError(t, err)
 	require.Equal(t, `# this is a comment with an expanded env var
-logging:
+debug:
   verbosity: detailed`,
 		cfgStr.Field,
 	)
