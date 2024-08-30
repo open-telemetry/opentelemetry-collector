@@ -11,7 +11,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverprofiles"
 )
 
 var defaultComponentType = component.MustNewType("nop")
@@ -32,7 +34,9 @@ func NewNopFactory() receiver.Factory {
 		func() component.Config { return &nopConfig{} },
 		receiver.WithTraces(createTraces, component.StabilityLevelStable),
 		receiver.WithMetrics(createMetrics, component.StabilityLevelStable),
-		receiver.WithLogs(createLogs, component.StabilityLevelStable))
+		receiver.WithLogs(createLogs, component.StabilityLevelStable),
+		receiverprofiles.WithProfiles(createProfiles, component.StabilityLevelAlpha),
+	)
 }
 
 // NewNopFactoryForType returns a receiver.Factory that constructs nop receivers supporting only the
@@ -65,6 +69,10 @@ func createMetrics(context.Context, receiver.Settings, component.Config, consume
 }
 
 func createLogs(context.Context, receiver.Settings, component.Config, consumer.Logs) (receiver.Logs, error) {
+	return nopInstance, nil
+}
+
+func createProfiles(context.Context, receiver.Settings, component.Config, consumerprofiles.Profiles) (receiverprofiles.Profiles, error) {
 	return nopInstance, nil
 }
 

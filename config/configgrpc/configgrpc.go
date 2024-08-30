@@ -8,6 +8,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -169,7 +170,7 @@ type ServerConfig struct {
 	TLSSetting *configtls.ServerConfig `mapstructure:"tls"`
 
 	// MaxRecvMsgSizeMiB sets the maximum size (in MiB) of messages accepted by the server.
-	MaxRecvMsgSizeMiB uint64 `mapstructure:"max_recv_msg_size_mib"`
+	MaxRecvMsgSizeMiB int `mapstructure:"max_recv_msg_size_mib"`
 
 	// MaxConcurrentStreams sets the limit on the number of concurrent streams to each ServerTransport.
 	// It has effect only for streaming RPCs.
@@ -305,9 +306,7 @@ func (gcs *ClientConfig) toDialOptions(ctx context.Context, host component.Host,
 	otelOpts := []otelgrpc.Option{
 		otelgrpc.WithTracerProvider(settings.TracerProvider),
 		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
-	}
-	if settings.MetricsLevel >= configtelemetry.LevelDetailed {
-		otelOpts = append(otelOpts, otelgrpc.WithMeterProvider(settings.MeterProvider))
+		otelgrpc.WithMeterProvider(settings.LeveledMeterProvider(configtelemetry.LevelDetailed)),
 	}
 
 	// Enable OpenTelemetry observability plugin.
@@ -318,6 +317,22 @@ func (gcs *ClientConfig) toDialOptions(ctx context.Context, host component.Host,
 
 func validateBalancerName(balancerName string) bool {
 	return balancer.Get(balancerName) != nil
+}
+
+func (gss *ServerConfig) Validate() error {
+	if gss.MaxRecvMsgSizeMiB*1024*1024 < 0 {
+		return fmt.Errorf("invalid max_recv_msg_size_mib value, must be between 1 and %d: %d", math.MaxInt/1024/1024, gss.MaxRecvMsgSizeMiB)
+	}
+
+	if gss.ReadBufferSize < 0 {
+		return fmt.Errorf("invalid read_buffer_size value: %d", gss.ReadBufferSize)
+	}
+
+	if gss.WriteBufferSize < 0 {
+		return fmt.Errorf("invalid write_buffer_size value: %d", gss.WriteBufferSize)
+	}
+
+	return nil
 }
 
 // ToServer returns a grpc.Server for the configuration
@@ -346,8 +361,8 @@ func (gss *ServerConfig) toServerOption(host component.Host, settings component.
 		opts = append(opts, grpc.Creds(credentials.NewTLS(tlsCfg)))
 	}
 
-	if gss.MaxRecvMsgSizeMiB > 0 {
-		opts = append(opts, grpc.MaxRecvMsgSize(int(gss.MaxRecvMsgSizeMiB*1024*1024)))
+	if gss.MaxRecvMsgSizeMiB > 0 && gss.MaxRecvMsgSizeMiB*1024*1024 > 0 {
+		opts = append(opts, grpc.MaxRecvMsgSize(gss.MaxRecvMsgSizeMiB*1024*1024))
 	}
 
 	if gss.MaxConcurrentStreams > 0 {
@@ -410,9 +425,7 @@ func (gss *ServerConfig) toServerOption(host component.Host, settings component.
 	otelOpts := []otelgrpc.Option{
 		otelgrpc.WithTracerProvider(settings.TracerProvider),
 		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
-	}
-	if settings.MetricsLevel >= configtelemetry.LevelDetailed {
-		otelOpts = append(otelOpts, otelgrpc.WithMeterProvider(settings.MeterProvider))
+		otelgrpc.WithMeterProvider(settings.LeveledMeterProvider(configtelemetry.LevelDetailed)),
 	}
 
 	// Enable OpenTelemetry observability plugin.
