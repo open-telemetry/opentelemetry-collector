@@ -28,7 +28,7 @@ Binary distributions produced by the Collector SIG contain components and featur
 The OpenTelemetry Collector SIG provides long term support for binary distributions of the OpenTelemetry Collector and its components. The following policies apply to long term support for any major version starting on v1:
 
 * A binary distribution of the OpenTelemetry Collector MUST be supported for a minimum of **one year** after the release of the next major version of said distribution.
-* Components MUST be supported for a minimum of **6 months** after the release of the next major version of said component or after the component has been marked as deprecated. If a component has been deprecated for 6 months it MAY be removed from a binary distribution of the OpenTelemetry Collector.
+* Components MUST be supported for a minimum of **6 months** after the release of the next major version of said component or after the component has been marked as deprecated. If a component has been deprecated for 6 months it MAY be removed from a binary distribution of the OpenTelemetry Collector. This does not imply a major version change in the Collector distribution.
 
 ## Go modules
 
