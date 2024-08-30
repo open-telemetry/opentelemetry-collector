@@ -10,7 +10,7 @@ The policies are divided depending on the artifact's target audience. While an a
 
 End-user focused software artifacts are those that are intended to be used by [end-users](CONTRIBUTING.md#end-users) of the OpenTelemetry Collector. These artifacts include 
 - Binary distributions of the OpenTelemetry Collector.
-- Collector components.
+- Collector components, such as receivers, processors, and exporters.
 
 These artifacts are versioned according to the [semantic versioning v2.0.0](https://semver.org/) specification.
 
