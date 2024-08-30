@@ -22,6 +22,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.108.1
 	go.opentelemetry.io/collector/consumer/consumertest v0.108.1
 	go.opentelemetry.io/collector/exporter v0.108.1
+	go.opentelemetry.io/collector/exporter/exporterprofiles v0.108.1
 	go.opentelemetry.io/collector/extension v0.108.1
 	go.opentelemetry.io/collector/extension/zpagesextension v0.108.1
 	go.opentelemetry.io/collector/featuregate v1.14.1
@@ -178,3 +179,5 @@ replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../receiver/r
 replace go.opentelemetry.io/collector/processor/processorprofiles => ../processor/processorprofiles
 
 replace go.opentelemetry.io/collector/connector/connectorprofiles => ../connector/connectorprofiles
+
+replace go.opentelemetry.io/collector/exporter/exporterprofiles => ../exporter/exporterprofiles
