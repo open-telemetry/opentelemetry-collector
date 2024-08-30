@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -43,6 +44,12 @@ func TestNewNopConnectorFactory(t *testing.T) {
 	assert.NoError(t, tracesToLogs.ConsumeTraces(context.Background(), ptrace.NewTraces()))
 	assert.NoError(t, tracesToLogs.Shutdown(context.Background()))
 
+	tracesToProfiles, err := factory.CreateTracesToProfiles(context.Background(), NewNopSettings(), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	assert.NoError(t, tracesToProfiles.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, tracesToProfiles.ConsumeTraces(context.Background(), ptrace.NewTraces()))
+	assert.NoError(t, tracesToProfiles.Shutdown(context.Background()))
+
 	metricsToTraces, err := factory.CreateMetricsToTraces(context.Background(), NewNopSettings(), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	assert.NoError(t, metricsToTraces.Start(context.Background(), componenttest.NewNopHost()))
@@ -61,6 +68,12 @@ func TestNewNopConnectorFactory(t *testing.T) {
 	assert.NoError(t, metricsToLogs.ConsumeMetrics(context.Background(), pmetric.NewMetrics()))
 	assert.NoError(t, metricsToLogs.Shutdown(context.Background()))
 
+	metricsToProfiles, err := factory.CreateMetricsToProfiles(context.Background(), NewNopSettings(), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	assert.NoError(t, metricsToProfiles.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, metricsToProfiles.ConsumeMetrics(context.Background(), pmetric.NewMetrics()))
+	assert.NoError(t, metricsToProfiles.Shutdown(context.Background()))
+
 	logsToTraces, err := factory.CreateLogsToTraces(context.Background(), NewNopSettings(), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	assert.NoError(t, logsToTraces.Start(context.Background(), componenttest.NewNopHost()))
@@ -78,6 +91,36 @@ func TestNewNopConnectorFactory(t *testing.T) {
 	assert.NoError(t, logsToLogs.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, logsToLogs.ConsumeLogs(context.Background(), plog.NewLogs()))
 	assert.NoError(t, logsToLogs.Shutdown(context.Background()))
+
+	logsToProfiles, err := factory.CreateLogsToProfiles(context.Background(), NewNopSettings(), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	assert.NoError(t, logsToProfiles.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, logsToProfiles.ConsumeLogs(context.Background(), plog.NewLogs()))
+	assert.NoError(t, logsToProfiles.Shutdown(context.Background()))
+
+	profilesToTraces, err := factory.CreateProfilesToTraces(context.Background(), NewNopSettings(), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	assert.NoError(t, profilesToTraces.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, profilesToTraces.ConsumeProfiles(context.Background(), pprofile.NewProfiles()))
+	assert.NoError(t, profilesToTraces.Shutdown(context.Background()))
+
+	profilesToMetrics, err := factory.CreateProfilesToMetrics(context.Background(), NewNopSettings(), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	assert.NoError(t, profilesToMetrics.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, profilesToMetrics.ConsumeProfiles(context.Background(), pprofile.NewProfiles()))
+	assert.NoError(t, profilesToMetrics.Shutdown(context.Background()))
+
+	profilesToLogs, err := factory.CreateProfilesToProfiles(context.Background(), NewNopSettings(), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	assert.NoError(t, profilesToLogs.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, profilesToLogs.ConsumeProfiles(context.Background(), pprofile.NewProfiles()))
+	assert.NoError(t, profilesToLogs.Shutdown(context.Background()))
+
+	profilesToProfiles, err := factory.CreateProfilesToProfiles(context.Background(), NewNopSettings(), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	assert.NoError(t, profilesToProfiles.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, profilesToProfiles.ConsumeProfiles(context.Background(), pprofile.NewProfiles()))
+	assert.NoError(t, profilesToProfiles.Shutdown(context.Background()))
 }
 
 func TestNewNopBuilder(t *testing.T) {
