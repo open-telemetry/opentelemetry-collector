@@ -10,7 +10,7 @@ component: extension/experimental/storage
 note: Move `extension/experimental/storage` into a separate module
 
 # One or more tracking issues or pull requests related to the change
-issues: [11005]
+issues: [11022]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
