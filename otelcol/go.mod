@@ -119,6 +119,8 @@ replace go.opentelemetry.io/collector/extension/zpagesextension => ../extension/
 
 replace go.opentelemetry.io/collector/extension => ../extension
 
+replace go.opentelemetry.io/collector/extension/experimental/storage => ../extension/experimental/storage
+
 replace go.opentelemetry.io/collector/exporter => ../exporter
 
 replace go.opentelemetry.io/collector/confmap => ../confmap
