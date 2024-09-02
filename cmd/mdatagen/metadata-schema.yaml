@@ -158,6 +158,9 @@ telemetry:
       unit:
       # Required: metric type with its settings.
       <sum|gauge|histogram>:
+        # Optional: Whether this metric is asynchronous. If async, a mechanism is required to be able to
+        # pass in options to the callbacks that are called when the metric is observed.
+        async: bool
         # Required: type of number data point values.
         value_type: <int|double>
         # Required for sum metric: whether the metric is monotonic (no negative delta values).

@@ -127,6 +127,11 @@ type metric struct {
 
 	// Attributes is the list of attributes that the metric emits.
 	Attributes []attributeName `mapstructure:"attributes"`
+
+	// Level specifies the minimum `configtelemetry.Level` for which
+	// the metric will be emitted. This only applies to internal telemetry
+	// configuration.
+	Level configtelemetry.Level `mapstructure:"level"`
 }
 
 func (m *metric) Unmarshal(parser *confmap.Conf) error {
@@ -235,6 +240,14 @@ type tests struct {
 type telemetry struct {
 	Level   configtelemetry.Level `mapstructure:"level"`
 	Metrics map[metricName]metric `mapstructure:"metrics"`
+}
+
+func (t telemetry) Levels() map[string]interface{} {
+	levels := map[string]interface{}{}
+	for _, m := range t.Metrics {
+		levels[m.Level.String()] = nil
+	}
+	return levels
 }
 
 type metadata struct {

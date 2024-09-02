@@ -10,6 +10,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/otel/attribute"
 	otelprom "go.opentelemetry.io/otel/exporters/prometheus"
+	"go.opentelemetry.io/otel/metric"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -149,7 +150,6 @@ func SetupTelemetry(id component.ID) (TestTelemetry, error) {
 		SpanRecorder: sr,
 	}
 	settings.ts.TracerProvider = tp
-	settings.ts.MetricsLevel = configtelemetry.LevelNormal
 
 	promRegOtel := prometheus.NewRegistry()
 
@@ -162,7 +162,9 @@ func SetupTelemetry(id component.ID) (TestTelemetry, error) {
 		sdkmetric.WithResource(resource.Empty()),
 		sdkmetric.WithReader(exp),
 	)
-	settings.ts.MeterProvider = settings.meterProvider
+	settings.ts.LeveledMeterProvider = func(_ configtelemetry.Level) metric.MeterProvider {
+		return settings.meterProvider
+	}
 
 	settings.prometheusChecker = &prometheusChecker{
 		otelHandler: promhttp.HandlerFor(promRegOtel, promhttp.HandlerOpts{}),
