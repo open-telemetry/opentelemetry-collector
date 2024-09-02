@@ -55,31 +55,3 @@ func TestNewNopFactory(t *testing.T) {
 	assert.NoError(t, profiles.ConsumeProfiles(context.Background(), pprofile.NewProfiles()))
 	assert.NoError(t, profiles.Shutdown(context.Background()))
 }
-
-func TestNewNopBuilder(t *testing.T) {
-	builder := NewNopBuilder()
-	require.NotNil(t, builder)
-
-	factory := NewNopFactory()
-	cfg := factory.CreateDefaultConfig()
-	set := NewNopSettings()
-	set.ID = component.NewID(nopType)
-
-	traces, err := factory.CreateTracesProcessor(context.Background(), set, cfg, consumertest.NewNop())
-	require.NoError(t, err)
-	bTraces, err := builder.CreateTraces(context.Background(), set, consumertest.NewNop())
-	require.NoError(t, err)
-	assert.IsType(t, traces, bTraces)
-
-	metrics, err := factory.CreateMetricsProcessor(context.Background(), set, cfg, consumertest.NewNop())
-	require.NoError(t, err)
-	bMetrics, err := builder.CreateMetrics(context.Background(), set, consumertest.NewNop())
-	require.NoError(t, err)
-	assert.IsType(t, metrics, bMetrics)
-
-	logs, err := factory.CreateLogsProcessor(context.Background(), set, cfg, consumertest.NewNop())
-	require.NoError(t, err)
-	bLogs, err := builder.CreateLogs(context.Background(), set, consumertest.NewNop())
-	require.NoError(t, err)
-	assert.IsType(t, logs, bLogs)
-}

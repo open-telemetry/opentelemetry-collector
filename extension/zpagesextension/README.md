@@ -5,6 +5,7 @@
 | ------------- |-----------|
 | Stability     | [beta]  |
 | Distributions | [core], [contrib], [k8s] |
+| Warnings      | [The zPages extension is incompatible with `service::telemetry::traces::level` set to `none`](#warnings) |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Fzpages%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Fzpages) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Fzpages%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Fzpages) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
@@ -76,3 +77,12 @@ example
 They also allow you to quickly examine error samples
 
 Example URL: http://localhost:55679/debug/tracez
+
+## Warnings
+
+This extension registers a SpanProcessor to record all the spans created inside
+the Collector. This depends on a TracerProvider that supports
+the SDK methods RegisterSpanProcessor and UnregisterSpanProcessor. Setting
+`service::telemetry::traces::level` to `none` configures a No-Op
+TracerProvider that does not support these methods, and therefore the zPages
+extension cannot work in this mode.

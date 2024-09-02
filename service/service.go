@@ -45,41 +45,17 @@ type Settings struct {
 	// CollectorConf contains the Collector's current configuration
 	CollectorConf *confmap.Conf
 
-	// Receivers builder for receivers.
-	//
-	// Deprecated: [v0.108.0] use the [ReceiversConfigs] and [ReceiversFactories] options
-	// instead.
-	Receivers builders.Receiver
-
 	// Receivers configuration to its builder.
 	ReceiversConfigs   map[component.ID]component.Config
 	ReceiversFactories map[component.Type]receiver.Factory
-
-	// Processors builder for processors.
-	//
-	// Deprecated: [v0.108.0] use the [ProcessorsConfigs] and [ProcessorsFactories] options
-	// instead.
-	Processors builders.Processor
 
 	// Processors configuration to its builder.
 	ProcessorsConfigs   map[component.ID]component.Config
 	ProcessorsFactories map[component.Type]processor.Factory
 
-	// Exporters builder for exporters.
-	//
-	// Deprecated: [v0.108.0] use the [ReceiversConfigs] and [ReceiversFactories] options
-	// instead.
-	Exporters builders.Exporter
-
 	// exporters configuration to its builder.
 	ExportersConfigs   map[component.ID]component.Config
 	ExportersFactories map[component.Type]exporter.Factory
-
-	// Connectors builder for connectors.
-	//
-	// Deprecated: [v0.108.0] use the [ConnectorsConfigs] and [ConnectorsFactories] options
-	// instead.
-	Connectors builders.Connector
 
 	// Connectors configuration to its builder.
 	ConnectorsConfigs   map[component.ID]component.Config
@@ -115,39 +91,15 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	disableHighCard := obsreportconfig.DisableHighCardinalityMetricsfeatureGate.IsEnabled()
 	extendedConfig := obsreportconfig.UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate.IsEnabled()
 
-	receivers := set.Receivers
-	if receivers == nil {
-		receivers = builders.NewReceiver(set.ReceiversConfigs, set.ReceiversFactories)
-	}
-
-	processors := set.Processors
-	if processors == nil {
-		processors = builders.NewProcessor(set.ProcessorsConfigs, set.ProcessorsFactories)
-	}
-
-	exporters := set.Exporters
-	if exporters == nil {
-		exporters = builders.NewExporter(set.ExportersConfigs, set.ExportersFactories)
-	}
-
-	connectors := set.Connectors
-	if connectors == nil {
-		connectors = builders.NewConnector(set.ConnectorsConfigs, set.ConnectorsFactories)
-	}
-
-	extensions := set.Extensions
-	if extensions == nil {
-		extensions = builders.NewExtension(set.ExtensionsConfigs, set.ExtensionsFactories)
-	}
-
 	srv := &Service{
 		buildInfo: set.BuildInfo,
 		host: &graph.Host{
-			Receivers:         receivers,
-			Processors:        processors,
-			Exporters:         exporters,
-			Connectors:        connectors,
-			Extensions:        extensions,
+			Receivers:  builders.NewReceiver(set.ReceiversConfigs, set.ReceiversFactories),
+			Processors: builders.NewProcessor(set.ProcessorsConfigs, set.ProcessorsFactories),
+			Exporters:  builders.NewExporter(set.ExportersConfigs, set.ExportersFactories),
+			Connectors: builders.NewConnector(set.ConnectorsConfigs, set.ConnectorsFactories),
+			Extensions: builders.NewExtension(set.ExtensionsConfigs, set.ExtensionsFactories),
+
 			ModuleInfo:        set.ModuleInfo,
 			BuildInfo:         set.BuildInfo,
 			AsyncErrorChannel: set.AsyncErrorChannel,
