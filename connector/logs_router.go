@@ -9,6 +9,7 @@ import (
 	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/connector/internal"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
 )
@@ -23,7 +24,7 @@ type LogsRouterAndConsumer interface {
 
 type logsRouter struct {
 	consumer.Logs
-	baseRouter[consumer.Logs]
+	internal.BaseRouter[consumer.Logs]
 }
 
 func NewLogsRouter(cm map[component.ID]consumer.Logs) LogsRouterAndConsumer {
@@ -33,13 +34,13 @@ func NewLogsRouter(cm map[component.ID]consumer.Logs) LogsRouterAndConsumer {
 	}
 	return &logsRouter{
 		Logs:       fanoutconsumer.NewLogs(consumers),
-		baseRouter: newBaseRouter(fanoutconsumer.NewLogs, cm),
+		BaseRouter: internal.NewBaseRouter(fanoutconsumer.NewLogs, cm),
 	}
 }
 
 func (r *logsRouter) PipelineIDs() []component.ID {
-	ids := make([]component.ID, 0, len(r.consumers))
-	for id := range r.consumers {
+	ids := make([]component.ID, 0, len(r.Consumers))
+	for id := range r.Consumers {
 		ids = append(ids, id)
 	}
 	return ids
@@ -52,7 +53,7 @@ func (r *logsRouter) Consumer(pipelineIDs ...component.ID) (consumer.Logs, error
 	consumers := make([]consumer.Logs, 0, len(pipelineIDs))
 	var errors error
 	for _, pipelineID := range pipelineIDs {
-		c, ok := r.consumers[pipelineID]
+		c, ok := r.Consumers[pipelineID]
 		if ok {
 			consumers = append(consumers, c)
 		} else {
