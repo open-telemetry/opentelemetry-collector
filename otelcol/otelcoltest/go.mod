@@ -170,6 +170,8 @@ replace go.opentelemetry.io/collector/semconv => ../../semconv
 
 replace go.opentelemetry.io/collector/extension/auth => ../../extension/auth
 
+replace go.opentelemetry.io/collector/extension/experimental/storage => ../../extension/experimental/storage
+
 replace go.opentelemetry.io/collector/internal/globalgates => ../../internal/globalgates
 
 replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../../consumer/consumerprofiles
