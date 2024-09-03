@@ -23,3 +23,10 @@ var DisableOpenCensusBridge = featuregate.GlobalRegistry().MustRegister("service
 	featuregate.WithRegisterFromVersion("v0.105.0"),
 	featuregate.WithRegisterToVersion("v0.109.0"),
 	featuregate.WithRegisterDescription("`Disables the OpenCensus bridge meaning any component still using the OpenCensus SDK will no longer be able to produce telemetry."))
+
+const MergeModeAppendID = "confmap.mergeModeAppend"
+
+var MergeModeAppend = featuregate.GlobalRegistry().MustRegister(MergeModeAppendID,
+	featuregate.StageAlpha,
+	featuregate.WithRegisterFromVersion("v0.105.0"),
+	featuregate.WithRegisterDescription("Overrides default koanf merging strategy and combines slices."))

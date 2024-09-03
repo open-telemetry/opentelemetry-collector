@@ -6,14 +6,19 @@ package confmap
 import (
 	"context"
 	"errors"
+	"os"
 	"path/filepath"
+	"reflect"
 	"sync"
 	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/globalgates"
 	"go.uber.org/zap"
+	"gopkg.in/yaml.v3"
 )
 
 type mockProvider struct {
@@ -425,4 +430,34 @@ func TestResolverDefaultProviderSet(t *testing.T) {
 	assert.NotNil(t, r.defaultScheme)
 	_, ok := r.providers["env"]
 	assert.True(t, ok)
+}
+
+type mergeTest struct {
+	Name     string           `yaml:"name"`
+	Append   bool             `yaml:"append"`
+	Configs  []map[string]any `yaml:"configs"`
+	Expected map[string]any   `yaml:"expected"`
+}
+
+func TestMergeFunctionality(t *testing.T) {
+	yamlFile, err := os.ReadFile("testdata/append_scenarios.yaml")
+	require.NoError(t, err)
+	var testcases []*mergeTest
+	err = yaml.Unmarshal(yamlFile, &testcases)
+	require.NoError(t, err)
+	for _, tt := range testcases {
+		t.Run(tt.Name, func(t *testing.T) {
+			featuregate.GlobalRegistry().Set(globalgates.MergeModeAppendID, tt.Append)
+			defer func() {
+				featuregate.GlobalRegistry().Set(globalgates.MergeModeAppendID, false)
+			}()
+			conf := New()
+			for _, c := range tt.Configs {
+				conf.Merge(NewFromStringMap(c))
+			}
+			mergedConf := conf.ToStringMap()
+			require.Truef(t, reflect.DeepEqual(mergedConf, tt.Expected), "Exp: %s\nGot: %s", tt.Expected, mergedConf)
+
+		})
+	}
 }

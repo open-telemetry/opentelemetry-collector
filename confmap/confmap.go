@@ -25,9 +25,25 @@ const (
 	KeyDelimiter = "::"
 )
 
+type option struct {
+	mergeFunc MergeFunc
+}
+
+type opts func(*option)
+
+func WithMergeFunc(f MergeFunc) opts {
+	return func(o *option) {
+		o.mergeFunc = f
+	}
+}
+
 // New creates a new empty confmap.Conf instance.
-func New() *Conf {
-	return &Conf{k: koanf.New(KeyDelimiter)}
+func New(options ...opts) *Conf {
+	o := option{}
+	for _, opt := range options {
+		opt(&o)
+	}
+	return &Conf{k: koanf.New(KeyDelimiter), mergeFunc: o.mergeFunc}
 }
 
 // NewFromStringMap creates a confmap.Conf from a map[string]any.
@@ -47,6 +63,8 @@ type Conf struct {
 	// This avoids running into an infinite recursion where Unmarshaler.Unmarshal and
 	// Conf.Unmarshal would call each other.
 	skipTopLevelUnmarshaler bool
+
+	mergeFunc MergeFunc
 }
 
 // AllKeys returns all keys holding a value, regardless of where they are set.
@@ -145,8 +163,23 @@ func (l *Conf) IsSet(key string) bool {
 
 // Merge merges the input given configuration into the existing config.
 // Note that the given map may be modified.
+
 func (l *Conf) Merge(in *Conf) error {
+	if globalgates.MergeModeAppend.IsEnabled() {
+		return l.mergeWithFunc(in, MergeAppend)
+	}
+	return l.merge(in)
+}
+
+func (l *Conf) merge(in *Conf) error {
 	return l.k.Merge(in.k)
+}
+
+// MergeWithFunc merges the input given configuration into the existing config.
+// Note that the given map may be modified.
+func (l *Conf) mergeWithFunc(in *Conf, mergeFunc MergeFunc) error {
+	// Currently, custom merge functions are supported only via koanf.Load
+	return l.k.Load(confmap.Provider(in.ToStringMap(), ""), nil, koanf.WithMergeFunc(mergeFunc))
 }
 
 // Sub returns new Conf instance representing a sub-config of this instance.
