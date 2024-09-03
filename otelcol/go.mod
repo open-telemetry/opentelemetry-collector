@@ -64,7 +64,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/collector v0.108.1 // indirect
 	go.opentelemetry.io/collector/component/componentprofiles v0.108.1 // indirect
-	go.opentelemetry.io/collector/connector/connectorprofiles v0.108.1 // indirect
+	go.opentelemetry.io/collector/connector/connectorprofiles v0.108.2-0.20240902140408-b6a44763e689 // indirect
 	go.opentelemetry.io/collector/consumer v0.108.1 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.108.1 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.108.1 // indirect
