@@ -109,8 +109,6 @@ github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9de
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yusufpapurcu/wmi v1.2.4 h1:zFUKzehAFReQwLys1b/iSMl+JQGSCSjtVqQn9bBrPo0=
 github.com/yusufpapurcu/wmi v1.2.4/go.mod h1:SBZ9tNy3G9/m5Oi98Zks0QjeHVDvuK0qfxQmPyzfmi0=
-go.opentelemetry.io/collector/extension/experimental/storage v0.0.0-20240902085631-cd1f7623fe67 h1:ObLO/tbldgX48dHPw4gZkeJiqmqsgqjSiDJwvvAhSfA=
-go.opentelemetry.io/collector/extension/experimental/storage v0.0.0-20240902085631-cd1f7623fe67/go.mod h1:sC+uLT76/Qujoew95f3Wfa6NGNd3F3trxNrJTr0dU3c=
 go.opentelemetry.io/contrib/config v0.9.0 h1:AJ1c6+vJ6SxvqBBhsi2RhLFMlc6SnJOg81Jp4toFyNw=
 go.opentelemetry.io/contrib/config v0.9.0/go.mod h1:u/u2L6y/c8GKrq/AP51sfXV4Eu24btVlC3A5f867xwg=
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.54.0 h1:r6I7RJCN86bpD/FQwedZ0vSixDpwuWREjW9oRMsmqDc=

@@ -221,6 +221,8 @@ replace go.opentelemetry.io/collector/extension => ../../extension
 
 replace go.opentelemetry.io/collector/extension/auth => ../../extension/auth
 
+replace go.opentelemetry.io/collector/extension/experimental/storage => ../../extension/experimental/storage
+
 replace go.opentelemetry.io/collector/extension/memorylimiterextension => ../../extension/memorylimiterextension
 
 replace go.opentelemetry.io/collector/extension/zpagesextension => ../../extension/zpagesextension
