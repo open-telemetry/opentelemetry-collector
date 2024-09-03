@@ -18,7 +18,6 @@ receivers:
   - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.110.0
 exporters:
   - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.110.0
-  - gomod: go.opentelemetry.io/collector/exporter/loggingexporter v0.110.0
   - gomod: go.opentelemetry.io/collector/exporter/nopexporter v0.110.0
   - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.110.0
   - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.110.0
@@ -72,7 +71,6 @@ replaces:
   - go.opentelemetry.io/collector/exporter => ../../exporter
   - go.opentelemetry.io/collector/exporter/debugexporter => ../../exporter/debugexporter
   - go.opentelemetry.io/collector/exporter/exporterprofiles => ../../exporter/exporterprofiles
-  - go.opentelemetry.io/collector/exporter/loggingexporter => ../../exporter/loggingexporter
   - go.opentelemetry.io/collector/exporter/nopexporter => ../../exporter/nopexporter
   - go.opentelemetry.io/collector/exporter/otlpexporter => ../../exporter/otlpexporter
   - go.opentelemetry.io/collector/exporter/otlphttpexporter => ../../exporter/otlphttpexporter
