@@ -130,6 +130,10 @@ type MetricsConfig struct {
 // TracesConfig exposes the common Telemetry configuration for collector's internal spans.
 // Experimental: *NOTE* this structure is subject to change or removal in the future.
 type TracesConfig struct {
+	// Level configures whether spans are emitted or not, the possible values are:
+	//  - "none" indicates that no tracing data should be collected;
+	//  - "basic" is the recommended and covers the basics of the service telemetry.
+	Level configtelemetry.Level `mapstructure:"level"`
 	// Propagators is a list of TextMapPropagators from the supported propagators list. Currently,
 	// tracecontext and  b3 are supported. By default, the value is set to empty list and
 	// context propagation is disabled.

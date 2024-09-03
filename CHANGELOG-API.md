@@ -7,6 +7,27 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.14.1/v0.108.1
+
+## v1.14.0/v0.108.0
+
+### 🛑 Breaking changes 🛑
+
+- `extensions`: Remove `StatusWatcher` interface.  Use `componentstatus.Watcher` instead. (#10777)
+- `component`: Removed Status related types and functions.  Use `componentstatus` instead. (#10777)
+- `component`: Remove `ReportStatus` from `TelemetrySettings`. Use `componentstatus.ReportStatus` instead. (#10777)
+- `componentstatus`: Make componentstatus.InstanceID immutable. (#10494)
+
+### 🚩 Deprecations 🚩
+
+- `scraperhelper`: deprecate NewObsReport, ObsReport, ObsReportSettings, scrapers should use NewScraperControllerReceiver (#10959)
+- `mdatagen`: Deprecating generated `Meter` func in favour of `LeveledMeter` (#10939)
+- `connector`: Deprecate connector.Builder, and move it into an internal package of the service module (#10784)
+- `exporter`: Deprecate exporter.Builder, and move it into an internal package of the service module (#10783)
+- `extension`: Deprecate extension.Builder, and move it into an internal package of the service module (#10785)
+- `processor`: Deprecate processor.Builder, and move it into an internal package of the service module (#10782)
+- `receiver`: Deprecate receiver.Builder, and move it into an internal package of the service module (#10781)
+
 ## v1.13.0/v0.107.0
 
 ### 🛑 Breaking changes 🛑

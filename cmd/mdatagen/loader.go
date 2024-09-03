@@ -127,6 +127,11 @@ type metric struct {
 
 	// Attributes is the list of attributes that the metric emits.
 	Attributes []attributeName `mapstructure:"attributes"`
+
+	// Level specifies the minimum `configtelemetry.Level` for which
+	// the metric will be emitted. This only applies to internal telemetry
+	// configuration.
+	Level configtelemetry.Level `mapstructure:"level"`
 }
 
 func (m *metric) Unmarshal(parser *confmap.Conf) error {
@@ -237,6 +242,14 @@ type telemetry struct {
 	Metrics map[metricName]metric `mapstructure:"metrics"`
 }
 
+func (t telemetry) Levels() map[string]interface{} {
+	levels := map[string]interface{}{}
+	for _, m := range t.Metrics {
+		levels[m.Level.String()] = nil
+	}
+	return levels
+}
+
 type metadata struct {
 	// Type of the component.
 	Type string `mapstructure:"type"`
@@ -254,6 +267,8 @@ type metadata struct {
 	Attributes map[attributeName]attribute `mapstructure:"attributes"`
 	// Metrics that can be emitted by the component.
 	Metrics map[metricName]metric `mapstructure:"metrics"`
+	// GithubProject is the project where the component README lives in the format of org/repo, defaults to open-telemetry/opentelemetry-collector-contrib
+	GithubProject string `mapstructure:"github_project"`
 	// ScopeName of the metrics emitted by the component.
 	ScopeName string `mapstructure:"scope_name"`
 	// ShortFolderName is the shortened folder name of the component, removing class if present

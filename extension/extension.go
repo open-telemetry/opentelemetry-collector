@@ -51,15 +51,13 @@ type ConfigWatcher interface {
 	NotifyConfig(ctx context.Context, conf *confmap.Conf) error
 }
 
-// StatusWatcher is an extra interface for Extension hosted by the OpenTelemetry
-// Collector that is to be implemented by extensions interested in changes to component
-// status.
-type StatusWatcher interface {
-	// ComponentStatusChanged notifies about a change in the source component status.
-	// Extensions that implement this interface must be ready that the ComponentStatusChanged
-	// may be called before, after or concurrently with calls to Component.Start() and Component.Shutdown().
-	// The function may be called concurrently with itself.
-	ComponentStatusChanged(source *component.InstanceID, event *component.StatusEvent)
+// ModuleInfo describes the go module for each component.
+type ModuleInfo struct {
+	Receiver  map[component.Type]string
+	Processor map[component.Type]string
+	Exporter  map[component.Type]string
+	Extension map[component.Type]string
+	Connector map[component.Type]string
 }
 
 // Settings is passed to Factory.Create(...) function.
@@ -71,6 +69,9 @@ type Settings struct {
 
 	// BuildInfo can be used by components for informational purposes
 	BuildInfo component.BuildInfo
+
+	// ModuleInfo describes the go module for each component.
+	ModuleInfo ModuleInfo
 }
 
 // CreateFunc is the equivalent of Factory.Create(...) function.
@@ -135,40 +136,4 @@ func MakeFactoryMap(factories ...Factory) (map[component.Type]Factory, error) {
 		fMap[f.Type()] = f
 	}
 	return fMap, nil
-}
-
-// Builder extension is a helper struct that given a set of Configs and Factories helps with creating extensions.
-type Builder struct {
-	cfgs      map[component.ID]component.Config
-	factories map[component.Type]Factory
-}
-
-// NewBuilder creates a new extension.Builder to help with creating components form a set of configs and factories.
-func NewBuilder(cfgs map[component.ID]component.Config, factories map[component.Type]Factory) *Builder {
-	return &Builder{cfgs: cfgs, factories: factories}
-}
-
-// Create creates an extension based on the settings and configs available.
-func (b *Builder) Create(ctx context.Context, set Settings) (Extension, error) {
-	cfg, existsCfg := b.cfgs[set.ID]
-	if !existsCfg {
-		return nil, fmt.Errorf("extension %q is not configured", set.ID)
-	}
-
-	f, existsFactory := b.factories[set.ID.Type()]
-	if !existsFactory {
-		return nil, fmt.Errorf("extension factory not available for: %q", set.ID)
-	}
-
-	sl := f.ExtensionStability()
-	if sl >= component.StabilityLevelAlpha {
-		set.Logger.Debug(sl.LogMessage())
-	} else {
-		set.Logger.Info(sl.LogMessage())
-	}
-	return f.CreateExtension(ctx, set, cfg)
-}
-
-func (b *Builder) Factory(componentType component.Type) component.Factory {
-	return b.factories[componentType]
 }

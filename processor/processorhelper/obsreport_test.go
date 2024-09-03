@@ -9,6 +9,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/noop"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -216,7 +218,9 @@ func TestNoMetrics(t *testing.T) {
 		const inserted = 5
 
 		set := tt.TelemetrySettings()
-		set.MetricsLevel = configtelemetry.LevelNone
+		set.LeveledMeterProvider = func(_ configtelemetry.Level) metric.MeterProvider {
+			return noop.MeterProvider{}
+		}
 
 		por, err := NewObsReport(ObsReportSettings{
 			ProcessorID:             processorID,
@@ -238,7 +242,9 @@ func TestNoMetrics(t *testing.T) {
 		const inserted = 4
 
 		set := tt.TelemetrySettings()
-		set.MetricsLevel = configtelemetry.LevelNone
+		set.LeveledMeterProvider = func(_ configtelemetry.Level) metric.MeterProvider {
+			return noop.MeterProvider{}
+		}
 
 		por, err := NewObsReport(ObsReportSettings{
 			ProcessorID:             processorID,
@@ -260,7 +266,9 @@ func TestNoMetrics(t *testing.T) {
 		const inserted = 3
 
 		set := tt.TelemetrySettings()
-		set.MetricsLevel = configtelemetry.LevelNone
+		set.LeveledMeterProvider = func(_ configtelemetry.Level) metric.MeterProvider {
+			return noop.MeterProvider{}
+		}
 
 		por, err := NewObsReport(ObsReportSettings{
 			ProcessorID:             processorID,
