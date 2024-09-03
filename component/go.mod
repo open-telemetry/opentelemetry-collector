@@ -5,7 +5,7 @@ go 1.22.0
 require (
 	github.com/prometheus/client_golang v1.20.2
 	github.com/prometheus/client_model v0.6.1
-	github.com/prometheus/common v0.56.0
+	github.com/prometheus/common v0.57.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.108.1
 	go.opentelemetry.io/collector/pdata v1.14.1
