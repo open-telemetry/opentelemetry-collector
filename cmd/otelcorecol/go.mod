@@ -93,10 +93,13 @@ require (
 	go.opentelemetry.io/collector/config/configtelemetry v0.108.1 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.14.1 // indirect
 	go.opentelemetry.io/collector/config/internal v0.108.1 // indirect
+	go.opentelemetry.io/collector/connector/connectorprofiles v0.108.2-0.20240902140408-b6a44763e689 // indirect
 	go.opentelemetry.io/collector/consumer v0.108.1 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.108.1 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.108.1 // indirect
+	go.opentelemetry.io/collector/exporter/exporterprofiles v0.108.1 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.108.1 // indirect
+	go.opentelemetry.io/collector/extension/experimental/storage v0.0.0-20240902085631-cd1f7623fe67 // indirect
 	go.opentelemetry.io/collector/featuregate v1.14.1 // indirect
 	go.opentelemetry.io/collector/internal/globalgates v0.108.1 // indirect
 	go.opentelemetry.io/collector/pdata v1.14.1 // indirect
@@ -196,11 +199,15 @@ replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/co
 
 replace go.opentelemetry.io/collector/connector => ../../connector
 
+replace go.opentelemetry.io/collector/connector/connectorprofiles => ../../connector/connectorprofiles
+
 replace go.opentelemetry.io/collector/connector/forwardconnector => ../../connector/forwardconnector
 
 replace go.opentelemetry.io/collector/exporter => ../../exporter
 
 replace go.opentelemetry.io/collector/exporter/debugexporter => ../../exporter/debugexporter
+
+replace go.opentelemetry.io/collector/exporter/exporterprofiles => ../../exporter/exporterprofiles
 
 replace go.opentelemetry.io/collector/exporter/loggingexporter => ../../exporter/loggingexporter
 

@@ -306,9 +306,7 @@ func (gcs *ClientConfig) toDialOptions(ctx context.Context, host component.Host,
 	otelOpts := []otelgrpc.Option{
 		otelgrpc.WithTracerProvider(settings.TracerProvider),
 		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
-	}
-	if settings.MetricsLevel >= configtelemetry.LevelDetailed {
-		otelOpts = append(otelOpts, otelgrpc.WithMeterProvider(settings.MeterProvider))
+		otelgrpc.WithMeterProvider(settings.LeveledMeterProvider(configtelemetry.LevelDetailed)),
 	}
 
 	// Enable OpenTelemetry observability plugin.
@@ -427,9 +425,7 @@ func (gss *ServerConfig) toServerOption(host component.Host, settings component.
 	otelOpts := []otelgrpc.Option{
 		otelgrpc.WithTracerProvider(settings.TracerProvider),
 		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
-	}
-	if settings.MetricsLevel >= configtelemetry.LevelDetailed {
-		otelOpts = append(otelOpts, otelgrpc.WithMeterProvider(settings.MeterProvider))
+		otelgrpc.WithMeterProvider(settings.LeveledMeterProvider(configtelemetry.LevelDetailed)),
 	}
 
 	// Enable OpenTelemetry observability plugin.

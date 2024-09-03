@@ -11,15 +11,18 @@ require (
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector v0.108.1
 	go.opentelemetry.io/collector/component v0.108.1
+	go.opentelemetry.io/collector/component/componentprofiles v0.108.1
 	go.opentelemetry.io/collector/component/componentstatus v0.108.1
 	go.opentelemetry.io/collector/config/confighttp v0.108.1
 	go.opentelemetry.io/collector/config/configtelemetry v0.108.1
 	go.opentelemetry.io/collector/confmap v1.14.1
 	go.opentelemetry.io/collector/connector v0.108.1
+	go.opentelemetry.io/collector/connector/connectorprofiles v0.108.2-0.20240902140408-b6a44763e689
 	go.opentelemetry.io/collector/consumer v0.108.1
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.108.1
 	go.opentelemetry.io/collector/consumer/consumertest v0.108.1
 	go.opentelemetry.io/collector/exporter v0.108.1
+	go.opentelemetry.io/collector/exporter/exporterprofiles v0.108.1
 	go.opentelemetry.io/collector/extension v0.108.1
 	go.opentelemetry.io/collector/extension/zpagesextension v0.108.1
 	go.opentelemetry.io/collector/featuregate v1.14.1
@@ -83,7 +86,6 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/collector/client v1.14.1 // indirect
-	go.opentelemetry.io/collector/component/componentprofiles v0.108.1 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.108.1 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.14.1 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.14.1 // indirect
@@ -148,6 +150,8 @@ replace go.opentelemetry.io/collector/config/configretry => ../config/configretr
 
 replace go.opentelemetry.io/collector/extension/auth => ../extension/auth
 
+replace go.opentelemetry.io/collector/extension/experimental/storage => ../extension/experimental/storage
+
 replace go.opentelemetry.io/collector/config/configopaque => ../config/configopaque
 
 replace go.opentelemetry.io/collector/config/confighttp => ../config/confighttp
@@ -175,3 +179,7 @@ replace go.opentelemetry.io/collector/internal/globalgates => ../internal/global
 replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../receiver/receiverprofiles
 
 replace go.opentelemetry.io/collector/processor/processorprofiles => ../processor/processorprofiles
+
+replace go.opentelemetry.io/collector/connector/connectorprofiles => ../connector/connectorprofiles
+
+replace go.opentelemetry.io/collector/exporter/exporterprofiles => ../exporter/exporterprofiles

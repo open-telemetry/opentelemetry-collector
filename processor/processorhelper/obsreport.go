@@ -48,7 +48,7 @@ func NewObsReport(cfg ObsReportSettings) (*ObsReport, error) {
 }
 
 func newObsReport(cfg ObsReportSettings) (*ObsReport, error) {
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(cfg.ProcessorCreateSettings.TelemetrySettings, metadata.WithLevel(cfg.ProcessorCreateSettings.MetricsLevel))
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(cfg.ProcessorCreateSettings.TelemetrySettings)
 	if err != nil {
 		return nil, err
 	}

@@ -39,6 +39,8 @@ replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../../consume
 
 replace go.opentelemetry.io/collector/extension => ../../extension
 
+replace go.opentelemetry.io/collector/extension/experimental/storage => ../../extension/experimental/storage
+
 replace go.opentelemetry.io/collector => ../..
 
 replace go.opentelemetry.io/collector/pdata/pprofile => ../../pdata/pprofile
