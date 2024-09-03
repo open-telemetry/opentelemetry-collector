@@ -61,6 +61,14 @@ additional metadata:
 - `consumererror.WithGRPCStatus`
 - `consumererror.WithHTTPStatus`
 
+**Example**:
+
+```go
+consumererror.New(err,
+  consumererror.WithGRPCStatus(codes.InvalidArgument),
+)
+```
+
 The following options are not currently available, but may be made available in
 the future:
 
@@ -86,17 +94,6 @@ Two examples:
   are given, we assume the component wanted to perform its own status
   conversion, and we will simply give the status for the requested transport
   without performing any conversion.
-
-**Example**:
-
-```go
-consumererror.New(err,
-  consumererror.WithRetry(
-    consumerrerror.WithRetryDelay(10 * time.Second)
-  ),
-  consumererror.WithGRPCStatus(codes.InvalidArgument),
-)
-```
 
 ### Retrying data submission
 
