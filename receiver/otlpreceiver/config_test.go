@@ -135,9 +135,10 @@ func TestUnmarshalConfig(t *testing.T) {
 							MaxAge:         7200,
 						},
 					},
-					TracesURLPath:  "/traces",
-					MetricsURLPath: "/v2/metrics",
-					LogsURLPath:    "/log/ingest",
+					TracesURLPath:   "/traces",
+					MetricsURLPath:  "/v2/metrics",
+					LogsURLPath:     "/log/ingest",
+					ProfilesURLPath: "/v2/profiles",
 				},
 			},
 		}, cfg)
@@ -164,9 +165,10 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 					ServerConfig: &confighttp.ServerConfig{
 						Endpoint: "/tmp/http_otlp.sock",
 					},
-					TracesURLPath:  defaultTracesURLPath,
-					MetricsURLPath: defaultMetricsURLPath,
-					LogsURLPath:    defaultLogsURLPath,
+					TracesURLPath:   defaultTracesURLPath,
+					MetricsURLPath:  defaultMetricsURLPath,
+					LogsURLPath:     defaultLogsURLPath,
+					ProfilesURLPath: defaultProfilesURLPath,
 				},
 			},
 		}, cfg)
@@ -213,6 +215,10 @@ func TestUnmarshalConfigInvalidSignalPath(t *testing.T) {
 		{
 			name:       "Invalid logs URL path",
 			testDataFn: "invalid_logs_path.yaml",
+		},
+		{
+			name:       "Invalid profiles URL path",
+			testDataFn: "invalid_profiles_path.yaml",
 		},
 	}
 

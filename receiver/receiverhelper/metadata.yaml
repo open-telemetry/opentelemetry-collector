@@ -5,7 +5,7 @@ status:
   class: receiver
   not_component: true
   stability:
-    beta: [traces, metrics, logs]
+    beta: [traces, metrics, logs, profiles]
   distributions: [core, contrib]
 
 telemetry:
@@ -53,6 +53,22 @@ telemetry:
     receiver_refused_log_records:
       enabled: true
       description: Number of log records that could not be pushed into the pipeline.
+      unit: "{records}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    receiver_accepted_profile_records:
+      enabled: true
+      description: Number of profile records successfully pushed into the pipeline.
+      unit: "{records}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    receiver_refused_profile_records:
+      enabled: true
+      description: Number of profile records that could not be pushed into the pipeline.
       unit: "{records}"
       sum:
         value_type: int

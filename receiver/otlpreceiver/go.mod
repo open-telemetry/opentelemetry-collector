@@ -16,10 +16,13 @@ require (
 	go.opentelemetry.io/collector/config/configtls v1.14.1
 	go.opentelemetry.io/collector/confmap v1.14.1
 	go.opentelemetry.io/collector/consumer v0.108.1
+	go.opentelemetry.io/collector/consumer/consumerprofiles v0.108.1
 	go.opentelemetry.io/collector/consumer/consumertest v0.108.1
 	go.opentelemetry.io/collector/pdata v1.14.1
+	go.opentelemetry.io/collector/pdata/pprofile v0.108.1
 	go.opentelemetry.io/collector/pdata/testdata v0.108.1
 	go.opentelemetry.io/collector/receiver v0.108.1
+	go.opentelemetry.io/collector/receiver/receiverprofiles v0.108.1
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240822170219-fc7c04adadcd
@@ -58,16 +61,14 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	go.opentelemetry.io/collector/client v1.14.1 // indirect
+	go.opentelemetry.io/collector/component/componentprofiles v0.108.1 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.14.1 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.14.1 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.108.1 // indirect
 	go.opentelemetry.io/collector/config/internal v0.108.1 // indirect
-	go.opentelemetry.io/collector/consumer/consumerprofiles v0.108.1 // indirect
 	go.opentelemetry.io/collector/extension v0.108.1 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.108.1 // indirect
 	go.opentelemetry.io/collector/featuregate v1.14.1 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.108.1 // indirect
-	go.opentelemetry.io/collector/receiver/receiverprofiles v0.108.1 // indirect
 	go.opentelemetry.io/contrib/config v0.9.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.54.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.54.0 // indirect
@@ -151,3 +152,5 @@ replace go.opentelemetry.io/collector/client => ../../client
 replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
 
 replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../receiverprofiles
+
+replace go.opentelemetry.io/collector/component/componentprofiles => ../../component/componentprofiles

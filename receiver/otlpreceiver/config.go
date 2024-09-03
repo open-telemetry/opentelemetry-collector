@@ -32,6 +32,9 @@ type HTTPConfig struct {
 
 	// The URL path to receive logs on. If omitted "/v1/logs" will be used.
 	LogsURLPath string `mapstructure:"logs_url_path,omitempty"`
+
+	// The URL path to receive profiles on. If omitted "/v1/profiles" will be used.
+	ProfilesURLPath string `mapstructure:"profiles_url_path,omitempty"`
 }
 
 // Protocols is the configuration for the supported protocols.
@@ -81,6 +84,9 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 			return err
 		}
 		if cfg.HTTP.LogsURLPath, err = sanitizeURLPath(cfg.HTTP.LogsURLPath); err != nil {
+			return err
+		}
+		if cfg.HTTP.ProfilesURLPath, err = sanitizeURLPath(cfg.HTTP.ProfilesURLPath); err != nil {
 			return err
 		}
 	}

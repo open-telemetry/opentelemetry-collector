@@ -28,14 +28,16 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                        metric.Meter
-	ReceiverAcceptedLogRecords   metric.Int64Counter
-	ReceiverAcceptedMetricPoints metric.Int64Counter
-	ReceiverAcceptedSpans        metric.Int64Counter
-	ReceiverRefusedLogRecords    metric.Int64Counter
-	ReceiverRefusedMetricPoints  metric.Int64Counter
-	ReceiverRefusedSpans         metric.Int64Counter
-	meters                       map[configtelemetry.Level]metric.Meter
+	meter                          metric.Meter
+	ReceiverAcceptedLogRecords     metric.Int64Counter
+	ReceiverAcceptedMetricPoints   metric.Int64Counter
+	ReceiverAcceptedProfileRecords metric.Int64Counter
+	ReceiverAcceptedSpans          metric.Int64Counter
+	ReceiverRefusedLogRecords      metric.Int64Counter
+	ReceiverRefusedMetricPoints    metric.Int64Counter
+	ReceiverRefusedProfileRecords  metric.Int64Counter
+	ReceiverRefusedSpans           metric.Int64Counter
+	meters                         map[configtelemetry.Level]metric.Meter
 }
 
 // telemetryBuilderOption applies changes to default builder.
@@ -62,6 +64,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
+	builder.ReceiverAcceptedProfileRecords, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
+		"otelcol_receiver_accepted_profile_records",
+		metric.WithDescription("Number of profile records successfully pushed into the pipeline."),
+		metric.WithUnit("{records}"),
+	)
+	errs = errors.Join(errs, err)
 	builder.ReceiverAcceptedSpans, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_receiver_accepted_spans",
 		metric.WithDescription("Number of spans successfully pushed into the pipeline."),
@@ -78,6 +86,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 		"otelcol_receiver_refused_metric_points",
 		metric.WithDescription("Number of metric points that could not be pushed into the pipeline."),
 		metric.WithUnit("{datapoints}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ReceiverRefusedProfileRecords, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
+		"otelcol_receiver_refused_profile_records",
+		metric.WithDescription("Number of profile records that could not be pushed into the pipeline."),
+		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ReceiverRefusedSpans, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
