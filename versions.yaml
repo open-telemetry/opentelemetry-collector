@@ -16,6 +16,8 @@ module-sets:
       - go.opentelemetry.io/collector/config/configretry
       - go.opentelemetry.io/collector/config/configtls
       - go.opentelemetry.io/collector/config/configtelemetry
+      - go.opentelemetry.io/collector/extension
+      - go.opentelemetry.io/collector/extension/auth
   beta:
     version: v0.108.1
     modules:
@@ -48,9 +50,7 @@ module-sets:
       - go.opentelemetry.io/collector/exporter/nopexporter
       - go.opentelemetry.io/collector/exporter/otlpexporter
       - go.opentelemetry.io/collector/exporter/otlphttpexporter
-      - go.opentelemetry.io/collector/extension
       - go.opentelemetry.io/collector/extension/extensioncapabilities
-      - go.opentelemetry.io/collector/extension/auth
       - go.opentelemetry.io/collector/extension/experimental/storage
       - go.opentelemetry.io/collector/extension/zpagesextension
       - go.opentelemetry.io/collector/extension/memorylimiterextension
