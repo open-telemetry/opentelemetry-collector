@@ -68,16 +68,16 @@ func (qCfg *QueueSettings) Validate() error {
 
 type queueSender struct {
 	baseRequestSender
-	queue          exporterqueue.Queue[exporter.Request]
+	queue          exporterqueue.Queue[Request]
 	numConsumers   int
 	traceAttribute attribute.KeyValue
-	consumers      *queue.Consumers[exporter.Request]
+	consumers      *queue.Consumers[Request]
 
 	obsrep     *obsReport
 	exporterID component.ID
 }
 
-func newQueueSender(q exporterqueue.Queue[exporter.Request], set exporter.Settings, numConsumers int,
+func newQueueSender(q exporterqueue.Queue[Request], set exporter.Settings, numConsumers int,
 	exportFailureMessage string, obsrep *obsReport) *queueSender {
 	qs := &queueSender{
 		queue:          q,
@@ -86,7 +86,7 @@ func newQueueSender(q exporterqueue.Queue[exporter.Request], set exporter.Settin
 		obsrep:         obsrep,
 		exporterID:     set.ID,
 	}
-	consumeFunc := func(ctx context.Context, req exporter.Request) error {
+	consumeFunc := func(ctx context.Context, req Request) error {
 		err := qs.nextSender.send(ctx, req)
 		if err != nil {
 			set.Logger.Error("Exporting failed. Dropping data."+exportFailureMessage,
@@ -94,7 +94,7 @@ func newQueueSender(q exporterqueue.Queue[exporter.Request], set exporter.Settin
 		}
 		return err
 	}
-	qs.consumers = queue.NewQueueConsumers[exporter.Request](q, numConsumers, consumeFunc)
+	qs.consumers = queue.NewQueueConsumers[Request](q, numConsumers, consumeFunc)
 	return qs
 }
 
@@ -121,7 +121,7 @@ func (qs *queueSender) Shutdown(ctx context.Context) error {
 }
 
 // send implements the requestSender interface. It puts the request in the queue.
-func (qs *queueSender) send(ctx context.Context, req exporter.Request) error {
+func (qs *queueSender) send(ctx context.Context, req Request) error {
 	// Prevent cancellation and deadline to propagate to the context stored in the queue.
 	// The grpc/http based receivers will cancel the request context after this function returns.
 	c := context.WithoutCancel(ctx)

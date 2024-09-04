@@ -7,13 +7,12 @@ import (
 	"context"
 	"errors"
 
-	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 // mergeTraces merges two traces requests into one.
-func mergeTraces(_ context.Context, r1 exporter.Request, r2 exporter.Request) (exporter.Request, error) {
+func mergeTraces(_ context.Context, r1 Request, r2 Request) (Request, error) {
 	tr1, ok1 := r1.(*tracesRequest)
 	tr2, ok2 := r2.(*tracesRequest)
 	if !ok1 || !ok2 {
@@ -24,13 +23,13 @@ func mergeTraces(_ context.Context, r1 exporter.Request, r2 exporter.Request) (e
 }
 
 // mergeSplitTraces splits and/or merges the traces into multiple requests based on the MaxSizeConfig.
-func mergeSplitTraces(_ context.Context, cfg exporterbatcher.MaxSizeConfig, r1 exporter.Request, r2 exporter.Request) ([]exporter.Request, error) {
+func mergeSplitTraces(_ context.Context, cfg exporterbatcher.MaxSizeConfig, r1 Request, r2 Request) ([]Request, error) {
 	var (
-		res          []exporter.Request
+		res          []Request
 		destReq      *tracesRequest
 		capacityLeft = cfg.MaxSizeItems
 	)
-	for _, req := range []exporter.Request{r1, r2} {
+	for _, req := range []Request{r1, r2} {
 		if req == nil {
 			continue
 		}

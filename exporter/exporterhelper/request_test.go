@@ -8,7 +8,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -55,7 +54,7 @@ func (r *fakeRequest) ItemsCount() int {
 	return r.items
 }
 
-func fakeBatchMergeFunc(_ context.Context, r1 exporter.Request, r2 exporter.Request) (exporter.Request, error) {
+func fakeBatchMergeFunc(_ context.Context, r1 Request, r2 Request) (Request, error) {
 	if r1 == nil {
 		return r2, nil
 	}
@@ -72,11 +71,11 @@ func fakeBatchMergeFunc(_ context.Context, r1 exporter.Request, r2 exporter.Requ
 	}, nil
 }
 
-func fakeBatchMergeSplitFunc(ctx context.Context, cfg exporterbatcher.MaxSizeConfig, r1 exporter.Request, r2 exporter.Request) ([]exporter.Request, error) {
+func fakeBatchMergeSplitFunc(ctx context.Context, cfg exporterbatcher.MaxSizeConfig, r1 Request, r2 Request) ([]Request, error) {
 	maxItems := cfg.MaxSizeItems
 	if maxItems == 0 {
 		r, err := fakeBatchMergeFunc(ctx, r1, r2)
-		return []exporter.Request{r}, err
+		return []Request{r}, err
 	}
 
 	if r2.(*fakeRequest).mergeErr != nil {
@@ -85,7 +84,7 @@ func fakeBatchMergeSplitFunc(ctx context.Context, cfg exporterbatcher.MaxSizeCon
 
 	fr2 := r2.(*fakeRequest)
 	fr2 = &fakeRequest{items: fr2.items, sink: fr2.sink, exportErr: fr2.exportErr, delay: fr2.delay}
-	var res []exporter.Request
+	var res []Request
 
 	// fill fr1 to maxItems if it's not nil
 	if r1 != nil {
@@ -96,7 +95,7 @@ func fakeBatchMergeSplitFunc(ctx context.Context, cfg exporterbatcher.MaxSizeCon
 			if fr2.exportErr != nil {
 				fr1.exportErr = fr2.exportErr
 			}
-			return []exporter.Request{fr1}, nil
+			return []Request{fr1}, nil
 		}
 		// if split is needed, we don't propagate exportErr from fr2 to fr1 to test more cases
 		fr2.items -= maxItems - fr1.items
@@ -124,14 +123,14 @@ type fakeRequestConverter struct {
 	requestError error
 }
 
-func (frc *fakeRequestConverter) requestFromMetricsFunc(_ context.Context, md pmetric.Metrics) (exporter.Request, error) {
+func (frc *fakeRequestConverter) requestFromMetricsFunc(_ context.Context, md pmetric.Metrics) (Request, error) {
 	return &fakeRequest{items: md.DataPointCount(), exportErr: frc.requestError}, frc.metricsError
 }
 
-func (frc *fakeRequestConverter) requestFromTracesFunc(_ context.Context, md ptrace.Traces) (exporter.Request, error) {
+func (frc *fakeRequestConverter) requestFromTracesFunc(_ context.Context, md ptrace.Traces) (Request, error) {
 	return &fakeRequest{items: md.SpanCount(), exportErr: frc.requestError}, frc.tracesError
 }
 
-func (frc *fakeRequestConverter) requestFromLogsFunc(_ context.Context, md plog.Logs) (exporter.Request, error) {
+func (frc *fakeRequestConverter) requestFromLogsFunc(_ context.Context, md plog.Logs) (Request, error) {
 	return &fakeRequest{items: md.LogRecordCount(), exportErr: frc.requestError}, frc.logsError
 }

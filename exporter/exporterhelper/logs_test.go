@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/exporter/internal"
 	"go.opentelemetry.io/collector/exporter/internal/queue"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -49,7 +48,7 @@ func TestLogsRequest(t *testing.T) {
 	assert.EqualValues(
 		t,
 		newLogsRequest(plog.NewLogs(), nil),
-		lr.(internal.RequestErrorHandler).OnError(logErr),
+		lr.(RequestErrorHandler).OnError(logErr),
 	)
 }
 

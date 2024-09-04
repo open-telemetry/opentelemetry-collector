@@ -134,7 +134,7 @@ func TestQueuedRetryHappyPath(t *testing.T) {
 					Enabled:      true,
 					QueueSize:    10,
 					NumConsumers: 1,
-				}, exporterqueue.NewMemoryQueueFactory[exporter.Request]()),
+				}, exporterqueue.NewMemoryQueueFactory[Request]()),
 				WithRetry(configretry.NewDefaultBackOffConfig()),
 			},
 		},
@@ -145,7 +145,7 @@ func TestQueuedRetryHappyPath(t *testing.T) {
 					Enabled:      true,
 					QueueSize:    10,
 					NumConsumers: 1,
-				}, exporterqueue.NewPersistentQueueFactory[exporter.Request](nil, exporterqueue.PersistentQueueSettings[exporter.Request]{})),
+				}, exporterqueue.NewPersistentQueueFactory[Request](nil, exporterqueue.PersistentQueueSettings[Request]{})),
 				WithRetry(configretry.NewDefaultBackOffConfig()),
 			},
 		},
@@ -156,7 +156,7 @@ func TestQueuedRetryHappyPath(t *testing.T) {
 					Enabled:      true,
 					QueueSize:    10,
 					NumConsumers: 1,
-				}, exporterqueue.NewPersistentQueueFactory[exporter.Request](nil, exporterqueue.PersistentQueueSettings[exporter.Request]{})),
+				}, exporterqueue.NewPersistentQueueFactory[Request](nil, exporterqueue.PersistentQueueSettings[Request]{})),
 				WithRetry(configretry.NewDefaultBackOffConfig()),
 			},
 		},
@@ -288,7 +288,7 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 				func() Option {
 					qs := exporterqueue.NewDefaultConfig()
 					qs.Enabled = false
-					return WithRequestQueue(qs, exporterqueue.NewMemoryQueueFactory[exporter.Request]())
+					return WithRequestQueue(qs, exporterqueue.NewMemoryQueueFactory[Request]())
 				}(),
 			},
 		},
@@ -324,7 +324,7 @@ func TestQueueFailedRequestDropped(t *testing.T) {
 	logger, observed := observer.New(zap.ErrorLevel)
 	set.Logger = zap.New(logger)
 	be, err := newBaseExporter(set, component.DataTypeLogs, newNoopObsrepSender,
-		WithRequestQueue(exporterqueue.NewDefaultConfig(), exporterqueue.NewMemoryQueueFactory[exporter.Request]()))
+		WithRequestQueue(exporterqueue.NewDefaultConfig(), exporterqueue.NewMemoryQueueFactory[Request]()))
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	mockR := newMockRequest(2, errors.New("some error"))
@@ -430,7 +430,7 @@ func TestQueuedRetryPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 }
 
 func TestQueueSenderNoStartShutdown(t *testing.T) {
-	queue := queue.NewBoundedMemoryQueue[exporter.Request](queue.MemoryQueueSettings[exporter.Request]{})
+	queue := queue.NewBoundedMemoryQueue[Request](queue.MemoryQueueSettings[Request]{})
 	set := exportertest.NewNopSettings()
 	obsrep, err := newExporter(obsReportSettings{
 		exporterID:             exporterID,

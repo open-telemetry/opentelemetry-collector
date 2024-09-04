@@ -9,7 +9,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/testdata"
@@ -34,8 +33,8 @@ func TestMergeSplitTraces(t *testing.T) {
 	tests := []struct {
 		name     string
 		cfg      exporterbatcher.MaxSizeConfig
-		tr1      exporter.Request
-		tr2      exporter.Request
+		tr1      Request
+		tr2      Request
 		expected []*tracesRequest
 	}{
 		{
