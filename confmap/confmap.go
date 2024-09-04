@@ -17,6 +17,7 @@ import (
 	"github.com/knadh/koanf/v2"
 
 	encoder "go.opentelemetry.io/collector/confmap/internal/mapstructure"
+	"go.opentelemetry.io/collector/internal/globalgates"
 )
 
 const (
