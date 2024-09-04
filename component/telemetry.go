@@ -22,18 +22,19 @@ type TelemetrySettings struct {
 	TracerProvider trace.TracerProvider
 
 	// MeterProvider that the factory can pass to other instrumented third-party libraries.
+	//
+	// Deprecated [v0.109.0]: use LeveledMeterProvider instead.
 	MeterProvider metric.MeterProvider
 
-	// MetricsLevel controls the level of detail for metrics emitted by the collector.
-	// Experimental: *NOTE* this field is experimental and may be changed or removed.
+	// LeveledMeterProvider returns a MeterProvider for a Level that the factory can
+	// pass to other instrumented third-party libraries.
+	LeveledMeterProvider func(level configtelemetry.Level) metric.MeterProvider
+
+	// MetricsLevel represents the configuration value set when the collector
+	// is configured. Components may use this level to decide whether it is
+	// appropriate to avoid computationally expensive calculations.
 	MetricsLevel configtelemetry.Level
 
 	// Resource contains the resource attributes for the collector's telemetry.
 	Resource pcommon.Resource
-
-	// ReportStatus allows a component to report runtime changes in status. The service
-	// will automatically report status for a component during startup and shutdown. Components can
-	// use this method to report status after start and before shutdown. For more details about
-	// component status reporting see: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-status.md
-	ReportStatus func(*StatusEvent)
 }

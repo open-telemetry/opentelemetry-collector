@@ -432,9 +432,9 @@ func TestQueuedRetryPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 func TestQueueSenderNoStartShutdown(t *testing.T) {
 	queue := queue.NewBoundedMemoryQueue[Request](queue.MemoryQueueSettings[Request]{})
 	set := exportertest.NewNopSettings()
-	obsrep, err := NewObsReport(ObsReportSettings{
-		ExporterID:             exporterID,
-		ExporterCreateSettings: exportertest.NewNopSettings(),
+	obsrep, err := newExporter(obsReportSettings{
+		exporterID:             exporterID,
+		exporterCreateSettings: exportertest.NewNopSettings(),
 	})
 	assert.NoError(t, err)
 	qs := newQueueSender(queue, set, 1, "", obsrep)

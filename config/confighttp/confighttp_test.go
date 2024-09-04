@@ -20,6 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -51,6 +52,8 @@ var (
 	mockID        = component.MustNewID("mock")
 	dummyID       = component.MustNewID("dummy")
 	nonExistingID = component.MustNewID("nonexisting")
+	// Omit TracerProvider and MeterProvider in TelemetrySettings as otelhttp.Transport cannot be introspected
+	nilProvidersSettings = component.TelemetrySettings{Logger: zap.NewNop(), MetricsLevel: configtelemetry.LevelNone, LeveledMeterProvider: func(_ configtelemetry.Level) metric.MeterProvider { return nil }}
 )
 
 func TestAllHTTPClientSettings(t *testing.T) {
@@ -171,7 +174,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				assert.EqualValues(t, 40, transport.MaxIdleConnsPerHost)
 				assert.EqualValues(t, 45, transport.MaxConnsPerHost)
 				assert.EqualValues(t, 30*time.Second, transport.IdleConnTimeout)
-				assert.EqualValues(t, true, transport.DisableKeepAlives)
+				assert.True(t, transport.DisableKeepAlives)
 			case *compressRoundTripper:
 				assert.EqualValues(t, "gzip", transport.compressionType)
 			}
@@ -218,7 +221,7 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 			assert.EqualValues(t, 0, transport.MaxIdleConnsPerHost)
 			assert.EqualValues(t, 0, transport.MaxConnsPerHost)
 			assert.EqualValues(t, 90*time.Second, transport.IdleConnTimeout)
-			assert.EqualValues(t, false, transport.DisableKeepAlives)
+			assert.False(t, transport.DisableKeepAlives)
 
 		})
 	}
@@ -438,7 +441,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// Omit TracerProvider and MeterProvider in TelemetrySettings as otelhttp.Transport cannot be introspected
-			client, err := test.settings.ToClient(context.Background(), test.host, component.TelemetrySettings{Logger: zap.NewNop(), MetricsLevel: configtelemetry.LevelNone})
+			client, err := test.settings.ToClient(context.Background(), test.host, nilProvidersSettings)
 			if test.shouldErr {
 				assert.Error(t, err)
 				return
@@ -721,7 +724,7 @@ func TestHttpReception(t *testing.T) {
 				TLSSetting: *tt.tlsClientCreds,
 			}
 
-			client, errClient := hcs.ToClient(context.Background(), componenttest.NewNopHost(), component.TelemetrySettings{})
+			client, errClient := hcs.ToClient(context.Background(), componenttest.NewNopHost(), nilProvidersSettings)
 			require.NoError(t, errClient)
 
 			if tt.forceHTTP1 {
@@ -762,7 +765,7 @@ func TestHttpCors(t *testing.T) {
 		},
 		{
 			name:             "emptyCORS",
-			CORSConfig:       &CORSConfig{},
+			CORSConfig:       NewDefaultCORSConfig(),
 			allowedWorks:     false,
 			disallowedWorks:  false,
 			extraHeaderWorks: false,
@@ -1523,13 +1526,13 @@ func BenchmarkHttpRequest(b *testing.B) {
 		b.Run(bb.name, func(b *testing.B) {
 			var c *http.Client
 			if !bb.clientPerThread {
-				c, err = hcs.ToClient(context.Background(), componenttest.NewNopHost(), component.TelemetrySettings{})
+				c, err = hcs.ToClient(context.Background(), componenttest.NewNopHost(), nilProvidersSettings)
 				require.NoError(b, err)
 
 			}
 			b.RunParallel(func(pb *testing.PB) {
 				if c == nil {
-					c, err = hcs.ToClient(context.Background(), componenttest.NewNopHost(), component.TelemetrySettings{})
+					c, err = hcs.ToClient(context.Background(), componenttest.NewNopHost(), nilProvidersSettings)
 					require.NoError(b, err)
 				}
 				if bb.forceHTTP1 {

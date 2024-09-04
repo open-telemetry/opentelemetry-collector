@@ -127,6 +127,11 @@ type metric struct {
 
 	// Attributes is the list of attributes that the metric emits.
 	Attributes []attributeName `mapstructure:"attributes"`
+
+	// Level specifies the minimum `configtelemetry.Level` for which
+	// the metric will be emitted. This only applies to internal telemetry
+	// configuration.
+	Level configtelemetry.Level `mapstructure:"level"`
 }
 
 func (m *metric) Unmarshal(parser *confmap.Conf) error {
@@ -229,11 +234,20 @@ type tests struct {
 	SkipShutdown        bool   `mapstructure:"skip_shutdown"`
 	GoLeak              goLeak `mapstructure:"goleak"`
 	ExpectConsumerError bool   `mapstructure:"expect_consumer_error"`
+	Host                string `mapstructure:"host"`
 }
 
 type telemetry struct {
 	Level   configtelemetry.Level `mapstructure:"level"`
 	Metrics map[metricName]metric `mapstructure:"metrics"`
+}
+
+func (t telemetry) Levels() map[string]interface{} {
+	levels := map[string]interface{}{}
+	for _, m := range t.Metrics {
+		levels[m.Level.String()] = nil
+	}
+	return levels
 }
 
 type metadata struct {
@@ -253,11 +267,13 @@ type metadata struct {
 	Attributes map[attributeName]attribute `mapstructure:"attributes"`
 	// Metrics that can be emitted by the component.
 	Metrics map[metricName]metric `mapstructure:"metrics"`
+	// GithubProject is the project where the component README lives in the format of org/repo, defaults to open-telemetry/opentelemetry-collector-contrib
+	GithubProject string `mapstructure:"github_project"`
 	// ScopeName of the metrics emitted by the component.
 	ScopeName string `mapstructure:"scope_name"`
 	// ShortFolderName is the shortened folder name of the component, removing class if present
 	ShortFolderName string `mapstructure:"-"`
-
+	// Tests is the set of tests generated with the component
 	Tests tests `mapstructure:"tests"`
 }
 
@@ -285,7 +301,7 @@ func loadMetadata(filePath string) (metadata, error) {
 		return metadata{}, err
 	}
 
-	md := metadata{ShortFolderName: shortFolderName(filePath)}
+	md := metadata{ShortFolderName: shortFolderName(filePath), Tests: tests{Host: "componenttest.NewNopHost()"}}
 	if err = conf.Unmarshal(&md); err != nil {
 		return md, err
 	}

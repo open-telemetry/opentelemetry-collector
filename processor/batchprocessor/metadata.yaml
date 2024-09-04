@@ -1,4 +1,5 @@
 type: batch
+github_project: open-telemetry/opentelemetry-collector
 
 status:
   class: processor
@@ -14,25 +15,26 @@ telemetry:
     processor_batch_batch_size_trigger_send:
       enabled: true
       description: Number of times the batch was sent due to a size trigger
-      unit: "1"
+      unit: "{times}"
       sum:
         value_type: int
         monotonic: true
     processor_batch_timeout_trigger_send:
       enabled: true
       description: Number of times the batch was sent due to a timeout trigger
-      unit: "1"
+      unit: "{times}"
       sum:
         value_type: int
         monotonic: true
     processor_batch_batch_send_size:
       enabled: true
       description: Number of units in the batch
-      unit: "1"
+      unit: "{units}"
       histogram:
         value_type: int
         bucket_boundaries: [10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000]
     processor_batch_batch_send_size_bytes:
+      level: detailed
       enabled: true
       description: Number of bytes in batch that was sent
       unit: By
@@ -42,7 +44,7 @@ telemetry:
     processor_batch_metadata_cardinality:
       enabled: true
       description: Number of distinct metadata value combinations being processed
-      unit: "1"
+      unit: "{combinations}"
       sum:
         value_type: int
         async: true

@@ -3,7 +3,7 @@
 
 module go.opentelemetry.io/collector/cmd/builder
 
-go 1.21.0
+go 1.22.0
 
 require (
 	github.com/hashicorp/go-version v1.7.0
@@ -18,7 +18,7 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
-	golang.org/x/mod v0.19.0
+	golang.org/x/mod v0.20.0
 )
 
 require (
