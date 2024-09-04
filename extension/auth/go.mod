@@ -45,8 +45,6 @@ require (
 
 replace go.opentelemetry.io/collector/component => ../../component
 
-replace go.opentelemetry.io/collector/confmap => ../../confmap
-
 replace go.opentelemetry.io/collector/extension => ../
 
 replace go.opentelemetry.io/collector/pdata => ../../pdata
