@@ -17,8 +17,15 @@ import (
 	"github.com/knadh/koanf/v2"
 
 	encoder "go.opentelemetry.io/collector/confmap/internal/mapstructure"
-	"go.opentelemetry.io/collector/internal/globalgates"
+	"go.opentelemetry.io/collector/featuregate"
 )
+
+const MergeComponentsAppendID = "confmap.MergeComponentsAppend"
+
+var MergeComponentsAppend = featuregate.GlobalRegistry().MustRegister(MergeComponentsAppendID,
+	featuregate.StageAlpha,
+	featuregate.WithRegisterFromVersion("v0.109.0"),
+	featuregate.WithRegisterDescription("Overrides default koanf merging strategy and combines slices."))
 
 const (
 	// KeyDelimiter is used as the default key delimiter in the default koanf instance.
@@ -162,8 +169,8 @@ func (l *Conf) IsSet(key string) bool {
 // Note that the given map may be modified.
 
 func (l *Conf) Merge(in *Conf) error {
-	if globalgates.MergeComponentsAppend.IsEnabled() {
-		return l.mergeWithFunc(in, MergeComponentsAppend)
+	if MergeComponentsAppend.IsEnabled() {
+		return l.mergeWithFunc(in, mergeComponentsAppend)
 	}
 	return l.merge(in)
 }

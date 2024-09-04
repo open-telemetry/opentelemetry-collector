@@ -11,7 +11,7 @@ import (
 
 type MergeFunc func(map[string]any, map[string]any) error
 
-func MergeComponentsAppend(new, old map[string]any) error {
+func mergeComponentsAppend(new, old map[string]any) error {
 	newService := maps.Search(new, []string{"service"})
 	oldService := maps.Search(old, []string{"service"})
 	if oldSer, ok := oldService.(map[string]any); ok {

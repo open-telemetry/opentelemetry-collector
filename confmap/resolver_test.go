@@ -16,7 +16,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/globalgates"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 )
@@ -447,9 +446,9 @@ func TestMergeFunctionality(t *testing.T) {
 	require.NoError(t, err)
 	for _, tt := range testcases {
 		t.Run(tt.Name, func(t *testing.T) {
-			featuregate.GlobalRegistry().Set(globalgates.MergeComponentsAppendID, tt.Append)
+			featuregate.GlobalRegistry().Set(MergeComponentsAppendID, tt.Append)
 			defer func() {
-				featuregate.GlobalRegistry().Set(globalgates.MergeComponentsAppendID, false)
+				featuregate.GlobalRegistry().Set(MergeComponentsAppendID, false)
 			}()
 			conf := New()
 			for _, c := range tt.Configs {
