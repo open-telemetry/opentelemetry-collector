@@ -17,10 +17,11 @@ func mergeComponentsAppend(new, old map[string]any) error {
 	if oldSer, ok := oldService.(map[string]any); ok {
 		if newSer, ok := newService.(map[string]any); ok {
 			mergeServices(newSer, oldSer)
-			// override the `service` in new config
+			// override the `service` in new config.
 			new["service"] = newSer
 		}
 	}
+	// merge rest of the config.
 	maps.Merge(new, old)
 	return nil
 }
