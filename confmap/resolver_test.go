@@ -447,9 +447,9 @@ func TestMergeFunctionality(t *testing.T) {
 	require.NoError(t, err)
 	for _, tt := range testcases {
 		t.Run(tt.Name, func(t *testing.T) {
-			featuregate.GlobalRegistry().Set(globalgates.MergeModeAppendID, tt.Append)
+			featuregate.GlobalRegistry().Set(globalgates.MergeComponentsAppendID, tt.Append)
 			defer func() {
-				featuregate.GlobalRegistry().Set(globalgates.MergeModeAppendID, false)
+				featuregate.GlobalRegistry().Set(globalgates.MergeComponentsAppendID, false)
 			}()
 			conf := New()
 			for _, c := range tt.Configs {

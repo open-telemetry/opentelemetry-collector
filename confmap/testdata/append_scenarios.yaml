@@ -261,3 +261,76 @@
             traces:
                 receivers: [nop]
                 exporters: [nop]
+- name: merge-mode-append-multiple
+  append: true
+  configs:
+    -
+        receivers:
+            nop:
+
+        exporters:
+            nop:
+
+        extensions:
+            nop:
+
+        service:
+            extensions: [nop]
+            pipelines:
+                traces:
+                    receivers: [nop]
+                    exporters: [nop]
+    -
+        receivers:
+            nop2:
+
+        exporters:
+            nop2:
+
+        extensions:
+            nop2:
+
+        service:
+            extensions: [nop2]
+            pipelines:
+                traces:
+                    receivers: [nop2]
+                    exporters: [nop2]
+    -
+        receivers:
+            nop3:
+
+        exporters:
+            nop3:
+
+        extensions:
+            nop3:
+
+        service:
+            extensions: [nop3]
+            pipelines:
+                traces:
+                    receivers: [nop3]
+                    exporters: [nop3]
+  expected: 
+    receivers:
+        nop:
+        nop2:
+        nop3:
+
+    exporters:
+        nop:
+        nop2:
+        nop3:
+
+    extensions:
+        nop:
+        nop2:
+        nop3:
+
+    service:
+        extensions: [nop, nop2, nop3]
+        pipelines:
+            traces:
+                receivers: [nop, nop2, nop3]
+                exporters: [nop, nop2, nop3]
