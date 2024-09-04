@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package connector // import "go.opentelemetry.io/collector/connector"
+package internal // import "go.opentelemetry.io/collector/connector/internal"
 
 import (
 	"fmt"
@@ -11,28 +11,28 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-type baseRouter[T any] struct {
+type BaseRouter[T any] struct {
 	fanout    func([]T) T
-	consumers map[component.ID]T
+	Consumers map[component.ID]T
 }
 
-func newBaseRouter[T any](fanout func([]T) T, cm map[component.ID]T) baseRouter[T] {
+func NewBaseRouter[T any](fanout func([]T) T, cm map[component.ID]T) BaseRouter[T] {
 	consumers := make(map[component.ID]T, len(cm))
 	for k, v := range cm {
 		consumers[k] = v
 	}
-	return baseRouter[T]{fanout: fanout, consumers: consumers}
+	return BaseRouter[T]{fanout: fanout, Consumers: consumers}
 }
 
-func (r *baseRouter[T]) PipelineIDs() []component.ID {
-	ids := make([]component.ID, 0, len(r.consumers))
-	for id := range r.consumers {
+func (r *BaseRouter[T]) PipelineIDs() []component.ID {
+	ids := make([]component.ID, 0, len(r.Consumers))
+	for id := range r.Consumers {
 		ids = append(ids, id)
 	}
 	return ids
 }
 
-func (r *baseRouter[T]) Consumer(pipelineIDs ...component.ID) (T, error) {
+func (r *BaseRouter[T]) Consumer(pipelineIDs ...component.ID) (T, error) {
 	var ret T
 	if len(pipelineIDs) == 0 {
 		return ret, fmt.Errorf("missing consumers")
@@ -40,7 +40,7 @@ func (r *baseRouter[T]) Consumer(pipelineIDs ...component.ID) (T, error) {
 	consumers := make([]T, 0, len(pipelineIDs))
 	var errors error
 	for _, pipelineID := range pipelineIDs {
-		c, ok := r.consumers[pipelineID]
+		c, ok := r.Consumers[pipelineID]
 		if ok {
 			consumers = append(consumers, c)
 		} else {

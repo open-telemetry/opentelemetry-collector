@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -46,32 +47,11 @@ func TestNewNopFactory(t *testing.T) {
 	assert.NoError(t, logs.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, logs.ConsumeLogs(context.Background(), plog.NewLogs()))
 	assert.NoError(t, logs.Shutdown(context.Background()))
-}
 
-func TestNewNopBuilder(t *testing.T) {
-	builder := NewNopBuilder()
-	require.NotNil(t, builder)
-
-	factory := NewNopFactory()
-	cfg := factory.CreateDefaultConfig()
-	set := NewNopSettings()
-	set.ID = component.NewID(nopType)
-
-	traces, err := factory.CreateTracesProcessor(context.Background(), set, cfg, consumertest.NewNop())
+	profiles, err := factory.CreateProfilesProcessor(context.Background(), NewNopSettings(), cfg, consumertest.NewNop())
 	require.NoError(t, err)
-	bTraces, err := builder.CreateTraces(context.Background(), set, consumertest.NewNop())
-	require.NoError(t, err)
-	assert.IsType(t, traces, bTraces)
-
-	metrics, err := factory.CreateMetricsProcessor(context.Background(), set, cfg, consumertest.NewNop())
-	require.NoError(t, err)
-	bMetrics, err := builder.CreateMetrics(context.Background(), set, consumertest.NewNop())
-	require.NoError(t, err)
-	assert.IsType(t, metrics, bMetrics)
-
-	logs, err := factory.CreateLogsProcessor(context.Background(), set, cfg, consumertest.NewNop())
-	require.NoError(t, err)
-	bLogs, err := builder.CreateLogs(context.Background(), set, consumertest.NewNop())
-	require.NoError(t, err)
-	assert.IsType(t, logs, bLogs)
+	assert.Equal(t, consumer.Capabilities{MutatesData: false}, profiles.Capabilities())
+	assert.NoError(t, profiles.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, profiles.ConsumeProfiles(context.Background(), pprofile.NewProfiles()))
+	assert.NoError(t, profiles.Shutdown(context.Background()))
 }
