@@ -44,8 +44,16 @@ type TelemetryBuilder struct {
 	meters                            map[configtelemetry.Level]metric.Meter
 }
 
-// telemetryBuilderOption applies changes to default builder.
-type telemetryBuilderOption func(*TelemetryBuilder)
+// TelemetryBuilderOption applies changes to default builder.
+type TelemetryBuilderOption interface {
+	apply(*TelemetryBuilder)
+}
+
+type telemetryBuilderOptionFunc func(mb *TelemetryBuilder)
+
+func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
+	tbof(mb)
+}
 
 // InitExporterQueueCapacity configures the ExporterQueueCapacity metric.
 func (builder *TelemetryBuilder) InitExporterQueueCapacity(cb func() int64, opts ...metric.ObserveOption) error {
@@ -85,10 +93,10 @@ func (builder *TelemetryBuilder) InitExporterQueueSize(cb func() int64, opts ...
 
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
 // for a component
-func NewTelemetryBuilder(settings component.TelemetrySettings, options ...telemetryBuilderOption) (*TelemetryBuilder, error) {
+func NewTelemetryBuilder(settings component.TelemetrySettings, options ...TelemetryBuilderOption) (*TelemetryBuilder, error) {
 	builder := TelemetryBuilder{meters: map[configtelemetry.Level]metric.Meter{}}
 	for _, op := range options {
-		op(&builder)
+		op.apply(&builder)
 	}
 	builder.meters[configtelemetry.LevelBasic] = LeveledMeter(settings, configtelemetry.LevelBasic)
 	var err, errs error
