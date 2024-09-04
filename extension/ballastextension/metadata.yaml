@@ -1,8 +1,0 @@
-type: memory_ballast
-github_project: open-telemetry/opentelemetry-collector
-
-status:
-  class: extension
-  stability:
-    deprecated: [extension]
-  distributions: [core, contrib]

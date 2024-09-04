@@ -74,6 +74,7 @@ var (
 		"/extension",
 		"/extension/auth",
 		"/extension/experimental/storage",
+		"/extension/extensioncapabilities",
 		"/extension/zpagesextension",
 		"/featuregate",
 		"/internal/globalgates",
