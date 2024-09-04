@@ -2,11 +2,26 @@ package confmap
 
 import (
 	"reflect"
+
+	"github.com/knadh/koanf/maps"
 )
 
 type MergeFunc func(map[string]any, map[string]any) error
 
-func MergeAppend(src, dest map[string]any) error {
+func MergeComponentsAppend(new, old map[string]any) error {
+	newService := maps.Search(new, []string{"service"})
+	oldService := maps.Search(old, []string{"service"})
+	if oldSer, ok := oldService.(map[string]any); ok {
+		if newSer, ok := newService.(map[string]any); ok {
+			mergeServices(newSer, oldSer)
+			new["service"] = oldSer
+		}
+	}
+	maps.Merge(new, old)
+	return nil
+}
+
+func mergeServices(src, dest map[string]any) {
 	for srcKey, sVal := range src {
 		dVal, destOk := dest[srcKey]
 		if !destOk {
@@ -29,13 +44,12 @@ func MergeAppend(src, dest map[string]any) error {
 			dest[srcKey] = mergeSlice(destVal, srcVal)
 		case reflect.Map:
 			// both of them are maps. Recursively call the MergeAppend
-			MergeAppend(sVal.(map[string]any), dVal.(map[string]any))
+			mergeServices(sVal.(map[string]any), dVal.(map[string]any))
 		default:
 			// Default case, override the old config
 			dest[srcKey] = sVal
 		}
 	}
-	return nil
 }
 
 func mergeSlice(src, dest reflect.Value) any {

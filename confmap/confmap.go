@@ -162,8 +162,8 @@ func (l *Conf) IsSet(key string) bool {
 // Note that the given map may be modified.
 
 func (l *Conf) Merge(in *Conf) error {
-	if globalgates.MergeModeAppend.IsEnabled() {
-		return l.mergeWithFunc(in, MergeAppend)
+	if globalgates.MergeComponentsAppend.IsEnabled() {
+		return l.mergeWithFunc(in, MergeComponentsAppend)
 	}
 	return l.merge(in)
 }
