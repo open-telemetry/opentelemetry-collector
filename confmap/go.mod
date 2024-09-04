@@ -28,4 +28,4 @@ retract (
 	v0.69.0 // Release failed, use v0.69.1
 )
 
-replace go.opentelemetry.io/collector/featuregate => ./featuregate
+replace go.opentelemetry.io/collector/featuregate => ../featuregate
