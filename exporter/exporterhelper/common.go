@@ -128,11 +128,8 @@ func WithRequestQueue(cfg exporterqueue.Config, queueFactory exporterqueue.Facto
 			o.exportFailureMessage += " Try enabling sending_queue to survive temporary failures."
 			return nil
 		}
-		set := exporterqueue.Settings{
-			DataType:         o.signal,
-			ExporterSettings: o.set,
-		}
-		o.queueSender = newQueueSender(queueFactory(context.Background(), set, cfg), o.set, cfg.NumConsumers, o.exportFailureMessage, o.obsrep)
+		o.queueCfg = cfg
+		o.queueFactory = queueFactory
 		return nil
 	}
 }
@@ -172,20 +169,8 @@ func WithRequestBatchFuncs(mf exporterbatcher.BatchMergeFunc[Request], msf expor
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func WithBatcher(cfg exporterbatcher.Config, opts ...BatcherOption) Option {
 	return func(o *baseExporter) error {
-		if !cfg.Enabled {
-			return nil
-		}
-
-		bs := newBatchSender(cfg, o.set, o.batchMergeFunc, o.batchMergeSplitfunc)
-		for _, opt := range opts {
-			if err := opt(bs); err != nil {
-				return err
-			}
-		}
-		if bs.mergeFunc == nil || bs.mergeSplitFunc == nil {
-			return fmt.Errorf("WithRequestBatchFuncs must be provided for the batcher applied to the request-based exporters")
-		}
-		o.batchSender = bs
+		o.batcherCfg = cfg
+		o.batcherOpts = opts
 		return nil
 	}
 }
@@ -247,6 +232,11 @@ type baseExporter struct {
 	timeoutSender *timeoutSender // timeoutSender is always initialized.
 
 	consumerOptions []consumer.Option
+
+	queueCfg     exporterqueue.Config
+	queueFactory exporterqueue.Factory[Request]
+	batcherCfg   exporterbatcher.Config
+	batcherOpts  []BatcherOption
 }
 
 func newBaseExporter(set exporter.Settings, signal component.DataType, osf obsrepSenderFactory, options ...Option) (*baseExporter, error) {
@@ -271,6 +261,32 @@ func newBaseExporter(set exporter.Settings, signal component.DataType, osf obsre
 	for _, op := range options {
 		err = multierr.Append(err, op(be))
 	}
+	if err != nil {
+		return nil, err
+	}
+
+	if be.batcherCfg.Enabled {
+		bs := newBatchSender(be.batcherCfg, be.set, be.batchMergeFunc, be.batchMergeSplitfunc)
+		for _, opt := range be.batcherOpts {
+			err = multierr.Append(err, opt(bs))
+		}
+		if bs.mergeFunc == nil || bs.mergeSplitFunc == nil {
+			err = multierr.Append(err, fmt.Errorf("WithRequestBatchFuncs must be provided for the batcher applied to the request-based exporters"))
+		}
+		be.batchSender = bs
+	}
+
+	if be.queueCfg.Enabled {
+		set := exporterqueue.Settings{
+			DataType:         be.signal,
+			ExporterSettings: be.set,
+		}
+		be.queueSender = newQueueSender(be.queueFactory(context.Background(), set, be.queueCfg), be.set, be.queueCfg.NumConsumers, be.exportFailureMessage, be.obsrep)
+		for _, op := range options {
+			err = multierr.Append(err, op(be))
+		}
+	}
+
 	if err != nil {
 		return nil, err
 	}
