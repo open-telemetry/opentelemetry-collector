@@ -49,6 +49,7 @@ module-sets:
       - go.opentelemetry.io/collector/exporter/otlpexporter
       - go.opentelemetry.io/collector/exporter/otlphttpexporter
       - go.opentelemetry.io/collector/extension
+      - go.opentelemetry.io/collector/extension/extensioncapabilities
       - go.opentelemetry.io/collector/extension/auth
       - go.opentelemetry.io/collector/extension/experimental/storage
       - go.opentelemetry.io/collector/extension/zpagesextension

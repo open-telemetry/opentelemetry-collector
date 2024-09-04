@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/components"
 	"go.opentelemetry.io/collector/service/internal/status"
@@ -92,7 +93,7 @@ func (bes *Extensions) Shutdown(ctx context.Context) error {
 func (bes *Extensions) NotifyPipelineReady() error {
 	for _, extID := range bes.extensionIDs {
 		ext := bes.extMap[extID]
-		if pw, ok := ext.(extension.PipelineWatcher); ok {
+		if pw, ok := ext.(extensioncapabilities.PipelineWatcher); ok {
 			if err := pw.Ready(); err != nil {
 				return fmt.Errorf("failed to notify extension %q: %w", extID, err)
 			}
@@ -105,7 +106,7 @@ func (bes *Extensions) NotifyPipelineNotReady() error {
 	var errs error
 	for _, extID := range bes.extensionIDs {
 		ext := bes.extMap[extID]
-		if pw, ok := ext.(extension.PipelineWatcher); ok {
+		if pw, ok := ext.(extensioncapabilities.PipelineWatcher); ok {
 			errs = multierr.Append(errs, pw.NotReady())
 		}
 	}
@@ -116,7 +117,7 @@ func (bes *Extensions) NotifyConfig(ctx context.Context, conf *confmap.Conf) err
 	var errs error
 	for _, extID := range bes.extensionIDs {
 		ext := bes.extMap[extID]
-		if cw, ok := ext.(extension.ConfigWatcher); ok {
+		if cw, ok := ext.(extensioncapabilities.ConfigWatcher); ok {
 			clonedConf := confmap.NewFromStringMap(conf.ToStringMap())
 			errs = multierr.Append(errs, cw.NotifyConfig(ctx, clonedConf))
 		}

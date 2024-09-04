@@ -293,6 +293,7 @@ check-contrib:
 		-replace go.opentelemetry.io/collector/extension=$(CURDIR)/extension  \
 		-replace go.opentelemetry.io/collector/extension/auth=$(CURDIR)/extension/auth  \
 		-replace go.opentelemetry.io/collector/extension/experimental/storage=$(CURDIR)/extension/experimental/storage  \
+		-replace go.opentelemetry.io/collector/extension/extensioncapabilities=$(CURDIR)/extension/extensioncapabilities  \
 		-replace go.opentelemetry.io/collector/extension/memorylimiterextension=$(CURDIR)/extension/memorylimiterextension  \
 		-replace go.opentelemetry.io/collector/extension/zpagesextension=$(CURDIR)/extension/zpagesextension  \
 		-replace go.opentelemetry.io/collector/featuregate=$(CURDIR)/featuregate  \

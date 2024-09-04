@@ -24,6 +24,7 @@ require (
 	go.opentelemetry.io/collector/exporter v0.108.1
 	go.opentelemetry.io/collector/exporter/exporterprofiles v0.108.1
 	go.opentelemetry.io/collector/extension v0.108.1
+	go.opentelemetry.io/collector/extension/extensioncapabilities v0.108.1
 	go.opentelemetry.io/collector/extension/zpagesextension v0.108.1
 	go.opentelemetry.io/collector/featuregate v1.14.1
 	go.opentelemetry.io/collector/internal/globalgates v0.108.1
@@ -151,6 +152,8 @@ replace go.opentelemetry.io/collector/config/configretry => ../config/configretr
 replace go.opentelemetry.io/collector/extension/auth => ../extension/auth
 
 replace go.opentelemetry.io/collector/extension/experimental/storage => ../extension/experimental/storage
+
+replace go.opentelemetry.io/collector/extension/extensioncapabilities => ../extension/extensioncapabilities
 
 replace go.opentelemetry.io/collector/config/configopaque => ../config/configopaque
 

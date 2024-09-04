@@ -67,6 +67,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.108.1 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.108.1 // indirect
 	go.opentelemetry.io/collector/exporter/exporterprofiles v0.108.1 // indirect
+	go.opentelemetry.io/collector/extension/extensioncapabilities v0.108.1 // indirect
 	go.opentelemetry.io/collector/featuregate v1.14.1 // indirect
 	go.opentelemetry.io/collector/internal/globalgates v0.108.1 // indirect
 	go.opentelemetry.io/collector/pdata v1.14.1 // indirect
@@ -182,6 +183,8 @@ replace go.opentelemetry.io/collector/component/componentprofiles => ../../compo
 replace go.opentelemetry.io/collector/client => ../../client
 
 replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
+
+replace go.opentelemetry.io/collector/extension/extensioncapabilities => ../../extension/extensioncapabilities
 
 replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../../receiver/receiverprofiles
 
