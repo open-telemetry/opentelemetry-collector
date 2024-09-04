@@ -87,8 +87,6 @@ github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9de
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yusufpapurcu/wmi v1.2.4 h1:zFUKzehAFReQwLys1b/iSMl+JQGSCSjtVqQn9bBrPo0=
 github.com/yusufpapurcu/wmi v1.2.4/go.mod h1:SBZ9tNy3G9/m5Oi98Zks0QjeHVDvuK0qfxQmPyzfmi0=
-go.opentelemetry.io/collector/internal/globalgates v0.108.1 h1:mzSR+psDtEdxwWBQP/e5ZSovPswU+fG5ctvWNvQ6MiU=
-go.opentelemetry.io/collector/internal/globalgates v0.108.1/go.mod h1:N3Ha+6JNawEoxVP35MKHnQtKW9zGa6XY/h/9rF96ZZg=
 go.opentelemetry.io/contrib/config v0.9.0 h1:AJ1c6+vJ6SxvqBBhsi2RhLFMlc6SnJOg81Jp4toFyNw=
 go.opentelemetry.io/contrib/config v0.9.0/go.mod h1:u/u2L6y/c8GKrq/AP51sfXV4Eu24btVlC3A5f867xwg=
 go.opentelemetry.io/otel v1.29.0 h1:PdomN/Al4q/lN6iBJEN3AwPvUiHPMlt93c8bqTG5Llw=
