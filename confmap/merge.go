@@ -14,6 +14,7 @@ func MergeComponentsAppend(new, old map[string]any) error {
 	if oldSer, ok := oldService.(map[string]any); ok {
 		if newSer, ok := newService.(map[string]any); ok {
 			mergeServices(newSer, oldSer)
+			// override the `service` in new config
 			new["service"] = oldSer
 		}
 	}
