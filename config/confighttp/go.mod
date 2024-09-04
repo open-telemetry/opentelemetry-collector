@@ -5,7 +5,7 @@ go 1.22.0
 require (
 	github.com/golang/snappy v0.0.4
 	github.com/klauspost/compress v1.17.9
-	github.com/rs/cors v1.11.0
+	github.com/rs/cors v1.11.1
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector v0.108.1
 	go.opentelemetry.io/collector/client v1.14.1
