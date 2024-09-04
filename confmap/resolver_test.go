@@ -457,7 +457,6 @@ func TestMergeFunctionality(t *testing.T) {
 			}
 			mergedConf := conf.ToStringMap()
 			require.Truef(t, reflect.DeepEqual(mergedConf, tt.Expected), "Exp: %s\nGot: %s", tt.Expected, mergedConf)
-
 		})
 	}
 }
