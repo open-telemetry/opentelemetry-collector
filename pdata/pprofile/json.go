@@ -98,7 +98,7 @@ func (sp ScopeProfiles) unmarshalJsoniter(iter *jsoniter.Iterator) {
 func (pc ProfileContainer) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
-		case "profile_id":
+		case "profileId", "profile_id":
 			pc.orig.ProfileId = iter.ReadStringAsSlice()
 		case "startTimeUnixNano", "start_time_unix_nano":
 			pc.orig.StartTimeUnixNano = json.ReadUint64(iter)
@@ -127,7 +127,7 @@ func (pc ProfileContainer) unmarshalJsoniter(iter *jsoniter.Iterator) {
 func (p Profile) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
-		case "sample_type":
+		case "sampleType", "sample_type":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
 				p.SampleType().AppendEmpty().unmarshalJsoniter(iter)
 				return true
@@ -147,9 +147,9 @@ func (p Profile) unmarshalJsoniter(iter *jsoniter.Iterator) {
 				p.Location().AppendEmpty().unmarshalJsoniter(iter)
 				return true
 			})
-		case "location_indices":
+		case "locationIndices", "location_indices":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				p.LocationIndices().Append(iter.ReadInt64())
+				p.LocationIndices().Append(json.ReadInt64(iter))
 				return true
 			})
 		case "function":
@@ -191,7 +191,7 @@ func (p Profile) unmarshalJsoniter(iter *jsoniter.Iterator) {
 			p.orig.Period = json.ReadInt64(iter)
 		case "comment":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				p.Comment().Append(iter.ReadInt64())
+				p.Comment().Append(json.ReadInt64(iter))
 				return true
 			})
 		case "defaultSampleType", "default_sample_type":
@@ -233,7 +233,7 @@ func (st Sample) unmarshalJsoniter(iter *jsoniter.Iterator) {
 			st.orig.StacktraceIdIndex = json.ReadUint32(iter)
 		case "value":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				st.Value().Append(iter.ReadInt64())
+				st.Value().Append(json.ReadInt64(iter))
 				return true
 			})
 		case "label":

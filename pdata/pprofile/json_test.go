@@ -18,6 +18,9 @@ var _ Unmarshaler = (*JSONUnmarshaler)(nil)
 var profilesOTLP = func() Profiles {
 	startTimestamp := pcommon.Timestamp(1684617382541971000)
 	endTimestamp := pcommon.Timestamp(1684623646539558000)
+	traceID := pcommon.TraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
+	spanID := pcommon.SpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
+
 	pd := NewProfiles()
 	// Add ResourceProfiles.
 	rp := pd.ResourceProfiles().AppendEmpty()
@@ -29,10 +32,19 @@ var profilesOTLP = func() Profiles {
 	// Add ScopeProfiles.
 	sp := rp.ScopeProfiles().AppendEmpty()
 	sp.SetSchemaUrl("schemaURL")
+	sp.Scope().SetName("scope name")
+	sp.Scope().SetVersion("scope version")
 	// Add profiles
 	pc := sp.Profiles().AppendEmpty()
 	pc.SetStartTime(startTimestamp)
 	pc.SetEndTime(endTimestamp)
+	pc.Attributes().PutStr("hello", "world")
+	pc.Attributes().PutStr("foo", "bar")
+	pc.SetDroppedAttributesCount(1)
+	// Add sample type
+	st := pc.Profile().SampleType().AppendEmpty()
+	st.SetType(1)
+	st.SetUnit(2)
 	// Add samples
 	s := pc.Profile().Sample().AppendEmpty()
 	s.SetLocationsStartIndex(1)
@@ -40,10 +52,33 @@ var profilesOTLP = func() Profiles {
 	s.SetStacktraceIdIndex(1)
 	s.SetLink(42)
 	s.Attributes().Append(1)
+	// Add mappings
+	m := pc.Profile().Mapping().AppendEmpty()
+	m.SetID(1)
+	// Add location
+	l := pc.Profile().Location().AppendEmpty()
+	l.SetID(2)
+	pc.Profile().LocationIndices().Append(1)
+	// Add function
+	f := pc.Profile().Function().AppendEmpty()
+	f.SetName(3)
+	// Add attribute table
+	at := pc.Profile().AttributeTable()
+	at.PutInt("answer", 42)
+	// Add attribute units
+	au := pc.Profile().AttributeUnits().AppendEmpty()
+	au.SetUnit(5)
+	// Add link table
+	lt := pc.Profile().LinkTable().AppendEmpty()
+	lt.SetTraceID(traceID)
+	lt.SetSpanID(spanID)
+	// Add string table
+	pc.Profile().StringTable().Append("foobar")
+
 	return pd
 }()
 
-var profilesJSON = `{"resourceProfiles":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}},{"key":"service.name","value":{"stringValue":"testService"}}],"droppedAttributesCount":1},"scopeProfiles":[{"scope":{},"profiles":[{"startTimeUnixNano":"1684617382541971000","endTimeUnixNano":"1684623646539558000","profile":{"sample":[{"locationsStartIndex":"1","locationsLength":"10","stacktraceIdIndex":1,"attributes":["1"],"link":"42"}],"periodType":{}}}],"schemaUrl":"schemaURL"}],"schemaUrl":"schemaURL"}]}`
+var profilesJSON = `{"resourceProfiles":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}},{"key":"service.name","value":{"stringValue":"testService"}}],"droppedAttributesCount":1},"scopeProfiles":[{"scope":{"name":"scope name","version":"scope version"},"profiles":[{"startTimeUnixNano":"1684617382541971000","endTimeUnixNano":"1684623646539558000","attributes":[{"key":"hello","value":{"stringValue":"world"}},{"key":"foo","value":{"stringValue":"bar"}}],"droppedAttributesCount":1,"profile":{"sampleType":[{"type":"1","unit":"2"}],"sample":[{"locationsStartIndex":"1","locationsLength":"10","stacktraceIdIndex":1,"attributes":["1"],"link":"42"}],"mapping":[{"id":"1"}],"location":[{"id":"2"}],"locationIndices":["1"],"function":[{"name":"3"}],"attributeTable":[{"key":"answer","value":{"intValue":"42"}}],"attributeUnits":[{"unit":"5"}],"linkTable":[{"traceId":"0102030405060708090a0b0c0d0e0f10","spanId":"1112131415161718"}],"stringTable":["foobar"],"periodType":{}}}],"schemaUrl":"schemaURL"}],"schemaUrl":"schemaURL"}]}`
 
 func TestJSONUnmarshal(t *testing.T) {
 	decoder := &JSONUnmarshaler{}
