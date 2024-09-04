@@ -4,6 +4,7 @@
 package otlpreceiver // import "go.opentelemetry.io/collector/receiver/otlpreceiver"
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"mime"
@@ -12,8 +13,8 @@ import (
 	spb "google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc/status"
 
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/internal/httphelper"
-	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/logs"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metrics"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/trace"
@@ -149,9 +150,15 @@ func readAndCloseBody(resp http.ResponseWriter, req *http.Request, enc encoder) 
 
 // writeError encodes the HTTP error inside a rpc.Status message as required by the OTLP protocol.
 func writeError(w http.ResponseWriter, encoder encoder, err error, statusCode int) {
-	s, ok := status.FromError(err)
-	if ok {
-		statusCode = errors.GetHTTPStatusCodeFromStatus(s)
+	var s *status.Status
+	ce := &consumererror.Error{}
+	if errors.As(err, &ce) {
+		code, ok := ce.HTTPStatus()
+		if ok {
+			statusCode = code
+		} else {
+			s = httphelper.NewStatusFromMsgAndHTTPCode(err.Error(), statusCode)
+		}
 	} else {
 		s = httphelper.NewStatusFromMsgAndHTTPCode(err.Error(), statusCode)
 	}

@@ -5,10 +5,12 @@ package trace // import "go.opentelemetry.io/collector/receiver/otlpreceiver/int
 
 import (
 	"context"
+	"errors"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
-	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
+	otlperrors "go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
@@ -49,7 +51,30 @@ func (r *Receiver) Export(ctx context.Context, req ptraceotlp.ExportRequest) (pt
 	// NonPermanent errors will be converted to codes.Unavailable (equivalent to HTTP 503)
 	// Permanent errors will be converted to codes.InvalidArgument (equivalent to HTTP 400)
 	if err != nil {
-		return ptraceotlp.NewExportResponse(), errors.GetStatusFromError(err)
+		ce := &consumererror.Error{}
+
+		if errors.As(err, &ce) {
+			res := ptraceotlp.NewExportResponse()
+			partialMsg, partialRejected, ok := ce.ExperimentalPartialSuccess()
+
+			if ok {
+				res.PartialSuccess().SetErrorMessage(partialMsg)
+				res.PartialSuccess().SetRejectedSpans(partialRejected)
+			}
+
+			var e error
+			s, ok := ce.GRPCStatus()
+
+			if ok {
+				e = s.Err()
+			} else {
+				e = otlperrors.GetStatusFromError(err)
+			}
+
+			return res, e
+		}
+
+		return ptraceotlp.NewExportResponse(), otlperrors.GetStatusFromError(err)
 	}
 
 	return ptraceotlp.NewExportResponse(), nil

@@ -9,7 +9,6 @@ import (
 	"runtime"
 	"time"
 
-	"go.uber.org/zap"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -86,15 +85,13 @@ func (e *baseExporter) shutdown(context.Context) error {
 func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 	req := ptraceotlp.NewExportRequestFromTraces(td)
 	resp, respErr := e.traceExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
-	if err := processError(respErr); err != nil {
-		return err
-	}
+	partial := partialSuccess{}
 	partialSuccess := resp.PartialSuccess()
-	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedSpans() == 0) {
-		e.settings.Logger.Warn("Partial success response",
-			zap.String("message", resp.PartialSuccess().ErrorMessage()),
-			zap.Int64("dropped_spans", resp.PartialSuccess().RejectedSpans()),
-		)
+	partial.msg = partialSuccess.ErrorMessage()
+	partial.rejected = partialSuccess.RejectedSpans()
+
+	if err := processError(respErr, partial); err != nil {
+		return err
 	}
 	return nil
 }
@@ -102,15 +99,13 @@ func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
 	req := pmetricotlp.NewExportRequestFromMetrics(md)
 	resp, respErr := e.metricExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
-	if err := processError(respErr); err != nil {
-		return err
-	}
+	partial := partialSuccess{}
 	partialSuccess := resp.PartialSuccess()
-	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedDataPoints() == 0) {
-		e.settings.Logger.Warn("Partial success response",
-			zap.String("message", resp.PartialSuccess().ErrorMessage()),
-			zap.Int64("dropped_data_points", resp.PartialSuccess().RejectedDataPoints()),
-		)
+	partial.msg = partialSuccess.ErrorMessage()
+	partial.rejected = partialSuccess.RejectedDataPoints()
+
+	if err := processError(respErr, partial); err != nil {
+		return err
 	}
 	return nil
 }
@@ -118,15 +113,13 @@ func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) erro
 func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 	req := plogotlp.NewExportRequestFromLogs(ld)
 	resp, respErr := e.logExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
-	if err := processError(respErr); err != nil {
-		return err
-	}
+	partial := partialSuccess{}
 	partialSuccess := resp.PartialSuccess()
-	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedLogRecords() == 0) {
-		e.settings.Logger.Warn("Partial success response",
-			zap.String("message", resp.PartialSuccess().ErrorMessage()),
-			zap.Int64("dropped_log_records", resp.PartialSuccess().RejectedLogRecords()),
-		)
+	partial.msg = partialSuccess.ErrorMessage()
+	partial.rejected = partialSuccess.RejectedLogRecords()
+
+	if err := processError(respErr, partial); err != nil {
+		return err
 	}
 	return nil
 }
@@ -138,15 +131,21 @@ func (e *baseExporter) enhanceContext(ctx context.Context) context.Context {
 	return ctx
 }
 
-func processError(err error) error {
-	if err == nil {
+func processError(err error, partial partialSuccess) error {
+	opts := []consumererror.ErrorOption{}
+
+	if !(partial.msg == "" && partial.rejected == 0) {
+		opts = append(opts, consumererror.WithExperimentalPartial(partial.msg, partial.rejected))
+	}
+
+	if err == nil && len(opts) == 0 {
 		// Request is successful, we are done.
 		return nil
 	}
 
 	// We have an error, check gRPC status code.
 	st := status.Convert(err)
-	if st.Code() == codes.OK {
+	if st.Code() == codes.OK && len(opts) == 0 {
 		// Not really an error, still success.
 		return nil
 	}
@@ -156,7 +155,7 @@ func processError(err error) error {
 
 	if !shouldRetry(st.Code(), retryInfo) {
 		// It is not a retryable error, we should not retry.
-		return consumererror.NewPermanent(err)
+		return err
 	}
 
 	// Check if server returned throttling information.
@@ -166,8 +165,7 @@ func processError(err error) error {
 		return exporterhelper.NewThrottleRetry(err, throttleDuration)
 	}
 
-	// Need to retry.
-	return err
+	return exporterhelper.NewThrottleRetry(err, 5*time.Second)
 }
 
 func shouldRetry(code codes.Code, retryInfo *errdetails.RetryInfo) bool {
@@ -206,4 +204,9 @@ func getThrottleDuration(t *errdetails.RetryInfo) time.Duration {
 		return time.Duration(t.RetryDelay.Seconds)*time.Second + time.Duration(t.RetryDelay.Nanos)*time.Nanosecond
 	}
 	return 0
+}
+
+type partialSuccess struct {
+	msg      string
+	rejected int64
 }

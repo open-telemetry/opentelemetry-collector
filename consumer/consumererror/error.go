@@ -25,8 +25,10 @@ import (
 // without backward compatibility
 type Error struct {
 	error
-	httpStatus int
-	grpcStatus *status.Status
+	httpStatus      int
+	grpcStatus      *status.Status
+	partialMsg      string
+	partialRejected int64
 }
 
 var _ error = (*Error)(nil)
@@ -99,6 +101,14 @@ func WithGRPCStatus(status *status.Status) ErrorOption {
 	})
 }
 
+// Experimental function for demonstration purposes only
+func WithExperimentalPartial(msg string, rejected int64) ErrorOption {
+	return errorOptionFunc(func(err *Error) {
+		err.partialMsg = msg
+		err.partialRejected = rejected
+	})
+}
+
 // Error implements the error interface.
 func (e *Error) Error() string {
 	return e.error.Error()
@@ -137,6 +147,11 @@ func (e *Error) GRPCStatus() (*status.Status, bool) {
 	}
 
 	return nil, false
+}
+
+// Experimental function for demonstration purposes only
+func (e *Error) ExperimentalPartialSuccess() (string, int64, bool) {
+	return e.partialMsg, e.partialRejected, e.partialMsg != "" || e.partialRejected != 0
 }
 
 func aggregateStatuses(a int, b int) int {

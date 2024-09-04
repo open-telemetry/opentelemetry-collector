@@ -5,6 +5,7 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 
 import (
 	"context"
+	"errors"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -12,6 +13,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
@@ -60,7 +62,18 @@ func (or *obsReport) startTracesOp(ctx context.Context) context.Context {
 
 // endTracesOp completes the export operation that was started with startTracesOp.
 func (or *obsReport) endTracesOp(ctx context.Context, numSpans int, err error) {
-	numSent, numFailedToSend := toNumItems(numSpans, err)
+	var numSent, numFailedToSend int64
+	ce := &consumererror.Error{}
+
+	if errors.As(err, &ce) {
+		_, partialCount, ok := ce.ExperimentalPartialSuccess()
+
+		if ok {
+			numFailedToSend = partialCount
+			numSent = int64(numSpans) - numFailedToSend
+		}
+	}
+
 	or.recordMetrics(context.WithoutCancel(ctx), component.DataTypeTraces, numSent, numFailedToSend)
 	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentSpansKey, obsmetrics.FailedToSendSpansKey)
 }
