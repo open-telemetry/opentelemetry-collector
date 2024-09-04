@@ -39,5 +39,3 @@ replace go.opentelemetry.io/collector/confmap => ../../confmap
 replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
 
 replace go.opentelemetry.io/collector/component => ../../component
-
-replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
