@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/internal"
 	"go.opentelemetry.io/collector/exporter/internal/experr"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
@@ -66,7 +67,7 @@ func (rs *retrySender) Shutdown(context.Context) error {
 }
 
 // send implements the requestSender interface
-func (rs *retrySender) send(ctx context.Context, req Request) error {
+func (rs *retrySender) send(ctx context.Context, req exporter.Request) error {
 	// Do not use NewExponentialBackOff since it calls Reset and the code here must
 	// call Reset after changing the InitialInterval (this saves an unnecessary call to Now).
 	expBackoff := backoff.ExponentialBackOff{
@@ -96,7 +97,7 @@ func (rs *retrySender) send(ctx context.Context, req Request) error {
 			return fmt.Errorf("not retryable error: %w", err)
 		}
 
-		req = extractPartialRequest(req, err)
+		req = internal.ExtractPartialRequest(req, err)
 
 		backoffDelay := expBackoff.NextBackOff()
 		if backoffDelay == backoff.Stop {

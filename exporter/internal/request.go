@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporterhelper"
+package internal // import "go.opentelemetry.io/collector/exporter/internal"
 
 import (
 	"context"
@@ -34,7 +34,7 @@ type RequestErrorHandler interface {
 
 // extractPartialRequest returns a new Request that may contain the items left to be sent
 // if only some items failed to process and can be retried. Otherwise, it returns the original Request.
-func extractPartialRequest(req Request, err error) Request {
+func ExtractPartialRequest(req Request, err error) Request {
 	if errReq, ok := req.(RequestErrorHandler); ok {
 		return errReq.OnError(err)
 	}

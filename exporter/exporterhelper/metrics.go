@@ -26,15 +26,15 @@ type metricsRequest struct {
 	pusher consumer.ConsumeMetricsFunc
 }
 
-func newMetricsRequest(md pmetric.Metrics, pusher consumer.ConsumeMetricsFunc) Request {
+func newMetricsRequest(md pmetric.Metrics, pusher consumer.ConsumeMetricsFunc) exporter.Request {
 	return &metricsRequest{
 		md:     md,
 		pusher: pusher,
 	}
 }
 
-func newMetricsRequestUnmarshalerFunc(pusher consumer.ConsumeMetricsFunc) exporterqueue.Unmarshaler[Request] {
-	return func(bytes []byte) (Request, error) {
+func newMetricsRequestUnmarshalerFunc(pusher consumer.ConsumeMetricsFunc) exporterqueue.Unmarshaler[exporter.Request] {
+	return func(bytes []byte) (exporter.Request, error) {
 		metrics, err := metricsUnmarshaler.UnmarshalMetrics(bytes)
 		if err != nil {
 			return nil, err
@@ -43,11 +43,11 @@ func newMetricsRequestUnmarshalerFunc(pusher consumer.ConsumeMetricsFunc) export
 	}
 }
 
-func metricsRequestMarshaler(req Request) ([]byte, error) {
+func metricsRequestMarshaler(req exporter.Request) ([]byte, error) {
 	return metricsMarshaler.MarshalMetrics(req.(*metricsRequest).md)
 }
 
-func (req *metricsRequest) OnError(err error) Request {
+func (req *metricsRequest) OnError(err error) exporter.Request {
 	var metricsError consumererror.Metrics
 	if errors.As(err, &metricsError) {
 		return newMetricsRequest(metricsError.Data(), req.pusher)
@@ -92,11 +92,11 @@ func NewMetricsExporter(
 // RequestFromMetricsFunc converts pdata.Metrics into a user-defined request.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-type RequestFromMetricsFunc func(context.Context, pmetric.Metrics) (Request, error)
+type RequestFromMetricsFunc func(context.Context, pmetric.Metrics) (exporter.Request, error)
 
 // requestFromMetrics returns a RequestFromMetricsFunc that converts pdata.Metrics into a Request.
 func requestFromMetrics(pusher consumer.ConsumeMetricsFunc) RequestFromMetricsFunc {
-	return func(_ context.Context, md pmetric.Metrics) (Request, error) {
+	return func(_ context.Context, md pmetric.Metrics) (exporter.Request, error) {
 		return newMetricsRequest(md, pusher), nil
 	}
 }
@@ -153,7 +153,7 @@ func newMetricsSenderWithObservability(obsrep *obsReport) requestSender {
 	return &metricsSenderWithObservability{obsrep: obsrep}
 }
 
-func (mewo *metricsSenderWithObservability) send(ctx context.Context, req Request) error {
+func (mewo *metricsSenderWithObservability) send(ctx context.Context, req exporter.Request) error {
 	c := mewo.obsrep.startMetricsOp(ctx)
 	numMetricDataPoints := req.ItemsCount()
 	err := mewo.nextSender.send(c, req)

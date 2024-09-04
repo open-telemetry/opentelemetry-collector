@@ -7,12 +7,13 @@ import (
 	"context"
 	"errors"
 
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
 // mergeLogs merges two logs requests into one.
-func mergeLogs(_ context.Context, r1 Request, r2 Request) (Request, error) {
+func mergeLogs(_ context.Context, r1 exporter.Request, r2 exporter.Request) (exporter.Request, error) {
 	lr1, ok1 := r1.(*logsRequest)
 	lr2, ok2 := r2.(*logsRequest)
 	if !ok1 || !ok2 {
@@ -23,13 +24,13 @@ func mergeLogs(_ context.Context, r1 Request, r2 Request) (Request, error) {
 }
 
 // mergeSplitLogs splits and/or merges the logs into multiple requests based on the MaxSizeConfig.
-func mergeSplitLogs(_ context.Context, cfg exporterbatcher.MaxSizeConfig, r1 Request, r2 Request) ([]Request, error) {
+func mergeSplitLogs(_ context.Context, cfg exporterbatcher.MaxSizeConfig, r1 exporter.Request, r2 exporter.Request) ([]exporter.Request, error) {
 	var (
-		res          []Request
+		res          []exporter.Request
 		destReq      *logsRequest
 		capacityLeft = cfg.MaxSizeItems
 	)
-	for _, req := range []Request{r1, r2} {
+	for _, req := range []exporter.Request{r1, r2} {
 		if req == nil {
 			continue
 		}

@@ -20,18 +20,19 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
-func mockRequestUnmarshaler(mr Request) exporterqueue.Unmarshaler[Request] {
-	return func([]byte) (Request, error) {
+func mockRequestUnmarshaler(mr exporter.Request) exporterqueue.Unmarshaler[exporter.Request] {
+	return func([]byte) (exporter.Request, error) {
 		return mr, nil
 	}
 }
 
-func mockRequestMarshaler(Request) ([]byte, error) {
+func mockRequestMarshaler(exporter.Request) ([]byte, error) {
 	return []byte("mockRequest"), nil
 }
 
@@ -274,7 +275,7 @@ func (mer *mockErrorRequest) Export(context.Context) error {
 	return errors.New("transient error")
 }
 
-func (mer *mockErrorRequest) OnError(error) Request {
+func (mer *mockErrorRequest) OnError(error) exporter.Request {
 	return mer
 }
 
@@ -282,7 +283,7 @@ func (mer *mockErrorRequest) ItemsCount() int {
 	return 7
 }
 
-func newErrorRequest() Request {
+func newErrorRequest() exporter.Request {
 	return &mockErrorRequest{}
 }
 
@@ -306,7 +307,7 @@ func (m *mockRequest) Export(ctx context.Context) error {
 	return ctx.Err()
 }
 
-func (m *mockRequest) OnError(error) Request {
+func (m *mockRequest) OnError(error) exporter.Request {
 	return &mockRequest{
 		cnt:          1,
 		consumeError: nil,
@@ -347,7 +348,7 @@ func newObservabilityConsumerSender(*obsReport) requestSender {
 	}
 }
 
-func (ocs *observabilityConsumerSender) send(ctx context.Context, req Request) error {
+func (ocs *observabilityConsumerSender) send(ctx context.Context, req exporter.Request) error {
 	err := ocs.nextSender.send(ctx, req)
 	if err != nil {
 		ocs.droppedItemsCount.Add(int64(req.ItemsCount()))

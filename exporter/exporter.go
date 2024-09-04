@@ -22,6 +22,8 @@ type Logs = internal.Logs
 // Settings configures exporter creators.
 type Settings = internal.Settings
 
+type Request = internal.Request
+
 // Factory is factory interface for exporters.
 //
 // This interface cannot be directly implemented. Implementations must

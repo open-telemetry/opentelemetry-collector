@@ -26,15 +26,15 @@ type logsRequest struct {
 	pusher consumer.ConsumeLogsFunc
 }
 
-func newLogsRequest(ld plog.Logs, pusher consumer.ConsumeLogsFunc) Request {
+func newLogsRequest(ld plog.Logs, pusher consumer.ConsumeLogsFunc) exporter.Request {
 	return &logsRequest{
 		ld:     ld,
 		pusher: pusher,
 	}
 }
 
-func newLogsRequestUnmarshalerFunc(pusher consumer.ConsumeLogsFunc) exporterqueue.Unmarshaler[Request] {
-	return func(bytes []byte) (Request, error) {
+func newLogsRequestUnmarshalerFunc(pusher consumer.ConsumeLogsFunc) exporterqueue.Unmarshaler[exporter.Request] {
+	return func(bytes []byte) (exporter.Request, error) {
 		logs, err := logsUnmarshaler.UnmarshalLogs(bytes)
 		if err != nil {
 			return nil, err
@@ -43,11 +43,11 @@ func newLogsRequestUnmarshalerFunc(pusher consumer.ConsumeLogsFunc) exporterqueu
 	}
 }
 
-func logsRequestMarshaler(req Request) ([]byte, error) {
+func logsRequestMarshaler(req exporter.Request) ([]byte, error) {
 	return logsMarshaler.MarshalLogs(req.(*logsRequest).ld)
 }
 
-func (req *logsRequest) OnError(err error) Request {
+func (req *logsRequest) OnError(err error) exporter.Request {
 	var logError consumererror.Logs
 	if errors.As(err, &logError) {
 		return newLogsRequest(logError.Data(), req.pusher)
@@ -92,11 +92,11 @@ func NewLogsExporter(
 // RequestFromLogsFunc converts plog.Logs data into a user-defined request.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-type RequestFromLogsFunc func(context.Context, plog.Logs) (Request, error)
+type RequestFromLogsFunc func(context.Context, plog.Logs) (exporter.Request, error)
 
 // requestFromLogs returns a RequestFromLogsFunc that converts plog.Logs into a Request.
 func requestFromLogs(pusher consumer.ConsumeLogsFunc) RequestFromLogsFunc {
-	return func(_ context.Context, ld plog.Logs) (Request, error) {
+	return func(_ context.Context, ld plog.Logs) (exporter.Request, error) {
 		return newLogsRequest(ld, pusher), nil
 	}
 }
@@ -153,7 +153,7 @@ func newLogsExporterWithObservability(obsrep *obsReport) requestSender {
 	return &logsExporterWithObservability{obsrep: obsrep}
 }
 
-func (lewo *logsExporterWithObservability) send(ctx context.Context, req Request) error {
+func (lewo *logsExporterWithObservability) send(ctx context.Context, req exporter.Request) error {
 	c := lewo.obsrep.startLogsOp(ctx)
 	numLogRecords := req.ItemsCount()
 	err := lewo.nextSender.send(c, req)

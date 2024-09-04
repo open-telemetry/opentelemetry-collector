@@ -79,7 +79,7 @@ func TestQueueOptionsWithRequestExporter(t *testing.T) {
 	_, err = newBaseExporter(exportertest.NewNopSettings(), defaultDataType, newNoopObsrepSender,
 		withMarshaler(mockRequestMarshaler), withUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
 		WithRetry(configretry.NewDefaultBackOffConfig()),
-		WithRequestQueue(exporterqueue.NewDefaultConfig(), exporterqueue.NewMemoryQueueFactory[Request]()))
+		WithRequestQueue(exporterqueue.NewDefaultConfig(), exporterqueue.NewMemoryQueueFactory[exporter.Request]()))
 	require.Error(t, err)
 }
 
