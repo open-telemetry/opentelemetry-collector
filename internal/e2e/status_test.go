@@ -279,17 +279,17 @@ func (t *testExtension) ComponentStatusChanged(
 	}
 }
 
-// NotifyConfig implements the extension.ConfigWatcher interface.
+// NotifyConfig implements the extensioncapabilities.ConfigWatcher interface.
 func (t *testExtension) NotifyConfig(_ context.Context, _ *confmap.Conf) error {
 	return nil
 }
 
-// Ready implements the extension.PipelineWatcher interface.
+// Ready implements the extensioncapabilities.PipelineWatcher interface.
 func (t *testExtension) Ready() error {
 	return nil
 }
 
-// NotReady implements the extension.PipelineWatcher interface.
+// NotReady implements the extensioncapabilities.PipelineWatcher interface.
 func (t *testExtension) NotReady() error {
 	return nil
 }
