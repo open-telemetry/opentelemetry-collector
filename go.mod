@@ -11,7 +11,7 @@ module go.opentelemetry.io/collector
 go 1.22.0
 
 require (
-	github.com/shirou/gopsutil/v4 v4.24.7
+	github.com/shirou/gopsutil/v4 v4.24.8
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.108.1
 	go.opentelemetry.io/collector/component/componentstatus v0.108.1
