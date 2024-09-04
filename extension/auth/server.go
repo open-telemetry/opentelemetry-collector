@@ -36,7 +36,15 @@ type defaultServer struct {
 }
 
 // ServerOption represents the possible options for NewServer.
-type ServerOption func(*defaultServer)
+type ServerOption interface {
+	apply(*defaultServer)
+}
+
+type serverOptionFunc func(*defaultServer)
+
+func (of serverOptionFunc) apply(e *defaultServer) {
+	of(e)
+}
 
 // ServerAuthenticateFunc defines the signature for the function responsible for performing the authentication based
 // on the given sources map. See Server.Authenticate.
@@ -51,25 +59,25 @@ func (f ServerAuthenticateFunc) Authenticate(ctx context.Context, sources map[st
 
 // WithServerAuthenticate specifies which function to use to perform the authentication.
 func WithServerAuthenticate(authFunc ServerAuthenticateFunc) ServerOption {
-	return func(o *defaultServer) {
+	return serverOptionFunc(func(o *defaultServer) {
 		o.ServerAuthenticateFunc = authFunc
-	}
+	})
 }
 
 // WithServerStart overrides the default `Start` function for a component.Component.
 // The default always returns nil.
 func WithServerStart(startFunc component.StartFunc) ServerOption {
-	return func(o *defaultServer) {
+	return serverOptionFunc(func(o *defaultServer) {
 		o.StartFunc = startFunc
-	}
+	})
 }
 
 // WithServerShutdown overrides the default `Shutdown` function for a component.Component.
 // The default always returns nil.
 func WithServerShutdown(shutdownFunc component.ShutdownFunc) ServerOption {
-	return func(o *defaultServer) {
+	return serverOptionFunc(func(o *defaultServer) {
 		o.ShutdownFunc = shutdownFunc
-	}
+	})
 }
 
 // NewServer returns a Server configured with the provided options.
@@ -77,7 +85,7 @@ func NewServer(options ...ServerOption) Server {
 	bc := &defaultServer{}
 
 	for _, op := range options {
-		op(bc)
+		op.apply(bc)
 	}
 
 	return bc
