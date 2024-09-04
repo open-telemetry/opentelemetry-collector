@@ -15,5 +15,5 @@ const MergeComponentsAppendID = "confmap.MergeComponentsAppend"
 
 var MergeComponentsAppend = featuregate.GlobalRegistry().MustRegister(MergeComponentsAppendID,
 	featuregate.StageAlpha,
-	featuregate.WithRegisterFromVersion("v0.105.0"),
+	featuregate.WithRegisterFromVersion("v0.109.0"),
 	featuregate.WithRegisterDescription("Overrides default koanf merging strategy and combines slices."))
