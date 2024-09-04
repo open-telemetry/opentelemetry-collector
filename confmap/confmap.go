@@ -25,25 +25,9 @@ const (
 	KeyDelimiter = "::"
 )
 
-type option struct {
-	mergeFunc MergeFunc
-}
-
-type opts func(*option)
-
-func WithMergeFunc(f MergeFunc) opts {
-	return func(o *option) {
-		o.mergeFunc = f
-	}
-}
-
 // New creates a new empty confmap.Conf instance.
-func New(options ...opts) *Conf {
-	o := option{}
-	for _, opt := range options {
-		opt(&o)
-	}
-	return &Conf{k: koanf.New(KeyDelimiter), mergeFunc: o.mergeFunc}
+func New() *Conf {
+	return &Conf{k: koanf.New(KeyDelimiter)}
 }
 
 // NewFromStringMap creates a confmap.Conf from a map[string]any.
@@ -63,8 +47,6 @@ type Conf struct {
 	// This avoids running into an infinite recursion where Unmarshaler.Unmarshal and
 	// Conf.Unmarshal would call each other.
 	skipTopLevelUnmarshaler bool
-
-	mergeFunc MergeFunc
 }
 
 // AllKeys returns all keys holding a value, regardless of where they are set.
