@@ -33,3 +33,5 @@ replace go.opentelemetry.io/collector/confmap/provider/fileprovider => ../../pro
 replace go.opentelemetry.io/collector/confmap/provider/envprovider => ../../provider/envprovider
 
 replace go.opentelemetry.io/collector/config/configopaque => ../../../config/configopaque
+
+replace go.opentelemetry.io/collector/featuregate => ../../../featuregate
