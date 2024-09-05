@@ -62,22 +62,19 @@ func (vcq *sizedChannel[T]) push(el T, size int64, callback func() error) error 
 // pop removes the element from the queue and returns it.
 // The call blocks until there is an item available or the queue is stopped.
 // The function returns true when an item is consumed or false if the queue is stopped and emptied.
-// The callback is called before the element is removed from the queue. It must return the size of the element.
-func (vcq *sizedChannel[T]) pop(callback func(T) (size int64)) (T, bool) {
+func (vcq *sizedChannel[T]) pop() (T, bool) {
 	el, ok := <-vcq.ch
-	if !ok {
-		return el, false
-	}
+	return el, ok
+}
 
-	size := callback(el)
-
+// updateSize updates size. It should be called when an item is removed from the queue.
+func (vcq *sizedChannel[T]) updateSize(deltaSize int64) {
 	// The used size and the channel size might be not in sync with the queue in case it's restored from the disk
 	// because we don't flush the current queue size on the disk on every read/write.
 	// In that case we need to make sure it doesn't go below 0.
-	if vcq.used.Add(-size) < 0 {
+	if vcq.used.Add(deltaSize) < 0 {
 		vcq.used.Store(0)
 	}
-	return el, true
 }
 
 // syncSize updates the used size to 0 if the queue is empty.

@@ -193,25 +193,14 @@ func (pq *persistentQueue[T]) restoreQueueSizeFromStorage(ctx context.Context) (
 // The function returns true when an item is consumed or false if the queue is stopped.
 func (pq *persistentQueue[T]) Consume(consumeFunc func(context.Context, T) error) bool {
 	for {
-		var (
-			req                  T
-			onProcessingFinished func(error)
-			consumed             bool
-		)
-
 		// If we are stopped we still process all the other events in the channel before, but we
 		// return fast in the `getNextItem`, so we will free the channel fast and get to the stop.
-		_, ok := pq.sizedChannel.pop(func(permanentQueueEl) int64 {
-			req, onProcessingFinished, consumed = pq.getNextItem(context.Background())
-			if !consumed {
-				return 0
-			}
-			return pq.set.Sizer.Sizeof(req)
-		})
-		if !ok {
+		if _, ok := pq.sizedChannel.pop(); !ok {
 			return false
 		}
-		if consumed {
+
+		if req, onProcessingFinished, ok := pq.getNextItem(context.Background()); ok {
+			pq.sizedChannel.updateSize(-pq.set.Sizer.Sizeof(req))
 			onProcessingFinished(consumeFunc(context.Background(), req))
 			return true
 		}

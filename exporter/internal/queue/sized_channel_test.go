@@ -27,18 +27,21 @@ func TestSizedCapacityChannel(t *testing.T) {
 	assert.Error(t, q.push(4, 4, nil))
 	assert.Equal(t, 4, q.Size())
 
-	el, ok := q.pop(func(el int) int64 { return int64(el) })
+	el, ok := q.pop()
+	q.updateSize(-int64(el))
 	assert.Equal(t, 1, el)
 	assert.True(t, ok)
 	assert.Equal(t, 3, q.Size())
 
-	el, ok = q.pop(func(el int) int64 { return int64(el) })
+	el, ok = q.pop()
+	q.updateSize(-int64(el))
 	assert.Equal(t, 3, el)
 	assert.True(t, ok)
 	assert.Equal(t, 0, q.Size())
 
 	q.shutdown()
-	el, ok = q.pop(func(el int) int64 { return int64(el) })
+	el, ok = q.pop()
+	q.updateSize(-int64(el))
 	assert.False(t, ok)
 	assert.Equal(t, 0, el)
 }
