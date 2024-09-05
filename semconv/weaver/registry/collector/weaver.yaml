@@ -18,7 +18,7 @@ templates:
   - pattern: trace.go.j2
     filter: >
       .groups
-      | map(select(.type == "trace"))
+      | map(select(.type == "span"))
       | map(. + {root_namespace: (if .id | index(".") then .id | split(".") | .[1] else "other" end)})
       | sort_by(.root_namespace)
     file_name: generated_trace.go

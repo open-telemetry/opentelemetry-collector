@@ -44,7 +44,7 @@ package semconv
 
 {% for group in ctx %}
 {% if group.attributes | length > 0 %}
-{# TODO - we're grouping by registry namespace, not attribute gorup, so we lose group docs #}
+{# TODO - we're grouping by registry namespace, not attribute group, so we lose group docs #}
 {{ ["Namespace: " ~ group.root_namespace] | comment }}
 const (
 {% for attribute in group.attributes %}
