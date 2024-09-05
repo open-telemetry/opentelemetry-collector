@@ -44,19 +44,27 @@ var profilesOTLP = func() Profiles {
 	pc.Attributes().PutStr("hello", "world")
 	pc.Attributes().PutStr("foo", "bar")
 	pc.SetDroppedAttributesCount(1)
+
+	pro := pc.Profile()
 	// Add sample type
-	st := pc.Profile().SampleType().AppendEmpty()
+	st := pro.SampleType().AppendEmpty()
 	st.SetType(1)
 	st.SetUnit(2)
 	// Add samples
-	s := pc.Profile().Sample().AppendEmpty()
+	s := pro.Sample().AppendEmpty()
 	s.SetLocationsStartIndex(1)
 	s.SetLocationsLength(10)
 	s.SetStacktraceIdIndex(1)
 	s.SetLink(42)
 	s.Attributes().Append(1)
+	la := s.Label().AppendEmpty()
+	la.SetKey(1)
+	la.SetStr(2)
+	la.SetNum(3)
+	la.SetNumUnit(4)
+	s.TimestampsUnixNano().Append(12345)
 	// Add mappings
-	m := pc.Profile().Mapping().AppendEmpty()
+	m := pro.Mapping().AppendEmpty()
 	m.SetID(1)
 	m.SetMemoryStart(2)
 	m.SetMemoryLimit(3)
@@ -71,7 +79,7 @@ var profilesOTLP = func() Profiles {
 	m.SetHasLineNumbers(true)
 	m.SetHasInlineFrames(true)
 	// Add location
-	l := pc.Profile().Location().AppendEmpty()
+	l := pro.Location().AppendEmpty()
 	l.SetID(2)
 	l.SetMappingIndex(3)
 	l.SetAddress(4)
@@ -83,27 +91,42 @@ var profilesOTLP = func() Profiles {
 	li.SetFunctionIndex(1)
 	li.SetLine(2)
 	li.SetColumn(3)
-	pc.Profile().LocationIndices().Append(1)
+	pro.LocationIndices().Append(1)
 	// Add function
-	f := pc.Profile().Function().AppendEmpty()
-	f.SetName(3)
+	f := pro.Function().AppendEmpty()
+	f.SetID(1)
+	f.SetName(2)
+	f.SetSystemName(3)
+	f.SetFilename(4)
+	f.SetStartLine(5)
 	// Add attribute table
-	at := pc.Profile().AttributeTable()
+	at := pro.AttributeTable()
 	at.PutInt("answer", 42)
 	// Add attribute units
-	au := pc.Profile().AttributeUnits().AppendEmpty()
+	au := pro.AttributeUnits().AppendEmpty()
+	au.SetAttributeKey(1)
 	au.SetUnit(5)
 	// Add link table
-	lt := pc.Profile().LinkTable().AppendEmpty()
+	lt := pro.LinkTable().AppendEmpty()
 	lt.SetTraceID(traceID)
 	lt.SetSpanID(spanID)
 	// Add string table
-	pc.Profile().StringTable().Append("foobar")
+	pro.StringTable().Append("foobar")
+	pro.SetDropFrames(1)
+	pro.SetKeepFrames(2)
+	pro.SetStartTime(1234)
+	pro.SetDuration(5678)
+	pro.PeriodType().SetType(1)
+	pro.PeriodType().SetUnit(2)
+	pro.SetPeriod(3)
+	pro.Comment().Append(1)
+	pro.Comment().Append(2)
+	pro.SetDefaultSampleType(4)
 
 	return pd
 }()
 
-var profilesJSON = `{"resourceProfiles":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}},{"key":"service.name","value":{"stringValue":"testService"}}],"droppedAttributesCount":1},"scopeProfiles":[{"scope":{"name":"scope name","version":"scope version"},"profiles":[{"profileId":"0102030405060708090a0b0c0d0e0f10","startTimeUnixNano":"1684617382541971000","endTimeUnixNano":"1684623646539558000","attributes":[{"key":"hello","value":{"stringValue":"world"}},{"key":"foo","value":{"stringValue":"bar"}}],"droppedAttributesCount":1,"profile":{"sampleType":[{"type":"1","unit":"2"}],"sample":[{"locationsStartIndex":"1","locationsLength":"10","stacktraceIdIndex":1,"attributes":["1"],"link":"42"}],"mapping":[{"id":"1","memoryStart":"2","memoryLimit":"3","fileOffset":"4","filename":"5","buildId":"6","attributes":["7","8"],"hasFunctions":true,"hasFilenames":true,"hasLineNumbers":true,"hasInlineFrames":true}],"location":[{"id":"2","mappingIndex":"3","address":"4","line":[{"functionIndex":"1","line":"2","column":"3"}],"isFolded":true,"typeIndex":5,"attributes":["6","7"]}],"locationIndices":["1"],"function":[{"name":"3"}],"attributeTable":[{"key":"answer","value":{"intValue":"42"}}],"attributeUnits":[{"unit":"5"}],"linkTable":[{"traceId":"0102030405060708090a0b0c0d0e0f10","spanId":"1112131415161718"}],"stringTable":["foobar"],"periodType":{}}}],"schemaUrl":"schemaURL"}],"schemaUrl":"schemaURL"}]}`
+var profilesJSON = `{"resourceProfiles":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}},{"key":"service.name","value":{"stringValue":"testService"}}],"droppedAttributesCount":1},"scopeProfiles":[{"scope":{"name":"scope name","version":"scope version"},"profiles":[{"profileId":"0102030405060708090a0b0c0d0e0f10","startTimeUnixNano":"1684617382541971000","endTimeUnixNano":"1684623646539558000","attributes":[{"key":"hello","value":{"stringValue":"world"}},{"key":"foo","value":{"stringValue":"bar"}}],"droppedAttributesCount":1,"profile":{"sampleType":[{"type":"1","unit":"2"}],"sample":[{"locationsStartIndex":"1","locationsLength":"10","stacktraceIdIndex":1,"label":[{"key":"1","str":"2","num":"3","numUnit":"4"}],"attributes":["1"],"link":"42","timestampsUnixNano":["12345"]}],"mapping":[{"id":"1","memoryStart":"2","memoryLimit":"3","fileOffset":"4","filename":"5","buildId":"6","attributes":["7","8"],"hasFunctions":true,"hasFilenames":true,"hasLineNumbers":true,"hasInlineFrames":true}],"location":[{"id":"2","mappingIndex":"3","address":"4","line":[{"functionIndex":"1","line":"2","column":"3"}],"isFolded":true,"typeIndex":5,"attributes":["6","7"]}],"locationIndices":["1"],"function":[{"id":"1","name":"2","systemName":"3","filename":"4","startLine":"5"}],"attributeTable":[{"key":"answer","value":{"intValue":"42"}}],"attributeUnits":[{"attributeKey":"1","unit":"5"}],"linkTable":[{"traceId":"0102030405060708090a0b0c0d0e0f10","spanId":"1112131415161718"}],"stringTable":["foobar"],"dropFrames":"1","keepFrames":"2","timeNanos":"1234","durationNanos":"5678","periodType":{"type":"1","unit":"2"},"period":"3","comment":["1","2"],"defaultSampleType":"4"}}],"schemaUrl":"schemaURL"}],"schemaUrl":"schemaURL"}]}`
 
 func TestJSONUnmarshal(t *testing.T) {
 	decoder := &JSONUnmarshaler{}
