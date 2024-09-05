@@ -539,12 +539,12 @@ func TestPersistentQueueStartWithNonDispatchedConcurrent(t *testing.T) {
 	pq := createTestPersistentQueueWithItemsCapacity(t, ext, 250)
 
 	proWg := sync.WaitGroup{}
-	for j := 0; j < 50; j++ {
+	for j := 0; j < 2; j++ {
 		proWg.Add(1)
 		go func() {
 			defer proWg.Done()
 			// Put in items up to capacity
-			for i := 0; i < 10; i++ {
+			for i := 0; i < 250; i++ {
 				for {
 					// retry infinitely so the exact amount of items are added to the queue eventually
 					if err := pq.Offer(context.Background(), req); err == nil {
@@ -557,11 +557,11 @@ func TestPersistentQueueStartWithNonDispatchedConcurrent(t *testing.T) {
 	}
 
 	conWg := sync.WaitGroup{}
-	for j := 0; j < 50; j++ {
+	for j := 0; j < 2; j++ {
 		conWg.Add(1)
 		go func() {
 			defer conWg.Done()
-			for i := 0; i < 10; i++ {
+			for i := 0; i < 250; i++ {
 				require.True(t, pq.Consume(func(context.Context, tracesRequest) error { return nil }))
 			}
 		}()
