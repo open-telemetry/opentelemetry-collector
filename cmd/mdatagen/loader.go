@@ -122,7 +122,7 @@ type metric struct {
 	Sum *sum `mapstructure:"sum,omitempty"`
 	// Gauge stores metadata for gauge metric type
 	Gauge *gauge `mapstructure:"gauge,omitempty"`
-	// Histogram stores metadata for histogram metric type
+	// Gauge stores metadata for gauge metric type
 	Histogram *histogram `mapstructure:"histogram,omitempty"`
 
 	// Attributes is the list of attributes that the metric emits.
