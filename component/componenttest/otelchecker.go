@@ -97,6 +97,25 @@ func checkIntSum(reader *sdkmetric.ManualReader, expectedMetric string, expected
 	return nil
 }
 
+func getHistogramDataPoint[N int64 | float64](reader *sdkmetric.ManualReader, expectedName string, expectedAttrs attribute.Set) (metricdata.HistogramDataPoint[N], error) {
+	m, err := getMetric(reader, expectedName)
+	if err != nil {
+		return metricdata.HistogramDataPoint[N]{}, err
+	}
+
+	switch a := m.Data.(type) {
+	case metricdata.Histogram[N]:
+		for _, dp := range a.DataPoints {
+			if expectedAttrs.Equals(&dp.Attributes) {
+				return dp, nil
+			}
+		}
+		return metricdata.HistogramDataPoint[N]{}, fmt.Errorf("metric '%s' doesn't have a histogram data point with the given attributes: %s", expectedName, expectedAttrs.Encoded(attribute.DefaultEncoder()))
+	default:
+		return metricdata.HistogramDataPoint[N]{}, fmt.Errorf("unknown metric type: %T", a)
+	}
+}
+
 func getSumDataPoint[N int64 | float64](reader *sdkmetric.ManualReader, expectedName string, expectedAttrs attribute.Set) (metricdata.DataPoint[N], error) {
 	m, err := getMetric(reader, expectedName)
 	if err != nil {

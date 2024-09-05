@@ -5,10 +5,10 @@ package componenttest // import "go.opentelemetry.io/collector/component/compone
 
 import (
 	"context"
-
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
@@ -112,6 +112,18 @@ func (tts *TestTelemetry) CheckReceiverMetrics(protocol string, acceptedMetricPo
 // Note: SetupTelemetry must be called before this function.
 func (tts *TestTelemetry) CheckScraperMetrics(receiver component.ID, scraper component.ID, scrapedMetricPoints, erroredMetricPoints int64) error {
 	return checkScraperMetrics(tts.reader, receiver, scraper, scrapedMetricPoints, erroredMetricPoints)
+}
+
+func (tts *TestTelemetry) GetIntSumDataPoint(expectedName string, expectedAttrs attribute.Set) (metricdata.DataPoint[int64], error) {
+	return getSumDataPoint[int64](tts.reader, expectedName, expectedAttrs)
+}
+
+func (tts *TestTelemetry) GetIntGaugeDataPoint(expectedName string, expectedAttrs attribute.Set) (metricdata.DataPoint[int64], error) {
+	return getGaugeDataPoint[int64](tts.reader, expectedName, expectedAttrs)
+}
+
+func (tts *TestTelemetry) GetFloatHistogramDataPoint(expectedName string, expectedAttrs attribute.Set) (metricdata.HistogramDataPoint[float64], error) {
+	return getHistogramDataPoint[float64](tts.reader, expectedName, expectedAttrs)
 }
 
 // Shutdown unregisters any views and shuts down the SpanRecorder

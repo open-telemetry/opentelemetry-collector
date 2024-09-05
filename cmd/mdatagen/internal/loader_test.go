@@ -250,6 +250,7 @@ func TestLoadMetadata(t *testing.T) {
 								MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeInt},
 								Mono:            Mono{Monotonic: true},
 							},
+							Attributes: []attributeName{"string_attr", "overridden_int_attr", "enum_attr", "boolean_attr"},
 						},
 						"request_duration": {
 							Enabled:     true,
@@ -260,6 +261,17 @@ func TestLoadMetadata(t *testing.T) {
 								MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
 								Boundaries:      []float64{1, 10, 100},
 							},
+							Attributes: []attributeName{"overridden_int_attr"},
+						},
+						"request_duration_no_attrs": {
+							Enabled:     true,
+							Description: "Duration of request. Test mdatagen without any attributes",
+							Unit:        strPtr("s"),
+							Histogram: &histogram{
+								MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
+								Boundaries:      []float64{1, 10, 100},
+							},
+							Attributes: []attributeName{},
 						},
 						"process_runtime_total_alloc_bytes": {
 							Enabled:     true,
@@ -273,6 +285,7 @@ func TestLoadMetadata(t *testing.T) {
 								},
 								Async: true,
 							},
+							Attributes: []attributeName{"string_attr", "overridden_int_attr", "enum_attr"},
 						},
 						"queue_length": {
 							Enabled:               true,
@@ -285,6 +298,17 @@ func TestLoadMetadata(t *testing.T) {
 									ValueType: pmetric.NumberDataPointValueTypeInt,
 								},
 								Async: true,
+							},
+						},
+						"disabled_metric": {
+							Enabled:     false,
+							Description: "This metric is disabled by default",
+							Unit:        strPtr("{items}"),
+							Optional:    false,
+							Gauge: &gauge{
+								MetricValueType: MetricValueType{
+									ValueType: pmetric.NumberDataPointValueTypeInt,
+								},
 							},
 						},
 					},
