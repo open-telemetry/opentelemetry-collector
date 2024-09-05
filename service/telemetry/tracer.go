@@ -30,24 +30,6 @@ var (
 	errUnsupportedPropagator = errors.New("unsupported trace propagator")
 )
 
-func attributes(set Settings, cfg Config) map[string]interface{} {
-	attrs := map[string]interface{}{
-		string(semconv.ServiceNameKey):    set.BuildInfo.Command,
-		string(semconv.ServiceVersionKey): set.BuildInfo.Version,
-	}
-	for k, v := range cfg.Resource {
-		if v != nil {
-			attrs[k] = *v
-		}
-
-		// the new value is nil, delete the existing key
-		if _, ok := attrs[k]; ok && v == nil {
-			delete(attrs, k)
-		}
-	}
-	return attrs
-}
-
 type noopNoContextTracer struct {
 	embedded.Tracer
 }
