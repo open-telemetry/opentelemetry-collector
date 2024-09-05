@@ -159,6 +159,16 @@ func TestUnmarshalJsoniterProfileData(t *testing.T) {
 	assert.Equal(t, 1, val.ResourceProfiles().Len())
 }
 
+func TestUnmarshalJsoniterProfileInvalidProfileIDField(t *testing.T) {
+	jsonStr := `{"profile_id":"--"}`
+	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	NewProfileContainer().unmarshalJsoniter(iter)
+	if assert.Error(t, iter.Error) {
+		assert.Contains(t, iter.Error.Error(), "parse profile_id")
+	}
+}
+
 func TestUnmarshalJsoniterResourceProfiles(t *testing.T) {
 	jsonStr := `{"extra":"", "resource": {}, "scopeProfiles": []}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
@@ -187,6 +197,26 @@ func TestUnmarshalJsoniterSample(t *testing.T) {
 	val.unmarshalJsoniter(iter)
 	assert.NoError(t, iter.Error)
 	assert.Equal(t, NewSample(), val)
+}
+
+func TestUnmarshalJsoniterLinkInvalidTraceIDField(t *testing.T) {
+	jsonStr := `{"trace_id":"--"}`
+	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	NewLink().unmarshalJsoniter(iter)
+	if assert.Error(t, iter.Error) {
+		assert.Contains(t, iter.Error.Error(), "parse trace_id")
+	}
+}
+
+func TestUnmarshalJsoniterSpanLinkInvalidSpanIDField(t *testing.T) {
+	jsonStr := `{"span_id":"--"}`
+	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	NewLink().unmarshalJsoniter(iter)
+	if assert.Error(t, iter.Error) {
+		assert.Contains(t, iter.Error.Error(), "parse span_id")
+	}
 }
 
 func BenchmarkJSONUnmarshal(b *testing.B) {
