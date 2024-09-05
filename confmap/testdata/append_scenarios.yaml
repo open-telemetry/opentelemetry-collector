@@ -75,12 +75,14 @@
     -
         receivers:
             nop:
+                key: val
 
         processors:
             nop:
 
         exporters:
             nop:
+                key: 2
 
         extensions:
             nop:
@@ -98,6 +100,8 @@
 
         exporters:
             nop2:
+            nop:
+                key: updated_value
 
         extensions:
             nop2:
@@ -113,10 +117,12 @@
     receivers:
         nop2:
         nop:
+            key: val
 
     exporters:
         nop2:
         nop:
+            key: updated_value
 
     processors:
         nop:
