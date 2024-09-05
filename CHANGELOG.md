@@ -7,6 +7,44 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.14.1/v0.108.1
+
+### 🧰 Bug fixes 🧰
+
+- `mdatagen`: Fix a missing import in the generated test file (#10969)
+
+## v1.14.0/v0.108.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: Added support for go1.23, bumped the minimum version to 1.22 (#10869)
+- `otelcol`: Remove deprecated `ConfmapProvider` interface. (#10934)
+- `confmap`: Mark `confmap.strictlyTypedInput` as stable (#10552)
+
+### 💡 Enhancements 💡
+
+- `exporter/otlp`: Add batching option to otlp exporter (#8122)
+- `builder`: Add a --skip-new-go-module flag to skip creating a module in the output directory. (#9252)
+- `component`: Add `TelemetrySettings.LeveledMeterProvider` func to replace MetricsLevel in the near future (#10931)
+- `mdatagen`: Add `LeveledMeter` method to mdatagen (#10933)
+- `service`: Adds `level` configuration option to `service::telemetry::trace` to allow users to disable the default TracerProvider (#10892)
+  This replaces the feature gate `service.noopTracerProvider` introduced in v0.107.0
+- `componentstatus`: Add new Reporter interface to define how to report a status via a `component.Host` implementation (#10852)
+- `mdatagen`: support using a different github project in mdatagen README issues list (#10484)
+- `mdatagen`: Updates mdatagen's usage to output a complete command line example, including the metadata.yaml file. (#10886)
+- `extension`: Add ModuleInfo to extension.Settings to allow extensions to access component go module information. (#10876)
+- `confmap`: Mark module as stable (#9379)
+
+### 🧰 Bug fixes 🧰
+
+- `batchprocessor`: Update units for internal telemetry (#10652)
+- `confmap`: Fix bug where an unset env var used with a non-string field resulted in a panic (#10950)
+- `service`: Fix memory leaks during service package shutdown (#9165)
+- `mdatagen`: Update generated telemetry template to only include context import when there are async metrics. (#10883)
+- `mdatagen`: Fixed bug in which setting `SkipLifecycle` & `SkipShutdown` to true would result in a generated file with an unused import `confmaptest` (#10866)
+- `confmap`: Use string representation for field types where all primitive types are strings. (#10937)
+- `otelcol`: Preserve internal representation when unmarshaling component configs (#10552)
+
 ## v1.13.0/v0.107.0
 
 ### 🛑 Breaking changes 🛑

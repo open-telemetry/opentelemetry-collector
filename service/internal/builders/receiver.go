@@ -5,30 +5,15 @@ package builders // import "go.opentelemetry.io/collector/service/internal/build
 
 import (
 	"context"
-	"errors"
 	"fmt"
-
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverprofiles"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
-
-var (
-	errNilNextConsumer = errors.New("nil next Consumer")
-	nopType            = component.MustNewType("nop")
-)
-
-// Receiver is an interface that allows using implementations of the builder
-// from different packages.
-type Receiver interface {
-	CreateTraces(context.Context, receiver.Settings, consumer.Traces) (receiver.Traces, error)
-	CreateMetrics(context.Context, receiver.Settings, consumer.Metrics) (receiver.Metrics, error)
-	CreateLogs(context.Context, receiver.Settings, consumer.Logs) (receiver.Logs, error)
-	Factory(component.Type) component.Factory
-}
 
 // ReceiverBuilder receiver is a helper struct that given a set of Configs and
 // Factories helps with creating receivers.
@@ -100,19 +85,27 @@ func (b *ReceiverBuilder) CreateLogs(ctx context.Context, set receiver.Settings,
 	return f.CreateLogsReceiver(ctx, set, cfg, next)
 }
 
-func (b *ReceiverBuilder) Factory(componentType component.Type) component.Factory {
-	return b.factories[componentType]
+// CreateProfiles creates a Profiles receiver based on the settings and config.
+func (b *ReceiverBuilder) CreateProfiles(ctx context.Context, set receiver.Settings, next consumerprofiles.Profiles) (receiverprofiles.Profiles, error) {
+	if next == nil {
+		return nil, errNilNextConsumer
+	}
+	cfg, existsCfg := b.cfgs[set.ID]
+	if !existsCfg {
+		return nil, fmt.Errorf("receiver %q is not configured", set.ID)
+	}
+
+	f, existsFactory := b.factories[set.ID.Type()]
+	if !existsFactory {
+		return nil, fmt.Errorf("receiver factory not available for: %q", set.ID)
+	}
+
+	logStabilityLevel(set.Logger, f.ProfilesReceiverStability())
+	return f.CreateProfilesReceiver(ctx, set, cfg, next)
 }
 
-// logStabilityLevel logs the stability level of a component. The log level is set to info for
-// undefined, unmaintained, deprecated and development. The log level is set to debug
-// for alpha, beta and stable.
-func logStabilityLevel(logger *zap.Logger, sl component.StabilityLevel) {
-	if sl >= component.StabilityLevelAlpha {
-		logger.Debug(sl.LogMessage())
-	} else {
-		logger.Info(sl.LogMessage())
-	}
+func (b *ReceiverBuilder) Factory(componentType component.Type) component.Factory {
+	return b.factories[componentType]
 }
 
 // NewNopReceiverConfigsAndFactories returns a configuration and factories that allows building a new nop receiver.

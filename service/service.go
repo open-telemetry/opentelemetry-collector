@@ -45,27 +45,28 @@ type Settings struct {
 	// CollectorConf contains the Collector's current configuration
 	CollectorConf *confmap.Conf
 
-	// Receivers builder for receivers.
-	//
-	// Deprecated: [v0.108.0] use the [ReceiversConfigs] and [ReceiversFactories] options
-	// instead.
-	Receivers builders.Receiver
-
 	// Receivers configuration to its builder.
 	ReceiversConfigs   map[component.ID]component.Config
 	ReceiversFactories map[component.Type]receiver.Factory
 
-	// Processors builder for processors.
-	Processors *processor.Builder
+	// Processors configuration to its builder.
+	ProcessorsConfigs   map[component.ID]component.Config
+	ProcessorsFactories map[component.Type]processor.Factory
 
-	// Exporters builder for exporters.
-	Exporters *exporter.Builder
+	// exporters configuration to its builder.
+	ExportersConfigs   map[component.ID]component.Config
+	ExportersFactories map[component.Type]exporter.Factory
 
-	// Connectors builder for connectors.
-	Connectors *connector.Builder
+	// Connectors configuration to its builder.
+	ConnectorsConfigs   map[component.ID]component.Config
+	ConnectorsFactories map[component.Type]connector.Factory
 
 	// Extensions builder for extensions.
-	Extensions *extension.Builder
+	Extensions builders.Extension
+
+	// Extensions configuration to its builder.
+	ExtensionsConfigs   map[component.ID]component.Config
+	ExtensionsFactories map[component.Type]extension.Factory
 
 	// ModuleInfo describes the go module for each component.
 	ModuleInfo extension.ModuleInfo
@@ -90,19 +91,15 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	disableHighCard := obsreportconfig.DisableHighCardinalityMetricsfeatureGate.IsEnabled()
 	extendedConfig := obsreportconfig.UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate.IsEnabled()
 
-	receivers := set.Receivers
-	if receivers == nil {
-		receivers = builders.NewReceiver(set.ReceiversConfigs, set.ReceiversFactories)
-	}
-
 	srv := &Service{
 		buildInfo: set.BuildInfo,
 		host: &graph.Host{
-			Receivers:         receivers,
-			Processors:        set.Processors,
-			Exporters:         set.Exporters,
-			Connectors:        set.Connectors,
-			Extensions:        set.Extensions,
+			Receivers:  builders.NewReceiver(set.ReceiversConfigs, set.ReceiversFactories),
+			Processors: builders.NewProcessor(set.ProcessorsConfigs, set.ProcessorsFactories),
+			Exporters:  builders.NewExporter(set.ExportersConfigs, set.ExportersFactories),
+			Connectors: builders.NewConnector(set.ConnectorsConfigs, set.ConnectorsFactories),
+			Extensions: builders.NewExtension(set.ExtensionsConfigs, set.ExtensionsFactories),
+
 			ModuleInfo:        set.ModuleInfo,
 			BuildInfo:         set.BuildInfo,
 			AsyncErrorChannel: set.AsyncErrorChannel,
@@ -166,7 +163,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		// ignore other errors as they represent invalid state transitions and are considered benign.
 	})
 
-	if err = srv.initGraph(ctx, set, cfg); err != nil {
+	if err = srv.initGraph(ctx, cfg); err != nil {
 		err = multierr.Append(err, srv.shutdownTelemetry(ctx))
 		return nil, err
 	}
@@ -178,7 +175,6 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	}
 
 	if cfg.Telemetry.Metrics.Level != configtelemetry.LevelNone && cfg.Telemetry.Metrics.Address != "" {
-		// The process telemetry initialization requires the ballast size, which is available after the extensions are initialized.
 		if err = proctelemetry.RegisterProcessMetrics(srv.telemetrySettings); err != nil {
 			return nil, fmt.Errorf("failed to register process metrics: %w", err)
 		}
@@ -315,15 +311,15 @@ func (srv *Service) initExtensions(ctx context.Context, cfg extensions.Config) e
 }
 
 // Creates the pipeline graph.
-func (srv *Service) initGraph(ctx context.Context, set Settings, cfg Config) error {
+func (srv *Service) initGraph(ctx context.Context, cfg Config) error {
 	var err error
 	if srv.host.Pipelines, err = graph.Build(ctx, graph.Settings{
 		Telemetry:        srv.telemetrySettings,
 		BuildInfo:        srv.buildInfo,
 		ReceiverBuilder:  srv.host.Receivers,
-		ProcessorBuilder: set.Processors,
-		ExporterBuilder:  set.Exporters,
-		ConnectorBuilder: set.Connectors,
+		ProcessorBuilder: srv.host.Processors,
+		ExporterBuilder:  srv.host.Exporters,
+		ConnectorBuilder: srv.host.Connectors,
 		PipelineConfigs:  cfg.Pipelines,
 		ReportStatus:     srv.host.Reporter.ReportStatus,
 	}); err != nil {

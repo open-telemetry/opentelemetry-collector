@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -43,6 +44,12 @@ func TestNewNopConnectorFactory(t *testing.T) {
 	assert.NoError(t, tracesToLogs.ConsumeTraces(context.Background(), ptrace.NewTraces()))
 	assert.NoError(t, tracesToLogs.Shutdown(context.Background()))
 
+	tracesToProfiles, err := factory.CreateTracesToProfiles(context.Background(), NewNopSettings(), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	assert.NoError(t, tracesToProfiles.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, tracesToProfiles.ConsumeTraces(context.Background(), ptrace.NewTraces()))
+	assert.NoError(t, tracesToProfiles.Shutdown(context.Background()))
+
 	metricsToTraces, err := factory.CreateMetricsToTraces(context.Background(), NewNopSettings(), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	assert.NoError(t, metricsToTraces.Start(context.Background(), componenttest.NewNopHost()))
@@ -61,6 +68,12 @@ func TestNewNopConnectorFactory(t *testing.T) {
 	assert.NoError(t, metricsToLogs.ConsumeMetrics(context.Background(), pmetric.NewMetrics()))
 	assert.NoError(t, metricsToLogs.Shutdown(context.Background()))
 
+	metricsToProfiles, err := factory.CreateMetricsToProfiles(context.Background(), NewNopSettings(), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	assert.NoError(t, metricsToProfiles.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, metricsToProfiles.ConsumeMetrics(context.Background(), pmetric.NewMetrics()))
+	assert.NoError(t, metricsToProfiles.Shutdown(context.Background()))
+
 	logsToTraces, err := factory.CreateLogsToTraces(context.Background(), NewNopSettings(), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	assert.NoError(t, logsToTraces.Start(context.Background(), componenttest.NewNopHost()))
@@ -78,68 +91,34 @@ func TestNewNopConnectorFactory(t *testing.T) {
 	assert.NoError(t, logsToLogs.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, logsToLogs.ConsumeLogs(context.Background(), plog.NewLogs()))
 	assert.NoError(t, logsToLogs.Shutdown(context.Background()))
-}
 
-func TestNewNopBuilder(t *testing.T) {
-	builder := NewNopBuilder()
-	require.NotNil(t, builder)
+	logsToProfiles, err := factory.CreateLogsToProfiles(context.Background(), NewNopSettings(), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	assert.NoError(t, logsToProfiles.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, logsToProfiles.ConsumeLogs(context.Background(), plog.NewLogs()))
+	assert.NoError(t, logsToProfiles.Shutdown(context.Background()))
 
-	factory := NewNopFactory()
-	cfg := factory.CreateDefaultConfig()
-	set := NewNopSettings()
-	set.ID = component.NewIDWithName(nopType, "conn")
+	profilesToTraces, err := factory.CreateProfilesToTraces(context.Background(), NewNopSettings(), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	assert.NoError(t, profilesToTraces.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, profilesToTraces.ConsumeProfiles(context.Background(), pprofile.NewProfiles()))
+	assert.NoError(t, profilesToTraces.Shutdown(context.Background()))
 
-	tracesToTraces, err := factory.CreateTracesToTraces(context.Background(), set, cfg, consumertest.NewNop())
+	profilesToMetrics, err := factory.CreateProfilesToMetrics(context.Background(), NewNopSettings(), cfg, consumertest.NewNop())
 	require.NoError(t, err)
-	bTracesToTraces, err := builder.CreateTracesToTraces(context.Background(), set, consumertest.NewNop())
-	require.NoError(t, err)
-	assert.IsType(t, tracesToTraces, bTracesToTraces)
+	assert.NoError(t, profilesToMetrics.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, profilesToMetrics.ConsumeProfiles(context.Background(), pprofile.NewProfiles()))
+	assert.NoError(t, profilesToMetrics.Shutdown(context.Background()))
 
-	tracesToMetrics, err := factory.CreateTracesToMetrics(context.Background(), set, cfg, consumertest.NewNop())
+	profilesToLogs, err := factory.CreateProfilesToProfiles(context.Background(), NewNopSettings(), cfg, consumertest.NewNop())
 	require.NoError(t, err)
-	bTracesToMetrics, err := builder.CreateTracesToMetrics(context.Background(), set, consumertest.NewNop())
-	require.NoError(t, err)
-	assert.IsType(t, tracesToMetrics, bTracesToMetrics)
+	assert.NoError(t, profilesToLogs.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, profilesToLogs.ConsumeProfiles(context.Background(), pprofile.NewProfiles()))
+	assert.NoError(t, profilesToLogs.Shutdown(context.Background()))
 
-	tracesToLogs, err := factory.CreateTracesToLogs(context.Background(), set, cfg, consumertest.NewNop())
+	profilesToProfiles, err := factory.CreateProfilesToProfiles(context.Background(), NewNopSettings(), cfg, consumertest.NewNop())
 	require.NoError(t, err)
-	bTracesToLogs, err := builder.CreateTracesToLogs(context.Background(), set, consumertest.NewNop())
-	require.NoError(t, err)
-	assert.IsType(t, tracesToLogs, bTracesToLogs)
-
-	metricsToTraces, err := factory.CreateMetricsToTraces(context.Background(), set, cfg, consumertest.NewNop())
-	require.NoError(t, err)
-	bMetricsToTraces, err := builder.CreateMetricsToTraces(context.Background(), set, consumertest.NewNop())
-	require.NoError(t, err)
-	assert.IsType(t, metricsToTraces, bMetricsToTraces)
-
-	metricsToMetrics, err := factory.CreateMetricsToMetrics(context.Background(), set, cfg, consumertest.NewNop())
-	require.NoError(t, err)
-	bMetricsToMetrics, err := builder.CreateMetricsToMetrics(context.Background(), set, consumertest.NewNop())
-	require.NoError(t, err)
-	assert.IsType(t, metricsToMetrics, bMetricsToMetrics)
-
-	metricsToLogs, err := factory.CreateMetricsToLogs(context.Background(), set, cfg, consumertest.NewNop())
-	require.NoError(t, err)
-	bMetricsToLogs, err := builder.CreateMetricsToLogs(context.Background(), set, consumertest.NewNop())
-	require.NoError(t, err)
-	assert.IsType(t, metricsToLogs, bMetricsToLogs)
-
-	logsToTraces, err := factory.CreateLogsToTraces(context.Background(), set, cfg, consumertest.NewNop())
-	require.NoError(t, err)
-	bLogsToTraces, err := builder.CreateLogsToTraces(context.Background(), set, consumertest.NewNop())
-	require.NoError(t, err)
-	assert.IsType(t, logsToTraces, bLogsToTraces)
-
-	logsToMetrics, err := factory.CreateLogsToMetrics(context.Background(), set, cfg, consumertest.NewNop())
-	require.NoError(t, err)
-	bLogsToMetrics, err := builder.CreateLogsToMetrics(context.Background(), set, consumertest.NewNop())
-	require.NoError(t, err)
-	assert.IsType(t, logsToMetrics, bLogsToMetrics)
-
-	logsToLogs, err := factory.CreateLogsToLogs(context.Background(), set, cfg, consumertest.NewNop())
-	require.NoError(t, err)
-	bLogsToLogs, err := builder.CreateLogsToLogs(context.Background(), set, consumertest.NewNop())
-	require.NoError(t, err)
-	assert.IsType(t, logsToLogs, bLogsToLogs)
+	assert.NoError(t, profilesToProfiles.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, profilesToProfiles.ConsumeProfiles(context.Background(), pprofile.NewProfiles()))
+	assert.NoError(t, profilesToProfiles.Shutdown(context.Background()))
 }

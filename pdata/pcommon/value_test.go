@@ -558,7 +558,7 @@ func TestNewValueFromRawInvalid(t *testing.T) {
 
 func TestInvalidValue(t *testing.T) {
 	v := Value{}
-	assert.Equal(t, false, v.Bool())
+	assert.False(t, v.Bool())
 	assert.Equal(t, int64(0), v.Int())
 	assert.Equal(t, float64(0), v.Double())
 	assert.Equal(t, "", v.Str())

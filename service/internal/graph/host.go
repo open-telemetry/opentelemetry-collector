@@ -11,11 +11,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
-	"go.opentelemetry.io/collector/connector"
-	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/status"
@@ -32,11 +29,11 @@ var _ component.Host = (*Host)(nil)
 
 type Host struct {
 	AsyncErrorChannel chan error
-	Receivers         builders.Receiver
-	Processors        *processor.Builder
-	Exporters         *exporter.Builder
-	Connectors        *connector.Builder
-	Extensions        *extension.Builder
+	Receivers         *builders.ReceiverBuilder
+	Processors        *builders.ProcessorBuilder
+	Exporters         *builders.ExporterBuilder
+	Connectors        *builders.ConnectorBuilder
+	Extensions        *builders.ExtensionBuilder
 
 	ModuleInfo extension.ModuleInfo
 	BuildInfo  component.BuildInfo
