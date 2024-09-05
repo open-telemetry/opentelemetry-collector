@@ -21,6 +21,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentprofiles"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -226,13 +227,15 @@ func TestServiceGetExporters(t *testing.T) {
 
 	// nolint
 	expMap := srv.host.GetExporters()
-	assert.Len(t, expMap, 3)
+	assert.Len(t, expMap, 4)
 	assert.Len(t, expMap[component.DataTypeTraces], 1)
 	assert.Contains(t, expMap[component.DataTypeTraces], component.NewID(nopType))
 	assert.Len(t, expMap[component.DataTypeMetrics], 1)
 	assert.Contains(t, expMap[component.DataTypeMetrics], component.NewID(nopType))
 	assert.Len(t, expMap[component.DataTypeLogs], 1)
 	assert.Contains(t, expMap[component.DataTypeLogs], component.NewID(nopType))
+	assert.Len(t, expMap[componentprofiles.DataTypeProfiles], 1)
+	assert.Contains(t, expMap[componentprofiles.DataTypeProfiles], component.NewID(nopType))
 }
 
 // TestServiceTelemetryCleanupOnError tests that if newService errors due to an invalid config telemetry is cleaned up
@@ -575,6 +578,11 @@ func newNopConfig() Config {
 			Exporters:  []component.ID{component.NewID(nopType)},
 		},
 		component.MustNewID("logs"): {
+			Receivers:  []component.ID{component.NewID(nopType)},
+			Processors: []component.ID{component.NewID(nopType)},
+			Exporters:  []component.ID{component.NewID(nopType)},
+		},
+		component.MustNewID("profiles"): {
 			Receivers:  []component.ID{component.NewID(nopType)},
 			Processors: []component.ID{component.NewID(nopType)},
 			Exporters:  []component.ID{component.NewID(nopType)},

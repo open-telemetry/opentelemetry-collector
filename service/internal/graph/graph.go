@@ -25,9 +25,11 @@ import (
 	"gonum.org/v1/gonum/graph/topo"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentprofiles"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
@@ -40,10 +42,10 @@ type Settings struct {
 	Telemetry component.TelemetrySettings
 	BuildInfo component.BuildInfo
 
-	ReceiverBuilder  builders.Receiver
-	ProcessorBuilder builders.Processor
-	ExporterBuilder  builders.Exporter
-	ConnectorBuilder builders.Connector
+	ReceiverBuilder  *builders.ReceiverBuilder
+	ProcessorBuilder *builders.ProcessorBuilder
+	ExporterBuilder  *builders.ExporterBuilder
+	ConnectorBuilder *builders.ConnectorBuilder
 
 	// PipelineConfigs is a map of component.ID to PipelineConfig.
 	PipelineConfigs pipelines.Config
@@ -314,6 +316,10 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 				cc := capabilityconsumer.NewLogs(next.(consumer.Logs), capability)
 				n.baseConsumer = cc
 				n.ConsumeLogsFunc = cc.ConsumeLogs
+			case componentprofiles.DataTypeProfiles:
+				cc := capabilityconsumer.NewProfiles(next.(consumerprofiles.Profiles), capability)
+				n.baseConsumer = cc
+				n.ConsumeProfilesFunc = cc.ConsumeProfiles
 			}
 		case *fanOutNode:
 			nexts := g.nextConsumers(n.ID())
@@ -336,6 +342,12 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 					consumers = append(consumers, next.(consumer.Logs))
 				}
 				n.baseConsumer = fanoutconsumer.NewLogs(consumers)
+			case componentprofiles.DataTypeProfiles:
+				consumers := make([]consumerprofiles.Profiles, 0, len(nexts))
+				for _, next := range nexts {
+					consumers = append(consumers, next.(consumerprofiles.Profiles))
+				}
+				n.baseConsumer = fanoutconsumer.NewProfiles(consumers)
 			}
 		}
 		if err != nil {
@@ -476,6 +488,7 @@ func (g *Graph) GetExporters() map[component.DataType]map[component.ID]component
 	exportersMap[component.DataTypeTraces] = make(map[component.ID]component.Component)
 	exportersMap[component.DataTypeMetrics] = make(map[component.ID]component.Component)
 	exportersMap[component.DataTypeLogs] = make(map[component.ID]component.Component)
+	exportersMap[componentprofiles.DataTypeProfiles] = make(map[component.ID]component.Component)
 
 	for _, pg := range g.pipelines {
 		for _, expNode := range pg.exporters {
@@ -538,6 +551,8 @@ func connectorStability(f connector.Factory, expType, recType component.Type) co
 			return f.TracesToMetricsStability()
 		case component.DataTypeLogs:
 			return f.TracesToLogsStability()
+		case componentprofiles.DataTypeProfiles:
+			return f.TracesToProfilesStability()
 		}
 	case component.DataTypeMetrics:
 		switch recType {
@@ -547,6 +562,8 @@ func connectorStability(f connector.Factory, expType, recType component.Type) co
 			return f.MetricsToMetricsStability()
 		case component.DataTypeLogs:
 			return f.MetricsToLogsStability()
+		case componentprofiles.DataTypeProfiles:
+			return f.MetricsToProfilesStability()
 		}
 	case component.DataTypeLogs:
 		switch recType {
@@ -556,6 +573,19 @@ func connectorStability(f connector.Factory, expType, recType component.Type) co
 			return f.LogsToMetricsStability()
 		case component.DataTypeLogs:
 			return f.LogsToLogsStability()
+		case componentprofiles.DataTypeProfiles:
+			return f.LogsToProfilesStability()
+		}
+	case componentprofiles.DataTypeProfiles:
+		switch recType {
+		case component.DataTypeTraces:
+			return f.ProfilesToTracesStability()
+		case component.DataTypeMetrics:
+			return f.ProfilesToMetricsStability()
+		case component.DataTypeLogs:
+			return f.ProfilesToLogsStability()
+		case componentprofiles.DataTypeProfiles:
+			return f.ProfilesToProfilesStability()
 		}
 	}
 	return component.StabilityLevelUndefined

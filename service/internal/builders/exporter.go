@@ -13,15 +13,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
-// Exporter is an interface that allows using implementations of the builder
-// from different packages.
-type Exporter interface {
-	CreateTraces(context.Context, exporter.Settings) (exporter.Traces, error)
-	CreateMetrics(context.Context, exporter.Settings) (exporter.Metrics, error)
-	CreateLogs(context.Context, exporter.Settings) (exporter.Logs, error)
-	Factory(component.Type) component.Factory
-}
-
 // ExporterBuilder is a helper struct that given a set of Configs and Factories helps with creating exporters.
 type ExporterBuilder struct {
 	cfgs      map[component.ID]component.Config

@@ -7,7 +7,7 @@ require (
 	github.com/prometheus/client_golang v1.20.2
 	github.com/prometheus/client_model v0.6.1
 	github.com/prometheus/common v0.57.0
-	github.com/shirou/gopsutil/v4 v4.24.7
+	github.com/shirou/gopsutil/v4 v4.24.8
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector v0.108.1
 	go.opentelemetry.io/collector/component v0.108.1
@@ -29,6 +29,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.14.1
 	go.opentelemetry.io/collector/internal/globalgates v0.108.1
 	go.opentelemetry.io/collector/pdata v1.14.1
+	go.opentelemetry.io/collector/pdata/pprofile v0.108.1
 	go.opentelemetry.io/collector/pdata/testdata v0.108.1
 	go.opentelemetry.io/collector/processor v0.108.1
 	go.opentelemetry.io/collector/processor/processorprofiles v0.108.1
@@ -93,7 +94,6 @@ require (
 	go.opentelemetry.io/collector/config/configtls v1.14.1 // indirect
 	go.opentelemetry.io/collector/config/internal v0.108.1 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.108.1 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.108.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.54.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.54.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp v0.5.0 // indirect
