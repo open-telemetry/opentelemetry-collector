@@ -189,6 +189,26 @@ func TestUnmarshalJsoniterScopeProfiles(t *testing.T) {
 	assert.Equal(t, NewScopeProfiles(), val)
 }
 
+func TestUnmarshalJsoniterProfile(t *testing.T) {
+	jsonStr := `{"extra":""}`
+	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	val := NewProfile()
+	val.unmarshalJsoniter(iter)
+	assert.NoError(t, iter.Error)
+	assert.Equal(t, NewProfile(), val)
+}
+
+func TestUnmarshalJsoniterValueType(t *testing.T) {
+	jsonStr := `{"extra":""}`
+	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	val := NewValueType()
+	val.unmarshalJsoniter(iter)
+	assert.NoError(t, iter.Error)
+	assert.Equal(t, NewValueType(), val)
+}
+
 func TestUnmarshalJsoniterSample(t *testing.T) {
 	jsonStr := `{"extra":""}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
@@ -197,6 +217,66 @@ func TestUnmarshalJsoniterSample(t *testing.T) {
 	val.unmarshalJsoniter(iter)
 	assert.NoError(t, iter.Error)
 	assert.Equal(t, NewSample(), val)
+}
+
+func TestUnmarshalJsoniterMapping(t *testing.T) {
+	jsonStr := `{"extra":""}`
+	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	val := NewMapping()
+	val.unmarshalJsoniter(iter)
+	assert.NoError(t, iter.Error)
+	assert.Equal(t, NewMapping(), val)
+}
+
+func TestUnmarshalJsoniterLocation(t *testing.T) {
+	jsonStr := `{"extra":""}`
+	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	val := NewLocation()
+	val.unmarshalJsoniter(iter)
+	assert.NoError(t, iter.Error)
+	assert.Equal(t, NewLocation(), val)
+}
+
+func TestUnmarshalJsoniterLine(t *testing.T) {
+	jsonStr := `{"extra":""}`
+	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	val := NewLine()
+	val.unmarshalJsoniter(iter)
+	assert.NoError(t, iter.Error)
+	assert.Equal(t, NewLine(), val)
+}
+
+func TestUnmarshalJsoniterFunction(t *testing.T) {
+	jsonStr := `{"extra":""}`
+	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	val := NewFunction()
+	val.unmarshalJsoniter(iter)
+	assert.NoError(t, iter.Error)
+	assert.Equal(t, NewFunction(), val)
+}
+
+func TestUnmarshalJsoniterAttributeUnit(t *testing.T) {
+	jsonStr := `{"extra":""}`
+	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	val := NewAttributeUnit()
+	val.unmarshalJsoniter(iter)
+	assert.NoError(t, iter.Error)
+	assert.Equal(t, NewAttributeUnit(), val)
+}
+
+func TestUnmarshalJsoniterLink(t *testing.T) {
+	jsonStr := `{"extra":""}`
+	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	val := NewLink()
+	val.unmarshalJsoniter(iter)
+	assert.NoError(t, iter.Error)
+	assert.Equal(t, NewLink(), val)
 }
 
 func TestUnmarshalJsoniterLinkInvalidTraceIDField(t *testing.T) {
@@ -217,6 +297,16 @@ func TestUnmarshalJsoniterSpanLinkInvalidSpanIDField(t *testing.T) {
 	if assert.Error(t, iter.Error) {
 		assert.Contains(t, iter.Error.Error(), "parse span_id")
 	}
+}
+
+func TestUnmarshalJsoniterLabel(t *testing.T) {
+	jsonStr := `{"extra":""}`
+	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	val := NewLabel()
+	val.unmarshalJsoniter(iter)
+	assert.NoError(t, iter.Error)
+	assert.Equal(t, NewLabel(), val)
 }
 
 func BenchmarkJSONUnmarshal(b *testing.B) {
