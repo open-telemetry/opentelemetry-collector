@@ -116,7 +116,7 @@ func (pc ProfileContainer) unmarshalJsoniter(iter *jsoniter.Iterator) {
 		case "originalPayloadFormat", "original_payload_format":
 			pc.orig.OriginalPayloadFormat = iter.ReadString()
 		case "originalPayload", "original_payload":
-			pc.orig.OriginalPayloadFormat = iter.ReadString()
+			pc.orig.OriginalPayload = iter.ReadStringAsSlice()
 		case "profile":
 			pc.Profile().unmarshalJsoniter(iter)
 		default:
@@ -277,7 +277,7 @@ func (m Mapping) unmarshalJsoniter(iter *jsoniter.Iterator) {
 			m.orig.Filename = json.ReadInt64(iter)
 		case "buildId", "build_id":
 			m.orig.BuildId = json.ReadInt64(iter)
-		case "buildIdKind", "build_id_kind":
+		case "buildIDKind", "build_id_kind":
 			m.SetBuildIDKind(otlpprofiles.BuildIdKind(json.ReadEnumValue(iter, otlpprofiles.BuildIdKind_value)))
 		case "attributes":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
