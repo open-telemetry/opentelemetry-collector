@@ -79,7 +79,8 @@ func TestTelemetryMetrics(t *testing.T) {
 
 	// Init optional metric and trigger record from another metric.
 	// We can check the other metric to ensure it's correctly updated as well.
-	tb.InitQueueLength(func() int64 { return 1 })
+	err = tb.InitQueueLength(func() int64 { return 1 })
+	require.NoError(t, err)
 	tb.BatchSizeTriggerSend.Add(context.Background(), 1, metric.WithAttributeSet(batchSizeTriggerSendAttrs))
 	ts, err = tt.GetIntGaugeDataPoint("otelcol_queue_length", attribute.NewSet())
 	require.NoError(t, err)
