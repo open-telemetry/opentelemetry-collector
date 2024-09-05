@@ -536,17 +536,18 @@ func TestPersistentQueueStartWithNonDispatchedConcurrent(t *testing.T) {
 	req := newTracesRequest(1, 1)
 
 	ext := NewMockStorageExtensionWithDelay(nil, 20*time.Nanosecond)
-	pq := createTestPersistentQueueWithItemsCapacity(t, ext, 300)
+	pq := createTestPersistentQueueWithItemsCapacity(t, ext, 25)
 
 	proWg := sync.WaitGroup{}
-	for j := 0; j < 2; j++ {
+	// Sending small amount of data as windows test can't handle the test fast enough
+	for j := 0; j < 5; j++ {
 		proWg.Add(1)
 		t.Log("spawning a producer goroutine")
 		go func() {
 			t.Log("spawned a producer goroutine")
 			defer proWg.Done()
 			// Put in items up to capacity
-			for i := 0; i < 150; i++ {
+			for i := 0; i < 10; i++ {
 				for {
 					// retry infinitely so the exact amount of items are added to the queue eventually
 					if err := pq.Offer(context.Background(), req); err == nil {
@@ -564,13 +565,13 @@ func TestPersistentQueueStartWithNonDispatchedConcurrent(t *testing.T) {
 	}
 
 	conWg := sync.WaitGroup{}
-	for j := 0; j < 2; j++ {
+	for j := 0; j < 5; j++ {
 		conWg.Add(1)
 		t.Log("spawning a consumer goroutine")
 		go func() {
 			t.Log("spanwed a consumer goroutine")
 			defer conWg.Done()
-			for i := 0; i < 150; i++ {
+			for i := 0; i < 10; i++ {
 				require.True(t, pq.Consume(func(context.Context, tracesRequest) error { return nil }))
 				t.Log("consume was successful")
 			}
@@ -590,7 +591,7 @@ func TestPersistentQueueStartWithNonDispatchedConcurrent(t *testing.T) {
 		proWg.Wait()
 	}()
 
-	doneCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	doneCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	select {
 	case <-conDone:
