@@ -1,0 +1,124 @@
+templates:
+  - pattern: resource.go.j2
+    filter: semconv_signal("resource",{})
+    application_mode: single
+    file_name: generated_resource.go
+  - pattern: event.go.j2
+    filter: semconv_signal("event",{})
+    application_mode: single
+    file_name: generated_event.go
+  - pattern: trace.go.j2
+    filter: semconv_signal("trace",{})
+    file_name: generated_trace.go
+    application_mode: single
+  - pattern: attribute_group.go.j2
+    filter: >
+      semconv_grouped_attributes({
+        "exclude_deprecated": false
+      })
+    application_mode: single
+    file_name: generated_attribute_group.go
+comment_formats:
+  go:
+    format: markdown
+    prefix: "// "
+    indent_first_level_list_items: true
+    shortcut_reference_link: true
+    trim: true
+    remove_trailing_dots: true
+default_comment_format: go
+acronyms:
+  - ACL
+  - AIX
+  - AKS
+  - AMD64
+  - API
+  - ARM32
+  - ARM64
+  - ARN
+  - ARNs
+  - ASCII
+  - AWS
+  - CPP
+  - CPU
+  - CSS
+  - DB
+  - DC
+  - DNS
+  - EC2
+  - ECS
+  - EDB
+  - EKS
+  - EOF
+  - GCP
+  - GRPC
+  - GUID
+  - HPUX
+  - HSQLDB
+  - HTML
+  - HTTP
+  - HTTPS
+  - IA64
+  - ID
+  - IP
+  - JDBC
+  - JSON
+  - K8S
+  - LHS
+  - MSSQL
+  - OS
+  - PHP
+  - PID
+  - PPC32
+  - PPC64
+  - QPS
+  - QUIC
+  - RAM
+  - RHS
+  - RPC
+  - SDK
+  - SLA
+  - SMTP
+  - SPDY
+  - SQL
+  - SSH
+  - TCP
+  - TLS
+  - TTL
+  - UDP
+  - UID
+  - UI
+  - UUID
+  - URI
+  - URL
+  - UTF8
+  - VM
+  - XML
+  - XMPP
+  - XSRF
+  - XSS
+  - ZOS
+  - CronJob
+  - DaemonSet
+  - StatefulSet
+  - ReplicaSet
+  - WebEngine
+  - MySQL
+  - PostgreSQL
+  - MariaDB
+  - MaxDB
+  - FirstSQL
+  - InstantDB
+  - HBase
+  - MongoDB
+  - CouchDB
+  - CosmosDB
+  - DynamoDB
+  - HanaDB
+  - FreeBSD
+  - NetBSD
+  - OpenBSD
+  - DragonflyBSD
+  - InProc
+  - FaaS
+  - OTel

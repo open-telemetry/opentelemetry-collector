@@ -1,0 +1,64 @@
+{# TODO - move to built in support for language constants in weaver #}
+{%- macro to_go_name(fqn) -%}
+{{fqn | replace(".", " ") | replace("_", " ") | title | replace(" ", "")}}
+{%- endmacro -%}
+{%- macro requirement_level_doc(attr) -%}
+{%- if attr.requirement_level == "required" -%}
+Requirement Level: Required
+{% elif attr.requirement_level.conditionally_required %}
+Requirement Level: Conditionally Required - {{ attr.requirement_level.conditionally_required }}
+{%- elif attr.requirement_level == "recommended" -%}
+Requirement Level: Recommended
+{% elif attr.requirement_level.recommended %}
+Requirement Level: Recommended - {{ attr.requirement_level.recommended }}
+{%- else -%}
+Requirement Level: Optional
+{%- endif %}
+{%- endmacro -%}
+{%- macro deprecated_doc(attr) -%}
+{% if attr is deprecated %}Deprecated: {{ attr.deprecated }}{% endif %}
+{%- endmacro -%}
+{%- macro notes_doc(attr) -%}
+{% if attr.note %}Note: {{ attr.note }}{% endif %}
+{%- endmacro -%}
+{%- macro examples_doc(attr) -%}
+{%- if attr.examples is iterable %}
+Examples: {{ attr.examples | pprint | trim("[]")  }}
+{%- endif -%}
+{%- endmacro -%}
+{%- macro godoc(attr) -%}
+{{ attr.brief }}
+
+{% if attr is enum %}Type: Enum{% else %}Type: {{ attr.type | instantiated_type }}{% endif %}
+{{ requirement_level_doc(attr) }}
+{{ deprecated_doc(attr) }}
+{{ examples_doc(attr) }}
+{{ notes_doc(attr) }}
+{%- endmacro -%}
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+// Code generated from semantic convention specification. DO NOT EDIT.
+
+package semconv
+
+{% for group in ctx %}
+{% if group.attributes | select("stable") | length > 0 %}
+{# TODO - we're grouping by registry namespace, not attribute gorup, so we lose group docs #}
+{{ ["Namespace: " ~ group.root_namespace] | comment }}
+const (
+{% for attribute in group.attributes | select("stable") %}
+    {{ godoc(attribute) | comment(indent=4) }}
+    Attribute{{to_go_name(attribute.name)}} = "{{attribute.name}}"
+{% endfor %}
+)
+{# TODO - generate enum values #}
+{% endif %}
+{% endfor %}
+
+func GetAttribute_groupSemanticConventionAttributeNames() []string() {
+    return []string(
+        {% for group in ctx %}{% for attribute in group.attributes | select("stable") %}Attribute{{to_go_name(attribute.name)}}
+        {% endfor %}{% endfor %}
+    )
+}

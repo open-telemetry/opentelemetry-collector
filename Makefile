@@ -239,15 +239,33 @@ genpdata:
 	$(GOCMD) run pdata/internal/cmd/pdatagen/main.go
 	$(MAKE) fmt
 
+# Definitions for semconvgen
+DOCKER_USER=$(shell id -u):$(shell id -g)
+# TODO - Pull docker image versions from rennovate-friendly source, e.g.
+# $(shell cat dependencies.Dockerfile | awk '$$4=="weaver" {print $$2}')
+WEAVER_CONTAINER=otel/weaver:v0.9.1
+
+
 # Generate semantic convention constants. Requires a clone of the opentelemetry-specification repo
-gensemconv: $(SEMCONVGEN) $(SEMCONVKIT)
+gensemconv: $(SEMCONVKIT)
 	@[ "${SPECPATH}" ] || ( echo ">> env var SPECPATH is not set"; exit 1 )
 	@[ "${SPECTAG}" ] || ( echo ">> env var SPECTAG is not set"; exit 1 )
 	@echo "Generating semantic convention constants from specification version ${SPECTAG} at ${SPECPATH}"
-	$(SEMCONVGEN) -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/model/. --only=resource -p conventionType=resource -f generated_resource.go
-	$(SEMCONVGEN) -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/model/. --only=event -p conventionType=event -f generated_event.go
-	$(SEMCONVGEN) -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/model/. --only=span -p conventionType=trace -f generated_trace.go
-	$(SEMCONVGEN) -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/model/. --only=attribute_group -p conventionType=attribute_group -f generated_attribute_group.go
+	mkdir -p $(PWD)/semconv/${SPECTAG}
+	docker run --rm \
+		-u $(DOCKER_USER) \
+		--mount 'type=bind,source=$(PWD)/semconv/weaver,target=/home/weaver/templates,readonly' \
+		--mount 'type=bind,source=$(SPECPATH)/model,target=/home/weaver/source,readonly' \
+		--mount 'type=bind,source=$(PWD)/semconv/${SPECTAG},target=/home/weaver/target' \
+		$(WEAVER_CONTAINER) registry generate \
+		--registry=/home/weaver/source \
+		--templates=/home/weaver/templates \
+		collector \
+		/home/weaver/target
+#	$(SEMCONVGEN) -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/model/. --only=resource -p conventionType=resource -f generated_resource.go
+#	$(SEMCONVGEN) -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/model/. --only=event -p conventionType=event -f generated_event.go
+#	$(SEMCONVGEN) -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/model/. --only=span -p conventionType=trace -f generated_trace.go
+#	$(SEMCONVGEN) -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/model/. --only=attribute_group -p conventionType=attribute_group -f generated_attribute_group.go
 	$(SEMCONVKIT) -output "semconv/$(SPECTAG)" -tag "$(SPECTAG)"
 
 # Checks that the HEAD of the contrib repo checked out in CONTRIB_PATH compiles
