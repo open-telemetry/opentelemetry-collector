@@ -59,3 +59,18 @@ func TestTraces(t *testing.T) {
 	assert.Len(t, sink.AllTraces(), 1)
 	assert.Equal(t, testdata.GenerateTraces(1), sink.AllTraces()[0])
 }
+
+func TestProfiles(t *testing.T) {
+	sink := &consumertest.ProfilesSink{}
+	require.Equal(t, consumer.Capabilities{MutatesData: false}, sink.Capabilities())
+
+	same := NewProfiles(sink, consumer.Capabilities{MutatesData: false})
+	assert.Same(t, sink, same)
+
+	wrap := NewProfiles(sink, consumer.Capabilities{MutatesData: true})
+	assert.Equal(t, consumer.Capabilities{MutatesData: true}, wrap.Capabilities())
+
+	assert.NoError(t, wrap.ConsumeProfiles(context.Background(), testdata.GenerateProfiles(1)))
+	assert.Len(t, sink.AllProfiles(), 1)
+	assert.Equal(t, testdata.GenerateProfiles(1), sink.AllProfiles()[0])
+}

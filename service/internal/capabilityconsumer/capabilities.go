@@ -5,6 +5,7 @@ package capabilityconsumer // import "go.opentelemetry.io/collector/service/inte
 
 import (
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 )
 
 func NewLogs(logs consumer.Logs, cap consumer.Capabilities) consumer.Logs {
@@ -52,5 +53,21 @@ type capTraces struct {
 }
 
 func (mts capTraces) Capabilities() consumer.Capabilities {
+	return mts.cap
+}
+
+func NewProfiles(profiles consumerprofiles.Profiles, cap consumer.Capabilities) consumerprofiles.Profiles {
+	if profiles.Capabilities() == cap {
+		return profiles
+	}
+	return capProfiles{Profiles: profiles, cap: cap}
+}
+
+type capProfiles struct {
+	consumerprofiles.Profiles
+	cap consumer.Capabilities
+}
+
+func (mts capProfiles) Capabilities() consumer.Capabilities {
 	return mts.cap
 }
