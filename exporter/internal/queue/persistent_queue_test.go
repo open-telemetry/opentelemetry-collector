@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"sync"
 	"sync/atomic"
 	"syscall"
 	"testing"
@@ -529,6 +530,68 @@ func TestPersistentQueueStartWithNonDispatched(t *testing.T) {
 	// Reload with extra capacity to make sure we re-enqueue in-progress items.
 	newPs := createTestPersistentQueueWithRequestsCapacity(t, ext, 6)
 	require.Equal(t, 6, newPs.Size())
+}
+
+func TestPersistentQueueStartWithNonDispatchedConcurrent(t *testing.T) {
+	req := newTracesRequest(1, 1)
+
+	ext := NewMockStorageExtensionWithDelay(nil, 50*time.Nanosecond)
+	pq := createTestPersistentQueueWithItemsCapacity(t, ext, 2500)
+
+	proWg := sync.WaitGroup{}
+	for j := 0; j < 50; j++ {
+		proWg.Add(1)
+		go func() {
+			defer proWg.Done()
+			// Put in items up to capacity
+			for i := 0; i < 100; i++ {
+				for {
+					// retry infinitely so the exact amount of items are added to the queue eventually
+					if err := pq.Offer(context.Background(), req); err == nil {
+						break
+					}
+					time.Sleep(time.Millisecond)
+				}
+			}
+		}()
+	}
+
+	conWg := sync.WaitGroup{}
+	for j := 0; j < 50; j++ {
+		conWg.Add(1)
+		go func() {
+			defer conWg.Done()
+			for i := 0; i < 100; i++ {
+				require.True(t, pq.Consume(func(context.Context, tracesRequest) error { return nil }))
+			}
+		}()
+	}
+
+	conDone := make(chan struct{})
+	go func() {
+		defer close(conDone)
+		conWg.Wait()
+	}()
+
+	proDone := make(chan struct{})
+	go func() {
+		defer close(proDone)
+		proWg.Wait()
+	}()
+
+	doneCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	select {
+	case <-conDone:
+	case <-doneCtx.Done():
+		assert.Fail(t, "timed out waiting for consumers to complete")
+	}
+
+	select {
+	case <-proDone:
+	case <-doneCtx.Done():
+		assert.Fail(t, "timed out waiting for producers to complete")
+	}
 }
 
 func TestPersistentQueue_PutCloseReadClose(t *testing.T) {
