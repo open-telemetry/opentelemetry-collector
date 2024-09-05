@@ -99,7 +99,9 @@ func (pc ProfileContainer) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "profileId", "profile_id":
-			pc.orig.ProfileId = iter.ReadStringAsSlice()
+			if err := pc.orig.ProfileId.UnmarshalJSON([]byte(iter.ReadString())); err != nil {
+				iter.ReportError("profileContainer.profileId", fmt.Sprintf("parse profile_id:%v", err))
+			}
 		case "startTimeUnixNano", "start_time_unix_nano":
 			pc.orig.StartTimeUnixNano = json.ReadUint64(iter)
 		case "endTimeUnixNano", "end_time_unix_nano":

@@ -18,6 +18,7 @@ var _ Unmarshaler = (*JSONUnmarshaler)(nil)
 var profilesOTLP = func() Profiles {
 	startTimestamp := pcommon.Timestamp(1684617382541971000)
 	endTimestamp := pcommon.Timestamp(1684623646539558000)
+	profileID := ProfileID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
 	traceID := pcommon.TraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
 	spanID := pcommon.SpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
 
@@ -36,6 +37,7 @@ var profilesOTLP = func() Profiles {
 	sp.Scope().SetVersion("scope version")
 	// Add profiles
 	pc := sp.Profiles().AppendEmpty()
+	pc.SetProfileID(profileID)
 	pc.SetStartTime(startTimestamp)
 	pc.SetEndTime(endTimestamp)
 	pc.Attributes().PutStr("hello", "world")
@@ -78,7 +80,7 @@ var profilesOTLP = func() Profiles {
 	return pd
 }()
 
-var profilesJSON = `{"resourceProfiles":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}},{"key":"service.name","value":{"stringValue":"testService"}}],"droppedAttributesCount":1},"scopeProfiles":[{"scope":{"name":"scope name","version":"scope version"},"profiles":[{"startTimeUnixNano":"1684617382541971000","endTimeUnixNano":"1684623646539558000","attributes":[{"key":"hello","value":{"stringValue":"world"}},{"key":"foo","value":{"stringValue":"bar"}}],"droppedAttributesCount":1,"profile":{"sampleType":[{"type":"1","unit":"2"}],"sample":[{"locationsStartIndex":"1","locationsLength":"10","stacktraceIdIndex":1,"attributes":["1"],"link":"42"}],"mapping":[{"id":"1"}],"location":[{"id":"2"}],"locationIndices":["1"],"function":[{"name":"3"}],"attributeTable":[{"key":"answer","value":{"intValue":"42"}}],"attributeUnits":[{"unit":"5"}],"linkTable":[{"traceId":"0102030405060708090a0b0c0d0e0f10","spanId":"1112131415161718"}],"stringTable":["foobar"],"periodType":{}}}],"schemaUrl":"schemaURL"}],"schemaUrl":"schemaURL"}]}`
+var profilesJSON = `{"resourceProfiles":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}},{"key":"service.name","value":{"stringValue":"testService"}}],"droppedAttributesCount":1},"scopeProfiles":[{"scope":{"name":"scope name","version":"scope version"},"profiles":[{"profileId":"0102030405060708090a0b0c0d0e0f10","startTimeUnixNano":"1684617382541971000","endTimeUnixNano":"1684623646539558000","attributes":[{"key":"hello","value":{"stringValue":"world"}},{"key":"foo","value":{"stringValue":"bar"}}],"droppedAttributesCount":1,"profile":{"sampleType":[{"type":"1","unit":"2"}],"sample":[{"locationsStartIndex":"1","locationsLength":"10","stacktraceIdIndex":1,"attributes":["1"],"link":"42"}],"mapping":[{"id":"1"}],"location":[{"id":"2"}],"locationIndices":["1"],"function":[{"name":"3"}],"attributeTable":[{"key":"answer","value":{"intValue":"42"}}],"attributeUnits":[{"unit":"5"}],"linkTable":[{"traceId":"0102030405060708090a0b0c0d0e0f10","spanId":"1112131415161718"}],"stringTable":["foobar"],"periodType":{}}}],"schemaUrl":"schemaURL"}],"schemaUrl":"schemaURL"}]}`
 
 func TestJSONUnmarshal(t *testing.T) {
 	decoder := &JSONUnmarshaler{}

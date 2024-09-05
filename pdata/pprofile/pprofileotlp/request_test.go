@@ -24,6 +24,7 @@ var profilesRequestJSON = []byte(`
 						"scope": {},
 						"profiles": [
 							{
+								"profileId": "",
 								"profile": {
 									"sample": [
 										{
