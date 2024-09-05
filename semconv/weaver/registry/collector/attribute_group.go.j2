@@ -52,7 +52,18 @@ const (
     Attribute{{to_go_name(attribute.name)}} = "{{attribute.name}}"
 {% endfor %}
 )
-{# TODO - generate enum values #}
+{% for attribute in group.attributes | select("stable") | select("enum") %}
+{# TODO - Previously, non-string enums were not handled #}
+{% if (attribute.type | instantiated_type) == "string" %}
+{{ ["Enum values for " ~ attribute.name] | comment}}
+const (
+{%- for val in attribute.type.members %}
+   {{ val.brief | comment }}
+   Attribute{{to_go_name(attribute.name ~ "." ~ val.id)}} = "{{val.value}}" 
+{%- endfor %}
+)
+{% endif %}
+{% endfor %}
 {% endif %}
 {% endfor %}
 
