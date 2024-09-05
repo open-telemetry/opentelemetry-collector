@@ -73,6 +73,16 @@ var profilesOTLP = func() Profiles {
 	// Add location
 	l := pc.Profile().Location().AppendEmpty()
 	l.SetID(2)
+	l.SetMappingIndex(3)
+	l.SetAddress(4)
+	l.SetIsFolded(true)
+	l.SetTypeIndex(5)
+	l.Attributes().Append(6)
+	l.Attributes().Append(7)
+	li := l.Line().AppendEmpty()
+	li.SetFunctionIndex(1)
+	li.SetLine(2)
+	li.SetColumn(3)
 	pc.Profile().LocationIndices().Append(1)
 	// Add function
 	f := pc.Profile().Function().AppendEmpty()
@@ -93,7 +103,7 @@ var profilesOTLP = func() Profiles {
 	return pd
 }()
 
-var profilesJSON = `{"resourceProfiles":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}},{"key":"service.name","value":{"stringValue":"testService"}}],"droppedAttributesCount":1},"scopeProfiles":[{"scope":{"name":"scope name","version":"scope version"},"profiles":[{"profileId":"0102030405060708090a0b0c0d0e0f10","startTimeUnixNano":"1684617382541971000","endTimeUnixNano":"1684623646539558000","attributes":[{"key":"hello","value":{"stringValue":"world"}},{"key":"foo","value":{"stringValue":"bar"}}],"droppedAttributesCount":1,"profile":{"sampleType":[{"type":"1","unit":"2"}],"sample":[{"locationsStartIndex":"1","locationsLength":"10","stacktraceIdIndex":1,"attributes":["1"],"link":"42"}],"mapping":[{"id":"1","memoryStart":"2","memoryLimit":"3","fileOffset":"4","filename":"5","buildId":"6","attributes":["7","8"],"hasFunctions":true,"hasFilenames":true,"hasLineNumbers":true,"hasInlineFrames":true}],"location":[{"id":"2"}],"locationIndices":["1"],"function":[{"name":"3"}],"attributeTable":[{"key":"answer","value":{"intValue":"42"}}],"attributeUnits":[{"unit":"5"}],"linkTable":[{"traceId":"0102030405060708090a0b0c0d0e0f10","spanId":"1112131415161718"}],"stringTable":["foobar"],"periodType":{}}}],"schemaUrl":"schemaURL"}],"schemaUrl":"schemaURL"}]}`
+var profilesJSON = `{"resourceProfiles":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}},{"key":"service.name","value":{"stringValue":"testService"}}],"droppedAttributesCount":1},"scopeProfiles":[{"scope":{"name":"scope name","version":"scope version"},"profiles":[{"profileId":"0102030405060708090a0b0c0d0e0f10","startTimeUnixNano":"1684617382541971000","endTimeUnixNano":"1684623646539558000","attributes":[{"key":"hello","value":{"stringValue":"world"}},{"key":"foo","value":{"stringValue":"bar"}}],"droppedAttributesCount":1,"profile":{"sampleType":[{"type":"1","unit":"2"}],"sample":[{"locationsStartIndex":"1","locationsLength":"10","stacktraceIdIndex":1,"attributes":["1"],"link":"42"}],"mapping":[{"id":"1","memoryStart":"2","memoryLimit":"3","fileOffset":"4","filename":"5","buildId":"6","attributes":["7","8"],"hasFunctions":true,"hasFilenames":true,"hasLineNumbers":true,"hasInlineFrames":true}],"location":[{"id":"2","mappingIndex":"3","address":"4","line":[{"functionIndex":"1","line":"2","column":"3"}],"isFolded":true,"typeIndex":5,"attributes":["6","7"]}],"locationIndices":["1"],"function":[{"name":"3"}],"attributeTable":[{"key":"answer","value":{"intValue":"42"}}],"attributeUnits":[{"unit":"5"}],"linkTable":[{"traceId":"0102030405060708090a0b0c0d0e0f10","spanId":"1112131415161718"}],"stringTable":["foobar"],"periodType":{}}}],"schemaUrl":"schemaURL"}],"schemaUrl":"schemaURL"}]}`
 
 func TestJSONUnmarshal(t *testing.T) {
 	decoder := &JSONUnmarshaler{}
