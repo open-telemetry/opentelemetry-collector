@@ -26,7 +26,7 @@ func TestAllSemConvFilesAreCrated(t *testing.T) {
 	assert.NoError(t, err)
 
 	for _, f := range files {
-		if !f.IsDir() {
+		if !f.IsDir() || f.Name() == "weaver" {
 			continue
 		}
 
