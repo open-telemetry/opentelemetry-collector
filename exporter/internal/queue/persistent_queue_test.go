@@ -535,7 +535,7 @@ func TestPersistentQueueStartWithNonDispatched(t *testing.T) {
 func TestPersistentQueueStartWithNonDispatchedConcurrent(t *testing.T) {
 	req := newTracesRequest(1, 1)
 
-	ext := NewMockStorageExtensionWithDelay(nil, 50*time.Nanosecond)
+	ext := NewMockStorageExtensionWithDelay(nil, 20*time.Nanosecond)
 	pq := createTestPersistentQueueWithItemsCapacity(t, ext, 2500)
 
 	proWg := sync.WaitGroup{}
@@ -550,7 +550,7 @@ func TestPersistentQueueStartWithNonDispatchedConcurrent(t *testing.T) {
 					if err := pq.Offer(context.Background(), req); err == nil {
 						break
 					}
-					time.Sleep(time.Millisecond)
+					time.Sleep(50 * time.Nanosecond)
 				}
 			}
 		}()
