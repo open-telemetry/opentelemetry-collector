@@ -15,25 +15,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 )
 
-// Connector is an interface that allows using implementations of the builder
-// from different packages.
-type Connector interface {
-	CreateTracesToTraces(context.Context, connector.Settings, consumer.Traces) (connector.Traces, error)
-	CreateTracesToMetrics(context.Context, connector.Settings, consumer.Metrics) (connector.Traces, error)
-	CreateTracesToLogs(context.Context, connector.Settings, consumer.Logs) (connector.Traces, error)
-
-	CreateMetricsToTraces(context.Context, connector.Settings, consumer.Traces) (connector.Metrics, error)
-	CreateMetricsToMetrics(context.Context, connector.Settings, consumer.Metrics) (connector.Metrics, error)
-	CreateMetricsToLogs(context.Context, connector.Settings, consumer.Logs) (connector.Metrics, error)
-
-	CreateLogsToTraces(context.Context, connector.Settings, consumer.Traces) (connector.Logs, error)
-	CreateLogsToMetrics(context.Context, connector.Settings, consumer.Metrics) (connector.Logs, error)
-	CreateLogsToLogs(context.Context, connector.Settings, consumer.Logs) (connector.Logs, error)
-
-	IsConfigured(component.ID) bool
-	Factory(component.Type) component.Factory
-}
-
 // ConnectorBuilder is a helper struct that given a set of Configs and Factories helps with creating connectors.
 type ConnectorBuilder struct {
 	cfgs      map[component.ID]component.Config
