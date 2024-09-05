@@ -542,40 +542,29 @@ func TestPersistentQueueStartWithNonDispatchedConcurrent(t *testing.T) {
 	// Sending small amount of data as windows test can't handle the test fast enough
 	for j := 0; j < 5; j++ {
 		proWg.Add(1)
-		t.Log("spawning a producer goroutine")
 		go func() {
-			t.Log("spawned a producer goroutine")
 			defer proWg.Done()
 			// Put in items up to capacity
 			for i := 0; i < 10; i++ {
 				for {
 					// retry infinitely so the exact amount of items are added to the queue eventually
 					if err := pq.Offer(context.Background(), req); err == nil {
-						t.Log("offer was successful")
 						break
-					} else {
-						t.Log(err.Error())
 					}
-					t.Log("sleeping and trying again")
 					time.Sleep(50 * time.Nanosecond)
 				}
 			}
-			t.Log("exiting producer loop")
 		}()
 	}
 
 	conWg := sync.WaitGroup{}
 	for j := 0; j < 5; j++ {
 		conWg.Add(1)
-		t.Log("spawning a consumer goroutine")
 		go func() {
-			t.Log("spanwed a consumer goroutine")
 			defer conWg.Done()
 			for i := 0; i < 10; i++ {
 				require.True(t, pq.Consume(func(context.Context, tracesRequest) error { return nil }))
-				t.Log("consume was successful")
 			}
-			t.Log("exiting consumer loop")
 		}()
 	}
 
