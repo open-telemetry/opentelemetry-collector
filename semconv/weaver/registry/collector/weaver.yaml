@@ -1,14 +1,26 @@
 templates:
   - pattern: resource.go.j2
-    filter: semconv_signal("resource",{})
+    filter: >
+      .groups
+      | map(select(.type == "resource"))
+      | map(. + {root_namespace: (if .id | index(".") then .id | split(".") | .[1] else "other" end)})
+      | sort_by(.root_namespace)
     application_mode: single
     file_name: generated_resource.go
   - pattern: event.go.j2
-    filter: semconv_signal("event",{})
+    filter: >
+      .groups
+      | map(select(.type == "event"))
+      | map(. + {root_namespace: (if .id | index(".") then .id | split(".") | .[1] else "other" end)})
+      | sort_by(.root_namespace)
     application_mode: single
     file_name: generated_event.go
   - pattern: trace.go.j2
-    filter: semconv_signal("trace",{})
+    filter: >
+      .groups
+      | map(select(.type == "trace"))
+      | map(. + {root_namespace: (if .id | index(".") then .id | split(".") | .[1] else "other" end)})
+      | sort_by(.root_namespace)
     file_name: generated_trace.go
     application_mode: single
   - pattern: attribute_group.go.j2

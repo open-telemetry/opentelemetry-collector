@@ -28,7 +28,7 @@ Examples: {{ attr.examples | pprint | trim("[]")  }}
 {%- endmacro -%}
 {%- macro godoc(attr) -%}
 {{ attr.brief }}
-
+Stability: {{ attr.stability | title }}
 {% if attr is enum %}Type: Enum{% else %}Type: {{ attr.type | instantiated_type }}{% endif %}
 {{ requirement_level_doc(attr) }}
 {{ deprecated_doc(attr) }}
@@ -43,16 +43,16 @@ Examples: {{ attr.examples | pprint | trim("[]")  }}
 package semconv
 
 {% for group in ctx %}
-{% if group.attributes | select("stable") | length > 0 %}
+{% if group.attributes | length > 0 %}
 {# TODO - we're grouping by registry namespace, not attribute gorup, so we lose group docs #}
 {{ ["Namespace: " ~ group.root_namespace] | comment }}
 const (
-{% for attribute in group.attributes | select("stable") %}
+{% for attribute in group.attributes %}
     {{ godoc(attribute) | comment(indent=4) }}
     Attribute{{to_go_name(attribute.name)}} = "{{attribute.name}}"
 {% endfor %}
 )
-{% for attribute in group.attributes | select("stable") | select("enum") %}
+{% for attribute in group.attributes | select("enum") %}
 {# TODO - Previously, non-string enums were not handled #}
 {% if (attribute.type | instantiated_type) == "string" %}
 {{ ["Enum values for " ~ attribute.name] | comment}}
@@ -69,7 +69,7 @@ const (
 
 func GetAttribute_groupSemanticConventionAttributeNames() []string() {
     return []string(
-        {% for group in ctx %}{% for attribute in group.attributes | select("stable") %}Attribute{{to_go_name(attribute.name)}}
+        {% for group in ctx %}{% for attribute in group.attributes %}Attribute{{to_go_name(attribute.name)}}
         {% endfor %}{% endfor %}
     )
 }
