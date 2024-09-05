@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/embedded"
 	"go.opentelemetry.io/otel/trace/noop"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -47,10 +48,28 @@ func attributes(set Settings, cfg Config) map[string]interface{} {
 	return attrs
 }
 
+type noopNoContextTracer struct {
+	embedded.Tracer
+}
+
+var noopSpan = noop.Span{}
+
+func (n *noopNoContextTracer) Start(ctx context.Context, _ string, _ ...trace.SpanStartOption) (context.Context, trace.Span) {
+	return ctx, noopSpan
+}
+
+type noopNoContextTracerProvider struct {
+	embedded.TracerProvider
+}
+
+func (n *noopNoContextTracerProvider) Tracer(_ string, _ ...trace.TracerOption) trace.Tracer {
+	return &noopNoContextTracer{}
+}
+
 // New creates a new Telemetry from Config.
 func newTracerProvider(ctx context.Context, set Settings, cfg Config) (trace.TracerProvider, error) {
 	if globalgates.NoopTracerProvider.IsEnabled() || cfg.Traces.Level == configtelemetry.LevelNone {
-		return noop.NewTracerProvider(), nil
+		return &noopNoContextTracerProvider{}, nil
 	}
 
 	sch := semconv.SchemaURL
