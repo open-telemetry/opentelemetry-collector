@@ -1,7 +1,7 @@
-{# TODO - move to built in support for language constants in weaver #}
 {%- macro to_go_name(fqn) -%}
-{{fqn | replace(".", " ") | replace("_", " ") | title | replace(" ", "")}}
+{{ fqn | title_case | acronym | replace(" ", "")  }}
 {%- endmacro -%}
+{# Note: Requirement level should only be documented *per signal*, not on a registry. #}
 {%- macro requirement_level_doc(attr) -%}
 {%- if attr.requirement_level == "required" -%}
 Requirement Level: Required
@@ -30,7 +30,6 @@ Examples: {{ attr.examples | pprint | trim("[]")  }}
 {{ attr.brief }}
 Stability: {{ attr.stability | title }}
 {% if attr is enum %}Type: Enum{% else %}Type: {{ attr.type | instantiated_type }}{% endif %}
-{{ requirement_level_doc(attr) }}
 {{ deprecated_doc(attr) }}
 {{ examples_doc(attr) }}
 {{ notes_doc(attr) }}
