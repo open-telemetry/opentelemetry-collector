@@ -22,7 +22,7 @@ Number of metric points successfully pushed into the pipeline.
 | ---- | ----------- | ---------- | --------- |
 | {datapoints} | Sum | Int | true |
 
-### otelcol_receiver_accepted_profile_records
+### otelcol_receiver_accepted_samples
 
 Number of profile records successfully pushed into the pipeline.
 
@@ -54,7 +54,7 @@ Number of metric points that could not be pushed into the pipeline.
 | ---- | ----------- | ---------- | --------- |
 | {datapoints} | Sum | Int | true |
 
-### otelcol_receiver_refused_profile_records
+### otelcol_receiver_refused_samples
 
 Number of profile records that could not be pushed into the pipeline.
 

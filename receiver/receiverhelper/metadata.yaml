@@ -58,7 +58,7 @@ telemetry:
         value_type: int
         monotonic: true
 
-    receiver_accepted_profile_records:
+    receiver_accepted_samples:
       enabled: true
       description: Number of profile records successfully pushed into the pipeline.
       unit: "{records}"
@@ -66,7 +66,7 @@ telemetry:
         value_type: int
         monotonic: true
 
-    receiver_refused_profile_records:
+    receiver_refused_samples:
       enabled: true
       description: Number of profile records that could not be pushed into the pipeline.
       unit: "{records}"
