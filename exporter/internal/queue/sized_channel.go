@@ -55,16 +55,8 @@ func (vcq *sizedChannel[T]) push(el T, size int64, callback func() error) error 
 			return err
 		}
 	}
-
-	select {
-	// for persistent queue implementation, channel len can be out of sync with used size. Attempt to put it
-	// into the channel. If it is full, simply returns ErrQueueIsFull error. This prevents potential deadlock issues.
-	case vcq.ch <- el:
-		return nil
-	default:
-		vcq.used.Add(-size)
-		return ErrQueueIsFull
-	}
+	vcq.ch <- el
+	return nil
 }
 
 // pop removes the element from the queue and returns it.
