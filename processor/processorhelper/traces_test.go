@@ -76,7 +76,7 @@ func newTestTProcessor(retError error) ProcessTracesFunc {
 }
 
 func TestTracesProcessor_RecordInOut(t *testing.T) {
-	// Regardless of how many logs are ingested, emit just one
+	// Regardless of how many spans are ingested, emit just one
 	mockAggregate := func(_ context.Context, _ ptrace.Traces) (ptrace.Traces, error) {
 		td := ptrace.NewTraces()
 		td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()

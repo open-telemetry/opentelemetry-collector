@@ -76,7 +76,7 @@ func newTestMProcessor(retError error) ProcessMetricsFunc {
 }
 
 func TestMetricsProcessor_RecordInOut(t *testing.T) {
-	// Regardless of how many logs are ingested, emit just one
+	// Regardless of how many data points are ingested, emit just one
 	mockAggregate := func(_ context.Context, _ pmetric.Metrics) (pmetric.Metrics, error) {
 		md := pmetric.NewMetrics()
 		md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptySum().DataPoints().AppendEmpty()
