@@ -67,9 +67,9 @@ const (
 {% endif %}
 {% endfor %}
 
-func GetAttribute_groupSemanticConventionAttributeNames() []string() {
-    return []string(
-        {% for group in ctx %}{% for attribute in group.attributes %}Attribute{{to_go_name(attribute.name)}}
+func GetAttribute_groupSemanticConventionAttributeNames() []string {
+    return []string {
+        {% for group in ctx %}{% for attribute in group.attributes %}Attribute{{to_go_name(attribute.name)}},
         {% endfor %}{% endfor %}
-    )
+    }
 }
