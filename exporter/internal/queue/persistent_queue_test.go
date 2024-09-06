@@ -593,7 +593,6 @@ func TestPersistentQueueStartWithNonDispatchedConcurrent(t *testing.T) {
 	case <-doneCtx.Done():
 		assert.Fail(t, "timed out waiting for producers to complete")
 	}
-	
 	assert.Zero(t, pq.sizedChannel.Size())
 }
 
