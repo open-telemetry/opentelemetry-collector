@@ -76,6 +76,12 @@ otelcol_scraper_scraped_metric_points{receiver="fakeReceiver",scraper="fakeScrap
 # HELP otelcol_scraper_errored_metric_points Number of metric points that were unable to be scraped.
 # TYPE otelcol_scraper_errored_metric_points counter
 otelcol_scraper_errored_metric_points{receiver="fakeReceiver",scraper="fakeScraper"} 41
+# HELP otelcol_receiver_accepted_samples Number of profiles samples successfully pushed into the pipeline.
+# TYPE otelcol_receiver_accepted_samples counter
+otelcol_receiver_accepted_samples{receiver="fakeReceiver",transport="fakeTransport"} 42
+# HELP otelcol_receiver_refused_samples Number of profiles samples that could not be pushed into the pipeline.
+# TYPE otelcol_receiver_refused_samples counter
+otelcol_receiver_refused_samples{receiver="fakeReceiver",transport="fakeTransport"} 13
 # HELP gauge_metric A simple gauge metric
 # TYPE gauge_metric gauge
 gauge_metric 49
