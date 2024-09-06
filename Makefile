@@ -249,7 +249,7 @@ WEAVER_CONTAINER=otel/weaver:v0.9.1
 # Generate semantic convention constants. Requires a clone of the opentelemetry-specification repo
 gensemconv: $(SEMCONVKIT)
 	@[ "${SPECTAG}" ] || ( echo ">> env var SPECTAG is not set"; exit 1 )
-	@echo "Generating semantic convention constants from specification version ${SPECTAG} at ${SPECPATH}"
+	@echo "Generating semantic convention constants from specification version ${SPECTAG} at https://github.com/open-telemetry/semantic-conventions.git@${SPECTAG}"
 # Ensure the target directory for source code is available.
 	mkdir -p $(PWD)/semconv/${SPECTAG}
 # Note: We mount a home directory for downloading/storing the semconv repository.
