@@ -30,6 +30,9 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
 	meter                             metric.Meter
+	ExporterDroppedLogRecords         metric.Int64Counter
+	ExporterDroppedMetricPoints       metric.Int64Counter
+	ExporterDroppedSpans              metric.Int64Counter
 	ExporterEnqueueFailedLogRecords   metric.Int64Counter
 	ExporterEnqueueFailedMetricPoints metric.Int64Counter
 	ExporterEnqueueFailedSpans        metric.Int64Counter
@@ -92,6 +95,24 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	}
 	builder.meters[configtelemetry.LevelBasic] = LeveledMeter(settings, configtelemetry.LevelBasic)
 	var err, errs error
+	builder.ExporterDroppedLogRecords, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
+		"otelcol_exporter_dropped_log_records",
+		metric.WithDescription("Number of log records dropped after failing to export."),
+		metric.WithUnit("{records}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterDroppedMetricPoints, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
+		"otelcol_exporter_dropped_metric_points",
+		metric.WithDescription("Number of metric points dropped after failing to export."),
+		metric.WithUnit("{records}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterDroppedSpans, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
+		"otelcol_exporter_dropped_spans",
+		metric.WithDescription("Number of spans dropped after failing to export."),
+		metric.WithUnit("{records}"),
+	)
+	errs = errors.Join(errs, err)
 	builder.ExporterEnqueueFailedLogRecords, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_exporter_enqueue_failed_log_records",
 		metric.WithDescription("Number of log records failed to be added to the sending queue."),

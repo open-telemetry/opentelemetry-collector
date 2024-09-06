@@ -309,6 +309,7 @@ func newBaseExporter(set exporter.Settings, signal component.DataType, osf obsre
 func (be *baseExporter) send(ctx context.Context, req Request) error {
 	err := be.queueSender.send(ctx, req)
 	if err != nil {
+		recordDroppedMetric(ctx, be.obsrep, int64(req.ItemsCount()))
 		be.set.Logger.Error("Exporting failed. Rejecting data."+be.exportFailureMessage,
 			zap.Error(err), zap.Int("rejected_items", req.ItemsCount()))
 	}
@@ -348,4 +349,16 @@ func (be *baseExporter) Shutdown(ctx context.Context) error {
 		be.queueSender.Shutdown(ctx),
 		// Last shutdown the wrapped exporter itself.
 		be.ShutdownFunc.Shutdown(ctx))
+}
+
+func recordDroppedMetric(ctx context.Context, obsrep *obsReport, count int64) {
+	if obsrep.dataType == component.DataTypeTraces {
+		obsrep.telemetryBuilder.ExporterDroppedSpans.Add(ctx, count)
+	}
+	if obsrep.dataType == component.DataTypeMetrics {
+		obsrep.telemetryBuilder.ExporterDroppedMetricPoints.Add(ctx, count)
+	}
+	if obsrep.dataType == component.DataTypeLogs {
+		obsrep.telemetryBuilder.ExporterDroppedLogRecords.Add(ctx, count)
+	}
 }

@@ -99,3 +99,27 @@ telemetry:
       gauge:
         value_type: int
         async: true
+
+    exporter_dropped_spans:
+      enabled: true
+      description: Number of spans dropped after failing to export.
+      unit: "{records}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    exporter_dropped_metric_points:
+      enabled: true
+      description: Number of metric points dropped after failing to export.
+      unit: "{records}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    exporter_dropped_log_records:
+      enabled: true
+      description: Number of log records dropped after failing to export.
+      unit: "{records}"
+      sum:
+        value_type: int
+        monotonic: true

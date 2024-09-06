@@ -6,6 +6,30 @@
 
 The following telemetry is emitted by this component.
 
+### otelcol_exporter_dropped_log_records
+
+Number of log records dropped after failing to export.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {records} | Sum | Int | true |
+
+### otelcol_exporter_dropped_metric_points
+
+Number of metric points dropped after failing to export.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {records} | Sum | Int | true |
+
+### otelcol_exporter_dropped_spans
+
+Number of spans dropped after failing to export.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {records} | Sum | Int | true |
+
 ### otelcol_exporter_enqueue_failed_log_records
 
 Number of log records failed to be added to the sending queue.
