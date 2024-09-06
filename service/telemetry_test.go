@@ -5,8 +5,8 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	io_prometheus_client "github.com/prometheus/client_model/go"
@@ -15,12 +15,12 @@ import (
 	"go.opentelemetry.io/contrib/config"
 	"go.opentelemetry.io/otel/metric"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/testutil"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
-	"go.opentelemetry.io/collector/service/internal/resource"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -77,6 +77,9 @@ func TestTelemetryInit(t *testing.T) {
 						"service_instance_id": testInstanceID,
 					},
 				},
+				"promhttp_metric_handler_errors_total": {
+					value: 0,
+				},
 				"target_info": {
 					value: 0,
 					labels: map[string]string{
@@ -114,6 +117,9 @@ func TestTelemetryInit(t *testing.T) {
 						"service_version":     "latest",
 						"service_instance_id": testInstanceID,
 					},
+				},
+				"promhttp_metric_handler_errors_total": {
+					value: 0,
 				},
 				"target_info": {
 					value: 0,
@@ -177,6 +183,9 @@ func TestTelemetryInit(t *testing.T) {
 						"service_instance_id": testInstanceID,
 					},
 				},
+				"promhttp_metric_handler_errors_total": {
+					value: 0,
+				},
 				"target_info": {
 					value: 0,
 					labels: map[string]string{
@@ -189,44 +198,50 @@ func TestTelemetryInit(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			previousValue := obsreportconfig.DisableHighCardinalityMetricsfeatureGate.IsEnabled()
+			require.NoError(t, featuregate.GlobalRegistry().Set(obsreportconfig.DisableHighCardinalityMetricsfeatureGate.ID(), tc.disableHighCard))
+			defer func() {
+				require.NoError(t, featuregate.GlobalRegistry().Set(obsreportconfig.DisableHighCardinalityMetricsfeatureGate.ID(), previousValue))
+			}()
+
+			var endpoint string
 			if tc.extendedConfig {
+				promEndpoint := testutil.GetAvailableLocalAddressPrometheus(t)
 				tc.cfg.Metrics.Readers = []config.MetricReader{
 					{
 						Pull: &config.PullMetricReader{
 							Exporter: config.MetricExporter{
-								Prometheus: testutil.GetAvailableLocalAddressPrometheus(t),
+								Prometheus: promEndpoint,
 							},
 						},
 					},
 				}
+				endpoint = fmt.Sprintf("http://%s:%d/metrics", *promEndpoint.Host, *promEndpoint.Port)
 			}
 			if tc.cfg == nil {
+				promEndpoint := testutil.GetAvailableLocalAddress(t)
 				tc.cfg = &telemetry.Config{
 					Resource: map[string]*string{
 						semconv.AttributeServiceInstanceID: &testInstanceID,
 					},
 					Metrics: telemetry.MetricsConfig{
 						Level:   configtelemetry.LevelDetailed,
-						Address: testutil.GetAvailableLocalAddress(t),
+						Address: promEndpoint,
 					},
 				}
+				endpoint = fmt.Sprintf("http://%s/metrics", promEndpoint)
 			}
-			set := meterProviderSettings{
-				res:               resource.New(component.NewDefaultBuildInfo(), tc.cfg.Resource),
-				cfg:               tc.cfg.Metrics,
-				asyncErrorChannel: make(chan error),
-			}
-			mp, err := newMeterProvider(set, tc.disableHighCard)
+			telset := telemetry.Settings{}
+			telFactory := telemetry.NewFactory()
+			mp, shutdown, err := telFactory.CreateMeterProvider(context.Background(), telset, tc.cfg)
 			require.NoError(t, err)
 			defer func() {
-				if prov, ok := mp.(interface{ Shutdown(context.Context) error }); ok {
-					require.NoError(t, prov.Shutdown(context.Background()))
-				}
+				require.NoError(t, shutdown(context.Background()))
 			}()
 
 			createTestMetrics(t, mp)
 
-			metrics := getMetricsFromPrometheus(t, mp.(*meterProvider).servers[0].Handler)
+			metrics := getMetricsFromPrometheus(t, endpoint)
 			require.Equal(t, len(tc.expectedMetrics), len(metrics))
 
 			for metricName, metricValue := range tc.expectedMetrics {
@@ -243,7 +258,6 @@ func TestTelemetryInit(t *testing.T) {
 				require.Equal(t, metricValue.value, mf.Metric[0].Counter.GetValue(), "value for metric %q was different than expected", metricName)
 			}
 		})
-
 	}
 }
 
@@ -262,15 +276,15 @@ func createTestMetrics(t *testing.T, mp metric.MeterProvider) {
 	httpExampleCounter.Add(context.Background(), 10, metric.WithAttributes(proctelemetry.HTTPUnacceptableKeyValues...))
 }
 
-func getMetricsFromPrometheus(t *testing.T, handler http.Handler) map[string]*io_prometheus_client.MetricFamily {
-	req, err := http.NewRequest(http.MethodGet, "/metrics", nil)
+func getMetricsFromPrometheus(t *testing.T, endpoint string) map[string]*io_prometheus_client.MetricFamily {
+	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
 	require.NoError(t, err)
 
-	rr := httptest.NewRecorder()
-	handler.ServeHTTP(rr, req)
+	res, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
 
 	var parser expfmt.TextParser
-	parsed, err := parser.TextToMetricFamilies(rr.Body)
+	parsed, err := parser.TextToMetricFamilies(res.Body)
 	require.NoError(t, err)
 
 	return parsed

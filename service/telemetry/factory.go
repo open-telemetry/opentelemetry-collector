@@ -7,6 +7,7 @@ import (
 	"context"
 	"time"
 
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -54,6 +55,10 @@ func NewFactory() Factory {
 		internal.WithTracerProvider(func(ctx context.Context, set Settings, cfg component.Config) (trace.TracerProvider, error) {
 			c := *cfg.(*Config)
 			return newTracerProvider(ctx, set, c)
+		}),
+		internal.WithMeterProvider(func(ctx context.Context, set Settings, cfg component.Config) (metric.MeterProvider, internal.ShutdownFunc, error) {
+			c := *cfg.(*Config)
+			return newMeterProvider(ctx, set, c)
 		}),
 	)
 }
