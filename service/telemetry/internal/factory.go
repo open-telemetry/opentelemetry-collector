@@ -17,9 +17,8 @@ import (
 
 // Settings holds configuration for building Telemetry.
 type Settings struct {
-	BuildInfo         component.BuildInfo
-	AsyncErrorChannel chan error
-	ZapOptions        []zap.Option
+	BuildInfo  component.BuildInfo
+	ZapOptions []zap.Option
 }
 
 // Factory is factory interface for telemetry.
@@ -37,7 +36,7 @@ type Factory interface {
 	CreateTracerProvider(ctx context.Context, set Settings, cfg component.Config) (trace.TracerProvider, error)
 
 	// CreateMeterProvider creates a MeterProvider.
-	CreateMeterProvider(ctx context.Context, set Settings, cfg component.Config) (metric.MeterProvider, error)
+	CreateMeterProvider(ctx context.Context, set Settings, cfg component.Config) (metric.MeterProvider, ShutdownFunc, error)
 
 	// unexportedFactoryFunc is used to prevent external implementations of Factory.
 	unexportedFactoryFunc()
@@ -106,8 +105,12 @@ func (f *factory) CreateTracerProvider(ctx context.Context, set Settings, cfg co
 	return f.CreateTracerProviderFunc(ctx, set, cfg)
 }
 
+type ShutdownFunc func(context.Context) error
+
+func noopShutdown(context.Context) error { return nil }
+
 // CreateMeterProviderFunc is the equivalent of Factory.CreateMeterProvider.
-type CreateMeterProviderFunc func(context.Context, Settings, component.Config) (metric.MeterProvider, error)
+type CreateMeterProviderFunc func(context.Context, Settings, component.Config) (metric.MeterProvider, ShutdownFunc, error)
 
 // WithMeterProvider overrides the default no-op meter provider.
 func WithMeterProvider(createMeterProvider CreateMeterProviderFunc) FactoryOption {
@@ -116,9 +119,9 @@ func WithMeterProvider(createMeterProvider CreateMeterProviderFunc) FactoryOptio
 	})
 }
 
-func (f *factory) CreateMeterProvider(ctx context.Context, set Settings, cfg component.Config) (metric.MeterProvider, error) {
+func (f *factory) CreateMeterProvider(ctx context.Context, set Settings, cfg component.Config) (metric.MeterProvider, ShutdownFunc, error) {
 	if f.CreateMeterProviderFunc == nil {
-		return metricnoop.NewMeterProvider(), nil
+		return metricnoop.NewMeterProvider(), noopShutdown, nil
 	}
 	return f.CreateMeterProviderFunc(ctx, set, cfg)
 }

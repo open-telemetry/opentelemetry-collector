@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"runtime"
 
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/noop"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
@@ -86,9 +87,24 @@ type Service struct {
 	collectorConf     *confmap.Conf
 }
 
+// otelErrorHandler is registered as the global error handler
+// to trigger the collector to shutdown if there are errors produced
+// by the otel SDK.
+type otelErrorHandler struct {
+	asyncErrorChannel chan error
+}
+
+func (o otelErrorHandler) Handle(err error) {
+	o.asyncErrorChannel <- err
+}
+
+const (
+	zapKeyTelemetryAddress = "address"
+	zapKeyTelemetryLevel   = "metrics level"
+)
+
 // New creates a new Service, its telemetry, and Components.
 func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
-	disableHighCard := obsreportconfig.DisableHighCardinalityMetricsfeatureGate.IsEnabled()
 	extendedConfig := obsreportconfig.UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate.IsEnabled()
 
 	srv := &Service{
@@ -117,6 +133,8 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		ZapOptions: set.LoggingOptions,
 	}
 
+	otel.SetErrorHandler(otelErrorHandler{asyncErrorChannel: set.AsyncErrorChannel})
+
 	logger, err := telFactory.CreateLogger(ctx, telset, &cfg.Telemetry)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create logger: %w", err)
@@ -129,16 +147,10 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 
 	logger.Info("Setting up own telemetry...")
 
-	mp, err := newMeterProvider(
-		meterProviderSettings{
-			res:               res,
-			cfg:               cfg.Telemetry.Metrics,
-			asyncErrorChannel: set.AsyncErrorChannel,
-		},
-		disableHighCard,
-	)
+	// TODO: handle shutdown func
+	mp, _, err := telFactory.CreateMeterProvider(ctx, telset, &cfg.Telemetry)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create metric provider: %w", err)
+		return nil, fmt.Errorf("failed to create meter provider: %w", err)
 	}
 
 	logsAboutMeterProvider(logger, cfg.Telemetry.Metrics, mp, extendedConfig)
@@ -197,11 +209,7 @@ func logsAboutMeterProvider(logger *zap.Logger, cfg telemetry.MetricsConfig, mp 
 		logger.Warn("service::telemetry::metrics::address is being deprecated in favor of service::telemetry::metrics::readers")
 	}
 
-	if lmp, ok := mp.(interface {
-		LogAboutServers(logger *zap.Logger, cfg telemetry.MetricsConfig)
-	}); ok {
-		lmp.LogAboutServers(logger, cfg)
-	}
+	// TODO: log about readers
 }
 
 // Start starts the extensions and pipelines. If Start fails Shutdown should be called to ensure a clean state.
