@@ -71,12 +71,12 @@ Config defines configuration for OTLP receiver.
 
 ### confighttp-HTTPServerSettings
 
-| Name                  | Type                                                      | Default      | Docs                                                                                                                                    |
-|-----------------------|-----------------------------------------------------------|--------------|-----------------------------------------------------------------------------------------------------------------------------------------|
-| endpoint              | string                                                    | localhost:4318 | Endpoint configures the listening address for the server.                                                                               |
-| tls                   | [configtls-TLSServerSetting](#configtls-tlsserversetting) | <no value>   | TLSSetting struct exposes TLS client configuration.                                                                                     |
-| cors                  | [confighttp-CORSConfig](#confighttp-corsconfig)           | <no value>   | CORSConfig configures a receiver for HTTP cross-origin resource sharing (CORS).                                                       |
-| max_request_body_size | int                                                       | 0            | MaxRequestBodySize configures the maximum allowed body size in bytes for a single request. The default `0` means there's no restriction |
+| Name                  | Type                                                      | Default       | Docs                                                                                                                   |
+|-----------------------|-----------------------------------------------------------|---------------|------------------------------------------------------------------------------------------------------------------------|
+| endpoint              | string                                                    | localhost:4318 | Endpoint configures the listening address for the server.                                                              |
+| tls                   | [configtls-TLSServerSetting](#configtls-tlsserversetting) | <no value>    | TLSSetting struct exposes TLS client configuration.                                                                    |
+| cors                  | [confighttp-CORSConfig](#confighttp-corsconfig)           | <no value>    | CORSConfig configures a receiver for HTTP cross-origin resource sharing (CORS).                                        |
+| max_request_body_size | int                                                       | 20MiB         | MaxRequestBodySize configures the maximum allowed body size in bytes for a single request. The default value is 20MiB. |
 
 ### confighttp-CORSConfig
 
