@@ -1,3 +1,6 @@
+params:
+  excluded_namespaces: []
+  excluded_attributes: ["messaging.client_id"]
 templates:
   - pattern: resource.go.j2
     filter: >
@@ -26,7 +29,12 @@ templates:
   - pattern: attribute_group.go.j2
     filter: >
       semconv_grouped_attributes({
-        "exclude_deprecated": false
+        "exclude_deprecated": false,
+        "exclude_root_namespace": $excluded_namespaces,
+      })
+      | map({
+        root_namespace: .root_namespace,
+        attributes: .attributes | map(select(.name as $st | $excluded_attributes[] | index($st) | not)),
       })
     application_mode: single
     file_name: generated_attribute_group.go
