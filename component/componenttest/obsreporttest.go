@@ -36,6 +36,7 @@ const (
 )
 
 type TestTelemetry struct {
+	isSetup      bool
 	ts           component.TelemetrySettings
 	id           component.ID
 	SpanRecorder *tracetest.SpanRecorder
@@ -45,80 +46,112 @@ type TestTelemetry struct {
 }
 
 // CheckExporterTraces checks that for the current exported values for trace exporter metrics match given values.
-// Note: SetupTelemetry must be called before this function.
 func (tts *TestTelemetry) CheckExporterTraces(sentSpans, sendFailedSpans int64) error {
+	if !tts.isSetup {
+		panic("SetupTelemetry must be called before this function")
+	}
 	return tts.prometheusChecker.checkExporterTraces(tts.id, sentSpans, sendFailedSpans)
 }
 
 // CheckExporterMetrics checks that for the current exported values for metrics exporter metrics match given values.
-// Note: SetupTelemetry must be called before this function.
 func (tts *TestTelemetry) CheckExporterMetrics(sentMetricsPoints, sendFailedMetricsPoints int64) error {
+	if !tts.isSetup {
+		panic("SetupTelemetry must be called before this function")
+	}
 	return tts.prometheusChecker.checkExporterMetrics(tts.id, sentMetricsPoints, sendFailedMetricsPoints)
 }
 
 func (tts *TestTelemetry) CheckExporterEnqueueFailedMetrics(enqueueFailed int64) error {
+	if !tts.isSetup {
+		panic("SetupTelemetry must be called before this function")
+	}
 	return tts.prometheusChecker.checkExporterEnqueueFailed(tts.id, "metric_points", enqueueFailed)
 }
 
 func (tts *TestTelemetry) CheckExporterEnqueueFailedTraces(enqueueFailed int64) error {
+	if !tts.isSetup {
+		panic("SetupTelemetry must be called before this function")
+	}
 	return tts.prometheusChecker.checkExporterEnqueueFailed(tts.id, "spans", enqueueFailed)
 }
 
 func (tts *TestTelemetry) CheckExporterEnqueueFailedLogs(enqueueFailed int64) error {
+	if !tts.isSetup {
+		panic("SetupTelemetry must be called before this function")
+	}
 	return tts.prometheusChecker.checkExporterEnqueueFailed(tts.id, "log_records", enqueueFailed)
 }
 
 // CheckExporterLogs checks that for the current exported values for logs exporter metrics match given values.
-// Note: SetupTelemetry must be called before this function.
 func (tts *TestTelemetry) CheckExporterLogs(sentLogRecords, sendFailedLogRecords int64) error {
+	if !tts.isSetup {
+		panic("SetupTelemetry must be called before this function")
+	}
 	return tts.prometheusChecker.checkExporterLogs(tts.id, sentLogRecords, sendFailedLogRecords)
 }
 
 func (tts *TestTelemetry) CheckExporterMetricGauge(metric string, val int64, extraAttrs ...attribute.KeyValue) error {
+	if !tts.isSetup {
+		panic("SetupTelemetry must be called before this function")
+	}
 	attrs := attributesForExporterMetrics(tts.id)
 	attrs = append(attrs, extraAttrs...)
 	return tts.prometheusChecker.checkGauge(metric, val, attrs)
 }
 
 // CheckProcessorTraces checks that for the current exported values for trace exporter metrics match given values.
-// Note: SetupTelemetry must be called before this function.
 func (tts *TestTelemetry) CheckProcessorTraces(acceptedSpans, refusedSpans, droppedSpans, insertedSpans int64) error {
+	if !tts.isSetup {
+		panic("SetupTelemetry must be called before this function")
+	}
 	return tts.prometheusChecker.checkProcessorTraces(tts.id, acceptedSpans, refusedSpans, droppedSpans, insertedSpans)
 }
 
 // CheckProcessorMetrics checks that for the current exported values for metrics exporter metrics match given values.
-// Note: SetupTelemetry must be called before this function.
 func (tts *TestTelemetry) CheckProcessorMetrics(acceptedMetricPoints, refusedMetricPoints, droppedMetricPoints, insertedMetricPoints int64) error {
+	if !tts.isSetup {
+		panic("SetupTelemetry must be called before this function")
+	}
 	return tts.prometheusChecker.checkProcessorMetrics(tts.id, acceptedMetricPoints, refusedMetricPoints, droppedMetricPoints, insertedMetricPoints)
 }
 
 // CheckProcessorLogs checks that for the current exported values for logs exporter metrics match given values.
-// Note: SetupTelemetry must be called before this function.
 func (tts *TestTelemetry) CheckProcessorLogs(acceptedLogRecords, refusedLogRecords, droppedLogRecords, insertedLogRecords int64) error {
+	if !tts.isSetup {
+		panic("SetupTelemetry must be called before this function")
+	}
 	return tts.prometheusChecker.checkProcessorLogs(tts.id, acceptedLogRecords, refusedLogRecords, droppedLogRecords, insertedLogRecords)
 }
 
 // CheckReceiverTraces checks that for the current exported values for trace receiver metrics match given values.
-// Note: SetupTelemetry must be called before this function.
 func (tts *TestTelemetry) CheckReceiverTraces(protocol string, acceptedSpans, droppedSpans int64) error {
+	if !tts.isSetup {
+		panic("SetupTelemetry must be called before this function")
+	}
 	return tts.prometheusChecker.checkReceiverTraces(tts.id, protocol, acceptedSpans, droppedSpans)
 }
 
 // CheckReceiverLogs checks that for the current exported values for logs receiver metrics match given values.
-// Note: SetupTelemetry must be called before this function.
 func (tts *TestTelemetry) CheckReceiverLogs(protocol string, acceptedLogRecords, droppedLogRecords int64) error {
+	if !tts.isSetup {
+		panic("SetupTelemetry must be called before this function")
+	}
 	return tts.prometheusChecker.checkReceiverLogs(tts.id, protocol, acceptedLogRecords, droppedLogRecords)
 }
 
 // CheckReceiverMetrics checks that for the current exported values for metrics receiver metrics match given values.
-// Note: SetupTelemetry must be called before this function.
 func (tts *TestTelemetry) CheckReceiverMetrics(protocol string, acceptedMetricPoints, droppedMetricPoints int64) error {
+	if !tts.isSetup {
+		panic("SetupTelemetry must be called before this function")
+	}
 	return tts.prometheusChecker.checkReceiverMetrics(tts.id, protocol, acceptedMetricPoints, droppedMetricPoints)
 }
 
 // CheckScraperMetrics checks that for the current exported values for metrics scraper metrics match given values.
-// Note: SetupTelemetry must be called before this function.
 func (tts *TestTelemetry) CheckScraperMetrics(receiver component.ID, scraper component.ID, scrapedMetricPoints, erroredMetricPoints int64) error {
+	if !tts.isSetup {
+		panic("SetupTelemetry must be called before this function")
+	}
 	return tts.prometheusChecker.checkScraperMetrics(receiver, scraper, scrapedMetricPoints, erroredMetricPoints)
 }
 
@@ -169,6 +202,8 @@ func SetupTelemetry(id component.ID) (TestTelemetry, error) {
 	settings.prometheusChecker = &prometheusChecker{
 		otelHandler: promhttp.HandlerFor(promRegOtel, promhttp.HandlerOpts{}),
 	}
+
+	settings.isSetup = true
 
 	return settings, nil
 }
