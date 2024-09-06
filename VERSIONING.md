@@ -8,7 +8,7 @@ The policies are divided depending on the artifact's target audience. While an a
 
 ## End-user focused software artifacts
 
-End-user focused software artifacts are those that are intended to be used by [end-users](CONTRIBUTING.md#end-users) of the OpenTelemetry Collector. These artifacts include 
+End-user focused software artifacts are those that are intended for [end-users](CONTRIBUTING.md#end-users) of the OpenTelemetry Collector. These artifacts include 
 - Binary distributions of the OpenTelemetry Collector.
 - Collector components, such as receivers, processors, and exporters.
 
