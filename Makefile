@@ -248,24 +248,25 @@ WEAVER_CONTAINER=otel/weaver:v0.9.1
 
 # Generate semantic convention constants. Requires a clone of the opentelemetry-specification repo
 gensemconv: $(SEMCONVKIT)
-	@[ "${SPECPATH}" ] || ( echo ">> env var SPECPATH is not set"; exit 1 )
 	@[ "${SPECTAG}" ] || ( echo ">> env var SPECTAG is not set"; exit 1 )
 	@echo "Generating semantic convention constants from specification version ${SPECTAG} at ${SPECPATH}"
+# Ensure the target directory for source code is available.
 	mkdir -p $(PWD)/semconv/${SPECTAG}
+# Note: We mount a home directory for downloading/storing the semconv repository.
+# Weaver will automatically clean the cache when finished, but the directories will remain.
+	mkdir -p ~/.weaver
 	docker run --rm \
 		-u $(DOCKER_USER) \
+		--env HOME=/tmp/weaver \
 		--mount 'type=bind,source=$(PWD)/semconv/weaver,target=/home/weaver/templates,readonly' \
-		--mount 'type=bind,source=$(SPECPATH)/model,target=/home/weaver/source,readonly' \
+		--mount 'type=bind,source=$(HOME)/.weaver,target=/tmp/weaver/.weaver' \
 		--mount 'type=bind,source=$(PWD)/semconv/${SPECTAG},target=/home/weaver/target' \
 		$(WEAVER_CONTAINER) registry generate \
-		--registry=/home/weaver/source \
+		--registry=https://github.com/open-telemetry/semantic-conventions.git@$(SPECTAG)#model \
 		--templates=/home/weaver/templates \
 		collector \
 		/home/weaver/target
-#	$(SEMCONVGEN) -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/model/. --only=resource -p conventionType=resource -f generated_resource.go
-#	$(SEMCONVGEN) -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/model/. --only=event -p conventionType=event -f generated_event.go
-#	$(SEMCONVGEN) -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/model/. --only=span -p conventionType=trace -f generated_trace.go
-#	$(SEMCONVGEN) -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/model/. --only=attribute_group -p conventionType=attribute_group -f generated_attribute_group.go
+# TODO: we should gofmt the result of running weaver.
 	$(SEMCONVKIT) -output "semconv/$(SPECTAG)" -tag "$(SPECTAG)"
 
 # Checks that the HEAD of the contrib repo checked out in CONTRIB_PATH compiles

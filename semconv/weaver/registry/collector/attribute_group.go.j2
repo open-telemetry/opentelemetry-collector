@@ -55,7 +55,7 @@ const (
 {% for attribute in group.attributes | select("enum") %}
 {# TODO - Previously, non-string enums were not handled #}
 {% if (attribute.type | instantiated_type) == "string" %}
-{{ ["Enum values for " ~ attribute.name] | comment}}
+{{ ["Enum values for " ~ attribute.name] | comment }}
 const (
 {%- for val in attribute.type.members %}
    {{ val.brief | comment }}
