@@ -262,19 +262,19 @@ func (gcs *ClientConfig) ToClientConnWithOptions(
 	settings component.TelemetrySettings,
 	extraOpts ...ToClientConnOption,
 ) (*grpc.ClientConn, error) {
-	grpcOpts, err := gcs.getGrpcDialOptions(ctx, host, settings)
+	grpcOpts, err := gcs.getGrpcDialOptions(ctx, host, settings, extraOpts)
 	if err != nil {
 		return nil, err
-	}
-	for _, opt := range extraOpts {
-		if wrapper, ok := opt.(grpcDialOptionWrapper); ok {
-			grpcOpts = append(grpcOpts, wrapper.opt)
-		}
 	}
 	return grpc.NewClient(gcs.sanitizedEndpoint(), grpcOpts...)
 }
 
-func (gcs *ClientConfig) getGrpcDialOptions(ctx context.Context, host component.Host, settings component.TelemetrySettings) ([]grpc.DialOption, error) {
+func (gcs *ClientConfig) getGrpcDialOptions(
+	ctx context.Context,
+	host component.Host,
+	settings component.TelemetrySettings,
+	extraOpts []ToClientConnOption,
+) ([]grpc.DialOption, error) {
 	var opts []grpc.DialOption
 	if gcs.Compression.IsCompressed() {
 		cp, err := getGRPCCompressionName(gcs.Compression)
@@ -351,6 +351,12 @@ func (gcs *ClientConfig) getGrpcDialOptions(ctx context.Context, host component.
 	// Enable OpenTelemetry observability plugin.
 	opts = append(opts, grpc.WithStatsHandler(otelgrpc.NewClientHandler(otelOpts...)))
 
+	for _, opt := range extraOpts {
+		if wrapper, ok := opt.(grpcDialOptionWrapper); ok {
+			opts = append(opts, wrapper.opt)
+		}
+	}
+
 	return opts, nil
 }
 
@@ -409,21 +415,20 @@ func (gss *ServerConfig) ToServerWithOptions(
 	_ context.Context,
 	host component.Host,
 	settings component.TelemetrySettings,
-	opts ...ToServerOption,
+	extraOpts ...ToServerOption,
 ) (*grpc.Server, error) {
-	grpcOpts, err := gss.getGrpcServerOptions(host, settings)
+	grpcOpts, err := gss.getGrpcServerOptions(host, settings, extraOpts)
 	if err != nil {
 		return nil, err
-	}
-	for _, opt := range opts {
-		if wrapper, ok := opt.(grpcServerOptionWrapper); ok {
-			grpcOpts = append(grpcOpts, wrapper.opt)
-		}
 	}
 	return grpc.NewServer(grpcOpts...), nil
 }
 
-func (gss *ServerConfig) getGrpcServerOptions(host component.Host, settings component.TelemetrySettings) ([]grpc.ServerOption, error) {
+func (gss *ServerConfig) getGrpcServerOptions(
+	host component.Host,
+	settings component.TelemetrySettings,
+	extraOpts []ToServerOption,
+) ([]grpc.ServerOption, error) {
 	switch gss.NetAddr.Transport {
 	case confignet.TransportTypeTCP, confignet.TransportTypeTCP4, confignet.TransportTypeTCP6, confignet.TransportTypeUDP, confignet.TransportTypeUDP4, confignet.TransportTypeUDP6:
 		internal.WarnOnUnspecifiedHost(settings.Logger, gss.NetAddr.Endpoint)
@@ -512,6 +517,12 @@ func (gss *ServerConfig) getGrpcServerOptions(host component.Host, settings comp
 	sInterceptors = append(sInterceptors, enhanceStreamWithClientInformation(gss.IncludeMetadata))
 
 	opts = append(opts, grpc.StatsHandler(otelgrpc.NewServerHandler(otelOpts...)), grpc.ChainUnaryInterceptor(uInterceptors...), grpc.ChainStreamInterceptor(sInterceptors...))
+
+	for _, opt := range extraOpts {
+		if wrapper, ok := opt.(grpcServerOptionWrapper); ok {
+			opts = append(opts, wrapper.opt)
+		}
+	}
 
 	return opts, nil
 }
