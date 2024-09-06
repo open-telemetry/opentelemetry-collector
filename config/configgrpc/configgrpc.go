@@ -226,16 +226,55 @@ func (gcs *ClientConfig) isSchemeHTTPS() bool {
 // a non-blocking dial (the function won't wait for connections to be
 // established, and connecting happens in the background). To make it a blocking
 // dial, use grpc.WithBlock() dial option.
-func (gcs *ClientConfig) ToClientConn(ctx context.Context, host component.Host, settings component.TelemetrySettings, extraOpts ...grpc.DialOption) (*grpc.ClientConn, error) {
-	opts, err := gcs.toDialOptions(ctx, host, settings)
+// Deprecated: [v0.109.0] If providing grpc.DialOptions, use ToClientConnGeneric
+// with WithGrpcDialOption instead.
+func (gcs *ClientConfig) ToClientConn(
+	ctx context.Context,
+	host component.Host,
+	settings component.TelemetrySettings,
+	grpcOpts ...grpc.DialOption,
+) (*grpc.ClientConn, error) {
+	var extraOpts []ToClientConnOption
+	for _, grpcOpt := range grpcOpts {
+		extraOpts = append(extraOpts, WithGrpcDialOption(grpcOpt))
+	}
+	return gcs.ToClientConnWithOptions(ctx, host, settings, extraOpts...)
+}
+
+type ToClientConnOption interface {
+	isToClientConnOption()
+}
+
+type grpcDialOptionWrapper struct {
+	opt grpc.DialOption
+}
+
+func WithGrpcDialOption(opt grpc.DialOption) ToClientConnOption {
+	return grpcDialOptionWrapper{opt: opt}
+}
+func (grpcDialOptionWrapper) isToClientConnOption() {}
+
+// Same as ToClientConn, but uses the ToClientConnOption interface for options.
+// This method will eventually replace ToClientConn.
+func (gcs *ClientConfig) ToClientConnWithOptions(
+	ctx context.Context,
+	host component.Host,
+	settings component.TelemetrySettings,
+	extraOpts ...ToClientConnOption,
+) (*grpc.ClientConn, error) {
+	grpcOpts, err := gcs.getGrpcDialOptions(ctx, host, settings)
 	if err != nil {
 		return nil, err
 	}
-	opts = append(opts, extraOpts...)
-	return grpc.NewClient(gcs.sanitizedEndpoint(), opts...)
+	for _, opt := range extraOpts {
+		if wrapper, ok := opt.(grpcDialOptionWrapper); ok {
+			grpcOpts = append(grpcOpts, wrapper.opt)
+		}
+	}
+	return grpc.NewClient(gcs.sanitizedEndpoint(), grpcOpts...)
 }
 
-func (gcs *ClientConfig) toDialOptions(ctx context.Context, host component.Host, settings component.TelemetrySettings) ([]grpc.DialOption, error) {
+func (gcs *ClientConfig) getGrpcDialOptions(ctx context.Context, host component.Host, settings component.TelemetrySettings) ([]grpc.DialOption, error) {
 	var opts []grpc.DialOption
 	if gcs.Compression.IsCompressed() {
 		cp, err := getGRPCCompressionName(gcs.Compression)
@@ -336,16 +375,55 @@ func (gss *ServerConfig) Validate() error {
 }
 
 // ToServer returns a grpc.Server for the configuration
-func (gss *ServerConfig) ToServer(_ context.Context, host component.Host, settings component.TelemetrySettings, extraOpts ...grpc.ServerOption) (*grpc.Server, error) {
-	opts, err := gss.toServerOption(host, settings)
+// Deprecated: [v0.109.0] If providing grpc.ServerOptions, use ToServerGeneric
+// with WithGrpcServerOption instead.
+func (gss *ServerConfig) ToServer(
+	ctx context.Context,
+	host component.Host,
+	settings component.TelemetrySettings,
+	grpcOpts ...grpc.ServerOption,
+) (*grpc.Server, error) {
+	var extraOpts []ToServerOption
+	for _, grpcOpt := range grpcOpts {
+		extraOpts = append(extraOpts, WithGrpcServerOption(grpcOpt))
+	}
+	return gss.ToServerWithOptions(ctx, host, settings, extraOpts...)
+}
+
+type ToServerOption interface {
+	isToServerOption()
+}
+
+type grpcServerOptionWrapper struct {
+	opt grpc.ServerOption
+}
+
+func WithGrpcServerOption(opt grpc.ServerOption) ToServerOption {
+	return grpcServerOptionWrapper{opt: opt}
+}
+func (grpcServerOptionWrapper) isToServerOption() {}
+
+// Same as ToServer, but uses the ToServerOption interface for options.
+// This method will eventually replace ToServer.
+func (gss *ServerConfig) ToServerWithOptions(
+	_ context.Context,
+	host component.Host,
+	settings component.TelemetrySettings,
+	opts ...ToServerOption,
+) (*grpc.Server, error) {
+	grpcOpts, err := gss.getGrpcServerOptions(host, settings)
 	if err != nil {
 		return nil, err
 	}
-	opts = append(opts, extraOpts...)
-	return grpc.NewServer(opts...), nil
+	for _, opt := range opts {
+		if wrapper, ok := opt.(grpcServerOptionWrapper); ok {
+			grpcOpts = append(grpcOpts, wrapper.opt)
+		}
+	}
+	return grpc.NewServer(grpcOpts...), nil
 }
 
-func (gss *ServerConfig) toServerOption(host component.Host, settings component.TelemetrySettings) ([]grpc.ServerOption, error) {
+func (gss *ServerConfig) getGrpcServerOptions(host component.Host, settings component.TelemetrySettings) ([]grpc.ServerOption, error) {
 	switch gss.NetAddr.Transport {
 	case confignet.TransportTypeTCP, confignet.TransportTypeTCP4, confignet.TransportTypeTCP6, confignet.TransportTypeUDP, confignet.TransportTypeUDP4, confignet.TransportTypeUDP6:
 		internal.WarnOnUnspecifiedHost(settings.Logger, gss.NetAddr.Endpoint)

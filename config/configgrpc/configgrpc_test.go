@@ -126,7 +126,7 @@ func TestDefaultGrpcClientSettings(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	opts, err := gcs.toDialOptions(context.Background(), componenttest.NewNopHost(), tt.TelemetrySettings())
+	opts, err := gcs.getGrpcDialOptions(context.Background(), componenttest.NewNopHost(), tt.TelemetrySettings())
 	assert.NoError(t, err)
 	assert.Len(t, opts, 2)
 }
@@ -231,7 +231,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			opts, err := test.settings.toDialOptions(context.Background(), test.host, tt.TelemetrySettings())
+			opts, err := test.settings.getGrpcDialOptions(context.Background(), test.host, tt.TelemetrySettings())
 			assert.NoError(t, err)
 			assert.Len(t, opts, 9)
 		})
@@ -244,7 +244,7 @@ func TestDefaultGrpcServerSettings(t *testing.T) {
 			Endpoint: "0.0.0.0:1234",
 		},
 	}
-	opts, err := gss.toServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+	opts, err := gss.getGrpcServerOptions(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	assert.NoError(t, err)
 	assert.Len(t, opts, 3)
 }
@@ -329,7 +329,7 @@ func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
 			},
 		},
 	}
-	opts, err := gss.toServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+	opts, err := gss.getGrpcServerOptions(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	assert.NoError(t, err)
 	assert.Len(t, opts, 10)
 }
@@ -488,7 +488,7 @@ func TestUseSecure(t *testing.T) {
 		TLSSetting:  configtls.ClientConfig{},
 		Keepalive:   nil,
 	}
-	dialOpts, err := gcs.toDialOptions(context.Background(), componenttest.NewNopHost(), tt.TelemetrySettings())
+	dialOpts, err := gcs.getGrpcDialOptions(context.Background(), componenttest.NewNopHost(), tt.TelemetrySettings())
 	assert.NoError(t, err)
 	assert.Len(t, dialOpts, 2)
 }
@@ -540,7 +540,7 @@ func TestGRPCServerWarning(t *testing.T) {
 			logger, observed := observer.New(zap.DebugLevel)
 			set.Logger = zap.New(logger)
 
-			opts, err := test.settings.toServerOption(componenttest.NewNopHost(), set)
+			opts, err := test.settings.getGrpcServerOptions(componenttest.NewNopHost(), set)
 			require.NoError(t, err)
 			require.NotNil(t, opts)
 			_ = grpc.NewServer(opts...)
