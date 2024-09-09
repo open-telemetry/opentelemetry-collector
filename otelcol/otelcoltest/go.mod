@@ -5,9 +5,9 @@ go 1.22.0
 require (
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.108.1
-	go.opentelemetry.io/collector/confmap v1.14.1
-	go.opentelemetry.io/collector/confmap/provider/envprovider v0.108.1
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.108.1
+	go.opentelemetry.io/collector/confmap v1.15.0
+	go.opentelemetry.io/collector/confmap/provider/envprovider v1.15.0
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.15.0
 	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.108.1
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.108.1
 	go.opentelemetry.io/collector/connector v0.108.1
@@ -68,9 +68,9 @@ require (
 	go.opentelemetry.io/collector/consumer/consumertest v0.108.1 // indirect
 	go.opentelemetry.io/collector/exporter/exporterprofiles v0.108.1 // indirect
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.0.0-20240909160516-e5999578ad90 // indirect
-	go.opentelemetry.io/collector/featuregate v1.14.1 // indirect
+	go.opentelemetry.io/collector/featuregate v1.15.0 // indirect
 	go.opentelemetry.io/collector/internal/globalgates v0.108.1 // indirect
-	go.opentelemetry.io/collector/pdata v1.14.1 // indirect
+	go.opentelemetry.io/collector/pdata v1.15.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.108.1 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.108.1 // indirect
 	go.opentelemetry.io/collector/processor/processorprofiles v0.108.1 // indirect
