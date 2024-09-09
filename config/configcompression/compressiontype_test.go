@@ -84,3 +84,141 @@ func TestUnmarshalText(t *testing.T) {
 		})
 	}
 }
+
+func TestIsZstd(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    Type
+		expected bool
+	}{
+		{
+			name:     "ValidZstd",
+			input:    TypeZstd,
+			expected: true,
+		},
+		{
+			name:     "InvalidZstd",
+			input:    TypeGzip,
+			expected: false,
+		},
+		{
+			name:     "ValidZstdLevel",
+			input:    "zstd/11",
+			expected: true,
+		},
+		{
+			name:     "ValidZstdLevel",
+			input:    "zstd/One",
+			expected: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, tt.input.IsZstd())
+		})
+	}
+}
+
+func TestIsGzip(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    Type
+		expected bool
+	}{
+		{
+			name:     "ValidGzip",
+			input:    TypeGzip,
+			expected: true,
+		},
+		{
+			name:     "InvalidGzip",
+			input:    TypeZlib,
+			expected: false,
+		},
+		{
+			name:     "ValidZlibCompressionLevel",
+			input:    "gzip/1",
+			expected: true,
+		},
+		{
+			name:     "InvalidZlibCompressionLevel",
+			input:    "gzip/10",
+			expected: false,
+		},
+		{
+			name:     "InvalidZlibCompressionLevel",
+			input:    "gzip/one", // Uses the default compression level
+			expected: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, tt.input.IsGzip())
+		})
+	}
+}
+
+func TestIsZlib(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    Type
+		expected bool
+		err      bool
+	}{
+		{
+			name:     "ValidZlib",
+			input:    TypeZlib,
+			expected: true,
+		},
+		{
+			name:     "InvalidZlib",
+			input:    TypeGzip,
+			expected: false,
+		},
+		{
+			name:     "ValidZlibCompressionLevel",
+			input:    "zlib/1",
+			expected: true,
+		},
+		{
+			name:     "InvalidZlibCompressionLevel",
+			input:    "zlib/10",
+			expected: false,
+		},
+		{
+			name:     "InvalidZlibCompressionLevel",
+			input:    "zlib/one", // Uses the default compression level
+			expected: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, tt.input.IsZlib())
+		})
+	}
+}
+
+func TestIsSnappy(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    Type
+		expected bool
+		err      bool
+	}{
+		{
+			name:     "ValidSnappy",
+			input:    "snappy",
+			expected: true,
+		},
+		{
+			name:     "InvliaSnappy",
+			input:    "snappy/1", // Uses the default compression level
+			expected: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, tt.input.IsSnappy())
+		})
+	}
+}
