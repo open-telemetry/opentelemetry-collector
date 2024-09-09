@@ -8,11 +8,11 @@ require (
 	go.opentelemetry.io/collector/component v0.108.1
 	go.opentelemetry.io/collector/component/componentstatus v0.108.1
 	go.opentelemetry.io/collector/config/configtelemetry v0.108.1
-	go.opentelemetry.io/collector/confmap v1.14.1
+	go.opentelemetry.io/collector/confmap v1.15.0
 	go.opentelemetry.io/collector/connector v0.108.1
 	go.opentelemetry.io/collector/exporter v0.108.1
 	go.opentelemetry.io/collector/extension v0.108.1
-	go.opentelemetry.io/collector/featuregate v1.14.1
+	go.opentelemetry.io/collector/featuregate v1.15.0
 	go.opentelemetry.io/collector/processor v0.108.1
 	go.opentelemetry.io/collector/receiver v0.108.1
 	go.opentelemetry.io/collector/service v0.108.1
@@ -71,7 +71,7 @@ require (
 	go.opentelemetry.io/collector/exporter/exporterprofiles v0.108.1 // indirect
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.0.0-20240909160516-e5999578ad90 // indirect
 	go.opentelemetry.io/collector/internal/globalgates v0.108.1 // indirect
-	go.opentelemetry.io/collector/pdata v1.14.1 // indirect
+	go.opentelemetry.io/collector/pdata v1.15.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.108.1 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.108.1 // indirect
 	go.opentelemetry.io/collector/processor/processorprofiles v0.108.1 // indirect
