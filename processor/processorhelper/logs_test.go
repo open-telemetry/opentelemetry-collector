@@ -6,20 +6,15 @@ package processorhelper
 import (
 	"context"
 	"errors"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric"
-	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
-	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -91,60 +86,44 @@ func TestLogsProcessor_RecordInOut(t *testing.T) {
 	incomingLogRecords.AppendEmpty()
 	incomingLogRecords.AppendEmpty()
 
-	metricReader := sdkmetric.NewManualReader()
-	set := processortest.NewNopSettings()
-	set.TelemetrySettings.MetricsLevel = configtelemetry.LevelBasic
-	set.TelemetrySettings.LeveledMeterProvider = func(level configtelemetry.Level) metric.MeterProvider {
-		if level >= configtelemetry.LevelBasic {
-			return sdkmetric.NewMeterProvider(sdkmetric.WithReader(metricReader))
-		}
-		return nil
-	}
-
-	lp, err := NewLogsProcessor(context.Background(), set, &testLogsCfg, consumertest.NewNop(), mockAggregate)
+	testTelemetry := setupTestTelemetry()
+	lp, err := NewLogsProcessor(context.Background(), testTelemetry.NewSettings(), &testLogsCfg, consumertest.NewNop(), mockAggregate)
 	require.NoError(t, err)
 
 	assert.NoError(t, lp.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, lp.ConsumeLogs(context.Background(), incomingLogs))
 	assert.NoError(t, lp.Shutdown(context.Background()))
 
-	ownMetrics := new(metricdata.ResourceMetrics)
-	require.NoError(t, metricReader.Collect(context.Background(), ownMetrics))
-
-	require.Len(t, ownMetrics.ScopeMetrics, 1)
-	require.Len(t, ownMetrics.ScopeMetrics[0].Metrics, 2)
-
-	inMetric := ownMetrics.ScopeMetrics[0].Metrics[0]
-	outMetric := ownMetrics.ScopeMetrics[0].Metrics[1]
-	if strings.Contains(inMetric.Name, "outgoing") {
-		inMetric, outMetric = outMetric, inMetric
-	}
-
-	metricdatatest.AssertAggregationsEqual(t, metricdata.Sum[int64]{
-		Temporality: metricdata.CumulativeTemporality,
-		IsMonotonic: true,
-		DataPoints: []metricdata.DataPoint[int64]{
-			{
-				Attributes: attribute.NewSet(attribute.KeyValue{
-					Key:   attribute.Key("processor"),
-					Value: attribute.StringValue(set.ID.String()),
-				}),
-				Value: 3,
+	testTelemetry.assertMetrics(t, []metricdata.Metrics{
+		{
+			Name:        "otelcol_processor_incoming_log_records",
+			Description: "Number of log records passed to the processor.",
+			Unit:        "{records}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      3,
+						Attributes: attribute.NewSet(attribute.String("processor", "processorhelper")),
+					},
+				},
 			},
 		},
-	}, inMetric.Data, metricdatatest.IgnoreTimestamp())
-
-	metricdatatest.AssertAggregationsEqual(t, metricdata.Sum[int64]{
-		Temporality: metricdata.CumulativeTemporality,
-		IsMonotonic: true,
-		DataPoints: []metricdata.DataPoint[int64]{
-			{
-				Attributes: attribute.NewSet(attribute.KeyValue{
-					Key:   attribute.Key("processor"),
-					Value: attribute.StringValue(set.ID.String()),
-				}),
-				Value: 1,
+		{
+			Name:        "otelcol_processor_outgoing_log_records",
+			Description: "Number of log records emitted from the processor.",
+			Unit:        "{records}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      1,
+						Attributes: attribute.NewSet(attribute.String("processor", "processorhelper")),
+					},
+				},
 			},
 		},
-	}, outMetric.Data, metricdatatest.IgnoreTimestamp())
+	})
 }
