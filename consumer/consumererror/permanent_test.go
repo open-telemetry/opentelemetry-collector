@@ -20,6 +20,7 @@ func (t testErrorType) Error() string {
 	return ""
 }
 
+// nolint
 func TestIsPermanent(t *testing.T) {
 	var err error
 	assert.False(t, IsPermanent(err))
@@ -34,6 +35,7 @@ func TestIsPermanent(t *testing.T) {
 	assert.True(t, IsPermanent(err))
 }
 
+// nolint
 func TestPermanent_Unwrap(t *testing.T) {
 	var err error = testErrorType{"testError"}
 	require.False(t, IsPermanent(err))

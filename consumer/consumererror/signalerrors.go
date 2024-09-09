@@ -34,7 +34,7 @@ type Traces struct {
 func NewTraces(err error, data ptrace.Traces) error {
 	return Traces{
 		retryable: retryable[ptrace.Traces]{
-			error: err,
+			error: New(err, WithRetryable()),
 			data:  data,
 		},
 	}
@@ -50,7 +50,7 @@ type Logs struct {
 func NewLogs(err error, data plog.Logs) error {
 	return Logs{
 		retryable: retryable[plog.Logs]{
-			error: err,
+			error: New(err, WithRetryable()),
 			data:  data,
 		},
 	}
@@ -66,7 +66,7 @@ type Metrics struct {
 func NewMetrics(err error, data pmetric.Metrics) error {
 	return Metrics{
 		retryable: retryable[pmetric.Metrics]{
-			error: err,
+			error: New(err, WithRetryable()),
 			data:  data,
 		},
 	}
