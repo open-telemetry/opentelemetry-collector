@@ -8,7 +8,7 @@ toolchain go1.22.7
 
 require (
 	go.opentelemetry.io/collector/component v0.108.1
-	go.opentelemetry.io/collector/confmap v1.14.1
+	go.opentelemetry.io/collector/confmap v1.15.0
 	go.opentelemetry.io/collector/confmap/provider/envprovider v0.108.1
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.108.1
 	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.108.1
@@ -80,18 +80,18 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/collector v0.108.1 // indirect
-	go.opentelemetry.io/collector/client v1.14.1 // indirect
+	go.opentelemetry.io/collector/client v1.15.0 // indirect
 	go.opentelemetry.io/collector/component/componentprofiles v0.108.1 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.108.1 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.108.1 // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.14.1 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.15.0 // indirect
 	go.opentelemetry.io/collector/config/configgrpc v0.108.1 // indirect
 	go.opentelemetry.io/collector/config/confighttp v0.108.1 // indirect
 	go.opentelemetry.io/collector/config/confignet v0.108.1 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.14.1 // indirect
-	go.opentelemetry.io/collector/config/configretry v1.14.1 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.15.0 // indirect
+	go.opentelemetry.io/collector/config/configretry v1.15.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.108.1 // indirect
-	go.opentelemetry.io/collector/config/configtls v1.14.1 // indirect
+	go.opentelemetry.io/collector/config/configtls v1.15.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.108.1 // indirect
 	go.opentelemetry.io/collector/connector/connectorprofiles v0.108.2-0.20240902140408-b6a44763e689 // indirect
 	go.opentelemetry.io/collector/consumer v0.108.1 // indirect
@@ -101,9 +101,9 @@ require (
 	go.opentelemetry.io/collector/extension/auth v0.108.1 // indirect
 	go.opentelemetry.io/collector/extension/experimental/storage v0.0.0-20240902085631-cd1f7623fe67 // indirect
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.0.0-20240909160516-e5999578ad90 // indirect
-	go.opentelemetry.io/collector/featuregate v1.14.1 // indirect
+	go.opentelemetry.io/collector/featuregate v1.15.0 // indirect
 	go.opentelemetry.io/collector/internal/globalgates v0.108.1 // indirect
-	go.opentelemetry.io/collector/pdata v1.14.1 // indirect
+	go.opentelemetry.io/collector/pdata v1.15.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.108.1 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.108.1 // indirect
 	go.opentelemetry.io/collector/processor/processorprofiles v0.108.1 // indirect
