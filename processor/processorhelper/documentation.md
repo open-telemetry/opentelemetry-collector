@@ -54,6 +54,30 @@ Number of spans that were dropped.
 | ---- | ----------- | ---------- | --------- |
 | {spans} | Sum | Int | true |
 
+### otelcol_processor_incoming_log_records
+
+Number of log records passed to the processor.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {records} | Sum | Int | true |
+
+### otelcol_processor_incoming_metric_points
+
+Number of metric points passed to the processor.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {datapoints} | Sum | Int | true |
+
+### otelcol_processor_incoming_spans
+
+Number of spans passed to the processor.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {spans} | Sum | Int | true |
+
 ### otelcol_processor_inserted_log_records
 
 Number of log records that were inserted.
@@ -73,6 +97,30 @@ Number of metric points that were inserted.
 ### otelcol_processor_inserted_spans
 
 Number of spans that were inserted.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {spans} | Sum | Int | true |
+
+### otelcol_processor_outgoing_log_records
+
+Number of log records emitted from the processor.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {records} | Sum | Int | true |
+
+### otelcol_processor_outgoing_metric_points
+
+Number of metric points emitted from the processor.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {datapoints} | Sum | Int | true |
+
+### otelcol_processor_outgoing_spans
+
+Number of spans emitted from the processor.
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |

@@ -9,6 +9,55 @@ status:
 
 telemetry:
   metrics:
+
+    processor_incoming_spans:
+      enabled: true
+      description: Number of spans passed to the processor.
+      unit: "{spans}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    processor_outgoing_spans:
+      enabled: true
+      description: Number of spans emitted from the processor.
+      unit: "{spans}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    processor_incoming_metric_points:
+      enabled: true
+      description: Number of metric points passed to the processor.
+      unit: "{datapoints}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    processor_outgoing_metric_points:
+      enabled: true
+      description: Number of metric points emitted from the processor.
+      unit: "{datapoints}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    processor_incoming_log_records:
+      enabled: true
+      description: Number of log records passed to the processor.
+      unit: "{records}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    processor_outgoing_log_records:
+      enabled: true
+      description: Number of log records emitted from the processor.
+      unit: "{records}"
+      sum:
+        value_type: int
+        monotonic: true
+
     processor_accepted_spans:
       enabled: true
       description: Number of spans successfully pushed into the next component in the pipeline.
