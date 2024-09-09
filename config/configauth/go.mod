@@ -4,9 +4,9 @@ go 1.22.0
 
 require (
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.108.1
-	go.opentelemetry.io/collector/extension v0.108.1
-	go.opentelemetry.io/collector/extension/auth v0.108.1
+	go.opentelemetry.io/collector/component v0.109.0
+	go.opentelemetry.io/collector/extension v0.109.0
+	go.opentelemetry.io/collector/extension/auth v0.109.0
 	go.uber.org/goleak v1.3.0
 )
 
@@ -20,7 +20,7 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.108.1 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.109.0 // indirect
 	go.opentelemetry.io/collector/confmap v1.15.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.15.0 // indirect
 	go.opentelemetry.io/otel v1.29.0 // indirect
