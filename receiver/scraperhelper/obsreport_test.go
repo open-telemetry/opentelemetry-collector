@@ -44,7 +44,7 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 			{items: 15, err: nil},
 		}
 		for i := range params {
-			scrp, err := newScraper(ObsReportSettings{
+			scrp, err := newScraper(obsReportSettings{
 				ReceiverID:             receiverID,
 				Scraper:                scraperID,
 				ReceiverCreateSettings: receiver.Settings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
@@ -95,7 +95,7 @@ func TestCheckScraperMetricsViews(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	s, err := newScraper(ObsReportSettings{
+	s, err := newScraper(obsReportSettings{
 		ReceiverID:             receiverID,
 		Scraper:                scraperID,
 		ReceiverCreateSettings: receiver.Settings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
