@@ -233,8 +233,6 @@ func TestUintUnmarshalerSuccess(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
-
 		t.Run(tt.name, func(t *testing.T) {
 			stringMap := map[string]any{
 				"uint_test": tt.testValue,
@@ -244,7 +242,7 @@ func TestUintUnmarshalerSuccess(t *testing.T) {
 			err := conf.Unmarshal(cfg)
 
 			assert.NoError(t, err)
-			assert.Equal(t, cfg.UintTest, uint32(tt.testValue))
+			assert.Equal(t, cfg.UintTest, tt.testValue)
 		})
 	}
 }
@@ -664,8 +662,6 @@ func TestZeroSliceHookFunc(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
-
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := NewFromStringMap(tt.cfg)
 
