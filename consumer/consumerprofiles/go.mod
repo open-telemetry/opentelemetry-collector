@@ -10,8 +10,8 @@ replace go.opentelemetry.io/collector/consumer => ../
 
 require (
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/consumer v0.108.1
-	go.opentelemetry.io/collector/pdata/pprofile v0.108.1
+	go.opentelemetry.io/collector/consumer v0.109.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.109.0
 )
 
 require (
