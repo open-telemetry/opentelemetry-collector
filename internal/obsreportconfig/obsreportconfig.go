@@ -19,6 +19,6 @@ var DisableHighCardinalityMetricsfeatureGate = featuregate.GlobalRegistry().Must
 // supports configuring the OpenTelemetry SDK via configuration
 var UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"telemetry.useOtelWithSDKConfigurationForInternalTelemetry",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("controls whether the collector supports extended OpenTelemetry"+
 		"configuration for internal telemetry"))
