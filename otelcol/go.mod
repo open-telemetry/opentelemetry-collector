@@ -21,7 +21,7 @@ require (
 	go.uber.org/zap v1.27.0
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842
 	golang.org/x/sys v0.24.0
-	google.golang.org/grpc v1.65.0
+	google.golang.org/grpc v1.66.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -54,9 +54,9 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/prometheus/client_golang v1.20.2 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
-	github.com/prometheus/common v0.56.0 // indirect
+	github.com/prometheus/common v0.57.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
-	github.com/shirou/gopsutil/v4 v4.24.7 // indirect
+	github.com/shirou/gopsutil/v4 v4.24.8 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
@@ -64,11 +64,12 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/collector v0.108.1 // indirect
 	go.opentelemetry.io/collector/component/componentprofiles v0.108.1 // indirect
-	go.opentelemetry.io/collector/connector/connectorprofiles v0.108.1 // indirect
+	go.opentelemetry.io/collector/connector/connectorprofiles v0.108.2-0.20240902140408-b6a44763e689 // indirect
 	go.opentelemetry.io/collector/consumer v0.108.1 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.108.1 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.108.1 // indirect
 	go.opentelemetry.io/collector/exporter/exporterprofiles v0.108.1 // indirect
+	go.opentelemetry.io/collector/extension/extensioncapabilities v0.108.1 // indirect
 	go.opentelemetry.io/collector/internal/globalgates v0.108.1 // indirect
 	go.opentelemetry.io/collector/pdata v1.14.1 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.108.1 // indirect
@@ -122,6 +123,8 @@ replace go.opentelemetry.io/collector/extension/zpagesextension => ../extension/
 
 replace go.opentelemetry.io/collector/extension => ../extension
 
+replace go.opentelemetry.io/collector/extension/experimental/storage => ../extension/experimental/storage
+
 replace go.opentelemetry.io/collector/exporter => ../exporter
 
 replace go.opentelemetry.io/collector/confmap => ../confmap
@@ -165,6 +168,8 @@ replace go.opentelemetry.io/collector/component/componentprofiles => ../componen
 replace go.opentelemetry.io/collector/client => ../client
 
 replace go.opentelemetry.io/collector/component/componentstatus => ../component/componentstatus
+
+replace go.opentelemetry.io/collector/extension/extensioncapabilities => ../extension/extensioncapabilities
 
 replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../receiver/receiverprofiles
 

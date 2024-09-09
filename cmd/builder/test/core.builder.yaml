@@ -49,6 +49,8 @@ replaces:
   - go.opentelemetry.io/collector/exporter/loggingexporter => ${WORKSPACE_DIR}/exporter/loggingexporter
   - go.opentelemetry.io/collector/extension => ${WORKSPACE_DIR}/extension
   - go.opentelemetry.io/collector/extension/auth => ${WORKSPACE_DIR}/extension/auth
+  - go.opentelemetry.io/collector/extension/experimental/storage => ${WORKSPACE_DIR}/extension/experimental/storage
+  - go.opentelemetry.io/collector/extension/extensioncapabilities => ${WORKSPACE_DIR}/extension/extensioncapabilities
   - go.opentelemetry.io/collector/extension/zpagesextension => ${WORKSPACE_DIR}/extension/zpagesextension
   - go.opentelemetry.io/collector/featuregate => ${WORKSPACE_DIR}/featuregate
   - go.opentelemetry.io/collector/internal/globalgates => ${WORKSPACE_DIR}/internal/globalgates

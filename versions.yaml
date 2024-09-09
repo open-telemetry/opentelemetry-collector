@@ -9,10 +9,13 @@ module-sets:
       - go.opentelemetry.io/collector/featuregate
       - go.opentelemetry.io/collector/pdata
       - go.opentelemetry.io/collector/confmap
+      - go.opentelemetry.io/collector/confmap/provider/envprovider
+      - go.opentelemetry.io/collector/confmap/provider/fileprovider
       - go.opentelemetry.io/collector/config/configopaque
       - go.opentelemetry.io/collector/config/configcompression
       - go.opentelemetry.io/collector/config/configretry
       - go.opentelemetry.io/collector/config/configtls
+      - go.opentelemetry.io/collector/config/configtelemetry
   beta:
     version: v0.108.1
     modules:
@@ -24,8 +27,6 @@ module-sets:
       - go.opentelemetry.io/collector/component/componentstatus
       - go.opentelemetry.io/collector/component/componentprofiles
       - go.opentelemetry.io/collector/confmap/converter/expandconverter
-      - go.opentelemetry.io/collector/confmap/provider/envprovider
-      - go.opentelemetry.io/collector/confmap/provider/fileprovider
       - go.opentelemetry.io/collector/confmap/provider/httpprovider
       - go.opentelemetry.io/collector/confmap/provider/httpsprovider
       - go.opentelemetry.io/collector/confmap/provider/yamlprovider
@@ -33,7 +34,6 @@ module-sets:
       - go.opentelemetry.io/collector/config/configgrpc
       - go.opentelemetry.io/collector/config/confighttp
       - go.opentelemetry.io/collector/config/confignet
-      - go.opentelemetry.io/collector/config/configtelemetry
       - go.opentelemetry.io/collector/config/internal
       - go.opentelemetry.io/collector/connector
       - go.opentelemetry.io/collector/connector/connectorprofiles
@@ -49,8 +49,9 @@ module-sets:
       - go.opentelemetry.io/collector/exporter/otlpexporter
       - go.opentelemetry.io/collector/exporter/otlphttpexporter
       - go.opentelemetry.io/collector/extension
+      - go.opentelemetry.io/collector/extension/extensioncapabilities
       - go.opentelemetry.io/collector/extension/auth
-      - go.opentelemetry.io/collector/extension/ballastextension
+      - go.opentelemetry.io/collector/extension/experimental/storage
       - go.opentelemetry.io/collector/extension/zpagesextension
       - go.opentelemetry.io/collector/extension/memorylimiterextension
       - go.opentelemetry.io/collector/otelcol

@@ -15,6 +15,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumertest v0.108.1
 	go.opentelemetry.io/collector/exporter/exporterprofiles v0.108.1
 	go.opentelemetry.io/collector/extension v0.108.1
+	go.opentelemetry.io/collector/extension/experimental/storage v0.0.0-20240902085631-cd1f7623fe67
 	go.opentelemetry.io/collector/pdata v1.14.1
 	go.opentelemetry.io/collector/pdata/pprofile v0.108.1
 	go.opentelemetry.io/collector/pdata/testdata v0.108.1
@@ -28,7 +29,7 @@ require (
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/sys v0.24.0
-	google.golang.org/grpc v1.65.0
+	google.golang.org/grpc v1.66.0
 )
 
 require (
@@ -52,9 +53,8 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.20.2 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
-	github.com/prometheus/common v0.56.0 // indirect
+	github.com/prometheus/common v0.57.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
-	go.opentelemetry.io/collector/component/componentstatus v0.108.1 // indirect
 	go.opentelemetry.io/collector/confmap v1.14.1 // indirect
 	go.opentelemetry.io/collector/receiver/receiverprofiles v0.108.1 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.51.0 // indirect
@@ -74,6 +74,8 @@ replace go.opentelemetry.io/collector/confmap => ../confmap
 replace go.opentelemetry.io/collector/consumer => ../consumer
 
 replace go.opentelemetry.io/collector/extension => ../extension
+
+replace go.opentelemetry.io/collector/extension/experimental/storage => ../extension/experimental/storage
 
 replace go.opentelemetry.io/collector/featuregate => ../featuregate
 

@@ -23,7 +23,6 @@ exporters:
   - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.108.1
   - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.108.1
 extensions:
-  - gomod: go.opentelemetry.io/collector/extension/ballastextension v0.108.1
   - gomod: go.opentelemetry.io/collector/extension/memorylimiterextension v0.108.1
   - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.108.1
 processors:
@@ -78,7 +77,8 @@ replaces:
   - go.opentelemetry.io/collector/exporter/otlphttpexporter => ../../exporter/otlphttpexporter
   - go.opentelemetry.io/collector/extension => ../../extension
   - go.opentelemetry.io/collector/extension/auth => ../../extension/auth
-  - go.opentelemetry.io/collector/extension/ballastextension => ../../extension/ballastextension
+  - go.opentelemetry.io/collector/extension/experimental/storage => ../../extension/experimental/storage
+  - go.opentelemetry.io/collector/extension/extensioncapabilities => ../../extension/extensioncapabilities
   - go.opentelemetry.io/collector/extension/memorylimiterextension => ../../extension/memorylimiterextension
   - go.opentelemetry.io/collector/extension/zpagesextension => ../../extension/zpagesextension
   - go.opentelemetry.io/collector/featuregate => ../../featuregate

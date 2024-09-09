@@ -35,6 +35,8 @@ import (
 
 var nopType = component.MustNewType("nop")
 
+var wg = sync.WaitGroup{}
+
 func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 	eventsReceived := make(map[*componentstatus.InstanceID][]*componentstatus.Event)
 	exporterFactory := exportertest.NewNopFactory()
@@ -112,9 +114,10 @@ func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 	s, err := service.New(context.Background(), set, cfg)
 	require.NoError(t, err)
 
+	wg.Add(1)
 	err = s.Start(context.Background())
 	require.NoError(t, err)
-	time.Sleep(15 * time.Second)
+	wg.Wait()
 	err = s.Shutdown(context.Background())
 	require.NoError(t, err)
 
@@ -170,6 +173,7 @@ func (t *testReceiver) Start(_ context.Context, host component.Host) error {
 	componentstatus.ReportStatus(host, componentstatus.NewRecoverableErrorEvent(errors.New("test recoverable error")))
 	go func() {
 		componentstatus.ReportStatus(host, componentstatus.NewEvent(componentstatus.StatusOK))
+		wg.Done()
 	}()
 	return nil
 }
@@ -246,7 +250,6 @@ func createExtension(_ context.Context, _ extension.Settings, cfg component.Conf
 
 type testExtension struct {
 	eventsReceived map[*componentstatus.InstanceID][]*componentstatus.Event
-	lock           sync.Mutex
 }
 
 type extensionConfig struct {
@@ -272,24 +275,22 @@ func (t *testExtension) ComponentStatusChanged(
 	source *componentstatus.InstanceID,
 	event *componentstatus.Event,
 ) {
-	t.lock.Lock()
-	defer t.lock.Unlock()
 	if source.ComponentID() == component.NewID(component.MustNewType("test")) {
 		t.eventsReceived[source] = append(t.eventsReceived[source], event)
 	}
 }
 
-// NotifyConfig implements the extension.ConfigWatcher interface.
+// NotifyConfig implements the extensioncapabilities.ConfigWatcher interface.
 func (t *testExtension) NotifyConfig(_ context.Context, _ *confmap.Conf) error {
 	return nil
 }
 
-// Ready implements the extension.PipelineWatcher interface.
+// Ready implements the extensioncapabilities.PipelineWatcher interface.
 func (t *testExtension) Ready() error {
 	return nil
 }
 
-// NotReady implements the extension.PipelineWatcher interface.
+// NotReady implements the extensioncapabilities.PipelineWatcher interface.
 func (t *testExtension) NotReady() error {
 	return nil
 }
