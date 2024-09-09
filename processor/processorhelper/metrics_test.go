@@ -6,13 +6,20 @@ package processorhelper
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -66,4 +73,79 @@ func newTestMProcessor(retError error) ProcessMetricsFunc {
 	return func(_ context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 		return md, retError
 	}
+}
+
+func TestMetricsProcessor_RecordInOut(t *testing.T) {
+	// Regardless of how many data points are ingested, emit just one
+	mockAggregate := func(_ context.Context, _ pmetric.Metrics) (pmetric.Metrics, error) {
+		md := pmetric.NewMetrics()
+		md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptySum().DataPoints().AppendEmpty()
+		return md, nil
+	}
+
+	incomingMetrics := pmetric.NewMetrics()
+	dps := incomingMetrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptySum().DataPoints()
+
+	// Add 3 data points to the incoming
+	dps.AppendEmpty()
+	dps.AppendEmpty()
+	dps.AppendEmpty()
+
+	metricReader := sdkmetric.NewManualReader()
+	set := processortest.NewNopSettings()
+	set.TelemetrySettings.MetricsLevel = configtelemetry.LevelNormal
+	set.TelemetrySettings.MetricsLevel = configtelemetry.LevelBasic
+	set.TelemetrySettings.LeveledMeterProvider = func(level configtelemetry.Level) metric.MeterProvider {
+		if level >= configtelemetry.LevelBasic {
+			return sdkmetric.NewMeterProvider(sdkmetric.WithReader(metricReader))
+		}
+		return nil
+	}
+
+	mp, err := NewMetricsProcessor(context.Background(), set, &testMetricsCfg, consumertest.NewNop(), mockAggregate)
+	require.NoError(t, err)
+
+	assert.NoError(t, mp.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, mp.ConsumeMetrics(context.Background(), incomingMetrics))
+	assert.NoError(t, mp.Shutdown(context.Background()))
+
+	ownMetrics := new(metricdata.ResourceMetrics)
+	require.NoError(t, metricReader.Collect(context.Background(), ownMetrics))
+
+	require.Len(t, ownMetrics.ScopeMetrics, 1)
+	require.Len(t, ownMetrics.ScopeMetrics[0].Metrics, 2)
+
+	inMetric := ownMetrics.ScopeMetrics[0].Metrics[0]
+	outMetric := ownMetrics.ScopeMetrics[0].Metrics[1]
+	if strings.Contains(inMetric.Name, "outgoing") {
+		inMetric, outMetric = outMetric, inMetric
+	}
+
+	metricdatatest.AssertAggregationsEqual(t, metricdata.Sum[int64]{
+		Temporality: metricdata.CumulativeTemporality,
+		IsMonotonic: true,
+		DataPoints: []metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(attribute.KeyValue{
+					Key:   attribute.Key("processor"),
+					Value: attribute.StringValue(set.ID.String()),
+				}),
+				Value: 3,
+			},
+		},
+	}, inMetric.Data, metricdatatest.IgnoreTimestamp())
+
+	metricdatatest.AssertAggregationsEqual(t, metricdata.Sum[int64]{
+		Temporality: metricdata.CumulativeTemporality,
+		IsMonotonic: true,
+		DataPoints: []metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(attribute.KeyValue{
+					Key:   attribute.Key("processor"),
+					Value: attribute.StringValue(set.ID.String()),
+				}),
+				Value: 1,
+			},
+		},
+	}, outMetric.Data, metricdatatest.IgnoreTimestamp())
 }

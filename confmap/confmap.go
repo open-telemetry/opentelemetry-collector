@@ -17,7 +17,6 @@ import (
 	"github.com/knadh/koanf/v2"
 
 	encoder "go.opentelemetry.io/collector/confmap/internal/mapstructure"
-	"go.opentelemetry.io/collector/internal/globalgates"
 )
 
 const (
@@ -108,9 +107,49 @@ func (l *Conf) Marshal(rawVal any, _ ...MarshalOption) error {
 	return l.Merge(NewFromStringMap(out))
 }
 
+func (l *Conf) unsanitizedGet(key string) any {
+	return l.k.Get(key)
+}
+
+// sanitize recursively removes expandedValue references from the given data.
+// It uses the expandedValue.Value field to replace the expandedValue references.
+func sanitize(a any) any {
+	return sanitizeExpanded(a, false)
+}
+
+// sanitizeToStringMap recursively removes expandedValue references from the given data.
+// It uses the expandedValue.Original field to replace the expandedValue references.
+func sanitizeToStr(a any) any {
+	return sanitizeExpanded(a, true)
+}
+
+func sanitizeExpanded(a any, useOriginal bool) any {
+	switch m := a.(type) {
+	case map[string]any:
+		c := maps.Copy(m)
+		for k, v := range m {
+			c[k] = sanitizeExpanded(v, useOriginal)
+		}
+		return c
+	case []any:
+		var newSlice []any
+		for _, e := range m {
+			newSlice = append(newSlice, sanitizeExpanded(e, useOriginal))
+		}
+		return newSlice
+	case expandedValue:
+		if useOriginal {
+			return m.Original
+		}
+		return m.Value
+	}
+	return a
+}
+
 // Get can retrieve any value given the key to use.
 func (l *Conf) Get(key string) any {
-	return l.k.Get(key)
+	val := l.unsanitizedGet(key)
+	return sanitizeExpanded(val, false)
 }
 
 // IsSet checks to see if the key has been set in any of the data locations.
@@ -128,7 +167,7 @@ func (l *Conf) Merge(in *Conf) error {
 // It returns an error is the sub-config is not a map[string]any (use Get()), and an empty Map if none exists.
 func (l *Conf) Sub(key string) (*Conf, error) {
 	// Code inspired by the koanf "Cut" func, but returns an error instead of empty map for unsupported sub-config type.
-	data := l.Get(key)
+	data := l.unsanitizedGet(key)
 	if data == nil {
 		return New(), nil
 	}
@@ -140,9 +179,14 @@ func (l *Conf) Sub(key string) (*Conf, error) {
 	return nil, fmt.Errorf("unexpected sub-config value kind for key:%s value:%v kind:%v", key, data, reflect.TypeOf(data).Kind())
 }
 
+func (l *Conf) toStringMapWithExpand() map[string]any {
+	m := maps.Unflatten(l.k.All(), KeyDelimiter)
+	return m
+}
+
 // ToStringMap creates a map[string]any from a Parser.
 func (l *Conf) ToStringMap() map[string]any {
-	return maps.Unflatten(l.k.All(), KeyDelimiter)
+	return sanitize(l.toStringMapWithExpand()).(map[string]any)
 }
 
 // decodeConfig decodes the contents of the Conf into the result argument, using a
@@ -157,9 +201,10 @@ func decodeConfig(m *Conf, result any, errorUnused bool, skipTopLevelUnmarshaler
 		ErrorUnused:      errorUnused,
 		Result:           result,
 		TagName:          "mapstructure",
-		WeaklyTypedInput: !globalgates.StrictlyTypedInputGate.IsEnabled(),
+		WeaklyTypedInput: false,
 		MatchName:        caseSensitiveMatchName,
 		DecodeHook: mapstructure.ComposeDecodeHookFunc(
+			useExpandValue(),
 			expandNilStructPointersHookFunc(),
 			mapstructure.StringToSliceHookFunc(","),
 			mapKeyStringToMapKeyTextUnmarshalerHookFunc(),
@@ -170,14 +215,13 @@ func decodeConfig(m *Conf, result any, errorUnused bool, skipTopLevelUnmarshaler
 			// we unmarshal the embedded structs if present to merge with the result:
 			unmarshalerEmbeddedStructsHookFunc(),
 			zeroSliceHookFunc(),
-			negativeUintHookFunc(),
 		),
 	}
 	decoder, err := mapstructure.NewDecoder(dc)
 	if err != nil {
 		return err
 	}
-	if err = decoder.Decode(m.ToStringMap()); err != nil {
+	if err = decoder.Decode(m.toStringMapWithExpand()); err != nil {
 		if strings.HasPrefix(err.Error(), "error decoding ''") {
 			return errors.Unwrap(err)
 		}
@@ -204,6 +248,63 @@ func encoderConfig(rawVal any) *encoder.EncoderConfig {
 // which is case-insensitive.
 func caseSensitiveMatchName(a, b string) bool {
 	return a == b
+}
+
+func castTo(exp expandedValue, useOriginal bool) any {
+	// If the target field is a string, use `exp.Original` or fail if not available.
+	if useOriginal {
+		return exp.Original
+	}
+	// Otherwise, use the parsed value (previous behavior).
+	return exp.Value
+}
+
+// Check if a reflect.Type is of the form T, where:
+// X is any type or interface
+// T = string | map[X]T | []T | [n]T
+func isStringyStructure(t reflect.Type) bool {
+	if t.Kind() == reflect.String {
+		return true
+	}
+	if t.Kind() == reflect.Map {
+		return isStringyStructure(t.Elem())
+	}
+	if t.Kind() == reflect.Slice || t.Kind() == reflect.Array {
+		return isStringyStructure(t.Elem())
+	}
+	return false
+}
+
+// When a value has been loaded from an external source via a provider, we keep both the
+// parsed value and the original string value. This allows us to expand the value to its
+// original string representation when decoding into a string field, and use the original otherwise.
+func useExpandValue() mapstructure.DecodeHookFuncType {
+	return func(
+		_ reflect.Type,
+		to reflect.Type,
+		data any) (any, error) {
+		if exp, ok := data.(expandedValue); ok {
+			v := castTo(exp, to.Kind() == reflect.String)
+			// See https://github.com/open-telemetry/opentelemetry-collector/issues/10949
+			// If the `to.Kind` is not a string, then expandValue's original value is useless and
+			// the casted-to value will be nil. In that scenario, we need to use the default value of `to`'s kind.
+			if v == nil {
+				return reflect.Zero(to).Interface(), nil
+			}
+			return v, nil
+		}
+
+		switch to.Kind() {
+		case reflect.Array, reflect.Slice, reflect.Map:
+			if isStringyStructure(to) {
+				// If the target field is a stringy structure, sanitize to use the original string value everywhere.
+				return sanitizeToStr(data), nil
+			}
+			// Otherwise, sanitize to use the parsed value everywhere.
+			return sanitize(data), nil
+		}
+		return data, nil
+	}
 }
 
 // In cases where a config has a mapping of something to a struct pointers
@@ -434,19 +535,6 @@ func zeroSliceHookFunc() mapstructure.DecodeHookFuncValue {
 			to.Set(reflect.MakeSlice(to.Type(), from.Len(), from.Cap()))
 		}
 
-		return from.Interface(), nil
-	}
-}
-
-// This hook is used to solve the issue: https://github.com/open-telemetry/opentelemetry-collector/issues/9060
-// Decoding should fail when converting a negative integer to any type of unsigned integer. This prevents
-// negative values being decoded as large uint values.
-// TODO: This should be removed as a part of https://github.com/open-telemetry/opentelemetry-collector/issues/9532
-func negativeUintHookFunc() mapstructure.DecodeHookFuncValue {
-	return func(from reflect.Value, to reflect.Value) (interface{}, error) {
-		if from.CanInt() && from.Int() < 0 && to.CanUint() {
-			return nil, fmt.Errorf("cannot convert negative value %v to an unsigned integer", from.Int())
-		}
 		return from.Interface(), nil
 	}
 }

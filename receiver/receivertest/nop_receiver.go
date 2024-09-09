@@ -11,17 +11,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverprofiles"
 )
 
 var defaultComponentType = component.MustNewType("nop")
-
-// NewNopCreateSettings returns a new nop settings for Create*Receiver functions.
-//
-// Deprecated: [v0.103.0] Use receivertest.NewNopSettings instead.
-func NewNopCreateSettings() receiver.Settings {
-	return NewNopSettings()
-}
 
 // NewNopSettings returns a new nop settings for Create*Receiver functions.
 func NewNopSettings() receiver.Settings {
@@ -39,7 +34,9 @@ func NewNopFactory() receiver.Factory {
 		func() component.Config { return &nopConfig{} },
 		receiver.WithTraces(createTraces, component.StabilityLevelStable),
 		receiver.WithMetrics(createMetrics, component.StabilityLevelStable),
-		receiver.WithLogs(createLogs, component.StabilityLevelStable))
+		receiver.WithLogs(createLogs, component.StabilityLevelStable),
+		receiverprofiles.WithProfiles(createProfiles, component.StabilityLevelAlpha),
+	)
 }
 
 // NewNopFactoryForType returns a receiver.Factory that constructs nop receivers supporting only the
@@ -75,18 +72,14 @@ func createLogs(context.Context, receiver.Settings, component.Config, consumer.L
 	return nopInstance, nil
 }
 
+func createProfiles(context.Context, receiver.Settings, component.Config, consumerprofiles.Profiles) (receiverprofiles.Profiles, error) {
+	return nopInstance, nil
+}
+
 var nopInstance = &nopReceiver{}
 
 // nopReceiver acts as a receiver for testing purposes.
 type nopReceiver struct {
 	component.StartFunc
 	component.ShutdownFunc
-}
-
-// NewNopBuilder returns a receiver.Builder that constructs nop receivers.
-func NewNopBuilder() *receiver.Builder {
-	nopFactory := NewNopFactory()
-	return receiver.NewBuilder(
-		map[component.ID]component.Config{component.NewID(defaultComponentType): nopFactory.CreateDefaultConfig()},
-		map[component.Type]receiver.Factory{defaultComponentType: nopFactory})
 }

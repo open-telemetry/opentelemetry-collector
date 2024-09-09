@@ -82,6 +82,9 @@ func (id *ID) UnmarshalText(text []byte) error {
 		if nameStr == "" {
 			return fmt.Errorf("in %q id: the part after %s should not be empty", idStr, typeAndNameSeparator)
 		}
+		if err := validateName(nameStr); err != nil {
+			return fmt.Errorf("in %q id: %w", nameStr, err)
+		}
 	}
 
 	var err error

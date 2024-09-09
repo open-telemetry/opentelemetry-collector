@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -113,7 +114,6 @@ func TestExpandNilStructPointersHookFunc(t *testing.T) {
 	// assert.False(t, *cfg.Boolean)
 	assert.Nil(t, cfg.Struct)
 	assert.NotNil(t, cfg.MapStruct)
-	// TODO: Investigate this unexpected result.
 	assert.Equal(t, &Struct{}, cfg.MapStruct["struct"])
 }
 
@@ -140,7 +140,6 @@ func TestExpandNilStructPointersHookFuncDefaultNotNilConfigNil(t *testing.T) {
 	assert.NotNil(t, cfg.Struct)
 	assert.Equal(t, s1, cfg.Struct)
 	assert.NotNil(t, cfg.MapStruct)
-	// TODO: Investigate this unexpected result.
 	assert.Equal(t, &Struct{}, cfg.MapStruct["struct"])
 }
 
@@ -279,7 +278,7 @@ func TestUintUnmarshalerFailure(t *testing.T) {
 	err := conf.Unmarshal(cfg)
 
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), fmt.Sprintf("* error decoding 'uint_test': cannot convert negative value %v to an unsigned integer", testValue))
+	assert.Contains(t, err.Error(), fmt.Sprintf("decoding failed due to the following error(s):\n\ncannot parse 'uint_test', %d overflows uint", testValue))
 }
 
 func TestMapKeyStringToMapKeyTextUnmarshalerHookFuncDuplicateID(t *testing.T) {
@@ -573,10 +572,6 @@ type testErrConfig struct {
 	Err errConfig `mapstructure:"err"`
 }
 
-func (tc *testErrConfig) Unmarshal(component *Conf) error {
-	return component.Unmarshal(tc)
-}
-
 type errConfig struct {
 	Foo string `mapstructure:"foo"`
 }
@@ -592,10 +587,8 @@ func TestUnmarshalerErr(t *testing.T) {
 		},
 	})
 
-	expectErr := "1 error(s) decoding:\n\n* error decoding 'err': never works"
-
 	tc := &testErrConfig{}
-	assert.EqualError(t, cfgMap.Unmarshal(tc), expectErr)
+	assert.EqualError(t, cfgMap.Unmarshal(tc), "decoding failed due to the following error(s):\n\nerror decoding 'err': never works")
 	assert.Empty(t, tc.Err.Foo)
 }
 
@@ -850,4 +843,89 @@ func TestRecursiveUnmarshaling(t *testing.T) {
 	r := &Recursive{}
 	require.NoError(t, conf.Unmarshal(r))
 	require.Equal(t, "something", r.Foo)
+}
+
+func TestExpandedValue(t *testing.T) {
+	cm := NewFromStringMap(map[string]any{
+		"key": expandedValue{
+			Value:    0xdeadbeef,
+			Original: "original",
+		}})
+	assert.Equal(t, 0xdeadbeef, cm.Get("key"))
+	assert.Equal(t, map[string]any{"key": 0xdeadbeef}, cm.ToStringMap())
+
+	type ConfigStr struct {
+		Key string `mapstructure:"key"`
+	}
+
+	cfgStr := ConfigStr{}
+	assert.NoError(t, cm.Unmarshal(&cfgStr))
+	assert.Equal(t, "original", cfgStr.Key)
+
+	type ConfigInt struct {
+		Key int `mapstructure:"key"`
+	}
+	cfgInt := ConfigInt{}
+	assert.NoError(t, cm.Unmarshal(&cfgInt))
+	assert.Equal(t, 0xdeadbeef, cfgInt.Key)
+
+	type ConfigBool struct {
+		Key bool `mapstructure:"key"`
+	}
+	cfgBool := ConfigBool{}
+	assert.Error(t, cm.Unmarshal(&cfgBool))
+}
+
+func TestStringyTypes(t *testing.T) {
+	tests := []struct {
+		valueOfType any
+		isStringy   bool
+	}{
+		{
+			valueOfType: "string",
+			isStringy:   true,
+		},
+		{
+			valueOfType: 1,
+			isStringy:   false,
+		},
+		{
+			valueOfType: map[string]any{},
+			isStringy:   false,
+		},
+		{
+			valueOfType: []any{},
+			isStringy:   false,
+		},
+		{
+			valueOfType: map[string]string{},
+			isStringy:   true,
+		},
+		{
+			valueOfType: []string{},
+			isStringy:   true,
+		},
+		{
+			valueOfType: map[string][]string{},
+			isStringy:   true,
+		},
+		{
+			valueOfType: map[string]map[string]string{},
+			isStringy:   true,
+		},
+		{
+			valueOfType: []map[string]any{},
+			isStringy:   false,
+		},
+		{
+			valueOfType: []map[string]string{},
+			isStringy:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		// Create a reflect.Type from the value
+		to := reflect.TypeOf(tt.valueOfType)
+		assert.Equal(t, tt.isStringy, isStringyStructure(to))
+	}
 }

@@ -5,6 +5,7 @@ package connector // import "go.opentelemetry.io/collector/connector"
 
 import (
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/connector/internal"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
 )
@@ -19,7 +20,7 @@ type MetricsRouterAndConsumer interface {
 
 type metricsRouter struct {
 	consumer.Metrics
-	baseRouter[consumer.Metrics]
+	internal.BaseRouter[consumer.Metrics]
 }
 
 func NewMetricsRouter(cm map[component.ID]consumer.Metrics) MetricsRouterAndConsumer {
@@ -29,7 +30,7 @@ func NewMetricsRouter(cm map[component.ID]consumer.Metrics) MetricsRouterAndCons
 	}
 	return &metricsRouter{
 		Metrics:    fanoutconsumer.NewMetrics(consumers),
-		baseRouter: newBaseRouter(fanoutconsumer.NewMetrics, cm),
+		BaseRouter: internal.NewBaseRouter(fanoutconsumer.NewMetrics, cm),
 	}
 }
 

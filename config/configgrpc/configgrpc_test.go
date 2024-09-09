@@ -19,8 +19,10 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
+	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
@@ -245,6 +247,58 @@ func TestDefaultGrpcServerSettings(t *testing.T) {
 	opts, err := gss.toServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	assert.NoError(t, err)
 	assert.Len(t, opts, 3)
+}
+
+func TestGrpcServerValidate(t *testing.T) {
+	tests := []struct {
+		gss *ServerConfig
+		err string
+	}{
+		{
+			gss: &ServerConfig{
+				MaxRecvMsgSizeMiB: -1,
+				NetAddr: confignet.AddrConfig{
+					Endpoint: "0.0.0.0:1234",
+				},
+			},
+			err: "invalid max_recv_msg_size_mib value",
+		},
+		{
+			gss: &ServerConfig{
+				MaxRecvMsgSizeMiB: 9223372036854775807,
+				NetAddr: confignet.AddrConfig{
+					Endpoint: "0.0.0.0:1234",
+				},
+			},
+			err: "invalid max_recv_msg_size_mib value",
+		},
+		{
+			gss: &ServerConfig{
+				ReadBufferSize: -1,
+				NetAddr: confignet.AddrConfig{
+					Endpoint: "0.0.0.0:1234",
+				},
+			},
+			err: "invalid read_buffer_size value",
+		},
+		{
+			gss: &ServerConfig{
+				WriteBufferSize: -1,
+				NetAddr: confignet.AddrConfig{
+					Endpoint: "0.0.0.0:1234",
+				},
+			},
+			err: "invalid write_buffer_size value",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.err, func(t *testing.T) {
+			err := tt.gss.Validate()
+			assert.Error(t, err)
+			assert.Regexp(t, tt.err, err)
+		})
+	}
 }
 
 func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
@@ -1022,7 +1076,8 @@ func TestDefaultUnaryInterceptorAuthFailure(t *testing.T) {
 
 	// verify
 	assert.Nil(t, res)
-	assert.Equal(t, expectedErr, err)
+	assert.ErrorContains(t, err, expectedErr.Error())
+	assert.Equal(t, codes.Unauthenticated, status.Code(err))
 	assert.True(t, authCalled)
 }
 
@@ -1098,7 +1153,8 @@ func TestDefaultStreamInterceptorAuthFailure(t *testing.T) {
 	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, auth.NewServer(auth.WithServerAuthenticate(authFunc)))
 
 	// verify
-	assert.Equal(t, expectedErr, err)
+	assert.ErrorContains(t, err, expectedErr.Error()) // unfortunately, grpc errors don't wrap the original ones
+	assert.Equal(t, codes.Unauthenticated, status.Code(err))
 	assert.True(t, authCalled)
 }
 

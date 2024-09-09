@@ -42,3 +42,13 @@ func TestSizedCapacityChannel(t *testing.T) {
 	assert.False(t, ok)
 	assert.Equal(t, 0, el)
 }
+
+func TestSizedCapacityChannel_Offer_sizedNotFullButChannelFull(t *testing.T) {
+	q := newSizedChannel[int](1, nil, 0)
+	assert.NoError(t, q.push(1, 1, nil))
+
+	q.used.Store(0)
+	err := q.push(1, 1, nil)
+	assert.Error(t, err)
+	assert.Equal(t, ErrQueueIsFull, err)
+}

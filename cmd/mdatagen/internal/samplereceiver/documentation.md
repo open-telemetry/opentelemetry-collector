@@ -123,7 +123,7 @@ Number of times the batch was sent due to a size trigger
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| {times} | Sum | Int | true |
 
 ### otelcol_process_runtime_total_alloc_bytes
 
@@ -141,7 +141,7 @@ For example this metric only exists if feature A is enabled.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {items} | Gauge | Int |
 
 ### otelcol_request_duration
 

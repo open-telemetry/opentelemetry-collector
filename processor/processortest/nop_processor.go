@@ -11,18 +11,13 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processorprofiles"
 )
 
 var nopType = component.MustNewType("nop")
-
-// NewNopCreateSettings returns a new nop settings for Create*Processor functions.
-//
-// Deprecated: [v0.103.0] Use processortest.NewNopSettings instead.
-func NewNopCreateSettings() processor.Settings {
-	return NewNopSettings()
-}
 
 // NewNopSettings returns a new nop settings for Create*Processor functions.
 func NewNopSettings() processor.Settings {
@@ -41,6 +36,7 @@ func NewNopFactory() processor.Factory {
 		processor.WithTraces(createTracesProcessor, component.StabilityLevelStable),
 		processor.WithMetrics(createMetricsProcessor, component.StabilityLevelStable),
 		processor.WithLogs(createLogsProcessor, component.StabilityLevelStable),
+		processorprofiles.WithProfiles(createProfilesProcessor, component.StabilityLevelAlpha),
 	)
 }
 
@@ -56,6 +52,10 @@ func createLogsProcessor(context.Context, processor.Settings, component.Config, 
 	return nopInstance, nil
 }
 
+func createProfilesProcessor(context.Context, processor.Settings, component.Config, consumerprofiles.Profiles) (processorprofiles.Profiles, error) {
+	return nopInstance, nil
+}
+
 type nopConfig struct{}
 
 var nopInstance = &nopProcessor{
@@ -67,12 +67,4 @@ type nopProcessor struct {
 	component.StartFunc
 	component.ShutdownFunc
 	consumertest.Consumer
-}
-
-// NewNopBuilder returns a processor.Builder that constructs nop processors.
-func NewNopBuilder() *processor.Builder {
-	nopFactory := NewNopFactory()
-	return processor.NewBuilder(
-		map[component.ID]component.Config{component.NewID(nopType): nopFactory.CreateDefaultConfig()},
-		map[component.Type]processor.Factory{nopType: nopFactory})
 }

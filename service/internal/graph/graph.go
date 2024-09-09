@@ -19,35 +19,38 @@ import (
 	"strings"
 
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 	"gonum.org/v1/gonum/graph"
 	"gonum.org/v1/gonum/graph/simple"
 	"gonum.org/v1/gonum/graph/topo"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentprofiles"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
-	"go.opentelemetry.io/collector/processor"
-	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
-	"go.opentelemetry.io/collector/service/internal/servicetelemetry"
 	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/pipelines"
 )
 
 // Settings holds configuration for building builtPipelines.
 type Settings struct {
-	Telemetry servicetelemetry.TelemetrySettings
+	Telemetry component.TelemetrySettings
 	BuildInfo component.BuildInfo
 
-	ReceiverBuilder  *receiver.Builder
-	ProcessorBuilder *processor.Builder
-	ExporterBuilder  *exporter.Builder
-	ConnectorBuilder *connector.Builder
+	ReceiverBuilder  *builders.ReceiverBuilder
+	ProcessorBuilder *builders.ProcessorBuilder
+	ExporterBuilder  *builders.ExporterBuilder
+	ConnectorBuilder *builders.ConnectorBuilder
 
 	// PipelineConfigs is a map of component.ID to PipelineConfig.
 	PipelineConfigs pipelines.Config
+
+	ReportStatus status.ServiceStatusFunc
 }
 
 type Graph struct {
@@ -58,9 +61,9 @@ type Graph struct {
 	pipelines map[component.ID]*pipelineNodes
 
 	// Keep track of status source per node
-	instanceIDs map[int64]*component.InstanceID
+	instanceIDs map[int64]*componentstatus.InstanceID
 
-	telemetry servicetelemetry.TelemetrySettings
+	telemetry component.TelemetrySettings
 }
 
 // Build builds a full pipeline graph.
@@ -69,7 +72,8 @@ func Build(ctx context.Context, set Settings) (*Graph, error) {
 	pipelines := &Graph{
 		componentGraph: simple.NewDirectedGraph(),
 		pipelines:      make(map[component.ID]*pipelineNodes, len(set.PipelineConfigs)),
-		instanceIDs:    make(map[int64]*component.InstanceID),
+		instanceIDs:    make(map[int64]*componentstatus.InstanceID),
+		telemetry:      set.Telemetry,
 	}
 	for pipelineID := range set.PipelineConfigs {
 		pipelines.pipelines[pipelineID] = &pipelineNodes{
@@ -193,47 +197,37 @@ func (g *Graph) createNodes(set Settings) error {
 func (g *Graph) createReceiver(pipelineID, recvID component.ID) *receiverNode {
 	rcvrNode := newReceiverNode(pipelineID.Type(), recvID)
 	if node := g.componentGraph.Node(rcvrNode.ID()); node != nil {
-		g.instanceIDs[node.ID()].PipelineIDs[pipelineID] = struct{}{}
+		instanceID := g.instanceIDs[node.ID()]
+		g.instanceIDs[node.ID()] = instanceID.WithPipelines(pipelineID)
 		return node.(*receiverNode)
 	}
 	g.componentGraph.AddNode(rcvrNode)
-	g.instanceIDs[rcvrNode.ID()] = &component.InstanceID{
-		ID:   recvID,
-		Kind: component.KindReceiver,
-		PipelineIDs: map[component.ID]struct{}{
-			pipelineID: {},
-		},
-	}
+	g.instanceIDs[rcvrNode.ID()] = componentstatus.NewInstanceID(
+		recvID, component.KindReceiver, pipelineID,
+	)
 	return rcvrNode
 }
 
 func (g *Graph) createProcessor(pipelineID, procID component.ID) *processorNode {
 	procNode := newProcessorNode(pipelineID, procID)
 	g.componentGraph.AddNode(procNode)
-	g.instanceIDs[procNode.ID()] = &component.InstanceID{
-		ID:   procID,
-		Kind: component.KindProcessor,
-		PipelineIDs: map[component.ID]struct{}{
-			pipelineID: {},
-		},
-	}
+	g.instanceIDs[procNode.ID()] = componentstatus.NewInstanceID(
+		procID, component.KindProcessor, pipelineID,
+	)
 	return procNode
 }
 
 func (g *Graph) createExporter(pipelineID, exprID component.ID) *exporterNode {
 	expNode := newExporterNode(pipelineID.Type(), exprID)
 	if node := g.componentGraph.Node(expNode.ID()); node != nil {
-		g.instanceIDs[expNode.ID()].PipelineIDs[pipelineID] = struct{}{}
+		instanceID := g.instanceIDs[expNode.ID()]
+		g.instanceIDs[expNode.ID()] = instanceID.WithPipelines(pipelineID)
 		return node.(*exporterNode)
 	}
 	g.componentGraph.AddNode(expNode)
-	g.instanceIDs[expNode.ID()] = &component.InstanceID{
-		ID:   expNode.componentID,
-		Kind: component.KindExporter,
-		PipelineIDs: map[component.ID]struct{}{
-			pipelineID: {},
-		},
-	}
+	g.instanceIDs[expNode.ID()] = componentstatus.NewInstanceID(
+		expNode.componentID, component.KindExporter, pipelineID,
+	)
 	return expNode
 }
 
@@ -241,19 +235,13 @@ func (g *Graph) createConnector(exprPipelineID, rcvrPipelineID, connID component
 	connNode := newConnectorNode(exprPipelineID.Type(), rcvrPipelineID.Type(), connID)
 	if node := g.componentGraph.Node(connNode.ID()); node != nil {
 		instanceID := g.instanceIDs[connNode.ID()]
-		instanceID.PipelineIDs[exprPipelineID] = struct{}{}
-		instanceID.PipelineIDs[rcvrPipelineID] = struct{}{}
+		g.instanceIDs[connNode.ID()] = instanceID.WithPipelines(exprPipelineID, rcvrPipelineID)
 		return node.(*connectorNode)
 	}
 	g.componentGraph.AddNode(connNode)
-	g.instanceIDs[connNode.ID()] = &component.InstanceID{
-		ID:   connNode.componentID,
-		Kind: component.KindConnector,
-		PipelineIDs: map[component.ID]struct{}{
-			exprPipelineID: {},
-			rcvrPipelineID: {},
-		},
-	}
+	g.instanceIDs[connNode.ID()] = componentstatus.NewInstanceID(
+		connNode.componentID, component.KindConnector, exprPipelineID, rcvrPipelineID,
+	)
 	return connNode
 }
 
@@ -296,22 +284,16 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 	for i := len(nodes) - 1; i >= 0; i-- {
 		node := nodes[i]
 
-		// skipped for capabilitiesNodes and fanoutNodes as they are not assigned componentIDs.
-		var telemetrySettings component.TelemetrySettings
-		if instanceID, ok := g.instanceIDs[node.ID()]; ok {
-			telemetrySettings = set.Telemetry.ToComponentTelemetrySettings(instanceID)
-		}
-
 		switch n := node.(type) {
 		case *receiverNode:
-			err = n.buildComponent(ctx, telemetrySettings, set.BuildInfo, set.ReceiverBuilder, g.nextConsumers(n.ID()))
+			err = n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ReceiverBuilder, g.nextConsumers(n.ID()))
 		case *processorNode:
 			// nextConsumers is guaranteed to be length 1.  Either it is the next processor or it is the fanout node for the exporters.
-			err = n.buildComponent(ctx, telemetrySettings, set.BuildInfo, set.ProcessorBuilder, g.nextConsumers(n.ID())[0])
+			err = n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ProcessorBuilder, g.nextConsumers(n.ID())[0])
 		case *exporterNode:
-			err = n.buildComponent(ctx, telemetrySettings, set.BuildInfo, set.ExporterBuilder)
+			err = n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ExporterBuilder)
 		case *connectorNode:
-			err = n.buildComponent(ctx, telemetrySettings, set.BuildInfo, set.ConnectorBuilder, g.nextConsumers(n.ID()))
+			err = n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ConnectorBuilder, g.nextConsumers(n.ID()))
 		case *capabilitiesNode:
 			capability := consumer.Capabilities{
 				// The fanOutNode represents the aggregate capabilities of the exporters in the pipeline.
@@ -334,6 +316,10 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 				cc := capabilityconsumer.NewLogs(next.(consumer.Logs), capability)
 				n.baseConsumer = cc
 				n.ConsumeLogsFunc = cc.ConsumeLogs
+			case componentprofiles.DataTypeProfiles:
+				cc := capabilityconsumer.NewProfiles(next.(consumerprofiles.Profiles), capability)
+				n.baseConsumer = cc
+				n.ConsumeProfilesFunc = cc.ConsumeProfiles
 			}
 		case *fanOutNode:
 			nexts := g.nextConsumers(n.ID())
@@ -356,6 +342,12 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 					consumers = append(consumers, next.(consumer.Logs))
 				}
 				n.baseConsumer = fanoutconsumer.NewLogs(consumers)
+			case componentprofiles.DataTypeProfiles:
+				consumers := make([]consumerprofiles.Profiles, 0, len(nexts))
+				for _, next := range nexts {
+					consumers = append(consumers, next.(consumerprofiles.Profiles))
+				}
+				n.baseConsumer = fanoutconsumer.NewProfiles(consumers)
 			}
 		}
 		if err != nil {
@@ -394,7 +386,11 @@ type pipelineNodes struct {
 	exporters map[int64]graph.Node
 }
 
-func (g *Graph) StartAll(ctx context.Context, host component.Host, reporter status.Reporter) error {
+func (g *Graph) StartAll(ctx context.Context, host *Host) error {
+	if host == nil {
+		return errors.New("host cannot be nil")
+	}
+
 	nodes, err := topo.Sort(g.componentGraph)
 	if err != nil {
 		return err
@@ -413,20 +409,27 @@ func (g *Graph) StartAll(ctx context.Context, host component.Host, reporter stat
 		}
 
 		instanceID := g.instanceIDs[node.ID()]
-		reporter.ReportStatus(
+		host.Reporter.ReportStatus(
 			instanceID,
-			component.NewStatusEvent(component.StatusStarting),
+			componentstatus.NewEvent(componentstatus.StatusStarting),
 		)
 
-		if compErr := comp.Start(ctx, host); compErr != nil {
-			reporter.ReportStatus(
+		if compErr := comp.Start(ctx, &HostWrapper{Host: host, InstanceID: instanceID}); compErr != nil {
+			host.Reporter.ReportStatus(
 				instanceID,
-				component.NewPermanentErrorEvent(compErr),
+				componentstatus.NewPermanentErrorEvent(compErr),
 			)
+			// We log with zap.AddStacktrace(zap.DPanicLevel) to avoid adding the stack trace to the error log
+			g.telemetry.Logger.WithOptions(zap.AddStacktrace(zap.DPanicLevel)).
+				Error("Failed to start component",
+					zap.Error(compErr),
+					zap.String("type", instanceID.Kind().String()),
+					zap.String("id", instanceID.ComponentID().String()),
+				)
 			return compErr
 		}
 
-		reporter.ReportOKIfStarting(instanceID)
+		host.Reporter.ReportOKIfStarting(instanceID)
 	}
 	return nil
 }
@@ -454,21 +457,21 @@ func (g *Graph) ShutdownAll(ctx context.Context, reporter status.Reporter) error
 		instanceID := g.instanceIDs[node.ID()]
 		reporter.ReportStatus(
 			instanceID,
-			component.NewStatusEvent(component.StatusStopping),
+			componentstatus.NewEvent(componentstatus.StatusStopping),
 		)
 
 		if compErr := comp.Shutdown(ctx); compErr != nil {
 			errs = multierr.Append(errs, compErr)
 			reporter.ReportStatus(
 				instanceID,
-				component.NewPermanentErrorEvent(compErr),
+				componentstatus.NewPermanentErrorEvent(compErr),
 			)
 			continue
 		}
 
 		reporter.ReportStatus(
 			instanceID,
-			component.NewStatusEvent(component.StatusStopped),
+			componentstatus.NewEvent(componentstatus.StatusStopped),
 		)
 	}
 	return errs
@@ -485,6 +488,7 @@ func (g *Graph) GetExporters() map[component.DataType]map[component.ID]component
 	exportersMap[component.DataTypeTraces] = make(map[component.ID]component.Component)
 	exportersMap[component.DataTypeMetrics] = make(map[component.ID]component.Component)
 	exportersMap[component.DataTypeLogs] = make(map[component.ID]component.Component)
+	exportersMap[componentprofiles.DataTypeProfiles] = make(map[component.ID]component.Component)
 
 	for _, pg := range g.pipelines {
 		for _, expNode := range pg.exporters {
@@ -547,6 +551,8 @@ func connectorStability(f connector.Factory, expType, recType component.Type) co
 			return f.TracesToMetricsStability()
 		case component.DataTypeLogs:
 			return f.TracesToLogsStability()
+		case componentprofiles.DataTypeProfiles:
+			return f.TracesToProfilesStability()
 		}
 	case component.DataTypeMetrics:
 		switch recType {
@@ -556,6 +562,8 @@ func connectorStability(f connector.Factory, expType, recType component.Type) co
 			return f.MetricsToMetricsStability()
 		case component.DataTypeLogs:
 			return f.MetricsToLogsStability()
+		case componentprofiles.DataTypeProfiles:
+			return f.MetricsToProfilesStability()
 		}
 	case component.DataTypeLogs:
 		switch recType {
@@ -565,7 +573,33 @@ func connectorStability(f connector.Factory, expType, recType component.Type) co
 			return f.LogsToMetricsStability()
 		case component.DataTypeLogs:
 			return f.LogsToLogsStability()
+		case componentprofiles.DataTypeProfiles:
+			return f.LogsToProfilesStability()
+		}
+	case componentprofiles.DataTypeProfiles:
+		switch recType {
+		case component.DataTypeTraces:
+			return f.ProfilesToTracesStability()
+		case component.DataTypeMetrics:
+			return f.ProfilesToMetricsStability()
+		case component.DataTypeLogs:
+			return f.ProfilesToLogsStability()
+		case componentprofiles.DataTypeProfiles:
+			return f.ProfilesToProfilesStability()
 		}
 	}
 	return component.StabilityLevelUndefined
+}
+
+var _ getExporters = (*HostWrapper)(nil)
+var _ component.Host = (*HostWrapper)(nil)
+var _ componentstatus.Reporter = (*HostWrapper)(nil)
+
+type HostWrapper struct {
+	*Host
+	InstanceID *componentstatus.InstanceID
+}
+
+func (host *HostWrapper) Report(event *componentstatus.Event) {
+	host.Reporter.ReportStatus(host.InstanceID, event)
 }

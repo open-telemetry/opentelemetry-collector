@@ -4,15 +4,10 @@
 package connector // import "go.opentelemetry.io/collector/connector"
 
 import (
-	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector/internal"
-)
-
-var (
-	errNilNextConsumer = errors.New("nil next Consumer")
 )
 
 // A Traces connector acts as an exporter from a traces pipeline and a receiver
@@ -53,11 +48,6 @@ type Metrics = internal.Metrics
 //     based on criteria such as attributes or other content of the log. The second
 //     pipeline can then process and export the log to the appropriate backend.
 type Logs = internal.Logs
-
-// CreateSettings configures Connector creators.
-//
-// Deprecated: [v0.103.0] Use connector.Settings instead.
-type CreateSettings = internal.Settings
 
 // Settings configures Connector creators.
 type Settings = internal.Settings

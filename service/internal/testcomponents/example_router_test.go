@@ -12,8 +12,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/connector"
+	"go.opentelemetry.io/collector/connector/connectorprofiles"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
@@ -145,4 +147,43 @@ func TestLogsRouter(t *testing.T) {
 	assert.NoError(t, lr.ConsumeLogs(context.Background(), ld))
 	assert.Len(t, sinkRight.AllLogs(), 3)
 	assert.Len(t, sinkLeft.AllLogs(), 2)
+}
+
+func TestProfilesRouter(t *testing.T) {
+	leftID := component.MustNewIDWithName("sink", "left")
+	rightID := component.MustNewIDWithName("sink", "right")
+
+	sinkLeft := new(consumertest.ProfilesSink)
+	sinkRight := new(consumertest.ProfilesSink)
+
+	// The service will build a router to give to every connector.
+	// Many connectors will just call router.ConsumeProfiles,
+	// but some implementation will call RouteProfiles instead.
+	router := connectorprofiles.NewProfilesRouter(
+		map[component.ID]consumerprofiles.Profiles{
+			leftID:  sinkLeft,
+			rightID: sinkRight,
+		})
+
+	cfg := ExampleRouterConfig{Profiles: &LeftRightConfig{Left: leftID, Right: rightID}}
+	tr, err := ExampleRouterFactory.CreateProfilesToProfiles(
+		context.Background(), connectortest.NewNopSettings(), cfg, router)
+	assert.NoError(t, err)
+	assert.False(t, tr.Capabilities().MutatesData)
+
+	td := testdata.GenerateProfiles(1)
+
+	assert.NoError(t, tr.ConsumeProfiles(context.Background(), td))
+	assert.Len(t, sinkRight.AllProfiles(), 1)
+	assert.Len(t, sinkLeft.AllProfiles(), 0)
+
+	assert.NoError(t, tr.ConsumeProfiles(context.Background(), td))
+	assert.Len(t, sinkRight.AllProfiles(), 1)
+	assert.Len(t, sinkLeft.AllProfiles(), 1)
+
+	assert.NoError(t, tr.ConsumeProfiles(context.Background(), td))
+	assert.NoError(t, tr.ConsumeProfiles(context.Background(), td))
+	assert.NoError(t, tr.ConsumeProfiles(context.Background(), td))
+	assert.Len(t, sinkRight.AllProfiles(), 3)
+	assert.Len(t, sinkLeft.AllProfiles(), 2)
 }

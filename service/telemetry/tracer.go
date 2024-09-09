@@ -13,6 +13,11 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/embedded"
+	"go.opentelemetry.io/otel/trace/noop"
+
+	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/internal/globalgates"
 )
 
 const (
@@ -25,25 +30,34 @@ var (
 	errUnsupportedPropagator = errors.New("unsupported trace propagator")
 )
 
+type noopNoContextTracer struct {
+	embedded.Tracer
+}
+
+var noopSpan = noop.Span{}
+
+func (n *noopNoContextTracer) Start(ctx context.Context, _ string, _ ...trace.SpanStartOption) (context.Context, trace.Span) {
+	return ctx, noopSpan
+}
+
+type noopNoContextTracerProvider struct {
+	embedded.TracerProvider
+}
+
+func (n *noopNoContextTracerProvider) Tracer(_ string, _ ...trace.TracerOption) trace.Tracer {
+	return &noopNoContextTracer{}
+}
+
 // New creates a new Telemetry from Config.
 func newTracerProvider(ctx context.Context, set Settings, cfg Config) (trace.TracerProvider, error) {
-	attrs := map[string]interface{}{
-		string(semconv.ServiceNameKey): set.BuildInfo.Version,
+	if globalgates.NoopTracerProvider.IsEnabled() || cfg.Traces.Level == configtelemetry.LevelNone {
+		return &noopNoContextTracerProvider{}, nil
 	}
-	for k, v := range cfg.Resource {
-		if v != nil {
-			attrs[k] = *v
-		}
 
-		// the new value is nil, delete the existing key
-		if _, ok := attrs[k]; ok && v == nil {
-			delete(attrs, k)
-		}
-	}
 	sch := semconv.SchemaURL
 	res := config.Resource{
 		SchemaUrl:  &sch,
-		Attributes: attrs,
+		Attributes: attributes(set, cfg),
 	}
 
 	sdk, err := config.NewSDK(

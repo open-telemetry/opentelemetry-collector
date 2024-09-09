@@ -21,19 +21,17 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentprofiles"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/connector/connectortest"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/processor/processortest"
-	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/service/extensions"
+	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/pipelines"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
@@ -185,19 +183,19 @@ func TestServiceGetFactory(t *testing.T) {
 	})
 
 	assert.Nil(t, srv.host.GetFactory(component.KindReceiver, wrongType))
-	assert.Equal(t, set.Receivers.Factory(nopType), srv.host.GetFactory(component.KindReceiver, nopType))
+	assert.Equal(t, srv.host.Receivers.Factory(nopType), srv.host.GetFactory(component.KindReceiver, nopType))
 
 	assert.Nil(t, srv.host.GetFactory(component.KindProcessor, wrongType))
-	assert.Equal(t, set.Processors.Factory(nopType), srv.host.GetFactory(component.KindProcessor, nopType))
+	assert.Equal(t, srv.host.Processors.Factory(nopType), srv.host.GetFactory(component.KindProcessor, nopType))
 
 	assert.Nil(t, srv.host.GetFactory(component.KindExporter, wrongType))
-	assert.Equal(t, set.Exporters.Factory(nopType), srv.host.GetFactory(component.KindExporter, nopType))
+	assert.Equal(t, srv.host.Exporters.Factory(nopType), srv.host.GetFactory(component.KindExporter, nopType))
 
 	assert.Nil(t, srv.host.GetFactory(component.KindConnector, wrongType))
-	assert.Equal(t, set.Connectors.Factory(nopType), srv.host.GetFactory(component.KindConnector, nopType))
+	assert.Equal(t, srv.host.Connectors.Factory(nopType), srv.host.GetFactory(component.KindConnector, nopType))
 
 	assert.Nil(t, srv.host.GetFactory(component.KindExtension, wrongType))
-	assert.Equal(t, set.Extensions.Factory(nopType), srv.host.GetFactory(component.KindExtension, nopType))
+	assert.Equal(t, srv.host.Extensions.Factory(nopType), srv.host.GetFactory(component.KindExtension, nopType))
 
 	// Try retrieve non existing component.Kind.
 	assert.Nil(t, srv.host.GetFactory(42, nopType))
@@ -227,14 +225,17 @@ func TestServiceGetExporters(t *testing.T) {
 		assert.NoError(t, srv.Shutdown(context.Background()))
 	})
 
+	// nolint
 	expMap := srv.host.GetExporters()
-	assert.Len(t, expMap, 3)
+	assert.Len(t, expMap, 4)
 	assert.Len(t, expMap[component.DataTypeTraces], 1)
 	assert.Contains(t, expMap[component.DataTypeTraces], component.NewID(nopType))
 	assert.Len(t, expMap[component.DataTypeMetrics], 1)
 	assert.Contains(t, expMap[component.DataTypeMetrics], component.NewID(nopType))
 	assert.Len(t, expMap[component.DataTypeLogs], 1)
 	assert.Contains(t, expMap[component.DataTypeLogs], component.NewID(nopType))
+	assert.Len(t, expMap[componentprofiles.DataTypeProfiles], 1)
+	assert.Contains(t, expMap[componentprofiles.DataTypeProfiles], component.NewID(nopType))
 }
 
 // TestServiceTelemetryCleanupOnError tests that if newService errors due to an invalid config telemetry is cleaned up
@@ -290,9 +291,12 @@ func testCollectorStartHelper(t *testing.T, tc ownMetricsTestCase, network strin
 
 	set := newNopSettings()
 	set.BuildInfo = component.BuildInfo{Version: "test version", Command: otelCommand}
-	set.Extensions = extension.NewBuilder(
-		map[component.ID]component.Config{component.MustNewID("zpages"): &zpagesextension.Config{ServerConfig: confighttp.ServerConfig{Endpoint: zpagesAddr}}},
-		map[component.Type]extension.Factory{component.MustNewType("zpages"): zpagesextension.NewFactory()})
+	set.ExtensionsConfigs = map[component.ID]component.Config{
+		component.MustNewID("zpages"): &zpagesextension.Config{
+			ServerConfig: confighttp.ServerConfig{Endpoint: zpagesAddr},
+		},
+	}
+	set.ExtensionsFactories = map[component.Type]extension.Factory{component.MustNewType("zpages"): zpagesextension.NewFactory()}
 	set.LoggingOptions = []zap.Option{zap.Hooks(hook)}
 
 	cfg := newNopConfig()
@@ -340,6 +344,10 @@ func TestServiceTelemetryRestart(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, resp.Body.Close())
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	// Response body must be closed now instead of defer as the test
+	// restarts the server on the same port. Leaving response open
+	// leaks a goroutine.
+	resp.Body.Close()
 
 	// Shutdown the service
 	require.NoError(t, srvOne.Shutdown(context.Background()))
@@ -362,6 +370,7 @@ func TestServiceTelemetryRestart(t *testing.T) {
 		100*time.Millisecond,
 		"Must get a valid response from the service",
 	)
+	defer resp.Body.Close()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 	// Shutdown the new service
@@ -374,9 +383,8 @@ func TestExtensionNotificationFailure(t *testing.T) {
 
 	var extName = component.MustNewType("configWatcher")
 	configWatcherExtensionFactory := newConfigWatcherExtensionFactory(extName)
-	set.Extensions = extension.NewBuilder(
-		map[component.ID]component.Config{component.NewID(extName): configWatcherExtensionFactory.CreateDefaultConfig()},
-		map[component.Type]extension.Factory{extName: configWatcherExtensionFactory})
+	set.ExtensionsConfigs = map[component.ID]component.Config{component.NewID(extName): configWatcherExtensionFactory.CreateDefaultConfig()}
+	set.ExtensionsFactories = map[component.Type]extension.Factory{extName: configWatcherExtensionFactory}
 	cfg.Extensions = []component.ID{component.NewID(extName)}
 
 	// Create a service
@@ -397,9 +405,8 @@ func TestNilCollectorEffectiveConfig(t *testing.T) {
 
 	var extName = component.MustNewType("configWatcher")
 	configWatcherExtensionFactory := newConfigWatcherExtensionFactory(extName)
-	set.Extensions = extension.NewBuilder(
-		map[component.ID]component.Config{component.NewID(extName): configWatcherExtensionFactory.CreateDefaultConfig()},
-		map[component.Type]extension.Factory{extName: configWatcherExtensionFactory})
+	set.ExtensionsConfigs = map[component.ID]component.Config{component.NewID(extName): configWatcherExtensionFactory.CreateDefaultConfig()}
+	set.ExtensionsFactories = map[component.Type]extension.Factory{extName: configWatcherExtensionFactory}
 	cfg.Extensions = []component.ID{component.NewID(extName)}
 
 	// Create a service
@@ -437,11 +444,11 @@ func TestServiceFatalError(t *testing.T) {
 	})
 
 	go func() {
-		ev := component.NewFatalErrorEvent(assert.AnError)
-		srv.host.notifyComponentStatusChange(&component.InstanceID{}, ev)
+		ev := componentstatus.NewFatalErrorEvent(assert.AnError)
+		srv.host.NotifyComponentStatusChange(&componentstatus.InstanceID{}, ev)
 	}()
 
-	err = <-srv.host.asyncErrorChannel
+	err = <-srv.host.AsyncErrorChannel
 
 	require.ErrorIs(t, err, assert.AnError)
 }
@@ -535,14 +542,26 @@ func assertZPages(t *testing.T, zpagesAddr string) {
 }
 
 func newNopSettings() Settings {
+	receiversConfigs, receiversFactories := builders.NewNopReceiverConfigsAndFactories()
+	processorsConfigs, processorsFactories := builders.NewNopProcessorConfigsAndFactories()
+	connectorsConfigs, connectorsFactories := builders.NewNopConnectorConfigsAndFactories()
+	exportersConfigs, exportersFactories := builders.NewNopExporterConfigsAndFactories()
+	extensionsConfigs, extensionsFactories := builders.NewNopExtensionConfigsAndFactories()
+
 	return Settings{
-		BuildInfo:     component.NewDefaultBuildInfo(),
-		CollectorConf: confmap.New(),
-		Receivers:     receivertest.NewNopBuilder(),
-		Processors:    processortest.NewNopBuilder(),
-		Exporters:     exportertest.NewNopBuilder(),
-		Connectors:    connectortest.NewNopBuilder(),
-		Extensions:    extensiontest.NewNopBuilder(),
+		BuildInfo:           component.NewDefaultBuildInfo(),
+		CollectorConf:       confmap.New(),
+		ReceiversConfigs:    receiversConfigs,
+		ReceiversFactories:  receiversFactories,
+		ProcessorsConfigs:   processorsConfigs,
+		ProcessorsFactories: processorsFactories,
+		ExportersConfigs:    exportersConfigs,
+		ExportersFactories:  exportersFactories,
+		ConnectorsConfigs:   connectorsConfigs,
+		ConnectorsFactories: connectorsFactories,
+		ExtensionsConfigs:   extensionsConfigs,
+		ExtensionsFactories: extensionsFactories,
+		AsyncErrorChannel:   make(chan error),
 	}
 }
 
@@ -559,6 +578,11 @@ func newNopConfig() Config {
 			Exporters:  []component.ID{component.NewID(nopType)},
 		},
 		component.MustNewID("logs"): {
+			Receivers:  []component.ID{component.NewID(nopType)},
+			Processors: []component.ID{component.NewID(nopType)},
+			Exporters:  []component.ID{component.NewID(nopType)},
+		},
+		component.MustNewID("profiles"): {
 			Receivers:  []component.ID{component.NewID(nopType)},
 			Processors: []component.ID{component.NewID(nopType)},
 			Exporters:  []component.ID{component.NewID(nopType)},

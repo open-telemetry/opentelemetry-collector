@@ -17,17 +17,18 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	otelprom "go.opentelemetry.io/otel/exporters/prometheus"
+	"go.opentelemetry.io/otel/metric"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/service/internal/servicetelemetry"
 )
 
 type testTelemetry struct {
-	servicetelemetry.TelemetrySettings
-	promHandler   http.Handler
-	meterProvider *sdkmetric.MeterProvider
+	component.TelemetrySettings
+	promHandler http.Handler
 }
 
 var expectedMetrics = []string{
@@ -41,23 +42,29 @@ var expectedMetrics = []string{
 
 func setupTelemetry(t *testing.T) testTelemetry {
 	settings := testTelemetry{
-		TelemetrySettings: servicetelemetry.NewNopTelemetrySettings(),
+		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 	}
-	settings.TelemetrySettings.MetricsLevel = configtelemetry.LevelNormal
 
 	promReg := prometheus.NewRegistry()
 	exporter, err := otelprom.New(otelprom.WithRegisterer(promReg), otelprom.WithoutUnits(), otelprom.WithoutCounterSuffixes())
 	require.NoError(t, err)
 
-	settings.meterProvider = sdkmetric.NewMeterProvider(
+	meterProvider := sdkmetric.NewMeterProvider(
 		sdkmetric.WithResource(resource.Empty()),
 		sdkmetric.WithReader(exporter),
 	)
-	settings.TelemetrySettings.MeterProvider = settings.meterProvider
+
+	settings.LeveledMeterProvider = func(_ configtelemetry.Level) metric.MeterProvider {
+		return meterProvider
+	}
+
+	settings.TelemetrySettings.LeveledMeterProvider = func(_ configtelemetry.Level) metric.MeterProvider {
+		return meterProvider
+	}
 
 	settings.promHandler = promhttp.HandlerFor(promReg, promhttp.HandlerOpts{})
 
-	t.Cleanup(func() { assert.NoError(t, settings.meterProvider.Shutdown(context.Background())) })
+	t.Cleanup(func() { assert.NoError(t, meterProvider.Shutdown(context.Background())) })
 
 	return settings
 }
@@ -78,7 +85,7 @@ func fetchPrometheusMetrics(handler http.Handler) (map[string]*io_prometheus_cli
 func TestProcessTelemetry(t *testing.T) {
 	tel := setupTelemetry(t)
 
-	require.NoError(t, RegisterProcessMetrics(tel.TelemetrySettings, 0))
+	require.NoError(t, RegisterProcessMetrics(tel.TelemetrySettings))
 
 	mp, err := fetchPrometheusMetrics(tel.promHandler)
 	require.NoError(t, err)

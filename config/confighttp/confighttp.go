@@ -47,24 +47,21 @@ type ClientConfig struct {
 	TLSSetting configtls.ClientConfig `mapstructure:"tls"`
 
 	// ReadBufferSize for HTTP client. See http.Transport.ReadBufferSize.
+	// Default is 0.
 	ReadBufferSize int `mapstructure:"read_buffer_size"`
 
 	// WriteBufferSize for HTTP client. See http.Transport.WriteBufferSize.
+	// Default is 0.
 	WriteBufferSize int `mapstructure:"write_buffer_size"`
 
 	// Timeout parameter configures `http.Client.Timeout`.
+	// Default is 0 (unlimited).
 	Timeout time.Duration `mapstructure:"timeout"`
 
 	// Additional headers attached to each HTTP request sent by the client.
 	// Existing header values are overwritten if collision happens.
 	// Header values are opaque since they may be sensitive.
 	Headers map[string]configopaque.String `mapstructure:"headers"`
-
-	// Custom Round Tripper to allow for individual components to intercept HTTP requests
-	//
-	// Deprecated: [v0.103.0] Set (*http.Client).Transport on the *http.Client returned from ToClient
-	// to configure this.
-	CustomRoundTripper func(next http.RoundTripper) (http.RoundTripper, error) `mapstructure:"-"`
 
 	// Auth configuration for outgoing HTTP calls.
 	Auth *configauth.Authentication `mapstructure:"auth"`
@@ -73,20 +70,20 @@ type ClientConfig struct {
 	Compression configcompression.Type `mapstructure:"compression"`
 
 	// MaxIdleConns is used to set a limit to the maximum idle HTTP connections the client can keep open.
-	// There's an already set value, and we want to override it only if an explicit value provided
+	// By default, it is set to 100.
 	MaxIdleConns *int `mapstructure:"max_idle_conns"`
 
 	// MaxIdleConnsPerHost is used to set a limit to the maximum idle HTTP connections the host can keep open.
-	// There's an already set value, and we want to override it only if an explicit value provided
+	// By default, it is set to [http.DefaultTransport.MaxIdleConnsPerHost].
 	MaxIdleConnsPerHost *int `mapstructure:"max_idle_conns_per_host"`
 
 	// MaxConnsPerHost limits the total number of connections per host, including connections in the dialing,
 	// active, and idle states.
-	// There's an already set value, and we want to override it only if an explicit value provided
+	// By default, it is set to [http.DefaultTransport.MaxConnsPerHost].
 	MaxConnsPerHost *int `mapstructure:"max_conns_per_host"`
 
 	// IdleConnTimeout is the maximum amount of time a connection will remain open before closing itself.
-	// There's an already set value, and we want to override it only if an explicit value provided
+	// By default, it is set to [http.DefaultTransport.IdleConnTimeout]
 	IdleConnTimeout *time.Duration `mapstructure:"idle_conn_timeout"`
 
 	// DisableKeepAlives, if true, disables HTTP keep-alives and will only use the connection to the server
@@ -117,17 +114,21 @@ type CookiesConfig struct {
 }
 
 // NewDefaultClientConfig returns ClientConfig type object with
-// the default values of 'MaxIdleConns' and 'IdleConnTimeout'.
+// the default values of 'MaxIdleConns' and 'IdleConnTimeout', as well as [http.DefaultTransport] values.
 // Other config options are not added as they are initialized with 'zero value' by GoLang as default.
 // We encourage to use this function to create an object of ClientConfig.
 func NewDefaultClientConfig() ClientConfig {
 	// The default values are taken from the values of 'DefaultTransport' of 'http' package.
-	maxIdleConns := 100
-	idleConnTimeout := 90 * time.Second
+	defaultTransport := http.DefaultTransport.(*http.Transport)
 
 	return ClientConfig{
-		MaxIdleConns:    &maxIdleConns,
-		IdleConnTimeout: &idleConnTimeout,
+		ReadBufferSize:      defaultTransport.ReadBufferSize,
+		WriteBufferSize:     defaultTransport.WriteBufferSize,
+		Headers:             map[string]configopaque.String{},
+		MaxIdleConns:        &defaultTransport.MaxIdleConns,
+		MaxIdleConnsPerHost: &defaultTransport.MaxIdleConnsPerHost,
+		MaxConnsPerHost:     &defaultTransport.MaxConnsPerHost,
+		IdleConnTimeout:     &defaultTransport.IdleConnTimeout,
 	}
 }
 
@@ -225,21 +226,11 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 	otelOpts := []otelhttp.Option{
 		otelhttp.WithTracerProvider(settings.TracerProvider),
 		otelhttp.WithPropagators(otel.GetTextMapPropagator()),
+		otelhttp.WithMeterProvider(settings.LeveledMeterProvider(configtelemetry.LevelDetailed)),
 	}
-	if settings.MetricsLevel >= configtelemetry.LevelDetailed {
-		otelOpts = append(otelOpts, otelhttp.WithMeterProvider(settings.MeterProvider))
-	}
-
 	// wrapping http transport with otelhttp transport to enable otel instrumentation
 	if settings.TracerProvider != nil && settings.MeterProvider != nil {
 		clientTransport = otelhttp.NewTransport(clientTransport, otelOpts...)
-	}
-
-	if hcs.CustomRoundTripper != nil {
-		clientTransport, err = hcs.CustomRoundTripper(clientTransport)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	var jar http.CookieJar
@@ -291,13 +282,12 @@ type ServerConfig struct {
 	CORS *CORSConfig `mapstructure:"cors"`
 
 	// Auth for this receiver
-	Auth *configauth.Authentication `mapstructure:"auth"`
+	Auth *AuthConfig `mapstructure:"auth"`
 
 	// MaxRequestBodySize sets the maximum request body size in bytes. Default: 20MiB.
 	MaxRequestBodySize int64 `mapstructure:"max_request_body_size"`
 
 	// IncludeMetadata propagates the client metadata from the incoming requests to the downstream consumers
-	// Experimental: *NOTE* this option is subject to change or removal in the future.
 	IncludeMetadata bool `mapstructure:"include_metadata"`
 
 	// Additional headers attached to each HTTP response sent to the client.
@@ -306,6 +296,60 @@ type ServerConfig struct {
 
 	// CompressionAlgorithms configures the list of compression algorithms the server can accept. Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate"]
 	CompressionAlgorithms []string `mapstructure:"compression_algorithms"`
+
+	// ReadTimeout is the maximum duration for reading the entire
+	// request, including the body. A zero or negative value means
+	// there will be no timeout.
+	//
+	// Because ReadTimeout does not let Handlers make per-request
+	// decisions on each request body's acceptable deadline or
+	// upload rate, most users will prefer to use
+	// ReadHeaderTimeout. It is valid to use them both.
+	ReadTimeout time.Duration `mapstructure:"read_timeout"`
+
+	// ReadHeaderTimeout is the amount of time allowed to read
+	// request headers. The connection's read deadline is reset
+	// after reading the headers and the Handler can decide what
+	// is considered too slow for the body. If ReadHeaderTimeout
+	// is zero, the value of ReadTimeout is used. If both are
+	// zero, there is no timeout.
+	ReadHeaderTimeout time.Duration `mapstructure:"read_header_timeout"`
+
+	// WriteTimeout is the maximum duration before timing out
+	// writes of the response. It is reset whenever a new
+	// request's header is read. Like ReadTimeout, it does not
+	// let Handlers make decisions on a per-request basis.
+	// A zero or negative value means there will be no timeout.
+	WriteTimeout time.Duration `mapstructure:"write_timeout"`
+
+	// IdleTimeout is the maximum amount of time to wait for the
+	// next request when keep-alives are enabled. If IdleTimeout
+	// is zero, the value of ReadTimeout is used. If both are
+	// zero, there is no timeout.
+	IdleTimeout time.Duration `mapstructure:"idle_timeout"`
+}
+
+// NewDefaultServerConfig returns ServerConfig type object with default values.
+// We encourage to use this function to create an object of ServerConfig.
+func NewDefaultServerConfig() ServerConfig {
+	tlsDefaultServerConfig := configtls.NewDefaultServerConfig()
+	return ServerConfig{
+		ResponseHeaders:   map[string]configopaque.String{},
+		TLSSetting:        &tlsDefaultServerConfig,
+		CORS:              NewDefaultCORSConfig(),
+		WriteTimeout:      30 * time.Second,
+		ReadHeaderTimeout: 1 * time.Minute,
+		IdleTimeout:       1 * time.Minute,
+	}
+}
+
+type AuthConfig struct {
+	// Auth for this receiver.
+	configauth.Authentication `mapstructure:",squash"`
+
+	// RequestParameters is a list of parameters that should be extracted from the request and added to the context.
+	// When a parameter is found in both the query string and the header, the value from the query string will be used.
+	RequestParameters []string `mapstructure:"request_params"`
 }
 
 // ToListener creates a net.Listener.
@@ -387,7 +431,7 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 			return nil, err
 		}
 
-		handler = authInterceptor(handler, server)
+		handler = authInterceptor(handler, server, hss.Auth.RequestParameters)
 	}
 
 	if hss.CORS != nil && len(hss.CORS.AllowedOrigins) > 0 {
@@ -413,9 +457,7 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 		otelhttp.WithSpanNameFormatter(func(_ string, r *http.Request) string {
 			return r.URL.Path
 		}),
-	}
-	if settings.MetricsLevel >= configtelemetry.LevelDetailed {
-		otelOpts = append(otelOpts, otelhttp.WithMeterProvider(settings.MeterProvider))
+		otelhttp.WithMeterProvider(settings.LeveledMeterProvider(configtelemetry.LevelDetailed)),
 	}
 
 	// Enable OpenTelemetry observability plugin.
@@ -428,9 +470,15 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 		includeMetadata: hss.IncludeMetadata,
 	}
 
-	return &http.Server{
-		Handler: handler,
-	}, nil
+	server := &http.Server{
+		Handler:           handler,
+		ReadTimeout:       hss.ReadTimeout,
+		ReadHeaderTimeout: hss.ReadHeaderTimeout,
+		WriteTimeout:      hss.WriteTimeout,
+		IdleTimeout:       hss.IdleTimeout,
+	}
+
+	return server, nil
 }
 
 func responseHeadersHandler(handler http.Handler, headers map[string]configopaque.String) http.Handler {
@@ -467,9 +515,21 @@ type CORSConfig struct {
 	MaxAge int `mapstructure:"max_age"`
 }
 
-func authInterceptor(next http.Handler, server auth.Server) http.Handler {
+// NewDefaultCORSConfig creates a default cross-origin resource sharing (CORS) configuration.
+func NewDefaultCORSConfig() *CORSConfig {
+	return &CORSConfig{}
+}
+
+func authInterceptor(next http.Handler, server auth.Server, requestParams []string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, err := server.Authenticate(r.Context(), r.Header)
+		sources := r.Header
+		query := r.URL.Query()
+		for _, param := range requestParams {
+			if val, ok := query[param]; ok {
+				sources[param] = val
+			}
+		}
+		ctx, err := server.Authenticate(r.Context(), sources)
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return

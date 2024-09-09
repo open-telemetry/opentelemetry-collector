@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -33,6 +34,10 @@ func TestExampleExporter(t *testing.T) {
 	assert.Equal(t, 0, len(exp.Logs))
 	assert.NoError(t, exp.ConsumeLogs(context.Background(), plog.Logs{}))
 	assert.Equal(t, 1, len(exp.Logs))
+
+	assert.Equal(t, 0, len(exp.Profiles))
+	assert.NoError(t, exp.ConsumeProfiles(context.Background(), pprofile.Profiles{}))
+	assert.Equal(t, 1, len(exp.Profiles))
 
 	assert.False(t, exp.Stopped())
 	assert.NoError(t, exp.Shutdown(context.Background()))

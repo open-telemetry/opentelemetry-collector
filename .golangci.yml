@@ -110,6 +110,8 @@ linters-settings:
             desc: "Use 'errors' or 'fmt' instead of github.com/pkg/errors"
           - pkg: github.com/hashicorp/go-multierror
             desc: "Use go.uber.org/multierr instead of github.com/hashicorp/go-multierror"
+          - pkg: "math/rand$"
+            desc: "Use the newer 'math/rand/v2' instead of math/rand"
         # Add a different guard rule so that we can ignore tests.
       ignore-in-test:
           deny:
@@ -118,6 +120,23 @@ linters-settings:
             # Allow in tests for testing pdata or other receivers/exporters that expect OTLP.
           files:
             - "!**/*_test.go"
+
+  testifylint:
+    # TODO: enable all rules
+    disable:
+      - compares
+      - empty
+      - error-is-as
+      - error-nil
+      - expected-actual
+      - float-compare
+      - formatter
+      - go-require
+      - len
+      - negative-positive
+      - nil-compare
+      - require-error
+    enable-all: true   
 
 linters:
   enable:
@@ -134,6 +153,7 @@ linters:
     - revive
     - staticcheck
     - tenv
+    - testifylint
     - unconvert
     - unused
     - unparam
@@ -145,10 +165,6 @@ issues:
       linters:
         - gosec
     - text: "G402:"
-      linters:
-        - gosec
-    # https://github.com/open-telemetry/opentelemetry-collector/issues/5699
-    - text: "G112:"
       linters:
         - gosec
 

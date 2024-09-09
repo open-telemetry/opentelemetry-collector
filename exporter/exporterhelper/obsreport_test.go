@@ -15,14 +15,13 @@ import (
 )
 
 func TestExportEnqueueFailure(t *testing.T) {
-	exporterID := component.MustNewID("fakeExporter")
 	tt, err := componenttest.SetupTelemetry(exporterID)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	obsrep, err := NewObsReport(ObsReportSettings{
-		ExporterID:             exporterID,
-		ExporterCreateSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+	obsrep, err := newExporter(obsReportSettings{
+		exporterID:             exporterID,
+		exporterCreateSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 	})
 	require.NoError(t, err)
 

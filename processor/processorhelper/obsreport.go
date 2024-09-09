@@ -48,7 +48,7 @@ func NewObsReport(cfg ObsReportSettings) (*ObsReport, error) {
 }
 
 func newObsReport(cfg ObsReportSettings) (*ObsReport, error) {
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(cfg.ProcessorCreateSettings.TelemetrySettings, metadata.WithLevel(cfg.ProcessorCreateSettings.MetricsLevel))
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(cfg.ProcessorCreateSettings.TelemetrySettings)
 	if err != nil {
 		return nil, err
 	}
@@ -58,6 +58,24 @@ func newObsReport(cfg ObsReportSettings) (*ObsReport, error) {
 		},
 		telemetryBuilder: telemetryBuilder,
 	}, nil
+}
+
+func (or *ObsReport) recordInOut(ctx context.Context, dataType component.DataType, incoming, outgoing int) {
+	var incomingCount, outgoingCount metric.Int64Counter
+	switch dataType {
+	case component.DataTypeTraces:
+		incomingCount = or.telemetryBuilder.ProcessorIncomingSpans
+		outgoingCount = or.telemetryBuilder.ProcessorOutgoingSpans
+	case component.DataTypeMetrics:
+		incomingCount = or.telemetryBuilder.ProcessorIncomingMetricPoints
+		outgoingCount = or.telemetryBuilder.ProcessorOutgoingMetricPoints
+	case component.DataTypeLogs:
+		incomingCount = or.telemetryBuilder.ProcessorIncomingLogRecords
+		outgoingCount = or.telemetryBuilder.ProcessorOutgoingLogRecords
+	}
+
+	incomingCount.Add(ctx, int64(incoming), metric.WithAttributes(or.otelAttrs...))
+	outgoingCount.Add(ctx, int64(outgoing), metric.WithAttributes(or.otelAttrs...))
 }
 
 func (or *ObsReport) recordData(ctx context.Context, dataType component.DataType, accepted, refused, dropped, inserted int64) {

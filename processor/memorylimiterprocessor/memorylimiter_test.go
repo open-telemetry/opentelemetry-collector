@@ -57,7 +57,8 @@ func TestNoDataLoss(t *testing.T) {
 	require.NoError(t, err)
 
 	processor, err := processorhelper.NewLogsProcessor(context.Background(), processor.Settings{
-		ID: component.MustNewID("nop"),
+		ID:                component.MustNewID("nop"),
+		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 	}, cfg, exporter,
 		limiter.processLogs,
 		processorhelper.WithStart(limiter.start),
@@ -122,7 +123,6 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 	tests := []struct {
 		name        string
 		mlCfg       *Config
-		ballastSize uint64
 		memAlloc    uint64
 		expectError bool
 	}{
@@ -133,7 +133,6 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 				MemoryLimitPercentage: 50,
 				MemorySpikePercentage: 1,
 			},
-			ballastSize: 0,
 			memAlloc:    800,
 			expectError: false,
 		},
@@ -144,29 +143,6 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 				MemoryLimitPercentage: 50,
 				MemorySpikePercentage: 1,
 			},
-			ballastSize: 0,
-			memAlloc:    1800,
-			expectError: true,
-		},
-		{
-			name: "Below memAllocLimit accounting for ballast",
-			mlCfg: &Config{
-				CheckInterval:         time.Second,
-				MemoryLimitPercentage: 50,
-				MemorySpikePercentage: 1,
-			},
-			ballastSize: 1000,
-			memAlloc:    800,
-			expectError: false,
-		},
-		{
-			name: "Above memAllocLimit even accounting for ballast",
-			mlCfg: &Config{
-				CheckInterval:         time.Second,
-				MemoryLimitPercentage: 50,
-				MemorySpikePercentage: 1,
-			},
-			ballastSize: 1000,
 			memAlloc:    1800,
 			expectError: true,
 		},
@@ -177,7 +153,6 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 				MemoryLimitPercentage: 50,
 				MemorySpikePercentage: 10,
 			},
-			ballastSize: 0,
 			memAlloc:    800,
 			expectError: false,
 		},
@@ -188,7 +163,6 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 				MemoryLimitPercentage: 50,
 				MemorySpikePercentage: 11,
 			},
-			ballastSize: 0,
 			memAlloc:    800,
 			expectError: true,
 		},
@@ -197,7 +171,7 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			memorylimiter.GetMemoryFn = totalMemory
 			memorylimiter.ReadMemStatsFn = func(ms *runtime.MemStats) {
-				ms.Alloc = tt.memAlloc + tt.ballastSize
+				ms.Alloc = tt.memAlloc
 			}
 
 			ml, err := newMemoryLimiterProcessor(processortest.NewNopSettings(), tt.mlCfg)
@@ -213,7 +187,7 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 				processorhelper.WithShutdown(ml.shutdown))
 			require.NoError(t, err)
 
-			assert.NoError(t, mp.Start(ctx, &host{ballastSize: tt.ballastSize}))
+			assert.NoError(t, mp.Start(ctx, &host{}))
 			ml.memlimiter.CheckMemLimits()
 			err = mp.ConsumeMetrics(ctx, md)
 			if tt.expectError {
@@ -239,7 +213,6 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 	tests := []struct {
 		name        string
 		mlCfg       *Config
-		ballastSize uint64
 		memAlloc    uint64
 		expectError bool
 	}{
@@ -250,7 +223,6 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 				MemoryLimitPercentage: 50,
 				MemorySpikePercentage: 1,
 			},
-			ballastSize: 0,
 			memAlloc:    800,
 			expectError: false,
 		},
@@ -261,29 +233,6 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 				MemoryLimitPercentage: 50,
 				MemorySpikePercentage: 1,
 			},
-			ballastSize: 0,
-			memAlloc:    1800,
-			expectError: true,
-		},
-		{
-			name: "Below memAllocLimit accounting for ballast",
-			mlCfg: &Config{
-				CheckInterval:         time.Second,
-				MemoryLimitPercentage: 50,
-				MemorySpikePercentage: 1,
-			},
-			ballastSize: 1000,
-			memAlloc:    800,
-			expectError: false,
-		},
-		{
-			name: "Above memAllocLimit even accounting for ballast",
-			mlCfg: &Config{
-				CheckInterval:         time.Second,
-				MemoryLimitPercentage: 50,
-				MemorySpikePercentage: 1,
-			},
-			ballastSize: 1000,
 			memAlloc:    1800,
 			expectError: true,
 		},
@@ -294,7 +243,6 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 				MemoryLimitPercentage: 50,
 				MemorySpikePercentage: 10,
 			},
-			ballastSize: 0,
 			memAlloc:    800,
 			expectError: false,
 		},
@@ -305,7 +253,6 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 				MemoryLimitPercentage: 50,
 				MemorySpikePercentage: 11,
 			},
-			ballastSize: 0,
 			memAlloc:    800,
 			expectError: true,
 		},
@@ -314,7 +261,7 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			memorylimiter.GetMemoryFn = totalMemory
 			memorylimiter.ReadMemStatsFn = func(ms *runtime.MemStats) {
-				ms.Alloc = tt.memAlloc + tt.ballastSize
+				ms.Alloc = tt.memAlloc
 			}
 
 			ml, err := newMemoryLimiterProcessor(processortest.NewNopSettings(), tt.mlCfg)
@@ -330,7 +277,7 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 				processorhelper.WithShutdown(ml.shutdown))
 			require.NoError(t, err)
 
-			assert.NoError(t, tp.Start(ctx, &host{ballastSize: tt.ballastSize}))
+			assert.NoError(t, tp.Start(ctx, &host{}))
 			ml.memlimiter.CheckMemLimits()
 			err = tp.ConsumeTraces(ctx, td)
 			if tt.expectError {
@@ -356,7 +303,6 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 	tests := []struct {
 		name        string
 		mlCfg       *Config
-		ballastSize uint64
 		memAlloc    uint64
 		expectError bool
 	}{
@@ -367,7 +313,6 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 				MemoryLimitPercentage: 50,
 				MemorySpikePercentage: 1,
 			},
-			ballastSize: 0,
 			memAlloc:    800,
 			expectError: false,
 		},
@@ -378,29 +323,6 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 				MemoryLimitPercentage: 50,
 				MemorySpikePercentage: 1,
 			},
-			ballastSize: 0,
-			memAlloc:    1800,
-			expectError: true,
-		},
-		{
-			name: "Below memAllocLimit accounting for ballast",
-			mlCfg: &Config{
-				CheckInterval:         time.Second,
-				MemoryLimitPercentage: 50,
-				MemorySpikePercentage: 1,
-			},
-			ballastSize: 1000,
-			memAlloc:    800,
-			expectError: false,
-		},
-		{
-			name: "Above memAllocLimit even accounting for ballast",
-			mlCfg: &Config{
-				CheckInterval:         time.Second,
-				MemoryLimitPercentage: 50,
-				MemorySpikePercentage: 1,
-			},
-			ballastSize: 1000,
 			memAlloc:    1800,
 			expectError: true,
 		},
@@ -411,7 +333,6 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 				MemoryLimitPercentage: 50,
 				MemorySpikePercentage: 10,
 			},
-			ballastSize: 0,
 			memAlloc:    800,
 			expectError: false,
 		},
@@ -422,7 +343,6 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 				MemoryLimitPercentage: 50,
 				MemorySpikePercentage: 11,
 			},
-			ballastSize: 0,
 			memAlloc:    800,
 			expectError: true,
 		},
@@ -431,7 +351,7 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			memorylimiter.GetMemoryFn = totalMemory
 			memorylimiter.ReadMemStatsFn = func(ms *runtime.MemStats) {
-				ms.Alloc = tt.memAlloc + tt.ballastSize
+				ms.Alloc = tt.memAlloc
 			}
 
 			ml, err := newMemoryLimiterProcessor(processortest.NewNopSettings(), tt.mlCfg)
@@ -447,7 +367,7 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 				processorhelper.WithShutdown(ml.shutdown))
 			require.NoError(t, err)
 
-			assert.NoError(t, tp.Start(ctx, &host{ballastSize: tt.ballastSize}))
+			assert.NoError(t, tp.Start(ctx, &host{}))
 			ml.memlimiter.CheckMemLimits()
 			err = tp.ConsumeLogs(ctx, ld)
 			if tt.expectError {
@@ -465,24 +385,12 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 }
 
 type host struct {
-	ballastSize uint64
 	component.Host
 }
 
 func (h *host) GetExtensions() map[component.ID]component.Component {
 	ret := make(map[component.ID]component.Component)
-	ret[component.MustNewID("ballast")] = &ballastExtension{ballastSize: h.ballastSize}
 	return ret
-}
-
-type ballastExtension struct {
-	ballastSize uint64
-	component.StartFunc
-	component.ShutdownFunc
-}
-
-func (be *ballastExtension) GetBallastSize() uint64 {
-	return be.ballastSize
 }
 
 func totalMemory() (uint64, error) {

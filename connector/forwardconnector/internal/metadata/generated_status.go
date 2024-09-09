@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("forward")
+	Type      = component.MustNewType("forward")
+	ScopeName = "go.opentelemetry.io/collector/connector/forwardconnector"
 )
 
 const (

@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -18,10 +19,10 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/internal/queue"
+	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
 func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
@@ -202,28 +203,33 @@ func TestQueuedRetryHappyPath(t *testing.T) {
 		})
 	}
 }
+
 func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(defaultID)
-	require.NoError(t, err)
+	dataTypes := []component.DataType{component.DataTypeLogs, component.DataTypeTraces, component.DataTypeMetrics}
+	for _, dataType := range dataTypes {
+		tt, err := componenttest.SetupTelemetry(defaultID)
+		require.NoError(t, err)
 
-	qCfg := NewDefaultQueueSettings()
-	qCfg.NumConsumers = 0 // to make every request go straight to the queue
-	rCfg := configretry.NewDefaultBackOffConfig()
-	set := exporter.Settings{ID: defaultID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}
-	be, err := newBaseExporter(set, defaultDataType, newObservabilityConsumerSender,
-		withMarshaler(mockRequestMarshaler), withUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
-		WithRetry(rCfg), WithQueue(qCfg))
-	require.NoError(t, err)
-	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
+		qCfg := NewDefaultQueueSettings()
+		qCfg.NumConsumers = 0 // to make every request go straight to the queue
+		rCfg := configretry.NewDefaultBackOffConfig()
+		set := exporter.Settings{ID: defaultID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}
+		be, err := newBaseExporter(set, dataType, newObservabilityConsumerSender,
+			withMarshaler(mockRequestMarshaler), withUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
+			WithRetry(rCfg), WithQueue(qCfg))
+		require.NoError(t, err)
+		require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 
-	require.NoError(t, tt.CheckExporterMetricGauge("otelcol_exporter_queue_capacity", int64(defaultQueueSize)))
+		require.NoError(t, tt.CheckExporterMetricGauge("otelcol_exporter_queue_capacity", int64(defaultQueueSize)))
 
-	for i := 0; i < 7; i++ {
-		require.NoError(t, be.send(context.Background(), newErrorRequest()))
+		for i := 0; i < 7; i++ {
+			require.NoError(t, be.send(context.Background(), newErrorRequest()))
+		}
+		require.NoError(t, tt.CheckExporterMetricGauge("otelcol_exporter_queue_size", int64(7),
+			attribute.String(obsmetrics.DataTypeKey, dataType.String())))
+
+		assert.NoError(t, be.Shutdown(context.Background()))
 	}
-	require.NoError(t, tt.CheckExporterMetricGauge("otelcol_exporter_queue_size", int64(7)))
-
-	assert.NoError(t, be.Shutdown(context.Background()))
 }
 
 func TestNoCancellationContext(t *testing.T) {
@@ -426,9 +432,12 @@ func TestQueuedRetryPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 func TestQueueSenderNoStartShutdown(t *testing.T) {
 	queue := queue.NewBoundedMemoryQueue[Request](queue.MemoryQueueSettings[Request]{})
 	set := exportertest.NewNopSettings()
-	builder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	obsrep, err := newExporter(obsReportSettings{
+		exporterID:             exporterID,
+		exporterCreateSettings: exportertest.NewNopSettings(),
+	})
 	assert.NoError(t, err)
-	qs := newQueueSender(queue, set, 1, "", builder)
+	qs := newQueueSender(queue, set, 1, "", obsrep)
 	assert.NoError(t, qs.Shutdown(context.Background()))
 }
 

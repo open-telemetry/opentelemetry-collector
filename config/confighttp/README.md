@@ -78,10 +78,11 @@ will not be enabled.
   header, allowing clients to cache the response to CORS preflight requests. If
   not set, browsers use a default of 5 seconds.
 - `endpoint`: Valid value syntax available [here](https://github.com/grpc/grpc/blob/master/doc/naming.md)
-- `max_request_body_size`: configures the maximum allowed body size in bytes for a single request. Default: `0` (no restriction)
+- `max_request_body_size`: configures the maximum allowed body size in bytes for a single request. Default: `20971520` (20MiB)
 - `compression_algorithms`: configures the list of compression algorithms the server can accept. Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate"]
 - [`tls`](../configtls/README.md)
 - [`auth`](../configauth/README.md)
+  - `request_params`: a list of query parameter names to add to the auth context, along with the HTTP headers
 
 You can enable [`attribute processor`][attribute-processor] to append any http header to span's attribute using custom key. You also need to enable the "include_metadata"
 
@@ -94,6 +95,8 @@ receivers:
       http:
         include_metadata: true
         auth:
+          request_params:
+          - token
           authenticator: some-authenticator-extension
         cors:
           allowed_origins:

@@ -1,4 +1,5 @@
 type: memory_limiter
+github_project: open-telemetry/opentelemetry-collector
 
 status:
   class: processor
