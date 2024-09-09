@@ -13,7 +13,6 @@ import (
 
 	"github.com/golang/snappy"
 	"github.com/klauspost/compress/zstd"
-	"github.com/pierrec/lz4/v4"
 
 	"go.opentelemetry.io/collector/config/configcompression"
 )
@@ -23,45 +22,30 @@ type writeCloserReset interface {
 	Reset(w io.Writer)
 }
 
-var (
-	_          writeCloserReset = (*gzip.Writer)(nil)
-	gZipPool                    = &compressor{pool: sync.Pool{New: func() any { return gzip.NewWriter(nil) }}}
-	_          writeCloserReset = (*snappy.Writer)(nil)
-	snappyPool                  = &compressor{pool: sync.Pool{New: func() any { return snappy.NewBufferedWriter(nil) }}}
-	_          writeCloserReset = (*zstd.Encoder)(nil)
-	// Concurrency 1 disables async decoding via goroutines. This is useful to reduce memory usage and isn't a bottleneck for compression using sync.Pool.
-	zStdPool                  = &compressor{pool: sync.Pool{New: func() any { zw, _ := zstd.NewWriter(nil, zstd.WithEncoderConcurrency(1)); return zw }}}
-	_        writeCloserReset = (*zlib.Writer)(nil)
-	zLibPool                  = &compressor{pool: sync.Pool{New: func() any { return zlib.NewWriter(nil) }}}
-	_        writeCloserReset = (*lz4.Writer)(nil)
-	lz4Pool                   = &compressor{pool: sync.Pool{New: func() any {
-		lz := lz4.NewWriter(nil)
-		// Setting concurrency to 1 to disable async decoding by goroutines. This will reduce the overall memory footprint and pool
-		_ = lz.Apply(lz4.ConcurrencyOption(1))
-		return lz
-	}}}
-)
-
 type compressor struct {
 	pool sync.Pool
 }
 
 // writerFactory defines writer field in CompressRoundTripper.
 // The validity of input is already checked when NewCompressRoundTripper was called in confighttp,
-func newCompressor(compressionType configcompression.Type) (*compressor, error) {
-	switch compressionType {
+func newCompressor(compressionopts CompressionOptions) (*compressor, error) {
+	switch compressionopts.compressionType {
 	case configcompression.TypeGzip:
-		return gZipPool, nil
+		var _ writeCloserReset = (*gzip.Writer)(nil)
+		return &compressor{pool: sync.Pool{New: func() any { w, _ := gzip.NewWriterLevel(nil, compressionopts.compressionLevel); return w }}}, nil
 	case configcompression.TypeSnappy:
-		return snappyPool, nil
+		var _ writeCloserReset = (*snappy.Writer)(nil)
+		return &compressor{pool: sync.Pool{New: func() any { return snappy.NewBufferedWriter(nil) }}}, nil
 	case configcompression.TypeZstd:
-		return zStdPool, nil
+		var _ writeCloserReset = (*zstd.Encoder)(nil)
+		compression := zstd.EncoderLevelFromZstd(compressionopts.compressionLevel)
+		encoderLevel := zstd.WithEncoderLevel(compression)
+		return &compressor{pool: sync.Pool{New: func() any { zw, _ := zstd.NewWriter(nil, zstd.WithEncoderConcurrency(1), encoderLevel); return zw }}}, nil
 	case configcompression.TypeZlib, configcompression.TypeDeflate:
-		return zLibPool, nil
-	case configcompression.TypeLz4:
-		return lz4Pool, nil
+		var _ writeCloserReset = (*zlib.Writer)(nil)
+		return &compressor{pool: sync.Pool{New: func() any { w, _ := zlib.NewWriterLevel(nil, compressionopts.compressionLevel); return w }}}, nil
 	}
-	return nil, errors.New("unsupported compression type, ")
+	return nil, errors.New("unsupported compression type")
 }
 
 func (p *compressor) compress(buf *bytes.Buffer, body io.ReadCloser) error {
