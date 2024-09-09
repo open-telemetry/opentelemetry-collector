@@ -49,9 +49,21 @@ func (ct *Type) UnmarshalText(in []byte) error {
 }
 
 // IsZstd returns true if the compression type is zstd.
+// The specified compression level is not validated.
+// Because zstd supports returning an encoder level that closest matches the compression ratio of a specific zstd compression level.
+// Many input values will provide the same compression level.
 func (ct *Type) IsZstd() bool {
 	parts := strings.Split(string(*ct), "/")
 	return parts[0] == string(TypeZstd)
+}
+
+// Compression level isn't supported for snappy.
+func (ct *Type) IsSnappy() bool {
+	parts := strings.Split(string(*ct), "/")
+	if len(parts) > 1 {
+		return false
+	}
+	return parts[0] == string(TypeSnappy)
 }
 
 // IsGzip returns true if the compression type is gzip and the specified compression level is valid.
@@ -70,6 +82,7 @@ func (ct *Type) IsGzip() bool {
 				levelStr == zlib.NoCompression {
 				return true
 			}
+			return false
 		}
 		return true
 	}
@@ -92,6 +105,7 @@ func (ct *Type) IsZlib() bool {
 				levelStr == zlib.NoCompression {
 				return true
 			}
+			return false
 		}
 		return true
 	}

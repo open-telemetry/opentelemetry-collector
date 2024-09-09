@@ -118,12 +118,12 @@ func TestHTTPClientCompression(t *testing.T) {
 				Compression: tt.encoding,
 			}
 			client, err := clientSettings.ToClient(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
-			require.NoError(t, err)
-			res, err := client.Do(req)
 			if tt.shouldError {
 				assert.Error(t, err)
 				return
 			}
+			require.NoError(t, err)
+			res, err := client.Do(req)
 			require.NoError(t, err)
 
 			_, err = io.ReadAll(res.Body)
@@ -310,8 +310,9 @@ func TestHTTPContentCompressionRequestWithNilBody(t *testing.T) {
 	req, err := http.NewRequest(http.MethodGet, srv.URL, nil)
 	require.NoError(t, err, "failed to create request to test handler")
 
-	client := srv.Client()
-	client.Transport, err = newCompressRoundTripper(http.DefaultTransport, configcompression.TypeGzip)
+	client := http.Client{}
+	// compression := CompressionOptions{configcompression.TypeGzip, gzip.BestSpeed}
+	client.Transport, err = newCompressRoundTripper(http.DefaultTransport, "gzip/1")
 	require.NoError(t, err)
 	res, err := client.Do(req)
 	require.NoError(t, err)

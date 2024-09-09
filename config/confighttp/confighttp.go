@@ -13,8 +13,6 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/rs/cors"
@@ -134,21 +132,6 @@ func NewDefaultClientConfig() ClientConfig {
 	}
 }
 
-func setCompression(compressionField configcompression.Type) (compressionType configcompression.Type, compressionLevel int) {
-	parts := strings.Split(string(compressionField), "/")
-
-	// Set compression type
-	compressionLevel = 1
-	compressionType = configcompression.Type(parts[0])
-	if len(parts) > 1 {
-		levelStr := parts[1]
-		if level, err := strconv.Atoi(levelStr); err == nil {
-			compressionLevel = level
-		}
-	}
-	return compressionType, compressionLevel
-}
-
 // ToClient creates an HTTP client.
 func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
 	tlsCfg, err := hcs.TLSSetting.LoadTLSConfig(ctx)
@@ -234,17 +217,8 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 	// Compress the body using specified compression methods if non-empty string is provided.
 	// Supporting gzip, zlib, deflate, snappy, and zstd; none is treated as uncompressed.
 	if hcs.Compression.IsCompressed() {
-		if hcs.Compression.IsZstd() || hcs.Compression.IsGzip() || hcs.Compression.IsZlib() {
-			compressionType, compressionLevel := setCompression(hcs.Compression)
-			compression := CompressionOptions{compressionType, compressionLevel}
-			clientTransport, err = newCompressRoundTripper(clientTransport, compression)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			// Use the default if the compression level is not specified.
-			compressionopts := CompressionOptions{hcs.Compression, -1}
-			clientTransport, err = newCompressRoundTripper(clientTransport, compressionopts)
+		if hcs.Compression.IsZstd() || hcs.Compression.IsGzip() || hcs.Compression.IsZlib() || hcs.Compression.IsSnappy() {
+			clientTransport, err = newCompressRoundTripper(clientTransport, hcs.Compression)
 			if err != nil {
 				return nil, err
 			}
