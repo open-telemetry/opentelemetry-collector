@@ -589,7 +589,7 @@ func TestOTLPReceiverGRPCTracesIngestTest(t *testing.T) {
 		assert.Equal(t, ingestionState.expectedCode, errStatus.Code())
 	}
 
-	require.Equal(t, expectedReceivedBatches, len(sink.AllTraces()))
+	require.Len(t, sink.AllTraces(), expectedReceivedBatches)
 
 	require.NoError(t, tt.CheckReceiverTraces("grpc", int64(expectedReceivedBatches), int64(expectedIngestionBlockedRPCs)))
 }
@@ -677,7 +677,7 @@ func TestOTLPReceiverHTTPTracesIngestTest(t *testing.T) {
 		}
 	}
 
-	require.Equal(t, expectedReceivedBatches, len(sink.AllTraces()))
+	require.Len(t, sink.AllTraces(), expectedReceivedBatches)
 
 	require.NoError(t, tt.CheckReceiverTraces("http", int64(expectedReceivedBatches), int64(expectedIngestionBlockedRPCs)))
 }

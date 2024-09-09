@@ -58,7 +58,7 @@ func TestTracesRouter(t *testing.T) {
 
 	assert.NoError(t, tr.ConsumeTraces(context.Background(), td))
 	assert.Len(t, sinkRight.AllTraces(), 1)
-	assert.Len(t, sinkLeft.AllTraces(), 0)
+	assert.Empty(t, sinkLeft.AllTraces())
 
 	assert.NoError(t, tr.ConsumeTraces(context.Background(), td))
 	assert.Len(t, sinkRight.AllTraces(), 1)
@@ -97,7 +97,7 @@ func TestMetricsRouter(t *testing.T) {
 
 	assert.NoError(t, mr.ConsumeMetrics(context.Background(), md))
 	assert.Len(t, sinkRight.AllMetrics(), 1)
-	assert.Len(t, sinkLeft.AllMetrics(), 0)
+	assert.Empty(t, sinkLeft.AllMetrics())
 
 	assert.NoError(t, mr.ConsumeMetrics(context.Background(), md))
 	assert.Len(t, sinkRight.AllMetrics(), 1)
@@ -136,7 +136,7 @@ func TestLogsRouter(t *testing.T) {
 
 	assert.NoError(t, lr.ConsumeLogs(context.Background(), ld))
 	assert.Len(t, sinkRight.AllLogs(), 1)
-	assert.Len(t, sinkLeft.AllLogs(), 0)
+	assert.Empty(t, sinkLeft.AllLogs())
 
 	assert.NoError(t, lr.ConsumeLogs(context.Background(), ld))
 	assert.Len(t, sinkRight.AllLogs(), 1)
@@ -175,7 +175,7 @@ func TestProfilesRouter(t *testing.T) {
 
 	assert.NoError(t, tr.ConsumeProfiles(context.Background(), td))
 	assert.Len(t, sinkRight.AllProfiles(), 1)
-	assert.Len(t, sinkLeft.AllProfiles(), 0)
+	assert.Empty(t, sinkLeft.AllProfiles())
 
 	assert.NoError(t, tr.ConsumeProfiles(context.Background(), td))
 	assert.Len(t, sinkRight.AllProfiles(), 1)

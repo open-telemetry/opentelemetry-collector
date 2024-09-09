@@ -320,7 +320,7 @@ func TestMap_Range(t *testing.T) {
 		delete(rawMap, k)
 		return true
 	})
-	assert.EqualValues(t, 0, len(rawMap))
+	assert.Empty(t, rawMap)
 }
 
 func TestMap_FromRaw(t *testing.T) {
