@@ -12,7 +12,7 @@ type Settings struct {
 	// ID returns the ID of the component that will be created.
 	ID component.ID
 
-	component.TelemetrySettings
+	TelemetrySettings component.TelemetrySettings
 
 	// BuildInfo can be used by components for informational purposes
 	BuildInfo component.BuildInfo
