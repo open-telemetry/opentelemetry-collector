@@ -15,15 +15,6 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 )
 
-// Processor is an interface that allows using implementations of the builder
-// from different packages.
-type Processor interface {
-	CreateTraces(context.Context, processor.Settings, consumer.Traces) (processor.Traces, error)
-	CreateMetrics(context.Context, processor.Settings, consumer.Metrics) (processor.Metrics, error)
-	CreateLogs(context.Context, processor.Settings, consumer.Logs) (processor.Logs, error)
-	Factory(component.Type) component.Factory
-}
-
 // ProcessorBuilder processor is a helper struct that given a set of Configs
 // and Factories helps with creating processors.
 type ProcessorBuilder struct {

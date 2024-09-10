@@ -223,7 +223,7 @@ func configureMetricOptions(t *testing.T, test metricsTestCase, initializeChs []
 
 		scrapeMetricsChs[i] = make(chan int)
 		tsm := &testScrapeMetrics{ch: scrapeMetricsChs[i], err: test.scrapeErr}
-		scp, err := NewScraper("scraper", tsm.scrape, scraperOptions...)
+		scp, err := NewScraperWithComponentType(component.MustNewType("scraper"), tsm.scrape, scraperOptions...)
 		assert.NoError(t, err)
 
 		metricOptions = append(metricOptions, AddScraper(scp))
@@ -325,7 +325,7 @@ func TestSingleScrapePerInterval(t *testing.T) {
 
 	tickerCh := make(chan time.Time)
 
-	scp, err := NewScraper("scaper", tsm.scrape)
+	scp, err := NewScraperWithComponentType(component.MustNewType("scaper"), tsm.scrape)
 	assert.NoError(t, err)
 
 	receiver, err := NewScraperControllerReceiver(
@@ -367,7 +367,7 @@ func TestScrapeControllerStartsOnInit(t *testing.T) {
 		ch: make(chan int, 1),
 	}
 
-	scp, err := NewScraper("scraper", tsm.scrape)
+	scp, err := NewScraperWithComponentType(component.MustNewType("scraper"), tsm.scrape)
 	require.NoError(t, err, "Must not error when creating scraper")
 
 	r, err := NewScraperControllerReceiver(
@@ -403,7 +403,7 @@ func TestScrapeControllerInitialDelay(t *testing.T) {
 		}
 	)
 
-	scp, err := NewScraper("timed", func(context.Context) (pmetric.Metrics, error) {
+	scp, err := NewScraperWithComponentType(component.MustNewType("timed"), func(context.Context) (pmetric.Metrics, error) {
 		elapsed <- time.Now()
 		return pmetric.NewMetrics(), nil
 	})

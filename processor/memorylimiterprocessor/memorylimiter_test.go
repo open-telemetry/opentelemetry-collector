@@ -57,7 +57,8 @@ func TestNoDataLoss(t *testing.T) {
 	require.NoError(t, err)
 
 	processor, err := processorhelper.NewLogsProcessor(context.Background(), processor.Settings{
-		ID: component.MustNewID("nop"),
+		ID:                component.MustNewID("nop"),
+		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 	}, cfg, exporter,
 		limiter.processLogs,
 		processorhelper.WithStart(limiter.start),
