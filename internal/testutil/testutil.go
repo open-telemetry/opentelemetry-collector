@@ -86,6 +86,22 @@ func GetAvailableLocalIPv6Address(t testing.TB) string {
 	return endpoint
 }
 
+func GetAvailableLocalIPv6AddressPrometheus(t testing.TB) *config.Prometheus {
+	address := GetAvailableLocalIPv6Address(t)
+	host, port, err := net.SplitHostPort(address)
+	if err != nil {
+		return nil
+	}
+	portInt, err := strconv.Atoi(port)
+	if err != nil {
+		return nil
+	}
+	return &config.Prometheus{
+		Host: &host,
+		Port: &portInt,
+	}
+}
+
 func GetAvailableLocalAddressPrometheus(t testing.TB) *config.Prometheus {
 	address := GetAvailableLocalAddress(t)
 	host, port, err := net.SplitHostPort(address)
