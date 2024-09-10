@@ -9,7 +9,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/pdata/pprofile/pprofileotlp"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 const dataFormatProtobuf = "protobuf"
@@ -18,14 +17,12 @@ const dataFormatProtobuf = "protobuf"
 type Receiver struct {
 	pprofileotlp.UnimplementedGRPCServer
 	nextConsumer consumerprofiles.Profiles
-	obsreport    *receiverhelper.ObsReport
 }
 
 // New creates a new Receiver reference.
-func New(nextConsumer consumerprofiles.Profiles, obsreport *receiverhelper.ObsReport) *Receiver {
+func New(nextConsumer consumerprofiles.Profiles) *Receiver {
 	return &Receiver{
 		nextConsumer: nextConsumer,
-		obsreport:    obsreport,
 	}
 }
 
@@ -38,10 +35,7 @@ func (r *Receiver) Export(ctx context.Context, req pprofileotlp.ExportRequest) (
 		return pprofileotlp.NewExportResponse(), nil
 	}
 
-	ctx = r.obsreport.StartProfilesOp(ctx)
 	err := r.nextConsumer.ConsumeProfiles(ctx, td)
-	r.obsreport.EndProfilesOp(ctx, dataFormatProtobuf, numProfiles, err)
-
 	// Use appropriate status codes for permanent/non-permanent errors
 	// If we return the error straightaway, then the grpc implementation will set status code to Unknown
 	// Refer: https://github.com/grpc/grpc-go/blob/v1.59.0/server.go#L1345

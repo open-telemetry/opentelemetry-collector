@@ -27,11 +27,6 @@ const (
 	// RefusedLogRecordsKey used to identify log records refused (ie.: not ingested) by the
 	// Collector.
 	RefusedLogRecordsKey = "refused_log_records"
-
-	// AcceptedSamplesKey used to identify profiling samples accepted by the Collector.
-	AcceptedSamplesKey = "accepted_spans"
-	// RefusedSpansKey used to identify spans refused (ie.: not ingested) by the Collector.
-	RefusedSamplesKey = "refused_spans"
 )
 
 var (

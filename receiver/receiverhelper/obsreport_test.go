@@ -179,53 +179,6 @@ func TestReceiveMetricsOp(t *testing.T) {
 	})
 }
 
-func TestReceiveProfilesDataOp(t *testing.T) {
-	testTelemetry(t, receiverID, func(t *testing.T, tt componenttest.TestTelemetry) {
-		parentCtx, parentSpan := tt.TelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
-		defer parentSpan.End()
-
-		params := []testParams{
-			{items: 13, err: errFake},
-			{items: 42, err: nil},
-		}
-		for i, param := range params {
-			rec, err := newReceiver(ObsReportSettings{
-				ReceiverID:             receiverID,
-				Transport:              transport,
-				ReceiverCreateSettings: receiver.Settings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-			})
-			require.NoError(t, err)
-			ctx := rec.StartProfilesOp(parentCtx)
-			assert.NotNil(t, ctx)
-			rec.EndProfilesOp(ctx, format, params[i].items, param.err)
-		}
-
-		spans := tt.SpanRecorder.Ended()
-		require.Equal(t, len(params), len(spans))
-
-		var acceptedSamples, refusedSamples int
-		for i, span := range spans {
-			assert.Equal(t, "receiver/"+receiverID.String()+"/TraceDataReceived", span.Name())
-			switch {
-			case params[i].err == nil:
-				acceptedSamples += params[i].items
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.AcceptedSamplesKey, Value: attribute.Int64Value(int64(params[i].items))})
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.RefusedSamplesKey, Value: attribute.Int64Value(0)})
-				assert.Equal(t, codes.Unset, span.Status().Code)
-			case errors.Is(params[i].err, errFake):
-				refusedSamples += params[i].items
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.AcceptedSamplesKey, Value: attribute.Int64Value(0)})
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.RefusedSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
-				assert.Equal(t, codes.Error, span.Status().Code)
-				assert.Equal(t, params[i].err.Error(), span.Status().Description)
-			default:
-				t.Fatalf("unexpected param: %v", params[i])
-			}
-		}
-		require.NoError(t, tt.CheckReceiverProfiles(transport, int64(acceptedSamples), int64(refusedSamples)))
-	})
-}
-
 func TestReceiveWithLongLivedCtx(t *testing.T) {
 	tt, err := componenttest.SetupTelemetry(receiverID)
 	require.NoError(t, err)

@@ -155,7 +155,7 @@ func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host)
 	}
 
 	if r.nextProfiles != nil {
-		httpProfilesReceiver := profiles.New(r.nextProfiles, r.obsrepHTTP)
+		httpProfilesReceiver := profiles.New(r.nextProfiles)
 		httpMux.HandleFunc(r.cfg.HTTP.ProfilesURLPath, func(resp http.ResponseWriter, req *http.Request) {
 			handleProfiles(resp, req, httpProfilesReceiver)
 		})

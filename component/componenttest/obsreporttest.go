@@ -116,12 +116,6 @@ func (tts *TestTelemetry) CheckReceiverMetrics(protocol string, acceptedMetricPo
 	return tts.prometheusChecker.checkReceiverMetrics(tts.id, protocol, acceptedMetricPoints, droppedMetricPoints)
 }
 
-// CheckReceiverProfiles checks that for the current exported values for profiles receiver metrics match given values.
-// Note: SetupTelemetry must be called before this function.
-func (tts *TestTelemetry) CheckReceiverProfiles(protocol string, acceptedSamples, droppedSamples int64) error {
-	return tts.prometheusChecker.checkReceiverProfiles(tts.id, protocol, acceptedSamples, droppedSamples)
-}
-
 // CheckScraperMetrics checks that for the current exported values for metrics scraper metrics match given values.
 // Note: SetupTelemetry must be called before this function.
 func (tts *TestTelemetry) CheckScraperMetrics(receiver component.ID, scraper component.ID, scrapedMetricPoints, erroredMetricPoints int64) error {

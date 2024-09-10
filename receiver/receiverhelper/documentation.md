@@ -22,14 +22,6 @@ Number of metric points successfully pushed into the pipeline.
 | ---- | ----------- | ---------- | --------- |
 | {datapoints} | Sum | Int | true |
 
-### otelcol_receiver_accepted_samples
-
-Number of profile records successfully pushed into the pipeline.
-
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| {records} | Sum | Int | true |
-
 ### otelcol_receiver_accepted_spans
 
 Number of spans successfully pushed into the pipeline.
@@ -53,14 +45,6 @@ Number of metric points that could not be pushed into the pipeline.
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
 | {datapoints} | Sum | Int | true |
-
-### otelcol_receiver_refused_samples
-
-Number of profile records that could not be pushed into the pipeline.
-
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| {records} | Sum | Int | true |
 
 ### otelcol_receiver_refused_spans
 

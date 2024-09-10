@@ -41,10 +41,6 @@ func (pc *prometheusChecker) checkReceiverMetrics(receiver component.ID, protoco
 	return pc.checkReceiver(receiver, "metric_points", protocol, accepted, dropped)
 }
 
-func (pc *prometheusChecker) checkReceiverProfiles(receiver component.ID, protocol string, accepted, dropped int64) error {
-	return pc.checkReceiver(receiver, "samples", protocol, accepted, dropped)
-}
-
 func (pc *prometheusChecker) checkReceiver(receiver component.ID, datatype, protocol string, acceptedMetricPoints, droppedMetricPoints int64) error {
 	receiverAttrs := attributesForReceiverMetrics(receiver, protocol)
 	return multierr.Combine(

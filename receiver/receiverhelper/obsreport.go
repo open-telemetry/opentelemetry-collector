@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componentprofiles"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper/internal/metadata"
@@ -122,24 +121,6 @@ func (rec *ObsReport) EndMetricsOp(
 	rec.endOp(receiverCtx, format, numReceivedPoints, err, component.DataTypeMetrics)
 }
 
-// StartProfilesOp is called when a request is received from a client.
-// The returned context should be used in other calls to the obsreport functions
-// dealing with the same receive operation.
-func (rec *ObsReport) StartProfilesOp(operationCtx context.Context) context.Context {
-	return rec.startOp(operationCtx, obsmetrics.ReceiveTraceDataOperationSuffix)
-}
-
-// EndProfilesOp completes the receive operation that was started with
-// StartProfilesOp.
-func (rec *ObsReport) EndProfilesOp(
-	receiverCtx context.Context,
-	format string,
-	numReceivedProfiles int,
-	err error,
-) {
-	rec.endOp(receiverCtx, format, numReceivedProfiles, err, componentprofiles.DataTypeProfiles)
-}
-
 // startOp creates the span used to trace the operation. Returning
 // the updated context with the created span.
 func (rec *ObsReport) startOp(receiverCtx context.Context, operationSuffix string) context.Context {
@@ -197,9 +178,6 @@ func (rec *ObsReport) endOp(
 		case component.DataTypeLogs:
 			acceptedItemsKey = obsmetrics.AcceptedLogRecordsKey
 			refusedItemsKey = obsmetrics.RefusedLogRecordsKey
-		case componentprofiles.DataTypeProfiles:
-			acceptedItemsKey = obsmetrics.AcceptedSamplesKey
-			refusedItemsKey = obsmetrics.RefusedSamplesKey
 		}
 
 		span.SetAttributes(
@@ -226,9 +204,6 @@ func (rec *ObsReport) recordMetrics(receiverCtx context.Context, dataType compon
 	case component.DataTypeLogs:
 		acceptedMeasure = rec.telemetryBuilder.ReceiverAcceptedLogRecords
 		refusedMeasure = rec.telemetryBuilder.ReceiverRefusedLogRecords
-	case componentprofiles.DataTypeProfiles:
-		acceptedMeasure = rec.telemetryBuilder.ReceiverAcceptedSamples
-		refusedMeasure = rec.telemetryBuilder.ReceiverRefusedSamples
 	}
 
 	acceptedMeasure.Add(receiverCtx, int64(numAccepted), metric.WithAttributes(rec.otelAttrs...))
