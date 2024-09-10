@@ -67,11 +67,10 @@ func TestCreateTracesReceiver(t *testing.T) {
 	defaultServerConfig := confighttp.NewDefaultServerConfig()
 	defaultServerConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 	defaultHTTPSettings := &HTTPConfig{
-		ServerConfig:    &defaultServerConfig,
-		TracesURLPath:   defaultTracesURLPath,
-		MetricsURLPath:  defaultMetricsURLPath,
-		LogsURLPath:     defaultLogsURLPath,
-		ProfilesURLPath: defaultProfilesURLPath,
+		ServerConfig:   &defaultServerConfig,
+		TracesURLPath:  defaultTracesURLPath,
+		MetricsURLPath: defaultMetricsURLPath,
+		LogsURLPath:    defaultLogsURLPath,
 	}
 
 	tests := []struct {
@@ -162,11 +161,10 @@ func TestCreateMetricReceiver(t *testing.T) {
 	defaultServerConfig := confighttp.NewDefaultServerConfig()
 	defaultServerConfig.Endpoint = "127.0.0.1:0"
 	defaultHTTPSettings := &HTTPConfig{
-		ServerConfig:    &defaultServerConfig,
-		TracesURLPath:   defaultTracesURLPath,
-		MetricsURLPath:  defaultMetricsURLPath,
-		LogsURLPath:     defaultLogsURLPath,
-		ProfilesURLPath: defaultProfilesURLPath,
+		ServerConfig:   &defaultServerConfig,
+		TracesURLPath:  defaultTracesURLPath,
+		MetricsURLPath: defaultMetricsURLPath,
+		LogsURLPath:    defaultLogsURLPath,
 	}
 
 	tests := []struct {
@@ -257,11 +255,10 @@ func TestCreateLogReceiver(t *testing.T) {
 	defaultServerConfig := confighttp.NewDefaultServerConfig()
 	defaultServerConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 	defaultHTTPSettings := &HTTPConfig{
-		ServerConfig:    &defaultServerConfig,
-		TracesURLPath:   defaultTracesURLPath,
-		MetricsURLPath:  defaultMetricsURLPath,
-		LogsURLPath:     defaultLogsURLPath,
-		ProfilesURLPath: defaultProfilesURLPath,
+		ServerConfig:   &defaultServerConfig,
+		TracesURLPath:  defaultTracesURLPath,
+		MetricsURLPath: defaultMetricsURLPath,
+		LogsURLPath:    defaultLogsURLPath,
 	}
 
 	tests := []struct {
@@ -352,11 +349,10 @@ func TestCreateProfilesReceiver(t *testing.T) {
 	defaultServerConfig := confighttp.NewDefaultServerConfig()
 	defaultServerConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 	defaultHTTPSettings := &HTTPConfig{
-		ServerConfig:    &defaultServerConfig,
-		TracesURLPath:   defaultTracesURLPath,
-		MetricsURLPath:  defaultMetricsURLPath,
-		LogsURLPath:     defaultLogsURLPath,
-		ProfilesURLPath: defaultProfilesURLPath,
+		ServerConfig:   &defaultServerConfig,
+		TracesURLPath:  defaultTracesURLPath,
+		MetricsURLPath: defaultMetricsURLPath,
+		LogsURLPath:    defaultLogsURLPath,
 	}
 
 	tests := []struct {
@@ -401,7 +397,6 @@ func TestCreateProfilesReceiver(t *testing.T) {
 						ServerConfig: &confighttp.ServerConfig{
 							Endpoint: "localhost:112233",
 						},
-						ProfilesURLPath: defaultProfilesURLPath,
 					},
 				},
 			},

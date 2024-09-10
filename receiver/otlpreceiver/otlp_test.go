@@ -294,48 +294,6 @@ func TestHandleInvalidRequests(t *testing.T) {
 			expectedStatus:       http.StatusMethodNotAllowed,
 			expectedResponseBody: "405 method not allowed, supported: [POST]",
 		},
-		{
-			name:        "no content type",
-			uri:         defaultProfilesURLPath,
-			method:      http.MethodPost,
-			contentType: "",
-
-			expectedStatus:       http.StatusUnsupportedMediaType,
-			expectedResponseBody: "415 unsupported media type, supported: [application/json, application/x-protobuf]",
-		},
-		{
-			name:        "invalid content type",
-			uri:         defaultProfilesURLPath,
-			method:      http.MethodPost,
-			contentType: "invalid",
-
-			expectedStatus:       http.StatusUnsupportedMediaType,
-			expectedResponseBody: "415 unsupported media type, supported: [application/json, application/x-protobuf]",
-		},
-		{
-			name:        "invalid request",
-			uri:         defaultProfilesURLPath,
-			method:      http.MethodPost,
-			contentType: "application/json",
-
-			expectedStatus: http.StatusBadRequest,
-		},
-		{
-			uri:         defaultProfilesURLPath,
-			method:      http.MethodPatch,
-			contentType: "application/json",
-
-			expectedStatus:       http.StatusMethodNotAllowed,
-			expectedResponseBody: "405 method not allowed, supported: [POST]",
-		},
-		{
-			uri:         defaultProfilesURLPath,
-			method:      http.MethodGet,
-			contentType: "application/json",
-
-			expectedStatus:       http.StatusMethodNotAllowed,
-			expectedResponseBody: "405 method not allowed, supported: [POST]",
-		},
 	}
 
 	for _, tt := range tests {
@@ -803,10 +761,9 @@ func TestHTTPInvalidTLSCredentials(t *testing.T) {
 						},
 					},
 				},
-				TracesURLPath:   defaultTracesURLPath,
-				MetricsURLPath:  defaultMetricsURLPath,
-				LogsURLPath:     defaultLogsURLPath,
-				ProfilesURLPath: defaultProfilesURLPath,
+				TracesURLPath:  defaultTracesURLPath,
+				MetricsURLPath: defaultMetricsURLPath,
+				LogsURLPath:    defaultLogsURLPath,
 			},
 		},
 	}
@@ -833,10 +790,9 @@ func testHTTPMaxRequestBodySize(t *testing.T, path string, contentType string, p
 					Endpoint:           addr,
 					MaxRequestBodySize: int64(size),
 				},
-				TracesURLPath:   defaultTracesURLPath,
-				MetricsURLPath:  defaultMetricsURLPath,
-				LogsURLPath:     defaultLogsURLPath,
-				ProfilesURLPath: defaultProfilesURLPath,
+				TracesURLPath:  defaultTracesURLPath,
+				MetricsURLPath: defaultMetricsURLPath,
+				LogsURLPath:    defaultLogsURLPath,
 			},
 		},
 	}

@@ -26,7 +26,7 @@ const (
 	defaultTracesURLPath   = "/v1/traces"
 	defaultMetricsURLPath  = "/v1/metrics"
 	defaultLogsURLPath     = "/v1/logs"
-	defaultProfilesURLPath = "/v1/profiles"
+	defaultProfilesURLPath = "/v1experimental/profiles"
 )
 
 // NewFactory creates a new OTLP receiver factory.
@@ -57,10 +57,9 @@ func createDefaultConfig() component.Config {
 				ServerConfig: &confighttp.ServerConfig{
 					Endpoint: localhostgate.EndpointForPort(httpPort),
 				},
-				TracesURLPath:   defaultTracesURLPath,
-				MetricsURLPath:  defaultMetricsURLPath,
-				LogsURLPath:     defaultLogsURLPath,
-				ProfilesURLPath: defaultProfilesURLPath,
+				TracesURLPath:  defaultTracesURLPath,
+				MetricsURLPath: defaultMetricsURLPath,
+				LogsURLPath:    defaultLogsURLPath,
 			},
 		},
 	}

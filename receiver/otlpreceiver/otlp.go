@@ -106,7 +106,7 @@ func (r *otlpReceiver) startGRPCServer(host component.Host) error {
 	}
 
 	if r.nextProfiles != nil {
-		pprofileotlp.RegisterGRPCServer(r.serverGRPC, profiles.New(r.nextProfiles, r.obsrepGRPC))
+		pprofileotlp.RegisterGRPCServer(r.serverGRPC, profiles.New(r.nextProfiles))
 	}
 
 	r.settings.Logger.Info("Starting GRPC server", zap.String("endpoint", r.cfg.GRPC.NetAddr.Endpoint))
@@ -156,7 +156,7 @@ func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host)
 
 	if r.nextProfiles != nil {
 		httpProfilesReceiver := profiles.New(r.nextProfiles)
-		httpMux.HandleFunc(r.cfg.HTTP.ProfilesURLPath, func(resp http.ResponseWriter, req *http.Request) {
+		httpMux.HandleFunc(defaultProfilesURLPath, func(resp http.ResponseWriter, req *http.Request) {
 			handleProfiles(resp, req, httpProfilesReceiver)
 		})
 	}
