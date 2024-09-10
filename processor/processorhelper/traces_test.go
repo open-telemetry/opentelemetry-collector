@@ -61,7 +61,7 @@ func TestNewTracesProcessor_ProcessTraceError(t *testing.T) {
 func TestNewTracesProcessor_ProcessTracesErrSkipProcessingData(t *testing.T) {
 	tp, err := NewTracesProcessor(context.Background(), processortest.NewNopSettings(), &testTracesCfg, consumertest.NewNop(), newTestTProcessor(ErrSkipProcessingData))
 	require.NoError(t, err)
-	assert.Equal(t, nil, tp.ConsumeTraces(context.Background(), ptrace.NewTraces()))
+	assert.NoError(t, tp.ConsumeTraces(context.Background(), ptrace.NewTraces()))
 }
 
 func newTestTProcessor(retError error) ProcessTracesFunc {

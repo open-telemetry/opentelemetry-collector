@@ -607,7 +607,7 @@ func TestPartialResponse_missingHeaderAndBody(t *testing.T) {
 					},
 				}
 				err = handlePartialSuccessResponse(resp, tt.handler)
-				assert.Nil(t, err)
+				assert.NoError(t, err)
 			})
 		}
 	}

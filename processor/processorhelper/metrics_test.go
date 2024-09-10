@@ -61,7 +61,7 @@ func TestNewMetricsProcessor_ProcessMetricsError(t *testing.T) {
 func TestNewMetricsProcessor_ProcessMetricsErrSkipProcessingData(t *testing.T) {
 	mp, err := NewMetricsProcessor(context.Background(), processortest.NewNopSettings(), &testMetricsCfg, consumertest.NewNop(), newTestMProcessor(ErrSkipProcessingData))
 	require.NoError(t, err)
-	assert.Equal(t, nil, mp.ConsumeMetrics(context.Background(), pmetric.NewMetrics()))
+	assert.NoError(t, mp.ConsumeMetrics(context.Background(), pmetric.NewMetrics()))
 }
 
 func newTestMProcessor(retError error) ProcessMetricsFunc {
