@@ -16,6 +16,12 @@ otelcol_exporter_send_failed_log_records{exporter="fakeExporter"} 36
 # HELP otelcol_exporter_sent_log_records Number of logs successfully sent to destination.
 # TYPE otelcol_exporter_sent_log_records counter
 otelcol_exporter_sent_log_records{exporter="fakeExporter"} 103
+# HELP otelcol_exporter_send_failed_samples Number of samples in failed attempts to send to destination.
+# TYPE otelcol_exporter_send_failed_samples counter
+otelcol_exporter_send_failed_samples{exporter="fakeExporter"} 14
+# HELP otelcol_exporter_sent_samples Number of samples successfully sent to destination.
+# TYPE otelcol_exporter_sent_samples counter
+otelcol_exporter_sent_samples{exporter="fakeExporter"} 43
 # HELP otelcol_processor_accepted_spans Number of spans successfully pushed into the next component in the pipeline.
 # TYPE otelcol_processor_accepted_spans counter
 otelcol_processor_accepted_spans{processor="fakeProcessor"} 42
