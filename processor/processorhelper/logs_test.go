@@ -61,7 +61,7 @@ func TestNewLogsProcessor_ProcessLogError(t *testing.T) {
 func TestNewLogsProcessor_ProcessLogsErrSkipProcessingData(t *testing.T) {
 	lp, err := NewLogsProcessor(context.Background(), processortest.NewNopSettings(), &testLogsCfg, consumertest.NewNop(), newTestLProcessor(ErrSkipProcessingData))
 	require.NoError(t, err)
-	assert.Equal(t, nil, lp.ConsumeLogs(context.Background(), plog.NewLogs()))
+	assert.NoError(t, lp.ConsumeLogs(context.Background(), plog.NewLogs()))
 }
 
 func newTestLProcessor(retError error) ProcessLogsFunc {

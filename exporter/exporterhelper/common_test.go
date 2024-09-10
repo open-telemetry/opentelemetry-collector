@@ -69,7 +69,7 @@ func checkStatus(t *testing.T, sd sdktrace.ReadOnlySpan, err error) {
 func TestQueueOptionsWithRequestExporter(t *testing.T) {
 	bs, err := newBaseExporter(exportertest.NewNopSettings(), defaultDataType, newNoopObsrepSender,
 		WithRetry(configretry.NewDefaultBackOffConfig()))
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Nil(t, bs.marshaler)
 	require.Nil(t, bs.unmarshaler)
 	_, err = newBaseExporter(exportertest.NewNopSettings(), defaultDataType, newNoopObsrepSender,
@@ -90,7 +90,7 @@ func TestBaseExporterLogging(t *testing.T) {
 	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.Enabled = false
 	bs, err := newBaseExporter(set, defaultDataType, newNoopObsrepSender, WithRetry(rCfg))
-	require.Nil(t, err)
+	require.NoError(t, err)
 	sendErr := bs.send(context.Background(), newErrorRequest())
 	require.Error(t, sendErr)
 

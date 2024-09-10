@@ -18,7 +18,7 @@ func TestMergeTraces(t *testing.T) {
 	tr1 := &tracesRequest{td: testdata.GenerateTraces(2)}
 	tr2 := &tracesRequest{td: testdata.GenerateTraces(3)}
 	res, err := mergeTraces(context.Background(), tr1, tr2)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, 5, res.(*tracesRequest).td.SpanCount())
 }
 
@@ -133,7 +133,7 @@ func TestMergeSplitTraces(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := mergeSplitTraces(context.Background(), tt.cfg, tt.tr1, tt.tr2)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.Equal(t, len(tt.expected), len(res))
 			for i := range res {
 				assert.Equal(t, tt.expected[i], res[i].(*tracesRequest))
