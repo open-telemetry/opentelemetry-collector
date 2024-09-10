@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/processor"
@@ -35,7 +36,6 @@ func NewMetricsProcessor(
 	metricsFunc ProcessMetricsFunc,
 	options ...Option,
 ) (processor.Metrics, error) {
-	// TODO: Add observability metrics support
 	if metricsFunc == nil {
 		return nil, errors.New("nil metricsFunc")
 	}
@@ -51,11 +51,16 @@ func NewMetricsProcessor(
 
 	eventOptions := spanAttributes(set.ID)
 	bs := fromOptions(options)
+	marshaler := new(pmetric.ProtoMarshaler)
 	metricsConsumer, err := consumer.NewMetrics(func(ctx context.Context, md pmetric.Metrics) error {
+		var pointsIn, pointsOut, bytesIn, bytesOut int
+
 		span := trace.SpanFromContext(ctx)
 		span.AddEvent("Start processing.", eventOptions)
-		pointsIn := md.DataPointCount()
-
+		pointsIn = md.DataPointCount()
+		if obs.metricLevel >= configtelemetry.LevelDetailed {
+			bytesIn = marshaler.MetricsSize(md)
+		}
 		md, err = metricsFunc(ctx, md)
 		span.AddEvent("End processing.", eventOptions)
 		if err != nil {
@@ -64,8 +69,12 @@ func NewMetricsProcessor(
 			}
 			return err
 		}
-		pointsOut := md.DataPointCount()
+		pointsOut = md.DataPointCount()
 		obs.recordInOut(ctx, pointsIn, pointsOut)
+		if obs.metricLevel >= configtelemetry.LevelDetailed {
+			bytesOut = marshaler.MetricsSize(md)
+			obs.recordInOutSize(ctx, bytesIn, bytesOut)
+		}
 		return nextConsumer.ConsumeMetrics(ctx, md)
 	}, bs.consumerOptions...)
 	if err != nil {

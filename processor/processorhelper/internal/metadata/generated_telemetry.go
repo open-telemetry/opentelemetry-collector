@@ -36,7 +36,9 @@ type TelemetryBuilder struct {
 	ProcessorDroppedMetricPoints  metric.Int64Counter
 	ProcessorDroppedSpans         metric.Int64Counter
 	ProcessorIncomingItems        metric.Int64Counter
+	ProcessorIncomingSize         metric.Int64Counter
 	ProcessorOutgoingItems        metric.Int64Counter
+	ProcessorOutgoingSize         metric.Int64Counter
 	ProcessorRefusedLogRecords    metric.Int64Counter
 	ProcessorRefusedMetricPoints  metric.Int64Counter
 	ProcessorRefusedSpans         metric.Int64Counter
@@ -62,6 +64,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		op.apply(&builder)
 	}
 	builder.meters[configtelemetry.LevelBasic] = LeveledMeter(settings, configtelemetry.LevelBasic)
+	builder.meters[configtelemetry.LevelDetailed] = LeveledMeter(settings, configtelemetry.LevelDetailed)
 	var err, errs error
 	builder.ProcessorAcceptedLogRecords, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_processor_accepted_log_records",
@@ -105,10 +108,22 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithUnit("{items}"),
 	)
 	errs = errors.Join(errs, err)
+	builder.ProcessorIncomingSize, err = builder.meters[configtelemetry.LevelDetailed].Int64Counter(
+		"otelcol_processor_incoming_size",
+		metric.WithDescription("Total size of spans passed to the processor."),
+		metric.WithUnit("By"),
+	)
+	errs = errors.Join(errs, err)
 	builder.ProcessorOutgoingItems, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_processor_outgoing_items",
 		metric.WithDescription("Number of items emitted from the processor."),
 		metric.WithUnit("{items}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorOutgoingSize, err = builder.meters[configtelemetry.LevelDetailed].Int64Counter(
+		"otelcol_processor_outgoing_size",
+		metric.WithDescription("Total size of spans emitted from the processor."),
+		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorRefusedLogRecords, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(

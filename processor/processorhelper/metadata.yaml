@@ -26,6 +26,24 @@ telemetry:
         value_type: int
         monotonic: true
 
+    processor_incoming_size:
+      enabled: true
+      level: detailed
+      description: Total size of spans passed to the processor.
+      unit: "By"
+      sum:
+        value_type: int
+        monotonic: true
+
+    processor_outgoing_size:
+      enabled: true
+      level: detailed
+      description: Total size of spans emitted from the processor.
+      unit: "By"
+      sum:
+        value_type: int
+        monotonic: true
+
     processor_accepted_spans:
       enabled: true
       description: Number of spans successfully pushed into the next component in the pipeline.

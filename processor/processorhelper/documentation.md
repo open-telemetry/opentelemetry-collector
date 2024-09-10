@@ -62,6 +62,14 @@ Number of items passed to the processor.
 | ---- | ----------- | ---------- | --------- |
 | {items} | Sum | Int | true |
 
+### otelcol_processor_incoming_size
+
+Total size of spans passed to the processor.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| By | Sum | Int | true |
+
 ### otelcol_processor_outgoing_items
 
 Number of items emitted from the processor.
@@ -69,6 +77,14 @@ Number of items emitted from the processor.
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
 | {items} | Sum | Int | true |
+
+### otelcol_processor_outgoing_size
+
+Total size of spans emitted from the processor.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| By | Sum | Int | true |
 
 ### otelcol_processor_refused_log_records
 
