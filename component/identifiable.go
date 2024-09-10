@@ -26,9 +26,21 @@ func NewID(typeVal Type) ID {
 	return ID{typeVal: typeVal}
 }
 
+// MustNewID builds a Type and returns a new ID with the given Type and empty name.
+// See MustNewType to check the valid values of typeVal.
+func MustNewID(typeVal string) ID {
+	return ID{typeVal: MustNewType(typeVal)}
+}
+
 // NewIDWithName returns a new ID with the given Type and name.
 func NewIDWithName(typeVal Type, nameVal string) ID {
 	return ID{typeVal: typeVal, nameVal: nameVal}
+}
+
+// MustNewIDWithName builds a Type and returns a new ID with the given Type and name.
+// See MustNewType to check the valid values of typeVal.
+func MustNewIDWithName(typeVal string, nameVal string) ID {
+	return ID{typeVal: MustNewType(typeVal), nameVal: nameVal}
 }
 
 // Type returns the type of the component.
@@ -51,25 +63,35 @@ func (id ID) MarshalText() (text []byte, err error) {
 func (id *ID) UnmarshalText(text []byte) error {
 	idStr := string(text)
 	items := strings.SplitN(idStr, typeAndNameSeparator, 2)
+	var typeStr, nameStr string
 	if len(items) >= 1 {
-		id.typeVal = Type(strings.TrimSpace(items[0]))
+		typeStr = strings.TrimSpace(items[0])
 	}
 
-	if len(items) == 1 && id.typeVal == "" {
+	if len(items) == 1 && typeStr == "" {
 		return errors.New("id must not be empty")
 	}
 
-	if id.typeVal == "" {
+	if typeStr == "" {
 		return fmt.Errorf("in %q id: the part before %s should not be empty", idStr, typeAndNameSeparator)
 	}
 
 	if len(items) > 1 {
 		// "name" part is present.
-		id.nameVal = strings.TrimSpace(items[1])
-		if id.nameVal == "" {
+		nameStr = strings.TrimSpace(items[1])
+		if nameStr == "" {
 			return fmt.Errorf("in %q id: the part after %s should not be empty", idStr, typeAndNameSeparator)
 		}
+		if err := validateName(nameStr); err != nil {
+			return fmt.Errorf("in %q id: %w", nameStr, err)
+		}
 	}
+
+	var err error
+	if id.typeVal, err = NewType(typeStr); err != nil {
+		return fmt.Errorf("in %q id: %w", idStr, err)
+	}
+	id.nameVal = nameStr
 
 	return nil
 }
@@ -77,8 +99,8 @@ func (id *ID) UnmarshalText(text []byte) error {
 // String returns the ID string representation as "type[/name]" format.
 func (id ID) String() string {
 	if id.nameVal == "" {
-		return string(id.typeVal)
+		return id.typeVal.String()
 	}
 
-	return string(id.typeVal) + typeAndNameSeparator + id.nameVal
+	return id.typeVal.String() + typeAndNameSeparator + id.nameVal
 }

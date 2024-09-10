@@ -3,11 +3,6 @@
 
 package obsmetrics // import "go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 
-import (
-	"go.opencensus.io/stats"
-	"go.opencensus.io/tag"
-)
-
 const (
 	// ScraperKey used to identify scrapers in metrics and traces.
 	ScraperKey = "scraper"
@@ -21,19 +16,7 @@ const (
 )
 
 const (
-	ScraperPrefix                 = ScraperKey + NameSep
-	ScraperMetricsOperationSuffix = NameSep + "MetricsScraped"
-)
-
-var (
-	TagKeyScraper, _ = tag.NewKey(ScraperKey)
-
-	ScraperScrapedMetricPoints = stats.Int64(
-		ScraperPrefix+ScrapedMetricPointsKey,
-		"Number of metric points successfully scraped.",
-		stats.UnitDimensionless)
-	ScraperErroredMetricPoints = stats.Int64(
-		ScraperPrefix+ErroredMetricPointsKey,
-		"Number of metric points that were unable to be scraped.",
-		stats.UnitDimensionless)
+	ScraperPrefix                 = ScraperKey + SpanNameSep
+	ScraperMetricPrefix           = ScraperKey + MetricNameSep
+	ScraperMetricsOperationSuffix = SpanNameSep + "MetricsScraped"
 )

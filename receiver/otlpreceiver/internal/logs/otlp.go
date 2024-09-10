@@ -8,6 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
@@ -40,5 +41,15 @@ func (r *Receiver) Export(ctx context.Context, req plogotlp.ExportRequest) (plog
 	err := r.nextConsumer.ConsumeLogs(ctx, ld)
 	r.obsreport.EndLogsOp(ctx, dataFormatProtobuf, numSpans, err)
 
-	return plogotlp.NewExportResponse(), err
+	// Use appropriate status codes for permanent/non-permanent errors
+	// If we return the error straightaway, then the grpc implementation will set status code to Unknown
+	// Refer: https://github.com/grpc/grpc-go/blob/v1.59.0/server.go#L1345
+	// So, convert the error to appropriate grpc status and return the error
+	// NonPermanent errors will be converted to codes.Unavailable (equivalent to HTTP 503)
+	// Permanent errors will be converted to codes.InvalidArgument (equivalent to HTTP 400)
+	if err != nil {
+		return plogotlp.NewExportResponse(), errors.GetStatusFromError(err)
+	}
+
+	return plogotlp.NewExportResponse(), nil
 }

@@ -11,14 +11,13 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/provider/internal"
 )
 
 const schemeName = "file"
 
 type provider struct{}
 
-// New returns a new confmap.Provider that reads the configuration from a file.
+// NewFactory returns a factory for a confmap.Provider that reads the configuration from a file.
 //
 // This Provider supports "file" scheme, and can be called with a "uri" that follows:
 //
@@ -33,7 +32,11 @@ type provider struct{}
 // `file:/path/to/file` - absolute path (unix, windows)
 // `file:c:/path/to/file` - absolute path including drive-letter (windows)
 // `file:c:\path\to\file` - absolute path including drive-letter (windows)
-func New() confmap.Provider {
+func NewFactory() confmap.ProviderFactory {
+	return confmap.NewProviderFactory(newProvider)
+}
+
+func newProvider(confmap.ProviderSettings) confmap.Provider {
 	return &provider{}
 }
 
@@ -48,7 +51,7 @@ func (fmp *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFu
 		return nil, fmt.Errorf("unable to read the file %v: %w", uri, err)
 	}
 
-	return internal.NewRetrievedFromYAML(content)
+	return confmap.NewRetrievedFromYAML(content)
 }
 
 func (*provider) Scheme() string {

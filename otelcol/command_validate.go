@@ -4,7 +4,6 @@
 package otelcol // import "go.opentelemetry.io/collector/otelcol"
 
 import (
-	"errors"
 	"flag"
 
 	"github.com/spf13/cobra"
@@ -16,19 +15,9 @@ func newValidateSubCommand(set CollectorSettings, flagSet *flag.FlagSet) *cobra.
 		Use:   "validate",
 		Short: "Validates the config without running the collector",
 		Args:  cobra.ExactArgs(0),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if set.ConfigProvider == nil {
-				var err error
-
-				configFlags := getConfigFlag(flagSet)
-				if len(configFlags) == 0 {
-					return errors.New("at least one config flag must be provided")
-				}
-
-				set.ConfigProvider, err = NewConfigProvider(newDefaultConfigProviderSettings(configFlags))
-				if err != nil {
-					return err
-				}
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			if err := updateSettingsUsingFlags(&set, flagSet); err != nil {
+				return err
 			}
 			col, err := NewCollector(set)
 			if err != nil {

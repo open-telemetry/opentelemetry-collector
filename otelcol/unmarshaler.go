@@ -4,11 +4,6 @@
 package otelcol // import "go.opentelemetry.io/collector/otelcol"
 
 import (
-	"time"
-
-	"go.uber.org/zap/zapcore"
-
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
@@ -32,6 +27,10 @@ type configSettings struct {
 // unmarshal the configSettings from a confmap.Conf.
 // After the config is unmarshalled, `Validate()` must be called to validate.
 func unmarshal(v *confmap.Conf, factories Factories) (*configSettings, error) {
+
+	telFactory := telemetry.NewFactory()
+	defaultTelConfig := *telFactory.CreateDefaultConfig().(*telemetry.Config)
+
 	// Unmarshal top level sections and validate.
 	cfg := &configSettings{
 		Receivers:  configunmarshaler.NewConfigs(factories.Receivers),
@@ -41,30 +40,9 @@ func unmarshal(v *confmap.Conf, factories Factories) (*configSettings, error) {
 		Extensions: configunmarshaler.NewConfigs(factories.Extensions),
 		// TODO: Add a component.ServiceFactory to allow this to be defined by the Service.
 		Service: service.Config{
-			Telemetry: telemetry.Config{
-				Logs: telemetry.LogsConfig{
-					Level:       zapcore.InfoLevel,
-					Development: false,
-					Encoding:    "console",
-					Sampling: &telemetry.LogsSamplingConfig{
-						Enabled:    true,
-						Tick:       10 * time.Second,
-						Initial:    10,
-						Thereafter: 100,
-					},
-					OutputPaths:       []string{"stderr"},
-					ErrorOutputPaths:  []string{"stderr"},
-					DisableCaller:     false,
-					DisableStacktrace: false,
-					InitialFields:     map[string]any(nil),
-				},
-				Metrics: telemetry.MetricsConfig{
-					Level:   configtelemetry.LevelBasic,
-					Address: ":8888",
-				},
-			},
+			Telemetry: defaultTelConfig,
 		},
 	}
 
-	return cfg, v.Unmarshal(&cfg, confmap.WithErrorUnused())
+	return cfg, v.Unmarshal(&cfg)
 }

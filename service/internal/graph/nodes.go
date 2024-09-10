@@ -10,12 +10,16 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentprofiles"
 	"go.opentelemetry.io/collector/connector"
+	"go.opentelemetry.io/collector/connector/connectorprofiles"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
 	"go.opentelemetry.io/collector/service/internal/components"
 )
@@ -61,7 +65,7 @@ type receiverNode struct {
 
 func newReceiverNode(pipelineType component.DataType, recvID component.ID) *receiverNode {
 	return &receiverNode{
-		nodeID:       newNodeID(receiverSeed, string(pipelineType), recvID.String()),
+		nodeID:       newNodeID(receiverSeed, pipelineType.String(), recvID.String()),
 		componentID:  recvID,
 		pipelineType: pipelineType,
 	}
@@ -70,11 +74,11 @@ func newReceiverNode(pipelineType component.DataType, recvID component.ID) *rece
 func (n *receiverNode) buildComponent(ctx context.Context,
 	tel component.TelemetrySettings,
 	info component.BuildInfo,
-	builder *receiver.Builder,
+	builder *builders.ReceiverBuilder,
 	nexts []baseConsumer,
 ) error {
-	set := receiver.CreateSettings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
-	set.TelemetrySettings.Logger = components.ReceiverLogger(tel.Logger, n.componentID, n.pipelineType)
+	tel.Logger = components.ReceiverLogger(tel.Logger, n.componentID, n.pipelineType)
+	set := receiver.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
 	var err error
 	switch n.pipelineType {
 	case component.DataTypeTraces:
@@ -95,6 +99,12 @@ func (n *receiverNode) buildComponent(ctx context.Context,
 			consumers = append(consumers, next.(consumer.Logs))
 		}
 		n.Component, err = builder.CreateLogs(ctx, set, fanoutconsumer.NewLogs(consumers))
+	case componentprofiles.DataTypeProfiles:
+		var consumers []consumerprofiles.Profiles
+		for _, next := range nexts {
+			consumers = append(consumers, next.(consumerprofiles.Profiles))
+		}
+		n.Component, err = builder.CreateProfiles(ctx, set, fanoutconsumer.NewProfiles(consumers))
 	default:
 		return fmt.Errorf("error creating receiver %q for data type %q is not supported", set.ID, n.pipelineType)
 	}
@@ -104,7 +114,7 @@ func (n *receiverNode) buildComponent(ctx context.Context,
 	return nil
 }
 
-var _ consumerNode = &processorNode{}
+var _ consumerNode = (*processorNode)(nil)
 
 // Every processor instance is unique to one pipeline.
 // Therefore, nodeID is derived from "pipeline ID" and "component ID".
@@ -130,11 +140,11 @@ func (n *processorNode) getConsumer() baseConsumer {
 func (n *processorNode) buildComponent(ctx context.Context,
 	tel component.TelemetrySettings,
 	info component.BuildInfo,
-	builder *processor.Builder,
+	builder *builders.ProcessorBuilder,
 	next baseConsumer,
 ) error {
-	set := processor.CreateSettings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
-	set.TelemetrySettings.Logger = components.ProcessorLogger(set.TelemetrySettings.Logger, n.componentID, n.pipelineID)
+	tel.Logger = components.ProcessorLogger(tel.Logger, n.componentID, n.pipelineID)
+	set := processor.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
 	var err error
 	switch n.pipelineID.Type() {
 	case component.DataTypeTraces:
@@ -143,6 +153,8 @@ func (n *processorNode) buildComponent(ctx context.Context,
 		n.Component, err = builder.CreateMetrics(ctx, set, next.(consumer.Metrics))
 	case component.DataTypeLogs:
 		n.Component, err = builder.CreateLogs(ctx, set, next.(consumer.Logs))
+	case componentprofiles.DataTypeProfiles:
+		n.Component, err = builder.CreateProfiles(ctx, set, next.(consumerprofiles.Profiles))
 	default:
 		return fmt.Errorf("error creating processor %q in pipeline %q, data type %q is not supported", set.ID, n.pipelineID, n.pipelineID.Type())
 	}
@@ -152,7 +164,7 @@ func (n *processorNode) buildComponent(ctx context.Context,
 	return nil
 }
 
-var _ consumerNode = &exporterNode{}
+var _ consumerNode = (*exporterNode)(nil)
 
 // An exporter instance can be shared by multiple pipelines of the same type.
 // Therefore, nodeID is derived from "pipeline type" and "component ID".
@@ -165,7 +177,7 @@ type exporterNode struct {
 
 func newExporterNode(pipelineType component.DataType, exprID component.ID) *exporterNode {
 	return &exporterNode{
-		nodeID:       newNodeID(exporterSeed, string(pipelineType), exprID.String()),
+		nodeID:       newNodeID(exporterSeed, pipelineType.String(), exprID.String()),
 		componentID:  exprID,
 		pipelineType: pipelineType,
 	}
@@ -179,10 +191,10 @@ func (n *exporterNode) buildComponent(
 	ctx context.Context,
 	tel component.TelemetrySettings,
 	info component.BuildInfo,
-	builder *exporter.Builder,
+	builder *builders.ExporterBuilder,
 ) error {
-	set := exporter.CreateSettings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
-	set.TelemetrySettings.Logger = components.ExporterLogger(set.TelemetrySettings.Logger, n.componentID, n.pipelineType)
+	tel.Logger = components.ExporterLogger(tel.Logger, n.componentID, n.pipelineType)
+	set := exporter.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
 	var err error
 	switch n.pipelineType {
 	case component.DataTypeTraces:
@@ -191,6 +203,8 @@ func (n *exporterNode) buildComponent(
 		n.Component, err = builder.CreateMetrics(ctx, set)
 	case component.DataTypeLogs:
 		n.Component, err = builder.CreateLogs(ctx, set)
+	case componentprofiles.DataTypeProfiles:
+		n.Component, err = builder.CreateProfiles(ctx, set)
 	default:
 		return fmt.Errorf("error creating exporter %q for data type %q is not supported", set.ID, n.pipelineType)
 	}
@@ -200,7 +214,7 @@ func (n *exporterNode) buildComponent(
 	return nil
 }
 
-var _ consumerNode = &connectorNode{}
+var _ consumerNode = (*connectorNode)(nil)
 
 // A connector instance connects one pipeline type to one other pipeline type.
 // Therefore, nodeID is derived from "exporter pipeline type", "receiver pipeline type", and "component ID".
@@ -215,7 +229,7 @@ type connectorNode struct {
 
 func newConnectorNode(exprPipelineType, rcvrPipelineType component.DataType, connID component.ID) *connectorNode {
 	return &connectorNode{
-		nodeID:           newNodeID(connectorSeed, connID.String(), string(exprPipelineType), string(rcvrPipelineType)),
+		nodeID:           newNodeID(connectorSeed, connID.String(), exprPipelineType.String(), rcvrPipelineType.String()),
 		componentID:      connID,
 		exprPipelineType: exprPipelineType,
 		rcvrPipelineType: rcvrPipelineType,
@@ -230,11 +244,11 @@ func (n *connectorNode) buildComponent(
 	ctx context.Context,
 	tel component.TelemetrySettings,
 	info component.BuildInfo,
-	builder *connector.Builder,
+	builder *builders.ConnectorBuilder,
 	nexts []baseConsumer,
 ) error {
-	set := connector.CreateSettings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
-	set.TelemetrySettings.Logger = components.ConnectorLogger(set.TelemetrySettings.Logger, n.componentID, n.exprPipelineType, n.rcvrPipelineType)
+	tel.Logger = components.ConnectorLogger(tel.Logger, n.componentID, n.exprPipelineType, n.rcvrPipelineType)
+	set := connector.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
 
 	switch n.rcvrPipelineType {
 	case component.DataTypeTraces:
@@ -244,7 +258,7 @@ func (n *connectorNode) buildComponent(
 			consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Traces)
 			capability.MutatesData = capability.MutatesData || next.Capabilities().MutatesData
 		}
-		next := fanoutconsumer.NewTracesRouter(consumers)
+		next := connector.NewTracesRouter(consumers)
 
 		switch n.exprPipelineType {
 		case component.DataTypeTraces:
@@ -271,6 +285,12 @@ func (n *connectorNode) buildComponent(
 				return err
 			}
 			n.Component, n.baseConsumer = conn, conn
+		case componentprofiles.DataTypeProfiles:
+			conn, err := builder.CreateProfilesToTraces(ctx, set, next)
+			if err != nil {
+				return err
+			}
+			n.Component, n.baseConsumer = conn, conn
 		}
 
 	case component.DataTypeMetrics:
@@ -280,7 +300,7 @@ func (n *connectorNode) buildComponent(
 			consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Metrics)
 			capability.MutatesData = capability.MutatesData || next.Capabilities().MutatesData
 		}
-		next := fanoutconsumer.NewMetricsRouter(consumers)
+		next := connector.NewMetricsRouter(consumers)
 
 		switch n.exprPipelineType {
 		case component.DataTypeTraces:
@@ -307,6 +327,12 @@ func (n *connectorNode) buildComponent(
 				return err
 			}
 			n.Component, n.baseConsumer = conn, conn
+		case componentprofiles.DataTypeProfiles:
+			conn, err := builder.CreateProfilesToMetrics(ctx, set, next)
+			if err != nil {
+				return err
+			}
+			n.Component, n.baseConsumer = conn, conn
 		}
 	case component.DataTypeLogs:
 		capability := consumer.Capabilities{MutatesData: false}
@@ -315,7 +341,7 @@ func (n *connectorNode) buildComponent(
 			consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Logs)
 			capability.MutatesData = capability.MutatesData || next.Capabilities().MutatesData
 		}
-		next := fanoutconsumer.NewLogsRouter(consumers)
+		next := connector.NewLogsRouter(consumers)
 
 		switch n.exprPipelineType {
 		case component.DataTypeTraces:
@@ -342,12 +368,59 @@ func (n *connectorNode) buildComponent(
 			// that the connector itself may MutatesData.
 			capability.MutatesData = capability.MutatesData || conn.Capabilities().MutatesData
 			n.baseConsumer = capabilityconsumer.NewLogs(conn, capability)
+		case componentprofiles.DataTypeProfiles:
+			conn, err := builder.CreateProfilesToLogs(ctx, set, next)
+			if err != nil {
+				return err
+			}
+			n.Component, n.baseConsumer = conn, conn
+		}
+	case componentprofiles.DataTypeProfiles:
+		capability := consumer.Capabilities{MutatesData: false}
+		consumers := make(map[component.ID]consumerprofiles.Profiles, len(nexts))
+		for _, next := range nexts {
+			consumers[next.(*capabilitiesNode).pipelineID] = next.(consumerprofiles.Profiles)
+			capability.MutatesData = capability.MutatesData || next.Capabilities().MutatesData
+		}
+		next := connectorprofiles.NewProfilesRouter(consumers)
+
+		switch n.exprPipelineType {
+		case component.DataTypeTraces:
+			conn, err := builder.CreateTracesToProfiles(ctx, set, next)
+			if err != nil {
+				return err
+			}
+			n.Component, n.baseConsumer = conn, conn
+		case component.DataTypeMetrics:
+			conn, err := builder.CreateMetricsToProfiles(ctx, set, next)
+			if err != nil {
+				return err
+			}
+			n.Component, n.baseConsumer = conn, conn
+		case component.DataTypeLogs:
+			conn, err := builder.CreateLogsToProfiles(ctx, set, next)
+			if err != nil {
+				return err
+			}
+			n.Component, n.baseConsumer = conn, conn
+		case componentprofiles.DataTypeProfiles:
+			conn, err := builder.CreateProfilesToProfiles(ctx, set, next)
+			if err != nil {
+				return err
+			}
+			n.Component = conn
+			// When connecting pipelines of the same data type, the connector must
+			// inherit the capabilities of pipelines in which it is acting as a receiver.
+			// Since the incoming and outgoing data types are the same, we must also consider
+			// that the connector itself may MutatesData.
+			capability.MutatesData = capability.MutatesData || conn.Capabilities().MutatesData
+			n.baseConsumer = capabilityconsumer.NewProfiles(conn, capability)
 		}
 	}
 	return nil
 }
 
-var _ consumerNode = &capabilitiesNode{}
+var _ consumerNode = (*capabilitiesNode)(nil)
 
 // Every pipeline has a "virtual" capabilities node immediately after the receiver(s).
 // There are two purposes for this node:
@@ -361,6 +434,7 @@ type capabilitiesNode struct {
 	consumer.ConsumeTracesFunc
 	consumer.ConsumeMetricsFunc
 	consumer.ConsumeLogsFunc
+	consumerprofiles.ConsumeProfilesFunc
 }
 
 func newCapabilitiesNode(pipelineID component.ID) *capabilitiesNode {
@@ -374,7 +448,7 @@ func (n *capabilitiesNode) getConsumer() baseConsumer {
 	return n
 }
 
-var _ consumerNode = &fanOutNode{}
+var _ consumerNode = (*fanOutNode)(nil)
 
 // Each pipeline has one fan-out node before exporters.
 // Therefore, nodeID is derived from "pipeline ID".

@@ -16,7 +16,10 @@ README](../configtls/README.md).
 
 - `endpoint`: address:port
 - [`tls`](../configtls/README.md)
-- `headers`: name/value pairs added to the HTTP request headers
+- [`headers`](https://pkg.go.dev/net/http#Request): name/value pairs added to the HTTP request headers
+  - certain headers such as Content-Length and Connection are automatically written when needed and values in Header may be ignored.
+  - `Host` header is automatically derived from `endpoint` value. However, this automatic assignment can be overridden by explicitly setting the Host field in the headers field.
+  - if `Host` header is provided then it overrides `Host` field in [Request](https://pkg.go.dev/net/http#Request) which results as an override of `Host` header value.
 - [`read_buffer_size`](https://golang.org/pkg/net/http/#Transport)
 - [`timeout`](https://golang.org/pkg/net/http/#Client)
 - [`write_buffer_size`](https://golang.org/pkg/net/http/#Transport)
@@ -31,12 +34,14 @@ README](../configtls/README.md).
 - [`disable_keep_alives`](https://golang.org/pkg/net/http/#Transport)
 - [`http2_read_idle_timeout`](https://pkg.go.dev/golang.org/x/net/http2#Transport)
 - [`http2_ping_timeout`](https://pkg.go.dev/golang.org/x/net/http2#Transport)
+- [`cookies`](https://pkg.go.dev/net/http#CookieJar)
+  - [`enabled`] if enabled, the client will store cookies from server responses and reuse them in subsequent requests.
 
 Example:
 
 ```yaml
 exporter:
-  otlp:
+  otlphttp:
     endpoint: otelcol2:55690
     auth:
       authenticator: some-authenticator-extension
@@ -48,6 +53,8 @@ exporter:
       test1: "value1"
       "test 2": "value 2"
     compression: zstd
+    cookies:
+      enabled: true
 ```
 
 ## Server Configuration
@@ -71,9 +78,11 @@ will not be enabled.
   header, allowing clients to cache the response to CORS preflight requests. If
   not set, browsers use a default of 5 seconds.
 - `endpoint`: Valid value syntax available [here](https://github.com/grpc/grpc/blob/master/doc/naming.md)
-- `max_request_body_size`: configures the maximum allowed body size in bytes for a single request. Default: `0` (no restriction)
+- `max_request_body_size`: configures the maximum allowed body size in bytes for a single request. Default: `20971520` (20MiB)
+- `compression_algorithms`: configures the list of compression algorithms the server can accept. Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate"]
 - [`tls`](../configtls/README.md)
 - [`auth`](../configauth/README.md)
+  - `request_params`: a list of query parameter names to add to the auth context, along with the HTTP headers
 
 You can enable [`attribute processor`][attribute-processor] to append any http header to span's attribute using custom key. You also need to enable the "include_metadata"
 
@@ -86,6 +95,8 @@ receivers:
       http:
         include_metadata: true
         auth:
+          request_params:
+          - token
           authenticator: some-authenticator-extension
         cors:
           allowed_origins:
@@ -95,6 +106,7 @@ receivers:
             - Example-Header
           max_age: 7200
         endpoint: 0.0.0.0:55690
+        compression_algorithms: ["", "gzip"]
 processors:
   attributes:
     actions:

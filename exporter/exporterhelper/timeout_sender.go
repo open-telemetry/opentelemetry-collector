@@ -5,13 +5,23 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 
 import (
 	"context"
+	"errors"
 	"time"
 )
 
 // TimeoutSettings for timeout. The timeout applies to individual attempts to send data to the backend.
 type TimeoutSettings struct {
 	// Timeout is the timeout for every attempt to send data to the backend.
+	// A zero timeout means no timeout.
 	Timeout time.Duration `mapstructure:"timeout"`
+}
+
+func (ts *TimeoutSettings) Validate() error {
+	// Negative timeouts are not acceptable, since all sends will fail.
+	if ts.Timeout < 0 {
+		return errors.New("'timeout' must be non-negative")
+	}
+	return nil
 }
 
 // NewDefaultTimeoutSettings returns the default settings for TimeoutSettings.
@@ -28,12 +38,13 @@ type timeoutSender struct {
 }
 
 func (ts *timeoutSender) send(ctx context.Context, req Request) error {
+	// TODO: Remove this by avoiding to create the timeout sender if timeout is 0.
+	if ts.cfg.Timeout == 0 {
+		return req.Export(ctx)
+	}
 	// Intentionally don't overwrite the context inside the request, because in case of retries deadline will not be
 	// updated because this deadline most likely is before the next one.
-	if ts.cfg.Timeout > 0 {
-		var cancelFunc func()
-		ctx, cancelFunc = context.WithTimeout(ctx, ts.cfg.Timeout)
-		defer cancelFunc()
-	}
-	return req.Export(ctx)
+	tCtx, cancelFunc := context.WithTimeout(ctx, ts.cfg.Timeout)
+	defer cancelFunc()
+	return req.Export(tCtx)
 }

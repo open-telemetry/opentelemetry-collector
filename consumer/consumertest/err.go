@@ -7,14 +7,16 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 // NewErr returns a Consumer that just drops all received data and returns the specified error to Consume* callers.
 func NewErr(err error) Consumer {
 	return &baseConsumer{
-		ConsumeTracesFunc:  func(ctx context.Context, td ptrace.Traces) error { return err },
-		ConsumeMetricsFunc: func(ctx context.Context, md pmetric.Metrics) error { return err },
-		ConsumeLogsFunc:    func(ctx context.Context, ld plog.Logs) error { return err },
+		ConsumeTracesFunc:   func(context.Context, ptrace.Traces) error { return err },
+		ConsumeMetricsFunc:  func(context.Context, pmetric.Metrics) error { return err },
+		ConsumeLogsFunc:     func(context.Context, plog.Logs) error { return err },
+		ConsumeProfilesFunc: func(context.Context, pprofile.Profiles) error { return err },
 	}
 }

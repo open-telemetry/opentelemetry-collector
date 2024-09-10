@@ -18,19 +18,19 @@ func createDefaultConfig() component.Config {
 }
 
 func TestCreateMetricsExporter(t *testing.T) {
-	me, err := CreateMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), createDefaultConfig(), &Common{})
+	me, err := CreateMetricsExporter(context.Background(), exportertest.NewNopSettings(), createDefaultConfig(), &Common{})
 	assert.NoError(t, err)
 	assert.NotNil(t, me)
 }
 
 func TestCreateTracesExporter(t *testing.T) {
-	te, err := CreateTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), createDefaultConfig(), &Common{})
+	te, err := CreateTracesExporter(context.Background(), exportertest.NewNopSettings(), createDefaultConfig(), &Common{})
 	assert.NoError(t, err)
 	assert.NotNil(t, te)
 }
 
 func TestCreateLogsExporter(t *testing.T) {
-	te, err := CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), createDefaultConfig(), &Common{})
+	te, err := CreateLogsExporter(context.Background(), exportertest.NewNopSettings(), createDefaultConfig(), &Common{})
 	assert.NoError(t, err)
 	assert.NotNil(t, te)
 }

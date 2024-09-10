@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"go.opentelemetry.io/contrib/config"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -123,19 +124,23 @@ type MetricsConfig struct {
 
 	// Readers allow configuration of metric readers to emit metrics to
 	// any number of supported backends.
-	Readers []MetricReader `mapstructure:"readers"`
+	Readers []config.MetricReader `mapstructure:"readers"`
 }
 
 // TracesConfig exposes the common Telemetry configuration for collector's internal spans.
 // Experimental: *NOTE* this structure is subject to change or removal in the future.
 type TracesConfig struct {
+	// Level configures whether spans are emitted or not, the possible values are:
+	//  - "none" indicates that no tracing data should be collected;
+	//  - "basic" is the recommended and covers the basics of the service telemetry.
+	Level configtelemetry.Level `mapstructure:"level"`
 	// Propagators is a list of TextMapPropagators from the supported propagators list. Currently,
 	// tracecontext and  b3 are supported. By default, the value is set to empty list and
 	// context propagation is disabled.
 	Propagators []string `mapstructure:"propagators"`
 	// Processors allow configuration of span processors to emit spans to
 	// any number of suported backends.
-	Processors []SpanProcessor `mapstructure:"processors"`
+	Processors []config.SpanProcessor `mapstructure:"processors"`
 }
 
 // Validate checks whether the current configuration is valid

@@ -30,6 +30,13 @@ func TestLoadConf(t *testing.T) {
 	assert.Equal(t, map[string]any{"floating": 3.14}, cfg.ToStringMap())
 }
 
+func TestToStringMapSanitizeEmptySlice(t *testing.T) {
+	cfg, err := LoadConf(filepath.Join("testdata", "empty-slice.yaml"))
+	require.NoError(t, err)
+	var nilSlice []interface{}
+	assert.Equal(t, map[string]any{"slice": nilSlice}, cfg.ToStringMap())
+}
+
 func TestValidateProviderScheme(t *testing.T) {
 	assert.NoError(t, ValidateProviderScheme(&schemeProvider{scheme: "file"}))
 	assert.NoError(t, ValidateProviderScheme(&schemeProvider{scheme: "s3"}))
@@ -54,6 +61,6 @@ func (s schemeProvider) Scheme() string {
 	return s.scheme
 }
 
-func (s schemeProvider) Shutdown(_ context.Context) error {
+func (s schemeProvider) Shutdown(context.Context) error {
 	return nil
 }

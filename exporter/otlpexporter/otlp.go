@@ -5,11 +5,11 @@ package otlpexporter // import "go.opentelemetry.io/collector/exporter/otlpexpor
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"runtime"
 	"time"
 
+	"go.uber.org/zap"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -46,37 +46,31 @@ type baseExporter struct {
 	userAgent string
 }
 
-// Crete new exporter and start it. The exporter will begin connecting but
-// this function may return before the connection is established.
-func newExporter(cfg component.Config, set exporter.CreateSettings) (*baseExporter, error) {
+func newExporter(cfg component.Config, set exporter.Settings) *baseExporter {
 	oCfg := cfg.(*Config)
-
-	if oCfg.Endpoint == "" {
-		return nil, errors.New("OTLP exporter config requires an Endpoint")
-	}
 
 	userAgent := fmt.Sprintf("%s/%s (%s/%s)",
 		set.BuildInfo.Description, set.BuildInfo.Version, runtime.GOOS, runtime.GOARCH)
 
-	return &baseExporter{config: oCfg, settings: set.TelemetrySettings, userAgent: userAgent}, nil
+	return &baseExporter{config: oCfg, settings: set.TelemetrySettings, userAgent: userAgent}
 }
 
 // start actually creates the gRPC connection. The client construction is deferred till this point as this
 // is the only place we get hold of Extensions which are required to construct auth round tripper.
 func (e *baseExporter) start(ctx context.Context, host component.Host) (err error) {
-	if e.clientConn, err = e.config.GRPCClientSettings.ToClientConn(ctx, host, e.settings, grpc.WithUserAgent(e.userAgent)); err != nil {
+	if e.clientConn, err = e.config.ClientConfig.ToClientConn(ctx, host, e.settings, grpc.WithUserAgent(e.userAgent)); err != nil {
 		return err
 	}
 	e.traceExporter = ptraceotlp.NewGRPCClient(e.clientConn)
 	e.metricExporter = pmetricotlp.NewGRPCClient(e.clientConn)
 	e.logExporter = plogotlp.NewGRPCClient(e.clientConn)
 	headers := map[string]string{}
-	for k, v := range e.config.GRPCClientSettings.Headers {
+	for k, v := range e.config.ClientConfig.Headers {
 		headers[k] = string(v)
 	}
 	e.metadata = metadata.New(headers)
 	e.callOptions = []grpc.CallOption{
-		grpc.WaitForReady(e.config.GRPCClientSettings.WaitForReady),
+		grpc.WaitForReady(e.config.ClientConfig.WaitForReady),
 	}
 
 	return
@@ -97,7 +91,10 @@ func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 	}
 	partialSuccess := resp.PartialSuccess()
 	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedSpans() == 0) {
-		return consumererror.NewPermanent(fmt.Errorf("OTLP partial success: \"%s\" (%d rejected)", resp.PartialSuccess().ErrorMessage(), resp.PartialSuccess().RejectedSpans()))
+		e.settings.Logger.Warn("Partial success response",
+			zap.String("message", resp.PartialSuccess().ErrorMessage()),
+			zap.Int64("dropped_spans", resp.PartialSuccess().RejectedSpans()),
+		)
 	}
 	return nil
 }
@@ -110,7 +107,10 @@ func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) erro
 	}
 	partialSuccess := resp.PartialSuccess()
 	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedDataPoints() == 0) {
-		return consumererror.NewPermanent(fmt.Errorf("OTLP partial success: \"%s\" (%d rejected)", resp.PartialSuccess().ErrorMessage(), resp.PartialSuccess().RejectedDataPoints()))
+		e.settings.Logger.Warn("Partial success response",
+			zap.String("message", resp.PartialSuccess().ErrorMessage()),
+			zap.Int64("dropped_data_points", resp.PartialSuccess().RejectedDataPoints()),
+		)
 	}
 	return nil
 }
@@ -123,7 +123,10 @@ func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 	}
 	partialSuccess := resp.PartialSuccess()
 	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedLogRecords() == 0) {
-		return consumererror.NewPermanent(fmt.Errorf("OTLP partial success: \"%s\" (%d rejected)", resp.PartialSuccess().ErrorMessage(), resp.PartialSuccess().RejectedLogRecords()))
+		e.settings.Logger.Warn("Partial success response",
+			zap.String("message", resp.PartialSuccess().ErrorMessage()),
+			zap.Int64("dropped_log_records", resp.PartialSuccess().RejectedLogRecords()),
+		)
 	}
 	return nil
 }
@@ -148,8 +151,7 @@ func processError(err error) error {
 		return nil
 	}
 
-	// Now, this is this a real error.
-
+	// Now, this is a real error.
 	retryInfo := getRetryInfo(st)
 
 	if !shouldRetry(st.Code(), retryInfo) {
@@ -165,7 +167,6 @@ func processError(err error) error {
 	}
 
 	// Need to retry.
-
 	return err
 }
 

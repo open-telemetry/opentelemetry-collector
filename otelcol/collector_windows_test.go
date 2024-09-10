@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package otelcol
 
@@ -20,9 +19,10 @@ import (
 func TestNewSvcHandler(t *testing.T) {
 	oldArgs := os.Args
 	defer func() { os.Args = oldArgs }()
-	os.Args = []string{"otelcol", "--config", filepath.Join("testdata", "otelcol-nop.yaml")}
+	filePath := filepath.Join("testdata", "otelcol-nop.yaml")
+	os.Args = []string{"otelcol", "--config", filePath}
 
-	s := NewSvcHandler(CollectorSettings{BuildInfo: component.NewDefaultBuildInfo(), Factories: nopFactories})
+	s := NewSvcHandler(CollectorSettings{BuildInfo: component.NewDefaultBuildInfo(), Factories: nopFactories, ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filePath})})
 
 	colDone := make(chan struct{})
 	requests := make(chan svc.ChangeRequest)

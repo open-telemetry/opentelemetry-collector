@@ -1,0 +1,13 @@
+type: otlp
+github_project: open-telemetry/opentelemetry-collector
+
+status:
+  class: exporter
+  stability:
+    stable: [traces, metrics]
+    beta: [logs]
+  distributions: [core, contrib, k8s]
+
+tests:
+  config:
+    endpoint: otelcol:4317

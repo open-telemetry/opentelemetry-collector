@@ -4,10 +4,14 @@
 package configtelemetry
 
 import (
+	"encoding"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
+
+var _ encoding.TextMarshaler = (*Level)(nil)
+var _ encoding.TextUnmarshaler = (*Level)(nil)
 
 func TestUnmarshalText(t *testing.T) {
 	tests := []struct {

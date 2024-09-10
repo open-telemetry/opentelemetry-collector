@@ -6,7 +6,31 @@ package confmap // import "go.opentelemetry.io/collector/confmap"
 import (
 	"context"
 	"fmt"
+
+	"go.uber.org/zap"
+	"gopkg.in/yaml.v3"
 )
+
+// ProviderSettings are the settings to initialize a Provider.
+type ProviderSettings struct {
+	// Logger is a zap.Logger that will be passed to Providers.
+	// Providers should be able to rely on the Logger being non-nil;
+	// when instantiating a Provider with a ProviderFactory,
+	// nil Logger references should be replaced with a no-op Logger.
+	Logger *zap.Logger
+}
+
+// ProviderFactory defines a factory that can be used to instantiate
+// new instances of a Provider.
+type ProviderFactory = moduleFactory[Provider, ProviderSettings]
+
+// CreateProviderFunc is a function that creates a Provider instance.
+type CreateProviderFunc = createConfmapFunc[Provider, ProviderSettings]
+
+// NewProviderFactory can be used to create a ProviderFactory.
+func NewProviderFactory(f CreateProviderFunc) ProviderFactory {
+	return newConfmapModuleFactory(f)
+}
 
 // Provider is an interface that helps to retrieve a config map and watch for any
 // changes to the config map. Implementations may load the config from a file,
@@ -66,7 +90,6 @@ type Provider interface {
 type WatcherFunc func(*ChangeEvent)
 
 // ChangeEvent describes the particular change event that happened with the config.
-// TODO: see if this can be eliminated.
 type ChangeEvent struct {
 	// Error is nil if the config is changed and needs to be re-fetched.
 	// Any non-nil error indicates that there was a problem with watching the config changes.
@@ -77,10 +100,15 @@ type ChangeEvent struct {
 type Retrieved struct {
 	rawConf   any
 	closeFunc CloseFunc
+
+	stringRepresentation string
+	isSetString          bool
 }
 
 type retrievedSettings struct {
-	closeFunc CloseFunc
+	stringRepresentation string
+	isSetString          bool
+	closeFunc            CloseFunc
 }
 
 // RetrievedOption options to customize Retrieved values.
@@ -92,6 +120,35 @@ func WithRetrievedClose(closeFunc CloseFunc) RetrievedOption {
 	return func(settings *retrievedSettings) {
 		settings.closeFunc = closeFunc
 	}
+}
+
+func withStringRepresentation(stringRepresentation string) RetrievedOption {
+	return func(settings *retrievedSettings) {
+		settings.stringRepresentation = stringRepresentation
+		settings.isSetString = true
+	}
+}
+
+// NewRetrievedFromYAML returns a new Retrieved instance that contains the deserialized data from the yaml bytes.
+// * yamlBytes the yaml bytes that will be deserialized.
+// * opts specifies options associated with this Retrieved value, such as CloseFunc.
+func NewRetrievedFromYAML(yamlBytes []byte, opts ...RetrievedOption) (*Retrieved, error) {
+	var rawConf any
+	if err := yaml.Unmarshal(yamlBytes, &rawConf); err != nil {
+		// If the string is not valid YAML, we try to use it verbatim as a string.
+		strRep := string(yamlBytes)
+		return NewRetrieved(strRep, append(opts, withStringRepresentation(strRep))...)
+	}
+
+	switch rawConf.(type) {
+	case string:
+		val := string(yamlBytes)
+		return NewRetrieved(val, append(opts, withStringRepresentation(val))...)
+	default:
+		opts = append(opts, withStringRepresentation(string(yamlBytes)))
+	}
+
+	return NewRetrieved(rawConf, opts...)
 }
 
 // NewRetrieved returns a new Retrieved instance that contains the data from the raw deserialized config.
@@ -107,7 +164,12 @@ func NewRetrieved(rawConf any, opts ...RetrievedOption) (*Retrieved, error) {
 	for _, opt := range opts {
 		opt(&set)
 	}
-	return &Retrieved{rawConf: rawConf, closeFunc: set.closeFunc}, nil
+	return &Retrieved{
+		rawConf:              rawConf,
+		closeFunc:            set.closeFunc,
+		stringRepresentation: set.stringRepresentation,
+		isSetString:          set.isSetString,
+	}, nil
 }
 
 // AsConf returns the retrieved configuration parsed as a Conf.
@@ -128,6 +190,20 @@ func (r *Retrieved) AsConf() (*Conf, error) {
 //   - map[string]any - every value follows the same rules as the given any;
 func (r *Retrieved) AsRaw() (any, error) {
 	return r.rawConf, nil
+}
+
+// AsString returns the retrieved configuration as a string.
+// If the retrieved configuration is not convertible to a string unambiguously, an error is returned.
+// If the retrieved configuration is a string, the string is returned.
+// This method is used to resolve ${} references in inline position.
+func (r *Retrieved) AsString() (string, error) {
+	if !r.isSetString {
+		if str, ok := r.rawConf.(string); ok {
+			return str, nil
+		}
+		return "", fmt.Errorf("retrieved value does not have unambiguous string representation: %v", r.rawConf)
+	}
+	return r.stringRepresentation, nil
 }
 
 // Close and release any watchers that Provider.Retrieve may have created.

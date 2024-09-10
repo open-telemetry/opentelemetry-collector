@@ -48,7 +48,7 @@ func (ms Metrics) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "resource_metrics", "resourceMetrics":
-			iter.ReadArrayCB(func(iterator *jsoniter.Iterator) bool {
+			iter.ReadArrayCB(func(*jsoniter.Iterator) bool {
 				ms.ResourceMetrics().AppendEmpty().unmarshalJsoniter(iter)
 				return true
 			})
@@ -106,6 +106,11 @@ func (ms Metric) unmarshalJsoniter(iter *jsoniter.Iterator) {
 			ms.orig.Description = iter.ReadString()
 		case "unit":
 			ms.orig.Unit = iter.ReadString()
+		case "metadata":
+			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
+				ms.orig.Metadata = append(ms.orig.Metadata, json.ReadAttribute(iter))
+				return true
+			})
 		case "sum":
 			ms.SetEmptySum().unmarshalJsoniter(iter)
 		case "gauge":

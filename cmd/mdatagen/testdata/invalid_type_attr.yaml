@@ -1,0 +1,24 @@
+type: metricreceiver
+
+sem_conv_version: 1.9.0
+
+status:
+  class: receiver
+  stability:
+    development: [logs]
+    beta: [traces]
+    stable: [metrics]
+
+attributes:
+  used_attr:
+    description: Used attribute.
+    type: invalidtype
+
+metrics:
+  metric:
+    enabled: true
+    description: Metric.
+    unit: "1"
+    gauge:
+      value_type: double
+    attributes: [used_attr]

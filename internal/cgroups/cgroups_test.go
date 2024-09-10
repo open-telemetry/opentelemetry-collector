@@ -24,7 +24,6 @@
 // THE SOFTWARE.
 
 //go:build linux
-// +build linux
 
 package cgroups
 
@@ -209,7 +208,7 @@ func TestCGroupsMemoryQuotaV2(t *testing.T) {
 
 	quota, defined, err := memoryQuotaV2("nonexistent", "nonexistent")
 	assert.Equal(t, int64(-1), quota, "nonexistent")
-	assert.Equal(t, false, defined, "nonexistent")
+	assert.False(t, defined, "nonexistent")
 	assert.NoError(t, err, "nonexistent")
 
 	cgroupBasePath := filepath.Join(testDataCGroupsPath, "v2")

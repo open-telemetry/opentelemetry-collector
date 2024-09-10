@@ -48,7 +48,7 @@ func (ms Logs) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "resource_logs", "resourceLogs":
-			iter.ReadArrayCB(func(iterator *jsoniter.Iterator) bool {
+			iter.ReadArrayCB(func(*jsoniter.Iterator) bool {
 				ms.ResourceLogs().AppendEmpty().unmarshalJsoniter(iter)
 				return true
 			})

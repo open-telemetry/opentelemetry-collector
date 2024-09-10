@@ -128,14 +128,14 @@ func TestPipelineConfigUnmarshalError(t *testing.T) {
 					},
 				},
 			}),
-			expectError: "'[traces].receivers[0]' has invalid keys: nop",
+			expectError: "'[traces].receivers': source data must be an array or slice, got map",
 		},
 	}
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			pips := new(pipelines.Config)
-			err := tt.conf.Unmarshal(&pips, confmap.WithErrorUnused())
+			err := tt.conf.Unmarshal(&pips)
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tt.expectError)
 		})
@@ -203,7 +203,7 @@ func TestServiceUnmarshalError(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.conf.Unmarshal(&service.Config{}, confmap.WithErrorUnused())
+			err := tt.conf.Unmarshal(&service.Config{})
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tt.expectError)
 		})

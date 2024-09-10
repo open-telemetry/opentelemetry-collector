@@ -79,7 +79,7 @@ func TestModuleFromCore(t *testing.T) {
 	assert.True(t, strings.HasPrefix(cfg.Extensions[0].Name, "otlpreceiver"))
 }
 
-func TestInvalidModule(t *testing.T) {
+func TestMissingModule(t *testing.T) {
 	type invalidModuleTest struct {
 		cfg Config
 		err error
@@ -89,11 +89,20 @@ func TestInvalidModule(t *testing.T) {
 		{
 			cfg: Config{
 				Logger: zap.NewNop(),
+				Providers: &[]Module{{
+					Import: "invalid",
+				}},
+			},
+			err: ErrMissingGoMod,
+		},
+		{
+			cfg: Config{
+				Logger: zap.NewNop(),
 				Extensions: []Module{{
 					Import: "invalid",
 				}},
 			},
-			err: ErrInvalidGoMod,
+			err: ErrMissingGoMod,
 		},
 		{
 			cfg: Config{
@@ -102,7 +111,7 @@ func TestInvalidModule(t *testing.T) {
 					Import: "invalid",
 				}},
 			},
-			err: ErrInvalidGoMod,
+			err: ErrMissingGoMod,
 		},
 		{
 			cfg: Config{
@@ -111,7 +120,7 @@ func TestInvalidModule(t *testing.T) {
 					Import: "invali",
 				}},
 			},
-			err: ErrInvalidGoMod,
+			err: ErrMissingGoMod,
 		},
 		{
 			cfg: Config{
@@ -120,7 +129,16 @@ func TestInvalidModule(t *testing.T) {
 					Import: "invalid",
 				}},
 			},
-			err: ErrInvalidGoMod,
+			err: ErrMissingGoMod,
+		},
+		{
+			cfg: Config{
+				Logger: zap.NewNop(),
+				Connectors: []Module{{
+					Import: "invalid",
+				}},
+			},
+			err: ErrMissingGoMod,
 		},
 	}
 
@@ -153,10 +171,10 @@ func TestNewBuiltinConfig(t *testing.T) {
 	// Unlike the config initialized in NewDefaultConfig(), we expect
 	// the builtin default to be practically useful, so there must be
 	// a set of modules present.
-	assert.NotZero(t, len(cfg.Receivers))
-	assert.NotZero(t, len(cfg.Exporters))
-	assert.NotZero(t, len(cfg.Extensions))
-	assert.NotZero(t, len(cfg.Processors))
+	assert.NotEmpty(t, cfg.Receivers)
+	assert.NotEmpty(t, cfg.Exporters)
+	assert.NotEmpty(t, cfg.Extensions)
+	assert.NotEmpty(t, cfg.Processors)
 }
 
 func TestSkipGoValidation(t *testing.T) {
@@ -220,8 +238,89 @@ func TestRequireOtelColModule(t *testing.T) {
 		t.Run(tt.Version, func(t *testing.T) {
 			cfg := NewDefaultConfig()
 			cfg.Distribution.OtelColVersion = tt.Version
-			require.NoError(t, cfg.SetRequireOtelColModule())
+			require.NoError(t, cfg.SetBackwardsCompatibility())
 			assert.Equal(t, tt.ExpectedRequireOtelColModule, cfg.Distribution.RequireOtelColModule)
 		})
 	}
+}
+
+func TestConfmapFactoryVersions(t *testing.T) {
+	testCases := []struct {
+		version   string
+		supported bool
+		err       bool
+	}{
+		{
+			version:   "x.0.0",
+			supported: false,
+			err:       true,
+		},
+		{
+			version:   "0.x.0",
+			supported: false,
+			err:       true,
+		},
+		{
+			version:   "0.0.0",
+			supported: false,
+		},
+		{
+			version:   "0.98.0",
+			supported: false,
+		},
+		{
+			version:   "0.98.1",
+			supported: false,
+		},
+		{
+			version:   "0.99.0",
+			supported: true,
+		},
+		{
+			version:   "0.99.7",
+			supported: true,
+		},
+		{
+			version:   "0.100.0",
+			supported: true,
+		},
+		{
+			version:   "0.100.1",
+			supported: true,
+		},
+		{
+			version:   "1.0",
+			supported: true,
+		},
+		{
+			version:   "1.0.0",
+			supported: true,
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.version, func(t *testing.T) {
+			cfg := NewDefaultConfig()
+			cfg.Distribution.OtelColVersion = tt.version
+			if !tt.err {
+				require.NoError(t, cfg.SetBackwardsCompatibility())
+				assert.Equal(t, tt.supported, cfg.Distribution.SupportsConfmapFactories)
+			} else {
+				require.Error(t, cfg.SetBackwardsCompatibility())
+			}
+		})
+	}
+}
+
+func TestAddsDefaultProviders(t *testing.T) {
+	cfg := NewDefaultConfig()
+	cfg.Providers = nil
+	assert.NoError(t, cfg.ParseModules())
+	assert.Len(t, *cfg.Providers, 5)
+}
+
+func TestSkipsNilFieldValidation(t *testing.T) {
+	cfg := NewDefaultConfig()
+	cfg.Providers = nil
+	assert.NoError(t, cfg.Validate())
 }

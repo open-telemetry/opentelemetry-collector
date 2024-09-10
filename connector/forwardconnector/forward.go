@@ -8,21 +8,18 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
+	"go.opentelemetry.io/collector/connector/forwardconnector/internal/metadata"
 	"go.opentelemetry.io/collector/consumer"
-)
-
-const (
-	typeStr = "forward"
 )
 
 // NewFactory returns a connector.Factory.
 func NewFactory() connector.Factory {
 	return connector.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		connector.WithTracesToTraces(createTracesToTraces, component.StabilityLevelBeta),
-		connector.WithMetricsToMetrics(createMetricsToMetrics, component.StabilityLevelBeta),
-		connector.WithLogsToLogs(createLogsToLogs, component.StabilityLevelBeta),
+		connector.WithTracesToTraces(createTracesToTraces, metadata.TracesToTracesStability),
+		connector.WithMetricsToMetrics(createMetricsToMetrics, metadata.MetricsToMetricsStability),
+		connector.WithLogsToLogs(createLogsToLogs, metadata.LogsToLogsStability),
 	)
 }
 
@@ -36,7 +33,7 @@ func createDefaultConfig() component.Config {
 // createTracesToTraces creates a trace receiver based on provided config.
 func createTracesToTraces(
 	_ context.Context,
-	_ connector.CreateSettings,
+	_ connector.Settings,
 	_ component.Config,
 	nextConsumer consumer.Traces,
 ) (connector.Traces, error) {
@@ -46,7 +43,7 @@ func createTracesToTraces(
 // createMetricsToMetrics creates a metrics receiver based on provided config.
 func createMetricsToMetrics(
 	_ context.Context,
-	_ connector.CreateSettings,
+	_ connector.Settings,
 	_ component.Config,
 	nextConsumer consumer.Metrics,
 ) (connector.Metrics, error) {
@@ -56,7 +53,7 @@ func createMetricsToMetrics(
 // createLogsToLogs creates a log receiver based on provided config.
 func createLogsToLogs(
 	_ context.Context,
-	_ connector.CreateSettings,
+	_ connector.Settings,
 	_ component.Config,
 	nextConsumer consumer.Logs,
 ) (connector.Logs, error) {

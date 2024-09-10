@@ -7,6 +7,466 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.15.0/v0.109.0
+
+### 🛑 Breaking changes 🛑
+
+- `Remove `extensiontest` StatusWatcher helpers`: They were unused. They may be added back on a different module or after `componentstatus` is marked 1.0
+ (#11044)
+- `pprofile`: Change Profile ID field from a byte array to a custom data type (#11048)
+- `connector`: Remove deprecated connector builder (#11019)
+- `exporter`: Remove deprecated exporter builder (#11019)
+- `extension`: Remove deprecated extension builder (#11019)
+- `processor`: Remove deprecated processor builder (#11019)
+- `receiver`: Remove deprecated receiver builder (#11019)
+
+### 🚩 Deprecations 🚩
+
+- `configtelemetry`: Deprecating `TelemetrySettings.MeterProvider` in favour of `TelemetrySettings.LeveledMeterProvider` (#10912)
+- `extension`: Deprecate `extension.ConfigWatcher`, `extension.PipelineWatcher` and `extension.Dependent` in favor of equivalents in the `extensioncapabilities` module. (#11000)
+- `scraperhelper`: deprecate NewScraper, should use NewScraperWithComponentType (#11082)
+
+### 🚀 New components 🚀
+
+- `extensioncapabilities`: Create a new module for optional extension capabilities. (#11000)
+
+### 💡 Enhancements 💡
+
+- `connectorprofiles`: Add ProfilesRouterAndConsumer interface, and NewProfilesRouter method. (#11023)
+- `pprofileotlp`: Introduce grpc service implementation of pprofileotlp (#11048)
+- `pprofile`: Introduce marshalling and unmarshalling of pprofile data (#11048)
+- `service`: Support profiles in the service package (#11024)
+
+## v1.14.1/v0.108.1
+
+## v1.14.0/v0.108.0
+
+### 🛑 Breaking changes 🛑
+
+- `extensions`: Remove `StatusWatcher` interface.  Use `componentstatus.Watcher` instead. (#10777)
+- `component`: Removed Status related types and functions.  Use `componentstatus` instead. (#10777)
+- `component`: Remove `ReportStatus` from `TelemetrySettings`. Use `componentstatus.ReportStatus` instead. (#10777)
+- `componentstatus`: Make componentstatus.InstanceID immutable. (#10494)
+
+### 🚩 Deprecations 🚩
+
+- `scraperhelper`: deprecate NewObsReport, ObsReport, ObsReportSettings, scrapers should use NewScraperControllerReceiver (#10959)
+- `mdatagen`: Deprecating generated `Meter` func in favour of `LeveledMeter` (#10939)
+- `connector`: Deprecate connector.Builder, and move it into an internal package of the service module (#10784)
+- `exporter`: Deprecate exporter.Builder, and move it into an internal package of the service module (#10783)
+- `extension`: Deprecate extension.Builder, and move it into an internal package of the service module (#10785)
+- `processor`: Deprecate processor.Builder, and move it into an internal package of the service module (#10782)
+- `receiver`: Deprecate receiver.Builder, and move it into an internal package of the service module (#10781)
+
+## v1.13.0/v0.107.0
+
+### 🛑 Breaking changes 🛑
+
+- `otelcol`: Delete deprecated NewCommandMustSetProvider (#10778)
+- `component`: Removes the deprecated `Host.GetFactory` method. (#10771)
+- `otelcoltest`: The `otelcol.LoadConfig` method no longer sets the `expandconverter`. (#10510)
+- `ocb`: Collectors built with OCB will no longer include the `expandconverter` (#10510)
+- `exporterhelper`: Delete deprecated `exporterhelper.ObsReport` and `exporterhelper.NewObsReport` (#10779, #10592)
+
+### 🚩 Deprecations 🚩
+
+- `expandconverter`: Deprecate `expandconverter`. (#10510)
+
+### 🚀 New components 🚀
+
+- `componentstatus`: Adds new componentstatus module that will soon replace status content in component. (#10730)
+- `connector/connectorprofiles`: Allow handling profiles in connector. (#10703)
+- `exporter/exporterprofiles`: Allow handling profiles in exporter. (#10702)
+- `processor/processorprofiles`: Allow handling profiles in processor. (#10691)
+- `receiver/receiverprofiles`: Allow handling profiles in receiver. (#10690)
+
+### 💡 Enhancements 💡
+
+- `confmap`: Check that providers have a correct scheme when building a confmap.Resolver. (#10786)
+- `confighttp`: Add `NewDefaultCORSConfig` function to initialize the default `confighttp.CORSConfig` (#9655)
+
+## v0.106.0
+
+### 🛑 Breaking changes 🛑
+
+- `configauth`: removing deprecated methods GetServerAuthenticatorContext and GetClientAuthenticatorContext (#9808)
+- `connector,exporter,receiver,extension,processor`: Remove deprecated funcs/structs (#10423)
+  Remove the following funcs & structs:
+  - connector.CreateSettings -> connector.Settings
+  - connectortest.NewNopCreateSettings -> connectortest.NewNopSettings
+  - exporter.CreateSettings -> exporter.Settings
+  - exportertest.NewNopCreateSettings -> exportertest.NewNopSettings
+  - extension.CreateSettings -> extension.Settings
+  - extensiontest.NewNopCreateSettings -> extensiontest.NewNopSettings
+  - processor.CreateSettings -> processor.Settings
+  - processortest.NewNopCreateSettings -> processortest.NewNopSettings
+  - receiver.CreateSettings -> receiver.Settings
+  - receivertest.NewNopCreateSettings -> receivertest.NewNopSettings
+  
+- `component/componenttest`: Add optional ...attribute.KeyValue argument to TestTelemetry.CheckExporterMetricGauge. (#10593)
+- `confighttp`: Auth data type signature has changed (#4806)
+  As part of the linked PR, the `auth` attribute was moved from `configauth.Authentication` 
+  to a new `AuthConfig`, which contains a `configauth.Authentication`. For end-users, this
+  is a non-breaking change. For users of the API, create a new AuthConfig using the
+  `configauth.Authentication` instance that was being used before.
+  
+- `mdatagen`: Remove WithAttributes option from the telemetry builder constructor. (#10608)
+  Attribute sets for async instruments now can be set as options to callback setters and async instruments initializers.
+  This allows each async instrument to have its own attribute set.
+  
+- `service/extensions`: Adds `Options` to `extensions.New`. (#10728)
+  This is only a breaking change if you are depending on `extensions.New`'s signature. Calls to `extensions.New` are not broken.
+
+### 🚩 Deprecations 🚩
+
+- `component`: Deprecates Host.GetFactory. (#10709)
+
+### 🚀 New components 🚀
+
+- `component/componentprofiles`: Add componentprofiles module. (#10525)
+
+### 💡 Enhancements 💡
+
+- `exporter, processor, receiver`: Document factory functions. (#9323)
+- `component`: Document status enums and New constructors (#9822)
+- `confighttp, configgrpc`: Remove the experimental comment on `IncludeMetadata` in confighttp and configgrpc (#9381)
+- `confighttp`: Add `confighttp.NewDefaultServerConfig()` to instantiate the default HTTP server configuration (#9655)
+- `consumer/consumertest`: Allow testing profiles with consumertest. (#10692)
+
+### 🧰 Bug fixes 🧰
+
+- `confmap`: Fix wrong expansion of environment variables escaped with `$$`, e.g. `$${ENV_VAR}` and `$$ENV_VAR`. (#10713)
+  This change fixes the issue where environment variables escaped with $$ were expanded. 
+  The collector now converts `$${ENV_VAR}` to `${ENV_VAR}` and `$$ENV_VAR` to `$ENV_VAR` without further expansion.
+  
+
+## v1.12.0/v0.105.0
+
+### 🛑 Breaking changes 🛑
+
+- `otelcol`: Obtain the Collector's effective config from otelcol.Config (#10139)
+  `otelcol.Collector` will now marshal `confmap.Conf` objects from `otelcol.Config` itself.
+- `otelcoltest`: Remove deprecated methods `LoadConfigWithSettings` and `LoadConfigAndValidateWithSettings` (#10512)
+
+### 🚩 Deprecations 🚩
+
+- `configauth`: Deprecated `Authentication.GetClientAuthenticatorContext` and `Authentication.GetServerAuthenticatorContext` (#10578)
+- `otelcol`: Deprecate `otelcol.ConfmapProvider` (#10139)
+  `otelcol.Collector` will now marshal `confmap.Conf` objects from `otelcol.Config` itself.
+- `otelcol`: Deprecate `(*otelcol.ConfigProvider).GetConfmap` (#10139)
+  Call `(*confmap.Conf).Marshal(*otelcol.Config)` to get the Collector's configuration.
+- `exporterhelper`: Deprecate the obsreport API in the exporterhelper package. (#10592)
+
+### 🚀 New components 🚀
+
+- `consumer/consumerprofiles`: Allow handling profiles in consumer. (#10464)
+
+## v1.11.0/v0.104.0
+
+### 🛑 Breaking changes 🛑
+
+- `otelcol`: The `otelcol.NewCommand` now requires at least one provider be set. (#10436)
+- `component/componenttest`: Added additional "inserted" count to `TestTelemetry.CheckProcessor*` methods. (#10353)
+
+### 🚩 Deprecations 🚩
+
+- `otelcoltest`: Deprecates `LoadConfigWithSettings` and `LoadConfigAndValidateWithSettings`.  Use `LoadConfig` and `LoadConfigAndValidate` instead. (#10417)
+- `otelcol`: The `otelcol.NewCommandMustSetProvider` is deprecated. Use `otelcol.NewCommand` instead. (#10436)
+
+### 🚀 New components 🚀
+
+- `otelcoltest`: Split off go.opentelemetry.io/collector/otelcol/otelcoltest into its own module (#10417)
+
+### 💡 Enhancements 💡
+
+- `pdata/pprofile`: Add pprofile wrapper to convert proto into pprofile. (#10401)
+- `pdata/testdata`: Add pdata testdata for profiles. (#10401)
+
+## v1.10.0/v0.103.0
+
+### 🛑 Breaking changes 🛑
+
+- `component`: Remove deprecated `component.UnmarshalConfig` (#7102)
+- `confighttp`: Use `confighttp.ServerConfig` as part of zpagesextension.Config. Previously the extension used `confignet.TCPAddrConfig` (#9368)
+
+### 🚩 Deprecations 🚩
+
+- `connector`: Deprecate CreateSettings and NewNopCreateSettings (#9428)
+  The following methods are being renamed:
+  - connector.CreateSettings -> connector.Settings
+  - connector.NewNopCreateSettings -> connector.NewNopSettings
+  
+- `exporter`: Deprecate CreateSettings and NewNopCreateSettings (#9428)
+  The following methods are being renamed:
+  - exporter.CreateSettings -> exporter.Settings
+  - exporter.NewNopCreateSettings -> exporter.NewNopSettings
+  
+- `extension`: Deprecate CreateSettings and NewNopCreateSettings (#9428)
+  The following methods are being renamed:
+  - extension.CreateSettings -> extension.Settings
+  - extension.NewNopCreateSettings -> extension.NewNopSettings
+  
+- `processor`: Deprecate CreateSettings and NewNopCreateSettings (#9428)
+  The following methods are being renamed:
+  - processor.CreateSettings -> processor.Settings
+  - processor.NewNopCreateSettings -> processor.NewNopSettings
+  
+- `receiver`: Deprecate CreateSettings and NewNopCreateSettings (#9428)
+  The following methods are being renamed:
+  - receiver.CreateSettings -> receiver.Settings
+  - receiver.NewNopCreateSettings -> receiver.NewNopSettings
+  
+- `configauth`: Deprecate `GetClientAuthenticator` and `GetServerAuthenticator`, use `GetClientAuthenticatorContext` and `GetServerAuthenticatorContext` instead. (#9808)
+- `confighttp`: Deprecate `ClientConfig.CustomRoundTripper` (#8627)
+  Set the `Transport` field on the `*http.Client` object returned from `(ClientConfig).ToClient` instead.
+- `filter`: Deprecate the `filter.CombinedFilter` struct (#10348)
+- `otelcol`: Deprecate `otelcol.NewCommand`. Use `otelcol.NewCommandMustProviderSettings` instead. (#10359)
+- `otelcoltest`: Deprecate `LoadConfig` and `LoadConfigAndValidate`. Use `LoadConfigWithSettings` and `LoadConfigAndValidateWithSettings` instead (#10359)
+
+### 💡 Enhancements 💡
+
+- `confmap`: Adds `confmap.Retrieved.AsString` method that returns the configuration value as a string (#9532)
+- `confmap`: Adds `confmap.NewRetrievedFromYAML` helper to create `confmap.Retrieved` values from YAML bytes (#9532)
+
+## v0.102.1
+
+No API-only changes on this release. **This release addresses [GHSA-c74f-6mfw-mm4v](https://github.com/open-telemetry/opentelemetry-collector/security/advisories/GHSA-c74f-6mfw-mm4v) for `configgrpc`.**
+
+## v1.9.0/v0.102.0
+
+**This release addresses [GHSA-c74f-6mfw-mm4v](https://github.com/open-telemetry/opentelemetry-collector/security/advisories/GHSA-c74f-6mfw-mm4v) for `confighttp`.**
+
+### 🛑 Breaking changes 🛑
+
+- `otelcol`: Remove deprecated `ConfigProvider` field from `CollectorSettings` (#10281)
+- `exporterhelper`: remove deprecated RequestMarshaler & RequestUnmarshaler types (#10283)
+- `service`: remove deprecated Telemetry struct and New func (#10285)
+- `configtls`: remove deprecated LoadTLSConfigContext funcs (#10283)
+
+### 🚩 Deprecations 🚩
+
+- `component`: Deprecate `component.UnmarshalConfig`, use `(*confmap.Conf).Unmarshal(&intoCfg)` instead. (#7102)
+- `service/telemetry`: Deprecate telemetry.New in favor of telemetry.NewFactory (#4970)
+
+### 💡 Enhancements 💡
+
+- `confmap`: Allow setting a default Provider on a Resolver to use when `${}` syntax is used without a scheme (#10182)
+- `pdata`: Introduce string and int64 slices to pcommon (#10148)
+- `pdata`: Introduce generated experimental pdata for profiling signal. (#10195)
+- `confmap`: Remove top level condition when considering struct as Unmarshalers (#7101)
+
+### 🧰 Bug fixes 🧰
+
+- `otelcol`: Update validate command to use the new configuration options (#10203)
+
+## v1.8.0/v0.101.0
+
+### 🛑 Breaking changes 🛑
+
+- `confighttp`: Removes deprecated functions `ToClientContext`, `ToListenerContext`, and `ToServerContext`. (#10138)
+- `confmap`: Deprecate `NewWithSettings` for all Providers and `New` for all Converters (#10134)
+  Use `NewFactory` instead for all affected modules.
+- `confmap`: Remove deprecated `Providers` and `Converters` from `confmap.ResolverSettings` (#10173)
+  Use `ProviderSettings` and `ConverterSettings` instead.
+
+### 🧰 Bug fixes 🧰
+
+- `otelcol`: Add explicit mapstructure tags to main configuration struct (#10152)
+- `confmap`: Support string-like types as map keys when marshaling (#10137)
+
+## v1.7.0/v0.100.0
+
+### 💡 Enhancements 💡
+
+- `configgrpc`: Adds `NewDefault*` functions for all the config structs. (#9654)
+- `exporterqueue`: Expose ErrQueueIsFull so upstream components can retry or apply backpressure. (#10070)
+
+### 🧰 Bug fixes 🧰
+
+- `mdatagen`: Call connectors with routers to be the same as the service graph (#10079)
+
+## v1.6.0/v0.99.0
+
+### 🛑 Breaking changes 🛑
+
+- `component`: Removed deprecated function `GetExporters` from `component.Host` interface (#9987)
+
+### 🚩 Deprecations 🚩
+
+- `confighttp`: deprecate ToClientContext, ToServerContext, ToListenerContext, replaced by ToClient, ToServer, ToListener (#9807)
+- `configtls`: Deprecates `ClientConfig.LoadTLSConfigContext` and `ServerConfig.LoadTLSConfigContext`, use `ClientConfig.LoadTLSConfig` and `ServerConfig.LoadTLSConfig` instead. (#9945)
+- `confmap`: Deprecate the `Providers` and `Converters` fields in `confmap.ResolverSettings` (#9516)
+Use the `ProviderFactories` and `ConverterFactories` fields instead.
+
+### 💡 Enhancements 💡
+
+- `configauth`: Adds `NewDefault*` functions for all the config structs. (#9821)
+- `configtls`: Adds `NewDefault*` functions for all the config structs. (#9658)
+- `pmetric`: Support metric.metadata in pdata/pmetric (#10006)
+
+## v1.5.0/v0.98.0
+
+### 🛑 Breaking changes 🛑
+
+- `component`: Restricts maximum length for `component.Type` to 63 characters. (#9872)
+- `configgrpc`: Remove deprecated `ToServerContext`, use `ToServer` instead. (#9836)
+- `configgrpc`: Remove deprecated `SanitizedEndpoint`. (#9836)
+- `configtls`: Remove Deprecated `TLSSetting`, `TLSClientSetting`, and `TLSServerSetting`. (#9786)
+- `configtls`: Rename `TLSSetting` to `Config` on `ClientConfig` and `ServerConfig`. (#9786)
+
+### 🚩 Deprecations 🚩
+
+- `confighttp`: Deprecate `ToClient`,`ToListener`and `ToServer` use `ToClientContext`,`ToListenerContext` and `ToServerContext`instead. (#9807)
+- `configtls`: Deprecate `ClientConfig.LoadTLSConfig` and `ServerConfig.LoadTLSConfig`, use `ClientConfig.LoadTLSConfigContext` and `ServerConfig.LoadTLSConfigContext` instead. (#9811)
+
+### 💡 Enhancements 💡
+
+- Introduce new module for generating pdata: pdata/testdata (#9886)
+- `exporterhelper`: Make the `WithBatcher` option available for regular exporter helpers based on OTLP data type. (#8122)
+  Now, `WithBatcher` can be used with both regular exporter helper (e.g. NewTracesExporter) and the request-based exporter 
+  helper (e.g. NewTracesRequestExporter). The request-based exporter helpers require `WithRequestBatchFuncs` option 
+  providing batching functions. 
+  
+- `confmap`: Creates a logger in the confmap.ProviderSettings and uses it to log when there is a missing or blank environment variable referenced in config. For now the noop logger is used everywhere except tests. (#5615)
+
+## v1.4.0/v0.97.0
+
+### 🛑 Breaking changes 🛑
+
+- `configgrpc`: Remove deprecated `ToServer` function. (#9787)
+- `confignet`: Change `Transport` field from `string` to `TransportType` (#9385)
+- `component`: Change underlying type of `component.Type` to an opaque struct. (#9208)
+- `obsreport`: Remove deprecated obsreport/obsreporttest package. (#9724)
+- `component`: Remove deprecated error `ErrNilNextConsumer` (#9322)
+- `connector`: Remove `LogsRouter`, `MetricsRouter` and `TracesRouter`. Use `LogsRouterAndConsumer`, `MetricsRouterAndConsumer`, `TracesRouterAndConsumer` respectively instead. (#9095)
+- `receiver`: Remove deprecated struct `ScraperControllerSettings` and function `NewDefaultScraperControllerSettings` (#6767)
+- `confmap`: Remove deprecated `provider.New` methods, use `NewWithSettings` moving forward. (#9443)
+
+### 🚩 Deprecations 🚩
+
+- `configgrpc`: Deprecated `ToServerContext`, use `ToServer` instead. (#9787)
+- `configgrpc`: Deprecate `SanitizedEndpoint` (#9788)
+
+### 💡 Enhancements 💡
+
+- `exporterhelper`: Add experimental batching capabilities to the exporter helper (#8122)
+- `confignet`: Adds `NewDefault*` functions for all the config structs. (#9656)
+- `configtls`: Validates TLS min_version and max_version (#9475)
+  Introduces `Validate()` method in TLSSetting.
+- `exporterhelper`: Invalid exporterhelper options now make the exporter creation error out instead of panicking. (#9717)
+- `components`: Give NoOp components a unique name (#9637)
+
+## v1.3.0/v0.96.0
+
+### 🚩 Deprecations 🚩
+
+- `configgrpc`: Deprecates `ToServer`.  Use `ToServerContext` instead. (#9624)
+- `component`: deprecate component.ErrNilNextConsumer (#9526)
+- `configtls`: Rename TLSClientSetting, TLSServerSetting, and TLSSetting based on the naming convention used in other config packages. (#9474)
+
+### 💡 Enhancements 💡
+
+- `receivertest`: add support for metrics in contract checker (#9551)
+
+## v1.2.0/v0.95.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: Bump minimum go version to go 1.21 (#9507)
+- `service/telemetry`: Delete generated_config types, use go.opentelemetry.io/contrib/config types instead (#9546)
+- `configcompression`: Remove deprecated `configcompression` types, constants and methods. (#9388)
+- `component`: Remove `host.ReportFatalError` (#6344)
+- `configgrpc`: Remove deprecated `configgrpc.ServerConfig.ToListener` (#9481)
+- `confmap`: Remove deprecated `confmap.WithErrorUnused` (#9484)
+
+### 🚩 Deprecations 🚩
+
+- `confignet`: Deprecate `confignet.NetAddr` and `confignet.TCPAddr` in favor of `confignet.AddrConfig` and `confignet.TCPAddrConfig`. (#9509)
+- `config/configgrpc`: Deprecate `configgrpc.ClientConfig.SanitizedEndpoint`, `configgrpc.ServerConfig.ToListener` and `configgrpc.ServerConfig.ToListenerContext` (#9481, #9482)
+- `scraperhelper`: Deprecate ScraperControllerSettings, use ControllerConfig instead (#6767)
+
+## v1.1.0/v0.94.0
+
+### 🛑 Breaking changes 🛑
+
+- `confignet`: Remove deprecated `DialContext` and `ListenContext` functions (#9363)
+- `confmap/converter/expandconverter`: Add `confmap.ConverterSettings` argument to experimental `expandconverter.New` function. (#5615, #9162)
+  - The `confmap.ConverterSettings` struct currently has no fields. It will be used to pass a logger.
+  
+- `component`: Remove deprecated funcs and types (#9283)
+- `otlpexporter`: Config struct is moving from embedding the deprecated GRPCClientSettings struct to using ClientConfig instead. (#6767)
+- `otlphttpexporter`: otlphttpexporter.Config embeds the struct confighttp.ClientConfig instead of confighttp.HTTPClientSettings (#6767)
+- `otlpreceiver`: HTTPConfig struct is moving from embedding the deprecated ServerSettings struct to using HTTPServerConfig instead. (#6767)
+- `component`: Validate component.Type at creation and unmarshaling time. (#9208)
+  - A component.Type must start with an ASCII alphabetic character and can only contain ASCII alphanumeric characters and '_'.
+  
+
+### 🚩 Deprecations 🚩
+
+- `configcompressions`: Deprecate `IsCompressed`.  Use `CompressionType.IsCompressed instead` instead. (#9435)
+- `configcompression`: Deprecate `CompressionType`, use `Type` instead. (#9416)
+- `confighttp`: Deprecate CORSSettings, use CORSConfig instead (#6767)
+- `configgrpc`: Deprecate `ToListener` function in favor of `ToListenerContext` (#9389)
+- `configgrpc`: Deprecate GRPCServerSettings, use ServerConfig instead (#6767)
+- `confighttp`: Deprecate HTTPClientSettings, use ClientConfig instead (#6767)
+- `confighttp`: Deprecate HTTPServerSettings, use ServerConfig instead (#6767)
+- `confmap/provider`: Deprecate <provider>.New in favor of <provider>.NewWithSettings for all core providers (#5615, #9162)
+  - NewWithSettings now takes an empty confmap.ProviderSettings struct. This will be used to pass a logger in the future.
+  
+
+### 💡 Enhancements 💡
+
+- `exporter/exporterhelper`: Add API for enabling queue in the new exporter helpers. (#7874)
+  The following experimental API is introduced in exporter package:
+    - `exporterhelper.WithRequestQueue`: a new exporter helper option for using a queue.
+    - `exporterqueue.Queue`: an interface for queue implementations.
+    - `exporterqueue.Factory`: a queue factory interface, implementations of this interface are intended to be used with WithRequestQueue option.
+    - `exporterqueue.Settings`: queue factory settings.
+    - `exporterqueue.Config`: common configuration for queue implementations.
+    - `exporterqueue.NewDefaultConfig`: a function for creating a default queue configuration.
+    - `exporterqueue.NewMemoryQueueFactory`: a new factory for creating a memory queue.
+    - `exporterqueue.NewPersistentQueueFactory: a factory for creating a persistent queue.
+  
+- `featuregate`: Add the `featuregate.ErrAlreadyRegistered` error, which is returned by `featuregate.Registry`'s `Register` when adding a feature gate that is already registered. (#8622)
+  Use `errors.Is` to check for this error.
+  
+
+## v0.93.0
+
+### 🛑 Breaking changes 🛑
+
+- `bug_fix`: Implement `encoding.BinaryMarshaler` interface to prevent `configopaque` -> `[]byte` -> `string` conversions from leaking the value (#9279)
+- `configopaque`: configopaque.String implements `fmt.Stringer` and `fmt.GoStringer`, outputting [REDACTED] when formatted with the %s, %q or %#v verbs` (#9213)
+  This may break applications that rely on the previous behavior of opaque strings with `fmt.Sprintf` to e.g. build URLs or headers.
+  Explicitly cast the opaque string to a string before using it in `fmt.Sprintf` to restore the previous behavior.
+  
+- `all`: Remove obsolete "// +build" directives (#9304)
+- `connectortest`: Remove deprecated connectortest router helpers. (#9278)
+
+### 🚩 Deprecations 🚩
+
+- `obsreporttest`: deprecate test funcs/structs (#8492)
+  The following methods/structs have been moved from obsreporttest to componenttest:
+  - obsreporttest.TestTelemetry -> componenttest.TestTelemetry
+  - obsreporttest.SetupTelemetry -> componenttest.SetupTelemetry
+  - obsreporttest.CheckScraperMetrics -> TestTelemetry.CheckScraperMetrics
+  - obserporttest.TestTelemetry.TelemetrySettings -> componenttest.TestTelemetry.TelemetrySettings()
+  
+- `confignet`: Deprecates `DialContext` and `ListenContext` functions. Use `Dial` and `Listen` instead. (#9258)
+  Unlike the previous `Dial` and `Listen` functions, the new `Dial` and `Listen` functions take a `context.Context` like `DialContext` and `ListenContext`.
+
+## v1.0.1/v0.92.0
+
+### 🛑 Breaking changes 🛑
+
+- `otlpexporter`: Change Config members names to use Config suffix. (#9091)
+- `component`: Remove deprecated unused TelemetrySettingsBase (#9145)
+
+### 🚩 Deprecations 🚩
+
+- `confignet`: Deprecates the `Dial` and `Listen` functions in favor of `DialContext` and `ListenContext`. (#9163)
+- `component`: Deprecate unnecessary type StatusFunc (#9146)
+
 ## v0.91.0
 
 ## v1.0.0/v0.90.0

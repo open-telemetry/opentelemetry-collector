@@ -4,6 +4,7 @@
 package testutil // import "go.opentelemetry.io/collector/internal/testutil"
 
 import (
+	"fmt"
 	"net"
 	"os/exec"
 	"runtime"
@@ -31,15 +32,44 @@ func GetAvailableLocalAddress(t testing.TB) string {
 	// which do not show up under the "netstat -ano" but can only be found by
 	// "netsh interface ipv4 show excludedportrange protocol=tcp".  We'll use []exclusions to hold those ranges and
 	// retry if the port returned by GetAvailableLocalAddress falls in one of those them.
+	network := "tcp4"
 	var exclusions []portpair
 	portFound := false
 	if runtime.GOOS == "windows" {
-		exclusions = getExclusionsList(t)
+		exclusions = getExclusionsList(network, t)
 	}
 
 	var endpoint string
 	for !portFound {
-		endpoint = findAvailableAddress(t)
+		endpoint = findAvailableAddress(network, t)
+		_, port, err := net.SplitHostPort(endpoint)
+		require.NoError(t, err)
+		portFound = true
+		if runtime.GOOS == "windows" {
+			for _, pair := range exclusions {
+				if port >= pair.first && port <= pair.last {
+					portFound = false
+					break
+				}
+			}
+		}
+	}
+
+	return endpoint
+}
+
+// GetAvailableLocalIPv6Address is IPv6 version of GetAvailableLocalAddress.
+func GetAvailableLocalIPv6Address(t testing.TB) string {
+	network := "tcp6"
+	var exclusions []portpair
+	portFound := false
+	if runtime.GOOS == "windows" {
+		exclusions = getExclusionsList(network, t)
+	}
+
+	var endpoint string
+	for !portFound {
+		endpoint = findAvailableAddress(network, t)
 		_, port, err := net.SplitHostPort(endpoint)
 		require.NoError(t, err)
 		portFound = true
@@ -72,8 +102,17 @@ func GetAvailableLocalAddressPrometheus(t testing.TB) *config.Prometheus {
 	}
 }
 
-func findAvailableAddress(t testing.TB) string {
-	ln, err := net.Listen("tcp", "localhost:0")
+func findAvailableAddress(network string, t testing.TB) string {
+	var host string
+	switch network {
+	case "tcp", "tcp4":
+		host = "localhost"
+	case "tcp6":
+		host = "[::1]"
+	}
+	require.NotZero(t, host, "network must be either of tcp, tcp4 or tcp6")
+
+	ln, err := net.Listen("tcp", fmt.Sprintf("%s:0", host))
 	require.NoError(t, err, "Failed to get a free local port")
 	// There is a possible race if something else takes this same port before
 	// the test uses it, however, that is unlikely in practice.
@@ -84,8 +123,16 @@ func findAvailableAddress(t testing.TB) string {
 }
 
 // Get excluded ports on Windows from the command: netsh interface ipv4 show excludedportrange protocol=tcp
-func getExclusionsList(t testing.TB) []portpair {
-	cmdTCP := exec.Command("netsh", "interface", "ipv4", "show", "excludedportrange", "protocol=tcp")
+func getExclusionsList(network string, t testing.TB) []portpair {
+	var cmdTCP *exec.Cmd
+	switch network {
+	case "tcp", "tcp4":
+		cmdTCP = exec.Command("netsh", "interface", "ipv4", "show", "excludedportrange", "protocol=tcp")
+	case "tcp6":
+		cmdTCP = exec.Command("netsh", "interface", "ipv6", "show", "excludedportrange", "protocol=tcp")
+	}
+	require.NotZero(t, cmdTCP, "network must be either of tcp, tcp4 or tcp6")
+
 	outputTCP, errTCP := cmdTCP.CombinedOutput()
 	require.NoError(t, errTCP)
 	exclusions := createExclusionsList(string(outputTCP), t)
@@ -102,14 +149,14 @@ func createExclusionsList(exclusionsText string, t testing.TB) []portpair {
 	var exclusions []portpair
 
 	parts := strings.Split(exclusionsText, "--------")
-	require.Equal(t, len(parts), 3)
+	require.Len(t, parts, 3)
 	portsText := strings.Split(parts[2], "*")
 	require.Greater(t, len(portsText), 1) // original text may have a suffix like " - Administered port exclusions."
 	lines := strings.Split(portsText[0], "\n")
 	for _, line := range lines {
 		if strings.TrimSpace(line) != "" {
 			entries := strings.Fields(strings.TrimSpace(line))
-			require.Equal(t, len(entries), 2)
+			require.Len(t, entries, 2)
 			pair := portpair{entries[0], entries[1]}
 			exclusions = append(exclusions, pair)
 		}

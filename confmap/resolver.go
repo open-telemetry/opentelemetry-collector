@@ -11,25 +11,19 @@ import (
 	"strings"
 
 	"go.uber.org/multierr"
-
-	"go.opentelemetry.io/collector/featuregate"
+	"go.uber.org/zap"
 )
 
 // follows drive-letter specification:
 // https://datatracker.ietf.org/doc/html/draft-kerwin-file-scheme-07.html#section-2.2
 var driverLetterRegexp = regexp.MustCompile("^[A-z]:")
 
-var _ = featuregate.GlobalRegistry().MustRegister(
-	"confmap.expandEnabled",
-	featuregate.StageStable,
-	featuregate.WithRegisterToVersion("v0.75.0"),
-	featuregate.WithRegisterDescription("controls whether expanding embedded external config providers URIs"))
-
 // Resolver resolves a configuration as a Conf.
 type Resolver struct {
-	uris       []location
-	providers  map[string]Provider
-	converters []Converter
+	uris          []location
+	providers     map[string]Provider
+	defaultScheme string
+	converters    []Converter
 
 	closers []CloseFunc
 	watcher chan error
@@ -41,12 +35,26 @@ type ResolverSettings struct {
 	// It is required to have at least one location.
 	URIs []string
 
-	// Providers is a map of pairs <scheme, Provider>.
-	// It is required to have at least one Provider.
-	Providers map[string]Provider
+	// ProviderFactories is a slice of Provider factories.
+	// It is required to have at least one factory.
+	ProviderFactories []ProviderFactory
 
-	// MapConverters is a slice of Converter.
-	Converters []Converter
+	// DefaultScheme is the scheme that is used if ${} syntax is used but no schema is provided.
+	// If no DefaultScheme is set, ${} with no schema will not be expanded.
+	// It is strongly recommended to set "env" as the default scheme to align with the
+	// OpenTelemetry Configuration Specification
+	DefaultScheme string
+
+	// ProviderSettings contains settings that will be passed to Provider
+	// factories when instantiating Providers.
+	ProviderSettings ProviderSettings
+
+	// ConverterFactories is a slice of Converter creation functions.
+	ConverterFactories []ConverterFactory
+
+	// ConverterSettings contains settings that will be passed to Converter
+	// factories when instantiating Converters.
+	ConverterSettings ConverterSettings
 }
 
 // NewResolver returns a new Resolver that resolves configuration from multiple URIs.
@@ -70,11 +78,47 @@ type ResolverSettings struct {
 // (see https://datatracker.ietf.org/doc/html/rfc3986). An empty "<scheme>" defaults to "file" schema.
 func NewResolver(set ResolverSettings) (*Resolver, error) {
 	if len(set.URIs) == 0 {
-		return nil, errors.New("invalid map resolver config: no URIs")
+		return nil, errors.New("invalid 'confmap.ResolverSettings' configuration: no URIs")
 	}
 
-	if len(set.Providers) == 0 {
-		return nil, errors.New("invalid map resolver config: no Providers")
+	if len(set.ProviderFactories) == 0 {
+		return nil, errors.New("invalid 'confmap.ResolverSettings' configuration: no Providers")
+	}
+
+	if set.ProviderSettings.Logger == nil {
+		set.ProviderSettings.Logger = zap.NewNop()
+	}
+
+	if set.ConverterSettings.Logger == nil {
+		set.ConverterSettings.Logger = zap.NewNop()
+	}
+
+	providers := make(map[string]Provider, len(set.ProviderFactories))
+	for _, factory := range set.ProviderFactories {
+		provider := factory.Create(set.ProviderSettings)
+		scheme := provider.Scheme()
+		// Check that the scheme follows the pattern.
+		if !regexp.MustCompile(schemePattern).MatchString(scheme) {
+			return nil, fmt.Errorf("invalid 'confmap.Provider' scheme %q", scheme)
+		}
+		// Check that the scheme is unique.
+		if _, ok := providers[scheme]; ok {
+			return nil, fmt.Errorf("duplicate 'confmap.Provider' scheme %q", scheme)
+		}
+
+		providers[scheme] = provider
+	}
+
+	if set.DefaultScheme != "" {
+		_, ok := providers[set.DefaultScheme]
+		if !ok {
+			return nil, errors.New("invalid 'confmap.ResolverSettings' configuration: DefaultScheme not found in providers list")
+		}
+	}
+
+	converters := make([]Converter, len(set.ConverterFactories))
+	for i, factory := range set.ConverterFactories {
+		converters[i] = factory.Create(set.ConverterSettings)
 	}
 
 	// Safe copy, ensures the slices and maps cannot be changed from the caller.
@@ -91,28 +135,22 @@ func NewResolver(set ResolverSettings) (*Resolver, error) {
 		if err != nil {
 			return nil, err
 		}
-		if _, ok := set.Providers[lURI.scheme]; !ok {
+		if _, ok := providers[lURI.scheme]; !ok {
 			return nil, fmt.Errorf("unsupported scheme on URI %q", uri)
 		}
 		uris[i] = lURI
 	}
-	providersCopy := make(map[string]Provider, len(set.Providers))
-	for k, v := range set.Providers {
-		providersCopy[k] = v
-	}
-	convertersCopy := make([]Converter, len(set.Converters))
-	copy(convertersCopy, set.Converters)
 
 	return &Resolver{
-		uris:       uris,
-		providers:  providersCopy,
-		converters: convertersCopy,
-		watcher:    make(chan error, 1),
+		uris:          uris,
+		providers:     providers,
+		defaultScheme: set.DefaultScheme,
+		converters:    converters,
+		watcher:       make(chan error, 1),
 	}, nil
 }
 
 // Resolve returns the configuration as a Conf, or error otherwise.
-//
 // Should never be called concurrently with itself, Watch or Shutdown.
 func (mr *Resolver) Resolve(ctx context.Context) (*Conf, error) {
 	// First check if already an active watching, close that if any.
@@ -139,11 +177,11 @@ func (mr *Resolver) Resolve(ctx context.Context) (*Conf, error) {
 
 	cfgMap := make(map[string]any)
 	for _, k := range retMap.AllKeys() {
-		val, err := mr.expandValueRecursively(ctx, retMap.Get(k))
+		val, err := mr.expandValueRecursively(ctx, retMap.unsanitizedGet(k))
 		if err != nil {
 			return nil, err
 		}
-		cfgMap[k] = val
+		cfgMap[k] = escapeDollarSigns(val)
 	}
 	retMap = NewFromStringMap(cfgMap)
 
@@ -155,6 +193,31 @@ func (mr *Resolver) Resolve(ctx context.Context) (*Conf, error) {
 	}
 
 	return retMap, nil
+}
+
+func escapeDollarSigns(val any) any {
+	switch v := val.(type) {
+	case string:
+		return strings.ReplaceAll(v, "$$", "$")
+	case expandedValue:
+		v.Original = strings.ReplaceAll(v.Original, "$$", "$")
+		v.Value = escapeDollarSigns(v.Value)
+		return v
+	case []any:
+		nslice := make([]any, len(v))
+		for i, x := range v {
+			nslice[i] = escapeDollarSigns(x)
+		}
+		return nslice
+	case map[string]any:
+		nmap := make(map[string]any, len(v))
+		for k, x := range v {
+			nmap[k] = escapeDollarSigns(x)
+		}
+		return nmap
+	default:
+		return val
+	}
 }
 
 // Watch blocks until any configuration change was detected or an unrecoverable error

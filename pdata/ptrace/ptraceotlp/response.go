@@ -74,7 +74,7 @@ func (ms ExportResponse) PartialSuccess() ExportPartialSuccess {
 }
 
 func (ms ExportPartialSuccess) unmarshalJsoniter(iter *jsoniter.Iterator) {
-	iter.ReadObjectCB(func(iterator *jsoniter.Iterator, f string) bool {
+	iter.ReadObjectCB(func(_ *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "rejected_spans", "rejectedSpans":
 			ms.orig.RejectedSpans = json.ReadInt64(iter)

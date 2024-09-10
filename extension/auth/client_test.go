@@ -45,7 +45,7 @@ func TestClientDefaultValues(t *testing.T) {
 
 func TestWithClientStart(t *testing.T) {
 	called := false
-	e := NewClient(WithClientStart(func(c context.Context, h component.Host) error {
+	e := NewClient(WithClientStart(func(context.Context, component.Host) error {
 		called = true
 		return nil
 	}))
@@ -60,7 +60,7 @@ func TestWithClientStart(t *testing.T) {
 
 func TestWithClientShutdown(t *testing.T) {
 	called := false
-	e := NewClient(WithClientShutdown(func(c context.Context) error {
+	e := NewClient(WithClientShutdown(func(context.Context) error {
 		called = true
 		return nil
 	}))

@@ -11,8 +11,6 @@ import (
 	"go.opentelemetry.io/collector/client"
 )
 
-var _ http.Handler = (*clientInfoHandler)(nil)
-
 // clientInfoHandler is an http.Handler that enhances the incoming request context with client.Info.
 type clientInfoHandler struct {
 	next http.Handler

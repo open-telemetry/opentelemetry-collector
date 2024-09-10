@@ -25,7 +25,7 @@ func ReceiverLogger(logger *zap.Logger, id component.ID, dt component.DataType) 
 	return logger.With(
 		zap.String(zapKindKey, strings.ToLower(component.KindReceiver.String())),
 		zap.String(zapNameKey, id.String()),
-		zap.String(zapDataTypeKey, string(dt)))
+		zap.String(zapDataTypeKey, dt.String()))
 }
 
 func ProcessorLogger(logger *zap.Logger, id component.ID, pipelineID component.ID) *zap.Logger {
@@ -38,7 +38,7 @@ func ProcessorLogger(logger *zap.Logger, id component.ID, pipelineID component.I
 func ExporterLogger(logger *zap.Logger, id component.ID, dt component.DataType) *zap.Logger {
 	return logger.With(
 		zap.String(zapKindKey, strings.ToLower(component.KindExporter.String())),
-		zap.String(zapDataTypeKey, string(dt)),
+		zap.String(zapDataTypeKey, dt.String()),
 		zap.String(zapNameKey, id.String()))
 }
 
@@ -52,6 +52,6 @@ func ConnectorLogger(logger *zap.Logger, id component.ID, expDT, rcvDT component
 	return logger.With(
 		zap.String(zapKindKey, strings.ToLower(component.KindConnector.String())),
 		zap.String(zapNameKey, id.String()),
-		zap.String(zapExporterInPipeline, string(expDT)),
-		zap.String(zapReceiverInPipeline, string(rcvDT)))
+		zap.String(zapExporterInPipeline, expDT.String()),
+		zap.String(zapReceiverInPipeline, rcvDT.String()))
 }

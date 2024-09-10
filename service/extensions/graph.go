@@ -13,7 +13,7 @@ import (
 	"gonum.org/v1/gonum/graph/topo"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 )
 
 type node struct {
@@ -38,7 +38,7 @@ func computeOrder(exts *Extensions) ([]component.ID, error) {
 	}
 	for extID, ext := range exts.extMap {
 		n := nodes[extID]
-		if dep, ok := ext.(extension.Dependent); ok {
+		if dep, ok := ext.(extensioncapabilities.Dependent); ok {
 			for _, depID := range dep.Dependencies() {
 				if d, ok := nodes[depID]; ok {
 					graph.SetEdge(graph.NewEdge(d, n))

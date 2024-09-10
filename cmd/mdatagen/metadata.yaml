@@ -1,0 +1,9 @@
+type: mdatagen
+github_project: open-telemetry/opentelemetry-collector
+
+status:
+  class: cmd
+  stability:
+    alpha: [metrics]
+  codeowners:
+    active: [dmitryax]

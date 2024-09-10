@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -16,8 +17,8 @@ import (
 )
 
 // retryConfig is a configuration to quickly retry failed exports.
-var retryConfig = func() exporterhelper.RetrySettings {
-	c := exporterhelper.NewDefaultRetrySettings()
+var retryConfig = func() configretry.BackOffConfig {
+	c := configretry.NewDefaultBackOffConfig()
 	c.InitialInterval = time.Millisecond
 	return c
 }()
@@ -40,7 +41,7 @@ type mockExporterFactory struct {
 
 func (mef *mockExporterFactory) createMockTracesExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
 	return exporterhelper.NewTracesExporter(ctx, set, cfg,
@@ -52,7 +53,7 @@ func (mef *mockExporterFactory) createMockTracesExporter(
 
 func (mef *mockExporterFactory) createMockMetricsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
 	return exporterhelper.NewMetricsExporter(ctx, set, cfg,
@@ -64,7 +65,7 @@ func (mef *mockExporterFactory) createMockMetricsExporter(
 
 func (mef *mockExporterFactory) createMockLogsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
 	return exporterhelper.NewLogsExporter(ctx, set, cfg,
@@ -77,7 +78,7 @@ func (mef *mockExporterFactory) createMockLogsExporter(
 func newMockExporterFactory(mr *mockReceiver) exporter.Factory {
 	mef := &mockExporterFactory{mr: mr}
 	return exporter.NewFactory(
-		"pass_through_exporter",
+		component.MustNewType("pass_through_exporter"),
 		func() component.Config { return &nopConfig{} },
 		exporter.WithTraces(mef.createMockTracesExporter, component.StabilityLevelBeta),
 		exporter.WithMetrics(mef.createMockMetricsExporter, component.StabilityLevelBeta),
@@ -86,17 +87,17 @@ func newMockExporterFactory(mr *mockReceiver) exporter.Factory {
 }
 
 func newMockReceiverFactory(mr *mockReceiver) receiver.Factory {
-	return receiver.NewFactory("pass_through_receiver",
+	return receiver.NewFactory(component.MustNewType("pass_through_receiver"),
 		func() component.Config { return &nopConfig{} },
-		receiver.WithTraces(func(_ context.Context, _ receiver.CreateSettings, _ component.Config, c consumer.Traces) (receiver.Traces, error) {
+		receiver.WithTraces(func(_ context.Context, _ receiver.Settings, _ component.Config, c consumer.Traces) (receiver.Traces, error) {
 			mr.Traces = c
 			return mr, nil
 		}, component.StabilityLevelStable),
-		receiver.WithMetrics(func(_ context.Context, _ receiver.CreateSettings, _ component.Config, c consumer.Metrics) (receiver.Metrics, error) {
+		receiver.WithMetrics(func(_ context.Context, _ receiver.Settings, _ component.Config, c consumer.Metrics) (receiver.Metrics, error) {
 			mr.Metrics = c
 			return mr, nil
 		}, component.StabilityLevelStable),
-		receiver.WithLogs(func(_ context.Context, _ receiver.CreateSettings, _ component.Config, c consumer.Logs) (receiver.Logs, error) {
+		receiver.WithLogs(func(_ context.Context, _ receiver.Settings, _ component.Config, c consumer.Logs) (receiver.Logs, error) {
 			mr.Logs = c
 			return mr, nil
 		}, component.StabilityLevelStable),

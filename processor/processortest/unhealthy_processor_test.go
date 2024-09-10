@@ -22,7 +22,7 @@ import (
 func TestNewUnhealthyProcessorFactory(t *testing.T) {
 	factory := NewUnhealthyProcessorFactory()
 	require.NotNil(t, factory)
-	assert.Equal(t, component.Type("unhealthy"), factory.Type())
+	assert.Equal(t, component.MustNewType("unhealthy"), factory.Type())
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, &struct{}{}, cfg)
 

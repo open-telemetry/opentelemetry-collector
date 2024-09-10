@@ -1,0 +1,16 @@
+type: memory_limiter
+github_project: open-telemetry/opentelemetry-collector
+
+status:
+  class: processor
+  stability:
+    beta: [traces, metrics, logs]
+  distributions: [core, contrib, k8s]
+
+tests:
+  config:
+    check_interval: 5s
+    limit_mib: 400
+    spike_limit_mib: 50
+  # TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/9687
+  skip_shutdown: true

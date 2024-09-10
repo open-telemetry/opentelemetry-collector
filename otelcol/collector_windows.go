@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package otelcol // import "go.opentelemetry.io/collector/otelcol"
 
@@ -19,6 +18,7 @@ import (
 	"golang.org/x/sys/windows/svc/eventlog"
 
 	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/service"
 )
 
 type windowsService struct {
@@ -77,21 +77,32 @@ func (s *windowsService) Execute(args []string, requests <-chan svc.ChangeReques
 }
 
 func (s *windowsService) start(elog *eventlog.Log, colErrorChannel chan error) error {
-	// Append to new slice instead of the already existing s.settings.LoggingOptions slice to not change that.
-	s.settings.LoggingOptions = append(
-		[]zap.Option{zap.WrapCore(withWindowsCore(elog))},
-		s.settings.LoggingOptions...,
-	)
 	// Parse all the flags manually.
 	if err := s.flags.Parse(os.Args[1:]); err != nil {
 		return err
 	}
 
 	var err error
-	s.col, err = newCollectorWithFlags(s.settings, s.flags)
+	err = updateSettingsUsingFlags(&s.settings, s.flags)
 	if err != nil {
 		return err
 	}
+	s.col, err = NewCollector(s.settings)
+	if err != nil {
+		return err
+	}
+
+	// The logging options need to be in place before the collector Run method is called
+	// since the telemetry creates the logger at the time of the Run method call.
+	// However, the zap.WrapCore function needs to read the serviceConfig to determine
+	// if the Windows Event Log should be used, however, the serviceConfig is also
+	// only read at the time of the Run method call. To work around this, we pass the
+	// serviceConfig as a pointer to the logging options, and then read its value
+	// when the zap.Logger is created by the telemetry.
+	s.col.set.LoggingOptions = append(
+		s.col.set.LoggingOptions,
+		zap.WrapCore(withWindowsCore(elog, &s.col.serviceConfig)),
+	)
 
 	// col.Run blocks until receiving a SIGTERM signal, so needs to be started
 	// asynchronously, but it will exit early if an error occurs on startup
@@ -189,8 +200,18 @@ func (w windowsEventLogCore) Sync() error {
 	return w.core.Sync()
 }
 
-func withWindowsCore(elog *eventlog.Log) func(zapcore.Core) zapcore.Core {
+func withWindowsCore(elog *eventlog.Log, serviceConfig **service.Config) func(zapcore.Core) zapcore.Core {
 	return func(core zapcore.Core) zapcore.Core {
+		if serviceConfig != nil && *serviceConfig != nil {
+			for _, output := range (*serviceConfig).Telemetry.Logs.OutputPaths {
+				if output != "stdout" && output != "stderr" {
+					// A log file was specified in the configuration, so we should not use the Windows Event Log
+					return core
+				}
+			}
+		}
+
+		// Use the Windows Event Log
 		encoderConfig := zap.NewProductionEncoderConfig()
 		encoderConfig.LineEnding = "\r\n"
 		return windowsEventLogCore{core, elog, zapcore.NewConsoleEncoder(encoderConfig)}

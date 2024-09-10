@@ -8,28 +8,26 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/contrib/config"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/bridge/opencensus"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	otelprom "go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
-	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/resource"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
@@ -44,8 +42,9 @@ const (
 	HTTPInstrumentation = "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
 	// supported protocols
-	protocolProtobufHTTP = "http/protobuf"
-	protocolProtobufGRPC = "grpc/protobuf"
+	protocolProtobufHTTP     = "http/protobuf"
+	protocolProtobufGRPC     = "grpc/protobuf"
+	defaultReadHeaderTimeout = 10 * time.Second
 )
 
 var (
@@ -63,15 +62,14 @@ var (
 	}
 
 	errNoValidMetricExporter = errors.New("no valid metric exporter")
-	errNoValidSpanExporter   = errors.New("no valid span exporter")
 )
 
-func InitMetricReader(ctx context.Context, reader config.MetricReader, asyncErrorChannel chan error) (sdkmetric.Reader, *http.Server, error) {
+func InitMetricReader(ctx context.Context, reader config.MetricReader, asyncErrorChannel chan error, serverWG *sync.WaitGroup) (sdkmetric.Reader, *http.Server, error) {
 	if reader.Pull != nil {
-		return initPullExporter(reader.Pull.Exporter, asyncErrorChannel)
+		return initPullExporter(reader.Pull.Exporter, asyncErrorChannel, serverWG)
 	}
 	if reader.Periodic != nil {
-		opts := []sdkmetric.PeriodicReaderOption{}
+		var opts []sdkmetric.PeriodicReaderOption
 		if reader.Periodic.Interval != nil {
 			opts = append(opts, sdkmetric.WithInterval(time.Duration(*reader.Periodic.Interval)*time.Millisecond))
 		}
@@ -82,47 +80,6 @@ func InitMetricReader(ctx context.Context, reader config.MetricReader, asyncErro
 		return initPeriodicExporter(ctx, reader.Periodic.Exporter, opts...)
 	}
 	return nil, nil, fmt.Errorf("unsupported metric reader type %v", reader)
-}
-
-func InitSpanProcessor(ctx context.Context, processor config.SpanProcessor) (sdktrace.SpanProcessor, error) {
-	if processor.Batch != nil {
-		if processor.Batch.Exporter.Console != nil {
-			exp, err := stdouttrace.New(
-				stdouttrace.WithPrettyPrint(),
-			)
-			if err != nil {
-				return nil, err
-			}
-			return initBatchSpanProcessor(processor.Batch, exp)
-		}
-		if processor.Batch.Exporter.OTLP != nil {
-			var err error
-			var exp sdktrace.SpanExporter
-			switch processor.Batch.Exporter.OTLP.Protocol {
-			case protocolProtobufHTTP:
-				exp, err = initOTLPHTTPSpanExporter(ctx, processor.Batch.Exporter.OTLP)
-			case protocolProtobufGRPC:
-				exp, err = initOTLPgRPCSpanExporter(ctx, processor.Batch.Exporter.OTLP)
-			default:
-				return nil, fmt.Errorf("unsupported protocol %q", processor.Batch.Exporter.OTLP.Protocol)
-			}
-			if err != nil {
-				return nil, err
-			}
-			return initBatchSpanProcessor(processor.Batch, exp)
-		}
-		return nil, errNoValidSpanExporter
-	}
-	return nil, fmt.Errorf("unsupported span processor type %v", processor)
-}
-
-func InitTracerProvider(res *resource.Resource, options []sdktrace.TracerProviderOption) (*sdktrace.TracerProvider, error) {
-	opts := []sdktrace.TracerProviderOption{
-		sdktrace.WithResource(res),
-	}
-
-	opts = append(opts, options...)
-	return sdktrace.NewTracerProvider(opts...), nil
 }
 
 func InitOpenTelemetry(res *resource.Resource, options []sdkmetric.Option, disableHighCardinality bool) (*sdkmetric.MeterProvider, error) {
@@ -137,16 +94,23 @@ func InitOpenTelemetry(res *resource.Resource, options []sdkmetric.Option, disab
 	), nil
 }
 
-func InitPrometheusServer(registry *prometheus.Registry, address string, asyncErrorChannel chan error) *http.Server {
+func InitPrometheusServer(registry *prometheus.Registry, address string, asyncErrorChannel chan error, serverWG *sync.WaitGroup) *http.Server {
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
 	server := &http.Server{
-		Addr:    address,
-		Handler: mux,
+		Addr:              address,
+		Handler:           mux,
+		ReadHeaderTimeout: defaultReadHeaderTimeout,
 	}
+
+	serverWG.Add(1)
 	go func() {
+		defer serverWG.Done()
 		if serveErr := server.ListenAndServe(); serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) {
-			asyncErrorChannel <- serveErr
+			select {
+			case asyncErrorChannel <- serveErr:
+			case <-time.After(1 * time.Second):
+			}
 		}
 	}()
 	return server
@@ -195,7 +159,7 @@ func cardinalityFilter(kvs ...attribute.KeyValue) attribute.Filter {
 	}
 }
 
-func initPrometheusExporter(prometheusConfig *config.Prometheus, asyncErrorChannel chan error) (sdkmetric.Reader, *http.Server, error) {
+func initPrometheusExporter(prometheusConfig *config.Prometheus, asyncErrorChannel chan error, serverWG *sync.WaitGroup) (sdkmetric.Reader, *http.Server, error) {
 	promRegistry := prometheus.NewRegistry()
 	if prometheusConfig.Host == nil {
 		return nil, nil, fmt.Errorf("host must be specified")
@@ -203,28 +167,28 @@ func initPrometheusExporter(prometheusConfig *config.Prometheus, asyncErrorChann
 	if prometheusConfig.Port == nil {
 		return nil, nil, fmt.Errorf("port must be specified")
 	}
-	exporter, err := otelprom.New(
+
+	opts := []otelprom.Option{
 		otelprom.WithRegisterer(promRegistry),
 		// https://github.com/open-telemetry/opentelemetry-collector/issues/8043
 		otelprom.WithoutUnits(),
 		// Disabled for the moment until this becomes stable, and we are ready to break backwards compatibility.
 		otelprom.WithoutScopeInfo(),
-		otelprom.WithProducer(opencensus.NewMetricProducer()),
 		// This allows us to produce metrics that are backwards compatible w/ opencensus
 		otelprom.WithoutCounterSuffixes(),
-		otelprom.WithNamespace("otelcol"),
 		otelprom.WithResourceAsConstantLabels(attribute.NewDenyKeysFilter()),
-	)
+	}
+	exporter, err := otelprom.New(opts...)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error creating otel prometheus exporter: %w", err)
 	}
 
-	return exporter, InitPrometheusServer(promRegistry, fmt.Sprintf("%s:%d", *prometheusConfig.Host, *prometheusConfig.Port), asyncErrorChannel), nil
+	return exporter, InitPrometheusServer(promRegistry, net.JoinHostPort(*prometheusConfig.Host, fmt.Sprintf("%d", *prometheusConfig.Port)), asyncErrorChannel, serverWG), nil
 }
 
-func initPullExporter(exporter config.MetricExporter, asyncErrorChannel chan error) (sdkmetric.Reader, *http.Server, error) {
+func initPullExporter(exporter config.MetricExporter, asyncErrorChannel chan error, serverWG *sync.WaitGroup) (sdkmetric.Reader, *http.Server, error) {
 	if exporter.Prometheus != nil {
-		return initPrometheusExporter(exporter.Prometheus, asyncErrorChannel)
+		return initPrometheusExporter(exporter.Prometheus, asyncErrorChannel, serverWG)
 	}
 	return nil, nil, errNoValidMetricExporter
 }
@@ -298,6 +262,18 @@ func initOTLPgRPCExporter(ctx context.Context, otlpConfig *config.OTLPMetric) (s
 	if len(otlpConfig.Headers) > 0 {
 		opts = append(opts, otlpmetricgrpc.WithHeaders(otlpConfig.Headers))
 	}
+	if otlpConfig.TemporalityPreference != nil {
+		switch *otlpConfig.TemporalityPreference {
+		case "delta":
+			opts = append(opts, otlpmetricgrpc.WithTemporalitySelector(temporalityPreferenceDelta))
+		case "cumulative":
+			opts = append(opts, otlpmetricgrpc.WithTemporalitySelector(temporalityPreferenceCumulative))
+		case "lowmemory":
+			opts = append(opts, otlpmetricgrpc.WithTemporalitySelector(temporalityPreferenceLowMemory))
+		default:
+			return nil, fmt.Errorf("unsupported temporality preference %q", *otlpConfig.TemporalityPreference)
+		}
+	}
 
 	return otlpmetricgrpc.New(ctx, opts...)
 }
@@ -335,107 +311,44 @@ func initOTLPHTTPExporter(ctx context.Context, otlpConfig *config.OTLPMetric) (s
 	if len(otlpConfig.Headers) > 0 {
 		opts = append(opts, otlpmetrichttp.WithHeaders(otlpConfig.Headers))
 	}
+	if otlpConfig.TemporalityPreference != nil {
+		switch *otlpConfig.TemporalityPreference {
+		case "delta":
+			opts = append(opts, otlpmetrichttp.WithTemporalitySelector(temporalityPreferenceDelta))
+		case "cumulative":
+			opts = append(opts, otlpmetrichttp.WithTemporalitySelector(temporalityPreferenceCumulative))
+		case "lowmemory":
+			opts = append(opts, otlpmetrichttp.WithTemporalitySelector(temporalityPreferenceLowMemory))
+		default:
+			return nil, fmt.Errorf("unsupported temporality preference %q", *otlpConfig.TemporalityPreference)
+		}
+	}
 
 	return otlpmetrichttp.New(ctx, opts...)
 }
 
-func initOTLPgRPCSpanExporter(ctx context.Context, otlpConfig *config.OTLP) (sdktrace.SpanExporter, error) {
-	opts := []otlptracegrpc.Option{}
-
-	if len(otlpConfig.Endpoint) > 0 {
-		u, err := url.ParseRequestURI(normalizeEndpoint(otlpConfig.Endpoint))
-		if err != nil {
-			return nil, err
-		}
-		opts = append(opts, otlptracegrpc.WithEndpoint(u.Host))
-		if u.Scheme == "http" {
-			opts = append(opts, otlptracegrpc.WithInsecure())
-		}
-	}
-
-	if otlpConfig.Compression != nil {
-		switch *otlpConfig.Compression {
-		case "gzip":
-			opts = append(opts, otlptracegrpc.WithCompressor(*otlpConfig.Compression))
-		case "none":
-			break
-		default:
-			return nil, fmt.Errorf("unsupported compression %q", *otlpConfig.Compression)
-		}
-	}
-	if otlpConfig.Timeout != nil && *otlpConfig.Timeout > 0 {
-		opts = append(opts, otlptracegrpc.WithTimeout(time.Millisecond*time.Duration(*otlpConfig.Timeout)))
-	}
-	if len(otlpConfig.Headers) > 0 {
-		opts = append(opts, otlptracegrpc.WithHeaders(otlpConfig.Headers))
-	}
-
-	return otlptracegrpc.New(ctx, opts...)
+func temporalityPreferenceCumulative(_ sdkmetric.InstrumentKind) metricdata.Temporality {
+	return metricdata.CumulativeTemporality
 }
 
-func initOTLPHTTPSpanExporter(ctx context.Context, otlpConfig *config.OTLP) (sdktrace.SpanExporter, error) {
-	opts := []otlptracehttp.Option{}
-
-	if len(otlpConfig.Endpoint) > 0 {
-		u, err := url.ParseRequestURI(normalizeEndpoint(otlpConfig.Endpoint))
-		if err != nil {
-			return nil, err
-		}
-		opts = append(opts, otlptracehttp.WithEndpoint(u.Host))
-
-		if u.Scheme == "http" {
-			opts = append(opts, otlptracehttp.WithInsecure())
-		}
-		if len(u.Path) > 0 {
-			opts = append(opts, otlptracehttp.WithURLPath(u.Path))
-		}
+func temporalityPreferenceDelta(ik sdkmetric.InstrumentKind) metricdata.Temporality {
+	switch ik {
+	case sdkmetric.InstrumentKindCounter, sdkmetric.InstrumentKindObservableCounter, sdkmetric.InstrumentKindHistogram:
+		return metricdata.DeltaTemporality
+	case sdkmetric.InstrumentKindObservableUpDownCounter, sdkmetric.InstrumentKindUpDownCounter:
+		return metricdata.CumulativeTemporality
+	default:
+		return metricdata.DeltaTemporality
 	}
-	if otlpConfig.Compression != nil {
-		switch *otlpConfig.Compression {
-		case "gzip":
-			opts = append(opts, otlptracehttp.WithCompression(otlptracehttp.GzipCompression))
-		case "none":
-			opts = append(opts, otlptracehttp.WithCompression(otlptracehttp.NoCompression))
-		default:
-			return nil, fmt.Errorf("unsupported compression %q", *otlpConfig.Compression)
-		}
-	}
-	if otlpConfig.Timeout != nil && *otlpConfig.Timeout > 0 {
-		opts = append(opts, otlptracehttp.WithTimeout(time.Millisecond*time.Duration(*otlpConfig.Timeout)))
-	}
-	if len(otlpConfig.Headers) > 0 {
-		opts = append(opts, otlptracehttp.WithHeaders(otlpConfig.Headers))
-	}
-
-	return otlptracehttp.New(ctx, opts...)
 }
 
-func initBatchSpanProcessor(bsp *config.BatchSpanProcessor, exp sdktrace.SpanExporter) (sdktrace.SpanProcessor, error) {
-	opts := []sdktrace.BatchSpanProcessorOption{}
-	if bsp.ExportTimeout != nil {
-		if *bsp.ExportTimeout < 0 {
-			return nil, fmt.Errorf("invalid export timeout %d", *bsp.ExportTimeout)
-		}
-		opts = append(opts, sdktrace.WithExportTimeout(time.Millisecond*time.Duration(*bsp.ExportTimeout)))
+func temporalityPreferenceLowMemory(ik sdkmetric.InstrumentKind) metricdata.Temporality {
+	switch ik {
+	case sdkmetric.InstrumentKindCounter, sdkmetric.InstrumentKindHistogram:
+		return metricdata.DeltaTemporality
+	case sdkmetric.InstrumentKindObservableCounter, sdkmetric.InstrumentKindObservableUpDownCounter, sdkmetric.InstrumentKindUpDownCounter:
+		return metricdata.CumulativeTemporality
+	default:
+		return metricdata.DeltaTemporality
 	}
-	if bsp.MaxExportBatchSize != nil {
-		if *bsp.MaxExportBatchSize < 0 {
-			return nil, fmt.Errorf("invalid batch size %d", *bsp.MaxExportBatchSize)
-		}
-		opts = append(opts, sdktrace.WithMaxExportBatchSize(*bsp.MaxExportBatchSize))
-	}
-	if bsp.MaxQueueSize != nil {
-		if *bsp.MaxQueueSize < 0 {
-			return nil, fmt.Errorf("invalid queue size %d", *bsp.MaxQueueSize)
-		}
-		opts = append(opts, sdktrace.WithMaxQueueSize(*bsp.MaxQueueSize))
-	}
-	if bsp.ScheduleDelay != nil {
-		if *bsp.ScheduleDelay < 0 {
-			return nil, fmt.Errorf("invalid schedule delay %d", *bsp.ScheduleDelay)
-		}
-		opts = append(opts, sdktrace.WithBatchTimeout(time.Millisecond*time.Duration(*bsp.ScheduleDelay)))
-	}
-	return sdktrace.NewBatchSpanProcessor(exp, opts...), nil
-
 }

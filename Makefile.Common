@@ -4,14 +4,18 @@ ALL_PKGS := $(sort $(shell go list ./...))
 # COVER_PKGS is the list of packages to include in the coverage
 COVER_PKGS := $(shell go list ./... | tr "\n" ",")
 
-GOTEST_OPT?= -race -timeout 120s
+GOTEST_TIMEOUT?=240s
+GOTEST_OPT?= -race -timeout $(GOTEST_TIMEOUT)
 GOCMD?= go
 GOTEST=$(GOCMD) test
 GOOS := $(shell $(GOCMD) env GOOS)
 GOARCH := $(shell $(GOCMD) env GOARCH)
 
-TOOLS_MOD_DIR   := $(PWD)/internal/tools
-TOOLS_BIN_DIR   := $(PWD)/.tools
+# SRC_ROOT is the top of the source tree.
+SRC_ROOT := $(shell git rev-parse --show-toplevel)
+
+TOOLS_MOD_DIR   := $(SRC_ROOT)/internal/tools
+TOOLS_BIN_DIR   := $(SRC_ROOT)/.tools
 TOOLS_MOD_REGEX := "\s+_\s+\".*\""
 TOOLS_PKG_NAMES := $(shell grep -E $(TOOLS_MOD_REGEX) < $(TOOLS_MOD_DIR)/tools.go | tr -d " _\"" | grep -vE '/v[0-9]+$$')
 TOOLS_BIN_NAMES := $(addprefix $(TOOLS_BIN_DIR)/, $(notdir $(shell echo $(TOOLS_PKG_NAMES))))
@@ -32,6 +36,9 @@ MULTIMOD     := $(TOOLS_BIN_DIR)/multimod
 PORTO        := $(TOOLS_BIN_DIR)/porto
 SEMCONVGEN   := $(TOOLS_BIN_DIR)/semconvgen
 SEMCONVKIT   := $(TOOLS_BIN_DIR)/semconvkit
+TESTIFYLINT  := $(TOOLS_BIN_DIR)/testifylint
+
+TESTIFYLINT_OPT?= --enable-all --disable=compares,error-is-as,error-nil,expected-actual,float-compare,formatter,go-require,negative-positive,nil-compare,require-error
 
 .PHONY: install-tools
 install-tools: $(TOOLS_BIN_NAMES)
@@ -63,7 +70,7 @@ fmt: $(GOIMPORTS)
 .PHONY: tidy
 tidy:
 	rm -fr go.sum
-	$(GOCMD) mod tidy -compat=1.20
+	$(GOCMD) mod tidy -compat=1.22.0
 
 .PHONY: lint
 lint: $(LINT)
@@ -84,3 +91,9 @@ impi: $(IMPI)
 .PHONY: moddownload
 moddownload:
 	$(GOCMD) mod download
+
+.PHONY: testifylint-fix
+testifylint-fix:$(TESTIFYLINT)
+	@echo "running $(TESTIFYLINT)"
+	@$(TESTIFYLINT) $(TESTIFYLINT_OPT) -fix ./...
+

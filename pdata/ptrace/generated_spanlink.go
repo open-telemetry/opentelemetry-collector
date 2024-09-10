@@ -76,6 +76,17 @@ func (ms SpanLink) TraceState() pcommon.TraceState {
 	return pcommon.TraceState(internal.NewTraceState(&ms.orig.TraceState, ms.state))
 }
 
+// Flags returns the flags associated with this SpanLink.
+func (ms SpanLink) Flags() uint32 {
+	return ms.orig.Flags
+}
+
+// SetFlags replaces the flags associated with this SpanLink.
+func (ms SpanLink) SetFlags(v uint32) {
+	ms.state.AssertMutable()
+	ms.orig.Flags = v
+}
+
 // Attributes returns the Attributes associated with this SpanLink.
 func (ms SpanLink) Attributes() pcommon.Map {
 	return pcommon.Map(internal.NewMap(&ms.orig.Attributes, ms.state))
@@ -98,6 +109,7 @@ func (ms SpanLink) CopyTo(dest SpanLink) {
 	dest.SetTraceID(ms.TraceID())
 	dest.SetSpanID(ms.SpanID())
 	ms.TraceState().CopyTo(dest.TraceState())
+	dest.SetFlags(ms.Flags())
 	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetDroppedAttributesCount(ms.DroppedAttributesCount())
 }

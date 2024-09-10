@@ -12,11 +12,13 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/internal/common"
+	"go.opentelemetry.io/collector/exporter/loggingexporter/internal/metadata"
 )
 
+// The value of "type" key in configuration.
+var componentType = component.MustNewType("logging")
+
 const (
-	// The value of "type" key in configuration.
-	typeStr                   = "logging"
 	defaultSamplingInitial    = 2
 	defaultSamplingThereafter = 500
 )
@@ -24,11 +26,11 @@ const (
 // NewFactory creates a factory for Logging exporter
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		componentType,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, component.StabilityLevelDeprecated),
-		exporter.WithMetrics(createMetricsExporter, component.StabilityLevelDeprecated),
-		exporter.WithLogs(createLogsExporter, component.StabilityLevelDeprecated),
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
 	)
 }
 
@@ -41,7 +43,8 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createTracesExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Traces, error) {
+func createTracesExporter(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Traces, error) {
+	set.TelemetrySettings.Logger.Warn("The logging exporter is DEPRECATED and will be REMOVED in v0.111.0. Use the debug exporter instead: https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/debugexporter")
 	cfg := config.(*Config)
 	return common.CreateTracesExporter(ctx, set, config, &common.Common{
 		Verbosity:          cfg.Verbosity,
@@ -52,7 +55,8 @@ func createTracesExporter(ctx context.Context, set exporter.CreateSettings, conf
 	})
 }
 
-func createMetricsExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Metrics, error) {
+func createMetricsExporter(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Metrics, error) {
+	set.TelemetrySettings.Logger.Warn("The logging exporter is DEPRECATED and will be REMOVED in v0.111.0. Use the debug exporter instead: https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/debugexporter")
 	cfg := config.(*Config)
 	return common.CreateMetricsExporter(ctx, set, config, &common.Common{
 		Verbosity:          cfg.Verbosity,
@@ -63,7 +67,8 @@ func createMetricsExporter(ctx context.Context, set exporter.CreateSettings, con
 	})
 }
 
-func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Logs, error) {
+func createLogsExporter(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Logs, error) {
+	set.TelemetrySettings.Logger.Warn("The logging exporter is DEPRECATED and will be REMOVED in v0.111.0. Use the debug exporter instead: https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/debugexporter")
 	cfg := config.(*Config)
 	return common.CreateLogsExporter(ctx, set, config, &common.Common{
 		Verbosity:          cfg.Verbosity,

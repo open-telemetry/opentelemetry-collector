@@ -1,11 +1,11 @@
 module go.opentelemetry.io/collector/config/configtls
 
-go 1.20
+go 1.22.0
 
 require (
 	github.com/fsnotify/fsnotify v1.7.0
-	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/config/configopaque v0.91.0
+	github.com/stretchr/testify v1.9.0
+	go.opentelemetry.io/collector/config/configopaque v1.15.0
 )
 
 require (

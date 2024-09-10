@@ -28,7 +28,7 @@ type tracesProcessor struct {
 // NewTracesProcessor creates a processor.Traces that ensure context propagation and the right tags are set.
 func NewTracesProcessor(
 	_ context.Context,
-	set processor.CreateSettings,
+	set processor.Settings,
 	_ component.Config,
 	nextConsumer consumer.Traces,
 	tracesFunc ProcessTracesFunc,
@@ -39,8 +39,12 @@ func NewTracesProcessor(
 		return nil, errors.New("nil tracesFunc")
 	}
 
-	if nextConsumer == nil {
-		return nil, component.ErrNilNextConsumer
+	obs, err := newObsReport(ObsReportSettings{
+		ProcessorID:             set.ID,
+		ProcessorCreateSettings: set,
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	eventOptions := spanAttributes(set.ID)
@@ -48,7 +52,8 @@ func NewTracesProcessor(
 	traceConsumer, err := consumer.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
 		span := trace.SpanFromContext(ctx)
 		span.AddEvent("Start processing.", eventOptions)
-		var err error
+		spansIn := td.SpanCount()
+
 		td, err = tracesFunc(ctx, td)
 		span.AddEvent("End processing.", eventOptions)
 		if err != nil {
@@ -57,6 +62,8 @@ func NewTracesProcessor(
 			}
 			return err
 		}
+		spansOut := td.SpanCount()
+		obs.recordInOut(ctx, component.DataTypeTraces, spansIn, spansOut)
 		return nextConsumer.ConsumeTraces(ctx, td)
 	}, bs.consumerOptions...)
 

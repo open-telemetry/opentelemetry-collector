@@ -6,17 +6,20 @@ package extensions
 import (
 	"context"
 	"errors"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 	"go.opentelemetry.io/collector/extension/extensiontest"
-	"go.opentelemetry.io/collector/service/internal/servicetelemetry"
+	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/status"
 )
 
@@ -38,17 +41,17 @@ func TestBuildExtensions(t *testing.T) {
 		{
 			name: "extension_not_configured",
 			config: Config{
-				component.NewID("myextension"),
+				component.MustNewID("myextension"),
 			},
 			wantErrMsg: "failed to create extension \"myextension\": extension \"myextension\" is not configured",
 		},
 		{
 			name: "missing_extension_factory",
 			extensionsConfigs: map[component.ID]component.Config{
-				component.NewID("unknown"): nopExtensionConfig,
+				component.MustNewID("unknown"): nopExtensionConfig,
 			},
 			config: Config{
-				component.NewID("unknown"),
+				component.MustNewID("unknown"),
 			},
 			wantErrMsg: "failed to create extension \"unknown\": extension factory not available for: \"unknown\"",
 		},
@@ -83,9 +86,9 @@ func TestBuildExtensions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := New(context.Background(), Settings{
-				Telemetry:  servicetelemetry.NewNopTelemetrySettings(),
+				Telemetry:  componenttest.NewNopTelemetrySettings(),
 				BuildInfo:  component.NewDefaultBuildInfo(),
-				Extensions: extension.NewBuilder(tt.extensionsConfigs, tt.factories),
+				Extensions: builders.NewExtension(tt.extensionsConfigs, tt.factories),
 			}, tt.config)
 			require.Error(t, err)
 			assert.EqualError(t, err, tt.wantErrMsg)
@@ -158,10 +161,10 @@ func (tc testOrderCase) testOrdering(t *testing.T) {
 	var startOrder []string
 	var shutdownOrder []string
 
-	recordingExtensionFactory := newRecordingExtensionFactory(func(set extension.CreateSettings, host component.Host) error {
+	recordingExtensionFactory := newRecordingExtensionFactory(func(set extension.Settings, _ component.Host) error {
 		startOrder = append(startOrder, set.ID.String())
 		return nil
-	}, func(set extension.CreateSettings) error {
+	}, func(set extension.Settings) error {
 		shutdownOrder = append(shutdownOrder, set.ID.String())
 		return nil
 	})
@@ -175,9 +178,9 @@ func (tc testOrderCase) testOrdering(t *testing.T) {
 	}
 
 	exts, err := New(context.Background(), Settings{
-		Telemetry: servicetelemetry.NewNopTelemetrySettings(),
+		Telemetry: componenttest.NewNopTelemetrySettings(),
 		BuildInfo: component.NewDefaultBuildInfo(),
-		Extensions: extension.NewBuilder(
+		Extensions: builders.NewExtension(
 			extCfgs,
 			map[component.Type]extension.Factory{
 				recordingExtensionFactory.Type(): recordingExtensionFactory,
@@ -194,16 +197,9 @@ func (tc testOrderCase) testOrdering(t *testing.T) {
 	err = exts.Shutdown(context.Background())
 	require.NoError(t, err)
 
-	// TODO From Go 1.21 can use slices.Reverse()
-	reverseSlice := func(s []string) {
-		for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
-			s[i], s[j] = s[j], s[i]
-		}
-	}
-
 	if len(tc.order) > 0 {
 		require.Equal(t, tc.order, startOrder)
-		reverseSlice(shutdownOrder)
+		slices.Reverse(shutdownOrder)
 		require.Equal(t, tc.order, shutdownOrder)
 	}
 }
@@ -212,11 +208,11 @@ func TestNotifyConfig(t *testing.T) {
 	notificationError := errors.New("Error processing config")
 	nopExtensionFactory := extensiontest.NewNopFactory()
 	nopExtensionConfig := nopExtensionFactory.CreateDefaultConfig()
-	n1ExtensionFactory := newConfigWatcherExtensionFactory("notifiable1", func() error { return nil })
+	n1ExtensionFactory := newConfigWatcherExtensionFactory(component.MustNewType("notifiable1"), func() error { return nil })
 	n1ExtensionConfig := n1ExtensionFactory.CreateDefaultConfig()
-	n2ExtensionFactory := newConfigWatcherExtensionFactory("notifiable2", func() error { return nil })
+	n2ExtensionFactory := newConfigWatcherExtensionFactory(component.MustNewType("notifiable2"), func() error { return nil })
 	n2ExtensionConfig := n1ExtensionFactory.CreateDefaultConfig()
-	nErrExtensionFactory := newConfigWatcherExtensionFactory("notifiableErr", func() error { return notificationError })
+	nErrExtensionFactory := newConfigWatcherExtensionFactory(component.MustNewType("notifiableErr"), func() error { return notificationError })
 	nErrExtensionConfig := nErrExtensionFactory.CreateDefaultConfig()
 
 	tests := []struct {
@@ -230,52 +226,52 @@ func TestNotifyConfig(t *testing.T) {
 		{
 			name: "No notifiable extensions",
 			factories: map[component.Type]extension.Factory{
-				"nop": nopExtensionFactory,
+				component.MustNewType("nop"): nopExtensionFactory,
 			},
 			extensionsConfigs: map[component.ID]component.Config{
-				component.NewID("nop"): nopExtensionConfig,
+				component.MustNewID("nop"): nopExtensionConfig,
 			},
 			serviceExtensions: []component.ID{
-				component.NewID("nop"),
+				component.MustNewID("nop"),
 			},
 		},
 		{
 			name: "One notifiable extension",
 			factories: map[component.Type]extension.Factory{
-				"notifiable1": n1ExtensionFactory,
+				component.MustNewType("notifiable1"): n1ExtensionFactory,
 			},
 			extensionsConfigs: map[component.ID]component.Config{
-				component.NewID("notifiable1"): n1ExtensionConfig,
+				component.MustNewID("notifiable1"): n1ExtensionConfig,
 			},
 			serviceExtensions: []component.ID{
-				component.NewID("notifiable1"),
+				component.MustNewID("notifiable1"),
 			},
 		},
 		{
 			name: "Multiple notifiable extensions",
 			factories: map[component.Type]extension.Factory{
-				"notifiable1": n1ExtensionFactory,
-				"notifiable2": n2ExtensionFactory,
+				component.MustNewType("notifiable1"): n1ExtensionFactory,
+				component.MustNewType("notifiable2"): n2ExtensionFactory,
 			},
 			extensionsConfigs: map[component.ID]component.Config{
-				component.NewID("notifiable1"): n1ExtensionConfig,
-				component.NewID("notifiable2"): n2ExtensionConfig,
+				component.MustNewID("notifiable1"): n1ExtensionConfig,
+				component.MustNewID("notifiable2"): n2ExtensionConfig,
 			},
 			serviceExtensions: []component.ID{
-				component.NewID("notifiable1"),
-				component.NewID("notifiable2"),
+				component.MustNewID("notifiable1"),
+				component.MustNewID("notifiable2"),
 			},
 		},
 		{
 			name: "Errors in extension notification",
 			factories: map[component.Type]extension.Factory{
-				"notifiableErr": nErrExtensionFactory,
+				component.MustNewType("notifiableErr"): nErrExtensionFactory,
 			},
 			extensionsConfigs: map[component.ID]component.Config{
-				component.NewID("notifiableErr"): nErrExtensionConfig,
+				component.MustNewID("notifiableErr"): nErrExtensionConfig,
 			},
 			serviceExtensions: []component.ID{
-				component.NewID("notifiableErr"),
+				component.MustNewID("notifiableErr"),
 			},
 			want: notificationError,
 		},
@@ -284,9 +280,9 @@ func TestNotifyConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			extensions, err := New(context.Background(), Settings{
-				Telemetry:  servicetelemetry.NewNopTelemetrySettings(),
+				Telemetry:  componenttest.NewNopTelemetrySettings(),
 				BuildInfo:  component.NewDefaultBuildInfo(),
-				Extensions: extension.NewBuilder(tt.extensionsConfigs, tt.factories),
+				Extensions: builders.NewExtension(tt.extensionsConfigs, tt.factories),
 			}, tt.serviceExtensions)
 			assert.NoError(t, err)
 			errs := extensions.NotifyConfig(context.Background(), confmap.NewFromStringMap(map[string]interface{}{}))
@@ -299,15 +295,15 @@ type configWatcherExtension struct {
 	fn func() error
 }
 
-func (comp *configWatcherExtension) Start(_ context.Context, _ component.Host) error {
+func (comp *configWatcherExtension) Start(context.Context, component.Host) error {
 	return comp.fn()
 }
 
-func (comp *configWatcherExtension) Shutdown(_ context.Context) error {
+func (comp *configWatcherExtension) Shutdown(context.Context) error {
 	return comp.fn()
 }
 
-func (comp *configWatcherExtension) NotifyConfig(_ context.Context, _ *confmap.Conf) error {
+func (comp *configWatcherExtension) NotifyConfig(context.Context, *confmap.Conf) error {
 	return comp.fn()
 }
 
@@ -326,7 +322,7 @@ func newConfigWatcherExtensionFactory(name component.Type, fn func() error) exte
 		func() component.Config {
 			return &struct{}{}
 		},
-		func(ctx context.Context, set extension.CreateSettings, extension component.Config) (extension.Extension, error) {
+		func(context.Context, extension.Settings, component.Config) (extension.Extension, error) {
 			return newConfigWatcherExtension(fn), nil
 		},
 		component.StabilityLevelDevelopment,
@@ -335,11 +331,11 @@ func newConfigWatcherExtensionFactory(name component.Type, fn func() error) exte
 
 func newBadExtensionFactory() extension.Factory {
 	return extension.NewFactory(
-		"bf",
+		component.MustNewType("bf"),
 		func() component.Config {
 			return &struct{}{}
 		},
-		func(ctx context.Context, set extension.CreateSettings, extension component.Config) (extension.Extension, error) {
+		func(context.Context, extension.Settings, component.Config) (extension.Extension, error) {
 			return nil, nil
 		},
 		component.StabilityLevelDevelopment,
@@ -348,11 +344,11 @@ func newBadExtensionFactory() extension.Factory {
 
 func newCreateErrorExtensionFactory() extension.Factory {
 	return extension.NewFactory(
-		"err",
+		component.MustNewType("err"),
 		func() component.Config {
 			return &struct{}{}
 		},
-		func(ctx context.Context, set extension.CreateSettings, extension component.Config) (extension.Extension, error) {
+		func(context.Context, extension.Settings, component.Config) (extension.Extension, error) {
 			return nil, errors.New("cannot create \"err\" extension type")
 		},
 		component.StabilityLevelDevelopment,
@@ -361,7 +357,7 @@ func newCreateErrorExtensionFactory() extension.Factory {
 
 func TestStatusReportedOnStartupShutdown(t *testing.T) {
 	// compare two slices of status events ignoring timestamp
-	assertEqualStatuses := func(t *testing.T, evts1, evts2 []*component.StatusEvent) {
+	assertEqualStatuses := func(t *testing.T, evts1, evts2 []*componentstatus.Event) {
 		assert.Equal(t, len(evts1), len(evts2))
 		for i := 0; i < len(evts1); i++ {
 			ev1 := evts1[i]
@@ -373,69 +369,73 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 
 	for _, tc := range []struct {
 		name             string
-		expectedStatuses []*component.StatusEvent
+		expectedStatuses []*componentstatus.Event
 		startErr         error
 		shutdownErr      error
 	}{
 		{
 			name: "successful startup/shutdown",
-			expectedStatuses: []*component.StatusEvent{
-				component.NewStatusEvent(component.StatusStarting),
-				component.NewStatusEvent(component.StatusOK),
-				component.NewStatusEvent(component.StatusStopping),
-				component.NewStatusEvent(component.StatusStopped),
+			expectedStatuses: []*componentstatus.Event{
+				componentstatus.NewEvent(componentstatus.StatusStarting),
+				componentstatus.NewEvent(componentstatus.StatusOK),
+				componentstatus.NewEvent(componentstatus.StatusStopping),
+				componentstatus.NewEvent(componentstatus.StatusStopped),
 			},
 			startErr:    nil,
 			shutdownErr: nil,
 		},
 		{
 			name: "start error",
-			expectedStatuses: []*component.StatusEvent{
-				component.NewStatusEvent(component.StatusStarting),
-				component.NewPermanentErrorEvent(assert.AnError),
+			expectedStatuses: []*componentstatus.Event{
+				componentstatus.NewEvent(componentstatus.StatusStarting),
+				componentstatus.NewPermanentErrorEvent(assert.AnError),
 			},
 			startErr:    assert.AnError,
 			shutdownErr: nil,
 		},
 		{
 			name: "shutdown error",
-			expectedStatuses: []*component.StatusEvent{
-				component.NewStatusEvent(component.StatusStarting),
-				component.NewStatusEvent(component.StatusOK),
-				component.NewStatusEvent(component.StatusStopping),
-				component.NewPermanentErrorEvent(assert.AnError),
+			expectedStatuses: []*componentstatus.Event{
+				componentstatus.NewEvent(componentstatus.StatusStarting),
+				componentstatus.NewEvent(componentstatus.StatusOK),
+				componentstatus.NewEvent(componentstatus.StatusStopping),
+				componentstatus.NewPermanentErrorEvent(assert.AnError),
 			},
 			startErr:    nil,
 			shutdownErr: assert.AnError,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			compID := component.NewID("statustest")
-			factory := newStatusTestExtensionFactory("statustest", tc.startErr, tc.shutdownErr)
+			statusType := component.MustNewType("statustest")
+			compID := component.NewID(statusType)
+			factory := newStatusTestExtensionFactory(statusType, tc.startErr, tc.shutdownErr)
 			config := factory.CreateDefaultConfig()
 			extensionsConfigs := map[component.ID]component.Config{
 				compID: config,
 			}
 			factories := map[component.Type]extension.Factory{
-				"statustest": factory,
+				statusType: factory,
 			}
+
+			var actualStatuses []*componentstatus.Event
+			rep := status.NewReporter(func(_ *componentstatus.InstanceID, ev *componentstatus.Event) {
+				actualStatuses = append(actualStatuses, ev)
+			}, func(err error) {
+				require.NoError(t, err)
+			})
+
 			extensions, err := New(
 				context.Background(),
 				Settings{
-					Telemetry:  servicetelemetry.NewNopTelemetrySettings(),
+					Telemetry:  componenttest.NewNopTelemetrySettings(),
 					BuildInfo:  component.NewDefaultBuildInfo(),
-					Extensions: extension.NewBuilder(extensionsConfigs, factories),
+					Extensions: builders.NewExtension(extensionsConfigs, factories),
 				},
 				[]component.ID{compID},
+				WithReporter(rep),
 			)
-
 			assert.NoError(t, err)
 
-			var actualStatuses []*component.StatusEvent
-			rep := status.NewReporter(func(id *component.InstanceID, ev *component.StatusEvent) {
-				actualStatuses = append(actualStatuses, ev)
-			})
-			extensions.telemetry.Status = rep
 			rep.Ready()
 
 			assert.Equal(t, tc.startErr, extensions.Start(context.Background(), componenttest.NewNopHost()))
@@ -452,11 +452,11 @@ type statusTestExtension struct {
 	shutdownErr error
 }
 
-func (ext *statusTestExtension) Start(_ context.Context, _ component.Host) error {
+func (ext *statusTestExtension) Start(context.Context, component.Host) error {
 	return ext.startErr
 }
 
-func (ext *statusTestExtension) Shutdown(_ context.Context) error {
+func (ext *statusTestExtension) Shutdown(context.Context) error {
 	return ext.shutdownErr
 }
 
@@ -473,20 +473,20 @@ func newStatusTestExtensionFactory(name component.Type, startErr, shutdownErr er
 		func() component.Config {
 			return &struct{}{}
 		},
-		func(ctx context.Context, set extension.CreateSettings, extension component.Config) (extension.Extension, error) {
+		func(context.Context, extension.Settings, component.Config) (extension.Extension, error) {
 			return newStatusTestExtension(startErr, shutdownErr), nil
 		},
 		component.StabilityLevelDevelopment,
 	)
 }
 
-func newRecordingExtensionFactory(startCallback func(set extension.CreateSettings, host component.Host) error, shutdownCallback func(set extension.CreateSettings) error) extension.Factory {
+func newRecordingExtensionFactory(startCallback func(set extension.Settings, host component.Host) error, shutdownCallback func(set extension.Settings) error) extension.Factory {
 	return extension.NewFactory(
-		"recording",
+		component.MustNewType("recording"),
 		func() component.Config {
 			return &recordingExtensionConfig{}
 		},
-		func(ctx context.Context, set extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
+		func(_ context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
 			return &recordingExtension{
 				config:           cfg.(recordingExtensionConfig),
 				createSettings:   set,
@@ -504,12 +504,12 @@ type recordingExtensionConfig struct {
 
 type recordingExtension struct {
 	config           recordingExtensionConfig
-	startCallback    func(set extension.CreateSettings, host component.Host) error
-	shutdownCallback func(set extension.CreateSettings) error
-	createSettings   extension.CreateSettings
+	startCallback    func(set extension.Settings, host component.Host) error
+	shutdownCallback func(set extension.Settings) error
+	createSettings   extension.Settings
 }
 
-var _ extension.Dependent = (*recordingExtension)(nil)
+var _ extensioncapabilities.Dependent = (*recordingExtension)(nil)
 
 func (ext *recordingExtension) Dependencies() []component.ID {
 	if len(ext.config.dependencies) == 0 {
@@ -517,7 +517,7 @@ func (ext *recordingExtension) Dependencies() []component.ID {
 	}
 	deps := make([]component.ID, len(ext.config.dependencies))
 	for i, dep := range ext.config.dependencies {
-		deps[i] = component.NewIDWithName("recording", dep)
+		deps[i] = component.MustNewIDWithName("recording", dep)
 	}
 	return deps
 }
@@ -526,6 +526,6 @@ func (ext *recordingExtension) Start(_ context.Context, host component.Host) err
 	return ext.startCallback(ext.createSettings, host)
 }
 
-func (ext *recordingExtension) Shutdown(_ context.Context) error {
+func (ext *recordingExtension) Shutdown(context.Context) error {
 	return ext.shutdownCallback(ext.createSettings)
 }

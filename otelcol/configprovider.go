@@ -8,12 +8,6 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/converter/expandconverter"
-	"go.opentelemetry.io/collector/confmap/provider/envprovider"
-	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
-	"go.opentelemetry.io/collector/confmap/provider/httpprovider"
-	"go.opentelemetry.io/collector/confmap/provider/httpsprovider"
-	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
 )
 
 // ConfigProvider provides the service configuration.
@@ -50,25 +44,11 @@ type ConfigProvider interface {
 	Shutdown(ctx context.Context) error
 }
 
-// ConfmapProvider is an optional interface to be implemented by ConfigProviders
-// to provide confmap.Conf objects representing a marshaled version of the
-// Collector's configuration.
-//
-// The purpose of this interface is that otelcol.ConfigProvider structs do not
-// necessarily need to use confmap.Conf as their underlying config structure.
-type ConfmapProvider interface {
-	// GetConfmap resolves the Collector's configuration and provides it as a confmap.Conf object.
-	//
-	// Should never be called concurrently with itself or any ConfigProvider method.
-	GetConfmap(ctx context.Context) (*confmap.Conf, error)
-}
-
 type configProvider struct {
 	mapResolver *confmap.Resolver
 }
 
-var _ ConfigProvider = &configProvider{}
-var _ ConfmapProvider = &configProvider{}
+var _ ConfigProvider = (*configProvider)(nil)
 
 // ConfigProviderSettings are the settings to configure the behavior of the ConfigProvider.
 type ConfigProviderSettings struct {
@@ -120,31 +100,4 @@ func (cm *configProvider) Watch() <-chan error {
 
 func (cm *configProvider) Shutdown(ctx context.Context) error {
 	return cm.mapResolver.Shutdown(ctx)
-}
-
-func (cm *configProvider) GetConfmap(ctx context.Context) (*confmap.Conf, error) {
-	conf, err := cm.mapResolver.Resolve(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("cannot resolve the configuration: %w", err)
-	}
-
-	return conf, nil
-}
-
-func newDefaultConfigProviderSettings(uris []string) ConfigProviderSettings {
-	return ConfigProviderSettings{
-		ResolverSettings: confmap.ResolverSettings{
-			URIs:       uris,
-			Providers:  makeMapProvidersMap(fileprovider.New(), envprovider.New(), yamlprovider.New(), httpprovider.New(), httpsprovider.New()),
-			Converters: []confmap.Converter{expandconverter.New()},
-		},
-	}
-}
-
-func makeMapProvidersMap(providers ...confmap.Provider) map[string]confmap.Provider {
-	ret := make(map[string]confmap.Provider, len(providers))
-	for _, provider := range providers {
-		ret[provider.Scheme()] = provider
-	}
-	return ret
 }
