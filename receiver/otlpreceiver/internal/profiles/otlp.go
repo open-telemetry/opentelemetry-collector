@@ -11,8 +11,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
 )
 
-const dataFormatProtobuf = "protobuf"
-
 // Receiver is the type used to handle spans from OpenTelemetry exporters.
 type Receiver struct {
 	pprofileotlp.UnimplementedGRPCServer
