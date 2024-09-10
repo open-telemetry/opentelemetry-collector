@@ -120,8 +120,6 @@ func (or *ObsReport) TracesDropped(ctx context.Context, numSpans int) {
 }
 
 // TracesInserted reports that the trace data was inserted.
-//
-// Deprecated: [v0.109.0] This method was not used in core/contrib and it's unclear when it should have been used.
 func (or *ObsReport) TracesInserted(ctx context.Context, numSpans int) {
 	or.recordData(ctx, component.DataTypeTraces, int64(0), int64(0), int64(0), int64(numSpans))
 }
@@ -142,8 +140,6 @@ func (or *ObsReport) MetricsDropped(ctx context.Context, numPoints int) {
 }
 
 // MetricsInserted reports that the metrics were inserted.
-//
-// Deprecated: [v0.109.0] This method was not used in core/contrib and it's unclear when it should have been used.
 func (or *ObsReport) MetricsInserted(ctx context.Context, numPoints int) {
 	or.recordData(ctx, component.DataTypeMetrics, int64(0), int64(0), int64(0), int64(numPoints))
 }
@@ -164,8 +160,6 @@ func (or *ObsReport) LogsDropped(ctx context.Context, numRecords int) {
 }
 
 // LogsInserted reports that the logs were inserted.
-//
-// Deprecated: [v0.109.0] This method was not used in core/contrib and it's unclear when it should have been used.
 func (or *ObsReport) LogsInserted(ctx context.Context, numRecords int) {
 	or.recordData(ctx, component.DataTypeLogs, int64(0), int64(0), int64(0), int64(numRecords))
 }
