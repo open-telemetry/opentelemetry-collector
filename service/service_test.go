@@ -17,6 +17,7 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/contrib/config"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -34,7 +35,6 @@ import (
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/pipelines"
 	"go.opentelemetry.io/collector/service/telemetry"
-	"go.opentelemetry.io/contrib/config"
 )
 
 type labelState int
