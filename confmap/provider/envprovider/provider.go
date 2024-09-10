@@ -27,6 +27,11 @@ type provider struct {
 //
 // This Provider supports "env" scheme, and can be called with a selector:
 // `env:NAME_OF_ENVIRONMENT_VARIABLE`
+//
+// A default value for unset variable can be provided after :- suffix, for example:
+// `env:NAME_OF_ENVIRONMENT_VARIABLE:-default_value`
+//
+// See also: https://opentelemetry.io/docs/specs/otel/configuration/file-configuration/#environment-variable-substitution
 func NewFactory() confmap.ProviderFactory {
 	return confmap.NewProviderFactory(newProvider)
 }
@@ -41,14 +46,18 @@ func (emp *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFu
 	if !strings.HasPrefix(uri, schemeName+":") {
 		return nil, fmt.Errorf("%q uri is not supported by %q provider", uri, schemeName)
 	}
-	envVarName := uri[len(schemeName)+1:]
+	envVarName, defaultValuePtr := parseEnvVarURI(uri[len(schemeName)+1:])
 	if !envvar.ValidationRegexp.MatchString(envVarName) {
 		return nil, fmt.Errorf("environment variable %q has invalid name: must match regex %s", envVarName, envvar.ValidationPattern)
-
 	}
+
 	val, exists := os.LookupEnv(envVarName)
 	if !exists {
-		emp.logger.Warn("Configuration references unset environment variable", zap.String("name", envVarName))
+		if defaultValuePtr != nil {
+			val = *defaultValuePtr
+		} else {
+			emp.logger.Warn("Configuration references unset environment variable", zap.String("name", envVarName))
+		}
 	} else if len(val) == 0 {
 		emp.logger.Info("Configuration references empty environment variable", zap.String("name", envVarName))
 	}
@@ -62,4 +71,14 @@ func (*provider) Scheme() string {
 
 func (*provider) Shutdown(context.Context) error {
 	return nil
+}
+
+// returns (var name, default value)
+func parseEnvVarURI(uri string) (string, *string) {
+	const defaultSuffix = ":-"
+	if strings.Contains(uri, defaultSuffix) {
+		parts := strings.SplitN(uri, defaultSuffix, 2)
+		return parts[0], &parts[1]
+	}
+	return uri, nil
 }

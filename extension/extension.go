@@ -8,22 +8,12 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/extension/internal"
 )
 
 // Extension is the interface for objects hosted by the OpenTelemetry Collector that
 // don't participate directly on data pipelines but provide some functionality
 // to the service, examples: health check endpoint, z-pages, etc.
-type Extension = internal.Extension
-
-// Deprecated: [v0.109.0] Use [extensioncapabilities.Dependent] instead.
-type Dependent = internal.Dependent
-
-// Deprecated: [v0.109.0] Use [extensioncapabilities.PipelineWatcher] instead.
-type PipelineWatcher = internal.PipelineWatcher
-
-// Deprecated: [v0.109.0] Use [extensioncapabilities.ConfigWatcher] instead.
-type ConfigWatcher = internal.ConfigWatcher
+type Extension = component.Component
 
 // ModuleInfo describes the go module for each component.
 type ModuleInfo struct {
