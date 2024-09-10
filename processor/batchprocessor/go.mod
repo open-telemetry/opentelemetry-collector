@@ -50,7 +50,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.109.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.109.0 // indirect
 	go.opentelemetry.io/collector/processor/processorprofiles v0.109.0 // indirect
-	go.opentelemetry.io/otel/exporters/prometheus v0.51.0 // indirect
+	go.opentelemetry.io/otel/exporters/prometheus v0.52.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.30.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.28.0 // indirect
