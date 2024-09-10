@@ -44,7 +44,7 @@ func BenchmarkProfilesToProto(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		buf, err := marshaler.MarshalProfiles(profiles)
 		require.NoError(b, err)
-		assert.NotEqual(b, 0, len(buf))
+		assert.NotEmpty(b, buf)
 	}
 }
 
@@ -54,7 +54,7 @@ func BenchmarkProfilesFromProto(b *testing.B) {
 	baseProfiles := generateBenchmarkProfiles(128)
 	buf, err := marshaler.MarshalProfiles(baseProfiles)
 	require.NoError(b, err)
-	assert.NotEqual(b, 0, len(buf))
+	assert.NotEmpty(b, buf)
 	b.ResetTimer()
 	b.ReportAllocs()
 	for n := 0; n < b.N; n++ {
