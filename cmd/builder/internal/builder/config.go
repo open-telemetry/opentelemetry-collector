@@ -17,7 +17,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const defaultOtelColVersion = "0.108.1"
+const defaultOtelColVersion = "0.109.0"
 
 // ErrMissingGoMod indicates an empty gomod field
 var ErrMissingGoMod = errors.New("missing gomod specification for module")

@@ -57,7 +57,7 @@ func TestForward(t *testing.T) {
 	assert.NoError(t, metricsToMetrics.Shutdown(ctx))
 	assert.NoError(t, logsToLogs.Shutdown(ctx))
 
-	assert.Equal(t, 1, len(tracesSink.AllTraces()))
-	assert.Equal(t, 2, len(metricsSink.AllMetrics()))
-	assert.Equal(t, 3, len(logsSink.AllLogs()))
+	assert.Len(t, tracesSink.AllTraces(), 1)
+	assert.Len(t, metricsSink.AllMetrics(), 2)
+	assert.Len(t, logsSink.AllLogs(), 3)
 }

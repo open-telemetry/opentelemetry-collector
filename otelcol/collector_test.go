@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/extension/extensiontest"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
 
@@ -136,6 +136,33 @@ func TestCollectorReportError(t *testing.T) {
 	assert.Equal(t, StateClosed, col.GetState())
 }
 
+// NewStatusWatcherExtensionFactory returns a component.ExtensionFactory to construct a status watcher extension.
+func NewStatusWatcherExtensionFactory(
+	onStatusChanged func(source *componentstatus.InstanceID, event *componentstatus.Event),
+) extension.Factory {
+	return extension.NewFactory(
+		component.MustNewType("statuswatcher"),
+		func() component.Config {
+			return &struct{}{}
+		},
+		func(context.Context, extension.Settings, component.Config) (component.Component, error) {
+			return &statusWatcherExtension{onStatusChanged: onStatusChanged}, nil
+		},
+		component.StabilityLevelStable)
+}
+
+// statusWatcherExtension receives status events reported via component status reporting for testing
+// purposes.
+type statusWatcherExtension struct {
+	component.StartFunc
+	component.ShutdownFunc
+	onStatusChanged func(source *componentstatus.InstanceID, event *componentstatus.Event)
+}
+
+func (e statusWatcherExtension) ComponentStatusChanged(source *componentstatus.InstanceID, event *componentstatus.Event) {
+	e.onStatusChanged(source, event)
+}
+
 func TestComponentStatusWatcher(t *testing.T) {
 	factories, err := nopFactories()
 	assert.NoError(t, err)
@@ -159,7 +186,7 @@ func TestComponentStatusWatcher(t *testing.T) {
 
 	// Add a "statuswatcher" extension that will receive notifications when processor
 	// status changes.
-	factory := extensiontest.NewStatusWatcherExtensionFactory(onStatusChanged)
+	factory := NewStatusWatcherExtensionFactory(onStatusChanged)
 	factories.Extensions[factory.Type()] = factory
 
 	// Create a collector

@@ -300,7 +300,7 @@ func TestSendTraces(t *testing.T) {
 
 	md := rcv.getMetadata()
 	require.EqualValues(t, md.Get("header"), expectedHeader)
-	require.Equal(t, len(md.Get("User-Agent")), 1)
+	require.Len(t, md.Get("User-Agent"), 1)
 	require.Contains(t, md.Get("User-Agent")[0], "Collector/1.2.3test")
 
 	// Return partial success
@@ -472,7 +472,7 @@ func TestSendMetrics(t *testing.T) {
 
 	mdata := rcv.getMetadata()
 	require.EqualValues(t, mdata.Get("header"), expectedHeader)
-	require.Equal(t, len(mdata.Get("User-Agent")), 1)
+	require.Len(t, mdata.Get("User-Agent"), 1)
 	require.Contains(t, mdata.Get("User-Agent")[0], "Collector/1.2.3test")
 
 	st := status.New(codes.InvalidArgument, "Invalid argument")
@@ -763,7 +763,7 @@ func TestSendLogData(t *testing.T) {
 	assert.EqualValues(t, ld, rcv.getLastRequest())
 
 	md := rcv.getMetadata()
-	require.Equal(t, len(md.Get("User-Agent")), 1)
+	require.Len(t, md.Get("User-Agent"), 1)
 	require.Contains(t, md.Get("User-Agent")[0], "Collector/1.2.3test")
 
 	st := status.New(codes.InvalidArgument, "Invalid argument")
