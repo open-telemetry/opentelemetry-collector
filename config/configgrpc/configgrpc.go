@@ -227,7 +227,7 @@ func (gcs *ClientConfig) isSchemeHTTPS() bool {
 // established, and connecting happens in the background). To make it a blocking
 // dial, use grpc.WithBlock() dial option.
 //
-// Deprecated: [v0.109.0] If providing a [grpc.DialOption], use [ClientConfig.ToClientConnWithOptions]
+// Deprecated: [v0.110.0] If providing a [grpc.DialOption], use [ClientConfig.ToClientConnWithOptions]
 // with [WithGrpcDialOption] instead.
 func (gcs *ClientConfig) ToClientConn(
 	ctx context.Context,
@@ -385,7 +385,7 @@ func (gss *ServerConfig) Validate() error {
 
 // ToServer returns a [grpc.Server] for the configuration
 //
-// Deprecated: [v0.109.0] If providing a [grpc.ServerOption], use [ServerConfig.ToServerWithOptions]
+// Deprecated: [v0.110.0] If providing a [grpc.ServerOption], use [ServerConfig.ToServerWithOptions]
 // with [WithGrpcServerOption] instead.
 func (gss *ServerConfig) ToServer(
 	ctx context.Context,
