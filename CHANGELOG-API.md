@@ -7,6 +7,36 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.15.0/v0.109.0
+
+### 🛑 Breaking changes 🛑
+
+- `Remove `extensiontest` StatusWatcher helpers`: They were unused. They may be added back on a different module or after `componentstatus` is marked 1.0
+ (#11044)
+- `pprofile`: Change Profile ID field from a byte array to a custom data type (#11048)
+- `connector`: Remove deprecated connector builder (#11019)
+- `exporter`: Remove deprecated exporter builder (#11019)
+- `extension`: Remove deprecated extension builder (#11019)
+- `processor`: Remove deprecated processor builder (#11019)
+- `receiver`: Remove deprecated receiver builder (#11019)
+
+### 🚩 Deprecations 🚩
+
+- `configtelemetry`: Deprecating `TelemetrySettings.MeterProvider` in favour of `TelemetrySettings.LeveledMeterProvider` (#10912)
+- `extension`: Deprecate `extension.ConfigWatcher`, `extension.PipelineWatcher` and `extension.Dependent` in favor of equivalents in the `extensioncapabilities` module. (#11000)
+- `scraperhelper`: deprecate NewScraper, should use NewScraperWithComponentType (#11082)
+
+### 🚀 New components 🚀
+
+- `extensioncapabilities`: Create a new module for optional extension capabilities. (#11000)
+
+### 💡 Enhancements 💡
+
+- `connectorprofiles`: Add ProfilesRouterAndConsumer interface, and NewProfilesRouter method. (#11023)
+- `pprofileotlp`: Introduce grpc service implementation of pprofileotlp (#11048)
+- `pprofile`: Introduce marshalling and unmarshalling of pprofile data (#11048)
+- `service`: Support profiles in the service package (#11024)
+
 ## v1.14.1/v0.108.1
 
 ## v1.14.0/v0.108.0

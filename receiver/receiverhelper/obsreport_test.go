@@ -211,7 +211,7 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 
 	for i, span := range spans {
 		assert.False(t, span.Parent().IsValid())
-		require.Equal(t, 1, len(span.Links()))
+		require.Len(t, span.Links(), 1)
 		link := span.Links()[0]
 		assert.Equal(t, parentSpan.SpanContext().TraceID(), link.SpanContext.TraceID())
 		assert.Equal(t, parentSpan.SpanContext().SpanID(), link.SpanContext.SpanID())

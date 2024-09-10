@@ -647,6 +647,7 @@ func TestIssue10937_ComplexType(t *testing.T) {
 }
 
 func TestIssue10949_UnsetVar(t *testing.T) {
+	t.Setenv("ENV", "")
 	resolver := NewResolver(t, "types_expand.yaml")
 	conf, err := resolver.Resolve(context.Background())
 	require.NoError(t, err)
