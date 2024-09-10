@@ -226,8 +226,9 @@ func (gcs *ClientConfig) isSchemeHTTPS() bool {
 // a non-blocking dial (the function won't wait for connections to be
 // established, and connecting happens in the background). To make it a blocking
 // dial, use grpc.WithBlock() dial option.
-// Deprecated: [v0.109.0] If providing grpc.DialOptions, use ToClientConnGeneric
-// with WithGrpcDialOption instead.
+//
+// Deprecated: [v0.109.0] If providing a [grpc.DialOption], use [ClientConfig.ToClientConnWithOptions]
+// with [WithGrpcDialOption] instead.
 func (gcs *ClientConfig) ToClientConn(
 	ctx context.Context,
 	host component.Host,
@@ -241,6 +242,7 @@ func (gcs *ClientConfig) ToClientConn(
 	return gcs.ToClientConnWithOptions(ctx, host, settings, extraOpts...)
 }
 
+// A sealed interface wrapping options for [ClientConfig.ToClientConnWithOptions].
 type ToClientConnOption interface {
 	isToClientConnOption()
 }
@@ -249,13 +251,14 @@ type grpcDialOptionWrapper struct {
 	opt grpc.DialOption
 }
 
+// Wraps a [grpc.DialOption] into a [ToClientConnOption].
 func WithGrpcDialOption(opt grpc.DialOption) ToClientConnOption {
 	return grpcDialOptionWrapper{opt: opt}
 }
 func (grpcDialOptionWrapper) isToClientConnOption() {}
 
-// Same as ToClientConn, but uses the ToClientConnOption interface for options.
-// This method will eventually replace ToClientConn.
+// Same as [ClientConfig.ToClientConn], but uses the [ToClientConnOption] interface for options.
+// This method will eventually replace [ClientConfig.ToClientConn].
 func (gcs *ClientConfig) ToClientConnWithOptions(
 	ctx context.Context,
 	host component.Host,
@@ -380,9 +383,10 @@ func (gss *ServerConfig) Validate() error {
 	return nil
 }
 
-// ToServer returns a grpc.Server for the configuration
-// Deprecated: [v0.109.0] If providing grpc.ServerOptions, use ToServerGeneric
-// with WithGrpcServerOption instead.
+// ToServer returns a [grpc.Server] for the configuration
+//
+// Deprecated: [v0.109.0] If providing a [grpc.ServerOption], use [ServerConfig.ToServerWithOptions]
+// with [WithGrpcServerOption] instead.
 func (gss *ServerConfig) ToServer(
 	ctx context.Context,
 	host component.Host,
@@ -396,6 +400,7 @@ func (gss *ServerConfig) ToServer(
 	return gss.ToServerWithOptions(ctx, host, settings, extraOpts...)
 }
 
+// A sealed interface wrapping options for [ServerConfig.ToServerWithOptions].
 type ToServerOption interface {
 	isToServerOption()
 }
@@ -404,13 +409,14 @@ type grpcServerOptionWrapper struct {
 	opt grpc.ServerOption
 }
 
+// Wraps a [grpc.ServerOption] into a [ToServerOption].
 func WithGrpcServerOption(opt grpc.ServerOption) ToServerOption {
 	return grpcServerOptionWrapper{opt: opt}
 }
 func (grpcServerOptionWrapper) isToServerOption() {}
 
-// Same as ToServer, but uses the ToServerOption interface for options.
-// This method will eventually replace ToServer.
+// Same as [ServerConfig.ToServer], but uses the [ToServerOption] interface for options.
+// This method will eventually replace [ServerConfig.ToServer].
 func (gss *ServerConfig) ToServerWithOptions(
 	_ context.Context,
 	host component.Host,
