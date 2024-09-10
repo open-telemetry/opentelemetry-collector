@@ -154,6 +154,42 @@ func TestEmptyEnvWithLoggerWarn(t *testing.T) {
 	assert.Equal(t, envName, logLine.Context[0].String)
 }
 
+func TestEnvWithDefaultValue(t *testing.T) {
+	env := createProvider()
+	tests := []struct {
+		name        string
+		unset       bool
+		value       string
+		uri         string
+		expectedVal string
+		expectedErr string
+	}{
+		{name: "unset", unset: true, uri: "env:MY_VAR:-default % value", expectedVal: "default % value"},
+		{name: "unset2", unset: true, uri: "env:MY_VAR:-", expectedVal: ""}, // empty default still applies
+		{name: "empty", value: "", uri: "env:MY_VAR:-foo", expectedVal: ""},
+		{name: "not empty", value: "value", uri: "env:MY_VAR:-", expectedVal: "value"},
+		{name: "syntax1", unset: true, uri: "env:-MY_VAR", expectedErr: "invalid name"},
+		{name: "syntax2", unset: true, uri: "env:MY_VAR:-test:-test", expectedVal: "test:-test"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if !test.unset {
+				t.Setenv("MY_VAR", test.value)
+			}
+			ret, err := env.Retrieve(context.Background(), test.uri, nil)
+			if test.expectedErr != "" {
+				require.ErrorContains(t, err, test.expectedErr)
+				return
+			}
+			require.NoError(t, err)
+			str, err := ret.AsString()
+			require.NoError(t, err)
+			assert.Equal(t, test.expectedVal, str)
+		})
+	}
+	assert.NoError(t, env.Shutdown(context.Background()))
+}
+
 func createProvider() confmap.Provider {
 	return NewFactory().Create(confmaptest.NewNopProviderSettings())
 }
