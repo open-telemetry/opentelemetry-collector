@@ -101,5 +101,3 @@ replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/co
 replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
 
 replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../../receiver/receiverprofiles
-
-replace go.opentelemetry.io/collector/component/componentprofiles => ../../component/componentprofiles

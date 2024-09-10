@@ -60,5 +60,3 @@ replace go.opentelemetry.io/collector/pdata => ../../pdata
 replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/consumertest
 
 replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
-
-replace go.opentelemetry.io/collector/component/componentprofiles => ../../component/componentprofiles

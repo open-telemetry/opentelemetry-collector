@@ -102,5 +102,3 @@ replace go.opentelemetry.io/collector/component/componentstatus => ../component/
 replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../receiver/receiverprofiles
 
 replace go.opentelemetry.io/collector/exporter/exporterprofiles => ./exporterprofiles
-
-replace go.opentelemetry.io/collector/component/componentprofiles => ../component/componentprofiles
