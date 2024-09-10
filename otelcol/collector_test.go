@@ -564,6 +564,8 @@ func newEnvProvider() confmap.ProviderFactory {
 			return confmap.NewRetrieved(float64(6.4))
 		case "env:BOOL":
 			return confmap.NewRetrieved(true)
+		case "env:ProgramData":
+			return confmap.NewRetrieved("C:\\ProgramData")
 		}
 		return nil, errors.New("impossible")
 	})

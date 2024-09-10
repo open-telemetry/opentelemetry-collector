@@ -99,7 +99,7 @@ func (s *windowsService) start(elog *eventlog.Log, colErrorChannel chan error) e
 	// only read at the time of the Run method call. To work around this, we pass the
 	// serviceConfig as a pointer to the logging options, and then read its value
 	// when the zap.Logger is created by the telemetry.
-	s.col.set.LoggingOptions = loggingOptionsWithEventLogCore(elog, s.col.serviceConfig, s.col.set.LoggingOptions)
+	s.col.set.LoggingOptions = loggingOptionsWithEventLogCore(elog, &s.col.serviceConfig, s.col.set.LoggingOptions)
 
 	// col.Run blocks until receiving a SIGTERM signal, so needs to be started
 	// asynchronously, but it will exit early if an error occurs on startup
@@ -140,13 +140,13 @@ func openEventLog(serviceName string) (*eventlog.Log, error) {
 
 func loggingOptionsWithEventLogCore(
 	elog *eventlog.Log,
-	serviceConfig *service.Config,
+	serviceConfig **service.Config,
 	userOptions []zap.Option,
 ) []zap.Option {
 	return append(
 		// The event log core must run last, so it needs to be the first option
 		// in this list.
-		[]zap.Option{zap.WrapCore(withWindowsCore(elog, &serviceConfig))},
+		[]zap.Option{zap.WrapCore(withWindowsCore(elog, serviceConfig))},
 		userOptions...,
 	)
 }
