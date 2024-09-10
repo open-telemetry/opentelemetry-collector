@@ -56,6 +56,10 @@ gotest-with-cover:
 	@$(MAKE) for-all-target TARGET="test-with-cover"
 	$(GOCMD) tool covdata textfmt -i=./coverage/unit -o ./coverage.txt
 
+.PHONY: gotestifylint-fix
+gotestifylint-fix:
+	$(MAKE) for-all-target TARGET="testifylint-fix"
+
 .PHONY: goporto
 goporto: $(PORTO)
 	$(PORTO) -w --include-internal --skip-dirs "^cmd/mdatagen/third_party$$" ./
@@ -286,6 +290,7 @@ check-contrib:
 		-replace go.opentelemetry.io/collector/consumer/consumertest=$(CURDIR)/consumer/consumertest  \
 		-replace go.opentelemetry.io/collector/exporter=$(CURDIR)/exporter  \
 		-replace go.opentelemetry.io/collector/exporter/debugexporter=$(CURDIR)/exporter/debugexporter  \
+		-replace go.opentelemetry.io/collector/exporter/exporterprofiles=$(CURDIR)/exporter/exporterprofiles  \
 		-replace go.opentelemetry.io/collector/exporter/loggingexporter=$(CURDIR)/exporter/loggingexporter  \
 		-replace go.opentelemetry.io/collector/exporter/nopexporter=$(CURDIR)/exporter/nopexporter  \
 		-replace go.opentelemetry.io/collector/exporter/otlpexporter=$(CURDIR)/exporter/otlpexporter  \
@@ -306,9 +311,11 @@ check-contrib:
 		-replace go.opentelemetry.io/collector/processor=$(CURDIR)/processor  \
 		-replace go.opentelemetry.io/collector/processor/batchprocessor=$(CURDIR)/processor/batchprocessor  \
 		-replace go.opentelemetry.io/collector/processor/memorylimiterprocessor=$(CURDIR)/processor/memorylimiterprocessor  \
+		-replace go.opentelemetry.io/collector/processor/processorprofiles=$(CURDIR)/processor/processorprofiles  \
 		-replace go.opentelemetry.io/collector/receiver=$(CURDIR)/receiver  \
 		-replace go.opentelemetry.io/collector/receiver/nopreceiver=$(CURDIR)/receiver/nopreceiver  \
 		-replace go.opentelemetry.io/collector/receiver/otlpreceiver=$(CURDIR)/receiver/otlpreceiver  \
+		-replace go.opentelemetry.io/collector/receiver/receiverprofiles=$(CURDIR)/receiver/receiverprofiles  \
 		-replace go.opentelemetry.io/collector/semconv=$(CURDIR)/semconv  \
 		-replace go.opentelemetry.io/collector/service=$(CURDIR)/service"
 	@$(MAKE) -C $(CONTRIB_PATH) gotidy
