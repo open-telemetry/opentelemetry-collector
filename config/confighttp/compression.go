@@ -15,6 +15,7 @@ import (
 
 	"github.com/golang/snappy"
 	"github.com/klauspost/compress/zstd"
+	"github.com/pierrec/lz4/v4"
 
 	"go.opentelemetry.io/collector/config/configcompression"
 )
@@ -31,11 +32,7 @@ var availableDecoders = map[string]func(body io.ReadCloser) (io.ReadCloser, erro
 		return nil, nil
 	},
 	"gzip": func(body io.ReadCloser) (io.ReadCloser, error) {
-		gr, err := gzip.NewReader(body)
-		if err != nil {
-			return nil, err
-		}
-		return gr, nil
+		return gzip.NewReader(body)
 	},
 	"zstd": func(body io.ReadCloser) (io.ReadCloser, error) {
 		zr, err := zstd.NewReader(
@@ -52,17 +49,20 @@ var availableDecoders = map[string]func(body io.ReadCloser) (io.ReadCloser, erro
 		return zr.IOReadCloser(), nil
 	},
 	"zlib": func(body io.ReadCloser) (io.ReadCloser, error) {
-		zr, err := zlib.NewReader(body)
-		if err != nil {
-			return nil, err
-		}
-		return zr, nil
+		return zlib.NewReader(body)
 	},
 	//nolint:unparam // Ignoring the linter request to remove error return since it needs to match the method signature
 	"snappy": func(body io.ReadCloser) (io.ReadCloser, error) {
 		// Lazy Reading content to improve memory efficiency
 		return &compressReadCloser{
 			Reader: snappy.NewReader(body),
+			orig:   body,
+		}, nil
+	},
+	//nolint:unparam // Ignoring the linter request to remove error return since it needs to match the method signature
+	"lz4": func(body io.ReadCloser) (io.ReadCloser, error) {
+		return &compressReadCloser{
+			Reader: lz4.NewReader(body),
 			orig:   body,
 		}, nil
 	},
@@ -119,7 +119,6 @@ type decompressor struct {
 // httpContentDecompressor offloads the task of handling compressed HTTP requests
 // by identifying the compression format in the "Content-Encoding" header and re-writing
 // request body so that the handlers further in the chain can work on decompressed data.
-// It supports gzip and deflate/zlib compression.
 func httpContentDecompressor(h http.Handler, maxRequestBodySize int64, eh func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int), enableDecoders []string, decoders map[string]func(body io.ReadCloser) (io.ReadCloser, error)) http.Handler {
 	errHandler := defaultErrorHandler
 	if eh != nil {
@@ -156,6 +155,12 @@ func (d *decompressor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if newBody != nil {
+		defer func(orig io.ReadCloser) {
+			// Ensure the original body is correctly consumed and closed
+			_, _ = io.Copy(io.Discard, orig)
+			_ = orig.Close()
+		}(r.Body)
+
 		defer newBody.Close()
 		// "Content-Encoding" header is removed to avoid decompressing twice
 		// in case the next handler(s) have implemented a similar mechanism.
