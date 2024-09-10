@@ -194,7 +194,7 @@ func TestTelemetryInit(t *testing.T) {
 					{
 						Pull: &config.PullMetricReader{
 							Exporter: config.MetricExporter{
-								Prometheus: testutil.GetAvailableLocalAddressPrometheus(t),
+								Prometheus: getAvailableLocalAddressPrometheus(t),
 							},
 						},
 					},
