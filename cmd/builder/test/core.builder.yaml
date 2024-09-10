@@ -3,19 +3,13 @@ dist:
   otelcol_version: 0.109.0
 
 extensions:
-  - import: go.opentelemetry.io/collector/extension/zpagesextension
-    gomod: go.opentelemetry.io/collector v0.109.0
-    path: ${WORKSPACE_DIR}
+  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.109.0
 
 receivers:
-  - import: go.opentelemetry.io/collector/receiver/otlpreceiver
-    gomod: go.opentelemetry.io/collector v0.109.0
-    path: ${WORKSPACE_DIR}
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.109.0
 
 exporters:
-  - import: go.opentelemetry.io/collector/exporter/debugexporter
-    gomod: go.opentelemetry.io/collector v0.109.0
-    path: ${WORKSPACE_DIR}
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.109.0
 
 replaces:
   - go.opentelemetry.io/collector => ${WORKSPACE_DIR}
