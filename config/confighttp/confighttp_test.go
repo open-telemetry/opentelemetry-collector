@@ -35,7 +35,7 @@ import (
 	"go.opentelemetry.io/collector/extension/auth"
 	"go.opentelemetry.io/collector/extension/auth/authtest"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/localhostgate"
+	"go.opentelemetry.io/collector/internal/globalgates"
 )
 
 type customRoundTripper struct {
@@ -520,11 +520,11 @@ func TestHTTPServerSettingsError(t *testing.T) {
 }
 
 func TestHTTPServerWarning(t *testing.T) {
-	prev := localhostgate.UseLocalHostAsDefaultHostfeatureGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(localhostgate.UseLocalHostAsDefaultHostID, false))
+	prev := globalgates.UseLocalHostAsDefaultHostfeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(globalgates.UseLocalHostAsDefaultHostID, false))
 	defer func() {
 		// Restore previous value.
-		require.NoError(t, featuregate.GlobalRegistry().Set(localhostgate.UseLocalHostAsDefaultHostID, prev))
+		require.NoError(t, featuregate.GlobalRegistry().Set(globalgates.UseLocalHostAsDefaultHostID, prev))
 	}()
 
 	tests := []struct {

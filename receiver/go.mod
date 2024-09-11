@@ -58,8 +58,6 @@ replace go.opentelemetry.io/collector/pdata => ../pdata
 
 replace go.opentelemetry.io/collector/pdata/testdata => ../pdata/testdata
 
-retract v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module
-
 replace go.opentelemetry.io/collector/config/configtelemetry => ../config/configtelemetry
 
 replace go.opentelemetry.io/collector/pdata/pprofile => ../pdata/pprofile
@@ -69,3 +67,5 @@ replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../consumer/c
 replace go.opentelemetry.io/collector/consumer/consumertest => ../consumer/consumertest
 
 replace go.opentelemetry.io/collector/receiver/receiverprofiles => ./receiverprofiles
+
+retract v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module

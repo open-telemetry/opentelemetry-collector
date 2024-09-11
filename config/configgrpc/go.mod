@@ -5,7 +5,6 @@ go 1.22.0
 require (
 	github.com/mostynb/go-grpc-compression v1.2.3
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector v0.109.0
 	go.opentelemetry.io/collector/client v1.15.0
 	go.opentelemetry.io/collector/component v0.109.0
 	go.opentelemetry.io/collector/config/configauth v0.109.0
@@ -17,6 +16,7 @@ require (
 	go.opentelemetry.io/collector/config/internal v0.109.0
 	go.opentelemetry.io/collector/extension/auth v0.109.0
 	go.opentelemetry.io/collector/featuregate v1.15.0
+	go.opentelemetry.io/collector/internal/globalgates v0.109.0
 	go.opentelemetry.io/collector/pdata v1.15.0
 	go.opentelemetry.io/collector/pdata/testdata v0.109.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.54.0
@@ -63,8 +63,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace go.opentelemetry.io/collector => ../../
-
 replace go.opentelemetry.io/collector/client => ../../client
 
 replace go.opentelemetry.io/collector/config/configauth => ../configauth
@@ -85,8 +83,6 @@ replace go.opentelemetry.io/collector/extension => ../../extension
 
 replace go.opentelemetry.io/collector/extension/auth => ../../extension/auth
 
-replace go.opentelemetry.io/collector/confmap => ../../confmap
-
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 
 replace go.opentelemetry.io/collector/pdata => ../../pdata
@@ -99,8 +95,4 @@ replace go.opentelemetry.io/collector/component => ../../component
 
 replace go.opentelemetry.io/collector/consumer => ../../consumer
 
-replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../../consumer/consumerprofiles
-
-replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/consumertest
-
-replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
+replace go.opentelemetry.io/collector/internal/globalgates => ../../internal/globalgates

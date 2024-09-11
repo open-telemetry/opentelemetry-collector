@@ -76,8 +76,6 @@ replace go.opentelemetry.io/collector/component => ../../component
 
 replace go.opentelemetry.io/collector/confmap => ../../confmap
 
-replace go.opentelemetry.io/collector/featuregate => ../../featuregate
-
 replace go.opentelemetry.io/collector/pdata => ../../pdata
 
 replace go.opentelemetry.io/collector/pdata/testdata => ../../pdata/testdata
