@@ -215,7 +215,7 @@ func TestErrorResponses(t *testing.T) {
 			cfg := &Config{
 				Encoding:       EncodingProto,
 				TracesEndpoint: fmt.Sprintf("%s/v1/traces", srv.URL),
-				// Create without QueueSettings and RetryConfig so that ConsumeTraces
+				// Create without QueueConfig and RetryConfig so that ConsumeTraces
 				// returns the errors that we want to check immediately.
 			}
 			exp, err := createTracesExporter(context.Background(), exportertest.NewNopSettings(), cfg)
