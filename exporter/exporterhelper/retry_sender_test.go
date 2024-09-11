@@ -188,7 +188,7 @@ func TestQueuedRetry_ThrottleError(t *testing.T) {
 	ocs.awaitAsyncProcessing()
 
 	// The initial backoff is 10ms, but because of the throttle this should wait at least 100ms.
-	assert.True(t, 100*time.Millisecond < time.Since(start))
+	assert.Less(t, 100*time.Millisecond, time.Since(start))
 
 	mockR.checkNumRequests(t, 2)
 	ocs.checkSendItemsCount(t, 2)
