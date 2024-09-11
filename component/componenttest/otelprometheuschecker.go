@@ -82,10 +82,6 @@ func (pc *prometheusChecker) checkExporterMetrics(exporter component.ID, sent, s
 	return pc.checkExporter(exporter, "metric_points", sent, sendFailed)
 }
 
-func (pc *prometheusChecker) checkExporterProfiles(exporter component.ID, sent, sendFailed int64) error {
-	return pc.checkExporter(exporter, "samples", sent, sendFailed)
-}
-
 func (pc *prometheusChecker) checkExporter(exporter component.ID, datatype string, sent, sendFailed int64) error {
 	exporterAttrs := attributesForExporterMetrics(exporter)
 	errs := pc.checkCounter(fmt.Sprintf("exporter_sent_%s", datatype), sent, exporterAttrs)

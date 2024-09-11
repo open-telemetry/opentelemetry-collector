@@ -939,7 +939,7 @@ func TestSendProfiles(t *testing.T) {
 
 	md := rcv.getMetadata()
 	require.EqualValues(t, md.Get("header"), expectedHeader)
-	require.Equal(t, len(md.Get("User-Agent")), 1)
+	require.Len(t, md.Get("User-Agent"), 1)
 	require.Contains(t, md.Get("User-Agent")[0], "Collector/1.2.3test")
 
 	// Return partial success

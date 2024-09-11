@@ -40,7 +40,6 @@ const (
 )
 
 var (
-	fakeProfilesExporterName   = component.MustNewIDWithName("fake_profiles_exporter", "with_name")
 	fakeProfilesExporterConfig = struct{}{}
 )
 
@@ -190,7 +189,7 @@ func TestProfilesExporter_WithSpan(t *testing.T) {
 	defer otel.SetTracerProvider(nooptrace.NewTracerProvider())
 
 	le, err := NewProfilesExporter(context.Background(), set, &fakeProfilesExporterConfig, newPushProfilesData(nil))
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, le)
 	checkWrapSpanForProfilesExporter(t, sr, set.TracerProvider.Tracer("test"), le, nil, 1)
 }
@@ -203,7 +202,7 @@ func TestProfilesRequestExporter_WithSpan(t *testing.T) {
 	defer otel.SetTracerProvider(nooptrace.NewTracerProvider())
 
 	le, err := NewProfilesRequestExporter(context.Background(), set, (&fakeRequestConverter{}).requestFromProfilesFunc)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, le)
 	checkWrapSpanForProfilesExporter(t, sr, set.TracerProvider.Tracer("test"), le, nil, 1)
 }
@@ -217,7 +216,7 @@ func TestProfilesExporter_WithSpan_ReturnError(t *testing.T) {
 
 	want := errors.New("my_error")
 	le, err := NewProfilesExporter(context.Background(), set, &fakeProfilesExporterConfig, newPushProfilesData(want))
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, le)
 	checkWrapSpanForProfilesExporter(t, sr, set.TracerProvider.Tracer("test"), le, want, 1)
 }
@@ -231,7 +230,7 @@ func TestProfilesRequestExporter_WithSpan_ReturnError(t *testing.T) {
 
 	want := errors.New("my_error")
 	le, err := NewProfilesRequestExporter(context.Background(), set, (&fakeRequestConverter{requestError: want}).requestFromProfilesFunc)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, le)
 	checkWrapSpanForProfilesExporter(t, sr, set.TracerProvider.Tracer("test"), le, want, 1)
 }
@@ -244,7 +243,7 @@ func TestProfilesExporter_WithShutdown(t *testing.T) {
 	assert.NotNil(t, le)
 	assert.NoError(t, err)
 
-	assert.Nil(t, le.Shutdown(context.Background()))
+	assert.NoError(t, le.Shutdown(context.Background()))
 	assert.True(t, shutdownCalled)
 }
 
@@ -257,7 +256,7 @@ func TestProfilesRequestExporter_WithShutdown(t *testing.T) {
 	assert.NotNil(t, le)
 	assert.NoError(t, err)
 
-	assert.Nil(t, le.Shutdown(context.Background()))
+	assert.NoError(t, le.Shutdown(context.Background()))
 	assert.True(t, shutdownCalled)
 }
 
@@ -284,13 +283,6 @@ func TestProfilesRequestExporter_WithShutdown_ReturnError(t *testing.T) {
 	assert.Equal(t, le.Shutdown(context.Background()), want)
 }
 
-func newPushProfilesDataModifiedDownstream(retError error) consumerprofiles.ConsumeProfilesFunc {
-	return func(_ context.Context, profile pprofile.Profiles) error {
-		profile.ResourceProfiles().MoveAndAppendTo(pprofile.NewResourceProfilesSlice())
-		return retError
-	}
-}
-
 func newPushProfilesData(retError error) consumerprofiles.ConsumeProfilesFunc {
 	return func(_ context.Context, _ pprofile.Profiles) error {
 		return retError
@@ -313,7 +305,7 @@ func checkWrapSpanForProfilesExporter(t *testing.T, sr *tracetest.SpanRecorder, 
 
 	// Inspection time!
 	gotSpanData := sr.Ended()
-	require.Equal(t, numRequests+1, len(gotSpanData))
+	require.Len(t, gotSpanData, numRequests+1)
 
 	parentSpan := gotSpanData[numRequests]
 	require.Equalf(t, fakeProfilesParentSpanName, parentSpan.Name(), "SpanData %v", parentSpan)

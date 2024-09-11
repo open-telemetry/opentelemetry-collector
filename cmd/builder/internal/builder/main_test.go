@@ -62,6 +62,7 @@ var (
 		"/confmap/provider/yamlprovider",
 		"/consumer",
 		"/consumer/consumerprofiles",
+		"/consumer/consumererror/consumererrorprofiles",
 		"/consumer/consumertest",
 		"/connector",
 		"/connector/connectorprofiles",
