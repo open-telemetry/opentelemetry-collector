@@ -121,7 +121,7 @@ func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 	err = s.Shutdown(context.Background())
 	require.NoError(t, err)
 
-	require.Equal(t, 2, len(eventsReceived))
+	require.Len(t, eventsReceived, 2)
 
 	for instanceID, events := range eventsReceived {
 		pipelineIDs := ""

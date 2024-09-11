@@ -1012,19 +1012,19 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 				mutatingPipelines[pipelineID] = expectMutatesData
 
 				expectedReceivers, expectedExporters := expectedInstances(test.pipelineConfigs, pipelineID)
-				require.Equal(t, expectedReceivers, len(pipeline.receivers))
+				require.Len(t, pipeline.receivers, expectedReceivers)
 				require.Equal(t, len(pipelineCfg.Processors), len(pipeline.processors))
-				require.Equal(t, expectedExporters, len(pipeline.exporters))
+				require.Len(t, pipeline.exporters, expectedExporters)
 
 				for _, n := range pipeline.exporters {
 					switch c := n.(type) {
 					case *exporterNode:
 						e := c.Component.(*testcomponents.ExampleExporter)
 						require.True(t, e.Started())
-						require.Equal(t, 0, len(e.Traces))
-						require.Equal(t, 0, len(e.Metrics))
-						require.Equal(t, 0, len(e.Logs))
-						require.Equal(t, 0, len(e.Profiles))
+						require.Empty(t, e.Traces)
+						require.Empty(t, e.Metrics)
+						require.Empty(t, e.Logs)
+						require.Empty(t, e.Profiles)
 					case *connectorNode:
 						// connector needs to be unwrapped to access component as ExampleConnector
 						switch ct := c.Component.(type) {
@@ -1179,7 +1179,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 			allExporters := pg.GetExporters()
 			for _, e := range allExporters[component.DataTypeTraces] {
 				tracesExporter := e.(*testcomponents.ExampleExporter)
-				assert.Equal(t, test.expectedPerExporter, len(tracesExporter.Traces))
+				assert.Len(t, tracesExporter.Traces, test.expectedPerExporter)
 				expectedMutable := testdata.GenerateTraces(1)
 				expectedReadOnly := testdata.GenerateTraces(1)
 				expectedReadOnly.MarkReadOnly()
@@ -1193,7 +1193,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 			}
 			for _, e := range allExporters[component.DataTypeMetrics] {
 				metricsExporter := e.(*testcomponents.ExampleExporter)
-				assert.Equal(t, test.expectedPerExporter, len(metricsExporter.Metrics))
+				assert.Len(t, metricsExporter.Metrics, test.expectedPerExporter)
 				expectedMutable := testdata.GenerateMetrics(1)
 				expectedReadOnly := testdata.GenerateMetrics(1)
 				expectedReadOnly.MarkReadOnly()
@@ -1207,7 +1207,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 			}
 			for _, e := range allExporters[component.DataTypeLogs] {
 				logsExporter := e.(*testcomponents.ExampleExporter)
-				assert.Equal(t, test.expectedPerExporter, len(logsExporter.Logs))
+				assert.Len(t, logsExporter.Logs, test.expectedPerExporter)
 				expectedMutable := testdata.GenerateLogs(1)
 				expectedReadOnly := testdata.GenerateLogs(1)
 				expectedReadOnly.MarkReadOnly()
@@ -1221,7 +1221,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 			}
 			for _, e := range allExporters[componentprofiles.DataTypeProfiles] {
 				profilesExporter := e.(*testcomponents.ExampleExporter)
-				assert.Equal(t, test.expectedPerExporter, len(profilesExporter.Profiles))
+				assert.Len(t, profilesExporter.Profiles, test.expectedPerExporter)
 				expectedMutable := testdata.GenerateProfiles(1)
 				expectedReadOnly := testdata.GenerateProfiles(1)
 				expectedReadOnly.MarkReadOnly()
@@ -1381,20 +1381,20 @@ func TestConnectorRouter(t *testing.T) {
 
 	// Consume 1, validate it went right
 	assert.NoError(t, tracesReceiver.ConsumeTraces(ctx, testdata.GenerateTraces(1)))
-	assert.Equal(t, 1, len(tracesRight.Traces))
-	assert.Equal(t, 0, len(tracesLeft.Traces))
+	assert.Len(t, tracesRight.Traces, 1)
+	assert.Empty(t, tracesLeft.Traces)
 
 	// Consume 1, validate it went left
 	assert.NoError(t, tracesReceiver.ConsumeTraces(ctx, testdata.GenerateTraces(1)))
-	assert.Equal(t, 1, len(tracesRight.Traces))
-	assert.Equal(t, 1, len(tracesLeft.Traces))
+	assert.Len(t, tracesRight.Traces, 1)
+	assert.Len(t, tracesLeft.Traces, 1)
 
 	// Consume 3, validate 2 went right, 1 went left
 	assert.NoError(t, tracesReceiver.ConsumeTraces(ctx, testdata.GenerateTraces(1)))
 	assert.NoError(t, tracesReceiver.ConsumeTraces(ctx, testdata.GenerateTraces(1)))
 	assert.NoError(t, tracesReceiver.ConsumeTraces(ctx, testdata.GenerateTraces(1)))
-	assert.Equal(t, 3, len(tracesRight.Traces))
-	assert.Equal(t, 2, len(tracesLeft.Traces))
+	assert.Len(t, tracesRight.Traces, 3)
+	assert.Len(t, tracesLeft.Traces, 2)
 
 	// Get a handle for the metrics receiver and both Exporters
 	metricsReceiver := allReceivers[component.DataTypeMetrics][rcvrID].(*testcomponents.ExampleReceiver)
@@ -1403,20 +1403,20 @@ func TestConnectorRouter(t *testing.T) {
 
 	// Consume 1, validate it went right
 	assert.NoError(t, metricsReceiver.ConsumeMetrics(ctx, testdata.GenerateMetrics(1)))
-	assert.Equal(t, 1, len(metricsRight.Metrics))
-	assert.Equal(t, 0, len(metricsLeft.Metrics))
+	assert.Len(t, metricsRight.Metrics, 1)
+	assert.Empty(t, metricsLeft.Metrics)
 
 	// Consume 1, validate it went left
 	assert.NoError(t, metricsReceiver.ConsumeMetrics(ctx, testdata.GenerateMetrics(1)))
-	assert.Equal(t, 1, len(metricsRight.Metrics))
-	assert.Equal(t, 1, len(metricsLeft.Metrics))
+	assert.Len(t, metricsRight.Metrics, 1)
+	assert.Len(t, metricsLeft.Metrics, 1)
 
 	// Consume 3, validate 2 went right, 1 went left
 	assert.NoError(t, metricsReceiver.ConsumeMetrics(ctx, testdata.GenerateMetrics(1)))
 	assert.NoError(t, metricsReceiver.ConsumeMetrics(ctx, testdata.GenerateMetrics(1)))
 	assert.NoError(t, metricsReceiver.ConsumeMetrics(ctx, testdata.GenerateMetrics(1)))
-	assert.Equal(t, 3, len(metricsRight.Metrics))
-	assert.Equal(t, 2, len(metricsLeft.Metrics))
+	assert.Len(t, metricsRight.Metrics, 3)
+	assert.Len(t, metricsLeft.Metrics, 2)
 
 	// Get a handle for the logs receiver and both Exporters
 	logsReceiver := allReceivers[component.DataTypeLogs][rcvrID].(*testcomponents.ExampleReceiver)
@@ -1425,20 +1425,20 @@ func TestConnectorRouter(t *testing.T) {
 
 	// Consume 1, validate it went right
 	assert.NoError(t, logsReceiver.ConsumeLogs(ctx, testdata.GenerateLogs(1)))
-	assert.Equal(t, 1, len(logsRight.Logs))
-	assert.Equal(t, 0, len(logsLeft.Logs))
+	assert.Len(t, logsRight.Logs, 1)
+	assert.Empty(t, logsLeft.Logs)
 
 	// Consume 1, validate it went left
 	assert.NoError(t, logsReceiver.ConsumeLogs(ctx, testdata.GenerateLogs(1)))
-	assert.Equal(t, 1, len(logsRight.Logs))
-	assert.Equal(t, 1, len(logsLeft.Logs))
+	assert.Len(t, logsRight.Logs, 1)
+	assert.Len(t, logsLeft.Logs, 1)
 
 	// Consume 3, validate 2 went right, 1 went left
 	assert.NoError(t, logsReceiver.ConsumeLogs(ctx, testdata.GenerateLogs(1)))
 	assert.NoError(t, logsReceiver.ConsumeLogs(ctx, testdata.GenerateLogs(1)))
 	assert.NoError(t, logsReceiver.ConsumeLogs(ctx, testdata.GenerateLogs(1)))
-	assert.Equal(t, 3, len(logsRight.Logs))
-	assert.Equal(t, 2, len(logsLeft.Logs))
+	assert.Len(t, logsRight.Logs, 3)
+	assert.Len(t, logsLeft.Logs, 2)
 
 	// Get a handle for the profiles receiver and both Exporters
 	profilesReceiver := allReceivers[componentprofiles.DataTypeProfiles][rcvrID].(*testcomponents.ExampleReceiver)
@@ -1447,20 +1447,20 @@ func TestConnectorRouter(t *testing.T) {
 
 	// Consume 1, validate it went right
 	assert.NoError(t, profilesReceiver.ConsumeProfiles(ctx, testdata.GenerateProfiles(1)))
-	assert.Equal(t, 1, len(profilesRight.Profiles))
-	assert.Equal(t, 0, len(profilesLeft.Profiles))
+	assert.Len(t, profilesRight.Profiles, 1)
+	assert.Empty(t, profilesLeft.Profiles)
 
 	// Consume 1, validate it went left
 	assert.NoError(t, profilesReceiver.ConsumeProfiles(ctx, testdata.GenerateProfiles(1)))
-	assert.Equal(t, 1, len(profilesRight.Profiles))
-	assert.Equal(t, 1, len(profilesLeft.Profiles))
+	assert.Len(t, profilesRight.Profiles, 1)
+	assert.Len(t, profilesLeft.Profiles, 1)
 
 	// Consume 3, validate 2 went right, 1 went left
 	assert.NoError(t, profilesReceiver.ConsumeProfiles(ctx, testdata.GenerateProfiles(1)))
 	assert.NoError(t, profilesReceiver.ConsumeProfiles(ctx, testdata.GenerateProfiles(1)))
 	assert.NoError(t, profilesReceiver.ConsumeProfiles(ctx, testdata.GenerateProfiles(1)))
-	assert.Equal(t, 3, len(profilesRight.Profiles))
-	assert.Equal(t, 2, len(profilesLeft.Profiles))
+	assert.Len(t, profilesRight.Profiles, 3)
+	assert.Len(t, profilesLeft.Profiles, 2)
 
 }
 

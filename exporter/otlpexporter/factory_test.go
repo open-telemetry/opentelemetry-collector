@@ -43,7 +43,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 
 	set := exportertest.NewNopSettings()
 	oexp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, oexp)
 }
 
@@ -194,6 +194,6 @@ func TestCreateLogsExporter(t *testing.T) {
 
 	set := exportertest.NewNopSettings()
 	oexp, err := factory.CreateLogsExporter(context.Background(), set, cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, oexp)
 }

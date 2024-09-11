@@ -26,12 +26,12 @@ type baseComponent struct {
 
 func TestNewMap(t *testing.T) {
 	comps := NewMap[component.ID, *baseComponent]()
-	assert.Len(t, comps.components, 0)
+	assert.Empty(t, comps.components)
 }
 
 func TestNewSharedComponentsCreateError(t *testing.T) {
 	comps := NewMap[component.ID, *baseComponent]()
-	assert.Len(t, comps.components, 0)
+	assert.Empty(t, comps.components)
 	myErr := errors.New("my error")
 	_, err := comps.LoadOrStore(
 		id,
@@ -39,7 +39,7 @@ func TestNewSharedComponentsCreateError(t *testing.T) {
 		newNopTelemetrySettings(),
 	)
 	assert.ErrorIs(t, err, myErr)
-	assert.Len(t, comps.components, 0)
+	assert.Empty(t, comps.components)
 }
 
 func TestSharedComponentsLoadOrStore(t *testing.T) {
@@ -65,7 +65,7 @@ func TestSharedComponentsLoadOrStore(t *testing.T) {
 
 	// Shutdown nop will remove
 	assert.NoError(t, got.Shutdown(context.Background()))
-	assert.Len(t, comps.components, 0)
+	assert.Empty(t, comps.components)
 	gotThird, err := comps.LoadOrStore(
 		id,
 		func() (*baseComponent, error) { return nop, nil },
@@ -200,7 +200,7 @@ func TestReportStatusOnStartShutdown(t *testing.T) {
 				require.Equal(t, tc.shutdownErr, err)
 			}
 
-			require.Equal(t, tc.expectedNumReporterInstances, len(reportedStatuses))
+			require.Len(t, reportedStatuses, tc.expectedNumReporterInstances)
 
 			for _, actualStatuses := range reportedStatuses {
 				require.Equal(t, tc.expectedStatuses, actualStatuses)
