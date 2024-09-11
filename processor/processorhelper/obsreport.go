@@ -119,13 +119,6 @@ func (or *ObsReport) TracesDropped(ctx context.Context, numSpans int) {
 	or.recordData(ctx, component.DataTypeTraces, int64(0), int64(0), int64(numSpans), int64(0))
 }
 
-// TracesInserted reports that the trace data was inserted.
-//
-// Deprecated: [v0.109.0] This method was not used in core/contrib and it's unclear when it should have been used.
-func (or *ObsReport) TracesInserted(ctx context.Context, numSpans int) {
-	or.recordData(ctx, component.DataTypeTraces, int64(0), int64(0), int64(0), int64(numSpans))
-}
-
 // MetricsAccepted reports that the metrics were accepted.
 func (or *ObsReport) MetricsAccepted(ctx context.Context, numPoints int) {
 	or.recordData(ctx, component.DataTypeMetrics, int64(numPoints), int64(0), int64(0), int64(0))
@@ -141,13 +134,6 @@ func (or *ObsReport) MetricsDropped(ctx context.Context, numPoints int) {
 	or.recordData(ctx, component.DataTypeMetrics, int64(0), int64(0), int64(numPoints), int64(0))
 }
 
-// MetricsInserted reports that the metrics were inserted.
-//
-// Deprecated: [v0.109.0] This method was not used in core/contrib and it's unclear when it should have been used.
-func (or *ObsReport) MetricsInserted(ctx context.Context, numPoints int) {
-	or.recordData(ctx, component.DataTypeMetrics, int64(0), int64(0), int64(0), int64(numPoints))
-}
-
 // LogsAccepted reports that the logs were accepted.
 func (or *ObsReport) LogsAccepted(ctx context.Context, numRecords int) {
 	or.recordData(ctx, component.DataTypeLogs, int64(numRecords), int64(0), int64(0), int64(0))
@@ -161,11 +147,4 @@ func (or *ObsReport) LogsRefused(ctx context.Context, numRecords int) {
 // LogsDropped reports that the logs were dropped.
 func (or *ObsReport) LogsDropped(ctx context.Context, numRecords int) {
 	or.recordData(ctx, component.DataTypeLogs, int64(0), int64(0), int64(numRecords), int64(0))
-}
-
-// LogsInserted reports that the logs were inserted.
-//
-// Deprecated: [v0.109.0] This method was not used in core/contrib and it's unclear when it should have been used.
-func (or *ObsReport) LogsInserted(ctx context.Context, numRecords int) {
-	or.recordData(ctx, component.DataTypeLogs, int64(0), int64(0), int64(0), int64(numRecords))
 }
