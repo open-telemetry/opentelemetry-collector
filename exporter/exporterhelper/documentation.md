@@ -22,14 +22,6 @@ Number of metric points failed to be added to the sending queue.
 | ---- | ----------- | ---------- | --------- |
 | {datapoints} | Sum | Int | true |
 
-### otelcol_exporter_enqueue_failed_samples
-
-Number of samples failed to be added to the sending queue.
-
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| {samples} | Sum | Int | true |
-
 ### otelcol_exporter_enqueue_failed_spans
 
 Number of spans failed to be added to the sending queue.
@@ -70,14 +62,6 @@ Number of metric points in failed attempts to send to destination.
 | ---- | ----------- | ---------- | --------- |
 | {datapoints} | Sum | Int | true |
 
-### otelcol_exporter_send_failed_samples
-
-Number of samples in failed attempts to send to destination.
-
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| {samples} | Sum | Int | true |
-
 ### otelcol_exporter_send_failed_spans
 
 Number of spans in failed attempts to send to destination.
@@ -101,14 +85,6 @@ Number of metric points successfully sent to destination.
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
 | {datapoints} | Sum | Int | true |
-
-### otelcol_exporter_sent_samples
-
-Number of samples successfully sent to destination.
-
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| {samples} | Sum | Int | true |
 
 ### otelcol_exporter_sent_spans
 

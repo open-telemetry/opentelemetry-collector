@@ -32,17 +32,14 @@ type TelemetryBuilder struct {
 	meter                             metric.Meter
 	ExporterEnqueueFailedLogRecords   metric.Int64Counter
 	ExporterEnqueueFailedMetricPoints metric.Int64Counter
-	ExporterEnqueueFailedSamples      metric.Int64Counter
 	ExporterEnqueueFailedSpans        metric.Int64Counter
 	ExporterQueueCapacity             metric.Int64ObservableGauge
 	ExporterQueueSize                 metric.Int64ObservableGauge
 	ExporterSendFailedLogRecords      metric.Int64Counter
 	ExporterSendFailedMetricPoints    metric.Int64Counter
-	ExporterSendFailedSamples         metric.Int64Counter
 	ExporterSendFailedSpans           metric.Int64Counter
 	ExporterSentLogRecords            metric.Int64Counter
 	ExporterSentMetricPoints          metric.Int64Counter
-	ExporterSentSamples               metric.Int64Counter
 	ExporterSentSpans                 metric.Int64Counter
 	meters                            map[configtelemetry.Level]metric.Meter
 }
@@ -107,12 +104,6 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ExporterEnqueueFailedSamples, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
-		"otelcol_exporter_enqueue_failed_samples",
-		metric.WithDescription("Number of samples failed to be added to the sending queue."),
-		metric.WithUnit("{samples}"),
-	)
-	errs = errors.Join(errs, err)
 	builder.ExporterEnqueueFailedSpans, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_exporter_enqueue_failed_spans",
 		metric.WithDescription("Number of spans failed to be added to the sending queue."),
@@ -131,12 +122,6 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ExporterSendFailedSamples, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
-		"otelcol_exporter_send_failed_samples",
-		metric.WithDescription("Number of samples in failed attempts to send to destination."),
-		metric.WithUnit("{samples}"),
-	)
-	errs = errors.Join(errs, err)
 	builder.ExporterSendFailedSpans, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_exporter_send_failed_spans",
 		metric.WithDescription("Number of spans in failed attempts to send to destination."),
@@ -153,12 +138,6 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 		"otelcol_exporter_sent_metric_points",
 		metric.WithDescription("Number of metric points successfully sent to destination."),
 		metric.WithUnit("{datapoints}"),
-	)
-	errs = errors.Join(errs, err)
-	builder.ExporterSentSamples, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
-		"otelcol_exporter_sent_samples",
-		metric.WithDescription("Number of samples successfully sent to destination."),
-		metric.WithUnit("{samples}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterSentSpans, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(

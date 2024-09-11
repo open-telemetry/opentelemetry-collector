@@ -182,99 +182,6 @@ func TestProfilesExporter_WithPersistentQueue(t *testing.T) {
 	}, 500*time.Millisecond, 10*time.Millisecond)
 }
 
-func TestProfilesExporter_WithRecordMetrics(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(fakeProfilesExporterName)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
-
-	le, err := NewProfilesExporter(context.Background(), exporter.Settings{ID: fakeProfilesExporterName, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, &fakeProfilesExporterConfig, newPushProfilesData(nil))
-	require.NoError(t, err)
-	require.NotNil(t, le)
-
-	checkRecordedMetricsForProfilesExporter(t, tt, le, nil)
-}
-
-func TestProfilesExporter_pProfileModifiedDownStream_WithRecordMetrics(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(fakeProfilesExporterName)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
-
-	le, err := NewProfilesExporter(context.Background(), exporter.Settings{ID: fakeProfilesExporterName, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, &fakeProfilesExporterConfig, newPushProfilesDataModifiedDownstream(nil), WithCapabilities(consumer.Capabilities{MutatesData: true}))
-	assert.NotNil(t, le)
-	assert.NoError(t, err)
-	ld := testdata.GenerateProfiles(2)
-
-	assert.NoError(t, le.ConsumeProfiles(context.Background(), ld))
-	assert.Equal(t, 0, ld.SampleCount())
-	require.NoError(t, tt.CheckExporterProfiles(int64(2), 0))
-}
-
-func TestProfilesRequestExporter_WithRecordMetrics(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(fakeProfilesExporterName)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
-
-	le, err := NewProfilesRequestExporter(context.Background(),
-		exporter.Settings{ID: fakeProfilesExporterName, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-		(&fakeRequestConverter{}).requestFromProfilesFunc)
-	require.NoError(t, err)
-	require.NotNil(t, le)
-
-	checkRecordedMetricsForProfilesExporter(t, tt, le, nil)
-}
-
-func TestProfilesExporter_WithRecordMetrics_ReturnError(t *testing.T) {
-	want := errors.New("my_error")
-	tt, err := componenttest.SetupTelemetry(fakeProfilesExporterName)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
-
-	le, err := NewProfilesExporter(context.Background(), exporter.Settings{ID: fakeProfilesExporterName, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, &fakeProfilesExporterConfig, newPushProfilesData(want))
-	require.Nil(t, err)
-	require.NotNil(t, le)
-
-	checkRecordedMetricsForProfilesExporter(t, tt, le, want)
-}
-
-func TestProfilesRequestExporter_WithRecordMetrics_ExportError(t *testing.T) {
-	want := errors.New("export_error")
-	tt, err := componenttest.SetupTelemetry(fakeProfilesExporterName)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
-
-	le, err := NewProfilesRequestExporter(context.Background(), exporter.Settings{ID: fakeProfilesExporterName, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-		(&fakeRequestConverter{requestError: want}).requestFromProfilesFunc)
-	require.Nil(t, err)
-	require.NotNil(t, le)
-
-	checkRecordedMetricsForProfilesExporter(t, tt, le, want)
-}
-
-func TestProfilesExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(fakeProfilesExporterName)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
-
-	rCfg := configretry.NewDefaultBackOffConfig()
-	qCfg := NewDefaultQueueSettings()
-	qCfg.NumConsumers = 1
-	qCfg.QueueSize = 2
-	wantErr := errors.New("some-error")
-	te, err := NewProfilesExporter(context.Background(), exporter.Settings{ID: fakeProfilesExporterName, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, &fakeProfilesExporterConfig, newPushProfilesData(wantErr), WithRetry(rCfg), WithQueue(qCfg))
-	require.NoError(t, err)
-	require.NotNil(t, te)
-
-	md := testdata.GenerateProfiles(3)
-	const numBatches = 7
-	for i := 0; i < numBatches; i++ {
-		// errors are checked in the checkExporterEnqueueFailedProfilesStats function below.
-		_ = te.ConsumeProfiles(context.Background(), md)
-	}
-
-	// 2 batched must be in queue, and 5 batches (15 profile records) rejected due to queue overflow
-	require.NoError(t, tt.CheckExporterEnqueueFailedProfiles(int64(15)))
-}
-
 func TestProfilesExporter_WithSpan(t *testing.T) {
 	set := exportertest.NewNopSettings()
 	sr := new(tracetest.SpanRecorder)
@@ -387,21 +294,6 @@ func newPushProfilesDataModifiedDownstream(retError error) consumerprofiles.Cons
 func newPushProfilesData(retError error) consumerprofiles.ConsumeProfilesFunc {
 	return func(_ context.Context, _ pprofile.Profiles) error {
 		return retError
-	}
-}
-
-func checkRecordedMetricsForProfilesExporter(t *testing.T, tt componenttest.TestTelemetry, le exporterprofiles.Profiles, wantError error) {
-	ld := testdata.GenerateProfiles(2)
-	const numBatches = 7
-	for i := 0; i < numBatches; i++ {
-		require.Equal(t, wantError, le.ConsumeProfiles(context.Background(), ld))
-	}
-
-	// TODO: When the new metrics correctly count partial dropped fix this.
-	if wantError != nil {
-		require.NoError(t, tt.CheckExporterProfiles(0, int64(numBatches*ld.SampleCount())))
-	} else {
-		require.NoError(t, tt.CheckExporterProfiles(int64(numBatches*ld.SampleCount()), 0))
 	}
 }
 

@@ -17,7 +17,6 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterprofiles"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
-	"go.opentelemetry.io/collector/exporter/internal/queue"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 )
 
@@ -134,11 +133,7 @@ func NewProfilesRequestExporter(
 				zap.Error(err))
 			return consumererror.NewPermanent(cErr)
 		}
-		sErr := be.send(ctx, req)
-		if errors.Is(sErr, queue.ErrQueueIsFull) {
-			be.obsrep.recordEnqueueFailure(ctx, componentprofiles.DataTypeProfiles, int64(req.ItemsCount()))
-		}
-		return sErr
+		return be.send(ctx, req)
 	}, be.consumerOptions...)
 
 	return &profileExporter{
