@@ -19,10 +19,10 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/internal/queue"
-	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
 func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
@@ -226,7 +226,7 @@ func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
 			require.NoError(t, be.send(context.Background(), newErrorRequest()))
 		}
 		require.NoError(t, tt.CheckExporterMetricGauge("otelcol_exporter_queue_size", int64(7),
-			attribute.String(obsmetrics.DataTypeKey, dataType.String())))
+			attribute.String(internal.DataTypeKey, dataType.String())))
 
 		assert.NoError(t, be.Shutdown(context.Background()))
 	}

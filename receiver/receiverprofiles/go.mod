@@ -37,8 +37,6 @@ require (
 
 replace go.opentelemetry.io/collector/receiver => ../
 
-replace go.opentelemetry.io/collector/confmap => ../../confmap
-
 replace go.opentelemetry.io/collector/consumer => ../../consumer
 
 replace go.opentelemetry.io/collector/component => ../../component
@@ -47,16 +45,10 @@ replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../../consume
 
 replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
 
-replace go.opentelemetry.io/collector => ../..
-
 replace go.opentelemetry.io/collector/pdata/testdata => ../../pdata/testdata
-
-replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 
 replace go.opentelemetry.io/collector/pdata/pprofile => ../../pdata/pprofile
 
 replace go.opentelemetry.io/collector/pdata => ../../pdata
 
 replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/consumertest
-
-replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus

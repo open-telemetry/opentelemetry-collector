@@ -1,9 +1,12 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package obsmetrics // import "go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
+package internal // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 
 const (
+	// spanNameSep is duplicate between receiver and exporter.
+	spanNameSep = "/"
+
 	// ExporterKey used to identify exporters in metrics and traces.
 	ExporterKey = "exporter"
 
@@ -24,12 +27,9 @@ const (
 	SentLogRecordsKey = "sent_log_records"
 	// FailedToSendLogRecordsKey used to track logs that failed to be sent by exporters.
 	FailedToSendLogRecordsKey = "send_failed_log_records"
-)
 
-var (
-	ExporterPrefix                 = ExporterKey + SpanNameSep
-	ExporterMetricPrefix           = ExporterKey + MetricNameSep
-	ExportTraceDataOperationSuffix = SpanNameSep + "traces"
-	ExportMetricsOperationSuffix   = SpanNameSep + "metrics"
-	ExportLogsOperationSuffix      = SpanNameSep + "logs"
+	ExporterPrefix                 = ExporterKey + spanNameSep
+	ExportTraceDataOperationSuffix = spanNameSep + "traces"
+	ExportMetricsOperationSuffix   = spanNameSep + "metrics"
+	ExportLogsOperationSuffix      = spanNameSep + "logs"
 )

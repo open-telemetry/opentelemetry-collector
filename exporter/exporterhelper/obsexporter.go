@@ -13,8 +13,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
-	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
 // obsReport is a helper to add observability to an exporter.
@@ -41,11 +41,11 @@ func newExporter(cfg obsReportSettings) (*obsReport, error) {
 	}
 
 	return &obsReport{
-		spanNamePrefix: obsmetrics.ExporterPrefix + cfg.exporterID.String(),
+		spanNamePrefix: internal.ExporterPrefix + cfg.exporterID.String(),
 		tracer:         cfg.exporterCreateSettings.TracerProvider.Tracer(cfg.exporterID.String()),
 		dataType:       cfg.dataType,
 		otelAttrs: []attribute.KeyValue{
-			attribute.String(obsmetrics.ExporterKey, cfg.exporterID.String()),
+			attribute.String(internal.ExporterKey, cfg.exporterID.String()),
 		},
 		telemetryBuilder: telemetryBuilder,
 	}, nil
@@ -55,21 +55,21 @@ func newExporter(cfg obsReportSettings) (*obsReport, error) {
 // The returned context should be used in other calls to the Exporter functions
 // dealing with the same export operation.
 func (or *obsReport) startTracesOp(ctx context.Context) context.Context {
-	return or.startOp(ctx, obsmetrics.ExportTraceDataOperationSuffix)
+	return or.startOp(ctx, internal.ExportTraceDataOperationSuffix)
 }
 
 // endTracesOp completes the export operation that was started with startTracesOp.
 func (or *obsReport) endTracesOp(ctx context.Context, numSpans int, err error) {
 	numSent, numFailedToSend := toNumItems(numSpans, err)
 	or.recordMetrics(context.WithoutCancel(ctx), component.DataTypeTraces, numSent, numFailedToSend)
-	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentSpansKey, obsmetrics.FailedToSendSpansKey)
+	endSpan(ctx, err, numSent, numFailedToSend, internal.SentSpansKey, internal.FailedToSendSpansKey)
 }
 
 // startMetricsOp is called at the start of an Export operation.
 // The returned context should be used in other calls to the Exporter functions
 // dealing with the same export operation.
 func (or *obsReport) startMetricsOp(ctx context.Context) context.Context {
-	return or.startOp(ctx, obsmetrics.ExportMetricsOperationSuffix)
+	return or.startOp(ctx, internal.ExportMetricsOperationSuffix)
 }
 
 // endMetricsOp completes the export operation that was started with
@@ -79,21 +79,21 @@ func (or *obsReport) startMetricsOp(ctx context.Context) context.Context {
 func (or *obsReport) endMetricsOp(ctx context.Context, numMetricPoints int, err error) {
 	numSent, numFailedToSend := toNumItems(numMetricPoints, err)
 	or.recordMetrics(context.WithoutCancel(ctx), component.DataTypeMetrics, numSent, numFailedToSend)
-	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentMetricPointsKey, obsmetrics.FailedToSendMetricPointsKey)
+	endSpan(ctx, err, numSent, numFailedToSend, internal.SentMetricPointsKey, internal.FailedToSendMetricPointsKey)
 }
 
 // startLogsOp is called at the start of an Export operation.
 // The returned context should be used in other calls to the Exporter functions
 // dealing with the same export operation.
 func (or *obsReport) startLogsOp(ctx context.Context) context.Context {
-	return or.startOp(ctx, obsmetrics.ExportLogsOperationSuffix)
+	return or.startOp(ctx, internal.ExportLogsOperationSuffix)
 }
 
 // endLogsOp completes the export operation that was started with startLogsOp.
 func (or *obsReport) endLogsOp(ctx context.Context, numLogRecords int, err error) {
 	numSent, numFailedToSend := toNumItems(numLogRecords, err)
 	or.recordMetrics(context.WithoutCancel(ctx), component.DataTypeLogs, numSent, numFailedToSend)
-	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentLogRecordsKey, obsmetrics.FailedToSendLogRecordsKey)
+	endSpan(ctx, err, numSent, numFailedToSend, internal.SentLogRecordsKey, internal.FailedToSendLogRecordsKey)
 }
 
 // startOp creates the span used to trace the operation. Returning
