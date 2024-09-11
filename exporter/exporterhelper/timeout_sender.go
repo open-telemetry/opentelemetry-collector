@@ -9,8 +9,6 @@ import (
 	"time"
 )
 
-// TimeoutSettings for timeout. The timeout applies to individual attempts to send data to the backend.
-//
 // Deprecated: [v0.110.0] Use TimeoutConfig instead.
 type TimeoutSettings = TimeoutConfig
 
@@ -29,8 +27,6 @@ func (ts *TimeoutConfig) Validate() error {
 	return nil
 }
 
-// NewDefaultTimeoutSettings returns the default settings for TimeoutSettings.
-//
 // Deprecated: [v0.110.0] Use NewDefaultTimeoutConfig instead.
 func NewDefaultTimeoutSettings() TimeoutSettings {
 	return NewDefaultTimeoutConfig()

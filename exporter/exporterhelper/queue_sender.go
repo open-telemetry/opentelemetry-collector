@@ -22,8 +22,6 @@ import (
 
 const defaultQueueSize = 1000
 
-// QueueSettings defines configuration for queueing batches before sending to the consumerSender.
-//
 // Deprecated: [v0.110.0] Use QueueConfig instead.
 type QueueSettings = QueueConfig
 
@@ -42,8 +40,6 @@ type QueueConfig struct {
 	StorageID *component.ID `mapstructure:"storage"`
 }
 
-// NewDefaultQueueSettings returns the default settings for QueueSettings.
-//
 // Deprecated: [v0.110.0] Use NewDefaultQueueConfig instead.
 func NewDefaultQueueSettings() QueueSettings {
 	return NewDefaultQueueConfig()
