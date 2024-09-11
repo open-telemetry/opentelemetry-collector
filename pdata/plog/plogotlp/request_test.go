@@ -39,9 +39,9 @@ var logsRequestJSON = []byte(`
 
 func TestRequestToPData(t *testing.T) {
 	tr := NewExportRequest()
-	assert.Equal(t, tr.Logs().LogRecordCount(), 0)
+	assert.Equal(t, 0, tr.Logs().LogRecordCount())
 	tr.Logs().ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-	assert.Equal(t, tr.Logs().LogRecordCount(), 1)
+	assert.Equal(t, 1, tr.Logs().LogRecordCount())
 }
 
 func TestRequestJSON(t *testing.T) {

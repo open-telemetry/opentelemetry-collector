@@ -365,7 +365,7 @@ func TestTracesExporter_WithShutdown_ReturnError(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.NoError(t, te.Start(context.Background(), componenttest.NewNopHost()))
-	assert.Equal(t, te.Shutdown(context.Background()), want)
+	assert.Equal(t, want, te.Shutdown(context.Background()))
 }
 
 func TestTracesRequestExporter_WithShutdown_ReturnError(t *testing.T) {
@@ -378,7 +378,7 @@ func TestTracesRequestExporter_WithShutdown_ReturnError(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.NoError(t, te.Start(context.Background(), componenttest.NewNopHost()))
-	assert.Equal(t, te.Shutdown(context.Background()), want)
+	assert.Equal(t, want, te.Shutdown(context.Background()))
 }
 
 func newTraceDataPusher(retError error) consumer.ConsumeTracesFunc {
