@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 )
 
 var (
@@ -55,13 +55,13 @@ func TestExportTraceDataOp(t *testing.T) {
 			switch {
 			case params[i].err == nil:
 				sentSpans += params[i].items
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.SentSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.FailedToSendSpansKey, Value: attribute.Int64Value(0)})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.SentSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedToSendSpansKey, Value: attribute.Int64Value(0)})
 				assert.Equal(t, codes.Unset, span.Status().Code)
 			case errors.Is(params[i].err, errFake):
 				failedToSendSpans += params[i].items
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.SentSpansKey, Value: attribute.Int64Value(0)})
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.FailedToSendSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.SentSpansKey, Value: attribute.Int64Value(0)})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedToSendSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
 				assert.Equal(t, codes.Error, span.Status().Code)
 				assert.Equal(t, params[i].err.Error(), span.Status().Description)
 			default:
@@ -104,13 +104,13 @@ func TestExportMetricsOp(t *testing.T) {
 			switch {
 			case params[i].err == nil:
 				sentMetricPoints += params[i].items
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.SentMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.FailedToSendMetricPointsKey, Value: attribute.Int64Value(0)})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.SentMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedToSendMetricPointsKey, Value: attribute.Int64Value(0)})
 				assert.Equal(t, codes.Unset, span.Status().Code)
 			case errors.Is(params[i].err, errFake):
 				failedToSendMetricPoints += params[i].items
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.SentMetricPointsKey, Value: attribute.Int64Value(0)})
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.FailedToSendMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.SentMetricPointsKey, Value: attribute.Int64Value(0)})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedToSendMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
 				assert.Equal(t, codes.Error, span.Status().Code)
 				assert.Equal(t, params[i].err.Error(), span.Status().Description)
 			default:
@@ -153,13 +153,13 @@ func TestExportLogsOp(t *testing.T) {
 			switch {
 			case params[i].err == nil:
 				sentLogRecords += params[i].items
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.SentLogRecordsKey, Value: attribute.Int64Value(int64(params[i].items))})
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.FailedToSendLogRecordsKey, Value: attribute.Int64Value(0)})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.SentLogRecordsKey, Value: attribute.Int64Value(int64(params[i].items))})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedToSendLogRecordsKey, Value: attribute.Int64Value(0)})
 				assert.Equal(t, codes.Unset, span.Status().Code)
 			case errors.Is(params[i].err, errFake):
 				failedToSendLogRecords += params[i].items
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.SentLogRecordsKey, Value: attribute.Int64Value(0)})
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.FailedToSendLogRecordsKey, Value: attribute.Int64Value(int64(params[i].items))})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.SentLogRecordsKey, Value: attribute.Int64Value(0)})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedToSendLogRecordsKey, Value: attribute.Int64Value(int64(params[i].items))})
 				assert.Equal(t, codes.Error, span.Status().Code)
 				assert.Equal(t, params[i].err.Error(), span.Status().Description)
 			default:

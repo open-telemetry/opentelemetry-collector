@@ -78,11 +78,7 @@ replace go.opentelemetry.io/collector/receiver => ../../receiver
 
 replace go.opentelemetry.io/collector/semconv => ../../semconv
 
-replace go.opentelemetry.io/collector/featuregate => ../../featuregate
-
 replace go.opentelemetry.io/collector/consumer => ../../consumer
-
-replace go.opentelemetry.io/collector => ../..
 
 replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
 
@@ -97,7 +93,5 @@ replace go.opentelemetry.io/collector/pdata/pprofile => ../../pdata/pprofile
 replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../../consumer/consumerprofiles
 
 replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/consumertest
-
-replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
 
 replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../../receiver/receiverprofiles

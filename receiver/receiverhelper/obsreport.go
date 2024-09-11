@@ -14,8 +14,8 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/internal"
 	"go.opentelemetry.io/collector/receiver/receiverhelper/internal/metadata"
 )
 
@@ -54,14 +54,14 @@ func newReceiver(cfg ObsReportSettings) (*ObsReport, error) {
 		return nil, err
 	}
 	return &ObsReport{
-		spanNamePrefix: obsmetrics.ReceiverPrefix + cfg.ReceiverID.String(),
+		spanNamePrefix: internal.ReceiverPrefix + cfg.ReceiverID.String(),
 		transport:      cfg.Transport,
 		longLivedCtx:   cfg.LongLivedCtx,
 		tracer:         cfg.ReceiverCreateSettings.TracerProvider.Tracer(cfg.ReceiverID.String()),
 
 		otelAttrs: []attribute.KeyValue{
-			attribute.String(obsmetrics.ReceiverKey, cfg.ReceiverID.String()),
-			attribute.String(obsmetrics.TransportKey, cfg.Transport),
+			attribute.String(internal.ReceiverKey, cfg.ReceiverID.String()),
+			attribute.String(internal.TransportKey, cfg.Transport),
 		},
 		telemetryBuilder: telemetryBuilder,
 	}, nil
@@ -71,7 +71,7 @@ func newReceiver(cfg ObsReportSettings) (*ObsReport, error) {
 // The returned context should be used in other calls to the obsreport functions
 // dealing with the same receive operation.
 func (rec *ObsReport) StartTracesOp(operationCtx context.Context) context.Context {
-	return rec.startOp(operationCtx, obsmetrics.ReceiveTraceDataOperationSuffix)
+	return rec.startOp(operationCtx, internal.ReceiveTraceDataOperationSuffix)
 }
 
 // EndTracesOp completes the receive operation that was started with
@@ -89,7 +89,7 @@ func (rec *ObsReport) EndTracesOp(
 // The returned context should be used in other calls to the obsreport functions
 // dealing with the same receive operation.
 func (rec *ObsReport) StartLogsOp(operationCtx context.Context) context.Context {
-	return rec.startOp(operationCtx, obsmetrics.ReceiverLogsOperationSuffix)
+	return rec.startOp(operationCtx, internal.ReceiverLogsOperationSuffix)
 }
 
 // EndLogsOp completes the receive operation that was started with
@@ -107,7 +107,7 @@ func (rec *ObsReport) EndLogsOp(
 // The returned context should be used in other calls to the obsreport functions
 // dealing with the same receive operation.
 func (rec *ObsReport) StartMetricsOp(operationCtx context.Context) context.Context {
-	return rec.startOp(operationCtx, obsmetrics.ReceiverMetricsOperationSuffix)
+	return rec.startOp(operationCtx, internal.ReceiverMetricsOperationSuffix)
 }
 
 // EndMetricsOp completes the receive operation that was started with
@@ -141,7 +141,7 @@ func (rec *ObsReport) startOp(receiverCtx context.Context, operationSuffix strin
 	}
 
 	if rec.transport != "" {
-		span.SetAttributes(attribute.String(obsmetrics.TransportKey, rec.transport))
+		span.SetAttributes(attribute.String(internal.TransportKey, rec.transport))
 	}
 	return ctx
 }
@@ -170,18 +170,18 @@ func (rec *ObsReport) endOp(
 		var acceptedItemsKey, refusedItemsKey string
 		switch dataType {
 		case component.DataTypeTraces:
-			acceptedItemsKey = obsmetrics.AcceptedSpansKey
-			refusedItemsKey = obsmetrics.RefusedSpansKey
+			acceptedItemsKey = internal.AcceptedSpansKey
+			refusedItemsKey = internal.RefusedSpansKey
 		case component.DataTypeMetrics:
-			acceptedItemsKey = obsmetrics.AcceptedMetricPointsKey
-			refusedItemsKey = obsmetrics.RefusedMetricPointsKey
+			acceptedItemsKey = internal.AcceptedMetricPointsKey
+			refusedItemsKey = internal.RefusedMetricPointsKey
 		case component.DataTypeLogs:
-			acceptedItemsKey = obsmetrics.AcceptedLogRecordsKey
-			refusedItemsKey = obsmetrics.RefusedLogRecordsKey
+			acceptedItemsKey = internal.AcceptedLogRecordsKey
+			refusedItemsKey = internal.RefusedLogRecordsKey
 		}
 
 		span.SetAttributes(
-			attribute.String(obsmetrics.FormatKey, format),
+			attribute.String(internal.FormatKey, format),
 			attribute.Int64(acceptedItemsKey, int64(numAccepted)),
 			attribute.Int64(refusedItemsKey, int64(numRefused)),
 		)
