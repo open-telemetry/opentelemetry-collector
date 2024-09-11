@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentprofiles"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
@@ -96,6 +97,20 @@ func (or *obsReport) endLogsOp(ctx context.Context, numLogRecords int, err error
 	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentLogRecordsKey, obsmetrics.FailedToSendLogRecordsKey)
 }
 
+// startProfilesOp is called at the start of an Export operation.
+// The returned context should be used in other calls to the Exporter functions
+// dealing with the same export operation.
+func (or *obsReport) startProfilesOp(ctx context.Context) context.Context {
+	return or.startOp(ctx, obsmetrics.ExportTraceDataOperationSuffix)
+}
+
+// endProfilesOp completes the export operation that was started with startProfilesOp.
+func (or *obsReport) endProfilesOp(ctx context.Context, numSpans int, err error) {
+	numSent, numFailedToSend := toNumItems(numSpans, err)
+	or.recordMetrics(context.WithoutCancel(ctx), componentprofiles.DataTypeProfiles, numSent, numFailedToSend)
+	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentSamplesKey, obsmetrics.FailedToSendSamplesKey)
+}
+
 // startOp creates the span used to trace the operation. Returning
 // the updated context and the created span.
 func (or *obsReport) startOp(ctx context.Context, operationSuffix string) context.Context {
@@ -116,6 +131,9 @@ func (or *obsReport) recordMetrics(ctx context.Context, dataType component.DataT
 	case component.DataTypeLogs:
 		sentMeasure = or.telemetryBuilder.ExporterSentLogRecords
 		failedMeasure = or.telemetryBuilder.ExporterSendFailedLogRecords
+	case componentprofiles.DataTypeProfiles:
+		sentMeasure = or.telemetryBuilder.ExporterSentSamples
+		failedMeasure = or.telemetryBuilder.ExporterSendFailedSamples
 	}
 
 	sentMeasure.Add(ctx, sent, metric.WithAttributes(or.otelAttrs...))
@@ -153,6 +171,8 @@ func (or *obsReport) recordEnqueueFailure(ctx context.Context, dataType componen
 		enqueueFailedMeasure = or.telemetryBuilder.ExporterEnqueueFailedMetricPoints
 	case component.DataTypeLogs:
 		enqueueFailedMeasure = or.telemetryBuilder.ExporterEnqueueFailedLogRecords
+	case componentprofiles.DataTypeProfiles:
+		enqueueFailedMeasure = or.telemetryBuilder.ExporterEnqueueFailedSamples
 	}
 
 	enqueueFailedMeasure.Add(ctx, failed, metric.WithAttributes(or.otelAttrs...))

@@ -5,7 +5,7 @@ status:
   class: exporter
   not_component: true
   stability:
-    beta: [traces, metrics, logs]
+    beta: [traces, metrics, logs, profiles]
   distributions: [core, contrib]
 
 telemetry:
@@ -78,6 +78,30 @@ telemetry:
       enabled: true
       description: Number of log records failed to be added to the sending queue.
       unit: "{records}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    exporter_sent_samples:
+      enabled: true
+      description: Number of samples successfully sent to destination.
+      unit: "{samples}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    exporter_send_failed_samples:
+      enabled: true
+      description: Number of samples in failed attempts to send to destination.
+      unit: "{samples}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    exporter_enqueue_failed_samples:
+      enabled: true
+      description: Number of samples failed to be added to the sending queue.
+      unit: "{samples}"
       sum:
         value_type: int
         monotonic: true

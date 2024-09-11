@@ -24,4 +24,8 @@ var (
 	errNilMetricsConverter = errors.New("nil RequestFromMetricsFunc")
 	// errNilLogsConverter is returned when a nil RequestFromLogsFunc is given.
 	errNilLogsConverter = errors.New("nil RequestFromLogsFunc")
+	// errNilPushProfileData is returned when a nil PushProfiles is given.
+	errNilPushProfileData = errors.New("nil PushProfiles")
+	// errNilProfilesConverter is returned when a nil RequestFromProfilesFunc is given.
+	errNilProfilesConverter = errors.New("nil RequestFromProfilesFunc")
 )

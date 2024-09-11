@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -117,10 +118,11 @@ func fakeBatchMergeSplitFunc(ctx context.Context, cfg exporterbatcher.MaxSizeCon
 }
 
 type fakeRequestConverter struct {
-	metricsError error
-	tracesError  error
-	logsError    error
-	requestError error
+	metricsError  error
+	tracesError   error
+	logsError     error
+	profilesError error
+	requestError  error
 }
 
 func (frc *fakeRequestConverter) requestFromMetricsFunc(_ context.Context, md pmetric.Metrics) (Request, error) {
@@ -133,4 +135,8 @@ func (frc *fakeRequestConverter) requestFromTracesFunc(_ context.Context, md ptr
 
 func (frc *fakeRequestConverter) requestFromLogsFunc(_ context.Context, md plog.Logs) (Request, error) {
 	return &fakeRequest{items: md.LogRecordCount(), exportErr: frc.requestError}, frc.logsError
+}
+
+func (frc *fakeRequestConverter) requestFromProfilesFunc(_ context.Context, md pprofile.Profiles) (Request, error) {
+	return &fakeRequest{items: md.SampleCount(), exportErr: frc.requestError}, frc.profilesError
 }
