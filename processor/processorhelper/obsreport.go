@@ -11,8 +11,8 @@ import (
 	"go.opentelemetry.io/otel/metric"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/internal"
 	"go.opentelemetry.io/collector/processor/processorhelper/internal/metadata"
 )
 
@@ -20,14 +20,14 @@ import (
 // the standards used in the Collector. The configType should be the same
 // value used to identify the type on the config.
 func BuildCustomMetricName(configType, metric string) string {
-	componentPrefix := obsmetrics.ProcessorMetricPrefix
-	if !strings.HasSuffix(componentPrefix, obsmetrics.MetricNameSep) {
-		componentPrefix += obsmetrics.MetricNameSep
+	componentPrefix := internal.ProcessorMetricPrefix
+	if !strings.HasSuffix(componentPrefix, internal.MetricNameSep) {
+		componentPrefix += internal.MetricNameSep
 	}
 	if configType == "" {
 		return componentPrefix
 	}
-	return componentPrefix + configType + obsmetrics.MetricNameSep + metric
+	return componentPrefix + configType + internal.MetricNameSep + metric
 }
 
 // ObsReport is a helper to add observability to a processor.
@@ -54,7 +54,7 @@ func newObsReport(cfg ObsReportSettings) (*ObsReport, error) {
 	}
 	return &ObsReport{
 		otelAttrs: []attribute.KeyValue{
-			attribute.String(obsmetrics.ProcessorKey, cfg.ProcessorID.String()),
+			attribute.String(internal.ProcessorKey, cfg.ProcessorID.String()),
 		},
 		telemetryBuilder: telemetryBuilder,
 	}, nil

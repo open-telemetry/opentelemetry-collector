@@ -41,8 +41,6 @@ replace go.opentelemetry.io/collector/extension => ../../extension
 
 replace go.opentelemetry.io/collector/extension/experimental/storage => ../../extension/experimental/storage
 
-replace go.opentelemetry.io/collector => ../..
-
 replace go.opentelemetry.io/collector/pdata/pprofile => ../../pdata/pprofile
 
 replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
@@ -50,10 +48,6 @@ replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/con
 replace go.opentelemetry.io/collector/config/configretry => ../../config/configretry
 
 replace go.opentelemetry.io/collector/pdata/testdata => ../../pdata/testdata
-
-replace go.opentelemetry.io/collector/featuregate => ../../featuregate
-
-replace go.opentelemetry.io/collector/confmap => ../../confmap
 
 replace go.opentelemetry.io/collector/component => ../../component
 
@@ -66,7 +60,5 @@ replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/co
 replace go.opentelemetry.io/collector/consumer => ../../consumer
 
 replace go.opentelemetry.io/collector/exporter => ../
-
-replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
 
 replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../../receiver/receiverprofiles

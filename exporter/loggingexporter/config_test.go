@@ -138,7 +138,7 @@ func Test_UnmarshalMarshalled(t *testing.T) {
 
 			if tc.expectedErr == "" {
 				assert.NoError(t, err)
-				assert.Equal(t, outCfg, tc.expectedConfig)
+				assert.Equal(t, tc.expectedConfig, outCfg)
 				return
 			}
 			assert.Error(t, err)

@@ -15,9 +15,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/internal/queue"
-	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
 const defaultQueueSize = 1000
@@ -90,7 +90,7 @@ func newQueueSender(q exporterqueue.Queue[Request], set exporter.Settings, numCo
 	qs := &queueSender{
 		queue:          q,
 		numConsumers:   numConsumers,
-		traceAttribute: attribute.String(obsmetrics.ExporterKey, set.ID.String()),
+		traceAttribute: attribute.String(internal.ExporterKey, set.ID.String()),
 		obsrep:         obsrep,
 		exporterID:     set.ID,
 	}
@@ -112,7 +112,7 @@ func (qs *queueSender) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 
-	dataTypeAttr := attribute.String(obsmetrics.DataTypeKey, qs.obsrep.dataType.String())
+	dataTypeAttr := attribute.String(internal.DataTypeKey, qs.obsrep.dataType.String())
 	return multierr.Append(
 		qs.obsrep.telemetryBuilder.InitExporterQueueSize(func() int64 { return int64(qs.queue.Size()) },
 			metric.WithAttributeSet(attribute.NewSet(qs.traceAttribute, dataTypeAttr))),

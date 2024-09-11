@@ -13,8 +13,8 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/internal"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.opentelemetry.io/collector/receiver/scraperhelper/internal/metadata"
 )
@@ -47,8 +47,8 @@ func newScraper(cfg obsReportSettings) (*obsReport, error) {
 		tracer:     cfg.ReceiverCreateSettings.TracerProvider.Tracer(cfg.Scraper.String()),
 
 		otelAttrs: []attribute.KeyValue{
-			attribute.String(obsmetrics.ReceiverKey, cfg.ReceiverID.String()),
-			attribute.String(obsmetrics.ScraperKey, cfg.Scraper.String()),
+			attribute.String(internal.ReceiverKey, cfg.ReceiverID.String()),
+			attribute.String(internal.ScraperKey, cfg.Scraper.String()),
 		},
 		telemetryBuilder: telemetryBuilder,
 	}, nil
@@ -58,7 +58,7 @@ func newScraper(cfg obsReportSettings) (*obsReport, error) {
 // returned context should be used in other calls to the obsreport functions
 // dealing with the same scrape operation.
 func (s *obsReport) StartMetricsOp(ctx context.Context) context.Context {
-	spanName := obsmetrics.ScraperPrefix + s.receiverID.String() + obsmetrics.SpanNameSep + s.scraper.String() + obsmetrics.ScraperMetricsOperationSuffix
+	spanName := internal.ScraperPrefix + s.receiverID.String() + internal.SpanNameSep + s.scraper.String() + internal.ScraperMetricsOperationSuffix
 	ctx, _ = s.tracer.Start(ctx, spanName)
 	return ctx
 }
@@ -88,9 +88,9 @@ func (s *obsReport) EndMetricsOp(
 	// end span according to errors
 	if span.IsRecording() {
 		span.SetAttributes(
-			attribute.String(obsmetrics.FormatKey, component.DataTypeMetrics.String()),
-			attribute.Int64(obsmetrics.ScrapedMetricPointsKey, int64(numScrapedMetrics)),
-			attribute.Int64(obsmetrics.ErroredMetricPointsKey, int64(numErroredMetrics)),
+			attribute.String(internal.FormatKey, component.DataTypeMetrics.String()),
+			attribute.Int64(internal.ScrapedMetricPointsKey, int64(numScrapedMetrics)),
+			attribute.Int64(internal.ErroredMetricPointsKey, int64(numErroredMetrics)),
 		)
 
 		if err != nil {
