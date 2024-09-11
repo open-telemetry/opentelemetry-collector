@@ -7,14 +7,20 @@ require (
 	go.opentelemetry.io/collector v0.109.0
 	go.opentelemetry.io/collector/component v0.109.0
 	go.opentelemetry.io/collector/config/configauth v0.109.0
+	go.opentelemetry.io/collector/config/configcompression v1.14.1
 	go.opentelemetry.io/collector/config/configcompression v1.15.0
 	go.opentelemetry.io/collector/config/configgrpc v0.109.0
+	go.opentelemetry.io/collector/config/configopaque v1.14.1
 	go.opentelemetry.io/collector/config/configopaque v1.15.0
+	go.opentelemetry.io/collector/config/configretry v1.14.1
 	go.opentelemetry.io/collector/config/configretry v1.15.0
+	go.opentelemetry.io/collector/config/configtls v1.14.1
 	go.opentelemetry.io/collector/config/configtls v1.15.0
+	go.opentelemetry.io/collector/confmap v1.14.1
 	go.opentelemetry.io/collector/confmap v1.15.0
 	go.opentelemetry.io/collector/consumer v0.109.0
 	go.opentelemetry.io/collector/exporter v0.109.0
+	go.opentelemetry.io/collector/pdata v1.14.1
 	go.opentelemetry.io/collector/pdata v1.15.0
 	go.opentelemetry.io/collector/pdata/testdata v0.109.0
 	go.uber.org/goleak v1.3.0
@@ -156,3 +162,7 @@ replace go.opentelemetry.io/collector/component/componentstatus => ../../compone
 replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../../receiver/receiverprofiles
 
 replace go.opentelemetry.io/collector/exporter/exporterprofiles => ../exporterprofiles
+
+replace go.opentelemetry.io/collector/component/componentprofiles => ../../component/componentprofiles
+
+replace go.opentelemetry.io/collector/consumer/consumererror/consumererrorprofiles => ../../consumer/consumererror/consumererrorprofiles
