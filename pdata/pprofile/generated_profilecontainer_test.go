@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
+	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -41,9 +42,10 @@ func TestProfileContainer_CopyTo(t *testing.T) {
 
 func TestProfileContainer_ProfileID(t *testing.T) {
 	ms := NewProfileContainer()
-	assert.Equal(t, pcommon.NewByteSlice(), ms.ProfileID())
-	internal.FillTestByteSlice(internal.ByteSlice(ms.ProfileID()))
-	assert.Equal(t, pcommon.ByteSlice(internal.GenerateTestByteSlice()), ms.ProfileID())
+	assert.Equal(t, ProfileID(data.ProfileID([16]byte{})), ms.ProfileID())
+	testValProfileID := ProfileID(data.ProfileID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
+	ms.SetProfileID(testValProfileID)
+	assert.Equal(t, testValProfileID, ms.ProfileID())
 }
 
 func TestProfileContainer_StartTime(t *testing.T) {
@@ -93,7 +95,7 @@ func generateTestProfileContainer() ProfileContainer {
 }
 
 func fillTestProfileContainer(tv ProfileContainer) {
-	internal.FillTestByteSlice(internal.NewByteSlice(&tv.orig.ProfileId, tv.state))
+	tv.orig.ProfileId = data.ProfileID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	tv.orig.StartTimeUnixNano = 1234567890
 	tv.orig.EndTimeUnixNano = 1234567890
 	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes, tv.state))

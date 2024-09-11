@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"go.opentelemetry.io/collector/pdata/internal/data"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -26,6 +27,8 @@ func BenchmarkProfilesUsage(b *testing.B) {
 	profiles := NewProfiles()
 	fillTestResourceProfilesSlice(profiles.ResourceProfiles())
 	ts := pcommon.NewTimestampFromTime(time.Now())
+	testValProfileID := ProfileID(data.ProfileID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
+	testSecondValProfileID := ProfileID(data.ProfileID([16]byte{2, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
 
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -47,21 +50,21 @@ func BenchmarkProfilesUsage(b *testing.B) {
 				assert.Equal(b, "new_test_name", iss.Scope().Name())
 				for k := 0; k < iss.Profiles().Len(); k++ {
 					s := iss.Profiles().At(k)
-					s.ProfileID().FromRaw([]byte("profile_id"))
-					assert.Equal(b, "profile_id", string(s.ProfileID().AsRaw()))
+					s.SetProfileID(testValProfileID)
+					assert.Equal(b, testValProfileID, s.ProfileID())
 					s.SetStartTime(ts)
 					assert.Equal(b, ts, s.StartTime())
 					s.SetEndTime(ts)
 					assert.Equal(b, ts, s.EndTime())
 				}
 				s := iss.Profiles().AppendEmpty()
-				s.ProfileID().FromRaw([]byte("new_profile_id"))
+				s.SetProfileID(testSecondValProfileID)
 				s.SetStartTime(ts)
 				s.SetEndTime(ts)
 				s.Attributes().PutStr("foo1", "bar1")
 				s.Attributes().PutStr("foo2", "bar2")
 				iss.Profiles().RemoveIf(func(lr ProfileContainer) bool {
-					return string(lr.ProfileID().AsRaw()) == "new_profile_id"
+					return lr.ProfileID() == testSecondValProfileID
 				})
 			}
 		}

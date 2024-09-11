@@ -89,7 +89,6 @@ type Service struct {
 // New creates a new Service, its telemetry, and Components.
 func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	disableHighCard := obsreportconfig.DisableHighCardinalityMetricsfeatureGate.IsEnabled()
-	extendedConfig := obsreportconfig.UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate.IsEnabled()
 
 	srv := &Service{
 		buildInfo: set.BuildInfo,
@@ -141,7 +140,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		return nil, fmt.Errorf("failed to create metric provider: %w", err)
 	}
 
-	logsAboutMeterProvider(logger, cfg.Telemetry.Metrics, mp, extendedConfig)
+	logsAboutMeterProvider(logger, cfg.Telemetry.Metrics, mp)
 	srv.telemetrySettings = component.TelemetrySettings{
 		LeveledMeterProvider: func(level configtelemetry.Level) metric.MeterProvider {
 			if level <= cfg.Telemetry.Metrics.Level {
@@ -183,7 +182,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	return srv, nil
 }
 
-func logsAboutMeterProvider(logger *zap.Logger, cfg telemetry.MetricsConfig, mp metric.MeterProvider, extendedConfig bool) {
+func logsAboutMeterProvider(logger *zap.Logger, cfg telemetry.MetricsConfig, mp metric.MeterProvider) {
 	if cfg.Level == configtelemetry.LevelNone || (cfg.Address == "" && len(cfg.Readers) == 0) {
 		logger.Info(
 			"Skipped telemetry setup.",
@@ -193,7 +192,7 @@ func logsAboutMeterProvider(logger *zap.Logger, cfg telemetry.MetricsConfig, mp 
 		return
 	}
 
-	if len(cfg.Address) != 0 && extendedConfig {
+	if len(cfg.Address) != 0 && obsreportconfig.UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate.IsEnabled() {
 		logger.Warn("service::telemetry::metrics::address is being deprecated in favor of service::telemetry::metrics::readers")
 	}
 
