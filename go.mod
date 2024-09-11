@@ -19,7 +19,6 @@ require (
 	go.opentelemetry.io/collector/consumer v0.109.0
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.109.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.109.0
-	go.opentelemetry.io/collector/featuregate v1.15.0
 	go.opentelemetry.io/collector/pdata v1.15.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.109.0
 	go.opentelemetry.io/collector/pdata/testdata v0.109.0
@@ -39,7 +38,6 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.1.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
@@ -87,8 +85,6 @@ replace go.opentelemetry.io/collector/config/configtelemetry => ./config/configt
 replace go.opentelemetry.io/collector/consumer => ./consumer
 
 replace go.opentelemetry.io/collector/consumer/consumertest => ./consumer/consumertest
-
-replace go.opentelemetry.io/collector/featuregate => ./featuregate
 
 replace go.opentelemetry.io/collector/pdata => ./pdata
 
