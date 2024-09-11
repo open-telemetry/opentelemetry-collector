@@ -4,7 +4,6 @@
 package builder
 
 import (
-	"errors"
 	"os"
 	"strings"
 	"testing"
@@ -143,7 +142,7 @@ func TestMissingModule(t *testing.T) {
 	}
 
 	for _, test := range configurations {
-		assert.True(t, errors.Is(test.cfg.Validate(), test.err))
+		assert.ErrorIs(t, test.cfg.Validate(), test.err)
 	}
 }
 
