@@ -23,7 +23,12 @@ import (
 const defaultQueueSize = 1000
 
 // QueueSettings defines configuration for queueing batches before sending to the consumerSender.
-type QueueSettings struct {
+//
+// Deprecated: [v0.110.0] Use QueueConfig instead.
+type QueueSettings = QueueConfig
+
+// QueueConfig defines configuration for queueing batches before sending to the consumerSender.
+type QueueConfig struct {
 	// Enabled indicates whether to not enqueue batches before sending to the consumerSender.
 	Enabled bool `mapstructure:"enabled"`
 	// NumConsumers is the number of consumers from the queue. Defaults to 10.
@@ -38,8 +43,15 @@ type QueueSettings struct {
 }
 
 // NewDefaultQueueSettings returns the default settings for QueueSettings.
+//
+// Deprecated: [v0.110.0] Use NewDefaultQueueConfig instead.
 func NewDefaultQueueSettings() QueueSettings {
-	return QueueSettings{
+	return NewDefaultQueueConfig()
+}
+
+// NewDefaultQueueConfig returns the default config for QueueConfig.
+func NewDefaultQueueConfig() QueueConfig {
+	return QueueConfig{
 		Enabled:      true,
 		NumConsumers: 10,
 		// By default, batches are 8192 spans, for a total of up to 8 million spans in the queue
@@ -49,8 +61,8 @@ func NewDefaultQueueSettings() QueueSettings {
 	}
 }
 
-// Validate checks if the QueueSettings configuration is valid
-func (qCfg *QueueSettings) Validate() error {
+// Validate checks if the QueueConfig configuration is valid
+func (qCfg *QueueConfig) Validate() error {
 	if !qCfg.Enabled {
 		return nil
 	}
