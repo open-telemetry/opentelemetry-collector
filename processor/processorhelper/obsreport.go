@@ -105,16 +105,22 @@ func (or *ObsReport) recordData(ctx context.Context, dataType component.DataType
 }
 
 // TracesAccepted reports that the trace data was accepted.
+//
+// Deprecated: [v0.110.0] This was only used by the memorylimiter processor, moving the metric there instead.
 func (or *ObsReport) TracesAccepted(ctx context.Context, numSpans int) {
 	or.recordData(ctx, component.DataTypeTraces, int64(numSpans), int64(0), int64(0), int64(0))
 }
 
 // TracesRefused reports that the trace data was refused.
+//
+// Deprecated: [v0.110.0] This was only used by the memorylimiter processor, moving the metric there instead.
 func (or *ObsReport) TracesRefused(ctx context.Context, numSpans int) {
 	or.recordData(ctx, component.DataTypeTraces, int64(0), int64(numSpans), int64(0), int64(0))
 }
 
 // TracesDropped reports that the trace data was dropped.
+//
+// Deprecated: [v0.110.0] This method was not used in core/contrib and it's unclear when it should have been used.
 func (or *ObsReport) TracesDropped(ctx context.Context, numSpans int) {
 	or.recordData(ctx, component.DataTypeTraces, int64(0), int64(0), int64(numSpans), int64(0))
 }
@@ -127,16 +133,22 @@ func (or *ObsReport) TracesInserted(ctx context.Context, numSpans int) {
 }
 
 // MetricsAccepted reports that the metrics were accepted.
+//
+// Deprecated: [v0.110.0] This was only used by the memorylimiter processor, moving the metric there instead.
 func (or *ObsReport) MetricsAccepted(ctx context.Context, numPoints int) {
 	or.recordData(ctx, component.DataTypeMetrics, int64(numPoints), int64(0), int64(0), int64(0))
 }
 
 // MetricsRefused reports that the metrics were refused.
+//
+// Deprecated: [v0.110.0] This was only used by the memorylimiter processor, moving the metric there instead.
 func (or *ObsReport) MetricsRefused(ctx context.Context, numPoints int) {
 	or.recordData(ctx, component.DataTypeMetrics, int64(0), int64(numPoints), int64(0), int64(0))
 }
 
 // MetricsDropped reports that the metrics were dropped.
+//
+// Deprecated: [v0.110.0] This method was not used in core/contrib and it's unclear when it should have been used.
 func (or *ObsReport) MetricsDropped(ctx context.Context, numPoints int) {
 	or.recordData(ctx, component.DataTypeMetrics, int64(0), int64(0), int64(numPoints), int64(0))
 }
@@ -149,16 +161,22 @@ func (or *ObsReport) MetricsInserted(ctx context.Context, numPoints int) {
 }
 
 // LogsAccepted reports that the logs were accepted.
+//
+// Deprecated: [v0.110.0] This was only used by the memorylimiter processor, moving the metric there instead.
 func (or *ObsReport) LogsAccepted(ctx context.Context, numRecords int) {
 	or.recordData(ctx, component.DataTypeLogs, int64(numRecords), int64(0), int64(0), int64(0))
 }
 
 // LogsRefused reports that the logs were refused.
+//
+// Deprecated: [v0.110.0] This was only used by the memorylimiter processor, moving the metric there instead.
 func (or *ObsReport) LogsRefused(ctx context.Context, numRecords int) {
 	or.recordData(ctx, component.DataTypeLogs, int64(0), int64(numRecords), int64(0), int64(0))
 }
 
 // LogsDropped reports that the logs were dropped.
+//
+// Deprecated: [v0.110.0] This method was not used in core/contrib and it's unclear when it should have been used.
 func (or *ObsReport) LogsDropped(ctx context.Context, numRecords int) {
 	or.recordData(ctx, component.DataTypeLogs, int64(0), int64(0), int64(numRecords), int64(0))
 }
