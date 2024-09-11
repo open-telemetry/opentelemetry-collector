@@ -144,8 +144,9 @@ func loggingOptionsWithEventLogCore(
 	userOptions []zap.Option,
 ) []zap.Option {
 	return append(
-		// The event log core must run last, so it needs to be the first option
-		// in this list.
+		// The order below must be preserved - see PR #11051
+		// The event log core must run *after* any user provided options, so it
+		// must be the first option in this list.
 		[]zap.Option{zap.WrapCore(withWindowsCore(elog, serviceConfig))},
 		userOptions...,
 	)
