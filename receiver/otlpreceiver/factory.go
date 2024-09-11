@@ -26,7 +26,7 @@ const (
 	defaultTracesURLPath   = "/v1/traces"
 	defaultMetricsURLPath  = "/v1/metrics"
 	defaultLogsURLPath     = "/v1/logs"
-	defaultProfilesURLPath = "/v1experimental/profiles"
+	defaultProfilesURLPath = "/v1development/profiles"
 )
 
 // NewFactory creates a new OTLP receiver factory.
