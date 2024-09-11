@@ -70,7 +70,7 @@ func newExporter(cfg component.Config, set exporter.Settings) (*baseExporter, er
 	// client construction is deferred to start
 	return &baseExporter{
 		config:    oCfg,
-		logger:    set.Logger,
+		logger:    set.TelemetrySettings.Logger,
 		userAgent: userAgent,
 		settings:  set.TelemetrySettings,
 	}, nil

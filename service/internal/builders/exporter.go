@@ -36,7 +36,7 @@ func (b *ExporterBuilder) CreateTraces(ctx context.Context, set exporter.Setting
 		return nil, fmt.Errorf("exporter factory not available for: %q", set.ID)
 	}
 
-	logStabilityLevel(set.Logger, f.TracesExporterStability())
+	logStabilityLevel(set.TelemetrySettings.Logger, f.TracesExporterStability())
 	return f.CreateTracesExporter(ctx, set, cfg)
 }
 
@@ -52,7 +52,7 @@ func (b *ExporterBuilder) CreateMetrics(ctx context.Context, set exporter.Settin
 		return nil, fmt.Errorf("exporter factory not available for: %q", set.ID)
 	}
 
-	logStabilityLevel(set.Logger, f.MetricsExporterStability())
+	logStabilityLevel(set.TelemetrySettings.Logger, f.MetricsExporterStability())
 	return f.CreateMetricsExporter(ctx, set, cfg)
 }
 
@@ -68,7 +68,7 @@ func (b *ExporterBuilder) CreateLogs(ctx context.Context, set exporter.Settings)
 		return nil, fmt.Errorf("exporter factory not available for: %q", set.ID)
 	}
 
-	logStabilityLevel(set.Logger, f.LogsExporterStability())
+	logStabilityLevel(set.TelemetrySettings.Logger, f.LogsExporterStability())
 	return f.CreateLogsExporter(ctx, set, cfg)
 }
 
@@ -84,7 +84,7 @@ func (b *ExporterBuilder) CreateProfiles(ctx context.Context, set exporter.Setti
 		return nil, fmt.Errorf("exporter factory not available for: %q", set.ID)
 	}
 
-	logStabilityLevel(set.Logger, f.ProfilesExporterStability())
+	logStabilityLevel(set.TelemetrySettings.Logger, f.ProfilesExporterStability())
 	return f.CreateProfilesExporter(ctx, set, cfg)
 }
 

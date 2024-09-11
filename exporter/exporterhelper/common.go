@@ -309,7 +309,7 @@ func newBaseExporter(set exporter.Settings, signal component.DataType, osf obsre
 func (be *baseExporter) send(ctx context.Context, req Request) error {
 	err := be.queueSender.send(ctx, req)
 	if err != nil {
-		be.set.Logger.Error("Exporting failed. Rejecting data."+be.exportFailureMessage,
+		be.set.TelemetrySettings.Logger.Error("Exporting failed. Rejecting data."+be.exportFailureMessage,
 			zap.Error(err), zap.Int("rejected_items", req.ItemsCount()))
 	}
 	return err

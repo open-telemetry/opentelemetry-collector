@@ -158,34 +158,34 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	{{- range $name, $metric := .Metrics }}
 	{{- if $metric.Warnings.IfEnabled }}
 	if mbc.Metrics.{{ $name.Render }}.Enabled {
-		settings.Logger.Warn("[WARNING] `{{ $name }}` should not be enabled: {{ $metric.Warnings.IfEnabled }}")
+		settings.TelemetrySettings.Logger.Warn("[WARNING] `{{ $name }}` should not be enabled: {{ $metric.Warnings.IfEnabled }}")
 	}
 	{{- end }}
 	{{- if $metric.Warnings.IfEnabledNotSet }}
 	if !mbc.Metrics.{{ $name.Render }}.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `{{ $name }}`: {{ $metric.Warnings.IfEnabledNotSet }}")
+		settings.TelemetrySettings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `{{ $name }}`: {{ $metric.Warnings.IfEnabledNotSet }}")
 	}
 	{{- end }}
 	{{- if $metric.Warnings.IfConfigured }}
 	if mbc.Metrics.{{ $name.Render }}.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] `{{ $name }}` should not be configured: {{ $metric.Warnings.IfConfigured }}")
+		settings.TelemetrySettings.Logger.Warn("[WARNING] `{{ $name }}` should not be configured: {{ $metric.Warnings.IfConfigured }}")
 	}
 	{{- end }}
 	{{- end }}
 	{{- range $name, $attr := .ResourceAttributes }}
 	{{- if $attr.Warnings.IfEnabled }}
 	if mbc.ResourceAttributes.{{ $name.Render }}.Enabled {
-		settings.Logger.Warn("[WARNING] `{{ $name }}` should not be enabled: {{ $attr.Warnings.IfEnabled }}")
+		settings.TelemetrySettings.Logger.Warn("[WARNING] `{{ $name }}` should not be enabled: {{ $attr.Warnings.IfEnabled }}")
 	}
 	{{- end }}
 	{{- if $attr.Warnings.IfEnabledNotSet }}
 	if !mbc.ResourceAttributes.{{ $name.Render }}.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `{{ $name }}`: {{ $attr.Warnings.IfEnabledNotSet }}")
+		settings.TelemetrySettings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `{{ $name }}`: {{ $attr.Warnings.IfEnabledNotSet }}")
 	}
 	{{- end }}
 	{{- if $attr.Warnings.IfConfigured }}
 	if mbc.ResourceAttributes.{{ $name.Render }}.enabledSetByUser || mbc.ResourceAttributes.{{ $name.Render }}.MetricsInclude != nil || mbc.ResourceAttributes.{{ $name.Render }}.MetricsExclude != nil {
-		settings.Logger.Warn("[WARNING] `{{ $name }}` should not be configured: {{ $attr.Warnings.IfConfigured }}")
+		settings.TelemetrySettings.Logger.Warn("[WARNING] `{{ $name }}` should not be configured: {{ $attr.Warnings.IfConfigured }}")
 	}
 	{{- end }}
 	{{- end }}

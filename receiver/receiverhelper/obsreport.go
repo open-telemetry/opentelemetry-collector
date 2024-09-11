@@ -57,7 +57,7 @@ func newReceiver(cfg ObsReportSettings) (*ObsReport, error) {
 		spanNamePrefix: obsmetrics.ReceiverPrefix + cfg.ReceiverID.String(),
 		transport:      cfg.Transport,
 		longLivedCtx:   cfg.LongLivedCtx,
-		tracer:         cfg.ReceiverCreateSettings.TracerProvider.Tracer(cfg.ReceiverID.String()),
+		tracer:         cfg.ReceiverCreateSettings.TelemetrySettings.TracerProvider.Tracer(cfg.ReceiverID.String()),
 
 		otelAttrs: []attribute.KeyValue{
 			attribute.String(obsmetrics.ReceiverKey, cfg.ReceiverID.String()),

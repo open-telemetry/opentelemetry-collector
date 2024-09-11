@@ -25,8 +25,8 @@ type componentTestTelemetry struct {
 
 func (tt *componentTestTelemetry) NewSettings() processor.Settings {
 	settings := processortest.NewNopSettings()
-	settings.MeterProvider = tt.meterProvider
-	settings.LeveledMeterProvider = func(_ configtelemetry.Level) metric.MeterProvider {
+	settings.TelemetrySettings.MeterProvider = tt.meterProvider
+	settings.TelemetrySettings.LeveledMeterProvider = func(_ configtelemetry.Level) metric.MeterProvider {
 		return tt.meterProvider
 	}
 	settings.ID = component.NewID(component.MustNewType("processorhelper"))

@@ -275,55 +275,55 @@ func TestLogsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 func TestLogsExporter_WithSpan(t *testing.T) {
 	set := exportertest.NewNopSettings()
 	sr := new(tracetest.SpanRecorder)
-	set.TracerProvider = sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
-	otel.SetTracerProvider(set.TracerProvider)
+	set.TelemetrySettings.TracerProvider = sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
+	otel.SetTracerProvider(set.TelemetrySettings.TracerProvider)
 	defer otel.SetTracerProvider(nooptrace.NewTracerProvider())
 
 	le, err := NewLogsExporter(context.Background(), set, &fakeLogsExporterConfig, newPushLogsData(nil))
 	require.Nil(t, err)
 	require.NotNil(t, le)
-	checkWrapSpanForLogsExporter(t, sr, set.TracerProvider.Tracer("test"), le, nil, 1)
+	checkWrapSpanForLogsExporter(t, sr, set.TelemetrySettings.TracerProvider.Tracer("test"), le, nil, 1)
 }
 
 func TestLogsRequestExporter_WithSpan(t *testing.T) {
 	set := exportertest.NewNopSettings()
 	sr := new(tracetest.SpanRecorder)
-	set.TracerProvider = sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
-	otel.SetTracerProvider(set.TracerProvider)
+	set.TelemetrySettings.TracerProvider = sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
+	otel.SetTracerProvider(set.TelemetrySettings.TracerProvider)
 	defer otel.SetTracerProvider(nooptrace.NewTracerProvider())
 
 	le, err := NewLogsRequestExporter(context.Background(), set, (&fakeRequestConverter{}).requestFromLogsFunc)
 	require.Nil(t, err)
 	require.NotNil(t, le)
-	checkWrapSpanForLogsExporter(t, sr, set.TracerProvider.Tracer("test"), le, nil, 1)
+	checkWrapSpanForLogsExporter(t, sr, set.TelemetrySettings.TracerProvider.Tracer("test"), le, nil, 1)
 }
 
 func TestLogsExporter_WithSpan_ReturnError(t *testing.T) {
 	set := exportertest.NewNopSettings()
 	sr := new(tracetest.SpanRecorder)
-	set.TracerProvider = sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
-	otel.SetTracerProvider(set.TracerProvider)
+	set.TelemetrySettings.TracerProvider = sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
+	otel.SetTracerProvider(set.TelemetrySettings.TracerProvider)
 	defer otel.SetTracerProvider(nooptrace.NewTracerProvider())
 
 	want := errors.New("my_error")
 	le, err := NewLogsExporter(context.Background(), set, &fakeLogsExporterConfig, newPushLogsData(want))
 	require.Nil(t, err)
 	require.NotNil(t, le)
-	checkWrapSpanForLogsExporter(t, sr, set.TracerProvider.Tracer("test"), le, want, 1)
+	checkWrapSpanForLogsExporter(t, sr, set.TelemetrySettings.TracerProvider.Tracer("test"), le, want, 1)
 }
 
 func TestLogsRequestExporter_WithSpan_ReturnError(t *testing.T) {
 	set := exportertest.NewNopSettings()
 	sr := new(tracetest.SpanRecorder)
-	set.TracerProvider = sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
-	otel.SetTracerProvider(set.TracerProvider)
+	set.TelemetrySettings.TracerProvider = sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
+	otel.SetTracerProvider(set.TelemetrySettings.TracerProvider)
 	defer otel.SetTracerProvider(nooptrace.NewTracerProvider())
 
 	want := errors.New("my_error")
 	le, err := NewLogsRequestExporter(context.Background(), set, (&fakeRequestConverter{requestError: want}).requestFromLogsFunc)
 	require.Nil(t, err)
 	require.NotNil(t, le)
-	checkWrapSpanForLogsExporter(t, sr, set.TracerProvider.Tracer("test"), le, want, 1)
+	checkWrapSpanForLogsExporter(t, sr, set.TelemetrySettings.TracerProvider.Tracer("test"), le, want, 1)
 }
 
 func TestLogsExporter_WithShutdown(t *testing.T) {

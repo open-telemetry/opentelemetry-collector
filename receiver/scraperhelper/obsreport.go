@@ -44,7 +44,7 @@ func newScraper(cfg obsReportSettings) (*obsReport, error) {
 	return &obsReport{
 		receiverID: cfg.ReceiverID,
 		scraper:    cfg.Scraper,
-		tracer:     cfg.ReceiverCreateSettings.TracerProvider.Tracer(cfg.Scraper.String()),
+		tracer:     cfg.ReceiverCreateSettings.TelemetrySettings.TracerProvider.Tracer(cfg.Scraper.String()),
 
 		otelAttrs: []attribute.KeyValue{
 			attribute.String(obsmetrics.ReceiverKey, cfg.ReceiverID.String()),

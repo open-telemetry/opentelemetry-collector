@@ -118,7 +118,7 @@ func newBatchProcessor(set processor.Settings, cfg *Config, batchFunc func() bat
 	}
 	sort.Strings(mks)
 	bp := &batchProcessor{
-		logger: set.Logger,
+		logger: set.TelemetrySettings.Logger,
 
 		sendBatchSize:    int(cfg.SendBatchSize),
 		sendBatchMaxSize: int(cfg.SendBatchMaxSize),

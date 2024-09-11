@@ -43,7 +43,7 @@ func (b *ReceiverBuilder) CreateTraces(ctx context.Context, set receiver.Setting
 		return nil, fmt.Errorf("receiver factory not available for: %q", set.ID)
 	}
 
-	logStabilityLevel(set.Logger, f.TracesReceiverStability())
+	logStabilityLevel(set.TelemetrySettings.Logger, f.TracesReceiverStability())
 	return f.CreateTracesReceiver(ctx, set, cfg, next)
 }
 
@@ -62,7 +62,7 @@ func (b *ReceiverBuilder) CreateMetrics(ctx context.Context, set receiver.Settin
 		return nil, fmt.Errorf("receiver factory not available for: %q", set.ID)
 	}
 
-	logStabilityLevel(set.Logger, f.MetricsReceiverStability())
+	logStabilityLevel(set.TelemetrySettings.Logger, f.MetricsReceiverStability())
 	return f.CreateMetricsReceiver(ctx, set, cfg, next)
 }
 
@@ -81,7 +81,7 @@ func (b *ReceiverBuilder) CreateLogs(ctx context.Context, set receiver.Settings,
 		return nil, fmt.Errorf("receiver factory not available for: %q", set.ID)
 	}
 
-	logStabilityLevel(set.Logger, f.LogsReceiverStability())
+	logStabilityLevel(set.TelemetrySettings.Logger, f.LogsReceiverStability())
 	return f.CreateLogsReceiver(ctx, set, cfg, next)
 }
 
@@ -100,7 +100,7 @@ func (b *ReceiverBuilder) CreateProfiles(ctx context.Context, set receiver.Setti
 		return nil, fmt.Errorf("receiver factory not available for: %q", set.ID)
 	}
 
-	logStabilityLevel(set.Logger, f.ProfilesReceiverStability())
+	logStabilityLevel(set.TelemetrySettings.Logger, f.ProfilesReceiverStability())
 	return f.CreateProfilesReceiver(ctx, set, cfg, next)
 }
 

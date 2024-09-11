@@ -110,7 +110,7 @@ func NewTracesRequestExporter(
 	converter RequestFromTracesFunc,
 	options ...Option,
 ) (exporter.Traces, error) {
-	if set.Logger == nil {
+	if set.TelemetrySettings.Logger == nil {
 		return nil, errNilLogger
 	}
 
@@ -126,7 +126,7 @@ func NewTracesRequestExporter(
 	tc, err := consumer.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
 		req, cErr := converter(ctx, td)
 		if cErr != nil {
-			set.Logger.Error("Failed to convert traces. Dropping data.",
+			set.TelemetrySettings.Logger.Error("Failed to convert traces. Dropping data.",
 				zap.Int("dropped_spans", td.SpanCount()),
 				zap.Error(err))
 			return consumererror.NewPermanent(cErr)

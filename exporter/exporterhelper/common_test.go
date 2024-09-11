@@ -86,7 +86,7 @@ func TestQueueOptionsWithRequestExporter(t *testing.T) {
 func TestBaseExporterLogging(t *testing.T) {
 	set := exportertest.NewNopSettings()
 	logger, observed := observer.New(zap.DebugLevel)
-	set.Logger = zap.New(logger)
+	set.TelemetrySettings.Logger = zap.New(logger)
 	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.Enabled = false
 	bs, err := newBaseExporter(set, defaultDataType, newNoopObsrepSender, WithRetry(rCfg))

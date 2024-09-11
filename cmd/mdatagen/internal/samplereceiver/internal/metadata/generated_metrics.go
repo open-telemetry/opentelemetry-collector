@@ -343,25 +343,25 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...metricBuilderOption) *MetricsBuilder {
 	if !mbc.Metrics.DefaultMetric.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `default.metric`: This metric will be disabled by default soon.")
+		settings.TelemetrySettings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `default.metric`: This metric will be disabled by default soon.")
 	}
 	if mbc.Metrics.DefaultMetricToBeRemoved.Enabled {
-		settings.Logger.Warn("[WARNING] `default.metric.to_be_removed` should not be enabled: This metric is deprecated and will be removed soon.")
+		settings.TelemetrySettings.Logger.Warn("[WARNING] `default.metric.to_be_removed` should not be enabled: This metric is deprecated and will be removed soon.")
 	}
 	if mbc.Metrics.OptionalMetric.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] `optional.metric` should not be configured: This metric is deprecated and will be removed soon.")
+		settings.TelemetrySettings.Logger.Warn("[WARNING] `optional.metric` should not be configured: This metric is deprecated and will be removed soon.")
 	}
 	if mbc.Metrics.OptionalMetricEmptyUnit.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] `optional.metric.empty_unit` should not be configured: This metric is deprecated and will be removed soon.")
+		settings.TelemetrySettings.Logger.Warn("[WARNING] `optional.metric.empty_unit` should not be configured: This metric is deprecated and will be removed soon.")
 	}
 	if !mbc.ResourceAttributes.StringResourceAttrDisableWarning.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `string.resource.attr_disable_warning`: This resource_attribute will be disabled by default soon.")
+		settings.TelemetrySettings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `string.resource.attr_disable_warning`: This resource_attribute will be disabled by default soon.")
 	}
 	if mbc.ResourceAttributes.StringResourceAttrRemoveWarning.enabledSetByUser || mbc.ResourceAttributes.StringResourceAttrRemoveWarning.MetricsInclude != nil || mbc.ResourceAttributes.StringResourceAttrRemoveWarning.MetricsExclude != nil {
-		settings.Logger.Warn("[WARNING] `string.resource.attr_remove_warning` should not be configured: This resource_attribute is deprecated and will be removed soon.")
+		settings.TelemetrySettings.Logger.Warn("[WARNING] `string.resource.attr_remove_warning` should not be configured: This resource_attribute is deprecated and will be removed soon.")
 	}
 	if mbc.ResourceAttributes.StringResourceAttrToBeRemoved.Enabled {
-		settings.Logger.Warn("[WARNING] `string.resource.attr_to_be_removed` should not be enabled: This resource_attribute is deprecated and will be removed soon.")
+		settings.TelemetrySettings.Logger.Warn("[WARNING] `string.resource.attr_to_be_removed` should not be enabled: This resource_attribute is deprecated and will be removed soon.")
 	}
 	mb := &MetricsBuilder{
 		config:                         mbc,

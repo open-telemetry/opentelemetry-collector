@@ -100,7 +100,7 @@ func (r *otlpReceiver) startGRPCServer(host component.Host) error {
 		plogotlp.RegisterGRPCServer(r.serverGRPC, logs.New(r.nextLogs, r.obsrepGRPC))
 	}
 
-	r.settings.Logger.Info("Starting GRPC server", zap.String("endpoint", r.cfg.GRPC.NetAddr.Endpoint))
+	r.settings.TelemetrySettings.Logger.Info("Starting GRPC server", zap.String("endpoint", r.cfg.GRPC.NetAddr.Endpoint))
 	var gln net.Listener
 	if gln, err = r.cfg.GRPC.NetAddr.Listen(context.Background()); err != nil {
 		return err
@@ -150,7 +150,7 @@ func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host)
 		return err
 	}
 
-	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", r.cfg.HTTP.ServerConfig.Endpoint))
+	r.settings.TelemetrySettings.Logger.Info("Starting HTTP server", zap.String("endpoint", r.cfg.HTTP.ServerConfig.Endpoint))
 	var hln net.Listener
 	if hln, err = r.cfg.HTTP.ServerConfig.ToListener(ctx); err != nil {
 		return err

@@ -50,7 +50,7 @@ func newBatchSender(cfg exporterbatcher.Config, set exporter.Settings,
 	bs := &batchSender{
 		activeBatch:        newEmptyBatch(),
 		cfg:                cfg,
-		logger:             set.Logger,
+		logger:             set.TelemetrySettings.Logger,
 		mergeFunc:          mf,
 		mergeSplitFunc:     msf,
 		shutdownCh:         nil,

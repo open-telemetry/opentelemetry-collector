@@ -110,7 +110,7 @@ func NewLogsRequestExporter(
 	converter RequestFromLogsFunc,
 	options ...Option,
 ) (exporter.Logs, error) {
-	if set.Logger == nil {
+	if set.TelemetrySettings.Logger == nil {
 		return nil, errNilLogger
 	}
 
@@ -126,7 +126,7 @@ func NewLogsRequestExporter(
 	lc, err := consumer.NewLogs(func(ctx context.Context, ld plog.Logs) error {
 		req, cErr := converter(ctx, ld)
 		if cErr != nil {
-			set.Logger.Error("Failed to convert logs. Dropping data.",
+			set.TelemetrySettings.Logger.Error("Failed to convert logs. Dropping data.",
 				zap.Int("dropped_log_records", ld.LogRecordCount()),
 				zap.Error(err))
 			return consumererror.NewPermanent(cErr)

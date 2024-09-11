@@ -86,7 +86,7 @@ func NewScraperControllerReceiver(
 
 	sc := &controller{
 		id:                 set.ID,
-		logger:             set.Logger,
+		logger:             set.TelemetrySettings.Logger,
 		collectionInterval: cfg.CollectionInterval,
 		initialDelay:       cfg.InitialDelay,
 		timeout:            cfg.Timeout,

@@ -249,7 +249,7 @@ func TestQueueRetryWithDisabledRetires(t *testing.T) {
 	rCfg.Enabled = false
 	set := exportertest.NewNopSettings()
 	logger, observed := observer.New(zap.ErrorLevel)
-	set.Logger = zap.New(logger)
+	set.TelemetrySettings.Logger = zap.New(logger)
 	be, err := newBaseExporter(set, component.DataTypeLogs, newObservabilityConsumerSender, WithRetry(rCfg))
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))

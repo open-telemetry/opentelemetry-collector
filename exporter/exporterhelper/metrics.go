@@ -110,7 +110,7 @@ func NewMetricsRequestExporter(
 	converter RequestFromMetricsFunc,
 	options ...Option,
 ) (exporter.Metrics, error) {
-	if set.Logger == nil {
+	if set.TelemetrySettings.Logger == nil {
 		return nil, errNilLogger
 	}
 
@@ -126,7 +126,7 @@ func NewMetricsRequestExporter(
 	mc, err := consumer.NewMetrics(func(ctx context.Context, md pmetric.Metrics) error {
 		req, cErr := converter(ctx, md)
 		if cErr != nil {
-			set.Logger.Error("Failed to convert metrics. Dropping data.",
+			set.TelemetrySettings.Logger.Error("Failed to convert metrics. Dropping data.",
 				zap.Int("dropped_data_points", md.DataPointCount()),
 				zap.Error(err))
 			return consumererror.NewPermanent(cErr)

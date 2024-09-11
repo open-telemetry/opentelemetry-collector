@@ -94,7 +94,7 @@ func TestQueuedRetry_RejectOnFull(t *testing.T) {
 	qCfg.NumConsumers = 0
 	set := exportertest.NewNopSettings()
 	logger, observed := observer.New(zap.ErrorLevel)
-	set.Logger = zap.New(logger)
+	set.TelemetrySettings.Logger = zap.New(logger)
 	be, err := newBaseExporter(set, defaultDataType, newNoopObsrepSender,
 		withMarshaler(mockRequestMarshaler), withUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
 		WithQueue(qCfg))
@@ -298,7 +298,7 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			set := exportertest.NewNopSettings()
 			logger, observed := observer.New(zap.ErrorLevel)
-			set.Logger = zap.New(logger)
+			set.TelemetrySettings.Logger = zap.New(logger)
 			be, err := newBaseExporter(set, component.DataTypeLogs, newObservabilityConsumerSender, tt.queueOptions...)
 			require.NoError(t, err)
 			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -322,7 +322,7 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 func TestQueueFailedRequestDropped(t *testing.T) {
 	set := exportertest.NewNopSettings()
 	logger, observed := observer.New(zap.ErrorLevel)
-	set.Logger = zap.New(logger)
+	set.TelemetrySettings.Logger = zap.New(logger)
 	be, err := newBaseExporter(set, component.DataTypeLogs, newNoopObsrepSender,
 		WithRequestQueue(exporterqueue.NewDefaultConfig(), exporterqueue.NewMemoryQueueFactory[Request]()))
 	require.NoError(t, err)

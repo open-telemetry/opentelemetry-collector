@@ -89,7 +89,7 @@ func newQueueSender(q exporterqueue.Queue[Request], set exporter.Settings, numCo
 	consumeFunc := func(ctx context.Context, req Request) error {
 		err := qs.nextSender.send(ctx, req)
 		if err != nil {
-			set.Logger.Error("Exporting failed. Dropping data."+exportFailureMessage,
+			set.TelemetrySettings.Logger.Error("Exporting failed. Dropping data."+exportFailureMessage,
 				zap.Error(err), zap.Int("dropped_items", req.ItemsCount()))
 		}
 		return err

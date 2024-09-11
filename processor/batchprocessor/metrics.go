@@ -47,7 +47,7 @@ func newBatchProcessorTelemetry(set processor.Settings, currentMetadataCardinali
 
 	return &batchProcessorTelemetry{
 		exportCtx:        context.Background(),
-		detailed:         set.MetricsLevel == configtelemetry.LevelDetailed,
+		detailed:         set.TelemetrySettings.MetricsLevel == configtelemetry.LevelDetailed,
 		telemetryBuilder: telemetryBuilder,
 		processorAttr:    attrs,
 	}, nil

@@ -42,7 +42,7 @@ func newExporter(cfg obsReportSettings) (*obsReport, error) {
 
 	return &obsReport{
 		spanNamePrefix: obsmetrics.ExporterPrefix + cfg.exporterID.String(),
-		tracer:         cfg.exporterCreateSettings.TracerProvider.Tracer(cfg.exporterID.String()),
+		tracer:         cfg.exporterCreateSettings.TelemetrySettings.TracerProvider.Tracer(cfg.exporterID.String()),
 		dataType:       cfg.dataType,
 		otelAttrs: []attribute.KeyValue{
 			attribute.String(obsmetrics.ExporterKey, cfg.exporterID.String()),

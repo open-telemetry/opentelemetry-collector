@@ -45,9 +45,9 @@ func (b *ExtensionBuilder) Create(ctx context.Context, set extension.Settings) (
 
 	sl := f.ExtensionStability()
 	if sl >= component.StabilityLevelAlpha {
-		set.Logger.Debug(sl.LogMessage())
+		set.TelemetrySettings.Logger.Debug(sl.LogMessage())
 	} else {
-		set.Logger.Info(sl.LogMessage())
+		set.TelemetrySettings.Logger.Info(sl.LogMessage())
 	}
 	return f.CreateExtension(ctx, set, cfg)
 }

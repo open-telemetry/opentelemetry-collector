@@ -41,7 +41,7 @@ func (b *ConnectorBuilder) CreateTracesToTraces(ctx context.Context, set connect
 		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
 	}
 
-	logStabilityLevel(set.Logger, f.TracesToTracesStability())
+	logStabilityLevel(set.TelemetrySettings.Logger, f.TracesToTracesStability())
 	return f.CreateTracesToTraces(ctx, set, cfg, next)
 }
 
@@ -60,7 +60,7 @@ func (b *ConnectorBuilder) CreateTracesToMetrics(ctx context.Context, set connec
 		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
 	}
 
-	logStabilityLevel(set.Logger, f.TracesToMetricsStability())
+	logStabilityLevel(set.TelemetrySettings.Logger, f.TracesToMetricsStability())
 	return f.CreateTracesToMetrics(ctx, set, cfg, next)
 }
 
@@ -79,7 +79,7 @@ func (b *ConnectorBuilder) CreateTracesToLogs(ctx context.Context, set connector
 		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
 	}
 
-	logStabilityLevel(set.Logger, f.TracesToLogsStability())
+	logStabilityLevel(set.TelemetrySettings.Logger, f.TracesToLogsStability())
 	return f.CreateTracesToLogs(ctx, set, cfg, next)
 }
 
@@ -98,7 +98,7 @@ func (b *ConnectorBuilder) CreateTracesToProfiles(ctx context.Context, set conne
 		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
 	}
 
-	logStabilityLevel(set.Logger, f.TracesToProfilesStability())
+	logStabilityLevel(set.TelemetrySettings.Logger, f.TracesToProfilesStability())
 	return f.CreateTracesToProfiles(ctx, set, cfg, next)
 }
 
@@ -117,7 +117,7 @@ func (b *ConnectorBuilder) CreateMetricsToTraces(ctx context.Context, set connec
 		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
 	}
 
-	logStabilityLevel(set.Logger, f.MetricsToTracesStability())
+	logStabilityLevel(set.TelemetrySettings.Logger, f.MetricsToTracesStability())
 	return f.CreateMetricsToTraces(ctx, set, cfg, next)
 }
 
@@ -136,7 +136,7 @@ func (b *ConnectorBuilder) CreateMetricsToMetrics(ctx context.Context, set conne
 		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
 	}
 
-	logStabilityLevel(set.Logger, f.MetricsToMetricsStability())
+	logStabilityLevel(set.TelemetrySettings.Logger, f.MetricsToMetricsStability())
 	return f.CreateMetricsToMetrics(ctx, set, cfg, next)
 }
 
@@ -155,7 +155,7 @@ func (b *ConnectorBuilder) CreateMetricsToLogs(ctx context.Context, set connecto
 		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
 	}
 
-	logStabilityLevel(set.Logger, f.MetricsToLogsStability())
+	logStabilityLevel(set.TelemetrySettings.Logger, f.MetricsToLogsStability())
 	return f.CreateMetricsToLogs(ctx, set, cfg, next)
 }
 
@@ -174,7 +174,7 @@ func (b *ConnectorBuilder) CreateMetricsToProfiles(ctx context.Context, set conn
 		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
 	}
 
-	logStabilityLevel(set.Logger, f.MetricsToProfilesStability())
+	logStabilityLevel(set.TelemetrySettings.Logger, f.MetricsToProfilesStability())
 	return f.CreateMetricsToProfiles(ctx, set, cfg, next)
 }
 
@@ -193,7 +193,7 @@ func (b *ConnectorBuilder) CreateLogsToTraces(ctx context.Context, set connector
 		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
 	}
 
-	logStabilityLevel(set.Logger, f.LogsToTracesStability())
+	logStabilityLevel(set.TelemetrySettings.Logger, f.LogsToTracesStability())
 	return f.CreateLogsToTraces(ctx, set, cfg, next)
 }
 
@@ -212,7 +212,7 @@ func (b *ConnectorBuilder) CreateLogsToMetrics(ctx context.Context, set connecto
 		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
 	}
 
-	logStabilityLevel(set.Logger, f.LogsToMetricsStability())
+	logStabilityLevel(set.TelemetrySettings.Logger, f.LogsToMetricsStability())
 	return f.CreateLogsToMetrics(ctx, set, cfg, next)
 }
 
@@ -231,7 +231,7 @@ func (b *ConnectorBuilder) CreateLogsToLogs(ctx context.Context, set connector.S
 		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
 	}
 
-	logStabilityLevel(set.Logger, f.LogsToLogsStability())
+	logStabilityLevel(set.TelemetrySettings.Logger, f.LogsToLogsStability())
 	return f.CreateLogsToLogs(ctx, set, cfg, next)
 }
 
@@ -250,7 +250,7 @@ func (b *ConnectorBuilder) CreateLogsToProfiles(ctx context.Context, set connect
 		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
 	}
 
-	logStabilityLevel(set.Logger, f.LogsToProfilesStability())
+	logStabilityLevel(set.TelemetrySettings.Logger, f.LogsToProfilesStability())
 	return f.CreateLogsToProfiles(ctx, set, cfg, next)
 }
 
@@ -269,7 +269,7 @@ func (b *ConnectorBuilder) CreateProfilesToTraces(ctx context.Context, set conne
 		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
 	}
 
-	logStabilityLevel(set.Logger, f.ProfilesToTracesStability())
+	logStabilityLevel(set.TelemetrySettings.Logger, f.ProfilesToTracesStability())
 	return f.CreateProfilesToTraces(ctx, set, cfg, next)
 }
 
@@ -288,7 +288,7 @@ func (b *ConnectorBuilder) CreateProfilesToMetrics(ctx context.Context, set conn
 		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
 	}
 
-	logStabilityLevel(set.Logger, f.ProfilesToMetricsStability())
+	logStabilityLevel(set.TelemetrySettings.Logger, f.ProfilesToMetricsStability())
 	return f.CreateProfilesToMetrics(ctx, set, cfg, next)
 }
 
@@ -307,7 +307,7 @@ func (b *ConnectorBuilder) CreateProfilesToLogs(ctx context.Context, set connect
 		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
 	}
 
-	logStabilityLevel(set.Logger, f.ProfilesToLogsStability())
+	logStabilityLevel(set.TelemetrySettings.Logger, f.ProfilesToLogsStability())
 	return f.CreateProfilesToLogs(ctx, set, cfg, next)
 }
 
@@ -326,7 +326,7 @@ func (b *ConnectorBuilder) CreateProfilesToProfiles(ctx context.Context, set con
 		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
 	}
 
-	logStabilityLevel(set.Logger, f.ProfilesToProfilesStability())
+	logStabilityLevel(set.TelemetrySettings.Logger, f.ProfilesToProfilesStability())
 	return f.CreateProfilesToProfiles(ctx, set, cfg, next)
 }
 

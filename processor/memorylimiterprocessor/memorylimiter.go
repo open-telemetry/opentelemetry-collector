@@ -22,7 +22,7 @@ type memoryLimiterProcessor struct {
 
 // newMemoryLimiter returns a new memorylimiter processor.
 func newMemoryLimiterProcessor(set processor.Settings, cfg *Config) (*memoryLimiterProcessor, error) {
-	ml, err := memorylimiter.NewMemoryLimiter(cfg, set.Logger)
+	ml, err := memorylimiter.NewMemoryLimiter(cfg, set.TelemetrySettings.Logger)
 	if err != nil {
 		return nil, err
 	}

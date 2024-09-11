@@ -42,7 +42,7 @@ func (b *ProcessorBuilder) CreateTraces(ctx context.Context, set processor.Setti
 		return nil, fmt.Errorf("processor factory not available for: %q", set.ID)
 	}
 
-	logStabilityLevel(set.Logger, f.TracesProcessorStability())
+	logStabilityLevel(set.TelemetrySettings.Logger, f.TracesProcessorStability())
 	return f.CreateTracesProcessor(ctx, set, cfg, next)
 }
 
@@ -61,7 +61,7 @@ func (b *ProcessorBuilder) CreateMetrics(ctx context.Context, set processor.Sett
 		return nil, fmt.Errorf("processor factory not available for: %q", set.ID)
 	}
 
-	logStabilityLevel(set.Logger, f.MetricsProcessorStability())
+	logStabilityLevel(set.TelemetrySettings.Logger, f.MetricsProcessorStability())
 	return f.CreateMetricsProcessor(ctx, set, cfg, next)
 }
 
@@ -80,7 +80,7 @@ func (b *ProcessorBuilder) CreateLogs(ctx context.Context, set processor.Setting
 		return nil, fmt.Errorf("processor factory not available for: %q", set.ID)
 	}
 
-	logStabilityLevel(set.Logger, f.LogsProcessorStability())
+	logStabilityLevel(set.TelemetrySettings.Logger, f.LogsProcessorStability())
 	return f.CreateLogsProcessor(ctx, set, cfg, next)
 }
 
@@ -99,7 +99,7 @@ func (b *ProcessorBuilder) CreateProfiles(ctx context.Context, set processor.Set
 		return nil, fmt.Errorf("processor factory not available for: %q", set.ID)
 	}
 
-	logStabilityLevel(set.Logger, f.ProfilesProcessorStability())
+	logStabilityLevel(set.TelemetrySettings.Logger, f.ProfilesProcessorStability())
 	return f.CreateProfilesProcessor(ctx, set, cfg, next)
 }
 

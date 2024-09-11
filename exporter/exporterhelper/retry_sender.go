@@ -56,7 +56,7 @@ func newRetrySender(config configretry.BackOffConfig, set exporter.Settings) *re
 		traceAttribute: attribute.String(obsmetrics.ExporterKey, set.ID.String()),
 		cfg:            config,
 		stopCh:         make(chan struct{}),
-		logger:         set.Logger,
+		logger:         set.TelemetrySettings.Logger,
 	}
 }
 

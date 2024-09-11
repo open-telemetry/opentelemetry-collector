@@ -97,7 +97,7 @@ func NewPersistentQueue[T any](set PersistentQueueSettings[T]) Queue[T] {
 	_, isRequestSized := set.Sizer.(*RequestSizer[T])
 	return &persistentQueue[T]{
 		set:            set,
-		logger:         set.ExporterSettings.Logger,
+		logger:         set.ExporterSettings.TelemetrySettings.Logger,
 		isRequestSized: isRequestSized,
 	}
 }
