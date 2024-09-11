@@ -124,7 +124,6 @@ linters-settings:
   testifylint:
     # TODO: enable all rules
     disable:
-      - error-is-as
       - float-compare
       - formatter
       - go-require
