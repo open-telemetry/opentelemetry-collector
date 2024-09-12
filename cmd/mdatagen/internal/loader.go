@@ -107,6 +107,9 @@ type Metric struct {
 	// Description of the metric.
 	Description string `mapstructure:"description"`
 
+	// The stability level of the metric.
+	Stability string `mapstructure:"stability"`
+
 	// ExtendedDocumentation of the metric. If specified, this will
 	// be appended to the description used in generated documentation.
 	ExtendedDocumentation string `mapstructure:"extended_documentation"`
