@@ -15,5 +15,5 @@ import (
 func TestTotalMemory(t *testing.T) {
 	totalMemory, err := TotalMemory()
 	require.NoError(t, err)
-	assert.True(t, totalMemory > 0)
+	assert.Positive(t, totalMemory)
 }

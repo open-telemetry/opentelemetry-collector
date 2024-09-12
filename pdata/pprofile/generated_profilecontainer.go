@@ -8,6 +8,7 @@ package pprofile
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
+	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -46,9 +47,15 @@ func (ms ProfileContainer) MoveTo(dest ProfileContainer) {
 	*ms.orig = otlpprofiles.ProfileContainer{}
 }
 
-// ProfileID returns the ProfileId associated with this ProfileContainer.
-func (ms ProfileContainer) ProfileID() pcommon.ByteSlice {
-	return pcommon.ByteSlice(internal.NewByteSlice(&ms.orig.ProfileId, ms.state))
+// ProfileID returns the profileid associated with this ProfileContainer.
+func (ms ProfileContainer) ProfileID() ProfileID {
+	return ProfileID(ms.orig.ProfileId)
+}
+
+// SetProfileID replaces the profileid associated with this ProfileContainer.
+func (ms ProfileContainer) SetProfileID(v ProfileID) {
+	ms.state.AssertMutable()
+	ms.orig.ProfileId = data.ProfileID(v)
 }
 
 // StartTime returns the starttime associated with this ProfileContainer.
@@ -97,7 +104,7 @@ func (ms ProfileContainer) Profile() Profile {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ProfileContainer) CopyTo(dest ProfileContainer) {
 	dest.state.AssertMutable()
-	ms.ProfileID().CopyTo(dest.ProfileID())
+	dest.SetProfileID(ms.ProfileID())
 	dest.SetStartTime(ms.StartTime())
 	dest.SetEndTime(ms.EndTime())
 	ms.Attributes().CopyTo(dest.Attributes())

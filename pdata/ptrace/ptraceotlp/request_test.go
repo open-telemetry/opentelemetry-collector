@@ -39,9 +39,9 @@ var tracesRequestJSON = []byte(`
 
 func TestRequestToPData(t *testing.T) {
 	tr := NewExportRequest()
-	assert.Equal(t, tr.Traces().SpanCount(), 0)
+	assert.Equal(t, 0, tr.Traces().SpanCount())
 	tr.Traces().ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-	assert.Equal(t, tr.Traces().SpanCount(), 1)
+	assert.Equal(t, 1, tr.Traces().SpanCount())
 }
 
 func TestRequestJSON(t *testing.T) {

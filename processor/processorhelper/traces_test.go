@@ -10,6 +10,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -59,11 +61,70 @@ func TestNewTracesProcessor_ProcessTraceError(t *testing.T) {
 func TestNewTracesProcessor_ProcessTracesErrSkipProcessingData(t *testing.T) {
 	tp, err := NewTracesProcessor(context.Background(), processortest.NewNopSettings(), &testTracesCfg, consumertest.NewNop(), newTestTProcessor(ErrSkipProcessingData))
 	require.NoError(t, err)
-	assert.Equal(t, nil, tp.ConsumeTraces(context.Background(), ptrace.NewTraces()))
+	assert.NoError(t, tp.ConsumeTraces(context.Background(), ptrace.NewTraces()))
 }
 
 func newTestTProcessor(retError error) ProcessTracesFunc {
 	return func(_ context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 		return td, retError
 	}
+}
+
+func TestTracesProcessor_RecordInOut(t *testing.T) {
+	// Regardless of how many spans are ingested, emit just one
+	mockAggregate := func(_ context.Context, _ ptrace.Traces) (ptrace.Traces, error) {
+		td := ptrace.NewTraces()
+		td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		return td, nil
+	}
+
+	incomingTraces := ptrace.NewTraces()
+	incomingSpans := incomingTraces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans()
+
+	// Add 4 records to the incoming
+	incomingSpans.AppendEmpty()
+	incomingSpans.AppendEmpty()
+	incomingSpans.AppendEmpty()
+	incomingSpans.AppendEmpty()
+
+	testTelemetry := setupTestTelemetry()
+	tp, err := NewTracesProcessor(context.Background(), testTelemetry.NewSettings(), &testLogsCfg, consumertest.NewNop(), mockAggregate)
+	require.NoError(t, err)
+
+	assert.NoError(t, tp.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, tp.ConsumeTraces(context.Background(), incomingTraces))
+	assert.NoError(t, tp.Shutdown(context.Background()))
+
+	testTelemetry.assertMetrics(t, []metricdata.Metrics{
+		{
+			Name:        "otelcol_processor_incoming_spans",
+			Description: "Number of spans passed to the processor.",
+			Unit:        "{spans}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      4,
+						Attributes: attribute.NewSet(attribute.String("processor", "processorhelper")),
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_processor_outgoing_spans",
+			Description: "Number of spans emitted from the processor.",
+			Unit:        "{spans}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      1,
+						Attributes: attribute.NewSet(attribute.String("processor", "processorhelper")),
+					},
+				},
+			},
+		},
+	})
 }

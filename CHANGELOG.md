@@ -7,6 +7,51 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.15.0/v0.109.0
+
+### 🛑 Breaking changes 🛑
+
+- `scraperhelper`: Remove deprecated `ObsReport`, `ObsReportSettings`, `NewObsReport` types/funcs (#11086)
+- `confmap`: Remove stable `confmap.strictlyTypedInput` gate (#11008)
+- `confmap`: Removes stable `confmap.unifyEnvVarExpansion` feature gate. (#11007)
+- `ballastextension`: Removes the deprecated ballastextension (#10671)
+- `service`: Removes stable `service.disableOpenCensusBridge` feature gate (#11009)
+
+### 🚩 Deprecations 🚩
+
+- `processorhelper`: These funcs are not used anywhere, marking them deprecated. (#11083)
+
+### 🚀 New components 🚀
+
+- `extension/experimental/storage`: Move `extension/experimental/storage` into a separate module (#11022)
+
+### 💡 Enhancements 💡
+
+- `configtelemetry`: Add guidelines for each level of component telemetry (#10286)
+- `service`: move `useOtelWithSDKConfigurationForInternalTelemetry` gate to beta (#11091)
+- `service`: implement a no-op tracer provider that doesn't propagate the context (#11026)
+  The no-op tracer provider supported by the SDK incurs a memory cost of propagating the context no matter
+  what. This is not needed if tracing is not enabled in the Collector. This implementation of the no-op tracer
+  provider removes the need to allocate memory when tracing is disabled.
+  
+- `envprovider`: Mark module as stable (#10982)
+- `fileprovider`: Mark module as stable (#10983)
+- `processor`: Add incoming and outgoing counts for processors using processorhelper. (#10910)
+  Any processor using the processorhelper package (this is most processors) will automatically report
+  incoming and outgoing item counts. The new metrics are:
+  - otelcol_processor_incoming_spans
+  - otelcol_processor_outgoing_spans
+  - otelcol_processor_incoming_metric_points
+  - otelcol_processor_outgoing_metric_points
+  - otelcol_processor_incoming_log_records
+  - otelcol_processor_outgoing_log_records
+  
+
+### 🧰 Bug fixes 🧰
+
+- `configgrpc`: Change the value of max_recv_msg_size_mib from uint64 to int to avoid a case where misconfiguration caused an integer overflow. (#10948)
+- `exporterqueue`: Fix a bug in persistent queue that Offer can becomes deadlocked when queue is almost full (#11015)
+
 ## v1.14.1/v0.108.1
 
 ### 🧰 Bug fixes 🧰
@@ -235,7 +280,7 @@ This release includes 2 very important breaking changes.
   - Stop doing most kinds of implicit type casting when resolving configuration values
   - Use the original string representation of configuration values if the ${} syntax is used in inline position
   
-- `confighttp`: Use `confighttp.ServerConfig` as part of zpagesextension. See [https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md#server-configuration](server configuration) options. (#9368)
+- `confighttp`: Use `confighttp.ServerConfig` as part of zpagesextension. See [server configuration](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md#server-configuration) options. (#9368)
 
 ### 🧰 Bug fixes 🧰
 
@@ -2160,9 +2205,9 @@ There isn't a valid core binary for this release. Use v0.57.2 instead.
 - Deprecate global flag in `featuregates` (#5060)
 - Deprecate last funcs/structs in componenthelper (#5069)
 - Change structs in otlpgrpc to follow standard go encoding interfaces (#5062)
-  - Deprecate UnmarshalJSON[Traces|Metrics|Logs][Reques|Response] in favor of `UnmarshalJSON`.
-  - Deprecate [Traces|Metrics|Logs][Reques|Response].Marshal in favor of `MarshalProto`.
-  - Deprecate UnmarshalJSON[Traces|Metrics|Logs][Reques|Response] in favor of `UnmarshalProto`.
+  - Deprecate `UnmarshalJSON[Traces|Metrics|Logs][Reques|Response]` in favor of `UnmarshalJSON`.
+  - Deprecate `[Traces|Metrics|Logs][Reques|Response].Marshal` in favor of `MarshalProto`.
+  - Deprecate `UnmarshalJSON[Traces|Metrics|Logs][Reques|Response]` in favor of `UnmarshalProto`.
 - Deprecating following pdata methods/types following OTLP v0.15.0 upgrade (#5076):
       - InstrumentationLibrary is now InstrumentationScope
       - NewInstrumentationLibrary is now NewInstrumentationScope
@@ -2662,7 +2707,7 @@ This release is marked as "bad" since the metrics pipelines will produce bad dat
 
 - Remove Resize() from pdata slice APIs (#3675)
 - Remove the ballast allocation when `mem-ballast-size-mib` is set in command line (#3626)
-  - Use [`ballast extension`](./extension/ballastextension/README.md) to set memory ballast instead.
+  - Use `ballast extension` to set memory ballast instead.
 - Rename `DoubleDataPoint` to `NumberDataPoint` (#3633)
 - Remove `IntHistogram` (#3676)
 

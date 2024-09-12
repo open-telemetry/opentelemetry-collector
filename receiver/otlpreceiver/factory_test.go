@@ -331,3 +331,38 @@ func TestCreateLogReceiver(t *testing.T) {
 		})
 	}
 }
+
+func TestEndpointForPort(t *testing.T) {
+	tests := []struct {
+		port     int
+		enabled  bool
+		endpoint string
+	}{
+		{
+			port:     4317,
+			enabled:  false,
+			endpoint: "0.0.0.0:4317",
+		},
+		{
+			port:     4317,
+			enabled:  true,
+			endpoint: "localhost:4317",
+		},
+		{
+			port:     0,
+			enabled:  false,
+			endpoint: "0.0.0.0:0",
+		},
+		{
+			port:     0,
+			enabled:  true,
+			endpoint: "localhost:0",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.endpoint, func(t *testing.T) {
+			assert.Equal(t, endpointForPort(tt.enabled, tt.port), tt.endpoint)
+		})
+	}
+}

@@ -10,6 +10,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -59,11 +61,70 @@ func TestNewMetricsProcessor_ProcessMetricsError(t *testing.T) {
 func TestNewMetricsProcessor_ProcessMetricsErrSkipProcessingData(t *testing.T) {
 	mp, err := NewMetricsProcessor(context.Background(), processortest.NewNopSettings(), &testMetricsCfg, consumertest.NewNop(), newTestMProcessor(ErrSkipProcessingData))
 	require.NoError(t, err)
-	assert.Equal(t, nil, mp.ConsumeMetrics(context.Background(), pmetric.NewMetrics()))
+	assert.NoError(t, mp.ConsumeMetrics(context.Background(), pmetric.NewMetrics()))
 }
 
 func newTestMProcessor(retError error) ProcessMetricsFunc {
 	return func(_ context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 		return md, retError
 	}
+}
+
+func TestMetricsProcessor_RecordInOut(t *testing.T) {
+	// Regardless of how many data points are ingested, emit 3
+	mockAggregate := func(_ context.Context, _ pmetric.Metrics) (pmetric.Metrics, error) {
+		md := pmetric.NewMetrics()
+		md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptySum().DataPoints().AppendEmpty()
+		md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptySum().DataPoints().AppendEmpty()
+		md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptySum().DataPoints().AppendEmpty()
+		return md, nil
+	}
+
+	incomingMetrics := pmetric.NewMetrics()
+	dps := incomingMetrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptySum().DataPoints()
+
+	// Add 2 data points to the incoming
+	dps.AppendEmpty()
+	dps.AppendEmpty()
+
+	testTelemetry := setupTestTelemetry()
+	mp, err := NewMetricsProcessor(context.Background(), testTelemetry.NewSettings(), &testMetricsCfg, consumertest.NewNop(), mockAggregate)
+	require.NoError(t, err)
+
+	assert.NoError(t, mp.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, mp.ConsumeMetrics(context.Background(), incomingMetrics))
+	assert.NoError(t, mp.Shutdown(context.Background()))
+
+	testTelemetry.assertMetrics(t, []metricdata.Metrics{
+		{
+			Name:        "otelcol_processor_incoming_metric_points",
+			Description: "Number of metric points passed to the processor.",
+			Unit:        "{datapoints}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      2,
+						Attributes: attribute.NewSet(attribute.String("processor", "processorhelper")),
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_processor_outgoing_metric_points",
+			Description: "Number of metric points emitted from the processor.",
+			Unit:        "{datapoints}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      3,
+						Attributes: attribute.NewSet(attribute.String("processor", "processorhelper")),
+					},
+				},
+			},
+		},
+	})
 }

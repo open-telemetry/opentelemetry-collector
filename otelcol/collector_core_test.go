@@ -72,7 +72,7 @@ func Test_collectorCore_Write(t *testing.T) {
 		e,
 		fields,
 	}
-	require.Equal(t, 1, len(cc.core.(*bufferedCore).logs))
+	require.Len(t, cc.core.(*bufferedCore).logs, 1)
 	require.Equal(t, expected, cc.core.(*bufferedCore).logs[0])
 }
 

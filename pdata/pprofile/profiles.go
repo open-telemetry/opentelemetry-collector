@@ -49,3 +49,20 @@ func (ms Profiles) ResourceProfiles() ResourceProfilesSlice {
 func (ms Profiles) MarkReadOnly() {
 	internal.SetProfilesState(internal.Profiles(ms), internal.StateReadOnly)
 }
+
+// SampleCount calculates the total number of samples.
+func (ms Profiles) SampleCount() int {
+	sampleCount := 0
+	rps := ms.ResourceProfiles()
+	for i := 0; i < rps.Len(); i++ {
+		rp := rps.At(i)
+		sps := rp.ScopeProfiles()
+		for j := 0; j < sps.Len(); j++ {
+			pcs := sps.At(j).Profiles()
+			for k := 0; j < pcs.Len(); j++ {
+				sampleCount += pcs.At(k).Profile().Sample().Len()
+			}
+		}
+	}
+	return sampleCount
+}
