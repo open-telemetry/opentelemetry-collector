@@ -25,9 +25,9 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/internal/queue"
-	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
@@ -156,7 +156,7 @@ func TestLogsRequestExporter_Default_ExportError(t *testing.T) {
 }
 
 func TestLogsExporter_WithPersistentQueue(t *testing.T) {
-	qCfg := NewDefaultQueueSettings()
+	qCfg := NewDefaultQueueConfig()
 	storageID := component.MustNewIDWithName("file_storage", "storage")
 	qCfg.StorageID = &storageID
 	rCfg := configretry.NewDefaultBackOffConfig()
@@ -253,7 +253,7 @@ func TestLogsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	rCfg := configretry.NewDefaultBackOffConfig()
-	qCfg := NewDefaultQueueSettings()
+	qCfg := NewDefaultQueueConfig()
 	qCfg.NumConsumers = 1
 	qCfg.QueueSize = 2
 	wantErr := errors.New("some-error")
@@ -359,7 +359,7 @@ func TestLogsExporter_WithShutdown_ReturnError(t *testing.T) {
 	assert.NotNil(t, le)
 	assert.NoError(t, err)
 
-	assert.Equal(t, le.Shutdown(context.Background()), want)
+	assert.Equal(t, want, le.Shutdown(context.Background()))
 }
 
 func TestLogsRequestExporter_WithShutdown_ReturnError(t *testing.T) {
@@ -371,7 +371,7 @@ func TestLogsRequestExporter_WithShutdown_ReturnError(t *testing.T) {
 	assert.NotNil(t, le)
 	assert.NoError(t, err)
 
-	assert.Equal(t, le.Shutdown(context.Background()), want)
+	assert.Equal(t, want, le.Shutdown(context.Background()))
 }
 
 func newPushLogsDataModifiedDownstream(retError error) consumer.ConsumeLogsFunc {
@@ -432,7 +432,7 @@ func checkWrapSpanForLogsExporter(t *testing.T, sr *tracetest.SpanRecorder, trac
 			sentLogRecords = 0
 			failedToSendLogRecords = numLogRecords
 		}
-		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: obsmetrics.SentLogRecordsKey, Value: attribute.Int64Value(sentLogRecords)}, "SpanData %v", sd)
-		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: obsmetrics.FailedToSendLogRecordsKey, Value: attribute.Int64Value(failedToSendLogRecords)}, "SpanData %v", sd)
+		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: internal.SentLogRecordsKey, Value: attribute.Int64Value(sentLogRecords)}, "SpanData %v", sd)
+		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: internal.FailedToSendLogRecordsKey, Value: attribute.Int64Value(failedToSendLogRecords)}, "SpanData %v", sd)
 	}
 }

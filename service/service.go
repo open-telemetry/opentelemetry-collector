@@ -23,8 +23,8 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/internal/localhostgate"
-	"go.opentelemetry.io/collector/internal/obsreportconfig"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/globalgates"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
@@ -36,6 +36,22 @@ import (
 	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
+
+// useOtelWithSDKConfigurationForInternalTelemetryFeatureGate is the feature gate that controls whether the collector
+// supports configuring the OpenTelemetry SDK via configuration
+var useOtelWithSDKConfigurationForInternalTelemetryFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"telemetry.useOtelWithSDKConfigurationForInternalTelemetry",
+	featuregate.StageBeta,
+	featuregate.WithRegisterDescription("controls whether the collector supports extended OpenTelemetry"+
+		"configuration for internal telemetry"))
+
+// disableHighCardinalityMetricsfeatureGate is the feature gate that controls whether the collector should enable
+// potentially high cardinality metrics. The gate will be removed when the collector allows for view configuration.
+var disableHighCardinalityMetricsfeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"telemetry.disableHighCardinalityMetrics",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("controls whether the collector should enable potentially high"+
+		"cardinality metrics. The gate will be removed when the collector allows for view configuration."))
 
 // Settings holds configuration for building a new Service.
 type Settings struct {
@@ -88,7 +104,7 @@ type Service struct {
 
 // New creates a new Service, its telemetry, and Components.
 func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
-	disableHighCard := obsreportconfig.DisableHighCardinalityMetricsfeatureGate.IsEnabled()
+	disableHighCard := disableHighCardinalityMetricsfeatureGate.IsEnabled()
 
 	srv := &Service{
 		buildInfo: set.BuildInfo,
@@ -173,10 +189,8 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		return nil, err
 	}
 
-	if cfg.Telemetry.Metrics.Level != configtelemetry.LevelNone && cfg.Telemetry.Metrics.Address != "" {
-		if err = proctelemetry.RegisterProcessMetrics(srv.telemetrySettings); err != nil {
-			return nil, fmt.Errorf("failed to register process metrics: %w", err)
-		}
+	if err = proctelemetry.RegisterProcessMetrics(srv.telemetrySettings); err != nil {
+		return nil, fmt.Errorf("failed to register process metrics: %w", err)
 	}
 
 	return srv, nil
@@ -192,7 +206,7 @@ func logsAboutMeterProvider(logger *zap.Logger, cfg telemetry.MetricsConfig, mp 
 		return
 	}
 
-	if len(cfg.Address) != 0 && obsreportconfig.UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate.IsEnabled() {
+	if len(cfg.Address) != 0 && useOtelWithSDKConfigurationForInternalTelemetryFeatureGate.IsEnabled() {
 		logger.Warn("service::telemetry::metrics::address is being deprecated in favor of service::telemetry::metrics::readers")
 	}
 
@@ -237,7 +251,7 @@ func (srv *Service) Start(ctx context.Context) error {
 	}
 
 	srv.telemetrySettings.Logger.Info("Everything is ready. Begin running and processing data.")
-	localhostgate.LogAboutUseLocalHostAsDefault(srv.telemetrySettings.Logger)
+	logAboutUseLocalHostAsDefault(srv.telemetrySettings.Logger)
 	return nil
 }
 
@@ -342,4 +356,14 @@ func pdataFromSdk(res *sdkresource.Resource) pcommon.Resource {
 		pcommonRes.Attributes().PutStr(string(keyValue.Key), keyValue.Value.AsString())
 	}
 	return pcommonRes
+}
+
+// logAboutUseLocalHostAsDefault logs about the upcoming change from 0.0.0.0 to localhost on server-like components.
+func logAboutUseLocalHostAsDefault(logger *zap.Logger) {
+	if globalgates.UseLocalHostAsDefaultHostfeatureGate.IsEnabled() {
+		logger.Info(
+			"The default endpoints for all servers in components have changed to use localhost instead of 0.0.0.0. Disable the feature gate to temporarily revert to the previous default.",
+			zap.String("feature gate ID", globalgates.UseLocalHostAsDefaultHostID),
+		)
+	}
 }

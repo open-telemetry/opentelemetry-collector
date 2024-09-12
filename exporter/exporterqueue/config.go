@@ -33,7 +33,7 @@ func NewDefaultConfig() Config {
 	}
 }
 
-// Validate checks if the QueueSettings configuration is valid
+// Validate checks if the Config is valid
 func (qCfg *Config) Validate() error {
 	if !qCfg.Enabled {
 		return nil

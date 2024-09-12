@@ -384,7 +384,7 @@ func TestScrapeControllerStartsOnInit(t *testing.T) {
 	assert.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()), "Must not error on start")
 	<-time.After(500 * time.Nanosecond)
 	assert.NoError(t, r.Shutdown(context.Background()), "Must not have errored on shutdown")
-	assert.Equal(t, tsm.timesScrapeCalled, 1, "Must have been called as soon as the controller started")
+	assert.Equal(t, 1, tsm.timesScrapeCalled, "Must have been called as soon as the controller started")
 }
 
 func TestScrapeControllerInitialDelay(t *testing.T) {

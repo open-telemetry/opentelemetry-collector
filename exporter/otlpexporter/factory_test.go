@@ -30,10 +30,10 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 	ocfg, ok := factory.CreateDefaultConfig().(*Config)
 	assert.True(t, ok)
-	assert.Equal(t, ocfg.RetryConfig, configretry.NewDefaultBackOffConfig())
-	assert.Equal(t, ocfg.QueueConfig, exporterhelper.NewDefaultQueueSettings())
-	assert.Equal(t, ocfg.TimeoutSettings, exporterhelper.NewDefaultTimeoutSettings())
-	assert.Equal(t, ocfg.Compression, configcompression.TypeGzip)
+	assert.Equal(t, configretry.NewDefaultBackOffConfig(), ocfg.RetryConfig)
+	assert.Equal(t, exporterhelper.NewDefaultQueueConfig(), ocfg.QueueConfig)
+	assert.Equal(t, exporterhelper.NewDefaultTimeoutConfig(), ocfg.TimeoutConfig)
+	assert.Equal(t, configcompression.TypeGzip, ocfg.Compression)
 }
 
 func TestCreateMetricsExporter(t *testing.T) {
@@ -181,7 +181,7 @@ func TestCreateTracesExporter(t *testing.T) {
 			if err != nil {
 				// Since the endpoint of OTLP exporter doesn't actually exist,
 				// exporter may already stop because it cannot connect.
-				assert.Equal(t, err.Error(), "rpc error: code = Canceled desc = grpc: the client connection is closing")
+				assert.Equal(t, "rpc error: code = Canceled desc = grpc: the client connection is closing", err.Error())
 			}
 		})
 	}
