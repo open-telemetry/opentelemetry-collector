@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package exporterhelper
+package internal
 
 import (
 	"context"
@@ -22,16 +22,17 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/exporter/internal"
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
-func mockRequestUnmarshaler(mr Request) exporterqueue.Unmarshaler[Request] {
-	return func([]byte) (Request, error) {
+func mockRequestUnmarshaler(mr internal.Request) exporterqueue.Unmarshaler[internal.Request] {
+	return func([]byte) (internal.Request, error) {
 		return mr, nil
 	}
 }
 
-func mockRequestMarshaler(Request) ([]byte, error) {
+func mockRequestMarshaler(internal.Request) ([]byte, error) {
 	return []byte("mockRequest"), nil
 }
 
@@ -39,10 +40,10 @@ func TestQueuedRetry_DropOnPermanentError(t *testing.T) {
 	qCfg := NewDefaultQueueConfig()
 	rCfg := configretry.NewDefaultBackOffConfig()
 	mockR := newMockRequest(2, consumererror.NewPermanent(errors.New("bad data")))
-	be, err := newBaseExporter(defaultSettings, defaultDataType, newObservabilityConsumerSender,
-		withMarshaler(mockRequestMarshaler), withUnmarshaler(mockRequestUnmarshaler(mockR)), WithRetry(rCfg), WithQueue(qCfg))
+	be, err := NewBaseExporter(defaultSettings, defaultDataType, newObservabilityConsumerSender,
+		WithMarshaler(mockRequestMarshaler), WithUnmarshaler(mockRequestUnmarshaler(mockR)), WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
-	ocs := be.obsrepSender.(*observabilityConsumerSender)
+	ocs := be.ObsrepSender.(*observabilityConsumerSender)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
 		assert.NoError(t, be.Shutdown(context.Background()))
@@ -50,7 +51,7 @@ func TestQueuedRetry_DropOnPermanentError(t *testing.T) {
 
 	ocs.run(func() {
 		// This is asynchronous so it should just enqueue, no errors expected.
-		require.NoError(t, be.send(context.Background(), mockR))
+		require.NoError(t, be.Send(context.Background(), mockR))
 	})
 	ocs.awaitAsyncProcessing()
 	// In the newMockConcurrentExporter we count requests and items even for failed requests
@@ -63,11 +64,11 @@ func TestQueuedRetry_DropOnNoRetry(t *testing.T) {
 	qCfg := NewDefaultQueueConfig()
 	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.Enabled = false
-	be, err := newBaseExporter(defaultSettings, defaultDataType, newObservabilityConsumerSender, withMarshaler(mockRequestMarshaler),
-		withUnmarshaler(mockRequestUnmarshaler(newMockRequest(2, errors.New("transient error")))),
+	be, err := NewBaseExporter(defaultSettings, defaultDataType, newObservabilityConsumerSender, WithMarshaler(mockRequestMarshaler),
+		WithUnmarshaler(mockRequestUnmarshaler(newMockRequest(2, errors.New("transient error")))),
 		WithQueue(qCfg), WithRetry(rCfg))
 	require.NoError(t, err)
-	ocs := be.obsrepSender.(*observabilityConsumerSender)
+	ocs := be.ObsrepSender.(*observabilityConsumerSender)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
 		assert.NoError(t, be.Shutdown(context.Background()))
@@ -76,7 +77,7 @@ func TestQueuedRetry_DropOnNoRetry(t *testing.T) {
 	mockR := newMockRequest(2, errors.New("transient error"))
 	ocs.run(func() {
 		// This is asynchronous so it should just enqueue, no errors expected.
-		require.NoError(t, be.send(context.Background(), mockR))
+		require.NoError(t, be.Send(context.Background(), mockR))
 	})
 	ocs.awaitAsyncProcessing()
 	// In the newMockConcurrentExporter we count requests and items even for failed requests
@@ -90,8 +91,8 @@ func TestQueuedRetry_OnError(t *testing.T) {
 	qCfg.NumConsumers = 1
 	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.InitialInterval = 0
-	be, err := newBaseExporter(defaultSettings, defaultDataType, newObservabilityConsumerSender,
-		withMarshaler(mockRequestMarshaler), withUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
+	be, err := NewBaseExporter(defaultSettings, defaultDataType, newObservabilityConsumerSender,
+		WithMarshaler(mockRequestMarshaler), WithUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
 		WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -101,10 +102,10 @@ func TestQueuedRetry_OnError(t *testing.T) {
 
 	traceErr := consumererror.NewTraces(errors.New("some error"), testdata.GenerateTraces(1))
 	mockR := newMockRequest(2, traceErr)
-	ocs := be.obsrepSender.(*observabilityConsumerSender)
+	ocs := be.ObsrepSender.(*observabilityConsumerSender)
 	ocs.run(func() {
 		// This is asynchronous so it should just enqueue, no errors expected.
-		require.NoError(t, be.send(context.Background(), mockR))
+		require.NoError(t, be.Send(context.Background(), mockR))
 	})
 	ocs.awaitAsyncProcessing()
 
@@ -120,11 +121,11 @@ func TestQueuedRetry_MaxElapsedTime(t *testing.T) {
 	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.InitialInterval = time.Millisecond
 	rCfg.MaxElapsedTime = 100 * time.Millisecond
-	be, err := newBaseExporter(defaultSettings, defaultDataType, newObservabilityConsumerSender,
-		withMarshaler(mockRequestMarshaler), withUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
+	be, err := NewBaseExporter(defaultSettings, defaultDataType, newObservabilityConsumerSender,
+		WithMarshaler(mockRequestMarshaler), WithUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
 		WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
-	ocs := be.obsrepSender.(*observabilityConsumerSender)
+	ocs := be.ObsrepSender.(*observabilityConsumerSender)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
 		assert.NoError(t, be.Shutdown(context.Background()))
@@ -132,14 +133,14 @@ func TestQueuedRetry_MaxElapsedTime(t *testing.T) {
 
 	ocs.run(func() {
 		// Add an item that will always fail.
-		require.NoError(t, be.send(context.Background(), newErrorRequest()))
+		require.NoError(t, be.Send(context.Background(), newErrorRequest()))
 	})
 
 	mockR := newMockRequest(2, nil)
 	start := time.Now()
 	ocs.run(func() {
 		// This is asynchronous so it should just enqueue, no errors expected.
-		require.NoError(t, be.send(context.Background(), mockR))
+		require.NoError(t, be.Send(context.Background(), mockR))
 	})
 	ocs.awaitAsyncProcessing()
 
@@ -152,7 +153,7 @@ func TestQueuedRetry_MaxElapsedTime(t *testing.T) {
 	mockR.checkNumRequests(t, 1)
 	ocs.checkSendItemsCount(t, 2)
 	ocs.checkDroppedItemsCount(t, 7)
-	require.Zero(t, be.queueSender.(*queueSender).queue.Size())
+	require.Zero(t, be.QueueSender.(*QueueSender).queue.Size())
 }
 
 type wrappedError struct {
@@ -168,11 +169,11 @@ func TestQueuedRetry_ThrottleError(t *testing.T) {
 	qCfg.NumConsumers = 1
 	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.InitialInterval = 10 * time.Millisecond
-	be, err := newBaseExporter(defaultSettings, defaultDataType, newObservabilityConsumerSender,
-		withMarshaler(mockRequestMarshaler), withUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
+	be, err := NewBaseExporter(defaultSettings, defaultDataType, newObservabilityConsumerSender,
+		WithMarshaler(mockRequestMarshaler), WithUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
 		WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
-	ocs := be.obsrepSender.(*observabilityConsumerSender)
+	ocs := be.ObsrepSender.(*observabilityConsumerSender)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
 		assert.NoError(t, be.Shutdown(context.Background()))
@@ -183,7 +184,7 @@ func TestQueuedRetry_ThrottleError(t *testing.T) {
 	start := time.Now()
 	ocs.run(func() {
 		// This is asynchronous so it should just enqueue, no errors expected.
-		require.NoError(t, be.send(context.Background(), mockR))
+		require.NoError(t, be.Send(context.Background(), mockR))
 	})
 	ocs.awaitAsyncProcessing()
 
@@ -193,7 +194,7 @@ func TestQueuedRetry_ThrottleError(t *testing.T) {
 	mockR.checkNumRequests(t, 2)
 	ocs.checkSendItemsCount(t, 2)
 	ocs.checkDroppedItemsCount(t, 0)
-	require.Zero(t, be.queueSender.(*queueSender).queue.Size())
+	require.Zero(t, be.QueueSender.(*QueueSender).queue.Size())
 }
 
 func TestQueuedRetry_RetryOnError(t *testing.T) {
@@ -202,11 +203,11 @@ func TestQueuedRetry_RetryOnError(t *testing.T) {
 	qCfg.QueueSize = 1
 	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.InitialInterval = 0
-	be, err := newBaseExporter(defaultSettings, defaultDataType, newObservabilityConsumerSender,
-		withMarshaler(mockRequestMarshaler), withUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
+	be, err := NewBaseExporter(defaultSettings, defaultDataType, newObservabilityConsumerSender,
+		WithMarshaler(mockRequestMarshaler), WithUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
 		WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
-	ocs := be.obsrepSender.(*observabilityConsumerSender)
+	ocs := be.ObsrepSender.(*observabilityConsumerSender)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
 		assert.NoError(t, be.Shutdown(context.Background()))
@@ -215,7 +216,7 @@ func TestQueuedRetry_RetryOnError(t *testing.T) {
 	mockR := newMockRequest(2, errors.New("transient error"))
 	ocs.run(func() {
 		// This is asynchronous so it should just enqueue, no errors expected.
-		require.NoError(t, be.send(context.Background(), mockR))
+		require.NoError(t, be.Send(context.Background(), mockR))
 	})
 	ocs.awaitAsyncProcessing()
 
@@ -223,19 +224,19 @@ func TestQueuedRetry_RetryOnError(t *testing.T) {
 	mockR.checkNumRequests(t, 2)
 	ocs.checkSendItemsCount(t, 2)
 	ocs.checkDroppedItemsCount(t, 0)
-	require.Zero(t, be.queueSender.(*queueSender).queue.Size())
+	require.Zero(t, be.QueueSender.(*QueueSender).queue.Size())
 }
 
 func TestQueueRetryWithNoQueue(t *testing.T) {
 	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.MaxElapsedTime = time.Nanosecond // fail fast
-	be, err := newBaseExporter(exportertest.NewNopSettings(), component.DataTypeLogs, newObservabilityConsumerSender, WithRetry(rCfg))
+	be, err := NewBaseExporter(exportertest.NewNopSettings(), component.DataTypeLogs, newObservabilityConsumerSender, WithRetry(rCfg))
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
-	ocs := be.obsrepSender.(*observabilityConsumerSender)
+	ocs := be.ObsrepSender.(*observabilityConsumerSender)
 	mockR := newMockRequest(2, errors.New("some error"))
 	ocs.run(func() {
-		require.Error(t, be.send(context.Background(), mockR))
+		require.Error(t, be.Send(context.Background(), mockR))
 	})
 	ocs.awaitAsyncProcessing()
 	mockR.checkNumRequests(t, 1)
@@ -250,13 +251,13 @@ func TestQueueRetryWithDisabledRetires(t *testing.T) {
 	set := exportertest.NewNopSettings()
 	logger, observed := observer.New(zap.ErrorLevel)
 	set.Logger = zap.New(logger)
-	be, err := newBaseExporter(set, component.DataTypeLogs, newObservabilityConsumerSender, WithRetry(rCfg))
+	be, err := NewBaseExporter(set, component.DataTypeLogs, newObservabilityConsumerSender, WithRetry(rCfg))
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
-	ocs := be.obsrepSender.(*observabilityConsumerSender)
+	ocs := be.ObsrepSender.(*observabilityConsumerSender)
 	mockR := newMockRequest(2, errors.New("some error"))
 	ocs.run(func() {
-		require.Error(t, be.send(context.Background(), mockR))
+		require.Error(t, be.Send(context.Background(), mockR))
 	})
 	assert.Len(t, observed.All(), 1)
 	assert.Equal(t, "Exporting failed. Rejecting data. "+
@@ -274,7 +275,7 @@ func (mer *mockErrorRequest) Export(context.Context) error {
 	return errors.New("transient error")
 }
 
-func (mer *mockErrorRequest) OnError(error) Request {
+func (mer *mockErrorRequest) OnError(error) internal.Request {
 	return mer
 }
 
@@ -282,7 +283,7 @@ func (mer *mockErrorRequest) ItemsCount() int {
 	return 7
 }
 
-func newErrorRequest() Request {
+func newErrorRequest() internal.Request {
 	return &mockErrorRequest{}
 }
 
@@ -306,7 +307,7 @@ func (m *mockRequest) Export(ctx context.Context) error {
 	return ctx.Err()
 }
 
-func (m *mockRequest) OnError(error) Request {
+func (m *mockRequest) OnError(error) internal.Request {
 	return &mockRequest{
 		cnt:          1,
 		consumeError: nil,
@@ -333,13 +334,13 @@ func newMockRequest(cnt int, consumeError error) *mockRequest {
 }
 
 type observabilityConsumerSender struct {
-	baseRequestSender
+	BaseRequestSender
 	waitGroup         *sync.WaitGroup
 	sentItemsCount    *atomic.Int64
 	droppedItemsCount *atomic.Int64
 }
 
-func newObservabilityConsumerSender(*obsReport) requestSender {
+func newObservabilityConsumerSender(*ObsReport) RequestSender {
 	return &observabilityConsumerSender{
 		waitGroup:         new(sync.WaitGroup),
 		droppedItemsCount: &atomic.Int64{},
@@ -347,8 +348,8 @@ func newObservabilityConsumerSender(*obsReport) requestSender {
 	}
 }
 
-func (ocs *observabilityConsumerSender) send(ctx context.Context, req Request) error {
-	err := ocs.nextSender.send(ctx, req)
+func (ocs *observabilityConsumerSender) Send(ctx context.Context, req internal.Request) error {
+	err := ocs.NextSender.Send(ctx, req)
 	if err != nil {
 		ocs.droppedItemsCount.Add(int64(req.ItemsCount()))
 	} else {
