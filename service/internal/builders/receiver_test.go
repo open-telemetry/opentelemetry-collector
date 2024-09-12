@@ -13,8 +13,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverprofiles"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
@@ -28,55 +30,62 @@ func TestReceiverBuilder(t *testing.T) {
 			receiver.WithTraces(createReceiverTraces, component.StabilityLevelDevelopment),
 			receiver.WithMetrics(createReceiverMetrics, component.StabilityLevelAlpha),
 			receiver.WithLogs(createReceiverLogs, component.StabilityLevelDeprecated),
+			receiverprofiles.WithProfiles(createReceiverProfiles, component.StabilityLevelAlpha),
 		),
 	}...)
 	require.NoError(t, err)
 
 	testCases := []struct {
-		name        string
-		id          component.ID
-		err         string
-		nextTraces  consumer.Traces
-		nextLogs    consumer.Logs
-		nextMetrics consumer.Metrics
+		name         string
+		id           component.ID
+		err          string
+		nextTraces   consumer.Traces
+		nextLogs     consumer.Logs
+		nextMetrics  consumer.Metrics
+		nextProfiles consumerprofiles.Profiles
 	}{
 		{
-			name:        "unknown",
-			id:          component.MustNewID("unknown"),
-			err:         "receiver factory not available for: \"unknown\"",
-			nextTraces:  consumertest.NewNop(),
-			nextLogs:    consumertest.NewNop(),
-			nextMetrics: consumertest.NewNop(),
+			name:         "unknown",
+			id:           component.MustNewID("unknown"),
+			err:          "receiver factory not available for: \"unknown\"",
+			nextTraces:   consumertest.NewNop(),
+			nextLogs:     consumertest.NewNop(),
+			nextMetrics:  consumertest.NewNop(),
+			nextProfiles: consumertest.NewNop(),
 		},
 		{
-			name:        "err",
-			id:          component.MustNewID("err"),
-			err:         "telemetry type is not supported",
-			nextTraces:  consumertest.NewNop(),
-			nextLogs:    consumertest.NewNop(),
-			nextMetrics: consumertest.NewNop(),
+			name:         "err",
+			id:           component.MustNewID("err"),
+			err:          "telemetry type is not supported",
+			nextTraces:   consumertest.NewNop(),
+			nextLogs:     consumertest.NewNop(),
+			nextMetrics:  consumertest.NewNop(),
+			nextProfiles: consumertest.NewNop(),
 		},
 		{
-			name:        "all",
-			id:          component.MustNewID("all"),
-			nextTraces:  consumertest.NewNop(),
-			nextLogs:    consumertest.NewNop(),
-			nextMetrics: consumertest.NewNop(),
+			name:         "all",
+			id:           component.MustNewID("all"),
+			nextTraces:   consumertest.NewNop(),
+			nextLogs:     consumertest.NewNop(),
+			nextMetrics:  consumertest.NewNop(),
+			nextProfiles: consumertest.NewNop(),
 		},
 		{
-			name:        "all/named",
-			id:          component.MustNewIDWithName("all", "named"),
-			nextTraces:  consumertest.NewNop(),
-			nextLogs:    consumertest.NewNop(),
-			nextMetrics: consumertest.NewNop(),
+			name:         "all/named",
+			id:           component.MustNewIDWithName("all", "named"),
+			nextTraces:   consumertest.NewNop(),
+			nextLogs:     consumertest.NewNop(),
+			nextMetrics:  consumertest.NewNop(),
+			nextProfiles: consumertest.NewNop(),
 		},
 		{
-			name:        "no next consumer",
-			id:          component.MustNewID("unknown"),
-			err:         "nil next Consumer",
-			nextTraces:  nil,
-			nextLogs:    nil,
-			nextMetrics: nil,
+			name:         "no next consumer",
+			id:           component.MustNewID("unknown"),
+			err:          "nil next Consumer",
+			nextTraces:   nil,
+			nextLogs:     nil,
+			nextMetrics:  nil,
+			nextProfiles: nil,
 		},
 	}
 
@@ -111,6 +120,15 @@ func TestReceiverBuilder(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, nopReceiverInstance, le)
 			}
+
+			pe, err := b.CreateProfiles(context.Background(), settings(tt.id), tt.nextProfiles)
+			if tt.err != "" {
+				assert.EqualError(t, err, tt.err)
+				assert.Nil(t, pe)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, nopReceiverInstance, pe)
+			}
 		})
 	}
 }
@@ -124,6 +142,7 @@ func TestReceiverBuilderMissingConfig(t *testing.T) {
 			receiver.WithTraces(createReceiverTraces, component.StabilityLevelDevelopment),
 			receiver.WithMetrics(createReceiverMetrics, component.StabilityLevelAlpha),
 			receiver.WithLogs(createReceiverLogs, component.StabilityLevelDeprecated),
+			receiverprofiles.WithProfiles(createReceiverProfiles, component.StabilityLevelAlpha),
 		),
 	}...)
 
@@ -143,6 +162,10 @@ func TestReceiverBuilderMissingConfig(t *testing.T) {
 	le, err := bErr.CreateLogs(context.Background(), settings(missingID), consumertest.NewNop())
 	assert.EqualError(t, err, "receiver \"all/missing\" is not configured")
 	assert.Nil(t, le)
+
+	pe, err := bErr.CreateProfiles(context.Background(), settings(missingID), consumertest.NewNop())
+	assert.EqualError(t, err, "receiver \"all/missing\" is not configured")
+	assert.Nil(t, pe)
 }
 
 func TestReceiverBuilderFactory(t *testing.T) {
@@ -183,6 +206,12 @@ func TestNewNopReceiverConfigsAndFactories(t *testing.T) {
 	bLogs, err := builder.CreateLogs(context.Background(), set, consumertest.NewNop())
 	require.NoError(t, err)
 	assert.IsType(t, logs, bLogs)
+
+	profiles, err := factory.CreateProfilesReceiver(context.Background(), set, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	bProfiles, err := builder.CreateProfiles(context.Background(), set, consumertest.NewNop())
+	require.NoError(t, err)
+	assert.IsType(t, profiles, bProfiles)
 }
 
 func settings(id component.ID) receiver.Settings {
@@ -213,5 +242,9 @@ func createReceiverMetrics(context.Context, receiver.Settings, component.Config,
 }
 
 func createReceiverLogs(context.Context, receiver.Settings, component.Config, consumer.Logs) (receiver.Logs, error) {
+	return nopReceiverInstance, nil
+}
+
+func createReceiverProfiles(context.Context, receiver.Settings, component.Config, consumerprofiles.Profiles) (receiverprofiles.Profiles, error) {
 	return nopReceiverInstance, nil
 }

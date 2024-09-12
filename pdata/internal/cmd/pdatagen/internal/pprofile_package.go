@@ -99,10 +99,15 @@ var profileContainer = &messageValueStruct{
 	description:    "// ProfileContainer are an experimental implementation of the OpenTelemetry Profiles Data Model.\n",
 	originFullName: "otlpprofiles.ProfileContainer",
 	fields: []baseField{
-		&sliceField{
+		&primitiveTypedField{
 			fieldName:       "ProfileID",
 			originFieldName: "ProfileId",
-			returnSlice:     byteSlice,
+			returnType: &primitiveType{
+				structName: "ProfileID",
+				rawType:    "data.ProfileID",
+				defaultVal: "data.ProfileID([16]byte{})",
+				testVal:    "data.ProfileID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})",
+			},
 		},
 		&primitiveTypedField{
 			fieldName:       "StartTime",

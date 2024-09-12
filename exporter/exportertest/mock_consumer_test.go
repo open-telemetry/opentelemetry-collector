@@ -130,10 +130,10 @@ func TestConsumeLogsNonPermanent(t *testing.T) {
 	if err != nil {
 		return
 	}
-	assert.Equal(t, mc.reqCounter.error.nonpermanent, 1)
-	assert.Equal(t, mc.reqCounter.error.permanent, 0)
-	assert.Equal(t, mc.reqCounter.success, 0)
-	assert.Equal(t, mc.reqCounter.total, 1)
+	assert.Equal(t, 1, mc.reqCounter.error.nonpermanent)
+	assert.Equal(t, 0, mc.reqCounter.error.permanent)
+	assert.Equal(t, 0, mc.reqCounter.success)
+	assert.Equal(t, 1, mc.reqCounter.total)
 
 }
 
@@ -145,10 +145,10 @@ func TestConsumeLogsPermanent(t *testing.T) {
 	if err != nil {
 		return
 	}
-	assert.Equal(t, mc.reqCounter.error.nonpermanent, 0)
-	assert.Equal(t, mc.reqCounter.error.permanent, 1)
-	assert.Equal(t, mc.reqCounter.success, 0)
-	assert.Equal(t, mc.reqCounter.total, 1)
+	assert.Equal(t, 0, mc.reqCounter.error.nonpermanent)
+	assert.Equal(t, 1, mc.reqCounter.error.permanent)
+	assert.Equal(t, 0, mc.reqCounter.success)
+	assert.Equal(t, 1, mc.reqCounter.total)
 
 }
 
@@ -159,10 +159,10 @@ func TestConsumeLogsSuccess(t *testing.T) {
 	if err != nil {
 		return
 	}
-	assert.Equal(t, mc.reqCounter.error.nonpermanent, 0)
-	assert.Equal(t, mc.reqCounter.error.permanent, 0)
-	assert.Equal(t, mc.reqCounter.success, 1)
-	assert.Equal(t, mc.reqCounter.total, 1)
+	assert.Equal(t, 0, mc.reqCounter.error.nonpermanent)
+	assert.Equal(t, 0, mc.reqCounter.error.permanent)
+	assert.Equal(t, 1, mc.reqCounter.success)
+	assert.Equal(t, 1, mc.reqCounter.total)
 
 }
 
@@ -173,10 +173,10 @@ func TestConsumeTracesNonPermanent(t *testing.T) {
 	if err != nil {
 		return
 	}
-	assert.Equal(t, mc.reqCounter.error.nonpermanent, 1)
-	assert.Equal(t, mc.reqCounter.error.permanent, 0)
-	assert.Equal(t, mc.reqCounter.success, 0)
-	assert.Equal(t, mc.reqCounter.total, 1)
+	assert.Equal(t, 1, mc.reqCounter.error.nonpermanent)
+	assert.Equal(t, 0, mc.reqCounter.error.permanent)
+	assert.Equal(t, 0, mc.reqCounter.success)
+	assert.Equal(t, 1, mc.reqCounter.total)
 
 }
 
@@ -188,10 +188,10 @@ func TestConsumeTracesPermanent(t *testing.T) {
 	if err != nil {
 		return
 	}
-	assert.Equal(t, mc.reqCounter.error.nonpermanent, 0)
-	assert.Equal(t, mc.reqCounter.error.permanent, 1)
-	assert.Equal(t, mc.reqCounter.success, 0)
-	assert.Equal(t, mc.reqCounter.total, 1)
+	assert.Equal(t, 0, mc.reqCounter.error.nonpermanent)
+	assert.Equal(t, 1, mc.reqCounter.error.permanent)
+	assert.Equal(t, 0, mc.reqCounter.success)
+	assert.Equal(t, 1, mc.reqCounter.total)
 
 }
 
@@ -202,10 +202,10 @@ func TestConsumeTracesSuccess(t *testing.T) {
 	if err != nil {
 		return
 	}
-	assert.Equal(t, mc.reqCounter.error.nonpermanent, 0)
-	assert.Equal(t, mc.reqCounter.error.permanent, 0)
-	assert.Equal(t, mc.reqCounter.success, 1)
-	assert.Equal(t, mc.reqCounter.total, 1)
+	assert.Equal(t, 0, mc.reqCounter.error.nonpermanent)
+	assert.Equal(t, 0, mc.reqCounter.error.permanent)
+	assert.Equal(t, 1, mc.reqCounter.success)
+	assert.Equal(t, 1, mc.reqCounter.total)
 
 }
 func TestConsumeMetricsNonPermanent(t *testing.T) {
@@ -215,10 +215,10 @@ func TestConsumeMetricsNonPermanent(t *testing.T) {
 	if err != nil {
 		return
 	}
-	assert.Equal(t, mc.reqCounter.error.nonpermanent, 1)
-	assert.Equal(t, mc.reqCounter.error.permanent, 0)
-	assert.Equal(t, mc.reqCounter.success, 0)
-	assert.Equal(t, mc.reqCounter.total, 1)
+	assert.Equal(t, 1, mc.reqCounter.error.nonpermanent)
+	assert.Equal(t, 0, mc.reqCounter.error.permanent)
+	assert.Equal(t, 0, mc.reqCounter.success)
+	assert.Equal(t, 1, mc.reqCounter.total)
 
 }
 
@@ -229,10 +229,10 @@ func TestConsumeMetricsPermanent(t *testing.T) {
 	if err != nil {
 		return
 	}
-	assert.Equal(t, mc.reqCounter.error.nonpermanent, 0)
-	assert.Equal(t, mc.reqCounter.error.permanent, 1)
-	assert.Equal(t, mc.reqCounter.success, 0)
-	assert.Equal(t, mc.reqCounter.total, 1)
+	assert.Equal(t, 0, mc.reqCounter.error.nonpermanent)
+	assert.Equal(t, 1, mc.reqCounter.error.permanent)
+	assert.Equal(t, 0, mc.reqCounter.success)
+	assert.Equal(t, 1, mc.reqCounter.total)
 
 }
 
@@ -243,14 +243,14 @@ func TestConsumeMetricsSuccess(t *testing.T) {
 	if err != nil {
 		return
 	}
-	assert.Equal(t, mc.reqCounter.error.nonpermanent, 0)
-	assert.Equal(t, mc.reqCounter.error.permanent, 0)
-	assert.Equal(t, mc.reqCounter.success, 1)
-	assert.Equal(t, mc.reqCounter.total, 1)
+	assert.Equal(t, 0, mc.reqCounter.error.nonpermanent)
+	assert.Equal(t, 0, mc.reqCounter.error.permanent)
+	assert.Equal(t, 1, mc.reqCounter.success)
+	assert.Equal(t, 1, mc.reqCounter.total)
 
 }
 
 func TestCapabilites(t *testing.T) {
 	mc := newMockConsumer(func() error { return nil })
-	assert.Equal(t, mc.Capabilities(), consumer.Capabilities{})
+	assert.Equal(t, consumer.Capabilities{}, mc.Capabilities())
 }

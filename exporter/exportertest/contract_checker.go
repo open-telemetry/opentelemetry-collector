@@ -228,9 +228,9 @@ func checkLogs(t *testing.T, params CheckConsumeContractParams, mockReceiver com
 // Test is successful if all the elements were received successfully and no error was returned
 func alwaysSucceedsPassed(t *testing.T, allRecordsNumber int, reqCounter requestCounter) {
 	require.Equal(t, allRecordsNumber, reqCounter.success)
-	require.Equal(t, reqCounter.total, allRecordsNumber)
-	require.Equal(t, reqCounter.error.nonpermanent, 0)
-	require.Equal(t, reqCounter.error.permanent, 0)
+	require.Equal(t, allRecordsNumber, reqCounter.total)
+	require.Equal(t, 0, reqCounter.error.nonpermanent)
+	require.Equal(t, 0, reqCounter.error.permanent)
 }
 
 // Test is successful if all the elements were retried on non-permanent errors

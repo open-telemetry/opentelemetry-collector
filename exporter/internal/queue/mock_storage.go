@@ -10,6 +10,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"syscall"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
@@ -20,22 +21,31 @@ type mockStorageExtension struct {
 	component.ShutdownFunc
 	st             sync.Map
 	getClientError error
+	executionDelay time.Duration
 }
 
 func (m *mockStorageExtension) GetClient(context.Context, component.Kind, component.ID, string) (storage.Client, error) {
 	if m.getClientError != nil {
 		return nil, m.getClientError
 	}
-	return &mockStorageClient{st: &m.st, closed: &atomic.Bool{}}, nil
+	return &mockStorageClient{st: &m.st, closed: &atomic.Bool{}, executionDelay: m.executionDelay}, nil
 }
 
 func NewMockStorageExtension(getClientError error) storage.Extension {
-	return &mockStorageExtension{getClientError: getClientError}
+	return NewMockStorageExtensionWithDelay(getClientError, 0)
+}
+
+func NewMockStorageExtensionWithDelay(getClientError error, executionDelay time.Duration) storage.Extension {
+	return &mockStorageExtension{
+		getClientError: getClientError,
+		executionDelay: executionDelay,
+	}
 }
 
 type mockStorageClient struct {
-	st     *sync.Map
-	closed *atomic.Bool
+	st             *sync.Map
+	closed         *atomic.Bool
+	executionDelay time.Duration // simulate real storage client delay
 }
 
 func (m *mockStorageClient) Get(ctx context.Context, s string) ([]byte, error) {
@@ -60,6 +70,9 @@ func (m *mockStorageClient) Close(context.Context) error {
 func (m *mockStorageClient) Batch(_ context.Context, ops ...storage.Operation) error {
 	if m.isClosed() {
 		panic("client already closed")
+	}
+	if m.executionDelay != 0 {
+		time.Sleep(m.executionDelay)
 	}
 	for _, op := range ops {
 		switch op.Type {

@@ -177,9 +177,17 @@ const accessorsOneOfPrimitiveTestTemplate = `func Test{{ .structName }}_{{ .acce
 
 const accessorsPrimitiveTestTemplate = `func Test{{ .structName }}_{{ .fieldName }}(t *testing.T) {
 	ms := New{{ .structName }}()
+	{{- if eq .returnType "bool" }}
+	assert.{{- if eq .defaultVal "true" }}True{{- else }}False{{- end }}(t, ms.{{ .fieldName }}())
+	{{- else }}	
 	assert.Equal(t, {{ .defaultVal }}, ms.{{ .fieldName }}())
+	{{- end }}
 	ms.Set{{ .fieldName }}({{ .testValue }})
+	{{- if eq .returnType "bool" }}
+	assert.{{- if eq .testValue "true" }}True{{- else }}False{{- end }}(t, ms.{{ .fieldName }}())
+	{{- else }}	
 	assert.Equal(t, {{ .testValue }}, ms.{{ .fieldName }}())
+	{{- end }}
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { new{{ .structName }}(&{{ .originStructName }}{}, &sharedState).Set{{ .fieldName }}({{ .testValue }}) })
 }`

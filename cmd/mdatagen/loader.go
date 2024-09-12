@@ -122,11 +122,16 @@ type metric struct {
 	Sum *sum `mapstructure:"sum,omitempty"`
 	// Gauge stores metadata for gauge metric type
 	Gauge *gauge `mapstructure:"gauge,omitempty"`
-	// Gauge stores metadata for gauge metric type
+	// Histogram stores metadata for histogram metric type
 	Histogram *histogram `mapstructure:"histogram,omitempty"`
 
 	// Attributes is the list of attributes that the metric emits.
 	Attributes []attributeName `mapstructure:"attributes"`
+
+	// Level specifies the minimum `configtelemetry.Level` for which
+	// the metric will be emitted. This only applies to internal telemetry
+	// configuration.
+	Level configtelemetry.Level `mapstructure:"level"`
 }
 
 func (m *metric) Unmarshal(parser *confmap.Conf) error {
@@ -235,6 +240,14 @@ type tests struct {
 type telemetry struct {
 	Level   configtelemetry.Level `mapstructure:"level"`
 	Metrics map[metricName]metric `mapstructure:"metrics"`
+}
+
+func (t telemetry) Levels() map[string]interface{} {
+	levels := map[string]interface{}{}
+	for _, m := range t.Metrics {
+		levels[m.Level.String()] = nil
+	}
+	return levels
 }
 
 type metadata struct {

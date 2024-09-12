@@ -6,3 +6,5 @@ status:
   stability:
     beta: [extension]
   distributions: [core, contrib, k8s]
+  warnings:
+    - The zPages extension is incompatible with `service::telemetry::traces::level` set to `none`

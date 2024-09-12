@@ -419,59 +419,58 @@ func TestIssue10787(t *testing.T) {
 	resolver := NewResolver(t, "issue-10787-main.yaml")
 	conf, err := resolver.Resolve(context.Background())
 	require.NoError(t, err)
-	assert.Equal(t, conf.ToStringMap(),
-		map[string]any{
-			"exporters": map[string]any{
-				"logging": map[string]any{
-					"verbosity": "detailed",
-				},
+	assert.Equal(t, map[string]any{
+		"exporters": map[string]any{
+			"debug": map[string]any{
+				"verbosity": "detailed",
 			},
-			"processors": map[string]any{
-				"batch": nil,
-			},
-			"receivers": map[string]any{
-				"otlp": map[string]any{
-					"protocols": map[string]any{
-						"grpc": map[string]any{
-							"endpoint": "0.0.0.0:4317",
-						},
-						"http": map[string]any{
-							"endpoint": "0.0.0.0:4318",
-						},
+		},
+		"processors": map[string]any{
+			"batch": nil,
+		},
+		"receivers": map[string]any{
+			"otlp": map[string]any{
+				"protocols": map[string]any{
+					"grpc": map[string]any{
+						"endpoint": "0.0.0.0:4317",
 					},
-				},
-			},
-			"service": map[string]any{
-				"pipelines": map[string]any{
-					"traces": map[string]any{
-						"exporters":  []any{"logging"},
-						"processors": []any{"batch"},
-						"receivers":  []any{"otlp"},
-					},
-				},
-				"telemetry": map[string]any{
-					"metrics": map[string]any{
-						"level": "detailed",
+					"http": map[string]any{
+						"endpoint": "0.0.0.0:4318",
 					},
 				},
 			},
 		},
+		"service": map[string]any{
+			"pipelines": map[string]any{
+				"traces": map[string]any{
+					"exporters":  []any{"debug"},
+					"processors": []any{"batch"},
+					"receivers":  []any{"otlp"},
+				},
+			},
+			"telemetry": map[string]any{
+				"metrics": map[string]any{
+					"level": "detailed",
+				},
+			},
+		},
+	}, conf.ToStringMap(),
 	)
 }
 
 func TestStructMappingIssue10787(t *testing.T) {
 	resolver := NewResolver(t, "types_expand.yaml")
 	t.Setenv("ENV", `# this is a comment
-logging:
+debug:
   verbosity: detailed`)
 	conf, err := resolver.Resolve(context.Background())
 	require.NoError(t, err)
 
-	type Logging struct {
+	type Debug struct {
 		Verbosity string `mapstructure:"verbosity"`
 	}
 	type Exporters struct {
-		Logging Logging `mapstructure:"logging"`
+		Debug Debug `mapstructure:"debug"`
 	}
 	type Target struct {
 		Field Exporters `mapstructure:"field"`
@@ -482,7 +481,7 @@ logging:
 	require.NoError(t, err)
 	require.Equal(t,
 		Target{Field: Exporters{
-			Logging: Logging{
+			Debug: Debug{
 				Verbosity: "detailed",
 			},
 		}},
@@ -495,7 +494,7 @@ logging:
 	err = confStr.Unmarshal(&cfgStr)
 	require.NoError(t, err)
 	require.Equal(t, `# this is a comment
-logging:
+debug:
   verbosity: detailed`,
 		cfgStr.Field,
 	)
@@ -505,16 +504,16 @@ func TestStructMappingIssue10787_ExpandComment(t *testing.T) {
 	resolver := NewResolver(t, "types_expand.yaml")
 	t.Setenv("EXPAND_ME", "an expanded env var")
 	t.Setenv("ENV", `# this is a comment with ${EXPAND_ME}
-logging:
+debug:
   verbosity: detailed`)
 	conf, err := resolver.Resolve(context.Background())
 	require.NoError(t, err)
 
-	type Logging struct {
+	type Debug struct {
 		Verbosity string `mapstructure:"verbosity"`
 	}
 	type Exporters struct {
-		Logging Logging `mapstructure:"logging"`
+		Debug Debug `mapstructure:"debug"`
 	}
 	type Target struct {
 		Field Exporters `mapstructure:"field"`
@@ -525,7 +524,7 @@ logging:
 	require.NoError(t, err)
 	require.Equal(t,
 		Target{Field: Exporters{
-			Logging: Logging{
+			Debug: Debug{
 				Verbosity: "detailed",
 			},
 		}},
@@ -538,7 +537,7 @@ logging:
 	err = confStr.Unmarshal(&cfgStr)
 	require.NoError(t, err)
 	require.Equal(t, `# this is a comment with an expanded env var
-logging:
+debug:
   verbosity: detailed`,
 		cfgStr.Field,
 	)
@@ -582,9 +581,9 @@ func TestIndirectSliceEnvVar(t *testing.T) {
 	var collectorConf CollectorConf
 	err = conf.Unmarshal(&collectorConf)
 	require.NoError(t, err)
-	assert.Equal(t, collectorConf.Exporters.OTLP.Endpoint, "localhost:4317")
-	assert.Equal(t, collectorConf.Service.Pipelines.Logs.Receivers, []string{"nop", "otlp"})
-	assert.Equal(t, collectorConf.Service.Pipelines.Logs.Exporters, []string{"otlp", "nop"})
+	assert.Equal(t, "localhost:4317", collectorConf.Exporters.OTLP.Endpoint)
+	assert.Equal(t, []string{"nop", "otlp"}, collectorConf.Service.Pipelines.Logs.Receivers)
+	assert.Equal(t, []string{"otlp", "nop"}, collectorConf.Service.Pipelines.Logs.Exporters)
 }
 
 func TestIssue10937_MapType(t *testing.T) {
@@ -647,6 +646,7 @@ func TestIssue10937_ComplexType(t *testing.T) {
 }
 
 func TestIssue10949_UnsetVar(t *testing.T) {
+	t.Setenv("ENV", "")
 	resolver := NewResolver(t, "types_expand.yaml")
 	conf, err := resolver.Resolve(context.Background())
 	require.NoError(t, err)

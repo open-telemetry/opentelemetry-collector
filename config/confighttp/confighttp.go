@@ -229,11 +229,8 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 	otelOpts := []otelhttp.Option{
 		otelhttp.WithTracerProvider(settings.TracerProvider),
 		otelhttp.WithPropagators(otel.GetTextMapPropagator()),
+		otelhttp.WithMeterProvider(settings.LeveledMeterProvider(configtelemetry.LevelDetailed)),
 	}
-	if settings.MetricsLevel >= configtelemetry.LevelDetailed {
-		otelOpts = append(otelOpts, otelhttp.WithMeterProvider(settings.MeterProvider))
-	}
-
 	// wrapping http transport with otelhttp transport to enable otel instrumentation
 	if settings.TracerProvider != nil && settings.MeterProvider != nil {
 		clientTransport = otelhttp.NewTransport(clientTransport, otelOpts...)
@@ -482,9 +479,7 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 		otelhttp.WithSpanNameFormatter(func(_ string, r *http.Request) string {
 			return r.URL.Path
 		}),
-	}
-	if settings.MetricsLevel >= configtelemetry.LevelDetailed {
-		otelOpts = append(otelOpts, otelhttp.WithMeterProvider(settings.MeterProvider))
+		otelhttp.WithMeterProvider(settings.LeveledMeterProvider(configtelemetry.LevelDetailed)),
 	}
 
 	// Enable OpenTelemetry observability plugin.

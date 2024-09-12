@@ -72,7 +72,7 @@ func Test_bufferedCore_Write(t *testing.T) {
 		e,
 		fields,
 	}
-	require.Equal(t, 1, len(bc.logs))
+	require.Len(t, bc.logs, 1)
 	require.Equal(t, expected, bc.logs[0])
 }
 

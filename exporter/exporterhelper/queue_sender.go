@@ -15,15 +15,18 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/internal/queue"
-	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
 const defaultQueueSize = 1000
 
-// QueueSettings defines configuration for queueing batches before sending to the consumerSender.
-type QueueSettings struct {
+// Deprecated: [v0.110.0] Use QueueConfig instead.
+type QueueSettings = QueueConfig
+
+// QueueConfig defines configuration for queueing batches before sending to the consumerSender.
+type QueueConfig struct {
 	// Enabled indicates whether to not enqueue batches before sending to the consumerSender.
 	Enabled bool `mapstructure:"enabled"`
 	// NumConsumers is the number of consumers from the queue. Defaults to 10.
@@ -37,9 +40,14 @@ type QueueSettings struct {
 	StorageID *component.ID `mapstructure:"storage"`
 }
 
-// NewDefaultQueueSettings returns the default settings for QueueSettings.
+// Deprecated: [v0.110.0] Use NewDefaultQueueConfig instead.
 func NewDefaultQueueSettings() QueueSettings {
-	return QueueSettings{
+	return NewDefaultQueueConfig()
+}
+
+// NewDefaultQueueConfig returns the default config for QueueConfig.
+func NewDefaultQueueConfig() QueueConfig {
+	return QueueConfig{
 		Enabled:      true,
 		NumConsumers: 10,
 		// By default, batches are 8192 spans, for a total of up to 8 million spans in the queue
@@ -49,8 +57,8 @@ func NewDefaultQueueSettings() QueueSettings {
 	}
 }
 
-// Validate checks if the QueueSettings configuration is valid
-func (qCfg *QueueSettings) Validate() error {
+// Validate checks if the QueueConfig configuration is valid
+func (qCfg *QueueConfig) Validate() error {
 	if !qCfg.Enabled {
 		return nil
 	}
@@ -82,7 +90,7 @@ func newQueueSender(q exporterqueue.Queue[Request], set exporter.Settings, numCo
 	qs := &queueSender{
 		queue:          q,
 		numConsumers:   numConsumers,
-		traceAttribute: attribute.String(obsmetrics.ExporterKey, set.ID.String()),
+		traceAttribute: attribute.String(internal.ExporterKey, set.ID.String()),
 		obsrep:         obsrep,
 		exporterID:     set.ID,
 	}
@@ -104,7 +112,7 @@ func (qs *queueSender) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 
-	dataTypeAttr := attribute.String(obsmetrics.DataTypeKey, qs.obsrep.dataType.String())
+	dataTypeAttr := attribute.String(internal.DataTypeKey, qs.obsrep.dataType.String())
 	return multierr.Append(
 		qs.obsrep.telemetryBuilder.InitExporterQueueSize(func() int64 { return int64(qs.queue.Size()) },
 			metric.WithAttributeSet(attribute.NewSet(qs.traceAttribute, dataTypeAttr))),
