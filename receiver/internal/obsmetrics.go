@@ -1,9 +1,12 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package obsmetrics // import "go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
+package internal // import "go.opentelemetry.io/collector/receiver/internal"
 
 const (
+	// SpanNameSep is duplicate between receiver and exporter.
+	SpanNameSep = "/"
+
 	// ReceiverKey used to identify receivers in metrics and traces.
 	ReceiverKey = "receiver"
 	// TransportKey used to identify the transport used to received the data.
@@ -27,11 +30,20 @@ const (
 	// RefusedLogRecordsKey used to identify log records refused (ie.: not ingested) by the
 	// Collector.
 	RefusedLogRecordsKey = "refused_log_records"
-)
 
-var (
+	// ScraperKey used to identify scrapers in metrics and traces.
+	ScraperKey = "scraper"
+
+	// ScrapedMetricPointsKey used to identify metric points scraped by the
+	// Collector.
+	ScrapedMetricPointsKey = "scraped_metric_points"
+	// ErroredMetricPointsKey used to identify metric points errored (i.e.
+	// unable to be scraped) by the Collector.
+	ErroredMetricPointsKey        = "errored_metric_points"
+	ScraperPrefix                 = ScraperKey + SpanNameSep
+	ScraperMetricsOperationSuffix = SpanNameSep + "MetricsScraped"
+
 	ReceiverPrefix                  = ReceiverKey + SpanNameSep
-	ReceiverMetricPrefix            = ReceiverKey + MetricNameSep
 	ReceiveTraceDataOperationSuffix = SpanNameSep + "TraceDataReceived"
 	ReceiverMetricsOperationSuffix  = SpanNameSep + "MetricsReceived"
 	ReceiverLogsOperationSuffix     = SpanNameSep + "LogsReceived"

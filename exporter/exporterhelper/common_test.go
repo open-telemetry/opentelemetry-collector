@@ -50,7 +50,7 @@ func TestBaseExporterWithOptions(t *testing.T) {
 		defaultSettings, defaultDataType, newNoopObsrepSender,
 		WithStart(func(context.Context, component.Host) error { return want }),
 		WithShutdown(func(context.Context) error { return want }),
-		WithTimeout(NewDefaultTimeoutSettings()),
+		WithTimeout(NewDefaultTimeoutConfig()),
 	)
 	require.NoError(t, err)
 	require.Equal(t, want, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -73,7 +73,7 @@ func TestQueueOptionsWithRequestExporter(t *testing.T) {
 	require.Nil(t, bs.marshaler)
 	require.Nil(t, bs.unmarshaler)
 	_, err = newBaseExporter(exportertest.NewNopSettings(), defaultDataType, newNoopObsrepSender,
-		WithRetry(configretry.NewDefaultBackOffConfig()), WithQueue(NewDefaultQueueSettings()))
+		WithRetry(configretry.NewDefaultBackOffConfig()), WithQueue(NewDefaultQueueConfig()))
 	require.Error(t, err)
 
 	_, err = newBaseExporter(exportertest.NewNopSettings(), defaultDataType, newNoopObsrepSender,

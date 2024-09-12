@@ -5,7 +5,6 @@ go 1.22.0
 require (
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector v0.109.0
 	go.opentelemetry.io/collector/component v0.109.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.109.0
 	go.opentelemetry.io/collector/consumer v0.109.0
@@ -51,21 +50,13 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace go.opentelemetry.io/collector => ../
-
 replace go.opentelemetry.io/collector/component => ../component
 
-replace go.opentelemetry.io/collector/confmap => ../confmap
-
 replace go.opentelemetry.io/collector/consumer => ../consumer
-
-replace go.opentelemetry.io/collector/featuregate => ../featuregate
 
 replace go.opentelemetry.io/collector/pdata => ../pdata
 
 replace go.opentelemetry.io/collector/pdata/testdata => ../pdata/testdata
-
-retract v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module
 
 replace go.opentelemetry.io/collector/config/configtelemetry => ../config/configtelemetry
 
@@ -75,6 +66,6 @@ replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../consumer/c
 
 replace go.opentelemetry.io/collector/consumer/consumertest => ../consumer/consumertest
 
-replace go.opentelemetry.io/collector/component/componentstatus => ../component/componentstatus
-
 replace go.opentelemetry.io/collector/receiver/receiverprofiles => ./receiverprofiles
+
+retract v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module

@@ -6,7 +6,6 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector v0.109.0
 	go.opentelemetry.io/collector/component v0.109.0
 	go.opentelemetry.io/collector/component/componentprofiles v0.109.0
 	go.opentelemetry.io/collector/config/configretry v1.15.0
@@ -60,19 +59,13 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace go.opentelemetry.io/collector => ../
-
 replace go.opentelemetry.io/collector/component => ../component
-
-replace go.opentelemetry.io/collector/confmap => ../confmap
 
 replace go.opentelemetry.io/collector/consumer => ../consumer
 
 replace go.opentelemetry.io/collector/extension => ../extension
 
 replace go.opentelemetry.io/collector/extension/experimental/storage => ../extension/experimental/storage
-
-replace go.opentelemetry.io/collector/featuregate => ../featuregate
 
 replace go.opentelemetry.io/collector/pdata => ../pdata
 
@@ -93,8 +86,6 @@ replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../consumer/c
 replace go.opentelemetry.io/collector/consumer/consumererror/consumererrorprofiles => ../consumer/consumererror/consumererrorprofiles
 
 replace go.opentelemetry.io/collector/consumer/consumertest => ../consumer/consumertest
-
-replace go.opentelemetry.io/collector/component/componentstatus => ../component/componentstatus
 
 replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../receiver/receiverprofiles
 

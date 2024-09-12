@@ -13,7 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
+	"go.opentelemetry.io/collector/processor/internal"
 )
 
 // ErrSkipProcessingData is a sentinel value to indicate when traces or metrics should intentionally be dropped
@@ -69,5 +69,5 @@ func fromOptions(options []Option) *baseSettings {
 }
 
 func spanAttributes(id component.ID) trace.EventOption {
-	return trace.WithAttributes(attribute.String(obsmetrics.ProcessorKey, id.String()))
+	return trace.WithAttributes(attribute.String(internal.ProcessorKey, id.String()))
 }

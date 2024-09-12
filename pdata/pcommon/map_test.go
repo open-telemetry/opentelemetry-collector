@@ -427,7 +427,7 @@ func TestMap_EnsureCapacity_Existing(t *testing.T) {
 	// Ensure previously existing element is still there.
 	assert.Equal(t, 1, am.Len())
 	v, ok := am.Get("foo")
-	assert.Equal(t, v.Str(), "bar")
+	assert.Equal(t, "bar", v.Str())
 	assert.True(t, ok)
 
 	assert.Equal(t, 5, cap(*am.getOrig()))
@@ -439,11 +439,11 @@ func TestMap_EnsureCapacity_Existing(t *testing.T) {
 	assert.Equal(t, 2, am.Len())
 
 	v, ok = am.Get("foo")
-	assert.Equal(t, v.Str(), "bar")
+	assert.Equal(t, "bar", v.Str())
 	assert.True(t, ok)
 
 	v, ok = am.Get("abc")
-	assert.Equal(t, v.Str(), "xyz")
+	assert.Equal(t, "xyz", v.Str())
 	assert.True(t, ok)
 }
 
