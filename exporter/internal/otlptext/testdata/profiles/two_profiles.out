@@ -1,0 +1,15 @@
+ResourceProfiles #0
+Resource SchemaURL: 
+Resource attributes:
+     -> resource-attr: Str(resource-attr-val-1)
+ScopeProfiles #0
+ScopeProfiles SchemaURL: 
+InstrumentationScope  
+Profile #0
+    Profile ID     : 0102030405060708090a0b0c0d0e0f10
+    Start time     : 2020-02-11 20:26:12.000000321 +0000 UTC
+    End time       : 2020-02-11 20:26:13.000000789 +0000 UTC
+Profile #1
+    Profile ID     : 0202030405060708090a0b0c0d0e0f10
+    Start time     : 2020-02-11 20:26:12.000000321 +0000 UTC
+    End time       : 2020-02-11 20:26:13.000000789 +0000 UTC
