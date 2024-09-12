@@ -5,7 +5,7 @@ status:
   class: exporter
   not_component: true
   stability:
-    beta: [traces, metrics, logs, profiles]
+    beta: [traces, metrics, logs]
   distributions: [core, contrib]
 
 telemetry:
