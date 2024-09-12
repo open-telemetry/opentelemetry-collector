@@ -79,29 +79,25 @@ func (or *ObsReport) recordInOut(ctx context.Context, dataType component.DataTyp
 }
 
 func (or *ObsReport) recordData(ctx context.Context, dataType component.DataType, accepted, refused, dropped, inserted int64) {
-	var acceptedCount, refusedCount, droppedCount, insertedCount metric.Int64Counter
+	var acceptedCount, refusedCount, droppedCount metric.Int64Counter
 	switch dataType {
 	case component.DataTypeTraces:
 		acceptedCount = or.telemetryBuilder.ProcessorAcceptedSpans
 		refusedCount = or.telemetryBuilder.ProcessorRefusedSpans
 		droppedCount = or.telemetryBuilder.ProcessorDroppedSpans
-		insertedCount = or.telemetryBuilder.ProcessorInsertedSpans
 	case component.DataTypeMetrics:
 		acceptedCount = or.telemetryBuilder.ProcessorAcceptedMetricPoints
 		refusedCount = or.telemetryBuilder.ProcessorRefusedMetricPoints
 		droppedCount = or.telemetryBuilder.ProcessorDroppedMetricPoints
-		insertedCount = or.telemetryBuilder.ProcessorInsertedMetricPoints
 	case component.DataTypeLogs:
 		acceptedCount = or.telemetryBuilder.ProcessorAcceptedLogRecords
 		refusedCount = or.telemetryBuilder.ProcessorRefusedLogRecords
 		droppedCount = or.telemetryBuilder.ProcessorDroppedLogRecords
-		insertedCount = or.telemetryBuilder.ProcessorInsertedLogRecords
 	}
 
 	acceptedCount.Add(ctx, accepted, metric.WithAttributes(or.otelAttrs...))
 	refusedCount.Add(ctx, refused, metric.WithAttributes(or.otelAttrs...))
 	droppedCount.Add(ctx, dropped, metric.WithAttributes(or.otelAttrs...))
-	insertedCount.Add(ctx, inserted, metric.WithAttributes(or.otelAttrs...))
 }
 
 // TracesAccepted reports that the trace data was accepted.
