@@ -61,15 +61,7 @@ func (b *baseScraper) ID() component.ID {
 
 // NewScraper creates a Scraper that calls Scrape at the specified collection interval,
 // reports observability information, and passes the scraped metrics to the next consumer.
-//
-// Deprecated: [v0.109.0] use NewScraperWithComponentType instead.
-func NewScraper(name string, scrape ScrapeFunc, options ...ScraperOption) (Scraper, error) {
-	return NewScraperWithComponentType(component.MustNewType(name), scrape, options...)
-}
-
-// NewScraperWithComponentType creates a Scraper that calls Scrape at the specified collection interval,
-// reports observability information, and passes the scraped metrics to the next consumer.
-func NewScraperWithComponentType(t component.Type, scrape ScrapeFunc, options ...ScraperOption) (Scraper, error) {
+func NewScraper(t component.Type, scrape ScrapeFunc, options ...ScraperOption) (Scraper, error) {
 	if scrape == nil {
 		return nil, errNilFunc
 	}
@@ -82,4 +74,12 @@ func NewScraperWithComponentType(t component.Type, scrape ScrapeFunc, options ..
 	}
 
 	return bs, nil
+}
+
+// NewScraperWithComponentType creates a Scraper that calls Scrape at the specified collection interval,
+// reports observability information, and passes the scraped metrics to the next consumer.
+//
+// Deprecated: [v0.110.0] use NewScraper instead.
+func NewScraperWithComponentType(t component.Type, scrape ScrapeFunc, options ...ScraperOption) (Scraper, error) {
+	return NewScraper(t, scrape, options...)
 }
