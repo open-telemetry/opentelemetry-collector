@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporterhelper"
+package internal // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 
 import (
 	"context"
@@ -14,18 +14,19 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/exporter/internal"
 )
 
-// batchSender is a component that places requests into batches before passing them to the downstream senders.
+// BatchSender is a component that places requests into batches before passing them to the downstream senders.
 // Batches are sent out with any of the following conditions:
 // - batch size reaches cfg.MinSizeItems
 // - cfg.FlushTimeout is elapsed since the timestamp when the previous batch was sent out.
 // - concurrencyLimit is reached.
-type batchSender struct {
-	baseRequestSender
+type BatchSender struct {
+	BaseRequestSender
 	cfg            exporterbatcher.Config
-	mergeFunc      exporterbatcher.BatchMergeFunc[Request]
-	mergeSplitFunc exporterbatcher.BatchMergeSplitFunc[Request]
+	mergeFunc      exporterbatcher.BatchMergeFunc[internal.Request]
+	mergeSplitFunc exporterbatcher.BatchMergeSplitFunc[internal.Request]
 
 	// concurrencyLimit is the maximum number of goroutines that can be blocked by the batcher.
 	// If this number is reached and all the goroutines are busy, the batch will be sent right away.
@@ -45,9 +46,9 @@ type batchSender struct {
 }
 
 // newBatchSender returns a new batch consumer component.
-func newBatchSender(cfg exporterbatcher.Config, set exporter.Settings,
-	mf exporterbatcher.BatchMergeFunc[Request], msf exporterbatcher.BatchMergeSplitFunc[Request]) *batchSender {
-	bs := &batchSender{
+func NewBatchSender(cfg exporterbatcher.Config, set exporter.Settings,
+	mf exporterbatcher.BatchMergeFunc[internal.Request], msf exporterbatcher.BatchMergeSplitFunc[internal.Request]) *BatchSender {
+	bs := &BatchSender{
 		activeBatch:        newEmptyBatch(),
 		cfg:                cfg,
 		logger:             set.Logger,
@@ -60,7 +61,7 @@ func newBatchSender(cfg exporterbatcher.Config, set exporter.Settings,
 	return bs
 }
 
-func (bs *batchSender) Start(_ context.Context, _ component.Host) error {
+func (bs *BatchSender) Start(_ context.Context, _ component.Host) error {
 	bs.shutdownCh = make(chan struct{})
 	timer := time.NewTimer(bs.cfg.FlushTimeout)
 	go func() {
@@ -103,7 +104,7 @@ func (bs *batchSender) Start(_ context.Context, _ component.Host) error {
 
 type batch struct {
 	ctx     context.Context
-	request Request
+	request internal.Request
 	done    chan struct{}
 	err     error
 
@@ -121,9 +122,9 @@ func newEmptyBatch() *batch {
 
 // exportActiveBatch exports the active batch asynchronously and replaces it with a new one.
 // Caller must hold the lock.
-func (bs *batchSender) exportActiveBatch() {
+func (bs *BatchSender) exportActiveBatch() {
 	go func(b *batch) {
-		b.err = bs.nextSender.send(b.ctx, b.request)
+		b.err = bs.NextSender.Send(b.ctx, b.request)
 		close(b.done)
 		bs.activeRequests.Add(-b.requestsBlocked)
 	}(bs.activeBatch)
@@ -134,15 +135,15 @@ func (bs *batchSender) exportActiveBatch() {
 // isActiveBatchReady returns true if the active batch is ready to be exported.
 // The batch is ready if it has reached the minimum size or the concurrency limit is reached.
 // Caller must hold the lock.
-func (bs *batchSender) isActiveBatchReady() bool {
+func (bs *BatchSender) isActiveBatchReady() bool {
 	return bs.activeBatch.request.ItemsCount() >= bs.cfg.MinSizeItems ||
 		(bs.concurrencyLimit > 0 && bs.activeRequests.Load() >= bs.concurrencyLimit)
 }
 
-func (bs *batchSender) send(ctx context.Context, req Request) error {
+func (bs *BatchSender) Send(ctx context.Context, req internal.Request) error {
 	// Stopped batch sender should act as pass-through to allow the queue to be drained.
 	if bs.stopped.Load() {
-		return bs.nextSender.send(ctx, req)
+		return bs.NextSender.Send(ctx, req)
 	}
 
 	if bs.cfg.MaxSizeItems > 0 {
@@ -152,7 +153,7 @@ func (bs *batchSender) send(ctx context.Context, req Request) error {
 }
 
 // sendMergeSplitBatch sends the request to the batch which may be split into multiple requests.
-func (bs *batchSender) sendMergeSplitBatch(ctx context.Context, req Request) error {
+func (bs *BatchSender) sendMergeSplitBatch(ctx context.Context, req internal.Request) error {
 	bs.mu.Lock()
 
 	reqs, err := bs.mergeSplitFunc(ctx, bs.cfg.MaxSizeConfig, bs.activeBatch.request, req)
@@ -187,7 +188,7 @@ func (bs *batchSender) sendMergeSplitBatch(ctx context.Context, req Request) err
 	// Intentionally do not put the last request in the active batch to not block it.
 	// TODO: Consider including the partial request in the error to avoid double publishing.
 	for _, r := range reqs {
-		if err := bs.nextSender.send(ctx, r); err != nil {
+		if err := bs.NextSender.Send(ctx, r); err != nil {
 			return err
 		}
 	}
@@ -195,7 +196,7 @@ func (bs *batchSender) sendMergeSplitBatch(ctx context.Context, req Request) err
 }
 
 // sendMergeBatch sends the request to the batch and waits for the batch to be exported.
-func (bs *batchSender) sendMergeBatch(ctx context.Context, req Request) error {
+func (bs *BatchSender) sendMergeBatch(ctx context.Context, req internal.Request) error {
 	bs.mu.Lock()
 
 	if bs.activeBatch.request != nil {
@@ -223,14 +224,14 @@ func (bs *batchSender) sendMergeBatch(ctx context.Context, req Request) error {
 // The context is only set once and is not updated after the first call.
 // Merging the context would be complex and require an additional goroutine to handle the context cancellation.
 // We take the approach of using the context from the first request since it's likely to have the shortest timeout.
-func (bs *batchSender) updateActiveBatch(ctx context.Context, req Request) {
+func (bs *BatchSender) updateActiveBatch(ctx context.Context, req internal.Request) {
 	if bs.activeBatch.request == nil {
 		bs.activeBatch.ctx = ctx
 	}
 	bs.activeBatch.request = req
 }
 
-func (bs *batchSender) Shutdown(context.Context) error {
+func (bs *BatchSender) Shutdown(context.Context) error {
 	bs.stopped.Store(true)
 	if bs.shutdownCh != nil {
 		close(bs.shutdownCh)

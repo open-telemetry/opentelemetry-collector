@@ -290,6 +290,7 @@ check-contrib:
 		-replace go.opentelemetry.io/collector/consumer/consumererror/consumererrorprofiles=$(CURDIR)/consumer/consumererror/consumererrorprofiles  \
 		-replace go.opentelemetry.io/collector/consumer/consumertest=$(CURDIR)/consumer/consumertest  \
 		-replace go.opentelemetry.io/collector/exporter=$(CURDIR)/exporter  \
+		-replace go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles=$(CURDIR)/exporter/exporterhelper/exporterhelperprofiles  \
 		-replace go.opentelemetry.io/collector/exporter/debugexporter=$(CURDIR)/exporter/debugexporter  \
 		-replace go.opentelemetry.io/collector/exporter/exporterprofiles=$(CURDIR)/exporter/exporterprofiles  \
 		-replace go.opentelemetry.io/collector/exporter/loggingexporter=$(CURDIR)/exporter/loggingexporter  \
@@ -360,6 +361,7 @@ restore-contrib:
 		-dropreplace go.opentelemetry.io/collector/consumer/consumererror/consumererrorprofiles  \
 		-dropreplace go.opentelemetry.io/collector/consumer/consumertest  \
 		-dropreplace go.opentelemetry.io/collector/exporter  \
+		-dropreplace go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles  \
 		-dropreplace go.opentelemetry.io/collector/exporter/debugexporter  \
 		-dropreplace go.opentelemetry.io/collector/exporter/loggingexporter  \
 		-dropreplace go.opentelemetry.io/collector/exporter/nopexporter  \

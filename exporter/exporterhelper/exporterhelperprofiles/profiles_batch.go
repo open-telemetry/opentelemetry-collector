@@ -1,18 +1,19 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporterhelper"
+package exporterhelperprofiles // import "go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles"
 
 import (
 	"context"
 	"errors"
 
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 )
 
 // mergeProfiles merges two profiles requests into one.
-func mergeProfiles(_ context.Context, r1 Request, r2 Request) (Request, error) {
+func mergeProfiles(_ context.Context, r1 exporterhelper.Request, r2 exporterhelper.Request) (exporterhelper.Request, error) {
 	tr1, ok1 := r1.(*profilesRequest)
 	tr2, ok2 := r2.(*profilesRequest)
 	if !ok1 || !ok2 {
@@ -23,13 +24,13 @@ func mergeProfiles(_ context.Context, r1 Request, r2 Request) (Request, error) {
 }
 
 // mergeSplitProfiles splits and/or merges the profiles into multiple requests based on the MaxSizeConfig.
-func mergeSplitProfiles(_ context.Context, cfg exporterbatcher.MaxSizeConfig, r1 Request, r2 Request) ([]Request, error) {
+func mergeSplitProfiles(_ context.Context, cfg exporterbatcher.MaxSizeConfig, r1 exporterhelper.Request, r2 exporterhelper.Request) ([]exporterhelper.Request, error) {
 	var (
-		res          []Request
+		res          []exporterhelper.Request
 		destReq      *profilesRequest
 		capacityLeft = cfg.MaxSizeItems
 	)
-	for _, req := range []Request{r1, r2} {
+	for _, req := range []exporterhelper.Request{r1, r2} {
 		if req == nil {
 			continue
 		}

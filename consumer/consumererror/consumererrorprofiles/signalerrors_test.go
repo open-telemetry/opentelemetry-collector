@@ -21,7 +21,7 @@ func TestProfiles(t *testing.T) {
 	var target Profiles
 	assert.False(t, errors.As(nil, &target))
 	assert.False(t, errors.As(err, &target))
-	assert.True(t, errors.As(profileErr, &target))
+	assert.ErrorAs(t, profileErr, &target)
 	assert.Equal(t, td, target.Data())
 }
 
@@ -33,7 +33,7 @@ func TestProfiles_Unwrap(t *testing.T) {
 	target := testErrorType{}
 	require.NotEqual(t, err, target)
 	// Unwrapping profileErr for err and assigning to target.
-	require.True(t, errors.As(profileErr, &target))
+	require.ErrorAs(t, profileErr, &target)
 	require.Equal(t, err, target)
 }
 

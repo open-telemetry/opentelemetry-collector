@@ -7,11 +7,9 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.109.0
-	go.opentelemetry.io/collector/component/componentprofiles v0.109.0
 	go.opentelemetry.io/collector/config/configretry v1.15.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.109.0
 	go.opentelemetry.io/collector/consumer v0.109.0
-	go.opentelemetry.io/collector/consumer/consumererror/consumererrorprofiles v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.109.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.109.0
 	go.opentelemetry.io/collector/exporter/exporterprofiles v0.109.0
@@ -83,12 +81,8 @@ replace go.opentelemetry.io/collector/config/configtelemetry => ../config/config
 
 replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../consumer/consumerprofiles
 
-replace go.opentelemetry.io/collector/consumer/consumererror/consumererrorprofiles => ../consumer/consumererror/consumererrorprofiles
-
 replace go.opentelemetry.io/collector/consumer/consumertest => ../consumer/consumertest
 
 replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../receiver/receiverprofiles
 
 replace go.opentelemetry.io/collector/exporter/exporterprofiles => ./exporterprofiles
-
-replace go.opentelemetry.io/collector/component/componentprofiles => ../component/componentprofiles

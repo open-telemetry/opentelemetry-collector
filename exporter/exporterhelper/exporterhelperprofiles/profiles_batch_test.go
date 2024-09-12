@@ -1,16 +1,21 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package exporterhelper
+package exporterhelperprofiles
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pprofile"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
@@ -19,6 +24,7 @@ func TestMergeProfiles(t *testing.T) {
 	pr2 := &profilesRequest{pd: testdata.GenerateProfiles(3)}
 	res, err := mergeProfiles(context.Background(), pr1, pr2)
 	assert.NoError(t, err)
+	fmt.Fprintf(os.Stdout, "%#v\n", res.(*profilesRequest).pd)
 	assert.Equal(t, 5, res.(*profilesRequest).pd.SampleCount())
 }
 
@@ -33,8 +39,8 @@ func TestMergeSplitProfiles(t *testing.T) {
 	tests := []struct {
 		name     string
 		cfg      exporterbatcher.MaxSizeConfig
-		pr1      Request
-		pr2      Request
+		pr1      exporterhelper.Request
+		pr2      exporterhelper.Request
 		expected []*profilesRequest
 	}{
 		{
@@ -151,4 +157,17 @@ func TestExtractProfiles(t *testing.T) {
 		assert.Equal(t, i, extractedProfiles.SampleCount())
 		assert.Equal(t, 10-i, ld.SampleCount())
 	}
+}
+
+type tracesRequest struct {
+	td     ptrace.Traces
+	pusher consumer.ConsumeTracesFunc
+}
+
+func (req *tracesRequest) Export(ctx context.Context) error {
+	return req.pusher(ctx, req.td)
+}
+
+func (req *tracesRequest) ItemsCount() int {
+	return req.td.SpanCount()
 }

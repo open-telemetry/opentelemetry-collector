@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporterhelper"
+package exporterhelperprofiles // import "go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles"
 
 import (
 	"context"
@@ -15,6 +15,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror/consumererrorprofiles"
 	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exporterprofiles"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/pdata/pprofile"
@@ -28,15 +30,15 @@ type profilesRequest struct {
 	pusher consumerprofiles.ConsumeProfilesFunc
 }
 
-func newProfilesRequest(pd pprofile.Profiles, pusher consumerprofiles.ConsumeProfilesFunc) Request {
+func newProfilesRequest(pd pprofile.Profiles, pusher consumerprofiles.ConsumeProfilesFunc) exporterhelper.Request {
 	return &profilesRequest{
 		pd:     pd,
 		pusher: pusher,
 	}
 }
 
-func newProfileRequestUnmarshalerFunc(pusher consumerprofiles.ConsumeProfilesFunc) exporterqueue.Unmarshaler[Request] {
-	return func(bytes []byte) (Request, error) {
+func newProfileRequestUnmarshalerFunc(pusher consumerprofiles.ConsumeProfilesFunc) exporterqueue.Unmarshaler[exporterhelper.Request] {
+	return func(bytes []byte) (exporterhelper.Request, error) {
 		profiles, err := profilesUnmarshaler.UnmarshalProfiles(bytes)
 		if err != nil {
 			return nil, err
@@ -45,11 +47,11 @@ func newProfileRequestUnmarshalerFunc(pusher consumerprofiles.ConsumeProfilesFun
 	}
 }
 
-func profilesRequestMarshaler(req Request) ([]byte, error) {
+func profilesRequestMarshaler(req exporterhelper.Request) ([]byte, error) {
 	return profilesMarshaler.MarshalProfiles(req.(*profilesRequest).pd)
 }
 
-func (req *profilesRequest) OnError(err error) Request {
+func (req *profilesRequest) OnError(err error) exporterhelper.Request {
 	var profileError consumererrorprofiles.Profiles
 	if errors.As(err, &profileError) {
 		return newProfilesRequest(profileError.Data(), req.pusher)
@@ -66,7 +68,7 @@ func (req *profilesRequest) ItemsCount() int {
 }
 
 type profileExporter struct {
-	*baseExporter
+	*internal.BaseExporter
 	consumerprofiles.Profiles
 }
 
@@ -76,7 +78,7 @@ func NewProfilesExporter(
 	set exporter.Settings,
 	cfg component.Config,
 	pusher consumerprofiles.ConsumeProfilesFunc,
-	options ...Option,
+	options ...exporterhelper.Option,
 ) (exporterprofiles.Profiles, error) {
 	if cfg == nil {
 		return nil, errNilConfig
@@ -84,9 +86,9 @@ func NewProfilesExporter(
 	if pusher == nil {
 		return nil, errNilPushProfileData
 	}
-	profilesOpts := []Option{
-		withMarshaler(profilesRequestMarshaler), withUnmarshaler(newProfileRequestUnmarshalerFunc(pusher)),
-		withBatchFuncs(mergeProfiles, mergeSplitProfiles),
+	profilesOpts := []exporterhelper.Option{
+		internal.WithMarshaler(profilesRequestMarshaler), internal.WithUnmarshaler(newProfileRequestUnmarshalerFunc(pusher)),
+		internal.WithBatchFuncs(mergeProfiles, mergeSplitProfiles),
 	}
 	return NewProfilesRequestExporter(ctx, set, requestFromProfiles(pusher), append(profilesOpts, options...)...)
 }
@@ -94,11 +96,11 @@ func NewProfilesExporter(
 // RequestFromProfilesFunc converts pprofile.Profiles into a user-defined Request.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-type RequestFromProfilesFunc func(context.Context, pprofile.Profiles) (Request, error)
+type RequestFromProfilesFunc func(context.Context, pprofile.Profiles) (exporterhelper.Request, error)
 
 // requestFromProfiles returns a RequestFromProfilesFunc that converts pprofile.Profiles into a Request.
 func requestFromProfiles(pusher consumerprofiles.ConsumeProfilesFunc) RequestFromProfilesFunc {
-	return func(_ context.Context, profiles pprofile.Profiles) (Request, error) {
+	return func(_ context.Context, profiles pprofile.Profiles) (exporterhelper.Request, error) {
 		return newProfilesRequest(profiles, pusher), nil
 	}
 }
@@ -110,7 +112,7 @@ func NewProfilesRequestExporter(
 	_ context.Context,
 	set exporter.Settings,
 	converter RequestFromProfilesFunc,
-	options ...Option,
+	options ...exporterhelper.Option,
 ) (exporterprofiles.Profiles, error) {
 	if set.Logger == nil {
 		return nil, errNilLogger
@@ -120,7 +122,7 @@ func NewProfilesRequestExporter(
 		return nil, errNilProfilesConverter
 	}
 
-	be, err := newBaseExporter(set, componentprofiles.DataTypeProfiles, newProfilesExporterWithObservability, options...)
+	be, err := internal.NewBaseExporter(set, componentprofiles.DataTypeProfiles, newProfilesExporterWithObservability, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -133,29 +135,29 @@ func NewProfilesRequestExporter(
 				zap.Error(err))
 			return consumererror.NewPermanent(cErr)
 		}
-		return be.send(ctx, req)
-	}, be.consumerOptions...)
+		return be.Send(ctx, req)
+	}, be.ConsumerOptions...)
 
 	return &profileExporter{
-		baseExporter: be,
+		BaseExporter: be,
 		Profiles:     tc,
 	}, err
 }
 
 type profilesExporterWithObservability struct {
-	baseRequestSender
-	obsrep *obsReport
+	internal.BaseRequestSender
+	obsrep *internal.ObsReport
 }
 
-func newProfilesExporterWithObservability(obsrep *obsReport) requestSender {
+func newProfilesExporterWithObservability(obsrep *internal.ObsReport) internal.RequestSender {
 	return &profilesExporterWithObservability{obsrep: obsrep}
 }
 
-func (tewo *profilesExporterWithObservability) send(ctx context.Context, req Request) error {
-	c := tewo.obsrep.startProfilesOp(ctx)
+func (tewo *profilesExporterWithObservability) Send(ctx context.Context, req exporterhelper.Request) error {
+	c := tewo.obsrep.StartProfilesOp(ctx)
 	numSamples := req.ItemsCount()
 	// Forward the data to the next consumer (this pusher is the next).
-	err := tewo.nextSender.send(c, req)
-	tewo.obsrep.endProfilesOp(c, numSamples, err)
+	err := tewo.NextSender.Send(c, req)
+	tewo.obsrep.EndProfilesOp(c, numSamples, err)
 	return err
 }

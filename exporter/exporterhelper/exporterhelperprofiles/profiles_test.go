@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package exporterhelper
+package exporterhelperprofiles
 
 import (
 	"context"
@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exporterprofiles"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -50,7 +51,7 @@ func TestProfilesRequest(t *testing.T) {
 	assert.EqualValues(
 		t,
 		newProfilesRequest(pprofile.NewProfiles(), nil),
-		lr.(RequestErrorHandler).OnError(profileErr),
+		lr.(exporterhelper.RequestErrorHandler).OnError(profileErr),
 	)
 }
 
@@ -67,7 +68,7 @@ func TestProfilesExporter_NilLogger(t *testing.T) {
 }
 
 func TestProfilesRequestExporter_NilLogger(t *testing.T) {
-	le, err := NewProfilesRequestExporter(context.Background(), exporter.Settings{}, (&fakeRequestConverter{}).requestFromProfilesFunc)
+	le, err := NewProfilesRequestExporter(context.Background(), exporter.Settings{}, (&internal.FakeRequestConverter{}).RequestFromProfilesFunc)
 	require.Nil(t, le)
 	require.Equal(t, errNilLogger, err)
 }
@@ -99,7 +100,7 @@ func TestProfilesExporter_Default(t *testing.T) {
 func TestProfilesRequestExporter_Default(t *testing.T) {
 	ld := pprofile.NewProfiles()
 	le, err := NewProfilesRequestExporter(context.Background(), exportertest.NewNopSettings(),
-		(&fakeRequestConverter{}).requestFromProfilesFunc)
+		(&internal.FakeRequestConverter{}).RequestFromProfilesFunc)
 	assert.NotNil(t, le)
 	assert.NoError(t, err)
 
@@ -111,7 +112,7 @@ func TestProfilesRequestExporter_Default(t *testing.T) {
 
 func TestProfilesExporter_WithCapabilities(t *testing.T) {
 	capabilities := consumer.Capabilities{MutatesData: true}
-	le, err := NewProfilesExporter(context.Background(), exportertest.NewNopSettings(), &fakeProfilesExporterConfig, newPushProfilesData(nil), WithCapabilities(capabilities))
+	le, err := NewProfilesExporter(context.Background(), exportertest.NewNopSettings(), &fakeProfilesExporterConfig, newPushProfilesData(nil), exporterhelper.WithCapabilities(capabilities))
 	require.NoError(t, err)
 	require.NotNil(t, le)
 
@@ -121,7 +122,7 @@ func TestProfilesExporter_WithCapabilities(t *testing.T) {
 func TestProfilesRequestExporter_WithCapabilities(t *testing.T) {
 	capabilities := consumer.Capabilities{MutatesData: true}
 	le, err := NewProfilesRequestExporter(context.Background(), exportertest.NewNopSettings(),
-		(&fakeRequestConverter{}).requestFromProfilesFunc, WithCapabilities(capabilities))
+		(&internal.FakeRequestConverter{}).RequestFromProfilesFunc, exporterhelper.WithCapabilities(capabilities))
 	require.NoError(t, err)
 	require.NotNil(t, le)
 
@@ -141,7 +142,7 @@ func TestProfilesRequestExporter_Default_ConvertError(t *testing.T) {
 	ld := pprofile.NewProfiles()
 	want := errors.New("convert_error")
 	le, err := NewProfilesRequestExporter(context.Background(), exportertest.NewNopSettings(),
-		(&fakeRequestConverter{profilesError: want}).requestFromProfilesFunc)
+		(&internal.FakeRequestConverter{ProfilesError: want}).RequestFromProfilesFunc)
 	require.NoError(t, err)
 	require.NotNil(t, le)
 	require.Equal(t, consumererror.NewPermanent(want), le.ConsumeProfiles(context.Background(), ld))
@@ -151,24 +152,24 @@ func TestProfilesRequestExporter_Default_ExportError(t *testing.T) {
 	ld := pprofile.NewProfiles()
 	want := errors.New("export_error")
 	le, err := NewProfilesRequestExporter(context.Background(), exportertest.NewNopSettings(),
-		(&fakeRequestConverter{requestError: want}).requestFromProfilesFunc)
+		(&internal.FakeRequestConverter{RequestError: want}).RequestFromProfilesFunc)
 	require.NoError(t, err)
 	require.NotNil(t, le)
 	require.Equal(t, want, le.ConsumeProfiles(context.Background(), ld))
 }
 
 func TestProfilesExporter_WithPersistentQueue(t *testing.T) {
-	qCfg := NewDefaultQueueSettings()
+	qCfg := exporterhelper.NewDefaultQueueConfig()
 	storageID := component.MustNewIDWithName("file_storage", "storage")
 	qCfg.StorageID = &storageID
 	rCfg := configretry.NewDefaultBackOffConfig()
 	ts := consumertest.ProfilesSink{}
 	set := exportertest.NewNopSettings()
 	set.ID = component.MustNewIDWithName("test_profiles", "with_persistent_queue")
-	te, err := NewProfilesExporter(context.Background(), set, &fakeProfilesExporterConfig, ts.ConsumeProfiles, WithRetry(rCfg), WithQueue(qCfg))
+	te, err := NewProfilesExporter(context.Background(), set, &fakeProfilesExporterConfig, ts.ConsumeProfiles, exporterhelper.WithRetry(rCfg), exporterhelper.WithQueue(qCfg))
 	require.NoError(t, err)
 
-	host := &mockHost{ext: map[component.ID]component.Component{
+	host := &internal.MockHost{Ext: map[component.ID]component.Component{
 		storageID: queue.NewMockStorageExtension(nil),
 	}}
 	require.NoError(t, te.Start(context.Background(), host))
@@ -201,7 +202,7 @@ func TestProfilesRequestExporter_WithSpan(t *testing.T) {
 	otel.SetTracerProvider(set.TracerProvider)
 	defer otel.SetTracerProvider(nooptrace.NewTracerProvider())
 
-	le, err := NewProfilesRequestExporter(context.Background(), set, (&fakeRequestConverter{}).requestFromProfilesFunc)
+	le, err := NewProfilesRequestExporter(context.Background(), set, (&internal.FakeRequestConverter{}).RequestFromProfilesFunc)
 	require.NoError(t, err)
 	require.NotNil(t, le)
 	checkWrapSpanForProfilesExporter(t, sr, set.TracerProvider.Tracer("test"), le, nil, 1)
@@ -229,7 +230,7 @@ func TestProfilesRequestExporter_WithSpan_ReturnError(t *testing.T) {
 	defer otel.SetTracerProvider(nooptrace.NewTracerProvider())
 
 	want := errors.New("my_error")
-	le, err := NewProfilesRequestExporter(context.Background(), set, (&fakeRequestConverter{requestError: want}).requestFromProfilesFunc)
+	le, err := NewProfilesRequestExporter(context.Background(), set, (&internal.FakeRequestConverter{RequestError: want}).RequestFromProfilesFunc)
 	require.NoError(t, err)
 	require.NotNil(t, le)
 	checkWrapSpanForProfilesExporter(t, sr, set.TracerProvider.Tracer("test"), le, want, 1)
@@ -239,7 +240,7 @@ func TestProfilesExporter_WithShutdown(t *testing.T) {
 	shutdownCalled := false
 	shutdown := func(context.Context) error { shutdownCalled = true; return nil }
 
-	le, err := NewProfilesExporter(context.Background(), exportertest.NewNopSettings(), &fakeProfilesExporterConfig, newPushProfilesData(nil), WithShutdown(shutdown))
+	le, err := NewProfilesExporter(context.Background(), exportertest.NewNopSettings(), &fakeProfilesExporterConfig, newPushProfilesData(nil), exporterhelper.WithShutdown(shutdown))
 	assert.NotNil(t, le)
 	assert.NoError(t, err)
 
@@ -252,7 +253,7 @@ func TestProfilesRequestExporter_WithShutdown(t *testing.T) {
 	shutdown := func(context.Context) error { shutdownCalled = true; return nil }
 
 	le, err := NewProfilesRequestExporter(context.Background(), exportertest.NewNopSettings(),
-		(&fakeRequestConverter{}).requestFromProfilesFunc, WithShutdown(shutdown))
+		(&internal.FakeRequestConverter{}).RequestFromProfilesFunc, exporterhelper.WithShutdown(shutdown))
 	assert.NotNil(t, le)
 	assert.NoError(t, err)
 
@@ -264,11 +265,11 @@ func TestProfilesExporter_WithShutdown_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
 	shutdownErr := func(context.Context) error { return want }
 
-	le, err := NewProfilesExporter(context.Background(), exportertest.NewNopSettings(), &fakeProfilesExporterConfig, newPushProfilesData(nil), WithShutdown(shutdownErr))
+	le, err := NewProfilesExporter(context.Background(), exportertest.NewNopSettings(), &fakeProfilesExporterConfig, newPushProfilesData(nil), exporterhelper.WithShutdown(shutdownErr))
 	assert.NotNil(t, le)
 	assert.NoError(t, err)
 
-	assert.Equal(t, le.Shutdown(context.Background()), want)
+	assert.Equal(t, want, le.Shutdown(context.Background()))
 }
 
 func TestProfilesRequestExporter_WithShutdown_ReturnError(t *testing.T) {
@@ -276,11 +277,11 @@ func TestProfilesRequestExporter_WithShutdown_ReturnError(t *testing.T) {
 	shutdownErr := func(context.Context) error { return want }
 
 	le, err := NewProfilesRequestExporter(context.Background(), exportertest.NewNopSettings(),
-		(&fakeRequestConverter{}).requestFromProfilesFunc, WithShutdown(shutdownErr))
+		(&internal.FakeRequestConverter{}).RequestFromProfilesFunc, exporterhelper.WithShutdown(shutdownErr))
 	assert.NotNil(t, le)
 	assert.NoError(t, err)
 
-	assert.Equal(t, le.Shutdown(context.Background()), want)
+	assert.Equal(t, want, le.Shutdown(context.Background()))
 }
 
 func newPushProfilesData(retError error) consumerprofiles.ConsumeProfilesFunc {
@@ -299,7 +300,7 @@ func generateProfilesTraffic(t *testing.T, tracer trace.Tracer, le exporterprofi
 }
 
 func checkWrapSpanForProfilesExporter(t *testing.T, sr *tracetest.SpanRecorder, tracer trace.Tracer, le exporterprofiles.Profiles,
-	wantError error, numProfileRecords int64) { // nolint: unparam
+	wantError error, numSampleRecords int64) { // nolint: unparam
 	const numRequests = 5
 	generateProfilesTraffic(t, tracer, le, numRequests, wantError)
 
@@ -311,15 +312,15 @@ func checkWrapSpanForProfilesExporter(t *testing.T, sr *tracetest.SpanRecorder, 
 	require.Equalf(t, fakeProfilesParentSpanName, parentSpan.Name(), "SpanData %v", parentSpan)
 	for _, sd := range gotSpanData[:numRequests] {
 		require.Equalf(t, parentSpan.SpanContext(), sd.Parent(), "Exporter span not a child\nSpanData %v", sd)
-		checkStatus(t, sd, wantError)
+		internal.CheckStatus(t, sd, wantError)
 
-		sentProfileRecords := numProfileRecords
-		var failedToSendProfileRecords int64
+		sentSampleRecords := numSampleRecords
+		var failedToSendSampleRecords int64
 		if wantError != nil {
-			sentProfileRecords = 0
-			failedToSendProfileRecords = numProfileRecords
+			sentSampleRecords = 0
+			failedToSendSampleRecords = numSampleRecords
 		}
-		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: internal.SentSamplesKey, Value: attribute.Int64Value(sentProfileRecords)}, "SpanData %v", sd)
-		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: internal.FailedToSendSamplesKey, Value: attribute.Int64Value(failedToSendProfileRecords)}, "SpanData %v", sd)
+		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: internal.SentSamplesKey, Value: attribute.Int64Value(sentSampleRecords)}, "SpanData %v", sd)
+		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: internal.FailedToSendSamplesKey, Value: attribute.Int64Value(failedToSendSampleRecords)}, "SpanData %v", sd)
 	}
 }

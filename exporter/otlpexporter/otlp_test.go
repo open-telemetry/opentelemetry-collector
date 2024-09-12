@@ -938,7 +938,7 @@ func TestSendProfiles(t *testing.T) {
 	assert.EqualValues(t, td, rcv.getLastRequest())
 
 	md := rcv.getMetadata()
-	require.EqualValues(t, md.Get("header"), expectedHeader)
+	require.EqualValues(t, expectedHeader, md.Get("header"))
 	require.Len(t, md.Get("User-Agent"), 1)
 	require.Contains(t, md.Get("User-Agent")[0], "Collector/1.2.3test")
 

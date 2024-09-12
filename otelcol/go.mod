@@ -178,5 +178,3 @@ replace go.opentelemetry.io/collector/processor/processorprofiles => ../processo
 replace go.opentelemetry.io/collector/connector/connectorprofiles => ../connector/connectorprofiles
 
 replace go.opentelemetry.io/collector/exporter/exporterprofiles => ../exporter/exporterprofiles
-
-replace go.opentelemetry.io/collector/consumer/consumererror/consumererrorprofiles => ../consumer/consumererror/consumererrorprofiles
