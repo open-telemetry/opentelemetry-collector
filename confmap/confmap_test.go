@@ -895,7 +895,7 @@ func TestSubExpandedValue(t *testing.T) {
 	assert.Equal(t, map[string]any{"subsubkey": "value"}, sub.ToStringMap())
 
 	// This should return value, but currently `Get` does not support keys within expanded values.
-	assert.Equal(t, nil, cm.Get("key::subkey::subsubkey"))
+	assert.Nil(t, cm.Get("key::subkey::subsubkey"))
 }
 
 func TestStringyTypes(t *testing.T) {
