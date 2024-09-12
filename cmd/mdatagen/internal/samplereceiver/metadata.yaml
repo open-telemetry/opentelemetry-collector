@@ -180,14 +180,6 @@ telemetry:
         value_type: double
         bucket_boundaries: [1, 10, 100]
       attributes: [overridden_int_attr]
-    request_duration_no_attrs:
-      enabled: true
-      description: Duration of request. Test mdatagen without any attributes
-      unit: s
-      histogram:
-        value_type: double
-        bucket_boundaries: [ 1, 10, 100 ]
-      attributes: []
     process_runtime_total_alloc_bytes:
       enabled: true
       stability:
@@ -207,11 +199,4 @@ telemetry:
       optional: true
       gauge:
         async: true
-        value_type: int
-    disabled_metric:
-      enabled: false
-      description: This metric is disabled by default
-      unit: "{items}"
-      optional: false
-      gauge:
         value_type: int
