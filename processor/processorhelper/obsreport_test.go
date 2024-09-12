@@ -87,7 +87,6 @@ func TestProcessorLogRecords(t *testing.T) {
 		const acceptedRecords = 29
 		const refusedRecords = 11
 		const droppedRecords = 17
-		const insertedRecords = 3
 
 		obsrep, err := newObsReport(ObsReportSettings{
 			ProcessorID:             processorID,
