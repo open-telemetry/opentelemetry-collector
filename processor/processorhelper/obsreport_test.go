@@ -27,7 +27,6 @@ func TestProcessorTraceData(t *testing.T) {
 		const acceptedSpans = 27
 		const refusedSpans = 19
 		const droppedSpans = 13
-		const insertedSpans = 5
 
 		obsrep, err := newObsReport(ObsReportSettings{
 			ProcessorID:             processorID,
@@ -37,9 +36,8 @@ func TestProcessorTraceData(t *testing.T) {
 		obsrep.TracesAccepted(context.Background(), acceptedSpans)
 		obsrep.TracesRefused(context.Background(), refusedSpans)
 		obsrep.TracesDropped(context.Background(), droppedSpans)
-		obsrep.TracesInserted(context.Background(), insertedSpans)
 
-		require.NoError(t, tt.CheckProcessorTraces(acceptedSpans, refusedSpans, droppedSpans, insertedSpans))
+		require.NoError(t, tt.CheckProcessorTraces(acceptedSpans, refusedSpans, droppedSpans))
 	})
 }
 
@@ -48,7 +46,6 @@ func TestProcessorMetricsData(t *testing.T) {
 		const acceptedPoints = 29
 		const refusedPoints = 11
 		const droppedPoints = 17
-		const insertedPoints = 4
 
 		obsrep, err := newObsReport(ObsReportSettings{
 			ProcessorID:             processorID,
@@ -58,9 +55,8 @@ func TestProcessorMetricsData(t *testing.T) {
 		obsrep.MetricsAccepted(context.Background(), acceptedPoints)
 		obsrep.MetricsRefused(context.Background(), refusedPoints)
 		obsrep.MetricsDropped(context.Background(), droppedPoints)
-		obsrep.MetricsInserted(context.Background(), insertedPoints)
 
-		require.NoError(t, tt.CheckProcessorMetrics(acceptedPoints, refusedPoints, droppedPoints, insertedPoints))
+		require.NoError(t, tt.CheckProcessorMetrics(acceptedPoints, refusedPoints, droppedPoints))
 	})
 }
 
@@ -91,7 +87,6 @@ func TestProcessorLogRecords(t *testing.T) {
 		const acceptedRecords = 29
 		const refusedRecords = 11
 		const droppedRecords = 17
-		const insertedRecords = 3
 
 		obsrep, err := newObsReport(ObsReportSettings{
 			ProcessorID:             processorID,
@@ -101,9 +96,8 @@ func TestProcessorLogRecords(t *testing.T) {
 		obsrep.LogsAccepted(context.Background(), acceptedRecords)
 		obsrep.LogsRefused(context.Background(), refusedRecords)
 		obsrep.LogsDropped(context.Background(), droppedRecords)
-		obsrep.LogsInserted(context.Background(), insertedRecords)
 
-		require.NoError(t, tt.CheckProcessorLogs(acceptedRecords, refusedRecords, droppedRecords, insertedRecords))
+		require.NoError(t, tt.CheckProcessorLogs(acceptedRecords, refusedRecords, droppedRecords))
 	})
 }
 
@@ -121,24 +115,19 @@ func TestCheckProcessorTracesViews(t *testing.T) {
 	por.TracesAccepted(context.Background(), 7)
 	por.TracesRefused(context.Background(), 8)
 	por.TracesDropped(context.Background(), 9)
-	por.TracesInserted(context.Background(), 10)
 
-	assert.NoError(t, tt.CheckProcessorTraces(7, 8, 9, 10))
-	assert.Error(t, tt.CheckProcessorTraces(0, 0, 0, 0))
-	assert.Error(t, tt.CheckProcessorTraces(7, 0, 0, 0))
-	assert.Error(t, tt.CheckProcessorTraces(0, 8, 0, 0))
-	assert.Error(t, tt.CheckProcessorTraces(0, 0, 9, 0))
-	assert.Error(t, tt.CheckProcessorTraces(0, 0, 0, 10))
-	assert.Error(t, tt.CheckProcessorTraces(7, 8, 0, 0))
-	assert.Error(t, tt.CheckProcessorTraces(7, 0, 9, 0))
-	assert.Error(t, tt.CheckProcessorTraces(7, 0, 0, 10))
-	assert.Error(t, tt.CheckProcessorTraces(0, 8, 9, 0))
-	assert.Error(t, tt.CheckProcessorTraces(0, 8, 0, 10))
-	assert.Error(t, tt.CheckProcessorTraces(0, 0, 9, 10))
-	assert.Error(t, tt.CheckProcessorTraces(7, 8, 9, 0))
-	assert.Error(t, tt.CheckProcessorTraces(7, 8, 0, 10))
-	assert.Error(t, tt.CheckProcessorTraces(7, 0, 9, 10))
-	assert.Error(t, tt.CheckProcessorTraces(0, 8, 9, 10))
+	assert.NoError(t, tt.CheckProcessorTraces(7, 8, 9))
+	assert.Error(t, tt.CheckProcessorTraces(0, 0, 0))
+	assert.Error(t, tt.CheckProcessorTraces(7, 0, 0))
+	assert.Error(t, tt.CheckProcessorTraces(0, 8, 0))
+	assert.Error(t, tt.CheckProcessorTraces(0, 0, 9))
+	assert.Error(t, tt.CheckProcessorTraces(0, 0, 0))
+	assert.Error(t, tt.CheckProcessorTraces(7, 8, 0))
+	assert.Error(t, tt.CheckProcessorTraces(7, 0, 9))
+	assert.Error(t, tt.CheckProcessorTraces(7, 0, 0))
+	assert.Error(t, tt.CheckProcessorTraces(0, 8, 9))
+	assert.Error(t, tt.CheckProcessorTraces(0, 8, 0))
+	assert.Error(t, tt.CheckProcessorTraces(0, 0, 9))
 }
 
 func TestCheckProcessorMetricsViews(t *testing.T) {
@@ -155,24 +144,19 @@ func TestCheckProcessorMetricsViews(t *testing.T) {
 	por.MetricsAccepted(context.Background(), 7)
 	por.MetricsRefused(context.Background(), 8)
 	por.MetricsDropped(context.Background(), 9)
-	por.MetricsInserted(context.Background(), 10)
 
-	assert.NoError(t, tt.CheckProcessorMetrics(7, 8, 9, 10))
-	assert.Error(t, tt.CheckProcessorMetrics(0, 0, 0, 0))
-	assert.Error(t, tt.CheckProcessorMetrics(7, 0, 0, 0))
-	assert.Error(t, tt.CheckProcessorMetrics(0, 8, 0, 0))
-	assert.Error(t, tt.CheckProcessorMetrics(0, 0, 9, 0))
-	assert.Error(t, tt.CheckProcessorMetrics(0, 0, 0, 10))
-	assert.Error(t, tt.CheckProcessorMetrics(7, 8, 0, 0))
-	assert.Error(t, tt.CheckProcessorMetrics(7, 0, 9, 0))
-	assert.Error(t, tt.CheckProcessorMetrics(7, 0, 0, 10))
-	assert.Error(t, tt.CheckProcessorMetrics(0, 8, 9, 0))
-	assert.Error(t, tt.CheckProcessorMetrics(0, 8, 0, 10))
-	assert.Error(t, tt.CheckProcessorMetrics(0, 0, 9, 10))
-	assert.Error(t, tt.CheckProcessorMetrics(7, 8, 9, 0))
-	assert.Error(t, tt.CheckProcessorMetrics(7, 8, 0, 10))
-	assert.Error(t, tt.CheckProcessorMetrics(7, 0, 9, 10))
-	assert.Error(t, tt.CheckProcessorMetrics(0, 8, 9, 10))
+	assert.NoError(t, tt.CheckProcessorMetrics(7, 8, 9))
+	assert.Error(t, tt.CheckProcessorMetrics(0, 0, 0))
+	assert.Error(t, tt.CheckProcessorMetrics(7, 0, 0))
+	assert.Error(t, tt.CheckProcessorMetrics(0, 8, 0))
+	assert.Error(t, tt.CheckProcessorMetrics(0, 0, 9))
+	assert.Error(t, tt.CheckProcessorMetrics(0, 0, 0))
+	assert.Error(t, tt.CheckProcessorMetrics(7, 8, 0))
+	assert.Error(t, tt.CheckProcessorMetrics(7, 0, 9))
+	assert.Error(t, tt.CheckProcessorMetrics(7, 0, 0))
+	assert.Error(t, tt.CheckProcessorMetrics(0, 8, 9))
+	assert.Error(t, tt.CheckProcessorMetrics(0, 8, 0))
+	assert.Error(t, tt.CheckProcessorMetrics(0, 0, 9))
 }
 
 func TestCheckProcessorLogViews(t *testing.T) {
@@ -189,24 +173,19 @@ func TestCheckProcessorLogViews(t *testing.T) {
 	por.LogsAccepted(context.Background(), 7)
 	por.LogsRefused(context.Background(), 8)
 	por.LogsDropped(context.Background(), 9)
-	por.LogsInserted(context.Background(), 10)
 
-	assert.NoError(t, tt.CheckProcessorLogs(7, 8, 9, 10))
-	assert.Error(t, tt.CheckProcessorLogs(0, 0, 0, 0))
-	assert.Error(t, tt.CheckProcessorLogs(7, 0, 0, 0))
-	assert.Error(t, tt.CheckProcessorLogs(0, 8, 0, 0))
-	assert.Error(t, tt.CheckProcessorLogs(0, 0, 9, 0))
-	assert.Error(t, tt.CheckProcessorLogs(0, 0, 0, 10))
-	assert.Error(t, tt.CheckProcessorLogs(7, 8, 0, 0))
-	assert.Error(t, tt.CheckProcessorLogs(7, 0, 9, 0))
-	assert.Error(t, tt.CheckProcessorLogs(7, 0, 0, 10))
-	assert.Error(t, tt.CheckProcessorLogs(0, 8, 9, 0))
-	assert.Error(t, tt.CheckProcessorLogs(0, 8, 0, 10))
-	assert.Error(t, tt.CheckProcessorLogs(0, 0, 9, 10))
-	assert.Error(t, tt.CheckProcessorLogs(7, 8, 9, 0))
-	assert.Error(t, tt.CheckProcessorLogs(7, 8, 0, 10))
-	assert.Error(t, tt.CheckProcessorLogs(7, 0, 9, 10))
-	assert.Error(t, tt.CheckProcessorLogs(0, 8, 9, 10))
+	assert.NoError(t, tt.CheckProcessorLogs(7, 8, 9))
+	assert.Error(t, tt.CheckProcessorLogs(0, 0, 0))
+	assert.Error(t, tt.CheckProcessorLogs(7, 0, 0))
+	assert.Error(t, tt.CheckProcessorLogs(0, 8, 0))
+	assert.Error(t, tt.CheckProcessorLogs(0, 0, 9))
+	assert.Error(t, tt.CheckProcessorLogs(0, 0, 0))
+	assert.Error(t, tt.CheckProcessorLogs(7, 8, 0))
+	assert.Error(t, tt.CheckProcessorLogs(7, 0, 9))
+	assert.Error(t, tt.CheckProcessorLogs(7, 0, 0))
+	assert.Error(t, tt.CheckProcessorLogs(0, 8, 9))
+	assert.Error(t, tt.CheckProcessorLogs(0, 8, 0))
+	assert.Error(t, tt.CheckProcessorLogs(0, 0, 9))
 }
 
 func TestNoMetrics(t *testing.T) {
@@ -215,7 +194,6 @@ func TestNoMetrics(t *testing.T) {
 		const accepted = 29
 		const refused = 11
 		const dropped = 17
-		const inserted = 5
 
 		set := tt.TelemetrySettings()
 		set.LeveledMeterProvider = func(_ configtelemetry.Level) metric.MeterProvider {
@@ -231,15 +209,13 @@ func TestNoMetrics(t *testing.T) {
 		por.TracesAccepted(context.Background(), accepted)
 		por.TracesRefused(context.Background(), refused)
 		por.TracesDropped(context.Background(), dropped)
-		por.TracesInserted(context.Background(), inserted)
 
-		require.Error(t, tt.CheckProcessorTraces(accepted, refused, dropped, inserted))
+		require.Error(t, tt.CheckProcessorTraces(accepted, refused, dropped))
 	})
 	testTelemetry(t, processorID, func(t *testing.T, tt componenttest.TestTelemetry) {
 		const accepted = 29
 		const refused = 11
 		const dropped = 17
-		const inserted = 4
 
 		set := tt.TelemetrySettings()
 		set.LeveledMeterProvider = func(_ configtelemetry.Level) metric.MeterProvider {
@@ -255,15 +231,13 @@ func TestNoMetrics(t *testing.T) {
 		por.MetricsAccepted(context.Background(), accepted)
 		por.MetricsRefused(context.Background(), refused)
 		por.MetricsDropped(context.Background(), dropped)
-		por.MetricsInserted(context.Background(), inserted)
 
-		require.Error(t, tt.CheckProcessorMetrics(accepted, refused, dropped, inserted))
+		require.Error(t, tt.CheckProcessorMetrics(accepted, refused, dropped))
 	})
 	testTelemetry(t, processorID, func(t *testing.T, tt componenttest.TestTelemetry) {
 		const accepted = 29
 		const refused = 11
 		const dropped = 17
-		const inserted = 3
 
 		set := tt.TelemetrySettings()
 		set.LeveledMeterProvider = func(_ configtelemetry.Level) metric.MeterProvider {
@@ -279,9 +253,8 @@ func TestNoMetrics(t *testing.T) {
 		por.LogsAccepted(context.Background(), accepted)
 		por.LogsRefused(context.Background(), refused)
 		por.LogsDropped(context.Background(), dropped)
-		por.LogsInserted(context.Background(), inserted)
 
-		require.Error(t, tt.CheckProcessorLogs(accepted, refused, dropped, inserted))
+		require.Error(t, tt.CheckProcessorLogs(accepted, refused, dropped))
 	})
 }
 

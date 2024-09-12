@@ -38,9 +38,6 @@ type TelemetryBuilder struct {
 	ProcessorIncomingLogRecords   metric.Int64Counter
 	ProcessorIncomingMetricPoints metric.Int64Counter
 	ProcessorIncomingSpans        metric.Int64Counter
-	ProcessorInsertedLogRecords   metric.Int64Counter
-	ProcessorInsertedMetricPoints metric.Int64Counter
-	ProcessorInsertedSpans        metric.Int64Counter
 	ProcessorOutgoingLogRecords   metric.Int64Counter
 	ProcessorOutgoingMetricPoints metric.Int64Counter
 	ProcessorOutgoingSpans        metric.Int64Counter
@@ -113,24 +110,6 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	builder.ProcessorIncomingSpans, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_processor_incoming_spans",
 		metric.WithDescription("Number of spans passed to the processor."),
-		metric.WithUnit("{spans}"),
-	)
-	errs = errors.Join(errs, err)
-	builder.ProcessorInsertedLogRecords, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
-		"otelcol_processor_inserted_log_records",
-		metric.WithDescription("Number of log records that were inserted."),
-		metric.WithUnit("{records}"),
-	)
-	errs = errors.Join(errs, err)
-	builder.ProcessorInsertedMetricPoints, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
-		"otelcol_processor_inserted_metric_points",
-		metric.WithDescription("Number of metric points that were inserted."),
-		metric.WithUnit("{datapoints}"),
-	)
-	errs = errors.Join(errs, err)
-	builder.ProcessorInsertedSpans, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
-		"otelcol_processor_inserted_spans",
-		metric.WithDescription("Number of spans that were inserted."),
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
