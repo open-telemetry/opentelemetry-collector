@@ -229,21 +229,21 @@ func TestServiceGetExporters(t *testing.T) {
 		assert.NoError(t, srv.Shutdown(context.Background()))
 	})
 
-	expMap := srv.host.GetExporters()
+	expMap := srv.host.GetExportersWithSignal()
 
-	v, ok := expMap[component.DataTypeTraces]
+	v, ok := expMap[pipeline.SignalTraces]
 	assert.True(t, ok)
 	assert.NotNil(t, v)
 
 	assert.Len(t, expMap, 4)
-	assert.Len(t, expMap[component.DataTypeTraces], 1)
-	assert.Contains(t, expMap[component.DataTypeTraces], component.NewID(nopType))
-	assert.Len(t, expMap[component.DataTypeMetrics], 1)
-	assert.Contains(t, expMap[component.DataTypeMetrics], component.NewID(nopType))
-	assert.Len(t, expMap[component.DataTypeLogs], 1)
-	assert.Contains(t, expMap[component.DataTypeLogs], component.NewID(nopType))
-	assert.Len(t, expMap[componentprofiles.DataTypeProfiles], 1)
-	assert.Contains(t, expMap[componentprofiles.DataTypeProfiles], component.NewID(nopType))
+	assert.Len(t, expMap[pipeline.SignalTraces], 1)
+	assert.Contains(t, expMap[pipeline.SignalTraces], component.NewID(nopType))
+	assert.Len(t, expMap[pipeline.SignalMetrics], 1)
+	assert.Contains(t, expMap[pipeline.SignalMetrics], component.NewID(nopType))
+	assert.Len(t, expMap[pipeline.SignalLogs], 1)
+	assert.Contains(t, expMap[pipeline.SignalLogs], component.NewID(nopType))
+	assert.Len(t, expMap[componentprofiles.SignalProfiles], 1)
+	assert.Contains(t, expMap[componentprofiles.SignalProfiles], component.NewID(nopType))
 }
 
 // nolint

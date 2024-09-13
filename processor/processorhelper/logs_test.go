@@ -18,13 +18,14 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
 
 var testLogsCfg = struct{}{}
 
 func TestNewLogsProcessor(t *testing.T) {
-	lp, err := NewLogsProcessor(context.Background(), processortest.NewNopSettings(), &testLogsCfg, consumertest.NewNop(), newTestLProcessor(nil))
+	lp, err := NewLogsProcessor(context.Background(), processortest.NewNopSettings(pipeline.SignalLogs), &testLogsCfg, consumertest.NewNop(), newTestLProcessor(nil))
 	require.NoError(t, err)
 
 	assert.True(t, lp.Capabilities().MutatesData)
@@ -35,7 +36,7 @@ func TestNewLogsProcessor(t *testing.T) {
 
 func TestNewLogsProcessor_WithOptions(t *testing.T) {
 	want := errors.New("my_error")
-	lp, err := NewLogsProcessor(context.Background(), processortest.NewNopSettings(), &testLogsCfg, consumertest.NewNop(), newTestLProcessor(nil),
+	lp, err := NewLogsProcessor(context.Background(), processortest.NewNopSettings(pipeline.SignalLogs), &testLogsCfg, consumertest.NewNop(), newTestLProcessor(nil),
 		WithStart(func(context.Context, component.Host) error { return want }),
 		WithShutdown(func(context.Context) error { return want }),
 		WithCapabilities(consumer.Capabilities{MutatesData: false}))
@@ -47,19 +48,19 @@ func TestNewLogsProcessor_WithOptions(t *testing.T) {
 }
 
 func TestNewLogsProcessor_NilRequiredFields(t *testing.T) {
-	_, err := NewLogsProcessor(context.Background(), processortest.NewNopSettings(), &testLogsCfg, consumertest.NewNop(), nil)
+	_, err := NewLogsProcessor(context.Background(), processortest.NewNopSettings(pipeline.SignalLogs), &testLogsCfg, consumertest.NewNop(), nil)
 	assert.Error(t, err)
 }
 
 func TestNewLogsProcessor_ProcessLogError(t *testing.T) {
 	want := errors.New("my_error")
-	lp, err := NewLogsProcessor(context.Background(), processortest.NewNopSettings(), &testLogsCfg, consumertest.NewNop(), newTestLProcessor(want))
+	lp, err := NewLogsProcessor(context.Background(), processortest.NewNopSettings(pipeline.SignalLogs), &testLogsCfg, consumertest.NewNop(), newTestLProcessor(want))
 	require.NoError(t, err)
 	assert.Equal(t, want, lp.ConsumeLogs(context.Background(), plog.NewLogs()))
 }
 
 func TestNewLogsProcessor_ProcessLogsErrSkipProcessingData(t *testing.T) {
-	lp, err := NewLogsProcessor(context.Background(), processortest.NewNopSettings(), &testLogsCfg, consumertest.NewNop(), newTestLProcessor(ErrSkipProcessingData))
+	lp, err := NewLogsProcessor(context.Background(), processortest.NewNopSettings(pipeline.SignalLogs), &testLogsCfg, consumertest.NewNop(), newTestLProcessor(ErrSkipProcessingData))
 	require.NoError(t, err)
 	assert.NoError(t, lp.ConsumeLogs(context.Background(), plog.NewLogs()))
 }
@@ -87,7 +88,7 @@ func TestLogsProcessor_RecordInOut(t *testing.T) {
 	incomingLogRecords.AppendEmpty()
 
 	testTelemetry := setupTestTelemetry()
-	lp, err := NewLogsProcessor(context.Background(), testTelemetry.NewSettings(), &testLogsCfg, consumertest.NewNop(), mockAggregate)
+	lp, err := NewLogsProcessor(context.Background(), testTelemetry.NewSettings(pipeline.SignalLogs), &testLogsCfg, consumertest.NewNop(), mockAggregate)
 	require.NoError(t, err)
 
 	assert.NoError(t, lp.Start(context.Background(), componenttest.NewNopHost()))
@@ -104,8 +105,12 @@ func TestLogsProcessor_RecordInOut(t *testing.T) {
 				IsMonotonic: true,
 				DataPoints: []metricdata.DataPoint[int64]{
 					{
-						Value:      3,
-						Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "logs")),
+						Value: 3,
+						Attributes: attribute.NewSet(
+							attribute.String("processor", "processorhelper"),
+							attribute.String("otel.signal", "logs"),
+							attribute.String("pipeline", "logs"),
+						),
 					},
 				},
 			},
@@ -119,8 +124,12 @@ func TestLogsProcessor_RecordInOut(t *testing.T) {
 				IsMonotonic: true,
 				DataPoints: []metricdata.DataPoint[int64]{
 					{
-						Value:      1,
-						Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "logs")),
+						Value: 1,
+						Attributes: attribute.NewSet(
+							attribute.String("processor", "processorhelper"),
+							attribute.String("otel.signal", "logs"),
+							attribute.String("pipeline", "logs"),
+						),
 					},
 				},
 			},

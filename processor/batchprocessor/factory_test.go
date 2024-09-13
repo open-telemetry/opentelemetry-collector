@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
 
@@ -23,20 +24,18 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateProcessor(t *testing.T) {
 	factory := NewFactory()
-
 	cfg := factory.CreateDefaultConfig()
-	creationSet := processortest.NewNopSettings()
-	tp, err := factory.CreateTracesProcessor(context.Background(), creationSet, cfg, nil)
+	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopSettings(pipeline.SignalTraces), cfg, nil)
 	assert.NotNil(t, tp)
 	assert.NoError(t, err, "cannot create trace processor")
 	assert.NoError(t, tp.Shutdown(context.Background()))
 
-	mp, err := factory.CreateMetricsProcessor(context.Background(), creationSet, cfg, nil)
+	mp, err := factory.CreateMetricsProcessor(context.Background(), processortest.NewNopSettings(pipeline.SignalMetrics), cfg, nil)
 	assert.NotNil(t, mp)
 	assert.NoError(t, err, "cannot create metric processor")
 	assert.NoError(t, mp.Shutdown(context.Background()))
 
-	lp, err := factory.CreateLogsProcessor(context.Background(), creationSet, cfg, nil)
+	lp, err := factory.CreateLogsProcessor(context.Background(), processortest.NewNopSettings(pipeline.SignalLogs), cfg, nil)
 	assert.NotNil(t, lp)
 	assert.NoError(t, err, "cannot create logs processor")
 	assert.NoError(t, lp.Shutdown(context.Background()))

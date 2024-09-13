@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorprofiles"
 )
@@ -20,11 +21,12 @@ import (
 var nopType = component.MustNewType("nop")
 
 // NewNopSettings returns a new nop settings for Create*Processor functions.
-func NewNopSettings() processor.Settings {
+func NewNopSettings(dt pipeline.Signal) processor.Settings {
 	return processor.Settings{
 		ID:                component.NewIDWithName(nopType, uuid.NewString()),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),
+		PipelineID:        pipeline.NewID(dt),
 	}
 }
 

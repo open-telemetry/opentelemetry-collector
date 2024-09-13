@@ -21,7 +21,7 @@ var (
 // Config defines the configurable settings for service telemetry.
 //
 // Deprecated: [v0.110.0] Use ConfigWithPipelineID instead
-type Config map[component.ID]*PipelineConfig
+type Config map[pipeline.ID]*PipelineConfig
 
 func (cfg Config) Validate() error {
 	// Must have at least one pipeline.
@@ -32,12 +32,12 @@ func (cfg Config) Validate() error {
 	// Check that all pipelines have at least one receiver and one exporter, and they reference
 	// only configured components.
 	for pipelineID, p := range cfg {
-		switch pipelineID.Type() {
+		switch pipelineID.Signal() {
 		// nolint
-		case component.DataTypeTraces, component.DataTypeMetrics, component.DataTypeLogs, componentprofiles.DataTypeProfiles:
+		case pipeline.SignalTraces, pipeline.SignalMetrics, pipeline.SignalLogs, componentprofiles.SignalProfiles:
 			// Continue
 		default:
-			return fmt.Errorf("pipeline %q: unknown datatype %q", pipelineID, pipelineID.Type())
+			return fmt.Errorf("pipeline %q: unknown datatype %q", pipelineID, pipelineID.Signal())
 		}
 
 		// Validate pipeline has at least one receiver.

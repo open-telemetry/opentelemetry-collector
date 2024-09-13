@@ -6,8 +6,9 @@ package internal // import "go.opentelemetry.io/collector/processor/internal"
 const (
 	MetricNameSep = "_"
 
-	// ProcessorKey is the key used to identify processors in metrics and traces.
 	ProcessorKey = "processor"
+	SignalKey    = "otel.signal"
+	PipelineKey  = "pipeline"
 
 	ProcessorMetricPrefix = ProcessorKey + MetricNameSep
 )

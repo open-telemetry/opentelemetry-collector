@@ -126,7 +126,7 @@ func TestComponentLifecycle(t *testing.T) {
 				switch tt.name {
 				case "logs":
 					e, ok := c.(exporter.Logs)
-					require.True(t, ok)				
+					require.True(t, ok)
 					logs := generateLifecycleTestLogs()
 					if !e.Capabilities().MutatesData {
 						logs.MarkReadOnly()
@@ -203,9 +203,19 @@ func TestComponentLifecycle(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(&cfg))
 
 	for _, tt := range tests {
+		var signal pipeline.Signal
+		switch tt.name {
+		case "logs":
+			signal = pipeline.SignalLogs
+		case "metrics":
+			signal = pipeline.SignalMetrics
+		case "traces":
+			signal = pipeline.SignalTraces
+		}
+
 		{{- if not .Tests.SkipShutdown }}
 		t.Run(tt.name + "-shutdown", func(t *testing.T) {
-			c, err := tt.createFn(context.Background(), processortest.NewNopSettings(), cfg)
+			c, err := tt.createFn(context.Background(), processortest.NewNopSettings(signal), cfg)
 			require.NoError(t, err)
 			err = c.Shutdown(context.Background())
 			require.NoError(t, err)
@@ -214,7 +224,7 @@ func TestComponentLifecycle(t *testing.T) {
 
 		{{- if not .Tests.SkipLifecycle }}
 		t.Run(tt.name + "-lifecycle", func(t *testing.T) {
-			c, err := tt.createFn(context.Background(), processortest.NewNopSettings(), cfg)
+			c, err := tt.createFn(context.Background(), processortest.NewNopSettings(signal), cfg)
 			require.NoError(t, err)
 			host := {{ .Tests.Host }}
 			err = c.Start(context.Background(), host)

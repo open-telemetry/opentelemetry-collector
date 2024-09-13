@@ -29,11 +29,14 @@ const (
 	scraperTag   = "scraper"
 	transportTag = "transport"
 	exporterTag  = "exporter"
+	processorTag = "processor"
+	pipelineTag  = "pipeline"
 )
 
 type TestTelemetry struct {
 	ts           component.TelemetrySettings
 	id           component.ID
+	extraAttrs   []attribute.KeyValue
 	SpanRecorder *tracetest.SpanRecorder
 
 	reader        *sdkmetric.ManualReader
@@ -129,16 +132,17 @@ func (tts *TestTelemetry) TelemetrySettings() component.TelemetrySettings {
 	return tts.ts
 }
 
-// SetupTelemetry sets up the testing environment to check the metrics recorded by receivers, producers, or exporters.
+// SetupTelemetry sets up the testing environment to check the metrics recorded by receivers, or exporters.
 // The caller must pass the ID of the component being tested. The ID will be used by the CreateSettings and Check methods.
 // The caller must defer a call to `Shutdown` on the returned TestTelemetry.
-func SetupTelemetry(id component.ID) (TestTelemetry, error) {
+func SetupTelemetry(id component.ID, extraAttrs ...attribute.KeyValue) (TestTelemetry, error) {
 	sr := new(tracetest.SpanRecorder)
 	tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
 
 	settings := TestTelemetry{
 		ts:           NewNopTelemetrySettings(),
 		id:           id,
+		extraAttrs:   extraAttrs,
 		SpanRecorder: sr,
 	}
 	settings.ts.TracerProvider = tp

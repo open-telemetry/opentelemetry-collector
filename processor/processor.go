@@ -39,6 +39,9 @@ type Settings struct {
 
 	// BuildInfo can be used by components for informational purposes
 	BuildInfo component.BuildInfo
+
+	// PipelineID indicates which pipeline contains this processor.
+	PipelineID pipeline.ID
 }
 
 // Factory is Factory interface for processors.

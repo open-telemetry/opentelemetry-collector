@@ -14,6 +14,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
@@ -23,8 +24,8 @@ type componentTestTelemetry struct {
 	meterProvider *sdkmetric.MeterProvider
 }
 
-func (tt *componentTestTelemetry) NewSettings() processor.Settings {
-	settings := processortest.NewNopSettings()
+func (tt *componentTestTelemetry) NewSettings(dt pipeline.Signal) processor.Settings {
+	settings := processortest.NewNopSettings(dt)
 	settings.MeterProvider = tt.meterProvider
 	settings.LeveledMeterProvider = func(_ configtelemetry.Level) metric.MeterProvider {
 		return tt.meterProvider

@@ -11,10 +11,12 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentprofiles"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorprofiles"
 	"go.opentelemetry.io/collector/processor/processortest"
@@ -186,30 +188,36 @@ func TestNewNopProcessorBuilder(t *testing.T) {
 
 	factory := processortest.NewNopFactory()
 	cfg := factory.CreateDefaultConfig()
-	set := processortest.NewNopSettings()
-	set.ID = component.NewID(nopType)
 
-	traces, err := factory.CreateTracesProcessor(context.Background(), set, cfg, consumertest.NewNop())
+	tracesSet := processortest.NewNopSettings(pipeline.SignalTraces)
+	tracesSet.ID = component.NewID(nopType)
+	traces, err := factory.CreateTracesProcessor(context.Background(), tracesSet, cfg, consumertest.NewNop())
 	require.NoError(t, err)
-	bTraces, err := builder.CreateTraces(context.Background(), set, consumertest.NewNop())
+	bTraces, err := builder.CreateTraces(context.Background(), tracesSet, consumertest.NewNop())
 	require.NoError(t, err)
 	assert.IsType(t, traces, bTraces)
 
-	metrics, err := factory.CreateMetricsProcessor(context.Background(), set, cfg, consumertest.NewNop())
+	metricsSet := processortest.NewNopSettings(pipeline.SignalMetrics)
+	metricsSet.ID = component.NewID(nopType)
+	metrics, err := factory.CreateMetricsProcessor(context.Background(), metricsSet, cfg, consumertest.NewNop())
 	require.NoError(t, err)
-	bMetrics, err := builder.CreateMetrics(context.Background(), set, consumertest.NewNop())
+	bMetrics, err := builder.CreateMetrics(context.Background(), metricsSet, consumertest.NewNop())
 	require.NoError(t, err)
 	assert.IsType(t, metrics, bMetrics)
 
-	logs, err := factory.CreateLogsProcessor(context.Background(), set, cfg, consumertest.NewNop())
+	logsSet := processortest.NewNopSettings(pipeline.SignalLogs)
+	logsSet.ID = component.NewID(nopType)
+	logs, err := factory.CreateLogsProcessor(context.Background(), logsSet, cfg, consumertest.NewNop())
 	require.NoError(t, err)
-	bLogs, err := builder.CreateLogs(context.Background(), set, consumertest.NewNop())
+	bLogs, err := builder.CreateLogs(context.Background(), logsSet, consumertest.NewNop())
 	require.NoError(t, err)
 	assert.IsType(t, logs, bLogs)
 
-	profiles, err := factory.(processorprofiles.Factory).CreateProfilesProcessor(context.Background(), set, cfg, consumertest.NewNop())
+	profilesSet := processortest.NewNopSettings(componentprofiles.SignalProfiles)
+	profilesSet.ID = component.NewID(nopType)
+	profiles, err := factory.(processorprofiles.Factory).CreateProfilesProcessor(context.Background(), profilesSet, cfg, consumertest.NewNop())
 	require.NoError(t, err)
-	bProfiles, err := builder.CreateProfiles(context.Background(), set, consumertest.NewNop())
+	bProfiles, err := builder.CreateProfiles(context.Background(), profilesSet, consumertest.NewNop())
 	require.NoError(t, err)
 	assert.IsType(t, profiles, bProfiles)
 }

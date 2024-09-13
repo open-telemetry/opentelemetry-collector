@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
@@ -67,14 +68,23 @@ func TestComponentLifecycle(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(&cfg))
 
 	for _, tt := range tests {
+		var signal pipeline.Signal
+		switch tt.name {
+		case "logs":
+			signal = pipeline.SignalLogs
+		case "metrics":
+			signal = pipeline.SignalMetrics
+		case "traces":
+			signal = pipeline.SignalTraces
+		}
 		t.Run(tt.name+"-shutdown", func(t *testing.T) {
-			c, err := tt.createFn(context.Background(), processortest.NewNopSettings(), cfg)
+			c, err := tt.createFn(context.Background(), processortest.NewNopSettings(signal), cfg)
 			require.NoError(t, err)
 			err = c.Shutdown(context.Background())
 			require.NoError(t, err)
 		})
 		t.Run(tt.name+"-lifecycle", func(t *testing.T) {
-			c, err := tt.createFn(context.Background(), processortest.NewNopSettings(), cfg)
+			c, err := tt.createFn(context.Background(), processortest.NewNopSettings(signal), cfg)
 			require.NoError(t, err)
 			host := componenttest.NewNopHost()
 			err = c.Start(context.Background(), host)

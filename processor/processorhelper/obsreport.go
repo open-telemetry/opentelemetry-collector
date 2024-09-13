@@ -58,7 +58,8 @@ func newObsReport(set processor.Settings, signal pipeline.Signal) (*obsReport, e
 	return &obsReport{
 		otelAttrs: []attribute.KeyValue{
 			attribute.String(internal.ProcessorKey, set.ID.String()),
-			attribute.String("otel.signal", signal.String()),
+			attribute.String(internal.SignalKey, signal.String()),
+			attribute.String(internal.PipelineKey, set.PipelineID.String()),
 		},
 		telemetryBuilder: telemetryBuilder,
 	}, nil

@@ -145,7 +145,7 @@ func (n *processorNode) buildComponent(ctx context.Context,
 	next baseConsumer,
 ) error {
 	tel.Logger = components.ProcessorLogger(tel.Logger, n.componentID, n.pipelineID)
-	set := processor.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
+	set := processor.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info, PipelineID: n.pipelineID}
 	var err error
 	switch n.pipelineID.Signal() {
 	case pipeline.SignalTraces:

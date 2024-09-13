@@ -26,30 +26,28 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/testdata"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
 
 func TestProcessorShutdown(t *testing.T) {
 	factory := NewFactory()
-
 	ctx := context.Background()
-	processorCreationSet := processortest.NewNopSettings()
-
 	for i := 0; i < 5; i++ {
 		require.NotPanics(t, func() {
-			tProc, err := factory.CreateTracesProcessor(ctx, processorCreationSet, factory.CreateDefaultConfig(), consumertest.NewNop())
+			tProc, err := factory.CreateTracesProcessor(ctx, processortest.NewNopSettings(pipeline.SignalTraces), factory.CreateDefaultConfig(), consumertest.NewNop())
 			require.NoError(t, err)
 			_ = tProc.Shutdown(ctx)
 		})
 
 		require.NotPanics(t, func() {
-			mProc, err := factory.CreateMetricsProcessor(ctx, processorCreationSet, factory.CreateDefaultConfig(), consumertest.NewNop())
+			mProc, err := factory.CreateMetricsProcessor(ctx, processortest.NewNopSettings(pipeline.SignalMetrics), factory.CreateDefaultConfig(), consumertest.NewNop())
 			require.NoError(t, err)
 			_ = mProc.Shutdown(ctx)
 		})
 
 		require.NotPanics(t, func() {
-			lProc, err := factory.CreateLogsProcessor(ctx, processorCreationSet, factory.CreateDefaultConfig(), consumertest.NewNop())
+			lProc, err := factory.CreateLogsProcessor(ctx, processortest.NewNopSettings(pipeline.SignalLogs), factory.CreateDefaultConfig(), consumertest.NewNop())
 			require.NoError(t, err)
 			_ = lProc.Shutdown(ctx)
 		})
@@ -58,22 +56,19 @@ func TestProcessorShutdown(t *testing.T) {
 
 func TestProcessorLifecycle(t *testing.T) {
 	factory := NewFactory()
-
 	ctx := context.Background()
-	processorCreationSet := processortest.NewNopSettings()
-
 	for i := 0; i < 5; i++ {
-		tProc, err := factory.CreateTracesProcessor(ctx, processorCreationSet, factory.CreateDefaultConfig(), consumertest.NewNop())
+		tProc, err := factory.CreateTracesProcessor(ctx, processortest.NewNopSettings(pipeline.SignalTraces), factory.CreateDefaultConfig(), consumertest.NewNop())
 		require.NoError(t, err)
 		require.NoError(t, tProc.Start(ctx, componenttest.NewNopHost()))
 		require.NoError(t, tProc.Shutdown(ctx))
 
-		mProc, err := factory.CreateMetricsProcessor(ctx, processorCreationSet, factory.CreateDefaultConfig(), consumertest.NewNop())
+		mProc, err := factory.CreateMetricsProcessor(ctx, processortest.NewNopSettings(pipeline.SignalMetrics), factory.CreateDefaultConfig(), consumertest.NewNop())
 		require.NoError(t, err)
 		require.NoError(t, mProc.Start(ctx, componenttest.NewNopHost()))
 		require.NoError(t, mProc.Shutdown(ctx))
 
-		lProc, err := factory.CreateLogsProcessor(ctx, processorCreationSet, factory.CreateDefaultConfig(), consumertest.NewNop())
+		lProc, err := factory.CreateLogsProcessor(ctx, processortest.NewNopSettings(pipeline.SignalLogs), factory.CreateDefaultConfig(), consumertest.NewNop())
 		require.NoError(t, err)
 		require.NoError(t, lProc.Start(ctx, componenttest.NewNopHost()))
 		require.NoError(t, lProc.Shutdown(ctx))
@@ -84,7 +79,7 @@ func TestBatchProcessorSpansDelivered(t *testing.T) {
 	sink := new(consumertest.TracesSink)
 	cfg := createDefaultConfig().(*Config)
 	cfg.SendBatchSize = 128
-	creationSet := processortest.NewNopSettings()
+	creationSet := processortest.NewNopSettings(pipeline.SignalTraces)
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg)
 	require.NoError(t, err)
@@ -127,7 +122,7 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.SendBatchSize = 128
 	cfg.SendBatchMaxSize = 130
-	creationSet := processortest.NewNopSettings()
+	creationSet := processortest.NewNopSettings(pipeline.SignalTraces)
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg)
 	require.NoError(t, err)
@@ -174,7 +169,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 	sendBatchSize := 20
 	cfg.SendBatchSize = uint32(sendBatchSize)
 	cfg.Timeout = 500 * time.Millisecond
-	creationSet := tel.NewSettings()
+	creationSet := tel.NewSettings(pipeline.SignalTraces)
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg)
 	require.NoError(t, err)
@@ -220,7 +215,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 				Temporality: metricdata.CumulativeTemporality,
 				DataPoints: []metricdata.HistogramDataPoint[int64]{
 					{
-						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
+						Attributes: attribute.NewSet(attribute.String("processor", "batch"), attribute.String("pipeline", "traces")),
 						Count:      uint64(expectedBatchesNum),
 						Bounds: []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000,
 							100_000, 200_000, 300_000, 400_000, 500_000, 600_000, 700_000, 800_000, 900_000,
@@ -241,7 +236,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 				Temporality: metricdata.CumulativeTemporality,
 				DataPoints: []metricdata.HistogramDataPoint[int64]{
 					{
-						Attributes:   attribute.NewSet(attribute.String("processor", "batch")),
+						Attributes:   attribute.NewSet(attribute.String("processor", "batch"), attribute.String("pipeline", "traces")),
 						Count:        uint64(expectedBatchesNum),
 						Bounds:       []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000},
 						BucketCounts: []uint64{0, uint64(expectedBatchesNum), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -262,7 +257,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 				DataPoints: []metricdata.DataPoint[int64]{
 					{
 						Value:      int64(expectedBatchesNum),
-						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
+						Attributes: attribute.NewSet(attribute.String("processor", "batch"), attribute.String("pipeline", "traces")),
 					},
 				},
 			},
@@ -277,7 +272,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 				DataPoints: []metricdata.DataPoint[int64]{
 					{
 						Value:      1,
-						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
+						Attributes: attribute.NewSet(attribute.String("processor", "batch"), attribute.String("pipeline", "traces")),
 					},
 				},
 			},
@@ -295,7 +290,7 @@ func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
 	cfg.SendBatchSize = uint32(sendBatchSize)
 	cfg.SendBatchMaxSize = uint32(sendBatchMaxSize)
 	cfg.Timeout = 500 * time.Millisecond
-	creationSet := tel.NewSettings()
+	creationSet := tel.NewSettings(pipeline.SignalTraces)
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg)
 	require.NoError(t, err)
@@ -346,7 +341,7 @@ func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
 				Temporality: metricdata.CumulativeTemporality,
 				DataPoints: []metricdata.HistogramDataPoint[int64]{
 					{
-						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
+						Attributes: attribute.NewSet(attribute.String("processor", "batch"), attribute.String("pipeline", "traces")),
 						Count:      uint64(expectedBatchesNum),
 						Bounds: []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000,
 							100_000, 200_000, 300_000, 400_000, 500_000, 600_000, 700_000, 800_000, 900_000,
@@ -367,7 +362,7 @@ func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
 				Temporality: metricdata.CumulativeTemporality,
 				DataPoints: []metricdata.HistogramDataPoint[int64]{
 					{
-						Attributes:   attribute.NewSet(attribute.String("processor", "batch")),
+						Attributes:   attribute.NewSet(attribute.String("processor", "batch"), attribute.String("pipeline", "traces")),
 						Count:        uint64(expectedBatchesNum),
 						Bounds:       []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000},
 						BucketCounts: []uint64{0, 1, uint64(expectedBatchesNum - 1), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -388,7 +383,7 @@ func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
 				DataPoints: []metricdata.DataPoint[int64]{
 					{
 						Value:      int64(expectedBatchesNum - 1),
-						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
+						Attributes: attribute.NewSet(attribute.String("processor", "batch"), attribute.String("pipeline", "traces")),
 					},
 				},
 			},
@@ -403,7 +398,7 @@ func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
 				DataPoints: []metricdata.DataPoint[int64]{
 					{
 						Value:      1,
-						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
+						Attributes: attribute.NewSet(attribute.String("processor", "batch"), attribute.String("pipeline", "traces")),
 					},
 				},
 			},
@@ -418,7 +413,7 @@ func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
 				DataPoints: []metricdata.DataPoint[int64]{
 					{
 						Value:      1,
-						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
+						Attributes: attribute.NewSet(attribute.String("processor", "batch"), attribute.String("pipeline", "traces")),
 					},
 				},
 			},
@@ -437,7 +432,7 @@ func TestBatchProcessorSentByTimeout(t *testing.T) {
 	spansPerRequest := 10
 	start := time.Now()
 
-	creationSet := processortest.NewNopSettings()
+	creationSet := processortest.NewNopSettings(pipeline.SignalTraces)
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg)
 	require.NoError(t, err)
@@ -484,7 +479,7 @@ func TestBatchProcessorTraceSendWhenClosing(t *testing.T) {
 	}
 	sink := new(consumertest.TracesSink)
 
-	creationSet := processortest.NewNopSettings()
+	creationSet := processortest.NewNopSettings(pipeline.SignalTraces)
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchTracesProcessor(creationSet, sink, &cfg)
 	require.NoError(t, err)
@@ -515,7 +510,7 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 	metricsPerRequest := 5
 	sink := new(consumertest.MetricsSink)
 
-	creationSet := processortest.NewNopSettings()
+	creationSet := processortest.NewNopSettings(pipeline.SignalMetrics)
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchMetricsProcessor(creationSet, sink, &cfg)
 	require.NoError(t, err)
@@ -569,7 +564,7 @@ func TestBatchMetricProcessorBatchSize(t *testing.T) {
 	dataPointsPerRequest := metricsPerRequest * dataPointsPerMetric
 	sink := new(consumertest.MetricsSink)
 
-	creationSet := tel.NewSettings()
+	creationSet := tel.NewSettings(pipeline.SignalMetrics)
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchMetricsProcessor(creationSet, sink, &cfg)
 	require.NoError(t, err)
@@ -609,7 +604,7 @@ func TestBatchMetricProcessorBatchSize(t *testing.T) {
 				Temporality: metricdata.CumulativeTemporality,
 				DataPoints: []metricdata.HistogramDataPoint[int64]{
 					{
-						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
+						Attributes: attribute.NewSet(attribute.String("processor", "batch"), attribute.String("pipeline", "metrics")),
 						Count:      uint64(expectedBatchesNum),
 						Bounds: []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000,
 							100_000, 200_000, 300_000, 400_000, 500_000, 600_000, 700_000, 800_000, 900_000,
@@ -630,7 +625,7 @@ func TestBatchMetricProcessorBatchSize(t *testing.T) {
 				Temporality: metricdata.CumulativeTemporality,
 				DataPoints: []metricdata.HistogramDataPoint[int64]{
 					{
-						Attributes:   attribute.NewSet(attribute.String("processor", "batch")),
+						Attributes:   attribute.NewSet(attribute.String("processor", "batch"), attribute.String("pipeline", "metrics")),
 						Count:        uint64(expectedBatchesNum),
 						Bounds:       []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000},
 						BucketCounts: []uint64{0, 0, uint64(expectedBatchesNum), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -651,7 +646,7 @@ func TestBatchMetricProcessorBatchSize(t *testing.T) {
 				DataPoints: []metricdata.DataPoint[int64]{
 					{
 						Value:      int64(expectedBatchesNum),
-						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
+						Attributes: attribute.NewSet(attribute.String("processor", "batch"), attribute.String("pipeline", "metrics")),
 					},
 				},
 			},
@@ -666,7 +661,7 @@ func TestBatchMetricProcessorBatchSize(t *testing.T) {
 				DataPoints: []metricdata.DataPoint[int64]{
 					{
 						Value:      1,
-						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
+						Attributes: attribute.NewSet(attribute.String("processor", "batch"), attribute.String("pipeline", "metrics")),
 					},
 				},
 			},
@@ -702,7 +697,7 @@ func TestBatchMetricsProcessor_Timeout(t *testing.T) {
 	metricsPerRequest := 10
 	sink := new(consumertest.MetricsSink)
 
-	creationSet := processortest.NewNopSettings()
+	creationSet := processortest.NewNopSettings(pipeline.SignalMetrics)
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchMetricsProcessor(creationSet, sink, &cfg)
 	require.NoError(t, err)
@@ -751,7 +746,7 @@ func TestBatchMetricProcessor_Shutdown(t *testing.T) {
 	metricsPerRequest := 10
 	sink := new(consumertest.MetricsSink)
 
-	creationSet := processortest.NewNopSettings()
+	creationSet := processortest.NewNopSettings(pipeline.SignalMetrics)
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchMetricsProcessor(creationSet, sink, &cfg)
 	require.NoError(t, err)
@@ -849,7 +844,7 @@ func BenchmarkMultiBatchMetricProcessor(b *testing.B) {
 func runMetricsProcessorBenchmark(b *testing.B, cfg Config) {
 	ctx := context.Background()
 	sink := new(metricsSink)
-	creationSet := processortest.NewNopSettings()
+	creationSet := processortest.NewNopSettings(pipeline.SignalMetrics)
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	metricsPerRequest := 1000
 	batcher, err := newBatchMetricsProcessor(creationSet, sink, &cfg)
@@ -897,7 +892,7 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 	logsPerRequest := 5
 	sink := new(consumertest.LogsSink)
 
-	creationSet := processortest.NewNopSettings()
+	creationSet := processortest.NewNopSettings(pipeline.SignalLogs)
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchLogsProcessor(creationSet, sink, &cfg)
 	require.NoError(t, err)
@@ -949,7 +944,7 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 	logsPerRequest := 5
 	sink := new(consumertest.LogsSink)
 
-	creationSet := tel.NewSettings()
+	creationSet := tel.NewSettings(pipeline.SignalLogs)
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchLogsProcessor(creationSet, sink, &cfg)
 	require.NoError(t, err)
@@ -989,7 +984,7 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 				Temporality: metricdata.CumulativeTemporality,
 				DataPoints: []metricdata.HistogramDataPoint[int64]{
 					{
-						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
+						Attributes: attribute.NewSet(attribute.String("processor", "batch"), attribute.String("pipeline", "logs")),
 						Count:      uint64(expectedBatchesNum),
 						Bounds: []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000,
 							100_000, 200_000, 300_000, 400_000, 500_000, 600_000, 700_000, 800_000, 900_000,
@@ -1010,7 +1005,7 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 				Temporality: metricdata.CumulativeTemporality,
 				DataPoints: []metricdata.HistogramDataPoint[int64]{
 					{
-						Attributes:   attribute.NewSet(attribute.String("processor", "batch")),
+						Attributes:   attribute.NewSet(attribute.String("processor", "batch"), attribute.String("pipeline", "logs")),
 						Count:        uint64(expectedBatchesNum),
 						Bounds:       []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000},
 						BucketCounts: []uint64{0, 0, uint64(expectedBatchesNum), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -1031,7 +1026,7 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 				DataPoints: []metricdata.DataPoint[int64]{
 					{
 						Value:      int64(expectedBatchesNum),
-						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
+						Attributes: attribute.NewSet(attribute.String("processor", "batch"), attribute.String("pipeline", "logs")),
 					},
 				},
 			},
@@ -1046,7 +1041,7 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 				DataPoints: []metricdata.DataPoint[int64]{
 					{
 						Value:      1,
-						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
+						Attributes: attribute.NewSet(attribute.String("processor", "batch"), attribute.String("pipeline", "logs")),
 					},
 				},
 			},
@@ -1063,7 +1058,7 @@ func TestBatchLogsProcessor_Timeout(t *testing.T) {
 	logsPerRequest := 10
 	sink := new(consumertest.LogsSink)
 
-	creationSet := processortest.NewNopSettings()
+	creationSet := processortest.NewNopSettings(pipeline.SignalLogs)
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchLogsProcessor(creationSet, sink, &cfg)
 	require.NoError(t, err)
@@ -1112,7 +1107,7 @@ func TestBatchLogProcessor_Shutdown(t *testing.T) {
 	logsPerRequest := 10
 	sink := new(consumertest.LogsSink)
 
-	creationSet := processortest.NewNopSettings()
+	creationSet := processortest.NewNopSettings(pipeline.SignalLogs)
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchLogsProcessor(creationSet, sink, &cfg)
 	require.NoError(t, err)
@@ -1191,7 +1186,7 @@ func TestBatchProcessorSpansBatchedByMetadata(t *testing.T) {
 	cfg.SendBatchSize = 1000
 	cfg.Timeout = 10 * time.Minute
 	cfg.MetadataKeys = []string{"token1", "token2"}
-	creationSet := processortest.NewNopSettings()
+	creationSet := processortest.NewNopSettings(pipeline.SignalTraces)
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg)
 	require.NoError(t, err)
@@ -1284,7 +1279,7 @@ func TestBatchProcessorMetadataCardinalityLimit(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.MetadataKeys = []string{"token"}
 	cfg.MetadataCardinalityLimit = cardLimit
-	creationSet := processortest.NewNopSettings()
+	creationSet := processortest.NewNopSettings(pipeline.SignalTraces)
 	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg)
 	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
@@ -1326,7 +1321,7 @@ func TestBatchZeroConfig(t *testing.T) {
 	const requestCount = 5
 	const logsPerRequest = 10
 	sink := new(consumertest.LogsSink)
-	creationSet := processortest.NewNopSettings()
+	creationSet := processortest.NewNopSettings(pipeline.SignalLogs)
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchLogsProcessor(creationSet, sink, &cfg)
 	require.NoError(t, err)
@@ -1367,7 +1362,7 @@ func TestBatchSplitOnly(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	sink := new(consumertest.LogsSink)
-	creationSet := processortest.NewNopSettings()
+	creationSet := processortest.NewNopSettings(pipeline.SignalLogs)
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchLogsProcessor(creationSet, sink, &cfg)
 	require.NoError(t, err)

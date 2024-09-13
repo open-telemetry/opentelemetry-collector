@@ -18,13 +18,14 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
 
 var testTracesCfg = struct{}{}
 
 func TestNewTracesProcessor(t *testing.T) {
-	tp, err := NewTracesProcessor(context.Background(), processortest.NewNopSettings(), &testTracesCfg, consumertest.NewNop(), newTestTProcessor(nil))
+	tp, err := NewTracesProcessor(context.Background(), processortest.NewNopSettings(pipeline.SignalTraces), &testTracesCfg, consumertest.NewNop(), newTestTProcessor(nil))
 	require.NoError(t, err)
 
 	assert.True(t, tp.Capabilities().MutatesData)
@@ -35,7 +36,7 @@ func TestNewTracesProcessor(t *testing.T) {
 
 func TestNewTracesProcessor_WithOptions(t *testing.T) {
 	want := errors.New("my_error")
-	tp, err := NewTracesProcessor(context.Background(), processortest.NewNopSettings(), &testTracesCfg, consumertest.NewNop(), newTestTProcessor(nil),
+	tp, err := NewTracesProcessor(context.Background(), processortest.NewNopSettings(pipeline.SignalTraces), &testTracesCfg, consumertest.NewNop(), newTestTProcessor(nil),
 		WithStart(func(context.Context, component.Host) error { return want }),
 		WithShutdown(func(context.Context) error { return want }),
 		WithCapabilities(consumer.Capabilities{MutatesData: false}))
@@ -47,19 +48,19 @@ func TestNewTracesProcessor_WithOptions(t *testing.T) {
 }
 
 func TestNewTracesProcessor_NilRequiredFields(t *testing.T) {
-	_, err := NewTracesProcessor(context.Background(), processortest.NewNopSettings(), &testTracesCfg, consumertest.NewNop(), nil)
+	_, err := NewTracesProcessor(context.Background(), processortest.NewNopSettings(pipeline.SignalTraces), &testTracesCfg, consumertest.NewNop(), nil)
 	assert.Error(t, err)
 }
 
 func TestNewTracesProcessor_ProcessTraceError(t *testing.T) {
 	want := errors.New("my_error")
-	tp, err := NewTracesProcessor(context.Background(), processortest.NewNopSettings(), &testTracesCfg, consumertest.NewNop(), newTestTProcessor(want))
+	tp, err := NewTracesProcessor(context.Background(), processortest.NewNopSettings(pipeline.SignalTraces), &testTracesCfg, consumertest.NewNop(), newTestTProcessor(want))
 	require.NoError(t, err)
 	assert.Equal(t, want, tp.ConsumeTraces(context.Background(), ptrace.NewTraces()))
 }
 
 func TestNewTracesProcessor_ProcessTracesErrSkipProcessingData(t *testing.T) {
-	tp, err := NewTracesProcessor(context.Background(), processortest.NewNopSettings(), &testTracesCfg, consumertest.NewNop(), newTestTProcessor(ErrSkipProcessingData))
+	tp, err := NewTracesProcessor(context.Background(), processortest.NewNopSettings(pipeline.SignalTraces), &testTracesCfg, consumertest.NewNop(), newTestTProcessor(ErrSkipProcessingData))
 	require.NoError(t, err)
 	assert.NoError(t, tp.ConsumeTraces(context.Background(), ptrace.NewTraces()))
 }
@@ -88,7 +89,7 @@ func TestTracesProcessor_RecordInOut(t *testing.T) {
 	incomingSpans.AppendEmpty()
 
 	testTelemetry := setupTestTelemetry()
-	tp, err := NewTracesProcessor(context.Background(), testTelemetry.NewSettings(), &testLogsCfg, consumertest.NewNop(), mockAggregate)
+	tp, err := NewTracesProcessor(context.Background(), testTelemetry.NewSettings(pipeline.SignalTraces), &testLogsCfg, consumertest.NewNop(), mockAggregate)
 	require.NoError(t, err)
 
 	assert.NoError(t, tp.Start(context.Background(), componenttest.NewNopHost()))
@@ -105,8 +106,12 @@ func TestTracesProcessor_RecordInOut(t *testing.T) {
 				IsMonotonic: true,
 				DataPoints: []metricdata.DataPoint[int64]{
 					{
-						Value:      4,
-						Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "traces")),
+						Value: 4,
+						Attributes: attribute.NewSet(
+							attribute.String("processor", "processorhelper"),
+							attribute.String("otel.signal", "traces"),
+							attribute.String("pipeline", "traces"),
+						),
 					},
 				},
 			},
@@ -120,8 +125,12 @@ func TestTracesProcessor_RecordInOut(t *testing.T) {
 				IsMonotonic: true,
 				DataPoints: []metricdata.DataPoint[int64]{
 					{
-						Value:      1,
-						Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "traces")),
+						Value: 1,
+						Attributes: attribute.NewSet(
+							attribute.String("processor", "processorhelper"),
+							attribute.String("otel.signal", "traces"),
+							attribute.String("pipeline", "traces"),
+						),
 					},
 				},
 			},

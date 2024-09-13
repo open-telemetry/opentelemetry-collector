@@ -32,7 +32,7 @@ type batchProcessorTelemetry struct {
 }
 
 func newBatchProcessorTelemetry(set processor.Settings, currentMetadataCardinality func() int) (*batchProcessorTelemetry, error) {
-	attrs := attribute.NewSet(attribute.String(internal.ProcessorKey, set.ID.String()))
+	attrs := attribute.NewSet(attribute.String(internal.ProcessorKey, set.ID.String()), attribute.String("pipeline", set.PipelineID.String()))
 
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings,
 		metadata.WithProcessorBatchMetadataCardinalityCallback(func() int64 {
