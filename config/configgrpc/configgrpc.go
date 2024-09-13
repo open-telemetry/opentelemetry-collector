@@ -242,7 +242,7 @@ func (gcs *ClientConfig) ToClientConn(
 	return gcs.ToClientConnWithOptions(ctx, host, settings, extraOpts...)
 }
 
-// A sealed interface wrapping options for [ClientConfig.ToClientConnWithOptions].
+// ToClientConnOption is a sealed interface wrapping options for [ClientConfig.ToClientConnWithOptions].
 type ToClientConnOption interface {
 	isToClientConnOption()
 }
@@ -251,13 +251,13 @@ type grpcDialOptionWrapper struct {
 	opt grpc.DialOption
 }
 
-// Wraps a [grpc.DialOption] into a [ToClientConnOption].
+// WithGrpcDialOption wraps a [grpc.DialOption] into a [ToClientConnOption].
 func WithGrpcDialOption(opt grpc.DialOption) ToClientConnOption {
 	return grpcDialOptionWrapper{opt: opt}
 }
 func (grpcDialOptionWrapper) isToClientConnOption() {}
 
-// Same as [ClientConfig.ToClientConn], but uses the [ToClientConnOption] interface for options.
+// ToClientConnWithOptions is the same as [ClientConfig.ToClientConn], but uses the [ToClientConnOption] interface for options.
 // This method will eventually replace [ClientConfig.ToClientConn].
 func (gcs *ClientConfig) ToClientConnWithOptions(
 	ctx context.Context,
@@ -400,7 +400,7 @@ func (gss *ServerConfig) ToServer(
 	return gss.ToServerWithOptions(ctx, host, settings, extraOpts...)
 }
 
-// A sealed interface wrapping options for [ServerConfig.ToServerWithOptions].
+// ToServerOption is a sealed interface wrapping options for [ServerConfig.ToServerWithOptions].
 type ToServerOption interface {
 	isToServerOption()
 }
@@ -409,13 +409,13 @@ type grpcServerOptionWrapper struct {
 	opt grpc.ServerOption
 }
 
-// Wraps a [grpc.ServerOption] into a [ToServerOption].
+// WithGrpcServerOption wraps a [grpc.ServerOption] into a [ToServerOption].
 func WithGrpcServerOption(opt grpc.ServerOption) ToServerOption {
 	return grpcServerOptionWrapper{opt: opt}
 }
 func (grpcServerOptionWrapper) isToServerOption() {}
 
-// Same as [ServerConfig.ToServer], but uses the [ToServerOption] interface for options.
+// ToServerWithOptions is the same as [ServerConfig.ToServer], but uses the [ToServerOption] interface for options.
 // This method will eventually replace [ServerConfig.ToServer].
 func (gss *ServerConfig) ToServerWithOptions(
 	_ context.Context,
