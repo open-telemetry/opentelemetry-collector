@@ -56,7 +56,7 @@ Number of spans that were dropped.
 
 ### otelcol_processor_incoming_items
 
-Number of items passed to the processor.
+Number of items passed to the processor. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
