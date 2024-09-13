@@ -29,7 +29,7 @@ telemetry:
     processor_incoming_size:
       enabled: true
       level: detailed
-      description: Total size of spans passed to the processor.
+      description: Total size of items passed to the processor.
       unit: "By"
       sum:
         value_type: int
