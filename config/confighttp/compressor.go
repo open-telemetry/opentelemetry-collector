@@ -7,7 +7,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"compress/zlib"
-	"fmt"
+	"errors"
 	"io"
 	"sync"
 
@@ -61,7 +61,7 @@ func newCompressor(compressionType configcompression.Type) (*compressor, error) 
 	case configcompression.TypeLz4:
 		return lz4Pool, nil
 	}
-	return nil, fmt.Errorf("unsupported compression type %q", compressionType)
+	return nil, errors.New("unsupported compression type, ")
 }
 
 func (p *compressor) compress(buf *bytes.Buffer, body io.ReadCloser) error {

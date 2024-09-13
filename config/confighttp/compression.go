@@ -32,7 +32,11 @@ var availableDecoders = map[string]func(body io.ReadCloser) (io.ReadCloser, erro
 		return nil, nil
 	},
 	"gzip": func(body io.ReadCloser) (io.ReadCloser, error) {
-		return gzip.NewReader(body)
+		gr, err := gzip.NewReader(body)
+		if err != nil {
+			return nil, err
+		}
+		return gr, nil
 	},
 	"zstd": func(body io.ReadCloser) (io.ReadCloser, error) {
 		zr, err := zstd.NewReader(
@@ -49,7 +53,11 @@ var availableDecoders = map[string]func(body io.ReadCloser) (io.ReadCloser, erro
 		return zr.IOReadCloser(), nil
 	},
 	"zlib": func(body io.ReadCloser) (io.ReadCloser, error) {
-		return zlib.NewReader(body)
+		zr, err := zlib.NewReader(body)
+		if err != nil {
+			return nil, err
+		}
+		return zr, nil
 	},
 	//nolint:unparam // Ignoring the linter request to remove error return since it needs to match the method signature
 	"snappy": func(body io.ReadCloser) (io.ReadCloser, error) {
