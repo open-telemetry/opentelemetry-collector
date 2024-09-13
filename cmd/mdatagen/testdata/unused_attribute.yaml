@@ -10,7 +10,10 @@ status:
     stable: [metrics]
 
 attributes:
-  used_attr:
+  used_attr_in_metrics_section:
+    description: Used attribute.
+    type: string
+  used_attr_in_telemetry_section:
     description: Used attribute.
     type: string
 
@@ -26,4 +29,14 @@ metrics:
     unit: "1"
     gauge:
       value_type: double
-    attributes: [used_attr]
+    attributes: [used_attr_in_metrics_section]
+
+telemetry:
+  metrics:
+    metric:
+      enabled: true
+      description: Metric.
+      unit: "1"
+      gauge:
+        value_type: double
+      attributes: [used_attr_in_telemetry_section]
