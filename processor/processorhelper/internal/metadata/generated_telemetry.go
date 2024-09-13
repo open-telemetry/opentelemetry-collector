@@ -110,7 +110,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.ProcessorIncomingSize, err = builder.meters[configtelemetry.LevelDetailed].Int64Counter(
 		"otelcol_processor_incoming_size",
-		metric.WithDescription("Total size of spans passed to the processor."),
+		metric.WithDescription("Total size of items passed to the processor."),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
@@ -122,7 +122,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.ProcessorOutgoingSize, err = builder.meters[configtelemetry.LevelDetailed].Int64Counter(
 		"otelcol_processor_outgoing_size",
-		metric.WithDescription("Total size of spans emitted from the processor."),
+		metric.WithDescription("Total size of items emitted from the processor."),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)

@@ -38,7 +38,7 @@ telemetry:
     processor_outgoing_size:
       enabled: true
       level: detailed
-      description: Total size of spans emitted from the processor.
+      description: Total size of items emitted from the processor.
       unit: "By"
       sum:
         value_type: int
