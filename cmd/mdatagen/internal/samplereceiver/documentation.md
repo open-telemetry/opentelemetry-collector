@@ -128,7 +128,7 @@ Number of times the batch was sent due to a size trigger [deprecated since v0.11
 
 ### otelcol_process_runtime_total_alloc_bytes
 
-Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc') [stable]
+Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |

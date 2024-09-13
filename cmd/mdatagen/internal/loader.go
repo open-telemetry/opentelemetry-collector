@@ -104,7 +104,7 @@ type stability struct {
 }
 
 func (s stability) String() string {
-	if len(s.Level) == 0 || s.Level == component.StabilityLevelUndefined.String() || s.Level == component.StabilityLevelStable.String() {
+	if len(s.Level) == 0 || strings.ToLower(s.Level) == strings.ToLower(component.StabilityLevelStable.String()) {
 		return ""
 	}
 	if len(s.From) > 0 {
