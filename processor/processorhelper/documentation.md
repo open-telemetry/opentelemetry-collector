@@ -64,7 +64,7 @@ Number of items passed to the processor.
 
 ### otelcol_processor_incoming_size
 
-Total size of spans passed to the processor.
+Total size of items passed to the processor.
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
@@ -80,7 +80,7 @@ Number of items emitted from the processor.
 
 ### otelcol_processor_outgoing_size
 
-Total size of spans emitted from the processor.
+Total size of items emitted from the processor.
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
