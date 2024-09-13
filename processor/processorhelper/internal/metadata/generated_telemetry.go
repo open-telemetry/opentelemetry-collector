@@ -107,7 +107,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.ProcessorOutgoingItems, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_processor_outgoing_items",
-		metric.WithDescription("Number of items emitted from the processor."),
+		metric.WithDescription("Number of items emitted from the processor. [alpha]"),
 		metric.WithUnit("{items}"),
 	)
 	errs = errors.Join(errs, err)

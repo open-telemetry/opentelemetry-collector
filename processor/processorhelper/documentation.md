@@ -64,7 +64,7 @@ Number of items passed to the processor. [alpha]
 
 ### otelcol_processor_outgoing_items
 
-Number of items emitted from the processor.
+Number of items emitted from the processor. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
