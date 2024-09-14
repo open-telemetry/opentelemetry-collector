@@ -44,18 +44,18 @@ func TestLogsMultiplexingNonMutating(t *testing.T) {
 		}
 	}
 
-	assert.True(t, ld == p1.AllLogs()[0])
-	assert.True(t, ld == p1.AllLogs()[1])
+	assert.Equal(t, ld, p1.AllLogs()[0])
+	assert.Equal(t, ld, p1.AllLogs()[1])
 	assert.EqualValues(t, ld, p1.AllLogs()[0])
 	assert.EqualValues(t, ld, p1.AllLogs()[1])
 
-	assert.True(t, ld == p2.AllLogs()[0])
-	assert.True(t, ld == p2.AllLogs()[1])
+	assert.Equal(t, ld, p2.AllLogs()[0])
+	assert.Equal(t, ld, p2.AllLogs()[1])
 	assert.EqualValues(t, ld, p2.AllLogs()[0])
 	assert.EqualValues(t, ld, p2.AllLogs()[1])
 
-	assert.True(t, ld == p3.AllLogs()[0])
-	assert.True(t, ld == p3.AllLogs()[1])
+	assert.Equal(t, ld, p3.AllLogs()[0])
+	assert.Equal(t, ld, p3.AllLogs()[1])
 	assert.EqualValues(t, ld, p3.AllLogs()[0])
 	assert.EqualValues(t, ld, p3.AllLogs()[1])
 
@@ -80,19 +80,19 @@ func TestLogsMultiplexingMutating(t *testing.T) {
 		}
 	}
 
-	assert.True(t, ld != p1.AllLogs()[0])
-	assert.True(t, ld != p1.AllLogs()[1])
+	assert.NotSame(t, ld, p1.AllLogs()[0])
+	assert.NotSame(t, ld, p1.AllLogs()[1])
 	assert.EqualValues(t, ld, p1.AllLogs()[0])
 	assert.EqualValues(t, ld, p1.AllLogs()[1])
 
-	assert.True(t, ld != p2.AllLogs()[0])
-	assert.True(t, ld != p2.AllLogs()[1])
+	assert.NotSame(t, ld, p2.AllLogs()[0])
+	assert.NotSame(t, ld, p2.AllLogs()[1])
 	assert.EqualValues(t, ld, p2.AllLogs()[0])
 	assert.EqualValues(t, ld, p2.AllLogs()[1])
 
 	// For this consumer, will receive the initial data.
-	assert.True(t, ld == p3.AllLogs()[0])
-	assert.True(t, ld == p3.AllLogs()[1])
+	assert.Equal(t, ld, p3.AllLogs()[0])
+	assert.Equal(t, ld, p3.AllLogs()[1])
 	assert.EqualValues(t, ld, p3.AllLogs()[0])
 	assert.EqualValues(t, ld, p3.AllLogs()[1])
 
@@ -121,18 +121,18 @@ func TestReadOnlyLogsMultiplexingMutating(t *testing.T) {
 
 	// All consumers should receive the cloned data.
 
-	assert.True(t, ld != p1.AllLogs()[0])
-	assert.True(t, ld != p1.AllLogs()[1])
+	assert.NotEqual(t, ld, p1.AllLogs()[0])
+	assert.NotEqual(t, ld, p1.AllLogs()[1])
 	assert.EqualValues(t, ldOrig, p1.AllLogs()[0])
 	assert.EqualValues(t, ldOrig, p1.AllLogs()[1])
 
-	assert.True(t, ld != p2.AllLogs()[0])
-	assert.True(t, ld != p2.AllLogs()[1])
+	assert.NotEqual(t, ld, p2.AllLogs()[0])
+	assert.NotEqual(t, ld, p2.AllLogs()[1])
 	assert.EqualValues(t, ldOrig, p2.AllLogs()[0])
 	assert.EqualValues(t, ldOrig, p2.AllLogs()[1])
 
-	assert.True(t, ld != p3.AllLogs()[0])
-	assert.True(t, ld != p3.AllLogs()[1])
+	assert.NotEqual(t, ld, p3.AllLogs()[0])
+	assert.NotEqual(t, ld, p3.AllLogs()[1])
 	assert.EqualValues(t, ldOrig, p3.AllLogs()[0])
 	assert.EqualValues(t, ldOrig, p3.AllLogs()[1])
 }
@@ -154,20 +154,20 @@ func TestLogsMultiplexingMixLastMutating(t *testing.T) {
 		}
 	}
 
-	assert.True(t, ld != p1.AllLogs()[0])
-	assert.True(t, ld != p1.AllLogs()[1])
+	assert.NotSame(t, ld, p1.AllLogs()[0])
+	assert.NotSame(t, ld, p1.AllLogs()[1])
 	assert.EqualValues(t, ld, p1.AllLogs()[0])
 	assert.EqualValues(t, ld, p1.AllLogs()[1])
 
 	// For this consumer, will receive the initial data.
-	assert.True(t, ld == p2.AllLogs()[0])
-	assert.True(t, ld == p2.AllLogs()[1])
+	assert.Equal(t, ld, p2.AllLogs()[0])
+	assert.Equal(t, ld, p2.AllLogs()[1])
 	assert.EqualValues(t, ld, p2.AllLogs()[0])
 	assert.EqualValues(t, ld, p2.AllLogs()[1])
 
 	// For this consumer, will clone the initial data.
-	assert.True(t, ld != p3.AllLogs()[0])
-	assert.True(t, ld != p3.AllLogs()[1])
+	assert.NotSame(t, ld, p3.AllLogs()[0])
+	assert.NotSame(t, ld, p3.AllLogs()[1])
 	assert.EqualValues(t, ld, p3.AllLogs()[0])
 	assert.EqualValues(t, ld, p3.AllLogs()[1])
 
@@ -192,19 +192,19 @@ func TestLogsMultiplexingMixLastNonMutating(t *testing.T) {
 		}
 	}
 
-	assert.True(t, ld != p1.AllLogs()[0])
-	assert.True(t, ld != p1.AllLogs()[1])
+	assert.NotSame(t, ld, p1.AllLogs()[0])
+	assert.NotSame(t, ld, p1.AllLogs()[1])
 	assert.EqualValues(t, ld, p1.AllLogs()[0])
 	assert.EqualValues(t, ld, p1.AllLogs()[1])
 
-	assert.True(t, ld != p2.AllLogs()[0])
-	assert.True(t, ld != p2.AllLogs()[1])
+	assert.NotSame(t, ld, p2.AllLogs()[0])
+	assert.NotSame(t, ld, p2.AllLogs()[1])
 	assert.EqualValues(t, ld, p2.AllLogs()[0])
 	assert.EqualValues(t, ld, p2.AllLogs()[1])
 
 	// For this consumer, will receive the initial data.
-	assert.True(t, ld == p3.AllLogs()[0])
-	assert.True(t, ld == p3.AllLogs()[1])
+	assert.Equal(t, ld, p3.AllLogs()[0])
+	assert.Equal(t, ld, p3.AllLogs()[1])
 	assert.EqualValues(t, ld, p3.AllLogs()[0])
 	assert.EqualValues(t, ld, p3.AllLogs()[1])
 
@@ -224,8 +224,8 @@ func TestLogsWhenErrors(t *testing.T) {
 		assert.Error(t, lfc.ConsumeLogs(context.Background(), ld))
 	}
 
-	assert.True(t, ld == p3.AllLogs()[0])
-	assert.True(t, ld == p3.AllLogs()[1])
+	assert.Equal(t, ld, p3.AllLogs()[0])
+	assert.Equal(t, ld, p3.AllLogs()[1])
 	assert.EqualValues(t, ld, p3.AllLogs()[0])
 	assert.EqualValues(t, ld, p3.AllLogs()[1])
 }

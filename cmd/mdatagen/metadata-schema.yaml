@@ -168,4 +168,5 @@ telemetry:
         # Bucket boundaries are only available to set for histogram metrics.
         bucket_boundaries: [double]
       # Optional: array of attributes that were defined in the attributes section that are emitted by this metric.
+      # Note: Only the following attribute types are supported: <string|int|double|bool>
       attributes: [string]

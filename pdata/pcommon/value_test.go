@@ -255,7 +255,7 @@ func TestValue_CopyTo(t *testing.T) {
 	av := NewValueEmpty()
 	destVal := otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{}}
 	av.CopyTo(newValue(&destVal, &state))
-	assert.EqualValues(t, nil, destVal.Value)
+	assert.Nil(t, destVal.Value)
 }
 
 func TestSliceWithNilValues(t *testing.T) {

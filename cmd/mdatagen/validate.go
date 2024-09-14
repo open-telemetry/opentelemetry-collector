@@ -129,34 +129,9 @@ func (md *metadata) validateResourceAttributes() error {
 func (md *metadata) validateMetrics() error {
 	var errs error
 	usedAttrs := map[attributeName]bool{}
-	for mn, m := range md.Metrics {
-		if m.Sum == nil && m.Gauge == nil {
-			errs = errors.Join(errs, fmt.Errorf("metric %v doesn't have a metric type key, "+
-				"one of the following has to be specified: sum, gauge", mn))
-			continue
-		}
-		if m.Sum != nil && m.Gauge != nil {
-			errs = errors.Join(errs, fmt.Errorf("metric %v has more than one metric type keys, "+
-				"only one of the following has to be specified: sum, gauge", mn))
-			continue
-		}
-		if err := m.validate(); err != nil {
-			errs = errors.Join(errs, fmt.Errorf(`metric "%v": %w`, mn, err))
-			continue
-		}
-		unknownAttrs := make([]attributeName, 0, len(m.Attributes))
-		for _, attr := range m.Attributes {
-			if _, ok := md.Attributes[attr]; ok {
-				usedAttrs[attr] = true
-			} else {
-				unknownAttrs = append(unknownAttrs, attr)
-			}
-		}
-		if len(unknownAttrs) > 0 {
-			errs = errors.Join(errs, fmt.Errorf(`metric "%v" refers to undefined attributes: %v`, mn, unknownAttrs))
-		}
-	}
-	errs = errors.Join(errs, md.validateAttributes(usedAttrs))
+	errs = errors.Join(errs, validateMetrics(md.Metrics, md.Attributes, usedAttrs),
+		validateMetrics(md.Telemetry.Metrics, md.Attributes, usedAttrs),
+		md.validateAttributes(usedAttrs))
 	return errs
 }
 
@@ -201,6 +176,38 @@ func (md *metadata) validateAttributes(usedAttrs map[attributeName]bool) error {
 	}
 	if len(unusedAttrs) > 0 {
 		errs = errors.Join(errs, fmt.Errorf("unused attributes: %v", unusedAttrs))
+	}
+	return errs
+}
+
+func validateMetrics(metrics map[metricName]metric, attributes map[attributeName]attribute, usedAttrs map[attributeName]bool) error {
+	var errs error
+	for mn, m := range metrics {
+		if m.Sum == nil && m.Gauge == nil && m.Histogram == nil {
+			errs = errors.Join(errs, fmt.Errorf("metric %v doesn't have a metric type key, "+
+				"one of the following has to be specified: sum, gauge, histogram", mn))
+			continue
+		}
+		if (m.Sum != nil && m.Gauge != nil) || (m.Sum != nil && m.Histogram != nil) || (m.Gauge != nil && m.Histogram != nil) {
+			errs = errors.Join(errs, fmt.Errorf("metric %v has more than one metric type keys, "+
+				"only one of the following has to be specified: sum, gauge, histogram", mn))
+			continue
+		}
+		if err := m.validate(); err != nil {
+			errs = errors.Join(errs, fmt.Errorf(`metric "%v": %w`, mn, err))
+			continue
+		}
+		unknownAttrs := make([]attributeName, 0, len(m.Attributes))
+		for _, attr := range m.Attributes {
+			if _, ok := attributes[attr]; ok {
+				usedAttrs[attr] = true
+			} else {
+				unknownAttrs = append(unknownAttrs, attr)
+			}
+		}
+		if len(unknownAttrs) > 0 {
+			errs = errors.Join(errs, fmt.Errorf(`metric "%v" refers to undefined attributes: %v`, mn, unknownAttrs))
+		}
 	}
 	return errs
 }

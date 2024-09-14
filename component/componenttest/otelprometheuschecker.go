@@ -48,25 +48,24 @@ func (pc *prometheusChecker) checkReceiver(receiver component.ID, datatype, prot
 		pc.checkCounter(fmt.Sprintf("receiver_refused_%s", datatype), droppedMetricPoints, receiverAttrs))
 }
 
-func (pc *prometheusChecker) checkProcessorTraces(processor component.ID, accepted, refused, dropped, inserted int64) error {
-	return pc.checkProcessor(processor, "spans", accepted, refused, dropped, inserted)
+func (pc *prometheusChecker) checkProcessorTraces(processor component.ID, accepted, refused, dropped int64) error {
+	return pc.checkProcessor(processor, "spans", accepted, refused, dropped)
 }
 
-func (pc *prometheusChecker) checkProcessorMetrics(processor component.ID, accepted, refused, dropped, inserted int64) error {
-	return pc.checkProcessor(processor, "metric_points", accepted, refused, dropped, inserted)
+func (pc *prometheusChecker) checkProcessorMetrics(processor component.ID, accepted, refused, dropped int64) error {
+	return pc.checkProcessor(processor, "metric_points", accepted, refused, dropped)
 }
 
-func (pc *prometheusChecker) checkProcessorLogs(processor component.ID, accepted, refused, dropped, inserted int64) error {
-	return pc.checkProcessor(processor, "log_records", accepted, refused, dropped, inserted)
+func (pc *prometheusChecker) checkProcessorLogs(processor component.ID, accepted, refused, dropped int64) error {
+	return pc.checkProcessor(processor, "log_records", accepted, refused, dropped)
 }
 
-func (pc *prometheusChecker) checkProcessor(processor component.ID, datatype string, accepted, refused, dropped, inserted int64) error {
+func (pc *prometheusChecker) checkProcessor(processor component.ID, datatype string, accepted, refused, dropped int64) error {
 	processorAttrs := attributesForProcessorMetrics(processor)
 	return multierr.Combine(
 		pc.checkCounter(fmt.Sprintf("processor_accepted_%s", datatype), accepted, processorAttrs),
 		pc.checkCounter(fmt.Sprintf("processor_refused_%s", datatype), refused, processorAttrs),
 		pc.checkCounter(fmt.Sprintf("processor_dropped_%s", datatype), dropped, processorAttrs),
-		pc.checkCounter(fmt.Sprintf("processor_inserted_%s", datatype), inserted, processorAttrs),
 	)
 }
 

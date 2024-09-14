@@ -306,7 +306,7 @@ func TestEncodeNonStringEncodedKey(t *testing.T) {
 	}
 	got, err := enc.Encode(testCase)
 	require.Error(t, err)
-	require.True(t, errors.Is(err, errNonStringEncodedKey))
+	require.ErrorIs(t, err, errNonStringEncodedKey)
 	require.Nil(t, got)
 }
 
@@ -358,7 +358,7 @@ func TestEncodeStructError(t *testing.T) {
 	}
 	got, err := enc.Encode(testCase)
 	require.Error(t, err)
-	require.True(t, errors.Is(err, wantErr))
+	require.ErrorIs(t, err, wantErr)
 	require.Nil(t, got)
 }
 

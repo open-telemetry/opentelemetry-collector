@@ -153,7 +153,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Monotonic cumulative sum int metric enabled by default.", ms.At(i).Description())
 					assert.Equal(t, "s", ms.At(i).Unit())
-					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -182,7 +182,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "[DEPRECATED] Non-monotonic delta sum double metric enabled by default.", ms.At(i).Description())
 					assert.Equal(t, "s", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityDelta, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -196,7 +196,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Monotonic cumulative sum int metric with string input_type enabled by default.", ms.At(i).Description())
 					assert.Equal(t, "s", ms.At(i).Unit())
-					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -235,7 +235,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.EqualValues(t, "string_attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("boolean_attr")
 					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
+					assert.True(t, attrVal.Bool())
 				case "optional.metric.empty_unit":
 					assert.False(t, validatedMetrics["optional.metric.empty_unit"], "Found a duplicate in the metrics slice: optional.metric.empty_unit")
 					validatedMetrics["optional.metric.empty_unit"] = true
@@ -253,7 +253,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.EqualValues(t, "string_attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("boolean_attr")
 					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
+					assert.True(t, attrVal.Bool())
 				}
 			}
 		})
