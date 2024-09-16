@@ -84,7 +84,7 @@ metrics:
 | ---- | ----------- | ------ |
 | string_attr | Attribute with any string value. | Any Str |
 | boolean_attr | Attribute with a boolean value. | Any Bool |
-| boolean_attr2 | Another boolean attribute, with a different test value. | Any Bool |
+| boolean_attr2 | Another attribute with a boolean value. | Any Bool |
 
 ### optional.metric.empty_unit
 

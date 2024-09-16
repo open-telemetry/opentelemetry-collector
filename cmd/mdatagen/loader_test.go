@@ -150,7 +150,7 @@ func TestLoadMetadata(t *testing.T) {
 						FullName: "boolean_attr",
 					},
 					"boolean_attr2": {
-						Description: "Another boolean attribute, with a different test value.",
+						Description: "Another attribute with a boolean value.",
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeBool,
 						},

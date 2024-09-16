@@ -86,8 +86,10 @@ attributes:
     description: Attribute with a boolean value.
     type: bool
 
+  # This 2nd boolean attribute allows us to test both values for boolean attributes,
+  # as test values are based on the parity of the attribute name length.
   boolean_attr2:
-    description: Another boolean attribute, with a different test value.
+    description: Another attribute with a boolean value.
     type: bool
 
   slice_attr:
