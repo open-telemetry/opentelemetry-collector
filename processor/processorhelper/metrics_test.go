@@ -97,31 +97,31 @@ func TestMetricsProcessor_RecordInOut(t *testing.T) {
 
 	testTelemetry.assertMetrics(t, []metricdata.Metrics{
 		{
-			Name:        "otelcol_processor_incoming_metric_points",
-			Description: "Number of metric points passed to the processor.",
-			Unit:        "{datapoints}",
+			Name:        "otelcol_processor_incoming_items",
+			Description: "Number of items passed to the processor.",
+			Unit:        "{items}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
 				IsMonotonic: true,
 				DataPoints: []metricdata.DataPoint[int64]{
 					{
 						Value:      2,
-						Attributes: attribute.NewSet(attribute.String("processor", "processorhelper")),
+						Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "metrics")),
 					},
 				},
 			},
 		},
 		{
-			Name:        "otelcol_processor_outgoing_metric_points",
-			Description: "Number of metric points emitted from the processor.",
-			Unit:        "{datapoints}",
+			Name:        "otelcol_processor_outgoing_items",
+			Description: "Number of items emitted from the processor.",
+			Unit:        "{items}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
 				IsMonotonic: true,
 				DataPoints: []metricdata.DataPoint[int64]{
 					{
 						Value:      3,
-						Attributes: attribute.NewSet(attribute.String("processor", "processorhelper")),
+						Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "metrics")),
 					},
 				},
 			},

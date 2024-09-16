@@ -257,7 +257,7 @@ func Test_applyCfgFromFile(t *testing.T) {
 			assert.Equal(t, tt.want.SkipGenerate, cfg.SkipGenerate)
 			assert.Equal(t, tt.want.SkipCompilation, cfg.SkipCompilation)
 			assert.Equal(t, tt.want.SkipGetModules, cfg.SkipGetModules)
-			assert.Equal(t, tt.want.SkipStrictVersioning, cfg.SkipStrictVersioning)
+			assert.True(t, cfg.SkipStrictVersioning)
 			assert.Equal(t, tt.want.Excludes, cfg.Excludes)
 			assert.Equal(t, tt.want.Exporters, cfg.Exporters)
 			assert.Equal(t, tt.want.Receivers, cfg.Receivers)
