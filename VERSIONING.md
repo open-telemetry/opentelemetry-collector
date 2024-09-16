@@ -6,6 +6,8 @@ The OpenTelemetry Collector SIG produces several artifacts for [a variety of aud
 
 The policies are divided depending on the artifact's target audience. While an artifact is supported, [critical bugs](docs/release.md#bugfix-release-criteria) and security vulnerabilities MUST be addressed. The main criteria for the length of support for an artifact is how easy it is for an artifact's target audience to adapt to disruptive changes.
 
+These policies reflect the current consensus of the OpenTelemetry Collector SIG. They are subject to change as the project evolves.
+
 ## Software artifacts for end users
 
 Software artifacts intended for [end users](CONTRIBUTING.md#end-users) of the OpenTelemetry Collector include 
@@ -20,7 +22,7 @@ Binary distributions produced by the Collector SIG contain components and featur
 
 * The Collector's core framework behavior MUST be stable in order for a Collector distribution to be v1.0.0 or higher.
 * Users can easily understand when they are opting in to use a component or feature that is not stable.
-    * The Collector MUST be configurable in a way that does not use unstable components or features.
+    * The Collector MUST be configurable so that unstable components or features can be excluded ensuring that a fully stable configuration is possible.
     * The Collector's telemetry (e.g. Collector logs) MUST provide the ability to identify usage of unstable components or features.
 
 ### Long-term support after v1
