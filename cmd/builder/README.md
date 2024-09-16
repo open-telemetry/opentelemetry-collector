@@ -20,7 +20,12 @@ receivers:
 
 processors:
   - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.109.0
-
+providers:
+  - gomod: go.opentelemetry.io/collector/confmap/provider/envprovider v1.15.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v1.15.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/httpprovider v0.109.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.109.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.109.0
 EOF
 $ builder --config=otelcol-builder.yaml
 $ cat > /tmp/otelcol.yaml <<EOF
