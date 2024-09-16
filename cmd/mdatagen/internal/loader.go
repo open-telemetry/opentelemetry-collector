@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package main
+package internal // import "go.opentelemetry.io/collector/cmd/mdatagen/internal"
 
 import (
 	"context"
@@ -19,24 +19,24 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-type metricName string
+type MetricName string
 
-func (mn metricName) Render() (string, error) {
-	return formatIdentifier(string(mn), true)
+func (mn MetricName) Render() (string, error) {
+	return FormatIdentifier(string(mn), true)
 }
 
-func (mn metricName) RenderUnexported() (string, error) {
-	return formatIdentifier(string(mn), false)
+func (mn MetricName) RenderUnexported() (string, error) {
+	return FormatIdentifier(string(mn), false)
 }
 
-type attributeName string
+type AttributeName string
 
-func (mn attributeName) Render() (string, error) {
-	return formatIdentifier(string(mn), true)
+func (mn AttributeName) Render() (string, error) {
+	return FormatIdentifier(string(mn), true)
 }
 
-func (mn attributeName) RenderUnexported() (string, error) {
-	return formatIdentifier(string(mn), false)
+func (mn AttributeName) RenderUnexported() (string, error) {
+	return FormatIdentifier(string(mn), false)
 }
 
 // ValueType defines an attribute value type.
@@ -97,7 +97,7 @@ func (mvt ValueType) Primitive() string {
 	}
 }
 
-type metric struct {
+type Metric struct {
 	// Enabled defines whether the metric is enabled by default.
 	Enabled bool `mapstructure:"enabled"`
 
@@ -126,7 +126,7 @@ type metric struct {
 	Histogram *histogram `mapstructure:"histogram,omitempty"`
 
 	// Attributes is the list of attributes that the metric emits.
-	Attributes []attributeName `mapstructure:"attributes"`
+	Attributes []AttributeName `mapstructure:"attributes"`
 
 	// Level specifies the minimum `configtelemetry.Level` for which
 	// the metric will be emitted. This only applies to internal telemetry
@@ -134,13 +134,13 @@ type metric struct {
 	Level configtelemetry.Level `mapstructure:"level"`
 }
 
-func (m *metric) Unmarshal(parser *confmap.Conf) error {
+func (m *Metric) Unmarshal(parser *confmap.Conf) error {
 	if !parser.IsSet("enabled") {
 		return errors.New("missing required field: `enabled`")
 	}
 	return parser.Unmarshal(m)
 }
-func (m metric) Data() MetricData {
+func (m Metric) Data() MetricData {
 	if m.Sum != nil {
 		return m.Sum
 	}
@@ -162,7 +162,7 @@ type warnings struct {
 	IfConfigured string `mapstructure:"if_configured"`
 }
 
-type attribute struct {
+type Attribute struct {
 	// Description describes the purpose of the attribute.
 	Description string `mapstructure:"description"`
 	// NameOverride can be used to override the attribute name.
@@ -178,20 +178,20 @@ type attribute struct {
 	// Type is an attribute type.
 	Type ValueType `mapstructure:"type"`
 	// FullName is the attribute name populated from the map key.
-	FullName attributeName `mapstructure:"-"`
+	FullName AttributeName `mapstructure:"-"`
 	// Warnings that will be shown to user under specified conditions.
 	Warnings warnings `mapstructure:"warnings"`
 }
 
 // Name returns actual name of the attribute that is set on the metric after applying NameOverride.
-func (a attribute) Name() attributeName {
+func (a Attribute) Name() AttributeName {
 	if a.NameOverride != "" {
-		return attributeName(a.NameOverride)
+		return AttributeName(a.NameOverride)
 	}
 	return a.FullName
 }
 
-func (a attribute) TestValue() string {
+func (a Attribute) TestValue() string {
 	if a.Enum != nil {
 		return fmt.Sprintf(`"%s"`, a.Enum[0])
 	}
@@ -239,7 +239,7 @@ type tests struct {
 
 type telemetry struct {
 	Level   configtelemetry.Level `mapstructure:"level"`
-	Metrics map[metricName]metric `mapstructure:"metrics"`
+	Metrics map[MetricName]Metric `mapstructure:"metrics"`
 }
 
 func (t telemetry) Levels() map[string]interface{} {
@@ -250,7 +250,7 @@ func (t telemetry) Levels() map[string]interface{} {
 	return levels
 }
 
-type metadata struct {
+type Metadata struct {
 	// Type of the component.
 	Type string `mapstructure:"type"`
 	// Type of the parent component (applicable to subcomponents).
@@ -262,11 +262,11 @@ type metadata struct {
 	// SemConvVersion is a version number of OpenTelemetry semantic conventions applied to the scraped metrics.
 	SemConvVersion string `mapstructure:"sem_conv_version"`
 	// ResourceAttributes that can be emitted by the component.
-	ResourceAttributes map[attributeName]attribute `mapstructure:"resource_attributes"`
+	ResourceAttributes map[AttributeName]Attribute `mapstructure:"resource_attributes"`
 	// Attributes emitted by one or more metrics.
-	Attributes map[attributeName]attribute `mapstructure:"attributes"`
+	Attributes map[AttributeName]Attribute `mapstructure:"attributes"`
 	// Metrics that can be emitted by the component.
-	Metrics map[metricName]metric `mapstructure:"metrics"`
+	Metrics map[MetricName]Metric `mapstructure:"metrics"`
 	// GithubProject is the project where the component README lives in the format of org/repo, defaults to open-telemetry/opentelemetry-collector-contrib
 	GithubProject string `mapstructure:"github_project"`
 	// ScopeName of the metrics emitted by the component.
@@ -277,31 +277,31 @@ type metadata struct {
 	Tests tests `mapstructure:"tests"`
 }
 
-func setAttributesFullName(attrs map[attributeName]attribute) {
+func setAttributesFullName(attrs map[AttributeName]Attribute) {
 	for k, v := range attrs {
 		v.FullName = k
 		attrs[k] = v
 	}
 }
 
-type templateContext struct {
-	metadata
+type TemplateContext struct {
+	Metadata
 	// Package name for generated code.
 	Package string
 }
 
-func loadMetadata(filePath string) (metadata, error) {
+func LoadMetadata(filePath string) (Metadata, error) {
 	cp, err := fileprovider.NewFactory().Create(confmaptest.NewNopProviderSettings()).Retrieve(context.Background(), "file:"+filePath, nil)
 	if err != nil {
-		return metadata{}, err
+		return Metadata{}, err
 	}
 
 	conf, err := cp.AsConf()
 	if err != nil {
-		return metadata{}, err
+		return Metadata{}, err
 	}
 
-	md := metadata{ShortFolderName: shortFolderName(filePath), Tests: tests{Host: "componenttest.NewNopHost()"}}
+	md := Metadata{ShortFolderName: shortFolderName(filePath), Tests: tests{Host: "componenttest.NewNopHost()"}}
 	if err = conf.Unmarshal(&md); err != nil {
 		return md, err
 	}

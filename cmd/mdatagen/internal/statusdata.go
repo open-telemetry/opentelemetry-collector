@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package main
+package internal // import "go.opentelemetry.io/collector/cmd/mdatagen/internal"
 
 import (
 	"errors"
@@ -16,7 +16,7 @@ import (
 // The rules below apply to every distribution added to this list:
 // - The distribution is open source and maintained by the OpenTelemetry project.
 // - The link must point to a publicly accessible repository.
-var distros = map[string]string{
+var Distros = map[string]string{
 	"core":    "https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol",
 	"contrib": "https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib",
 	"k8s":     "https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-k8s",
