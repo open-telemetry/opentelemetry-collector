@@ -149,6 +149,13 @@ func TestLoadMetadata(t *testing.T) {
 						},
 						FullName: "boolean_attr",
 					},
+					"boolean_attr2": {
+						Description: "Another boolean attribute, with a different test value.",
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeBool,
+						},
+						FullName: "boolean_attr2",
+					},
 					"slice_attr": {
 						Description: "Attribute with a slice value.",
 						Type: ValueType{
@@ -190,7 +197,7 @@ func TestLoadMetadata(t *testing.T) {
 						Gauge: &gauge{
 							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
 						},
-						Attributes: []attributeName{"string_attr", "boolean_attr"},
+						Attributes: []attributeName{"string_attr", "boolean_attr", "boolean_attr2"},
 					},
 					"optional.metric.empty_unit": {
 						Enabled:     false,
