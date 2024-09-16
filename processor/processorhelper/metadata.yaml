@@ -10,50 +10,18 @@ status:
 telemetry:
   metrics:
 
-    processor_incoming_spans:
+    processor_incoming_items:
       enabled: true
-      description: Number of spans passed to the processor.
-      unit: "{spans}"
+      description: Number of items passed to the processor.
+      unit: "{items}"
       sum:
         value_type: int
         monotonic: true
 
-    processor_outgoing_spans:
+    processor_outgoing_items:
       enabled: true
-      description: Number of spans emitted from the processor.
-      unit: "{spans}"
-      sum:
-        value_type: int
-        monotonic: true
-
-    processor_incoming_metric_points:
-      enabled: true
-      description: Number of metric points passed to the processor.
-      unit: "{datapoints}"
-      sum:
-        value_type: int
-        monotonic: true
-
-    processor_outgoing_metric_points:
-      enabled: true
-      description: Number of metric points emitted from the processor.
-      unit: "{datapoints}"
-      sum:
-        value_type: int
-        monotonic: true
-
-    processor_incoming_log_records:
-      enabled: true
-      description: Number of log records passed to the processor.
-      unit: "{records}"
-      sum:
-        value_type: int
-        monotonic: true
-
-    processor_outgoing_log_records:
-      enabled: true
-      description: Number of log records emitted from the processor.
-      unit: "{records}"
+      description: Number of items emitted from the processor.
+      unit: "{items}"
       sum:
         value_type: int
         monotonic: true
