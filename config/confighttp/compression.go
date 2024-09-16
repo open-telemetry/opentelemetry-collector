@@ -58,17 +58,10 @@ var availableDecoders = map[string]func(body io.ReadCloser) (io.ReadCloser, erro
 		}
 		return zr, nil
 	},
+	//nolint:unparam // ignoring lint since method needs to fit typedef
 	"snappy": func(body io.ReadCloser) (io.ReadCloser, error) {
-		sr := snappy.NewReader(body)
-		sb := new(bytes.Buffer)
-		_, err := io.Copy(sb, sr)
-		if err != nil {
-			return nil, err
-		}
-		if err = body.Close(); err != nil {
-			return nil, err
-		}
-		return io.NopCloser(sb), nil
+		// Lazy Reading content to improve memory efficiency
+		return io.NopCloser(snappy.NewReader(body)), nil
 	},
 }
 
