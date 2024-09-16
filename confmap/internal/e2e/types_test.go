@@ -419,43 +419,42 @@ func TestIssue10787(t *testing.T) {
 	resolver := NewResolver(t, "issue-10787-main.yaml")
 	conf, err := resolver.Resolve(context.Background())
 	require.NoError(t, err)
-	assert.Equal(t, conf.ToStringMap(),
-		map[string]any{
-			"exporters": map[string]any{
-				"debug": map[string]any{
-					"verbosity": "detailed",
-				},
+	assert.Equal(t, map[string]any{
+		"exporters": map[string]any{
+			"debug": map[string]any{
+				"verbosity": "detailed",
 			},
-			"processors": map[string]any{
-				"batch": nil,
-			},
-			"receivers": map[string]any{
-				"otlp": map[string]any{
-					"protocols": map[string]any{
-						"grpc": map[string]any{
-							"endpoint": "0.0.0.0:4317",
-						},
-						"http": map[string]any{
-							"endpoint": "0.0.0.0:4318",
-						},
+		},
+		"processors": map[string]any{
+			"batch": nil,
+		},
+		"receivers": map[string]any{
+			"otlp": map[string]any{
+				"protocols": map[string]any{
+					"grpc": map[string]any{
+						"endpoint": "0.0.0.0:4317",
 					},
-				},
-			},
-			"service": map[string]any{
-				"pipelines": map[string]any{
-					"traces": map[string]any{
-						"exporters":  []any{"debug"},
-						"processors": []any{"batch"},
-						"receivers":  []any{"otlp"},
-					},
-				},
-				"telemetry": map[string]any{
-					"metrics": map[string]any{
-						"level": "detailed",
+					"http": map[string]any{
+						"endpoint": "0.0.0.0:4318",
 					},
 				},
 			},
 		},
+		"service": map[string]any{
+			"pipelines": map[string]any{
+				"traces": map[string]any{
+					"exporters":  []any{"debug"},
+					"processors": []any{"batch"},
+					"receivers":  []any{"otlp"},
+				},
+			},
+			"telemetry": map[string]any{
+				"metrics": map[string]any{
+					"level": "detailed",
+				},
+			},
+		},
+	}, conf.ToStringMap(),
 	)
 }
 
@@ -582,9 +581,9 @@ func TestIndirectSliceEnvVar(t *testing.T) {
 	var collectorConf CollectorConf
 	err = conf.Unmarshal(&collectorConf)
 	require.NoError(t, err)
-	assert.Equal(t, collectorConf.Exporters.OTLP.Endpoint, "localhost:4317")
-	assert.Equal(t, collectorConf.Service.Pipelines.Logs.Receivers, []string{"nop", "otlp"})
-	assert.Equal(t, collectorConf.Service.Pipelines.Logs.Exporters, []string{"otlp", "nop"})
+	assert.Equal(t, "localhost:4317", collectorConf.Exporters.OTLP.Endpoint)
+	assert.Equal(t, []string{"nop", "otlp"}, collectorConf.Service.Pipelines.Logs.Receivers)
+	assert.Equal(t, []string{"otlp", "nop"}, collectorConf.Service.Pipelines.Logs.Exporters)
 }
 
 func TestIssue10937_MapType(t *testing.T) {

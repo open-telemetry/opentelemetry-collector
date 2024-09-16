@@ -25,9 +25,9 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/internal/queue"
-	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
@@ -154,7 +154,7 @@ func TestTracesRequestExporter_Default_ExportError(t *testing.T) {
 }
 
 func TestTracesExporter_WithPersistentQueue(t *testing.T) {
-	qCfg := NewDefaultQueueSettings()
+	qCfg := NewDefaultQueueConfig()
 	storageID := component.MustNewIDWithName("file_storage", "storage")
 	qCfg.StorageID = &storageID
 	rCfg := configretry.NewDefaultBackOffConfig()
@@ -252,7 +252,7 @@ func TestTracesExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	rCfg := configretry.NewDefaultBackOffConfig()
-	qCfg := NewDefaultQueueSettings()
+	qCfg := NewDefaultQueueConfig()
 	qCfg.NumConsumers = 1
 	qCfg.QueueSize = 2
 	wantErr := errors.New("some-error")
@@ -365,7 +365,7 @@ func TestTracesExporter_WithShutdown_ReturnError(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.NoError(t, te.Start(context.Background(), componenttest.NewNopHost()))
-	assert.Equal(t, te.Shutdown(context.Background()), want)
+	assert.Equal(t, want, te.Shutdown(context.Background()))
 }
 
 func TestTracesRequestExporter_WithShutdown_ReturnError(t *testing.T) {
@@ -378,7 +378,7 @@ func TestTracesRequestExporter_WithShutdown_ReturnError(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.NoError(t, te.Start(context.Background(), componenttest.NewNopHost()))
-	assert.Equal(t, te.Shutdown(context.Background()), want)
+	assert.Equal(t, want, te.Shutdown(context.Background()))
 }
 
 func newTraceDataPusher(retError error) consumer.ConsumeTracesFunc {
@@ -441,7 +441,7 @@ func checkWrapSpanForTracesExporter(t *testing.T, sr *tracetest.SpanRecorder, tr
 			sentSpans = 0
 			failedToSendSpans = numSpans
 		}
-		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: obsmetrics.SentSpansKey, Value: attribute.Int64Value(sentSpans)}, "SpanData %v", sd)
-		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: obsmetrics.FailedToSendSpansKey, Value: attribute.Int64Value(failedToSendSpans)}, "SpanData %v", sd)
+		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: internal.SentSpansKey, Value: attribute.Int64Value(sentSpans)}, "SpanData %v", sd)
+		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: internal.FailedToSendSpansKey, Value: attribute.Int64Value(failedToSendSpans)}, "SpanData %v", sd)
 	}
 }

@@ -12,5 +12,5 @@ import (
 func TestReadMemInfo(t *testing.T) {
 	vmStat, err := readMemInfo()
 	assert.NoError(t, err)
-	assert.True(t, vmStat > 0)
+	assert.Positive(t, vmStat)
 }

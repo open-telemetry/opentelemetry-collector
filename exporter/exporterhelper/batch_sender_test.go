@@ -561,7 +561,7 @@ func TestBatchSender_ShutdownDeadlock(t *testing.T) {
 	doneShutdown := make(chan struct{})
 	go func() {
 		close(startShutdown)
-		require.Nil(t, be.Shutdown(context.Background()))
+		require.NoError(t, be.Shutdown(context.Background()))
 		close(doneShutdown)
 	}()
 	<-startShutdown
@@ -575,7 +575,7 @@ func TestBatchSender_ShutdownDeadlock(t *testing.T) {
 func TestBatchSenderWithTimeout(t *testing.T) {
 	bCfg := exporterbatcher.NewDefaultConfig()
 	bCfg.MinSizeItems = 10
-	tCfg := NewDefaultTimeoutSettings()
+	tCfg := NewDefaultTimeoutConfig()
 	tCfg.Timeout = 50 * time.Millisecond
 	be, err := newBaseExporter(defaultSettings, defaultDataType, newNoopObsrepSender,
 		WithBatcher(bCfg, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc)),

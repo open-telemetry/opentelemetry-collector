@@ -124,7 +124,7 @@ func TestBuildResource(t *testing.T) {
 	otelRes := New(buildInfo, resMap)
 	res := pdataFromSdk(otelRes)
 
-	assert.Equal(t, res.Attributes().Len(), 3)
+	assert.Equal(t, 3, res.Attributes().Len())
 	value, ok := res.Attributes().Get(semconv.AttributeServiceName)
 	assert.True(t, ok)
 	assert.Equal(t, buildInfo.Command, value.AsString())
@@ -145,7 +145,7 @@ func TestBuildResource(t *testing.T) {
 	res = pdataFromSdk(otelRes)
 
 	// Attributes should not exist since we nil-ified all.
-	assert.Equal(t, res.Attributes().Len(), 0)
+	assert.Equal(t, 0, res.Attributes().Len())
 
 	// Check override values
 	strPtr := func(v string) *string { return &v }
@@ -157,7 +157,7 @@ func TestBuildResource(t *testing.T) {
 	otelRes = New(buildInfo, resMap)
 	res = pdataFromSdk(otelRes)
 
-	assert.Equal(t, res.Attributes().Len(), 3)
+	assert.Equal(t, 3, res.Attributes().Len())
 	value, ok = res.Attributes().Get(semconv.AttributeServiceName)
 	assert.True(t, ok)
 	assert.Equal(t, "a", value.AsString())

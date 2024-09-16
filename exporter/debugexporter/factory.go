@@ -54,7 +54,7 @@ func createTracesExporter(ctx context.Context, set exporter.Settings, config com
 	return exporterhelper.NewTracesExporter(ctx, set, config,
 		debugExporter.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithShutdown(otlptext.LoggerSync(exporterLogger)),
 	)
 }
@@ -66,7 +66,7 @@ func createMetricsExporter(ctx context.Context, set exporter.Settings, config co
 	return exporterhelper.NewMetricsExporter(ctx, set, config,
 		debugExporter.pushMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithShutdown(otlptext.LoggerSync(exporterLogger)),
 	)
 }
@@ -78,7 +78,7 @@ func createLogsExporter(ctx context.Context, set exporter.Settings, config compo
 	return exporterhelper.NewLogsExporter(ctx, set, config,
 		debugExporter.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithShutdown(otlptext.LoggerSync(exporterLogger)),
 	)
 }

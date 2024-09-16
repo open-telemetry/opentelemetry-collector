@@ -679,7 +679,7 @@ func TestConfigValidate(t *testing.T) {
 			err := test.tlsConfig.Validate()
 
 			if test.errorTxt == "" {
-				assert.Nil(t, err)
+				assert.NoError(t, err)
 			} else {
 				assert.EqualError(t, err, test.errorTxt)
 			}

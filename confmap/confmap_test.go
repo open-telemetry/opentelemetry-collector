@@ -876,6 +876,28 @@ func TestExpandedValue(t *testing.T) {
 	assert.Error(t, cm.Unmarshal(&cfgBool))
 }
 
+func TestSubExpandedValue(t *testing.T) {
+	cm := NewFromStringMap(map[string]any{
+		"key": map[string]any{
+			"subkey": expandedValue{
+				Value:    map[string]any{"subsubkey": "value"},
+				Original: "subsubkey: value",
+			},
+		},
+	})
+
+	assert.Equal(t, map[string]any{"subkey": map[string]any{"subsubkey": "value"}}, cm.Get("key"))
+	assert.Equal(t, map[string]any{"key": map[string]any{"subkey": map[string]any{"subsubkey": "value"}}}, cm.ToStringMap())
+	assert.Equal(t, map[string]any{"subsubkey": "value"}, cm.Get("key::subkey"))
+
+	sub, err := cm.Sub("key::subkey")
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]any{"subsubkey": "value"}, sub.ToStringMap())
+
+	// This should return value, but currently `Get` does not support keys within expanded values.
+	assert.Nil(t, cm.Get("key::subkey::subsubkey"))
+}
+
 func TestStringyTypes(t *testing.T) {
 	tests := []struct {
 		valueOfType any
