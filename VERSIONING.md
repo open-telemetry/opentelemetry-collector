@@ -6,9 +6,9 @@ The OpenTelemetry Collector SIG produces several artifacts for [a variety of aud
 
 The policies are divided depending on the artifact's target audience. While an artifact is supported, [critical bugs](docs/release.md#bugfix-release-criteria) and security vulnerabilities MUST be addressed. The main criteria for the length of support for an artifact is how easy it is for an artifact's target audience to adapt to disruptive changes.
 
-## End-user focused software artifacts
+## Software artifacts for end users
 
-End-user focused software artifacts are those that are intended for [end-users](CONTRIBUTING.md#end-users) of the OpenTelemetry Collector. These artifacts include 
+Software artifacts intended for [end users](CONTRIBUTING.md#end-users) of the OpenTelemetry Collector include 
 - Binary distributions of the OpenTelemetry Collector.
 - Go modules that expose Collector components, such as receivers, processors, connectors, extensions and exporters. 
 
@@ -23,9 +23,9 @@ Binary distributions produced by the Collector SIG contain components and featur
     * The Collector MUST be configurable in a way that does not use unstable components or features.
     * The Collector's telemetry (e.g. Collector logs) MUST provide the ability to identify usage of unstable components or features.
 
-### Long term support after v1
+### Long-term support after v1
 
-The OpenTelemetry Collector SIG provides long term support for stable binary distributions of the OpenTelemetry Collector and its components. The following policies apply to long term support for any major version starting on v1:
+The OpenTelemetry Collector SIG provides long-term support for stable binary distributions of the OpenTelemetry Collector and its components. The following policies apply to long-term support for any major version starting on v1:
 
 * A binary distribution of the OpenTelemetry Collector MUST be supported for a minimum of **one year** after the release of the next major version of said distribution.
 * Components MUST be supported for a minimum of **6 months** after the release of the next major version of said component or after the component has been marked as deprecated. If a component has been deprecated for 6 months it MAY be removed from a binary distribution of the OpenTelemetry Collector. This does not imply a major version change in the Collector distribution.
@@ -163,9 +163,9 @@ on its intended usage (e.g. when calling a method or when passed to any method o
 * GitHub releases will be made for all releases.
 * Go modules will be made available at Go package mirrors.
 
-### Long term support after v1
+### Long-term support after v1
 
-The OpenTelemetry Collector SIG provides long term support for stable Go modules. Support for modules depend on the module's [target audiences](CONTRIBUTING.md#target-audiences). The following policies apply to long term support for any major version starting on v1:
+The OpenTelemetry Collector SIG provides long-term support for stable Go modules. Support for modules depend on the module's [target audiences](CONTRIBUTING.md#target-audiences). The following policies apply to long-term support for any major version starting on v1:
 
 - Modules intended for **component developers** MUST be supported for a minimum of **1 year** after the release of the next major version of said module or after the module has been marked as deprecated.
 - Modules intended for **Collector library users** MUST be supported for a minimum of **6 months** after the release of the next major version of said module or after the module has been marked as deprecated.
