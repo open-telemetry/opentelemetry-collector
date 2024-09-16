@@ -14,7 +14,7 @@ require (
 	go.opentelemetry.io/collector/config/configopaque v1.15.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.109.0
 	go.opentelemetry.io/collector/config/configtls v1.15.0
-	go.opentelemetry.io/collector/config/internal v0.109.0
+	go.opentelemetry.io/collector/config/internal v0.109.1-0.20240916143658-74729e731d3b
 	go.opentelemetry.io/collector/extension/auth v0.109.0
 	go.opentelemetry.io/collector/featuregate v1.15.0
 	go.opentelemetry.io/collector/internal/globalgates v0.109.0
