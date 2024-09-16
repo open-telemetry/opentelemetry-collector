@@ -20,6 +20,7 @@ receivers:
 
 processors:
   - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.109.0
+
 providers:
   - gomod: go.opentelemetry.io/collector/confmap/provider/envprovider v1.15.0
   - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v1.15.0
