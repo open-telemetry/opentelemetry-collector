@@ -103,7 +103,7 @@ telemetry:
     exporter_dropped_spans:
       enabled: true
       description: Number of spans dropped after failing to export.
-      unit: "{records}"
+      unit: "{spans}"
       sum:
         value_type: int
         monotonic: true
@@ -111,7 +111,7 @@ telemetry:
     exporter_dropped_metric_points:
       enabled: true
       description: Number of metric points dropped after failing to export.
-      unit: "{records}"
+      unit: "{datapoints}"
       sum:
         value_type: int
         monotonic: true
