@@ -29,11 +29,11 @@ var _ component.Host = (*Host)(nil)
 
 type Host struct {
 	AsyncErrorChannel chan error
-	Receivers         builders.Receiver
-	Processors        builders.Processor
-	Exporters         builders.Exporter
-	Connectors        builders.Connector
-	Extensions        builders.Extension
+	Receivers         *builders.ReceiverBuilder
+	Processors        *builders.ProcessorBuilder
+	Exporters         *builders.ExporterBuilder
+	Connectors        *builders.ConnectorBuilder
+	Extensions        *builders.ExtensionBuilder
 
 	ModuleInfo extension.ModuleInfo
 	BuildInfo  component.BuildInfo

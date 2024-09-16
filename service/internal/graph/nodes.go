@@ -10,8 +10,11 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentprofiles"
 	"go.opentelemetry.io/collector/connector"
+	"go.opentelemetry.io/collector/connector/connectorprofiles"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
 	"go.opentelemetry.io/collector/processor"
@@ -71,7 +74,7 @@ func newReceiverNode(pipelineType component.DataType, recvID component.ID) *rece
 func (n *receiverNode) buildComponent(ctx context.Context,
 	tel component.TelemetrySettings,
 	info component.BuildInfo,
-	builder builders.Receiver,
+	builder *builders.ReceiverBuilder,
 	nexts []baseConsumer,
 ) error {
 	tel.Logger = components.ReceiverLogger(tel.Logger, n.componentID, n.pipelineType)
@@ -96,6 +99,12 @@ func (n *receiverNode) buildComponent(ctx context.Context,
 			consumers = append(consumers, next.(consumer.Logs))
 		}
 		n.Component, err = builder.CreateLogs(ctx, set, fanoutconsumer.NewLogs(consumers))
+	case componentprofiles.DataTypeProfiles:
+		var consumers []consumerprofiles.Profiles
+		for _, next := range nexts {
+			consumers = append(consumers, next.(consumerprofiles.Profiles))
+		}
+		n.Component, err = builder.CreateProfiles(ctx, set, fanoutconsumer.NewProfiles(consumers))
 	default:
 		return fmt.Errorf("error creating receiver %q for data type %q is not supported", set.ID, n.pipelineType)
 	}
@@ -131,7 +140,7 @@ func (n *processorNode) getConsumer() baseConsumer {
 func (n *processorNode) buildComponent(ctx context.Context,
 	tel component.TelemetrySettings,
 	info component.BuildInfo,
-	builder builders.Processor,
+	builder *builders.ProcessorBuilder,
 	next baseConsumer,
 ) error {
 	tel.Logger = components.ProcessorLogger(tel.Logger, n.componentID, n.pipelineID)
@@ -144,6 +153,8 @@ func (n *processorNode) buildComponent(ctx context.Context,
 		n.Component, err = builder.CreateMetrics(ctx, set, next.(consumer.Metrics))
 	case component.DataTypeLogs:
 		n.Component, err = builder.CreateLogs(ctx, set, next.(consumer.Logs))
+	case componentprofiles.DataTypeProfiles:
+		n.Component, err = builder.CreateProfiles(ctx, set, next.(consumerprofiles.Profiles))
 	default:
 		return fmt.Errorf("error creating processor %q in pipeline %q, data type %q is not supported", set.ID, n.pipelineID, n.pipelineID.Type())
 	}
@@ -180,7 +191,7 @@ func (n *exporterNode) buildComponent(
 	ctx context.Context,
 	tel component.TelemetrySettings,
 	info component.BuildInfo,
-	builder builders.Exporter,
+	builder *builders.ExporterBuilder,
 ) error {
 	tel.Logger = components.ExporterLogger(tel.Logger, n.componentID, n.pipelineType)
 	set := exporter.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
@@ -192,6 +203,8 @@ func (n *exporterNode) buildComponent(
 		n.Component, err = builder.CreateMetrics(ctx, set)
 	case component.DataTypeLogs:
 		n.Component, err = builder.CreateLogs(ctx, set)
+	case componentprofiles.DataTypeProfiles:
+		n.Component, err = builder.CreateProfiles(ctx, set)
 	default:
 		return fmt.Errorf("error creating exporter %q for data type %q is not supported", set.ID, n.pipelineType)
 	}
@@ -231,7 +244,7 @@ func (n *connectorNode) buildComponent(
 	ctx context.Context,
 	tel component.TelemetrySettings,
 	info component.BuildInfo,
-	builder builders.Connector,
+	builder *builders.ConnectorBuilder,
 	nexts []baseConsumer,
 ) error {
 	tel.Logger = components.ConnectorLogger(tel.Logger, n.componentID, n.exprPipelineType, n.rcvrPipelineType)
@@ -272,6 +285,12 @@ func (n *connectorNode) buildComponent(
 				return err
 			}
 			n.Component, n.baseConsumer = conn, conn
+		case componentprofiles.DataTypeProfiles:
+			conn, err := builder.CreateProfilesToTraces(ctx, set, next)
+			if err != nil {
+				return err
+			}
+			n.Component, n.baseConsumer = conn, conn
 		}
 
 	case component.DataTypeMetrics:
@@ -304,6 +323,12 @@ func (n *connectorNode) buildComponent(
 			n.baseConsumer = capabilityconsumer.NewMetrics(conn, capability)
 		case component.DataTypeLogs:
 			conn, err := builder.CreateLogsToMetrics(ctx, set, next)
+			if err != nil {
+				return err
+			}
+			n.Component, n.baseConsumer = conn, conn
+		case componentprofiles.DataTypeProfiles:
+			conn, err := builder.CreateProfilesToMetrics(ctx, set, next)
 			if err != nil {
 				return err
 			}
@@ -343,6 +368,53 @@ func (n *connectorNode) buildComponent(
 			// that the connector itself may MutatesData.
 			capability.MutatesData = capability.MutatesData || conn.Capabilities().MutatesData
 			n.baseConsumer = capabilityconsumer.NewLogs(conn, capability)
+		case componentprofiles.DataTypeProfiles:
+			conn, err := builder.CreateProfilesToLogs(ctx, set, next)
+			if err != nil {
+				return err
+			}
+			n.Component, n.baseConsumer = conn, conn
+		}
+	case componentprofiles.DataTypeProfiles:
+		capability := consumer.Capabilities{MutatesData: false}
+		consumers := make(map[component.ID]consumerprofiles.Profiles, len(nexts))
+		for _, next := range nexts {
+			consumers[next.(*capabilitiesNode).pipelineID] = next.(consumerprofiles.Profiles)
+			capability.MutatesData = capability.MutatesData || next.Capabilities().MutatesData
+		}
+		next := connectorprofiles.NewProfilesRouter(consumers)
+
+		switch n.exprPipelineType {
+		case component.DataTypeTraces:
+			conn, err := builder.CreateTracesToProfiles(ctx, set, next)
+			if err != nil {
+				return err
+			}
+			n.Component, n.baseConsumer = conn, conn
+		case component.DataTypeMetrics:
+			conn, err := builder.CreateMetricsToProfiles(ctx, set, next)
+			if err != nil {
+				return err
+			}
+			n.Component, n.baseConsumer = conn, conn
+		case component.DataTypeLogs:
+			conn, err := builder.CreateLogsToProfiles(ctx, set, next)
+			if err != nil {
+				return err
+			}
+			n.Component, n.baseConsumer = conn, conn
+		case componentprofiles.DataTypeProfiles:
+			conn, err := builder.CreateProfilesToProfiles(ctx, set, next)
+			if err != nil {
+				return err
+			}
+			n.Component = conn
+			// When connecting pipelines of the same data type, the connector must
+			// inherit the capabilities of pipelines in which it is acting as a receiver.
+			// Since the incoming and outgoing data types are the same, we must also consider
+			// that the connector itself may MutatesData.
+			capability.MutatesData = capability.MutatesData || conn.Capabilities().MutatesData
+			n.baseConsumer = capabilityconsumer.NewProfiles(conn, capability)
 		}
 	}
 	return nil
@@ -362,6 +434,7 @@ type capabilitiesNode struct {
 	consumer.ConsumeTracesFunc
 	consumer.ConsumeMetricsFunc
 	consumer.ConsumeLogsFunc
+	consumerprofiles.ConsumeProfilesFunc
 }
 
 func newCapabilitiesNode(pipelineID component.ID) *capabilitiesNode {

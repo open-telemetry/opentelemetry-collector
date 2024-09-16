@@ -15,15 +15,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
-// Receiver is an interface that allows using implementations of the builder
-// from different packages.
-type Receiver interface {
-	CreateTraces(context.Context, receiver.Settings, consumer.Traces) (receiver.Traces, error)
-	CreateMetrics(context.Context, receiver.Settings, consumer.Metrics) (receiver.Metrics, error)
-	CreateLogs(context.Context, receiver.Settings, consumer.Logs) (receiver.Logs, error)
-	Factory(component.Type) component.Factory
-}
-
 // ReceiverBuilder receiver is a helper struct that given a set of Configs and
 // Factories helps with creating receivers.
 type ReceiverBuilder struct {

@@ -4,7 +4,6 @@
 package builder
 
 import (
-	"errors"
 	"os"
 	"strings"
 	"testing"
@@ -143,7 +142,7 @@ func TestMissingModule(t *testing.T) {
 	}
 
 	for _, test := range configurations {
-		assert.True(t, errors.Is(test.cfg.Validate(), test.err))
+		assert.ErrorIs(t, test.cfg.Validate(), test.err)
 	}
 }
 
@@ -171,10 +170,10 @@ func TestNewBuiltinConfig(t *testing.T) {
 	// Unlike the config initialized in NewDefaultConfig(), we expect
 	// the builtin default to be practically useful, so there must be
 	// a set of modules present.
-	assert.NotZero(t, len(cfg.Receivers))
-	assert.NotZero(t, len(cfg.Exporters))
-	assert.NotZero(t, len(cfg.Extensions))
-	assert.NotZero(t, len(cfg.Processors))
+	assert.NotEmpty(t, cfg.Receivers)
+	assert.NotEmpty(t, cfg.Exporters)
+	assert.NotEmpty(t, cfg.Extensions)
+	assert.NotEmpty(t, cfg.Processors)
 }
 
 func TestSkipGoValidation(t *testing.T) {
