@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package main
+package internal // import "go.opentelemetry.io/collector/cmd/mdatagen/internal"
 
 import (
 	"errors"
@@ -179,7 +179,7 @@ func (d *sum) Unmarshal(parser *confmap.Conf) error {
 }
 
 // TODO: Currently, this func will not be called because of https://github.com/open-telemetry/opentelemetry-collector/issues/6671. Uncomment function and
-// add a test case to Test_loadMetadata for file no_monotonic.yaml once the issue is solved.
+// add a test case to Test_LoadMetadata for file no_monotonic.yaml once the issue is solved.
 //
 // Unmarshal is a custom unmarshaler for Mono.
 // func (m *Mono) Unmarshal(parser *confmap.Conf) error {

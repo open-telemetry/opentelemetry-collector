@@ -20,6 +20,8 @@ import (
 
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal"
 )
 
 const (
@@ -51,7 +53,7 @@ func run(ymlPath string) error {
 	ymlDir := filepath.Dir(ymlPath)
 	packageName := filepath.Base(ymlDir)
 
-	md, err := loadMetadata(ymlPath)
+	md, err := internal.LoadMetadata(ymlPath)
 	if err != nil {
 		return fmt.Errorf("failed loading %v: %w", ymlPath, err)
 	}
@@ -143,25 +145,25 @@ func run(ymlPath string) error {
 	return nil
 }
 
-func templatize(tmplFile string, md metadata) *template.Template {
+func templatize(tmplFile string, md internal.Metadata) *template.Template {
 	return template.Must(
 		template.
 			New(filepath.Base(tmplFile)).
 			Option("missingkey=error").
 			Funcs(map[string]any{
 				"publicVar": func(s string) (string, error) {
-					return formatIdentifier(s, true)
+					return internal.FormatIdentifier(s, true)
 				},
-				"attributeInfo": func(an attributeName) attribute {
+				"attributeInfo": func(an internal.AttributeName) internal.Attribute {
 					return md.Attributes[an]
 				},
-				"metricInfo": func(mn metricName) metric {
+				"metricInfo": func(mn internal.MetricName) internal.Metric {
 					return md.Metrics[mn]
 				},
-				"telemetryInfo": func(mn metricName) metric {
+				"telemetryInfo": func(mn internal.MetricName) internal.Metric {
 					return md.Telemetry.Metrics[mn]
 				},
-				"parseImportsRequired": func(metrics map[metricName]metric) bool {
+				"parseImportsRequired": func(metrics map[internal.MetricName]internal.Metric) bool {
 					for _, m := range metrics {
 						if m.Data().HasMetricInputType() {
 							return true
@@ -195,7 +197,7 @@ func templatize(tmplFile string, md metadata) *template.Template {
 				},
 				"inc": func(i int) int { return i + 1 },
 				"distroURL": func(name string) string {
-					return distros[name]
+					return internal.Distros[name]
 				},
 				"isExporter": func() bool {
 					return md.Status.Class == "exporter"
@@ -342,10 +344,10 @@ func templatize(tmplFile string, md metadata) *template.Template {
 				// which uses the `\` as a special character.
 				// Meaning on windows based machines, the `\` needs to be replaced
 				// with a `/` for it to find the file.
-			}).ParseFS(templateFS, strings.ReplaceAll(tmplFile, "\\", "/")))
+			}).ParseFS(internal.TemplateFS, strings.ReplaceAll(tmplFile, "\\", "/")))
 }
 
-func inlineReplace(tmplFile string, outputFile string, md metadata, start string, end string) error {
+func inlineReplace(tmplFile string, outputFile string, md internal.Metadata, start string, end string) error {
 	var readmeContents []byte
 	var err error
 	if readmeContents, err = os.ReadFile(outputFile); err != nil { // nolint: gosec
@@ -364,7 +366,7 @@ func inlineReplace(tmplFile string, outputFile string, md metadata, start string
 		md.GithubProject = "open-telemetry/opentelemetry-collector-contrib"
 	}
 
-	if err := tmpl.Execute(&buf, templateContext{metadata: md, Package: "metadata"}); err != nil {
+	if err := tmpl.Execute(&buf, internal.TemplateContext{Metadata: md, Package: "metadata"}); err != nil {
 		return fmt.Errorf("failed executing template: %w", err)
 	}
 
@@ -378,11 +380,11 @@ func inlineReplace(tmplFile string, outputFile string, md metadata, start string
 	return nil
 }
 
-func generateFile(tmplFile string, outputFile string, md metadata, goPackage string) error {
+func generateFile(tmplFile string, outputFile string, md internal.Metadata, goPackage string) error {
 	tmpl := templatize(tmplFile, md)
 	buf := bytes.Buffer{}
 
-	if err := tmpl.Execute(&buf, templateContext{metadata: md, Package: goPackage}); err != nil {
+	if err := tmpl.Execute(&buf, internal.TemplateContext{Metadata: md, Package: goPackage}); err != nil {
 		return fmt.Errorf("failed executing template: %w", err)
 	}
 

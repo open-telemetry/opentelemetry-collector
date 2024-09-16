@@ -57,10 +57,10 @@ You can run `cd cmd/mdatagen && $(GOCMD) install .` to install the `mdatagen` to
 
 ## Contributing to the Metadata Generator
 
-The code for generating the documentation can be found in [loader.go](./loader.go) and the templates for rendering the documentation can be found in [templates](./templates).
+The code for generating the documentation can be found in [loader.go](./internal/loader.go) and the templates for rendering the documentation can be found in [templates](internal/templates).
 When making updates to the metadata generator or introducing support for new functionality:
 
-1. Ensure the [metadata-schema.yaml](./metadata-schema.yaml) and [./metadata.yaml](metadata.yaml) files reflect the changes.
+1. Ensure the [metadata-schema.yaml](./metadata-schema.yaml) and [metadata.yaml](./metadata.yaml) files reflect the changes.
 2. Run `make mdatagen-test`.
 3. Make sure all tests are passing including [generated tests](./internal/samplereceiver/internal/metadata/generated_metrics_test.go).
 4. Run `make generate`.
