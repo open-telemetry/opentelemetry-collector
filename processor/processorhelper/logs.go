@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
@@ -39,12 +40,22 @@ func NewLogsProcessor(
 		return nil, errors.New("nil logsFunc")
 	}
 
+	obs, err := newObsReport(ObsReportSettings{
+		ProcessorID:             set.ID,
+		ProcessorCreateSettings: set,
+	})
+	if err != nil {
+		return nil, err
+	}
+	obs.otelAttrs = append(obs.otelAttrs, attribute.String("otel.signal", "logs"))
+
 	eventOptions := spanAttributes(set.ID)
 	bs := fromOptions(options)
 	logsConsumer, err := consumer.NewLogs(func(ctx context.Context, ld plog.Logs) error {
 		span := trace.SpanFromContext(ctx)
 		span.AddEvent("Start processing.", eventOptions)
-		var err error
+		recordsIn := ld.LogRecordCount()
+
 		ld, err = logsFunc(ctx, ld)
 		span.AddEvent("End processing.", eventOptions)
 		if err != nil {
@@ -53,6 +64,8 @@ func NewLogsProcessor(
 			}
 			return err
 		}
+		recordsOut := ld.LogRecordCount()
+		obs.recordInOut(ctx, recordsIn, recordsOut)
 		return nextConsumer.ConsumeLogs(ctx, ld)
 	}, bs.consumerOptions...)
 	if err != nil {

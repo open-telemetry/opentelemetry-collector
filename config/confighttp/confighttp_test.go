@@ -35,7 +35,7 @@ import (
 	"go.opentelemetry.io/collector/extension/auth"
 	"go.opentelemetry.io/collector/extension/auth/authtest"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/localhostgate"
+	"go.opentelemetry.io/collector/internal/globalgates"
 )
 
 type customRoundTripper struct {
@@ -520,11 +520,11 @@ func TestHTTPServerSettingsError(t *testing.T) {
 }
 
 func TestHTTPServerWarning(t *testing.T) {
-	prev := localhostgate.UseLocalHostAsDefaultHostfeatureGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(localhostgate.UseLocalHostAsDefaultHostID, false))
+	prev := globalgates.UseLocalHostAsDefaultHostfeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(globalgates.UseLocalHostAsDefaultHostID, false))
 	defer func() {
 		// Restore previous value.
-		require.NoError(t, featuregate.GlobalRegistry().Set(localhostgate.UseLocalHostAsDefaultHostID, prev))
+		require.NoError(t, featuregate.GlobalRegistry().Set(globalgates.UseLocalHostAsDefaultHostID, prev))
 	}()
 
 	tests := []struct {
@@ -1249,8 +1249,8 @@ func TestFailedServerAuth(t *testing.T) {
 	srv.Handler.ServeHTTP(response, httptest.NewRequest("GET", "/", nil))
 
 	// verify
-	assert.Equal(t, response.Result().StatusCode, http.StatusUnauthorized)
-	assert.Equal(t, response.Result().Status, fmt.Sprintf("%v %s", http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized)))
+	assert.Equal(t, http.StatusUnauthorized, response.Result().StatusCode)
+	assert.Equal(t, fmt.Sprintf("%v %s", http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized)), response.Result().Status)
 }
 
 func TestServerWithErrorHandler(t *testing.T) {
@@ -1259,7 +1259,7 @@ func TestServerWithErrorHandler(t *testing.T) {
 		Endpoint: "localhost:0",
 	}
 	eh := func(w http.ResponseWriter, _ *http.Request, _ string, statusCode int) {
-		assert.Equal(t, statusCode, http.StatusBadRequest)
+		assert.Equal(t, http.StatusBadRequest, statusCode)
 		// custom error handler changes returned status code
 		http.Error(w, "invalid request", http.StatusInternalServerError)
 	}
@@ -1281,7 +1281,7 @@ func TestServerWithErrorHandler(t *testing.T) {
 
 	srv.Handler.ServeHTTP(response, req)
 	// verify
-	assert.Equal(t, response.Result().StatusCode, http.StatusInternalServerError)
+	assert.Equal(t, http.StatusInternalServerError, response.Result().StatusCode)
 }
 
 func TestServerWithDecoder(t *testing.T) {
@@ -1309,7 +1309,7 @@ func TestServerWithDecoder(t *testing.T) {
 
 	srv.Handler.ServeHTTP(response, req)
 	// verify
-	assert.Equal(t, response.Result().StatusCode, http.StatusOK)
+	assert.Equal(t, http.StatusOK, response.Result().StatusCode)
 
 }
 
@@ -1356,7 +1356,7 @@ func TestServerWithDecompression(t *testing.T) {
 
 	// verifications is done mostly within the test, but this is only a sanity check
 	// that we got into the test handler
-	assert.Equal(t, resp.StatusCode, http.StatusBadRequest)
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 }
 
 func TestDefaultMaxRequestBodySize(t *testing.T) {

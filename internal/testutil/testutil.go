@@ -8,13 +8,11 @@ import (
 	"net"
 	"os/exec"
 	"runtime"
-	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/contrib/config"
 )
 
 type portpair struct {
@@ -86,22 +84,6 @@ func GetAvailableLocalIPv6Address(t testing.TB) string {
 	return endpoint
 }
 
-func GetAvailableLocalAddressPrometheus(t testing.TB) *config.Prometheus {
-	address := GetAvailableLocalAddress(t)
-	host, port, err := net.SplitHostPort(address)
-	if err != nil {
-		return nil
-	}
-	portInt, err := strconv.Atoi(port)
-	if err != nil {
-		return nil
-	}
-	return &config.Prometheus{
-		Host: &host,
-		Port: &portInt,
-	}
-}
-
 func findAvailableAddress(network string, t testing.TB) string {
 	var host string
 	switch network {
@@ -149,14 +131,14 @@ func createExclusionsList(exclusionsText string, t testing.TB) []portpair {
 	var exclusions []portpair
 
 	parts := strings.Split(exclusionsText, "--------")
-	require.Equal(t, len(parts), 3)
+	require.Len(t, parts, 3)
 	portsText := strings.Split(parts[2], "*")
 	require.Greater(t, len(portsText), 1) // original text may have a suffix like " - Administered port exclusions."
 	lines := strings.Split(portsText[0], "\n")
 	for _, line := range lines {
 		if strings.TrimSpace(line) != "" {
 			entries := strings.Fields(strings.TrimSpace(line))
-			require.Equal(t, len(entries), 2)
+			require.Len(t, entries, 2)
 			pair := portpair{entries[0], entries[1]}
 			exclusions = append(exclusions, pair)
 		}

@@ -22,7 +22,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
         with:
-          go-version: ~1.22.6
+          go-version: ~1.22.7
           cache: false
       - name: Cache Go
         id: go-cache
@@ -45,7 +45,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
         with:
-          go-version: ~1.22.6
+          go-version: ~1.22.7
           cache: false
       - name: Cache Go
         id: go-cache
@@ -69,7 +69,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
         with:
-          go-version: ~1.22.6
+          go-version: ~1.22.7
           cache: false
       - name: Cache Go
         id: go-cache
@@ -94,7 +94,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
         with:
-          go-version: ~1.22.6
+          go-version: ~1.22.7
           cache: false
       - name: Cache Go
         id: go-cache
@@ -194,7 +194,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
         with:
-          go-version: ~1.22.6
+          go-version: ~1.22.7
           cache: false
       - name: Cache Go
         id: go-cache
@@ -256,7 +256,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
         with:
-          go-version: ~1.22.6
+          go-version: ~1.22.7
           cache: false
       - name: Cache Go
         id: go-cache

@@ -51,7 +51,7 @@ type controller struct {
 	nextConsumer       consumer.Metrics
 
 	scrapers    []Scraper
-	obsScrapers []*ObsReport
+	obsScrapers []*obsReport
 
 	tickerCh <-chan time.Time
 
@@ -101,9 +101,9 @@ func NewScraperControllerReceiver(
 		op(sc)
 	}
 
-	sc.obsScrapers = make([]*ObsReport, len(sc.scrapers))
+	sc.obsScrapers = make([]*obsReport, len(sc.scrapers))
 	for i, scraper := range sc.scrapers {
-		scrp, err := newScraper(ObsReportSettings{
+		scrp, err := newScraper(obsReportSettings{
 			ReceiverID:             sc.id,
 			Scraper:                scraper.ID(),
 			ReceiverCreateSettings: sc.recvSettings,

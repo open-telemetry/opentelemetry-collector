@@ -320,7 +320,7 @@ func TestMap_Range(t *testing.T) {
 		delete(rawMap, k)
 		return true
 	})
-	assert.EqualValues(t, 0, len(rawMap))
+	assert.Empty(t, rawMap)
 }
 
 func TestMap_FromRaw(t *testing.T) {
@@ -375,11 +375,28 @@ func TestMap_FromRaw(t *testing.T) {
 	}, v.Map().AsRaw())
 }
 
+func TestMap_MoveTo(t *testing.T) {
+	dest := NewMap()
+	// Test MoveTo to empty
+	NewMap().MoveTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test MoveTo larger slice
+	src := Map(internal.GenerateTestMap())
+	src.MoveTo(dest)
+	assert.EqualValues(t, Map(internal.GenerateTestMap()), dest)
+	assert.Equal(t, 0, src.Len())
+
+	// Test MoveTo from empty to non-empty
+	NewMap().MoveTo(dest)
+	assert.Equal(t, 0, dest.Len())
+}
+
 func TestMap_CopyTo(t *testing.T) {
 	dest := NewMap()
 	// Test CopyTo to empty
 	NewMap().CopyTo(dest)
-	assert.EqualValues(t, 0, dest.Len())
+	assert.Equal(t, 0, dest.Len())
 
 	// Test CopyTo larger slice
 	Map(internal.GenerateTestMap()).CopyTo(dest)
@@ -427,7 +444,7 @@ func TestMap_EnsureCapacity_Existing(t *testing.T) {
 	// Ensure previously existing element is still there.
 	assert.Equal(t, 1, am.Len())
 	v, ok := am.Get("foo")
-	assert.Equal(t, v.Str(), "bar")
+	assert.Equal(t, "bar", v.Str())
 	assert.True(t, ok)
 
 	assert.Equal(t, 5, cap(*am.getOrig()))
@@ -439,11 +456,11 @@ func TestMap_EnsureCapacity_Existing(t *testing.T) {
 	assert.Equal(t, 2, am.Len())
 
 	v, ok = am.Get("foo")
-	assert.Equal(t, v.Str(), "bar")
+	assert.Equal(t, "bar", v.Str())
 	assert.True(t, ok)
 
 	v, ok = am.Get("abc")
-	assert.Equal(t, v.Str(), "xyz")
+	assert.Equal(t, "xyz", v.Str())
 	assert.True(t, ok)
 }
 

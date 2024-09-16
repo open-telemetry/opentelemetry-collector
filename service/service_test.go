@@ -8,7 +8,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -17,6 +19,7 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/contrib/config"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -325,6 +328,87 @@ func testCollectorStartHelper(t *testing.T, tc ownMetricsTestCase, network strin
 	}
 }
 
+func TestServiceTelemetryWithReaders(t *testing.T) {
+	for _, tc := range ownMetricsTestCases() {
+		t.Run(fmt.Sprintf("ipv4_%s", tc.name), func(t *testing.T) {
+			testCollectorStartHelperWithReaders(t, tc, "tcp4")
+		})
+		t.Run(fmt.Sprintf("ipv6_%s", tc.name), func(t *testing.T) {
+			testCollectorStartHelperWithReaders(t, tc, "tcp6")
+		})
+	}
+}
+
+func testCollectorStartHelperWithReaders(t *testing.T, tc ownMetricsTestCase, network string) {
+	var once sync.Once
+	loggingHookCalled := false
+	hook := func(zapcore.Entry) error {
+		once.Do(func() {
+			loggingHookCalled = true
+		})
+		return nil
+	}
+
+	var (
+		metricsAddr *config.Prometheus
+		zpagesAddr  string
+	)
+	switch network {
+	case "tcp", "tcp4":
+		metricsAddr = getAvailableLocalAddressPrometheus(t)
+		zpagesAddr = testutil.GetAvailableLocalAddress(t)
+	case "tcp6":
+		metricsAddr = getAvailableLocalIPv6AddressPrometheus(t)
+		zpagesAddr = testutil.GetAvailableLocalIPv6Address(t)
+	}
+	require.NotZero(t, metricsAddr, "network must be either of tcp, tcp4 or tcp6")
+	require.NotZero(t, zpagesAddr, "network must be either of tcp, tcp4 or tcp6")
+
+	set := newNopSettings()
+	set.BuildInfo = component.BuildInfo{Version: "test version", Command: otelCommand}
+	set.ExtensionsConfigs = map[component.ID]component.Config{
+		component.MustNewID("zpages"): &zpagesextension.Config{
+			ServerConfig: confighttp.ServerConfig{Endpoint: zpagesAddr},
+		},
+	}
+	set.ExtensionsFactories = map[component.Type]extension.Factory{component.MustNewType("zpages"): zpagesextension.NewFactory()}
+	set.LoggingOptions = []zap.Option{zap.Hooks(hook)}
+
+	cfg := newNopConfig()
+	cfg.Extensions = []component.ID{component.MustNewID("zpages")}
+	cfg.Telemetry.Metrics.Address = ""
+	cfg.Telemetry.Metrics.Readers = []config.MetricReader{
+		{
+			Pull: &config.PullMetricReader{
+				Exporter: config.MetricExporter{
+					Prometheus: metricsAddr,
+				},
+			},
+		},
+	}
+	cfg.Telemetry.Resource = make(map[string]*string)
+	// Include resource attributes under the service::telemetry::resource key.
+	for k, v := range tc.userDefinedResource {
+		cfg.Telemetry.Resource[k] = v
+	}
+
+	// Create a service, check for metrics, shutdown and repeat to ensure that telemetry can be started/shutdown and started again.
+	for i := 0; i < 2; i++ {
+		srv, err := New(context.Background(), set, cfg)
+		require.NoError(t, err)
+
+		require.NoError(t, srv.Start(context.Background()))
+		// Sleep for 1 second to ensure the http server is started.
+		time.Sleep(1 * time.Second)
+		assert.True(t, loggingHookCalled)
+
+		assertResourceLabels(t, srv.telemetrySettings.Resource, tc.expectedLabels)
+		assertMetrics(t, fmt.Sprintf("%s:%d", *metricsAddr.Host, *metricsAddr.Port), tc.expectedLabels)
+		assertZPages(t, zpagesAddr)
+		require.NoError(t, srv.Shutdown(context.Background()))
+	}
+}
+
 // TestServiceTelemetryRestart tests that the service correctly restarts the telemetry server.
 func TestServiceTelemetryRestart(t *testing.T) {
 	// Create a service
@@ -486,7 +570,20 @@ func assertMetrics(t *testing.T, metricsAddr string, expectedLabels map[string]l
 	require.NoError(t, err)
 
 	prefix := "otelcol"
+	expectedMetrics := map[string]bool{
+		"target_info":                                    false,
+		"otelcol_process_memory_rss":                     false,
+		"otelcol_process_cpu_seconds":                    false,
+		"otelcol_process_runtime_total_sys_memory_bytes": false,
+		"otelcol_process_runtime_heap_alloc_bytes":       false,
+		"otelcol_process_runtime_total_alloc_bytes":      false,
+		"otelcol_process_uptime":                         false,
+	}
 	for metricName, metricFamily := range parsed {
+		if _, ok := expectedMetrics[metricName]; !ok {
+			require.True(t, ok, "unexpected metric: %s", metricName)
+		}
+		expectedMetrics[metricName] = true
 		if metricName != "target_info" {
 			// require is used here so test fails with a single message.
 			require.True(
@@ -515,6 +612,9 @@ func assertMetrics(t *testing.T, metricsAddr string, expectedLabels map[string]l
 				}
 			}
 		}
+	}
+	for k, val := range expectedMetrics {
+		require.True(t, val, "missing metric: %s", k)
 	}
 }
 
@@ -644,4 +744,27 @@ func newConfigWatcherExtensionFactory(name component.Type) extension.Factory {
 		},
 		component.StabilityLevelDevelopment,
 	)
+}
+
+func getAvailableLocalIPv6AddressPrometheus(t testing.TB) *config.Prometheus {
+	return addrToPrometheus(testutil.GetAvailableLocalIPv6Address(t))
+}
+
+func getAvailableLocalAddressPrometheus(t testing.TB) *config.Prometheus {
+	return addrToPrometheus(testutil.GetAvailableLocalAddress(t))
+}
+
+func addrToPrometheus(address string) *config.Prometheus {
+	host, port, err := net.SplitHostPort(address)
+	if err != nil {
+		return nil
+	}
+	portInt, err := strconv.Atoi(port)
+	if err != nil {
+		return nil
+	}
+	return &config.Prometheus{
+		Host: &host,
+		Port: &portInt,
+	}
 }

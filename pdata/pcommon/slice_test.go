@@ -77,7 +77,7 @@ func TestSlice_EnsureCapacity(t *testing.T) {
 	for i := 0; i < es.Len(); i++ {
 		expectedEs[es.At(i).getOrig()] = true
 	}
-	assert.Equal(t, es.Len(), len(expectedEs))
+	assert.Len(t, expectedEs, es.Len())
 	es.EnsureCapacity(ensureSmallLen)
 	assert.Less(t, ensureSmallLen, es.Len())
 	foundEs := make(map[*otlpcommon.AnyValue]bool, es.Len())
@@ -89,7 +89,7 @@ func TestSlice_EnsureCapacity(t *testing.T) {
 	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	oldLen := es.Len()
-	assert.Equal(t, oldLen, len(expectedEs))
+	assert.Len(t, expectedEs, oldLen)
 	es.EnsureCapacity(ensureLargeLen)
 	assert.Equal(t, ensureLargeLen, cap(*es.getOrig()))
 }

@@ -14,5 +14,5 @@ import (
 func TestTotalMemory(t *testing.T) {
 	totalMemory, err := TotalMemory()
 	assert.NoError(t, err)
-	assert.True(t, totalMemory > 0)
+	assert.Positive(t, totalMemory)
 }

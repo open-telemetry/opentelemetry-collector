@@ -18,7 +18,7 @@ func TestMergeLogs(t *testing.T) {
 	lr1 := &logsRequest{ld: testdata.GenerateLogs(2)}
 	lr2 := &logsRequest{ld: testdata.GenerateLogs(3)}
 	res, err := mergeLogs(context.Background(), lr1, lr2)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, 5, res.(*logsRequest).ld.LogRecordCount())
 }
 
@@ -132,7 +132,7 @@ func TestMergeSplitLogs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := mergeSplitLogs(context.Background(), tt.cfg, tt.lr1, tt.lr2)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.Equal(t, len(tt.expected), len(res))
 			for i, r := range res {
 				assert.Equal(t, tt.expected[i], r.(*logsRequest))

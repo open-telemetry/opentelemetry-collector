@@ -64,11 +64,11 @@ func WithShutdown(shutdown component.ShutdownFunc) Option {
 	}
 }
 
-// WithTimeout overrides the default TimeoutSettings for an exporter.
-// The default TimeoutSettings is 5 seconds.
-func WithTimeout(timeoutSettings TimeoutSettings) Option {
+// WithTimeout overrides the default TimeoutConfig for an exporter.
+// The default TimeoutConfig is 5 seconds.
+func WithTimeout(timeoutConfig TimeoutConfig) Option {
 	return func(o *baseExporter) error {
-		o.timeoutSender.cfg = timeoutSettings
+		o.timeoutSender.cfg = timeoutConfig
 		return nil
 	}
 }
@@ -86,10 +86,10 @@ func WithRetry(config configretry.BackOffConfig) Option {
 	}
 }
 
-// WithQueue overrides the default QueueSettings for an exporter.
-// The default QueueSettings is to disable queueing.
+// WithQueue overrides the default QueueConfig for an exporter.
+// The default QueueConfig is to disable queueing.
 // This option cannot be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter.
-func WithQueue(config QueueSettings) Option {
+func WithQueue(config QueueConfig) Option {
 	return func(o *baseExporter) error {
 		if o.marshaler == nil || o.unmarshaler == nil {
 			return fmt.Errorf("WithQueue option is not available for the new request exporters, use WithRequestQueue instead")
@@ -252,7 +252,7 @@ func newBaseExporter(set exporter.Settings, signal component.DataType, osf obsre
 		queueSender:   &baseRequestSender{},
 		obsrepSender:  osf(obsReport),
 		retrySender:   &baseRequestSender{},
-		timeoutSender: &timeoutSender{cfg: NewDefaultTimeoutSettings()},
+		timeoutSender: &timeoutSender{cfg: NewDefaultTimeoutConfig()},
 
 		set:    set,
 		obsrep: obsReport,

@@ -172,8 +172,13 @@ func (l *Conf) Sub(key string) (*Conf, error) {
 		return New(), nil
 	}
 
-	if v, ok := data.(map[string]any); ok {
+	switch v := data.(type) {
+	case map[string]any:
 		return NewFromStringMap(v), nil
+	case expandedValue:
+		if m, ok := v.Value.(map[string]any); ok {
+			return NewFromStringMap(m), nil
+		}
 	}
 
 	return nil, fmt.Errorf("unexpected sub-config value kind for key:%s value:%v kind:%v", key, data, reflect.TypeOf(data).Kind())

@@ -106,7 +106,7 @@ func TestNewMountPointFromLineErr(t *testing.T) {
 		errExpected := mountPointFormatInvalidError{line}
 
 		assert.Nil(t, mountPoint, "[%d] %q", i, line)
-		assert.Equal(t, err, errExpected, "[%d] %q", i, line)
+		assert.Equal(t, errExpected, err, "[%d] %q", i, line)
 	}
 }
 
