@@ -110,7 +110,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMetricInputTypeDataPoint(ts, "1", "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
 
 			allMetricsCount++
-			mb.RecordOptionalMetricDataPoint(ts, 1, "string_attr-val", true)
+			mb.RecordOptionalMetricDataPoint(ts, 1, "string_attr-val", true, false)
 
 			allMetricsCount++
 			mb.RecordOptionalMetricEmptyUnitDataPoint(ts, 1, "string_attr-val", true)
@@ -236,6 +236,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("boolean_attr")
 					assert.True(t, ok)
 					assert.True(t, attrVal.Bool())
+					attrVal, ok = dp.Attributes().Get("boolean_attr2")
+					assert.True(t, ok)
+					assert.False(t, attrVal.Bool())
 				case "optional.metric.empty_unit":
 					assert.False(t, validatedMetrics["optional.metric.empty_unit"], "Found a duplicate in the metrics slice: optional.metric.empty_unit")
 					validatedMetrics["optional.metric.empty_unit"] = true

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package main
+package internal
 
 import (
 	"io/fs"
@@ -38,7 +38,7 @@ func TestEnsureTemplatesLoaded(t *testing.T) {
 		}
 		count = 0
 	)
-	assert.NoError(t, fs.WalkDir(templateFS, ".", func(path string, d fs.DirEntry, _ error) error {
+	assert.NoError(t, fs.WalkDir(TemplateFS, ".", func(path string, d fs.DirEntry, _ error) error {
 		if d != nil && d.IsDir() {
 			return nil
 		}

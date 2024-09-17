@@ -12,19 +12,22 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/internal/globalgates"
 	"go.opentelemetry.io/collector/internal/sharedcomponent"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/receiverprofiles"
 )
 
 const (
 	grpcPort = 4317
 	httpPort = 4318
 
-	defaultTracesURLPath  = "/v1/traces"
-	defaultMetricsURLPath = "/v1/metrics"
-	defaultLogsURLPath    = "/v1/logs"
+	defaultTracesURLPath   = "/v1/traces"
+	defaultMetricsURLPath  = "/v1/metrics"
+	defaultLogsURLPath     = "/v1/logs"
+	defaultProfilesURLPath = "/v1development/profiles"
 )
 
 // NewFactory creates a new OTLP receiver factory.
@@ -35,6 +38,7 @@ func NewFactory() receiver.Factory {
 		receiver.WithTraces(createTraces, metadata.TracesStability),
 		receiver.WithMetrics(createMetrics, metadata.MetricsStability),
 		receiver.WithLogs(createLog, metadata.LogsStability),
+		receiverprofiles.WithProfiles(createProfiles, metadata.ProfilesStability),
 	)
 }
 
@@ -128,6 +132,29 @@ func createLog(
 	}
 
 	r.Unwrap().registerLogsConsumer(consumer)
+	return r, nil
+}
+
+// createProfiles creates a trace receiver based on provided config.
+func createProfiles(
+	_ context.Context,
+	set receiver.Settings,
+	cfg component.Config,
+	nextConsumer consumerprofiles.Profiles,
+) (receiverprofiles.Profiles, error) {
+	oCfg := cfg.(*Config)
+	r, err := receivers.LoadOrStore(
+		oCfg,
+		func() (*otlpReceiver, error) {
+			return newOtlpReceiver(oCfg, &set)
+		},
+		&set.TelemetrySettings,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	r.Unwrap().registerProfilesConsumer(nextConsumer)
 	return r, nil
 }
 

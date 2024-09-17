@@ -10,6 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal/data"
+	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1experimental"
+	otlpprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -21,6 +23,65 @@ func TestReadOnlyProfilesInvalidUsage(t *testing.T) {
 	profiles.MarkReadOnly()
 	assert.True(t, profiles.IsReadOnly())
 	assert.Panics(t, func() { res.Attributes().PutStr("k2", "v2") })
+}
+
+func TestSampleCount(t *testing.T) {
+	profiles := NewProfiles()
+	assert.EqualValues(t, 0, profiles.SampleCount())
+
+	rs := profiles.ResourceProfiles().AppendEmpty()
+	assert.EqualValues(t, 0, profiles.SampleCount())
+
+	ils := rs.ScopeProfiles().AppendEmpty()
+	assert.EqualValues(t, 0, profiles.SampleCount())
+
+	ps := ils.Profiles().AppendEmpty().Profile()
+	assert.EqualValues(t, 0, profiles.SampleCount())
+
+	ps.Sample().AppendEmpty()
+	assert.EqualValues(t, 1, profiles.SampleCount())
+
+	rms := profiles.ResourceProfiles()
+	rms.EnsureCapacity(3)
+	rms.AppendEmpty().ScopeProfiles().AppendEmpty()
+	ilss := rms.AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty().Profile().Sample()
+	for i := 0; i < 5; i++ {
+		ilss.AppendEmpty()
+	}
+	// 5 + 1 (from rms.At(0) initialized first)
+	assert.EqualValues(t, 6, profiles.SampleCount())
+}
+
+func TestSampleCountWithEmpty(t *testing.T) {
+	assert.EqualValues(t, 0, newProfiles(&otlpcollectorprofile.ExportProfilesServiceRequest{
+		ResourceProfiles: []*otlpprofile.ResourceProfiles{{}},
+	}).SampleCount())
+	assert.EqualValues(t, 0, newProfiles(&otlpcollectorprofile.ExportProfilesServiceRequest{
+		ResourceProfiles: []*otlpprofile.ResourceProfiles{
+			{
+				ScopeProfiles: []*otlpprofile.ScopeProfiles{{}},
+			},
+		},
+	}).SampleCount())
+	assert.EqualValues(t, 1, newProfiles(&otlpcollectorprofile.ExportProfilesServiceRequest{
+		ResourceProfiles: []*otlpprofile.ResourceProfiles{
+			{
+				ScopeProfiles: []*otlpprofile.ScopeProfiles{
+					{
+						Profiles: []*otlpprofile.ProfileContainer{
+							{
+								Profile: otlpprofile.Profile{
+									Sample: []otlpprofile.Sample{
+										{},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}).SampleCount())
 }
 
 func BenchmarkProfilesUsage(b *testing.B) {
