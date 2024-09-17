@@ -1504,7 +1504,7 @@ func BenchmarkHttpRequest(b *testing.B) {
 		componenttest.NewNopTelemetrySettings(),
 		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			_, errWrite := fmt.Fprint(w, "test")
-			require.NoError(b, errWrite)
+			assert.NoError(b, errWrite)
 		}))
 	require.NoError(b, err)
 	ln, err := hss.ToListener(context.Background())

@@ -85,7 +85,7 @@ func TestHTTPClientCompression(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				body, err := io.ReadAll(r.Body)
-				require.NoError(t, err, "failed to read request body: %v", err)
+				assert.NoError(t, err, "failed to read request body: %v", err)
 				assert.EqualValues(t, tt.reqBody, body)
 				w.WriteHeader(http.StatusOK)
 			}))
@@ -125,7 +125,7 @@ func TestHTTPCustomDecompression(t *testing.T) {
 			return
 		}
 
-		require.NoError(t, err, "failed to read request body: %v", err)
+		assert.NoError(t, err, "failed to read request body: %v", err)
 		assert.EqualValues(t, "decompressed body", string(body))
 		w.WriteHeader(http.StatusOK)
 	})
@@ -250,7 +250,7 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 					return
 				}
 
-				require.NoError(t, err, "failed to read request body: %v", err)
+				assert.NoError(t, err, "failed to read request body: %v", err)
 				assert.EqualValues(t, testBody, string(body))
 				w.WriteHeader(http.StatusOK)
 			}), defaultMaxRequestBodySize, defaultErrorHandler, defaultCompressionAlgorithms, noDecoders))
@@ -279,7 +279,7 @@ func TestHTTPContentCompressionRequestWithNilBody(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		body, err := io.ReadAll(r.Body)
-		require.NoError(t, err, "failed to read request body: %v", err)
+		assert.NoError(t, err, "failed to read request body: %v", err)
 		assert.EqualValues(t, compressedGzipBody.Bytes(), body)
 	}))
 	defer server.Close()
