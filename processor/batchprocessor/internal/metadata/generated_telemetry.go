@@ -39,25 +39,33 @@ type TelemetryBuilder struct {
 	meters                                   map[configtelemetry.Level]metric.Meter
 }
 
-// telemetryBuilderOption applies changes to default builder.
-type telemetryBuilderOption func(*TelemetryBuilder)
+// TelemetryBuilderOption applies changes to default builder.
+type TelemetryBuilderOption interface {
+	apply(*TelemetryBuilder)
+}
+
+type telemetryBuilderOptionFunc func(mb *TelemetryBuilder)
+
+func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
+	tbof(mb)
+}
 
 // WithProcessorBatchMetadataCardinalityCallback sets callback for observable ProcessorBatchMetadataCardinality metric.
-func WithProcessorBatchMetadataCardinalityCallback(cb func() int64, opts ...metric.ObserveOption) telemetryBuilderOption {
-	return func(builder *TelemetryBuilder) {
+func WithProcessorBatchMetadataCardinalityCallback(cb func() int64, opts ...metric.ObserveOption) TelemetryBuilderOption {
+	return telemetryBuilderOptionFunc(func(builder *TelemetryBuilder) {
 		builder.observeProcessorBatchMetadataCardinality = func(_ context.Context, o metric.Observer) error {
 			o.ObserveInt64(builder.ProcessorBatchMetadataCardinality, cb(), opts...)
 			return nil
 		}
-	}
+	})
 }
 
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
 // for a component
-func NewTelemetryBuilder(settings component.TelemetrySettings, options ...telemetryBuilderOption) (*TelemetryBuilder, error) {
+func NewTelemetryBuilder(settings component.TelemetrySettings, options ...TelemetryBuilderOption) (*TelemetryBuilder, error) {
 	builder := TelemetryBuilder{meters: map[configtelemetry.Level]metric.Meter{}}
 	for _, op := range options {
-		op(&builder)
+		op.apply(&builder)
 	}
 	builder.meters[configtelemetry.LevelBasic] = LeveledMeter(settings, configtelemetry.LevelBasic)
 	builder.meters[configtelemetry.LevelDetailed] = LeveledMeter(settings, configtelemetry.LevelDetailed)

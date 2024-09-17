@@ -375,11 +375,28 @@ func TestMap_FromRaw(t *testing.T) {
 	}, v.Map().AsRaw())
 }
 
+func TestMap_MoveTo(t *testing.T) {
+	dest := NewMap()
+	// Test MoveTo to empty
+	NewMap().MoveTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test MoveTo larger slice
+	src := Map(internal.GenerateTestMap())
+	src.MoveTo(dest)
+	assert.EqualValues(t, Map(internal.GenerateTestMap()), dest)
+	assert.Equal(t, 0, src.Len())
+
+	// Test MoveTo from empty to non-empty
+	NewMap().MoveTo(dest)
+	assert.Equal(t, 0, dest.Len())
+}
+
 func TestMap_CopyTo(t *testing.T) {
 	dest := NewMap()
 	// Test CopyTo to empty
 	NewMap().CopyTo(dest)
-	assert.EqualValues(t, 0, dest.Len())
+	assert.Equal(t, 0, dest.Len())
 
 	// Test CopyTo larger slice
 	Map(internal.GenerateTestMap()).CopyTo(dest)

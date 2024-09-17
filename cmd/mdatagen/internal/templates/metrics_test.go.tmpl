@@ -179,7 +179,7 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok {{ if eq $i 0 }}:{{ end }}= dp.Attributes().Get("{{ (attributeInfo $attr).Name }}")
 					assert.True(t, ok)
 					{{- if eq (attributeInfo $attr).Type.String "Bool"}}
-					assert.{{- if (attributeInfo $attr).TestValue }}True{{ else }}False{{- end }}(t, attrVal.{{ (attributeInfo $attr).Type }}()
+					assert.{{- if eq (attributeInfo $attr).TestValue "true" }}True{{ else }}False{{- end }}(t, attrVal.{{ (attributeInfo $attr).Type }}()
 					{{- else }}
 					assert.EqualValues(t, {{ (attributeInfo $attr).TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}()
 					{{- end }}
