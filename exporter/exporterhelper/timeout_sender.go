@@ -17,6 +17,15 @@ type TimeoutConfig struct {
 	// Timeout is the timeout for every attempt to send data to the backend.
 	// A zero timeout means no timeout.
 	Timeout time.Duration `mapstructure:"timeout"`
+
+	// OnShortTimeout is the exporter's disposition toward short timeouts,
+	// any time the incoming context's deadline is shorter than the
+	// configured Timeout.  The choices are:
+	//
+	// - sustain: use the shorter-than-configured timeout
+	// - abort: abort the request for having insufficient deadline on arrival
+	// - ignore: ignore the previous deadline and proceed with the configured timeout
+	OnShortTimeout string `mapstructure:"on_short_timeout"`
 }
 
 func (ts *TimeoutConfig) Validate() error {
@@ -35,7 +44,8 @@ func NewDefaultTimeoutSettings() TimeoutSettings {
 // NewDefaultTimeoutConfig returns the default config for TimeoutConfig.
 func NewDefaultTimeoutConfig() TimeoutConfig {
 	return TimeoutConfig{
-		Timeout: 5 * time.Second,
+		Timeout:        5 * time.Second,
+		OnShortTimeout: "sustain",
 	}
 }
 
@@ -50,8 +60,30 @@ func (ts *timeoutSender) send(ctx context.Context, req Request) error {
 	if ts.cfg.Timeout == 0 {
 		return req.Export(ctx)
 	}
-	// Intentionally don't overwrite the context inside the request, because in case of retries deadline will not be
-	// updated because this deadline most likely is before the next one.
+	// If there is deadline that will expire before the configured timeout,
+	// take one of several optional behaviors.
+	if deadline, has := ctx.Deadline(); has {
+		available := time.Until(deadline)
+		if available < ts.cfg.Timeout {
+			switch ts.cfg.OnShortTimeout {
+			case "ignore":
+				// The following call erases the
+				// deadline, a new one will be
+				// inserted below.
+				ctx = context.WithoutCancel(ctx)
+			case "abort":
+				// We should return a gRPC-or-HTTP
+				// response status saying the request
+				// was aborted.
+				return fmt.Errorf("Aborted: context deadline %v shorter than configured timeout %v", available, ts.cfg.Timeout)
+			case "sustain":
+				// Allow the shorter-than-configured
+				// timeout, means do nothing.
+			default:
+				// Default is sustain, the legacy behavior.
+		}
+	}
+
 	tCtx, cancelFunc := context.WithTimeout(ctx, ts.cfg.Timeout)
 	defer cancelFunc()
 	return req.Export(tCtx)
