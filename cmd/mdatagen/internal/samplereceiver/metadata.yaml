@@ -43,27 +43,27 @@ resource_attributes:
 
   map.resource.attr:
     description: Resource attribute with a map value.
-    type: map 
+    type: map
     enabled: true
 
   string.resource.attr_disable_warning:
     description: Resource attribute with any string value.
     type: string
-    enabled: true 
+    enabled: true
     warnings:
       if_enabled_not_set: This resource_attribute will be disabled by default soon.
 
   string.resource.attr_remove_warning:
     description: Resource attribute with any string value.
     type: string
-    enabled: false 
+    enabled: false
     warnings:
       if_configured: This resource_attribute is deprecated and will be removed soon.
 
   string.resource.attr_to_be_removed:
     description: Resource attribute with any string value.
     type: string
-    enabled: true 
+    enabled: true
     warnings:
       if_enabled: This resource_attribute is deprecated and will be removed soon.
 
@@ -84,6 +84,12 @@ attributes:
 
   boolean_attr:
     description: Attribute with a boolean value.
+    type: bool
+
+  # This 2nd boolean attribute allows us to test both values for boolean attributes,
+  # as test values are based on the parity of the attribute name length.
+  boolean_attr2:
+    description: Another attribute with a boolean value.
     type: bool
 
   slice_attr:
@@ -114,7 +120,7 @@ metrics:
     unit: "1"
     gauge:
       value_type: double
-    attributes: [string_attr, boolean_attr]
+    attributes: [string_attr, boolean_attr, boolean_attr2]
     warnings:
       if_configured: This metric is deprecated and will be removed soon.
 

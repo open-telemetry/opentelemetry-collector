@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package main
+package internal
 
 import (
 	"testing"
@@ -37,7 +37,7 @@ func TestFormatIdentifier(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
-			got, err := formatIdentifier(tt.input, tt.exported)
+			got, err := FormatIdentifier(tt.input, tt.exported)
 
 			if tt.wantErr != "" {
 				require.EqualError(t, err, tt.wantErr)
