@@ -161,6 +161,9 @@ telemetry:
   metrics:
     batch_size_trigger_send:
       enabled: true
+      stability:
+        level: deprecated
+        from: v0.110.0
       description: Number of times the batch was sent due to a size trigger
       unit: "{times}"
       sum:
@@ -168,6 +171,8 @@ telemetry:
         monotonic: true
     request_duration:
       enabled: true
+      stability:
+        level: alpha
       description: Duration of request
       unit: s
       histogram:
@@ -175,6 +180,8 @@ telemetry:
         bucket_boundaries: [1, 10, 100]
     process_runtime_total_alloc_bytes:
       enabled: true
+      stability:
+        level: stable
       description: Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')
       unit: By
       sum:
