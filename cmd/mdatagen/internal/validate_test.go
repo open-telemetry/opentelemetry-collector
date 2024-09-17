@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package main
+package internal
 
 import (
 	"fmt"
@@ -69,12 +69,12 @@ func TestValidate(t *testing.T) {
 		{
 			name: "testdata/no_metric_type.yaml",
 			wantErr: "metric system.cpu.time doesn't have a metric type key, " +
-				"one of the following has to be specified: sum, gauge",
+				"one of the following has to be specified: sum, gauge, histogram",
 		},
 		{
 			name: "testdata/two_metric_types.yaml",
 			wantErr: "metric system.cpu.time has more than one metric type keys, " +
-				"only one of the following has to be specified: sum, gauge",
+				"only one of the following has to be specified: sum, gauge, histogram",
 		},
 		{
 			name:    "testdata/invalid_input_type.yaml",
@@ -99,7 +99,7 @@ func TestValidate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := loadMetadata(tt.name)
+			_, err := LoadMetadata(tt.name)
 			require.Error(t, err)
 			require.EqualError(t, err, tt.wantErr)
 		})
@@ -113,9 +113,9 @@ func TestValidateMetricDuplicates(t *testing.T) {
 		"container.uptime":          {"docker_stats", "kubeletstats"},
 	}
 	allMetrics := map[string][]string{}
-	err := filepath.Walk("../../receiver", func(path string, info fs.FileInfo, _ error) error {
+	err := filepath.Walk("../../../receiver", func(path string, info fs.FileInfo, _ error) error {
 		if info.Name() == "metadata.yaml" {
-			md, err := loadMetadata(path)
+			md, err := LoadMetadata(path)
 			require.NoError(t, err)
 			if len(md.Metrics) > 0 {
 				for metricName := range md.Metrics {

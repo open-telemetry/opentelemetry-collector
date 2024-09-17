@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package main
+package internal
 
 import (
 	"testing"
@@ -16,12 +16,12 @@ import (
 func TestLoadMetadata(t *testing.T) {
 	tests := []struct {
 		name    string
-		want    metadata
+		want    Metadata
 		wantErr string
 	}{
 		{
-			name: "internal/samplereceiver/metadata.yaml",
-			want: metadata{
+			name: "samplereceiver/metadata.yaml",
+			want: Metadata{
 				GithubProject:  "open-telemetry/opentelemetry-collector",
 				Type:           "sample",
 				SemConvVersion: "1.9.0",
@@ -39,7 +39,7 @@ func TestLoadMetadata(t *testing.T) {
 					Warnings:             []string{"Any additional information that should be brought to the consumer's attention"},
 					UnsupportedPlatforms: []string{"freebsd", "illumos"},
 				},
-				ResourceAttributes: map[attributeName]attribute{
+				ResourceAttributes: map[AttributeName]Attribute{
 					"string.resource.attr": {
 						Description: "Resource attribute with any string value.",
 						Enabled:     true,
@@ -116,7 +116,7 @@ func TestLoadMetadata(t *testing.T) {
 					},
 				},
 
-				Attributes: map[attributeName]attribute{
+				Attributes: map[AttributeName]Attribute{
 					"enum_attr": {
 						Description:  "Attribute with a known set of string values.",
 						NameOverride: "",
@@ -149,6 +149,13 @@ func TestLoadMetadata(t *testing.T) {
 						},
 						FullName: "boolean_attr",
 					},
+					"boolean_attr2": {
+						Description: "Another attribute with a boolean value.",
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeBool,
+						},
+						FullName: "boolean_attr2",
+					},
 					"slice_attr": {
 						Description: "Attribute with a slice value.",
 						Type: ValueType{
@@ -164,7 +171,7 @@ func TestLoadMetadata(t *testing.T) {
 						FullName: "map_attr",
 					},
 				},
-				Metrics: map[metricName]metric{
+				Metrics: map[MetricName]Metric{
 					"default.metric": {
 						Enabled:               true,
 						Description:           "Monotonic cumulative sum int metric enabled by default.",
@@ -178,7 +185,7 @@ func TestLoadMetadata(t *testing.T) {
 							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
 							Mono:                   Mono{Monotonic: true},
 						},
-						Attributes: []attributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
+						Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
 					},
 					"optional.metric": {
 						Enabled:     false,
@@ -190,7 +197,7 @@ func TestLoadMetadata(t *testing.T) {
 						Gauge: &gauge{
 							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
 						},
-						Attributes: []attributeName{"string_attr", "boolean_attr"},
+						Attributes: []AttributeName{"string_attr", "boolean_attr", "boolean_attr2"},
 					},
 					"optional.metric.empty_unit": {
 						Enabled:     false,
@@ -202,7 +209,7 @@ func TestLoadMetadata(t *testing.T) {
 						Gauge: &gauge{
 							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
 						},
-						Attributes: []attributeName{"string_attr", "boolean_attr"},
+						Attributes: []AttributeName{"string_attr", "boolean_attr"},
 					},
 
 					"default.metric.to_be_removed": {
@@ -229,11 +236,11 @@ func TestLoadMetadata(t *testing.T) {
 							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
 							Mono:                   Mono{Monotonic: true},
 						},
-						Attributes: []attributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
+						Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
 					},
 				},
 				Telemetry: telemetry{
-					Metrics: map[metricName]metric{
+					Metrics: map[MetricName]Metric{
 						"batch_size_trigger_send": {
 							Enabled:     true,
 							Description: "Number of times the batch was sent due to a size trigger",
@@ -286,27 +293,27 @@ func TestLoadMetadata(t *testing.T) {
 		},
 		{
 			name: "testdata/parent.yaml",
-			want: metadata{
+			want: Metadata{
 				Type:            "subcomponent",
 				Parent:          "parentComponent",
-				ScopeName:       "go.opentelemetry.io/collector/cmd/mdatagen",
+				ScopeName:       "go.opentelemetry.io/collector/cmd/mdatagen/internal",
 				ShortFolderName: "testdata",
 				Tests:           tests{Host: "componenttest.NewNopHost()"},
 			},
 		},
 		{
 			name:    "testdata/invalid_type_rattr.yaml",
-			want:    metadata{},
+			want:    Metadata{},
 			wantErr: "decoding failed due to the following error(s):\n\nerror decoding 'resource_attributes[string.resource.attr].type': invalid type: \"invalidtype\"",
 		},
 		{
 			name:    "testdata/no_enabled.yaml",
-			want:    metadata{},
+			want:    Metadata{},
 			wantErr: "decoding failed due to the following error(s):\n\nerror decoding 'metrics[system.cpu.time]': missing required field: `enabled`",
 		},
 		{
 			name: "testdata/no_value_type.yaml",
-			want: metadata{},
+			want: Metadata{},
 			wantErr: "decoding failed due to the following error(s):\n\nerror decoding 'metrics[system.cpu.time]': decoding failed due to the following error(s):\n\n" +
 				"error decoding 'sum': missing required field: `value_type`",
 		},
@@ -316,18 +323,18 @@ func TestLoadMetadata(t *testing.T) {
 		},
 		{
 			name:    "testdata/invalid_aggregation.yaml",
-			want:    metadata{},
+			want:    Metadata{},
 			wantErr: "decoding failed due to the following error(s):\n\nerror decoding 'metrics[default.metric]': decoding failed due to the following error(s):\n\nerror decoding 'sum': decoding failed due to the following error(s):\n\nerror decoding 'aggregation_temporality': invalid aggregation: \"invalidaggregation\"",
 		},
 		{
 			name:    "testdata/invalid_type_attr.yaml",
-			want:    metadata{},
+			want:    Metadata{},
 			wantErr: "decoding failed due to the following error(s):\n\nerror decoding 'attributes[used_attr].type': invalid type: \"invalidtype\"",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := loadMetadata(tt.name)
+			got, err := LoadMetadata(tt.name)
 			if tt.wantErr != "" {
 				require.Error(t, err)
 				require.EqualError(t, err, tt.wantErr)

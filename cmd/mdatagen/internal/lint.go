@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package main
+package internal // import "go.opentelemetry.io/collector/cmd/mdatagen/internal"
 
 import (
 	"errors"
@@ -11,8 +11,8 @@ import (
 	"go.opentelemetry.io/collector/cmd/mdatagen/third_party/golint"
 )
 
-// formatIdentifier variable in a go-safe way
-func formatIdentifier(s string, exported bool) (string, error) {
+// FormatIdentifier variable in a go-safe way
+func FormatIdentifier(s string, exported bool) (string, error) {
 	if s == "" {
 		return "", errors.New("string cannot be empty")
 	}

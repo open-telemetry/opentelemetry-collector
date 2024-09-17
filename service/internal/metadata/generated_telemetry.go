@@ -45,75 +45,83 @@ type TelemetryBuilder struct {
 	meters                                   map[configtelemetry.Level]metric.Meter
 }
 
-// telemetryBuilderOption applies changes to default builder.
-type telemetryBuilderOption func(*TelemetryBuilder)
+// TelemetryBuilderOption applies changes to default builder.
+type TelemetryBuilderOption interface {
+	apply(*TelemetryBuilder)
+}
+
+type telemetryBuilderOptionFunc func(mb *TelemetryBuilder)
+
+func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
+	tbof(mb)
+}
 
 // WithProcessCPUSecondsCallback sets callback for observable ProcessCPUSeconds metric.
-func WithProcessCPUSecondsCallback(cb func() float64, opts ...metric.ObserveOption) telemetryBuilderOption {
-	return func(builder *TelemetryBuilder) {
+func WithProcessCPUSecondsCallback(cb func() float64, opts ...metric.ObserveOption) TelemetryBuilderOption {
+	return telemetryBuilderOptionFunc(func(builder *TelemetryBuilder) {
 		builder.observeProcessCPUSeconds = func(_ context.Context, o metric.Observer) error {
 			o.ObserveFloat64(builder.ProcessCPUSeconds, cb(), opts...)
 			return nil
 		}
-	}
+	})
 }
 
 // WithProcessMemoryRssCallback sets callback for observable ProcessMemoryRss metric.
-func WithProcessMemoryRssCallback(cb func() int64, opts ...metric.ObserveOption) telemetryBuilderOption {
-	return func(builder *TelemetryBuilder) {
+func WithProcessMemoryRssCallback(cb func() int64, opts ...metric.ObserveOption) TelemetryBuilderOption {
+	return telemetryBuilderOptionFunc(func(builder *TelemetryBuilder) {
 		builder.observeProcessMemoryRss = func(_ context.Context, o metric.Observer) error {
 			o.ObserveInt64(builder.ProcessMemoryRss, cb(), opts...)
 			return nil
 		}
-	}
+	})
 }
 
 // WithProcessRuntimeHeapAllocBytesCallback sets callback for observable ProcessRuntimeHeapAllocBytes metric.
-func WithProcessRuntimeHeapAllocBytesCallback(cb func() int64, opts ...metric.ObserveOption) telemetryBuilderOption {
-	return func(builder *TelemetryBuilder) {
+func WithProcessRuntimeHeapAllocBytesCallback(cb func() int64, opts ...metric.ObserveOption) TelemetryBuilderOption {
+	return telemetryBuilderOptionFunc(func(builder *TelemetryBuilder) {
 		builder.observeProcessRuntimeHeapAllocBytes = func(_ context.Context, o metric.Observer) error {
 			o.ObserveInt64(builder.ProcessRuntimeHeapAllocBytes, cb(), opts...)
 			return nil
 		}
-	}
+	})
 }
 
 // WithProcessRuntimeTotalAllocBytesCallback sets callback for observable ProcessRuntimeTotalAllocBytes metric.
-func WithProcessRuntimeTotalAllocBytesCallback(cb func() int64, opts ...metric.ObserveOption) telemetryBuilderOption {
-	return func(builder *TelemetryBuilder) {
+func WithProcessRuntimeTotalAllocBytesCallback(cb func() int64, opts ...metric.ObserveOption) TelemetryBuilderOption {
+	return telemetryBuilderOptionFunc(func(builder *TelemetryBuilder) {
 		builder.observeProcessRuntimeTotalAllocBytes = func(_ context.Context, o metric.Observer) error {
 			o.ObserveInt64(builder.ProcessRuntimeTotalAllocBytes, cb(), opts...)
 			return nil
 		}
-	}
+	})
 }
 
 // WithProcessRuntimeTotalSysMemoryBytesCallback sets callback for observable ProcessRuntimeTotalSysMemoryBytes metric.
-func WithProcessRuntimeTotalSysMemoryBytesCallback(cb func() int64, opts ...metric.ObserveOption) telemetryBuilderOption {
-	return func(builder *TelemetryBuilder) {
+func WithProcessRuntimeTotalSysMemoryBytesCallback(cb func() int64, opts ...metric.ObserveOption) TelemetryBuilderOption {
+	return telemetryBuilderOptionFunc(func(builder *TelemetryBuilder) {
 		builder.observeProcessRuntimeTotalSysMemoryBytes = func(_ context.Context, o metric.Observer) error {
 			o.ObserveInt64(builder.ProcessRuntimeTotalSysMemoryBytes, cb(), opts...)
 			return nil
 		}
-	}
+	})
 }
 
 // WithProcessUptimeCallback sets callback for observable ProcessUptime metric.
-func WithProcessUptimeCallback(cb func() float64, opts ...metric.ObserveOption) telemetryBuilderOption {
-	return func(builder *TelemetryBuilder) {
+func WithProcessUptimeCallback(cb func() float64, opts ...metric.ObserveOption) TelemetryBuilderOption {
+	return telemetryBuilderOptionFunc(func(builder *TelemetryBuilder) {
 		builder.observeProcessUptime = func(_ context.Context, o metric.Observer) error {
 			o.ObserveFloat64(builder.ProcessUptime, cb(), opts...)
 			return nil
 		}
-	}
+	})
 }
 
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
 // for a component
-func NewTelemetryBuilder(settings component.TelemetrySettings, options ...telemetryBuilderOption) (*TelemetryBuilder, error) {
+func NewTelemetryBuilder(settings component.TelemetrySettings, options ...TelemetryBuilderOption) (*TelemetryBuilder, error) {
 	builder := TelemetryBuilder{meters: map[configtelemetry.Level]metric.Meter{}}
 	for _, op := range options {
-		op(&builder)
+		op.apply(&builder)
 	}
 	builder.meters[configtelemetry.LevelBasic] = LeveledMeter(settings, configtelemetry.LevelBasic)
 	var err, errs error

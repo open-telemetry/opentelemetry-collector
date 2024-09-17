@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package main
+package internal // import "go.opentelemetry.io/collector/cmd/mdatagen/internal"
 
 import (
 	"errors"
@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-func (md *metadata) Validate() error {
+func (md *Metadata) Validate() error {
 	var errs error
 	if err := md.validateType(); err != nil {
 		errs = errors.Join(errs, err)
@@ -35,7 +35,7 @@ func (md *metadata) Validate() error {
 // This must be kept in sync with the regex in component/config.go.
 var typeRegexp = regexp.MustCompile(`^[a-zA-Z][0-9a-zA-Z_]{0,62}$`)
 
-func (md *metadata) validateType() error {
+func (md *Metadata) validateType() error {
 	if md.Type == "" {
 		return errors.New("missing type")
 	}
@@ -51,7 +51,7 @@ func (md *metadata) validateType() error {
 	return nil
 }
 
-func (md *metadata) validateStatus() error {
+func (md *Metadata) validateStatus() error {
 	if md.Parent != "" && md.Status == nil {
 		// status is not required for subcomponents.
 		return nil
@@ -120,7 +120,7 @@ func (s *Status) validateStability() error {
 	return errs
 }
 
-func (md *metadata) validateResourceAttributes() error {
+func (md *Metadata) validateResourceAttributes() error {
 	var errs error
 	for name, attr := range md.ResourceAttributes {
 		if attr.Description == "" {
@@ -134,41 +134,16 @@ func (md *metadata) validateResourceAttributes() error {
 	return errs
 }
 
-func (md *metadata) validateMetrics() error {
+func (md *Metadata) validateMetrics() error {
 	var errs error
-	usedAttrs := map[attributeName]bool{}
-	for mn, m := range md.Metrics {
-		if m.Sum == nil && m.Gauge == nil {
-			errs = errors.Join(errs, fmt.Errorf("metric %v doesn't have a metric type key, "+
-				"one of the following has to be specified: sum, gauge", mn))
-			continue
-		}
-		if m.Sum != nil && m.Gauge != nil {
-			errs = errors.Join(errs, fmt.Errorf("metric %v has more than one metric type keys, "+
-				"only one of the following has to be specified: sum, gauge", mn))
-			continue
-		}
-		if err := m.validate(); err != nil {
-			errs = errors.Join(errs, fmt.Errorf(`metric "%v": %w`, mn, err))
-			continue
-		}
-		unknownAttrs := make([]attributeName, 0, len(m.Attributes))
-		for _, attr := range m.Attributes {
-			if _, ok := md.Attributes[attr]; ok {
-				usedAttrs[attr] = true
-			} else {
-				unknownAttrs = append(unknownAttrs, attr)
-			}
-		}
-		if len(unknownAttrs) > 0 {
-			errs = errors.Join(errs, fmt.Errorf(`metric "%v" refers to undefined attributes: %v`, mn, unknownAttrs))
-		}
-	}
-	errs = errors.Join(errs, md.validateAttributes(usedAttrs))
+	usedAttrs := map[AttributeName]bool{}
+	errs = errors.Join(errs, validateMetrics(md.Metrics, md.Attributes, usedAttrs),
+		validateMetrics(md.Telemetry.Metrics, md.Attributes, usedAttrs),
+		md.validateAttributes(usedAttrs))
 	return errs
 }
 
-func (m *metric) validate() error {
+func (m *Metric) validate() error {
 	var errs error
 	if m.Description == "" {
 		errs = errors.Join(errs, errors.New(`missing metric description`))
@@ -192,9 +167,9 @@ func (mit MetricInputType) Validate() error {
 	return nil
 }
 
-func (md *metadata) validateAttributes(usedAttrs map[attributeName]bool) error {
+func (md *Metadata) validateAttributes(usedAttrs map[AttributeName]bool) error {
 	var errs error
-	unusedAttrs := make([]attributeName, 0, len(md.Attributes))
+	unusedAttrs := make([]AttributeName, 0, len(md.Attributes))
 	for attrName, attr := range md.Attributes {
 		if attr.Description == "" {
 			errs = errors.Join(errs, fmt.Errorf(`missing attribute description for: %v`, attrName))
@@ -209,6 +184,38 @@ func (md *metadata) validateAttributes(usedAttrs map[attributeName]bool) error {
 	}
 	if len(unusedAttrs) > 0 {
 		errs = errors.Join(errs, fmt.Errorf("unused attributes: %v", unusedAttrs))
+	}
+	return errs
+}
+
+func validateMetrics(metrics map[MetricName]Metric, attributes map[AttributeName]Attribute, usedAttrs map[AttributeName]bool) error {
+	var errs error
+	for mn, m := range metrics {
+		if m.Sum == nil && m.Gauge == nil && m.Histogram == nil {
+			errs = errors.Join(errs, fmt.Errorf("metric %v doesn't have a metric type key, "+
+				"one of the following has to be specified: sum, gauge, histogram", mn))
+			continue
+		}
+		if (m.Sum != nil && m.Gauge != nil) || (m.Sum != nil && m.Histogram != nil) || (m.Gauge != nil && m.Histogram != nil) {
+			errs = errors.Join(errs, fmt.Errorf("metric %v has more than one metric type keys, "+
+				"only one of the following has to be specified: sum, gauge, histogram", mn))
+			continue
+		}
+		if err := m.validate(); err != nil {
+			errs = errors.Join(errs, fmt.Errorf(`metric "%v": %w`, mn, err))
+			continue
+		}
+		unknownAttrs := make([]AttributeName, 0, len(m.Attributes))
+		for _, attr := range m.Attributes {
+			if _, ok := attributes[attr]; ok {
+				usedAttrs[attr] = true
+			} else {
+				unknownAttrs = append(unknownAttrs, attr)
+			}
+		}
+		if len(unknownAttrs) > 0 {
+			errs = errors.Join(errs, fmt.Errorf(`metric "%v" refers to undefined attributes: %v`, mn, unknownAttrs))
+		}
 	}
 	return errs
 }
