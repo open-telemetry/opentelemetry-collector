@@ -58,7 +58,7 @@ var availableDecoders = map[string]func(body io.ReadCloser) (io.ReadCloser, erro
 		}
 		return zr, nil
 	},
-	//nolint:unparam // ignoring lint since method needs to fit typedef
+	//nolint:unparam // Ignoring the linter request to remove error return since it needs to match the method signature
 	"snappy": func(body io.ReadCloser) (io.ReadCloser, error) {
 		// Lazy Reading content to improve memory efficiency
 		return io.NopCloser(snappy.NewReader(body)), nil
