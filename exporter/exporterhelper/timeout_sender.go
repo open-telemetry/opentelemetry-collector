@@ -6,6 +6,7 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 )
 
@@ -81,6 +82,7 @@ func (ts *timeoutSender) send(ctx context.Context, req Request) error {
 				// timeout, means do nothing.
 			default:
 				// Default is sustain, the legacy behavior.
+			}
 		}
 	}
 
