@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -46,8 +47,13 @@ func TestCreateSameReceiver(t *testing.T) {
 	assert.NotNil(t, lReceiver)
 	assert.NoError(t, err)
 
+	pReceiver, err := factory.CreateProfilesReceiver(context.Background(), creationSet, cfg, consumertest.NewNop())
+	assert.NotNil(t, pReceiver)
+	assert.NoError(t, err)
+
 	assert.Same(t, tReceiver, mReceiver)
 	assert.Same(t, tReceiver, lReceiver)
+	assert.Same(t, tReceiver, pReceiver)
 }
 
 func TestCreateTracesReceiver(t *testing.T) {
@@ -327,6 +333,99 @@ func TestCreateLogReceiver(t *testing.T) {
 			} else {
 				require.NoError(t, mr.Start(context.Background(), componenttest.NewNopHost()))
 				assert.NoError(t, mr.Shutdown(context.Background()))
+			}
+		})
+	}
+}
+
+func TestCreateProfilesReceiver(t *testing.T) {
+	factory := NewFactory()
+	defaultGRPCSettings := &configgrpc.ServerConfig{
+		NetAddr: confignet.AddrConfig{
+			Endpoint:  testutil.GetAvailableLocalAddress(t),
+			Transport: confignet.TransportTypeTCP,
+		},
+	}
+	defaultServerConfig := confighttp.NewDefaultServerConfig()
+	defaultServerConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
+	defaultHTTPSettings := &HTTPConfig{
+		ServerConfig:   &defaultServerConfig,
+		TracesURLPath:  defaultTracesURLPath,
+		MetricsURLPath: defaultMetricsURLPath,
+		LogsURLPath:    defaultLogsURLPath,
+	}
+
+	tests := []struct {
+		name         string
+		cfg          *Config
+		wantStartErr bool
+		wantErr      bool
+		sink         consumerprofiles.Profiles
+	}{
+		{
+			name: "default",
+			cfg: &Config{
+				Protocols: Protocols{
+					GRPC: defaultGRPCSettings,
+					HTTP: defaultHTTPSettings,
+				},
+			},
+			sink: consumertest.NewNop(),
+		},
+		{
+			name: "invalid_grpc_port",
+			cfg: &Config{
+				Protocols: Protocols{
+					GRPC: &configgrpc.ServerConfig{
+						NetAddr: confignet.AddrConfig{
+							Endpoint:  "localhost:112233",
+							Transport: confignet.TransportTypeTCP,
+						},
+					},
+					HTTP: defaultHTTPSettings,
+				},
+			},
+			wantStartErr: true,
+			sink:         consumertest.NewNop(),
+		},
+		{
+			name: "invalid_http_port",
+			cfg: &Config{
+				Protocols: Protocols{
+					GRPC: defaultGRPCSettings,
+					HTTP: &HTTPConfig{
+						ServerConfig: &confighttp.ServerConfig{
+							Endpoint: "localhost:112233",
+						},
+					},
+				},
+			},
+			wantStartErr: true,
+			sink:         consumertest.NewNop(),
+		},
+		{
+			name: "no_http_or_grcp_config",
+			cfg: &Config{
+				Protocols: Protocols{},
+			},
+			sink: consumertest.NewNop(),
+		},
+	}
+	ctx := context.Background()
+	creationSet := receivertest.NewNopSettings()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tr, err := factory.CreateProfilesReceiver(ctx, creationSet, tt.cfg, tt.sink)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			if tt.wantStartErr {
+				assert.Error(t, tr.Start(context.Background(), componenttest.NewNopHost()))
+			} else {
+				assert.NoError(t, tr.Start(context.Background(), componenttest.NewNopHost()))
+				assert.NoError(t, tr.Shutdown(context.Background()))
 			}
 		})
 	}
