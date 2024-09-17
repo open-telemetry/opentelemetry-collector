@@ -7,14 +7,25 @@ import (
 	"context"
 	"time"
 
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/service/internal/resource"
 	"go.opentelemetry.io/collector/service/telemetry/internal"
 )
+
+// disableHighCardinalityMetricsfeatureGate is the feature gate that controls whether the collector should enable
+// potentially high cardinality metrics. The gate will be removed when the collector allows for view configuration.
+var disableHighCardinalityMetricsfeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"telemetry.disableHighCardinalityMetrics",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("controls whether the collector should enable potentially high"+
+		"cardinality metrics. The gate will be removed when the collector allows for view configuration."))
 
 func createDefaultConfig() component.Config {
 	return &Config{
@@ -54,6 +65,18 @@ func NewFactory() Factory {
 		internal.WithTracerProvider(func(ctx context.Context, set Settings, cfg component.Config) (trace.TracerProvider, error) {
 			c := *cfg.(*Config)
 			return newTracerProvider(ctx, set, c)
+		}),
+		internal.WithMeterProvider(func(_ context.Context, set Settings, cfg component.Config) (metric.MeterProvider, error) {
+			c := *cfg.(*Config)
+			disableHighCard := disableHighCardinalityMetricsfeatureGate.IsEnabled()
+			return newMeterProvider(
+				meterProviderSettings{
+					res:               resource.New(set.BuildInfo, c.Resource),
+					cfg:               c.Metrics,
+					asyncErrorChannel: set.AsyncErrorChannel,
+				},
+				disableHighCard,
+			)
 		}),
 	)
 }
