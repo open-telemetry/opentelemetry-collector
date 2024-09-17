@@ -95,15 +95,23 @@ func (s *Status) validateStability() error {
 			if c != "metrics" &&
 				c != "traces" &&
 				c != "logs" &&
+				c != "profiles" &&
 				c != "traces_to_traces" &&
 				c != "traces_to_metrics" &&
 				c != "traces_to_logs" &&
+				c != "traces_to_profiles" &&
 				c != "metrics_to_traces" &&
 				c != "metrics_to_metrics" &&
 				c != "metrics_to_logs" &&
+				c != "metrics_to_profiles" &&
 				c != "logs_to_traces" &&
 				c != "logs_to_metrics" &&
 				c != "logs_to_logs" &&
+				c != "logs_to_profiles" &&
+				c != "profiles_to_profiles" &&
+				c != "profiles_to_traces" &&
+				c != "profiles_to_metrics" &&
+				c != "profiles_to_logs" &&
 				c != "extension" {
 				errs = errors.Join(errs, fmt.Errorf("invalid component: %v", c))
 			}
