@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/internal/sharedcomponent"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/extensions"
@@ -100,12 +101,12 @@ func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 				Level: configtelemetry.LevelNone,
 			},
 		},
-		Pipelines: pipelines.Config{
-			component.MustNewID("traces"): {
+		PipelinesWithPipelineID: pipelines.ConfigWithPipelineID{
+			pipeline.MustNewID("traces"): {
 				Receivers: []component.ID{component.NewID(component.MustNewType("test"))},
 				Exporters: []component.ID{component.NewID(nopType)},
 			},
-			component.MustNewID("metrics"): {
+			pipeline.MustNewID("metrics"): {
 				Receivers: []component.ID{component.NewID(component.MustNewType("test"))},
 				Exporters: []component.ID{component.NewID(nopType)},
 			},
@@ -127,7 +128,7 @@ func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 
 	for instanceID, events := range eventsReceived {
 		pipelineIDs := ""
-		instanceID.AllPipelineIDs(func(id component.ID) bool {
+		instanceID.AllPipelineIDsWithPipelineIDs(func(id pipeline.ID) bool {
 			pipelineIDs += id.String() + ","
 			return true
 		})

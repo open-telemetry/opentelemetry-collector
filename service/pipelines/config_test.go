@@ -11,12 +11,13 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 func TestConfigValidate(t *testing.T) {
 	var testCases = []struct {
 		name     string // test case name (also file name containing config yaml)
-		cfgFn    func() Config
+		cfgFn    func() ConfigWithPipelineID
 		expected error
 	}{
 		{
@@ -26,9 +27,9 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			name: "duplicate-processor-reference",
-			cfgFn: func() Config {
+			cfgFn: func() ConfigWithPipelineID {
 				cfg := generateConfig()
-				pipe := cfg[component.MustNewID("traces")]
+				pipe := cfg[pipeline.MustNewID("traces")]
 				pipe.Processors = append(pipe.Processors, pipe.Processors...)
 				return cfg
 			},
@@ -36,41 +37,41 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			name: "missing-pipeline-receivers",
-			cfgFn: func() Config {
+			cfgFn: func() ConfigWithPipelineID {
 				cfg := generateConfig()
-				cfg[component.MustNewID("traces")].Receivers = nil
+				cfg[pipeline.MustNewID("traces")].Receivers = nil
 				return cfg
 			},
 			expected: fmt.Errorf(`pipeline "traces": %w`, errMissingServicePipelineReceivers),
 		},
 		{
 			name: "missing-pipeline-exporters",
-			cfgFn: func() Config {
+			cfgFn: func() ConfigWithPipelineID {
 				cfg := generateConfig()
-				cfg[component.MustNewID("traces")].Exporters = nil
+				cfg[pipeline.MustNewID("traces")].Exporters = nil
 				return cfg
 			},
 			expected: fmt.Errorf(`pipeline "traces": %w`, errMissingServicePipelineExporters),
 		},
 		{
 			name: "missing-pipelines",
-			cfgFn: func() Config {
+			cfgFn: func() ConfigWithPipelineID {
 				return nil
 			},
 			expected: errMissingServicePipelines,
 		},
 		{
 			name: "invalid-service-pipeline-type",
-			cfgFn: func() Config {
+			cfgFn: func() ConfigWithPipelineID {
 				cfg := generateConfig()
-				cfg[component.MustNewID("wrongtype")] = &PipelineConfig{
+				cfg[pipeline.MustNewID("wrongtype")] = &PipelineConfig{
 					Receivers:  []component.ID{component.MustNewID("nop")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewID("nop")},
 				}
 				return cfg
 			},
-			expected: errors.New(`pipeline "wrongtype": unknown datatype "wrongtype"`),
+			expected: errors.New(`pipeline "wrongtype": unknown signal "wrongtype"`),
 		},
 	}
 
@@ -82,9 +83,9 @@ func TestConfigValidate(t *testing.T) {
 	}
 }
 
-func generateConfig() Config {
-	return map[component.ID]*PipelineConfig{
-		component.MustNewID("traces"): {
+func generateConfig() ConfigWithPipelineID {
+	return map[pipeline.ID]*PipelineConfig{
+		pipeline.MustNewID("traces"): {
 			Receivers:  []component.ID{component.MustNewID("nop")},
 			Processors: []component.ID{component.MustNewID("nop")},
 			Exporters:  []component.ID{component.MustNewID("nop")},

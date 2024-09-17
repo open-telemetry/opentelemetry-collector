@@ -15,13 +15,14 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 // obsReport is a helper to add observability to an exporter.
 type obsReport struct {
 	spanNamePrefix string
 	tracer         trace.Tracer
-	dataType       component.DataType
+	signal         pipeline.Signal
 
 	otelAttrs        []attribute.KeyValue
 	telemetryBuilder *metadata.TelemetryBuilder
@@ -31,7 +32,7 @@ type obsReport struct {
 type obsReportSettings struct {
 	exporterID             component.ID
 	exporterCreateSettings exporter.Settings
-	dataType               component.DataType
+	signal                 pipeline.Signal
 }
 
 func newExporter(cfg obsReportSettings) (*obsReport, error) {
@@ -43,7 +44,7 @@ func newExporter(cfg obsReportSettings) (*obsReport, error) {
 	return &obsReport{
 		spanNamePrefix: internal.ExporterPrefix + cfg.exporterID.String(),
 		tracer:         cfg.exporterCreateSettings.TracerProvider.Tracer(cfg.exporterID.String()),
-		dataType:       cfg.dataType,
+		signal:         cfg.signal,
 		otelAttrs: []attribute.KeyValue{
 			attribute.String(internal.ExporterKey, cfg.exporterID.String()),
 		},
@@ -61,7 +62,7 @@ func (or *obsReport) startTracesOp(ctx context.Context) context.Context {
 // endTracesOp completes the export operation that was started with startTracesOp.
 func (or *obsReport) endTracesOp(ctx context.Context, numSpans int, err error) {
 	numSent, numFailedToSend := toNumItems(numSpans, err)
-	or.recordMetrics(context.WithoutCancel(ctx), component.DataTypeTraces, numSent, numFailedToSend)
+	or.recordMetrics(context.WithoutCancel(ctx), pipeline.SignalTraces, numSent, numFailedToSend)
 	endSpan(ctx, err, numSent, numFailedToSend, internal.SentSpansKey, internal.FailedToSendSpansKey)
 }
 
@@ -78,7 +79,7 @@ func (or *obsReport) startMetricsOp(ctx context.Context) context.Context {
 // If needed, report your use case in https://github.com/open-telemetry/opentelemetry-collector/issues/10592.
 func (or *obsReport) endMetricsOp(ctx context.Context, numMetricPoints int, err error) {
 	numSent, numFailedToSend := toNumItems(numMetricPoints, err)
-	or.recordMetrics(context.WithoutCancel(ctx), component.DataTypeMetrics, numSent, numFailedToSend)
+	or.recordMetrics(context.WithoutCancel(ctx), pipeline.SignalMetrics, numSent, numFailedToSend)
 	endSpan(ctx, err, numSent, numFailedToSend, internal.SentMetricPointsKey, internal.FailedToSendMetricPointsKey)
 }
 
@@ -92,7 +93,7 @@ func (or *obsReport) startLogsOp(ctx context.Context) context.Context {
 // endLogsOp completes the export operation that was started with startLogsOp.
 func (or *obsReport) endLogsOp(ctx context.Context, numLogRecords int, err error) {
 	numSent, numFailedToSend := toNumItems(numLogRecords, err)
-	or.recordMetrics(context.WithoutCancel(ctx), component.DataTypeLogs, numSent, numFailedToSend)
+	or.recordMetrics(context.WithoutCancel(ctx), pipeline.SignalLogs, numSent, numFailedToSend)
 	endSpan(ctx, err, numSent, numFailedToSend, internal.SentLogRecordsKey, internal.FailedToSendLogRecordsKey)
 }
 
@@ -104,16 +105,16 @@ func (or *obsReport) startOp(ctx context.Context, operationSuffix string) contex
 	return ctx
 }
 
-func (or *obsReport) recordMetrics(ctx context.Context, dataType component.DataType, sent, failed int64) {
+func (or *obsReport) recordMetrics(ctx context.Context, dataType pipeline.Signal, sent, failed int64) {
 	var sentMeasure, failedMeasure metric.Int64Counter
 	switch dataType {
-	case component.DataTypeTraces:
+	case pipeline.SignalTraces:
 		sentMeasure = or.telemetryBuilder.ExporterSentSpans
 		failedMeasure = or.telemetryBuilder.ExporterSendFailedSpans
-	case component.DataTypeMetrics:
+	case pipeline.SignalMetrics:
 		sentMeasure = or.telemetryBuilder.ExporterSentMetricPoints
 		failedMeasure = or.telemetryBuilder.ExporterSendFailedMetricPoints
-	case component.DataTypeLogs:
+	case pipeline.SignalLogs:
 		sentMeasure = or.telemetryBuilder.ExporterSentLogRecords
 		failedMeasure = or.telemetryBuilder.ExporterSendFailedLogRecords
 	}
@@ -144,14 +145,14 @@ func toNumItems(numExportedItems int, err error) (int64, int64) {
 	return int64(numExportedItems), 0
 }
 
-func (or *obsReport) recordEnqueueFailure(ctx context.Context, dataType component.DataType, failed int64) {
+func (or *obsReport) recordEnqueueFailure(ctx context.Context, signal pipeline.Signal, failed int64) {
 	var enqueueFailedMeasure metric.Int64Counter
-	switch dataType {
-	case component.DataTypeTraces:
+	switch signal {
+	case pipeline.SignalTraces:
 		enqueueFailedMeasure = or.telemetryBuilder.ExporterEnqueueFailedSpans
-	case component.DataTypeMetrics:
+	case pipeline.SignalMetrics:
 		enqueueFailedMeasure = or.telemetryBuilder.ExporterEnqueueFailedMetricPoints
-	case component.DataTypeLogs:
+	case pipeline.SignalLogs:
 		enqueueFailedMeasure = or.telemetryBuilder.ExporterEnqueueFailedLogRecords
 	}
 

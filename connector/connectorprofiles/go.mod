@@ -13,6 +13,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumertest v0.109.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.109.0
 	go.opentelemetry.io/collector/pdata/testdata v0.109.0
+	go.opentelemetry.io/collector/pipeline v0.109.0
 )
 
 require (
@@ -23,6 +24,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.109.0 // indirect
+	go.opentelemetry.io/collector/internal/globalsignal v0.109.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.15.0 // indirect
 	go.opentelemetry.io/otel v1.30.0 // indirect
 	go.opentelemetry.io/otel/metric v1.30.0 // indirect
@@ -63,3 +65,7 @@ replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/con
 replace go.opentelemetry.io/collector/pdata/testdata => ../../pdata/testdata
 
 replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
+
+replace go.opentelemetry.io/collector/pipeline => ../../pipeline
+
+replace go.opentelemetry.io/collector/internal/globalsignal => ../../internal/globalsignal

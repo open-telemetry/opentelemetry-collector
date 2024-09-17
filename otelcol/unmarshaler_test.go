@@ -134,7 +134,7 @@ func TestPipelineConfigUnmarshalError(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			pips := new(pipelines.Config)
+			pips := new(pipelines.ConfigWithPipelineID)
 			err := tt.conf.Unmarshal(&pips)
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tt.expectError)

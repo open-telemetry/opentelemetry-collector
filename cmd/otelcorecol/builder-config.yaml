@@ -41,6 +41,7 @@ providers:
 replaces:
   - go.opentelemetry.io/collector => ../../
   - go.opentelemetry.io/collector/internal/globalgates => ../../internal/globalgates
+  - go.opentelemetry.io/collector/internal/globalsignal => ../../internal/globalsignal
   - go.opentelemetry.io/collector/client => ../../client
   - go.opentelemetry.io/collector/otelcol => ../../otelcol
   - go.opentelemetry.io/collector/component => ../../component
@@ -85,6 +86,7 @@ replaces:
   - go.opentelemetry.io/collector/pdata => ../../pdata
   - go.opentelemetry.io/collector/pdata/testdata => ../../pdata/testdata
   - go.opentelemetry.io/collector/pdata/pprofile => ../../pdata/pprofile
+  - go.opentelemetry.io/collector/pipeline => ../../pipeline
   - go.opentelemetry.io/collector/processor => ../../processor
   - go.opentelemetry.io/collector/processor/batchprocessor => ../../processor/batchprocessor
   - go.opentelemetry.io/collector/processor/memorylimiterprocessor => ../../processor/memorylimiterprocessor

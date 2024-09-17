@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 var routerType = component.MustNewType("examplerouter")
@@ -30,8 +31,8 @@ var ExampleRouterFactory = connector.NewFactory(
 )
 
 type LeftRightConfig struct {
-	Left  component.ID `mapstructure:"left"`
-	Right component.ID `mapstructure:"right"`
+	Left  pipeline.ID `mapstructure:"left"`
+	Right pipeline.ID `mapstructure:"right"`
 }
 
 type ExampleRouterConfig struct {
@@ -47,7 +48,7 @@ func createExampleRouterDefaultConfig() component.Config {
 
 func createExampleTracesRouter(_ context.Context, _ connector.Settings, cfg component.Config, traces consumer.Traces) (connector.Traces, error) {
 	c := cfg.(ExampleRouterConfig)
-	r := traces.(connector.TracesRouterAndConsumer)
+	r := traces.(connector.TracesRouterAndConsumerWithPipelineIDs)
 	left, _ := r.Consumer(c.Traces.Left)
 	right, _ := r.Consumer(c.Traces.Right)
 	return &ExampleRouter{
@@ -58,7 +59,7 @@ func createExampleTracesRouter(_ context.Context, _ connector.Settings, cfg comp
 
 func createExampleMetricsRouter(_ context.Context, _ connector.Settings, cfg component.Config, metrics consumer.Metrics) (connector.Metrics, error) {
 	c := cfg.(ExampleRouterConfig)
-	r := metrics.(connector.MetricsRouterAndConsumer)
+	r := metrics.(connector.MetricsRouterAndConsumerWithPipelineIDs)
 	left, _ := r.Consumer(c.Metrics.Left)
 	right, _ := r.Consumer(c.Metrics.Right)
 	return &ExampleRouter{
@@ -69,7 +70,7 @@ func createExampleMetricsRouter(_ context.Context, _ connector.Settings, cfg com
 
 func createExampleLogsRouter(_ context.Context, _ connector.Settings, cfg component.Config, logs consumer.Logs) (connector.Logs, error) {
 	c := cfg.(ExampleRouterConfig)
-	r := logs.(connector.LogsRouterAndConsumer)
+	r := logs.(connector.LogsRouterAndConsumerWithPipelineIDs)
 	left, _ := r.Consumer(c.Logs.Left)
 	right, _ := r.Consumer(c.Logs.Right)
 	return &ExampleRouter{
@@ -80,7 +81,7 @@ func createExampleLogsRouter(_ context.Context, _ connector.Settings, cfg compon
 
 func createExampleProfilesRouter(_ context.Context, _ connector.Settings, cfg component.Config, profiles consumerprofiles.Profiles) (connectorprofiles.Profiles, error) {
 	c := cfg.(ExampleRouterConfig)
-	r := profiles.(connectorprofiles.ProfilesRouterAndConsumer)
+	r := profiles.(connectorprofiles.ProfilesRouterAndConsumerWithPipelineIDs)
 	left, _ := r.Consumer(c.Profiles.Left)
 	right, _ := r.Consumer(c.Profiles.Right)
 	return &ExampleRouter{

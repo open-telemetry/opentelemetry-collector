@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/internal/queue"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 var tracesMarshaler = &ptrace.ProtoMarshaler{}
@@ -118,7 +119,7 @@ func NewTracesRequestExporter(
 		return nil, errNilTracesConverter
 	}
 
-	be, err := newBaseExporter(set, component.DataTypeTraces, newTracesExporterWithObservability, options...)
+	be, err := newBaseExporter(set, pipeline.SignalTraces, newTracesExporterWithObservability, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +134,7 @@ func NewTracesRequestExporter(
 		}
 		sErr := be.send(ctx, req)
 		if errors.Is(sErr, queue.ErrQueueIsFull) {
-			be.obsrep.recordEnqueueFailure(ctx, component.DataTypeTraces, int64(req.ItemsCount()))
+			be.obsrep.recordEnqueueFailure(ctx, pipeline.SignalTraces, int64(req.ItemsCount()))
 		}
 		return sErr
 	}, be.consumerOptions...)

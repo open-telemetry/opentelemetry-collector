@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/internal/queue"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
@@ -205,7 +206,7 @@ func TestQueuedRetryHappyPath(t *testing.T) {
 }
 
 func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
-	dataTypes := []component.DataType{component.DataTypeLogs, component.DataTypeTraces, component.DataTypeMetrics}
+	dataTypes := []pipeline.Signal{pipeline.SignalLogs, pipeline.SignalTraces, pipeline.SignalMetrics}
 	for _, dataType := range dataTypes {
 		tt, err := componenttest.SetupTelemetry(defaultID)
 		require.NoError(t, err)
@@ -299,7 +300,7 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 			set := exportertest.NewNopSettings()
 			logger, observed := observer.New(zap.ErrorLevel)
 			set.Logger = zap.New(logger)
-			be, err := newBaseExporter(set, component.DataTypeLogs, newObservabilityConsumerSender, tt.queueOptions...)
+			be, err := newBaseExporter(set, pipeline.SignalLogs, newObservabilityConsumerSender, tt.queueOptions...)
 			require.NoError(t, err)
 			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 			ocs := be.obsrepSender.(*observabilityConsumerSender)
@@ -323,7 +324,7 @@ func TestQueueFailedRequestDropped(t *testing.T) {
 	set := exportertest.NewNopSettings()
 	logger, observed := observer.New(zap.ErrorLevel)
 	set.Logger = zap.New(logger)
-	be, err := newBaseExporter(set, component.DataTypeLogs, newNoopObsrepSender,
+	be, err := newBaseExporter(set, pipeline.SignalLogs, newNoopObsrepSender,
 		WithRequestQueue(exporterqueue.NewDefaultConfig(), exporterqueue.NewMemoryQueueFactory[Request]()))
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))

@@ -78,6 +78,8 @@ var (
 		"/extension/zpagesextension",
 		"/featuregate",
 		"/internal/globalgates",
+		"/internal/globalsignal",
+		"/pipeline",
 		"/processor",
 		"/processor/batchprocessor",
 		"/processor/memorylimiterprocessor",

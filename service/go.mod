@@ -31,6 +31,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.15.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.109.0
 	go.opentelemetry.io/collector/pdata/testdata v0.109.0
+	go.opentelemetry.io/collector/pipeline v0.109.0
 	go.opentelemetry.io/collector/processor v0.109.0
 	go.opentelemetry.io/collector/processor/processorprofiles v0.109.0
 	go.opentelemetry.io/collector/receiver v0.109.0
@@ -94,6 +95,7 @@ require (
 	go.opentelemetry.io/collector/config/configtls v1.15.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.109.1-0.20240916143658-74729e731d3b // indirect
 	go.opentelemetry.io/collector/extension/auth v0.109.0 // indirect
+	go.opentelemetry.io/collector/internal/globalsignal v0.109.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.55.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.55.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp v0.6.0 // indirect
@@ -136,6 +138,8 @@ replace go.opentelemetry.io/collector/exporter => ../exporter
 replace go.opentelemetry.io/collector/confmap => ../confmap
 
 replace go.opentelemetry.io/collector/config/configtelemetry => ../config/configtelemetry
+
+replace go.opentelemetry.io/collector/pipeline => ../pipeline
 
 replace go.opentelemetry.io/collector/processor => ../processor
 
@@ -186,3 +190,5 @@ replace go.opentelemetry.io/collector/processor/processorprofiles => ../processo
 replace go.opentelemetry.io/collector/connector/connectorprofiles => ../connector/connectorprofiles
 
 replace go.opentelemetry.io/collector/exporter/exporterprofiles => ../exporter/exporterprofiles
+
+replace go.opentelemetry.io/collector/internal/globalsignal => ../internal/globalsignal

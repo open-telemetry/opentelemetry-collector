@@ -31,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/promtest"
@@ -218,6 +219,7 @@ func TestServiceGetExtensions(t *testing.T) {
 	assert.Contains(t, extMap, component.NewID(nopType))
 }
 
+// nolint
 func TestServiceGetExporters(t *testing.T) {
 	srv, err := New(context.Background(), newNopSettings(), newNopConfig())
 	require.NoError(t, err)
@@ -227,8 +229,12 @@ func TestServiceGetExporters(t *testing.T) {
 		assert.NoError(t, srv.Shutdown(context.Background()))
 	})
 
-	// nolint
 	expMap := srv.host.GetExporters()
+
+	v, ok := expMap[component.DataTypeTraces]
+	assert.True(t, ok)
+	assert.NotNil(t, v)
+
 	assert.Len(t, expMap, 4)
 	assert.Len(t, expMap[component.DataTypeTraces], 1)
 	assert.Contains(t, expMap[component.DataTypeTraces], component.NewID(nopType))
@@ -244,7 +250,7 @@ func TestServiceGetExporters(t *testing.T) {
 // and another service with a valid config can be started right after.
 func TestServiceTelemetryCleanupOnError(t *testing.T) {
 	invalidCfg := newNopConfig()
-	invalidCfg.Pipelines[component.MustNewID("traces")].Processors[0] = component.MustNewID("invalid")
+	invalidCfg.PipelinesWithPipelineID[pipeline.MustNewID("traces")].Processors[0] = component.MustNewID("invalid")
 	// Create a service with an invalid config and expect an error
 	_, err := New(context.Background(), newNopSettings(), invalidCfg)
 	require.Error(t, err)
@@ -665,23 +671,23 @@ func newNopSettings() Settings {
 }
 
 func newNopConfig() Config {
-	return newNopConfigPipelineConfigs(pipelines.Config{
-		component.MustNewID("traces"): {
+	return newNopConfigPipelineConfigs(pipelines.ConfigWithPipelineID{
+		pipeline.MustNewID("traces"): {
 			Receivers:  []component.ID{component.NewID(nopType)},
 			Processors: []component.ID{component.NewID(nopType)},
 			Exporters:  []component.ID{component.NewID(nopType)},
 		},
-		component.MustNewID("metrics"): {
+		pipeline.MustNewID("metrics"): {
 			Receivers:  []component.ID{component.NewID(nopType)},
 			Processors: []component.ID{component.NewID(nopType)},
 			Exporters:  []component.ID{component.NewID(nopType)},
 		},
-		component.MustNewID("logs"): {
+		pipeline.MustNewID("logs"): {
 			Receivers:  []component.ID{component.NewID(nopType)},
 			Processors: []component.ID{component.NewID(nopType)},
 			Exporters:  []component.ID{component.NewID(nopType)},
 		},
-		component.MustNewID("profiles"): {
+		pipeline.MustNewID("profiles"): {
 			Receivers:  []component.ID{component.NewID(nopType)},
 			Processors: []component.ID{component.NewID(nopType)},
 			Exporters:  []component.ID{component.NewID(nopType)},
@@ -689,10 +695,10 @@ func newNopConfig() Config {
 	})
 }
 
-func newNopConfigPipelineConfigs(pipelineCfgs pipelines.Config) Config {
+func newNopConfigPipelineConfigs(pipelineCfgs pipelines.ConfigWithPipelineID) Config {
 	return Config{
-		Extensions: extensions.Config{component.NewID(nopType)},
-		Pipelines:  pipelineCfgs,
+		Extensions:              extensions.Config{component.NewID(nopType)},
+		PipelinesWithPipelineID: pipelineCfgs,
 		Telemetry: telemetry.Config{
 			Logs: telemetry.LogsConfig{
 				Level:       zapcore.InfoLevel,

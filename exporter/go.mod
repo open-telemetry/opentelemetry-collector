@@ -15,9 +15,11 @@ require (
 	go.opentelemetry.io/collector/exporter/exporterprofiles v0.109.0
 	go.opentelemetry.io/collector/extension v0.109.0
 	go.opentelemetry.io/collector/extension/experimental/storage v0.109.0
+	go.opentelemetry.io/collector/internal/globalsignal v0.109.0
 	go.opentelemetry.io/collector/pdata v1.15.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.109.0
 	go.opentelemetry.io/collector/pdata/testdata v0.109.0
+	go.opentelemetry.io/collector/pipeline v0.109.0
 	go.opentelemetry.io/collector/receiver v0.109.0
 	go.opentelemetry.io/otel v1.30.0
 	go.opentelemetry.io/otel/metric v1.30.0
@@ -62,6 +64,8 @@ replace go.opentelemetry.io/collector/pdata/testdata => ../pdata/testdata
 
 replace go.opentelemetry.io/collector/pdata/pprofile => ../pdata/pprofile
 
+replace go.opentelemetry.io/collector/pipeline => ../pipeline
+
 replace go.opentelemetry.io/collector/receiver => ../receiver
 
 retract v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module
@@ -77,3 +81,5 @@ replace go.opentelemetry.io/collector/consumer/consumertest => ../consumer/consu
 replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../receiver/receiverprofiles
 
 replace go.opentelemetry.io/collector/exporter/exporterprofiles => ./exporterprofiles
+
+replace go.opentelemetry.io/collector/internal/globalsignal => ../internal/globalsignal

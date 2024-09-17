@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 // requestSender is an abstraction of a sender for a request independent of the type of the data (traces, metrics, logs).
@@ -111,7 +112,7 @@ func WithQueue(config QueueConfig) Option {
 			Unmarshaler: o.unmarshaler,
 		})
 		q := qf(context.Background(), exporterqueue.Settings{
-			DataType:         o.signal,
+			Signal:           o.signal,
 			ExporterSettings: o.set,
 		}, exporterqueue.Config{
 			Enabled:      config.Enabled,
@@ -236,7 +237,7 @@ type baseExporter struct {
 	component.StartFunc
 	component.ShutdownFunc
 
-	signal component.DataType
+	signal pipeline.Signal
 
 	batchMergeFunc      exporterbatcher.BatchMergeFunc[Request]
 	batchMergeSplitfunc exporterbatcher.BatchMergeSplitFunc[Request]
@@ -267,8 +268,8 @@ type baseExporter struct {
 	batcherOpts  []BatcherOption
 }
 
-func newBaseExporter(set exporter.Settings, signal component.DataType, osf obsrepSenderFactory, options ...Option) (*baseExporter, error) {
-	obsReport, err := newExporter(obsReportSettings{exporterID: set.ID, exporterCreateSettings: set, dataType: signal})
+func newBaseExporter(set exporter.Settings, signal pipeline.Signal, osf obsrepSenderFactory, options ...Option) (*baseExporter, error) {
+	obsReport, err := newExporter(obsReportSettings{exporterID: set.ID, exporterCreateSettings: set, signal: signal})
 	if err != nil {
 		return nil, err
 	}
@@ -306,7 +307,7 @@ func newBaseExporter(set exporter.Settings, signal component.DataType, osf obsre
 
 	if be.queueCfg.Enabled {
 		set := exporterqueue.Settings{
-			DataType:         be.signal,
+			Signal:           be.signal,
 			ExporterSettings: be.set,
 		}
 		be.queueSender = newQueueSender(be.queueFactory(context.Background(), set, be.queueCfg), be.set, be.queueCfg.NumConsumers, be.exportFailureMessage, be.obsrep)

@@ -13,6 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/pipelines"
 	"go.opentelemetry.io/collector/service/telemetry"
@@ -42,7 +43,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "duplicate-processor-reference",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				pipe := cfg.Pipelines[component.MustNewID("traces")]
+				pipe := cfg.PipelinesWithPipelineID[pipeline.MustNewID("traces")]
 				pipe.Processors = append(pipe.Processors, pipe.Processors...)
 				return cfg
 			},
@@ -52,14 +53,14 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-service-pipeline-type",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				cfg.Pipelines[component.MustNewID("wrongtype")] = &pipelines.PipelineConfig{
+				cfg.PipelinesWithPipelineID[pipeline.MustNewID("wrongtype")] = &pipelines.PipelineConfig{
 					Receivers:  []component.ID{component.MustNewID("nop")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewID("nop")},
 				}
 				return cfg
 			},
-			expected: fmt.Errorf(`service::pipelines config validation failed: %w`, errors.New(`pipeline "wrongtype": unknown datatype "wrongtype"`)),
+			expected: fmt.Errorf(`service::pipelines config validation failed: %w`, errors.New(`pipeline "wrongtype": unknown signal "wrongtype"`)),
 		},
 		{
 			name: "invalid-telemetry-metric-config",
@@ -100,8 +101,8 @@ func generateConfig() *Config {
 			},
 		},
 		Extensions: extensions.Config{component.MustNewID("nop")},
-		Pipelines: pipelines.Config{
-			component.MustNewID("traces"): {
+		PipelinesWithPipelineID: pipelines.ConfigWithPipelineID{
+			pipeline.MustNewID("traces"): {
 				Receivers:  []component.ID{component.MustNewID("nop")},
 				Processors: []component.ID{component.MustNewID("nop")},
 				Exporters:  []component.ID{component.MustNewID("nop")},

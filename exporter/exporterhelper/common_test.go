@@ -20,11 +20,12 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 var (
 	defaultType     = component.MustNewType("test")
-	defaultDataType = component.DataTypeMetrics
+	defaultDataType = pipeline.SignalMetrics
 	defaultID       = component.NewID(defaultType)
 	defaultSettings = func() exporter.Settings {
 		set := exportertest.NewNopSettings()

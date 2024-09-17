@@ -2,7 +2,10 @@ module go.opentelemetry.io/collector/component/componentprofiles
 
 go 1.22.0
 
-require go.opentelemetry.io/collector/component v0.109.0
+require (
+	go.opentelemetry.io/collector/component v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/internal/globalsignal v0.109.0
+)
 
 require (
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -26,3 +29,7 @@ replace go.opentelemetry.io/collector/pdata => ../../pdata
 replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
 
 replace go.opentelemetry.io/collector/component => ../
+
+replace go.opentelemetry.io/collector/pipeline => ../../pipeline
+
+replace go.opentelemetry.io/collector/internal/globalsignal => ../../internal/globalsignal

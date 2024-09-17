@@ -119,6 +119,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	// Check that all pipelines reference only configured components.
+	// nolint
 	for pipelineID, pipeline := range cfg.Service.Pipelines {
 		// Validate pipeline receiver name references.
 		for _, ref := range pipeline.Receivers {
@@ -130,14 +131,14 @@ func (cfg *Config) Validate() error {
 			if _, ok := cfg.Connectors[ref]; ok {
 				continue
 			}
-			return fmt.Errorf("service::pipelines::%s: references receiver %q which is not configured", pipelineID, ref)
+			return fmt.Errorf("service::pipelines::%s: references receiver %q which is not configured", pipelineID.String(), ref)
 		}
 
 		// Validate pipeline processor name references.
 		for _, ref := range pipeline.Processors {
 			// Check that the name referenced in the pipeline's processors exists in the top-level processors.
 			if cfg.Processors[ref] == nil {
-				return fmt.Errorf("service::pipelines::%s: references processor %q which is not configured", pipelineID, ref)
+				return fmt.Errorf("service::pipelines::%s: references processor %q which is not configured", pipelineID.String(), ref)
 			}
 		}
 
@@ -150,7 +151,43 @@ func (cfg *Config) Validate() error {
 			if _, ok := cfg.Connectors[ref]; ok {
 				continue
 			}
-			return fmt.Errorf("service::pipelines::%s: references exporter %q which is not configured", pipelineID, ref)
+			return fmt.Errorf("service::pipelines::%s: references exporter %q which is not configured", pipelineID.String(), ref)
+		}
+	}
+
+	// Check that all pipelines reference only configured components.
+	for pipelineID, pipeline := range cfg.Service.PipelinesWithPipelineID {
+		// Validate pipeline receiver name references.
+		for _, ref := range pipeline.Receivers {
+			// Check that the name referenced in the pipeline's receivers exists in the top-level receivers.
+			if _, ok := cfg.Receivers[ref]; ok {
+				continue
+			}
+
+			if _, ok := cfg.Connectors[ref]; ok {
+				continue
+			}
+			return fmt.Errorf("service::pipelines::%s: references receiver %q which is not configured", pipelineID.String(), ref)
+		}
+
+		// Validate pipeline processor name references.
+		for _, ref := range pipeline.Processors {
+			// Check that the name referenced in the pipeline's processors exists in the top-level processors.
+			if cfg.Processors[ref] == nil {
+				return fmt.Errorf("service::pipelines::%s: references processor %q which is not configured", pipelineID.String(), ref)
+			}
+		}
+
+		// Validate pipeline exporter name references.
+		for _, ref := range pipeline.Exporters {
+			// Check that the name referenced in the pipeline's Exporters exists in the top-level Exporters.
+			if _, ok := cfg.Exporters[ref]; ok {
+				continue
+			}
+			if _, ok := cfg.Connectors[ref]; ok {
+				continue
+			}
+			return fmt.Errorf("service::pipelines::%s: references exporter %q which is not configured", pipelineID.String(), ref)
 		}
 	}
 	return nil
