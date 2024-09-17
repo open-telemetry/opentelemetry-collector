@@ -42,17 +42,17 @@ func NewLogsProcessor(
 
 	eventOptions := spanAttributes(set.ID)
 	bs := fromOptions(options)
-	remoteTapType, _ := component.NewType("remotetap")
-	remoteTapId := component.NewID(remoteTapType)
 	logsConsumer, err := consumer.NewLogs(func(ctx context.Context, ld plog.Logs) error {
 		span := trace.SpanFromContext(ctx)
 		span.AddEvent("Start processing.", eventOptions)
 		var err error
 		ld, err = logsFunc(ctx, ld)
 
-		// Publish logs to the remotetap extension if active.
-		if remotetap := set.Extensions()[remoteTapId]; remotetap != nil && remotetap.(pdata.Publisher).IsActive(pdata.ComponentID(set.ID.String())) {
-			remotetap.(pdata.Publisher).PublishLogs(pdata.ComponentID(set.ID.String()), ld)
+		// Publish data to active streams.
+		for _, p := range set.Publishers {
+			if p.IsActive(pdata.ComponentID(set.ID.String())) {
+				p.PublishLogs(pdata.ComponentID(set.ID.String()), ld)
+			}
 		}
 
 		span.AddEvent("End processing.", eventOptions)

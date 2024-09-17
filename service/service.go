@@ -371,7 +371,7 @@ func (srv *Service) initGraph(ctx context.Context, cfg Config) error {
 		ConnectorBuilder: srv.host.Connectors,
 		PipelineConfigs:  cfg.Pipelines,
 		ReportStatus:     srv.host.Reporter.ReportStatus,
-		Extensions:       srv.host.ServiceExtensions.GetExtensions,
+		Publishers:       srv.host.GetPublishers(),
 	}); err != nil {
 		return fmt.Errorf("failed to build pipelines: %w", err)
 	}

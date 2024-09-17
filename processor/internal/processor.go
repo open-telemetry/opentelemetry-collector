@@ -3,7 +3,10 @@
 
 package internal // import "go.opentelemetry.io/collector/processor/internal"
 
-import "go.opentelemetry.io/collector/component"
+import (
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata"
+)
 
 // Settings is passed to Create* functions in Factory.
 type Settings struct {
@@ -15,6 +18,6 @@ type Settings struct {
 	// BuildInfo can be used by components for informational purposes
 	BuildInfo component.BuildInfo
 
-	// Extensions can be used by components to interact with extensions
-	Extensions func() map[component.ID]component.Component
+	// Publishers can be used by components to publish data after processing
+	Publishers []pdata.Publisher
 }

@@ -11,7 +11,7 @@ import (
 
 type ComponentID string
 
-// Publisher is used by components to publish data to the RemoteTap extension.
+// Publisher is used by components to publish data as it passes through the pipeline.
 type Publisher interface {
 	// IsActive returns true when at least one connection is open for the given componentID.
 	IsActive(ComponentID) bool

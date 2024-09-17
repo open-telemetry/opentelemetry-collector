@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/pdata"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/status"
@@ -62,6 +63,16 @@ func (host *Host) GetFactory(kind component.Kind, componentType component.Type) 
 
 func (host *Host) GetExtensions() map[component.ID]component.Component {
 	return host.ServiceExtensions.GetExtensions()
+}
+
+func (host *Host) GetPublishers() []pdata.Publisher {
+	publishers := make([]pdata.Publisher, 0)
+	for _, v := range host.ServiceExtensions.GetExtensions() {
+		if publisher, ok := v.(pdata.Publisher); ok {
+			publishers = append(publishers, publisher)
+		}
+	}
+	return publishers
 }
 
 // Deprecated: [0.79.0] This function will be removed in the future.

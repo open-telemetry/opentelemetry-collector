@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
+	"go.opentelemetry.io/collector/pdata"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/internal/builders"
@@ -132,11 +133,11 @@ func (n *processorNode) buildComponent(ctx context.Context,
 	tel component.TelemetrySettings,
 	info component.BuildInfo,
 	builder builders.Processor,
-	extensions func() map[component.ID]component.Component,
+	publishers []pdata.Publisher,
 	next baseConsumer,
 ) error {
 	tel.Logger = components.ProcessorLogger(tel.Logger, n.componentID, n.pipelineID)
-	set := processor.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info, Extensions: extensions}
+	set := processor.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info, Publishers: publishers}
 	var err error
 	switch n.pipelineID.Type() {
 	case component.DataTypeTraces:
