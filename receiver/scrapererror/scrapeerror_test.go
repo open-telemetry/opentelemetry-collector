@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestScrapeErrorsAddPartial(t *testing.T) {
@@ -89,10 +90,10 @@ func TestScrapeErrorsCombine(t *testing.T) {
 	for _, tt := range testCases {
 		scrapeErrs := tt.errs()
 		if tt.expectNil {
-			assert.NoError(t, scrapeErrs.Combine())
+			require.NoError(t, scrapeErrs.Combine())
 			continue
 		}
-		assert.EqualError(t, scrapeErrs.Combine(), tt.expectedErr)
+		require.EqualError(t, scrapeErrs.Combine(), tt.expectedErr)
 		if tt.expectedScrape {
 			var partialScrapeErr PartialScrapeError
 			if !errors.As(scrapeErrs.Combine(), &partialScrapeErr) {

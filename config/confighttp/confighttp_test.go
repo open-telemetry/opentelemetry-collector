@@ -165,7 +165,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				assert.Error(t, err)
 				return
 			}
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			switch transport := client.Transport.(type) {
 			case *http.Transport:
 				assert.EqualValues(t, 1024, transport.ReadBufferSize)
@@ -213,7 +213,7 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 			tel := componenttest.NewNopTelemetrySettings()
 			tel.TracerProvider = nil
 			client, err := tt.settings.ToClient(context.Background(), host, tel)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			transport := client.Transport.(*http.Transport)
 			assert.EqualValues(t, 1024, transport.ReadBufferSize)
 			assert.EqualValues(t, 512, transport.WriteBufferSize)
@@ -446,7 +446,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 				assert.Error(t, err)
 				return
 			}
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.NotNil(t, client)
 			transport := client.Transport
 
@@ -734,11 +734,11 @@ func TestHttpReception(t *testing.T) {
 
 			resp, errResp := client.Get(hcs.Endpoint)
 			if tt.hasError {
-				assert.Error(t, errResp)
+				require.Error(t, errResp)
 			} else {
-				assert.NoError(t, errResp)
+				require.NoError(t, errResp)
 				body, errRead := io.ReadAll(resp.Body)
-				assert.NoError(t, errRead)
+				require.NoError(t, errRead)
 				assert.Equal(t, "tt", string(body))
 				assert.Equal(t, expectedProto, resp.Proto)
 			}
@@ -1065,7 +1065,7 @@ func TestHttpClientHeaders(t *testing.T) {
 			}
 			client, _ := setting.ToClient(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 			req, err := http.NewRequest(http.MethodGet, setting.Endpoint, nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			_, err = client.Do(req)
 			assert.NoError(t, err)
 		})
@@ -1101,7 +1101,7 @@ func TestHttpClientHostHeader(t *testing.T) {
 		}
 		client, _ := setting.ToClient(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 		req, err := http.NewRequest(http.MethodGet, setting.Endpoint, nil)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		_, err = client.Do(req)
 		assert.NoError(t, err)
 	})

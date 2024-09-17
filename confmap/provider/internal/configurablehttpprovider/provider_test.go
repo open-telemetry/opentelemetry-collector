@@ -133,15 +133,15 @@ func TestFunctionalityDownloadFileHTTP(t *testing.T) {
 
 func TestFunctionalityDownloadFileHTTPS(t *testing.T) {
 	certPath, keyPath, err := generateCertificate("localhost")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	invalidCert, err := os.CreateTemp("", "cert*.crt")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = invalidCert.Write([]byte{0, 1, 2})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	cert, err := tls.LoadX509KeyPair(certPath, keyPath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	ts := httptest.NewUnstartedServer(http.HandlerFunc(answerGet))
 	ts.TLS = &tls.Config{Certificates: []tls.Certificate{cert}}
 	ts.StartTLS()
@@ -232,12 +232,12 @@ func TestFunctionalityDownloadFileHTTPS(t *testing.T) {
 func TestUnsupportedScheme(t *testing.T) {
 	fp := New(HTTPScheme, confmaptest.NewNopProviderSettings())
 	_, err := fp.Retrieve(context.Background(), "https://...", nil)
-	assert.Error(t, err)
-	assert.NoError(t, fp.Shutdown(context.Background()))
+	require.Error(t, err)
+	require.NoError(t, fp.Shutdown(context.Background()))
 
 	fp = New(HTTPSScheme, confmaptest.NewNopProviderSettings())
 	_, err = fp.Retrieve(context.Background(), "http://...", nil)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.NoError(t, fp.Shutdown(context.Background()))
 }
 
@@ -257,7 +257,7 @@ func TestRetrieveFromShutdownServer(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	ts.Close()
 	_, err := fp.Retrieve(context.Background(), ts.URL, nil)
-	assert.Error(t, err)
+	require.Error(t, err)
 	require.NoError(t, fp.Shutdown(context.Background()))
 }
 
@@ -268,7 +268,7 @@ func TestNonExistent(t *testing.T) {
 	}))
 	defer ts.Close()
 	_, err := fp.Retrieve(context.Background(), ts.URL, nil)
-	assert.Error(t, err)
+	require.Error(t, err)
 	require.NoError(t, fp.Shutdown(context.Background()))
 }
 

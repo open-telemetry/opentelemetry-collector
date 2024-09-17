@@ -224,11 +224,11 @@ func TestNilOrigSetValue(t *testing.T) {
 	assert.Equal(t, []byte{1, 2, 3}, av.Bytes().AsRaw())
 
 	av = NewValueEmpty()
-	assert.NoError(t, av.SetEmptyMap().FromRaw(map[string]any{"k": "v"}))
+	require.NoError(t, av.SetEmptyMap().FromRaw(map[string]any{"k": "v"}))
 	assert.Equal(t, map[string]any{"k": "v"}, av.Map().AsRaw())
 
 	av = NewValueEmpty()
-	assert.NoError(t, av.SetEmptySlice().FromRaw([]any{int64(1), "val"}))
+	require.NoError(t, av.SetEmptySlice().FromRaw([]any{int64(1), "val"}))
 	assert.Equal(t, []any{int64(1), "val"}, av.Slice().AsRaw())
 }
 
@@ -545,7 +545,7 @@ func TestNewValueFromRaw(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			actual := NewValueEmpty()
-			assert.NoError(t, actual.FromRaw(tt.input))
+			require.NoError(t, actual.FromRaw(tt.input))
 			assert.Equal(t, tt.expected, actual)
 		})
 	}

@@ -197,11 +197,11 @@ func TestGraphStartStopCycle(t *testing.T) {
 	pg.componentGraph.SetEdge(simple.Edge{F: c1, T: p1}) // loop back
 
 	err := pg.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})})
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), `topo: no topological ordering: cyclic components`)
 
 	err = pg.ShutdownAll(context.Background(), statustest.NewNopStatusReporter())
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), `topo: no topological ordering: cyclic components`)
 }
 
@@ -224,7 +224,7 @@ func TestGraphStartStopComponentError(t *testing.T) {
 		F: r1,
 		T: e1,
 	})
-	assert.EqualError(t, pg.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}), "foo")
+	require.EqualError(t, pg.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}), "foo")
 	assert.EqualError(t, pg.ShutdownAll(context.Background(), statustest.NewNopStatusReporter()), "bar")
 }
 
@@ -986,7 +986,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 
 			assert.Equal(t, len(tt.pipelineConfigs), len(pg.pipelines))
 
-			assert.NoError(t, pg.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}))
+			require.NoError(t, pg.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}))
 
 			mutatingPipelines := make(map[component.ID]bool, len(tt.pipelineConfigs))
 
@@ -1103,23 +1103,23 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 			allReceivers := pg.getReceivers()
 			for _, c := range allReceivers[component.DataTypeTraces] {
 				tracesReceiver := c.(*testcomponents.ExampleReceiver)
-				assert.NoError(t, tracesReceiver.ConsumeTraces(context.Background(), testdata.GenerateTraces(1)))
+				require.NoError(t, tracesReceiver.ConsumeTraces(context.Background(), testdata.GenerateTraces(1)))
 			}
 			for _, c := range allReceivers[component.DataTypeMetrics] {
 				metricsReceiver := c.(*testcomponents.ExampleReceiver)
-				assert.NoError(t, metricsReceiver.ConsumeMetrics(context.Background(), testdata.GenerateMetrics(1)))
+				require.NoError(t, metricsReceiver.ConsumeMetrics(context.Background(), testdata.GenerateMetrics(1)))
 			}
 			for _, c := range allReceivers[component.DataTypeLogs] {
 				logsReceiver := c.(*testcomponents.ExampleReceiver)
-				assert.NoError(t, logsReceiver.ConsumeLogs(context.Background(), testdata.GenerateLogs(1)))
+				require.NoError(t, logsReceiver.ConsumeLogs(context.Background(), testdata.GenerateLogs(1)))
 			}
 			for _, c := range allReceivers[componentprofiles.DataTypeProfiles] {
 				profilesReceiver := c.(*testcomponents.ExampleReceiver)
-				assert.NoError(t, profilesReceiver.ConsumeProfiles(context.Background(), testdata.GenerateProfiles(1)))
+				require.NoError(t, profilesReceiver.ConsumeProfiles(context.Background(), testdata.GenerateProfiles(1)))
 			}
 
 			// Shut down the entire component graph
-			assert.NoError(t, pg.ShutdownAll(context.Background(), statustest.NewNopStatusReporter()))
+			require.NoError(t, pg.ShutdownAll(context.Background(), statustest.NewNopStatusReporter()))
 
 			// Check each pipeline individually, ensuring that all components are stopped.
 			for pipelineID := range tt.pipelineConfigs {
@@ -1380,12 +1380,12 @@ func TestConnectorRouter(t *testing.T) {
 	tracesLeft := allExporters[component.DataTypeTraces][expLeftID].(*testcomponents.ExampleExporter)
 
 	// Consume 1, validate it went right
-	assert.NoError(t, tracesReceiver.ConsumeTraces(ctx, testdata.GenerateTraces(1)))
+	require.NoError(t, tracesReceiver.ConsumeTraces(ctx, testdata.GenerateTraces(1)))
 	assert.Len(t, tracesRight.Traces, 1)
 	assert.Empty(t, tracesLeft.Traces)
 
 	// Consume 1, validate it went left
-	assert.NoError(t, tracesReceiver.ConsumeTraces(ctx, testdata.GenerateTraces(1)))
+	require.NoError(t, tracesReceiver.ConsumeTraces(ctx, testdata.GenerateTraces(1)))
 	assert.Len(t, tracesRight.Traces, 1)
 	assert.Len(t, tracesLeft.Traces, 1)
 
@@ -1402,12 +1402,12 @@ func TestConnectorRouter(t *testing.T) {
 	metricsLeft := allExporters[component.DataTypeMetrics][expLeftID].(*testcomponents.ExampleExporter)
 
 	// Consume 1, validate it went right
-	assert.NoError(t, metricsReceiver.ConsumeMetrics(ctx, testdata.GenerateMetrics(1)))
+	require.NoError(t, metricsReceiver.ConsumeMetrics(ctx, testdata.GenerateMetrics(1)))
 	assert.Len(t, metricsRight.Metrics, 1)
 	assert.Empty(t, metricsLeft.Metrics)
 
 	// Consume 1, validate it went left
-	assert.NoError(t, metricsReceiver.ConsumeMetrics(ctx, testdata.GenerateMetrics(1)))
+	require.NoError(t, metricsReceiver.ConsumeMetrics(ctx, testdata.GenerateMetrics(1)))
 	assert.Len(t, metricsRight.Metrics, 1)
 	assert.Len(t, metricsLeft.Metrics, 1)
 
@@ -1424,12 +1424,12 @@ func TestConnectorRouter(t *testing.T) {
 	logsLeft := allExporters[component.DataTypeLogs][expLeftID].(*testcomponents.ExampleExporter)
 
 	// Consume 1, validate it went right
-	assert.NoError(t, logsReceiver.ConsumeLogs(ctx, testdata.GenerateLogs(1)))
+	require.NoError(t, logsReceiver.ConsumeLogs(ctx, testdata.GenerateLogs(1)))
 	assert.Len(t, logsRight.Logs, 1)
 	assert.Empty(t, logsLeft.Logs)
 
 	// Consume 1, validate it went left
-	assert.NoError(t, logsReceiver.ConsumeLogs(ctx, testdata.GenerateLogs(1)))
+	require.NoError(t, logsReceiver.ConsumeLogs(ctx, testdata.GenerateLogs(1)))
 	assert.Len(t, logsRight.Logs, 1)
 	assert.Len(t, logsLeft.Logs, 1)
 
@@ -1446,12 +1446,12 @@ func TestConnectorRouter(t *testing.T) {
 	profilesLeft := allExporters[componentprofiles.DataTypeProfiles][expLeftID].(*testcomponents.ExampleExporter)
 
 	// Consume 1, validate it went right
-	assert.NoError(t, profilesReceiver.ConsumeProfiles(ctx, testdata.GenerateProfiles(1)))
+	require.NoError(t, profilesReceiver.ConsumeProfiles(ctx, testdata.GenerateProfiles(1)))
 	assert.Len(t, profilesRight.Profiles, 1)
 	assert.Empty(t, profilesLeft.Profiles)
 
 	// Consume 1, validate it went left
-	assert.NoError(t, profilesReceiver.ConsumeProfiles(ctx, testdata.GenerateProfiles(1)))
+	require.NoError(t, profilesReceiver.ConsumeProfiles(ctx, testdata.GenerateProfiles(1)))
 	assert.Len(t, profilesRight.Profiles, 1)
 	assert.Len(t, profilesLeft.Profiles, 1)
 
@@ -2730,8 +2730,8 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 				},
 			}
 			pipelines, err := Build(context.Background(), set)
-			assert.NoError(t, err)
-			assert.Error(t, pipelines.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}))
+			require.NoError(t, err)
+			require.Error(t, pipelines.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}))
 			assert.Error(t, pipelines.ShutdownAll(context.Background(), statustest.NewNopStatusReporter()))
 		})
 
@@ -2744,8 +2744,8 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 				},
 			}
 			pipelines, err := Build(context.Background(), set)
-			assert.NoError(t, err)
-			assert.Error(t, pipelines.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}))
+			require.NoError(t, err)
+			require.Error(t, pipelines.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}))
 			assert.Error(t, pipelines.ShutdownAll(context.Background(), statustest.NewNopStatusReporter()))
 		})
 
@@ -2758,8 +2758,8 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 				},
 			}
 			pipelines, err := Build(context.Background(), set)
-			assert.NoError(t, err)
-			assert.Error(t, pipelines.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}))
+			require.NoError(t, err)
+			require.Error(t, pipelines.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}))
 			assert.Error(t, pipelines.ShutdownAll(context.Background(), statustest.NewNopStatusReporter()))
 		})
 
@@ -2778,8 +2778,8 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 					},
 				}
 				pipelines, err := Build(context.Background(), set)
-				assert.NoError(t, err)
-				assert.Error(t, pipelines.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}))
+				require.NoError(t, err)
+				require.Error(t, pipelines.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}))
 				assert.Error(t, pipelines.ShutdownAll(context.Background(), statustest.NewNopStatusReporter()))
 			})
 		}

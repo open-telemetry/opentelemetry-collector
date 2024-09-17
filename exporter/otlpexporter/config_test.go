@@ -26,7 +26,7 @@ import (
 func TestUnmarshalDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, confmap.New().Unmarshal(&cfg))
+	require.NoError(t, confmap.New().Unmarshal(&cfg))
 	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
 }
 
@@ -35,7 +35,7 @@ func TestUnmarshalConfig(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, cm.Unmarshal(&cfg))
+	require.NoError(t, cm.Unmarshal(&cfg))
 	assert.Equal(t,
 		&Config{
 			TimeoutConfig: exporterhelper.TimeoutConfig{

@@ -248,9 +248,9 @@ func TestCheckReceiverTracesViews(t *testing.T) {
 	require.NotNil(t, ctx)
 	rec.EndTracesOp(ctx, format, 7, nil)
 
-	assert.NoError(t, tt.CheckReceiverTraces(transport, 7, 0))
-	assert.Error(t, tt.CheckReceiverTraces(transport, 7, 7))
-	assert.Error(t, tt.CheckReceiverTraces(transport, 0, 0))
+	require.NoError(t, tt.CheckReceiverTraces(transport, 7, 0))
+	require.Error(t, tt.CheckReceiverTraces(transport, 7, 7))
+	require.Error(t, tt.CheckReceiverTraces(transport, 0, 0))
 	assert.Error(t, tt.CheckReceiverTraces(transport, 0, 7))
 }
 
@@ -269,9 +269,9 @@ func TestCheckReceiverMetricsViews(t *testing.T) {
 	require.NotNil(t, ctx)
 	rec.EndMetricsOp(ctx, format, 7, nil)
 
-	assert.NoError(t, tt.CheckReceiverMetrics(transport, 7, 0))
-	assert.Error(t, tt.CheckReceiverMetrics(transport, 7, 7))
-	assert.Error(t, tt.CheckReceiverMetrics(transport, 0, 0))
+	require.NoError(t, tt.CheckReceiverMetrics(transport, 7, 0))
+	require.Error(t, tt.CheckReceiverMetrics(transport, 7, 7))
+	require.Error(t, tt.CheckReceiverMetrics(transport, 0, 0))
 	assert.Error(t, tt.CheckReceiverMetrics(transport, 0, 7))
 }
 
@@ -290,9 +290,9 @@ func TestCheckReceiverLogsViews(t *testing.T) {
 	require.NotNil(t, ctx)
 	rec.EndLogsOp(ctx, format, 7, nil)
 
-	assert.NoError(t, tt.CheckReceiverLogs(transport, 7, 0))
-	assert.Error(t, tt.CheckReceiverLogs(transport, 7, 7))
-	assert.Error(t, tt.CheckReceiverLogs(transport, 0, 0))
+	require.NoError(t, tt.CheckReceiverLogs(transport, 7, 0))
+	require.Error(t, tt.CheckReceiverLogs(transport, 7, 7))
+	require.Error(t, tt.CheckReceiverLogs(transport, 0, 0))
 	assert.Error(t, tt.CheckReceiverLogs(transport, 0, 7))
 }
 

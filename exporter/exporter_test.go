@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -22,9 +23,9 @@ func TestNewFactory(t *testing.T) {
 	assert.EqualValues(t, testType, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 	_, err := factory.CreateTracesExporter(context.Background(), Settings{}, &defaultCfg)
-	assert.Error(t, err)
+	require.Error(t, err)
 	_, err = factory.CreateMetricsExporter(context.Background(), Settings{}, &defaultCfg)
-	assert.Error(t, err)
+	require.Error(t, err)
 	_, err = factory.CreateLogsExporter(context.Background(), Settings{}, &defaultCfg)
 	assert.Error(t, err)
 }
@@ -43,11 +44,11 @@ func TestNewFactoryWithOptions(t *testing.T) {
 
 	assert.Equal(t, component.StabilityLevelDevelopment, factory.TracesExporterStability())
 	_, err := factory.CreateTracesExporter(context.Background(), Settings{}, &defaultCfg)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelAlpha, factory.MetricsExporterStability())
 	_, err = factory.CreateMetricsExporter(context.Background(), Settings{}, &defaultCfg)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelDeprecated, factory.LogsExporterStability())
 	_, err = factory.CreateLogsExporter(context.Background(), Settings{}, &defaultCfg)
@@ -85,7 +86,7 @@ func TestMakeFactoryMap(t *testing.T) {
 				assert.Error(t, err)
 				return
 			}
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.out, out)
 		})
 	}

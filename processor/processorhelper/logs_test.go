@@ -39,7 +39,7 @@ func TestNewLogsProcessor_WithOptions(t *testing.T) {
 		WithStart(func(context.Context, component.Host) error { return want }),
 		WithShutdown(func(context.Context) error { return want }),
 		WithCapabilities(consumer.Capabilities{MutatesData: false}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, want, lp.Start(context.Background(), componenttest.NewNopHost()))
 	assert.Equal(t, want, lp.Shutdown(context.Background()))

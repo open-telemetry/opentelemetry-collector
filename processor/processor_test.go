@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -23,9 +24,9 @@ func TestNewFactory(t *testing.T) {
 	assert.EqualValues(t, testType, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 	_, err := factory.CreateTracesProcessor(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
-	assert.Error(t, err)
+	require.Error(t, err)
 	_, err = factory.CreateMetricsProcessor(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
-	assert.Error(t, err)
+	require.Error(t, err)
 	_, err = factory.CreateLogsProcessor(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
 	assert.Error(t, err)
 }
@@ -44,11 +45,11 @@ func TestNewFactoryWithOptions(t *testing.T) {
 
 	assert.Equal(t, component.StabilityLevelAlpha, factory.TracesProcessorStability())
 	_, err := factory.CreateTracesProcessor(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelBeta, factory.MetricsProcessorStability())
 	_, err = factory.CreateMetricsProcessor(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelUnmaintained, factory.LogsProcessorStability())
 	_, err = factory.CreateLogsProcessor(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
@@ -86,7 +87,7 @@ func TestMakeFactoryMap(t *testing.T) {
 				assert.Error(t, err)
 				return
 			}
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.out, out)
 		})
 	}

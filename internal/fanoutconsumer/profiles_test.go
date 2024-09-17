@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerprofiles"
@@ -223,7 +224,7 @@ func TestProfilesWhenErrors(t *testing.T) {
 	td := testdata.GenerateProfiles(1)
 
 	for i := 0; i < 2; i++ {
-		assert.Error(t, tfc.ConsumeProfiles(context.Background(), td))
+		require.Error(t, tfc.ConsumeProfiles(context.Background(), td))
 	}
 
 	assert.Equal(t, td, p3.AllProfiles()[0])

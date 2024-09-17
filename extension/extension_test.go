@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
 )
@@ -35,7 +36,7 @@ func TestNewFactory(t *testing.T) {
 
 	assert.Equal(t, component.StabilityLevelDevelopment, factory.ExtensionStability())
 	ext, err := factory.CreateExtension(context.Background(), Settings{}, &defaultCfg)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Same(t, nopExtensionInstance, ext)
 }
 
@@ -69,7 +70,7 @@ func TestMakeFactoryMap(t *testing.T) {
 				assert.Error(t, err)
 				return
 			}
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.out, out)
 		})
 	}

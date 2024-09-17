@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
@@ -53,10 +54,10 @@ func TestGetServer(t *testing.T) {
 
 			// verify
 			if tt.expected != nil {
-				assert.ErrorIs(t, err, tt.expected)
+				require.ErrorIs(t, err, tt.expected)
 				assert.Nil(t, authenticator)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.NotNil(t, authenticator)
 			}
 		})
@@ -69,7 +70,7 @@ func TestGetServerFails(t *testing.T) {
 	}
 
 	authenticator, err := cfg.GetServerAuthenticator(context.Background(), map[component.ID]component.Component{})
-	assert.ErrorIs(t, err, errAuthenticatorNotFound)
+	require.ErrorIs(t, err, errAuthenticatorNotFound)
 	assert.Nil(t, authenticator)
 }
 
@@ -104,10 +105,10 @@ func TestGetClient(t *testing.T) {
 
 			// verify
 			if tt.expected != nil {
-				assert.ErrorIs(t, err, tt.expected)
+				require.ErrorIs(t, err, tt.expected)
 				assert.Nil(t, authenticator)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.NotNil(t, authenticator)
 			}
 		})
@@ -119,6 +120,6 @@ func TestGetClientFails(t *testing.T) {
 		AuthenticatorID: component.MustNewID("does_not_exist"),
 	}
 	authenticator, err := cfg.GetClientAuthenticator(context.Background(), map[component.ID]component.Component{})
-	assert.ErrorIs(t, err, errAuthenticatorNotFound)
+	require.ErrorIs(t, err, errAuthenticatorNotFound)
 	assert.Nil(t, authenticator)
 }

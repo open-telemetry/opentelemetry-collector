@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCannotShutdownIfNotWatching(t *testing.T) {
@@ -25,10 +26,10 @@ func TestCannotStartIfAlreadyWatching(t *testing.T) {
 	reloader, _, _ := createReloader(t)
 
 	err := reloader.startWatching()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	err = reloader.startWatching()
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	err = reloader.shutdown()
 	assert.NoError(t, err)
@@ -38,12 +39,12 @@ func TestClosingWatcherDoesntBreakReloader(t *testing.T) {
 	reloader, loader, _ := createReloader(t)
 
 	err := reloader.startWatching()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, 1, loader.reloadNumber())
 
 	err = reloader.watcher.Close()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	err = reloader.shutdown()
 	assert.NoError(t, err)
@@ -53,14 +54,14 @@ func TestErrorRecordedIfFileDeleted(t *testing.T) {
 	reloader, loader, filePath := createReloader(t)
 
 	err := reloader.startWatching()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, 1, loader.reloadNumber())
 
 	loader.returnErrorOnSubsequentCalls("test error on reload")
 
 	err = os.WriteFile(filePath, []byte("some_data"), 0600)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Eventually(t, func() bool {
 		return loader.reloadNumber() > 1 && reloader.getLastError() != nil
@@ -82,7 +83,7 @@ func createReloader(t *testing.T) (*clientCAsFileReloader, *testLoader, string) 
 
 func createTempFile(t *testing.T) string {
 	tmpCa, err := os.CreateTemp("", "clientCAs.crt")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	tmpCaPath, err := filepath.Abs(tmpCa.Name())
 	assert.NoError(t, err)
 	assert.NoError(t, tmpCa.Close())

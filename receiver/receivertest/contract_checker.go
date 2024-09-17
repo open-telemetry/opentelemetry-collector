@@ -193,7 +193,7 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 	}
 
 	err = receiver.Shutdown(ctx)
-	assert.NoError(params.T, err)
+	require.NoError(params.T, err)
 
 	// Print some stats to help debug test failures.
 	fmt.Printf(

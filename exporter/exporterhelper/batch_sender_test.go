@@ -341,7 +341,7 @@ func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
 			}, 100*time.Millisecond, 10*time.Millisecond)
 
 			// the 3rd request should be flushed by itself due to flush interval
-			assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 2, sink: sink}))
+			require.NoError(t, be.send(context.Background(), &fakeRequest{items: 2, sink: sink}))
 			assert.Eventually(t, func() bool {
 				return sink.requestsCount.Load() == 2 && sink.itemsCount.Load() == 6
 			}, 100*time.Millisecond, 10*time.Millisecond)
@@ -608,7 +608,7 @@ func TestBatchSenderWithTimeout(t *testing.T) {
 	}
 	wg.Wait()
 
-	assert.NoError(t, be.Shutdown(context.Background()))
+	require.NoError(t, be.Shutdown(context.Background()))
 
 	// The sink should not change
 	assert.EqualValues(t, 1, sink.requestsCount.Load())

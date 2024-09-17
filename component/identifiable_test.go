@@ -8,12 +8,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMarshalText(t *testing.T) {
 	id := NewIDWithName(MustNewType("test"), "name")
 	got, err := id.MarshalText()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, id.String(), string(got))
 }
 
@@ -92,7 +93,7 @@ func TestUnmarshalText(t *testing.T) {
 				return
 			}
 
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expectedID, id)
 			assert.Equal(t, tt.expectedID.Type(), id.Type())
 			assert.Equal(t, tt.expectedID.Name(), id.Name())

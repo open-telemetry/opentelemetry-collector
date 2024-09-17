@@ -86,7 +86,7 @@ func TestMetricsRequestExporter_NilMetricsConverter(t *testing.T) {
 func TestMetricsExporter_Default(t *testing.T) {
 	md := pmetric.NewMetrics()
 	me, err := NewMetricsExporter(context.Background(), exportertest.NewNopSettings(), &fakeMetricsExporterConfig, newPushMetricsData(nil))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, me)
 
 	assert.Equal(t, consumer.Capabilities{MutatesData: false}, me.Capabilities())
@@ -99,7 +99,7 @@ func TestMetricsRequestExporter_Default(t *testing.T) {
 	md := pmetric.NewMetrics()
 	me, err := NewMetricsRequestExporter(context.Background(), exportertest.NewNopSettings(),
 		(&fakeRequestConverter{}).requestFromMetricsFunc)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, me)
 
 	assert.Equal(t, consumer.Capabilities{MutatesData: false}, me.Capabilities())
@@ -111,7 +111,7 @@ func TestMetricsRequestExporter_Default(t *testing.T) {
 func TestMetricsExporter_WithCapabilities(t *testing.T) {
 	capabilities := consumer.Capabilities{MutatesData: true}
 	me, err := NewMetricsExporter(context.Background(), exportertest.NewNopSettings(), &fakeMetricsExporterConfig, newPushMetricsData(nil), WithCapabilities(capabilities))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, me)
 
 	assert.Equal(t, capabilities, me.Capabilities())
@@ -121,7 +121,7 @@ func TestMetricsRequestExporter_WithCapabilities(t *testing.T) {
 	capabilities := consumer.Capabilities{MutatesData: true}
 	me, err := NewMetricsRequestExporter(context.Background(), exportertest.NewNopSettings(),
 		(&fakeRequestConverter{}).requestFromMetricsFunc, WithCapabilities(capabilities))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, me)
 
 	assert.Equal(t, capabilities, me.Capabilities())
@@ -202,7 +202,7 @@ func TestMetricsExporter_pMetricModifiedDownStream_WithRecordMetrics(t *testing.
 	require.NotNil(t, me)
 	md := testdata.GenerateMetrics(2)
 
-	assert.NoError(t, me.ConsumeMetrics(context.Background(), md))
+	require.NoError(t, me.ConsumeMetrics(context.Background(), md))
 	assert.Equal(t, 0, md.MetricCount())
 	require.NoError(t, tt.CheckExporterMetrics(int64(4), 0))
 }
