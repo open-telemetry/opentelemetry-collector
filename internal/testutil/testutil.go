@@ -25,40 +25,20 @@ type portpair struct {
 // provided that there is no race by some other code to grab the same port
 // immediately.
 func GetAvailableLocalAddress(t testing.TB) string {
+	return findAvailable(t, "tcp4")
+}
+
+// GetAvailableLocalIPv6Address is IPv6 version of GetAvailableLocalAddress.
+func GetAvailableLocalIPv6Address(t testing.TB) string {
+	return findAvailable(t, "tcp6")
+}
+
+func findAvailable(t testing.TB, network string) string {
 	// Retry has been added for windows as net.Listen can return a port that is not actually available. Details can be
 	// found in https://github.com/docker/for-win/issues/3171 but to summarize Hyper-V will reserve ranges of ports
 	// which do not show up under the "netstat -ano" but can only be found by
 	// "netsh interface ipv4 show excludedportrange protocol=tcp".  We'll use []exclusions to hold those ranges and
 	// retry if the port returned by GetAvailableLocalAddress falls in one of those them.
-	network := "tcp4"
-	var exclusions []portpair
-	portFound := false
-	if runtime.GOOS == "windows" {
-		exclusions = getExclusionsList(network, t)
-	}
-
-	var endpoint string
-	for !portFound {
-		endpoint = findAvailableAddress(network, t)
-		_, port, err := net.SplitHostPort(endpoint)
-		require.NoError(t, err)
-		portFound = true
-		if runtime.GOOS == "windows" {
-			for _, pair := range exclusions {
-				if port >= pair.first && port <= pair.last {
-					portFound = false
-					break
-				}
-			}
-		}
-	}
-
-	return endpoint
-}
-
-// GetAvailableLocalIPv6Address is IPv6 version of GetAvailableLocalAddress.
-func GetAvailableLocalIPv6Address(t testing.TB) string {
-	network := "tcp6"
 	var exclusions []portpair
 	portFound := false
 	if runtime.GOOS == "windows" {
