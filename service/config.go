@@ -34,7 +34,11 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("service::pipelines config validation failed: cannot configure both Pipelines and PipelinesWithPipelineID")
 	}
 
-	if len(cfg.Pipelines) == 0 {
+	if len(cfg.Pipelines) > 0 {
+		if err := cfg.Pipelines.Validate(); err != nil {
+			return fmt.Errorf("service::pipelines config validation failed: %w", err)
+		}
+	} else {
 		if err := cfg.PipelinesWithPipelineID.Validate(); err != nil {
 			return fmt.Errorf("service::pipelines config validation failed: %w", err)
 		}
