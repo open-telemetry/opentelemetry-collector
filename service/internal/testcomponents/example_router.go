@@ -48,7 +48,7 @@ func createExampleRouterDefaultConfig() component.Config {
 
 func createExampleTracesRouter(_ context.Context, _ connector.Settings, cfg component.Config, traces consumer.Traces) (connector.Traces, error) {
 	c := cfg.(ExampleRouterConfig)
-	r := traces.(connector.TracesRouterAndConsumerWithPipelineIDs)
+	r := traces.(connector.TracesRouterAndConsumer)
 	left, _ := r.Consumer(c.Traces.Left)
 	right, _ := r.Consumer(c.Traces.Right)
 	return &ExampleRouter{
@@ -59,7 +59,7 @@ func createExampleTracesRouter(_ context.Context, _ connector.Settings, cfg comp
 
 func createExampleMetricsRouter(_ context.Context, _ connector.Settings, cfg component.Config, metrics consumer.Metrics) (connector.Metrics, error) {
 	c := cfg.(ExampleRouterConfig)
-	r := metrics.(connector.MetricsRouterAndConsumerWithPipelineIDs)
+	r := metrics.(connector.MetricsRouterAndConsumer)
 	left, _ := r.Consumer(c.Metrics.Left)
 	right, _ := r.Consumer(c.Metrics.Right)
 	return &ExampleRouter{
@@ -70,7 +70,7 @@ func createExampleMetricsRouter(_ context.Context, _ connector.Settings, cfg com
 
 func createExampleLogsRouter(_ context.Context, _ connector.Settings, cfg component.Config, logs consumer.Logs) (connector.Logs, error) {
 	c := cfg.(ExampleRouterConfig)
-	r := logs.(connector.LogsRouterAndConsumerWithPipelineIDs)
+	r := logs.(connector.LogsRouterAndConsumer)
 	left, _ := r.Consumer(c.Logs.Left)
 	right, _ := r.Consumer(c.Logs.Right)
 	return &ExampleRouter{
@@ -81,7 +81,7 @@ func createExampleLogsRouter(_ context.Context, _ connector.Settings, cfg compon
 
 func createExampleProfilesRouter(_ context.Context, _ connector.Settings, cfg component.Config, profiles consumerprofiles.Profiles) (connectorprofiles.Profiles, error) {
 	c := cfg.(ExampleRouterConfig)
-	r := profiles.(connectorprofiles.ProfilesRouterAndConsumerWithPipelineIDs)
+	r := profiles.(connectorprofiles.ProfilesRouterAndConsumer)
 	left, _ := r.Consumer(c.Profiles.Left)
 	right, _ := r.Consumer(c.Profiles.Right)
 	return &ExampleRouter{

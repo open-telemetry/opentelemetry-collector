@@ -42,7 +42,7 @@ func TestTracesRouter(t *testing.T) {
 	// The service will build a router to give to every connector.
 	// Many connectors will just call router.ConsumeTraces,
 	// but some implementation will call RouteTraces instead.
-	router := connector.NewTracesRouterWithPipelineIDs(
+	router := connector.NewTracesRouter(
 		map[pipeline.ID]consumer.Traces{
 			leftID:  sinkLeft,
 			rightID: sinkRight,
@@ -81,7 +81,7 @@ func TestMetricsRouter(t *testing.T) {
 	// The service will build a router to give to every connector.
 	// Many connectors will just call router.ConsumeMetrics,
 	// but some implementation will call RouteMetrics instead.
-	router := connector.NewMetricsRouterWithPipelineIDs(
+	router := connector.NewMetricsRouter(
 		map[pipeline.ID]consumer.Metrics{
 			leftID:  sinkLeft,
 			rightID: sinkRight,
@@ -120,7 +120,7 @@ func TestLogsRouter(t *testing.T) {
 	// The service will build a router to give to every connector.
 	// Many connectors will just call router.ConsumeLogs,
 	// but some implementation will call RouteLogs instead.
-	router := connector.NewLogsRouterWithPipelineIDs(
+	router := connector.NewLogsRouter(
 		map[pipeline.ID]consumer.Logs{
 			leftID:  sinkLeft,
 			rightID: sinkRight,
@@ -159,7 +159,7 @@ func TestProfilesRouter(t *testing.T) {
 	// The service will build a router to give to every connector.
 	// Many connectors will just call router.ConsumeProfiles,
 	// but some implementation will call RouteProfiles instead.
-	router := connectorprofiles.NewProfilesRouterWithPipelineIDs(
+	router := connectorprofiles.NewProfilesRouter(
 		map[pipeline.ID]consumerprofiles.Profiles{
 			leftID:  sinkLeft,
 			rightID: sinkRight,

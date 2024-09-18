@@ -58,7 +58,7 @@ func fuzzMetrics(numIDs, numCons, numMetrics int) func(*testing.T) {
 			allConsMap[allIDs[i]] = allCons[i]
 		}
 
-		r := NewMetricsRouterWithPipelineIDs(allConsMap)
+		r := NewMetricsRouter(allConsMap)
 		md := testdata.GenerateMetrics(1)
 
 		// Keep track of how many logs each consumer should receive.
@@ -113,7 +113,7 @@ func TestMetricsRouterConsumers(t *testing.T) {
 
 	foo := new(consumertest.MetricsSink)
 	bar := new(consumertest.MetricsSink)
-	r := NewMetricsRouterWithPipelineIDs(map[pipeline.ID]consumer.Metrics{fooID: foo, barID: bar})
+	r := NewMetricsRouter(map[pipeline.ID]consumer.Metrics{fooID: foo, barID: bar})
 
 	rcs := r.PipelineIDs()
 	assert.Len(t, rcs, 2)

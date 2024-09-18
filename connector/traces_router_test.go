@@ -58,7 +58,7 @@ func fuzzTraces(numIDs, numCons, numTraces int) func(*testing.T) {
 			allConsMap[allIDs[i]] = allCons[i]
 		}
 
-		r := NewTracesRouterWithPipelineIDs(allConsMap)
+		r := NewTracesRouter(allConsMap)
 		td := testdata.GenerateTraces(1)
 
 		// Keep track of how many logs each consumer should receive.
@@ -113,7 +113,7 @@ func TestTracesRouterConsumer(t *testing.T) {
 
 	foo := new(consumertest.TracesSink)
 	bar := new(consumertest.TracesSink)
-	r := NewTracesRouterWithPipelineIDs(map[pipeline.ID]consumer.Traces{fooID: foo, barID: bar})
+	r := NewTracesRouter(map[pipeline.ID]consumer.Traces{fooID: foo, barID: bar})
 
 	rcs := r.PipelineIDs()
 	assert.Len(t, rcs, 2)

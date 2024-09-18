@@ -58,7 +58,7 @@ func fuzzLogs(numIDs, numCons, numLogs int) func(*testing.T) {
 			allConsMap[allIDs[i]] = allCons[i]
 		}
 
-		r := NewLogsRouterWithPipelineIDs(allConsMap)
+		r := NewLogsRouter(allConsMap)
 		ld := testdata.GenerateLogs(1)
 
 		// Keep track of how many logs each consumer should receive.
@@ -113,7 +113,7 @@ func TestLogsRouterConsumers(t *testing.T) {
 
 	foo := new(consumertest.LogsSink)
 	bar := new(consumertest.LogsSink)
-	r := NewLogsRouterWithPipelineIDs(map[pipeline.ID]consumer.Logs{fooID: foo, barID: bar})
+	r := NewLogsRouter(map[pipeline.ID]consumer.Logs{fooID: foo, barID: bar})
 
 	rcs := r.PipelineIDs()
 	assert.Len(t, rcs, 2)
