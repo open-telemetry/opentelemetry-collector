@@ -38,7 +38,7 @@ SEMCONVGEN   := $(TOOLS_BIN_DIR)/semconvgen
 SEMCONVKIT   := $(TOOLS_BIN_DIR)/semconvkit
 TESTIFYLINT  := $(TOOLS_BIN_DIR)/testifylint
 
-TESTIFYLINT_OPT?= --enable-all --disable=require-error
+TESTIFYLINT_OPT?= --enable-all
 
 .PHONY: install-tools
 install-tools: $(TOOLS_BIN_NAMES)

@@ -231,7 +231,7 @@ func TestErrorResponses(t *testing.T) {
 			// generate traces
 			traces := ptrace.NewTraces()
 			err = exp.ConsumeTraces(context.Background(), traces)
-			assert.Error(t, err)
+			require.Error(t, err)
 
 			if test.isPermErr {
 				assert.True(t, consumererror.IsPermanent(err))
@@ -769,7 +769,7 @@ func TestPartialSuccess_longContentLengthHeader(t *testing.T) {
 				// No real error happens for long content length, so the partial
 				// success is handled as success with a warning.
 				err = handlePartialSuccessResponse(resp, handler)
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), 1)
 				assert.Contains(t, observed.FilterLevelExact(zap.WarnLevel).All()[0].Message, "Partial success")
 			})

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/credentials"
 )
 
@@ -20,7 +21,7 @@ func TestNilStartAndShutdown(t *testing.T) {
 	origCtx := context.Background()
 
 	err := m.Start(origCtx, nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	err = m.Shutdown(origCtx)
 	assert.NoError(t, err)
@@ -64,7 +65,7 @@ func TestMockRoundTripper(t *testing.T) {
 				return
 			}
 			assert.NotNil(t, tripper)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			// check if the resultant tripper is indeed the one provided
 			_, ok := tripper.(*customRoundTripper)
 			assert.True(t, ok)
@@ -119,7 +120,7 @@ func TestMockPerRPCCredential(t *testing.T) {
 				return
 			}
 			assert.NotNil(t, credential)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			// check if the resultant tripper is indeed the one provided
 			_, ok := credential.(*customPerRPCCredentials)
 			assert.True(t, ok)

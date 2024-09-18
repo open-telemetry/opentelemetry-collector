@@ -27,7 +27,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
-	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
+	require.NoError(t, componenttest.CheckConfigStruct(cfg))
 	ocfg, ok := factory.CreateDefaultConfig().(*Config)
 	assert.True(t, ok)
 	assert.Equal(t, configretry.NewDefaultBackOffConfig(), ocfg.RetryConfig)
@@ -168,13 +168,13 @@ func TestCreateTracesExporter(t *testing.T) {
 			factory := NewFactory()
 			set := exportertest.NewNopSettings()
 			consumer, err := factory.CreateTracesExporter(context.Background(), set, tt.config)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.NotNil(t, consumer)
 			err = consumer.Start(context.Background(), componenttest.NewNopHost())
 			if tt.mustFailOnStart {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 			// Shutdown is called even when Start fails
 			err = consumer.Shutdown(context.Background())

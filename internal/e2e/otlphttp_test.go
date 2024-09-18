@@ -62,7 +62,7 @@ func TestTraceNoBackend(t *testing.T) {
 func TestTraceInvalidUrl(t *testing.T) {
 	exp := startTracesExporter(t, "http:/\\//this_is_an/*/invalid_url", "")
 	td := testdata.GenerateTraces(1)
-	assert.Error(t, exp.ConsumeTraces(context.Background(), td))
+	require.Error(t, exp.ConsumeTraces(context.Background(), td))
 
 	exp = startTracesExporter(t, "", "http:/\\//this_is_an/*/invalid_url")
 	td = testdata.GenerateTraces(1)
@@ -111,7 +111,7 @@ func TestTraceRoundTrip(t *testing.T) {
 			exp := startTracesExporter(t, tt.baseURL, tt.overrideURL)
 
 			td := testdata.GenerateTraces(1)
-			assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
+			require.NoError(t, exp.ConsumeTraces(context.Background(), td))
 			require.Eventually(t, func() bool {
 				return sink.SpanCount() > 0
 			}, 1*time.Second, 10*time.Millisecond)
@@ -164,7 +164,7 @@ func TestMetricsRoundTrip(t *testing.T) {
 			exp := startMetricsExporter(t, tt.baseURL, tt.overrideURL)
 
 			md := testdata.GenerateMetrics(1)
-			assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
+			require.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 			require.Eventually(t, func() bool {
 				return sink.DataPointCount() > 0
 			}, 1*time.Second, 10*time.Millisecond)
@@ -217,7 +217,7 @@ func TestLogsRoundTrip(t *testing.T) {
 			exp := startLogsExporter(t, tt.baseURL, tt.overrideURL)
 
 			md := testdata.GenerateLogs(1)
-			assert.NoError(t, exp.ConsumeLogs(context.Background(), md))
+			require.NoError(t, exp.ConsumeLogs(context.Background(), md))
 			require.Eventually(t, func() bool {
 				return sink.LogRecordCount() > 0
 			}, 1*time.Second, 10*time.Millisecond)

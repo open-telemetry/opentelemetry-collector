@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var _ encoding.TextMarshaler = (*Level)(nil)
@@ -50,7 +51,7 @@ func TestUnmarshalText(t *testing.T) {
 				if test.err {
 					assert.Error(t, err)
 				} else {
-					assert.NoError(t, err)
+					require.NoError(t, err)
 					assert.Equal(t, test.level, lvl)
 				}
 			})
@@ -94,7 +95,7 @@ func TestLevelStringMarshal(t *testing.T) {
 		t.Run(tt.str, func(t *testing.T) {
 			assert.Equal(t, tt.str, tt.level.String())
 			got, err := tt.level.MarshalText()
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.str, string(got))
 		})
 	}

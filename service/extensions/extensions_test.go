@@ -284,7 +284,7 @@ func TestNotifyConfig(t *testing.T) {
 				BuildInfo:  component.NewDefaultBuildInfo(),
 				Extensions: builders.NewExtension(tt.extensionsConfigs, tt.factories),
 			}, tt.serviceExtensions)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			errs := extensions.NotifyConfig(context.Background(), confmap.NewFromStringMap(map[string]interface{}{}))
 			assert.Equal(t, tt.want, errs)
 		})
@@ -434,7 +434,7 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 				[]component.ID{compID},
 				WithReporter(rep),
 			)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			rep.Ready()
 

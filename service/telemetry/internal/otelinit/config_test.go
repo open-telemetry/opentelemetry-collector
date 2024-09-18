@@ -534,7 +534,7 @@ func TestMetricReader(t *testing.T) {
 
 			defer func() {
 				if gotReader != nil {
-					assert.NoError(t, gotReader.Shutdown(context.Background()))
+					require.NoError(t, gotReader.Shutdown(context.Background()))
 				}
 				if server != nil {
 					assert.NoError(t, server.Shutdown(context.Background()))

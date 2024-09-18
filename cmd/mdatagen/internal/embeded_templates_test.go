@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestEnsureTemplatesLoaded(t *testing.T) {
@@ -38,7 +39,7 @@ func TestEnsureTemplatesLoaded(t *testing.T) {
 		}
 		count = 0
 	)
-	assert.NoError(t, fs.WalkDir(TemplateFS, ".", func(path string, d fs.DirEntry, _ error) error {
+	require.NoError(t, fs.WalkDir(TemplateFS, ".", func(path string, d fs.DirEntry, _ error) error {
 		if d != nil && d.IsDir() {
 			return nil
 		}

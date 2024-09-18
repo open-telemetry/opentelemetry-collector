@@ -41,7 +41,7 @@ func TestExport_EmptyRequest(t *testing.T) {
 	profileSink := new(consumertest.ProfilesSink)
 	profileClient := makeProfileServiceClient(t, profileSink)
 	resp, err := profileClient.Export(context.Background(), pprofileotlp.NewExportRequest())
-	assert.NoError(t, err, "Failed to export profile: %v", err)
+	require.NoError(t, err, "Failed to export profile: %v", err)
 	assert.NotNil(t, resp, "The response is missing")
 }
 
@@ -51,7 +51,7 @@ func TestExport_NonPermanentErrorConsumer(t *testing.T) {
 
 	profileClient := makeProfileServiceClient(t, consumertest.NewErr(errors.New("my error")))
 	resp, err := profileClient.Export(context.Background(), req)
-	assert.EqualError(t, err, "rpc error: code = Unavailable desc = my error")
+	require.EqualError(t, err, "rpc error: code = Unavailable desc = my error")
 	assert.IsType(t, status.Error(codes.Unknown, ""), err)
 	assert.Equal(t, pprofileotlp.ExportResponse{}, resp)
 }
@@ -61,7 +61,7 @@ func TestExport_PermanentErrorConsumer(t *testing.T) {
 
 	profileClient := makeProfileServiceClient(t, consumertest.NewErr(consumererror.NewPermanent(errors.New("my error"))))
 	resp, err := profileClient.Export(context.Background(), req)
-	assert.EqualError(t, err, "rpc error: code = Internal desc = Permanent error: my error")
+	require.EqualError(t, err, "rpc error: code = Internal desc = Permanent error: my error")
 	assert.IsType(t, status.Error(codes.Unknown, ""), err)
 	assert.Equal(t, pprofileotlp.ExportResponse{}, resp)
 }

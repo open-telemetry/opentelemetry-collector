@@ -165,7 +165,7 @@ func (e statusWatcherExtension) ComponentStatusChanged(source *componentstatus.I
 
 func TestComponentStatusWatcher(t *testing.T) {
 	factories, err := nopFactories()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Use a processor factory that creates "unhealthy" processor: one that
 	// always reports StatusRecoverableError after successful Start.

@@ -37,19 +37,19 @@ func TestCreateSameReceiver(t *testing.T) {
 	creationSet := receivertest.NewNopSettings()
 	tReceiver, err := factory.CreateTracesReceiver(context.Background(), creationSet, cfg, consumertest.NewNop())
 	assert.NotNil(t, tReceiver)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), creationSet, cfg, consumertest.NewNop())
 	assert.NotNil(t, mReceiver)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	lReceiver, err := factory.CreateMetricsReceiver(context.Background(), creationSet, cfg, consumertest.NewNop())
 	assert.NotNil(t, lReceiver)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	pReceiver, err := factory.CreateProfilesReceiver(context.Background(), creationSet, cfg, consumertest.NewNop())
 	assert.NotNil(t, pReceiver)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Same(t, tReceiver, mReceiver)
 	assert.Same(t, tReceiver, lReceiver)
@@ -139,7 +139,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 				assert.Error(t, err)
 				return
 			}
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			if tt.wantStartErr {
 				assert.Error(t, tr.Start(context.Background(), componenttest.NewNopHost()))
 			} else {
@@ -233,7 +233,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 				assert.Error(t, err)
 				return
 			}
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			if tt.wantStartErr {
 				assert.Error(t, mr.Start(context.Background(), componenttest.NewNopHost()))
 			} else {
@@ -327,7 +327,7 @@ func TestCreateLogReceiver(t *testing.T) {
 				assert.Error(t, err)
 				return
 			}
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			if tt.wantStartErr {
 				assert.Error(t, mr.Start(context.Background(), componenttest.NewNopHost()))
 			} else {
@@ -420,7 +420,7 @@ func TestCreateProfilesReceiver(t *testing.T) {
 				assert.Error(t, err)
 				return
 			}
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			if tt.wantStartErr {
 				assert.Error(t, tr.Start(context.Background(), componenttest.NewNopHost()))
 			} else {

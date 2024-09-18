@@ -185,9 +185,9 @@ func TestCheckExporterTracesViews(t *testing.T) {
 	require.NotNil(t, ctx)
 	obsrep.endTracesOp(ctx, 7, nil)
 
-	assert.NoError(t, tt.CheckExporterTraces(7, 0))
-	assert.Error(t, tt.CheckExporterTraces(7, 7))
-	assert.Error(t, tt.CheckExporterTraces(0, 0))
+	require.NoError(t, tt.CheckExporterTraces(7, 0))
+	require.Error(t, tt.CheckExporterTraces(7, 7))
+	require.Error(t, tt.CheckExporterTraces(0, 0))
 	assert.Error(t, tt.CheckExporterTraces(0, 7))
 }
 
@@ -205,9 +205,9 @@ func TestCheckExporterMetricsViews(t *testing.T) {
 	require.NotNil(t, ctx)
 	obsrep.endMetricsOp(ctx, 7, nil)
 
-	assert.NoError(t, tt.CheckExporterMetrics(7, 0))
-	assert.Error(t, tt.CheckExporterMetrics(7, 7))
-	assert.Error(t, tt.CheckExporterMetrics(0, 0))
+	require.NoError(t, tt.CheckExporterMetrics(7, 0))
+	require.Error(t, tt.CheckExporterMetrics(7, 7))
+	require.Error(t, tt.CheckExporterMetrics(0, 0))
 	assert.Error(t, tt.CheckExporterMetrics(0, 7))
 }
 
@@ -225,9 +225,9 @@ func TestCheckExporterLogsViews(t *testing.T) {
 	require.NotNil(t, ctx)
 	obsrep.endLogsOp(ctx, 7, nil)
 
-	assert.NoError(t, tt.CheckExporterLogs(7, 0))
-	assert.Error(t, tt.CheckExporterLogs(7, 7))
-	assert.Error(t, tt.CheckExporterLogs(0, 0))
+	require.NoError(t, tt.CheckExporterLogs(7, 0))
+	require.Error(t, tt.CheckExporterLogs(7, 7))
+	require.Error(t, tt.CheckExporterLogs(0, 0))
 	assert.Error(t, tt.CheckExporterLogs(0, 7))
 }
 
