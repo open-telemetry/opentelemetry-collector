@@ -8,17 +8,18 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewDefaultTimeoutConfig(t *testing.T) {
 	cfg := NewDefaultTimeoutConfig()
-	assert.NoError(t, cfg.Validate())
+	require.NoError(t, cfg.Validate())
 	assert.Equal(t, TimeoutConfig{Timeout: 5 * time.Second}, cfg)
 }
 
 func TestInvalidTimeout(t *testing.T) {
 	cfg := NewDefaultTimeoutConfig()
-	assert.NoError(t, cfg.Validate())
+	require.NoError(t, cfg.Validate())
 	cfg.Timeout = -1
 	assert.Error(t, cfg.Validate())
 }

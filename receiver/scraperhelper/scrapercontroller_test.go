@@ -123,8 +123,8 @@ func TestScrapeController(t *testing.T) {
 		},
 	}
 
-	for _, test := range testCases {
-		test := test
+	for _, tt := range testCases {
+		test := tt
 		t.Run(test.name, func(t *testing.T) {
 			receiverID := component.MustNewID("receiver")
 			tt, err := componenttest.SetupTelemetry(receiverID)
@@ -224,7 +224,7 @@ func configureMetricOptions(t *testing.T, test metricsTestCase, initializeChs []
 		scrapeMetricsChs[i] = make(chan int)
 		tsm := &testScrapeMetrics{ch: scrapeMetricsChs[i], err: test.scrapeErr}
 		scp, err := NewScraper(component.MustNewType("scraper"), tsm.scrape, scraperOptions...)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		metricOptions = append(metricOptions, AddScraper(scp))
 	}
@@ -326,7 +326,7 @@ func TestSingleScrapePerInterval(t *testing.T) {
 	tickerCh := make(chan time.Time)
 
 	scp, err := NewScraper(component.MustNewType("scaper"), tsm.scrape)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	receiver, err := NewScraperControllerReceiver(
 		cfg,
@@ -383,7 +383,7 @@ func TestScrapeControllerStartsOnInit(t *testing.T) {
 
 	assert.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()), "Must not error on start")
 	<-time.After(500 * time.Nanosecond)
-	assert.NoError(t, r.Shutdown(context.Background()), "Must not have errored on shutdown")
+	require.NoError(t, r.Shutdown(context.Background()), "Must not have errored on shutdown")
 	assert.Equal(t, 1, tsm.timesScrapeCalled, "Must have been called as soon as the controller started")
 }
 

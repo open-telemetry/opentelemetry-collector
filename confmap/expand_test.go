@@ -40,9 +40,9 @@ func TestResolverExpandEnvVars(t *testing.T) {
 		return NewRetrieved(envs[uri[4:]])
 	})
 
-	for _, test := range testCases {
-		t.Run(test.name, func(t *testing.T) {
-			resolver, err := NewResolver(ResolverSettings{URIs: []string{filepath.Join("testdata", test.name)}, ProviderFactories: []ProviderFactory{fileProvider, envProvider}, ConverterFactories: nil})
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			resolver, err := NewResolver(ResolverSettings{URIs: []string{filepath.Join("testdata", tt.name)}, ProviderFactories: []ProviderFactory{fileProvider, envProvider}, ConverterFactories: nil})
 			require.NoError(t, err)
 
 			// Test that expanded configs are the same with the simple config with no env vars.

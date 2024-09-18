@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -56,10 +57,10 @@ func TestTelemetryConfiguration(t *testing.T) {
 			set := Settings{ZapOptions: []zap.Option{}}
 			logger, err := f.CreateLogger(context.Background(), set, tt.cfg)
 			if tt.success {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.NotNil(t, logger)
 			} else {
-				assert.Error(t, err)
+				require.Error(t, err)
 				assert.Nil(t, logger)
 			}
 		})
@@ -114,7 +115,7 @@ func TestSampledLogger(t *testing.T) {
 			ctx := context.Background()
 			set := Settings{ZapOptions: []zap.Option{}}
 			logger, err := f.CreateLogger(ctx, set, tt.cfg)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.NotNil(t, logger)
 		})
 	}
