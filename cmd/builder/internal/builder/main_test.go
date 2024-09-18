@@ -290,6 +290,18 @@ func TestGenerateAndCompile(t *testing.T) {
 			},
 		},
 		{
+			testCase: "Build Tags Compilation",
+			cfgBuilder: func(t *testing.T) Config {
+				cfg := newTestConfig()
+				err := cfg.SetBackwardsCompatibility()
+				require.NoError(t, err)
+				cfg.Distribution.OutputPath = t.TempDir()
+				cfg.Replaces = append(cfg.Replaces, replaces...)
+				cfg.Distribution.BuildTags = "customTag"
+				return cfg
+			},
+		},
+		{
 			testCase: "Debug Compilation",
 			cfgBuilder: func(t *testing.T) Config {
 				cfg := newTestConfig()
