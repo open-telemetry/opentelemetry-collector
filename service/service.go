@@ -39,9 +39,10 @@ import (
 
 // useOtelWithSDKConfigurationForInternalTelemetryFeatureGate is the feature gate that controls whether the collector
 // supports configuring the OpenTelemetry SDK via configuration
-var useOtelWithSDKConfigurationForInternalTelemetryFeatureGate = featuregate.GlobalRegistry().MustRegister(
+var _ = featuregate.GlobalRegistry().MustRegister(
 	"telemetry.useOtelWithSDKConfigurationForInternalTelemetry",
-	featuregate.StageBeta,
+	featuregate.StageStable,
+	featuregate.WithRegisterToVersion("v0.110.0"),
 	featuregate.WithRegisterDescription("controls whether the collector supports extended OpenTelemetry"+
 		"configuration for internal telemetry"))
 
@@ -180,12 +181,12 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 }
 
 func logsAboutMeterProvider(logger *zap.Logger, cfg telemetry.MetricsConfig, mp metric.MeterProvider) {
-	if cfg.Level == configtelemetry.LevelNone || (cfg.Address == "" && len(cfg.Readers) == 0) {
+	if cfg.Level == configtelemetry.LevelNone || len(cfg.Readers) == 0 {
 		logger.Info("Skipped telemetry setup.")
 		return
 	}
 
-	if len(cfg.Address) != 0 && useOtelWithSDKConfigurationForInternalTelemetryFeatureGate.IsEnabled() {
+	if len(cfg.Address) != 0 {
 		logger.Warn("service::telemetry::metrics::address is being deprecated in favor of service::telemetry::metrics::readers")
 	}
 
