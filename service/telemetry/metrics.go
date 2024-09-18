@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package service // import "go.opentelemetry.io/collector/service"
+package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
 
 import (
 	"context"
@@ -19,8 +19,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/service/internal/proctelemetry"
-	"go.opentelemetry.io/collector/service/telemetry"
+	"go.opentelemetry.io/collector/service/telemetry/internal/otelinit"
 )
 
 const (
@@ -36,7 +35,7 @@ type meterProvider struct {
 
 type meterProviderSettings struct {
 	res               *resource.Resource
-	cfg               telemetry.MetricsConfig
+	cfg               MetricsConfig
 	asyncErrorChannel chan error
 }
 
@@ -73,7 +72,7 @@ func newMeterProvider(set meterProviderSettings, disableHighCardinality bool) (m
 	var opts []sdkmetric.Option
 	for _, reader := range set.cfg.Readers {
 		// https://github.com/open-telemetry/opentelemetry-collector/issues/8045
-		r, server, err := proctelemetry.InitMetricReader(context.Background(), reader, set.asyncErrorChannel, &mp.serverWG)
+		r, server, err := otelinit.InitMetricReader(context.Background(), reader, set.asyncErrorChannel, &mp.serverWG)
 		if err != nil {
 			return nil, err
 		}
@@ -85,7 +84,7 @@ func newMeterProvider(set meterProviderSettings, disableHighCardinality bool) (m
 	}
 
 	var err error
-	mp.MeterProvider, err = proctelemetry.InitOpenTelemetry(set.res, opts, disableHighCardinality)
+	mp.MeterProvider, err = otelinit.InitOpenTelemetry(set.res, opts, disableHighCardinality)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +92,7 @@ func newMeterProvider(set meterProviderSettings, disableHighCardinality bool) (m
 }
 
 // LogAboutServers logs about the servers that are serving metrics.
-func (mp *meterProvider) LogAboutServers(logger *zap.Logger, cfg telemetry.MetricsConfig) {
+func (mp *meterProvider) LogAboutServers(logger *zap.Logger, cfg MetricsConfig) {
 	for _, server := range mp.servers {
 		logger.Info(
 			"Serving metrics",

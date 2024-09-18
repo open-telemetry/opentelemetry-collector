@@ -125,8 +125,6 @@ linters-settings:
     # TODO: enable all rules
     disable:
       - float-compare
-      - formatter
-      - go-require
       - require-error
     enable-all: true   
 

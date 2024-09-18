@@ -1,10 +1,9 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package main
+package internal
 
 import (
-	"fmt"
 	"io/fs"
 	"path/filepath"
 	"testing"
@@ -99,7 +98,7 @@ func TestValidate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := loadMetadata(tt.name)
+			_, err := LoadMetadata(tt.name)
 			require.Error(t, err)
 			require.EqualError(t, err, tt.wantErr)
 		})
@@ -113,9 +112,9 @@ func TestValidateMetricDuplicates(t *testing.T) {
 		"container.uptime":          {"docker_stats", "kubeletstats"},
 	}
 	allMetrics := map[string][]string{}
-	err := filepath.Walk("../../receiver", func(path string, info fs.FileInfo, _ error) error {
+	err := filepath.Walk("../../../receiver", func(path string, info fs.FileInfo, _ error) error {
 		if info.Name() == "metadata.yaml" {
-			md, err := loadMetadata(path)
+			md, err := LoadMetadata(path)
 			require.NoError(t, err)
 			if len(md.Metrics) > 0 {
 				for metricName := range md.Metrics {
@@ -132,10 +131,10 @@ func TestValidateMetricDuplicates(t *testing.T) {
 		for _, metricName := range metrics {
 			if val, exists := seen[metricName]; exists {
 				receivers, allowed := allowedMetrics[metricName]
-				assert.True(
+				assert.Truef(
 					t,
 					allowed && contains(receiver, receivers) && contains(val, receivers),
-					fmt.Sprintf("Duplicate metric %v in receivers %v and %v. Please validate that this is intentional by adding the metric name and receiver types in the allowedMetrics map in this test\n", metricName, receiver, val),
+					"Duplicate metric %v in receivers %v and %v. Please validate that this is intentional by adding the metric name and receiver types in the allowedMetrics map in this test\n", metricName, receiver, val,
 				)
 			}
 			seen[metricName] = receiver

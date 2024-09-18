@@ -8,9 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net"
 	"net/http"
-	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -35,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/builders"
+	"go.opentelemetry.io/collector/service/internal/promtest"
 	"go.opentelemetry.io/collector/service/pipelines"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
@@ -355,10 +354,10 @@ func testCollectorStartHelperWithReaders(t *testing.T, tc ownMetricsTestCase, ne
 	)
 	switch network {
 	case "tcp", "tcp4":
-		metricsAddr = getAvailableLocalAddressPrometheus(t)
+		metricsAddr = promtest.GetAvailableLocalAddressPrometheus(t)
 		zpagesAddr = testutil.GetAvailableLocalAddress(t)
 	case "tcp6":
-		metricsAddr = getAvailableLocalIPv6AddressPrometheus(t)
+		metricsAddr = promtest.GetAvailableLocalIPv6AddressPrometheus(t)
 		zpagesAddr = testutil.GetAvailableLocalIPv6Address(t)
 	}
 	require.NotZero(t, metricsAddr, "network must be either of tcp, tcp4 or tcp6")
@@ -744,27 +743,4 @@ func newConfigWatcherExtensionFactory(name component.Type) extension.Factory {
 		},
 		component.StabilityLevelDevelopment,
 	)
-}
-
-func getAvailableLocalIPv6AddressPrometheus(t testing.TB) *config.Prometheus {
-	return addrToPrometheus(testutil.GetAvailableLocalIPv6Address(t))
-}
-
-func getAvailableLocalAddressPrometheus(t testing.TB) *config.Prometheus {
-	return addrToPrometheus(testutil.GetAvailableLocalAddress(t))
-}
-
-func addrToPrometheus(address string) *config.Prometheus {
-	host, port, err := net.SplitHostPort(address)
-	if err != nil {
-		return nil
-	}
-	portInt, err := strconv.Atoi(port)
-	if err != nil {
-		return nil
-	}
-	return &config.Prometheus{
-		Host: &host,
-		Port: &portInt,
-	}
 }

@@ -97,7 +97,7 @@ func TestLogsProcessor_RecordInOut(t *testing.T) {
 	testTelemetry.assertMetrics(t, []metricdata.Metrics{
 		{
 			Name:        "otelcol_processor_incoming_items",
-			Description: "Number of items passed to the processor.",
+			Description: "Number of items passed to the processor. [alpha]",
 			Unit:        "{items}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
@@ -112,7 +112,7 @@ func TestLogsProcessor_RecordInOut(t *testing.T) {
 		},
 		{
 			Name:        "otelcol_processor_outgoing_items",
-			Description: "Number of items emitted from the processor.",
+			Description: "Number of items emitted from the processor. [alpha]",
 			Unit:        "{items}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
