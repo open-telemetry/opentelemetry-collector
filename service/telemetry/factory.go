@@ -7,6 +7,7 @@ import (
 	"context"
 	"time"
 
+	"go.opentelemetry.io/contrib/config"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -99,8 +100,17 @@ func createDefaultConfig() component.Config {
 			InitialFields:     map[string]any(nil),
 		},
 		Metrics: MetricsConfig{
-			Level:   configtelemetry.LevelNormal,
-			Address: ":8888",
+			Level: configtelemetry.LevelNormal,
+			Readers: []config.MetricReader{{
+				Pull: &config.PullMetricReader{Exporter: config.MetricExporter{Prometheus: &config.Prometheus{
+					Host: newPtr(""),
+					Port: newPtr(8888),
+				}}}},
+			},
 		},
 	}
+}
+
+func newPtr[T int | string](str T) *T {
+	return &str
 }
