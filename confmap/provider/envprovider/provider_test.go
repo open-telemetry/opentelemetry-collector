@@ -171,20 +171,20 @@ func TestEnvWithDefaultValue(t *testing.T) {
 		{name: "syntax1", unset: true, uri: "env:-MY_VAR", expectedErr: "invalid name"},
 		{name: "syntax2", unset: true, uri: "env:MY_VAR:-test:-test", expectedVal: "test:-test"},
 	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			if !test.unset {
-				t.Setenv("MY_VAR", test.value)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if !tt.unset {
+				t.Setenv("MY_VAR", tt.value)
 			}
-			ret, err := env.Retrieve(context.Background(), test.uri, nil)
-			if test.expectedErr != "" {
-				require.ErrorContains(t, err, test.expectedErr)
+			ret, err := env.Retrieve(context.Background(), tt.uri, nil)
+			if tt.expectedErr != "" {
+				require.ErrorContains(t, err, tt.expectedErr)
 				return
 			}
 			require.NoError(t, err)
 			str, err := ret.AsString()
 			require.NoError(t, err)
-			assert.Equal(t, test.expectedVal, str)
+			assert.Equal(t, tt.expectedVal, str)
 		})
 	}
 	assert.NoError(t, env.Shutdown(context.Background()))

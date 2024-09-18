@@ -216,9 +216,9 @@ func TestUnmarshalConfigInvalidSignalPath(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			cm, err := confmaptest.LoadConf(filepath.Join("testdata", test.testDataFn))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", tt.testDataFn))
 			require.NoError(t, err)
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()

@@ -62,8 +62,7 @@ func TestMakeFactoryMap(t *testing.T) {
 			in:   []Factory{p1, p2, NewFactory(component.MustNewType("p1"), nil, nil, component.StabilityLevelAlpha)},
 		},
 	}
-	for i := range testCases {
-		tt := testCases[i]
+	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			out, err := MakeFactoryMap(tt.in...)
 			if tt.out == nil {

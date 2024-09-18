@@ -79,8 +79,7 @@ func TestMakeFactoryMap(t *testing.T) {
 		},
 	}
 
-	for i := range testCases {
-		tt := testCases[i]
+	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			out, err := MakeFactoryMap(tt.in...)
 			if tt.out == nil {
