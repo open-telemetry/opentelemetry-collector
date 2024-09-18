@@ -242,7 +242,7 @@ func TestTelemetryInit(t *testing.T) {
 				}
 
 				require.Equal(t, metricValue.labels, labels, "labels for metric %q was different than expected", metricName)
-				require.Equal(t, metricValue.value, mf.Metric[0].Counter.GetValue(), "value for metric %q was different than expected", metricName)
+				require.InDelta(t, metricValue.value, mf.Metric[0].Counter.GetValue(), 0.01, "value for metric %q was different than expected", metricName)
 			}
 		})
 

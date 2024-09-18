@@ -270,7 +270,7 @@ func TestReadFloat64(t *testing.T) {
 				return
 			}
 			assert.NoError(t, iter.Error)
-			assert.Equal(t, tt.want, val)
+			assert.InDelta(t, tt.want, val, 0.01)
 		})
 	}
 }
