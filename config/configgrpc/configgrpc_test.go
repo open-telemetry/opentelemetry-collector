@@ -905,10 +905,10 @@ func TestContextWithClient(t *testing.T) {
 			},
 		},
 	}
-	for _, tC := range testCases {
-		t.Run(tC.desc, func(t *testing.T) {
-			cl := client.FromContext(contextWithClient(tC.input, tC.doMetadata))
-			assert.Equal(t, tC.expected, cl)
+	for _, tt := range testCases {
+		t.Run(tt.desc, func(t *testing.T) {
+			cl := client.FromContext(contextWithClient(tt.input, tt.doMetadata))
+			assert.Equal(t, tt.expected, cl)
 		})
 	}
 }
@@ -950,13 +950,13 @@ func (ms *mockedStream) Context() context.Context {
 
 func TestClientInfoInterceptors(t *testing.T) {
 	testCases := []struct {
-		desc   string
+		name   string
 		tester func(context.Context, ptraceotlp.GRPCClient)
 	}{
 		{
 			// we only have unary services, we don't have any clients we could use
 			// to test with streaming services
-			desc: "unary",
+			name: "unary",
 			tester: func(ctx context.Context, cl ptraceotlp.GRPCClient) {
 				resp, errResp := cl.Export(ctx, ptraceotlp.NewExportRequest())
 				require.NoError(t, errResp)
@@ -964,8 +964,8 @@ func TestClientInfoInterceptors(t *testing.T) {
 			},
 		},
 	}
-	for _, tC := range testCases {
-		t.Run(tC.desc, func(t *testing.T) {
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
 			mock := &grpcTraceServer{}
 			var l net.Listener
 
@@ -1000,13 +1000,13 @@ func TestClientInfoInterceptors(t *testing.T) {
 					},
 				}
 
-				tt, err := componenttest.SetupTelemetry(componentID)
+				tel, err := componenttest.SetupTelemetry(componentID)
 				require.NoError(t, err)
 				defer func() {
-					require.NoError(t, tt.Shutdown(context.Background()))
+					require.NoError(t, tel.Shutdown(context.Background()))
 				}()
 
-				grpcClientConn, errClient := gcs.ToClientConn(context.Background(), componenttest.NewNopHost(), tt.TelemetrySettings())
+				grpcClientConn, errClient := gcs.ToClientConn(context.Background(), componenttest.NewNopHost(), tel.TelemetrySettings())
 				require.NoError(t, errClient)
 				defer func() { assert.NoError(t, grpcClientConn.Close()) }()
 
@@ -1015,7 +1015,7 @@ func TestClientInfoInterceptors(t *testing.T) {
 				defer cancelFunc()
 
 				// test
-				tC.tester(ctx, cl)
+				tt.tester(ctx, cl)
 			}
 
 			// verify

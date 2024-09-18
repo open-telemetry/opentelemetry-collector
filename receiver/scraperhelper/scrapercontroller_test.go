@@ -123,8 +123,8 @@ func TestScrapeController(t *testing.T) {
 		},
 	}
 
-	for _, test := range testCases {
-		test := test
+	for _, tt := range testCases {
+		test := tt
 		t.Run(test.name, func(t *testing.T) {
 			receiverID := component.MustNewID("receiver")
 			tt, err := componenttest.SetupTelemetry(receiverID)

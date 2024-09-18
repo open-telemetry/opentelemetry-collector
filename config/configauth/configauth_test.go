@@ -24,36 +24,36 @@ func TestNewDefaultAuthentication(t *testing.T) {
 
 func TestGetServer(t *testing.T) {
 	testCases := []struct {
-		desc          string
+		name          string
 		authenticator extension.Extension
 		expected      error
 	}{
 		{
-			desc:          "obtain server authenticator",
+			name:          "obtain server authenticator",
 			authenticator: auth.NewServer(),
 			expected:      nil,
 		},
 		{
-			desc:          "not a server authenticator",
+			name:          "not a server authenticator",
 			authenticator: auth.NewClient(),
 			expected:      errNotServer,
 		},
 	}
-	for _, tC := range testCases {
-		t.Run(tC.desc, func(t *testing.T) {
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
 			// prepare
 			cfg := &Authentication{
 				AuthenticatorID: mockID,
 			}
 			ext := map[component.ID]component.Component{
-				mockID: tC.authenticator,
+				mockID: tt.authenticator,
 			}
 
 			authenticator, err := cfg.GetServerAuthenticator(context.Background(), ext)
 
 			// verify
-			if tC.expected != nil {
-				assert.ErrorIs(t, err, tC.expected)
+			if tt.expected != nil {
+				assert.ErrorIs(t, err, tt.expected)
 				assert.Nil(t, authenticator)
 			} else {
 				assert.NoError(t, err)
@@ -75,36 +75,36 @@ func TestGetServerFails(t *testing.T) {
 
 func TestGetClient(t *testing.T) {
 	testCases := []struct {
-		desc          string
+		name          string
 		authenticator extension.Extension
 		expected      error
 	}{
 		{
-			desc:          "obtain client authenticator",
+			name:          "obtain client authenticator",
 			authenticator: auth.NewClient(),
 			expected:      nil,
 		},
 		{
-			desc:          "not a client authenticator",
+			name:          "not a client authenticator",
 			authenticator: auth.NewServer(),
 			expected:      errNotClient,
 		},
 	}
-	for _, tC := range testCases {
-		t.Run(tC.desc, func(t *testing.T) {
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
 			// prepare
 			cfg := &Authentication{
 				AuthenticatorID: mockID,
 			}
 			ext := map[component.ID]component.Component{
-				mockID: tC.authenticator,
+				mockID: tt.authenticator,
 			}
 
 			authenticator, err := cfg.GetClientAuthenticator(context.Background(), ext)
 
 			// verify
-			if tC.expected != nil {
-				assert.ErrorIs(t, err, tC.expected)
+			if tt.expected != nil {
+				assert.ErrorIs(t, err, tt.expected)
 				assert.Nil(t, authenticator)
 			} else {
 				assert.NoError(t, err)

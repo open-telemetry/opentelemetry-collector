@@ -152,7 +152,7 @@ func TestFunctionalityDownloadFileHTTPS(t *testing.T) {
 	defer ts.Close()
 
 	tests := []struct {
-		testName               string
+		name                   string
 		certPath               string
 		hostName               string
 		useCertificate         bool
@@ -160,7 +160,7 @@ func TestFunctionalityDownloadFileHTTPS(t *testing.T) {
 		shouldError            bool
 	}{
 		{
-			testName:               "Test valid certificate and name",
+			name:                   "Test valid certificate and name",
 			certPath:               certPath,
 			hostName:               "localhost",
 			useCertificate:         true,
@@ -168,7 +168,7 @@ func TestFunctionalityDownloadFileHTTPS(t *testing.T) {
 			shouldError:            false,
 		},
 		{
-			testName:               "Test valid certificate with invalid name",
+			name:                   "Test valid certificate with invalid name",
 			certPath:               certPath,
 			hostName:               "127.0.0.1",
 			useCertificate:         true,
@@ -176,7 +176,7 @@ func TestFunctionalityDownloadFileHTTPS(t *testing.T) {
 			shouldError:            true,
 		},
 		{
-			testName:               "Test valid certificate with invalid name, skip validation",
+			name:                   "Test valid certificate with invalid name, skip validation",
 			certPath:               certPath,
 			hostName:               "127.0.0.1",
 			useCertificate:         true,
@@ -184,7 +184,7 @@ func TestFunctionalityDownloadFileHTTPS(t *testing.T) {
 			shouldError:            false,
 		},
 		{
-			testName:               "Test no certificate should fail",
+			name:                   "Test no certificate should fail",
 			certPath:               certPath,
 			hostName:               "localhost",
 			useCertificate:         false,
@@ -192,7 +192,7 @@ func TestFunctionalityDownloadFileHTTPS(t *testing.T) {
 			shouldError:            true,
 		},
 		{
-			testName:               "Test invalid cert",
+			name:                   "Test invalid cert",
 			certPath:               invalidCert.Name(),
 			hostName:               "localhost",
 			useCertificate:         true,
@@ -200,7 +200,7 @@ func TestFunctionalityDownloadFileHTTPS(t *testing.T) {
 			shouldError:            true,
 		},
 		{
-			testName:               "Test no cert",
+			name:                   "Test no cert",
 			certPath:               "no_certificate",
 			hostName:               "localhost",
 			useCertificate:         true,
@@ -210,7 +210,7 @@ func TestFunctionalityDownloadFileHTTPS(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.testName, func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			fp := newConfigurableHTTPProvider(HTTPSScheme, confmaptest.NewNopProviderSettings())
 			// Parse url of the test server to get the port number.
 			tsURL, err := url.Parse(ts.URL)

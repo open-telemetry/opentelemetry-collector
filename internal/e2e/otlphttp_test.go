@@ -104,11 +104,11 @@ func TestTraceRoundTrip(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.TracesSink)
 			startTracesReceiver(t, addr, sink)
-			exp := startTracesExporter(t, test.baseURL, test.overrideURL)
+			exp := startTracesExporter(t, tt.baseURL, tt.overrideURL)
 
 			td := testdata.GenerateTraces(1)
 			assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
@@ -157,11 +157,11 @@ func TestMetricsRoundTrip(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.MetricsSink)
 			startMetricsReceiver(t, addr, sink)
-			exp := startMetricsExporter(t, test.baseURL, test.overrideURL)
+			exp := startMetricsExporter(t, tt.baseURL, tt.overrideURL)
 
 			md := testdata.GenerateMetrics(1)
 			assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
@@ -210,11 +210,11 @@ func TestLogsRoundTrip(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
 			startLogsReceiver(t, addr, sink)
-			exp := startLogsExporter(t, test.baseURL, test.overrideURL)
+			exp := startLogsExporter(t, tt.baseURL, tt.overrideURL)
 
 			md := testdata.GenerateLogs(1)
 			assert.NoError(t, exp.ConsumeLogs(context.Background(), md))

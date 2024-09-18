@@ -259,7 +259,7 @@ func newTracesRequest(numTraces int, numSpans int) tracesRequest {
 func TestToStorageClient(t *testing.T) {
 	getStorageClientError := errors.New("unable to create storage client")
 	testCases := []struct {
-		desc           string
+		name           string
 		storage        storage.Extension
 		numStorages    int
 		storageIndex   int
@@ -267,25 +267,25 @@ func TestToStorageClient(t *testing.T) {
 		getClientError error
 	}{
 		{
-			desc:          "obtain storage extension by name",
+			name:          "obtain storage extension by name",
 			numStorages:   2,
 			storageIndex:  0,
 			expectedError: nil,
 		},
 		{
-			desc:          "fail on not existing storage extension",
+			name:          "fail on not existing storage extension",
 			numStorages:   2,
 			storageIndex:  100,
 			expectedError: errNoStorageClient,
 		},
 		{
-			desc:          "invalid extension type",
+			name:          "invalid extension type",
 			numStorages:   2,
 			storageIndex:  100,
 			expectedError: errNoStorageClient,
 		},
 		{
-			desc:           "fail on error getting storage client from extension",
+			name:           "fail on error getting storage client from extension",
 			numStorages:    1,
 			storageIndex:   0,
 			expectedError:  getStorageClientError,
@@ -293,13 +293,13 @@ func TestToStorageClient(t *testing.T) {
 		},
 	}
 
-	for _, tC := range testCases {
-		t.Run(tC.desc, func(t *testing.T) {
-			storageID := component.MustNewIDWithName("file_storage", strconv.Itoa(tC.storageIndex))
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			storageID := component.MustNewIDWithName("file_storage", strconv.Itoa(tt.storageIndex))
 
 			var extensions = map[component.ID]component.Component{}
-			for i := 0; i < tC.numStorages; i++ {
-				extensions[component.MustNewIDWithName("file_storage", strconv.Itoa(i))] = NewMockStorageExtension(tC.getClientError)
+			for i := 0; i < tt.numStorages; i++ {
+				extensions[component.MustNewIDWithName("file_storage", strconv.Itoa(i))] = NewMockStorageExtension(tt.getClientError)
 			}
 			host := &mockHost{ext: extensions}
 			ownerID := component.MustNewID("foo_exporter")
@@ -308,8 +308,8 @@ func TestToStorageClient(t *testing.T) {
 			client, err := toStorageClient(context.Background(), storageID, host, ownerID, component.DataTypeTraces)
 
 			// verify
-			if tC.expectedError != nil {
-				assert.ErrorIs(t, err, tC.expectedError)
+			if tt.expectedError != nil {
+				assert.ErrorIs(t, err, tt.expectedError)
 				assert.Nil(t, client)
 			} else {
 				assert.NoError(t, err)
@@ -794,22 +794,22 @@ func TestPersistentQueue_ItemDispatchingFinish_ErrorHandling(t *testing.T) {
 	testCases := []struct {
 		storageErrors []error
 		expectedError error
-		description   string
+		name          string
 	}{
 		{
-			description:   "no errors",
+			name:          "no errors",
 			storageErrors: []error{},
 			expectedError: nil,
 		},
 		{
-			description: "error on first transaction, success afterwards",
+			name: "error on first transaction, success afterwards",
 			storageErrors: []error{
 				errUpdatingDispatched,
 			},
 			expectedError: nil,
 		},
 		{
-			description: "error on first and second transaction",
+			name: "error on first and second transaction",
 			storageErrors: []error{
 				errUpdatingDispatched,
 				errDeletingItem,
@@ -817,7 +817,7 @@ func TestPersistentQueue_ItemDispatchingFinish_ErrorHandling(t *testing.T) {
 			expectedError: errDeletingItem,
 		},
 		{
-			description: "error on first and third transaction",
+			name: "error on first and third transaction",
 			storageErrors: []error{
 				errUpdatingDispatched,
 				nil,
@@ -827,15 +827,15 @@ func TestPersistentQueue_ItemDispatchingFinish_ErrorHandling(t *testing.T) {
 		},
 	}
 
-	for _, testCase := range testCases {
-		t.Run(testCase.description, func(t *testing.T) {
-			client := newFakeStorageClientWithErrors(testCase.storageErrors)
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			client := newFakeStorageClientWithErrors(tt.storageErrors)
 			ps := createTestPersistentQueueWithClient(client)
 			client.Reset()
 
 			err := ps.itemDispatchingFinish(context.Background(), 0)
 
-			require.ErrorIs(t, err, testCase.expectedError)
+			require.ErrorIs(t, err, tt.expectedError)
 		})
 	}
 }

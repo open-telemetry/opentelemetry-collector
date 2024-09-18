@@ -56,10 +56,10 @@ func TestMockRoundTripper(t *testing.T) {
 		},
 	}
 
-	for _, testcase := range testcases {
-		t.Run(testcase.name, func(t *testing.T) {
-			tripper, err := testcase.clientAuth.RoundTripper(nil)
-			if testcase.expectedErr {
+	for _, tt := range testcases {
+		t.Run(tt.name, func(t *testing.T) {
+			tripper, err := tt.clientAuth.RoundTripper(nil)
+			if tt.expectedErr {
 				assert.Error(t, err)
 				return
 			}
@@ -108,13 +108,13 @@ func TestMockPerRPCCredential(t *testing.T) {
 		},
 	}
 
-	for _, testcase := range testcases {
-		t.Run(testcase.name, func(t *testing.T) {
-			credential, err := testcase.clientAuth.PerRPCCredentials()
+	for _, tt := range testcases {
+		t.Run(tt.name, func(t *testing.T) {
+			credential, err := tt.clientAuth.PerRPCCredentials()
 			if err != nil {
 				return
 			}
-			if testcase.expectedErr {
+			if tt.expectedErr {
 				assert.Error(t, err)
 				return
 			}

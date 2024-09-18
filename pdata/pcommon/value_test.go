@@ -347,10 +347,10 @@ func TestValueAsString(t *testing.T) {
 			expected: base64.StdEncoding.EncodeToString([]byte("String bytes")),
 		},
 	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			actual := test.input.AsString()
-			assert.Equal(t, test.expected, actual)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := tt.input.AsString()
+			assert.Equal(t, tt.expected, actual)
 		})
 	}
 }
@@ -405,10 +405,10 @@ func TestValueAsRaw(t *testing.T) {
 			},
 		},
 	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			actual := test.input.AsRaw()
-			assert.Equal(t, test.expected, actual)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := tt.input.AsRaw()
+			assert.Equal(t, tt.expected, actual)
 		})
 	}
 }

@@ -90,12 +90,12 @@ func TestLevelStringMarshal(t *testing.T) {
 			level: LevelDetailed,
 		},
 	}
-	for _, test := range tests {
-		t.Run(test.str, func(t *testing.T) {
-			assert.Equal(t, test.str, test.level.String())
-			got, err := test.level.MarshalText()
+	for _, tt := range tests {
+		t.Run(tt.str, func(t *testing.T) {
+			assert.Equal(t, tt.str, tt.level.String())
+			got, err := tt.level.MarshalText()
 			assert.NoError(t, err)
-			assert.Equal(t, test.str, string(got))
+			assert.Equal(t, tt.str, string(got))
 		})
 	}
 }
