@@ -952,10 +952,10 @@ func TestPartialSuccess_profiles(t *testing.T) {
 		partial.SetErrorMessage("hello")
 		partial.SetRejectedProfiles(1)
 		bytes, err := response.MarshalProto()
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		writer.Header().Set("Content-Type", "application/x-protobuf")
 		_, err = writer.Write(bytes)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	})
 	defer srv.Close()
 
