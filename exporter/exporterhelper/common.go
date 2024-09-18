@@ -44,53 +44,61 @@ func (b *baseRequestSender) setNextSender(nextSender requestSender) {
 type obsrepSenderFactory func(obsrep *obsReport) requestSender
 
 // Option apply changes to baseExporter.
-type Option func(*baseExporter) error
+type Option interface {
+	apply(*baseExporter) error
+}
+
+type optionFunc func(*baseExporter) error
+
+func (of optionFunc) apply(e *baseExporter) error {
+	return of(e)
+}
 
 // WithStart overrides the default Start function for an exporter.
 // The default start function does nothing and always returns nil.
 func WithStart(start component.StartFunc) Option {
-	return func(o *baseExporter) error {
+	return optionFunc(func(o *baseExporter) error {
 		o.StartFunc = start
 		return nil
-	}
+	})
 }
 
 // WithShutdown overrides the default Shutdown function for an exporter.
 // The default shutdown function does nothing and always returns nil.
 func WithShutdown(shutdown component.ShutdownFunc) Option {
-	return func(o *baseExporter) error {
+	return optionFunc(func(o *baseExporter) error {
 		o.ShutdownFunc = shutdown
 		return nil
-	}
+	})
 }
 
-// WithTimeout overrides the default TimeoutConfig for an exporter.
-// The default TimeoutConfig is 5 seconds.
+// WithTimeout overrides the default TimeoutSettings for an exporter.
+// The default TimeoutSettings is 5 seconds.
 func WithTimeout(timeoutConfig TimeoutConfig) Option {
-	return func(o *baseExporter) error {
+	return optionFunc(func(o *baseExporter) error {
 		o.timeoutSender.cfg = timeoutConfig
 		return nil
-	}
+	})
 }
 
 // WithRetry overrides the default configretry.BackOffConfig for an exporter.
 // The default configretry.BackOffConfig is to disable retries.
 func WithRetry(config configretry.BackOffConfig) Option {
-	return func(o *baseExporter) error {
+	return optionFunc(func(o *baseExporter) error {
 		if !config.Enabled {
 			o.exportFailureMessage += " Try enabling retry_on_failure config option to retry on retryable errors."
 			return nil
 		}
 		o.retrySender = newRetrySender(config, o.set)
 		return nil
-	}
+	})
 }
 
 // WithQueue overrides the default QueueConfig for an exporter.
 // The default QueueConfig is to disable queueing.
 // This option cannot be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter.
 func WithQueue(config QueueConfig) Option {
-	return func(o *baseExporter) error {
+	return optionFunc(func(o *baseExporter) error {
 		if o.marshaler == nil || o.unmarshaler == nil {
 			return fmt.Errorf("WithQueue option is not available for the new request exporters, use WithRequestQueue instead")
 		}
@@ -112,7 +120,7 @@ func WithQueue(config QueueConfig) Option {
 		})
 		o.queueSender = newQueueSender(q, o.set, config.NumConsumers, o.exportFailureMessage, o.obsrep)
 		return nil
-	}
+	})
 }
 
 // WithRequestQueue enables queueing for an exporter.
@@ -120,7 +128,7 @@ func WithQueue(config QueueConfig) Option {
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func WithRequestQueue(cfg exporterqueue.Config, queueFactory exporterqueue.Factory[Request]) Option {
-	return func(o *baseExporter) error {
+	return optionFunc(func(o *baseExporter) error {
 		if o.marshaler != nil || o.unmarshaler != nil {
 			return fmt.Errorf("WithRequestQueue option must be used with the new request exporters only, use WithQueue instead")
 		}
@@ -131,25 +139,33 @@ func WithRequestQueue(cfg exporterqueue.Config, queueFactory exporterqueue.Facto
 		o.queueCfg = cfg
 		o.queueFactory = queueFactory
 		return nil
-	}
+	})
 }
 
 // WithCapabilities overrides the default Capabilities() function for a Consumer.
 // The default is non-mutable data.
 // TODO: Verify if we can change the default to be mutable as we do for processors.
 func WithCapabilities(capabilities consumer.Capabilities) Option {
-	return func(o *baseExporter) error {
+	return optionFunc(func(o *baseExporter) error {
 		o.consumerOptions = append(o.consumerOptions, consumer.WithCapabilities(capabilities))
 		return nil
-	}
+	})
 }
 
 // BatcherOption apply changes to batcher sender.
-type BatcherOption func(*batchSender) error
+type BatcherOption interface {
+	apply(*batchSender) error
+}
+
+type batcherOptionFunc func(*batchSender) error
+
+func (of batcherOptionFunc) apply(e *batchSender) error {
+	return of(e)
+}
 
 // WithRequestBatchFuncs sets the functions for merging and splitting batches for an exporter built for custom request types.
 func WithRequestBatchFuncs(mf exporterbatcher.BatchMergeFunc[Request], msf exporterbatcher.BatchMergeSplitFunc[Request]) BatcherOption {
-	return func(bs *batchSender) error {
+	return batcherOptionFunc(func(bs *batchSender) error {
 		if mf == nil || msf == nil {
 			return fmt.Errorf("WithRequestBatchFuncs must be provided with non-nil functions")
 		}
@@ -159,7 +175,7 @@ func WithRequestBatchFuncs(mf exporterbatcher.BatchMergeFunc[Request], msf expor
 		bs.mergeFunc = mf
 		bs.mergeSplitFunc = msf
 		return nil
-	}
+	})
 }
 
 // WithBatcher enables batching for an exporter based on custom request types.
@@ -168,39 +184,51 @@ func WithRequestBatchFuncs(mf exporterbatcher.BatchMergeFunc[Request], msf expor
 // This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func WithBatcher(cfg exporterbatcher.Config, opts ...BatcherOption) Option {
-	return func(o *baseExporter) error {
-		o.batcherCfg = cfg
-		o.batcherOpts = opts
+	return optionFunc(func(o *baseExporter) error {
+		if !cfg.Enabled {
+			return nil
+		}
+
+		bs := newBatchSender(cfg, o.set, o.batchMergeFunc, o.batchMergeSplitfunc)
+		for _, opt := range opts {
+			if err := opt.apply(bs); err != nil {
+				return err
+			}
+		}
+		if bs.mergeFunc == nil || bs.mergeSplitFunc == nil {
+			return fmt.Errorf("WithRequestBatchFuncs must be provided for the batcher applied to the request-based exporters")
+		}
+		o.batchSender = bs
 		return nil
-	}
+	})
 }
 
 // withMarshaler is used to set the request marshaler for the new exporter helper.
 // It must be provided as the first option when creating a new exporter helper.
 func withMarshaler(marshaler exporterqueue.Marshaler[Request]) Option {
-	return func(o *baseExporter) error {
+	return optionFunc(func(o *baseExporter) error {
 		o.marshaler = marshaler
 		return nil
-	}
+	})
 }
 
 // withUnmarshaler is used to set the request unmarshaler for the new exporter helper.
 // It must be provided as the first option when creating a new exporter helper.
 func withUnmarshaler(unmarshaler exporterqueue.Unmarshaler[Request]) Option {
-	return func(o *baseExporter) error {
+	return optionFunc(func(o *baseExporter) error {
 		o.unmarshaler = unmarshaler
 		return nil
-	}
+	})
 }
 
 // withBatchFuncs is used to set the functions for merging and splitting batches for OLTP-based exporters.
 // It must be provided as the first option when creating a new exporter helper.
 func withBatchFuncs(mf exporterbatcher.BatchMergeFunc[Request], msf exporterbatcher.BatchMergeSplitFunc[Request]) Option {
-	return func(o *baseExporter) error {
+	return optionFunc(func(o *baseExporter) error {
 		o.batchMergeFunc = mf
 		o.batchMergeSplitfunc = msf
 		return nil
-	}
+	})
 }
 
 // baseExporter contains common fields between different exporter types.
@@ -259,7 +287,7 @@ func newBaseExporter(set exporter.Settings, signal component.DataType, osf obsre
 	}
 
 	for _, op := range options {
-		err = multierr.Append(err, op(be))
+		err = multierr.Append(err, op.apply(be))
 	}
 	if err != nil {
 		return nil, err
@@ -268,7 +296,7 @@ func newBaseExporter(set exporter.Settings, signal component.DataType, osf obsre
 	if be.batcherCfg.Enabled {
 		bs := newBatchSender(be.batcherCfg, be.set, be.batchMergeFunc, be.batchMergeSplitfunc)
 		for _, opt := range be.batcherOpts {
-			err = multierr.Append(err, opt(bs))
+			err = multierr.Append(err, opt.apply(bs))
 		}
 		if bs.mergeFunc == nil || bs.mergeSplitFunc == nil {
 			err = multierr.Append(err, fmt.Errorf("WithRequestBatchFuncs must be provided for the batcher applied to the request-based exporters"))
@@ -283,7 +311,7 @@ func newBaseExporter(set exporter.Settings, signal component.DataType, osf obsre
 		}
 		be.queueSender = newQueueSender(be.queueFactory(context.Background(), set, be.queueCfg), be.set, be.queueCfg.NumConsumers, be.exportFailureMessage, be.obsrep)
 		for _, op := range options {
-			err = multierr.Append(err, op(be))
+			err = multierr.Append(err, op.apply(be))
 		}
 	}
 

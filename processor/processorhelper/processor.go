@@ -22,30 +22,38 @@ import (
 var ErrSkipProcessingData = errors.New("sentinel error to skip processing data from the remainder of the pipeline")
 
 // Option apply changes to internalOptions.
-type Option func(*baseSettings)
+type Option interface {
+	apply(*baseSettings)
+}
+
+type optionFunc func(*baseSettings)
+
+func (of optionFunc) apply(e *baseSettings) {
+	of(e)
+}
 
 // WithStart overrides the default Start function for an processor.
 // The default shutdown function does nothing and always returns nil.
 func WithStart(start component.StartFunc) Option {
-	return func(o *baseSettings) {
+	return optionFunc(func(o *baseSettings) {
 		o.StartFunc = start
-	}
+	})
 }
 
 // WithShutdown overrides the default Shutdown function for an processor.
 // The default shutdown function does nothing and always returns nil.
 func WithShutdown(shutdown component.ShutdownFunc) Option {
-	return func(o *baseSettings) {
+	return optionFunc(func(o *baseSettings) {
 		o.ShutdownFunc = shutdown
-	}
+	})
 }
 
 // WithCapabilities overrides the default GetCapabilities function for an processor.
 // The default GetCapabilities function returns mutable capabilities.
 func WithCapabilities(capabilities consumer.Capabilities) Option {
-	return func(o *baseSettings) {
+	return optionFunc(func(o *baseSettings) {
 		o.consumerOptions = append(o.consumerOptions, consumer.WithCapabilities(capabilities))
-	}
+	})
 }
 
 type baseSettings struct {
@@ -62,7 +70,7 @@ func fromOptions(options []Option) *baseSettings {
 	}
 
 	for _, op := range options {
-		op(opts)
+		op.apply(opts)
 	}
 
 	return opts

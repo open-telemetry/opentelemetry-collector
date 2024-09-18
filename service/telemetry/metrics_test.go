@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package service
+package telemetry
 
 import (
 	"context"
@@ -19,9 +19,9 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/testutil"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
-	"go.opentelemetry.io/collector/service/internal/proctelemetry"
+	"go.opentelemetry.io/collector/service/internal/promtest"
 	"go.opentelemetry.io/collector/service/internal/resource"
-	"go.opentelemetry.io/collector/service/telemetry"
+	"go.opentelemetry.io/collector/service/telemetry/internal/otelinit"
 )
 
 const (
@@ -31,6 +31,8 @@ const (
 	httpPrefix   = "http_"
 	counterName  = "test_counter"
 )
+
+var testInstanceID = "test_instance_id"
 
 func TestTelemetryInit(t *testing.T) {
 	type metricValue struct {
@@ -43,7 +45,7 @@ func TestTelemetryInit(t *testing.T) {
 		disableHighCard bool
 		expectedMetrics map[string]metricValue
 		extendedConfig  bool
-		cfg             *telemetry.Config
+		cfg             *Config
 	}{
 		{
 			name: "UseOpenTelemetryForInternalMetrics",
@@ -128,11 +130,11 @@ func TestTelemetryInit(t *testing.T) {
 		{
 			name:           "UseOTelWithSDKConfiguration",
 			extendedConfig: true,
-			cfg: &telemetry.Config{
-				Metrics: telemetry.MetricsConfig{
+			cfg: &Config{
+				Metrics: MetricsConfig{
 					Level: configtelemetry.LevelDetailed,
 				},
-				Traces: telemetry.TracesConfig{
+				Traces: TracesConfig{
 					Processors: []config.SpanProcessor{
 						{
 							Batch: &config.BatchSpanProcessor{
@@ -194,18 +196,18 @@ func TestTelemetryInit(t *testing.T) {
 					{
 						Pull: &config.PullMetricReader{
 							Exporter: config.MetricExporter{
-								Prometheus: getAvailableLocalAddressPrometheus(t),
+								Prometheus: promtest.GetAvailableLocalAddressPrometheus(t),
 							},
 						},
 					},
 				}
 			}
 			if tc.cfg == nil {
-				tc.cfg = &telemetry.Config{
+				tc.cfg = &Config{
 					Resource: map[string]*string{
 						semconv.AttributeServiceInstanceID: &testInstanceID,
 					},
-					Metrics: telemetry.MetricsConfig{
+					Metrics: MetricsConfig{
 						Level:   configtelemetry.LevelDetailed,
 						Address: testutil.GetAvailableLocalAddress(t),
 					},
@@ -240,7 +242,7 @@ func TestTelemetryInit(t *testing.T) {
 				}
 
 				require.Equal(t, metricValue.labels, labels, "labels for metric %q was different than expected", metricName)
-				require.Equal(t, metricValue.value, mf.Metric[0].Counter.GetValue(), "value for metric %q was different than expected", metricName)
+				require.InDelta(t, metricValue.value, mf.Metric[0].Counter.GetValue(), 0.01, "value for metric %q was different than expected", metricName)
 			}
 		})
 
@@ -253,13 +255,13 @@ func createTestMetrics(t *testing.T, mp metric.MeterProvider) {
 	require.NoError(t, err)
 	counter.Add(context.Background(), 13)
 
-	grpcExampleCounter, err := mp.Meter(proctelemetry.GRPCInstrumentation).Int64Counter(metricPrefix + grpcPrefix + counterName)
+	grpcExampleCounter, err := mp.Meter(otelinit.GRPCInstrumentation).Int64Counter(metricPrefix + grpcPrefix + counterName)
 	require.NoError(t, err)
-	grpcExampleCounter.Add(context.Background(), 11, metric.WithAttributes(proctelemetry.GRPCUnacceptableKeyValues...))
+	grpcExampleCounter.Add(context.Background(), 11, metric.WithAttributes(otelinit.GRPCUnacceptableKeyValues...))
 
-	httpExampleCounter, err := mp.Meter(proctelemetry.HTTPInstrumentation).Int64Counter(metricPrefix + httpPrefix + counterName)
+	httpExampleCounter, err := mp.Meter(otelinit.HTTPInstrumentation).Int64Counter(metricPrefix + httpPrefix + counterName)
 	require.NoError(t, err)
-	httpExampleCounter.Add(context.Background(), 10, metric.WithAttributes(proctelemetry.HTTPUnacceptableKeyValues...))
+	httpExampleCounter.Add(context.Background(), 10, metric.WithAttributes(otelinit.HTTPUnacceptableKeyValues...))
 }
 
 func getMetricsFromPrometheus(t *testing.T, handler http.Handler) map[string]*io_prometheus_client.MetricFamily {

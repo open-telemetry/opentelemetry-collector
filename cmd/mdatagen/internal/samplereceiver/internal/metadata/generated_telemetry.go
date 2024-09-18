@@ -88,7 +88,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	var err, errs error
 	builder.BatchSizeTriggerSend, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_batch_size_trigger_send",
-		metric.WithDescription("Number of times the batch was sent due to a size trigger"),
+		metric.WithDescription("Number of times the batch was sent due to a size trigger [deprecated since v0.110.0]"),
 		metric.WithUnit("{times}"),
 	)
 	errs = errors.Join(errs, err)
@@ -102,7 +102,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.RequestDuration, err = builder.meters[configtelemetry.LevelBasic].Float64Histogram(
 		"otelcol_request_duration",
-		metric.WithDescription("Duration of request"),
+		metric.WithDescription("Duration of request [alpha]"),
 		metric.WithUnit("s"), metric.WithExplicitBucketBoundaries([]float64{1, 10, 100}...),
 	)
 	errs = errors.Join(errs, err)

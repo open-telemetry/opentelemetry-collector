@@ -563,7 +563,7 @@ func TestPersistentQueueStartWithNonDispatchedConcurrent(t *testing.T) {
 		go func() {
 			defer conWg.Done()
 			for i := 0; i < 10; i++ {
-				require.True(t, pq.Consume(func(context.Context, tracesRequest) error { return nil }))
+				assert.True(t, pq.Consume(func(context.Context, tracesRequest) error { return nil }))
 			}
 		}()
 	}
