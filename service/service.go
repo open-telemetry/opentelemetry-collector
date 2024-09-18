@@ -45,14 +45,6 @@ var useOtelWithSDKConfigurationForInternalTelemetryFeatureGate = featuregate.Glo
 	featuregate.WithRegisterDescription("controls whether the collector supports extended OpenTelemetry"+
 		"configuration for internal telemetry"))
 
-// disableHighCardinalityMetricsfeatureGate is the feature gate that controls whether the collector should enable
-// potentially high cardinality metrics. The gate will be removed when the collector allows for view configuration.
-var disableHighCardinalityMetricsfeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"telemetry.disableHighCardinalityMetrics",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("controls whether the collector should enable potentially high"+
-		"cardinality metrics. The gate will be removed when the collector allows for view configuration."))
-
 // Settings holds configuration for building a new Service.
 type Settings struct {
 	// BuildInfo provides collector start information.
@@ -104,8 +96,6 @@ type Service struct {
 
 // New creates a new Service, its telemetry, and Components.
 func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
-	disableHighCard := disableHighCardinalityMetricsfeatureGate.IsEnabled()
-
 	srv := &Service{
 		buildInfo: set.BuildInfo,
 		host: &graph.Host{
@@ -144,14 +134,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 
 	logger.Info("Setting up own telemetry...")
 
-	mp, err := newMeterProvider(
-		meterProviderSettings{
-			res:               res,
-			cfg:               cfg.Telemetry.Metrics,
-			asyncErrorChannel: set.AsyncErrorChannel,
-		},
-		disableHighCard,
-	)
+	mp, err := telFactory.CreateMeterProvider(ctx, telset, &cfg.Telemetry)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create metric provider: %w", err)
 	}
@@ -198,11 +181,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 
 func logsAboutMeterProvider(logger *zap.Logger, cfg telemetry.MetricsConfig, mp metric.MeterProvider) {
 	if cfg.Level == configtelemetry.LevelNone || (cfg.Address == "" && len(cfg.Readers) == 0) {
-		logger.Info(
-			"Skipped telemetry setup.",
-			zap.String(zapKeyTelemetryAddress, cfg.Address),
-			zap.Stringer(zapKeyTelemetryLevel, cfg.Level),
-		)
+		logger.Info("Skipped telemetry setup.")
 		return
 	}
 

@@ -40,6 +40,7 @@ import (
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.opentelemetry.io/collector/pdata/testdata"
@@ -844,6 +845,7 @@ func newReceiver(t *testing.T, settings component.TelemetrySettings, cfg *Config
 	r.registerTraceConsumer(c)
 	r.registerMetricsConsumer(c)
 	r.registerLogsConsumer(c)
+	r.registerProfilesConsumer(c)
 	return r
 }
 
@@ -855,7 +857,7 @@ type dataRequest struct {
 }
 
 func generateDataRequests(t *testing.T) []dataRequest {
-	return []dataRequest{generateTracesRequest(t), generateMetricsRequests(t), generateLogsRequest(t)}
+	return []dataRequest{generateTracesRequest(t), generateMetricsRequests(t), generateLogsRequest(t), generateProfilesRequest(t)}
 }
 
 func generateTracesRequest(t *testing.T) dataRequest {
@@ -898,6 +900,20 @@ func generateLogsRequest(t *testing.T) dataRequest {
 	require.NoError(t, err)
 
 	return dataRequest{data: ld, path: defaultLogsURLPath, jsonBytes: logJSON, protoBytes: logProto}
+}
+
+func generateProfilesRequest(t *testing.T) dataRequest {
+	protoMarshaler := &pprofile.ProtoMarshaler{}
+	jsonMarshaler := &pprofile.JSONMarshaler{}
+
+	md := testdata.GenerateProfiles(2)
+	profileProto, err := protoMarshaler.MarshalProfiles(md)
+	require.NoError(t, err)
+
+	profileJSON, err := jsonMarshaler.MarshalProfiles(md)
+	require.NoError(t, err)
+
+	return dataRequest{data: md, path: defaultProfilesURLPath, jsonBytes: profileJSON, protoBytes: profileProto}
 }
 
 func doHTTPRequest(
@@ -1101,15 +1117,17 @@ type errOrSinkConsumer struct {
 	*consumertest.TracesSink
 	*consumertest.MetricsSink
 	*consumertest.LogsSink
+	*consumertest.ProfilesSink
 	mu           sync.Mutex
 	consumeError error // to be returned by ConsumeTraces, if set
 }
 
 func newErrOrSinkConsumer() *errOrSinkConsumer {
 	return &errOrSinkConsumer{
-		TracesSink:  new(consumertest.TracesSink),
-		MetricsSink: new(consumertest.MetricsSink),
-		LogsSink:    new(consumertest.LogsSink),
+		TracesSink:   new(consumertest.TracesSink),
+		MetricsSink:  new(consumertest.MetricsSink),
+		LogsSink:     new(consumertest.LogsSink),
+		ProfilesSink: new(consumertest.ProfilesSink),
 	}
 }
 
@@ -1160,6 +1178,18 @@ func (esc *errOrSinkConsumer) ConsumeLogs(ctx context.Context, ld plog.Logs) err
 	return esc.LogsSink.ConsumeLogs(ctx, ld)
 }
 
+// ConsumeProfiles stores profiles to this sink.
+func (esc *errOrSinkConsumer) ConsumeProfiles(ctx context.Context, md pprofile.Profiles) error {
+	esc.mu.Lock()
+	defer esc.mu.Unlock()
+
+	if esc.consumeError != nil {
+		return esc.consumeError
+	}
+
+	return esc.ProfilesSink.ConsumeProfiles(ctx, md)
+}
+
 // Reset deletes any stored in the sinks, resets error to nil.
 func (esc *errOrSinkConsumer) Reset() {
 	esc.mu.Lock()
@@ -1169,6 +1199,7 @@ func (esc *errOrSinkConsumer) Reset() {
 	esc.TracesSink.Reset()
 	esc.MetricsSink.Reset()
 	esc.LogsSink.Reset()
+	esc.ProfilesSink.Reset()
 }
 
 // Reset deletes any stored in the sinks, resets error to nil.
@@ -1191,6 +1222,12 @@ func (esc *errOrSinkConsumer) checkData(t *testing.T, data any, len int) {
 		require.Len(t, allLogs, len)
 		if len > 0 {
 			require.Equal(t, allLogs[0], data)
+		}
+	case pprofile.Profiles:
+		allProfiles := esc.ProfilesSink.AllProfiles()
+		require.Len(t, allProfiles, len)
+		if len > 0 {
+			require.Equal(t, allProfiles[0], data)
 		}
 	}
 }

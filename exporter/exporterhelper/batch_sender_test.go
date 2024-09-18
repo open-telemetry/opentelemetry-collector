@@ -549,8 +549,8 @@ func TestBatchSender_ShutdownDeadlock(t *testing.T) {
 	sink := newFakeRequestSink()
 
 	// Send 2 concurrent requests
-	go func() { require.NoError(t, be.send(context.Background(), &fakeRequest{items: 4, sink: sink})) }()
-	go func() { require.NoError(t, be.send(context.Background(), &fakeRequest{items: 4, sink: sink})) }()
+	go func() { assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 4, sink: sink})) }()
+	go func() { assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 4, sink: sink})) }()
 
 	// Wait for the requests to enter the merge function
 	<-waitMerge
@@ -561,7 +561,7 @@ func TestBatchSender_ShutdownDeadlock(t *testing.T) {
 	doneShutdown := make(chan struct{})
 	go func() {
 		close(startShutdown)
-		require.NoError(t, be.Shutdown(context.Background()))
+		assert.NoError(t, be.Shutdown(context.Background()))
 		close(doneShutdown)
 	}()
 	<-startShutdown
@@ -590,7 +590,7 @@ func TestBatchSenderWithTimeout(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		wg.Add(1)
 		go func() {
-			require.NoError(t, be.send(context.Background(), &fakeRequest{items: 4, sink: sink}))
+			assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 4, sink: sink}))
 			wg.Done()
 		}()
 	}
@@ -644,11 +644,11 @@ func TestBatchSenderTimerResetNoConflict(t *testing.T) {
 
 	// Send 2 concurrent requests that should be merged in one batch in the same interval as the flush timer
 	go func() {
-		require.NoError(t, be.send(context.Background(), &fakeRequest{items: 4, sink: sink}))
+		assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 4, sink: sink}))
 	}()
 	time.Sleep(30 * time.Millisecond)
 	go func() {
-		require.NoError(t, be.send(context.Background(), &fakeRequest{items: 4, sink: sink}))
+		assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 4, sink: sink}))
 	}()
 
 	// The batch should be sent either with the flush interval or by reaching the minimum items size with no conflict
@@ -676,10 +676,10 @@ func TestBatchSenderTimerFlush(t *testing.T) {
 
 	// Send 2 concurrent requests that should be merged in one batch and sent immediately
 	go func() {
-		require.NoError(t, be.send(context.Background(), &fakeRequest{items: 4, sink: sink}))
+		assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 4, sink: sink}))
 	}()
 	go func() {
-		require.NoError(t, be.send(context.Background(), &fakeRequest{items: 4, sink: sink}))
+		assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 4, sink: sink}))
 	}()
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		assert.LessOrEqual(c, uint64(1), sink.requestsCount.Load())
@@ -688,7 +688,7 @@ func TestBatchSenderTimerFlush(t *testing.T) {
 
 	// Send another request that should be flushed after 100ms instead of 50ms since last flush
 	go func() {
-		require.NoError(t, be.send(context.Background(), &fakeRequest{items: 4, sink: sink}))
+		assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 4, sink: sink}))
 	}()
 
 	// Confirm that it is not flushed in 50ms
