@@ -562,7 +562,7 @@ func TestBatchSender_ShutdownDeadlock(t *testing.T) {
 	doneShutdown := make(chan struct{})
 	go func() {
 		close(startShutdown)
-		require.NoError(t, be.Shutdown(context.Background()))
+		assert.NoError(t, be.Shutdown(context.Background()))
 		close(doneShutdown)
 	}()
 	<-startShutdown

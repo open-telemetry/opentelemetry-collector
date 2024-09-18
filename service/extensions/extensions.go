@@ -178,12 +178,20 @@ type Settings struct {
 	Extensions builders.Extension
 }
 
-type Option func(*Extensions)
+type Option interface {
+	apply(*Extensions)
+}
+
+type optionFunc func(*Extensions)
+
+func (of optionFunc) apply(e *Extensions) {
+	of(e)
+}
 
 func WithReporter(reporter status.Reporter) Option {
-	return func(e *Extensions) {
+	return optionFunc(func(e *Extensions) {
 		e.reporter = reporter
-	}
+	})
 }
 
 // New creates a new Extensions from Config.
@@ -197,7 +205,7 @@ func New(ctx context.Context, set Settings, cfg Config, options ...Option) (*Ext
 	}
 
 	for _, opt := range options {
-		opt(exts)
+		opt.apply(exts)
 	}
 
 	for _, extID := range cfg {

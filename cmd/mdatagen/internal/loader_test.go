@@ -243,6 +243,7 @@ func TestLoadMetadata(t *testing.T) {
 					Metrics: map[MetricName]Metric{
 						"batch_size_trigger_send": {
 							Enabled:     true,
+							Stability:   stability{Level: "deprecated", From: "v0.110.0"},
 							Description: "Number of times the batch was sent due to a size trigger",
 							Unit:        strPtr("{times}"),
 							Sum: &sum{
@@ -252,6 +253,7 @@ func TestLoadMetadata(t *testing.T) {
 						},
 						"request_duration": {
 							Enabled:     true,
+							Stability:   stability{Level: "alpha"},
 							Description: "Duration of request",
 							Unit:        strPtr("s"),
 							Histogram: &histogram{
@@ -261,6 +263,7 @@ func TestLoadMetadata(t *testing.T) {
 						},
 						"process_runtime_total_alloc_bytes": {
 							Enabled:     true,
+							Stability:   stability{Level: "stable"},
 							Description: "Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')",
 							Unit:        strPtr("By"),
 							Sum: &sum{

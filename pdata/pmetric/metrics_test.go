@@ -218,12 +218,12 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	// First point
 	assert.EqualValues(t, startTime, gaugeDataPoints.At(0).StartTimestamp())
 	assert.EqualValues(t, endTime, gaugeDataPoints.At(0).Timestamp())
-	assert.EqualValues(t, 123.1, gaugeDataPoints.At(0).DoubleValue())
+	assert.InDelta(t, 123.1, gaugeDataPoints.At(0).DoubleValue(), 0.01)
 	assert.EqualValues(t, map[string]any{"key0": "value0"}, gaugeDataPoints.At(0).Attributes().AsRaw())
 	// Second point
 	assert.EqualValues(t, startTime, gaugeDataPoints.At(1).StartTimestamp())
 	assert.EqualValues(t, endTime, gaugeDataPoints.At(1).Timestamp())
-	assert.EqualValues(t, 456.1, gaugeDataPoints.At(1).DoubleValue())
+	assert.InDelta(t, 456.1, gaugeDataPoints.At(1).DoubleValue(), 0.01)
 	assert.EqualValues(t, map[string]any{"key1": "value1"}, gaugeDataPoints.At(1).Attributes().AsRaw())
 
 	// Check double metric
@@ -239,12 +239,12 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	// First point
 	assert.EqualValues(t, startTime, sumDataPoints.At(0).StartTimestamp())
 	assert.EqualValues(t, endTime, sumDataPoints.At(0).Timestamp())
-	assert.EqualValues(t, 123.1, sumDataPoints.At(0).DoubleValue())
+	assert.InDelta(t, 123.1, sumDataPoints.At(0).DoubleValue(), 0.01)
 	assert.EqualValues(t, map[string]any{"key0": "value0"}, sumDataPoints.At(0).Attributes().AsRaw())
 	// Second point
 	assert.EqualValues(t, startTime, sumDataPoints.At(1).StartTimestamp())
 	assert.EqualValues(t, endTime, sumDataPoints.At(1).Timestamp())
-	assert.EqualValues(t, 456.1, sumDataPoints.At(1).DoubleValue())
+	assert.InDelta(t, 456.1, sumDataPoints.At(1).DoubleValue(), 0.01)
 	assert.EqualValues(t, map[string]any{"key1": "value1"}, sumDataPoints.At(1).Attributes().AsRaw())
 
 	// Check histogram metric
@@ -337,7 +337,7 @@ func TestOtlpToFromInternalGaugeMutating(t *testing.T) {
 	gaugeDataPoints.At(0).SetTimestamp(pcommon.Timestamp(endTime + 1))
 	assert.EqualValues(t, endTime+1, gaugeDataPoints.At(0).Timestamp())
 	gaugeDataPoints.At(0).SetDoubleValue(124.1)
-	assert.EqualValues(t, 124.1, gaugeDataPoints.At(0).DoubleValue())
+	assert.InDelta(t, 124.1, gaugeDataPoints.At(0).DoubleValue(), 0.01)
 	gaugeDataPoints.At(0).Attributes().Remove("key0")
 	gaugeDataPoints.At(0).Attributes().PutStr("k", "v")
 	assert.EqualValues(t, newAttributes, gaugeDataPoints.At(0).Attributes().AsRaw())
@@ -420,7 +420,7 @@ func TestOtlpToFromInternalSumMutating(t *testing.T) {
 	doubleDataPoints.At(0).SetTimestamp(pcommon.Timestamp(endTime + 1))
 	assert.EqualValues(t, endTime+1, doubleDataPoints.At(0).Timestamp())
 	doubleDataPoints.At(0).SetDoubleValue(124.1)
-	assert.EqualValues(t, 124.1, doubleDataPoints.At(0).DoubleValue())
+	assert.InDelta(t, 124.1, doubleDataPoints.At(0).DoubleValue(), 0.01)
 	doubleDataPoints.At(0).Attributes().Remove("key0")
 	doubleDataPoints.At(0).Attributes().PutStr("k", "v")
 	assert.EqualValues(t, newAttributes, doubleDataPoints.At(0).Attributes().AsRaw())
