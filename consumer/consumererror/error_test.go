@@ -16,25 +16,43 @@ import (
 
 var errTest = errors.New("consumererror testing error")
 
-func Test_New(t *testing.T) {
+func Test_NewOTLPHTTPError(t *testing.T) {
 	httpStatus := 500
-	grpcStatus := status.New(codes.Aborted, "aborted")
 	wantErr := &Error{
 		error:      errTest,
 		httpStatus: httpStatus,
+	}
+
+	newErr := NewOTLPHTTPError(errTest, httpStatus)
+
+	require.Equal(t, wantErr, newErr)
+}
+
+func Test_NewOTLPGRPCError(t *testing.T) {
+	grpcStatus := status.New(codes.Aborted, "aborted")
+	wantErr := &Error{
+		error:      errTest,
 		grpcStatus: grpcStatus,
 	}
 
-	newErr := New(errTest,
-		WithOTLPHTTPStatus(httpStatus),
-		WithOTLPGRPCStatus(grpcStatus),
-	)
+	newErr := NewOTLPGRPCError(errTest, grpcStatus)
+
+	require.Equal(t, wantErr, newErr)
+}
+
+func Test_NewRetryableError(t *testing.T) {
+	wantErr := &Error{
+		error:     errTest,
+		retryable: true,
+	}
+
+	newErr := NewRetryableError(errTest)
 
 	require.Equal(t, wantErr, newErr)
 }
 
 func Test_Error(t *testing.T) {
-	newErr := New(errTest)
+	newErr := Error{error: errTest}
 
 	require.Equal(t, errTest.Error(), newErr.Error())
 }

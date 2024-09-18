@@ -32,69 +32,21 @@ type Error struct {
 
 var _ error = (*Error)(nil)
 
-// ErrorOption allows annotating an Error with metadata.
-type ErrorOption interface {
-	applyOption(*Error)
-}
-
-type errorOptionFunc func(*Error)
-
-func (f errorOptionFunc) applyOption(e *Error) {
-	f(e)
-}
-
-// New wraps an error that happened while consuming telemetry and adds metadata
-// onto it to be passed back up the pipeline.
-// At least one option should be provided.
-//
-// Experimental: This API is at the early stage of development and may change
-// without backward compatibility
-func New(origErr error, options ...ErrorOption) error {
-	err := &Error{error: origErr}
-
-	for _, option := range options {
-		option.applyOption(err)
-	}
-
-	return err
-}
-
-// WithOTLPHTTPStatus records an HTTP status code that was received from a server
+// NewOTLPHTTPError records an HTTP status code that was received from a server
 // during data submission.
-// It is not necessary to use WithRetryable with creating an error with WithOTLPHTTPStatus
-// as the retryable property can be inferred from the HTTP status code using OTLP specification.
-//
-// Experimental: This API is at the early stage of development and may change
-// without backward compatibility
-func WithOTLPHTTPStatus(status int) ErrorOption {
-	return errorOptionFunc(func(err *Error) {
-		err.httpStatus = status
-	})
+func NewOTLPHTTPError(origErr error, httpStatus int) error {
+	return &Error{error: origErr, httpStatus: httpStatus}
 }
 
-// WithOTLPGRPCStatus records a gRPC status code that was received from a server
+// NewOTLPGRPCError records a gRPC status code that was received from a server
 // during data submission.
-// It is not necessary to use WithRetryable with creating an error with WithOTLPGRPCStatus
-// as the retryable property can be inferred from the grpc status using OTLP specification.
-//
-// Experimental: This API is at the early stage of development and may change
-// without backward compatibility
-func WithOTLPGRPCStatus(status *status.Status) ErrorOption {
-	return errorOptionFunc(func(err *Error) {
-		err.grpcStatus = status
-	})
+func NewOTLPGRPCError(origErr error, status *status.Status) error {
+	return &Error{error: origErr, grpcStatus: status}
 }
 
-// WithRetryable records that this error is retryable according to OTLP specification.
-// WithRetryable is not necessary when creating an error with WithOTLPHTTPStatus or
-// WithOTLPGRPCStatus, as the retryable property can be inferred from OTLP specification.
-//
-// Experimental: This API is at the early stage of development and may change
-// without backward compatibility
-func WithRetryable() ErrorOption {
-	return errorOptionFunc(func(err *Error) {
-		err.retryable = true
-	})
+// NewRetryableError records that this error is retryable according to OTLP specification.
+func NewRetryableError(origErr error) error {
+	return &Error{error: origErr, retryable: true}
 }
 
 // Error implements the error interface.
