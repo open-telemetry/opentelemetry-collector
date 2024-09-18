@@ -36,7 +36,7 @@ func TestTraces_Unwrap(t *testing.T) {
 	require.ErrorAs(t, traceErr, &target)
 	require.Equal(t, err, target)
 	var e *Error
-	require.True(t, errors.As(traceErr, &e))
+	require.ErrorAs(t, traceErr, &e)
 	assert.True(t, e.Retryable())
 }
 
@@ -63,7 +63,7 @@ func TestLogs_Unwrap(t *testing.T) {
 	require.ErrorAs(t, logsErr, &target)
 	require.Equal(t, err, target)
 	var e *Error
-	require.True(t, errors.As(logsErr, &e))
+	require.ErrorAs(t, logsErr, &e)
 	assert.True(t, e.Retryable())
 }
 
@@ -90,6 +90,6 @@ func TestMetrics_Unwrap(t *testing.T) {
 	require.ErrorAs(t, metricErr, &target)
 	require.Equal(t, err, target)
 	var e *Error
-	require.True(t, errors.As(metricErr, &e))
+	require.ErrorAs(t, metricErr, &e)
 	assert.True(t, e.Retryable())
 }

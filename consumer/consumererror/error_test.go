@@ -75,7 +75,7 @@ func TestAs(t *testing.T) {
 	secondError := errors.Join(errors.New("test"), err)
 
 	var e *Error
-	require.True(t, errors.As(secondError, &e))
+	require.ErrorAs(t, secondError, &e)
 	assert.Equal(t, errTest.Error(), e.Error())
 }
 

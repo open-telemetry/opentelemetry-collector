@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package statusconversion // import "go.opentelemetry.io/collector/consumer/consumererror/internal/statusconversion"
 
 import (
