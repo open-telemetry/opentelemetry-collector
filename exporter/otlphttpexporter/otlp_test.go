@@ -205,9 +205,9 @@ func TestErrorResponses(t *testing.T) {
 				writer.WriteHeader(test.responseStatus)
 				if test.responseBody != nil {
 					msg, err := proto.Marshal(test.responseBody.Proto())
-					require.NoError(t, err)
+					assert.NoError(t, err)
 					_, err = writer.Write(msg)
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}
 			})
 			defer srv.Close()
@@ -215,7 +215,7 @@ func TestErrorResponses(t *testing.T) {
 			cfg := &Config{
 				Encoding:       EncodingProto,
 				TracesEndpoint: fmt.Sprintf("%s/v1/traces", srv.URL),
-				// Create without QueueSettings and RetryConfig so that ConsumeTraces
+				// Create without QueueConfig and RetryConfig so that ConsumeTraces
 				// returns the errors that we want to check immediately.
 			}
 			exp, err := createTracesExporter(context.Background(), exportertest.NewNopSettings(), cfg)
@@ -461,10 +461,10 @@ func TestPartialSuccess_logs(t *testing.T) {
 		partial.SetErrorMessage("hello")
 		partial.SetRejectedLogRecords(1)
 		b, err := response.MarshalProto()
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		writer.Header().Set("Content-Type", "application/x-protobuf")
 		_, err = writer.Write(b)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	})
 	defer srv.Close()
 
@@ -607,7 +607,7 @@ func TestPartialResponse_missingHeaderAndBody(t *testing.T) {
 					},
 				}
 				err = handlePartialSuccessResponse(resp, tt.handler)
-				assert.Nil(t, err)
+				assert.NoError(t, err)
 			})
 		}
 	}
@@ -801,10 +801,10 @@ func TestPartialSuccess_traces(t *testing.T) {
 		partial.SetErrorMessage("hello")
 		partial.SetRejectedSpans(1)
 		bytes, err := response.MarshalProto()
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		writer.Header().Set("Content-Type", "application/x-protobuf")
 		_, err = writer.Write(bytes)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	})
 	defer srv.Close()
 
@@ -841,10 +841,10 @@ func TestPartialSuccess_metrics(t *testing.T) {
 		partial.SetErrorMessage("hello")
 		partial.SetRejectedDataPoints(1)
 		bytes, err := response.MarshalProto()
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		writer.Header().Set("Content-Type", "application/x-protobuf")
 		_, err = writer.Write(bytes)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	})
 	defer srv.Close()
 

@@ -43,7 +43,7 @@ func TestExtensionBuilder(t *testing.T) {
 	// Check that the extension has access to the resource attributes.
 	nop, ok := e.(nopExtension)
 	assert.True(t, ok)
-	assert.Equal(t, nop.Settings.Resource.Attributes().Len(), 0)
+	assert.Equal(t, 0, nop.Settings.Resource.Attributes().Len())
 
 	missingType, err := b.Create(context.Background(), createExtensionSettings(unknownID))
 	assert.EqualError(t, err, "extension factory not available for: \"unknown\"")

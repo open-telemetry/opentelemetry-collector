@@ -119,8 +119,8 @@ func TestMetricsRouterConsumers(t *testing.T) {
 	assert.Len(t, rcs, 2)
 	assert.ElementsMatch(t, []component.ID{fooID, barID}, rcs)
 
-	assert.Len(t, foo.AllMetrics(), 0)
-	assert.Len(t, bar.AllMetrics(), 0)
+	assert.Empty(t, foo.AllMetrics())
+	assert.Empty(t, bar.AllMetrics())
 
 	both, err := r.Consumer(fooID, barID)
 	assert.NotNil(t, both)

@@ -389,7 +389,7 @@ func TestResolverShutdownClosesWatch(t *testing.T) {
 	go func() {
 		errW, ok := <-resolver.Watch()
 		// Channel is closed, no exception
-		assert.Nil(t, errW)
+		assert.NoError(t, errW)
 		assert.False(t, ok)
 		watcherWG.Done()
 	}()

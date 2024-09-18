@@ -483,7 +483,7 @@ func startCollector(ctx context.Context, t *testing.T, col *Collector) *sync.Wai
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		require.NoError(t, col.Run(ctx))
+		assert.NoError(t, col.Run(ctx))
 	}()
 	return wg
 }

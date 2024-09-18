@@ -19,14 +19,14 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/internal/queue"
-	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
 func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
-	qCfg := NewDefaultQueueSettings()
+	qCfg := NewDefaultQueueConfig()
 	qCfg.NumConsumers = 1
 	rCfg := configretry.NewDefaultBackOffConfig()
 	be, err := newBaseExporter(defaultSettings, defaultDataType, newObservabilityConsumerSender,
@@ -60,7 +60,7 @@ func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
 }
 
 func TestQueuedRetry_DoNotPreserveCancellation(t *testing.T) {
-	qCfg := NewDefaultQueueSettings()
+	qCfg := NewDefaultQueueConfig()
 	qCfg.NumConsumers = 1
 	rCfg := configretry.NewDefaultBackOffConfig()
 	be, err := newBaseExporter(defaultSettings, defaultDataType, newObservabilityConsumerSender,
@@ -89,7 +89,7 @@ func TestQueuedRetry_DoNotPreserveCancellation(t *testing.T) {
 }
 
 func TestQueuedRetry_RejectOnFull(t *testing.T) {
-	qCfg := NewDefaultQueueSettings()
+	qCfg := NewDefaultQueueConfig()
 	qCfg.QueueSize = 0
 	qCfg.NumConsumers = 0
 	set := exportertest.NewNopSettings()
@@ -119,7 +119,7 @@ func TestQueuedRetryHappyPath(t *testing.T) {
 			queueOptions: []Option{
 				withMarshaler(mockRequestMarshaler),
 				withUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
-				WithQueue(QueueSettings{
+				WithQueue(QueueConfig{
 					Enabled:      true,
 					QueueSize:    10,
 					NumConsumers: 1,
@@ -210,7 +210,7 @@ func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
 		tt, err := componenttest.SetupTelemetry(defaultID)
 		require.NoError(t, err)
 
-		qCfg := NewDefaultQueueSettings()
+		qCfg := NewDefaultQueueConfig()
 		qCfg.NumConsumers = 0 // to make every request go straight to the queue
 		rCfg := configretry.NewDefaultBackOffConfig()
 		set := exporter.Settings{ID: defaultID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}
@@ -226,7 +226,7 @@ func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
 			require.NoError(t, be.send(context.Background(), newErrorRequest()))
 		}
 		require.NoError(t, tt.CheckExporterMetricGauge("otelcol_exporter_queue_size", int64(7),
-			attribute.String(obsmetrics.DataTypeKey, dataType.String())))
+			attribute.String(internal.DataTypeKey, dataType.String())))
 
 		assert.NoError(t, be.Shutdown(context.Background()))
 	}
@@ -248,14 +248,14 @@ func TestNoCancellationContext(t *testing.T) {
 	assert.True(t, d.IsZero())
 }
 
-func TestQueueSettings_Validate(t *testing.T) {
-	qCfg := NewDefaultQueueSettings()
+func TestQueueConfig_Validate(t *testing.T) {
+	qCfg := NewDefaultQueueConfig()
 	assert.NoError(t, qCfg.Validate())
 
 	qCfg.QueueSize = 0
 	assert.EqualError(t, qCfg.Validate(), "queue size must be positive")
 
-	qCfg = NewDefaultQueueSettings()
+	qCfg = NewDefaultQueueConfig()
 	qCfg.NumConsumers = 0
 
 	assert.EqualError(t, qCfg.Validate(), "number of queue consumers must be positive")
@@ -276,7 +276,7 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 				withMarshaler(mockRequestMarshaler),
 				withUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
 				func() Option {
-					qs := NewDefaultQueueSettings()
+					qs := NewDefaultQueueConfig()
 					qs.Enabled = false
 					return WithQueue(qs)
 				}(),
@@ -340,7 +340,7 @@ func TestQueuedRetryPersistenceEnabled(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	qCfg := NewDefaultQueueSettings()
+	qCfg := NewDefaultQueueConfig()
 	storageID := component.MustNewIDWithName("file_storage", "storage")
 	qCfg.StorageID = &storageID // enable persistence
 	rCfg := configretry.NewDefaultBackOffConfig()
@@ -366,7 +366,7 @@ func TestQueuedRetryPersistenceEnabledStorageError(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	qCfg := NewDefaultQueueSettings()
+	qCfg := NewDefaultQueueConfig()
 	storageID := component.MustNewIDWithName("file_storage", "storage")
 	qCfg.StorageID = &storageID // enable persistence
 	rCfg := configretry.NewDefaultBackOffConfig()
@@ -385,7 +385,7 @@ func TestQueuedRetryPersistenceEnabledStorageError(t *testing.T) {
 }
 
 func TestQueuedRetryPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
-	qCfg := NewDefaultQueueSettings()
+	qCfg := NewDefaultQueueConfig()
 	qCfg.NumConsumers = 1
 	storageID := component.MustNewIDWithName("file_storage", "storage")
 	qCfg.StorageID = &storageID // enable persistence to ensure data is re-queued on shutdown

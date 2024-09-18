@@ -23,8 +23,8 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/internal/localhostgate"
-	"go.opentelemetry.io/collector/internal/obsreportconfig"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/globalgates"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
@@ -36,6 +36,15 @@ import (
 	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
+
+// useOtelWithSDKConfigurationForInternalTelemetryFeatureGate is the feature gate that controls whether the collector
+// supports configuring the OpenTelemetry SDK via configuration
+var _ = featuregate.GlobalRegistry().MustRegister(
+	"telemetry.useOtelWithSDKConfigurationForInternalTelemetry",
+	featuregate.StageStable,
+	featuregate.WithRegisterToVersion("v0.110.0"),
+	featuregate.WithRegisterDescription("controls whether the collector supports extended OpenTelemetry"+
+		"configuration for internal telemetry"))
 
 // Settings holds configuration for building a new Service.
 type Settings struct {
@@ -88,9 +97,6 @@ type Service struct {
 
 // New creates a new Service, its telemetry, and Components.
 func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
-	disableHighCard := obsreportconfig.DisableHighCardinalityMetricsfeatureGate.IsEnabled()
-	extendedConfig := obsreportconfig.UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate.IsEnabled()
-
 	srv := &Service{
 		buildInfo: set.BuildInfo,
 		host: &graph.Host{
@@ -129,19 +135,12 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 
 	logger.Info("Setting up own telemetry...")
 
-	mp, err := newMeterProvider(
-		meterProviderSettings{
-			res:               res,
-			cfg:               cfg.Telemetry.Metrics,
-			asyncErrorChannel: set.AsyncErrorChannel,
-		},
-		disableHighCard,
-	)
+	mp, err := telFactory.CreateMeterProvider(ctx, telset, &cfg.Telemetry)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create metric provider: %w", err)
 	}
 
-	logsAboutMeterProvider(logger, cfg.Telemetry.Metrics, mp, extendedConfig)
+	logsAboutMeterProvider(logger, cfg.Telemetry.Metrics, mp)
 	srv.telemetrySettings = component.TelemetrySettings{
 		LeveledMeterProvider: func(level configtelemetry.Level) metric.MeterProvider {
 			if level <= cfg.Telemetry.Metrics.Level {
@@ -174,26 +173,20 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		return nil, err
 	}
 
-	if cfg.Telemetry.Metrics.Level != configtelemetry.LevelNone && cfg.Telemetry.Metrics.Address != "" {
-		if err = proctelemetry.RegisterProcessMetrics(srv.telemetrySettings); err != nil {
-			return nil, fmt.Errorf("failed to register process metrics: %w", err)
-		}
+	if err = proctelemetry.RegisterProcessMetrics(srv.telemetrySettings); err != nil {
+		return nil, fmt.Errorf("failed to register process metrics: %w", err)
 	}
 
 	return srv, nil
 }
 
-func logsAboutMeterProvider(logger *zap.Logger, cfg telemetry.MetricsConfig, mp metric.MeterProvider, extendedConfig bool) {
-	if cfg.Level == configtelemetry.LevelNone || (cfg.Address == "" && len(cfg.Readers) == 0) {
-		logger.Info(
-			"Skipped telemetry setup.",
-			zap.String(zapKeyTelemetryAddress, cfg.Address),
-			zap.Stringer(zapKeyTelemetryLevel, cfg.Level),
-		)
+func logsAboutMeterProvider(logger *zap.Logger, cfg telemetry.MetricsConfig, mp metric.MeterProvider) {
+	if cfg.Level == configtelemetry.LevelNone || len(cfg.Readers) == 0 {
+		logger.Info("Skipped telemetry setup.")
 		return
 	}
 
-	if len(cfg.Address) != 0 && extendedConfig {
+	if len(cfg.Address) != 0 {
 		logger.Warn("service::telemetry::metrics::address is being deprecated in favor of service::telemetry::metrics::readers")
 	}
 
@@ -238,7 +231,7 @@ func (srv *Service) Start(ctx context.Context) error {
 	}
 
 	srv.telemetrySettings.Logger.Info("Everything is ready. Begin running and processing data.")
-	localhostgate.LogAboutUseLocalHostAsDefault(srv.telemetrySettings.Logger)
+	logAboutUseLocalHostAsDefault(srv.telemetrySettings.Logger)
 	return nil
 }
 
@@ -343,4 +336,14 @@ func pdataFromSdk(res *sdkresource.Resource) pcommon.Resource {
 		pcommonRes.Attributes().PutStr(string(keyValue.Key), keyValue.Value.AsString())
 	}
 	return pcommonRes
+}
+
+// logAboutUseLocalHostAsDefault logs about the upcoming change from 0.0.0.0 to localhost on server-like components.
+func logAboutUseLocalHostAsDefault(logger *zap.Logger) {
+	if globalgates.UseLocalHostAsDefaultHostfeatureGate.IsEnabled() {
+		logger.Info(
+			"The default endpoints for all servers in components have changed to use localhost instead of 0.0.0.0. Disable the feature gate to temporarily revert to the previous default.",
+			zap.String("feature gate ID", globalgates.UseLocalHostAsDefaultHostID),
+		)
+	}
 }
