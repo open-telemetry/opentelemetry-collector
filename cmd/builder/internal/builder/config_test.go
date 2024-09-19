@@ -153,6 +153,7 @@ func TestNewDefaultConfig(t *testing.T) {
 	assert.NoError(t, cfg.SetGoPath())
 	require.NoError(t, cfg.Validate())
 	assert.False(t, cfg.Distribution.DebugCompilation)
+	assert.Empty(t, cfg.Distribution.BuildTags)
 }
 
 func TestNewBuiltinConfig(t *testing.T) {
@@ -196,6 +197,18 @@ func TestSkipGoInitialization(t *testing.T) {
 	assert.NoError(t, cfg.Validate())
 	assert.NoError(t, cfg.SetGoPath())
 	assert.Zero(t, cfg.Distribution.Go)
+}
+
+func TestBuildTagConfig(t *testing.T) {
+	cfg := Config{
+		Distribution: Distribution{
+			BuildTags: "customTag",
+		},
+		SkipCompilation: true,
+		SkipGetModules:  true,
+	}
+	require.NoError(t, cfg.Validate())
+	assert.Equal(t, "customTag", cfg.Distribution.BuildTags)
 }
 
 func TestDebugOptionSetConfig(t *testing.T) {
