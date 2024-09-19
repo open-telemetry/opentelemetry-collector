@@ -13,6 +13,10 @@ import (
 // Config has the configuration for the extension enabling the zPages extension.
 type Config struct {
 	confighttp.ServerConfig `mapstructure:",squash"`
+
+	// EnableExpvar indicates whether to enable expvar service.
+	// (default = false)
+	EnableExpvar bool `mapstructure:"enable_expvar"`
 }
 
 var _ component.Config = (*Config)(nil)

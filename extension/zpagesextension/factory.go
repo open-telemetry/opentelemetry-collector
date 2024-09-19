@@ -26,6 +26,7 @@ func createDefaultConfig() component.Config {
 		ServerConfig: confighttp.ServerConfig{
 			Endpoint: defaultEndpoint,
 		},
+		EnableExpvar: false,
 	}
 }
 
