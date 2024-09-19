@@ -148,16 +148,16 @@ func TestPersistentQueue_FullCapacity(t *testing.T) {
 			req := newTracesRequest(1, 10)
 
 			// First request is picked by the consumer. Wait until the consumer is blocked on done.
-			assert.NoError(t, pq.Offer(context.Background(), req))
+			require.NoError(t, pq.Offer(context.Background(), req))
 			start <- struct{}{}
 			close(start)
 
 			for i := 0; i < 10; i++ {
 				result := pq.Offer(context.Background(), newTracesRequest(1, 10))
 				if i < 5 {
-					assert.NoError(t, result)
+					require.NoError(t, result)
 				} else {
-					assert.ErrorIs(t, result, ErrQueueIsFull)
+					require.ErrorIs(t, result, ErrQueueIsFull)
 				}
 			}
 			assert.Equal(t, 5*tt.sizeMultiplier, pq.Size())
@@ -219,7 +219,7 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 				})
 
 			for i := 0; i < c.numMessagesProduced; i++ {
-				assert.NoError(t, pq.Offer(context.Background(), req))
+				require.NoError(t, pq.Offer(context.Background(), req))
 			}
 
 			assert.Eventually(t, func() bool {
@@ -259,7 +259,7 @@ func newTracesRequest(numTraces int, numSpans int) tracesRequest {
 func TestToStorageClient(t *testing.T) {
 	getStorageClientError := errors.New("unable to create storage client")
 	testCases := []struct {
-		desc           string
+		name           string
 		storage        storage.Extension
 		numStorages    int
 		storageIndex   int
@@ -267,25 +267,25 @@ func TestToStorageClient(t *testing.T) {
 		getClientError error
 	}{
 		{
-			desc:          "obtain storage extension by name",
+			name:          "obtain storage extension by name",
 			numStorages:   2,
 			storageIndex:  0,
 			expectedError: nil,
 		},
 		{
-			desc:          "fail on not existing storage extension",
+			name:          "fail on not existing storage extension",
 			numStorages:   2,
 			storageIndex:  100,
 			expectedError: errNoStorageClient,
 		},
 		{
-			desc:          "invalid extension type",
+			name:          "invalid extension type",
 			numStorages:   2,
 			storageIndex:  100,
 			expectedError: errNoStorageClient,
 		},
 		{
-			desc:           "fail on error getting storage client from extension",
+			name:           "fail on error getting storage client from extension",
 			numStorages:    1,
 			storageIndex:   0,
 			expectedError:  getStorageClientError,
@@ -293,13 +293,13 @@ func TestToStorageClient(t *testing.T) {
 		},
 	}
 
-	for _, tC := range testCases {
-		t.Run(tC.desc, func(t *testing.T) {
-			storageID := component.MustNewIDWithName("file_storage", strconv.Itoa(tC.storageIndex))
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			storageID := component.MustNewIDWithName("file_storage", strconv.Itoa(tt.storageIndex))
 
 			var extensions = map[component.ID]component.Component{}
-			for i := 0; i < tC.numStorages; i++ {
-				extensions[component.MustNewIDWithName("file_storage", strconv.Itoa(i))] = NewMockStorageExtension(tC.getClientError)
+			for i := 0; i < tt.numStorages; i++ {
+				extensions[component.MustNewIDWithName("file_storage", strconv.Itoa(i))] = NewMockStorageExtension(tt.getClientError)
 			}
 			host := &mockHost{ext: extensions}
 			ownerID := component.MustNewID("foo_exporter")
@@ -308,11 +308,11 @@ func TestToStorageClient(t *testing.T) {
 			client, err := toStorageClient(context.Background(), storageID, host, ownerID, component.DataTypeTraces)
 
 			// verify
-			if tC.expectedError != nil {
-				assert.ErrorIs(t, err, tC.expectedError)
+			if tt.expectedError != nil {
+				require.ErrorIs(t, err, tt.expectedError)
 				assert.Nil(t, client)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.NotNil(t, client)
 			}
 		})
@@ -327,7 +327,7 @@ func TestInvalidStorageExtensionType(t *testing.T) {
 	extConfig := factory.CreateDefaultConfig()
 	settings := extensiontest.NewNopSettings()
 	extension, err := factory.CreateExtension(context.Background(), settings, extConfig)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	var extensions = map[component.ID]component.Component{
 		storageID: extension,
 	}
@@ -338,7 +338,7 @@ func TestInvalidStorageExtensionType(t *testing.T) {
 	client, err := toStorageClient(context.Background(), storageID, host, ownerID, component.DataTypeTraces)
 
 	// we should get an error about the extension type
-	assert.ErrorIs(t, err, errWrongExtensionType)
+	require.ErrorIs(t, err, errWrongExtensionType)
 	assert.Nil(t, client)
 }
 
@@ -439,7 +439,7 @@ func TestPersistentQueue_CorruptedData(t *testing.T) {
 			}
 
 			// Cannot close until we corrupt the data because the
-			assert.NoError(t, ps.Shutdown(context.Background()))
+			require.NoError(t, ps.Shutdown(context.Background()))
 
 			// Reload
 			newPs := createTestPersistentQueueWithRequestsCapacity(t, ext, 1000)
@@ -525,7 +525,7 @@ func TestPersistentQueueStartWithNonDispatched(t *testing.T) {
 		require.Equal(t, 5, ps.Size())
 		return experr.NewShutdownErr(nil)
 	}))
-	assert.NoError(t, ps.Shutdown(context.Background()))
+	require.NoError(t, ps.Shutdown(context.Background()))
 
 	// Reload with extra capacity to make sure we re-enqueue in-progress items.
 	newPs := createTestPersistentQueueWithRequestsCapacity(t, ext, 6)
@@ -563,7 +563,7 @@ func TestPersistentQueueStartWithNonDispatchedConcurrent(t *testing.T) {
 		go func() {
 			defer conWg.Done()
 			for i := 0; i < 10; i++ {
-				require.True(t, pq.Consume(func(context.Context, tracesRequest) error { return nil }))
+				assert.True(t, pq.Consume(func(context.Context, tracesRequest) error { return nil }))
 			}
 		}()
 	}
@@ -608,7 +608,7 @@ func TestPersistentQueue_PutCloseReadClose(t *testing.T) {
 	assert.Equal(t, 2, ps.Size())
 	// TODO: Remove this, after the initialization writes the readIndex.
 	_, _, _ = ps.getNextItem(context.Background())
-	assert.NoError(t, ps.Shutdown(context.Background()))
+	require.NoError(t, ps.Shutdown(context.Background()))
 
 	newPs := createTestPersistentQueueWithRequestsCapacity(t, ext, 1000)
 	require.Equal(t, 2, newPs.Size())
@@ -733,12 +733,12 @@ func TestPersistentQueue_ShutdownWhileConsuming(t *testing.T) {
 	assert.Equal(t, 0, ps.Size())
 	assert.False(t, ps.client.(*mockStorageClient).isClosed())
 
-	assert.NoError(t, ps.Offer(context.Background(), newTracesRequest(5, 10)))
+	require.NoError(t, ps.Offer(context.Background(), newTracesRequest(5, 10)))
 
 	_, onProcessingFinished, ok := ps.getNextItem(context.Background())
 	require.True(t, ok)
 	assert.False(t, ps.client.(*mockStorageClient).isClosed())
-	assert.NoError(t, ps.Shutdown(context.Background()))
+	require.NoError(t, ps.Shutdown(context.Background()))
 	assert.False(t, ps.client.(*mockStorageClient).isClosed())
 	onProcessingFinished(nil)
 	assert.True(t, ps.client.(*mockStorageClient).isClosed())
@@ -794,22 +794,22 @@ func TestPersistentQueue_ItemDispatchingFinish_ErrorHandling(t *testing.T) {
 	testCases := []struct {
 		storageErrors []error
 		expectedError error
-		description   string
+		name          string
 	}{
 		{
-			description:   "no errors",
+			name:          "no errors",
 			storageErrors: []error{},
 			expectedError: nil,
 		},
 		{
-			description: "error on first transaction, success afterwards",
+			name: "error on first transaction, success afterwards",
 			storageErrors: []error{
 				errUpdatingDispatched,
 			},
 			expectedError: nil,
 		},
 		{
-			description: "error on first and second transaction",
+			name: "error on first and second transaction",
 			storageErrors: []error{
 				errUpdatingDispatched,
 				errDeletingItem,
@@ -817,7 +817,7 @@ func TestPersistentQueue_ItemDispatchingFinish_ErrorHandling(t *testing.T) {
 			expectedError: errDeletingItem,
 		},
 		{
-			description: "error on first and third transaction",
+			name: "error on first and third transaction",
 			storageErrors: []error{
 				errUpdatingDispatched,
 				nil,
@@ -827,15 +827,15 @@ func TestPersistentQueue_ItemDispatchingFinish_ErrorHandling(t *testing.T) {
 		},
 	}
 
-	for _, testCase := range testCases {
-		t.Run(testCase.description, func(t *testing.T) {
-			client := newFakeStorageClientWithErrors(testCase.storageErrors)
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			client := newFakeStorageClientWithErrors(tt.storageErrors)
 			ps := createTestPersistentQueueWithClient(client)
 			client.Reset()
 
 			err := ps.itemDispatchingFinish(context.Background(), 0)
 
-			require.ErrorIs(t, err, testCase.expectedError)
+			require.ErrorIs(t, err, tt.expectedError)
 		})
 	}
 }
@@ -852,7 +852,7 @@ func TestPersistentQueue_ItemsCapacityUsageRestoredOnShutdown(t *testing.T) {
 	assert.NoError(t, pq.Offer(context.Background(), newTracesRequest(2, 10)))
 	assert.Equal(t, 100, pq.Size())
 
-	assert.ErrorIs(t, pq.Offer(context.Background(), newTracesRequest(5, 5)), ErrQueueIsFull)
+	require.ErrorIs(t, pq.Offer(context.Background(), newTracesRequest(5, 5)), ErrQueueIsFull)
 	assert.Equal(t, 100, pq.Size())
 
 	assert.True(t, pq.Consume(func(_ context.Context, traces tracesRequest) error {
@@ -861,14 +861,14 @@ func TestPersistentQueue_ItemsCapacityUsageRestoredOnShutdown(t *testing.T) {
 	}))
 	assert.Equal(t, 60, pq.Size())
 
-	assert.NoError(t, pq.Shutdown(context.Background()))
+	require.NoError(t, pq.Shutdown(context.Background()))
 
 	newPQ := createTestPersistentQueueWithItemsCapacity(t, ext, 100)
 
 	// The queue should be restored to the previous size.
 	assert.Equal(t, 60, newPQ.Size())
 
-	assert.NoError(t, newPQ.Offer(context.Background(), newTracesRequest(2, 5)))
+	require.NoError(t, newPQ.Offer(context.Background(), newTracesRequest(2, 5)))
 
 	// Check the combined queue size.
 	assert.Equal(t, 70, newPQ.Size())
@@ -906,14 +906,14 @@ func TestPersistentQueue_ItemsCapacityUsageIsNotPreserved(t *testing.T) {
 	}))
 	assert.Equal(t, 2, pq.Size())
 
-	assert.NoError(t, pq.Shutdown(context.Background()))
+	require.NoError(t, pq.Shutdown(context.Background()))
 
 	newPQ := createTestPersistentQueueWithItemsCapacity(t, ext, 100)
 
 	// The queue items size cannot be restored, fall back to request-based size
 	assert.Equal(t, 2, newPQ.Size())
 
-	assert.NoError(t, newPQ.Offer(context.Background(), newTracesRequest(2, 5)))
+	require.NoError(t, newPQ.Offer(context.Background(), newTracesRequest(2, 5)))
 
 	// Only new items are correctly reflected
 	assert.Equal(t, 12, newPQ.Size())
@@ -933,7 +933,7 @@ func TestPersistentQueue_ItemsCapacityUsageIsNotPreserved(t *testing.T) {
 	assert.Equal(t, 0, newPQ.Size())
 
 	// Adding another batch should update the size accordingly
-	assert.NoError(t, newPQ.Offer(context.Background(), newTracesRequest(5, 5)))
+	require.NoError(t, newPQ.Offer(context.Background(), newTracesRequest(5, 5)))
 	assert.Equal(t, 25, newPQ.Size())
 
 	assert.True(t, newPQ.Consume(func(_ context.Context, traces tracesRequest) error {
@@ -966,7 +966,7 @@ func TestPersistentQueue_RequestCapacityLessAfterRestart(t *testing.T) {
 	}))
 	assert.Equal(t, 3, pq.Size())
 
-	assert.NoError(t, pq.Shutdown(context.Background()))
+	require.NoError(t, pq.Shutdown(context.Background()))
 
 	// The queue is restarted with the less capacity than needed to restore the queued items, but with the same
 	// underlying storage. No need to drop requests that are over capacity since they are already in the storage.
@@ -976,7 +976,7 @@ func TestPersistentQueue_RequestCapacityLessAfterRestart(t *testing.T) {
 	assert.Equal(t, 3, newPQ.Size())
 
 	// Queue is full
-	assert.Error(t, newPQ.Offer(context.Background(), newTracesRequest(2, 5)))
+	require.Error(t, newPQ.Offer(context.Background(), newTracesRequest(2, 5)))
 
 	assert.True(t, newPQ.Consume(func(_ context.Context, traces tracesRequest) error {
 		assert.Equal(t, 20, traces.traces.SpanCount())
@@ -985,7 +985,7 @@ func TestPersistentQueue_RequestCapacityLessAfterRestart(t *testing.T) {
 	assert.Equal(t, 2, newPQ.Size())
 
 	// Still full
-	assert.Error(t, newPQ.Offer(context.Background(), newTracesRequest(2, 5)))
+	require.Error(t, newPQ.Offer(context.Background(), newTracesRequest(2, 5)))
 
 	assert.True(t, newPQ.Consume(func(_ context.Context, traces tracesRequest) error {
 		assert.Equal(t, 25, traces.traces.SpanCount())
@@ -1008,7 +1008,7 @@ func TestPersistentQueue_RestoredUsedSizeIsCorrectedOnDrain(t *testing.T) {
 	assert.Equal(t, 0, pq.Size())
 
 	for i := 0; i < 6; i++ {
-		assert.NoError(t, pq.Offer(context.Background(), newTracesRequest(2, 5)))
+		require.NoError(t, pq.Offer(context.Background(), newTracesRequest(2, 5)))
 	}
 	assert.Equal(t, 60, pq.Size())
 

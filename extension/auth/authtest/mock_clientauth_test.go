@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/credentials"
 )
 
@@ -20,7 +21,7 @@ func TestNilStartAndShutdown(t *testing.T) {
 	origCtx := context.Background()
 
 	err := m.Start(origCtx, nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	err = m.Shutdown(origCtx)
 	assert.NoError(t, err)
@@ -56,15 +57,15 @@ func TestMockRoundTripper(t *testing.T) {
 		},
 	}
 
-	for _, testcase := range testcases {
-		t.Run(testcase.name, func(t *testing.T) {
-			tripper, err := testcase.clientAuth.RoundTripper(nil)
-			if testcase.expectedErr {
+	for _, tt := range testcases {
+		t.Run(tt.name, func(t *testing.T) {
+			tripper, err := tt.clientAuth.RoundTripper(nil)
+			if tt.expectedErr {
 				assert.Error(t, err)
 				return
 			}
 			assert.NotNil(t, tripper)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			// check if the resultant tripper is indeed the one provided
 			_, ok := tripper.(*customRoundTripper)
 			assert.True(t, ok)
@@ -108,18 +109,18 @@ func TestMockPerRPCCredential(t *testing.T) {
 		},
 	}
 
-	for _, testcase := range testcases {
-		t.Run(testcase.name, func(t *testing.T) {
-			credential, err := testcase.clientAuth.PerRPCCredentials()
+	for _, tt := range testcases {
+		t.Run(tt.name, func(t *testing.T) {
+			credential, err := tt.clientAuth.PerRPCCredentials()
 			if err != nil {
 				return
 			}
-			if testcase.expectedErr {
+			if tt.expectedErr {
 				assert.Error(t, err)
 				return
 			}
 			assert.NotNil(t, credential)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			// check if the resultant tripper is indeed the one provided
 			_, ok := credential.(*customPerRPCCredentials)
 			assert.True(t, ok)

@@ -167,9 +167,17 @@ func (ms {{ .structName }}) Set{{ .accessorFieldName }}(v {{ .returnType }}) {
 
 const accessorsOneOfPrimitiveTestTemplate = `func Test{{ .structName }}_{{ .accessorFieldName }}(t *testing.T) {
 	ms := New{{ .structName }}()
+	{{- if eq .returnType "float64"}}
+	assert.InDelta(t, {{ .defaultVal }}, ms.{{ .accessorFieldName }}(), 0.01)
+	{{- else }}
 	assert.Equal(t, {{ .defaultVal }}, ms.{{ .accessorFieldName }}())
+	{{- end }}
 	ms.Set{{ .accessorFieldName }}({{ .testValue }})
+	{{- if eq .returnType "float64" }}
+	assert.InDelta(t, {{ .testValue }}, ms.{{ .accessorFieldName }}(), 0.01)
+	{{- else }}
 	assert.Equal(t, {{ .testValue }}, ms.{{ .accessorFieldName }}())
+	{{- end }}
 	assert.Equal(t, {{ .typeName }}, ms.{{ .originOneOfTypeFuncName }}())
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { new{{ .structName }}(&{{ .originStructName }}{}, &sharedState).Set{{ .accessorFieldName }}({{ .testValue }}) })
@@ -179,13 +187,17 @@ const accessorsPrimitiveTestTemplate = `func Test{{ .structName }}_{{ .fieldName
 	ms := New{{ .structName }}()
 	{{- if eq .returnType "bool" }}
 	assert.{{- if eq .defaultVal "true" }}True{{- else }}False{{- end }}(t, ms.{{ .fieldName }}())
-	{{- else }}	
+	{{- else if eq .returnType "float64" }}
+	assert.InDelta(t, {{ .defaultVal }}, ms.{{ .fieldName }}(), 0.01)
+	{{- else }}
 	assert.Equal(t, {{ .defaultVal }}, ms.{{ .fieldName }}())
 	{{- end }}
 	ms.Set{{ .fieldName }}({{ .testValue }})
 	{{- if eq .returnType "bool" }}
 	assert.{{- if eq .testValue "true" }}True{{- else }}False{{- end }}(t, ms.{{ .fieldName }}())
-	{{- else }}	
+	{{- else if eq .returnType "float64"}}
+	assert.InDelta(t, {{ .testValue }}, ms.{{ .fieldName }}(), 0.01)
+	{{- else }}
 	assert.Equal(t, {{ .testValue }}, ms.{{ .fieldName }}())
 	{{- end }}
 	sharedState := internal.StateReadOnly
@@ -243,10 +255,18 @@ func (ms {{ .structName }}) Remove{{ .fieldName }}() {
 
 const accessorsOptionalPrimitiveTestTemplate = `func Test{{ .structName }}_{{ .fieldName }}(t *testing.T) {
 	ms := New{{ .structName }}()
+	{{- if eq .returnType "float64" }}
+	assert.InDelta(t, {{ .defaultVal }}, ms.{{ .fieldName }}() , 0.01)
+	{{- else }}
 	assert.Equal(t, {{ .defaultVal }}, ms.{{ .fieldName }}())
+	{{- end }}
 	ms.Set{{ .fieldName }}({{ .testValue }})
 	assert.True(t, ms.Has{{ .fieldName }}())
+	{{- if eq .returnType "float64" }}
+	assert.InDelta(t, {{.testValue }}, ms.{{ .fieldName }}(), 0.01)
+	{{- else }}
 	assert.Equal(t, {{ .testValue }}, ms.{{ .fieldName }}())
+	{{- end }}
 	ms.Remove{{ .fieldName }}()
 	assert.False(t, ms.Has{{ .fieldName }}())
 }`

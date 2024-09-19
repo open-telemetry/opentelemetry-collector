@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/internal/queue"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -64,7 +65,7 @@ func (req *metricsRequest) ItemsCount() int {
 }
 
 type metricsExporter struct {
-	*baseExporter
+	*internal.BaseExporter
 	consumer.Metrics
 }
 
@@ -83,8 +84,8 @@ func NewMetricsExporter(
 		return nil, errNilPushMetricsData
 	}
 	metricsOpts := []Option{
-		withMarshaler(metricsRequestMarshaler), withUnmarshaler(newMetricsRequestUnmarshalerFunc(pusher)),
-		withBatchFuncs(mergeMetrics, mergeSplitMetrics),
+		internal.WithMarshaler(metricsRequestMarshaler), internal.WithUnmarshaler(newMetricsRequestUnmarshalerFunc(pusher)),
+		internal.WithBatchFuncs(mergeMetrics, mergeSplitMetrics),
 	}
 	return NewMetricsRequestExporter(ctx, set, requestFromMetrics(pusher), append(metricsOpts, options...)...)
 }
@@ -118,7 +119,7 @@ func NewMetricsRequestExporter(
 		return nil, errNilMetricsConverter
 	}
 
-	be, err := newBaseExporter(set, component.DataTypeMetrics, newMetricsSenderWithObservability, options...)
+	be, err := internal.NewBaseExporter(set, component.DataTypeMetrics, newMetricsSenderWithObservability, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -131,32 +132,32 @@ func NewMetricsRequestExporter(
 				zap.Error(err))
 			return consumererror.NewPermanent(cErr)
 		}
-		sErr := be.send(ctx, req)
+		sErr := be.Send(ctx, req)
 		if errors.Is(sErr, queue.ErrQueueIsFull) {
-			be.obsrep.recordEnqueueFailure(ctx, component.DataTypeMetrics, int64(req.ItemsCount()))
+			be.Obsrep.RecordEnqueueFailure(ctx, component.DataTypeMetrics, int64(req.ItemsCount()))
 		}
 		return sErr
-	}, be.consumerOptions...)
+	}, be.ConsumerOptions...)
 
 	return &metricsExporter{
-		baseExporter: be,
+		BaseExporter: be,
 		Metrics:      mc,
 	}, err
 }
 
 type metricsSenderWithObservability struct {
-	baseRequestSender
-	obsrep *obsReport
+	internal.BaseRequestSender
+	obsrep *internal.ObsReport
 }
 
-func newMetricsSenderWithObservability(obsrep *obsReport) requestSender {
+func newMetricsSenderWithObservability(obsrep *internal.ObsReport) internal.RequestSender {
 	return &metricsSenderWithObservability{obsrep: obsrep}
 }
 
-func (mewo *metricsSenderWithObservability) send(ctx context.Context, req Request) error {
-	c := mewo.obsrep.startMetricsOp(ctx)
+func (mewo *metricsSenderWithObservability) Send(ctx context.Context, req Request) error {
+	c := mewo.obsrep.StartMetricsOp(ctx)
 	numMetricDataPoints := req.ItemsCount()
-	err := mewo.nextSender.send(c, req)
-	mewo.obsrep.endMetricsOp(c, numMetricDataPoints, err)
+	err := mewo.NextSender.Send(c, req)
+	mewo.obsrep.EndMetricsOp(c, numMetricDataPoints, err)
 	return err
 }

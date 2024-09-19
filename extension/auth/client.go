@@ -26,7 +26,15 @@ type Client interface {
 }
 
 // ClientOption represents the possible options for NewClient.
-type ClientOption func(*defaultClient)
+type ClientOption interface {
+	apply(*defaultClient)
+}
+
+type clientOptionFunc func(*defaultClient)
+
+func (of clientOptionFunc) apply(e *defaultClient) {
+	of(e)
+}
 
 // ClientRoundTripperFunc specifies the function that returns a RoundTripper that can be used to authenticate HTTP requests.
 type ClientRoundTripperFunc func(base http.RoundTripper) (http.RoundTripper, error)
@@ -58,33 +66,33 @@ type defaultClient struct {
 // WithClientStart overrides the default `Start` function for a component.Component.
 // The default always returns nil.
 func WithClientStart(startFunc component.StartFunc) ClientOption {
-	return func(o *defaultClient) {
+	return clientOptionFunc(func(o *defaultClient) {
 		o.StartFunc = startFunc
-	}
+	})
 }
 
 // WithClientShutdown overrides the default `Shutdown` function for a component.Component.
 // The default always returns nil.
 func WithClientShutdown(shutdownFunc component.ShutdownFunc) ClientOption {
-	return func(o *defaultClient) {
+	return clientOptionFunc(func(o *defaultClient) {
 		o.ShutdownFunc = shutdownFunc
-	}
+	})
 }
 
 // WithClientRoundTripper provides a `RoundTripper` function for this client authenticator.
 // The default round tripper is no-op.
 func WithClientRoundTripper(roundTripperFunc ClientRoundTripperFunc) ClientOption {
-	return func(o *defaultClient) {
+	return clientOptionFunc(func(o *defaultClient) {
 		o.ClientRoundTripperFunc = roundTripperFunc
-	}
+	})
 }
 
 // WithClientPerRPCCredentials provides a `PerRPCCredentials` function for this client authenticator.
 // There's no default.
 func WithClientPerRPCCredentials(perRPCCredentialsFunc ClientPerRPCCredentialsFunc) ClientOption {
-	return func(o *defaultClient) {
+	return clientOptionFunc(func(o *defaultClient) {
 		o.ClientPerRPCCredentialsFunc = perRPCCredentialsFunc
-	}
+	})
 }
 
 // NewClient returns a Client configured with the provided options.
@@ -92,7 +100,7 @@ func NewClient(options ...ClientOption) Client {
 	bc := &defaultClient{}
 
 	for _, op := range options {
-		op(bc)
+		op.apply(bc)
 	}
 
 	return bc

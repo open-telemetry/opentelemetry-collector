@@ -110,23 +110,23 @@ func TestCheckProcessorTracesViews(t *testing.T) {
 		ProcessorID:             processorID,
 		ProcessorCreateSettings: processor.Settings{ID: processorID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	por.TracesAccepted(context.Background(), 7)
 	por.TracesRefused(context.Background(), 8)
 	por.TracesDropped(context.Background(), 9)
 
-	assert.NoError(t, tt.CheckProcessorTraces(7, 8, 9))
-	assert.Error(t, tt.CheckProcessorTraces(0, 0, 0))
-	assert.Error(t, tt.CheckProcessorTraces(7, 0, 0))
-	assert.Error(t, tt.CheckProcessorTraces(0, 8, 0))
-	assert.Error(t, tt.CheckProcessorTraces(0, 0, 9))
-	assert.Error(t, tt.CheckProcessorTraces(0, 0, 0))
-	assert.Error(t, tt.CheckProcessorTraces(7, 8, 0))
-	assert.Error(t, tt.CheckProcessorTraces(7, 0, 9))
-	assert.Error(t, tt.CheckProcessorTraces(7, 0, 0))
-	assert.Error(t, tt.CheckProcessorTraces(0, 8, 9))
-	assert.Error(t, tt.CheckProcessorTraces(0, 8, 0))
+	require.NoError(t, tt.CheckProcessorTraces(7, 8, 9))
+	require.Error(t, tt.CheckProcessorTraces(0, 0, 0))
+	require.Error(t, tt.CheckProcessorTraces(7, 0, 0))
+	require.Error(t, tt.CheckProcessorTraces(0, 8, 0))
+	require.Error(t, tt.CheckProcessorTraces(0, 0, 9))
+	require.Error(t, tt.CheckProcessorTraces(0, 0, 0))
+	require.Error(t, tt.CheckProcessorTraces(7, 8, 0))
+	require.Error(t, tt.CheckProcessorTraces(7, 0, 9))
+	require.Error(t, tt.CheckProcessorTraces(7, 0, 0))
+	require.Error(t, tt.CheckProcessorTraces(0, 8, 9))
+	require.Error(t, tt.CheckProcessorTraces(0, 8, 0))
 	assert.Error(t, tt.CheckProcessorTraces(0, 0, 9))
 }
 
@@ -139,23 +139,23 @@ func TestCheckProcessorMetricsViews(t *testing.T) {
 		ProcessorID:             processorID,
 		ProcessorCreateSettings: processor.Settings{ID: processorID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	por.MetricsAccepted(context.Background(), 7)
 	por.MetricsRefused(context.Background(), 8)
 	por.MetricsDropped(context.Background(), 9)
 
-	assert.NoError(t, tt.CheckProcessorMetrics(7, 8, 9))
-	assert.Error(t, tt.CheckProcessorMetrics(0, 0, 0))
-	assert.Error(t, tt.CheckProcessorMetrics(7, 0, 0))
-	assert.Error(t, tt.CheckProcessorMetrics(0, 8, 0))
-	assert.Error(t, tt.CheckProcessorMetrics(0, 0, 9))
-	assert.Error(t, tt.CheckProcessorMetrics(0, 0, 0))
-	assert.Error(t, tt.CheckProcessorMetrics(7, 8, 0))
-	assert.Error(t, tt.CheckProcessorMetrics(7, 0, 9))
-	assert.Error(t, tt.CheckProcessorMetrics(7, 0, 0))
-	assert.Error(t, tt.CheckProcessorMetrics(0, 8, 9))
-	assert.Error(t, tt.CheckProcessorMetrics(0, 8, 0))
+	require.NoError(t, tt.CheckProcessorMetrics(7, 8, 9))
+	require.Error(t, tt.CheckProcessorMetrics(0, 0, 0))
+	require.Error(t, tt.CheckProcessorMetrics(7, 0, 0))
+	require.Error(t, tt.CheckProcessorMetrics(0, 8, 0))
+	require.Error(t, tt.CheckProcessorMetrics(0, 0, 9))
+	require.Error(t, tt.CheckProcessorMetrics(0, 0, 0))
+	require.Error(t, tt.CheckProcessorMetrics(7, 8, 0))
+	require.Error(t, tt.CheckProcessorMetrics(7, 0, 9))
+	require.Error(t, tt.CheckProcessorMetrics(7, 0, 0))
+	require.Error(t, tt.CheckProcessorMetrics(0, 8, 9))
+	require.Error(t, tt.CheckProcessorMetrics(0, 8, 0))
 	assert.Error(t, tt.CheckProcessorMetrics(0, 0, 9))
 }
 
@@ -168,23 +168,23 @@ func TestCheckProcessorLogViews(t *testing.T) {
 		ProcessorID:             processorID,
 		ProcessorCreateSettings: processor.Settings{ID: processorID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	por.LogsAccepted(context.Background(), 7)
 	por.LogsRefused(context.Background(), 8)
 	por.LogsDropped(context.Background(), 9)
 
-	assert.NoError(t, tt.CheckProcessorLogs(7, 8, 9))
-	assert.Error(t, tt.CheckProcessorLogs(0, 0, 0))
-	assert.Error(t, tt.CheckProcessorLogs(7, 0, 0))
-	assert.Error(t, tt.CheckProcessorLogs(0, 8, 0))
-	assert.Error(t, tt.CheckProcessorLogs(0, 0, 9))
-	assert.Error(t, tt.CheckProcessorLogs(0, 0, 0))
-	assert.Error(t, tt.CheckProcessorLogs(7, 8, 0))
-	assert.Error(t, tt.CheckProcessorLogs(7, 0, 9))
-	assert.Error(t, tt.CheckProcessorLogs(7, 0, 0))
-	assert.Error(t, tt.CheckProcessorLogs(0, 8, 9))
-	assert.Error(t, tt.CheckProcessorLogs(0, 8, 0))
+	require.NoError(t, tt.CheckProcessorLogs(7, 8, 9))
+	require.Error(t, tt.CheckProcessorLogs(0, 0, 0))
+	require.Error(t, tt.CheckProcessorLogs(7, 0, 0))
+	require.Error(t, tt.CheckProcessorLogs(0, 8, 0))
+	require.Error(t, tt.CheckProcessorLogs(0, 0, 9))
+	require.Error(t, tt.CheckProcessorLogs(0, 0, 0))
+	require.Error(t, tt.CheckProcessorLogs(7, 8, 0))
+	require.Error(t, tt.CheckProcessorLogs(7, 0, 9))
+	require.Error(t, tt.CheckProcessorLogs(7, 0, 0))
+	require.Error(t, tt.CheckProcessorLogs(0, 8, 9))
+	require.Error(t, tt.CheckProcessorLogs(0, 8, 0))
 	assert.Error(t, tt.CheckProcessorLogs(0, 0, 9))
 }
 
@@ -204,7 +204,7 @@ func TestNoMetrics(t *testing.T) {
 			ProcessorID:             processorID,
 			ProcessorCreateSettings: processor.Settings{ID: processorID, TelemetrySettings: set, BuildInfo: component.NewDefaultBuildInfo()},
 		})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		por.TracesAccepted(context.Background(), accepted)
 		por.TracesRefused(context.Background(), refused)
@@ -226,7 +226,7 @@ func TestNoMetrics(t *testing.T) {
 			ProcessorID:             processorID,
 			ProcessorCreateSettings: processor.Settings{ID: processorID, TelemetrySettings: set, BuildInfo: component.NewDefaultBuildInfo()},
 		})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		por.MetricsAccepted(context.Background(), accepted)
 		por.MetricsRefused(context.Background(), refused)
@@ -248,7 +248,7 @@ func TestNoMetrics(t *testing.T) {
 			ProcessorID:             processorID,
 			ProcessorCreateSettings: processor.Settings{ID: processorID, TelemetrySettings: set, BuildInfo: component.NewDefaultBuildInfo()},
 		})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		por.LogsAccepted(context.Background(), accepted)
 		por.LogsRefused(context.Background(), refused)

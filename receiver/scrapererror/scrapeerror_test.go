@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestScrapeErrorsAddPartial(t *testing.T) {
@@ -86,19 +87,19 @@ func TestScrapeErrorsCombine(t *testing.T) {
 		},
 	}
 
-	for _, tc := range testCases {
-		scrapeErrs := tc.errs()
-		if tc.expectNil {
-			assert.NoError(t, scrapeErrs.Combine())
+	for _, tt := range testCases {
+		scrapeErrs := tt.errs()
+		if tt.expectNil {
+			require.NoError(t, scrapeErrs.Combine())
 			continue
 		}
-		assert.EqualError(t, scrapeErrs.Combine(), tc.expectedErr)
-		if tc.expectedScrape {
+		require.EqualError(t, scrapeErrs.Combine(), tt.expectedErr)
+		if tt.expectedScrape {
 			var partialScrapeErr PartialScrapeError
 			if !errors.As(scrapeErrs.Combine(), &partialScrapeErr) {
 				t.Errorf("%+v.Combine() = %q. Want: PartialScrapeError", scrapeErrs, scrapeErrs.Combine())
-			} else if tc.expectedFailedCount != partialScrapeErr.Failed {
-				t.Errorf("%+v.Combine().Failed. Got %d Failed count. Want: %d", scrapeErrs, partialScrapeErr.Failed, tc.expectedFailedCount)
+			} else if tt.expectedFailedCount != partialScrapeErr.Failed {
+				t.Errorf("%+v.Combine().Failed. Got %d Failed count. Want: %d", scrapeErrs, partialScrapeErr.Failed, tt.expectedFailedCount)
 			}
 		}
 	}
