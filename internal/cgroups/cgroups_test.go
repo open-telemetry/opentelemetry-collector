@@ -32,6 +32,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewCGroups(t *testing.T) {
@@ -50,7 +51,7 @@ func TestNewCGroups(t *testing.T) {
 
 	cgroups, err := NewCGroups(cgroupsProcMountInfoPath, cgroupsProcCGroupPath)
 	assert.Equal(t, len(testTable), len(cgroups))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	for _, tt := range testTable {
 		cgroup, exists := cgroups[tt.subsys]
@@ -113,7 +114,7 @@ func TestCGroupsMemoryQuota(t *testing.T) {
 	quota, defined, err := cgroups.MemoryQuota()
 	assert.Equal(t, int64(-1), quota, "nonexistent")
 	assert.False(t, defined, "nonexistent")
-	assert.NoError(t, err, "nonexistent")
+	require.NoError(t, err, "nonexistent")
 
 	for _, tt := range testTable {
 		cgroupPath := filepath.Join(testDataCGroupsPath, tt.name)
@@ -209,7 +210,7 @@ func TestCGroupsMemoryQuotaV2(t *testing.T) {
 	quota, defined, err := memoryQuotaV2("nonexistent", "nonexistent")
 	assert.Equal(t, int64(-1), quota, "nonexistent")
 	assert.False(t, defined, "nonexistent")
-	assert.NoError(t, err, "nonexistent")
+	require.NoError(t, err, "nonexistent")
 
 	cgroupBasePath := filepath.Join(testDataCGroupsPath, "v2")
 	for _, tt := range testTable {

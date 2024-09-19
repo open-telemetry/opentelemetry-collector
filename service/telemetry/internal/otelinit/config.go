@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package proctelemetry // import "go.opentelemetry.io/collector/service/internal/proctelemetry"
+package otelinit // import "go.opentelemetry.io/collector/service/telemetry/internal/otelinit"
 
 import (
 	"context"

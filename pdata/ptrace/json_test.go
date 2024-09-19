@@ -8,6 +8,7 @@ import (
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -93,14 +94,14 @@ var tracesJSON = `{"resourceSpans":[{"resource":{"attributes":[{"key":"host.name
 func TestJSONUnmarshal(t *testing.T) {
 	decoder := &JSONUnmarshaler{}
 	got, err := decoder.UnmarshalTraces([]byte(tracesJSON))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.EqualValues(t, tracesOTLP, got)
 }
 
 func TestJSONMarshal(t *testing.T) {
 	encoder := &JSONMarshaler{}
 	jsonBuf, err := encoder.MarshalTraces(tracesOTLP)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, tracesJSON, string(jsonBuf))
 }
 
@@ -117,7 +118,7 @@ func TestUnmarshalJsoniterTraceData(t *testing.T) {
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewTraces()
 	val.unmarshalJsoniter(iter)
-	assert.NoError(t, iter.Error)
+	require.NoError(t, iter.Error)
 	assert.Equal(t, 1, val.ResourceSpans().Len())
 }
 
@@ -127,7 +128,7 @@ func TestUnmarshalJsoniterResourceSpans(t *testing.T) {
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewResourceSpans()
 	val.unmarshalJsoniter(iter)
-	assert.NoError(t, iter.Error)
+	require.NoError(t, iter.Error)
 	assert.Equal(t, NewResourceSpans(), val)
 }
 
@@ -137,7 +138,7 @@ func TestUnmarshalJsoniterScopeSpans(t *testing.T) {
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewScopeSpans()
 	val.unmarshalJsoniter(iter)
-	assert.NoError(t, iter.Error)
+	require.NoError(t, iter.Error)
 	assert.Equal(t, NewScopeSpans(), val)
 }
 
@@ -147,7 +148,7 @@ func TestUnmarshalJsoniterSpan(t *testing.T) {
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewSpan()
 	val.unmarshalJsoniter(iter)
-	assert.NoError(t, iter.Error)
+	require.NoError(t, iter.Error)
 	assert.Equal(t, NewSpan(), val)
 }
 
@@ -187,7 +188,7 @@ func TestUnmarshalJsoniterSpanStatus(t *testing.T) {
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewStatus()
 	val.unmarshalJsoniter(iter)
-	assert.NoError(t, iter.Error)
+	require.NoError(t, iter.Error)
 	assert.Equal(t, NewStatus(), val)
 }
 
@@ -197,7 +198,7 @@ func TestUnmarshalJsoniterSpanLink(t *testing.T) {
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewSpanLink()
 	val.unmarshalJsoniter(iter)
-	assert.NoError(t, iter.Error)
+	require.NoError(t, iter.Error)
 	assert.Equal(t, NewSpanLink(), val)
 }
 
@@ -227,7 +228,7 @@ func TestUnmarshalJsoniterSpanEvent(t *testing.T) {
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewSpanEvent()
 	val.unmarshalJsoniter(iter)
-	assert.NoError(t, iter.Error)
+	require.NoError(t, iter.Error)
 	assert.Equal(t, NewSpanEvent(), val)
 }
 
@@ -236,7 +237,7 @@ func BenchmarkJSONUnmarshal(b *testing.B) {
 
 	encoder := &JSONMarshaler{}
 	jsonBuf, err := encoder.MarshalTraces(tracesOTLP)
-	assert.NoError(b, err)
+	require.NoError(b, err)
 	decoder := &JSONUnmarshaler{}
 
 	b.ResetTimer()

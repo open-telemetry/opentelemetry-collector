@@ -31,7 +31,7 @@ func TestComponentTelemetry(t *testing.T) {
 	tt.assertMetrics(t, []metricdata.Metrics{
 		{
 			Name:        "otelcol_batch_size_trigger_send",
-			Description: "Number of times the batch was sent due to a size trigger",
+			Description: "Number of times the batch was sent due to a size trigger [deprecated since v0.110.0]",
 			Unit:        "{times}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
@@ -64,7 +64,7 @@ func TestComponentTelemetry(t *testing.T) {
 	tt.assertMetrics(t, []metricdata.Metrics{
 		{
 			Name:        "otelcol_batch_size_trigger_send",
-			Description: "Number of times the batch was sent due to a size trigger",
+			Description: "Number of times the batch was sent due to a size trigger [deprecated since v0.110.0]",
 			Unit:        "{times}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,

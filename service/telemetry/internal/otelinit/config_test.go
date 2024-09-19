@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package proctelemetry
+package otelinit
 
 import (
 	"context"
@@ -534,7 +534,7 @@ func TestMetricReader(t *testing.T) {
 
 			defer func() {
 				if gotReader != nil {
-					assert.NoError(t, gotReader.Shutdown(context.Background()))
+					require.NoError(t, gotReader.Shutdown(context.Background()))
 				}
 				if server != nil {
 					assert.NoError(t, server.Shutdown(context.Background()))

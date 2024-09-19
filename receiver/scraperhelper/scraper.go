@@ -30,20 +30,28 @@ type Scraper interface {
 }
 
 // ScraperOption apply changes to internal options.
-type ScraperOption func(*baseScraper)
+type ScraperOption interface {
+	apply(*baseScraper)
+}
+
+type scraperOptionFunc func(*baseScraper)
+
+func (of scraperOptionFunc) apply(e *baseScraper) {
+	of(e)
+}
 
 // WithStart sets the function that will be called on startup.
 func WithStart(start component.StartFunc) ScraperOption {
-	return func(o *baseScraper) {
+	return scraperOptionFunc(func(o *baseScraper) {
 		o.StartFunc = start
-	}
+	})
 }
 
 // WithShutdown sets the function that will be called on shutdown.
 func WithShutdown(shutdown component.ShutdownFunc) ScraperOption {
-	return func(o *baseScraper) {
+	return scraperOptionFunc(func(o *baseScraper) {
 		o.ShutdownFunc = shutdown
-	}
+	})
 }
 
 var _ Scraper = (*baseScraper)(nil)
@@ -70,7 +78,7 @@ func NewScraper(t component.Type, scrape ScrapeFunc, options ...ScraperOption) (
 		id:         component.NewID(t),
 	}
 	for _, op := range options {
-		op(bs)
+		op.apply(bs)
 	}
 
 	return bs, nil

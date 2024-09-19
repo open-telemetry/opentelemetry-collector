@@ -4,7 +4,6 @@
 package internal
 
 import (
-	"fmt"
 	"io/fs"
 	"path/filepath"
 	"testing"
@@ -132,10 +131,10 @@ func TestValidateMetricDuplicates(t *testing.T) {
 		for _, metricName := range metrics {
 			if val, exists := seen[metricName]; exists {
 				receivers, allowed := allowedMetrics[metricName]
-				assert.True(
+				assert.Truef(
 					t,
 					allowed && contains(receiver, receivers) && contains(val, receivers),
-					fmt.Sprintf("Duplicate metric %v in receivers %v and %v. Please validate that this is intentional by adding the metric name and receiver types in the allowedMetrics map in this test\n", metricName, receiver, val),
+					"Duplicate metric %v in receivers %v and %v. Please validate that this is intentional by adding the metric name and receiver types in the allowedMetrics map in this test\n", metricName, receiver, val,
 				)
 			}
 			seen[metricName] = receiver

@@ -100,7 +100,7 @@ func TestBatchProcessorSpansDelivered(t *testing.T) {
 			spans.At(spanIndex).SetName(getTestSpanName(requestNum, spanIndex))
 		}
 		td.ResourceSpans().At(0).CopyTo(sentResourceSpans.AppendEmpty())
-		assert.NoError(t, batcher.ConsumeTraces(context.Background(), td))
+		require.NoError(t, batcher.ConsumeTraces(context.Background(), td))
 	}
 
 	// Added to test logic that check for empty resources.
@@ -141,7 +141,7 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
 			spans.At(spanIndex).SetName(getTestSpanName(requestNum, spanIndex))
 		}
-		assert.NoError(t, batcher.ConsumeTraces(context.Background(), td))
+		require.NoError(t, batcher.ConsumeTraces(context.Background(), td))
 	}
 
 	// Added to test logic that check for empty resources.
@@ -188,7 +188,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		td := testdata.GenerateTraces(spansPerRequest)
 
-		assert.NoError(t, batcher.ConsumeTraces(context.Background(), td))
+		require.NoError(t, batcher.ConsumeTraces(context.Background(), td))
 	}
 
 	require.NoError(t, batcher.Shutdown(context.Background()))
@@ -310,7 +310,7 @@ func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
 	sizeSum := 0
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		td := testdata.GenerateTraces(spansPerRequest)
-		assert.NoError(t, batcher.ConsumeTraces(context.Background(), td))
+		require.NoError(t, batcher.ConsumeTraces(context.Background(), td))
 	}
 
 	require.NoError(t, batcher.Shutdown(context.Background()))
@@ -445,7 +445,7 @@ func TestBatchProcessorSentByTimeout(t *testing.T) {
 
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		td := testdata.GenerateTraces(spansPerRequest)
-		assert.NoError(t, batcher.ConsumeTraces(context.Background(), td))
+		require.NoError(t, batcher.ConsumeTraces(context.Background(), td))
 	}
 
 	// Wait for at least one batch to be sent.
@@ -494,7 +494,7 @@ func TestBatchProcessorTraceSendWhenClosing(t *testing.T) {
 	spansPerRequest := 10
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		td := testdata.GenerateTraces(spansPerRequest)
-		assert.NoError(t, batcher.ConsumeTraces(context.Background(), td))
+		require.NoError(t, batcher.ConsumeTraces(context.Background(), td))
 	}
 
 	require.NoError(t, batcher.Shutdown(context.Background()))
@@ -530,7 +530,7 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 			metrics.At(metricIndex).SetName(getTestMetricName(requestNum, metricIndex))
 		}
 		md.ResourceMetrics().At(0).CopyTo(sentResourceMetrics.AppendEmpty())
-		assert.NoError(t, batcher.ConsumeMetrics(context.Background(), md))
+		require.NoError(t, batcher.ConsumeMetrics(context.Background(), md))
 	}
 
 	// Added to test case with empty resources sent.
@@ -580,7 +580,7 @@ func TestBatchMetricProcessorBatchSize(t *testing.T) {
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		md := testdata.GenerateMetrics(metricsPerRequest)
 		size += sizer.MetricsSize(md)
-		assert.NoError(t, batcher.ConsumeMetrics(context.Background(), md))
+		require.NoError(t, batcher.ConsumeMetrics(context.Background(), md))
 	}
 	require.NoError(t, batcher.Shutdown(context.Background()))
 
@@ -711,7 +711,7 @@ func TestBatchMetricsProcessor_Timeout(t *testing.T) {
 	start := time.Now()
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		md := testdata.GenerateMetrics(metricsPerRequest)
-		assert.NoError(t, batcher.ConsumeMetrics(context.Background(), md))
+		require.NoError(t, batcher.ConsumeMetrics(context.Background(), md))
 	}
 
 	// Wait for at least one batch to be sent.
@@ -759,7 +759,7 @@ func TestBatchMetricProcessor_Shutdown(t *testing.T) {
 
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		md := testdata.GenerateMetrics(metricsPerRequest)
-		assert.NoError(t, batcher.ConsumeMetrics(context.Background(), md))
+		require.NoError(t, batcher.ConsumeMetrics(context.Background(), md))
 	}
 
 	require.NoError(t, batcher.Shutdown(context.Background()))
@@ -912,7 +912,7 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 			logs.At(logIndex).SetSeverityText(getTestLogSeverityText(requestNum, logIndex))
 		}
 		ld.ResourceLogs().At(0).CopyTo(sentResourceLogs.AppendEmpty())
-		assert.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
+		require.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
 	}
 
 	// Added to test case with empty resources sent.
@@ -960,7 +960,7 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		ld := testdata.GenerateLogs(logsPerRequest)
 		size += sizer.LogsSize(ld)
-		assert.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
+		require.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
 	}
 	require.NoError(t, batcher.Shutdown(context.Background()))
 
@@ -1072,7 +1072,7 @@ func TestBatchLogsProcessor_Timeout(t *testing.T) {
 	start := time.Now()
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		ld := testdata.GenerateLogs(logsPerRequest)
-		assert.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
+		require.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
 	}
 
 	// Wait for at least one batch to be sent.
@@ -1120,7 +1120,7 @@ func TestBatchLogProcessor_Shutdown(t *testing.T) {
 
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		ld := testdata.GenerateLogs(logsPerRequest)
-		assert.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
+		require.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
 	}
 
 	require.NoError(t, batcher.Shutdown(context.Background()))
@@ -1242,7 +1242,7 @@ func TestBatchProcessorSpansBatchedByMetadata(t *testing.T) {
 		// use round-robin to assign context.
 		num := requestNum % len(callCtxs)
 		expectByContext[num] += spansPerRequest
-		assert.NoError(t, batcher.ConsumeTraces(callCtxs[num], td))
+		require.NoError(t, batcher.ConsumeTraces(callCtxs[num], td))
 	}
 
 	require.NoError(t, batcher.Shutdown(context.Background()))
@@ -1299,7 +1299,7 @@ func TestBatchProcessorMetadataCardinalityLimit(t *testing.T) {
 			}),
 		})
 
-		assert.NoError(t, batcher.ConsumeTraces(ctx, td))
+		require.NoError(t, batcher.ConsumeTraces(ctx, td))
 	}
 
 	td := testdata.GenerateTraces(1)
@@ -1310,7 +1310,7 @@ func TestBatchProcessorMetadataCardinalityLimit(t *testing.T) {
 	})
 	err = batcher.ConsumeTraces(ctx, td)
 
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.True(t, consumererror.IsPermanent(err))
 	assert.Contains(t, err.Error(), "too many")
 
@@ -1339,7 +1339,7 @@ func TestBatchZeroConfig(t *testing.T) {
 		cnt := logsPerRequest + requestNum
 		expect += cnt
 		ld := testdata.GenerateLogs(cnt)
-		assert.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
+		require.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
 	}
 
 	// Wait for all batches.
@@ -1377,7 +1377,7 @@ func TestBatchSplitOnly(t *testing.T) {
 
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		ld := testdata.GenerateLogs(logsPerRequest)
-		assert.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
+		require.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
 	}
 
 	// Wait for all batches.
