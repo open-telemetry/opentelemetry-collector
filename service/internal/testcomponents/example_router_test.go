@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -24,11 +25,11 @@ func TestExampleRouter(t *testing.T) {
 	conn := &ExampleRouter{}
 	host := componenttest.NewNopHost()
 	assert.False(t, conn.Started())
-	assert.NoError(t, conn.Start(context.Background(), host))
+	require.NoError(t, conn.Start(context.Background(), host))
 	assert.True(t, conn.Started())
 
 	assert.False(t, conn.Stopped())
-	assert.NoError(t, conn.Shutdown(context.Background()))
+	require.NoError(t, conn.Shutdown(context.Background()))
 	assert.True(t, conn.Stopped())
 }
 
@@ -51,16 +52,16 @@ func TestTracesRouter(t *testing.T) {
 	cfg := ExampleRouterConfig{Traces: &LeftRightConfig{Left: leftID, Right: rightID}}
 	tr, err := ExampleRouterFactory.CreateTracesToTraces(
 		context.Background(), connectortest.NewNopSettings(), cfg, router)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.False(t, tr.Capabilities().MutatesData)
 
 	td := testdata.GenerateTraces(1)
 
-	assert.NoError(t, tr.ConsumeTraces(context.Background(), td))
+	require.NoError(t, tr.ConsumeTraces(context.Background(), td))
 	assert.Len(t, sinkRight.AllTraces(), 1)
 	assert.Empty(t, sinkLeft.AllTraces())
 
-	assert.NoError(t, tr.ConsumeTraces(context.Background(), td))
+	require.NoError(t, tr.ConsumeTraces(context.Background(), td))
 	assert.Len(t, sinkRight.AllTraces(), 1)
 	assert.Len(t, sinkLeft.AllTraces(), 1)
 
@@ -90,16 +91,16 @@ func TestMetricsRouter(t *testing.T) {
 	cfg := ExampleRouterConfig{Metrics: &LeftRightConfig{Left: leftID, Right: rightID}}
 	mr, err := ExampleRouterFactory.CreateMetricsToMetrics(
 		context.Background(), connectortest.NewNopSettings(), cfg, router)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.False(t, mr.Capabilities().MutatesData)
 
 	md := testdata.GenerateMetrics(1)
 
-	assert.NoError(t, mr.ConsumeMetrics(context.Background(), md))
+	require.NoError(t, mr.ConsumeMetrics(context.Background(), md))
 	assert.Len(t, sinkRight.AllMetrics(), 1)
 	assert.Empty(t, sinkLeft.AllMetrics())
 
-	assert.NoError(t, mr.ConsumeMetrics(context.Background(), md))
+	require.NoError(t, mr.ConsumeMetrics(context.Background(), md))
 	assert.Len(t, sinkRight.AllMetrics(), 1)
 	assert.Len(t, sinkLeft.AllMetrics(), 1)
 
@@ -129,16 +130,16 @@ func TestLogsRouter(t *testing.T) {
 	cfg := ExampleRouterConfig{Logs: &LeftRightConfig{Left: leftID, Right: rightID}}
 	lr, err := ExampleRouterFactory.CreateLogsToLogs(
 		context.Background(), connectortest.NewNopSettings(), cfg, router)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.False(t, lr.Capabilities().MutatesData)
 
 	ld := testdata.GenerateLogs(1)
 
-	assert.NoError(t, lr.ConsumeLogs(context.Background(), ld))
+	require.NoError(t, lr.ConsumeLogs(context.Background(), ld))
 	assert.Len(t, sinkRight.AllLogs(), 1)
 	assert.Empty(t, sinkLeft.AllLogs())
 
-	assert.NoError(t, lr.ConsumeLogs(context.Background(), ld))
+	require.NoError(t, lr.ConsumeLogs(context.Background(), ld))
 	assert.Len(t, sinkRight.AllLogs(), 1)
 	assert.Len(t, sinkLeft.AllLogs(), 1)
 
@@ -168,16 +169,16 @@ func TestProfilesRouter(t *testing.T) {
 	cfg := ExampleRouterConfig{Profiles: &LeftRightConfig{Left: leftID, Right: rightID}}
 	tr, err := ExampleRouterFactory.CreateProfilesToProfiles(
 		context.Background(), connectortest.NewNopSettings(), cfg, router)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.False(t, tr.Capabilities().MutatesData)
 
 	td := testdata.GenerateProfiles(1)
 
-	assert.NoError(t, tr.ConsumeProfiles(context.Background(), td))
+	require.NoError(t, tr.ConsumeProfiles(context.Background(), td))
 	assert.Len(t, sinkRight.AllProfiles(), 1)
 	assert.Empty(t, sinkLeft.AllProfiles())
 
-	assert.NoError(t, tr.ConsumeProfiles(context.Background(), td))
+	require.NoError(t, tr.ConsumeProfiles(context.Background(), td))
 	assert.Len(t, sinkRight.AllProfiles(), 1)
 	assert.Len(t, sinkLeft.AllProfiles(), 1)
 

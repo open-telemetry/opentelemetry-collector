@@ -46,7 +46,7 @@ func TestExport_EmptyRequest(t *testing.T) {
 
 	logClient := makeLogsServiceClient(t, logSink)
 	resp, err := logClient.Export(context.Background(), plogotlp.NewExportRequest())
-	assert.NoError(t, err, "Failed to export trace: %v", err)
+	require.NoError(t, err, "Failed to export trace: %v", err)
 	assert.NotNil(t, resp, "The response is missing")
 }
 
@@ -56,7 +56,7 @@ func TestExport_NonPermanentErrorConsumer(t *testing.T) {
 
 	logClient := makeLogsServiceClient(t, consumertest.NewErr(errors.New("my error")))
 	resp, err := logClient.Export(context.Background(), req)
-	assert.EqualError(t, err, "rpc error: code = Unavailable desc = my error")
+	require.EqualError(t, err, "rpc error: code = Unavailable desc = my error")
 	assert.IsType(t, status.Error(codes.Unknown, ""), err)
 	assert.Equal(t, plogotlp.ExportResponse{}, resp)
 }
@@ -67,7 +67,7 @@ func TestExport_PermanentErrorConsumer(t *testing.T) {
 
 	logClient := makeLogsServiceClient(t, consumertest.NewErr(consumererror.NewPermanent(errors.New("my error"))))
 	resp, err := logClient.Export(context.Background(), req)
-	assert.EqualError(t, err, "rpc error: code = Internal desc = Permanent error: my error")
+	require.EqualError(t, err, "rpc error: code = Internal desc = Permanent error: my error")
 	assert.IsType(t, status.Error(codes.Unknown, ""), err)
 	assert.Equal(t, plogotlp.ExportResponse{}, resp)
 }

@@ -38,7 +38,7 @@ func TestNewSharedComponentsCreateError(t *testing.T) {
 		func() (*baseComponent, error) { return nil, myErr },
 		newNopTelemetrySettings(),
 	)
-	assert.ErrorIs(t, err, myErr)
+	require.ErrorIs(t, err, myErr)
 	assert.Empty(t, comps.components)
 }
 
@@ -64,7 +64,7 @@ func TestSharedComponentsLoadOrStore(t *testing.T) {
 	assert.Same(t, got, gotSecond)
 
 	// Shutdown nop will remove
-	assert.NoError(t, got.Shutdown(context.Background()))
+	require.NoError(t, got.Shutdown(context.Background()))
 	assert.Empty(t, comps.components)
 	gotThird, err := comps.LoadOrStore(
 		id,
@@ -99,13 +99,13 @@ func TestSharedComponent(t *testing.T) {
 	assert.Equal(t, wantErr, got.Start(context.Background(), componenttest.NewNopHost()))
 	assert.Equal(t, 1, calledStart)
 	// Second time is not called anymore.
-	assert.NoError(t, got.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, got.Start(context.Background(), componenttest.NewNopHost()))
 	assert.Equal(t, 1, calledStart)
 	// first time, shutdown is called.
 	assert.Equal(t, wantErr, got.Shutdown(context.Background()))
 	assert.Equal(t, 1, calledStop)
 	// Second time is not called anymore.
-	assert.NoError(t, got.Shutdown(context.Background()))
+	require.NoError(t, got.Shutdown(context.Background()))
 	assert.Equal(t, 1, calledStop)
 }
 

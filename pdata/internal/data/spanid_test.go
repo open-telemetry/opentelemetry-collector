@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSpanID(t *testing.T) {
@@ -26,11 +27,11 @@ func TestSpanIDMarshal(t *testing.T) {
 	sid := SpanID([8]byte{})
 	n, err := sid.MarshalTo(buf)
 	assert.EqualValues(t, 0, n)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	sid = [8]byte{1, 2, 3, 4, 5, 6, 7, 8}
 	n, err = sid.MarshalTo(buf)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.EqualValues(t, 8, n)
 	assert.EqualValues(t, []byte{1, 2, 3, 4, 5, 6, 7, 8}, buf[0:8])
 
@@ -42,7 +43,7 @@ func TestSpanIDMarshalJSON(t *testing.T) {
 	sid := SpanID([8]byte{})
 	json, err := sid.MarshalJSON()
 	assert.EqualValues(t, []byte(`""`), json)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	sid = [8]byte{0x12, 0x23, 0xAD, 0x12, 0x23, 0xAD, 0x12, 0x23}
 	json, err = sid.MarshalJSON()
@@ -55,15 +56,15 @@ func TestSpanIDUnmarshal(t *testing.T) {
 
 	sid := SpanID{}
 	err := sid.Unmarshal(buf[0:8])
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.EqualValues(t, [8]byte{0x12, 0x23, 0xAD, 0x12, 0x23, 0xAD, 0x12, 0x23}, sid)
 
 	err = sid.Unmarshal(buf[0:0])
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.EqualValues(t, [8]byte{}, sid)
 
 	err = sid.Unmarshal(nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.EqualValues(t, [8]byte{}, sid)
 
 	err = sid.Unmarshal(buf[0:3])
@@ -73,25 +74,25 @@ func TestSpanIDUnmarshal(t *testing.T) {
 func TestSpanIDUnmarshalJSON(t *testing.T) {
 	sid := SpanID{}
 	err := sid.UnmarshalJSON([]byte(`""`))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.EqualValues(t, [8]byte{}, sid)
 
 	err = sid.UnmarshalJSON([]byte(`"1234567812345678"`))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.EqualValues(t, [8]byte{0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78}, sid)
 
 	err = sid.UnmarshalJSON([]byte(`1234567812345678`))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.EqualValues(t, [8]byte{0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78}, sid)
 
 	err = sid.UnmarshalJSON([]byte(`"nothex"`))
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	err = sid.UnmarshalJSON([]byte(`"1"`))
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	err = sid.UnmarshalJSON([]byte(`"123"`))
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	err = sid.UnmarshalJSON([]byte(`"`))
 	assert.Error(t, err)

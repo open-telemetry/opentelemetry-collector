@@ -51,7 +51,7 @@ func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
 
 	require.LessOrEqual(t, 1, be.queueSender.(*queueSender).queue.Size())
 
-	assert.NoError(t, be.Shutdown(context.Background()))
+	require.NoError(t, be.Shutdown(context.Background()))
 
 	secondMockR.checkNumRequests(t, 1)
 	ocs.checkSendItemsCount(t, 3)
@@ -242,7 +242,7 @@ func TestNoCancellationContext(t *testing.T) {
 	require.Equal(t, deadline, d)
 
 	nctx := context.WithoutCancel(ctx)
-	assert.NoError(t, nctx.Err())
+	require.NoError(t, nctx.Err())
 	d, ok = nctx.Deadline()
 	assert.False(t, ok)
 	assert.True(t, d.IsZero())
@@ -250,15 +250,15 @@ func TestNoCancellationContext(t *testing.T) {
 
 func TestQueueConfig_Validate(t *testing.T) {
 	qCfg := NewDefaultQueueConfig()
-	assert.NoError(t, qCfg.Validate())
+	require.NoError(t, qCfg.Validate())
 
 	qCfg.QueueSize = 0
-	assert.EqualError(t, qCfg.Validate(), "queue size must be positive")
+	require.EqualError(t, qCfg.Validate(), "queue size must be positive")
 
 	qCfg = NewDefaultQueueConfig()
 	qCfg.NumConsumers = 0
 
-	assert.EqualError(t, qCfg.Validate(), "number of queue consumers must be positive")
+	require.EqualError(t, qCfg.Validate(), "number of queue consumers must be positive")
 
 	// Confirm Validate doesn't return error with invalid config when feature is disabled
 	qCfg.Enabled = false
@@ -436,7 +436,7 @@ func TestQueueSenderNoStartShutdown(t *testing.T) {
 		exporterID:             exporterID,
 		exporterCreateSettings: exportertest.NewNopSettings(),
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	qs := newQueueSender(queue, set, 1, "", obsrep)
 	assert.NoError(t, qs.Shutdown(context.Background()))
 }

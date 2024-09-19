@@ -46,7 +46,7 @@ func TestConfig(t *testing.T) {
 			assert.Equal(t, expCfg, actualCfg)
 
 			for _, cfg := range actualCfg {
-				assert.NoError(t, cfg.Validate())
+				require.NoError(t, cfg.Validate())
 			}
 			fs := CreateFilter(actualCfg)
 			assert.NotNil(t, fs)
@@ -68,7 +68,7 @@ func TestMatches(t *testing.T) {
 	}
 
 	for _, c := range cfg {
-		assert.NoError(t, c.Validate())
+		require.NoError(t, c.Validate())
 	}
 	fs := CreateFilter(cfg)
 

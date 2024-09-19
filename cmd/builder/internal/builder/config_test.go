@@ -28,7 +28,7 @@ func TestParseModules(t *testing.T) {
 
 	// test
 	err := cfg.ParseModules()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// verify
 	assert.Equal(t, "github.com/org/repo v0.1.2", cfg.Extensions[0].GoMod)
@@ -47,7 +47,7 @@ func TestRelativePath(t *testing.T) {
 
 	// test
 	err := cfg.ParseModules()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// verify
 	cwd, err := os.Getwd()
@@ -72,7 +72,7 @@ func TestModuleFromCore(t *testing.T) {
 
 	// test
 	err := cfg.ParseModules()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// verify
 	assert.True(t, strings.HasPrefix(cfg.Extensions[0].Name, "otlpreceiver"))
@@ -219,7 +219,7 @@ func TestDebugOptionSetConfig(t *testing.T) {
 		SkipCompilation: true,
 		SkipGetModules:  true,
 	}
-	assert.NoError(t, cfg.Validate())
+	require.NoError(t, cfg.Validate())
 	assert.True(t, cfg.Distribution.DebugCompilation)
 }
 
@@ -327,7 +327,7 @@ func TestConfmapFactoryVersions(t *testing.T) {
 func TestAddsDefaultProviders(t *testing.T) {
 	cfg := NewDefaultConfig()
 	cfg.Providers = nil
-	assert.NoError(t, cfg.ParseModules())
+	require.NoError(t, cfg.ParseModules())
 	assert.Len(t, *cfg.Providers, 5)
 }
 
