@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -221,7 +222,7 @@ func TestLogsWhenErrors(t *testing.T) {
 	ld := testdata.GenerateLogs(1)
 
 	for i := 0; i < 2; i++ {
-		assert.Error(t, lfc.ConsumeLogs(context.Background(), ld))
+		require.Error(t, lfc.ConsumeLogs(context.Background(), ld))
 	}
 
 	assert.Equal(t, ld, p3.AllLogs()[0])

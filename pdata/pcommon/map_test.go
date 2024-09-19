@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
@@ -305,7 +306,7 @@ func TestMap_Range(t *testing.T) {
 		"k_empty":  nil,
 	}
 	am := NewMap()
-	assert.NoError(t, am.FromRaw(rawMap))
+	require.NoError(t, am.FromRaw(rawMap))
 	assert.Equal(t, 5, am.Len())
 
 	calls := 0
@@ -325,17 +326,17 @@ func TestMap_Range(t *testing.T) {
 
 func TestMap_FromRaw(t *testing.T) {
 	am := NewMap()
-	assert.NoError(t, am.FromRaw(map[string]any{}))
+	require.NoError(t, am.FromRaw(map[string]any{}))
 	assert.Equal(t, 0, am.Len())
 	am.PutEmpty("k")
 	assert.Equal(t, 1, am.Len())
 
-	assert.NoError(t, am.FromRaw(nil))
+	require.NoError(t, am.FromRaw(nil))
 	assert.Equal(t, 0, am.Len())
 	am.PutEmpty("k")
 	assert.Equal(t, 1, am.Len())
 
-	assert.NoError(t, am.FromRaw(map[string]any{
+	require.NoError(t, am.FromRaw(map[string]any{
 		"k_string": "123",
 		"k_int":    123,
 		"k_double": 1.23,

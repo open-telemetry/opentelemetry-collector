@@ -628,9 +628,7 @@ func assertZPages(t *testing.T, zpagesAddr string) {
 	testZPagePathFn := func(t *testing.T, path string) {
 		client := &http.Client{}
 		resp, err := client.Get("http://" + zpagesAddr + path)
-		if !assert.NoError(t, err, "error retrieving zpage at %q", path) {
-			return
-		}
+		require.NoError(t, err, "error retrieving zpage at %q", path)
 		assert.Equal(t, http.StatusOK, resp.StatusCode, "unsuccessful zpage %q GET", path)
 		assert.NoError(t, resp.Body.Close())
 	}

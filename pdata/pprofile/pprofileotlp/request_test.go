@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var _ json.Unmarshaler = ExportRequest{}
@@ -50,10 +51,10 @@ func TestRequestToPData(t *testing.T) {
 
 func TestRequestJSON(t *testing.T) {
 	tr := NewExportRequest()
-	assert.NoError(t, tr.UnmarshalJSON(profilesRequestJSON))
+	require.NoError(t, tr.UnmarshalJSON(profilesRequestJSON))
 	assert.Equal(t, uint64(42), tr.Profiles().ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).Profile().Sample().At(0).LocationsStartIndex())
 
 	got, err := tr.MarshalJSON()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, strings.Join(strings.Fields(string(profilesRequestJSON)), ""), string(got))
 }

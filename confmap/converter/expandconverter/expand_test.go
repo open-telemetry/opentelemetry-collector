@@ -44,9 +44,9 @@ func TestNewExpandConverter(t *testing.T) {
 	expectedCfgMap, errExpected := confmaptest.LoadConf(filepath.Join("testdata", "expand-with-no-env.yaml"))
 	require.NoError(t, errExpected, "Unable to get expected config")
 
-	for _, test := range testCases {
-		t.Run(test.name, func(t *testing.T) {
-			conf, err := confmaptest.LoadConf(filepath.Join("testdata", test.name))
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			conf, err := confmaptest.LoadConf(filepath.Join("testdata", tt.name))
 			require.NoError(t, err, "Unable to get config")
 
 			// Test that expanded configs are the same with the simple config with no env vars.
@@ -271,15 +271,15 @@ func TestNewExpandConverterWithErrors(t *testing.T) {
 		},
 	}
 
-	for _, test := range testCases {
-		t.Run(test.name, func(t *testing.T) {
-			conf, err := confmaptest.LoadConf(filepath.Join("testdata", "errors", test.name))
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			conf, err := confmaptest.LoadConf(filepath.Join("testdata", "errors", tt.name))
 			require.NoError(t, err, "Unable to get config")
 
 			// Test that expanded configs are the same with the simple config with no env vars.
 			err = createConverter().Convert(context.Background(), conf)
 
-			assert.Equal(t, test.expectedError, err)
+			assert.Equal(t, tt.expectedError, err)
 		})
 	}
 }

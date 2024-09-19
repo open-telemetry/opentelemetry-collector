@@ -327,27 +327,27 @@ func TestResolver(t *testing.T) {
 		ConverterFactories: nil})
 	require.NoError(t, err)
 	_, errN := resolver.Resolve(context.Background())
-	assert.NoError(t, errN)
+	require.NoError(t, errN)
 	assert.Equal(t, int32(0), numCalls.Load())
 
 	errW := <-resolver.Watch()
-	assert.NoError(t, errW)
+	require.NoError(t, errW)
 
 	// Repeat Resolve/Watch.
 
 	_, errN = resolver.Resolve(context.Background())
-	assert.NoError(t, errN)
+	require.NoError(t, errN)
 	assert.Equal(t, int32(1), numCalls.Load())
 
 	errW = <-resolver.Watch()
-	assert.NoError(t, errW)
+	require.NoError(t, errW)
 
 	_, errN = resolver.Resolve(context.Background())
-	assert.NoError(t, errN)
+	require.NoError(t, errN)
 	assert.Equal(t, int32(2), numCalls.Load())
 
 	errC := resolver.Shutdown(context.Background())
-	assert.NoError(t, errC)
+	require.NoError(t, errC)
 	assert.Equal(t, int32(3), numCalls.Load())
 }
 
@@ -382,7 +382,7 @@ func TestResolverShutdownClosesWatch(t *testing.T) {
 		ConverterFactories: nil})
 	require.NoError(t, err)
 	_, errN := resolver.Resolve(context.Background())
-	assert.NoError(t, errN)
+	require.NoError(t, errN)
 
 	var watcherWG sync.WaitGroup
 	watcherWG.Add(1)
@@ -394,7 +394,7 @@ func TestResolverShutdownClosesWatch(t *testing.T) {
 		watcherWG.Done()
 	}()
 
-	assert.NoError(t, resolver.Shutdown(context.Background()))
+	require.NoError(t, resolver.Shutdown(context.Background()))
 	watcherWG.Wait()
 }
 
