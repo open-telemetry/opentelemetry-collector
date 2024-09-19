@@ -1,0 +1,87 @@
+"$schema": http://json-schema.org/draft-04/schema#
+id: opentelemetry.io/collector/config/configtls/configtls
+$defs:
+  config:
+    type: object
+    title: Config
+    properties:
+      ca_file:
+        type: string
+        default: ""
+      ca_pem:
+        type: string
+        goType:
+          name: String
+          package: go.opentelemetry.io/collector/config/configopaque
+        default: ""
+      include_system_ca_certs_pool:
+        type: boolean
+        default: true
+      cert_file:
+        type: string
+        default: ""
+      cert_pem:
+        type: string
+        default: ""
+        goType:
+          name: String
+          package: go.opentelemetry.io/collector/config/configopaque
+      key_file:
+        type: string
+        default: ""
+      key_pem:
+        type: string
+        default: ""
+        goType:
+          name: String
+          package: go.opentelemetry.io/collector/config/configopaque
+      min_version:
+        type: string
+        default: ""
+      max_version:
+        type: string
+        default: ""
+      cipher_suites:
+        type: array
+        items:
+          type: string
+      reload_interval:
+        type: string
+        format: duration
+        default: "PT33.3S"
+      insecure:
+        type: boolean
+        default: false
+      insecure_skip_verify:
+        type: boolean
+        default: false
+      server_name_override:
+        type: string
+        default: ""
+  client_config:
+    type: object
+    title: ClientConfig
+    allOf:
+      - "$ref": "#/$defs/config"
+    properties:
+      insecure:
+        type: boolean
+        default: true
+      insecure_skip_verify:
+        type: boolean
+        default: true
+      server_name_override:
+        type: string
+        default: ""
+  server_config:
+    type: object
+    title: ServerConfig
+    allOf:
+      - "$ref": "#/$defs/config"
+    properties:
+      client_ca_file_reload:
+        type: boolean
+        default: true
+      client_ca_file:
+        type: string
+        default: ""

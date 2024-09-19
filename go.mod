@@ -118,3 +118,5 @@ replace go.opentelemetry.io/collector/pdata/pprofile => ./pdata/pprofile
 replace go.opentelemetry.io/collector/internal/globalgates => ./internal/globalgates
 
 replace go.opentelemetry.io/collector/consumer/consumerprofiles => ./consumer/consumerprofiles
+
+replace github.com/atombender/go-jsonschema => github.com/ptodev/go-jsonschema v0.0.0-20240813163654-5518ba93ee84

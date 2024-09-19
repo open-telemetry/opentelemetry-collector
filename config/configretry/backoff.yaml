@@ -1,0 +1,27 @@
+"$schema": http://json-schema.org/draft-04/schema#
+id: opentelemetry.io/collector/config/configretry/backoff/retry_on_failure
+"$defs":
+  retry_on_failure:
+    type: object
+    properties:
+      enabled:
+        type: boolean
+        default: true
+      initial_interval:
+        type: string
+        format: duration
+        default: "PT5S"
+      randomization_factor:
+        type: number
+        default: 0.5
+      multiplier:
+        type: number
+        default: 1.5
+      max_interval:
+        type: string
+        format: duration
+        default: "PT30S"
+      max_elapsed_time:
+        type: string
+        format: duration
+        default: "PT5M"

@@ -85,9 +85,9 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				IdleConnTimeout:      &idleConnTimeout,
 				Compression:          "",
 				DisableKeepAlives:    true,
-				Cookies:              &CookiesConfig{Enabled: true},
-				HTTP2ReadIdleTimeout: idleConnTimeout,
-				HTTP2PingTimeout:     http2PingTimeout,
+				Cookies:              &ClientConfigCookies{Enabled: true},
+				Http2ReadIdleTimeout: idleConnTimeout,
+				Http2PingTimeout:     http2PingTimeout,
 			},
 			shouldError: false,
 		},
@@ -106,8 +106,8 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				IdleConnTimeout:      &idleConnTimeout,
 				Compression:          "none",
 				DisableKeepAlives:    true,
-				HTTP2ReadIdleTimeout: idleConnTimeout,
-				HTTP2PingTimeout:     http2PingTimeout,
+				Http2ReadIdleTimeout: idleConnTimeout,
+				Http2PingTimeout:     http2PingTimeout,
 			},
 			shouldError: false,
 		},
@@ -126,8 +126,8 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				IdleConnTimeout:      &idleConnTimeout,
 				Compression:          "gzip",
 				DisableKeepAlives:    true,
-				HTTP2ReadIdleTimeout: idleConnTimeout,
-				HTTP2PingTimeout:     http2PingTimeout,
+				Http2ReadIdleTimeout: idleConnTimeout,
+				Http2PingTimeout:     http2PingTimeout,
 			},
 			shouldError: false,
 		},
@@ -146,8 +146,8 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				IdleConnTimeout:      &idleConnTimeout,
 				Compression:          "gzip",
 				DisableKeepAlives:    true,
-				HTTP2ReadIdleTimeout: idleConnTimeout,
-				HTTP2PingTimeout:     http2PingTimeout,
+				Http2ReadIdleTimeout: idleConnTimeout,
+				Http2PingTimeout:     http2PingTimeout,
 			},
 			shouldError: false,
 		},
@@ -255,7 +255,7 @@ func TestProxyURL(t *testing.T) {
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
 			s := NewDefaultClientConfig()
-			s.ProxyURL = tC.proxyURL
+			s.ProxyUrl = tC.proxyURL
 
 			tt := componenttest.NewNopTelemetrySettings()
 			tt.TracerProvider = nil
@@ -299,10 +299,10 @@ func TestHTTPClientSettingsError(t *testing.T) {
 				Endpoint: "",
 				TLSSetting: configtls.ClientConfig{
 					Config: configtls.Config{
-						CAFile: "/doesnt/exist",
+						CaFile: "/doesnt/exist",
 					},
-					Insecure:   false,
-					ServerName: "",
+					Insecure:           false,
+					ServerNameOverride: "",
 				},
 			},
 		},
@@ -314,8 +314,8 @@ func TestHTTPClientSettingsError(t *testing.T) {
 					Config: configtls.Config{
 						CertFile: "/doesnt/exist",
 					},
-					Insecure:   false,
-					ServerName: "",
+					Insecure:           false,
+					ServerNameOverride: "",
 				},
 			},
 		},
@@ -323,7 +323,7 @@ func TestHTTPClientSettingsError(t *testing.T) {
 			err: "failed to resolve authenticator \"dummy\": authenticator not found",
 			settings: ClientConfig{
 				Endpoint: "https://localhost:1234/v1/traces",
-				Auth:     &configauth.Authentication{AuthenticatorID: dummyID},
+				Auth:     &configauth.Authentication{Authenticator: dummyID},
 			},
 		},
 	}
@@ -361,7 +361,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			name: "with_auth_configuration_and_no_extension",
 			settings: ClientConfig{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Authentication{AuthenticatorID: dummyID},
+				Auth:     &configauth.Authentication{Authenticator: dummyID},
 			},
 			shouldErr: true,
 			host: &mockHost{
@@ -374,7 +374,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			name: "with_auth_configuration_and_no_extension_map",
 			settings: ClientConfig{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Authentication{AuthenticatorID: dummyID},
+				Auth:     &configauth.Authentication{Authenticator: dummyID},
 			},
 			shouldErr: true,
 			host:      componenttest.NewNopHost(),
@@ -383,7 +383,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			name: "with_auth_configuration_has_extension",
 			settings: ClientConfig{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Authentication{AuthenticatorID: mockID},
+				Auth:     &configauth.Authentication{Authenticator: mockID},
 			},
 			shouldErr: false,
 			host: &mockHost{
@@ -396,7 +396,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			name: "with_auth_configuration_has_extension_and_headers",
 			settings: ClientConfig{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Authentication{AuthenticatorID: mockID},
+				Auth:     &configauth.Authentication{Authenticator: mockID},
 				Headers:  map[string]configopaque.String{"foo": "bar"},
 			},
 			shouldErr: false,
@@ -410,7 +410,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			name: "with_auth_configuration_has_extension_and_compression",
 			settings: ClientConfig{
 				Endpoint:    "localhost:1234",
-				Auth:        &configauth.Authentication{AuthenticatorID: component.MustNewID("mock")},
+				Auth:        &configauth.Authentication{Authenticator: component.MustNewID("mock")},
 				Compression: configcompression.TypeGzip,
 			},
 			shouldErr: false,
@@ -424,7 +424,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			name: "with_auth_configuration_has_err_extension",
 			settings: ClientConfig{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Authentication{AuthenticatorID: mockID},
+				Auth:     &configauth.Authentication{Authenticator: mockID},
 			},
 			shouldErr: true,
 			host: &mockHost{
@@ -482,7 +482,7 @@ func TestHTTPServerSettingsError(t *testing.T) {
 				Endpoint: "localhost:0",
 				TLSSetting: &configtls.ServerConfig{
 					Config: configtls.Config{
-						CAFile: "/doesnt/exist",
+						CaFile: "/doesnt/exist",
 					},
 				},
 			},
@@ -503,7 +503,7 @@ func TestHTTPServerSettingsError(t *testing.T) {
 			settings: ServerConfig{
 				Endpoint: "localhost:0",
 				TLSSetting: &configtls.ServerConfig{
-					ClientCAFile: "/doesnt/exist",
+					ClientCaFile: "/doesnt/exist",
 				},
 			},
 		},
@@ -582,32 +582,32 @@ func TestHttpReception(t *testing.T) {
 			name: "TLS",
 			tlsServerCreds: &configtls.ServerConfig{
 				Config: configtls.Config{
-					CAFile:   filepath.Join("testdata", "ca.crt"),
+					CaFile:   filepath.Join("testdata", "ca.crt"),
 					CertFile: filepath.Join("testdata", "server.crt"),
 					KeyFile:  filepath.Join("testdata", "server.key"),
 				},
 			},
 			tlsClientCreds: &configtls.ClientConfig{
 				Config: configtls.Config{
-					CAFile: filepath.Join("testdata", "ca.crt"),
+					CaFile: filepath.Join("testdata", "ca.crt"),
 				},
-				ServerName: "localhost",
+				ServerNameOverride: "localhost",
 			},
 		},
 		{
 			name: "TLS (HTTP/1.1)",
 			tlsServerCreds: &configtls.ServerConfig{
 				Config: configtls.Config{
-					CAFile:   filepath.Join("testdata", "ca.crt"),
+					CaFile:   filepath.Join("testdata", "ca.crt"),
 					CertFile: filepath.Join("testdata", "server.crt"),
 					KeyFile:  filepath.Join("testdata", "server.key"),
 				},
 			},
 			tlsClientCreds: &configtls.ClientConfig{
 				Config: configtls.Config{
-					CAFile: filepath.Join("testdata", "ca.crt"),
+					CaFile: filepath.Join("testdata", "ca.crt"),
 				},
-				ServerName: "localhost",
+				ServerNameOverride: "localhost",
 			},
 			forceHTTP1: true,
 		},
@@ -615,14 +615,14 @@ func TestHttpReception(t *testing.T) {
 			name: "NoServerCertificates",
 			tlsServerCreds: &configtls.ServerConfig{
 				Config: configtls.Config{
-					CAFile: filepath.Join("testdata", "ca.crt"),
+					CaFile: filepath.Join("testdata", "ca.crt"),
 				},
 			},
 			tlsClientCreds: &configtls.ClientConfig{
 				Config: configtls.Config{
-					CAFile: filepath.Join("testdata", "ca.crt"),
+					CaFile: filepath.Join("testdata", "ca.crt"),
 				},
-				ServerName: "localhost",
+				ServerNameOverride: "localhost",
 			},
 			hasError: true,
 		},
@@ -630,36 +630,36 @@ func TestHttpReception(t *testing.T) {
 			name: "mTLS",
 			tlsServerCreds: &configtls.ServerConfig{
 				Config: configtls.Config{
-					CAFile:   filepath.Join("testdata", "ca.crt"),
+					CaFile:   filepath.Join("testdata", "ca.crt"),
 					CertFile: filepath.Join("testdata", "server.crt"),
 					KeyFile:  filepath.Join("testdata", "server.key"),
 				},
-				ClientCAFile: filepath.Join("testdata", "ca.crt"),
+				ClientCaFile: filepath.Join("testdata", "ca.crt"),
 			},
 			tlsClientCreds: &configtls.ClientConfig{
 				Config: configtls.Config{
-					CAFile:   filepath.Join("testdata", "ca.crt"),
+					CaFile:   filepath.Join("testdata", "ca.crt"),
 					CertFile: filepath.Join("testdata", "client.crt"),
 					KeyFile:  filepath.Join("testdata", "client.key"),
 				},
-				ServerName: "localhost",
+				ServerNameOverride: "localhost",
 			},
 		},
 		{
 			name: "NoClientCertificate",
 			tlsServerCreds: &configtls.ServerConfig{
 				Config: configtls.Config{
-					CAFile:   filepath.Join("testdata", "ca.crt"),
+					CaFile:   filepath.Join("testdata", "ca.crt"),
 					CertFile: filepath.Join("testdata", "server.crt"),
 					KeyFile:  filepath.Join("testdata", "server.key"),
 				},
-				ClientCAFile: filepath.Join("testdata", "ca.crt"),
+				ClientCaFile: filepath.Join("testdata", "ca.crt"),
 			},
 			tlsClientCreds: &configtls.ClientConfig{
 				Config: configtls.Config{
-					CAFile: filepath.Join("testdata", "ca.crt"),
+					CaFile: filepath.Join("testdata", "ca.crt"),
 				},
-				ServerName: "localhost",
+				ServerNameOverride: "localhost",
 			},
 			hasError: true,
 		},
@@ -667,19 +667,19 @@ func TestHttpReception(t *testing.T) {
 			name: "WrongClientCA",
 			tlsServerCreds: &configtls.ServerConfig{
 				Config: configtls.Config{
-					CAFile:   filepath.Join("testdata", "ca.crt"),
+					CaFile:   filepath.Join("testdata", "ca.crt"),
 					CertFile: filepath.Join("testdata", "server.crt"),
 					KeyFile:  filepath.Join("testdata", "server.key"),
 				},
-				ClientCAFile: filepath.Join("testdata", "server.crt"),
+				ClientCaFile: filepath.Join("testdata", "server.crt"),
 			},
 			tlsClientCreds: &configtls.ClientConfig{
 				Config: configtls.Config{
-					CAFile:   filepath.Join("testdata", "ca.crt"),
+					CaFile:   filepath.Join("testdata", "ca.crt"),
 					CertFile: filepath.Join("testdata", "client.crt"),
 					KeyFile:  filepath.Join("testdata", "client.key"),
 				},
-				ServerName: "localhost",
+				ServerNameOverride: "localhost",
 			},
 			hasError: true,
 		},
@@ -748,7 +748,7 @@ func TestHttpCors(t *testing.T) {
 	tests := []struct {
 		name string
 
-		*CORSConfig
+		*Cors
 
 		allowedWorks     bool
 		disallowedWorks  bool
@@ -762,14 +762,14 @@ func TestHttpCors(t *testing.T) {
 		},
 		{
 			name:             "emptyCORS",
-			CORSConfig:       NewDefaultCORSConfig(),
+			Cors:             NewDefaultCORSConfig(),
 			allowedWorks:     false,
 			disallowedWorks:  false,
 			extraHeaderWorks: false,
 		},
 		{
 			name: "OriginCORS",
-			CORSConfig: &CORSConfig{
+			Cors: &Cors{
 				AllowedOrigins: []string{"allowed-*.com"},
 			},
 			allowedWorks:     true,
@@ -778,7 +778,7 @@ func TestHttpCors(t *testing.T) {
 		},
 		{
 			name: "CacheableCORS",
-			CORSConfig: &CORSConfig{
+			Cors: &Cors{
 				AllowedOrigins: []string{"allowed-*.com"},
 				MaxAge:         360,
 			},
@@ -788,7 +788,7 @@ func TestHttpCors(t *testing.T) {
 		},
 		{
 			name: "HeaderCORS",
-			CORSConfig: &CORSConfig{
+			Cors: &Cors{
 				AllowedOrigins: []string{"allowed-*.com"},
 				AllowedHeaders: []string{"ExtraHeader"},
 			},
@@ -802,7 +802,7 @@ func TestHttpCors(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			hss := &ServerConfig{
 				Endpoint: "localhost:0",
-				CORS:     tt.CORSConfig,
+				Cors:     tt.Cors,
 			}
 
 			ln, err := hss.ToListener(context.Background())
@@ -824,18 +824,18 @@ func TestHttpCors(t *testing.T) {
 			url := fmt.Sprintf("http://%s", ln.Addr().String())
 
 			expectedStatus := http.StatusNoContent
-			if tt.CORSConfig == nil || len(tt.AllowedOrigins) == 0 {
+			if tt.Cors == nil || len(tt.AllowedOrigins) == 0 {
 				expectedStatus = http.StatusOK
 			}
 
-			// Verify allowed domain gets responses that allow CORS.
-			verifyCorsResp(t, url, "allowed-origin.com", tt.CORSConfig, false, expectedStatus, tt.allowedWorks)
+			// Verify allowed domain gets responses that allow Cors.
+			verifyCorsResp(t, url, "allowed-origin.com", tt.Cors, false, expectedStatus, tt.allowedWorks)
 
-			// Verify allowed domain and extra headers gets responses that allow CORS.
-			verifyCorsResp(t, url, "allowed-origin.com", tt.CORSConfig, true, expectedStatus, tt.extraHeaderWorks)
+			// Verify allowed domain and extra headers gets responses that allow Cors.
+			verifyCorsResp(t, url, "allowed-origin.com", tt.Cors, true, expectedStatus, tt.extraHeaderWorks)
 
-			// Verify disallowed domain gets responses that disallow CORS.
-			verifyCorsResp(t, url, "disallowed-origin.com", tt.CORSConfig, false, expectedStatus, tt.disallowedWorks)
+			// Verify disallowed domain gets responses that disallow Cors.
+			verifyCorsResp(t, url, "disallowed-origin.com", tt.Cors, false, expectedStatus, tt.disallowedWorks)
 
 			require.NoError(t, s.Close())
 		})
@@ -845,10 +845,10 @@ func TestHttpCors(t *testing.T) {
 func TestHttpCorsInvalidSettings(t *testing.T) {
 	hss := &ServerConfig{
 		Endpoint: "localhost:0",
-		CORS:     &CORSConfig{AllowedHeaders: []string{"some-header"}},
+		Cors:     &Cors{AllowedHeaders: []string{"some-header"}},
 	}
 
-	// This effectively does not enable CORS but should also not cause an error
+	// This effectively does not enable Cors but should also not cause an error
 	s, err := hss.ToServer(
 		context.Background(),
 		componenttest.NewNopHost(),
@@ -862,12 +862,12 @@ func TestHttpCorsInvalidSettings(t *testing.T) {
 func TestHttpCorsWithSettings(t *testing.T) {
 	hss := &ServerConfig{
 		Endpoint: "localhost:0",
-		CORS: &CORSConfig{
+		Cors: &Cors{
 			AllowedOrigins: []string{"*"},
 		},
-		Auth: &AuthConfig{
+		Auth: &ServerConfigAuth{
 			Authentication: configauth.Authentication{
-				AuthenticatorID: mockID,
+				Authenticator: mockID,
 			},
 		},
 	}
@@ -943,7 +943,7 @@ func TestHttpServerHeaders(t *testing.T) {
 
 			url := fmt.Sprintf("http://%s", ln.Addr().String())
 
-			// Verify allowed domain gets responses that allow CORS.
+			// Verify allowed domain gets responses that allow Cors.
 			verifyHeadersResp(t, url, tt.headers)
 
 			require.NoError(t, s.Close())
@@ -951,7 +951,7 @@ func TestHttpServerHeaders(t *testing.T) {
 	}
 }
 
-func verifyCorsResp(t *testing.T, url string, origin string, set *CORSConfig, extraHeader bool, wantStatus int, wantAllowed bool) {
+func verifyCorsResp(t *testing.T, url string, origin string, set *Cors, extraHeader bool, wantStatus int, wantAllowed bool) {
 	req, err := http.NewRequest(http.MethodOptions, url, nil)
 	require.NoError(t, err, "Error creating trace OPTIONS request: %v", err)
 	req.Header.Set("Origin", origin)
@@ -1170,9 +1170,9 @@ func TestServerAuth(t *testing.T) {
 	authCalled := false
 	hss := ServerConfig{
 		Endpoint: "localhost:0",
-		Auth: &AuthConfig{
+		Auth: &ServerConfigAuth{
 			Authentication: configauth.Authentication{
-				AuthenticatorID: mockID,
+				Authenticator: mockID,
 			},
 		},
 	}
@@ -1206,9 +1206,9 @@ func TestServerAuth(t *testing.T) {
 
 func TestInvalidServerAuth(t *testing.T) {
 	hss := ServerConfig{
-		Auth: &AuthConfig{
+		Auth: &ServerConfigAuth{
 			Authentication: configauth.Authentication{
-				AuthenticatorID: nonExistingID,
+				Authenticator: nonExistingID,
 			},
 		},
 	}
@@ -1222,9 +1222,9 @@ func TestFailedServerAuth(t *testing.T) {
 	// prepare
 	hss := ServerConfig{
 		Endpoint: "localhost:0",
-		Auth: &AuthConfig{
+		Auth: &ServerConfigAuth{
 			Authentication: configauth.Authentication{
-				AuthenticatorID: mockID,
+				Authenticator: mockID,
 			},
 		},
 	}
@@ -1402,10 +1402,10 @@ func TestAuthWithQueryParams(t *testing.T) {
 	authCalled := false
 	hss := ServerConfig{
 		Endpoint: "localhost:0",
-		Auth: &AuthConfig{
-			RequestParameters: []string{"auth"},
+		Auth: &ServerConfigAuth{
+			RequestParams: []string{"auth"},
 			Authentication: configauth.Authentication{
-				AuthenticatorID: mockID,
+				Authenticator: mockID,
 			},
 		},
 	}
@@ -1478,16 +1478,16 @@ func BenchmarkHttpRequest(b *testing.B) {
 
 	tlsServerCreds := &configtls.ServerConfig{
 		Config: configtls.Config{
-			CAFile:   filepath.Join("testdata", "ca.crt"),
+			CaFile:   filepath.Join("testdata", "ca.crt"),
 			CertFile: filepath.Join("testdata", "server.crt"),
 			KeyFile:  filepath.Join("testdata", "server.key"),
 		},
 	}
 	tlsClientCreds := &configtls.ClientConfig{
 		Config: configtls.Config{
-			CAFile: filepath.Join("testdata", "ca.crt"),
+			CaFile: filepath.Join("testdata", "ca.crt"),
 		},
-		ServerName: "localhost",
+		ServerNameOverride: "localhost",
 	}
 
 	hss := &ServerConfig{
@@ -1555,7 +1555,7 @@ func BenchmarkHttpRequest(b *testing.B) {
 func TestDefaultHTTPServerSettings(t *testing.T) {
 	httpServerSettings := NewDefaultServerConfig()
 	assert.NotNil(t, httpServerSettings.ResponseHeaders)
-	assert.NotNil(t, httpServerSettings.CORS)
+	assert.NotNil(t, httpServerSettings.Cors)
 	assert.NotNil(t, httpServerSettings.TLSSetting)
 	assert.Equal(t, 1*time.Minute, httpServerSettings.IdleTimeout)
 	assert.Equal(t, 30*time.Second, httpServerSettings.WriteTimeout)

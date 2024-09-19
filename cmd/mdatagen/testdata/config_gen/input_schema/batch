@@ -55,28 +55,32 @@ config:
     timeout:
       type: string
       format: duration
-      default: "PT0.2S"
+      default: "PT33.3S"
+      description: 
     send_batch_size:
       type: integer
       minimum: 0
       default: 8192
-      goType:
-        name: uint32
+      description: 
     send_batch_max_size:
       type: integer
-      default: 0
       minimum: 0
-      goType:
-        name: uint32
+      default: 0
+      description: 
     metadata_keys:
       type: array
       items:
         type: string
-      default: []
       description: 
     metadata_cardinality_limit:
       type: integer
-      default: 1000
       minimum: 0
-      goType:
-        name: uint32
+      default: 1000
+      description: 
+    paulin_test:
+      type: string
+      default: "test"
+    paulin_test2:
+      type: number
+    paulin_test3:
+      type: boolean

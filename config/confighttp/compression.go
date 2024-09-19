@@ -19,12 +19,15 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 )
 
+const headerContentEncoding = "Content-Encoding"
+
 type compressRoundTripper struct {
 	rt              http.RoundTripper
 	compressionType configcompression.Type
 	compressor      *compressor
 }
 
+// TODO: Use the new Compression enum instead of "string"
 var availableDecoders = map[string]func(body io.ReadCloser) (io.ReadCloser, error){
 	"": func(io.ReadCloser) (io.ReadCloser, error) {
 		// Not a compressed payload. Nothing to do.

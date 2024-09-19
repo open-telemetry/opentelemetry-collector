@@ -1,0 +1,146 @@
+"$schema": http://json-schema.org/draft-04/schema#
+id: opentelemetry.io/collector/config/confighttp/confighttp
+"$defs":
+  cors:
+    type: object
+    title: CorsConfig
+    properties:
+      allowed_origins:
+        type: array
+        items:
+          type: string
+      allowed_headers:
+        type: array
+        items:
+          type: string
+      max_age:
+        type: integer
+        default: 0
+  client_config:
+    type: object
+    title: ClientConfig
+    properties:
+      TLSSetting:
+        "$ref": "../configtls/configtls.yaml#/$defs/client_config"
+        default:
+        additionalProperties: false
+      endpoint:
+        type: string
+        default: ''
+      proxy_url:
+        type: string
+        default: ''
+      read_buffer_size:
+        type: integer
+        default: 0
+      write_buffer_size:
+        type: integer
+        default: 0
+      timeout:
+        type: string
+        format: duration
+        default: "PT33.3S"
+      headers:
+        type: object
+        # TODO: This shouldn't generate a new type ClientConfigHeaders
+        additionalProperties:
+          type: string
+          goType:
+            # TODO: Make this import  work
+            # "$ref": "../configopaque/schema.yaml#/$defs/String"
+            name: String
+            package: go.opentelemetry.io/collector/config/configopaque
+      auth:
+        "$ref": "../../config/configauth/configauth.yaml#/$defs/authentication"
+      compression:
+        "$ref": "../configcompression/compressiontype.yaml"
+        # TODO: Why isn't the default inside compressiontype.yaml enough?
+        default: 'none'
+      max_idle_conns:
+        type: integer
+      max_idle_conns_per_host:
+        type: integer
+      max_conns_per_host:
+        type: integer
+      idle_conn_timeout:
+        type: string
+        format: duration
+      disable_keep_alives:
+        type: boolean
+        default: false
+      http2_read_idle_timeout:
+        type: string
+        format: duration
+        default: "PT33.3S"
+      http2_ping_timeout:
+        type: string
+        format: duration
+        default: "PT33.3S"
+      cookies:
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+  server_config:
+    type: object
+    title: ServerConfig
+    properties:
+      TLSSetting:
+        "$ref": "../configtls/configtls.yaml#/$defs/server_config"
+      cors:
+        "$ref": "#/$defs/cors"
+      endpoint:
+        type: string
+        default: ''
+      auth:
+        type: object
+        title: AuthConfig
+        # TODO: This allOf doesn't seem to work properly
+        # allOf:
+        # - "$ref": "../../config/configauth/configauth.yaml#/$defs/authentication"
+        properties:
+          request_params:
+            type: array
+            items:
+              type: string
+            default:
+        # TODO: The above schema doesn't work properly. It generates:
+        # if v, ok := raw["auth"]; !ok || v == nil {
+        #   plain.Auth = ServerConfigAuth{
+        #     RequestParams: []interface{}{},
+        #   }
+        # }
+      max_request_body_size:
+        type: integer
+        default: 0
+      include_metadata:
+        type: boolean
+        default: false
+      response_headers:
+        type: object
+        additionalProperties:
+          type: string
+          goType:
+            name: String
+            package: go.opentelemetry.io/collector/config/configopaque
+      compression_algorithms:
+        "$ref": "../configcompression/compressiontype.yaml"
+        # TODO: Why isn't the default inside compressiontype.yaml enough?
+        default: 'none'
+      read_timeout:
+        type: string
+        format: duration
+        default: "PT33.3S"
+      read_header_timeout:
+        type: string
+        format: duration
+        default: "PT33.3S"
+      write_timeout:
+        type: string
+        format: duration
+        default: "PT33.3S"
+      idle_timeout:
+        type: string
+        format: duration
+        default: "PT33.3S"

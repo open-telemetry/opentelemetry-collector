@@ -1,0 +1,6 @@
+"$schema": http://json-schema.org/draft-04/schema#
+id: opentelemetry.io/collector/config/configopaque
+$defs:
+  String:
+    name: String
+    package: go.opentelemetry.io/collector/config/configopaque

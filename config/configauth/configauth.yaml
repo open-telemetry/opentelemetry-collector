@@ -1,0 +1,14 @@
+"$schema": http://json-schema.org/draft-04/schema#
+id: opentelemetry.io/collector/config/configauth/configauth
+$defs:
+  authentication:
+    type: object
+    title: Authentication
+    required:
+      - authenticator
+    properties:
+      authenticator:
+        type: string
+        goType:
+          name: ID
+          package: go.opentelemetry.io/collector/component

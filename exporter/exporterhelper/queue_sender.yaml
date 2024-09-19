@@ -1,0 +1,19 @@
+$schema: http://json-schema.org/draft-04/schema#
+id: opentelemetry.io/collector/exporter/exporterhelper/queue_sender
+type: object
+$defs:
+  sending_queue:
+    type: object
+    properties:
+      enabled:
+        type: boolean
+        default: true
+      queue_size:
+        type: integer
+        default: 1000
+      num_workers:
+        type: integer
+        default": 10
+      storage:
+        type: string
+        default: ""

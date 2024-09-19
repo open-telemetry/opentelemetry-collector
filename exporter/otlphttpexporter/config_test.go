@@ -38,7 +38,7 @@ func TestUnmarshalConfig(t *testing.T) {
 	assert.NoError(t, cm.Unmarshal(&cfg))
 	assert.Equal(t,
 		&Config{
-			RetryConfig: configretry.BackOffConfig{
+			RetryOnFailure: configretry.RetryOnFailure{
 				Enabled:             true,
 				InitialInterval:     10 * time.Second,
 				RandomizationFactor: 0.7,
@@ -46,12 +46,12 @@ func TestUnmarshalConfig(t *testing.T) {
 				MaxInterval:         1 * time.Minute,
 				MaxElapsedTime:      10 * time.Minute,
 			},
-			QueueConfig: exporterhelper.QueueSettings{
+			SendingQueue: exporterhelper.SendingQueue{
 				Enabled:      true,
 				NumConsumers: 2,
 				QueueSize:    10,
 			},
-			Encoding: EncodingProto,
+			Encoding: ConfigEncodingProto,
 			ClientConfig: confighttp.ClientConfig{
 				Headers: map[string]configopaque.String{
 					"can you have a . here?": "F0000000-0000-0000-0000-000000000000",
@@ -59,12 +59,10 @@ func TestUnmarshalConfig(t *testing.T) {
 					"another":                "somevalue",
 				},
 				Endpoint: "https://1.2.3.4:1234",
-				TLSSetting: configtls.ClientConfig{
-					Config: configtls.Config{
-						CAFile:   "/var/lib/mycert.pem",
-						CertFile: "certfile",
-						KeyFile:  "keyfile",
-					},
+				TLSSetting: configtls.Config{
+					CaFile:   "/var/lib/mycert.pem",
+					CertFile: "certfile",
+					KeyFile:  "keyfile",
 					Insecure: true,
 				},
 				ReadBufferSize:  123,
@@ -87,19 +85,19 @@ func TestUnmarshalEncoding(t *testing.T) {
 	tests := []struct {
 		name          string
 		encodingBytes []byte
-		expected      EncodingType
+		expected      ConfigEncoding
 		shouldError   bool
 	}{
 		{
 			name:          "UnmarshalEncodingProto",
 			encodingBytes: []byte("proto"),
-			expected:      EncodingProto,
+			expected:      ConfigEncodingProto,
 			shouldError:   false,
 		},
 		{
 			name:          "UnmarshalEncodingJson",
 			encodingBytes: []byte("json"),
-			expected:      EncodingJSON,
+			expected:      ConfigEncodingJson,
 			shouldError:   false,
 		},
 		{
@@ -116,8 +114,8 @@ func TestUnmarshalEncoding(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var encoding EncodingType
-			err := encoding.UnmarshalText(tt.encodingBytes)
+			var encoding ConfigEncoding
+			err := encoding.UnmarshalJSON(tt.encodingBytes)
 
 			if tt.shouldError {
 				assert.Error(t, err)

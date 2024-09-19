@@ -93,9 +93,9 @@ func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 	var err error
 	var request []byte
 	switch e.config.Encoding {
-	case EncodingJSON:
+	case ConfigEncodingJson:
 		request, err = tr.MarshalJSON()
-	case EncodingProto:
+	case ConfigEncodingProto:
 		request, err = tr.MarshalProto()
 	default:
 		err = fmt.Errorf("invalid encoding: %s", e.config.Encoding)
@@ -114,9 +114,9 @@ func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) erro
 	var err error
 	var request []byte
 	switch e.config.Encoding {
-	case EncodingJSON:
+	case ConfigEncodingJson:
 		request, err = tr.MarshalJSON()
-	case EncodingProto:
+	case ConfigEncodingProto:
 		request, err = tr.MarshalProto()
 	default:
 		err = fmt.Errorf("invalid encoding: %s", e.config.Encoding)
@@ -134,9 +134,9 @@ func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 	var err error
 	var request []byte
 	switch e.config.Encoding {
-	case EncodingJSON:
+	case ConfigEncodingJson:
 		request, err = tr.MarshalJSON()
-	case EncodingProto:
+	case ConfigEncodingProto:
 		request, err = tr.MarshalProto()
 	default:
 		err = fmt.Errorf("invalid encoding: %s", e.config.Encoding)
@@ -157,9 +157,9 @@ func (e *baseExporter) export(ctx context.Context, url string, request []byte, p
 	}
 
 	switch e.config.Encoding {
-	case EncodingJSON:
+	case ConfigEncodingJson:
 		req.Header.Set("Content-Type", jsonContentType)
-	case EncodingProto:
+	case ConfigEncodingProto:
 		req.Header.Set("Content-Type", protobufContentType)
 	default:
 		return fmt.Errorf("invalid encoding: %s", e.config.Encoding)

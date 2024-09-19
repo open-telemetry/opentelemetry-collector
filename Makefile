@@ -86,6 +86,7 @@ gofmt:
 gotidy:
 	@$(MAKE) for-all-target TARGET="tidy"
 
+# TODO: Make sure the CI fails if the config.go code is out of date.
 .PHONY: gogenerate
 gogenerate:
 	cd cmd/mdatagen && $(GOCMD) install .

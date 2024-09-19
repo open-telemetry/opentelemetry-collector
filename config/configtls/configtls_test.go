@@ -51,30 +51,30 @@ func TestOptionsToConfig(t *testing.T) {
 	}{
 		{
 			name:    "should load system CA",
-			options: Config{CAFile: ""},
+			options: Config{CaFile: ""},
 		},
 		{
 			name:    "should load custom CA",
-			options: Config{CAFile: filepath.Join("testdata", "ca-1.crt")},
+			options: Config{CaFile: filepath.Join("testdata", "ca-1.crt")},
 		},
 		{
 			name:    "should load system CA and custom CA",
-			options: Config{IncludeSystemCACertsPool: true, CAFile: filepath.Join("testdata", "ca-1.crt")},
+			options: Config{IncludeSystemCaCertsPool: true, CaFile: filepath.Join("testdata", "ca-1.crt")},
 		},
 		{
 			name:        "should fail with invalid CA file path",
-			options:     Config{CAFile: filepath.Join("testdata", "not/valid")},
+			options:     Config{CaFile: filepath.Join("testdata", "not/valid")},
 			expectError: "failed to load CA",
 		},
 		{
 			name:        "should fail with invalid CA file content",
-			options:     Config{CAFile: filepath.Join("testdata", "testCA-bad.txt")},
+			options:     Config{CaFile: filepath.Join("testdata", "testCA-bad.txt")},
 			expectError: "failed to parse cert",
 		},
 		{
 			name: "should load valid TLS  settings",
 			options: Config{
-				CAFile:   filepath.Join("testdata", "ca-1.crt"),
+				CaFile:   filepath.Join("testdata", "ca-1.crt"),
 				CertFile: filepath.Join("testdata", "server-1.crt"),
 				KeyFile:  filepath.Join("testdata", "server-1.key"),
 			},
@@ -82,7 +82,7 @@ func TestOptionsToConfig(t *testing.T) {
 		{
 			name: "should fail with missing TLS KeyFile",
 			options: Config{
-				CAFile:   filepath.Join("testdata", "ca-1.crt"),
+				CaFile:   filepath.Join("testdata", "ca-1.crt"),
 				CertFile: filepath.Join("testdata", "server-1.crt"),
 			},
 			expectError: "provide both certificate and key, or neither",
@@ -90,7 +90,7 @@ func TestOptionsToConfig(t *testing.T) {
 		{
 			name: "should fail with invalid TLS KeyFile",
 			options: Config{
-				CAFile:   filepath.Join("testdata", "ca-1.crt"),
+				CaFile:   filepath.Join("testdata", "ca-1.crt"),
 				CertFile: filepath.Join("testdata", "server-1.crt"),
 				KeyFile:  filepath.Join("testdata", "not/valid"),
 			},
@@ -99,7 +99,7 @@ func TestOptionsToConfig(t *testing.T) {
 		{
 			name: "should fail with missing TLS Cert",
 			options: Config{
-				CAFile:  filepath.Join("testdata", "ca-1.crt"),
+				CaFile:  filepath.Join("testdata", "ca-1.crt"),
 				KeyFile: filepath.Join("testdata", "server-1.key"),
 			},
 			expectError: "provide both certificate and key, or neither",
@@ -107,7 +107,7 @@ func TestOptionsToConfig(t *testing.T) {
 		{
 			name: "should fail with invalid TLS Cert",
 			options: Config{
-				CAFile:   filepath.Join("testdata", "ca-1.crt"),
+				CaFile:   filepath.Join("testdata", "ca-1.crt"),
 				CertFile: filepath.Join("testdata", "not/valid"),
 				KeyFile:  filepath.Join("testdata", "server-1.key"),
 			},
@@ -116,21 +116,21 @@ func TestOptionsToConfig(t *testing.T) {
 		{
 			name: "should fail with invalid TLS CA",
 			options: Config{
-				CAFile: filepath.Join("testdata", "not/valid"),
+				CaFile: filepath.Join("testdata", "not/valid"),
 			},
 			expectError: "failed to load CA",
 		},
 		{
 			name: "should fail with invalid CA pool",
 			options: Config{
-				CAFile: filepath.Join("testdata", "testCA-bad.txt"),
+				CaFile: filepath.Join("testdata", "testCA-bad.txt"),
 			},
 			expectError: "failed to parse cert",
 		},
 		{
 			name: "should pass with valid CA pool",
 			options: Config{
-				CAFile: filepath.Join("testdata", "ca-1.crt"),
+				CaFile: filepath.Join("testdata", "ca-1.crt"),
 			},
 		},
 		{
@@ -156,12 +156,12 @@ func TestOptionsToConfig(t *testing.T) {
 		},
 		{
 			name:    "should load custom CA PEM",
-			options: Config{CAPem: readFilePanics("testdata/ca-1.crt")},
+			options: Config{CaPem: readFilePanics("testdata/ca-1.crt")},
 		},
 		{
 			name: "should load valid TLS settings with PEMs",
 			options: Config{
-				CAPem:   readFilePanics("testdata/ca-1.crt"),
+				CaPem:   readFilePanics("testdata/ca-1.crt"),
 				CertPem: readFilePanics("testdata/server-1.crt"),
 				KeyPem:  readFilePanics("testdata/server-1.key"),
 			},
@@ -182,14 +182,14 @@ func TestOptionsToConfig(t *testing.T) {
 		},
 		{
 			name:        "should fail with invalid CA PEM",
-			options:     Config{CAPem: readFilePanics("testdata/testCA-bad.txt")},
+			options:     Config{CaPem: readFilePanics("testdata/testCA-bad.txt")},
 			expectError: "failed to parse cert",
 		},
 		{
 			name: "should fail CA file and PEM both provided",
 			options: Config{
-				CAFile: "testdata/ca-1.crt",
-				CAPem:  readFilePanics("testdata/ca-1.crt"),
+				CaFile: "testdata/ca-1.crt",
+				CaPem:  readFilePanics("testdata/ca-1.crt"),
 			},
 			expectError: "provide either a CA file or the PEM-encoded string, but not both",
 		},
@@ -214,7 +214,7 @@ func TestOptionsToConfig(t *testing.T) {
 		{
 			name: "should fail to load valid TLS settings with bad Cert PEM",
 			options: Config{
-				CAPem:   readFilePanics("testdata/ca-1.crt"),
+				CaPem:   readFilePanics("testdata/ca-1.crt"),
 				CertPem: readFilePanics("testdata/testCA-bad.txt"),
 				KeyPem:  readFilePanics("testdata/server-1.key"),
 			},
@@ -223,7 +223,7 @@ func TestOptionsToConfig(t *testing.T) {
 		{
 			name: "should fail to load valid TLS settings with bad Key PEM",
 			options: Config{
-				CAPem:   readFilePanics("testdata/ca-1.crt"),
+				CaPem:   readFilePanics("testdata/ca-1.crt"),
 				CertPem: readFilePanics("testdata/server-1.crt"),
 				KeyPem:  readFilePanics("testdata/testCA-bad.txt"),
 			},
@@ -232,7 +232,7 @@ func TestOptionsToConfig(t *testing.T) {
 		{
 			name: "should fail with missing TLS KeyPem",
 			options: Config{
-				CAPem:   readFilePanics("testdata/ca-1.crt"),
+				CaPem:   readFilePanics("testdata/ca-1.crt"),
 				CertPem: readFilePanics("testdata/server-1.crt"),
 			},
 			expectError: "provide both certificate and key, or neither",
@@ -240,7 +240,7 @@ func TestOptionsToConfig(t *testing.T) {
 		{
 			name: "should fail with missing TLS Cert PEM",
 			options: Config{
-				CAPem:  readFilePanics("testdata/ca-1.crt"),
+				CaPem:  readFilePanics("testdata/ca-1.crt"),
 				KeyPem: readFilePanics("testdata/server-1.key"),
 			},
 			expectError: "provide both certificate and key, or neither",
@@ -314,7 +314,7 @@ func TestLoadTLSServerConfigError(t *testing.T) {
 	assert.Error(t, err)
 
 	tlsSetting = ServerConfig{
-		ClientCAFile: "doesnt/exist",
+		ClientCaFile: "doesnt/exist",
 	}
 	_, err = tlsSetting.LoadTLSConfig(context.Background())
 	assert.Error(t, err)
@@ -334,8 +334,8 @@ func TestLoadTLSServerConfigReload(t *testing.T) {
 	overwriteClientCA(t, tmpCaPath, "ca-1.crt")
 
 	tlsSetting := ServerConfig{
-		ClientCAFile:       tmpCaPath,
-		ReloadClientCAFile: true,
+		ClientCaFile:       tmpCaPath,
+		ClientCaFileReload: true,
 	}
 
 	tlsCfg, err := tlsSetting.LoadTLSConfig(context.Background())
@@ -365,8 +365,8 @@ func TestLoadTLSServerConfigFailingReload(t *testing.T) {
 	overwriteClientCA(t, tmpCaPath, "ca-1.crt")
 
 	tlsSetting := ServerConfig{
-		ClientCAFile:       tmpCaPath,
-		ReloadClientCAFile: true,
+		ClientCaFile:       tmpCaPath,
+		ClientCaFileReload: true,
 	}
 
 	tlsCfg, err := tlsSetting.LoadTLSConfig(context.Background())
@@ -396,8 +396,8 @@ func TestLoadTLSServerConfigFailingInitialLoad(t *testing.T) {
 	overwriteClientCA(t, tmpCaPath, "testCA-bad.txt")
 
 	tlsSetting := ServerConfig{
-		ClientCAFile:       tmpCaPath,
-		ReloadClientCAFile: true,
+		ClientCaFile:       tmpCaPath,
+		ClientCaFileReload: true,
 	}
 
 	tlsCfg, err := tlsSetting.LoadTLSConfig(context.Background())
@@ -410,8 +410,8 @@ func TestLoadTLSServerConfigWrongPath(t *testing.T) {
 	tmpCaPath := createTempClientCaFile(t)
 
 	tlsSetting := ServerConfig{
-		ClientCAFile:       tmpCaPath + "wrong-path",
-		ReloadClientCAFile: true,
+		ClientCaFile:       tmpCaPath + "wrong-path",
+		ClientCaFileReload: true,
 	}
 
 	tlsCfg, err := tlsSetting.LoadTLSConfig(context.Background())
@@ -426,8 +426,8 @@ func TestLoadTLSServerConfigFailing(t *testing.T) {
 	overwriteClientCA(t, tmpCaPath, "ca-1.crt")
 
 	tlsSetting := ServerConfig{
-		ClientCAFile:       tmpCaPath,
-		ReloadClientCAFile: true,
+		ClientCaFile:       tmpCaPath,
+		ClientCaFileReload: true,
 	}
 
 	tlsCfg, err := tlsSetting.LoadTLSConfig(context.Background())
@@ -671,7 +671,7 @@ func TestConfigValidate(t *testing.T) {
 		{name: `TLS Config ["", "asd"] to give [Error]`, tlsConfig: Config{MinVersion: "", MaxVersion: "asd"}, errorTxt: `invalid TLS max_version: unsupported TLS version: "asd"`},
 		{name: `TLS Config ["0.4", ""] to give [Error]`, tlsConfig: Config{MinVersion: "0.4", MaxVersion: ""}, errorTxt: `invalid TLS min_version: unsupported TLS version: "0.4"`},
 		{name: `TLS Config ["1.2", "1.1"] to give [Error]`, tlsConfig: Config{MinVersion: "1.2", MaxVersion: "1.1"}, errorTxt: `invalid TLS configuration: min_version cannot be greater than max_version`},
-		{name: `TLS Config with both CA File and PEM`, tlsConfig: Config{CAFile: "test", CAPem: "test"}, errorTxt: `provide either a CA file or the PEM-encoded string, but not both`},
+		{name: `TLS Config with both CA File and PEM`, tlsConfig: Config{CaFile: "test", CaPem: "test"}, errorTxt: `provide either a CA file or the PEM-encoded string, but not both`},
 	}
 
 	for _, test := range tests {
@@ -747,8 +747,8 @@ func TestSystemCertPool(t *testing.T) {
 		{
 			name: "not using system cert pool",
 			tlsConfig: Config{
-				IncludeSystemCACertsPool: false,
-				CAFile:                   filepath.Join("testdata", "ca-1.crt"),
+				IncludeSystemCaCertsPool: false,
+				CaFile:                   filepath.Join("testdata", "ca-1.crt"),
 			},
 			wantErr:      nil,
 			systemCertFn: x509.SystemCertPool,
@@ -756,8 +756,8 @@ func TestSystemCertPool(t *testing.T) {
 		{
 			name: "using system cert pool",
 			tlsConfig: Config{
-				IncludeSystemCACertsPool: true,
-				CAFile:                   filepath.Join("testdata", "ca-1.crt"),
+				IncludeSystemCaCertsPool: true,
+				CaFile:                   filepath.Join("testdata", "ca-1.crt"),
 			},
 			wantErr:      nil,
 			systemCertFn: x509.SystemCertPool,
@@ -765,8 +765,8 @@ func TestSystemCertPool(t *testing.T) {
 		{
 			name: "error loading system cert pool",
 			tlsConfig: Config{
-				IncludeSystemCACertsPool: true,
-				CAFile:                   filepath.Join("testdata", "ca-1.crt"),
+				IncludeSystemCaCertsPool: true,
+				CaFile:                   filepath.Join("testdata", "ca-1.crt"),
 			},
 			wantErr: anError,
 			systemCertFn: func() (*x509.CertPool, error) {
@@ -776,8 +776,8 @@ func TestSystemCertPool(t *testing.T) {
 		{
 			name: "nil system cert pool",
 			tlsConfig: Config{
-				IncludeSystemCACertsPool: true,
-				CAFile:                   filepath.Join("testdata", "ca-1.crt"),
+				IncludeSystemCaCertsPool: true,
+				CaFile:                   filepath.Join("testdata", "ca-1.crt"),
 			},
 			wantErr: nil,
 			systemCertFn: func() (*x509.CertPool, error) {
@@ -827,7 +827,7 @@ func TestSystemCertPool_loadCert(t *testing.T) {
 		{
 			name: "not using system cert pool",
 			tlsConfig: Config{
-				IncludeSystemCACertsPool: false,
+				IncludeSystemCaCertsPool: false,
 			},
 			wantErr:      nil,
 			systemCertFn: x509.SystemCertPool,
@@ -835,7 +835,7 @@ func TestSystemCertPool_loadCert(t *testing.T) {
 		{
 			name: "using system cert pool",
 			tlsConfig: Config{
-				IncludeSystemCACertsPool: true,
+				IncludeSystemCaCertsPool: true,
 			},
 			wantErr:      nil,
 			systemCertFn: x509.SystemCertPool,
@@ -843,7 +843,7 @@ func TestSystemCertPool_loadCert(t *testing.T) {
 		{
 			name: "error loading system cert pool",
 			tlsConfig: Config{
-				IncludeSystemCACertsPool: true,
+				IncludeSystemCaCertsPool: true,
 			},
 			wantErr: anError,
 			systemCertFn: func() (*x509.CertPool, error) {
@@ -853,7 +853,7 @@ func TestSystemCertPool_loadCert(t *testing.T) {
 		{
 			name: "nil system cert pool",
 			tlsConfig: Config{
-				IncludeSystemCACertsPool: true,
+				IncludeSystemCaCertsPool: true,
 			},
 			wantErr: nil,
 			systemCertFn: func() (*x509.CertPool, error) {
