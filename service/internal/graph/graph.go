@@ -29,7 +29,6 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
-	"go.opentelemetry.io/collector/pdata"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
 	"go.opentelemetry.io/collector/service/internal/status"
@@ -51,7 +50,7 @@ type Settings struct {
 
 	ReportStatus status.ServiceStatusFunc
 
-	Publishers []pdata.Publisher
+	Publishers []component.Publisher
 }
 
 type Graph struct {

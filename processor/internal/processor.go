@@ -5,7 +5,6 @@ package internal // import "go.opentelemetry.io/collector/processor/internal"
 
 import (
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/pdata"
 )
 
 // Settings is passed to Create* functions in Factory.
@@ -19,5 +18,5 @@ type Settings struct {
 	BuildInfo component.BuildInfo
 
 	// Publishers can be used by components to publish data after processing
-	Publishers []pdata.Publisher
+	Publishers []component.Publisher
 }

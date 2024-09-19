@@ -11,7 +11,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/pdata"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 )
@@ -50,8 +49,8 @@ func NewTracesProcessor(
 
 		// Publish data to active streams.
 		for _, p := range set.Publishers {
-			if p.IsActive(pdata.ComponentID(set.ID.String())) {
-				p.PublishTraces(pdata.ComponentID(set.ID.String()), td)
+			if p.IsActive(component.ComponentID(set.ID.String())) {
+				p.PublishTraces(component.ComponentID(set.ID.String()), td)
 			}
 		}
 
