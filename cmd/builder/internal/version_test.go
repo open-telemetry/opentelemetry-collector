@@ -64,7 +64,7 @@ var validBinVersionFunc binVersionFunc = func(_ debugReadBuildInfoFunc) (string,
 }
 
 var invalidBinVersionFunc binVersionFunc = func(_ debugReadBuildInfoFunc) (string, error) {
-	return "", fmt.Errorf("failed to get version")
+	return "", fmt.Errorf("failed to read build info")
 }
 
 func TestVersionCommand(t *testing.T) {
