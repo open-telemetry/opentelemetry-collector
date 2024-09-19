@@ -207,7 +207,7 @@ func TestBuildTagConfig(t *testing.T) {
 		SkipCompilation: true,
 		SkipGetModules:  true,
 	}
-	assert.NoError(t, cfg.Validate())
+	require.NoError(t, cfg.Validate())
 	assert.Equal(t, "customTag", cfg.Distribution.BuildTags)
 }
 
