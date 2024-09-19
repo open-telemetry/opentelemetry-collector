@@ -45,11 +45,12 @@ id: opentelemetry.io/collector/config/confighttp/confighttp
         # TODO: This shouldn't generate a new type ClientConfigHeaders
         additionalProperties:
           type: string
-          goType:
+          goJSONSchema:
             # TODO: Make this import  work
             # "$ref": "../configopaque/schema.yaml#/$defs/String"
-            name: String
-            package: go.opentelemetry.io/collector/config/configopaque
+            type: configopaque.String
+            imports:
+            - go.opentelemetry.io/collector/config/configopaque
       auth:
         "$ref": "../../config/configauth/configauth.yaml#/$defs/authentication"
       compression:
@@ -121,9 +122,10 @@ id: opentelemetry.io/collector/config/confighttp/confighttp
         type: object
         additionalProperties:
           type: string
-          goType:
-            name: String
-            package: go.opentelemetry.io/collector/config/configopaque
+          goJSONSchema:
+            type: configopaque.String
+            imports:
+            - go.opentelemetry.io/collector/config/configopaque
       compression_algorithms:
         "$ref": "../configcompression/compressiontype.yaml"
         # TODO: Why isn't the default inside compressiontype.yaml enough?

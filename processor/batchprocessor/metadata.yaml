@@ -60,14 +60,14 @@ config:
       type: integer
       minimum: 0
       default: 8192
-      goType:
-        name: uint32
+      goJSONSchema:
+        type: uint32
     send_batch_max_size:
       type: integer
       default: 0
       minimum: 0
-      goType:
-        name: uint32
+      goJSONSchema:
+        type: uint32
     metadata_keys:
       type: array
       items:
@@ -78,5 +78,5 @@ config:
       type: integer
       default: 1000
       minimum: 0
-      goType:
-        name: uint32
+      goJSONSchema:
+        type: uint32

@@ -10,9 +10,10 @@ $defs:
         default: ""
       ca_pem:
         type: string
-        goType:
-          name: String
-          package: go.opentelemetry.io/collector/config/configopaque
+        goJSONSchema:
+          type: configopaque.String
+          imports:
+          - go.opentelemetry.io/collector/config/configopaque
         default: ""
       include_system_ca_certs_pool:
         type: boolean
@@ -23,18 +24,20 @@ $defs:
       cert_pem:
         type: string
         default: ""
-        goType:
-          name: String
-          package: go.opentelemetry.io/collector/config/configopaque
+        goJSONSchema:
+          type: configopaque.String
+          imports:
+          - go.opentelemetry.io/collector/config/configopaque
       key_file:
         type: string
         default: ""
       key_pem:
         type: string
         default: ""
-        goType:
-          name: String
-          package: go.opentelemetry.io/collector/config/configopaque
+        goJSONSchema:
+          type: configopaque.String
+          imports:
+          - go.opentelemetry.io/collector/config/configopaque
       min_version:
         type: string
         default: ""

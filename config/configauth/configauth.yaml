@@ -9,6 +9,7 @@ $defs:
     properties:
       authenticator:
         type: string
-        goType:
-          name: ID
-          package: go.opentelemetry.io/collector/component
+        goJSONSchema:
+          type: component.ID
+          imports:
+          -  go.opentelemetry.io/collector/component
