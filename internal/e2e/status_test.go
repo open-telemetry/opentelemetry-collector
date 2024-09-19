@@ -38,6 +38,8 @@ var nopType = component.MustNewType("nop")
 var wg = sync.WaitGroup{}
 
 func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
+	t.Skipf("Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector/issues/10927#issuecomment-2343679185")
+
 	eventsReceived := make(map[*componentstatus.InstanceID][]*componentstatus.Event)
 	exporterFactory := exportertest.NewNopFactory()
 	connectorFactory := connectortest.NewNopFactory()

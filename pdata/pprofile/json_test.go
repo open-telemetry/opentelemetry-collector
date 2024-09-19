@@ -8,6 +8,7 @@ import (
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -133,14 +134,14 @@ var profilesJSON = `{"resourceProfiles":[{"resource":{"attributes":[{"key":"host
 func TestJSONUnmarshal(t *testing.T) {
 	decoder := &JSONUnmarshaler{}
 	got, err := decoder.UnmarshalProfiles([]byte(profilesJSON))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.EqualValues(t, profilesOTLP, got)
 }
 
 func TestJSONMarshal(t *testing.T) {
 	encoder := &JSONMarshaler{}
 	jsonBuf, err := encoder.MarshalProfiles(profilesOTLP)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, profilesJSON, string(jsonBuf))
 }
 
@@ -157,7 +158,7 @@ func TestUnmarshalJsoniterProfileData(t *testing.T) {
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewProfiles()
 	val.unmarshalJsoniter(iter)
-	assert.NoError(t, iter.Error)
+	require.NoError(t, iter.Error)
 	assert.Equal(t, 1, val.ResourceProfiles().Len())
 }
 
@@ -177,7 +178,7 @@ func TestUnmarshalJsoniterResourceProfiles(t *testing.T) {
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewResourceProfiles()
 	val.unmarshalJsoniter(iter)
-	assert.NoError(t, iter.Error)
+	require.NoError(t, iter.Error)
 	assert.Equal(t, NewResourceProfiles(), val)
 }
 
@@ -187,7 +188,7 @@ func TestUnmarshalJsoniterScopeProfiles(t *testing.T) {
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewScopeProfiles()
 	val.unmarshalJsoniter(iter)
-	assert.NoError(t, iter.Error)
+	require.NoError(t, iter.Error)
 	assert.Equal(t, NewScopeProfiles(), val)
 }
 
@@ -197,7 +198,7 @@ func TestUnmarshalJsoniterProfile(t *testing.T) {
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewProfile()
 	val.unmarshalJsoniter(iter)
-	assert.NoError(t, iter.Error)
+	require.NoError(t, iter.Error)
 	assert.Equal(t, NewProfile(), val)
 }
 
@@ -207,7 +208,7 @@ func TestUnmarshalJsoniterValueType(t *testing.T) {
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewValueType()
 	val.unmarshalJsoniter(iter)
-	assert.NoError(t, iter.Error)
+	require.NoError(t, iter.Error)
 	assert.Equal(t, NewValueType(), val)
 }
 
@@ -217,7 +218,7 @@ func TestUnmarshalJsoniterSample(t *testing.T) {
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewSample()
 	val.unmarshalJsoniter(iter)
-	assert.NoError(t, iter.Error)
+	require.NoError(t, iter.Error)
 	assert.Equal(t, NewSample(), val)
 }
 
@@ -227,7 +228,7 @@ func TestUnmarshalJsoniterMapping(t *testing.T) {
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewMapping()
 	val.unmarshalJsoniter(iter)
-	assert.NoError(t, iter.Error)
+	require.NoError(t, iter.Error)
 	assert.Equal(t, NewMapping(), val)
 }
 
@@ -237,7 +238,7 @@ func TestUnmarshalJsoniterLocation(t *testing.T) {
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewLocation()
 	val.unmarshalJsoniter(iter)
-	assert.NoError(t, iter.Error)
+	require.NoError(t, iter.Error)
 	assert.Equal(t, NewLocation(), val)
 }
 
@@ -247,7 +248,7 @@ func TestUnmarshalJsoniterLine(t *testing.T) {
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewLine()
 	val.unmarshalJsoniter(iter)
-	assert.NoError(t, iter.Error)
+	require.NoError(t, iter.Error)
 	assert.Equal(t, NewLine(), val)
 }
 
@@ -257,7 +258,7 @@ func TestUnmarshalJsoniterFunction(t *testing.T) {
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewFunction()
 	val.unmarshalJsoniter(iter)
-	assert.NoError(t, iter.Error)
+	require.NoError(t, iter.Error)
 	assert.Equal(t, NewFunction(), val)
 }
 
@@ -267,7 +268,7 @@ func TestUnmarshalJsoniterAttributeUnit(t *testing.T) {
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewAttributeUnit()
 	val.unmarshalJsoniter(iter)
-	assert.NoError(t, iter.Error)
+	require.NoError(t, iter.Error)
 	assert.Equal(t, NewAttributeUnit(), val)
 }
 
@@ -277,7 +278,7 @@ func TestUnmarshalJsoniterLink(t *testing.T) {
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewLink()
 	val.unmarshalJsoniter(iter)
-	assert.NoError(t, iter.Error)
+	require.NoError(t, iter.Error)
 	assert.Equal(t, NewLink(), val)
 }
 
@@ -307,7 +308,7 @@ func TestUnmarshalJsoniterLabel(t *testing.T) {
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewLabel()
 	val.unmarshalJsoniter(iter)
-	assert.NoError(t, iter.Error)
+	require.NoError(t, iter.Error)
 	assert.Equal(t, NewLabel(), val)
 }
 
@@ -316,7 +317,7 @@ func BenchmarkJSONUnmarshal(b *testing.B) {
 
 	encoder := &JSONMarshaler{}
 	jsonBuf, err := encoder.MarshalProfiles(profilesOTLP)
-	assert.NoError(b, err)
+	require.NoError(b, err)
 	decoder := &JSONUnmarshaler{}
 
 	b.ResetTimer()

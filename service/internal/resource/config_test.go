@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 
 	"go.opentelemetry.io/collector/component"
@@ -92,7 +93,7 @@ func TestNew(t *testing.T) {
 
 				// Check that the value is a valid UUID.
 				_, err := uuid.Parse(got["service.instance.id"])
-				assert.NoError(t, err)
+				require.NoError(t, err)
 
 				// Remove so that we can compare the rest of the map.
 				delete(got, "service.instance.id")
