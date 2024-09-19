@@ -409,9 +409,9 @@ func TestMaxRedirects(t *testing.T) {
 			resp, err := client.Do(req)
 
 			if test.expectedErrStr != "" {
-				assert.ErrorContains(t, err, test.expectedErrStr)
+				require.ErrorContains(t, err, test.expectedErrStr)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 			assert.Equal(t, http.StatusMovedPermanently, resp.StatusCode)
 
