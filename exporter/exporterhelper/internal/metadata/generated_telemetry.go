@@ -112,13 +112,13 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.ExporterDroppedMetricPoints, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_exporter_dropped_metric_points",
 		metric.WithDescription("Number of metric points dropped after failing to export."),
-		metric.WithUnit("{records}"),
+		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterDroppedSpans, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_exporter_dropped_spans",
 		metric.WithDescription("Number of spans dropped after failing to export."),
-		metric.WithUnit("{records}"),
+		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterEnqueueFailedLogRecords, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
