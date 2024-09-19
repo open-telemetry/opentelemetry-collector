@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/internal/queue"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -64,7 +65,7 @@ func (req *tracesRequest) ItemsCount() int {
 }
 
 type traceExporter struct {
-	*baseExporter
+	*internal.BaseExporter
 	consumer.Traces
 }
 
@@ -83,8 +84,8 @@ func NewTracesExporter(
 		return nil, errNilPushTraceData
 	}
 	tracesOpts := []Option{
-		withMarshaler(tracesRequestMarshaler), withUnmarshaler(newTraceRequestUnmarshalerFunc(pusher)),
-		withBatchFuncs(mergeTraces, mergeSplitTraces),
+		internal.WithMarshaler(tracesRequestMarshaler), internal.WithUnmarshaler(newTraceRequestUnmarshalerFunc(pusher)),
+		internal.WithBatchFuncs(mergeTraces, mergeSplitTraces),
 	}
 	return NewTracesRequestExporter(ctx, set, requestFromTraces(pusher), append(tracesOpts, options...)...)
 }
@@ -118,7 +119,7 @@ func NewTracesRequestExporter(
 		return nil, errNilTracesConverter
 	}
 
-	be, err := newBaseExporter(set, component.DataTypeTraces, newTracesExporterWithObservability, options...)
+	be, err := internal.NewBaseExporter(set, component.DataTypeTraces, newTracesExporterWithObservability, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -131,33 +132,33 @@ func NewTracesRequestExporter(
 				zap.Error(err))
 			return consumererror.NewPermanent(cErr)
 		}
-		sErr := be.send(ctx, req)
+		sErr := be.Send(ctx, req)
 		if errors.Is(sErr, queue.ErrQueueIsFull) {
-			be.obsrep.recordEnqueueFailure(ctx, component.DataTypeTraces, int64(req.ItemsCount()))
+			be.Obsrep.RecordEnqueueFailure(ctx, component.DataTypeTraces, int64(req.ItemsCount()))
 		}
 		return sErr
-	}, be.consumerOptions...)
+	}, be.ConsumerOptions...)
 
 	return &traceExporter{
-		baseExporter: be,
+		BaseExporter: be,
 		Traces:       tc,
 	}, err
 }
 
 type tracesExporterWithObservability struct {
-	baseRequestSender
-	obsrep *obsReport
+	internal.BaseRequestSender
+	obsrep *internal.ObsReport
 }
 
-func newTracesExporterWithObservability(obsrep *obsReport) requestSender {
+func newTracesExporterWithObservability(obsrep *internal.ObsReport) internal.RequestSender {
 	return &tracesExporterWithObservability{obsrep: obsrep}
 }
 
-func (tewo *tracesExporterWithObservability) send(ctx context.Context, req Request) error {
-	c := tewo.obsrep.startTracesOp(ctx)
+func (tewo *tracesExporterWithObservability) Send(ctx context.Context, req Request) error {
+	c := tewo.obsrep.StartTracesOp(ctx)
 	numTraceSpans := req.ItemsCount()
 	// Forward the data to the next consumer (this pusher is the next).
-	err := tewo.nextSender.send(c, req)
-	tewo.obsrep.endTracesOp(c, numTraceSpans, err)
+	err := tewo.NextSender.Send(c, req)
+	tewo.obsrep.EndTracesOp(c, numTraceSpans, err)
 	return err
 }
