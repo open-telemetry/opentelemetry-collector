@@ -82,7 +82,7 @@ func TestTracesExporter_Default(t *testing.T) {
 	td := ptrace.NewTraces()
 	te, err := NewTracesExporter(context.Background(), exportertest.NewNopSettings(), &fakeTracesExporterConfig, newTraceDataPusher(nil))
 	assert.NotNil(t, te)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, consumer.Capabilities{MutatesData: false}, te.Capabilities())
 	assert.NoError(t, te.Start(context.Background(), componenttest.NewNopHost()))
@@ -95,7 +95,7 @@ func TestTracesRequestExporter_Default(t *testing.T) {
 	te, err := NewTracesRequestExporter(context.Background(), exportertest.NewNopSettings(),
 		(&fakeRequestConverter{}).requestFromTracesFunc)
 	assert.NotNil(t, te)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, consumer.Capabilities{MutatesData: false}, te.Capabilities())
 	assert.NoError(t, te.Start(context.Background(), componenttest.NewNopHost()))
@@ -107,7 +107,7 @@ func TestTracesExporter_WithCapabilities(t *testing.T) {
 	capabilities := consumer.Capabilities{MutatesData: true}
 	te, err := NewTracesExporter(context.Background(), exportertest.NewNopSettings(), &fakeTracesExporterConfig, newTraceDataPusher(nil), WithCapabilities(capabilities))
 	assert.NotNil(t, te)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, capabilities, te.Capabilities())
 }
@@ -117,7 +117,7 @@ func TestTracesRequestExporter_WithCapabilities(t *testing.T) {
 	te, err := NewTracesRequestExporter(context.Background(), exportertest.NewNopSettings(),
 		(&fakeRequestConverter{}).requestFromTracesFunc, WithCapabilities(capabilities))
 	assert.NotNil(t, te)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, capabilities, te.Capabilities())
 }
@@ -196,10 +196,10 @@ func TestTracesExporter_pLogModifiedDownStream_WithRecordMetrics(t *testing.T) {
 
 	te, err := NewTracesExporter(context.Background(), exporter.Settings{ID: fakeTracesExporterName, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, &fakeTracesExporterConfig, newTraceDataPusherModifiedDownstream(nil), WithCapabilities(consumer.Capabilities{MutatesData: true}))
 	assert.NotNil(t, te)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	td := testdata.GenerateTraces(2)
 
-	assert.NoError(t, te.ConsumeTraces(context.Background(), td))
+	require.NoError(t, te.ConsumeTraces(context.Background(), td))
 	assert.Equal(t, 0, td.SpanCount())
 	require.NoError(t, tt.CheckExporterTraces(int64(2), 0))
 }

@@ -290,67 +290,67 @@ func TestConnectorBuilderMissingConfig(t *testing.T) {
 	missingID := component.MustNewIDWithName("all", "missing")
 
 	t2t, err := bErr.CreateTracesToTraces(context.Background(), createConnectorSettings(missingID), consumertest.NewNop())
-	assert.EqualError(t, err, "connector \"all/missing\" is not configured")
+	require.EqualError(t, err, "connector \"all/missing\" is not configured")
 	assert.Nil(t, t2t)
 
 	t2m, err := bErr.CreateTracesToMetrics(context.Background(), createConnectorSettings(missingID), consumertest.NewNop())
-	assert.EqualError(t, err, "connector \"all/missing\" is not configured")
+	require.EqualError(t, err, "connector \"all/missing\" is not configured")
 	assert.Nil(t, t2m)
 
 	t2l, err := bErr.CreateTracesToLogs(context.Background(), createConnectorSettings(missingID), consumertest.NewNop())
-	assert.EqualError(t, err, "connector \"all/missing\" is not configured")
+	require.EqualError(t, err, "connector \"all/missing\" is not configured")
 	assert.Nil(t, t2l)
 
 	t2p, err := bErr.CreateTracesToProfiles(context.Background(), createConnectorSettings(missingID), consumertest.NewNop())
-	assert.EqualError(t, err, "connector \"all/missing\" is not configured")
+	require.EqualError(t, err, "connector \"all/missing\" is not configured")
 	assert.Nil(t, t2p)
 
 	m2t, err := bErr.CreateMetricsToTraces(context.Background(), createConnectorSettings(missingID), consumertest.NewNop())
-	assert.EqualError(t, err, "connector \"all/missing\" is not configured")
+	require.EqualError(t, err, "connector \"all/missing\" is not configured")
 	assert.Nil(t, m2t)
 
 	m2m, err := bErr.CreateMetricsToMetrics(context.Background(), createConnectorSettings(missingID), consumertest.NewNop())
-	assert.EqualError(t, err, "connector \"all/missing\" is not configured")
+	require.EqualError(t, err, "connector \"all/missing\" is not configured")
 	assert.Nil(t, m2m)
 
 	m2l, err := bErr.CreateMetricsToLogs(context.Background(), createConnectorSettings(missingID), consumertest.NewNop())
-	assert.EqualError(t, err, "connector \"all/missing\" is not configured")
+	require.EqualError(t, err, "connector \"all/missing\" is not configured")
 	assert.Nil(t, m2l)
 
 	m2p, err := bErr.CreateMetricsToProfiles(context.Background(), createConnectorSettings(missingID), consumertest.NewNop())
-	assert.EqualError(t, err, "connector \"all/missing\" is not configured")
+	require.EqualError(t, err, "connector \"all/missing\" is not configured")
 	assert.Nil(t, m2p)
 
 	l2t, err := bErr.CreateLogsToTraces(context.Background(), createConnectorSettings(missingID), consumertest.NewNop())
-	assert.EqualError(t, err, "connector \"all/missing\" is not configured")
+	require.EqualError(t, err, "connector \"all/missing\" is not configured")
 	assert.Nil(t, l2t)
 
 	l2m, err := bErr.CreateLogsToMetrics(context.Background(), createConnectorSettings(missingID), consumertest.NewNop())
-	assert.EqualError(t, err, "connector \"all/missing\" is not configured")
+	require.EqualError(t, err, "connector \"all/missing\" is not configured")
 	assert.Nil(t, l2m)
 
 	l2l, err := bErr.CreateLogsToLogs(context.Background(), createConnectorSettings(missingID), consumertest.NewNop())
-	assert.EqualError(t, err, "connector \"all/missing\" is not configured")
+	require.EqualError(t, err, "connector \"all/missing\" is not configured")
 	assert.Nil(t, l2l)
 
 	l2p, err := bErr.CreateLogsToProfiles(context.Background(), createConnectorSettings(missingID), consumertest.NewNop())
-	assert.EqualError(t, err, "connector \"all/missing\" is not configured")
+	require.EqualError(t, err, "connector \"all/missing\" is not configured")
 	assert.Nil(t, l2p)
 
 	p2t, err := bErr.CreateProfilesToTraces(context.Background(), createConnectorSettings(missingID), consumertest.NewNop())
-	assert.EqualError(t, err, "connector \"all/missing\" is not configured")
+	require.EqualError(t, err, "connector \"all/missing\" is not configured")
 	assert.Nil(t, p2t)
 
 	p2m, err := bErr.CreateProfilesToMetrics(context.Background(), createConnectorSettings(missingID), consumertest.NewNop())
-	assert.EqualError(t, err, "connector \"all/missing\" is not configured")
+	require.EqualError(t, err, "connector \"all/missing\" is not configured")
 	assert.Nil(t, p2m)
 
 	p2l, err := bErr.CreateProfilesToLogs(context.Background(), createConnectorSettings(missingID), consumertest.NewNop())
-	assert.EqualError(t, err, "connector \"all/missing\" is not configured")
+	require.EqualError(t, err, "connector \"all/missing\" is not configured")
 	assert.Nil(t, p2l)
 
 	p2p, err := bErr.CreateProfilesToProfiles(context.Background(), createConnectorSettings(missingID), consumertest.NewNop())
-	assert.EqualError(t, err, "connector \"all/missing\" is not configured")
+	require.EqualError(t, err, "connector \"all/missing\" is not configured")
 	assert.Nil(t, p2p)
 }
 

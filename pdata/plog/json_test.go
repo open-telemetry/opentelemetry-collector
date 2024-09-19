@@ -48,10 +48,10 @@ var logsOTLP = func() Logs {
 func TestLogsJSON(t *testing.T) {
 	encoder := &JSONMarshaler{}
 	jsonBuf, err := encoder.MarshalLogs(logsOTLP)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	decoder := &JSONUnmarshaler{}
 	got, err := decoder.UnmarshalLogs(jsonBuf)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.EqualValues(t, logsOTLP, got)
 }
 
@@ -60,14 +60,14 @@ var logsJSON = `{"resourceLogs":[{"resource":{"attributes":[{"key":"host.name","
 func TestJSONUnmarshal(t *testing.T) {
 	decoder := &JSONUnmarshaler{}
 	got, err := decoder.UnmarshalLogs([]byte(logsJSON))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.EqualValues(t, logsOTLP, got)
 }
 
 func TestJSONMarshal(t *testing.T) {
 	encoder := &JSONMarshaler{}
 	jsonBuf, err := encoder.MarshalLogs(logsOTLP)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, logsJSON, string(jsonBuf))
 }
 
@@ -84,7 +84,7 @@ func TestUnmarshalJsoniterLogsData(t *testing.T) {
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewLogs()
 	val.unmarshalJsoniter(iter)
-	assert.NoError(t, iter.Error)
+	require.NoError(t, iter.Error)
 	assert.Equal(t, NewLogs(), val)
 }
 
@@ -94,7 +94,7 @@ func TestUnmarshalJsoniterResourceLogs(t *testing.T) {
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewResourceLogs()
 	val.unmarshalJsoniter(iter)
-	assert.NoError(t, iter.Error)
+	require.NoError(t, iter.Error)
 	assert.Equal(t, NewResourceLogs(), val)
 }
 
@@ -104,7 +104,7 @@ func TestUnmarshalJsoniterScopeLogs(t *testing.T) {
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewScopeLogs()
 	val.unmarshalJsoniter(iter)
-	assert.NoError(t, iter.Error)
+	require.NoError(t, iter.Error)
 	assert.Equal(t, NewScopeLogs(), val)
 }
 
@@ -114,7 +114,7 @@ func TestUnmarshalJsoniterLogRecord(t *testing.T) {
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewLogRecord()
 	val.unmarshalJsoniter(iter)
-	assert.NoError(t, iter.Error)
+	require.NoError(t, iter.Error)
 	assert.Equal(t, NewLogRecord(), val)
 }
 
@@ -141,7 +141,7 @@ func BenchmarkJSONUnmarshal(b *testing.B) {
 
 	encoder := &JSONMarshaler{}
 	jsonBuf, err := encoder.MarshalLogs(logsOTLP)
-	assert.NoError(b, err)
+	require.NoError(b, err)
 	decoder := &JSONUnmarshaler{}
 
 	b.ResetTimer()

@@ -224,11 +224,11 @@ func TestNilOrigSetValue(t *testing.T) {
 	assert.Equal(t, []byte{1, 2, 3}, av.Bytes().AsRaw())
 
 	av = NewValueEmpty()
-	assert.NoError(t, av.SetEmptyMap().FromRaw(map[string]any{"k": "v"}))
+	require.NoError(t, av.SetEmptyMap().FromRaw(map[string]any{"k": "v"}))
 	assert.Equal(t, map[string]any{"k": "v"}, av.Map().AsRaw())
 
 	av = NewValueEmpty()
-	assert.NoError(t, av.SetEmptySlice().FromRaw([]any{int64(1), "val"}))
+	require.NoError(t, av.SetEmptySlice().FromRaw([]any{int64(1), "val"}))
 	assert.Equal(t, []any{int64(1), "val"}, av.Slice().AsRaw())
 }
 
@@ -347,10 +347,10 @@ func TestValueAsString(t *testing.T) {
 			expected: base64.StdEncoding.EncodeToString([]byte("String bytes")),
 		},
 	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			actual := test.input.AsString()
-			assert.Equal(t, test.expected, actual)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := tt.input.AsString()
+			assert.Equal(t, tt.expected, actual)
 		})
 	}
 }
@@ -405,10 +405,10 @@ func TestValueAsRaw(t *testing.T) {
 			},
 		},
 	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			actual := test.input.AsRaw()
-			assert.Equal(t, test.expected, actual)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := tt.input.AsRaw()
+			assert.Equal(t, tt.expected, actual)
 		})
 	}
 }
@@ -545,7 +545,7 @@ func TestNewValueFromRaw(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			actual := NewValueEmpty()
-			assert.NoError(t, actual.FromRaw(tt.input))
+			require.NoError(t, actual.FromRaw(tt.input))
 			assert.Equal(t, tt.expected, actual)
 		})
 	}
