@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pprofile"
@@ -46,6 +47,6 @@ func TestConsumeProfiles(t *testing.T) {
 func TestConsumeProfiles_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
 	cp, err := NewProfiles(func(context.Context, pprofile.Profiles) error { return want })
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, want, cp.ConsumeProfiles(context.Background(), pprofile.NewProfiles()))
 }

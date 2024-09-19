@@ -102,30 +102,30 @@ func TestHistogramDataPoint_Flags(t *testing.T) {
 
 func TestHistogramDataPoint_Sum(t *testing.T) {
 	ms := NewHistogramDataPoint()
-	assert.Equal(t, float64(0.0), ms.Sum())
+	assert.InDelta(t, float64(0.0), ms.Sum(), 0.01)
 	ms.SetSum(float64(17.13))
 	assert.True(t, ms.HasSum())
-	assert.Equal(t, float64(17.13), ms.Sum())
+	assert.InDelta(t, float64(17.13), ms.Sum(), 0.01)
 	ms.RemoveSum()
 	assert.False(t, ms.HasSum())
 }
 
 func TestHistogramDataPoint_Min(t *testing.T) {
 	ms := NewHistogramDataPoint()
-	assert.Equal(t, float64(0.0), ms.Min())
+	assert.InDelta(t, float64(0.0), ms.Min(), 0.01)
 	ms.SetMin(float64(9.23))
 	assert.True(t, ms.HasMin())
-	assert.Equal(t, float64(9.23), ms.Min())
+	assert.InDelta(t, float64(9.23), ms.Min(), 0.01)
 	ms.RemoveMin()
 	assert.False(t, ms.HasMin())
 }
 
 func TestHistogramDataPoint_Max(t *testing.T) {
 	ms := NewHistogramDataPoint()
-	assert.Equal(t, float64(0.0), ms.Max())
+	assert.InDelta(t, float64(0.0), ms.Max(), 0.01)
 	ms.SetMax(float64(182.55))
 	assert.True(t, ms.HasMax())
-	assert.Equal(t, float64(182.55), ms.Max())
+	assert.InDelta(t, float64(182.55), ms.Max(), 0.01)
 	ms.RemoveMax()
 	assert.False(t, ms.HasMax())
 }

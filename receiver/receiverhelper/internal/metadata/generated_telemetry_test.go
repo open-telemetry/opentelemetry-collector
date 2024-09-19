@@ -75,9 +75,9 @@ func TestNewTelemetryBuilder(t *testing.T) {
 		TracerProvider: mockTracerProvider{},
 	}
 	applied := false
-	_, err := NewTelemetryBuilder(set, func(b *TelemetryBuilder) {
+	_, err := NewTelemetryBuilder(set, telemetryBuilderOptionFunc(func(b *TelemetryBuilder) {
 		applied = true
-	})
+	}))
 	require.NoError(t, err)
 	require.True(t, applied)
 }

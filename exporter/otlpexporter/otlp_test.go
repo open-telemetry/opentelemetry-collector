@@ -263,14 +263,14 @@ func TestSendTraces(t *testing.T) {
 	}()
 
 	host := componenttest.NewNopHost()
-	assert.NoError(t, exp.Start(context.Background(), host))
+	require.NoError(t, exp.Start(context.Background(), host))
 
 	// Ensure that initially there is no data in the receiver.
 	assert.EqualValues(t, 0, rcv.requestCount.Load())
 
 	// Send empty trace.
 	td := ptrace.NewTraces()
-	assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
+	require.NoError(t, exp.ConsumeTraces(context.Background(), td))
 
 	// Wait until it is received.
 	assert.Eventually(t, func() bool {
@@ -284,7 +284,7 @@ func TestSendTraces(t *testing.T) {
 	td = testdata.GenerateTraces(2)
 
 	err = exp.ConsumeTraces(context.Background(), td)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Wait until it is received.
 	assert.Eventually(t, func() bool {
@@ -299,8 +299,8 @@ func TestSendTraces(t *testing.T) {
 	assert.EqualValues(t, td, rcv.getLastRequest())
 
 	md := rcv.getMetadata()
-	require.EqualValues(t, md.Get("header"), expectedHeader)
-	require.Equal(t, len(md.Get("User-Agent")), 1)
+	require.EqualValues(t, expectedHeader, md.Get("header"))
+	require.Len(t, md.Get("User-Agent"), 1)
 	require.Contains(t, md.Get("User-Agent")[0], "Collector/1.2.3test")
 
 	// Return partial success
@@ -317,7 +317,7 @@ func TestSendTraces(t *testing.T) {
 	td = testdata.GenerateTraces(2)
 
 	err = exp.ConsumeTraces(context.Background(), td)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), 1)
 	assert.Contains(t, observed.FilterLevelExact(zap.WarnLevel).All()[0].Message, "Partial success")
 }
@@ -375,14 +375,14 @@ func TestSendTracesWhenEndpointHasHttpScheme(t *testing.T) {
 			}()
 
 			host := componenttest.NewNopHost()
-			assert.NoError(t, exp.Start(context.Background(), host))
+			require.NoError(t, exp.Start(context.Background(), host))
 
 			// Ensure that initially there is no data in the receiver.
 			assert.EqualValues(t, 0, rcv.requestCount.Load())
 
 			// Send empty trace.
 			td := ptrace.NewTraces()
-			assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
+			require.NoError(t, exp.ConsumeTraces(context.Background(), td))
 
 			// Wait until it is received.
 			assert.Eventually(t, func() bool {
@@ -435,14 +435,14 @@ func TestSendMetrics(t *testing.T) {
 
 	host := componenttest.NewNopHost()
 
-	assert.NoError(t, exp.Start(context.Background(), host))
+	require.NoError(t, exp.Start(context.Background(), host))
 
 	// Ensure that initially there is no data in the receiver.
 	assert.EqualValues(t, 0, rcv.requestCount.Load())
 
 	// Send empty metric.
 	md := pmetric.NewMetrics()
-	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
+	require.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 
 	// Wait until it is received.
 	assert.Eventually(t, func() bool {
@@ -456,7 +456,7 @@ func TestSendMetrics(t *testing.T) {
 	md = testdata.GenerateMetrics(2)
 
 	err = exp.ConsumeMetrics(context.Background(), md)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Wait until it is received.
 	assert.Eventually(t, func() bool {
@@ -471,8 +471,8 @@ func TestSendMetrics(t *testing.T) {
 	assert.EqualValues(t, md, rcv.getLastRequest())
 
 	mdata := rcv.getMetadata()
-	require.EqualValues(t, mdata.Get("header"), expectedHeader)
-	require.Equal(t, len(mdata.Get("User-Agent")), 1)
+	require.EqualValues(t, expectedHeader, mdata.Get("header"))
+	require.Len(t, mdata.Get("User-Agent"), 1)
 	require.Contains(t, mdata.Get("User-Agent")[0], "Collector/1.2.3test")
 
 	st := status.New(codes.InvalidArgument, "Invalid argument")
@@ -482,7 +482,7 @@ func TestSendMetrics(t *testing.T) {
 	md = testdata.GenerateMetrics(2)
 
 	err = exp.ConsumeMetrics(context.Background(), md)
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	rcv.setExportError(nil)
 
@@ -498,7 +498,7 @@ func TestSendMetrics(t *testing.T) {
 
 	// Send two metrics.
 	md = testdata.GenerateMetrics(2)
-	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
+	require.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 	assert.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), 1)
 	assert.Contains(t, observed.FilterLevelExact(zap.WarnLevel).All()[0].Message, "Partial success")
 }
@@ -533,24 +533,24 @@ func TestSendTraceDataServerDownAndUp(t *testing.T) {
 
 	host := componenttest.NewNopHost()
 
-	assert.NoError(t, exp.Start(context.Background(), host))
+	require.NoError(t, exp.Start(context.Background(), host))
 
 	// A trace with 2 spans.
 	td := testdata.GenerateTraces(2)
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-	assert.Error(t, exp.ConsumeTraces(ctx, td))
+	require.Error(t, exp.ConsumeTraces(ctx, td))
 	assert.EqualValues(t, context.DeadlineExceeded, ctx.Err())
 	cancel()
 
 	ctx, cancel = context.WithTimeout(context.Background(), 1*time.Second)
-	assert.Error(t, exp.ConsumeTraces(ctx, td))
+	require.Error(t, exp.ConsumeTraces(ctx, td))
 	assert.EqualValues(t, context.DeadlineExceeded, ctx.Err())
 	cancel()
 
 	startServerAndMakeRequest(t, exp, td, ln)
 
 	ctx, cancel = context.WithTimeout(context.Background(), 1*time.Second)
-	assert.Error(t, exp.ConsumeTraces(ctx, td))
+	require.Error(t, exp.ConsumeTraces(ctx, td))
 	assert.EqualValues(t, context.DeadlineExceeded, ctx.Err())
 	cancel()
 
@@ -561,7 +561,7 @@ func TestSendTraceDataServerDownAndUp(t *testing.T) {
 	startServerAndMakeRequest(t, exp, td, ln)
 
 	ctx, cancel = context.WithTimeout(context.Background(), 1*time.Second)
-	assert.Error(t, exp.ConsumeTraces(ctx, td))
+	require.Error(t, exp.ConsumeTraces(ctx, td))
 	assert.EqualValues(t, context.DeadlineExceeded, ctx.Err())
 	cancel()
 }
@@ -590,7 +590,7 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 
 	host := componenttest.NewNopHost()
 
-	assert.NoError(t, exp.Start(context.Background(), host))
+	require.NoError(t, exp.Start(context.Background(), host))
 
 	// A trace with 2 spans.
 	td := testdata.GenerateTraces(2)
@@ -610,7 +610,7 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 	case <-ctx.Done():
 		t.Fail()
 	case <-done:
-		assert.NoError(t, ctx.Err())
+		require.NoError(t, ctx.Err())
 	}
 	cancel()
 }
@@ -641,12 +641,12 @@ func TestSendTracesOnResourceExhaustion(t *testing.T) {
 	}()
 
 	host := componenttest.NewNopHost()
-	assert.NoError(t, exp.Start(context.Background(), host))
+	require.NoError(t, exp.Start(context.Background(), host))
 
 	assert.EqualValues(t, 0, rcv.requestCount.Load())
 
 	td := ptrace.NewTraces()
-	assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
+	require.NoError(t, exp.ConsumeTraces(context.Background(), td))
 
 	assert.Never(t, func() bool {
 		return rcv.requestCount.Load() > 1
@@ -660,7 +660,7 @@ func TestSendTracesOnResourceExhaustion(t *testing.T) {
 	})
 	rcv.setExportError(st.Err())
 
-	assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
+	require.NoError(t, exp.ConsumeTraces(context.Background(), td))
 
 	assert.Eventually(t, func() bool {
 		return rcv.requestCount.Load() > 1
@@ -679,7 +679,7 @@ func startServerAndMakeRequest(t *testing.T, exp exporter.Traces, td ptrace.Trac
 
 	// Resend the request, this should succeed.
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	assert.NoError(t, exp.ConsumeTraces(ctx, td))
+	require.NoError(t, exp.ConsumeTraces(ctx, td))
 	cancel()
 
 	// Wait until it is received.
@@ -729,14 +729,14 @@ func TestSendLogData(t *testing.T) {
 
 	host := componenttest.NewNopHost()
 
-	assert.NoError(t, exp.Start(context.Background(), host))
+	require.NoError(t, exp.Start(context.Background(), host))
 
 	// Ensure that initially there is no data in the receiver.
 	assert.EqualValues(t, 0, rcv.requestCount.Load())
 
 	// Send empty request.
 	ld := plog.NewLogs()
-	assert.NoError(t, exp.ConsumeLogs(context.Background(), ld))
+	require.NoError(t, exp.ConsumeLogs(context.Background(), ld))
 
 	// Wait until it is received.
 	assert.Eventually(t, func() bool {
@@ -750,7 +750,7 @@ func TestSendLogData(t *testing.T) {
 	ld = testdata.GenerateLogs(2)
 
 	err = exp.ConsumeLogs(context.Background(), ld)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Wait until it is received.
 	assert.Eventually(t, func() bool {
@@ -763,7 +763,7 @@ func TestSendLogData(t *testing.T) {
 	assert.EqualValues(t, ld, rcv.getLastRequest())
 
 	md := rcv.getMetadata()
-	require.Equal(t, len(md.Get("User-Agent")), 1)
+	require.Len(t, md.Get("User-Agent"), 1)
 	require.Contains(t, md.Get("User-Agent")[0], "Collector/1.2.3test")
 
 	st := status.New(codes.InvalidArgument, "Invalid argument")
@@ -773,7 +773,7 @@ func TestSendLogData(t *testing.T) {
 	ld = testdata.GenerateLogs(2)
 
 	err = exp.ConsumeLogs(context.Background(), ld)
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	rcv.setExportError(nil)
 
@@ -791,7 +791,7 @@ func TestSendLogData(t *testing.T) {
 	ld = testdata.GenerateLogs(2)
 
 	err = exp.ConsumeLogs(context.Background(), ld)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), 1)
 	assert.Contains(t, observed.FilterLevelExact(zap.WarnLevel).All()[0].Message, "Partial success")
 }

@@ -57,7 +57,8 @@ func TestNoDataLoss(t *testing.T) {
 	require.NoError(t, err)
 
 	processor, err := processorhelper.NewLogsProcessor(context.Background(), processor.Settings{
-		ID: component.MustNewID("nop"),
+		ID:                component.MustNewID("nop"),
+		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 	}, cfg, exporter,
 		limiter.processLogs,
 		processorhelper.WithStart(limiter.start),
@@ -192,7 +193,7 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 			if tt.expectError {
 				assert.Equal(t, memorylimiter.ErrDataRefused, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 			assert.NoError(t, mp.Shutdown(ctx))
 		})
@@ -282,7 +283,7 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 			if tt.expectError {
 				assert.Equal(t, memorylimiter.ErrDataRefused, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 			assert.NoError(t, tp.Shutdown(ctx))
 		})
@@ -372,7 +373,7 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 			if tt.expectError {
 				assert.Equal(t, memorylimiter.ErrDataRefused, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 			assert.NoError(t, tp.Shutdown(ctx))
 		})

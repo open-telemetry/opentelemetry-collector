@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 )
 
 var (
@@ -55,13 +55,13 @@ func TestExportTraceDataOp(t *testing.T) {
 			switch {
 			case params[i].err == nil:
 				sentSpans += params[i].items
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.SentSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.FailedToSendSpansKey, Value: attribute.Int64Value(0)})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.SentSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedToSendSpansKey, Value: attribute.Int64Value(0)})
 				assert.Equal(t, codes.Unset, span.Status().Code)
 			case errors.Is(params[i].err, errFake):
 				failedToSendSpans += params[i].items
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.SentSpansKey, Value: attribute.Int64Value(0)})
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.FailedToSendSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.SentSpansKey, Value: attribute.Int64Value(0)})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedToSendSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
 				assert.Equal(t, codes.Error, span.Status().Code)
 				assert.Equal(t, params[i].err.Error(), span.Status().Description)
 			default:
@@ -104,13 +104,13 @@ func TestExportMetricsOp(t *testing.T) {
 			switch {
 			case params[i].err == nil:
 				sentMetricPoints += params[i].items
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.SentMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.FailedToSendMetricPointsKey, Value: attribute.Int64Value(0)})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.SentMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedToSendMetricPointsKey, Value: attribute.Int64Value(0)})
 				assert.Equal(t, codes.Unset, span.Status().Code)
 			case errors.Is(params[i].err, errFake):
 				failedToSendMetricPoints += params[i].items
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.SentMetricPointsKey, Value: attribute.Int64Value(0)})
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.FailedToSendMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.SentMetricPointsKey, Value: attribute.Int64Value(0)})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedToSendMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
 				assert.Equal(t, codes.Error, span.Status().Code)
 				assert.Equal(t, params[i].err.Error(), span.Status().Description)
 			default:
@@ -153,13 +153,13 @@ func TestExportLogsOp(t *testing.T) {
 			switch {
 			case params[i].err == nil:
 				sentLogRecords += params[i].items
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.SentLogRecordsKey, Value: attribute.Int64Value(int64(params[i].items))})
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.FailedToSendLogRecordsKey, Value: attribute.Int64Value(0)})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.SentLogRecordsKey, Value: attribute.Int64Value(int64(params[i].items))})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedToSendLogRecordsKey, Value: attribute.Int64Value(0)})
 				assert.Equal(t, codes.Unset, span.Status().Code)
 			case errors.Is(params[i].err, errFake):
 				failedToSendLogRecords += params[i].items
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.SentLogRecordsKey, Value: attribute.Int64Value(0)})
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.FailedToSendLogRecordsKey, Value: attribute.Int64Value(int64(params[i].items))})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.SentLogRecordsKey, Value: attribute.Int64Value(0)})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedToSendLogRecordsKey, Value: attribute.Int64Value(int64(params[i].items))})
 				assert.Equal(t, codes.Error, span.Status().Code)
 				assert.Equal(t, params[i].err.Error(), span.Status().Description)
 			default:
@@ -185,9 +185,9 @@ func TestCheckExporterTracesViews(t *testing.T) {
 	require.NotNil(t, ctx)
 	obsrep.endTracesOp(ctx, 7, nil)
 
-	assert.NoError(t, tt.CheckExporterTraces(7, 0))
-	assert.Error(t, tt.CheckExporterTraces(7, 7))
-	assert.Error(t, tt.CheckExporterTraces(0, 0))
+	require.NoError(t, tt.CheckExporterTraces(7, 0))
+	require.Error(t, tt.CheckExporterTraces(7, 7))
+	require.Error(t, tt.CheckExporterTraces(0, 0))
 	assert.Error(t, tt.CheckExporterTraces(0, 7))
 }
 
@@ -205,9 +205,9 @@ func TestCheckExporterMetricsViews(t *testing.T) {
 	require.NotNil(t, ctx)
 	obsrep.endMetricsOp(ctx, 7, nil)
 
-	assert.NoError(t, tt.CheckExporterMetrics(7, 0))
-	assert.Error(t, tt.CheckExporterMetrics(7, 7))
-	assert.Error(t, tt.CheckExporterMetrics(0, 0))
+	require.NoError(t, tt.CheckExporterMetrics(7, 0))
+	require.Error(t, tt.CheckExporterMetrics(7, 7))
+	require.Error(t, tt.CheckExporterMetrics(0, 0))
 	assert.Error(t, tt.CheckExporterMetrics(0, 7))
 }
 
@@ -225,9 +225,9 @@ func TestCheckExporterLogsViews(t *testing.T) {
 	require.NotNil(t, ctx)
 	obsrep.endLogsOp(ctx, 7, nil)
 
-	assert.NoError(t, tt.CheckExporterLogs(7, 0))
-	assert.Error(t, tt.CheckExporterLogs(7, 7))
-	assert.Error(t, tt.CheckExporterLogs(0, 0))
+	require.NoError(t, tt.CheckExporterLogs(7, 0))
+	require.Error(t, tt.CheckExporterLogs(7, 7))
+	require.Error(t, tt.CheckExporterLogs(0, 0))
 	assert.Error(t, tt.CheckExporterLogs(0, 7))
 }
 

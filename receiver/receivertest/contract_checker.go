@@ -148,7 +148,7 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 			defer wg.Done()
 			for atomic.AddInt64(&generatedIndex, 1) <= int64(params.GenerateCount) {
 				ids := params.Generator.Generate()
-				require.Greater(params.T, len(ids), 0)
+				require.NotEmpty(params.T, ids)
 
 				mux.Lock()
 				duplicates := generatedIDs.mergeSlice(ids)
@@ -193,7 +193,7 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 	}
 
 	err = receiver.Shutdown(ctx)
-	assert.NoError(params.T, err)
+	require.NoError(params.T, err)
 
 	// Print some stats to help debug test failures.
 	fmt.Printf(

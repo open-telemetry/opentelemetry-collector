@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 
 	"go.opentelemetry.io/collector/component"
@@ -92,7 +93,7 @@ func TestNew(t *testing.T) {
 
 				// Check that the value is a valid UUID.
 				_, err := uuid.Parse(got["service.instance.id"])
-				assert.NoError(t, err)
+				require.NoError(t, err)
 
 				// Remove so that we can compare the rest of the map.
 				delete(got, "service.instance.id")
@@ -124,7 +125,7 @@ func TestBuildResource(t *testing.T) {
 	otelRes := New(buildInfo, resMap)
 	res := pdataFromSdk(otelRes)
 
-	assert.Equal(t, res.Attributes().Len(), 3)
+	assert.Equal(t, 3, res.Attributes().Len())
 	value, ok := res.Attributes().Get(semconv.AttributeServiceName)
 	assert.True(t, ok)
 	assert.Equal(t, buildInfo.Command, value.AsString())
@@ -145,7 +146,7 @@ func TestBuildResource(t *testing.T) {
 	res = pdataFromSdk(otelRes)
 
 	// Attributes should not exist since we nil-ified all.
-	assert.Equal(t, res.Attributes().Len(), 0)
+	assert.Equal(t, 0, res.Attributes().Len())
 
 	// Check override values
 	strPtr := func(v string) *string { return &v }
@@ -157,7 +158,7 @@ func TestBuildResource(t *testing.T) {
 	otelRes = New(buildInfo, resMap)
 	res = pdataFromSdk(otelRes)
 
-	assert.Equal(t, res.Attributes().Len(), 3)
+	assert.Equal(t, 3, res.Attributes().Len())
 	value, ok = res.Attributes().Get(semconv.AttributeServiceName)
 	assert.True(t, ok)
 	assert.Equal(t, "a", value.AsString())

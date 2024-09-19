@@ -8,6 +8,7 @@ import (
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 )
@@ -151,7 +152,7 @@ func TestReadAttributeUnknownField(t *testing.T) {
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	value := ReadAttribute(iter)
 	//  unknown fields should not be an error
-	assert.NoError(t, iter.Error)
+	require.NoError(t, iter.Error)
 	assert.EqualValues(t, otlpcommon.KeyValue{}, value)
 }
 
@@ -162,7 +163,7 @@ func TestReadAttributeValueUnknownField(t *testing.T) {
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	value := ReadAttribute(iter)
 	//  unknown fields should not be an error
-	assert.NoError(t, iter.Error)
+	require.NoError(t, iter.Error)
 	assert.EqualValues(t, otlpcommon.KeyValue{Key: "test"}, value)
 }
 
@@ -172,7 +173,7 @@ func TestReadValueUnknownField(t *testing.T) {
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	value := &otlpcommon.AnyValue{}
 	ReadValue(iter, value)
-	assert.NoError(t, iter.Error)
+	require.NoError(t, iter.Error)
 	assert.EqualValues(t, &otlpcommon.AnyValue{}, value)
 }
 
@@ -192,7 +193,7 @@ func TestReadArrayUnknownField(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	value := readArray(iter)
-	assert.NoError(t, iter.Error)
+	require.NoError(t, iter.Error)
 	assert.EqualValues(t, &otlpcommon.ArrayValue{}, value)
 }
 
@@ -201,7 +202,7 @@ func TestReadKvlistValueUnknownField(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	value := readKvlistValue(iter)
-	assert.NoError(t, iter.Error)
+	require.NoError(t, iter.Error)
 	assert.EqualValues(t, &otlpcommon.KeyValueList{}, value)
 }
 
@@ -212,7 +213,7 @@ func TestReadArrayValueInvalidArrayValue(t *testing.T) {
 
 	value := &otlpcommon.AnyValue{}
 	ReadValue(iter, value)
-	assert.NoError(t, iter.Error)
+	require.NoError(t, iter.Error)
 	assert.EqualValues(t, &otlpcommon.AnyValue{
 		Value: &otlpcommon.AnyValue_ArrayValue{
 			ArrayValue: &otlpcommon.ArrayValue{},
@@ -227,7 +228,7 @@ func TestReadKvlistValueInvalidArrayValue(t *testing.T) {
 
 	value := &otlpcommon.AnyValue{}
 	ReadValue(iter, value)
-	assert.NoError(t, iter.Error)
+	require.NoError(t, iter.Error)
 	assert.EqualValues(t, &otlpcommon.AnyValue{
 		Value: &otlpcommon.AnyValue_KvlistValue{
 			KvlistValue: &otlpcommon.KeyValueList{},

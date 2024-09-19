@@ -8,7 +8,7 @@ The following telemetry is emitted by this component.
 
 ### otelcol_processor_accepted_log_records
 
-Number of log records successfully pushed into the next component in the pipeline.
+Number of log records successfully pushed into the next component in the pipeline. [deprecated since v0.110.0]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
@@ -16,7 +16,7 @@ Number of log records successfully pushed into the next component in the pipelin
 
 ### otelcol_processor_accepted_metric_points
 
-Number of metric points successfully pushed into the next component in the pipeline.
+Number of metric points successfully pushed into the next component in the pipeline. [deprecated since v0.110.0]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
@@ -24,7 +24,7 @@ Number of metric points successfully pushed into the next component in the pipel
 
 ### otelcol_processor_accepted_spans
 
-Number of spans successfully pushed into the next component in the pipeline.
+Number of spans successfully pushed into the next component in the pipeline. [deprecated since v0.110.0]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
@@ -32,7 +32,7 @@ Number of spans successfully pushed into the next component in the pipeline.
 
 ### otelcol_processor_dropped_log_records
 
-Number of log records that were dropped.
+Number of log records that were dropped. [deprecated since v0.110.0]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
@@ -40,7 +40,7 @@ Number of log records that were dropped.
 
 ### otelcol_processor_dropped_metric_points
 
-Number of metric points that were dropped.
+Number of metric points that were dropped. [deprecated since v0.110.0]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
@@ -48,39 +48,31 @@ Number of metric points that were dropped.
 
 ### otelcol_processor_dropped_spans
 
-Number of spans that were dropped.
+Number of spans that were dropped. [deprecated since v0.110.0]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
 | {spans} | Sum | Int | true |
 
-### otelcol_processor_inserted_log_records
+### otelcol_processor_incoming_items
 
-Number of log records that were inserted.
-
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| {records} | Sum | Int | true |
-
-### otelcol_processor_inserted_metric_points
-
-Number of metric points that were inserted.
+Number of items passed to the processor. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
-| {datapoints} | Sum | Int | true |
+| {items} | Sum | Int | true |
 
-### otelcol_processor_inserted_spans
+### otelcol_processor_outgoing_items
 
-Number of spans that were inserted.
+Number of items emitted from the processor. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
-| {spans} | Sum | Int | true |
+| {items} | Sum | Int | true |
 
 ### otelcol_processor_refused_log_records
 
-Number of log records that were rejected by the next component in the pipeline.
+Number of log records that were rejected by the next component in the pipeline. [deprecated since v0.110.0]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
@@ -88,7 +80,7 @@ Number of log records that were rejected by the next component in the pipeline.
 
 ### otelcol_processor_refused_metric_points
 
-Number of metric points that were rejected by the next component in the pipeline.
+Number of metric points that were rejected by the next component in the pipeline. [deprecated since v0.110.0]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
@@ -96,7 +88,7 @@ Number of metric points that were rejected by the next component in the pipeline
 
 ### otelcol_processor_refused_spans
 
-Number of spans that were rejected by the next component in the pipeline.
+Number of spans that were rejected by the next component in the pipeline. [deprecated since v0.110.0]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |

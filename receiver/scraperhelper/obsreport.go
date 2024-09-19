@@ -13,16 +13,14 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/internal"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.opentelemetry.io/collector/receiver/scraperhelper/internal/metadata"
 )
 
-// ObsReport is a helper to add observability to a scraper.
-//
-// Deprecated: [v0.108.0] will be removed.
-type ObsReport struct {
+// obsReport is a helper to add observability to a scraper.
+type obsReport struct {
 	receiverID component.ID
 	scraper    component.ID
 	tracer     trace.Tracer
@@ -31,35 +29,26 @@ type ObsReport struct {
 	telemetryBuilder *metadata.TelemetryBuilder
 }
 
-// ObsReportSettings are settings for creating an ObsReport.
-//
-// Deprecated: [v0.108.0] will be removed.
-type ObsReportSettings struct {
+// obsReportSettings are settings for creating an ObsReport.
+type obsReportSettings struct {
 	ReceiverID             component.ID
 	Scraper                component.ID
 	ReceiverCreateSettings receiver.Settings
 }
 
-// NewObsReport creates a new ObsReport.
-//
-// Deprecated: [v0.108.0] will be removed, scrapers should use NewScraperControllerReceiver instead.
-func NewObsReport(cfg ObsReportSettings) (*ObsReport, error) {
-	return newScraper(cfg)
-}
-
-func newScraper(cfg ObsReportSettings) (*ObsReport, error) {
+func newScraper(cfg obsReportSettings) (*obsReport, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(cfg.ReceiverCreateSettings.TelemetrySettings)
 	if err != nil {
 		return nil, err
 	}
-	return &ObsReport{
+	return &obsReport{
 		receiverID: cfg.ReceiverID,
 		scraper:    cfg.Scraper,
 		tracer:     cfg.ReceiverCreateSettings.TracerProvider.Tracer(cfg.Scraper.String()),
 
 		otelAttrs: []attribute.KeyValue{
-			attribute.String(obsmetrics.ReceiverKey, cfg.ReceiverID.String()),
-			attribute.String(obsmetrics.ScraperKey, cfg.Scraper.String()),
+			attribute.String(internal.ReceiverKey, cfg.ReceiverID.String()),
+			attribute.String(internal.ScraperKey, cfg.Scraper.String()),
 		},
 		telemetryBuilder: telemetryBuilder,
 	}, nil
@@ -68,15 +57,15 @@ func newScraper(cfg ObsReportSettings) (*ObsReport, error) {
 // StartMetricsOp is called when a scrape operation is started. The
 // returned context should be used in other calls to the obsreport functions
 // dealing with the same scrape operation.
-func (s *ObsReport) StartMetricsOp(ctx context.Context) context.Context {
-	spanName := obsmetrics.ScraperPrefix + s.receiverID.String() + obsmetrics.SpanNameSep + s.scraper.String() + obsmetrics.ScraperMetricsOperationSuffix
+func (s *obsReport) StartMetricsOp(ctx context.Context) context.Context {
+	spanName := internal.ScraperPrefix + s.receiverID.String() + internal.SpanNameSep + s.scraper.String() + internal.ScraperMetricsOperationSuffix
 	ctx, _ = s.tracer.Start(ctx, spanName)
 	return ctx
 }
 
 // EndMetricsOp completes the scrape operation that was started with
 // StartMetricsOp.
-func (s *ObsReport) EndMetricsOp(
+func (s *obsReport) EndMetricsOp(
 	scraperCtx context.Context,
 	numScrapedMetrics int,
 	err error,
@@ -99,9 +88,9 @@ func (s *ObsReport) EndMetricsOp(
 	// end span according to errors
 	if span.IsRecording() {
 		span.SetAttributes(
-			attribute.String(obsmetrics.FormatKey, component.DataTypeMetrics.String()),
-			attribute.Int64(obsmetrics.ScrapedMetricPointsKey, int64(numScrapedMetrics)),
-			attribute.Int64(obsmetrics.ErroredMetricPointsKey, int64(numErroredMetrics)),
+			attribute.String(internal.FormatKey, component.DataTypeMetrics.String()),
+			attribute.Int64(internal.ScrapedMetricPointsKey, int64(numScrapedMetrics)),
+			attribute.Int64(internal.ErroredMetricPointsKey, int64(numErroredMetrics)),
 		)
 
 		if err != nil {
@@ -112,7 +101,7 @@ func (s *ObsReport) EndMetricsOp(
 	span.End()
 }
 
-func (s *ObsReport) recordMetrics(scraperCtx context.Context, numScrapedMetrics, numErroredMetrics int) {
+func (s *obsReport) recordMetrics(scraperCtx context.Context, numScrapedMetrics, numErroredMetrics int) {
 	s.telemetryBuilder.ScraperScrapedMetricPoints.Add(scraperCtx, int64(numScrapedMetrics), metric.WithAttributes(s.otelAttrs...))
 	s.telemetryBuilder.ScraperErroredMetricPoints.Add(scraperCtx, int64(numErroredMetrics), metric.WithAttributes(s.otelAttrs...))
 }

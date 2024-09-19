@@ -213,33 +213,38 @@ func TestEncode(t *testing.T) {
 }
 
 func TestGetTagInfo(t *testing.T) {
-	testCases := map[string]struct {
+	testCases := []struct {
+		name       string
 		field      reflect.StructField
 		wantName   string
 		wantOmit   bool
 		wantSquash bool
 	}{
-		"WithoutTags": {
+		{
+			name: "WithoutTags",
 			field: reflect.StructField{
 				Name: "Test",
 			},
 			wantName: "test",
 		},
-		"WithoutMapStructureTag": {
+		{
+			name: "WithoutMapStructureTag",
 			field: reflect.StructField{
 				Tag:  `yaml:"hello,inline"`,
 				Name: "YAML",
 			},
 			wantName: "yaml",
 		},
-		"WithRename": {
+		{
+			name: "WithRename",
 			field: reflect.StructField{
 				Tag:  `mapstructure:"hello"`,
 				Name: "Test",
 			},
 			wantName: "hello",
 		},
-		"WithOmitEmpty": {
+		{
+			name: "WithOmitEmpty",
 			field: reflect.StructField{
 				Tag:  `mapstructure:"hello,omitempty"`,
 				Name: "Test",
@@ -247,14 +252,16 @@ func TestGetTagInfo(t *testing.T) {
 			wantName: "hello",
 			wantOmit: true,
 		},
-		"WithSquash": {
+		{
+			name: "WithSquash",
 			field: reflect.StructField{
 				Tag:  `mapstructure:",squash"`,
 				Name: "Test",
 			},
 			wantSquash: true,
 		},
-		"WithRemain": {
+		{
+			name: "WithRemain",
 			field: reflect.StructField{
 				Tag:  `mapstructure:",remain"`,
 				Name: "Test",
@@ -262,12 +269,12 @@ func TestGetTagInfo(t *testing.T) {
 			wantSquash: true,
 		},
 	}
-	for name, testCase := range testCases {
-		t.Run(name, func(t *testing.T) {
-			got := getTagInfo(testCase.field)
-			require.Equal(t, testCase.wantName, got.name)
-			require.Equal(t, testCase.wantOmit, got.omitEmpty)
-			require.Equal(t, testCase.wantSquash, got.squash)
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			got := getTagInfo(tt.field)
+			require.Equal(t, tt.wantName, got.name)
+			require.Equal(t, tt.wantOmit, got.omitEmpty)
+			require.Equal(t, tt.wantSquash, got.squash)
 		})
 	}
 }
@@ -283,10 +290,10 @@ func TestEncodeValueError(t *testing.T) {
 		{encodeFn: enc.encodeStruct, wantErr: &reflect.ValueError{Method: "encodeStruct", Kind: reflect.String}},
 		{encodeFn: enc.encodeSlice, wantErr: &reflect.ValueError{Method: "encodeSlice", Kind: reflect.String}},
 	}
-	for _, testCase := range testCases {
-		got, err := testCase.encodeFn(testValue)
+	for _, tt := range testCases {
+		got, err := tt.encodeFn(testValue)
 		require.Error(t, err)
-		require.Equal(t, testCase.wantErr, err)
+		require.Equal(t, tt.wantErr, err)
 		require.Nil(t, got)
 	}
 }
@@ -306,7 +313,7 @@ func TestEncodeNonStringEncodedKey(t *testing.T) {
 	}
 	got, err := enc.Encode(testCase)
 	require.Error(t, err)
-	require.True(t, errors.Is(err, errNonStringEncodedKey))
+	require.ErrorIs(t, err, errNonStringEncodedKey)
 	require.Nil(t, got)
 }
 
@@ -358,7 +365,7 @@ func TestEncodeStructError(t *testing.T) {
 	}
 	got, err := enc.Encode(testCase)
 	require.Error(t, err)
-	require.True(t, errors.Is(err, wantErr))
+	require.ErrorIs(t, err, wantErr)
 	require.Nil(t, got)
 }
 

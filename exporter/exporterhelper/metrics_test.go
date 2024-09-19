@@ -25,9 +25,9 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/internal/queue"
-	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
@@ -86,7 +86,7 @@ func TestMetricsRequestExporter_NilMetricsConverter(t *testing.T) {
 func TestMetricsExporter_Default(t *testing.T) {
 	md := pmetric.NewMetrics()
 	me, err := NewMetricsExporter(context.Background(), exportertest.NewNopSettings(), &fakeMetricsExporterConfig, newPushMetricsData(nil))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, me)
 
 	assert.Equal(t, consumer.Capabilities{MutatesData: false}, me.Capabilities())
@@ -99,7 +99,7 @@ func TestMetricsRequestExporter_Default(t *testing.T) {
 	md := pmetric.NewMetrics()
 	me, err := NewMetricsRequestExporter(context.Background(), exportertest.NewNopSettings(),
 		(&fakeRequestConverter{}).requestFromMetricsFunc)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, me)
 
 	assert.Equal(t, consumer.Capabilities{MutatesData: false}, me.Capabilities())
@@ -111,7 +111,7 @@ func TestMetricsRequestExporter_Default(t *testing.T) {
 func TestMetricsExporter_WithCapabilities(t *testing.T) {
 	capabilities := consumer.Capabilities{MutatesData: true}
 	me, err := NewMetricsExporter(context.Background(), exportertest.NewNopSettings(), &fakeMetricsExporterConfig, newPushMetricsData(nil), WithCapabilities(capabilities))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, me)
 
 	assert.Equal(t, capabilities, me.Capabilities())
@@ -121,7 +121,7 @@ func TestMetricsRequestExporter_WithCapabilities(t *testing.T) {
 	capabilities := consumer.Capabilities{MutatesData: true}
 	me, err := NewMetricsRequestExporter(context.Background(), exportertest.NewNopSettings(),
 		(&fakeRequestConverter{}).requestFromMetricsFunc, WithCapabilities(capabilities))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, me)
 
 	assert.Equal(t, capabilities, me.Capabilities())
@@ -157,7 +157,7 @@ func TestMetricsRequestExporter_Default_ExportError(t *testing.T) {
 }
 
 func TestMetricsExporter_WithPersistentQueue(t *testing.T) {
-	qCfg := NewDefaultQueueSettings()
+	qCfg := NewDefaultQueueConfig()
 	storageID := component.MustNewIDWithName("file_storage", "storage")
 	qCfg.StorageID = &storageID
 	rCfg := configretry.NewDefaultBackOffConfig()
@@ -202,7 +202,7 @@ func TestMetricsExporter_pMetricModifiedDownStream_WithRecordMetrics(t *testing.
 	require.NotNil(t, me)
 	md := testdata.GenerateMetrics(2)
 
-	assert.NoError(t, me.ConsumeMetrics(context.Background(), md))
+	require.NoError(t, me.ConsumeMetrics(context.Background(), md))
 	assert.Equal(t, 0, md.MetricCount())
 	require.NoError(t, tt.CheckExporterMetrics(int64(4), 0))
 }
@@ -255,7 +255,7 @@ func TestMetricsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	rCfg := configretry.NewDefaultBackOffConfig()
-	qCfg := NewDefaultQueueSettings()
+	qCfg := NewDefaultQueueConfig()
 	qCfg.NumConsumers = 1
 	qCfg.QueueSize = 2
 	wantErr := errors.New("some-error")
@@ -424,7 +424,7 @@ func checkWrapSpanForMetricsExporter(t *testing.T, sr *tracetest.SpanRecorder, t
 
 	// Inspection time!
 	gotSpanData := sr.Ended()
-	require.Equal(t, numRequests+1, len(gotSpanData))
+	require.Len(t, gotSpanData, numRequests+1)
 
 	parentSpan := gotSpanData[numRequests]
 	require.Equalf(t, fakeMetricsParentSpanName, parentSpan.Name(), "SpanData %v", parentSpan)
@@ -438,7 +438,7 @@ func checkWrapSpanForMetricsExporter(t *testing.T, sr *tracetest.SpanRecorder, t
 			sentMetricPoints = 0
 			failedToSendMetricPoints = numMetricPoints
 		}
-		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: obsmetrics.SentMetricPointsKey, Value: attribute.Int64Value(sentMetricPoints)}, "SpanData %v", sd)
-		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: obsmetrics.FailedToSendMetricPointsKey, Value: attribute.Int64Value(failedToSendMetricPoints)}, "SpanData %v", sd)
+		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: internal.SentMetricPointsKey, Value: attribute.Int64Value(sentMetricPoints)}, "SpanData %v", sd)
+		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: internal.FailedToSendMetricPointsKey, Value: attribute.Int64Value(failedToSendMetricPoints)}, "SpanData %v", sd)
 	}
 }

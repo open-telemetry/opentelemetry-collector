@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -119,8 +120,8 @@ func TestLogsRouterConsumers(t *testing.T) {
 	assert.Len(t, rcs, 2)
 	assert.ElementsMatch(t, []component.ID{fooID, barID}, rcs)
 
-	assert.Len(t, foo.AllLogs(), 0)
-	assert.Len(t, bar.AllLogs(), 0)
+	assert.Empty(t, foo.AllLogs())
+	assert.Empty(t, bar.AllLogs())
 
 	both, err := r.Consumer(fooID, barID)
 	assert.NotNil(t, both)
@@ -148,7 +149,7 @@ func TestLogsRouterConsumers(t *testing.T) {
 
 	none, err := r.Consumer()
 	assert.Nil(t, none)
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	fake, err := r.Consumer(component.MustNewID("fake"))
 	assert.Nil(t, fake)

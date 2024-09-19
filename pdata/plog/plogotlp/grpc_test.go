@@ -43,7 +43,7 @@ func TestGrpc(t *testing.T) {
 			return lis.Dial()
 		}),
 		grpc.WithTransportCredentials(insecure.NewCredentials()))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	t.Cleanup(func() {
 		assert.NoError(t, cc.Close())
 	})
@@ -51,7 +51,7 @@ func TestGrpc(t *testing.T) {
 	logClient := NewGRPCClient(cc)
 
 	resp, err := logClient.Export(context.Background(), generateLogsRequest())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, NewExportResponse(), resp)
 }
 
@@ -75,7 +75,7 @@ func TestGrpcError(t *testing.T) {
 			return lis.Dial()
 		}),
 		grpc.WithTransportCredentials(insecure.NewCredentials()))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	t.Cleanup(func() {
 		assert.NoError(t, cc.Close())
 	})
