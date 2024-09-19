@@ -148,7 +148,7 @@ func TestGrpcClientExtraOption(t *testing.T) {
 		tt.TelemetrySettings(),
 		[]ToClientConnOption{WithGrpcDialOption(extraOpt)},
 	)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, opts, 3)
 	assert.Equal(t, opts[2], extraOpt)
 }
@@ -283,7 +283,7 @@ func TestGrpcServerExtraOption(t *testing.T) {
 		componenttest.NewNopTelemetrySettings(),
 		[]ToServerOption{WithGrpcServerOption(extraOpt)},
 	)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, opts, 4)
 	assert.Equal(t, opts[3], extraOpt)
 }
