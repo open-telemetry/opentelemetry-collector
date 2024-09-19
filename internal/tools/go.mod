@@ -227,3 +227,5 @@ retract (
 	v0.57.1 // Release failed, use v0.57.2
 	v0.57.0 // Release failed, use v0.57.2
 )
+
+replace github.com/jackc/pgx/v5 v5.4.3 => github.com/jackc/pgx/v5 v5.6.0
