@@ -49,7 +49,7 @@ func newLogger(ctx context.Context, cfg LogsConfig, options []zap.Option) (*zap.
 	logger, err := zapCfg.Build(options...)
 
 	if len(cfg.Processors) > 0 {
-		logger = logger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+		logger = logger.WithOptions(zap.WrapCore(func(_ zapcore.Core) zapcore.Core {
 			return otelzap.NewCore("go.opentelemetry.io/collector/service/telemetry", otelzap.WithLoggerProvider(sdk.LoggerProvider()))
 		}))
 	}
