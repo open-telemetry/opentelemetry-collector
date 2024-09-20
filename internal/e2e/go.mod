@@ -15,6 +15,7 @@ require (
 	go.opentelemetry.io/collector/config/configtls v1.17.0
 	go.opentelemetry.io/collector/confmap v1.17.0
 	go.opentelemetry.io/collector/connector v0.111.0
+	go.opentelemetry.io/collector/connector/connectortest v0.111.0
 	go.opentelemetry.io/collector/consumer v0.111.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.111.0
 	go.opentelemetry.io/collector/exporter v0.111.0
@@ -186,6 +187,8 @@ replace go.opentelemetry.io/collector/client => ../../client
 replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
 
 replace go.opentelemetry.io/collector/connector => ../../connector
+
+replace go.opentelemetry.io/collector/connector/connectortest => ../../connector/connectortest
 
 replace go.opentelemetry.io/collector/semconv => ../../semconv
 
