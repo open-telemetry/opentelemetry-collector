@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
@@ -45,6 +46,6 @@ func TestConsumeTraces(t *testing.T) {
 func TestConsumeTraces_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
 	cp, err := NewTraces(func(context.Context, ptrace.Traces) error { return want })
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, want, cp.ConsumeTraces(context.Background(), ptrace.NewTraces()))
 }

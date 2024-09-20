@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
@@ -23,7 +24,7 @@ func TestMergeProfiles(t *testing.T) {
 	pr1 := &profilesRequest{pd: testdata.GenerateProfiles(2)}
 	pr2 := &profilesRequest{pd: testdata.GenerateProfiles(3)}
 	res, err := mergeProfiles(context.Background(), pr1, pr2)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	fmt.Fprintf(os.Stdout, "%#v\n", res.(*profilesRequest).pd)
 	assert.Equal(t, 5, res.(*profilesRequest).pd.SampleCount())
 }
@@ -133,7 +134,7 @@ func TestMergeSplitProfiles(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := mergeSplitProfiles(context.Background(), tt.cfg, tt.pr1, tt.pr2)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, len(tt.expected), len(res))
 			for i, r := range res {
 				assert.Equal(t, tt.expected[i], r.(*profilesRequest))

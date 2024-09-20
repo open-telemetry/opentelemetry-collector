@@ -52,6 +52,11 @@ func createDefaultConfig() component.Config {
 	}
 }
 
+// composeSignalURL composes the final URL for the signal (traces, metrics, logs) based on the configuration.
+// oCfg is the configuration of the exporter.
+// signalOverrideURL is the URL specified in the signal specific configuration (empty if not specified).
+// signalName is the name of the signal, e.g. "traces", "metrics", "logs".
+// signalVersion is the version of the signal, e.g. "v1" or "v1development".
 func composeSignalURL(oCfg *Config, signalOverrideURL, signalName, signalVersion string) (string, error) {
 	switch {
 	case signalOverrideURL != "":

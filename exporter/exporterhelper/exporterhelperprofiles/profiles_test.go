@@ -89,12 +89,12 @@ func TestProfilesExporter_Default(t *testing.T) {
 	ld := pprofile.NewProfiles()
 	le, err := NewProfilesExporter(context.Background(), exportertest.NewNopSettings(), &fakeProfilesExporterConfig, newPushProfilesData(nil))
 	assert.NotNil(t, le)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, consumer.Capabilities{MutatesData: false}, le.Capabilities())
-	assert.NoError(t, le.Start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, le.ConsumeProfiles(context.Background(), ld))
-	assert.NoError(t, le.Shutdown(context.Background()))
+	require.NoError(t, le.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, le.ConsumeProfiles(context.Background(), ld))
+	require.NoError(t, le.Shutdown(context.Background()))
 }
 
 func TestProfilesRequestExporter_Default(t *testing.T) {
@@ -102,12 +102,12 @@ func TestProfilesRequestExporter_Default(t *testing.T) {
 	le, err := NewProfilesRequestExporter(context.Background(), exportertest.NewNopSettings(),
 		(&internal.FakeRequestConverter{}).RequestFromProfilesFunc)
 	assert.NotNil(t, le)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, consumer.Capabilities{MutatesData: false}, le.Capabilities())
-	assert.NoError(t, le.Start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, le.ConsumeProfiles(context.Background(), ld))
-	assert.NoError(t, le.Shutdown(context.Background()))
+	require.NoError(t, le.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, le.ConsumeProfiles(context.Background(), ld))
+	require.NoError(t, le.Shutdown(context.Background()))
 }
 
 func TestProfilesExporter_WithCapabilities(t *testing.T) {
@@ -242,9 +242,9 @@ func TestProfilesExporter_WithShutdown(t *testing.T) {
 
 	le, err := NewProfilesExporter(context.Background(), exportertest.NewNopSettings(), &fakeProfilesExporterConfig, newPushProfilesData(nil), exporterhelper.WithShutdown(shutdown))
 	assert.NotNil(t, le)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.NoError(t, le.Shutdown(context.Background()))
+	require.NoError(t, le.Shutdown(context.Background()))
 	assert.True(t, shutdownCalled)
 }
 
@@ -255,9 +255,9 @@ func TestProfilesRequestExporter_WithShutdown(t *testing.T) {
 	le, err := NewProfilesRequestExporter(context.Background(), exportertest.NewNopSettings(),
 		(&internal.FakeRequestConverter{}).RequestFromProfilesFunc, exporterhelper.WithShutdown(shutdown))
 	assert.NotNil(t, le)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.NoError(t, le.Shutdown(context.Background()))
+	require.NoError(t, le.Shutdown(context.Background()))
 	assert.True(t, shutdownCalled)
 }
 
@@ -267,7 +267,7 @@ func TestProfilesExporter_WithShutdown_ReturnError(t *testing.T) {
 
 	le, err := NewProfilesExporter(context.Background(), exportertest.NewNopSettings(), &fakeProfilesExporterConfig, newPushProfilesData(nil), exporterhelper.WithShutdown(shutdownErr))
 	assert.NotNil(t, le)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, want, le.Shutdown(context.Background()))
 }
@@ -279,7 +279,7 @@ func TestProfilesRequestExporter_WithShutdown_ReturnError(t *testing.T) {
 	le, err := NewProfilesRequestExporter(context.Background(), exportertest.NewNopSettings(),
 		(&internal.FakeRequestConverter{}).RequestFromProfilesFunc, exporterhelper.WithShutdown(shutdownErr))
 	assert.NotNil(t, le)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, want, le.Shutdown(context.Background()))
 }

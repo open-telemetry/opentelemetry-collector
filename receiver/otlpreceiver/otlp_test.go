@@ -134,11 +134,11 @@ func TestJsonHttp(t *testing.T) {
 				respBytes := doHTTPRequest(t, url, tt.encoding, tt.contentType, dr.jsonBytes, tt.expectedStatusCode)
 				if tt.err == nil {
 					tr := ptraceotlp.NewExportResponse()
-					assert.NoError(t, tr.UnmarshalJSON(respBytes), "Unable to unmarshal response to Response")
+					require.NoError(t, tr.UnmarshalJSON(respBytes), "Unable to unmarshal response to Response")
 					sink.checkData(t, dr.data, 1)
 				} else {
 					errStatus := &spb.Status{}
-					assert.NoError(t, json.Unmarshal(respBytes, errStatus))
+					require.NoError(t, json.Unmarshal(respBytes, errStatus))
 					if s, ok := status.FromError(tt.err); ok {
 						assert.True(t, proto.Equal(errStatus, s.Proto()))
 					} else {
@@ -391,11 +391,11 @@ func TestProtoHttp(t *testing.T) {
 				respBytes := doHTTPRequest(t, url, tt.encoding, "application/x-protobuf", dr.protoBytes, tt.expectedStatusCode)
 				if tt.err == nil {
 					tr := ptraceotlp.NewExportResponse()
-					assert.NoError(t, tr.UnmarshalProto(respBytes))
+					require.NoError(t, tr.UnmarshalProto(respBytes))
 					sink.checkData(t, dr.data, 1)
 				} else {
 					errStatus := &spb.Status{}
-					assert.NoError(t, proto.Unmarshal(respBytes, errStatus))
+					require.NoError(t, proto.Unmarshal(respBytes, errStatus))
 					if s, ok := status.FromError(tt.err); ok {
 						assert.True(t, proto.Equal(errStatus, s.Proto()))
 					} else {
@@ -669,10 +669,10 @@ func TestOTLPReceiverHTTPTracesIngestTest(t *testing.T) {
 		if ingestionState.expectedCode == codes.OK {
 			require.Equal(t, 200, resp.StatusCode)
 			tr := ptraceotlp.NewExportResponse()
-			assert.NoError(t, tr.UnmarshalProto(respBytes))
+			require.NoError(t, tr.UnmarshalProto(respBytes))
 		} else {
 			errStatus := &spb.Status{}
-			assert.NoError(t, proto.Unmarshal(respBytes, errStatus))
+			require.NoError(t, proto.Unmarshal(respBytes, errStatus))
 			assert.Equal(t, ingestionState.expectedStatusCode, resp.StatusCode)
 			assert.Equal(t, ingestionState.expectedCode, codes.Code(errStatus.Code))
 		}
@@ -1063,7 +1063,7 @@ func TestShutdown(t *testing.T) {
 	// Now shutdown the receiver, while continuing sending traces to it.
 	ctx, cancelFn := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancelFn()
-	assert.NoError(t, r.Shutdown(ctx))
+	require.NoError(t, r.Shutdown(ctx))
 
 	// Remember how many spans the sink received. This number should not change after this
 	// point because after Shutdown() returns the component is not allowed to produce
