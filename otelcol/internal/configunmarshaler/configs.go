@@ -5,8 +5,8 @@ package configunmarshaler // import "go.opentelemetry.io/collector/otelcol/inter
 
 import (
 	"fmt"
-
-	"golang.org/x/exp/maps"
+	"maps"
+	"slices"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -35,7 +35,7 @@ func (c *Configs[F]) Unmarshal(conf *confmap.Conf) error {
 		// Find factory based on component kind and type that we read from config source.
 		factory, ok := c.factories[id.Type()]
 		if !ok {
-			return errorUnknownType(id, maps.Keys(c.factories))
+			return errorUnknownType(id, slices.Collect(maps.Keys(c.factories)))
 		}
 
 		// Get the configuration from the confmap.Conf to preserve internal representation.
