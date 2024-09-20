@@ -151,11 +151,3 @@ Duration of request [alpha]
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | s | Histogram | Double |
-
-### otelcol_request_duration_no_attrs
-
-Duration of request. Test mdatagen without any attributes
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| s | Histogram | Double |

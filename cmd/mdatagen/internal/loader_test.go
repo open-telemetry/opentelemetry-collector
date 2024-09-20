@@ -250,7 +250,7 @@ func TestLoadMetadata(t *testing.T) {
 								MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeInt},
 								Mono:            Mono{Monotonic: true},
 							},
-							Attributes: []attributeName{"string_attr", "overridden_int_attr", "enum_attr", "boolean_attr"},
+							Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "boolean_attr"},
 						},
 						"request_duration": {
 							Enabled:     true,
@@ -261,7 +261,7 @@ func TestLoadMetadata(t *testing.T) {
 								MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
 								Boundaries:      []float64{1, 10, 100},
 							},
-							Attributes: []attributeName{"overridden_int_attr"},
+							Attributes: []AttributeName{"overridden_int_attr"},
 						},
 						"request_duration_no_attrs": {
 							Enabled:     true,
@@ -271,7 +271,7 @@ func TestLoadMetadata(t *testing.T) {
 								MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
 								Boundaries:      []float64{1, 10, 100},
 							},
-							Attributes: []attributeName{},
+							Attributes: []AttributeName{},
 						},
 						"process_runtime_total_alloc_bytes": {
 							Enabled:     true,
@@ -285,7 +285,7 @@ func TestLoadMetadata(t *testing.T) {
 								},
 								Async: true,
 							},
-							Attributes: []attributeName{"string_attr", "overridden_int_attr", "enum_attr"},
+							Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr"},
 						},
 						"queue_length": {
 							Enabled:               true,
