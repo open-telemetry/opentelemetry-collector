@@ -15,6 +15,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componentprofiles"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -116,7 +117,20 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 	// Create and start the receiver.
 	var receiver component.Component
 	var err error
-	switch params.Signal {
+
+	s := params.Signal
+	switch params.DataType {
+	case component.DataTypeTraces:
+		s = pipeline.SignalTraces
+	case component.DataTypeMetrics:
+		s = pipeline.SignalMetrics
+	case component.DataTypeLogs:
+		s = pipeline.SignalLogs
+	case componentprofiles.DataTypeProfiles:
+		s = componentprofiles.SignalProfiles
+	}
+
+	switch s {
 	case pipeline.SignalLogs:
 		receiver, err = params.Factory.CreateLogsReceiver(ctx, NewNopSettings(), params.Config, consumer)
 	case pipeline.SignalTraces:
