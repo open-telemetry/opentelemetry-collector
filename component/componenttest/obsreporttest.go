@@ -5,6 +5,7 @@ package componenttest // import "go.opentelemetry.io/collector/component/compone
 
 import (
 	"context"
+
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
