@@ -64,7 +64,7 @@ There are three supported ways to install the builder:
 
 ### Official release Docker image
 
-You will find the official docker images at [DockerHub](hub.docker.com/r/otel/opentelemetry-collector-builder). 
+You will find the official docker images at [DockerHub](https://hub.docker.com/r/otel/opentelemetry-collector-builder). 
 
 Pull the image via tagged version number (e.g. v0.110.0) or 'latest.' You may also specify platform, although Docker will handle this automatically as it is a multi-platform build.
 
