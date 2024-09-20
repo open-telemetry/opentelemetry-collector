@@ -55,21 +55,25 @@ Below are some more examples that can be used for reference:
 
 You can run `cd cmd/mdatagen && $(GOCMD) install .` to install the `mdatagen` tool in `GOBIN` and then run `mdatagen metadata.yaml` to generate documentation for a specific component or you can run `make generate` to generate documentation for all components.
 
-### Generate a package with an alternate name
+### Generate multiple metadata packages
 
-By default, `mdatagen` will generate a package called `metadata` in the `internal` directory. If you want to generate a package with a different name, you can use the `--package_name` flag to provide an alternate name.
+By default, `mdatagen` will generate a package called `metadata` in the `internal` directory. If you want to generate a package with a different name, you can use the `generated_package_name` configuration field to provide an alternate name.
 
-```go
-//go:generate mdatagen --package_name custom custom.yaml
-
-package main
+```yaml
+type: otlp
+generated_package_name: customname
+status:
+  class: receiver
+  stability:
+    beta: [logs]
+    stable: [metrics, traces]
 ```
 
 The most common scenario for this would be making major changes to a receiver's metadata without breaking what exists. In this scenario, `mdatagen` could produce separate packages for different metadata specs in the same receiver:
 
 ```go
 //go:generate mdatagen metadata.yaml
-//go:generate mdatagen --package_name custom custom.yaml
+//go:generate mdatagen custom.yaml
 
 package main
 ```
