@@ -142,7 +142,12 @@ func (id *InstanceID) addPipelines(pipelineIDs []pipeline.ID) {
 func convertToPipelineIDs(ids []component.ID) []pipeline.ID {
 	pipelineIDs := make([]pipeline.ID, len(ids))
 	for i, id := range ids {
-		pipelineIDs[i] = pipeline.MustNewIDWithName(id.Type().String(), id.Name())
+		if id.Name() != "" {
+			pipelineIDs[i] = pipeline.MustNewIDWithName(id.Type().String(), id.Name())
+		} else {
+			pipelineIDs[i] = pipeline.MustNewID(id.Type().String())
+		}
+
 	}
 	return pipelineIDs
 }
