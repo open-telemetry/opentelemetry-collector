@@ -29,7 +29,7 @@ func TestProfilesText(t *testing.T) {
 		},
 		{
 			name: "two_profiles",
-			in:   testdata.GenerateProfiles(2),
+			in:   testdata.GenerateExtendedProfiles(2),
 			out:  "two_profiles.out",
 		},
 	}
