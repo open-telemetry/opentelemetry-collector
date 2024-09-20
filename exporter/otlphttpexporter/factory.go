@@ -49,7 +49,12 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func composeSignalURL(oCfg *Config, signalOverrideURL string, signalName string) (string, error) {
+// composeSignalURL composes the final URL for the signal (traces, metrics, logs) based on the configuration.
+// oCfg is the configuration of the exporter.
+// signalOverrideURL is the URL specified in the signal specific configuration (empty if not specified).
+// signalName is the name of the signal, e.g. "traces", "metrics", "logs".
+// signalVersion is the version of the signal, e.g. "v1" or "v1development".
+func composeSignalURL(oCfg *Config, signalOverrideURL string, signalName string, signalVersion string) (string, error) {
 	switch {
 	case signalOverrideURL != "":
 		_, err := url.Parse(signalOverrideURL)
@@ -61,9 +66,9 @@ func composeSignalURL(oCfg *Config, signalOverrideURL string, signalName string)
 		return "", fmt.Errorf("either endpoint or %s_endpoint must be specified", signalName)
 	default:
 		if strings.HasSuffix(oCfg.Endpoint, "/") {
-			return oCfg.Endpoint + "v1/" + signalName, nil
+			return oCfg.Endpoint + signalVersion + "/" + signalName, nil
 		}
-		return oCfg.Endpoint + "/v1/" + signalName, nil
+		return oCfg.Endpoint + "/" + signalVersion + "/" + signalName, nil
 	}
 }
 
@@ -78,7 +83,7 @@ func createTracesExporter(
 	}
 	oCfg := cfg.(*Config)
 
-	oce.tracesURL, err = composeSignalURL(oCfg, oCfg.TracesEndpoint, "traces")
+	oce.tracesURL, err = composeSignalURL(oCfg, oCfg.TracesEndpoint, "traces", "v1")
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +109,7 @@ func createMetricsExporter(
 	}
 	oCfg := cfg.(*Config)
 
-	oce.metricsURL, err = composeSignalURL(oCfg, oCfg.MetricsEndpoint, "metrics")
+	oce.metricsURL, err = composeSignalURL(oCfg, oCfg.MetricsEndpoint, "metrics", "v1")
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +135,7 @@ func createLogsExporter(
 	}
 	oCfg := cfg.(*Config)
 
-	oce.logsURL, err = composeSignalURL(oCfg, oCfg.LogsEndpoint, "logs")
+	oce.logsURL, err = composeSignalURL(oCfg, oCfg.LogsEndpoint, "logs", "v1")
 	if err != nil {
 		return nil, err
 	}
