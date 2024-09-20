@@ -38,7 +38,7 @@ func TestTelemetryMetrics(t *testing.T) {
 
 	// Initialize default values for all attributes used by telemetry metrics. Must be used or we'll get lint errors.
 	stringAttr := attribute.String("string_attr", "value")
-	stateAttr := attribute.Int64("state", 1)
+	stateAttr := attribute.Int64("state", int64(1))
 	// Choose first value in array for enums
 	enumAttr := attribute.String("enum_attr", "red")
 	booleanAttr := attribute.String("boolean_attr", "false")
