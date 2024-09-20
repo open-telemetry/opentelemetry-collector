@@ -6,6 +6,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.109.0
+	go.opentelemetry.io/collector/component/componentprofiles v0.109.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.109.0
 	go.opentelemetry.io/collector/consumer v0.109.0
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.109.0
