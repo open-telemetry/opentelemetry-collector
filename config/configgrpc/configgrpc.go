@@ -202,6 +202,16 @@ func NewDefaultServerConfig() *ServerConfig {
 	}
 }
 
+func (gcs *ClientConfig) Validate() error {
+	if gcs.BalancerName != "" {
+		if balancer.Get(gcs.BalancerName) == nil {
+			return fmt.Errorf("invalid balancer_name: %s", gcs.BalancerName)
+		}
+	}
+
+	return nil
+}
+
 // sanitizedEndpoint strips the prefix of either http:// or https:// from configgrpc.ClientConfig.Endpoint.
 func (gcs *ClientConfig) sanitizedEndpoint() string {
 	switch {
@@ -292,10 +302,6 @@ func (gcs *ClientConfig) toDialOptions(ctx context.Context, host component.Host,
 	}
 
 	if gcs.BalancerName != "" {
-		valid := validateBalancerName(gcs.BalancerName)
-		if !valid {
-			return nil, fmt.Errorf("invalid balancer_name: %s", gcs.BalancerName)
-		}
 		opts = append(opts, grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy":"%s"}`, gcs.BalancerName)))
 	}
 
@@ -313,10 +319,6 @@ func (gcs *ClientConfig) toDialOptions(ctx context.Context, host component.Host,
 	opts = append(opts, grpc.WithStatsHandler(otelgrpc.NewClientHandler(otelOpts...)))
 
 	return opts, nil
-}
-
-func validateBalancerName(balancerName string) bool {
-	return balancer.Get(balancerName) != nil
 }
 
 func (gss *ServerConfig) Validate() error {
