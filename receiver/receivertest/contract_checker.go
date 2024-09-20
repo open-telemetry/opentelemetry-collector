@@ -119,6 +119,7 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 	var err error
 
 	s := params.Signal
+	// nolint
 	switch params.DataType {
 	case component.DataTypeTraces:
 		s = pipeline.SignalTraces
