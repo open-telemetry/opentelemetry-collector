@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerprofiles"
@@ -149,7 +150,7 @@ func TestProfilessRouterConsumer(t *testing.T) {
 
 	none, err := r.Consumer()
 	assert.Nil(t, none)
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	fake, err := r.Consumer(pipeline.MustNewID("fake"))
 	assert.Nil(t, fake)

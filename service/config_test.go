@@ -74,10 +74,10 @@ func TestConfigValidate(t *testing.T) {
 		},
 	}
 
-	for _, test := range testCases {
-		t.Run(test.name, func(t *testing.T) {
-			cfg := test.cfgFn()
-			assert.Equal(t, test.expected, cfg.Validate())
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := tt.cfgFn()
+			assert.Equal(t, tt.expected, cfg.Validate())
 		})
 	}
 }

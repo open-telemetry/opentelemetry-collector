@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_Signal_String(t *testing.T) {
@@ -17,14 +18,14 @@ func Test_Signal_String(t *testing.T) {
 
 func Test_Signal_MarshalText(t *testing.T) {
 	val, err := SignalTraces.MarshalText()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, []byte("traces"), val)
 
 	val, err = SignalMetrics.MarshalText()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, []byte("metrics"), val)
 
 	val, err = SignalLogs.MarshalText()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, []byte("logs"), val)
 }

@@ -13,6 +13,8 @@ import (
 var (
 	// ErrDataTypeIsNotSupported can be returned by receiver, exporter, processor or connector factory funcs that create the
 	// Component if the particular telemetry data type is not supported by the receiver, exporter, processor or connector factory.
+	//
+	// Deprecated: [v0.110.0] Use pipeline.ErrSignalNotSupported instead
 	ErrDataTypeIsNotSupported = errors.New("telemetry type is not supported")
 )
 

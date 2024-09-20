@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentprofiles"
@@ -55,7 +56,7 @@ func TestNewFactoryWithSameTypes(t *testing.T) {
 
 	assert.Equal(t, component.StabilityLevelAlpha, factory.ProfilesToProfilesStability())
 	_, err := factory.CreateProfilesToProfiles(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	_, err = factory.CreateProfilesToTraces(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	assert.Equal(t, err, internal.ErrDataTypes(testID, componentprofiles.SignalProfiles, pipeline.SignalTraces))
@@ -84,23 +85,23 @@ func TestNewFactoryWithTranslateTypes(t *testing.T) {
 
 	assert.Equal(t, component.StabilityLevelBeta, factory.TracesToProfilesStability())
 	_, err = factory.CreateTracesToProfiles(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelDevelopment, factory.MetricsToProfilesStability())
 	_, err = factory.CreateMetricsToProfiles(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelAlpha, factory.LogsToProfilesStability())
 	_, err = factory.CreateLogsToProfiles(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelBeta, factory.ProfilesToTracesStability())
 	_, err = factory.CreateProfilesToTraces(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelDevelopment, factory.ProfilesToMetricsStability())
 	_, err = factory.CreateProfilesToMetrics(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelAlpha, factory.ProfilesToLogsStability())
 	_, err = factory.CreateProfilesToLogs(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())

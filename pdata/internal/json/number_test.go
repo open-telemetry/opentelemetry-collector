@@ -8,6 +8,7 @@ import (
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestReadInt32(t *testing.T) {
@@ -57,7 +58,7 @@ func TestReadInt32(t *testing.T) {
 				assert.Error(t, iter.Error)
 				return
 			}
-			assert.NoError(t, iter.Error)
+			require.NoError(t, iter.Error)
 			assert.Equal(t, tt.want, val)
 		})
 	}
@@ -110,7 +111,7 @@ func TestReadUint32(t *testing.T) {
 				assert.Error(t, iter.Error)
 				return
 			}
-			assert.NoError(t, iter.Error)
+			require.NoError(t, iter.Error)
 			assert.Equal(t, tt.want, val)
 		})
 	}
@@ -163,7 +164,7 @@ func TestReadInt64(t *testing.T) {
 				assert.Error(t, iter.Error)
 				return
 			}
-			assert.NoError(t, iter.Error)
+			require.NoError(t, iter.Error)
 			assert.Equal(t, tt.want, val)
 		})
 	}
@@ -216,7 +217,7 @@ func TestReadUint64(t *testing.T) {
 				assert.Error(t, iter.Error)
 				return
 			}
-			assert.NoError(t, iter.Error)
+			require.NoError(t, iter.Error)
 			assert.Equal(t, tt.want, val)
 		})
 	}
@@ -269,7 +270,7 @@ func TestReadFloat64(t *testing.T) {
 				assert.Error(t, iter.Error)
 				return
 			}
-			assert.NoError(t, iter.Error)
+			require.NoError(t, iter.Error)
 			assert.InDelta(t, tt.want, val, 0.01)
 		})
 	}

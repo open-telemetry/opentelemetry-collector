@@ -17,7 +17,7 @@ import (
 
 func TestLoadConfig(t *testing.T) {
 	factories, err := NopFactories()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	cfg, err := LoadConfig(filepath.Join("testdata", "config.yaml"), factories)
 	require.NoError(t, err)
@@ -62,7 +62,7 @@ func TestLoadConfig(t *testing.T) {
 
 func TestLoadConfigAndValidate(t *testing.T) {
 	factories, err := NopFactories()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	cfgValidate, errValidate := LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 	require.NoError(t, errValidate)
