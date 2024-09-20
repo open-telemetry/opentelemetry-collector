@@ -56,12 +56,13 @@ type CheckConsumeContractParams struct {
 	T *testing.T
 	// Factory that allows to create a receiver.
 	Factory receiver.Factory
+
 	// DataType to test for.
 	//
 	// Deprecated: [v0.110.0] Use Signal instead.
-	// nolint
-	DataType component.DataType
-	Signal   pipeline.Signal
+	DataType component.DataType // nolint
+
+	Signal pipeline.Signal
 	// Config of the receiver to use.
 	Config component.Config
 	// Generator that can send data to the receiver.

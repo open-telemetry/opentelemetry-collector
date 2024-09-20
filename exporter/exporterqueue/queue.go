@@ -28,8 +28,7 @@ type Queue[T any] queue.Queue[T]
 type Settings struct {
 
 	// Deprecated: [v0.110.0] Use Signal instead
-	// nolint
-	DataType component.DataType
+	DataType component.DataType // nolint
 
 	Signal           pipeline.Signal
 	ExporterSettings exporter.Settings
