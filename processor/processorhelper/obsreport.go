@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/internal"
 	"go.opentelemetry.io/collector/processor/processorhelper/internal/metadata"
@@ -34,6 +35,7 @@ func BuildCustomMetricName(configType, metric string) string {
 type ObsReport struct {
 	otelAttrs        []attribute.KeyValue
 	telemetryBuilder *metadata.TelemetryBuilder
+	metricLevel      configtelemetry.Level
 }
 
 // ObsReportSettings are settings for creating an ObsReport.
@@ -57,12 +59,18 @@ func newObsReport(cfg ObsReportSettings) (*ObsReport, error) {
 			attribute.String(internal.ProcessorKey, cfg.ProcessorID.String()),
 		},
 		telemetryBuilder: telemetryBuilder,
+		metricLevel:      cfg.ProcessorCreateSettings.TelemetrySettings.MetricsLevel,
 	}, nil
 }
 
 func (or *ObsReport) recordInOut(ctx context.Context, incoming, outgoing int) {
 	or.telemetryBuilder.ProcessorIncomingItems.Add(ctx, int64(incoming), metric.WithAttributes(or.otelAttrs...))
 	or.telemetryBuilder.ProcessorOutgoingItems.Add(ctx, int64(outgoing), metric.WithAttributes(or.otelAttrs...))
+}
+
+func (or *ObsReport) recordInOutSize(ctx context.Context, bytesIn, bytesOut int) {
+	or.telemetryBuilder.ProcessorIncomingSize.Add(ctx, int64(bytesIn), metric.WithAttributes(or.otelAttrs...))
+	or.telemetryBuilder.ProcessorOutgoingSize.Add(ctx, int64(bytesOut), metric.WithAttributes(or.otelAttrs...))
 }
 
 func (or *ObsReport) recordData(ctx context.Context, dataType component.DataType, accepted, refused, dropped int64) {
