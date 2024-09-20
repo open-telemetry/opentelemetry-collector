@@ -263,16 +263,6 @@ func TestLoadMetadata(t *testing.T) {
 							},
 							Attributes: []AttributeName{"overridden_int_attr"},
 						},
-						"request_duration_no_attrs": {
-							Enabled:     true,
-							Description: "Duration of request. Test mdatagen without any attributes",
-							Unit:        strPtr("s"),
-							Histogram: &histogram{
-								MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
-								Boundaries:      []float64{1, 10, 100},
-							},
-							Attributes: []AttributeName{},
-						},
 						"process_runtime_total_alloc_bytes": {
 							Enabled:     true,
 							Stability:   stability{Level: "stable"},
@@ -298,17 +288,6 @@ func TestLoadMetadata(t *testing.T) {
 									ValueType: pmetric.NumberDataPointValueTypeInt,
 								},
 								Async: true,
-							},
-						},
-						"disabled_metric": {
-							Enabled:     false,
-							Description: "This metric is disabled by default",
-							Unit:        strPtr("{items}"),
-							Optional:    false,
-							Gauge: &gauge{
-								MetricValueType: MetricValueType{
-									ValueType: pmetric.NumberDataPointValueTypeInt,
-								},
 							},
 						},
 					},
