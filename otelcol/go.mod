@@ -14,6 +14,7 @@ require (
 	go.opentelemetry.io/collector/extension v0.109.0
 	go.opentelemetry.io/collector/featuregate v1.15.0
 	go.opentelemetry.io/collector/processor v0.109.0
+	go.opentelemetry.io/collector/processor/processortest v0.109.0
 	go.opentelemetry.io/collector/receiver v0.109.0
 	go.opentelemetry.io/collector/service v0.109.0
 	go.uber.org/goleak v1.3.0
@@ -178,3 +179,5 @@ replace go.opentelemetry.io/collector/processor/processorprofiles => ../processo
 replace go.opentelemetry.io/collector/connector/connectorprofiles => ../connector/connectorprofiles
 
 replace go.opentelemetry.io/collector/exporter/exporterprofiles => ../exporter/exporterprofiles
+
+replace go.opentelemetry.io/collector/processor/processortest => ../processor/processortest

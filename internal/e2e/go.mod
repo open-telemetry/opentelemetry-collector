@@ -87,6 +87,7 @@ require (
 	go.opentelemetry.io/collector/pdata/pprofile v0.109.0 // indirect
 	go.opentelemetry.io/collector/processor v0.109.0 // indirect
 	go.opentelemetry.io/collector/processor/processorprofiles v0.109.0 // indirect
+	go.opentelemetry.io/collector/processor/processortest v0.109.0 // indirect
 	go.opentelemetry.io/collector/receiver/receiverprofiles v0.109.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.109.0 // indirect
 	go.opentelemetry.io/contrib/config v0.10.0 // indirect
@@ -206,3 +207,5 @@ replace go.opentelemetry.io/collector/processor/processorprofiles => ../../proce
 replace go.opentelemetry.io/collector/connector/connectorprofiles => ../../connector/connectorprofiles
 
 replace go.opentelemetry.io/collector/exporter/exporterprofiles => ../../exporter/exporterprofiles
+
+replace go.opentelemetry.io/collector/processor/processortest => ../../processor/processortest

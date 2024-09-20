@@ -86,6 +86,7 @@ replaces:
   - go.opentelemetry.io/collector/pdata/testdata => ../../pdata/testdata
   - go.opentelemetry.io/collector/pdata/pprofile => ../../pdata/pprofile
   - go.opentelemetry.io/collector/processor => ../../processor
+  - go.opentelemetry.io/collector/processor/processortest => ../../processor/processortest
   - go.opentelemetry.io/collector/processor/batchprocessor => ../../processor/batchprocessor
   - go.opentelemetry.io/collector/processor/memorylimiterprocessor => ../../processor/memorylimiterprocessor
   - go.opentelemetry.io/collector/processor/processorprofiles => ../../processor/processorprofiles
