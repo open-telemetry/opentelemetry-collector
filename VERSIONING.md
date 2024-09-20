@@ -1,13 +1,42 @@
-# Versioning
+# Versioning and stability
 
-This document describes the versioning policy for this repository. This policy
-is designed so that the following goal can be achieved:
+The OpenTelemetry Collector SIG produces several artifacts for [a variety of audiences](CONTRIBUTING.md#target-audiences). This document describes the versioning and support policy for these artifacts. These policies are designed so that the following goal can be achieved:
 
-**Users are provided a codebase of value that is stable and secure.**
+**Users are provided software artifacts of value that are stable and secure.**
 
-## Public API expectations
+The policies are divided depending on the artifact's target audience. While an artifact is supported, [critical bugs](docs/release.md#bugfix-release-criteria) and security vulnerabilities MUST be addressed. The main criteria for the length of support for an artifact is how easy it is for an artifact's target audience to adapt to disruptive changes.
 
-The following public API expectations apply to all modules in opentelemetry-collector and opentelemetry-collector-contrib.
+These policies reflect the current consensus of the OpenTelemetry Collector SIG. They are subject to change as the project evolves.
+
+## Software artifacts for end users
+
+Software artifacts intended for [end users](CONTRIBUTING.md#end-users) of the OpenTelemetry Collector include 
+- Binary distributions of the OpenTelemetry Collector.
+- Go modules that expose Collector components, such as receivers, processors, connectors, extensions and exporters. 
+
+These artifacts are versioned according to the [semantic versioning v2.0.0](https://semver.org/) specification.
+
+### General considerations
+
+Binary distributions produced by the Collector SIG contain components and features with varying [levels of stability](README.md#stability-levels). We abide by the following principles to relate the Collector's version to the stability of its components and features:
+
+* The Collector's core framework behavior MUST be stable in order for a Collector distribution to be v1.0.0 or higher.
+* Users can easily understand when they are opting in to use a component or feature that is not stable.
+    * The Collector MUST be configurable so that unstable components or features can be excluded ensuring that a fully stable configuration is possible.
+    * The Collector's telemetry (e.g. Collector logs) MUST provide the ability to identify usage of unstable components or features.
+
+### Long-term support after v1
+
+The OpenTelemetry Collector SIG provides long-term support for stable binary distributions of the OpenTelemetry Collector and its components. The following policies apply to long-term support for any major version starting on v1:
+
+* A binary distribution of the OpenTelemetry Collector MUST be supported for a minimum of **one year** after the release of the next major version of said distribution.
+* Components MUST be supported for a minimum of **6 months** after the release of the next major version of said component or after the component has been marked as deprecated. If a component has been deprecated for 6 months it MAY be removed from a binary distribution of the OpenTelemetry Collector. This does not imply a major version change in the Collector distribution.
+
+## Go modules
+
+Go modules are intended to be used by [component developers](CONTRIBUTING.md#component-developers) and [Collector library users](CONTRIBUTING.md#collector-library-users) of the OpenTelemetry Collector
+
+Unless otherwise specified, the following public API expectations apply to all modules in opentelemetry-collector and opentelemetry-collector-contrib.
 As a general rule, stability guarantees of modules versioned as `v1` or higher are aligned with [Go 1 compatibility promise](https://go.dev/doc/go1compat).
 
 ### General Go API considerations
@@ -54,7 +83,7 @@ structure.
 must continue to be valid after a change to the validation rules, except when the configuration struct would cause an error
 on its intended usage (e.g. when calling a method or when passed to any method or function in any module under opentelemetry-collector).
 
-## Versioning and module schema
+### Module versioning and schema
 
 * Versioning of this project will be idiomatic of a Go project using [Go
   modules](https://golang.org/ref/mod#versions).
@@ -135,3 +164,10 @@ on its intended usage (e.g. when calling a method or when passed to any method o
     * Contrib modules will be kept up to date with this project's releases.
 * GitHub releases will be made for all releases.
 * Go modules will be made available at Go package mirrors.
+
+### Long-term support after v1
+
+The OpenTelemetry Collector SIG provides long-term support for stable Go modules. Support for modules depend on the module's [target audiences](CONTRIBUTING.md#target-audiences). The following policies apply to long-term support for any major version starting on v1:
+
+- Modules intended for **component developers** MUST be supported for a minimum of **1 year** after the release of the next major version of said module or after the module has been marked as deprecated.
+- Modules intended for **Collector library users** MUST be supported for a minimum of **6 months** after the release of the next major version of said module or after the module has been marked as deprecated.

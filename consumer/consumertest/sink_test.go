@@ -71,6 +71,8 @@ func TestProfilesSink(t *testing.T) {
 		want = append(want, td)
 	}
 	assert.Equal(t, want, sink.AllProfiles())
+	assert.Equal(t, len(want), sink.SampleCount())
 	sink.Reset()
 	assert.Empty(t, sink.AllProfiles())
+	assert.Empty(t, sink.SampleCount())
 }

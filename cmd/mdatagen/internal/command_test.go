@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package main
+package internal
 
 import (
 	"bytes"
@@ -14,7 +14,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/cmd/mdatagen/internal"
 	"go.opentelemetry.io/collector/component"
 )
 
@@ -112,7 +111,7 @@ func TestRunContents(t *testing.T) {
 			tmpdir := filepath.Join(t.TempDir(), "shortname")
 			err := os.MkdirAll(tmpdir, 0750)
 			require.NoError(t, err)
-			ymlContent, err := os.ReadFile(filepath.Join("internal/testdata", tt.yml))
+			ymlContent, err := os.ReadFile(filepath.Join("testdata", tt.yml))
 			require.NoError(t, err)
 			metadataFile := filepath.Join(tmpdir, "metadata.yaml")
 			require.NoError(t, os.WriteFile(metadataFile, ymlContent, 0600))
@@ -266,7 +265,7 @@ func TestInlineReplace(t *testing.T) {
 		warnings       []string
 		stability      map[component.StabilityLevel][]string
 		distros        []string
-		codeowners     *internal.Codeowners
+		codeowners     *Codeowners
 		githubProject  string
 	}{
 		{
@@ -308,7 +307,7 @@ Some info about a component
 			outputFile:     "readme_with_status_codeowners_and_seeking_new.md",
 			componentClass: "receiver",
 			distros:        []string{"contrib"},
-			codeowners: &internal.Codeowners{
+			codeowners: &Codeowners{
 				Active:     []string{"foo"},
 				SeekingNew: true,
 			},
@@ -325,7 +324,7 @@ Some info about a component
 			outputFile:     "readme_with_status_codeowners_and_emeritus.md",
 			componentClass: "receiver",
 			distros:        []string{"contrib"},
-			codeowners: &internal.Codeowners{
+			codeowners: &Codeowners{
 				Active:   []string{"foo"},
 				Emeritus: []string{"bar"},
 			},
@@ -342,7 +341,7 @@ Some info about a component
 			outputFile:     "readme_with_status_codeowners.md",
 			componentClass: "receiver",
 			distros:        []string{"contrib"},
-			codeowners: &internal.Codeowners{
+			codeowners: &Codeowners{
 				Active: []string{"foo"},
 			},
 		},
@@ -426,11 +425,11 @@ Some info about a component
 			if len(tt.stability) > 0 {
 				stability = tt.stability
 			}
-			md := internal.Metadata{
+			md := Metadata{
 				GithubProject:   tt.githubProject,
 				Type:            "foo",
 				ShortFolderName: "foo",
-				Status: &internal.Status{
+				Status: &Status{
 					Stability:     stability,
 					Distributions: tt.distros,
 					Class:         tt.componentClass,
@@ -450,7 +449,7 @@ Some info about a component
 			got, err := os.ReadFile(filepath.Join(tmpdir, "README.md")) // nolint: gosec
 			require.NoError(t, err)
 			got = bytes.ReplaceAll(got, []byte("\r\n"), []byte("\n"))
-			expected, err := os.ReadFile(filepath.Join("internal/testdata", tt.outputFile))
+			expected, err := os.ReadFile(filepath.Join("testdata", tt.outputFile))
 			require.NoError(t, err)
 			expected = bytes.ReplaceAll(expected, []byte("\r\n"), []byte("\n"))
 			fmt.Println(string(got))
@@ -464,14 +463,14 @@ func TestGenerateStatusMetadata(t *testing.T) {
 	tests := []struct {
 		name     string
 		output   string
-		md       internal.Metadata
+		md       Metadata
 		expected string
 	}{
 		{
 			name: "foo component with beta status",
-			md: internal.Metadata{
+			md: Metadata{
 				Type: "foo",
-				Status: &internal.Status{
+				Status: &Status{
 					Stability: map[component.StabilityLevel][]string{
 						component.StabilityLevelBeta: {"metrics"},
 					},
@@ -499,9 +498,9 @@ const (
 		},
 		{
 			name: "foo component with alpha status",
-			md: internal.Metadata{
+			md: Metadata{
 				Type: "foo",
-				Status: &internal.Status{
+				Status: &Status{
 					Stability: map[component.StabilityLevel][]string{
 						component.StabilityLevelAlpha: {"metrics"},
 					},
@@ -546,14 +545,14 @@ func TestGenerateTelemetryMetadata(t *testing.T) {
 	tests := []struct {
 		name     string
 		output   string
-		md       internal.Metadata
+		md       Metadata
 		expected string
 	}{
 		{
 			name: "foo component with beta status",
-			md: internal.Metadata{
+			md: Metadata{
 				Type: "foo",
-				Status: &internal.Status{
+				Status: &Status{
 					Stability: map[component.StabilityLevel][]string{
 						component.StabilityLevelBeta: {"metrics"},
 					},
@@ -589,9 +588,9 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 		},
 		{
 			name: "foo component with alpha status",
-			md: internal.Metadata{
+			md: Metadata{
 				Type: "foo",
-				Status: &internal.Status{
+				Status: &Status{
 					Stability: map[component.StabilityLevel][]string{
 						component.StabilityLevelAlpha: {"metrics"},
 					},
