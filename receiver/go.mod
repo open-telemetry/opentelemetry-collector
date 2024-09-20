@@ -67,3 +67,5 @@ retract v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module
 replace go.opentelemetry.io/collector/pipeline => ../pipeline
 
 replace go.opentelemetry.io/collector/internal/globalsignal => ../internal/globalsignal
+
+replace go.opentelemetry.io/collector/component/componentprofiles => ../component/componentprofiles
