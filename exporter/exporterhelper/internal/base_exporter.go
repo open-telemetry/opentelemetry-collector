@@ -26,10 +26,26 @@ import (
 type ObsrepSenderFactory = func(obsrep *ObsReport) RequestSender
 
 // Option apply changes to BaseExporter.
-type Option func(*BaseExporter) error
+type Option interface {
+	apply(*BaseExporter) error
+}
+
+type optionFunc func(*BaseExporter) error
+
+func (of optionFunc) apply(e *BaseExporter) error {
+	return of(e)
+}
 
 // BatcherOption apply changes to batcher sender.
-type BatcherOption func(*BatchSender) error
+type BatcherOption interface {
+	apply(*BatchSender) error
+}
+
+type batcherOptionFunc func(*BatchSender) error
+
+func (of batcherOptionFunc) apply(e *BatchSender) error {
+	return of(e)
+}
 
 type BaseExporter struct {
 	component.StartFunc
@@ -86,7 +102,7 @@ func NewBaseExporter(set exporter.Settings, signal component.DataType, osf Obsre
 	}
 
 	for _, op := range options {
-		err = multierr.Append(err, op(be))
+		err = multierr.Append(err, op.apply(be))
 	}
 	if err != nil {
 		return nil, err
@@ -95,7 +111,7 @@ func NewBaseExporter(set exporter.Settings, signal component.DataType, osf Obsre
 	if be.BatcherCfg.Enabled {
 		bs := NewBatchSender(be.BatcherCfg, be.Set, be.BatchMergeFunc, be.BatchMergeSplitfunc)
 		for _, opt := range be.BatcherOpts {
-			err = multierr.Append(err, opt(bs))
+			err = multierr.Append(err, opt.apply(bs))
 		}
 		if bs.mergeFunc == nil || bs.mergeSplitFunc == nil {
 			err = multierr.Append(err, fmt.Errorf("WithRequestBatchFuncs must be provided for the batcher applied to the request-based exporters"))
@@ -110,7 +126,7 @@ func NewBaseExporter(set exporter.Settings, signal component.DataType, osf Obsre
 		}
 		be.QueueSender = NewQueueSender(be.QueueFactory(context.Background(), set, be.QueueCfg), be.Set, be.QueueCfg.NumConsumers, be.ExportFailureMessage, be.Obsrep)
 		for _, op := range options {
-			err = multierr.Append(err, op(be))
+			err = multierr.Append(err, op.apply(be))
 		}
 	}
 
@@ -180,48 +196,48 @@ func (be *BaseExporter) Shutdown(ctx context.Context) error {
 // WithStart overrides the default Start function for an exporter.
 // The default start function does nothing and always returns nil.
 func WithStart(start component.StartFunc) Option {
-	return func(o *BaseExporter) error {
+	return optionFunc(func(o *BaseExporter) error {
 		o.StartFunc = start
 		return nil
-	}
+	})
 }
 
 // WithShutdown overrides the default Shutdown function for an exporter.
 // The default shutdown function does nothing and always returns nil.
 func WithShutdown(shutdown component.ShutdownFunc) Option {
-	return func(o *BaseExporter) error {
+	return optionFunc(func(o *BaseExporter) error {
 		o.ShutdownFunc = shutdown
 		return nil
-	}
+	})
 }
 
 // WithTimeout overrides the default TimeoutConfig for an exporter.
 // The default TimeoutConfig is 5 seconds.
 func WithTimeout(timeoutConfig TimeoutConfig) Option {
-	return func(o *BaseExporter) error {
+	return optionFunc(func(o *BaseExporter) error {
 		o.TimeoutSender.cfg = timeoutConfig
 		return nil
-	}
+	})
 }
 
 // WithRetry overrides the default configretry.BackOffConfig for an exporter.
 // The default configretry.BackOffConfig is to disable retries.
 func WithRetry(config configretry.BackOffConfig) Option {
-	return func(o *BaseExporter) error {
+	return optionFunc(func(o *BaseExporter) error {
 		if !config.Enabled {
 			o.ExportFailureMessage += " Try enabling retry_on_failure config option to retry on retryable errors."
 			return nil
 		}
 		o.RetrySender = newRetrySender(config, o.Set)
 		return nil
-	}
+	})
 }
 
 // WithQueue overrides the default QueueConfig for an exporter.
 // The default QueueConfig is to disable queueing.
 // This option cannot be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter.
 func WithQueue(config QueueConfig) Option {
-	return func(o *BaseExporter) error {
+	return optionFunc(func(o *BaseExporter) error {
 		if o.Marshaler == nil || o.Unmarshaler == nil {
 			return fmt.Errorf("WithQueue option is not available for the new request exporters, use WithRequestQueue instead")
 		}
@@ -243,7 +259,7 @@ func WithQueue(config QueueConfig) Option {
 		})
 		o.QueueSender = NewQueueSender(q, o.Set, config.NumConsumers, o.ExportFailureMessage, o.Obsrep)
 		return nil
-	}
+	})
 }
 
 // WithRequestQueue enables queueing for an exporter.
@@ -251,7 +267,7 @@ func WithQueue(config QueueConfig) Option {
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func WithRequestQueue(cfg exporterqueue.Config, queueFactory exporterqueue.Factory[internal.Request]) Option {
-	return func(o *BaseExporter) error {
+	return optionFunc(func(o *BaseExporter) error {
 		if o.Marshaler != nil || o.Unmarshaler != nil {
 			return fmt.Errorf("WithRequestQueue option must be used with the new request exporters only, use WithQueue instead")
 		}
@@ -262,22 +278,22 @@ func WithRequestQueue(cfg exporterqueue.Config, queueFactory exporterqueue.Facto
 		o.QueueCfg = cfg
 		o.QueueFactory = queueFactory
 		return nil
-	}
+	})
 }
 
 // WithCapabilities overrides the default Capabilities() function for a Consumer.
 // The default is non-mutable data.
 // TODO: Verify if we can change the default to be mutable as we do for processors.
 func WithCapabilities(capabilities consumer.Capabilities) Option {
-	return func(o *BaseExporter) error {
+	return optionFunc(func(o *BaseExporter) error {
 		o.ConsumerOptions = append(o.ConsumerOptions, consumer.WithCapabilities(capabilities))
 		return nil
-	}
+	})
 }
 
 // WithRequestBatchFuncs sets the functions for merging and splitting batches for an exporter built for custom request types.
 func WithRequestBatchFuncs(mf exporterbatcher.BatchMergeFunc[internal.Request], msf exporterbatcher.BatchMergeSplitFunc[internal.Request]) BatcherOption {
-	return func(bs *BatchSender) error {
+	return batcherOptionFunc(func(bs *BatchSender) error {
 		if mf == nil || msf == nil {
 			return fmt.Errorf("WithRequestBatchFuncs must be provided with non-nil functions")
 		}
@@ -287,7 +303,7 @@ func WithRequestBatchFuncs(mf exporterbatcher.BatchMergeFunc[internal.Request], 
 		bs.mergeFunc = mf
 		bs.mergeSplitFunc = msf
 		return nil
-	}
+	})
 }
 
 // WithBatcher enables batching for an exporter based on custom request types.
@@ -296,39 +312,39 @@ func WithRequestBatchFuncs(mf exporterbatcher.BatchMergeFunc[internal.Request], 
 // This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func WithBatcher(cfg exporterbatcher.Config, opts ...BatcherOption) Option {
-	return func(o *BaseExporter) error {
+	return optionFunc(func(o *BaseExporter) error {
 		o.BatcherCfg = cfg
 		o.BatcherOpts = opts
 		return nil
-	}
+	})
 }
 
 // WithMarshaler is used to set the request marshaler for the new exporter helper.
 // It must be provided as the first option when creating a new exporter helper.
 func WithMarshaler(marshaler exporterqueue.Marshaler[internal.Request]) Option {
-	return func(o *BaseExporter) error {
+	return optionFunc(func(o *BaseExporter) error {
 		o.Marshaler = marshaler
 		return nil
-	}
+	})
 }
 
 // withUnmarshaler is used to set the request unmarshaler for the new exporter helper.
 // It must be provided as the first option when creating a new exporter helper.
 func WithUnmarshaler(unmarshaler exporterqueue.Unmarshaler[internal.Request]) Option {
-	return func(o *BaseExporter) error {
+	return optionFunc(func(o *BaseExporter) error {
 		o.Unmarshaler = unmarshaler
 		return nil
-	}
+	})
 }
 
 // withBatchFuncs is used to set the functions for merging and splitting batches for OLTP-based exporters.
 // It must be provided as the first option when creating a new exporter helper.
 func WithBatchFuncs(mf exporterbatcher.BatchMergeFunc[internal.Request], msf exporterbatcher.BatchMergeSplitFunc[internal.Request]) Option {
-	return func(o *BaseExporter) error {
+	return optionFunc(func(o *BaseExporter) error {
 		o.BatchMergeFunc = mf
 		o.BatchMergeSplitfunc = msf
 		return nil
-	}
+	})
 }
 
 func CheckStatus(t *testing.T, sd sdktrace.ReadOnlySpan, err error) {

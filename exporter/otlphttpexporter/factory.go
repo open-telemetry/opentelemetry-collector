@@ -18,6 +18,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles"
+	"go.opentelemetry.io/collector/exporter/exporterprofiles"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter/internal/metadata"
 )
 
@@ -29,6 +31,7 @@ func NewFactory() exporter.Factory {
 		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
 		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
 		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
+		exporterprofiles.WithProfiles(createProfilesExporter, metadata.ProfilesStability),
 	)
 }
 
@@ -54,7 +57,7 @@ func createDefaultConfig() component.Config {
 // signalOverrideURL is the URL specified in the signal specific configuration (empty if not specified).
 // signalName is the name of the signal, e.g. "traces", "metrics", "logs".
 // signalVersion is the version of the signal, e.g. "v1" or "v1development".
-func composeSignalURL(oCfg *Config, signalOverrideURL string, signalName string, signalVersion string) (string, error) {
+func composeSignalURL(oCfg *Config, signalOverrideURL, signalName, signalVersion string) (string, error) {
 	switch {
 	case signalOverrideURL != "":
 		_, err := url.Parse(signalOverrideURL)
@@ -142,6 +145,32 @@ func createLogsExporter(
 
 	return exporterhelper.NewLogsExporter(ctx, set, cfg,
 		oce.pushLogs,
+		exporterhelper.WithStart(oce.start),
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		// explicitly disable since we rely on http.Client timeout logic.
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
+		exporterhelper.WithRetry(oCfg.RetryConfig),
+		exporterhelper.WithQueue(oCfg.QueueConfig))
+}
+
+func createProfilesExporter(
+	ctx context.Context,
+	set exporter.Settings,
+	cfg component.Config,
+) (exporterprofiles.Profiles, error) {
+	oce, err := newExporter(cfg, set)
+	if err != nil {
+		return nil, err
+	}
+	oCfg := cfg.(*Config)
+
+	oce.profilesURL, err = composeSignalURL(oCfg, "", "profiles", "v1development")
+	if err != nil {
+		return nil, err
+	}
+
+	return exporterhelperprofiles.NewProfilesExporter(ctx, set, cfg,
+		oce.pushProfiles,
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// explicitly disable since we rely on http.Client timeout logic.

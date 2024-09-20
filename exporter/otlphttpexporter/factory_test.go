@@ -209,6 +209,17 @@ func TestCreateLogsExporter(t *testing.T) {
 	require.NotNil(t, oexp)
 }
 
+func TestCreateProfilesExporter(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.ClientConfig.Endpoint = "http://" + testutil.GetAvailableLocalAddress(t)
+
+	set := exportertest.NewNopSettings()
+	oexp, err := factory.CreateProfilesExporter(context.Background(), set, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, oexp)
+}
+
 func TestComposeSignalURL(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)

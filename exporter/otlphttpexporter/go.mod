@@ -14,7 +14,10 @@ require (
 	go.opentelemetry.io/collector/confmap v1.15.0
 	go.opentelemetry.io/collector/consumer v0.109.0
 	go.opentelemetry.io/collector/exporter v0.109.0
+	go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/exporter/exporterprofiles v0.109.0
 	go.opentelemetry.io/collector/pdata v1.15.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.109.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240822170219-fc7c04adadcd
@@ -46,18 +49,18 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	go.opentelemetry.io/collector/client v1.15.0 // indirect
+	go.opentelemetry.io/collector/component/componentprofiles v0.109.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.109.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.109.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.109.1-0.20240916143658-74729e731d3b // indirect
+	go.opentelemetry.io/collector/consumer/consumererror/consumererrorprofiles v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.109.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.109.0 // indirect
-	go.opentelemetry.io/collector/exporter/exporterprofiles v0.109.0 // indirect
 	go.opentelemetry.io/collector/extension v0.109.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.109.0 // indirect
 	go.opentelemetry.io/collector/extension/experimental/storage v0.109.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.15.0 // indirect
 	go.opentelemetry.io/collector/internal/globalgates v0.109.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.109.0 // indirect
 	go.opentelemetry.io/collector/receiver v0.109.0 // indirect
 	go.opentelemetry.io/collector/receiver/receiverprofiles v0.109.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.55.0 // indirect
@@ -131,5 +134,11 @@ replace go.opentelemetry.io/collector/component/componentstatus => ../../compone
 replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../../receiver/receiverprofiles
 
 replace go.opentelemetry.io/collector/exporter/exporterprofiles => ../exporterprofiles
+
+replace go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles => ../exporterhelper/exporterhelperprofiles
+
+replace go.opentelemetry.io/collector/component/componentprofiles => ../../component/componentprofiles
+
+replace go.opentelemetry.io/collector/consumer/consumererror/consumererrorprofiles => ../../consumer/consumererror/consumererrorprofiles
 
 replace go.opentelemetry.io/collector/internal/globalgates => ../../internal/globalgates
