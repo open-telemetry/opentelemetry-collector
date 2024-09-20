@@ -6,7 +6,6 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
@@ -36,107 +35,97 @@ type TelemetryBuilder struct {
 	ProcessorDroppedLogRecords    metric.Int64Counter
 	ProcessorDroppedMetricPoints  metric.Int64Counter
 	ProcessorDroppedSpans         metric.Int64Counter
-	ProcessorInsertedLogRecords   metric.Int64Counter
-	ProcessorInsertedMetricPoints metric.Int64Counter
-	ProcessorInsertedSpans        metric.Int64Counter
+	ProcessorIncomingItems        metric.Int64Counter
+	ProcessorOutgoingItems        metric.Int64Counter
 	ProcessorRefusedLogRecords    metric.Int64Counter
 	ProcessorRefusedMetricPoints  metric.Int64Counter
 	ProcessorRefusedSpans         metric.Int64Counter
-	level                         configtelemetry.Level
+	meters                        map[configtelemetry.Level]metric.Meter
 }
 
-// telemetryBuilderOption applies changes to default builder.
-type telemetryBuilderOption func(*TelemetryBuilder)
+// TelemetryBuilderOption applies changes to default builder.
+type TelemetryBuilderOption interface {
+	apply(*TelemetryBuilder)
+}
 
-// WithLevel sets the current telemetry level for the component.
-func WithLevel(lvl configtelemetry.Level) telemetryBuilderOption {
-	return func(builder *TelemetryBuilder) {
-		builder.level = lvl
-	}
+type telemetryBuilderOptionFunc func(mb *TelemetryBuilder)
+
+func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
+	tbof(mb)
 }
 
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
 // for a component
-func NewTelemetryBuilder(settings component.TelemetrySettings, options ...telemetryBuilderOption) (*TelemetryBuilder, error) {
-	builder := TelemetryBuilder{level: configtelemetry.LevelBasic}
+func NewTelemetryBuilder(settings component.TelemetrySettings, options ...TelemetryBuilderOption) (*TelemetryBuilder, error) {
+	builder := TelemetryBuilder{meters: map[configtelemetry.Level]metric.Meter{}}
 	for _, op := range options {
-		op(&builder)
+		op.apply(&builder)
 	}
+	builder.meters[configtelemetry.LevelBasic] = LeveledMeter(settings, configtelemetry.LevelBasic)
 	var err, errs error
-	if builder.level >= configtelemetry.LevelBasic {
-		builder.meter = Meter(settings)
-	} else {
-		builder.meter = noop.Meter{}
-	}
-	builder.ProcessorAcceptedLogRecords, err = builder.meter.Int64Counter(
+	builder.ProcessorAcceptedLogRecords, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_processor_accepted_log_records",
-		metric.WithDescription("Number of log records successfully pushed into the next component in the pipeline."),
+		metric.WithDescription("Number of log records successfully pushed into the next component in the pipeline. [deprecated since v0.110.0]"),
 		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorAcceptedMetricPoints, err = builder.meter.Int64Counter(
+	builder.ProcessorAcceptedMetricPoints, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_processor_accepted_metric_points",
-		metric.WithDescription("Number of metric points successfully pushed into the next component in the pipeline."),
+		metric.WithDescription("Number of metric points successfully pushed into the next component in the pipeline. [deprecated since v0.110.0]"),
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorAcceptedSpans, err = builder.meter.Int64Counter(
+	builder.ProcessorAcceptedSpans, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_processor_accepted_spans",
-		metric.WithDescription("Number of spans successfully pushed into the next component in the pipeline."),
+		metric.WithDescription("Number of spans successfully pushed into the next component in the pipeline. [deprecated since v0.110.0]"),
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorDroppedLogRecords, err = builder.meter.Int64Counter(
+	builder.ProcessorDroppedLogRecords, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_processor_dropped_log_records",
-		metric.WithDescription("Number of log records that were dropped."),
+		metric.WithDescription("Number of log records that were dropped. [deprecated since v0.110.0]"),
 		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorDroppedMetricPoints, err = builder.meter.Int64Counter(
+	builder.ProcessorDroppedMetricPoints, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_processor_dropped_metric_points",
-		metric.WithDescription("Number of metric points that were dropped."),
+		metric.WithDescription("Number of metric points that were dropped. [deprecated since v0.110.0]"),
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorDroppedSpans, err = builder.meter.Int64Counter(
+	builder.ProcessorDroppedSpans, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_processor_dropped_spans",
-		metric.WithDescription("Number of spans that were dropped."),
+		metric.WithDescription("Number of spans that were dropped. [deprecated since v0.110.0]"),
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorInsertedLogRecords, err = builder.meter.Int64Counter(
-		"otelcol_processor_inserted_log_records",
-		metric.WithDescription("Number of log records that were inserted."),
-		metric.WithUnit("{records}"),
+	builder.ProcessorIncomingItems, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
+		"otelcol_processor_incoming_items",
+		metric.WithDescription("Number of items passed to the processor. [alpha]"),
+		metric.WithUnit("{items}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorInsertedMetricPoints, err = builder.meter.Int64Counter(
-		"otelcol_processor_inserted_metric_points",
-		metric.WithDescription("Number of metric points that were inserted."),
-		metric.WithUnit("{datapoints}"),
+	builder.ProcessorOutgoingItems, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
+		"otelcol_processor_outgoing_items",
+		metric.WithDescription("Number of items emitted from the processor. [alpha]"),
+		metric.WithUnit("{items}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorInsertedSpans, err = builder.meter.Int64Counter(
-		"otelcol_processor_inserted_spans",
-		metric.WithDescription("Number of spans that were inserted."),
-		metric.WithUnit("{spans}"),
-	)
-	errs = errors.Join(errs, err)
-	builder.ProcessorRefusedLogRecords, err = builder.meter.Int64Counter(
+	builder.ProcessorRefusedLogRecords, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_processor_refused_log_records",
-		metric.WithDescription("Number of log records that were rejected by the next component in the pipeline."),
+		metric.WithDescription("Number of log records that were rejected by the next component in the pipeline. [deprecated since v0.110.0]"),
 		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorRefusedMetricPoints, err = builder.meter.Int64Counter(
+	builder.ProcessorRefusedMetricPoints, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_processor_refused_metric_points",
-		metric.WithDescription("Number of metric points that were rejected by the next component in the pipeline."),
+		metric.WithDescription("Number of metric points that were rejected by the next component in the pipeline. [deprecated since v0.110.0]"),
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorRefusedSpans, err = builder.meter.Int64Counter(
+	builder.ProcessorRefusedSpans, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_processor_refused_spans",
-		metric.WithDescription("Number of spans that were rejected by the next component in the pipeline."),
+		metric.WithDescription("Number of spans that were rejected by the next component in the pipeline. [deprecated since v0.110.0]"),
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)

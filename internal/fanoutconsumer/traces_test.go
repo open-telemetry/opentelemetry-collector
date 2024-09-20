@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -44,18 +45,18 @@ func TestTracesMultiplexingNonMutating(t *testing.T) {
 		}
 	}
 
-	assert.True(t, td == p1.AllTraces()[0])
-	assert.True(t, td == p1.AllTraces()[1])
+	assert.Equal(t, td, p1.AllTraces()[0])
+	assert.Equal(t, td, p1.AllTraces()[1])
 	assert.EqualValues(t, td, p1.AllTraces()[0])
 	assert.EqualValues(t, td, p1.AllTraces()[1])
 
-	assert.True(t, td == p2.AllTraces()[0])
-	assert.True(t, td == p2.AllTraces()[1])
+	assert.Equal(t, td, p2.AllTraces()[0])
+	assert.Equal(t, td, p2.AllTraces()[1])
 	assert.EqualValues(t, td, p2.AllTraces()[0])
 	assert.EqualValues(t, td, p2.AllTraces()[1])
 
-	assert.True(t, td == p3.AllTraces()[0])
-	assert.True(t, td == p3.AllTraces()[1])
+	assert.Equal(t, td, p3.AllTraces()[0])
+	assert.Equal(t, td, p3.AllTraces()[1])
 	assert.EqualValues(t, td, p3.AllTraces()[0])
 	assert.EqualValues(t, td, p3.AllTraces()[1])
 
@@ -80,19 +81,19 @@ func TestTracesMultiplexingMutating(t *testing.T) {
 		}
 	}
 
-	assert.True(t, td != p1.AllTraces()[0])
-	assert.True(t, td != p1.AllTraces()[1])
+	assert.NotSame(t, td, p1.AllTraces()[0])
+	assert.NotSame(t, td, p1.AllTraces()[1])
 	assert.EqualValues(t, td, p1.AllTraces()[0])
 	assert.EqualValues(t, td, p1.AllTraces()[1])
 
-	assert.True(t, td != p2.AllTraces()[0])
-	assert.True(t, td != p2.AllTraces()[1])
+	assert.NotSame(t, td, p2.AllTraces()[0])
+	assert.NotSame(t, td, p2.AllTraces()[1])
 	assert.EqualValues(t, td, p2.AllTraces()[0])
 	assert.EqualValues(t, td, p2.AllTraces()[1])
 
 	// For this consumer, will receive the initial data.
-	assert.True(t, td == p3.AllTraces()[0])
-	assert.True(t, td == p3.AllTraces()[1])
+	assert.Equal(t, td, p3.AllTraces()[0])
+	assert.Equal(t, td, p3.AllTraces()[1])
 	assert.EqualValues(t, td, p3.AllTraces()[0])
 	assert.EqualValues(t, td, p3.AllTraces()[1])
 
@@ -122,18 +123,18 @@ func TestReadOnlyTracesMultiplexingMutating(t *testing.T) {
 
 	// All consumers should receive the cloned data.
 
-	assert.True(t, td != p1.AllTraces()[0])
-	assert.True(t, td != p1.AllTraces()[1])
+	assert.NotEqual(t, td, p1.AllTraces()[0])
+	assert.NotEqual(t, td, p1.AllTraces()[1])
 	assert.EqualValues(t, tdOrig, p1.AllTraces()[0])
 	assert.EqualValues(t, tdOrig, p1.AllTraces()[1])
 
-	assert.True(t, td != p2.AllTraces()[0])
-	assert.True(t, td != p2.AllTraces()[1])
+	assert.NotEqual(t, td, p2.AllTraces()[0])
+	assert.NotEqual(t, td, p2.AllTraces()[1])
 	assert.EqualValues(t, tdOrig, p2.AllTraces()[0])
 	assert.EqualValues(t, tdOrig, p2.AllTraces()[1])
 
-	assert.True(t, td != p3.AllTraces()[0])
-	assert.True(t, td != p3.AllTraces()[1])
+	assert.NotEqual(t, td, p3.AllTraces()[0])
+	assert.NotEqual(t, td, p3.AllTraces()[1])
 	assert.EqualValues(t, tdOrig, p3.AllTraces()[0])
 	assert.EqualValues(t, tdOrig, p3.AllTraces()[1])
 }
@@ -155,20 +156,20 @@ func TestTracesMultiplexingMixLastMutating(t *testing.T) {
 		}
 	}
 
-	assert.True(t, td != p1.AllTraces()[0])
-	assert.True(t, td != p1.AllTraces()[1])
+	assert.NotSame(t, td, p1.AllTraces()[0])
+	assert.NotSame(t, td, p1.AllTraces()[1])
 	assert.EqualValues(t, td, p1.AllTraces()[0])
 	assert.EqualValues(t, td, p1.AllTraces()[1])
 
 	// For this consumer, will receive the initial data.
-	assert.True(t, td == p2.AllTraces()[0])
-	assert.True(t, td == p2.AllTraces()[1])
+	assert.Equal(t, td, p2.AllTraces()[0])
+	assert.Equal(t, td, p2.AllTraces()[1])
 	assert.EqualValues(t, td, p2.AllTraces()[0])
 	assert.EqualValues(t, td, p2.AllTraces()[1])
 
 	// For this consumer, will clone the initial data.
-	assert.True(t, td != p3.AllTraces()[0])
-	assert.True(t, td != p3.AllTraces()[1])
+	assert.NotSame(t, td, p3.AllTraces()[0])
+	assert.NotSame(t, td, p3.AllTraces()[1])
 	assert.EqualValues(t, td, p3.AllTraces()[0])
 	assert.EqualValues(t, td, p3.AllTraces()[1])
 
@@ -193,19 +194,19 @@ func TestTracesMultiplexingMixLastNonMutating(t *testing.T) {
 		}
 	}
 
-	assert.True(t, td != p1.AllTraces()[0])
-	assert.True(t, td != p1.AllTraces()[1])
+	assert.NotSame(t, td, p1.AllTraces()[0])
+	assert.NotSame(t, td, p1.AllTraces()[1])
 	assert.EqualValues(t, td, p1.AllTraces()[0])
 	assert.EqualValues(t, td, p1.AllTraces()[1])
 
-	assert.True(t, td != p2.AllTraces()[0])
-	assert.True(t, td != p2.AllTraces()[1])
+	assert.NotSame(t, td, p2.AllTraces()[0])
+	assert.NotSame(t, td, p2.AllTraces()[1])
 	assert.EqualValues(t, td, p2.AllTraces()[0])
 	assert.EqualValues(t, td, p2.AllTraces()[1])
 
 	// For this consumer, will receive the initial data.
-	assert.True(t, td == p3.AllTraces()[0])
-	assert.True(t, td == p3.AllTraces()[1])
+	assert.Equal(t, td, p3.AllTraces()[0])
+	assert.Equal(t, td, p3.AllTraces()[1])
 	assert.EqualValues(t, td, p3.AllTraces()[0])
 	assert.EqualValues(t, td, p3.AllTraces()[1])
 
@@ -222,11 +223,11 @@ func TestTracesWhenErrors(t *testing.T) {
 	td := testdata.GenerateTraces(1)
 
 	for i := 0; i < 2; i++ {
-		assert.Error(t, tfc.ConsumeTraces(context.Background(), td))
+		require.Error(t, tfc.ConsumeTraces(context.Background(), td))
 	}
 
-	assert.True(t, td == p3.AllTraces()[0])
-	assert.True(t, td == p3.AllTraces()[1])
+	assert.Equal(t, td, p3.AllTraces()[0])
+	assert.Equal(t, td, p3.AllTraces()[1])
 	assert.EqualValues(t, td, p3.AllTraces()[0])
 	assert.EqualValues(t, td, p3.AllTraces()[1])
 }

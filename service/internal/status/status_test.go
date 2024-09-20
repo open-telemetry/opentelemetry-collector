@@ -14,7 +14,7 @@ import (
 )
 
 func TestStatusFSM(t *testing.T) {
-	for _, tc := range []struct {
+	for _, tt := range []struct {
 		name               string
 		reportedStatuses   []componentstatus.Status
 		expectedStatuses   []componentstatus.Status
@@ -122,7 +122,7 @@ func TestStatusFSM(t *testing.T) {
 			expectedErrorCount: 1,
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			var receivedStatuses []componentstatus.Status
 			fsm := newFSM(
 				func(ev *componentstatus.Event) {
@@ -131,15 +131,15 @@ func TestStatusFSM(t *testing.T) {
 			)
 
 			errorCount := 0
-			for _, status := range tc.reportedStatuses {
+			for _, status := range tt.reportedStatuses {
 				if err := fsm.transition(componentstatus.NewEvent(status)); err != nil {
 					errorCount++
 					require.ErrorIs(t, err, errInvalidStateTransition)
 				}
 			}
 
-			require.Equal(t, tc.expectedErrorCount, errorCount)
-			require.Equal(t, tc.expectedStatuses, receivedStatuses)
+			require.Equal(t, tt.expectedErrorCount, errorCount)
+			require.Equal(t, tt.expectedStatuses, receivedStatuses)
 		})
 	}
 }
@@ -278,7 +278,7 @@ func TestReporterReady(t *testing.T) {
 }
 
 func TestReportComponentOKIfStarting(t *testing.T) {
-	for _, tc := range []struct {
+	for _, tt := range []struct {
 		name             string
 		initialStatuses  []componentstatus.Status
 		expectedStatuses []componentstatus.Status
@@ -327,7 +327,7 @@ func TestReportComponentOKIfStarting(t *testing.T) {
 			},
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			var receivedStatuses []componentstatus.Status
 
 			rep := NewReporter(
@@ -341,13 +341,13 @@ func TestReportComponentOKIfStarting(t *testing.T) {
 			rep.Ready()
 
 			id := &componentstatus.InstanceID{}
-			for _, status := range tc.initialStatuses {
+			for _, status := range tt.initialStatuses {
 				rep.ReportStatus(id, componentstatus.NewEvent(status))
 			}
 
 			rep.ReportOKIfStarting(id)
 
-			require.Equal(t, tc.expectedStatuses, receivedStatuses)
+			require.Equal(t, tt.expectedStatuses, receivedStatuses)
 		})
 	}
 }

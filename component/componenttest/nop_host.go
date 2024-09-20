@@ -22,7 +22,3 @@ func (nh *nopHost) GetFactory(component.Kind, component.Type) component.Factory 
 func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
-
-func (nh *nopHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
-	return nil
-}

@@ -20,6 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -34,7 +35,7 @@ import (
 	"go.opentelemetry.io/collector/extension/auth"
 	"go.opentelemetry.io/collector/extension/auth/authtest"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/localhostgate"
+	"go.opentelemetry.io/collector/internal/globalgates"
 )
 
 type customRoundTripper struct {
@@ -52,7 +53,7 @@ var (
 	dummyID       = component.MustNewID("dummy")
 	nonExistingID = component.MustNewID("nonexisting")
 	// Omit TracerProvider and MeterProvider in TelemetrySettings as otelhttp.Transport cannot be introspected
-	nilProvidersSettings = component.TelemetrySettings{Logger: zap.NewNop(), MetricsLevel: configtelemetry.LevelNone}
+	nilProvidersSettings = component.TelemetrySettings{Logger: zap.NewNop(), MetricsLevel: configtelemetry.LevelNone, LeveledMeterProvider: func(_ configtelemetry.Level) metric.MeterProvider { return nil }}
 )
 
 func TestAllHTTPClientSettings(t *testing.T) {
@@ -155,16 +156,16 @@ func TestAllHTTPClientSettings(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			tt := componenttest.NewNopTelemetrySettings()
-			tt.TracerProvider = nil
-			client, err := test.settings.ToClient(context.Background(), host, tt)
-			if test.shouldError {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tel := componenttest.NewNopTelemetrySettings()
+			tel.TracerProvider = nil
+			client, err := tt.settings.ToClient(context.Background(), host, tel)
+			if tt.shouldError {
 				assert.Error(t, err)
 				return
 			}
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			switch transport := client.Transport.(type) {
 			case *http.Transport:
 				assert.EqualValues(t, 1024, transport.ReadBufferSize)
@@ -173,7 +174,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				assert.EqualValues(t, 40, transport.MaxIdleConnsPerHost)
 				assert.EqualValues(t, 45, transport.MaxConnsPerHost)
 				assert.EqualValues(t, 30*time.Second, transport.IdleConnTimeout)
-				assert.EqualValues(t, true, transport.DisableKeepAlives)
+				assert.True(t, transport.DisableKeepAlives)
 			case *compressRoundTripper:
 				assert.EqualValues(t, "gzip", transport.compressionType)
 			}
@@ -207,12 +208,12 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			tt := componenttest.NewNopTelemetrySettings()
-			tt.TracerProvider = nil
-			client, err := test.settings.ToClient(context.Background(), host, tt)
-			assert.NoError(t, err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tel := componenttest.NewNopTelemetrySettings()
+			tel.TracerProvider = nil
+			client, err := tt.settings.ToClient(context.Background(), host, tel)
+			require.NoError(t, err)
 			transport := client.Transport.(*http.Transport)
 			assert.EqualValues(t, 1024, transport.ReadBufferSize)
 			assert.EqualValues(t, 512, transport.WriteBufferSize)
@@ -220,7 +221,7 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 			assert.EqualValues(t, 0, transport.MaxIdleConnsPerHost)
 			assert.EqualValues(t, 0, transport.MaxConnsPerHost)
 			assert.EqualValues(t, 90*time.Second, transport.IdleConnTimeout)
-			assert.EqualValues(t, false, transport.DisableKeepAlives)
+			assert.False(t, transport.DisableKeepAlives)
 
 		})
 	}
@@ -234,36 +235,36 @@ func TestDefaultHTTPClientSettings(t *testing.T) {
 
 func TestProxyURL(t *testing.T) {
 	testCases := []struct {
-		desc        string
+		name        string
 		proxyURL    string
 		expectedURL *url.URL
 		err         bool
 	}{
 		{
-			desc:        "default config",
+			name:        "default config",
 			expectedURL: nil,
 		},
 		{
-			desc:        "proxy is set",
+			name:        "proxy is set",
 			proxyURL:    "http://proxy.example.com:8080",
 			expectedURL: &url.URL{Scheme: "http", Host: "proxy.example.com:8080"},
 		},
 		{
-			desc:     "proxy is invalid",
+			name:     "proxy is invalid",
 			proxyURL: "://example.com",
 			err:      true,
 		},
 	}
-	for _, tC := range testCases {
-		t.Run(tC.desc, func(t *testing.T) {
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
 			s := NewDefaultClientConfig()
-			s.ProxyURL = tC.proxyURL
+			s.ProxyURL = tt.proxyURL
 
-			tt := componenttest.NewNopTelemetrySettings()
-			tt.TracerProvider = nil
-			client, err := s.ToClient(context.Background(), componenttest.NewNopHost(), tt)
+			tel := componenttest.NewNopTelemetrySettings()
+			tel.TracerProvider = nil
+			client, err := s.ToClient(context.Background(), componenttest.NewNopHost(), tel)
 
-			if tC.err {
+			if tt.err {
 				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
@@ -276,11 +277,11 @@ func TestProxyURL(t *testing.T) {
 				url, err := transport.Proxy(&http.Request{URL: &url.URL{Scheme: "http", Host: "example.com"}})
 				require.NoError(t, err)
 
-				if tC.expectedURL == nil {
+				if tt.expectedURL == nil {
 					assert.Nil(t, url)
 				} else {
 					require.NotNil(t, url)
-					assert.Equal(t, tC.expectedURL, url)
+					assert.Equal(t, tt.expectedURL, url)
 				}
 			}
 		})
@@ -329,10 +330,10 @@ func TestHTTPClientSettingsError(t *testing.T) {
 			},
 		},
 	}
-	for _, test := range tests {
-		t.Run(test.err, func(t *testing.T) {
-			_, err := test.settings.ToClient(context.Background(), host, componenttest.NewNopTelemetrySettings())
-			assert.Regexp(t, test.err, err)
+	for _, tt := range tests {
+		t.Run(tt.err, func(t *testing.T) {
+			_, err := tt.settings.ToClient(context.Background(), host, componenttest.NewNopTelemetrySettings())
+			assert.Regexp(t, tt.err, err)
 		})
 	}
 }
@@ -437,35 +438,35 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			},
 		},
 	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			// Omit TracerProvider and MeterProvider in TelemetrySettings as otelhttp.Transport cannot be introspected
-			client, err := test.settings.ToClient(context.Background(), test.host, nilProvidersSettings)
-			if test.shouldErr {
+			client, err := tt.settings.ToClient(context.Background(), tt.host, nilProvidersSettings)
+			if tt.shouldErr {
 				assert.Error(t, err)
 				return
 			}
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.NotNil(t, client)
 			transport := client.Transport
 
 			// Compression should wrap Auth, unwrap it
-			if test.settings.Compression.IsCompressed() {
+			if tt.settings.Compression.IsCompressed() {
 				ct, ok := transport.(*compressRoundTripper)
 				assert.True(t, ok)
-				assert.Equal(t, test.settings.Compression, ct.compressionType)
+				assert.Equal(t, tt.settings.Compression, ct.compressionType)
 				transport = ct.rt
 			}
 
 			// Headers should wrap Auth, unwrap it
-			if test.settings.Headers != nil {
+			if tt.settings.Headers != nil {
 				ht, ok := transport.(*headerRoundTripper)
 				assert.True(t, ok)
-				assert.Equal(t, test.settings.Headers, ht.headers)
+				assert.Equal(t, tt.settings.Headers, ht.headers)
 				transport = ht.transport
 			}
 
-			if test.settings.Auth != nil {
+			if tt.settings.Auth != nil {
 				_, ok := transport.(*customRoundTripper)
 				assert.True(t, ok)
 			}
@@ -510,20 +511,20 @@ func TestHTTPServerSettingsError(t *testing.T) {
 			},
 		},
 	}
-	for _, test := range tests {
-		t.Run(test.err, func(t *testing.T) {
-			_, err := test.settings.ToListener(context.Background())
-			assert.Regexp(t, test.err, err)
+	for _, tt := range tests {
+		t.Run(tt.err, func(t *testing.T) {
+			_, err := tt.settings.ToListener(context.Background())
+			assert.Regexp(t, tt.err, err)
 		})
 	}
 }
 
 func TestHTTPServerWarning(t *testing.T) {
-	prev := localhostgate.UseLocalHostAsDefaultHostfeatureGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(localhostgate.UseLocalHostAsDefaultHostID, false))
+	prev := globalgates.UseLocalHostAsDefaultHostfeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(globalgates.UseLocalHostAsDefaultHostID, false))
 	defer func() {
 		// Restore previous value.
-		require.NoError(t, featuregate.GlobalRegistry().Set(localhostgate.UseLocalHostAsDefaultHostID, prev))
+		require.NoError(t, featuregate.GlobalRegistry().Set(globalgates.UseLocalHostAsDefaultHostID, prev))
 	}()
 
 	tests := []struct {
@@ -544,22 +545,22 @@ func TestHTTPServerWarning(t *testing.T) {
 			len: 0,
 		},
 	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			set := componenttest.NewNopTelemetrySettings()
 			logger, observed := observer.New(zap.DebugLevel)
 			set.Logger = zap.New(logger)
 
-			_, err := test.settings.ToServer(
+			_, err := tt.settings.ToServer(
 				context.Background(),
 				componenttest.NewNopHost(),
 				set,
 				http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-					_, errWrite := fmt.Fprint(w, "test")
+					_, errWrite := fmt.Fprint(w, "tt")
 					assert.NoError(t, errWrite)
 				}))
 			require.NoError(t, err)
-			require.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), test.len)
+			require.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), tt.len)
 		})
 	}
 
@@ -702,7 +703,7 @@ func TestHttpReception(t *testing.T) {
 				componenttest.NewNopHost(),
 				componenttest.NewNopTelemetrySettings(),
 				http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-					_, errWrite := fmt.Fprint(w, "test")
+					_, errWrite := fmt.Fprint(w, "tt")
 					assert.NoError(t, errWrite)
 				}))
 			require.NoError(t, err)
@@ -733,12 +734,12 @@ func TestHttpReception(t *testing.T) {
 
 			resp, errResp := client.Get(hcs.Endpoint)
 			if tt.hasError {
-				assert.Error(t, errResp)
+				require.Error(t, errResp)
 			} else {
-				assert.NoError(t, errResp)
+				require.NoError(t, errResp)
 				body, errRead := io.ReadAll(resp.Body)
-				assert.NoError(t, errRead)
-				assert.Equal(t, "test", string(body))
+				require.NoError(t, errRead)
+				assert.Equal(t, "tt", string(body))
 				assert.Equal(t, expectedProto, resp.Proto)
 			}
 			require.NoError(t, s.Close())
@@ -1010,28 +1011,6 @@ func verifyHeadersResp(t *testing.T, url string, expected map[string]configopaqu
 	}
 }
 
-func ExampleServerConfig() {
-	settings := NewDefaultServerConfig()
-	settings.Endpoint = "localhost:443"
-
-	s, err := settings.ToServer(
-		context.Background(),
-		componenttest.NewNopHost(),
-		componenttest.NewNopTelemetrySettings(),
-		http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
-	if err != nil {
-		panic(err)
-	}
-
-	l, err := settings.ToListener(context.Background())
-	if err != nil {
-		panic(err)
-	}
-	if err = s.Serve(l); err != nil {
-		panic(err)
-	}
-}
-
 func TestHttpClientHeaders(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -1064,7 +1043,7 @@ func TestHttpClientHeaders(t *testing.T) {
 			}
 			client, _ := setting.ToClient(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 			req, err := http.NewRequest(http.MethodGet, setting.Endpoint, nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			_, err = client.Do(req)
 			assert.NoError(t, err)
 		})
@@ -1100,7 +1079,7 @@ func TestHttpClientHostHeader(t *testing.T) {
 		}
 		client, _ := setting.ToClient(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 		req, err := http.NewRequest(http.MethodGet, setting.Endpoint, nil)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		_, err = client.Do(req)
 		assert.NoError(t, err)
 	})
@@ -1108,18 +1087,18 @@ func TestHttpClientHostHeader(t *testing.T) {
 
 func TestContextWithClient(t *testing.T) {
 	testCases := []struct {
-		desc       string
+		name       string
 		input      *http.Request
 		doMetadata bool
 		expected   client.Info
 	}{
 		{
-			desc:     "request without client IP or headers",
+			name:     "request without client IP or headers",
 			input:    &http.Request{},
 			expected: client.Info{},
 		},
 		{
-			desc: "request with client IP",
+			name: "request with client IP",
 			input: &http.Request{
 				RemoteAddr: "1.2.3.4:55443",
 			},
@@ -1130,39 +1109,39 @@ func TestContextWithClient(t *testing.T) {
 			},
 		},
 		{
-			desc: "request with client headers, no metadata processing",
+			name: "request with client headers, no metadata processing",
 			input: &http.Request{
-				Header: map[string][]string{"x-test-header": {"test-value"}},
+				Header: map[string][]string{"x-tt-header": {"tt-value"}},
 			},
 			doMetadata: false,
 			expected:   client.Info{},
 		},
 		{
-			desc: "request with client headers",
+			name: "request with client headers",
 			input: &http.Request{
-				Header: map[string][]string{"x-test-header": {"test-value"}},
+				Header: map[string][]string{"x-tt-header": {"tt-value"}},
 			},
 			doMetadata: true,
 			expected: client.Info{
-				Metadata: client.NewMetadata(map[string][]string{"x-test-header": {"test-value"}}),
+				Metadata: client.NewMetadata(map[string][]string{"x-tt-header": {"tt-value"}}),
 			},
 		},
 		{
-			desc: "request with Host and client headers",
+			name: "request with Host and client headers",
 			input: &http.Request{
-				Header: map[string][]string{"x-test-header": {"test-value"}},
+				Header: map[string][]string{"x-tt-header": {"tt-value"}},
 				Host:   "localhost:55443",
 			},
 			doMetadata: true,
 			expected: client.Info{
-				Metadata: client.NewMetadata(map[string][]string{"x-test-header": {"test-value"}, "Host": {"localhost:55443"}}),
+				Metadata: client.NewMetadata(map[string][]string{"x-tt-header": {"tt-value"}, "Host": {"localhost:55443"}}),
 			},
 		},
 	}
-	for _, tC := range testCases {
-		t.Run(tC.desc, func(t *testing.T) {
-			ctx := contextWithClient(tC.input, tC.doMetadata)
-			assert.Equal(t, tC.expected, client.FromContext(ctx))
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := contextWithClient(tt.input, tt.doMetadata)
+			assert.Equal(t, tt.expected, client.FromContext(ctx))
 		})
 	}
 }
@@ -1198,7 +1177,7 @@ func TestServerAuth(t *testing.T) {
 	srv, err := hss.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings(), handler)
 	require.NoError(t, err)
 
-	// test
+	// tt
 	srv.Handler.ServeHTTP(&httptest.ResponseRecorder{}, httptest.NewRequest("GET", "/", nil))
 
 	// verify
@@ -1243,13 +1222,13 @@ func TestFailedServerAuth(t *testing.T) {
 	srv, err := hss.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings(), http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	require.NoError(t, err)
 
-	// test
+	// tt
 	response := &httptest.ResponseRecorder{}
 	srv.Handler.ServeHTTP(response, httptest.NewRequest("GET", "/", nil))
 
 	// verify
-	assert.Equal(t, response.Result().StatusCode, http.StatusUnauthorized)
-	assert.Equal(t, response.Result().Status, fmt.Sprintf("%v %s", http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized)))
+	assert.Equal(t, http.StatusUnauthorized, response.Result().StatusCode)
+	assert.Equal(t, fmt.Sprintf("%v %s", http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized)), response.Result().Status)
 }
 
 func TestServerWithErrorHandler(t *testing.T) {
@@ -1258,7 +1237,7 @@ func TestServerWithErrorHandler(t *testing.T) {
 		Endpoint: "localhost:0",
 	}
 	eh := func(w http.ResponseWriter, _ *http.Request, _ string, statusCode int) {
-		assert.Equal(t, statusCode, http.StatusBadRequest)
+		assert.Equal(t, http.StatusBadRequest, statusCode)
 		// custom error handler changes returned status code
 		http.Error(w, "invalid request", http.StatusInternalServerError)
 	}
@@ -1271,7 +1250,7 @@ func TestServerWithErrorHandler(t *testing.T) {
 		WithErrorHandler(eh),
 	)
 	require.NoError(t, err)
-	// test
+	// tt
 	response := &httptest.ResponseRecorder{}
 
 	req, err := http.NewRequest(http.MethodGet, srv.Addr, nil)
@@ -1280,7 +1259,7 @@ func TestServerWithErrorHandler(t *testing.T) {
 
 	srv.Handler.ServeHTTP(response, req)
 	// verify
-	assert.Equal(t, response.Result().StatusCode, http.StatusInternalServerError)
+	assert.Equal(t, http.StatusInternalServerError, response.Result().StatusCode)
 }
 
 func TestServerWithDecoder(t *testing.T) {
@@ -1299,7 +1278,7 @@ func TestServerWithDecoder(t *testing.T) {
 		WithDecoder("something-else", decoder),
 	)
 	require.NoError(t, err)
-	// test
+	// tt
 	response := &httptest.ResponseRecorder{}
 
 	req, err := http.NewRequest(http.MethodGet, srv.Addr, bytes.NewBuffer([]byte("something")))
@@ -1308,7 +1287,7 @@ func TestServerWithDecoder(t *testing.T) {
 
 	srv.Handler.ServeHTTP(response, req)
 	// verify
-	assert.Equal(t, response.Result().StatusCode, http.StatusOK)
+	assert.Equal(t, http.StatusOK, response.Result().StatusCode)
 
 }
 
@@ -1345,7 +1324,7 @@ func TestServerWithDecompression(t *testing.T) {
 
 	req.Header.Set("Content-Encoding", "zstd")
 
-	// test
+	// tt
 	c := http.Client{}
 	resp, err := c.Do(req)
 	require.NoError(t, err, "Error sending request: %v", err)
@@ -1353,9 +1332,9 @@ func TestServerWithDecompression(t *testing.T) {
 	_, err = io.ReadAll(resp.Body)
 	require.NoError(t, err, "Error reading response body: %v", err)
 
-	// verifications is done mostly within the test, but this is only a sanity check
-	// that we got into the test handler
-	assert.Equal(t, resp.StatusCode, http.StatusBadRequest)
+	// verifications is done mostly within the tt, but this is only a sanity check
+	// that we got into the tt handler
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 }
 
 func TestDefaultMaxRequestBodySize(t *testing.T) {
@@ -1433,7 +1412,7 @@ func TestAuthWithQueryParams(t *testing.T) {
 	srv, err := hss.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings(), handler)
 	require.NoError(t, err)
 
-	// test
+	// tt
 	srv.Handler.ServeHTTP(&httptest.ResponseRecorder{}, httptest.NewRequest("GET", "/?auth=1", nil))
 
 	// verify
@@ -1502,8 +1481,8 @@ func BenchmarkHttpRequest(b *testing.B) {
 		componenttest.NewNopHost(),
 		componenttest.NewNopTelemetrySettings(),
 		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			_, errWrite := fmt.Fprint(w, "test")
-			require.NoError(b, errWrite)
+			_, errWrite := fmt.Fprint(w, "tt")
+			assert.NoError(b, errWrite)
 		}))
 	require.NoError(b, err)
 	ln, err := hss.ToListener(context.Background())
@@ -1544,7 +1523,7 @@ func BenchmarkHttpRequest(b *testing.B) {
 					body, errRead := io.ReadAll(resp.Body)
 					_ = resp.Body.Close()
 					require.NoError(b, errRead)
-					require.Equal(b, "test", string(body))
+					require.Equal(b, "tt", string(body))
 				}
 				c.CloseIdleConnections()
 			})

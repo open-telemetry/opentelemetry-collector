@@ -5,22 +5,28 @@ This program generates a custom OpenTelemetry Collector binary based on a given 
 ## TL;DR
 
 ```console
-$ go install go.opentelemetry.io/collector/cmd/builder@v0.107.0
+$ go install go.opentelemetry.io/collector/cmd/builder@v0.109.0
 $ cat > otelcol-builder.yaml <<EOF
 dist:
   name: otelcol-custom
   description: Local OpenTelemetry Collector binary
   output_path: /tmp/dist
 exporters:
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.107.0
-  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.107.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.109.0
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.109.0
 
 receivers:
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.107.0
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.109.0
 
 processors:
-  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.107.0
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.109.0
 
+providers:
+  - gomod: go.opentelemetry.io/collector/confmap/provider/envprovider v1.15.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v1.15.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/httpprovider v0.109.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.109.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.109.0
 EOF
 $ builder --config=otelcol-builder.yaml
 $ cat > /tmp/otelcol.yaml <<EOF
@@ -156,24 +162,6 @@ then commit the code in a git repo. A CI can sync the code and execute
 ocb --skip-generate --skip-get-modules --config=config.yaml
 ```
 to only execute the compilation step.
-
-### Avoiding the use of a new go.mod file
-
-You can optionally skip creating a new `go.mod` file. This is helpful when 
-using a monorepo setup with a shared go.mod file. When the `--skip-new-go-module` 
-command-line flag is supplied, the build process issues a `go get` command for 
-each component, relying on the Go toolchain to update the enclosing Go module 
-appropriately.
-
-This command will avoid downgrading a dependency in the enclosing
-module, according to
-[`semver.Compare()`](https://pkg.go.dev/golang.org/x/mod/semver#Compare),
-and will instead issue a log indicating that the component was not
-upgraded.
-
-`--skip-new-go-module` is incompatible with `replaces`, `excludes`,
-and the component `path` override.  For each of these features, users
-are expected to modify the enclosing `go.mod` directly.
 
 ### Strict versioning checks
 

@@ -8,6 +8,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -169,7 +170,7 @@ type ServerConfig struct {
 	TLSSetting *configtls.ServerConfig `mapstructure:"tls"`
 
 	// MaxRecvMsgSizeMiB sets the maximum size (in MiB) of messages accepted by the server.
-	MaxRecvMsgSizeMiB uint64 `mapstructure:"max_recv_msg_size_mib"`
+	MaxRecvMsgSizeMiB int `mapstructure:"max_recv_msg_size_mib"`
 
 	// MaxConcurrentStreams sets the limit on the number of concurrent streams to each ServerTransport.
 	// It has effect only for streaming RPCs.
@@ -225,16 +226,58 @@ func (gcs *ClientConfig) isSchemeHTTPS() bool {
 // a non-blocking dial (the function won't wait for connections to be
 // established, and connecting happens in the background). To make it a blocking
 // dial, use grpc.WithBlock() dial option.
-func (gcs *ClientConfig) ToClientConn(ctx context.Context, host component.Host, settings component.TelemetrySettings, extraOpts ...grpc.DialOption) (*grpc.ClientConn, error) {
-	opts, err := gcs.toDialOptions(ctx, host, settings)
+//
+// Deprecated: [v0.110.0] If providing a [grpc.DialOption], use [ClientConfig.ToClientConnWithOptions]
+// with [WithGrpcDialOption] instead.
+func (gcs *ClientConfig) ToClientConn(
+	ctx context.Context,
+	host component.Host,
+	settings component.TelemetrySettings,
+	grpcOpts ...grpc.DialOption,
+) (*grpc.ClientConn, error) {
+	var extraOpts []ToClientConnOption
+	for _, grpcOpt := range grpcOpts {
+		extraOpts = append(extraOpts, WithGrpcDialOption(grpcOpt))
+	}
+	return gcs.ToClientConnWithOptions(ctx, host, settings, extraOpts...)
+}
+
+// ToClientConnOption is a sealed interface wrapping options for [ClientConfig.ToClientConnWithOptions].
+type ToClientConnOption interface {
+	isToClientConnOption()
+}
+
+type grpcDialOptionWrapper struct {
+	opt grpc.DialOption
+}
+
+// WithGrpcDialOption wraps a [grpc.DialOption] into a [ToClientConnOption].
+func WithGrpcDialOption(opt grpc.DialOption) ToClientConnOption {
+	return grpcDialOptionWrapper{opt: opt}
+}
+func (grpcDialOptionWrapper) isToClientConnOption() {}
+
+// ToClientConnWithOptions is the same as [ClientConfig.ToClientConn], but uses the [ToClientConnOption] interface for options.
+// This method will eventually replace [ClientConfig.ToClientConn].
+func (gcs *ClientConfig) ToClientConnWithOptions(
+	ctx context.Context,
+	host component.Host,
+	settings component.TelemetrySettings,
+	extraOpts ...ToClientConnOption,
+) (*grpc.ClientConn, error) {
+	grpcOpts, err := gcs.getGrpcDialOptions(ctx, host, settings, extraOpts)
 	if err != nil {
 		return nil, err
 	}
-	opts = append(opts, extraOpts...)
-	return grpc.NewClient(gcs.sanitizedEndpoint(), opts...)
+	return grpc.NewClient(gcs.sanitizedEndpoint(), grpcOpts...)
 }
 
-func (gcs *ClientConfig) toDialOptions(ctx context.Context, host component.Host, settings component.TelemetrySettings) ([]grpc.DialOption, error) {
+func (gcs *ClientConfig) getGrpcDialOptions(
+	ctx context.Context,
+	host component.Host,
+	settings component.TelemetrySettings,
+	extraOpts []ToClientConnOption,
+) ([]grpc.DialOption, error) {
 	var opts []grpc.DialOption
 	if gcs.Compression.IsCompressed() {
 		cp, err := getGRPCCompressionName(gcs.Compression)
@@ -305,13 +348,17 @@ func (gcs *ClientConfig) toDialOptions(ctx context.Context, host component.Host,
 	otelOpts := []otelgrpc.Option{
 		otelgrpc.WithTracerProvider(settings.TracerProvider),
 		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
-	}
-	if settings.MetricsLevel >= configtelemetry.LevelDetailed {
-		otelOpts = append(otelOpts, otelgrpc.WithMeterProvider(settings.MeterProvider))
+		otelgrpc.WithMeterProvider(settings.LeveledMeterProvider(configtelemetry.LevelDetailed)),
 	}
 
 	// Enable OpenTelemetry observability plugin.
 	opts = append(opts, grpc.WithStatsHandler(otelgrpc.NewClientHandler(otelOpts...)))
+
+	for _, opt := range extraOpts {
+		if wrapper, ok := opt.(grpcDialOptionWrapper); ok {
+			opts = append(opts, wrapper.opt)
+		}
+	}
 
 	return opts, nil
 }
@@ -320,17 +367,74 @@ func validateBalancerName(balancerName string) bool {
 	return balancer.Get(balancerName) != nil
 }
 
-// ToServer returns a grpc.Server for the configuration
-func (gss *ServerConfig) ToServer(_ context.Context, host component.Host, settings component.TelemetrySettings, extraOpts ...grpc.ServerOption) (*grpc.Server, error) {
-	opts, err := gss.toServerOption(host, settings)
+func (gss *ServerConfig) Validate() error {
+	if gss.MaxRecvMsgSizeMiB*1024*1024 < 0 {
+		return fmt.Errorf("invalid max_recv_msg_size_mib value, must be between 1 and %d: %d", math.MaxInt/1024/1024, gss.MaxRecvMsgSizeMiB)
+	}
+
+	if gss.ReadBufferSize < 0 {
+		return fmt.Errorf("invalid read_buffer_size value: %d", gss.ReadBufferSize)
+	}
+
+	if gss.WriteBufferSize < 0 {
+		return fmt.Errorf("invalid write_buffer_size value: %d", gss.WriteBufferSize)
+	}
+
+	return nil
+}
+
+// ToServer returns a [grpc.Server] for the configuration
+//
+// Deprecated: [v0.110.0] If providing a [grpc.ServerOption], use [ServerConfig.ToServerWithOptions]
+// with [WithGrpcServerOption] instead.
+func (gss *ServerConfig) ToServer(
+	ctx context.Context,
+	host component.Host,
+	settings component.TelemetrySettings,
+	grpcOpts ...grpc.ServerOption,
+) (*grpc.Server, error) {
+	var extraOpts []ToServerOption
+	for _, grpcOpt := range grpcOpts {
+		extraOpts = append(extraOpts, WithGrpcServerOption(grpcOpt))
+	}
+	return gss.ToServerWithOptions(ctx, host, settings, extraOpts...)
+}
+
+// ToServerOption is a sealed interface wrapping options for [ServerConfig.ToServerWithOptions].
+type ToServerOption interface {
+	isToServerOption()
+}
+
+type grpcServerOptionWrapper struct {
+	opt grpc.ServerOption
+}
+
+// WithGrpcServerOption wraps a [grpc.ServerOption] into a [ToServerOption].
+func WithGrpcServerOption(opt grpc.ServerOption) ToServerOption {
+	return grpcServerOptionWrapper{opt: opt}
+}
+func (grpcServerOptionWrapper) isToServerOption() {}
+
+// ToServerWithOptions is the same as [ServerConfig.ToServer], but uses the [ToServerOption] interface for options.
+// This method will eventually replace [ServerConfig.ToServer].
+func (gss *ServerConfig) ToServerWithOptions(
+	_ context.Context,
+	host component.Host,
+	settings component.TelemetrySettings,
+	extraOpts ...ToServerOption,
+) (*grpc.Server, error) {
+	grpcOpts, err := gss.getGrpcServerOptions(host, settings, extraOpts)
 	if err != nil {
 		return nil, err
 	}
-	opts = append(opts, extraOpts...)
-	return grpc.NewServer(opts...), nil
+	return grpc.NewServer(grpcOpts...), nil
 }
 
-func (gss *ServerConfig) toServerOption(host component.Host, settings component.TelemetrySettings) ([]grpc.ServerOption, error) {
+func (gss *ServerConfig) getGrpcServerOptions(
+	host component.Host,
+	settings component.TelemetrySettings,
+	extraOpts []ToServerOption,
+) ([]grpc.ServerOption, error) {
 	switch gss.NetAddr.Transport {
 	case confignet.TransportTypeTCP, confignet.TransportTypeTCP4, confignet.TransportTypeTCP6, confignet.TransportTypeUDP, confignet.TransportTypeUDP4, confignet.TransportTypeUDP6:
 		internal.WarnOnUnspecifiedHost(settings.Logger, gss.NetAddr.Endpoint)
@@ -346,8 +450,8 @@ func (gss *ServerConfig) toServerOption(host component.Host, settings component.
 		opts = append(opts, grpc.Creds(credentials.NewTLS(tlsCfg)))
 	}
 
-	if gss.MaxRecvMsgSizeMiB > 0 {
-		opts = append(opts, grpc.MaxRecvMsgSize(int(gss.MaxRecvMsgSizeMiB*1024*1024)))
+	if gss.MaxRecvMsgSizeMiB > 0 && gss.MaxRecvMsgSizeMiB*1024*1024 > 0 {
+		opts = append(opts, grpc.MaxRecvMsgSize(gss.MaxRecvMsgSizeMiB*1024*1024))
 	}
 
 	if gss.MaxConcurrentStreams > 0 {
@@ -410,9 +514,7 @@ func (gss *ServerConfig) toServerOption(host component.Host, settings component.
 	otelOpts := []otelgrpc.Option{
 		otelgrpc.WithTracerProvider(settings.TracerProvider),
 		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
-	}
-	if settings.MetricsLevel >= configtelemetry.LevelDetailed {
-		otelOpts = append(otelOpts, otelgrpc.WithMeterProvider(settings.MeterProvider))
+		otelgrpc.WithMeterProvider(settings.LeveledMeterProvider(configtelemetry.LevelDetailed)),
 	}
 
 	// Enable OpenTelemetry observability plugin.
@@ -421,6 +523,12 @@ func (gss *ServerConfig) toServerOption(host component.Host, settings component.
 	sInterceptors = append(sInterceptors, enhanceStreamWithClientInformation(gss.IncludeMetadata))
 
 	opts = append(opts, grpc.StatsHandler(otelgrpc.NewServerHandler(otelOpts...)), grpc.ChainUnaryInterceptor(uInterceptors...), grpc.ChainStreamInterceptor(sInterceptors...))
+
+	for _, opt := range extraOpts {
+		if wrapper, ok := opt.(grpcServerOptionWrapper); ok {
+			opts = append(opts, wrapper.opt)
+		}
+	}
 
 	return opts, nil
 }

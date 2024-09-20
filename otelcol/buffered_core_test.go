@@ -72,7 +72,7 @@ func Test_bufferedCore_Write(t *testing.T) {
 		e,
 		fields,
 	}
-	require.Equal(t, 1, len(bc.logs))
+	require.Len(t, bc.logs, 1)
 	require.Equal(t, expected, bc.logs[0])
 }
 
@@ -102,6 +102,6 @@ func Test_bufferedCore_TakeLogs(t *testing.T) {
 	assert.Equal(t, expected, bc.TakeLogs())
 	assert.Nil(t, bc.logs)
 
-	assert.Error(t, bc.Write(e, fields))
+	require.Error(t, bc.Write(e, fields))
 	assert.Nil(t, bc.TakeLogs())
 }

@@ -10,6 +10,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -37,7 +39,7 @@ func TestNewLogsProcessor_WithOptions(t *testing.T) {
 		WithStart(func(context.Context, component.Host) error { return want }),
 		WithShutdown(func(context.Context) error { return want }),
 		WithCapabilities(consumer.Capabilities{MutatesData: false}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, want, lp.Start(context.Background(), componenttest.NewNopHost()))
 	assert.Equal(t, want, lp.Shutdown(context.Background()))
@@ -59,11 +61,69 @@ func TestNewLogsProcessor_ProcessLogError(t *testing.T) {
 func TestNewLogsProcessor_ProcessLogsErrSkipProcessingData(t *testing.T) {
 	lp, err := NewLogsProcessor(context.Background(), processortest.NewNopSettings(), &testLogsCfg, consumertest.NewNop(), newTestLProcessor(ErrSkipProcessingData))
 	require.NoError(t, err)
-	assert.Equal(t, nil, lp.ConsumeLogs(context.Background(), plog.NewLogs()))
+	assert.NoError(t, lp.ConsumeLogs(context.Background(), plog.NewLogs()))
 }
 
 func newTestLProcessor(retError error) ProcessLogsFunc {
 	return func(_ context.Context, ld plog.Logs) (plog.Logs, error) {
 		return ld, retError
 	}
+}
+
+func TestLogsProcessor_RecordInOut(t *testing.T) {
+	// Regardless of how many logs are ingested, emit just one
+	mockAggregate := func(_ context.Context, _ plog.Logs) (plog.Logs, error) {
+		ld := plog.NewLogs()
+		ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+		return ld, nil
+	}
+
+	incomingLogs := plog.NewLogs()
+	incomingLogRecords := incomingLogs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
+
+	// Add 3 records to the incoming
+	incomingLogRecords.AppendEmpty()
+	incomingLogRecords.AppendEmpty()
+	incomingLogRecords.AppendEmpty()
+
+	testTelemetry := setupTestTelemetry()
+	lp, err := NewLogsProcessor(context.Background(), testTelemetry.NewSettings(), &testLogsCfg, consumertest.NewNop(), mockAggregate)
+	require.NoError(t, err)
+
+	assert.NoError(t, lp.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, lp.ConsumeLogs(context.Background(), incomingLogs))
+	assert.NoError(t, lp.Shutdown(context.Background()))
+
+	testTelemetry.assertMetrics(t, []metricdata.Metrics{
+		{
+			Name:        "otelcol_processor_incoming_items",
+			Description: "Number of items passed to the processor. [alpha]",
+			Unit:        "{items}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      3,
+						Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "logs")),
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_processor_outgoing_items",
+			Description: "Number of items emitted from the processor. [alpha]",
+			Unit:        "{items}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      1,
+						Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "logs")),
+					},
+				},
+			},
+		},
+	})
 }

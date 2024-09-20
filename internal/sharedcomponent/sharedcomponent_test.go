@@ -26,20 +26,20 @@ type baseComponent struct {
 
 func TestNewMap(t *testing.T) {
 	comps := NewMap[component.ID, *baseComponent]()
-	assert.Len(t, comps.components, 0)
+	assert.Empty(t, comps.components)
 }
 
 func TestNewSharedComponentsCreateError(t *testing.T) {
 	comps := NewMap[component.ID, *baseComponent]()
-	assert.Len(t, comps.components, 0)
+	assert.Empty(t, comps.components)
 	myErr := errors.New("my error")
 	_, err := comps.LoadOrStore(
 		id,
 		func() (*baseComponent, error) { return nil, myErr },
 		newNopTelemetrySettings(),
 	)
-	assert.ErrorIs(t, err, myErr)
-	assert.Len(t, comps.components, 0)
+	require.ErrorIs(t, err, myErr)
+	assert.Empty(t, comps.components)
 }
 
 func TestSharedComponentsLoadOrStore(t *testing.T) {
@@ -64,8 +64,8 @@ func TestSharedComponentsLoadOrStore(t *testing.T) {
 	assert.Same(t, got, gotSecond)
 
 	// Shutdown nop will remove
-	assert.NoError(t, got.Shutdown(context.Background()))
-	assert.Len(t, comps.components, 0)
+	require.NoError(t, got.Shutdown(context.Background()))
+	assert.Empty(t, comps.components)
 	gotThird, err := comps.LoadOrStore(
 		id,
 		func() (*baseComponent, error) { return nop, nil },
@@ -99,13 +99,13 @@ func TestSharedComponent(t *testing.T) {
 	assert.Equal(t, wantErr, got.Start(context.Background(), componenttest.NewNopHost()))
 	assert.Equal(t, 1, calledStart)
 	// Second time is not called anymore.
-	assert.NoError(t, got.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, got.Start(context.Background(), componenttest.NewNopHost()))
 	assert.Equal(t, 1, calledStart)
 	// first time, shutdown is called.
 	assert.Equal(t, wantErr, got.Shutdown(context.Background()))
 	assert.Equal(t, 1, calledStop)
 	// Second time is not called anymore.
-	assert.NoError(t, got.Shutdown(context.Background()))
+	require.NoError(t, got.Shutdown(context.Background()))
 	assert.Equal(t, 1, calledStop)
 }
 
@@ -200,7 +200,7 @@ func TestReportStatusOnStartShutdown(t *testing.T) {
 				require.Equal(t, tc.shutdownErr, err)
 			}
 
-			require.Equal(t, tc.expectedNumReporterInstances, len(reportedStatuses))
+			require.Len(t, reportedStatuses, tc.expectedNumReporterInstances)
 
 			for _, actualStatuses := range reportedStatuses {
 				require.Equal(t, tc.expectedStatuses, actualStatuses)

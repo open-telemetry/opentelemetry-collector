@@ -8,9 +8,12 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
+	"go.opentelemetry.io/collector/connector/connectorprofiles"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -23,6 +26,7 @@ var ExampleRouterFactory = connector.NewFactory(
 	connector.WithTracesToTraces(createExampleTracesRouter, component.StabilityLevelDevelopment),
 	connector.WithMetricsToMetrics(createExampleMetricsRouter, component.StabilityLevelDevelopment),
 	connector.WithLogsToLogs(createExampleLogsRouter, component.StabilityLevelDevelopment),
+	connectorprofiles.WithProfilesToProfiles(createExampleProfilesRouter, component.StabilityLevelDevelopment),
 )
 
 type LeftRightConfig struct {
@@ -31,9 +35,10 @@ type LeftRightConfig struct {
 }
 
 type ExampleRouterConfig struct {
-	Traces  *LeftRightConfig `mapstructure:"traces"`
-	Metrics *LeftRightConfig `mapstructure:"metrics"`
-	Logs    *LeftRightConfig `mapstructure:"logs"`
+	Traces   *LeftRightConfig `mapstructure:"traces"`
+	Metrics  *LeftRightConfig `mapstructure:"metrics"`
+	Logs     *LeftRightConfig `mapstructure:"logs"`
+	Profiles *LeftRightConfig `mapstructure:"profiles"`
 }
 
 func createExampleRouterDefaultConfig() component.Config {
@@ -73,6 +78,17 @@ func createExampleLogsRouter(_ context.Context, _ connector.Settings, cfg compon
 	}, nil
 }
 
+func createExampleProfilesRouter(_ context.Context, _ connector.Settings, cfg component.Config, profiles consumerprofiles.Profiles) (connectorprofiles.Profiles, error) {
+	c := cfg.(ExampleRouterConfig)
+	r := profiles.(connectorprofiles.ProfilesRouterAndConsumer)
+	left, _ := r.Consumer(c.Profiles.Left)
+	right, _ := r.Consumer(c.Profiles.Right)
+	return &ExampleRouter{
+		profilesRight: right,
+		profilesLeft:  left,
+	}, nil
+}
+
 type ExampleRouter struct {
 	componentState
 
@@ -87,6 +103,10 @@ type ExampleRouter struct {
 	logsRight consumer.Logs
 	logsLeft  consumer.Logs
 	logsNum   int
+
+	profilesRight consumerprofiles.Profiles
+	profilesLeft  consumerprofiles.Profiles
+	profilesNum   int
 }
 
 func (r *ExampleRouter) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
@@ -111,6 +131,14 @@ func (r *ExampleRouter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 		return r.logsLeft.ConsumeLogs(ctx, ld)
 	}
 	return r.logsRight.ConsumeLogs(ctx, ld)
+}
+
+func (r *ExampleRouter) ConsumeProfiles(ctx context.Context, td pprofile.Profiles) error {
+	r.profilesNum++
+	if r.profilesNum%2 == 0 {
+		return r.profilesLeft.ConsumeProfiles(ctx, td)
+	}
+	return r.profilesRight.ConsumeProfiles(ctx, td)
 }
 
 func (r *ExampleRouter) Capabilities() consumer.Capabilities {

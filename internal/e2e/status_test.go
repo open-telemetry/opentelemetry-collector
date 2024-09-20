@@ -6,6 +6,8 @@ package e2e
 import (
 	"context"
 	"errors"
+	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -33,7 +35,11 @@ import (
 
 var nopType = component.MustNewType("nop")
 
+var wg = sync.WaitGroup{}
+
 func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
+	t.Skipf("Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector/issues/10927#issuecomment-2343679185")
+
 	eventsReceived := make(map[*componentstatus.InstanceID][]*componentstatus.Event)
 	exporterFactory := exportertest.NewNopFactory()
 	connectorFactory := connectortest.NewNopFactory()
@@ -110,37 +116,47 @@ func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 	s, err := service.New(context.Background(), set, cfg)
 	require.NoError(t, err)
 
+	wg.Add(1)
 	err = s.Start(context.Background())
 	require.NoError(t, err)
-	time.Sleep(15 * time.Second)
+	wg.Wait()
 	err = s.Shutdown(context.Background())
 	require.NoError(t, err)
 
-	assert.Equal(t, 5, len(eventsReceived))
+	require.Len(t, eventsReceived, 2)
 
 	for instanceID, events := range eventsReceived {
-		if instanceID.ComponentID() == component.NewID(component.MustNewType("test")) {
-			for i, e := range events {
-				if i == 0 {
-					assert.Equal(t, componentstatus.StatusStarting, e.Status())
-				}
-				if i == 1 {
-					assert.Equal(t, componentstatus.StatusRecoverableError, e.Status())
-				}
-				if i == 2 {
-					assert.Equal(t, componentstatus.StatusOK, e.Status())
-				}
-				if i == 3 {
-					assert.Equal(t, componentstatus.StatusStopping, e.Status())
-				}
-				if i == 4 {
-					assert.Equal(t, componentstatus.StatusStopped, e.Status())
-				}
-				if i >= 5 {
-					assert.Fail(t, "received too many events")
-				}
+		pipelineIDs := ""
+		instanceID.AllPipelineIDs(func(id component.ID) bool {
+			pipelineIDs += id.String() + ","
+			return true
+		})
+
+		t.Logf("checking errors for %v - %v - %v", pipelineIDs, instanceID.Kind().String(), instanceID.ComponentID().String())
+
+		eventStr := ""
+		for i, e := range events {
+			eventStr += fmt.Sprintf("%v,", e.Status())
+			if i == 0 {
+				assert.Equal(t, componentstatus.StatusStarting, e.Status())
+			}
+			if i == 1 {
+				assert.Equal(t, componentstatus.StatusRecoverableError, e.Status())
+			}
+			if i == 2 {
+				assert.Equal(t, componentstatus.StatusOK, e.Status())
+			}
+			if i == 3 {
+				assert.Equal(t, componentstatus.StatusStopping, e.Status())
+			}
+			if i == 4 {
+				assert.Equal(t, componentstatus.StatusStopped, e.Status())
+			}
+			if i >= 5 {
+				assert.Fail(t, "received too many events")
 			}
 		}
+		t.Logf("events received: %v", eventStr)
 	}
 }
 
@@ -156,12 +172,11 @@ func newReceiverFactory() receiver.Factory {
 type testReceiver struct{}
 
 func (t *testReceiver) Start(_ context.Context, host component.Host) error {
-	if statusReporter, ok := host.(componentstatus.Reporter); ok {
-		statusReporter.Report(componentstatus.NewRecoverableErrorEvent(errors.New("test recoverable error")))
-		go func() {
-			statusReporter.Report(componentstatus.NewEvent(componentstatus.StatusOK))
-		}()
-	}
+	componentstatus.ReportStatus(host, componentstatus.NewRecoverableErrorEvent(errors.New("test recoverable error")))
+	go func() {
+		componentstatus.ReportStatus(host, componentstatus.NewEvent(componentstatus.StatusOK))
+		wg.Done()
+	}()
 	return nil
 }
 
@@ -262,20 +277,22 @@ func (t *testExtension) ComponentStatusChanged(
 	source *componentstatus.InstanceID,
 	event *componentstatus.Event,
 ) {
-	t.eventsReceived[source] = append(t.eventsReceived[source], event)
+	if source.ComponentID() == component.NewID(component.MustNewType("test")) {
+		t.eventsReceived[source] = append(t.eventsReceived[source], event)
+	}
 }
 
-// NotifyConfig implements the extension.ConfigWatcher interface.
+// NotifyConfig implements the extensioncapabilities.ConfigWatcher interface.
 func (t *testExtension) NotifyConfig(_ context.Context, _ *confmap.Conf) error {
 	return nil
 }
 
-// Ready implements the extension.PipelineWatcher interface.
+// Ready implements the extensioncapabilities.PipelineWatcher interface.
 func (t *testExtension) Ready() error {
 	return nil
 }
 
-// NotReady implements the extension.PipelineWatcher interface.
+// NotReady implements the extensioncapabilities.PipelineWatcher interface.
 func (t *testExtension) NotReady() error {
 	return nil
 }

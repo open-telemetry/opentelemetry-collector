@@ -13,8 +13,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processorprofiles"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
 
@@ -28,55 +30,62 @@ func TestProcessorBuilder(t *testing.T) {
 			processor.WithTraces(createProcessorTraces, component.StabilityLevelDevelopment),
 			processor.WithMetrics(createProcessorMetrics, component.StabilityLevelAlpha),
 			processor.WithLogs(createProcessorLogs, component.StabilityLevelDeprecated),
+			processorprofiles.WithProfiles(createProcessorProfiles, component.StabilityLevelDevelopment),
 		),
 	}...)
 	require.NoError(t, err)
 
 	testCases := []struct {
-		name        string
-		id          component.ID
-		err         string
-		nextTraces  consumer.Traces
-		nextLogs    consumer.Logs
-		nextMetrics consumer.Metrics
+		name         string
+		id           component.ID
+		err          string
+		nextTraces   consumer.Traces
+		nextLogs     consumer.Logs
+		nextMetrics  consumer.Metrics
+		nextProfiles consumerprofiles.Profiles
 	}{
 		{
-			name:        "unknown",
-			id:          component.MustNewID("unknown"),
-			err:         "processor factory not available for: \"unknown\"",
-			nextTraces:  consumertest.NewNop(),
-			nextLogs:    consumertest.NewNop(),
-			nextMetrics: consumertest.NewNop(),
+			name:         "unknown",
+			id:           component.MustNewID("unknown"),
+			err:          "processor factory not available for: \"unknown\"",
+			nextTraces:   consumertest.NewNop(),
+			nextLogs:     consumertest.NewNop(),
+			nextMetrics:  consumertest.NewNop(),
+			nextProfiles: consumertest.NewNop(),
 		},
 		{
-			name:        "err",
-			id:          component.MustNewID("err"),
-			err:         "telemetry type is not supported",
-			nextTraces:  consumertest.NewNop(),
-			nextLogs:    consumertest.NewNop(),
-			nextMetrics: consumertest.NewNop(),
+			name:         "err",
+			id:           component.MustNewID("err"),
+			err:          "telemetry type is not supported",
+			nextTraces:   consumertest.NewNop(),
+			nextLogs:     consumertest.NewNop(),
+			nextMetrics:  consumertest.NewNop(),
+			nextProfiles: consumertest.NewNop(),
 		},
 		{
-			name:        "all",
-			id:          component.MustNewID("all"),
-			nextTraces:  consumertest.NewNop(),
-			nextLogs:    consumertest.NewNop(),
-			nextMetrics: consumertest.NewNop(),
+			name:         "all",
+			id:           component.MustNewID("all"),
+			nextTraces:   consumertest.NewNop(),
+			nextLogs:     consumertest.NewNop(),
+			nextMetrics:  consumertest.NewNop(),
+			nextProfiles: consumertest.NewNop(),
 		},
 		{
-			name:        "all/named",
-			id:          component.MustNewIDWithName("all", "named"),
-			nextTraces:  consumertest.NewNop(),
-			nextLogs:    consumertest.NewNop(),
-			nextMetrics: consumertest.NewNop(),
+			name:         "all/named",
+			id:           component.MustNewIDWithName("all", "named"),
+			nextTraces:   consumertest.NewNop(),
+			nextLogs:     consumertest.NewNop(),
+			nextMetrics:  consumertest.NewNop(),
+			nextProfiles: consumertest.NewNop(),
 		},
 		{
-			name:        "no next consumer",
-			id:          component.MustNewID("unknown"),
-			err:         "nil next Consumer",
-			nextTraces:  nil,
-			nextLogs:    nil,
-			nextMetrics: nil,
+			name:         "no next consumer",
+			id:           component.MustNewID("unknown"),
+			err:          "nil next Consumer",
+			nextTraces:   nil,
+			nextLogs:     nil,
+			nextMetrics:  nil,
+			nextProfiles: nil,
 		},
 	}
 
@@ -87,29 +96,38 @@ func TestProcessorBuilder(t *testing.T) {
 
 			te, err := b.CreateTraces(context.Background(), createProcessorSettings(tt.id), tt.nextTraces)
 			if tt.err != "" {
-				assert.EqualError(t, err, tt.err)
+				require.EqualError(t, err, tt.err)
 				assert.Nil(t, te)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, nopProcessorInstance, te)
 			}
 
 			me, err := b.CreateMetrics(context.Background(), createProcessorSettings(tt.id), tt.nextMetrics)
 			if tt.err != "" {
-				assert.EqualError(t, err, tt.err)
+				require.EqualError(t, err, tt.err)
 				assert.Nil(t, me)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, nopProcessorInstance, me)
 			}
 
 			le, err := b.CreateLogs(context.Background(), createProcessorSettings(tt.id), tt.nextLogs)
 			if tt.err != "" {
-				assert.EqualError(t, err, tt.err)
+				require.EqualError(t, err, tt.err)
 				assert.Nil(t, le)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, nopProcessorInstance, le)
+			}
+
+			pe, err := b.CreateProfiles(context.Background(), createProcessorSettings(tt.id), tt.nextProfiles)
+			if tt.err != "" {
+				require.EqualError(t, err, tt.err)
+				assert.Nil(t, pe)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, nopProcessorInstance, pe)
 			}
 		})
 	}
@@ -124,6 +142,7 @@ func TestProcessorBuilderMissingConfig(t *testing.T) {
 			processor.WithTraces(createProcessorTraces, component.StabilityLevelDevelopment),
 			processor.WithMetrics(createProcessorMetrics, component.StabilityLevelAlpha),
 			processor.WithLogs(createProcessorLogs, component.StabilityLevelDeprecated),
+			processorprofiles.WithProfiles(createProcessorProfiles, component.StabilityLevelDevelopment),
 		),
 	}...)
 
@@ -133,16 +152,20 @@ func TestProcessorBuilderMissingConfig(t *testing.T) {
 	missingID := component.MustNewIDWithName("all", "missing")
 
 	te, err := bErr.CreateTraces(context.Background(), createProcessorSettings(missingID), consumertest.NewNop())
-	assert.EqualError(t, err, "processor \"all/missing\" is not configured")
+	require.EqualError(t, err, "processor \"all/missing\" is not configured")
 	assert.Nil(t, te)
 
 	me, err := bErr.CreateMetrics(context.Background(), createProcessorSettings(missingID), consumertest.NewNop())
-	assert.EqualError(t, err, "processor \"all/missing\" is not configured")
+	require.EqualError(t, err, "processor \"all/missing\" is not configured")
 	assert.Nil(t, me)
 
 	le, err := bErr.CreateLogs(context.Background(), createProcessorSettings(missingID), consumertest.NewNop())
-	assert.EqualError(t, err, "processor \"all/missing\" is not configured")
+	require.EqualError(t, err, "processor \"all/missing\" is not configured")
 	assert.Nil(t, le)
+
+	pe, err := bErr.CreateProfiles(context.Background(), createProcessorSettings(missingID), consumertest.NewNop())
+	require.EqualError(t, err, "processor \"all/missing\" is not configured")
+	assert.Nil(t, pe)
 }
 
 func TestProcessorBuilderFactory(t *testing.T) {
@@ -183,13 +206,19 @@ func TestNewNopProcessorBuilder(t *testing.T) {
 	bLogs, err := builder.CreateLogs(context.Background(), set, consumertest.NewNop())
 	require.NoError(t, err)
 	assert.IsType(t, logs, bLogs)
+
+	profiles, err := factory.CreateProfilesProcessor(context.Background(), set, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	bProfiles, err := builder.CreateProfiles(context.Background(), set, consumertest.NewNop())
+	require.NoError(t, err)
+	assert.IsType(t, profiles, bProfiles)
 }
 
 var nopProcessorInstance = &nopProcessor{
 	Consumer: consumertest.NewNop(),
 }
 
-// nopProcessor stores consumed traces and metrics for testing purposes.
+// nopProcessor stores consumed traces, metrics, logs and profiles for testing purposes.
 type nopProcessor struct {
 	component.StartFunc
 	component.ShutdownFunc
@@ -205,6 +234,10 @@ func createProcessorMetrics(context.Context, processor.Settings, component.Confi
 }
 
 func createProcessorLogs(context.Context, processor.Settings, component.Config, consumer.Logs) (processor.Logs, error) {
+	return nopProcessorInstance, nil
+}
+
+func createProcessorProfiles(context.Context, processor.Settings, component.Config, consumerprofiles.Profiles) (processorprofiles.Profiles, error) {
 	return nopProcessorInstance, nil
 }
 

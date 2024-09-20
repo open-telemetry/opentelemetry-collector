@@ -286,19 +286,19 @@ func TestLoadTLSClientConfig(t *testing.T) {
 		Insecure: true,
 	}
 	tlsCfg, err := tlsSetting.LoadTLSConfig(context.Background())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Nil(t, tlsCfg)
 
 	tlsSetting = ClientConfig{}
 	tlsCfg, err = tlsSetting.LoadTLSConfig(context.Background())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, tlsCfg)
 
 	tlsSetting = ClientConfig{
 		InsecureSkipVerify: true,
 	}
 	tlsCfg, err = tlsSetting.LoadTLSConfig(context.Background())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, tlsCfg)
 	assert.True(t, tlsCfg.InsecureSkipVerify)
 }
@@ -311,7 +311,7 @@ func TestLoadTLSServerConfigError(t *testing.T) {
 		},
 	}
 	_, err := tlsSetting.LoadTLSConfig(context.Background())
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	tlsSetting = ServerConfig{
 		ClientCAFile: "doesnt/exist",
@@ -323,7 +323,7 @@ func TestLoadTLSServerConfigError(t *testing.T) {
 func TestLoadTLSServerConfig(t *testing.T) {
 	tlsSetting := ServerConfig{}
 	tlsCfg, err := tlsSetting.LoadTLSConfig(context.Background())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, tlsCfg)
 }
 
@@ -339,11 +339,11 @@ func TestLoadTLSServerConfigReload(t *testing.T) {
 	}
 
 	tlsCfg, err := tlsSetting.LoadTLSConfig(context.Background())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, tlsCfg)
 
 	firstClient, err := tlsCfg.GetConfigForClient(nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	overwriteClientCA(t, tmpCaPath, "ca-2.crt")
 
@@ -353,7 +353,7 @@ func TestLoadTLSServerConfigReload(t *testing.T) {
 	}, 5*time.Second, 10*time.Millisecond)
 
 	secondClient, err := tlsCfg.GetConfigForClient(nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.NotEqual(t, firstClient.ClientCAs, secondClient.ClientCAs)
 }
@@ -370,11 +370,11 @@ func TestLoadTLSServerConfigFailingReload(t *testing.T) {
 	}
 
 	tlsCfg, err := tlsSetting.LoadTLSConfig(context.Background())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, tlsCfg)
 
 	firstClient, err := tlsCfg.GetConfigForClient(nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	overwriteClientCA(t, tmpCaPath, "testCA-bad.txt")
 
@@ -384,7 +384,7 @@ func TestLoadTLSServerConfigFailingReload(t *testing.T) {
 	}, 5*time.Second, 10*time.Millisecond)
 
 	secondClient, err := tlsCfg.GetConfigForClient(nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, firstClient.ClientCAs, secondClient.ClientCAs)
 }
@@ -401,7 +401,7 @@ func TestLoadTLSServerConfigFailingInitialLoad(t *testing.T) {
 	}
 
 	tlsCfg, err := tlsSetting.LoadTLSConfig(context.Background())
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, tlsCfg)
 }
 
@@ -415,7 +415,7 @@ func TestLoadTLSServerConfigWrongPath(t *testing.T) {
 	}
 
 	tlsCfg, err := tlsSetting.LoadTLSConfig(context.Background())
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, tlsCfg)
 }
 
@@ -431,28 +431,28 @@ func TestLoadTLSServerConfigFailing(t *testing.T) {
 	}
 
 	tlsCfg, err := tlsSetting.LoadTLSConfig(context.Background())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, tlsCfg)
 
 	firstClient, err := tlsCfg.GetConfigForClient(nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, firstClient)
 
 	err = os.Remove(tmpCaPath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	firstClient, err = tlsCfg.GetConfigForClient(nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, firstClient)
 }
 
 func overwriteClientCA(t *testing.T, targetFilePath string, testdataFileName string) {
 	targetFile, err := os.OpenFile(filepath.Clean(targetFilePath), os.O_RDWR, 0600)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	testdataFilePath := filepath.Join("testdata", testdataFileName)
 	testdataFile, err := os.OpenFile(filepath.Clean(testdataFilePath), os.O_RDONLY, 0200)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	_, err = io.Copy(targetFile, testdataFile)
 	assert.NoError(t, err)
@@ -463,7 +463,7 @@ func overwriteClientCA(t *testing.T, targetFilePath string, testdataFileName str
 
 func createTempClientCaFile(t *testing.T) string {
 	tmpCa, err := os.CreateTemp("", "ca-tmp.crt")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	tmpCaPath, err := filepath.Abs(tmpCa.Name())
 	assert.NoError(t, err)
 	assert.NoError(t, tmpCa.Close())
@@ -476,13 +476,13 @@ func TestEagerlyLoadCertificate(t *testing.T) {
 		KeyFile:  filepath.Join("testdata", "client-1.key"),
 	}
 	cfg, err := options.loadTLSConfig()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, cfg)
 	cert, err := cfg.GetCertificate(&tls.ClientHelloInfo{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, cert)
 	pCert, err := x509.ParseCertificate(cert.Certificate[0])
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, pCert)
 	assert.ElementsMatch(t, []string{"example1"}, pCert.DNSNames)
 }
@@ -540,20 +540,20 @@ func TestCertificateReload(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			// Copy certs into a temp dir so we can safely modify them
 			certFile, err := os.CreateTemp("", "cert")
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			defer os.Remove(certFile.Name())
 
 			keyFile, err := os.CreateTemp("", "key")
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			defer os.Remove(keyFile.Name())
 
 			fdc, err := os.Open(filepath.Join("testdata", "client-1.crt"))
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			_, err = io.Copy(certFile, fdc)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			fdk, err := os.Open(filepath.Join("testdata", "client-1.key"))
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			_, err = io.Copy(keyFile, fdk)
 			assert.NoError(t, err)
 			assert.NoError(t, fdk.Close())
@@ -564,15 +564,15 @@ func TestCertificateReload(t *testing.T) {
 				ReloadInterval: test.reloadInterval,
 			}
 			cfg, err := options.loadTLSConfig()
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.NotNil(t, cfg)
 
 			// Asssert that we loaded the original certificate
 			cert, err := cfg.GetCertificate(&tls.ClientHelloInfo{})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.NotNil(t, cert)
 			pCert, err := x509.ParseCertificate(cert.Certificate[0])
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.NotNil(t, pCert)
 			assert.Equal(t, test.dns1, pCert.DNSNames[0])
 
@@ -580,18 +580,18 @@ func TestCertificateReload(t *testing.T) {
 			assert.NoError(t, certFile.Truncate(0))
 			assert.NoError(t, keyFile.Truncate(0))
 			_, err = certFile.Seek(0, 0)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			_, err = keyFile.Seek(0, 0)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			fdc2, err := os.Open(filepath.Join("testdata", test.cert2))
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			_, err = io.Copy(certFile, fdc2)
 			assert.NoError(t, err)
 			assert.NoError(t, fdc2.Close())
 
 			fdk2, err := os.Open(filepath.Join("testdata", test.key2))
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			_, err = io.Copy(keyFile, fdk2)
 			assert.NoError(t, err)
 			assert.NoError(t, fdk2.Close())
@@ -602,10 +602,10 @@ func TestCertificateReload(t *testing.T) {
 			// Assert that we loaded the new certificate
 			cert, err = cfg.GetCertificate(&tls.ClientHelloInfo{})
 			if test.errText == "" {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.NotNil(t, cert)
 				pCert, err = x509.ParseCertificate(cert.Certificate[0])
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.NotNil(t, pCert)
 				assert.Equal(t, test.dns2, pCert.DNSNames[0])
 			} else {
@@ -679,7 +679,7 @@ func TestConfigValidate(t *testing.T) {
 			err := test.tlsConfig.Validate()
 
 			if test.errorTxt == "" {
-				assert.Nil(t, err)
+				assert.NoError(t, err)
 			} else {
 				assert.EqualError(t, err, test.errorTxt)
 			}
@@ -729,7 +729,7 @@ invalid TLS cipher suite: "BAR"`,
 			if test.wantErr != "" {
 				assert.EqualError(t, err, test.wantErr)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, test.result, config.CipherSuites)
 			}
 		})
@@ -798,7 +798,7 @@ func TestSystemCertPool(t *testing.T) {
 			}
 			c, err := serverConfig.LoadTLSConfig(context.Background())
 			if test.wantErr != nil {
-				assert.ErrorContains(t, err, test.wantErr.Error())
+				require.ErrorContains(t, err, test.wantErr.Error())
 			} else {
 				assert.NotNil(t, c.RootCAs)
 			}
