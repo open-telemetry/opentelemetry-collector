@@ -215,13 +215,19 @@ func TestComposeSignalURL(t *testing.T) {
 
 	// Has slash at end
 	cfg.ClientConfig.Endpoint = "http://localhost:4318/"
-	url, err := composeSignalURL(cfg, "", "traces")
+	url, err := composeSignalURL(cfg, "", "traces", "v1")
 	require.NoError(t, err)
 	assert.Equal(t, "http://localhost:4318/v1/traces", url)
 
 	// No slash at end
 	cfg.ClientConfig.Endpoint = "http://localhost:4318"
-	url, err = composeSignalURL(cfg, "", "traces")
+	url, err = composeSignalURL(cfg, "", "traces", "v1")
 	require.NoError(t, err)
 	assert.Equal(t, "http://localhost:4318/v1/traces", url)
+
+	// Different version
+	cfg.ClientConfig.Endpoint = "http://localhost:4318"
+	url, err = composeSignalURL(cfg, "", "traces", "v2")
+	require.NoError(t, err)
+	assert.Equal(t, "http://localhost:4318/v2/traces", url)
 }
