@@ -16,6 +16,7 @@ require (
 	go.opentelemetry.io/collector/otelcol v0.111.0
 	go.opentelemetry.io/collector/pipeline v0.111.0
 	go.opentelemetry.io/collector/processor v0.111.0
+	go.opentelemetry.io/collector/processor/processortest v0.111.0
 	go.opentelemetry.io/collector/receiver v0.111.0
 	go.opentelemetry.io/collector/service v0.111.0
 	go.uber.org/goleak v1.3.0
@@ -139,6 +140,8 @@ replace go.opentelemetry.io/collector/config/internal => ../../config/internal
 replace go.opentelemetry.io/collector/config/configtls => ../../config/configtls
 
 replace go.opentelemetry.io/collector/processor => ../../processor
+
+replace go.opentelemetry.io/collector/processor/processortest => ../../processor/processortest
 
 replace go.opentelemetry.io/collector/confmap => ../../confmap
 
