@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporterhelper"
+package internal
 
 import (
 	"context"
@@ -16,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 )
 
 var (
@@ -30,9 +29,9 @@ func TestExportTraceDataOp(t *testing.T) {
 		parentCtx, parentSpan := tt.TelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
-		obsrep, err := newExporter(obsReportSettings{
-			exporterID:             exporterID,
-			exporterCreateSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		obsrep, err := NewExporter(ObsReportSettings{
+			ExporterID:             exporterID,
+			ExporterCreateSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		})
 		require.NoError(t, err)
 
@@ -41,9 +40,9 @@ func TestExportTraceDataOp(t *testing.T) {
 			{items: 14, err: errFake},
 		}
 		for i := range params {
-			ctx := obsrep.startTracesOp(parentCtx)
+			ctx := obsrep.StartTracesOp(parentCtx)
 			assert.NotNil(t, ctx)
-			obsrep.endTracesOp(ctx, params[i].items, params[i].err)
+			obsrep.EndTracesOp(ctx, params[i].items, params[i].err)
 		}
 
 		spans := tt.SpanRecorder.Ended()
@@ -55,13 +54,13 @@ func TestExportTraceDataOp(t *testing.T) {
 			switch {
 			case params[i].err == nil:
 				sentSpans += params[i].items
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.SentSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedToSendSpansKey, Value: attribute.Int64Value(0)})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: SentSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: FailedToSendSpansKey, Value: attribute.Int64Value(0)})
 				assert.Equal(t, codes.Unset, span.Status().Code)
 			case errors.Is(params[i].err, errFake):
 				failedToSendSpans += params[i].items
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.SentSpansKey, Value: attribute.Int64Value(0)})
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedToSendSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: SentSpansKey, Value: attribute.Int64Value(0)})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: FailedToSendSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
 				assert.Equal(t, codes.Error, span.Status().Code)
 				assert.Equal(t, params[i].err.Error(), span.Status().Description)
 			default:
@@ -78,9 +77,9 @@ func TestExportMetricsOp(t *testing.T) {
 		parentCtx, parentSpan := tt.TelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
-		obsrep, err := newExporter(obsReportSettings{
-			exporterID:             exporterID,
-			exporterCreateSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		obsrep, err := NewExporter(ObsReportSettings{
+			ExporterID:             exporterID,
+			ExporterCreateSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		})
 		require.NoError(t, err)
 
@@ -89,10 +88,10 @@ func TestExportMetricsOp(t *testing.T) {
 			{items: 23, err: errFake},
 		}
 		for i := range params {
-			ctx := obsrep.startMetricsOp(parentCtx)
+			ctx := obsrep.StartMetricsOp(parentCtx)
 			assert.NotNil(t, ctx)
 
-			obsrep.endMetricsOp(ctx, params[i].items, params[i].err)
+			obsrep.EndMetricsOp(ctx, params[i].items, params[i].err)
 		}
 
 		spans := tt.SpanRecorder.Ended()
@@ -104,13 +103,13 @@ func TestExportMetricsOp(t *testing.T) {
 			switch {
 			case params[i].err == nil:
 				sentMetricPoints += params[i].items
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.SentMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedToSendMetricPointsKey, Value: attribute.Int64Value(0)})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: SentMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: FailedToSendMetricPointsKey, Value: attribute.Int64Value(0)})
 				assert.Equal(t, codes.Unset, span.Status().Code)
 			case errors.Is(params[i].err, errFake):
 				failedToSendMetricPoints += params[i].items
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.SentMetricPointsKey, Value: attribute.Int64Value(0)})
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedToSendMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: SentMetricPointsKey, Value: attribute.Int64Value(0)})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: FailedToSendMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
 				assert.Equal(t, codes.Error, span.Status().Code)
 				assert.Equal(t, params[i].err.Error(), span.Status().Description)
 			default:
@@ -127,9 +126,9 @@ func TestExportLogsOp(t *testing.T) {
 		parentCtx, parentSpan := tt.TelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
-		obsrep, err := newExporter(obsReportSettings{
-			exporterID:             exporterID,
-			exporterCreateSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		obsrep, err := NewExporter(ObsReportSettings{
+			ExporterID:             exporterID,
+			ExporterCreateSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		})
 		require.NoError(t, err)
 
@@ -138,10 +137,10 @@ func TestExportLogsOp(t *testing.T) {
 			{items: 23, err: errFake},
 		}
 		for i := range params {
-			ctx := obsrep.startLogsOp(parentCtx)
+			ctx := obsrep.StartLogsOp(parentCtx)
 			assert.NotNil(t, ctx)
 
-			obsrep.endLogsOp(ctx, params[i].items, params[i].err)
+			obsrep.EndLogsOp(ctx, params[i].items, params[i].err)
 		}
 
 		spans := tt.SpanRecorder.Ended()
@@ -153,13 +152,13 @@ func TestExportLogsOp(t *testing.T) {
 			switch {
 			case params[i].err == nil:
 				sentLogRecords += params[i].items
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.SentLogRecordsKey, Value: attribute.Int64Value(int64(params[i].items))})
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedToSendLogRecordsKey, Value: attribute.Int64Value(0)})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: SentLogRecordsKey, Value: attribute.Int64Value(int64(params[i].items))})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: FailedToSendLogRecordsKey, Value: attribute.Int64Value(0)})
 				assert.Equal(t, codes.Unset, span.Status().Code)
 			case errors.Is(params[i].err, errFake):
 				failedToSendLogRecords += params[i].items
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.SentLogRecordsKey, Value: attribute.Int64Value(0)})
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedToSendLogRecordsKey, Value: attribute.Int64Value(int64(params[i].items))})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: SentLogRecordsKey, Value: attribute.Int64Value(0)})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: FailedToSendLogRecordsKey, Value: attribute.Int64Value(int64(params[i].items))})
 				assert.Equal(t, codes.Error, span.Status().Code)
 				assert.Equal(t, params[i].err.Error(), span.Status().Description)
 			default:
@@ -176,14 +175,14 @@ func TestCheckExporterTracesViews(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	obsrep, err := newExporter(obsReportSettings{
-		exporterID:             exporterID,
-		exporterCreateSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+	obsrep, err := NewExporter(ObsReportSettings{
+		ExporterID:             exporterID,
+		ExporterCreateSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 	})
 	require.NoError(t, err)
-	ctx := obsrep.startTracesOp(context.Background())
+	ctx := obsrep.StartTracesOp(context.Background())
 	require.NotNil(t, ctx)
-	obsrep.endTracesOp(ctx, 7, nil)
+	obsrep.EndTracesOp(ctx, 7, nil)
 
 	require.NoError(t, tt.CheckExporterTraces(7, 0))
 	require.Error(t, tt.CheckExporterTraces(7, 7))
@@ -196,14 +195,14 @@ func TestCheckExporterMetricsViews(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	obsrep, err := newExporter(obsReportSettings{
-		exporterID:             exporterID,
-		exporterCreateSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+	obsrep, err := NewExporter(ObsReportSettings{
+		ExporterID:             exporterID,
+		ExporterCreateSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 	})
 	require.NoError(t, err)
-	ctx := obsrep.startMetricsOp(context.Background())
+	ctx := obsrep.StartMetricsOp(context.Background())
 	require.NotNil(t, ctx)
-	obsrep.endMetricsOp(ctx, 7, nil)
+	obsrep.EndMetricsOp(ctx, 7, nil)
 
 	require.NoError(t, tt.CheckExporterMetrics(7, 0))
 	require.Error(t, tt.CheckExporterMetrics(7, 7))
@@ -216,14 +215,14 @@ func TestCheckExporterLogsViews(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	obsrep, err := newExporter(obsReportSettings{
-		exporterID:             exporterID,
-		exporterCreateSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+	obsrep, err := NewExporter(ObsReportSettings{
+		ExporterID:             exporterID,
+		ExporterCreateSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 	})
 	require.NoError(t, err)
-	ctx := obsrep.startLogsOp(context.Background())
+	ctx := obsrep.StartLogsOp(context.Background())
 	require.NotNil(t, ctx)
-	obsrep.endLogsOp(ctx, 7, nil)
+	obsrep.EndLogsOp(ctx, 7, nil)
 
 	require.NoError(t, tt.CheckExporterLogs(7, 0))
 	require.Error(t, tt.CheckExporterLogs(7, 7))
