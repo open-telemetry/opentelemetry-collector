@@ -7,7 +7,8 @@ package component // import "go.opentelemetry.io/collector/component"
 
 import (
 	"context"
-	"errors"
+
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 var (
@@ -15,7 +16,7 @@ var (
 	// Component if the particular telemetry data type is not supported by the receiver, exporter, processor or connector factory.
 	//
 	// Deprecated: [v0.110.0] Use pipeline.ErrSignalNotSupported instead
-	ErrDataTypeIsNotSupported = errors.New("telemetry type is not supported")
+	ErrDataTypeIsNotSupported = pipeline.ErrSignalNotSupported
 )
 
 // Component is either a receiver, exporter, processor, connector, or an extension.
