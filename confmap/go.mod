@@ -28,3 +28,7 @@ retract (
 	v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module, use v0.76.1
 	v0.69.0 // Release failed, use v0.69.1
 )
+
+// @nocommit
+// replace github.com/go-viper/mapstructure/v2 => /Users/ysh/dev/go-viper/mapstructure
+replace github.com/go-viper/mapstructure/v2 => github.com/yurishkuro/mapstructure/v2 v2.0.0-20240922211401-0a04d624f38e
