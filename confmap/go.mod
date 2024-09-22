@@ -3,7 +3,7 @@ module go.opentelemetry.io/collector/confmap
 go 1.22.0
 
 require (
-	github.com/go-viper/mapstructure/v2 v2.1.0
+	github.com/go-viper/mapstructure/v2 v2.2.1
 	github.com/knadh/koanf/maps v0.1.1
 	github.com/knadh/koanf/providers/confmap v0.1.0
 	github.com/knadh/koanf/v2 v2.1.1
@@ -28,7 +28,3 @@ retract (
 	v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module, use v0.76.1
 	v0.69.0 // Release failed, use v0.69.1
 )
-
-// @nocommit
-// replace github.com/go-viper/mapstructure/v2 => /Users/ysh/dev/go-viper/mapstructure
-replace github.com/go-viper/mapstructure/v2 => github.com/yurishkuro/mapstructure/v2 v2.0.0-20240922211401-0a04d624f38e
