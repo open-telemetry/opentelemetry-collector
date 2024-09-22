@@ -13,6 +13,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.15.0
 	go.opentelemetry.io/collector/pdata/testdata v0.109.0
 	go.opentelemetry.io/collector/processor v0.109.0
+	go.opentelemetry.io/collector/processor/processortest v0.109.0
 	go.opentelemetry.io/otel v1.30.0
 	go.opentelemetry.io/otel/metric v1.30.0
 	go.opentelemetry.io/otel/sdk/metric v1.30.0
@@ -82,3 +83,5 @@ replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/co
 replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
 
 replace go.opentelemetry.io/collector/processor/processorprofiles => ../processorprofiles
+
+replace go.opentelemetry.io/collector/processor/processortest => ../processortest

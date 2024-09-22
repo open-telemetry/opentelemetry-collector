@@ -79,6 +79,7 @@ var (
 		"/featuregate",
 		"/internal/globalgates",
 		"/processor",
+		"/processor/processortest",
 		"/processor/batchprocessor",
 		"/processor/memorylimiterprocessor",
 		"/processor/processorprofiles",
