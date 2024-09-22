@@ -5,7 +5,6 @@ go 1.22.1
 toolchain go1.22.7
 
 require (
-	github.com/Antonboom/testifylint v1.4.3
 	github.com/a8m/envsubst v1.4.2
 	github.com/client9/misspell v0.3.4
 	github.com/golangci/golangci-lint v1.60.1
@@ -30,6 +29,7 @@ require (
 	github.com/Abirdcfly/dupword v0.0.14 // indirect
 	github.com/Antonboom/errname v0.1.13 // indirect
 	github.com/Antonboom/nilnil v0.1.9 // indirect
+	github.com/Antonboom/testifylint v1.4.3 // indirect
 	github.com/BurntSushi/toml v1.4.1-0.20240526193622-a339e1f7089c // indirect
 	github.com/Crocmagnon/fatcontext v0.4.0 // indirect
 	github.com/Djarvur/go-err113 v0.0.0-20210108212216-aea10b59be24 // indirect
