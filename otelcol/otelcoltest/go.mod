@@ -11,6 +11,7 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.109.0
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.109.0
 	go.opentelemetry.io/collector/connector v0.109.0
+	go.opentelemetry.io/collector/connector/connectortest v0.109.0
 	go.opentelemetry.io/collector/exporter v0.109.0
 	go.opentelemetry.io/collector/extension v0.109.0
 	go.opentelemetry.io/collector/otelcol v0.109.0
@@ -149,6 +150,8 @@ replace go.opentelemetry.io/collector/pdata => ../../pdata
 replace go.opentelemetry.io/collector/pdata/pprofile => ../../pdata/pprofile
 
 replace go.opentelemetry.io/collector/connector => ../../connector
+
+replace go.opentelemetry.io/collector/connector/connectortest => ../../connector/connectortest
 
 replace go.opentelemetry.io/collector/config/configretry => ../../config/configretry
 
