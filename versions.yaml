@@ -21,6 +21,7 @@ module-sets:
     modules:
       - go.opentelemetry.io/collector
       - go.opentelemetry.io/collector/internal/globalgates
+      - go.opentelemetry.io/collector/internal/globalsignal
       - go.opentelemetry.io/collector/cmd/builder
       - go.opentelemetry.io/collector/cmd/mdatagen
       - go.opentelemetry.io/collector/component
@@ -58,6 +59,7 @@ module-sets:
       - go.opentelemetry.io/collector/otelcol/otelcoltest
       - go.opentelemetry.io/collector/pdata/pprofile
       - go.opentelemetry.io/collector/pdata/testdata
+      - go.opentelemetry.io/collector/pipeline
       - go.opentelemetry.io/collector/processor
       - go.opentelemetry.io/collector/processor/batchprocessor
       - go.opentelemetry.io/collector/processor/memorylimiterprocessor
