@@ -21,7 +21,7 @@ type Sub struct {
 	Foo string `mapstructure:"foo"`
 }
 
-func TestConfigValidateNoBackends(t *testing.T) {
+func TestOptional(t *testing.T) {
 	tests := []struct {
 		name        string
 		config      string

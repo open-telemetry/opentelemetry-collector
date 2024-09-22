@@ -109,10 +109,10 @@ func TestExpandNilStructPointersHookFunc(t *testing.T) {
 	conf := NewFromStringMap(stringMap)
 	cfg := &TestConfig{}
 	assert.Nil(t, cfg.Struct)
+
 	require.NoError(t, conf.Unmarshal(cfg))
 	assert.Nil(t, cfg.Boolean)
-	// assert.False(t, *cfg.Boolean)
-	assert.Nil(t, cfg.Struct)
+	assert.Nil(t, cfg.Struct) // TODO does not match description of expandNilStructPointersHookFunc
 	assert.NotNil(t, cfg.MapStruct)
 	assert.Equal(t, &Struct{}, cfg.MapStruct["struct"])
 }
@@ -153,6 +153,10 @@ func TestUnmarshalWithIgnoreUnused(t *testing.T) {
 	assert.NoError(t, conf.Unmarshal(&TestIDConfig{}, WithIgnoreUnused()))
 }
 
+type Struct struct {
+	Name string
+}
+
 type TestConfig struct {
 	Boolean   *bool              `mapstructure:"boolean"`
 	Struct    *Struct            `mapstructure:"struct"`
@@ -169,10 +173,6 @@ func (t TestConfig) Marshal(conf *Conf) error {
 	return conf.Merge(NewFromStringMap(map[string]any{
 		"additional": "field",
 	}))
-}
-
-type Struct struct {
-	Name string
 }
 
 type TestID string
