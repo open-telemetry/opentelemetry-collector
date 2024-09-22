@@ -361,9 +361,14 @@ func TestMaxRedirects(t *testing.T) {
 			expectedRequests: 1,
 		},
 		{
+			name:             "One redirect",
+			settings:         ClientConfig{MaxRedirects: toIntPtr(1)},
+			expectedRequests: 2,
+		},
+		{
 			name:             "Defined max redirects",
 			settings:         ClientConfig{MaxRedirects: toIntPtr(5)},
-			expectedRequests: 5,
+			expectedRequests: 6,
 		},
 	}
 

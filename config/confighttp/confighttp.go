@@ -256,14 +256,10 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 func makeCheckRedirect(max *int) func(*http.Request, []*http.Request) error {
 	if max == nil {
 		return nil
-	} else if *max == 0 {
-		return func(_ *http.Request, _ []*http.Request) error {
-			return http.ErrUseLastResponse
-		}
 	}
 
 	return func(_ *http.Request, via []*http.Request) error {
-		if *max == len(via) {
+		if *max == (len(via) - 1) {
 			return http.ErrUseLastResponse
 		}
 		return nil
