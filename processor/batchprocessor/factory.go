@@ -10,12 +10,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/batchprocessor/internal/metadata"
 )
 
 const (
-	// The value of "type" key in configuration.
-	typeStr = "concurrentbatch"
-
 	defaultSendBatchSize = uint32(8192)
 	defaultTimeout       = 200 * time.Millisecond
 
@@ -28,7 +26,7 @@ const (
 // NewFactory returns a new factory for the Batch processor.
 func NewFactory() processor.Factory {
 	return processor.NewFactory(
-		component.MustNewType(typeStr),
+		metadata.Type,
 		createDefaultConfig,
 		processor.WithTraces(createTraces, component.StabilityLevelStable),
 		processor.WithMetrics(createMetrics, component.StabilityLevelStable),
