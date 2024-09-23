@@ -100,7 +100,7 @@ func (host *Host) GetExporters() map[component.DataType]map[component.ID]compone
 // connector. See https://github.com/open-telemetry/opentelemetry-collector/issues/7370 and
 // https://github.com/open-telemetry/opentelemetry-collector/pull/7390#issuecomment-1483710184
 // for additional information.
-func (host *Host) GetExportersWithSignal() map[globalsignal.Signal]map[component.ID]component.Component {
+func (host *Host) GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component {
 	return host.Pipelines.GetExporters()
 }
 
