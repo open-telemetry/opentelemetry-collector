@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/internal"
 	"go.opentelemetry.io/collector/processor/processorhelper/internal/metadata"
@@ -65,18 +66,18 @@ func (or *ObsReport) recordInOut(ctx context.Context, incoming, outgoing int) {
 	or.telemetryBuilder.ProcessorOutgoingItems.Add(ctx, int64(outgoing), metric.WithAttributes(or.otelAttrs...))
 }
 
-func (or *ObsReport) recordData(ctx context.Context, dataType component.DataType, accepted, refused, dropped int64) {
+func (or *ObsReport) recordData(ctx context.Context, signal pipeline.Signal, accepted, refused, dropped int64) {
 	var acceptedCount, refusedCount, droppedCount metric.Int64Counter
-	switch dataType {
-	case component.DataTypeTraces:
+	switch signal {
+	case pipeline.SignalTraces:
 		acceptedCount = or.telemetryBuilder.ProcessorAcceptedSpans
 		refusedCount = or.telemetryBuilder.ProcessorRefusedSpans
 		droppedCount = or.telemetryBuilder.ProcessorDroppedSpans
-	case component.DataTypeMetrics:
+	case pipeline.SignalMetrics:
 		acceptedCount = or.telemetryBuilder.ProcessorAcceptedMetricPoints
 		refusedCount = or.telemetryBuilder.ProcessorRefusedMetricPoints
 		droppedCount = or.telemetryBuilder.ProcessorDroppedMetricPoints
-	case component.DataTypeLogs:
+	case pipeline.SignalLogs:
 		acceptedCount = or.telemetryBuilder.ProcessorAcceptedLogRecords
 		refusedCount = or.telemetryBuilder.ProcessorRefusedLogRecords
 		droppedCount = or.telemetryBuilder.ProcessorDroppedLogRecords
@@ -91,61 +92,61 @@ func (or *ObsReport) recordData(ctx context.Context, dataType component.DataType
 //
 // Deprecated: [v0.110.0] Processor helper automatically calculates incoming/outgoing metrics only.
 func (or *ObsReport) TracesAccepted(ctx context.Context, numSpans int) {
-	or.recordData(ctx, component.DataTypeTraces, int64(numSpans), int64(0), int64(0))
+	or.recordData(ctx, pipeline.SignalTraces, int64(numSpans), int64(0), int64(0))
 }
 
 // TracesRefused reports that the trace data was refused.
 //
 // Deprecated: [v0.110.0] Processor helper automatically calculates incoming/outgoing metrics only.
 func (or *ObsReport) TracesRefused(ctx context.Context, numSpans int) {
-	or.recordData(ctx, component.DataTypeTraces, int64(0), int64(numSpans), int64(0))
+	or.recordData(ctx, pipeline.SignalTraces, int64(0), int64(numSpans), int64(0))
 }
 
 // TracesDropped reports that the trace data was dropped.
 //
 // Deprecated: [v0.110.0] Processor helper automatically calculates incoming/outgoing metrics only.
 func (or *ObsReport) TracesDropped(ctx context.Context, numSpans int) {
-	or.recordData(ctx, component.DataTypeTraces, int64(0), int64(0), int64(numSpans))
+	or.recordData(ctx, pipeline.SignalTraces, int64(0), int64(0), int64(numSpans))
 }
 
 // MetricsAccepted reports that the metrics were accepted.
 //
 // Deprecated: [v0.110.0] Processor helper automatically calculates incoming/outgoing metrics only.
 func (or *ObsReport) MetricsAccepted(ctx context.Context, numPoints int) {
-	or.recordData(ctx, component.DataTypeMetrics, int64(numPoints), int64(0), int64(0))
+	or.recordData(ctx, pipeline.SignalMetrics, int64(numPoints), int64(0), int64(0))
 }
 
 // MetricsRefused reports that the metrics were refused.
 //
 // Deprecated: [v0.110.0] Processor helper automatically calculates incoming/outgoing metrics only.
 func (or *ObsReport) MetricsRefused(ctx context.Context, numPoints int) {
-	or.recordData(ctx, component.DataTypeMetrics, int64(0), int64(numPoints), int64(0))
+	or.recordData(ctx, pipeline.SignalMetrics, int64(0), int64(numPoints), int64(0))
 }
 
 // MetricsDropped reports that the metrics were dropped.
 //
 // Deprecated: [v0.110.0] Processor helper automatically calculates incoming/outgoing metrics only.
 func (or *ObsReport) MetricsDropped(ctx context.Context, numPoints int) {
-	or.recordData(ctx, component.DataTypeMetrics, int64(0), int64(0), int64(numPoints))
+	or.recordData(ctx, pipeline.SignalMetrics, int64(0), int64(0), int64(numPoints))
 }
 
 // LogsAccepted reports that the logs were accepted.
 //
 // Deprecated: [v0.110.0] Processor helper automatically calculates incoming/outgoing metrics only.
 func (or *ObsReport) LogsAccepted(ctx context.Context, numRecords int) {
-	or.recordData(ctx, component.DataTypeLogs, int64(numRecords), int64(0), int64(0))
+	or.recordData(ctx, pipeline.SignalLogs, int64(numRecords), int64(0), int64(0))
 }
 
 // LogsRefused reports that the logs were refused.
 //
 // Deprecated: [v0.110.0] Processor helper automatically calculates incoming/outgoing metrics only.
 func (or *ObsReport) LogsRefused(ctx context.Context, numRecords int) {
-	or.recordData(ctx, component.DataTypeLogs, int64(0), int64(numRecords), int64(0))
+	or.recordData(ctx, pipeline.SignalLogs, int64(0), int64(numRecords), int64(0))
 }
 
 // LogsDropped reports that the logs were dropped.
 //
 // Deprecated: [v0.110.0] Processor helper automatically calculates incoming/outgoing metrics only.
 func (or *ObsReport) LogsDropped(ctx context.Context, numRecords int) {
-	or.recordData(ctx, component.DataTypeLogs, int64(0), int64(0), int64(numRecords))
+	or.recordData(ctx, pipeline.SignalLogs, int64(0), int64(0), int64(numRecords))
 }

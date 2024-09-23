@@ -1,15 +1,15 @@
 dist:
   module: go.opentelemetry.io/collector/builder/test/core
-  otelcol_version: 0.109.0
+  otelcol_version: 0.110.0
 
 extensions:
-  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.109.0
+  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.110.0
 
 receivers:
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.109.0
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.110.0
 
 exporters:
-  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.109.0
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.110.0
 
 replaces:
   - go.opentelemetry.io/collector => ${WORKSPACE_DIR}
@@ -49,11 +49,13 @@ replaces:
   - go.opentelemetry.io/collector/extension/zpagesextension => ${WORKSPACE_DIR}/extension/zpagesextension
   - go.opentelemetry.io/collector/featuregate => ${WORKSPACE_DIR}/featuregate
   - go.opentelemetry.io/collector/internal/globalgates => ${WORKSPACE_DIR}/internal/globalgates
+  - go.opentelemetry.io/collector/internal/globalsignal => ${WORKSPACE_DIR}/internal/globalsignal
   - go.opentelemetry.io/collector/otelcol => ${WORKSPACE_DIR}/otelcol
   - go.opentelemetry.io/collector/otelcol/otelcoltest => ${WORKSPACE_DIR}/otelcol/otelcoltest
   - go.opentelemetry.io/collector/pdata => ${WORKSPACE_DIR}/pdata
   - go.opentelemetry.io/collector/pdata/pprofile => ${WORKSPACE_DIR}/pdata/pprofile
   - go.opentelemetry.io/collector/pdata/testdata => ${WORKSPACE_DIR}/pdata/testdata
+  - go.opentelemetry.io/collector/pipeline => ${WORKSPACE_DIR}/pipeline
   - go.opentelemetry.io/collector/processor => ${WORKSPACE_DIR}/processor
   - go.opentelemetry.io/collector/processor/processorprofiles => ${WORKSPACE_DIR}/processor/processorprofiles
   - go.opentelemetry.io/collector/receiver => ${WORKSPACE_DIR}/receiver

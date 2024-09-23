@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/internal/testutil"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 )
 
@@ -48,7 +49,7 @@ func TestConsumeContractOtlpLogs(t *testing.T) {
 		T:                    t,
 		NumberOfTestElements: 10,
 		ExporterFactory:      otlpexporter.NewFactory(),
-		DataType:             component.DataTypeLogs,
+		Signal:               pipeline.SignalLogs,
 		ExporterConfig:       testExporterConfig(addr),
 		ReceiverFactory:      otlpreceiver.NewFactory(),
 		ReceiverConfig:       testReceiverConfig(addr),
@@ -60,7 +61,7 @@ func TestConsumeContractOtlpTraces(t *testing.T) {
 	exportertest.CheckConsumeContract(exportertest.CheckConsumeContractParams{
 		T:                    t,
 		NumberOfTestElements: 10,
-		DataType:             component.DataTypeTraces,
+		Signal:               pipeline.SignalTraces,
 		ExporterFactory:      otlpexporter.NewFactory(),
 		ExporterConfig:       testExporterConfig(addr),
 		ReceiverFactory:      otlpreceiver.NewFactory(),
@@ -74,7 +75,7 @@ func TestConsumeContractOtlpMetrics(t *testing.T) {
 		T:                    t,
 		NumberOfTestElements: 10,
 		ExporterFactory:      otlpexporter.NewFactory(),
-		DataType:             component.DataTypeMetrics,
+		Signal:               pipeline.SignalMetrics,
 		ExporterConfig:       testExporterConfig(addr),
 		ReceiverFactory:      otlpreceiver.NewFactory(),
 		ReceiverConfig:       testReceiverConfig(addr),

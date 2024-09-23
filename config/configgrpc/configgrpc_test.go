@@ -34,8 +34,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/extension/auth"
 	"go.opentelemetry.io/collector/extension/auth/authtest"
-	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/globalgates"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
@@ -533,13 +531,6 @@ func TestUseSecure(t *testing.T) {
 }
 
 func TestGRPCServerWarning(t *testing.T) {
-	prev := globalgates.UseLocalHostAsDefaultHostfeatureGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(globalgates.UseLocalHostAsDefaultHostID, false))
-	defer func() {
-		// Restore previous value.
-		require.NoError(t, featuregate.GlobalRegistry().Set(globalgates.UseLocalHostAsDefaultHostID, prev))
-	}()
-
 	tests := []struct {
 		name     string
 		settings ServerConfig
