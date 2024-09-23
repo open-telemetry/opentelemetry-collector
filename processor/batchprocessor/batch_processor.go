@@ -29,10 +29,8 @@ import (
 	"go.opentelemetry.io/collector/processor"
 )
 
-var (
-	// errTooManyBatchers is returned when the MetadataCardinalityLimit has been reached.
-	errTooManyBatchers = consumererror.NewPermanent(errors.New("too many batcher metadata-value combinations"))
-)
+// errTooManyBatchers is returned when the MetadataCardinalityLimit has been reached.
+var errTooManyBatchers = consumererror.NewPermanent(errors.New("too many batcher metadata-value combinations"))
 
 // batch_processor is a component that accepts spans and metrics, places them
 // into batches and sends downstream.
