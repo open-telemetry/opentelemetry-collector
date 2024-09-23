@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/internal/globalsignal v0.109.0
+	go.opentelemetry.io/collector/internal/globalsignal v0.0.0-20240923143859-77bb849aa07e
 )
 
 require (

@@ -39,9 +39,9 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.109.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.109.0 // indirect
-	go.opentelemetry.io/collector/internal/globalsignal v0.109.0 // indirect
+	go.opentelemetry.io/collector/internal/globalsignal v0.0.0-20240923143859-77bb849aa07e // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.109.0 // indirect
-	go.opentelemetry.io/collector/pipeline v0.109.0 // indirect
+	go.opentelemetry.io/collector/pipeline v0.0.0-20240923143859-77bb849aa07e // indirect
 	go.opentelemetry.io/collector/processor/processorprofiles v0.109.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.30.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
