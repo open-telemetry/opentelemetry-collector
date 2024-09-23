@@ -34,7 +34,6 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
@@ -57,8 +56,6 @@ require (
 	go.opentelemetry.io/collector/extension v0.109.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.109.0 // indirect
 	go.opentelemetry.io/collector/extension/experimental/storage v0.109.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.15.0 // indirect
-	go.opentelemetry.io/collector/internal/globalgates v0.109.0 // indirect
 	go.opentelemetry.io/collector/internal/globalsignal v0.0.0-20240923154032-388e56cdb156 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.109.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.0.0-20240923154032-388e56cdb156 // indirect
@@ -76,8 +73,6 @@ require (
 	golang.org/x/text v0.18.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace go.opentelemetry.io/collector => ../../
 
 replace go.opentelemetry.io/collector/component => ../../component
 
@@ -105,8 +100,6 @@ replace go.opentelemetry.io/collector/extension/auth => ../../extension/auth
 
 replace go.opentelemetry.io/collector/extension/experimental/storage => ../../extension/experimental/storage
 
-replace go.opentelemetry.io/collector/featuregate => ../../featuregate
-
 replace go.opentelemetry.io/collector/pdata => ../../pdata
 
 replace go.opentelemetry.io/collector/pdata/testdata => ../../pdata/testdata
@@ -119,11 +112,6 @@ replace go.opentelemetry.io/collector/consumer => ../../consumer
 
 replace go.opentelemetry.io/collector/client => ../../client
 
-retract (
-	v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module, use v0.76.1
-	v0.69.0 // Release failed, use v0.69.1
-)
-
 replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
 
 replace go.opentelemetry.io/collector/config/configretry => ../../config/configretry
@@ -132,16 +120,21 @@ replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../../consume
 
 replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/consumertest
 
-replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
-
 replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../../receiver/receiverprofiles
 
 replace go.opentelemetry.io/collector/exporter/exporterprofiles => ../exporterprofiles
-
-replace go.opentelemetry.io/collector/internal/globalgates => ../../internal/globalgates
 
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 
 replace go.opentelemetry.io/collector/internal/globalsignal => ../../internal/globalsignal
 
 replace go.opentelemetry.io/collector/component/componentprofiles => ../../component/componentprofiles
+
+replace go.opentelemetry.io/collector => ../..
+
+replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
+
+retract (
+	v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module, use v0.76.1
+	v0.69.0 // Release failed, use v0.69.1
+)
