@@ -13,7 +13,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/globalgates"
-	"go.opentelemetry.io/collector/service/telemetry/internal"
 )
 
 func TestNewTracerProvider(t *testing.T) {
@@ -51,7 +50,7 @@ func TestNewTracerProvider(t *testing.T) {
 			defer func() {
 				require.NoError(t, featuregate.GlobalRegistry().Set(globalgates.NoopTracerProvider.ID(), previousValue))
 			}()
-			provider, err := newTracerProvider(context.TODO(), internal.Settings{}, tt.cfg)
+			provider, err := newTracerProvider(context.TODO(), Settings{}, tt.cfg)
 			require.NoError(t, err)
 			require.IsType(t, tt.wantTracerProvider, provider)
 		})
