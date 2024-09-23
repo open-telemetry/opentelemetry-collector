@@ -15,7 +15,6 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/client"
@@ -99,8 +98,11 @@ type shard struct {
 	// underlying data types.
 	batch batch
 
+	// pending describes the contributors to the current batch.
 	pending []pendingItem
 
+	// totalSent counts the number of items processed by the
+	// shard in its lifetime.
 	totalSent uint64
 }
 
@@ -264,7 +266,7 @@ func (b *shard) start() {
 			if b.batch.itemCount() > 0 {
 				// TODO: Set a timeout on sendTraces or
 				// make it cancellable using the context that Shutdown gets as a parameter
-				b.sendItems(triggerShutdown)
+				b.sendItems(triggerTimeout)
 			}
 			return
 		case item := <-b.newItem:
@@ -339,15 +341,16 @@ func (b *shard) sendItems(trigger trigger) {
 
 	// The current batch can contain items from several different producers. Ensure each producer gets a response back.
 	for len(b.pending) > 0 && numItemsBefore < numItemsAfter {
-		// Waiter only had some items in the current batch
 		if numItemsBefore+b.pending[0].numItems > numItemsAfter {
+			// Waiter only had some items in the current batch
 			partialSent := numItemsAfter - numItemsBefore
 			b.pending[0].numItems -= partialSent
 			numItemsBefore += partialSent
 			waiters = append(waiters, b.pending[0].respCh)
 			contexts = append(contexts, b.pending[0].parentCtx)
 			countItems = append(countItems, int(partialSent))
-		} else { // waiter gets a complete response.
+		} else {
+			// waiter gets a complete response.
 			numItemsBefore += b.pending[0].numItems
 			waiters = append(waiters, b.pending[0].respCh)
 			contexts = append(contexts, b.pending[0].parentCtx)
@@ -361,6 +364,8 @@ func (b *shard) sendItems(trigger trigger) {
 			}
 		}
 	}
+
+	b.totalSent = numItemsAfter
 
 	go func() {
 		var err error
@@ -412,8 +417,6 @@ func (b *shard) sendItems(trigger trigger) {
 			b.processor.telemetry.record(trigger, int64(sent), bytes)
 		}
 	}()
-
-	b.totalSent = numItemsAfter
 }
 
 func parentSpans(contexts []context.Context) []trace.Span {
@@ -480,7 +483,7 @@ func (b *shard) consumeAndWait(ctx context.Context, data any) error {
 			// nil response might be wrapped as an error.
 			unwrap := newErr.(countedError)
 			if unwrap.err != nil {
-				err = multierr.Append(err, newErr)
+				err = errors.Join(err, newErr)
 			}
 
 			item.count -= unwrap.count
@@ -490,7 +493,7 @@ func (b *shard) consumeAndWait(ctx context.Context, data any) error {
 
 			return err
 		case <-ctx.Done():
-			err = multierr.Append(err, ctx.Err())
+			err = errors.Join(err, ctx.Err())
 			return err
 		}
 	}
