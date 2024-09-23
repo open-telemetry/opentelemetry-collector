@@ -6,11 +6,14 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.109.0
+	go.opentelemetry.io/collector/component/componentprofiles v0.109.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.109.0
 	go.opentelemetry.io/collector/consumer v0.109.0
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.109.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.109.0
+	go.opentelemetry.io/collector/internal/globalsignal v0.109.0
 	go.opentelemetry.io/collector/pdata v1.15.0
+	go.opentelemetry.io/collector/pipeline v0.109.0
 	go.opentelemetry.io/collector/receiver/receiverprofiles v0.109.0
 	go.opentelemetry.io/otel v1.30.0
 	go.opentelemetry.io/otel/metric v1.30.0
@@ -60,3 +63,9 @@ replace go.opentelemetry.io/collector/consumer/consumertest => ../consumer/consu
 replace go.opentelemetry.io/collector/receiver/receiverprofiles => ./receiverprofiles
 
 retract v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module
+
+replace go.opentelemetry.io/collector/pipeline => ../pipeline
+
+replace go.opentelemetry.io/collector/internal/globalsignal => ../internal/globalsignal
+
+replace go.opentelemetry.io/collector/component/componentprofiles => ../component/componentprofiles

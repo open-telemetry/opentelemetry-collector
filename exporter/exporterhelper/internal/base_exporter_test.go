@@ -19,11 +19,12 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/internal"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 var (
 	defaultType     = component.MustNewType("test")
-	defaultDataType = component.DataTypeMetrics
+	defaultSignal   = pipeline.SignalMetrics
 	defaultID       = component.NewID(defaultType)
 	defaultSettings = func() exporter.Settings {
 		set := exportertest.NewNopSettings()
@@ -37,7 +38,7 @@ func newNoopObsrepSender(*ObsReport) RequestSender {
 }
 
 func TestBaseExporter(t *testing.T) {
-	be, err := NewBaseExporter(defaultSettings, defaultDataType, newNoopObsrepSender)
+	be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender)
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, be.Shutdown(context.Background()))
@@ -46,7 +47,7 @@ func TestBaseExporter(t *testing.T) {
 func TestBaseExporterWithOptions(t *testing.T) {
 	want := errors.New("my error")
 	be, err := NewBaseExporter(
-		defaultSettings, defaultDataType, newNoopObsrepSender,
+		defaultSettings, defaultSignal, newNoopObsrepSender,
 		WithStart(func(context.Context, component.Host) error { return want }),
 		WithShutdown(func(context.Context) error { return want }),
 		WithTimeout(NewDefaultTimeoutConfig()),
@@ -57,16 +58,16 @@ func TestBaseExporterWithOptions(t *testing.T) {
 }
 
 func TestQueueOptionsWithRequestExporter(t *testing.T) {
-	bs, err := NewBaseExporter(exportertest.NewNopSettings(), defaultDataType, newNoopObsrepSender,
+	bs, err := NewBaseExporter(exportertest.NewNopSettings(), defaultSignal, newNoopObsrepSender,
 		WithRetry(configretry.NewDefaultBackOffConfig()))
 	require.NoError(t, err)
 	require.Nil(t, bs.Marshaler)
 	require.Nil(t, bs.Unmarshaler)
-	_, err = NewBaseExporter(exportertest.NewNopSettings(), defaultDataType, newNoopObsrepSender,
+	_, err = NewBaseExporter(exportertest.NewNopSettings(), defaultSignal, newNoopObsrepSender,
 		WithRetry(configretry.NewDefaultBackOffConfig()), WithQueue(NewDefaultQueueConfig()))
 	require.Error(t, err)
 
-	_, err = NewBaseExporter(exportertest.NewNopSettings(), defaultDataType, newNoopObsrepSender,
+	_, err = NewBaseExporter(exportertest.NewNopSettings(), defaultSignal, newNoopObsrepSender,
 		WithMarshaler(mockRequestMarshaler), WithUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
 		WithRetry(configretry.NewDefaultBackOffConfig()),
 		WithRequestQueue(exporterqueue.NewDefaultConfig(), exporterqueue.NewMemoryQueueFactory[internal.Request]()))
@@ -79,7 +80,7 @@ func TestBaseExporterLogging(t *testing.T) {
 	set.Logger = zap.New(logger)
 	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.Enabled = false
-	bs, err := NewBaseExporter(set, defaultDataType, newNoopObsrepSender, WithRetry(rCfg))
+	bs, err := NewBaseExporter(set, defaultSignal, newNoopObsrepSender, WithRetry(rCfg))
 	require.NoError(t, err)
 	sendErr := bs.Send(context.Background(), newErrorRequest())
 	require.Error(t, sendErr)

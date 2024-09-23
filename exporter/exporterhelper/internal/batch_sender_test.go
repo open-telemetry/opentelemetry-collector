@@ -211,7 +211,7 @@ func TestBatchSender_Disabled(t *testing.T) {
 	cfg := exporterbatcher.NewDefaultConfig()
 	cfg.Enabled = false
 	cfg.MaxSizeItems = 5
-	be, err := NewBaseExporter(defaultSettings, defaultDataType, newNoopObsrepSender,
+	be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender,
 		WithBatcher(cfg, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc)))
 	require.NotNil(t, be)
 	require.NoError(t, err)
@@ -259,7 +259,7 @@ func TestBatchSender_InvalidMergeSplitFunc(t *testing.T) {
 }
 
 func TestBatchSender_PostShutdown(t *testing.T) {
-	be, err := NewBaseExporter(defaultSettings, defaultDataType, newNoopObsrepSender,
+	be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender,
 		WithBatcher(exporterbatcher.NewDefaultConfig(), WithRequestBatchFuncs(fakeBatchMergeFunc,
 			fakeBatchMergeSplitFunc)))
 	require.NotNil(t, be)
@@ -322,7 +322,7 @@ func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			qCfg := exporterqueue.NewDefaultConfig()
 			qCfg.NumConsumers = 2
-			be, err := NewBaseExporter(defaultSettings, defaultDataType, newNoopObsrepSender,
+			be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender,
 				WithBatcher(tt.batcherCfg, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc)),
 				WithRequestQueue(qCfg, exporterqueue.NewMemoryQueueFactory[internal.Request]()))
 			require.NotNil(t, be)
@@ -377,7 +377,7 @@ func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
 func TestBatchSender_BatchBlocking(t *testing.T) {
 	bCfg := exporterbatcher.NewDefaultConfig()
 	bCfg.MinSizeItems = 3
-	be, err := NewBaseExporter(defaultSettings, defaultDataType, newNoopObsrepSender,
+	be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender,
 		WithBatcher(bCfg, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc)))
 	require.NotNil(t, be)
 	require.NoError(t, err)
@@ -407,7 +407,7 @@ func TestBatchSender_BatchBlocking(t *testing.T) {
 func TestBatchSender_BatchCancelled(t *testing.T) {
 	bCfg := exporterbatcher.NewDefaultConfig()
 	bCfg.MinSizeItems = 2
-	be, err := NewBaseExporter(defaultSettings, defaultDataType, newNoopObsrepSender,
+	be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender,
 		WithBatcher(bCfg, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc)))
 	require.NotNil(t, be)
 	require.NoError(t, err)
@@ -442,7 +442,7 @@ func TestBatchSender_BatchCancelled(t *testing.T) {
 func TestBatchSender_DrainActiveRequests(t *testing.T) {
 	bCfg := exporterbatcher.NewDefaultConfig()
 	bCfg.MinSizeItems = 2
-	be, err := NewBaseExporter(defaultSettings, defaultDataType, newNoopObsrepSender,
+	be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender,
 		WithBatcher(bCfg, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc)))
 	require.NotNil(t, be)
 	require.NoError(t, err)
@@ -505,7 +505,7 @@ func TestBatchSender_WithBatcherOption(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			be, err := NewBaseExporter(defaultSettings, defaultDataType, newNoopObsrepSender, tt.opts...)
+			be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender, tt.opts...)
 			if tt.expectedErr {
 				assert.Nil(t, be)
 				assert.Error(t, err)
@@ -518,7 +518,7 @@ func TestBatchSender_WithBatcherOption(t *testing.T) {
 }
 
 func TestBatchSender_UnstartedShutdown(t *testing.T) {
-	be, err := NewBaseExporter(defaultSettings, defaultDataType, newNoopObsrepSender,
+	be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender,
 		WithBatcher(exporterbatcher.NewDefaultConfig(), WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc)))
 	require.NoError(t, err)
 
@@ -542,7 +542,7 @@ func TestBatchSender_ShutdownDeadlock(t *testing.T) {
 
 	bCfg := exporterbatcher.NewDefaultConfig()
 	bCfg.FlushTimeout = 10 * time.Minute // high timeout to avoid the timeout to trigger
-	be, err := NewBaseExporter(defaultSettings, defaultDataType, newNoopObsrepSender,
+	be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender,
 		WithBatcher(bCfg, WithRequestBatchFuncs(blockedBatchMergeFunc, fakeBatchMergeSplitFunc)))
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -578,7 +578,7 @@ func TestBatchSenderWithTimeout(t *testing.T) {
 	bCfg.MinSizeItems = 10
 	tCfg := NewDefaultTimeoutConfig()
 	tCfg.Timeout = 50 * time.Millisecond
-	be, err := NewBaseExporter(defaultSettings, defaultDataType, newNoopObsrepSender,
+	be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender,
 		WithBatcher(bCfg, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc)),
 		WithTimeout(tCfg))
 	require.NoError(t, err)
@@ -637,7 +637,7 @@ func TestBatchSenderTimerResetNoConflict(t *testing.T) {
 	bCfg := exporterbatcher.NewDefaultConfig()
 	bCfg.MinSizeItems = 8
 	bCfg.FlushTimeout = 50 * time.Millisecond
-	be, err := NewBaseExporter(defaultSettings, defaultDataType, newNoopObsrepSender,
+	be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender,
 		WithBatcher(bCfg, WithRequestBatchFuncs(delayBatchMergeFunc, fakeBatchMergeSplitFunc)))
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -668,7 +668,7 @@ func TestBatchSenderTimerFlush(t *testing.T) {
 	bCfg := exporterbatcher.NewDefaultConfig()
 	bCfg.MinSizeItems = 8
 	bCfg.FlushTimeout = 100 * time.Millisecond
-	be, err := NewBaseExporter(defaultSettings, defaultDataType, newNoopObsrepSender,
+	be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender,
 		WithBatcher(bCfg, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc)))
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -705,7 +705,7 @@ func TestBatchSenderTimerFlush(t *testing.T) {
 }
 
 func queueBatchExporter(t *testing.T, batchOption Option) *BaseExporter {
-	be, err := NewBaseExporter(defaultSettings, defaultDataType, newNoopObsrepSender, batchOption,
+	be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender, batchOption,
 		WithRequestQueue(exporterqueue.NewDefaultConfig(), exporterqueue.NewMemoryQueueFactory[internal.Request]()))
 	require.NotNil(t, be)
 	require.NoError(t, err)
