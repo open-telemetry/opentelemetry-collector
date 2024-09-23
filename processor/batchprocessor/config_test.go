@@ -27,7 +27,7 @@ func TestUnmarshalConfig(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	require.NoError(t, cm.Unmarshal(cfg))
+	require.NoError(t, cm.Unmarshal(&cfg))
 	assert.Equal(t,
 		&Config{
 			SendBatchSize:            uint32(10000),
