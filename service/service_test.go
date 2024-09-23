@@ -246,6 +246,33 @@ func TestServiceGetExporters(t *testing.T) {
 	assert.Contains(t, expMap[componentprofiles.DataTypeProfiles], component.NewID(nopType))
 }
 
+// nolint
+func TestServiceGetExportersWithSignal(t *testing.T) {
+	srv, err := New(context.Background(), newNopSettings(), newNopConfig())
+	require.NoError(t, err)
+
+	assert.NoError(t, srv.Start(context.Background()))
+	t.Cleanup(func() {
+		assert.NoError(t, srv.Shutdown(context.Background()))
+	})
+
+	expMap := srv.host.GetExportersWithSignal()
+
+	v, ok := expMap[pipeline.SignalTraces]
+	assert.True(t, ok)
+	assert.NotNil(t, v)
+
+	assert.Len(t, expMap, 4)
+	assert.Len(t, expMap[pipeline.SignalTraces], 1)
+	assert.Contains(t, expMap[pipeline.SignalTraces], component.NewID(nopType))
+	assert.Len(t, expMap[pipeline.SignalMetrics], 1)
+	assert.Contains(t, expMap[pipeline.SignalMetrics], component.NewID(nopType))
+	assert.Len(t, expMap[pipeline.SignalLogs], 1)
+	assert.Contains(t, expMap[pipeline.SignalLogs], component.NewID(nopType))
+	assert.Len(t, expMap[componentprofiles.SignalProfiles], 1)
+	assert.Contains(t, expMap[componentprofiles.SignalProfiles], component.NewID(nopType))
+}
+
 // TestServiceTelemetryCleanupOnError tests that if newService errors due to an invalid config telemetry is cleaned up
 // and another service with a valid config can be started right after.
 func TestServiceTelemetryCleanupOnError(t *testing.T) {
