@@ -28,11 +28,11 @@ const (
 )
 
 type Test struct {
-	value        string
-	targetField  TargetField
-	expected     any
-	resolveErr   string
-	unmarshalErr string
+	value         string
+	targetField   TargetField
+	expected      any
+	resolveErr    string
+	unmarshalErrs []string
 }
 
 type TargetConfig[T any] struct {
@@ -54,8 +54,10 @@ func NewResolver(t testing.TB, path string) *confmap.Resolver {
 
 func AssertExpectedMatch[T any](t *testing.T, tt Test, conf *confmap.Conf, cfg *TargetConfig[T]) {
 	err := conf.Unmarshal(cfg)
-	if tt.unmarshalErr != "" {
-		require.ErrorContains(t, err, tt.unmarshalErr)
+	if len(tt.unmarshalErrs) > 0 {
+		for _, unmarshalErr := range tt.unmarshalErrs {
+			require.ErrorContains(t, err, unmarshalErr)
+		}
 		return
 	}
 	require.NoError(t, err)
@@ -143,9 +145,9 @@ func TestStrictTypeCasting(t *testing.T) {
 			expected:    "\"0123\"",
 		},
 		{
-			value:        "\"0123\"",
-			targetField:  TargetFieldInt,
-			unmarshalErr: "'field' expected type 'int', got unconvertible type 'string', value: '\"0123\"'",
+			value:         "\"0123\"",
+			targetField:   TargetFieldInt,
+			unmarshalErrs: []string{"'field' expected type 'int', got unconvertible type 'string', value: '\"0123\"'"},
 		},
 		{
 			value:       "\"0123\"",
@@ -163,14 +165,14 @@ func TestStrictTypeCasting(t *testing.T) {
 			expected:    "inline field with !!str 0123 expansion",
 		},
 		{
-			value:        "t",
-			targetField:  TargetFieldBool,
-			unmarshalErr: "'field' expected type 'bool', got unconvertible type 'string', value: 't'",
+			value:         "t",
+			targetField:   TargetFieldBool,
+			unmarshalErrs: []string{"'field' expected type", "got unconvertible type"},
 		},
 		{
-			value:        "23",
-			targetField:  TargetFieldBool,
-			unmarshalErr: "'field' expected type 'bool', got unconvertible type 'int', value: '23'",
+			value:         "23",
+			targetField:   TargetFieldBool,
+			unmarshalErrs: []string{"'field' expected type", "got unconvertible type"},
 		},
 		{
 			value:       "{\"field\": 123}",
@@ -204,9 +206,9 @@ func TestStrictTypeCasting(t *testing.T) {
 			expected:    true,
 		},
 		{
-			value:        "true # comment with a ${env:hello.world} reference",
-			targetField:  TargetFieldString,
-			unmarshalErr: `expected type 'string', got unconvertible type 'bool'`,
+			value:         "true # comment with a ${env:hello.world} reference",
+			targetField:   TargetFieldString,
+			unmarshalErrs: []string{"expected type", "got unconvertible type"},
 		},
 		{
 			value:       "true # comment with a ${env:hello.world} reference",

@@ -4,16 +4,11 @@
 package optional
 
 import (
-	"os"
-	"path/filepath"
-	"strings"
 	"testing"
-	"unicode"
 
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 type Config struct {
@@ -27,7 +22,7 @@ type Sub struct {
 func TestOptional(t *testing.T) {
 	tests := []struct {
 		name        string
-		config      string
+		config      map[string]any
 		defaultCfg  Config
 		expectedSub bool
 		expectedFoo string
@@ -41,10 +36,11 @@ func TestOptional(t *testing.T) {
 		},
 		{
 			name: "no_default_with_config",
-			config: `
-					sub:
-					  foo: bar
-					`,
+			config: map[string]any{
+				"sub": map[string]any{
+					"foo": "bar",
+				},
+			},
 			defaultCfg: Config{
 				Sub1: None[Sub](),
 			},
@@ -64,10 +60,11 @@ func TestOptional(t *testing.T) {
 		},
 		{
 			name: "with_default_with_config",
-			config: `
-					sub:
-					  foo: bar
-					`,
+			config: map[string]any{
+				"sub": map[string]any{
+					"foo": "bar",
+				},
+			},
 			defaultCfg: Config{
 				Sub1: WithDefault(func() Sub {
 					return Sub{
@@ -83,9 +80,9 @@ func TestOptional(t *testing.T) {
 			// and no additional processing happens for it, including custom unmarshaler.
 			// https://github.com/go-viper/mapstructure/blob/0382e5b7e3987443c91311b7fdb60b92c69a47bf/mapstructure.go#L445
 			name: "with_default_with_config_no_foo",
-			config: `
-					sub:
-					`,
+			config: map[string]any{
+				"sub": nil,
+			},
 			defaultCfg: Config{
 				Sub1: WithDefault(func() Sub {
 					return Sub{
@@ -101,7 +98,7 @@ func TestOptional(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := test.defaultCfg
-			conf := strToConf(t, test.config)
+			conf := confmap.NewFromStringMap(test.config)
 			require.NoError(t, conf.Unmarshal(&cfg))
 			require.Equal(t, test.expectedSub, cfg.Sub1.HasValue())
 			if test.expectedSub {
@@ -109,45 +106,4 @@ func TestOptional(t *testing.T) {
 			}
 		})
 	}
-}
-
-func strToConf(t *testing.T, config string) *confmap.Conf {
-	config = stripWhitespacePrefix(config)
-	d := t.TempDir()
-	f := filepath.Join(d, "config.yaml")
-	require.NoError(t, os.WriteFile(f, []byte(config), 0o644))
-	cm, err := confmaptest.LoadConf(f)
-	require.NoError(t, err)
-	return cm
-}
-
-// stripWhitespacePrefix finds the first non-blank line,
-// detects how much whitespace is in front of it, and removes
-// that much whitespace from the beginning of all lines.
-func stripWhitespacePrefix(s string) string {
-	lines := strings.Split(s, "\n")
-	var prefix string
-
-	// Find the first non-blank line
-	for _, line := range lines {
-		if strings.TrimSpace(line) == "" {
-			continue
-		}
-		nonSpace := strings.IndexFunc(line, func(r rune) bool {
-			return !unicode.IsSpace(r)
-		})
-		prefix = string([]rune(line)[:nonSpace])
-		break
-	}
-
-	// Remove the prefix from all lines
-	var result []string
-	for _, line := range lines {
-		if strings.TrimSpace(line) == "" {
-			continue
-		}
-		result = append(result, strings.TrimPrefix(line, prefix))
-	}
-
-	return strings.Join(result, "\n")
 }
