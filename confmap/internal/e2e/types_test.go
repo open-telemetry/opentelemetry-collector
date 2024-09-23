@@ -241,6 +241,11 @@ func TestStrictTypeCasting(t *testing.T) {
 			expected:    "inline field with [filelog,windowseventlog/application] expansion",
 		},
 		{
+			value:       `2023-03-20T03:17:55.432328Z`,
+			targetField: TargetFieldString,
+			expected:    `2023-03-20T03:17:55.432328Z`,
+		},
+		{
 			value:       "$$ENV",
 			targetField: TargetFieldString,
 			expected:    "$ENV",
