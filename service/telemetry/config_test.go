@@ -71,7 +71,7 @@ func TestUnmarshalConfigDeprecatedAddressGateEnabled(t *testing.T) {
 	cfg := NewFactory().CreateDefaultConfig()
 	require.NoError(t, cm.Unmarshal(&cfg))
 	require.Len(t, cfg.(*Config).Metrics.Readers, 1)
-	assert.Equal(t, "", *cfg.(*Config).Metrics.Readers[0].Pull.Exporter.Prometheus.Host)
+	assert.Equal(t, "localhost", *cfg.(*Config).Metrics.Readers[0].Pull.Exporter.Prometheus.Host)
 	assert.Equal(t, 8888, *cfg.(*Config).Metrics.Readers[0].Pull.Exporter.Prometheus.Port)
 }
 
