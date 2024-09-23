@@ -7,16 +7,16 @@ require (
 	github.com/klauspost/compress v1.17.9
 	github.com/rs/cors v1.11.1
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/client v1.15.0
+	go.opentelemetry.io/collector/client v1.16.0
 	go.opentelemetry.io/collector/component v0.109.0
 	go.opentelemetry.io/collector/config/configauth v0.109.0
-	go.opentelemetry.io/collector/config/configcompression v1.15.0
-	go.opentelemetry.io/collector/config/configopaque v1.15.0
+	go.opentelemetry.io/collector/config/configcompression v1.16.0
+	go.opentelemetry.io/collector/config/configopaque v1.16.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.109.0
-	go.opentelemetry.io/collector/config/configtls v1.15.0
+	go.opentelemetry.io/collector/config/configtls v1.16.0
 	go.opentelemetry.io/collector/config/internal v0.109.1-0.20240916143658-74729e731d3b
 	go.opentelemetry.io/collector/extension/auth v0.109.0
-	go.opentelemetry.io/collector/featuregate v1.15.0
+	go.opentelemetry.io/collector/featuregate v1.16.0
 	go.opentelemetry.io/collector/internal/globalgates v0.109.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.55.0
 	go.opentelemetry.io/otel v1.30.0
@@ -37,7 +37,7 @@ require (
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/collector/extension v0.109.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.15.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.16.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.30.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.30.0 // indirect
 	go.opentelemetry.io/otel/trace v1.30.0 // indirect
