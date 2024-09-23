@@ -13,7 +13,6 @@ import (
 	"sync"
 	"time"
 
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
@@ -168,11 +167,6 @@ func newBatchProcessor(set processor.Settings, cfg *Config, batchFunc func() bat
 	}
 	sort.Strings(mks)
 
-	tp := set.TelemetrySettings.TracerProvider
-	if tp == nil {
-		tp = otel.GetTracerProvider()
-	}
-
 	bp := &batchProcessor{
 		logger: set.Logger,
 
@@ -183,13 +177,12 @@ func newBatchProcessor(set processor.Settings, cfg *Config, batchFunc func() bat
 		shutdownC:        make(chan struct{}, 1),
 		metadataKeys:     mks,
 		metadataLimit:    int(cfg.MetadataCardinalityLimit),
-		tracer:           tp.Tracer(metadata.ScopeName),
+		tracer:           set.TelemetrySettings.TracerProvider.Tracer(metadata.ScopeName),
 	}
 
 	asb := anyShardBatcher{processor: bp}
 	if len(bp.metadataKeys) == 0 {
-		ssb := &singleShardBatcher{anyShardBatcher: asb}
-		bp.batcher = ssb
+		bp.batcher = &singleShardBatcher{anyShardBatcher: asb}
 	} else {
 		bp.batcher = &multiShardBatcher{anyShardBatcher: asb}
 	}
@@ -582,10 +575,6 @@ func (mb *multiShardBatcher) consume(ctx context.Context, data any) error {
 	}
 
 	return b.(*shard).consumeAndWait(ctx, data)
-}
-
-func recordBatchError(err error) error {
-	return fmt.Errorf("Batch contained errors: %w", err)
 }
 
 func (mb *multiShardBatcher) currentMetadataCardinality() int {
