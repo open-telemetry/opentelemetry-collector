@@ -6,6 +6,7 @@ package otlptext
 import (
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 
@@ -72,12 +73,22 @@ func extendProfiles(profiles pprofile.Profiles) (pprofile.Profiles) {
 			location.SetTypeIndex(5)
 			location.Attributes().FromRaw([]uint64{6, 7})
 		
-			profile.Profile().AttributeTable().FromRaw(map[string]any{
+			attributeTable := map[string]any{
 				"key": "answer",
 				"value": map[string]any{
 					"intValue": "42",
 				},
-			})
+			}
+			sortedAttributeTable := make(map[string]any)
+			sortedKeys := make([]string, 0, len(attributeTable))
+			for k := range attributeTable {
+				sortedKeys = append(sortedKeys, k)
+			}
+			sort.Strings(sortedKeys)
+			for _, k := range sortedKeys {
+				sortedAttributeTable[k] = attributeTable[k]
+			}
+			profile.Profile().AttributeTable().FromRaw(sortedAttributeTable)
 		
 			attributeUnits := profile.Profile().AttributeUnits().AppendEmpty()
 			attributeUnits.SetAttributeKey(1)
