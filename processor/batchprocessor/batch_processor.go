@@ -122,6 +122,8 @@ type dataItem struct {
 type batch interface {
 	// export the current batch
 	export(ctx context.Context, req any) error
+
+	// splitBatch returns a full request built from pending items.
 	splitBatch(ctx context.Context, sendBatchMaxSize int, returnBytes bool) (sentBatchSize int, req any)
 
 	// itemCount returns the size of the current batch
@@ -130,7 +132,8 @@ type batch interface {
 	// add item to the current batch
 	add(item any)
 
-	sizeBytes(data any) int
+	// sizeBytes counts the OTLP encoding size of the batch
+	sizeBytes(item any) int
 }
 
 // countedError is useful when a producer adds items that are split
@@ -367,7 +370,6 @@ func (b *shard) sendItems(trigger trigger) {
 	}
 
 	go func() {
-		before := time.Now()
 		var err error
 
 		var parentSpan trace.Span
@@ -405,7 +407,6 @@ func (b *shard) sendItems(trigger trigger) {
 		// terminates.
 		parentSpan.End()
 
-		latency := time.Since(before)
 		for i := range waiters {
 			count := countItems[i]
 			waiter := waiters[i]
@@ -415,7 +416,7 @@ func (b *shard) sendItems(trigger trigger) {
 		if err != nil {
 			b.processor.logger.Warn("Sender failed", zap.Error(err))
 		} else {
-			b.processor.telemetry.record(latency, trigger, int64(sent), bytes)
+			b.processor.telemetry.record(trigger, int64(sent), bytes)
 		}
 	}()
 
@@ -450,22 +451,7 @@ func allSame(x []context.Context) bool {
 	return true
 }
 
-func (bp *batchProcessor) countAcquire(ctx context.Context, bytes int64) error {
-	var err error
-	if err == nil && bp.telemetry.batchInFlightBytes != nil {
-		bp.telemetry.batchInFlightBytes.Add(ctx, bytes, bp.telemetry.processorAttrOption)
-	}
-	return err
-}
-
-func (bp *batchProcessor) countRelease(bytes int64) {
-	if bp.telemetry.batchInFlightBytes != nil {
-		bp.telemetry.batchInFlightBytes.Add(context.Background(), -bytes, bp.telemetry.processorAttrOption)
-	}
-}
-
 func (b *shard) consumeAndWait(ctx context.Context, data any) error {
-
 	var itemCount int
 	switch telem := data.(type) {
 	case ptrace.Traces:
@@ -487,36 +473,6 @@ func (b *shard) consumeAndWait(ctx context.Context, data any) error {
 		responseCh: respCh,
 		count:      itemCount,
 	}
-	bytes := int64(b.batch.sizeBytes(data))
-
-	err := b.processor.countAcquire(ctx, bytes)
-	if err != nil {
-		return err
-	}
-
-	// The purpose of this function is to ensure semaphore
-	// releases all previously acquired bytes
-	defer func() {
-		if item.count == 0 {
-			b.processor.countRelease(bytes)
-			return
-		}
-		// context may have timed out before we received all
-		// responses. Start goroutine to wait and release
-		// all acquired bytes after the parent thread returns.
-		go func() {
-			for newErr := range respCh {
-				unwrap := newErr.(countedError)
-
-				item.count -= unwrap.count
-				if item.count != 0 {
-					continue
-				}
-				break
-			}
-			b.processor.countRelease(bytes)
-		}()
-	}()
 
 	select {
 	case <-ctx.Done():
@@ -524,6 +480,7 @@ func (b *shard) consumeAndWait(ctx context.Context, data any) error {
 	case b.newItem <- item:
 	}
 
+	var err error
 	for {
 		select {
 		case newErr := <-respCh:
