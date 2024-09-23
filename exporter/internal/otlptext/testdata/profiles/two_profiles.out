@@ -37,7 +37,6 @@ Profile #0
         Type index: 5
         Attributes: [6 7]
     Attribute table:
-         -> key: Str(answer)
          -> value: Map({"intValue":"42"})
     Attribute units:
          -> attributeKey: Int(1)
