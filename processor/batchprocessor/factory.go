@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate mdatagen metadata.yaml
+
 package batchprocessor // import "go.opentelemetry.io/collector/processor/batchprocessor"
 
 import (
@@ -28,9 +30,9 @@ func NewFactory() processor.Factory {
 	return processor.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		processor.WithTraces(createTraces, component.StabilityLevelStable),
-		processor.WithMetrics(createMetrics, component.StabilityLevelStable),
-		processor.WithLogs(createLogs, component.StabilityLevelStable))
+		processor.WithTraces(createTraces, metadata.TracesStability),
+		processor.WithMetrics(createMetrics, metadata.MetricsStability),
+		processor.WithLogs(createLogs, metadata.LogsStability))
 }
 
 func createDefaultConfig() component.Config {
