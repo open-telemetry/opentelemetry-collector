@@ -47,7 +47,7 @@ func TestProfilesText(t *testing.T) {
 }
 
 // GenerateExtendedProfiles generates dummy profiling data with extended values for tests
-func extendProfiles(profiles pprofile.Profiles) (pprofile.Profiles) {
+func extendProfiles(profiles pprofile.Profiles) pprofile.Profiles {
 	sc := profiles.ResourceProfiles().At(0).ScopeProfiles().At(0)
 	profilesCount := profiles.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().Len()
 	for i := 0; i < profilesCount; i++ {
@@ -60,7 +60,7 @@ func extendProfiles(profiles pprofile.Profiles) (pprofile.Profiles) {
 			label.SetStr(2)
 			label.SetNum(3)
 			label.SetNumUnit(4)
-		
+
 			location := profile.Profile().Location().AppendEmpty()
 			location.SetID(2)
 			location.SetMappingIndex(3)
@@ -72,7 +72,7 @@ func extendProfiles(profiles pprofile.Profiles) (pprofile.Profiles) {
 			location.SetIsFolded(true)
 			location.SetTypeIndex(5)
 			location.Attributes().FromRaw([]uint64{6, 7})
-		
+
 			attributeTable := map[string]any{
 				"key": "answer",
 				"value": map[string]any{
@@ -89,11 +89,11 @@ func extendProfiles(profiles pprofile.Profiles) (pprofile.Profiles) {
 				sortedAttributeTable[k] = attributeTable[k]
 			}
 			profile.Profile().AttributeTable().FromRaw(sortedAttributeTable)
-		
+
 			attributeUnits := profile.Profile().AttributeUnits().AppendEmpty()
 			attributeUnits.SetAttributeKey(1)
 			attributeUnits.SetUnit(5)
-		
+
 			profile.Profile().StringTable().Append("foobar")
 		case 1:
 			profile := sc.Profiles().At(i)

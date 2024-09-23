@@ -50,20 +50,20 @@ func (textProfilesMarshaler) MarshalProfiles(pd pprofile.Profiles) ([]byte, erro
 				buf.logProfileFunctions(profile.Profile().Function())
 
 				buf.logAttributesWithIndentation(
-					"Attribute table", 
-					profile.Profile().AttributeTable(), 
+					"Attribute table",
+					profile.Profile().AttributeTable(),
 					4)
 
 				buf.logAttributesWithIndentation(
-					"Attribute units", 
+					"Attribute units",
 					attributeUnitsToMap(profile.Profile().AttributeUnits()),
 					4)
-				
+
 				buf.logAttributesWithIndentation(
 					"Link table",
 					linkTableToMap(profile.Profile().LinkTable()),
 					4)
-				
+
 				buf.logStringTable(profile.Profile().StringTable())
 				buf.logComment(profile.Profile().Comment())
 			}
