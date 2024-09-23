@@ -615,12 +615,6 @@ func newBatchLogsProcessor(set processor.Settings, next consumer.Logs, cfg *Conf
 	return newBatchProcessor(set, cfg, func() batch { return newBatchLogs(next) })
 }
 
-func recoverError(retErr *error) {
-	if r := recover(); r != nil {
-		*retErr = fmt.Errorf("%v", r)
-	}
-}
-
 type batchTraces struct {
 	nextConsumer consumer.Traces
 	traceData    ptrace.Traces
@@ -649,8 +643,7 @@ func (bt *batchTraces) sizeBytes(data any) int {
 	return bt.sizer.TracesSize(data.(ptrace.Traces))
 }
 
-func (bt *batchTraces) export(ctx context.Context, req any) (retErr error) {
-	defer recoverError(&retErr)
+func (bt *batchTraces) export(ctx context.Context, req any) error {
 	td := req.(ptrace.Traces)
 	return bt.nextConsumer.ConsumeTraces(ctx, td)
 }
@@ -690,8 +683,7 @@ func (bm *batchMetrics) sizeBytes(data any) int {
 	return bm.sizer.MetricsSize(data.(pmetric.Metrics))
 }
 
-func (bm *batchMetrics) export(ctx context.Context, req any) (retErr error) {
-	defer recoverError(&retErr)
+func (bm *batchMetrics) export(ctx context.Context, req any) error {
 	md := req.(pmetric.Metrics)
 	return bm.nextConsumer.ConsumeMetrics(ctx, md)
 }
@@ -743,8 +735,7 @@ func (bl *batchLogs) sizeBytes(data any) int {
 	return bl.sizer.LogsSize(data.(plog.Logs))
 }
 
-func (bl *batchLogs) export(ctx context.Context, req any) (retErr error) {
-	defer recoverError(&retErr)
+func (bl *batchLogs) export(ctx context.Context, req any) error {
 	ld := req.(plog.Logs)
 	return bl.nextConsumer.ConsumeLogs(ctx, ld)
 }
