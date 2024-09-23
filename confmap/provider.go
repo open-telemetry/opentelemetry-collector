@@ -165,9 +165,6 @@ func NewRetrievedFromYAML(yamlBytes []byte, opts ...RetrievedOption) (*Retrieved
 //   - []any;
 //   - map[string]any;
 func NewRetrieved(rawConf any, opts ...RetrievedOption) (*Retrieved, error) {
-	if err := checkRawConfType(rawConf); err != nil {
-		return nil, err
-	}
 	set := retrievedSettings{}
 	for _, opt := range opts {
 		opt.apply(&set)
@@ -229,17 +226,3 @@ func (r *Retrieved) Close(ctx context.Context) error {
 
 // CloseFunc a function equivalent to Retrieved.Close.
 type CloseFunc func(context.Context) error
-
-func checkRawConfType(rawConf any) error {
-	if rawConf == nil {
-		return nil
-	}
-	switch rawConf.(type) {
-	case int, int32, int64, float32, float64, bool, string, []any, map[string]any:
-		return nil
-	default:
-		return fmt.Errorf(
-			"unsupported type=%T for retrieved config,"+
-				" ensure that values are wrapped in quotes", rawConf)
-	}
-}
