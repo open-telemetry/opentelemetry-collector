@@ -101,14 +101,14 @@ type shard struct {
 
 	pending []pendingItem
 
-	totalSent int
+	totalSent uint64
 
 	tracer trace.TracerProvider
 }
 
 type pendingItem struct {
 	parentCtx context.Context
-	numItems  int
+	numItems  uint64
 	respCh    chan error
 }
 
@@ -285,7 +285,7 @@ func (b *shard) processItem(item dataItem) {
 	b.batch.add(item.data)
 	after := b.batch.itemCount()
 
-	totalItems := after - before
+	totalItems := uint64(after - before)
 	b.pending = append(b.pending, pendingItem{
 		parentCtx: item.parentCtx,
 		numItems:  totalItems,
@@ -334,7 +334,7 @@ func (b *shard) sendItems(trigger trigger) {
 	var contexts []context.Context
 
 	numItemsBefore := b.totalSent
-	numItemsAfter := b.totalSent + sent
+	numItemsAfter := b.totalSent + uint64(sent)
 
 	// The current batch can contain items from several different producers. Ensure each producer gets a response back.
 	for len(b.pending) > 0 && numItemsBefore < numItemsAfter {
@@ -345,12 +345,12 @@ func (b *shard) sendItems(trigger trigger) {
 			numItemsBefore += partialSent
 			waiters = append(waiters, b.pending[0].respCh)
 			contexts = append(contexts, b.pending[0].parentCtx)
-			countItems = append(countItems, partialSent)
+			countItems = append(countItems, int(partialSent))
 		} else { // waiter gets a complete response.
 			numItemsBefore += b.pending[0].numItems
 			waiters = append(waiters, b.pending[0].respCh)
 			contexts = append(contexts, b.pending[0].parentCtx)
-			countItems = append(countItems, b.pending[0].numItems)
+			countItems = append(countItems, int(b.pending[0].numItems))
 
 			// complete response sent so b.pending[0] can be popped from queue.
 			if len(b.pending) > 1 {
