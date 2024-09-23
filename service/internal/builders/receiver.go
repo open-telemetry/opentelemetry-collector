@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverprofiles"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -95,9 +96,14 @@ func (b *ReceiverBuilder) CreateProfiles(ctx context.Context, set receiver.Setti
 		return nil, fmt.Errorf("receiver %q is not configured", set.ID)
 	}
 
-	f, existsFactory := b.factories[set.ID.Type()]
+	recvFact, existsFactory := b.factories[set.ID.Type()]
 	if !existsFactory {
 		return nil, fmt.Errorf("receiver factory not available for: %q", set.ID)
+	}
+
+	f, ok := recvFact.(receiverprofiles.Factory)
+	if !ok {
+		return nil, pipeline.ErrSignalNotSupported
 	}
 
 	logStabilityLevel(set.Logger, f.ProfilesReceiverStability())

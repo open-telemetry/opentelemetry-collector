@@ -27,12 +27,12 @@ const (
 
 // NewFactory creates a new OTLP receiver factory.
 func NewFactory() receiver.Factory {
-	return receiver.NewFactory(
+	return receiverprofiles.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithTraces(createTraces, metadata.TracesStability),
-		receiver.WithMetrics(createMetrics, metadata.MetricsStability),
-		receiver.WithLogs(createLog, metadata.LogsStability),
+		receiverprofiles.WithTraces(createTraces, metadata.TracesStability),
+		receiverprofiles.WithMetrics(createMetrics, metadata.MetricsStability),
+		receiverprofiles.WithLogs(createLog, metadata.LogsStability),
 		receiverprofiles.WithProfiles(createProfiles, metadata.ProfilesStability),
 	)
 }
