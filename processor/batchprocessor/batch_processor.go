@@ -108,14 +108,14 @@ type shard struct {
 
 type pendingItem struct {
 	parentCtx context.Context
-	numItems  uint64
-	respCh    chan error
+	numItems  int
+	respCh    chan countedError
 }
 
 type dataItem struct {
 	parentCtx  context.Context
 	data       any
-	responseCh chan error
+	responseCh chan countedError
 	count      int
 }
 
@@ -287,7 +287,7 @@ func (b *shard) processItem(item dataItem) {
 	b.batch.add(item.data)
 	after := b.batch.itemCount()
 
-	totalItems := uint64(after - before)
+	totalItems := after - before
 	b.pending = append(b.pending, pendingItem{
 		parentCtx: item.parentCtx,
 		numItems:  totalItems,
@@ -299,7 +299,6 @@ func (b *shard) processItem(item dataItem) {
 
 func (b *shard) flushItems() {
 	sent := false
-
 	for b.batch.itemCount() > 0 && (!b.hasTimer() || b.batch.itemCount() >= b.processor.sendBatchSize) {
 		b.sendItems(triggerBatchSize)
 		sent = true
@@ -331,29 +330,31 @@ func (b *shard) sendItems(trigger trigger) {
 	sent, req := b.batch.splitBatch(b.exportCtx, b.processor.sendBatchMaxSize, b.processor.telemetry.detailed)
 	bytes := int64(b.batch.sizeBytes(req))
 
-	var waiters []chan error
-	var countItems []int
-	var contexts []context.Context
+	var thisBatch []pendingTuple
 
 	numItemsBefore := b.totalSent
 	numItemsAfter := b.totalSent + uint64(sent)
 
 	// The current batch can contain items from several different producers. Ensure each producer gets a response back.
 	for len(b.pending) > 0 && numItemsBefore < numItemsAfter {
-		if numItemsBefore+b.pending[0].numItems > numItemsAfter {
+		if numItemsBefore+uint64(b.pending[0].numItems) > numItemsAfter {
 			// Waiter only had some items in the current batch
-			partialSent := numItemsAfter - numItemsBefore
+			partialSent := int(numItemsAfter - numItemsBefore)
+			numItemsBefore = numItemsAfter
 			b.pending[0].numItems -= partialSent
-			numItemsBefore += partialSent
-			waiters = append(waiters, b.pending[0].respCh)
-			contexts = append(contexts, b.pending[0].parentCtx)
-			countItems = append(countItems, int(partialSent))
+			thisBatch = append(thisBatch, pendingTuple{
+				waiter: b.pending[0].respCh,
+				count:  partialSent,
+				ctx:    b.pending[0].parentCtx,
+			})
 		} else {
 			// waiter gets a complete response.
-			numItemsBefore += b.pending[0].numItems
-			waiters = append(waiters, b.pending[0].respCh)
-			contexts = append(contexts, b.pending[0].parentCtx)
-			countItems = append(countItems, int(b.pending[0].numItems))
+			numItemsBefore += uint64(b.pending[0].numItems)
+			thisBatch = append(thisBatch, pendingTuple{
+				waiter: b.pending[0].respCh,
+				count:  b.pending[0].numItems,
+				ctx:    b.pending[0].parentCtx,
+			})
 
 			// complete response sent so b.pending[0] can be popped from queue.
 			if len(b.pending) > 1 {
@@ -371,17 +372,16 @@ func (b *shard) sendItems(trigger trigger) {
 
 		var parentSpan trace.Span
 		var parent context.Context
-		isSingleCtx := allSame(contexts)
+		isSingleCtx := allSameContext(thisBatch)
 
-		// For SDK's we can reuse the parent context because there is
-		// only one possible parent. This is not the case
-		// for collector batchprocessors which must break the parent context
-		// because batch items can be incoming from multiple receivers.
+		// If incoming requests are sufficiently large, there
+		// will be one context, in which case no need to create a new
+		// root span.
 		if isSingleCtx {
-			parent = contexts[0]
+			parent = thisBatch[0].ctx
 			parent, parentSpan = b.processor.tracer.Start(parent, "batch_processor/export")
 		} else {
-			spans := parentSpans(contexts)
+			spans := parentSpans(thisBatch)
 
 			links := make([]trace.Link, len(spans))
 			for i, span := range spans {
@@ -404,10 +404,8 @@ func (b *shard) sendItems(trigger trigger) {
 		// terminates.
 		parentSpan.End()
 
-		for i := range waiters {
-			count := countItems[i]
-			waiter := waiters[i]
-			waiter <- countedError{err: err, count: count}
+		for _, pending := range thisBatch {
+			pending.waiter <- countedError{err: err, count: pending.count}
 		}
 
 		if err != nil {
@@ -418,28 +416,34 @@ func (b *shard) sendItems(trigger trigger) {
 	}()
 }
 
-func parentSpans(contexts []context.Context) []trace.Span {
+func parentSpans(x []pendingTuple) []trace.Span {
 	var spans []trace.Span
 	unique := make(map[context.Context]bool)
-	for i := range contexts {
-		_, ok := unique[contexts[i]]
+	for i := range x {
+		_, ok := unique[x[i].ctx]
 		if ok {
 			continue
 		}
 
-		unique[contexts[i]] = true
+		unique[x[i].ctx] = true
 
-		spans = append(spans, trace.SpanFromContext(contexts[i]))
+		spans = append(spans, trace.SpanFromContext(x[i].ctx))
 	}
 
 	return spans
 }
 
-// helper function to check if a slice of contexts contains more than one unique context.
-// If the contexts are all the same then we can
-func allSame(x []context.Context) bool {
+type pendingTuple struct {
+	waiter chan countedError
+	count  int
+	ctx    context.Context
+}
+
+// allSameContext is a helper function to check if a slice of contexts
+// contains more than one unique context.
+func allSameContext(x []pendingTuple) bool {
 	for idx := range x[1:] {
-		if x[idx] != x[0] {
+		if x[idx].ctx != x[0].ctx {
 			return false
 		}
 	}
@@ -461,7 +465,7 @@ func (b *shard) consumeAndWait(ctx context.Context, data any) error {
 		return nil
 	}
 
-	respCh := make(chan error, 1)
+	respCh := make(chan countedError, 1)
 	item := dataItem{
 		parentCtx:  ctx,
 		data:       data,
@@ -478,14 +482,13 @@ func (b *shard) consumeAndWait(ctx context.Context, data any) error {
 	var err error
 	for {
 		select {
-		case newErr := <-respCh:
+		case cntErr := <-respCh:
 			// nil response might be wrapped as an error.
-			unwrap := newErr.(countedError)
-			if unwrap.err != nil {
-				err = errors.Join(err, newErr)
+			if cntErr.err != nil {
+				err = errors.Join(err, cntErr)
 			}
 
-			item.count -= unwrap.count
+			item.count -= cntErr.count
 			if item.count != 0 {
 				continue
 			}
