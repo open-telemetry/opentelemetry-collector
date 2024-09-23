@@ -16,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/service/internal/resource"
-	"go.opentelemetry.io/collector/service/telemetry/internal"
 )
 
 // disableHighCardinalityMetricsfeatureGate is the feature gate that controls whether the collector should enable
@@ -26,6 +25,60 @@ var disableHighCardinalityMetricsfeatureGate = featuregate.GlobalRegistry().Must
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("controls whether the collector should enable potentially high"+
 		"cardinality metrics. The gate will be removed when the collector allows for view configuration."))
+
+// Settings holds configuration for building Telemetry.
+type Settings struct {
+	BuildInfo         component.BuildInfo
+	AsyncErrorChannel chan error
+	ZapOptions        []zap.Option
+}
+
+// Factory is factory interface for telemetry.
+// This interface cannot be directly implemented. Implementations must
+// use the NewFactory to implement it.
+type Factory interface {
+	// CreateDefaultConfig creates the default configuration for the telemetry.
+	// TODO: Should we just inherit from component.Factory?
+	CreateDefaultConfig() component.Config
+
+	// CreateLogger creates a logger.
+	CreateLogger(ctx context.Context, set Settings, cfg component.Config) (*zap.Logger, error)
+
+	// CreateTracerProvider creates a TracerProvider.
+	CreateTracerProvider(ctx context.Context, set Settings, cfg component.Config) (trace.TracerProvider, error)
+
+	// CreateMeterProvider creates a MeterProvider.
+	CreateMeterProvider(ctx context.Context, set Settings, cfg component.Config) (metric.MeterProvider, error)
+
+	// unexportedFactoryFunc is used to prevent external implementations of Factory.
+	unexportedFactoryFunc()
+}
+
+// NewFactory creates a new Factory.
+func NewFactory() Factory {
+	return newFactory(createDefaultConfig,
+		withLogger(func(_ context.Context, set Settings, cfg component.Config) (*zap.Logger, error) {
+			c := *cfg.(*Config)
+			return newLogger(c.Logs, set.ZapOptions)
+		}),
+		withTracerProvider(func(ctx context.Context, set Settings, cfg component.Config) (trace.TracerProvider, error) {
+			c := *cfg.(*Config)
+			return newTracerProvider(ctx, set, c)
+		}),
+		withMeterProvider(func(_ context.Context, set Settings, cfg component.Config) (metric.MeterProvider, error) {
+			c := *cfg.(*Config)
+			disableHighCard := disableHighCardinalityMetricsfeatureGate.IsEnabled()
+			return newMeterProvider(
+				meterProviderSettings{
+					res:               resource.New(set.BuildInfo, c.Resource),
+					cfg:               c.Metrics,
+					asyncErrorChannel: set.AsyncErrorChannel,
+				},
+				disableHighCard,
+			)
+		}),
+	)
+}
 
 func createDefaultConfig() component.Config {
 	return &Config{
@@ -50,33 +103,4 @@ func createDefaultConfig() component.Config {
 			Address: ":8888",
 		},
 	}
-}
-
-// Factory is a telemetry factory.
-type Factory = internal.Factory
-
-// NewFactory creates a new Factory.
-func NewFactory() Factory {
-	return internal.NewFactory(createDefaultConfig,
-		internal.WithLogger(func(_ context.Context, set Settings, cfg component.Config) (*zap.Logger, error) {
-			c := *cfg.(*Config)
-			return newLogger(c.Logs, set.ZapOptions)
-		}),
-		internal.WithTracerProvider(func(ctx context.Context, set Settings, cfg component.Config) (trace.TracerProvider, error) {
-			c := *cfg.(*Config)
-			return newTracerProvider(ctx, set, c)
-		}),
-		internal.WithMeterProvider(func(_ context.Context, set Settings, cfg component.Config) (metric.MeterProvider, error) {
-			c := *cfg.(*Config)
-			disableHighCard := disableHighCardinalityMetricsfeatureGate.IsEnabled()
-			return newMeterProvider(
-				meterProviderSettings{
-					res:               resource.New(set.BuildInfo, c.Resource),
-					cfg:               c.Metrics,
-					asyncErrorChannel: set.AsyncErrorChannel,
-				},
-				disableHighCard,
-			)
-		}),
-	)
 }
