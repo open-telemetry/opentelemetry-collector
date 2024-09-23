@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/batchprocessor/internal/metadata"
 )
 
 // errTooManyBatchers is returned when the MetadataCardinalityLimit has been reached.
@@ -64,13 +65,15 @@ type batchProcessor struct {
 
 	telemetry *batchProcessorTelemetry
 
-	//  batcher will be either *singletonBatcher or *multiBatcher
+	// batcher will be either *singletonBatcher or *multiBatcher
 	batcher batcher
 
-	tracer trace.TracerProvider
+	// tracer is the configured tracer
+	tracer trace.Tracer
 }
 
 type batcher interface {
+	start(ctx context.Context) error
 	consume(ctx context.Context, data any) error
 	currentMetadataCardinality() int
 }
@@ -100,8 +103,6 @@ type shard struct {
 	pending []pendingItem
 
 	totalSent uint64
-
-	tracer trace.TracerProvider
 }
 
 type pendingItem struct {
@@ -179,15 +180,15 @@ func newBatchProcessor(set processor.Settings, cfg *Config, batchFunc func() bat
 		shutdownC:        make(chan struct{}, 1),
 		metadataKeys:     mks,
 		metadataLimit:    int(cfg.MetadataCardinalityLimit),
-		tracer:           tp,
+		tracer:           tp.Tracer(metadata.ScopeName),
 	}
 
+	asb := anyShardBatcher{processor: bp}
 	if len(bp.metadataKeys) == 0 {
-		bp.batcher = &singleShardBatcher{batcher: bp.newShard(nil)}
+		ssb := &singleShardBatcher{anyShardBatcher: asb}
+		bp.batcher = ssb
 	} else {
-		bp.batcher = &multiShardBatcher{
-			batchProcessor: bp,
-		}
+		bp.batcher = &multiShardBatcher{anyShardBatcher: asb}
 	}
 
 	bpt, err := newBatchProcessorTelemetry(set, bp.batcher.currentMetadataCardinality)
@@ -199,22 +200,28 @@ func newBatchProcessor(set processor.Settings, cfg *Config, batchFunc func() bat
 	return bp, nil
 }
 
+// anyShardBatcher contains common code for single and multi-shard batchers.
+type anyShardBatcher struct {
+	processor *batchProcessor
+}
+
 // newShard gets or creates a batcher corresponding with attrs.
-func (bp *batchProcessor) newShard(md map[string][]string) *shard {
+func (ab *anyShardBatcher) newShard(md map[string][]string) *shard {
 	exportCtx := client.NewContext(context.Background(), client.Info{
 		Metadata: client.NewMetadata(md),
 	})
 	b := &shard{
-		processor: bp,
+		processor: ab.processor,
 		newItem:   make(chan dataItem, runtime.NumCPU()),
 		exportCtx: exportCtx,
-		batch:     bp.batchFunc(),
-		tracer:    bp.tracer,
+		batch:     ab.processor.batchFunc(),
 	}
-
-	b.processor.goroutines.Add(1)
-	go b.start()
 	return b
+}
+
+func (ab *anyShardBatcher) startShard(s *shard) {
+	ab.processor.goroutines.Add(1)
+	go s.start()
 }
 
 func (bp *batchProcessor) Capabilities() consumer.Capabilities {
@@ -222,8 +229,8 @@ func (bp *batchProcessor) Capabilities() consumer.Capabilities {
 }
 
 // Start is invoked during service startup.
-func (bp *batchProcessor) Start(context.Context, component.Host) error {
-	return nil
+func (bp *batchProcessor) Start(ctx context.Context, _ component.Host) error {
+	return bp.batcher.start(ctx)
 }
 
 // Shutdown is invoked during service shutdown.
@@ -373,7 +380,7 @@ func (b *shard) sendItems(trigger trigger) {
 		// because batch items can be incoming from multiple receivers.
 		if isSingleCtx {
 			parent = contexts[0]
-			parent, parentSpan = b.tracer.Tracer("otel").Start(parent, "concurrent_batch_processor/export")
+			parent, parentSpan = b.processor.tracer.Start(parent, "batch_processor/export")
 		} else {
 			spans := parentSpans(contexts)
 
@@ -381,7 +388,7 @@ func (b *shard) sendItems(trigger trigger) {
 			for i, span := range spans {
 				links[i] = trace.Link{SpanContext: span.SpanContext()}
 			}
-			parent, parentSpan = b.tracer.Tracer("otel").Start(b.exportCtx, "concurrent_batch_processor/export", trace.WithLinks(links...))
+			parent, parentSpan = b.processor.tracer.Start(b.exportCtx, "batch_processor/export", trace.WithLinks(links...))
 
 			// Note: linking in the opposite direction.
 			// This could be inferred by the trace
@@ -542,6 +549,7 @@ func (b *shard) consumeAndWait(ctx context.Context, data any) error {
 // singleShardBatcher is used when metadataKeys is empty, to avoid the
 // additional lock and map operations used in multiBatcher.
 type singleShardBatcher struct {
+	anyShardBatcher
 	batcher *shard
 }
 
@@ -553,9 +561,15 @@ func (sb *singleShardBatcher) currentMetadataCardinality() int {
 	return 1
 }
 
+func (sb *singleShardBatcher) start(context.Context) error {
+	sb.batcher = sb.newShard(nil)
+	sb.startShard(sb.batcher)
+	return nil
+}
+
 // multiBatcher is used when metadataKeys is not empty.
 type multiShardBatcher struct {
-	*batchProcessor
+	anyShardBatcher
 	batchers sync.Map
 
 	// Guards the size and the storing logic to ensure no more than limit items are stored.
@@ -564,13 +578,17 @@ type multiShardBatcher struct {
 	size int
 }
 
+func (sb *multiShardBatcher) start(context.Context) error {
+	return nil
+}
+
 func (mb *multiShardBatcher) consume(ctx context.Context, data any) error {
 	// Get each metadata key value, form the corresponding
 	// attribute set for use as a map lookup key.
 	info := client.FromContext(ctx)
 	md := map[string][]string{}
 	var attrs []attribute.KeyValue
-	for _, k := range mb.metadataKeys {
+	for _, k := range mb.processor.metadataKeys {
 		// Lookup the value in the incoming metadata, copy it
 		// into the outgoing metadata, and create a unique
 		// value for the attributeSet.
@@ -587,7 +605,7 @@ func (mb *multiShardBatcher) consume(ctx context.Context, data any) error {
 	b, ok := mb.batchers.Load(aset)
 	if !ok {
 		mb.lock.Lock()
-		if mb.metadataLimit != 0 && mb.size >= mb.metadataLimit {
+		if mb.processor.metadataLimit != 0 && mb.size >= mb.processor.metadataLimit {
 			mb.lock.Unlock()
 			return errTooManyBatchers
 		}
@@ -596,8 +614,12 @@ func (mb *multiShardBatcher) consume(ctx context.Context, data any) error {
 		// and name-downcased list of attributes.
 		var loaded bool
 		b, loaded = mb.batchers.LoadOrStore(aset, mb.newShard(md))
+
 		if !loaded {
+			// This is a new shard
 			mb.size++
+			mb.startShard(b.(*shard))
+
 		}
 		mb.lock.Unlock()
 	}

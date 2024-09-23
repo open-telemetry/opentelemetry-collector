@@ -349,7 +349,7 @@ func TestBatchProcessorUnbrokenParentContextSingle(t *testing.T) {
 	assert.Equal(t, 2*int(math.Ceil(numBatches))+1, len(td))
 	for _, span := range td {
 		switch span.Name {
-		case "concurrent_batch_processor/export":
+		case "batch_processor/export":
 			// more test below
 			break
 		case "exporter/test_exporter/traces":
@@ -448,7 +448,7 @@ func TestBatchProcessorUnbrokenParentContextMultiple(t *testing.T) {
 	}
 	for _, span := range td {
 		switch span.Name {
-		case "concurrent_batch_processor/export":
+		case "batch_processor/export":
 			// more test below
 			break
 		case "exporter/test_exporter/traces":
@@ -1350,6 +1350,8 @@ func TestBatchZeroConfig(t *testing.T) {
 		require.Equal(t, 1, ld.ResourceLogs().Len())
 		require.Equal(t, logsPerRequest+i, ld.LogRecordCount())
 	}
+
+	require.NoError(t, batcher.Shutdown(context.Background()))
 }
 
 func TestBatchSplitOnly(t *testing.T) {
@@ -1386,6 +1388,8 @@ func TestBatchSplitOnly(t *testing.T) {
 	for _, ld := range receivedMds {
 		require.Equal(t, maxBatch, ld.LogRecordCount())
 	}
+
+	require.NoError(t, batcher.Shutdown(context.Background()))
 }
 
 func TestBatchProcessorEmptyBatch(t *testing.T) {
@@ -1451,5 +1455,7 @@ func TestErrorPropagation(t *testing.T) {
 		assert.Error(t, err)
 		assert.ErrorIs(t, err, proto)
 		assert.Contains(t, err.Error(), proto.Error())
+
+		require.NoError(t, batcher.Shutdown(context.Background()))
 	}
 }
