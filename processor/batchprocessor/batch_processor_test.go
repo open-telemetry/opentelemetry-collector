@@ -14,7 +14,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 	"golang.org/x/sync/semaphore"
 
 	"go.opentelemetry.io/collector/client"
@@ -32,7 +31,6 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/otel"
-	noopmetric "go.opentelemetry.io/otel/metric/noop"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
@@ -305,13 +303,11 @@ func TestBatchProcessorUnbrokenParentContextSingle(t *testing.T) {
 	bg, rootSp := tracer.Start(context.Background(), "test_parent")
 
 	createSet := exporter.Settings{
-		ID: component.MustNewID("test_exporter"),
-		TelemetrySettings: component.TelemetrySettings{
-			TracerProvider: tp,
-			MeterProvider:  noopmetric.MeterProvider{},
-			Logger:         zap.NewNop(),
-		},
+		ID:                component.MustNewID("test_exporter"),
+		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 	}
+
+	createSet.TelemetrySettings.TracerProvider = tp
 
 	opt := exporterhelper.WithQueue(exporterhelper.QueueSettings{
 		Enabled: false,
@@ -368,6 +364,7 @@ func TestBatchProcessorUnbrokenParentContextSingle(t *testing.T) {
 	}
 
 	require.NoError(t, bp.Shutdown(context.Background()))
+	require.NoError(t, tp.Shutdown(context.Background()))
 }
 
 func TestBatchProcessorUnbrokenParentContextMultiple(t *testing.T) {
@@ -387,13 +384,10 @@ func TestBatchProcessorUnbrokenParentContextMultiple(t *testing.T) {
 	bg := context.Background()
 
 	createSet := exporter.Settings{
-		ID: component.MustNewID("test_exporter"),
-		TelemetrySettings: component.TelemetrySettings{
-			TracerProvider: tp,
-			MeterProvider:  noopmetric.MeterProvider{},
-			Logger:         zap.NewNop(),
-		},
+		ID:                component.MustNewID("test_exporter"),
+		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 	}
+	createSet.TelemetrySettings.TracerProvider = tp
 	opt := exporterhelper.WithQueue(exporterhelper.QueueSettings{
 		Enabled: false,
 	})
@@ -491,6 +485,7 @@ func TestBatchProcessorUnbrokenParentContextMultiple(t *testing.T) {
 	}
 
 	require.NoError(t, bp.Shutdown(context.Background()))
+	require.NoError(t, tp.Shutdown(context.Background()))
 }
 
 func TestBatchProcessorSpansDelivered(t *testing.T) {
