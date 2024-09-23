@@ -16,9 +16,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.110.0 // indirect
-	go.opentelemetry.io/collector/internal/globalsignal v0.110.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.16.0 // indirect
-	go.opentelemetry.io/collector/pipeline v0.110.0 // indirect
 	go.opentelemetry.io/otel v1.30.0 // indirect
 	go.opentelemetry.io/otel/metric v1.30.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.30.0 // indirect
@@ -40,7 +38,3 @@ replace go.opentelemetry.io/collector/component => ../component
 replace go.opentelemetry.io/collector/pdata => ../pdata
 
 replace go.opentelemetry.io/collector/config/configtelemetry => ../config/configtelemetry
-
-replace go.opentelemetry.io/collector/pipeline => ../pipeline
-
-replace go.opentelemetry.io/collector/internal/globalsignal => ../internal/globalsignal
