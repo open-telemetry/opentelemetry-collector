@@ -168,7 +168,6 @@ func newBatchProcessor(set processor.Settings, cfg *Config, batchFunc func() bat
 		mks[i] = strings.ToLower(k)
 	}
 	sort.Strings(mks)
-
 	bp := &batchProcessor{
 		logger: set.Logger,
 
@@ -204,22 +203,17 @@ type anyShardBatcher struct {
 }
 
 // newShard gets or creates a batcher corresponding with attrs.
-func (ab *anyShardBatcher) newShard(md map[string][]string) *shard {
+func (bp *batchProcessor) newShard(md map[string][]string) *shard {
 	exportCtx := client.NewContext(context.Background(), client.Info{
 		Metadata: client.NewMetadata(md),
 	})
 	b := &shard{
-		processor: ab.processor,
+		processor: bp,
 		newItem:   make(chan dataItem, runtime.NumCPU()),
 		exportCtx: exportCtx,
-		batch:     ab.processor.batchFunc(),
+		batch:     bp.batchFunc(),
 	}
 	return b
-}
-
-func (ab *anyShardBatcher) startShard(s *shard) {
-	ab.processor.goroutines.Add(1)
-	go s.start()
 }
 
 func (bp *batchProcessor) Capabilities() consumer.Capabilities {
@@ -241,6 +235,11 @@ func (bp *batchProcessor) Shutdown(context.Context) error {
 }
 
 func (b *shard) start() {
+	b.processor.goroutines.Add(1)
+	go b.startLoop()
+}
+
+func (b *shard) startLoop() {
 	defer b.processor.goroutines.Done()
 
 	// timerCh ensures we only block when there is a
@@ -515,8 +514,8 @@ func (sb *singleShardBatcher) currentMetadataCardinality() int {
 }
 
 func (sb *singleShardBatcher) start(context.Context) error {
-	sb.batcher = sb.newShard(nil)
-	sb.startShard(sb.batcher)
+	sb.batcher = sb.processor.newShard(nil)
+	sb.batcher.start()
 	return nil
 }
 
@@ -566,12 +565,12 @@ func (mb *multiShardBatcher) consume(ctx context.Context, data any) error {
 		// aset.ToSlice() returns the sorted, deduplicated,
 		// and name-downcased list of attributes.
 		var loaded bool
-		b, loaded = mb.batchers.LoadOrStore(aset, mb.newShard(md))
+		b, loaded = mb.batchers.LoadOrStore(aset, mb.processor.newShard(md))
 
 		if !loaded {
 			// This is a new shard
 			mb.size++
-			mb.startShard(b.(*shard))
+			b.(*shard).start()
 
 		}
 		mb.lock.Unlock()
