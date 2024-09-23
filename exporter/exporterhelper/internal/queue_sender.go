@@ -112,7 +112,7 @@ func (qs *QueueSender) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 
-	dataTypeAttr := attribute.String(DataTypeKey, qs.obsrep.DataType.String())
+	dataTypeAttr := attribute.String(DataTypeKey, qs.obsrep.Signal.String())
 	return multierr.Append(
 		qs.obsrep.TelemetryBuilder.InitExporterQueueSize(func() int64 { return int64(qs.queue.Size()) },
 			metric.WithAttributeSet(attribute.NewSet(qs.traceAttribute, dataTypeAttr))),

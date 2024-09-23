@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/internal"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -88,7 +89,7 @@ func (s *obsReport) EndMetricsOp(
 	// end span according to errors
 	if span.IsRecording() {
 		span.SetAttributes(
-			attribute.String(internal.FormatKey, component.DataTypeMetrics.String()),
+			attribute.String(internal.FormatKey, pipeline.SignalMetrics.String()),
 			attribute.Int64(internal.ScrapedMetricPointsKey, int64(numScrapedMetrics)),
 			attribute.Int64(internal.ErroredMetricPointsKey, int64(numErroredMetrics)),
 		)

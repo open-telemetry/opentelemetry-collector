@@ -9,6 +9,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/internal/queue"
+	"go.opentelemetry.io/collector/internal/globalsignal"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 // ErrQueueIsFull is the error that Queue returns when full.
@@ -24,7 +26,11 @@ type Queue[T any] queue.Queue[T]
 
 // Settings defines settings for creating a queue.
 type Settings struct {
-	DataType         component.DataType
+
+	// Deprecated: [v0.110.0] Use Signal instead
+	DataType component.DataType // nolint
+
+	Signal           pipeline.Signal
 	ExporterSettings exporter.Settings
 }
 
@@ -74,10 +80,14 @@ func NewPersistentQueueFactory[T itemsCounter](storageID *component.ID, factoryS
 		return NewMemoryQueueFactory[T]()
 	}
 	return func(_ context.Context, set Settings, cfg Config) Queue[T] {
+		signal := set.Signal
+		if set.DataType.String() != "" {
+			signal = globalsignal.MustNewSignal(set.DataType.String())
+		}
 		return queue.NewPersistentQueue[T](queue.PersistentQueueSettings[T]{
 			Sizer:            sizerFromConfig[T](cfg),
 			Capacity:         capacityFromConfig(cfg),
-			DataType:         set.DataType,
+			Signal:           signal,
 			StorageID:        *storageID,
 			Marshaler:        factorySettings.Marshaler,
 			Unmarshaler:      factorySettings.Unmarshaler,

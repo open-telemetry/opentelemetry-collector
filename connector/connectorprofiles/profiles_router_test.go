@@ -12,12 +12,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/testdata"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 type mutatingProfilesSink struct {
@@ -44,13 +44,13 @@ func TestProfilesRouterMultiplexing(t *testing.T) {
 
 func fuzzProfiles(numIDs, numCons, numProfiles int) func(*testing.T) {
 	return func(t *testing.T) {
-		allIDs := make([]component.ID, 0, numCons)
+		allIDs := make([]pipeline.ID, 0, numCons)
 		allCons := make([]consumerprofiles.Profiles, 0, numCons)
-		allConsMap := make(map[component.ID]consumerprofiles.Profiles)
+		allConsMap := make(map[pipeline.ID]consumerprofiles.Profiles)
 
 		// If any consumer is mutating, the router must report mutating
 		for i := 0; i < numCons; i++ {
-			allIDs = append(allIDs, component.MustNewIDWithName("sink", strconv.Itoa(numCons)))
+			allIDs = append(allIDs, pipeline.MustNewIDWithName("sink", strconv.Itoa(numCons)))
 			// Random chance for each consumer to be mutating
 			if (numCons+numProfiles+i)%4 == 0 {
 				allCons = append(allCons, &mutatingProfilesSink{ProfilesSink: new(consumertest.ProfilesSink)})
@@ -65,11 +65,11 @@ func fuzzProfiles(numIDs, numCons, numProfiles int) func(*testing.T) {
 
 		// Keep track of how many logs each consumer should receive.
 		// This will be validated after every call to RouteProfiles.
-		expected := make(map[component.ID]int, numCons)
+		expected := make(map[pipeline.ID]int, numCons)
 
 		for i := 0; i < numProfiles; i++ {
 			// Build a random set of ids (no duplicates)
-			randCons := make(map[component.ID]bool, numIDs)
+			randCons := make(map[pipeline.ID]bool, numIDs)
 			for j := 0; j < numIDs; j++ {
 				// This number should be pretty random and less than numCons
 				conNum := (numCons + numIDs + i + j) % numCons
@@ -77,7 +77,7 @@ func fuzzProfiles(numIDs, numCons, numProfiles int) func(*testing.T) {
 			}
 
 			// Convert to slice, update expectations
-			conIDs := make([]component.ID, 0, len(randCons))
+			conIDs := make([]pipeline.ID, 0, len(randCons))
 			for id := range randCons {
 				conIDs = append(conIDs, id)
 				expected[id]++
@@ -110,16 +110,16 @@ func TestProfilessRouterConsumer(t *testing.T) {
 	ctx := context.Background()
 	td := testdata.GenerateProfiles(1)
 
-	fooID := component.MustNewID("foo")
-	barID := component.MustNewID("bar")
+	fooID := pipeline.MustNewID("foo")
+	barID := pipeline.MustNewID("bar")
 
 	foo := new(consumertest.ProfilesSink)
 	bar := new(consumertest.ProfilesSink)
-	r := NewProfilesRouter(map[component.ID]consumerprofiles.Profiles{fooID: foo, barID: bar})
+	r := NewProfilesRouter(map[pipeline.ID]consumerprofiles.Profiles{fooID: foo, barID: bar})
 
 	rcs := r.PipelineIDs()
 	assert.Len(t, rcs, 2)
-	assert.ElementsMatch(t, []component.ID{fooID, barID}, rcs)
+	assert.ElementsMatch(t, []pipeline.ID{fooID, barID}, rcs)
 
 	assert.Empty(t, foo.AllProfiles())
 	assert.Empty(t, bar.AllProfiles())
@@ -152,7 +152,7 @@ func TestProfilessRouterConsumer(t *testing.T) {
 	assert.Nil(t, none)
 	require.Error(t, err)
 
-	fake, err := r.Consumer(component.MustNewID("fake"))
+	fake, err := r.Consumer(pipeline.MustNewID("fake"))
 	assert.Nil(t, fake)
 	assert.Error(t, err)
 }
