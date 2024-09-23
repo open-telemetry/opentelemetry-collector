@@ -186,7 +186,7 @@ func TestResolverExpandStringValues(t *testing.T) {
 			output: "test_true",
 		},
 		{
-			name:   "Bool",
+			name:   "Timestamp",
 			input:  "test_${env:TIMESTAMP}",
 			output: "test_2023-03-20T03:17:55.432328Z",
 		},
