@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 // Factory is a factory interface for exporters.
@@ -17,7 +18,7 @@ type Factory interface {
 
 	// CreateTracesExporter creates a TracesExporter based on this config.
 	// If the exporter type does not support tracing,
-	// this function returns the error [component.ErrDataTypeIsNotSupported].
+	// this function returns the error [pipeline.ErrSignalNotSupported].
 	CreateTracesExporter(ctx context.Context, set Settings, cfg component.Config) (Traces, error)
 
 	// TracesExporterStability gets the stability level of the TracesExporter.
@@ -25,7 +26,7 @@ type Factory interface {
 
 	// CreateMetricsExporter creates a MetricsExporter based on this config.
 	// If the exporter type does not support metrics,
-	// this function returns the error [component.ErrDataTypeIsNotSupported].
+	// this function returns the error [pipeline.ErrSignalNotSupported].
 	CreateMetricsExporter(ctx context.Context, set Settings, cfg component.Config) (Metrics, error)
 
 	// MetricsExporterStability gets the stability level of the MetricsExporter.
@@ -33,7 +34,7 @@ type Factory interface {
 
 	// CreateLogsExporter creates a LogsExporter based on the config.
 	// If the exporter type does not support logs,
-	// this function returns the error [component.ErrDataTypeIsNotSupported].
+	// this function returns the error [pipeline.ErrSignalNotSupported].
 	CreateLogsExporter(ctx context.Context, set Settings, cfg component.Config) (Logs, error)
 
 	// LogsExporterStability gets the stability level of the LogsExporter.
@@ -41,7 +42,7 @@ type Factory interface {
 
 	// CreateProfilesExporter creates a ProfilesExporter based on this config.
 	// If the exporter type does not support tracing,
-	// this function returns the error [component.ErrDataTypeIsNotSupported].
+	// this function returns the error [pipeline.ErrSignalNotSupported].
 	CreateProfilesExporter(ctx context.Context, set Settings, cfg component.Config) (Profiles, error)
 
 	// ProfilesExporterStability gets the stability level of the ProfilesExporter.
@@ -71,7 +72,7 @@ type CreateTracesFunc func(context.Context, Settings, component.Config) (Traces,
 // CreateTracesExporter implements ExporterFactory.CreateTracesExporter().
 func (f CreateTracesFunc) CreateTracesExporter(ctx context.Context, set Settings, cfg component.Config) (Traces, error) {
 	if f == nil {
-		return nil, component.ErrDataTypeIsNotSupported
+		return nil, pipeline.ErrSignalNotSupported
 	}
 	return f(ctx, set, cfg)
 }
@@ -82,7 +83,7 @@ type CreateMetricsFunc func(context.Context, Settings, component.Config) (Metric
 // CreateMetricsExporter implements ExporterFactory.CreateMetricsExporter().
 func (f CreateMetricsFunc) CreateMetricsExporter(ctx context.Context, set Settings, cfg component.Config) (Metrics, error) {
 	if f == nil {
-		return nil, component.ErrDataTypeIsNotSupported
+		return nil, pipeline.ErrSignalNotSupported
 	}
 	return f(ctx, set, cfg)
 }
@@ -93,7 +94,7 @@ type CreateLogsFunc func(context.Context, Settings, component.Config) (Logs, err
 // CreateLogsExporter implements Factory.CreateLogsExporter().
 func (f CreateLogsFunc) CreateLogsExporter(ctx context.Context, set Settings, cfg component.Config) (Logs, error) {
 	if f == nil {
-		return nil, component.ErrDataTypeIsNotSupported
+		return nil, pipeline.ErrSignalNotSupported
 	}
 	return f(ctx, set, cfg)
 }
@@ -104,7 +105,7 @@ type CreateProfilesFunc func(context.Context, Settings, component.Config) (Profi
 // CreateProfilesExporter implements ExporterFactory.CreateProfilesExporter().
 func (f CreateProfilesFunc) CreateProfilesExporter(ctx context.Context, set Settings, cfg component.Config) (Profiles, error) {
 	if f == nil {
-		return nil, component.ErrDataTypeIsNotSupported
+		return nil, pipeline.ErrSignalNotSupported
 	}
 	return f(ctx, set, cfg)
 }

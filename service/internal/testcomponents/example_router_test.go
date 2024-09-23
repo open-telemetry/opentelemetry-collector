@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectorprofiles"
@@ -19,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/testdata"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 func TestExampleRouter(t *testing.T) {
@@ -34,8 +34,8 @@ func TestExampleRouter(t *testing.T) {
 }
 
 func TestTracesRouter(t *testing.T) {
-	leftID := component.MustNewIDWithName("sink", "left")
-	rightID := component.MustNewIDWithName("sink", "right")
+	leftID := pipeline.MustNewIDWithName("sink", "left")
+	rightID := pipeline.MustNewIDWithName("sink", "right")
 
 	sinkLeft := new(consumertest.TracesSink)
 	sinkRight := new(consumertest.TracesSink)
@@ -44,7 +44,7 @@ func TestTracesRouter(t *testing.T) {
 	// Many connectors will just call router.ConsumeTraces,
 	// but some implementation will call RouteTraces instead.
 	router := connector.NewTracesRouter(
-		map[component.ID]consumer.Traces{
+		map[pipeline.ID]consumer.Traces{
 			leftID:  sinkLeft,
 			rightID: sinkRight,
 		})
@@ -73,8 +73,8 @@ func TestTracesRouter(t *testing.T) {
 }
 
 func TestMetricsRouter(t *testing.T) {
-	leftID := component.MustNewIDWithName("sink", "left")
-	rightID := component.MustNewIDWithName("sink", "right")
+	leftID := pipeline.MustNewIDWithName("sink", "left")
+	rightID := pipeline.MustNewIDWithName("sink", "right")
 
 	sinkLeft := new(consumertest.MetricsSink)
 	sinkRight := new(consumertest.MetricsSink)
@@ -83,7 +83,7 @@ func TestMetricsRouter(t *testing.T) {
 	// Many connectors will just call router.ConsumeMetrics,
 	// but some implementation will call RouteMetrics instead.
 	router := connector.NewMetricsRouter(
-		map[component.ID]consumer.Metrics{
+		map[pipeline.ID]consumer.Metrics{
 			leftID:  sinkLeft,
 			rightID: sinkRight,
 		})
@@ -112,8 +112,8 @@ func TestMetricsRouter(t *testing.T) {
 }
 
 func TestLogsRouter(t *testing.T) {
-	leftID := component.MustNewIDWithName("sink", "left")
-	rightID := component.MustNewIDWithName("sink", "right")
+	leftID := pipeline.MustNewIDWithName("sink", "left")
+	rightID := pipeline.MustNewIDWithName("sink", "right")
 
 	sinkLeft := new(consumertest.LogsSink)
 	sinkRight := new(consumertest.LogsSink)
@@ -122,7 +122,7 @@ func TestLogsRouter(t *testing.T) {
 	// Many connectors will just call router.ConsumeLogs,
 	// but some implementation will call RouteLogs instead.
 	router := connector.NewLogsRouter(
-		map[component.ID]consumer.Logs{
+		map[pipeline.ID]consumer.Logs{
 			leftID:  sinkLeft,
 			rightID: sinkRight,
 		})
@@ -151,8 +151,8 @@ func TestLogsRouter(t *testing.T) {
 }
 
 func TestProfilesRouter(t *testing.T) {
-	leftID := component.MustNewIDWithName("sink", "left")
-	rightID := component.MustNewIDWithName("sink", "right")
+	leftID := pipeline.MustNewIDWithName("sink", "left")
+	rightID := pipeline.MustNewIDWithName("sink", "right")
 
 	sinkLeft := new(consumertest.ProfilesSink)
 	sinkRight := new(consumertest.ProfilesSink)
@@ -161,7 +161,7 @@ func TestProfilesRouter(t *testing.T) {
 	// Many connectors will just call router.ConsumeProfiles,
 	// but some implementation will call RouteProfiles instead.
 	router := connectorprofiles.NewProfilesRouter(
-		map[component.ID]consumerprofiles.Profiles{
+		map[pipeline.ID]consumerprofiles.Profiles{
 			leftID:  sinkLeft,
 			rightID: sinkRight,
 		})

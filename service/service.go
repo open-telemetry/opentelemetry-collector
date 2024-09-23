@@ -24,8 +24,8 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/globalgates"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/extensions"
@@ -34,6 +34,7 @@ import (
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
 	"go.opentelemetry.io/collector/service/internal/resource"
 	"go.opentelemetry.io/collector/service/internal/status"
+	"go.opentelemetry.io/collector/service/pipelines"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -231,7 +232,6 @@ func (srv *Service) Start(ctx context.Context) error {
 	}
 
 	srv.telemetrySettings.Logger.Info("Everything is ready. Begin running and processing data.")
-	logAboutUseLocalHostAsDefault(srv.telemetrySettings.Logger)
 	return nil
 }
 
@@ -303,8 +303,19 @@ func (srv *Service) initExtensions(ctx context.Context, cfg extensions.Config) e
 	return nil
 }
 
+func convertFromComponentIDToPipelineID(id component.ID) pipeline.ID {
+	return pipeline.MustNewIDWithName(id.Type().String(), id.Name())
+}
+
 // Creates the pipeline graph.
 func (srv *Service) initGraph(ctx context.Context, cfg Config) error {
+	if len(cfg.Pipelines) > 0 {
+		cfg.PipelinesWithPipelineID = make(pipelines.ConfigWithPipelineID, len(cfg.Pipelines))
+		for k, v := range cfg.Pipelines {
+			cfg.PipelinesWithPipelineID[convertFromComponentIDToPipelineID(k)] = v
+		}
+	}
+
 	var err error
 	if srv.host.Pipelines, err = graph.Build(ctx, graph.Settings{
 		Telemetry:        srv.telemetrySettings,
@@ -313,7 +324,7 @@ func (srv *Service) initGraph(ctx context.Context, cfg Config) error {
 		ProcessorBuilder: srv.host.Processors,
 		ExporterBuilder:  srv.host.Exporters,
 		ConnectorBuilder: srv.host.Connectors,
-		PipelineConfigs:  cfg.Pipelines,
+		PipelineConfigs:  cfg.PipelinesWithPipelineID,
 		ReportStatus:     srv.host.Reporter.ReportStatus,
 	}); err != nil {
 		return fmt.Errorf("failed to build pipelines: %w", err)
@@ -336,14 +347,4 @@ func pdataFromSdk(res *sdkresource.Resource) pcommon.Resource {
 		pcommonRes.Attributes().PutStr(string(keyValue.Key), keyValue.Value.AsString())
 	}
 	return pcommonRes
-}
-
-// logAboutUseLocalHostAsDefault logs about the upcoming change from 0.0.0.0 to localhost on server-like components.
-func logAboutUseLocalHostAsDefault(logger *zap.Logger) {
-	if globalgates.UseLocalHostAsDefaultHostfeatureGate.IsEnabled() {
-		logger.Info(
-			"The default endpoints for all servers in components have changed to use localhost instead of 0.0.0.0. Disable the feature gate to temporarily revert to the previous default.",
-			zap.String("feature gate ID", globalgates.UseLocalHostAsDefaultHostID),
-		)
-	}
 }

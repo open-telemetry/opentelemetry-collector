@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/testdata"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
 )
 
@@ -22,7 +23,7 @@ func verifyTracesDoesNotProduceAfterShutdown(t *testing.T, factory processor.Fac
 	// Create a proc and output its produce to a sink.
 	nextSink := new(consumertest.TracesSink)
 	proc, err := factory.CreateTracesProcessor(context.Background(), NewNopSettings(), cfg, nextSink)
-	if errors.Is(err, component.ErrDataTypeIsNotSupported) {
+	if errors.Is(err, pipeline.ErrSignalNotSupported) {
 		return
 	}
 	require.NoError(t, err)
@@ -46,7 +47,7 @@ func verifyLogsDoesNotProduceAfterShutdown(t *testing.T, factory processor.Facto
 	// Create a proc and output its produce to a sink.
 	nextSink := new(consumertest.LogsSink)
 	proc, err := factory.CreateLogsProcessor(context.Background(), NewNopSettings(), cfg, nextSink)
-	if errors.Is(err, component.ErrDataTypeIsNotSupported) {
+	if errors.Is(err, pipeline.ErrSignalNotSupported) {
 		return
 	}
 	require.NoError(t, err)
@@ -70,7 +71,7 @@ func verifyMetricsDoesNotProduceAfterShutdown(t *testing.T, factory processor.Fa
 	// Create a proc and output its produce to a sink.
 	nextSink := new(consumertest.MetricsSink)
 	proc, err := factory.CreateMetricsProcessor(context.Background(), NewNopSettings(), cfg, nextSink)
-	if errors.Is(err, component.ErrDataTypeIsNotSupported) {
+	if errors.Is(err, pipeline.ErrSignalNotSupported) {
 		return
 	}
 	require.NoError(t, err)

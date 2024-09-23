@@ -39,7 +39,7 @@ func TestProcessTelemetryWithHostProc(t *testing.T) {
 		} else {
 			metricValue = metric.Metric[0].GetGauge().GetValue()
 		}
-		if strings.HasPrefix(metricName, "process_uptime") || strings.HasPrefix(metricName, "process_cpu_seconds") {
+		if strings.HasPrefix(metricName, "otelcol_process_uptime") || strings.HasPrefix(metricName, "otelcol_process_cpu_seconds") {
 			// This likely will still be zero when running the test.
 			assert.GreaterOrEqual(t, metricValue, float64(0), metricName)
 			continue
