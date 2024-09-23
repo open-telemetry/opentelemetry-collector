@@ -5,16 +5,16 @@ go 1.22.0
 require (
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.109.0
-	go.opentelemetry.io/collector/component/componentstatus v0.109.0
-	go.opentelemetry.io/collector/config/configtelemetry v0.109.0
-	go.opentelemetry.io/collector/consumer v0.109.0
-	go.opentelemetry.io/collector/consumer/consumerprofiles v0.109.0
-	go.opentelemetry.io/collector/consumer/consumertest v0.109.0
+	go.opentelemetry.io/collector/component v0.110.0
+	go.opentelemetry.io/collector/component/componentstatus v0.110.0
+	go.opentelemetry.io/collector/config/configtelemetry v0.110.0
+	go.opentelemetry.io/collector/consumer v0.110.0
+	go.opentelemetry.io/collector/consumer/consumerprofiles v0.110.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.110.0
 	go.opentelemetry.io/collector/pdata v1.16.0
-	go.opentelemetry.io/collector/pdata/pprofile v0.109.0
-	go.opentelemetry.io/collector/pdata/testdata v0.109.0
-	go.opentelemetry.io/collector/processor/processorprofiles v0.109.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.110.0
+	go.opentelemetry.io/collector/pdata/testdata v0.110.0
+	go.opentelemetry.io/collector/processor/processorprofiles v0.110.0
 	go.opentelemetry.io/otel v1.30.0
 	go.opentelemetry.io/otel/metric v1.30.0
 	go.opentelemetry.io/otel/sdk/metric v1.30.0
