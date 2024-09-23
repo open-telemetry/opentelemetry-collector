@@ -37,7 +37,7 @@ func TestProfilesText(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := NewTextProfilesMarshaler().MarshalProfiles(tt.in)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			out, err := os.ReadFile(filepath.Join("testdata", "profiles", tt.out))
 			require.NoError(t, err)
 			expected := strings.ReplaceAll(string(out), "\r", "")
@@ -88,7 +88,7 @@ func extendProfiles(profiles pprofile.Profiles) pprofile.Profiles {
 			for _, k := range sortedKeys {
 				sortedAttributeTable[k] = attributeTable[k]
 			}
-			profile.Profile().AttributeTable().FromRaw(sortedAttributeTable)
+			_ = profile.Profile().AttributeTable().FromRaw(sortedAttributeTable)
 
 			attributeUnits := profile.Profile().AttributeUnits().AppendEmpty()
 			attributeUnits.SetAttributeKey(1)
