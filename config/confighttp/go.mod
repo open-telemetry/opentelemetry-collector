@@ -37,9 +37,9 @@ require (
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/collector/extension v0.109.0 // indirect
-	go.opentelemetry.io/collector/internal/globalsignal v0.109.0 // indirect
+	go.opentelemetry.io/collector/internal/globalsignal v0.0.0-20240923143859-77bb849aa07e // indirect
 	go.opentelemetry.io/collector/pdata v1.15.0 // indirect
-	go.opentelemetry.io/collector/pipeline v0.109.0 // indirect
+	go.opentelemetry.io/collector/pipeline v0.0.0-20240923143859-77bb849aa07e // indirect
 	go.opentelemetry.io/otel/sdk v1.30.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.30.0 // indirect
 	go.opentelemetry.io/otel/trace v1.30.0 // indirect

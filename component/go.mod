@@ -6,7 +6,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.109.0
 	go.opentelemetry.io/collector/pdata v1.15.0
-	go.opentelemetry.io/collector/pipeline v0.109.0
+	go.opentelemetry.io/collector/pipeline v0.0.0-20240923143859-77bb849aa07e
 	go.opentelemetry.io/otel v1.30.0
 	go.opentelemetry.io/otel/metric v1.30.0
 	go.opentelemetry.io/otel/sdk v1.30.0
@@ -24,7 +24,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector/internal/globalsignal v0.109.0 // indirect
+	go.opentelemetry.io/collector/internal/globalsignal v0.0.0-20240923143859-77bb849aa07e // indirect
 	golang.org/x/net v0.28.0 // indirect
 	golang.org/x/sys v0.25.0 // indirect
 	golang.org/x/text v0.17.0 // indirect
