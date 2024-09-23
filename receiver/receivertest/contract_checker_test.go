@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
 )
 
@@ -239,7 +240,7 @@ func TestConsumeContract(t *testing.T) {
 	params := CheckConsumeContractParams{
 		T:             t,
 		Factory:       newExampleFactory(),
-		DataType:      component.DataTypeLogs,
+		Signal:        pipeline.SignalLogs,
 		Config:        cfg,
 		Generator:     generator,
 		GenerateCount: logsPerTest,
@@ -262,7 +263,7 @@ func TestConsumeMetricsContract(t *testing.T) {
 	params := CheckConsumeContractParams{
 		T:             t,
 		Factory:       newExampleFactory(),
-		DataType:      component.DataTypeMetrics,
+		Signal:        pipeline.SignalMetrics,
 		Config:        cfg,
 		Generator:     generator,
 		GenerateCount: metricsPerTest,
@@ -285,7 +286,7 @@ func TestConsumeTracesContract(t *testing.T) {
 	params := CheckConsumeContractParams{
 		T:             t,
 		Factory:       newExampleFactory(),
-		DataType:      component.DataTypeTraces,
+		Signal:        pipeline.SignalTraces,
 		Config:        cfg,
 		Generator:     generator,
 		GenerateCount: spansPerTest,
