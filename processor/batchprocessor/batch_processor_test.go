@@ -14,7 +14,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/sync/semaphore"
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
@@ -31,6 +30,8 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
@@ -102,87 +103,6 @@ func TestProcessorLifecycle(t *testing.T) {
 	}
 }
 
-type panicConsumer struct {
-}
-
-func (pc *panicConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-	panic("testing panic")
-	return nil
-}
-func (pc *panicConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	panic("testing panic")
-	return nil
-}
-func (pc *panicConsumer) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
-	panic("testing panic")
-	return nil
-}
-
-func (pc *panicConsumer) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
-}
-
-type blockingConsumer struct {
-	lock             sync.Mutex
-	numItems         int
-	numBytesAcquired int64
-	blocking         chan struct{}
-	sem              *semaphore.Weighted
-	szr              *ptrace.ProtoMarshaler
-}
-
-func (bc *blockingConsumer) getItemsWaiting() int {
-	bc.lock.Lock()
-	defer bc.lock.Unlock()
-	return bc.numItems
-}
-
-func (bc *blockingConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-	sz := int64(bc.szr.TracesSize(td))
-	bc.lock.Lock()
-
-	bc.numItems += td.SpanCount()
-	bc.numBytesAcquired += sz
-
-	bc.lock.Unlock()
-
-	bc.sem.Acquire(ctx, sz)
-	defer bc.sem.Release(sz)
-	<-bc.blocking
-
-	return nil
-}
-
-func (bc *blockingConsumer) unblock() {
-	bc.lock.Lock()
-	defer bc.lock.Unlock()
-	close(bc.blocking)
-	bc.numItems = 0
-}
-
-func (bc *blockingConsumer) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
-}
-
-// helper function to help determine a setting for cfg.MaxInFlightSizeMiB based
-// on the number of requests and number of spans per request.
-func calculateMaxInFlightSizeMiB(numRequests, spansPerRequest int) uint32 {
-	sentResourceSpans := ptrace.NewTraces().ResourceSpans()
-	td := testdata.GenerateTraces(spansPerRequest)
-	spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
-	for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
-		spans.At(spanIndex).SetName(getTestSpanName(0, spanIndex))
-	}
-	td.ResourceSpans().At(0).CopyTo(sentResourceSpans.AppendEmpty())
-
-	szr := &ptrace.ProtoMarshaler{}
-	singleSz := szr.TracesSize(td)
-	numBytes := uint32(singleSz * numRequests)
-	numMiB := (numBytes - 1 + 1<<20) >> 20
-
-	return numMiB
-}
-
 func TestBatchProcessorUnbrokenParentContextSingle(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.SendBatchSize = 100
@@ -227,13 +147,7 @@ func TestBatchProcessorUnbrokenParentContextSingle(t *testing.T) {
 			spans.At(spanIndex).SetName(getTestSpanName(requestNum, spanIndex))
 		}
 		td.ResourceSpans().At(0).CopyTo(sentResourceSpans.AppendEmpty())
-		// ConsumeTraces is a blocking function and should be run in a go routine
-		// until batch size reached to unblock.
-		wg.Add(1)
-		go func() {
-			assert.NoError(t, bp.ConsumeTraces(bg, td))
-			wg.Done()
-		}()
+		sendTraces(t, bg, bp, &wg, td)
 	}
 	wg.Wait()
 	rootSp.End()
@@ -319,13 +233,7 @@ func TestBatchProcessorUnbrokenParentContextMultiple(t *testing.T) {
 			spans.At(spanIndex).SetName(getTestSpanName(requestNum, spanIndex))
 		}
 		td.ResourceSpans().At(0).CopyTo(sentResourceSpans.AppendEmpty())
-		// ConsumeTraces is a blocking function and should be run in a go routine
-		// until batch size reached to unblock.
-		wg.Add(1)
-		go func() {
-			assert.NoError(t, bp.ConsumeTraces(callCtxs[num], td))
-			wg.Done()
-		}()
+		sendTraces(t, callCtxs[num], bp, &wg, td)
 	}
 	wg.Wait()
 
@@ -384,7 +292,24 @@ func TestBatchProcessorUnbrokenParentContextMultiple(t *testing.T) {
 	require.NoError(t, tp.Shutdown(context.Background()))
 }
 
+func sendTraces(t *testing.T, ctx context.Context, batcher *batchProcessor, wg *sync.WaitGroup, td ptrace.Traces) {
+	wg.Add(1)
+	go func() {
+		assert.NoError(t, batcher.ConsumeTraces(ctx, td))
+		wg.Done()
+	}()
+}
+
+func sendMetrics(t *testing.T, ctx context.Context, batcher *batchProcessor, wg *sync.WaitGroup, md pmetric.Metrics) {
+	wg.Add(1)
+	go func() {
+		assert.NoError(t, batcher.ConsumeMetrics(ctx, md))
+		wg.Done()
+	}()
+}
+
 func TestBatchProcessorSpansDelivered(t *testing.T) {
+	bg := context.Background()
 	sink := new(consumertest.TracesSink)
 	cfg := createDefaultConfig().(*Config)
 	cfg.SendBatchSize = 128
@@ -393,7 +318,7 @@ func TestBatchProcessorSpansDelivered(t *testing.T) {
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg)
 	require.NoError(t, err)
-	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, batcher.Start(bg, componenttest.NewNopHost()))
 
 	requestCount := 1000
 	spansPerRequest := 100
@@ -406,22 +331,12 @@ func TestBatchProcessorSpansDelivered(t *testing.T) {
 			spans.At(spanIndex).SetName(getTestSpanName(requestNum, spanIndex))
 		}
 		td.ResourceSpans().At(0).CopyTo(sentResourceSpans.AppendEmpty())
-		// ConsumeTraces is a blocking function and should be run in a go routine
-		// until batch size reached to unblock.
-		wg.Add(1)
-		go func() {
-			assert.NoError(t, batcher.ConsumeTraces(context.Background(), td))
-			wg.Done()
-		}()
+		sendTraces(t, bg, batcher, &wg, td)
 	}
 
 	// Added to test logic that check for empty resources.
 	td := ptrace.NewTraces()
-	wg.Add(1)
-	go func() {
-		assert.NoError(t, batcher.ConsumeTraces(context.Background(), td))
-		wg.Done()
-	}()
+	sendTraces(t, bg, batcher, &wg, td)
 
 	wg.Wait()
 	require.NoError(t, batcher.Shutdown(context.Background()))
@@ -440,6 +355,7 @@ func TestBatchProcessorSpansDelivered(t *testing.T) {
 }
 
 func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
+	bg := context.Background()
 	sink := new(consumertest.TracesSink)
 	cfg := createDefaultConfig().(*Config)
 	cfg.SendBatchSize = 128
@@ -449,7 +365,7 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg)
 	require.NoError(t, err)
-	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, batcher.Start(bg, componenttest.NewNopHost()))
 
 	requestCount := 1000
 	spansPerRequest := 150
@@ -460,20 +376,12 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
 			spans.At(spanIndex).SetName(getTestSpanName(requestNum, spanIndex))
 		}
-		wg.Add(1)
-		go func() {
-			assert.NoError(t, batcher.ConsumeTraces(context.Background(), td))
-			wg.Done()
-		}()
+		sendTraces(t, bg, batcher, &wg, td)
 	}
 
 	// Added to test logic that check for empty resources.
 	td := ptrace.NewTraces()
-	wg.Add(1)
-	go func() {
-		require.NoError(t, batcher.ConsumeTraces(context.Background(), td))
-		wg.Done()
-	}()
+	sendTraces(t, bg, batcher, &wg, td)
 
 	// shutdown will flush any remaining spans
 	wg.Wait()
@@ -487,7 +395,274 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 	assert.Equal(t, (requestCount*spansPerRequest)%int(cfg.SendBatchMaxSize), sink.AllTraces()[len(sink.AllTraces())-1].SpanCount())
 }
 
+func TestBatchProcessorTracesSentBySize(t *testing.T) {
+	tel := setupTestTelemetry()
+	sizer := &ptrace.ProtoMarshaler{}
+	sink := new(consumertest.TracesSink)
+	cfg := createDefaultConfig().(*Config)
+	bg := context.Background()
+	sendBatchSize := 20
+	cfg.SendBatchSize = uint32(sendBatchSize)
+	cfg.Timeout = 500 * time.Millisecond
+	creationSet := tel.NewSettings()
+	creationSet.MetricsLevel = configtelemetry.LevelDetailed
+	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg)
+	require.NoError(t, err)
+	require.NoError(t, batcher.Start(bg, componenttest.NewNopHost()))
+
+	requestCount := 100
+	spansPerRequest := 5
+
+	var wg sync.WaitGroup
+	start := time.Now()
+	sizeSum := 0
+	for requestNum := 0; requestNum < requestCount; requestNum++ {
+		td := testdata.GenerateTraces(spansPerRequest)
+
+		sendTraces(t, bg, batcher, &wg, td)
+	}
+
+	wg.Wait()
+	require.NoError(t, batcher.Shutdown(context.Background()))
+
+	elapsed := time.Since(start)
+	require.LessOrEqual(t, elapsed.Nanoseconds(), cfg.Timeout.Nanoseconds())
+
+	expectedBatchesNum := requestCount * spansPerRequest / sendBatchSize
+	expectedBatchingFactor := sendBatchSize / spansPerRequest
+
+	require.Equal(t, requestCount*spansPerRequest, sink.SpanCount())
+	receivedTraces := sink.AllTraces()
+	require.Len(t, receivedTraces, expectedBatchesNum)
+	for _, td := range receivedTraces {
+		sizeSum += sizer.TracesSize(td)
+		rss := td.ResourceSpans()
+		require.Equal(t, expectedBatchingFactor, rss.Len())
+		for i := 0; i < expectedBatchingFactor; i++ {
+			require.Equal(t, spansPerRequest, rss.At(i).ScopeSpans().At(0).Spans().Len())
+		}
+	}
+
+	tel.assertMetrics(t, []metricdata.Metrics{
+		{
+			Name:        "otelcol_processor_batch_batch_send_size_bytes",
+			Description: "Number of bytes in batch that was sent",
+			Unit:        "By",
+			Data: metricdata.Histogram[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				DataPoints: []metricdata.HistogramDataPoint[int64]{
+					{
+						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
+						Count:      uint64(expectedBatchesNum),
+						Bounds: []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000,
+							100_000, 200_000, 300_000, 400_000, 500_000, 600_000, 700_000, 800_000, 900_000,
+							1000_000, 2000_000, 3000_000, 4000_000, 5000_000, 6000_000, 7000_000, 8000_000, 9000_000},
+						BucketCounts: []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, uint64(expectedBatchesNum), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+						Sum:          int64(sizeSum),
+						Min:          metricdata.NewExtrema(int64(sizeSum / expectedBatchesNum)),
+						Max:          metricdata.NewExtrema(int64(sizeSum / expectedBatchesNum)),
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_processor_batch_batch_send_size",
+			Description: "Number of units in the batch",
+			Unit:        "{units}",
+			Data: metricdata.Histogram[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				DataPoints: []metricdata.HistogramDataPoint[int64]{
+					{
+						Attributes:   attribute.NewSet(attribute.String("processor", "batch")),
+						Count:        uint64(expectedBatchesNum),
+						Bounds:       []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000},
+						BucketCounts: []uint64{0, uint64(expectedBatchesNum), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+						Sum:          int64(sink.SpanCount()),
+						Min:          metricdata.NewExtrema(int64(sendBatchSize)),
+						Max:          metricdata.NewExtrema(int64(sendBatchSize)),
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_processor_batch_batch_size_trigger_send",
+			Description: "Number of times the batch was sent due to a size trigger",
+			Unit:        "{times}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      int64(expectedBatchesNum),
+						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_processor_batch_metadata_cardinality",
+			Description: "Number of distinct metadata value combinations being processed",
+			Unit:        "{combinations}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: false,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      1,
+						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
+					},
+				},
+			},
+		},
+	})
+}
+
+func TestBatchProcessorTracesSentByMaxSize(t *testing.T) {
+	tel := setupTestTelemetry()
+	sizer := &ptrace.ProtoMarshaler{}
+	sink := new(consumertest.TracesSink)
+	cfg := createDefaultConfig().(*Config)
+	bg := context.Background()
+	sendBatchSize := 20
+	sendBatchMaxSize := 37
+	cfg.SendBatchSize = uint32(sendBatchSize)
+	cfg.SendBatchMaxSize = uint32(sendBatchMaxSize)
+	cfg.Timeout = 500 * time.Millisecond
+	creationSet := tel.NewSettings()
+	creationSet.MetricsLevel = configtelemetry.LevelDetailed
+	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg)
+	require.NoError(t, err)
+	require.NoError(t, batcher.Start(bg, componenttest.NewNopHost()))
+
+	requestCount := 1
+	spansPerRequest := 500
+	totalSpans := requestCount * spansPerRequest
+
+	var wg sync.WaitGroup
+	start := time.Now()
+
+	sizeSum := 0
+	for requestNum := 0; requestNum < requestCount; requestNum++ {
+		td := testdata.GenerateTraces(spansPerRequest)
+		sendTraces(t, bg, batcher, &wg, td)
+	}
+
+	wg.Wait()
+	require.NoError(t, batcher.Shutdown(context.Background()))
+
+	elapsed := time.Since(start)
+	require.LessOrEqual(t, elapsed.Nanoseconds(), cfg.Timeout.Nanoseconds())
+
+	// The max batch size is not a divisor of the total number of spans
+	expectedBatchesNum := int(math.Ceil(float64(totalSpans) / float64(sendBatchMaxSize)))
+
+	require.Equal(t, totalSpans, sink.SpanCount())
+	receivedTraces := sink.AllTraces()
+	require.Len(t, receivedTraces, expectedBatchesNum)
+	// we have to count the size after it was processed since splitTraces will cause some
+	// repeated ResourceSpan data to be sent through the processor
+	var min, max int
+	for _, td := range receivedTraces {
+		if min == 0 || sizer.TracesSize(td) < min {
+			min = sizer.TracesSize(td)
+		}
+		if sizer.TracesSize(td) > max {
+			max = sizer.TracesSize(td)
+		}
+		sizeSum += sizer.TracesSize(td)
+	}
+
+	tel.assertMetrics(t, []metricdata.Metrics{
+		{
+			Name:        "otelcol_processor_batch_batch_send_size_bytes",
+			Description: "Number of bytes in batch that was sent",
+			Unit:        "By",
+			Data: metricdata.Histogram[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				DataPoints: []metricdata.HistogramDataPoint[int64]{
+					{
+						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
+						Count:      uint64(expectedBatchesNum),
+						Bounds: []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000,
+							100_000, 200_000, 300_000, 400_000, 500_000, 600_000, 700_000, 800_000, 900_000,
+							1000_000, 2000_000, 3000_000, 4000_000, 5000_000, 6000_000, 7000_000, 8000_000, 9000_000},
+						BucketCounts: []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, uint64(expectedBatchesNum - 1), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+						Sum:          int64(sizeSum),
+						Min:          metricdata.NewExtrema(int64(min)),
+						Max:          metricdata.NewExtrema(int64(max)),
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_processor_batch_batch_send_size",
+			Description: "Number of units in the batch",
+			Unit:        "{units}",
+			Data: metricdata.Histogram[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				DataPoints: []metricdata.HistogramDataPoint[int64]{
+					{
+						Attributes:   attribute.NewSet(attribute.String("processor", "batch")),
+						Count:        uint64(expectedBatchesNum),
+						Bounds:       []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000},
+						BucketCounts: []uint64{0, 1, uint64(expectedBatchesNum - 1), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+						Sum:          int64(sink.SpanCount()),
+						Min:          metricdata.NewExtrema(int64(sendBatchSize - 1)),
+						Max:          metricdata.NewExtrema(int64(cfg.SendBatchMaxSize)),
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_processor_batch_batch_size_trigger_send",
+			Description: "Number of times the batch was sent due to a size trigger",
+			Unit:        "{times}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      int64(expectedBatchesNum - 1),
+						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_processor_batch_timeout_trigger_send",
+			Description: "Number of times the batch was sent due to a timeout trigger",
+			Unit:        "{times}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      1,
+						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_processor_batch_metadata_cardinality",
+			Description: "Number of distinct metadata value combinations being processed",
+			Unit:        "{combinations}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: false,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      1,
+						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
+					},
+				},
+			},
+		},
+	})
+}
+
 func TestBatchProcessorSentByTimeout(t *testing.T) {
+	bg := context.Background()
 	sink := new(consumertest.TracesSink)
 	cfg := createDefaultConfig().(*Config)
 	sendBatchSize := 100
@@ -501,17 +676,13 @@ func TestBatchProcessorSentByTimeout(t *testing.T) {
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg)
 	require.NoError(t, err)
-	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, batcher.Start(bg, componenttest.NewNopHost()))
 
 	var wg sync.WaitGroup
 	start := time.Now()
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		td := testdata.GenerateTraces(spansPerRequest)
-		wg.Add(1)
-		go func() {
-			assert.NoError(t, batcher.ConsumeTraces(context.Background(), td))
-			wg.Done()
-		}()
+		sendTraces(t, bg, batcher, &wg, td)
 	}
 
 	wg.Wait()
@@ -535,6 +706,7 @@ func TestBatchProcessorSentByTimeout(t *testing.T) {
 }
 
 func TestBatchProcessorTraceSendWhenClosing(t *testing.T) {
+	bg := context.Background()
 	cfg := Config{
 		Timeout:       3 * time.Second,
 		SendBatchSize: 1000,
@@ -545,18 +717,14 @@ func TestBatchProcessorTraceSendWhenClosing(t *testing.T) {
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchTracesProcessor(creationSet, sink, &cfg)
 	require.NoError(t, err)
-	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, batcher.Start(bg, componenttest.NewNopHost()))
 
 	requestCount := 10
 	spansPerRequest := 10
 	var wg sync.WaitGroup
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		td := testdata.GenerateTraces(spansPerRequest)
-		wg.Add(1)
-		go func() {
-			assert.NoError(t, batcher.ConsumeTraces(context.Background(), td))
-			wg.Done()
-		}()
+		sendTraces(t, bg, batcher, &wg, td)
 	}
 
 	wg.Wait()
@@ -578,11 +746,12 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 	metricsPerRequest := 5
 	sink := new(consumertest.MetricsSink)
 
+	bg := context.Background()
 	creationSet := processortest.NewNopSettings()
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchMetricsProcessor(creationSet, sink, &cfg)
 	require.NoError(t, err)
-	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, batcher.Start(bg, componenttest.NewNopHost()))
 
 	sentResourceMetrics := pmetric.NewMetrics().ResourceMetrics()
 
@@ -594,11 +763,7 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 			metrics.At(metricIndex).SetName(getTestMetricName(requestNum, metricIndex))
 		}
 		md.ResourceMetrics().At(0).CopyTo(sentResourceMetrics.AppendEmpty())
-		wg.Add(1)
-		go func() {
-			assert.NoError(t, batcher.ConsumeMetrics(context.Background(), md))
-			wg.Done()
-		}()
+		sendMetrics(t, bg, batcher, &wg, md)
 	}
 
 	// Added to test case with empty resources sent.
