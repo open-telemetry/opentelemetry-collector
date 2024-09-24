@@ -80,6 +80,91 @@ func TestProcessorLifecycle(t *testing.T) {
 	}
 }
 
+func BenchmarkBatchTraceProcessor(b *testing.B) {
+	b.StopTimer()
+	cfg := Config{
+		Timeout:                  100 * time.Millisecond,
+		SendBatchSize:            1000,
+		MetadataCardinalityLimit: defaultMetadataCardinalityLimit,
+	}
+	runTraceProcessorWoMetadataBenchmark(b, cfg)
+}
+
+func runTraceProcessorWoMetadataBenchmark(b *testing.B, cfg Config) {
+	ctx := context.Background()
+
+	sink := new(consumertest.TracesSink)
+	cfg.SendBatchSize = 128
+	creationSet := processortest.NewNopSettings()
+	creationSet.MetricsLevel = configtelemetry.LevelDetailed
+	batcher, err := newBatchTracesProcessor(creationSet, sink, &cfg)
+	require.NoError(b, err)
+	require.NoError(b, batcher.Start(context.Background(), componenttest.NewNopHost()))
+
+	b.StartTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			requestCount := 100
+			spansPerRequest := 10
+			sentResourceSpans := ptrace.NewTraces().ResourceSpans()
+			for requestNum := 0; requestNum < requestCount; requestNum++ {
+				td := testdata.GenerateTraces(spansPerRequest)
+				spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
+				for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
+					spans.At(spanIndex).SetName(getTestSpanName(requestNum, spanIndex))
+				}
+				td.ResourceSpans().At(0).CopyTo(sentResourceSpans.AppendEmpty())
+				assert.NoError(b, batcher.ConsumeTraces(context.Background(), td))
+			}
+		}
+	})
+	b.StopTimer()
+	require.NoError(b, batcher.Shutdown(ctx))
+}
+
+func BenchmarkBatchTraceProcessorWithMetadata(b *testing.B) {
+	b.StopTimer()
+	cfg := Config{
+		Timeout:                  100 * time.Millisecond,
+		SendBatchSize:            1000,
+		MetadataCardinalityLimit: defaultMetadataCardinalityLimit,
+		MetadataKeys:             []string{"X-Sf-Token"},
+	}
+	runTraceProcessorWithMetadataBenchmark(b, cfg)
+}
+
+func runTraceProcessorWithMetadataBenchmark(b *testing.B, cfg Config) {
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, "X-Sf-Token", "token")
+
+	sink := new(consumertest.TracesSink)
+	creationSet := processortest.NewNopSettings()
+	creationSet.MetricsLevel = configtelemetry.LevelDetailed
+	batcher, err := newBatchTracesProcessor(creationSet, sink, &cfg)
+	require.NoError(b, err)
+	require.NoError(b, batcher.Start(context.Background(), componenttest.NewNopHost()))
+
+	b.StartTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			requestCount := 100
+			spansPerRequest := 10
+			sentResourceSpans := ptrace.NewTraces().ResourceSpans()
+			for requestNum := 0; requestNum < requestCount; requestNum++ {
+				td := testdata.GenerateTraces(spansPerRequest)
+				spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
+				for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
+					spans.At(spanIndex).SetName(getTestSpanName(requestNum, spanIndex))
+				}
+				td.ResourceSpans().At(0).CopyTo(sentResourceSpans.AppendEmpty())
+				assert.NoError(b, batcher.ConsumeTraces(context.Background(), td))
+			}
+		}
+	})
+	b.StopTimer()
+	require.NoError(b, batcher.Shutdown(ctx))
+}
+
 func TestBatchProcessorSpansDelivered(t *testing.T) {
 	sink := new(consumertest.TracesSink)
 	cfg := createDefaultConfig().(*Config)
@@ -222,9 +307,11 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 					{
 						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
 						Count:      uint64(expectedBatchesNum),
-						Bounds: []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000,
+						Bounds: []float64{
+							10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000,
 							100_000, 200_000, 300_000, 400_000, 500_000, 600_000, 700_000, 800_000, 900_000,
-							1000_000, 2000_000, 3000_000, 4000_000, 5000_000, 6000_000, 7000_000, 8000_000, 9000_000},
+							1000_000, 2000_000, 3000_000, 4000_000, 5000_000, 6000_000, 7000_000, 8000_000, 9000_000,
+						},
 						BucketCounts: []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, uint64(expectedBatchesNum), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 						Sum:          int64(sizeSum),
 						Min:          metricdata.NewExtrema(int64(sizeSum / expectedBatchesNum)),
@@ -348,9 +435,11 @@ func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
 					{
 						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
 						Count:      uint64(expectedBatchesNum),
-						Bounds: []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000,
+						Bounds: []float64{
+							10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000,
 							100_000, 200_000, 300_000, 400_000, 500_000, 600_000, 700_000, 800_000, 900_000,
-							1000_000, 2000_000, 3000_000, 4000_000, 5000_000, 6000_000, 7000_000, 8000_000, 9000_000},
+							1000_000, 2000_000, 3000_000, 4000_000, 5000_000, 6000_000, 7000_000, 8000_000, 9000_000,
+						},
 						BucketCounts: []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, uint64(expectedBatchesNum - 1), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 						Sum:          int64(sizeSum),
 						Min:          metricdata.NewExtrema(int64(min)),
@@ -611,9 +700,11 @@ func TestBatchMetricProcessorBatchSize(t *testing.T) {
 					{
 						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
 						Count:      uint64(expectedBatchesNum),
-						Bounds: []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000,
+						Bounds: []float64{
+							10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000,
 							100_000, 200_000, 300_000, 400_000, 500_000, 600_000, 700_000, 800_000, 900_000,
-							1000_000, 2000_000, 3000_000, 4000_000, 5000_000, 6000_000, 7000_000, 8000_000, 9000_000},
+							1000_000, 2000_000, 3000_000, 4000_000, 5000_000, 6000_000, 7000_000, 8000_000, 9000_000,
+						},
 						BucketCounts: []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, uint64(expectedBatchesNum), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 						Sum:          int64(size),
 						Min:          metricdata.NewExtrema(int64(size / expectedBatchesNum)),
@@ -991,9 +1082,11 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 					{
 						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
 						Count:      uint64(expectedBatchesNum),
-						Bounds: []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000,
+						Bounds: []float64{
+							10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000,
 							100_000, 200_000, 300_000, 400_000, 500_000, 600_000, 700_000, 800_000, 900_000,
-							1000_000, 2000_000, 3000_000, 4000_000, 5000_000, 6000_000, 7000_000, 8000_000, 9000_000},
+							1000_000, 2000_000, 3000_000, 4000_000, 5000_000, 6000_000, 7000_000, 8000_000, 9000_000,
+						},
 						BucketCounts: []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, uint64(expectedBatchesNum), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 						Sum:          int64(size),
 						Min:          metricdata.NewExtrema(int64(size / expectedBatchesNum)),
