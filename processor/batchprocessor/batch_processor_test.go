@@ -180,7 +180,7 @@ func TestBatchProcessorUnbrokenParentContextSingle(t *testing.T) {
 	tp.ForceFlush(bg)
 	td := exp.GetSpans()
 	numBatches := float64(spansPerRequest*requestCount) / float64(cfg.SendBatchMaxSize)
-	assert.Equal(t, 2*int(math.Ceil(numBatches))+1, len(td))
+	assert.Len(t, td, 2*int(math.Ceil(numBatches))+1)
 	for _, span := range td {
 		switch span.Name {
 		case "batch_processor/export":
@@ -268,7 +268,7 @@ func TestBatchProcessorUnbrokenParentContextMultiple(t *testing.T) {
 
 	// Expect 2 spans per batch, one exporter and one batch processor.
 	numBatches := float64(spansPerRequest*requestCount) / float64(cfg.SendBatchMaxSize)
-	assert.Equal(t, 2*int(math.Ceil(numBatches)), len(td))
+	assert.Len(t, td, 2*int(math.Ceil(numBatches)))
 
 	var expectSpanCtxs []trace.SpanContext
 	for _, span := range endLater {
@@ -284,7 +284,7 @@ func TestBatchProcessorUnbrokenParentContextMultiple(t *testing.T) {
 		default:
 			t.Error("unexpected span name:", span.Name)
 		}
-		assert.Equal(t, len(callCtxs), len(span.Links))
+		assert.Len(t, span.Links, len(callCtxs))
 
 		var haveSpanCtxs []trace.SpanContext
 		for _, link := range span.Links {
@@ -302,7 +302,7 @@ func TestBatchProcessorUnbrokenParentContextMultiple(t *testing.T) {
 	tp.ForceFlush(bg)
 	td = exp.GetSpans()
 
-	assert.Equal(t, len(callCtxs), len(td))
+	assert.Len(t, td, len(callCtxs))
 	for _, span := range td {
 		switch span.Name {
 		case "test_context":
@@ -321,7 +321,6 @@ func TestBatchProcessorSpansDelivered(t *testing.T) {
 	sink := new(consumertest.TracesSink)
 	cfg := createDefaultConfig().(*Config)
 	cfg.SendBatchSize = 128
-	cfg.Timeout = 10 * time.Second
 	creationSet := processortest.NewNopSettings()
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg)
@@ -368,7 +367,6 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.SendBatchSize = 128
 	cfg.SendBatchMaxSize = 130
-	cfg.Timeout = 2 * time.Second
 	creationSet := processortest.NewNopSettings()
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg)
@@ -434,6 +432,7 @@ func TestBatchProcessorTracesSentBySize(t *testing.T) {
 	wg.Wait()
 	require.NoError(t, batcher.Shutdown(context.Background()))
 
+	// We expect at no timeout periods because (items % sendBatchMaxSize) == 0.
 	elapsed := time.Since(start)
 	require.LessOrEqual(t, elapsed.Nanoseconds(), cfg.Timeout.Nanoseconds())
 
@@ -548,7 +547,6 @@ func TestBatchProcessorTracesSentByMaxSize(t *testing.T) {
 
 	requestCount := 1
 	spansPerRequest := 500
-	expectedBatchesNum := int(math.Ceil(float64(spansPerRequest) / float64(sendBatchMaxSize)))
 	totalSpans := requestCount * spansPerRequest
 
 	sizeSum := 0
@@ -557,8 +555,12 @@ func TestBatchProcessorTracesSentByMaxSize(t *testing.T) {
 	wg.Wait()
 	require.NoError(t, batcher.Shutdown(bg))
 
+	// We expect at least one timeout period because (items % sendBatchMaxSize) != 0.
 	elapsed := time.Since(start)
 	require.GreaterOrEqual(t, elapsed.Nanoseconds(), cfg.Timeout.Nanoseconds())
+
+	// The max batch size is not a divisor of the total number of spans
+	expectedBatchesNum := int(math.Ceil(float64(totalSpans) / float64(sendBatchMaxSize)))
 
 	// The max batch size is a divisor of the total number of spans, which
 	// ensures no timeout was needed (as tested above).
@@ -695,6 +697,7 @@ func TestBatchProcessorSentByTimeout(t *testing.T) {
 
 	wg.Wait()
 	elapsed := time.Since(start)
+	// We expect no timeout periods because (items % sendBatchMaxSize) == 0.
 	require.LessOrEqual(t, cfg.Timeout.Nanoseconds(), elapsed.Nanoseconds())
 	require.NoError(t, batcher.Shutdown(context.Background()))
 
@@ -739,7 +742,7 @@ func TestBatchProcessorTraceSendWhenClosing(t *testing.T) {
 	require.NoError(t, batcher.Shutdown(context.Background()))
 
 	require.Equal(t, requestCount*spansPerRequest, sink.SpanCount())
-	require.Equal(t, 1, len(sink.AllTraces()))
+	require.Len(t, sink.AllTraces(), 1)
 }
 
 func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
@@ -830,8 +833,7 @@ func TestBatchMetricProcessorBatchSize(t *testing.T) {
 	wg.Wait()
 	require.NoError(t, batcher.Shutdown(bg))
 
-	// We expect no timeout because the request fits exactly into
-	// a number of batches.
+	// We expect no timeout periods because (items % sendBatchMaxSize) == 0.
 	elapsed := time.Since(start)
 	require.LessOrEqual(t, elapsed.Nanoseconds(), cfg.Timeout.Nanoseconds())
 
@@ -967,6 +969,7 @@ func TestBatchMetricsProcessor_Timeout(t *testing.T) {
 
 	wg.Wait()
 	elapsed := time.Since(start)
+	// We expect at no timeout periods because (items % sendBatchMaxSize) == 0.
 	require.LessOrEqual(t, cfg.Timeout.Nanoseconds(), elapsed.Nanoseconds())
 	require.NoError(t, batcher.Shutdown(context.Background()))
 
@@ -1217,6 +1220,7 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 	require.NoError(t, batcher.Shutdown(bg))
 
 	elapsed := time.Since(start)
+	// We expect no timeout periods because (items % sendBatchMaxSize) == 0.
 	require.LessOrEqual(t, elapsed.Nanoseconds(), cfg.Timeout.Nanoseconds())
 
 	expectedBatchesNum := requestCount * logsPerRequest / int(cfg.SendBatchSize)
@@ -1332,6 +1336,7 @@ func TestBatchLogsProcessor_Timeout(t *testing.T) {
 
 	wg.Wait()
 	elapsed := time.Since(start)
+	// We expect no timeout periods because (items % sendBatchMaxSize) == 0.
 	require.LessOrEqual(t, cfg.Timeout.Nanoseconds(), elapsed.Nanoseconds())
 	require.NoError(t, batcher.Shutdown(bg))
 
