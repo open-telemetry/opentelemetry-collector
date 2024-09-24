@@ -90,6 +90,17 @@ func BenchmarkBatchTraceProcessor(b *testing.B) {
 	runTraceProcessorWoMetadataBenchmark(b, cfg)
 }
 
+func BenchmarkBatchTraceProcessorWithMetadata(b *testing.B) {
+	b.StopTimer()
+	cfg := Config{
+		Timeout:                  100 * time.Millisecond,
+		SendBatchSize:            1000,
+		MetadataCardinalityLimit: defaultMetadataCardinalityLimit,
+		MetadataKeys:             []string{"X-Sf-Token"},
+	}
+	runTraceProcessorWoMetadataBenchmark(b, cfg)
+}
+
 func runTraceProcessorWoMetadataBenchmark(b *testing.B, cfg Config) {
 	ctx := context.Background()
 
@@ -100,65 +111,23 @@ func runTraceProcessorWoMetadataBenchmark(b *testing.B, cfg Config) {
 	batcher, err := newBatchTracesProcessor(creationSet, sink, &cfg)
 	require.NoError(b, err)
 	require.NoError(b, batcher.Start(context.Background(), componenttest.NewNopHost()))
-
-	b.StartTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			requestCount := 100
-			spansPerRequest := 10
-			sentResourceSpans := ptrace.NewTraces().ResourceSpans()
-			for requestNum := 0; requestNum < requestCount; requestNum++ {
-				td := testdata.GenerateTraces(spansPerRequest)
-				spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
-				for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
-					spans.At(spanIndex).SetName(getTestSpanName(requestNum, spanIndex))
-				}
-				td.ResourceSpans().At(0).CopyTo(sentResourceSpans.AppendEmpty())
-				assert.NoError(b, batcher.ConsumeTraces(context.Background(), td))
-			}
+	var td ptrace.Traces
+	requestCount := 10000
+	spansPerRequest := 10
+	sentResourceSpans := ptrace.NewTraces().ResourceSpans()
+	for requestNum := 0; requestNum < requestCount; requestNum++ {
+		td = testdata.GenerateTraces(spansPerRequest)
+		spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
+		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
+			spans.At(spanIndex).SetName(getTestSpanName(requestNum, spanIndex))
 		}
-	})
-	b.StopTimer()
-	require.NoError(b, batcher.Shutdown(ctx))
-}
-
-func BenchmarkBatchTraceProcessorWithMetadata(b *testing.B) {
-	b.StopTimer()
-	cfg := Config{
-		Timeout:                  100 * time.Millisecond,
-		SendBatchSize:            1000,
-		MetadataCardinalityLimit: defaultMetadataCardinalityLimit,
-		MetadataKeys:             []string{"X-Sf-Token"},
+		td.ResourceSpans().At(0).CopyTo(sentResourceSpans.AppendEmpty())
 	}
-	runTraceProcessorWithMetadataBenchmark(b, cfg)
-}
-
-func runTraceProcessorWithMetadataBenchmark(b *testing.B, cfg Config) {
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, "X-Sf-Token", "token")
-
-	sink := new(consumertest.TracesSink)
-	creationSet := processortest.NewNopSettings()
-	creationSet.MetricsLevel = configtelemetry.LevelDetailed
-	batcher, err := newBatchTracesProcessor(creationSet, sink, &cfg)
-	require.NoError(b, err)
-	require.NoError(b, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
 	b.StartTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			requestCount := 100
-			spansPerRequest := 10
-			sentResourceSpans := ptrace.NewTraces().ResourceSpans()
-			for requestNum := 0; requestNum < requestCount; requestNum++ {
-				td := testdata.GenerateTraces(spansPerRequest)
-				spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
-				for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
-					spans.At(spanIndex).SetName(getTestSpanName(requestNum, spanIndex))
-				}
-				td.ResourceSpans().At(0).CopyTo(sentResourceSpans.AppendEmpty())
-				assert.NoError(b, batcher.ConsumeTraces(context.Background(), td))
-			}
+			assert.NoError(b, batcher.ConsumeTraces(context.Background(), td))
 		}
 	})
 	b.StopTimer()
