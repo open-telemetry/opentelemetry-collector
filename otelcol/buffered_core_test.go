@@ -102,6 +102,6 @@ func Test_bufferedCore_TakeLogs(t *testing.T) {
 	assert.Equal(t, expected, bc.TakeLogs())
 	assert.Nil(t, bc.logs)
 
-	assert.Error(t, bc.Write(e, fields))
+	require.Error(t, bc.Write(e, fields))
 	assert.Nil(t, bc.TakeLogs())
 }

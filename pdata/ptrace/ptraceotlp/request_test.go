@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var _ json.Unmarshaler = ExportRequest{}
@@ -39,17 +40,17 @@ var tracesRequestJSON = []byte(`
 
 func TestRequestToPData(t *testing.T) {
 	tr := NewExportRequest()
-	assert.Equal(t, tr.Traces().SpanCount(), 0)
+	assert.Equal(t, 0, tr.Traces().SpanCount())
 	tr.Traces().ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-	assert.Equal(t, tr.Traces().SpanCount(), 1)
+	assert.Equal(t, 1, tr.Traces().SpanCount())
 }
 
 func TestRequestJSON(t *testing.T) {
 	tr := NewExportRequest()
-	assert.NoError(t, tr.UnmarshalJSON(tracesRequestJSON))
+	require.NoError(t, tr.UnmarshalJSON(tracesRequestJSON))
 	assert.Equal(t, "test_span", tr.Traces().ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
 
 	got, err := tr.MarshalJSON()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, strings.Join(strings.Fields(string(tracesRequestJSON)), ""), string(got))
 }

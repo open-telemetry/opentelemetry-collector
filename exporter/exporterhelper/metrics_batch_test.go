@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -18,7 +19,7 @@ func TestMergeMetrics(t *testing.T) {
 	mr1 := &metricsRequest{md: testdata.GenerateMetrics(2)}
 	mr2 := &metricsRequest{md: testdata.GenerateMetrics(3)}
 	res, err := mergeMetrics(context.Background(), mr1, mr2)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 5, res.(*metricsRequest).md.MetricCount())
 }
 
@@ -133,7 +134,7 @@ func TestMergeSplitMetrics(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := mergeSplitMetrics(context.Background(), tt.cfg, tt.mr1, tt.mr2)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, len(tt.expected), len(res))
 			for i := range res {
 				assert.Equal(t, tt.expected[i], res[i].(*metricsRequest))

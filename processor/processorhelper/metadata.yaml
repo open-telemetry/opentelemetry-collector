@@ -10,50 +10,22 @@ status:
 telemetry:
   metrics:
 
-    processor_incoming_spans:
+    processor_incoming_items:
       enabled: true
-      description: Number of spans passed to the processor.
-      unit: "{spans}"
+      stability:
+        level: alpha
+      description: Number of items passed to the processor.
+      unit: "{items}"
       sum:
         value_type: int
         monotonic: true
 
-    processor_outgoing_spans:
+    processor_outgoing_items:
       enabled: true
-      description: Number of spans emitted from the processor.
-      unit: "{spans}"
-      sum:
-        value_type: int
-        monotonic: true
-
-    processor_incoming_metric_points:
-      enabled: true
-      description: Number of metric points passed to the processor.
-      unit: "{datapoints}"
-      sum:
-        value_type: int
-        monotonic: true
-
-    processor_outgoing_metric_points:
-      enabled: true
-      description: Number of metric points emitted from the processor.
-      unit: "{datapoints}"
-      sum:
-        value_type: int
-        monotonic: true
-
-    processor_incoming_log_records:
-      enabled: true
-      description: Number of log records passed to the processor.
-      unit: "{records}"
-      sum:
-        value_type: int
-        monotonic: true
-
-    processor_outgoing_log_records:
-      enabled: true
-      description: Number of log records emitted from the processor.
-      unit: "{records}"
+      stability:
+        level: alpha
+      description: Number of items emitted from the processor.
+      unit: "{items}"
       sum:
         value_type: int
         monotonic: true
@@ -61,6 +33,9 @@ telemetry:
     processor_accepted_spans:
       enabled: true
       description: Number of spans successfully pushed into the next component in the pipeline.
+      stability:
+        level: deprecated
+        from: v0.110.0
       unit: "{spans}"
       sum:
         value_type: int
@@ -69,6 +44,9 @@ telemetry:
     processor_refused_spans:
       enabled: true
       description: Number of spans that were rejected by the next component in the pipeline.
+      stability:
+        level: deprecated
+        from: v0.110.0
       unit: "{spans}"
       sum:
         value_type: int
@@ -77,14 +55,9 @@ telemetry:
     processor_dropped_spans:
       enabled: true
       description: Number of spans that were dropped.
-      unit: "{spans}"
-      sum:
-        value_type: int
-        monotonic: true
-
-    processor_inserted_spans:
-      enabled: true
-      description: Number of spans that were inserted.
+      stability:
+        level: deprecated
+        from: v0.110.0
       unit: "{spans}"
       sum:
         value_type: int
@@ -93,6 +66,9 @@ telemetry:
     processor_accepted_metric_points:
       enabled: true
       description: Number of metric points successfully pushed into the next component in the pipeline.
+      stability:
+        level: deprecated
+        from: v0.110.0
       unit: "{datapoints}"
       sum:
         value_type: int
@@ -101,6 +77,9 @@ telemetry:
     processor_refused_metric_points:
       enabled: true
       description: Number of metric points that were rejected by the next component in the pipeline.
+      stability:
+        level: deprecated
+        from: v0.110.0
       unit: "{datapoints}"
       sum:
         value_type: int
@@ -109,14 +88,9 @@ telemetry:
     processor_dropped_metric_points:
       enabled: true
       description: Number of metric points that were dropped.
-      unit: "{datapoints}"
-      sum:
-        value_type: int
-        monotonic: true
-
-    processor_inserted_metric_points:
-      enabled: true
-      description: Number of metric points that were inserted.
+      stability:
+        level: deprecated
+        from: v0.110.0
       unit: "{datapoints}"
       sum:
         value_type: int
@@ -125,6 +99,9 @@ telemetry:
     processor_accepted_log_records:
       enabled: true
       description: Number of log records successfully pushed into the next component in the pipeline.
+      stability:
+        level: deprecated
+        from: v0.110.0
       unit: "{records}"
       sum:
         value_type: int
@@ -133,6 +110,9 @@ telemetry:
     processor_refused_log_records:
       enabled: true
       description: Number of log records that were rejected by the next component in the pipeline.
+      stability:
+        level: deprecated
+        from: v0.110.0
       unit: "{records}"
       sum:
         value_type: int
@@ -141,14 +121,9 @@ telemetry:
     processor_dropped_log_records:
       enabled: true
       description: Number of log records that were dropped.
-      unit: "{records}"
-      sum:
-        value_type: int
-        monotonic: true
-
-    processor_inserted_log_records:
-      enabled: true
-      description: Number of log records that were inserted.
+      stability:
+        level: deprecated
+        from: v0.110.0
       unit: "{records}"
       sum:
         value_type: int

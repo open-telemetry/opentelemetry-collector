@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 var routerType = component.MustNewType("examplerouter")
@@ -30,8 +31,8 @@ var ExampleRouterFactory = connector.NewFactory(
 )
 
 type LeftRightConfig struct {
-	Left  component.ID `mapstructure:"left"`
-	Right component.ID `mapstructure:"right"`
+	Left  pipeline.ID `mapstructure:"left"`
+	Right pipeline.ID `mapstructure:"right"`
 }
 
 type ExampleRouterConfig struct {

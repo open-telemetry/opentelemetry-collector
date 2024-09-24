@@ -7,10 +7,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestReadMemInfo(t *testing.T) {
 	vmStat, err := readMemInfo()
-	assert.NoError(t, err)
-	assert.True(t, vmStat > 0)
+	require.NoError(t, err)
+	assert.Positive(t, vmStat)
 }

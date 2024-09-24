@@ -20,7 +20,15 @@ import (
 )
 
 // ScraperControllerOption apply changes to internal options.
-type ScraperControllerOption func(*controller)
+type ScraperControllerOption interface {
+	apply(*controller)
+}
+
+type scraperControllerOptionFunc func(*controller)
+
+func (of scraperControllerOptionFunc) apply(e *controller) {
+	of(e)
+}
 
 // AddScraper configures the provided scrape function to be called
 // with the specified options, and at the specified collection interval.
@@ -28,18 +36,18 @@ type ScraperControllerOption func(*controller)
 // Observability information will be reported, and the scraped metrics
 // will be passed to the next consumer.
 func AddScraper(scraper Scraper) ScraperControllerOption {
-	return func(o *controller) {
+	return scraperControllerOptionFunc(func(o *controller) {
 		o.scrapers = append(o.scrapers, scraper)
-	}
+	})
 }
 
 // WithTickerChannel allows you to override the scraper controller's ticker
 // channel to specify when scrape is called. This is only expected to be
 // used by tests.
 func WithTickerChannel(tickerCh <-chan time.Time) ScraperControllerOption {
-	return func(o *controller) {
+	return scraperControllerOptionFunc(func(o *controller) {
 		o.tickerCh = tickerCh
-	}
+	})
 }
 
 type controller struct {
@@ -98,7 +106,7 @@ func NewScraperControllerReceiver(
 	}
 
 	for _, op := range options {
-		op(sc)
+		op.apply(sc)
 	}
 
 	sc.obsScrapers = make([]*obsReport, len(sc.scrapers))

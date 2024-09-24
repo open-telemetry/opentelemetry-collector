@@ -25,18 +25,18 @@ func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
-	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
+	require.NoError(t, componenttest.CheckConfigStruct(cfg))
 	ocfg, ok := factory.CreateDefaultConfig().(*Config)
 	assert.True(t, ok)
-	assert.Equal(t, ocfg.ClientConfig.Endpoint, "")
-	assert.Equal(t, ocfg.ClientConfig.Timeout, 30*time.Second, "default timeout is 30 second")
+	assert.Equal(t, "", ocfg.ClientConfig.Endpoint)
+	assert.Equal(t, 30*time.Second, ocfg.ClientConfig.Timeout, "default timeout is 30 second")
 	assert.True(t, ocfg.RetryConfig.Enabled, "default retry is enabled")
-	assert.Equal(t, ocfg.RetryConfig.MaxElapsedTime, 300*time.Second, "default retry MaxElapsedTime")
-	assert.Equal(t, ocfg.RetryConfig.InitialInterval, 5*time.Second, "default retry InitialInterval")
-	assert.Equal(t, ocfg.RetryConfig.MaxInterval, 30*time.Second, "default retry MaxInterval")
+	assert.Equal(t, 300*time.Second, ocfg.RetryConfig.MaxElapsedTime, "default retry MaxElapsedTime")
+	assert.Equal(t, 5*time.Second, ocfg.RetryConfig.InitialInterval, "default retry InitialInterval")
+	assert.Equal(t, 30*time.Second, ocfg.RetryConfig.MaxInterval, "default retry MaxInterval")
 	assert.True(t, ocfg.QueueConfig.Enabled, "default sending queue is enabled")
-	assert.Equal(t, ocfg.Encoding, EncodingProto)
-	assert.Equal(t, ocfg.Compression, configcompression.TypeGzip)
+	assert.Equal(t, EncodingProto, ocfg.Encoding)
+	assert.Equal(t, configcompression.TypeGzip, ocfg.Compression)
 }
 
 func TestCreateMetricsExporter(t *testing.T) {
@@ -181,18 +181,18 @@ func TestCreateTracesExporter(t *testing.T) {
 				assert.Error(t, err)
 				return
 			}
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.NotNil(t, consumer)
 			err = consumer.Start(context.Background(), componenttest.NewNopHost())
 			if tt.mustFailOnStart {
-				assert.Error(t, err)
+				require.Error(t, err)
 			}
 
 			err = consumer.Shutdown(context.Background())
 			if err != nil {
 				// Since the endpoint of OTLP exporter doesn't actually exist,
 				// exporter may already stop because it cannot connect.
-				assert.Equal(t, err.Error(), "rpc error: code = Canceled desc = grpc: the client connection is closing")
+				assert.Equal(t, "rpc error: code = Canceled desc = grpc: the client connection is closing", err.Error())
 			}
 		})
 	}
@@ -215,13 +215,19 @@ func TestComposeSignalURL(t *testing.T) {
 
 	// Has slash at end
 	cfg.ClientConfig.Endpoint = "http://localhost:4318/"
-	url, err := composeSignalURL(cfg, "", "traces")
+	url, err := composeSignalURL(cfg, "", "traces", "v1")
 	require.NoError(t, err)
 	assert.Equal(t, "http://localhost:4318/v1/traces", url)
 
 	// No slash at end
 	cfg.ClientConfig.Endpoint = "http://localhost:4318"
-	url, err = composeSignalURL(cfg, "", "traces")
+	url, err = composeSignalURL(cfg, "", "traces", "v1")
 	require.NoError(t, err)
 	assert.Equal(t, "http://localhost:4318/v1/traces", url)
+
+	// Different version
+	cfg.ClientConfig.Endpoint = "http://localhost:4318"
+	url, err = composeSignalURL(cfg, "", "traces", "v2")
+	require.NoError(t, err)
+	assert.Equal(t, "http://localhost:4318/v2/traces", url)
 }

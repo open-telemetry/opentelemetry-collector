@@ -111,36 +111,36 @@ func TestMapping_Attributes(t *testing.T) {
 
 func TestMapping_HasFunctions(t *testing.T) {
 	ms := NewMapping()
-	assert.Equal(t, false, ms.HasFunctions())
+	assert.False(t, ms.HasFunctions())
 	ms.SetHasFunctions(true)
-	assert.Equal(t, true, ms.HasFunctions())
+	assert.True(t, ms.HasFunctions())
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, &sharedState).SetHasFunctions(true) })
 }
 
 func TestMapping_HasFilenames(t *testing.T) {
 	ms := NewMapping()
-	assert.Equal(t, false, ms.HasFilenames())
+	assert.False(t, ms.HasFilenames())
 	ms.SetHasFilenames(true)
-	assert.Equal(t, true, ms.HasFilenames())
+	assert.True(t, ms.HasFilenames())
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, &sharedState).SetHasFilenames(true) })
 }
 
 func TestMapping_HasLineNumbers(t *testing.T) {
 	ms := NewMapping()
-	assert.Equal(t, false, ms.HasLineNumbers())
+	assert.False(t, ms.HasLineNumbers())
 	ms.SetHasLineNumbers(true)
-	assert.Equal(t, true, ms.HasLineNumbers())
+	assert.True(t, ms.HasLineNumbers())
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, &sharedState).SetHasLineNumbers(true) })
 }
 
 func TestMapping_HasInlineFrames(t *testing.T) {
 	ms := NewMapping()
-	assert.Equal(t, false, ms.HasInlineFrames())
+	assert.False(t, ms.HasInlineFrames())
 	ms.SetHasInlineFrames(true)
-	assert.Equal(t, true, ms.HasInlineFrames())
+	assert.True(t, ms.HasInlineFrames())
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, &sharedState).SetHasInlineFrames(true) })
 }

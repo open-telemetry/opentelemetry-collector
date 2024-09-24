@@ -58,12 +58,14 @@ func (p *memoryLimiterProcessor) processTraces(ctx context.Context, td ptrace.Tr
 		// 	to a receiver (ie.: a receiver is on the call stack). For now it
 		// 	assumes that the pipeline is properly configured and a receiver is on the
 		// 	callstack and that the receiver will correctly retry the refused data again.
+		// nolint SA1019
 		p.obsrep.TracesRefused(ctx, numSpans)
 		return td, memorylimiter.ErrDataRefused
 	}
 
 	// Even if the next consumer returns error record the data as accepted by
 	// this processor.
+	// nolint SA1019
 	p.obsrep.TracesAccepted(ctx, numSpans)
 	return td, nil
 }
@@ -76,12 +78,14 @@ func (p *memoryLimiterProcessor) processMetrics(ctx context.Context, md pmetric.
 		// 	to a receiver (ie.: a receiver is on the call stack). For now it
 		// 	assumes that the pipeline is properly configured and a receiver is on the
 		// 	callstack.
+		// nolint SA1019
 		p.obsrep.MetricsRefused(ctx, numDataPoints)
 		return md, memorylimiter.ErrDataRefused
 	}
 
 	// Even if the next consumer returns error record the data as accepted by
 	// this processor.
+	// nolint SA1019
 	p.obsrep.MetricsAccepted(ctx, numDataPoints)
 	return md, nil
 }
@@ -94,12 +98,14 @@ func (p *memoryLimiterProcessor) processLogs(ctx context.Context, ld plog.Logs) 
 		// 	to a receiver (ie.: a receiver is on the call stack). For now it
 		// 	assumes that the pipeline is properly configured and a receiver is on the
 		// 	callstack.
+		// nolint SA1019
 		p.obsrep.LogsRefused(ctx, numRecords)
 		return ld, memorylimiter.ErrDataRefused
 	}
 
 	// Even if the next consumer returns error record the data as accepted by
 	// this processor.
+	// nolint SA1019
 	p.obsrep.LogsAccepted(ctx, numRecords)
 	return ld, nil
 }

@@ -9,6 +9,7 @@ import (
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var _ json.Unmarshaler = ExportResponse{}
@@ -17,7 +18,7 @@ var _ json.Marshaler = ExportResponse{}
 func TestExportResponseJSON(t *testing.T) {
 	jsonStr := `{"partialSuccess": {"rejectedLogRecords":1, "errorMessage":"nothing"}}`
 	val := NewExportResponse()
-	assert.NoError(t, val.UnmarshalJSON([]byte(jsonStr)))
+	require.NoError(t, val.UnmarshalJSON([]byte(jsonStr)))
 	expected := NewExportResponse()
 	expected.PartialSuccess().SetRejectedLogRecords(1)
 	expected.PartialSuccess().SetErrorMessage("nothing")
@@ -27,7 +28,7 @@ func TestExportResponseJSON(t *testing.T) {
 func TestUnmarshalJSONExportResponse(t *testing.T) {
 	jsonStr := `{"extra":"", "partialSuccess": {}}`
 	val := NewExportResponse()
-	assert.NoError(t, val.UnmarshalJSON([]byte(jsonStr)))
+	require.NoError(t, val.UnmarshalJSON([]byte(jsonStr)))
 	assert.Equal(t, NewExportResponse(), val)
 }
 
@@ -37,6 +38,6 @@ func TestUnmarshalJsoniterExportPartialSuccess(t *testing.T) {
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewExportPartialSuccess()
 	val.unmarshalJsoniter(iter)
-	assert.NoError(t, iter.Error)
+	require.NoError(t, iter.Error)
 	assert.Equal(t, NewExportPartialSuccess(), val)
 }
