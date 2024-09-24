@@ -129,7 +129,7 @@ type batch interface {
 	export(ctx context.Context, req any) error
 
 	// splitBatch returns a full request built from pending items.
-	splitBatch(ctx context.Context, sendBatchMaxSize int, returnBytes bool) (sentBatchSize int, req any)
+	splitBatch(ctx context.Context, sendBatchMaxSize int) (sentBatchSize int, req any)
 
 	// itemCount returns the size of the current batch
 	itemCount() int
@@ -331,8 +331,7 @@ func (b *shard) resetTimer() {
 }
 
 func (b *shard) sendItems(trigger trigger) {
-	sent, req := b.batch.splitBatch(b.exportCtx, b.processor.sendBatchMaxSize, b.processor.telemetry.detailed)
-	bytes := int64(b.batch.sizeBytes(req))
+	sent, req := b.batch.splitBatch(b.exportCtx, b.processor.sendBatchMaxSize)
 
 	var thisBatch []pendingTuple
 
@@ -415,6 +414,11 @@ func (b *shard) sendItems(trigger trigger) {
 		if err != nil {
 			b.processor.logger.Warn("Sender failed", zap.Error(err))
 		} else {
+			// Note that bytes is only used by record() when level is detailed.
+			var bytes int64
+			if b.processor.telemetry.detailed {
+				bytes = int64(b.batch.sizeBytes(req))
+			}
 			b.processor.telemetry.record(trigger, int64(sent), bytes)
 		}
 	}()
@@ -542,13 +546,13 @@ func (sb *multiShardBatcher) start(context.Context) error {
 	return nil
 }
 
-func (mb *multiShardBatcher) consume(ctx context.Context, data any) error {
+func (sb *multiShardBatcher) consume(ctx context.Context, data any) error {
 	// Get each metadata key value, form the corresponding
 	// attribute set for use as a map lookup key.
 	info := client.FromContext(ctx)
 	md := map[string][]string{}
 	var attrs []attribute.KeyValue
-	for _, k := range mb.processor.metadataKeys {
+	for _, k := range sb.processor.metadataKeys {
 		// Lookup the value in the incoming metadata, copy it
 		// into the outgoing metadata, and create a unique
 		// value for the attributeSet.
@@ -562,35 +566,35 @@ func (mb *multiShardBatcher) consume(ctx context.Context, data any) error {
 	}
 	aset := attribute.NewSet(attrs...)
 
-	b, ok := mb.batchers.Load(aset)
+	b, ok := sb.batchers.Load(aset)
 	if !ok {
-		mb.lock.Lock()
-		if mb.processor.metadataLimit != 0 && mb.size >= mb.processor.metadataLimit {
-			mb.lock.Unlock()
+		sb.lock.Lock()
+		if sb.processor.metadataLimit != 0 && sb.size >= sb.processor.metadataLimit {
+			sb.lock.Unlock()
 			return errTooManyBatchers
 		}
 
 		// aset.ToSlice() returns the sorted, deduplicated,
 		// and name-downcased list of attributes.
 		var loaded bool
-		b, loaded = mb.batchers.LoadOrStore(aset, mb.processor.newShard(md))
+		b, loaded = sb.batchers.LoadOrStore(aset, sb.processor.newShard(md))
 
 		if !loaded {
 			// This is a new shard
-			mb.size++
+			sb.size++
 			b.(*shard).start()
 
 		}
-		mb.lock.Unlock()
+		sb.lock.Unlock()
 	}
 
 	return b.(*shard).consumeAndWait(ctx, data)
 }
 
-func (mb *multiShardBatcher) currentMetadataCardinality() int {
-	mb.lock.Lock()
-	defer mb.lock.Unlock()
-	return mb.size
+func (sb *multiShardBatcher) currentMetadataCardinality() int {
+	sb.lock.Lock()
+	defer sb.lock.Unlock()
+	return sb.size
 }
 
 // ConsumeTraces implements TracesProcessor
@@ -656,7 +660,7 @@ func (bt *batchTraces) export(ctx context.Context, req any) error {
 	return bt.nextConsumer.ConsumeTraces(ctx, td)
 }
 
-func (bt *batchTraces) splitBatch(ctx context.Context, sendBatchMaxSize int, returnBytes bool) (int, any) {
+func (bt *batchTraces) splitBatch(_ context.Context, sendBatchMaxSize int) (int, any) {
 	var req ptrace.Traces
 	var sent int
 	if sendBatchMaxSize > 0 && bt.itemCount() > sendBatchMaxSize {
@@ -696,7 +700,7 @@ func (bm *batchMetrics) export(ctx context.Context, req any) error {
 	return bm.nextConsumer.ConsumeMetrics(ctx, md)
 }
 
-func (bm *batchMetrics) splitBatch(ctx context.Context, sendBatchMaxSize int, returnBytes bool) (int, any) {
+func (bm *batchMetrics) splitBatch(_ context.Context, sendBatchMaxSize int) (int, any) {
 	var req pmetric.Metrics
 	var sent int
 	if sendBatchMaxSize > 0 && bm.dataPointCount > sendBatchMaxSize {
@@ -748,7 +752,7 @@ func (bl *batchLogs) export(ctx context.Context, req any) error {
 	return bl.nextConsumer.ConsumeLogs(ctx, ld)
 }
 
-func (bl *batchLogs) splitBatch(ctx context.Context, sendBatchMaxSize int, returnBytes bool) (int, any) {
+func (bl *batchLogs) splitBatch(_ context.Context, sendBatchMaxSize int) (int, any) {
 	var req plog.Logs
 	var sent int
 

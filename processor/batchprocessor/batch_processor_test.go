@@ -15,6 +15,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+	"go.opentelemetry.io/otel/trace"
+
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -27,14 +34,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/testdata"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/sdk/metric/metricdata"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/sdk/trace/tracetest"
-	"go.opentelemetry.io/otel/trace"
 )
 
 type testError struct{}
@@ -43,7 +45,7 @@ func (testError) Error() string {
 	return "test"
 }
 
-func sendTraces(t *testing.T, ctx context.Context, batcher processor.Traces, wg *sync.WaitGroup, td ptrace.Traces) {
+func sendTraces(ctx context.Context, t *testing.T, batcher processor.Traces, wg *sync.WaitGroup, td ptrace.Traces) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -51,7 +53,7 @@ func sendTraces(t *testing.T, ctx context.Context, batcher processor.Traces, wg 
 	}()
 }
 
-func sendMetrics(t *testing.T, ctx context.Context, batcher processor.Metrics, wg *sync.WaitGroup, md pmetric.Metrics) {
+func sendMetrics(ctx context.Context, t *testing.T, batcher processor.Metrics, wg *sync.WaitGroup, md pmetric.Metrics) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -59,7 +61,7 @@ func sendMetrics(t *testing.T, ctx context.Context, batcher processor.Metrics, w
 	}()
 }
 
-func sendLogs(t *testing.T, ctx context.Context, batcher processor.Logs, wg *sync.WaitGroup, ld plog.Logs) {
+func sendLogs(ctx context.Context, t *testing.T, batcher processor.Logs, wg *sync.WaitGroup, ld plog.Logs) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -152,7 +154,7 @@ func TestBatchProcessorUnbrokenParentContextSingle(t *testing.T) {
 	opt := exporterhelper.WithQueue(exporterhelper.QueueSettings{
 		Enabled: false,
 	})
-	next, err := exporterhelper.NewTracesExporter(bg, createSet, Config{}, func(ctx context.Context, td ptrace.Traces) error { return nil }, opt)
+	next, err := exporterhelper.NewTracesExporter(bg, createSet, Config{}, func(context.Context, ptrace.Traces) error { return nil }, opt)
 	require.NoError(t, err)
 
 	processorSet := processortest.NewNopSettings()
@@ -171,7 +173,7 @@ func TestBatchProcessorUnbrokenParentContextSingle(t *testing.T) {
 			spans.At(spanIndex).SetName(getTestSpanName(requestNum, spanIndex))
 		}
 		td.ResourceSpans().At(0).CopyTo(sentResourceSpans.AppendEmpty())
-		sendTraces(t, bg, bp, &wg, td)
+		sendTraces(bg, t, bp, &wg, td)
 	}
 	wg.Wait()
 	rootSp.End()
@@ -185,7 +187,6 @@ func TestBatchProcessorUnbrokenParentContextSingle(t *testing.T) {
 		switch span.Name {
 		case "batch_processor/export":
 			// more test below
-			break
 		case "exporter/test_exporter/traces":
 			continue
 		case "test_parent":
@@ -225,7 +226,7 @@ func TestBatchProcessorUnbrokenParentContextMultiple(t *testing.T) {
 	opt := exporterhelper.WithQueue(exporterhelper.QueueSettings{
 		Enabled: false,
 	})
-	next, err := exporterhelper.NewTracesExporter(bg, createSet, Config{}, func(ctx context.Context, td ptrace.Traces) error { return nil }, opt)
+	next, err := exporterhelper.NewTracesExporter(bg, createSet, Config{}, func(context.Context, ptrace.Traces) error { return nil }, opt)
 	require.NoError(t, err)
 
 	processorSet := processortest.NewNopSettings()
@@ -257,7 +258,7 @@ func TestBatchProcessorUnbrokenParentContextMultiple(t *testing.T) {
 			spans.At(spanIndex).SetName(getTestSpanName(requestNum, spanIndex))
 		}
 		td.ResourceSpans().At(0).CopyTo(sentResourceSpans.AppendEmpty())
-		sendTraces(t, callCtxs[num], bp, &wg, td)
+		sendTraces(callCtxs[num], t, bp, &wg, td)
 	}
 	wg.Wait()
 
@@ -278,7 +279,6 @@ func TestBatchProcessorUnbrokenParentContextMultiple(t *testing.T) {
 		switch span.Name {
 		case "batch_processor/export":
 			// more test below
-			break
 		case "exporter/test_exporter/traces":
 			continue
 		default:
@@ -309,7 +309,7 @@ func TestBatchProcessorUnbrokenParentContextMultiple(t *testing.T) {
 		default:
 			t.Error("unexpected span name:", span.Name)
 		}
-		assert.Less(t, 0, len(span.Links))
+		assert.NotEmpty(t, span.Links)
 	}
 
 	require.NoError(t, bp.Shutdown(context.Background()))
@@ -338,12 +338,12 @@ func TestBatchProcessorSpansDelivered(t *testing.T) {
 			spans.At(spanIndex).SetName(getTestSpanName(requestNum, spanIndex))
 		}
 		td.ResourceSpans().At(0).CopyTo(sentResourceSpans.AppendEmpty())
-		sendTraces(t, bg, batcher, &wg, td)
+		sendTraces(bg, t, batcher, &wg, td)
 	}
 
 	// Added to test logic that check for empty resources.
 	td := ptrace.NewTraces()
-	sendTraces(t, bg, batcher, &wg, td)
+	sendTraces(bg, t, batcher, &wg, td)
 
 	wg.Wait()
 	require.NoError(t, batcher.Shutdown(context.Background()))
@@ -382,12 +382,12 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
 			spans.At(spanIndex).SetName(getTestSpanName(requestNum, spanIndex))
 		}
-		sendTraces(t, bg, batcher, &wg, td)
+		sendTraces(bg, t, batcher, &wg, td)
 	}
 
 	// Added to test logic that check for empty resources.
 	td := ptrace.NewTraces()
-	sendTraces(t, bg, batcher, &wg, td)
+	sendTraces(bg, t, batcher, &wg, td)
 
 	// shutdown will flush any remaining spans
 	wg.Wait()
@@ -426,7 +426,7 @@ func TestBatchProcessorTracesSentBySize(t *testing.T) {
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		td := testdata.GenerateTraces(spansPerRequest)
 
-		sendTraces(t, bg, batcher, &wg, td)
+		sendTraces(bg, t, batcher, &wg, td)
 	}
 
 	wg.Wait()
@@ -550,7 +550,7 @@ func TestBatchProcessorTracesSentByMaxSize(t *testing.T) {
 	totalSpans := requestCount * spansPerRequest
 
 	sizeSum := 0
-	sendTraces(t, bg, batcher, &wg, testdata.GenerateTraces(spansPerRequest))
+	sendTraces(bg, t, batcher, &wg, testdata.GenerateTraces(spansPerRequest))
 
 	wg.Wait()
 	require.NoError(t, batcher.Shutdown(bg))
@@ -692,7 +692,7 @@ func TestBatchProcessorSentByTimeout(t *testing.T) {
 
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		td := testdata.GenerateTraces(spansPerRequest)
-		sendTraces(t, bg, batcher, &wg, td)
+		sendTraces(bg, t, batcher, &wg, td)
 	}
 
 	wg.Wait()
@@ -735,7 +735,7 @@ func TestBatchProcessorTraceSendWhenClosing(t *testing.T) {
 	var wg sync.WaitGroup
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		td := testdata.GenerateTraces(spansPerRequest)
-		sendTraces(t, bg, batcher, &wg, td)
+		sendTraces(bg, t, batcher, &wg, td)
 	}
 
 	wg.Wait()
@@ -774,12 +774,12 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 			metrics.At(metricIndex).SetName(getTestMetricName(requestNum, metricIndex))
 		}
 		md.ResourceMetrics().At(0).CopyTo(sentResourceMetrics.AppendEmpty())
-		sendMetrics(t, bg, batcher, &wg, md)
+		sendMetrics(bg, t, batcher, &wg, md)
 	}
 
 	// Added to test case with empty resources sent.
 	md := pmetric.NewMetrics()
-	sendMetrics(t, bg, batcher, &wg, md)
+	sendMetrics(bg, t, batcher, &wg, md)
 
 	wg.Wait()
 	require.NoError(t, batcher.Shutdown(context.Background()))
@@ -828,7 +828,7 @@ func TestBatchMetricProcessorBatchSize(t *testing.T) {
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		md := testdata.GenerateMetrics(metricsPerRequest)
 		size += sizer.MetricsSize(md)
-		sendMetrics(t, bg, batcher, &wg, md)
+		sendMetrics(bg, t, batcher, &wg, md)
 	}
 	wg.Wait()
 	require.NoError(t, batcher.Shutdown(bg))
@@ -936,7 +936,7 @@ func TestBatchMetrics_UnevenBatchMaxSize(t *testing.T) {
 
 	batchMetrics.add(md)
 	require.Equal(t, dataPointsPerMetric*metricsCount, batchMetrics.dataPointCount)
-	sent, req := batchMetrics.splitBatch(ctx, sendBatchMaxSize, true)
+	sent, req := batchMetrics.splitBatch(ctx, sendBatchMaxSize)
 	sendErr := batchMetrics.export(ctx, req)
 	require.NoError(t, sendErr)
 	require.Equal(t, sendBatchMaxSize, sent)
@@ -964,7 +964,7 @@ func TestBatchMetricsProcessor_Timeout(t *testing.T) {
 
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		md := testdata.GenerateMetrics(metricsPerRequest)
-		sendMetrics(t, bg, batcher, &wg, md)
+		sendMetrics(bg, t, batcher, &wg, md)
 	}
 
 	wg.Wait()
@@ -978,7 +978,7 @@ func TestBatchMetricsProcessor_Timeout(t *testing.T) {
 
 	require.Equal(t, requestCount*2*metricsPerRequest, sink.DataPointCount())
 	receivedMds := sink.AllMetrics()
-	require.Equal(t, expectedBatchesNum, len(receivedMds))
+	require.Len(t, receivedMds, expectedBatchesNum)
 	for _, md := range receivedMds {
 		require.Equal(t, expectedBatchingFactor, md.ResourceMetrics().Len())
 		for i := 0; i < expectedBatchingFactor; i++ {
@@ -1006,14 +1006,14 @@ func TestBatchMetricProcessor_Shutdown(t *testing.T) {
 	var wg sync.WaitGroup
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		md := testdata.GenerateMetrics(metricsPerRequest)
-		sendMetrics(t, bg, batcher, &wg, md)
+		sendMetrics(bg, t, batcher, &wg, md)
 	}
 
 	wg.Wait()
 	require.NoError(t, batcher.Shutdown(context.Background()))
 
 	require.Equal(t, requestCount*2*metricsPerRequest, sink.DataPointCount())
-	require.Equal(t, 1, len(sink.AllMetrics()))
+	require.Len(t, sink.AllMetrics(), 1)
 }
 
 func getTestSpanName(requestNum, index int) string {
@@ -1162,12 +1162,12 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 			logs.At(logIndex).SetSeverityText(getTestLogSeverityText(requestNum, logIndex))
 		}
 		ld.ResourceLogs().At(0).CopyTo(sentResourceLogs.AppendEmpty())
-		sendLogs(t, bg, batcher, &wg, ld)
+		sendLogs(bg, t, batcher, &wg, ld)
 	}
 
 	// Added to test case with empty resources sent.
 	ld := plog.NewLogs()
-	sendLogs(t, bg, batcher, &wg, ld)
+	sendLogs(bg, t, batcher, &wg, ld)
 
 	wg.Wait()
 	require.NoError(t, batcher.Shutdown(bg))
@@ -1214,7 +1214,7 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		ld := testdata.GenerateLogs(logsPerRequest)
 		size += sizer.LogsSize(ld)
-		sendLogs(t, bg, batcher, &wg, ld)
+		sendLogs(bg, t, batcher, &wg, ld)
 	}
 	wg.Wait()
 	require.NoError(t, batcher.Shutdown(bg))
@@ -1331,7 +1331,7 @@ func TestBatchLogsProcessor_Timeout(t *testing.T) {
 
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		ld := testdata.GenerateLogs(logsPerRequest)
-		sendLogs(t, bg, batcher, &wg, ld)
+		sendLogs(bg, t, batcher, &wg, ld)
 	}
 
 	wg.Wait()
@@ -1345,7 +1345,7 @@ func TestBatchLogsProcessor_Timeout(t *testing.T) {
 
 	require.Equal(t, requestCount*logsPerRequest, sink.LogRecordCount())
 	receivedMds := sink.AllLogs()
-	require.Equal(t, expectedBatchesNum, len(receivedMds))
+	require.Len(t, receivedMds, expectedBatchesNum)
 	for _, ld := range receivedMds {
 		require.Equal(t, expectedBatchingFactor, ld.ResourceLogs().Len())
 		for i := 0; i < expectedBatchingFactor; i++ {
@@ -1373,14 +1373,14 @@ func TestBatchLogProcessor_Shutdown(t *testing.T) {
 	var wg sync.WaitGroup
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		ld := testdata.GenerateLogs(logsPerRequest)
-		sendLogs(t, bg, batcher, &wg, ld)
+		sendLogs(bg, t, batcher, &wg, ld)
 	}
 
 	wg.Wait()
 	require.NoError(t, batcher.Shutdown(bg))
 
 	require.Equal(t, requestCount*logsPerRequest, sink.LogRecordCount())
-	require.Equal(t, 1, len(sink.AllLogs()))
+	require.Len(t, sink.AllLogs(), 1)
 }
 
 func getTestLogSeverityText(requestNum, index int) string {
@@ -1416,23 +1416,23 @@ func verifyTracesDoesNotProduceAfterShutdown(t *testing.T, factory processor.Fac
 	bg := context.Background()
 	proc, err := factory.CreateTracesProcessor(bg, processortest.NewNopSettings(), cfg, nextSink)
 	if err != nil {
-		if errors.Is(err, component.ErrDataTypeIsNotSupported) {
+		if errors.Is(err, pipeline.ErrSignalNotSupported) {
 			return
 		}
 		require.NoError(t, err)
 	}
-	assert.NoError(t, proc.Start(bg, componenttest.NewNopHost()))
+	require.NoError(t, proc.Start(bg, componenttest.NewNopHost()))
 
 	// Send some traces to the proc.
 	const generatedCount = 10
 	var wg sync.WaitGroup
 	for i := 0; i < generatedCount; i++ {
-		sendTraces(t, bg, proc, &wg, testdata.GenerateTraces(1))
+		sendTraces(bg, t, proc, &wg, testdata.GenerateTraces(1))
 	}
 
 	// Now shutdown the proc.
 	wg.Wait()
-	assert.NoError(t, proc.Shutdown(bg))
+	require.NoError(t, proc.Shutdown(bg))
 
 	// The Shutdown() is done. It means the proc must have sent everything we
 	// gave it to the next sink.
@@ -1525,7 +1525,7 @@ func TestBatchProcessorSpansBatchedByMetadata(t *testing.T) {
 		// use round-robin to assign context.
 		num := requestNum % len(callCtxs)
 		expectByContext[num] += spansPerRequest
-		sendTraces(t, callCtxs[num], batcher, &wg, td)
+		sendTraces(callCtxs[num], t, batcher, &wg, td)
 	}
 
 	wg.Wait()
@@ -1585,7 +1585,7 @@ func TestBatchProcessorMetadataCardinalityLimit(t *testing.T) {
 			}),
 		})
 
-		sendTraces(t, ctx, batcher, &wg, td)
+		sendTraces(ctx, t, batcher, &wg, td)
 	}
 
 	wg.Wait()
@@ -1630,7 +1630,7 @@ func TestBatchZeroConfig(t *testing.T) {
 		cnt := logsPerRequest + requestNum
 		expect += cnt
 		ld := testdata.GenerateLogs(cnt)
-		sendLogs(t, bg, batcher, &wg, ld)
+		sendLogs(bg, t, batcher, &wg, ld)
 	}
 
 	wg.Wait()
@@ -1639,7 +1639,7 @@ func TestBatchZeroConfig(t *testing.T) {
 	// Expect them to be the original sizes.  Since they can
 	// arrive out of order, we use an ElementsMatch test below.
 	receivedMds := sink.AllLogs()
-	require.Equal(t, requestCount, len(receivedMds))
+	require.Len(t, receivedMds, requestCount)
 	var receiveSizes []int
 	var expectSizes []int
 	for i, ld := range receivedMds {
@@ -1672,7 +1672,7 @@ func TestBatchSplitOnly(t *testing.T) {
 	var wg sync.WaitGroup
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		ld := testdata.GenerateLogs(logsPerRequest)
-		sendLogs(t, bg, batcher, &wg, ld)
+		sendLogs(bg, t, batcher, &wg, ld)
 	}
 
 	// Wait for all batches.
@@ -1681,7 +1681,7 @@ func TestBatchSplitOnly(t *testing.T) {
 
 	// Expect them to be the limited by maxBatch.
 	receivedMds := sink.AllLogs()
-	require.Equal(t, requestCount*logsPerRequest/maxBatch, len(receivedMds))
+	require.Len(t, receivedMds, requestCount*logsPerRequest/maxBatch)
 	for _, ld := range receivedMds {
 		require.Equal(t, maxBatch, ld.LogRecordCount())
 	}
@@ -1726,7 +1726,7 @@ func (es errorSink) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{}
 }
 
-func (es errorSink) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+func (es errorSink) ConsumeLogs(context.Context, plog.Logs) error {
 	return es.err
 }
 
@@ -1747,8 +1747,8 @@ func TestErrorPropagation(t *testing.T) {
 
 		ld := testdata.GenerateLogs(1)
 		err = batcher.ConsumeLogs(context.Background(), ld)
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, proto)
+		require.Error(t, err)
+		require.ErrorIs(t, err, proto)
 		assert.Contains(t, err.Error(), proto.Error())
 
 		require.NoError(t, batcher.Shutdown(context.Background()))
