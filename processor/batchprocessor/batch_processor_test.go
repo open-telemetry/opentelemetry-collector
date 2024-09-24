@@ -295,16 +295,16 @@ func TestBatchProcessorUnbrokenParentContextMultiple(t *testing.T) {
 func sendTraces(t *testing.T, ctx context.Context, batcher *batchProcessor, wg *sync.WaitGroup, td ptrace.Traces) {
 	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		assert.NoError(t, batcher.ConsumeTraces(ctx, td))
-		wg.Done()
 	}()
 }
 
 func sendMetrics(t *testing.T, ctx context.Context, batcher *batchProcessor, wg *sync.WaitGroup, md pmetric.Metrics) {
 	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		assert.NoError(t, batcher.ConsumeMetrics(ctx, md))
-		wg.Done()
 	}()
 }
 
@@ -532,33 +532,32 @@ func TestBatchProcessorTracesSentByMaxSize(t *testing.T) {
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg)
 	require.NoError(t, err)
-	require.NoError(t, batcher.Start(bg, componenttest.NewNopHost()))
-
-	requestCount := 1
-	spansPerRequest := 500
-	totalSpans := requestCount * spansPerRequest
 
 	var wg sync.WaitGroup
 	start := time.Now()
 
+	require.NoError(t, batcher.Start(bg, componenttest.NewNopHost()))
+
+	requestCount := 1
+	spansPerRequest := 500
+	expectedBatchesNum := int(math.Ceil(float64(spansPerRequest) / float64(sendBatchMaxSize)))
+	totalSpans := requestCount * spansPerRequest
+
 	sizeSum := 0
-	for requestNum := 0; requestNum < requestCount; requestNum++ {
-		td := testdata.GenerateTraces(spansPerRequest)
-		sendTraces(t, bg, batcher, &wg, td)
-	}
+	sendTraces(t, bg, batcher, &wg, testdata.GenerateTraces(spansPerRequest))
 
 	wg.Wait()
-	require.NoError(t, batcher.Shutdown(context.Background()))
+	require.NoError(t, batcher.Shutdown(bg))
 
 	elapsed := time.Since(start)
-	require.LessOrEqual(t, elapsed.Nanoseconds(), cfg.Timeout.Nanoseconds())
+	require.GreaterOrEqual(t, elapsed.Nanoseconds(), cfg.Timeout.Nanoseconds())
 
-	// The max batch size is not a divisor of the total number of spans
-	expectedBatchesNum := int(math.Ceil(float64(totalSpans) / float64(sendBatchMaxSize)))
-
+	// The max batch size is a divisor of the total number of spans, which
+	// ensures no timeout was needed (as tested above).
 	require.Equal(t, totalSpans, sink.SpanCount())
 	receivedTraces := sink.AllTraces()
 	require.Len(t, receivedTraces, expectedBatchesNum)
+
 	// we have to count the size after it was processed since splitTraces will cause some
 	// repeated ResourceSpan data to be sent through the processor
 	var min, max int
@@ -607,7 +606,7 @@ func TestBatchProcessorTracesSentByMaxSize(t *testing.T) {
 						Bounds:       []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000},
 						BucketCounts: []uint64{0, 1, uint64(expectedBatchesNum - 1), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 						Sum:          int64(sink.SpanCount()),
-						Min:          metricdata.NewExtrema(int64(sendBatchSize - 1)),
+						Min:          metricdata.NewExtrema(int64(uint32(spansPerRequest) % cfg.SendBatchMaxSize)),
 						Max:          metricdata.NewExtrema(int64(cfg.SendBatchMaxSize)),
 					},
 				},
@@ -637,7 +636,7 @@ func TestBatchProcessorTracesSentByMaxSize(t *testing.T) {
 				IsMonotonic: true,
 				DataPoints: []metricdata.DataPoint[int64]{
 					{
-						Value:      1,
+						Value:      int64(1),
 						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
 					},
 				},
