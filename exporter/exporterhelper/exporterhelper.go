@@ -16,9 +16,3 @@ type Request = internal.Request
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 type RequestErrorHandler = internal.RequestErrorHandler
-
-// extractPartialRequest returns a new Request that may contain the items left to be sent
-// if only some items failed to process and can be retried. Otherwise, it returns the original Request.
-func extractPartialRequest(req Request, err error) Request {
-	return internal.ExtractPartialRequest(req, err)
-}

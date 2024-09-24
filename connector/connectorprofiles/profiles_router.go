@@ -4,17 +4,16 @@
 package connectorprofiles // import "go.opentelemetry.io/collector/connector/connectorprofiles"
 
 import (
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector/internal"
 	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
-// ProfilesRouterAndConsumer feeds the first consumerprofiles.Profiles in each of the specified pipelines.
 type ProfilesRouterAndConsumer interface {
 	consumerprofiles.Profiles
-	Consumer(...component.ID) (consumerprofiles.Profiles, error)
-	PipelineIDs() []component.ID
+	Consumer(...pipeline.ID) (consumerprofiles.Profiles, error)
+	PipelineIDs() []pipeline.ID
 	privateFunc()
 }
 
@@ -23,7 +22,7 @@ type profilesRouter struct {
 	internal.BaseRouter[consumerprofiles.Profiles]
 }
 
-func NewProfilesRouter(cm map[component.ID]consumerprofiles.Profiles) ProfilesRouterAndConsumer {
+func NewProfilesRouter(cm map[pipeline.ID]consumerprofiles.Profiles) ProfilesRouterAndConsumer {
 	consumers := make([]consumerprofiles.Profiles, 0, len(cm))
 	for _, cons := range cm {
 		consumers = append(consumers, cons)

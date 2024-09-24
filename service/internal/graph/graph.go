@@ -31,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
 	"go.opentelemetry.io/collector/service/internal/status"
@@ -48,7 +49,7 @@ type Settings struct {
 	ConnectorBuilder *builders.ConnectorBuilder
 
 	// PipelineConfigs is a map of component.ID to PipelineConfig.
-	PipelineConfigs pipelines.Config
+	PipelineConfigs pipelines.ConfigWithPipelineID
 
 	ReportStatus status.ServiceStatusFunc
 }
@@ -58,7 +59,7 @@ type Graph struct {
 	componentGraph *simple.DirectedGraph
 
 	// Keep track of how nodes relate to pipelines, so we can declare edges in the graph.
-	pipelines map[component.ID]*pipelineNodes
+	pipelines map[pipeline.ID]*pipelineNodes
 
 	// Keep track of status source per node
 	instanceIDs map[int64]*componentstatus.InstanceID
@@ -71,7 +72,7 @@ type Graph struct {
 func Build(ctx context.Context, set Settings) (*Graph, error) {
 	pipelines := &Graph{
 		componentGraph: simple.NewDirectedGraph(),
-		pipelines:      make(map[component.ID]*pipelineNodes, len(set.PipelineConfigs)),
+		pipelines:      make(map[pipeline.ID]*pipelineNodes, len(set.PipelineConfigs)),
 		instanceIDs:    make(map[int64]*componentstatus.InstanceID),
 		telemetry:      set.Telemetry,
 	}
@@ -95,8 +96,8 @@ func (g *Graph) createNodes(set Settings) error {
 	connectors := make(map[component.ID]struct{})
 
 	// Keep track of connectors and where they are used. (map[connectorID][]pipelineID).
-	connectorsAsExporter := make(map[component.ID][]component.ID)
-	connectorsAsReceiver := make(map[component.ID][]component.ID)
+	connectorsAsExporter := make(map[component.ID][]pipeline.ID)
+	connectorsAsReceiver := make(map[component.ID][]pipeline.ID)
 
 	// Build each pipelineNodes struct for each pipeline by parsing the pipelineCfg.
 	// Also populates the connectors, connectorsAsExporter and connectorsAsReceiver maps.
@@ -140,19 +141,19 @@ func (g *Graph) createNodes(set Settings) error {
 		}
 		connFactory := factory.(connector.Factory)
 
-		expTypes := make(map[component.DataType]bool)
+		expTypes := make(map[pipeline.Signal]bool)
 		for _, pipelineID := range connectorsAsExporter[connID] {
 			// The presence of each key indicates how the connector is used as an exporter.
 			// The value is initially set to false. Later we will set the value to true *if* we
 			// confirm that there is a supported corresponding use as a receiver.
-			expTypes[pipelineID.Type()] = false
+			expTypes[pipelineID.Signal()] = false
 		}
-		recTypes := make(map[component.DataType]bool)
+		recTypes := make(map[pipeline.Signal]bool)
 		for _, pipelineID := range connectorsAsReceiver[connID] {
 			// The presence of each key indicates how the connector is used as a receiver.
 			// The value is initially set to false. Later we will set the value to true *if* we
 			// confirm that there is a supported corresponding use as an exporter.
-			recTypes[pipelineID.Type()] = false
+			recTypes[pipelineID.Signal()] = false
 		}
 
 		for expType := range expTypes {
@@ -180,7 +181,7 @@ func (g *Graph) createNodes(set Settings) error {
 
 		for _, eID := range connectorsAsExporter[connID] {
 			for _, rID := range connectorsAsReceiver[connID] {
-				if connectorStability(connFactory, eID.Type(), rID.Type()) == component.StabilityLevelUndefined {
+				if connectorStability(connFactory, eID.Signal(), rID.Signal()) == component.StabilityLevelUndefined {
 					// Connector is not supported for this combination, but we know it is used correctly elsewhere
 					continue
 				}
@@ -194,52 +195,52 @@ func (g *Graph) createNodes(set Settings) error {
 	return nil
 }
 
-func (g *Graph) createReceiver(pipelineID, recvID component.ID) *receiverNode {
-	rcvrNode := newReceiverNode(pipelineID.Type(), recvID)
+func (g *Graph) createReceiver(pipelineID pipeline.ID, recvID component.ID) *receiverNode {
+	rcvrNode := newReceiverNode(pipelineID.Signal(), recvID)
 	if node := g.componentGraph.Node(rcvrNode.ID()); node != nil {
 		instanceID := g.instanceIDs[node.ID()]
-		g.instanceIDs[node.ID()] = instanceID.WithPipelines(pipelineID)
+		g.instanceIDs[node.ID()] = instanceID.WithPipelineIDs(pipelineID)
 		return node.(*receiverNode)
 	}
 	g.componentGraph.AddNode(rcvrNode)
-	g.instanceIDs[rcvrNode.ID()] = componentstatus.NewInstanceID(
+	g.instanceIDs[rcvrNode.ID()] = componentstatus.NewInstanceIDWithPipelineIDs(
 		recvID, component.KindReceiver, pipelineID,
 	)
 	return rcvrNode
 }
 
-func (g *Graph) createProcessor(pipelineID, procID component.ID) *processorNode {
+func (g *Graph) createProcessor(pipelineID pipeline.ID, procID component.ID) *processorNode {
 	procNode := newProcessorNode(pipelineID, procID)
 	g.componentGraph.AddNode(procNode)
-	g.instanceIDs[procNode.ID()] = componentstatus.NewInstanceID(
+	g.instanceIDs[procNode.ID()] = componentstatus.NewInstanceIDWithPipelineIDs(
 		procID, component.KindProcessor, pipelineID,
 	)
 	return procNode
 }
 
-func (g *Graph) createExporter(pipelineID, exprID component.ID) *exporterNode {
-	expNode := newExporterNode(pipelineID.Type(), exprID)
+func (g *Graph) createExporter(pipelineID pipeline.ID, exprID component.ID) *exporterNode {
+	expNode := newExporterNode(pipelineID.Signal(), exprID)
 	if node := g.componentGraph.Node(expNode.ID()); node != nil {
 		instanceID := g.instanceIDs[expNode.ID()]
-		g.instanceIDs[expNode.ID()] = instanceID.WithPipelines(pipelineID)
+		g.instanceIDs[expNode.ID()] = instanceID.WithPipelineIDs(pipelineID)
 		return node.(*exporterNode)
 	}
 	g.componentGraph.AddNode(expNode)
-	g.instanceIDs[expNode.ID()] = componentstatus.NewInstanceID(
+	g.instanceIDs[expNode.ID()] = componentstatus.NewInstanceIDWithPipelineIDs(
 		expNode.componentID, component.KindExporter, pipelineID,
 	)
 	return expNode
 }
 
-func (g *Graph) createConnector(exprPipelineID, rcvrPipelineID, connID component.ID) *connectorNode {
-	connNode := newConnectorNode(exprPipelineID.Type(), rcvrPipelineID.Type(), connID)
+func (g *Graph) createConnector(exprPipelineID, rcvrPipelineID pipeline.ID, connID component.ID) *connectorNode {
+	connNode := newConnectorNode(exprPipelineID.Signal(), rcvrPipelineID.Signal(), connID)
 	if node := g.componentGraph.Node(connNode.ID()); node != nil {
 		instanceID := g.instanceIDs[connNode.ID()]
-		g.instanceIDs[connNode.ID()] = instanceID.WithPipelines(exprPipelineID, rcvrPipelineID)
+		g.instanceIDs[connNode.ID()] = instanceID.WithPipelineIDs(exprPipelineID, rcvrPipelineID)
 		return node.(*connectorNode)
 	}
 	g.componentGraph.AddNode(connNode)
-	g.instanceIDs[connNode.ID()] = componentstatus.NewInstanceID(
+	g.instanceIDs[connNode.ID()] = componentstatus.NewInstanceIDWithPipelineIDs(
 		connNode.componentID, component.KindConnector, exprPipelineID, rcvrPipelineID,
 	)
 	return connNode
@@ -303,46 +304,46 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 				capability.MutatesData = capability.MutatesData || proc.getConsumer().Capabilities().MutatesData
 			}
 			next := g.nextConsumers(n.ID())[0]
-			switch n.pipelineID.Type() {
-			case component.DataTypeTraces:
+			switch n.pipelineID.Signal() {
+			case pipeline.SignalTraces:
 				cc := capabilityconsumer.NewTraces(next.(consumer.Traces), capability)
 				n.baseConsumer = cc
 				n.ConsumeTracesFunc = cc.ConsumeTraces
-			case component.DataTypeMetrics:
+			case pipeline.SignalMetrics:
 				cc := capabilityconsumer.NewMetrics(next.(consumer.Metrics), capability)
 				n.baseConsumer = cc
 				n.ConsumeMetricsFunc = cc.ConsumeMetrics
-			case component.DataTypeLogs:
+			case pipeline.SignalLogs:
 				cc := capabilityconsumer.NewLogs(next.(consumer.Logs), capability)
 				n.baseConsumer = cc
 				n.ConsumeLogsFunc = cc.ConsumeLogs
-			case componentprofiles.DataTypeProfiles:
+			case componentprofiles.SignalProfiles:
 				cc := capabilityconsumer.NewProfiles(next.(consumerprofiles.Profiles), capability)
 				n.baseConsumer = cc
 				n.ConsumeProfilesFunc = cc.ConsumeProfiles
 			}
 		case *fanOutNode:
 			nexts := g.nextConsumers(n.ID())
-			switch n.pipelineID.Type() {
-			case component.DataTypeTraces:
+			switch n.pipelineID.Signal() {
+			case pipeline.SignalTraces:
 				consumers := make([]consumer.Traces, 0, len(nexts))
 				for _, next := range nexts {
 					consumers = append(consumers, next.(consumer.Traces))
 				}
 				n.baseConsumer = fanoutconsumer.NewTraces(consumers)
-			case component.DataTypeMetrics:
+			case pipeline.SignalMetrics:
 				consumers := make([]consumer.Metrics, 0, len(nexts))
 				for _, next := range nexts {
 					consumers = append(consumers, next.(consumer.Metrics))
 				}
 				n.baseConsumer = fanoutconsumer.NewMetrics(consumers)
-			case component.DataTypeLogs:
+			case pipeline.SignalLogs:
 				consumers := make([]consumer.Logs, 0, len(nexts))
 				for _, next := range nexts {
 					consumers = append(consumers, next.(consumer.Logs))
 				}
 				n.baseConsumer = fanoutconsumer.NewLogs(consumers)
-			case componentprofiles.DataTypeProfiles:
+			case componentprofiles.SignalProfiles:
 				consumers := make([]consumerprofiles.Profiles, 0, len(nexts))
 				for _, next := range nexts {
 					consumers = append(consumers, next.(consumerprofiles.Profiles))
@@ -477,18 +478,12 @@ func (g *Graph) ShutdownAll(ctx context.Context, reporter status.Reporter) error
 	return errs
 }
 
-// Deprecated: [0.79.0] This function will be removed in the future.
-// Several components in the contrib repository use this function so it cannot be removed
-// before those cases are removed. In most cases, use of this function can be replaced by a
-// connector. See https://github.com/open-telemetry/opentelemetry-collector/issues/7370 and
-// https://github.com/open-telemetry/opentelemetry-collector/pull/7390#issuecomment-1483710184
-// for additional information.
-func (g *Graph) GetExporters() map[component.DataType]map[component.ID]component.Component {
-	exportersMap := make(map[component.DataType]map[component.ID]component.Component)
-	exportersMap[component.DataTypeTraces] = make(map[component.ID]component.Component)
-	exportersMap[component.DataTypeMetrics] = make(map[component.ID]component.Component)
-	exportersMap[component.DataTypeLogs] = make(map[component.ID]component.Component)
-	exportersMap[componentprofiles.DataTypeProfiles] = make(map[component.ID]component.Component)
+func (g *Graph) GetExporters() map[pipeline.Signal]map[component.ID]component.Component {
+	exportersMap := make(map[pipeline.Signal]map[component.ID]component.Component)
+	exportersMap[pipeline.SignalTraces] = make(map[component.ID]component.Component)
+	exportersMap[pipeline.SignalMetrics] = make(map[component.ID]component.Component)
+	exportersMap[pipeline.SignalLogs] = make(map[component.ID]component.Component)
+	exportersMap[componentprofiles.SignalProfiles] = make(map[component.ID]component.Component)
 
 	for _, pg := range g.pipelines {
 		for _, expNode := range pg.exporters {
@@ -531,7 +526,7 @@ func cycleErr(err error, cycles [][]graph.Node) error {
 	for _, node := range cycle {
 		switch n := node.(type) {
 		case *processorNode:
-			componentDetails = append(componentDetails, fmt.Sprintf("processor %q in pipeline %q", n.componentID, n.pipelineID))
+			componentDetails = append(componentDetails, fmt.Sprintf("processor %q in pipeline %q", n.componentID, n.pipelineID.String()))
 		case *connectorNode:
 			componentDetails = append(componentDetails, fmt.Sprintf("connector %q (%s to %s)", n.componentID, n.exprPipelineType, n.rcvrPipelineType))
 		default:
@@ -541,50 +536,50 @@ func cycleErr(err error, cycles [][]graph.Node) error {
 	return fmt.Errorf("cycle detected: %s", strings.Join(componentDetails, " -> "))
 }
 
-func connectorStability(f connector.Factory, expType, recType component.Type) component.StabilityLevel {
+func connectorStability(f connector.Factory, expType, recType pipeline.Signal) component.StabilityLevel {
 	switch expType {
-	case component.DataTypeTraces:
+	case pipeline.SignalTraces:
 		switch recType {
-		case component.DataTypeTraces:
+		case pipeline.SignalTraces:
 			return f.TracesToTracesStability()
-		case component.DataTypeMetrics:
+		case pipeline.SignalMetrics:
 			return f.TracesToMetricsStability()
-		case component.DataTypeLogs:
+		case pipeline.SignalLogs:
 			return f.TracesToLogsStability()
-		case componentprofiles.DataTypeProfiles:
+		case componentprofiles.SignalProfiles:
 			return f.TracesToProfilesStability()
 		}
-	case component.DataTypeMetrics:
+	case pipeline.SignalMetrics:
 		switch recType {
-		case component.DataTypeTraces:
+		case pipeline.SignalTraces:
 			return f.MetricsToTracesStability()
-		case component.DataTypeMetrics:
+		case pipeline.SignalMetrics:
 			return f.MetricsToMetricsStability()
-		case component.DataTypeLogs:
+		case pipeline.SignalLogs:
 			return f.MetricsToLogsStability()
-		case componentprofiles.DataTypeProfiles:
+		case componentprofiles.SignalProfiles:
 			return f.MetricsToProfilesStability()
 		}
-	case component.DataTypeLogs:
+	case pipeline.SignalLogs:
 		switch recType {
-		case component.DataTypeTraces:
+		case pipeline.SignalTraces:
 			return f.LogsToTracesStability()
-		case component.DataTypeMetrics:
+		case pipeline.SignalMetrics:
 			return f.LogsToMetricsStability()
-		case component.DataTypeLogs:
+		case pipeline.SignalLogs:
 			return f.LogsToLogsStability()
-		case componentprofiles.DataTypeProfiles:
+		case componentprofiles.SignalProfiles:
 			return f.LogsToProfilesStability()
 		}
-	case componentprofiles.DataTypeProfiles:
+	case componentprofiles.SignalProfiles:
 		switch recType {
-		case component.DataTypeTraces:
+		case pipeline.SignalTraces:
 			return f.ProfilesToTracesStability()
-		case component.DataTypeMetrics:
+		case pipeline.SignalMetrics:
 			return f.ProfilesToMetricsStability()
-		case component.DataTypeLogs:
+		case pipeline.SignalLogs:
 			return f.ProfilesToLogsStability()
-		case componentprofiles.DataTypeProfiles:
+		case componentprofiles.SignalProfiles:
 			return f.ProfilesToProfilesStability()
 		}
 	}

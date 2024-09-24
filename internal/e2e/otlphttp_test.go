@@ -62,7 +62,7 @@ func TestTraceNoBackend(t *testing.T) {
 func TestTraceInvalidUrl(t *testing.T) {
 	exp := startTracesExporter(t, "http:/\\//this_is_an/*/invalid_url", "")
 	td := testdata.GenerateTraces(1)
-	assert.Error(t, exp.ConsumeTraces(context.Background(), td))
+	require.Error(t, exp.ConsumeTraces(context.Background(), td))
 
 	exp = startTracesExporter(t, "", "http:/\\//this_is_an/*/invalid_url")
 	td = testdata.GenerateTraces(1)
@@ -104,14 +104,14 @@ func TestTraceRoundTrip(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.TracesSink)
 			startTracesReceiver(t, addr, sink)
-			exp := startTracesExporter(t, test.baseURL, test.overrideURL)
+			exp := startTracesExporter(t, tt.baseURL, tt.overrideURL)
 
 			td := testdata.GenerateTraces(1)
-			assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
+			require.NoError(t, exp.ConsumeTraces(context.Background(), td))
 			require.Eventually(t, func() bool {
 				return sink.SpanCount() > 0
 			}, 1*time.Second, 10*time.Millisecond)
@@ -157,14 +157,14 @@ func TestMetricsRoundTrip(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.MetricsSink)
 			startMetricsReceiver(t, addr, sink)
-			exp := startMetricsExporter(t, test.baseURL, test.overrideURL)
+			exp := startMetricsExporter(t, tt.baseURL, tt.overrideURL)
 
 			md := testdata.GenerateMetrics(1)
-			assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
+			require.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 			require.Eventually(t, func() bool {
 				return sink.DataPointCount() > 0
 			}, 1*time.Second, 10*time.Millisecond)
@@ -210,14 +210,14 @@ func TestLogsRoundTrip(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
 			startLogsReceiver(t, addr, sink)
-			exp := startLogsExporter(t, test.baseURL, test.overrideURL)
+			exp := startLogsExporter(t, tt.baseURL, tt.overrideURL)
 
 			md := testdata.GenerateLogs(1)
-			assert.NoError(t, exp.ConsumeLogs(context.Background(), md))
+			require.NoError(t, exp.ConsumeLogs(context.Background(), md))
 			require.Eventually(t, func() bool {
 				return sink.LogRecordCount() > 0
 			}, 1*time.Second, 10*time.Millisecond)
@@ -232,18 +232,18 @@ func TestIssue_4221(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		defer func() { assert.NoError(t, r.Body.Close()) }()
 		compressedData, err := io.ReadAll(r.Body)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		gzipReader, err := gzip.NewReader(bytes.NewReader(compressedData))
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		data, err := io.ReadAll(gzipReader)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		base64Data := base64.StdEncoding.EncodeToString(data)
 		// Verify same base64 encoded string is received.
 		assert.Equal(t, "CscBCkkKIAoMc2VydmljZS5uYW1lEhAKDnVvcC5zdGFnZS1ldS0xCiUKGW91dHN5c3RlbXMubW9kdWxlLnZlcnNpb24SCAoGOTAzMzg2EnoKEQoMdW9wX2NhbmFyaWVzEgExEmUKEEMDhT8Ib0+Mhs8Zi2VR34QSCOVRPDJ5XEG5IgA5QE41aASRrxZBQE41aASRrxZKEAoKc3Bhbl9pbmRleBICGANKHwoNY29kZS5mdW5jdGlvbhIOCgxteUZ1bmN0aW9uMzZ6AA==", base64Data)
 		unbase64Data, err := base64.StdEncoding.DecodeString(base64Data)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		tr := ptraceotlp.NewExportRequest()
-		require.NoError(t, tr.UnmarshalProto(unbase64Data))
+		assert.NoError(t, tr.UnmarshalProto(unbase64Data))
 		span := tr.Traces().ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 		traceID := span.TraceID()
 		assert.Equal(t, "4303853f086f4f8c86cf198b6551df84", hex.EncodeToString(traceID[:]))

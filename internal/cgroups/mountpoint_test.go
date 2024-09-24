@@ -31,6 +31,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewMountPointFromLine(t *testing.T) {
@@ -90,7 +91,7 @@ func TestNewMountPointFromLineErr(t *testing.T) {
 	for i, line := range linesWithInvalidIDs {
 		mountPoint, err := NewMountPointFromLine(line)
 		assert.Nil(t, mountPoint, "[%d] %q", i, line)
-		assert.Error(t, err, line)
+		require.Error(t, err, line)
 	}
 
 	linesWithInvalidFields := []string{
@@ -106,7 +107,7 @@ func TestNewMountPointFromLineErr(t *testing.T) {
 		errExpected := mountPointFormatInvalidError{line}
 
 		assert.Nil(t, mountPoint, "[%d] %q", i, line)
-		assert.Equal(t, err, errExpected, "[%d] %q", i, line)
+		assert.Equal(t, errExpected, err, "[%d] %q", i, line)
 	}
 }
 
@@ -115,7 +116,7 @@ func TestMountPointTranslate(t *testing.T) {
 	cgroupMountPoint, err := NewMountPointFromLine(line)
 
 	assert.NotNil(t, cgroupMountPoint)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	testTable := []struct {
 		name            string
@@ -151,7 +152,7 @@ func TestMountPointTranslateError(t *testing.T) {
 	cgroupMountPoint, err := NewMountPointFromLine(line)
 
 	assert.NotNil(t, cgroupMountPoint)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	inaccessiblePaths := []string{
 		"/",

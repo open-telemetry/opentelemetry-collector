@@ -25,6 +25,17 @@ const (
 
 // Test the collector as a Windows service.
 // The test assumes that the service and respective event source are already created.
+//
+// To test locally:
+// * Build the binary:
+//   - make otelcorecol
+//
+// * Install the Windows service
+//   - New-Service -Name "otelcorecol" -StartupType "Manual" -BinaryPathName "${PWD}\bin\otelcorecol_windows_amd64 --config ${PWD}\examples\local\otel-config.yaml"
+//
+// * Create event log source
+//   - eventcreate.exe /t information /id 1 /l application /d "Creating event provider for 'otelcorecol'" /so otelcorecol
+//
 // The test also must be executed with administrative privileges.
 func TestCollectorAsService(t *testing.T) {
 	collector_executable, err := filepath.Abs(filepath.Join("..", "bin", "otelcorecol_windows_amd64"))
@@ -58,7 +69,7 @@ func TestCollectorAsService(t *testing.T) {
 		},
 		{
 			name:       "LogToFile",
-			configFile: filepath.Join(".", "testdata", "otel-log-to-file.yaml"),
+			configFile: filepath.Join(".", "testdata", "otelcol-log-to-file.yaml"),
 			customSetup: func(t *testing.T) {
 				// Create the folder and clean the log file if it exists
 				programDataPath := os.Getenv("ProgramData")

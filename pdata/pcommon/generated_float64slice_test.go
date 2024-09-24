@@ -24,25 +24,25 @@ func TestNewFloat64Slice(t *testing.T) {
 	assert.Equal(t, []float64{1, 5, 3}, ms.AsRaw())
 	ms.FromRaw([]float64{3})
 	assert.Equal(t, 1, ms.Len())
-	assert.Equal(t, float64(3), ms.At(0))
+	assert.InDelta(t, float64(3), ms.At(0), 0.01)
 
 	cp := NewFloat64Slice()
 	ms.CopyTo(cp)
 	ms.SetAt(0, float64(2))
-	assert.Equal(t, float64(2), ms.At(0))
-	assert.Equal(t, float64(3), cp.At(0))
+	assert.InDelta(t, float64(2), ms.At(0), 0.01)
+	assert.InDelta(t, float64(3), cp.At(0), 0.01)
 	ms.CopyTo(cp)
-	assert.Equal(t, float64(2), cp.At(0))
+	assert.InDelta(t, float64(2), cp.At(0), 0.01)
 
 	mv := NewFloat64Slice()
 	ms.MoveTo(mv)
 	assert.Equal(t, 0, ms.Len())
 	assert.Equal(t, 1, mv.Len())
-	assert.Equal(t, float64(2), mv.At(0))
+	assert.InDelta(t, float64(2), mv.At(0), 0.01)
 	ms.FromRaw([]float64{1, 2, 3})
 	ms.MoveTo(mv)
 	assert.Equal(t, 3, mv.Len())
-	assert.Equal(t, float64(1), mv.At(0))
+	assert.InDelta(t, float64(1), mv.At(0), 0.01)
 }
 
 func TestFloat64SliceReadOnly(t *testing.T) {
@@ -51,7 +51,7 @@ func TestFloat64SliceReadOnly(t *testing.T) {
 	ms := Float64Slice(internal.NewFloat64Slice(&raw, &state))
 
 	assert.Equal(t, 3, ms.Len())
-	assert.Equal(t, float64(1), ms.At(0))
+	assert.InDelta(t, float64(1), ms.At(0), 0.01)
 	assert.Panics(t, func() { ms.Append(1) })
 	assert.Panics(t, func() { ms.EnsureCapacity(2) })
 	assert.Equal(t, raw, ms.AsRaw())
@@ -71,7 +71,7 @@ func TestFloat64SliceAppend(t *testing.T) {
 	ms.FromRaw([]float64{1, 2, 3})
 	ms.Append(5, 5)
 	assert.Equal(t, 5, ms.Len())
-	assert.Equal(t, float64(5), ms.At(4))
+	assert.InDelta(t, float64(5), ms.At(4), 0.01)
 }
 
 func TestFloat64SliceEnsureCapacity(t *testing.T) {

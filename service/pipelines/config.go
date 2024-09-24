@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentprofiles"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 var (
@@ -18,6 +19,8 @@ var (
 )
 
 // Config defines the configurable settings for service telemetry.
+//
+// Deprecated: [v0.110.0] Use ConfigWithPipelineID instead
 type Config map[component.ID]*PipelineConfig
 
 func (cfg Config) Validate() error {
@@ -28,8 +31,9 @@ func (cfg Config) Validate() error {
 
 	// Check that all pipelines have at least one receiver and one exporter, and they reference
 	// only configured components.
-	for pipelineID, pipeline := range cfg {
+	for pipelineID, p := range cfg {
 		switch pipelineID.Type() {
+		// nolint
 		case component.DataTypeTraces, component.DataTypeMetrics, component.DataTypeLogs, componentprofiles.DataTypeProfiles:
 			// Continue
 		default:
@@ -37,8 +41,35 @@ func (cfg Config) Validate() error {
 		}
 
 		// Validate pipeline has at least one receiver.
-		if err := pipeline.Validate(); err != nil {
+		if err := p.Validate(); err != nil {
 			return fmt.Errorf("pipeline %q: %w", pipelineID, err)
+		}
+	}
+
+	return nil
+}
+
+type ConfigWithPipelineID map[pipeline.ID]*PipelineConfig
+
+func (cfg ConfigWithPipelineID) Validate() error {
+	// Must have at least one pipeline.
+	if len(cfg) == 0 {
+		return errMissingServicePipelines
+	}
+
+	// Check that all pipelines have at least one receiver and one exporter, and they reference
+	// only configured components.
+	for pipelineID, p := range cfg {
+		switch pipelineID.Signal() {
+		case pipeline.SignalTraces, pipeline.SignalMetrics, pipeline.SignalLogs, componentprofiles.SignalProfiles:
+			// Continue
+		default:
+			return fmt.Errorf("pipeline %q: unknown signal %q", pipelineID.String(), pipelineID.Signal())
+		}
+
+		// Validate pipeline has at least one receiver.
+		if err := p.Validate(); err != nil {
+			return fmt.Errorf("pipeline %q: %w", pipelineID.String(), err)
 		}
 	}
 

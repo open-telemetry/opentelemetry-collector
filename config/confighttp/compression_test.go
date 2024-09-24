@@ -8,12 +8,14 @@ import (
 	"compress/gzip"
 	"compress/zlib"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"testing/iotest"
 
 	"github.com/golang/snappy"
 	"github.com/klauspost/compress/zstd"
@@ -85,7 +87,7 @@ func TestHTTPClientCompression(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				body, err := io.ReadAll(r.Body)
-				require.NoError(t, err, "failed to read request body: %v", err)
+				assert.NoError(t, err, "failed to read request body: %v", err)
 				assert.EqualValues(t, tt.reqBody, body)
 				w.WriteHeader(http.StatusOK)
 			}))
@@ -125,7 +127,7 @@ func TestHTTPCustomDecompression(t *testing.T) {
 			return
 		}
 
-		require.NoError(t, err, "failed to read request body: %v", err)
+		assert.NoError(t, err, "failed to read request body: %v", err)
 		assert.EqualValues(t, "decompressed body", string(body))
 		w.WriteHeader(http.StatusOK)
 	})
@@ -142,7 +144,7 @@ func TestHTTPCustomDecompression(t *testing.T) {
 	require.NoError(t, err, "failed to create request to test handler")
 	req.Header.Set("Content-Encoding", "custom-encoding")
 
-	client := http.Client{}
+	client := srv.Client()
 	res, err := client.Do(req)
 	require.NoError(t, err)
 
@@ -250,7 +252,7 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 					return
 				}
 
-				require.NoError(t, err, "failed to read request body: %v", err)
+				assert.NoError(t, err, "failed to read request body: %v", err)
 				assert.EqualValues(t, testBody, string(body))
 				w.WriteHeader(http.StatusOK)
 			}), defaultMaxRequestBodySize, defaultErrorHandler, defaultCompressionAlgorithms, noDecoders))
@@ -260,7 +262,7 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 			require.NoError(t, err, "failed to create request to test handler")
 			req.Header.Set("Content-Encoding", tt.encoding)
 
-			client := http.Client{}
+			client := srv.Client()
 			res, err := client.Do(req)
 			require.NoError(t, err)
 
@@ -276,18 +278,18 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 
 func TestHTTPContentCompressionRequestWithNilBody(t *testing.T) {
 	compressedGzipBody := compressGzip(t, []byte{})
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		body, err := io.ReadAll(r.Body)
-		require.NoError(t, err, "failed to read request body: %v", err)
+		assert.NoError(t, err, "failed to read request body: %v", err)
 		assert.EqualValues(t, compressedGzipBody.Bytes(), body)
 	}))
-	defer server.Close()
+	defer srv.Close()
 
-	req, err := http.NewRequest(http.MethodGet, server.URL, nil)
+	req, err := http.NewRequest(http.MethodGet, srv.URL, nil)
 	require.NoError(t, err, "failed to create request to test handler")
 
-	client := http.Client{}
+	client := srv.Client()
 	client.Transport, err = newCompressRoundTripper(http.DefaultTransport, configcompression.TypeGzip)
 	require.NoError(t, err)
 	res, err := client.Do(req)
@@ -298,27 +300,16 @@ func TestHTTPContentCompressionRequestWithNilBody(t *testing.T) {
 	require.NoError(t, res.Body.Close(), "failed to close request body: %v", err)
 }
 
-type copyFailBody struct {
-}
-
-func (*copyFailBody) Read([]byte) (n int, err error) {
-	return 0, fmt.Errorf("read failed")
-}
-
-func (*copyFailBody) Close() error {
-	return nil
-}
-
 func TestHTTPContentCompressionCopyError(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
-	t.Cleanup(server.Close)
+	t.Cleanup(srv.Close)
 
-	req, err := http.NewRequest(http.MethodGet, server.URL, &copyFailBody{})
+	req, err := http.NewRequest(http.MethodGet, srv.URL, iotest.ErrReader(errors.New("read failed")))
 	require.NoError(t, err)
 
-	client := http.Client{}
+	client := srv.Client()
 	client.Transport, err = newCompressRoundTripper(http.DefaultTransport, configcompression.TypeGzip)
 	require.NoError(t, err)
 	_, err = client.Do(req)
@@ -334,15 +325,15 @@ func (*closeFailBody) Close() error {
 }
 
 func TestHTTPContentCompressionRequestBodyCloseError(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
-	t.Cleanup(server.Close)
+	t.Cleanup(srv.Close)
 
-	req, err := http.NewRequest(http.MethodGet, server.URL, &closeFailBody{Buffer: bytes.NewBuffer([]byte("blank"))})
+	req, err := http.NewRequest(http.MethodGet, srv.URL, &closeFailBody{Buffer: bytes.NewBuffer([]byte("blank"))})
 	require.NoError(t, err)
 
-	client := http.Client{}
+	client := srv.Client()
 	client.Transport, err = newCompressRoundTripper(http.DefaultTransport, configcompression.TypeGzip)
 	require.NoError(t, err)
 	_, err = client.Do(req)
@@ -362,7 +353,7 @@ func TestOverrideCompressionList(t *testing.T) {
 	require.NoError(t, err, "failed to create request to test handler")
 	req.Header.Set("Content-Encoding", "snappy")
 
-	client := http.Client{}
+	client := srv.Client()
 
 	// test
 	res, err := client.Do(req)

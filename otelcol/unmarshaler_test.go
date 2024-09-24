@@ -19,7 +19,7 @@ import (
 
 func TestUnmarshalEmpty(t *testing.T) {
 	factories, err := nopFactories()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	_, err = unmarshal(confmap.New(), factories)
 	assert.NoError(t, err)
@@ -27,7 +27,7 @@ func TestUnmarshalEmpty(t *testing.T) {
 
 func TestUnmarshalEmptyAllSections(t *testing.T) {
 	factories, err := nopFactories()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	conf := confmap.NewFromStringMap(map[string]any{
 		"receivers":  nil,
@@ -38,7 +38,7 @@ func TestUnmarshalEmptyAllSections(t *testing.T) {
 		"service":    nil,
 	})
 	cfg, err := unmarshal(conf, factories)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	zapProdCfg := zap.NewProductionConfig()
 	assert.Equal(t, telemetry.LogsConfig{
@@ -61,7 +61,7 @@ func TestUnmarshalEmptyAllSections(t *testing.T) {
 
 func TestUnmarshalUnknownTopLevel(t *testing.T) {
 	factories, err := nopFactories()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	conf := confmap.NewFromStringMap(map[string]any{
 		"unknown_section": nil,
@@ -134,7 +134,7 @@ func TestPipelineConfigUnmarshalError(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			pips := new(pipelines.Config)
+			pips := new(pipelines.ConfigWithPipelineID)
 			err := tt.conf.Unmarshal(&pips)
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tt.expectError)
