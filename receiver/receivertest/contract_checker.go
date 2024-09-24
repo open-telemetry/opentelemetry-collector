@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentprofiles"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -24,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
 )
 
@@ -54,8 +56,13 @@ type CheckConsumeContractParams struct {
 	T *testing.T
 	// Factory that allows to create a receiver.
 	Factory receiver.Factory
+
 	// DataType to test for.
-	DataType component.DataType
+	//
+	// Deprecated: [v0.110.0] Use Signal instead.
+	DataType component.DataType // nolint
+
+	Signal pipeline.Signal
 	// Config of the receiver to use.
 	Config component.Config
 	// Generator that can send data to the receiver.
@@ -111,12 +118,26 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 	// Create and start the receiver.
 	var receiver component.Component
 	var err error
+
+	s := params.Signal
+	// nolint
 	switch params.DataType {
-	case component.DataTypeLogs:
-		receiver, err = params.Factory.CreateLogsReceiver(ctx, NewNopSettings(), params.Config, consumer)
 	case component.DataTypeTraces:
-		receiver, err = params.Factory.CreateTracesReceiver(ctx, NewNopSettings(), params.Config, consumer)
+		s = pipeline.SignalTraces
 	case component.DataTypeMetrics:
+		s = pipeline.SignalMetrics
+	case component.DataTypeLogs:
+		s = pipeline.SignalLogs
+	case componentprofiles.DataTypeProfiles:
+		s = componentprofiles.SignalProfiles
+	}
+
+	switch s {
+	case pipeline.SignalLogs:
+		receiver, err = params.Factory.CreateLogsReceiver(ctx, NewNopSettings(), params.Config, consumer)
+	case pipeline.SignalTraces:
+		receiver, err = params.Factory.CreateTracesReceiver(ctx, NewNopSettings(), params.Config, consumer)
+	case pipeline.SignalMetrics:
 		receiver, err = params.Factory.CreateMetricsReceiver(ctx, NewNopSettings(), params.Config, consumer)
 	default:
 		require.FailNow(params.T, "must specify a valid DataType to test for")

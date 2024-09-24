@@ -55,7 +55,7 @@ func (g *Graph) HandleZPages(w http.ResponseWriter, r *http.Request) {
 
 		sumData.Rows = append(sumData.Rows, zpages.SummaryPipelinesTableRowData{
 			FullName:    c.String(),
-			InputType:   c.Type().String(),
+			InputType:   c.Signal().String(),
 			MutatesData: p.capabilitiesNode.getConsumer().Capabilities().MutatesData,
 			Receivers:   recvIDs,
 			Processors:  procIDs,

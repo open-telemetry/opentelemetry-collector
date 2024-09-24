@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 // Factory is a factory interface for receivers.
@@ -20,7 +21,7 @@ type Factory interface {
 
 	// CreateTracesReceiver creates a TracesReceiver based on this config.
 	// If the receiver type does not support traces,
-	// this function returns the error [component.ErrDataTypeIsNotSupported].
+	// this function returns the error [pipeline.ErrSignalNotSupported].
 	// Implementers can assume `nextConsumer` is never nil.
 	CreateTracesReceiver(ctx context.Context, set Settings, cfg component.Config, nextConsumer consumer.Traces) (Traces, error)
 
@@ -29,7 +30,7 @@ type Factory interface {
 
 	// CreateMetricsReceiver creates a MetricsReceiver based on this config.
 	// If the receiver type does not support metrics,
-	// this function returns the error [component.ErrDataTypeIsNotSupported].
+	// this function returns the error [pipeline.ErrSignalNotSupported].
 	// Implementers can assume `nextConsumer` is never nil.
 	CreateMetricsReceiver(ctx context.Context, set Settings, cfg component.Config, nextConsumer consumer.Metrics) (Metrics, error)
 
@@ -38,7 +39,7 @@ type Factory interface {
 
 	// CreateLogsReceiver creates a LogsReceiver based on this config.
 	// If the receiver type does not support logs,
-	// this function returns the error [component.ErrDataTypeIsNotSupported].
+	// this function returns the error [pipeline.ErrSignalNotSupported].
 	// Implementers can assume `nextConsumer` is never nil.
 	CreateLogsReceiver(ctx context.Context, set Settings, cfg component.Config, nextConsumer consumer.Logs) (Logs, error)
 
@@ -79,7 +80,7 @@ func (f CreateTracesFunc) CreateTracesReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Traces) (Traces, error) {
 	if f == nil {
-		return nil, component.ErrDataTypeIsNotSupported
+		return nil, pipeline.ErrSignalNotSupported
 	}
 	return f(ctx, set, cfg, nextConsumer)
 }
@@ -95,7 +96,7 @@ func (f CreateMetricsFunc) CreateMetricsReceiver(
 	nextConsumer consumer.Metrics,
 ) (Metrics, error) {
 	if f == nil {
-		return nil, component.ErrDataTypeIsNotSupported
+		return nil, pipeline.ErrSignalNotSupported
 	}
 	return f(ctx, set, cfg, nextConsumer)
 }
@@ -111,7 +112,7 @@ func (f CreateLogsFunc) CreateLogsReceiver(
 	nextConsumer consumer.Logs,
 ) (Logs, error) {
 	if f == nil {
-		return nil, component.ErrDataTypeIsNotSupported
+		return nil, pipeline.ErrSignalNotSupported
 	}
 	return f(ctx, set, cfg, nextConsumer)
 }
@@ -126,7 +127,7 @@ func (f CreateProfilesFunc) CreateProfilesReceiver(
 	cfg component.Config,
 	nextConsumer consumerprofiles.Profiles) (Profiles, error) {
 	if f == nil {
-		return nil, component.ErrDataTypeIsNotSupported
+		return nil, pipeline.ErrSignalNotSupported
 	}
 	return f(ctx, set, cfg, nextConsumer)
 }

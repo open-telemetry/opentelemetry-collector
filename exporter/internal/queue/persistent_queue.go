@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/internal/experr"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 // persistentQueue provides a persistent queue implementation backed by file storage extension
@@ -85,7 +86,7 @@ var (
 type PersistentQueueSettings[T any] struct {
 	Sizer            Sizer[T]
 	Capacity         int64
-	DataType         component.DataType
+	Signal           pipeline.Signal
 	StorageID        component.ID
 	Marshaler        func(req T) ([]byte, error)
 	Unmarshaler      func([]byte) (T, error)
@@ -104,7 +105,7 @@ func NewPersistentQueue[T any](set PersistentQueueSettings[T]) Queue[T] {
 
 // Start starts the persistentQueue with the given number of consumers.
 func (pq *persistentQueue[T]) Start(ctx context.Context, host component.Host) error {
-	storageClient, err := toStorageClient(ctx, pq.set.StorageID, host, pq.set.ExporterSettings.ID, pq.set.DataType)
+	storageClient, err := toStorageClient(ctx, pq.set.StorageID, host, pq.set.ExporterSettings.ID, pq.set.Signal)
 	if err != nil {
 		return err
 	}
@@ -485,7 +486,7 @@ func (pq *persistentQueue[T]) itemDispatchingFinish(ctx context.Context, index u
 	return nil
 }
 
-func toStorageClient(ctx context.Context, storageID component.ID, host component.Host, ownerID component.ID, signal component.DataType) (storage.Client, error) {
+func toStorageClient(ctx context.Context, storageID component.ID, host component.Host, ownerID component.ID, signal pipeline.Signal) (storage.Client, error) {
 	ext, found := host.GetExtensions()[storageID]
 	if !found {
 		return nil, errNoStorageClient
