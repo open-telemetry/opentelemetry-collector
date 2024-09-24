@@ -70,6 +70,7 @@ type batchProcessor struct {
 	tracer trace.Tracer
 }
 
+// batcher represents a single-shard or multi-shard batching process.
 type batcher interface {
 	start(ctx context.Context) error
 	consume(ctx context.Context, data any) error
@@ -106,17 +107,20 @@ type shard struct {
 	totalSent uint64
 }
 
+// pendingItem is stored parallel to a pending batch and records
+// how many items the waiter submitted, used to ensure the correct
+// response count is returned to each waiter.
 type pendingItem struct {
 	parentCtx context.Context
 	numItems  int
 	respCh    chan countedError
 }
 
+// dataItem is exchanged between the waiter and the batching process
+// includes the pendingItem and its data.
 type dataItem struct {
-	parentCtx  context.Context
-	data       any
-	responseCh chan countedError
-	count      int
+	data any
+	pendingItem
 }
 
 // batch is an interface generalizing the individual signal types.
@@ -291,7 +295,7 @@ func (b *shard) processItem(item dataItem) {
 	b.pending = append(b.pending, pendingItem{
 		parentCtx: item.parentCtx,
 		numItems:  totalItems,
-		respCh:    item.responseCh,
+		respCh:    item.respCh,
 	})
 
 	b.flushItems()
@@ -467,10 +471,12 @@ func (b *shard) consumeAndWait(ctx context.Context, data any) error {
 
 	respCh := make(chan countedError, 1)
 	item := dataItem{
-		parentCtx:  ctx,
-		data:       data,
-		responseCh: respCh,
-		count:      itemCount,
+		data: data,
+		pendingItem: pendingItem{
+			parentCtx: ctx,
+			respCh:    respCh,
+			numItems:  itemCount,
+		},
 	}
 
 	select {
@@ -488,15 +494,14 @@ func (b *shard) consumeAndWait(ctx context.Context, data any) error {
 				err = errors.Join(err, cntErr)
 			}
 
-			item.count -= cntErr.count
-			if item.count != 0 {
+			item.numItems -= cntErr.count
+			if item.numItems != 0 {
 				continue
 			}
 
 			return err
 		case <-ctx.Done():
-			err = errors.Join(err, ctx.Err())
-			return err
+			return errors.Join(err, ctx.Err())
 		}
 	}
 }
