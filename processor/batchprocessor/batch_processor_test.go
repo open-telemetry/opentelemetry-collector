@@ -1137,6 +1137,7 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 		Timeout:       200 * time.Millisecond,
 		SendBatchSize: 50,
 	}
+	bg := context.Background()
 
 	requestCount := 100
 	logsPerRequest := 5
@@ -1146,7 +1147,7 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchLogsProcessor(creationSet, sink, &cfg)
 	require.NoError(t, err)
-	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, batcher.Start(bg, componenttest.NewNopHost()))
 
 	sentResourceLogs := plog.NewLogs().ResourceLogs()
 
@@ -1158,23 +1159,15 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 			logs.At(logIndex).SetSeverityText(getTestLogSeverityText(requestNum, logIndex))
 		}
 		ld.ResourceLogs().At(0).CopyTo(sentResourceLogs.AppendEmpty())
-		wg.Add(1)
-		go func() {
-			assert.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
-			wg.Done()
-		}()
+		sendLogs(t, bg, batcher, &wg, ld)
 	}
 
 	// Added to test case with empty resources sent.
 	ld := plog.NewLogs()
-	wg.Add(1)
-	go func() {
-		assert.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
-		wg.Done()
-	}()
+	sendLogs(t, bg, batcher, &wg, ld)
 
 	wg.Wait()
-	require.NoError(t, batcher.Shutdown(context.Background()))
+	require.NoError(t, batcher.Shutdown(bg))
 
 	require.Equal(t, requestCount*logsPerRequest, sink.LogRecordCount())
 	receivedMds := sink.AllLogs()
@@ -1646,13 +1639,18 @@ func TestBatchZeroConfig(t *testing.T) {
 	wg.Wait()
 	require.NoError(t, batcher.Shutdown(bg))
 
-	// Expect them to be the original sizes.
+	// Expect them to be the original sizes.  Since they can
+	// arrive out of order, we use an ElementsMatch test below.
 	receivedMds := sink.AllLogs()
 	require.Equal(t, requestCount, len(receivedMds))
+	var receiveSizes []int
+	var expectSizes []int
 	for i, ld := range receivedMds {
 		require.Equal(t, 1, ld.ResourceLogs().Len())
-		require.Equal(t, logsPerRequest+i, ld.LogRecordCount())
+		expectSizes = append(expectSizes, logsPerRequest+i)
+		receiveSizes = append(receiveSizes, ld.LogRecordCount())
 	}
+	assert.ElementsMatch(t, expectSizes, receiveSizes)
 }
 
 func TestBatchSplitOnly(t *testing.T) {
@@ -1663,6 +1661,7 @@ func TestBatchSplitOnly(t *testing.T) {
 	cfg := Config{
 		SendBatchMaxSize: maxBatch,
 	}
+	bg := context.Background()
 
 	require.NoError(t, cfg.Validate())
 
@@ -1671,17 +1670,17 @@ func TestBatchSplitOnly(t *testing.T) {
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchLogsProcessor(creationSet, sink, &cfg)
 	require.NoError(t, err)
-	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, batcher.Start(bg, componenttest.NewNopHost()))
 
+	var wg sync.WaitGroup
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		ld := testdata.GenerateLogs(logsPerRequest)
-		assert.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
+		sendLogs(t, bg, batcher, &wg, ld)
 	}
 
 	// Wait for all batches.
-	require.Eventually(t, func() bool {
-		return sink.LogRecordCount() == logsPerRequest*requestCount
-	}, time.Second, 5*time.Millisecond)
+	wg.Wait()
+	require.NoError(t, batcher.Shutdown(bg))
 
 	// Expect them to be the limited by maxBatch.
 	receivedMds := sink.AllLogs()
@@ -1689,8 +1688,6 @@ func TestBatchSplitOnly(t *testing.T) {
 	for _, ld := range receivedMds {
 		require.Equal(t, maxBatch, ld.LogRecordCount())
 	}
-
-	require.NoError(t, batcher.Shutdown(context.Background()))
 }
 
 func TestBatchProcessorEmptyBatch(t *testing.T) {
