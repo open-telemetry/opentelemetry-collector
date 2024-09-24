@@ -53,9 +53,9 @@ $ /tmp/dist/otelcol-custom --config=/tmp/otelcol.yaml
 
 There are two supported ways to install the builder: via the official releases (recommended) and through `go install`.
 
-### Official releases 
+### Official releases
 
-This is the recommended installation method. Download the binary for your respective platform under the ["Releases"](https://github.com/open-telemetry/opentelemetry-collector/releases?q=builder) page.
+This is the recommended installation method. Download the binary for your respective platform from the ["Releases"](https://github.com/open-telemetry/opentelemetry-collector-releases/releases?q=cmd/builder) page.
 
 ### `go install`
 
