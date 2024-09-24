@@ -43,6 +43,30 @@ func (testError) Error() string {
 	return "test"
 }
 
+func sendTraces(t *testing.T, ctx context.Context, batcher processor.Traces, wg *sync.WaitGroup, td ptrace.Traces) {
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		assert.NoError(t, batcher.ConsumeTraces(ctx, td))
+	}()
+}
+
+func sendMetrics(t *testing.T, ctx context.Context, batcher processor.Metrics, wg *sync.WaitGroup, md pmetric.Metrics) {
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		assert.NoError(t, batcher.ConsumeMetrics(ctx, md))
+	}()
+}
+
+func sendLogs(t *testing.T, ctx context.Context, batcher processor.Logs, wg *sync.WaitGroup, ld plog.Logs) {
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		assert.NoError(t, batcher.ConsumeLogs(ctx, ld))
+	}()
+}
+
 func TestErrorWrapping(t *testing.T) {
 	e := countedError{
 		err: fmt.Errorf("oops: %w", testError{}),
@@ -290,22 +314,6 @@ func TestBatchProcessorUnbrokenParentContextMultiple(t *testing.T) {
 
 	require.NoError(t, bp.Shutdown(context.Background()))
 	require.NoError(t, tp.Shutdown(context.Background()))
-}
-
-func sendTraces(t *testing.T, ctx context.Context, batcher *batchProcessor, wg *sync.WaitGroup, td ptrace.Traces) {
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		assert.NoError(t, batcher.ConsumeTraces(ctx, td))
-	}()
-}
-
-func sendMetrics(t *testing.T, ctx context.Context, batcher *batchProcessor, wg *sync.WaitGroup, md pmetric.Metrics) {
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		assert.NoError(t, batcher.ConsumeMetrics(ctx, md))
-	}()
 }
 
 func TestBatchProcessorSpansDelivered(t *testing.T) {
@@ -767,11 +775,7 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 
 	// Added to test case with empty resources sent.
 	md := pmetric.NewMetrics()
-	wg.Add(1)
-	go func() {
-		assert.NoError(t, batcher.ConsumeMetrics(context.Background(), md))
-		wg.Done()
-	}()
+	sendMetrics(t, bg, batcher, &wg, md)
 
 	wg.Wait()
 	require.NoError(t, batcher.Shutdown(context.Background()))
@@ -787,6 +791,134 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 				metricsReceivedByName[getTestMetricName(requestNum, metricIndex)])
 		}
 	}
+}
+
+func TestBatchMetricProcessorBatchSize(t *testing.T) {
+	tel := setupTestTelemetry()
+	bg := context.Background()
+	sizer := &pmetric.ProtoMarshaler{}
+
+	// Instantiate the batch processor with low config values to test data
+	// gets sent through the processor.
+	cfg := Config{
+		Timeout:       100 * time.Millisecond,
+		SendBatchSize: 50,
+	}
+
+	requestCount := 100
+	metricsPerRequest := 5
+	dataPointsPerMetric := 2 // Since the int counter uses two datapoints.
+	dataPointsPerRequest := metricsPerRequest * dataPointsPerMetric
+	sink := new(consumertest.MetricsSink)
+
+	creationSet := tel.NewSettings()
+	creationSet.MetricsLevel = configtelemetry.LevelDetailed
+	batcher, err := newBatchMetricsProcessor(creationSet, sink, &cfg)
+	require.NoError(t, err)
+
+	start := time.Now()
+	require.NoError(t, batcher.Start(bg, componenttest.NewNopHost()))
+
+	var wg sync.WaitGroup
+	size := 0
+	for requestNum := 0; requestNum < requestCount; requestNum++ {
+		md := testdata.GenerateMetrics(metricsPerRequest)
+		size += sizer.MetricsSize(md)
+		sendMetrics(t, bg, batcher, &wg, md)
+	}
+	wg.Wait()
+	require.NoError(t, batcher.Shutdown(bg))
+
+	// We expect no timeout because the request fits exactly into
+	// a number of batches.
+	elapsed := time.Since(start)
+	require.LessOrEqual(t, elapsed.Nanoseconds(), cfg.Timeout.Nanoseconds())
+
+	expectedBatchesNum := requestCount * dataPointsPerRequest / int(cfg.SendBatchSize)
+	expectedBatchingFactor := int(cfg.SendBatchSize) / dataPointsPerRequest
+
+	require.Equal(t, requestCount*2*metricsPerRequest, sink.DataPointCount())
+	receivedMds := sink.AllMetrics()
+	require.Len(t, receivedMds, expectedBatchesNum)
+	for _, md := range receivedMds {
+		require.Equal(t, expectedBatchingFactor, md.ResourceMetrics().Len())
+		for i := 0; i < expectedBatchingFactor; i++ {
+			require.Equal(t, metricsPerRequest, md.ResourceMetrics().At(i).ScopeMetrics().At(0).Metrics().Len())
+		}
+	}
+
+	tel.assertMetrics(t, []metricdata.Metrics{
+		{
+			Name:        "otelcol_processor_batch_batch_send_size_bytes",
+			Description: "Number of bytes in batch that was sent",
+			Unit:        "By",
+			Data: metricdata.Histogram[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				DataPoints: []metricdata.HistogramDataPoint[int64]{
+					{
+						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
+						Count:      uint64(expectedBatchesNum),
+						Bounds: []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000,
+							100_000, 200_000, 300_000, 400_000, 500_000, 600_000, 700_000, 800_000, 900_000,
+							1000_000, 2000_000, 3000_000, 4000_000, 5000_000, 6000_000, 7000_000, 8000_000, 9000_000},
+						BucketCounts: []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, uint64(expectedBatchesNum), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+						Sum:          int64(size),
+						Min:          metricdata.NewExtrema(int64(size / expectedBatchesNum)),
+						Max:          metricdata.NewExtrema(int64(size / expectedBatchesNum)),
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_processor_batch_batch_send_size",
+			Description: "Number of units in the batch",
+			Unit:        "{units}",
+			Data: metricdata.Histogram[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				DataPoints: []metricdata.HistogramDataPoint[int64]{
+					{
+						Attributes:   attribute.NewSet(attribute.String("processor", "batch")),
+						Count:        uint64(expectedBatchesNum),
+						Bounds:       []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000},
+						BucketCounts: []uint64{0, 0, uint64(expectedBatchesNum), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+						Sum:          int64(sink.DataPointCount()),
+						Min:          metricdata.NewExtrema(int64(cfg.SendBatchSize)),
+						Max:          metricdata.NewExtrema(int64(cfg.SendBatchSize)),
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_processor_batch_batch_size_trigger_send",
+			Description: "Number of times the batch was sent due to a size trigger",
+			Unit:        "{times}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      int64(expectedBatchesNum),
+						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_processor_batch_metadata_cardinality",
+			Description: "Number of distinct metadata value combinations being processed",
+			Unit:        "{combinations}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: false,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      1,
+						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
+					},
+				},
+			},
+		},
+	})
 }
 
 func TestBatchMetrics_UnevenBatchMaxSize(t *testing.T) {
@@ -810,6 +942,7 @@ func TestBatchMetrics_UnevenBatchMaxSize(t *testing.T) {
 }
 
 func TestBatchMetricsProcessor_Timeout(t *testing.T) {
+	bg := context.Background()
 	cfg := Config{
 		Timeout:       100 * time.Millisecond,
 		SendBatchSize: 101,
@@ -822,17 +955,13 @@ func TestBatchMetricsProcessor_Timeout(t *testing.T) {
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchMetricsProcessor(creationSet, sink, &cfg)
 	require.NoError(t, err)
-	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, batcher.Start(bg, componenttest.NewNopHost()))
 
 	var wg sync.WaitGroup
 	start := time.Now()
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		md := testdata.GenerateMetrics(metricsPerRequest)
-		wg.Add(1)
-		go func() {
-			assert.NoError(t, batcher.ConsumeMetrics(context.Background(), md))
-			wg.Done()
-		}()
+		sendMetrics(t, bg, batcher, &wg, md)
 	}
 
 	wg.Wait()
@@ -855,6 +984,7 @@ func TestBatchMetricsProcessor_Timeout(t *testing.T) {
 }
 
 func TestBatchMetricProcessor_Shutdown(t *testing.T) {
+	bg := context.Background()
 	cfg := Config{
 		Timeout:       3 * time.Second,
 		SendBatchSize: 1000,
@@ -867,16 +997,12 @@ func TestBatchMetricProcessor_Shutdown(t *testing.T) {
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchMetricsProcessor(creationSet, sink, &cfg)
 	require.NoError(t, err)
-	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, batcher.Start(bg, componenttest.NewNopHost()))
 
 	var wg sync.WaitGroup
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		md := testdata.GenerateMetrics(metricsPerRequest)
-		wg.Add(1)
-		go func() {
-			assert.NoError(t, batcher.ConsumeMetrics(context.Background(), md))
-			wg.Done()
-		}()
+		sendMetrics(t, bg, batcher, &wg, md)
 	}
 
 	wg.Wait()
@@ -1112,6 +1238,7 @@ func TestBatchLogProcessor_Shutdown(t *testing.T) {
 		Timeout:       3 * time.Second,
 		SendBatchSize: 1000,
 	}
+	bg := context.Background()
 	requestCount := 5
 	logsPerRequest := 10
 	sink := new(consumertest.LogsSink)
@@ -1120,20 +1247,20 @@ func TestBatchLogProcessor_Shutdown(t *testing.T) {
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchLogsProcessor(creationSet, sink, &cfg)
 	require.NoError(t, err)
-	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, batcher.Start(bg, componenttest.NewNopHost()))
 
 	var wg sync.WaitGroup
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		ld := testdata.GenerateLogs(logsPerRequest)
 		wg.Add(1)
 		go func() {
-			assert.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
+			assert.NoError(t, batcher.ConsumeLogs(bg, ld))
 			wg.Done()
 		}()
 	}
 
 	wg.Wait()
-	require.NoError(t, batcher.Shutdown(context.Background()))
+	require.NoError(t, batcher.Shutdown(bg))
 
 	require.Equal(t, requestCount*logsPerRequest, sink.LogRecordCount())
 	require.Equal(t, 1, len(sink.AllLogs()))
@@ -1169,29 +1296,26 @@ func TestShutdown(t *testing.T) {
 func verifyTracesDoesNotProduceAfterShutdown(t *testing.T, factory processor.Factory, cfg component.Config) {
 	// Create a proc and output its produce to a sink.
 	nextSink := new(consumertest.TracesSink)
-	proc, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopSettings(), cfg, nextSink)
+	bg := context.Background()
+	proc, err := factory.CreateTracesProcessor(bg, processortest.NewNopSettings(), cfg, nextSink)
 	if err != nil {
 		if errors.Is(err, component.ErrDataTypeIsNotSupported) {
 			return
 		}
 		require.NoError(t, err)
 	}
-	assert.NoError(t, proc.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, proc.Start(bg, componenttest.NewNopHost()))
 
 	// Send some traces to the proc.
 	const generatedCount = 10
 	var wg sync.WaitGroup
 	for i := 0; i < generatedCount; i++ {
-		wg.Add(1)
-		go func() {
-			assert.NoError(t, proc.ConsumeTraces(context.Background(), testdata.GenerateTraces(1)))
-			wg.Done()
-		}()
+		sendTraces(t, bg, proc, &wg, testdata.GenerateTraces(1))
 	}
 
 	// Now shutdown the proc.
 	wg.Wait()
-	assert.NoError(t, proc.Shutdown(context.Background()))
+	assert.NoError(t, proc.Shutdown(bg))
 
 	// The Shutdown() is done. It means the proc must have sent everything we
 	// gave it to the next sink.
@@ -1235,10 +1359,10 @@ func TestBatchProcessorSpansBatchedByMetadata(t *testing.T) {
 	creationSet := processortest.NewNopSettings()
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg)
-	require.NoError(t, err)
-	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
-
 	bg := context.Background()
+	require.NoError(t, err)
+	require.NoError(t, batcher.Start(bg, componenttest.NewNopHost()))
+
 	callCtxs := []context.Context{
 		client.NewContext(bg, client.Info{
 			Metadata: client.NewMetadata(map[string][]string{
