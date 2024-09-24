@@ -416,13 +416,14 @@ func TestBatchProcessorTracesSentBySize(t *testing.T) {
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg)
 	require.NoError(t, err)
+
+	var wg sync.WaitGroup
+	start := time.Now()
 	require.NoError(t, batcher.Start(bg, componenttest.NewNopHost()))
 
 	requestCount := 100
 	spansPerRequest := 5
 
-	var wg sync.WaitGroup
-	start := time.Now()
 	sizeSum := 0
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		td := testdata.GenerateTraces(spansPerRequest)
@@ -543,7 +544,6 @@ func TestBatchProcessorTracesSentByMaxSize(t *testing.T) {
 
 	var wg sync.WaitGroup
 	start := time.Now()
-
 	require.NoError(t, batcher.Start(bg, componenttest.NewNopHost()))
 
 	requestCount := 1
@@ -683,10 +683,11 @@ func TestBatchProcessorSentByTimeout(t *testing.T) {
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg)
 	require.NoError(t, err)
-	require.NoError(t, batcher.Start(bg, componenttest.NewNopHost()))
 
 	var wg sync.WaitGroup
 	start := time.Now()
+	require.NoError(t, batcher.Start(bg, componenttest.NewNopHost()))
+
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		td := testdata.GenerateTraces(spansPerRequest)
 		sendTraces(t, bg, batcher, &wg, td)
@@ -702,7 +703,7 @@ func TestBatchProcessorSentByTimeout(t *testing.T) {
 
 	require.Equal(t, requestCount*spansPerRequest, sink.SpanCount())
 	receivedTraces := sink.AllTraces()
-	require.EqualValues(t, expectedBatchesNum, len(receivedTraces))
+	require.Len(t, receivedTraces, expectedBatchesNum)
 	for _, td := range receivedTraces {
 		rss := td.ResourceSpans()
 		require.Equal(t, expectedBatchingFactor, rss.Len())
@@ -816,10 +817,10 @@ func TestBatchMetricProcessorBatchSize(t *testing.T) {
 	batcher, err := newBatchMetricsProcessor(creationSet, sink, &cfg)
 	require.NoError(t, err)
 
+	var wg sync.WaitGroup
 	start := time.Now()
 	require.NoError(t, batcher.Start(bg, componenttest.NewNopHost()))
 
-	var wg sync.WaitGroup
 	size := 0
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		md := testdata.GenerateMetrics(metricsPerRequest)
@@ -955,10 +956,10 @@ func TestBatchMetricsProcessor_Timeout(t *testing.T) {
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchMetricsProcessor(creationSet, sink, &cfg)
 	require.NoError(t, err)
-	require.NoError(t, batcher.Start(bg, componenttest.NewNopHost()))
-
 	var wg sync.WaitGroup
 	start := time.Now()
+	require.NoError(t, batcher.Start(bg, componenttest.NewNopHost()))
+
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		md := testdata.GenerateMetrics(metricsPerRequest)
 		sendMetrics(t, bg, batcher, &wg, md)
@@ -1209,10 +1210,10 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 	batcher, err := newBatchLogsProcessor(creationSet, sink, &cfg)
 	require.NoError(t, err)
 
+	var wg sync.WaitGroup
 	start := time.Now()
 	require.NoError(t, batcher.Start(bg, componenttest.NewNopHost()))
 
-	var wg sync.WaitGroup
 	size := 0
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		ld := testdata.GenerateLogs(logsPerRequest)
@@ -1326,17 +1327,14 @@ func TestBatchLogsProcessor_Timeout(t *testing.T) {
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchLogsProcessor(creationSet, sink, &cfg)
 	require.NoError(t, err)
-	require.NoError(t, batcher.Start(bg, componenttest.NewNopHost()))
 
 	var wg sync.WaitGroup
 	start := time.Now()
+	require.NoError(t, batcher.Start(bg, componenttest.NewNopHost()))
+
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		ld := testdata.GenerateLogs(logsPerRequest)
-		wg.Add(1)
-		go func() {
-			assert.NoError(t, batcher.ConsumeLogs(bg, ld))
-			wg.Done()
-		}()
+		sendLogs(t, bg, batcher, &wg, ld)
 	}
 
 	wg.Wait()
@@ -1377,11 +1375,7 @@ func TestBatchLogProcessor_Shutdown(t *testing.T) {
 	var wg sync.WaitGroup
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		ld := testdata.GenerateLogs(logsPerRequest)
-		wg.Add(1)
-		go func() {
-			assert.NoError(t, batcher.ConsumeLogs(bg, ld))
-			wg.Done()
-		}()
+		sendLogs(t, bg, batcher, &wg, ld)
 	}
 
 	wg.Wait()
@@ -1627,6 +1621,7 @@ func TestBatchZeroConfig(t *testing.T) {
 	// This is a no-op configuration. No need for a timer, no
 	// minimum, no mxaimum, just a pass through.
 	cfg := Config{}
+	bg := context.Background()
 
 	require.NoError(t, cfg.Validate())
 
@@ -1637,20 +1632,19 @@ func TestBatchZeroConfig(t *testing.T) {
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchLogsProcessor(creationSet, sink, &cfg)
 	require.NoError(t, err)
-	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, batcher.Start(bg, componenttest.NewNopHost()))
 
 	expect := 0
+	var wg sync.WaitGroup
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		cnt := logsPerRequest + requestNum
 		expect += cnt
 		ld := testdata.GenerateLogs(cnt)
-		assert.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
+		sendLogs(t, bg, batcher, &wg, ld)
 	}
 
-	// Wait for all batches.
-	require.Eventually(t, func() bool {
-		return sink.LogRecordCount() == expect
-	}, time.Second, 5*time.Millisecond)
+	wg.Wait()
+	require.NoError(t, batcher.Shutdown(bg))
 
 	// Expect them to be the original sizes.
 	receivedMds := sink.AllLogs()
@@ -1659,8 +1653,6 @@ func TestBatchZeroConfig(t *testing.T) {
 		require.Equal(t, 1, ld.ResourceLogs().Len())
 		require.Equal(t, logsPerRequest+i, ld.LogRecordCount())
 	}
-
-	require.NoError(t, batcher.Shutdown(context.Background()))
 }
 
 func TestBatchSplitOnly(t *testing.T) {
