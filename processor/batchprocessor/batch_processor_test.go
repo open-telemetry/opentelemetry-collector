@@ -1520,11 +1520,7 @@ func TestBatchProcessorSpansBatchedByMetadata(t *testing.T) {
 		// use round-robin to assign context.
 		num := requestNum % len(callCtxs)
 		expectByContext[num] += spansPerRequest
-		wg.Add(1)
-		go func() {
-			assert.NoError(t, batcher.ConsumeTraces(callCtxs[num], td))
-			wg.Done()
-		}()
+		sendTraces(t, callCtxs[num], batcher, &wg, td)
 	}
 
 	wg.Wait()
@@ -1584,11 +1580,7 @@ func TestBatchProcessorMetadataCardinalityLimit(t *testing.T) {
 			}),
 		})
 
-		wg.Add(1)
-		go func() {
-			assert.NoError(t, batcher.ConsumeTraces(ctx, td))
-			wg.Done()
-		}()
+		sendTraces(t, ctx, batcher, &wg, td)
 	}
 
 	wg.Wait()
