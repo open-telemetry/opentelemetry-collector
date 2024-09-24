@@ -644,7 +644,7 @@ func TestBatchProcessorTracesSentByMaxSize(t *testing.T) {
 				IsMonotonic: true,
 				DataPoints: []metricdata.DataPoint[int64]{
 					{
-						Value:      int64(1),
+						Value:      1,
 						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
 					},
 				},
@@ -1188,11 +1188,136 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 	}
 }
 
+func TestBatchLogProcessor_BatchSize(t *testing.T) {
+	tel := setupTestTelemetry()
+	sizer := &plog.ProtoMarshaler{}
+	bg := context.Background()
+
+	// Instantiate the batch processor with low config values to test data
+	// gets sent through the processor.
+	cfg := Config{
+		Timeout:       100 * time.Millisecond,
+		SendBatchSize: 50,
+	}
+
+	requestCount := 100
+	logsPerRequest := 5
+	sink := new(consumertest.LogsSink)
+
+	creationSet := tel.NewSettings()
+	creationSet.MetricsLevel = configtelemetry.LevelDetailed
+	batcher, err := newBatchLogsProcessor(creationSet, sink, &cfg)
+	require.NoError(t, err)
+
+	start := time.Now()
+	require.NoError(t, batcher.Start(bg, componenttest.NewNopHost()))
+
+	var wg sync.WaitGroup
+	size := 0
+	for requestNum := 0; requestNum < requestCount; requestNum++ {
+		ld := testdata.GenerateLogs(logsPerRequest)
+		size += sizer.LogsSize(ld)
+		sendLogs(t, bg, batcher, &wg, ld)
+	}
+	wg.Wait()
+	require.NoError(t, batcher.Shutdown(bg))
+
+	elapsed := time.Since(start)
+	require.LessOrEqual(t, elapsed.Nanoseconds(), cfg.Timeout.Nanoseconds())
+
+	expectedBatchesNum := requestCount * logsPerRequest / int(cfg.SendBatchSize)
+	expectedBatchingFactor := int(cfg.SendBatchSize) / logsPerRequest
+
+	require.Equal(t, requestCount*logsPerRequest, sink.LogRecordCount())
+	receivedMds := sink.AllLogs()
+	require.Len(t, receivedMds, expectedBatchesNum)
+	for _, ld := range receivedMds {
+		require.Equal(t, expectedBatchingFactor, ld.ResourceLogs().Len())
+		for i := 0; i < expectedBatchingFactor; i++ {
+			require.Equal(t, logsPerRequest, ld.ResourceLogs().At(i).ScopeLogs().At(0).LogRecords().Len())
+		}
+	}
+
+	tel.assertMetrics(t, []metricdata.Metrics{
+		{
+			Name:        "otelcol_processor_batch_batch_send_size_bytes",
+			Description: "Number of bytes in batch that was sent",
+			Unit:        "By",
+			Data: metricdata.Histogram[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				DataPoints: []metricdata.HistogramDataPoint[int64]{
+					{
+						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
+						Count:      uint64(expectedBatchesNum),
+						Bounds: []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000,
+							100_000, 200_000, 300_000, 400_000, 500_000, 600_000, 700_000, 800_000, 900_000,
+							1000_000, 2000_000, 3000_000, 4000_000, 5000_000, 6000_000, 7000_000, 8000_000, 9000_000},
+						BucketCounts: []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, uint64(expectedBatchesNum), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+						Sum:          int64(size),
+						Min:          metricdata.NewExtrema(int64(size / expectedBatchesNum)),
+						Max:          metricdata.NewExtrema(int64(size / expectedBatchesNum)),
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_processor_batch_batch_send_size",
+			Description: "Number of units in the batch",
+			Unit:        "{units}",
+			Data: metricdata.Histogram[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				DataPoints: []metricdata.HistogramDataPoint[int64]{
+					{
+						Attributes:   attribute.NewSet(attribute.String("processor", "batch")),
+						Count:        uint64(expectedBatchesNum),
+						Bounds:       []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000},
+						BucketCounts: []uint64{0, 0, uint64(expectedBatchesNum), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+						Sum:          int64(sink.LogRecordCount()),
+						Min:          metricdata.NewExtrema(int64(cfg.SendBatchSize)),
+						Max:          metricdata.NewExtrema(int64(cfg.SendBatchSize)),
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_processor_batch_batch_size_trigger_send",
+			Description: "Number of times the batch was sent due to a size trigger",
+			Unit:        "{times}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      int64(expectedBatchesNum),
+						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_processor_batch_metadata_cardinality",
+			Description: "Number of distinct metadata value combinations being processed",
+			Unit:        "{combinations}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: false,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      1,
+						Attributes: attribute.NewSet(attribute.String("processor", "batch")),
+					},
+				},
+			},
+		},
+	})
+}
+
 func TestBatchLogsProcessor_Timeout(t *testing.T) {
 	cfg := Config{
 		Timeout:       3 * time.Second,
 		SendBatchSize: 100,
 	}
+	bg := context.Background()
 	requestCount := 5
 	logsPerRequest := 10
 	sink := new(consumertest.LogsSink)
@@ -1201,7 +1326,7 @@ func TestBatchLogsProcessor_Timeout(t *testing.T) {
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchLogsProcessor(creationSet, sink, &cfg)
 	require.NoError(t, err)
-	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, batcher.Start(bg, componenttest.NewNopHost()))
 
 	var wg sync.WaitGroup
 	start := time.Now()
@@ -1209,7 +1334,7 @@ func TestBatchLogsProcessor_Timeout(t *testing.T) {
 		ld := testdata.GenerateLogs(logsPerRequest)
 		wg.Add(1)
 		go func() {
-			assert.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
+			assert.NoError(t, batcher.ConsumeLogs(bg, ld))
 			wg.Done()
 		}()
 	}
@@ -1217,7 +1342,7 @@ func TestBatchLogsProcessor_Timeout(t *testing.T) {
 	wg.Wait()
 	elapsed := time.Since(start)
 	require.LessOrEqual(t, cfg.Timeout.Nanoseconds(), elapsed.Nanoseconds())
-	require.NoError(t, batcher.Shutdown(context.Background()))
+	require.NoError(t, batcher.Shutdown(bg))
 
 	expectedBatchesNum := 1
 	expectedBatchingFactor := 5
