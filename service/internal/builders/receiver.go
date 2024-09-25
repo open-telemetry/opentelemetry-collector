@@ -100,8 +100,13 @@ func (b *ReceiverBuilder) CreateProfiles(ctx context.Context, set receiver.Setti
 		return nil, fmt.Errorf("receiver factory not available for: %q", set.ID)
 	}
 
-	logStabilityLevel(set.Logger, f.ProfilesReceiverStability())
-	return f.CreateProfilesReceiver(ctx, set, cfg, next)
+	pf, ok := f.(receiverprofiles.Factory)
+	if !ok {
+		return nil, fmt.Errorf("receiver cannot receive profiles")
+	}
+
+	logStabilityLevel(set.Logger, pf.ProfilesReceiverStability())
+	return pf.CreateProfilesReceiver(ctx, set, cfg, next)
 }
 
 func (b *ReceiverBuilder) Factory(componentType component.Type) component.Factory {

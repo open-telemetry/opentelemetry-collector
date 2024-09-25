@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/testutil"
+	"go.opentelemetry.io/collector/receiver/receiverprofiles"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
@@ -47,7 +48,7 @@ func TestCreateSameReceiver(t *testing.T) {
 	assert.NotNil(t, lReceiver)
 	require.NoError(t, err)
 
-	pReceiver, err := factory.CreateProfilesReceiver(context.Background(), creationSet, cfg, consumertest.NewNop())
+	pReceiver, err := factory.(receiverprofiles.Factory).CreateProfilesReceiver(context.Background(), creationSet, cfg, consumertest.NewNop())
 	assert.NotNil(t, pReceiver)
 	require.NoError(t, err)
 
@@ -415,7 +416,7 @@ func TestCreateProfilesReceiver(t *testing.T) {
 	creationSet := receivertest.NewNopSettings()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tr, err := factory.CreateProfilesReceiver(ctx, creationSet, tt.cfg, tt.sink)
+			tr, err := factory.(receiverprofiles.Factory).CreateProfilesReceiver(ctx, creationSet, tt.cfg, tt.sink)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return

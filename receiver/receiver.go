@@ -34,15 +34,6 @@ type Logs = internal.Logs
 // Settings configures Receiver creators.
 type Settings = internal.Settings
 
-// Factory is factory interface for receivers.
-//
-// This interface cannot be directly implemented. Implementations must
-// use the NewReceiverFactory to implement it.
-type Factory = internal.Factory
-
-// FactoryOption apply changes to ReceiverOptions.
-type FactoryOption = internal.FactoryOption
-
 // CreateTracesFunc is the equivalent of Factory.CreateTraces.
 type CreateTracesFunc = internal.CreateTracesFunc
 

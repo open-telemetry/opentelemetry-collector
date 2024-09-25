@@ -207,7 +207,7 @@ func TestNewNopReceiverConfigsAndFactories(t *testing.T) {
 	require.NoError(t, err)
 	assert.IsType(t, logs, bLogs)
 
-	profiles, err := factory.CreateProfilesReceiver(context.Background(), set, cfg, consumertest.NewNop())
+	profiles, err := factory.(receiverprofiles.Factory).CreateProfilesReceiver(context.Background(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	bProfiles, err := builder.CreateProfiles(context.Background(), set, consumertest.NewNop())
 	require.NoError(t, err)
