@@ -70,17 +70,17 @@ func (or *ObsReport) recordData(ctx context.Context, signal pipeline.Signal, acc
 	var acceptedCount, refusedCount, droppedCount metric.Int64Counter
 	switch signal {
 	case pipeline.SignalTraces:
-		acceptedCount = or.telemetryBuilder.ProcessorAcceptedSpans
-		refusedCount = or.telemetryBuilder.ProcessorRefusedSpans
-		droppedCount = or.telemetryBuilder.ProcessorDroppedSpans
+		acceptedCount = or.telemetryBuilder.ProcessorMemoryLimiterAcceptedSpans
+		refusedCount = or.telemetryBuilder.ProcessorMemoryLimiterRefusedSpans
+		droppedCount = or.telemetryBuilder.ProcessorMemoryLimiterDroppedSpans
 	case pipeline.SignalMetrics:
-		acceptedCount = or.telemetryBuilder.ProcessorAcceptedMetricPoints
-		refusedCount = or.telemetryBuilder.ProcessorRefusedMetricPoints
-		droppedCount = or.telemetryBuilder.ProcessorDroppedMetricPoints
+		acceptedCount = or.telemetryBuilder.ProcessorMemoryLimiterAcceptedMetricPoints
+		refusedCount = or.telemetryBuilder.ProcessorMemoryLimiterRefusedMetricPoints
+		droppedCount = or.telemetryBuilder.ProcessorMemoryLimiterDroppedMetricPoints
 	case pipeline.SignalLogs:
-		acceptedCount = or.telemetryBuilder.ProcessorAcceptedLogRecords
-		refusedCount = or.telemetryBuilder.ProcessorRefusedLogRecords
-		droppedCount = or.telemetryBuilder.ProcessorDroppedLogRecords
+		acceptedCount = or.telemetryBuilder.ProcessorMemoryLimiterAcceptedLogRecords
+		refusedCount = or.telemetryBuilder.ProcessorMemoryLimiterRefusedLogRecords
+		droppedCount = or.telemetryBuilder.ProcessorMemoryLimiterDroppedLogRecords
 	}
 
 	acceptedCount.Add(ctx, accepted, metric.WithAttributes(or.otelAttrs...))
