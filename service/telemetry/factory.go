@@ -18,9 +18,9 @@ import (
 	"go.opentelemetry.io/collector/service/internal/resource"
 )
 
-// disableHighCardinalityMetricsfeatureGate is the feature gate that controls whether the collector should enable
+// disableHighCardinalityMetricsFeatureGate is the feature gate that controls whether the collector should enable
 // potentially high cardinality metrics. The gate will be removed when the collector allows for view configuration.
-var disableHighCardinalityMetricsfeatureGate = featuregate.GlobalRegistry().MustRegister(
+var disableHighCardinalityMetricsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"telemetry.disableHighCardinalityMetrics",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("controls whether the collector should enable potentially high"+
@@ -67,7 +67,7 @@ func NewFactory() Factory {
 		}),
 		withMeterProvider(func(_ context.Context, set Settings, cfg component.Config) (metric.MeterProvider, error) {
 			c := *cfg.(*Config)
-			disableHighCard := disableHighCardinalityMetricsfeatureGate.IsEnabled()
+			disableHighCard := disableHighCardinalityMetricsFeatureGate.IsEnabled()
 			return newMeterProvider(
 				meterProviderSettings{
 					res:               resource.New(set.BuildInfo, c.Resource),
