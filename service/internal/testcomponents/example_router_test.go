@@ -8,31 +8,34 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/connector"
+	"go.opentelemetry.io/collector/connector/connectorprofiles"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/testdata"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 func TestExampleRouter(t *testing.T) {
 	conn := &ExampleRouter{}
 	host := componenttest.NewNopHost()
 	assert.False(t, conn.Started())
-	assert.NoError(t, conn.Start(context.Background(), host))
+	require.NoError(t, conn.Start(context.Background(), host))
 	assert.True(t, conn.Started())
 
 	assert.False(t, conn.Stopped())
-	assert.NoError(t, conn.Shutdown(context.Background()))
+	require.NoError(t, conn.Shutdown(context.Background()))
 	assert.True(t, conn.Stopped())
 }
 
 func TestTracesRouter(t *testing.T) {
-	leftID := component.MustNewIDWithName("sink", "left")
-	rightID := component.MustNewIDWithName("sink", "right")
+	leftID := pipeline.MustNewIDWithName("sink", "left")
+	rightID := pipeline.MustNewIDWithName("sink", "right")
 
 	sinkLeft := new(consumertest.TracesSink)
 	sinkRight := new(consumertest.TracesSink)
@@ -41,7 +44,7 @@ func TestTracesRouter(t *testing.T) {
 	// Many connectors will just call router.ConsumeTraces,
 	// but some implementation will call RouteTraces instead.
 	router := connector.NewTracesRouter(
-		map[component.ID]consumer.Traces{
+		map[pipeline.ID]consumer.Traces{
 			leftID:  sinkLeft,
 			rightID: sinkRight,
 		})
@@ -49,16 +52,16 @@ func TestTracesRouter(t *testing.T) {
 	cfg := ExampleRouterConfig{Traces: &LeftRightConfig{Left: leftID, Right: rightID}}
 	tr, err := ExampleRouterFactory.CreateTracesToTraces(
 		context.Background(), connectortest.NewNopSettings(), cfg, router)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.False(t, tr.Capabilities().MutatesData)
 
 	td := testdata.GenerateTraces(1)
 
-	assert.NoError(t, tr.ConsumeTraces(context.Background(), td))
+	require.NoError(t, tr.ConsumeTraces(context.Background(), td))
 	assert.Len(t, sinkRight.AllTraces(), 1)
-	assert.Len(t, sinkLeft.AllTraces(), 0)
+	assert.Empty(t, sinkLeft.AllTraces())
 
-	assert.NoError(t, tr.ConsumeTraces(context.Background(), td))
+	require.NoError(t, tr.ConsumeTraces(context.Background(), td))
 	assert.Len(t, sinkRight.AllTraces(), 1)
 	assert.Len(t, sinkLeft.AllTraces(), 1)
 
@@ -70,8 +73,8 @@ func TestTracesRouter(t *testing.T) {
 }
 
 func TestMetricsRouter(t *testing.T) {
-	leftID := component.MustNewIDWithName("sink", "left")
-	rightID := component.MustNewIDWithName("sink", "right")
+	leftID := pipeline.MustNewIDWithName("sink", "left")
+	rightID := pipeline.MustNewIDWithName("sink", "right")
 
 	sinkLeft := new(consumertest.MetricsSink)
 	sinkRight := new(consumertest.MetricsSink)
@@ -80,7 +83,7 @@ func TestMetricsRouter(t *testing.T) {
 	// Many connectors will just call router.ConsumeMetrics,
 	// but some implementation will call RouteMetrics instead.
 	router := connector.NewMetricsRouter(
-		map[component.ID]consumer.Metrics{
+		map[pipeline.ID]consumer.Metrics{
 			leftID:  sinkLeft,
 			rightID: sinkRight,
 		})
@@ -88,16 +91,16 @@ func TestMetricsRouter(t *testing.T) {
 	cfg := ExampleRouterConfig{Metrics: &LeftRightConfig{Left: leftID, Right: rightID}}
 	mr, err := ExampleRouterFactory.CreateMetricsToMetrics(
 		context.Background(), connectortest.NewNopSettings(), cfg, router)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.False(t, mr.Capabilities().MutatesData)
 
 	md := testdata.GenerateMetrics(1)
 
-	assert.NoError(t, mr.ConsumeMetrics(context.Background(), md))
+	require.NoError(t, mr.ConsumeMetrics(context.Background(), md))
 	assert.Len(t, sinkRight.AllMetrics(), 1)
-	assert.Len(t, sinkLeft.AllMetrics(), 0)
+	assert.Empty(t, sinkLeft.AllMetrics())
 
-	assert.NoError(t, mr.ConsumeMetrics(context.Background(), md))
+	require.NoError(t, mr.ConsumeMetrics(context.Background(), md))
 	assert.Len(t, sinkRight.AllMetrics(), 1)
 	assert.Len(t, sinkLeft.AllMetrics(), 1)
 
@@ -109,8 +112,8 @@ func TestMetricsRouter(t *testing.T) {
 }
 
 func TestLogsRouter(t *testing.T) {
-	leftID := component.MustNewIDWithName("sink", "left")
-	rightID := component.MustNewIDWithName("sink", "right")
+	leftID := pipeline.MustNewIDWithName("sink", "left")
+	rightID := pipeline.MustNewIDWithName("sink", "right")
 
 	sinkLeft := new(consumertest.LogsSink)
 	sinkRight := new(consumertest.LogsSink)
@@ -119,7 +122,7 @@ func TestLogsRouter(t *testing.T) {
 	// Many connectors will just call router.ConsumeLogs,
 	// but some implementation will call RouteLogs instead.
 	router := connector.NewLogsRouter(
-		map[component.ID]consumer.Logs{
+		map[pipeline.ID]consumer.Logs{
 			leftID:  sinkLeft,
 			rightID: sinkRight,
 		})
@@ -127,16 +130,16 @@ func TestLogsRouter(t *testing.T) {
 	cfg := ExampleRouterConfig{Logs: &LeftRightConfig{Left: leftID, Right: rightID}}
 	lr, err := ExampleRouterFactory.CreateLogsToLogs(
 		context.Background(), connectortest.NewNopSettings(), cfg, router)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.False(t, lr.Capabilities().MutatesData)
 
 	ld := testdata.GenerateLogs(1)
 
-	assert.NoError(t, lr.ConsumeLogs(context.Background(), ld))
+	require.NoError(t, lr.ConsumeLogs(context.Background(), ld))
 	assert.Len(t, sinkRight.AllLogs(), 1)
-	assert.Len(t, sinkLeft.AllLogs(), 0)
+	assert.Empty(t, sinkLeft.AllLogs())
 
-	assert.NoError(t, lr.ConsumeLogs(context.Background(), ld))
+	require.NoError(t, lr.ConsumeLogs(context.Background(), ld))
 	assert.Len(t, sinkRight.AllLogs(), 1)
 	assert.Len(t, sinkLeft.AllLogs(), 1)
 
@@ -145,4 +148,43 @@ func TestLogsRouter(t *testing.T) {
 	assert.NoError(t, lr.ConsumeLogs(context.Background(), ld))
 	assert.Len(t, sinkRight.AllLogs(), 3)
 	assert.Len(t, sinkLeft.AllLogs(), 2)
+}
+
+func TestProfilesRouter(t *testing.T) {
+	leftID := pipeline.MustNewIDWithName("sink", "left")
+	rightID := pipeline.MustNewIDWithName("sink", "right")
+
+	sinkLeft := new(consumertest.ProfilesSink)
+	sinkRight := new(consumertest.ProfilesSink)
+
+	// The service will build a router to give to every connector.
+	// Many connectors will just call router.ConsumeProfiles,
+	// but some implementation will call RouteProfiles instead.
+	router := connectorprofiles.NewProfilesRouter(
+		map[pipeline.ID]consumerprofiles.Profiles{
+			leftID:  sinkLeft,
+			rightID: sinkRight,
+		})
+
+	cfg := ExampleRouterConfig{Profiles: &LeftRightConfig{Left: leftID, Right: rightID}}
+	tr, err := ExampleRouterFactory.CreateProfilesToProfiles(
+		context.Background(), connectortest.NewNopSettings(), cfg, router)
+	require.NoError(t, err)
+	assert.False(t, tr.Capabilities().MutatesData)
+
+	td := testdata.GenerateProfiles(1)
+
+	require.NoError(t, tr.ConsumeProfiles(context.Background(), td))
+	assert.Len(t, sinkRight.AllProfiles(), 1)
+	assert.Empty(t, sinkLeft.AllProfiles())
+
+	require.NoError(t, tr.ConsumeProfiles(context.Background(), td))
+	assert.Len(t, sinkRight.AllProfiles(), 1)
+	assert.Len(t, sinkLeft.AllProfiles(), 1)
+
+	assert.NoError(t, tr.ConsumeProfiles(context.Background(), td))
+	assert.NoError(t, tr.ConsumeProfiles(context.Background(), td))
+	assert.NoError(t, tr.ConsumeProfiles(context.Background(), td))
+	assert.Len(t, sinkRight.AllProfiles(), 3)
+	assert.Len(t, sinkLeft.AllProfiles(), 2)
 }

@@ -56,7 +56,7 @@ func TestExport_NonPermanentErrorConsumer(t *testing.T) {
 
 	metricsClient := makeMetricsServiceClient(t, consumertest.NewErr(errors.New("my error")))
 	resp, err := metricsClient.Export(context.Background(), req)
-	assert.EqualError(t, err, "rpc error: code = Unavailable desc = my error")
+	require.EqualError(t, err, "rpc error: code = Unavailable desc = my error")
 	assert.IsType(t, status.Error(codes.Unknown, ""), err)
 	assert.Equal(t, pmetricotlp.ExportResponse{}, resp)
 }
@@ -67,7 +67,7 @@ func TestExport_PermanentErrorConsumer(t *testing.T) {
 
 	metricsClient := makeMetricsServiceClient(t, consumertest.NewErr(consumererror.NewPermanent(errors.New("my error"))))
 	resp, err := metricsClient.Export(context.Background(), req)
-	assert.EqualError(t, err, "rpc error: code = Internal desc = Permanent error: my error")
+	require.EqualError(t, err, "rpc error: code = Internal desc = Permanent error: my error")
 	assert.IsType(t, status.Error(codes.Unknown, ""), err)
 	assert.Equal(t, pmetricotlp.ExportResponse{}, resp)
 }

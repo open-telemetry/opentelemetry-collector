@@ -15,8 +15,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/internal"
 )
 
 const (
@@ -65,13 +65,13 @@ func TestReceiveTraceDataOp(t *testing.T) {
 			switch {
 			case params[i].err == nil:
 				acceptedSpans += params[i].items
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.AcceptedSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.RefusedSpansKey, Value: attribute.Int64Value(0)})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.AcceptedSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedSpansKey, Value: attribute.Int64Value(0)})
 				assert.Equal(t, codes.Unset, span.Status().Code)
 			case errors.Is(params[i].err, errFake):
 				refusedSpans += params[i].items
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.AcceptedSpansKey, Value: attribute.Int64Value(0)})
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.RefusedSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.AcceptedSpansKey, Value: attribute.Int64Value(0)})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
 				assert.Equal(t, codes.Error, span.Status().Code)
 				assert.Equal(t, params[i].err.Error(), span.Status().Description)
 			default:
@@ -113,13 +113,13 @@ func TestReceiveLogsOp(t *testing.T) {
 			switch {
 			case params[i].err == nil:
 				acceptedLogRecords += params[i].items
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.AcceptedLogRecordsKey, Value: attribute.Int64Value(int64(params[i].items))})
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.RefusedLogRecordsKey, Value: attribute.Int64Value(0)})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.AcceptedLogRecordsKey, Value: attribute.Int64Value(int64(params[i].items))})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedLogRecordsKey, Value: attribute.Int64Value(0)})
 				assert.Equal(t, codes.Unset, span.Status().Code)
 			case errors.Is(params[i].err, errFake):
 				refusedLogRecords += params[i].items
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.AcceptedLogRecordsKey, Value: attribute.Int64Value(0)})
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.RefusedLogRecordsKey, Value: attribute.Int64Value(int64(params[i].items))})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.AcceptedLogRecordsKey, Value: attribute.Int64Value(0)})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedLogRecordsKey, Value: attribute.Int64Value(int64(params[i].items))})
 				assert.Equal(t, codes.Error, span.Status().Code)
 				assert.Equal(t, params[i].err.Error(), span.Status().Description)
 			default:
@@ -161,13 +161,13 @@ func TestReceiveMetricsOp(t *testing.T) {
 			switch {
 			case params[i].err == nil:
 				acceptedMetricPoints += params[i].items
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.AcceptedMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.RefusedMetricPointsKey, Value: attribute.Int64Value(0)})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.AcceptedMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedMetricPointsKey, Value: attribute.Int64Value(0)})
 				assert.Equal(t, codes.Unset, span.Status().Code)
 			case errors.Is(params[i].err, errFake):
 				refusedMetricPoints += params[i].items
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.AcceptedMetricPointsKey, Value: attribute.Int64Value(0)})
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.RefusedMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.AcceptedMetricPointsKey, Value: attribute.Int64Value(0)})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
 				assert.Equal(t, codes.Error, span.Status().Code)
 				assert.Equal(t, params[i].err.Error(), span.Status().Description)
 			default:
@@ -211,20 +211,20 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 
 	for i, span := range spans {
 		assert.False(t, span.Parent().IsValid())
-		require.Equal(t, 1, len(span.Links()))
+		require.Len(t, span.Links(), 1)
 		link := span.Links()[0]
 		assert.Equal(t, parentSpan.SpanContext().TraceID(), link.SpanContext.TraceID())
 		assert.Equal(t, parentSpan.SpanContext().SpanID(), link.SpanContext.SpanID())
 		assert.Equal(t, "receiver/"+receiverID.String()+"/TraceDataReceived", span.Name())
-		require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.TransportKey, Value: attribute.StringValue(transport)})
+		require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.TransportKey, Value: attribute.StringValue(transport)})
 		switch {
 		case params[i].err == nil:
-			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.AcceptedSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
-			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.RefusedSpansKey, Value: attribute.Int64Value(0)})
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.AcceptedSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedSpansKey, Value: attribute.Int64Value(0)})
 			assert.Equal(t, codes.Unset, span.Status().Code)
 		case errors.Is(params[i].err, errFake):
-			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.AcceptedSpansKey, Value: attribute.Int64Value(0)})
-			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.RefusedSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.AcceptedSpansKey, Value: attribute.Int64Value(0)})
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
 			assert.Equal(t, codes.Error, span.Status().Code)
 			assert.Equal(t, params[i].err.Error(), span.Status().Description)
 		default:
@@ -248,9 +248,9 @@ func TestCheckReceiverTracesViews(t *testing.T) {
 	require.NotNil(t, ctx)
 	rec.EndTracesOp(ctx, format, 7, nil)
 
-	assert.NoError(t, tt.CheckReceiverTraces(transport, 7, 0))
-	assert.Error(t, tt.CheckReceiverTraces(transport, 7, 7))
-	assert.Error(t, tt.CheckReceiverTraces(transport, 0, 0))
+	require.NoError(t, tt.CheckReceiverTraces(transport, 7, 0))
+	require.Error(t, tt.CheckReceiverTraces(transport, 7, 7))
+	require.Error(t, tt.CheckReceiverTraces(transport, 0, 0))
 	assert.Error(t, tt.CheckReceiverTraces(transport, 0, 7))
 }
 
@@ -269,9 +269,9 @@ func TestCheckReceiverMetricsViews(t *testing.T) {
 	require.NotNil(t, ctx)
 	rec.EndMetricsOp(ctx, format, 7, nil)
 
-	assert.NoError(t, tt.CheckReceiverMetrics(transport, 7, 0))
-	assert.Error(t, tt.CheckReceiverMetrics(transport, 7, 7))
-	assert.Error(t, tt.CheckReceiverMetrics(transport, 0, 0))
+	require.NoError(t, tt.CheckReceiverMetrics(transport, 7, 0))
+	require.Error(t, tt.CheckReceiverMetrics(transport, 7, 7))
+	require.Error(t, tt.CheckReceiverMetrics(transport, 0, 0))
 	assert.Error(t, tt.CheckReceiverMetrics(transport, 0, 7))
 }
 
@@ -290,9 +290,9 @@ func TestCheckReceiverLogsViews(t *testing.T) {
 	require.NotNil(t, ctx)
 	rec.EndLogsOp(ctx, format, 7, nil)
 
-	assert.NoError(t, tt.CheckReceiverLogs(transport, 7, 0))
-	assert.Error(t, tt.CheckReceiverLogs(transport, 7, 7))
-	assert.Error(t, tt.CheckReceiverLogs(transport, 0, 0))
+	require.NoError(t, tt.CheckReceiverLogs(transport, 7, 0))
+	require.Error(t, tt.CheckReceiverLogs(transport, 7, 7))
+	require.Error(t, tt.CheckReceiverLogs(transport, 0, 0))
 	assert.Error(t, tt.CheckReceiverLogs(transport, 0, 7))
 }
 

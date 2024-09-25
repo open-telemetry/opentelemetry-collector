@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
@@ -33,7 +34,12 @@ type CheckConsumeContractParams struct {
 	T                    *testing.T
 	NumberOfTestElements int
 	// DataType to test for.
+	//
+	// Deprecated: [v0.110.0] Use Signal instead
+	// nolint
 	DataType component.DataType
+
+	Signal pipeline.Signal
 	// ExporterFactory to create an exporter to be tested.
 	ExporterFactory exporter.Factory
 	ExporterConfig  component.Config
@@ -84,18 +90,18 @@ func CheckConsumeContract(params CheckConsumeContractParams) {
 
 func checkConsumeContractScenario(t *testing.T, params CheckConsumeContractParams, decisionFunc func() error, checkIfTestPassed func(*testing.T, int, requestCounter)) {
 	mockConsumerInstance := newMockConsumer(decisionFunc)
-	switch params.DataType {
-	case component.DataTypeLogs:
+	switch params.Signal {
+	case pipeline.SignalLogs:
 		r, err := params.ReceiverFactory.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), params.ReceiverConfig, &mockConsumerInstance)
 		require.NoError(t, err)
 		require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 		checkLogs(t, params, r, &mockConsumerInstance, checkIfTestPassed)
-	case component.DataTypeTraces:
+	case pipeline.SignalTraces:
 		r, err := params.ReceiverFactory.CreateTracesReceiver(context.Background(), receivertest.NewNopSettings(), params.ReceiverConfig, &mockConsumerInstance)
 		require.NoError(t, err)
 		require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 		checkTraces(t, params, r, &mockConsumerInstance, checkIfTestPassed)
-	case component.DataTypeMetrics:
+	case pipeline.SignalMetrics:
 		r, err := params.ReceiverFactory.CreateMetricsReceiver(context.Background(), receivertest.NewNopSettings(), params.ReceiverConfig, &mockConsumerInstance)
 		require.NoError(t, err)
 		require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
@@ -228,9 +234,9 @@ func checkLogs(t *testing.T, params CheckConsumeContractParams, mockReceiver com
 // Test is successful if all the elements were received successfully and no error was returned
 func alwaysSucceedsPassed(t *testing.T, allRecordsNumber int, reqCounter requestCounter) {
 	require.Equal(t, allRecordsNumber, reqCounter.success)
-	require.Equal(t, reqCounter.total, allRecordsNumber)
-	require.Equal(t, reqCounter.error.nonpermanent, 0)
-	require.Equal(t, reqCounter.error.permanent, 0)
+	require.Equal(t, allRecordsNumber, reqCounter.total)
+	require.Equal(t, 0, reqCounter.error.nonpermanent)
+	require.Equal(t, 0, reqCounter.error.permanent)
 }
 
 // Test is successful if all the elements were retried on non-permanent errors

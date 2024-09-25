@@ -93,7 +93,7 @@ func TestProcessTelemetry(t *testing.T) {
 	for _, metricName := range expectedMetrics {
 		metric, ok := mp[metricName]
 		require.True(t, ok)
-		require.True(t, len(metric.Metric) == 1)
+		require.Len(t, metric.Metric, 1)
 		var metricValue float64
 		if metric.GetType() == io_prometheus_client.MetricType_COUNTER {
 			metricValue = metric.Metric[0].GetCounter().GetValue()

@@ -24,7 +24,7 @@ import (
 func TestUnmarshalDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, confmap.New().Unmarshal(&cfg))
+	require.NoError(t, confmap.New().Unmarshal(&cfg))
 	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
 	// Default/Empty config is invalid.
 	assert.Error(t, component.ValidateConfig(cfg))
@@ -35,7 +35,7 @@ func TestUnmarshalConfig(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, cm.Unmarshal(&cfg))
+	require.NoError(t, cm.Unmarshal(&cfg))
 	assert.Equal(t,
 		&Config{
 			RetryConfig: configretry.BackOffConfig{
@@ -46,7 +46,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				MaxInterval:         1 * time.Minute,
 				MaxElapsedTime:      10 * time.Minute,
 			},
-			QueueConfig: exporterhelper.QueueSettings{
+			QueueConfig: exporterhelper.QueueConfig{
 				Enabled:      true,
 				NumConsumers: 2,
 				QueueSize:    10,
@@ -122,7 +122,7 @@ func TestUnmarshalEncoding(t *testing.T) {
 			if tt.shouldError {
 				assert.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.expected, encoding)
 			}
 		})

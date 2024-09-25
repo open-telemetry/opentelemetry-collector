@@ -96,37 +96,37 @@ func TestProcessorBuilder(t *testing.T) {
 
 			te, err := b.CreateTraces(context.Background(), createProcessorSettings(tt.id), tt.nextTraces)
 			if tt.err != "" {
-				assert.EqualError(t, err, tt.err)
+				require.EqualError(t, err, tt.err)
 				assert.Nil(t, te)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, nopProcessorInstance, te)
 			}
 
 			me, err := b.CreateMetrics(context.Background(), createProcessorSettings(tt.id), tt.nextMetrics)
 			if tt.err != "" {
-				assert.EqualError(t, err, tt.err)
+				require.EqualError(t, err, tt.err)
 				assert.Nil(t, me)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, nopProcessorInstance, me)
 			}
 
 			le, err := b.CreateLogs(context.Background(), createProcessorSettings(tt.id), tt.nextLogs)
 			if tt.err != "" {
-				assert.EqualError(t, err, tt.err)
+				require.EqualError(t, err, tt.err)
 				assert.Nil(t, le)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, nopProcessorInstance, le)
 			}
 
 			pe, err := b.CreateProfiles(context.Background(), createProcessorSettings(tt.id), tt.nextProfiles)
 			if tt.err != "" {
-				assert.EqualError(t, err, tt.err)
+				require.EqualError(t, err, tt.err)
 				assert.Nil(t, pe)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, nopProcessorInstance, pe)
 			}
 		})
@@ -152,19 +152,19 @@ func TestProcessorBuilderMissingConfig(t *testing.T) {
 	missingID := component.MustNewIDWithName("all", "missing")
 
 	te, err := bErr.CreateTraces(context.Background(), createProcessorSettings(missingID), consumertest.NewNop())
-	assert.EqualError(t, err, "processor \"all/missing\" is not configured")
+	require.EqualError(t, err, "processor \"all/missing\" is not configured")
 	assert.Nil(t, te)
 
 	me, err := bErr.CreateMetrics(context.Background(), createProcessorSettings(missingID), consumertest.NewNop())
-	assert.EqualError(t, err, "processor \"all/missing\" is not configured")
+	require.EqualError(t, err, "processor \"all/missing\" is not configured")
 	assert.Nil(t, me)
 
 	le, err := bErr.CreateLogs(context.Background(), createProcessorSettings(missingID), consumertest.NewNop())
-	assert.EqualError(t, err, "processor \"all/missing\" is not configured")
+	require.EqualError(t, err, "processor \"all/missing\" is not configured")
 	assert.Nil(t, le)
 
 	pe, err := bErr.CreateProfiles(context.Background(), createProcessorSettings(missingID), consumertest.NewNop())
-	assert.EqualError(t, err, "processor \"all/missing\" is not configured")
+	require.EqualError(t, err, "processor \"all/missing\" is not configured")
 	assert.Nil(t, pe)
 }
 

@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 // Factory is a Factory interface for processors.
@@ -20,7 +21,7 @@ type Factory interface {
 
 	// CreateTracesProcessor creates a TracesProcessor based on this config.
 	// If the processor type does not support traces,
-	// this function returns the error [component.ErrDataTypeIsNotSupported].
+	// this function returns the error [pipeline.ErrSignalNotSupported].
 	// Implementers can assume `nextConsumer` is never nil.
 	CreateTracesProcessor(ctx context.Context, set Settings, cfg component.Config, nextConsumer consumer.Traces) (Traces, error)
 
@@ -29,7 +30,7 @@ type Factory interface {
 
 	// CreateMetricsProcessor creates a MetricsProcessor based on this config.
 	// If the processor type does not support metrics,
-	// this function returns the error [component.ErrDataTypeIsNotSupported].
+	// this function returns the error [pipeline.ErrSignalNotSupported].
 	// Implementers can assume `nextConsumer` is never nil.
 	CreateMetricsProcessor(ctx context.Context, set Settings, cfg component.Config, nextConsumer consumer.Metrics) (Metrics, error)
 
@@ -38,7 +39,7 @@ type Factory interface {
 
 	// CreateLogsProcessor creates a LogsProcessor based on the config.
 	// If the processor type does not support logs,
-	// this function returns the error [component.ErrDataTypeIsNotSupported].
+	// this function returns the error [pipeline.ErrSignalNotSupported].
 	// Implementers can assume `nextConsumer` is never nil.
 	CreateLogsProcessor(ctx context.Context, set Settings, cfg component.Config, nextConsumer consumer.Logs) (Logs, error)
 
@@ -81,7 +82,7 @@ func (f CreateTracesFunc) CreateTracesProcessor(
 	cfg component.Config,
 	nextConsumer consumer.Traces) (Traces, error) {
 	if f == nil {
-		return nil, component.ErrDataTypeIsNotSupported
+		return nil, pipeline.ErrSignalNotSupported
 	}
 	return f(ctx, set, cfg, nextConsumer)
 }
@@ -97,7 +98,7 @@ func (f CreateMetricsFunc) CreateMetricsProcessor(
 	nextConsumer consumer.Metrics,
 ) (Metrics, error) {
 	if f == nil {
-		return nil, component.ErrDataTypeIsNotSupported
+		return nil, pipeline.ErrSignalNotSupported
 	}
 	return f(ctx, set, cfg, nextConsumer)
 }
@@ -113,7 +114,7 @@ func (f CreateLogsFunc) CreateLogsProcessor(
 	nextConsumer consumer.Logs,
 ) (Logs, error) {
 	if f == nil {
-		return nil, component.ErrDataTypeIsNotSupported
+		return nil, pipeline.ErrSignalNotSupported
 	}
 	return f(ctx, set, cfg, nextConsumer)
 }
@@ -128,7 +129,7 @@ func (f CreateProfilesFunc) CreateProfilesProcessor(
 	cfg component.Config,
 	nextConsumer consumerprofiles.Profiles) (Profiles, error) {
 	if f == nil {
-		return nil, component.ErrDataTypeIsNotSupported
+		return nil, pipeline.ErrSignalNotSupported
 	}
 	return f(ctx, set, cfg, nextConsumer)
 }

@@ -11,12 +11,13 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service/pipelines"
 )
 
 func TestLoadConfig(t *testing.T) {
 	factories, err := NopFactories()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	cfg, err := LoadConfig(filepath.Join("testdata", "config.yaml"), factories)
 	require.NoError(t, err)
@@ -48,20 +49,20 @@ func TestLoadConfig(t *testing.T) {
 	// Verify service.
 	require.Len(t, cfg.Service.Extensions, 1)
 	assert.Contains(t, cfg.Service.Extensions, component.MustNewID("nop"))
-	require.Len(t, cfg.Service.Pipelines, 1)
+	require.Len(t, cfg.Service.PipelinesWithPipelineID, 1)
 	assert.Equal(t,
 		&pipelines.PipelineConfig{
 			Receivers:  []component.ID{component.MustNewID("nop")},
 			Processors: []component.ID{component.MustNewID("nop")},
 			Exporters:  []component.ID{component.MustNewID("nop")},
 		},
-		cfg.Service.Pipelines[component.MustNewID("traces")],
+		cfg.Service.PipelinesWithPipelineID[pipeline.MustNewID("traces")],
 		"Did not load pipeline config correctly")
 }
 
 func TestLoadConfigAndValidate(t *testing.T) {
 	factories, err := NopFactories()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	cfgValidate, errValidate := LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 	require.NoError(t, errValidate)

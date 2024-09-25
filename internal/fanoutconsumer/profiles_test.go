@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerprofiles"
@@ -45,18 +46,18 @@ func TestProfilesMultiplexingNonMutating(t *testing.T) {
 		}
 	}
 
-	assert.True(t, td == p1.AllProfiles()[0])
-	assert.True(t, td == p1.AllProfiles()[1])
+	assert.Equal(t, td, p1.AllProfiles()[0])
+	assert.Equal(t, td, p1.AllProfiles()[1])
 	assert.EqualValues(t, td, p1.AllProfiles()[0])
 	assert.EqualValues(t, td, p1.AllProfiles()[1])
 
-	assert.True(t, td == p2.AllProfiles()[0])
-	assert.True(t, td == p2.AllProfiles()[1])
+	assert.Equal(t, td, p2.AllProfiles()[0])
+	assert.Equal(t, td, p2.AllProfiles()[1])
 	assert.EqualValues(t, td, p2.AllProfiles()[0])
 	assert.EqualValues(t, td, p2.AllProfiles()[1])
 
-	assert.True(t, td == p3.AllProfiles()[0])
-	assert.True(t, td == p3.AllProfiles()[1])
+	assert.Equal(t, td, p3.AllProfiles()[0])
+	assert.Equal(t, td, p3.AllProfiles()[1])
 	assert.EqualValues(t, td, p3.AllProfiles()[0])
 	assert.EqualValues(t, td, p3.AllProfiles()[1])
 
@@ -81,19 +82,19 @@ func TestProfilesMultiplexingMutating(t *testing.T) {
 		}
 	}
 
-	assert.True(t, td != p1.AllProfiles()[0])
-	assert.True(t, td != p1.AllProfiles()[1])
+	assert.NotSame(t, td, p1.AllProfiles()[0])
+	assert.NotSame(t, td, p1.AllProfiles()[1])
 	assert.EqualValues(t, td, p1.AllProfiles()[0])
 	assert.EqualValues(t, td, p1.AllProfiles()[1])
 
-	assert.True(t, td != p2.AllProfiles()[0])
-	assert.True(t, td != p2.AllProfiles()[1])
+	assert.NotSame(t, td, p2.AllProfiles()[0])
+	assert.NotSame(t, td, p2.AllProfiles()[1])
 	assert.EqualValues(t, td, p2.AllProfiles()[0])
 	assert.EqualValues(t, td, p2.AllProfiles()[1])
 
 	// For this consumer, will receive the initial data.
-	assert.True(t, td == p3.AllProfiles()[0])
-	assert.True(t, td == p3.AllProfiles()[1])
+	assert.Equal(t, td, p3.AllProfiles()[0])
+	assert.Equal(t, td, p3.AllProfiles()[1])
 	assert.EqualValues(t, td, p3.AllProfiles()[0])
 	assert.EqualValues(t, td, p3.AllProfiles()[1])
 
@@ -123,18 +124,18 @@ func TestReadOnlyProfilesMultiplexingMutating(t *testing.T) {
 
 	// All consumers should receive the cloned data.
 
-	assert.True(t, td != p1.AllProfiles()[0])
-	assert.True(t, td != p1.AllProfiles()[1])
+	assert.NotEqual(t, td, p1.AllProfiles()[0])
+	assert.NotEqual(t, td, p1.AllProfiles()[1])
 	assert.EqualValues(t, tdOrig, p1.AllProfiles()[0])
 	assert.EqualValues(t, tdOrig, p1.AllProfiles()[1])
 
-	assert.True(t, td != p2.AllProfiles()[0])
-	assert.True(t, td != p2.AllProfiles()[1])
+	assert.NotEqual(t, td, p2.AllProfiles()[0])
+	assert.NotEqual(t, td, p2.AllProfiles()[1])
 	assert.EqualValues(t, tdOrig, p2.AllProfiles()[0])
 	assert.EqualValues(t, tdOrig, p2.AllProfiles()[1])
 
-	assert.True(t, td != p3.AllProfiles()[0])
-	assert.True(t, td != p3.AllProfiles()[1])
+	assert.NotEqual(t, td, p3.AllProfiles()[0])
+	assert.NotEqual(t, td, p3.AllProfiles()[1])
 	assert.EqualValues(t, tdOrig, p3.AllProfiles()[0])
 	assert.EqualValues(t, tdOrig, p3.AllProfiles()[1])
 }
@@ -156,20 +157,20 @@ func TestProfilesMultiplexingMixLastMutating(t *testing.T) {
 		}
 	}
 
-	assert.True(t, td != p1.AllProfiles()[0])
-	assert.True(t, td != p1.AllProfiles()[1])
+	assert.NotSame(t, td, p1.AllProfiles()[0])
+	assert.NotSame(t, td, p1.AllProfiles()[1])
 	assert.EqualValues(t, td, p1.AllProfiles()[0])
 	assert.EqualValues(t, td, p1.AllProfiles()[1])
 
 	// For this consumer, will receive the initial data.
-	assert.True(t, td == p2.AllProfiles()[0])
-	assert.True(t, td == p2.AllProfiles()[1])
+	assert.Equal(t, td, p2.AllProfiles()[0])
+	assert.Equal(t, td, p2.AllProfiles()[1])
 	assert.EqualValues(t, td, p2.AllProfiles()[0])
 	assert.EqualValues(t, td, p2.AllProfiles()[1])
 
 	// For this consumer, will clone the initial data.
-	assert.True(t, td != p3.AllProfiles()[0])
-	assert.True(t, td != p3.AllProfiles()[1])
+	assert.NotSame(t, td, p3.AllProfiles()[0])
+	assert.NotSame(t, td, p3.AllProfiles()[1])
 	assert.EqualValues(t, td, p3.AllProfiles()[0])
 	assert.EqualValues(t, td, p3.AllProfiles()[1])
 
@@ -194,19 +195,19 @@ func TestProfilesMultiplexingMixLastNonMutating(t *testing.T) {
 		}
 	}
 
-	assert.True(t, td != p1.AllProfiles()[0])
-	assert.True(t, td != p1.AllProfiles()[1])
+	assert.NotSame(t, td, p1.AllProfiles()[0])
+	assert.NotSame(t, td, p1.AllProfiles()[1])
 	assert.EqualValues(t, td, p1.AllProfiles()[0])
 	assert.EqualValues(t, td, p1.AllProfiles()[1])
 
-	assert.True(t, td != p2.AllProfiles()[0])
-	assert.True(t, td != p2.AllProfiles()[1])
+	assert.NotSame(t, td, p2.AllProfiles()[0])
+	assert.NotSame(t, td, p2.AllProfiles()[1])
 	assert.EqualValues(t, td, p2.AllProfiles()[0])
 	assert.EqualValues(t, td, p2.AllProfiles()[1])
 
 	// For this consumer, will receive the initial data.
-	assert.True(t, td == p3.AllProfiles()[0])
-	assert.True(t, td == p3.AllProfiles()[1])
+	assert.Equal(t, td, p3.AllProfiles()[0])
+	assert.Equal(t, td, p3.AllProfiles()[1])
 	assert.EqualValues(t, td, p3.AllProfiles()[0])
 	assert.EqualValues(t, td, p3.AllProfiles()[1])
 
@@ -223,11 +224,11 @@ func TestProfilesWhenErrors(t *testing.T) {
 	td := testdata.GenerateProfiles(1)
 
 	for i := 0; i < 2; i++ {
-		assert.Error(t, tfc.ConsumeProfiles(context.Background(), td))
+		require.Error(t, tfc.ConsumeProfiles(context.Background(), td))
 	}
 
-	assert.True(t, td == p3.AllProfiles()[0])
-	assert.True(t, td == p3.AllProfiles()[1])
+	assert.Equal(t, td, p3.AllProfiles()[0])
+	assert.Equal(t, td, p3.AllProfiles()[1])
 	assert.EqualValues(t, td, p3.AllProfiles()[0])
 	assert.EqualValues(t, td, p3.AllProfiles()[1])
 }

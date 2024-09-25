@@ -8,7 +8,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverprofiles"
 )
 
 var receiverType = component.MustNewType("examplereceiver")
@@ -19,7 +21,9 @@ var ExampleReceiverFactory = receiver.NewFactory(
 	createReceiverDefaultConfig,
 	receiver.WithTraces(createTracesReceiver, component.StabilityLevelDevelopment),
 	receiver.WithMetrics(createMetricsReceiver, component.StabilityLevelDevelopment),
-	receiver.WithLogs(createLogsReceiver, component.StabilityLevelDevelopment))
+	receiver.WithLogs(createLogsReceiver, component.StabilityLevelDevelopment),
+	receiverprofiles.WithProfiles(createProfilesReceiver, component.StabilityLevelDevelopment),
+)
 
 func createReceiverDefaultConfig() component.Config {
 	return &struct{}{}
@@ -60,6 +64,18 @@ func createLogsReceiver(
 	return lr, nil
 }
 
+// createProfilesReceiver creates a trace receiver based on this config.
+func createProfilesReceiver(
+	_ context.Context,
+	_ receiver.Settings,
+	cfg component.Config,
+	nextConsumer consumerprofiles.Profiles,
+) (receiverprofiles.Profiles, error) {
+	tr := createReceiver(cfg)
+	tr.ConsumeProfilesFunc = nextConsumer.ConsumeProfiles
+	return tr, nil
+}
+
 func createReceiver(cfg component.Config) *ExampleReceiver {
 	// There must be one receiver for all data types. We maintain a map of
 	// receivers per config.
@@ -75,12 +91,13 @@ func createReceiver(cfg component.Config) *ExampleReceiver {
 	return er
 }
 
-// ExampleReceiver allows producing traces and metrics for testing purposes.
+// ExampleReceiver allows producing traces, metrics, logs and profiles for testing purposes.
 type ExampleReceiver struct {
 	componentState
 	consumer.ConsumeTracesFunc
 	consumer.ConsumeMetricsFunc
 	consumer.ConsumeLogsFunc
+	consumerprofiles.ConsumeProfilesFunc
 }
 
 // This is the map of already created example receivers for particular configurations.

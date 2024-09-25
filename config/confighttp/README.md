@@ -68,8 +68,8 @@ is hosted at a different [origin][origin]. If left blank or set to `null`, CORS
 will not be enabled.
   - `allowed_origins`: A list of [origins][origin] allowed to send requests to
   the receiver. An origin may contain a wildcard (`*`) to replace 0 or more
-  characters (e.g., `https://*.example.com`). To allow any origin, set to
-  `["*"]`. If no origins are listed, CORS will not be enabled.
+  characters (e.g., `https://*.example.com`). **Do not use** a plain wildcard
+  `["*"]`, as our CORS response includes `Access-Control-Allow-Credentials: true`, which makes browsers to **disallow a plain wildcard** (this is a security standard). To allow any origin, you can specify at least the protocol, for example `["https://*", "http://*"]`. If no origins are listed, CORS will not be enabled.
   - `allowed_headers`: Allow CORS requests to include headers outside the
   [default safelist][cors-headers]. By default, safelist headers and
   `X-Requested-With` will be allowed. To allow any request header, set to
@@ -78,7 +78,7 @@ will not be enabled.
   header, allowing clients to cache the response to CORS preflight requests. If
   not set, browsers use a default of 5 seconds.
 - `endpoint`: Valid value syntax available [here](https://github.com/grpc/grpc/blob/master/doc/naming.md)
-- `max_request_body_size`: configures the maximum allowed body size in bytes for a single request. Default: `0` (no restriction)
+- `max_request_body_size`: configures the maximum allowed body size in bytes for a single request. Default: `20971520` (20MiB)
 - `compression_algorithms`: configures the list of compression algorithms the server can accept. Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate"]
 - [`tls`](../configtls/README.md)
 - [`auth`](../configauth/README.md)

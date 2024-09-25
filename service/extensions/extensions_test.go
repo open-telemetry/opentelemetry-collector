@@ -284,7 +284,7 @@ func TestNotifyConfig(t *testing.T) {
 				BuildInfo:  component.NewDefaultBuildInfo(),
 				Extensions: builders.NewExtension(tt.extensionsConfigs, tt.factories),
 			}, tt.serviceExtensions)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			errs := extensions.NotifyConfig(context.Background(), confmap.NewFromStringMap(map[string]interface{}{}))
 			assert.Equal(t, tt.want, errs)
 		})
@@ -367,7 +367,7 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 		}
 	}
 
-	for _, tc := range []struct {
+	for _, tt := range []struct {
 		name             string
 		expectedStatuses []*componentstatus.Event
 		startErr         error
@@ -405,10 +405,10 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 			shutdownErr: assert.AnError,
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			statusType := component.MustNewType("statustest")
 			compID := component.NewID(statusType)
-			factory := newStatusTestExtensionFactory(statusType, tc.startErr, tc.shutdownErr)
+			factory := newStatusTestExtensionFactory(statusType, tt.startErr, tt.shutdownErr)
 			config := factory.CreateDefaultConfig()
 			extensionsConfigs := map[component.ID]component.Config{
 				compID: config,
@@ -434,15 +434,15 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 				[]component.ID{compID},
 				WithReporter(rep),
 			)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			rep.Ready()
 
-			assert.Equal(t, tc.startErr, extensions.Start(context.Background(), componenttest.NewNopHost()))
-			if tc.startErr == nil {
-				assert.Equal(t, tc.shutdownErr, extensions.Shutdown(context.Background()))
+			assert.Equal(t, tt.startErr, extensions.Start(context.Background(), componenttest.NewNopHost()))
+			if tt.startErr == nil {
+				assert.Equal(t, tt.shutdownErr, extensions.Shutdown(context.Background()))
 			}
-			assertEqualStatuses(t, tc.expectedStatuses, actualStatuses)
+			assertEqualStatuses(t, tt.expectedStatuses, actualStatuses)
 		})
 	}
 }

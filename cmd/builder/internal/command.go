@@ -84,7 +84,7 @@ configuration is provided, ocb will generate a default Collector.
 	cmd.Flags().BoolVar(&cfg.SkipGenerate, skipGenerateFlag, false, "Whether builder should skip generating go code (default false)")
 	cmd.Flags().BoolVar(&cfg.SkipCompilation, skipCompilationFlag, false, "Whether builder should only generate go code with no compile of the collector (default false)")
 	cmd.Flags().BoolVar(&cfg.SkipGetModules, skipGetModulesFlag, false, "Whether builder should skip updating go.mod and retrieve Go module list (default false)")
-	cmd.Flags().BoolVar(&cfg.SkipStrictVersioning, skipStrictVersioningFlag, false, "Whether builder should skip strictly checking the calculated versions following dependency resolution")
+	cmd.Flags().BoolVar(&cfg.SkipStrictVersioning, skipStrictVersioningFlag, true, "Whether builder should skip strictly checking the calculated versions following dependency resolution")
 	cmd.Flags().BoolVar(&cfg.Verbose, verboseFlag, false, "Whether builder should print verbose output (default false)")
 	cmd.Flags().StringVar(&cfg.LDFlags, ldflagsFlag, "", `ldflags to include in the "go build" command`)
 	cmd.Flags().StringVar(&cfg.Distribution.Name, distributionNameFlag, "otelcol-custom", "The executable name for the OpenTelemetry Collector distribution")
@@ -209,5 +209,6 @@ func applyCfgFromFile(flags *flag.FlagSet, cfgFromFile builder.Config) {
 	if !flags.Changed(distributionModuleFlag) && cfgFromFile.Distribution.Module != "" {
 		cfg.Distribution.Module = cfgFromFile.Distribution.Module
 	}
+	cfg.Distribution.BuildTags = cfgFromFile.Distribution.BuildTags
 	cfg.Distribution.DebugCompilation = cfgFromFile.Distribution.DebugCompilation
 }
