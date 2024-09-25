@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/internal/queue"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 var logsMarshaler = &plog.ProtoMarshaler{}
@@ -119,7 +120,7 @@ func NewLogsRequestExporter(
 		return nil, errNilLogsConverter
 	}
 
-	be, err := internal.NewBaseExporter(set, component.DataTypeLogs, newLogsExporterWithObservability, options...)
+	be, err := internal.NewBaseExporter(set, pipeline.SignalLogs, newLogsExporterWithObservability, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +135,7 @@ func NewLogsRequestExporter(
 		}
 		sErr := be.Send(ctx, req)
 		if errors.Is(sErr, queue.ErrQueueIsFull) {
-			be.Obsrep.RecordEnqueueFailure(ctx, component.DataTypeLogs, int64(req.ItemsCount()))
+			be.Obsrep.RecordEnqueueFailure(ctx, pipeline.SignalLogs, int64(req.ItemsCount()))
 		}
 		return sErr
 	}, be.ConsumerOptions...)

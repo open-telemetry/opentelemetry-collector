@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/component/componentprofiles"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 // Factory is a factory interface for connectors.
@@ -143,7 +144,7 @@ func (f CreateTracesToTracesFunc) CreateTracesToTraces(
 	cfg component.Config,
 	nextConsumer consumer.Traces) (Traces, error) {
 	if f == nil {
-		return nil, ErrDataTypes(set.ID, component.DataTypeTraces, component.DataTypeTraces)
+		return nil, ErrDataTypes(set.ID, pipeline.SignalTraces, pipeline.SignalTraces)
 	}
 	return f(ctx, set, cfg, nextConsumer)
 }
@@ -159,7 +160,7 @@ func (f CreateTracesToMetricsFunc) CreateTracesToMetrics(
 	nextConsumer consumer.Metrics,
 ) (Traces, error) {
 	if f == nil {
-		return nil, ErrDataTypes(set.ID, component.DataTypeTraces, component.DataTypeMetrics)
+		return nil, ErrDataTypes(set.ID, pipeline.SignalTraces, pipeline.SignalMetrics)
 	}
 	return f(ctx, set, cfg, nextConsumer)
 }
@@ -175,7 +176,7 @@ func (f CreateTracesToLogsFunc) CreateTracesToLogs(
 	nextConsumer consumer.Logs,
 ) (Traces, error) {
 	if f == nil {
-		return nil, ErrDataTypes(set.ID, component.DataTypeTraces, component.DataTypeLogs)
+		return nil, ErrDataTypes(set.ID, pipeline.SignalTraces, pipeline.SignalLogs)
 	}
 	return f(ctx, set, cfg, nextConsumer)
 }
@@ -191,7 +192,7 @@ func (f CreateTracesToProfilesFunc) CreateTracesToProfiles(
 	nextConsumer consumerprofiles.Profiles,
 ) (Traces, error) {
 	if f == nil {
-		return nil, ErrDataTypes(set.ID, component.DataTypeTraces, componentprofiles.DataTypeProfiles)
+		return nil, ErrDataTypes(set.ID, pipeline.SignalTraces, componentprofiles.SignalProfiles)
 	}
 	return f(ctx, set, cfg, nextConsumer)
 }
@@ -207,7 +208,7 @@ func (f CreateMetricsToTracesFunc) CreateMetricsToTraces(
 	nextConsumer consumer.Traces,
 ) (Metrics, error) {
 	if f == nil {
-		return nil, ErrDataTypes(set.ID, component.DataTypeMetrics, component.DataTypeTraces)
+		return nil, ErrDataTypes(set.ID, pipeline.SignalMetrics, pipeline.SignalTraces)
 	}
 	return f(ctx, set, cfg, nextConsumer)
 }
@@ -223,7 +224,7 @@ func (f CreateMetricsToMetricsFunc) CreateMetricsToMetrics(
 	nextConsumer consumer.Metrics,
 ) (Metrics, error) {
 	if f == nil {
-		return nil, ErrDataTypes(set.ID, component.DataTypeMetrics, component.DataTypeMetrics)
+		return nil, ErrDataTypes(set.ID, pipeline.SignalMetrics, pipeline.SignalMetrics)
 	}
 	return f(ctx, set, cfg, nextConsumer)
 }
@@ -239,7 +240,7 @@ func (f CreateMetricsToLogsFunc) CreateMetricsToLogs(
 	nextConsumer consumer.Logs,
 ) (Metrics, error) {
 	if f == nil {
-		return nil, ErrDataTypes(set.ID, component.DataTypeMetrics, component.DataTypeLogs)
+		return nil, ErrDataTypes(set.ID, pipeline.SignalMetrics, pipeline.SignalLogs)
 	}
 	return f(ctx, set, cfg, nextConsumer)
 }
@@ -255,7 +256,7 @@ func (f CreateMetricsToProfilesFunc) CreateMetricsToProfiles(
 	nextConsumer consumerprofiles.Profiles,
 ) (Metrics, error) {
 	if f == nil {
-		return nil, ErrDataTypes(set.ID, component.DataTypeMetrics, componentprofiles.DataTypeProfiles)
+		return nil, ErrDataTypes(set.ID, pipeline.SignalMetrics, componentprofiles.SignalProfiles)
 	}
 	return f(ctx, set, cfg, nextConsumer)
 }
@@ -271,7 +272,7 @@ func (f CreateLogsToTracesFunc) CreateLogsToTraces(
 	nextConsumer consumer.Traces,
 ) (Logs, error) {
 	if f == nil {
-		return nil, ErrDataTypes(set.ID, component.DataTypeLogs, component.DataTypeTraces)
+		return nil, ErrDataTypes(set.ID, pipeline.SignalLogs, pipeline.SignalTraces)
 	}
 	return f(ctx, set, cfg, nextConsumer)
 }
@@ -287,7 +288,7 @@ func (f CreateLogsToMetricsFunc) CreateLogsToMetrics(
 	nextConsumer consumer.Metrics,
 ) (Logs, error) {
 	if f == nil {
-		return nil, ErrDataTypes(set.ID, component.DataTypeLogs, component.DataTypeMetrics)
+		return nil, ErrDataTypes(set.ID, pipeline.SignalLogs, pipeline.SignalMetrics)
 	}
 	return f(ctx, set, cfg, nextConsumer)
 }
@@ -303,7 +304,7 @@ func (f CreateLogsToLogsFunc) CreateLogsToLogs(
 	nextConsumer consumer.Logs,
 ) (Logs, error) {
 	if f == nil {
-		return nil, ErrDataTypes(set.ID, component.DataTypeLogs, component.DataTypeLogs)
+		return nil, ErrDataTypes(set.ID, pipeline.SignalLogs, pipeline.SignalLogs)
 	}
 	return f(ctx, set, cfg, nextConsumer)
 }
@@ -319,7 +320,7 @@ func (f CreateLogsToProfilesFunc) CreateLogsToProfiles(
 	nextConsumer consumerprofiles.Profiles,
 ) (Logs, error) {
 	if f == nil {
-		return nil, ErrDataTypes(set.ID, component.DataTypeLogs, componentprofiles.DataTypeProfiles)
+		return nil, ErrDataTypes(set.ID, pipeline.SignalLogs, componentprofiles.SignalProfiles)
 	}
 	return f(ctx, set, cfg, nextConsumer)
 }
@@ -335,7 +336,7 @@ func (f CreateProfilesToProfilesFunc) CreateProfilesToProfiles(
 	nextConsumer consumerprofiles.Profiles,
 ) (Profiles, error) {
 	if f == nil {
-		return nil, ErrDataTypes(set.ID, componentprofiles.DataTypeProfiles, componentprofiles.DataTypeProfiles)
+		return nil, ErrDataTypes(set.ID, componentprofiles.SignalProfiles, componentprofiles.SignalProfiles)
 	}
 	return f(ctx, set, cfg, nextConsumer)
 }
@@ -351,7 +352,7 @@ func (f CreateProfilesToTracesFunc) CreateProfilesToTraces(
 	nextConsumer consumer.Traces,
 ) (Profiles, error) {
 	if f == nil {
-		return nil, ErrDataTypes(set.ID, componentprofiles.DataTypeProfiles, component.DataTypeTraces)
+		return nil, ErrDataTypes(set.ID, componentprofiles.SignalProfiles, pipeline.SignalTraces)
 	}
 	return f(ctx, set, cfg, nextConsumer)
 }
@@ -367,7 +368,7 @@ func (f CreateProfilesToMetricsFunc) CreateProfilesToMetrics(
 	nextConsumer consumer.Metrics,
 ) (Profiles, error) {
 	if f == nil {
-		return nil, ErrDataTypes(set.ID, componentprofiles.DataTypeProfiles, component.DataTypeMetrics)
+		return nil, ErrDataTypes(set.ID, componentprofiles.SignalProfiles, pipeline.SignalMetrics)
 	}
 	return f(ctx, set, cfg, nextConsumer)
 }
@@ -383,7 +384,7 @@ func (f CreateProfilesToLogsFunc) CreateProfilesToLogs(
 	nextConsumer consumer.Logs,
 ) (Profiles, error) {
 	if f == nil {
-		return nil, ErrDataTypes(set.ID, componentprofiles.DataTypeProfiles, component.DataTypeLogs)
+		return nil, ErrDataTypes(set.ID, componentprofiles.SignalProfiles, pipeline.SignalLogs)
 	}
 	return f(ctx, set, cfg, nextConsumer)
 }
@@ -599,6 +600,6 @@ func WithProfilesToLogs(createProfilesToLogs CreateProfilesToLogsFunc, sl compon
 	})
 }
 
-func ErrDataTypes(id component.ID, from, to component.DataType) error {
-	return fmt.Errorf("connector %q cannot connect from %s to %s: %w", id, from, to, component.ErrDataTypeIsNotSupported)
+func ErrDataTypes(id component.ID, from, to pipeline.Signal) error {
+	return fmt.Errorf("connector %q cannot connect from %s to %s: %w", id, from, to, pipeline.ErrSignalNotSupported)
 }
