@@ -22,9 +22,6 @@ import (
 
 const defaultQueueSize = 1000
 
-// Deprecated: [v0.110.0] Use QueueConfig instead.
-type QueueSettings = QueueConfig
-
 // QueueConfig defines configuration for queueing batches before sending to the consumerSender.
 type QueueConfig struct {
 	// Enabled indicates whether to not enqueue batches before sending to the consumerSender.
@@ -38,11 +35,6 @@ type QueueConfig struct {
 	// StorageID if not empty, enables the persistent storage and uses the component specified
 	// as a storage extension for the persistent queue
 	StorageID *component.ID `mapstructure:"storage"`
-}
-
-// Deprecated: [v0.110.0] Use NewDefaultQueueConfig instead.
-func NewDefaultQueueSettings() QueueSettings {
-	return NewDefaultQueueConfig()
 }
 
 // NewDefaultQueueConfig returns the default config for QueueConfig.

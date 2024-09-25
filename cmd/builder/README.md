@@ -61,17 +61,17 @@ There are two supported ways to install the builder: via the official releases (
 
 ### Official releases
 
-This is the recommended installation method. Download the binary for your respective platform under the ["Releases"](https://github.com/open-telemetry/opentelemetry-collector/releases?q=builder) page.
+This is the recommended installation method. Download the binary for your respective platform from the ["Releases"](https://github.com/open-telemetry/opentelemetry-collector-releases/releases?q=cmd/builder) page.
 
 ### `go install`
 
 You need to have a `go` compiler in your PATH. Run the following command to install the latest version:
 
-```
+```console
 go install go.opentelemetry.io/collector/cmd/builder@latest
 ```
 
-If installing through this method the binary will be called `builder`. Binaries installed through this method [will incorrectly show `dev` as their version](https://github.com/open-telemetry/opentelemetry-collector/issues/8691).
+If installing through this method the binary will be called `builder`.
 
 ## Running
 
