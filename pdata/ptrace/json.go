@@ -113,7 +113,7 @@ func (dest Span) unmarshalJsoniter(iter *jsoniter.Iterator) {
 				iter.ReportError("readSpan.parentSpanId", fmt.Sprintf("parse parent_span_id:%v", err))
 			}
 		case "flags":
-			dest.orig.Flags = iter.ReadUint32()
+			dest.orig.Flags = json.ReadUint32(iter)
 		case "name":
 			dest.orig.Name = iter.ReadString()
 		case "kind":
