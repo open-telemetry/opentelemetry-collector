@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/contrib/config"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
@@ -275,8 +276,17 @@ func generateConfig() *Config {
 					InitialFields:     map[string]any{"fieldKey": "filed-value"},
 				},
 				Metrics: telemetry.MetricsConfig{
-					Level:   configtelemetry.LevelNormal,
-					Address: ":8080",
+					Level: configtelemetry.LevelNormal,
+					Readers: []config.MetricReader{
+						{
+							Pull: &config.PullMetricReader{Exporter: config.MetricExporter{
+								Prometheus: &config.Prometheus{
+									Host: newPtr("localhost"),
+									Port: newPtr(8080),
+								},
+							}},
+						},
+					},
 				},
 			},
 			Extensions: []component.ID{component.MustNewID("nop")},
@@ -289,4 +299,8 @@ func generateConfig() *Config {
 			},
 		},
 	}
+}
+
+func newPtr[T int | string](str T) *T {
+	return &str
 }

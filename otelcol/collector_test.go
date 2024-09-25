@@ -389,8 +389,8 @@ func TestCollectorRun(t *testing.T) {
 	tests := []struct {
 		file string
 	}{
-		{file: "otelcol-nometrics.yaml"},
-		{file: "otelcol-noaddress.yaml"},
+		{file: "otelcol-noreaders.yaml"},
+		{file: "otelcol-emptyreaders.yaml"},
 	}
 
 	for _, tt := range tests {
