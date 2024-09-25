@@ -132,7 +132,7 @@ type MetricsConfig struct {
 	//  - "detailed" adds dimensions and views to the previous levels.
 	Level configtelemetry.Level `mapstructure:"level"`
 
-	// Deprecated: [v0.110.0] use readers configuration.
+	// Deprecated: [v0.111.0] use readers configuration.
 	Address string `mapstructure:"address"`
 
 	// Readers allow configuration of metric readers to emit metrics to
