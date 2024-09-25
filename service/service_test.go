@@ -291,78 +291,6 @@ func TestServiceTelemetryCleanupOnError(t *testing.T) {
 func TestServiceTelemetry(t *testing.T) {
 	for _, tc := range ownMetricsTestCases() {
 		t.Run(fmt.Sprintf("ipv4_%s", tc.name), func(t *testing.T) {
-			testCollectorStartHelper(t, tc, "tcp4")
-		})
-		t.Run(fmt.Sprintf("ipv6_%s", tc.name), func(t *testing.T) {
-			testCollectorStartHelper(t, tc, "tcp6")
-		})
-	}
-}
-
-func testCollectorStartHelper(t *testing.T, tc ownMetricsTestCase, network string) {
-	var once sync.Once
-	loggingHookCalled := false
-	hook := func(zapcore.Entry) error {
-		once.Do(func() {
-			loggingHookCalled = true
-		})
-		return nil
-	}
-
-	var (
-		metricsAddr string
-		zpagesAddr  string
-	)
-	switch network {
-	case "tcp", "tcp4":
-		metricsAddr = testutil.GetAvailableLocalAddress(t)
-		zpagesAddr = testutil.GetAvailableLocalAddress(t)
-	case "tcp6":
-		metricsAddr = testutil.GetAvailableLocalIPv6Address(t)
-		zpagesAddr = testutil.GetAvailableLocalIPv6Address(t)
-	}
-	require.NotZero(t, metricsAddr, "network must be either of tcp, tcp4 or tcp6")
-	require.NotZero(t, zpagesAddr, "network must be either of tcp, tcp4 or tcp6")
-
-	set := newNopSettings()
-	set.BuildInfo = component.BuildInfo{Version: "test version", Command: otelCommand}
-	set.ExtensionsConfigs = map[component.ID]component.Config{
-		component.MustNewID("zpages"): &zpagesextension.Config{
-			ServerConfig: confighttp.ServerConfig{Endpoint: zpagesAddr},
-		},
-	}
-	set.ExtensionsFactories = map[component.Type]extension.Factory{component.MustNewType("zpages"): zpagesextension.NewFactory()}
-	set.LoggingOptions = []zap.Option{zap.Hooks(hook)}
-
-	cfg := newNopConfig()
-	cfg.Extensions = []component.ID{component.MustNewID("zpages")}
-	cfg.Telemetry.Metrics.Address = metricsAddr
-	cfg.Telemetry.Resource = make(map[string]*string)
-	// Include resource attributes under the service::telemetry::resource key.
-	for k, v := range tc.userDefinedResource {
-		cfg.Telemetry.Resource[k] = v
-	}
-
-	// Create a service, check for metrics, shutdown and repeat to ensure that telemetry can be started/shutdown and started again.
-	for i := 0; i < 2; i++ {
-		srv, err := New(context.Background(), set, cfg)
-		require.NoError(t, err)
-
-		require.NoError(t, srv.Start(context.Background()))
-		// Sleep for 1 second to ensure the http server is started.
-		time.Sleep(1 * time.Second)
-		assert.True(t, loggingHookCalled)
-
-		assertResourceLabels(t, srv.telemetrySettings.Resource, tc.expectedLabels)
-		assertMetrics(t, metricsAddr, tc.expectedLabels)
-		assertZPages(t, zpagesAddr)
-		require.NoError(t, srv.Shutdown(context.Background()))
-	}
-}
-
-func TestServiceTelemetryWithReaders(t *testing.T) {
-	for _, tc := range ownMetricsTestCases() {
-		t.Run(fmt.Sprintf("ipv4_%s", tc.name), func(t *testing.T) {
 			testCollectorStartHelperWithReaders(t, tc, "tcp4")
 		})
 		t.Run(fmt.Sprintf("ipv6_%s", tc.name), func(t *testing.T) {
@@ -408,7 +336,6 @@ func testCollectorStartHelperWithReaders(t *testing.T, tc ownMetricsTestCase, ne
 
 	cfg := newNopConfig()
 	cfg.Extensions = []component.ID{component.MustNewID("zpages")}
-	cfg.Telemetry.Metrics.Address = ""
 	cfg.Telemetry.Metrics.Readers = []config.MetricReader{
 		{
 			Pull: &config.PullMetricReader{
@@ -742,8 +669,13 @@ func newNopConfigPipelineConfigs(pipelineCfgs pipelines.ConfigWithPipelineID) Co
 				InitialFields:     map[string]any(nil),
 			},
 			Metrics: telemetry.MetricsConfig{
-				Level:   configtelemetry.LevelBasic,
-				Address: "localhost:8888",
+				Level: configtelemetry.LevelBasic,
+				Readers: []config.MetricReader{{
+					Pull: &config.PullMetricReader{Exporter: config.MetricExporter{Prometheus: &config.Prometheus{
+						Host: newPtr("localhost"),
+						Port: newPtr(8888),
+					}}}},
+				},
 			},
 		},
 	}
@@ -774,4 +706,8 @@ func newConfigWatcherExtensionFactory(name component.Type) extension.Factory {
 		},
 		component.StabilityLevelDevelopment,
 	)
+}
+
+func newPtr[T int | string](str T) *T {
+	return &str
 }

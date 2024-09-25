@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/contrib/config"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -30,8 +31,13 @@ func TestTelemetryConfiguration(t *testing.T) {
 					Encoding: "console",
 				},
 				Metrics: MetricsConfig{
-					Level:   configtelemetry.LevelBasic,
-					Address: "127.0.0.1:3333",
+					Level: configtelemetry.LevelBasic,
+					Readers: []config.MetricReader{{
+						Pull: &config.PullMetricReader{Exporter: config.MetricExporter{Prometheus: &config.Prometheus{
+							Host: newPtr("127.0.0.1"),
+							Port: newPtr(3333),
+						}}}},
+					},
 				},
 			},
 			success: true,
@@ -43,8 +49,13 @@ func TestTelemetryConfiguration(t *testing.T) {
 					Level: zapcore.DebugLevel,
 				},
 				Metrics: MetricsConfig{
-					Level:   configtelemetry.LevelBasic,
-					Address: "127.0.0.1:3333",
+					Level: configtelemetry.LevelBasic,
+					Readers: []config.MetricReader{{
+						Pull: &config.PullMetricReader{Exporter: config.MetricExporter{Prometheus: &config.Prometheus{
+							Host: newPtr("127.0.0.1"),
+							Port: newPtr(3333),
+						}}}},
+					},
 				},
 			},
 			success: false,
