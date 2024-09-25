@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterqueue" // BaseExporter contains common fields between different exporter types.
 	"go.opentelemetry.io/collector/exporter/internal"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 type ObsrepSenderFactory = func(obsrep *ObsReport) RequestSender
@@ -35,7 +36,7 @@ type BaseExporter struct {
 	component.StartFunc
 	component.ShutdownFunc
 
-	Signal component.DataType
+	Signal pipeline.Signal
 
 	BatchMergeFunc      exporterbatcher.BatchMergeFunc[internal.Request]
 	BatchMergeSplitfunc exporterbatcher.BatchMergeSplitFunc[internal.Request]
@@ -66,8 +67,8 @@ type BaseExporter struct {
 	BatcherOpts  []BatcherOption
 }
 
-func NewBaseExporter(set exporter.Settings, signal component.DataType, osf ObsrepSenderFactory, options ...Option) (*BaseExporter, error) {
-	obsReport, err := NewExporter(ObsReportSettings{ExporterID: set.ID, ExporterCreateSettings: set, DataType: signal})
+func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSenderFactory, options ...Option) (*BaseExporter, error) {
+	obsReport, err := NewExporter(ObsReportSettings{ExporterID: set.ID, ExporterCreateSettings: set, Signal: signal})
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +106,7 @@ func NewBaseExporter(set exporter.Settings, signal component.DataType, osf Obsre
 
 	if be.QueueCfg.Enabled {
 		set := exporterqueue.Settings{
-			DataType:         be.Signal,
+			Signal:           be.Signal,
 			ExporterSettings: be.Set,
 		}
 		be.QueueSender = NewQueueSender(be.QueueFactory(context.Background(), set, be.QueueCfg), be.Set, be.QueueCfg.NumConsumers, be.ExportFailureMessage, be.Obsrep)
@@ -234,7 +235,7 @@ func WithQueue(config QueueConfig) Option {
 			Unmarshaler: o.Unmarshaler,
 		})
 		q := qf(context.Background(), exporterqueue.Settings{
-			DataType:         o.Signal,
+			Signal:           o.Signal,
 			ExporterSettings: o.Set,
 		}, exporterqueue.Config{
 			Enabled:      config.Enabled,

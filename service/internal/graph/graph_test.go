@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterprofiles"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/testdata"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorprofiles"
 	"go.opentelemetry.io/collector/processor/processortest"
@@ -231,28 +232,28 @@ func TestGraphStartStopComponentError(t *testing.T) {
 func TestConnectorPipelinesGraph(t *testing.T) {
 	tests := []struct {
 		name                string
-		pipelineConfigs     pipelines.Config
+		pipelineConfigs     pipelines.ConfigWithPipelineID
 		expectedPerExporter int // requires symmetry in Pipelines
 	}{
 		{
 			name: "pipelines_simple.yaml",
-			pipelineConfigs: pipelines.Config{
-				component.MustNewID("traces"): {
+			pipelineConfigs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewID("traces"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
 				},
-				component.MustNewID("metrics"): {
+				pipeline.MustNewID("metrics"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
 				},
-				component.MustNewID("logs"): {
+				pipeline.MustNewID("logs"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
 				},
-				component.MustNewID("profiles"): {
+				pipeline.MustNewID("profiles"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
@@ -262,23 +263,23 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		},
 		{
 			name: "pipelines_simple_mutate.yaml",
-			pipelineConfigs: pipelines.Config{
-				component.MustNewID("traces"): {
+			pipelineConfigs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewID("traces"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
 					Processors: []component.ID{component.MustNewIDWithName("exampleprocessor", "mutate")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
 				},
-				component.MustNewID("metrics"): {
+				pipeline.MustNewID("metrics"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
 					Processors: []component.ID{component.MustNewIDWithName("exampleprocessor", "mutate")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
 				},
-				component.MustNewID("logs"): {
+				pipeline.MustNewID("logs"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
 					Processors: []component.ID{component.MustNewIDWithName("exampleprocessor", "mutate")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
 				},
-				component.MustNewID("profiles"): {
+				pipeline.MustNewID("profiles"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
 					Processors: []component.ID{component.MustNewIDWithName("exampleprocessor", "mutate")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
@@ -288,23 +289,23 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		},
 		{
 			name: "pipelines_simple_multi_proc.yaml",
-			pipelineConfigs: pipelines.Config{
-				component.MustNewID("traces"): {
+			pipelineConfigs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewID("traces"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor"), component.MustNewIDWithName("exampleprocessor", "mutate")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
 				},
-				component.MustNewID("metrics"): {
+				pipeline.MustNewID("metrics"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor"), component.MustNewIDWithName("exampleprocessor", "mutate")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
 				},
-				component.MustNewID("logs"): {
+				pipeline.MustNewID("logs"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor"), component.MustNewIDWithName("exampleprocessor", "mutate")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
 				},
-				component.MustNewID("profiles"): {
+				pipeline.MustNewID("profiles"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor"), component.MustNewIDWithName("exampleprocessor", "mutate")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
@@ -314,20 +315,20 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		},
 		{
 			name: "pipelines_simple_no_proc.yaml",
-			pipelineConfigs: pipelines.Config{
-				component.MustNewID("traces"): {
+			pipelineConfigs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewID("traces"): {
 					Receivers: []component.ID{component.MustNewID("examplereceiver")},
 					Exporters: []component.ID{component.MustNewID("exampleexporter")},
 				},
-				component.MustNewID("metrics"): {
+				pipeline.MustNewID("metrics"): {
 					Receivers: []component.ID{component.MustNewID("examplereceiver")},
 					Exporters: []component.ID{component.MustNewID("exampleexporter")},
 				},
-				component.MustNewID("logs"): {
+				pipeline.MustNewID("logs"): {
 					Receivers: []component.ID{component.MustNewID("examplereceiver")},
 					Exporters: []component.ID{component.MustNewID("exampleexporter")},
 				},
-				component.MustNewID("profiles"): {
+				pipeline.MustNewID("profiles"): {
 					Receivers: []component.ID{component.MustNewID("examplereceiver")},
 					Exporters: []component.ID{component.MustNewID("exampleexporter")},
 				},
@@ -336,23 +337,23 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		},
 		{
 			name: "pipelines_multi.yaml",
-			pipelineConfigs: pipelines.Config{
-				component.MustNewID("traces"): {
+			pipelineConfigs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewID("traces"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver"), component.MustNewIDWithName("examplereceiver", "1")},
 					Processors: []component.ID{component.MustNewIDWithName("exampleprocessor", "mutate"), component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter"), component.MustNewIDWithName("exampleexporter", "1")},
 				},
-				component.MustNewID("metrics"): {
+				pipeline.MustNewID("metrics"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver"), component.MustNewIDWithName("examplereceiver", "1")},
 					Processors: []component.ID{component.MustNewIDWithName("exampleprocessor", "mutate"), component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter"), component.MustNewIDWithName("exampleexporter", "1")},
 				},
-				component.MustNewID("logs"): {
+				pipeline.MustNewID("logs"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver"), component.MustNewIDWithName("examplereceiver", "1")},
 					Processors: []component.ID{component.MustNewIDWithName("exampleprocessor", "mutate"), component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter"), component.MustNewIDWithName("exampleexporter", "1")},
 				},
-				component.MustNewID("profiles"): {
+				pipeline.MustNewID("profiles"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver"), component.MustNewIDWithName("examplereceiver", "1")},
 					Processors: []component.ID{component.MustNewIDWithName("exampleprocessor", "mutate"), component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter"), component.MustNewIDWithName("exampleexporter", "1")},
@@ -362,20 +363,20 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		},
 		{
 			name: "pipelines_multi_no_proc.yaml",
-			pipelineConfigs: pipelines.Config{
-				component.MustNewID("traces"): {
+			pipelineConfigs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewID("traces"): {
 					Receivers: []component.ID{component.MustNewID("examplereceiver"), component.MustNewIDWithName("examplereceiver", "1")},
 					Exporters: []component.ID{component.MustNewID("exampleexporter"), component.MustNewIDWithName("exampleexporter", "1")},
 				},
-				component.MustNewID("metrics"): {
+				pipeline.MustNewID("metrics"): {
 					Receivers: []component.ID{component.MustNewID("examplereceiver"), component.MustNewIDWithName("examplereceiver", "1")},
 					Exporters: []component.ID{component.MustNewID("exampleexporter"), component.MustNewIDWithName("exampleexporter", "1")},
 				},
-				component.MustNewID("logs"): {
+				pipeline.MustNewID("logs"): {
 					Receivers: []component.ID{component.MustNewID("examplereceiver"), component.MustNewIDWithName("examplereceiver", "1")},
 					Exporters: []component.ID{component.MustNewID("exampleexporter"), component.MustNewIDWithName("exampleexporter", "1")},
 				},
-				component.MustNewID("profiles"): {
+				pipeline.MustNewID("profiles"): {
 					Receivers: []component.ID{component.MustNewID("examplereceiver"), component.MustNewIDWithName("examplereceiver", "1")},
 					Exporters: []component.ID{component.MustNewID("exampleexporter"), component.MustNewIDWithName("exampleexporter", "1")},
 				},
@@ -384,40 +385,40 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		},
 		{
 			name: "multi_pipeline_receivers_and_exporters.yaml",
-			pipelineConfigs: pipelines.Config{
-				component.MustNewID("traces"): {
+			pipelineConfigs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewID("traces"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
 					Processors: []component.ID{component.MustNewIDWithName("exampleprocessor", "mutate")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
 				},
-				component.MustNewIDWithName("traces", "1"): {
+				pipeline.MustNewIDWithName("traces", "1"): {
 					Receivers: []component.ID{component.MustNewID("examplereceiver")},
 					Exporters: []component.ID{component.MustNewID("exampleexporter")},
 				},
-				component.MustNewID("metrics"): {
+				pipeline.MustNewID("metrics"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
 					Processors: []component.ID{component.MustNewIDWithName("exampleprocessor", "mutate")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
 				},
-				component.MustNewIDWithName("metrics", "1"): {
+				pipeline.MustNewIDWithName("metrics", "1"): {
 					Receivers: []component.ID{component.MustNewID("examplereceiver")},
 					Exporters: []component.ID{component.MustNewID("exampleexporter")},
 				},
-				component.MustNewID("logs"): {
+				pipeline.MustNewID("logs"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
 					Processors: []component.ID{component.MustNewIDWithName("exampleprocessor", "mutate")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
 				},
-				component.MustNewIDWithName("logs", "1"): {
+				pipeline.MustNewIDWithName("logs", "1"): {
 					Receivers: []component.ID{component.MustNewID("examplereceiver")},
 					Exporters: []component.ID{component.MustNewID("exampleexporter")},
 				},
-				component.MustNewID("profiles"): {
+				pipeline.MustNewID("profiles"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
 					Processors: []component.ID{component.MustNewIDWithName("exampleprocessor", "mutate")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
 				},
-				component.MustNewIDWithName("profiles", "1"): {
+				pipeline.MustNewIDWithName("profiles", "1"): {
 					Receivers: []component.ID{component.MustNewID("examplereceiver")},
 					Exporters: []component.ID{component.MustNewID("exampleexporter")},
 				},
@@ -426,13 +427,13 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		},
 		{
 			name: "pipelines_conn_simple_traces.yaml",
-			pipelineConfigs: pipelines.Config{
-				component.MustNewIDWithName("traces", "in"): {
+			pipelineConfigs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("traces", "in"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewIDWithName("exampleconnector", "inherit_mutate")},
 				},
-				component.MustNewIDWithName("traces", "out"): {
+				pipeline.MustNewIDWithName("traces", "out"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("exampleconnector", "inherit_mutate")},
 					Processors: []component.ID{component.MustNewIDWithName("exampleprocessor", "mutate")}, // mutate propagates upstream to connector
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
@@ -442,13 +443,13 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		},
 		{
 			name: "pipelines_conn_simple_metrics.yaml",
-			pipelineConfigs: pipelines.Config{
-				component.MustNewIDWithName("metrics", "in"): {
+			pipelineConfigs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("metrics", "in"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewIDWithName("exampleconnector", "inherit_mutate")},
 				},
-				component.MustNewIDWithName("metrics", "out"): {
+				pipeline.MustNewIDWithName("metrics", "out"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("exampleconnector", "inherit_mutate")},
 					Processors: []component.ID{component.MustNewIDWithName("exampleprocessor", "mutate")}, // mutate propagates upstream to connector
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
@@ -458,13 +459,13 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		},
 		{
 			name: "pipelines_conn_simple_logs.yaml",
-			pipelineConfigs: pipelines.Config{
-				component.MustNewIDWithName("logs", "in"): {
+			pipelineConfigs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("logs", "in"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewIDWithName("exampleconnector", "inherit_mutate")},
 				},
-				component.MustNewIDWithName("logs", "out"): {
+				pipeline.MustNewIDWithName("logs", "out"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("exampleconnector", "inherit_mutate")},
 					Processors: []component.ID{component.MustNewIDWithName("exampleprocessor", "mutate")}, // mutate propagates upstream to connector
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
@@ -474,13 +475,13 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		},
 		{
 			name: "pipelines_conn_simple_profiles.yaml",
-			pipelineConfigs: pipelines.Config{
-				component.MustNewIDWithName("profiles", "in"): {
+			pipelineConfigs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("profiles", "in"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewIDWithName("exampleconnector", "inherit_mutate")},
 				},
-				component.MustNewIDWithName("profiles", "out"): {
+				pipeline.MustNewIDWithName("profiles", "out"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("exampleconnector", "inherit_mutate")},
 					Processors: []component.ID{component.MustNewIDWithName("exampleprocessor", "mutate")}, // mutate propagates upstream to connector
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
@@ -490,23 +491,23 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		},
 		{
 			name: "pipelines_conn_fork_merge_traces.yaml",
-			pipelineConfigs: pipelines.Config{
-				component.MustNewIDWithName("traces", "in"): {
+			pipelineConfigs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("traces", "in"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewIDWithName("exampleconnector", "inherit_mutate")},
 				},
-				component.MustNewIDWithName("traces", "type0"): {
+				pipeline.MustNewIDWithName("traces", "type0"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("exampleconnector", "inherit_mutate")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewIDWithName("exampleconnector", "merge")},
 				},
-				component.MustNewIDWithName("traces", "type1"): {
+				pipeline.MustNewIDWithName("traces", "type1"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("exampleconnector", "inherit_mutate")},
 					Processors: []component.ID{component.MustNewIDWithName("exampleprocessor", "mutate")}, // mutate propagates upstream to connector
 					Exporters:  []component.ID{component.MustNewIDWithName("exampleconnector", "merge")},
 				},
-				component.MustNewIDWithName("traces", "out"): {
+				pipeline.MustNewIDWithName("traces", "out"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("exampleconnector", "merge")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
@@ -516,23 +517,23 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		},
 		{
 			name: "pipelines_conn_fork_merge_metrics.yaml",
-			pipelineConfigs: pipelines.Config{
-				component.MustNewIDWithName("metrics", "in"): {
+			pipelineConfigs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("metrics", "in"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewIDWithName("exampleconnector", "inherit_mutate")},
 				},
-				component.MustNewIDWithName("metrics", "type0"): {
+				pipeline.MustNewIDWithName("metrics", "type0"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("exampleconnector", "inherit_mutate")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewIDWithName("exampleconnector", "merge")},
 				},
-				component.MustNewIDWithName("metrics", "type1"): {
+				pipeline.MustNewIDWithName("metrics", "type1"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("exampleconnector", "inherit_mutate")},
 					Processors: []component.ID{component.MustNewIDWithName("exampleprocessor", "mutate")}, // mutate propagates upstream to connector
 					Exporters:  []component.ID{component.MustNewIDWithName("exampleconnector", "merge")},
 				},
-				component.MustNewIDWithName("metrics", "out"): {
+				pipeline.MustNewIDWithName("metrics", "out"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("exampleconnector", "merge")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
@@ -542,23 +543,23 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		},
 		{
 			name: "pipelines_conn_fork_merge_logs.yaml",
-			pipelineConfigs: pipelines.Config{
-				component.MustNewIDWithName("logs", "in"): {
+			pipelineConfigs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("logs", "in"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewIDWithName("exampleconnector", "inherit_mutate")},
 				},
-				component.MustNewIDWithName("logs", "type0"): {
+				pipeline.MustNewIDWithName("logs", "type0"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("exampleconnector", "inherit_mutate")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewIDWithName("exampleconnector", "merge")},
 				},
-				component.MustNewIDWithName("logs", "type1"): {
+				pipeline.MustNewIDWithName("logs", "type1"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("exampleconnector", "inherit_mutate")},
 					Processors: []component.ID{component.MustNewIDWithName("exampleprocessor", "mutate")}, // mutate propagates upstream to connector
 					Exporters:  []component.ID{component.MustNewIDWithName("exampleconnector", "merge")},
 				},
-				component.MustNewIDWithName("logs", "out"): {
+				pipeline.MustNewIDWithName("logs", "out"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("exampleconnector", "merge")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
@@ -568,23 +569,23 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		},
 		{
 			name: "pipelines_conn_fork_merge_profiles.yaml",
-			pipelineConfigs: pipelines.Config{
-				component.MustNewIDWithName("profiles", "in"): {
+			pipelineConfigs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("profiles", "in"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewIDWithName("exampleconnector", "inherit_mutate")},
 				},
-				component.MustNewIDWithName("profiles", "type0"): {
+				pipeline.MustNewIDWithName("profiles", "type0"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("exampleconnector", "inherit_mutate")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewIDWithName("exampleconnector", "merge")},
 				},
-				component.MustNewIDWithName("profiles", "type1"): {
+				pipeline.MustNewIDWithName("profiles", "type1"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("exampleconnector", "inherit_mutate")},
 					Processors: []component.ID{component.MustNewIDWithName("exampleprocessor", "mutate")}, // mutate propagates upstream to connector
 					Exporters:  []component.ID{component.MustNewIDWithName("exampleconnector", "merge")},
 				},
-				component.MustNewIDWithName("profiles", "out"): {
+				pipeline.MustNewIDWithName("profiles", "out"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("exampleconnector", "merge")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
@@ -594,23 +595,23 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		},
 		{
 			name: "pipelines_conn_translate_from_traces.yaml",
-			pipelineConfigs: pipelines.Config{
-				component.MustNewID("traces"): {
+			pipelineConfigs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewID("traces"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleconnector")},
 				},
-				component.MustNewID("metrics"): {
+				pipeline.MustNewID("metrics"): {
 					Receivers:  []component.ID{component.MustNewID("exampleconnector")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
 				},
-				component.MustNewID("logs"): {
+				pipeline.MustNewID("logs"): {
 					Receivers:  []component.ID{component.MustNewID("exampleconnector")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
 				},
-				component.MustNewID("profiles"): {
+				pipeline.MustNewID("profiles"): {
 					Receivers:  []component.ID{component.MustNewID("exampleconnector")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
@@ -620,23 +621,23 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		},
 		{
 			name: "pipelines_conn_translate_from_metrics.yaml",
-			pipelineConfigs: pipelines.Config{
-				component.MustNewID("metrics"): {
+			pipelineConfigs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewID("metrics"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleconnector")},
 				},
-				component.MustNewID("traces"): {
+				pipeline.MustNewID("traces"): {
 					Receivers:  []component.ID{component.MustNewID("exampleconnector")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
 				},
-				component.MustNewID("logs"): {
+				pipeline.MustNewID("logs"): {
 					Receivers:  []component.ID{component.MustNewID("exampleconnector")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
 				},
-				component.MustNewID("profiles"): {
+				pipeline.MustNewID("profiles"): {
 					Receivers:  []component.ID{component.MustNewID("exampleconnector")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
@@ -646,23 +647,23 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		},
 		{
 			name: "pipelines_conn_translate_from_logs.yaml",
-			pipelineConfigs: pipelines.Config{
-				component.MustNewID("logs"): {
+			pipelineConfigs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewID("logs"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleconnector")},
 				},
-				component.MustNewID("traces"): {
+				pipeline.MustNewID("traces"): {
 					Receivers:  []component.ID{component.MustNewID("exampleconnector")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
 				},
-				component.MustNewID("metrics"): {
+				pipeline.MustNewID("metrics"): {
 					Receivers:  []component.ID{component.MustNewID("exampleconnector")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
 				},
-				component.MustNewID("profiles"): {
+				pipeline.MustNewID("profiles"): {
 					Receivers:  []component.ID{component.MustNewID("exampleconnector")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
@@ -672,23 +673,23 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		},
 		{
 			name: "pipelines_conn_translate_from_profiles.yaml",
-			pipelineConfigs: pipelines.Config{
-				component.MustNewID("traces"): {
+			pipelineConfigs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewID("traces"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleconnector")},
 				},
-				component.MustNewID("metrics"): {
+				pipeline.MustNewID("metrics"): {
 					Receivers:  []component.ID{component.MustNewID("exampleconnector")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
 				},
-				component.MustNewID("logs"): {
+				pipeline.MustNewID("logs"): {
 					Receivers:  []component.ID{component.MustNewID("exampleconnector")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
 				},
-				component.MustNewID("profiles"): {
+				pipeline.MustNewID("profiles"): {
 					Receivers:  []component.ID{component.MustNewID("exampleconnector")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
@@ -698,43 +699,43 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		},
 		{
 			name: "pipelines_conn_matrix_immutable.yaml",
-			pipelineConfigs: pipelines.Config{
-				component.MustNewIDWithName("traces", "in"): {
+			pipelineConfigs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("traces", "in"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleconnector")},
 				},
-				component.MustNewIDWithName("metrics", "in"): {
+				pipeline.MustNewIDWithName("metrics", "in"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleconnector")},
 				},
-				component.MustNewIDWithName("logs", "in"): {
+				pipeline.MustNewIDWithName("logs", "in"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleconnector")},
 				},
-				component.MustNewIDWithName("profiles", "in"): {
+				pipeline.MustNewIDWithName("profiles", "in"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleconnector")},
 				},
-				component.MustNewIDWithName("traces", "out"): {
+				pipeline.MustNewIDWithName("traces", "out"): {
 					Receivers:  []component.ID{component.MustNewID("exampleconnector")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
 				},
-				component.MustNewIDWithName("metrics", "out"): {
+				pipeline.MustNewIDWithName("metrics", "out"): {
 					Receivers:  []component.ID{component.MustNewID("exampleconnector")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
 				},
-				component.MustNewIDWithName("logs", "out"): {
+				pipeline.MustNewIDWithName("logs", "out"): {
 					Receivers:  []component.ID{component.MustNewID("exampleconnector")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
 				},
-				component.MustNewIDWithName("profiles", "out"): {
+				pipeline.MustNewIDWithName("profiles", "out"): {
 					Receivers:  []component.ID{component.MustNewID("exampleconnector")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
@@ -744,43 +745,43 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		},
 		{
 			name: "pipelines_conn_matrix_mutable.yaml",
-			pipelineConfigs: pipelines.Config{
-				component.MustNewIDWithName("traces", "in"): {
+			pipelineConfigs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("traces", "in"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
 					Processors: []component.ID{component.MustNewIDWithName("exampleprocessor", "mutate")},
 					Exporters:  []component.ID{component.MustNewIDWithName("exampleconnector", "inherit_mutate")},
 				},
-				component.MustNewIDWithName("metrics", "in"): {
+				pipeline.MustNewIDWithName("metrics", "in"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
 					Processors: []component.ID{component.MustNewIDWithName("exampleprocessor", "mutate")},
 					Exporters:  []component.ID{component.MustNewIDWithName("exampleconnector", "inherit_mutate")},
 				},
-				component.MustNewIDWithName("logs", "in"): {
+				pipeline.MustNewIDWithName("logs", "in"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
 					Processors: []component.ID{component.MustNewIDWithName("exampleprocessor", "mutate")},
 					Exporters:  []component.ID{component.MustNewIDWithName("exampleconnector", "inherit_mutate")},
 				},
-				component.MustNewIDWithName("profiles", "in"): {
+				pipeline.MustNewIDWithName("profiles", "in"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
 					Processors: []component.ID{component.MustNewIDWithName("exampleprocessor", "mutate")},
 					Exporters:  []component.ID{component.MustNewIDWithName("exampleconnector", "inherit_mutate")},
 				},
-				component.MustNewIDWithName("traces", "out"): {
+				pipeline.MustNewIDWithName("traces", "out"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("exampleconnector", "inherit_mutate")},
 					Processors: []component.ID{component.MustNewIDWithName("exampleprocessor", "mutate")}, // mutate propagates upstream to connector
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
 				},
-				component.MustNewIDWithName("metrics", "out"): {
+				pipeline.MustNewIDWithName("metrics", "out"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("exampleconnector", "inherit_mutate")},
 					Processors: []component.ID{component.MustNewIDWithName("exampleprocessor", "mutate")}, // mutate propagates upstream to connector
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
 				},
-				component.MustNewIDWithName("logs", "out"): {
+				pipeline.MustNewIDWithName("logs", "out"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("exampleconnector", "inherit_mutate")},
 					Processors: []component.ID{component.MustNewIDWithName("exampleprocessor", "mutate")}, // mutate propagates upstream to connector
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
 				},
-				component.MustNewIDWithName("profiles", "out"): {
+				pipeline.MustNewIDWithName("profiles", "out"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("exampleconnector", "inherit_mutate")},
 					Processors: []component.ID{component.MustNewIDWithName("exampleprocessor", "mutate")}, // mutate propagates upstream to connector
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
@@ -790,36 +791,36 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		},
 		{
 			name: "pipelines_conn_lanes.yaml",
-			pipelineConfigs: pipelines.Config{
-				component.MustNewIDWithName("traces", "in"): {
+			pipelineConfigs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("traces", "in"): {
 					Receivers: []component.ID{component.MustNewID("examplereceiver")},
 					Exporters: []component.ID{component.MustNewID("mockforward")},
 				},
-				component.MustNewIDWithName("traces", "out"): {
+				pipeline.MustNewIDWithName("traces", "out"): {
 					Receivers: []component.ID{component.MustNewID("mockforward")},
 					Exporters: []component.ID{component.MustNewID("exampleexporter")},
 				},
-				component.MustNewIDWithName("metrics", "in"): {
+				pipeline.MustNewIDWithName("metrics", "in"): {
 					Receivers: []component.ID{component.MustNewID("examplereceiver")},
 					Exporters: []component.ID{component.MustNewID("mockforward")},
 				},
-				component.MustNewIDWithName("metrics", "out"): {
+				pipeline.MustNewIDWithName("metrics", "out"): {
 					Receivers: []component.ID{component.MustNewID("mockforward")},
 					Exporters: []component.ID{component.MustNewID("exampleexporter")},
 				},
-				component.MustNewIDWithName("logs", "in"): {
+				pipeline.MustNewIDWithName("logs", "in"): {
 					Receivers: []component.ID{component.MustNewID("examplereceiver")},
 					Exporters: []component.ID{component.MustNewID("mockforward")},
 				},
-				component.MustNewIDWithName("logs", "out"): {
+				pipeline.MustNewIDWithName("logs", "out"): {
 					Receivers: []component.ID{component.MustNewID("mockforward")},
 					Exporters: []component.ID{component.MustNewID("exampleexporter")},
 				},
-				component.MustNewIDWithName("profiles", "in"): {
+				pipeline.MustNewIDWithName("profiles", "in"): {
 					Receivers: []component.ID{component.MustNewID("examplereceiver")},
 					Exporters: []component.ID{component.MustNewID("mockforward")},
 				},
-				component.MustNewIDWithName("profiles", "out"): {
+				pipeline.MustNewIDWithName("profiles", "out"): {
 					Receivers: []component.ID{component.MustNewID("mockforward")},
 					Exporters: []component.ID{component.MustNewID("exampleexporter")},
 				},
@@ -828,23 +829,23 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		},
 		{
 			name: "pipelines_conn_mutate_traces.yaml",
-			pipelineConfigs: pipelines.Config{
-				component.MustNewIDWithName("traces", "in"): {
+			pipelineConfigs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("traces", "in"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewIDWithName("exampleconnector", "inherit_mutate")},
 				},
-				component.MustNewIDWithName("traces", "out0"): {
+				pipeline.MustNewIDWithName("traces", "out0"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("exampleconnector", "inherit_mutate")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
 				},
-				component.MustNewIDWithName("traces", "middle"): {
+				pipeline.MustNewIDWithName("traces", "middle"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("exampleconnector", "inherit_mutate")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewIDWithName("exampleconnector", "mutate")},
 				},
-				component.MustNewIDWithName("traces", "out1"): {
+				pipeline.MustNewIDWithName("traces", "out1"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("exampleconnector", "mutate")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
@@ -854,23 +855,23 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		},
 		{
 			name: "pipelines_conn_mutate_metrics.yaml",
-			pipelineConfigs: pipelines.Config{
-				component.MustNewIDWithName("metrics", "in"): {
+			pipelineConfigs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("metrics", "in"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewIDWithName("exampleconnector", "inherit_mutate")},
 				},
-				component.MustNewIDWithName("metrics", "out0"): {
+				pipeline.MustNewIDWithName("metrics", "out0"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("exampleconnector", "inherit_mutate")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
 				},
-				component.MustNewIDWithName("metrics", "middle"): {
+				pipeline.MustNewIDWithName("metrics", "middle"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("exampleconnector", "inherit_mutate")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewIDWithName("exampleconnector", "mutate")},
 				},
-				component.MustNewIDWithName("metrics", "out1"): {
+				pipeline.MustNewIDWithName("metrics", "out1"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("exampleconnector", "mutate")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
@@ -880,23 +881,23 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		},
 		{
 			name: "pipelines_conn_mutate_logs.yaml",
-			pipelineConfigs: pipelines.Config{
-				component.MustNewIDWithName("logs", "in"): {
+			pipelineConfigs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("logs", "in"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewIDWithName("exampleconnector", "inherit_mutate")},
 				},
-				component.MustNewIDWithName("logs", "out0"): {
+				pipeline.MustNewIDWithName("logs", "out0"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("exampleconnector", "inherit_mutate")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
 				},
-				component.MustNewIDWithName("logs", "middle"): {
+				pipeline.MustNewIDWithName("logs", "middle"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("exampleconnector", "inherit_mutate")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewIDWithName("exampleconnector", "mutate")},
 				},
-				component.MustNewIDWithName("logs", "out1"): {
+				pipeline.MustNewIDWithName("logs", "out1"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("exampleconnector", "mutate")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
@@ -906,23 +907,23 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		},
 		{
 			name: "pipelines_conn_mutate_profiles.yaml",
-			pipelineConfigs: pipelines.Config{
-				component.MustNewIDWithName("profiles", "in"): {
+			pipelineConfigs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("profiles", "in"): {
 					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewIDWithName("exampleconnector", "inherit_mutate")},
 				},
-				component.MustNewIDWithName("profiles", "out0"): {
+				pipeline.MustNewIDWithName("profiles", "out0"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("exampleconnector", "inherit_mutate")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
 				},
-				component.MustNewIDWithName("profiles", "middle"): {
+				pipeline.MustNewIDWithName("profiles", "middle"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("exampleconnector", "inherit_mutate")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewIDWithName("exampleconnector", "mutate")},
 				},
-				component.MustNewIDWithName("profiles", "out1"): {
+				pipeline.MustNewIDWithName("profiles", "out1"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("exampleconnector", "mutate")},
 					Processors: []component.ID{component.MustNewID("exampleprocessor")},
 					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
@@ -988,7 +989,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 
 			require.NoError(t, pg.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}))
 
-			mutatingPipelines := make(map[component.ID]bool, len(tt.pipelineConfigs))
+			mutatingPipelines := make(map[pipeline.ID]bool, len(tt.pipelineConfigs))
 
 			// Check each pipeline individually, ensuring that all components are started
 			// and that they have observed no signals yet.
@@ -1081,7 +1082,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 					// find all the Pipelines of the same type where this connector is a receiver
 					var inheritMutatesData bool
 					for recPipelineID, recPipeline := range pg.pipelines {
-						if recPipelineID == expPipelineID || recPipelineID.Type() != expPipelineID.Type() {
+						if recPipelineID == expPipelineID || recPipelineID.Signal() != expPipelineID.Signal() {
 							continue
 						}
 						for _, rec := range recPipeline.receivers {
@@ -1101,19 +1102,19 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 			// shared between Pipelines. The `allReceivers` function also excludes Connectors, which we do
 			// not want to directly inject with signals.
 			allReceivers := pg.getReceivers()
-			for _, c := range allReceivers[component.DataTypeTraces] {
+			for _, c := range allReceivers[pipeline.SignalTraces] {
 				tracesReceiver := c.(*testcomponents.ExampleReceiver)
 				require.NoError(t, tracesReceiver.ConsumeTraces(context.Background(), testdata.GenerateTraces(1)))
 			}
-			for _, c := range allReceivers[component.DataTypeMetrics] {
+			for _, c := range allReceivers[pipeline.SignalMetrics] {
 				metricsReceiver := c.(*testcomponents.ExampleReceiver)
 				require.NoError(t, metricsReceiver.ConsumeMetrics(context.Background(), testdata.GenerateMetrics(1)))
 			}
-			for _, c := range allReceivers[component.DataTypeLogs] {
+			for _, c := range allReceivers[pipeline.SignalLogs] {
 				logsReceiver := c.(*testcomponents.ExampleReceiver)
 				require.NoError(t, logsReceiver.ConsumeLogs(context.Background(), testdata.GenerateLogs(1)))
 			}
-			for _, c := range allReceivers[componentprofiles.DataTypeProfiles] {
+			for _, c := range allReceivers[componentprofiles.SignalProfiles] {
 				profilesReceiver := c.(*testcomponents.ExampleReceiver)
 				require.NoError(t, profilesReceiver.ConsumeProfiles(context.Background(), testdata.GenerateProfiles(1)))
 			}
@@ -1177,7 +1178,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 			// Get the list of Exporters directly from the overall component graph. Like Receivers,
 			// exclude Connectors and validate each exporter once regardless of sharing between Pipelines.
 			allExporters := pg.GetExporters()
-			for _, e := range allExporters[component.DataTypeTraces] {
+			for _, e := range allExporters[pipeline.SignalTraces] {
 				tracesExporter := e.(*testcomponents.ExampleExporter)
 				assert.Len(t, tracesExporter.Traces, tt.expectedPerExporter)
 				expectedMutable := testdata.GenerateTraces(1)
@@ -1191,7 +1192,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 					}
 				}
 			}
-			for _, e := range allExporters[component.DataTypeMetrics] {
+			for _, e := range allExporters[pipeline.SignalMetrics] {
 				metricsExporter := e.(*testcomponents.ExampleExporter)
 				assert.Len(t, metricsExporter.Metrics, tt.expectedPerExporter)
 				expectedMutable := testdata.GenerateMetrics(1)
@@ -1205,7 +1206,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 					}
 				}
 			}
-			for _, e := range allExporters[component.DataTypeLogs] {
+			for _, e := range allExporters[pipeline.SignalLogs] {
 				logsExporter := e.(*testcomponents.ExampleExporter)
 				assert.Len(t, logsExporter.Logs, tt.expectedPerExporter)
 				expectedMutable := testdata.GenerateLogs(1)
@@ -1219,7 +1220,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 					}
 				}
 			}
-			for _, e := range allExporters[componentprofiles.DataTypeProfiles] {
+			for _, e := range allExporters[componentprofiles.SignalProfiles] {
 				profilesExporter := e.(*testcomponents.ExampleExporter)
 				assert.Len(t, profilesExporter.Profiles, tt.expectedPerExporter)
 				expectedMutable := testdata.GenerateProfiles(1)
@@ -1246,21 +1247,21 @@ func TestConnectorRouter(t *testing.T) {
 	expRightID := component.MustNewIDWithName("exampleexporter", "right")
 	expLeftID := component.MustNewIDWithName("exampleexporter", "left")
 
-	tracesInID := component.MustNewIDWithName("traces", "in")
-	tracesRightID := component.MustNewIDWithName("traces", "right")
-	tracesLeftID := component.MustNewIDWithName("traces", "left")
+	tracesInID := pipeline.MustNewIDWithName("traces", "in")
+	tracesRightID := pipeline.MustNewIDWithName("traces", "right")
+	tracesLeftID := pipeline.MustNewIDWithName("traces", "left")
 
-	metricsInID := component.MustNewIDWithName("metrics", "in")
-	metricsRightID := component.MustNewIDWithName("metrics", "right")
-	metricsLeftID := component.MustNewIDWithName("metrics", "left")
+	metricsInID := pipeline.MustNewIDWithName("metrics", "in")
+	metricsRightID := pipeline.MustNewIDWithName("metrics", "right")
+	metricsLeftID := pipeline.MustNewIDWithName("metrics", "left")
 
-	logsInID := component.MustNewIDWithName("logs", "in")
-	logsRightID := component.MustNewIDWithName("logs", "right")
-	logsLeftID := component.MustNewIDWithName("logs", "left")
+	logsInID := pipeline.MustNewIDWithName("logs", "in")
+	logsRightID := pipeline.MustNewIDWithName("logs", "right")
+	logsLeftID := pipeline.MustNewIDWithName("logs", "left")
 
-	profilesInID := component.MustNewIDWithName("profiles", "in")
-	profilesRightID := component.MustNewIDWithName("profiles", "right")
-	profilesLeftID := component.MustNewIDWithName("profiles", "left")
+	profilesInID := pipeline.MustNewIDWithName("profiles", "in")
+	profilesRightID := pipeline.MustNewIDWithName("profiles", "right")
+	profilesLeftID := pipeline.MustNewIDWithName("profiles", "left")
 
 	ctx := context.Background()
 	set := Settings{
@@ -1314,7 +1315,7 @@ func TestConnectorRouter(t *testing.T) {
 				testcomponents.ExampleRouterFactory.Type(): testcomponents.ExampleRouterFactory,
 			},
 		),
-		PipelineConfigs: pipelines.Config{
+		PipelineConfigs: pipelines.ConfigWithPipelineID{
 			tracesInID: {
 				Receivers: []component.ID{rcvrID},
 				Exporters: []component.ID{routeTracesID},
@@ -1375,9 +1376,9 @@ func TestConnectorRouter(t *testing.T) {
 	assert.Equal(t, len(set.PipelineConfigs), len(pg.pipelines))
 
 	// Get a handle for the traces receiver and both Exporters
-	tracesReceiver := allReceivers[component.DataTypeTraces][rcvrID].(*testcomponents.ExampleReceiver)
-	tracesRight := allExporters[component.DataTypeTraces][expRightID].(*testcomponents.ExampleExporter)
-	tracesLeft := allExporters[component.DataTypeTraces][expLeftID].(*testcomponents.ExampleExporter)
+	tracesReceiver := allReceivers[pipeline.SignalTraces][rcvrID].(*testcomponents.ExampleReceiver)
+	tracesRight := allExporters[pipeline.SignalTraces][expRightID].(*testcomponents.ExampleExporter)
+	tracesLeft := allExporters[pipeline.SignalTraces][expLeftID].(*testcomponents.ExampleExporter)
 
 	// Consume 1, validate it went right
 	require.NoError(t, tracesReceiver.ConsumeTraces(ctx, testdata.GenerateTraces(1)))
@@ -1397,9 +1398,9 @@ func TestConnectorRouter(t *testing.T) {
 	assert.Len(t, tracesLeft.Traces, 2)
 
 	// Get a handle for the metrics receiver and both Exporters
-	metricsReceiver := allReceivers[component.DataTypeMetrics][rcvrID].(*testcomponents.ExampleReceiver)
-	metricsRight := allExporters[component.DataTypeMetrics][expRightID].(*testcomponents.ExampleExporter)
-	metricsLeft := allExporters[component.DataTypeMetrics][expLeftID].(*testcomponents.ExampleExporter)
+	metricsReceiver := allReceivers[pipeline.SignalMetrics][rcvrID].(*testcomponents.ExampleReceiver)
+	metricsRight := allExporters[pipeline.SignalMetrics][expRightID].(*testcomponents.ExampleExporter)
+	metricsLeft := allExporters[pipeline.SignalMetrics][expLeftID].(*testcomponents.ExampleExporter)
 
 	// Consume 1, validate it went right
 	require.NoError(t, metricsReceiver.ConsumeMetrics(ctx, testdata.GenerateMetrics(1)))
@@ -1419,9 +1420,9 @@ func TestConnectorRouter(t *testing.T) {
 	assert.Len(t, metricsLeft.Metrics, 2)
 
 	// Get a handle for the logs receiver and both Exporters
-	logsReceiver := allReceivers[component.DataTypeLogs][rcvrID].(*testcomponents.ExampleReceiver)
-	logsRight := allExporters[component.DataTypeLogs][expRightID].(*testcomponents.ExampleExporter)
-	logsLeft := allExporters[component.DataTypeLogs][expLeftID].(*testcomponents.ExampleExporter)
+	logsReceiver := allReceivers[pipeline.SignalLogs][rcvrID].(*testcomponents.ExampleReceiver)
+	logsRight := allExporters[pipeline.SignalLogs][expRightID].(*testcomponents.ExampleExporter)
+	logsLeft := allExporters[pipeline.SignalLogs][expLeftID].(*testcomponents.ExampleExporter)
 
 	// Consume 1, validate it went right
 	require.NoError(t, logsReceiver.ConsumeLogs(ctx, testdata.GenerateLogs(1)))
@@ -1441,9 +1442,9 @@ func TestConnectorRouter(t *testing.T) {
 	assert.Len(t, logsLeft.Logs, 2)
 
 	// Get a handle for the profiles receiver and both Exporters
-	profilesReceiver := allReceivers[componentprofiles.DataTypeProfiles][rcvrID].(*testcomponents.ExampleReceiver)
-	profilesRight := allExporters[componentprofiles.DataTypeProfiles][expRightID].(*testcomponents.ExampleExporter)
-	profilesLeft := allExporters[componentprofiles.DataTypeProfiles][expLeftID].(*testcomponents.ExampleExporter)
+	profilesReceiver := allReceivers[componentprofiles.SignalProfiles][rcvrID].(*testcomponents.ExampleReceiver)
+	profilesRight := allExporters[componentprofiles.SignalProfiles][expRightID].(*testcomponents.ExampleExporter)
+	profilesLeft := allExporters[componentprofiles.SignalProfiles][expLeftID].(*testcomponents.ExampleExporter)
 
 	// Consume 1, validate it went right
 	require.NoError(t, profilesReceiver.ConsumeProfiles(ctx, testdata.GenerateProfiles(1)))
@@ -1481,7 +1482,7 @@ func TestGraphBuildErrors(t *testing.T) {
 		processorCfgs map[component.ID]component.Config
 		exporterCfgs  map[component.ID]component.Config
 		connectorCfgs map[component.ID]component.Config
-		pipelineCfgs  pipelines.Config
+		pipelineCfgs  pipelines.ConfigWithPipelineID
 		expected      string
 	}{
 		{
@@ -1492,8 +1493,8 @@ func TestGraphBuildErrors(t *testing.T) {
 			exporterCfgs: map[component.ID]component.Config{
 				component.MustNewID("bf"): badExporterFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewID("logs"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewID("logs"): {
 					Receivers: []component.ID{component.MustNewID("nop")},
 					Exporters: []component.ID{component.MustNewID("bf")},
 				},
@@ -1508,8 +1509,8 @@ func TestGraphBuildErrors(t *testing.T) {
 			exporterCfgs: map[component.ID]component.Config{
 				component.MustNewID("bf"): badExporterFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewID("metrics"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewID("metrics"): {
 					Receivers: []component.ID{component.MustNewID("nop")},
 					Exporters: []component.ID{component.MustNewID("bf")},
 				},
@@ -1524,8 +1525,8 @@ func TestGraphBuildErrors(t *testing.T) {
 			exporterCfgs: map[component.ID]component.Config{
 				component.MustNewID("bf"): badExporterFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewID("traces"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewID("traces"): {
 					Receivers: []component.ID{component.MustNewID("nop")},
 					Exporters: []component.ID{component.MustNewID("bf")},
 				},
@@ -1540,8 +1541,8 @@ func TestGraphBuildErrors(t *testing.T) {
 			exporterCfgs: map[component.ID]component.Config{
 				component.MustNewID("bf"): badExporterFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewID("profiles"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewID("profiles"): {
 					Receivers: []component.ID{component.MustNewID("nop")},
 					Exporters: []component.ID{component.MustNewID("bf")},
 				},
@@ -1559,8 +1560,8 @@ func TestGraphBuildErrors(t *testing.T) {
 			exporterCfgs: map[component.ID]component.Config{
 				component.MustNewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewID("logs"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewID("logs"): {
 					Receivers:  []component.ID{component.MustNewID("nop")},
 					Processors: []component.ID{component.MustNewID("bf")},
 					Exporters:  []component.ID{component.MustNewID("nop")},
@@ -1579,8 +1580,8 @@ func TestGraphBuildErrors(t *testing.T) {
 			exporterCfgs: map[component.ID]component.Config{
 				component.MustNewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewID("metrics"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewID("metrics"): {
 					Receivers:  []component.ID{component.MustNewID("nop")},
 					Processors: []component.ID{component.MustNewID("bf")},
 					Exporters:  []component.ID{component.MustNewID("nop")},
@@ -1599,8 +1600,8 @@ func TestGraphBuildErrors(t *testing.T) {
 			exporterCfgs: map[component.ID]component.Config{
 				component.MustNewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewID("traces"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewID("traces"): {
 					Receivers:  []component.ID{component.MustNewID("nop")},
 					Processors: []component.ID{component.MustNewID("bf")},
 					Exporters:  []component.ID{component.MustNewID("nop")},
@@ -1619,8 +1620,8 @@ func TestGraphBuildErrors(t *testing.T) {
 			exporterCfgs: map[component.ID]component.Config{
 				component.MustNewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewID("profiles"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewID("profiles"): {
 					Receivers:  []component.ID{component.MustNewID("nop")},
 					Processors: []component.ID{component.MustNewID("bf")},
 					Exporters:  []component.ID{component.MustNewID("nop")},
@@ -1636,8 +1637,8 @@ func TestGraphBuildErrors(t *testing.T) {
 			exporterCfgs: map[component.ID]component.Config{
 				component.MustNewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewID("logs"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewID("logs"): {
 					Receivers: []component.ID{component.MustNewID("bf")},
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
@@ -1652,8 +1653,8 @@ func TestGraphBuildErrors(t *testing.T) {
 			exporterCfgs: map[component.ID]component.Config{
 				component.MustNewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewID("metrics"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewID("metrics"): {
 					Receivers: []component.ID{component.MustNewID("bf")},
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
@@ -1668,8 +1669,8 @@ func TestGraphBuildErrors(t *testing.T) {
 			exporterCfgs: map[component.ID]component.Config{
 				component.MustNewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewID("traces"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewID("traces"): {
 					Receivers: []component.ID{component.MustNewID("bf")},
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
@@ -1684,8 +1685,8 @@ func TestGraphBuildErrors(t *testing.T) {
 			exporterCfgs: map[component.ID]component.Config{
 				component.MustNewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewID("profiles"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewID("profiles"): {
 					Receivers: []component.ID{component.MustNewID("bf")},
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
@@ -1703,12 +1704,12 @@ func TestGraphBuildErrors(t *testing.T) {
 			connectorCfgs: map[component.ID]component.Config{
 				component.MustNewID("bf"): nopConnectorFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewIDWithName("traces", "in"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("traces", "in"): {
 					Receivers: []component.ID{component.MustNewID("nop")},
 					Exporters: []component.ID{component.MustNewID("bf")},
 				},
-				component.MustNewIDWithName("traces", "out"): {
+				pipeline.MustNewIDWithName("traces", "out"): {
 					Receivers: []component.ID{component.MustNewID("bf")},
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
@@ -1726,12 +1727,12 @@ func TestGraphBuildErrors(t *testing.T) {
 			connectorCfgs: map[component.ID]component.Config{
 				component.MustNewID("bf"): nopConnectorFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewIDWithName("traces", "in"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("traces", "in"): {
 					Receivers: []component.ID{component.MustNewID("nop")},
 					Exporters: []component.ID{component.MustNewID("bf")},
 				},
-				component.MustNewIDWithName("metrics", "out"): {
+				pipeline.MustNewIDWithName("metrics", "out"): {
 					Receivers: []component.ID{component.MustNewID("bf")},
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
@@ -1749,12 +1750,12 @@ func TestGraphBuildErrors(t *testing.T) {
 			connectorCfgs: map[component.ID]component.Config{
 				component.MustNewID("bf"): nopConnectorFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewIDWithName("traces", "in"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("traces", "in"): {
 					Receivers: []component.ID{component.MustNewID("nop")},
 					Exporters: []component.ID{component.MustNewID("bf")},
 				},
-				component.MustNewIDWithName("logs", "out"): {
+				pipeline.MustNewIDWithName("logs", "out"): {
 					Receivers: []component.ID{component.MustNewID("bf")},
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
@@ -1772,12 +1773,12 @@ func TestGraphBuildErrors(t *testing.T) {
 			connectorCfgs: map[component.ID]component.Config{
 				component.MustNewID("bf"): nopConnectorFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewIDWithName("traces", "in"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("traces", "in"): {
 					Receivers: []component.ID{component.MustNewID("nop")},
 					Exporters: []component.ID{component.MustNewID("bf")},
 				},
-				component.MustNewIDWithName("profiles", "out"): {
+				pipeline.MustNewIDWithName("profiles", "out"): {
 					Receivers: []component.ID{component.MustNewID("bf")},
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
@@ -1795,12 +1796,12 @@ func TestGraphBuildErrors(t *testing.T) {
 			connectorCfgs: map[component.ID]component.Config{
 				component.MustNewID("bf"): nopConnectorFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewIDWithName("metrics", "in"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("metrics", "in"): {
 					Receivers: []component.ID{component.MustNewID("nop")},
 					Exporters: []component.ID{component.MustNewID("bf")},
 				},
-				component.MustNewIDWithName("traces", "out"): {
+				pipeline.MustNewIDWithName("traces", "out"): {
 					Receivers: []component.ID{component.MustNewID("bf")},
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
@@ -1818,12 +1819,12 @@ func TestGraphBuildErrors(t *testing.T) {
 			connectorCfgs: map[component.ID]component.Config{
 				component.MustNewID("bf"): nopConnectorFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewIDWithName("metrics", "in"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("metrics", "in"): {
 					Receivers: []component.ID{component.MustNewID("nop")},
 					Exporters: []component.ID{component.MustNewID("bf")},
 				},
-				component.MustNewIDWithName("metrics", "out"): {
+				pipeline.MustNewIDWithName("metrics", "out"): {
 					Receivers: []component.ID{component.MustNewID("bf")},
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
@@ -1841,12 +1842,12 @@ func TestGraphBuildErrors(t *testing.T) {
 			connectorCfgs: map[component.ID]component.Config{
 				component.MustNewID("bf"): nopConnectorFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewIDWithName("metrics", "in"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("metrics", "in"): {
 					Receivers: []component.ID{component.MustNewID("nop")},
 					Exporters: []component.ID{component.MustNewID("bf")},
 				},
-				component.MustNewIDWithName("logs", "out"): {
+				pipeline.MustNewIDWithName("logs", "out"): {
 					Receivers: []component.ID{component.MustNewID("bf")},
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
@@ -1864,12 +1865,12 @@ func TestGraphBuildErrors(t *testing.T) {
 			connectorCfgs: map[component.ID]component.Config{
 				component.MustNewID("bf"): nopConnectorFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewIDWithName("metrics", "in"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("metrics", "in"): {
 					Receivers: []component.ID{component.MustNewID("nop")},
 					Exporters: []component.ID{component.MustNewID("bf")},
 				},
-				component.MustNewIDWithName("profiles", "out"): {
+				pipeline.MustNewIDWithName("profiles", "out"): {
 					Receivers: []component.ID{component.MustNewID("bf")},
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
@@ -1887,12 +1888,12 @@ func TestGraphBuildErrors(t *testing.T) {
 			connectorCfgs: map[component.ID]component.Config{
 				component.MustNewID("bf"): nopConnectorFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewIDWithName("logs", "in"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("logs", "in"): {
 					Receivers: []component.ID{component.MustNewID("nop")},
 					Exporters: []component.ID{component.MustNewID("bf")},
 				},
-				component.MustNewIDWithName("traces", "out"): {
+				pipeline.MustNewIDWithName("traces", "out"): {
 					Receivers: []component.ID{component.MustNewID("bf")},
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
@@ -1910,12 +1911,12 @@ func TestGraphBuildErrors(t *testing.T) {
 			connectorCfgs: map[component.ID]component.Config{
 				component.MustNewID("bf"): nopConnectorFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewIDWithName("logs", "in"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("logs", "in"): {
 					Receivers: []component.ID{component.MustNewID("nop")},
 					Exporters: []component.ID{component.MustNewID("bf")},
 				},
-				component.MustNewIDWithName("metrics", "out"): {
+				pipeline.MustNewIDWithName("metrics", "out"): {
 					Receivers: []component.ID{component.MustNewID("bf")},
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
@@ -1933,12 +1934,12 @@ func TestGraphBuildErrors(t *testing.T) {
 			connectorCfgs: map[component.ID]component.Config{
 				component.MustNewID("bf"): nopConnectorFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewIDWithName("logs", "in"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("logs", "in"): {
 					Receivers: []component.ID{component.MustNewID("nop")},
 					Exporters: []component.ID{component.MustNewID("bf")},
 				},
-				component.MustNewIDWithName("logs", "out"): {
+				pipeline.MustNewIDWithName("logs", "out"): {
 					Receivers: []component.ID{component.MustNewID("bf")},
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
@@ -1956,12 +1957,12 @@ func TestGraphBuildErrors(t *testing.T) {
 			connectorCfgs: map[component.ID]component.Config{
 				component.MustNewID("bf"): nopConnectorFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewIDWithName("logs", "in"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("logs", "in"): {
 					Receivers: []component.ID{component.MustNewID("nop")},
 					Exporters: []component.ID{component.MustNewID("bf")},
 				},
-				component.MustNewIDWithName("profiles", "out"): {
+				pipeline.MustNewIDWithName("profiles", "out"): {
 					Receivers: []component.ID{component.MustNewID("bf")},
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
@@ -1979,12 +1980,12 @@ func TestGraphBuildErrors(t *testing.T) {
 			connectorCfgs: map[component.ID]component.Config{
 				component.MustNewID("bf"): nopConnectorFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewIDWithName("profiles", "in"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("profiles", "in"): {
 					Receivers: []component.ID{component.MustNewID("nop")},
 					Exporters: []component.ID{component.MustNewID("bf")},
 				},
-				component.MustNewIDWithName("traces", "out"): {
+				pipeline.MustNewIDWithName("traces", "out"): {
 					Receivers: []component.ID{component.MustNewID("bf")},
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
@@ -2002,12 +2003,12 @@ func TestGraphBuildErrors(t *testing.T) {
 			connectorCfgs: map[component.ID]component.Config{
 				component.MustNewID("bf"): nopConnectorFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewIDWithName("profiles", "in"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("profiles", "in"): {
 					Receivers: []component.ID{component.MustNewID("nop")},
 					Exporters: []component.ID{component.MustNewID("bf")},
 				},
-				component.MustNewIDWithName("metrics", "out"): {
+				pipeline.MustNewIDWithName("metrics", "out"): {
 					Receivers: []component.ID{component.MustNewID("bf")},
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
@@ -2025,12 +2026,12 @@ func TestGraphBuildErrors(t *testing.T) {
 			connectorCfgs: map[component.ID]component.Config{
 				component.MustNewID("bf"): nopConnectorFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewIDWithName("profiles", "in"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("profiles", "in"): {
 					Receivers: []component.ID{component.MustNewID("nop")},
 					Exporters: []component.ID{component.MustNewID("bf")},
 				},
-				component.MustNewIDWithName("logs", "out"): {
+				pipeline.MustNewIDWithName("logs", "out"): {
 					Receivers: []component.ID{component.MustNewID("bf")},
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
@@ -2048,12 +2049,12 @@ func TestGraphBuildErrors(t *testing.T) {
 			connectorCfgs: map[component.ID]component.Config{
 				component.MustNewID("bf"): nopConnectorFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewIDWithName("profiles", "in"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("profiles", "in"): {
 					Receivers: []component.ID{component.MustNewID("nop")},
 					Exporters: []component.ID{component.MustNewID("bf")},
 				},
-				component.MustNewIDWithName("profiles", "out"): {
+				pipeline.MustNewIDWithName("profiles", "out"): {
 					Receivers: []component.ID{component.MustNewID("bf")},
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
@@ -2071,8 +2072,8 @@ func TestGraphBuildErrors(t *testing.T) {
 			connectorCfgs: map[component.ID]component.Config{
 				component.MustNewIDWithName("nop", "conn"): nopConnectorFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewIDWithName("metrics", "in"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("metrics", "in"): {
 					Receivers: []component.ID{component.MustNewID("nop")},
 					Exporters: []component.ID{component.MustNewIDWithName("nop", "conn")},
 				},
@@ -2090,8 +2091,8 @@ func TestGraphBuildErrors(t *testing.T) {
 			connectorCfgs: map[component.ID]component.Config{
 				component.MustNewIDWithName("nop", "conn"): nopConnectorFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewIDWithName("traces", "out"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("traces", "out"): {
 					Receivers: []component.ID{component.MustNewIDWithName("nop", "conn")},
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
@@ -2109,16 +2110,16 @@ func TestGraphBuildErrors(t *testing.T) {
 			connectorCfgs: map[component.ID]component.Config{
 				component.MustNewID("mockforward"): mfConnectorFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewIDWithName("traces", "in"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("traces", "in"): {
 					Receivers: []component.ID{component.MustNewID("nop")},
 					Exporters: []component.ID{component.MustNewID("mockforward")},
 				},
-				component.MustNewIDWithName("traces", "out"): {
+				pipeline.MustNewIDWithName("traces", "out"): {
 					Receivers: []component.ID{component.MustNewID("mockforward")},
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
-				component.MustNewIDWithName("metrics", "in"): {
+				pipeline.MustNewIDWithName("metrics", "in"): {
 					Receivers: []component.ID{component.MustNewID("nop")},
 					Exporters: []component.ID{component.MustNewID("mockforward")},
 				},
@@ -2136,16 +2137,16 @@ func TestGraphBuildErrors(t *testing.T) {
 			connectorCfgs: map[component.ID]component.Config{
 				component.MustNewID("mockforward"): mfConnectorFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewIDWithName("metrics", "in"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("metrics", "in"): {
 					Receivers: []component.ID{component.MustNewID("nop")},
 					Exporters: []component.ID{component.MustNewID("mockforward")},
 				},
-				component.MustNewIDWithName("metrics", "out"): {
+				pipeline.MustNewIDWithName("metrics", "out"): {
 					Receivers: []component.ID{component.MustNewID("mockforward")},
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
-				component.MustNewIDWithName("traces", "out"): {
+				pipeline.MustNewIDWithName("traces", "out"): {
 					Receivers: []component.ID{component.MustNewID("mockforward")},
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
@@ -2166,8 +2167,8 @@ func TestGraphBuildErrors(t *testing.T) {
 			connectorCfgs: map[component.ID]component.Config{
 				component.MustNewIDWithName("nop", "conn"): nopConnectorFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewID("traces"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewID("traces"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("nop", "conn")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewIDWithName("nop", "conn")},
@@ -2192,8 +2193,8 @@ func TestGraphBuildErrors(t *testing.T) {
 			connectorCfgs: map[component.ID]component.Config{
 				component.MustNewIDWithName("nop", "conn"): nopConnectorFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewID("metrics"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewID("metrics"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("nop", "conn")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewIDWithName("nop", "conn")},
@@ -2218,8 +2219,8 @@ func TestGraphBuildErrors(t *testing.T) {
 			connectorCfgs: map[component.ID]component.Config{
 				component.MustNewIDWithName("nop", "conn"): nopConnectorFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewID("logs"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewID("logs"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("nop", "conn")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewIDWithName("nop", "conn")},
@@ -2244,8 +2245,8 @@ func TestGraphBuildErrors(t *testing.T) {
 			connectorCfgs: map[component.ID]component.Config{
 				component.MustNewIDWithName("nop", "conn"): nopConnectorFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewID("profiles"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewID("profiles"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("nop", "conn")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewIDWithName("nop", "conn")},
@@ -2272,23 +2273,23 @@ func TestGraphBuildErrors(t *testing.T) {
 				component.MustNewIDWithName("nop", "conn1"): nopConnectorFactory.CreateDefaultConfig(),
 				component.MustNewIDWithName("nop", "conn2"): nopConnectorFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewIDWithName("traces", "in"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("traces", "in"): {
 					Receivers:  []component.ID{component.MustNewID("nop")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewIDWithName("nop", "conn")},
 				},
-				component.MustNewIDWithName("traces", "1"): {
+				pipeline.MustNewIDWithName("traces", "1"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("nop", "conn")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewIDWithName("nop", "conn1")},
 				},
-				component.MustNewIDWithName("traces", "2"): {
+				pipeline.MustNewIDWithName("traces", "2"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("nop", "conn1")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewIDWithName("nop", "conn2"), component.MustNewIDWithName("nop", "conn")},
 				},
-				component.MustNewIDWithName("traces", "out"): {
+				pipeline.MustNewIDWithName("traces", "out"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("nop", "conn2")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewID("nop")},
@@ -2317,23 +2318,23 @@ func TestGraphBuildErrors(t *testing.T) {
 				component.MustNewIDWithName("nop", "conn1"): nopConnectorFactory.CreateDefaultConfig(),
 				component.MustNewIDWithName("nop", "conn2"): nopConnectorFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewIDWithName("metrics", "in"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("metrics", "in"): {
 					Receivers:  []component.ID{component.MustNewID("nop")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewIDWithName("nop", "conn")},
 				},
-				component.MustNewIDWithName("metrics", "1"): {
+				pipeline.MustNewIDWithName("metrics", "1"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("nop", "conn")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewIDWithName("nop", "conn1")},
 				},
-				component.MustNewIDWithName("metrics", "2"): {
+				pipeline.MustNewIDWithName("metrics", "2"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("nop", "conn1")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewIDWithName("nop", "conn2"), component.MustNewIDWithName("nop", "conn")},
 				},
-				component.MustNewIDWithName("metrics", "out"): {
+				pipeline.MustNewIDWithName("metrics", "out"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("nop", "conn2")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewID("nop")},
@@ -2362,23 +2363,23 @@ func TestGraphBuildErrors(t *testing.T) {
 				component.MustNewIDWithName("nop", "conn1"): nopConnectorFactory.CreateDefaultConfig(),
 				component.MustNewIDWithName("nop", "conn2"): nopConnectorFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewIDWithName("logs", "in"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("logs", "in"): {
 					Receivers:  []component.ID{component.MustNewID("nop")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewIDWithName("nop", "conn")},
 				},
-				component.MustNewIDWithName("logs", "1"): {
+				pipeline.MustNewIDWithName("logs", "1"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("nop", "conn")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewIDWithName("nop", "conn1")},
 				},
-				component.MustNewIDWithName("logs", "2"): {
+				pipeline.MustNewIDWithName("logs", "2"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("nop", "conn1")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewIDWithName("nop", "conn2"), component.MustNewIDWithName("nop", "conn")},
 				},
-				component.MustNewIDWithName("logs", "out"): {
+				pipeline.MustNewIDWithName("logs", "out"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("nop", "conn2")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewID("nop")},
@@ -2407,23 +2408,23 @@ func TestGraphBuildErrors(t *testing.T) {
 				component.MustNewIDWithName("nop", "conn1"): nopConnectorFactory.CreateDefaultConfig(),
 				component.MustNewIDWithName("nop", "conn2"): nopConnectorFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewIDWithName("profiles", "in"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("profiles", "in"): {
 					Receivers:  []component.ID{component.MustNewID("nop")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewIDWithName("nop", "conn")},
 				},
-				component.MustNewIDWithName("profiles", "1"): {
+				pipeline.MustNewIDWithName("profiles", "1"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("nop", "conn")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewIDWithName("nop", "conn1")},
 				},
-				component.MustNewIDWithName("profiles", "2"): {
+				pipeline.MustNewIDWithName("profiles", "2"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("nop", "conn1")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewIDWithName("nop", "conn2"), component.MustNewIDWithName("nop", "conn")},
 				},
-				component.MustNewIDWithName("profiles", "out"): {
+				pipeline.MustNewIDWithName("profiles", "out"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("nop", "conn2")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewID("nop")},
@@ -2453,38 +2454,38 @@ func TestGraphBuildErrors(t *testing.T) {
 				component.MustNewIDWithName("nop", "forkagain"): nopConnectorFactory.CreateDefaultConfig(),
 				component.MustNewIDWithName("nop", "rawlog"):    nopConnectorFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewIDWithName("traces", "in"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("traces", "in"): {
 					Receivers:  []component.ID{component.MustNewID("nop")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewIDWithName("nop", "fork")},
 				},
-				component.MustNewIDWithName("traces", "copy1"): {
+				pipeline.MustNewIDWithName("traces", "copy1"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("nop", "fork")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewIDWithName("nop", "count")},
 				},
-				component.MustNewIDWithName("traces", "copy2"): {
+				pipeline.MustNewIDWithName("traces", "copy2"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("nop", "fork")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewIDWithName("nop", "forkagain")},
 				},
-				component.MustNewIDWithName("traces", "copy2a"): {
+				pipeline.MustNewIDWithName("traces", "copy2a"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("nop", "forkagain")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewIDWithName("nop", "count")},
 				},
-				component.MustNewIDWithName("traces", "copy2b"): {
+				pipeline.MustNewIDWithName("traces", "copy2b"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("nop", "forkagain")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewIDWithName("nop", "rawlog")},
 				},
-				component.MustNewIDWithName("metrics", "count"): {
+				pipeline.MustNewIDWithName("metrics", "count"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("nop", "count")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewID("nop")},
 				},
-				component.MustNewIDWithName("logs", "raw"): {
+				pipeline.MustNewIDWithName("logs", "raw"): {
 					Receivers:  []component.ID{component.MustNewIDWithName("nop", "rawlog")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewIDWithName("nop", "fork")}, // cannot loop back to "nop/fork"
@@ -2507,8 +2508,8 @@ func TestGraphBuildErrors(t *testing.T) {
 			exporterCfgs: map[component.ID]component.Config{
 				component.MustNewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewID("traces"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewID("traces"): {
 					Receivers: []component.ID{component.MustNewID("nop")},
 					Exporters: []component.ID{component.MustNewID("nop"), component.MustNewIDWithName("nop", "1")},
 				},
@@ -2523,8 +2524,8 @@ func TestGraphBuildErrors(t *testing.T) {
 			exporterCfgs: map[component.ID]component.Config{
 				component.MustNewID("unknown"): nopReceiverFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewID("traces"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewID("traces"): {
 					Receivers: []component.ID{component.MustNewID("nop")},
 					Exporters: []component.ID{component.MustNewID("unknown")},
 				},
@@ -2542,8 +2543,8 @@ func TestGraphBuildErrors(t *testing.T) {
 			exporterCfgs: map[component.ID]component.Config{
 				component.MustNewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewID("metrics"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewID("metrics"): {
 					Receivers:  []component.ID{component.MustNewID("nop")},
 					Processors: []component.ID{component.MustNewID("nop"), component.MustNewIDWithName("nop", "1")},
 					Exporters:  []component.ID{component.MustNewID("nop")},
@@ -2562,8 +2563,8 @@ func TestGraphBuildErrors(t *testing.T) {
 			exporterCfgs: map[component.ID]component.Config{
 				component.MustNewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewID("metrics"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewID("metrics"): {
 					Receivers:  []component.ID{component.MustNewID("nop")},
 					Processors: []component.ID{component.MustNewID("unknown")},
 					Exporters:  []component.ID{component.MustNewID("nop")},
@@ -2579,8 +2580,8 @@ func TestGraphBuildErrors(t *testing.T) {
 			exporterCfgs: map[component.ID]component.Config{
 				component.MustNewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewID("logs"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewID("logs"): {
 					Receivers: []component.ID{component.MustNewID("nop"), component.MustNewIDWithName("nop", "1")},
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
@@ -2595,8 +2596,8 @@ func TestGraphBuildErrors(t *testing.T) {
 			exporterCfgs: map[component.ID]component.Config{
 				component.MustNewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewID("logs"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewID("logs"): {
 					Receivers: []component.ID{component.MustNewID("unknown")},
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
@@ -2614,12 +2615,12 @@ func TestGraphBuildErrors(t *testing.T) {
 			connectorCfgs: map[component.ID]component.Config{
 				component.MustNewID("unknown"): nopConnectorFactory.CreateDefaultConfig(),
 			},
-			pipelineCfgs: pipelines.Config{
-				component.MustNewIDWithName("traces", "in"): {
+			pipelineCfgs: pipelines.ConfigWithPipelineID{
+				pipeline.MustNewIDWithName("traces", "in"): {
 					Receivers: []component.ID{component.MustNewID("nop")},
 					Exporters: []component.ID{component.MustNewID("unknown")},
 				},
-				component.MustNewIDWithName("traces", "out"): {
+				pipeline.MustNewIDWithName("traces", "out"): {
 					Receivers: []component.ID{component.MustNewID("unknown")},
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
@@ -2719,11 +2720,11 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 			}),
 	}
 
-	dataTypes := []component.DataType{component.DataTypeTraces, component.DataTypeMetrics, component.DataTypeLogs}
+	dataTypes := []pipeline.Signal{pipeline.SignalTraces, pipeline.SignalMetrics, pipeline.SignalLogs}
 	for _, dt := range dataTypes {
 		t.Run(dt.String()+"/receiver", func(t *testing.T) {
-			set.PipelineConfigs = pipelines.Config{
-				component.NewID(dt): {
+			set.PipelineConfigs = pipelines.ConfigWithPipelineID{
+				pipeline.NewID(dt): {
 					Receivers:  []component.ID{component.MustNewID("nop"), component.MustNewID("err")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewID("nop")},
@@ -2736,8 +2737,8 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 		})
 
 		t.Run(dt.String()+"/processor", func(t *testing.T) {
-			set.PipelineConfigs = pipelines.Config{
-				component.NewID(dt): {
+			set.PipelineConfigs = pipelines.ConfigWithPipelineID{
+				pipeline.NewID(dt): {
 					Receivers:  []component.ID{component.MustNewID("nop")},
 					Processors: []component.ID{component.MustNewID("nop"), component.MustNewID("err")},
 					Exporters:  []component.ID{component.MustNewID("nop")},
@@ -2750,8 +2751,8 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 		})
 
 		t.Run(dt.String()+"/exporter", func(t *testing.T) {
-			set.PipelineConfigs = pipelines.Config{
-				component.NewID(dt): {
+			set.PipelineConfigs = pipelines.ConfigWithPipelineID{
+				pipeline.NewID(dt): {
 					Receivers:  []component.ID{component.MustNewID("nop")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewID("nop"), component.MustNewID("err")},
@@ -2765,13 +2766,13 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 
 		for _, dt2 := range dataTypes {
 			t.Run(dt.String()+"/"+dt2.String()+"/connector", func(t *testing.T) {
-				set.PipelineConfigs = pipelines.Config{
-					component.NewIDWithName(dt, "in"): {
+				set.PipelineConfigs = pipelines.ConfigWithPipelineID{
+					pipeline.NewIDWithName(dt, "in"): {
 						Receivers:  []component.ID{component.MustNewID("nop")},
 						Processors: []component.ID{component.MustNewID("nop")},
 						Exporters:  []component.ID{component.MustNewID("nop"), component.MustNewIDWithName("err", "conn")},
 					},
-					component.NewIDWithName(dt2, "out"): {
+					pipeline.NewIDWithName(dt2, "out"): {
 						Receivers:  []component.ID{component.MustNewID("nop"), component.MustNewIDWithName("err", "conn")},
 						Processors: []component.ID{component.MustNewID("nop")},
 						Exporters:  []component.ID{component.MustNewID("nop")},
@@ -2797,12 +2798,12 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 	eSdErr := &testNode{id: component.MustNewIDWithName("e_sd_err", "1"), shutdownErr: assert.AnError}
 
 	instanceIDs := map[*testNode]*componentstatus.InstanceID{
-		rNoErr: componentstatus.NewInstanceID(rNoErr.id, component.KindReceiver),
-		rStErr: componentstatus.NewInstanceID(rStErr.id, component.KindReceiver),
-		rSdErr: componentstatus.NewInstanceID(rSdErr.id, component.KindReceiver),
-		eNoErr: componentstatus.NewInstanceID(eNoErr.id, component.KindExporter),
-		eStErr: componentstatus.NewInstanceID(eStErr.id, component.KindExporter),
-		eSdErr: componentstatus.NewInstanceID(eSdErr.id, component.KindExporter),
+		rNoErr: componentstatus.NewInstanceIDWithPipelineIDs(rNoErr.id, component.KindReceiver),
+		rStErr: componentstatus.NewInstanceIDWithPipelineIDs(rStErr.id, component.KindReceiver),
+		rSdErr: componentstatus.NewInstanceIDWithPipelineIDs(rSdErr.id, component.KindReceiver),
+		eNoErr: componentstatus.NewInstanceIDWithPipelineIDs(eNoErr.id, component.KindExporter),
+		eStErr: componentstatus.NewInstanceIDWithPipelineIDs(eStErr.id, component.KindExporter),
+		eSdErr: componentstatus.NewInstanceIDWithPipelineIDs(eSdErr.id, component.KindExporter),
 	}
 
 	// compare two maps of status events ignoring timestamp
@@ -2939,12 +2940,12 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 	}
 }
 
-func (g *Graph) getReceivers() map[component.DataType]map[component.ID]component.Component {
-	receiversMap := make(map[component.DataType]map[component.ID]component.Component)
-	receiversMap[component.DataTypeTraces] = make(map[component.ID]component.Component)
-	receiversMap[component.DataTypeMetrics] = make(map[component.ID]component.Component)
-	receiversMap[component.DataTypeLogs] = make(map[component.ID]component.Component)
-	receiversMap[componentprofiles.DataTypeProfiles] = make(map[component.ID]component.Component)
+func (g *Graph) getReceivers() map[pipeline.Signal]map[component.ID]component.Component {
+	receiversMap := make(map[pipeline.Signal]map[component.ID]component.Component)
+	receiversMap[pipeline.SignalTraces] = make(map[component.ID]component.Component)
+	receiversMap[pipeline.SignalMetrics] = make(map[component.ID]component.Component)
+	receiversMap[pipeline.SignalLogs] = make(map[component.ID]component.Component)
+	receiversMap[componentprofiles.SignalProfiles] = make(map[component.ID]component.Component)
 
 	for _, pg := range g.pipelines {
 		for _, rcvrNode := range pg.receivers {
@@ -2972,7 +2973,7 @@ func (g *Graph) getReceivers() map[component.DataType]map[component.ID]component
 // However, within an individual pipeline, we expect:
 // - E instances of the connector as a receiver.
 // - R instances of the connector as an exporter.
-func expectedInstances(m pipelines.Config, pID component.ID) (int, int) {
+func expectedInstances(m pipelines.ConfigWithPipelineID, pID pipeline.ID) (int, int) {
 	exConnectorType := component.MustNewType("exampleconnector")
 	var r, e int
 	for _, rID := range m[pID].Receivers {
@@ -2982,11 +2983,11 @@ func expectedInstances(m pipelines.Config, pID component.ID) (int, int) {
 		}
 
 		// This is a connector. Count the pipeline types where it is an exporter.
-		typeMap := map[component.DataType]bool{}
+		typeMap := map[pipeline.Signal]bool{}
 		for pID, pCfg := range m {
 			for _, eID := range pCfg.Exporters {
 				if eID == rID {
-					typeMap[pID.Type()] = true
+					typeMap[pID.Signal()] = true
 				}
 			}
 		}
@@ -2999,11 +3000,11 @@ func expectedInstances(m pipelines.Config, pID component.ID) (int, int) {
 		}
 
 		// This is a connector. Count the pipeline types where it is a receiver.
-		typeMap := map[component.DataType]bool{}
+		typeMap := map[pipeline.Signal]bool{}
 		for pID, pCfg := range m {
 			for _, rID := range pCfg.Receivers {
 				if rID == eID {
-					typeMap[pID.Type()] = true
+					typeMap[pID.Signal()] = true
 				}
 			}
 		}

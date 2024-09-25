@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 type tracesRequest struct {
@@ -60,7 +61,7 @@ func createAndStartTestPersistentQueue(t *testing.T, sizer Sizer[tracesRequest],
 	pq := NewPersistentQueue[tracesRequest](PersistentQueueSettings[tracesRequest]{
 		Sizer:            sizer,
 		Capacity:         capacity,
-		DataType:         component.DataTypeTraces,
+		Signal:           pipeline.SignalTraces,
 		StorageID:        component.ID{},
 		Marshaler:        marshalTracesRequest,
 		Unmarshaler:      unmarshalTracesRequest,
@@ -81,7 +82,7 @@ func createTestPersistentQueueWithClient(client storage.Client) *persistentQueue
 	pq := NewPersistentQueue[tracesRequest](PersistentQueueSettings[tracesRequest]{
 		Sizer:            &RequestSizer[tracesRequest]{},
 		Capacity:         1000,
-		DataType:         component.DataTypeTraces,
+		Signal:           pipeline.SignalTraces,
 		StorageID:        component.ID{},
 		Marshaler:        marshalTracesRequest,
 		Unmarshaler:      unmarshalTracesRequest,
@@ -104,7 +105,7 @@ func createTestPersistentQueueWithCapacityLimiter(t testing.TB, ext storage.Exte
 	pq := NewPersistentQueue[tracesRequest](PersistentQueueSettings[tracesRequest]{
 		Sizer:            sizer,
 		Capacity:         capacity,
-		DataType:         component.DataTypeTraces,
+		Signal:           pipeline.SignalTraces,
 		StorageID:        component.ID{},
 		Marshaler:        marshalTracesRequest,
 		Unmarshaler:      unmarshalTracesRequest,
@@ -305,7 +306,7 @@ func TestToStorageClient(t *testing.T) {
 			ownerID := component.MustNewID("foo_exporter")
 
 			// execute
-			client, err := toStorageClient(context.Background(), storageID, host, ownerID, component.DataTypeTraces)
+			client, err := toStorageClient(context.Background(), storageID, host, ownerID, pipeline.SignalTraces)
 
 			// verify
 			if tt.expectedError != nil {
@@ -335,7 +336,7 @@ func TestInvalidStorageExtensionType(t *testing.T) {
 	ownerID := component.MustNewID("foo_exporter")
 
 	// execute
-	client, err := toStorageClient(context.Background(), storageID, host, ownerID, component.DataTypeTraces)
+	client, err := toStorageClient(context.Background(), storageID, host, ownerID, pipeline.SignalTraces)
 
 	// we should get an error about the extension type
 	require.ErrorIs(t, err, errWrongExtensionType)
