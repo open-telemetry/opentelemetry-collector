@@ -22,6 +22,12 @@ type Logs = internal.Logs
 // Settings is passed to Create* functions in Factory.
 type Settings = internal.Settings
 
+// Publisher is used by processors to publish data as it passes through the pipeline.
+type Publisher = internal.Publisher
+
+// ComponentID represents the ID of a component.
+type ComponentID = internal.ComponentID
+
 // Factory is Factory interface for processors.
 //
 // This interface cannot be directly implemented. Implementations must

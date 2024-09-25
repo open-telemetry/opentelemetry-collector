@@ -18,5 +18,5 @@ type Settings struct {
 	BuildInfo component.BuildInfo
 
 	// Publishers can be used by components to publish data after processing
-	Publishers []component.Publisher
+	Publishers []Publisher
 }

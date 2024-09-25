@@ -49,8 +49,8 @@ func NewTracesProcessor(
 
 		// Publish data to active streams.
 		for _, p := range set.Publishers {
-			if p.IsActive(component.ComponentID(set.ID.String())) {
-				p.PublishTraces(component.ComponentID(set.ID.String()), td)
+			if p.IsActive(processor.ComponentID(set.ID.String())) {
+				p.PublishTraces(processor.ComponentID(set.ID.String()), td)
 			}
 		}
 

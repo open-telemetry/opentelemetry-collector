@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package component // import "go.opentelemetry.io/collector/component"
+package internal // import "go.opentelemetry.io/collector/processor/internal"
 
 import (
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -11,7 +11,7 @@ import (
 
 type ComponentID string
 
-// Publisher is used by components to publish data as it passes through the pipeline.
+// Publisher is used by processors to publish data as it passes through the pipeline.
 type Publisher interface {
 	// IsActive returns true when at least one connection is open for the given componentID.
 	IsActive(ComponentID) bool

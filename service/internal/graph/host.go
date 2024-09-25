@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/status"
@@ -64,10 +65,10 @@ func (host *Host) GetExtensions() map[component.ID]component.Component {
 	return host.ServiceExtensions.GetExtensions()
 }
 
-func (host *Host) GetPublishers() []component.Publisher {
-	publishers := make([]component.Publisher, 0)
+func (host *Host) GetPublishers() []processor.Publisher {
+	publishers := make([]processor.Publisher, 0)
 	for _, v := range host.ServiceExtensions.GetExtensions() {
-		if publisher, ok := v.(component.Publisher); ok {
+		if publisher, ok := v.(processor.Publisher); ok {
 			publishers = append(publishers, publisher)
 		}
 	}

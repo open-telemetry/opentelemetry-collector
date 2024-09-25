@@ -49,8 +49,8 @@ func NewLogsProcessor(
 
 		// Publish data to active streams.
 		for _, p := range set.Publishers {
-			if p.IsActive(component.ComponentID(set.ID.String())) {
-				p.PublishLogs(component.ComponentID(set.ID.String()), ld)
+			if p.IsActive(processor.ComponentID(set.ID.String())) {
+				p.PublishLogs(processor.ComponentID(set.ID.String()), ld)
 			}
 		}
 

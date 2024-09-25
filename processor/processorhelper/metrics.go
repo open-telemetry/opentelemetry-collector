@@ -49,8 +49,8 @@ func NewMetricsProcessor(
 
 		// Publish data to active streams.
 		for _, p := range set.Publishers {
-			if p.IsActive(component.ComponentID(set.ID.String())) {
-				p.PublishMetrics(component.ComponentID(set.ID.String()), md)
+			if p.IsActive(processor.ComponentID(set.ID.String())) {
+				p.PublishMetrics(processor.ComponentID(set.ID.String()), md)
 			}
 		}
 
