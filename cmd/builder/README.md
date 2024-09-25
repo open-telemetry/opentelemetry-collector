@@ -59,9 +59,9 @@ $ /tmp/dist/otelcol-custom --config=/tmp/otelcol.yaml
 
 There are two supported ways to install the builder: via the official releases (recommended) and through `go install`.
 
-### Official releases 
+### Official releases
 
-This is the recommended installation method. Download the binary for your respective platform under the ["Releases"](https://github.com/open-telemetry/opentelemetry-collector/releases?q=builder) page.
+This is the recommended installation method. Download the binary for your respective platform from the ["Releases"](https://github.com/open-telemetry/opentelemetry-collector-releases/releases?q=cmd/builder) page.
 
 ### `go install`
 
@@ -80,7 +80,7 @@ You will need to specify at least one module (extension, exporter, receiver, pro
 To build a default collector configuration, you can use [this](../otelcorecol/builder-config.yaml) build configuration.
 
 ```console
-$ ocb --config=builder-config.yaml
+ocb --config=builder-config.yaml
 ```
 
 Use `ocb --help` to learn about which flags are available.
@@ -90,10 +90,12 @@ Use `ocb --help` to learn about which flags are available.
 To keep the debug symbols in the resulting OpenTelemetry Collector binary, set the configuration property `debug_compilation` to true.
 
 Then install `go-delve` and run OpenTelemetry Collector with `dlv` command as the following example:
+
 ```bash
 # go install github.com/go-delve/delve/cmd/dlv@latest
 # ~/go/bin/dlv --listen=:2345 --headless=true --api-version=2 --accept-multiclient --log exec .otel-collector-binary -- --config otel-collector-config.yaml
 ```
+
 Finally, load the OpenTelemetry Collector as a project in the IDE, configure debug for Go
 
 ## Configuration
@@ -101,7 +103,7 @@ Finally, load the OpenTelemetry Collector as a project in the IDE, configure deb
 The configuration file is composed of two main parts: `dist` and module types. All `dist` options can be specified via command line flags:
 
 ```console
-$ ocb --config=config.yaml --name="my-otelcol"
+ocb --config=config.yaml --name="my-otelcol"
 ```
 
 The module types are specified at the top-level, and might be: `extensions`, `exporters`, `receivers` and `processors`. They all accept a list of components, and each component is required to have at least the `gomod` entry. When not specified, the `import` value is inferred from the `gomod`. When not specified, the `name` is inferred from the `import`.
@@ -157,29 +159,32 @@ For instance, a code generation step could execute
 ```console
 ocb --skip-compilation --config=config.yaml
 ```
+
 then commit the code in a git repo. A CI can sync the code and execute
+
 ```console
 ocb --skip-generate --skip-get-modules --config=config.yaml
 ```
+
 to only execute the compilation step.
 
 ### Strict versioning checks
 
 The builder checks the relevant `go.mod`
-file for the following things after `go get`ing all components and calling 
+file for the following things after `go get`ing all components and calling
 `go mod tidy`:
 
-1. The `dist::otelcol_version` field in the build configuration must have 
-   matching major and minor versions as the core library version calculated by 
-   the Go toolchain, considering all components.  A mismatch could happen, for 
-   example, when the builder or one of the components depends on a newer release 
+1. The `dist::otelcol_version` field in the build configuration must have
+   matching major and minor versions as the core library version calculated by
+   the Go toolchain, considering all components.  A mismatch could happen, for
+   example, when the builder or one of the components depends on a newer release
    of the core collector library.
-2. For each component in the build configuration, the major and minor versions 
+2. For each component in the build configuration, the major and minor versions
    included in the `gomod` module specifier must match the one calculated by
    the Go toolchain, considering all components.  A mismatch could
    happen, for example, when the enclosing Go module uses a newer
    release of the core collector library.
-   
-The `--skip-strict-versioning` flag disables these versioning checks. 
-This flag is available temporarily and 
+
+The `--skip-strict-versioning` flag disables these versioning checks.
+This flag is available temporarily and
 **will be removed in a future minor version**.
