@@ -17,6 +17,7 @@ require (
 	go.opentelemetry.io/collector/processor v0.110.0
 	go.opentelemetry.io/collector/receiver v0.110.0
 	go.opentelemetry.io/collector/service v0.110.0
+	go.opentelemetry.io/contrib/config v0.10.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
@@ -79,7 +80,6 @@ require (
 	go.opentelemetry.io/collector/processor/processorprofiles v0.110.0 // indirect
 	go.opentelemetry.io/collector/receiver/receiverprofiles v0.110.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.110.0 // indirect
-	go.opentelemetry.io/contrib/config v0.10.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.30.0 // indirect
 	go.opentelemetry.io/otel v1.30.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp v0.6.0 // indirect
