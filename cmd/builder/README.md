@@ -84,7 +84,7 @@ Additional arguments may be passed to ocb on the command line as specified below
 
 ### Official release binaries 
 
-This is also a recommended installation method. Download the binary for your respective platform under the ["Releases"](https://github.com/open-telemetry/opentelemetry-collector/releases?q=builder) page.
+This is the recommended installation method for the binary. Download the binary for your respective platform from the ["Releases"](https://github.com/open-telemetry/opentelemetry-collector-releases/releases?q=cmd/builder) page.
 
 ### `go install`
 
