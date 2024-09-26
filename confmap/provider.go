@@ -143,6 +143,7 @@ func withStringRepresentation(stringRepresentation string) RetrievedOption {
 func NewRetrievedFromYAML(yamlBytes []byte, opts ...RetrievedOption) (*Retrieved, error) {
 	var rawConf any
 	if err := yaml.Unmarshal(yamlBytes, &rawConf); err != nil {
+		fmt.Printf("unmarshaling from yaml failed: %v\nAttempting to use it as a string verbatim. You can ignore this warning if the collector starts successfully.\n\n", err)
 		// If the string is not valid YAML, we try to use it verbatim as a string.
 		strRep := string(yamlBytes)
 		return NewRetrieved(strRep, append(opts, withStringRepresentation(strRep))...)
