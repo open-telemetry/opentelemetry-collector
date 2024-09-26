@@ -7,7 +7,7 @@ change_type: enhancement
 component: ocb
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: create docker images for OCB
+note: create docker images for OCB, per https://github.com/open-telemetry/opentelemetry-collector-releases/pull/671
 
 # One or more tracking issues or pull requests related to the change
 issues: [ 5712 ]
