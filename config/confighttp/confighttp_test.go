@@ -1576,7 +1576,7 @@ type Span struct {
 
 func (t Tracer) Start(ctx context.Context, name string, _ ...trace.SpanStartOption) (context.Context, trace.Span) {
 	t.ch <- name
-	return context.TODO(), Span{name: name}
+	return ctx, Span{name: name}
 }
 
 func TestOperationPrefix(t *testing.T) {
@@ -1622,10 +1622,10 @@ func TestOperationPrefix(t *testing.T) {
 			go func() {
 				_ = s.Serve(ln)
 			}()
-			url := fmt.Sprintf("http://%s", ln.Addr().String())
-			status, err := http.Get(url)
+			uri := fmt.Sprintf("http://%s", ln.Addr().String())
+			status, err := http.Get(uri)
 			require.NoError(t, err)
-			require.Equal(t, status.StatusCode, http.StatusOK)
+			require.Equal(t, http.StatusOK, status.StatusCode)
 			require.NoError(t, s.Close())
 
 			spanName := <-nameChan
