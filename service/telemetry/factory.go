@@ -19,6 +19,13 @@ import (
 	"go.opentelemetry.io/collector/service/internal/resource"
 )
 
+var useLocalHostAsDefaultMetricsAddressFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"telemetry.UseLocalHostAsDefaultMetricsAddress",
+	featuregate.StageBeta,
+	featuregate.WithRegisterFromVersion("v0.111.0"),
+	featuregate.WithRegisterDescription("controls whether default Prometheus metrics server use localhost as the default host for their endpoints"),
+)
+
 // disableHighCardinalityMetricsFeatureGate is the feature gate that controls whether the collector should enable
 // potentially high cardinality metrics. The gate will be removed when the collector allows for view configuration.
 var disableHighCardinalityMetricsFeatureGate = featuregate.GlobalRegistry().MustRegister(
@@ -82,6 +89,11 @@ func NewFactory() Factory {
 }
 
 func createDefaultConfig() component.Config {
+	metricsHost := "localhost"
+	if !useLocalHostAsDefaultMetricsAddressFeatureGate.IsEnabled() {
+		metricsHost = ""
+	}
+
 	return &Config{
 		Logs: LogsConfig{
 			Level:       zapcore.InfoLevel,
@@ -103,7 +115,7 @@ func createDefaultConfig() component.Config {
 			Level: configtelemetry.LevelNormal,
 			Readers: []config.MetricReader{{
 				Pull: &config.PullMetricReader{Exporter: config.MetricExporter{Prometheus: &config.Prometheus{
-					Host: newPtr(""),
+					Host: &metricsHost,
 					Port: newPtr(8888),
 				}}}},
 			},
