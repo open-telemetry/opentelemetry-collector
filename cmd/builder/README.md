@@ -66,7 +66,7 @@ There are three supported ways to install the builder:
 
 You will find the official docker images at [DockerHub](https://hub.docker.com/r/otel/opentelemetry-collector-builder). 
 
-Pull the image via tagged version number (e.g. v0.110.0) or 'latest.' You may also specify platform, although Docker will handle this automatically as it is a multi-platform build.
+Pull the image via tagged version number (e.g. v0.110.0) or 'latest'. You may also specify platform, although Docker will handle this automatically as it is a multi-platform build.
 
 ```
 docker pull otel/opentelemetry-collector-builder:latest
@@ -74,7 +74,7 @@ docker pull otel/opentelemetry-collector-builder:latest
 
 The included builder configuration file/manifest should be replaced by mounting a file from your local filesystem to the docker container; the default location is `/build/builder-config.yaml`. If you mount a file at a different location inside the container, your `builder.config.yaml` must be specified as a command line argument to ocb. Additionally, the output folder must also be mounted from your local system to the docker container. This output directory must be specified in your `builder-config.yaml` file as it cannot be set via the command-line arguments.
 
-Assuming you are running this image in your working directory, have a `builder-config.yaml` file located in this folder, the `dist.output_path` item inside your `builder-config.yaml` is set to `./otelcol-dev`, and you wish to output the binary/go module files to a folder named "output," the command would look as follows:
+Assuming you are running this image in your working directory, have a `builder-config.yaml` file located in this folder, the `dist.output_path` item inside your `builder-config.yaml` is set to `./otelcol-dev`, and you wish to output the binary/go module files to a folder named `output`, the command would look as follows:
 
 ```
 docker run -v "$(pwd)/builder-config.yaml:/build/builder-config.yaml" -v "$(pwd)/output:/build/otelcol-dev" otel/opentelemetry-collector-builder:latest
