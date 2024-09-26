@@ -13,7 +13,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -33,19 +32,22 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Timeout = 30 * time.Second
+	// Default to gzip compression
+	clientConfig.Compression = configcompression.TypeGzip
+	// We almost read 0 bytes, so no need to tune ReadBufferSize.
+	clientConfig.WriteBufferSize = 512 * 1024
+	clientConfig.MaxIdleConns = nil
+	clientConfig.MaxIdleConnsPerHost = nil
+	clientConfig.MaxConnsPerHost = nil
+	clientConfig.IdleConnTimeout = nil
+
 	return &Config{
-		RetryConfig: configretry.NewDefaultBackOffConfig(),
-		QueueConfig: exporterhelper.NewDefaultQueueConfig(),
-		Encoding:    EncodingProto,
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: "",
-			Timeout:  30 * time.Second,
-			Headers:  map[string]configopaque.String{},
-			// Default to gzip compression
-			Compression: configcompression.TypeGzip,
-			// We almost read 0 bytes, so no need to tune ReadBufferSize.
-			WriteBufferSize: 512 * 1024,
-		},
+		RetryConfig:  configretry.NewDefaultBackOffConfig(),
+		QueueConfig:  exporterhelper.NewDefaultQueueConfig(),
+		Encoding:     EncodingProto,
+		ClientConfig: clientConfig,
 	}
 }
 
