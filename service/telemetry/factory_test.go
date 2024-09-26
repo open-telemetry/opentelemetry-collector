@@ -5,16 +5,50 @@ package telemetry
 
 import (
 	"context"
+	"strconv"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/contrib/config"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/featuregate"
 )
+
+func TestDefaultConfig(t *testing.T) {
+	tests := []struct {
+		expected string
+		gate     bool
+	}{
+		{
+			expected: "localhost",
+			gate:     true,
+		},
+		{
+			expected: "",
+			gate:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run("UseLocalHostAsDefaultMetricsAddress/"+strconv.FormatBool(tt.gate), func(t *testing.T) {
+			prev := useLocalHostAsDefaultMetricsAddressFeatureGate.IsEnabled()
+			require.NoError(t, featuregate.GlobalRegistry().Set(useLocalHostAsDefaultMetricsAddressFeatureGate.ID(), tt.gate))
+			defer func() {
+				// Restore previous value.
+				require.NoError(t, featuregate.GlobalRegistry().Set(useLocalHostAsDefaultMetricsAddressFeatureGate.ID(), prev))
+			}()
+			cfg := NewFactory().CreateDefaultConfig()
+			require.Len(t, cfg.(*Config).Metrics.Readers, 1)
+			assert.Equal(t, tt.expected, *cfg.(*Config).Metrics.Readers[0].Pull.Exporter.Prometheus.Host)
+			assert.Equal(t, 8888, *cfg.(*Config).Metrics.Readers[0].Pull.Exporter.Prometheus.Port)
+		})
+	}
+}
 
 func TestTelemetryConfiguration(t *testing.T) {
 	tests := []struct {
@@ -30,8 +64,13 @@ func TestTelemetryConfiguration(t *testing.T) {
 					Encoding: "console",
 				},
 				Metrics: MetricsConfig{
-					Level:   configtelemetry.LevelBasic,
-					Address: "127.0.0.1:3333",
+					Level: configtelemetry.LevelBasic,
+					Readers: []config.MetricReader{{
+						Pull: &config.PullMetricReader{Exporter: config.MetricExporter{Prometheus: &config.Prometheus{
+							Host: newPtr("127.0.0.1"),
+							Port: newPtr(3333),
+						}}}},
+					},
 				},
 			},
 			success: true,
@@ -43,8 +82,13 @@ func TestTelemetryConfiguration(t *testing.T) {
 					Level: zapcore.DebugLevel,
 				},
 				Metrics: MetricsConfig{
-					Level:   configtelemetry.LevelBasic,
-					Address: "127.0.0.1:3333",
+					Level: configtelemetry.LevelBasic,
+					Readers: []config.MetricReader{{
+						Pull: &config.PullMetricReader{Exporter: config.MetricExporter{Prometheus: &config.Prometheus{
+							Host: newPtr("127.0.0.1"),
+							Port: newPtr(3333),
+						}}}},
+					},
 				},
 			},
 			success: false,

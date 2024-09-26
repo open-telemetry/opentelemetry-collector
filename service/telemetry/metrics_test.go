@@ -17,7 +17,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/internal/testutil"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.opentelemetry.io/collector/service/internal/promtest"
 	"go.opentelemetry.io/collector/service/internal/resource"
@@ -208,8 +207,10 @@ func TestTelemetryInit(t *testing.T) {
 						semconv.AttributeServiceInstanceID: &testInstanceID,
 					},
 					Metrics: MetricsConfig{
-						Level:   configtelemetry.LevelDetailed,
-						Address: testutil.GetAvailableLocalAddress(t),
+						Level: configtelemetry.LevelDetailed,
+						Readers: []config.MetricReader{{
+							Pull: &config.PullMetricReader{Exporter: config.MetricExporter{Prometheus: promtest.GetAvailableLocalAddressPrometheus(t)}},
+						}},
 					},
 				}
 			}
@@ -276,5 +277,4 @@ func getMetricsFromPrometheus(t *testing.T, handler http.Handler) map[string]*io
 	require.NoError(t, err)
 
 	return parsed
-
 }

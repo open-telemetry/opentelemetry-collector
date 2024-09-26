@@ -16,12 +16,12 @@ import (
 var receiverType = component.MustNewType("examplereceiver")
 
 // ExampleReceiverFactory is factory for ExampleReceiver.
-var ExampleReceiverFactory = receiver.NewFactory(
+var ExampleReceiverFactory = receiverprofiles.NewFactory(
 	receiverType,
 	createReceiverDefaultConfig,
-	receiver.WithTraces(createTracesReceiver, component.StabilityLevelDevelopment),
-	receiver.WithMetrics(createMetricsReceiver, component.StabilityLevelDevelopment),
-	receiver.WithLogs(createLogsReceiver, component.StabilityLevelDevelopment),
+	receiverprofiles.WithTraces(createTracesReceiver, component.StabilityLevelDevelopment),
+	receiverprofiles.WithMetrics(createMetricsReceiver, component.StabilityLevelDevelopment),
+	receiverprofiles.WithLogs(createLogsReceiver, component.StabilityLevelDevelopment),
 	receiverprofiles.WithProfiles(createProfilesReceiver, component.StabilityLevelDevelopment),
 )
 

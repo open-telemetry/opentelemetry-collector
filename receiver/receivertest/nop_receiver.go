@@ -31,12 +31,12 @@ func NewNopSettings() receiver.Settings {
 
 // NewNopFactory returns a receiver.Factory that constructs nop receivers supporting all data types.
 func NewNopFactory() receiver.Factory {
-	return receiver.NewFactory(
+	return receiverprofiles.NewFactory(
 		defaultComponentType,
 		func() component.Config { return &nopConfig{} },
-		receiver.WithTraces(createTraces, component.StabilityLevelStable),
-		receiver.WithMetrics(createMetrics, component.StabilityLevelStable),
-		receiver.WithLogs(createLogs, component.StabilityLevelStable),
+		receiverprofiles.WithTraces(createTraces, component.StabilityLevelStable),
+		receiverprofiles.WithMetrics(createMetrics, component.StabilityLevelStable),
+		receiverprofiles.WithLogs(createLogs, component.StabilityLevelStable),
 		receiverprofiles.WithProfiles(createProfiles, component.StabilityLevelAlpha),
 	)
 }

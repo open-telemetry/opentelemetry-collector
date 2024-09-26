@@ -3038,15 +3038,15 @@ func newBadConnectorFactory() connector.Factory {
 }
 
 func newErrReceiverFactory() receiver.Factory {
-	return receiver.NewFactory(component.MustNewType("err"),
+	return receiverprofiles.NewFactory(component.MustNewType("err"),
 		func() component.Config { return &struct{}{} },
-		receiver.WithTraces(func(context.Context, receiver.Settings, component.Config, consumer.Traces) (receiver.Traces, error) {
+		receiverprofiles.WithTraces(func(context.Context, receiver.Settings, component.Config, consumer.Traces) (receiver.Traces, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		receiver.WithLogs(func(context.Context, receiver.Settings, component.Config, consumer.Logs) (receiver.Logs, error) {
+		receiverprofiles.WithLogs(func(context.Context, receiver.Settings, component.Config, consumer.Logs) (receiver.Logs, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		receiver.WithMetrics(func(context.Context, receiver.Settings, component.Config, consumer.Metrics) (receiver.Metrics, error) {
+		receiverprofiles.WithMetrics(func(context.Context, receiver.Settings, component.Config, consumer.Metrics) (receiver.Metrics, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
 		receiverprofiles.WithProfiles(func(context.Context, receiver.Settings, component.Config, consumerprofiles.Profiles) (receiverprofiles.Profiles, error) {
