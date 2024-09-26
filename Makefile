@@ -262,6 +262,7 @@ check-contrib:
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit \
 		-replace go.opentelemetry.io/collector=$(CURDIR) \
 		-replace go.opentelemetry.io/collector/client=$(CURDIR)/client \
+		-replace go.opentelemetry.io/collector/cmd/mdatagen=$(CURDIR)/cmd/mdatagen \
 		-replace go.opentelemetry.io/collector/component=$(CURDIR)/component  \
 		-replace go.opentelemetry.io/collector/component/componentprofiles=$(CURDIR)/component/componentprofiles  \
 		-replace go.opentelemetry.io/collector/component/componentstatus=$(CURDIR)/component/componentstatus  \
@@ -333,6 +334,7 @@ restore-contrib:
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit \
 		-dropreplace go.opentelemetry.io/collector \
 		-dropreplace go.opentelemetry.io/collector/client \
+		-dropreplace go.opentelemetry.io/collector/cmd/mdatagen \
 		-dropreplace go.opentelemetry.io/collector/component \
 		-dropreplace go.opentelemetry.io/collector/component/componentprofiles \
 		-dropreplace go.opentelemetry.io/collector/component/componentstatus \

@@ -67,11 +67,11 @@ This is the recommended installation method. Download the binary for your respec
 
 You need to have a `go` compiler in your PATH. Run the following command to install the latest version:
 
-```
+```console
 go install go.opentelemetry.io/collector/cmd/builder@latest
 ```
 
-If installing through this method the binary will be called `builder`. Binaries installed through this method [will incorrectly show `dev` as their version](https://github.com/open-telemetry/opentelemetry-collector/issues/8691).
+If installing through this method the binary will be called `builder`.
 
 ## Running
 
