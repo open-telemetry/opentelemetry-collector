@@ -105,6 +105,14 @@ func WithProfiles(createProfiles CreateProfilesFunc, sl component.StabilityLevel
 	})
 }
 
+// WithEntities overrides the default "error not supported" implementation for Factory.
+// CreateEntities and the default "undefined" stability level.
+func WithEntities(createEntities receiver.CreateEntitiesFunc, sl component.StabilityLevel) FactoryOption {
+	return factoryOptionFunc(func(o *factoryOpts) {
+		o.opts = append(o.opts, receiver.WithEntities(createEntities, sl))
+	})
+}
+
 // NewFactory returns a Factory.
 func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefaultConfigFunc, options ...FactoryOption) Factory {
 	opts := factoryOpts{factory: &factory{}}

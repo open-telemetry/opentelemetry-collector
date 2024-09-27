@@ -168,7 +168,7 @@ ocb:
 # Definitions for ProtoBuf generation.
 
 # The source directory for OTLP ProtoBufs.
-OPENTELEMETRY_PROTO_SRC_DIR=pdata/internal/opentelemetry-proto
+OPENTELEMETRY_PROTO_SRC_DIR?=pdata/internal/opentelemetry-proto
 
 # The branch matching the current version of the proto to use
 OPENTELEMETRY_PROTO_VERSION=v1.3.1
@@ -200,7 +200,7 @@ genproto: genproto-cleanup
 	# Call a sub-make to ensure OPENTELEMETRY_PROTO_FILES is populated
 	$(MAKE) genproto_sub
 	$(MAKE) fmt
-	$(MAKE) genproto-cleanup
+	# $(MAKE) genproto-cleanup
 
 genproto_sub:
 	@echo Generating code for the following files:
@@ -234,8 +234,8 @@ genproto_sub:
 	cp -R $(PROTO_INTERMEDIATE_DIR)/$(PROTO_PACKAGE)/* $(PROTO_TARGET_GEN_DIR)/
 	rm -rf $(PROTO_INTERMEDIATE_DIR)/go.opentelemetry.io
 
-	@rm -rf $(OPENTELEMETRY_PROTO_SRC_DIR)/*
-	@rm -rf $(OPENTELEMETRY_PROTO_SRC_DIR)/.* > /dev/null 2>&1 || true
+	#@rm -rf $(OPENTELEMETRY_PROTO_SRC_DIR)/*
+	#@rm -rf $(OPENTELEMETRY_PROTO_SRC_DIR)/.* > /dev/null 2>&1 || true
 
 # Generate structs, functions and tests for pdata package. Must be used after any changes
 # to proto and after running `make genproto`

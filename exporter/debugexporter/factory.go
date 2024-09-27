@@ -35,6 +35,7 @@ func NewFactory() exporter.Factory {
 		exporter.WithTraces(createTraces, metadata.TracesStability),
 		exporter.WithMetrics(createMetrics, metadata.MetricsStability),
 		exporter.WithLogs(createLogs, metadata.LogsStability),
+		exporter.WithEntities(createEntities, metadata.EntitiesStability),
 	)
 }
 
@@ -77,6 +78,18 @@ func createLogs(ctx context.Context, set exporter.Settings, config component.Con
 	debug := newDebugExporter(exporterLogger, cfg.Verbosity)
 	return exporterhelper.NewLogs(ctx, set, config,
 		debug.pushLogs,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
+		exporterhelper.WithShutdown(otlptext.LoggerSync(exporterLogger)),
+	)
+}
+
+func createEntities(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Entities, error) {
+	cfg := config.(*Config)
+	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
+	debug := newDebugExporter(exporterLogger, cfg.Verbosity)
+	return exporterhelper.NewEntities(ctx, set, config,
+		debug.pushEntities,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithShutdown(otlptext.LoggerSync(exporterLogger)),

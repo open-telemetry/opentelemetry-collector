@@ -122,6 +122,24 @@ func (rec *ObsReport) EndMetricsOp(
 	rec.endOp(receiverCtx, format, numReceivedPoints, err, pipeline.SignalMetrics)
 }
 
+// StartEntitiesOp is called when a request is received from a client.
+// The returned context should be used in other calls to the obsreport functions
+// dealing with the same receive operation.
+func (rec *ObsReport) StartEntitiesOp(operationCtx context.Context) context.Context {
+	return rec.startOp(operationCtx, internal.ReceiverEntitiesOperationSuffix)
+}
+
+// EndEntitiesOp completes the receive operation that was started with
+// StartEntitiesOp.
+func (rec *ObsReport) EndEntitiesOp(
+	receiverCtx context.Context,
+	format string,
+	numReceivedLogRecords int,
+	err error,
+) {
+	rec.endOp(receiverCtx, format, numReceivedLogRecords, err, pipeline.SignalEntities)
+}
+
 // startOp creates the span used to trace the operation. Returning
 // the updated context with the created span.
 func (rec *ObsReport) startOp(receiverCtx context.Context, operationSuffix string) context.Context {

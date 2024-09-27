@@ -23,6 +23,8 @@ var pcommon = &Package{
 	structs: []baseStruct{
 		scope,
 		resource,
+		entityRefSlice,
+		entityRef,
 		byteSlice,
 		float64Slice,
 		uInt64Slice,
@@ -159,12 +161,45 @@ var resource = &messageValueStruct{
 	fields: []baseField{
 		attributes,
 		droppedAttributesCount,
+		&sliceField{
+			fieldName:   "Entities",
+			returnSlice: entityRefSlice,
+		},
 	},
 }
 
 var resourceField = &messageValueField{
 	fieldName:     "Resource",
 	returnMessage: resource,
+}
+
+var entityRefSlice = &sliceOfPtrs{
+	structName:  "ResourceEntityRefSlice",
+	packageName: "pcommon",
+	element:     entityRef,
+}
+
+var entityRef = &messageValueStruct{
+	structName:     "ResourceEntityRef",
+	packageName:    "pcommon",
+	originFullName: "otlpresource.ResourceEntityRef",
+	fields: []baseField{
+		schemaURLField,
+		&primitiveField{
+			fieldName:  "Type",
+			returnType: "string",
+			defaultVal: `""`,
+			testVal:    `"host"`,
+		},
+		&sliceField{
+			fieldName:   "IdAttrKeys",
+			returnSlice: stringSlice,
+		},
+		&sliceField{
+			fieldName:   "DescrAttrKeys",
+			returnSlice: stringSlice,
+		},
+	},
 }
 
 var byteSlice = &primitiveSliceStruct{

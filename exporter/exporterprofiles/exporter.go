@@ -99,6 +99,13 @@ func WithProfiles(createProfiles CreateProfilesFunc, sl component.StabilityLevel
 	})
 }
 
+// WithEntities overrides the default "error not supported" implementation for CreateEntities and the default "undefined" stability level.
+func WithEntities(createEntities exporter.CreateEntitiesFunc, sl component.StabilityLevel) FactoryOption {
+	return factoryOptionFunc(func(o *factoryOpts) {
+		o.opts = append(o.opts, exporter.WithEntities(createEntities, sl))
+	})
+}
+
 type factory struct {
 	exporter.Factory
 	CreateProfilesFunc
