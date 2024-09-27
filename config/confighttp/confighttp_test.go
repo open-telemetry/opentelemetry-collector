@@ -1613,8 +1613,7 @@ func TestOperationPrefix(t *testing.T) {
 			go func() {
 				_ = s.Serve(ln)
 			}()
-			uri := fmt.Sprintf("http://%s", ln.Addr().String())
-			status, err := http.Get(uri)
+			status, err := http.Get(fmt.Sprintf("http://%s", ln.Addr().String()))
 			require.NoError(t, err)
 			require.Equal(t, http.StatusOK, status.StatusCode)
 			require.NoError(t, s.Close())
