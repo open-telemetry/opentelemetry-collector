@@ -25,6 +25,9 @@ func (md *Metadata) Validate() error {
 	if err := md.validateMetrics(); err != nil {
 		errs = errors.Join(errs, err)
 	}
+	if err := md.validateEntities(); err != nil {
+		errs = errors.Join(errs, err)
+	}
 	return errs
 }
 
@@ -140,6 +143,18 @@ func (md *Metadata) validateMetrics() error {
 	errs = errors.Join(errs, validateMetrics(md.Metrics, md.Attributes, usedAttrs),
 		validateMetrics(md.Telemetry.Metrics, md.Attributes, usedAttrs),
 		md.validateAttributes(usedAttrs))
+	return errs
+}
+
+func (md *Metadata) validateEntities() error {
+	var errs error
+	for _, entity := range md.Entities {
+		for _, attr := range append(entity.IDAttributes, entity.DescriptiveAttributes...) {
+			if _, ok := md.ResourceAttributes[attr]; !ok {
+				errs = errors.Join(errs, fmt.Errorf("undefined resource attribute: %v", attr))
+			}
+		}
+	}
 	return errs
 }
 

@@ -27,6 +27,14 @@ func newLinkSlice(orig *[]otlpprofiles.Link, state *internal.State) LinkSlice {
 	return LinkSlice{orig: orig, state: state}
 }
 
+func (ms LinkSlice) getOrig() *[]otlpprofiles.Link {
+	return ms.orig
+}
+
+func (ms LinkSlice) getState() *internal.State {
+	return ms.state
+}
+
 // NewLinkSlice creates a LinkSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewLinkSlice() LinkSlice {
@@ -39,7 +47,7 @@ func NewLinkSlice() LinkSlice {
 //
 // Returns "0" for a newly instance created with "NewLinkSlice()".
 func (es LinkSlice) Len() int {
-	return len(*es.orig)
+	return len(*es.getOrig())
 }
 
 // At returns the element at the given index.
@@ -51,7 +59,7 @@ func (es LinkSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es LinkSlice) At(i int) Link {
-	return newLink(&(*es.orig)[i], es.state)
+	return newLink(&(*es.getOrig())[i], es.getState())
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -67,45 +75,45 @@ func (es LinkSlice) At(i int) Link {
 //	    // Here should set all the values for e.
 //	}
 func (es LinkSlice) EnsureCapacity(newCap int) {
-	es.state.AssertMutable()
-	oldCap := cap(*es.orig)
+	es.getState().AssertMutable()
+	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
 		return
 	}
 
-	newOrig := make([]otlpprofiles.Link, len(*es.orig), newCap)
-	copy(newOrig, *es.orig)
-	*es.orig = newOrig
+	newOrig := make([]otlpprofiles.Link, len(*es.getOrig()), newCap)
+	copy(newOrig, *es.getOrig())
+	*es.getOrig() = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty Link.
 // It returns the newly added Link.
 func (es LinkSlice) AppendEmpty() Link {
-	es.state.AssertMutable()
-	*es.orig = append(*es.orig, otlpprofiles.Link{})
+	es.getState().AssertMutable()
+	*es.getOrig() = append(*es.getOrig(), otlpprofiles.Link{})
 	return es.At(es.Len() - 1)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es LinkSlice) MoveAndAppendTo(dest LinkSlice) {
-	es.state.AssertMutable()
-	dest.state.AssertMutable()
-	if *dest.orig == nil {
+	es.getState().AssertMutable()
+	dest.getState().AssertMutable()
+	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
-		*dest.orig = *es.orig
+		*dest.getOrig() = *es.getOrig()
 	} else {
-		*dest.orig = append(*dest.orig, *es.orig...)
+		*dest.getOrig() = append(*dest.getOrig(), *es.getOrig()...)
 	}
-	*es.orig = nil
+	*es.getOrig() = nil
 }
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
 func (es LinkSlice) RemoveIf(f func(Link) bool) {
-	es.state.AssertMutable()
+	es.getState().AssertMutable()
 	newLen := 0
-	for i := 0; i < len(*es.orig); i++ {
+	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
 			continue
 		}
@@ -114,23 +122,23 @@ func (es LinkSlice) RemoveIf(f func(Link) bool) {
 			newLen++
 			continue
 		}
-		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.getOrig())[newLen] = (*es.getOrig())[i]
 		newLen++
 	}
-	*es.orig = (*es.orig)[:newLen]
+	*es.getOrig() = (*es.getOrig())[:newLen]
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es LinkSlice) CopyTo(dest LinkSlice) {
-	dest.state.AssertMutable()
+	dest.getState().AssertMutable()
 	srcLen := es.Len()
-	destCap := cap(*dest.orig)
+	destCap := cap(*dest.getOrig())
 	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
 	} else {
-		(*dest.orig) = make([]otlpprofiles.Link, srcLen)
+		(*dest.getOrig()) = make([]otlpprofiles.Link, srcLen)
 	}
-	for i := range *es.orig {
-		newLink(&(*es.orig)[i], es.state).CopyTo(newLink(&(*dest.orig)[i], dest.state))
+	for i := range *es.getOrig() {
+		newLink(&(*es.getOrig())[i], es.getState()).CopyTo(newLink(&(*dest.getOrig())[i], dest.getState()))
 	}
 }

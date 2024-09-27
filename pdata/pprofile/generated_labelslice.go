@@ -27,6 +27,14 @@ func newLabelSlice(orig *[]otlpprofiles.Label, state *internal.State) LabelSlice
 	return LabelSlice{orig: orig, state: state}
 }
 
+func (ms LabelSlice) getOrig() *[]otlpprofiles.Label {
+	return ms.orig
+}
+
+func (ms LabelSlice) getState() *internal.State {
+	return ms.state
+}
+
 // NewLabelSlice creates a LabelSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewLabelSlice() LabelSlice {
@@ -39,7 +47,7 @@ func NewLabelSlice() LabelSlice {
 //
 // Returns "0" for a newly instance created with "NewLabelSlice()".
 func (es LabelSlice) Len() int {
-	return len(*es.orig)
+	return len(*es.getOrig())
 }
 
 // At returns the element at the given index.
@@ -51,7 +59,7 @@ func (es LabelSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es LabelSlice) At(i int) Label {
-	return newLabel(&(*es.orig)[i], es.state)
+	return newLabel(&(*es.getOrig())[i], es.getState())
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -67,45 +75,45 @@ func (es LabelSlice) At(i int) Label {
 //	    // Here should set all the values for e.
 //	}
 func (es LabelSlice) EnsureCapacity(newCap int) {
-	es.state.AssertMutable()
-	oldCap := cap(*es.orig)
+	es.getState().AssertMutable()
+	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
 		return
 	}
 
-	newOrig := make([]otlpprofiles.Label, len(*es.orig), newCap)
-	copy(newOrig, *es.orig)
-	*es.orig = newOrig
+	newOrig := make([]otlpprofiles.Label, len(*es.getOrig()), newCap)
+	copy(newOrig, *es.getOrig())
+	*es.getOrig() = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty Label.
 // It returns the newly added Label.
 func (es LabelSlice) AppendEmpty() Label {
-	es.state.AssertMutable()
-	*es.orig = append(*es.orig, otlpprofiles.Label{})
+	es.getState().AssertMutable()
+	*es.getOrig() = append(*es.getOrig(), otlpprofiles.Label{})
 	return es.At(es.Len() - 1)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es LabelSlice) MoveAndAppendTo(dest LabelSlice) {
-	es.state.AssertMutable()
-	dest.state.AssertMutable()
-	if *dest.orig == nil {
+	es.getState().AssertMutable()
+	dest.getState().AssertMutable()
+	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
-		*dest.orig = *es.orig
+		*dest.getOrig() = *es.getOrig()
 	} else {
-		*dest.orig = append(*dest.orig, *es.orig...)
+		*dest.getOrig() = append(*dest.getOrig(), *es.getOrig()...)
 	}
-	*es.orig = nil
+	*es.getOrig() = nil
 }
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
 func (es LabelSlice) RemoveIf(f func(Label) bool) {
-	es.state.AssertMutable()
+	es.getState().AssertMutable()
 	newLen := 0
-	for i := 0; i < len(*es.orig); i++ {
+	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
 			continue
 		}
@@ -114,23 +122,23 @@ func (es LabelSlice) RemoveIf(f func(Label) bool) {
 			newLen++
 			continue
 		}
-		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.getOrig())[newLen] = (*es.getOrig())[i]
 		newLen++
 	}
-	*es.orig = (*es.orig)[:newLen]
+	*es.getOrig() = (*es.getOrig())[:newLen]
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es LabelSlice) CopyTo(dest LabelSlice) {
-	dest.state.AssertMutable()
+	dest.getState().AssertMutable()
 	srcLen := es.Len()
-	destCap := cap(*dest.orig)
+	destCap := cap(*dest.getOrig())
 	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
 	} else {
-		(*dest.orig) = make([]otlpprofiles.Label, srcLen)
+		(*dest.getOrig()) = make([]otlpprofiles.Label, srcLen)
 	}
-	for i := range *es.orig {
-		newLabel(&(*es.orig)[i], es.state).CopyTo(newLabel(&(*dest.orig)[i], dest.state))
+	for i := range *es.getOrig() {
+		newLabel(&(*es.getOrig())[i], es.getState()).CopyTo(newLabel(&(*dest.getOrig())[i], dest.getState()))
 	}
 }

@@ -46,6 +46,14 @@ func (ms ResourceProfiles) MoveTo(dest ResourceProfiles) {
 	*ms.orig = otlpprofiles.ResourceProfiles{}
 }
 
+func (ms ResourceProfiles) getOrig() *otlpprofiles.ResourceProfiles {
+	return ms.orig
+}
+
+func (ms ResourceProfiles) getState() *internal.State {
+	return ms.state
+}
+
 // Resource returns the resource associated with this ResourceProfiles.
 func (ms ResourceProfiles) Resource() pcommon.Resource {
 	return pcommon.Resource(internal.NewResource(&ms.orig.Resource, ms.state))

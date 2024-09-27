@@ -46,6 +46,14 @@ func (ms ScopeSpans) MoveTo(dest ScopeSpans) {
 	*ms.orig = otlptrace.ScopeSpans{}
 }
 
+func (ms ScopeSpans) getOrig() *otlptrace.ScopeSpans {
+	return ms.orig
+}
+
+func (ms ScopeSpans) getState() *internal.State {
+	return ms.state
+}
+
 // Scope returns the scope associated with this ScopeSpans.
 func (ms ScopeSpans) Scope() pcommon.InstrumentationScope {
 	return pcommon.InstrumentationScope(internal.NewInstrumentationScope(&ms.orig.Scope, ms.state))

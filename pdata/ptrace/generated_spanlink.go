@@ -49,6 +49,14 @@ func (ms SpanLink) MoveTo(dest SpanLink) {
 	*ms.orig = otlptrace.Span_Link{}
 }
 
+func (ms SpanLink) getOrig() *otlptrace.Span_Link {
+	return ms.orig
+}
+
+func (ms SpanLink) getState() *internal.State {
+	return ms.state
+}
+
 // TraceID returns the traceid associated with this SpanLink.
 func (ms SpanLink) TraceID() pcommon.TraceID {
 	return pcommon.TraceID(ms.orig.TraceId)

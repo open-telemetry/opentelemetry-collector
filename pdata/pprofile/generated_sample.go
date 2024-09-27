@@ -46,6 +46,14 @@ func (ms Sample) MoveTo(dest Sample) {
 	*ms.orig = otlpprofiles.Sample{}
 }
 
+func (ms Sample) getOrig() *otlpprofiles.Sample {
+	return ms.orig
+}
+
+func (ms Sample) getState() *internal.State {
+	return ms.state
+}
+
 // LocationIndex returns the LocationIndex associated with this Sample.
 func (ms Sample) LocationIndex() pcommon.UInt64Slice {
 	return pcommon.UInt64Slice(internal.NewUInt64Slice(&ms.orig.LocationIndex, ms.state))

@@ -45,6 +45,14 @@ func (ms ExportPartialSuccess) MoveTo(dest ExportPartialSuccess) {
 	*ms.orig = otlpcollectorlog.ExportLogsPartialSuccess{}
 }
 
+func (ms ExportPartialSuccess) getOrig() *otlpcollectorlog.ExportLogsPartialSuccess {
+	return ms.orig
+}
+
+func (ms ExportPartialSuccess) getState() *internal.State {
+	return ms.state
+}
+
 // RejectedLogRecords returns the rejectedlogrecords associated with this ExportPartialSuccess.
 func (ms ExportPartialSuccess) RejectedLogRecords() int64 {
 	return ms.orig.RejectedLogRecords

@@ -46,6 +46,14 @@ func (ms ExponentialHistogram) MoveTo(dest ExponentialHistogram) {
 	*ms.orig = otlpmetrics.ExponentialHistogram{}
 }
 
+func (ms ExponentialHistogram) getOrig() *otlpmetrics.ExponentialHistogram {
+	return ms.orig
+}
+
+func (ms ExponentialHistogram) getState() *internal.State {
+	return ms.state
+}
+
 // AggregationTemporality returns the aggregationtemporality associated with this ExponentialHistogram.
 func (ms ExponentialHistogram) AggregationTemporality() AggregationTemporality {
 	return AggregationTemporality(ms.orig.AggregationTemporality)

@@ -45,6 +45,14 @@ func (ms ExportPartialSuccess) MoveTo(dest ExportPartialSuccess) {
 	*ms.orig = otlpcollectortrace.ExportTracePartialSuccess{}
 }
 
+func (ms ExportPartialSuccess) getOrig() *otlpcollectortrace.ExportTracePartialSuccess {
+	return ms.orig
+}
+
+func (ms ExportPartialSuccess) getState() *internal.State {
+	return ms.state
+}
+
 // RejectedSpans returns the rejectedspans associated with this ExportPartialSuccess.
 func (ms ExportPartialSuccess) RejectedSpans() int64 {
 	return ms.orig.RejectedSpans

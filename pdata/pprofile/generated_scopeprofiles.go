@@ -46,6 +46,14 @@ func (ms ScopeProfiles) MoveTo(dest ScopeProfiles) {
 	*ms.orig = otlpprofiles.ScopeProfiles{}
 }
 
+func (ms ScopeProfiles) getOrig() *otlpprofiles.ScopeProfiles {
+	return ms.orig
+}
+
+func (ms ScopeProfiles) getState() *internal.State {
+	return ms.state
+}
+
 // Scope returns the scope associated with this ScopeProfiles.
 func (ms ScopeProfiles) Scope() pcommon.InstrumentationScope {
 	return pcommon.InstrumentationScope(internal.NewInstrumentationScope(&ms.orig.Scope, ms.state))

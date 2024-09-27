@@ -46,6 +46,14 @@ func (ms Location) MoveTo(dest Location) {
 	*ms.orig = otlpprofiles.Location{}
 }
 
+func (ms Location) getOrig() *otlpprofiles.Location {
+	return ms.orig
+}
+
+func (ms Location) getState() *internal.State {
+	return ms.state
+}
+
 // ID returns the id associated with this Location.
 func (ms Location) ID() uint64 {
 	return ms.orig.Id

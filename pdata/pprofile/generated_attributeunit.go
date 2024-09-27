@@ -45,6 +45,14 @@ func (ms AttributeUnit) MoveTo(dest AttributeUnit) {
 	*ms.orig = otlpprofiles.AttributeUnit{}
 }
 
+func (ms AttributeUnit) getOrig() *otlpprofiles.AttributeUnit {
+	return ms.orig
+}
+
+func (ms AttributeUnit) getState() *internal.State {
+	return ms.state
+}
+
 // AttributeKey returns the attributekey associated with this AttributeUnit.
 func (ms AttributeUnit) AttributeKey() int64 {
 	return ms.orig.AttributeKey

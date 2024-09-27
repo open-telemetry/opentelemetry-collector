@@ -46,6 +46,14 @@ func (ms ResourceLogs) MoveTo(dest ResourceLogs) {
 	*ms.orig = otlplogs.ResourceLogs{}
 }
 
+func (ms ResourceLogs) getOrig() *otlplogs.ResourceLogs {
+	return ms.orig
+}
+
+func (ms ResourceLogs) getState() *internal.State {
+	return ms.state
+}
+
 // Resource returns the resource associated with this ResourceLogs.
 func (ms ResourceLogs) Resource() pcommon.Resource {
 	return pcommon.Resource(internal.NewResource(&ms.orig.Resource, ms.state))

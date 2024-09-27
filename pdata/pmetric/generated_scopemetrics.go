@@ -46,6 +46,14 @@ func (ms ScopeMetrics) MoveTo(dest ScopeMetrics) {
 	*ms.orig = otlpmetrics.ScopeMetrics{}
 }
 
+func (ms ScopeMetrics) getOrig() *otlpmetrics.ScopeMetrics {
+	return ms.orig
+}
+
+func (ms ScopeMetrics) getState() *internal.State {
+	return ms.state
+}
+
 // Scope returns the scope associated with this ScopeMetrics.
 func (ms ScopeMetrics) Scope() pcommon.InstrumentationScope {
 	return pcommon.InstrumentationScope(internal.NewInstrumentationScope(&ms.orig.Scope, ms.state))

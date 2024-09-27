@@ -45,6 +45,14 @@ func (ms Function) MoveTo(dest Function) {
 	*ms.orig = otlpprofiles.Function{}
 }
 
+func (ms Function) getOrig() *otlpprofiles.Function {
+	return ms.orig
+}
+
+func (ms Function) getState() *internal.State {
+	return ms.state
+}
+
 // ID returns the id associated with this Function.
 func (ms Function) ID() uint64 {
 	return ms.orig.Id

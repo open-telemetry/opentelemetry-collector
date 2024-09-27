@@ -160,6 +160,25 @@ func (DataPointFlags) EnumDescriptor() ([]byte, []int) {
 // storage, OR can be embedded by other protocols that transfer OTLP metrics
 // data but do not implement the OTLP protocol.
 //
+// MetricsData
+// └─── ResourceMetrics
+//
+//	├── Resource
+//	├── SchemaURL
+//	└── ScopeMetrics
+//	   ├── Scope
+//	   ├── SchemaURL
+//	   └── Metric
+//	      ├── Name
+//	      ├── Description
+//	      ├── Unit
+//	      └── data
+//	         ├── Gauge
+//	         ├── Sum
+//	         ├── Histogram
+//	         ├── ExponentialHistogram
+//	         └── Summary
+//
 // The main difference between this message and collector protocol is that
 // in this message there will not be any "control" or "metadata" specific to
 // OTLP protocol.
@@ -228,6 +247,8 @@ type ResourceMetrics struct {
 	// https://opentelemetry.io/docs/specs/otel/schemas/#schema-url
 	// This schema_url applies to the data in the "resource" field. It does not apply
 	// to the data in the "scope_metrics" field which have their own schema_url field.
+	//
+	// This field is deprecated in favour of Resource.entities.schema_url.
 	SchemaUrl string `protobuf:"bytes,3,opt,name=schema_url,json=schemaUrl,proto3" json:"schema_url,omitempty"`
 }
 

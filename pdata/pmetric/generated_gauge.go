@@ -45,6 +45,14 @@ func (ms Gauge) MoveTo(dest Gauge) {
 	*ms.orig = otlpmetrics.Gauge{}
 }
 
+func (ms Gauge) getOrig() *otlpmetrics.Gauge {
+	return ms.orig
+}
+
+func (ms Gauge) getState() *internal.State {
+	return ms.state
+}
+
 // DataPoints returns the DataPoints associated with this Gauge.
 func (ms Gauge) DataPoints() NumberDataPointSlice {
 	return newNumberDataPointSlice(&ms.orig.DataPoints, ms.state)
