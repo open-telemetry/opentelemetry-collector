@@ -473,7 +473,10 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 		otelhttp.WithTracerProvider(settings.TracerProvider),
 		otelhttp.WithPropagators(otel.GetTextMapPropagator()),
 		otelhttp.WithSpanNameFormatter(func(operation string, r *http.Request) string {
-			return strings.TrimPrefix(fmt.Sprintf("%s:%s", operation, r.URL.Path), ":")
+			if len(operation) > 0 {
+				return fmt.Sprintf("%s:%s", operation, r.URL.Path)
+			}
+			return r.URL.Path
 		}),
 		otelhttp.WithMeterProvider(settings.LeveledMeterProvider(configtelemetry.LevelDetailed)),
 	}
