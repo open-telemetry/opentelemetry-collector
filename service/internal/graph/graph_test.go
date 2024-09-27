@@ -3074,15 +3074,15 @@ func newErrProcessorFactory() processor.Factory {
 }
 
 func newErrExporterFactory() exporter.Factory {
-	return exporter.NewFactory(component.MustNewType("err"),
+	return exporterprofiles.NewFactory(component.MustNewType("err"),
 		func() component.Config { return &struct{}{} },
-		exporter.WithTraces(func(context.Context, exporter.Settings, component.Config) (exporter.Traces, error) {
+		exporterprofiles.WithTraces(func(context.Context, exporter.Settings, component.Config) (exporter.Traces, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		exporter.WithLogs(func(context.Context, exporter.Settings, component.Config) (exporter.Logs, error) {
+		exporterprofiles.WithLogs(func(context.Context, exporter.Settings, component.Config) (exporter.Logs, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		exporter.WithMetrics(func(context.Context, exporter.Settings, component.Config) (exporter.Metrics, error) {
+		exporterprofiles.WithMetrics(func(context.Context, exporter.Settings, component.Config) (exporter.Metrics, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
 		exporterprofiles.WithProfiles(func(context.Context, exporter.Settings, component.Config) (exporterprofiles.Profiles, error) {
