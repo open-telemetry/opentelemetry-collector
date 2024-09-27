@@ -24,12 +24,12 @@ func TestReceiverBuilder(t *testing.T) {
 	defaultCfg := struct{}{}
 	factories, err := receiver.MakeFactoryMap([]receiver.Factory{
 		receiver.NewFactory(component.MustNewType("err"), nil),
-		receiver.NewFactory(
+		receiverprofiles.NewFactory(
 			component.MustNewType("all"),
 			func() component.Config { return &defaultCfg },
-			receiver.WithTraces(createReceiverTraces, component.StabilityLevelDevelopment),
-			receiver.WithMetrics(createReceiverMetrics, component.StabilityLevelAlpha),
-			receiver.WithLogs(createReceiverLogs, component.StabilityLevelDeprecated),
+			receiverprofiles.WithTraces(createReceiverTraces, component.StabilityLevelDevelopment),
+			receiverprofiles.WithMetrics(createReceiverMetrics, component.StabilityLevelAlpha),
+			receiverprofiles.WithLogs(createReceiverLogs, component.StabilityLevelDeprecated),
 			receiverprofiles.WithProfiles(createReceiverProfiles, component.StabilityLevelAlpha),
 		),
 	}...)
@@ -136,12 +136,12 @@ func TestReceiverBuilder(t *testing.T) {
 func TestReceiverBuilderMissingConfig(t *testing.T) {
 	defaultCfg := struct{}{}
 	factories, err := receiver.MakeFactoryMap([]receiver.Factory{
-		receiver.NewFactory(
+		receiverprofiles.NewFactory(
 			component.MustNewType("all"),
 			func() component.Config { return &defaultCfg },
-			receiver.WithTraces(createReceiverTraces, component.StabilityLevelDevelopment),
-			receiver.WithMetrics(createReceiverMetrics, component.StabilityLevelAlpha),
-			receiver.WithLogs(createReceiverLogs, component.StabilityLevelDeprecated),
+			receiverprofiles.WithTraces(createReceiverTraces, component.StabilityLevelDevelopment),
+			receiverprofiles.WithMetrics(createReceiverMetrics, component.StabilityLevelAlpha),
+			receiverprofiles.WithLogs(createReceiverLogs, component.StabilityLevelDeprecated),
 			receiverprofiles.WithProfiles(createReceiverProfiles, component.StabilityLevelAlpha),
 		),
 	}...)
@@ -207,7 +207,7 @@ func TestNewNopReceiverConfigsAndFactories(t *testing.T) {
 	require.NoError(t, err)
 	assert.IsType(t, logs, bLogs)
 
-	profiles, err := factory.CreateProfilesReceiver(context.Background(), set, cfg, consumertest.NewNop())
+	profiles, err := factory.(receiverprofiles.Factory).CreateProfilesReceiver(context.Background(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	bProfiles, err := builder.CreateProfiles(context.Background(), set, consumertest.NewNop())
 	require.NoError(t, err)

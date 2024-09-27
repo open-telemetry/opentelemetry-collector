@@ -186,6 +186,11 @@ func TestResolverExpandStringValues(t *testing.T) {
 			output: "test_true",
 		},
 		{
+			name:   "Timestamp",
+			input:  "test_${env:TIMESTAMP}",
+			output: "test_2023-03-20T03:17:55.432328Z",
+		},
+		{
 			name:   "MultipleSameMatches",
 			input:  "test_${env:BOOL}_test_${env:BOOL}",
 			output: "test_true_test_true",
@@ -414,6 +419,8 @@ func newEnvProvider() ProviderFactory {
 			return NewRetrievedFromYAML([]byte("[localhost:3042]"))
 		case "env:HOST":
 			return NewRetrievedFromYAML([]byte("localhost"))
+		case "env:TIMESTAMP":
+			return NewRetrievedFromYAML([]byte("2023-03-20T03:17:55.432328Z"))
 		case "env:OS":
 			return NewRetrievedFromYAML([]byte("ubuntu"))
 		case "env:PR":

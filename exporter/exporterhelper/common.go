@@ -27,8 +27,8 @@ func WithShutdown(shutdown component.ShutdownFunc) Option {
 	return internal.WithShutdown(shutdown)
 }
 
-// WithTimeout overrides the default TimeoutSettings for an exporter.
-// The default TimeoutSettings is 5 seconds.
+// WithTimeout overrides the default TimeoutConfig for an exporter.
+// The default TimeoutConfig is 5 seconds.
 func WithTimeout(timeoutConfig TimeoutConfig) Option {
 	return internal.WithTimeout(timeoutConfig)
 }

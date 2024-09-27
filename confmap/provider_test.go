@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -102,6 +103,10 @@ func TestNewRetrievedFromYAMLString(t *testing.T) {
 		{
 			yaml:  "123",
 			value: 123,
+		},
+		{
+			yaml:  "2023-03-20T03:17:55.432328Z",
+			value: time.Date(2023, 3, 20, 3, 17, 55, 432328000, time.UTC),
 		},
 		{
 			yaml:  "true",

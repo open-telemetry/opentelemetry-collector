@@ -18,7 +18,7 @@ import (
 func TestNewFactoryWithProfiles(t *testing.T) {
 	var testType = component.MustNewType("test")
 	defaultCfg := struct{}{}
-	factory := receiver.NewFactory(
+	factory := NewFactory(
 		testType,
 		func() component.Config { return &defaultCfg },
 		WithProfiles(createProfiles, component.StabilityLevelAlpha),

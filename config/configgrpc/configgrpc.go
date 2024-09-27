@@ -202,6 +202,16 @@ func NewDefaultServerConfig() *ServerConfig {
 	}
 }
 
+func (gcs *ClientConfig) Validate() error {
+	if gcs.BalancerName != "" {
+		if balancer.Get(gcs.BalancerName) == nil {
+			return fmt.Errorf("invalid balancer_name: %s", gcs.BalancerName)
+		}
+	}
+
+	return nil
+}
+
 // sanitizedEndpoint strips the prefix of either http:// or https:// from configgrpc.ClientConfig.Endpoint.
 func (gcs *ClientConfig) sanitizedEndpoint() string {
 	switch {
@@ -222,27 +232,7 @@ func (gcs *ClientConfig) isSchemeHTTPS() bool {
 	return strings.HasPrefix(gcs.Endpoint, "https://")
 }
 
-// ToClientConn creates a client connection to the given target. By default, it's
-// a non-blocking dial (the function won't wait for connections to be
-// established, and connecting happens in the background). To make it a blocking
-// dial, use grpc.WithBlock() dial option.
-//
-// Deprecated: [v0.110.0] If providing a [grpc.DialOption], use [ClientConfig.ToClientConnWithOptions]
-// with [WithGrpcDialOption] instead.
-func (gcs *ClientConfig) ToClientConn(
-	ctx context.Context,
-	host component.Host,
-	settings component.TelemetrySettings,
-	grpcOpts ...grpc.DialOption,
-) (*grpc.ClientConn, error) {
-	var extraOpts []ToClientConnOption
-	for _, grpcOpt := range grpcOpts {
-		extraOpts = append(extraOpts, WithGrpcDialOption(grpcOpt))
-	}
-	return gcs.ToClientConnWithOptions(ctx, host, settings, extraOpts...)
-}
-
-// ToClientConnOption is a sealed interface wrapping options for [ClientConfig.ToClientConnWithOptions].
+// ToClientConnOption is a sealed interface wrapping options for [ClientConfig.ToClientConn].
 type ToClientConnOption interface {
 	isToClientConnOption()
 }
@@ -257,9 +247,11 @@ func WithGrpcDialOption(opt grpc.DialOption) ToClientConnOption {
 }
 func (grpcDialOptionWrapper) isToClientConnOption() {}
 
-// ToClientConnWithOptions is the same as [ClientConfig.ToClientConn], but uses the [ToClientConnOption] interface for options.
-// This method will eventually replace [ClientConfig.ToClientConn].
-func (gcs *ClientConfig) ToClientConnWithOptions(
+// ToClientConn creates a client connection to the given target. By default, it's
+// a non-blocking dial (the function won't wait for connections to be
+// established, and connecting happens in the background). To make it a blocking
+// dial, use the WithGrpcDiqlOption(grpc.WithBlock()) option.
+func (gcs *ClientConfig) ToClientConn(
 	ctx context.Context,
 	host component.Host,
 	settings component.TelemetrySettings,
@@ -270,6 +262,18 @@ func (gcs *ClientConfig) ToClientConnWithOptions(
 		return nil, err
 	}
 	return grpc.NewClient(gcs.sanitizedEndpoint(), grpcOpts...)
+}
+
+// ToClientConnWithOptions is the same as [ClientConfig.ToClientConn].
+//
+// Deprecated: [v0.111.0] Use [ClientConfig.ToClientConn] instead.
+func (gcs *ClientConfig) ToClientConnWithOptions(
+	ctx context.Context,
+	host component.Host,
+	settings component.TelemetrySettings,
+	extraOpts ...ToClientConnOption,
+) (*grpc.ClientConn, error) {
+	return gcs.ToClientConn(ctx, host, settings, extraOpts...)
 }
 
 func (gcs *ClientConfig) getGrpcDialOptions(
@@ -334,10 +338,6 @@ func (gcs *ClientConfig) getGrpcDialOptions(
 	}
 
 	if gcs.BalancerName != "" {
-		valid := validateBalancerName(gcs.BalancerName)
-		if !valid {
-			return nil, fmt.Errorf("invalid balancer_name: %s", gcs.BalancerName)
-		}
 		opts = append(opts, grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy":"%s"}`, gcs.BalancerName)))
 	}
 
@@ -363,10 +363,6 @@ func (gcs *ClientConfig) getGrpcDialOptions(
 	return opts, nil
 }
 
-func validateBalancerName(balancerName string) bool {
-	return balancer.Get(balancerName) != nil
-}
-
 func (gss *ServerConfig) Validate() error {
 	if gss.MaxRecvMsgSizeMiB*1024*1024 < 0 {
 		return fmt.Errorf("invalid max_recv_msg_size_mib value, must be between 1 and %d: %d", math.MaxInt/1024/1024, gss.MaxRecvMsgSizeMiB)
@@ -383,24 +379,7 @@ func (gss *ServerConfig) Validate() error {
 	return nil
 }
 
-// ToServer returns a [grpc.Server] for the configuration
-//
-// Deprecated: [v0.110.0] If providing a [grpc.ServerOption], use [ServerConfig.ToServerWithOptions]
-// with [WithGrpcServerOption] instead.
-func (gss *ServerConfig) ToServer(
-	ctx context.Context,
-	host component.Host,
-	settings component.TelemetrySettings,
-	grpcOpts ...grpc.ServerOption,
-) (*grpc.Server, error) {
-	var extraOpts []ToServerOption
-	for _, grpcOpt := range grpcOpts {
-		extraOpts = append(extraOpts, WithGrpcServerOption(grpcOpt))
-	}
-	return gss.ToServerWithOptions(ctx, host, settings, extraOpts...)
-}
-
-// ToServerOption is a sealed interface wrapping options for [ServerConfig.ToServerWithOptions].
+// ToServerOption is a sealed interface wrapping options for [ServerConfig.ToServer].
 type ToServerOption interface {
 	isToServerOption()
 }
@@ -415,9 +394,8 @@ func WithGrpcServerOption(opt grpc.ServerOption) ToServerOption {
 }
 func (grpcServerOptionWrapper) isToServerOption() {}
 
-// ToServerWithOptions is the same as [ServerConfig.ToServer], but uses the [ToServerOption] interface for options.
-// This method will eventually replace [ServerConfig.ToServer].
-func (gss *ServerConfig) ToServerWithOptions(
+// ToServer returns a [grpc.Server] for the configuration.
+func (gss *ServerConfig) ToServer(
 	_ context.Context,
 	host component.Host,
 	settings component.TelemetrySettings,
@@ -428,6 +406,18 @@ func (gss *ServerConfig) ToServerWithOptions(
 		return nil, err
 	}
 	return grpc.NewServer(grpcOpts...), nil
+}
+
+// ToServerWithOptions is the same as [ServerConfig.ToServer].
+//
+// Deprecated: [v0.111.0] Use [ServerConfig.ToServer] instead.
+func (gss *ServerConfig) ToServerWithOptions(
+	ctx context.Context,
+	host component.Host,
+	settings component.TelemetrySettings,
+	extraOpts ...ToServerOption,
+) (*grpc.Server, error) {
+	return gss.ToServer(ctx, host, settings, extraOpts...)
 }
 
 func (gss *ServerConfig) getGrpcServerOptions(

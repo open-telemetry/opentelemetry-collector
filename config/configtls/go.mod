@@ -5,7 +5,7 @@ go 1.22.0
 require (
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/config/configopaque v1.15.0
+	go.opentelemetry.io/collector/config/configopaque v1.16.0
 )
 
 require (

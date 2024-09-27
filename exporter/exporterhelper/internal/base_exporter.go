@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterqueue" // BaseExporter contains common fields between different exporter types.
 	"go.opentelemetry.io/collector/exporter/internal"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 type ObsrepSenderFactory = func(obsrep *ObsReport) RequestSender
@@ -35,7 +36,7 @@ type BaseExporter struct {
 	component.StartFunc
 	component.ShutdownFunc
 
-	Signal component.DataType
+	Signal pipeline.Signal
 
 	BatchMergeFunc      exporterbatcher.BatchMergeFunc[internal.Request]
 	BatchMergeSplitfunc exporterbatcher.BatchMergeSplitFunc[internal.Request]
@@ -60,14 +61,15 @@ type BaseExporter struct {
 
 	ConsumerOptions []consumer.Option
 
-	QueueCfg     exporterqueue.Config
-	QueueFactory exporterqueue.Factory[internal.Request]
-	BatcherCfg   exporterbatcher.Config
-	BatcherOpts  []BatcherOption
+	QueueCfg         QueueConfig
+	ExporterQueueCfg exporterqueue.Config
+	QueueFactory     exporterqueue.Factory[internal.Request]
+	BatcherCfg       exporterbatcher.Config
+	BatcherOpts      []BatcherOption
 }
 
-func NewBaseExporter(set exporter.Settings, signal component.DataType, osf ObsrepSenderFactory, options ...Option) (*BaseExporter, error) {
-	obsReport, err := NewExporter(ObsReportSettings{ExporterID: set.ID, ExporterCreateSettings: set, DataType: signal})
+func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSenderFactory, options ...Option) (*BaseExporter, error) {
+	obsReport, err := NewExporter(ObsReportSettings{ExporterID: set.ID, ExporterCreateSettings: set, Signal: signal})
 	if err != nil {
 		return nil, err
 	}
@@ -92,6 +94,29 @@ func NewBaseExporter(set exporter.Settings, signal component.DataType, osf Obsre
 		return nil, err
 	}
 
+	if be.QueueCfg.Enabled {
+		q := be.QueueFactory(context.Background(), exporterqueue.Settings{
+			Signal:           be.Signal,
+			ExporterSettings: be.Set,
+		}, exporterqueue.Config{
+			Enabled:      be.QueueCfg.Enabled,
+			NumConsumers: be.QueueCfg.NumConsumers,
+			QueueSize:    be.QueueCfg.QueueSize,
+		})
+		be.QueueSender = NewQueueSender(q, be.Set, be.QueueCfg.NumConsumers, be.ExportFailureMessage, be.Obsrep)
+	}
+
+	if be.ExporterQueueCfg.Enabled {
+		set := exporterqueue.Settings{
+			Signal:           be.Signal,
+			ExporterSettings: be.Set,
+		}
+		be.QueueSender = NewQueueSender(be.QueueFactory(context.Background(), set, be.ExporterQueueCfg), be.Set, be.ExporterQueueCfg.NumConsumers, be.ExportFailureMessage, be.Obsrep)
+		for _, op := range options {
+			err = multierr.Append(err, op(be))
+		}
+	}
+
 	if be.BatcherCfg.Enabled {
 		bs := NewBatchSender(be.BatcherCfg, be.Set, be.BatchMergeFunc, be.BatchMergeSplitfunc)
 		for _, opt := range be.BatcherOpts {
@@ -101,17 +126,6 @@ func NewBaseExporter(set exporter.Settings, signal component.DataType, osf Obsre
 			err = multierr.Append(err, fmt.Errorf("WithRequestBatchFuncs must be provided for the batcher applied to the request-based exporters"))
 		}
 		be.BatchSender = bs
-	}
-
-	if be.QueueCfg.Enabled {
-		set := exporterqueue.Settings{
-			DataType:         be.Signal,
-			ExporterSettings: be.Set,
-		}
-		be.QueueSender = NewQueueSender(be.QueueFactory(context.Background(), set, be.QueueCfg), be.Set, be.QueueCfg.NumConsumers, be.ExportFailureMessage, be.Obsrep)
-		for _, op := range options {
-			err = multierr.Append(err, op(be))
-		}
 	}
 
 	if err != nil {
@@ -229,19 +243,11 @@ func WithQueue(config QueueConfig) Option {
 			o.ExportFailureMessage += " Try enabling sending_queue to survive temporary failures."
 			return nil
 		}
-		qf := exporterqueue.NewPersistentQueueFactory[internal.Request](config.StorageID, exporterqueue.PersistentQueueSettings[internal.Request]{
+		o.QueueCfg = config
+		o.QueueFactory = exporterqueue.NewPersistentQueueFactory[internal.Request](config.StorageID, exporterqueue.PersistentQueueSettings[internal.Request]{
 			Marshaler:   o.Marshaler,
 			Unmarshaler: o.Unmarshaler,
 		})
-		q := qf(context.Background(), exporterqueue.Settings{
-			DataType:         o.Signal,
-			ExporterSettings: o.Set,
-		}, exporterqueue.Config{
-			Enabled:      config.Enabled,
-			NumConsumers: config.NumConsumers,
-			QueueSize:    config.QueueSize,
-		})
-		o.QueueSender = NewQueueSender(q, o.Set, config.NumConsumers, o.ExportFailureMessage, o.Obsrep)
 		return nil
 	}
 }
@@ -259,7 +265,7 @@ func WithRequestQueue(cfg exporterqueue.Config, queueFactory exporterqueue.Facto
 			o.ExportFailureMessage += " Try enabling sending_queue to survive temporary failures."
 			return nil
 		}
-		o.QueueCfg = cfg
+		o.ExporterQueueCfg = cfg
 		o.QueueFactory = queueFactory
 		return nil
 	}
