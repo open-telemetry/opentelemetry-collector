@@ -258,11 +258,11 @@ func createTestMetrics(t *testing.T, mp metric.MeterProvider) {
 
 	grpcExampleCounter, err := mp.Meter(otelinit.GRPCInstrumentation).Int64Counter(metricPrefix + grpcPrefix + counterName)
 	require.NoError(t, err)
-	grpcExampleCounter.Add(context.Background(), 11, metric.WithAttributes(otelinit.GRPCUnacceptableKeyValues...))
+	grpcExampleCounter.Add(context.Background(), 11, metric.WithAttributeSet(otelinit.GRPCUnacceptableKeyValues))
 
 	httpExampleCounter, err := mp.Meter(otelinit.HTTPInstrumentation).Int64Counter(metricPrefix + httpPrefix + counterName)
 	require.NoError(t, err)
-	httpExampleCounter.Add(context.Background(), 10, metric.WithAttributes(otelinit.HTTPUnacceptableKeyValues...))
+	httpExampleCounter.Add(context.Background(), 10, metric.WithAttributeSet(otelinit.HTTPUnacceptableKeyValues))
 }
 
 func getMetricsFromPrometheus(t *testing.T, handler http.Handler) map[string]*io_prometheus_client.MetricFamily {

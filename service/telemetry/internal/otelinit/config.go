@@ -48,17 +48,17 @@ const (
 
 var (
 	// GRPCUnacceptableKeyValues is a list of high cardinality grpc attributes that should be filtered out.
-	GRPCUnacceptableKeyValues = []attribute.KeyValue{
+	GRPCUnacceptableKeyValues = attribute.NewSet(
 		attribute.String(semconv.AttributeNetSockPeerAddr, ""),
 		attribute.String(semconv.AttributeNetSockPeerPort, ""),
 		attribute.String(semconv.AttributeNetSockPeerName, ""),
-	}
+	)
 
 	// HTTPUnacceptableKeyValues is a list of high cardinality http attributes that should be filtered out.
-	HTTPUnacceptableKeyValues = []attribute.KeyValue{
+	HTTPUnacceptableKeyValues = attribute.NewSet(
 		attribute.String(semconv.AttributeNetHostName, ""),
 		attribute.String(semconv.AttributeNetHostPort, ""),
-	}
+	)
 
 	errNoValidMetricExporter = errors.New("no valid metric exporter")
 )
@@ -123,18 +123,17 @@ func disableHighCardinalityViews(disableHighCardinality bool) []sdkmetric.View {
 		sdkmetric.NewView(
 			sdkmetric.Instrument{Scope: instrumentation.Scope{Name: GRPCInstrumentation}},
 			sdkmetric.Stream{
-				AttributeFilter: cardinalityFilter(GRPCUnacceptableKeyValues...),
+				AttributeFilter: cardinalityFilter(GRPCUnacceptableKeyValues),
 			}),
 		sdkmetric.NewView(
 			sdkmetric.Instrument{Scope: instrumentation.Scope{Name: HTTPInstrumentation}},
 			sdkmetric.Stream{
-				AttributeFilter: cardinalityFilter(HTTPUnacceptableKeyValues...),
+				AttributeFilter: cardinalityFilter(HTTPUnacceptableKeyValues),
 			}),
 	}
 }
 
-func cardinalityFilter(kvs ...attribute.KeyValue) attribute.Filter {
-	filter := attribute.NewSet(kvs...)
+func cardinalityFilter(filter attribute.Set) attribute.Filter {
 	return func(kv attribute.KeyValue) bool {
 		return !filter.HasValue(kv.Key)
 	}
