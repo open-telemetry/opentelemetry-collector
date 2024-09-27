@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -1752,5 +1753,151 @@ func TestErrorPropagation(t *testing.T) {
 		assert.Contains(t, err.Error(), proto.Error())
 
 		require.NoError(t, batcher.Shutdown(context.Background()))
+	}
+}
+
+// concurrencyTracesSink orchestrates a test in which the concurrency
+// limit is is repeatedly reached but never exceeded.  The consumers
+// are released when the limit is reached exactly.
+type concurrencyTracesSink struct {
+	*testing.T
+	context.CancelFunc
+	consumertest.TracesSink
+
+	lock sync.Mutex
+	conc int
+	cnt  int
+	grp  *sync.WaitGroup
+}
+
+func newConcurrencyTracesSink(ctx context.Context, cancel context.CancelFunc, t *testing.T, conc int) *concurrencyTracesSink {
+	cts := &concurrencyTracesSink{
+		T:          t,
+		CancelFunc: cancel,
+		conc:       conc,
+		grp:        &sync.WaitGroup{},
+	}
+	cts.grp.Add(1)
+	go func() {
+		for {
+			runtime.Gosched()
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
+			cts.lock.Lock()
+			if cts.cnt == cts.conc {
+				cts.grp.Done()
+				cts.grp = &sync.WaitGroup{}
+				cts.grp.Add(1)
+				cts.cnt = 0
+			}
+			cts.lock.Unlock()
+		}
+	}()
+	return cts
+}
+
+func (cts *concurrencyTracesSink) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+	cts.lock.Lock()
+	cts.cnt++
+	grp := cts.grp
+	if cts.cnt > cts.conc {
+		cts.Fatal("unexpected concurrency -- already at limit")
+		cts.CancelFunc()
+	}
+	cts.lock.Unlock()
+	grp.Wait()
+	return cts.TracesSink.ConsumeTraces(ctx, td)
+}
+
+func TestBatchProcessorConcurrency(t *testing.T) {
+	for _, conc := range []int{1, 2, 4, 10} {
+		t.Run(fmt.Sprint(conc), func(t *testing.T) {
+			bg, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			sink := newConcurrencyTracesSink(bg, cancel, t, conc)
+			cfg := createDefaultConfig().(*Config)
+			cfg.MaxConcurrency = uint32(conc)
+			cfg.SendBatchSize = 100
+			cfg.Timeout = time.Minute
+			creationSet := processortest.NewNopSettings()
+			batcher, err := newBatchTracesProcessor(creationSet, sink, cfg)
+			require.NoError(t, err)
+			require.NoError(t, batcher.Start(bg, componenttest.NewNopHost()))
+
+			// requestCount has to be a multiple of concurrency for the
+			// concurrencyTracesSink mechanism, which releases requests when
+			// the maximum concurrent number is reached.
+			requestCount := 100 * conc
+			spansPerRequest := 100
+			var wg sync.WaitGroup
+			for requestNum := 0; requestNum < requestCount; requestNum++ {
+				td := testdata.GenerateTraces(spansPerRequest)
+				sendTraces(bg, t, batcher, &wg, td)
+			}
+
+			wg.Wait()
+			require.NoError(t, batcher.Shutdown(context.Background()))
+
+			require.Equal(t, requestCount*spansPerRequest, sink.SpanCount())
+		})
+	}
+}
+
+func TestBatchProcessorEarlyReturn(t *testing.T) {
+	bg := context.Background()
+	sink := new(consumertest.TracesSink)
+	cfg := createDefaultConfig().(*Config)
+	cfg.EarlyReturn = true
+	cfg.Timeout = time.Minute
+	creationSet := processortest.NewNopSettings()
+	creationSet.MetricsLevel = configtelemetry.LevelDetailed
+	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg)
+	require.NoError(t, err)
+
+	start := time.Now()
+	require.NoError(t, batcher.Start(bg, componenttest.NewNopHost()))
+
+	requestCount := 1000
+	spansPerRequest := 100
+	sentResourceSpans := ptrace.NewTraces().ResourceSpans()
+	var wg sync.WaitGroup
+	for requestNum := 0; requestNum < requestCount; requestNum++ {
+		td := testdata.GenerateTraces(spansPerRequest)
+		spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
+		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
+			spans.At(spanIndex).SetName(getTestSpanName(requestNum, spanIndex))
+		}
+		td.ResourceSpans().At(0).CopyTo(sentResourceSpans.AppendEmpty())
+		// Note: not using sendTraces()-- this test is synchronous.
+		require.NoError(t, batcher.ConsumeTraces(bg, td))
+	}
+
+	// This should take very little time.
+	require.Less(t, time.Since(start), cfg.Timeout/2)
+
+	// Shutdown, then wait for callers.  Note that Shutdown is not
+	// properly synchronized when EarlyReturn is true, so up to
+	// the capacity of the channel times spansPerRequest may go
+	// missing.
+	require.NoError(t, batcher.Shutdown(context.Background()))
+
+	wg.Wait()
+
+	// Despite the early return, we expect 100% completion because
+	// Shutdown flushes the nextItem channel and waits for pending exports.
+	require.LessOrEqual(t, requestCount*spansPerRequest, sink.SpanCount())
+	receivedTraces := sink.AllTraces()
+	spansReceivedByName := spansReceivedByName(receivedTraces)
+	for requestNum := 0; requestNum < requestCount; requestNum++ {
+		spans := sentResourceSpans.At(requestNum).ScopeSpans().At(0).Spans()
+		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
+			require.EqualValues(t,
+				spans.At(spanIndex),
+				spansReceivedByName[getTestSpanName(requestNum, spanIndex)])
+		}
 	}
 }

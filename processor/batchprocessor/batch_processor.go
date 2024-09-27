@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+	"golang.org/x/sync/semaphore"
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
@@ -57,6 +58,13 @@ type batchProcessor struct {
 
 	// metadataLimit is the limiting size of the batchers map.
 	metadataLimit int
+
+	// sem controls the max_concurrency setting.  this field is nil
+	// for unlimited concurrency.
+	sem *semaphore.Weighted
+
+	// earlyReturn is the value of Config.EarlyReturn.
+	earlyReturn bool
 
 	shutdownC  chan struct{}
 	goroutines sync.WaitGroup
@@ -182,7 +190,12 @@ func newBatchProcessor(set processor.Settings, cfg *Config, batchFunc func() bat
 		shutdownC:        make(chan struct{}, 1),
 		metadataKeys:     mks,
 		metadataLimit:    int(cfg.MetadataCardinalityLimit),
+		earlyReturn:      cfg.EarlyReturn,
 		tracer:           set.TelemetrySettings.TracerProvider.Tracer(metadata.ScopeName),
+	}
+
+	if cfg.MaxConcurrency > 0 {
+		bp.sem = semaphore.NewWeighted(int64(cfg.MaxConcurrency))
 	}
 
 	asb := anyShardBatcher{processor: bp}
@@ -370,7 +383,16 @@ func (b *shard) sendItems(trigger trigger) {
 
 	b.totalSent = numItemsAfter
 
+	if b.processor.sem != nil {
+		b.processor.sem.Acquire(context.Background(), 1)
+	}
+	b.processor.goroutines.Add(1)
 	go func() {
+		if b.processor.sem != nil {
+			defer b.processor.sem.Release(1)
+		}
+		defer b.processor.goroutines.Done()
+
 		var err error
 
 		var parentSpan trace.Span
@@ -487,6 +509,9 @@ func (b *shard) consumeAndWait(ctx context.Context, data any) error {
 	case <-ctx.Done():
 		return ctx.Err()
 	case b.newItem <- item:
+		if b.processor.earlyReturn {
+			return nil
+		}
 	}
 
 	var err error
