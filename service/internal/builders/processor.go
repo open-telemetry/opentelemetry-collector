@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorprofiles"
 	"go.opentelemetry.io/collector/processor/processortest"
@@ -94,11 +95,15 @@ func (b *ProcessorBuilder) CreateProfiles(ctx context.Context, set processor.Set
 		return nil, fmt.Errorf("processor %q is not configured", set.ID)
 	}
 
-	f, existsFactory := b.factories[set.ID.Type()]
+	procFact, existsFactory := b.factories[set.ID.Type()]
 	if !existsFactory {
 		return nil, fmt.Errorf("processor factory not available for: %q", set.ID)
 	}
 
+	f, ok := procFact.(processorprofiles.Factory)
+	if !ok {
+		return nil, pipeline.ErrSignalNotSupported
+	}
 	logStabilityLevel(set.Logger, f.ProfilesProcessorStability())
 	return f.CreateProfilesProcessor(ctx, set, cfg, next)
 }
