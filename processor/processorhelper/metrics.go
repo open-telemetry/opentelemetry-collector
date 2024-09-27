@@ -7,12 +7,12 @@ import (
 	"context"
 	"errors"
 
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
 )
 
@@ -40,14 +40,10 @@ func NewMetricsProcessor(
 		return nil, errors.New("nil metricsFunc")
 	}
 
-	obs, err := newObsReport(ObsReportSettings{
-		ProcessorID:             set.ID,
-		ProcessorCreateSettings: set,
-	})
+	obs, err := newObsReport(set, pipeline.SignalMetrics)
 	if err != nil {
 		return nil, err
 	}
-	obs.otelAttrs = append(obs.otelAttrs, attribute.String("otel.signal", "metrics"))
 
 	eventOptions := spanAttributes(set.ID)
 	bs := fromOptions(options)

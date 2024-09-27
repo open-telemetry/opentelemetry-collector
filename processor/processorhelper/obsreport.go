@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/internal"
 	"go.opentelemetry.io/collector/processor/processorhelper/internal/metadata"
@@ -30,37 +31,40 @@ func BuildCustomMetricName(configType, metric string) string {
 	return componentPrefix + configType + internal.MetricNameSep + metric
 }
 
-// ObsReport is a helper to add observability to a processor.
-type ObsReport struct {
-	otelAttrs        []attribute.KeyValue
-	telemetryBuilder *metadata.TelemetryBuilder
-}
+// Deprecated: [v0.111.0] not used.
+type ObsReport struct{}
 
-// ObsReportSettings are settings for creating an ObsReport.
+// Deprecated: [v0.111.0] not used.
 type ObsReportSettings struct {
 	ProcessorID             component.ID
 	ProcessorCreateSettings processor.Settings
 }
 
-// NewObsReport creates a new Processor.
-func NewObsReport(cfg ObsReportSettings) (*ObsReport, error) {
-	return newObsReport(cfg)
+// Deprecated: [v0.111.0] not used.
+func NewObsReport(_ ObsReportSettings) (*ObsReport, error) {
+	return &ObsReport{}, nil
 }
 
-func newObsReport(cfg ObsReportSettings) (*ObsReport, error) {
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(cfg.ProcessorCreateSettings.TelemetrySettings)
+type obsReport struct {
+	otelAttrs        []attribute.KeyValue
+	telemetryBuilder *metadata.TelemetryBuilder
+}
+
+func newObsReport(set processor.Settings, signal pipeline.Signal) (*obsReport, error) {
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
 		return nil, err
 	}
-	return &ObsReport{
+	return &obsReport{
 		otelAttrs: []attribute.KeyValue{
-			attribute.String(internal.ProcessorKey, cfg.ProcessorID.String()),
+			attribute.String(internal.ProcessorKey, set.ID.String()),
+			attribute.String("otel.signal", signal.String()),
 		},
 		telemetryBuilder: telemetryBuilder,
 	}, nil
 }
 
-func (or *ObsReport) recordInOut(ctx context.Context, incoming, outgoing int) {
+func (or *obsReport) recordInOut(ctx context.Context, incoming, outgoing int) {
 	or.telemetryBuilder.ProcessorIncomingItems.Add(ctx, int64(incoming), metric.WithAttributes(or.otelAttrs...))
 	or.telemetryBuilder.ProcessorOutgoingItems.Add(ctx, int64(outgoing), metric.WithAttributes(or.otelAttrs...))
 }
