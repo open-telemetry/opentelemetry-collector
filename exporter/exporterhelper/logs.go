@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
-	"go.opentelemetry.io/collector/exporter/exporterqueue"
+	"go.opentelemetry.io/collector/exporter/internal/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/internal/queue"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pipeline"
@@ -88,12 +88,13 @@ func NewLogsExporter(
 		internal.WithMarshaler(logsRequestMarshaler), internal.WithUnmarshaler(newLogsRequestUnmarshalerFunc(pusher)),
 		internal.WithBatchFuncs(mergeLogs, mergeSplitLogs),
 	}
-	return NewLogsRequestExporter(ctx, set, requestFromLogs(pusher), append(logsOpts, options...)...)
+	return newLogsRequestExporter(ctx, set, requestFromLogs(pusher), append(logsOpts, options...)...)
 }
 
 // RequestFromLogsFunc converts plog.Logs data into a user-defined request.
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+//
+// Deprecated: [v0.111.0] If you use this API, please comment on
+// https://github.com/open-telemetry/opentelemetry-collector/issues/11142 so we don't remove it.
 type RequestFromLogsFunc func(context.Context, plog.Logs) (Request, error)
 
 // requestFromLogs returns a RequestFromLogsFunc that converts plog.Logs into a Request.
@@ -104,9 +105,19 @@ func requestFromLogs(pusher consumer.ConsumeLogsFunc) RequestFromLogsFunc {
 }
 
 // NewLogsRequestExporter creates new logs exporter based on custom LogsConverter and RequestSender.
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+//
+// Deprecated: [v0.111.0] If you use this API, please comment on
+// https://github.com/open-telemetry/opentelemetry-collector/issues/11142 so we don't remove it.
 func NewLogsRequestExporter(
+	ctx context.Context,
+	set exporter.Settings,
+	converter RequestFromLogsFunc,
+	options ...Option,
+) (exporter.Logs, error) {
+	return newLogsRequestExporter(ctx, set, converter, options...)
+}
+
+func newLogsRequestExporter(
 	_ context.Context,
 	set exporter.Settings,
 	converter RequestFromLogsFunc,

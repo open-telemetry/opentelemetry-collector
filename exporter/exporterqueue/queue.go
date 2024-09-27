@@ -7,63 +7,63 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/internal/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/internal/queue"
-	"go.opentelemetry.io/collector/internal/globalsignal"
-	"go.opentelemetry.io/collector/pipeline"
 )
 
 // ErrQueueIsFull is the error that Queue returns when full.
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-var ErrQueueIsFull = queue.ErrQueueIsFull
+//
+// Deprecated: [v0.111.0] If you use this API, please comment on
+// https://github.com/open-telemetry/opentelemetry-collector/issues/11142 so we don't remove it.
+var ErrQueueIsFull = exporterqueue.ErrQueueIsFull
 
 // Queue defines a producer-consumer exchange which can be backed by e.g. the memory-based ring buffer queue
 // (boundedMemoryQueue) or via a disk-based queue (persistentQueue)
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+//
+// Deprecated: [v0.111.0] If you use this API, please comment on
+// https://github.com/open-telemetry/opentelemetry-collector/issues/11142 so we don't remove it.
 type Queue[T any] queue.Queue[T]
 
 // Settings defines settings for creating a queue.
-type Settings struct {
-
-	// Deprecated: [v0.110.0] Use Signal instead
-	DataType component.DataType // nolint
-
-	Signal           pipeline.Signal
-	ExporterSettings exporter.Settings
-}
+//
+// Deprecated: [v0.111.0] If you use this API, please comment on
+// https://github.com/open-telemetry/opentelemetry-collector/issues/11142 so we don't remove it.
+type Settings = exporterqueue.Settings
 
 // Marshaler is a function that can marshal a request into bytes.
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+//
+// Deprecated: [v0.111.0] If you use this API, please comment on
+// https://github.com/open-telemetry/opentelemetry-collector/issues/11142 so we don't remove it.
 type Marshaler[T any] func(T) ([]byte, error)
 
 // Unmarshaler is a function that can unmarshal bytes into a request.
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+//
+// Deprecated: [v0.111.0] If you use this API, please comment on
+// https://github.com/open-telemetry/opentelemetry-collector/issues/11142 so we don't remove it.
 type Unmarshaler[T any] func([]byte) (T, error)
 
 // Factory is a function that creates a new queue.
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+//
+// Deprecated: [v0.111.0] If you use this API, please comment on
+// https://github.com/open-telemetry/opentelemetry-collector/issues/11142 so we don't remove it.
 type Factory[T any] func(context.Context, Settings, Config) Queue[T]
 
 // NewMemoryQueueFactory returns a factory to create a new memory queue.
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-func NewMemoryQueueFactory[T itemsCounter]() Factory[T] {
-	return func(_ context.Context, _ Settings, cfg Config) Queue[T] {
-		return queue.NewBoundedMemoryQueue[T](queue.MemoryQueueSettings[T]{
-			Sizer:    sizerFromConfig[T](cfg),
-			Capacity: capacityFromConfig(cfg),
-		})
+//
+// Deprecated: [v0.111.0] If you use this API, please comment on
+// https://github.com/open-telemetry/opentelemetry-collector/issues/11142 so we don't remove it.
+func NewMemoryQueueFactory[T exporterqueue.ItemsCounter]() Factory[T] {
+	// Ugly code to convert between external and internal defined types
+	internalFactory := exporterqueue.NewMemoryQueueFactory[T]()
+	return func(ctx context.Context, settings Settings, cfg Config) Queue[T] {
+		return internalFactory(ctx, settings, cfg)
 	}
 }
 
 // PersistentQueueSettings defines developer settings for the persistent queue factory.
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+//
+// Deprecated: [v0.111.0] If you use this API, please comment on
+// https://github.com/open-telemetry/opentelemetry-collector/issues/11142 so we don't remove it.
 type PersistentQueueSettings[T any] struct {
 	// Marshaler is used to serialize queue elements before storing them in the persistent storage.
 	Marshaler Marshaler[T]
@@ -73,39 +73,16 @@ type PersistentQueueSettings[T any] struct {
 
 // NewPersistentQueueFactory returns a factory to create a new persistent queue.
 // If cfg.StorageID is nil then it falls back to memory queue.
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-func NewPersistentQueueFactory[T itemsCounter](storageID *component.ID, factorySettings PersistentQueueSettings[T]) Factory[T] {
-	if storageID == nil {
-		return NewMemoryQueueFactory[T]()
+//
+// Deprecated: [v0.111.0] If you use this API, please comment on
+// https://github.com/open-telemetry/opentelemetry-collector/issues/11142 so we don't remove it.
+func NewPersistentQueueFactory[T exporterqueue.ItemsCounter](storageID *component.ID, factorySettings PersistentQueueSettings[T]) Factory[T] {
+	// Ugly code to convert between external and internal defined types
+	internalFactory := exporterqueue.NewPersistentQueueFactory(storageID, exporterqueue.PersistentQueueSettings[T]{
+		Marshaler:   exporterqueue.Marshaler[T](factorySettings.Marshaler),
+		Unmarshaler: exporterqueue.Unmarshaler[T](factorySettings.Unmarshaler),
+	})
+	return func(ctx context.Context, s exporterqueue.Settings, c exporterqueue.Config) Queue[T] {
+		return internalFactory(ctx, s, c)
 	}
-	return func(_ context.Context, set Settings, cfg Config) Queue[T] {
-		signal := set.Signal
-		if set.DataType.String() != "" {
-			signal = globalsignal.MustNewSignal(set.DataType.String())
-		}
-		return queue.NewPersistentQueue[T](queue.PersistentQueueSettings[T]{
-			Sizer:            sizerFromConfig[T](cfg),
-			Capacity:         capacityFromConfig(cfg),
-			Signal:           signal,
-			StorageID:        *storageID,
-			Marshaler:        factorySettings.Marshaler,
-			Unmarshaler:      factorySettings.Unmarshaler,
-			ExporterSettings: set.ExporterSettings,
-		})
-	}
-}
-
-type itemsCounter interface {
-	ItemsCount() int
-}
-
-func sizerFromConfig[T itemsCounter](Config) queue.Sizer[T] {
-	// TODO: Handle other ways to measure the queue size once they are added.
-	return &queue.RequestSizer[T]{}
-}
-
-func capacityFromConfig(cfg Config) int64 {
-	// TODO: Handle other ways to measure the queue size once they are added.
-	return int64(cfg.QueueSize)
 }
