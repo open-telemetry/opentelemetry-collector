@@ -3056,15 +3056,15 @@ func newErrReceiverFactory() receiver.Factory {
 }
 
 func newErrProcessorFactory() processor.Factory {
-	return processor.NewFactory(component.MustNewType("err"),
+	return processorprofiles.NewFactory(component.MustNewType("err"),
 		func() component.Config { return &struct{}{} },
-		processor.WithTraces(func(context.Context, processor.Settings, component.Config, consumer.Traces) (processor.Traces, error) {
+		processorprofiles.WithTraces(func(context.Context, processor.Settings, component.Config, consumer.Traces) (processor.Traces, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		processor.WithLogs(func(context.Context, processor.Settings, component.Config, consumer.Logs) (processor.Logs, error) {
+		processorprofiles.WithLogs(func(context.Context, processor.Settings, component.Config, consumer.Logs) (processor.Logs, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		processor.WithMetrics(func(context.Context, processor.Settings, component.Config, consumer.Metrics) (processor.Metrics, error) {
+		processorprofiles.WithMetrics(func(context.Context, processor.Settings, component.Config, consumer.Metrics) (processor.Metrics, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
 		processorprofiles.WithProfiles(func(context.Context, processor.Settings, component.Config, consumerprofiles.Profiles) (processorprofiles.Profiles, error) {

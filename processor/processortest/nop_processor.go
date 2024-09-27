@@ -30,12 +30,12 @@ func NewNopSettings() processor.Settings {
 
 // NewNopFactory returns a component.ProcessorFactory that constructs nop processors.
 func NewNopFactory() processor.Factory {
-	return processor.NewFactory(
+	return processorprofiles.NewFactory(
 		nopType,
 		func() component.Config { return &nopConfig{} },
-		processor.WithTraces(createTracesProcessor, component.StabilityLevelStable),
-		processor.WithMetrics(createMetricsProcessor, component.StabilityLevelStable),
-		processor.WithLogs(createLogsProcessor, component.StabilityLevelStable),
+		processorprofiles.WithTraces(createTracesProcessor, component.StabilityLevelStable),
+		processorprofiles.WithMetrics(createMetricsProcessor, component.StabilityLevelStable),
+		processorprofiles.WithLogs(createLogsProcessor, component.StabilityLevelStable),
 		processorprofiles.WithProfiles(createProfilesProcessor, component.StabilityLevelAlpha),
 	)
 }
