@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/rs/cors"
