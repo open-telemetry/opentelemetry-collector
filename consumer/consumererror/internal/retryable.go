@@ -4,13 +4,14 @@
 package internal // import "go.opentelemetry.io/collector/consumer/consumererror/internal"
 
 import (
+	"go.opentelemetry.io/collector/pdata/pentity"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-type Retryable[V ptrace.Traces | pmetric.Metrics | plog.Logs | pprofile.Profiles] struct {
+type Retryable[V ptrace.Traces | pmetric.Metrics | plog.Logs | pprofile.Profiles | pentity.Entities] struct {
 	Err   error
 	Value V
 }

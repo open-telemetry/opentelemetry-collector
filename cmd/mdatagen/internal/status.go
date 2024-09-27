@@ -109,6 +109,7 @@ func (ms StabilityMap) Validate() error {
 				c != "traces" &&
 				c != "logs" &&
 				c != "profiles" &&
+				c != "entities" &&
 				c != "traces_to_traces" &&
 				c != "traces_to_metrics" &&
 				c != "traces_to_logs" &&

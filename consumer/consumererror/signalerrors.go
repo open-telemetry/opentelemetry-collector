@@ -5,6 +5,7 @@ package consumererror // import "go.opentelemetry.io/collector/consumer/consumer
 
 import (
 	"go.opentelemetry.io/collector/consumer/consumererror/internal"
+	"go.opentelemetry.io/collector/pdata/pentity"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -52,6 +53,22 @@ type Metrics struct {
 func NewMetrics(err error, data pmetric.Metrics) error {
 	return Metrics{
 		Retryable: internal.Retryable[pmetric.Metrics]{
+			Err:   err,
+			Value: data,
+		},
+	}
+}
+
+// Entities is an error that may carry associated Log data for a subset of received data
+// that failed to be processed or sent.
+type Entities struct {
+	internal.Retryable[pentity.Entities]
+}
+
+// NewEntities creates a Entities that can encapsulate received data that failed to be processed or sent.
+func NewEntities(err error, data pentity.Entities) error {
+	return Entities{
+		Retryable: internal.Retryable[pentity.Entities]{
 			Err:   err,
 			Value: data,
 		},

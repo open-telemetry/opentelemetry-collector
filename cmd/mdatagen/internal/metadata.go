@@ -28,6 +28,8 @@ type Metadata struct {
 	SemConvVersion string `mapstructure:"sem_conv_version"`
 	// ResourceAttributes that can be emitted by the component.
 	ResourceAttributes map[AttributeName]Attribute `mapstructure:"resource_attributes"`
+	// Entities associated with the emitted resource attributes.
+	Entities []Entity `mapstructure:"entities"`
 	// Attributes emitted by one or more metrics.
 	Attributes map[AttributeName]Attribute `mapstructure:"attributes"`
 	// Metrics that can be emitted by the component.
@@ -62,6 +64,9 @@ func (md *Metadata) Validate() error {
 	}
 
 	if err := md.validateMetrics(); err != nil {
+		errs = errors.Join(errs, err)
+	}
+	if err := md.validateEntities(); err != nil {
 		errs = errors.Join(errs, err)
 	}
 	return errs
@@ -113,6 +118,18 @@ func (md *Metadata) validateMetrics() error {
 	return errs
 }
 
+func (md *Metadata) validateEntities() error {
+	var errs error
+	for _, entity := range md.Entities {
+		for _, attr := range append(entity.IDAttributes, entity.DescriptiveAttributes...) {
+			if _, ok := md.ResourceAttributes[attr]; !ok {
+				errs = errors.Join(errs, fmt.Errorf("undefined resource attribute: %v", attr))
+			}
+		}
+	}
+	return errs
+}
+
 func (md *Metadata) validateAttributes(usedAttrs map[AttributeName]bool) error {
 	var errs error
 	unusedAttrs := make([]AttributeName, 0, len(md.Attributes))
@@ -154,6 +171,15 @@ func validateMetrics(metrics map[MetricName]Metric, attributes map[AttributeName
 		}
 	}
 	return errs
+}
+
+type Entity struct {
+	// Type of the entity.
+	Type string `mapstructure:"type"`
+	// Identifying attributes of the entity.
+	IDAttributes []AttributeName `mapstructure:"id_attributes"`
+	// Descriptive attributes of the entity.
+	DescriptiveAttributes []AttributeName `mapstructure:"descriptive_attributes"`
 }
 
 type AttributeName string

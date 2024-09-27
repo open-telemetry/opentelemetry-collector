@@ -235,7 +235,7 @@ func TestServiceGetExporters(t *testing.T) {
 	assert.True(t, ok)
 	assert.NotNil(t, v)
 
-	assert.Len(t, expMap, 4)
+	assert.Len(t, expMap, 5)
 	assert.Len(t, expMap[pipeline.SignalTraces], 1)
 	assert.Contains(t, expMap[pipeline.SignalTraces], component.NewID(nopType))
 	assert.Len(t, expMap[pipeline.SignalMetrics], 1)
@@ -244,6 +244,8 @@ func TestServiceGetExporters(t *testing.T) {
 	assert.Contains(t, expMap[pipeline.SignalLogs], component.NewID(nopType))
 	assert.Len(t, expMap[pipelineprofiles.SignalProfiles], 1)
 	assert.Contains(t, expMap[pipelineprofiles.SignalProfiles], component.NewID(nopType))
+	assert.Len(t, expMap[pipeline.SignalEntities], 1)
+	assert.Contains(t, expMap[pipeline.SignalEntities], component.NewID(nopType))
 }
 
 // TestServiceTelemetryCleanupOnError tests that if newService errors due to an invalid config telemetry is cleaned up
@@ -613,6 +615,11 @@ func newNopConfig() Config {
 			Exporters:  []component.ID{component.NewID(nopType)},
 		},
 		pipeline.NewID(pipelineprofiles.SignalProfiles): {
+			Receivers:  []component.ID{component.NewID(nopType)},
+			Processors: []component.ID{component.NewID(nopType)},
+			Exporters:  []component.ID{component.NewID(nopType)},
+		},
+		pipeline.NewID(pipeline.SignalEntities): {
 			Receivers:  []component.ID{component.NewID(nopType)},
 			Processors: []component.ID{component.NewID(nopType)},
 			Exporters:  []component.ID{component.NewID(nopType)},

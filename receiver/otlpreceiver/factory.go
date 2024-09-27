@@ -34,6 +34,7 @@ func NewFactory() receiver.Factory {
 		receiverprofiles.WithMetrics(createMetrics, metadata.MetricsStability),
 		receiverprofiles.WithLogs(createLog, metadata.LogsStability),
 		receiverprofiles.WithProfiles(createProfiles, metadata.ProfilesStability),
+		receiverprofiles.WithEntities(createEntities, metadata.EntitiesStability),
 	)
 }
 
@@ -146,6 +147,28 @@ func createProfiles(
 	}
 
 	r.Unwrap().registerProfilesConsumer(nextConsumer)
+	return r, nil
+}
+
+// createEntities creates a trace receiver based on provided config.
+func createEntities(
+	_ context.Context,
+	set receiver.Settings,
+	cfg component.Config,
+	nextConsumer consumer.Entities,
+) (receiver.Entities, error) {
+	oCfg := cfg.(*Config)
+	r, err := receivers.LoadOrStore(
+		oCfg,
+		func() (*otlpReceiver, error) {
+			return newOtlpReceiver(oCfg, &set)
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	r.Unwrap().registerEntitiesConsumer(nextConsumer)
 	return r, nil
 }
 

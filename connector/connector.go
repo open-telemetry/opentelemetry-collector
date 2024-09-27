@@ -61,6 +61,21 @@ type Logs interface {
 	consumer.Logs
 }
 
+// An Entities connector acts as an exporter from a logs pipeline and a receiver
+// to one or more traces, metrics, or logs pipelines.
+// Entities feeds a consumer.Traces, consumer.Metrics, or consumer.Entities with data.
+//
+// Examples:
+//   - Structured logs containing span information could be consumed and emitted as traces.
+//   - Metrics could be extracted from structured logs that contain numeric data.
+//   - Entities could be collected in one pipeline and routed to another logs pipeline
+//     based on criteria such as attributes or other content of the log. The second
+//     pipeline can then process and export the log to the appropriate backend.
+type Entities interface {
+	component.Component
+	consumer.Entities
+}
+
 // Settings configures Connector creators.
 type Settings struct {
 	// ID returns the ID of the component that will be created.
@@ -91,26 +106,42 @@ type Factory interface {
 	CreateTracesToTraces(ctx context.Context, set Settings, cfg component.Config, next consumer.Traces) (Traces, error)
 	CreateTracesToMetrics(ctx context.Context, set Settings, cfg component.Config, next consumer.Metrics) (Traces, error)
 	CreateTracesToLogs(ctx context.Context, set Settings, cfg component.Config, next consumer.Logs) (Traces, error)
+	CreateTracesToEntities(ctx context.Context, set Settings, cfg component.Config, next consumer.Entities) (Traces, error)
 
 	CreateMetricsToTraces(ctx context.Context, set Settings, cfg component.Config, next consumer.Traces) (Metrics, error)
 	CreateMetricsToMetrics(ctx context.Context, set Settings, cfg component.Config, next consumer.Metrics) (Metrics, error)
 	CreateMetricsToLogs(ctx context.Context, set Settings, cfg component.Config, next consumer.Logs) (Metrics, error)
+	CreateMetricsToEntities(ctx context.Context, set Settings, cfg component.Config, next consumer.Entities) (Metrics, error)
 
 	CreateLogsToTraces(ctx context.Context, set Settings, cfg component.Config, next consumer.Traces) (Logs, error)
 	CreateLogsToMetrics(ctx context.Context, set Settings, cfg component.Config, next consumer.Metrics) (Logs, error)
 	CreateLogsToLogs(ctx context.Context, set Settings, cfg component.Config, next consumer.Logs) (Logs, error)
+	CreateLogsToEntities(ctx context.Context, set Settings, cfg component.Config, next consumer.Entities) (Logs, error)
+
+	CreateEntitiesToTraces(ctx context.Context, set Settings, cfg component.Config, next consumer.Traces) (Entities, error)
+	CreateEntitiesToMetrics(ctx context.Context, set Settings, cfg component.Config, next consumer.Metrics) (Entities, error)
+	CreateEntitiesToLogs(ctx context.Context, set Settings, cfg component.Config, next consumer.Logs) (Entities, error)
+	CreateEntitiesToEntities(ctx context.Context, set Settings, cfg component.Config, next consumer.Entities) (Entities, error)
 
 	TracesToTracesStability() component.StabilityLevel
 	TracesToMetricsStability() component.StabilityLevel
 	TracesToLogsStability() component.StabilityLevel
+	TracesToEntitiesStability() component.StabilityLevel
 
 	MetricsToTracesStability() component.StabilityLevel
 	MetricsToMetricsStability() component.StabilityLevel
 	MetricsToLogsStability() component.StabilityLevel
+	MetricsToEntitiesStability() component.StabilityLevel
 
 	LogsToTracesStability() component.StabilityLevel
 	LogsToMetricsStability() component.StabilityLevel
 	LogsToLogsStability() component.StabilityLevel
+	LogsToEntitiesStability() component.StabilityLevel
+
+	EntitiesToTracesStability() component.StabilityLevel
+	EntitiesToMetricsStability() component.StabilityLevel
+	EntitiesToLogsStability() component.StabilityLevel
+	EntitiesToEntitiesStability() component.StabilityLevel
 
 	unexportedFactoryFunc()
 }
@@ -163,6 +194,18 @@ func (f CreateTracesToLogsFunc) CreateTracesToLogs(ctx context.Context, set Sett
 	return f(ctx, set, cfg, next)
 }
 
+// CreateTracesToEntitiesFunc is the equivalent of Factory.CreateTracesToEntities().
+type CreateTracesToEntitiesFunc func(context.Context, Settings, component.Config, consumer.Entities) (Traces, error)
+
+// CreateTracesToEntities implements Factory.CreateTracesToEntities().
+func (f CreateTracesToEntitiesFunc) CreateTracesToEntities(ctx context.Context, set Settings, cfg component.Config,
+	next consumer.Entities) (Traces, error) {
+	if f == nil {
+		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalTraces, pipeline.SignalEntities)
+	}
+	return f(ctx, set, cfg, next)
+}
+
 // CreateMetricsToTracesFunc is the equivalent of Factory.CreateMetricsToTraces().
 type CreateMetricsToTracesFunc func(context.Context, Settings, component.Config, consumer.Traces) (Metrics, error)
 
@@ -196,6 +239,18 @@ func (f CreateMetricsToLogsFunc) CreateMetricsToLogs(ctx context.Context, set Se
 	return f(ctx, set, cfg, next)
 }
 
+// CreateMetricsToEntitiesFunc is the equivalent of Factory.CreateMetricsToEntities().
+type CreateMetricsToEntitiesFunc func(context.Context, Settings, component.Config, consumer.Entities) (Metrics, error)
+
+// CreateMetricsToEntities implements Factory.CreateMetricsToEntities().
+func (f CreateMetricsToEntitiesFunc) CreateMetricsToEntities(ctx context.Context, set Settings, cfg component.Config,
+	next consumer.Entities) (Metrics, error) {
+	if f == nil {
+		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalMetrics, pipeline.SignalEntities)
+	}
+	return f(ctx, set, cfg, next)
+}
+
 // CreateLogsToTracesFunc is the equivalent of Factory.CreateLogsToTraces().
 type CreateLogsToTracesFunc func(context.Context, Settings, component.Config, consumer.Traces) (Logs, error)
 
@@ -225,6 +280,66 @@ type CreateLogsToLogsFunc func(context.Context, Settings, component.Config, cons
 func (f CreateLogsToLogsFunc) CreateLogsToLogs(ctx context.Context, set Settings, cfg component.Config, next consumer.Logs) (Logs, error) {
 	if f == nil {
 		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalLogs, pipeline.SignalLogs)
+	}
+	return f(ctx, set, cfg, next)
+}
+
+// CreateLogsToEntitiesFunc is the equivalent of Factory.CreateLogsToEntities().
+type CreateLogsToEntitiesFunc func(context.Context, Settings, component.Config, consumer.Entities) (Logs, error)
+
+// CreateLogsToEntities implements Factory.CreateLogsToEntities().
+func (f CreateLogsToEntitiesFunc) CreateLogsToEntities(ctx context.Context, set Settings, cfg component.Config,
+	next consumer.Entities) (Logs, error) {
+	if f == nil {
+		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalLogs, pipeline.SignalEntities)
+	}
+	return f(ctx, set, cfg, next)
+}
+
+// CreateEntitiesToTracesFunc is the equivalent of Factory.CreateEntitiesToTraces().
+type CreateEntitiesToTracesFunc func(context.Context, Settings, component.Config, consumer.Traces) (Entities, error)
+
+// CreateEntitiesToTraces implements Factory.CreateEntitiesToTraces().
+func (f CreateEntitiesToTracesFunc) CreateEntitiesToTraces(ctx context.Context, set Settings, cfg component.Config,
+	next consumer.Traces) (Entities, error) {
+	if f == nil {
+		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalEntities, pipeline.SignalTraces)
+	}
+	return f(ctx, set, cfg, next)
+}
+
+// CreateEntitiesToMetricsFunc is the equivalent of Factory.CreateEntitiesToMetrics().
+type CreateEntitiesToMetricsFunc func(context.Context, Settings, component.Config, consumer.Metrics) (Entities, error)
+
+// CreateEntitiesToMetrics implements Factory.CreateEntitiesToMetrics().
+func (f CreateEntitiesToMetricsFunc) CreateEntitiesToMetrics(ctx context.Context, set Settings, cfg component.Config,
+	next consumer.Metrics) (Entities, error) {
+	if f == nil {
+		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalEntities, pipeline.SignalMetrics)
+	}
+	return f(ctx, set, cfg, next)
+}
+
+// CreateEntitiesToLogsFunc is the equivalent of Factory.CreateEntitiesToLogs().
+type CreateEntitiesToLogsFunc func(context.Context, Settings, component.Config, consumer.Logs) (Entities, error)
+
+// CreateEntitiesToLogs implements Factory.CreateEntitiesToLogs().
+func (f CreateEntitiesToLogsFunc) CreateEntitiesToLogs(ctx context.Context, set Settings, cfg component.Config,
+	next consumer.Logs) (Entities, error) {
+	if f == nil {
+		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalEntities, pipeline.SignalLogs)
+	}
+	return f(ctx, set, cfg, next)
+}
+
+// CreateEntitiesToEntitiesFunc is the equivalent of Factory.CreateEntitiesToLogs().
+type CreateEntitiesToEntitiesFunc func(context.Context, Settings, component.Config, consumer.Entities) (Entities, error)
+
+// CreateEntitiesToEntities implements Factory.CreateEntitiesToEntities().
+func (f CreateEntitiesToEntitiesFunc) CreateEntitiesToEntities(ctx context.Context, set Settings, cfg component.Config,
+	next consumer.Entities) (Entities, error) {
+	if f == nil {
+		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalEntities, pipeline.SignalLogs)
 	}
 	return f(ctx, set, cfg, next)
 }
@@ -309,26 +424,42 @@ type factory struct {
 	CreateTracesToTracesFunc
 	CreateTracesToMetricsFunc
 	CreateTracesToLogsFunc
+	CreateTracesToEntitiesFunc
 
 	CreateMetricsToTracesFunc
 	CreateMetricsToMetricsFunc
 	CreateMetricsToLogsFunc
+	CreateMetricsToEntitiesFunc
 
 	CreateLogsToTracesFunc
 	CreateLogsToMetricsFunc
 	CreateLogsToLogsFunc
+	CreateLogsToEntitiesFunc
 
-	tracesToTracesStabilityLevel  component.StabilityLevel
-	tracesToMetricsStabilityLevel component.StabilityLevel
-	tracesToLogsStabilityLevel    component.StabilityLevel
+	CreateEntitiesToTracesFunc
+	CreateEntitiesToMetricsFunc
+	CreateEntitiesToLogsFunc
+	CreateEntitiesToEntitiesFunc
 
-	metricsToTracesStabilityLevel  component.StabilityLevel
-	metricsToMetricsStabilityLevel component.StabilityLevel
-	metricsToLogsStabilityLevel    component.StabilityLevel
+	tracesToTracesStabilityLevel   component.StabilityLevel
+	tracesToMetricsStabilityLevel  component.StabilityLevel
+	tracesToLogsStabilityLevel     component.StabilityLevel
+	tracesToEntitiesStabilityLevel component.StabilityLevel
 
-	logsToTracesStabilityLevel  component.StabilityLevel
-	logsToMetricsStabilityLevel component.StabilityLevel
-	logsToLogsStabilityLevel    component.StabilityLevel
+	metricsToTracesStabilityLevel   component.StabilityLevel
+	metricsToMetricsStabilityLevel  component.StabilityLevel
+	metricsToLogsStabilityLevel     component.StabilityLevel
+	metricsToEntitiesStabilityLevel component.StabilityLevel
+
+	logsToTracesStabilityLevel   component.StabilityLevel
+	logsToMetricsStabilityLevel  component.StabilityLevel
+	logsToLogsStabilityLevel     component.StabilityLevel
+	logsToEntitiesStabilityLevel component.StabilityLevel
+
+	entitiesToTracesStabilityLevel   component.StabilityLevel
+	entitiesToMetricsStabilityLevel  component.StabilityLevel
+	entitiesToLogsStabilityLevel     component.StabilityLevel
+	entitiesToEntitiesStabilityLevel component.StabilityLevel
 }
 
 // Type returns the type of component.
@@ -350,6 +481,10 @@ func (f *factory) TracesToLogsStability() component.StabilityLevel {
 	return f.tracesToLogsStabilityLevel
 }
 
+func (f *factory) TracesToEntitiesStability() component.StabilityLevel {
+	return f.tracesToEntitiesStabilityLevel
+}
+
 func (f *factory) MetricsToTracesStability() component.StabilityLevel {
 	return f.metricsToTracesStabilityLevel
 }
@@ -362,6 +497,10 @@ func (f *factory) MetricsToLogsStability() component.StabilityLevel {
 	return f.metricsToLogsStabilityLevel
 }
 
+func (f *factory) MetricsToEntitiesStability() component.StabilityLevel {
+	return f.metricsToEntitiesStabilityLevel
+}
+
 func (f *factory) LogsToTracesStability() component.StabilityLevel {
 	return f.logsToTracesStabilityLevel
 }
@@ -372,6 +511,26 @@ func (f *factory) LogsToMetricsStability() component.StabilityLevel {
 
 func (f *factory) LogsToLogsStability() component.StabilityLevel {
 	return f.logsToLogsStabilityLevel
+}
+
+func (f *factory) LogsToEntitiesStability() component.StabilityLevel {
+	return f.logsToEntitiesStabilityLevel
+}
+
+func (f *factory) EntitiesToTracesStability() component.StabilityLevel {
+	return f.entitiesToTracesStabilityLevel
+}
+
+func (f *factory) EntitiesToMetricsStability() component.StabilityLevel {
+	return f.entitiesToMetricsStabilityLevel
+}
+
+func (f *factory) EntitiesToLogsStability() component.StabilityLevel {
+	return f.entitiesToLogsStabilityLevel
+}
+
+func (f *factory) EntitiesToEntitiesStability() component.StabilityLevel {
+	return f.entitiesToEntitiesStabilityLevel
 }
 
 // NewFactory returns a Factory.

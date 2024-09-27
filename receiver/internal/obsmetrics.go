@@ -31,6 +31,12 @@ const (
 	// Collector.
 	RefusedLogRecordsKey = "refused_log_records"
 
+	// AcceptedEntitiesKey used to identify log records accepted by the Collector.
+	AcceptedEntitiesKey = "accepted_entities"
+	// RefusedEntitiesKey used to identify log records refused (ie.: not ingested) by the
+	// Collector.
+	RefusedEntitiesKey = "refused_entities"
+
 	// ScraperKey used to identify scrapers in metrics and traces.
 	ScraperKey = "scraper"
 
@@ -46,5 +52,6 @@ const (
 	ReceiverPrefix                  = ReceiverKey + SpanNameSep
 	ReceiveTraceDataOperationSuffix = SpanNameSep + "TraceDataReceived"
 	ReceiverMetricsOperationSuffix  = SpanNameSep + "MetricsReceived"
+	ReceiverEntitiesOperationSuffix = SpanNameSep + "EntitiesReceived"
 	ReceiverLogsOperationSuffix     = SpanNameSep + "LogsReceived"
 )

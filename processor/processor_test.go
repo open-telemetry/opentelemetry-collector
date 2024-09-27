@@ -28,6 +28,8 @@ func TestNewFactory(t *testing.T) {
 	_, err = factory.CreateMetrics(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
 	require.Error(t, err)
 	_, err = factory.CreateLogs(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
+	require.Error(t, err)
+	_, err = factory.CreateEntities(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
 	assert.Error(t, err)
 }
 

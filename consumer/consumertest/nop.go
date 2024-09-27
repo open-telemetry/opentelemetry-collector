@@ -6,6 +6,7 @@ package consumertest // import "go.opentelemetry.io/collector/consumer/consumert
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/pdata/pentity"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
@@ -19,5 +20,6 @@ func NewNop() Consumer {
 		ConsumeMetricsFunc:  func(context.Context, pmetric.Metrics) error { return nil },
 		ConsumeLogsFunc:     func(context.Context, plog.Logs) error { return nil },
 		ConsumeProfilesFunc: func(context.Context, pprofile.Profiles) error { return nil },
+		ConsumeEntitiesFunc: func(context.Context, pentity.Entities) error { return nil },
 	}
 }

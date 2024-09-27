@@ -6,5 +6,5 @@ status:
   stability:
     stable: [traces, metrics]
     beta: [logs]
-    development: [profiles]
+    development: [profiles, entities]
   distributions: [core, contrib, k8s, otlp]

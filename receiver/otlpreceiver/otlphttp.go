@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/internal/httphelper"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/entities"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/logs"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metrics"
@@ -142,6 +143,37 @@ func handleProfiles(resp http.ResponseWriter, req *http.Request, profilesReceive
 	}
 
 	msg, err := enc.marshalProfilesResponse(otlpResp)
+	if err != nil {
+		writeError(resp, enc, err, http.StatusInternalServerError)
+		return
+	}
+	writeResponse(resp, enc.contentType(), http.StatusOK, msg)
+}
+
+func handleEntities(resp http.ResponseWriter, req *http.Request, entitiesReceiver *entities.Receiver) {
+	enc, ok := readContentType(resp, req)
+	if !ok {
+		return
+	}
+
+	body, ok := readAndCloseBody(resp, req, enc)
+	if !ok {
+		return
+	}
+
+	otlpReq, err := enc.unmarshalEntitiesRequest(body)
+	if err != nil {
+		writeError(resp, enc, err, http.StatusBadRequest)
+		return
+	}
+
+	otlpResp, err := entitiesReceiver.Export(req.Context(), otlpReq)
+	if err != nil {
+		writeError(resp, enc, err, http.StatusInternalServerError)
+		return
+	}
+
+	msg, err := enc.marshalEntitiesResponse(otlpResp)
 	if err != nil {
 		writeError(resp, enc, err, http.StatusInternalServerError)
 		return

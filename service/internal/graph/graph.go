@@ -322,6 +322,10 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 				cc := capabilityconsumer.NewProfiles(next.(consumerprofiles.Profiles), capability)
 				n.baseConsumer = cc
 				n.ConsumeProfilesFunc = cc.ConsumeProfiles
+			case pipeline.SignalEntities:
+				cc := capabilityconsumer.NewEntities(next.(consumer.Entities), capability)
+				n.baseConsumer = cc
+				n.ConsumeEntitiesFunc = cc.ConsumeEntities
 			}
 		case *fanOutNode:
 			nexts := g.nextConsumers(n.ID())
@@ -350,6 +354,12 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 					consumers = append(consumers, next.(consumerprofiles.Profiles))
 				}
 				n.baseConsumer = fanoutconsumer.NewProfiles(consumers)
+			case pipeline.SignalEntities:
+				consumers := make([]consumer.Entities, 0, len(nexts))
+				for _, next := range nexts {
+					consumers = append(consumers, next.(consumer.Entities))
+				}
+				n.baseConsumer = fanoutconsumer.NewEntities(consumers)
 			}
 		}
 		if err != nil {
@@ -485,6 +495,7 @@ func (g *Graph) GetExporters() map[pipeline.Signal]map[component.ID]component.Co
 	exportersMap[pipeline.SignalMetrics] = make(map[component.ID]component.Component)
 	exportersMap[pipeline.SignalLogs] = make(map[component.ID]component.Component)
 	exportersMap[pipelineprofiles.SignalProfiles] = make(map[component.ID]component.Component)
+	exportersMap[pipeline.SignalEntities] = make(map[component.ID]component.Component)
 
 	for _, pg := range g.pipelines {
 		for _, expNode := range pg.exporters {
@@ -598,6 +609,17 @@ func connectorStability(f connector.Factory, expType, recType pipeline.Signal) c
 			return fprof.ProfilesToLogsStability()
 		case pipelineprofiles.SignalProfiles:
 			return fprof.ProfilesToProfilesStability()
+		}
+	case pipeline.SignalEntities:
+		switch recType {
+		case pipeline.SignalTraces:
+			return f.EntitiesToTracesStability()
+		case pipeline.SignalMetrics:
+			return f.EntitiesToMetricsStability()
+		case pipeline.SignalLogs:
+			return f.EntitiesToLogsStability()
+		case pipeline.SignalEntities:
+			return f.EntitiesToEntitiesStability()
 		}
 	}
 	return component.StabilityLevelUndefined

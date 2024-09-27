@@ -26,8 +26,10 @@ func TestNewFactory(t *testing.T) {
 	require.Error(t, err)
 	_, err = factory.CreateMetrics(context.Background(), Settings{}, &defaultCfg)
 	require.Error(t, err)
-	_, err = factory.CreateLogs(context.Background(), Settings{}, &defaultCfg)
-	assert.Error(t, err)
+	_, err = factory.CreateLogsExporter(context.Background(), Settings{}, &defaultCfg)
+	require.Error(t, err)
+	_, err = factory.CreateEntities(context.Background(), Settings{}, &defaultCfg)
+	require.Error(t, err)
 }
 
 func TestNewFactoryWithOptions(t *testing.T) {

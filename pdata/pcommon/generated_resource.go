@@ -66,9 +66,15 @@ func (ms Resource) SetDroppedAttributesCount(v uint32) {
 	ms.getOrig().DroppedAttributesCount = v
 }
 
+// Entities returns the Entities associated with this Resource.
+func (ms Resource) Entities() ResourceEntityRefSlice {
+	return ResourceEntityRefSlice(internal.NewResourceEntityRefSlice(&ms.getOrig().Entities, internal.GetResourceState(internal.Resource(ms))))
+}
+
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Resource) CopyTo(dest Resource) {
 	dest.getState().AssertMutable()
 	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetDroppedAttributesCount(ms.DroppedAttributesCount())
+	ms.Entities().CopyTo(dest.Entities())
 }

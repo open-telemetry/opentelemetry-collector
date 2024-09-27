@@ -39,7 +39,14 @@ type Logs interface {
 	component.Component
 }
 
-// Settings configures receiver creators.
+// Entities receiver receives entities.
+// Its purpose is to translate data from any format to the collector's internal entities data format.
+// EntitiesReceiver feeds a consumer.Entities with data.
+type Entities interface {
+	component.Component
+}
+
+// Settings configures Receiver creators.
 type Settings struct {
 	// ID returns the ID of the component that will be created.
 	ID component.ID
@@ -83,6 +90,14 @@ type Factory interface {
 
 	// LogsStability gets the stability level of the Logs receiver.
 	LogsStability() component.StabilityLevel
+
+	// CreateEntities creates a EntitiesReceiver based on this config.
+	// If the receiver type does not support the data type or if the config is not valid
+	// an error will be returned instead.
+	CreateEntities(ctx context.Context, set Settings, cfg component.Config, nextConsumer consumer.Entities) (Entities, error)
+
+	// EntitiesStability gets the stability level of the EntitiesReceiver.
+	EntitiesStability() component.StabilityLevel
 
 	unexportedFactoryFunc()
 }
@@ -133,6 +148,22 @@ func (f CreateLogsFunc) CreateLogs(ctx context.Context, set Settings, cfg compon
 	return f(ctx, set, cfg, next)
 }
 
+// CreateEntitiesFunc is the equivalent of ReceiverFactory.CreateEntitiesReceiver().
+type CreateEntitiesFunc func(context.Context, Settings, component.Config, consumer.Entities) (Entities, error)
+
+// CreateEntities implements Factory.CreateEntitiesReceiver().
+func (f CreateEntitiesFunc) CreateEntities(
+	ctx context.Context,
+	set Settings,
+	cfg component.Config,
+	nextConsumer consumer.Entities,
+) (Entities, error) {
+	if f == nil {
+		return nil, pipeline.ErrSignalNotSupported
+	}
+	return f(ctx, set, cfg, nextConsumer)
+}
+
 type factory struct {
 	cfgType component.Type
 	component.CreateDefaultConfigFunc
@@ -142,6 +173,8 @@ type factory struct {
 	metricsStabilityLevel component.StabilityLevel
 	CreateLogsFunc
 	logsStabilityLevel component.StabilityLevel
+	CreateEntitiesFunc
+	entitiesStabilityLevel component.StabilityLevel
 }
 
 func (f *factory) Type() component.Type {
@@ -162,7 +195,11 @@ func (f *factory) LogsStability() component.StabilityLevel {
 	return f.logsStabilityLevel
 }
 
-// WithTraces overrides the default "error not supported" implementation for Factory.CreateTraces and the default "undefined" stability level.
+func (f *factory) EntitiesStability() component.StabilityLevel {
+	return f.entitiesStabilityLevel
+}
+
+// WithTraces overrides the default "error not supported" implementation for CreateTracesReceiver and the default "undefined" stability level.
 func WithTraces(createTraces CreateTracesFunc, sl component.StabilityLevel) FactoryOption {
 	return factoryOptionFunc(func(o *factory) {
 		o.tracesStabilityLevel = sl
@@ -183,6 +220,14 @@ func WithLogs(createLogs CreateLogsFunc, sl component.StabilityLevel) FactoryOpt
 	return factoryOptionFunc(func(o *factory) {
 		o.logsStabilityLevel = sl
 		o.CreateLogsFunc = createLogs
+	})
+}
+
+// WithEntities overrides the default "error not supported" implementation for CreateEntitiesReceiver and the default "undefined" stability level.
+func WithEntities(createEntities CreateEntitiesFunc, sl component.StabilityLevel) FactoryOption {
+	return factoryOptionFunc(func(o *factory) {
+		o.entitiesStabilityLevel = sl
+		o.CreateEntitiesFunc = createEntities
 	})
 }
 

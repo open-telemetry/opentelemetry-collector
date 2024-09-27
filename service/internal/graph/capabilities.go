@@ -26,6 +26,7 @@ type capabilitiesNode struct {
 	consumer.ConsumeMetricsFunc
 	consumer.ConsumeLogsFunc
 	consumerprofiles.ConsumeProfilesFunc
+	consumer.ConsumeEntitiesFunc
 }
 
 func newCapabilitiesNode(pipelineID pipeline.ID) *capabilitiesNode {

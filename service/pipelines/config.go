@@ -40,7 +40,7 @@ func (cfg Config) Validate() error {
 	// only configured components.
 	for pipelineID, p := range cfg {
 		switch pipelineID.Signal() {
-		case pipeline.SignalTraces, pipeline.SignalMetrics, pipeline.SignalLogs:
+		case pipeline.SignalTraces, pipeline.SignalMetrics, pipeline.SignalLogs, pipeline.SignalEntities:
 			// Continue
 		case pipelineprofiles.SignalProfiles:
 			if !serviceProfileSupportGate.IsEnabled() {

@@ -38,6 +38,7 @@ func NewFactory() exporter.Factory {
 		exporterprofiles.WithMetrics(createMetrics, metadata.MetricsStability),
 		exporterprofiles.WithLogs(createLogs, metadata.LogsStability),
 		exporterprofiles.WithProfiles(createProfiles, metadata.ProfilesStability),
+		exporterprofiles.WithEntities(createEntities, metadata.EntitiesStability),
 	)
 }
 
@@ -92,6 +93,18 @@ func createProfiles(ctx context.Context, set exporter.Settings, config component
 	debug := newDebugExporter(exporterLogger, cfg.Verbosity)
 	return exporterhelperprofiles.NewProfilesExporter(ctx, set, config,
 		debug.pushProfiles,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
+		exporterhelper.WithShutdown(otlptext.LoggerSync(exporterLogger)),
+	)
+}
+
+func createEntities(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Entities, error) {
+	cfg := config.(*Config)
+	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
+	debug := newDebugExporter(exporterLogger, cfg.Verbosity)
+	return exporterhelper.NewEntities(ctx, set, config,
+		debug.pushEntities,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithShutdown(otlptext.LoggerSync(exporterLogger)),

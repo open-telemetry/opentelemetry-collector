@@ -110,6 +110,25 @@ func (b *ReceiverBuilder) CreateProfiles(ctx context.Context, set receiver.Setti
 	return f.CreateProfiles(ctx, set, cfg, next)
 }
 
+// CreateEntities creates an Entities receiver based on the settings and config.
+func (b *ReceiverBuilder) CreateEntities(ctx context.Context, set receiver.Settings, next consumer.Entities) (receiver.Entities, error) {
+	if next == nil {
+		return nil, errNilNextConsumer
+	}
+	cfg, existsCfg := b.cfgs[set.ID]
+	if !existsCfg {
+		return nil, fmt.Errorf("receiver %q is not configured", set.ID)
+	}
+
+	f, existsFactory := b.factories[set.ID.Type()]
+	if !existsFactory {
+		return nil, fmt.Errorf("receiver factory not available for: %q", set.ID)
+	}
+
+	logStabilityLevel(set.Logger, f.EntitiesStability())
+	return f.CreateEntities(ctx, set, cfg, next)
+}
+
 func (b *ReceiverBuilder) Factory(componentType component.Type) component.Factory {
 	return b.factories[componentType]
 }

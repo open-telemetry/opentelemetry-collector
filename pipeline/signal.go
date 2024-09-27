@@ -16,7 +16,8 @@ type Signal = globalsignal.Signal
 var ErrSignalNotSupported = errors.New("telemetry type is not supported")
 
 var (
-	SignalTraces  = globalsignal.MustNewSignal("traces")
-	SignalMetrics = globalsignal.MustNewSignal("metrics")
-	SignalLogs    = globalsignal.MustNewSignal("logs")
+	SignalTraces   = globalsignal.MustNewSignal("traces")
+	SignalMetrics  = globalsignal.MustNewSignal("metrics")
+	SignalLogs     = globalsignal.MustNewSignal("logs")
+	SignalEntities = globalsignal.MustNewSignal("entities")
 )
