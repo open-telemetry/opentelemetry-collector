@@ -1273,9 +1273,8 @@ func TestBatchProcessorDuplicateMetadataKeys(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.MetadataKeys = []string{"myTOKEN", "mytoken"}
 	err := cfg.Validate()
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "duplicate")
-	require.Contains(t, err.Error(), "mytoken")
+	require.ErrorContains(t, err, "duplicate")
+	require.ErrorContains(t, err, "mytoken")
 }
 
 func TestBatchProcessorMetadataCardinalityLimit(t *testing.T) {
@@ -1312,7 +1311,7 @@ func TestBatchProcessorMetadataCardinalityLimit(t *testing.T) {
 
 	require.Error(t, err)
 	assert.True(t, consumererror.IsPermanent(err))
-	assert.Contains(t, err.Error(), "too many")
+	require.ErrorContains(t, err, "too many")
 
 	require.NoError(t, batcher.Shutdown(context.Background()))
 }

@@ -198,12 +198,10 @@ func TestGraphStartStopCycle(t *testing.T) {
 	pg.componentGraph.SetEdge(simple.Edge{F: c1, T: p1}) // loop back
 
 	err := pg.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})})
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), `topo: no topological ordering: cyclic components`)
+	require.ErrorContains(t, err, `topo: no topological ordering: cyclic components`)
 
 	err = pg.ShutdownAll(context.Background(), statustest.NewNopStatusReporter())
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), `topo: no topological ordering: cyclic components`)
+	assert.ErrorContains(t, err, `topo: no topological ordering: cyclic components`)
 }
 
 func TestGraphStartStopComponentError(t *testing.T) {

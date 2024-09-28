@@ -277,8 +277,7 @@ func TestUintUnmarshalerFailure(t *testing.T) {
 	cfg := &UintConfig{}
 	err := conf.Unmarshal(cfg)
 
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), fmt.Sprintf("decoding failed due to the following error(s):\n\ncannot parse 'uint_test', %d overflows uint", testValue))
+	assert.ErrorContains(t, err, fmt.Sprintf("decoding failed due to the following error(s):\n\ncannot parse 'uint_test', %d overflows uint", testValue))
 }
 
 func TestMapKeyStringToMapKeyTextUnmarshalerHookFuncDuplicateID(t *testing.T) {
