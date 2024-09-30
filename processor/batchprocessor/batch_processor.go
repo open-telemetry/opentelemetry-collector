@@ -16,7 +16,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
-	"golang.org/x/sync/semaphore"
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
@@ -58,10 +57,6 @@ type batchProcessor struct {
 
 	// metadataLimit is the limiting size of the batchers map.
 	metadataLimit int
-
-	// sem controls the max_concurrency setting.  this field is nil
-	// for unlimited concurrency.
-	sem *semaphore.Weighted
 
 	// earlyReturn is the value of Config.EarlyReturn.
 	earlyReturn bool
@@ -192,10 +187,6 @@ func newBatchProcessor(set processor.Settings, cfg *Config, batchFunc func() bat
 		metadataLimit:    int(cfg.MetadataCardinalityLimit),
 		earlyReturn:      cfg.EarlyReturn,
 		tracer:           set.TelemetrySettings.TracerProvider.Tracer(metadata.ScopeName),
-	}
-
-	if cfg.MaxConcurrency > 0 {
-		bp.sem = semaphore.NewWeighted(int64(cfg.MaxConcurrency))
 	}
 
 	asb := anyShardBatcher{processor: bp}
@@ -383,67 +374,61 @@ func (b *shard) sendItems(trigger trigger) {
 
 	b.totalSent = numItemsAfter
 
-	if b.processor.sem != nil {
-		b.processor.sem.Acquire(context.Background(), 1)
-	}
 	b.processor.goroutines.Add(1)
-	go func() {
-		if b.processor.sem != nil {
-			defer b.processor.sem.Release(1)
+	defer b.processor.goroutines.Done()
+
+	var err error
+
+	var parentSpan trace.Span
+	var parent context.Context
+	isSingleCtx := allSameContext(thisBatch)
+
+	// If incoming requests are sufficiently large, there
+	// will be one context, in which case no need to create a new
+	// root span.
+	if isSingleCtx {
+		parent = thisBatch[0].ctx
+		parent, parentSpan = b.processor.tracer.Start(parent, "batch_processor/export")
+	} else {
+		spans := parentSpans(thisBatch)
+
+		links := make([]trace.Link, len(spans))
+		for i, span := range spans {
+			links[i] = trace.Link{SpanContext: span.SpanContext()}
 		}
-		defer b.processor.goroutines.Done()
+		parent, parentSpan = b.processor.tracer.Start(b.exportCtx, "batch_processor/export", trace.WithLinks(links...))
 
-		var err error
-
-		var parentSpan trace.Span
-		var parent context.Context
-		isSingleCtx := allSameContext(thisBatch)
-
-		// If incoming requests are sufficiently large, there
-		// will be one context, in which case no need to create a new
-		// root span.
-		if isSingleCtx {
-			parent = thisBatch[0].ctx
-			parent, parentSpan = b.processor.tracer.Start(parent, "batch_processor/export")
-		} else {
-			spans := parentSpans(thisBatch)
-
-			links := make([]trace.Link, len(spans))
-			for i, span := range spans {
-				links[i] = trace.Link{SpanContext: span.SpanContext()}
-			}
-			parent, parentSpan = b.processor.tracer.Start(b.exportCtx, "batch_processor/export", trace.WithLinks(links...))
-
-			// Note: linking in the opposite direction.
-			// This could be inferred by the trace
-			// backend, but this adds helpful information
-			// in cases where sampling may break links.
-			// See https://github.com/open-telemetry/opentelemetry-specification/issues/1877
-			for _, span := range spans {
-				span.AddLink(trace.Link{SpanContext: parentSpan.SpanContext()})
-			}
+		// Note: linking in the opposite direction.
+		// This could be inferred by the trace
+		// backend, but this adds helpful information
+		// in cases where sampling may break links.
+		// See https://github.com/open-telemetry/opentelemetry-specification/issues/1877
+		for _, span := range spans {
+			span.AddLink(trace.Link{SpanContext: parentSpan.SpanContext()})
 		}
-		err = b.batch.export(parent, req)
-		// Note: call End() before returning to caller contexts, otherwise
-		// trace-based tests will not recognize unfinished spans when the test
-		// terminates.
-		parentSpan.End()
+	}
+	err = b.batch.export(parent, req)
+	// Note: call End() before returning to caller contexts, otherwise
+	// trace-based tests will not recognize unfinished spans when the test
+	// terminates.
+	parentSpan.End()
 
-		for _, pending := range thisBatch {
+	for _, pending := range thisBatch {
+		if pending.waiter != nil {
 			pending.waiter <- countedError{err: err, count: pending.count}
 		}
+	}
 
-		if err != nil {
-			b.processor.logger.Warn("Sender failed", zap.Error(err))
-		} else {
-			// Note that bytes is only used by record() when level is detailed.
-			var bytes int64
-			if b.processor.telemetry.detailed {
-				bytes = int64(b.batch.sizeBytes(req))
-			}
-			b.processor.telemetry.record(trigger, int64(sent), bytes)
+	if err != nil {
+		b.processor.logger.Warn("Sender failed", zap.Error(err))
+	} else {
+		// Note that bytes is only used by record() when level is detailed.
+		var bytes int64
+		if b.processor.telemetry.detailed {
+			bytes = int64(b.batch.sizeBytes(req))
 		}
-	}()
+		b.processor.telemetry.record(trigger, int64(sent), bytes)
+	}
 }
 
 func parentSpans(x []pendingTuple) []trace.Span {
@@ -495,7 +480,10 @@ func (b *shard) consumeAndWait(ctx context.Context, data any) error {
 		return nil
 	}
 
-	respCh := make(chan countedError, 1)
+	var respCh chan countedError
+	if !b.processor.earlyReturn {
+		respCh = make(chan countedError, 1)
+	}
 	item := dataItem{
 		data: data,
 		pendingItem: pendingItem{
