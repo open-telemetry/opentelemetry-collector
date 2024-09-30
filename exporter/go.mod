@@ -14,7 +14,6 @@ require (
 	go.opentelemetry.io/collector/exporter/exporterprofiles v0.110.0
 	go.opentelemetry.io/collector/extension v0.110.0
 	go.opentelemetry.io/collector/extension/experimental/storage v0.110.0
-	go.opentelemetry.io/collector/internal/globalsignal v0.110.0
 	go.opentelemetry.io/collector/pdata v1.16.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.110.0
 	go.opentelemetry.io/collector/pdata/testdata v0.110.0
@@ -41,8 +40,8 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector/component/componentprofiles v0.110.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.110.0 // indirect
+	go.opentelemetry.io/collector/internal/globalsignal v0.110.0 // indirect
 	go.opentelemetry.io/collector/receiver/receiverprofiles v0.110.0 // indirect
 	golang.org/x/net v0.28.0 // indirect
 	golang.org/x/text v0.17.0 // indirect
@@ -84,5 +83,3 @@ replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../receiver/r
 replace go.opentelemetry.io/collector/exporter/exporterprofiles => ./exporterprofiles
 
 replace go.opentelemetry.io/collector/internal/globalsignal => ../internal/globalsignal
-
-replace go.opentelemetry.io/collector/component/componentprofiles => ../component/componentprofiles

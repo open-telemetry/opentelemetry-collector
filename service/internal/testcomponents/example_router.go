@@ -21,12 +21,12 @@ import (
 var routerType = component.MustNewType("examplerouter")
 
 // ExampleRouterFactory is factory for ExampleRouter.
-var ExampleRouterFactory = connector.NewFactory(
+var ExampleRouterFactory = connectorprofiles.NewFactory(
 	routerType,
 	createExampleRouterDefaultConfig,
-	connector.WithTracesToTraces(createExampleTracesRouter, component.StabilityLevelDevelopment),
-	connector.WithMetricsToMetrics(createExampleMetricsRouter, component.StabilityLevelDevelopment),
-	connector.WithLogsToLogs(createExampleLogsRouter, component.StabilityLevelDevelopment),
+	connectorprofiles.WithTracesToTraces(createExampleTracesRouter, component.StabilityLevelDevelopment),
+	connectorprofiles.WithMetricsToMetrics(createExampleMetricsRouter, component.StabilityLevelDevelopment),
+	connectorprofiles.WithLogsToLogs(createExampleLogsRouter, component.StabilityLevelDevelopment),
 	connectorprofiles.WithProfilesToProfiles(createExampleProfilesRouter, component.StabilityLevelDevelopment),
 )
 

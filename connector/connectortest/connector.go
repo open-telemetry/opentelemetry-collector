@@ -32,22 +32,22 @@ type nopConfig struct{}
 
 // NewNopFactory returns a connector.Factory that constructs nop processors.
 func NewNopFactory() connector.Factory {
-	return connector.NewFactory(
+	return connectorprofiles.NewFactory(
 		nopType,
 		func() component.Config {
 			return &nopConfig{}
 		},
-		connector.WithTracesToTraces(createTracesToTracesConnector, component.StabilityLevelDevelopment),
-		connector.WithTracesToMetrics(createTracesToMetricsConnector, component.StabilityLevelDevelopment),
-		connector.WithTracesToLogs(createTracesToLogsConnector, component.StabilityLevelDevelopment),
+		connectorprofiles.WithTracesToTraces(createTracesToTracesConnector, component.StabilityLevelDevelopment),
+		connectorprofiles.WithTracesToMetrics(createTracesToMetricsConnector, component.StabilityLevelDevelopment),
+		connectorprofiles.WithTracesToLogs(createTracesToLogsConnector, component.StabilityLevelDevelopment),
 		connectorprofiles.WithTracesToProfiles(createTracesToProfilesConnector, component.StabilityLevelAlpha),
-		connector.WithMetricsToTraces(createMetricsToTracesConnector, component.StabilityLevelDevelopment),
-		connector.WithMetricsToMetrics(createMetricsToMetricsConnector, component.StabilityLevelDevelopment),
-		connector.WithMetricsToLogs(createMetricsToLogsConnector, component.StabilityLevelDevelopment),
+		connectorprofiles.WithMetricsToTraces(createMetricsToTracesConnector, component.StabilityLevelDevelopment),
+		connectorprofiles.WithMetricsToMetrics(createMetricsToMetricsConnector, component.StabilityLevelDevelopment),
+		connectorprofiles.WithMetricsToLogs(createMetricsToLogsConnector, component.StabilityLevelDevelopment),
 		connectorprofiles.WithMetricsToProfiles(createMetricsToProfilesConnector, component.StabilityLevelAlpha),
-		connector.WithLogsToTraces(createLogsToTracesConnector, component.StabilityLevelDevelopment),
-		connector.WithLogsToMetrics(createLogsToMetricsConnector, component.StabilityLevelDevelopment),
-		connector.WithLogsToLogs(createLogsToLogsConnector, component.StabilityLevelDevelopment),
+		connectorprofiles.WithLogsToTraces(createLogsToTracesConnector, component.StabilityLevelDevelopment),
+		connectorprofiles.WithLogsToMetrics(createLogsToMetricsConnector, component.StabilityLevelDevelopment),
+		connectorprofiles.WithLogsToLogs(createLogsToLogsConnector, component.StabilityLevelDevelopment),
 		connectorprofiles.WithLogsToProfiles(createLogsToProfilesConnector, component.StabilityLevelAlpha),
 		connectorprofiles.WithProfilesToTraces(createProfilesToTracesConnector, component.StabilityLevelAlpha),
 		connectorprofiles.WithProfilesToMetrics(createProfilesToMetricsConnector, component.StabilityLevelAlpha),
