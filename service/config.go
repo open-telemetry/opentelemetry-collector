@@ -20,13 +20,12 @@ type Config struct {
 	Extensions extensions.Config `mapstructure:"extensions"`
 
 	// Pipelines are the set of data pipelines configured for the service.
-	//
-	// Deprecated: [v0.110.0] Use PipelinesWithPipelineID instead
-	// nolint
-	Pipelines pipelines.Config `mapstructure:"-"`
+	Pipelines pipelines.Config `mapstructure:"pipelines"`
 
 	// Pipelines are the set of data pipelines configured for the service.
-	PipelinesWithPipelineID pipelines.ConfigWithPipelineID `mapstructure:"pipelines"`
+	//
+	// Deprecated: [v0.111.0] Use Pipelines instead.
+	PipelinesWithPipelineID pipelines.ConfigWithPipelineID `mapstructure:"-"` // nolint
 }
 
 func (cfg *Config) Validate() error {
@@ -34,12 +33,12 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("service::pipelines config validation failed: cannot configure both Pipelines and PipelinesWithPipelineID")
 	}
 
-	if len(cfg.Pipelines) > 0 {
-		if err := cfg.Pipelines.Validate(); err != nil {
+	if len(cfg.PipelinesWithPipelineID) > 0 {
+		if err := cfg.PipelinesWithPipelineID.Validate(); err != nil {
 			return fmt.Errorf("service::pipelines config validation failed: %w", err)
 		}
 	} else {
-		if err := cfg.PipelinesWithPipelineID.Validate(); err != nil {
+		if err := cfg.Pipelines.Validate(); err != nil {
 			return fmt.Errorf("service::pipelines config validation failed: %w", err)
 		}
 	}
