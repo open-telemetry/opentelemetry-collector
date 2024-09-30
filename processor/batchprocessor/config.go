@@ -44,12 +44,6 @@ type Config struct {
 	// batcher instances that will be created through a distinct
 	// combination of MetadataKeys.
 	MetadataCardinalityLimit uint32 `mapstructure:"metadata_cardinality_limit"`
-
-	// EarlyReturn dictates whether the batch processor will
-	// return success as soon as the data item has been accepted
-	// into a pending batch.  When set, the return will be
-	// unconditional success, not determined by the actual outcome.
-	EarlyReturn bool `mapstructure:"early_return"`
 }
 
 var _ component.Config = (*Config)(nil)

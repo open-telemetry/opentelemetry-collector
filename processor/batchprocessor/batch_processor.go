@@ -58,9 +58,6 @@ type batchProcessor struct {
 	// metadataLimit is the limiting size of the batchers map.
 	metadataLimit int
 
-	// earlyReturn is the value of Config.EarlyReturn.
-	earlyReturn bool
-
 	shutdownC  chan struct{}
 	goroutines sync.WaitGroup
 
@@ -116,7 +113,6 @@ type shard struct {
 type pendingItem struct {
 	parentCtx context.Context
 	numItems  int
-	respCh    chan countedError
 }
 
 // dataItem is exchanged between the waiter and the batching process
@@ -185,7 +181,6 @@ func newBatchProcessor(set processor.Settings, cfg *Config, batchFunc func() bat
 		shutdownC:        make(chan struct{}, 1),
 		metadataKeys:     mks,
 		metadataLimit:    int(cfg.MetadataCardinalityLimit),
-		earlyReturn:      cfg.EarlyReturn,
 		tracer:           set.TelemetrySettings.TracerProvider.Tracer(metadata.ScopeName),
 	}
 
@@ -299,7 +294,6 @@ func (b *shard) processItem(item dataItem) {
 	b.pending = append(b.pending, pendingItem{
 		parentCtx: item.parentCtx,
 		numItems:  totalItems,
-		respCh:    item.respCh,
 	})
 
 	b.flushItems()
@@ -350,17 +344,15 @@ func (b *shard) sendItems(trigger trigger) {
 			numItemsBefore = numItemsAfter
 			b.pending[0].numItems -= partialSent
 			thisBatch = append(thisBatch, pendingTuple{
-				waiter: b.pending[0].respCh,
-				count:  partialSent,
-				ctx:    b.pending[0].parentCtx,
+				count: partialSent,
+				ctx:   b.pending[0].parentCtx,
 			})
 		} else {
 			// waiter gets a complete response.
 			numItemsBefore += uint64(b.pending[0].numItems)
 			thisBatch = append(thisBatch, pendingTuple{
-				waiter: b.pending[0].respCh,
-				count:  b.pending[0].numItems,
-				ctx:    b.pending[0].parentCtx,
+				count: b.pending[0].numItems,
+				ctx:   b.pending[0].parentCtx,
 			})
 
 			// complete response sent so b.pending[0] can be popped from queue.
@@ -413,12 +405,6 @@ func (b *shard) sendItems(trigger trigger) {
 	// terminates.
 	parentSpan.End()
 
-	for _, pending := range thisBatch {
-		if pending.waiter != nil {
-			pending.waiter <- countedError{err: err, count: pending.count}
-		}
-	}
-
 	if err != nil {
 		b.processor.logger.Warn("Sender failed", zap.Error(err))
 	} else {
@@ -449,9 +435,8 @@ func parentSpans(x []pendingTuple) []trace.Span {
 }
 
 type pendingTuple struct {
-	waiter chan countedError
-	count  int
-	ctx    context.Context
+	count int
+	ctx   context.Context
 }
 
 // allSameContext is a helper function to check if a slice of contexts
@@ -480,15 +465,10 @@ func (b *shard) consumeAndWait(ctx context.Context, data any) error {
 		return nil
 	}
 
-	var respCh chan countedError
-	if !b.processor.earlyReturn {
-		respCh = make(chan countedError, 1)
-	}
 	item := dataItem{
 		data: data,
 		pendingItem: pendingItem{
 			parentCtx: ctx,
-			respCh:    respCh,
 			numItems:  itemCount,
 		},
 	}
@@ -497,29 +477,7 @@ func (b *shard) consumeAndWait(ctx context.Context, data any) error {
 	case <-ctx.Done():
 		return ctx.Err()
 	case b.newItem <- item:
-		if b.processor.earlyReturn {
-			return nil
-		}
-	}
-
-	var err error
-	for {
-		select {
-		case cntErr := <-respCh:
-			// nil response might be wrapped as an error.
-			if cntErr.err != nil {
-				err = errors.Join(err, cntErr)
-			}
-
-			item.numItems -= cntErr.count
-			if item.numItems != 0 {
-				continue
-			}
-
-			return err
-		case <-ctx.Done():
-			return errors.Join(err, ctx.Err())
-		}
+		return nil
 	}
 }
 

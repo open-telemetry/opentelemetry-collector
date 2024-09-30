@@ -40,12 +40,6 @@ func createDefaultConfig() component.Config {
 		SendBatchSize:            defaultSendBatchSize,
 		Timeout:                  defaultTimeout,
 		MetadataCardinalityLimit: defaultMetadataCardinalityLimit,
-
-		// EarlyReturn allows the batch processor to return as soon
-		// as it has accepted the item into its current batch.  This
-		// prevents error transmission and interferes with load-based
-		// throttling for upstream clients.
-		EarlyReturn: true,
 	}
 }
 

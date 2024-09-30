@@ -528,14 +528,6 @@ func TestBatchProcessorTracesSentBySize(t *testing.T) {
 }
 
 func TestBatchProcessorTracesSentByMaxSize(t *testing.T) {
-	for _, early := range []bool{true, false} {
-		t.Run(fmt.Sprint("early=", early), func(t *testing.T) {
-			testBatchProcessorTracesSentByMaxSize(t, early)
-		})
-	}
-}
-
-func testBatchProcessorTracesSentByMaxSize(t *testing.T, early bool) {
 	tel := setupTestTelemetry()
 	sizer := &ptrace.ProtoMarshaler{}
 	sink := new(consumertest.TracesSink)
@@ -546,7 +538,6 @@ func testBatchProcessorTracesSentByMaxSize(t *testing.T, early bool) {
 	cfg.SendBatchSize = uint32(sendBatchSize)
 	cfg.SendBatchMaxSize = uint32(sendBatchMaxSize)
 	cfg.Timeout = 500 * time.Millisecond
-	cfg.EarlyReturn = early
 	creationSet := tel.NewSettings()
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg)
@@ -568,11 +559,7 @@ func testBatchProcessorTracesSentByMaxSize(t *testing.T, early bool) {
 
 	// We expect at least one timeout period because (items % sendBatchMaxSize) != 0.
 	elapsed := time.Since(start)
-	if early {
-		require.Less(t, elapsed.Nanoseconds(), cfg.Timeout.Nanoseconds())
-	} else {
-		require.GreaterOrEqual(t, elapsed.Nanoseconds(), cfg.Timeout.Nanoseconds())
-	}
+	require.Less(t, elapsed.Nanoseconds(), cfg.Timeout.Nanoseconds())
 
 	// The max batch size is not a divisor of the total number of spans
 	expectedBatchesNum := int(math.Ceil(float64(totalSpans) / float64(sendBatchMaxSize)))
@@ -686,21 +673,12 @@ func testBatchProcessorTracesSentByMaxSize(t *testing.T, early bool) {
 }
 
 func TestBatchProcessorSentByTimeout(t *testing.T) {
-	for _, early := range []bool{true, false} {
-		t.Run(fmt.Sprint("early=", early), func(t *testing.T) {
-			testBatchProcessorSentByTimeout(t, early)
-		})
-	}
-}
-
-func testBatchProcessorSentByTimeout(t *testing.T, early bool) {
 	bg := context.Background()
 	sink := new(consumertest.TracesSink)
 	cfg := createDefaultConfig().(*Config)
 	sendBatchSize := 100
 	cfg.SendBatchSize = uint32(sendBatchSize)
 	cfg.Timeout = 100 * time.Millisecond
-	cfg.EarlyReturn = early
 
 	requestCount := 5
 	spansPerRequest := 10
@@ -723,14 +701,8 @@ func testBatchProcessorSentByTimeout(t *testing.T, early bool) {
 	require.NoError(t, batcher.Shutdown(context.Background()))
 
 	elapsed := time.Since(start)
-	if early {
-		// We should not observe a wait for the timeout.
-		require.LessOrEqual(t, elapsed.Nanoseconds(), cfg.Timeout.Nanoseconds())
-	} else {
-		// requestCount*spansPerRequest is not a full batch,
-		// so we waited for a timeout.
-		require.Greater(t, elapsed.Nanoseconds(), cfg.Timeout.Nanoseconds())
-	}
+	// We should not observe a wait for the timeout.
+	require.LessOrEqual(t, elapsed.Nanoseconds(), cfg.Timeout.Nanoseconds())
 
 	expectedBatchesNum := 1
 	expectedBatchingFactor := 5
@@ -990,7 +962,7 @@ func TestBatchMetricsProcessor_Timeout(t *testing.T) {
 	batcher, err := newBatchMetricsProcessor(creationSet, sink, &cfg)
 	require.NoError(t, err)
 	var wg sync.WaitGroup
-	start := time.Now()
+
 	require.NoError(t, batcher.Start(bg, componenttest.NewNopHost()))
 
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
@@ -999,9 +971,7 @@ func TestBatchMetricsProcessor_Timeout(t *testing.T) {
 	}
 
 	wg.Wait()
-	elapsed := time.Since(start)
-	// We expect at no timeout periods because (items % sendBatchMaxSize) == 0.
-	require.LessOrEqual(t, cfg.Timeout.Nanoseconds(), elapsed.Nanoseconds())
+
 	require.NoError(t, batcher.Shutdown(context.Background()))
 
 	expectedBatchesNum := 1
@@ -1357,7 +1327,6 @@ func TestBatchLogsProcessor_Timeout(t *testing.T) {
 	require.NoError(t, err)
 
 	var wg sync.WaitGroup
-	start := time.Now()
 	require.NoError(t, batcher.Start(bg, componenttest.NewNopHost()))
 
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
@@ -1366,9 +1335,6 @@ func TestBatchLogsProcessor_Timeout(t *testing.T) {
 	}
 
 	wg.Wait()
-	elapsed := time.Since(start)
-	// We expect no timeout periods because (items % sendBatchMaxSize) == 0.
-	require.LessOrEqual(t, cfg.Timeout.Nanoseconds(), elapsed.Nanoseconds())
 	require.NoError(t, batcher.Shutdown(bg))
 
 	expectedBatchesNum := 1
@@ -1761,32 +1727,6 @@ func (es errorSink) ConsumeLogs(context.Context, plog.Logs) error {
 	return es.err
 }
 
-func TestErrorPropagation(t *testing.T) {
-	for _, proto := range []error{
-		testError{},
-		fmt.Errorf("womp"),
-	} {
-		sink := errorSink{err: proto}
-
-		creationSet := processortest.NewNopSettings()
-		creationSet.MetricsLevel = configtelemetry.LevelDetailed
-		cfg := createDefaultConfig().(*Config)
-		cfg.EarlyReturn = false
-		batcher, err := newBatchLogsProcessor(creationSet, sink, cfg)
-
-		require.NoError(t, err)
-		require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
-
-		ld := testdata.GenerateLogs(1)
-		err = batcher.ConsumeLogs(context.Background(), ld)
-		require.Error(t, err)
-		require.ErrorIs(t, err, proto)
-		assert.Contains(t, err.Error(), proto.Error())
-
-		require.NoError(t, batcher.Shutdown(context.Background()))
-	}
-}
-
 // concurrencyTracesSink orchestrates a test in which the concurrency
 // limit is is repeatedly reached but never exceeded.  The consumers
 // are released when the limit is reached exactly.
@@ -1841,59 +1781,4 @@ func (cts *concurrencyTracesSink) ConsumeTraces(ctx context.Context, td ptrace.T
 	cts.lock.Unlock()
 	grp.Wait()
 	return cts.TracesSink.ConsumeTraces(ctx, td)
-}
-
-func TestBatchProcessorEarlyReturn(t *testing.T) {
-	bg := context.Background()
-	sink := new(consumertest.TracesSink)
-	cfg := createDefaultConfig().(*Config)
-	cfg.EarlyReturn = true
-	cfg.Timeout = time.Minute
-	creationSet := processortest.NewNopSettings()
-	creationSet.MetricsLevel = configtelemetry.LevelDetailed
-	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg)
-	require.NoError(t, err)
-
-	start := time.Now()
-	require.NoError(t, batcher.Start(bg, componenttest.NewNopHost()))
-
-	requestCount := 1000
-	spansPerRequest := 100
-	sentResourceSpans := ptrace.NewTraces().ResourceSpans()
-	var wg sync.WaitGroup
-	for requestNum := 0; requestNum < requestCount; requestNum++ {
-		td := testdata.GenerateTraces(spansPerRequest)
-		spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
-		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
-			spans.At(spanIndex).SetName(getTestSpanName(requestNum, spanIndex))
-		}
-		td.ResourceSpans().At(0).CopyTo(sentResourceSpans.AppendEmpty())
-		// Note: not using sendTraces()-- this test is synchronous.
-		require.NoError(t, batcher.ConsumeTraces(bg, td))
-	}
-
-	// This should take very little time.
-	require.Less(t, time.Since(start), cfg.Timeout/2)
-
-	// Shutdown, then wait for callers.  Note that Shutdown is not
-	// properly synchronized when EarlyReturn is true, so up to
-	// the capacity of the channel times spansPerRequest may go
-	// missing.
-	require.NoError(t, batcher.Shutdown(context.Background()))
-
-	wg.Wait()
-
-	// Despite the early return, we expect 100% completion because
-	// Shutdown flushes the nextItem channel and waits for pending exports.
-	require.LessOrEqual(t, requestCount*spansPerRequest, sink.SpanCount())
-	receivedTraces := sink.AllTraces()
-	spansReceivedByName := spansReceivedByName(receivedTraces)
-	for requestNum := 0; requestNum < requestCount; requestNum++ {
-		spans := sentResourceSpans.At(requestNum).ScopeSpans().At(0).Spans()
-		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
-			require.EqualValues(t,
-				spans.At(spanIndex),
-				spansReceivedByName[getTestSpanName(requestNum, spanIndex)])
-		}
-	}
 }
