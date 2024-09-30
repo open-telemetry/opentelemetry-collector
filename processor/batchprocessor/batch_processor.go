@@ -533,8 +533,8 @@ func (mb *multiShardBatcher) consume(ctx context.Context, data any) error {
 
 		if !loaded {
 			// This is a new shard
-			mb.size++
 			b.(*shard).start()
+			mb.size++
 
 		}
 		mb.lock.Unlock()
@@ -593,7 +593,6 @@ func newBatchTraces(nextConsumer consumer.Traces) *batchTraces {
 // add updates current batchTraces by adding new TraceData object
 func (bt *batchTraces) add(item any) {
 	td := item.(ptrace.Traces)
-
 	newSpanCount := td.SpanCount()
 	if newSpanCount == 0 {
 		return
