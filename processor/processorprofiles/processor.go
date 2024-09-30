@@ -19,13 +19,16 @@ import (
 type Factory interface {
 	processor.Factory
 
-	// CreateProfilesProcessor creates a ProfilesProcessor based on this config.
+	// CreateProfiles creates a Profiles processor based on this config.
 	// If the processor type does not support tracing or if the config is not valid,
 	// an error will be returned instead.
-	CreateProfilesProcessor(ctx context.Context, set processor.Settings, cfg component.Config, nextConsumer consumerprofiles.Profiles) (Profiles, error)
+	CreateProfiles(ctx context.Context, set processor.Settings, cfg component.Config, next consumerprofiles.Profiles) (Profiles, error)
 
-	// ProfilesProcessorStability gets the stability level of the ProfilesProcessor.
-	ProfilesProcessorStability() component.StabilityLevel
+	// Deprecated: [v0.111.0] use CreateProfiles.
+	CreateProfilesProcessor(ctx context.Context, set processor.Settings, cfg component.Config, next consumerprofiles.Profiles) (Profiles, error)
+
+	// ProfilesStability gets the stability level of the Profiles processor.
+	ProfilesStability() component.StabilityLevel
 }
 
 // Profiles is a processor that can consume profiles.
@@ -38,16 +41,17 @@ type Profiles interface {
 // CreateProfilesFunc is the equivalent of Factory.CreateProfiles().
 type CreateProfilesFunc func(context.Context, processor.Settings, component.Config, consumerprofiles.Profiles) (Profiles, error)
 
-// CreateProfilesProcessor implements Factory.CreateProfilesProcessor().
-func (f CreateProfilesFunc) CreateProfilesProcessor(
-	ctx context.Context,
-	set processor.Settings,
-	cfg component.Config,
-	nextConsumer consumerprofiles.Profiles) (Profiles, error) {
+// CreateProfiles implements Factory.CreateProfiles.
+func (f CreateProfilesFunc) CreateProfiles(ctx context.Context, set processor.Settings, cfg component.Config, next consumerprofiles.Profiles) (Profiles, error) {
 	if f == nil {
 		return nil, pipeline.ErrSignalNotSupported
 	}
-	return f(ctx, set, cfg, nextConsumer)
+	return f(ctx, set, cfg, next)
+}
+
+// Deprecated: [v0.111.0] use CreateProfiles.
+func (f CreateProfilesFunc) CreateProfilesProcessor(ctx context.Context, set processor.Settings, cfg component.Config, next consumerprofiles.Profiles) (Profiles, error) {
+	return f.CreateProfiles(ctx, set, cfg, next)
 }
 
 // FactoryOption apply changes to ReceiverOptions.
@@ -69,7 +73,7 @@ type factory struct {
 	profilesStabilityLevel component.StabilityLevel
 }
 
-func (f factory) ProfilesProcessorStability() component.StabilityLevel {
+func (f factory) ProfilesStability() component.StabilityLevel {
 	return f.profilesStabilityLevel
 }
 

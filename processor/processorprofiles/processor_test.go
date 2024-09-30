@@ -26,8 +26,8 @@ func TestNewFactoryWithProfiles(t *testing.T) {
 	assert.EqualValues(t, testType, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
-	assert.Equal(t, component.StabilityLevelAlpha, factory.ProfilesProcessorStability())
-	_, err := factory.CreateProfilesProcessor(context.Background(), processor.Settings{}, &defaultCfg, consumertest.NewNop())
+	assert.Equal(t, component.StabilityLevelAlpha, factory.ProfilesStability())
+	_, err := factory.CreateProfiles(context.Background(), processor.Settings{}, &defaultCfg, consumertest.NewNop())
 	assert.NoError(t, err)
 }
 
