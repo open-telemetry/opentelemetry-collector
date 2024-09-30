@@ -317,7 +317,9 @@ func (b *shard) sendItems(trigger trigger) {
 	numItemsBefore := b.totalSent
 	numItemsAfter := b.totalSent + uint64(sent)
 
-	// The current batch can contain items from several different producers. Ensure each producer gets a response back.
+	// The current batch can contain items from several different
+	// producers.  Update pending to correctly track contexts
+	// included in the current batch.
 	for len(b.pending) > 0 && numItemsBefore < numItemsAfter {
 		if numItemsBefore+uint64(b.pending[0].numItems) > numItemsAfter {
 			// Waiter only had some items in the current batch
@@ -329,19 +331,16 @@ func (b *shard) sendItems(trigger trigger) {
 				ctx:   b.pending[0].parentCtx,
 			})
 		} else {
-			// waiter gets a complete response.
+			// This item will be completely processed.
 			numItemsBefore += uint64(b.pending[0].numItems)
 			thisBatch = append(thisBatch, pendingTuple{
 				count: b.pending[0].numItems,
 				ctx:   b.pending[0].parentCtx,
 			})
 
-			// complete response sent so b.pending[0] can be popped from queue.
-			if len(b.pending) > 1 {
-				b.pending = b.pending[1:]
-			} else {
-				b.pending = []pendingItem{}
-			}
+			// Shift the pending array, to allow it to be re-used.
+			copy(b.pending[0:len(b.pending)-1], b.pending[1:])
+			b.pending = b.pending[:len(b.pending)-1]
 		}
 	}
 
