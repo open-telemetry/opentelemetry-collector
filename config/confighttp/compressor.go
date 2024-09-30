@@ -9,8 +9,6 @@ import (
 	"compress/zlib"
 	"errors"
 	"io"
-	"strconv"
-	"strings"
 	"sync"
 
 	"github.com/golang/snappy"
@@ -28,41 +26,26 @@ type compressor struct {
 	pool sync.Pool
 }
 
-// Gets the compression type and level from the configuration.
-func getCompression(compressionField configcompression.Type) (compressionType configcompression.Type, compressionLevel int) {
-	parts := strings.Split(string(compressionField), "/")
-
-	compressionLevel = zlib.DefaultCompression
-	compressionType = configcompression.Type(parts[0])
-	if len(parts) > 1 {
-		levelStr := parts[1]
-		if level, err := strconv.Atoi(levelStr); err == nil {
-			compressionLevel = level
-		}
-	}
-	return compressionType, compressionLevel
-}
-
 // writerFactory defines writer field in CompressRoundTripper.
 // The validity of input is already checked when NewCompressRoundTripper was called in confighttp,
-func newCompressor(compressionType configcompression.Type) (*compressor, error) {
-	compressionType, compressionLevel := getCompression(compressionType)
+func newCompressor(compressionType configcompression.TypeWithLevel) (*compressor, error) {
+	// compressionType, compressionLevel := getCompression(compressionType)
 
-	switch compressionType {
+	switch compressionType.Type {
 	case configcompression.TypeGzip:
 		var _ writeCloserReset = (*gzip.Writer)(nil)
-		return &compressor{pool: sync.Pool{New: func() any { w, _ := gzip.NewWriterLevel(nil, compressionLevel); return w }}}, nil
+		return &compressor{pool: sync.Pool{New: func() any { w, _ := gzip.NewWriterLevel(nil, int(compressionType.Level)); return w }}}, nil
 	case configcompression.TypeSnappy:
 		var _ writeCloserReset = (*snappy.Writer)(nil)
 		return &compressor{pool: sync.Pool{New: func() any { return snappy.NewBufferedWriter(nil) }}}, nil
 	case configcompression.TypeZstd:
 		var _ writeCloserReset = (*zstd.Encoder)(nil)
-		compression := zstd.EncoderLevelFromZstd(compressionLevel)
+		compression := zstd.EncoderLevelFromZstd(int(compressionType.Level))
 		encoderLevel := zstd.WithEncoderLevel(compression)
 		return &compressor{pool: sync.Pool{New: func() any { zw, _ := zstd.NewWriter(nil, zstd.WithEncoderConcurrency(1), encoderLevel); return zw }}}, nil
 	case configcompression.TypeZlib, configcompression.TypeDeflate:
 		var _ writeCloserReset = (*zlib.Writer)(nil)
-		return &compressor{pool: sync.Pool{New: func() any { w, _ := zlib.NewWriterLevel(nil, compressionLevel); return w }}}, nil
+		return &compressor{pool: sync.Pool{New: func() any { w, _ := zlib.NewWriterLevel(nil, int(compressionType.Level)); return w }}}, nil
 	}
 	return nil, errors.New("unsupported compression type")
 }
