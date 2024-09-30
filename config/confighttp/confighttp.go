@@ -4,7 +4,6 @@
 package confighttp // import "go.opentelemetry.io/collector/config/confighttp"
 
 import (
-	"compress/zlib"
 	"context"
 	"crypto/tls"
 	"errors"
@@ -14,8 +13,6 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/rs/cors"
@@ -70,7 +67,7 @@ type ClientConfig struct {
 	Auth *configauth.Authentication `mapstructure:"auth"`
 
 	// The compression key for supported compression types within collector.
-	Compression configcompression.TypeWithLevel `mapstructure:"compression"`
+	Compression configcompression.Type `mapstructure:"compression"`
 
 	// MaxIdleConns is used to set a limit to the maximum idle HTTP connections the client can keep open.
 	// By default, it is set to 100.
@@ -133,21 +130,6 @@ func NewDefaultClientConfig() ClientConfig {
 		MaxConnsPerHost:     &defaultTransport.MaxConnsPerHost,
 		IdleConnTimeout:     &defaultTransport.IdleConnTimeout,
 	}
-}
-
-// Gets the compression type and level from the configuration.
-func getCompression(compressionField configcompression.Type) (compressionType configcompression.Type, compressionLevel configcompression.Level) {
-	parts := strings.Split(string(compressionField), "/")
-
-	compressionLevel = zlib.DefaultCompression
-	compressionType = configcompression.Type(parts[0])
-	if len(parts) > 1 {
-		levelStr := parts[1]
-		if level, err := strconv.Atoi(levelStr); err == nil {
-			compressionLevel = configcompression.Level(level)
-		}
-	}
-	return compressionType, compressionLevel
 }
 
 // ToClient creates an HTTP client.
@@ -234,13 +216,12 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 
 	// Compress the body using specified compression methods if non-empty string is provided.
 	// Supporting gzip, zlib, deflate, snappy, and zstd; none is treated as uncompressed.
-	// compressionType, compressionLevel := getCompression(hcs.Compression.Type)
-	// compressionTypeWithLevel := configcompression.TypeWithLevel{compressionType, compressionLevel}
-	compressionTypeWithLevel, err := hcs.Compression.UnmarshalText()
+	var compressionTypeWithLevel configcompression.TypeWithLevel
+	err = compressionTypeWithLevel.UnmarshalText([]byte(hcs.Compression))
 	if err != nil {
 		return nil, err
 	}
-	if hcs.Compression.Type.IsCompressed() {
+	if hcs.Compression.IsCompressed() {
 		clientTransport, err = newCompressRoundTripper(clientTransport, compressionTypeWithLevel)
 		if err != nil {
 			return nil, err

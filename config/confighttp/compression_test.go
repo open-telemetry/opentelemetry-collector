@@ -36,51 +36,58 @@ func TestHTTPClientCompression(t *testing.T) {
 	compressedZstdBody := compressZstd(t, testBody)
 	compressedLz4Body := compressLz4(t, testBody)
 
+	const (
+		GzipLevel    configcompression.Type = "gzip/1"
+		ZlibLevel    configcompression.Type = "zlib/1"
+		DeflateLevel configcompression.Type = "deflate/1"
+		ZstdLevel    configcompression.Type = "zstd/11"
+	)
+
 	tests := []struct {
 		name        string
-		encoding    configcompression.TypeWithLevel
+		encoding    configcompression.Type
 		reqBody     []byte
 		shouldError bool
 	}{
 		{
 			name:        "ValidEmpty",
-			encoding:    configcompression.TypeWithLevel{Type: configcompression.Type(""), Level: 0},
+			encoding:    "",
 			reqBody:     testBody,
 			shouldError: false,
 		},
 		{
 			name:        "ValidNone",
-			encoding:    configcompression.TypeWithLevel{Type: configcompression.Type("none"), Level: 0},
+			encoding:    "none",
 			reqBody:     testBody,
 			shouldError: false,
 		},
 		{
 			name:        "ValidGzip",
-			encoding:    configcompression.TypeWithLevel{Type: configcompression.TypeGzip, Level: gzip.BestSpeed},
+			encoding:    GzipLevel,
 			reqBody:     compressedGzipBody.Bytes(),
 			shouldError: false,
 		},
 		{
 			name:        "ValidZlib",
-			encoding:    configcompression.TypeWithLevel{Type: configcompression.TypeZlib, Level: zlib.BestSpeed},
+			encoding:    ZlibLevel,
 			reqBody:     compressedZlibBody.Bytes(),
 			shouldError: false,
 		},
 		{
 			name:        "ValidDeflate",
-			encoding:    configcompression.TypeWithLevel{Type: configcompression.TypeDeflate, Level: zlib.BestSpeed},
+			encoding:    DeflateLevel,
 			reqBody:     compressedDeflateBody.Bytes(),
 			shouldError: false,
 		},
 		{
 			name:        "ValidSnappy",
-			encoding:    configcompression.TypeWithLevel{Type: configcompression.TypeSnappy, Level: 0},
+			encoding:    configcompression.TypeSnappy,
 			reqBody:     compressedSnappyBody.Bytes(),
 			shouldError: false,
 		},
 		{
 			name:        "ValidZstd",
-			encoding:    configcompression.TypeWithLevel{Type: configcompression.TypeZstd, Level: 11},
+			encoding:    ZstdLevel,
 			reqBody:     compressedZstdBody.Bytes(),
 			shouldError: false,
 		},
@@ -304,7 +311,7 @@ func TestHTTPContentCompressionRequestWithNilBody(t *testing.T) {
 	require.NoError(t, err, "failed to create request to test handler")
 
 	client := http.Client{}
-	compression := configcompression.TypeWithLevel{configcompression.TypeGzip, gzip.BestSpeed}
+	compression := configcompression.TypeWithLevel{Type: configcompression.TypeGzip, Level: gzip.BestSpeed}
 	client.Transport, err = newCompressRoundTripper(http.DefaultTransport, compression)
 	require.NoError(t, err)
 	res, err := client.Do(req)
@@ -325,7 +332,7 @@ func TestHTTPContentCompressionCopyError(t *testing.T) {
 	require.NoError(t, err)
 
 	client := srv.Client()
-	compression := configcompression.TypeWithLevel{configcompression.TypeGzip, zlib.DefaultCompression}
+	compression := configcompression.TypeWithLevel{Type: configcompression.TypeGzip, Level: zlib.DefaultCompression}
 	client.Transport, err = newCompressRoundTripper(http.DefaultTransport, compression)
 	require.NoError(t, err)
 	_, err = client.Do(req)
@@ -350,7 +357,7 @@ func TestHTTPContentCompressionRequestBodyCloseError(t *testing.T) {
 	require.NoError(t, err)
 
 	client := srv.Client()
-	compression := configcompression.TypeWithLevel{configcompression.TypeGzip, zlib.DefaultCompression}
+	compression := configcompression.TypeWithLevel{Type: configcompression.TypeGzip, Level: zlib.DefaultCompression}
 	client.Transport, err = newCompressRoundTripper(http.DefaultTransport, compression)
 	require.NoError(t, err)
 	_, err = client.Do(req)

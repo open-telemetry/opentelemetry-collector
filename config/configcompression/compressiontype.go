@@ -5,6 +5,8 @@ package configcompression // import "go.opentelemetry.io/collector/config/config
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/klauspost/compress/zlib"
 )
@@ -14,8 +16,8 @@ type Type string
 type Level int
 
 type TypeWithLevel struct {
-	Type  Type  `mapstructure:"type"`
-	Level Level `mapstructure:"level"`
+	Type  Type
+	Level Level
 }
 
 const (
@@ -35,20 +37,39 @@ func (ct *Type) IsCompressed() bool {
 	return *ct != typeEmpty && *ct != typeNone
 }
 
-func (ct *TypeWithLevel) UnmarshalText() (TypeWithLevel, error) {
-	typ := ct.Type
-	if (typ == TypeGzip && isValidLevel(int(ct.Level))) ||
-		(typ == TypeZlib && isValidLevel(int(ct.Level))) ||
-		(typ == TypeDeflate && isValidLevel(int(ct.Level))) ||
-		typ == TypeSnappy ||
-		typ == TypeZstd ||
-		typ == TypeLz4 ||
-		typ == typeNone ||
-		typ == typeEmpty {
-		return TypeWithLevel{Type: typ, Level: ct.Level}, nil
+func (ct *TypeWithLevel) UnmarshalText(in []byte) error {
+	var compressionTyp Type
+	var level int
+	var err error
+	parts := strings.Split(string(in), "/")
+	compressionTyp = Type(parts[0])
+	level = zlib.DefaultCompression
+	if len(parts) > 1 {
+		level, err = strconv.Atoi(parts[1])
+		if err != nil {
+			return fmt.Errorf("invalid compression level: %q", parts[1])
+		}
+		if compressionTyp == TypeSnappy ||
+			compressionTyp == typeNone ||
+			compressionTyp == typeEmpty {
+			return fmt.Errorf("compression level is not supported for %q", compressionTyp)
+		}
+	}
+	ct.Level = Level(level)
+	if (compressionTyp == TypeGzip && isValidLevel(level)) ||
+		(compressionTyp == TypeZlib && isValidLevel(level)) ||
+		(compressionTyp == TypeDeflate && isValidLevel(level)) ||
+		compressionTyp == TypeSnappy ||
+		compressionTyp == TypeZstd ||
+		compressionTyp == typeNone ||
+		compressionTyp == typeEmpty {
+		ct.Level = Level(level)
+		ct.Type = compressionTyp
+		return nil
 	}
 
-	return TypeWithLevel{Type: typ, Level: ct.Level}, fmt.Errorf("unsupported compression type/level %q/%q", typ, ct.Level)
+	return fmt.Errorf("unsupported compression type/level %s/%d", compressionTyp, ct.Level)
+
 }
 
 func isValidLevel(level int) bool {

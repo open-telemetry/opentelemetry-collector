@@ -5,7 +5,6 @@ package confighttp
 
 import (
 	"bytes"
-	"compress/zlib"
 	"context"
 	"errors"
 	"fmt"
@@ -85,7 +84,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				MaxIdleConnsPerHost:  &maxIdleConnsPerHost,
 				MaxConnsPerHost:      &maxConnsPerHost,
 				IdleConnTimeout:      &idleConnTimeout,
-				Compression:          configcompression.TypeWithLevel{"", zlib.DefaultCompression},
+				Compression:          "",
 				DisableKeepAlives:    true,
 				Cookies:              &CookiesConfig{Enabled: true},
 				HTTP2ReadIdleTimeout: idleConnTimeout,
@@ -106,7 +105,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				MaxIdleConnsPerHost:  &maxIdleConnsPerHost,
 				MaxConnsPerHost:      &maxConnsPerHost,
 				IdleConnTimeout:      &idleConnTimeout,
-				Compression:          configcompression.TypeWithLevel{"none", zlib.DefaultCompression},
+				Compression:          "none",
 				DisableKeepAlives:    true,
 				HTTP2ReadIdleTimeout: idleConnTimeout,
 				HTTP2PingTimeout:     http2PingTimeout,
@@ -126,7 +125,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				MaxIdleConnsPerHost:  &maxIdleConnsPerHost,
 				MaxConnsPerHost:      &maxConnsPerHost,
 				IdleConnTimeout:      &idleConnTimeout,
-				Compression:          configcompression.TypeWithLevel{"gzip", zlib.DefaultCompression},
+				Compression:          "gzip",
 				DisableKeepAlives:    true,
 				HTTP2ReadIdleTimeout: idleConnTimeout,
 				HTTP2PingTimeout:     http2PingTimeout,
@@ -146,12 +145,32 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				MaxIdleConnsPerHost:  &maxIdleConnsPerHost,
 				MaxConnsPerHost:      &maxConnsPerHost,
 				IdleConnTimeout:      &idleConnTimeout,
-				Compression:          configcompression.TypeWithLevel{"gzip", zlib.DefaultCompression},
+				Compression:          "gzip",
 				DisableKeepAlives:    true,
 				HTTP2ReadIdleTimeout: idleConnTimeout,
 				HTTP2PingTimeout:     http2PingTimeout,
 			},
 			shouldError: false,
+		},
+		{
+			name: "invalid_settings_http2_health_check",
+			settings: ClientConfig{
+				Endpoint: "localhost:1234",
+				TLSSetting: configtls.ClientConfig{
+					Insecure: false,
+				},
+				ReadBufferSize:       1024,
+				WriteBufferSize:      512,
+				MaxIdleConns:         &maxIdleConns,
+				MaxIdleConnsPerHost:  &maxIdleConnsPerHost,
+				MaxConnsPerHost:      &maxConnsPerHost,
+				IdleConnTimeout:      &idleConnTimeout,
+				Compression:          "gzip/ten",
+				DisableKeepAlives:    true,
+				HTTP2ReadIdleTimeout: idleConnTimeout,
+				HTTP2PingTimeout:     http2PingTimeout,
+			},
+			shouldError: true,
 		},
 	}
 
@@ -413,7 +432,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			settings: ClientConfig{
 				Endpoint:    "localhost:1234",
 				Auth:        &configauth.Authentication{AuthenticatorID: component.MustNewID("mock")},
-				Compression: configcompression.TypeWithLevel{configcompression.TypeGzip, zlib.DefaultCompression},
+				Compression: configcompression.TypeGzip,
 			},
 			shouldErr: false,
 			host: &mockHost{
@@ -450,10 +469,10 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			transport := client.Transport
 
 			// Compression should wrap Auth, unwrap it
-			if tt.settings.Compression.Type.IsCompressed() {
+			if tt.settings.Compression.IsCompressed() {
 				ct, ok := transport.(*compressRoundTripper)
 				assert.True(t, ok)
-				assert.Equal(t, tt.settings.Compression, ct.compressionType)
+				assert.Equal(t, tt.settings.Compression, ct.compressionType.Type)
 				transport = ct.rt
 			}
 
