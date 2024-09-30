@@ -269,13 +269,13 @@ func (b *shard) sendItems(trigger trigger) {
 	err := b.batch.export(b.exportCtx, req)
 	if err != nil {
 		b.processor.logger.Warn("Sender failed", zap.Error(err))
-	} else {
-		var bytes int
-		if b.processor.telemetry.detailed {
-			bytes = b.batch.sizeBytes(req)
-		}
-		b.processor.telemetry.record(trigger, int64(sent), int64(bytes))
+		return
 	}
+	var bytes int
+	if b.processor.telemetry.detailed {
+		bytes = b.batch.sizeBytes(req)
+	}
+	b.processor.telemetry.record(trigger, int64(sent), int64(bytes))
 }
 
 // singleShardBatcher is used when metadataKeys is empty, to avoid the
