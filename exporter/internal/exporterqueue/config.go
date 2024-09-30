@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package exporterqueue
+package exporterqueue // import "go.opentelemetry.io/collector/exporter/internal/exporterqueue"
 
 import (
 	"errors"
