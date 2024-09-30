@@ -92,9 +92,9 @@ func newComponentsCommand(set CollectorSettings) *cobra.Command {
 					Name:   rcv.Type(),
 					Module: factories.ReceiverModules[rcv.Type()],
 					Stability: map[string]string{
-						"logs":    rcv.LogsReceiverStability().String(),
-						"metrics": rcv.MetricsReceiverStability().String(),
-						"traces":  rcv.TracesReceiverStability().String(),
+						"logs":    rcv.LogsStability().String(),
+						"metrics": rcv.MetricsStability().String(),
+						"traces":  rcv.TracesStability().String(),
 					},
 				})
 			}

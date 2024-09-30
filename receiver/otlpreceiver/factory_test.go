@@ -36,19 +36,19 @@ func TestCreateSameReceiver(t *testing.T) {
 	cfg.HTTP.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	creationSet := receivertest.NewNopSettings()
-	tReceiver, err := factory.CreateTracesReceiver(context.Background(), creationSet, cfg, consumertest.NewNop())
+	tReceiver, err := factory.CreateTraces(context.Background(), creationSet, cfg, consumertest.NewNop())
 	assert.NotNil(t, tReceiver)
 	require.NoError(t, err)
 
-	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), creationSet, cfg, consumertest.NewNop())
+	mReceiver, err := factory.CreateMetrics(context.Background(), creationSet, cfg, consumertest.NewNop())
 	assert.NotNil(t, mReceiver)
 	require.NoError(t, err)
 
-	lReceiver, err := factory.CreateMetricsReceiver(context.Background(), creationSet, cfg, consumertest.NewNop())
+	lReceiver, err := factory.CreateMetrics(context.Background(), creationSet, cfg, consumertest.NewNop())
 	assert.NotNil(t, lReceiver)
 	require.NoError(t, err)
 
-	pReceiver, err := factory.(receiverprofiles.Factory).CreateProfilesReceiver(context.Background(), creationSet, cfg, consumertest.NewNop())
+	pReceiver, err := factory.(receiverprofiles.Factory).CreateProfiles(context.Background(), creationSet, cfg, consumertest.NewNop())
 	assert.NotNil(t, pReceiver)
 	require.NoError(t, err)
 
@@ -57,7 +57,7 @@ func TestCreateSameReceiver(t *testing.T) {
 	assert.Same(t, tReceiver, pReceiver)
 }
 
-func TestCreateTracesReceiver(t *testing.T) {
+func TestCreateTraces(t *testing.T) {
 	factory := NewFactory()
 	defaultGRPCSettings := &configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
@@ -135,7 +135,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 	creationSet := receivertest.NewNopSettings()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tr, err := factory.CreateTracesReceiver(ctx, creationSet, tt.cfg, tt.sink)
+			tr, err := factory.CreateTraces(ctx, creationSet, tt.cfg, tt.sink)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return
@@ -151,7 +151,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 	}
 }
 
-func TestCreateMetricReceiver(t *testing.T) {
+func TestCreateMetric(t *testing.T) {
 	factory := NewFactory()
 	defaultGRPCSettings := &configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
@@ -229,7 +229,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 	creationSet := receivertest.NewNopSettings()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mr, err := factory.CreateMetricsReceiver(ctx, creationSet, tt.cfg, tt.sink)
+			mr, err := factory.CreateMetrics(ctx, creationSet, tt.cfg, tt.sink)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return
@@ -245,7 +245,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 	}
 }
 
-func TestCreateLogReceiver(t *testing.T) {
+func TestCreateLogs(t *testing.T) {
 	factory := NewFactory()
 	defaultGRPCSettings := &configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
@@ -323,7 +323,7 @@ func TestCreateLogReceiver(t *testing.T) {
 	creationSet := receivertest.NewNopSettings()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mr, err := factory.CreateLogsReceiver(ctx, creationSet, tt.cfg, tt.sink)
+			mr, err := factory.CreateLogs(ctx, creationSet, tt.cfg, tt.sink)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return
@@ -339,7 +339,7 @@ func TestCreateLogReceiver(t *testing.T) {
 	}
 }
 
-func TestCreateProfilesReceiver(t *testing.T) {
+func TestCreateProfiles(t *testing.T) {
 	factory := NewFactory()
 	defaultGRPCSettings := &configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
@@ -416,7 +416,7 @@ func TestCreateProfilesReceiver(t *testing.T) {
 	creationSet := receivertest.NewNopSettings()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tr, err := factory.(receiverprofiles.Factory).CreateProfilesReceiver(ctx, creationSet, tt.cfg, tt.sink)
+			tr, err := factory.(receiverprofiles.Factory).CreateProfiles(ctx, creationSet, tt.cfg, tt.sink)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return

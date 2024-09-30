@@ -23,11 +23,11 @@ func TestNewFactory(t *testing.T) {
 		func() component.Config { return &defaultCfg })
 	assert.EqualValues(t, testType, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
-	_, err := factory.CreateTracesReceiver(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
+	_, err := factory.CreateTraces(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
 	require.Error(t, err)
-	_, err = factory.CreateMetricsReceiver(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
+	_, err = factory.CreateMetrics(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
 	require.Error(t, err)
-	_, err = factory.CreateLogsReceiver(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
+	_, err = factory.CreateLogs(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
 	assert.Error(t, err)
 }
 
@@ -43,16 +43,16 @@ func TestNewFactoryWithOptions(t *testing.T) {
 	assert.EqualValues(t, testType, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
-	assert.Equal(t, component.StabilityLevelDeprecated, factory.TracesReceiverStability())
-	_, err := factory.CreateTracesReceiver(context.Background(), Settings{}, &defaultCfg, nil)
+	assert.Equal(t, component.StabilityLevelDeprecated, factory.TracesStability())
+	_, err := factory.CreateTraces(context.Background(), Settings{}, &defaultCfg, nil)
 	require.NoError(t, err)
 
-	assert.Equal(t, component.StabilityLevelAlpha, factory.MetricsReceiverStability())
-	_, err = factory.CreateMetricsReceiver(context.Background(), Settings{}, &defaultCfg, nil)
+	assert.Equal(t, component.StabilityLevelAlpha, factory.MetricsStability())
+	_, err = factory.CreateMetrics(context.Background(), Settings{}, &defaultCfg, nil)
 	require.NoError(t, err)
 
-	assert.Equal(t, component.StabilityLevelStable, factory.LogsReceiverStability())
-	_, err = factory.CreateLogsReceiver(context.Background(), Settings{}, &defaultCfg, nil)
+	assert.Equal(t, component.StabilityLevelStable, factory.LogsStability())
+	_, err = factory.CreateLogs(context.Background(), Settings{}, &defaultCfg, nil)
 	assert.NoError(t, err)
 }
 
