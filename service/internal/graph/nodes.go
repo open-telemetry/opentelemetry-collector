@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
 	"go.opentelemetry.io/collector/service/internal/components"
+	"go.opentelemetry.io/collector/service/internal/graph/internal/metadata"
 )
 
 const (
@@ -73,6 +74,7 @@ func newReceiverNode(pipelineType pipeline.Signal, recvID component.ID) *receive
 }
 
 func (n *receiverNode) buildComponent(ctx context.Context,
+	tb *metadata.TelemetryBuilder,
 	tel component.TelemetrySettings,
 	info component.BuildInfo,
 	builder *builders.ReceiverBuilder,
@@ -87,19 +89,31 @@ func (n *receiverNode) buildComponent(ctx context.Context,
 		for _, next := range nexts {
 			consumers = append(consumers, next.(consumer.Traces))
 		}
-		n.Component, err = builder.CreateTraces(ctx, set, fanoutconsumer.NewTraces(consumers))
+		n.Component, err = builder.CreateTraces(ctx, set, obsTracesConsumer{
+			Traces:      fanoutconsumer.NewTraces(consumers),
+			itemCounter: tb.ReceiverOutgoingItems,
+			// TODO add attributes
+		})
 	case pipeline.SignalMetrics:
 		var consumers []consumer.Metrics
 		for _, next := range nexts {
 			consumers = append(consumers, next.(consumer.Metrics))
 		}
-		n.Component, err = builder.CreateMetrics(ctx, set, fanoutconsumer.NewMetrics(consumers))
+		n.Component, err = builder.CreateMetrics(ctx, set, obsMetricsConsumer{
+			Metrics:     fanoutconsumer.NewMetrics(consumers),
+			itemCounter: tb.ReceiverOutgoingItems,
+			// TODO add attributes
+		})
 	case pipeline.SignalLogs:
 		var consumers []consumer.Logs
 		for _, next := range nexts {
 			consumers = append(consumers, next.(consumer.Logs))
 		}
-		n.Component, err = builder.CreateLogs(ctx, set, fanoutconsumer.NewLogs(consumers))
+		n.Component, err = builder.CreateLogs(ctx, set, obsLogsConsumer{
+			Logs:        fanoutconsumer.NewLogs(consumers),
+			itemCounter: tb.ReceiverOutgoingItems,
+			// TODO add attributes
+		})
 	case componentprofiles.SignalProfiles:
 		var consumers []consumerprofiles.Profiles
 		for _, next := range nexts {
@@ -139,6 +153,7 @@ func (n *processorNode) getConsumer() baseConsumer {
 }
 
 func (n *processorNode) buildComponent(ctx context.Context,
+	tb *metadata.TelemetryBuilder,
 	tel component.TelemetrySettings,
 	info component.BuildInfo,
 	builder *builders.ProcessorBuilder,
@@ -146,21 +161,58 @@ func (n *processorNode) buildComponent(ctx context.Context,
 ) error {
 	tel.Logger = components.ProcessorLogger(tel.Logger, n.componentID, n.pipelineID)
 	set := processor.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
-	var err error
+
 	switch n.pipelineID.Signal() {
 	case pipeline.SignalTraces:
-		n.Component, err = builder.CreateTraces(ctx, set, next.(consumer.Traces))
+		c, err := builder.CreateTraces(ctx, set, obsTracesConsumer{
+			Traces:      next.(consumer.Traces),
+			itemCounter: tb.ProcessorOutgoingItems,
+			// TODO add attributes
+		})
+		if err != nil {
+			return fmt.Errorf("failed to create %q processor, in pipeline %q: %w", set.ID, n.pipelineID.String(), err)
+		}
+		n.Component = obsTracesProcessor{
+			Traces:      c.(processor.Traces),
+			itemCounter: tb.ProcessorIncomingItems,
+			// TODO add attributes
+		}
 	case pipeline.SignalMetrics:
-		n.Component, err = builder.CreateMetrics(ctx, set, next.(consumer.Metrics))
+		c, err := builder.CreateMetrics(ctx, set, obsMetricsConsumer{
+			Metrics:     next.(consumer.Metrics),
+			itemCounter: tb.ProcessorOutgoingItems,
+			// TODO add attributes
+		})
+		if err != nil {
+			return fmt.Errorf("failed to create %q processor, in pipeline %q: %w", set.ID, n.pipelineID.String(), err)
+		}
+		n.Component = obsMetricsProcessor{
+			Metrics:     c.(processor.Metrics),
+			itemCounter: tb.ProcessorIncomingItems,
+			// TODO add attributes
+		}
 	case pipeline.SignalLogs:
-		n.Component, err = builder.CreateLogs(ctx, set, next.(consumer.Logs))
+		c, err := builder.CreateLogs(ctx, set, obsLogsConsumer{
+			Logs:        next.(consumer.Logs),
+			itemCounter: tb.ProcessorOutgoingItems,
+			// TODO add attributes
+		})
+		if err != nil {
+			return fmt.Errorf("failed to create %q processor, in pipeline %q: %w", set.ID, n.pipelineID.String(), err)
+		}
+		n.Component = obsLogsProcessor{
+			Logs:        c.(processor.Logs),
+			itemCounter: tb.ProcessorIncomingItems,
+			// TODO add attributes
+		}
 	case componentprofiles.SignalProfiles:
-		n.Component, err = builder.CreateProfiles(ctx, set, next.(consumerprofiles.Profiles))
+		c, err := builder.CreateProfiles(ctx, set, next.(consumerprofiles.Profiles))
+		if err != nil {
+			return fmt.Errorf("failed to create %q processor, in pipeline %q: %w", set.ID, n.pipelineID.String(), err)
+		}
+		n.Component = c
 	default:
 		return fmt.Errorf("error creating processor %q in pipeline %q, data type %q is not supported", set.ID, n.pipelineID.String(), n.pipelineID.Signal())
-	}
-	if err != nil {
-		return fmt.Errorf("failed to create %q processor, in pipeline %q: %w", set.ID, n.pipelineID.String(), err)
 	}
 	return nil
 }
@@ -190,28 +242,55 @@ func (n *exporterNode) getConsumer() baseConsumer {
 
 func (n *exporterNode) buildComponent(
 	ctx context.Context,
+	tb *metadata.TelemetryBuilder,
 	tel component.TelemetrySettings,
 	info component.BuildInfo,
 	builder *builders.ExporterBuilder,
 ) error {
 	tel.Logger = components.ExporterLogger(tel.Logger, n.componentID, n.pipelineType)
 	set := exporter.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
-	var err error
+
 	switch n.pipelineType {
 	case pipeline.SignalTraces:
-		n.Component, err = builder.CreateTraces(ctx, set)
+		c, err := builder.CreateTraces(ctx, set)
+		if err != nil {
+			return fmt.Errorf("failed to create %q exporter for data type %q: %w", set.ID, n.pipelineType, err)
+		}
+		n.Component = obsTracesExporter{
+			Traces:      c.(exporter.Traces),
+			itemCounter: tb.ExporterIncomingItems,
+			// TODO add attributes
+		}
 	case pipeline.SignalMetrics:
-		n.Component, err = builder.CreateMetrics(ctx, set)
+		c, err := builder.CreateMetrics(ctx, set)
+		if err != nil {
+			return fmt.Errorf("failed to create %q exporter for data type %q: %w", set.ID, n.pipelineType, err)
+		}
+		n.Component = obsMetricsExporter{
+			Metrics:     c.(exporter.Metrics),
+			itemCounter: tb.ExporterIncomingItems,
+			// TODO add attributes
+		}
 	case pipeline.SignalLogs:
-		n.Component, err = builder.CreateLogs(ctx, set)
+		c, err := builder.CreateLogs(ctx, set)
+		if err != nil {
+			return fmt.Errorf("failed to create %q exporter for data type %q: %w", set.ID, n.pipelineType, err)
+		}
+		n.Component = obsLogsExporter{
+			Logs:        c.(exporter.Logs),
+			itemCounter: tb.ExporterIncomingItems,
+			// TODO add attributes
+		}
 	case componentprofiles.SignalProfiles:
-		n.Component, err = builder.CreateProfiles(ctx, set)
+		c, err := builder.CreateProfiles(ctx, set)
+		if err != nil {
+			return fmt.Errorf("failed to create %q exporter for data type %q: %w", set.ID, n.pipelineType, err)
+		}
+		n.Component = c
 	default:
 		return fmt.Errorf("error creating exporter %q for data type %q is not supported", set.ID, n.pipelineType)
 	}
-	if err != nil {
-		return fmt.Errorf("failed to create %q exporter for data type %q: %w", set.ID, n.pipelineType, err)
-	}
+
 	return nil
 }
 
@@ -243,6 +322,7 @@ func (n *connectorNode) getConsumer() baseConsumer {
 
 func (n *connectorNode) buildComponent(
 	ctx context.Context,
+	tb *metadata.TelemetryBuilder,
 	tel component.TelemetrySettings,
 	info component.BuildInfo,
 	builder *builders.ConnectorBuilder,
@@ -259,7 +339,11 @@ func (n *connectorNode) buildComponent(
 			consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Traces)
 			capability.MutatesData = capability.MutatesData || next.Capabilities().MutatesData
 		}
-		next := connector.NewTracesRouter(consumers)
+		next := obsTracesConsumer{
+			Traces:      connector.NewTracesRouter(consumers),
+			itemCounter: tb.ConnectorOutgoingItems,
+			// TODO add attributes
+		}
 
 		switch n.exprPipelineType {
 		case pipeline.SignalTraces:
@@ -267,25 +351,40 @@ func (n *connectorNode) buildComponent(
 			if err != nil {
 				return err
 			}
-			n.Component = conn
+			obsConn := obsTracesConnector{
+				Traces:      conn,
+				itemCounter: tb.ConnectorIncomingItems,
+				// TODO add attributes
+			}
+			n.Component = obsConn
 			// When connecting pipelines of the same data type, the connector must
 			// inherit the capabilities of pipelines in which it is acting as a receiver.
 			// Since the incoming and outgoing data types are the same, we must also consider
 			// that the connector itself may MutatesData.
-			capability.MutatesData = capability.MutatesData || conn.Capabilities().MutatesData
-			n.baseConsumer = capabilityconsumer.NewTraces(conn, capability)
+			capability.MutatesData = capability.MutatesData || obsConn.Capabilities().MutatesData
+			n.baseConsumer = capabilityconsumer.NewTraces(obsConn, capability)
 		case pipeline.SignalMetrics:
 			conn, err := builder.CreateMetricsToTraces(ctx, set, next)
 			if err != nil {
 				return err
 			}
-			n.Component, n.baseConsumer = conn, conn
+			obsConn := obsMetricsConnector{
+				Metrics:     conn,
+				itemCounter: tb.ConnectorIncomingItems,
+				// TODO add attributes
+			}
+			n.Component, n.baseConsumer = obsConn, obsConn
 		case pipeline.SignalLogs:
 			conn, err := builder.CreateLogsToTraces(ctx, set, next)
 			if err != nil {
 				return err
 			}
-			n.Component, n.baseConsumer = conn, conn
+			obsConn := obsLogsConnector{
+				Logs:        conn,
+				itemCounter: tb.ConnectorIncomingItems,
+				// TODO add attributes
+			}
+			n.Component, n.baseConsumer = obsConn, obsConn
 		case componentprofiles.SignalProfiles:
 			conn, err := builder.CreateProfilesToTraces(ctx, set, next)
 			if err != nil {
@@ -301,7 +400,11 @@ func (n *connectorNode) buildComponent(
 			consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Metrics)
 			capability.MutatesData = capability.MutatesData || next.Capabilities().MutatesData
 		}
-		next := connector.NewMetricsRouter(consumers)
+		next := obsMetricsConsumer{
+			Metrics:     connector.NewMetricsRouter(consumers),
+			itemCounter: tb.ConnectorOutgoingItems,
+			// TODO add attributes
+		}
 
 		switch n.exprPipelineType {
 		case pipeline.SignalTraces:
@@ -309,25 +412,40 @@ func (n *connectorNode) buildComponent(
 			if err != nil {
 				return err
 			}
-			n.Component, n.baseConsumer = conn, conn
+			obsConn := obsTracesConnector{
+				Traces:      conn,
+				itemCounter: tb.ConnectorIncomingItems,
+				// TODO add attributes
+			}
+			n.Component, n.baseConsumer = obsConn, obsConn
 		case pipeline.SignalMetrics:
 			conn, err := builder.CreateMetricsToMetrics(ctx, set, next)
 			if err != nil {
 				return err
 			}
-			n.Component = conn
+			obsConn := obsMetricsConnector{
+				Metrics:     conn,
+				itemCounter: tb.ConnectorIncomingItems,
+				// TODO add attributes
+			}
+			n.Component = obsConn
 			// When connecting pipelines of the same data type, the connector must
 			// inherit the capabilities of pipelines in which it is acting as a receiver.
 			// Since the incoming and outgoing data types are the same, we must also consider
 			// that the connector itself may MutatesData.
-			capability.MutatesData = capability.MutatesData || conn.Capabilities().MutatesData
-			n.baseConsumer = capabilityconsumer.NewMetrics(conn, capability)
+			capability.MutatesData = capability.MutatesData || obsConn.Capabilities().MutatesData
+			n.baseConsumer = capabilityconsumer.NewMetrics(obsConn, capability)
 		case pipeline.SignalLogs:
 			conn, err := builder.CreateLogsToMetrics(ctx, set, next)
 			if err != nil {
 				return err
 			}
-			n.Component, n.baseConsumer = conn, conn
+			obsConn := obsLogsConnector{
+				Logs:        conn,
+				itemCounter: tb.ConnectorIncomingItems,
+				// TODO add attributes
+			}
+			n.Component, n.baseConsumer = obsConn, obsConn
 		case componentprofiles.SignalProfiles:
 			conn, err := builder.CreateProfilesToMetrics(ctx, set, next)
 			if err != nil {
@@ -342,7 +460,11 @@ func (n *connectorNode) buildComponent(
 			consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Logs)
 			capability.MutatesData = capability.MutatesData || next.Capabilities().MutatesData
 		}
-		next := connector.NewLogsRouter(consumers)
+		next := obsLogsConsumer{
+			Logs:        connector.NewLogsRouter(consumers),
+			itemCounter: tb.ConnectorOutgoingItems,
+			// TODO add attributes
+		}
 
 		switch n.exprPipelineType {
 		case pipeline.SignalTraces:
@@ -350,25 +472,40 @@ func (n *connectorNode) buildComponent(
 			if err != nil {
 				return err
 			}
-			n.Component, n.baseConsumer = conn, conn
+			obsConn := obsTracesConnector{
+				Traces:      conn,
+				itemCounter: tb.ConnectorIncomingItems,
+				// TODO add attributes
+			}
+			n.Component, n.baseConsumer = obsConn, obsConn
 		case pipeline.SignalMetrics:
 			conn, err := builder.CreateMetricsToLogs(ctx, set, next)
 			if err != nil {
 				return err
 			}
-			n.Component, n.baseConsumer = conn, conn
+			obsConn := obsMetricsConnector{
+				Metrics:     conn,
+				itemCounter: tb.ConnectorIncomingItems,
+				// TODO add attributes
+			}
+			n.Component, n.baseConsumer = obsConn, obsConn
 		case pipeline.SignalLogs:
 			conn, err := builder.CreateLogsToLogs(ctx, set, next)
 			if err != nil {
 				return err
 			}
-			n.Component = conn
+			obsConn := obsLogsConnector{
+				Logs:        conn,
+				itemCounter: tb.ConnectorIncomingItems,
+				// TODO add attributes
+			}
+			n.Component = obsConn
 			// When connecting pipelines of the same data type, the connector must
 			// inherit the capabilities of pipelines in which it is acting as a receiver.
 			// Since the incoming and outgoing data types are the same, we must also consider
 			// that the connector itself may MutatesData.
-			capability.MutatesData = capability.MutatesData || conn.Capabilities().MutatesData
-			n.baseConsumer = capabilityconsumer.NewLogs(conn, capability)
+			capability.MutatesData = capability.MutatesData || obsConn.Capabilities().MutatesData
+			n.baseConsumer = capabilityconsumer.NewLogs(obsConn, capability)
 		case componentprofiles.SignalProfiles:
 			conn, err := builder.CreateProfilesToLogs(ctx, set, next)
 			if err != nil {

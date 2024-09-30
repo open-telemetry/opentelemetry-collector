@@ -10,6 +10,9 @@
 // [Graph.StartAll] starts all components in each pipeline.
 //
 // [Graph.ShutdownAll] stops all components in each pipeline.
+
+//go:generate mdatagen metadata.yaml
+
 package graph // import "go.opentelemetry.io/collector/service/internal/graph"
 
 import (
@@ -34,6 +37,7 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
+	"go.opentelemetry.io/collector/service/internal/graph/internal/metadata"
 	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/pipelines"
 )
@@ -282,19 +286,24 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 		return cycleErr(err, topo.DirectedCyclesIn(g.componentGraph))
 	}
 
+	tb, err := metadata.NewTelemetryBuilder(set.Telemetry)
+	if err != nil {
+		return err
+	}
+
 	for i := len(nodes) - 1; i >= 0; i-- {
 		node := nodes[i]
 
 		switch n := node.(type) {
 		case *receiverNode:
-			err = n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ReceiverBuilder, g.nextConsumers(n.ID()))
+			err = n.buildComponent(ctx, tb, set.Telemetry, set.BuildInfo, set.ReceiverBuilder, g.nextConsumers(n.ID()))
 		case *processorNode:
 			// nextConsumers is guaranteed to be length 1.  Either it is the next processor or it is the fanout node for the exporters.
-			err = n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ProcessorBuilder, g.nextConsumers(n.ID())[0])
+			err = n.buildComponent(ctx, tb, set.Telemetry, set.BuildInfo, set.ProcessorBuilder, g.nextConsumers(n.ID())[0])
 		case *exporterNode:
-			err = n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ExporterBuilder)
+			err = n.buildComponent(ctx, tb, set.Telemetry, set.BuildInfo, set.ExporterBuilder)
 		case *connectorNode:
-			err = n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ConnectorBuilder, g.nextConsumers(n.ID()))
+			err = n.buildComponent(ctx, tb, set.Telemetry, set.BuildInfo, set.ConnectorBuilder, g.nextConsumers(n.ID()))
 		case *capabilitiesNode:
 			capability := consumer.Capabilities{
 				// The fanOutNode represents the aggregate capabilities of the exporters in the pipeline.
