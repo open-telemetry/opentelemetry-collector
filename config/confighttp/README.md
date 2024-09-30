@@ -28,27 +28,27 @@ README](../configtls/README.md).
   - `none` will be treated as uncompressed, and any other inputs will cause an error.
   - Compression levels can now be configured as part of the compression type like below. Not specifying any compression level will result in the default.
     - `gzip`
-      - NoCompression: `0`
-      - BestSpeed: `1`
-      - BestCompression: `9`
-      - DefaultCompression: `-1`
+      - NoCompression: `gzip/0`
+      - BestSpeed: `gzip/1`
+      - BestCompression: `gzip/9`
+      - DefaultCompression: `gzip/-1`
     - `zlib`
-      - NoCompression: `0`
-      - BestSpeed: `1`
-      - BestCompression: `9`
-      - DefaultCompression: `-1`
+      - NoCompression: `zlib/0`
+      - BestSpeed: `zlib/1`
+      - BestCompression: `zlib/9`
+      - DefaultCompression: `zlib/-1`
     - `deflate`
-      - NoCompression: `0`
-      - BestSpeed: `1`
-      - BestCompression: `9`
-      - DefaultCompression: `-1`
+      - NoCompression: `deflate/0`
+      - BestSpeed: `deflate/1`
+      - BestCompression: `deflate/9`
+      - DefaultCompression: `deflate/-1`
     - `zstd`
-      - SpeedFastest: `1`
-      - SpeedDefault: `3`
-      - SpeedBetterCompression: `6`
-      - SpeedBestCompression: `11`
+      - SpeedFastest: `zstd/1`
+      - SpeedDefault: `zstd/3`
+      - SpeedBetterCompression: `zstd/6`
+      - SpeedBestCompression: `zstd/11`
     - `snappy`
-      No compression levels supported
+      No compression levels supported yet
 - [`max_idle_conns`](https://golang.org/pkg/net/http/#Transport)
 - [`max_idle_conns_per_host`](https://golang.org/pkg/net/http/#Transport)
 - [`max_conns_per_host`](https://golang.org/pkg/net/http/#Transport)
@@ -75,9 +75,7 @@ exporter:
     headers:
       test1: "value1"
       "test 2": "value 2"
-    compression: 
-      type: zstd
-      level: 11
+    compression: zstd
     cookies:
       enabled: true
 ```
