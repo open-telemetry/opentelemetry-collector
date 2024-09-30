@@ -3090,42 +3090,42 @@ func newErrExporterFactory() exporter.Factory {
 }
 
 func newErrConnectorFactory() connector.Factory {
-	return connector.NewFactory(component.MustNewType("err"), func() component.Config {
+	return connectorprofiles.NewFactory(component.MustNewType("err"), func() component.Config {
 		return &struct{}{}
 	},
-		connector.WithTracesToTraces(func(context.Context, connector.Settings, component.Config, consumer.Traces) (connector.Traces, error) {
+		connectorprofiles.WithTracesToTraces(func(context.Context, connector.Settings, component.Config, consumer.Traces) (connector.Traces, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
-		connector.WithTracesToMetrics(func(context.Context, connector.Settings, component.Config, consumer.Metrics) (connector.Traces, error) {
+		connectorprofiles.WithTracesToMetrics(func(context.Context, connector.Settings, component.Config, consumer.Metrics) (connector.Traces, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
-		connector.WithTracesToLogs(func(context.Context, connector.Settings, component.Config, consumer.Logs) (connector.Traces, error) {
+		connectorprofiles.WithTracesToLogs(func(context.Context, connector.Settings, component.Config, consumer.Logs) (connector.Traces, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
 		connectorprofiles.WithTracesToProfiles(func(context.Context, connector.Settings, component.Config, consumerprofiles.Profiles) (connector.Traces, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
 
-		connector.WithMetricsToTraces(func(context.Context, connector.Settings, component.Config, consumer.Traces) (connector.Metrics, error) {
+		connectorprofiles.WithMetricsToTraces(func(context.Context, connector.Settings, component.Config, consumer.Traces) (connector.Metrics, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
-		connector.WithMetricsToMetrics(func(context.Context, connector.Settings, component.Config, consumer.Metrics) (connector.Metrics, error) {
+		connectorprofiles.WithMetricsToMetrics(func(context.Context, connector.Settings, component.Config, consumer.Metrics) (connector.Metrics, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
-		connector.WithMetricsToLogs(func(context.Context, connector.Settings, component.Config, consumer.Logs) (connector.Metrics, error) {
+		connectorprofiles.WithMetricsToLogs(func(context.Context, connector.Settings, component.Config, consumer.Logs) (connector.Metrics, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
 		connectorprofiles.WithMetricsToProfiles(func(context.Context, connector.Settings, component.Config, consumerprofiles.Profiles) (connector.Metrics, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
 
-		connector.WithLogsToTraces(func(context.Context, connector.Settings, component.Config, consumer.Traces) (connector.Logs, error) {
+		connectorprofiles.WithLogsToTraces(func(context.Context, connector.Settings, component.Config, consumer.Traces) (connector.Logs, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
-		connector.WithLogsToMetrics(func(context.Context, connector.Settings, component.Config, consumer.Metrics) (connector.Logs, error) {
+		connectorprofiles.WithLogsToMetrics(func(context.Context, connector.Settings, component.Config, consumer.Metrics) (connector.Logs, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
-		connector.WithLogsToLogs(func(context.Context, connector.Settings, component.Config, consumer.Logs) (connector.Logs, error) {
+		connectorprofiles.WithLogsToLogs(func(context.Context, connector.Settings, component.Config, consumer.Logs) (connector.Logs, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
 		connectorprofiles.WithLogsToProfiles(func(context.Context, connector.Settings, component.Config, consumerprofiles.Profiles) (connector.Logs, error) {
