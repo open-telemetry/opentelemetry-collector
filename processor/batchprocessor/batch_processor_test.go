@@ -1297,7 +1297,7 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 
 func TestBatchLogsProcessor_Timeout(t *testing.T) {
 	cfg := Config{
-		Timeout:       3 * time.Second,
+		Timeout:       100 * time.Millisecond,
 		SendBatchSize: 100,
 	}
 	bg := context.Background()
@@ -1451,8 +1451,8 @@ func TestBatchProcessorSpansBatchedByMetadata(t *testing.T) {
 		spanCountByToken12: map[string]int{},
 	}
 	cfg := createDefaultConfig().(*Config)
-	cfg.SendBatchSize = 100
-	cfg.Timeout = 1 * time.Second
+	cfg.SendBatchSize = 1000
+	cfg.Timeout = 10 * time.Minute
 	cfg.MetadataKeys = []string{"token1", "token2"}
 	creationSet := processortest.NewNopSettings()
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
