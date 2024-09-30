@@ -46,7 +46,6 @@ require (
 	github.com/mostynb/go-grpc-compression v1.2.3 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/collector/client v1.16.0 // indirect
-	go.opentelemetry.io/collector/component/componentprofiles v0.110.0 // indirect
 	go.opentelemetry.io/collector/config/confignet v1.16.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.110.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.110.0 // indirect
