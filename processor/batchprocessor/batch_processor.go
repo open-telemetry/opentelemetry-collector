@@ -61,13 +61,19 @@ type batchProcessor struct {
 
 	telemetry *batchProcessorTelemetry
 
-	//  batcher will be either *singletonBatcher or *multiBatcher
+	// batcher will be either *singletonBatcher or *multiBatcher
 	batcher batcher
 }
 
+// batcher is describes a *singletonBatcher or *multiBatcher.
 type batcher interface {
+	// start initializes background resources used by this batcher.
 	start(ctx context.Context) error
+
+	// consume incorporates a new item of data into the pending batch.
 	consume(ctx context.Context, data any) error
+
+	// currentMetadataCardinality returns the number of shards.
 	currentMetadataCardinality() int
 }
 
