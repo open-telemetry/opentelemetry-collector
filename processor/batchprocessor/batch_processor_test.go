@@ -70,15 +70,6 @@ func sendLogs(ctx context.Context, t *testing.T, batcher processor.Logs, wg *syn
 	}()
 }
 
-func TestErrorWrapping(t *testing.T) {
-	e := countedError{
-		err: fmt.Errorf("oops: %w", testError{}),
-	}
-	require.Error(t, e)
-	require.Contains(t, e.Error(), "oops: test")
-	require.ErrorIs(t, e, testError{})
-}
-
 func TestProcessorShutdown(t *testing.T) {
 	factory := NewFactory()
 

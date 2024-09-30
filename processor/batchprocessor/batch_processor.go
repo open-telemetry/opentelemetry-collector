@@ -140,25 +140,6 @@ type batch interface {
 	sizeBytes(item any) int
 }
 
-// countedError is useful when a producer adds items that are split
-// between multiple batches. This signals that producers should continue
-// waiting until all its items receive a response.
-type countedError struct {
-	err   error
-	count int
-}
-
-func (ce countedError) Error() string {
-	if ce.err == nil {
-		return ""
-	}
-	return fmt.Sprintf("batch error: %s", ce.err.Error())
-}
-
-func (ce countedError) Unwrap() error {
-	return ce.err
-}
-
 var _ consumer.Traces = (*batchProcessor)(nil)
 var _ consumer.Metrics = (*batchProcessor)(nil)
 var _ consumer.Logs = (*batchProcessor)(nil)
@@ -302,8 +283,8 @@ func (b *shard) processItem(item dataItem) {
 func (b *shard) flushItems() {
 	sent := false
 	for b.batch.itemCount() > 0 && (!b.hasTimer() || b.batch.itemCount() >= b.processor.sendBatchSize) {
-		b.sendItems(triggerBatchSize)
 		sent = true
+		b.sendItems(triggerBatchSize)
 	}
 
 	if sent {
