@@ -127,8 +127,6 @@ replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 
 replace go.opentelemetry.io/collector/internal/globalsignal => ../../internal/globalsignal
 
-replace go.opentelemetry.io/collector/component/componentprofiles => ../../component/componentprofiles
-
 replace go.opentelemetry.io/collector => ../..
 
 replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
