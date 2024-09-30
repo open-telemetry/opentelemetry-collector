@@ -103,7 +103,8 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.RequestDuration, err = builder.meters[configtelemetry.LevelBasic].Float64Histogram(
 		"otelcol_request_duration",
 		metric.WithDescription("Duration of request [alpha]"),
-		metric.WithUnit("s"), metric.WithExplicitBucketBoundaries([]float64{1, 10, 100}...),
+		metric.WithUnit("s"),
+		metric.WithExplicitBucketBoundaries([]float64{1, 10, 100}...),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs
