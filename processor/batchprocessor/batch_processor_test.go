@@ -39,12 +39,6 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 )
 
-type testError struct{}
-
-func (testError) Error() string {
-	return "test"
-}
-
 func sendTraces(ctx context.Context, t *testing.T, batcher processor.Traces, wg *sync.WaitGroup, td ptrace.Traces) {
 	wg.Add(1)
 	go func() {
