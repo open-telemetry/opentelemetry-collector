@@ -277,7 +277,7 @@ func TestServiceGetExportersWithSignal(t *testing.T) {
 // and another service with a valid config can be started right after.
 func TestServiceTelemetryCleanupOnError(t *testing.T) {
 	invalidCfg := newNopConfig()
-	invalidCfg.PipelinesWithPipelineID[pipeline.MustNewID("traces")].Processors[0] = component.MustNewID("invalid")
+	invalidCfg.Pipelines[pipeline.MustNewID("traces")].Processors[0] = component.MustNewID("invalid")
 	// Create a service with an invalid config and expect an error
 	_, err := New(context.Background(), newNopSettings(), invalidCfg)
 	require.Error(t, err)
