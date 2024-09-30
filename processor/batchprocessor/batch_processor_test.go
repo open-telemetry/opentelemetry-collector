@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -1702,74 +1701,4 @@ func TestBatchProcessorEmptyBatch(t *testing.T) {
 
 	wg.Wait()
 	require.NoError(t, batcher.Shutdown(context.Background()))
-}
-
-type errorSink struct {
-	err error
-}
-
-var _ consumer.Logs = errorSink{}
-
-func (es errorSink) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{}
-}
-
-func (es errorSink) ConsumeLogs(context.Context, plog.Logs) error {
-	return es.err
-}
-
-// concurrencyTracesSink orchestrates a test in which the concurrency
-// limit is is repeatedly reached but never exceeded.  The consumers
-// are released when the limit is reached exactly.
-type concurrencyTracesSink struct {
-	*testing.T
-	context.CancelFunc
-	consumertest.TracesSink
-
-	lock sync.Mutex
-	conc int
-	cnt  int
-	grp  *sync.WaitGroup
-}
-
-func newConcurrencyTracesSink(ctx context.Context, cancel context.CancelFunc, t *testing.T, conc int) *concurrencyTracesSink {
-	cts := &concurrencyTracesSink{
-		T:          t,
-		CancelFunc: cancel,
-		conc:       conc,
-		grp:        &sync.WaitGroup{},
-	}
-	cts.grp.Add(1)
-	go func() {
-		for {
-			runtime.Gosched()
-			select {
-			case <-ctx.Done():
-				return
-			default:
-			}
-			cts.lock.Lock()
-			if cts.cnt == cts.conc {
-				cts.grp.Done()
-				cts.grp = &sync.WaitGroup{}
-				cts.grp.Add(1)
-				cts.cnt = 0
-			}
-			cts.lock.Unlock()
-		}
-	}()
-	return cts
-}
-
-func (cts *concurrencyTracesSink) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-	cts.lock.Lock()
-	cts.cnt++
-	grp := cts.grp
-	if cts.cnt > cts.conc {
-		cts.Fatal("unexpected concurrency -- already at limit")
-		cts.CancelFunc()
-	}
-	cts.lock.Unlock()
-	grp.Wait()
-	return cts.TracesSink.ConsumeTraces(ctx, td)
 }
