@@ -120,7 +120,7 @@ func (cfg *Config) Validate() error {
 
 	// Check that all pipelines reference only configured components.
 	// nolint
-	for pipelineID, pipeline := range cfg.Service.Pipelines {
+	for pipelineID, pipeline := range cfg.Service.PipelinesWithPipelineID {
 		// Validate pipeline receiver name references.
 		for _, ref := range pipeline.Receivers {
 			// Check that the name referenced in the pipeline's receivers exists in the top-level receivers.
@@ -156,7 +156,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	// Check that all pipelines reference only configured components.
-	for pipelineID, pipeline := range cfg.Service.PipelinesWithPipelineID {
+	for pipelineID, pipeline := range cfg.Service.Pipelines {
 		// Validate pipeline receiver name references.
 		for _, ref := range pipeline.Receivers {
 			// Check that the name referenced in the pipeline's receivers exists in the top-level receivers.

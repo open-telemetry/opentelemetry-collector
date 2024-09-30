@@ -28,7 +28,6 @@ require (
 	go.opentelemetry.io/collector/extension/zpagesextension v0.110.0
 	go.opentelemetry.io/collector/featuregate v1.16.0
 	go.opentelemetry.io/collector/internal/globalgates v0.110.0
-	go.opentelemetry.io/collector/internal/globalsignal v0.110.0
 	go.opentelemetry.io/collector/pdata v1.16.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.110.0
 	go.opentelemetry.io/collector/pdata/testdata v0.110.0
@@ -96,6 +95,7 @@ require (
 	go.opentelemetry.io/collector/config/configtls v1.16.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.110.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.110.0 // indirect
+	go.opentelemetry.io/collector/internal/globalsignal v0.110.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.55.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.55.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp v0.6.0 // indirect

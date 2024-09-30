@@ -219,7 +219,6 @@ func TestServiceGetExtensions(t *testing.T) {
 	assert.Contains(t, extMap, component.NewID(nopType))
 }
 
-// nolint
 func TestServiceGetExporters(t *testing.T) {
 	srv, err := New(context.Background(), newNopSettings(), newNopConfig())
 	require.NoError(t, err)
@@ -229,24 +228,24 @@ func TestServiceGetExporters(t *testing.T) {
 		assert.NoError(t, srv.Shutdown(context.Background()))
 	})
 
+	// nolint
 	expMap := srv.host.GetExporters()
 
-	v, ok := expMap[component.DataTypeTraces]
+	v, ok := expMap[pipeline.SignalTraces]
 	assert.True(t, ok)
 	assert.NotNil(t, v)
 
 	assert.Len(t, expMap, 4)
-	assert.Len(t, expMap[component.DataTypeTraces], 1)
-	assert.Contains(t, expMap[component.DataTypeTraces], component.NewID(nopType))
-	assert.Len(t, expMap[component.DataTypeMetrics], 1)
-	assert.Contains(t, expMap[component.DataTypeMetrics], component.NewID(nopType))
-	assert.Len(t, expMap[component.DataTypeLogs], 1)
-	assert.Contains(t, expMap[component.DataTypeLogs], component.NewID(nopType))
-	assert.Len(t, expMap[componentprofiles.DataTypeProfiles], 1)
-	assert.Contains(t, expMap[componentprofiles.DataTypeProfiles], component.NewID(nopType))
+	assert.Len(t, expMap[pipeline.SignalTraces], 1)
+	assert.Contains(t, expMap[pipeline.SignalTraces], component.NewID(nopType))
+	assert.Len(t, expMap[pipeline.SignalMetrics], 1)
+	assert.Contains(t, expMap[pipeline.SignalMetrics], component.NewID(nopType))
+	assert.Len(t, expMap[pipeline.SignalLogs], 1)
+	assert.Contains(t, expMap[pipeline.SignalLogs], component.NewID(nopType))
+	assert.Len(t, expMap[componentprofiles.SignalProfiles], 1)
+	assert.Contains(t, expMap[componentprofiles.SignalProfiles], component.NewID(nopType))
 }
 
-// nolint
 func TestServiceGetExportersWithSignal(t *testing.T) {
 	srv, err := New(context.Background(), newNopSettings(), newNopConfig())
 	require.NoError(t, err)
@@ -256,6 +255,7 @@ func TestServiceGetExportersWithSignal(t *testing.T) {
 		assert.NoError(t, srv.Shutdown(context.Background()))
 	})
 
+	// nolint
 	expMap := srv.host.GetExportersWithSignal()
 
 	v, ok := expMap[pipeline.SignalTraces]
@@ -277,7 +277,7 @@ func TestServiceGetExportersWithSignal(t *testing.T) {
 // and another service with a valid config can be started right after.
 func TestServiceTelemetryCleanupOnError(t *testing.T) {
 	invalidCfg := newNopConfig()
-	invalidCfg.PipelinesWithPipelineID[pipeline.MustNewID("traces")].Processors[0] = component.MustNewID("invalid")
+	invalidCfg.Pipelines[pipeline.MustNewID("traces")].Processors[0] = component.MustNewID("invalid")
 	// Create a service with an invalid config and expect an error
 	_, err := New(context.Background(), newNopSettings(), invalidCfg)
 	require.Error(t, err)
@@ -623,7 +623,7 @@ func newNopSettings() Settings {
 }
 
 func newNopConfig() Config {
-	return newNopConfigPipelineConfigs(pipelines.ConfigWithPipelineID{
+	return newNopConfigPipelineConfigs(pipelines.Config{
 		pipeline.MustNewID("traces"): {
 			Receivers:  []component.ID{component.NewID(nopType)},
 			Processors: []component.ID{component.NewID(nopType)},
@@ -647,10 +647,10 @@ func newNopConfig() Config {
 	})
 }
 
-func newNopConfigPipelineConfigs(pipelineCfgs pipelines.ConfigWithPipelineID) Config {
+func newNopConfigPipelineConfigs(pipelineCfgs pipelines.Config) Config {
 	return Config{
-		Extensions:              extensions.Config{component.NewID(nopType)},
-		PipelinesWithPipelineID: pipelineCfgs,
+		Extensions: extensions.Config{component.NewID(nopType)},
+		Pipelines:  pipelineCfgs,
 		Telemetry: telemetry.Config{
 			Logs: telemetry.LogsConfig{
 				Level:       zapcore.InfoLevel,
