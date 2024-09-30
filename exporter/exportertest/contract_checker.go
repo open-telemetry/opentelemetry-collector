@@ -33,13 +33,7 @@ type uniqueIDAttrVal string
 type CheckConsumeContractParams struct {
 	T                    *testing.T
 	NumberOfTestElements int
-	// DataType to test for.
-	//
-	// Deprecated: [v0.110.0] Use Signal instead
-	// nolint
-	DataType component.DataType
-
-	Signal pipeline.Signal
+	Signal               pipeline.Signal
 	// ExporterFactory to create an exporter to be tested.
 	ExporterFactory exporter.Factory
 	ExporterConfig  component.Config
