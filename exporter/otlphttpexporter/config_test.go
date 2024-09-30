@@ -30,6 +30,11 @@ func TestUnmarshalDefaultConfig(t *testing.T) {
 	assert.Error(t, component.ValidateConfig(cfg))
 }
 
+var defaultMaxIdleConns = 100
+var defaultMaxIdleConnsPerHost = 0
+var defaultMaxConnsPerHost = 0
+var defaultIdleConnTimeout = 90 * time.Second
+
 func TestUnmarshalConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
@@ -67,10 +72,14 @@ func TestUnmarshalConfig(t *testing.T) {
 					},
 					Insecure: true,
 				},
-				ReadBufferSize:  123,
-				WriteBufferSize: 345,
-				Timeout:         time.Second * 10,
-				Compression:     "gzip",
+				ReadBufferSize:      123,
+				WriteBufferSize:     345,
+				Timeout:             time.Second * 10,
+				Compression:         "gzip",
+				MaxIdleConns:        &defaultMaxIdleConns,
+				MaxIdleConnsPerHost: &defaultMaxIdleConnsPerHost,
+				MaxConnsPerHost:     &defaultMaxConnsPerHost,
+				IdleConnTimeout:     &defaultIdleConnTimeout,
 			},
 		}, cfg)
 }
