@@ -494,17 +494,17 @@ type multiShardBatcher struct {
 	size int
 }
 
-func (sb *multiShardBatcher) start(context.Context) error {
+func (mb *multiShardBatcher) start(context.Context) error {
 	return nil
 }
 
-func (sb *multiShardBatcher) consume(ctx context.Context, data any) error {
+func (mb *multiShardBatcher) consume(ctx context.Context, data any) error {
 	// Get each metadata key value, form the corresponding
 	// attribute set for use as a map lookup key.
 	info := client.FromContext(ctx)
 	md := map[string][]string{}
 	var attrs []attribute.KeyValue
-	for _, k := range sb.processor.metadataKeys {
+	for _, k := range mb.processor.metadataKeys {
 		// Lookup the value in the incoming metadata, copy it
 		// into the outgoing metadata, and create a unique
 		// value for the attributeSet.
@@ -518,35 +518,35 @@ func (sb *multiShardBatcher) consume(ctx context.Context, data any) error {
 	}
 	aset := attribute.NewSet(attrs...)
 
-	b, ok := sb.batchers.Load(aset)
+	b, ok := mb.batchers.Load(aset)
 	if !ok {
-		sb.lock.Lock()
-		if sb.processor.metadataLimit != 0 && sb.size >= sb.processor.metadataLimit {
-			sb.lock.Unlock()
+		mb.lock.Lock()
+		if mb.processor.metadataLimit != 0 && mb.size >= mb.processor.metadataLimit {
+			mb.lock.Unlock()
 			return errTooManyBatchers
 		}
 
 		// aset.ToSlice() returns the sorted, deduplicated,
 		// and name-downcased list of attributes.
 		var loaded bool
-		b, loaded = sb.batchers.LoadOrStore(aset, sb.processor.newShard(md))
+		b, loaded = mb.batchers.LoadOrStore(aset, mb.processor.newShard(md))
 
 		if !loaded {
 			// This is a new shard
-			sb.size++
+			mb.size++
 			b.(*shard).start()
 
 		}
-		sb.lock.Unlock()
+		mb.lock.Unlock()
 	}
 
 	return b.(*shard).consumeAndWait(ctx, data)
 }
 
-func (sb *multiShardBatcher) currentMetadataCardinality() int {
-	sb.lock.Lock()
-	defer sb.lock.Unlock()
-	return sb.size
+func (mb *multiShardBatcher) currentMetadataCardinality() int {
+	mb.lock.Lock()
+	defer mb.lock.Unlock()
+	return mb.size
 }
 
 // ConsumeTraces implements TracesProcessor
