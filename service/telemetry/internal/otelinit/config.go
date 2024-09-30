@@ -29,7 +29,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/resource"
 
-	"go.opentelemetry.io/collector/processor/processorhelper"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 )
 
@@ -85,7 +84,7 @@ func InitMetricReader(ctx context.Context, reader config.MetricReader, asyncErro
 func InitOpenTelemetry(res *resource.Resource, options []sdkmetric.Option, disableHighCardinality bool) (*sdkmetric.MeterProvider, error) {
 	opts := []sdkmetric.Option{
 		sdkmetric.WithResource(res),
-		sdkmetric.WithView(batchViews(disableHighCardinality)...),
+		sdkmetric.WithView(disableHighCardinalityViews(disableHighCardinality)...),
 	}
 
 	opts = append(opts, options...)
@@ -116,40 +115,22 @@ func InitPrometheusServer(registry *prometheus.Registry, address string, asyncEr
 	return server
 }
 
-func batchViews(disableHighCardinality bool) []sdkmetric.View {
-	views := []sdkmetric.View{
-		sdkmetric.NewView(
-			sdkmetric.Instrument{Name: processorhelper.BuildCustomMetricName("batch", "batch_send_size")},
-			sdkmetric.Stream{Aggregation: sdkmetric.AggregationExplicitBucketHistogram{
-				Boundaries: []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000},
-			}},
-		),
-		sdkmetric.NewView(
-			sdkmetric.Instrument{Name: processorhelper.BuildCustomMetricName("batch", "batch_send_size_bytes")},
-			sdkmetric.Stream{Aggregation: sdkmetric.AggregationExplicitBucketHistogram{
-				Boundaries: []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000,
-					100_000, 200_000, 300_000, 400_000, 500_000, 600_000, 700_000, 800_000, 900_000,
-					1000_000, 2000_000, 3000_000, 4000_000, 5000_000, 6000_000, 7000_000, 8000_000, 9000_000},
-			}},
-		),
+func disableHighCardinalityViews(disableHighCardinality bool) []sdkmetric.View {
+	if !disableHighCardinality {
+		return nil
 	}
-	if disableHighCardinality {
-		views = append(views, sdkmetric.NewView(sdkmetric.Instrument{
-			Scope: instrumentation.Scope{
-				Name: GRPCInstrumentation,
-			},
-		}, sdkmetric.Stream{
-			AttributeFilter: cardinalityFilter(GRPCUnacceptableKeyValues...),
-		}))
-		views = append(views, sdkmetric.NewView(sdkmetric.Instrument{
-			Scope: instrumentation.Scope{
-				Name: HTTPInstrumentation,
-			},
-		}, sdkmetric.Stream{
-			AttributeFilter: cardinalityFilter(HTTPUnacceptableKeyValues...),
-		}))
+	return []sdkmetric.View{
+		sdkmetric.NewView(
+			sdkmetric.Instrument{Scope: instrumentation.Scope{Name: GRPCInstrumentation}},
+			sdkmetric.Stream{
+				AttributeFilter: cardinalityFilter(GRPCUnacceptableKeyValues...),
+			}),
+		sdkmetric.NewView(
+			sdkmetric.Instrument{Scope: instrumentation.Scope{Name: HTTPInstrumentation}},
+			sdkmetric.Stream{
+				AttributeFilter: cardinalityFilter(HTTPUnacceptableKeyValues...),
+			}),
 	}
-	return views
 }
 
 func cardinalityFilter(kvs ...attribute.KeyValue) attribute.Filter {
