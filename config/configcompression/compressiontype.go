@@ -5,14 +5,18 @@ package configcompression // import "go.opentelemetry.io/collector/config/config
 
 import (
 	"fmt"
-	"strconv"
-	"strings"
 
 	"github.com/klauspost/compress/zlib"
 )
 
 // Type represents a compression method
 type Type string
+type Level int
+
+type TypeWithLevel struct {
+	Type  Type  `mapstructure:"type"`
+	Level Level `mapstructure:"level"`
+}
 
 const (
 	TypeGzip    Type = "gzip"
@@ -31,83 +35,26 @@ func (ct *Type) IsCompressed() bool {
 	return *ct != typeEmpty && *ct != typeNone
 }
 
-func (ct *Type) UnmarshalText(in []byte) error {
-	typ := Type(in)
-	if typ == TypeGzip ||
-		typ == TypeZlib ||
-		typ == TypeDeflate ||
+func (ct *TypeWithLevel) UnmarshalText() (TypeWithLevel, error) {
+	typ := ct.Type
+	if (typ == TypeGzip && isValidLevel(int(ct.Level))) ||
+		(typ == TypeZlib && isValidLevel(int(ct.Level))) ||
+		(typ == TypeDeflate && isValidLevel(int(ct.Level))) ||
 		typ == TypeSnappy ||
 		typ == TypeZstd ||
 		typ == TypeLz4 ||
 		typ == typeNone ||
 		typ == typeEmpty {
-		*ct = typ
-		return nil
+		return TypeWithLevel{Type: typ, Level: ct.Level}, nil
 	}
-	return fmt.Errorf("unsupported compression type %q", typ)
 
+	return TypeWithLevel{Type: typ, Level: ct.Level}, fmt.Errorf("unsupported compression type/level %q/%q", typ, ct.Level)
 }
 
-// IsZstd returns true if the compression type is zstd.
-// The specified compression level is not validated.
-// Because zstd supports returning an encoder level that closest matches the compression ratio of a specific zstd compression level.
-// Many input values will provide the same compression level.
-func (ct *Type) IsZstd() bool {
-	parts := strings.Split(string(*ct), "/")
-	return parts[0] == string(TypeZstd)
-}
-
-// Compression level isn't supported for snappy.
-func (ct *Type) IsSnappy() bool {
-	parts := strings.Split(string(*ct), "/")
-	if len(parts) > 1 {
-		return false
-	}
-	return parts[0] == string(TypeSnappy)
-}
-
-// IsGzip returns true if the compression type is gzip and the specified compression level is valid.
-func (ct *Type) IsGzip() bool {
-	parts := strings.Split(string(*ct), "/")
-	if parts[0] == string(TypeGzip) {
-		if len(parts) > 1 {
-			levelStr, err := strconv.Atoi(parts[1])
-			if err != nil {
-				return false
-			}
-			if levelStr == zlib.BestSpeed ||
-				levelStr == zlib.BestCompression ||
-				levelStr == zlib.DefaultCompression ||
-				levelStr == zlib.HuffmanOnly ||
-				levelStr == zlib.NoCompression {
-				return true
-			}
-			return false
-		}
-		return true
-	}
-	return false
-}
-
-// IsZlib returns true if the compression type is zlib and the specified compression level is valid.
-func (ct *Type) IsZlib() bool {
-	parts := strings.Split(string(*ct), "/")
-	if parts[0] == string(TypeZlib) || parts[0] == string(TypeDeflate) {
-		if len(parts) > 1 {
-			levelStr, err := strconv.Atoi(parts[1])
-			if err != nil {
-				return false
-			}
-			if levelStr == zlib.BestSpeed ||
-				levelStr == zlib.BestCompression ||
-				levelStr == zlib.DefaultCompression ||
-				levelStr == zlib.HuffmanOnly ||
-				levelStr == zlib.NoCompression {
-				return true
-			}
-			return false
-		}
-		return true
-	}
-	return false
+func isValidLevel(level int) bool {
+	return level == zlib.BestSpeed ||
+		level == zlib.BestCompression ||
+		level == zlib.DefaultCompression ||
+		level == zlib.HuffmanOnly ||
+		level == zlib.NoCompression
 }
