@@ -49,7 +49,7 @@ type Settings struct {
 	ConnectorBuilder *builders.ConnectorBuilder
 
 	// PipelineConfigs is a map of component.ID to PipelineConfig.
-	PipelineConfigs pipelines.ConfigWithPipelineID
+	PipelineConfigs pipelines.Config
 
 	ReportStatus status.ServiceStatusFunc
 }

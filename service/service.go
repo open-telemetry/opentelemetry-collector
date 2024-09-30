@@ -25,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/extensions"
@@ -304,16 +303,13 @@ func (srv *Service) initExtensions(ctx context.Context, cfg extensions.Config) e
 	return nil
 }
 
-func convertFromComponentIDToPipelineID(id component.ID) pipeline.ID {
-	return pipeline.MustNewIDWithName(id.Type().String(), id.Name())
-}
-
 // Creates the pipeline graph.
 func (srv *Service) initGraph(ctx context.Context, cfg Config) error {
-	if len(cfg.Pipelines) > 0 {
-		cfg.PipelinesWithPipelineID = make(pipelines.ConfigWithPipelineID, len(cfg.Pipelines))
-		for k, v := range cfg.Pipelines {
-			cfg.PipelinesWithPipelineID[convertFromComponentIDToPipelineID(k)] = v
+	// nolint
+	if len(cfg.PipelinesWithPipelineID) > 0 {
+		cfg.Pipelines = make(pipelines.Config, len(cfg.PipelinesWithPipelineID))
+		for k, v := range cfg.PipelinesWithPipelineID {
+			cfg.Pipelines[k] = v
 		}
 	}
 
@@ -325,7 +321,7 @@ func (srv *Service) initGraph(ctx context.Context, cfg Config) error {
 		ProcessorBuilder: srv.host.Processors,
 		ExporterBuilder:  srv.host.Exporters,
 		ConnectorBuilder: srv.host.Connectors,
-		PipelineConfigs:  cfg.PipelinesWithPipelineID,
+		PipelineConfigs:  cfg.Pipelines,
 		ReportStatus:     srv.host.Reporter.ReportStatus,
 	}); err != nil {
 		return fmt.Errorf("failed to build pipelines: %w", err)
