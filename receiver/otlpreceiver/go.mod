@@ -51,7 +51,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	go.opentelemetry.io/collector/client v1.16.0 // indirect
-	go.opentelemetry.io/collector/component/componentprofiles v0.110.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.16.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.16.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.110.0 // indirect
@@ -125,8 +124,6 @@ replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../receiverpr
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 
 replace go.opentelemetry.io/collector/internal/globalsignal => ../../internal/globalsignal
-
-replace go.opentelemetry.io/collector/component/componentprofiles => ../../component/componentprofiles
 
 retract (
 	v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module, use v0.76.1

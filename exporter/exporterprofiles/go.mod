@@ -68,5 +68,3 @@ replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../../receive
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 
 replace go.opentelemetry.io/collector/internal/globalsignal => ../../internal/globalsignal
-
-replace go.opentelemetry.io/collector/component/componentprofiles => ../../component/componentprofiles
