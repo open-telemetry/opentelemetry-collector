@@ -20,14 +20,14 @@ import (
 // If error is returned then returned data are ignored. It MUST not call the next component.
 type ProcessLogsFunc func(context.Context, plog.Logs) (plog.Logs, error)
 
-type logProcessor struct {
+type logs struct {
 	component.StartFunc
 	component.ShutdownFunc
 	consumer.Logs
 }
 
-// NewLogsProcessor creates a processor.Logs that ensure context propagation and the right tags are set.
-func NewLogsProcessor(
+// NewLogs creates a processor.Logs that ensure context propagation and the right tags are set.
+func NewLogs(
 	_ context.Context,
 	set processor.Settings,
 	_ component.Config,
@@ -35,7 +35,6 @@ func NewLogsProcessor(
 	logsFunc ProcessLogsFunc,
 	options ...Option,
 ) (processor.Logs, error) {
-	// TODO: Add observability metrics support
 	if logsFunc == nil {
 		return nil, errors.New("nil logsFunc")
 	}
@@ -68,9 +67,12 @@ func NewLogsProcessor(
 		return nil, err
 	}
 
-	return &logProcessor{
+	return &logs{
 		StartFunc:    bs.StartFunc,
 		ShutdownFunc: bs.ShutdownFunc,
 		Logs:         logsConsumer,
 	}, nil
 }
+
+// Deprecated: [v0.111.0] use NewTraces.
+var NewLogsProcessor = NewLogs

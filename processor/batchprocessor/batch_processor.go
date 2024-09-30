@@ -353,22 +353,22 @@ func (mb *multiShardBatcher) currentMetadataCardinality() int {
 	return mb.size
 }
 
-// ConsumeTraces implements TracesProcessor
+// ConsumeTraces implements processor.Traces
 func (bp *batchProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	return bp.batcher.consume(ctx, td)
 }
 
-// ConsumeMetrics implements MetricsProcessor
+// ConsumeMetrics implements processor.Metrics
 func (bp *batchProcessor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	return bp.batcher.consume(ctx, md)
 }
 
-// ConsumeLogs implements LogsProcessor
+// ConsumeLogs implements processor.Logs
 func (bp *batchProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	return bp.batcher.consume(ctx, ld)
 }
 
-// newBatchTracesProcessor creates a new batch processor that batches traces by size or with timeout
+// newBatchTraces creates a new batch processor that batches traces by size or with timeout
 func newBatchTracesProcessor(set processor.Settings, next consumer.Traces, cfg *Config) (*batchProcessor, error) {
 	return newBatchProcessor(set, cfg, func() batch { return newBatchTraces(next) })
 }

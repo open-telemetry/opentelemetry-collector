@@ -81,9 +81,9 @@ func newComponentsCommand(set CollectorSettings) *cobra.Command {
 					Name:   prs.Type(),
 					Module: factories.ProcessorModules[prs.Type()],
 					Stability: map[string]string{
-						"logs":    prs.LogsProcessorStability().String(),
-						"metrics": prs.MetricsProcessorStability().String(),
-						"traces":  prs.TracesProcessorStability().String(),
+						"logs":    prs.LogsStability().String(),
+						"metrics": prs.MetricsStability().String(),
+						"traces":  prs.TracesStability().String(),
 					},
 				})
 			}

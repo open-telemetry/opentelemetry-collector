@@ -23,8 +23,8 @@ import (
 
 var testMetricsCfg = struct{}{}
 
-func TestNewMetricsProcessor(t *testing.T) {
-	mp, err := NewMetricsProcessor(context.Background(), processortest.NewNopSettings(), &testMetricsCfg, consumertest.NewNop(), newTestMProcessor(nil))
+func TestNewMetrics(t *testing.T) {
+	mp, err := NewMetrics(context.Background(), processortest.NewNopSettings(), &testMetricsCfg, consumertest.NewNop(), newTestMProcessor(nil))
 	require.NoError(t, err)
 
 	assert.True(t, mp.Capabilities().MutatesData)
@@ -33,9 +33,9 @@ func TestNewMetricsProcessor(t *testing.T) {
 	assert.NoError(t, mp.Shutdown(context.Background()))
 }
 
-func TestNewMetricsProcessor_WithOptions(t *testing.T) {
+func TestNewMetrics_WithOptions(t *testing.T) {
 	want := errors.New("my_error")
-	mp, err := NewMetricsProcessor(context.Background(), processortest.NewNopSettings(), &testMetricsCfg, consumertest.NewNop(), newTestMProcessor(nil),
+	mp, err := NewMetrics(context.Background(), processortest.NewNopSettings(), &testMetricsCfg, consumertest.NewNop(), newTestMProcessor(nil),
 		WithStart(func(context.Context, component.Host) error { return want }),
 		WithShutdown(func(context.Context) error { return want }),
 		WithCapabilities(consumer.Capabilities{MutatesData: false}))
@@ -46,20 +46,20 @@ func TestNewMetricsProcessor_WithOptions(t *testing.T) {
 	assert.False(t, mp.Capabilities().MutatesData)
 }
 
-func TestNewMetricsProcessor_NilRequiredFields(t *testing.T) {
-	_, err := NewMetricsProcessor(context.Background(), processortest.NewNopSettings(), &testMetricsCfg, consumertest.NewNop(), nil)
+func TestNewMetrics_NilRequiredFields(t *testing.T) {
+	_, err := NewMetrics(context.Background(), processortest.NewNopSettings(), &testMetricsCfg, consumertest.NewNop(), nil)
 	assert.Error(t, err)
 }
 
-func TestNewMetricsProcessor_ProcessMetricsError(t *testing.T) {
+func TestNewMetrics_ProcessMetricsError(t *testing.T) {
 	want := errors.New("my_error")
-	mp, err := NewMetricsProcessor(context.Background(), processortest.NewNopSettings(), &testMetricsCfg, consumertest.NewNop(), newTestMProcessor(want))
+	mp, err := NewMetrics(context.Background(), processortest.NewNopSettings(), &testMetricsCfg, consumertest.NewNop(), newTestMProcessor(want))
 	require.NoError(t, err)
 	assert.Equal(t, want, mp.ConsumeMetrics(context.Background(), pmetric.NewMetrics()))
 }
 
-func TestNewMetricsProcessor_ProcessMetricsErrSkipProcessingData(t *testing.T) {
-	mp, err := NewMetricsProcessor(context.Background(), processortest.NewNopSettings(), &testMetricsCfg, consumertest.NewNop(), newTestMProcessor(ErrSkipProcessingData))
+func TestNewMetrics_ProcessMetricsErrSkipProcessingData(t *testing.T) {
+	mp, err := NewMetrics(context.Background(), processortest.NewNopSettings(), &testMetricsCfg, consumertest.NewNop(), newTestMProcessor(ErrSkipProcessingData))
 	require.NoError(t, err)
 	assert.NoError(t, mp.ConsumeMetrics(context.Background(), pmetric.NewMetrics()))
 }
@@ -70,7 +70,7 @@ func newTestMProcessor(retError error) ProcessMetricsFunc {
 	}
 }
 
-func TestMetricsProcessor_RecordInOut(t *testing.T) {
+func TestMetrics_RecordInOut(t *testing.T) {
 	// Regardless of how many data points are ingested, emit 3
 	mockAggregate := func(_ context.Context, _ pmetric.Metrics) (pmetric.Metrics, error) {
 		md := pmetric.NewMetrics()
@@ -88,7 +88,7 @@ func TestMetricsProcessor_RecordInOut(t *testing.T) {
 	dps.AppendEmpty()
 
 	testTelemetry := setupTestTelemetry()
-	mp, err := NewMetricsProcessor(context.Background(), testTelemetry.NewSettings(), &testMetricsCfg, consumertest.NewNop(), mockAggregate)
+	mp, err := NewMetrics(context.Background(), testTelemetry.NewSettings(), &testMetricsCfg, consumertest.NewNop(), mockAggregate)
 	require.NoError(t, err)
 
 	assert.NoError(t, mp.Start(context.Background(), componenttest.NewNopHost()))
