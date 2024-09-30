@@ -27,25 +27,20 @@ type InstanceID struct {
 }
 
 // NewInstanceID returns an ID that uniquely identifies a component.
-//
-// Deprecated: [v0.110.0] Use NewInstanceIDWithPipelineID instead
-func NewInstanceID(componentID component.ID, kind component.Kind, pipelineIDs ...component.ID) *InstanceID {
-	instanceID := &InstanceID{
-		componentID: componentID,
-		kind:        kind,
-	}
-	instanceID.addPipelines(convertToPipelineIDs(pipelineIDs))
-	return instanceID
-}
-
-// NewInstanceIDWithPipelineIDs returns an InstanceID that uniquely identifies a component.
-func NewInstanceIDWithPipelineIDs(componentID component.ID, kind component.Kind, pipelineIDs ...pipeline.ID) *InstanceID {
+func NewInstanceID(componentID component.ID, kind component.Kind, pipelineIDs ...pipeline.ID) *InstanceID {
 	instanceID := &InstanceID{
 		componentID: componentID,
 		kind:        kind,
 	}
 	instanceID.addPipelines(pipelineIDs)
 	return instanceID
+}
+
+// NewInstanceIDWithPipelineIDs returns an InstanceID that uniquely identifies a component.
+//
+// Deprecated: [v0.111.0] Use NewInstanceIDWithPipelineID instead
+func NewInstanceIDWithPipelineIDs(componentID component.ID, kind component.Kind, pipelineIDs ...pipeline.ID) *InstanceID {
+	return NewInstanceID(componentID, kind, pipelineIDs...)
 }
 
 // ComponentID returns the ComponentID associated with this instance.
@@ -60,30 +55,7 @@ func (id *InstanceID) Kind() component.Kind {
 
 // AllPipelineIDs calls f for each pipeline this instance is associated with. If
 // f returns false it will stop iteration.
-//
-// Deprecated: [v0.110.0] Use AllPipelineIDsWithPipelineIDs instead.
-func (id *InstanceID) AllPipelineIDs(f func(component.ID) bool) {
-	var bs []byte
-	for _, b := range []byte(id.pipelineIDs) {
-		if b != pipelineDelim {
-			bs = append(bs, b)
-			continue
-		}
-		pipelineID := component.ID{}
-		err := pipelineID.UnmarshalText(bs)
-		bs = bs[:0]
-		if err != nil {
-			continue
-		}
-		if !f(pipelineID) {
-			break
-		}
-	}
-}
-
-// AllPipelineIDsWithPipelineIDs calls f for each pipeline this instance is associated with. If
-// f returns false it will stop iteration.
-func (id *InstanceID) AllPipelineIDsWithPipelineIDs(f func(pipeline.ID) bool) {
+func (id *InstanceID) AllPipelineIDs(f func(pipeline.ID) bool) {
 	var bs []byte
 	for _, b := range []byte(id.pipelineIDs) {
 		if b != pipelineDelim {
@@ -102,23 +74,17 @@ func (id *InstanceID) AllPipelineIDsWithPipelineIDs(f func(pipeline.ID) bool) {
 	}
 }
 
-// WithPipelines returns a new InstanceID updated to include the given
-// pipelineIDs.
+// AllPipelineIDsWithPipelineIDs calls f for each pipeline this instance is associated with. If
+// f returns false it will stop iteration.
 //
-// Deprecated: [v0.110.0] Use WithPipelineIDs instead
-func (id *InstanceID) WithPipelines(pipelineIDs ...component.ID) *InstanceID {
-	instanceID := &InstanceID{
-		componentID: id.componentID,
-		kind:        id.kind,
-		pipelineIDs: id.pipelineIDs,
-	}
-	instanceID.addPipelines(convertToPipelineIDs(pipelineIDs))
-	return instanceID
+// Deprecated: [v0.111.0] Use AllPipelineIDs instead.
+func (id *InstanceID) AllPipelineIDsWithPipelineIDs(f func(pipeline.ID) bool) {
+	id.AllPipelineIDs(f)
 }
 
-// WithPipelineIDs returns a new InstanceID updated to include the given
+// WithPipelines returns a new InstanceID updated to include the given
 // pipelineIDs.
-func (id *InstanceID) WithPipelineIDs(pipelineIDs ...pipeline.ID) *InstanceID {
+func (id *InstanceID) WithPipelines(pipelineIDs ...pipeline.ID) *InstanceID {
 	instanceID := &InstanceID{
 		componentID: id.componentID,
 		kind:        id.kind,
@@ -126,6 +92,14 @@ func (id *InstanceID) WithPipelineIDs(pipelineIDs ...pipeline.ID) *InstanceID {
 	}
 	instanceID.addPipelines(pipelineIDs)
 	return instanceID
+}
+
+// WithPipelineIDs returns a new InstanceID updated to include the given
+// pipelineIDs.
+//
+// Deprecated: [v0.111.0] Use WithPipelines instead
+func (id *InstanceID) WithPipelineIDs(pipelineIDs ...pipeline.ID) *InstanceID {
+	return id.WithPipelines(pipelineIDs...)
 }
 
 func (id *InstanceID) addPipelines(pipelineIDs []pipeline.ID) {
@@ -137,17 +111,4 @@ func (id *InstanceID) addPipelines(pipelineIDs []pipeline.ID) {
 	sort.Strings(strIDs)
 	strIDs = slices.Compact(strIDs)
 	id.pipelineIDs = strings.Join(strIDs, delim) + delim
-}
-
-func convertToPipelineIDs(ids []component.ID) []pipeline.ID {
-	pipelineIDs := make([]pipeline.ID, len(ids))
-	for i, id := range ids {
-		if id.Name() != "" {
-			pipelineIDs[i] = pipeline.MustNewIDWithName(id.Type().String(), id.Name())
-		} else {
-			pipelineIDs[i] = pipeline.MustNewID(id.Type().String())
-		}
-
-	}
-	return pipelineIDs
 }
