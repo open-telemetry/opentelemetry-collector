@@ -1448,7 +1448,7 @@ func traceTestProfiles(t *testing.T) map[string]testProfile {
 	)
 
 	return map[string]testProfile{
-		"traces": testProfile{
+		"traces": {
 			sender: func(ctx context.Context, t *testing.T, bp *batchProcessor, wg *sync.WaitGroup, cnt int) {
 				sendTraces(ctx, t, bp, wg, testdata.GenerateTraces(cnt))
 			},
@@ -1466,7 +1466,7 @@ func traceTestProfiles(t *testing.T) map[string]testProfile {
 				return bp
 			},
 		},
-		"metrics": testProfile{
+		"metrics": {
 			sender: func(ctx context.Context, t *testing.T, bp *batchProcessor, wg *sync.WaitGroup, cnt int) {
 				// Note that GenerateMetrics creates two points per requested point,
 				// so we halve the number and are required to use even counts.
@@ -1486,7 +1486,7 @@ func traceTestProfiles(t *testing.T) map[string]testProfile {
 				return bp
 			},
 		},
-		"logs": testProfile{
+		"logs": {
 			sender: func(ctx context.Context, t *testing.T, bp *batchProcessor, wg *sync.WaitGroup, cnt int) {
 				sendLogs(ctx, t, bp, wg, testdata.GenerateLogs(cnt))
 			},
