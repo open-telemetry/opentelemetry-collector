@@ -1429,13 +1429,99 @@ func TestBatchSplitOnly(t *testing.T) {
 	}
 }
 
+type (
+	testSender func(ctx context.Context, t *testing.T, bp *batchProcessor, wg *sync.WaitGroup, cnt int)
+
+	testCreate func(ctx context.Context, cfg *Config, procSet processor.Settings, exportSet exporter.Settings) *batchProcessor
+
+	testProfile struct {
+		sender testSender
+		create testCreate
+	}
+)
+
+func traceTestProfiles(t *testing.T) map[string]testProfile {
+	exportOpts := exporterhelper.WithQueue(
+		exporterhelper.QueueConfig{
+			Enabled: false,
+		},
+	)
+
+	return map[string]testProfile{
+		"traces": testProfile{
+			sender: func(ctx context.Context, t *testing.T, bp *batchProcessor, wg *sync.WaitGroup, cnt int) {
+				sendTraces(ctx, t, bp, wg, testdata.GenerateTraces(cnt))
+			},
+			create: func(ctx context.Context, cfg *Config, procSet processor.Settings, exportSet exporter.Settings) *batchProcessor {
+				next, err := exporterhelper.NewTracesExporter(
+					ctx,
+					exportSet,
+					*cfg,
+					func(context.Context, ptrace.Traces) error { return nil },
+					exportOpts,
+				)
+				require.NoError(t, err)
+				bp, err := newBatchTracesProcessor(procSet, next, cfg)
+				require.NoError(t, err)
+				return bp
+			},
+		},
+		"metrics": testProfile{
+			sender: func(ctx context.Context, t *testing.T, bp *batchProcessor, wg *sync.WaitGroup, cnt int) {
+				// Note that GenerateMetrics creates two points per requested point,
+				// so we halve the number and are required to use even counts.
+				sendMetrics(ctx, t, bp, wg, testdata.GenerateMetrics(cnt/2))
+			},
+			create: func(ctx context.Context, cfg *Config, procSet processor.Settings, exportSet exporter.Settings) *batchProcessor {
+				next, err := exporterhelper.NewMetricsExporter(
+					ctx,
+					exportSet,
+					*cfg,
+					func(context.Context, pmetric.Metrics) error { return nil },
+					exportOpts,
+				)
+				require.NoError(t, err)
+				bp, err := newBatchMetricsProcessor(procSet, next, cfg)
+				require.NoError(t, err)
+				return bp
+			},
+		},
+		"logs": testProfile{
+			sender: func(ctx context.Context, t *testing.T, bp *batchProcessor, wg *sync.WaitGroup, cnt int) {
+				sendLogs(ctx, t, bp, wg, testdata.GenerateLogs(cnt))
+			},
+			create: func(ctx context.Context, cfg *Config, procSet processor.Settings, exportSet exporter.Settings) *batchProcessor {
+				next, err := exporterhelper.NewLogsExporter(
+					ctx,
+					exportSet,
+					*cfg,
+					func(context.Context, plog.Logs) error { return nil },
+					exportOpts,
+				)
+				require.NoError(t, err)
+				bp, err := newBatchLogsProcessor(procSet, next, cfg)
+				require.NoError(t, err)
+				return bp
+			},
+		},
+	}
+}
+
 func TestBatchProcessorUnbrokenParentContextSingle(t *testing.T) {
+	for signal, profile := range traceTestProfiles(t) {
+		t.Run(signal, func(t *testing.T) {
+			testBatchProcessorUnbrokenParentContextSingle(t, signal, profile)
+		})
+	}
+}
+
+func testBatchProcessorUnbrokenParentContextSingle(t *testing.T, signal string, profile testProfile) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.SendBatchSize = 100
 	cfg.SendBatchMaxSize = 100
 	cfg.Timeout = 3 * time.Second
 	requestCount := 10
-	spansPerRequest := 5249
+	itemsPerRequest := 5248 // Has to be even, see comment re: GenerateMetrics() above
 	exp := tracetest.NewInMemoryExporter()
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithBatcher(exp),
@@ -1444,36 +1530,23 @@ func TestBatchProcessorUnbrokenParentContextSingle(t *testing.T) {
 	tracer := tp.Tracer("otel")
 	bg, rootSp := tracer.Start(context.Background(), "test_parent")
 
-	createSet := exporter.Settings{
+	exportSet := exporter.Settings{
 		ID:                component.MustNewID("test_exporter"),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 	}
 
-	createSet.TelemetrySettings.TracerProvider = tp
+	exportSet.TelemetrySettings.TracerProvider = tp
 
-	opt := exporterhelper.WithQueue(exporterhelper.QueueSettings{
-		Enabled: false,
-	})
-	next, err := exporterhelper.NewTracesExporter(bg, createSet, Config{}, func(context.Context, ptrace.Traces) error { return nil }, opt)
-	require.NoError(t, err)
+	procSet := processortest.NewNopSettings()
+	procSet.MetricsLevel = configtelemetry.LevelDetailed
+	procSet.TracerProvider = tp
 
-	processorSet := processortest.NewNopSettings()
-	processorSet.MetricsLevel = configtelemetry.LevelDetailed
-	processorSet.TracerProvider = tp
-	bp, err := newBatchTracesProcessor(processorSet, next, cfg)
-	require.NoError(t, err)
+	bp := profile.create(bg, cfg, procSet, exportSet)
 	require.NoError(t, bp.Start(context.Background(), componenttest.NewNopHost()))
 
-	sentResourceSpans := ptrace.NewTraces().ResourceSpans()
 	var wg sync.WaitGroup
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
-		td := testdata.GenerateTraces(spansPerRequest)
-		spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
-		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
-			spans.At(spanIndex).SetName(getTestSpanName(requestNum, spanIndex))
-		}
-		td.ResourceSpans().At(0).CopyTo(sentResourceSpans.AppendEmpty())
-		sendTraces(bg, t, bp, &wg, td)
+		profile.sender(bg, t, bp, &wg, itemsPerRequest)
 	}
 	wg.Wait()
 	rootSp.End()
@@ -1484,14 +1557,15 @@ func TestBatchProcessorUnbrokenParentContextSingle(t *testing.T) {
 
 	// need to flush tracerprovider
 	tp.ForceFlush(bg)
-	td := exp.GetSpans()
-	numBatches := float64(spansPerRequest*requestCount) / float64(cfg.SendBatchMaxSize)
-	assert.Len(t, td, 2*int(math.Ceil(numBatches))+1)
-	for _, span := range td {
+
+	traces := exp.GetSpans()
+	numBatches := float64(itemsPerRequest*requestCount) / float64(cfg.SendBatchMaxSize)
+	assert.Len(t, traces, 2*int(math.Ceil(numBatches))+1)
+	for _, span := range traces {
 		switch span.Name {
 		case "batch_processor/export":
 			// more test below
-		case "exporter/test_exporter/traces":
+		case "exporter/test_exporter/" + signal:
 			continue
 		case "test_parent":
 			continue
@@ -1506,13 +1580,22 @@ func TestBatchProcessorUnbrokenParentContextSingle(t *testing.T) {
 }
 
 func TestBatchProcessorUnbrokenParentContextMultiple(t *testing.T) {
+	for signal, profile := range traceTestProfiles(t) {
+		t.Run(signal, func(t *testing.T) {
+			testBatchProcessorUnbrokenParentContextMultiple(t, signal, profile)
+		})
+	}
+}
+
+func testBatchProcessorUnbrokenParentContextMultiple(t *testing.T, signal string, profile testProfile) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.SendBatchSize = 100
 	cfg.SendBatchMaxSize = 100
 	cfg.Timeout = 3 * time.Second
 	requestCount := 50
-	// keep spansPerRequest small to ensure multiple contexts end up in the same batch.
-	spansPerRequest := 5
+	// keep itemsPerRequest small to ensure multiple contexts end up in the same batch.
+	// this number has to be even, see comment on GenerateMetrics above.
+	itemsPerRequest := 6
 	exp := tracetest.NewInMemoryExporter()
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithBatcher(exp),
@@ -1521,22 +1604,18 @@ func TestBatchProcessorUnbrokenParentContextMultiple(t *testing.T) {
 	tracer := tp.Tracer("otel")
 	bg := context.Background()
 
-	createSet := exporter.Settings{
+	exportSet := exporter.Settings{
 		ID:                component.MustNewID("test_exporter"),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 	}
-	createSet.TelemetrySettings.TracerProvider = tp
-	opt := exporterhelper.WithQueue(exporterhelper.QueueSettings{
-		Enabled: false,
-	})
-	next, err := exporterhelper.NewTracesExporter(bg, createSet, Config{}, func(context.Context, ptrace.Traces) error { return nil }, opt)
-	require.NoError(t, err)
+	exportSet.TelemetrySettings.TracerProvider = tp
 
-	processorSet := processortest.NewNopSettings()
-	processorSet.MetricsLevel = configtelemetry.LevelDetailed
-	processorSet.TracerProvider = tp
-	bp, err := newBatchTracesProcessor(processorSet, next, cfg)
-	require.NoError(t, err)
+	procSet := processortest.NewNopSettings()
+	procSet.MetricsLevel = configtelemetry.LevelDetailed
+	procSet.TracerProvider = tp
+
+	bp := profile.create(bg, cfg, procSet, exportSet)
+
 	require.NoError(t, bp.Start(bg, componenttest.NewNopHost()))
 
 	var endLater []trace.Span
@@ -1551,17 +1630,10 @@ func TestBatchProcessorUnbrokenParentContextMultiple(t *testing.T) {
 		mkCtx(),
 	}
 
-	sentResourceSpans := ptrace.NewTraces().ResourceSpans()
 	var wg sync.WaitGroup
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		num := requestNum % len(callCtxs)
-		td := testdata.GenerateTraces(spansPerRequest)
-		spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
-		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
-			spans.At(spanIndex).SetName(getTestSpanName(requestNum, spanIndex))
-		}
-		td.ResourceSpans().At(0).CopyTo(sentResourceSpans.AppendEmpty())
-		sendTraces(callCtxs[num], t, bp, &wg, td)
+		profile.sender(callCtxs[num], t, bp, &wg, itemsPerRequest)
 	}
 	wg.Wait()
 
@@ -1575,7 +1647,7 @@ func TestBatchProcessorUnbrokenParentContextMultiple(t *testing.T) {
 	exp.Reset()
 
 	// Expect 2 spans per batch, one exporter and one batch processor.
-	numBatches := float64(spansPerRequest*requestCount) / float64(cfg.SendBatchMaxSize)
+	numBatches := float64(itemsPerRequest*requestCount) / float64(cfg.SendBatchMaxSize)
 	assert.Len(t, td, 2*int(math.Ceil(numBatches)))
 
 	var expectSpanCtxs []trace.SpanContext
@@ -1586,7 +1658,7 @@ func TestBatchProcessorUnbrokenParentContextMultiple(t *testing.T) {
 		switch span.Name {
 		case "batch_processor/export":
 			// more test below
-		case "exporter/test_exporter/traces":
+		case "exporter/test_exporter/" + signal:
 			continue
 		default:
 			t.Error("unexpected span name:", span.Name)
