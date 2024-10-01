@@ -111,7 +111,7 @@ func (rs *retrySender) send(ctx context.Context, req Request) error {
 		if deadline, has := ctx.Deadline(); has && time.Until(deadline) < backoffDelay {
 			// The delay is longer than the deadline.  There is no point in
 			// waiting for cancelation.
-			return fmt.Errorf("Exporting aborted. Deadline is shorter than retry interval.")
+			return fmt.Errorf("request will be cancelled before next retry: %w", err)
 		}
 
 		backoffDelayStr := backoffDelay.String()
