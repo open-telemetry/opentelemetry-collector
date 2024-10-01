@@ -37,19 +37,19 @@ func TestProcessorShutdown(t *testing.T) {
 
 	for i := 0; i < 5; i++ {
 		require.NotPanics(t, func() {
-			tProc, err := factory.CreateTracesProcessor(ctx, processorCreationSet, factory.CreateDefaultConfig(), consumertest.NewNop())
+			tProc, err := factory.CreateTraces(ctx, processorCreationSet, factory.CreateDefaultConfig(), consumertest.NewNop())
 			require.NoError(t, err)
 			_ = tProc.Shutdown(ctx)
 		})
 
 		require.NotPanics(t, func() {
-			mProc, err := factory.CreateMetricsProcessor(ctx, processorCreationSet, factory.CreateDefaultConfig(), consumertest.NewNop())
+			mProc, err := factory.CreateMetrics(ctx, processorCreationSet, factory.CreateDefaultConfig(), consumertest.NewNop())
 			require.NoError(t, err)
 			_ = mProc.Shutdown(ctx)
 		})
 
 		require.NotPanics(t, func() {
-			lProc, err := factory.CreateLogsProcessor(ctx, processorCreationSet, factory.CreateDefaultConfig(), consumertest.NewNop())
+			lProc, err := factory.CreateLogs(ctx, processorCreationSet, factory.CreateDefaultConfig(), consumertest.NewNop())
 			require.NoError(t, err)
 			_ = lProc.Shutdown(ctx)
 		})
@@ -63,17 +63,17 @@ func TestProcessorLifecycle(t *testing.T) {
 	processorCreationSet := processortest.NewNopSettings()
 
 	for i := 0; i < 5; i++ {
-		tProc, err := factory.CreateTracesProcessor(ctx, processorCreationSet, factory.CreateDefaultConfig(), consumertest.NewNop())
+		tProc, err := factory.CreateTraces(ctx, processorCreationSet, factory.CreateDefaultConfig(), consumertest.NewNop())
 		require.NoError(t, err)
 		require.NoError(t, tProc.Start(ctx, componenttest.NewNopHost()))
 		require.NoError(t, tProc.Shutdown(ctx))
 
-		mProc, err := factory.CreateMetricsProcessor(ctx, processorCreationSet, factory.CreateDefaultConfig(), consumertest.NewNop())
+		mProc, err := factory.CreateMetrics(ctx, processorCreationSet, factory.CreateDefaultConfig(), consumertest.NewNop())
 		require.NoError(t, err)
 		require.NoError(t, mProc.Start(ctx, componenttest.NewNopHost()))
 		require.NoError(t, mProc.Shutdown(ctx))
 
-		lProc, err := factory.CreateLogsProcessor(ctx, processorCreationSet, factory.CreateDefaultConfig(), consumertest.NewNop())
+		lProc, err := factory.CreateLogs(ctx, processorCreationSet, factory.CreateDefaultConfig(), consumertest.NewNop())
 		require.NoError(t, err)
 		require.NoError(t, lProc.Start(ctx, componenttest.NewNopHost()))
 		require.NoError(t, lProc.Shutdown(ctx))
@@ -686,7 +686,8 @@ func TestBatchMetrics_UnevenBatchMaxSize(t *testing.T) {
 
 	batchMetrics.add(md)
 	require.Equal(t, dataPointsPerMetric*metricsCount, batchMetrics.dataPointCount)
-	sent, _, sendErr := batchMetrics.export(ctx, sendBatchMaxSize, false)
+	sent, req := batchMetrics.splitBatch(ctx, sendBatchMaxSize)
+	sendErr := batchMetrics.export(ctx, req)
 	require.NoError(t, sendErr)
 	require.Equal(t, sendBatchMaxSize, sent)
 	remainingDataPointCount := metricsCount*dataPointsPerMetric - sendBatchMaxSize

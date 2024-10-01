@@ -23,8 +23,8 @@ import (
 
 var testTracesCfg = struct{}{}
 
-func TestNewTracesProcessor(t *testing.T) {
-	tp, err := NewTracesProcessor(context.Background(), processortest.NewNopSettings(), &testTracesCfg, consumertest.NewNop(), newTestTProcessor(nil))
+func TestNewTraces(t *testing.T) {
+	tp, err := NewTraces(context.Background(), processortest.NewNopSettings(), &testTracesCfg, consumertest.NewNop(), newTestTProcessor(nil))
 	require.NoError(t, err)
 
 	assert.True(t, tp.Capabilities().MutatesData)
@@ -33,9 +33,9 @@ func TestNewTracesProcessor(t *testing.T) {
 	assert.NoError(t, tp.Shutdown(context.Background()))
 }
 
-func TestNewTracesProcessor_WithOptions(t *testing.T) {
+func TestNewTraces_WithOptions(t *testing.T) {
 	want := errors.New("my_error")
-	tp, err := NewTracesProcessor(context.Background(), processortest.NewNopSettings(), &testTracesCfg, consumertest.NewNop(), newTestTProcessor(nil),
+	tp, err := NewTraces(context.Background(), processortest.NewNopSettings(), &testTracesCfg, consumertest.NewNop(), newTestTProcessor(nil),
 		WithStart(func(context.Context, component.Host) error { return want }),
 		WithShutdown(func(context.Context) error { return want }),
 		WithCapabilities(consumer.Capabilities{MutatesData: false}))
@@ -46,20 +46,20 @@ func TestNewTracesProcessor_WithOptions(t *testing.T) {
 	assert.False(t, tp.Capabilities().MutatesData)
 }
 
-func TestNewTracesProcessor_NilRequiredFields(t *testing.T) {
-	_, err := NewTracesProcessor(context.Background(), processortest.NewNopSettings(), &testTracesCfg, consumertest.NewNop(), nil)
+func TestNewTraces_NilRequiredFields(t *testing.T) {
+	_, err := NewTraces(context.Background(), processortest.NewNopSettings(), &testTracesCfg, consumertest.NewNop(), nil)
 	assert.Error(t, err)
 }
 
-func TestNewTracesProcessor_ProcessTraceError(t *testing.T) {
+func TestNewTraces_ProcessTraceError(t *testing.T) {
 	want := errors.New("my_error")
-	tp, err := NewTracesProcessor(context.Background(), processortest.NewNopSettings(), &testTracesCfg, consumertest.NewNop(), newTestTProcessor(want))
+	tp, err := NewTraces(context.Background(), processortest.NewNopSettings(), &testTracesCfg, consumertest.NewNop(), newTestTProcessor(want))
 	require.NoError(t, err)
 	assert.Equal(t, want, tp.ConsumeTraces(context.Background(), ptrace.NewTraces()))
 }
 
-func TestNewTracesProcessor_ProcessTracesErrSkipProcessingData(t *testing.T) {
-	tp, err := NewTracesProcessor(context.Background(), processortest.NewNopSettings(), &testTracesCfg, consumertest.NewNop(), newTestTProcessor(ErrSkipProcessingData))
+func TestNewTraces_ProcessTracesErrSkipProcessingData(t *testing.T) {
+	tp, err := NewTraces(context.Background(), processortest.NewNopSettings(), &testTracesCfg, consumertest.NewNop(), newTestTProcessor(ErrSkipProcessingData))
 	require.NoError(t, err)
 	assert.NoError(t, tp.ConsumeTraces(context.Background(), ptrace.NewTraces()))
 }
@@ -70,7 +70,7 @@ func newTestTProcessor(retError error) ProcessTracesFunc {
 	}
 }
 
-func TestTracesProcessor_RecordInOut(t *testing.T) {
+func TestTraces_RecordInOut(t *testing.T) {
 	// Regardless of how many spans are ingested, emit just one
 	mockAggregate := func(_ context.Context, _ ptrace.Traces) (ptrace.Traces, error) {
 		td := ptrace.NewTraces()
@@ -88,7 +88,7 @@ func TestTracesProcessor_RecordInOut(t *testing.T) {
 	incomingSpans.AppendEmpty()
 
 	testTelemetry := setupTestTelemetry()
-	tp, err := NewTracesProcessor(context.Background(), testTelemetry.NewSettings(), &testLogsCfg, consumertest.NewNop(), mockAggregate)
+	tp, err := NewTraces(context.Background(), testTelemetry.NewSettings(), &testLogsCfg, consumertest.NewNop(), mockAggregate)
 	require.NoError(t, err)
 
 	assert.NoError(t, tp.Start(context.Background(), componenttest.NewNopHost()))
