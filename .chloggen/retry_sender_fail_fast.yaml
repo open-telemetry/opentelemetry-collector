@@ -7,7 +7,7 @@ change_type: enhancement
 component: exporterhelper
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Retry sender: fail fast when the context timeout is shorter than the next retry interval.
+note: Retry sender will fail fast when the context timeout is shorter than the next retry interval.
 
 # One or more tracking issues or pull requests related to the change
 issues: [11183]
