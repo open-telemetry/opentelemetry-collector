@@ -168,7 +168,7 @@ func newBatchProcessor(set processor.Settings, cfg *Config, batchFunc func() bat
 		shutdownC:        make(chan struct{}, 1),
 		metadataKeys:     mks,
 		metadataLimit:    int(cfg.MetadataCardinalityLimit),
-		tracer:           set.TelemetrySettings.TracerProvider.Tracer(metadata.ScopeName),
+		tracer:           metadata.Tracer(set.TelemetrySettings),
 	}
 	if len(bp.metadataKeys) == 0 {
 		bp.batcher = &singleShardBatcher{
