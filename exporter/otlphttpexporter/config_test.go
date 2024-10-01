@@ -4,6 +4,7 @@
 package otlphttpexporter
 
 import (
+	"net/http"
 	"path/filepath"
 	"testing"
 	"time"
@@ -30,12 +31,8 @@ func TestUnmarshalDefaultConfig(t *testing.T) {
 	assert.Error(t, component.ValidateConfig(cfg))
 }
 
-var defaultMaxIdleConns = 100
-var defaultMaxIdleConnsPerHost = 0
-var defaultMaxConnsPerHost = 0
-var defaultIdleConnTimeout = 90 * time.Second
-
 func TestUnmarshalConfig(t *testing.T) {
+	defaultTransport := http.DefaultTransport.(*http.Transport)
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
@@ -76,10 +73,10 @@ func TestUnmarshalConfig(t *testing.T) {
 				WriteBufferSize:     345,
 				Timeout:             time.Second * 10,
 				Compression:         "gzip",
-				MaxIdleConns:        &defaultMaxIdleConns,
-				MaxIdleConnsPerHost: &defaultMaxIdleConnsPerHost,
-				MaxConnsPerHost:     &defaultMaxConnsPerHost,
-				IdleConnTimeout:     &defaultIdleConnTimeout,
+				MaxIdleConns:        &defaultTransport.MaxIdleConns,
+				MaxIdleConnsPerHost: &defaultTransport.MaxIdleConnsPerHost,
+				MaxConnsPerHost:     &defaultTransport.MaxConnsPerHost,
+				IdleConnTimeout:     &defaultTransport.IdleConnTimeout,
 			},
 		}, cfg)
 }
