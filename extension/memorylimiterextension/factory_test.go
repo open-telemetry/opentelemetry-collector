@@ -38,10 +38,10 @@ func TestCreateExtension(t *testing.T) {
 	pCfg.CheckInterval = 100 * time.Millisecond
 
 	tp, err := factory.CreateExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, tp)
 	// test if we can shutdown a monitoring routine that has not started
-	assert.ErrorIs(t, tp.Shutdown(context.Background()), memorylimiter.ErrShutdownNotStarted)
+	require.ErrorIs(t, tp.Shutdown(context.Background()), memorylimiter.ErrShutdownNotStarted)
 	assert.NoError(t, tp.Start(context.Background(), componenttest.NewNopHost()))
 
 	assert.NoError(t, tp.Shutdown(context.Background()))

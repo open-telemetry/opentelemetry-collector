@@ -84,6 +84,7 @@ metrics:
 | ---- | ----------- | ------ |
 | string_attr | Attribute with any string value. | Any Str |
 | boolean_attr | Attribute with a boolean value. | Any Bool |
+| boolean_attr2 | Another attribute with a boolean value. | Any Bool |
 
 ### optional.metric.empty_unit
 
@@ -119,7 +120,7 @@ The following telemetry is emitted by this component.
 
 ### otelcol_batch_size_trigger_send
 
-Number of times the batch was sent due to a size trigger
+Number of times the batch was sent due to a size trigger [deprecated since v0.110.0]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
@@ -145,7 +146,7 @@ For example this metric only exists if feature A is enabled.
 
 ### otelcol_request_duration
 
-Duration of request
+Duration of request [alpha]
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |

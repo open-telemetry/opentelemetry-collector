@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/internal/sharedcomponent"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/extensions"
@@ -38,6 +39,8 @@ var nopType = component.MustNewType("nop")
 var wg = sync.WaitGroup{}
 
 func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
+	t.Skipf("Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector/issues/10927#issuecomment-2343679185")
+
 	eventsReceived := make(map[*componentstatus.InstanceID][]*componentstatus.Event)
 	exporterFactory := exportertest.NewNopFactory()
 	connectorFactory := connectortest.NewNopFactory()
@@ -99,11 +102,11 @@ func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 			},
 		},
 		Pipelines: pipelines.Config{
-			component.MustNewID("traces"): {
+			pipeline.MustNewID("traces"): {
 				Receivers: []component.ID{component.NewID(component.MustNewType("test"))},
 				Exporters: []component.ID{component.NewID(nopType)},
 			},
-			component.MustNewID("metrics"): {
+			pipeline.MustNewID("metrics"): {
 				Receivers: []component.ID{component.NewID(component.MustNewType("test"))},
 				Exporters: []component.ID{component.NewID(nopType)},
 			},
@@ -121,11 +124,11 @@ func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 	err = s.Shutdown(context.Background())
 	require.NoError(t, err)
 
-	require.Equal(t, 2, len(eventsReceived))
+	require.Len(t, eventsReceived, 2)
 
 	for instanceID, events := range eventsReceived {
 		pipelineIDs := ""
-		instanceID.AllPipelineIDs(func(id component.ID) bool {
+		instanceID.AllPipelineIDsWithPipelineIDs(func(id pipeline.ID) bool {
 			pipelineIDs += id.String() + ","
 			return true
 		})

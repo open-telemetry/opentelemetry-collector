@@ -116,25 +116,49 @@ const immutableSliceTestTemplate = `func TestNew{{ .structName }}(t *testing.T) 
 	assert.Equal(t, []{{ .itemType }}{ {{ .testNewVal }} }, ms.AsRaw())
 	ms.FromRaw([]{{ .itemType }}{ {{ index .testInterfaceOrigVal 2 }} })
 	assert.Equal(t, 1, ms.Len())
-	assert.Equal(t, {{ .itemType }}( {{ index .testInterfaceOrigVal 2 }} ), ms.At(0))
+	{{- if eq .itemType "float64" }}
+	assert.InDelta(t, {{ .itemType }}({{ index .testInterfaceOrigVal 2 }}), ms.At(0), 0.01)
+	{{- else }}
+	assert.Equal(t, {{ .itemType }}({{ index .testInterfaceOrigVal 2 }}), ms.At(0))
+	{{- end }}
 
 	cp := New{{ .structName }}()
 	ms.CopyTo(cp)
 	ms.SetAt(0, {{ .itemType }}( {{ index .testInterfaceOrigVal 1 }} ))
-	assert.Equal(t, {{ .itemType }}( {{ index .testInterfaceOrigVal 1 }} ), ms.At(0))
+	{{- if eq .itemType "float64" }}
+	assert.InDelta(t, {{ .itemType }}({{ index .testInterfaceOrigVal 1 }}), ms.At(0), 0.01)
+	{{- else }}
+	assert.Equal(t, {{ .itemType }}({{ index .testInterfaceOrigVal 1 }}), ms.At(0))
+	{{- end }}
+	{{- if eq .itemType "float64" }}
+	assert.InDelta(t, {{ .itemType }}({{ index .testInterfaceOrigVal 2 }}), cp.At(0), 0.01)
+	{{- else }}
 	assert.Equal(t, {{ .itemType }}({{ index .testInterfaceOrigVal 2 }}), cp.At(0))
+	{{- end }}
 	ms.CopyTo(cp)
+	{{- if eq .itemType "float64" }}
+	assert.InDelta(t, {{ .itemType }}({{ index .testInterfaceOrigVal 1 }}), cp.At(0), 0.01)
+	{{- else }}
 	assert.Equal(t, {{ .itemType }}({{ index .testInterfaceOrigVal 1 }}), cp.At(0))
+	{{- end }}
 
 	mv := New{{ .structName }}()
 	ms.MoveTo(mv)
 	assert.Equal(t, 0, ms.Len())
 	assert.Equal(t, 1, mv.Len())
-	assert.Equal(t, {{ .itemType }}({{ index .testInterfaceOrigVal 1 }}), mv.At(0))
+	{{- if eq .itemType "float64" }}
+	assert.InDelta(t, {{ .itemType }}({{index .testInterfaceOrigVal 1 }}), mv.At(0), 0.01)
+	{{- else }}
+	assert.Equal(t, {{ .itemType }}({{index .testInterfaceOrigVal 1 }}), mv.At(0))
+	{{- end }}
 	ms.FromRaw([]{{ .itemType }}{ {{ .testOrigVal }} })
 	ms.MoveTo(mv)
 	assert.Equal(t, 3, mv.Len())
-	assert.Equal(t, {{ .itemType }}({{ index .testInterfaceOrigVal 0 }}), mv.At(0))
+	{{- if eq .itemType "float64" }}
+	assert.InDelta(t, {{ .itemType }}({{index .testInterfaceOrigVal 0 }}), mv.At(0), 0.01)
+	{{- else }}
+	assert.Equal(t, {{ .itemType }}({{index .testInterfaceOrigVal 0 }}), mv.At(0))
+	{{- end }}
 }
 
 func Test{{ .structName }}ReadOnly(t *testing.T) {
@@ -143,7 +167,11 @@ func Test{{ .structName }}ReadOnly(t *testing.T) {
 	ms := {{ .structName }}(internal.New{{ .structName }}(&raw, &state))
 
 	assert.Equal(t, 3, ms.Len())
+	{{- if eq .itemType "float64" }}
+	assert.InDelta(t, {{ .itemType }}( {{index .testInterfaceOrigVal 0 }} ), ms.At(0), 0.01)
+	{{- else }}
 	assert.Equal(t, {{ .itemType }}({{ index .testInterfaceOrigVal 0 }}), ms.At(0))
+	{{- end }}
 	assert.Panics(t, func() { ms.Append({{ index .testInterfaceOrigVal 0 }}) })
 	assert.Panics(t, func() { ms.EnsureCapacity(2) })
 	assert.Equal(t, raw, ms.AsRaw())
@@ -163,7 +191,11 @@ func Test{{ .structName }}Append(t *testing.T) {
 	ms.FromRaw([]{{ .itemType }}{ {{ .testOrigVal }} })
 	ms.Append({{ .testSetVal }}, {{ .testSetVal }})
 	assert.Equal(t, 5, ms.Len())
+	{{- if eq .itemType "float64" }}
+	assert.InDelta(t, {{ .itemType }}({{ .testSetVal }} ), ms.At(4), 0.01)
+	{{- else }}
 	assert.Equal(t, {{ .itemType }}({{ .testSetVal }}), ms.At(4))
+	{{- end }}
 }
 
 func Test{{ .structName }}EnsureCapacity(t *testing.T) {

@@ -7,6 +7,73 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.16.0/v0.110.0
+
+### 🛑 Breaking changes 🛑
+
+- `otlpexporter`: The `TimeoutSettings` field in `otlpexporter.Config` was renamed to `TimeoutConfig`. (#11132)
+- `connector`: Change `TracesRouterAndConsumer`, `NewTracesRouter`, `MetricsRouterAndConsumer`, `NewMetricsRouter`, `LogsRouterAndConsumer`, and `NewLogsRouter` to use `pipeline.ID` instead of `component.ID`. (#11204)
+- `extension`: Remove deprecated extension interfaces. (#11043)
+  They are now available in the `extensioncapabilities` module.
+  
+
+### 🚩 Deprecations 🚩
+
+- `exporterhelper`: Deprecate TimeoutSettings/QueueSettings in favor of TimeoutConfig/QueueConfig. (#6767)
+- `configgrpc`: Deprecate `ClientConfig.ToClientConn`/`ServerConfig.ToServer` in favor of `ToClientConnWithOptions`/`ToServerWithOptions` (#9480)
+  Users providing a grpc.DialOption/grpc.ServerOption should now wrap them into
+  a generic option with `WithGrpcDialOption`/`WithGrpcServerOption`.
+  
+- `componentprofiles`: Deprecates `DataTypeProfiles`. Use `SignalProfiles` instead. (#11204)
+- `componentstatus`: Deprecates `NewInstanceID`, `AllPipelineIDs`, and `WithPipelines`. Use `NewInstanceIDWithPipelineIDs`, `AllPipelineIDsWithPipelineIDs`, and `WithPipelineIDs` instead. (#11204)
+- `exporterqueue`: Deprecates `Settings.DataType`. Use `Settings.Signal` instead. (#11204)
+- `service`: Deprecates `pipelines.Config`. Use `pipelines.ConfigWithPipelineID` instead. (#11204)
+- `component`: Deprecates `DataType`, `DataTypeTraces`, `DataTypeMetrics`, and `DataTypeLogs`. Use `pipeline.Signal`, `SignalTraces`, `SignalMetrics`, and `SignalLogs` instead. (#11204)
+- `service`: Deprecates service's implementation of `GetExporters` interface.  Use `GetExportersWithSignal` instead. (#11249)
+- `scraperhelper`: Deprecate NewScraperWithComponentType, should use NewScraper (#11159)
+
+### 🚀 New components 🚀
+
+- `pipeline`: Adds new `pipeline` module to house the concept of pipeline ID and Signal. (#11209)
+
+### 💡 Enhancements 💡
+
+- `pdata`: Add support to MoveTo for Map, allow avoiding copies (#11175)
+- `options`: Avoid using private types in public APIs and also protect options to be implemented outside this module. (#11054)
+- `mdatagen`: Avoid using private types in public APIs and also protect options to be implemented outside this module. (#11040)
+- `consumertest`: Introduce SampleCount method in ProfilesSink struct. (#11225)
+- `otlpreceiver`: Support profiles in the OTLP receiver (#11071)
+
+## v1.15.0/v0.109.0
+
+### 🛑 Breaking changes 🛑
+
+- `Remove `extensiontest` StatusWatcher helpers`: They were unused. They may be added back on a different module or after `componentstatus` is marked 1.0
+ (#11044)
+- `pprofile`: Change Profile ID field from a byte array to a custom data type (#11048)
+- `connector`: Remove deprecated connector builder (#11019)
+- `exporter`: Remove deprecated exporter builder (#11019)
+- `extension`: Remove deprecated extension builder (#11019)
+- `processor`: Remove deprecated processor builder (#11019)
+- `receiver`: Remove deprecated receiver builder (#11019)
+
+### 🚩 Deprecations 🚩
+
+- `configtelemetry`: Deprecating `TelemetrySettings.MeterProvider` in favour of `TelemetrySettings.LeveledMeterProvider` (#10912)
+- `extension`: Deprecate `extension.ConfigWatcher`, `extension.PipelineWatcher` and `extension.Dependent` in favor of equivalents in the `extensioncapabilities` module. (#11000)
+- `scraperhelper`: deprecate NewScraper, should use NewScraperWithComponentType (#11082)
+
+### 🚀 New components 🚀
+
+- `extensioncapabilities`: Create a new module for optional extension capabilities. (#11000)
+
+### 💡 Enhancements 💡
+
+- `connectorprofiles`: Add ProfilesRouterAndConsumer interface, and NewProfilesRouter method. (#11023)
+- `pprofileotlp`: Introduce grpc service implementation of pprofileotlp (#11048)
+- `pprofile`: Introduce marshalling and unmarshalling of pprofile data (#11048)
+- `service`: Support profiles in the service package (#11024)
+
 ## v1.14.1/v0.108.1
 
 ## v1.14.0/v0.108.0

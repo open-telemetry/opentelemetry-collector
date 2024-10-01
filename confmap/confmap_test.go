@@ -109,7 +109,7 @@ func TestExpandNilStructPointersHookFunc(t *testing.T) {
 	conf := NewFromStringMap(stringMap)
 	cfg := &TestConfig{}
 	assert.Nil(t, cfg.Struct)
-	assert.NoError(t, conf.Unmarshal(cfg))
+	require.NoError(t, conf.Unmarshal(cfg))
 	assert.Nil(t, cfg.Boolean)
 	// assert.False(t, *cfg.Boolean)
 	assert.Nil(t, cfg.Struct)
@@ -134,7 +134,7 @@ func TestExpandNilStructPointersHookFuncDefaultNotNilConfigNil(t *testing.T) {
 		Struct:    s1,
 		MapStruct: map[string]*Struct{"struct": s2},
 	}
-	assert.NoError(t, conf.Unmarshal(cfg))
+	require.NoError(t, conf.Unmarshal(cfg))
 	assert.NotNil(t, cfg.Boolean)
 	assert.True(t, *cfg.Boolean)
 	assert.NotNil(t, cfg.Struct)
@@ -149,7 +149,7 @@ func TestUnmarshalWithIgnoreUnused(t *testing.T) {
 		"string":  "this is a string",
 	}
 	conf := NewFromStringMap(stringMap)
-	assert.Error(t, conf.Unmarshal(&TestIDConfig{}))
+	require.Error(t, conf.Unmarshal(&TestIDConfig{}))
 	assert.NoError(t, conf.Unmarshal(&TestIDConfig{}, WithIgnoreUnused()))
 }
 
@@ -208,7 +208,7 @@ func TestMapKeyStringToMapKeyTextUnmarshalerHookFunc(t *testing.T) {
 	conf := NewFromStringMap(stringMap)
 
 	cfg := &TestIDConfig{}
-	assert.NoError(t, conf.Unmarshal(cfg))
+	require.NoError(t, conf.Unmarshal(cfg))
 	assert.True(t, cfg.Boolean)
 	assert.Equal(t, map[TestID]string{"string": "this is a string"}, cfg.Map)
 }
@@ -243,7 +243,7 @@ func TestUintUnmarshalerSuccess(t *testing.T) {
 			cfg := &UintConfig{}
 			err := conf.Unmarshal(cfg)
 
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, cfg.UintTest, uint32(tt.testValue))
 		})
 	}
@@ -264,7 +264,7 @@ func TestUint64Unmarshaler(t *testing.T) {
 	cfg := &Uint64Config{}
 	err := conf.Unmarshal(cfg)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, cfg.UintTest, testValue)
 }
 
@@ -277,8 +277,7 @@ func TestUintUnmarshalerFailure(t *testing.T) {
 	cfg := &UintConfig{}
 	err := conf.Unmarshal(cfg)
 
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), fmt.Sprintf("decoding failed due to the following error(s):\n\ncannot parse 'uint_test', %d overflows uint", testValue))
+	assert.ErrorContains(t, err, fmt.Sprintf("decoding failed due to the following error(s):\n\ncannot parse 'uint_test', %d overflows uint", testValue))
 }
 
 func TestMapKeyStringToMapKeyTextUnmarshalerHookFuncDuplicateID(t *testing.T) {
@@ -316,7 +315,7 @@ func TestMarshal(t *testing.T) {
 			"string": "this is a string",
 		},
 	}
-	assert.NoError(t, conf.Marshal(cfg))
+	require.NoError(t, conf.Marshal(cfg))
 	assert.Equal(t, true, conf.Get("bool"))
 	assert.Equal(t, map[string]any{"string_": "this is a string"}, conf.Get("map"))
 }
@@ -345,7 +344,7 @@ func TestMarshaler(t *testing.T) {
 			Name: "StructName",
 		},
 	}
-	assert.NoError(t, conf.Marshal(cfg))
+	require.NoError(t, conf.Marshal(cfg))
 	assert.Equal(t, "field", conf.Get("additional"))
 
 	conf = New()
@@ -355,9 +354,9 @@ func TestMarshaler(t *testing.T) {
 	nmCfg := &NestedMarshaler{
 		TestConfig: cfg,
 	}
-	assert.NoError(t, conf.Marshal(nmCfg))
+	require.NoError(t, conf.Marshal(nmCfg))
 	sub, err := conf.Sub("testconfig")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, sub.IsSet("additional"))
 	assert.Equal(t, "field", sub.Get("additional"))
 	varBool := false
@@ -483,7 +482,7 @@ func TestUnmarshaler(t *testing.T) {
 	})
 
 	tc := &testConfig{}
-	assert.NoError(t, cfgMap.Unmarshal(tc))
+	require.NoError(t, cfgMap.Unmarshal(tc))
 	assert.Equal(t, "make sure this is only called directly", tc.Another)
 	assert.Equal(t, "make sure this is called", tc.Next.String)
 	assert.Equal(t, "make sure this is also called", tc.EmbeddedConfig.Some)
@@ -501,7 +500,7 @@ func TestEmbeddedUnmarshaler(t *testing.T) {
 	})
 
 	tc := &testConfigWithoutUnmarshaler{}
-	assert.NoError(t, cfgMap.Unmarshal(tc))
+	require.NoError(t, cfgMap.Unmarshal(tc))
 	assert.Equal(t, "make sure this", tc.Another)
 	assert.Equal(t, "make sure this is called", tc.Next.String)
 	assert.Equal(t, "make sure this is also called", tc.EmbeddedConfig.Some)
@@ -545,7 +544,7 @@ func TestUnmarshalerKeepAlreadyInitialized(t *testing.T) {
 	tc := &testConfig{Next: &nextConfig{
 		private: "keep already configured members",
 	}}
-	assert.NoError(t, cfgMap.Unmarshal(tc))
+	require.NoError(t, cfgMap.Unmarshal(tc))
 	assert.Equal(t, "make sure this is only called directly", tc.Another)
 	assert.Equal(t, "make sure this is called", tc.Next.String)
 	assert.Equal(t, "keep already configured members", tc.Next.private)
@@ -562,7 +561,7 @@ func TestDirectUnmarshaler(t *testing.T) {
 	tc := &testConfig{Next: &nextConfig{
 		private: "keep already configured members",
 	}}
-	assert.NoError(t, tc.Unmarshal(cfgMap))
+	require.NoError(t, tc.Unmarshal(cfgMap))
 	assert.Equal(t, "make sure this is only called directly is only called directly", tc.Another)
 	assert.Equal(t, "make sure this is called", tc.Next.String)
 	assert.Equal(t, "keep already configured members", tc.Next.private)
@@ -588,7 +587,7 @@ func TestUnmarshalerErr(t *testing.T) {
 	})
 
 	tc := &testErrConfig{}
-	assert.EqualError(t, cfgMap.Unmarshal(tc), "decoding failed due to the following error(s):\n\nerror decoding 'err': never works")
+	require.EqualError(t, cfgMap.Unmarshal(tc), "decoding failed due to the following error(s):\n\nerror decoding 'err': never works")
 	assert.Empty(t, tc.Err.Foo)
 }
 
@@ -736,7 +735,7 @@ func TestNestedUnmarshalerImplementations(t *testing.T) {
 
 	// Use a wrapper struct until we deprecate component.UnmarshalConfig
 	w := &Wrapper{}
-	assert.NoError(t, conf.Unmarshal(w))
+	require.NoError(t, conf.Unmarshal(w))
 
 	a := w.A
 	assert.Equal(t, []string{"conf.Unmarshal", "A.Unmarshal"}, a.Modifiers)
@@ -754,14 +753,14 @@ func TestUnmarshalDouble(t *testing.T) {
 		Str string `mapstructure:"str"`
 	}
 	s := &Struct{}
-	assert.NoError(t, conf.Unmarshal(s))
+	require.NoError(t, conf.Unmarshal(s))
 	assert.Equal(t, "test", s.Str)
 
 	type Struct2 struct {
 		Str string `mapstructure:"str"`
 	}
 	s2 := &Struct2{}
-	assert.NoError(t, conf.Unmarshal(s2))
+	require.NoError(t, conf.Unmarshal(s2))
 	assert.Equal(t, "test", s2.Str)
 }
 
@@ -859,14 +858,14 @@ func TestExpandedValue(t *testing.T) {
 	}
 
 	cfgStr := ConfigStr{}
-	assert.NoError(t, cm.Unmarshal(&cfgStr))
+	require.NoError(t, cm.Unmarshal(&cfgStr))
 	assert.Equal(t, "original", cfgStr.Key)
 
 	type ConfigInt struct {
 		Key int `mapstructure:"key"`
 	}
 	cfgInt := ConfigInt{}
-	assert.NoError(t, cm.Unmarshal(&cfgInt))
+	require.NoError(t, cm.Unmarshal(&cfgInt))
 	assert.Equal(t, 0xdeadbeef, cfgInt.Key)
 
 	type ConfigBool struct {
@@ -874,6 +873,28 @@ func TestExpandedValue(t *testing.T) {
 	}
 	cfgBool := ConfigBool{}
 	assert.Error(t, cm.Unmarshal(&cfgBool))
+}
+
+func TestSubExpandedValue(t *testing.T) {
+	cm := NewFromStringMap(map[string]any{
+		"key": map[string]any{
+			"subkey": expandedValue{
+				Value:    map[string]any{"subsubkey": "value"},
+				Original: "subsubkey: value",
+			},
+		},
+	})
+
+	assert.Equal(t, map[string]any{"subkey": map[string]any{"subsubkey": "value"}}, cm.Get("key"))
+	assert.Equal(t, map[string]any{"key": map[string]any{"subkey": map[string]any{"subsubkey": "value"}}}, cm.ToStringMap())
+	assert.Equal(t, map[string]any{"subsubkey": "value"}, cm.Get("key::subkey"))
+
+	sub, err := cm.Sub("key::subkey")
+	require.NoError(t, err)
+	assert.Equal(t, map[string]any{"subsubkey": "value"}, sub.ToStringMap())
+
+	// This should return value, but currently `Get` does not support keys within expanded values.
+	assert.Nil(t, cm.Get("key::subkey::subsubkey"))
 }
 
 func TestStringyTypes(t *testing.T) {

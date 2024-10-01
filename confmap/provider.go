@@ -6,6 +6,7 @@ package confmap // import "go.opentelemetry.io/collector/confmap"
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
@@ -112,21 +113,29 @@ type retrievedSettings struct {
 }
 
 // RetrievedOption options to customize Retrieved values.
-type RetrievedOption func(*retrievedSettings)
+type RetrievedOption interface {
+	apply(*retrievedSettings)
+}
+
+type retrievedOptionFunc func(*retrievedSettings)
+
+func (of retrievedOptionFunc) apply(e *retrievedSettings) {
+	of(e)
+}
 
 // WithRetrievedClose overrides the default Retrieved.Close function.
 // The default Retrieved.Close function does nothing and always returns nil.
 func WithRetrievedClose(closeFunc CloseFunc) RetrievedOption {
-	return func(settings *retrievedSettings) {
+	return retrievedOptionFunc(func(settings *retrievedSettings) {
 		settings.closeFunc = closeFunc
-	}
+	})
 }
 
 func withStringRepresentation(stringRepresentation string) RetrievedOption {
-	return func(settings *retrievedSettings) {
+	return retrievedOptionFunc(func(settings *retrievedSettings) {
 		settings.stringRepresentation = stringRepresentation
 		settings.isSetString = true
-	}
+	})
 }
 
 // NewRetrievedFromYAML returns a new Retrieved instance that contains the deserialized data from the yaml bytes.
@@ -162,7 +171,7 @@ func NewRetrieved(rawConf any, opts ...RetrievedOption) (*Retrieved, error) {
 	}
 	set := retrievedSettings{}
 	for _, opt := range opts {
-		opt(&set)
+		opt.apply(&set)
 	}
 	return &Retrieved{
 		rawConf:              rawConf,
@@ -227,7 +236,7 @@ func checkRawConfType(rawConf any) error {
 		return nil
 	}
 	switch rawConf.(type) {
-	case int, int32, int64, float32, float64, bool, string, []any, map[string]any:
+	case int, int32, int64, float32, float64, bool, string, []any, map[string]any, time.Time:
 		return nil
 	default:
 		return fmt.Errorf(

@@ -74,22 +74,32 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
 ## Producing the artifacts
 The last step of the release process creates artifacts for the new version of the collector and publishes images to Dockerhub. The steps in this portion of the release are done in the [opentelemetry-collector-releases](https://github.com/open-telemetry/opentelemetry-collector-releases) repo.
 
-1. Update the `./distributions/**/manifest.yaml` files to include the new release version.
+**NOTE: Step 1 of this section is updated!**
 
-2. Update the builder version in `OTELCOL_BUILDER_VERSION` to the new release in the `Makefile`. While this might not be strictly necessary for every release, this is a good practice.
+1. Run the "Update Version" workflow under [opentelemetry-collector-releases](https://github.com/open-telemetry/opentelemetry-collector-releases) repo. Make sure to enter the previous (current) and the new (updated) version numbers, including the leading 'v'. This will automate the following steps:
+   
+   1. Update the `./distributions/**/manifest.yaml` files to include the new release version.
 
-3. Create a pull request with the change and ensure the build completes successfully. See [example](https://github.com/open-telemetry/opentelemetry-collector-releases/pull/71).
+   2. Update the default `./cmd/builder/builder-config.yaml` used for ocb Docker image build to include the new release version
+
+   3. Update the builder version in `OTELCOL_BUILDER_VERSION` to the new release in the `Makefile`. While this might not be strictly necessary for every release, this is a good practice.
+
+   4. Create a pull request with these changes 
+
+2. Review the automatic pull request that is created and ensure the build completes successfully. See [example](https://github.com/open-telemetry/opentelemetry-collector-releases/pull/71).
    -  🛑 **Do not move forward until this PR is merged.** 🛑
 
-4. Check out the commit created by merging the PR and tag with the new release version by running the `make push-tags TAG=v0.85.0` command. If you set your remote using `https` you need to include `REMOTE=https://github.com/open-telemetry/opentelemetry-collector-releases.git` in each command. Wait for the new tag build to pass successfully.
+3. Check out the commit created by merging the PR and tag with the new release version by running the `make push-tags TAG=v0.85.0` command. If you set your remote using `https` you need to include `REMOTE=https://github.com/open-telemetry/opentelemetry-collector-releases.git` in each command. Wait for the new tag build to pass successfully.
 
-5. Ensure the "Release Core", "Release Contrib", "Release k8s", and "Builder - Release" actions pass, this will
+4. Ensure the "Release Core", "Release Contrib", "Release k8s", and "Builder - Release" actions pass, this will
 
     1. push new container images to `https://hub.docker.com/repository/docker/otel/opentelemetry-collector`, `https://hub.docker.com/repository/docker/otel/opentelemetry-collector-contrib` and `https://hub.docker.com/repository/docker/otel/opentelemetry-collector-k8s`
 
     2. create a Github release for the tag and push all the build artifacts to the Github release. See [example](https://github.com/open-telemetry/opentelemetry-collector-releases/actions/workflows/release-core.yaml).
 
     3. build and release ocb binaries under a separate tagged Github release, e.g. `cmd/builder/v0.85.0`
+
+    4. build and push ocb Docker images to `https://hub.docker.com/r/otel/opentelemetry-collector-builder` and the GitHub Container Registry within the releases repository
 
 ## Troubleshooting
 
@@ -160,7 +170,6 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 
 | Date       | Version  | Release manager                                   |
 |------------|----------|---------------------------------------------------|
-| 2024-09-09 | v0.109.0 | [@bogdandrutu](https://github.com/bogdandrutu)    |
 | 2024-09-23 | v0.110.0 | [@jpkrohling](https://github.com/jpkrohling)      |
 | 2024-10-07 | v0.111.0 | [@mx-psi](https://github.com/mx-psi)              |
 | 2024-10-21 | v0.112.0 | [@evan-bradley](https://github.com/evan-bradley)  |
@@ -169,4 +178,5 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 | 2024-12-02 | v0.115.0 | [@atoulme](https://github.com/atoulme)            |
 | 2024-12-16 | v0.116.0 | [@songy23](https://github.com/songy23)            |
 | 2025-01-06 | v0.117.0 | [@dmitryax](https://github.com/dmitryax)          |
-| 2024-01-20 | v0.118.0 | [@codeboten](https://github.com/codeboten)        |
+| 2025-01-20 | v0.118.0 | [@codeboten](https://github.com/codeboten)        |
+| 2025-02-03 | v0.119.0 | [@bogdandrutu](https://github.com/bogdandrutu)    |

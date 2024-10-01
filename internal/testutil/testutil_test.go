@@ -68,8 +68,8 @@ Start Port    End Port
 * - Administered port exclusions.
 `
 	exclusions := createExclusionsList(exclusionsText, t)
-	require.Equal(t, len(exclusions), 2)
+	require.Len(t, exclusions, 2)
 
 	emptyExclusions := createExclusionsList(emptyExclusionsText, t)
-	require.Equal(t, len(emptyExclusions), 0)
+	require.Empty(t, emptyExclusions)
 }

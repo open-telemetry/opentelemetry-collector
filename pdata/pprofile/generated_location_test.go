@@ -75,9 +75,9 @@ func TestLocation_Line(t *testing.T) {
 
 func TestLocation_IsFolded(t *testing.T) {
 	ms := NewLocation()
-	assert.Equal(t, false, ms.IsFolded())
+	assert.False(t, ms.IsFolded())
 	ms.SetIsFolded(true)
-	assert.Equal(t, true, ms.IsFolded())
+	assert.True(t, ms.IsFolded())
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { newLocation(&otlpprofiles.Location{}, &sharedState).SetIsFolded(true) })
 }

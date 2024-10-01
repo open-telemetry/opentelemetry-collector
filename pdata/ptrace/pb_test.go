@@ -44,7 +44,7 @@ func BenchmarkTracesToProto(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		buf, err := marshaler.MarshalTraces(traces)
 		require.NoError(b, err)
-		assert.NotEqual(b, 0, len(buf))
+		assert.NotEmpty(b, buf)
 	}
 }
 
@@ -54,7 +54,7 @@ func BenchmarkTracesFromProto(b *testing.B) {
 	baseTraces := generateBenchmarkTraces(128)
 	buf, err := marshaler.MarshalTraces(baseTraces)
 	require.NoError(b, err)
-	assert.NotEqual(b, 0, len(buf))
+	assert.NotEmpty(b, buf)
 	b.ResetTimer()
 	b.ReportAllocs()
 	for n := 0; n < b.N; n++ {

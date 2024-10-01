@@ -37,10 +37,28 @@ func fillProfileOne(profile pprofile.ProfileContainer) {
 	profile.SetStartTime(profileStartTimestamp)
 	profile.SetEndTime(profileEndTimestamp)
 	profile.SetDroppedAttributesCount(1)
+
+	sample := profile.Profile().Sample().AppendEmpty()
+	sample.LocationIndex().Append(1)
+	sample.SetLocationsStartIndex(2)
+	sample.SetLocationsLength(10)
+	sample.SetStacktraceIdIndex(3)
+	sample.Value().Append(4)
+	sample.SetLink(42)
+	sample.Attributes().Append(5)
 }
 
 func fillProfileTwo(profile pprofile.ProfileContainer) {
 	profile.SetProfileID([16]byte{0x02, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
 	profile.SetStartTime(profileStartTimestamp)
 	profile.SetEndTime(profileEndTimestamp)
+
+	sample := profile.Profile().Sample().AppendEmpty()
+	sample.LocationIndex().Append(6)
+	sample.SetLocationsStartIndex(7)
+	sample.SetLocationsLength(20)
+	sample.SetStacktraceIdIndex(8)
+	sample.Value().Append(9)
+	sample.SetLink(44)
+	sample.Attributes().Append(10)
 }

@@ -109,19 +109,8 @@ The process to generate new metrics is to configure them via
 
 ## Experimental trace telemetry
 
-The Collector does not expose traces by default, but an effort is underway to
-[change this][issue7532]. The work includes supporting configuration of the
-OpenTelemetry SDK used to produce the Collector's internal telemetry. This
-feature is behind two feature gates:
-
-```bash
-  --feature-gates=telemetry.useOtelWithSDKConfigurationForInternalTelemetry
-```
-
-The gate `useOtelWithSDKConfigurationForInternalTelemetry` enables the Collector
-to parse any configuration that aligns with the [OpenTelemetry Configuration]
-schema. Support for this schema is experimental, but it does allow telemetry to
-be exported using OTLP.
+The Collector does not expose traces by default, but can be configured.
+The Collector's internal telemetry uses OpenTelemetry SDK.
 
 The following configuration can be used in combination with the aforementioned
 feature gates to emit internal metrics and traces from the Collector to an OTLP

@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/logs"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metrics"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/profiles"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/trace"
 )
 
@@ -110,6 +111,37 @@ func handleLogs(resp http.ResponseWriter, req *http.Request, logsReceiver *logs.
 	}
 
 	msg, err := enc.marshalLogsResponse(otlpResp)
+	if err != nil {
+		writeError(resp, enc, err, http.StatusInternalServerError)
+		return
+	}
+	writeResponse(resp, enc.contentType(), http.StatusOK, msg)
+}
+
+func handleProfiles(resp http.ResponseWriter, req *http.Request, profilesReceiver *profiles.Receiver) {
+	enc, ok := readContentType(resp, req)
+	if !ok {
+		return
+	}
+
+	body, ok := readAndCloseBody(resp, req, enc)
+	if !ok {
+		return
+	}
+
+	otlpReq, err := enc.unmarshalProfilesRequest(body)
+	if err != nil {
+		writeError(resp, enc, err, http.StatusBadRequest)
+		return
+	}
+
+	otlpResp, err := profilesReceiver.Export(req.Context(), otlpReq)
+	if err != nil {
+		writeError(resp, enc, err, http.StatusInternalServerError)
+		return
+	}
+
+	msg, err := enc.marshalProfilesResponse(otlpResp)
 	if err != nil {
 		writeError(resp, enc, err, http.StatusInternalServerError)
 		return

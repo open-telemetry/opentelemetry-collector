@@ -26,7 +26,7 @@ func TestValue(t *testing.T) {
 
 	v = NewValueDouble(3.4)
 	assert.EqualValues(t, ValueTypeDouble, v.Type())
-	assert.EqualValues(t, 3.4, v.Double())
+	assert.InDelta(t, 3.4, v.Double(), 0.01)
 
 	v = NewValueBool(true)
 	assert.EqualValues(t, ValueTypeBool, v.Type())
@@ -52,7 +52,7 @@ func TestValueReadOnly(t *testing.T) {
 	assert.EqualValues(t, ValueTypeStr, v.Type())
 	assert.EqualValues(t, "v", v.Str())
 	assert.EqualValues(t, 0, v.Int())
-	assert.EqualValues(t, 0, v.Double())
+	assert.InDelta(t, 0, v.Double(), 0.01)
 	assert.False(t, v.Bool())
 	assert.EqualValues(t, ByteSlice{}, v.Bytes())
 	assert.EqualValues(t, Map{}, v.Map())
@@ -217,18 +217,18 @@ func TestNilOrigSetValue(t *testing.T) {
 
 	av = NewValueEmpty()
 	av.SetDouble(1.23)
-	assert.EqualValues(t, 1.23, av.Double())
+	assert.InDelta(t, 1.23, av.Double(), 0.01)
 
 	av = NewValueEmpty()
 	av.SetEmptyBytes().FromRaw([]byte{1, 2, 3})
 	assert.Equal(t, []byte{1, 2, 3}, av.Bytes().AsRaw())
 
 	av = NewValueEmpty()
-	assert.NoError(t, av.SetEmptyMap().FromRaw(map[string]any{"k": "v"}))
+	require.NoError(t, av.SetEmptyMap().FromRaw(map[string]any{"k": "v"}))
 	assert.Equal(t, map[string]any{"k": "v"}, av.Map().AsRaw())
 
 	av = NewValueEmpty()
-	assert.NoError(t, av.SetEmptySlice().FromRaw([]any{int64(1), "val"}))
+	require.NoError(t, av.SetEmptySlice().FromRaw([]any{int64(1), "val"}))
 	assert.Equal(t, []any{int64(1), "val"}, av.Slice().AsRaw())
 }
 
@@ -255,7 +255,7 @@ func TestValue_CopyTo(t *testing.T) {
 	av := NewValueEmpty()
 	destVal := otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{}}
 	av.CopyTo(newValue(&destVal, &state))
-	assert.EqualValues(t, nil, destVal.Value)
+	assert.Nil(t, destVal.Value)
 }
 
 func TestSliceWithNilValues(t *testing.T) {
@@ -347,10 +347,10 @@ func TestValueAsString(t *testing.T) {
 			expected: base64.StdEncoding.EncodeToString([]byte("String bytes")),
 		},
 	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			actual := test.input.AsString()
-			assert.Equal(t, test.expected, actual)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := tt.input.AsString()
+			assert.Equal(t, tt.expected, actual)
 		})
 	}
 }
@@ -405,10 +405,10 @@ func TestValueAsRaw(t *testing.T) {
 			},
 		},
 	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			actual := test.input.AsRaw()
-			assert.Equal(t, test.expected, actual)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := tt.input.AsRaw()
+			assert.Equal(t, tt.expected, actual)
 		})
 	}
 }
@@ -545,7 +545,7 @@ func TestNewValueFromRaw(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			actual := NewValueEmpty()
-			assert.NoError(t, actual.FromRaw(tt.input))
+			require.NoError(t, actual.FromRaw(tt.input))
 			assert.Equal(t, tt.expected, actual)
 		})
 	}
@@ -560,7 +560,7 @@ func TestInvalidValue(t *testing.T) {
 	v := Value{}
 	assert.False(t, v.Bool())
 	assert.Equal(t, int64(0), v.Int())
-	assert.Equal(t, float64(0), v.Double())
+	assert.InDelta(t, float64(0), v.Double(), 0.01)
 	assert.Equal(t, "", v.Str())
 	assert.Equal(t, ByteSlice{}, v.Bytes())
 	assert.Equal(t, Map{}, v.Map())

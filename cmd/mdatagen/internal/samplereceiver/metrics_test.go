@@ -26,12 +26,12 @@ func TestGeneratedMetrics(t *testing.T) {
 func TestComponentTelemetry(t *testing.T) {
 	tt := setupTestTelemetry()
 	factory := NewFactory()
-	receiver, err := factory.CreateMetricsReceiver(context.Background(), tt.NewSettings(), componenttest.NewNopHost(), new(consumertest.MetricsSink))
+	receiver, err := factory.CreateMetrics(context.Background(), tt.NewSettings(), componenttest.NewNopHost(), new(consumertest.MetricsSink))
 	require.NoError(t, err)
 	tt.assertMetrics(t, []metricdata.Metrics{
 		{
 			Name:        "otelcol_batch_size_trigger_send",
-			Description: "Number of times the batch was sent due to a size trigger",
+			Description: "Number of times the batch was sent due to a size trigger [deprecated since v0.110.0]",
 			Unit:        "{times}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
@@ -64,7 +64,7 @@ func TestComponentTelemetry(t *testing.T) {
 	tt.assertMetrics(t, []metricdata.Metrics{
 		{
 			Name:        "otelcol_batch_size_trigger_send",
-			Description: "Number of times the batch was sent due to a size trigger",
+			Description: "Number of times the batch was sent due to a size trigger [deprecated since v0.110.0]",
 			Unit:        "{times}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,

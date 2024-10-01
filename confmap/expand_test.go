@@ -40,9 +40,9 @@ func TestResolverExpandEnvVars(t *testing.T) {
 		return NewRetrieved(envs[uri[4:]])
 	})
 
-	for _, test := range testCases {
-		t.Run(test.name, func(t *testing.T) {
-			resolver, err := NewResolver(ResolverSettings{URIs: []string{filepath.Join("testdata", test.name)}, ProviderFactories: []ProviderFactory{fileProvider, envProvider}, ConverterFactories: nil})
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			resolver, err := NewResolver(ResolverSettings{URIs: []string{filepath.Join("testdata", tt.name)}, ProviderFactories: []ProviderFactory{fileProvider, envProvider}, ConverterFactories: nil})
 			require.NoError(t, err)
 
 			// Test that expanded configs are the same with the simple config with no env vars.
@@ -184,6 +184,11 @@ func TestResolverExpandStringValues(t *testing.T) {
 			name:   "Bool",
 			input:  "test_${env:BOOL}",
 			output: "test_true",
+		},
+		{
+			name:   "Timestamp",
+			input:  "test_${env:TIMESTAMP}",
+			output: "test_2023-03-20T03:17:55.432328Z",
 		},
 		{
 			name:   "MultipleSameMatches",
@@ -414,6 +419,8 @@ func newEnvProvider() ProviderFactory {
 			return NewRetrievedFromYAML([]byte("[localhost:3042]"))
 		case "env:HOST":
 			return NewRetrievedFromYAML([]byte("localhost"))
+		case "env:TIMESTAMP":
+			return NewRetrievedFromYAML([]byte("2023-03-20T03:17:55.432328Z"))
 		case "env:OS":
 			return NewRetrievedFromYAML([]byte("ubuntu"))
 		case "env:PR":

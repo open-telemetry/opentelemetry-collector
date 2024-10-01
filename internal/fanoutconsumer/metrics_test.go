@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -44,18 +45,18 @@ func TestMetricsMultiplexingNonMutating(t *testing.T) {
 		}
 	}
 
-	assert.True(t, md == p1.AllMetrics()[0])
-	assert.True(t, md == p1.AllMetrics()[1])
+	assert.Equal(t, md, p1.AllMetrics()[0])
+	assert.Equal(t, md, p1.AllMetrics()[1])
 	assert.EqualValues(t, md, p1.AllMetrics()[0])
 	assert.EqualValues(t, md, p1.AllMetrics()[1])
 
-	assert.True(t, md == p2.AllMetrics()[0])
-	assert.True(t, md == p2.AllMetrics()[1])
+	assert.Equal(t, md, p2.AllMetrics()[0])
+	assert.Equal(t, md, p2.AllMetrics()[1])
 	assert.EqualValues(t, md, p2.AllMetrics()[0])
 	assert.EqualValues(t, md, p2.AllMetrics()[1])
 
-	assert.True(t, md == p3.AllMetrics()[0])
-	assert.True(t, md == p3.AllMetrics()[1])
+	assert.Equal(t, md, p3.AllMetrics()[0])
+	assert.Equal(t, md, p3.AllMetrics()[1])
 	assert.EqualValues(t, md, p3.AllMetrics()[0])
 	assert.EqualValues(t, md, p3.AllMetrics()[1])
 
@@ -80,19 +81,19 @@ func TestMetricsMultiplexingMutating(t *testing.T) {
 		}
 	}
 
-	assert.True(t, md != p1.AllMetrics()[0])
-	assert.True(t, md != p1.AllMetrics()[1])
+	assert.NotSame(t, md, p1.AllMetrics()[0])
+	assert.NotSame(t, md, p1.AllMetrics()[1])
 	assert.EqualValues(t, md, p1.AllMetrics()[0])
 	assert.EqualValues(t, md, p1.AllMetrics()[1])
 
-	assert.True(t, md != p2.AllMetrics()[0])
-	assert.True(t, md != p2.AllMetrics()[1])
+	assert.NotSame(t, md, p2.AllMetrics()[0])
+	assert.NotSame(t, md, p2.AllMetrics()[1])
 	assert.EqualValues(t, md, p2.AllMetrics()[0])
 	assert.EqualValues(t, md, p2.AllMetrics()[1])
 
 	// For this consumer, will receive the initial data.
-	assert.True(t, md == p3.AllMetrics()[0])
-	assert.True(t, md == p3.AllMetrics()[1])
+	assert.Equal(t, md, p3.AllMetrics()[0])
+	assert.Equal(t, md, p3.AllMetrics()[1])
 	assert.EqualValues(t, md, p3.AllMetrics()[0])
 	assert.EqualValues(t, md, p3.AllMetrics()[1])
 
@@ -121,18 +122,18 @@ func TestReadOnlyMetricsMultiplexingMixFirstMutating(t *testing.T) {
 
 	// All consumers should receive the cloned data.
 
-	assert.True(t, md != p1.AllMetrics()[0])
-	assert.True(t, md != p1.AllMetrics()[1])
+	assert.NotEqual(t, md, p1.AllMetrics()[0])
+	assert.NotEqual(t, md, p1.AllMetrics()[1])
 	assert.EqualValues(t, mdOrig, p1.AllMetrics()[0])
 	assert.EqualValues(t, mdOrig, p1.AllMetrics()[1])
 
-	assert.True(t, md != p2.AllMetrics()[0])
-	assert.True(t, md != p2.AllMetrics()[1])
+	assert.NotEqual(t, md, p2.AllMetrics()[0])
+	assert.NotEqual(t, md, p2.AllMetrics()[1])
 	assert.EqualValues(t, mdOrig, p2.AllMetrics()[0])
 	assert.EqualValues(t, mdOrig, p2.AllMetrics()[1])
 
-	assert.True(t, md != p3.AllMetrics()[0])
-	assert.True(t, md != p3.AllMetrics()[1])
+	assert.NotEqual(t, md, p3.AllMetrics()[0])
+	assert.NotEqual(t, md, p3.AllMetrics()[1])
 	assert.EqualValues(t, mdOrig, p3.AllMetrics()[0])
 	assert.EqualValues(t, mdOrig, p3.AllMetrics()[1])
 }
@@ -154,20 +155,20 @@ func TestMetricsMultiplexingMixLastMutating(t *testing.T) {
 		}
 	}
 
-	assert.True(t, md != p1.AllMetrics()[0])
-	assert.True(t, md != p1.AllMetrics()[1])
+	assert.NotSame(t, md, p1.AllMetrics()[0])
+	assert.NotSame(t, md, p1.AllMetrics()[1])
 	assert.EqualValues(t, md, p1.AllMetrics()[0])
 	assert.EqualValues(t, md, p1.AllMetrics()[1])
 
 	// For this consumer, will receive the initial data.
-	assert.True(t, md == p2.AllMetrics()[0])
-	assert.True(t, md == p2.AllMetrics()[1])
+	assert.Equal(t, md, p2.AllMetrics()[0])
+	assert.Equal(t, md, p2.AllMetrics()[1])
 	assert.EqualValues(t, md, p2.AllMetrics()[0])
 	assert.EqualValues(t, md, p2.AllMetrics()[1])
 
 	// For this consumer, will clone the initial data.
-	assert.True(t, md != p3.AllMetrics()[0])
-	assert.True(t, md != p3.AllMetrics()[1])
+	assert.NotSame(t, md, p3.AllMetrics()[0])
+	assert.NotSame(t, md, p3.AllMetrics()[1])
 	assert.EqualValues(t, md, p3.AllMetrics()[0])
 	assert.EqualValues(t, md, p3.AllMetrics()[1])
 
@@ -192,19 +193,19 @@ func TestMetricsMultiplexingMixLastNonMutating(t *testing.T) {
 		}
 	}
 
-	assert.True(t, md != p1.AllMetrics()[0])
-	assert.True(t, md != p1.AllMetrics()[1])
+	assert.NotSame(t, md, p1.AllMetrics()[0])
+	assert.NotSame(t, md, p1.AllMetrics()[1])
 	assert.EqualValues(t, md, p1.AllMetrics()[0])
 	assert.EqualValues(t, md, p1.AllMetrics()[1])
 
-	assert.True(t, md != p2.AllMetrics()[0])
-	assert.True(t, md != p2.AllMetrics()[1])
+	assert.NotSame(t, md, p2.AllMetrics()[0])
+	assert.NotSame(t, md, p2.AllMetrics()[1])
 	assert.EqualValues(t, md, p2.AllMetrics()[0])
 	assert.EqualValues(t, md, p2.AllMetrics()[1])
 
 	// For this consumer, will receive the initial data.
-	assert.True(t, md == p3.AllMetrics()[0])
-	assert.True(t, md == p3.AllMetrics()[1])
+	assert.Equal(t, md, p3.AllMetrics()[0])
+	assert.Equal(t, md, p3.AllMetrics()[1])
 	assert.EqualValues(t, md, p3.AllMetrics()[0])
 	assert.EqualValues(t, md, p3.AllMetrics()[1])
 
@@ -221,11 +222,11 @@ func TestMetricsWhenErrors(t *testing.T) {
 	md := testdata.GenerateMetrics(1)
 
 	for i := 0; i < 2; i++ {
-		assert.Error(t, mfc.ConsumeMetrics(context.Background(), md))
+		require.Error(t, mfc.ConsumeMetrics(context.Background(), md))
 	}
 
-	assert.True(t, md == p3.AllMetrics()[0])
-	assert.True(t, md == p3.AllMetrics()[1])
+	assert.Equal(t, md, p3.AllMetrics()[0])
+	assert.Equal(t, md, p3.AllMetrics()[1])
 	assert.EqualValues(t, md, p3.AllMetrics()[0])
 	assert.EqualValues(t, md, p3.AllMetrics()[1])
 }
