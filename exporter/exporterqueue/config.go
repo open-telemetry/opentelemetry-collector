@@ -9,15 +9,13 @@ import (
 
 // Config defines configuration for queueing requests before exporting.
 // It's supposed to be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter.
-//
-// Deprecated: [v0.111.0] If you use this API, please comment on
-// https://github.com/open-telemetry/opentelemetry-collector/issues/11142 so we don't remove it.
+// Experimental: This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 type Config = exporterqueue.Config
 
 // NewDefaultConfig returns the default Config.
-//
-// Deprecated: [v0.111.0] If you use this API, please comment on
-// https://github.com/open-telemetry/opentelemetry-collector/issues/11142 so we don't remove it.
+// Experimental: This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func NewDefaultConfig() Config {
 	return exporterqueue.NewDefaultConfig()
 }
@@ -26,7 +24,6 @@ func NewDefaultConfig() Config {
 // The struct is provided to be added in the exporter configuration as one struct under the "sending_queue" key.
 // The exporter helper Go interface requires the fields to be provided separately to WithRequestQueue and
 // NewPersistentQueueFactory.
-//
-// Deprecated: [v0.111.0] If you use this API, please comment on
-// https://github.com/open-telemetry/opentelemetry-collector/issues/11142 so we don't remove it.
+// Experimental: This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 type PersistentQueueConfig = exporterqueue.PersistentQueueConfig

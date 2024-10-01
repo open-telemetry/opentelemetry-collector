@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
-	"go.opentelemetry.io/collector/exporter/exporterqueue"
+	"go.opentelemetry.io/collector/exporter/exporterqueue" //nolint // Deprecated package only used in deprecated functions
 	internalExporterQueue "go.opentelemetry.io/collector/exporter/internal/exporterqueue"
 )
 
