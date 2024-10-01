@@ -88,11 +88,8 @@ func (f *factory) ProfilesReceiverStability() component.StabilityLevel {
 }
 
 type factoryOpts struct {
-	cfgType component.Type
-	component.CreateDefaultConfigFunc
 	opts []receiver.FactoryOption
-	CreateProfilesFunc
-	profilesStabilityLevel component.StabilityLevel
+	*factory
 }
 
 // WithTraces overrides the default "error not supported" implementation for Factory.CreateTraces and the default "undefined" stability level.
@@ -126,16 +123,11 @@ func WithProfiles(createProfiles CreateProfilesFunc, sl component.StabilityLevel
 
 // NewFactory returns a Factory.
 func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefaultConfigFunc, options ...FactoryOption) Factory {
-	opts := factoryOpts{
-		cfgType:                 cfgType,
-		CreateDefaultConfigFunc: createDefaultConfig,
-	}
+	opts := factoryOpts{factory: &factory{}}
 	for _, opt := range options {
 		opt.applyOption(&opts)
 	}
-	return &factory{
-		Factory:                receiver.NewFactory(opts.cfgType, opts.CreateDefaultConfig, opts.opts...),
-		CreateProfilesFunc:     opts.CreateProfilesFunc,
-		profilesStabilityLevel: opts.profilesStabilityLevel,
-	}
+	opts.factory.Factory = receiver.NewFactory(cfgType, createDefaultConfig, opts.opts...)
+	return opts.factory
+
 }
