@@ -106,10 +106,6 @@ type shard struct {
 
 	// pending describes the contributors to the current batch.
 	pending []pendingItem
-
-	// totalSent counts the number of items processed by the
-	// shard in its lifetime.
-	totalSent uint64
 }
 
 // pendingItem is stored parallel to a pending batch and records how
@@ -140,7 +136,7 @@ type batch interface {
 	itemCount() int
 
 	// add item to the current batch
-	add(item any)
+	add(item any) int
 
 	// sizeBytes counts the OTLP encoding size of the batch
 	sizeBytes(item any) int
@@ -271,11 +267,8 @@ func (b *shard) startLoop() {
 }
 
 func (b *shard) processItem(item dataItem) {
-	before := b.batch.itemCount()
-	b.batch.add(item.data)
-	after := b.batch.itemCount()
+	totalItems := b.batch.add(item.data)
 
-	totalItems := after - before
 	b.pending = append(b.pending, pendingItem{
 		parentCtx: item.parentCtx,
 		numItems:  totalItems,
@@ -318,25 +311,25 @@ func (b *shard) sendItems(trigger trigger) {
 
 	var thisBatch []pendingItem
 
-	numItemsBefore := b.totalSent
-	numItemsAfter := b.totalSent + uint64(sent)
+	// numToSend equals the number of points being sent not yet
+	// incorporated into thisBatch.  It is decremented as the pending
+	// items are assembled.
+	numToSend := sent
 
 	// The current batch can contain items from several different
 	// producers.  Update pending to correctly track contexts
 	// included in the current batch.
-	for len(b.pending) > 0 && numItemsBefore < numItemsAfter {
-		if numItemsBefore+uint64(b.pending[0].numItems) > numItemsAfter {
+	for len(b.pending) > 0 && numToSend > 0 {
+		if b.pending[0].numItems > numToSend {
 			// Waiter only had some items in the current batch
-			partialSent := int(numItemsAfter - numItemsBefore)
-			numItemsBefore = numItemsAfter
-			b.pending[0].numItems -= partialSent
+			b.pending[0].numItems -= numToSend
 			thisBatch = append(thisBatch, pendingItem{
-				numItems:  partialSent,
+				numItems:  numToSend,
 				parentCtx: b.pending[0].parentCtx,
 			})
 		} else {
 			// This item will be completely processed.
-			numItemsBefore += uint64(b.pending[0].numItems)
+			numToSend -= b.pending[0].numItems
 			thisBatch = append(thisBatch, pendingItem{
 				numItems:  b.pending[0].numItems,
 				parentCtx: b.pending[0].parentCtx,
@@ -348,8 +341,6 @@ func (b *shard) sendItems(trigger trigger) {
 			b.pending = b.pending[:len(b.pending)-1]
 		}
 	}
-
-	b.totalSent = numItemsAfter
 
 	var err error
 
@@ -563,15 +554,14 @@ func newBatchTraces(nextConsumer consumer.Traces) *batchTraces {
 }
 
 // add updates current batchTraces by adding new TraceData object
-func (bt *batchTraces) add(item any) {
+func (bt *batchTraces) add(item any) int {
 	td := item.(ptrace.Traces)
 	newSpanCount := td.SpanCount()
-	if newSpanCount == 0 {
-		return
+	if newSpanCount != 0 {
+		bt.spanCount += newSpanCount
+		td.ResourceSpans().MoveAndAppendTo(bt.traceData.ResourceSpans())
 	}
-
-	bt.spanCount += newSpanCount
-	td.ResourceSpans().MoveAndAppendTo(bt.traceData.ResourceSpans())
+	return newSpanCount
 }
 
 func (bt *batchTraces) sizeBytes(data any) int {
@@ -644,15 +634,15 @@ func (bm *batchMetrics) itemCount() int {
 	return bm.dataPointCount
 }
 
-func (bm *batchMetrics) add(item any) {
+func (bm *batchMetrics) add(item any) int {
 	md := item.(pmetric.Metrics)
 
 	newDataPointCount := md.DataPointCount()
-	if newDataPointCount == 0 {
-		return
+	if newDataPointCount != 0 {
+		bm.dataPointCount += newDataPointCount
+		md.ResourceMetrics().MoveAndAppendTo(bm.metricData.ResourceMetrics())
 	}
-	bm.dataPointCount += newDataPointCount
-	md.ResourceMetrics().MoveAndAppendTo(bm.metricData.ResourceMetrics())
+	return newDataPointCount
 }
 
 type batchLogs struct {
@@ -696,13 +686,13 @@ func (bl *batchLogs) itemCount() int {
 	return bl.logCount
 }
 
-func (bl *batchLogs) add(item any) {
+func (bl *batchLogs) add(item any) int {
 	ld := item.(plog.Logs)
 
 	newLogsCount := ld.LogRecordCount()
-	if newLogsCount == 0 {
-		return
+	if newLogsCount != 0 {
+		bl.logCount += newLogsCount
+		ld.ResourceLogs().MoveAndAppendTo(bl.logData.ResourceLogs())
 	}
-	bl.logCount += newLogsCount
-	ld.ResourceLogs().MoveAndAppendTo(bl.logData.ResourceLogs())
+	return newLogsCount
 }
