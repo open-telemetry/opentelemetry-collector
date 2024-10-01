@@ -20,7 +20,7 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240903143218-8af14fe29dc1
-	google.golang.org/grpc v1.67.0
+	google.golang.org/grpc v1.67.1
 	google.golang.org/protobuf v1.34.2
 )
 
@@ -46,7 +46,6 @@ require (
 	github.com/mostynb/go-grpc-compression v1.2.3 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/collector/client v1.16.0 // indirect
-	go.opentelemetry.io/collector/component/componentprofiles v0.110.0 // indirect
 	go.opentelemetry.io/collector/config/confignet v1.16.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.110.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.110.0 // indirect
@@ -127,8 +126,6 @@ replace go.opentelemetry.io/collector/exporter/exporterprofiles => ../exporterpr
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 
 replace go.opentelemetry.io/collector/internal/globalsignal => ../../internal/globalsignal
-
-replace go.opentelemetry.io/collector/component/componentprofiles => ../../component/componentprofiles
 
 replace go.opentelemetry.io/collector => ../..
 

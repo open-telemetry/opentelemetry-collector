@@ -232,7 +232,7 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 			encoding: "snappy",
 			reqBody:  bytes.NewBuffer(testBody),
 			respCode: http.StatusBadRequest,
-			respBody: "snappy: corrupt input\n",
+			respBody: "snappy: corrupt input",
 		},
 		{
 			name:     "UnsupportedCompression",

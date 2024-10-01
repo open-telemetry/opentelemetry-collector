@@ -251,8 +251,7 @@ func TestOptionsToConfig(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			cfg, err := test.options.loadTLSConfig()
 			if test.expectError != "" {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), test.expectError)
+				assert.ErrorContains(t, err, test.expectError)
 			} else {
 				require.NoError(t, err)
 				assert.NotNil(t, cfg)

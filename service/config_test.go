@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/contrib/config"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
@@ -43,7 +44,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "duplicate-processor-reference",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				pipe := cfg.PipelinesWithPipelineID[pipeline.MustNewID("traces")]
+				pipe := cfg.Pipelines[pipeline.MustNewID("traces")]
 				pipe.Processors = append(pipe.Processors, pipe.Processors...)
 				return cfg
 			},
@@ -53,7 +54,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-service-pipeline-type",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				cfg.PipelinesWithPipelineID[pipeline.MustNewID("wrongtype")] = &pipelines.PipelineConfig{
+				cfg.Pipelines[pipeline.MustNewID("wrongtype")] = &pipelines.PipelineConfig{
 					Receivers:  []component.ID{component.MustNewID("nop")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewID("nop")},
@@ -67,7 +68,7 @@ func TestConfigValidate(t *testing.T) {
 			cfgFn: func() *Config {
 				cfg := generateConfig()
 				cfg.Telemetry.Metrics.Level = configtelemetry.LevelBasic
-				cfg.Telemetry.Metrics.Address = ""
+				cfg.Telemetry.Metrics.Readers = nil
 				return cfg
 			},
 			expected: nil,
@@ -96,12 +97,17 @@ func generateConfig() *Config {
 				InitialFields:     map[string]any{"fieldKey": "filed-value"},
 			},
 			Metrics: telemetry.MetricsConfig{
-				Level:   configtelemetry.LevelNormal,
-				Address: ":8080",
+				Level: configtelemetry.LevelNormal,
+				Readers: []config.MetricReader{{
+					Pull: &config.PullMetricReader{Exporter: config.MetricExporter{Prometheus: &config.Prometheus{
+						Host: newPtr("localhost"),
+						Port: newPtr(8080),
+					}}}},
+				},
 			},
 		},
 		Extensions: extensions.Config{component.MustNewID("nop")},
-		PipelinesWithPipelineID: pipelines.ConfigWithPipelineID{
+		Pipelines: pipelines.Config{
 			pipeline.MustNewID("traces"): {
 				Receivers:  []component.ID{component.MustNewID("nop")},
 				Processors: []component.ID{component.MustNewID("nop")},

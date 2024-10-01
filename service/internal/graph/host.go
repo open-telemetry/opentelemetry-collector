@@ -10,11 +10,9 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componentprofiles"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/globalsignal"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/builders"
@@ -26,14 +24,14 @@ import (
 //
 // nolint
 type getExporters interface {
-	GetExporters() map[component.DataType]map[component.ID]component.Component
+	GetExporters() map[pipeline.Signal]map[component.ID]component.Component
 }
 
 // TODO: remove as part of https://github.com/open-telemetry/opentelemetry-collector/issues/7370 for service 1.0
 //
 // nolint
 type getExportersWithSignal interface {
-	GetExportersWithSignal() map[globalsignal.Signal]map[component.ID]component.Component
+	GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component
 }
 
 var _ getExporters = (*Host)(nil)
@@ -83,15 +81,8 @@ func (host *Host) GetExtensions() map[component.ID]component.Component {
 // connector. See https://github.com/open-telemetry/opentelemetry-collector/issues/7370 and
 // https://github.com/open-telemetry/opentelemetry-collector/pull/7390#issuecomment-1483710184
 // for additional information.
-// If you still need this, use GetExportersWithSignal instead.
-// nolint
-func (host *Host) GetExporters() map[component.DataType]map[component.ID]component.Component {
-	exporters := host.Pipelines.GetExporters()
-	exportersMap := make(map[component.DataType]map[component.ID]component.Component)
-	for k, v := range exporters {
-		exportersMap[convertSignalToDataType(k)] = v
-	}
-	return exportersMap
+func (host *Host) GetExporters() map[pipeline.Signal]map[component.ID]component.Component {
+	return host.Pipelines.GetExporters()
 }
 
 // Deprecated: [0.79.0] This function will be removed in the future.
@@ -100,24 +91,9 @@ func (host *Host) GetExporters() map[component.DataType]map[component.ID]compone
 // connector. See https://github.com/open-telemetry/opentelemetry-collector/issues/7370 and
 // https://github.com/open-telemetry/opentelemetry-collector/pull/7390#issuecomment-1483710184
 // for additional information.
+// If you still need this, use GetExporters instead.
 func (host *Host) GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component {
 	return host.Pipelines.GetExporters()
-}
-
-// nolint
-func convertSignalToDataType(signal pipeline.Signal) component.DataType {
-	switch signal {
-	case pipeline.SignalTraces:
-		return component.DataTypeTraces
-	case pipeline.SignalMetrics:
-		return component.DataTypeMetrics
-	case pipeline.SignalLogs:
-		return component.DataTypeLogs
-	case componentprofiles.SignalProfiles:
-		return componentprofiles.DataTypeProfiles
-	default:
-		return component.MustNewType(signal.String())
-	}
 }
 
 func (host *Host) NotifyComponentStatusChange(source *componentstatus.InstanceID, event *componentstatus.Event) {

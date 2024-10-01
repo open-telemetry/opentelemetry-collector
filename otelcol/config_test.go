@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/contrib/config"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
@@ -99,7 +100,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-receiver-reference",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				pipe := cfg.Service.PipelinesWithPipelineID[pipeline.MustNewID("traces")]
+				pipe := cfg.Service.Pipelines[pipeline.MustNewID("traces")]
 				pipe.Receivers = append(pipe.Receivers, component.MustNewIDWithName("nop", "2"))
 				return cfg
 			},
@@ -109,7 +110,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-processor-reference",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				pipe := cfg.Service.PipelinesWithPipelineID[pipeline.MustNewID("traces")]
+				pipe := cfg.Service.Pipelines[pipeline.MustNewID("traces")]
 				pipe.Processors = append(pipe.Processors, component.MustNewIDWithName("nop", "2"))
 				return cfg
 			},
@@ -119,7 +120,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-exporter-reference",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				pipe := cfg.Service.PipelinesWithPipelineID[pipeline.MustNewID("traces")]
+				pipe := cfg.Service.Pipelines[pipeline.MustNewID("traces")]
 				pipe.Exporters = append(pipe.Exporters, component.MustNewIDWithName("nop", "2"))
 				return cfg
 			},
@@ -186,7 +187,7 @@ func TestConfigValidate(t *testing.T) {
 				cfg := generateConfig()
 				cfg.Receivers[component.MustNewID("nop2")] = &errConfig{}
 				cfg.Connectors[component.MustNewID("nop2")] = &errConfig{}
-				pipe := cfg.Service.PipelinesWithPipelineID[pipeline.MustNewID("traces")]
+				pipe := cfg.Service.Pipelines[pipeline.MustNewID("traces")]
 				pipe.Receivers = append(pipe.Receivers, component.MustNewIDWithName("nop", "2"))
 				pipe.Exporters = append(pipe.Exporters, component.MustNewIDWithName("nop", "2"))
 				return cfg
@@ -199,7 +200,7 @@ func TestConfigValidate(t *testing.T) {
 				cfg := generateConfig()
 				cfg.Exporters[component.MustNewID("nop2")] = &errConfig{}
 				cfg.Connectors[component.MustNewID("nop2")] = &errConfig{}
-				pipe := cfg.Service.PipelinesWithPipelineID[pipeline.MustNewID("traces")]
+				pipe := cfg.Service.Pipelines[pipeline.MustNewID("traces")]
 				pipe.Receivers = append(pipe.Receivers, component.MustNewIDWithName("nop", "2"))
 				pipe.Exporters = append(pipe.Exporters, component.MustNewIDWithName("nop", "2"))
 				return cfg
@@ -210,7 +211,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-connector-reference-as-receiver",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				pipe := cfg.Service.PipelinesWithPipelineID[pipeline.MustNewID("traces")]
+				pipe := cfg.Service.Pipelines[pipeline.MustNewID("traces")]
 				pipe.Receivers = append(pipe.Receivers, component.MustNewIDWithName("nop", "conn2"))
 				return cfg
 			},
@@ -220,7 +221,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-connector-reference-as-receiver",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				pipe := cfg.Service.PipelinesWithPipelineID[pipeline.MustNewID("traces")]
+				pipe := cfg.Service.Pipelines[pipeline.MustNewID("traces")]
 				pipe.Exporters = append(pipe.Exporters, component.MustNewIDWithName("nop", "conn2"))
 				return cfg
 			},
@@ -230,7 +231,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-service-config",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				cfg.Service.PipelinesWithPipelineID = nil
+				cfg.Service.Pipelines = nil
 				return cfg
 			},
 			expected: fmt.Errorf(`service::pipelines config validation failed: %w`, errors.New(`service must have at least one pipeline`)),
@@ -275,12 +276,21 @@ func generateConfig() *Config {
 					InitialFields:     map[string]any{"fieldKey": "filed-value"},
 				},
 				Metrics: telemetry.MetricsConfig{
-					Level:   configtelemetry.LevelNormal,
-					Address: ":8080",
+					Level: configtelemetry.LevelNormal,
+					Readers: []config.MetricReader{
+						{
+							Pull: &config.PullMetricReader{Exporter: config.MetricExporter{
+								Prometheus: &config.Prometheus{
+									Host: newPtr("localhost"),
+									Port: newPtr(8080),
+								},
+							}},
+						},
+					},
 				},
 			},
 			Extensions: []component.ID{component.MustNewID("nop")},
-			PipelinesWithPipelineID: pipelines.ConfigWithPipelineID{
+			Pipelines: pipelines.Config{
 				pipeline.MustNewID("traces"): {
 					Receivers:  []component.ID{component.MustNewID("nop")},
 					Processors: []component.ID{component.MustNewID("nop")},
@@ -289,4 +299,8 @@ func generateConfig() *Config {
 			},
 		},
 	}
+}
+
+func newPtr[T int | string](str T) *T {
+	return &str
 }

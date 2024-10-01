@@ -23,8 +23,8 @@ import (
 
 var testLogsCfg = struct{}{}
 
-func TestNewLogsProcessor(t *testing.T) {
-	lp, err := NewLogsProcessor(context.Background(), processortest.NewNopSettings(), &testLogsCfg, consumertest.NewNop(), newTestLProcessor(nil))
+func TestNewLogs(t *testing.T) {
+	lp, err := NewLogs(context.Background(), processortest.NewNopSettings(), &testLogsCfg, consumertest.NewNop(), newTestLProcessor(nil))
 	require.NoError(t, err)
 
 	assert.True(t, lp.Capabilities().MutatesData)
@@ -33,9 +33,9 @@ func TestNewLogsProcessor(t *testing.T) {
 	assert.NoError(t, lp.Shutdown(context.Background()))
 }
 
-func TestNewLogsProcessor_WithOptions(t *testing.T) {
+func TestNewLogs_WithOptions(t *testing.T) {
 	want := errors.New("my_error")
-	lp, err := NewLogsProcessor(context.Background(), processortest.NewNopSettings(), &testLogsCfg, consumertest.NewNop(), newTestLProcessor(nil),
+	lp, err := NewLogs(context.Background(), processortest.NewNopSettings(), &testLogsCfg, consumertest.NewNop(), newTestLProcessor(nil),
 		WithStart(func(context.Context, component.Host) error { return want }),
 		WithShutdown(func(context.Context) error { return want }),
 		WithCapabilities(consumer.Capabilities{MutatesData: false}))
@@ -46,20 +46,20 @@ func TestNewLogsProcessor_WithOptions(t *testing.T) {
 	assert.False(t, lp.Capabilities().MutatesData)
 }
 
-func TestNewLogsProcessor_NilRequiredFields(t *testing.T) {
-	_, err := NewLogsProcessor(context.Background(), processortest.NewNopSettings(), &testLogsCfg, consumertest.NewNop(), nil)
+func TestNewLogs_NilRequiredFields(t *testing.T) {
+	_, err := NewLogs(context.Background(), processortest.NewNopSettings(), &testLogsCfg, consumertest.NewNop(), nil)
 	assert.Error(t, err)
 }
 
-func TestNewLogsProcessor_ProcessLogError(t *testing.T) {
+func TestNewLogs_ProcessLogError(t *testing.T) {
 	want := errors.New("my_error")
-	lp, err := NewLogsProcessor(context.Background(), processortest.NewNopSettings(), &testLogsCfg, consumertest.NewNop(), newTestLProcessor(want))
+	lp, err := NewLogs(context.Background(), processortest.NewNopSettings(), &testLogsCfg, consumertest.NewNop(), newTestLProcessor(want))
 	require.NoError(t, err)
 	assert.Equal(t, want, lp.ConsumeLogs(context.Background(), plog.NewLogs()))
 }
 
-func TestNewLogsProcessor_ProcessLogsErrSkipProcessingData(t *testing.T) {
-	lp, err := NewLogsProcessor(context.Background(), processortest.NewNopSettings(), &testLogsCfg, consumertest.NewNop(), newTestLProcessor(ErrSkipProcessingData))
+func TestNewLogs_ProcessLogsErrSkipProcessingData(t *testing.T) {
+	lp, err := NewLogs(context.Background(), processortest.NewNopSettings(), &testLogsCfg, consumertest.NewNop(), newTestLProcessor(ErrSkipProcessingData))
 	require.NoError(t, err)
 	assert.NoError(t, lp.ConsumeLogs(context.Background(), plog.NewLogs()))
 }
@@ -70,7 +70,7 @@ func newTestLProcessor(retError error) ProcessLogsFunc {
 	}
 }
 
-func TestLogsProcessor_RecordInOut(t *testing.T) {
+func TestLogs_RecordInOut(t *testing.T) {
 	// Regardless of how many logs are ingested, emit just one
 	mockAggregate := func(_ context.Context, _ plog.Logs) (plog.Logs, error) {
 		ld := plog.NewLogs()
@@ -87,7 +87,7 @@ func TestLogsProcessor_RecordInOut(t *testing.T) {
 	incomingLogRecords.AppendEmpty()
 
 	testTelemetry := setupTestTelemetry()
-	lp, err := NewLogsProcessor(context.Background(), testTelemetry.NewSettings(), &testLogsCfg, consumertest.NewNop(), mockAggregate)
+	lp, err := NewLogs(context.Background(), testTelemetry.NewSettings(), &testLogsCfg, consumertest.NewNop(), mockAggregate)
 	require.NoError(t, err)
 
 	assert.NoError(t, lp.Start(context.Background(), componenttest.NewNopHost()))

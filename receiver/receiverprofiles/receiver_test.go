@@ -18,7 +18,7 @@ import (
 func TestNewFactoryWithProfiles(t *testing.T) {
 	var testType = component.MustNewType("test")
 	defaultCfg := struct{}{}
-	factory := receiver.NewFactory(
+	factory := NewFactory(
 		testType,
 		func() component.Config { return &defaultCfg },
 		WithProfiles(createProfiles, component.StabilityLevelAlpha),
@@ -26,8 +26,8 @@ func TestNewFactoryWithProfiles(t *testing.T) {
 	assert.EqualValues(t, testType, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
-	assert.Equal(t, component.StabilityLevelAlpha, factory.ProfilesReceiverStability())
-	_, err := factory.CreateProfilesReceiver(context.Background(), receiver.Settings{}, &defaultCfg, nil)
+	assert.Equal(t, component.StabilityLevelAlpha, factory.ProfilesStability())
+	_, err := factory.CreateProfiles(context.Background(), receiver.Settings{}, &defaultCfg, nil)
 	assert.NoError(t, err)
 }
 

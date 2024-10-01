@@ -24,12 +24,12 @@ func TestReceiverBuilder(t *testing.T) {
 	defaultCfg := struct{}{}
 	factories, err := receiver.MakeFactoryMap([]receiver.Factory{
 		receiver.NewFactory(component.MustNewType("err"), nil),
-		receiver.NewFactory(
+		receiverprofiles.NewFactory(
 			component.MustNewType("all"),
 			func() component.Config { return &defaultCfg },
-			receiver.WithTraces(createReceiverTraces, component.StabilityLevelDevelopment),
-			receiver.WithMetrics(createReceiverMetrics, component.StabilityLevelAlpha),
-			receiver.WithLogs(createReceiverLogs, component.StabilityLevelDeprecated),
+			receiverprofiles.WithTraces(createReceiverTraces, component.StabilityLevelDevelopment),
+			receiverprofiles.WithMetrics(createReceiverMetrics, component.StabilityLevelAlpha),
+			receiverprofiles.WithLogs(createReceiverLogs, component.StabilityLevelDeprecated),
 			receiverprofiles.WithProfiles(createReceiverProfiles, component.StabilityLevelAlpha),
 		),
 	}...)
@@ -136,12 +136,12 @@ func TestReceiverBuilder(t *testing.T) {
 func TestReceiverBuilderMissingConfig(t *testing.T) {
 	defaultCfg := struct{}{}
 	factories, err := receiver.MakeFactoryMap([]receiver.Factory{
-		receiver.NewFactory(
+		receiverprofiles.NewFactory(
 			component.MustNewType("all"),
 			func() component.Config { return &defaultCfg },
-			receiver.WithTraces(createReceiverTraces, component.StabilityLevelDevelopment),
-			receiver.WithMetrics(createReceiverMetrics, component.StabilityLevelAlpha),
-			receiver.WithLogs(createReceiverLogs, component.StabilityLevelDeprecated),
+			receiverprofiles.WithTraces(createReceiverTraces, component.StabilityLevelDevelopment),
+			receiverprofiles.WithMetrics(createReceiverMetrics, component.StabilityLevelAlpha),
+			receiverprofiles.WithLogs(createReceiverLogs, component.StabilityLevelDeprecated),
 			receiverprofiles.WithProfiles(createReceiverProfiles, component.StabilityLevelAlpha),
 		),
 	}...)
@@ -189,25 +189,25 @@ func TestNewNopReceiverConfigsAndFactories(t *testing.T) {
 	set := receivertest.NewNopSettings()
 	set.ID = component.NewID(nopType)
 
-	traces, err := factory.CreateTracesReceiver(context.Background(), set, cfg, consumertest.NewNop())
+	traces, err := factory.CreateTraces(context.Background(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	bTraces, err := builder.CreateTraces(context.Background(), set, consumertest.NewNop())
 	require.NoError(t, err)
 	assert.IsType(t, traces, bTraces)
 
-	metrics, err := factory.CreateMetricsReceiver(context.Background(), set, cfg, consumertest.NewNop())
+	metrics, err := factory.CreateMetrics(context.Background(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	bMetrics, err := builder.CreateMetrics(context.Background(), set, consumertest.NewNop())
 	require.NoError(t, err)
 	assert.IsType(t, metrics, bMetrics)
 
-	logs, err := factory.CreateLogsReceiver(context.Background(), set, cfg, consumertest.NewNop())
+	logs, err := factory.CreateLogs(context.Background(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	bLogs, err := builder.CreateLogs(context.Background(), set, consumertest.NewNop())
 	require.NoError(t, err)
 	assert.IsType(t, logs, bLogs)
 
-	profiles, err := factory.CreateProfilesReceiver(context.Background(), set, cfg, consumertest.NewNop())
+	profiles, err := factory.(receiverprofiles.Factory).CreateProfiles(context.Background(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	bProfiles, err := builder.CreateProfiles(context.Background(), set, consumertest.NewNop())
 	require.NoError(t, err)

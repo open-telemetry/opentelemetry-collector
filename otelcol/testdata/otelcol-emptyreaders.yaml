@@ -7,7 +7,7 @@ exporters:
 service:
   telemetry:
     metrics:
-      address: ""
+      readers: []
   pipelines:
     metrics:
       receivers: [nop]
