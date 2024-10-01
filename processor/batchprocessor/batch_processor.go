@@ -344,6 +344,7 @@ func (b *shard) sendItems(trigger trigger) {
 
 			// Shift the pending array, to allow it to be re-used.
 			copy(b.pending[0:len(b.pending)-1], b.pending[1:])
+			b.pending[len(b.pending)-1] = pendingItem{}
 			b.pending = b.pending[:len(b.pending)-1]
 		}
 	}
