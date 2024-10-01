@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/client"
@@ -24,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/batchprocessor/internal/metadata"
 )
 
 // errTooManyBatchers is returned when the MetadataCardinalityLimit has been reached.
@@ -63,6 +65,9 @@ type batchProcessor struct {
 
 	// batcher will be either *singletonBatcher or *multiBatcher
 	batcher batcher
+
+	// tracer is the configured tracer
+	tracer trace.Tracer
 }
 
 // batcher is describes a *singletonBatcher or *multiBatcher.
@@ -93,11 +98,34 @@ type shard struct {
 	timer *time.Timer
 
 	// newItem is used to receive data items from producers.
-	newItem chan any
+	newItem chan dataItem
 
 	// batch is an in-flight data item containing one of the
 	// underlying data types.
 	batch batch
+
+	// pending describes the contributors to the current batch.
+	pending []pendingItem
+
+	// totalSent counts the number of items processed by the
+	// shard in its lifetime.
+	totalSent uint64
+}
+
+// pendingItem is stored parallel to a pending batch and records
+// how many items the waiter submitted, used to ensure the correct
+// response count is returned to each waiter.  It is also used
+// inside sendItems() to represent a partially complete batch.
+type pendingItem struct {
+	parentCtx context.Context
+	numItems  int
+}
+
+// dataItem is exchanged between the waiter and the batching process
+// includes the pendingItem and its data.
+type dataItem struct {
+	data any
+	pendingItem
 }
 
 // batch is an interface generalizing the individual signal types.
@@ -140,6 +168,7 @@ func newBatchProcessor(set processor.Settings, cfg *Config, batchFunc func() bat
 		shutdownC:        make(chan struct{}, 1),
 		metadataKeys:     mks,
 		metadataLimit:    int(cfg.MetadataCardinalityLimit),
+		tracer:           set.TelemetrySettings.TracerProvider.Tracer(metadata.ScopeName),
 	}
 	if len(bp.metadataKeys) == 0 {
 		bp.batcher = &singleShardBatcher{
@@ -168,7 +197,7 @@ func (bp *batchProcessor) newShard(md map[string][]string) *shard {
 	})
 	b := &shard{
 		processor: bp,
-		newItem:   make(chan any, runtime.NumCPU()),
+		newItem:   make(chan dataItem, runtime.NumCPU()),
 		exportCtx: exportCtx,
 		batch:     bp.batchFunc(),
 	}
@@ -228,7 +257,7 @@ func (b *shard) startLoop() {
 			}
 			return
 		case item := <-b.newItem:
-			if item == nil {
+			if item.data == nil {
 				continue
 			}
 			b.processItem(item)
@@ -241,8 +270,21 @@ func (b *shard) startLoop() {
 	}
 }
 
-func (b *shard) processItem(item any) {
-	b.batch.add(item)
+func (b *shard) processItem(item dataItem) {
+	before := b.batch.itemCount()
+	b.batch.add(item.data)
+	after := b.batch.itemCount()
+
+	totalItems := after - before
+	b.pending = append(b.pending, pendingItem{
+		parentCtx: item.parentCtx,
+		numItems:  totalItems,
+	})
+
+	b.flushItems()
+}
+
+func (b *shard) flushItems() {
 	sent := false
 	for b.batch.itemCount() > 0 && (!b.hasTimer() || b.batch.itemCount() >= b.processor.sendBatchSize) {
 		sent = true
@@ -274,8 +316,76 @@ func (b *shard) resetTimer() {
 func (b *shard) sendItems(trigger trigger) {
 	sent, req := b.batch.splitBatch(b.exportCtx, b.processor.sendBatchMaxSize)
 
-	err := b.batch.export(b.exportCtx, req)
-	if err != nil {
+	var thisBatch []pendingItem
+
+	numItemsBefore := b.totalSent
+	numItemsAfter := b.totalSent + uint64(sent)
+
+	// The current batch can contain items from several different
+	// producers.  Update pending to correctly track contexts
+	// included in the current batch.
+	for len(b.pending) > 0 && numItemsBefore < numItemsAfter {
+		if numItemsBefore+uint64(b.pending[0].numItems) > numItemsAfter {
+			// Waiter only had some items in the current batch
+			partialSent := int(numItemsAfter - numItemsBefore)
+			numItemsBefore = numItemsAfter
+			b.pending[0].numItems -= partialSent
+			thisBatch = append(thisBatch, pendingItem{
+				numItems:  partialSent,
+				parentCtx: b.pending[0].parentCtx,
+			})
+		} else {
+			// This item will be completely processed.
+			numItemsBefore += uint64(b.pending[0].numItems)
+			thisBatch = append(thisBatch, pendingItem{
+				numItems:  b.pending[0].numItems,
+				parentCtx: b.pending[0].parentCtx,
+			})
+
+			// Shift the pending array, to allow it to be re-used.
+			copy(b.pending[0:len(b.pending)-1], b.pending[1:])
+			b.pending = b.pending[:len(b.pending)-1]
+		}
+	}
+
+	b.totalSent = numItemsAfter
+
+	var err error
+
+	var parentSpan trace.Span
+	var parent context.Context
+	isSingleCtx := allSameContext(thisBatch)
+
+	// If incoming requests are sufficiently large, there
+	// will be one context, in which case no need to create a new
+	// root span.
+	if isSingleCtx {
+		parent = thisBatch[0].parentCtx
+		parent, parentSpan = b.processor.tracer.Start(parent, "batch_processor/export")
+	} else {
+		spans := parentSpans(thisBatch)
+
+		links := make([]trace.Link, len(spans))
+		for i, span := range spans {
+			links[i] = trace.Link{SpanContext: span.SpanContext()}
+		}
+		parent, parentSpan = b.processor.tracer.Start(b.exportCtx, "batch_processor/export", trace.WithLinks(links...))
+
+		// Note: linking in the opposite direction.
+		// This could be inferred by the trace
+		// backend, but this adds helpful information
+		// in cases where sampling may break links.
+		// See https://github.com/open-telemetry/opentelemetry-specification/issues/1877
+		for _, span := range spans {
+			span.AddLink(trace.Link{SpanContext: parentSpan.SpanContext()})
+		}
+	}
+	// Note: call End() before returning to caller contexts, otherwise
+	// trace-based tests will not recognize unfinished spans when the test
+	// terminates.
+	parentSpan.End()
+
+	if err = b.batch.export(parent, req); err != nil {
 		b.processor.logger.Warn("Sender failed", zap.Error(err))
 		return
 	}
@@ -284,6 +394,63 @@ func (b *shard) sendItems(trigger trigger) {
 		bytes = b.batch.sizeBytes(req)
 	}
 	b.processor.telemetry.record(trigger, int64(sent), int64(bytes))
+}
+
+// parentSpans computes the set of distinct span contexts and returns
+// the corresponding set of active span objects.
+func parentSpans(x []pendingItem) []trace.Span {
+	var spans []trace.Span
+	unique := make(map[context.Context]bool)
+	for i := range x {
+		_, ok := unique[x[i].parentCtx]
+		if ok {
+			continue
+		}
+
+		unique[x[i].parentCtx] = true
+
+		spans = append(spans, trace.SpanFromContext(x[i].parentCtx))
+	}
+
+	return spans
+}
+
+// allSameContext is a helper function to check if a slice of contexts
+// contains more than one unique context.
+func allSameContext(x []pendingItem) bool {
+	for idx := range x[1:] {
+		if x[idx].parentCtx != x[0].parentCtx {
+			return false
+		}
+	}
+	return true
+}
+
+func (b *shard) consumeBatch(ctx context.Context, data any) error {
+	var itemCount int
+	switch telem := data.(type) {
+	case ptrace.Traces:
+		itemCount = telem.SpanCount()
+	case pmetric.Metrics:
+		itemCount = telem.DataPointCount()
+	case plog.Logs:
+		itemCount = telem.LogRecordCount()
+	}
+
+	if itemCount == 0 {
+		return nil
+	}
+
+	item := dataItem{
+		data: data,
+		pendingItem: pendingItem{
+			parentCtx: ctx,
+			numItems:  itemCount,
+		},
+	}
+
+	b.newItem <- item
+	return nil
 }
 
 // singleShardBatcher is used when metadataKeys is empty, to avoid the
@@ -299,9 +466,8 @@ func (sb *singleShardBatcher) start(context.Context) error {
 	return nil
 }
 
-func (sb *singleShardBatcher) consume(_ context.Context, data any) error {
-	sb.single.newItem <- data
-	return nil
+func (sb *singleShardBatcher) consume(ctx context.Context, data any) error {
+	return sb.single.consumeBatch(ctx, data)
 }
 
 func (sb *singleShardBatcher) currentMetadataCardinality() int {
@@ -362,8 +528,7 @@ func (mb *multiShardBatcher) consume(ctx context.Context, data any) error {
 		}
 		mb.lock.Unlock()
 	}
-	b.(*shard).newItem <- data
-	return nil
+	return b.(*shard).consumeBatch(ctx, data)
 }
 
 func (mb *multiShardBatcher) currentMetadataCardinality() int {
