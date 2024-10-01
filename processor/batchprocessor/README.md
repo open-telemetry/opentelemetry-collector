@@ -117,7 +117,7 @@ The number of batch processors currently in use is exported as the
 
 ## Tracing support
 
-This processor is traced using a span name `batch_processor/export`
+This processor is traced using a span named `batch_processor/export`
 for each exported batch.  If the batch consists of a single parent
 context, the context will be used and a child span created.  If the
 batch consists of multiple parent contexts, then a new root span is

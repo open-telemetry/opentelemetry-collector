@@ -112,10 +112,10 @@ type shard struct {
 	totalSent uint64
 }
 
-// pendingItem is stored parallel to a pending batch and records
-// how many items the waiter submitted, used to ensure the correct
-// response count is returned to each waiter.  It is also used
-// inside sendItems() to represent a partially complete batch.
+// pendingItem is stored parallel to a pending batch and records how
+// many items the waiter submitted, used to match trace contexts with
+// batches.  It is also used inside sendItems() to represent a
+// partially complete batch.
 type pendingItem struct {
 	parentCtx context.Context
 	numItems  int
