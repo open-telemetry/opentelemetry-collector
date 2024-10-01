@@ -17,9 +17,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processorhelper/internal/metadata"
 )
 
-// BuildCustomMetricName is used to be build a metric name following
-// the standards used in the Collector. The configType should be the same
-// value used to identify the type on the config.
+// Deprecated: [v0.111.0] no longer needed. To be removed in future.
 func BuildCustomMetricName(configType, metric string) string {
 	componentPrefix := internal.ProcessorMetricPrefix
 	if !strings.HasSuffix(componentPrefix, internal.MetricNameSep) {
