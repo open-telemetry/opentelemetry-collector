@@ -355,12 +355,11 @@ func (b *shard) sendItems(trigger trigger) {
 
 	var parentSpan trace.Span
 	var parent context.Context
-	isSingleCtx := allSameContext(thisBatch)
 
 	// If incoming requests are sufficiently large, there
 	// will be one context, in which case no need to create a new
 	// root span.
-	if isSingleCtx {
+	if len(thisBatch) == 1 {
 		parent = thisBatch[0].parentCtx
 		parent, parentSpan = b.processor.tracer.Start(parent, "batch_processor/export")
 	} else {
@@ -372,11 +371,14 @@ func (b *shard) sendItems(trigger trigger) {
 		}
 		parent, parentSpan = b.processor.tracer.Start(b.exportCtx, "batch_processor/export", trace.WithLinks(links...))
 
-		// Note: linking in the opposite direction.
-		// This could be inferred by the trace
-		// backend, but this adds helpful information
-		// in cases where sampling may break links.
-		// See https://github.com/open-telemetry/opentelemetry-specification/issues/1877
+		// Note: linking in the opposite direction.  This
+		// could be inferred by the trace backend, but this
+		// adds helpful information in cases where sampling
+		// may break links.  See
+		// https://github.com/open-telemetry/opentelemetry-specification/issues/1877
+		// Note that there is a possibility that the span has
+		// already ended (if EarlyReturn or context canceled),
+		// in which case this becomes a no-op.
 		for _, span := range spans {
 			span.AddLink(trace.Link{SpanContext: parentSpan.SpanContext()})
 		}
@@ -401,30 +403,11 @@ func (b *shard) sendItems(trigger trigger) {
 // the corresponding set of active span objects.
 func parentSpans(x []pendingItem) []trace.Span {
 	var spans []trace.Span
-	unique := make(map[context.Context]bool)
 	for i := range x {
-		_, ok := unique[x[i].parentCtx]
-		if ok {
-			continue
-		}
-
-		unique[x[i].parentCtx] = true
-
 		spans = append(spans, trace.SpanFromContext(x[i].parentCtx))
 	}
 
 	return spans
-}
-
-// allSameContext is a helper function to check if a slice of contexts
-// contains more than one unique context.
-func allSameContext(x []pendingItem) bool {
-	for idx := range x[1:] {
-		if x[idx].parentCtx != x[0].parentCtx {
-			return false
-		}
-	}
-	return true
 }
 
 func (b *shard) consumeBatch(ctx context.Context, data any) error {

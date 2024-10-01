@@ -1520,8 +1520,10 @@ func testBatchProcessorUnbrokenParentContextSingle(t *testing.T, signal string, 
 	cfg.SendBatchSize = 100
 	cfg.SendBatchMaxSize = 100
 	cfg.Timeout = 3 * time.Second
+	// Make itemsPerRequest match the batch size and it means single-batch exports,
+	// which avoid creating a new root span.
 	requestCount := 10
-	itemsPerRequest := 5248 // Has to be even, see comment re: GenerateMetrics() above
+	itemsPerRequest := 100
 	exp := tracetest.NewInMemoryExporter()
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithBatcher(exp),
@@ -1594,8 +1596,9 @@ func testBatchProcessorUnbrokenParentContextMultiple(t *testing.T, signal string
 	cfg.Timeout = 3 * time.Second
 	requestCount := 50
 	// keep itemsPerRequest small to ensure multiple contexts end up in the same batch.
-	// this number has to be even, see comment on GenerateMetrics above.
-	itemsPerRequest := 6
+	// this number has to be even, see comment on GenerateMetrics above.  Has to evenly
+	// divide batch size for the test logic below.
+	itemsPerRequest := 10
 	exp := tracetest.NewInMemoryExporter()
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithBatcher(exp),
@@ -1654,6 +1657,7 @@ func testBatchProcessorUnbrokenParentContextMultiple(t *testing.T, signal string
 	for _, span := range endLater {
 		expectSpanCtxs = append(expectSpanCtxs, span.SpanContext())
 	}
+	linksTotal := 0
 	for _, span := range td {
 		switch span.Name {
 		case "batch_processor/export":
@@ -1663,15 +1667,22 @@ func testBatchProcessorUnbrokenParentContextMultiple(t *testing.T, signal string
 		default:
 			t.Error("unexpected span name:", span.Name)
 		}
-		assert.Len(t, span.Links, len(callCtxs))
+		linksTotal += len(span.Links)
 
 		var haveSpanCtxs []trace.SpanContext
+		uniqSpanCtxs := make(map[trace.SpanID]struct{})
 		for _, link := range span.Links {
+			if _, ok := uniqSpanCtxs[link.SpanContext.SpanID()]; ok {
+				continue
+			}
+			uniqSpanCtxs[link.SpanContext.SpanID()] = struct{}{}
 			haveSpanCtxs = append(haveSpanCtxs, link.SpanContext)
 		}
 
 		assert.ElementsMatch(t, expectSpanCtxs, haveSpanCtxs)
 	}
+
+	assert.Equal(t, requestCount, linksTotal)
 
 	// End the parent spans
 	for _, span := range endLater {
