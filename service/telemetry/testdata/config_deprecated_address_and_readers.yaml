@@ -1,0 +1,11 @@
+logs:
+  level: "info"
+metrics:
+  level: "basic"
+  address: "192.168.0.1:6666"
+  readers:
+    - pull:
+        exporter:
+          prometheus:
+            host: "localhost"
+            port: 9999

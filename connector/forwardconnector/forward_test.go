@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/connector/connectortest"
@@ -27,17 +28,17 @@ func TestForward(t *testing.T) {
 
 	tracesSink := new(consumertest.TracesSink)
 	tracesToTraces, err := f.CreateTracesToTraces(ctx, set, cfg, tracesSink)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, tracesToTraces)
 
 	metricsSink := new(consumertest.MetricsSink)
 	metricsToMetrics, err := f.CreateMetricsToMetrics(ctx, set, cfg, metricsSink)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, metricsToMetrics)
 
 	logsSink := new(consumertest.LogsSink)
 	logsToLogs, err := f.CreateLogsToLogs(ctx, set, cfg, logsSink)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, logsToLogs)
 
 	assert.NoError(t, tracesToTraces.Start(ctx, host))

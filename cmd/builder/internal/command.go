@@ -209,5 +209,6 @@ func applyCfgFromFile(flags *flag.FlagSet, cfgFromFile builder.Config) {
 	if !flags.Changed(distributionModuleFlag) && cfgFromFile.Distribution.Module != "" {
 		cfg.Distribution.Module = cfgFromFile.Distribution.Module
 	}
+	cfg.Distribution.BuildTags = cfgFromFile.Distribution.BuildTags
 	cfg.Distribution.DebugCompilation = cfgFromFile.Distribution.DebugCompilation
 }

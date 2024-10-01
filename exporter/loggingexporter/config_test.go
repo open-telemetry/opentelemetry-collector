@@ -19,7 +19,7 @@ import (
 func TestUnmarshalDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, confmap.New().Unmarshal(&cfg))
+	require.NoError(t, confmap.New().Unmarshal(&cfg))
 	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
 }
 
@@ -78,7 +78,7 @@ func TestUnmarshalConfig(t *testing.T) {
 			if tt.expectedErr != "" {
 				assert.ErrorContains(t, err, tt.expectedErr)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.cfg, cfg)
 			}
 		})
@@ -126,7 +126,7 @@ func Test_UnmarshalMarshalled(t *testing.T) {
 
 			conf := confmap.New()
 			err := conf.Marshal(tc.inCfg)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			raw := conf.ToStringMap()
 
@@ -137,11 +137,11 @@ func Test_UnmarshalMarshalled(t *testing.T) {
 			err = conf.Unmarshal(outCfg)
 
 			if tc.expectedErr == "" {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tc.expectedConfig, outCfg)
 				return
 			}
-			assert.Error(t, err)
+			require.Error(t, err)
 			assert.EqualError(t, err, tc.expectedErr)
 		})
 	}

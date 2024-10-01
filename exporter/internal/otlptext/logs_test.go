@@ -65,7 +65,7 @@ func TestLogsText(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := NewTextLogsMarshaler().MarshalLogs(tt.in)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			out, err := os.ReadFile(filepath.Join("testdata", "logs", tt.out))
 			require.NoError(t, err)
 			expected := strings.ReplaceAll(string(out), "\r", "")

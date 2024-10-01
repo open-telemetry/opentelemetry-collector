@@ -58,17 +58,13 @@ var availableDecoders = map[string]func(body io.ReadCloser) (io.ReadCloser, erro
 		}
 		return zr, nil
 	},
+	//nolint:unparam // Ignoring the linter request to remove error return since it needs to match the method signature
 	"snappy": func(body io.ReadCloser) (io.ReadCloser, error) {
-		sr := snappy.NewReader(body)
-		sb := new(bytes.Buffer)
-		_, err := io.Copy(sb, sr)
-		if err != nil {
-			return nil, err
-		}
-		if err = body.Close(); err != nil {
-			return nil, err
-		}
-		return io.NopCloser(sb), nil
+		// Lazy Reading content to improve memory efficiency
+		return &compressReadCloser{
+			Reader: snappy.NewReader(body),
+			orig:   body,
+		}, nil
 	},
 }
 

@@ -8,9 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net"
 	"net/http"
-	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -33,8 +31,10 @@ import (
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/builders"
+	"go.opentelemetry.io/collector/service/internal/promtest"
 	"go.opentelemetry.io/collector/service/pipelines"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
@@ -230,22 +230,54 @@ func TestServiceGetExporters(t *testing.T) {
 
 	// nolint
 	expMap := srv.host.GetExporters()
+
+	v, ok := expMap[pipeline.SignalTraces]
+	assert.True(t, ok)
+	assert.NotNil(t, v)
+
 	assert.Len(t, expMap, 4)
-	assert.Len(t, expMap[component.DataTypeTraces], 1)
-	assert.Contains(t, expMap[component.DataTypeTraces], component.NewID(nopType))
-	assert.Len(t, expMap[component.DataTypeMetrics], 1)
-	assert.Contains(t, expMap[component.DataTypeMetrics], component.NewID(nopType))
-	assert.Len(t, expMap[component.DataTypeLogs], 1)
-	assert.Contains(t, expMap[component.DataTypeLogs], component.NewID(nopType))
-	assert.Len(t, expMap[componentprofiles.DataTypeProfiles], 1)
-	assert.Contains(t, expMap[componentprofiles.DataTypeProfiles], component.NewID(nopType))
+	assert.Len(t, expMap[pipeline.SignalTraces], 1)
+	assert.Contains(t, expMap[pipeline.SignalTraces], component.NewID(nopType))
+	assert.Len(t, expMap[pipeline.SignalMetrics], 1)
+	assert.Contains(t, expMap[pipeline.SignalMetrics], component.NewID(nopType))
+	assert.Len(t, expMap[pipeline.SignalLogs], 1)
+	assert.Contains(t, expMap[pipeline.SignalLogs], component.NewID(nopType))
+	assert.Len(t, expMap[componentprofiles.SignalProfiles], 1)
+	assert.Contains(t, expMap[componentprofiles.SignalProfiles], component.NewID(nopType))
+}
+
+func TestServiceGetExportersWithSignal(t *testing.T) {
+	srv, err := New(context.Background(), newNopSettings(), newNopConfig())
+	require.NoError(t, err)
+
+	assert.NoError(t, srv.Start(context.Background()))
+	t.Cleanup(func() {
+		assert.NoError(t, srv.Shutdown(context.Background()))
+	})
+
+	// nolint
+	expMap := srv.host.GetExportersWithSignal()
+
+	v, ok := expMap[pipeline.SignalTraces]
+	assert.True(t, ok)
+	assert.NotNil(t, v)
+
+	assert.Len(t, expMap, 4)
+	assert.Len(t, expMap[pipeline.SignalTraces], 1)
+	assert.Contains(t, expMap[pipeline.SignalTraces], component.NewID(nopType))
+	assert.Len(t, expMap[pipeline.SignalMetrics], 1)
+	assert.Contains(t, expMap[pipeline.SignalMetrics], component.NewID(nopType))
+	assert.Len(t, expMap[pipeline.SignalLogs], 1)
+	assert.Contains(t, expMap[pipeline.SignalLogs], component.NewID(nopType))
+	assert.Len(t, expMap[componentprofiles.SignalProfiles], 1)
+	assert.Contains(t, expMap[componentprofiles.SignalProfiles], component.NewID(nopType))
 }
 
 // TestServiceTelemetryCleanupOnError tests that if newService errors due to an invalid config telemetry is cleaned up
 // and another service with a valid config can be started right after.
 func TestServiceTelemetryCleanupOnError(t *testing.T) {
 	invalidCfg := newNopConfig()
-	invalidCfg.Pipelines[component.MustNewID("traces")].Processors[0] = component.MustNewID("invalid")
+	invalidCfg.Pipelines[pipeline.MustNewID("traces")].Processors[0] = component.MustNewID("invalid")
 	// Create a service with an invalid config and expect an error
 	_, err := New(context.Background(), newNopSettings(), invalidCfg)
 	require.Error(t, err)
@@ -257,78 +289,6 @@ func TestServiceTelemetryCleanupOnError(t *testing.T) {
 }
 
 func TestServiceTelemetry(t *testing.T) {
-	for _, tc := range ownMetricsTestCases() {
-		t.Run(fmt.Sprintf("ipv4_%s", tc.name), func(t *testing.T) {
-			testCollectorStartHelper(t, tc, "tcp4")
-		})
-		t.Run(fmt.Sprintf("ipv6_%s", tc.name), func(t *testing.T) {
-			testCollectorStartHelper(t, tc, "tcp6")
-		})
-	}
-}
-
-func testCollectorStartHelper(t *testing.T, tc ownMetricsTestCase, network string) {
-	var once sync.Once
-	loggingHookCalled := false
-	hook := func(zapcore.Entry) error {
-		once.Do(func() {
-			loggingHookCalled = true
-		})
-		return nil
-	}
-
-	var (
-		metricsAddr string
-		zpagesAddr  string
-	)
-	switch network {
-	case "tcp", "tcp4":
-		metricsAddr = testutil.GetAvailableLocalAddress(t)
-		zpagesAddr = testutil.GetAvailableLocalAddress(t)
-	case "tcp6":
-		metricsAddr = testutil.GetAvailableLocalIPv6Address(t)
-		zpagesAddr = testutil.GetAvailableLocalIPv6Address(t)
-	}
-	require.NotZero(t, metricsAddr, "network must be either of tcp, tcp4 or tcp6")
-	require.NotZero(t, zpagesAddr, "network must be either of tcp, tcp4 or tcp6")
-
-	set := newNopSettings()
-	set.BuildInfo = component.BuildInfo{Version: "test version", Command: otelCommand}
-	set.ExtensionsConfigs = map[component.ID]component.Config{
-		component.MustNewID("zpages"): &zpagesextension.Config{
-			ServerConfig: confighttp.ServerConfig{Endpoint: zpagesAddr},
-		},
-	}
-	set.ExtensionsFactories = map[component.Type]extension.Factory{component.MustNewType("zpages"): zpagesextension.NewFactory()}
-	set.LoggingOptions = []zap.Option{zap.Hooks(hook)}
-
-	cfg := newNopConfig()
-	cfg.Extensions = []component.ID{component.MustNewID("zpages")}
-	cfg.Telemetry.Metrics.Address = metricsAddr
-	cfg.Telemetry.Resource = make(map[string]*string)
-	// Include resource attributes under the service::telemetry::resource key.
-	for k, v := range tc.userDefinedResource {
-		cfg.Telemetry.Resource[k] = v
-	}
-
-	// Create a service, check for metrics, shutdown and repeat to ensure that telemetry can be started/shutdown and started again.
-	for i := 0; i < 2; i++ {
-		srv, err := New(context.Background(), set, cfg)
-		require.NoError(t, err)
-
-		require.NoError(t, srv.Start(context.Background()))
-		// Sleep for 1 second to ensure the http server is started.
-		time.Sleep(1 * time.Second)
-		assert.True(t, loggingHookCalled)
-
-		assertResourceLabels(t, srv.telemetrySettings.Resource, tc.expectedLabels)
-		assertMetrics(t, metricsAddr, tc.expectedLabels)
-		assertZPages(t, zpagesAddr)
-		require.NoError(t, srv.Shutdown(context.Background()))
-	}
-}
-
-func TestServiceTelemetryWithReaders(t *testing.T) {
 	for _, tc := range ownMetricsTestCases() {
 		t.Run(fmt.Sprintf("ipv4_%s", tc.name), func(t *testing.T) {
 			testCollectorStartHelperWithReaders(t, tc, "tcp4")
@@ -355,10 +315,10 @@ func testCollectorStartHelperWithReaders(t *testing.T, tc ownMetricsTestCase, ne
 	)
 	switch network {
 	case "tcp", "tcp4":
-		metricsAddr = getAvailableLocalAddressPrometheus(t)
+		metricsAddr = promtest.GetAvailableLocalAddressPrometheus(t)
 		zpagesAddr = testutil.GetAvailableLocalAddress(t)
 	case "tcp6":
-		metricsAddr = getAvailableLocalIPv6AddressPrometheus(t)
+		metricsAddr = promtest.GetAvailableLocalIPv6AddressPrometheus(t)
 		zpagesAddr = testutil.GetAvailableLocalIPv6Address(t)
 	}
 	require.NotZero(t, metricsAddr, "network must be either of tcp, tcp4 or tcp6")
@@ -376,7 +336,6 @@ func testCollectorStartHelperWithReaders(t *testing.T, tc ownMetricsTestCase, ne
 
 	cfg := newNopConfig()
 	cfg.Extensions = []component.ID{component.MustNewID("zpages")}
-	cfg.Telemetry.Metrics.Address = ""
 	cfg.Telemetry.Metrics.Readers = []config.MetricReader{
 		{
 			Pull: &config.PullMetricReader{
@@ -629,9 +588,7 @@ func assertZPages(t *testing.T, zpagesAddr string) {
 	testZPagePathFn := func(t *testing.T, path string) {
 		client := &http.Client{}
 		resp, err := client.Get("http://" + zpagesAddr + path)
-		if !assert.NoError(t, err, "error retrieving zpage at %q", path) {
-			return
-		}
+		require.NoError(t, err, "error retrieving zpage at %q", path)
 		assert.Equal(t, http.StatusOK, resp.StatusCode, "unsuccessful zpage %q GET", path)
 		assert.NoError(t, resp.Body.Close())
 	}
@@ -667,22 +624,22 @@ func newNopSettings() Settings {
 
 func newNopConfig() Config {
 	return newNopConfigPipelineConfigs(pipelines.Config{
-		component.MustNewID("traces"): {
+		pipeline.MustNewID("traces"): {
 			Receivers:  []component.ID{component.NewID(nopType)},
 			Processors: []component.ID{component.NewID(nopType)},
 			Exporters:  []component.ID{component.NewID(nopType)},
 		},
-		component.MustNewID("metrics"): {
+		pipeline.MustNewID("metrics"): {
 			Receivers:  []component.ID{component.NewID(nopType)},
 			Processors: []component.ID{component.NewID(nopType)},
 			Exporters:  []component.ID{component.NewID(nopType)},
 		},
-		component.MustNewID("logs"): {
+		pipeline.MustNewID("logs"): {
 			Receivers:  []component.ID{component.NewID(nopType)},
 			Processors: []component.ID{component.NewID(nopType)},
 			Exporters:  []component.ID{component.NewID(nopType)},
 		},
-		component.MustNewID("profiles"): {
+		pipeline.MustNewID("profiles"): {
 			Receivers:  []component.ID{component.NewID(nopType)},
 			Processors: []component.ID{component.NewID(nopType)},
 			Exporters:  []component.ID{component.NewID(nopType)},
@@ -712,8 +669,13 @@ func newNopConfigPipelineConfigs(pipelineCfgs pipelines.Config) Config {
 				InitialFields:     map[string]any(nil),
 			},
 			Metrics: telemetry.MetricsConfig{
-				Level:   configtelemetry.LevelBasic,
-				Address: "localhost:8888",
+				Level: configtelemetry.LevelBasic,
+				Readers: []config.MetricReader{{
+					Pull: &config.PullMetricReader{Exporter: config.MetricExporter{Prometheus: &config.Prometheus{
+						Host: newPtr("localhost"),
+						Port: newPtr(8888),
+					}}}},
+				},
 			},
 		},
 	}
@@ -746,25 +708,6 @@ func newConfigWatcherExtensionFactory(name component.Type) extension.Factory {
 	)
 }
 
-func getAvailableLocalIPv6AddressPrometheus(t testing.TB) *config.Prometheus {
-	return addrToPrometheus(testutil.GetAvailableLocalIPv6Address(t))
-}
-
-func getAvailableLocalAddressPrometheus(t testing.TB) *config.Prometheus {
-	return addrToPrometheus(testutil.GetAvailableLocalAddress(t))
-}
-
-func addrToPrometheus(address string) *config.Prometheus {
-	host, port, err := net.SplitHostPort(address)
-	if err != nil {
-		return nil
-	}
-	portInt, err := strconv.Atoi(port)
-	if err != nil {
-		return nil
-	}
-	return &config.Prometheus{
-		Host: &host,
-		Port: &portInt,
-	}
+func newPtr[T int | string](str T) *T {
+	return &str
 }

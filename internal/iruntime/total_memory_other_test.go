@@ -9,10 +9,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestTotalMemory(t *testing.T) {
 	totalMemory, err := TotalMemory()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Positive(t, totalMemory)
 }

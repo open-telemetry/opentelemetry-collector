@@ -25,7 +25,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
-	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
+	require.NoError(t, componenttest.CheckConfigStruct(cfg))
 	ocfg, ok := factory.CreateDefaultConfig().(*Config)
 	assert.True(t, ok)
 	assert.Equal(t, "", ocfg.ClientConfig.Endpoint)
@@ -181,11 +181,11 @@ func TestCreateTracesExporter(t *testing.T) {
 				assert.Error(t, err)
 				return
 			}
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.NotNil(t, consumer)
 			err = consumer.Start(context.Background(), componenttest.NewNopHost())
 			if tt.mustFailOnStart {
-				assert.Error(t, err)
+				require.Error(t, err)
 			}
 
 			err = consumer.Shutdown(context.Background())
@@ -215,13 +215,19 @@ func TestComposeSignalURL(t *testing.T) {
 
 	// Has slash at end
 	cfg.ClientConfig.Endpoint = "http://localhost:4318/"
-	url, err := composeSignalURL(cfg, "", "traces")
+	url, err := composeSignalURL(cfg, "", "traces", "v1")
 	require.NoError(t, err)
 	assert.Equal(t, "http://localhost:4318/v1/traces", url)
 
 	// No slash at end
 	cfg.ClientConfig.Endpoint = "http://localhost:4318"
-	url, err = composeSignalURL(cfg, "", "traces")
+	url, err = composeSignalURL(cfg, "", "traces", "v1")
 	require.NoError(t, err)
 	assert.Equal(t, "http://localhost:4318/v1/traces", url)
+
+	// Different version
+	cfg.ClientConfig.Endpoint = "http://localhost:4318"
+	url, err = composeSignalURL(cfg, "", "traces", "v2")
+	require.NoError(t, err)
+	assert.Equal(t, "http://localhost:4318/v2/traces", url)
 }

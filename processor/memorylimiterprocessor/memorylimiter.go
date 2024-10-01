@@ -11,13 +11,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
-	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 type memoryLimiterProcessor struct {
 	memlimiter *memorylimiter.MemoryLimiter
-	obsrep     *processorhelper.ObsReport
+	obsrep     *obsReport
 }
 
 // newMemoryLimiter returns a new memorylimiter processor.
@@ -26,10 +26,7 @@ func newMemoryLimiterProcessor(set processor.Settings, cfg *Config) (*memoryLimi
 	if err != nil {
 		return nil, err
 	}
-	obsrep, err := processorhelper.NewObsReport(processorhelper.ObsReportSettings{
-		ProcessorID:             set.ID,
-		ProcessorCreateSettings: set,
-	})
+	obsrep, err := newObsReport(set)
 	if err != nil {
 		return nil, err
 	}
@@ -58,13 +55,13 @@ func (p *memoryLimiterProcessor) processTraces(ctx context.Context, td ptrace.Tr
 		// 	to a receiver (ie.: a receiver is on the call stack). For now it
 		// 	assumes that the pipeline is properly configured and a receiver is on the
 		// 	callstack and that the receiver will correctly retry the refused data again.
-		p.obsrep.TracesRefused(ctx, numSpans)
+		p.obsrep.refused(ctx, numSpans, pipeline.SignalTraces)
 		return td, memorylimiter.ErrDataRefused
 	}
 
 	// Even if the next consumer returns error record the data as accepted by
 	// this processor.
-	p.obsrep.TracesAccepted(ctx, numSpans)
+	p.obsrep.accepted(ctx, numSpans, pipeline.SignalTraces)
 	return td, nil
 }
 
@@ -76,13 +73,13 @@ func (p *memoryLimiterProcessor) processMetrics(ctx context.Context, md pmetric.
 		// 	to a receiver (ie.: a receiver is on the call stack). For now it
 		// 	assumes that the pipeline is properly configured and a receiver is on the
 		// 	callstack.
-		p.obsrep.MetricsRefused(ctx, numDataPoints)
+		p.obsrep.refused(ctx, numDataPoints, pipeline.SignalMetrics)
 		return md, memorylimiter.ErrDataRefused
 	}
 
 	// Even if the next consumer returns error record the data as accepted by
 	// this processor.
-	p.obsrep.MetricsAccepted(ctx, numDataPoints)
+	p.obsrep.accepted(ctx, numDataPoints, pipeline.SignalMetrics)
 	return md, nil
 }
 
@@ -94,12 +91,12 @@ func (p *memoryLimiterProcessor) processLogs(ctx context.Context, ld plog.Logs) 
 		// 	to a receiver (ie.: a receiver is on the call stack). For now it
 		// 	assumes that the pipeline is properly configured and a receiver is on the
 		// 	callstack.
-		p.obsrep.LogsRefused(ctx, numRecords)
+		p.obsrep.refused(ctx, numRecords, pipeline.SignalLogs)
 		return ld, memorylimiter.ErrDataRefused
 	}
 
 	// Even if the next consumer returns error record the data as accepted by
 	// this processor.
-	p.obsrep.LogsAccepted(ctx, numRecords)
+	p.obsrep.accepted(ctx, numRecords, pipeline.SignalLogs)
 	return ld, nil
 }

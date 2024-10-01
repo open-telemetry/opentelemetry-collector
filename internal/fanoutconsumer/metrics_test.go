@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -221,7 +222,7 @@ func TestMetricsWhenErrors(t *testing.T) {
 	md := testdata.GenerateMetrics(1)
 
 	for i := 0; i < 2; i++ {
-		assert.Error(t, mfc.ConsumeMetrics(context.Background(), md))
+		require.Error(t, mfc.ConsumeMetrics(context.Background(), md))
 	}
 
 	assert.Equal(t, md, p3.AllMetrics()[0])

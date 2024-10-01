@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
 )
 
@@ -109,7 +110,7 @@ func TestCheckConsumeContractLogs(t *testing.T) {
 	params := CheckConsumeContractParams{
 		T:                    t,
 		ExporterFactory:      newMockExporterFactory(mr),
-		DataType:             component.DataTypeLogs,
+		Signal:               pipeline.SignalLogs,
 		ExporterConfig:       nopConfig{},
 		NumberOfTestElements: 10,
 		ReceiverFactory:      newMockReceiverFactory(mr),
@@ -123,7 +124,7 @@ func TestCheckConsumeContractMetrics(t *testing.T) {
 	CheckConsumeContract(CheckConsumeContractParams{
 		T:                    t,
 		ExporterFactory:      newMockExporterFactory(mr),
-		DataType:             component.DataTypeMetrics, // Change to the appropriate data type
+		Signal:               pipeline.SignalMetrics, // Change to the appropriate data type
 		ExporterConfig:       nopConfig{},
 		NumberOfTestElements: 10,
 		ReceiverFactory:      newMockReceiverFactory(mr),
@@ -135,7 +136,7 @@ func TestCheckConsumeContractTraces(t *testing.T) {
 	CheckConsumeContract(CheckConsumeContractParams{
 		T:                    t,
 		ExporterFactory:      newMockExporterFactory(mr),
-		DataType:             component.DataTypeTraces,
+		Signal:               pipeline.SignalTraces,
 		ExporterConfig:       nopConfig{},
 		NumberOfTestElements: 10,
 		ReceiverFactory:      newMockReceiverFactory(mr),

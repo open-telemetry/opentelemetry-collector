@@ -5,7 +5,6 @@ package otlpreceiver // import "go.opentelemetry.io/collector/receiver/otlprecei
 
 import (
 	"context"
-	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -13,7 +12,6 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerprofiles"
-	"go.opentelemetry.io/collector/internal/globalgates"
 	"go.opentelemetry.io/collector/internal/sharedcomponent"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
@@ -21,9 +19,6 @@ import (
 )
 
 const (
-	grpcPort = 4317
-	httpPort = 4318
-
 	defaultTracesURLPath   = "/v1/traces"
 	defaultMetricsURLPath  = "/v1/metrics"
 	defaultLogsURLPath     = "/v1/logs"
@@ -32,12 +27,12 @@ const (
 
 // NewFactory creates a new OTLP receiver factory.
 func NewFactory() receiver.Factory {
-	return receiver.NewFactory(
+	return receiverprofiles.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithTraces(createTraces, metadata.TracesStability),
-		receiver.WithMetrics(createMetrics, metadata.MetricsStability),
-		receiver.WithLogs(createLog, metadata.LogsStability),
+		receiverprofiles.WithTraces(createTraces, metadata.TracesStability),
+		receiverprofiles.WithMetrics(createMetrics, metadata.MetricsStability),
+		receiverprofiles.WithLogs(createLog, metadata.LogsStability),
 		receiverprofiles.WithProfiles(createProfiles, metadata.ProfilesStability),
 	)
 }
@@ -48,7 +43,7 @@ func createDefaultConfig() component.Config {
 		Protocols: Protocols{
 			GRPC: &configgrpc.ServerConfig{
 				NetAddr: confignet.AddrConfig{
-					Endpoint:  endpointForPort(globalgates.UseLocalHostAsDefaultHostfeatureGate.IsEnabled(), grpcPort),
+					Endpoint:  "localhost:4317",
 					Transport: confignet.TransportTypeTCP,
 				},
 				// We almost write 0 bytes, so no need to tune WriteBufferSize.
@@ -56,7 +51,7 @@ func createDefaultConfig() component.Config {
 			},
 			HTTP: &HTTPConfig{
 				ServerConfig: &confighttp.ServerConfig{
-					Endpoint: endpointForPort(globalgates.UseLocalHostAsDefaultHostfeatureGate.IsEnabled(), httpPort),
+					Endpoint: "localhost:4318",
 				},
 				TracesURLPath:  defaultTracesURLPath,
 				MetricsURLPath: defaultMetricsURLPath,
@@ -159,18 +154,9 @@ func createProfiles(
 }
 
 // This is the map of already created OTLP receivers for particular configurations.
-// We maintain this map because the Factory is asked trace and metric receivers separately
-// when it gets CreateTracesReceiver() and CreateMetricsReceiver() but they must not
+// We maintain this map because the receiver.Factory is asked trace and metric receivers separately
+// when it gets CreateTraces() and CreateMetrics() but they must not
 // create separate objects, they must use one otlpReceiver object per configuration.
 // When the receiver is shutdown it should be removed from this map so the same configuration
 // can be recreated successfully.
 var receivers = sharedcomponent.NewMap[*Config, *otlpReceiver]()
-
-// endpointForPort gets the endpoint for a given port using localhost or 0.0.0.0 depending on the feature gate.
-func endpointForPort(useLocalHostAsDefault bool, port int) string {
-	host := "localhost"
-	if !useLocalHostAsDefault {
-		host = "0.0.0.0"
-	}
-	return fmt.Sprintf("%s:%d", host, port)
-}

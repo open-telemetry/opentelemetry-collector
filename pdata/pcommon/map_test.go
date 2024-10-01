@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
@@ -215,7 +216,7 @@ func TestMapWithEmpty(t *testing.T) {
 	val, exist = sm.Get("other_key_double")
 	assert.True(t, exist)
 	assert.EqualValues(t, ValueTypeDouble, val.Type())
-	assert.EqualValues(t, 1.23, val.Double())
+	assert.InDelta(t, 1.23, val.Double(), 0.01)
 
 	sm.PutBool("other_key_bool", true)
 	val, exist = sm.Get("other_key_bool")
@@ -245,7 +246,7 @@ func TestMapWithEmpty(t *testing.T) {
 	val, exist = sm.Get("another_key_double")
 	assert.True(t, exist)
 	assert.EqualValues(t, ValueTypeDouble, val.Type())
-	assert.EqualValues(t, 4.56, val.Double())
+	assert.InDelta(t, 4.56, val.Double(), 0.01)
 
 	sm.PutBool("another_key_bool", false)
 	val, exist = sm.Get("another_key_bool")
@@ -305,7 +306,7 @@ func TestMap_Range(t *testing.T) {
 		"k_empty":  nil,
 	}
 	am := NewMap()
-	assert.NoError(t, am.FromRaw(rawMap))
+	require.NoError(t, am.FromRaw(rawMap))
 	assert.Equal(t, 5, am.Len())
 
 	calls := 0
@@ -325,17 +326,17 @@ func TestMap_Range(t *testing.T) {
 
 func TestMap_FromRaw(t *testing.T) {
 	am := NewMap()
-	assert.NoError(t, am.FromRaw(map[string]any{}))
+	require.NoError(t, am.FromRaw(map[string]any{}))
 	assert.Equal(t, 0, am.Len())
 	am.PutEmpty("k")
 	assert.Equal(t, 1, am.Len())
 
-	assert.NoError(t, am.FromRaw(nil))
+	require.NoError(t, am.FromRaw(nil))
 	assert.Equal(t, 0, am.Len())
 	am.PutEmpty("k")
 	assert.Equal(t, 1, am.Len())
 
-	assert.NoError(t, am.FromRaw(map[string]any{
+	require.NoError(t, am.FromRaw(map[string]any{
 		"k_string": "123",
 		"k_int":    123,
 		"k_double": 1.23,
@@ -357,7 +358,7 @@ func TestMap_FromRaw(t *testing.T) {
 	assert.Equal(t, int64(123), v.Int())
 	v, ok = am.Get("k_double")
 	assert.True(t, ok)
-	assert.Equal(t, 1.23, v.Double())
+	assert.InDelta(t, 1.23, v.Double(), 0.01)
 	v, ok = am.Get("k_null")
 	assert.True(t, ok)
 	assert.Equal(t, ValueTypeEmpty, v.Type())

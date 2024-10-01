@@ -55,9 +55,9 @@ func TestExemplar_ValueType(t *testing.T) {
 
 func TestExemplar_DoubleValue(t *testing.T) {
 	ms := NewExemplar()
-	assert.Equal(t, float64(0.0), ms.DoubleValue())
+	assert.InDelta(t, float64(0.0), ms.DoubleValue(), 0.01)
 	ms.SetDoubleValue(float64(17.13))
-	assert.Equal(t, float64(17.13), ms.DoubleValue())
+	assert.InDelta(t, float64(17.13), ms.DoubleValue(), 0.01)
 	assert.Equal(t, ExemplarValueTypeDouble, ms.ValueType())
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { newExemplar(&otlpmetrics.Exemplar{}, &sharedState).SetDoubleValue(float64(17.13)) })

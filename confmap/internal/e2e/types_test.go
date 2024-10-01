@@ -197,6 +197,16 @@ func TestStrictTypeCasting(t *testing.T) {
 			targetField: TargetFieldInlineString,
 			expected:    "inline field with 2006-01-02T15:04:05Z07:00 expansion",
 		},
+		{
+			value:       "2023-03-20T03:17:55.432328Z",
+			targetField: TargetFieldString,
+			expected:    "2023-03-20T03:17:55.432328Z",
+		},
+		{
+			value:       "2023-03-20T03:17:55.432328Z",
+			targetField: TargetFieldInlineString,
+			expected:    "inline field with 2023-03-20T03:17:55.432328Z expansion",
+		},
 		// issue 10787
 		{
 			value:       "true # comment with a ${env:hello.world} reference",

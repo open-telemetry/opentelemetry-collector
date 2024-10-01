@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/plog"
 )
@@ -45,6 +46,6 @@ func TestConsumeLogs(t *testing.T) {
 func TestConsumeLogs_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
 	cp, err := NewLogs(func(context.Context, plog.Logs) error { return want })
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, want, cp.ConsumeLogs(context.Background(), plog.NewLogs()))
 }

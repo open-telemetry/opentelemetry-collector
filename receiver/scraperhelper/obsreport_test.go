@@ -105,9 +105,9 @@ func TestCheckScraperMetricsViews(t *testing.T) {
 	require.NotNil(t, ctx)
 	s.EndMetricsOp(ctx, 7, nil)
 
-	assert.NoError(t, tt.CheckScraperMetrics(receiverID, scraperID, 7, 0))
-	assert.Error(t, tt.CheckScraperMetrics(receiverID, scraperID, 7, 7))
-	assert.Error(t, tt.CheckScraperMetrics(receiverID, scraperID, 0, 0))
+	require.NoError(t, tt.CheckScraperMetrics(receiverID, scraperID, 7, 0))
+	require.Error(t, tt.CheckScraperMetrics(receiverID, scraperID, 7, 7))
+	require.Error(t, tt.CheckScraperMetrics(receiverID, scraperID, 0, 0))
 	assert.Error(t, tt.CheckScraperMetrics(receiverID, scraperID, 0, 7))
 }
 
