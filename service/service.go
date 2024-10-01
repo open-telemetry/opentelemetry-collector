@@ -23,8 +23,7 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/internal/localhostgate"
-	"go.opentelemetry.io/collector/internal/obsreportconfig"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
@@ -34,8 +33,18 @@ import (
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
 	"go.opentelemetry.io/collector/service/internal/resource"
 	"go.opentelemetry.io/collector/service/internal/status"
+	"go.opentelemetry.io/collector/service/pipelines"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
+
+// useOtelWithSDKConfigurationForInternalTelemetryFeatureGate is the feature gate that controls whether the collector
+// supports configuring the OpenTelemetry SDK via configuration
+var _ = featuregate.GlobalRegistry().MustRegister(
+	"telemetry.useOtelWithSDKConfigurationForInternalTelemetry",
+	featuregate.StageStable,
+	featuregate.WithRegisterToVersion("v0.110.0"),
+	featuregate.WithRegisterDescription("controls whether the collector supports extended OpenTelemetry"+
+		"configuration for internal telemetry"))
 
 // Settings holds configuration for building a new Service.
 type Settings struct {
@@ -88,8 +97,6 @@ type Service struct {
 
 // New creates a new Service, its telemetry, and Components.
 func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
-	disableHighCard := obsreportconfig.DisableHighCardinalityMetricsfeatureGate.IsEnabled()
-
 	srv := &Service{
 		buildInfo: set.BuildInfo,
 		host: &graph.Host{
@@ -128,14 +135,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 
 	logger.Info("Setting up own telemetry...")
 
-	mp, err := newMeterProvider(
-		meterProviderSettings{
-			res:               res,
-			cfg:               cfg.Telemetry.Metrics,
-			asyncErrorChannel: set.AsyncErrorChannel,
-		},
-		disableHighCard,
-	)
+	mp, err := telFactory.CreateMeterProvider(ctx, telset, &cfg.Telemetry)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create metric provider: %w", err)
 	}
@@ -173,26 +173,21 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		return nil, err
 	}
 
-	if cfg.Telemetry.Metrics.Level != configtelemetry.LevelNone && cfg.Telemetry.Metrics.Address != "" {
-		if err = proctelemetry.RegisterProcessMetrics(srv.telemetrySettings); err != nil {
-			return nil, fmt.Errorf("failed to register process metrics: %w", err)
-		}
+	if err = proctelemetry.RegisterProcessMetrics(srv.telemetrySettings); err != nil {
+		return nil, fmt.Errorf("failed to register process metrics: %w", err)
 	}
 
 	return srv, nil
 }
 
 func logsAboutMeterProvider(logger *zap.Logger, cfg telemetry.MetricsConfig, mp metric.MeterProvider) {
-	if cfg.Level == configtelemetry.LevelNone || (cfg.Address == "" && len(cfg.Readers) == 0) {
-		logger.Info(
-			"Skipped telemetry setup.",
-			zap.String(zapKeyTelemetryAddress, cfg.Address),
-			zap.Stringer(zapKeyTelemetryLevel, cfg.Level),
-		)
+	if cfg.Level == configtelemetry.LevelNone || len(cfg.Readers) == 0 {
+		logger.Info("Skipped telemetry setup.")
 		return
 	}
 
-	if len(cfg.Address) != 0 && obsreportconfig.UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate.IsEnabled() {
+	//nolint
+	if len(cfg.Address) != 0 {
 		logger.Warn("service::telemetry::metrics::address is being deprecated in favor of service::telemetry::metrics::readers")
 	}
 
@@ -237,7 +232,6 @@ func (srv *Service) Start(ctx context.Context) error {
 	}
 
 	srv.telemetrySettings.Logger.Info("Everything is ready. Begin running and processing data.")
-	localhostgate.LogAboutUseLocalHostAsDefault(srv.telemetrySettings.Logger)
 	return nil
 }
 
@@ -311,6 +305,14 @@ func (srv *Service) initExtensions(ctx context.Context, cfg extensions.Config) e
 
 // Creates the pipeline graph.
 func (srv *Service) initGraph(ctx context.Context, cfg Config) error {
+	// nolint
+	if len(cfg.PipelinesWithPipelineID) > 0 {
+		cfg.Pipelines = make(pipelines.Config, len(cfg.PipelinesWithPipelineID))
+		for k, v := range cfg.PipelinesWithPipelineID {
+			cfg.Pipelines[k] = v
+		}
+	}
+
 	var err error
 	if srv.host.Pipelines, err = graph.Build(ctx, graph.Settings{
 		Telemetry:        srv.telemetrySettings,

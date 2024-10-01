@@ -78,6 +78,8 @@ var (
 		"/extension/zpagesextension",
 		"/featuregate",
 		"/internal/globalgates",
+		"/internal/globalsignal",
+		"/pipeline",
 		"/processor",
 		"/processor/batchprocessor",
 		"/processor/memorylimiterprocessor",
@@ -121,19 +123,18 @@ func TestGenerateInvalidOutputPath(t *testing.T) {
 	cfg := newInitializedConfig(t)
 	cfg.Distribution.OutputPath = ":/invalid"
 	err := Generate(cfg)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "failed to create output path")
+	require.ErrorContains(t, err, "failed to create output path")
 }
 
 func TestVersioning(t *testing.T) {
 	replaces := generateReplaces()
 	tests := []struct {
-		description string
+		name        string
 		cfgBuilder  func() Config
 		expectedErr error
 	}{
 		{
-			description: "defaults",
+			name: "defaults",
 			cfgBuilder: func() Config {
 				cfg := newTestConfig()
 				cfg.Distribution.Go = "go"
@@ -143,7 +144,7 @@ func TestVersioning(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
-			description: "require otelcol",
+			name: "require otelcol",
 			cfgBuilder: func() Config {
 				cfg := newTestConfig()
 				cfg.Distribution.Go = "go"
@@ -154,7 +155,7 @@ func TestVersioning(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
-			description: "only gomod file, skip generate",
+			name: "only gomod file, skip generate",
 			cfgBuilder: func() Config {
 				cfg := newTestConfig()
 				tempDir := t.TempDir()
@@ -168,7 +169,7 @@ func TestVersioning(t *testing.T) {
 			expectedErr: ErrDepNotFound,
 		},
 		{
-			description: "old otel version",
+			name: "old otel version",
 			cfgBuilder: func() Config {
 				cfg := newTestConfig()
 				cfg.Verbose = true
@@ -200,7 +201,7 @@ func TestVersioning(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
-			description: "old component version",
+			name: "old component version",
 			cfgBuilder: func() Config {
 				cfg := newTestConfig()
 				cfg.Distribution.Go = "go"
@@ -216,7 +217,7 @@ func TestVersioning(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
-			description: "old component version without strict mode",
+			name: "old component version without strict mode",
 			cfgBuilder: func() Config {
 				cfg := newTestConfig()
 				cfg.Distribution.Go = "go"
@@ -233,14 +234,14 @@ func TestVersioning(t *testing.T) {
 			expectedErr: nil,
 		},
 	}
-	for _, tc := range tests {
-		t.Run(tc.description, func(t *testing.T) {
-			cfg := tc.cfgBuilder()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := tt.cfgBuilder()
 			require.NoError(t, cfg.SetBackwardsCompatibility())
 			require.NoError(t, cfg.Validate())
 			require.NoError(t, cfg.ParseModules())
 			err := GenerateAndCompile(cfg)
-			require.ErrorIs(t, err, tc.expectedErr)
+			require.ErrorIs(t, err, tt.expectedErr)
 		})
 	}
 }
@@ -263,11 +264,11 @@ func TestSkipGenerate(t *testing.T) {
 func TestGenerateAndCompile(t *testing.T) {
 	replaces := generateReplaces()
 	testCases := []struct {
-		testCase   string
+		name       string
 		cfgBuilder func(t *testing.T) Config
 	}{
 		{
-			testCase: "Default Configuration Compilation",
+			name: "Default Configuration Compilation",
 			cfgBuilder: func(t *testing.T) Config {
 				cfg := newTestConfig()
 				err := cfg.SetBackwardsCompatibility()
@@ -278,7 +279,7 @@ func TestGenerateAndCompile(t *testing.T) {
 			},
 		},
 		{
-			testCase: "LDFlags Compilation",
+			name: "LDFlags Compilation",
 			cfgBuilder: func(t *testing.T) Config {
 				cfg := newTestConfig()
 				err := cfg.SetBackwardsCompatibility()
@@ -290,7 +291,19 @@ func TestGenerateAndCompile(t *testing.T) {
 			},
 		},
 		{
-			testCase: "Debug Compilation",
+			name: "Build Tags Compilation",
+			cfgBuilder: func(t *testing.T) Config {
+				cfg := newTestConfig()
+				err := cfg.SetBackwardsCompatibility()
+				require.NoError(t, err)
+				cfg.Distribution.OutputPath = t.TempDir()
+				cfg.Replaces = append(cfg.Replaces, replaces...)
+				cfg.Distribution.BuildTags = "customTag"
+				return cfg
+			},
+		},
+		{
+			name: "Debug Compilation",
 			cfgBuilder: func(t *testing.T) Config {
 				cfg := newTestConfig()
 				err := cfg.SetBackwardsCompatibility()
@@ -303,7 +316,7 @@ func TestGenerateAndCompile(t *testing.T) {
 			},
 		},
 		{
-			testCase: "No providers",
+			name: "No providers",
 			cfgBuilder: func(t *testing.T) Config {
 				cfg := newTestConfig()
 				err := cfg.SetBackwardsCompatibility()
@@ -315,7 +328,7 @@ func TestGenerateAndCompile(t *testing.T) {
 			},
 		},
 		{
-			testCase: "Pre-confmap factories",
+			name: "Pre-confmap factories",
 			cfgBuilder: func(t *testing.T) Config {
 				cfg := newTestConfig()
 				err := cfg.SetBackwardsCompatibility()
@@ -328,7 +341,7 @@ func TestGenerateAndCompile(t *testing.T) {
 			},
 		},
 		{
-			testCase: "With confmap factories",
+			name: "With confmap factories",
 			cfgBuilder: func(t *testing.T) Config {
 				cfg := newTestConfig()
 				err := cfg.SetBackwardsCompatibility()
@@ -341,7 +354,7 @@ func TestGenerateAndCompile(t *testing.T) {
 			},
 		},
 		{
-			testCase: "ConfResolverDefaultURIScheme set",
+			name: "ConfResolverDefaultURIScheme set",
 			cfgBuilder: func(t *testing.T) Config {
 				cfg := newTestConfig()
 				err := cfg.SetBackwardsCompatibility()
@@ -357,7 +370,7 @@ func TestGenerateAndCompile(t *testing.T) {
 	}
 
 	for _, tt := range testCases {
-		t.Run(tt.testCase, func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			cfg := tt.cfgBuilder(t)
 			assert.NoError(t, cfg.Validate())
 			assert.NoError(t, cfg.SetGoPath())

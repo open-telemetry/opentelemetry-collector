@@ -202,6 +202,16 @@ func NewDefaultServerConfig() *ServerConfig {
 	}
 }
 
+func (gcs *ClientConfig) Validate() error {
+	if gcs.BalancerName != "" {
+		if balancer.Get(gcs.BalancerName) == nil {
+			return fmt.Errorf("invalid balancer_name: %s", gcs.BalancerName)
+		}
+	}
+
+	return nil
+}
+
 // sanitizedEndpoint strips the prefix of either http:// or https:// from configgrpc.ClientConfig.Endpoint.
 func (gcs *ClientConfig) sanitizedEndpoint() string {
 	switch {
@@ -222,20 +232,56 @@ func (gcs *ClientConfig) isSchemeHTTPS() bool {
 	return strings.HasPrefix(gcs.Endpoint, "https://")
 }
 
+// ToClientConnOption is a sealed interface wrapping options for [ClientConfig.ToClientConn].
+type ToClientConnOption interface {
+	isToClientConnOption()
+}
+
+type grpcDialOptionWrapper struct {
+	opt grpc.DialOption
+}
+
+// WithGrpcDialOption wraps a [grpc.DialOption] into a [ToClientConnOption].
+func WithGrpcDialOption(opt grpc.DialOption) ToClientConnOption {
+	return grpcDialOptionWrapper{opt: opt}
+}
+func (grpcDialOptionWrapper) isToClientConnOption() {}
+
 // ToClientConn creates a client connection to the given target. By default, it's
 // a non-blocking dial (the function won't wait for connections to be
 // established, and connecting happens in the background). To make it a blocking
-// dial, use grpc.WithBlock() dial option.
-func (gcs *ClientConfig) ToClientConn(ctx context.Context, host component.Host, settings component.TelemetrySettings, extraOpts ...grpc.DialOption) (*grpc.ClientConn, error) {
-	opts, err := gcs.toDialOptions(ctx, host, settings)
+// dial, use the WithGrpcDiqlOption(grpc.WithBlock()) option.
+func (gcs *ClientConfig) ToClientConn(
+	ctx context.Context,
+	host component.Host,
+	settings component.TelemetrySettings,
+	extraOpts ...ToClientConnOption,
+) (*grpc.ClientConn, error) {
+	grpcOpts, err := gcs.getGrpcDialOptions(ctx, host, settings, extraOpts)
 	if err != nil {
 		return nil, err
 	}
-	opts = append(opts, extraOpts...)
-	return grpc.NewClient(gcs.sanitizedEndpoint(), opts...)
+	return grpc.NewClient(gcs.sanitizedEndpoint(), grpcOpts...)
 }
 
-func (gcs *ClientConfig) toDialOptions(ctx context.Context, host component.Host, settings component.TelemetrySettings) ([]grpc.DialOption, error) {
+// ToClientConnWithOptions is the same as [ClientConfig.ToClientConn].
+//
+// Deprecated: [v0.111.0] Use [ClientConfig.ToClientConn] instead.
+func (gcs *ClientConfig) ToClientConnWithOptions(
+	ctx context.Context,
+	host component.Host,
+	settings component.TelemetrySettings,
+	extraOpts ...ToClientConnOption,
+) (*grpc.ClientConn, error) {
+	return gcs.ToClientConn(ctx, host, settings, extraOpts...)
+}
+
+func (gcs *ClientConfig) getGrpcDialOptions(
+	ctx context.Context,
+	host component.Host,
+	settings component.TelemetrySettings,
+	extraOpts []ToClientConnOption,
+) ([]grpc.DialOption, error) {
 	var opts []grpc.DialOption
 	if gcs.Compression.IsCompressed() {
 		cp, err := getGRPCCompressionName(gcs.Compression)
@@ -292,10 +338,6 @@ func (gcs *ClientConfig) toDialOptions(ctx context.Context, host component.Host,
 	}
 
 	if gcs.BalancerName != "" {
-		valid := validateBalancerName(gcs.BalancerName)
-		if !valid {
-			return nil, fmt.Errorf("invalid balancer_name: %s", gcs.BalancerName)
-		}
 		opts = append(opts, grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy":"%s"}`, gcs.BalancerName)))
 	}
 
@@ -312,11 +354,13 @@ func (gcs *ClientConfig) toDialOptions(ctx context.Context, host component.Host,
 	// Enable OpenTelemetry observability plugin.
 	opts = append(opts, grpc.WithStatsHandler(otelgrpc.NewClientHandler(otelOpts...)))
 
-	return opts, nil
-}
+	for _, opt := range extraOpts {
+		if wrapper, ok := opt.(grpcDialOptionWrapper); ok {
+			opts = append(opts, wrapper.opt)
+		}
+	}
 
-func validateBalancerName(balancerName string) bool {
-	return balancer.Get(balancerName) != nil
+	return opts, nil
 }
 
 func (gss *ServerConfig) Validate() error {
@@ -335,17 +379,52 @@ func (gss *ServerConfig) Validate() error {
 	return nil
 }
 
-// ToServer returns a grpc.Server for the configuration
-func (gss *ServerConfig) ToServer(_ context.Context, host component.Host, settings component.TelemetrySettings, extraOpts ...grpc.ServerOption) (*grpc.Server, error) {
-	opts, err := gss.toServerOption(host, settings)
+// ToServerOption is a sealed interface wrapping options for [ServerConfig.ToServer].
+type ToServerOption interface {
+	isToServerOption()
+}
+
+type grpcServerOptionWrapper struct {
+	opt grpc.ServerOption
+}
+
+// WithGrpcServerOption wraps a [grpc.ServerOption] into a [ToServerOption].
+func WithGrpcServerOption(opt grpc.ServerOption) ToServerOption {
+	return grpcServerOptionWrapper{opt: opt}
+}
+func (grpcServerOptionWrapper) isToServerOption() {}
+
+// ToServer returns a [grpc.Server] for the configuration.
+func (gss *ServerConfig) ToServer(
+	_ context.Context,
+	host component.Host,
+	settings component.TelemetrySettings,
+	extraOpts ...ToServerOption,
+) (*grpc.Server, error) {
+	grpcOpts, err := gss.getGrpcServerOptions(host, settings, extraOpts)
 	if err != nil {
 		return nil, err
 	}
-	opts = append(opts, extraOpts...)
-	return grpc.NewServer(opts...), nil
+	return grpc.NewServer(grpcOpts...), nil
 }
 
-func (gss *ServerConfig) toServerOption(host component.Host, settings component.TelemetrySettings) ([]grpc.ServerOption, error) {
+// ToServerWithOptions is the same as [ServerConfig.ToServer].
+//
+// Deprecated: [v0.111.0] Use [ServerConfig.ToServer] instead.
+func (gss *ServerConfig) ToServerWithOptions(
+	ctx context.Context,
+	host component.Host,
+	settings component.TelemetrySettings,
+	extraOpts ...ToServerOption,
+) (*grpc.Server, error) {
+	return gss.ToServer(ctx, host, settings, extraOpts...)
+}
+
+func (gss *ServerConfig) getGrpcServerOptions(
+	host component.Host,
+	settings component.TelemetrySettings,
+	extraOpts []ToServerOption,
+) ([]grpc.ServerOption, error) {
 	switch gss.NetAddr.Transport {
 	case confignet.TransportTypeTCP, confignet.TransportTypeTCP4, confignet.TransportTypeTCP6, confignet.TransportTypeUDP, confignet.TransportTypeUDP4, confignet.TransportTypeUDP6:
 		internal.WarnOnUnspecifiedHost(settings.Logger, gss.NetAddr.Endpoint)
@@ -434,6 +513,12 @@ func (gss *ServerConfig) toServerOption(host component.Host, settings component.
 	sInterceptors = append(sInterceptors, enhanceStreamWithClientInformation(gss.IncludeMetadata))
 
 	opts = append(opts, grpc.StatsHandler(otelgrpc.NewServerHandler(otelOpts...)), grpc.ChainUnaryInterceptor(uInterceptors...), grpc.ChainStreamInterceptor(sInterceptors...))
+
+	for _, opt := range extraOpts {
+		if wrapper, ok := opt.(grpcServerOptionWrapper); ok {
+			opts = append(opts, wrapper.opt)
+		}
+	}
 
 	return opts, nil
 }

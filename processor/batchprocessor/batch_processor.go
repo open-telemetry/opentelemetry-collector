@@ -61,12 +61,19 @@ type batchProcessor struct {
 
 	telemetry *batchProcessorTelemetry
 
-	//  batcher will be either *singletonBatcher or *multiBatcher
+	// batcher will be either *singletonBatcher or *multiBatcher
 	batcher batcher
 }
 
+// batcher is describes a *singletonBatcher or *multiBatcher.
 type batcher interface {
+	// start initializes background resources used by this batcher.
+	start(ctx context.Context) error
+
+	// consume incorporates a new item of data into the pending batch.
 	consume(ctx context.Context, data any) error
+
+	// currentMetadataCardinality returns the number of shards.
 	currentMetadataCardinality() int
 }
 
@@ -96,13 +103,19 @@ type shard struct {
 // batch is an interface generalizing the individual signal types.
 type batch interface {
 	// export the current batch
-	export(ctx context.Context, sendBatchMaxSize int, returnBytes bool) (sentBatchSize int, sentBatchBytes int, err error)
+	export(ctx context.Context, req any) error
+
+	// splitBatch returns a full request built from pending items.
+	splitBatch(ctx context.Context, sendBatchMaxSize int) (sentBatchSize int, req any)
 
 	// itemCount returns the size of the current batch
 	itemCount() int
 
 	// add item to the current batch
 	add(item any)
+
+	// sizeBytes counts the OTLP encoding size of the batch
+	sizeBytes(item any) int
 }
 
 var _ consumer.Traces = (*batchProcessor)(nil)
@@ -129,12 +142,13 @@ func newBatchProcessor(set processor.Settings, cfg *Config, batchFunc func() bat
 		metadataLimit:    int(cfg.MetadataCardinalityLimit),
 	}
 	if len(bp.metadataKeys) == 0 {
-		s := bp.newShard(nil)
-		s.start()
-		bp.batcher = &singleShardBatcher{batcher: s}
+		bp.batcher = &singleShardBatcher{
+			processor: bp,
+			single:    nil, // created in start
+		}
 	} else {
 		bp.batcher = &multiShardBatcher{
-			batchProcessor: bp,
+			processor: bp,
 		}
 	}
 
@@ -166,8 +180,8 @@ func (bp *batchProcessor) Capabilities() consumer.Capabilities {
 }
 
 // Start is invoked during service startup.
-func (bp *batchProcessor) Start(context.Context, component.Host) error {
-	return nil
+func (bp *batchProcessor) Start(ctx context.Context, _ component.Host) error {
+	return bp.batcher.start(ctx)
 }
 
 // Shutdown is invoked during service shutdown.
@@ -258,22 +272,35 @@ func (b *shard) resetTimer() {
 }
 
 func (b *shard) sendItems(trigger trigger) {
-	sent, bytes, err := b.batch.export(b.exportCtx, b.processor.sendBatchMaxSize, b.processor.telemetry.detailed)
+	sent, req := b.batch.splitBatch(b.exportCtx, b.processor.sendBatchMaxSize)
+
+	err := b.batch.export(b.exportCtx, req)
 	if err != nil {
 		b.processor.logger.Warn("Sender failed", zap.Error(err))
-	} else {
-		b.processor.telemetry.record(trigger, int64(sent), int64(bytes))
+		return
 	}
+	var bytes int
+	if b.processor.telemetry.detailed {
+		bytes = b.batch.sizeBytes(req)
+	}
+	b.processor.telemetry.record(trigger, int64(sent), int64(bytes))
 }
 
 // singleShardBatcher is used when metadataKeys is empty, to avoid the
 // additional lock and map operations used in multiBatcher.
 type singleShardBatcher struct {
-	batcher *shard
+	processor *batchProcessor
+	single    *shard
+}
+
+func (sb *singleShardBatcher) start(context.Context) error {
+	sb.single = sb.processor.newShard(nil)
+	sb.single.start()
+	return nil
 }
 
 func (sb *singleShardBatcher) consume(_ context.Context, data any) error {
-	sb.batcher.newItem <- data
+	sb.single.newItem <- data
 	return nil
 }
 
@@ -283,13 +310,17 @@ func (sb *singleShardBatcher) currentMetadataCardinality() int {
 
 // multiBatcher is used when metadataKeys is not empty.
 type multiShardBatcher struct {
-	*batchProcessor
-	batchers sync.Map
+	processor *batchProcessor
+	batchers  sync.Map
 
 	// Guards the size and the storing logic to ensure no more than limit items are stored.
 	// If we are willing to allow "some" extra items than the limit this can be removed and size can be made atomic.
 	lock sync.Mutex
 	size int
+}
+
+func (mb *multiShardBatcher) start(context.Context) error {
+	return nil
 }
 
 func (mb *multiShardBatcher) consume(ctx context.Context, data any) error {
@@ -298,7 +329,7 @@ func (mb *multiShardBatcher) consume(ctx context.Context, data any) error {
 	info := client.FromContext(ctx)
 	md := map[string][]string{}
 	var attrs []attribute.KeyValue
-	for _, k := range mb.metadataKeys {
+	for _, k := range mb.processor.metadataKeys {
 		// Lookup the value in the incoming metadata, copy it
 		// into the outgoing metadata, and create a unique
 		// value for the attributeSet.
@@ -315,7 +346,7 @@ func (mb *multiShardBatcher) consume(ctx context.Context, data any) error {
 	b, ok := mb.batchers.Load(aset)
 	if !ok {
 		mb.lock.Lock()
-		if mb.metadataLimit != 0 && mb.size >= mb.metadataLimit {
+		if mb.processor.metadataLimit != 0 && mb.size >= mb.processor.metadataLimit {
 			mb.lock.Unlock()
 			return errTooManyBatchers
 		}
@@ -323,7 +354,7 @@ func (mb *multiShardBatcher) consume(ctx context.Context, data any) error {
 		// aset.ToSlice() returns the sorted, deduplicated,
 		// and name-downcased list of attributes.
 		var loaded bool
-		b, loaded = mb.batchers.LoadOrStore(aset, mb.newShard(md))
+		b, loaded = mb.batchers.LoadOrStore(aset, mb.processor.newShard(md))
 		if !loaded {
 			// Start the goroutine only if we added the object to the map, otherwise is already started.
 			b.(*shard).start()
@@ -341,22 +372,22 @@ func (mb *multiShardBatcher) currentMetadataCardinality() int {
 	return mb.size
 }
 
-// ConsumeTraces implements TracesProcessor
+// ConsumeTraces implements processor.Traces
 func (bp *batchProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	return bp.batcher.consume(ctx, td)
 }
 
-// ConsumeMetrics implements MetricsProcessor
+// ConsumeMetrics implements processor.Metrics
 func (bp *batchProcessor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	return bp.batcher.consume(ctx, md)
 }
 
-// ConsumeLogs implements LogsProcessor
+// ConsumeLogs implements processor.Logs
 func (bp *batchProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	return bp.batcher.consume(ctx, ld)
 }
 
-// newBatchTracesProcessor creates a new batch processor that batches traces by size or with timeout
+// newBatchTraces creates a new batch processor that batches traces by size or with timeout
 func newBatchTracesProcessor(set processor.Settings, next consumer.Traces, cfg *Config) (*batchProcessor, error) {
 	return newBatchProcessor(set, cfg, func() batch { return newBatchTraces(next) })
 }
@@ -394,10 +425,18 @@ func (bt *batchTraces) add(item any) {
 	td.ResourceSpans().MoveAndAppendTo(bt.traceData.ResourceSpans())
 }
 
-func (bt *batchTraces) export(ctx context.Context, sendBatchMaxSize int, returnBytes bool) (int, int, error) {
+func (bt *batchTraces) sizeBytes(data any) int {
+	return bt.sizer.TracesSize(data.(ptrace.Traces))
+}
+
+func (bt *batchTraces) export(ctx context.Context, req any) error {
+	td := req.(ptrace.Traces)
+	return bt.nextConsumer.ConsumeTraces(ctx, td)
+}
+
+func (bt *batchTraces) splitBatch(_ context.Context, sendBatchMaxSize int) (int, any) {
 	var req ptrace.Traces
 	var sent int
-	var bytes int
 	if sendBatchMaxSize > 0 && bt.itemCount() > sendBatchMaxSize {
 		req = splitTraces(sendBatchMaxSize, bt.traceData)
 		bt.spanCount -= sendBatchMaxSize
@@ -408,10 +447,7 @@ func (bt *batchTraces) export(ctx context.Context, sendBatchMaxSize int, returnB
 		bt.traceData = ptrace.NewTraces()
 		bt.spanCount = 0
 	}
-	if returnBytes {
-		bytes = bt.sizer.TracesSize(req)
-	}
-	return sent, bytes, bt.nextConsumer.ConsumeTraces(ctx, req)
+	return sent, req
 }
 
 func (bt *batchTraces) itemCount() int {
@@ -429,10 +465,18 @@ func newBatchMetrics(nextConsumer consumer.Metrics) *batchMetrics {
 	return &batchMetrics{nextConsumer: nextConsumer, metricData: pmetric.NewMetrics(), sizer: &pmetric.ProtoMarshaler{}}
 }
 
-func (bm *batchMetrics) export(ctx context.Context, sendBatchMaxSize int, returnBytes bool) (int, int, error) {
+func (bm *batchMetrics) sizeBytes(data any) int {
+	return bm.sizer.MetricsSize(data.(pmetric.Metrics))
+}
+
+func (bm *batchMetrics) export(ctx context.Context, req any) error {
+	md := req.(pmetric.Metrics)
+	return bm.nextConsumer.ConsumeMetrics(ctx, md)
+}
+
+func (bm *batchMetrics) splitBatch(_ context.Context, sendBatchMaxSize int) (int, any) {
 	var req pmetric.Metrics
 	var sent int
-	var bytes int
 	if sendBatchMaxSize > 0 && bm.dataPointCount > sendBatchMaxSize {
 		req = splitMetrics(sendBatchMaxSize, bm.metricData)
 		bm.dataPointCount -= sendBatchMaxSize
@@ -443,10 +487,8 @@ func (bm *batchMetrics) export(ctx context.Context, sendBatchMaxSize int, return
 		bm.metricData = pmetric.NewMetrics()
 		bm.dataPointCount = 0
 	}
-	if returnBytes {
-		bytes = bm.sizer.MetricsSize(req)
-	}
-	return sent, bytes, bm.nextConsumer.ConsumeMetrics(ctx, req)
+
+	return sent, req
 }
 
 func (bm *batchMetrics) itemCount() int {
@@ -475,10 +517,18 @@ func newBatchLogs(nextConsumer consumer.Logs) *batchLogs {
 	return &batchLogs{nextConsumer: nextConsumer, logData: plog.NewLogs(), sizer: &plog.ProtoMarshaler{}}
 }
 
-func (bl *batchLogs) export(ctx context.Context, sendBatchMaxSize int, returnBytes bool) (int, int, error) {
+func (bl *batchLogs) sizeBytes(data any) int {
+	return bl.sizer.LogsSize(data.(plog.Logs))
+}
+
+func (bl *batchLogs) export(ctx context.Context, req any) error {
+	ld := req.(plog.Logs)
+	return bl.nextConsumer.ConsumeLogs(ctx, ld)
+}
+
+func (bl *batchLogs) splitBatch(_ context.Context, sendBatchMaxSize int) (int, any) {
 	var req plog.Logs
 	var sent int
-	var bytes int
 
 	if sendBatchMaxSize > 0 && bl.logCount > sendBatchMaxSize {
 		req = splitLogs(sendBatchMaxSize, bl.logData)
@@ -490,10 +540,7 @@ func (bl *batchLogs) export(ctx context.Context, sendBatchMaxSize int, returnByt
 		bl.logData = plog.NewLogs()
 		bl.logCount = 0
 	}
-	if returnBytes {
-		bytes = bl.sizer.LogsSize(req)
-	}
-	return sent, bytes, bl.nextConsumer.ConsumeLogs(ctx, req)
+	return sent, req
 }
 
 func (bl *batchLogs) itemCount() int {

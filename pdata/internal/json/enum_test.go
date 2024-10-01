@@ -8,6 +8,7 @@ import (
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestReadEnumValue(t *testing.T) {
@@ -67,7 +68,7 @@ func TestReadEnumValue(t *testing.T) {
 				assert.Error(t, iter.Error)
 				return
 			}
-			assert.NoError(t, iter.Error)
+			require.NoError(t, iter.Error)
 			assert.Equal(t, tt.want, val)
 		})
 	}

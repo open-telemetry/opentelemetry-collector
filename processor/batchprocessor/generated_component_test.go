@@ -40,21 +40,21 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "logs",
 			createFn: func(ctx context.Context, set processor.Settings, cfg component.Config) (component.Component, error) {
-				return factory.CreateLogsProcessor(ctx, set, cfg, consumertest.NewNop())
+				return factory.CreateLogs(ctx, set, cfg, consumertest.NewNop())
 			},
 		},
 
 		{
 			name: "metrics",
 			createFn: func(ctx context.Context, set processor.Settings, cfg component.Config) (component.Component, error) {
-				return factory.CreateMetricsProcessor(ctx, set, cfg, consumertest.NewNop())
+				return factory.CreateMetrics(ctx, set, cfg, consumertest.NewNop())
 			},
 		},
 
 		{
 			name: "traces",
 			createFn: func(ctx context.Context, set processor.Settings, cfg component.Config) (component.Component, error) {
-				return factory.CreateTracesProcessor(ctx, set, cfg, consumertest.NewNop())
+				return factory.CreateTraces(ctx, set, cfg, consumertest.NewNop())
 			},
 		},
 	}
@@ -66,21 +66,21 @@ func TestComponentLifecycle(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(&cfg))
 
-	for _, test := range tests {
-		t.Run(test.name+"-shutdown", func(t *testing.T) {
-			c, err := test.createFn(context.Background(), processortest.NewNopSettings(), cfg)
+	for _, tt := range tests {
+		t.Run(tt.name+"-shutdown", func(t *testing.T) {
+			c, err := tt.createFn(context.Background(), processortest.NewNopSettings(), cfg)
 			require.NoError(t, err)
 			err = c.Shutdown(context.Background())
 			require.NoError(t, err)
 		})
-		t.Run(test.name+"-lifecycle", func(t *testing.T) {
-			c, err := test.createFn(context.Background(), processortest.NewNopSettings(), cfg)
+		t.Run(tt.name+"-lifecycle", func(t *testing.T) {
+			c, err := tt.createFn(context.Background(), processortest.NewNopSettings(), cfg)
 			require.NoError(t, err)
 			host := componenttest.NewNopHost()
 			err = c.Start(context.Background(), host)
 			require.NoError(t, err)
 			require.NotPanics(t, func() {
-				switch test.name {
+				switch tt.name {
 				case "logs":
 					e, ok := c.(processor.Logs)
 					require.True(t, ok)

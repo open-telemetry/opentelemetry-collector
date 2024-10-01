@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorprofiles"
 	"go.opentelemetry.io/collector/processor/processortest"
@@ -42,8 +43,8 @@ func (b *ProcessorBuilder) CreateTraces(ctx context.Context, set processor.Setti
 		return nil, fmt.Errorf("processor factory not available for: %q", set.ID)
 	}
 
-	logStabilityLevel(set.Logger, f.TracesProcessorStability())
-	return f.CreateTracesProcessor(ctx, set, cfg, next)
+	logStabilityLevel(set.Logger, f.TracesStability())
+	return f.CreateTraces(ctx, set, cfg, next)
 }
 
 // CreateMetrics creates a Metrics processor based on the settings and config.
@@ -61,8 +62,8 @@ func (b *ProcessorBuilder) CreateMetrics(ctx context.Context, set processor.Sett
 		return nil, fmt.Errorf("processor factory not available for: %q", set.ID)
 	}
 
-	logStabilityLevel(set.Logger, f.MetricsProcessorStability())
-	return f.CreateMetricsProcessor(ctx, set, cfg, next)
+	logStabilityLevel(set.Logger, f.MetricsStability())
+	return f.CreateMetrics(ctx, set, cfg, next)
 }
 
 // CreateLogs creates a Logs processor based on the settings and config.
@@ -80,8 +81,8 @@ func (b *ProcessorBuilder) CreateLogs(ctx context.Context, set processor.Setting
 		return nil, fmt.Errorf("processor factory not available for: %q", set.ID)
 	}
 
-	logStabilityLevel(set.Logger, f.LogsProcessorStability())
-	return f.CreateLogsProcessor(ctx, set, cfg, next)
+	logStabilityLevel(set.Logger, f.LogsStability())
+	return f.CreateLogs(ctx, set, cfg, next)
 }
 
 // CreateProfiles creates a Profiles processor based on the settings and config.
@@ -94,13 +95,17 @@ func (b *ProcessorBuilder) CreateProfiles(ctx context.Context, set processor.Set
 		return nil, fmt.Errorf("processor %q is not configured", set.ID)
 	}
 
-	f, existsFactory := b.factories[set.ID.Type()]
+	procFact, existsFactory := b.factories[set.ID.Type()]
 	if !existsFactory {
 		return nil, fmt.Errorf("processor factory not available for: %q", set.ID)
 	}
 
-	logStabilityLevel(set.Logger, f.ProfilesProcessorStability())
-	return f.CreateProfilesProcessor(ctx, set, cfg, next)
+	f, ok := procFact.(processorprofiles.Factory)
+	if !ok {
+		return nil, pipeline.ErrSignalNotSupported
+	}
+	logStabilityLevel(set.Logger, f.ProfilesStability())
+	return f.CreateProfiles(ctx, set, cfg, next)
 }
 
 func (b *ProcessorBuilder) Factory(componentType component.Type) component.Factory {

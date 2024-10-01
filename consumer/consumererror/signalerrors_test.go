@@ -17,11 +17,11 @@ func TestTraces(t *testing.T) {
 	td := testdata.GenerateTraces(1)
 	err := errors.New("some error")
 	traceErr := NewTraces(err, td)
-	assert.Equal(t, err.Error(), traceErr.Error())
+	require.EqualError(t, err, traceErr.Error())
 	var target Traces
 	assert.False(t, errors.As(nil, &target))
 	assert.False(t, errors.As(err, &target))
-	assert.True(t, errors.As(traceErr, &target))
+	require.ErrorAs(t, traceErr, &target)
 	assert.Equal(t, td, target.Data())
 }
 
@@ -33,7 +33,7 @@ func TestTraces_Unwrap(t *testing.T) {
 	target := testErrorType{}
 	require.NotEqual(t, err, target)
 	// Unwrapping traceErr for err and assigning to target.
-	require.True(t, errors.As(traceErr, &target))
+	require.ErrorAs(t, traceErr, &target)
 	require.Equal(t, err, target)
 }
 
@@ -41,11 +41,11 @@ func TestLogs(t *testing.T) {
 	td := testdata.GenerateLogs(1)
 	err := errors.New("some error")
 	logsErr := NewLogs(err, td)
-	assert.Equal(t, err.Error(), logsErr.Error())
+	require.EqualError(t, err, logsErr.Error())
 	var target Logs
 	assert.False(t, errors.As(nil, &target))
 	assert.False(t, errors.As(err, &target))
-	assert.True(t, errors.As(logsErr, &target))
+	require.ErrorAs(t, logsErr, &target)
 	assert.Equal(t, td, target.Data())
 }
 
@@ -57,7 +57,7 @@ func TestLogs_Unwrap(t *testing.T) {
 	target := testErrorType{}
 	require.NotEqual(t, err, target)
 	// Unwrapping logsErr for err and assigning to target.
-	require.True(t, errors.As(logsErr, &target))
+	require.ErrorAs(t, logsErr, &target)
 	require.Equal(t, err, target)
 }
 
@@ -65,11 +65,11 @@ func TestMetrics(t *testing.T) {
 	td := testdata.GenerateMetrics(1)
 	err := errors.New("some error")
 	metricErr := NewMetrics(err, td)
-	assert.Equal(t, err.Error(), metricErr.Error())
+	require.EqualError(t, err, metricErr.Error())
 	var target Metrics
 	assert.False(t, errors.As(nil, &target))
 	assert.False(t, errors.As(err, &target))
-	assert.True(t, errors.As(metricErr, &target))
+	require.ErrorAs(t, metricErr, &target)
 	assert.Equal(t, td, target.Data())
 }
 
@@ -81,6 +81,6 @@ func TestMetrics_Unwrap(t *testing.T) {
 	target := testErrorType{}
 	require.NotEqual(t, err, target)
 	// Unwrapping metricErr for err and assigning to target.
-	require.True(t, errors.As(metricErr, &target))
+	require.ErrorAs(t, metricErr, &target)
 	require.Equal(t, err, target)
 }

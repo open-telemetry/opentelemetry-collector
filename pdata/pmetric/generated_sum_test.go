@@ -48,9 +48,9 @@ func TestSum_AggregationTemporality(t *testing.T) {
 
 func TestSum_IsMonotonic(t *testing.T) {
 	ms := NewSum()
-	assert.Equal(t, false, ms.IsMonotonic())
+	assert.False(t, ms.IsMonotonic())
 	ms.SetIsMonotonic(true)
-	assert.Equal(t, true, ms.IsMonotonic())
+	assert.True(t, ms.IsMonotonic())
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { newSum(&otlpmetrics.Sum{}, &sharedState).SetIsMonotonic(true) })
 }

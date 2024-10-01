@@ -122,18 +122,6 @@ linters-settings:
             - "!**/*_test.go"
 
   testifylint:
-    # TODO: enable all rules
-    disable:
-      - compares
-      - error-is-as
-      - error-nil
-      - expected-actual
-      - float-compare
-      - formatter
-      - go-require
-      - negative-positive
-      - nil-compare
-      - require-error
     enable-all: true   
 
 linters:
