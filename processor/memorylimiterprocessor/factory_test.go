@@ -38,20 +38,20 @@ func TestCreateProcessor(t *testing.T) {
 	pCfg.MemorySpikeLimitMiB = 1907
 	pCfg.CheckInterval = 100 * time.Millisecond
 
-	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
-	assert.NoError(t, err)
+	tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
+	require.NoError(t, err)
 	assert.NotNil(t, tp)
 	// test if we can shutdown a monitoring routine that has not started
-	assert.ErrorIs(t, tp.Shutdown(context.Background()), memorylimiter.ErrShutdownNotStarted)
-	assert.NoError(t, tp.Start(context.Background(), componenttest.NewNopHost()))
+	require.ErrorIs(t, tp.Shutdown(context.Background()), memorylimiter.ErrShutdownNotStarted)
+	require.NoError(t, tp.Start(context.Background(), componenttest.NewNopHost()))
 
-	mp, err := factory.CreateMetricsProcessor(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
-	assert.NoError(t, err)
+	mp, err := factory.CreateMetrics(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
+	require.NoError(t, err)
 	assert.NotNil(t, mp)
-	assert.NoError(t, mp.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, mp.Start(context.Background(), componenttest.NewNopHost()))
 
-	lp, err := factory.CreateLogsProcessor(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
-	assert.NoError(t, err)
+	lp, err := factory.CreateLogs(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
+	require.NoError(t, err)
 	assert.NotNil(t, lp)
 	assert.NoError(t, lp.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -59,7 +59,7 @@ func TestCreateProcessor(t *testing.T) {
 	assert.NoError(t, tp.Shutdown(context.Background()))
 	assert.NoError(t, mp.Shutdown(context.Background()))
 	// verify that no monitoring routine is running
-	assert.ErrorIs(t, tp.Shutdown(context.Background()), memorylimiter.ErrShutdownNotStarted)
+	require.ErrorIs(t, tp.Shutdown(context.Background()), memorylimiter.ErrShutdownNotStarted)
 
 	// start and shutdown a new monitoring routine
 	assert.NoError(t, lp.Start(context.Background(), componenttest.NewNopHost()))

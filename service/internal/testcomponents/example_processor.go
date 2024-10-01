@@ -16,12 +16,12 @@ import (
 var procType = component.MustNewType("exampleprocessor")
 
 // ExampleProcessorFactory is factory for ExampleProcessor.
-var ExampleProcessorFactory = processor.NewFactory(
+var ExampleProcessorFactory = processorprofiles.NewFactory(
 	procType,
 	createDefaultConfig,
-	processor.WithTraces(createTracesProcessor, component.StabilityLevelDevelopment),
-	processor.WithMetrics(createMetricsProcessor, component.StabilityLevelDevelopment),
-	processor.WithLogs(createLogsProcessor, component.StabilityLevelDevelopment),
+	processorprofiles.WithTraces(createTracesProcessor, component.StabilityLevelDevelopment),
+	processorprofiles.WithMetrics(createMetricsProcessor, component.StabilityLevelDevelopment),
+	processorprofiles.WithLogs(createLogsProcessor, component.StabilityLevelDevelopment),
 	processorprofiles.WithProfiles(createProfilesProcessor, component.StabilityLevelDevelopment),
 )
 

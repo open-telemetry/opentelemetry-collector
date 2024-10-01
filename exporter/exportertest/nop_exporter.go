@@ -28,12 +28,12 @@ func NewNopSettings() exporter.Settings {
 
 // NewNopFactory returns an exporter.Factory that constructs nop exporters.
 func NewNopFactory() exporter.Factory {
-	return exporter.NewFactory(
+	return exporterprofiles.NewFactory(
 		nopType,
 		func() component.Config { return &nopConfig{} },
-		exporter.WithTraces(createTracesExporter, component.StabilityLevelStable),
-		exporter.WithMetrics(createMetricsExporter, component.StabilityLevelStable),
-		exporter.WithLogs(createLogsExporter, component.StabilityLevelStable),
+		exporterprofiles.WithTraces(createTracesExporter, component.StabilityLevelStable),
+		exporterprofiles.WithMetrics(createMetricsExporter, component.StabilityLevelStable),
+		exporterprofiles.WithLogs(createLogsExporter, component.StabilityLevelStable),
 		exporterprofiles.WithProfiles(createProfilesExporter, component.StabilityLevelAlpha),
 	)
 }

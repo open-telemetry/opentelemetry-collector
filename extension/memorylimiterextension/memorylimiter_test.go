@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -82,7 +83,7 @@ func TestMemoryPressureResponse(t *testing.T) {
 			if tt.expectError {
 				assert.True(t, mustRefuse)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 			assert.NoError(t, ml.Shutdown(ctx))
 		})

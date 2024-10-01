@@ -29,7 +29,6 @@ const (
 	scraperTag   = "scraper"
 	transportTag = "transport"
 	exporterTag  = "exporter"
-	processorTag = "processor"
 )
 
 type TestTelemetry struct {
@@ -72,27 +71,23 @@ func (tts *TestTelemetry) CheckExporterLogs(sentLogRecords, sendFailedLogRecords
 }
 
 func (tts *TestTelemetry) CheckExporterMetricGauge(metric string, val int64, extraAttrs ...attribute.KeyValue) error {
-	attrs := attributesForExporterMetrics(tts.id)
-	attrs = append(attrs, extraAttrs...)
+	attrs := attributesForExporterMetrics(tts.id, extraAttrs...)
 	return checkIntGauge(tts.reader, metric, val, attrs)
 }
 
-// CheckProcessorTraces checks that for the current exported values for trace exporter metrics match given values.
-// Note: SetupTelemetry must be called before this function.
-func (tts *TestTelemetry) CheckProcessorTraces(acceptedSpans, refusedSpans, droppedSpans int64) error {
-	return checkProcessorTraces(tts.reader, tts.id, acceptedSpans, refusedSpans, droppedSpans)
+// Deprecated: [v0.111.0] deleted metrics, no-op.
+func (tts *TestTelemetry) CheckProcessorTraces(_, _, _ int64) error {
+	return nil
 }
 
-// CheckProcessorMetrics checks that for the current exported values for metrics exporter metrics match given values.
-// Note: SetupTelemetry must be called before this function.
-func (tts *TestTelemetry) CheckProcessorMetrics(acceptedMetricPoints, refusedMetricPoints, droppedMetricPoints int64) error {
-	return checkProcessorMetrics(tts.reader, tts.id, acceptedMetricPoints, refusedMetricPoints, droppedMetricPoints)
+// Deprecated: [v0.111.0] deleted metrics, no-op.
+func (tts *TestTelemetry) CheckProcessorMetrics(_, _, _ int64) error {
+	return nil
 }
 
-// CheckProcessorLogs checks that for the current exported values for logs exporter metrics match given values.
-// Note: SetupTelemetry must be called before this function.
-func (tts *TestTelemetry) CheckProcessorLogs(acceptedLogRecords, refusedLogRecords, droppedLogRecords int64) error {
-	return checkProcessorLogs(tts.reader, tts.id, acceptedLogRecords, refusedLogRecords, droppedLogRecords)
+// Deprecated: [v0.111.0] deleted metrics, no-op.
+func (tts *TestTelemetry) CheckProcessorLogs(_, _, _ int64) error {
+	return nil
 }
 
 // CheckReceiverTraces checks that for the current exported values for trace receiver metrics match given values.

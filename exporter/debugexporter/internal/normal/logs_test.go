@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -111,7 +112,7 @@ log message mykey2=myvalue2 mykey1=myvalue1
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			output, err := NewNormalLogsMarshaler().MarshalLogs(tt.input)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expected, string(output))
 		})
 	}

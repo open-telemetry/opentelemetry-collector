@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -97,6 +98,21 @@ func (mvt ValueType) Primitive() string {
 	}
 }
 
+type stability struct {
+	Level string `mapstructure:"level"`
+	From  string `mapstructure:"from"`
+}
+
+func (s stability) String() string {
+	if len(s.Level) == 0 || strings.EqualFold(s.Level, component.StabilityLevelStable.String()) {
+		return ""
+	}
+	if len(s.From) > 0 {
+		return fmt.Sprintf(" [%s since %s]", s.Level, s.From)
+	}
+	return fmt.Sprintf(" [%s]", s.Level)
+}
+
 type Metric struct {
 	// Enabled defines whether the metric is enabled by default.
 	Enabled bool `mapstructure:"enabled"`
@@ -106,6 +122,9 @@ type Metric struct {
 
 	// Description of the metric.
 	Description string `mapstructure:"description"`
+
+	// The stability level of the metric.
+	Stability stability `mapstructure:"stability"`
 
 	// ExtendedDocumentation of the metric. If specified, this will
 	// be appended to the description used in generated documentation.
