@@ -93,3 +93,17 @@ replace go.opentelemetry.io/collector/processor/processorprofiles => ../processo
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 
 replace go.opentelemetry.io/collector/internal/globalsignal => ../../internal/globalsignal
+
+replace go.opentelemetry.io/collector/extension => ../../extension
+
+replace go.opentelemetry.io/collector/config/configretry => ../../config/configretry
+
+replace go.opentelemetry.io/collector/exporter/exporterprofiles => ../../exporter/exporterprofiles
+
+replace go.opentelemetry.io/collector/extension/experimental/storage => ../../extension/experimental/storage
+
+replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../../receiver/receiverprofiles
+
+replace go.opentelemetry.io/collector/receiver => ../../receiver
+
+replace go.opentelemetry.io/collector/exporter => ../../exporter
