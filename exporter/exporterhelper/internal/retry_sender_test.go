@@ -269,6 +269,54 @@ func TestQueueRetryWithDisabledRetires(t *testing.T) {
 	require.NoError(t, be.Shutdown(context.Background()))
 }
 
+func TestRetryWithContextTimeout(t *testing.T) {
+	const testTimeout = 10 * time.Second
+
+	rCfg := configretry.NewDefaultBackOffConfig()
+	rCfg.Enabled = true
+	rCfg.InitialInterval = testTimeout * 2
+	qCfg := exporterqueue.NewDefaultConfig()
+	qCfg.Enabled = false
+	set := exportertest.NewNopSettings()
+	logger, observed := observer.New(zap.ErrorLevel)
+	set.Logger = zap.New(logger)
+	be, err := NewBaseExporter(
+		set,
+		pipeline.SignalLogs,
+		newObservabilityConsumerSender,
+		WithRetry(rCfg),
+		WithRequestQueue(qCfg, exporterqueue.NewMemoryQueueFactory[internal.Request]()),
+	)
+	require.NoError(t, err)
+	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
+	ocs := be.ObsrepSender.(*observabilityConsumerSender)
+	mockR := newMockRequest(2, errors.New("some error"))
+
+	start := time.Now()
+	ocs.run(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
+		defer cancel()
+		err := be.Send(ctx, mockR)
+		require.Error(t, err)
+		require.Equal(t, err.Error(), "request will be cancelled before next retry: some error")
+	})
+	assert.Len(t, observed.All(), 1)
+	assert.Equal(t, "Exporting failed. Rejecting data. "+
+		"Try enabling sending_queue to survive temporary failures.", observed.All()[0].Message)
+	ocs.awaitAsyncProcessing()
+	mockR.checkNumRequests(t, 1)
+	ocs.checkSendItemsCount(t, 0)
+	ocs.checkDroppedItemsCount(t, 2)
+	require.NoError(t, be.Shutdown(context.Background()))
+
+	// There should be no delay, because the initial interval is
+	// longer than the context timeout.  Merely checking that no
+	// delays on the order of either the context timeout or the
+	// retry interval were introduced, i.e., fail fast.
+	elapsed := time.Since(start)
+	require.Less(t, elapsed, testTimeout/2)
+}
+
 type mockErrorRequest struct{}
 
 func (mer *mockErrorRequest) Export(context.Context) error {
