@@ -56,7 +56,7 @@ func TestNoDataLoss(t *testing.T) {
 	limiter, err := newMemoryLimiterProcessor(set, cfg)
 	require.NoError(t, err)
 
-	processor, err := processorhelper.NewLogsProcessor(context.Background(), processor.Settings{
+	processor, err := processorhelper.NewLogs(context.Background(), processor.Settings{
 		ID:                component.MustNewID("nop"),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 	}, cfg, exporter,
@@ -176,7 +176,7 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 
 			ml, err := newMemoryLimiterProcessor(processortest.NewNopSettings(), tt.mlCfg)
 			require.NoError(t, err)
-			mp, err := processorhelper.NewMetricsProcessor(
+			mp, err := processorhelper.NewMetrics(
 				context.Background(),
 				processortest.NewNopSettings(),
 				tt.mlCfg,
@@ -266,7 +266,7 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 
 			ml, err := newMemoryLimiterProcessor(processortest.NewNopSettings(), tt.mlCfg)
 			require.NoError(t, err)
-			tp, err := processorhelper.NewTracesProcessor(
+			tp, err := processorhelper.NewTraces(
 				context.Background(),
 				processortest.NewNopSettings(),
 				tt.mlCfg,
@@ -356,7 +356,7 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 
 			ml, err := newMemoryLimiterProcessor(processortest.NewNopSettings(), tt.mlCfg)
 			require.NoError(t, err)
-			tp, err := processorhelper.NewLogsProcessor(
+			tp, err := processorhelper.NewLogs(
 				context.Background(),
 				processortest.NewNopSettings(),
 				tt.mlCfg,

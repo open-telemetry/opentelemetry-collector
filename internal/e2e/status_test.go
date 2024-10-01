@@ -101,7 +101,7 @@ func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 				Level: configtelemetry.LevelNone,
 			},
 		},
-		PipelinesWithPipelineID: pipelines.ConfigWithPipelineID{
+		Pipelines: pipelines.Config{
 			pipeline.MustNewID("traces"): {
 				Receivers: []component.ID{component.NewID(component.MustNewType("test"))},
 				Exporters: []component.ID{component.NewID(nopType)},
@@ -128,7 +128,7 @@ func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 
 	for instanceID, events := range eventsReceived {
 		pipelineIDs := ""
-		instanceID.AllPipelineIDsWithPipelineIDs(func(id pipeline.ID) bool {
+		instanceID.AllPipelineIDs(func(id pipeline.ID) bool {
 			pipelineIDs += id.String() + ","
 			return true
 		})

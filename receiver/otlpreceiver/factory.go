@@ -154,8 +154,8 @@ func createProfiles(
 }
 
 // This is the map of already created OTLP receivers for particular configurations.
-// We maintain this map because the Factory is asked trace and metric receivers separately
-// when it gets CreateTracesReceiver() and CreateMetricsReceiver() but they must not
+// We maintain this map because the receiver.Factory is asked trace and metric receivers separately
+// when it gets CreateTraces() and CreateMetrics() but they must not
 // create separate objects, they must use one otlpReceiver object per configuration.
 // When the receiver is shutdown it should be removed from this map so the same configuration
 // can be recreated successfully.

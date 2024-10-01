@@ -136,8 +136,7 @@ func TestUnmarshalError(t *testing.T) {
 				t.Run(tt.name, func(t *testing.T) {
 					cfgs := NewConfigs(tk.factories)
 					err := cfgs.Unmarshal(tt.conf)
-					require.Error(t, err)
-					assert.Contains(t, err.Error(), tt.expectedError)
+					assert.ErrorContains(t, err, tt.expectedError)
 				})
 			}
 		})

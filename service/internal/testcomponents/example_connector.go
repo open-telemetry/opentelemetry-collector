@@ -21,23 +21,23 @@ import (
 var connType = component.MustNewType("exampleconnector")
 
 // ExampleConnectorFactory is factory for ExampleConnector.
-var ExampleConnectorFactory = connector.NewFactory(
+var ExampleConnectorFactory = connectorprofiles.NewFactory(
 	connType,
 	createExampleConnectorDefaultConfig,
 
-	connector.WithTracesToTraces(createExampleTracesToTraces, component.StabilityLevelDevelopment),
-	connector.WithTracesToMetrics(createExampleTracesToMetrics, component.StabilityLevelDevelopment),
-	connector.WithTracesToLogs(createExampleTracesToLogs, component.StabilityLevelDevelopment),
+	connectorprofiles.WithTracesToTraces(createExampleTracesToTraces, component.StabilityLevelDevelopment),
+	connectorprofiles.WithTracesToMetrics(createExampleTracesToMetrics, component.StabilityLevelDevelopment),
+	connectorprofiles.WithTracesToLogs(createExampleTracesToLogs, component.StabilityLevelDevelopment),
 	connectorprofiles.WithTracesToProfiles(createExampleTracesToProfiles, component.StabilityLevelDevelopment),
 
-	connector.WithMetricsToTraces(createExampleMetricsToTraces, component.StabilityLevelDevelopment),
-	connector.WithMetricsToMetrics(createExampleMetricsToMetrics, component.StabilityLevelDevelopment),
-	connector.WithMetricsToLogs(createExampleMetricsToLogs, component.StabilityLevelDevelopment),
+	connectorprofiles.WithMetricsToTraces(createExampleMetricsToTraces, component.StabilityLevelDevelopment),
+	connectorprofiles.WithMetricsToMetrics(createExampleMetricsToMetrics, component.StabilityLevelDevelopment),
+	connectorprofiles.WithMetricsToLogs(createExampleMetricsToLogs, component.StabilityLevelDevelopment),
 	connectorprofiles.WithMetricsToProfiles(createExampleMetricsToProfiles, component.StabilityLevelDevelopment),
 
-	connector.WithLogsToTraces(createExampleLogsToTraces, component.StabilityLevelDevelopment),
-	connector.WithLogsToMetrics(createExampleLogsToMetrics, component.StabilityLevelDevelopment),
-	connector.WithLogsToLogs(createExampleLogsToLogs, component.StabilityLevelDevelopment),
+	connectorprofiles.WithLogsToTraces(createExampleLogsToTraces, component.StabilityLevelDevelopment),
+	connectorprofiles.WithLogsToMetrics(createExampleLogsToMetrics, component.StabilityLevelDevelopment),
+	connectorprofiles.WithLogsToLogs(createExampleLogsToLogs, component.StabilityLevelDevelopment),
 	connectorprofiles.WithLogsToProfiles(createExampleLogsToProfiles, component.StabilityLevelDevelopment),
 
 	connectorprofiles.WithProfilesToTraces(createExampleProfilesToTraces, component.StabilityLevelDevelopment),
@@ -46,12 +46,12 @@ var ExampleConnectorFactory = connector.NewFactory(
 	connectorprofiles.WithProfilesToProfiles(createExampleProfilesToProfiles, component.StabilityLevelDevelopment),
 )
 
-var MockForwardConnectorFactory = connector.NewFactory(
+var MockForwardConnectorFactory = connectorprofiles.NewFactory(
 	component.MustNewType("mockforward"),
 	createExampleConnectorDefaultConfig,
-	connector.WithTracesToTraces(createExampleTracesToTraces, component.StabilityLevelDevelopment),
-	connector.WithMetricsToMetrics(createExampleMetricsToMetrics, component.StabilityLevelDevelopment),
-	connector.WithLogsToLogs(createExampleLogsToLogs, component.StabilityLevelDevelopment),
+	connectorprofiles.WithTracesToTraces(createExampleTracesToTraces, component.StabilityLevelDevelopment),
+	connectorprofiles.WithMetricsToMetrics(createExampleMetricsToMetrics, component.StabilityLevelDevelopment),
+	connectorprofiles.WithLogsToLogs(createExampleLogsToLogs, component.StabilityLevelDevelopment),
 	connectorprofiles.WithProfilesToProfiles(createExampleProfilesToProfiles, component.StabilityLevelDevelopment),
 )
 

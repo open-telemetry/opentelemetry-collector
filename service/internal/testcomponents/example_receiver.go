@@ -19,18 +19,18 @@ var receiverType = component.MustNewType("examplereceiver")
 var ExampleReceiverFactory = receiverprofiles.NewFactory(
 	receiverType,
 	createReceiverDefaultConfig,
-	receiverprofiles.WithTraces(createTracesReceiver, component.StabilityLevelDevelopment),
-	receiverprofiles.WithMetrics(createMetricsReceiver, component.StabilityLevelDevelopment),
-	receiverprofiles.WithLogs(createLogsReceiver, component.StabilityLevelDevelopment),
-	receiverprofiles.WithProfiles(createProfilesReceiver, component.StabilityLevelDevelopment),
+	receiverprofiles.WithTraces(createTraces, component.StabilityLevelDevelopment),
+	receiverprofiles.WithMetrics(createMetrics, component.StabilityLevelDevelopment),
+	receiverprofiles.WithLogs(createLogs, component.StabilityLevelDevelopment),
+	receiverprofiles.WithProfiles(createProfiles, component.StabilityLevelDevelopment),
 )
 
 func createReceiverDefaultConfig() component.Config {
 	return &struct{}{}
 }
 
-// createTracesReceiver creates a trace receiver based on this config.
-func createTracesReceiver(
+// createTraces creates a receiver.Traces based on this config.
+func createTraces(
 	_ context.Context,
 	_ receiver.Settings,
 	cfg component.Config,
@@ -41,8 +41,8 @@ func createTracesReceiver(
 	return tr, nil
 }
 
-// createMetricsReceiver creates a metrics receiver based on this config.
-func createMetricsReceiver(
+// createMetrics creates a receiver.Metrics based on this config.
+func createMetrics(
 	_ context.Context,
 	_ receiver.Settings,
 	cfg component.Config,
@@ -53,7 +53,8 @@ func createMetricsReceiver(
 	return mr, nil
 }
 
-func createLogsReceiver(
+// createLogs creates a receiver.Logs based on this config.
+func createLogs(
 	_ context.Context,
 	_ receiver.Settings,
 	cfg component.Config,
@@ -64,8 +65,8 @@ func createLogsReceiver(
 	return lr, nil
 }
 
-// createProfilesReceiver creates a trace receiver based on this config.
-func createProfilesReceiver(
+// createProfiles creates a receiver.Profiles based on this config.
+func createProfiles(
 	_ context.Context,
 	_ receiver.Settings,
 	cfg component.Config,
@@ -101,7 +102,7 @@ type ExampleReceiver struct {
 }
 
 // This is the map of already created example receivers for particular configurations.
-// We maintain this map because the ReceiverFactory is asked trace and metric receivers separately
-// when it gets CreateTracesReceiver() and CreateMetricsReceiver() but they must not
+// We maintain this map because the receiver.Factory is asked trace and metric receivers separately
+// when it gets CreateTraces() and CreateMetrics() but they must not
 // create separate objects, they must use one Receiver object per configuration.
 var exampleReceivers = map[component.Config]*ExampleReceiver{}

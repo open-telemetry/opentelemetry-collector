@@ -26,7 +26,7 @@ func TestGeneratedMetrics(t *testing.T) {
 func TestComponentTelemetry(t *testing.T) {
 	tt := setupTestTelemetry()
 	factory := NewFactory()
-	receiver, err := factory.CreateMetricsReceiver(context.Background(), tt.NewSettings(), componenttest.NewNopHost(), new(consumertest.MetricsSink))
+	receiver, err := factory.CreateMetrics(context.Background(), tt.NewSettings(), componenttest.NewNopHost(), new(consumertest.MetricsSink))
 	require.NoError(t, err)
 	tt.assertMetrics(t, []metricdata.Metrics{
 		{

@@ -23,11 +23,11 @@ func TestNewFactory(t *testing.T) {
 		func() component.Config { return &defaultCfg })
 	assert.EqualValues(t, testType, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
-	_, err := factory.CreateTracesProcessor(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
+	_, err := factory.CreateTraces(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
 	require.Error(t, err)
-	_, err = factory.CreateMetricsProcessor(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
+	_, err = factory.CreateMetrics(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
 	require.Error(t, err)
-	_, err = factory.CreateLogsProcessor(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
+	_, err = factory.CreateLogs(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
 	assert.Error(t, err)
 }
 
@@ -43,16 +43,16 @@ func TestNewFactoryWithOptions(t *testing.T) {
 	assert.EqualValues(t, testType, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
-	assert.Equal(t, component.StabilityLevelAlpha, factory.TracesProcessorStability())
-	_, err := factory.CreateTracesProcessor(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
+	assert.Equal(t, component.StabilityLevelAlpha, factory.TracesStability())
+	_, err := factory.CreateTraces(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
 	require.NoError(t, err)
 
-	assert.Equal(t, component.StabilityLevelBeta, factory.MetricsProcessorStability())
-	_, err = factory.CreateMetricsProcessor(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
+	assert.Equal(t, component.StabilityLevelBeta, factory.MetricsStability())
+	_, err = factory.CreateMetrics(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
 	require.NoError(t, err)
 
-	assert.Equal(t, component.StabilityLevelUnmaintained, factory.LogsProcessorStability())
-	_, err = factory.CreateLogsProcessor(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
+	assert.Equal(t, component.StabilityLevelUnmaintained, factory.LogsStability())
+	_, err = factory.CreateLogs(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
 	assert.NoError(t, err)
 }
 

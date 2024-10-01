@@ -12,7 +12,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerprofiles"
-	"go.opentelemetry.io/collector/internal/globalsignal"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverprofiles"
@@ -43,15 +42,7 @@ func NewNopFactory() receiver.Factory {
 
 // NewNopFactoryForType returns a receiver.Factory that constructs nop receivers supporting only the
 // given data type.
-//
-// Deprecated: [v0.110.0] Use NewNopFactoryForTypeWithSignal instead
-func NewNopFactoryForType(dataType component.DataType) receiver.Factory {
-	return NewNopFactoryForTypeWithSignal(globalsignal.MustNewSignal(dataType.String()))
-}
-
-// NewNopFactoryForTypeWithSignal returns a receiver.Factory that constructs nop receivers supporting only the
-// given signal.
-func NewNopFactoryForTypeWithSignal(signal pipeline.Signal) receiver.Factory {
+func NewNopFactoryForType(signal pipeline.Signal) receiver.Factory {
 	var factoryOpt receiver.FactoryOption
 	switch signal {
 	case pipeline.SignalTraces:
@@ -66,6 +57,14 @@ func NewNopFactoryForTypeWithSignal(signal pipeline.Signal) receiver.Factory {
 
 	componentType := component.MustNewType(defaultComponentType.String() + "_" + signal.String())
 	return receiver.NewFactory(componentType, func() component.Config { return &nopConfig{} }, factoryOpt)
+}
+
+// NewNopFactoryForTypeWithSignal returns a receiver.Factory that constructs nop receivers supporting only the
+// given signal.
+//
+// Deprecated: [v0.111.0] Use NewNopFactoryForType instead
+func NewNopFactoryForTypeWithSignal(signal pipeline.Signal) receiver.Factory {
+	return NewNopFactoryForType(signal)
 }
 
 type nopConfig struct{}
