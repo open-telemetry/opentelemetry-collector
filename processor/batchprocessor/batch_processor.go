@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !1.23
+
 package batchprocessor // import "go.opentelemetry.io/collector/processor/batchprocessor"
 
 import (
@@ -118,9 +120,11 @@ type batch interface {
 	sizeBytes(item any) int
 }
 
-var _ consumer.Traces = (*batchProcessor)(nil)
-var _ consumer.Metrics = (*batchProcessor)(nil)
-var _ consumer.Logs = (*batchProcessor)(nil)
+var (
+	_ consumer.Traces  = (*batchProcessor)(nil)
+	_ consumer.Metrics = (*batchProcessor)(nil)
+	_ consumer.Logs    = (*batchProcessor)(nil)
+)
 
 // newBatchProcessor returns a new batch processor component.
 func newBatchProcessor(set processor.Settings, cfg *Config, batchFunc func() batch) (*batchProcessor, error) {
@@ -257,12 +261,6 @@ func (b *shard) processItem(item any) {
 
 func (b *shard) hasTimer() bool {
 	return b.timer != nil
-}
-
-func (b *shard) stopTimer() {
-	if b.hasTimer() && !b.timer.Stop() {
-		<-b.timer.C
-	}
 }
 
 func (b *shard) resetTimer() {
