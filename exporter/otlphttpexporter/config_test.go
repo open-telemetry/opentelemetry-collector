@@ -32,7 +32,11 @@ func TestUnmarshalDefaultConfig(t *testing.T) {
 }
 
 func TestUnmarshalConfig(t *testing.T) {
-	defaultTransport := http.DefaultTransport.(*http.Transport)
+	defaultMaxIdleConns := http.DefaultTransport.(*http.Transport).MaxIdleConns
+	defaultMaxIdleConnsPerHost := http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost
+	defaultMaxConnsPerHost := http.DefaultTransport.(*http.Transport).MaxConnsPerHost
+	defaultIdleConnTimeout := http.DefaultTransport.(*http.Transport).IdleConnTimeout
+
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
@@ -73,10 +77,10 @@ func TestUnmarshalConfig(t *testing.T) {
 				WriteBufferSize:     345,
 				Timeout:             time.Second * 10,
 				Compression:         "gzip",
-				MaxIdleConns:        &defaultTransport.MaxIdleConns,
-				MaxIdleConnsPerHost: &defaultTransport.MaxIdleConnsPerHost,
-				MaxConnsPerHost:     &defaultTransport.MaxConnsPerHost,
-				IdleConnTimeout:     &defaultTransport.IdleConnTimeout,
+				MaxIdleConns:        &defaultMaxIdleConns,
+				MaxIdleConnsPerHost: &defaultMaxIdleConnsPerHost,
+				MaxConnsPerHost:     &defaultMaxConnsPerHost,
+				IdleConnTimeout:     &defaultIdleConnTimeout,
 			},
 		}, cfg)
 }
