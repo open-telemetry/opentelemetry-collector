@@ -303,7 +303,7 @@ func TestRetryWithContextTimeout(t *testing.T) {
 		defer cancel()
 		err := be.Send(ctx, mockR)
 		require.Error(t, err)
-		require.Equal(t, err.Error(), "request will be cancelled before next retry: transient error")
+		require.Equal(t, "request will be cancelled before next retry: transient error", err.Error())
 	})
 	assert.Len(t, observed.All(), 2)
 	assert.Equal(t, "Exporting failed. Will retry the request after interval.", observed.All()[0].Message)
