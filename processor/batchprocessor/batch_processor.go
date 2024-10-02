@@ -120,8 +120,8 @@ type pendingItem struct {
 // dataItem is exchanged between the waiter and the batching process
 // includes the pendingItem and its data.
 type dataItem struct {
-	data any
-	pendingItem
+	data      any
+	parentCtx context.Context
 }
 
 // batch is an interface generalizing the individual signal types.
@@ -256,6 +256,8 @@ func (b *shard) startLoop() {
 			if item.data == nil {
 				continue
 			}
+			// Important invariant. processItem() must return with the pending
+			// number of items less than the minimum batch size.
 			b.processItem(item)
 		case <-timerCh:
 			if b.batch.itemCount() > 0 {
@@ -274,6 +276,8 @@ func (b *shard) processItem(item dataItem) {
 		numItems:  totalItems,
 	})
 
+	// The call to flushItems() is necessary to maintain the invariant that
+	// after this call returns, the pending data is less than a full batch.
 	b.flushItems()
 }
 
@@ -307,98 +311,81 @@ func (b *shard) resetTimer() {
 }
 
 func (b *shard) sendItems(trigger trigger) {
+	// Note because of the invariant stated for processItems, we know the
+	// number of current waiters exceeds the batch by at most one entry.
+	// Therefore, we can enumerate the possibilities.
+	//
+	// 1. len(b.pending) == 1 where the item count of element[0] is <= batch size
+	// 2. len(b.pending) == 1 where the item count of element[0] is > batch size
+	// 3. len(b.pending) == N where N>1 and the item count in elements[0:N-1] is < batch size
+	//
+	// Importantly, in all cases, the batch will include a portion
+	// of data from all contexts in the pending slice.  In case 2
+	// there is always a single residual pendingItem.  In case 3 there
+	// may or may not be a single residential pendingItem.
+
+	pendingSize := b.batch.itemCount()
 	sent, req := b.batch.splitBatch(b.exportCtx, b.processor.sendBatchMaxSize)
 
-	var thisBatch []pendingItem
+	var rootCtx context.Context
 
-	// numToSend equals the number of points being sent not yet
-	// incorporated into thisBatch.  It is decremented as the pending
-	// items are assembled.
-	numToSend := sent
-
-	// The current batch can contain items from several different
-	// producers.  Update pending to correctly track contexts
-	// included in the current batch.
-	for len(b.pending) > 0 && numToSend > 0 {
-		if b.pending[0].numItems > numToSend {
-			// Waiter only had some items in the current batch
-			b.pending[0].numItems -= numToSend
-			thisBatch = append(thisBatch, pendingItem{
-				numItems:  numToSend,
-				parentCtx: b.pending[0].parentCtx,
-			})
-		} else {
-			// This item will be completely processed.
-			numToSend -= b.pending[0].numItems
-			thisBatch = append(thisBatch, pendingItem{
-				numItems:  b.pending[0].numItems,
-				parentCtx: b.pending[0].parentCtx,
-			})
-
-			// Shift the pending array, to allow it to be re-used.
-			copy(b.pending[0:len(b.pending)-1], b.pending[1:])
-			b.pending[len(b.pending)-1] = pendingItem{}
-			b.pending = b.pending[:len(b.pending)-1]
-		}
-	}
-
-	var err error
-
-	var parentSpan trace.Span
-	var parent context.Context
-
-	// If incoming requests are sufficiently large, there
-	// will be one context, in which case no need to create a new
-	// root span.
-	if len(thisBatch) == 1 {
-		parent = thisBatch[0].parentCtx
-		parent, parentSpan = b.processor.tracer.Start(parent, "batch_processor/export")
+	// If the portion being sent belongs to the first item in the pending list,
+	// then there is a single context we can use.
+	if sent <= b.pending[0].numItems {
+		rootCtx = b.pending[0].parentCtx
 	} else {
-		spans := parentSpans(thisBatch)
-
-		links := make([]trace.Link, len(spans))
-		for i, span := range spans {
-			links[i] = trace.Link{SpanContext: span.SpanContext()}
-		}
-		parent, parentSpan = b.processor.tracer.Start(b.exportCtx, "batch_processor/export", trace.WithLinks(links...))
-
-		// Note: linking in the opposite direction.  This
-		// could be inferred by the trace backend, but this
-		// adds helpful information in cases where sampling
-		// may break links.  See
-		// https://github.com/open-telemetry/opentelemetry-specification/issues/1877
-		// Note that there is a possibility that the span has
-		// already ended (if EarlyReturn or context canceled),
-		// in which case this becomes a no-op.
-		for _, span := range spans {
-			span.AddLink(trace.Link{SpanContext: parentSpan.SpanContext()})
-		}
+		rootCtx = b.exportCtx
 	}
-	// Note: call End() before returning to caller contexts, otherwise
-	// trace-based tests will not recognize unfinished spans when the test
-	// terminates.
-	parentSpan.End()
+	ctx, parent := b.processor.tracer.Start(rootCtx, "batch_processor/export")
+	defer parent.End()
 
-	if err = b.batch.export(parent, req); err != nil {
+	// Note: linking spans in both directions.  This could be
+	// inferred by the trace backend, but this adds helpful
+	// information in cases where sampling may break links.  See
+	// https://github.com/open-telemetry/opentelemetry-specification/issues/1877
+	// Note that there is a possibility that the span has already
+	// ended (if EarlyReturn or context canceled), in which case
+	// this becomes a no-op.
+	parentSpanContext := parent.SpanContext()
+	for _, pending := range b.pending {
+		span := trace.SpanFromContext(pending.parentCtx)
+		span.AddLink(trace.Link{SpanContext: parentSpanContext})
+		parent.AddLink(trace.Link{SpanContext: span.SpanContext()})
+	}
+
+	err := b.batch.export(ctx, req)
+
+	// Remember the last pending parent context, we may need it.
+	finalParent := b.pending[len(b.pending)-1].parentCtx
+	// Clear the array to permit GC of finished contexts while
+	// re-using the slice instead of a new allocation.
+	for i := range b.pending {
+		b.pending[i] = pendingItem{}
+	}
+	// There is either one or zero items left in the pending slice,
+	// according to the invariant discussed above.
+	if pendingSize == sent {
+		// The batch is fully sent, pending slice is clear.
+		b.pending = b.pending[:0]
+	} else {
+		// The batch is fully sent, pending slice keeps one item.
+		b.pending = b.pending[:1]
+		b.pending[0].parentCtx = finalParent
+		b.pending[0].numItems = pendingSize - sent
+	}
+
+	if err != nil {
 		b.processor.logger.Warn("Sender failed", zap.Error(err))
+		// TODO: it seems incorrect not to call telemetry.record()
+		// for errors.  Yes?
 		return
 	}
+
 	var bytes int
 	if b.processor.telemetry.detailed {
 		bytes = b.batch.sizeBytes(req)
 	}
 	b.processor.telemetry.record(trigger, int64(sent), int64(bytes))
-}
-
-// parentSpans computes the set of distinct span contexts and returns
-// the corresponding set of active span objects.
-func parentSpans(x []pendingItem) []trace.Span {
-	var spans []trace.Span
-	for i := range x {
-		spans = append(spans, trace.SpanFromContext(x[i].parentCtx))
-	}
-
-	return spans
 }
 
 func (b *shard) consumeBatch(ctx context.Context, data any) error {
@@ -417,11 +404,8 @@ func (b *shard) consumeBatch(ctx context.Context, data any) error {
 	}
 
 	item := dataItem{
-		data: data,
-		pendingItem: pendingItem{
-			parentCtx: ctx,
-			numItems:  itemCount,
-		},
+		data:      data,
+		parentCtx: ctx,
 	}
 
 	b.newItem <- item
