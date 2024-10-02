@@ -277,7 +277,7 @@ func TestRetryWithContextTimeout(t *testing.T) {
 
 	// First attempt after 100ms is attempted
 	rCfg.InitialInterval = 100 * time.Millisecond
-	rCfg.RandomizationFactor = 1
+	rCfg.RandomizationFactor = 0
 	// Second attempt is at twice the testTimeout
 	rCfg.Multiplier = float64(2 * testTimeout / rCfg.InitialInterval)
 	qCfg := exporterqueue.NewDefaultConfig()
