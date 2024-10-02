@@ -83,11 +83,3 @@ func NewScraper(t component.Type, scrape ScrapeFunc, options ...ScraperOption) (
 
 	return bs, nil
 }
-
-// NewScraperWithComponentType creates a Scraper that calls Scrape at the specified collection interval,
-// reports observability information, and passes the scraped metrics to the next consumer.
-//
-// Deprecated: [v0.110.0] use NewScraper instead.
-func NewScraperWithComponentType(t component.Type, scrape ScrapeFunc, options ...ScraperOption) (Scraper, error) {
-	return NewScraper(t, scrape, options...)
-}

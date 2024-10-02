@@ -53,8 +53,7 @@ func TestIDFromMetrics(t *testing.T) {
 	invalidData := pmetric.NewMetrics() // Create an invalid pmetric.Metrics object with missing attribute
 	invalidData.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptyHistogram().DataPoints().AppendEmpty().Attributes()
 	_, err = idFromMetrics(invalidData)
-	require.Error(t, err)
-	assert.Equal(t, err.Error(), fmt.Sprintf("invalid data element, attribute %q is missing", uniqueIDAttrName))
+	require.EqualError(t, err, fmt.Sprintf("invalid data element, attribute %q is missing", uniqueIDAttrName))
 
 	// Test case 3: Wrong attribute type
 	var intID int64 = 12
@@ -62,8 +61,7 @@ func TestIDFromMetrics(t *testing.T) {
 	wrongAttribute.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().
 		SetEmptyHistogram().DataPoints().AppendEmpty().Attributes().PutInt(uniqueIDAttrName, intID)
 	_, err = idFromMetrics(wrongAttribute)
-	require.Error(t, err)
-	assert.Equal(t, err.Error(), fmt.Sprintf("invalid data element, attribute %q is wrong type Int", uniqueIDAttrName))
+	assert.EqualError(t, err, fmt.Sprintf("invalid data element, attribute %q is wrong type Int", uniqueIDAttrName))
 }
 
 func TestIDFromTraces(t *testing.T) {
@@ -78,8 +76,7 @@ func TestIDFromTraces(t *testing.T) {
 	invalidData := ptrace.NewTraces()
 	invalidData.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().Attributes()
 	_, err = idFromTraces(invalidData)
-	require.Error(t, err)
-	assert.Equal(t, err.Error(), fmt.Sprintf("invalid data element, attribute %q is missing", uniqueIDAttrName))
+	require.EqualError(t, err, fmt.Sprintf("invalid data element, attribute %q is missing", uniqueIDAttrName))
 
 	// Test case 3: Wrong attribute type
 	var intID int64 = 12
@@ -87,8 +84,7 @@ func TestIDFromTraces(t *testing.T) {
 	wrongAttribute.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().Attributes().
 		PutInt(uniqueIDAttrName, intID)
 	_, err = idFromTraces(wrongAttribute)
-	require.Error(t, err)
-	assert.Equal(t, err.Error(), fmt.Sprintf("invalid data element, attribute %q is wrong type Int", uniqueIDAttrName))
+	assert.EqualError(t, err, fmt.Sprintf("invalid data element, attribute %q is wrong type Int", uniqueIDAttrName))
 }
 
 func TestIDFromLogs(t *testing.T) {
@@ -103,8 +99,7 @@ func TestIDFromLogs(t *testing.T) {
 	invalidData := plog.NewLogs()
 	invalidData.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Attributes()
 	_, err = idFromLogs(invalidData)
-	require.Error(t, err)
-	assert.Equal(t, err.Error(), fmt.Sprintf("invalid data element, attribute %q is missing", uniqueIDAttrName))
+	require.EqualError(t, err, fmt.Sprintf("invalid data element, attribute %q is missing", uniqueIDAttrName))
 
 	// Test case 3: Wrong attribute type
 	var intID int64 = 12
@@ -112,8 +107,7 @@ func TestIDFromLogs(t *testing.T) {
 	wrongAttribute.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Attributes().
 		PutInt(uniqueIDAttrName, intID)
 	_, err = idFromLogs(wrongAttribute)
-	require.Error(t, err)
-	assert.Equal(t, err.Error(), fmt.Sprintf("invalid data element, attribute %q is wrong type Int", uniqueIDAttrName))
+	assert.EqualError(t, err, fmt.Sprintf("invalid data element, attribute %q is wrong type Int", uniqueIDAttrName))
 }
 
 func returnNonPermanentError() error {

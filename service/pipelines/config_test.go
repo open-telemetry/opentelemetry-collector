@@ -17,7 +17,7 @@ import (
 func TestConfigValidate(t *testing.T) {
 	var testCases = []struct {
 		name     string // test case name (also file name containing config yaml)
-		cfgFn    func() ConfigWithPipelineID
+		cfgFn    func() Config
 		expected error
 	}{
 		{
@@ -27,7 +27,7 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			name: "duplicate-processor-reference",
-			cfgFn: func() ConfigWithPipelineID {
+			cfgFn: func() Config {
 				cfg := generateConfig()
 				pipe := cfg[pipeline.MustNewID("traces")]
 				pipe.Processors = append(pipe.Processors, pipe.Processors...)
@@ -37,7 +37,7 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			name: "missing-pipeline-receivers",
-			cfgFn: func() ConfigWithPipelineID {
+			cfgFn: func() Config {
 				cfg := generateConfig()
 				cfg[pipeline.MustNewID("traces")].Receivers = nil
 				return cfg
@@ -46,7 +46,7 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			name: "missing-pipeline-exporters",
-			cfgFn: func() ConfigWithPipelineID {
+			cfgFn: func() Config {
 				cfg := generateConfig()
 				cfg[pipeline.MustNewID("traces")].Exporters = nil
 				return cfg
@@ -55,14 +55,14 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			name: "missing-pipelines",
-			cfgFn: func() ConfigWithPipelineID {
+			cfgFn: func() Config {
 				return nil
 			},
 			expected: errMissingServicePipelines,
 		},
 		{
 			name: "invalid-service-pipeline-type",
-			cfgFn: func() ConfigWithPipelineID {
+			cfgFn: func() Config {
 				cfg := generateConfig()
 				cfg[pipeline.MustNewID("wrongtype")] = &PipelineConfig{
 					Receivers:  []component.ID{component.MustNewID("nop")},
@@ -83,7 +83,7 @@ func TestConfigValidate(t *testing.T) {
 	}
 }
 
-func generateConfig() ConfigWithPipelineID {
+func generateConfig() Config {
 	return map[pipeline.ID]*PipelineConfig{
 		pipeline.MustNewID("traces"): {
 			Receivers:  []component.ID{component.MustNewID("nop")},

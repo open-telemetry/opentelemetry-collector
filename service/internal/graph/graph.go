@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/component/componentprofiles"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/connector"
+	"go.opentelemetry.io/collector/connector/connectorprofiles"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
@@ -49,7 +50,7 @@ type Settings struct {
 	ConnectorBuilder *builders.ConnectorBuilder
 
 	// PipelineConfigs is a map of component.ID to PipelineConfig.
-	PipelineConfigs pipelines.ConfigWithPipelineID
+	PipelineConfigs pipelines.Config
 
 	ReportStatus status.ServiceStatusFunc
 }
@@ -199,11 +200,11 @@ func (g *Graph) createReceiver(pipelineID pipeline.ID, recvID component.ID) *rec
 	rcvrNode := newReceiverNode(pipelineID.Signal(), recvID)
 	if node := g.componentGraph.Node(rcvrNode.ID()); node != nil {
 		instanceID := g.instanceIDs[node.ID()]
-		g.instanceIDs[node.ID()] = instanceID.WithPipelineIDs(pipelineID)
+		g.instanceIDs[node.ID()] = instanceID.WithPipelines(pipelineID)
 		return node.(*receiverNode)
 	}
 	g.componentGraph.AddNode(rcvrNode)
-	g.instanceIDs[rcvrNode.ID()] = componentstatus.NewInstanceIDWithPipelineIDs(
+	g.instanceIDs[rcvrNode.ID()] = componentstatus.NewInstanceID(
 		recvID, component.KindReceiver, pipelineID,
 	)
 	return rcvrNode
@@ -212,7 +213,7 @@ func (g *Graph) createReceiver(pipelineID pipeline.ID, recvID component.ID) *rec
 func (g *Graph) createProcessor(pipelineID pipeline.ID, procID component.ID) *processorNode {
 	procNode := newProcessorNode(pipelineID, procID)
 	g.componentGraph.AddNode(procNode)
-	g.instanceIDs[procNode.ID()] = componentstatus.NewInstanceIDWithPipelineIDs(
+	g.instanceIDs[procNode.ID()] = componentstatus.NewInstanceID(
 		procID, component.KindProcessor, pipelineID,
 	)
 	return procNode
@@ -222,11 +223,11 @@ func (g *Graph) createExporter(pipelineID pipeline.ID, exprID component.ID) *exp
 	expNode := newExporterNode(pipelineID.Signal(), exprID)
 	if node := g.componentGraph.Node(expNode.ID()); node != nil {
 		instanceID := g.instanceIDs[expNode.ID()]
-		g.instanceIDs[expNode.ID()] = instanceID.WithPipelineIDs(pipelineID)
+		g.instanceIDs[expNode.ID()] = instanceID.WithPipelines(pipelineID)
 		return node.(*exporterNode)
 	}
 	g.componentGraph.AddNode(expNode)
-	g.instanceIDs[expNode.ID()] = componentstatus.NewInstanceIDWithPipelineIDs(
+	g.instanceIDs[expNode.ID()] = componentstatus.NewInstanceID(
 		expNode.componentID, component.KindExporter, pipelineID,
 	)
 	return expNode
@@ -236,11 +237,11 @@ func (g *Graph) createConnector(exprPipelineID, rcvrPipelineID pipeline.ID, conn
 	connNode := newConnectorNode(exprPipelineID.Signal(), rcvrPipelineID.Signal(), connID)
 	if node := g.componentGraph.Node(connNode.ID()); node != nil {
 		instanceID := g.instanceIDs[connNode.ID()]
-		g.instanceIDs[connNode.ID()] = instanceID.WithPipelineIDs(exprPipelineID, rcvrPipelineID)
+		g.instanceIDs[connNode.ID()] = instanceID.WithPipelines(exprPipelineID, rcvrPipelineID)
 		return node.(*connectorNode)
 	}
 	g.componentGraph.AddNode(connNode)
-	g.instanceIDs[connNode.ID()] = componentstatus.NewInstanceIDWithPipelineIDs(
+	g.instanceIDs[connNode.ID()] = componentstatus.NewInstanceID(
 		connNode.componentID, component.KindConnector, exprPipelineID, rcvrPipelineID,
 	)
 	return connNode
@@ -547,7 +548,11 @@ func connectorStability(f connector.Factory, expType, recType pipeline.Signal) c
 		case pipeline.SignalLogs:
 			return f.TracesToLogsStability()
 		case componentprofiles.SignalProfiles:
-			return f.TracesToProfilesStability()
+			fprof, ok := f.(connectorprofiles.Factory)
+			if !ok {
+				return component.StabilityLevelUndefined
+			}
+			return fprof.TracesToProfilesStability()
 		}
 	case pipeline.SignalMetrics:
 		switch recType {
@@ -558,7 +563,11 @@ func connectorStability(f connector.Factory, expType, recType pipeline.Signal) c
 		case pipeline.SignalLogs:
 			return f.MetricsToLogsStability()
 		case componentprofiles.SignalProfiles:
-			return f.MetricsToProfilesStability()
+			fprof, ok := f.(connectorprofiles.Factory)
+			if !ok {
+				return component.StabilityLevelUndefined
+			}
+			return fprof.MetricsToProfilesStability()
 		}
 	case pipeline.SignalLogs:
 		switch recType {
@@ -569,18 +578,26 @@ func connectorStability(f connector.Factory, expType, recType pipeline.Signal) c
 		case pipeline.SignalLogs:
 			return f.LogsToLogsStability()
 		case componentprofiles.SignalProfiles:
-			return f.LogsToProfilesStability()
+			fprof, ok := f.(connectorprofiles.Factory)
+			if !ok {
+				return component.StabilityLevelUndefined
+			}
+			return fprof.LogsToProfilesStability()
 		}
 	case componentprofiles.SignalProfiles:
+		fprof, ok := f.(connectorprofiles.Factory)
+		if !ok {
+			return component.StabilityLevelUndefined
+		}
 		switch recType {
 		case pipeline.SignalTraces:
-			return f.ProfilesToTracesStability()
+			return fprof.ProfilesToTracesStability()
 		case pipeline.SignalMetrics:
-			return f.ProfilesToMetricsStability()
+			return fprof.ProfilesToMetricsStability()
 		case pipeline.SignalLogs:
-			return f.ProfilesToLogsStability()
+			return fprof.ProfilesToLogsStability()
 		case componentprofiles.SignalProfiles:
-			return f.ProfilesToProfilesStability()
+			return fprof.ProfilesToProfilesStability()
 		}
 	}
 	return component.StabilityLevelUndefined

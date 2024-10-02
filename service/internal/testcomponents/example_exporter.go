@@ -21,12 +21,12 @@ var testType = component.MustNewType("exampleexporter")
 const stability = component.StabilityLevelDevelopment
 
 // ExampleExporterFactory is factory for ExampleExporter.
-var ExampleExporterFactory = exporter.NewFactory(
+var ExampleExporterFactory = exporterprofiles.NewFactory(
 	testType,
 	createExporterDefaultConfig,
-	exporter.WithTraces(createTracesExporter, stability),
-	exporter.WithMetrics(createMetricsExporter, stability),
-	exporter.WithLogs(createLogsExporter, stability),
+	exporterprofiles.WithTraces(createTracesExporter, stability),
+	exporterprofiles.WithMetrics(createMetricsExporter, stability),
+	exporterprofiles.WithLogs(createLogsExporter, stability),
 	exporterprofiles.WithProfiles(createProfilesExporter, stability),
 )
 
