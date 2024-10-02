@@ -38,10 +38,6 @@ func createDefaultConfig() component.Config {
 	clientConfig.Compression = configcompression.TypeGzip
 	// We almost read 0 bytes, so no need to tune ReadBufferSize.
 	clientConfig.WriteBufferSize = 512 * 1024
-	clientConfig.MaxIdleConns = nil
-	clientConfig.MaxIdleConnsPerHost = nil
-	clientConfig.MaxConnsPerHost = nil
-	clientConfig.IdleConnTimeout = nil
 
 	return &Config{
 		RetryConfig:  configretry.NewDefaultBackOffConfig(),
