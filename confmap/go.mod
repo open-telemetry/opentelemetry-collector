@@ -3,7 +3,7 @@ module go.opentelemetry.io/collector/confmap
 go 1.22.0
 
 require (
-	github.com/go-viper/mapstructure/v2 v2.1.0
+	github.com/go-viper/mapstructure/v2 v2.2.1
 	github.com/knadh/koanf/maps v0.1.1
 	github.com/knadh/koanf/providers/confmap v0.1.0
 	github.com/knadh/koanf/v2 v2.1.1
