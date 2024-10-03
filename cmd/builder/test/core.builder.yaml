@@ -40,7 +40,6 @@ replaces:
   - go.opentelemetry.io/collector/connector/connectorprofiles => ${WORKSPACE_DIR}/connector/connectorprofiles
   - go.opentelemetry.io/collector/exporter => ${WORKSPACE_DIR}/exporter
   - go.opentelemetry.io/collector/exporter/debugexporter => ${WORKSPACE_DIR}/exporter/debugexporter
-  - go.opentelemetry.io/collector/exporter/loggingexporter => ${WORKSPACE_DIR}/exporter/loggingexporter
   - go.opentelemetry.io/collector/exporter/exporterprofiles => ${WORKSPACE_DIR}/exporter/exporterprofiles
   - go.opentelemetry.io/collector/extension => ${WORKSPACE_DIR}/extension
   - go.opentelemetry.io/collector/extension/auth => ${WORKSPACE_DIR}/extension/auth
