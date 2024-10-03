@@ -13,21 +13,6 @@ import (
 )
 
 func newLogger(ctx context.Context, cfg LogsConfig, options []zap.Option) (*zap.Logger, error) {
-	sdk, err := config.NewSDK(
-		config.WithContext(ctx),
-		config.WithOpenTelemetryConfiguration(
-			config.OpenTelemetryConfiguration{
-				LoggerProvider: &config.LoggerProvider{
-					Processors: cfg.Processors,
-				},
-			},
-		),
-	)
-
-	if err != nil {
-		return nil, err
-	}
-
 	// Copied from NewProductionConfig.
 	zapCfg := &zap.Config{
 		Level:             zap.NewAtomicLevelAt(cfg.Level),
@@ -49,6 +34,20 @@ func newLogger(ctx context.Context, cfg LogsConfig, options []zap.Option) (*zap.
 	logger, err := zapCfg.Build(options...)
 
 	if len(cfg.Processors) > 0 {
+		sdk, err := config.NewSDK(
+			config.WithContext(ctx),
+			config.WithOpenTelemetryConfiguration(
+				config.OpenTelemetryConfiguration{
+					LoggerProvider: &config.LoggerProvider{
+						Processors: cfg.Processors,
+					},
+				},
+			),
+		)
+
+		if err != nil {
+			return nil, err
+		}
 		logger = logger.WithOptions(zap.WrapCore(func(_ zapcore.Core) zapcore.Core {
 			return otelzap.NewCore("go.opentelemetry.io/collector/service/telemetry", otelzap.WithLoggerProvider(sdk.LoggerProvider()))
 		}))
