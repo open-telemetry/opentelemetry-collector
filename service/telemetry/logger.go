@@ -33,6 +33,10 @@ func newLogger(ctx context.Context, cfg LogsConfig, options []zap.Option) (*zap.
 
 	logger, err := zapCfg.Build(options...)
 
+	if err != nil {
+		return nil, err
+	}
+
 	if len(cfg.Processors) > 0 {
 		sdk, err := config.NewSDK(
 			config.WithContext(ctx),
@@ -53,9 +57,6 @@ func newLogger(ctx context.Context, cfg LogsConfig, options []zap.Option) (*zap.
 		}))
 	}
 
-	if err != nil {
-		return nil, err
-	}
 	if cfg.Sampling != nil && cfg.Sampling.Enabled {
 		logger = newSampledLogger(logger, cfg.Sampling)
 	}
