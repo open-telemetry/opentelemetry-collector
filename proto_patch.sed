@@ -70,8 +70,5 @@ s+repeated Sample \(.*\);+repeated Sample \1\
 s+repeated Label \(.*\);+repeated Label \1\
   [ (gogoproto.nullable) = false ];+g
 
-s+repeated Link link_table \(.*\);+repeated Link link_table \1\
-  [ (gogoproto.nullable) = false ];+g
-
 s+ValueType period_type \(.*\);+ValueType period_type \1\
   [ (gogoproto.nullable) = false ];+g
