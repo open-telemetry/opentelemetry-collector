@@ -15,16 +15,15 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/components"
+	"go.opentelemetry.io/collector/service/internal/graph/attribute"
 )
-
-const processorSeed = "processor"
 
 var _ consumerNode = (*processorNode)(nil)
 
 // Every processor instance is unique to one pipeline.
 // Therefore, nodeID is derived from "pipeline ID" and "component ID".
 type processorNode struct {
-	nodeID
+	*attribute.Attributes
 	componentID component.ID
 	pipelineID  pipeline.ID
 	component.Component
@@ -32,7 +31,7 @@ type processorNode struct {
 
 func newProcessorNode(pipelineID pipeline.ID, procID component.ID) *processorNode {
 	return &processorNode{
-		nodeID:      newNodeID(processorSeed, pipelineID.String(), procID.String()),
+		Attributes:  attribute.Processor(pipelineID, procID),
 		componentID: procID,
 		pipelineID:  pipelineID,
 	}

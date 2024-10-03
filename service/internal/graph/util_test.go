@@ -6,6 +6,7 @@ package graph
 import (
 	"context"
 	"errors"
+	"hash/fnv"
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
@@ -37,7 +38,9 @@ type testNode struct {
 // ID satisfies the graph.Node interface, allowing
 // testNode to be used in a simple.DirectedGraph
 func (n *testNode) ID() int64 {
-	return int64(newNodeID(n.id.String()))
+	h := fnv.New64a()
+	h.Write([]byte(n.id.String()))
+	return int64(h.Sum64()) // #nosec G115
 }
 
 func (n *testNode) Start(ctx context.Context, _ component.Host) error {
