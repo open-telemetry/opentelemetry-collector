@@ -16,16 +16,15 @@ import (
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
 	"go.opentelemetry.io/collector/service/internal/components"
+	"go.opentelemetry.io/collector/service/internal/graph/attribute"
 )
-
-const connectorSeed = "connector"
 
 var _ consumerNode = (*connectorNode)(nil)
 
 // A connector instance connects one pipeline type to one other pipeline type.
 // Therefore, nodeID is derived from "exporter pipeline type", "receiver pipeline type", and "component ID".
 type connectorNode struct {
-	nodeID
+	*attribute.Attributes
 	componentID      component.ID
 	exprPipelineType pipeline.Signal
 	rcvrPipelineType pipeline.Signal
@@ -34,7 +33,7 @@ type connectorNode struct {
 
 func newConnectorNode(exprPipelineType, rcvrPipelineType pipeline.Signal, connID component.ID) *connectorNode {
 	return &connectorNode{
-		nodeID:           newNodeID(connectorSeed, connID.String(), exprPipelineType.String(), rcvrPipelineType.String()),
+		Attributes:       attribute.Connector(exprPipelineType, rcvrPipelineType, connID),
 		componentID:      connID,
 		exprPipelineType: exprPipelineType,
 		rcvrPipelineType: rcvrPipelineType,
