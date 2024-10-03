@@ -67,9 +67,6 @@ s+repeated ValueType \(.*\);+repeated ValueType \1\
 s+repeated Sample \(.*\);+repeated Sample \1\
   [ (gogoproto.nullable) = false ];+g
 
-s+repeated Location \(.*\);+repeated Location \1\
-  [ (gogoproto.nullable) = false ];+g
-
 s+repeated Label \(.*\);+repeated Label \1\
   [ (gogoproto.nullable) = false ];+g
 

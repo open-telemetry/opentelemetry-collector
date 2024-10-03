@@ -441,7 +441,7 @@ var mapping = &messageValueStruct{
 	},
 }
 
-var locationSlice = &sliceOfValues{
+var locationSlice = &sliceOfPtrs{
 	structName: "LocationSlice",
 	element:    location,
 }
