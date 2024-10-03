@@ -44,7 +44,7 @@ func (ct *TypeWithLevel) UnmarshalText(in []byte) error {
 	parts := strings.Split(string(in), "/")
 	compressionTyp = Type(parts[0])
 	level = zlib.DefaultCompression
-	if len(parts) > 1 {
+	if len(parts) == 2 {
 		level, err = strconv.Atoi(parts[1])
 		if err != nil {
 			return fmt.Errorf("invalid compression level: %q", parts[1])
