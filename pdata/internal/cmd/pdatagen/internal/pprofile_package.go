@@ -355,7 +355,7 @@ var label = &messageValueStruct{
 	},
 }
 
-var mappingSlice = &sliceOfValues{
+var mappingSlice = &sliceOfPtrs{
 	structName: "MappingSlice",
 	element:    mapping,
 }
