@@ -567,7 +567,7 @@ var function = &messageValueStruct{
 	},
 }
 
-var attributeUnitSlice = &sliceOfValues{
+var attributeUnitSlice = &sliceOfPtrs{
 	structName: "AttributeUnitSlice",
 	element:    attributeUnit,
 }

@@ -70,9 +70,6 @@ s+repeated Sample \(.*\);+repeated Sample \1\
 s+repeated Label \(.*\);+repeated Label \1\
   [ (gogoproto.nullable) = false ];+g
 
-s+repeated AttributeUnit \(.*\);+repeated AttributeUnit \1\
-  [ (gogoproto.nullable) = false ];+g
-
 s+repeated Link link_table \(.*\);+repeated Link link_table \1\
   [ (gogoproto.nullable) = false ];+g
 
