@@ -492,7 +492,7 @@ var location = &messageValueStruct{
 	},
 }
 
-var lineSlice = &sliceOfValues{
+var lineSlice = &sliceOfPtrs{
 	structName: "LineSlice",
 	element:    line,
 }
