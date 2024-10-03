@@ -118,7 +118,11 @@ func (b *ConnectorBuilder) CreateMetricsToTraces(ctx context.Context, set connec
 	}
 
 	logStabilityLevel(set.Logger, f.MetricsToTracesStability())
-	return f.CreateMetricsToTraces(ctx, set, cfg, next)
+	conn, err := f.CreateMetricsToTraces(ctx, set, cfg, next)
+	if err != nil {
+		return nil, err
+	}
+	return wrapMetrics(set.ID, set.TelemetrySettings, conn), nil
 }
 
 // CreateMetricsToMetrics creates a Metrics connector based on the settings and config.
@@ -137,7 +141,11 @@ func (b *ConnectorBuilder) CreateMetricsToMetrics(ctx context.Context, set conne
 	}
 
 	logStabilityLevel(set.Logger, f.MetricsToMetricsStability())
-	return f.CreateMetricsToMetrics(ctx, set, cfg, next)
+	conn, err := f.CreateMetricsToMetrics(ctx, set, cfg, next)
+	if err != nil {
+		return nil, err
+	}
+	return wrapMetrics(set.ID, set.TelemetrySettings, conn), nil
 }
 
 // CreateMetricsToLogs creates a Metrics connector based on the settings and config.
@@ -156,7 +164,11 @@ func (b *ConnectorBuilder) CreateMetricsToLogs(ctx context.Context, set connecto
 	}
 
 	logStabilityLevel(set.Logger, f.MetricsToLogsStability())
-	return f.CreateMetricsToLogs(ctx, set, cfg, next)
+	conn, err := f.CreateMetricsToLogs(ctx, set, cfg, next)
+	if err != nil {
+		return nil, err
+	}
+	return wrapMetrics(set.ID, set.TelemetrySettings, conn), nil
 }
 
 // CreateMetricsToProfiles creates a Metrics connector based on the settings and config.
@@ -175,7 +187,11 @@ func (b *ConnectorBuilder) CreateMetricsToProfiles(ctx context.Context, set conn
 	}
 
 	logStabilityLevel(set.Logger, f.MetricsToProfilesStability())
-	return f.CreateMetricsToProfiles(ctx, set, cfg, next)
+	conn, err := f.CreateMetricsToProfiles(ctx, set, cfg, next)
+	if err != nil {
+		return nil, err
+	}
+	return wrapMetrics(set.ID, set.TelemetrySettings, conn), nil
 }
 
 // CreateLogsToTraces creates a Logs connector based on the settings and config.

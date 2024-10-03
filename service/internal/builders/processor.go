@@ -62,7 +62,11 @@ func (b *ProcessorBuilder) CreateMetrics(ctx context.Context, set processor.Sett
 	}
 
 	logStabilityLevel(set.Logger, f.MetricsProcessorStability())
-	return f.CreateMetricsProcessor(ctx, set, cfg, next)
+	proc, err := f.CreateMetricsProcessor(ctx, set, cfg, next)
+	if err != nil {
+		return nil, err
+	}
+	return wrapMetrics(set.ID, set.TelemetrySettings, proc), nil
 }
 
 // CreateLogs creates a Logs processor based on the settings and config.

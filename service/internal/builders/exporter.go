@@ -53,7 +53,11 @@ func (b *ExporterBuilder) CreateMetrics(ctx context.Context, set exporter.Settin
 	}
 
 	logStabilityLevel(set.Logger, f.MetricsExporterStability())
-	return f.CreateMetricsExporter(ctx, set, cfg)
+	exp, err := f.CreateMetricsExporter(ctx, set, cfg)
+	if err != nil {
+		return nil, err
+	}
+	return wrapMetrics(set.ID, set.TelemetrySettings, exp), nil
 }
 
 // CreateLogs creates a Logs exporter based on the settings and config.
