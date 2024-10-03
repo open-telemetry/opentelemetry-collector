@@ -49,6 +49,14 @@ func (ms ExponentialHistogramDataPoint) MoveTo(dest ExponentialHistogramDataPoin
 	*ms.orig = otlpmetrics.ExponentialHistogramDataPoint{}
 }
 
+func (ms ExponentialHistogramDataPoint) getOrig() *otlpmetrics.ExponentialHistogramDataPoint {
+	return ms.orig
+}
+
+func (ms ExponentialHistogramDataPoint) getState() *internal.State {
+	return ms.state
+}
+
 // Attributes returns the Attributes associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Attributes() pcommon.Map {
 	return pcommon.Map(internal.NewMap(&ms.orig.Attributes, ms.state))

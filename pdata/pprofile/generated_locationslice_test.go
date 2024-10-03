@@ -68,14 +68,14 @@ func TestLocationSlice_EnsureCapacity(t *testing.T) {
 	const ensureSmallLen = 4
 	es.EnsureCapacity(ensureSmallLen)
 	assert.Less(t, ensureSmallLen, es.Len())
-	assert.Equal(t, es.Len(), cap(*es.orig))
+	assert.Equal(t, es.Len(), cap(*es.getOrig()))
 	assert.Equal(t, generateTestLocationSlice(), es)
 
 	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	es.EnsureCapacity(ensureLargeLen)
 	assert.Less(t, generateTestLocationSlice().Len(), ensureLargeLen)
-	assert.Equal(t, ensureLargeLen, cap(*es.orig))
+	assert.Equal(t, ensureLargeLen, cap(*es.getOrig()))
 	assert.Equal(t, generateTestLocationSlice(), es)
 }
 

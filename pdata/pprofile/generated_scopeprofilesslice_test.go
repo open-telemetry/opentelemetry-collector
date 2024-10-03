@@ -69,14 +69,14 @@ func TestScopeProfilesSlice_EnsureCapacity(t *testing.T) {
 	const ensureSmallLen = 4
 	es.EnsureCapacity(ensureSmallLen)
 	assert.Less(t, ensureSmallLen, es.Len())
-	assert.Equal(t, es.Len(), cap(*es.orig))
+	assert.Equal(t, es.Len(), cap(*es.getOrig()))
 	assert.Equal(t, generateTestScopeProfilesSlice(), es)
 
 	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	es.EnsureCapacity(ensureLargeLen)
 	assert.Less(t, generateTestScopeProfilesSlice().Len(), ensureLargeLen)
-	assert.Equal(t, ensureLargeLen, cap(*es.orig))
+	assert.Equal(t, ensureLargeLen, cap(*es.getOrig()))
 	assert.Equal(t, generateTestScopeProfilesSlice(), es)
 }
 
@@ -126,16 +126,16 @@ func TestScopeProfilesSlice_RemoveIf(t *testing.T) {
 func TestScopeProfilesSlice_Sort(t *testing.T) {
 	es := generateTestScopeProfilesSlice()
 	es.Sort(func(a, b ScopeProfiles) bool {
-		return uintptr(unsafe.Pointer(a.orig)) < uintptr(unsafe.Pointer(b.orig))
+		return uintptr(unsafe.Pointer(a.getOrig())) < uintptr(unsafe.Pointer(b.getOrig()))
 	})
 	for i := 1; i < es.Len(); i++ {
-		assert.Less(t, uintptr(unsafe.Pointer(es.At(i-1).orig)), uintptr(unsafe.Pointer(es.At(i).orig)))
+		assert.Less(t, uintptr(unsafe.Pointer(es.At(i-1).getOrig())), uintptr(unsafe.Pointer(es.At(i).getOrig())))
 	}
 	es.Sort(func(a, b ScopeProfiles) bool {
-		return uintptr(unsafe.Pointer(a.orig)) > uintptr(unsafe.Pointer(b.orig))
+		return uintptr(unsafe.Pointer(a.getOrig())) > uintptr(unsafe.Pointer(b.getOrig()))
 	})
 	for i := 1; i < es.Len(); i++ {
-		assert.Greater(t, uintptr(unsafe.Pointer(es.At(i-1).orig)), uintptr(unsafe.Pointer(es.At(i).orig)))
+		assert.Greater(t, uintptr(unsafe.Pointer(es.At(i-1).getOrig())), uintptr(unsafe.Pointer(es.At(i).getOrig())))
 	}
 }
 

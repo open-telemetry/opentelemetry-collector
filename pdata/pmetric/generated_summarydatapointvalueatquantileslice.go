@@ -29,6 +29,14 @@ func newSummaryDataPointValueAtQuantileSlice(orig *[]*otlpmetrics.SummaryDataPoi
 	return SummaryDataPointValueAtQuantileSlice{orig: orig, state: state}
 }
 
+func (ms SummaryDataPointValueAtQuantileSlice) getOrig() *[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile {
+	return ms.orig
+}
+
+func (ms SummaryDataPointValueAtQuantileSlice) getState() *internal.State {
+	return ms.state
+}
+
 // NewSummaryDataPointValueAtQuantileSlice creates a SummaryDataPointValueAtQuantileSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewSummaryDataPointValueAtQuantileSlice() SummaryDataPointValueAtQuantileSlice {
@@ -41,7 +49,7 @@ func NewSummaryDataPointValueAtQuantileSlice() SummaryDataPointValueAtQuantileSl
 //
 // Returns "0" for a newly instance created with "NewSummaryDataPointValueAtQuantileSlice()".
 func (es SummaryDataPointValueAtQuantileSlice) Len() int {
-	return len(*es.orig)
+	return len(*es.getOrig())
 }
 
 // At returns the element at the given index.
@@ -53,7 +61,7 @@ func (es SummaryDataPointValueAtQuantileSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es SummaryDataPointValueAtQuantileSlice) At(i int) SummaryDataPointValueAtQuantile {
-	return newSummaryDataPointValueAtQuantile((*es.orig)[i], es.state)
+	return newSummaryDataPointValueAtQuantile((*es.getOrig())[i], es.getState())
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -69,45 +77,45 @@ func (es SummaryDataPointValueAtQuantileSlice) At(i int) SummaryDataPointValueAt
 //	    // Here should set all the values for e.
 //	}
 func (es SummaryDataPointValueAtQuantileSlice) EnsureCapacity(newCap int) {
-	es.state.AssertMutable()
-	oldCap := cap(*es.orig)
+	es.getState().AssertMutable()
+	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
 		return
 	}
 
-	newOrig := make([]*otlpmetrics.SummaryDataPoint_ValueAtQuantile, len(*es.orig), newCap)
-	copy(newOrig, *es.orig)
-	*es.orig = newOrig
+	newOrig := make([]*otlpmetrics.SummaryDataPoint_ValueAtQuantile, len(*es.getOrig()), newCap)
+	copy(newOrig, *es.getOrig())
+	*es.getOrig() = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty SummaryDataPointValueAtQuantile.
 // It returns the newly added SummaryDataPointValueAtQuantile.
 func (es SummaryDataPointValueAtQuantileSlice) AppendEmpty() SummaryDataPointValueAtQuantile {
-	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpmetrics.SummaryDataPoint_ValueAtQuantile{})
+	es.getState().AssertMutable()
+	*es.getOrig() = append(*es.getOrig(), &otlpmetrics.SummaryDataPoint_ValueAtQuantile{})
 	return es.At(es.Len() - 1)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es SummaryDataPointValueAtQuantileSlice) MoveAndAppendTo(dest SummaryDataPointValueAtQuantileSlice) {
-	es.state.AssertMutable()
-	dest.state.AssertMutable()
-	if *dest.orig == nil {
+	es.getState().AssertMutable()
+	dest.getState().AssertMutable()
+	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
-		*dest.orig = *es.orig
+		*dest.getOrig() = *es.getOrig()
 	} else {
-		*dest.orig = append(*dest.orig, *es.orig...)
+		*dest.getOrig() = append(*dest.getOrig(), *es.getOrig()...)
 	}
-	*es.orig = nil
+	*es.getOrig() = nil
 }
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
 func (es SummaryDataPointValueAtQuantileSlice) RemoveIf(f func(SummaryDataPointValueAtQuantile) bool) {
-	es.state.AssertMutable()
+	es.getState().AssertMutable()
 	newLen := 0
-	for i := 0; i < len(*es.orig); i++ {
+	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
 			continue
 		}
@@ -116,37 +124,37 @@ func (es SummaryDataPointValueAtQuantileSlice) RemoveIf(f func(SummaryDataPointV
 			newLen++
 			continue
 		}
-		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.getOrig())[newLen] = (*es.getOrig())[i]
 		newLen++
 	}
-	*es.orig = (*es.orig)[:newLen]
+	*es.getOrig() = (*es.getOrig())[:newLen]
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es SummaryDataPointValueAtQuantileSlice) CopyTo(dest SummaryDataPointValueAtQuantileSlice) {
-	dest.state.AssertMutable()
+	dest.getState().AssertMutable()
 	srcLen := es.Len()
-	destCap := cap(*dest.orig)
+	destCap := cap(*dest.getOrig())
 	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newSummaryDataPointValueAtQuantile((*es.orig)[i], es.state).CopyTo(newSummaryDataPointValueAtQuantile((*dest.orig)[i], dest.state))
+		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
+		for i := range *es.getOrig() {
+			newSummaryDataPointValueAtQuantile((*es.getOrig())[i], es.getState()).CopyTo(newSummaryDataPointValueAtQuantile((*dest.getOrig())[i], dest.getState()))
 		}
 		return
 	}
 	origs := make([]otlpmetrics.SummaryDataPoint_ValueAtQuantile, srcLen)
 	wrappers := make([]*otlpmetrics.SummaryDataPoint_ValueAtQuantile, srcLen)
-	for i := range *es.orig {
+	for i := range *es.getOrig() {
 		wrappers[i] = &origs[i]
-		newSummaryDataPointValueAtQuantile((*es.orig)[i], es.state).CopyTo(newSummaryDataPointValueAtQuantile(wrappers[i], dest.state))
+		newSummaryDataPointValueAtQuantile((*es.getOrig())[i], es.getState()).CopyTo(newSummaryDataPointValueAtQuantile(wrappers[i], dest.getState()))
 	}
-	*dest.orig = wrappers
+	*dest.getOrig() = wrappers
 }
 
 // Sort sorts the SummaryDataPointValueAtQuantile elements within SummaryDataPointValueAtQuantileSlice given the
 // provided less function so that two instances of SummaryDataPointValueAtQuantileSlice
 // can be compared.
 func (es SummaryDataPointValueAtQuantileSlice) Sort(less func(a, b SummaryDataPointValueAtQuantile) bool) {
-	es.state.AssertMutable()
-	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	es.getState().AssertMutable()
+	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }

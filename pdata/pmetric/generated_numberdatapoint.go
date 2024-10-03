@@ -46,6 +46,14 @@ func (ms NumberDataPoint) MoveTo(dest NumberDataPoint) {
 	*ms.orig = otlpmetrics.NumberDataPoint{}
 }
 
+func (ms NumberDataPoint) getOrig() *otlpmetrics.NumberDataPoint {
+	return ms.orig
+}
+
+func (ms NumberDataPoint) getState() *internal.State {
+	return ms.state
+}
+
 // Attributes returns the Attributes associated with this NumberDataPoint.
 func (ms NumberDataPoint) Attributes() pcommon.Map {
 	return pcommon.Map(internal.NewMap(&ms.orig.Attributes, ms.state))

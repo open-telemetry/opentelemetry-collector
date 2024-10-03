@@ -30,6 +30,12 @@ type Logs interface {
 	consumer.Logs
 }
 
+// Entities is a processor that can consume entities.
+type Entities interface {
+	component.Component
+	consumer.Entities
+}
+
 // Settings is passed to Create* functions in Factory.
 type Settings struct {
 	// ID returns the ID of the component that will be created.
@@ -93,6 +99,15 @@ type Factory interface {
 	// Deprecated: [v0.111.0] use LogsStability.
 	LogsProcessorStability() component.StabilityLevel
 
+	// CreateEntities creates an Entities processor based on this config.
+	// If the processor type does not support entities,
+	// this function returns the error [pipeline.ErrSignalNotSupported].
+	// Implementers can assume `next` is never nil.
+	CreateEntities(ctx context.Context, set Settings, cfg component.Config, next consumer.Entities) (Entities, error)
+
+	// EntitiesStability gets the stability level of the Entities processor.
+	EntitiesStability() component.StabilityLevel
+
 	unexportedFactoryFunc()
 }
 
@@ -120,6 +135,8 @@ type factory struct {
 	metricsStabilityLevel component.StabilityLevel
 	CreateLogsFunc
 	logsStabilityLevel component.StabilityLevel
+	CreateEntitiesFunc
+	entitiesStabilityLevel component.StabilityLevel
 }
 
 func (f *factory) Type() component.Type {
@@ -153,6 +170,10 @@ func (f factory) LogsStability() component.StabilityLevel {
 // Deprecated: [v0.111.0] use LogsStability.
 func (f factory) LogsProcessorStability() component.StabilityLevel {
 	return f.logsStabilityLevel
+}
+
+func (f factory) EntitiesStability() component.StabilityLevel {
+	return f.entitiesStabilityLevel
 }
 
 // CreateTracesFunc is the equivalent of Factory.CreateTraces().
@@ -203,6 +224,17 @@ func (f CreateLogsFunc) CreateLogsProcessor(ctx context.Context, set Settings, c
 	return f.CreateLogs(ctx, set, cfg, next)
 }
 
+// CreateEntitiesFunc is the equivalent of Factory.CreateEntities().
+type CreateEntitiesFunc func(context.Context, Settings, component.Config, consumer.Entities) (Entities, error)
+
+// CreateEntities implements Factory.CreateEntities.
+func (f CreateEntitiesFunc) CreateEntities(ctx context.Context, set Settings, cfg component.Config, next consumer.Entities) (Entities, error) {
+	if f == nil {
+		return nil, pipeline.ErrSignalNotSupported
+	}
+	return f(ctx, set, cfg, next)
+}
+
 // WithTraces overrides the default "error not supported" implementation for CreateTraces and the default "undefined" stability level.
 func WithTraces(createTraces CreateTracesFunc, sl component.StabilityLevel) FactoryOption {
 	return factoryOptionFunc(func(o *factory) {
@@ -224,6 +256,14 @@ func WithLogs(createLogs CreateLogsFunc, sl component.StabilityLevel) FactoryOpt
 	return factoryOptionFunc(func(o *factory) {
 		o.logsStabilityLevel = sl
 		o.CreateLogsFunc = createLogs
+	})
+}
+
+// WithEntities overrides the default "error not supported" implementation for CreateEntities and the default "undefined" stability level.
+func WithEntities(createEntities CreateEntitiesFunc, sl component.StabilityLevel) FactoryOption {
+	return factoryOptionFunc(func(o *factory) {
+		o.entitiesStabilityLevel = sl
+		o.CreateEntitiesFunc = createEntities
 	})
 }
 

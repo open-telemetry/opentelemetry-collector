@@ -46,6 +46,14 @@ func (ms ResourceMetrics) MoveTo(dest ResourceMetrics) {
 	*ms.orig = otlpmetrics.ResourceMetrics{}
 }
 
+func (ms ResourceMetrics) getOrig() *otlpmetrics.ResourceMetrics {
+	return ms.orig
+}
+
+func (ms ResourceMetrics) getState() *internal.State {
+	return ms.state
+}
+
 // Resource returns the resource associated with this ResourceMetrics.
 func (ms ResourceMetrics) Resource() pcommon.Resource {
 	return pcommon.Resource(internal.NewResource(&ms.orig.Resource, ms.state))

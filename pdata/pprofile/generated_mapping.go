@@ -46,6 +46,14 @@ func (ms Mapping) MoveTo(dest Mapping) {
 	*ms.orig = otlpprofiles.Mapping{}
 }
 
+func (ms Mapping) getOrig() *otlpprofiles.Mapping {
+	return ms.orig
+}
+
+func (ms Mapping) getState() *internal.State {
+	return ms.state
+}
+
 // ID returns the id associated with this Mapping.
 func (ms Mapping) ID() uint64 {
 	return ms.orig.Id

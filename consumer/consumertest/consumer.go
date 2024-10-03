@@ -8,6 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/pdata/pentity"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
@@ -34,6 +35,9 @@ type Consumer interface {
 	// ConsumeProfiles to implement the consumerprofiles.Profiles.
 	ConsumeProfiles(context.Context, pprofile.Profiles) error
 
+	// ConsumeEntities to implement the consumer.Entities.
+	ConsumeEntities(context.Context, pentity.Entities) error
+
 	unexported()
 }
 
@@ -41,6 +45,7 @@ var _ consumer.Logs = (Consumer)(nil)
 var _ consumer.Metrics = (Consumer)(nil)
 var _ consumer.Traces = (Consumer)(nil)
 var _ consumerprofiles.Profiles = (Consumer)(nil)
+var _ consumer.Entities = (Consumer)(nil)
 
 type nonMutatingConsumer struct{}
 
@@ -55,6 +60,7 @@ type baseConsumer struct {
 	consumer.ConsumeMetricsFunc
 	consumer.ConsumeLogsFunc
 	consumerprofiles.ConsumeProfilesFunc
+	consumer.ConsumeEntitiesFunc
 }
 
 func (bc baseConsumer) unexported() {}

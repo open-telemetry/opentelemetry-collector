@@ -29,6 +29,14 @@ func newScopeMetricsSlice(orig *[]*otlpmetrics.ScopeMetrics, state *internal.Sta
 	return ScopeMetricsSlice{orig: orig, state: state}
 }
 
+func (ms ScopeMetricsSlice) getOrig() *[]*otlpmetrics.ScopeMetrics {
+	return ms.orig
+}
+
+func (ms ScopeMetricsSlice) getState() *internal.State {
+	return ms.state
+}
+
 // NewScopeMetricsSlice creates a ScopeMetricsSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewScopeMetricsSlice() ScopeMetricsSlice {
@@ -41,7 +49,7 @@ func NewScopeMetricsSlice() ScopeMetricsSlice {
 //
 // Returns "0" for a newly instance created with "NewScopeMetricsSlice()".
 func (es ScopeMetricsSlice) Len() int {
-	return len(*es.orig)
+	return len(*es.getOrig())
 }
 
 // At returns the element at the given index.
@@ -53,7 +61,7 @@ func (es ScopeMetricsSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es ScopeMetricsSlice) At(i int) ScopeMetrics {
-	return newScopeMetrics((*es.orig)[i], es.state)
+	return newScopeMetrics((*es.getOrig())[i], es.getState())
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -69,45 +77,45 @@ func (es ScopeMetricsSlice) At(i int) ScopeMetrics {
 //	    // Here should set all the values for e.
 //	}
 func (es ScopeMetricsSlice) EnsureCapacity(newCap int) {
-	es.state.AssertMutable()
-	oldCap := cap(*es.orig)
+	es.getState().AssertMutable()
+	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
 		return
 	}
 
-	newOrig := make([]*otlpmetrics.ScopeMetrics, len(*es.orig), newCap)
-	copy(newOrig, *es.orig)
-	*es.orig = newOrig
+	newOrig := make([]*otlpmetrics.ScopeMetrics, len(*es.getOrig()), newCap)
+	copy(newOrig, *es.getOrig())
+	*es.getOrig() = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty ScopeMetrics.
 // It returns the newly added ScopeMetrics.
 func (es ScopeMetricsSlice) AppendEmpty() ScopeMetrics {
-	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpmetrics.ScopeMetrics{})
+	es.getState().AssertMutable()
+	*es.getOrig() = append(*es.getOrig(), &otlpmetrics.ScopeMetrics{})
 	return es.At(es.Len() - 1)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ScopeMetricsSlice) MoveAndAppendTo(dest ScopeMetricsSlice) {
-	es.state.AssertMutable()
-	dest.state.AssertMutable()
-	if *dest.orig == nil {
+	es.getState().AssertMutable()
+	dest.getState().AssertMutable()
+	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
-		*dest.orig = *es.orig
+		*dest.getOrig() = *es.getOrig()
 	} else {
-		*dest.orig = append(*dest.orig, *es.orig...)
+		*dest.getOrig() = append(*dest.getOrig(), *es.getOrig()...)
 	}
-	*es.orig = nil
+	*es.getOrig() = nil
 }
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
 func (es ScopeMetricsSlice) RemoveIf(f func(ScopeMetrics) bool) {
-	es.state.AssertMutable()
+	es.getState().AssertMutable()
 	newLen := 0
-	for i := 0; i < len(*es.orig); i++ {
+	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
 			continue
 		}
@@ -116,37 +124,37 @@ func (es ScopeMetricsSlice) RemoveIf(f func(ScopeMetrics) bool) {
 			newLen++
 			continue
 		}
-		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.getOrig())[newLen] = (*es.getOrig())[i]
 		newLen++
 	}
-	*es.orig = (*es.orig)[:newLen]
+	*es.getOrig() = (*es.getOrig())[:newLen]
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ScopeMetricsSlice) CopyTo(dest ScopeMetricsSlice) {
-	dest.state.AssertMutable()
+	dest.getState().AssertMutable()
 	srcLen := es.Len()
-	destCap := cap(*dest.orig)
+	destCap := cap(*dest.getOrig())
 	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newScopeMetrics((*es.orig)[i], es.state).CopyTo(newScopeMetrics((*dest.orig)[i], dest.state))
+		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
+		for i := range *es.getOrig() {
+			newScopeMetrics((*es.getOrig())[i], es.getState()).CopyTo(newScopeMetrics((*dest.getOrig())[i], dest.getState()))
 		}
 		return
 	}
 	origs := make([]otlpmetrics.ScopeMetrics, srcLen)
 	wrappers := make([]*otlpmetrics.ScopeMetrics, srcLen)
-	for i := range *es.orig {
+	for i := range *es.getOrig() {
 		wrappers[i] = &origs[i]
-		newScopeMetrics((*es.orig)[i], es.state).CopyTo(newScopeMetrics(wrappers[i], dest.state))
+		newScopeMetrics((*es.getOrig())[i], es.getState()).CopyTo(newScopeMetrics(wrappers[i], dest.getState()))
 	}
-	*dest.orig = wrappers
+	*dest.getOrig() = wrappers
 }
 
 // Sort sorts the ScopeMetrics elements within ScopeMetricsSlice given the
 // provided less function so that two instances of ScopeMetricsSlice
 // can be compared.
 func (es ScopeMetricsSlice) Sort(less func(a, b ScopeMetrics) bool) {
-	es.state.AssertMutable()
-	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	es.getState().AssertMutable()
+	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }

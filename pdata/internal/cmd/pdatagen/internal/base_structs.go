@@ -51,15 +51,21 @@ func (ms {{ .structName }}) MoveTo(dest {{ .structName }}) {
 	*ms.{{ .origAccessor }} = {{ .originName }}{}
 }
 
-{{ if .isCommon -}}
 func (ms {{ .structName }}) getOrig() *{{ .originName }} {
+	{{- if .isCommon -}}
 	return internal.GetOrig{{ .structName }}(internal.{{ .structName }}(ms))
+	{{- else }}
+	return ms.orig
+	{{- end }}
 }
 
 func (ms {{ .structName }}) getState() *internal.State {
+	{{- if .isCommon -}}
 	return internal.Get{{ .structName }}State(internal.{{ .structName }}(ms))
+	{{- else }}
+	return ms.state
+	{{- end }}
 }
-{{- end }}
 
 {{ range .fields -}}
 {{ .GenerateAccessors $.messageStruct }}

@@ -46,6 +46,14 @@ func (ms ScopeLogs) MoveTo(dest ScopeLogs) {
 	*ms.orig = otlplogs.ScopeLogs{}
 }
 
+func (ms ScopeLogs) getOrig() *otlplogs.ScopeLogs {
+	return ms.orig
+}
+
+func (ms ScopeLogs) getState() *internal.State {
+	return ms.state
+}
+
 // Scope returns the scope associated with this ScopeLogs.
 func (ms ScopeLogs) Scope() pcommon.InstrumentationScope {
 	return pcommon.InstrumentationScope(internal.NewInstrumentationScope(&ms.orig.Scope, ms.state))

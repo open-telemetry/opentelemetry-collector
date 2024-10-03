@@ -47,6 +47,14 @@ func (ms Link) MoveTo(dest Link) {
 	*ms.orig = otlpprofiles.Link{}
 }
 
+func (ms Link) getOrig() *otlpprofiles.Link {
+	return ms.orig
+}
+
+func (ms Link) getState() *internal.State {
+	return ms.state
+}
+
 // TraceID returns the traceid associated with this Link.
 func (ms Link) TraceID() pcommon.TraceID {
 	return pcommon.TraceID(ms.orig.TraceId)

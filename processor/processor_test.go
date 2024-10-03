@@ -29,6 +29,8 @@ func TestNewFactory(t *testing.T) {
 	require.Error(t, err)
 	_, err = factory.CreateLogs(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
 	assert.Error(t, err)
+	_, err = factory.CreateEntities(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
+	assert.Error(t, err)
 }
 
 func TestNewFactoryWithOptions(t *testing.T) {

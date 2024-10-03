@@ -29,6 +29,14 @@ func newProfilesContainersSlice(orig *[]*otlpprofiles.ProfileContainer, state *i
 	return ProfilesContainersSlice{orig: orig, state: state}
 }
 
+func (ms ProfilesContainersSlice) getOrig() *[]*otlpprofiles.ProfileContainer {
+	return ms.orig
+}
+
+func (ms ProfilesContainersSlice) getState() *internal.State {
+	return ms.state
+}
+
 // NewProfilesContainersSlice creates a ProfilesContainersSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewProfilesContainersSlice() ProfilesContainersSlice {
@@ -41,7 +49,7 @@ func NewProfilesContainersSlice() ProfilesContainersSlice {
 //
 // Returns "0" for a newly instance created with "NewProfilesContainersSlice()".
 func (es ProfilesContainersSlice) Len() int {
-	return len(*es.orig)
+	return len(*es.getOrig())
 }
 
 // At returns the element at the given index.
@@ -53,7 +61,7 @@ func (es ProfilesContainersSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es ProfilesContainersSlice) At(i int) ProfileContainer {
-	return newProfileContainer((*es.orig)[i], es.state)
+	return newProfileContainer((*es.getOrig())[i], es.getState())
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -69,45 +77,45 @@ func (es ProfilesContainersSlice) At(i int) ProfileContainer {
 //	    // Here should set all the values for e.
 //	}
 func (es ProfilesContainersSlice) EnsureCapacity(newCap int) {
-	es.state.AssertMutable()
-	oldCap := cap(*es.orig)
+	es.getState().AssertMutable()
+	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
 		return
 	}
 
-	newOrig := make([]*otlpprofiles.ProfileContainer, len(*es.orig), newCap)
-	copy(newOrig, *es.orig)
-	*es.orig = newOrig
+	newOrig := make([]*otlpprofiles.ProfileContainer, len(*es.getOrig()), newCap)
+	copy(newOrig, *es.getOrig())
+	*es.getOrig() = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty ProfileContainer.
 // It returns the newly added ProfileContainer.
 func (es ProfilesContainersSlice) AppendEmpty() ProfileContainer {
-	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpprofiles.ProfileContainer{})
+	es.getState().AssertMutable()
+	*es.getOrig() = append(*es.getOrig(), &otlpprofiles.ProfileContainer{})
 	return es.At(es.Len() - 1)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ProfilesContainersSlice) MoveAndAppendTo(dest ProfilesContainersSlice) {
-	es.state.AssertMutable()
-	dest.state.AssertMutable()
-	if *dest.orig == nil {
+	es.getState().AssertMutable()
+	dest.getState().AssertMutable()
+	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
-		*dest.orig = *es.orig
+		*dest.getOrig() = *es.getOrig()
 	} else {
-		*dest.orig = append(*dest.orig, *es.orig...)
+		*dest.getOrig() = append(*dest.getOrig(), *es.getOrig()...)
 	}
-	*es.orig = nil
+	*es.getOrig() = nil
 }
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
 func (es ProfilesContainersSlice) RemoveIf(f func(ProfileContainer) bool) {
-	es.state.AssertMutable()
+	es.getState().AssertMutable()
 	newLen := 0
-	for i := 0; i < len(*es.orig); i++ {
+	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
 			continue
 		}
@@ -116,37 +124,37 @@ func (es ProfilesContainersSlice) RemoveIf(f func(ProfileContainer) bool) {
 			newLen++
 			continue
 		}
-		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.getOrig())[newLen] = (*es.getOrig())[i]
 		newLen++
 	}
-	*es.orig = (*es.orig)[:newLen]
+	*es.getOrig() = (*es.getOrig())[:newLen]
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ProfilesContainersSlice) CopyTo(dest ProfilesContainersSlice) {
-	dest.state.AssertMutable()
+	dest.getState().AssertMutable()
 	srcLen := es.Len()
-	destCap := cap(*dest.orig)
+	destCap := cap(*dest.getOrig())
 	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newProfileContainer((*es.orig)[i], es.state).CopyTo(newProfileContainer((*dest.orig)[i], dest.state))
+		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
+		for i := range *es.getOrig() {
+			newProfileContainer((*es.getOrig())[i], es.getState()).CopyTo(newProfileContainer((*dest.getOrig())[i], dest.getState()))
 		}
 		return
 	}
 	origs := make([]otlpprofiles.ProfileContainer, srcLen)
 	wrappers := make([]*otlpprofiles.ProfileContainer, srcLen)
-	for i := range *es.orig {
+	for i := range *es.getOrig() {
 		wrappers[i] = &origs[i]
-		newProfileContainer((*es.orig)[i], es.state).CopyTo(newProfileContainer(wrappers[i], dest.state))
+		newProfileContainer((*es.getOrig())[i], es.getState()).CopyTo(newProfileContainer(wrappers[i], dest.getState()))
 	}
-	*dest.orig = wrappers
+	*dest.getOrig() = wrappers
 }
 
 // Sort sorts the ProfileContainer elements within ProfilesContainersSlice given the
 // provided less function so that two instances of ProfilesContainersSlice
 // can be compared.
 func (es ProfilesContainersSlice) Sort(less func(a, b ProfileContainer) bool) {
-	es.state.AssertMutable()
-	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	es.getState().AssertMutable()
+	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }

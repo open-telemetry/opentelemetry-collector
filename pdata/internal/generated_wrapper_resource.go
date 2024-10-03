@@ -38,4 +38,5 @@ func GenerateTestResource() Resource {
 func FillTestResource(tv Resource) {
 	FillTestMap(NewMap(&tv.orig.Attributes, tv.state))
 	tv.orig.DroppedAttributesCount = uint32(17)
+	FillTestResourceEntityRefSlice(NewResourceEntityRefSlice(&tv.orig.Entities, tv.state))
 }

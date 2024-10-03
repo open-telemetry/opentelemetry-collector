@@ -46,6 +46,14 @@ func (ms Status) MoveTo(dest Status) {
 	*ms.orig = otlptrace.Status{}
 }
 
+func (ms Status) getOrig() *otlptrace.Status {
+	return ms.orig
+}
+
+func (ms Status) getState() *internal.State {
+	return ms.state
+}
+
 // Code returns the code associated with this Status.
 func (ms Status) Code() StatusCode {
 	return StatusCode(ms.orig.Code)

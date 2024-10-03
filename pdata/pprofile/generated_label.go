@@ -45,6 +45,14 @@ func (ms Label) MoveTo(dest Label) {
 	*ms.orig = otlpprofiles.Label{}
 }
 
+func (ms Label) getOrig() *otlpprofiles.Label {
+	return ms.orig
+}
+
+func (ms Label) getState() *internal.State {
+	return ms.state
+}
+
 // Key returns the key associated with this Label.
 func (ms Label) Key() int64 {
 	return ms.orig.Key

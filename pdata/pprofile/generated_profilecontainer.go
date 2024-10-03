@@ -47,6 +47,14 @@ func (ms ProfileContainer) MoveTo(dest ProfileContainer) {
 	*ms.orig = otlpprofiles.ProfileContainer{}
 }
 
+func (ms ProfileContainer) getOrig() *otlpprofiles.ProfileContainer {
+	return ms.orig
+}
+
+func (ms ProfileContainer) getState() *internal.State {
+	return ms.state
+}
+
 // ProfileID returns the profileid associated with this ProfileContainer.
 func (ms ProfileContainer) ProfileID() ProfileID {
 	return ProfileID(ms.orig.ProfileId)

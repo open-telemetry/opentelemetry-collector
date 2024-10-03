@@ -45,6 +45,14 @@ func (ms Line) MoveTo(dest Line) {
 	*ms.orig = otlpprofiles.Line{}
 }
 
+func (ms Line) getOrig() *otlpprofiles.Line {
+	return ms.orig
+}
+
+func (ms Line) getState() *internal.State {
+	return ms.state
+}
+
 // FunctionIndex returns the functionindex associated with this Line.
 func (ms Line) FunctionIndex() uint64 {
 	return ms.orig.FunctionIndex

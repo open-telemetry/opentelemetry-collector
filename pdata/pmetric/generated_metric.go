@@ -47,6 +47,14 @@ func (ms Metric) MoveTo(dest Metric) {
 	*ms.orig = otlpmetrics.Metric{}
 }
 
+func (ms Metric) getOrig() *otlpmetrics.Metric {
+	return ms.orig
+}
+
+func (ms Metric) getState() *internal.State {
+	return ms.state
+}
+
 // Name returns the name associated with this Metric.
 func (ms Metric) Name() string {
 	return ms.orig.Name

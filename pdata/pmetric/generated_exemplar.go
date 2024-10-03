@@ -50,6 +50,14 @@ func (ms Exemplar) MoveTo(dest Exemplar) {
 	*ms.orig = otlpmetrics.Exemplar{}
 }
 
+func (ms Exemplar) getOrig() *otlpmetrics.Exemplar {
+	return ms.orig
+}
+
+func (ms Exemplar) getState() *internal.State {
+	return ms.state
+}
+
 // Timestamp returns the timestamp associated with this Exemplar.
 func (ms Exemplar) Timestamp() pcommon.Timestamp {
 	return pcommon.Timestamp(ms.orig.TimeUnixNano)

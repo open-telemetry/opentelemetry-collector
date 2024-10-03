@@ -27,6 +27,14 @@ func newLocationSlice(orig *[]otlpprofiles.Location, state *internal.State) Loca
 	return LocationSlice{orig: orig, state: state}
 }
 
+func (ms LocationSlice) getOrig() *[]otlpprofiles.Location {
+	return ms.orig
+}
+
+func (ms LocationSlice) getState() *internal.State {
+	return ms.state
+}
+
 // NewLocationSlice creates a LocationSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewLocationSlice() LocationSlice {
@@ -39,7 +47,7 @@ func NewLocationSlice() LocationSlice {
 //
 // Returns "0" for a newly instance created with "NewLocationSlice()".
 func (es LocationSlice) Len() int {
-	return len(*es.orig)
+	return len(*es.getOrig())
 }
 
 // At returns the element at the given index.
@@ -51,7 +59,7 @@ func (es LocationSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es LocationSlice) At(i int) Location {
-	return newLocation(&(*es.orig)[i], es.state)
+	return newLocation(&(*es.getOrig())[i], es.getState())
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -67,45 +75,45 @@ func (es LocationSlice) At(i int) Location {
 //	    // Here should set all the values for e.
 //	}
 func (es LocationSlice) EnsureCapacity(newCap int) {
-	es.state.AssertMutable()
-	oldCap := cap(*es.orig)
+	es.getState().AssertMutable()
+	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
 		return
 	}
 
-	newOrig := make([]otlpprofiles.Location, len(*es.orig), newCap)
-	copy(newOrig, *es.orig)
-	*es.orig = newOrig
+	newOrig := make([]otlpprofiles.Location, len(*es.getOrig()), newCap)
+	copy(newOrig, *es.getOrig())
+	*es.getOrig() = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty Location.
 // It returns the newly added Location.
 func (es LocationSlice) AppendEmpty() Location {
-	es.state.AssertMutable()
-	*es.orig = append(*es.orig, otlpprofiles.Location{})
+	es.getState().AssertMutable()
+	*es.getOrig() = append(*es.getOrig(), otlpprofiles.Location{})
 	return es.At(es.Len() - 1)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es LocationSlice) MoveAndAppendTo(dest LocationSlice) {
-	es.state.AssertMutable()
-	dest.state.AssertMutable()
-	if *dest.orig == nil {
+	es.getState().AssertMutable()
+	dest.getState().AssertMutable()
+	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
-		*dest.orig = *es.orig
+		*dest.getOrig() = *es.getOrig()
 	} else {
-		*dest.orig = append(*dest.orig, *es.orig...)
+		*dest.getOrig() = append(*dest.getOrig(), *es.getOrig()...)
 	}
-	*es.orig = nil
+	*es.getOrig() = nil
 }
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
 func (es LocationSlice) RemoveIf(f func(Location) bool) {
-	es.state.AssertMutable()
+	es.getState().AssertMutable()
 	newLen := 0
-	for i := 0; i < len(*es.orig); i++ {
+	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
 			continue
 		}
@@ -114,23 +122,23 @@ func (es LocationSlice) RemoveIf(f func(Location) bool) {
 			newLen++
 			continue
 		}
-		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.getOrig())[newLen] = (*es.getOrig())[i]
 		newLen++
 	}
-	*es.orig = (*es.orig)[:newLen]
+	*es.getOrig() = (*es.getOrig())[:newLen]
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es LocationSlice) CopyTo(dest LocationSlice) {
-	dest.state.AssertMutable()
+	dest.getState().AssertMutable()
 	srcLen := es.Len()
-	destCap := cap(*dest.orig)
+	destCap := cap(*dest.getOrig())
 	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
 	} else {
-		(*dest.orig) = make([]otlpprofiles.Location, srcLen)
+		(*dest.getOrig()) = make([]otlpprofiles.Location, srcLen)
 	}
-	for i := range *es.orig {
-		newLocation(&(*es.orig)[i], es.state).CopyTo(newLocation(&(*dest.orig)[i], dest.state))
+	for i := range *es.getOrig() {
+		newLocation(&(*es.getOrig())[i], es.getState()).CopyTo(newLocation(&(*dest.getOrig())[i], dest.getState()))
 	}
 }

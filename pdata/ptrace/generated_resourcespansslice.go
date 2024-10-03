@@ -29,6 +29,14 @@ func newResourceSpansSlice(orig *[]*otlptrace.ResourceSpans, state *internal.Sta
 	return ResourceSpansSlice{orig: orig, state: state}
 }
 
+func (ms ResourceSpansSlice) getOrig() *[]*otlptrace.ResourceSpans {
+	return ms.orig
+}
+
+func (ms ResourceSpansSlice) getState() *internal.State {
+	return ms.state
+}
+
 // NewResourceSpansSlice creates a ResourceSpansSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewResourceSpansSlice() ResourceSpansSlice {
@@ -41,7 +49,7 @@ func NewResourceSpansSlice() ResourceSpansSlice {
 //
 // Returns "0" for a newly instance created with "NewResourceSpansSlice()".
 func (es ResourceSpansSlice) Len() int {
-	return len(*es.orig)
+	return len(*es.getOrig())
 }
 
 // At returns the element at the given index.
@@ -53,7 +61,7 @@ func (es ResourceSpansSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es ResourceSpansSlice) At(i int) ResourceSpans {
-	return newResourceSpans((*es.orig)[i], es.state)
+	return newResourceSpans((*es.getOrig())[i], es.getState())
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -69,45 +77,45 @@ func (es ResourceSpansSlice) At(i int) ResourceSpans {
 //	    // Here should set all the values for e.
 //	}
 func (es ResourceSpansSlice) EnsureCapacity(newCap int) {
-	es.state.AssertMutable()
-	oldCap := cap(*es.orig)
+	es.getState().AssertMutable()
+	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
 		return
 	}
 
-	newOrig := make([]*otlptrace.ResourceSpans, len(*es.orig), newCap)
-	copy(newOrig, *es.orig)
-	*es.orig = newOrig
+	newOrig := make([]*otlptrace.ResourceSpans, len(*es.getOrig()), newCap)
+	copy(newOrig, *es.getOrig())
+	*es.getOrig() = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty ResourceSpans.
 // It returns the newly added ResourceSpans.
 func (es ResourceSpansSlice) AppendEmpty() ResourceSpans {
-	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlptrace.ResourceSpans{})
+	es.getState().AssertMutable()
+	*es.getOrig() = append(*es.getOrig(), &otlptrace.ResourceSpans{})
 	return es.At(es.Len() - 1)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ResourceSpansSlice) MoveAndAppendTo(dest ResourceSpansSlice) {
-	es.state.AssertMutable()
-	dest.state.AssertMutable()
-	if *dest.orig == nil {
+	es.getState().AssertMutable()
+	dest.getState().AssertMutable()
+	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
-		*dest.orig = *es.orig
+		*dest.getOrig() = *es.getOrig()
 	} else {
-		*dest.orig = append(*dest.orig, *es.orig...)
+		*dest.getOrig() = append(*dest.getOrig(), *es.getOrig()...)
 	}
-	*es.orig = nil
+	*es.getOrig() = nil
 }
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
 func (es ResourceSpansSlice) RemoveIf(f func(ResourceSpans) bool) {
-	es.state.AssertMutable()
+	es.getState().AssertMutable()
 	newLen := 0
-	for i := 0; i < len(*es.orig); i++ {
+	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
 			continue
 		}
@@ -116,37 +124,37 @@ func (es ResourceSpansSlice) RemoveIf(f func(ResourceSpans) bool) {
 			newLen++
 			continue
 		}
-		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.getOrig())[newLen] = (*es.getOrig())[i]
 		newLen++
 	}
-	*es.orig = (*es.orig)[:newLen]
+	*es.getOrig() = (*es.getOrig())[:newLen]
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ResourceSpansSlice) CopyTo(dest ResourceSpansSlice) {
-	dest.state.AssertMutable()
+	dest.getState().AssertMutable()
 	srcLen := es.Len()
-	destCap := cap(*dest.orig)
+	destCap := cap(*dest.getOrig())
 	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newResourceSpans((*es.orig)[i], es.state).CopyTo(newResourceSpans((*dest.orig)[i], dest.state))
+		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
+		for i := range *es.getOrig() {
+			newResourceSpans((*es.getOrig())[i], es.getState()).CopyTo(newResourceSpans((*dest.getOrig())[i], dest.getState()))
 		}
 		return
 	}
 	origs := make([]otlptrace.ResourceSpans, srcLen)
 	wrappers := make([]*otlptrace.ResourceSpans, srcLen)
-	for i := range *es.orig {
+	for i := range *es.getOrig() {
 		wrappers[i] = &origs[i]
-		newResourceSpans((*es.orig)[i], es.state).CopyTo(newResourceSpans(wrappers[i], dest.state))
+		newResourceSpans((*es.getOrig())[i], es.getState()).CopyTo(newResourceSpans(wrappers[i], dest.getState()))
 	}
-	*dest.orig = wrappers
+	*dest.getOrig() = wrappers
 }
 
 // Sort sorts the ResourceSpans elements within ResourceSpansSlice given the
 // provided less function so that two instances of ResourceSpansSlice
 // can be compared.
 func (es ResourceSpansSlice) Sort(less func(a, b ResourceSpans) bool) {
-	es.state.AssertMutable()
-	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	es.getState().AssertMutable()
+	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }

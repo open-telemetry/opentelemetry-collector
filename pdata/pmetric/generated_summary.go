@@ -45,6 +45,14 @@ func (ms Summary) MoveTo(dest Summary) {
 	*ms.orig = otlpmetrics.Summary{}
 }
 
+func (ms Summary) getOrig() *otlpmetrics.Summary {
+	return ms.orig
+}
+
+func (ms Summary) getState() *internal.State {
+	return ms.state
+}
+
 // DataPoints returns the DataPoints associated with this Summary.
 func (ms Summary) DataPoints() SummaryDataPointSlice {
 	return newSummaryDataPointSlice(&ms.orig.DataPoints, ms.state)

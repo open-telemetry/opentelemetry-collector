@@ -45,6 +45,14 @@ func (ms ValueType) MoveTo(dest ValueType) {
 	*ms.orig = otlpprofiles.ValueType{}
 }
 
+func (ms ValueType) getOrig() *otlpprofiles.ValueType {
+	return ms.orig
+}
+
+func (ms ValueType) getState() *internal.State {
+	return ms.state
+}
+
 // Type returns the type associated with this ValueType.
 func (ms ValueType) Type() int64 {
 	return ms.orig.Type

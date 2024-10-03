@@ -53,3 +53,10 @@ func TestResource_DroppedAttributesCount(t *testing.T) {
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { newResource(&otlpresource.Resource{}, &sharedState).SetDroppedAttributesCount(uint32(17)) })
 }
+
+func TestResource_Entities(t *testing.T) {
+	ms := NewResource()
+	assert.Equal(t, NewResourceEntityRefSlice(), ms.Entities())
+	internal.FillTestResourceEntityRefSlice(internal.ResourceEntityRefSlice(ms.Entities()))
+	assert.Equal(t, ResourceEntityRefSlice(internal.GenerateTestResourceEntityRefSlice()), ms.Entities())
+}

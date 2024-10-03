@@ -69,14 +69,14 @@ func TestNumberDataPointSlice_EnsureCapacity(t *testing.T) {
 	const ensureSmallLen = 4
 	es.EnsureCapacity(ensureSmallLen)
 	assert.Less(t, ensureSmallLen, es.Len())
-	assert.Equal(t, es.Len(), cap(*es.orig))
+	assert.Equal(t, es.Len(), cap(*es.getOrig()))
 	assert.Equal(t, generateTestNumberDataPointSlice(), es)
 
 	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	es.EnsureCapacity(ensureLargeLen)
 	assert.Less(t, generateTestNumberDataPointSlice().Len(), ensureLargeLen)
-	assert.Equal(t, ensureLargeLen, cap(*es.orig))
+	assert.Equal(t, ensureLargeLen, cap(*es.getOrig()))
 	assert.Equal(t, generateTestNumberDataPointSlice(), es)
 }
 
@@ -126,16 +126,16 @@ func TestNumberDataPointSlice_RemoveIf(t *testing.T) {
 func TestNumberDataPointSlice_Sort(t *testing.T) {
 	es := generateTestNumberDataPointSlice()
 	es.Sort(func(a, b NumberDataPoint) bool {
-		return uintptr(unsafe.Pointer(a.orig)) < uintptr(unsafe.Pointer(b.orig))
+		return uintptr(unsafe.Pointer(a.getOrig())) < uintptr(unsafe.Pointer(b.getOrig()))
 	})
 	for i := 1; i < es.Len(); i++ {
-		assert.Less(t, uintptr(unsafe.Pointer(es.At(i-1).orig)), uintptr(unsafe.Pointer(es.At(i).orig)))
+		assert.Less(t, uintptr(unsafe.Pointer(es.At(i-1).getOrig())), uintptr(unsafe.Pointer(es.At(i).getOrig())))
 	}
 	es.Sort(func(a, b NumberDataPoint) bool {
-		return uintptr(unsafe.Pointer(a.orig)) > uintptr(unsafe.Pointer(b.orig))
+		return uintptr(unsafe.Pointer(a.getOrig())) > uintptr(unsafe.Pointer(b.getOrig()))
 	})
 	for i := 1; i < es.Len(); i++ {
-		assert.Greater(t, uintptr(unsafe.Pointer(es.At(i-1).orig)), uintptr(unsafe.Pointer(es.At(i).orig)))
+		assert.Greater(t, uintptr(unsafe.Pointer(es.At(i-1).getOrig())), uintptr(unsafe.Pointer(es.At(i).getOrig())))
 	}
 }
 

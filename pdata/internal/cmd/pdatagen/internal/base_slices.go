@@ -5,6 +5,7 @@ package internal // import "go.opentelemetry.io/collector/pdata/internal/cmd/pda
 
 import (
 	"bytes"
+	"strings"
 	"text/template"
 )
 
@@ -15,13 +16,37 @@ const sliceTemplate = `// {{ .structName }} logically represents a slice of {{ .
 //
 // Must use New{{ .structName }} function to create new instances.
 // Important: zero-initialized instance is not valid for use.
+{{- if .isCommon }}
+type {{ .structName }} internal.{{ .structName }}
+{{- else }}
 type {{ .structName }} struct {
 	orig *[]{{ .originElementType }}
 	state *internal.State
 }
+{{- end }}
 
 func new{{ .structName }}(orig *[]{{ .originElementType }}, state *internal.State) {{ .structName }} {
+	{{- if .isCommon }}
+	return {{ .structName }}(internal.New{{ .structName }}(orig, state))
+	{{- else }}
 	return {{ .structName }}{orig: orig, state: state}
+	{{- end }}
+}
+
+func (ms {{ .structName }}) getOrig() *[]{{ .originElementType }} {
+	{{- if .isCommon }}
+	return internal.GetOrig{{ .structName }}(internal.{{ .structName }}(ms))
+	{{- else }}
+	return ms.orig
+	{{- end }}
+}
+
+func (ms {{ .structName }}) getState() *internal.State {
+	{{- if .isCommon }}
+	return internal.Get{{ .structName }}State(internal.{{ .structName }}(ms))
+	{{- else }}
+	return ms.state
+	{{- end }}
 }
 
 // New{{ .structName }} creates a {{ .structName }} with 0 elements.
@@ -36,7 +61,7 @@ func New{{ .structName }}() {{ .structName }} {
 //
 // Returns "0" for a newly instance created with "New{{ .structName }}()".
 func (es {{ .structName }}) Len() int {
-	return len(*es.orig)
+	return len(*es.getOrig())
 }
 
 // At returns the element at the given index.
@@ -62,45 +87,45 @@ func (es {{ .structName }}) At(i int) {{ .elementName }} {
 //       // Here should set all the values for e.
 //   }
 func (es {{ .structName }}) EnsureCapacity(newCap int) {
-	es.state.AssertMutable()
-	oldCap := cap(*es.orig)
+	es.getState().AssertMutable()
+	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
 		return
 	}
 
-	newOrig := make([]{{ .originElementType }}, len(*es.orig), newCap)
-	copy(newOrig, *es.orig)
-	*es.orig = newOrig
+	newOrig := make([]{{ .originElementType }}, len(*es.getOrig()), newCap)
+	copy(newOrig, *es.getOrig())
+	*es.getOrig() = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty {{ .elementName }}.
 // It returns the newly added {{ .elementName }}.
 func (es {{ .structName }}) AppendEmpty() {{ .elementName }} {
-	es.state.AssertMutable()
-	*es.orig = append(*es.orig, {{ .emptyOriginElement }})
+	es.getState().AssertMutable()
+	*es.getOrig() = append(*es.getOrig(), {{ .emptyOriginElement }})
 	return es.At(es.Len() - 1)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es {{ .structName }}) MoveAndAppendTo(dest {{ .structName }}) {
-	es.state.AssertMutable()
-	dest.state.AssertMutable()
-	if *dest.orig == nil {
+	es.getState().AssertMutable()
+	dest.getState().AssertMutable()
+	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
-		*dest.orig = *es.orig
+		*dest.getOrig() = *es.getOrig()
 	} else {
-		*dest.orig = append(*dest.orig, *es.orig...)
+		*dest.getOrig() = append(*dest.getOrig(), *es.getOrig()...)
 	}
-	*es.orig = nil
+	*es.getOrig() = nil
 }
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
 func (es {{ .structName }}) RemoveIf(f func({{ .elementName }}) bool) {
-	es.state.AssertMutable()
+	es.getState().AssertMutable()
 	newLen := 0
-	for i := 0; i < len(*es.orig); i++ {
+	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
 			continue
 		}
@@ -109,41 +134,41 @@ func (es {{ .structName }}) RemoveIf(f func({{ .elementName }}) bool) {
 			newLen++
 			continue
 		}
-		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.getOrig())[newLen] = (*es.getOrig())[i]
 		newLen++
 	}
-	*es.orig = (*es.orig)[:newLen]
+	*es.getOrig() = (*es.getOrig())[:newLen]
 }
 
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es {{ .structName }}) CopyTo(dest {{ .structName }}) {
-	dest.state.AssertMutable()
+	dest.getState().AssertMutable()
 	srcLen := es.Len()
-	destCap := cap(*dest.orig)
+	destCap := cap(*dest.getOrig())
 	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
 
 	{{- if eq .type "sliceOfPtrs" }}
-		for i := range *es.orig {
-			new{{ .elementName }}((*es.orig)[i], es.state).CopyTo(new{{ .elementName }}((*dest.orig)[i], dest.state))
+		for i := range *es.getOrig() {
+			new{{ .elementName }}((*es.getOrig())[i], es.getState()).CopyTo(new{{ .elementName }}((*dest.getOrig())[i], dest.getState()))
 		}
 		return
 	}
 	origs := make([]{{ .originName }}, srcLen)
 	wrappers := make([]*{{ .originName }}, srcLen)
-	for i := range *es.orig {
+	for i := range *es.getOrig() {
 		wrappers[i] = &origs[i]
-		new{{ .elementName }}((*es.orig)[i], es.state).CopyTo(new{{ .elementName }}(wrappers[i], dest.state))
+		new{{ .elementName }}((*es.getOrig())[i], es.getState()).CopyTo(new{{ .elementName }}(wrappers[i], dest.getState()))
 	}
-	*dest.orig = wrappers
+	*dest.getOrig() = wrappers
 
 	{{- else }}
 	} else {
-		(*dest.orig) = make([]{{ .originElementType }}, srcLen)
+		(*dest.getOrig()) = make([]{{ .originElementType }}, srcLen)
 	}
-	for i := range *es.orig {
-		{{ .newElement }}.CopyTo(new{{ .elementName }}(&(*dest.orig)[i], dest.state))
+	for i := range *es.getOrig() {
+		{{ .newElement }}.CopyTo(new{{ .elementName }}(&(*dest.getOrig())[i], dest.getState()))
 	}
 	{{- end }}
 }
@@ -153,8 +178,8 @@ func (es {{ .structName }}) CopyTo(dest {{ .structName }}) {
 // provided less function so that two instances of {{ .structName }}
 // can be compared.
 func (es {{ .structName }}) Sort(less func(a, b {{ .elementName }}) bool) {
-	es.state.AssertMutable()
-	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	es.getState().AssertMutable()
+	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 {{- end }}`
 
@@ -166,11 +191,19 @@ const sliceTestTemplate = `func Test{{ .structName }}(t *testing.T) {
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := New{{ .elementName }}()
+	{{- if .isCommon }}
+	testVal := {{ .elementName }}(internal.GenerateTest{{ .elementName }}())
+	{{- else }}
 	testVal := generateTest{{ .elementName }}()
+	{{- end }}
 	for i := 0; i < 7; i++ {
 		el := es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
+		{{- if .isCommon }}
+		internal.FillTest{{ .elementName }}(internal.{{ .elementName }}(el))
+		{{- else }}
 		fillTest{{ .elementName }}(el)
+		{{- end }}
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -211,14 +244,14 @@ func Test{{ .structName }}_EnsureCapacity(t *testing.T) {
 	const ensureSmallLen = 4
 	es.EnsureCapacity(ensureSmallLen)
 	assert.Less(t, ensureSmallLen, es.Len())
-	assert.Equal(t, es.Len(), cap(*es.orig))
+	assert.Equal(t, es.Len(), cap(*es.getOrig()))
 	assert.Equal(t, generateTest{{ .structName }}(), es)
 
 	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	es.EnsureCapacity(ensureLargeLen)
 	assert.Less(t, generateTest{{ .structName }}().Len(), ensureLargeLen)
-	assert.Equal(t, ensureLargeLen, cap(*es.orig))
+	assert.Equal(t, ensureLargeLen, cap(*es.getOrig()))
 	assert.Equal(t, generateTest{{ .structName }}(), es)
 }
 
@@ -269,32 +302,60 @@ func Test{{ .structName }}_RemoveIf(t *testing.T) {
 func Test{{ .structName }}_Sort(t *testing.T) {
 	es := generateTest{{ .structName }}()
 	es.Sort(func(a, b {{ .elementName }}) bool {
-		return uintptr(unsafe.Pointer(a.orig)) < uintptr(unsafe.Pointer(b.orig))
+		return uintptr(unsafe.Pointer(a.getOrig())) < uintptr(unsafe.Pointer(b.getOrig()))
 	})
 	for i := 1; i < es.Len(); i++ {
-		assert.Less(t, uintptr(unsafe.Pointer(es.At(i-1).orig)), uintptr(unsafe.Pointer(es.At(i).orig)))
+		assert.Less(t, uintptr(unsafe.Pointer(es.At(i-1).getOrig())), uintptr(unsafe.Pointer(es.At(i).getOrig())))
 	}
 	es.Sort(func(a, b {{ .elementName }}) bool {
-		return uintptr(unsafe.Pointer(a.orig)) > uintptr(unsafe.Pointer(b.orig))
+		return uintptr(unsafe.Pointer(a.getOrig())) > uintptr(unsafe.Pointer(b.getOrig()))
 	})
 	for i := 1; i < es.Len(); i++ {
-		assert.Greater(t, uintptr(unsafe.Pointer(es.At(i-1).orig)), uintptr(unsafe.Pointer(es.At(i).orig)))
+		assert.Greater(t, uintptr(unsafe.Pointer(es.At(i-1).getOrig())), uintptr(unsafe.Pointer(es.At(i).getOrig())))
 	}
+}
+{{- end }}
+
+{{- if .isCommon }}
+func generateTest{{ .structName }}() {{ .structName }} {
+	return {{ .structName }}(internal.GenerateTest{{ .structName }}())
 }
 {{- end }}`
 
-const sliceGenerateTest = `func generateTest{{ .structName }}() {{ .structName }} {
-	es := New{{ .structName }}()
-	fillTest{{ .structName }}(es)
+const sliceGenerateTest = `func {{ upperIfInternal "g" }}enerateTest{{ .structName }}() {{ .structName }} {
+	{{- if .isCommon }}
+	orig := []{{ .originElementType }}(nil)
+	state := StateMutable
+	{{- end }}
+	es := New{{ .structName }}({{ if .isCommon }}&orig, &state{{ end }})
+	{{ upperIfInternal "f" }}illTest{{ .structName }}(es)
 	return es
 }
 
-func fillTest{{ .structName }}(es {{ .structName }}) {
+func {{ upperIfInternal "f" }}illTest{{ .structName }}(es {{ .structName }}) {
 	*es.orig = make([]{{ .originElementType }}, 7)
 	for i := 0; i < 7; i++ {
 		(*es.orig)[i] = {{ .emptyOriginElement }}
-		fillTest{{ .elementName }}({{ .newElement }})
+		{{ upperIfInternal "f" }}illTest{{ .elementName }}({{ upperIfInternal "n" }}ew{{ .elementName }}({{ .elementGetter }}, es.state))
 	}
+}`
+
+const sliceValueAliasTemplate = `
+type {{ .structName }} struct {
+	orig *[]{{ .originElementType }}
+	state *State
+}
+
+func GetOrig{{ .structName }}(ms {{ .structName }}) *[]{{ .originElementType }} {
+	return ms.orig
+}
+
+func Get{{ .structName }}State(ms {{ .structName }}) *State {
+	return ms.state
+}
+
+func New{{ .structName }}(orig *[]{{ .originElementType }}, state *State) {{ .structName }} {
+	return {{ .structName }}{orig: orig, state: state}
 }`
 
 type baseSlice interface {
@@ -332,25 +393,44 @@ func (ss *sliceOfPtrs) generateTests(sb *bytes.Buffer) {
 }
 
 func (ss *sliceOfPtrs) generateTestValueHelpers(sb *bytes.Buffer) {
-	t := template.Must(template.New("sliceGenerateTest").Parse(sliceGenerateTest))
+	funcs := template.FuncMap{
+		"upperIfInternal": func(in string) string {
+			if usedByOtherDataTypes(ss.packageName) {
+				return strings.ToUpper(in)
+			}
+			return in
+		},
+	}
+	t := template.Must(template.New("sliceGenerateTest").Funcs(funcs).Parse(sliceGenerateTest))
 	if err := t.Execute(sb, ss.templateFields()); err != nil {
 		panic(err)
 	}
 }
 
 func (ss *sliceOfPtrs) templateFields() map[string]any {
+	newElement := "new" + ss.element.structName + "((*es.getOrig())[i], es.getState())"
+	if usedByOtherDataTypes(ss.packageName) {
+		newElement = ss.element.structName + "(internal.New" + ss.element.structName + "((*es.getOrig())[i], es.getState()))"
+	}
 	return map[string]any{
 		"type":               "sliceOfPtrs",
+		"isCommon":           usedByOtherDataTypes(ss.packageName),
 		"structName":         ss.structName,
 		"elementName":        ss.element.structName,
 		"originName":         ss.element.originFullName,
 		"originElementType":  "*" + ss.element.originFullName,
 		"emptyOriginElement": "&" + ss.element.originFullName + "{}",
-		"newElement":         "new" + ss.element.structName + "((*es.orig)[i], es.state)",
+		"newElement":         newElement,
+		"elementGetter":      "(*es.orig)[i]",
 	}
 }
 
-func (ss *sliceOfPtrs) generateInternal(*bytes.Buffer) {}
+func (ss *sliceOfPtrs) generateInternal(sb *bytes.Buffer) {
+	t := template.Must(template.New("sliceValueAliasTemplate").Parse(sliceValueAliasTemplate))
+	if err := t.Execute(sb, ss.templateFields()); err != nil {
+		panic(err)
+	}
+}
 
 var _ baseStruct = (*sliceOfPtrs)(nil)
 
@@ -384,13 +464,25 @@ func (ss *sliceOfValues) generateTests(sb *bytes.Buffer) {
 }
 
 func (ss *sliceOfValues) generateTestValueHelpers(sb *bytes.Buffer) {
-	t := template.Must(template.New("sliceGenerateTest").Parse(sliceGenerateTest))
+	funcs := template.FuncMap{
+		"upperIfInternal": func(in string) string {
+			if usedByOtherDataTypes(ss.packageName) {
+				return strings.ToUpper(in)
+			}
+			return in
+		},
+	}
+	t := template.Must(template.New("sliceGenerateTest").Funcs(funcs).Parse(sliceGenerateTest))
 	if err := t.Execute(sb, ss.templateFields()); err != nil {
 		panic(err)
 	}
 }
 
 func (ss *sliceOfValues) templateFields() map[string]any {
+	newElement := "new" + ss.element.structName + "(&(*es.getOrig())[i], es.getState())"
+	if usedByOtherDataTypes(ss.packageName) {
+		newElement = ss.element.structName + "(internal.New" + ss.element.structName + "(&(*es.getOrig())[i], es.getState()))"
+	}
 	return map[string]any{
 		"type":               "sliceOfValues",
 		"structName":         ss.structName,
@@ -398,7 +490,8 @@ func (ss *sliceOfValues) templateFields() map[string]any {
 		"originName":         ss.element.originFullName,
 		"originElementType":  ss.element.originFullName,
 		"emptyOriginElement": ss.element.originFullName + "{}",
-		"newElement":         "new" + ss.element.structName + "(&(*es.orig)[i], es.state)",
+		"newElement":         newElement,
+		"elementGetter":      "&(*es.orig)[i]",
 	}
 }
 

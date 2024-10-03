@@ -29,6 +29,14 @@ func newSpanLinkSlice(orig *[]*otlptrace.Span_Link, state *internal.State) SpanL
 	return SpanLinkSlice{orig: orig, state: state}
 }
 
+func (ms SpanLinkSlice) getOrig() *[]*otlptrace.Span_Link {
+	return ms.orig
+}
+
+func (ms SpanLinkSlice) getState() *internal.State {
+	return ms.state
+}
+
 // NewSpanLinkSlice creates a SpanLinkSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewSpanLinkSlice() SpanLinkSlice {
@@ -41,7 +49,7 @@ func NewSpanLinkSlice() SpanLinkSlice {
 //
 // Returns "0" for a newly instance created with "NewSpanLinkSlice()".
 func (es SpanLinkSlice) Len() int {
-	return len(*es.orig)
+	return len(*es.getOrig())
 }
 
 // At returns the element at the given index.
@@ -53,7 +61,7 @@ func (es SpanLinkSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es SpanLinkSlice) At(i int) SpanLink {
-	return newSpanLink((*es.orig)[i], es.state)
+	return newSpanLink((*es.getOrig())[i], es.getState())
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -69,45 +77,45 @@ func (es SpanLinkSlice) At(i int) SpanLink {
 //	    // Here should set all the values for e.
 //	}
 func (es SpanLinkSlice) EnsureCapacity(newCap int) {
-	es.state.AssertMutable()
-	oldCap := cap(*es.orig)
+	es.getState().AssertMutable()
+	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
 		return
 	}
 
-	newOrig := make([]*otlptrace.Span_Link, len(*es.orig), newCap)
-	copy(newOrig, *es.orig)
-	*es.orig = newOrig
+	newOrig := make([]*otlptrace.Span_Link, len(*es.getOrig()), newCap)
+	copy(newOrig, *es.getOrig())
+	*es.getOrig() = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty SpanLink.
 // It returns the newly added SpanLink.
 func (es SpanLinkSlice) AppendEmpty() SpanLink {
-	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlptrace.Span_Link{})
+	es.getState().AssertMutable()
+	*es.getOrig() = append(*es.getOrig(), &otlptrace.Span_Link{})
 	return es.At(es.Len() - 1)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es SpanLinkSlice) MoveAndAppendTo(dest SpanLinkSlice) {
-	es.state.AssertMutable()
-	dest.state.AssertMutable()
-	if *dest.orig == nil {
+	es.getState().AssertMutable()
+	dest.getState().AssertMutable()
+	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
-		*dest.orig = *es.orig
+		*dest.getOrig() = *es.getOrig()
 	} else {
-		*dest.orig = append(*dest.orig, *es.orig...)
+		*dest.getOrig() = append(*dest.getOrig(), *es.getOrig()...)
 	}
-	*es.orig = nil
+	*es.getOrig() = nil
 }
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
 func (es SpanLinkSlice) RemoveIf(f func(SpanLink) bool) {
-	es.state.AssertMutable()
+	es.getState().AssertMutable()
 	newLen := 0
-	for i := 0; i < len(*es.orig); i++ {
+	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
 			continue
 		}
@@ -116,37 +124,37 @@ func (es SpanLinkSlice) RemoveIf(f func(SpanLink) bool) {
 			newLen++
 			continue
 		}
-		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.getOrig())[newLen] = (*es.getOrig())[i]
 		newLen++
 	}
-	*es.orig = (*es.orig)[:newLen]
+	*es.getOrig() = (*es.getOrig())[:newLen]
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es SpanLinkSlice) CopyTo(dest SpanLinkSlice) {
-	dest.state.AssertMutable()
+	dest.getState().AssertMutable()
 	srcLen := es.Len()
-	destCap := cap(*dest.orig)
+	destCap := cap(*dest.getOrig())
 	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newSpanLink((*es.orig)[i], es.state).CopyTo(newSpanLink((*dest.orig)[i], dest.state))
+		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
+		for i := range *es.getOrig() {
+			newSpanLink((*es.getOrig())[i], es.getState()).CopyTo(newSpanLink((*dest.getOrig())[i], dest.getState()))
 		}
 		return
 	}
 	origs := make([]otlptrace.Span_Link, srcLen)
 	wrappers := make([]*otlptrace.Span_Link, srcLen)
-	for i := range *es.orig {
+	for i := range *es.getOrig() {
 		wrappers[i] = &origs[i]
-		newSpanLink((*es.orig)[i], es.state).CopyTo(newSpanLink(wrappers[i], dest.state))
+		newSpanLink((*es.getOrig())[i], es.getState()).CopyTo(newSpanLink(wrappers[i], dest.getState()))
 	}
-	*dest.orig = wrappers
+	*dest.getOrig() = wrappers
 }
 
 // Sort sorts the SpanLink elements within SpanLinkSlice given the
 // provided less function so that two instances of SpanLinkSlice
 // can be compared.
 func (es SpanLinkSlice) Sort(less func(a, b SpanLink) bool) {
-	es.state.AssertMutable()
-	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	es.getState().AssertMutable()
+	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
