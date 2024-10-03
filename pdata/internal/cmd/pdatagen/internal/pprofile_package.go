@@ -230,7 +230,7 @@ var profile = &messageValueStruct{
 	},
 }
 
-var valueTypeSlice = &sliceOfValues{
+var valueTypeSlice = &sliceOfPtrs{
 	structName: "ValueTypeSlice",
 	element:    valueType,
 }
