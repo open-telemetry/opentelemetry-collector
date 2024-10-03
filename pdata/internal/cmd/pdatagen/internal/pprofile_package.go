@@ -318,7 +318,7 @@ var sample = &messageValueStruct{
 	},
 }
 
-var labelSlice = &sliceOfValues{
+var labelSlice = &sliceOfPtrs{
 	structName: "LabelSlice",
 	element:    label,
 }
