@@ -7,6 +7,7 @@ package receiverhelper // import "go.opentelemetry.io/collector/receiver/receive
 
 import (
 	"context"
+	"reflect"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -186,7 +187,7 @@ func (rec *ObsReport) endOp(
 			attribute.Int64(acceptedItemsKey, int64(numAccepted)),
 			attribute.Int64(refusedItemsKey, int64(numRefused)),
 		)
-		if err != nil {
+		if !isErrorNil(err) {
 			span.SetStatus(codes.Error, err.Error())
 		}
 	}
@@ -209,4 +210,13 @@ func (rec *ObsReport) recordMetrics(receiverCtx context.Context, signal pipeline
 
 	acceptedMeasure.Add(receiverCtx, int64(numAccepted), metric.WithAttributes(rec.otelAttrs...))
 	refusedMeasure.Add(receiverCtx, int64(numRefused), metric.WithAttributes(rec.otelAttrs...))
+}
+
+// Correctly checks for nil, even in case of https://go.dev/doc/faq#nil_error.
+func isErrorNil(err error) bool {
+	if err == nil {
+		return true
+	}
+	val := reflect.ValueOf(err)
+	return val.Kind() == reflect.Ptr && val.IsNil()
 }

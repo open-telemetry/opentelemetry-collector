@@ -296,10 +296,32 @@ func TestCheckReceiverLogsViews(t *testing.T) {
 	assert.Error(t, tt.CheckReceiverLogs(transport, 0, 7))
 }
 
+type myError struct {
+	error
+}
+
+func returnsError(b bool) error {
+	var p *myError
+	if b {
+		p = &myError{error: errors.New("my error")}
+	}
+	return p // Will always return a non-nil error.
+}
+
+func TestIsErrorNil(t *testing.T) {
+	assert.True(t, isErrorNil(nil))
+	assert.False(t, isErrorNil(returnsError(true)))
+	// nolint
+	assert.NotNil(t, returnsError(true) == nil)
+	assert.True(t, isErrorNil(returnsError(false)))
+	// nolint
+	assert.False(t, returnsError(false) == nil)
+	assert.False(t, isErrorNil(myError{error: errors.New("my error")}))
+}
+
 func testTelemetry(t *testing.T, id component.ID, testFunc func(t *testing.T, tt componenttest.TestTelemetry)) {
 	tt, err := componenttest.SetupTelemetry(id)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
-
 	testFunc(t, tt)
 }
