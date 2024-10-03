@@ -261,7 +261,7 @@ var valueType = &messageValueStruct{
 	},
 }
 
-var sampleSlice = &sliceOfValues{
+var sampleSlice = &sliceOfPtrs{
 	structName: "SampleSlice",
 	element:    sample,
 }
