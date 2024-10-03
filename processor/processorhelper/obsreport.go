@@ -17,7 +17,9 @@ import (
 	"go.opentelemetry.io/collector/processor/processorhelper/internal/metadata"
 )
 
-// Deprecated: [v0.111.0] no longer needed. To be removed in future.
+/**
+* @deprecated: [v0.111.0] no longer needed. We're removing this method in version 0.111.0
+*/
 func BuildCustomMetricName(configType, metric string) string {
 	componentPrefix := internal.ProcessorMetricPrefix
 	if !strings.HasSuffix(componentPrefix, internal.MetricNameSep) {
@@ -27,6 +29,7 @@ func BuildCustomMetricName(configType, metric string) string {
 		return componentPrefix
 	}
 	return componentPrefix + configType + internal.MetricNameSep + metric
+	// the actual implentation
 }
 
 // Deprecated: [v0.111.0] not used.
