@@ -523,7 +523,7 @@ var line = &messageValueStruct{
 	},
 }
 
-var functionSlice = &sliceOfValues{
+var functionSlice = &sliceOfPtrs{
 	structName: "FunctionSlice",
 	element:    function,
 }
