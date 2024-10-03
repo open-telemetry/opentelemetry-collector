@@ -296,7 +296,7 @@ Users should always initialize the config struct with this function and overwrit
 
 ### Optional Fields
 
-Use pointers to represent optional fields in configuration to distinguish between unset values and zero values.
+Config fields should use the normal type and rely on zero values. In cases where it is necessary to distinguish between unset values and zero values, use a pointer to the type.
 
 ### Startup Error Handling
 
