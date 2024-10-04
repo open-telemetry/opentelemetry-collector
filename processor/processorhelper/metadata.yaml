@@ -28,3 +28,22 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+
+    processor_errors:
+      enabled: true
+      stability:
+        level: alpha
+      description: Number of errors emitted from the processor
+      unit: "{errors}"
+      sum:
+        value_type: int
+        monotonic: true
+    processor_skips:
+      enabled: true
+      stability:
+        level: alpha
+      description: Number of skips by processor
+      unit: ""
+      sum:
+        value_type: int
+        monotonic: true

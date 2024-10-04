@@ -50,18 +50,21 @@ func NewMetrics(
 		span := trace.SpanFromContext(ctx)
 		span.AddEvent("Start processing.", eventOptions)
 		pointsIn := md.DataPointCount()
+		obs.recordIn(ctx, pointsIn)
 
 		var errFunc error
 		md, errFunc = metricsFunc(ctx, md)
 		span.AddEvent("End processing.", eventOptions)
 		if errFunc != nil {
 			if errors.Is(errFunc, ErrSkipProcessingData) {
+				obs.processorSkipped(ctx)
 				return nil
 			}
+			obs.processorError(ctx)
 			return errFunc
 		}
 		pointsOut := md.DataPointCount()
-		obs.recordInOut(ctx, pointsIn, pointsOut)
+		obs.recordOut(ctx, pointsOut)
 		return nextConsumer.ConsumeMetrics(ctx, md)
 	}, bs.consumerOptions...)
 	if err != nil {

@@ -6,6 +6,14 @@
 
 The following telemetry is emitted by this component.
 
+### otelcol_processor_errors
+
+Number of errors emitted from the processor [alpha]
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {errors} | Sum | Int | true |
+
 ### otelcol_processor_incoming_items
 
 Number of items passed to the processor. [alpha]
@@ -21,3 +29,11 @@ Number of items emitted from the processor. [alpha]
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
 | {items} | Sum | Int | true |
+
+### otelcol_processor_skips
+
+Number of skips by processor [alpha]
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {errors} | Sum | Int | true |

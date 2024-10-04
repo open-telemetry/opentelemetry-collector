@@ -29,8 +29,10 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
 	meter                  metric.Meter
+	ProcessorErrors        metric.Int64Counter
 	ProcessorIncomingItems metric.Int64Counter
 	ProcessorOutgoingItems metric.Int64Counter
+	ProcessorSkips         metric.Int64Counter
 	meters                 map[configtelemetry.Level]metric.Meter
 }
 
@@ -54,6 +56,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meters[configtelemetry.LevelBasic] = LeveledMeter(settings, configtelemetry.LevelBasic)
 	var err, errs error
+	builder.ProcessorErrors, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
+		"otelcol_processor_errors",
+		metric.WithDescription("Number of errors emitted from the processor [alpha]"),
+		metric.WithUnit("{errors}"),
+	)
+	errs = errors.Join(errs, err)
 	builder.ProcessorIncomingItems, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_processor_incoming_items",
 		metric.WithDescription("Number of items passed to the processor. [alpha]"),
@@ -64,6 +72,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_processor_outgoing_items",
 		metric.WithDescription("Number of items emitted from the processor. [alpha]"),
 		metric.WithUnit("{items}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorSkips, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
+		"otelcol_processor_skips",
+		metric.WithDescription("Number of skips by processor [alpha]"),
+		metric.WithUnit("{errors}"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs

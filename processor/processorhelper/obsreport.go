@@ -62,7 +62,18 @@ func newObsReport(set processor.Settings, signal pipeline.Signal) (*obsReport, e
 	}, nil
 }
 
-func (or *obsReport) recordInOut(ctx context.Context, incoming, outgoing int) {
+func (or *obsReport) recordIn(ctx context.Context, incoming int) {
 	or.telemetryBuilder.ProcessorIncomingItems.Add(ctx, int64(incoming), metric.WithAttributes(or.otelAttrs...))
+}
+
+func (or *obsReport) recordOut(ctx context.Context, outgoing int) {
 	or.telemetryBuilder.ProcessorOutgoingItems.Add(ctx, int64(outgoing), metric.WithAttributes(or.otelAttrs...))
+}
+
+func (or *obsReport) processorError(ctx context.Context) {
+	or.telemetryBuilder.ProcessorErrors.Add(ctx, 1, metric.WithAttributes(or.otelAttrs...))
+}
+
+func (or *obsReport) processorSkipped(ctx context.Context) {
+	or.telemetryBuilder.ProcessorSkips.Add(ctx, 1, metric.WithAttributes(or.otelAttrs...))
 }
