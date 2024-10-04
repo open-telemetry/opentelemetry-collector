@@ -6,6 +6,7 @@ package processorhelper
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -68,6 +69,36 @@ func newTestMProcessor(retError error) ProcessMetricsFunc {
 	return func(_ context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 		return md, retError
 	}
+}
+
+func TestMetricsConcurrency(t *testing.T) {
+	metricsFunc := func(_ context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
+		return md, nil
+	}
+
+	incomingMetrics := pmetric.NewMetrics()
+	dps := incomingMetrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptySum().DataPoints()
+
+	// Add 2 data points to the incoming
+	dps.AppendEmpty()
+	dps.AppendEmpty()
+
+	mp, err := NewMetrics(context.Background(), processortest.NewNopSettings(), &testLogsCfg, consumertest.NewNop(), metricsFunc)
+	require.NoError(t, err)
+	assert.NoError(t, mp.Start(context.Background(), componenttest.NewNopHost()))
+
+	var wg sync.WaitGroup
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := 0; j < 10000; j++ {
+				assert.NoError(t, mp.ConsumeMetrics(context.Background(), incomingMetrics))
+			}
+		}()
+	}
+	wg.Wait()
+	assert.NoError(t, mp.Shutdown(context.Background()))
 }
 
 func TestMetrics_RecordInOut(t *testing.T) {
