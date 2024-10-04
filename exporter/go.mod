@@ -51,8 +51,6 @@ require (
 
 replace go.opentelemetry.io/collector/component => ../component
 
-replace go.opentelemetry.io/collector/component/componentstatus => ../component/componentstatus
-
 replace go.opentelemetry.io/collector/consumer => ../consumer
 
 replace go.opentelemetry.io/collector/extension => ../extension

@@ -1095,7 +1095,7 @@ func TestComponentStatus(t *testing.T) {
 				exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
 				require.NoError(t, err)
 				require.NotNil(t, exp)
-				assert.NoError(t, exp.Start(context.Background(), host))
+				require.NoError(t, exp.Start(context.Background(), host))
 
 				defer func() {
 					assert.NoError(t, exp.Shutdown(context.Background()))
@@ -1136,7 +1136,7 @@ func TestComponentStatus(t *testing.T) {
 				exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 				require.NoError(t, err)
 				require.NotNil(t, exp)
-				assert.NoError(t, exp.Start(context.Background(), host))
+				require.NoError(t, exp.Start(context.Background(), host))
 
 				defer func() {
 					assert.NoError(t, exp.Shutdown(context.Background()))
@@ -1176,7 +1176,7 @@ func TestComponentStatus(t *testing.T) {
 				exp, err := factory.CreateLogsExporter(context.Background(), set, cfg)
 				require.NoError(t, err)
 				require.NotNil(t, exp)
-				assert.NoError(t, exp.Start(context.Background(), host))
+				require.NoError(t, exp.Start(context.Background(), host))
 
 				defer func() {
 					assert.NoError(t, exp.Shutdown(context.Background()))

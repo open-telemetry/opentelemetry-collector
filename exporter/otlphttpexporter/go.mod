@@ -80,8 +80,6 @@ replace go.opentelemetry.io/collector => ../../
 
 replace go.opentelemetry.io/collector/component => ../../component
 
-replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
-
 replace go.opentelemetry.io/collector/config/configauth => ../../config/configauth
 
 replace go.opentelemetry.io/collector/config/configcompression => ../../config/configcompression
