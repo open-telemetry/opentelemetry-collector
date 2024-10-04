@@ -17,6 +17,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
@@ -44,6 +45,7 @@ type baseExporter struct {
 	metadata        metadata.MD
 	callOptions     []grpc.CallOption
 
+	host     component.Host
 	settings component.TelemetrySettings
 
 	// Default user-agent header.
@@ -78,6 +80,7 @@ func (e *baseExporter) start(ctx context.Context, host component.Host) (err erro
 	e.callOptions = []grpc.CallOption{
 		grpc.WaitForReady(e.config.ClientConfig.WaitForReady),
 	}
+	e.host = host
 
 	return
 }
@@ -89,11 +92,14 @@ func (e *baseExporter) shutdown(context.Context) error {
 	return nil
 }
 
-func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
+func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) (err error) {
+	defer func() {
+		e.reportStatusFromError(err)
+	}()
 	req := ptraceotlp.NewExportRequestFromTraces(td)
 	resp, respErr := e.traceExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
-	if err := processError(respErr); err != nil {
-		return err
+	if err = e.processError(respErr); err != nil {
+		return
 	}
 	partialSuccess := resp.PartialSuccess()
 	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedSpans() == 0) {
@@ -102,14 +108,17 @@ func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 			zap.Int64("dropped_spans", resp.PartialSuccess().RejectedSpans()),
 		)
 	}
-	return nil
+	return
 }
 
-func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
+func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) (err error) {
+	defer func() {
+		e.reportStatusFromError(err)
+	}()
 	req := pmetricotlp.NewExportRequestFromMetrics(md)
 	resp, respErr := e.metricExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
-	if err := processError(respErr); err != nil {
-		return err
+	if err = e.processError(respErr); err != nil {
+		return
 	}
 	partialSuccess := resp.PartialSuccess()
 	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedDataPoints() == 0) {
@@ -118,14 +127,17 @@ func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) erro
 			zap.Int64("dropped_data_points", resp.PartialSuccess().RejectedDataPoints()),
 		)
 	}
-	return nil
+	return
 }
 
-func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
+func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) (err error) {
+	defer func() {
+		e.reportStatusFromError(err)
+	}()
 	req := plogotlp.NewExportRequestFromLogs(ld)
 	resp, respErr := e.logExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
-	if err := processError(respErr); err != nil {
-		return err
+	if err = e.processError(respErr); err != nil {
+		return
 	}
 	partialSuccess := resp.PartialSuccess()
 	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedLogRecords() == 0) {
@@ -134,13 +146,13 @@ func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 			zap.Int64("dropped_log_records", resp.PartialSuccess().RejectedLogRecords()),
 		)
 	}
-	return nil
+	return
 }
 
 func (e *baseExporter) pushProfiles(ctx context.Context, td pprofile.Profiles) error {
 	req := pprofileotlp.NewExportRequestFromProfiles(td)
 	resp, respErr := e.profileExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
-	if err := processError(respErr); err != nil {
+	if err := e.processError(respErr); err != nil {
 		return err
 	}
 	partialSuccess := resp.PartialSuccess()
@@ -160,7 +172,7 @@ func (e *baseExporter) enhanceContext(ctx context.Context) context.Context {
 	return ctx
 }
 
-func processError(err error) error {
+func (e *baseExporter) processError(err error) error {
 	if err == nil {
 		// Request is successful, we are done.
 		return nil
@@ -174,6 +186,10 @@ func processError(err error) error {
 	}
 
 	// Now, this is a real error.
+	if isComponentPermanentError(st) {
+		componentstatus.ReportStatus(e.host, componentstatus.NewPermanentErrorEvent(err))
+	}
+
 	retryInfo := getRetryInfo(st)
 
 	if !shouldRetry(st.Code(), retryInfo) {
@@ -190,6 +206,14 @@ func processError(err error) error {
 
 	// Need to retry.
 	return err
+}
+
+func (e *baseExporter) reportStatusFromError(err error) {
+	if err != nil {
+		componentstatus.ReportStatus(e.host, componentstatus.NewRecoverableErrorEvent(err))
+		return
+	}
+	componentstatus.ReportStatus(e.host, componentstatus.NewEvent(componentstatus.StatusOK))
 }
 
 func shouldRetry(code codes.Code, retryInfo *errdetails.RetryInfo) bool {
@@ -228,4 +252,22 @@ func getThrottleDuration(t *errdetails.RetryInfo) time.Duration {
 		return time.Duration(t.RetryDelay.Seconds)*time.Second + time.Duration(t.RetryDelay.Nanos)*time.Nanosecond
 	}
 	return 0
+}
+
+// A component status of PermanentError indicates the component is in a state that will require user
+// intervention to fix. Typically this is a misconfiguration detected at runtime. A component
+// PermanentError has different semantics than a consumererror. For more information, see:
+// https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-status.md
+func isComponentPermanentError(st *status.Status) bool {
+	switch st.Code() {
+	case codes.NotFound:
+		return true
+	case codes.PermissionDenied:
+		return true
+	case codes.Unauthenticated:
+		return true
+	default:
+		return false
+	}
+
 }

@@ -25,6 +25,8 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/durationpb"
 
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -1032,5 +1034,173 @@ func TestSendProfilesWhenEndpointHasHttpScheme(t *testing.T) {
 			// Ensure it was received empty.
 			assert.EqualValues(t, 0, rcv.totalItems.Load())
 		})
+	}
+}
+
+func TestComponentStatus(t *testing.T) {
+	tests := []struct {
+		name            string
+		exportError     error
+		componentStatus componentstatus.Status
+	}{
+		{
+			name:            "No Error",
+			exportError:     nil,
+			componentStatus: componentstatus.StatusOK,
+		},
+		{
+			name:            "Permission Denied",
+			exportError:     status.Error(codes.PermissionDenied, "permission denied"),
+			componentStatus: componentstatus.StatusPermanentError,
+		},
+		{
+			name:            "Not Found",
+			exportError:     status.Error(codes.NotFound, "not found"),
+			componentStatus: componentstatus.StatusPermanentError,
+		},
+		{
+			name:            "Unauthenticated",
+			exportError:     status.Error(codes.Unauthenticated, "unauthenticated"),
+			componentStatus: componentstatus.StatusPermanentError,
+		},
+		{
+			name:            "Resource Exhausted",
+			exportError:     status.Error(codes.ResourceExhausted, "resource exhausted"),
+			componentStatus: componentstatus.StatusRecoverableError,
+		},
+	}
+
+	t.Run("traces", func(t *testing.T) {
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				ln, err := net.Listen("tcp", "localhost:")
+				require.NoError(t, err)
+				rcv, _ := otlpTracesReceiverOnGRPCServer(ln, false)
+				rcv.setExportError(tt.exportError)
+				defer rcv.srv.GracefulStop()
+
+				factory := NewFactory()
+				cfg := factory.CreateDefaultConfig().(*Config)
+				cfg.QueueConfig.Enabled = false
+				cfg.ClientConfig = configgrpc.ClientConfig{
+					Endpoint: ln.Addr().String(),
+					TLSSetting: configtls.ClientConfig{
+						Insecure: true,
+					},
+				}
+
+				set := exportertest.NewNopSettings()
+				host := &testHost{Host: componenttest.NewNopHost()}
+
+				exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
+				require.NoError(t, err)
+				require.NotNil(t, exp)
+				assert.NoError(t, exp.Start(context.Background(), host))
+
+				defer func() {
+					assert.NoError(t, exp.Shutdown(context.Background()))
+				}()
+
+				td := ptrace.NewTraces()
+				err = exp.ConsumeTraces(context.Background(), td)
+
+				assert.Equal(t, tt.componentStatus != componentstatus.StatusOK, err != nil)
+				assert.Equal(t, tt.componentStatus, host.lastStatus)
+			})
+		}
+	})
+
+	t.Run("metrics", func(t *testing.T) {
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				ln, err := net.Listen("tcp", "localhost:")
+				require.NoError(t, err)
+
+				rcv := otlpMetricsReceiverOnGRPCServer(ln)
+				rcv.setExportError(tt.exportError)
+				defer rcv.srv.GracefulStop()
+
+				factory := NewFactory()
+				cfg := factory.CreateDefaultConfig().(*Config)
+				cfg.QueueConfig.Enabled = false
+				cfg.ClientConfig = configgrpc.ClientConfig{
+					Endpoint: ln.Addr().String(),
+					TLSSetting: configtls.ClientConfig{
+						Insecure: true,
+					},
+				}
+
+				set := exportertest.NewNopSettings()
+				host := &testHost{Host: componenttest.NewNopHost()}
+
+				exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
+				require.NoError(t, err)
+				require.NotNil(t, exp)
+				assert.NoError(t, exp.Start(context.Background(), host))
+
+				defer func() {
+					assert.NoError(t, exp.Shutdown(context.Background()))
+				}()
+
+				md := pmetric.NewMetrics()
+				err = exp.ConsumeMetrics(context.Background(), md)
+				assert.Equal(t, tt.componentStatus != componentstatus.StatusOK, err != nil)
+				assert.Equal(t, tt.componentStatus, host.lastStatus)
+			})
+		}
+	})
+
+	t.Run("logs", func(t *testing.T) {
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				ln, err := net.Listen("tcp", "localhost:")
+				require.NoError(t, err)
+
+				rcv := otlpLogsReceiverOnGRPCServer(ln)
+				rcv.setExportError(tt.exportError)
+				defer rcv.srv.GracefulStop()
+
+				factory := NewFactory()
+				cfg := factory.CreateDefaultConfig().(*Config)
+				cfg.QueueConfig.Enabled = false
+				cfg.ClientConfig = configgrpc.ClientConfig{
+					Endpoint: ln.Addr().String(),
+					TLSSetting: configtls.ClientConfig{
+						Insecure: true,
+					},
+				}
+
+				set := exportertest.NewNopSettings()
+				host := &testHost{Host: componenttest.NewNopHost()}
+
+				exp, err := factory.CreateLogsExporter(context.Background(), set, cfg)
+				require.NoError(t, err)
+				require.NotNil(t, exp)
+				assert.NoError(t, exp.Start(context.Background(), host))
+
+				defer func() {
+					assert.NoError(t, exp.Shutdown(context.Background()))
+				}()
+
+				ld := plog.NewLogs()
+				err = exp.ConsumeLogs(context.Background(), ld)
+				assert.Equal(t, tt.componentStatus != componentstatus.StatusOK, err != nil)
+				assert.Equal(t, tt.componentStatus, host.lastStatus)
+			})
+		}
+	})
+}
+
+var _ component.Host = (*testHost)(nil)
+var _ componentstatus.Reporter = (*testHost)(nil)
+
+type testHost struct {
+	component.Host
+	lastStatus componentstatus.Status
+}
+
+func (h *testHost) Report(ev *componentstatus.Event) {
+	if h.lastStatus != componentstatus.StatusPermanentError {
+		h.lastStatus = ev.Status()
 	}
 }
