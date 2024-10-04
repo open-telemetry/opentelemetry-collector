@@ -341,7 +341,7 @@ func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (uint64, T, bool)
 			pq.logger.Error("Error deleting item from queue", zap.Error(err))
 		}
 
-		return index, request, false
+		return 0, request, false
 	}
 
 	// Increase the reference count, so the client is not closed while the request is being processed.
