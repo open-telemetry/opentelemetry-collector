@@ -8,6 +8,7 @@ package pprofile
 
 import (
 	"testing"
+	"unsafe"
 
 	"github.com/stretchr/testify/assert"
 
@@ -19,7 +20,7 @@ func TestAttributeUnitSlice(t *testing.T) {
 	es := NewAttributeUnitSlice()
 	assert.Equal(t, 0, es.Len())
 	state := internal.StateMutable
-	es = newAttributeUnitSlice(&[]otlpprofiles.AttributeUnit{}, &state)
+	es = newAttributeUnitSlice(&[]*otlpprofiles.AttributeUnit{}, &state)
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewAttributeUnit()
@@ -35,7 +36,7 @@ func TestAttributeUnitSlice(t *testing.T) {
 
 func TestAttributeUnitSliceReadOnly(t *testing.T) {
 	sharedState := internal.StateReadOnly
-	es := newAttributeUnitSlice(&[]otlpprofiles.AttributeUnit{}, &sharedState)
+	es := newAttributeUnitSlice(&[]*otlpprofiles.AttributeUnit{}, &sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -122,6 +123,22 @@ func TestAttributeUnitSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestAttributeUnitSlice_Sort(t *testing.T) {
+	es := generateTestAttributeUnitSlice()
+	es.Sort(func(a, b AttributeUnit) bool {
+		return uintptr(unsafe.Pointer(a.orig)) < uintptr(unsafe.Pointer(b.orig))
+	})
+	for i := 1; i < es.Len(); i++ {
+		assert.Less(t, uintptr(unsafe.Pointer(es.At(i-1).orig)), uintptr(unsafe.Pointer(es.At(i).orig)))
+	}
+	es.Sort(func(a, b AttributeUnit) bool {
+		return uintptr(unsafe.Pointer(a.orig)) > uintptr(unsafe.Pointer(b.orig))
+	})
+	for i := 1; i < es.Len(); i++ {
+		assert.Greater(t, uintptr(unsafe.Pointer(es.At(i-1).orig)), uintptr(unsafe.Pointer(es.At(i).orig)))
+	}
+}
+
 func generateTestAttributeUnitSlice() AttributeUnitSlice {
 	es := NewAttributeUnitSlice()
 	fillTestAttributeUnitSlice(es)
@@ -129,9 +146,9 @@ func generateTestAttributeUnitSlice() AttributeUnitSlice {
 }
 
 func fillTestAttributeUnitSlice(es AttributeUnitSlice) {
-	*es.orig = make([]otlpprofiles.AttributeUnit, 7)
+	*es.orig = make([]*otlpprofiles.AttributeUnit, 7)
 	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = otlpprofiles.AttributeUnit{}
-		fillTestAttributeUnit(newAttributeUnit(&(*es.orig)[i], es.state))
+		(*es.orig)[i] = &otlpprofiles.AttributeUnit{}
+		fillTestAttributeUnit(newAttributeUnit((*es.orig)[i], es.state))
 	}
 }

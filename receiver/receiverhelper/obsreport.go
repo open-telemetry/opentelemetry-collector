@@ -27,7 +27,7 @@ type ObsReport struct {
 	longLivedCtx   bool
 	tracer         trace.Tracer
 
-	otelAttrs        []attribute.KeyValue
+	otelAttrs        attribute.Set
 	telemetryBuilder *metadata.TelemetryBuilder
 }
 
@@ -60,10 +60,10 @@ func newReceiver(cfg ObsReportSettings) (*ObsReport, error) {
 		longLivedCtx:   cfg.LongLivedCtx,
 		tracer:         cfg.ReceiverCreateSettings.TracerProvider.Tracer(cfg.ReceiverID.String()),
 
-		otelAttrs: []attribute.KeyValue{
+		otelAttrs: attribute.NewSet(
 			attribute.String(internal.ReceiverKey, cfg.ReceiverID.String()),
 			attribute.String(internal.TransportKey, cfg.Transport),
-		},
+		),
 		telemetryBuilder: telemetryBuilder,
 	}, nil
 }
@@ -207,6 +207,6 @@ func (rec *ObsReport) recordMetrics(receiverCtx context.Context, signal pipeline
 		refusedMeasure = rec.telemetryBuilder.ReceiverRefusedLogRecords
 	}
 
-	acceptedMeasure.Add(receiverCtx, int64(numAccepted), metric.WithAttributes(rec.otelAttrs...))
-	refusedMeasure.Add(receiverCtx, int64(numRefused), metric.WithAttributes(rec.otelAttrs...))
+	acceptedMeasure.Add(receiverCtx, int64(numAccepted), metric.WithAttributeSet(rec.otelAttrs))
+	refusedMeasure.Add(receiverCtx, int64(numRefused), metric.WithAttributeSet(rec.otelAttrs))
 }
