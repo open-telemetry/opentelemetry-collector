@@ -1,8 +1,0 @@
-type: logging
-github_project: open-telemetry/opentelemetry-collector
-
-status:
-  class: exporter
-  stability:
-    deprecated: [traces, metrics, logs]
-  distributions: [core, contrib]

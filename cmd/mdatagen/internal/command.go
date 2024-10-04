@@ -116,7 +116,7 @@ func run(ymlPath string) error {
 		toGenerate[filepath.Join(tmplDir, "telemetry_test.go.tmpl")] = filepath.Join(codeDir, "generated_telemetry_test.go")
 	}
 
-	if len(md.Metrics) != 0 || len(md.Telemetry.Metrics) != 0 { // if there's metrics or internal metrics, generate documentation for them
+	if len(md.Metrics) != 0 || len(md.Telemetry.Metrics) != 0 || len(md.ResourceAttributes) != 0 { // if there's metrics or internal metrics, generate documentation for them
 		toGenerate[filepath.Join(tmplDir, "documentation.md.tmpl")] = filepath.Join(ymlDir, "documentation.md")
 	}
 

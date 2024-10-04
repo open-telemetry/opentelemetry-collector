@@ -147,7 +147,7 @@ func (f factoryOptionFunc) applyOption(o *factoryOpts) {
 type factoryOpts struct {
 	opts []connector.FactoryOption
 
-	factory *factory
+	*factory
 }
 
 // WithTracesToTraces overrides the default "error not supported" implementation for WithTracesToTraces and the default "undefined" stability level.
@@ -216,56 +216,56 @@ func WithLogsToLogs(createLogsToLogs connector.CreateLogsToLogsFunc, sl componen
 // WithTracesToProfiles overrides the default "error not supported" implementation for WithTracesToProfiles and the default "undefined" stability level.
 func WithTracesToProfiles(createTracesToProfiles CreateTracesToProfilesFunc, sl component.StabilityLevel) FactoryOption {
 	return factoryOptionFunc(func(o *factoryOpts) {
-		o.factory.tracesToProfilesStabilityLevel = sl
-		o.factory.CreateTracesToProfilesFunc = createTracesToProfiles
+		o.tracesToProfilesStabilityLevel = sl
+		o.CreateTracesToProfilesFunc = createTracesToProfiles
 	})
 }
 
 // WithMetricsToProfiles overrides the default "error not supported" implementation for WithMetricsToProfiles and the default "undefined" stability level.
 func WithMetricsToProfiles(createMetricsToProfiles CreateMetricsToProfilesFunc, sl component.StabilityLevel) FactoryOption {
 	return factoryOptionFunc(func(o *factoryOpts) {
-		o.factory.metricsToProfilesStabilityLevel = sl
-		o.factory.CreateMetricsToProfilesFunc = createMetricsToProfiles
+		o.metricsToProfilesStabilityLevel = sl
+		o.CreateMetricsToProfilesFunc = createMetricsToProfiles
 	})
 }
 
 // WithLogsToProfiles overrides the default "error not supported" implementation for WithLogsToProfiles and the default "undefined" stability level.
 func WithLogsToProfiles(createLogsToProfiles CreateLogsToProfilesFunc, sl component.StabilityLevel) FactoryOption {
 	return factoryOptionFunc(func(o *factoryOpts) {
-		o.factory.logsToProfilesStabilityLevel = sl
-		o.factory.CreateLogsToProfilesFunc = createLogsToProfiles
+		o.logsToProfilesStabilityLevel = sl
+		o.CreateLogsToProfilesFunc = createLogsToProfiles
 	})
 }
 
 // WithProfilesToProfiles overrides the default "error not supported" implementation for WithProfilesToProfiles and the default "undefined" stability level.
 func WithProfilesToProfiles(createProfilesToProfiles CreateProfilesToProfilesFunc, sl component.StabilityLevel) FactoryOption {
 	return factoryOptionFunc(func(o *factoryOpts) {
-		o.factory.profilesToProfilesStabilityLevel = sl
-		o.factory.CreateProfilesToProfilesFunc = createProfilesToProfiles
+		o.profilesToProfilesStabilityLevel = sl
+		o.CreateProfilesToProfilesFunc = createProfilesToProfiles
 	})
 }
 
 // WithProfilesToTraces overrides the default "error not supported" implementation for WithProfilesToTraces and the default "undefined" stability level.
 func WithProfilesToTraces(createProfilesToTraces CreateProfilesToTracesFunc, sl component.StabilityLevel) FactoryOption {
 	return factoryOptionFunc(func(o *factoryOpts) {
-		o.factory.profilesToTracesStabilityLevel = sl
-		o.factory.CreateProfilesToTracesFunc = createProfilesToTraces
+		o.profilesToTracesStabilityLevel = sl
+		o.CreateProfilesToTracesFunc = createProfilesToTraces
 	})
 }
 
 // WithProfilesToMetrics overrides the default "error not supported" implementation for WithProfilesToMetrics and the default "undefined" stability level.
 func WithProfilesToMetrics(createProfilesToMetrics CreateProfilesToMetricsFunc, sl component.StabilityLevel) FactoryOption {
 	return factoryOptionFunc(func(o *factoryOpts) {
-		o.factory.profilesToMetricsStabilityLevel = sl
-		o.factory.CreateProfilesToMetricsFunc = createProfilesToMetrics
+		o.profilesToMetricsStabilityLevel = sl
+		o.CreateProfilesToMetricsFunc = createProfilesToMetrics
 	})
 }
 
 // WithProfilesToLogs overrides the default "error not supported" implementation for WithProfilesToLogs and the default "undefined" stability level.
 func WithProfilesToLogs(createProfilesToLogs CreateProfilesToLogsFunc, sl component.StabilityLevel) FactoryOption {
 	return factoryOptionFunc(func(o *factoryOpts) {
-		o.factory.profilesToLogsStabilityLevel = sl
-		o.factory.CreateProfilesToLogsFunc = createProfilesToLogs
+		o.profilesToLogsStabilityLevel = sl
+		o.CreateProfilesToLogsFunc = createProfilesToLogs
 	})
 }
 
@@ -322,12 +322,10 @@ func (f *factory) ProfilesToLogsStability() component.StabilityLevel {
 
 // NewFactory returns a Factory.
 func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefaultConfigFunc, options ...FactoryOption) Factory {
-	opts := factoryOpts{
-		factory: &factory{},
-	}
+	opts := factoryOpts{factory: &factory{}}
 	for _, opt := range options {
 		opt.applyOption(&opts)
 	}
-	opts.factory.Factory = connector.NewFactory(cfgType, createDefaultConfig, opts.opts...)
+	opts.Factory = connector.NewFactory(cfgType, createDefaultConfig, opts.opts...)
 	return opts.factory
 }

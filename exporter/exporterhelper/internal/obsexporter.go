@@ -23,7 +23,7 @@ type ObsReport struct {
 	tracer         trace.Tracer
 	Signal         pipeline.Signal
 
-	otelAttrs        []attribute.KeyValue
+	otelAttrs        attribute.Set
 	TelemetryBuilder *metadata.TelemetryBuilder
 }
 
@@ -41,12 +41,10 @@ func NewExporter(cfg ObsReportSettings) (*ObsReport, error) {
 	}
 
 	return &ObsReport{
-		spanNamePrefix: ExporterPrefix + cfg.ExporterID.String(),
-		tracer:         cfg.ExporterCreateSettings.TracerProvider.Tracer(cfg.ExporterID.String()),
-		Signal:         cfg.Signal,
-		otelAttrs: []attribute.KeyValue{
-			attribute.String(ExporterKey, cfg.ExporterID.String()),
-		},
+		spanNamePrefix:   ExporterPrefix + cfg.ExporterID.String(),
+		tracer:           cfg.ExporterCreateSettings.TracerProvider.Tracer(cfg.ExporterID.String()),
+		Signal:           cfg.Signal,
+		otelAttrs:        attribute.NewSet(attribute.String(ExporterKey, cfg.ExporterID.String())),
 		TelemetryBuilder: telemetryBuilder,
 	}, nil
 }
@@ -118,8 +116,8 @@ func (or *ObsReport) recordMetrics(ctx context.Context, signal pipeline.Signal, 
 		failedMeasure = or.TelemetryBuilder.ExporterSendFailedLogRecords
 	}
 
-	sentMeasure.Add(ctx, sent, metric.WithAttributes(or.otelAttrs...))
-	failedMeasure.Add(ctx, failed, metric.WithAttributes(or.otelAttrs...))
+	sentMeasure.Add(ctx, sent, metric.WithAttributeSet(or.otelAttrs))
+	failedMeasure.Add(ctx, failed, metric.WithAttributeSet(or.otelAttrs))
 }
 
 func endSpan(ctx context.Context, err error, numSent, numFailedToSend int64, sentItemsKey, failedToSendItemsKey string) {
@@ -155,5 +153,5 @@ func (or *ObsReport) RecordEnqueueFailure(ctx context.Context, signal pipeline.S
 		enqueueFailedMeasure = or.TelemetryBuilder.ExporterEnqueueFailedLogRecords
 	}
 
-	enqueueFailedMeasure.Add(ctx, failed, metric.WithAttributes(or.otelAttrs...))
+	enqueueFailedMeasure.Add(ctx, failed, metric.WithAttributeSet(or.otelAttrs))
 }

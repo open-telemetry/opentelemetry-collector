@@ -44,11 +44,8 @@ func (f factoryOptionFunc) applyOption(o *factoryOpts) {
 }
 
 type factoryOpts struct {
-	cfgType component.Type
-	component.CreateDefaultConfigFunc
 	opts []exporter.FactoryOption
-	CreateProfilesFunc
-	profilesStabilityLevel component.StabilityLevel
+	*factory
 }
 
 // CreateProfilesFunc is the equivalent of Factory.CreateProfiles.
@@ -103,16 +100,10 @@ func (f *factory) ProfilesExporterStability() component.StabilityLevel {
 
 // NewFactory returns a Factory.
 func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefaultConfigFunc, options ...FactoryOption) Factory {
-	opts := factoryOpts{
-		cfgType:                 cfgType,
-		CreateDefaultConfigFunc: createDefaultConfig,
-	}
+	opts := factoryOpts{factory: &factory{}}
 	for _, opt := range options {
 		opt.applyOption(&opts)
 	}
-	return &factory{
-		Factory:                exporter.NewFactory(opts.cfgType, opts.CreateDefaultConfig, opts.opts...),
-		CreateProfilesFunc:     opts.CreateProfilesFunc,
-		profilesStabilityLevel: opts.profilesStabilityLevel,
-	}
+	opts.factory.Factory = exporter.NewFactory(cfgType, createDefaultConfig, opts.opts...)
+	return opts.factory
 }
