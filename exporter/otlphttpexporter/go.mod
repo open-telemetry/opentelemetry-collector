@@ -6,6 +6,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector v0.111.0
 	go.opentelemetry.io/collector/component v0.111.0
+	go.opentelemetry.io/collector/component/componentstatus v0.111.0
 	go.opentelemetry.io/collector/config/configcompression v1.17.0
 	go.opentelemetry.io/collector/config/confighttp v0.111.0
 	go.opentelemetry.io/collector/config/configopaque v1.17.0
@@ -78,6 +79,8 @@ require (
 replace go.opentelemetry.io/collector => ../../
 
 replace go.opentelemetry.io/collector/component => ../../component
+
+replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
 
 replace go.opentelemetry.io/collector/config/configauth => ../../config/configauth
 

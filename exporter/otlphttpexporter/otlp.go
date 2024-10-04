@@ -20,6 +20,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -43,6 +44,7 @@ type baseExporter struct {
 	logsURL     string
 	profilesURL string
 	logger      *zap.Logger
+	host        component.Host
 	settings    component.TelemetrySettings
 	// Default user-agent header.
 	userAgent string
@@ -87,6 +89,7 @@ func (e *baseExporter) start(ctx context.Context, host component.Host) error {
 		return err
 	}
 	e.client = client
+	e.host = host
 	return nil
 }
 
@@ -173,7 +176,10 @@ func (e *baseExporter) pushProfiles(ctx context.Context, td pprofile.Profiles) e
 	return e.export(ctx, e.profilesURL, request, e.profilesPartialSuccessHandler)
 }
 
-func (e *baseExporter) export(ctx context.Context, url string, request []byte, partialSuccessHandler partialSuccessHandler) error {
+func (e *baseExporter) export(ctx context.Context, url string, request []byte, partialSuccessHandler partialSuccessHandler) (err error) {
+	defer func() {
+		e.reportStatusFromError(err)
+	}()
 	e.logger.Debug("Preparing to make HTTP request", zap.String("url", url))
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(request))
 	if err != nil {
@@ -222,6 +228,10 @@ func (e *baseExporter) export(ctx context.Context, url string, request []byte, p
 	}
 	formattedErr = httphelper.NewStatusFromMsgAndHTTPCode(errString, resp.StatusCode).Err()
 
+	if isComponentPermanentError(resp.StatusCode) {
+		componentstatus.ReportStatus(e.host, componentstatus.NewPermanentErrorEvent(formattedErr))
+	}
+
 	if isRetryableStatusCode(resp.StatusCode) {
 		// A retry duration of 0 seconds will trigger the default backoff policy
 		// of our caller (retry handler).
@@ -242,6 +252,14 @@ func (e *baseExporter) export(ctx context.Context, url string, request []byte, p
 	return consumererror.NewPermanent(formattedErr)
 }
 
+func (e *baseExporter) reportStatusFromError(err error) {
+	if err != nil {
+		componentstatus.ReportStatus(e.host, componentstatus.NewRecoverableErrorEvent(err))
+		return
+	}
+	componentstatus.ReportStatus(e.host, componentstatus.NewEvent(componentstatus.StatusOK))
+}
+
 // Determine if the status code is retryable according to the specification.
 // For more, see https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md#failures-1
 func isRetryableStatusCode(code int) bool {
@@ -253,6 +271,31 @@ func isRetryableStatusCode(code int) bool {
 	case http.StatusServiceUnavailable:
 		return true
 	case http.StatusGatewayTimeout:
+		return true
+	default:
+		return false
+	}
+}
+
+// A component status of PermanentError indicates the component is in a state that will require user
+// intervention to fix. Typically this is a misconfiguration detected at runtime. A component
+// PermanentError has different semantics than a consumererror. For more information, see:
+// https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-status.md
+func isComponentPermanentError(code int) bool {
+	switch code {
+	case http.StatusUnauthorized:
+		return true
+	case http.StatusForbidden:
+		return true
+	case http.StatusNotFound:
+		return true
+	case http.StatusMethodNotAllowed:
+		return true
+	case http.StatusRequestEntityTooLarge:
+		return true
+	case http.StatusRequestURITooLong:
+		return true
+	case http.StatusRequestHeaderFieldsTooLarge:
 		return true
 	default:
 		return false
