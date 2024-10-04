@@ -55,6 +55,7 @@ func NewMetrics(
 		md, errFunc = metricsFunc(ctx, md)
 		span.AddEvent("End processing.", eventOptions)
 		if errFunc != nil {
+			obs.recordInOut(ctx, pointsIn, 0)
 			if errors.Is(errFunc, ErrSkipProcessingData) {
 				return nil
 			}
