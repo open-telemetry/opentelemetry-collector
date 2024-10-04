@@ -170,8 +170,6 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 
 | Date       | Version  | Release manager                                   |
 |------------|----------|---------------------------------------------------|
-| 2024-09-23 | v0.110.0 | [@jpkrohling](https://github.com/jpkrohling)      |
-| 2024-10-07 | v0.111.0 | [@mx-psi](https://github.com/mx-psi)              |
 | 2024-10-21 | v0.112.0 | [@evan-bradley](https://github.com/evan-bradley)  |
 | 2024-11-04 | v0.113.0 | [@djaglowski](https://github.com/djaglowski)      |
 | 2024-11-18 | v0.114.0 | [@TylerHelmuth](https://github.com/TylerHelmuth)  |
@@ -180,3 +178,5 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 | 2025-01-06 | v0.117.0 | [@dmitryax](https://github.com/dmitryax)          |
 | 2025-01-20 | v0.118.0 | [@codeboten](https://github.com/codeboten)        |
 | 2025-02-03 | v0.119.0 | [@bogdandrutu](https://github.com/bogdandrutu)    |
+| 2025-02-17 | v0.120.0 | [@jpkrohling](https://github.com/jpkrohling)      |
+| 2025-03-03 | v0.121.0 | [@mx-psi](https://github.com/mx-psi)              |

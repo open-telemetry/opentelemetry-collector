@@ -71,7 +71,7 @@ func TestSampleCountWithEmpty(t *testing.T) {
 						Profiles: []*otlpprofile.ProfileContainer{
 							{
 								Profile: otlpprofile.Profile{
-									Sample: []otlpprofile.Sample{
+									Sample: []*otlpprofile.Sample{
 										{},
 									},
 								},
