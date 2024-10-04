@@ -23,6 +23,8 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -1137,6 +1139,176 @@ func TestEncoding(t *testing.T) {
 	})
 }
 
+func TestComponentStatus(t *testing.T) {
+	tests := []struct {
+		name            string
+		responseStatus  int
+		componentStatus componentstatus.Status
+	}{
+		{
+			name:            "200",
+			responseStatus:  http.StatusOK,
+			componentStatus: componentstatus.StatusOK,
+		},
+		{
+			name:            "401",
+			responseStatus:  http.StatusUnauthorized,
+			componentStatus: componentstatus.StatusPermanentError,
+		},
+		{
+			name:            "403",
+			responseStatus:  http.StatusForbidden,
+			componentStatus: componentstatus.StatusPermanentError,
+		},
+		{
+			name:            "404",
+			responseStatus:  http.StatusNotFound,
+			componentStatus: componentstatus.StatusPermanentError,
+		},
+		{
+			name:            "405",
+			responseStatus:  http.StatusMethodNotAllowed,
+			componentStatus: componentstatus.StatusPermanentError,
+		},
+		{
+			name:            "413",
+			responseStatus:  http.StatusRequestEntityTooLarge,
+			componentStatus: componentstatus.StatusPermanentError,
+		},
+		{
+			name:            "414",
+			responseStatus:  http.StatusRequestURITooLong,
+			componentStatus: componentstatus.StatusPermanentError,
+		},
+		{
+			name:            "419",
+			responseStatus:  http.StatusTooManyRequests,
+			componentStatus: componentstatus.StatusRecoverableError,
+		},
+		{
+			name:            "431",
+			responseStatus:  http.StatusRequestHeaderFieldsTooLarge,
+			componentStatus: componentstatus.StatusPermanentError,
+		},
+		{
+			name:            "503",
+			responseStatus:  http.StatusServiceUnavailable,
+			componentStatus: componentstatus.StatusRecoverableError,
+		},
+	}
+
+	t.Run("traces", func(t *testing.T) {
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				srv := createBackend("/v1/traces", func(writer http.ResponseWriter, request *http.Request) {
+					writer.WriteHeader(tt.responseStatus)
+				})
+				defer srv.Close()
+
+				cfg := &Config{
+					Encoding:       EncodingProto,
+					TracesEndpoint: fmt.Sprintf("%s/v1/traces", srv.URL),
+				}
+
+				set := exportertest.NewNopSettings()
+				host := &testHost{
+					Host: componenttest.NewNopHost(),
+				}
+
+				exp, err := createTraces(context.Background(), set, cfg)
+				require.NoError(t, err)
+
+				err = exp.Start(context.Background(), host)
+				require.NoError(t, err)
+				t.Cleanup(func() {
+					require.NoError(t, exp.Shutdown(context.Background()))
+				})
+
+				traces := ptrace.NewTraces()
+				err = exp.ConsumeTraces(context.Background(), traces)
+				if tt.componentStatus != componentstatus.StatusOK {
+					assert.Error(t, err)
+				}
+				assert.Equal(t, tt.componentStatus, host.lastStatus)
+			})
+		}
+	})
+
+	t.Run("metrics", func(t *testing.T) {
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				srv := createBackend("/v1/metrics", func(writer http.ResponseWriter, request *http.Request) {
+					writer.WriteHeader(tt.responseStatus)
+				})
+				defer srv.Close()
+
+				cfg := &Config{
+					Encoding:        EncodingProto,
+					MetricsEndpoint: fmt.Sprintf("%s/v1/metrics", srv.URL),
+				}
+
+				set := exportertest.NewNopSettings()
+				host := &testHost{
+					Host: componenttest.NewNopHost(),
+				}
+
+				exp, err := createMetrics(context.Background(), set, cfg)
+				require.NoError(t, err)
+
+				err = exp.Start(context.Background(), host)
+				require.NoError(t, err)
+				t.Cleanup(func() {
+					require.NoError(t, exp.Shutdown(context.Background()))
+				})
+
+				metrics := pmetric.NewMetrics()
+				err = exp.ConsumeMetrics(context.Background(), metrics)
+				if tt.componentStatus != componentstatus.StatusOK {
+					assert.Error(t, err)
+				}
+				assert.Equal(t, tt.componentStatus, host.lastStatus)
+			})
+		}
+	})
+
+	t.Run("logs", func(t *testing.T) {
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				srv := createBackend("/v1/logs", func(writer http.ResponseWriter, request *http.Request) {
+					writer.WriteHeader(tt.responseStatus)
+				})
+				defer srv.Close()
+
+				cfg := &Config{
+					Encoding:     EncodingProto,
+					LogsEndpoint: fmt.Sprintf("%s/v1/logs", srv.URL),
+				}
+
+				set := exportertest.NewNopSettings()
+				host := &testHost{
+					Host: componenttest.NewNopHost(),
+				}
+
+				exp, err := createLogs(context.Background(), set, cfg)
+				require.NoError(t, err)
+
+				err = exp.Start(context.Background(), host)
+				require.NoError(t, err)
+				t.Cleanup(func() {
+					require.NoError(t, exp.Shutdown(context.Background()))
+				})
+
+				logs := plog.NewLogs()
+				err = exp.ConsumeLogs(context.Background(), logs)
+				if tt.componentStatus != componentstatus.StatusOK {
+					assert.Error(t, err)
+				}
+				assert.Equal(t, tt.componentStatus, host.lastStatus)
+			})
+		}
+	})
+}
+
 func createBackend(endpoint string, handler func(writer http.ResponseWriter, request *http.Request)) *httptest.Server {
 	mux := http.NewServeMux()
 	mux.HandleFunc(endpoint, handler)
@@ -1150,4 +1322,18 @@ type badReader struct{}
 
 func (b badReader) Read([]byte) (int, error) {
 	return 0, errors.New("Bad read")
+}
+
+var _ component.Host = (*testHost)(nil)
+var _ componentstatus.Reporter = (*testHost)(nil)
+
+type testHost struct {
+	component.Host
+	lastStatus componentstatus.Status
+}
+
+func (h *testHost) Report(ev *componentstatus.Event) {
+	if h.lastStatus != componentstatus.StatusPermanentError {
+		h.lastStatus = ev.Status()
+	}
 }
