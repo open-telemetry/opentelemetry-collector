@@ -25,7 +25,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
   - otelcol_processor_outgoing_items
   
 - `processorhelper`: Remove deprecated `[Traces|Metrics|Logs]`Inserted funcs (#11151)
-- `config`: Mark UseLocalHostAsDefaultHostFeatureGate as stable (#11235)
+- `config`: Mark UseLocalHostAsDefaultHostfeatureGate as stable (#11235)
 
 ### 🚩 Deprecations 🚩
 
@@ -1140,7 +1140,7 @@ This release includes 2 very important breaking changes.
 
 ### 🛑 Breaking changes 🛑
 
-- `pdata`: Start enforcing grpc server implementation to embed UnimplementedGRPCServer, disallow client implementation (#6966)
+- `pdata`: Start enforcing grpc server implementation to embed UnimplementedGRPCServer, dissallow client implementation (#6966)
 - `config/configgrpc`: Change configgrpc.GRPCClientSettings.Headers type to map[string]configopaque.String (#6852)
   Use `configopaque.String(str)` and `string(opaque)` to turn a string opaque/clear.
 - `pdata`: Remove deprecated pcommon.Value.Equal (#6860)
@@ -1179,8 +1179,8 @@ This release includes 2 very important breaking changes.
 - `component`: Remove deprecated Receiver types (#6882)
 - `componenttest`: Remove deprecated funcs from componenttest (#6836)
 - `batchprocessor`: Remove deprecated batchprocessor.MetricViews and batchprocessor.OtelMetricViews (#6861)
-- `component`: Remove deprecated component.[Factories|MakeProcessorFactoryMap] and componenttest.NewNopFactories (#6835)
-- `config`: Remove deprecated config.*Settings (#6837)
+- `component`: Remove deprecated component.[Factories|MakePorcessorFactoryMap] and componenttest.NewNopFactories (#6835)
+- `config`: Remove deprecated cofig.*Settings (#6837)
 - `obsereporttest`: Remove deprecated obsereporttest.SetupTelemetryWithID (#6861)
 - `component`: Remove deprecated component [Traces|Metrics|Logs]Processor and ProcessorFactory (#6884)
 - `service`: Remove deprecated service service.ConfigService and service.ConfigServicePipeline (#6859)
@@ -1535,7 +1535,7 @@ and hope to make a v1.0.0 release soon.
 
 ### 🛑 Breaking changes 🛑
 
-- `pdata`: JSON marshaler emits enums as ints per spec requirements. This may be a breaking change if receivers were not confirming with the spec. (#6338)
+- `pdata`: JSON marshaler emits enums as ints per spec reuqirements. This may be a breaking change if receivers were not confirming with the spec. (#6338)
 - `confmap`: Remove deprecated `confmap.Conf.UnmarshalExact` API in 0.62.0 (#6315)
 - `pdata`: Remove API deprecated in 0.62.0 (#6314)
   - Remove deprecated `pcommon.NewValueString`
@@ -1626,7 +1626,7 @@ and hope to make a v1.0.0 release soon.
 
 ### 🚩 Deprecations 🚩
 
-- Deprecate `p[metric|log|trace]otlp.RegisterServer` in favor of `p[metric|log|trace]otlp.RegisterGRPCServer` (#6182)
+- Deprecate `p[metric|log|trace]otlp.RegiserServer` in favor of `p[metric|log|trace]otlp.RegiserGRPCServer` (#6182)
 - Deprecate `pcommon.Map.PutString` in favor of `pcommon.Map.PutStr` (#6210)
 - Deprecate `pcommon.NewValueString` in favor of `pcommon.NewValueStr` (#6209)
 - Deprecate `pmetric.MetricAggregationTemporality` enum type in favor of `pmetric.AggregationTemporality` (#6253)
@@ -1773,7 +1773,7 @@ and hope to make a v1.0.0 release soon.
   - Remove `ConfigProviderSettings.Location`
   - Remove `ConfigProviderSettings.MapProviders`
   - Remove `ConfigProviderSettings.MapConverters`
-  - Remove `featuregate.Registry.MustApply`
+  - Remove `featuregate.Registry.MustAppy`
 - Remove deprecated funcs from `pdata` module. (#5911)
   - Remove `pmetric.MetricDataPointFlags.String()`
   - Remove `pmetric.NumberDataPoint.FlagsStruct()`
@@ -2117,7 +2117,7 @@ There isn't a valid core binary for this release. Use v0.57.2 instead.
 - Update OTLP to v0.17.0 (#5335)
 - Add optional min/max fields to histograms (#5399)
 - User-defined Resource attributes can be specified under `service.telemetry.resource`
-  configuration key and will be included as metric labels for own telemetry.
+  configuration key and will be included as metric lables for own telemetry.
   If `service.instance.id` is not specified it will be auto-generated. Previously
   `service.instance.id` was always auto-generated, so the default of the new
   behavior matches the old behavior. (#5402)
@@ -2265,9 +2265,9 @@ There isn't a valid core binary for this release. Use v0.57.2 instead.
 - Deprecate global flag in `featuregates` (#5060)
 - Deprecate last funcs/structs in componenthelper (#5069)
 - Change structs in otlpgrpc to follow standard go encoding interfaces (#5062)
-  - Deprecate `UnmarshalJSON[Traces|Metrics|Logs][Request|Response]` in favor of `UnmarshalJSON`.
-  - Deprecate `[Traces|Metrics|Logs][Request|Response].Marshal` in favor of `MarshalProto`.
-  - Deprecate `UnmarshalJSON[Traces|Metrics|Logs][Request|Response]` in favor of `UnmarshalProto`.
+  - Deprecate `UnmarshalJSON[Traces|Metrics|Logs][Reques|Response]` in favor of `UnmarshalJSON`.
+  - Deprecate `[Traces|Metrics|Logs][Reques|Response].Marshal` in favor of `MarshalProto`.
+  - Deprecate `UnmarshalJSON[Traces|Metrics|Logs][Reques|Response]` in favor of `UnmarshalProto`.
 - Deprecating following pdata methods/types following OTLP v0.15.0 upgrade (#5076):
       - InstrumentationLibrary is now InstrumentationScope
       - NewInstrumentationLibrary is now NewInstrumentationScope
@@ -2513,7 +2513,7 @@ There isn't a valid core binary for this release. Use v0.57.2 instead.
 
 - Remove reference to `defaultcomponents` in core and deprecate `include_core` flag (#4087)
 - Remove `config.NewConfigMapFrom[File|Buffer]`, add testonly version (#4502)
-- `configtls`: TLS 1.2 is the new default minimum version (#4503)
+- `configtls`: TLS 1.2 is the new default mininum version (#4503)
 - `confighttp`: `ToServer` now accepts a `component.Host`, in line with gRPC's counterpart (#4514)
 - CORS configuration for OTLP/HTTP receivers has been moved into a `cors:` block, instead of individual `cors_allowed_origins` and `cors_allowed_headers` settings (#4492)
 
@@ -3148,8 +3148,8 @@ This release is marked as "bad" since the metrics pipelines will produce bad dat
 - `kafka` exporter: Change to not use internal data (#2696)
 - Ensure that extensions can be created and started multiple times (#2679)
 - Use otlp request in logs wrapper, hide members in the wrapper (#2692)
-- Add MetricsWrapper to disallow access to internal representation (#2693)
-- Add TracesWrapper to disallow access to internal representation (#2721)
+- Add MetricsWrapper to dissallow access to internal representation (#2693)
+- Add TracesWrapper to dissallow access to internal representation (#2721)
 - Allow multiple OTLP receivers to be created (#2743)
 
 ### 🧰 Bug fixes 🧰
@@ -3165,7 +3165,7 @@ This release is marked as "bad" since the metrics pipelines will produce bad dat
 - Rename ServiceExtension to just Extension (#2581)
 - Remove `consumerdata.TraceData` (#2551)
 - Move `consumerdata.MetricsData` to `internaldata.MetricsData` (#2512)
-- Remove custom OpenCensus semantic conventions that have equivalent in otel (#2552)
+- Remove custom OpenCensus sematic conventions that have equivalent in otel (#2552)
 - Move ScrapeErrors and PartialScrapeError to `scrapererror` (#2580)
 - Remove support for deprecated unmarshaler `CustomUnmarshaler`, only `Unmarshal` is supported (#2591)
 - Remove deprecated componenterror.CombineErrors (#2598)
