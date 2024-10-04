@@ -50,7 +50,21 @@ func TestCreateMetricsExporter(t *testing.T) {
 	require.NotNil(t, oexp)
 }
 
+func clientConfig(endpoint string, headers map[string]configopaque.String, tlsSetting configtls.ClientConfig, compression configcompression.Type) confighttp.ClientConfig {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.TLSSetting = tlsSetting
+	clientConfig.Compression = compression
+	if endpoint != "" {
+		clientConfig.Endpoint = endpoint
+	}
+	if headers != nil {
+		clientConfig.Headers = headers
+	}
+	return clientConfig
+}
+
 func TestCreateTracesExporter(t *testing.T) {
+	var configCompression configcompression.Type
 	endpoint := "http://" + testutil.GetAvailableLocalAddress(t)
 
 	tests := []struct {
@@ -62,59 +76,46 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "NoEndpoint",
 			config: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "",
-				},
+				ClientConfig: clientConfig("", nil, configtls.ClientConfig{}, configCompression),
 			},
 			mustFailOnCreate: true,
 		},
 		{
 			name: "UseSecure",
 			config: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: endpoint,
-					TLSSetting: configtls.ClientConfig{
-						Insecure: false,
-					},
-				},
+				ClientConfig: clientConfig(endpoint, nil, configtls.ClientConfig{
+					Insecure: false,
+				}, configCompression),
 			},
 		},
 		{
 			name: "Headers",
 			config: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: endpoint,
-					Headers: map[string]configopaque.String{
-						"hdr1": "val1",
-						"hdr2": "val2",
-					},
-				},
+				ClientConfig: clientConfig(endpoint, map[string]configopaque.String{
+					"hdr1": "val1",
+					"hdr2": "val2",
+				}, configtls.ClientConfig{}, configCompression),
 			},
 		},
 		{
 			name: "CaCert",
 			config: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: endpoint,
-					TLSSetting: configtls.ClientConfig{
-						Config: configtls.Config{
-							CAFile: filepath.Join("testdata", "test_cert.pem"),
-						},
+				ClientConfig: clientConfig(endpoint, nil, configtls.ClientConfig{
+					Config: configtls.Config{
+						CAFile: filepath.Join("testdata", "test_cert.pem"),
 					},
-				},
+				}, configCompression),
 			},
 		},
 		{
 			name: "CertPemFileError",
 			config: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: endpoint,
-					TLSSetting: configtls.ClientConfig{
-						Config: configtls.Config{
-							CAFile: "nosuchfile",
-						},
+				ClientConfig: clientConfig(endpoint, nil, configtls.ClientConfig{
+					Config: configtls.Config{
+						CAFile: "nosuchfile",
 					},
 				},
+					configCompression),
 			},
 			mustFailOnCreate: false,
 			mustFailOnStart:  true,
@@ -122,51 +123,39 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "NoneCompression",
 			config: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint:    endpoint,
-					Compression: "none",
-				},
+				ClientConfig: clientConfig(endpoint, nil, configtls.ClientConfig{}, "none"),
 			},
 		},
 		{
 			name: "GzipCompression",
 			config: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint:    endpoint,
-					Compression: configcompression.TypeGzip,
-				},
+				ClientConfig: clientConfig(endpoint, nil, configtls.ClientConfig{}, configcompression.TypeGzip),
 			},
 		},
 		{
 			name: "SnappyCompression",
 			config: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint:    endpoint,
-					Compression: configcompression.TypeSnappy,
-				},
+				ClientConfig: clientConfig(endpoint, nil, configtls.ClientConfig{}, configcompression.TypeSnappy),
 			},
 		},
 		{
 			name: "ZstdCompression",
 			config: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint:    endpoint,
-					Compression: configcompression.TypeZstd,
-				},
+				ClientConfig: clientConfig(endpoint, nil, configtls.ClientConfig{}, configcompression.TypeZstd),
 			},
 		},
 		{
 			name: "ProtoEncoding",
 			config: &Config{
 				Encoding:     EncodingProto,
-				ClientConfig: confighttp.ClientConfig{Endpoint: endpoint},
+				ClientConfig: clientConfig(endpoint, nil, configtls.ClientConfig{}, configCompression),
 			},
 		},
 		{
 			name: "JSONEncoding",
 			config: &Config{
 				Encoding:     EncodingJSON,
-				ClientConfig: confighttp.ClientConfig{Endpoint: endpoint},
+				ClientConfig: clientConfig(endpoint, nil, configtls.ClientConfig{}, configCompression),
 			},
 		},
 	}

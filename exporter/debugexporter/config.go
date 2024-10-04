@@ -20,9 +20,9 @@ var (
 	}
 )
 
-// Config defines configuration for logging exporter.
+// Config defines configuration for debug exporter.
 type Config struct {
-	// Verbosity defines the logging exporter verbosity.
+	// Verbosity defines the debug exporter verbosity.
 	Verbosity configtelemetry.Level `mapstructure:"verbosity,omitempty"`
 
 	// SamplingInitial defines how many samples are initially logged during each second.

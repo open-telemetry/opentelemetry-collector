@@ -1,10 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// NOTE: If you are making changes to this file, consider whether you want to make similar changes
-// to the Logging exporter in /exporter/internal/common/logging_exporter.go, which has similar logic.
-// This is especially important for security issues.
-
 package debugexporter // import "go.opentelemetry.io/collector/exporter/debugexporter"
 
 import (

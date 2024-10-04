@@ -6,6 +6,7 @@ package processorhelper
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -68,6 +69,38 @@ func newTestTProcessor(retError error) ProcessTracesFunc {
 	return func(_ context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 		return td, retError
 	}
+}
+
+func TestTracesConcurrency(t *testing.T) {
+	tracesFunc := func(_ context.Context, td ptrace.Traces) (ptrace.Traces, error) {
+		return td, nil
+	}
+
+	incomingTraces := ptrace.NewTraces()
+	incomingSpans := incomingTraces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans()
+
+	// Add 4 records to the incoming
+	incomingSpans.AppendEmpty()
+	incomingSpans.AppendEmpty()
+	incomingSpans.AppendEmpty()
+	incomingSpans.AppendEmpty()
+
+	mp, err := NewTraces(context.Background(), processortest.NewNopSettings(), &testLogsCfg, consumertest.NewNop(), tracesFunc)
+	require.NoError(t, err)
+	assert.NoError(t, mp.Start(context.Background(), componenttest.NewNopHost()))
+
+	var wg sync.WaitGroup
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := 0; j < 10000; j++ {
+				assert.NoError(t, mp.ConsumeTraces(context.Background(), incomingTraces))
+			}
+		}()
+	}
+	wg.Wait()
+	assert.NoError(t, mp.Shutdown(context.Background()))
 }
 
 func TestTraces_RecordInOut(t *testing.T) {

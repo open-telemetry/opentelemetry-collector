@@ -6,6 +6,7 @@ package processorhelper
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -68,6 +69,37 @@ func newTestLProcessor(retError error) ProcessLogsFunc {
 	return func(_ context.Context, ld plog.Logs) (plog.Logs, error) {
 		return ld, retError
 	}
+}
+
+func TestLogsConcurrency(t *testing.T) {
+	logsFunc := func(_ context.Context, ld plog.Logs) (plog.Logs, error) {
+		return ld, nil
+	}
+
+	incomingLogs := plog.NewLogs()
+	incomingLogRecords := incomingLogs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
+
+	// Add 3 records to the incoming
+	incomingLogRecords.AppendEmpty()
+	incomingLogRecords.AppendEmpty()
+	incomingLogRecords.AppendEmpty()
+
+	lp, err := NewLogs(context.Background(), processortest.NewNopSettings(), &testLogsCfg, consumertest.NewNop(), logsFunc)
+	require.NoError(t, err)
+	assert.NoError(t, lp.Start(context.Background(), componenttest.NewNopHost()))
+
+	var wg sync.WaitGroup
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := 0; j < 10000; j++ {
+				assert.NoError(t, lp.ConsumeLogs(context.Background(), incomingLogs))
+			}
+		}()
+	}
+	wg.Wait()
+	assert.NoError(t, lp.Shutdown(context.Background()))
 }
 
 func TestLogs_RecordInOut(t *testing.T) {

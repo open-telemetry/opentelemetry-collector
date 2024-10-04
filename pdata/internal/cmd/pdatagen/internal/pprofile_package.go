@@ -230,7 +230,7 @@ var profile = &messageValueStruct{
 	},
 }
 
-var valueTypeSlice = &sliceOfValues{
+var valueTypeSlice = &sliceOfPtrs{
 	structName: "ValueTypeSlice",
 	element:    valueType,
 }
@@ -261,7 +261,7 @@ var valueType = &messageValueStruct{
 	},
 }
 
-var sampleSlice = &sliceOfValues{
+var sampleSlice = &sliceOfPtrs{
 	structName: "SampleSlice",
 	element:    sample,
 }
@@ -318,7 +318,7 @@ var sample = &messageValueStruct{
 	},
 }
 
-var labelSlice = &sliceOfValues{
+var labelSlice = &sliceOfPtrs{
 	structName: "LabelSlice",
 	element:    label,
 }
@@ -355,7 +355,7 @@ var label = &messageValueStruct{
 	},
 }
 
-var mappingSlice = &sliceOfValues{
+var mappingSlice = &sliceOfPtrs{
 	structName: "MappingSlice",
 	element:    mapping,
 }
@@ -441,7 +441,7 @@ var mapping = &messageValueStruct{
 	},
 }
 
-var locationSlice = &sliceOfValues{
+var locationSlice = &sliceOfPtrs{
 	structName: "LocationSlice",
 	element:    location,
 }
@@ -492,7 +492,7 @@ var location = &messageValueStruct{
 	},
 }
 
-var lineSlice = &sliceOfValues{
+var lineSlice = &sliceOfPtrs{
 	structName: "LineSlice",
 	element:    line,
 }
@@ -523,7 +523,7 @@ var line = &messageValueStruct{
 	},
 }
 
-var functionSlice = &sliceOfValues{
+var functionSlice = &sliceOfPtrs{
 	structName: "FunctionSlice",
 	element:    function,
 }
@@ -567,7 +567,7 @@ var function = &messageValueStruct{
 	},
 }
 
-var attributeUnitSlice = &sliceOfValues{
+var attributeUnitSlice = &sliceOfPtrs{
 	structName: "AttributeUnitSlice",
 	element:    attributeUnit,
 }
@@ -592,7 +592,7 @@ var attributeUnit = &messageValueStruct{
 	},
 }
 
-var linkSlice = &sliceOfValues{
+var linkSlice = &sliceOfPtrs{
 	structName: "LinkSlice",
 	element:    link,
 }

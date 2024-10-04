@@ -61,32 +61,5 @@ s+bytes profile_id = \(.*\);+bytes profile_id = \1\
 	(gogoproto.customtype) = "go.opentelemetry.io/collector/pdata/internal/data.ProfileID"\
 	];+g
 
-s+repeated ValueType \(.*\);+repeated ValueType \1\
-  [ (gogoproto.nullable) = false ];+g
-
-s+repeated Sample \(.*\);+repeated Sample \1\
-  [ (gogoproto.nullable) = false ];+g
-
-s+repeated Mapping \(.*\);+repeated Mapping \1\
-  [ (gogoproto.nullable) = false ];+g
-
-s+repeated Location \(.*\);+repeated Location \1\
-  [ (gogoproto.nullable) = false ];+g
-
-s+repeated Label \(.*\);+repeated Label \1\
-  [ (gogoproto.nullable) = false ];+g
-
-s+repeated Function \(.*\);+repeated Function \1\
-  [ (gogoproto.nullable) = false ];+g
-
-s+repeated AttributeUnit \(.*\);+repeated AttributeUnit \1\
-  [ (gogoproto.nullable) = false ];+g
-
-s+repeated Link link_table \(.*\);+repeated Link link_table \1\
-  [ (gogoproto.nullable) = false ];+g
-
-s+repeated Line \(.*\);+repeated Line \1\
-  [ (gogoproto.nullable) = false ];+g
-
 s+ValueType period_type \(.*\);+ValueType period_type \1\
   [ (gogoproto.nullable) = false ];+g
