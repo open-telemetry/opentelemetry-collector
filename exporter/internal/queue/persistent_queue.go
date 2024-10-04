@@ -304,8 +304,9 @@ func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
 	return nil
 }
 
-// getNextItem pulls the next available item from the persistent storage along with a callback function that should be
-// called after the item is processed to clean up the storage. If no new item is available, returns false.
+// getNextItem pulls the next available item from the persistent storage along with its index. Once processing is
+// finished, the index should be called with OnProcessingFinished to clean up the storage. If no new item is available,
+// returns false.
 func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (uint64, T, bool) {
 	pq.mu.Lock()
 	defer pq.mu.Unlock()
