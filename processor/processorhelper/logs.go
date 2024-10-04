@@ -51,13 +51,14 @@ func NewLogs(
 		span.AddEvent("Start processing.", eventOptions)
 		recordsIn := ld.LogRecordCount()
 
-		ld, err = logsFunc(ctx, ld)
+		var errFunc error
+		ld, errFunc = logsFunc(ctx, ld)
 		span.AddEvent("End processing.", eventOptions)
-		if err != nil {
-			if errors.Is(err, ErrSkipProcessingData) {
+		if errFunc != nil {
+			if errors.Is(errFunc, ErrSkipProcessingData) {
 				return nil
 			}
-			return err
+			return errFunc
 		}
 		recordsOut := ld.LogRecordCount()
 		obs.recordInOut(ctx, recordsIn, recordsOut)
