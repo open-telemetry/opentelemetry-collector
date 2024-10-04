@@ -33,6 +33,9 @@ require (
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
 )
 
+{{- range .Providers}}
+{{if ne .Path ""}}replace {{.GoMod}} => {{.Path}}{{end}}
+{{- end}}
 {{- range .Connectors}}
 {{if ne .Path ""}}replace {{.GoMod}} => {{.Path}}{{end}}
 {{- end}}
