@@ -5,12 +5,9 @@ package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
 
 import (
 	"context"
-	"net"
 	"net/http"
-	"strconv"
 	"sync"
 
-	"go.opentelemetry.io/contrib/config"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/noop"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
@@ -40,32 +37,8 @@ type meterProviderSettings struct {
 }
 
 func newMeterProvider(set meterProviderSettings, disableHighCardinality bool) (metric.MeterProvider, error) {
-	if set.cfg.Level == configtelemetry.LevelNone || (set.cfg.Address == "" && len(set.cfg.Readers) == 0) {
+	if set.cfg.Level == configtelemetry.LevelNone || len(set.cfg.Readers) == 0 {
 		return noop.NewMeterProvider(), nil
-	}
-
-	if len(set.cfg.Address) != 0 {
-		host, port, err := net.SplitHostPort(set.cfg.Address)
-		if err != nil {
-			return nil, err
-		}
-		portInt, err := strconv.Atoi(port)
-		if err != nil {
-			return nil, err
-		}
-		if set.cfg.Readers == nil {
-			set.cfg.Readers = []config.MetricReader{}
-		}
-		set.cfg.Readers = append(set.cfg.Readers, config.MetricReader{
-			Pull: &config.PullMetricReader{
-				Exporter: config.MetricExporter{
-					Prometheus: &config.Prometheus{
-						Host: &host,
-						Port: &portInt,
-					},
-				},
-			},
-		})
 	}
 
 	mp := &meterProvider{}

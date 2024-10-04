@@ -15,23 +15,24 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 var routerType = component.MustNewType("examplerouter")
 
 // ExampleRouterFactory is factory for ExampleRouter.
-var ExampleRouterFactory = connector.NewFactory(
+var ExampleRouterFactory = connectorprofiles.NewFactory(
 	routerType,
 	createExampleRouterDefaultConfig,
-	connector.WithTracesToTraces(createExampleTracesRouter, component.StabilityLevelDevelopment),
-	connector.WithMetricsToMetrics(createExampleMetricsRouter, component.StabilityLevelDevelopment),
-	connector.WithLogsToLogs(createExampleLogsRouter, component.StabilityLevelDevelopment),
+	connectorprofiles.WithTracesToTraces(createExampleTracesRouter, component.StabilityLevelDevelopment),
+	connectorprofiles.WithMetricsToMetrics(createExampleMetricsRouter, component.StabilityLevelDevelopment),
+	connectorprofiles.WithLogsToLogs(createExampleLogsRouter, component.StabilityLevelDevelopment),
 	connectorprofiles.WithProfilesToProfiles(createExampleProfilesRouter, component.StabilityLevelDevelopment),
 )
 
 type LeftRightConfig struct {
-	Left  component.ID `mapstructure:"left"`
-	Right component.ID `mapstructure:"right"`
+	Left  pipeline.ID `mapstructure:"left"`
+	Right pipeline.ID `mapstructure:"right"`
 }
 
 type ExampleRouterConfig struct {

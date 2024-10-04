@@ -122,9 +122,6 @@ linters-settings:
             - "!**/*_test.go"
 
   testifylint:
-    # TODO: enable all rules
-    disable:
-      - require-error
     enable-all: true   
 
 linters:

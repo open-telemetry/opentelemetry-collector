@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
 )
 
@@ -54,8 +55,7 @@ type CheckConsumeContractParams struct {
 	T *testing.T
 	// Factory that allows to create a receiver.
 	Factory receiver.Factory
-	// DataType to test for.
-	DataType component.DataType
+	Signal  pipeline.Signal
 	// Config of the receiver to use.
 	Config component.Config
 	// Generator that can send data to the receiver.
@@ -111,13 +111,13 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 	// Create and start the receiver.
 	var receiver component.Component
 	var err error
-	switch params.DataType {
-	case component.DataTypeLogs:
-		receiver, err = params.Factory.CreateLogsReceiver(ctx, NewNopSettings(), params.Config, consumer)
-	case component.DataTypeTraces:
-		receiver, err = params.Factory.CreateTracesReceiver(ctx, NewNopSettings(), params.Config, consumer)
-	case component.DataTypeMetrics:
-		receiver, err = params.Factory.CreateMetricsReceiver(ctx, NewNopSettings(), params.Config, consumer)
+	switch params.Signal {
+	case pipeline.SignalLogs:
+		receiver, err = params.Factory.CreateLogs(ctx, NewNopSettings(), params.Config, consumer)
+	case pipeline.SignalTraces:
+		receiver, err = params.Factory.CreateTraces(ctx, NewNopSettings(), params.Config, consumer)
+	case pipeline.SignalMetrics:
+		receiver, err = params.Factory.CreateMetrics(ctx, NewNopSettings(), params.Config, consumer)
 	default:
 		require.FailNow(params.T, "must specify a valid DataType to test for")
 	}
@@ -193,7 +193,7 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 	}
 
 	err = receiver.Shutdown(ctx)
-	assert.NoError(params.T, err)
+	require.NoError(params.T, err)
 
 	// Print some stats to help debug test failures.
 	fmt.Printf(

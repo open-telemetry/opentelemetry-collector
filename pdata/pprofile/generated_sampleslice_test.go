@@ -8,6 +8,7 @@ package pprofile
 
 import (
 	"testing"
+	"unsafe"
 
 	"github.com/stretchr/testify/assert"
 
@@ -19,7 +20,7 @@ func TestSampleSlice(t *testing.T) {
 	es := NewSampleSlice()
 	assert.Equal(t, 0, es.Len())
 	state := internal.StateMutable
-	es = newSampleSlice(&[]otlpprofiles.Sample{}, &state)
+	es = newSampleSlice(&[]*otlpprofiles.Sample{}, &state)
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewSample()
@@ -35,7 +36,7 @@ func TestSampleSlice(t *testing.T) {
 
 func TestSampleSliceReadOnly(t *testing.T) {
 	sharedState := internal.StateReadOnly
-	es := newSampleSlice(&[]otlpprofiles.Sample{}, &sharedState)
+	es := newSampleSlice(&[]*otlpprofiles.Sample{}, &sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -122,6 +123,22 @@ func TestSampleSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestSampleSlice_Sort(t *testing.T) {
+	es := generateTestSampleSlice()
+	es.Sort(func(a, b Sample) bool {
+		return uintptr(unsafe.Pointer(a.orig)) < uintptr(unsafe.Pointer(b.orig))
+	})
+	for i := 1; i < es.Len(); i++ {
+		assert.Less(t, uintptr(unsafe.Pointer(es.At(i-1).orig)), uintptr(unsafe.Pointer(es.At(i).orig)))
+	}
+	es.Sort(func(a, b Sample) bool {
+		return uintptr(unsafe.Pointer(a.orig)) > uintptr(unsafe.Pointer(b.orig))
+	})
+	for i := 1; i < es.Len(); i++ {
+		assert.Greater(t, uintptr(unsafe.Pointer(es.At(i-1).orig)), uintptr(unsafe.Pointer(es.At(i).orig)))
+	}
+}
+
 func generateTestSampleSlice() SampleSlice {
 	es := NewSampleSlice()
 	fillTestSampleSlice(es)
@@ -129,9 +146,9 @@ func generateTestSampleSlice() SampleSlice {
 }
 
 func fillTestSampleSlice(es SampleSlice) {
-	*es.orig = make([]otlpprofiles.Sample, 7)
+	*es.orig = make([]*otlpprofiles.Sample, 7)
 	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = otlpprofiles.Sample{}
-		fillTestSample(newSample(&(*es.orig)[i], es.state))
+		(*es.orig)[i] = &otlpprofiles.Sample{}
+		fillTestSample(newSample((*es.orig)[i], es.state))
 	}
 }

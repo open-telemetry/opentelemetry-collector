@@ -26,7 +26,7 @@ import (
 func TestUnmarshalDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, confmap.New().Unmarshal(&cfg))
+	require.NoError(t, confmap.New().Unmarshal(&cfg))
 	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
 }
 
@@ -35,7 +35,7 @@ func TestUnmarshalConfig(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, cm.Unmarshal(&cfg))
+	require.NoError(t, cm.Unmarshal(&cfg))
 	assert.Equal(t,
 		&Config{
 			TimeoutConfig: exporterhelper.TimeoutConfig{
@@ -94,7 +94,7 @@ func TestUnmarshalInvalidConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid_configs.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
-	for _, test := range []struct {
+	for _, tt := range []struct {
 		name     string
 		errorMsg string
 	}{
@@ -131,12 +131,12 @@ func TestUnmarshalInvalidConfig(t *testing.T) {
 			errorMsg: `invalid port "port"`,
 		},
 	} {
-		t.Run(test.name, func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
-			sub, err := cm.Sub(test.name)
+			sub, err := cm.Sub(tt.name)
 			require.NoError(t, err)
 			assert.NoError(t, sub.Unmarshal(&cfg))
-			assert.ErrorContains(t, component.ValidateConfig(cfg), test.errorMsg)
+			assert.ErrorContains(t, component.ValidateConfig(cfg), tt.errorMsg)
 		})
 	}
 

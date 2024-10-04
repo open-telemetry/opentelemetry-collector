@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 func TestConfigValidate(t *testing.T) {
@@ -28,7 +29,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "duplicate-processor-reference",
 			cfgFn: func() Config {
 				cfg := generateConfig()
-				pipe := cfg[component.MustNewID("traces")]
+				pipe := cfg[pipeline.MustNewID("traces")]
 				pipe.Processors = append(pipe.Processors, pipe.Processors...)
 				return cfg
 			},
@@ -38,7 +39,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "missing-pipeline-receivers",
 			cfgFn: func() Config {
 				cfg := generateConfig()
-				cfg[component.MustNewID("traces")].Receivers = nil
+				cfg[pipeline.MustNewID("traces")].Receivers = nil
 				return cfg
 			},
 			expected: fmt.Errorf(`pipeline "traces": %w`, errMissingServicePipelineReceivers),
@@ -47,7 +48,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "missing-pipeline-exporters",
 			cfgFn: func() Config {
 				cfg := generateConfig()
-				cfg[component.MustNewID("traces")].Exporters = nil
+				cfg[pipeline.MustNewID("traces")].Exporters = nil
 				return cfg
 			},
 			expected: fmt.Errorf(`pipeline "traces": %w`, errMissingServicePipelineExporters),
@@ -63,28 +64,28 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-service-pipeline-type",
 			cfgFn: func() Config {
 				cfg := generateConfig()
-				cfg[component.MustNewID("wrongtype")] = &PipelineConfig{
+				cfg[pipeline.MustNewID("wrongtype")] = &PipelineConfig{
 					Receivers:  []component.ID{component.MustNewID("nop")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewID("nop")},
 				}
 				return cfg
 			},
-			expected: errors.New(`pipeline "wrongtype": unknown datatype "wrongtype"`),
+			expected: errors.New(`pipeline "wrongtype": unknown signal "wrongtype"`),
 		},
 	}
 
-	for _, test := range testCases {
-		t.Run(test.name, func(t *testing.T) {
-			cfg := test.cfgFn()
-			assert.Equal(t, test.expected, cfg.Validate())
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := tt.cfgFn()
+			assert.Equal(t, tt.expected, cfg.Validate())
 		})
 	}
 }
 
 func generateConfig() Config {
-	return map[component.ID]*PipelineConfig{
-		component.MustNewID("traces"): {
+	return map[pipeline.ID]*PipelineConfig{
+		pipeline.MustNewID("traces"): {
 			Receivers:  []component.ID{component.MustNewID("nop")},
 			Processors: []component.ID{component.MustNewID("nop")},
 			Exporters:  []component.ID{component.MustNewID("nop")},

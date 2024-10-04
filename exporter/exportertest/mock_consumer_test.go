@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -46,14 +47,13 @@ func TestIDFromMetrics(t *testing.T) {
 	validData := createMetric(id)
 	metricID, err := idFromMetrics(validData)
 	assert.Equal(t, metricID, id)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Test case 2: Missing uniqueIDAttrName attribute
 	invalidData := pmetric.NewMetrics() // Create an invalid pmetric.Metrics object with missing attribute
 	invalidData.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptyHistogram().DataPoints().AppendEmpty().Attributes()
 	_, err = idFromMetrics(invalidData)
-	assert.Error(t, err)
-	assert.Equal(t, err.Error(), fmt.Sprintf("invalid data element, attribute %q is missing", uniqueIDAttrName))
+	require.EqualError(t, err, fmt.Sprintf("invalid data element, attribute %q is missing", uniqueIDAttrName))
 
 	// Test case 3: Wrong attribute type
 	var intID int64 = 12
@@ -61,8 +61,7 @@ func TestIDFromMetrics(t *testing.T) {
 	wrongAttribute.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().
 		SetEmptyHistogram().DataPoints().AppendEmpty().Attributes().PutInt(uniqueIDAttrName, intID)
 	_, err = idFromMetrics(wrongAttribute)
-	assert.Error(t, err)
-	assert.Equal(t, err.Error(), fmt.Sprintf("invalid data element, attribute %q is wrong type Int", uniqueIDAttrName))
+	assert.EqualError(t, err, fmt.Sprintf("invalid data element, attribute %q is wrong type Int", uniqueIDAttrName))
 }
 
 func TestIDFromTraces(t *testing.T) {
@@ -71,14 +70,13 @@ func TestIDFromTraces(t *testing.T) {
 	validData := createTrace(id)
 	traceID, err := idFromTraces(validData)
 	assert.Equal(t, traceID, id)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Test case 2: Missing uniqueIDAttrName attribute
 	invalidData := ptrace.NewTraces()
 	invalidData.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().Attributes()
 	_, err = idFromTraces(invalidData)
-	assert.Error(t, err)
-	assert.Equal(t, err.Error(), fmt.Sprintf("invalid data element, attribute %q is missing", uniqueIDAttrName))
+	require.EqualError(t, err, fmt.Sprintf("invalid data element, attribute %q is missing", uniqueIDAttrName))
 
 	// Test case 3: Wrong attribute type
 	var intID int64 = 12
@@ -86,8 +84,7 @@ func TestIDFromTraces(t *testing.T) {
 	wrongAttribute.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().Attributes().
 		PutInt(uniqueIDAttrName, intID)
 	_, err = idFromTraces(wrongAttribute)
-	assert.Error(t, err)
-	assert.Equal(t, err.Error(), fmt.Sprintf("invalid data element, attribute %q is wrong type Int", uniqueIDAttrName))
+	assert.EqualError(t, err, fmt.Sprintf("invalid data element, attribute %q is wrong type Int", uniqueIDAttrName))
 }
 
 func TestIDFromLogs(t *testing.T) {
@@ -96,14 +93,13 @@ func TestIDFromLogs(t *testing.T) {
 	validData := createLog(id)
 	logID, err := idFromLogs(validData)
 	assert.Equal(t, logID, id)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Test case 2: Missing uniqueIDAttrName attribute
 	invalidData := plog.NewLogs()
 	invalidData.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Attributes()
 	_, err = idFromLogs(invalidData)
-	assert.Error(t, err)
-	assert.Equal(t, err.Error(), fmt.Sprintf("invalid data element, attribute %q is missing", uniqueIDAttrName))
+	require.EqualError(t, err, fmt.Sprintf("invalid data element, attribute %q is missing", uniqueIDAttrName))
 
 	// Test case 3: Wrong attribute type
 	var intID int64 = 12
@@ -111,8 +107,7 @@ func TestIDFromLogs(t *testing.T) {
 	wrongAttribute.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Attributes().
 		PutInt(uniqueIDAttrName, intID)
 	_, err = idFromLogs(wrongAttribute)
-	assert.Error(t, err)
-	assert.Equal(t, err.Error(), fmt.Sprintf("invalid data element, attribute %q is wrong type Int", uniqueIDAttrName))
+	assert.EqualError(t, err, fmt.Sprintf("invalid data element, attribute %q is wrong type Int", uniqueIDAttrName))
 }
 
 func returnNonPermanentError() error {

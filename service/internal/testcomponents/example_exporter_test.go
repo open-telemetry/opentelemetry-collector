@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -20,26 +21,26 @@ func TestExampleExporter(t *testing.T) {
 	exp := &ExampleExporter{}
 	host := componenttest.NewNopHost()
 	assert.False(t, exp.Started())
-	assert.NoError(t, exp.Start(context.Background(), host))
+	require.NoError(t, exp.Start(context.Background(), host))
 	assert.True(t, exp.Started())
 
 	assert.Empty(t, exp.Traces)
-	assert.NoError(t, exp.ConsumeTraces(context.Background(), ptrace.Traces{}))
+	require.NoError(t, exp.ConsumeTraces(context.Background(), ptrace.Traces{}))
 	assert.Len(t, exp.Traces, 1)
 
 	assert.Empty(t, exp.Metrics)
-	assert.NoError(t, exp.ConsumeMetrics(context.Background(), pmetric.Metrics{}))
+	require.NoError(t, exp.ConsumeMetrics(context.Background(), pmetric.Metrics{}))
 	assert.Len(t, exp.Metrics, 1)
 
 	assert.Empty(t, exp.Logs)
-	assert.NoError(t, exp.ConsumeLogs(context.Background(), plog.Logs{}))
+	require.NoError(t, exp.ConsumeLogs(context.Background(), plog.Logs{}))
 	assert.Len(t, exp.Logs, 1)
 
 	assert.Empty(t, exp.Profiles)
-	assert.NoError(t, exp.ConsumeProfiles(context.Background(), pprofile.Profiles{}))
+	require.NoError(t, exp.ConsumeProfiles(context.Background(), pprofile.Profiles{}))
 	assert.Len(t, exp.Profiles, 1)
 
 	assert.False(t, exp.Stopped())
-	assert.NoError(t, exp.Shutdown(context.Background()))
+	require.NoError(t, exp.Shutdown(context.Background()))
 	assert.True(t, exp.Stopped())
 }

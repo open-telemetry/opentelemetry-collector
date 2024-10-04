@@ -17,7 +17,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/internal/testutil"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.opentelemetry.io/collector/service/internal/promtest"
 	"go.opentelemetry.io/collector/service/internal/resource"
@@ -40,7 +39,7 @@ func TestTelemetryInit(t *testing.T) {
 		labels map[string]string
 	}
 
-	for _, tc := range []struct {
+	for _, tt := range []struct {
 		name            string
 		disableHighCard bool
 		expectedMetrics map[string]metricValue
@@ -190,9 +189,9 @@ func TestTelemetryInit(t *testing.T) {
 			},
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
-			if tc.extendedConfig {
-				tc.cfg.Metrics.Readers = []config.MetricReader{
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.extendedConfig {
+				tt.cfg.Metrics.Readers = []config.MetricReader{
 					{
 						Pull: &config.PullMetricReader{
 							Exporter: config.MetricExporter{
@@ -202,23 +201,25 @@ func TestTelemetryInit(t *testing.T) {
 					},
 				}
 			}
-			if tc.cfg == nil {
-				tc.cfg = &Config{
+			if tt.cfg == nil {
+				tt.cfg = &Config{
 					Resource: map[string]*string{
 						semconv.AttributeServiceInstanceID: &testInstanceID,
 					},
 					Metrics: MetricsConfig{
-						Level:   configtelemetry.LevelDetailed,
-						Address: testutil.GetAvailableLocalAddress(t),
+						Level: configtelemetry.LevelDetailed,
+						Readers: []config.MetricReader{{
+							Pull: &config.PullMetricReader{Exporter: config.MetricExporter{Prometheus: promtest.GetAvailableLocalAddressPrometheus(t)}},
+						}},
 					},
 				}
 			}
 			set := meterProviderSettings{
-				res:               resource.New(component.NewDefaultBuildInfo(), tc.cfg.Resource),
-				cfg:               tc.cfg.Metrics,
+				res:               resource.New(component.NewDefaultBuildInfo(), tt.cfg.Resource),
+				cfg:               tt.cfg.Metrics,
 				asyncErrorChannel: make(chan error),
 			}
-			mp, err := newMeterProvider(set, tc.disableHighCard)
+			mp, err := newMeterProvider(set, tt.disableHighCard)
 			require.NoError(t, err)
 			defer func() {
 				if prov, ok := mp.(interface{ Shutdown(context.Context) error }); ok {
@@ -229,9 +230,9 @@ func TestTelemetryInit(t *testing.T) {
 			createTestMetrics(t, mp)
 
 			metrics := getMetricsFromPrometheus(t, mp.(*meterProvider).servers[0].Handler)
-			require.Equal(t, len(tc.expectedMetrics), len(metrics))
+			require.Equal(t, len(tt.expectedMetrics), len(metrics))
 
-			for metricName, metricValue := range tc.expectedMetrics {
+			for metricName, metricValue := range tt.expectedMetrics {
 				mf, present := metrics[metricName]
 				require.True(t, present, "expected metric %q was not present", metricName)
 				require.Len(t, mf.Metric, 1, "only one measure should exist for metric %q", metricName)
@@ -276,5 +277,4 @@ func getMetricsFromPrometheus(t *testing.T, handler http.Handler) map[string]*io
 	require.NoError(t, err)
 
 	return parsed
-
 }

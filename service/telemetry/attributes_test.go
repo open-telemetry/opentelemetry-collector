@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/service/telemetry/internal"
 )
 
 func TestAttributes(t *testing.T) {
@@ -50,7 +49,7 @@ func TestAttributes(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			attrs := attributes(internal.Settings{BuildInfo: tt.buildInfo}, tt.cfg)
+			attrs := attributes(Settings{BuildInfo: tt.buildInfo}, tt.cfg)
 			require.Equal(t, tt.wantAttributes, attrs)
 		})
 	}

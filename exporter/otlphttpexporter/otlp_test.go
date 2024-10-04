@@ -231,7 +231,7 @@ func TestErrorResponses(t *testing.T) {
 			// generate traces
 			traces := ptrace.NewTraces()
 			err = exp.ConsumeTraces(context.Background(), traces)
-			assert.Error(t, err)
+			require.Error(t, err)
 
 			if test.isPermErr {
 				assert.True(t, consumererror.IsPermanent(err))
@@ -279,10 +279,10 @@ func TestUserAgent(t *testing.T) {
 	}
 
 	t.Run("traces", func(t *testing.T) {
-		for _, test := range tests {
-			t.Run(test.name, func(t *testing.T) {
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
 				srv := createBackend("/v1/traces", func(writer http.ResponseWriter, request *http.Request) {
-					assert.Contains(t, request.Header.Get("user-agent"), test.expectedUA)
+					assert.Contains(t, request.Header.Get("user-agent"), tt.expectedUA)
 					writer.WriteHeader(200)
 				})
 				defer srv.Close()
@@ -291,7 +291,7 @@ func TestUserAgent(t *testing.T) {
 					Encoding:       EncodingProto,
 					TracesEndpoint: fmt.Sprintf("%s/v1/traces", srv.URL),
 					ClientConfig: confighttp.ClientConfig{
-						Headers: test.headers,
+						Headers: tt.headers,
 					},
 				}
 				exp, err := createTracesExporter(context.Background(), set, cfg)
@@ -313,10 +313,10 @@ func TestUserAgent(t *testing.T) {
 	})
 
 	t.Run("metrics", func(t *testing.T) {
-		for _, test := range tests {
-			t.Run(test.name, func(t *testing.T) {
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
 				srv := createBackend("/v1/metrics", func(writer http.ResponseWriter, request *http.Request) {
-					assert.Contains(t, request.Header.Get("user-agent"), test.expectedUA)
+					assert.Contains(t, request.Header.Get("user-agent"), tt.expectedUA)
 					writer.WriteHeader(200)
 				})
 				defer srv.Close()
@@ -325,7 +325,7 @@ func TestUserAgent(t *testing.T) {
 					Encoding:        EncodingProto,
 					MetricsEndpoint: fmt.Sprintf("%s/v1/metrics", srv.URL),
 					ClientConfig: confighttp.ClientConfig{
-						Headers: test.headers,
+						Headers: tt.headers,
 					},
 				}
 				exp, err := createMetricsExporter(context.Background(), set, cfg)
@@ -347,10 +347,10 @@ func TestUserAgent(t *testing.T) {
 	})
 
 	t.Run("logs", func(t *testing.T) {
-		for _, test := range tests {
-			t.Run(test.name, func(t *testing.T) {
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
 				srv := createBackend("/v1/logs", func(writer http.ResponseWriter, request *http.Request) {
-					assert.Contains(t, request.Header.Get("user-agent"), test.expectedUA)
+					assert.Contains(t, request.Header.Get("user-agent"), tt.expectedUA)
 					writer.WriteHeader(200)
 				})
 				defer srv.Close()
@@ -359,7 +359,7 @@ func TestUserAgent(t *testing.T) {
 					Encoding:     EncodingProto,
 					LogsEndpoint: fmt.Sprintf("%s/v1/logs", srv.URL),
 					ClientConfig: confighttp.ClientConfig{
-						Headers: test.headers,
+						Headers: tt.headers,
 					},
 				}
 				exp, err := createLogsExporter(context.Background(), set, cfg)
@@ -769,7 +769,7 @@ func TestPartialSuccess_longContentLengthHeader(t *testing.T) {
 				// No real error happens for long content length, so the partial
 				// success is handled as success with a warning.
 				err = handlePartialSuccessResponse(resp, handler)
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), 1)
 				assert.Contains(t, observed.FilterLevelExact(zap.WarnLevel).All()[0].Message, "Partial success")
 			})
@@ -897,17 +897,17 @@ func TestEncoding(t *testing.T) {
 	}
 
 	t.Run("traces", func(t *testing.T) {
-		for _, test := range tests {
-			t.Run(test.name, func(t *testing.T) {
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
 				srv := createBackend("/v1/traces", func(writer http.ResponseWriter, request *http.Request) {
-					assert.Contains(t, request.Header.Get("content-type"), test.expectedEncoding)
+					assert.Contains(t, request.Header.Get("content-type"), tt.expectedEncoding)
 					writer.WriteHeader(200)
 				})
 				defer srv.Close()
 
 				cfg := &Config{
 					TracesEndpoint: fmt.Sprintf("%s/v1/traces", srv.URL),
-					Encoding:       test.encoding,
+					Encoding:       tt.encoding,
 				}
 				exp, err := createTracesExporter(context.Background(), set, cfg)
 				require.NoError(t, err)
@@ -928,17 +928,17 @@ func TestEncoding(t *testing.T) {
 	})
 
 	t.Run("metrics", func(t *testing.T) {
-		for _, test := range tests {
-			t.Run(test.name, func(t *testing.T) {
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
 				srv := createBackend("/v1/metrics", func(writer http.ResponseWriter, request *http.Request) {
-					assert.Contains(t, request.Header.Get("content-type"), test.expectedEncoding)
+					assert.Contains(t, request.Header.Get("content-type"), tt.expectedEncoding)
 					writer.WriteHeader(200)
 				})
 				defer srv.Close()
 
 				cfg := &Config{
 					MetricsEndpoint: fmt.Sprintf("%s/v1/metrics", srv.URL),
-					Encoding:        test.encoding,
+					Encoding:        tt.encoding,
 				}
 				exp, err := createMetricsExporter(context.Background(), set, cfg)
 				require.NoError(t, err)
@@ -959,17 +959,17 @@ func TestEncoding(t *testing.T) {
 	})
 
 	t.Run("logs", func(t *testing.T) {
-		for _, test := range tests {
-			t.Run(test.name, func(t *testing.T) {
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
 				srv := createBackend("/v1/logs", func(writer http.ResponseWriter, request *http.Request) {
-					assert.Contains(t, request.Header.Get("content-type"), test.expectedEncoding)
+					assert.Contains(t, request.Header.Get("content-type"), tt.expectedEncoding)
 					writer.WriteHeader(200)
 				})
 				defer srv.Close()
 
 				cfg := &Config{
 					LogsEndpoint: fmt.Sprintf("%s/v1/logs", srv.URL),
-					Encoding:     test.encoding,
+					Encoding:     tt.encoding,
 				}
 				exp, err := createLogsExporter(context.Background(), set, cfg)
 				require.NoError(t, err)

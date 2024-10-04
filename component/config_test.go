@@ -306,7 +306,6 @@ func TestNewType(t *testing.T) {
 		{name: "kinetica"},
 		{name: "kubeletstats"},
 		{name: "loadbalancing"},
-		{name: "logging"},
 		{name: "logicmonitor"},
 		{name: "logstransform"},
 		{name: "logzio"},
