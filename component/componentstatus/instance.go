@@ -36,13 +36,6 @@ func NewInstanceID(componentID component.ID, kind component.Kind, pipelineIDs ..
 	return instanceID
 }
 
-// NewInstanceIDWithPipelineIDs returns an InstanceID that uniquely identifies a component.
-//
-// Deprecated: [v0.111.0] Use NewInstanceIDWithPipelineID instead
-func NewInstanceIDWithPipelineIDs(componentID component.ID, kind component.Kind, pipelineIDs ...pipeline.ID) *InstanceID {
-	return NewInstanceID(componentID, kind, pipelineIDs...)
-}
-
 // ComponentID returns the ComponentID associated with this instance.
 func (id *InstanceID) ComponentID() component.ID {
 	return id.componentID
@@ -74,14 +67,6 @@ func (id *InstanceID) AllPipelineIDs(f func(pipeline.ID) bool) {
 	}
 }
 
-// AllPipelineIDsWithPipelineIDs calls f for each pipeline this instance is associated with. If
-// f returns false it will stop iteration.
-//
-// Deprecated: [v0.111.0] Use AllPipelineIDs instead.
-func (id *InstanceID) AllPipelineIDsWithPipelineIDs(f func(pipeline.ID) bool) {
-	id.AllPipelineIDs(f)
-}
-
 // WithPipelines returns a new InstanceID updated to include the given
 // pipelineIDs.
 func (id *InstanceID) WithPipelines(pipelineIDs ...pipeline.ID) *InstanceID {
@@ -92,14 +77,6 @@ func (id *InstanceID) WithPipelines(pipelineIDs ...pipeline.ID) *InstanceID {
 	}
 	instanceID.addPipelines(pipelineIDs)
 	return instanceID
-}
-
-// WithPipelineIDs returns a new InstanceID updated to include the given
-// pipelineIDs.
-//
-// Deprecated: [v0.111.0] Use WithPipelines instead
-func (id *InstanceID) WithPipelineIDs(pipelineIDs ...pipeline.ID) *InstanceID {
-	return id.WithPipelines(pipelineIDs...)
 }
 
 func (id *InstanceID) addPipelines(pipelineIDs []pipeline.ID) {
