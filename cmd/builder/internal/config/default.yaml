@@ -10,30 +10,30 @@ dist:
   module: go.opentelemetry.io/collector/cmd/otelcorecol
   name: otelcorecol
   description: Local OpenTelemetry Collector binary, testing only.
-  version: 0.110.0-dev
-  otelcol_version: 0.110.0
+  version: 0.111.0-dev
+  otelcol_version: 0.111.0
 
 receivers:
-  - gomod: go.opentelemetry.io/collector/receiver/nopreceiver v0.110.0
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.110.0
+  - gomod: go.opentelemetry.io/collector/receiver/nopreceiver v0.111.0
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.111.0
 exporters:
-  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.110.0
-  - gomod: go.opentelemetry.io/collector/exporter/nopexporter v0.110.0
-  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.110.0
-  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.110.0
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.111.0
+  - gomod: go.opentelemetry.io/collector/exporter/nopexporter v0.111.0
+  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.111.0
+  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.111.0
 extensions:
-  - gomod: go.opentelemetry.io/collector/extension/memorylimiterextension v0.110.0
-  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.110.0
+  - gomod: go.opentelemetry.io/collector/extension/memorylimiterextension v0.111.0
+  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.111.0
 processors:
-  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.110.0
-  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.110.0
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.111.0
+  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.111.0
 connectors:
-  - gomod: go.opentelemetry.io/collector/connector/forwardconnector v0.110.0
+  - gomod: go.opentelemetry.io/collector/connector/forwardconnector v0.111.0
 
 providers:
-  - gomod: go.opentelemetry.io/collector/confmap/provider/envprovider v1.16.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v1.16.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/httpprovider v0.110.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.110.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.110.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/envprovider v1.17.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v1.17.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/httpprovider v0.111.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.111.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.111.0
 

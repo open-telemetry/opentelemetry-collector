@@ -7,6 +7,37 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.17.0/v0.111.0
+
+### 🛑 Breaking changes 🛑
+
+- `service/telemetry`: Change default metrics address to "localhost:8888" instead of ":8888" (#11251)
+  This behavior can be disabled by disabling the feature gate 'telemetry.UseLocalHostAsDefaultMetricsAddress'.
+- `loggingexporter`: Removed the deprecated logging exporter.  Use the debug exporter instead. (#11037)
+
+### 🚩 Deprecations 🚩
+
+- `service/telemetry`: Deprecate service::telemetry::metrics::address in favor of service::telemetry::metrics::readers. (#11205)
+- `processorhelper`: Deprecate BuildProcessorMetricName as it's no longer needed since introduction of mdatagen (#11302)
+
+### 💡 Enhancements 💡
+
+- `ocb`: create docker images for OCB, per https://github.com/open-telemetry/opentelemetry-collector-releases/pull/671 (#5712)
+  Adds standard Docker images for OCB to Dockerhub and GitHub, see hub.docker.com/r/otel/opentelemetry-collector-builder
+- `confighttp`: Snappy compression to lazy read for memory efficiency (#11177)
+- `httpsprovider`: Mark the httpsprovider as stable. (#11191)
+- `httpprovider`: Mark the httpprovider as stable. (#11191)
+- `yamlprovider`: Mark the yamlprovider as stable. (#11192)
+- `confmap`: Allow using any YAML structure as a string when loading configuration including time.Time formats (#10659)
+  Previously, fields with time.Time formats could not be used as strings in configurations
+  
+
+### 🧰 Bug fixes 🧰
+
+- `processorhelper`: Fix data race condition, concurrent writes to the err variable, causes UB (Undefined Behavior) (#11350)
+- `cmd/builder`: re-adds function to properly set and view version number of OpenTelemetry Collector Builder (ocb) binaries (#11208)
+- `pdata`: Unmarshal Span and SpanLink flags from JSON (#11267)
+
 ## v1.16.0/v0.110.0
 
 ### 🛑 Breaking changes 🛑
