@@ -1200,7 +1200,7 @@ func TestComponentStatus(t *testing.T) {
 	t.Run("traces", func(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				srv := createBackend("/v1/traces", func(writer http.ResponseWriter, request *http.Request) {
+				srv := createBackend("/v1/traces", func(writer http.ResponseWriter, _ *http.Request) {
 					writer.WriteHeader(tt.responseStatus)
 				})
 				defer srv.Close()
@@ -1227,7 +1227,7 @@ func TestComponentStatus(t *testing.T) {
 				traces := ptrace.NewTraces()
 				err = exp.ConsumeTraces(context.Background(), traces)
 				if tt.componentStatus != componentstatus.StatusOK {
-					assert.Error(t, err)
+					require.Error(t, err)
 				}
 				assert.Equal(t, tt.componentStatus, host.lastStatus)
 			})
@@ -1237,7 +1237,7 @@ func TestComponentStatus(t *testing.T) {
 	t.Run("metrics", func(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				srv := createBackend("/v1/metrics", func(writer http.ResponseWriter, request *http.Request) {
+				srv := createBackend("/v1/metrics", func(writer http.ResponseWriter, _ *http.Request) {
 					writer.WriteHeader(tt.responseStatus)
 				})
 				defer srv.Close()
@@ -1264,7 +1264,7 @@ func TestComponentStatus(t *testing.T) {
 				metrics := pmetric.NewMetrics()
 				err = exp.ConsumeMetrics(context.Background(), metrics)
 				if tt.componentStatus != componentstatus.StatusOK {
-					assert.Error(t, err)
+					require.Error(t, err)
 				}
 				assert.Equal(t, tt.componentStatus, host.lastStatus)
 			})
@@ -1274,7 +1274,7 @@ func TestComponentStatus(t *testing.T) {
 	t.Run("logs", func(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				srv := createBackend("/v1/logs", func(writer http.ResponseWriter, request *http.Request) {
+				srv := createBackend("/v1/logs", func(writer http.ResponseWriter, _ *http.Request) {
 					writer.WriteHeader(tt.responseStatus)
 				})
 				defer srv.Close()
@@ -1301,7 +1301,7 @@ func TestComponentStatus(t *testing.T) {
 				logs := plog.NewLogs()
 				err = exp.ConsumeLogs(context.Background(), logs)
 				if tt.componentStatus != componentstatus.StatusOK {
-					assert.Error(t, err)
+					require.Error(t, err)
 				}
 				assert.Equal(t, tt.componentStatus, host.lastStatus)
 			})
