@@ -1,4 +1,4 @@
-{{- define "metric-documenation" -}}
+{{- define "metric-documentation" -}}
 {{- $metricName := . }}
 {{- $metric := $metricName | metricInfo -}}
 
@@ -82,7 +82,7 @@ metrics:
 {{- range $metricName, $metric := .Metrics }}
 {{- if $metric.Enabled }}
 
-{{ template "metric-documenation" $metricName }}
+{{ template "metric-documentation" $metricName }}
 
 {{- end }}
 {{- end }}
@@ -105,7 +105,7 @@ metrics:
 {{- end }}
 {{- $optionalMetricSeen = true }}
 
-{{ template "metric-documenation" $metricName }}
+{{ template "metric-documentation" $metricName }}
 
 {{- end }}
 {{- end }}

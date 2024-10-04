@@ -14,7 +14,7 @@ import (
 
 // Profiles receiver receives profiles.
 // Its purpose is to translate data from any format to the collector's internal profile format.
-// ProfilessReceiver feeds a consumerprofiles.Profiles with data.
+// ProfilesReceiver feeds a consumerprofiles.Profiles with data.
 //
 // For example, it could be a pprof data source which translates pprof profiles into pprofile.Profiles.
 type Profiles interface {

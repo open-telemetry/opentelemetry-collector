@@ -403,7 +403,7 @@ func generateFile(tmplFile string, outputFile string, md Metadata, goPackage str
 	}
 
 	if err := os.Remove(outputFile); err != nil && !errors.Is(err, os.ErrNotExist) {
-		return fmt.Errorf("unable to remove genererated file %q: %w", outputFile, err)
+		return fmt.Errorf("unable to remove generated file %q: %w", outputFile, err)
 	}
 
 	result := buf.Bytes()
