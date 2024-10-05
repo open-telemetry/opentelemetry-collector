@@ -25,17 +25,17 @@ func TestNewFactoryWithProfiles(t *testing.T) {
 	assert.EqualValues(t, testType, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
-	assert.Equal(t, component.StabilityLevelDevelopment, factory.ProfilesExporterStability())
-	_, err := factory.CreateProfilesExporter(context.Background(), exporter.Settings{}, &defaultCfg)
+	assert.Equal(t, component.StabilityLevelDevelopment, factory.ProfilesStability())
+	_, err := factory.CreateProfiles(context.Background(), exporter.Settings{}, &defaultCfg)
 	assert.NoError(t, err)
 }
 
-var nopInstance = &nopExporter{
+var nopInstance = &nop{
 	Consumer: consumertest.NewNop(),
 }
 
-// nopExporter stores consumed profiles for testing purposes.
-type nopExporter struct {
+// nop stores consumed profiles for testing purposes.
+type nop struct {
 	component.StartFunc
 	component.ShutdownFunc
 	consumertest.Consumer

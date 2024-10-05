@@ -20,10 +20,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
-func TestTracesExporterNoErrors(t *testing.T) {
+func TestTracesNoErrors(t *testing.T) {
 	for _, tc := range createTestCases() {
 		t.Run(tc.name, func(t *testing.T) {
-			lte, err := createTracesExporter(context.Background(), exportertest.NewNopSettings(), tc.config)
+			lte, err := createTraces(context.Background(), exportertest.NewNopSettings(), tc.config)
 			require.NotNil(t, lte)
 			assert.NoError(t, err)
 
@@ -35,10 +35,10 @@ func TestTracesExporterNoErrors(t *testing.T) {
 	}
 }
 
-func TestMetricsExporterNoErrors(t *testing.T) {
+func TestMetricsNoErrors(t *testing.T) {
 	for _, tc := range createTestCases() {
 		t.Run(tc.name, func(t *testing.T) {
-			lme, err := createMetricsExporter(context.Background(), exportertest.NewNopSettings(), tc.config)
+			lme, err := createMetrics(context.Background(), exportertest.NewNopSettings(), tc.config)
 			require.NotNil(t, lme)
 			assert.NoError(t, err)
 
@@ -53,10 +53,10 @@ func TestMetricsExporterNoErrors(t *testing.T) {
 	}
 }
 
-func TestLogsExporterNoErrors(t *testing.T) {
+func TestLogsNoErrors(t *testing.T) {
 	for _, tc := range createTestCases() {
 		t.Run(tc.name, func(t *testing.T) {
-			lle, err := createLogsExporter(context.Background(), exportertest.NewNopSettings(), createDefaultConfig())
+			lle, err := createLogs(context.Background(), exportertest.NewNopSettings(), createDefaultConfig())
 			require.NotNil(t, lle)
 			assert.NoError(t, err)
 
@@ -68,7 +68,7 @@ func TestLogsExporterNoErrors(t *testing.T) {
 	}
 }
 
-func TestExporterErrors(t *testing.T) {
+func TestErrors(t *testing.T) {
 	le := newDebugExporter(zaptest.NewLogger(t), configtelemetry.LevelDetailed)
 	require.NotNil(t, le)
 
