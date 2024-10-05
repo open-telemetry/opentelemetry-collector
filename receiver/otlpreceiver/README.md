@@ -66,7 +66,7 @@ type.  These default to `/v1/traces`, `/v1/metrics`, `/v1/logs`, and
 
 To write traces with HTTP/JSON, `POST` to `[address]/[traces_url_path]` for
 traces, to `[address]/[metrics_url_path]` for metrics, to
-`[address]/[logs_url_path]` for logs, and to `[address]/[profiles_url_path] for
+`[address]/[logs_url_path]` for logs, and to `[address]/[profiles_url_path]` for
 profiles.
 The default port is `4318`.  When using the `otlphttpexporter` peer to
 communicate with this component, use the `traces_endpoint`,

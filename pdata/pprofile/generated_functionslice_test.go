@@ -8,6 +8,7 @@ package pprofile
 
 import (
 	"testing"
+	"unsafe"
 
 	"github.com/stretchr/testify/assert"
 
@@ -19,7 +20,7 @@ func TestFunctionSlice(t *testing.T) {
 	es := NewFunctionSlice()
 	assert.Equal(t, 0, es.Len())
 	state := internal.StateMutable
-	es = newFunctionSlice(&[]otlpprofiles.Function{}, &state)
+	es = newFunctionSlice(&[]*otlpprofiles.Function{}, &state)
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewFunction()
@@ -35,7 +36,7 @@ func TestFunctionSlice(t *testing.T) {
 
 func TestFunctionSliceReadOnly(t *testing.T) {
 	sharedState := internal.StateReadOnly
-	es := newFunctionSlice(&[]otlpprofiles.Function{}, &sharedState)
+	es := newFunctionSlice(&[]*otlpprofiles.Function{}, &sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -122,6 +123,22 @@ func TestFunctionSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestFunctionSlice_Sort(t *testing.T) {
+	es := generateTestFunctionSlice()
+	es.Sort(func(a, b Function) bool {
+		return uintptr(unsafe.Pointer(a.orig)) < uintptr(unsafe.Pointer(b.orig))
+	})
+	for i := 1; i < es.Len(); i++ {
+		assert.Less(t, uintptr(unsafe.Pointer(es.At(i-1).orig)), uintptr(unsafe.Pointer(es.At(i).orig)))
+	}
+	es.Sort(func(a, b Function) bool {
+		return uintptr(unsafe.Pointer(a.orig)) > uintptr(unsafe.Pointer(b.orig))
+	})
+	for i := 1; i < es.Len(); i++ {
+		assert.Greater(t, uintptr(unsafe.Pointer(es.At(i-1).orig)), uintptr(unsafe.Pointer(es.At(i).orig)))
+	}
+}
+
 func generateTestFunctionSlice() FunctionSlice {
 	es := NewFunctionSlice()
 	fillTestFunctionSlice(es)
@@ -129,9 +146,9 @@ func generateTestFunctionSlice() FunctionSlice {
 }
 
 func fillTestFunctionSlice(es FunctionSlice) {
-	*es.orig = make([]otlpprofiles.Function, 7)
+	*es.orig = make([]*otlpprofiles.Function, 7)
 	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = otlpprofiles.Function{}
-		fillTestFunction(newFunction(&(*es.orig)[i], es.state))
+		(*es.orig)[i] = &otlpprofiles.Function{}
+		fillTestFunction(newFunction((*es.orig)[i], es.state))
 	}
 }

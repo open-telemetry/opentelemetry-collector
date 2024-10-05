@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 type tracesRequest struct {
@@ -60,7 +61,7 @@ func createAndStartTestPersistentQueue(t *testing.T, sizer Sizer[tracesRequest],
 	pq := NewPersistentQueue[tracesRequest](PersistentQueueSettings[tracesRequest]{
 		Sizer:            sizer,
 		Capacity:         capacity,
-		DataType:         component.DataTypeTraces,
+		Signal:           pipeline.SignalTraces,
 		StorageID:        component.ID{},
 		Marshaler:        marshalTracesRequest,
 		Unmarshaler:      unmarshalTracesRequest,
@@ -81,7 +82,7 @@ func createTestPersistentQueueWithClient(client storage.Client) *persistentQueue
 	pq := NewPersistentQueue[tracesRequest](PersistentQueueSettings[tracesRequest]{
 		Sizer:            &RequestSizer[tracesRequest]{},
 		Capacity:         1000,
-		DataType:         component.DataTypeTraces,
+		Signal:           pipeline.SignalTraces,
 		StorageID:        component.ID{},
 		Marshaler:        marshalTracesRequest,
 		Unmarshaler:      unmarshalTracesRequest,
@@ -104,7 +105,7 @@ func createTestPersistentQueueWithCapacityLimiter(t testing.TB, ext storage.Exte
 	pq := NewPersistentQueue[tracesRequest](PersistentQueueSettings[tracesRequest]{
 		Sizer:            sizer,
 		Capacity:         capacity,
-		DataType:         component.DataTypeTraces,
+		Signal:           pipeline.SignalTraces,
 		StorageID:        component.ID{},
 		Marshaler:        marshalTracesRequest,
 		Unmarshaler:      unmarshalTracesRequest,
@@ -305,7 +306,7 @@ func TestToStorageClient(t *testing.T) {
 			ownerID := component.MustNewID("foo_exporter")
 
 			// execute
-			client, err := toStorageClient(context.Background(), storageID, host, ownerID, component.DataTypeTraces)
+			client, err := toStorageClient(context.Background(), storageID, host, ownerID, pipeline.SignalTraces)
 
 			// verify
 			if tt.expectedError != nil {
@@ -335,7 +336,7 @@ func TestInvalidStorageExtensionType(t *testing.T) {
 	ownerID := component.MustNewID("foo_exporter")
 
 	// execute
-	client, err := toStorageClient(context.Background(), storageID, host, ownerID, component.DataTypeTraces)
+	client, err := toStorageClient(context.Background(), storageID, host, ownerID, pipeline.SignalTraces)
 
 	// we should get an error about the extension type
 	require.ErrorIs(t, err, errWrongExtensionType)
@@ -462,19 +463,19 @@ func TestPersistentQueue_CurrentlyProcessedItems(t *testing.T) {
 	requireCurrentlyDispatchedItemsEqual(t, ps, []uint64{})
 
 	// Takes index 0 in process.
-	readReq, _, found := ps.getNextItem(context.Background())
+	_, readReq, found := ps.getNextItem(context.Background())
 	require.True(t, found)
 	assert.Equal(t, req, readReq)
 	requireCurrentlyDispatchedItemsEqual(t, ps, []uint64{0})
 
 	// This takes item 1 to process.
-	secondReadReq, onProcessingFinished, found := ps.getNextItem(context.Background())
+	secondIndex, secondReadReq, found := ps.getNextItem(context.Background())
 	require.True(t, found)
 	assert.Equal(t, req, secondReadReq)
 	requireCurrentlyDispatchedItemsEqual(t, ps, []uint64{0, 1})
 
 	// Lets mark item 1 as finished, it will remove it from the currently dispatched items list.
-	onProcessingFinished(nil)
+	ps.OnProcessingFinished(secondIndex, nil)
 	requireCurrentlyDispatchedItemsEqual(t, ps, []uint64{0})
 
 	// Reload the storage. Since items 0 was not finished, this should be re-enqueued at the end.
@@ -735,12 +736,12 @@ func TestPersistentQueue_ShutdownWhileConsuming(t *testing.T) {
 
 	require.NoError(t, ps.Offer(context.Background(), newTracesRequest(5, 10)))
 
-	_, onProcessingFinished, ok := ps.getNextItem(context.Background())
+	index, _, ok := ps.getNextItem(context.Background())
 	require.True(t, ok)
 	assert.False(t, ps.client.(*mockStorageClient).isClosed())
 	require.NoError(t, ps.Shutdown(context.Background()))
 	assert.False(t, ps.client.(*mockStorageClient).isClosed())
-	onProcessingFinished(nil)
+	ps.OnProcessingFinished(index, nil)
 	assert.True(t, ps.client.(*mockStorageClient).isClosed())
 }
 

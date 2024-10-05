@@ -22,12 +22,12 @@ func TestExporterBuilder(t *testing.T) {
 	defaultCfg := struct{}{}
 	factories, err := exporter.MakeFactoryMap([]exporter.Factory{
 		exporter.NewFactory(component.MustNewType("err"), nil),
-		exporter.NewFactory(
+		exporterprofiles.NewFactory(
 			component.MustNewType("all"),
 			func() component.Config { return &defaultCfg },
-			exporter.WithTraces(createExporterTraces, component.StabilityLevelDevelopment),
-			exporter.WithMetrics(createExporterMetrics, component.StabilityLevelAlpha),
-			exporter.WithLogs(createExporterLogs, component.StabilityLevelDeprecated),
+			exporterprofiles.WithTraces(createExporterTraces, component.StabilityLevelDevelopment),
+			exporterprofiles.WithMetrics(createExporterMetrics, component.StabilityLevelAlpha),
+			exporterprofiles.WithLogs(createExporterLogs, component.StabilityLevelDeprecated),
 			exporterprofiles.WithProfiles(createExporterProfiles, component.StabilityLevelDevelopment),
 		),
 	}...)
@@ -105,12 +105,12 @@ func TestExporterBuilder(t *testing.T) {
 func TestExporterBuilderMissingConfig(t *testing.T) {
 	defaultCfg := struct{}{}
 	factories, err := exporter.MakeFactoryMap([]exporter.Factory{
-		exporter.NewFactory(
+		exporterprofiles.NewFactory(
 			component.MustNewType("all"),
 			func() component.Config { return &defaultCfg },
-			exporter.WithTraces(createExporterTraces, component.StabilityLevelDevelopment),
-			exporter.WithMetrics(createExporterMetrics, component.StabilityLevelAlpha),
-			exporter.WithLogs(createExporterLogs, component.StabilityLevelDeprecated),
+			exporterprofiles.WithTraces(createExporterTraces, component.StabilityLevelDevelopment),
+			exporterprofiles.WithMetrics(createExporterMetrics, component.StabilityLevelAlpha),
+			exporterprofiles.WithLogs(createExporterLogs, component.StabilityLevelDeprecated),
 			exporterprofiles.WithProfiles(createExporterProfiles, component.StabilityLevelDevelopment),
 		),
 	}...)
@@ -176,7 +176,7 @@ func TestNewNopExporterConfigsAndFactories(t *testing.T) {
 	require.NoError(t, err)
 	assert.IsType(t, logs, bLogs)
 
-	profiles, err := factory.CreateProfilesExporter(context.Background(), set, cfg)
+	profiles, err := factory.(exporterprofiles.Factory).CreateProfilesExporter(context.Background(), set, cfg)
 	require.NoError(t, err)
 	bProfiles, err := builder.CreateProfiles(context.Background(), set)
 	require.NoError(t, err)
