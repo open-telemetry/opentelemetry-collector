@@ -15,8 +15,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/debugexporter/internal/metadata"
+	"go.opentelemetry.io/collector/exporter/debugexporter/internal/otlptext"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/exporter/internal/otlptext"
 )
 
 // The value of "type" key in configuration.

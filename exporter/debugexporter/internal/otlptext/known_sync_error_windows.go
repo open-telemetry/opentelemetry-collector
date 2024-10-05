@@ -3,7 +3,7 @@
 
 //go:build windows
 
-package otlptext // import "go.opentelemetry.io/collector/exporter/internal/otlptext"
+package otlptext // import "go.opentelemetry.io/collector/exporter/debugexporter/internal/otlptext"
 
 import "golang.org/x/sys/windows"
 
