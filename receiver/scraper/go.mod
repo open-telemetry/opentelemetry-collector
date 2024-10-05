@@ -44,8 +44,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace go.opentelemetry.io/collector/component/componentprofiles => ../../component/componentprofiles
-
 replace go.opentelemetry.io/collector/receiver => ../
 
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
