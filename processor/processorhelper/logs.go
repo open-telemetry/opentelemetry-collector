@@ -75,6 +75,3 @@ func NewLogs(
 		Logs:         logsConsumer,
 	}, nil
 }
-
-// Deprecated: [v0.111.0] use NewTraces.
-var NewLogsProcessor = NewLogs
