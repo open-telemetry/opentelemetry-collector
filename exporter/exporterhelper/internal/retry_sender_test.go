@@ -269,10 +269,75 @@ func TestQueueRetryWithDisabledRetires(t *testing.T) {
 	require.NoError(t, be.Shutdown(context.Background()))
 }
 
-type mockErrorRequest struct{}
+func TestRetryWithContextTimeout(t *testing.T) {
+	const testTimeout = 10 * time.Second
+
+	rCfg := configretry.NewDefaultBackOffConfig()
+	rCfg.Enabled = true
+
+	// First attempt after 100ms is attempted
+	rCfg.InitialInterval = 100 * time.Millisecond
+	rCfg.RandomizationFactor = 0
+	// Second attempt is at twice the testTimeout
+	rCfg.Multiplier = float64(2 * testTimeout / rCfg.InitialInterval)
+	qCfg := exporterqueue.NewDefaultConfig()
+	qCfg.Enabled = false
+	set := exportertest.NewNopSettings()
+	logger, observed := observer.New(zap.InfoLevel)
+	set.Logger = zap.New(logger)
+	be, err := NewBaseExporter(
+		set,
+		pipeline.SignalLogs,
+		newObservabilityConsumerSender,
+		WithRetry(rCfg),
+		WithRequestQueue(qCfg, exporterqueue.NewMemoryQueueFactory[internal.Request]()),
+	)
+	require.NoError(t, err)
+	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
+	ocs := be.ObsrepSender.(*observabilityConsumerSender)
+	mockR := newErrorRequest()
+
+	start := time.Now()
+	ocs.run(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
+		defer cancel()
+		err := be.Send(ctx, mockR)
+		require.Error(t, err)
+		require.Equal(t, "request will be cancelled before next retry: transient error", err.Error())
+	})
+	assert.Len(t, observed.All(), 2)
+	assert.Equal(t, "Exporting failed. Will retry the request after interval.", observed.All()[0].Message)
+	assert.Equal(t, "Exporting failed. Rejecting data. "+
+		"Try enabling sending_queue to survive temporary failures.", observed.All()[1].Message)
+	ocs.awaitAsyncProcessing()
+	ocs.checkDroppedItemsCount(t, 7)
+	require.Equal(t, 2, mockR.(*mockErrorRequest).getNumRequests())
+	require.NoError(t, be.Shutdown(context.Background()))
+
+	// There should be no delay, because the initial interval is
+	// longer than the context timeout.  Merely checking that no
+	// delays on the order of either the context timeout or the
+	// retry interval were introduced, i.e., fail fast.
+	elapsed := time.Since(start)
+	require.Less(t, elapsed, testTimeout/2)
+}
+
+type mockErrorRequest struct {
+	mu       sync.Mutex
+	requests int
+}
 
 func (mer *mockErrorRequest) Export(context.Context) error {
+	mer.mu.Lock()
+	defer mer.mu.Unlock()
+	mer.requests++
 	return errors.New("transient error")
+}
+
+func (mer *mockErrorRequest) getNumRequests() int {
+	mer.mu.Lock()
+	defer mer.mu.Unlock()
+	return mer.requests
 }
 
 func (mer *mockErrorRequest) OnError(error) internal.Request {
