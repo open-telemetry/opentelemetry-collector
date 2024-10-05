@@ -251,8 +251,6 @@ replace go.opentelemetry.io/collector/processor/processorprofiles => ../../proce
 
 replace go.opentelemetry.io/collector/receiver => ../../receiver
 
-replace go.opentelemetry.io/collector/receiver/scraper => ../../receiver/scraper
-
 replace go.opentelemetry.io/collector/receiver/nopreceiver => ../../receiver/nopreceiver
 
 replace go.opentelemetry.io/collector/receiver/otlpreceiver => ../../receiver/otlpreceiver
