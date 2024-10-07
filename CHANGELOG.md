@@ -14,11 +14,13 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 - `service/telemetry`: Change default metrics address to "localhost:8888" instead of ":8888" (#11251)
   This behavior can be disabled by disabling the feature gate 'telemetry.UseLocalHostAsDefaultMetricsAddress'.
 - `loggingexporter`: Removed the deprecated logging exporter.  Use the debug exporter instead. (#11037)
+- `processortest` : Removed and deprecated NewUnhealthyProcessorCreateSettings. Use NewNopSettings instead. (#11307)
 
 ### 🚩 Deprecations 🚩
 
 - `service/telemetry`: Deprecate service::telemetry::metrics::address in favor of service::telemetry::metrics::readers. (#11205)
 - `processorhelper`: Deprecate BuildProcessorMetricName as it's no longer needed since introduction of mdatagen (#11302)
+- `processortest` : Deprecate NewUnhealthyProcessorCreateSettings as it's not used and equivalent to NewNopSettings (#11307)
 
 ### 💡 Enhancements 💡
 
