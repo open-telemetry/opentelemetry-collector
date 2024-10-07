@@ -4,12 +4,12 @@
 package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporterhelper"
 
 import (
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/config/configtimeout"
 )
 
-type TimeoutConfig = internal.TimeoutConfig
+type TimeoutConfig = configtimeout.TimeoutConfig
 
-// NewDefaultTimeoutConfig returns the default config for TimeoutConfig.
+// NewDefaultConfig returns the default config for TimeoutConfig.
 func NewDefaultTimeoutConfig() TimeoutConfig {
-	return internal.NewDefaultTimeoutConfig()
+	return configtimeout.NewDefaultConfig()
 }

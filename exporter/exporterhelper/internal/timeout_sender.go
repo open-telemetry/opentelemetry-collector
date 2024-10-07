@@ -5,42 +5,43 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"time"
 
+	"go.opentelemetry.io/collector/config/configtimeout"
 	"go.opentelemetry.io/collector/exporter/internal"
 )
-
-// TimeoutConfig for timeout. The timeout applies to individual attempts to send data to the backend.
-type TimeoutConfig struct {
-	// Timeout is the timeout for every attempt to send data to the backend.
-	// A zero timeout means no timeout.
-	Timeout time.Duration `mapstructure:"timeout"`
-}
-
-func (ts *TimeoutConfig) Validate() error {
-	// Negative timeouts are not acceptable, since all sends will fail.
-	if ts.Timeout < 0 {
-		return errors.New("'timeout' must be non-negative")
-	}
-	return nil
-}
-
-// NewDefaultTimeoutConfig returns the default config for TimeoutConfig.
-func NewDefaultTimeoutConfig() TimeoutConfig {
-	return TimeoutConfig{
-		Timeout: 5 * time.Second,
-	}
-}
 
 // TimeoutSender is a requestSender that adds a `timeout` to every request that passes this sender.
 type TimeoutSender struct {
 	BaseRequestSender
-	cfg TimeoutConfig
+	cfg configtimeout.TimeoutConfig
 }
 
 func (ts *TimeoutSender) Send(ctx context.Context, req internal.Request) error {
-	// TODO: Remove this by avoiding to create the timeout sender if timeout is 0.
+	// If there is deadline that will expire before the configured timeout,
+	// take one of several optional behaviors.
+	if deadline, has := ctx.Deadline(); has {
+		switch ts.cfg.ShortTimeoutPolicy {
+		case configtimeout.PolicyIgnore:
+			// The following call erases the
+			// deadline, a new one will be
+			// inserted below.
+			ctx = context.WithoutCancel(ctx)
+		case configtimeout.PolicyAbort:
+			// We should return a gRPC-or-HTTP
+			// response status saying the request
+			// was aborted.
+			if available := time.Until(deadline); available < ts.cfg.Timeout {
+				return fmt.Errorf("request will be cancelled in %v before configured %v timeout", available, ts.cfg.Timeout)
+			}
+		case configtimeout.PolicySustain:
+			// Allow the shorter-than-configured
+			// timeout, means do nothing.
+		}
+	}
+	// Note: testing for zero timeout happens after the deadline check
+	// above, especially in case the user configures an "ignore" policy.
 	if ts.cfg.Timeout == 0 {
 		return req.Export(ctx)
 	}
