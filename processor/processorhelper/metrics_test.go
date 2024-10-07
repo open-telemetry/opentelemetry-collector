@@ -159,3 +159,58 @@ func TestMetrics_RecordInOut(t *testing.T) {
 		},
 	})
 }
+
+func TestMetrics_RecordIn_ErrorOut(t *testing.T) {
+	/// Regardless of input, return error
+	mockErr := func(_ context.Context, _ pmetric.Metrics) (pmetric.Metrics, error) {
+		return pmetric.NewMetrics(), errors.New("fake")
+	}
+
+	incomingMetrics := pmetric.NewMetrics()
+	dps := incomingMetrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptySum().DataPoints()
+
+	// Add 2 data points to the incoming
+	dps.AppendEmpty()
+	dps.AppendEmpty()
+
+	testTelemetry := setupTestTelemetry()
+	mp, err := NewMetrics(context.Background(), testTelemetry.NewSettings(), &testMetricsCfg, consumertest.NewNop(), mockErr)
+	require.NoError(t, err)
+
+	require.NoError(t, mp.Start(context.Background(), componenttest.NewNopHost()))
+	require.Error(t, mp.ConsumeMetrics(context.Background(), incomingMetrics))
+	require.NoError(t, mp.Shutdown(context.Background()))
+
+	testTelemetry.assertMetrics(t, []metricdata.Metrics{
+		{
+			Name:        "otelcol_processor_incoming_items",
+			Description: "Number of items passed to the processor. [alpha]",
+			Unit:        "{items}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      2,
+						Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "metrics")),
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_processor_outgoing_items",
+			Description: "Number of items emitted from the processor. [alpha]",
+			Unit:        "{items}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      0,
+						Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "metrics")),
+					},
+				},
+			},
+		},
+	})
+}

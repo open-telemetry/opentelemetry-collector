@@ -26,7 +26,7 @@ type obsReport struct {
 	scraper    component.ID
 	tracer     trace.Tracer
 
-	otelAttrs        []attribute.KeyValue
+	otelAttrs        attribute.Set
 	telemetryBuilder *metadata.TelemetryBuilder
 }
 
@@ -47,10 +47,10 @@ func newScraper(cfg obsReportSettings) (*obsReport, error) {
 		scraper:    cfg.Scraper,
 		tracer:     cfg.ReceiverCreateSettings.TracerProvider.Tracer(cfg.Scraper.String()),
 
-		otelAttrs: []attribute.KeyValue{
+		otelAttrs: attribute.NewSet(
 			attribute.String(internal.ReceiverKey, cfg.ReceiverID.String()),
 			attribute.String(internal.ScraperKey, cfg.Scraper.String()),
-		},
+		),
 		telemetryBuilder: telemetryBuilder,
 	}, nil
 }
@@ -103,6 +103,6 @@ func (s *obsReport) EndMetricsOp(
 }
 
 func (s *obsReport) recordMetrics(scraperCtx context.Context, numScrapedMetrics, numErroredMetrics int) {
-	s.telemetryBuilder.ScraperScrapedMetricPoints.Add(scraperCtx, int64(numScrapedMetrics), metric.WithAttributes(s.otelAttrs...))
-	s.telemetryBuilder.ScraperErroredMetricPoints.Add(scraperCtx, int64(numErroredMetrics), metric.WithAttributes(s.otelAttrs...))
+	s.telemetryBuilder.ScraperScrapedMetricPoints.Add(scraperCtx, int64(numScrapedMetrics), metric.WithAttributeSet(s.otelAttrs))
+	s.telemetryBuilder.ScraperErroredMetricPoints.Add(scraperCtx, int64(numErroredMetrics), metric.WithAttributeSet(s.otelAttrs))
 }

@@ -55,6 +55,7 @@ func NewTraces(
 		td, errFunc = tracesFunc(ctx, td)
 		span.AddEvent("End processing.", eventOptions)
 		if errFunc != nil {
+			obs.recordInOut(ctx, spansIn, 0)
 			if errors.Is(errFunc, ErrSkipProcessingData) {
 				return nil
 			}

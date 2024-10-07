@@ -159,3 +159,59 @@ func TestLogs_RecordInOut(t *testing.T) {
 		},
 	})
 }
+
+func TestLogs_RecordIn_ErrorOut(t *testing.T) {
+	// Regardless of input, return error
+	mockErr := func(_ context.Context, _ plog.Logs) (plog.Logs, error) {
+		return plog.NewLogs(), errors.New("fake")
+	}
+
+	incomingLogs := plog.NewLogs()
+	incomingLogRecords := incomingLogs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
+
+	// Add 3 records to the incoming
+	incomingLogRecords.AppendEmpty()
+	incomingLogRecords.AppendEmpty()
+	incomingLogRecords.AppendEmpty()
+
+	testTelemetry := setupTestTelemetry()
+	lp, err := NewLogs(context.Background(), testTelemetry.NewSettings(), &testLogsCfg, consumertest.NewNop(), mockErr)
+	require.NoError(t, err)
+
+	require.NoError(t, lp.Start(context.Background(), componenttest.NewNopHost()))
+	require.Error(t, lp.ConsumeLogs(context.Background(), incomingLogs))
+	require.NoError(t, lp.Shutdown(context.Background()))
+
+	testTelemetry.assertMetrics(t, []metricdata.Metrics{
+		{
+			Name:        "otelcol_processor_incoming_items",
+			Description: "Number of items passed to the processor. [alpha]",
+			Unit:        "{items}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      3,
+						Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "logs")),
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_processor_outgoing_items",
+			Description: "Number of items emitted from the processor. [alpha]",
+			Unit:        "{items}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      0,
+						Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "logs")),
+					},
+				},
+			},
+		},
+	})
+}

@@ -33,6 +33,8 @@ type Queue[T any] interface {
 	Size() int
 	// Capacity returns the capacity of the queue.
 	Capacity() int
+	// Should be called to remove the item of the given index from the queue once processing is finished.
+	OnProcessingFinished(index uint64, consumeErr error)
 }
 
 type itemsCounter interface {
