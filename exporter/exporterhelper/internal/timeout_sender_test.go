@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/config/configtimeout"
 	"go.opentelemetry.io/collector/exporter/internal"
 )
@@ -28,13 +29,12 @@ func TestInvalidTimeout(t *testing.T) {
 	assert.Error(t, cfg.Validate())
 }
 
-const (
-	expectCtxKey = "testkey"
-	expectCtxVal = "testval"
-)
+const expectCtxVal = "testval"
+
+type expectCtxKey struct{}
 
 func newTestContext() context.Context {
-	return context.WithValue(context.Background(), expectCtxKey, expectCtxVal)
+	return context.WithValue(context.Background(), expectCtxKey{}, expectCtxVal)
 }
 
 type testTimeoutRequest struct {
@@ -47,7 +47,7 @@ type testTimeoutRequest struct {
 func (s *testTimeoutRequest) Export(ctx context.Context) error {
 	s.calls++
 	s.lastCtx = ctx
-	require.Equal(s.t, expectCtxVal, ctx.Value(expectCtxKey))
+	require.Equal(s.t, expectCtxVal, ctx.Value(expectCtxKey{}))
 	if s.err != nil {
 		return s.err
 	}
@@ -105,7 +105,7 @@ func TestTimeoutIgnoreSuccess(t *testing.T) {
 	// The context is already canceled, but w/ an Ignore policy
 	// itwill call Export() anyway using a context free of the deadline.
 	tt1 := &testTimeoutRequest{t: t}
-	require.Equal(t, nil, ts.Send(ctx, tt1))
+	require.NoError(t, ts.Send(ctx, tt1))
 	require.Equal(t, 1, tt1.calls)
 }
 
