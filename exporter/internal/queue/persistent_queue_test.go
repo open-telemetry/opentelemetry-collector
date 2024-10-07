@@ -463,19 +463,19 @@ func TestPersistentQueue_CurrentlyProcessedItems(t *testing.T) {
 	requireCurrentlyDispatchedItemsEqual(t, ps, []uint64{})
 
 	// Takes index 0 in process.
-	readReq, _, found := ps.getNextItem(context.Background())
+	_, readReq, found := ps.getNextItem(context.Background())
 	require.True(t, found)
 	assert.Equal(t, req, readReq)
 	requireCurrentlyDispatchedItemsEqual(t, ps, []uint64{0})
 
 	// This takes item 1 to process.
-	secondReadReq, onProcessingFinished, found := ps.getNextItem(context.Background())
+	secondIndex, secondReadReq, found := ps.getNextItem(context.Background())
 	require.True(t, found)
 	assert.Equal(t, req, secondReadReq)
 	requireCurrentlyDispatchedItemsEqual(t, ps, []uint64{0, 1})
 
 	// Lets mark item 1 as finished, it will remove it from the currently dispatched items list.
-	onProcessingFinished(nil)
+	ps.OnProcessingFinished(secondIndex, nil)
 	requireCurrentlyDispatchedItemsEqual(t, ps, []uint64{0})
 
 	// Reload the storage. Since items 0 was not finished, this should be re-enqueued at the end.
@@ -736,12 +736,12 @@ func TestPersistentQueue_ShutdownWhileConsuming(t *testing.T) {
 
 	require.NoError(t, ps.Offer(context.Background(), newTracesRequest(5, 10)))
 
-	_, onProcessingFinished, ok := ps.getNextItem(context.Background())
+	index, _, ok := ps.getNextItem(context.Background())
 	require.True(t, ok)
 	assert.False(t, ps.client.(*mockStorageClient).isClosed())
 	require.NoError(t, ps.Shutdown(context.Background()))
 	assert.False(t, ps.client.(*mockStorageClient).isClosed())
-	onProcessingFinished(nil)
+	ps.OnProcessingFinished(index, nil)
 	assert.True(t, ps.client.(*mockStorageClient).isClosed())
 }
 

@@ -6,7 +6,6 @@ status:
   not_component: true
   stability:
     beta: [traces, metrics, logs]
-  distributions: [core, contrib]
 
 telemetry:
   metrics:
