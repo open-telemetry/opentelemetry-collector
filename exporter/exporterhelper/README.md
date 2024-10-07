@@ -40,10 +40,6 @@ receivers propagate the timeout from a preceding exporter or
 OpenTelemetry SDK, so in many cases a request context will already
 have an associated deadline when the Timeout sender is called.
 
-If the `timeout` is zero, a new deadline will not be added to the
-export context; however, by default, incoming context deadlines remain
-in effect.
-
 If there is an existing context deadline associated with the request,
 by default the Timeout sender will not extend the deadline.
 
@@ -53,6 +49,11 @@ configuration, the `short_timeout_policy` value determines behavior:
 - **sustain**: The default behavior, this allows a short timeout to remain in effect.
 - **ignore**: Optional behavior: this allows ignoring the short timeout; requests will be issued with the full configured `timeout` setting, irrespective of the caller's deadline.
 - **abort**: Optional behavior: this allows failing requests that callers will abort before the full configured `timeout` setting.
+
+If the `timeout` is zero, a new deadline will not be added to the
+export context; however, by default, incoming context deadlines remain
+in effect.  To disable timeouts while ignoring the caller's deadline,
+set `timeout` to `0` and `short_timeout_policy` to `ignore`.
 
 ### Persistent Queue
 
