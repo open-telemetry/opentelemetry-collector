@@ -93,6 +93,25 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSe
 		return nil, err
 	}
 
+	if be.BatcherCfg.Enabled {
+		bs := NewBatchSender(be.BatcherCfg, be.Set, be.BatchMergeFunc, be.BatchMergeSplitfunc)
+		for _, opt := range be.BatcherOpts {
+			err = multierr.Append(err, opt(bs))
+		}
+
+		if bs.mergeFunc == nil || bs.mergeSplitFunc == nil {
+			err = multierr.Append(err, fmt.Errorf("WithRequestBatchFuncs must be provided for the batcher applied to the request-based exporters"))
+		}
+
+		// Setting these callbacks to base exporter, because if they come in from options, these are only set to batch sender.
+		be.BatchMergeFunc = bs.mergeFunc
+		be.BatchMergeSplitfunc = bs.mergeSplitFunc
+
+		if !be.queueCfg.Enabled {
+			be.BatchSender = bs
+		}
+	}
+
 	if be.queueCfg.Enabled {
 		q := be.queueFactory(
 			context.Background(),
@@ -101,21 +120,11 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSe
 				ExporterSettings: be.Set,
 			},
 			be.queueCfg)
-		be.QueueSender = NewQueueSender(q, be.Set, be.queueCfg.NumConsumers, be.ExportFailureMessage, be.Obsrep)
+		be.QueueSender = NewQueueSender(q, be.Set, be.queueCfg.NumConsumers,
+			be.ExportFailureMessage, be.Obsrep, be.BatcherCfg, be.BatchMergeFunc, be.BatchMergeSplitfunc)
 		for _, op := range options {
 			err = multierr.Append(err, op(be))
 		}
-	}
-
-	if be.BatcherCfg.Enabled {
-		bs := NewBatchSender(be.BatcherCfg, be.Set, be.BatchMergeFunc, be.BatchMergeSplitfunc)
-		for _, opt := range be.BatcherOpts {
-			err = multierr.Append(err, opt(bs))
-		}
-		if bs.mergeFunc == nil || bs.mergeSplitFunc == nil {
-			err = multierr.Append(err, fmt.Errorf("WithRequestBatchFuncs must be provided for the batcher applied to the request-based exporters"))
-		}
-		be.BatchSender = bs
 	}
 
 	if err != nil {
