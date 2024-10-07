@@ -130,6 +130,10 @@ func Compile(cfg Config) error {
 	}
 	cfg.Logger.Info("Compiled", zap.String("binary", fmt.Sprintf("%s/%s", cfg.Distribution.OutputPath, cfg.Distribution.Name)))
 
+	if err := removeGoTempDir(); err != nil {
+		cfg.Logger.Info("failed to remove temporary directory used for Go compilation", zap.String("error", err.Error()))
+	}
+
 	return nil
 }
 
