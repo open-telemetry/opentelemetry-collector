@@ -178,7 +178,7 @@ func downloadGoBinary(version string) error {
 	defer gzr.Close()
 
 	tr := tar.NewReader(gzr)
-	if err := os.MkdirAll(filepath.Join(os.TempDir(), "go"), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(os.TempDir(), "go"), 0750); err != nil {
 		return err
 	}
 
@@ -194,7 +194,7 @@ func downloadGoBinary(version string) error {
 		target := filepath.Join(os.TempDir(), header.Name)
 		switch header.Typeflag {
 		case tar.TypeDir:
-			if err := os.MkdirAll(target, 0755); err != nil {
+			if err := os.MkdirAll(target, 0750); err != nil {
 				return err
 			}
 		case tar.TypeReg:
@@ -202,9 +202,12 @@ func downloadGoBinary(version string) error {
 			if err != nil {
 				return err
 			}
-			if _, err := io.Copy(f, tr); err != nil {
+			// Copy up to 500MB of data to avoid gosec warning; current Go distributions are arount 250MB
+			if _, err := io.CopyN(f, tr, 500000000); err != nil {
 				f.Close()
-				return err
+				if !errors.Is(err, io.EOF) {
+					return err
+				}
 			}
 			f.Close()
 		}
@@ -216,8 +219,9 @@ func downloadGoBinary(version string) error {
 
 func removeGoTempDir() error {
 	goTempDir := filepath.Join(os.TempDir(), "go")
-	if _, err := os.Stat(goTempDir); err == nil {
-		if err := os.RemoveAll(goTempDir); err != nil {
+	var err error
+	if _, err = os.Stat(goTempDir); err == nil {
+		if err = os.RemoveAll(goTempDir); err != nil {
 			return fmt.Errorf("failed to remove go temp directory: %w", err)
 		}
 	} else if !os.IsNotExist(err) {

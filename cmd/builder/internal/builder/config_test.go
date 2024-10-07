@@ -382,7 +382,7 @@ func TestGetGoVersionFromBuildInfo(t *testing.T) {
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.expected, version)
 			}
 		})
@@ -483,7 +483,6 @@ func TestSetGoPathWithDownload(t *testing.T) {
 	assert.NoError(t, cfg.Validate())
 	// Save the original PATH
 	originalPath := os.Getenv("PATH")
-	defer os.Setenv("PATH", originalPath)
 
 	// Mock the PATH to exclude any references to go
 	paths := strings.Split(originalPath, string(os.PathListSeparator))
@@ -494,7 +493,7 @@ func TestSetGoPathWithDownload(t *testing.T) {
 		}
 	}
 	mockedPath := strings.Join(newPaths, string(os.PathListSeparator))
-	os.Setenv("PATH", mockedPath)
+	t.Setenv("PATH", mockedPath)
 
 	assert.NoError(t, cfg.SetGoPath())
 	assert.NoError(t, removeGoTempDir())
