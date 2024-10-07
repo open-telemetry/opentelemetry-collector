@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/exporter/nopexporter"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/internal/sharedcomponent"
 	"go.opentelemetry.io/collector/pipeline"
@@ -42,7 +42,7 @@ func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 	t.Skipf("Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector/issues/10927#issuecomment-2343679185")
 
 	eventsReceived := make(map[*componentstatus.InstanceID][]*componentstatus.Event)
-	exporterFactory := exportertest.NewNopFactory()
+	exporterFactory := nopexporter.NewFactory()
 	connectorFactory := connectortest.NewNopFactory()
 	// Use a different ID than receivertest and exportertest to avoid ambiguous
 	// configuration scenarios. Ambiguous IDs are detected in the 'otelcol' package,

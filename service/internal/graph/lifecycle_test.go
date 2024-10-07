@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/exporter/nopexporter"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
@@ -175,7 +175,7 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 	errConnectorFactory := newErrConnectorFactory()
 	nopReceiverFactory := receivertest.NewNopFactory()
 	nopProcessorFactory := processortest.NewNopFactory()
-	nopExporterFactory := exportertest.NewNopFactory()
+	nopExporterFactory := nopexporter.NewFactory()
 	nopConnectorFactory := connectortest.NewNopFactory()
 
 	set := Settings{

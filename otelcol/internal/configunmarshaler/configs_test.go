@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/connector/connectortest"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/exporter/nopexporter"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -39,7 +39,7 @@ var testKinds = []struct {
 	{
 		kind: "exporter",
 		factories: map[component.Type]component.Factory{
-			nopType: exportertest.NewNopFactory(),
+			nopType: nopexporter.NewFactory(),
 		},
 	},
 	{
@@ -148,7 +148,7 @@ func TestUnmarshal_LoggingExporter(t *testing.T) {
 		"logging": nil,
 	})
 	factories := map[component.Type]component.Factory{
-		nopType: exportertest.NewNopFactory(),
+		nopType: nopexporter.NewFactory(),
 	}
 	cfgs := NewConfigs(factories)
 	err := cfgs.Unmarshal(conf)

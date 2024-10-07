@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/connector/connectorprofiles"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/exporter/nopexporter"
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
@@ -1273,7 +1273,7 @@ func TestConnectorRouter(t *testing.T) {
 func TestGraphBuildErrors(t *testing.T) {
 	nopReceiverFactory := receivertest.NewNopFactory()
 	nopProcessorFactory := processortest.NewNopFactory()
-	nopExporterFactory := exportertest.NewNopFactory()
+	nopExporterFactory := nopexporter.NewFactory()
 	nopConnectorFactory := connectortest.NewNopFactory()
 	mfConnectorFactory := testcomponents.MockForwardConnectorFactory
 	badReceiverFactory := newBadReceiverFactory()

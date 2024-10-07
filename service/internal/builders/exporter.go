@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterprofiles"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/exporter/nopexporter"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -100,7 +100,7 @@ func (b *ExporterBuilder) Factory(componentType component.Type) component.Factor
 
 // NewNopExporterConfigsAndFactories returns a configuration and factories that allows building a new nop exporter.
 func NewNopExporterConfigsAndFactories() (map[component.ID]component.Config, map[component.Type]exporter.Factory) {
-	nopFactory := exportertest.NewNopFactory()
+	nopFactory := nopexporter.NewFactory()
 	configs := map[component.ID]component.Config{
 		component.NewID(nopType): nopFactory.CreateDefaultConfig(),
 	}

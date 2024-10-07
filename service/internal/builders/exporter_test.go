@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterprofiles"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/exporter/nopexporter"
 )
 
 func TestExporterBuilder(t *testing.T) {
@@ -153,7 +154,7 @@ func TestNewNopExporterConfigsAndFactories(t *testing.T) {
 	builder := NewExporter(configs, factories)
 	require.NotNil(t, builder)
 
-	factory := exportertest.NewNopFactory()
+	factory := nopexporter.NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	set := exportertest.NewNopSettings()
 	set.ID = component.NewID(nopType)
