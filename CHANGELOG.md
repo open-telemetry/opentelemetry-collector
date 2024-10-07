@@ -19,7 +19,6 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 - `service/telemetry`: Deprecate service::telemetry::metrics::address in favor of service::telemetry::metrics::readers. (#11205)
 - `processorhelper`: Deprecate BuildProcessorMetricName as it's no longer needed since introduction of mdatagen (#11302)
-- `processortest` : Deprecate NewUnhealthyProcessorCreateSettings as it's not used and equivalent to NewNopSettings (#11307)
 
 ### 💡 Enhancements 💡
 
