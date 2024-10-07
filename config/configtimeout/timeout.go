@@ -66,7 +66,7 @@ func (tp *Policy) Validate() error {
 	case PolicySustain, PolicyIgnore, PolicyAbort, policyUnset:
 		return nil
 	default:
-		return fmt.Errorf("unsupported timeout type %v", *tp)
+		return fmt.Errorf("unsupported 'short_timeout_policy' %v", *tp)
 	}
 
 }
