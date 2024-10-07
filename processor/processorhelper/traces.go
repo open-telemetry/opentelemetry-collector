@@ -76,6 +76,3 @@ func NewTraces(
 		Traces:       traceConsumer,
 	}, nil
 }
-
-// Deprecated: [v0.111.0] use NewTraces.
-var NewTracesProcessor = NewTraces
