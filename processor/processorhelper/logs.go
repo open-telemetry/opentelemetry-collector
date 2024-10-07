@@ -55,6 +55,7 @@ func NewLogs(
 		ld, errFunc = logsFunc(ctx, ld)
 		span.AddEvent("End processing.", eventOptions)
 		if errFunc != nil {
+			obs.recordInOut(ctx, recordsIn, 0)
 			if errors.Is(errFunc, ErrSkipProcessingData) {
 				return nil
 			}
