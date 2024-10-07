@@ -16,7 +16,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configretry"
-	"go.opentelemetry.io/collector/config/configtimeout"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
@@ -81,7 +80,7 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSe
 		QueueSender:   &BaseRequestSender{},
 		ObsrepSender:  osf(obsReport),
 		RetrySender:   &BaseRequestSender{},
-		TimeoutSender: &TimeoutSender{cfg: configtimeout.NewDefaultConfig()},
+		TimeoutSender: &TimeoutSender{cfg: NewDefaultTimeoutConfig()},
 
 		Set:    set,
 		Obsrep: obsReport,
@@ -202,7 +201,7 @@ func WithShutdown(shutdown component.ShutdownFunc) Option {
 
 // WithTimeout overrides the default TimeoutConfig for an exporter.
 // The default TimeoutConfig is 5 seconds.
-func WithTimeout(timeoutConfig configtimeout.TimeoutConfig) Option {
+func WithTimeout(timeoutConfig TimeoutConfig) Option {
 	return func(o *BaseExporter) error {
 		o.TimeoutSender.cfg = timeoutConfig
 		return nil

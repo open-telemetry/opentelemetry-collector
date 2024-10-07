@@ -199,5 +199,3 @@ replace go.opentelemetry.io/collector/exporter/exporterprofiles => ../../exporte
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 
 replace go.opentelemetry.io/collector/internal/globalsignal => ../../internal/globalsignal
-
-replace go.opentelemetry.io/collector/config/configtimeout => ../../config/configtimeout
