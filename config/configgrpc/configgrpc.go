@@ -264,18 +264,6 @@ func (gcs *ClientConfig) ToClientConn(
 	return grpc.NewClient(gcs.sanitizedEndpoint(), grpcOpts...)
 }
 
-// ToClientConnWithOptions is the same as [ClientConfig.ToClientConn].
-//
-// Deprecated: [v0.111.0] Use [ClientConfig.ToClientConn] instead.
-func (gcs *ClientConfig) ToClientConnWithOptions(
-	ctx context.Context,
-	host component.Host,
-	settings component.TelemetrySettings,
-	extraOpts ...ToClientConnOption,
-) (*grpc.ClientConn, error) {
-	return gcs.ToClientConn(ctx, host, settings, extraOpts...)
-}
-
 func (gcs *ClientConfig) getGrpcDialOptions(
 	ctx context.Context,
 	host component.Host,
@@ -406,18 +394,6 @@ func (gss *ServerConfig) ToServer(
 		return nil, err
 	}
 	return grpc.NewServer(grpcOpts...), nil
-}
-
-// ToServerWithOptions is the same as [ServerConfig.ToServer].
-//
-// Deprecated: [v0.111.0] Use [ServerConfig.ToServer] instead.
-func (gss *ServerConfig) ToServerWithOptions(
-	ctx context.Context,
-	host component.Host,
-	settings component.TelemetrySettings,
-	extraOpts ...ToServerOption,
-) (*grpc.Server, error) {
-	return gss.ToServer(ctx, host, settings, extraOpts...)
 }
 
 func (gss *ServerConfig) getGrpcServerOptions(

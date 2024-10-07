@@ -59,14 +59,6 @@ func NewNopFactoryForType(signal pipeline.Signal) receiver.Factory {
 	return receiver.NewFactory(componentType, func() component.Config { return &nopConfig{} }, factoryOpt)
 }
 
-// NewNopFactoryForTypeWithSignal returns a receiver.Factory that constructs nop receivers supporting only the
-// given signal.
-//
-// Deprecated: [v0.111.0] Use NewNopFactoryForType instead
-func NewNopFactoryForTypeWithSignal(signal pipeline.Signal) receiver.Factory {
-	return NewNopFactoryForType(signal)
-}
-
 type nopConfig struct{}
 
 func createTraces(context.Context, receiver.Settings, component.Config, consumer.Traces) (receiver.Traces, error) {

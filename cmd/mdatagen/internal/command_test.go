@@ -31,17 +31,18 @@ func TestNewCommand(t *testing.T) {
 
 func TestRunContents(t *testing.T) {
 	tests := []struct {
-		yml                    string
-		wantMetricsGenerated   bool
-		wantMetricsContext     bool
-		wantConfigGenerated    bool
-		wantTelemetryGenerated bool
-		wantStatusGenerated    bool
-		wantGoleakIgnore       bool
-		wantGoleakSkip         bool
-		wantGoleakSetup        bool
-		wantGoleakTeardown     bool
-		wantErr                bool
+		yml                             string
+		wantMetricsGenerated            bool
+		wantMetricsContext              bool
+		wantConfigGenerated             bool
+		wantTelemetryGenerated          bool
+		wantResourceAttributesGenerated bool
+		wantStatusGenerated             bool
+		wantGoleakIgnore                bool
+		wantGoleakSkip                  bool
+		wantGoleakSetup                 bool
+		wantGoleakTeardown              bool
+		wantErr                         bool
 	}{
 		{
 			yml:     "invalid.yaml",
@@ -64,9 +65,10 @@ func TestRunContents(t *testing.T) {
 			wantStatusGenerated:  true,
 		},
 		{
-			yml:                 "resource_attributes_only.yaml",
-			wantConfigGenerated: true,
-			wantStatusGenerated: true,
+			yml:                             "resource_attributes_only.yaml",
+			wantConfigGenerated:             true,
+			wantStatusGenerated:             true,
+			wantResourceAttributesGenerated: true,
 		},
 		{
 			yml:                 "status_only.yaml",
@@ -190,7 +192,7 @@ foo
 				require.NoFileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_telemetry_test.go"))
 			}
 
-			if !tt.wantMetricsGenerated && !tt.wantTelemetryGenerated {
+			if !tt.wantMetricsGenerated && !tt.wantTelemetryGenerated && !tt.wantResourceAttributesGenerated {
 				require.NoFileExists(t, filepath.Join(tmpdir, "documentation.md"))
 			}
 

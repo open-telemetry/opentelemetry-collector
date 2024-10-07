@@ -302,6 +302,7 @@ check-contrib:
 		-replace go.opentelemetry.io/collector/extension/memorylimiterextension=$(CURDIR)/extension/memorylimiterextension  \
 		-replace go.opentelemetry.io/collector/extension/zpagesextension=$(CURDIR)/extension/zpagesextension  \
 		-replace go.opentelemetry.io/collector/featuregate=$(CURDIR)/featuregate  \
+		-replace go.opentelemetry.io/collector/filter=$(CURDIR)/filter  \
 		-replace go.opentelemetry.io/collector/internal/globalgates=$(CURDIR)/internal/globalgates \
 		-replace go.opentelemetry.io/collector/internal/globalsignal=$(CURDIR)/internal/globalsignal \
 		-replace go.opentelemetry.io/collector/otelcol=$(CURDIR)/otelcol  \
@@ -370,6 +371,7 @@ restore-contrib:
 		-dropreplace go.opentelemetry.io/collector/extension/memorylimiterextension  \
 		-dropreplace go.opentelemetry.io/collector/extension/zpagesextension  \
 		-dropreplace go.opentelemetry.io/collector/featuregate  \
+		-dropreplace go.opentelemetry.io/collector/filter  \
 		-dropreplace go.opentelemetry.io/collector/internal/globalgates \
 		-dropreplace go.opentelemetry.io/collector/internal/globalsignal \
 		-dropreplace go.opentelemetry.io/collector/otelcol  \

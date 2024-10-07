@@ -7,10 +7,10 @@ change_type: bug_fix
 component: cmd/builder
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: re-adds function to properly set and view version number of OpenTelemetry Collector Builder (ocb) binaries
+note: Fix default configuration for builder for httpprovider, httpsprovider, and yamlprovider.
 
 # One or more tracking issues or pull requests related to the change
-issues: [11208]
+issues: [11357]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
