@@ -46,7 +46,7 @@ by default the Timeout sender will not extend the deadline.
 If the associated context deadline is shorter than the `timeout`
 configuration, the `short_timeout_policy` value determines behavior:
 
-- **sustain**: The default behavior, this allows a short timeout to remain in effect.
+- **sustain**: The default behavior, this allows a shorter-than-configured timeout to remain in effect.
 - **ignore**: Optional behavior: this allows ignoring the short timeout; requests will be issued with the full configured `timeout` setting, irrespective of the caller's deadline.
 - **abort**: Optional behavior: this allows failing requests that callers will abort before the full configured `timeout` setting.
 
