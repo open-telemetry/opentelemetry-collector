@@ -16,8 +16,11 @@ var (
 
 func init() {
 	// the second returned value is a boolean, which is true if the binaries are built with module support.
-	if version == "" {
-		info, _ := debug.ReadBuildInfo()
+	if version != "" {
+		return
+	}
+	info, ok := debug.ReadBuildInfo()
+	if ok {
 		version = info.Main.Version
 	}
 }
