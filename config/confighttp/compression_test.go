@@ -112,10 +112,10 @@ func TestHTTPClientCompression(t *testing.T) {
 
 			req, err := http.NewRequest(http.MethodGet, srv.URL, reqBody)
 			require.NoError(t, err, "failed to create request to test handler")
-
+			compression := configcompression.TypeWithLevel{Type: tt.encoding, Level: gzip.BestSpeed}
 			clientSettings := ClientConfig{
 				Endpoint:    srv.URL,
-				Compression: tt.encoding,
+				Compression: compression,
 			}
 			client, err := clientSettings.ToClient(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 			if tt.shouldError {
