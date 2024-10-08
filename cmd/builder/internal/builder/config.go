@@ -146,6 +146,16 @@ func getGoVersionFromBuildInfo() (string, error) {
 	version := strings.TrimPrefix(info.GoVersion, "go")
 	return version, nil
 }
+func sanitizeExtractPath(filePath string, destination string) error {
+	// to avoid zip slip (writing outside of the destination), we resolve
+	// the target path, and make sure it's nested in the intended
+	// destination, or bail otherwise.
+	destpath := filepath.Join(destination, filePath)
+	if !strings.HasPrefix(destpath, destination) {
+		return fmt.Errorf("%s: illegal file path", filePath)
+	}
+	return nil
+}
 
 func downloadGoBinary(version string) error {
 	platform := runtime.GOOS
@@ -184,32 +194,35 @@ func downloadGoBinary(version string) error {
 
 	for {
 		header, err := tr.Next()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
 			return err
 		}
-
-		target := filepath.Join(os.TempDir(), header.Name)
-		switch header.Typeflag {
-		case tar.TypeDir:
-			if err := os.MkdirAll(target, 0750); err != nil {
-				return err
-			}
-		case tar.TypeReg:
-			f, err := os.OpenFile(target, os.O_CREATE|os.O_WRONLY, os.FileMode(header.Mode))
-			if err != nil {
-				return err
-			}
-			// Copy up to 500MB of data to avoid gosec warning; current Go distributions are arount 250MB
-			if _, err := io.CopyN(f, tr, 500000000); err != nil {
-				f.Close()
-				if !errors.Is(err, io.EOF) {
+		err = sanitizeExtractPath(header.Name, os.TempDir())
+		if err == nil {
+			target := filepath.Join(os.TempDir(), header.Name)
+			switch header.Typeflag {
+			case tar.TypeDir:
+				if err := os.MkdirAll(target, 0750); err != nil {
 					return err
 				}
+			case tar.TypeReg:
+				f, err := os.OpenFile(target, os.O_CREATE|os.O_WRONLY, os.FileMode(header.Mode))
+				if err != nil {
+					return err
+				}
+				// Copy up to 500MB of data to avoid gosec warning; current Go distributions are arount 250MB
+				if _, err := io.CopyN(f, tr, 500000000); err != nil {
+					f.Close()
+					if !errors.Is(err, io.EOF) {
+						return err
+					}
+				}
+				f.Close()
 			}
-			f.Close()
+
 		}
 	}
 

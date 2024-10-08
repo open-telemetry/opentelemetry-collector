@@ -389,6 +389,9 @@ func TestGetGoVersionFromBuildInfo(t *testing.T) {
 	}
 }
 
+const readmePath = "../../README.md"
+const tarballPath = "../../test/test-tarball.tar.gz"
+
 func TestDownloadGoBinary(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -429,15 +432,13 @@ func TestDownloadGoBinary(t *testing.T) {
 				if tmp == tarballLocation {
 					w.WriteHeader(tt.serverStatus)
 					if tt.serverStatus == http.StatusOK {
-						var filePath string
+						var fileContent []byte
+						var err error
 						if tt.serverResponse == "invalid gzip content" {
-							filePath = "../../README.md"
+							fileContent, err = os.ReadFile(readmePath)
 						} else {
-							filePath = "../../test/test-tarball.tar.gz"
+							fileContent, err = os.ReadFile(tarballPath)
 						}
-						currentDir, _ := os.Getwd()
-						_ = fmt.Sprintf("currentDir: %s", currentDir)
-						fileContent, err := os.ReadFile(filePath)
 						if err != nil {
 							t.Fatalf("failed to read test tarball: %v", err)
 						}
