@@ -33,6 +33,10 @@ type Queue[T any] interface {
 	Size() int
 	// Capacity returns the capacity of the queue.
 	Capacity() int
+	// GetNextItem pulls the next available item from the queue along with its index. Once processing is
+	// finished, the index should be called with OnProcessingFinished to clean up the storage. If no new
+	// item is available, returns false.
+	GetNextItem() (uint64, T, bool)
 	// Should be called to remove the item of the given index from the queue once processing is finished.
 	OnProcessingFinished(index uint64, consumeErr error)
 }
