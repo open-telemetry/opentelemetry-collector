@@ -14,7 +14,7 @@ import (
 
 // Profiles receiver receives profiles.
 // Its purpose is to translate data from any format to the collector's internal profile format.
-// ProfilessReceiver feeds a consumerprofiles.Profiles with data.
+// Profiles receiver feeds a consumerprofiles.Profiles with data.
 //
 // For example, it could be a pprof data source which translates pprof profiles into pprofile.Profiles.
 type Profiles interface {
@@ -24,7 +24,7 @@ type Profiles interface {
 // Factory is a factory interface for receivers.
 //
 // This interface cannot be directly implemented. Implementations must
-// use the NewReceiverFactory to implement it.
+// use the NewFactory to implement it.
 type Factory interface {
 	receiver.Factory
 
@@ -33,14 +33,8 @@ type Factory interface {
 	// an error will be returned instead. `next` is never nil.
 	CreateProfiles(ctx context.Context, set receiver.Settings, cfg component.Config, next consumerprofiles.Profiles) (Profiles, error)
 
-	// Deprecated: [v0.111.0] use CreateProfiles.
-	CreateProfilesReceiver(ctx context.Context, set receiver.Settings, cfg component.Config, next consumerprofiles.Profiles) (Profiles, error)
-
-	// ProfilesStability gets the stability level of the ProfilesReceiver.
+	// ProfilesStability gets the stability level of the Profiles receiver.
 	ProfilesStability() component.StabilityLevel
-
-	// Deprecated: [v0.111.0] use ProfilesStability.
-	ProfilesReceiverStability() component.StabilityLevel
 }
 
 // CreateProfilesFunc is the equivalent of Factory.CreateProfiles.
@@ -54,18 +48,13 @@ func (f CreateProfilesFunc) CreateProfiles(ctx context.Context, set receiver.Set
 	return f(ctx, set, cfg, next)
 }
 
-// Deprecated: [v0.111.0] use CreateProfiles.
-func (f CreateProfilesFunc) CreateProfilesReceiver(ctx context.Context, set receiver.Settings, cfg component.Config, next consumerprofiles.Profiles) (Profiles, error) {
-	return f.CreateProfiles(ctx, set, cfg, next)
-}
-
-// FactoryOption apply changes to ReceiverOptions.
+// FactoryOption apply changes to Factory.
 type FactoryOption interface {
 	// applyOption applies the option.
 	applyOption(o *factoryOpts)
 }
 
-// factoryOptionFunc is an ReceiverFactoryOption created through a function.
+// factoryOptionFunc is a FactoryOption created through a function.
 type factoryOptionFunc func(*factoryOpts)
 
 func (f factoryOptionFunc) applyOption(o *factoryOpts) {
@@ -80,11 +69,6 @@ type factory struct {
 
 func (f *factory) ProfilesStability() component.StabilityLevel {
 	return f.profilesStabilityLevel
-}
-
-// Deprecated: [v0.111.0] use ProfilesStability.
-func (f *factory) ProfilesReceiverStability() component.StabilityLevel {
-	return f.ProfilesStability()
 }
 
 type factoryOpts struct {

@@ -24,9 +24,6 @@ type Factory interface {
 	// an error will be returned instead.
 	CreateProfiles(ctx context.Context, set processor.Settings, cfg component.Config, next consumerprofiles.Profiles) (Profiles, error)
 
-	// Deprecated: [v0.111.0] use CreateProfiles.
-	CreateProfilesProcessor(ctx context.Context, set processor.Settings, cfg component.Config, next consumerprofiles.Profiles) (Profiles, error)
-
 	// ProfilesStability gets the stability level of the Profiles processor.
 	ProfilesStability() component.StabilityLevel
 }
@@ -47,11 +44,6 @@ func (f CreateProfilesFunc) CreateProfiles(ctx context.Context, set processor.Se
 		return nil, pipeline.ErrSignalNotSupported
 	}
 	return f(ctx, set, cfg, next)
-}
-
-// Deprecated: [v0.111.0] use CreateProfiles.
-func (f CreateProfilesFunc) CreateProfilesProcessor(ctx context.Context, set processor.Settings, cfg component.Config, next consumerprofiles.Profiles) (Profiles, error) {
-	return f.CreateProfiles(ctx, set, cfg, next)
 }
 
 // FactoryOption apply changes to ReceiverOptions.
