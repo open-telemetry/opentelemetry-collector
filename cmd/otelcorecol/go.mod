@@ -11,9 +11,9 @@ require (
 	go.opentelemetry.io/collector/confmap v1.17.0
 	go.opentelemetry.io/collector/confmap/provider/envprovider v1.17.0
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.17.0
-	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.111.0
-	go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.111.0
-	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.111.0
+	go.opentelemetry.io/collector/confmap/provider/httpprovider v1.17.0
+	go.opentelemetry.io/collector/confmap/provider/httpsprovider v1.17.0
+	go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.17.0
 	go.opentelemetry.io/collector/connector v0.111.0
 	go.opentelemetry.io/collector/connector/forwardconnector v0.111.0
 	go.opentelemetry.io/collector/exporter v0.111.0
