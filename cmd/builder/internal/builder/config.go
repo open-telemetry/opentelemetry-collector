@@ -250,17 +250,21 @@ func (c *Config) SetGoPath() error {
 		if _, err := exec.Command(c.Distribution.Go, "env").CombinedOutput(); err != nil { // nolint G204
 			path, err := exec.LookPath("go")
 			if err != nil {
-				c.Logger.Info("Failed to find go executable in PATH, downloading Go binary")
-				goVersion, err := getGoVersionFromBuildInfo()
-				if err != nil {
-					return err
+				if runtime.GOOS == "windows" {
+					return fmt.Errorf("failed to find go executable in PATH, please install Go from %s", goVersionPackageURL)
+				} else {
+					c.Logger.Info("Failed to find go executable in PATH, downloading Go binary")
+					goVersion, err := getGoVersionFromBuildInfo()
+					if err != nil {
+						return err
+					}
+					c.Logger.Info(fmt.Sprintf("Downloading Go version %s from "+filepath.Join(goVersionPackageURL, fmt.Sprintf("go%s.%s-%s.tar.gz", goVersion, runtime.GOOS, runtime.GOARCH)), goVersion))
+					if err := downloadGoBinary(goVersion); err != nil {
+						return err
+					}
+					path = filepath.Join(os.TempDir(), "go", "bin", "go")
+					c.Logger.Info(fmt.Sprintf("Installed go at temporary path: %s", path))
 				}
-				c.Logger.Info(fmt.Sprintf("Downloading Go version %s from "+filepath.Join(goVersionPackageURL, fmt.Sprintf("go%s.%s-%s.tar.gz", goVersion, runtime.GOOS, runtime.GOARCH)), goVersion))
-				if err := downloadGoBinary(goVersion); err != nil {
-					return err
-				}
-				path = filepath.Join(os.TempDir(), "go", "bin", "go")
-				c.Logger.Info(fmt.Sprintf("Installed go at temporary path: %s", path))
 			}
 			c.Distribution.Go = path
 		}

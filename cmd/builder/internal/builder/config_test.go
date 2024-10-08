@@ -479,6 +479,9 @@ func TestDownloadGoBinary(t *testing.T) {
 }
 
 func TestSetGoPathWithDownload(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on windows")
+	}
 	cfg := NewDefaultConfig()
 	require.NoError(t, cfg.ParseModules())
 	assert.NoError(t, cfg.Validate())
