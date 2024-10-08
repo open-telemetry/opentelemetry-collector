@@ -259,7 +259,7 @@ func makeCheckRedirect(max *int) func(*http.Request, []*http.Request) error {
 	}
 
 	return func(_ *http.Request, via []*http.Request) error {
-		if *max == (len(via) - 1) {
+		if len(via) > *max {
 			return http.ErrUseLastResponse
 		}
 		return nil
