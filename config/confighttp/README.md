@@ -31,17 +31,17 @@ README](../configtls/README.md).
       - NoCompression: `gzip/0`
       - BestSpeed: `gzip/1`
       - BestCompression: `gzip/9`
-      - DefaultCompression: `gzip/-1`
+      - DefaultCompression: `gzip`
     - `zlib`
       - NoCompression: `zlib/0`
       - BestSpeed: `zlib/1`
       - BestCompression: `zlib/9`
-      - DefaultCompression: `zlib/-1`
+      - DefaultCompression: `zlib`
     - `deflate`
       - NoCompression: `deflate/0`
       - BestSpeed: `deflate/1`
       - BestCompression: `deflate/9`
-      - DefaultCompression: `deflate/-1`
+      - DefaultCompression: `deflate`
     - `zstd`
       - SpeedFastest: `zstd/1`
       - SpeedDefault: `zstd/3`

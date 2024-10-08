@@ -38,12 +38,10 @@ func (ct *Type) IsCompressed() bool {
 }
 
 func (ct *TypeWithLevel) UnmarshalText(in []byte) error {
-	var compressionTyp Type
-	var level int
 	var err error
 	parts := strings.Split(string(in), "/")
-	compressionTyp = Type(parts[0])
-	level = zlib.DefaultCompression
+	compressionTyp := Type(parts[0])
+	level := zlib.DefaultCompression
 	if len(parts) == 2 {
 		level, err = strconv.Atoi(parts[1])
 		if err != nil {
