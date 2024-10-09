@@ -14,6 +14,7 @@ const (
 	TypeDeflate Type = "deflate"
 	TypeSnappy  Type = "snappy"
 	TypeZstd    Type = "zstd"
+	TypeLz4     Type = "lz4"
 	typeNone    Type = "none"
 	typeEmpty   Type = ""
 )
@@ -31,6 +32,7 @@ func (ct *Type) UnmarshalText(in []byte) error {
 		typ == TypeDeflate ||
 		typ == TypeSnappy ||
 		typ == TypeZstd ||
+		typ == TypeLz4 ||
 		typ == typeNone ||
 		typ == typeEmpty {
 		*ct = typ

@@ -17,7 +17,6 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/connector"
-	"go.opentelemetry.io/collector/connector/connectorprofiles"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -832,17 +831,9 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 						require.Empty(t, e.Logs)
 						require.Empty(t, e.Profiles)
 					case *connectorNode:
-						// connector needs to be unwrapped to access component as ExampleConnector
-						switch ct := c.Component.(type) {
-						case connector.Traces:
-							require.True(t, ct.(*testcomponents.ExampleConnector).Started())
-						case connector.Metrics:
-							require.True(t, ct.(*testcomponents.ExampleConnector).Started())
-						case connector.Logs:
-							require.True(t, ct.(*testcomponents.ExampleConnector).Started())
-						case connectorprofiles.Profiles:
-							require.True(t, ct.(*testcomponents.ExampleConnector).Started())
-						}
+						exConn := unwrapExampleConnector(c)
+						require.NotNil(t, exConn)
+						require.True(t, exConn.Started())
 					default:
 						require.Fail(t, fmt.Sprintf("unexpected type %T", c))
 					}
@@ -857,17 +848,9 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 					case *receiverNode:
 						require.True(t, c.Component.(*testcomponents.ExampleReceiver).Started())
 					case *connectorNode:
-						// connector needs to be unwrapped to access component as ExampleConnector
-						switch ct := c.Component.(type) {
-						case connector.Traces:
-							require.True(t, ct.(*testcomponents.ExampleConnector).Started())
-						case connector.Metrics:
-							require.True(t, ct.(*testcomponents.ExampleConnector).Started())
-						case connector.Logs:
-							require.True(t, ct.(*testcomponents.ExampleConnector).Started())
-						case connectorprofiles.Profiles:
-							require.True(t, ct.(*testcomponents.ExampleConnector).Started())
-						}
+						exConn := unwrapExampleConnector(c)
+						require.NotNil(t, exConn)
+						require.True(t, exConn.Started())
 					default:
 						require.Fail(t, fmt.Sprintf("unexpected type %T", c))
 					}
@@ -937,17 +920,9 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 					case *receiverNode:
 						require.True(t, c.Component.(*testcomponents.ExampleReceiver).Stopped())
 					case *connectorNode:
-						// connector needs to be unwrapped to access component as ExampleConnector
-						switch ct := c.Component.(type) {
-						case connector.Traces:
-							require.True(t, ct.(*testcomponents.ExampleConnector).Stopped())
-						case connector.Metrics:
-							require.True(t, ct.(*testcomponents.ExampleConnector).Stopped())
-						case connector.Logs:
-							require.True(t, ct.(*testcomponents.ExampleConnector).Stopped())
-						case connectorprofiles.Profiles:
-							require.True(t, ct.(*testcomponents.ExampleConnector).Stopped())
-						}
+						exConn := unwrapExampleConnector(c)
+						require.NotNil(t, exConn)
+						require.True(t, exConn.Stopped())
 					default:
 						require.Fail(t, fmt.Sprintf("unexpected type %T", c))
 					}
@@ -963,17 +938,9 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 						e := c.Component.(*testcomponents.ExampleExporter)
 						require.True(t, e.Stopped())
 					case *connectorNode:
-						// connector needs to be unwrapped to access component as ExampleConnector
-						switch ct := c.Component.(type) {
-						case connector.Traces:
-							require.True(t, ct.(*testcomponents.ExampleConnector).Stopped())
-						case connector.Metrics:
-							require.True(t, ct.(*testcomponents.ExampleConnector).Stopped())
-						case connector.Logs:
-							require.True(t, ct.(*testcomponents.ExampleConnector).Stopped())
-						case connectorprofiles.Profiles:
-							require.True(t, ct.(*testcomponents.ExampleConnector).Stopped())
-						}
+						exConn := unwrapExampleConnector(c)
+						require.NotNil(t, exConn)
+						require.True(t, exConn.Stopped())
 					default:
 						require.Fail(t, fmt.Sprintf("unexpected type %T", c))
 					}

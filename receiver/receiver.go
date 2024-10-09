@@ -39,7 +39,7 @@ type Logs interface {
 	component.Component
 }
 
-// Settings configures Receiver creators.
+// Settings configures receiver creators.
 type Settings struct {
 	// ID returns the ID of the component that will be created.
 	ID component.ID
@@ -53,7 +53,7 @@ type Settings struct {
 // Factory is a factory interface for receivers.
 //
 // This interface cannot be directly implemented. Implementations must
-// use the NewReceiverFactory to implement it.
+// use the NewFactory to implement it.
 type Factory interface {
 	component.Factory
 
@@ -63,14 +63,8 @@ type Factory interface {
 	// Implementers can assume `next` is never nil.
 	CreateTraces(ctx context.Context, set Settings, cfg component.Config, next consumer.Traces) (Traces, error)
 
-	// Deprecated: [v0.111.0] Use CreateTraces.
-	CreateTracesReceiver(ctx context.Context, set Settings, cfg component.Config, next consumer.Traces) (Traces, error)
-
-	// TracesStability gets the stability level of the TracesReceiver.
+	// TracesStability gets the stability level of the Traces receiver.
 	TracesStability() component.StabilityLevel
-
-	// Deprecated: [v0.111.0] Use TracesStability.
-	TracesReceiverStability() component.StabilityLevel
 
 	// CreateMetrics creates a Metrics based on this config.
 	// If the receiver type does not support metrics,
@@ -78,14 +72,8 @@ type Factory interface {
 	// Implementers can assume `next` is never nil.
 	CreateMetrics(ctx context.Context, set Settings, cfg component.Config, next consumer.Metrics) (Metrics, error)
 
-	// Deprecated: [v0.111.0] Use CreateMetrics.
-	CreateMetricsReceiver(ctx context.Context, set Settings, cfg component.Config, next consumer.Metrics) (Metrics, error)
-
-	// MetricsStability gets the stability level of the MetricsReceiver.
+	// MetricsStability gets the stability level of the Metrics receiver.
 	MetricsStability() component.StabilityLevel
-
-	// Deprecated: [v0.111.0] Use MetricsStability.
-	MetricsReceiverStability() component.StabilityLevel
 
 	// CreateLogs creates a Logs based on this config.
 	// If the receiver type does not support logs,
@@ -93,14 +81,8 @@ type Factory interface {
 	// Implementers can assume `next` is never nil.
 	CreateLogs(ctx context.Context, set Settings, cfg component.Config, next consumer.Logs) (Logs, error)
 
-	// Deprecated: [v0.111.0] Use CreateLogs.
-	CreateLogsReceiver(ctx context.Context, set Settings, cfg component.Config, next consumer.Logs) (Logs, error)
-
-	// LogsStability gets the stability level of the LogsReceiver.
+	// LogsStability gets the stability level of the Logs receiver.
 	LogsStability() component.StabilityLevel
-
-	// Deprecated: [v0.111.0] Use LogsStability.
-	LogsReceiverStability() component.StabilityLevel
 
 	unexportedFactoryFunc()
 }
@@ -111,7 +93,7 @@ type FactoryOption interface {
 	applyOption(o *factory)
 }
 
-// factoryOptionFunc is an ReceiverFactoryOption created through a function.
+// factoryOptionFunc is an FactoryOption created through a function.
 type factoryOptionFunc func(*factory)
 
 func (f factoryOptionFunc) applyOption(o *factory) {
@@ -129,11 +111,6 @@ func (f CreateTracesFunc) CreateTraces(ctx context.Context, set Settings, cfg co
 	return f(ctx, set, cfg, next)
 }
 
-// Deprecated: [v0.111.0] Use CreateTraces.
-func (f CreateTracesFunc) CreateTracesReceiver(ctx context.Context, set Settings, cfg component.Config, next consumer.Traces) (Traces, error) {
-	return f.CreateTraces(ctx, set, cfg, next)
-}
-
 // CreateMetricsFunc is the equivalent of Factory.CreateMetrics.
 type CreateMetricsFunc func(context.Context, Settings, component.Config, consumer.Metrics) (Metrics, error)
 
@@ -145,11 +122,6 @@ func (f CreateMetricsFunc) CreateMetrics(ctx context.Context, set Settings, cfg 
 	return f(ctx, set, cfg, next)
 }
 
-// Deprecated: [v0.111.0] Use CreateMetrics.
-func (f CreateMetricsFunc) CreateMetricsReceiver(ctx context.Context, set Settings, cfg component.Config, next consumer.Metrics) (Metrics, error) {
-	return f.CreateMetrics(ctx, set, cfg, next)
-}
-
 // CreateLogsFunc is the equivalent of Factory.CreateLogs.
 type CreateLogsFunc func(context.Context, Settings, component.Config, consumer.Logs) (Logs, error)
 
@@ -159,11 +131,6 @@ func (f CreateLogsFunc) CreateLogs(ctx context.Context, set Settings, cfg compon
 		return nil, pipeline.ErrSignalNotSupported
 	}
 	return f(ctx, set, cfg, next)
-}
-
-// Deprecated: [v0.111.0] Use CreateLogs.
-func (f CreateLogsFunc) CreateLogsReceiver(ctx context.Context, set Settings, cfg component.Config, next consumer.Logs) (Logs, error) {
-	return f.CreateLogs(ctx, set, cfg, next)
 }
 
 type factory struct {
@@ -193,21 +160,6 @@ func (f *factory) MetricsStability() component.StabilityLevel {
 
 func (f *factory) LogsStability() component.StabilityLevel {
 	return f.logsStabilityLevel
-}
-
-// Deprecated: [v0.111.0] use TracesStability.
-func (f *factory) TracesReceiverStability() component.StabilityLevel {
-	return f.TracesStability()
-}
-
-// Deprecated: [v0.111.0] use MetricsStability.
-func (f *factory) MetricsReceiverStability() component.StabilityLevel {
-	return f.MetricsStability()
-}
-
-// Deprecated: [v0.111.0] use LogsStability.
-func (f *factory) LogsReceiverStability() component.StabilityLevel {
-	return f.LogsStability()
 }
 
 // WithTraces overrides the default "error not supported" implementation for Factory.CreateTraces and the default "undefined" stability level.

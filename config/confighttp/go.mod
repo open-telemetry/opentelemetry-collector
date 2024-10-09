@@ -5,6 +5,7 @@ go 1.22.0
 require (
 	github.com/golang/snappy v0.0.4
 	github.com/klauspost/compress v1.17.10
+	github.com/pierrec/lz4/v4 v4.1.21
 	github.com/rs/cors v1.11.1
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/client v1.17.0
@@ -21,7 +22,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.30.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
-	golang.org/x/net v0.29.0
+	golang.org/x/net v0.30.0
 )
 
 require (
@@ -39,11 +40,11 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.30.0 // indirect
 	go.opentelemetry.io/otel/trace v1.30.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/sys v0.25.0 // indirect
-	golang.org/x/text v0.18.0 // indirect
+	golang.org/x/sys v0.26.0 // indirect
+	golang.org/x/text v0.19.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240822170219-fc7c04adadcd // indirect
 	google.golang.org/grpc v1.67.1 // indirect
-	google.golang.org/protobuf v1.34.2 // indirect
+	google.golang.org/protobuf v1.35.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
