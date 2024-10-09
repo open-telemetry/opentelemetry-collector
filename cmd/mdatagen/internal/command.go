@@ -48,7 +48,7 @@ func NewCommand() (*cobra.Command, error) {
 		Use:          "mdatagen",
 		Version:      ver,
 		SilenceUsage: true,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			return run(args[0])
 		},
 	}
