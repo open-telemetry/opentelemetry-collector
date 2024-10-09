@@ -111,7 +111,7 @@ processors:
   attributes:
     actions:
       - key: http.client_ip
-        from_context: X-Forwarded-For
+        from_context: metadata.x-forwarded-for
         action: upsert
 ```
 
