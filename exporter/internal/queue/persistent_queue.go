@@ -193,31 +193,14 @@ func (pq *persistentQueue[T]) restoreQueueSizeFromStorage(ctx context.Context) (
 // The call blocks until there is an item available or the queue is stopped.
 // The function returns true when an item is consumed or false if the queue is stopped.
 func (pq *persistentQueue[T]) Consume(consumeFunc func(context.Context, T) error) bool {
-	for {
-		var (
-			index    uint64
-			req      T
-			consumed bool
-		)
-
-		// If we are stopped we still process all the other events in the channel before, but we
-		// return fast in the `getNextItem`, so we will free the channel fast and get to the stop.
-		_, ok := pq.sizedChannel.pop(func(permanentQueueEl) int64 {
-			index, req, consumed = pq.GetNextItem()
-			if !consumed {
-				return 0
-			}
-			return pq.set.Sizer.Sizeof(req)
-		})
-		if !ok {
-			return false
-		}
-		if consumed {
-			consumeErr := consumeFunc(context.Background(), req)
-			pq.OnProcessingFinished(index, consumeErr)
-			return true
-		}
+	index, req, ok := pq.Read(context.Background())
+	if !ok {
+		return false
 	}
+	consumeErr := consumeFunc(context.Background(), req)
+	pq.OnProcessingFinished(index, consumeErr)
+	return true
+
 }
 
 func (pq *persistentQueue[T]) Shutdown(ctx context.Context) error {
@@ -304,10 +287,37 @@ func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
 	return nil
 }
 
+func (pq *persistentQueue[T]) Read(ctx context.Context) (uint64, T, bool) {
+	for {
+		var (
+			index    uint64
+			req      T
+			consumed bool
+		)
+		_, ok := pq.sizedChannel.pop(func(permanentQueueEl) int64 {
+			size := int64(0)
+			index, req, consumed = pq.getNextItem(ctx)
+			if consumed {
+				size = pq.set.Sizer.Sizeof(req)
+			}
+			return size
+		})
+		if !ok {
+			return 0, req, false
+		}
+		if consumed {
+			return index, req, true
+		}
+
+		// If ok && !consumed, it means we are stopped. In this case, we still process all the other events
+		// in the channel before, so we will free the channel fast and get to the stop.
+	}
+}
+
 // getNextItem pulls the next available item from the persistent storage along with its index. Once processing is
 // finished, the index should be called with OnProcessingFinished to clean up the storage. If no new item is available,
 // returns false.
-func (pq *persistentQueue[T]) GetNextItem() (uint64, T, bool) {
+func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (uint64, T, bool) {
 	pq.mu.Lock()
 	defer pq.mu.Unlock()
 
@@ -326,7 +336,7 @@ func (pq *persistentQueue[T]) GetNextItem() (uint64, T, bool) {
 	pq.readIndex++
 	pq.currentlyDispatchedItems = append(pq.currentlyDispatchedItems, index)
 	getOp := storage.GetOperation(getItemKey(index))
-	err := pq.client.Batch(context.Background(),
+	err := pq.client.Batch(ctx,
 		storage.SetOperation(readIndexKey, itemIndexToBytes(pq.readIndex)),
 		storage.SetOperation(currentlyDispatchedItemsKey, itemIndexArrayToBytes(pq.currentlyDispatchedItems)),
 		getOp)
@@ -338,7 +348,7 @@ func (pq *persistentQueue[T]) GetNextItem() (uint64, T, bool) {
 	if err != nil {
 		pq.logger.Debug("Failed to dispatch item", zap.Error(err))
 		// We need to make sure that currently dispatched items list is cleaned
-		if err = pq.itemDispatchingFinish(context.Background(), index); err != nil {
+		if err = pq.itemDispatchingFinish(ctx, index); err != nil {
 			pq.logger.Error("Error deleting item from queue", zap.Error(err))
 		}
 

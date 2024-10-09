@@ -463,13 +463,13 @@ func TestPersistentQueue_CurrentlyProcessedItems(t *testing.T) {
 	requireCurrentlyDispatchedItemsEqual(t, ps, []uint64{})
 
 	// Takes index 0 in process.
-	_, readReq, found := ps.GetNextItem()
+	_, readReq, found := ps.getNextItem(context.Background())
 	require.True(t, found)
 	assert.Equal(t, req, readReq)
 	requireCurrentlyDispatchedItemsEqual(t, ps, []uint64{0})
 
 	// This takes item 1 to process.
-	secondIndex, secondReadReq, found := ps.GetNextItem()
+	secondIndex, secondReadReq, found := ps.getNextItem(context.Background())
 	require.True(t, found)
 	assert.Equal(t, req, secondReadReq)
 	requireCurrentlyDispatchedItemsEqual(t, ps, []uint64{0, 1})
@@ -608,7 +608,7 @@ func TestPersistentQueue_PutCloseReadClose(t *testing.T) {
 	assert.NoError(t, ps.Offer(context.Background(), req))
 	assert.Equal(t, 2, ps.Size())
 	// TODO: Remove this, after the initialization writes the readIndex.
-	_, _, _ = ps.GetNextItem()
+	_, _, _ = ps.getNextItem(context.Background())
 	require.NoError(t, ps.Shutdown(context.Background()))
 
 	newPs := createTestPersistentQueueWithRequestsCapacity(t, ext, 1000)
@@ -736,7 +736,7 @@ func TestPersistentQueue_ShutdownWhileConsuming(t *testing.T) {
 
 	require.NoError(t, ps.Offer(context.Background(), newTracesRequest(5, 10)))
 
-	index, _, ok := ps.GetNextItem()
+	index, _, ok := ps.getNextItem(context.Background())
 	require.True(t, ok)
 	assert.False(t, ps.client.(*mockStorageClient).isClosed())
 	require.NoError(t, ps.Shutdown(context.Background()))
