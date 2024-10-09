@@ -26,7 +26,7 @@ func TestBoundedQueue(t *testing.T) {
 	require.NoError(t, q.Offer(context.Background(), "a"))
 
 	numConsumed := 0
-	assert.True(t, q.Consume(func(_ context.Context, item string) error {
+	assert.True(t, consume(q, func(_ context.Context, item string) error {
 		assert.Equal(t, "a", item)
 		numConsumed++
 		return nil
@@ -42,7 +42,7 @@ func TestBoundedQueue(t *testing.T) {
 	require.ErrorIs(t, q.Offer(context.Background(), "c"), ErrQueueIsFull)
 	assert.Equal(t, 1, q.Size())
 
-	assert.True(t, q.Consume(func(_ context.Context, item string) error {
+	assert.True(t, consume(q, func(_ context.Context, item string) error {
 		assert.Equal(t, "b", item)
 		numConsumed++
 		return nil
@@ -51,7 +51,7 @@ func TestBoundedQueue(t *testing.T) {
 
 	for _, toAddItem := range []string{"d", "e", "f"} {
 		require.NoError(t, q.Offer(context.Background(), toAddItem))
-		assert.True(t, q.Consume(func(_ context.Context, item string) error {
+		assert.True(t, consume(q, func(_ context.Context, item string) error {
 			assert.Equal(t, toAddItem, item)
 			numConsumed++
 			return nil
@@ -59,7 +59,7 @@ func TestBoundedQueue(t *testing.T) {
 	}
 	assert.Equal(t, 5, numConsumed)
 	require.NoError(t, q.Shutdown(context.Background()))
-	assert.False(t, q.Consume(func(_ context.Context, item string) error {
+	assert.False(t, consume(q, func(_ context.Context, item string) error {
 		panic(item)
 	}))
 }
@@ -82,7 +82,7 @@ func TestShutdownWhileNotEmpty(t *testing.T) {
 	assert.Equal(t, 10, q.Size())
 	numConsumed := 0
 	for i := 0; i < 10; i++ {
-		assert.True(t, q.Consume(func(_ context.Context, item string) error {
+		assert.True(t, consume(q, func(_ context.Context, item string) error {
 			assert.Equal(t, strconv.FormatInt(int64(i), 10), item)
 			numConsumed++
 			return nil
@@ -91,7 +91,7 @@ func TestShutdownWhileNotEmpty(t *testing.T) {
 	assert.Equal(t, 10, numConsumed)
 	assert.Equal(t, 0, q.Size())
 
-	assert.False(t, q.Consume(func(_ context.Context, item string) error {
+	assert.False(t, consume(q, func(_ context.Context, item string) error {
 		panic(item)
 	}))
 }
