@@ -13,6 +13,7 @@ import (
 
 	"github.com/golang/snappy"
 	"github.com/klauspost/compress/zstd"
+	"github.com/pierrec/lz4/v4"
 
 	"go.opentelemetry.io/collector/config/configcompression"
 )
@@ -31,10 +32,12 @@ var (
 	snappyCompressor                  = &compressor{}
 	zstdCompressor                    = &compressor{}
 	zlibCompressor                    = &compressor{}
+	lz4Compressor                     = &compressor{}
 	_                writeCloserReset = (*gzip.Writer)(nil)
 	_                writeCloserReset = (*snappy.Writer)(nil)
 	_                writeCloserReset = (*zstd.Encoder)(nil)
 	_                writeCloserReset = (*zlib.Writer)(nil)
+	_                writeCloserReset = (*lz4.Writer)(nil)
 )
 
 // writerFactory defines writer field in CompressRoundTripper.
@@ -67,6 +70,12 @@ func newCompressor(compressionType configcompression.TypeWithLevel) (*compressor
 			return zlibCompressor, nil
 		}
 		return zlibCompressor, nil
+	case configcompression.TypeLz4:
+		if lz4Compressor.pool.Get() == nil {
+			lz4Compressor.pool = sync.Pool{New: func() any { lz := lz4.NewWriter(nil); _ = lz.Apply(lz4.ConcurrencyOption(1)); return lz }}
+			return lz4Compressor, nil
+		}
+		return lz4Compressor, nil
 	}
 	return nil, errors.New("unsupported compression type")
 }
