@@ -44,27 +44,27 @@ func TestInvalidConfig(t *testing.T) {
 	}
 	f := otlphttpexporter.NewFactory()
 	set := exportertest.NewNopSettings()
-	_, err := f.CreateTracesExporter(context.Background(), set, config)
+	_, err := f.CreateTraces(context.Background(), set, config)
 	require.Error(t, err)
-	_, err = f.CreateMetricsExporter(context.Background(), set, config)
+	_, err = f.CreateMetrics(context.Background(), set, config)
 	require.Error(t, err)
-	_, err = f.CreateLogsExporter(context.Background(), set, config)
+	_, err = f.CreateLogs(context.Background(), set, config)
 	require.Error(t, err)
 }
 
 func TestTraceNoBackend(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
-	exp := startTracesExporter(t, "", fmt.Sprintf("http://%s/v1/traces", addr))
+	exp := startTraces(t, "", fmt.Sprintf("http://%s/v1/traces", addr))
 	td := testdata.GenerateTraces(1)
 	assert.Error(t, exp.ConsumeTraces(context.Background(), td))
 }
 
 func TestTraceInvalidUrl(t *testing.T) {
-	exp := startTracesExporter(t, "http:/\\//this_is_an/*/invalid_url", "")
+	exp := startTraces(t, "http:/\\//this_is_an/*/invalid_url", "")
 	td := testdata.GenerateTraces(1)
 	require.Error(t, exp.ConsumeTraces(context.Background(), td))
 
-	exp = startTracesExporter(t, "", "http:/\\//this_is_an/*/invalid_url")
+	exp = startTraces(t, "", "http:/\\//this_is_an/*/invalid_url")
 	td = testdata.GenerateTraces(1)
 	assert.Error(t, exp.ConsumeTraces(context.Background(), td))
 }
@@ -73,7 +73,7 @@ func TestTraceError(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 
 	startTracesReceiver(t, addr, consumertest.NewErr(errors.New("my_error")))
-	exp := startTracesExporter(t, "", fmt.Sprintf("http://%s/v1/traces", addr))
+	exp := startTraces(t, "", fmt.Sprintf("http://%s/v1/traces", addr))
 
 	td := testdata.GenerateTraces(1)
 	assert.Error(t, exp.ConsumeTraces(context.Background(), td))
@@ -108,7 +108,7 @@ func TestTraceRoundTrip(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.TracesSink)
 			startTracesReceiver(t, addr, sink)
-			exp := startTracesExporter(t, tt.baseURL, tt.overrideURL)
+			exp := startTraces(t, tt.baseURL, tt.overrideURL)
 
 			td := testdata.GenerateTraces(1)
 			require.NoError(t, exp.ConsumeTraces(context.Background(), td))
@@ -126,7 +126,7 @@ func TestMetricsError(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 
 	startMetricsReceiver(t, addr, consumertest.NewErr(errors.New("my_error")))
-	exp := startMetricsExporter(t, "", fmt.Sprintf("http://%s/v1/metrics", addr))
+	exp := startMetrics(t, "", fmt.Sprintf("http://%s/v1/metrics", addr))
 
 	md := testdata.GenerateMetrics(1)
 	assert.Error(t, exp.ConsumeMetrics(context.Background(), md))
@@ -161,7 +161,7 @@ func TestMetricsRoundTrip(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.MetricsSink)
 			startMetricsReceiver(t, addr, sink)
-			exp := startMetricsExporter(t, tt.baseURL, tt.overrideURL)
+			exp := startMetrics(t, tt.baseURL, tt.overrideURL)
 
 			md := testdata.GenerateMetrics(1)
 			require.NoError(t, exp.ConsumeMetrics(context.Background(), md))
@@ -179,7 +179,7 @@ func TestLogsError(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 
 	startLogsReceiver(t, addr, consumertest.NewErr(errors.New("my_error")))
-	exp := startLogsExporter(t, "", fmt.Sprintf("http://%s/v1/logs", addr))
+	exp := startLogs(t, "", fmt.Sprintf("http://%s/v1/logs", addr))
 
 	md := testdata.GenerateLogs(1)
 	assert.Error(t, exp.ConsumeLogs(context.Background(), md))
@@ -214,7 +214,7 @@ func TestLogsRoundTrip(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
 			startLogsReceiver(t, addr, sink)
-			exp := startLogsExporter(t, tt.baseURL, tt.overrideURL)
+			exp := startLogs(t, tt.baseURL, tt.overrideURL)
 
 			md := testdata.GenerateLogs(1)
 			require.NoError(t, exp.ConsumeLogs(context.Background(), md))
@@ -252,7 +252,7 @@ func TestIssue_4221(t *testing.T) {
 	}))
 	defer func() { svr.Close() }()
 
-	exp := startTracesExporter(t, "", svr.URL)
+	exp := startTraces(t, "", svr.URL)
 
 	md := ptrace.NewTraces()
 	rms := md.ResourceSpans().AppendEmpty()
@@ -287,37 +287,37 @@ func TestIssue_4221(t *testing.T) {
 	assert.NoError(t, exp.ConsumeTraces(context.Background(), md))
 }
 
-func startTracesExporter(t *testing.T, baseURL string, overrideURL string) exporter.Traces {
+func startTraces(t *testing.T, baseURL string, overrideURL string) exporter.Traces {
 	factory := otlphttpexporter.NewFactory()
-	cfg := createExporterConfig(baseURL, factory.CreateDefaultConfig())
+	cfg := createConfig(baseURL, factory.CreateDefaultConfig())
 	cfg.TracesEndpoint = overrideURL
-	exp, err := factory.CreateTracesExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+	exp, err := factory.CreateTraces(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 	startAndCleanup(t, exp)
 	return exp
 }
 
-func startMetricsExporter(t *testing.T, baseURL string, overrideURL string) exporter.Metrics {
+func startMetrics(t *testing.T, baseURL string, overrideURL string) exporter.Metrics {
 	factory := otlphttpexporter.NewFactory()
-	cfg := createExporterConfig(baseURL, factory.CreateDefaultConfig())
+	cfg := createConfig(baseURL, factory.CreateDefaultConfig())
 	cfg.MetricsEndpoint = overrideURL
-	exp, err := factory.CreateMetricsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+	exp, err := factory.CreateMetrics(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 	startAndCleanup(t, exp)
 	return exp
 }
 
-func startLogsExporter(t *testing.T, baseURL string, overrideURL string) exporter.Logs {
+func startLogs(t *testing.T, baseURL string, overrideURL string) exporter.Logs {
 	factory := otlphttpexporter.NewFactory()
-	cfg := createExporterConfig(baseURL, factory.CreateDefaultConfig())
+	cfg := createConfig(baseURL, factory.CreateDefaultConfig())
 	cfg.LogsEndpoint = overrideURL
-	exp, err := factory.CreateLogsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+	exp, err := factory.CreateLogs(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 	startAndCleanup(t, exp)
 	return exp
 }
 
-func createExporterConfig(baseURL string, defaultCfg component.Config) *otlphttpexporter.Config {
+func createConfig(baseURL string, defaultCfg component.Config) *otlphttpexporter.Config {
 	cfg := defaultCfg.(*otlphttpexporter.Config)
 	cfg.Endpoint = baseURL
 	cfg.QueueConfig.Enabled = false

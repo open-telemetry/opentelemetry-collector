@@ -37,8 +37,8 @@ func (b *ExporterBuilder) CreateTraces(ctx context.Context, set exporter.Setting
 		return nil, fmt.Errorf("exporter factory not available for: %q", set.ID)
 	}
 
-	logStabilityLevel(set.Logger, f.TracesExporterStability())
-	return f.CreateTracesExporter(ctx, set, cfg)
+	logStabilityLevel(set.Logger, f.TracesStability())
+	return f.CreateTraces(ctx, set, cfg)
 }
 
 // CreateMetrics creates a Metrics exporter based on the settings and config.
@@ -53,8 +53,8 @@ func (b *ExporterBuilder) CreateMetrics(ctx context.Context, set exporter.Settin
 		return nil, fmt.Errorf("exporter factory not available for: %q", set.ID)
 	}
 
-	logStabilityLevel(set.Logger, f.MetricsExporterStability())
-	return f.CreateMetricsExporter(ctx, set, cfg)
+	logStabilityLevel(set.Logger, f.MetricsStability())
+	return f.CreateMetrics(ctx, set, cfg)
 }
 
 // CreateLogs creates a Logs exporter based on the settings and config.
@@ -69,8 +69,8 @@ func (b *ExporterBuilder) CreateLogs(ctx context.Context, set exporter.Settings)
 		return nil, fmt.Errorf("exporter factory not available for: %q", set.ID)
 	}
 
-	logStabilityLevel(set.Logger, f.LogsExporterStability())
-	return f.CreateLogsExporter(ctx, set, cfg)
+	logStabilityLevel(set.Logger, f.LogsStability())
+	return f.CreateLogs(ctx, set, cfg)
 }
 
 // CreateProfiles creates a Profiles exporter based on the settings and config.
@@ -90,8 +90,8 @@ func (b *ExporterBuilder) CreateProfiles(ctx context.Context, set exporter.Setti
 		return nil, pipeline.ErrSignalNotSupported
 	}
 
-	logStabilityLevel(set.Logger, f.ProfilesExporterStability())
-	return f.CreateProfilesExporter(ctx, set, cfg)
+	logStabilityLevel(set.Logger, f.ProfilesStability())
+	return f.CreateProfiles(ctx, set, cfg)
 }
 
 func (b *ExporterBuilder) Factory(componentType component.Type) component.Factory {
