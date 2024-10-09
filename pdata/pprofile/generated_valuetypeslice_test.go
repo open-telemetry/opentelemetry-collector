@@ -8,6 +8,7 @@ package pprofile
 
 import (
 	"testing"
+	"unsafe"
 
 	"github.com/stretchr/testify/assert"
 
@@ -19,7 +20,7 @@ func TestValueTypeSlice(t *testing.T) {
 	es := NewValueTypeSlice()
 	assert.Equal(t, 0, es.Len())
 	state := internal.StateMutable
-	es = newValueTypeSlice(&[]otlpprofiles.ValueType{}, &state)
+	es = newValueTypeSlice(&[]*otlpprofiles.ValueType{}, &state)
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewValueType()
@@ -35,7 +36,7 @@ func TestValueTypeSlice(t *testing.T) {
 
 func TestValueTypeSliceReadOnly(t *testing.T) {
 	sharedState := internal.StateReadOnly
-	es := newValueTypeSlice(&[]otlpprofiles.ValueType{}, &sharedState)
+	es := newValueTypeSlice(&[]*otlpprofiles.ValueType{}, &sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -122,6 +123,22 @@ func TestValueTypeSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestValueTypeSlice_Sort(t *testing.T) {
+	es := generateTestValueTypeSlice()
+	es.Sort(func(a, b ValueType) bool {
+		return uintptr(unsafe.Pointer(a.orig)) < uintptr(unsafe.Pointer(b.orig))
+	})
+	for i := 1; i < es.Len(); i++ {
+		assert.Less(t, uintptr(unsafe.Pointer(es.At(i-1).orig)), uintptr(unsafe.Pointer(es.At(i).orig)))
+	}
+	es.Sort(func(a, b ValueType) bool {
+		return uintptr(unsafe.Pointer(a.orig)) > uintptr(unsafe.Pointer(b.orig))
+	})
+	for i := 1; i < es.Len(); i++ {
+		assert.Greater(t, uintptr(unsafe.Pointer(es.At(i-1).orig)), uintptr(unsafe.Pointer(es.At(i).orig)))
+	}
+}
+
 func generateTestValueTypeSlice() ValueTypeSlice {
 	es := NewValueTypeSlice()
 	fillTestValueTypeSlice(es)
@@ -129,9 +146,9 @@ func generateTestValueTypeSlice() ValueTypeSlice {
 }
 
 func fillTestValueTypeSlice(es ValueTypeSlice) {
-	*es.orig = make([]otlpprofiles.ValueType, 7)
+	*es.orig = make([]*otlpprofiles.ValueType, 7)
 	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = otlpprofiles.ValueType{}
-		fillTestValueType(newValueType(&(*es.orig)[i], es.state))
+		(*es.orig)[i] = &otlpprofiles.ValueType{}
+		fillTestValueType(newValueType((*es.orig)[i], es.state))
 	}
 }

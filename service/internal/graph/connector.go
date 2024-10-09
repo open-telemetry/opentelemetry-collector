@@ -30,7 +30,6 @@ type connectorNode struct {
 	exprPipelineType pipeline.Signal
 	rcvrPipelineType pipeline.Signal
 	component.Component
-	baseConsumer
 }
 
 func newConnectorNode(exprPipelineType, rcvrPipelineType pipeline.Signal, connID component.ID) *connectorNode {
@@ -43,7 +42,7 @@ func newConnectorNode(exprPipelineType, rcvrPipelineType pipeline.Signal, connID
 }
 
 func (n *connectorNode) getConsumer() baseConsumer {
-	return n.baseConsumer
+	return n.Component.(baseConsumer)
 }
 
 func (n *connectorNode) buildComponent(
@@ -55,173 +54,167 @@ func (n *connectorNode) buildComponent(
 ) error {
 	tel.Logger = components.ConnectorLogger(tel.Logger, n.componentID, n.exprPipelineType, n.rcvrPipelineType)
 	set := connector.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
-
 	switch n.rcvrPipelineType {
 	case pipeline.SignalTraces:
-		capability := consumer.Capabilities{MutatesData: false}
-		consumers := make(map[pipeline.ID]consumer.Traces, len(nexts))
-		for _, next := range nexts {
-			consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Traces)
-			capability.MutatesData = capability.MutatesData || next.Capabilities().MutatesData
-		}
-		next := connector.NewTracesRouter(consumers)
-
-		switch n.exprPipelineType {
-		case pipeline.SignalTraces:
-			conn, err := builder.CreateTracesToTraces(ctx, set, next)
-			if err != nil {
-				return err
-			}
-			n.Component = conn
-			// When connecting pipelines of the same data type, the connector must
-			// inherit the capabilities of pipelines in which it is acting as a receiver.
-			// Since the incoming and outgoing data types are the same, we must also consider
-			// that the connector itself may MutatesData.
-			capability.MutatesData = capability.MutatesData || conn.Capabilities().MutatesData
-			n.baseConsumer = capabilityconsumer.NewTraces(conn, capability)
-		case pipeline.SignalMetrics:
-			conn, err := builder.CreateMetricsToTraces(ctx, set, next)
-			if err != nil {
-				return err
-			}
-			n.Component, n.baseConsumer = conn, conn
-		case pipeline.SignalLogs:
-			conn, err := builder.CreateLogsToTraces(ctx, set, next)
-			if err != nil {
-				return err
-			}
-			n.Component, n.baseConsumer = conn, conn
-		case componentprofiles.SignalProfiles:
-			conn, err := builder.CreateProfilesToTraces(ctx, set, next)
-			if err != nil {
-				return err
-			}
-			n.Component, n.baseConsumer = conn, conn
-		}
-
+		return n.buildTraces(ctx, set, builder, nexts)
 	case pipeline.SignalMetrics:
-		capability := consumer.Capabilities{MutatesData: false}
-		consumers := make(map[pipeline.ID]consumer.Metrics, len(nexts))
-		for _, next := range nexts {
-			consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Metrics)
-			capability.MutatesData = capability.MutatesData || next.Capabilities().MutatesData
-		}
-		next := connector.NewMetricsRouter(consumers)
-
-		switch n.exprPipelineType {
-		case pipeline.SignalTraces:
-			conn, err := builder.CreateTracesToMetrics(ctx, set, next)
-			if err != nil {
-				return err
-			}
-			n.Component, n.baseConsumer = conn, conn
-		case pipeline.SignalMetrics:
-			conn, err := builder.CreateMetricsToMetrics(ctx, set, next)
-			if err != nil {
-				return err
-			}
-			n.Component = conn
-			// When connecting pipelines of the same data type, the connector must
-			// inherit the capabilities of pipelines in which it is acting as a receiver.
-			// Since the incoming and outgoing data types are the same, we must also consider
-			// that the connector itself may MutatesData.
-			capability.MutatesData = capability.MutatesData || conn.Capabilities().MutatesData
-			n.baseConsumer = capabilityconsumer.NewMetrics(conn, capability)
-		case pipeline.SignalLogs:
-			conn, err := builder.CreateLogsToMetrics(ctx, set, next)
-			if err != nil {
-				return err
-			}
-			n.Component, n.baseConsumer = conn, conn
-		case componentprofiles.SignalProfiles:
-			conn, err := builder.CreateProfilesToMetrics(ctx, set, next)
-			if err != nil {
-				return err
-			}
-			n.Component, n.baseConsumer = conn, conn
-		}
+		return n.buildMetrics(ctx, set, builder, nexts)
 	case pipeline.SignalLogs:
-		capability := consumer.Capabilities{MutatesData: false}
-		consumers := make(map[pipeline.ID]consumer.Logs, len(nexts))
-		for _, next := range nexts {
-			consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Logs)
-			capability.MutatesData = capability.MutatesData || next.Capabilities().MutatesData
-		}
-		next := connector.NewLogsRouter(consumers)
-
-		switch n.exprPipelineType {
-		case pipeline.SignalTraces:
-			conn, err := builder.CreateTracesToLogs(ctx, set, next)
-			if err != nil {
-				return err
-			}
-			n.Component, n.baseConsumer = conn, conn
-		case pipeline.SignalMetrics:
-			conn, err := builder.CreateMetricsToLogs(ctx, set, next)
-			if err != nil {
-				return err
-			}
-			n.Component, n.baseConsumer = conn, conn
-		case pipeline.SignalLogs:
-			conn, err := builder.CreateLogsToLogs(ctx, set, next)
-			if err != nil {
-				return err
-			}
-			n.Component = conn
-			// When connecting pipelines of the same data type, the connector must
-			// inherit the capabilities of pipelines in which it is acting as a receiver.
-			// Since the incoming and outgoing data types are the same, we must also consider
-			// that the connector itself may MutatesData.
-			capability.MutatesData = capability.MutatesData || conn.Capabilities().MutatesData
-			n.baseConsumer = capabilityconsumer.NewLogs(conn, capability)
-		case componentprofiles.SignalProfiles:
-			conn, err := builder.CreateProfilesToLogs(ctx, set, next)
-			if err != nil {
-				return err
-			}
-			n.Component, n.baseConsumer = conn, conn
-		}
+		return n.buildLogs(ctx, set, builder, nexts)
 	case componentprofiles.SignalProfiles:
-		capability := consumer.Capabilities{MutatesData: false}
-		consumers := make(map[pipeline.ID]consumerprofiles.Profiles, len(nexts))
-		for _, next := range nexts {
-			consumers[next.(*capabilitiesNode).pipelineID] = next.(consumerprofiles.Profiles)
-			capability.MutatesData = capability.MutatesData || next.Capabilities().MutatesData
-		}
-		next := connectorprofiles.NewProfilesRouter(consumers)
-
-		switch n.exprPipelineType {
-		case pipeline.SignalTraces:
-			conn, err := builder.CreateTracesToProfiles(ctx, set, next)
-			if err != nil {
-				return err
-			}
-			n.Component, n.baseConsumer = conn, conn
-		case pipeline.SignalMetrics:
-			conn, err := builder.CreateMetricsToProfiles(ctx, set, next)
-			if err != nil {
-				return err
-			}
-			n.Component, n.baseConsumer = conn, conn
-		case pipeline.SignalLogs:
-			conn, err := builder.CreateLogsToProfiles(ctx, set, next)
-			if err != nil {
-				return err
-			}
-			n.Component, n.baseConsumer = conn, conn
-		case componentprofiles.SignalProfiles:
-			conn, err := builder.CreateProfilesToProfiles(ctx, set, next)
-			if err != nil {
-				return err
-			}
-			n.Component = conn
-			// When connecting pipelines of the same data type, the connector must
-			// inherit the capabilities of pipelines in which it is acting as a receiver.
-			// Since the incoming and outgoing data types are the same, we must also consider
-			// that the connector itself may MutatesData.
-			capability.MutatesData = capability.MutatesData || conn.Capabilities().MutatesData
-			n.baseConsumer = capabilityconsumer.NewProfiles(conn, capability)
-		}
+		return n.buildProfiles(ctx, set, builder, nexts)
 	}
 	return nil
+}
+
+func (n *connectorNode) buildTraces(
+	ctx context.Context,
+	set connector.Settings,
+	builder *builders.ConnectorBuilder,
+	nexts []baseConsumer,
+) error {
+	consumers := make(map[pipeline.ID]consumer.Traces, len(nexts))
+	for _, next := range nexts {
+		consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Traces)
+	}
+	next := connector.NewTracesRouter(consumers)
+
+	var err error
+	switch n.exprPipelineType {
+	case pipeline.SignalTraces:
+		var conn connector.Traces
+		conn, err = builder.CreateTracesToTraces(ctx, set, next)
+		if err != nil {
+			return err
+		}
+		n.Component = componentTraces{
+			Component: conn,
+			Traces:    capabilityconsumer.NewTraces(conn, aggregateCap(conn, nexts)),
+		}
+		return nil
+	case pipeline.SignalMetrics:
+		n.Component, err = builder.CreateMetricsToTraces(ctx, set, next)
+	case pipeline.SignalLogs:
+		n.Component, err = builder.CreateLogsToTraces(ctx, set, next)
+	case componentprofiles.SignalProfiles:
+		n.Component, err = builder.CreateProfilesToTraces(ctx, set, next)
+	}
+	return err
+}
+
+func (n *connectorNode) buildMetrics(
+	ctx context.Context,
+	set connector.Settings,
+	builder *builders.ConnectorBuilder,
+	nexts []baseConsumer,
+) error {
+	consumers := make(map[pipeline.ID]consumer.Metrics, len(nexts))
+	for _, next := range nexts {
+		consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Metrics)
+	}
+	next := connector.NewMetricsRouter(consumers)
+
+	var err error
+	switch n.exprPipelineType {
+	case pipeline.SignalMetrics:
+		var conn connector.Metrics
+		conn, err = builder.CreateMetricsToMetrics(ctx, set, next)
+		if err != nil {
+			return err
+		}
+		n.Component = componentMetrics{
+			Component: conn,
+			Metrics:   capabilityconsumer.NewMetrics(conn, aggregateCap(conn, nexts)),
+		}
+		return nil
+	case pipeline.SignalTraces:
+		n.Component, err = builder.CreateTracesToMetrics(ctx, set, next)
+	case pipeline.SignalLogs:
+		n.Component, err = builder.CreateLogsToMetrics(ctx, set, next)
+	case componentprofiles.SignalProfiles:
+		n.Component, err = builder.CreateProfilesToMetrics(ctx, set, next)
+	}
+	return err
+}
+
+func (n *connectorNode) buildLogs(
+	ctx context.Context,
+	set connector.Settings,
+	builder *builders.ConnectorBuilder,
+	nexts []baseConsumer,
+) error {
+	consumers := make(map[pipeline.ID]consumer.Logs, len(nexts))
+	for _, next := range nexts {
+		consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Logs)
+	}
+	next := connector.NewLogsRouter(consumers)
+
+	var err error
+	switch n.exprPipelineType {
+	case pipeline.SignalLogs:
+		var conn connector.Logs
+		conn, err = builder.CreateLogsToLogs(ctx, set, next)
+		if err != nil {
+			return err
+		}
+		n.Component = componentLogs{
+			Component: conn,
+			Logs:      capabilityconsumer.NewLogs(conn, aggregateCap(conn, nexts)),
+		}
+		return nil
+	case pipeline.SignalTraces:
+		n.Component, err = builder.CreateTracesToLogs(ctx, set, next)
+	case pipeline.SignalMetrics:
+		n.Component, err = builder.CreateMetricsToLogs(ctx, set, next)
+	case componentprofiles.SignalProfiles:
+		n.Component, err = builder.CreateProfilesToLogs(ctx, set, next)
+	}
+	return err
+}
+
+func (n *connectorNode) buildProfiles(
+	ctx context.Context,
+	set connector.Settings,
+	builder *builders.ConnectorBuilder,
+	nexts []baseConsumer,
+) error {
+	consumers := make(map[pipeline.ID]consumerprofiles.Profiles, len(nexts))
+	for _, next := range nexts {
+		consumers[next.(*capabilitiesNode).pipelineID] = next.(consumerprofiles.Profiles)
+	}
+	next := connectorprofiles.NewProfilesRouter(consumers)
+
+	var err error
+	switch n.exprPipelineType {
+	case componentprofiles.SignalProfiles:
+		var conn connectorprofiles.Profiles
+		conn, err = builder.CreateProfilesToProfiles(ctx, set, next)
+		if err != nil {
+			return err
+		}
+		n.Component = componentProfiles{
+			Component: conn,
+			Profiles:  capabilityconsumer.NewProfiles(conn, aggregateCap(conn, nexts)),
+		}
+		return nil
+	case pipeline.SignalTraces:
+		n.Component, err = builder.CreateTracesToProfiles(ctx, set, next)
+	case pipeline.SignalMetrics:
+		n.Component, err = builder.CreateMetricsToProfiles(ctx, set, next)
+	case pipeline.SignalLogs:
+		n.Component, err = builder.CreateLogsToProfiles(ctx, set, next)
+	}
+	return err
+}
+
+// When connecting pipelines of the same data type, the connector must
+// inherit the capabilities of pipelines in which it is acting as a receiver.
+// Since the incoming and outgoing data types are the same, we must also consider
+// that the connector itself may mutate the data and pass it along.
+func aggregateCap(base baseConsumer, nexts []baseConsumer) consumer.Capabilities {
+	capabilities := base.Capabilities()
+	for _, next := range nexts {
+		capabilities.MutatesData = capabilities.MutatesData || next.Capabilities().MutatesData
+	}
+	return capabilities
 }

@@ -70,8 +70,8 @@ type metricsExporter struct {
 	consumer.Metrics
 }
 
-// NewMetricsExporter creates an exporter.Metrics that records observability metrics and wraps every request with a Span.
-func NewMetricsExporter(
+// NewMetrics creates an exporter.Metrics that records observability metrics and wraps every request with a Span.
+func NewMetrics(
 	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config,
@@ -88,8 +88,11 @@ func NewMetricsExporter(
 		internal.WithMarshaler(metricsRequestMarshaler), internal.WithUnmarshaler(newMetricsRequestUnmarshalerFunc(pusher)),
 		internal.WithBatchFuncs(mergeMetrics, mergeSplitMetrics),
 	}
-	return NewMetricsRequestExporter(ctx, set, requestFromMetrics(pusher), append(metricsOpts, options...)...)
+	return NewMetricsRequest(ctx, set, requestFromMetrics(pusher), append(metricsOpts, options...)...)
 }
+
+// Deprecated: [v0.112.0] use NewMetrics.
+var NewMetricsExporter = NewMetrics
 
 // RequestFromMetricsFunc converts pdata.Metrics into a user-defined request.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
@@ -103,10 +106,10 @@ func requestFromMetrics(pusher consumer.ConsumeMetricsFunc) RequestFromMetricsFu
 	}
 }
 
-// NewMetricsRequestExporter creates a new metrics exporter based on a custom MetricsConverter and RequestSender.
+// NewMetricsRequest creates a new metrics exporter based on a custom MetricsConverter and RequestSender.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-func NewMetricsRequestExporter(
+func NewMetricsRequest(
 	_ context.Context,
 	set exporter.Settings,
 	converter RequestFromMetricsFunc,
@@ -145,6 +148,9 @@ func NewMetricsRequestExporter(
 		Metrics:      mc,
 	}, err
 }
+
+// Deprecated: [v0.112.0] use NewMetricsRequest.
+var NewMetricsRequestExporter = NewMetricsRequest
 
 type metricsSenderWithObservability struct {
 	internal.BaseRequestSender

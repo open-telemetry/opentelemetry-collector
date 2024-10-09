@@ -103,9 +103,9 @@ func newComponentsCommand(set CollectorSettings) *cobra.Command {
 					Name:   exp.Type(),
 					Module: factories.ExporterModules[exp.Type()],
 					Stability: map[string]string{
-						"logs":    exp.LogsExporterStability().String(),
-						"metrics": exp.MetricsExporterStability().String(),
-						"traces":  exp.TracesExporterStability().String(),
+						"logs":    exp.LogsStability().String(),
+						"metrics": exp.MetricsStability().String(),
+						"traces":  exp.TracesStability().String(),
 					},
 				})
 			}

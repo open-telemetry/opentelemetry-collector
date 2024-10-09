@@ -27,17 +27,16 @@ type batchProcessorTelemetry struct {
 
 	exportCtx context.Context
 
-	processorAttr    attribute.Set
+	processorAttr    metric.MeasurementOption
 	telemetryBuilder *metadata.TelemetryBuilder
 }
 
 func newBatchProcessorTelemetry(set processor.Settings, currentMetadataCardinality func() int) (*batchProcessorTelemetry, error) {
-	attrs := attribute.NewSet(attribute.String(internal.ProcessorKey, set.ID.String()))
+	attrs := metric.WithAttributeSet(attribute.NewSet(attribute.String(internal.ProcessorKey, set.ID.String())))
 
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings,
-		metadata.WithProcessorBatchMetadataCardinalityCallback(func() int64 {
-			return int64(currentMetadataCardinality())
-		}, metric.WithAttributeSet(attrs)),
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(
+		set.TelemetrySettings,
+		metadata.WithProcessorBatchMetadataCardinalityCallback(func() int64 { return int64(currentMetadataCardinality()) }, attrs),
 	)
 
 	if err != nil {
@@ -55,11 +54,11 @@ func newBatchProcessorTelemetry(set processor.Settings, currentMetadataCardinali
 func (bpt *batchProcessorTelemetry) record(trigger trigger, sent, bytes int64) {
 	switch trigger {
 	case triggerBatchSize:
-		bpt.telemetryBuilder.ProcessorBatchBatchSizeTriggerSend.Add(bpt.exportCtx, 1, metric.WithAttributeSet(bpt.processorAttr))
+		bpt.telemetryBuilder.ProcessorBatchBatchSizeTriggerSend.Add(bpt.exportCtx, 1, bpt.processorAttr)
 	case triggerTimeout:
-		bpt.telemetryBuilder.ProcessorBatchTimeoutTriggerSend.Add(bpt.exportCtx, 1, metric.WithAttributeSet(bpt.processorAttr))
+		bpt.telemetryBuilder.ProcessorBatchTimeoutTriggerSend.Add(bpt.exportCtx, 1, bpt.processorAttr)
 	}
 
-	bpt.telemetryBuilder.ProcessorBatchBatchSendSize.Record(bpt.exportCtx, sent, metric.WithAttributeSet(bpt.processorAttr))
-	bpt.telemetryBuilder.ProcessorBatchBatchSendSizeBytes.Record(bpt.exportCtx, bytes, metric.WithAttributeSet(bpt.processorAttr))
+	bpt.telemetryBuilder.ProcessorBatchBatchSendSize.Record(bpt.exportCtx, sent, bpt.processorAttr)
+	bpt.telemetryBuilder.ProcessorBatchBatchSendSizeBytes.Record(bpt.exportCtx, bytes, bpt.processorAttr)
 }
