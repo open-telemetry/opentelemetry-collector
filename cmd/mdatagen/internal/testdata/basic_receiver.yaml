@@ -3,4 +3,4 @@ type: test
 status:
   class: receiver
   stability:
-    beta: [logs_to_logs]
+    beta: [logs]
