@@ -15,8 +15,6 @@ var NoopTracerProvider = featuregate.GlobalRegistry().MustRegister("service.noop
 	featuregate.WithRegisterToVersion("v0.109.0"),
 	featuregate.WithRegisterDescription("Sets a Noop OpenTelemetry TracerProvider to reduce memory allocations. This featuregate is incompatible with the zPages extension."))
 
-// UseLocalHostAsDefaultHostfeatureGate is the feature gate that controls whether
-// server-like receivers and extensions such as the OTLP receiver use localhost as the default host for their endpoints.
 var _ = mustRegisterOrLoad(
 	featuregate.GlobalRegistry(),
 	"component.UseLocalHostAsDefaultHost",

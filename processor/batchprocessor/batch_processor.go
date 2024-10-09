@@ -352,7 +352,7 @@ func (mb *multiShardBatcher) consume(ctx context.Context, data any) error {
 		}
 
 		// aset.ToSlice() returns the sorted, deduplicated,
-		// and name-downcased list of attributes.
+		// and name-lowercased list of attributes.
 		var loaded bool
 		b, loaded = mb.batchers.LoadOrStore(aset, mb.processor.newShard(md))
 		if !loaded {
