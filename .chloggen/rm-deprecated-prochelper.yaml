@@ -7,7 +7,7 @@ change_type: breaking
 component: processorhelper
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Remove deprecated funcs from processorhelper
+note: Remove deprecated funcs/types from processorhelper & componenttest
 
 # One or more tracking issues or pull requests related to the change
 issues: [11302]
