@@ -6,6 +6,7 @@ package processorhelper
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -70,6 +71,38 @@ func newTestTProcessor(retError error) ProcessTracesFunc {
 	}
 }
 
+func TestTracesConcurrency(t *testing.T) {
+	tracesFunc := func(_ context.Context, td ptrace.Traces) (ptrace.Traces, error) {
+		return td, nil
+	}
+
+	incomingTraces := ptrace.NewTraces()
+	incomingSpans := incomingTraces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans()
+
+	// Add 4 records to the incoming
+	incomingSpans.AppendEmpty()
+	incomingSpans.AppendEmpty()
+	incomingSpans.AppendEmpty()
+	incomingSpans.AppendEmpty()
+
+	mp, err := NewTraces(context.Background(), processortest.NewNopSettings(), &testLogsCfg, consumertest.NewNop(), tracesFunc)
+	require.NoError(t, err)
+	assert.NoError(t, mp.Start(context.Background(), componenttest.NewNopHost()))
+
+	var wg sync.WaitGroup
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := 0; j < 10000; j++ {
+				assert.NoError(t, mp.ConsumeTraces(context.Background(), incomingTraces))
+			}
+		}()
+	}
+	wg.Wait()
+	assert.NoError(t, mp.Shutdown(context.Background()))
+}
+
 func TestTraces_RecordInOut(t *testing.T) {
 	// Regardless of how many spans are ingested, emit just one
 	mockAggregate := func(_ context.Context, _ ptrace.Traces) (ptrace.Traces, error) {
@@ -121,6 +154,63 @@ func TestTraces_RecordInOut(t *testing.T) {
 				DataPoints: []metricdata.DataPoint[int64]{
 					{
 						Value:      1,
+						Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "traces")),
+					},
+				},
+			},
+		},
+	})
+}
+
+func TestTraces_RecordIn_ErrorOut(t *testing.T) {
+	// Regardless of input, return error
+	mockErr := func(_ context.Context, _ ptrace.Traces) (ptrace.Traces, error) {
+		return ptrace.NewTraces(), errors.New("fake")
+	}
+
+	incomingTraces := ptrace.NewTraces()
+	incomingSpans := incomingTraces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans()
+
+	// Add 4 records to the incoming
+	incomingSpans.AppendEmpty()
+	incomingSpans.AppendEmpty()
+	incomingSpans.AppendEmpty()
+	incomingSpans.AppendEmpty()
+
+	testTelemetry := setupTestTelemetry()
+	tp, err := NewTraces(context.Background(), testTelemetry.NewSettings(), &testLogsCfg, consumertest.NewNop(), mockErr)
+	require.NoError(t, err)
+
+	require.NoError(t, tp.Start(context.Background(), componenttest.NewNopHost()))
+	require.Error(t, tp.ConsumeTraces(context.Background(), incomingTraces))
+	require.NoError(t, tp.Shutdown(context.Background()))
+
+	testTelemetry.assertMetrics(t, []metricdata.Metrics{
+		{
+			Name:        "otelcol_processor_incoming_items",
+			Description: "Number of items passed to the processor. [alpha]",
+			Unit:        "{items}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      4,
+						Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "traces")),
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_processor_outgoing_items",
+			Description: "Number of items emitted from the processor. [alpha]",
+			Unit:        "{items}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      0,
 						Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "traces")),
 					},
 				},

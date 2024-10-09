@@ -70,8 +70,8 @@ type metricsExporter struct {
 	consumer.Metrics
 }
 
-// NewMetricsExporter creates an exporter.Metrics that records observability metrics and wraps every request with a Span.
-func NewMetricsExporter(
+// NewMetrics creates an exporter.Metrics that records observability metrics and wraps every request with a Span.
+func NewMetrics(
 	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config,
@@ -91,6 +91,9 @@ func NewMetricsExporter(
 	return newMetricsRequestExporter(ctx, set, requestFromMetrics(pusher), append(metricsOpts, options...)...)
 }
 
+// Deprecated: [v0.112.0] use NewMetrics.
+var NewMetricsExporter = NewMetrics
+
 // RequestFromMetricsFunc converts pdata.Metrics into a user-defined request.
 //
 // Deprecated: [v0.111.0] If you use this API, please comment on
@@ -108,7 +111,7 @@ func requestFromMetrics(pusher consumer.ConsumeMetricsFunc) RequestFromMetricsFu
 //
 // Deprecated: [v0.111.0] If you use this API, please comment on
 // https://github.com/open-telemetry/opentelemetry-collector/issues/11142 so we don't remove it.
-func NewMetricsRequestExporter(
+func NewMetricsRequest(
 	ctx context.Context,
 	set exporter.Settings,
 	converter RequestFromMetricsFunc,
@@ -156,6 +159,9 @@ func newMetricsRequestExporter(
 		Metrics:      mc,
 	}, err
 }
+
+// Deprecated: [v0.112.0] use NewMetricsRequest.
+var NewMetricsRequestExporter = NewMetricsRequest
 
 type metricsSenderWithObservability struct {
 	internal.BaseRequestSender

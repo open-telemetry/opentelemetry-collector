@@ -70,8 +70,8 @@ type logsExporter struct {
 	consumer.Logs
 }
 
-// NewLogsExporter creates an exporter.Logs that records observability metrics and wraps every request with a Span.
-func NewLogsExporter(
+// NewLogs creates an exporter.Logs that records observability metrics and wraps every request with a Span.
+func NewLogs(
 	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config,
@@ -91,6 +91,9 @@ func NewLogsExporter(
 	return newLogsRequestExporter(ctx, set, requestFromLogs(pusher), append(logsOpts, options...)...)
 }
 
+// Deprecated: [v0.112.0] use NewLogs.
+var NewLogsExporter = NewLogs
+
 // RequestFromLogsFunc converts plog.Logs data into a user-defined request.
 //
 // Deprecated: [v0.111.0] If you use this API, please comment on
@@ -108,7 +111,7 @@ func requestFromLogs(pusher consumer.ConsumeLogsFunc) RequestFromLogsFunc {
 //
 // Deprecated: [v0.111.0] If you use this API, please comment on
 // https://github.com/open-telemetry/opentelemetry-collector/issues/11142 so we don't remove it.
-func NewLogsRequestExporter(
+func NewLogsRequest(
 	ctx context.Context,
 	set exporter.Settings,
 	converter RequestFromLogsFunc,
@@ -131,7 +134,7 @@ func newLogsRequestExporter(
 		return nil, errNilLogsConverter
 	}
 
-	be, err := internal.NewBaseExporter(set, pipeline.SignalLogs, newLogsExporterWithObservability, options...)
+	be, err := internal.NewBaseExporter(set, pipeline.SignalLogs, newLogsWithObservability, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -157,12 +160,15 @@ func newLogsRequestExporter(
 	}, err
 }
 
+// Deprecated: [v0.112.0] use NewLogsRequest.
+var NewLogsRequestExporter = NewLogsRequest
+
 type logsExporterWithObservability struct {
 	internal.BaseRequestSender
 	obsrep *internal.ObsReport
 }
 
-func newLogsExporterWithObservability(obsrep *internal.ObsReport) internal.RequestSender {
+func newLogsWithObservability(obsrep *internal.ObsReport) internal.RequestSender {
 	return &logsExporterWithObservability{obsrep: obsrep}
 }
 

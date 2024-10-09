@@ -24,9 +24,6 @@ type Factory interface {
 	// an error will be returned instead.
 	CreateProfiles(ctx context.Context, set processor.Settings, cfg component.Config, next consumerprofiles.Profiles) (Profiles, error)
 
-	// Deprecated: [v0.111.0] use CreateProfiles.
-	CreateProfilesProcessor(ctx context.Context, set processor.Settings, cfg component.Config, next consumerprofiles.Profiles) (Profiles, error)
-
 	// ProfilesStability gets the stability level of the Profiles processor.
 	ProfilesStability() component.StabilityLevel
 }
@@ -47,11 +44,6 @@ func (f CreateProfilesFunc) CreateProfiles(ctx context.Context, set processor.Se
 		return nil, pipeline.ErrSignalNotSupported
 	}
 	return f(ctx, set, cfg, next)
-}
-
-// Deprecated: [v0.111.0] use CreateProfiles.
-func (f CreateProfilesFunc) CreateProfilesProcessor(ctx context.Context, set processor.Settings, cfg component.Config, next consumerprofiles.Profiles) (Profiles, error) {
-	return f.CreateProfiles(ctx, set, cfg, next)
 }
 
 // FactoryOption apply changes to ReceiverOptions.
@@ -78,11 +70,8 @@ func (f factory) ProfilesStability() component.StabilityLevel {
 }
 
 type factoryOpts struct {
-	cfgType component.Type
-	component.CreateDefaultConfigFunc
 	opts []processor.FactoryOption
-	CreateProfilesFunc
-	profilesStabilityLevel component.StabilityLevel
+	*factory
 }
 
 // WithTraces overrides the default "error not supported" implementation for CreateTraces and the default "undefined" stability level.
@@ -116,16 +105,10 @@ func WithProfiles(createProfiles CreateProfilesFunc, sl component.StabilityLevel
 
 // NewFactory returns a Factory.
 func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefaultConfigFunc, options ...FactoryOption) Factory {
-	opts := factoryOpts{
-		cfgType:                 cfgType,
-		CreateDefaultConfigFunc: createDefaultConfig,
-	}
+	opts := factoryOpts{factory: &factory{}}
 	for _, opt := range options {
 		opt.applyOption(&opts)
 	}
-	return &factory{
-		Factory:                processor.NewFactory(opts.cfgType, opts.CreateDefaultConfig, opts.opts...),
-		CreateProfilesFunc:     opts.CreateProfilesFunc,
-		profilesStabilityLevel: opts.profilesStabilityLevel,
-	}
+	opts.factory.Factory = processor.NewFactory(cfgType, createDefaultConfig, opts.opts...)
+	return opts.factory
 }

@@ -23,7 +23,7 @@ README](../configtls/README.md).
 - [`read_buffer_size`](https://golang.org/pkg/net/http/#Transport)
 - [`timeout`](https://golang.org/pkg/net/http/#Client)
 - [`write_buffer_size`](https://golang.org/pkg/net/http/#Transport)
-- `compression`: Compression type to use among `gzip`, `zstd`, `snappy`, `zlib`, and `deflate`.
+- `compression`: Compression type to use among `gzip`, `zstd`, `snappy`, `zlib`, `deflate`, and `lz4`.
   - look at the documentation for the server-side of the communication.
   - `none` will be treated as uncompressed, and any other inputs will cause an error.
 - [`max_idle_conns`](https://golang.org/pkg/net/http/#Transport)
@@ -79,7 +79,7 @@ will not be enabled.
   not set, browsers use a default of 5 seconds.
 - `endpoint`: Valid value syntax available [here](https://github.com/grpc/grpc/blob/master/doc/naming.md)
 - `max_request_body_size`: configures the maximum allowed body size in bytes for a single request. Default: `20971520` (20MiB)
-- `compression_algorithms`: configures the list of compression algorithms the server can accept. Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate"]
+- `compression_algorithms`: configures the list of compression algorithms the server can accept. Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate", "lz4"]
 - [`tls`](../configtls/README.md)
 - [`auth`](../configauth/README.md)
   - `request_params`: a list of query parameter names to add to the auth context, along with the HTTP headers
@@ -111,7 +111,7 @@ processors:
   attributes:
     actions:
       - key: http.client_ip
-        from_context: X-Forwarded-For
+        from_context: metadata.x-forwarded-for
         action: upsert
 ```
 

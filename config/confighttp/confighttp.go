@@ -33,7 +33,7 @@ import (
 
 const headerContentEncoding = "Content-Encoding"
 const defaultMaxRequestBodySize = 20 * 1024 * 1024 // 20MiB
-var defaultCompressionAlgorithms = []string{"", "gzip", "zstd", "zlib", "snappy", "deflate"}
+var defaultCompressionAlgorithms = []string{"", "gzip", "zstd", "zlib", "snappy", "deflate", "lz4"}
 
 // ClientConfig defines settings for creating an HTTP client.
 type ClientConfig struct {

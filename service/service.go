@@ -33,7 +33,6 @@ import (
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
 	"go.opentelemetry.io/collector/service/internal/resource"
 	"go.opentelemetry.io/collector/service/internal/status"
-	"go.opentelemetry.io/collector/service/pipelines"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -305,14 +304,6 @@ func (srv *Service) initExtensions(ctx context.Context, cfg extensions.Config) e
 
 // Creates the pipeline graph.
 func (srv *Service) initGraph(ctx context.Context, cfg Config) error {
-	// nolint
-	if len(cfg.PipelinesWithPipelineID) > 0 {
-		cfg.Pipelines = make(pipelines.Config, len(cfg.PipelinesWithPipelineID))
-		for k, v := range cfg.PipelinesWithPipelineID {
-			cfg.Pipelines[k] = v
-		}
-	}
-
 	var err error
 	if srv.host.Pipelines, err = graph.Build(ctx, graph.Settings{
 		Telemetry:        srv.telemetrySettings,

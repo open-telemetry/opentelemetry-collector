@@ -17,9 +17,9 @@ import (
 	"go.opentelemetry.io/collector/processor/processorhelper/internal/metadata"
 )
 
-// BuildCustomMetricName is used to be build a metric name following
-// the standards used in the Collector. The configType should be the same
-// value used to identify the type on the config.
+const signalKey = "otel.signal"
+
+// Deprecated: [v0.111.0] no longer needed. To be removed in future.
 func BuildCustomMetricName(configType, metric string) string {
 	componentPrefix := internal.ProcessorMetricPrefix
 	if !strings.HasSuffix(componentPrefix, internal.MetricNameSep) {
@@ -46,7 +46,7 @@ func NewObsReport(_ ObsReportSettings) (*ObsReport, error) {
 }
 
 type obsReport struct {
-	otelAttrs        []attribute.KeyValue
+	otelAttrs        metric.MeasurementOption
 	telemetryBuilder *metadata.TelemetryBuilder
 }
 
@@ -56,15 +56,15 @@ func newObsReport(set processor.Settings, signal pipeline.Signal) (*obsReport, e
 		return nil, err
 	}
 	return &obsReport{
-		otelAttrs: []attribute.KeyValue{
+		otelAttrs: metric.WithAttributeSet(attribute.NewSet(
 			attribute.String(internal.ProcessorKey, set.ID.String()),
-			attribute.String("otel.signal", signal.String()),
-		},
+			attribute.String(signalKey, signal.String()),
+		)),
 		telemetryBuilder: telemetryBuilder,
 	}, nil
 }
 
 func (or *obsReport) recordInOut(ctx context.Context, incoming, outgoing int) {
-	or.telemetryBuilder.ProcessorIncomingItems.Add(ctx, int64(incoming), metric.WithAttributes(or.otelAttrs...))
-	or.telemetryBuilder.ProcessorOutgoingItems.Add(ctx, int64(outgoing), metric.WithAttributes(or.otelAttrs...))
+	or.telemetryBuilder.ProcessorIncomingItems.Add(ctx, int64(incoming), or.otelAttrs)
+	or.telemetryBuilder.ProcessorOutgoingItems.Add(ctx, int64(outgoing), or.otelAttrs)
 }

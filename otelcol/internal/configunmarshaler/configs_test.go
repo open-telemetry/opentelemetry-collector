@@ -142,3 +142,15 @@ func TestUnmarshalError(t *testing.T) {
 		})
 	}
 }
+
+func TestUnmarshal_LoggingExporter(t *testing.T) {
+	conf := confmap.NewFromStringMap(map[string]any{
+		"logging": nil,
+	})
+	factories := map[component.Type]component.Factory{
+		nopType: exportertest.NewNopFactory(),
+	}
+	cfgs := NewConfigs(factories)
+	err := cfgs.Unmarshal(conf)
+	assert.ErrorContains(t, err, "the logging exporter has been deprecated, use the debug exporter instead")
+}
