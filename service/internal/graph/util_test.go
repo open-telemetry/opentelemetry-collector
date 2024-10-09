@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processorprofiles"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverprofiles"
+	"go.opentelemetry.io/collector/service/internal/testcomponents"
 	"go.opentelemetry.io/collector/service/pipelines"
 )
 
@@ -144,6 +145,29 @@ func expectedInstances(m pipelines.Config, pID pipeline.ID) (int, int) {
 		e += len(typeMap)
 	}
 	return r, e
+}
+
+// connector needs to be unwrapped to access component as ExampleConnector
+func unwrapExampleConnector(c *connectorNode) *testcomponents.ExampleConnector {
+	switch ct := c.Component.(type) {
+	case componentTraces: // consumes traces, emits traces
+		return ct.Component.(*testcomponents.ExampleConnector)
+	case connector.Traces: // consumes traces, emits something else
+		return ct.(*testcomponents.ExampleConnector)
+	case componentMetrics: // consumes metrics, emits metrics
+		return ct.Component.(*testcomponents.ExampleConnector)
+	case connector.Metrics: // consumes metrics, emits something else
+		return ct.(*testcomponents.ExampleConnector)
+	case componentLogs: // consumes logs, emits logs
+		return ct.Component.(*testcomponents.ExampleConnector)
+	case connector.Logs: // consumes logs, emits something else
+		return ct.(*testcomponents.ExampleConnector)
+	case componentProfiles: // consumes profiles, emits profiles
+		return ct.Component.(*testcomponents.ExampleConnector)
+	case connectorprofiles.Profiles: // consumes profiles, emits something else
+		return ct.(*testcomponents.ExampleConnector)
+	}
+	return nil
 }
 
 func newBadReceiverFactory() receiver.Factory {
