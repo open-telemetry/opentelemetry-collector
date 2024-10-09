@@ -96,8 +96,8 @@ var NewTracesExporter = NewTraces
 
 // RequestFromTracesFunc converts ptrace.Traces into a user-defined Request.
 //
-// Deprecated: [v0.111.0] If you use this API, please comment on
-// https://github.com/open-telemetry/opentelemetry-collector/issues/11142 so we don't remove it.
+// Deprecated: [v0.112.0] If you use this API, please comment on
+// https://github.com/open-telemetry/opentelemetry-collector/issues/11142 so that we don't remove it.
 type RequestFromTracesFunc func(context.Context, ptrace.Traces) (Request, error)
 
 // requestFromTraces returns a RequestFromTracesFunc that converts ptrace.Traces into a Request.
@@ -109,8 +109,8 @@ func requestFromTraces(pusher consumer.ConsumeTracesFunc) RequestFromTracesFunc 
 
 // NewTracesRequestExporter creates a new traces exporter based on a custom TracesConverter and RequestSender.
 //
-// Deprecated: [v0.111.0] If you use this API, please comment on
-// https://github.com/open-telemetry/opentelemetry-collector/issues/11142 so we don't remove it.
+// Deprecated: [v0.112.0] If you use this API, please comment on
+// https://github.com/open-telemetry/opentelemetry-collector/issues/11142 so that we don't remove it.
 func NewTracesRequest(
 	ctx context.Context,
 	set exporter.Settings,

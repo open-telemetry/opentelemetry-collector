@@ -96,8 +96,8 @@ var NewMetricsExporter = NewMetrics
 
 // RequestFromMetricsFunc converts pdata.Metrics into a user-defined request.
 //
-// Deprecated: [v0.111.0] If you use this API, please comment on
-// https://github.com/open-telemetry/opentelemetry-collector/issues/11142 so we don't remove it.
+// Deprecated: [v0.112.0] If you use this API, please comment on
+// https://github.com/open-telemetry/opentelemetry-collector/issues/11142 so that we don't remove it.
 type RequestFromMetricsFunc func(context.Context, pmetric.Metrics) (Request, error)
 
 // requestFromMetrics returns a RequestFromMetricsFunc that converts pdata.Metrics into a Request.
@@ -109,8 +109,8 @@ func requestFromMetrics(pusher consumer.ConsumeMetricsFunc) RequestFromMetricsFu
 
 // NewMetricsRequestExporter creates a new metrics exporter based on a custom MetricsConverter and RequestSender.
 //
-// Deprecated: [v0.111.0] If you use this API, please comment on
-// https://github.com/open-telemetry/opentelemetry-collector/issues/11142 so we don't remove it.
+// Deprecated: [v0.112.0] If you use this API, please comment on
+// https://github.com/open-telemetry/opentelemetry-collector/issues/11142 so that we don't remove it.
 func NewMetricsRequest(
 	ctx context.Context,
 	set exporter.Settings,

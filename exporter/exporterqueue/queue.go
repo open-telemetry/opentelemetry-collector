@@ -1,8 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// Deprecated: [v0.111.0] If you use this API, please comment on
-// https://github.com/open-telemetry/opentelemetry-collector/issues/11142 so we don't remove it.
+// Deprecated: [v0.112.0] If you use this API, please comment on
+// https://github.com/open-telemetry/opentelemetry-collector/issues/11142 so that we don't remove it.
 package exporterqueue // import "go.opentelemetry.io/collector/exporter/exporterqueue"
 
 import (

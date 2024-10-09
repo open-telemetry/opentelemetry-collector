@@ -52,8 +52,8 @@ func WithQueue(config internal.QueueConfig) Option {
 // WithRequestQueue enables queueing for an exporter.
 // This option should be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter.
 //
-// Deprecated: [v0.111.0] If you use this API, please comment on
-// https://github.com/open-telemetry/opentelemetry-collector/issues/11142 so we don't remove it.
+// Deprecated: [v0.112.0] If you use this API, please comment on
+// https://github.com/open-telemetry/opentelemetry-collector/issues/11142 so that we don't remove it.
 func WithRequestQueue(cfg exporterqueue.Config, queueFactory exporterqueue.Factory[Request]) Option {
 	// Ugly code to convert between external and internal defined types
 	internalFactory := func(ctx context.Context, s internalExporterQueue.Settings, c internalExporterQueue.Config) internalExporterQueue.Queue[Request] {
@@ -74,8 +74,8 @@ type BatcherOption = internal.BatcherOption
 
 // WithRequestBatchFuncs sets the functions for merging and splitting batches for an exporter built for custom request types.
 //
-// Deprecated: [v0.111.0] If you use this API, please comment on
-// https://github.com/open-telemetry/opentelemetry-collector/issues/11142 so we don't remove it.
+// Deprecated: [v0.112.0] If you use this API, please comment on
+// https://github.com/open-telemetry/opentelemetry-collector/issues/11142 so that we don't remove it.
 func WithRequestBatchFuncs(mf exporterbatcher.BatchMergeFunc[Request], msf exporterbatcher.BatchMergeSplitFunc[Request]) BatcherOption {
 	return internal.WithRequestBatchFuncs(mf, msf)
 }
