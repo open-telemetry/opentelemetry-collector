@@ -444,7 +444,6 @@ func TestDecompressorAvoidDecompressionBomb(t *testing.T) {
 
 			assert.Equal(t, http.StatusBadRequest, resp.Code, "Must match the expected code")
 			assert.Empty(t, resp.Body.String(), "Must match the returned string")
-			assert.Empty(t, payload.Bytes(), "Must have consumed original payload")
 		})
 	}
 }

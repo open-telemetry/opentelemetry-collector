@@ -163,12 +163,6 @@ func (d *decompressor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if newBody != nil {
-		defer func(orig io.ReadCloser) {
-			// Ensure the original body is correctly consumed and closed
-			_, _ = io.Copy(io.Discard, orig)
-			_ = orig.Close()
-		}(r.Body)
-
 		defer newBody.Close()
 		// "Content-Encoding" header is removed to avoid decompressing twice
 		// in case the next handler(s) have implemented a similar mechanism.
