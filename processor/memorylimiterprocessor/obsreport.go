@@ -16,7 +16,7 @@ import (
 )
 
 type obsReport struct {
-	otelAttrs        attribute.Set
+	otelAttrs        metric.MeasurementOption
 	telemetryBuilder *metadata.TelemetryBuilder
 }
 
@@ -27,7 +27,7 @@ func newObsReport(set processor.Settings) (*obsReport, error) {
 	}
 
 	return &obsReport{
-		otelAttrs:        attribute.NewSet(attribute.String(internal.ProcessorKey, set.ID.String())),
+		otelAttrs:        metric.WithAttributeSet(attribute.NewSet(attribute.String(internal.ProcessorKey, set.ID.String()))),
 		telemetryBuilder: telemetryBuilder,
 	}, nil
 }
@@ -36,11 +36,11 @@ func newObsReport(set processor.Settings) (*obsReport, error) {
 func (or *obsReport) accepted(ctx context.Context, num int, signal pipeline.Signal) {
 	switch signal {
 	case pipeline.SignalTraces:
-		or.telemetryBuilder.ProcessorAcceptedSpans.Add(ctx, int64(num), metric.WithAttributeSet(or.otelAttrs))
+		or.telemetryBuilder.ProcessorAcceptedSpans.Add(ctx, int64(num), or.otelAttrs)
 	case pipeline.SignalMetrics:
-		or.telemetryBuilder.ProcessorAcceptedMetricPoints.Add(ctx, int64(num), metric.WithAttributeSet(or.otelAttrs))
+		or.telemetryBuilder.ProcessorAcceptedMetricPoints.Add(ctx, int64(num), or.otelAttrs)
 	case pipeline.SignalLogs:
-		or.telemetryBuilder.ProcessorAcceptedLogRecords.Add(ctx, int64(num), metric.WithAttributeSet(or.otelAttrs))
+		or.telemetryBuilder.ProcessorAcceptedLogRecords.Add(ctx, int64(num), or.otelAttrs)
 	}
 }
 
@@ -48,10 +48,10 @@ func (or *obsReport) accepted(ctx context.Context, num int, signal pipeline.Sign
 func (or *obsReport) refused(ctx context.Context, num int, signal pipeline.Signal) {
 	switch signal {
 	case pipeline.SignalTraces:
-		or.telemetryBuilder.ProcessorRefusedSpans.Add(ctx, int64(num), metric.WithAttributeSet(or.otelAttrs))
+		or.telemetryBuilder.ProcessorRefusedSpans.Add(ctx, int64(num), or.otelAttrs)
 	case pipeline.SignalMetrics:
-		or.telemetryBuilder.ProcessorRefusedMetricPoints.Add(ctx, int64(num), metric.WithAttributeSet(or.otelAttrs))
+		or.telemetryBuilder.ProcessorRefusedMetricPoints.Add(ctx, int64(num), or.otelAttrs)
 	case pipeline.SignalLogs:
-		or.telemetryBuilder.ProcessorRefusedLogRecords.Add(ctx, int64(num), metric.WithAttributeSet(or.otelAttrs))
+		or.telemetryBuilder.ProcessorRefusedLogRecords.Add(ctx, int64(num), or.otelAttrs)
 	}
 }

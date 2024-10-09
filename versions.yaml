@@ -3,7 +3,7 @@
 
 module-sets:
   stable:
-    version: v1.16.0
+    version: v1.17.0
     modules:
       - go.opentelemetry.io/collector/client
       - go.opentelemetry.io/collector/featuregate
@@ -20,7 +20,7 @@ module-sets:
       - go.opentelemetry.io/collector/config/configtls
       - go.opentelemetry.io/collector/config/confignet
   beta:
-    version: v0.110.0
+    version: v0.111.0
     modules:
       - go.opentelemetry.io/collector
       - go.opentelemetry.io/collector/internal/globalgates
@@ -41,6 +41,7 @@ module-sets:
       - go.opentelemetry.io/collector/connector/forwardconnector
       - go.opentelemetry.io/collector/consumer
       - go.opentelemetry.io/collector/consumer/consumerprofiles
+      - go.opentelemetry.io/collector/consumer/consumererror/consumererrorprofiles
       - go.opentelemetry.io/collector/consumer/consumertest
       - go.opentelemetry.io/collector/exporter
       - go.opentelemetry.io/collector/exporter/debugexporter

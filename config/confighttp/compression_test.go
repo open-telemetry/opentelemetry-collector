@@ -19,6 +19,7 @@ import (
 
 	"github.com/golang/snappy"
 	"github.com/klauspost/compress/zstd"
+	"github.com/pierrec/lz4/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -33,6 +34,7 @@ func TestHTTPClientCompression(t *testing.T) {
 	compressedDeflateBody := compressZlib(t, testBody)
 	compressedSnappyBody := compressSnappy(t, testBody)
 	compressedZstdBody := compressZstd(t, testBody)
+	compressedLz4Body := compressLz4(t, testBody)
 
 	tests := []struct {
 		name        string
@@ -80,6 +82,12 @@ func TestHTTPClientCompression(t *testing.T) {
 			name:        "ValidZstd",
 			encoding:    configcompression.TypeZstd,
 			reqBody:     compressedZstdBody.Bytes(),
+			shouldError: false,
+		},
+		{
+			name:        "ValidLz4",
+			encoding:    configcompression.TypeLz4,
+			reqBody:     compressedLz4Body.Bytes(),
 			shouldError: false,
 		},
 	}
@@ -197,6 +205,12 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 			name:     "ValidSnappy",
 			encoding: "snappy",
 			reqBody:  compressSnappy(t, testBody),
+			respCode: http.StatusOK,
+		},
+		{
+			name:     "ValidLz4",
+			encoding: "lz4",
+			reqBody:  compressLz4(t, testBody),
 			respCode: http.StatusOK,
 		},
 		{
@@ -365,6 +379,75 @@ func TestOverrideCompressionList(t *testing.T) {
 	require.NoError(t, res.Body.Close(), "failed to close request body: %v", err)
 }
 
+func TestDecompressorAvoidDecompressionBomb(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		name     string
+		encoding string
+		compress func(tb testing.TB, payload []byte) *bytes.Buffer
+	}{
+		// None encoding is ignored since it does not
+		// enforce the max body size if content encoding header is not set
+		{
+			name:     "gzip",
+			encoding: "gzip",
+			compress: compressGzip,
+		},
+		{
+			name:     "zstd",
+			encoding: "zstd",
+			compress: compressZstd,
+		},
+		{
+			name:     "zlib",
+			encoding: "zlib",
+			compress: compressZlib,
+		},
+		{
+			name:     "snappy",
+			encoding: "snappy",
+			compress: compressSnappy,
+		},
+		{
+			name:     "lz4",
+			encoding: "lz4",
+			compress: compressLz4,
+		},
+	} {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			h := httpContentDecompressor(
+				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					n, err := io.Copy(io.Discard, r.Body)
+					assert.Equal(t, int64(1024), n, "Must have only read the limited value of bytes")
+					assert.EqualError(t, err, "http: request body too large")
+					w.WriteHeader(http.StatusBadRequest)
+				}),
+				1024,
+				defaultErrorHandler,
+				defaultCompressionAlgorithms,
+				availableDecoders,
+			)
+
+			payload := tc.compress(t, make([]byte, 2*1024)) // 2KB uncompressed payload
+			assert.NotEmpty(t, payload.Bytes(), "Must have data available")
+
+			req := httptest.NewRequest(http.MethodPost, "/", payload)
+			req.Header.Set("Content-Encoding", tc.encoding)
+
+			resp := httptest.NewRecorder()
+
+			h.ServeHTTP(resp, req)
+
+			assert.Equal(t, http.StatusBadRequest, resp.Code, "Must match the expected code")
+			assert.Empty(t, resp.Body.String(), "Must match the returned string")
+		})
+	}
+}
+
 func compressGzip(t testing.TB, body []byte) *bytes.Buffer {
 	var buf bytes.Buffer
 	gw := gzip.NewWriter(&buf)
@@ -398,5 +481,14 @@ func compressZstd(t testing.TB, body []byte) *bytes.Buffer {
 	_, err := zw.Write(body)
 	require.NoError(t, err)
 	require.NoError(t, zw.Close())
+	return &buf
+}
+
+func compressLz4(tb testing.TB, body []byte) *bytes.Buffer {
+	var buf bytes.Buffer
+	lz := lz4.NewWriter(&buf)
+	_, err := lz.Write(body)
+	require.NoError(tb, err)
+	require.NoError(tb, lz.Close())
 	return &buf
 }

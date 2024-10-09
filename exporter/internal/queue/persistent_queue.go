@@ -195,15 +195,15 @@ func (pq *persistentQueue[T]) restoreQueueSizeFromStorage(ctx context.Context) (
 func (pq *persistentQueue[T]) Consume(consumeFunc func(context.Context, T) error) bool {
 	for {
 		var (
-			req                  T
-			onProcessingFinished func(error)
-			consumed             bool
+			index    uint64
+			req      T
+			consumed bool
 		)
 
 		// If we are stopped we still process all the other events in the channel before, but we
 		// return fast in the `getNextItem`, so we will free the channel fast and get to the stop.
 		_, ok := pq.sizedChannel.pop(func(permanentQueueEl) int64 {
-			req, onProcessingFinished, consumed = pq.getNextItem(context.Background())
+			index, req, consumed = pq.getNextItem(context.Background())
 			if !consumed {
 				return 0
 			}
@@ -213,7 +213,8 @@ func (pq *persistentQueue[T]) Consume(consumeFunc func(context.Context, T) error
 			return false
 		}
 		if consumed {
-			onProcessingFinished(consumeFunc(context.Background(), req))
+			consumeErr := consumeFunc(context.Background(), req)
+			pq.OnProcessingFinished(index, consumeErr)
 			return true
 		}
 	}
@@ -303,20 +304,21 @@ func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
 	return nil
 }
 
-// getNextItem pulls the next available item from the persistent storage along with a callback function that should be
-// called after the item is processed to clean up the storage. If no new item is available, returns false.
-func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (T, func(error), bool) {
+// getNextItem pulls the next available item from the persistent storage along with its index. Once processing is
+// finished, the index should be called with OnProcessingFinished to clean up the storage. If no new item is available,
+// returns false.
+func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (uint64, T, bool) {
 	pq.mu.Lock()
 	defer pq.mu.Unlock()
 
 	var request T
 
 	if pq.stopped {
-		return request, nil, false
+		return 0, request, false
 	}
 
 	if pq.readIndex == pq.writeIndex {
-		return request, nil, false
+		return 0, request, false
 	}
 
 	index := pq.readIndex
@@ -340,45 +342,49 @@ func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (T, func(error), 
 			pq.logger.Error("Error deleting item from queue", zap.Error(err))
 		}
 
-		return request, nil, false
+		return 0, request, false
 	}
 
 	// Increase the reference count, so the client is not closed while the request is being processed.
 	// The client cannot be closed because we hold the lock since last we checked `stopped`.
 	pq.refClient++
-	return request, func(consumeErr error) {
-		// Delete the item from the persistent storage after it was processed.
-		pq.mu.Lock()
-		// Always unref client even if the consumer is shutdown because we always ref it for every valid request.
-		defer func() {
-			if err = pq.unrefClient(ctx); err != nil {
-				pq.logger.Error("Error closing the storage client", zap.Error(err))
-			}
-			pq.mu.Unlock()
-		}()
 
-		if experr.IsShutdownErr(consumeErr) {
-			// The queue is shutting down, don't mark the item as dispatched, so it's picked up again after restart.
-			// TODO: Handle partially delivered requests by updating their values in the storage.
-			return
+	return index, request, true
+}
+
+// Should be called to remove the item of the given index from the queue once processing is finished.
+func (pq *persistentQueue[T]) OnProcessingFinished(index uint64, consumeErr error) {
+	// Delete the item from the persistent storage after it was processed.
+	pq.mu.Lock()
+	// Always unref client even if the consumer is shutdown because we always ref it for every valid request.
+	defer func() {
+		if err := pq.unrefClient(context.Background()); err != nil {
+			pq.logger.Error("Error closing the storage client", zap.Error(err))
 		}
+		pq.mu.Unlock()
+	}()
 
-		if err = pq.itemDispatchingFinish(ctx, index); err != nil {
-			pq.logger.Error("Error deleting item from queue", zap.Error(err))
+	if experr.IsShutdownErr(consumeErr) {
+		// The queue is shutting down, don't mark the item as dispatched, so it's picked up again after restart.
+		// TODO: Handle partially delivered requests by updating their values in the storage.
+		return
+	}
+
+	if err := pq.itemDispatchingFinish(context.Background(), index); err != nil {
+		pq.logger.Error("Error deleting item from queue", zap.Error(err))
+	}
+
+	// Back up the queue size to storage on every 10 reads. The stored value is used to recover the queue size
+	// in case if the collector is killed. The recovered queue size is allowed to be inaccurate.
+	if (pq.readIndex % 10) == 0 {
+		if qsErr := pq.backupQueueSize(context.Background()); qsErr != nil {
+			pq.logger.Error("Error writing queue size to storage", zap.Error(qsErr))
 		}
+	}
 
-		// Back up the queue size to storage on every 10 reads. The stored value is used to recover the queue size
-		// in case if the collector is killed. The recovered queue size is allowed to be inaccurate.
-		if (pq.readIndex % 10) == 0 {
-			if qsErr := pq.backupQueueSize(ctx); qsErr != nil {
-				pq.logger.Error("Error writing queue size to storage", zap.Error(err))
-			}
-		}
+	// Ensure the used size and the channel size are in sync.
+	pq.sizedChannel.syncSize()
 
-		// Ensure the used size and the channel size are in sync.
-		pq.sizedChannel.syncSize()
-
-	}, true
 }
 
 // retrieveAndEnqueueNotDispatchedReqs gets the items for which sending was not finished, cleans the storage
