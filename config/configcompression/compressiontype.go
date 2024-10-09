@@ -48,6 +48,7 @@ func (ct *TypeWithLevel) UnmarshalText(in []byte) error {
 			return fmt.Errorf("invalid compression level: %q", parts[1])
 		}
 		if compressionTyp == TypeSnappy ||
+			compressionTyp == TypeLz4 ||
 			compressionTyp == typeNone ||
 			compressionTyp == typeEmpty {
 			return fmt.Errorf("compression level is not supported for %q", compressionTyp)
@@ -58,6 +59,7 @@ func (ct *TypeWithLevel) UnmarshalText(in []byte) error {
 		(compressionTyp == TypeZlib && isValidLevel(level)) ||
 		(compressionTyp == TypeDeflate && isValidLevel(level)) ||
 		compressionTyp == TypeSnappy ||
+		compressionTyp == TypeLz4 ||
 		compressionTyp == TypeZstd ||
 		compressionTyp == typeNone ||
 		compressionTyp == typeEmpty {
