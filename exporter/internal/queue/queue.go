@@ -30,8 +30,9 @@ type Queue[T any] interface {
 	// Capacity returns the capacity of the queue.
 	Capacity() int
 	// Read pulls the next available item from the queue along with its index. Once processing is
-	// finished, the index should be called with OnProcessingFinished to clean up the storage. If no new
-	// item is available, returns false.
+	// finished, the index should be called with OnProcessingFinished to clean up the storage.
+	// The function blocks until an item is available or if the queue is stopped.
+	// Returns false if reading failed or if the queue is stopped.
 	Read(context.Context) (uint64, T, bool)
 	// Should be called to remove the item of the given index from the queue once processing is finished.
 	OnProcessingFinished(index uint64, consumeErr error)
