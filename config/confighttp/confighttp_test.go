@@ -6,6 +6,7 @@ package confighttp
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
@@ -23,6 +24,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
+	"golang.org/x/net/http2"
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
@@ -564,6 +566,7 @@ func TestHttpReception(t *testing.T) {
 		tlsClientCreds *configtls.ClientConfig
 		hasError       bool
 		forceHTTP1     bool
+		allowh2c       bool
 	}{
 		{
 			name:           "noTLS",
@@ -571,6 +574,14 @@ func TestHttpReception(t *testing.T) {
 			tlsClientCreds: &configtls.ClientConfig{
 				Insecure: true,
 			},
+		},
+		{
+			name:           "noTLS and AllowH2CUpgrade",
+			tlsServerCreds: nil,
+			tlsClientCreds: &configtls.ClientConfig{
+				Insecure: true,
+			},
+			allowh2c: true,
 		},
 		{
 			name: "TLS",
@@ -683,8 +694,9 @@ func TestHttpReception(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			hss := &ServerConfig{
-				Endpoint:   "localhost:0",
-				TLSSetting: tt.tlsServerCreds,
+				Endpoint:        "localhost:0",
+				TLSSetting:      tt.tlsServerCreds,
+				AllowH2CUpgrade: tt.allowh2c,
 			}
 			ln, err := hss.ToListener(context.Background())
 			require.NoError(t, err)
@@ -703,11 +715,13 @@ func TestHttpReception(t *testing.T) {
 				_ = s.Serve(ln)
 			}()
 
-			prefix := "https://"
 			expectedProto := "HTTP/2.0"
+			prefix := "https://"
 			if tt.tlsClientCreds.Insecure {
 				prefix = "http://"
-				expectedProto = "HTTP/1.1"
+				if !tt.allowh2c {
+					expectedProto = "HTTP/1.1"
+				}
 			}
 
 			hcs := &ClientConfig{
@@ -717,6 +731,17 @@ func TestHttpReception(t *testing.T) {
 
 			client, errClient := hcs.ToClient(context.Background(), componenttest.NewNopHost(), nilProvidersSettings)
 			require.NoError(t, errClient)
+
+			if tt.allowh2c {
+				client.Transport = &http2.Transport{
+					AllowHTTP: true,
+					// Pretend we are dialing a TLS endpoint. (Note, we ignore the passed tls.Config)
+					DialTLS: func(netw, addr string, _ *tls.Config) (net.Conn, error) {
+						return net.Dial(netw, addr)
+					},
+				}
+				defer client.Transport.(*http2.Transport).CloseIdleConnections()
+			}
 
 			if tt.forceHTTP1 {
 				expectedProto = "HTTP/1.1"
