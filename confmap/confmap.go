@@ -209,6 +209,7 @@ func decodeConfig(m *Conf, result any, errorUnused bool, skipTopLevelUnmarshaler
 		WeaklyTypedInput: false,
 		MatchName:        caseSensitiveMatchName,
 		DecodeHook: mapstructure.ComposeDecodeHookFunc(
+			optionalHookFunc(),
 			useExpandValue(),
 			expandNilStructPointersHookFunc(),
 			mapstructure.StringToSliceHookFunc(","),
@@ -428,6 +429,40 @@ func unmarshalerEmbeddedStructsHookFunc() mapstructure.DecodeHookFuncValue {
 			}
 		}
 		return fromAsMap, nil
+	}
+}
+
+// optionalHookFunc applies logic when the to.Type is optional.Optional. When decoding primitive types, 
+// we use reflect.Value's FieldByName API (https://pkg.go.dev/reflect#Value.FieldByName) and Set (https://pkg.go.dev/reflect#Value.Set) APIs
+// in order to set the Value and HasValue. Set cannot be used for struct field types, as the set value must be assignable to the target type, 
+// so for structs we use optionals custom unmarshaller in order to cast the map to the struct.
+//
+// This logic relies on the fact that the hook only gets called when the value is explicitely set in the config,
+// so if we are in this hook, we know we can set HasValue to true.
+func optionalHookFunc() mapstructure.DecodeHookFuncValue {
+	return func(from reflect.Value, to reflect.Value) (any, error) {
+		// As the type is generic, we check for the prefix.
+		if strings.HasPrefix(to.Type().String(), "optional.Optional") {
+			// the optional.Optional field is a struct
+			if _, ok := from.Interface().(map[string]any); ok {
+				unmarshaler, ok := to.Addr().Interface().(Unmarshaler)
+				if !ok {
+					return from.Interface(), nil
+				}
+				c := NewFromStringMap(from.Interface().(map[string]any))
+				if err := unmarshaler.Unmarshal(c); err != nil {
+					return nil, err
+				}
+				return to.Interface(), nil
+			}
+
+			// the optional.Optional field is a primitive type
+			to.FieldByName("Value").Set(from)
+			to.FieldByName("HasValue").SetBool(true)
+			return to.Interface(), nil
+		}
+
+		return from.Interface(), nil
 	}
 }
 
