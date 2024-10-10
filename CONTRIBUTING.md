@@ -294,6 +294,10 @@ To guarantee backward-compatible behavior, all configuration packages should sup
 
 Users should always initialize the config struct with this function and overwrite anything as needed.
 
+### Optional Fields
+
+Config fields should use the normal type and rely on zero values. In cases where it is necessary to distinguish between unset values and zero values, use a pointer to the type.
+
 ### Startup Error Handling
 
 Verify configuration during startup and fail fast if the configuration is invalid.
