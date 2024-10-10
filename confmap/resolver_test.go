@@ -162,7 +162,7 @@ func TestResolverErrors(t *testing.T) {
 			expectResolveErr: true,
 		},
 		{
-			name:      "retrieve location not convertable to Conf",
+			name:      "retrieve location not convertible to Conf",
 			locations: []string{"mock:", "err:"},
 			providers: []Provider{
 				&mockProvider{},

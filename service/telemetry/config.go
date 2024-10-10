@@ -152,7 +152,7 @@ type TracesConfig struct {
 	// context propagation is disabled.
 	Propagators []string `mapstructure:"propagators"`
 	// Processors allow configuration of span processors to emit spans to
-	// any number of suported backends.
+	// any number of supported backends.
 	Processors []config.SpanProcessor `mapstructure:"processors"`
 }
 

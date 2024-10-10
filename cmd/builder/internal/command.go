@@ -144,7 +144,7 @@ func initConfig(flags *flag.FlagSet) error {
 	if err := k.Load(env.Provider("", ".", func(s string) string {
 		// Only values from the `dist.` group can be set,
 		// and the subfields in `dist.` contain `_` in their names.
-		// All other fields are arrays and the koanf env provider doesn't provide a straightforward way to set arrarys.
+		// All other fields are arrays and the koanf env provider doesn't provide a straightforward way to set arrays.
 		return strings.Replace(strings.ToLower(s), "dist_", "dist.", 1)
 	}), nil); err != nil {
 		return fmt.Errorf("failed to load environment variables: %w", err)

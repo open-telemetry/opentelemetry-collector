@@ -30,7 +30,6 @@ type connectorNode struct {
 	exprPipelineType pipeline.Signal
 	rcvrPipelineType pipeline.Signal
 	component.Component
-	baseConsumer
 }
 
 func newConnectorNode(exprPipelineType, rcvrPipelineType pipeline.Signal, connID component.ID) *connectorNode {
@@ -43,7 +42,7 @@ func newConnectorNode(exprPipelineType, rcvrPipelineType pipeline.Signal, connID
 }
 
 func (n *connectorNode) getConsumer() baseConsumer {
-	return n.baseConsumer
+	return n.Component.(baseConsumer)
 }
 
 func (n *connectorNode) buildComponent(
@@ -80,40 +79,27 @@ func (n *connectorNode) buildTraces(
 	}
 	next := connector.NewTracesRouter(consumers)
 
+	var err error
 	switch n.exprPipelineType {
 	case pipeline.SignalTraces:
-		conn, err := builder.CreateTracesToTraces(ctx, set, next)
+		var conn connector.Traces
+		conn, err = builder.CreateTracesToTraces(ctx, set, next)
 		if err != nil {
 			return err
 		}
-		n.Component, n.baseConsumer = conn, conn
+		n.Component = componentTraces{
+			Component: conn,
+			Traces:    capabilityconsumer.NewTraces(conn, aggregateCap(conn, nexts)),
+		}
+		return nil
 	case pipeline.SignalMetrics:
-		conn, err := builder.CreateMetricsToTraces(ctx, set, next)
-		if err != nil {
-			return err
-		}
-		n.Component, n.baseConsumer = conn, conn
+		n.Component, err = builder.CreateMetricsToTraces(ctx, set, next)
 	case pipeline.SignalLogs:
-		conn, err := builder.CreateLogsToTraces(ctx, set, next)
-		if err != nil {
-			return err
-		}
-		n.Component, n.baseConsumer = conn, conn
+		n.Component, err = builder.CreateLogsToTraces(ctx, set, next)
 	case componentprofiles.SignalProfiles:
-		conn, err := builder.CreateProfilesToTraces(ctx, set, next)
-		if err != nil {
-			return err
-		}
-		n.Component, n.baseConsumer = conn, conn
+		n.Component, err = builder.CreateProfilesToTraces(ctx, set, next)
 	}
-
-	if n.exprPipelineType == pipeline.SignalTraces {
-		n.baseConsumer = capabilityconsumer.NewTraces(
-			n.Component.(connector.Traces),
-			aggregateCapabilities(n.baseConsumer, nexts),
-		)
-	}
-	return nil
+	return err
 }
 
 func (n *connectorNode) buildMetrics(
@@ -128,40 +114,27 @@ func (n *connectorNode) buildMetrics(
 	}
 	next := connector.NewMetricsRouter(consumers)
 
+	var err error
 	switch n.exprPipelineType {
-	case pipeline.SignalTraces:
-		conn, err := builder.CreateTracesToMetrics(ctx, set, next)
-		if err != nil {
-			return err
-		}
-		n.Component, n.baseConsumer = conn, conn
 	case pipeline.SignalMetrics:
-		conn, err := builder.CreateMetricsToMetrics(ctx, set, next)
+		var conn connector.Metrics
+		conn, err = builder.CreateMetricsToMetrics(ctx, set, next)
 		if err != nil {
 			return err
 		}
-		n.Component, n.baseConsumer = conn, conn
+		n.Component = componentMetrics{
+			Component: conn,
+			Metrics:   capabilityconsumer.NewMetrics(conn, aggregateCap(conn, nexts)),
+		}
+		return nil
+	case pipeline.SignalTraces:
+		n.Component, err = builder.CreateTracesToMetrics(ctx, set, next)
 	case pipeline.SignalLogs:
-		conn, err := builder.CreateLogsToMetrics(ctx, set, next)
-		if err != nil {
-			return err
-		}
-		n.Component, n.baseConsumer = conn, conn
+		n.Component, err = builder.CreateLogsToMetrics(ctx, set, next)
 	case componentprofiles.SignalProfiles:
-		conn, err := builder.CreateProfilesToMetrics(ctx, set, next)
-		if err != nil {
-			return err
-		}
-		n.Component, n.baseConsumer = conn, conn
+		n.Component, err = builder.CreateProfilesToMetrics(ctx, set, next)
 	}
-
-	if n.exprPipelineType == pipeline.SignalMetrics {
-		n.baseConsumer = capabilityconsumer.NewMetrics(
-			n.Component.(connector.Metrics),
-			aggregateCapabilities(n.baseConsumer, nexts),
-		)
-	}
-	return nil
+	return err
 }
 
 func (n *connectorNode) buildLogs(
@@ -176,40 +149,27 @@ func (n *connectorNode) buildLogs(
 	}
 	next := connector.NewLogsRouter(consumers)
 
+	var err error
 	switch n.exprPipelineType {
-	case pipeline.SignalTraces:
-		conn, err := builder.CreateTracesToLogs(ctx, set, next)
-		if err != nil {
-			return err
-		}
-		n.Component, n.baseConsumer = conn, conn
-	case pipeline.SignalMetrics:
-		conn, err := builder.CreateMetricsToLogs(ctx, set, next)
-		if err != nil {
-			return err
-		}
-		n.Component, n.baseConsumer = conn, conn
 	case pipeline.SignalLogs:
-		conn, err := builder.CreateLogsToLogs(ctx, set, next)
+		var conn connector.Logs
+		conn, err = builder.CreateLogsToLogs(ctx, set, next)
 		if err != nil {
 			return err
 		}
-		n.Component, n.baseConsumer = conn, conn
+		n.Component = componentLogs{
+			Component: conn,
+			Logs:      capabilityconsumer.NewLogs(conn, aggregateCap(conn, nexts)),
+		}
+		return nil
+	case pipeline.SignalTraces:
+		n.Component, err = builder.CreateTracesToLogs(ctx, set, next)
+	case pipeline.SignalMetrics:
+		n.Component, err = builder.CreateMetricsToLogs(ctx, set, next)
 	case componentprofiles.SignalProfiles:
-		conn, err := builder.CreateProfilesToLogs(ctx, set, next)
-		if err != nil {
-			return err
-		}
-		n.Component, n.baseConsumer = conn, conn
+		n.Component, err = builder.CreateProfilesToLogs(ctx, set, next)
 	}
-
-	if n.exprPipelineType == pipeline.SignalLogs {
-		n.baseConsumer = capabilityconsumer.NewLogs(
-			n.Component.(connector.Logs),
-			aggregateCapabilities(n.baseConsumer, nexts),
-		)
-	}
-	return nil
+	return err
 }
 
 func (n *connectorNode) buildProfiles(
@@ -224,47 +184,34 @@ func (n *connectorNode) buildProfiles(
 	}
 	next := connectorprofiles.NewProfilesRouter(consumers)
 
+	var err error
 	switch n.exprPipelineType {
-	case pipeline.SignalTraces:
-		conn, err := builder.CreateTracesToProfiles(ctx, set, next)
-		if err != nil {
-			return err
-		}
-		n.Component, n.baseConsumer = conn, conn
-	case pipeline.SignalMetrics:
-		conn, err := builder.CreateMetricsToProfiles(ctx, set, next)
-		if err != nil {
-			return err
-		}
-		n.Component, n.baseConsumer = conn, conn
-	case pipeline.SignalLogs:
-		conn, err := builder.CreateLogsToProfiles(ctx, set, next)
-		if err != nil {
-			return err
-		}
-		n.Component, n.baseConsumer = conn, conn
 	case componentprofiles.SignalProfiles:
-		conn, err := builder.CreateProfilesToProfiles(ctx, set, next)
+		var conn connectorprofiles.Profiles
+		conn, err = builder.CreateProfilesToProfiles(ctx, set, next)
 		if err != nil {
 			return err
 		}
-		n.Component, n.baseConsumer = conn, conn
+		n.Component = componentProfiles{
+			Component: conn,
+			Profiles:  capabilityconsumer.NewProfiles(conn, aggregateCap(conn, nexts)),
+		}
+		return nil
+	case pipeline.SignalTraces:
+		n.Component, err = builder.CreateTracesToProfiles(ctx, set, next)
+	case pipeline.SignalMetrics:
+		n.Component, err = builder.CreateMetricsToProfiles(ctx, set, next)
+	case pipeline.SignalLogs:
+		n.Component, err = builder.CreateLogsToProfiles(ctx, set, next)
 	}
-
-	if n.exprPipelineType == componentprofiles.SignalProfiles {
-		n.baseConsumer = capabilityconsumer.NewProfiles(
-			n.Component.(connectorprofiles.Profiles),
-			aggregateCapabilities(n.baseConsumer, nexts),
-		)
-	}
-	return nil
+	return err
 }
 
 // When connecting pipelines of the same data type, the connector must
 // inherit the capabilities of pipelines in which it is acting as a receiver.
 // Since the incoming and outgoing data types are the same, we must also consider
-// that the connector itself may MutatesData.
-func aggregateCapabilities(base baseConsumer, nexts []baseConsumer) consumer.Capabilities {
+// that the connector itself may mutate the data and pass it along.
+func aggregateCap(base baseConsumer, nexts []baseConsumer) consumer.Capabilities {
 	capabilities := base.Capabilities()
 	for _, next := range nexts {
 		capabilities.MutatesData = capabilities.MutatesData || next.Capabilities().MutatesData

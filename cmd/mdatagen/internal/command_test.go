@@ -12,10 +12,22 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
 )
+
+func TestNewCommand(t *testing.T) {
+	cmd, err := NewCommand()
+	require.NoError(t, err)
+
+	assert.NotNil(t, cmd)
+	assert.IsType(t, &cobra.Command{}, cmd)
+	assert.Equal(t, "mdatagen", cmd.Use)
+	assert.True(t, cmd.SilenceUsage)
+}
 
 func TestRunContents(t *testing.T) {
 	tests := []struct {
@@ -35,6 +47,16 @@ func TestRunContents(t *testing.T) {
 		{
 			yml:     "invalid.yaml",
 			wantErr: true,
+		},
+		{
+			yml:                 "basic_connector.yaml",
+			wantErr:             false,
+			wantStatusGenerated: true,
+		},
+		{
+			yml:                 "basic_receiver.yaml",
+			wantErr:             false,
+			wantStatusGenerated: true,
 		},
 		{
 			yml:                  "metrics_and_type.yaml",
@@ -344,7 +366,7 @@ Some info about a component
 			componentClass: "receiver",
 			distros:        []string{"contrib"},
 			codeowners: &Codeowners{
-				Active: []string{"foo"},
+				Active: []string{"open-telemetry/collector-approvers"},
 			},
 		},
 		{

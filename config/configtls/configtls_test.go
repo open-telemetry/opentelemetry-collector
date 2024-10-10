@@ -566,7 +566,7 @@ func TestCertificateReload(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotNil(t, cfg)
 
-			// Asssert that we loaded the original certificate
+			// Assert that we loaded the original certificate
 			cert, err := cfg.GetCertificate(&tls.ClientHelloInfo{})
 			require.NoError(t, err)
 			assert.NotNil(t, cert)

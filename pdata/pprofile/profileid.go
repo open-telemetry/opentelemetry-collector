@@ -19,7 +19,7 @@ func NewProfileIDEmpty() ProfileID {
 	return emptyProfileID
 }
 
-// String returns string representation of the ProifleID.
+// String returns string representation of the ProfileID.
 //
 // Important: Don't rely on this method to get a string identifier of ProfileID.
 // Use hex.EncodeToString explicitly instead.

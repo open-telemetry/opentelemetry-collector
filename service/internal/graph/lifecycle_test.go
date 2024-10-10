@@ -423,8 +423,6 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 			}, func(error) {
 			})
 
-			rep.Ready()
-
 			e0, e1 := tt.edge[0], tt.edge[1]
 			pg.instanceIDs = map[int64]*componentstatus.InstanceID{
 				e0.ID(): instanceIDs[e0],

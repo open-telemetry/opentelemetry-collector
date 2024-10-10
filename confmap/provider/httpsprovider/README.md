@@ -6,7 +6,7 @@ load configuration files stored in web servers.
 Expected URI format:
 - https://...
 
-### Prerequistes
+### Prerequisites
 
 You need to setup a HTTP server with support to HTTPS. The server must have a certificate that can be validated in the
 host running the collector using system root certificates.

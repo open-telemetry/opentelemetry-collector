@@ -81,7 +81,7 @@ func TestMetricReader(t *testing.T) {
 				Pull: &config.PullMetricReader{
 					Exporter: config.MetricExporter{
 						Prometheus: &config.Prometheus{
-							Host: strPtr("locahost"),
+							Host: strPtr("localhost"),
 						},
 					},
 				},
@@ -94,7 +94,7 @@ func TestMetricReader(t *testing.T) {
 				Pull: &config.PullMetricReader{
 					Exporter: config.MetricExporter{
 						Prometheus: &config.Prometheus{
-							Host: strPtr("locahost"),
+							Host: strPtr("localhost"),
 							Port: intPtr(8080),
 						},
 					},
@@ -108,7 +108,7 @@ func TestMetricReader(t *testing.T) {
 				Periodic: &config.PeriodicMetricReader{
 					Exporter: config.MetricExporter{
 						Prometheus: &config.Prometheus{
-							Host: strPtr("locahost"),
+							Host: strPtr("localhost"),
 							Port: intPtr(8080),
 						},
 					},

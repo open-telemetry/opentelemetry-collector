@@ -81,9 +81,9 @@ func TestGetDecision(t *testing.T) {
 }
 
 func TestRefuseDecision(t *testing.T) {
-	decison1000Limit30Spike30 := newPercentageMemUsageChecker(1000, 60, 30)
-	decison1000Limit60Spike50 := newPercentageMemUsageChecker(1000, 60, 50)
-	decison1000Limit40Spike20 := newPercentageMemUsageChecker(1000, 40, 20)
+	decision1000Limit30Spike30 := newPercentageMemUsageChecker(1000, 60, 30)
+	decision1000Limit60Spike50 := newPercentageMemUsageChecker(1000, 60, 50)
+	decision1000Limit40Spike20 := newPercentageMemUsageChecker(1000, 40, 20)
 
 	tests := []struct {
 		name         string
@@ -93,13 +93,13 @@ func TestRefuseDecision(t *testing.T) {
 	}{
 		{
 			name:         "should refuse over limit",
-			usageChecker: *decison1000Limit30Spike30,
+			usageChecker: *decision1000Limit30Spike30,
 			ms:           &runtime.MemStats{Alloc: 600},
 			shouldRefuse: true,
 		},
 		{
 			name:         "should not refuse",
-			usageChecker: *decison1000Limit30Spike30,
+			usageChecker: *decision1000Limit30Spike30,
 			ms:           &runtime.MemStats{Alloc: 100},
 			shouldRefuse: false,
 		},
@@ -114,13 +114,13 @@ func TestRefuseDecision(t *testing.T) {
 		},
 		{
 			name:         "should refuse, spike, percentage usageChecker",
-			usageChecker: *decison1000Limit60Spike50,
+			usageChecker: *decision1000Limit60Spike50,
 			ms:           &runtime.MemStats{Alloc: 300},
 			shouldRefuse: true,
 		},
 		{
 			name:         "should refuse, spike, percentage usageChecker",
-			usageChecker: *decison1000Limit40Spike20,
+			usageChecker: *decision1000Limit40Spike20,
 			ms:           &runtime.MemStats{Alloc: 250},
 			shouldRefuse: true,
 		},

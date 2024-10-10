@@ -5,12 +5,10 @@ package processorhelper // import "go.opentelemetry.io/collector/processor/proce
 
 import (
 	"context"
-	"strings"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/internal"
@@ -18,32 +16,6 @@ import (
 )
 
 const signalKey = "otel.signal"
-
-// Deprecated: [v0.111.0] no longer needed. To be removed in future.
-func BuildCustomMetricName(configType, metric string) string {
-	componentPrefix := internal.ProcessorMetricPrefix
-	if !strings.HasSuffix(componentPrefix, internal.MetricNameSep) {
-		componentPrefix += internal.MetricNameSep
-	}
-	if configType == "" {
-		return componentPrefix
-	}
-	return componentPrefix + configType + internal.MetricNameSep + metric
-}
-
-// Deprecated: [v0.111.0] not used.
-type ObsReport struct{}
-
-// Deprecated: [v0.111.0] not used.
-type ObsReportSettings struct {
-	ProcessorID             component.ID
-	ProcessorCreateSettings processor.Settings
-}
-
-// Deprecated: [v0.111.0] not used.
-func NewObsReport(_ ObsReportSettings) (*ObsReport, error) {
-	return &ObsReport{}, nil
-}
 
 type obsReport struct {
 	otelAttrs        metric.MeasurementOption

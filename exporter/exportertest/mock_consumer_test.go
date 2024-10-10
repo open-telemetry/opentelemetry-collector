@@ -245,7 +245,7 @@ func TestConsumeMetricsSuccess(t *testing.T) {
 
 }
 
-func TestCapabilites(t *testing.T) {
+func TestCapabilities(t *testing.T) {
 	mc := newMockConsumer(func() error { return nil })
 	assert.Equal(t, consumer.Capabilities{}, mc.Capabilities())
 }

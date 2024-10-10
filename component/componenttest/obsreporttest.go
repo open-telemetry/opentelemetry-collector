@@ -75,21 +75,6 @@ func (tts *TestTelemetry) CheckExporterMetricGauge(metric string, val int64, ext
 	return checkIntGauge(tts.reader, metric, val, attrs)
 }
 
-// Deprecated: [v0.111.0] deleted metrics, no-op.
-func (tts *TestTelemetry) CheckProcessorTraces(_, _, _ int64) error {
-	return nil
-}
-
-// Deprecated: [v0.111.0] deleted metrics, no-op.
-func (tts *TestTelemetry) CheckProcessorMetrics(_, _, _ int64) error {
-	return nil
-}
-
-// Deprecated: [v0.111.0] deleted metrics, no-op.
-func (tts *TestTelemetry) CheckProcessorLogs(_, _, _ int64) error {
-	return nil
-}
-
 // CheckReceiverTraces checks that for the current exported values for trace receiver metrics match given values.
 // Note: SetupTelemetry must be called before this function.
 func (tts *TestTelemetry) CheckReceiverTraces(protocol string, acceptedSpans, droppedSpans int64) error {
