@@ -25,9 +25,9 @@ func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
-		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
-		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
+		exporter.WithTraces(createTraces, metadata.TracesStability),
+		exporter.WithMetrics(createMetrics, metadata.MetricsStability),
+		exporter.WithLogs(createLogs, metadata.LogsStability),
 	)
 }
 
@@ -70,7 +70,7 @@ func composeSignalURL(oCfg *Config, signalOverrideURL string, signalName string,
 	}
 }
 
-func createTracesExporter(
+func createTraces(
 	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config,
@@ -86,7 +86,7 @@ func createTracesExporter(
 		return nil, err
 	}
 
-	return exporterhelper.NewTracesExporter(ctx, set, cfg,
+	return exporterhelper.NewTraces(ctx, set, cfg,
 		oce.pushTraces,
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -96,7 +96,7 @@ func createTracesExporter(
 		exporterhelper.WithQueue(oCfg.QueueConfig))
 }
 
-func createMetricsExporter(
+func createMetrics(
 	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config,
@@ -112,7 +112,7 @@ func createMetricsExporter(
 		return nil, err
 	}
 
-	return exporterhelper.NewMetricsExporter(ctx, set, cfg,
+	return exporterhelper.NewMetrics(ctx, set, cfg,
 		oce.pushMetrics,
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -122,7 +122,7 @@ func createMetricsExporter(
 		exporterhelper.WithQueue(oCfg.QueueConfig))
 }
 
-func createLogsExporter(
+func createLogs(
 	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config,
@@ -132,13 +132,12 @@ func createLogsExporter(
 		return nil, err
 	}
 	oCfg := cfg.(*Config)
-
 	oce.logsURL, err = composeSignalURL(oCfg, oCfg.LogsEndpoint, "logs", "v1")
 	if err != nil {
 		return nil, err
 	}
 
-	return exporterhelper.NewLogsExporter(ctx, set, cfg,
+	return exporterhelper.NewLogs(ctx, set, cfg,
 		oce.pushLogs,
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
