@@ -8,15 +8,19 @@ import (
 )
 
 var pmetricotlp = &Package{
-	name: "pmetricotlp",
-	path: filepath.Join("pmetric", "pmetricotlp"),
-	imports: []string{
-		`otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"`,
-	},
-	testImports: []string{
-		`"testing"`,
-		``,
-		`"github.com/stretchr/testify/assert"`,
+	info: &PackageInfo{
+		name: "pmetricotlp",
+		path: filepath.Join("pmetric", "pmetricotlp"),
+		imports: []string{
+			`otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"`,
+		},
+		testImports: []string{
+			`"testing"`,
+			``,
+			`"github.com/stretchr/testify/assert"`,
+			``,
+			`"go.opentelemetry.io/collector/pdata/internal"`,
+		},
 	},
 	structs: []baseStruct{
 		exportMetricsPartialSuccess,
