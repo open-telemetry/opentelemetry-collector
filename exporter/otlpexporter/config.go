@@ -38,18 +38,18 @@ func (c *Config) Validate() error {
 	}
 	hostport := endpoint
 	if strings.HasPrefix(c.Endpoint, "http") {
-		//see https://github.com/open-telemetry/opentelemetry-collector/issues/10488
+		// see https://github.com/open-telemetry/opentelemetry-collector/issues/10488
 		idx := strings.Index(hostport, "/")
 		if idx > -1 {
 			hostport = hostport[:idx]
 		}
 	} else if strings.HasPrefix(c.Endpoint, "dns") {
 		// see https://github.com/open-telemetry/opentelemetry-collector/issues/10488
-		validDnsRegex := regexp.MustCompile("^dns://([^/]+)/([^/]+)$|^dns:///([^/]+)$")
-		if !validDnsRegex.Match([]byte(c.Endpoint)) {
+		validDNSRegex := regexp.MustCompile("^dns://([^/]+)/([^/]+)$|^dns:///([^/]+)$")
+		if !validDNSRegex.Match([]byte(c.Endpoint)) {
 			return fmt.Errorf("invalid dns scheme format")
 		}
-		matches := validDnsRegex.FindStringSubmatch(c.Endpoint)
+		matches := validDNSRegex.FindStringSubmatch(c.Endpoint)
 		if len(matches) > 1 {
 			if matches[2] != "" {
 				// with authority
