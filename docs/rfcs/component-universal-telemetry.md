@@ -14,7 +14,7 @@ The collector should be observable and this must naturally include observability
 
 ### Mechanism
 
-The mechanism of telemetry capture should be _external_ to components. Specifically, we should observe telemetry at each point where a component passes data to another component, and, at each point where a component consumes data from another component. In terms of the component graph, this means that every _edge_ in the graph will have two layers of instrumentation - one for the producing component and one for the consuming component. Importantly, each layer generates telemetry which is ascribed to a single component instance, so by having two layers per edge we can describe both sides of each handoff independently. In the case of processors and connectors, the appropriate layers can act in concert (e.g. record the start and end of a span).
+The mechanism of telemetry capture should be _external_ to components. Specifically, we should observe telemetry at each point where a component passes data to another component, and, at each point where a component consumes data from another component. In terms of the component graph, every _edge_ in the graph will have two layers of instrumentation - one for the producing component and one for the consuming component. Importantly, each layer generates telemetry ascribed to a single component instance, so by having two layers per edge we can describe both sides of each handoff independently. In the case of processors and connectors, the appropriate layers can act in concert (e.g. record the start and end of a span).
 
 ### Attributes
 
