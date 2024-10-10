@@ -239,12 +239,12 @@ func newExtensionFactory() extension.Factory {
 	return extension.NewFactory(
 		component.MustNewType("watcher"),
 		createDefaultExtensionConfig,
-		createExtension,
+		create,
 		component.StabilityLevelStable,
 	)
 }
 
-func createExtension(_ context.Context, _ extension.Settings, cfg component.Config) (extension.Extension, error) {
+func create(_ context.Context, _ extension.Settings, cfg component.Config) (extension.Extension, error) {
 	oCfg := cfg.(*extensionConfig)
 	return &testExtension{
 		eventsReceived: oCfg.eventsReceived,
