@@ -91,6 +91,7 @@ require (
 	go.opentelemetry.io/collector/config/configopaque v1.17.0 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.17.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.111.0 // indirect
+	go.opentelemetry.io/collector/config/configtimeout v0.111.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.17.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.111.0 // indirect
 	go.opentelemetry.io/collector/connector/connectorprofiles v0.111.0 // indirect
@@ -179,6 +180,8 @@ replace go.opentelemetry.io/collector/config/configopaque => ../../config/config
 replace go.opentelemetry.io/collector/config/configretry => ../../config/configretry
 
 replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
+
+replace go.opentelemetry.io/collector/config/configtimeout => ../../config/configtimeout
 
 replace go.opentelemetry.io/collector/config/configtls => ../../config/configtls
 

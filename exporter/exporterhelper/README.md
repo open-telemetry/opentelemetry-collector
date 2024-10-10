@@ -24,10 +24,36 @@ The following configuration options can be modified:
       [the batch processor](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/batchprocessor)
       is used, the metric `send_batch_size` can be used for estimation)
 - `timeout` (default = 5s): Time to wait per individual attempt to send data to a backend
+- `short_timeout_policy` (default: sustain): The policy toward handling of short-timeout requests. See below.
 
 The `initial_interval`, `max_interval`, `max_elapsed_time`, and `timeout` options accept 
 [duration strings](https://pkg.go.dev/time#ParseDuration),
 valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
+
+### Timeout
+
+The Timeout sender imposes a context deadline on the Export request.
+
+It is common, in the OpenTelemetry Collector, for receiver components
+to associate a context deadline with a request.  Typically, gRPC
+receivers propagate the timeout from a preceding exporter or
+OpenTelemetry SDK, so in many cases a request context will already
+have an associated deadline when the Timeout sender is called.
+
+If there is an existing context deadline associated with the request,
+by default the Timeout sender will not extend the deadline.
+
+If the associated context deadline is shorter than the `timeout`
+configuration, the `short_timeout_policy` value determines behavior:
+
+- **sustain**: The default behavior, this allows a shorter-than-configured timeout to remain in effect.
+- **ignore**: Optional behavior: this allows ignoring the short timeout; requests will be issued with the full configured `timeout` setting, irrespective of the caller's deadline.
+- **abort**: Optional behavior: this allows failing requests that callers will abort before the full configured `timeout` setting.
+
+If the `timeout` is zero, a new deadline will not be added to the
+export context; however, by default, incoming context deadlines remain
+in effect.  To disable timeouts while ignoring the caller's deadline,
+set `timeout` to `0` and `short_timeout_policy` to `ignore`.
 
 ### Persistent Queue
 

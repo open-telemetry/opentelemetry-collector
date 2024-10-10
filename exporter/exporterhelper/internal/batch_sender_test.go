@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configtimeout"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/internal"
@@ -576,7 +577,7 @@ func TestBatchSender_ShutdownDeadlock(t *testing.T) {
 func TestBatchSenderWithTimeout(t *testing.T) {
 	bCfg := exporterbatcher.NewDefaultConfig()
 	bCfg.MinSizeItems = 10
-	tCfg := NewDefaultTimeoutConfig()
+	tCfg := configtimeout.NewDefaultConfig()
 	tCfg.Timeout = 50 * time.Millisecond
 	be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender,
 		WithBatcher(bCfg, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc)),

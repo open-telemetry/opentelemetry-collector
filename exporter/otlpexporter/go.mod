@@ -48,6 +48,7 @@ require (
 	go.opentelemetry.io/collector/client v1.17.0 // indirect
 	go.opentelemetry.io/collector/config/confignet v1.17.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.111.0 // indirect
+	go.opentelemetry.io/collector/config/configtimeout v0.111.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.111.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.111.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.111.0 // indirect
@@ -135,3 +136,5 @@ retract (
 	v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module, use v0.76.1
 	v0.69.0 // Release failed, use v0.69.1
 )
+
+replace go.opentelemetry.io/collector/config/configtimeout => ../../config/configtimeout

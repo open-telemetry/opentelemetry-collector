@@ -35,6 +35,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.17.0 // indirect
+	go.opentelemetry.io/collector/config/configtimeout v0.111.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.111.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.111.0 // indirect
 	go.opentelemetry.io/collector/exporter/exporterprofiles v0.111.0 // indirect
@@ -93,3 +94,5 @@ replace go.opentelemetry.io/collector/exporter/exporterprofiles => ../exporterpr
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 
 replace go.opentelemetry.io/collector/internal/globalsignal => ../../internal/globalsignal
+
+replace go.opentelemetry.io/collector/config/configtimeout => ../../config/configtimeout
