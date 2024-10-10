@@ -40,9 +40,9 @@ func (q *boundedMemoryQueue[T]) Offer(ctx context.Context, req T) error {
 	return q.sizedChannel.push(memQueueEl[T]{ctx: ctx, req: req}, q.sizer.Sizeof(req), nil)
 }
 
-func (q *boundedMemoryQueue[T]) Read(_ context.Context) (uint64, T, bool) {
+func (q *boundedMemoryQueue[T]) Read(_ context.Context) (uint64, context.Context, T, bool) {
 	item, ok := q.sizedChannel.pop(func(el memQueueEl[T]) int64 { return q.sizer.Sizeof(el.req) })
-	return 0, item.req, ok
+	return 0, item.ctx, item.req, ok
 }
 
 // Should be called to remove the item of the given index from the queue once processing is finished.

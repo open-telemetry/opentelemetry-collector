@@ -8,11 +8,11 @@ import (
 )
 
 func consume[T any](q Queue[T], consumeFunc func(context.Context, T) error) bool {
-	index, req, ok := q.Read(context.Background())
+	index, ctx, req, ok := q.Read(context.Background())
 	if !ok {
 		return false
 	}
-	consumeErr := consumeFunc(context.Background(), req)
+	consumeErr := consumeFunc(ctx, req)
 	q.OnProcessingFinished(index, consumeErr)
 	return true
 }
