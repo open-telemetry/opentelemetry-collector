@@ -413,7 +413,7 @@ func TestPersistentQueue_CorruptedData(t *testing.T) {
 				require.NoError(t, err)
 			}
 			assert.Equal(t, 3, ps.Size())
-			require.True(t, ps.Consume(func(context.Context, tracesRequest) error {
+			require.True(t, consume(ps, func(context.Context, tracesRequest) error {
 				return experr.NewShutdownErr(nil)
 			}))
 			assert.Equal(t, 2, ps.Size())
@@ -486,7 +486,7 @@ func TestPersistentQueue_CurrentlyProcessedItems(t *testing.T) {
 
 	// We should be able to pull all remaining items now
 	for i := 0; i < 4; i++ {
-		newPs.Consume(func(_ context.Context, traces tracesRequest) error {
+		consume(newPs, func(_ context.Context, traces tracesRequest) error {
 			assert.Equal(t, req, traces)
 			return nil
 		})
@@ -520,7 +520,7 @@ func TestPersistentQueueStartWithNonDispatched(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	require.True(t, ps.Consume(func(context.Context, tracesRequest) error {
+	require.True(t, consume(ps, func(context.Context, tracesRequest) error {
 		// put one more item in
 		require.NoError(t, ps.Offer(context.Background(), req))
 		require.Equal(t, 5, ps.Size())
@@ -615,13 +615,13 @@ func TestPersistentQueue_PutCloseReadClose(t *testing.T) {
 	require.Equal(t, 2, newPs.Size())
 
 	// Let's read both of the elements we put
-	newPs.Consume(func(_ context.Context, traces tracesRequest) error {
+	consume(newPs, func(_ context.Context, traces tracesRequest) error {
 		require.Equal(t, req, traces)
 		return nil
 	})
 	assert.Equal(t, 1, newPs.Size())
 
-	newPs.Consume(func(_ context.Context, traces tracesRequest) error {
+	consume(newPs, func(_ context.Context, traces tracesRequest) error {
 		require.Equal(t, req, traces)
 		return nil
 	})
@@ -663,7 +663,7 @@ func BenchmarkPersistentQueue_TraceSpans(b *testing.B) {
 			}
 
 			for i := 0; i < bb.N; i++ {
-				require.True(bb, ps.Consume(func(context.Context, tracesRequest) error { return nil }))
+				require.True(bb, consume(ps, func(context.Context, tracesRequest) error { return nil }))
 			}
 			require.NoError(b, ext.Shutdown(context.Background()))
 		})
@@ -781,7 +781,7 @@ func TestPersistentQueue_StorageFull(t *testing.T) {
 	// Subsequent items succeed, as deleting the first item frees enough space for the state update
 	reqCount--
 	for i := reqCount; i > 0; i-- {
-		require.True(t, ps.Consume(func(context.Context, tracesRequest) error { return nil }))
+		require.True(t, consume(ps, func(context.Context, tracesRequest) error { return nil }))
 	}
 
 	// We should be able to put a new item in

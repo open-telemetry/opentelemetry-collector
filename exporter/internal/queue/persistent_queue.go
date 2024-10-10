@@ -189,20 +189,6 @@ func (pq *persistentQueue[T]) restoreQueueSizeFromStorage(ctx context.Context) (
 	return bytesToItemIndex(val)
 }
 
-// Consume applies the provided function on the head of queue.
-// The call blocks until there is an item available or the queue is stopped.
-// The function returns true when an item is consumed or false if the queue is stopped.
-func (pq *persistentQueue[T]) Consume(consumeFunc func(context.Context, T) error) bool {
-	index, _, req, ok := pq.Read(context.Background())
-	if !ok {
-		return false
-	}
-	consumeErr := consumeFunc(context.Background(), req)
-	pq.OnProcessingFinished(index, consumeErr)
-	return true
-
-}
-
 func (pq *persistentQueue[T]) Shutdown(ctx context.Context) error {
 	// If the queue is not initialized, there is nothing to shut down.
 	if pq.client == nil {
