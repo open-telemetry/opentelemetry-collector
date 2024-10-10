@@ -4,11 +4,17 @@
 package builder // import "go.opentelemetry.io/collector/cmd/builder/internal/builder"
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
+	"runtime/debug"
 	"strings"
 	"time"
 
@@ -19,8 +25,12 @@ import (
 
 const defaultOtelColVersion = "0.111.0"
 
+var goVersionPackageURL = "https://golang.org/dl/"
+
 // ErrMissingGoMod indicates an empty gomod field
 var ErrMissingGoMod = errors.New("missing gomod specification for module")
+
+var readBuildInfo = debug.ReadBuildInfo
 
 // Config holds the builder's configuration
 type Config struct {
@@ -128,14 +138,132 @@ func (c *Config) Validate() error {
 	)
 }
 
-// SetGoPath sets go path
+func getGoVersionFromBuildInfo() (string, error) {
+	info, ok := readBuildInfo()
+	if !ok {
+		return "", fmt.Errorf("failed to read Go build info")
+	}
+	version := strings.TrimPrefix(info.GoVersion, "go")
+	return version, nil
+}
+func sanitizeExtractPath(filePath string, destination string) error {
+	// to avoid zip slip (writing outside of the destination), we resolve
+	// the target path, and make sure it's nested in the intended
+	// destination, or bail otherwise.
+	destpath := filepath.Join(destination, filePath)
+	if !strings.HasPrefix(destpath, destination) {
+		return fmt.Errorf("%s: illegal file path", filePath)
+	}
+	return nil
+}
+
+func downloadGoBinary(version string) error {
+	platform := runtime.GOOS
+	arch := runtime.GOARCH
+	originalGoURL := goVersionPackageURL
+	goVersionPackageURL = fmt.Sprintf(goVersionPackageURL+"/go%s.%s-%s.tar.gz", version, platform, arch)
+	defer func() {
+		goVersionPackageURL = originalGoURL
+	}()
+	client := http.Client{Transport: &http.Transport{DisableKeepAlives: true}}
+	request, err := http.NewRequest(http.MethodGet, goVersionPackageURL, nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := client.Do(request)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to download Go binary: %s", resp.Status)
+	}
+
+	gzr, err := gzip.NewReader(resp.Body)
+	if err != nil {
+		return err
+	}
+	defer gzr.Close()
+
+	tr := tar.NewReader(gzr)
+	if err := os.MkdirAll(filepath.Join(os.TempDir(), "go"), 0750); err != nil {
+		return err
+	}
+
+	for {
+		header, err := tr.Next()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return err
+		}
+		err = sanitizeExtractPath(header.Name, os.TempDir())
+		if err == nil {
+			target := filepath.Join(os.TempDir(), header.Name)
+			switch header.Typeflag {
+			case tar.TypeDir:
+				if err := os.MkdirAll(target, 0750); err != nil {
+					return err
+				}
+			case tar.TypeReg:
+				f, err := os.OpenFile(target, os.O_CREATE|os.O_WRONLY, os.FileMode(header.Mode))
+				if err != nil {
+					return err
+				}
+				// Copy up to 500MB of data to avoid gosec warning; current Go distributions are arount 250MB
+				if _, err := io.CopyN(f, tr, 500000000); err != nil {
+					f.Close()
+					if !errors.Is(err, io.EOF) {
+						return err
+					}
+				}
+				f.Close()
+			}
+
+		}
+	}
+
+	return nil
+
+}
+
+func removeGoTempDir() error {
+	goTempDir := filepath.Join(os.TempDir(), "go")
+	var err error
+	if _, err = os.Stat(goTempDir); err == nil {
+		if err = os.RemoveAll(goTempDir); err != nil {
+			return fmt.Errorf("failed to remove go temp directory: %w", err)
+		}
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("failed to check go temp directory: %w", err)
+	}
+	return nil
+}
+
+// SetGoPath sets go path, and if go binary not found on path, downloads it
 func (c *Config) SetGoPath() error {
 	if !c.SkipCompilation || !c.SkipGetModules {
 		// #nosec G204
 		if _, err := exec.Command(c.Distribution.Go, "env").CombinedOutput(); err != nil { // nolint G204
 			path, err := exec.LookPath("go")
 			if err != nil {
-				return ErrGoNotFound
+				if runtime.GOOS == "windows" {
+					return fmt.Errorf("failed to find go executable in PATH, please install Go from %s", goVersionPackageURL)
+				}
+				c.Logger.Info("Failed to find go executable in PATH, downloading Go binary")
+				goVersion, err := getGoVersionFromBuildInfo()
+				if err != nil {
+					return err
+				}
+				c.Logger.Info(fmt.Sprintf("Downloading Go version %s from "+filepath.Join(goVersionPackageURL, fmt.Sprintf("go%s.%s-%s.tar.gz", goVersion, runtime.GOOS, runtime.GOARCH)), goVersion))
+				if err := downloadGoBinary(goVersion); err != nil {
+					return err
+				}
+				path = filepath.Join(os.TempDir(), "go", "bin", "go")
+				c.Logger.Info(fmt.Sprintf("Installed go at temporary path: %s", path))
 			}
 			c.Distribution.Go = path
 		}
