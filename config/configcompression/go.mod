@@ -3,6 +3,7 @@ module go.opentelemetry.io/collector/config/configcompression
 go 1.22.0
 
 require (
+	github.com/klauspost/compress v1.17.9
 	github.com/stretchr/testify v1.9.0
 	go.uber.org/goleak v1.3.0
 )
