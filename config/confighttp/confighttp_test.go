@@ -336,6 +336,97 @@ func TestHTTPClientSettingsError(t *testing.T) {
 	}
 }
 
+func TestMaxRedirects(t *testing.T) {
+	toIntPtr := func(i int) *int {
+		return &i
+	}
+	tests := []struct {
+		name             string
+		settings         ClientConfig
+		expectedRequests int
+		expectedErrStr   string
+	}{
+		{
+			name:             "No redirects config",
+			settings:         ClientConfig{},
+			expectedRequests: 10,
+			// default client returns an error, custom implementations should return a ErrUseLastResponse which the internal http package will skip it to let the users select the previous response without closing the body.
+			expectedErrStr: "stopped after 10 redirects",
+		},
+		{
+			name:             "Zero redirects",
+			settings:         ClientConfig{MaxRedirects: toIntPtr(0)},
+			expectedRequests: 1,
+		},
+		{
+			name:             "One redirect",
+			settings:         ClientConfig{MaxRedirects: toIntPtr(1)},
+			expectedRequests: 2,
+		},
+		{
+			name:             "Defined max redirects",
+			settings:         ClientConfig{MaxRedirects: toIntPtr(5)},
+			expectedRequests: 6,
+		},
+	}
+
+	countRequests := func(resp *http.Response) int {
+		counter := 0
+		for resp != nil {
+			resp = resp.Request.Response
+			counter++
+		}
+		return counter
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			client, err := test.settings.ToClient(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+			require.NoError(t, err)
+
+			hss := &ServerConfig{
+				Endpoint: "localhost:0",
+			}
+
+			ln, err := hss.ToListener(context.Background())
+			require.NoError(t, err)
+
+			url := fmt.Sprintf("http://%s", ln.Addr().String())
+
+			// always return a redirection to itself
+			s, err := hss.ToServer(
+				context.Background(),
+				componenttest.NewNopHost(),
+				componenttest.NewNopTelemetrySettings(),
+				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					http.Redirect(w, r, url, http.StatusMovedPermanently)
+				}))
+			require.NoError(t, err)
+
+			go func() {
+				_ = s.Serve(ln)
+			}()
+
+			req, err := http.NewRequest(http.MethodOptions, url, nil)
+			require.NoError(t, err)
+			resp, err := client.Do(req)
+
+			if test.expectedErrStr != "" {
+				require.ErrorContains(t, err, test.expectedErrStr)
+			} else {
+				require.NoError(t, err)
+			}
+			assert.Equal(t, http.StatusMovedPermanently, resp.StatusCode)
+
+			defer resp.Body.Close()
+
+			require.Equal(t, test.expectedRequests, countRequests(resp))
+
+			require.NoError(t, s.Close())
+		})
+	}
+}
+
 func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 	tests := []struct {
 		name      string

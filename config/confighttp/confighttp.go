@@ -105,6 +105,9 @@ type ClientConfig struct {
 	HTTP2PingTimeout time.Duration `mapstructure:"http2_ping_timeout"`
 	// Cookies configures the cookie management of the HTTP client.
 	Cookies *CookiesConfig `mapstructure:"cookies"`
+
+	// Maximum number of redirections to follow, if not defined, the Client uses its default policy, which is to stop after 10 consecutive requests.
+	MaxRedirects *int `mapstructure:"max_redirects"`
 }
 
 // CookiesConfig defines the configuration of the HTTP client regarding cookies served by the server.
@@ -242,10 +245,25 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 	}
 
 	return &http.Client{
-		Transport: clientTransport,
-		Timeout:   hcs.Timeout,
-		Jar:       jar,
+		CheckRedirect: makeCheckRedirect(hcs.MaxRedirects),
+		Transport:     clientTransport,
+		Timeout:       hcs.Timeout,
+		Jar:           jar,
 	}, nil
+}
+
+// makeCheckRedirect checks if max redirects are exceeded
+func makeCheckRedirect(max *int) func(*http.Request, []*http.Request) error {
+	if max == nil {
+		return nil
+	}
+
+	return func(_ *http.Request, via []*http.Request) error {
+		if len(via) > *max {
+			return http.ErrUseLastResponse
+		}
+		return nil
+	}
 }
 
 // Custom RoundTripper that adds headers.
