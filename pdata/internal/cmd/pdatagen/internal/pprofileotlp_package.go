@@ -7,15 +7,19 @@ import (
 )
 
 var pprofileotlp = &Package{
-	name: "pprofileotlp",
-	path: filepath.Join("pprofile", "pprofileotlp"),
-	imports: []string{
-		`otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1experimental"`,
-	},
-	testImports: []string{
-		`"testing"`,
-		``,
-		`"github.com/stretchr/testify/assert"`,
+	info: &PackageInfo{
+		name: "pprofileotlp",
+		path: filepath.Join("pprofile", "pprofileotlp"),
+		imports: []string{
+			`otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1experimental"`,
+		},
+		testImports: []string{
+			`"testing"`,
+			``,
+			`"github.com/stretchr/testify/assert"`,
+			``,
+			`"go.opentelemetry.io/collector/pdata/internal"`,
+		},
 	},
 	structs: []baseStruct{
 		exportProfilesPartialSuccess,
