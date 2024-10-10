@@ -287,7 +287,7 @@ func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
 	return nil
 }
 
-func (pq *persistentQueue[T]) Read(ctx context.Context) (uint64, T, bool) {
+func (pq *persistentQueue[T]) Read(ctx context.Context) (uint64, context.Context, T, bool) {
 	for {
 		var (
 			index    uint64
@@ -303,10 +303,10 @@ func (pq *persistentQueue[T]) Read(ctx context.Context) (uint64, T, bool) {
 			return size
 		})
 		if !ok {
-			return 0, req, false
+			return 0, nil, req, false
 		}
 		if consumed {
-			return index, req, true
+			return index, nil, req, true
 		}
 
 		// If ok && !consumed, it means we are stopped. In this case, we still process all the other events
