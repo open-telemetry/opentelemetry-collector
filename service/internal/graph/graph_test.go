@@ -2068,11 +2068,11 @@ func TestGraphBuildErrors(t *testing.T) {
 				},
 			},
 			expected: `cycle detected: ` +
-				`connector "nop/conn1" (traces to traces) -> ` +
-				`processor "nop" in pipeline "traces/2" -> ` +
 				`connector "nop/conn" (traces to traces) -> ` +
 				`processor "nop" in pipeline "traces/1" -> ` +
-				`connector "nop/conn1" (traces to traces)`,
+				`connector "nop/conn1" (traces to traces) -> ` +
+				`processor "nop" in pipeline "traces/2" -> ` +
+				`connector "nop/conn" (traces to traces)`,
 		},
 		{
 			name: "not_allowed_deep_cycle_metrics.yaml",
@@ -2158,11 +2158,11 @@ func TestGraphBuildErrors(t *testing.T) {
 				},
 			},
 			expected: `cycle detected: ` +
-				`connector "nop/conn1" (logs to logs) -> ` +
-				`processor "nop" in pipeline "logs/2" -> ` +
 				`connector "nop/conn" (logs to logs) -> ` +
 				`processor "nop" in pipeline "logs/1" -> ` +
-				`connector "nop/conn1" (logs to logs)`,
+				`connector "nop/conn1" (logs to logs) -> ` +
+				`processor "nop" in pipeline "logs/2" -> ` +
+				`connector "nop/conn" (logs to logs)`,
 		},
 		{
 			name: "not_allowed_deep_cycle_profiles.yaml",
@@ -2264,13 +2264,13 @@ func TestGraphBuildErrors(t *testing.T) {
 				},
 			},
 			expected: `cycle detected: ` +
+				`connector "nop/forkagain" (traces to traces) -> ` +
+				`processor "nop" in pipeline "traces/copy2b" -> ` +
 				`connector "nop/rawlog" (traces to logs) -> ` +
 				`processor "nop" in pipeline "logs/raw" -> ` +
 				`connector "nop/fork" (logs to traces) -> ` +
 				`processor "nop" in pipeline "traces/copy2" -> ` +
-				`connector "nop/forkagain" (traces to traces) -> ` +
-				`processor "nop" in pipeline "traces/copy2b" -> ` +
-				`connector "nop/rawlog" (traces to logs)`,
+				`connector "nop/forkagain" (traces to traces)`,
 		},
 		{
 			name: "unknown_exporter_config",

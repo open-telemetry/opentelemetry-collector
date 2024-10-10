@@ -13,16 +13,15 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/components"
+	"go.opentelemetry.io/collector/service/internal/graph/attribute"
 )
-
-const exporterSeed = "exporter"
 
 var _ consumerNode = (*exporterNode)(nil)
 
 // An exporter instance can be shared by multiple pipelines of the same type.
 // Therefore, nodeID is derived from "pipeline type" and "component ID".
 type exporterNode struct {
-	nodeID
+	*attribute.Attributes
 	componentID  component.ID
 	pipelineType pipeline.Signal
 	component.Component
@@ -30,7 +29,7 @@ type exporterNode struct {
 
 func newExporterNode(pipelineType pipeline.Signal, exprID component.ID) *exporterNode {
 	return &exporterNode{
-		nodeID:       newNodeID(exporterSeed, pipelineType.String(), exprID.String()),
+		Attributes:   attribute.Exporter(pipelineType, exprID),
 		componentID:  exprID,
 		pipelineType: pipelineType,
 	}
