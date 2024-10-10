@@ -25,6 +25,7 @@ type Queue[T any] interface {
 	// without violating capacity restrictions. If success returns no error.
 	// It returns ErrQueueIsFull if no space is currently available.
 	Offer(ctx context.Context, item T) error
+	Read() (T, bool, func(error))
 	// Consume applies the provided function on the head of queue.
 	// The call blocks until there is an item available or the queue is stopped.
 	// The function returns true when an item is consumed or false if the queue is stopped.

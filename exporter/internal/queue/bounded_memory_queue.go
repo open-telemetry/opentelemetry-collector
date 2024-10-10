@@ -40,6 +40,14 @@ func (q *boundedMemoryQueue[T]) Offer(ctx context.Context, req T) error {
 	return q.sizedChannel.push(memQueueEl[T]{ctx: ctx, req: req}, q.sizer.Sizeof(req), nil)
 }
 
+func (q *boundedMemoryQueue[T]) Read() (T, bool, func(error)) {
+	item, ok := q.sizedChannel.pop(func(el memQueueEl[T]) int64 { return q.sizer.Sizeof(el.req) })
+	if !ok {
+		return item.req, ok, nil
+	}
+	return item.req, ok, nil
+}
+
 // Consume applies the provided function on the head of queue.
 // The call blocks until there is an item available or the queue is stopped.
 // The function returns true when an item is consumed or false if the queue is stopped and emptied.
