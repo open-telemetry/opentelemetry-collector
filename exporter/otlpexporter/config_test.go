@@ -147,6 +147,41 @@ func TestValidDNSEndpoint(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = "dns://authority/backend.example.com:4317"
 	assert.NoError(t, cfg.Validate())
+	cfg.Endpoint = "backend.example.com:4317"
+	assert.NoError(t, cfg.Validate())
+	cfg.Endpoint = "dns:///backend.example.com:4317"
+	assert.NoError(t, cfg.Validate())
+	// validate invalid endpoints. See https://github.com/open-telemetry/opentelemetry-collector/issues/10488
+	// port missing
+	cfg.Endpoint = "dns://authority/my-backend"
+	require.EqualError(t, cfg.Validate(), "address my-backend: missing port in address")
+	// invalid dns scheme
+	cfg.Endpoint = "dns:////backend.example.com:4317"
+	require.EqualError(t, cfg.Validate(), "invalid dns scheme format")
+	cfg.Endpoint = "dns:/backend.example.com:4317"
+	require.EqualError(t, cfg.Validate(), "invalid dns scheme format")
+}
+
+func TestValidHttpEndpoint(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Endpoint = "http://backend.example.com:4317"
+	assert.NoError(t, cfg.Validate())
+	cfg.Endpoint = "https://backend.example.com:4317"
+	assert.NoError(t, cfg.Validate())
+	cfg.Endpoint = "backend.example.com:4317"
+	assert.NoError(t, cfg.Validate())
+	// validate invalid endpoints. See https://github.com/open-telemetry/opentelemetry-collector/issues/10488
+	// port in the wrong place
+	cfg.Endpoint = "http://backend.example.com/something/foo:4317"
+	require.EqualError(t, cfg.Validate(), "address backend.example.com: missing port in address")
+	cfg.Endpoint = "https://backend.example.com/something/foo:4317"
+	require.EqualError(t, cfg.Validate(), "address backend.example.com: missing port in address")
+	// port missing
+	cfg.Endpoint = "http://my-backend"
+	require.EqualError(t, cfg.Validate(), "address my-backend: missing port in address")
+	cfg.Endpoint = "https://my-backend"
+	require.EqualError(t, cfg.Validate(), "address my-backend: missing port in address")
 }
 
 func TestSanitizeEndpoint(t *testing.T) {
