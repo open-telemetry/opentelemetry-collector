@@ -4,11 +4,15 @@
 package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
 
 import (
+	"context"
+
+	"go.opentelemetry.io/contrib/bridges/otelzap"
+	"go.opentelemetry.io/contrib/config"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
-func newLogger(cfg LogsConfig, options []zap.Option) (*zap.Logger, error) {
+func newLogger(ctx context.Context, cfg LogsConfig, options []zap.Option) (*zap.Logger, error) {
 	// Copied from NewProductionConfig.
 	zapCfg := &zap.Config{
 		Level:             zap.NewAtomicLevelAt(cfg.Level),
@@ -28,9 +32,31 @@ func newLogger(cfg LogsConfig, options []zap.Option) (*zap.Logger, error) {
 	}
 
 	logger, err := zapCfg.Build(options...)
+
 	if err != nil {
 		return nil, err
 	}
+
+	if len(cfg.Processors) > 0 {
+		sdk, err := config.NewSDK(
+			config.WithContext(ctx),
+			config.WithOpenTelemetryConfiguration(
+				config.OpenTelemetryConfiguration{
+					LoggerProvider: &config.LoggerProvider{
+						Processors: cfg.Processors,
+					},
+				},
+			),
+		)
+
+		if err != nil {
+			return nil, err
+		}
+		logger = logger.WithOptions(zap.WrapCore(func(_ zapcore.Core) zapcore.Core {
+			return otelzap.NewCore("go.opentelemetry.io/collector/service/telemetry", otelzap.WithLoggerProvider(sdk.LoggerProvider()))
+		}))
+	}
+
 	if cfg.Sampling != nil && cfg.Sampling.Enabled {
 		logger = newSampledLogger(logger, cfg.Sampling)
 	}

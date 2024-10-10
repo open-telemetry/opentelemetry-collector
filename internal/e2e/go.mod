@@ -92,6 +92,7 @@ require (
 	go.opentelemetry.io/collector/processor/processorprofiles v0.111.0 // indirect
 	go.opentelemetry.io/collector/receiver/receiverprofiles v0.111.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.111.0 // indirect
+	go.opentelemetry.io/contrib/bridges/otelzap v0.5.0 // indirect
 	go.opentelemetry.io/contrib/config v0.10.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.55.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.55.0 // indirect

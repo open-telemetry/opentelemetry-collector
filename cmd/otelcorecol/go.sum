@@ -109,6 +109,8 @@ github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9de
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yusufpapurcu/wmi v1.2.4 h1:zFUKzehAFReQwLys1b/iSMl+JQGSCSjtVqQn9bBrPo0=
 github.com/yusufpapurcu/wmi v1.2.4/go.mod h1:SBZ9tNy3G9/m5Oi98Zks0QjeHVDvuK0qfxQmPyzfmi0=
+go.opentelemetry.io/contrib/bridges/otelzap v0.5.0 h1:DKXgQ+nDW41ErBPLbRrrytiwfSBIP6v9i7uUKCDMnAc=
+go.opentelemetry.io/contrib/bridges/otelzap v0.5.0/go.mod h1:ljh3EKpTWP9AWcaH+XRfMOUQlICdeMMk5MJvk7Xu4MQ=
 go.opentelemetry.io/contrib/config v0.10.0 h1:2JknAzMaYjxrHkTnZh3eOme/Y2P5eHE2SWfhfV6Xd6c=
 go.opentelemetry.io/contrib/config v0.10.0/go.mod h1:aND2M6/KfNkntI5cyvHriR/zvZgPf8j9yETdSmvpfmc=
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.55.0 h1:hCq2hNMwsegUvPzI7sPOvtO9cqyy5GbWt/Ybp2xrx8Q=
