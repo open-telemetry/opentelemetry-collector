@@ -1,0 +1,22 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: localhost:4317
+        cors:
+          allowed_origins:
+            - http://test.com
+          allowed_headers:
+            - Example-Header
+          max_age: 7200
+
+exporters:
+  otlphttp:
+    endpoint: localhost:4318
+    max_idle_conns: 567
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [otlphttp]
