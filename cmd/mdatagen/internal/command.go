@@ -74,7 +74,7 @@ func run(ymlPath string) error {
 
 	tmplDir := "templates"
 
-	codeDir := filepath.Join(ymlDir, "internal", "metadata")
+	codeDir := filepath.Join(ymlDir, "internal", md.GeneratedPackageName)
 	if err = os.MkdirAll(codeDir, 0700); err != nil {
 		return fmt.Errorf("unable to create output directory %q: %w", codeDir, err)
 	}
@@ -99,7 +99,7 @@ func run(ymlPath string) error {
 			if err = inlineReplace(
 				filepath.Join(tmplDir, "readme.md.tmpl"),
 				filepath.Join(ymlDir, "README.md"),
-				md, statusStart, statusEnd); err != nil {
+				md, statusStart, statusEnd, md.GeneratedPackageName); err != nil {
 				return err
 			}
 		}
@@ -151,7 +151,7 @@ func run(ymlPath string) error {
 	}
 
 	for tmpl, dst := range toGenerate {
-		if err = generateFile(tmpl, dst, md, "metadata"); err != nil {
+		if err = generateFile(tmpl, dst, md, md.GeneratedPackageName); err != nil {
 			return err
 		}
 	}
@@ -371,7 +371,7 @@ func executeTemplate(tmplFile string, md Metadata, goPackage string) ([]byte, er
 	return buf.Bytes(), nil
 }
 
-func inlineReplace(tmplFile string, outputFile string, md Metadata, start string, end string) error {
+func inlineReplace(tmplFile string, outputFile string, md Metadata, start string, end string, goPackage string) error {
 	var readmeContents []byte
 	var err error
 	if readmeContents, err = os.ReadFile(outputFile); err != nil { // nolint: gosec
@@ -387,7 +387,7 @@ func inlineReplace(tmplFile string, outputFile string, md Metadata, start string
 		md.GithubProject = "open-telemetry/opentelemetry-collector-contrib"
 	}
 
-	buf, err := executeTemplate(tmplFile, md, "metadata")
+	buf, err := executeTemplate(tmplFile, md, goPackage)
 	if err != nil {
 		return err
 	}
