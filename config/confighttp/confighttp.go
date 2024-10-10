@@ -377,6 +377,7 @@ func (hss *ServerConfig) ToListener(ctx context.Context) (net.Listener, error) {
 type toServerOptions struct {
 	errHandler func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int)
 	decoders   map[string]func(body io.ReadCloser) (io.ReadCloser, error)
+	spanPrefix string
 }
 
 // ToServerOption is an option to change the behavior of the HTTP server
@@ -407,6 +408,14 @@ func WithDecoder(key string, dec func(body io.ReadCloser) (io.ReadCloser, error)
 			opts.decoders = map[string]func(body io.ReadCloser) (io.ReadCloser, error){}
 		}
 		opts.decoders[key] = dec
+	})
+}
+
+// WithSpanPrefix creates a span prefixed with the specified name.
+// Ideally, this prefix should be the component's ID.
+func WithSpanPrefix(spanPrefix string) ToServerOption {
+	return toServerOptionFunc(func(opts *toServerOptions) {
+		opts.spanPrefix = spanPrefix
 	})
 }
 
@@ -462,15 +471,17 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 	otelOpts := []otelhttp.Option{
 		otelhttp.WithTracerProvider(settings.TracerProvider),
 		otelhttp.WithPropagators(otel.GetTextMapPropagator()),
-		otelhttp.WithSpanNameFormatter(func(_ string, r *http.Request) string {
+		otelhttp.WithSpanNameFormatter(func(operation string, r *http.Request) string {
+			if len(operation) > 0 {
+				return fmt.Sprintf("%s:%s", operation, r.URL.Path)
+			}
 			return r.URL.Path
 		}),
 		otelhttp.WithMeterProvider(settings.LeveledMeterProvider(configtelemetry.LevelDetailed)),
 	}
 
 	// Enable OpenTelemetry observability plugin.
-	// TODO: Consider to use component ID string as prefix for all the operations.
-	handler = otelhttp.NewHandler(handler, "", otelOpts...)
+	handler = otelhttp.NewHandler(handler, serverOpts.spanPrefix, otelOpts...)
 
 	// wrap the current handler in an interceptor that will add client.Info to the request's context
 	handler = &clientInfoHandler{
