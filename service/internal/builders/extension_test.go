@@ -75,7 +75,7 @@ func TestNewNopExtensionConfigsAndFactories(t *testing.T) {
 	set := extensiontest.NewNopSettings()
 	set.ID = component.NewID(nopType)
 
-	ext, err := factory.CreateExtension(context.Background(), set, cfg)
+	ext, err := factory.Create(context.Background(), set, cfg)
 	require.NoError(t, err)
 	bExt, err := builder.Create(context.Background(), set)
 	require.NoError(t, err)

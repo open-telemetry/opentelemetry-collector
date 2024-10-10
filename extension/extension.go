@@ -41,18 +41,29 @@ type Settings struct {
 // CreateFunc is the equivalent of Factory.Create(...) function.
 type CreateFunc func(context.Context, Settings, component.Config) (Extension, error)
 
-// CreateExtension implements Factory.Create.
-func (f CreateFunc) CreateExtension(ctx context.Context, set Settings, cfg component.Config) (Extension, error) {
+// Create implements Factory.Create.
+func (f CreateFunc) Create(ctx context.Context, set Settings, cfg component.Config) (Extension, error) {
 	return f(ctx, set, cfg)
+}
+
+// Deprecated: [v0.112.0] use Create.
+func (f CreateFunc) CreateExtension(ctx context.Context, set Settings, cfg component.Config) (Extension, error) {
+	return f.Create(ctx, set, cfg)
 }
 
 type Factory interface {
 	component.Factory
 
-	// CreateExtension creates an extension based on the given config.
+	// Create an extension based on the given config.
+	Create(ctx context.Context, set Settings, cfg component.Config) (Extension, error)
+
+	// Deprecated: [v0.112.0] use Create.
 	CreateExtension(ctx context.Context, set Settings, cfg component.Config) (Extension, error)
 
-	// ExtensionStability gets the stability level of the Extension.
+	// Stability gets the stability level of the Extension.
+	Stability() component.StabilityLevel
+
+	// Deprecated: [v0.112.0] use Stability.
 	ExtensionStability() component.StabilityLevel
 
 	unexportedFactoryFunc()
@@ -70,6 +81,10 @@ func (f *factory) Type() component.Type {
 }
 
 func (f *factory) unexportedFactoryFunc() {}
+
+func (f *factory) Stability() component.StabilityLevel {
+	return f.extensionStability
+}
 
 func (f *factory) ExtensionStability() component.StabilityLevel {
 	return f.extensionStability

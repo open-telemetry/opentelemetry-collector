@@ -327,7 +327,7 @@ func TestInvalidStorageExtensionType(t *testing.T) {
 	factory := extensiontest.NewNopFactory()
 	extConfig := factory.CreateDefaultConfig()
 	settings := extensiontest.NewNopSettings()
-	extension, err := factory.CreateExtension(context.Background(), settings, extConfig)
+	extension, err := factory.Create(context.Background(), settings, extConfig)
 	require.NoError(t, err)
 	var extensions = map[component.ID]component.Component{
 		storageID: extension,
