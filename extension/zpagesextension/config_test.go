@@ -37,5 +37,6 @@ func TestUnmarshalConfig(t *testing.T) {
 			ServerConfig: confighttp.ServerConfig{
 				Endpoint: "localhost:56888",
 			},
+			EnableExpvar: false,
 		}, cfg)
 }
