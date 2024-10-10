@@ -39,7 +39,7 @@ type Config struct {
 	Receivers    []Module     `mapstructure:"receivers"`
 	Processors   []Module     `mapstructure:"processors"`
 	Connectors   []Module     `mapstructure:"connectors"`
-	Providers    *[]Module    `mapstructure:"providers"`
+	Providers    []Module     `mapstructure:"providers"`
 	Replaces     []string     `mapstructure:"replaces"`
 	Excludes     []string     `mapstructure:"excludes"`
 
@@ -79,6 +79,13 @@ type Module struct {
 	Path   string `mapstructure:"path"`   // an optional path to the local version of this module
 }
 
+func (mod *Module) Validate() error {
+	if mod.GoMod == "" {
+		return ErrMissingGoMod
+	}
+	return nil
+}
+
 type retry struct {
 	numRetries int
 	wait       time.Duration
@@ -114,17 +121,13 @@ func NewDefaultConfig() Config {
 
 // Validate checks whether the current configuration is valid
 func (c *Config) Validate() error {
-	var providersError error
-	if c.Providers != nil {
-		providersError = validateModules("provider", *c.Providers)
-	}
 	return multierr.Combine(
 		validateModules("extension", c.Extensions),
 		validateModules("receiver", c.Receivers),
 		validateModules("exporter", c.Exporters),
 		validateModules("processor", c.Processors),
 		validateModules("connector", c.Connectors),
-		providersError,
+		validateProviders(c.Providers),
 	)
 }
 
@@ -207,43 +210,29 @@ func (c *Config) ParseModules() error {
 		return err
 	}
 
-	if c.Providers != nil {
-		providers, err := parseModules(*c.Providers)
-		if err != nil {
-			return err
-		}
-		c.Providers = &providers
-	} else {
-		providers, err := parseModules([]Module{
-			{
-				GoMod: "go.opentelemetry.io/collector/confmap/provider/envprovider v" + c.Distribution.OtelColVersion,
-			},
-			{
-				GoMod: "go.opentelemetry.io/collector/confmap/provider/fileprovider v" + c.Distribution.OtelColVersion,
-			},
-			{
-				GoMod: "go.opentelemetry.io/collector/confmap/provider/httpprovider v" + c.Distribution.OtelColVersion,
-			},
-			{
-				GoMod: "go.opentelemetry.io/collector/confmap/provider/httpsprovider v" + c.Distribution.OtelColVersion,
-			},
-			{
-				GoMod: "go.opentelemetry.io/collector/confmap/provider/yamlprovider v" + c.Distribution.OtelColVersion,
-			},
-		})
-		if err != nil {
-			return err
-		}
-		c.Providers = &providers
+	c.Providers, err = parseModules(c.Providers)
+	if err != nil {
+		return err
 	}
 
 	return nil
 }
 
+func validateProviders(providers []Module) error {
+	if err := validateModules("provider", providers); err != nil {
+		return err
+	}
+	if len(providers) == 0 {
+		return errors.New("at least one provider is required")
+	}
+	return nil
+}
+
 func validateModules(name string, mods []Module) error {
+	var errs error
 	for i, mod := range mods {
-		if mod.GoMod == "" {
-			return fmt.Errorf("%s module at index %v: %w", name, i, ErrMissingGoMod)
+		if err := mod.Validate(); err != nil {
+			errs = multierr.Append(errs, fmt.Errorf("%s module at index %v: %w", name, i, err))
 		}
 	}
 	return nil
