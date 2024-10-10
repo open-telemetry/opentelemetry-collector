@@ -3,13 +3,10 @@
 
 package componentprofiles // import "go.opentelemetry.io/collector/component/componentprofiles"
 
-import "go.opentelemetry.io/collector/component"
-
-func mustNewDataType(strType string) component.DataType {
-	return component.MustNewType(strType)
-}
+import (
+	"go.opentelemetry.io/collector/internal/globalsignal"
+)
 
 var (
-	// DataTypeProfiles is the data type tag for profiles.
-	DataTypeProfiles = mustNewDataType("profiles")
+	SignalProfiles = globalsignal.MustNewSignal("profiles")
 )

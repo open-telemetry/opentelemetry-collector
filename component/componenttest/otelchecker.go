@@ -41,27 +41,6 @@ func checkReceiver(reader *sdkmetric.ManualReader, receiver component.ID, dataty
 		checkIntSum(reader, fmt.Sprintf("otelcol_receiver_refused_%s", datatype), droppedMetricPoints, receiverAttrs))
 }
 
-func checkProcessorTraces(reader *sdkmetric.ManualReader, processor component.ID, accepted, refused, dropped int64) error {
-	return checkProcessor(reader, processor, "spans", accepted, refused, dropped)
-}
-
-func checkProcessorMetrics(reader *sdkmetric.ManualReader, processor component.ID, accepted, refused, dropped int64) error {
-	return checkProcessor(reader, processor, "metric_points", accepted, refused, dropped)
-}
-
-func checkProcessorLogs(reader *sdkmetric.ManualReader, processor component.ID, accepted, refused, dropped int64) error {
-	return checkProcessor(reader, processor, "log_records", accepted, refused, dropped)
-}
-
-func checkProcessor(reader *sdkmetric.ManualReader, processor component.ID, datatype string, accepted, refused, dropped int64) error {
-	processorAttrs := attributesForProcessorMetrics(processor)
-	return multierr.Combine(
-		checkIntSum(reader, fmt.Sprintf("otelcol_processor_accepted_%s", datatype), accepted, processorAttrs),
-		checkIntSum(reader, fmt.Sprintf("otelcol_processor_refused_%s", datatype), refused, processorAttrs),
-		checkIntSum(reader, fmt.Sprintf("otelcol_processor_dropped_%s", datatype), dropped, processorAttrs),
-	)
-}
-
 func checkExporterTraces(reader *sdkmetric.ManualReader, exporter component.ID, sent, sendFailed int64) error {
 	return checkExporter(reader, exporter, "spans", sent, sendFailed)
 }
@@ -92,8 +71,8 @@ func checkExporterEnqueueFailed(reader *sdkmetric.ManualReader, exporter compone
 	return checkIntSum(reader, fmt.Sprintf("otelcol_exporter_enqueue_failed_%s", datatype), enqueueFailed, exporterAttrs)
 }
 
-func checkIntGauge(reader *sdkmetric.ManualReader, metric string, expected int64, attrs []attribute.KeyValue) error {
-	dp, err := getGaugeDataPoint[int64](reader, metric, attrs)
+func checkIntGauge(reader *sdkmetric.ManualReader, metric string, expected int64, expectedAttrs attribute.Set) error {
+	dp, err := getGaugeDataPoint[int64](reader, metric, expectedAttrs)
 	if err != nil {
 		return err
 	}
@@ -105,8 +84,8 @@ func checkIntGauge(reader *sdkmetric.ManualReader, metric string, expected int64
 	return nil
 }
 
-func checkIntSum(reader *sdkmetric.ManualReader, expectedMetric string, expected int64, attrs []attribute.KeyValue) error {
-	dp, err := getSumDataPoint[int64](reader, expectedMetric, attrs)
+func checkIntSum(reader *sdkmetric.ManualReader, expectedMetric string, expected int64, expectedAttrs attribute.Set) error {
+	dp, err := getSumDataPoint[int64](reader, expectedMetric, expectedAttrs)
 	if err != nil {
 		return err
 	}
@@ -118,7 +97,7 @@ func checkIntSum(reader *sdkmetric.ManualReader, expectedMetric string, expected
 	return nil
 }
 
-func getSumDataPoint[N int64 | float64](reader *sdkmetric.ManualReader, expectedName string, expectedAttrs []attribute.KeyValue) (metricdata.DataPoint[N], error) {
+func getSumDataPoint[N int64 | float64](reader *sdkmetric.ManualReader, expectedName string, expectedAttrs attribute.Set) (metricdata.DataPoint[N], error) {
 	m, err := getMetric(reader, expectedName)
 	if err != nil {
 		return metricdata.DataPoint[N]{}, err
@@ -132,7 +111,7 @@ func getSumDataPoint[N int64 | float64](reader *sdkmetric.ManualReader, expected
 	}
 }
 
-func getGaugeDataPoint[N int64 | float64](reader *sdkmetric.ManualReader, expectedName string, expectedAttrs []attribute.KeyValue) (metricdata.DataPoint[N], error) {
+func getGaugeDataPoint[N int64 | float64](reader *sdkmetric.ManualReader, expectedName string, expectedAttrs attribute.Set) (metricdata.DataPoint[N], error) {
 	m, err := getMetric(reader, expectedName)
 	if err != nil {
 		return metricdata.DataPoint[N]{}, err
@@ -146,14 +125,13 @@ func getGaugeDataPoint[N int64 | float64](reader *sdkmetric.ManualReader, expect
 	}
 }
 
-func getDataPoint[N int64 | float64](dps []metricdata.DataPoint[N], expectedName string, expectedAttrs []attribute.KeyValue) (metricdata.DataPoint[N], error) {
-	expectedSet := attribute.NewSet(expectedAttrs...)
+func getDataPoint[N int64 | float64](dps []metricdata.DataPoint[N], expectedName string, expectedAttrs attribute.Set) (metricdata.DataPoint[N], error) {
 	for _, dp := range dps {
-		if expectedSet.Equals(&dp.Attributes) {
+		if expectedAttrs.Equals(&dp.Attributes) {
 			return dp, nil
 		}
 	}
-	return metricdata.DataPoint[N]{}, fmt.Errorf("metric '%s' doesn't have a data point with the given attributes: %s", expectedName, expectedSet.Encoded(attribute.DefaultEncoder()))
+	return metricdata.DataPoint[N]{}, fmt.Errorf("metric '%s' doesn't have a data point with the given attributes: %s", expectedName, expectedAttrs.Encoded(attribute.DefaultEncoder()))
 }
 
 func getMetric(reader *sdkmetric.ManualReader, expectedName string) (metricdata.Metrics, error) {
@@ -172,26 +150,24 @@ func getMetric(reader *sdkmetric.ManualReader, expectedName string) (metricdata.
 	return metricdata.Metrics{}, fmt.Errorf("metric '%s' not found", expectedName)
 }
 
-func attributesForScraperMetrics(receiver component.ID, scraper component.ID) []attribute.KeyValue {
-	return []attribute.KeyValue{
+func attributesForScraperMetrics(receiver component.ID, scraper component.ID) attribute.Set {
+	return attribute.NewSet(
 		attribute.String(receiverTag, receiver.String()),
 		attribute.String(scraperTag, scraper.String()),
-	}
+	)
 }
 
 // attributesForReceiverMetrics returns the attributes that are needed for the receiver metrics.
-func attributesForReceiverMetrics(receiver component.ID, transport string) []attribute.KeyValue {
-	return []attribute.KeyValue{
+func attributesForReceiverMetrics(receiver component.ID, transport string) attribute.Set {
+	return attribute.NewSet(
 		attribute.String(receiverTag, receiver.String()),
 		attribute.String(transportTag, transport),
-	}
-}
-
-func attributesForProcessorMetrics(processor component.ID) []attribute.KeyValue {
-	return []attribute.KeyValue{attribute.String(processorTag, processor.String())}
+	)
 }
 
 // attributesForExporterMetrics returns the attributes that are needed for the receiver metrics.
-func attributesForExporterMetrics(exporter component.ID) []attribute.KeyValue {
-	return []attribute.KeyValue{attribute.String(exporterTag, exporter.String())}
+func attributesForExporterMetrics(exporter component.ID, extraAttrs ...attribute.KeyValue) attribute.Set {
+	attrs := []attribute.KeyValue{attribute.String(exporterTag, exporter.String())}
+	attrs = append(attrs, extraAttrs...)
+	return attribute.NewSet(attrs...)
 }

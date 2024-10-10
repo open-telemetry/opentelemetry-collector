@@ -17,7 +17,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/internal/testutil"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.opentelemetry.io/collector/service/internal/promtest"
 	"go.opentelemetry.io/collector/service/internal/resource"
@@ -208,8 +207,10 @@ func TestTelemetryInit(t *testing.T) {
 						semconv.AttributeServiceInstanceID: &testInstanceID,
 					},
 					Metrics: MetricsConfig{
-						Level:   configtelemetry.LevelDetailed,
-						Address: testutil.GetAvailableLocalAddress(t),
+						Level: configtelemetry.LevelDetailed,
+						Readers: []config.MetricReader{{
+							Pull: &config.PullMetricReader{Exporter: config.MetricExporter{Prometheus: promtest.GetAvailableLocalAddressPrometheus(t)}},
+						}},
 					},
 				}
 			}
@@ -257,11 +258,11 @@ func createTestMetrics(t *testing.T, mp metric.MeterProvider) {
 
 	grpcExampleCounter, err := mp.Meter(otelinit.GRPCInstrumentation).Int64Counter(metricPrefix + grpcPrefix + counterName)
 	require.NoError(t, err)
-	grpcExampleCounter.Add(context.Background(), 11, metric.WithAttributes(otelinit.GRPCUnacceptableKeyValues...))
+	grpcExampleCounter.Add(context.Background(), 11, metric.WithAttributeSet(otelinit.GRPCUnacceptableKeyValues))
 
 	httpExampleCounter, err := mp.Meter(otelinit.HTTPInstrumentation).Int64Counter(metricPrefix + httpPrefix + counterName)
 	require.NoError(t, err)
-	httpExampleCounter.Add(context.Background(), 10, metric.WithAttributes(otelinit.HTTPUnacceptableKeyValues...))
+	httpExampleCounter.Add(context.Background(), 10, metric.WithAttributeSet(otelinit.HTTPUnacceptableKeyValues))
 }
 
 func getMetricsFromPrometheus(t *testing.T, handler http.Handler) map[string]*io_prometheus_client.MetricFamily {
@@ -276,5 +277,4 @@ func getMetricsFromPrometheus(t *testing.T, handler http.Handler) map[string]*io
 	require.NoError(t, err)
 
 	return parsed
-
 }

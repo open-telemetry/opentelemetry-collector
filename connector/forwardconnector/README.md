@@ -129,7 +129,7 @@ service:
       # - forward
   # traces/log:
   #   receivers: [forward]
-  #   exporters: [logging]
+  #   exporters: [debug]
 ```
 
 [Connectors README]:../README.md

@@ -22,12 +22,12 @@ func TestExporterBuilder(t *testing.T) {
 	defaultCfg := struct{}{}
 	factories, err := exporter.MakeFactoryMap([]exporter.Factory{
 		exporter.NewFactory(component.MustNewType("err"), nil),
-		exporter.NewFactory(
+		exporterprofiles.NewFactory(
 			component.MustNewType("all"),
 			func() component.Config { return &defaultCfg },
-			exporter.WithTraces(createExporterTraces, component.StabilityLevelDevelopment),
-			exporter.WithMetrics(createExporterMetrics, component.StabilityLevelAlpha),
-			exporter.WithLogs(createExporterLogs, component.StabilityLevelDeprecated),
+			exporterprofiles.WithTraces(createExporterTraces, component.StabilityLevelDevelopment),
+			exporterprofiles.WithMetrics(createExporterMetrics, component.StabilityLevelAlpha),
+			exporterprofiles.WithLogs(createExporterLogs, component.StabilityLevelDeprecated),
 			exporterprofiles.WithProfiles(createExporterProfiles, component.StabilityLevelDevelopment),
 		),
 	}...)
@@ -105,12 +105,12 @@ func TestExporterBuilder(t *testing.T) {
 func TestExporterBuilderMissingConfig(t *testing.T) {
 	defaultCfg := struct{}{}
 	factories, err := exporter.MakeFactoryMap([]exporter.Factory{
-		exporter.NewFactory(
+		exporterprofiles.NewFactory(
 			component.MustNewType("all"),
 			func() component.Config { return &defaultCfg },
-			exporter.WithTraces(createExporterTraces, component.StabilityLevelDevelopment),
-			exporter.WithMetrics(createExporterMetrics, component.StabilityLevelAlpha),
-			exporter.WithLogs(createExporterLogs, component.StabilityLevelDeprecated),
+			exporterprofiles.WithTraces(createExporterTraces, component.StabilityLevelDevelopment),
+			exporterprofiles.WithMetrics(createExporterMetrics, component.StabilityLevelAlpha),
+			exporterprofiles.WithLogs(createExporterLogs, component.StabilityLevelDeprecated),
 			exporterprofiles.WithProfiles(createExporterProfiles, component.StabilityLevelDevelopment),
 		),
 	}...)
@@ -158,25 +158,25 @@ func TestNewNopExporterConfigsAndFactories(t *testing.T) {
 	set := exportertest.NewNopSettings()
 	set.ID = component.NewID(nopType)
 
-	traces, err := factory.CreateTracesExporter(context.Background(), set, cfg)
+	traces, err := factory.CreateTraces(context.Background(), set, cfg)
 	require.NoError(t, err)
 	bTraces, err := builder.CreateTraces(context.Background(), set)
 	require.NoError(t, err)
 	assert.IsType(t, traces, bTraces)
 
-	metrics, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
+	metrics, err := factory.CreateMetrics(context.Background(), set, cfg)
 	require.NoError(t, err)
 	bMetrics, err := builder.CreateMetrics(context.Background(), set)
 	require.NoError(t, err)
 	assert.IsType(t, metrics, bMetrics)
 
-	logs, err := factory.CreateLogsExporter(context.Background(), set, cfg)
+	logs, err := factory.CreateLogs(context.Background(), set, cfg)
 	require.NoError(t, err)
 	bLogs, err := builder.CreateLogs(context.Background(), set)
 	require.NoError(t, err)
 	assert.IsType(t, logs, bLogs)
 
-	profiles, err := factory.CreateProfilesExporter(context.Background(), set, cfg)
+	profiles, err := factory.(exporterprofiles.Factory).CreateProfiles(context.Background(), set, cfg)
 	require.NoError(t, err)
 	bProfiles, err := builder.CreateProfiles(context.Background(), set)
 	require.NoError(t, err)

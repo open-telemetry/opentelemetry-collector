@@ -16,7 +16,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -24,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/internal"
 	"go.opentelemetry.io/collector/pdata/testdata"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 func mockRequestUnmarshaler(mr internal.Request) exporterqueue.Unmarshaler[internal.Request] {
@@ -40,7 +40,7 @@ func TestQueuedRetry_DropOnPermanentError(t *testing.T) {
 	qCfg := NewDefaultQueueConfig()
 	rCfg := configretry.NewDefaultBackOffConfig()
 	mockR := newMockRequest(2, consumererror.NewPermanent(errors.New("bad data")))
-	be, err := NewBaseExporter(defaultSettings, defaultDataType, newObservabilityConsumerSender,
+	be, err := NewBaseExporter(defaultSettings, defaultSignal, newObservabilityConsumerSender,
 		WithMarshaler(mockRequestMarshaler), WithUnmarshaler(mockRequestUnmarshaler(mockR)), WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 	ocs := be.ObsrepSender.(*observabilityConsumerSender)
@@ -64,7 +64,7 @@ func TestQueuedRetry_DropOnNoRetry(t *testing.T) {
 	qCfg := NewDefaultQueueConfig()
 	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.Enabled = false
-	be, err := NewBaseExporter(defaultSettings, defaultDataType, newObservabilityConsumerSender, WithMarshaler(mockRequestMarshaler),
+	be, err := NewBaseExporter(defaultSettings, defaultSignal, newObservabilityConsumerSender, WithMarshaler(mockRequestMarshaler),
 		WithUnmarshaler(mockRequestUnmarshaler(newMockRequest(2, errors.New("transient error")))),
 		WithQueue(qCfg), WithRetry(rCfg))
 	require.NoError(t, err)
@@ -91,7 +91,7 @@ func TestQueuedRetry_OnError(t *testing.T) {
 	qCfg.NumConsumers = 1
 	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.InitialInterval = 0
-	be, err := NewBaseExporter(defaultSettings, defaultDataType, newObservabilityConsumerSender,
+	be, err := NewBaseExporter(defaultSettings, defaultSignal, newObservabilityConsumerSender,
 		WithMarshaler(mockRequestMarshaler), WithUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
 		WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
@@ -121,7 +121,7 @@ func TestQueuedRetry_MaxElapsedTime(t *testing.T) {
 	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.InitialInterval = time.Millisecond
 	rCfg.MaxElapsedTime = 100 * time.Millisecond
-	be, err := NewBaseExporter(defaultSettings, defaultDataType, newObservabilityConsumerSender,
+	be, err := NewBaseExporter(defaultSettings, defaultSignal, newObservabilityConsumerSender,
 		WithMarshaler(mockRequestMarshaler), WithUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
 		WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
@@ -169,7 +169,7 @@ func TestQueuedRetry_ThrottleError(t *testing.T) {
 	qCfg.NumConsumers = 1
 	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.InitialInterval = 10 * time.Millisecond
-	be, err := NewBaseExporter(defaultSettings, defaultDataType, newObservabilityConsumerSender,
+	be, err := NewBaseExporter(defaultSettings, defaultSignal, newObservabilityConsumerSender,
 		WithMarshaler(mockRequestMarshaler), WithUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
 		WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
@@ -203,7 +203,7 @@ func TestQueuedRetry_RetryOnError(t *testing.T) {
 	qCfg.QueueSize = 1
 	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.InitialInterval = 0
-	be, err := NewBaseExporter(defaultSettings, defaultDataType, newObservabilityConsumerSender,
+	be, err := NewBaseExporter(defaultSettings, defaultSignal, newObservabilityConsumerSender,
 		WithMarshaler(mockRequestMarshaler), WithUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
 		WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
@@ -230,7 +230,7 @@ func TestQueuedRetry_RetryOnError(t *testing.T) {
 func TestQueueRetryWithNoQueue(t *testing.T) {
 	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.MaxElapsedTime = time.Nanosecond // fail fast
-	be, err := NewBaseExporter(exportertest.NewNopSettings(), component.DataTypeLogs, newObservabilityConsumerSender, WithRetry(rCfg))
+	be, err := NewBaseExporter(exportertest.NewNopSettings(), pipeline.SignalLogs, newObservabilityConsumerSender, WithRetry(rCfg))
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	ocs := be.ObsrepSender.(*observabilityConsumerSender)
@@ -251,7 +251,7 @@ func TestQueueRetryWithDisabledRetires(t *testing.T) {
 	set := exportertest.NewNopSettings()
 	logger, observed := observer.New(zap.ErrorLevel)
 	set.Logger = zap.New(logger)
-	be, err := NewBaseExporter(set, component.DataTypeLogs, newObservabilityConsumerSender, WithRetry(rCfg))
+	be, err := NewBaseExporter(set, pipeline.SignalLogs, newObservabilityConsumerSender, WithRetry(rCfg))
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	ocs := be.ObsrepSender.(*observabilityConsumerSender)
@@ -269,10 +269,75 @@ func TestQueueRetryWithDisabledRetires(t *testing.T) {
 	require.NoError(t, be.Shutdown(context.Background()))
 }
 
-type mockErrorRequest struct{}
+func TestRetryWithContextTimeout(t *testing.T) {
+	const testTimeout = 10 * time.Second
+
+	rCfg := configretry.NewDefaultBackOffConfig()
+	rCfg.Enabled = true
+
+	// First attempt after 100ms is attempted
+	rCfg.InitialInterval = 100 * time.Millisecond
+	rCfg.RandomizationFactor = 0
+	// Second attempt is at twice the testTimeout
+	rCfg.Multiplier = float64(2 * testTimeout / rCfg.InitialInterval)
+	qCfg := exporterqueue.NewDefaultConfig()
+	qCfg.Enabled = false
+	set := exportertest.NewNopSettings()
+	logger, observed := observer.New(zap.InfoLevel)
+	set.Logger = zap.New(logger)
+	be, err := NewBaseExporter(
+		set,
+		pipeline.SignalLogs,
+		newObservabilityConsumerSender,
+		WithRetry(rCfg),
+		WithRequestQueue(qCfg, exporterqueue.NewMemoryQueueFactory[internal.Request]()),
+	)
+	require.NoError(t, err)
+	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
+	ocs := be.ObsrepSender.(*observabilityConsumerSender)
+	mockR := newErrorRequest()
+
+	start := time.Now()
+	ocs.run(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
+		defer cancel()
+		err := be.Send(ctx, mockR)
+		require.Error(t, err)
+		require.Equal(t, "request will be cancelled before next retry: transient error", err.Error())
+	})
+	assert.Len(t, observed.All(), 2)
+	assert.Equal(t, "Exporting failed. Will retry the request after interval.", observed.All()[0].Message)
+	assert.Equal(t, "Exporting failed. Rejecting data. "+
+		"Try enabling sending_queue to survive temporary failures.", observed.All()[1].Message)
+	ocs.awaitAsyncProcessing()
+	ocs.checkDroppedItemsCount(t, 7)
+	require.Equal(t, 2, mockR.(*mockErrorRequest).getNumRequests())
+	require.NoError(t, be.Shutdown(context.Background()))
+
+	// There should be no delay, because the initial interval is
+	// longer than the context timeout.  Merely checking that no
+	// delays on the order of either the context timeout or the
+	// retry interval were introduced, i.e., fail fast.
+	elapsed := time.Since(start)
+	require.Less(t, elapsed, testTimeout/2)
+}
+
+type mockErrorRequest struct {
+	mu       sync.Mutex
+	requests int
+}
 
 func (mer *mockErrorRequest) Export(context.Context) error {
+	mer.mu.Lock()
+	defer mer.mu.Unlock()
+	mer.requests++
 	return errors.New("transient error")
+}
+
+func (mer *mockErrorRequest) getNumRequests() int {
+	mer.mu.Lock()
+	defer mer.mu.Unlock()
+	return mer.requests
 }
 
 func (mer *mockErrorRequest) OnError(error) internal.Request {

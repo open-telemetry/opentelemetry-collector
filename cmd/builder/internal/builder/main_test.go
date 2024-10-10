@@ -78,6 +78,8 @@ var (
 		"/extension/zpagesextension",
 		"/featuregate",
 		"/internal/globalgates",
+		"/internal/globalsignal",
+		"/pipeline",
 		"/processor",
 		"/processor/batchprocessor",
 		"/processor/memorylimiterprocessor",
@@ -121,8 +123,7 @@ func TestGenerateInvalidOutputPath(t *testing.T) {
 	cfg := newInitializedConfig(t)
 	cfg.Distribution.OutputPath = ":/invalid"
 	err := Generate(cfg)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "failed to create output path")
+	require.ErrorContains(t, err, "failed to create output path")
 }
 
 func TestVersioning(t *testing.T) {

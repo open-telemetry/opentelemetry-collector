@@ -254,7 +254,7 @@ func TestSendTraces(t *testing.T) {
 	logger, observed := observer.New(zap.DebugLevel)
 	set.TelemetrySettings.Logger = zap.New(logger)
 
-	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
+	exp, err := factory.CreateTraces(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 
@@ -366,7 +366,7 @@ func TestSendTracesWhenEndpointHasHttpScheme(t *testing.T) {
 				cfg.ClientConfig.TLSSetting.InsecureSkipVerify = true
 			}
 			set := exportertest.NewNopSettings()
-			exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
+			exp, err := factory.CreateTraces(context.Background(), set, cfg)
 			require.NoError(t, err)
 			require.NotNil(t, exp)
 
@@ -426,7 +426,7 @@ func TestSendMetrics(t *testing.T) {
 	logger, observed := observer.New(zap.DebugLevel)
 	set.TelemetrySettings.Logger = zap.New(logger)
 
-	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
+	exp, err := factory.CreateMetrics(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {
@@ -524,7 +524,7 @@ func TestSendTraceDataServerDownAndUp(t *testing.T) {
 		WaitForReady: true,
 	}
 	set := exportertest.NewNopSettings()
-	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
+	exp, err := factory.CreateTraces(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {
@@ -581,7 +581,7 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 		},
 	}
 	set := exportertest.NewNopSettings()
-	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
+	exp, err := factory.CreateTraces(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {
@@ -632,7 +632,7 @@ func TestSendTracesOnResourceExhaustion(t *testing.T) {
 		},
 	}
 	set := exportertest.NewNopSettings()
-	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
+	exp, err := factory.CreateTraces(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 
@@ -720,7 +720,7 @@ func TestSendLogData(t *testing.T) {
 	logger, observed := observer.New(zap.DebugLevel)
 	set.TelemetrySettings.Logger = zap.New(logger)
 
-	exp, err := factory.CreateLogsExporter(context.Background(), set, cfg)
+	exp, err := factory.CreateLogs(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {

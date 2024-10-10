@@ -700,7 +700,7 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 		},
 	}
 
-	r, err := NewFactory().CreateTracesReceiver(
+	r, err := NewFactory().CreateTraces(
 		context.Background(),
 		receivertest.NewNopSettings(),
 		cfg,
@@ -769,7 +769,7 @@ func TestHTTPInvalidTLSCredentials(t *testing.T) {
 	}
 
 	// TLS is resolved during Start for HTTP.
-	r, err := NewFactory().CreateTracesReceiver(
+	r, err := NewFactory().CreateTraces(
 		context.Background(),
 		receivertest.NewNopSettings(),
 		cfg,
@@ -1016,7 +1016,7 @@ func TestShutdown(t *testing.T) {
 	cfg.HTTP.Endpoint = endpointHTTP
 	set := receivertest.NewNopSettings()
 	set.ID = otlpReceiverID
-	r, err := NewFactory().CreateTracesReceiver(
+	r, err := NewFactory().CreateTraces(
 		context.Background(),
 		set,
 		cfg,

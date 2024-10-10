@@ -12,28 +12,51 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
 )
 
+func TestNewCommand(t *testing.T) {
+	cmd, err := NewCommand()
+	require.NoError(t, err)
+
+	assert.NotNil(t, cmd)
+	assert.IsType(t, &cobra.Command{}, cmd)
+	assert.Equal(t, "mdatagen", cmd.Use)
+	assert.True(t, cmd.SilenceUsage)
+}
+
 func TestRunContents(t *testing.T) {
 	tests := []struct {
-		yml                    string
-		wantMetricsGenerated   bool
-		wantMetricsContext     bool
-		wantConfigGenerated    bool
-		wantTelemetryGenerated bool
-		wantStatusGenerated    bool
-		wantGoleakIgnore       bool
-		wantGoleakSkip         bool
-		wantGoleakSetup        bool
-		wantGoleakTeardown     bool
-		wantErr                bool
+		yml                             string
+		wantMetricsGenerated            bool
+		wantMetricsContext              bool
+		wantConfigGenerated             bool
+		wantTelemetryGenerated          bool
+		wantResourceAttributesGenerated bool
+		wantStatusGenerated             bool
+		wantGoleakIgnore                bool
+		wantGoleakSkip                  bool
+		wantGoleakSetup                 bool
+		wantGoleakTeardown              bool
+		wantErr                         bool
 	}{
 		{
 			yml:     "invalid.yaml",
 			wantErr: true,
+		},
+		{
+			yml:                 "basic_connector.yaml",
+			wantErr:             false,
+			wantStatusGenerated: true,
+		},
+		{
+			yml:                 "basic_receiver.yaml",
+			wantErr:             false,
+			wantStatusGenerated: true,
 		},
 		{
 			yml:                  "metrics_and_type.yaml",
@@ -42,9 +65,10 @@ func TestRunContents(t *testing.T) {
 			wantStatusGenerated:  true,
 		},
 		{
-			yml:                 "resource_attributes_only.yaml",
-			wantConfigGenerated: true,
-			wantStatusGenerated: true,
+			yml:                             "resource_attributes_only.yaml",
+			wantConfigGenerated:             true,
+			wantStatusGenerated:             true,
+			wantResourceAttributesGenerated: true,
 		},
 		{
 			yml:                 "status_only.yaml",
@@ -176,7 +200,7 @@ foo
 				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_telemetry_test.go"))
 			}
 
-			if !tt.wantMetricsGenerated && !tt.wantTelemetryGenerated {
+			if !tt.wantMetricsGenerated && !tt.wantTelemetryGenerated && !tt.wantResourceAttributesGenerated {
 				require.NoFileExists(t, filepath.Join(tmpdir, "documentation.md"))
 			}
 
@@ -350,7 +374,7 @@ Some info about a component
 			componentClass: "receiver",
 			distros:        []string{"contrib"},
 			codeowners: &Codeowners{
-				Active: []string{"foo"},
+				Active: []string{"open-telemetry/collector-approvers"},
 			},
 		},
 		{

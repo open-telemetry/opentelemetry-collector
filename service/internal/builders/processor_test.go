@@ -24,12 +24,12 @@ func TestProcessorBuilder(t *testing.T) {
 	defaultCfg := struct{}{}
 	factories, err := processor.MakeFactoryMap([]processor.Factory{
 		processor.NewFactory(component.MustNewType("err"), nil),
-		processor.NewFactory(
+		processorprofiles.NewFactory(
 			component.MustNewType("all"),
 			func() component.Config { return &defaultCfg },
-			processor.WithTraces(createProcessorTraces, component.StabilityLevelDevelopment),
-			processor.WithMetrics(createProcessorMetrics, component.StabilityLevelAlpha),
-			processor.WithLogs(createProcessorLogs, component.StabilityLevelDeprecated),
+			processorprofiles.WithTraces(createProcessorTraces, component.StabilityLevelDevelopment),
+			processorprofiles.WithMetrics(createProcessorMetrics, component.StabilityLevelAlpha),
+			processorprofiles.WithLogs(createProcessorLogs, component.StabilityLevelDeprecated),
 			processorprofiles.WithProfiles(createProcessorProfiles, component.StabilityLevelDevelopment),
 		),
 	}...)
@@ -136,12 +136,12 @@ func TestProcessorBuilder(t *testing.T) {
 func TestProcessorBuilderMissingConfig(t *testing.T) {
 	defaultCfg := struct{}{}
 	factories, err := processor.MakeFactoryMap([]processor.Factory{
-		processor.NewFactory(
+		processorprofiles.NewFactory(
 			component.MustNewType("all"),
 			func() component.Config { return &defaultCfg },
-			processor.WithTraces(createProcessorTraces, component.StabilityLevelDevelopment),
-			processor.WithMetrics(createProcessorMetrics, component.StabilityLevelAlpha),
-			processor.WithLogs(createProcessorLogs, component.StabilityLevelDeprecated),
+			processorprofiles.WithTraces(createProcessorTraces, component.StabilityLevelDevelopment),
+			processorprofiles.WithMetrics(createProcessorMetrics, component.StabilityLevelAlpha),
+			processorprofiles.WithLogs(createProcessorLogs, component.StabilityLevelDeprecated),
 			processorprofiles.WithProfiles(createProcessorProfiles, component.StabilityLevelDevelopment),
 		),
 	}...)
@@ -189,25 +189,25 @@ func TestNewNopProcessorBuilder(t *testing.T) {
 	set := processortest.NewNopSettings()
 	set.ID = component.NewID(nopType)
 
-	traces, err := factory.CreateTracesProcessor(context.Background(), set, cfg, consumertest.NewNop())
+	traces, err := factory.CreateTraces(context.Background(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	bTraces, err := builder.CreateTraces(context.Background(), set, consumertest.NewNop())
 	require.NoError(t, err)
 	assert.IsType(t, traces, bTraces)
 
-	metrics, err := factory.CreateMetricsProcessor(context.Background(), set, cfg, consumertest.NewNop())
+	metrics, err := factory.CreateMetrics(context.Background(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	bMetrics, err := builder.CreateMetrics(context.Background(), set, consumertest.NewNop())
 	require.NoError(t, err)
 	assert.IsType(t, metrics, bMetrics)
 
-	logs, err := factory.CreateLogsProcessor(context.Background(), set, cfg, consumertest.NewNop())
+	logs, err := factory.CreateLogs(context.Background(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	bLogs, err := builder.CreateLogs(context.Background(), set, consumertest.NewNop())
 	require.NoError(t, err)
 	assert.IsType(t, logs, bLogs)
 
-	profiles, err := factory.CreateProfilesProcessor(context.Background(), set, cfg, consumertest.NewNop())
+	profiles, err := factory.(processorprofiles.Factory).CreateProfiles(context.Background(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	bProfiles, err := builder.CreateProfiles(context.Background(), set, consumertest.NewNop())
 	require.NoError(t, err)

@@ -53,6 +53,11 @@ func (q *boundedMemoryQueue[T]) Consume(consumeFunc func(context.Context, T) err
 	return true
 }
 
+// Should be called to remove the item of the given index from the queue once processing is finished.
+// For in memory queue, this function is noop.
+func (q *boundedMemoryQueue[T]) OnProcessingFinished(uint64, error) {
+}
+
 // Shutdown closes the queue channel to initiate draining of the queue.
 func (q *boundedMemoryQueue[T]) Shutdown(context.Context) error {
 	q.sizedChannel.shutdown()

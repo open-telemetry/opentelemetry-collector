@@ -262,6 +262,7 @@ check-contrib:
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit \
 		-replace go.opentelemetry.io/collector=$(CURDIR) \
 		-replace go.opentelemetry.io/collector/client=$(CURDIR)/client \
+		-replace go.opentelemetry.io/collector/cmd/mdatagen=$(CURDIR)/cmd/mdatagen \
 		-replace go.opentelemetry.io/collector/component=$(CURDIR)/component  \
 		-replace go.opentelemetry.io/collector/component/componentprofiles=$(CURDIR)/component/componentprofiles  \
 		-replace go.opentelemetry.io/collector/component/componentstatus=$(CURDIR)/component/componentstatus  \
@@ -291,7 +292,6 @@ check-contrib:
 		-replace go.opentelemetry.io/collector/exporter=$(CURDIR)/exporter  \
 		-replace go.opentelemetry.io/collector/exporter/debugexporter=$(CURDIR)/exporter/debugexporter  \
 		-replace go.opentelemetry.io/collector/exporter/exporterprofiles=$(CURDIR)/exporter/exporterprofiles  \
-		-replace go.opentelemetry.io/collector/exporter/loggingexporter=$(CURDIR)/exporter/loggingexporter  \
 		-replace go.opentelemetry.io/collector/exporter/nopexporter=$(CURDIR)/exporter/nopexporter  \
 		-replace go.opentelemetry.io/collector/exporter/otlpexporter=$(CURDIR)/exporter/otlpexporter  \
 		-replace go.opentelemetry.io/collector/exporter/otlphttpexporter=$(CURDIR)/exporter/otlphttpexporter  \
@@ -302,6 +302,7 @@ check-contrib:
 		-replace go.opentelemetry.io/collector/extension/memorylimiterextension=$(CURDIR)/extension/memorylimiterextension  \
 		-replace go.opentelemetry.io/collector/extension/zpagesextension=$(CURDIR)/extension/zpagesextension  \
 		-replace go.opentelemetry.io/collector/featuregate=$(CURDIR)/featuregate  \
+		-replace go.opentelemetry.io/collector/filter=$(CURDIR)/filter  \
 		-replace go.opentelemetry.io/collector/internal/globalgates=$(CURDIR)/internal/globalgates \
 		-replace go.opentelemetry.io/collector/internal/globalsignal=$(CURDIR)/internal/globalsignal \
 		-replace go.opentelemetry.io/collector/otelcol=$(CURDIR)/otelcol  \
@@ -333,6 +334,7 @@ restore-contrib:
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit \
 		-dropreplace go.opentelemetry.io/collector \
 		-dropreplace go.opentelemetry.io/collector/client \
+		-dropreplace go.opentelemetry.io/collector/cmd/mdatagen \
 		-dropreplace go.opentelemetry.io/collector/component \
 		-dropreplace go.opentelemetry.io/collector/component/componentprofiles \
 		-dropreplace go.opentelemetry.io/collector/component/componentstatus \
@@ -361,7 +363,6 @@ restore-contrib:
 		-dropreplace go.opentelemetry.io/collector/consumer/consumertest  \
 		-dropreplace go.opentelemetry.io/collector/exporter  \
 		-dropreplace go.opentelemetry.io/collector/exporter/debugexporter  \
-		-dropreplace go.opentelemetry.io/collector/exporter/loggingexporter  \
 		-dropreplace go.opentelemetry.io/collector/exporter/nopexporter  \
 		-dropreplace go.opentelemetry.io/collector/exporter/otlpexporter  \
 		-dropreplace go.opentelemetry.io/collector/exporter/otlphttpexporter  \
@@ -370,6 +371,7 @@ restore-contrib:
 		-dropreplace go.opentelemetry.io/collector/extension/memorylimiterextension  \
 		-dropreplace go.opentelemetry.io/collector/extension/zpagesextension  \
 		-dropreplace go.opentelemetry.io/collector/featuregate  \
+		-dropreplace go.opentelemetry.io/collector/filter  \
 		-dropreplace go.opentelemetry.io/collector/internal/globalgates \
 		-dropreplace go.opentelemetry.io/collector/internal/globalsignal \
 		-dropreplace go.opentelemetry.io/collector/otelcol  \

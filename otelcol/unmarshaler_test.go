@@ -67,8 +67,7 @@ func TestUnmarshalUnknownTopLevel(t *testing.T) {
 		"unknown_section": nil,
 	})
 	_, err = unmarshal(conf, factories)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "'' has invalid keys: unknown_section")
+	assert.ErrorContains(t, err, "'' has invalid keys: unknown_section")
 }
 
 func TestPipelineConfigUnmarshalError(t *testing.T) {
@@ -136,8 +135,7 @@ func TestPipelineConfigUnmarshalError(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			pips := new(pipelines.Config)
 			err := tt.conf.Unmarshal(&pips)
-			require.Error(t, err)
-			assert.Contains(t, err.Error(), tt.expectError)
+			assert.ErrorContains(t, err, tt.expectError)
 		})
 	}
 }
@@ -159,7 +157,7 @@ func TestServiceUnmarshalError(t *testing.T) {
 					},
 				},
 			}),
-			expectError: "error decoding 'telemetry.logs.level': unrecognized level: \"UNKNOWN\"",
+			expectError: "error decoding 'telemetry': decoding failed due to the following error(s):\n\nerror decoding 'logs.level': unrecognized level: \"UNKNOWN\"",
 		},
 		{
 			name: "invalid-metrics-level",
@@ -170,7 +168,7 @@ func TestServiceUnmarshalError(t *testing.T) {
 					},
 				},
 			}),
-			expectError: "error decoding 'telemetry.metrics.level': unknown metrics level \"unknown\"",
+			expectError: "error decoding 'telemetry': decoding failed due to the following error(s):\n\nerror decoding 'metrics.level': unknown metrics level \"unknown\"",
 		},
 		{
 			name: "invalid-service-extensions-section",
@@ -204,8 +202,7 @@ func TestServiceUnmarshalError(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.conf.Unmarshal(&service.Config{})
-			require.Error(t, err)
-			assert.Contains(t, err.Error(), tt.expectError)
+			require.ErrorContains(t, err, tt.expectError)
 		})
 	}
 }

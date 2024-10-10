@@ -7,6 +7,8 @@
 package pprofile
 
 import (
+	"sort"
+
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
 )
@@ -19,18 +21,18 @@ import (
 // Must use NewLabelSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type LabelSlice struct {
-	orig  *[]otlpprofiles.Label
+	orig  *[]*otlpprofiles.Label
 	state *internal.State
 }
 
-func newLabelSlice(orig *[]otlpprofiles.Label, state *internal.State) LabelSlice {
+func newLabelSlice(orig *[]*otlpprofiles.Label, state *internal.State) LabelSlice {
 	return LabelSlice{orig: orig, state: state}
 }
 
 // NewLabelSlice creates a LabelSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewLabelSlice() LabelSlice {
-	orig := []otlpprofiles.Label(nil)
+	orig := []*otlpprofiles.Label(nil)
 	state := internal.StateMutable
 	return newLabelSlice(&orig, &state)
 }
@@ -51,7 +53,7 @@ func (es LabelSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es LabelSlice) At(i int) Label {
-	return newLabel(&(*es.orig)[i], es.state)
+	return newLabel((*es.orig)[i], es.state)
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -73,7 +75,7 @@ func (es LabelSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]otlpprofiles.Label, len(*es.orig), newCap)
+	newOrig := make([]*otlpprofiles.Label, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
@@ -82,7 +84,7 @@ func (es LabelSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Label.
 func (es LabelSlice) AppendEmpty() Label {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, otlpprofiles.Label{})
+	*es.orig = append(*es.orig, &otlpprofiles.Label{})
 	return es.At(es.Len() - 1)
 }
 
@@ -127,10 +129,24 @@ func (es LabelSlice) CopyTo(dest LabelSlice) {
 	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-	} else {
-		(*dest.orig) = make([]otlpprofiles.Label, srcLen)
+		for i := range *es.orig {
+			newLabel((*es.orig)[i], es.state).CopyTo(newLabel((*dest.orig)[i], dest.state))
+		}
+		return
 	}
+	origs := make([]otlpprofiles.Label, srcLen)
+	wrappers := make([]*otlpprofiles.Label, srcLen)
 	for i := range *es.orig {
-		newLabel(&(*es.orig)[i], es.state).CopyTo(newLabel(&(*dest.orig)[i], dest.state))
+		wrappers[i] = &origs[i]
+		newLabel((*es.orig)[i], es.state).CopyTo(newLabel(wrappers[i], dest.state))
 	}
+	*dest.orig = wrappers
+}
+
+// Sort sorts the Label elements within LabelSlice given the
+// provided less function so that two instances of LabelSlice
+// can be compared.
+func (es LabelSlice) Sort(less func(a, b Label) bool) {
+	es.state.AssertMutable()
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }

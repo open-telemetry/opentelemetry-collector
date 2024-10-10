@@ -24,7 +24,6 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/globalgates"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
@@ -186,6 +185,7 @@ func logsAboutMeterProvider(logger *zap.Logger, cfg telemetry.MetricsConfig, mp 
 		return
 	}
 
+	//nolint
 	if len(cfg.Address) != 0 {
 		logger.Warn("service::telemetry::metrics::address is being deprecated in favor of service::telemetry::metrics::readers")
 	}
@@ -209,9 +209,6 @@ func (srv *Service) Start(ctx context.Context) error {
 		zap.Int("NumCPU", runtime.NumCPU()),
 	)
 
-	// enable status reporting
-	srv.host.Reporter.Ready()
-
 	if err := srv.host.ServiceExtensions.Start(ctx, srv.host); err != nil {
 		return fmt.Errorf("failed to start extensions: %w", err)
 	}
@@ -231,7 +228,6 @@ func (srv *Service) Start(ctx context.Context) error {
 	}
 
 	srv.telemetrySettings.Logger.Info("Everything is ready. Begin running and processing data.")
-	logAboutUseLocalHostAsDefault(srv.telemetrySettings.Logger)
 	return nil
 }
 
@@ -336,14 +332,4 @@ func pdataFromSdk(res *sdkresource.Resource) pcommon.Resource {
 		pcommonRes.Attributes().PutStr(string(keyValue.Key), keyValue.Value.AsString())
 	}
 	return pcommonRes
-}
-
-// logAboutUseLocalHostAsDefault logs about the upcoming change from 0.0.0.0 to localhost on server-like components.
-func logAboutUseLocalHostAsDefault(logger *zap.Logger) {
-	if globalgates.UseLocalHostAsDefaultHostfeatureGate.IsEnabled() {
-		logger.Info(
-			"The default endpoints for all servers in components have changed to use localhost instead of 0.0.0.0. Disable the feature gate to temporarily revert to the previous default.",
-			zap.String("feature gate ID", globalgates.UseLocalHostAsDefaultHostID),
-		)
-	}
 }

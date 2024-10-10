@@ -201,7 +201,7 @@ func TestComponentStatusWatcher(t *testing.T) {
 	wg := startCollector(context.Background(), t, col)
 
 	// An unhealthy processor asynchronously reports a recoverable error. Depending on the Go
-	// Scheduler the statuses reported at startup will be one of the two valid sequnces below.
+	// Scheduler the statuses reported at startup will be one of the two valid sequences below.
 	startupStatuses1 := []componentstatus.Status{
 		componentstatus.StatusStarting,
 		componentstatus.StatusOK,
@@ -389,8 +389,8 @@ func TestCollectorRun(t *testing.T) {
 	tests := []struct {
 		file string
 	}{
-		{file: "otelcol-nometrics.yaml"},
-		{file: "otelcol-noaddress.yaml"},
+		{file: "otelcol-noreaders.yaml"},
+		{file: "otelcol-emptyreaders.yaml"},
 	}
 
 	for _, tt := range tests {
