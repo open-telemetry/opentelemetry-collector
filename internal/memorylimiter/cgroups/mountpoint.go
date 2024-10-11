@@ -25,7 +25,7 @@
 
 //go:build linux
 
-package cgroups // import "go.opentelemetry.io/collector/internal/cgroups"
+package cgroups // import "go.opentelemetry.io/collector/internal/memorylimiter/cgroups"
 
 import (
 	"bufio"
