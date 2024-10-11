@@ -12,7 +12,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	io_prometheus_client "github.com/prometheus/client_model/go"
+	promclient "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -27,8 +27,8 @@ import (
 )
 
 type testTelemetry struct {
-	component.TelemetrySettings
-	promHandler http.Handler
+	TelemetrySettings component.TelemetrySettings
+	promHandler       http.Handler
 }
 
 var expectedMetrics = []string{
@@ -54,10 +54,8 @@ func setupTelemetry(t *testing.T) testTelemetry {
 		sdkmetric.WithReader(exporter),
 	)
 
-	settings.LeveledMeterProvider = func(_ configtelemetry.Level) metric.MeterProvider {
-		return meterProvider
-	}
-
+	settings.TelemetrySettings.MetricsLevel = configtelemetry.LevelDetailed
+	settings.TelemetrySettings.MeterProvider = meterProvider
 	settings.TelemetrySettings.LeveledMeterProvider = func(_ configtelemetry.Level) metric.MeterProvider {
 		return meterProvider
 	}
@@ -69,7 +67,7 @@ func setupTelemetry(t *testing.T) testTelemetry {
 	return settings
 }
 
-func fetchPrometheusMetrics(handler http.Handler) (map[string]*io_prometheus_client.MetricFamily, error) {
+func fetchPrometheusMetrics(handler http.Handler) (map[string]*promclient.MetricFamily, error) {
 	req, err := http.NewRequest(http.MethodGet, "/metrics", nil)
 	if err != nil {
 		return nil, err
@@ -95,7 +93,7 @@ func TestProcessTelemetry(t *testing.T) {
 		require.True(t, ok)
 		require.Len(t, metric.Metric, 1)
 		var metricValue float64
-		if metric.GetType() == io_prometheus_client.MetricType_COUNTER {
+		if metric.GetType() == promclient.MetricType_COUNTER {
 			metricValue = metric.Metric[0].GetCounter().GetValue()
 		} else {
 			metricValue = metric.Metric[0].GetGauge().GetValue()
