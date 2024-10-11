@@ -123,13 +123,10 @@ func NewDefaultClientConfig() ClientConfig {
 	defaultTransport := http.DefaultTransport.(*http.Transport)
 
 	return ClientConfig{
-		ReadBufferSize:  defaultTransport.ReadBufferSize,
-		WriteBufferSize: defaultTransport.WriteBufferSize,
-		Headers:         map[string]configopaque.String{},
-		MaxIdleConns: optional.Optional[int]{
-			Value:    12345,
-			HasValue: true,
-		},
+		ReadBufferSize:      defaultTransport.ReadBufferSize,
+		WriteBufferSize:     defaultTransport.WriteBufferSize,
+		Headers:             map[string]configopaque.String{},
+		MaxIdleConns:        optional.WithDefault(12345),
 		MaxIdleConnsPerHost: optional.Optional[int]{},
 		MaxConnsPerHost:     &defaultTransport.MaxConnsPerHost,
 		IdleConnTimeout:     &defaultTransport.IdleConnTimeout,
@@ -154,13 +151,13 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 	}
 
 	fmt.Printf("MaxIdleConns: %+v\n", hcs.MaxIdleConns)
-	if hcs.MaxIdleConns.HasValue {
-		transport.MaxIdleConns = hcs.MaxIdleConns.Value
+	if hcs.MaxIdleConns.HasValue() {
+		transport.MaxIdleConns = hcs.MaxIdleConns.Value()
 	}
 
 	fmt.Printf("MaxIdleConnsPerHost: %+v\n", hcs.MaxIdleConnsPerHost)
-	if hcs.MaxIdleConnsPerHost.HasValue {
-		transport.MaxIdleConnsPerHost = hcs.MaxIdleConnsPerHost.Value
+	if hcs.MaxIdleConnsPerHost.HasValue() {
+		transport.MaxIdleConnsPerHost = hcs.MaxIdleConnsPerHost.Value()
 	}
 
 	if hcs.MaxConnsPerHost != nil {
@@ -340,12 +337,9 @@ type ServerConfig struct {
 func NewDefaultServerConfig() ServerConfig {
 	tlsDefaultServerConfig := configtls.NewDefaultServerConfig()
 	return ServerConfig{
-		ResponseHeaders: map[string]configopaque.String{},
-		TLSSetting:      &tlsDefaultServerConfig,
-		CORS: optional.Optional[CORSConfig]{
-			Value:    *NewDefaultCORSConfig(),
-			HasValue: true,
-		},
+		ResponseHeaders:   map[string]configopaque.String{},
+		TLSSetting:        &tlsDefaultServerConfig,
+		CORS:              optional.WithDefault(*NewDefaultCORSConfig()),
 		WriteTimeout:      30 * time.Second,
 		ReadHeaderTimeout: 1 * time.Minute,
 		IdleTimeout:       1 * time.Minute,
@@ -443,26 +437,26 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 	}
 
 	fmt.Printf("AUTH: %+v\n", hss.Auth)
-	if hss.Auth.HasValue {
-		server, err := hss.Auth.Value.GetServerAuthenticator(context.Background(), host.GetExtensions())
+	if hss.Auth.HasValue() {
+		server, err := hss.Auth.Value().GetServerAuthenticator(context.Background(), host.GetExtensions())
 		if err != nil {
 			return nil, err
 		}
 
-		handler = authInterceptor(handler, server, hss.Auth.Value.RequestParameters)
+		handler = authInterceptor(handler, server, hss.Auth.Value().RequestParameters)
 	}
 
 	fmt.Printf("CORS: %+v\n", hss.CORS)
-	if hss.CORS.HasValue && len(hss.CORS.Value.AllowedOrigins) > 0 {
+	if hss.CORS.HasValue() && len(hss.CORS.Value().AllowedOrigins) > 0 {
 		co := cors.Options{
-			AllowedOrigins:   hss.CORS.Value.AllowedOrigins,
+			AllowedOrigins:   hss.CORS.Value().AllowedOrigins,
 			AllowCredentials: true,
-			AllowedHeaders:   hss.CORS.Value.AllowedHeaders,
-			MaxAge:           hss.CORS.Value.MaxAge,
+			AllowedHeaders:   hss.CORS.Value().AllowedHeaders,
+			MaxAge:           hss.CORS.Value().MaxAge,
 		}
 		handler = cors.New(co).Handler(handler)
 	}
-	if hss.CORS.HasValue && len(hss.CORS.Value.AllowedOrigins) == 0 && len(hss.CORS.Value.AllowedHeaders) > 0 {
+	if hss.CORS.HasValue() && len(hss.CORS.Value().AllowedOrigins) == 0 && len(hss.CORS.Value().AllowedHeaders) > 0 {
 		settings.Logger.Warn("The CORS configuration specifies allowed headers but no allowed origins, and is therefore ignored.")
 
 	}
