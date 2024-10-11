@@ -85,7 +85,6 @@ require (
 	go.opentelemetry.io/collector/extension/experimental/storage v0.111.0 // indirect
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.111.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.17.0 // indirect
-	go.opentelemetry.io/collector/internal/globalgates v0.111.0 // indirect
 	go.opentelemetry.io/collector/internal/globalsignal v0.111.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.111.0 // indirect
 	go.opentelemetry.io/collector/processor v0.111.0 // indirect
@@ -197,8 +196,6 @@ replace go.opentelemetry.io/collector/extension/zpagesextension => ../../extensi
 replace go.opentelemetry.io/collector/service => ../../service
 
 replace go.opentelemetry.io/collector/component/componentprofiles => ../../component/componentprofiles
-
-replace go.opentelemetry.io/collector/internal/globalgates => ../globalgates
 
 replace go.opentelemetry.io/collector/extension/extensioncapabilities => ../../extension/extensioncapabilities
 

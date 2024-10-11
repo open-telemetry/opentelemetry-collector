@@ -39,7 +39,6 @@ providers:
 
 replaces:
   - go.opentelemetry.io/collector => ../../
-  - go.opentelemetry.io/collector/internal/globalgates => ../../internal/globalgates
   - go.opentelemetry.io/collector/internal/globalsignal => ../../internal/globalsignal
   - go.opentelemetry.io/collector/client => ../../client
   - go.opentelemetry.io/collector/otelcol => ../../otelcol
