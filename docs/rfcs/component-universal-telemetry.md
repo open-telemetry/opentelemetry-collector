@@ -23,28 +23,29 @@ All signals should use the following attributes:
 
 - `otel.component.kind`: `receiver`
 - `otel.component.id`: The component ID
-- `otel.signal`: `logs`, `metrics`, `traces`, **OR `ANY`**
+- `otel.signal`: `logs`, `metrics`, `traces`
 
 #### Processors
 
 - `otel.component.kind`: `processor`
 - `otel.component.id`: The component ID
-- `otel.pipeline.id`: The pipeline ID, **OR `ANY`**
-- `otel.signal`: `logs`, `metrics`, `traces`, **OR `ANY`**
+- `otel.pipeline.id`: The pipeline ID
+- `otel.signal`: `logs`, `metrics`, `traces`
 
 #### Exporters
 
 - `otel.component.kind`: `exporter`
 - `otel.component.id`: The component ID
-- `otel.signal`: `logs`, `metrics` `traces`, **OR `ANY`**
+- `otel.signal`: `logs`, `metrics` `traces`
 
 #### Connectors
 
 - `otel.component.kind`: `connector`
 - `otel.component.id`: The component ID
-- `otel.signal`: `logs->logs`, `logs->metrics`, `logs->traces`, `metrics->logs`, `metrics->metrics`, etc, **OR `ANY`**
+- `otel.signal`: `logs`, `metrics` `traces`
+- `otel.output.signal`: `logs`, `metrics` `traces`
 
-Notes: The use of `ANY` indicates that values are not associated with a particular signal or pipeline. This is used when a component enforces non-standard instancing patterns. For example, the `otlp` receiver isa singleton, so the values are aggregated across signals. Similarly, the `memory_limiter` processor is a singleton, so the values are aggregated across pipelines.
+Note: The `otel.signal`, `otel.output.signal`, or `otel.pipeline.id` attributes may be omitted if the corresponding component instances are unified by the component implementation. For example, the `otlp` receiver is a singleton, so its telemetry is not specific to a signal. Similarly, the `memory_limiter` processor is a singleton, so its telemetry is not specific to a pipeline.
 
 ### Metrics
 
@@ -58,7 +59,7 @@ The location of these measurements can be described in terms of whether the data
 1. Incoming measurements are attributed to the component which is _consuming_ the data.
 2. Outgoing measurements are attributed to the component which is _producing_ the data.
 
-For both metrics, an `outcome` attribute with possible values `success` and `failure` should be automatically recorded, corresponding to whether or not the function call returned an error. Outgoing measurements will be recorded with `outcome` as `failure` when the next consumer returns an error, and `success` otherwise. Likewise, incoming measurements will be recorded with `outcome` as `failure` when the component itself returns an error, and `success` otherwise.
+For both metrics, an `outcome` attribute with possible values `success` and `failure` should be automatically recorded, corresponding to whether or not the corresponding function call returned an error. Specifically, incoming measurements will be recorded with `outcome` as `failure` when a call from the previous component the `ConsumeX` function returns an error, and `success` otherwise. Likewise, outgoing measurements will be recorded with `outcome` as `failure` when a call to the next consumer's `ConsumeX` function returns an error, and `success` otherwise.
 
 ```yaml
     otelcol_component_incoming_items:
