@@ -445,21 +445,10 @@ type PrimitiveUnmarshaler interface {
 // so if we are in this hook, we know we can set HasValue to true.
 func optionalHookFunc() mapstructure.DecodeHookFuncValue {
 	return func(from reflect.Value, to reflect.Value) (any, error) {
-		// As the type is generic, we check for the prefix.
-		if strings.HasPrefix(to.Type().String(), "optional.Optional") {
-			// the optional.Optional field is a struct
-			if _, ok := from.Interface().(map[string]any); ok {
-				unmarshaler, ok := to.Addr().Interface().(Unmarshaler)
-				if !ok {
-					return from.Interface(), nil
-				}
-				c := NewFromStringMap(from.Interface().(map[string]any))
-				if err := unmarshaler.Unmarshal(c); err != nil {
-					return nil, err
-				}
-				return to.Interface(), nil
-			}
-
+		_, ok := from.Interface().(map[string]any)
+		// As the type is generic, we check for the prefix. If castable to map,
+		// unmarshalerHookFunc will take care of it.
+		if strings.HasPrefix(to.Type().String(), "optional.Optional") && !ok {
 			unmarshaler, ok := to.Addr().Interface().(PrimitiveUnmarshaler)
 			if !ok {
 				return from.Interface(), nil
