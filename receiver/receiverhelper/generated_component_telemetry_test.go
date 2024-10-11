@@ -29,6 +29,7 @@ func (tt *componentTestTelemetry) NewSettings() receiver.Settings {
 	settings.LeveledMeterProvider = func(_ configtelemetry.Level) metric.MeterProvider {
 		return tt.meterProvider
 	}
+	settings.MetricsLevel = configtelemetry.LevelDetailed
 	settings.ID = component.NewID(component.MustNewType("receiverhelper"))
 
 	return settings

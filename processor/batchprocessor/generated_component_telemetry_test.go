@@ -29,6 +29,7 @@ func (tt *componentTestTelemetry) NewSettings() processor.Settings {
 	settings.LeveledMeterProvider = func(_ configtelemetry.Level) metric.MeterProvider {
 		return tt.meterProvider
 	}
+	settings.MetricsLevel = configtelemetry.LevelDetailed
 	settings.ID = component.NewID(component.MustNewType("batch"))
 
 	return settings
