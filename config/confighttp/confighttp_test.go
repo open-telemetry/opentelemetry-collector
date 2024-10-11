@@ -1607,7 +1607,7 @@ func TestOperationPrefix(t *testing.T) {
 				http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					w.WriteHeader(http.StatusOK)
 				}),
-				WithSpanPrefix(tt.prefix),
+				WithSpanFormatter(PrefixFormatter(tt.prefix)),
 			)
 			require.NoError(t, err)
 			go func() {
