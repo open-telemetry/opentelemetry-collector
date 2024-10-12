@@ -49,5 +49,6 @@ func TotalMemory() (uint64, error) {
 		return totalMem, nil
 	}
 
+	// nolint:gosec
 	return uint64(memoryQuota), nil
 }
