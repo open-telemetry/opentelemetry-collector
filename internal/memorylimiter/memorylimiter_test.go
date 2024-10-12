@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/internal/iruntime"
+	"go.opentelemetry.io/collector/internal/memorylimiter/iruntime"
 )
 
 // TestMemoryPressureResponse manipulates results from querying memory and

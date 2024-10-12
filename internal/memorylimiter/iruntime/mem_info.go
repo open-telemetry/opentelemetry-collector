@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package iruntime // import "go.opentelemetry.io/collector/internal/iruntime"
+package iruntime // import "go.opentelemetry.io/collector/internal/memorylimiter/iruntime"
 
 import (
 	"github.com/shirou/gopsutil/v4/mem"
