@@ -47,7 +47,6 @@ replaces:
   - go.opentelemetry.io/collector/extension/extensioncapabilities => ${WORKSPACE_DIR}/extension/extensioncapabilities
   - go.opentelemetry.io/collector/extension/zpagesextension => ${WORKSPACE_DIR}/extension/zpagesextension
   - go.opentelemetry.io/collector/featuregate => ${WORKSPACE_DIR}/featuregate
-  - go.opentelemetry.io/collector/internal/globalgates => ${WORKSPACE_DIR}/internal/globalgates
   - go.opentelemetry.io/collector/internal/globalsignal => ${WORKSPACE_DIR}/internal/globalsignal
   - go.opentelemetry.io/collector/otelcol => ${WORKSPACE_DIR}/otelcol
   - go.opentelemetry.io/collector/otelcol/otelcoltest => ${WORKSPACE_DIR}/otelcol/otelcoltest

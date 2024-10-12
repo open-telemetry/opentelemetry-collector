@@ -23,7 +23,6 @@ module-sets:
     version: v0.111.0
     modules:
       - go.opentelemetry.io/collector
-      - go.opentelemetry.io/collector/internal/globalgates
       - go.opentelemetry.io/collector/internal/globalsignal
       - go.opentelemetry.io/collector/cmd/builder
       - go.opentelemetry.io/collector/cmd/mdatagen
