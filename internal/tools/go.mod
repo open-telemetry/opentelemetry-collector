@@ -1,8 +1,8 @@
 module go.opentelemetry.io/collector/internal/tools
 
-go 1.22.1
+go 1.23
 
-toolchain go1.22.8
+toolchain go1.23.2
 
 require (
 	github.com/a8m/envsubst v1.4.2
