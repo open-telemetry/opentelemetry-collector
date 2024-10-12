@@ -166,6 +166,7 @@ func (pq *persistentQueue[T]) initPersistentContiguousStorage(ctx context.Contex
 		initEls = make([]permanentQueueEl, initIndexSize)
 	}
 
+	// nolint: gosec
 	pq.sizedChannel = newSizedChannel[permanentQueueEl](pq.set.Capacity, initEls, int64(initQueueSize))
 }
 
@@ -213,6 +214,7 @@ func (pq *persistentQueue[T]) backupQueueSize(ctx context.Context) error {
 		return nil
 	}
 
+	// nolint: gosec
 	return pq.client.Set(ctx, queueSizeKey, itemIndexToBytes(uint64(pq.Size())))
 }
 
@@ -524,6 +526,7 @@ func bytesToItemIndex(buf []byte) (uint64, error) {
 func itemIndexArrayToBytes(arr []uint64) []byte {
 	size := len(arr)
 	buf := make([]byte, 0, 4+size*8)
+	// nolint: gosec
 	buf = binary.LittleEndian.AppendUint32(buf, uint32(size))
 	for _, item := range arr {
 		buf = binary.LittleEndian.AppendUint64(buf, item)

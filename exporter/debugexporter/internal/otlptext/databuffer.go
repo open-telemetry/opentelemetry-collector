@@ -202,9 +202,9 @@ func (b *dataBuffer) logExponentialHistogramDataPoints(ps pmetric.ExponentialHis
 
 		for i := 0; i < negB.Len(); i++ {
 			pos := negB.Len() - i - 1
-			index := p.Negative().Offset() + int32(pos)
-			lower := math.Exp(float64(index) * factor)
-			upper := math.Exp(float64(index+1) * factor)
+			index := float64(p.Negative().Offset()) + float64(pos)
+			lower := math.Exp(index * factor)
+			upper := math.Exp((index + 1) * factor)
 			b.logEntry("Bucket [%f, %f), Count: %d", -upper, -lower, negB.At(pos))
 		}
 
@@ -213,9 +213,9 @@ func (b *dataBuffer) logExponentialHistogramDataPoints(ps pmetric.ExponentialHis
 		}
 
 		for pos := 0; pos < posB.Len(); pos++ {
-			index := p.Positive().Offset() + int32(pos)
-			lower := math.Exp(float64(index) * factor)
-			upper := math.Exp(float64(index+1) * factor)
+			index := float64(p.Positive().Offset()) + float64(pos)
+			lower := math.Exp(index * factor)
+			upper := math.Exp((index + 1) * factor)
 			b.logEntry("Bucket (%f, %f], Count: %d", lower, upper, posB.At(pos))
 		}
 

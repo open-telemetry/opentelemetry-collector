@@ -95,7 +95,7 @@ type Collector struct {
 
 	serviceConfig *service.Config
 	service       *service.Service
-	state         *atomic.Int32
+	state         *atomic.Int64
 
 	// shutdownChan is used to terminate the collector.
 	shutdownChan chan struct{}
@@ -121,8 +121,8 @@ func NewCollector(set CollectorSettings) (*Collector, error) {
 		return nil, err
 	}
 
-	state := &atomic.Int32{}
-	state.Store(int32(StateStarting))
+	state := new(atomic.Int64)
+	state.Store(int64(StateStarting))
 	return &Collector{
 		set:          set,
 		state:        state,
@@ -366,5 +366,5 @@ func (col *Collector) shutdown(ctx context.Context) error {
 
 // setCollectorState provides current state of the collector
 func (col *Collector) setCollectorState(state State) {
-	col.state.Store(int32(state))
+	col.state.Store(int64(state))
 }
