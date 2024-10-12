@@ -241,7 +241,6 @@ func TestStatusFuncsConcurrent(t *testing.T) {
 	wg.Add(len(ids))
 
 	for _, id := range ids {
-		id := id
 		go func() {
 			compFn := NewReportStatusFunc(id, rep.ReportStatus)
 			compFn(componentstatus.NewEvent(componentstatus.StatusStarting))

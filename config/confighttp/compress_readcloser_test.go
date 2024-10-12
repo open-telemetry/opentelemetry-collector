@@ -53,7 +53,6 @@ func TestCompressReadCloser(t *testing.T) {
 			errVal: "failed to close reader",
 		},
 	} {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
