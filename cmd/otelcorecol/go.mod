@@ -81,7 +81,6 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/collector v0.111.0 // indirect
 	go.opentelemetry.io/collector/client v1.17.0 // indirect
-	go.opentelemetry.io/collector/component/componentprofiles v0.111.0 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.111.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.111.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.17.0 // indirect
@@ -107,6 +106,7 @@ require (
 	go.opentelemetry.io/collector/pdata/pprofile v0.111.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.111.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.111.0 // indirect
+	go.opentelemetry.io/collector/pipeline/pipelineprofiles v0.111.0 // indirect
 	go.opentelemetry.io/collector/processor/processorprofiles v0.111.0 // indirect
 	go.opentelemetry.io/collector/receiver/receiverprofiles v0.111.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.111.0 // indirect
@@ -156,8 +156,6 @@ replace go.opentelemetry.io/collector/client => ../../client
 replace go.opentelemetry.io/collector/otelcol => ../../otelcol
 
 replace go.opentelemetry.io/collector/component => ../../component
-
-replace go.opentelemetry.io/collector/component/componentprofiles => ../../component/componentprofiles
 
 replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
 
@@ -238,6 +236,8 @@ replace go.opentelemetry.io/collector/pdata/testdata => ../../pdata/testdata
 replace go.opentelemetry.io/collector/pdata/pprofile => ../../pdata/pprofile
 
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
+
+replace go.opentelemetry.io/collector/pipeline/pipelineprofiles => ../../pipeline/pipelineprofiles
 
 replace go.opentelemetry.io/collector/processor => ../../processor
 
