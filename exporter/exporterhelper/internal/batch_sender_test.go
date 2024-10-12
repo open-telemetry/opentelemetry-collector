@@ -75,7 +75,7 @@ func TestBatchSender_Merge(t *testing.T) {
 			require.NoError(t, be.Send(context.Background(), &fakeRequest{items: 3, sink: sink,
 				mergeErr: errors.New("merge error")}))
 
-			assert.Equal(t, uint64(1), sink.requestsCount.Load())
+			assert.Equal(t, int64(1), sink.requestsCount.Load())
 			assert.Eventually(t, func() bool {
 				return sink.requestsCount.Load() == 2 && sink.itemsCount.Load() == 15
 			}, 100*time.Millisecond, 10*time.Millisecond)
@@ -89,8 +89,8 @@ func TestBatchSender_BatchExportError(t *testing.T) {
 	tests := []struct {
 		name             string
 		batcherOption    Option
-		expectedRequests uint64
-		expectedItems    uint64
+		expectedRequests int64
+		expectedItems    int64
 	}{
 		{
 			name:          "merge_only",
@@ -131,7 +131,7 @@ func TestBatchSender_BatchExportError(t *testing.T) {
 
 			// the first two requests should be blocked by the batchSender.
 			time.Sleep(50 * time.Millisecond)
-			assert.Equal(t, uint64(0), sink.requestsCount.Load())
+			assert.Equal(t, int64(0), sink.requestsCount.Load())
 
 			// the third request should trigger the export and cause an error.
 			errReq := &fakeRequest{items: 20, exportErr: errors.New("transient error"), sink: sink}
@@ -203,8 +203,8 @@ func TestBatchSender_Shutdown(t *testing.T) {
 	require.NoError(t, be.Shutdown(context.Background()))
 
 	// shutdown should force sending the batch
-	assert.Equal(t, uint64(1), sink.requestsCount.Load())
-	assert.Equal(t, uint64(3), sink.itemsCount.Load())
+	assert.Equal(t, int64(1), sink.requestsCount.Load())
+	assert.Equal(t, int64(3), sink.itemsCount.Load())
 }
 
 func TestBatchSender_Disabled(t *testing.T) {
@@ -224,8 +224,8 @@ func TestBatchSender_Disabled(t *testing.T) {
 	sink := newFakeRequestSink()
 	// should be sent right away without splitting because batching is disabled.
 	require.NoError(t, be.Send(context.Background(), &fakeRequest{items: 8, sink: sink}))
-	assert.Equal(t, uint64(1), sink.requestsCount.Load())
-	assert.Equal(t, uint64(8), sink.itemsCount.Load())
+	assert.Equal(t, int64(1), sink.requestsCount.Load())
+	assert.Equal(t, int64(8), sink.itemsCount.Load())
 }
 
 func TestBatchSender_InvalidMergeSplitFunc(t *testing.T) {
@@ -270,8 +270,8 @@ func TestBatchSender_PostShutdown(t *testing.T) {
 	// Closed batch sender should act as a pass-through to not block queue draining.
 	sink := newFakeRequestSink()
 	require.NoError(t, be.Send(context.Background(), &fakeRequest{items: 8, sink: sink}))
-	assert.Equal(t, uint64(1), sink.requestsCount.Load())
-	assert.Equal(t, uint64(8), sink.itemsCount.Load())
+	assert.Equal(t, int64(1), sink.requestsCount.Load())
+	assert.Equal(t, int64(8), sink.itemsCount.Load())
 }
 
 func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
@@ -281,8 +281,8 @@ func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
 	tests := []struct {
 		name             string
 		batcherCfg       exporterbatcher.Config
-		expectedRequests uint64
-		expectedItems    uint64
+		expectedRequests int64
+		expectedItems    int64
 	}{
 		{
 			name: "merge_only",
@@ -318,7 +318,6 @@ func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			qCfg := exporterqueue.NewDefaultConfig()
 			qCfg.NumConsumers = 2
@@ -397,8 +396,8 @@ func TestBatchSender_BatchBlocking(t *testing.T) {
 	wg.Wait()
 
 	// should be sent in two batches since the batch size is 3
-	assert.Equal(t, uint64(2), sink.requestsCount.Load())
-	assert.Equal(t, uint64(6), sink.itemsCount.Load())
+	assert.Equal(t, int64(2), sink.requestsCount.Load())
+	assert.Equal(t, int64(6), sink.itemsCount.Load())
 
 	require.NoError(t, be.Shutdown(context.Background()))
 }
@@ -433,8 +432,8 @@ func TestBatchSender_BatchCancelled(t *testing.T) {
 	wg.Wait()
 
 	// nothing should be delivered
-	assert.Equal(t, uint64(0), sink.requestsCount.Load())
-	assert.Equal(t, uint64(0), sink.itemsCount.Load())
+	assert.Equal(t, int64(0), sink.requestsCount.Load())
+	assert.Equal(t, int64(0), sink.itemsCount.Load())
 
 	require.NoError(t, be.Shutdown(context.Background()))
 }
@@ -468,8 +467,8 @@ func TestBatchSender_DrainActiveRequests(t *testing.T) {
 	// It should take 120 milliseconds to complete.
 	require.NoError(t, be.Shutdown(context.Background()))
 
-	assert.Equal(t, uint64(2), sink.requestsCount.Load())
-	assert.Equal(t, uint64(3), sink.itemsCount.Load())
+	assert.Equal(t, int64(2), sink.requestsCount.Load())
+	assert.Equal(t, int64(3), sink.itemsCount.Load())
 }
 
 func TestBatchSender_WithBatcherOption(t *testing.T) {
@@ -654,7 +653,7 @@ func TestBatchSenderTimerResetNoConflict(t *testing.T) {
 
 	// The batch should be sent either with the flush interval or by reaching the minimum items size with no conflict
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-		assert.LessOrEqual(c, uint64(1), sink.requestsCount.Load())
+		assert.LessOrEqual(c, int64(1), sink.requestsCount.Load())
 		assert.EqualValues(c, 8, sink.itemsCount.Load())
 	}, 200*time.Millisecond, 10*time.Millisecond)
 
@@ -683,7 +682,7 @@ func TestBatchSenderTimerFlush(t *testing.T) {
 		assert.NoError(t, be.Send(context.Background(), &fakeRequest{items: 4, sink: sink}))
 	}()
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-		assert.LessOrEqual(c, uint64(1), sink.requestsCount.Load())
+		assert.LessOrEqual(c, int64(1), sink.requestsCount.Load())
 		assert.EqualValues(c, 8, sink.itemsCount.Load())
 	}, 30*time.Millisecond, 5*time.Millisecond)
 
@@ -694,12 +693,12 @@ func TestBatchSenderTimerFlush(t *testing.T) {
 
 	// Confirm that it is not flushed in 50ms
 	time.Sleep(60 * time.Millisecond)
-	assert.LessOrEqual(t, uint64(1), sink.requestsCount.Load())
+	assert.LessOrEqual(t, int64(1), sink.requestsCount.Load())
 	assert.EqualValues(t, 8, sink.itemsCount.Load())
 
 	// Confirm that it is flushed after 100ms (using 60+50=110 here to be safe)
 	time.Sleep(50 * time.Millisecond)
-	assert.LessOrEqual(t, uint64(2), sink.requestsCount.Load())
+	assert.LessOrEqual(t, int64(2), sink.requestsCount.Load())
 	assert.EqualValues(t, 12, sink.itemsCount.Load())
 	require.NoError(t, be.Shutdown(context.Background()))
 }
@@ -710,4 +709,66 @@ func queueBatchExporter(t *testing.T, batchOption Option) *BaseExporter {
 	require.NotNil(t, be)
 	require.NoError(t, err)
 	return be
+}
+
+func fakeBatchMergeFunc(_ context.Context, r1 internal.Request, r2 internal.Request) (internal.Request, error) {
+	if r1 == nil {
+		return r2, nil
+	}
+	fr1 := r1.(*fakeRequest)
+	fr2 := r2.(*fakeRequest)
+	if fr2.mergeErr != nil {
+		return nil, fr2.mergeErr
+	}
+	return &fakeRequest{
+		items:     fr1.items + fr2.items,
+		sink:      fr1.sink,
+		exportErr: fr2.exportErr,
+		delay:     fr1.delay + fr2.delay,
+	}, nil
+}
+
+func fakeBatchMergeSplitFunc(ctx context.Context, cfg exporterbatcher.MaxSizeConfig, r1 internal.Request, r2 internal.Request) ([]internal.Request, error) {
+	maxItems := cfg.MaxSizeItems
+	if maxItems == 0 {
+		r, err := fakeBatchMergeFunc(ctx, r1, r2)
+		return []internal.Request{r}, err
+	}
+
+	if r2.(*fakeRequest).mergeErr != nil {
+		return nil, r2.(*fakeRequest).mergeErr
+	}
+
+	fr2 := r2.(*fakeRequest)
+	fr2 = &fakeRequest{items: fr2.items, sink: fr2.sink, exportErr: fr2.exportErr, delay: fr2.delay}
+	var res []internal.Request
+
+	// fill fr1 to maxItems if it's not nil
+	if r1 != nil {
+		fr1 := r1.(*fakeRequest)
+		fr1 = &fakeRequest{items: fr1.items, sink: fr1.sink, exportErr: fr1.exportErr, delay: fr1.delay}
+		if fr2.items <= maxItems-fr1.items {
+			fr1.items += fr2.items
+			if fr2.exportErr != nil {
+				fr1.exportErr = fr2.exportErr
+			}
+			return []internal.Request{fr1}, nil
+		}
+		// if split is needed, we don't propagate exportErr from fr2 to fr1 to test more cases
+		fr2.items -= maxItems - fr1.items
+		fr1.items = maxItems
+		res = append(res, fr1)
+	}
+
+	// split fr2 to maxItems
+	for {
+		if fr2.items <= maxItems {
+			res = append(res, &fakeRequest{items: fr2.items, sink: fr2.sink, exportErr: fr2.exportErr, delay: fr2.delay})
+			break
+		}
+		res = append(res, &fakeRequest{items: maxItems, sink: fr2.sink, exportErr: fr2.exportErr, delay: fr2.delay})
+		fr2.items -= maxItems
+	}
+
+	return res, nil
 }
