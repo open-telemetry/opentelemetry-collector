@@ -73,7 +73,6 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/collector/client v1.17.0 // indirect
-	go.opentelemetry.io/collector/component/componentprofiles v0.111.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.111.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.17.0 // indirect
 	go.opentelemetry.io/collector/config/confignet v1.17.0 // indirect
@@ -87,6 +86,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.17.0 // indirect
 	go.opentelemetry.io/collector/internal/globalsignal v0.111.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.111.0 // indirect
+	go.opentelemetry.io/collector/pipeline/pipelineprofiles v0.111.0 // indirect
 	go.opentelemetry.io/collector/processor v0.111.0 // indirect
 	go.opentelemetry.io/collector/processor/processorprofiles v0.111.0 // indirect
 	go.opentelemetry.io/collector/receiver/receiverprofiles v0.111.0 // indirect
@@ -195,8 +195,6 @@ replace go.opentelemetry.io/collector/extension/zpagesextension => ../../extensi
 
 replace go.opentelemetry.io/collector/service => ../../service
 
-replace go.opentelemetry.io/collector/component/componentprofiles => ../../component/componentprofiles
-
 replace go.opentelemetry.io/collector/extension/extensioncapabilities => ../../extension/extensioncapabilities
 
 replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../../receiver/receiverprofiles
@@ -210,3 +208,5 @@ replace go.opentelemetry.io/collector/exporter/exporterprofiles => ../../exporte
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 
 replace go.opentelemetry.io/collector/internal/globalsignal => ../globalsignal
+
+replace go.opentelemetry.io/collector/pipeline/pipelineprofiles => ../../pipeline/pipelineprofiles

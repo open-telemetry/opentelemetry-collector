@@ -264,7 +264,6 @@ check-contrib:
 		-replace go.opentelemetry.io/collector/client=$(CURDIR)/client \
 		-replace go.opentelemetry.io/collector/cmd/mdatagen=$(CURDIR)/cmd/mdatagen \
 		-replace go.opentelemetry.io/collector/component=$(CURDIR)/component  \
-		-replace go.opentelemetry.io/collector/component/componentprofiles=$(CURDIR)/component/componentprofiles  \
 		-replace go.opentelemetry.io/collector/component/componentstatus=$(CURDIR)/component/componentstatus  \
 		-replace go.opentelemetry.io/collector/config/configauth=$(CURDIR)/config/configauth  \
 		-replace go.opentelemetry.io/collector/config/configcompression=$(CURDIR)/config/configcompression  \
@@ -310,6 +309,7 @@ check-contrib:
 		-replace go.opentelemetry.io/collector/pdata/testdata=$(CURDIR)/pdata/testdata  \
 		-replace go.opentelemetry.io/collector/pdata/pprofile=$(CURDIR)/pdata/pprofile  \
 		-replace go.opentelemetry.io/collector/pipeline=$(CURDIR)/pipeline  \
+		-replace go.opentelemetry.io/collector/pipeline/pipelineprofiles=$(CURDIR)/pipeline/pipelineprofiles  \
 		-replace go.opentelemetry.io/collector/processor=$(CURDIR)/processor  \
 		-replace go.opentelemetry.io/collector/processor/batchprocessor=$(CURDIR)/processor/batchprocessor  \
 		-replace go.opentelemetry.io/collector/processor/memorylimiterprocessor=$(CURDIR)/processor/memorylimiterprocessor  \
@@ -335,7 +335,6 @@ restore-contrib:
 		-dropreplace go.opentelemetry.io/collector/client \
 		-dropreplace go.opentelemetry.io/collector/cmd/mdatagen \
 		-dropreplace go.opentelemetry.io/collector/component \
-		-dropreplace go.opentelemetry.io/collector/component/componentprofiles \
 		-dropreplace go.opentelemetry.io/collector/component/componentstatus \
 		-dropreplace go.opentelemetry.io/collector/config/configauth  \
 		-dropreplace go.opentelemetry.io/collector/config/configcompression  \
@@ -378,6 +377,7 @@ restore-contrib:
 		-dropreplace go.opentelemetry.io/collector/pdata/testdata  \
 		-dropreplace go.opentelemetry.io/collector/pdata/pprofile  \
 		-dropreplace go.opentelemetry.io/collector/pipeline  \
+		-dropreplace go.opentelemetry.io/collector/pipeline/pipelineprofiles \
 		-dropreplace go.opentelemetry.io/collector/processor  \
 		-dropreplace go.opentelemetry.io/collector/processor/batchprocessor  \
 		-dropreplace go.opentelemetry.io/collector/processor/memorylimiterprocessor  \

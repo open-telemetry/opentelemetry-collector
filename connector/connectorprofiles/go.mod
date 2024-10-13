@@ -6,7 +6,6 @@ require (
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector v0.111.0
 	go.opentelemetry.io/collector/component v0.111.0
-	go.opentelemetry.io/collector/component/componentprofiles v0.111.0
 	go.opentelemetry.io/collector/connector v0.111.0
 	go.opentelemetry.io/collector/consumer v0.111.0
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.111.0
@@ -14,6 +13,7 @@ require (
 	go.opentelemetry.io/collector/pdata/pprofile v0.111.0
 	go.opentelemetry.io/collector/pdata/testdata v0.111.0
 	go.opentelemetry.io/collector/pipeline v0.111.0
+	go.opentelemetry.io/collector/pipeline/pipelineprofiles v0.111.0
 )
 
 require (
@@ -50,8 +50,6 @@ replace go.opentelemetry.io/collector/pdata/pprofile => ../../pdata/pprofile
 
 replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../../consumer/consumerprofiles
 
-replace go.opentelemetry.io/collector/component/componentprofiles => ../../component/componentprofiles
-
 replace go.opentelemetry.io/collector => ../..
 
 replace go.opentelemetry.io/collector/confmap => ../../confmap
@@ -69,3 +67,5 @@ replace go.opentelemetry.io/collector/component/componentstatus => ../../compone
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 
 replace go.opentelemetry.io/collector/internal/globalsignal => ../../internal/globalsignal
+
+replace go.opentelemetry.io/collector/pipeline/pipelineprofiles => ../../pipeline/pipelineprofiles

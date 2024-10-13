@@ -41,7 +41,6 @@ var (
 	replaceModules = []string{
 		"",
 		"/component",
-		"/component/componentprofiles",
 		"/component/componentstatus",
 		"/client",
 		"/config/configauth",
@@ -79,6 +78,7 @@ var (
 		"/featuregate",
 		"/internal/globalsignal",
 		"/pipeline",
+		"/pipeline/pipelineprofiles",
 		"/processor",
 		"/processor/batchprocessor",
 		"/processor/memorylimiterprocessor",

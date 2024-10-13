@@ -8,13 +8,13 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componentprofiles"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectorprofiles"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/collector/pipeline/pipelineprofiles"
 )
 
 func errDataTypes(id component.ID, from, to pipeline.Signal) error {
@@ -106,7 +106,7 @@ func (b *ConnectorBuilder) CreateTracesToProfiles(ctx context.Context, set conne
 
 	f, ok := connFact.(connectorprofiles.Factory)
 	if !ok {
-		return nil, errDataTypes(set.ID, pipeline.SignalTraces, componentprofiles.SignalProfiles)
+		return nil, errDataTypes(set.ID, pipeline.SignalTraces, pipelineprofiles.SignalProfiles)
 	}
 
 	logStabilityLevel(set.Logger, f.TracesToProfilesStability())
@@ -187,7 +187,7 @@ func (b *ConnectorBuilder) CreateMetricsToProfiles(ctx context.Context, set conn
 
 	f, ok := connFact.(connectorprofiles.Factory)
 	if !ok {
-		return nil, errDataTypes(set.ID, pipeline.SignalMetrics, componentprofiles.SignalProfiles)
+		return nil, errDataTypes(set.ID, pipeline.SignalMetrics, pipelineprofiles.SignalProfiles)
 	}
 
 	logStabilityLevel(set.Logger, f.MetricsToProfilesStability())
@@ -268,7 +268,7 @@ func (b *ConnectorBuilder) CreateLogsToProfiles(ctx context.Context, set connect
 
 	f, ok := connFact.(connectorprofiles.Factory)
 	if !ok {
-		return nil, errDataTypes(set.ID, pipeline.SignalLogs, componentprofiles.SignalProfiles)
+		return nil, errDataTypes(set.ID, pipeline.SignalLogs, pipelineprofiles.SignalProfiles)
 	}
 
 	logStabilityLevel(set.Logger, f.LogsToProfilesStability())
@@ -292,7 +292,7 @@ func (b *ConnectorBuilder) CreateProfilesToTraces(ctx context.Context, set conne
 
 	f, ok := connFact.(connectorprofiles.Factory)
 	if !ok {
-		return nil, errDataTypes(set.ID, componentprofiles.SignalProfiles, pipeline.SignalTraces)
+		return nil, errDataTypes(set.ID, pipelineprofiles.SignalProfiles, pipeline.SignalTraces)
 	}
 
 	logStabilityLevel(set.Logger, f.ProfilesToTracesStability())
@@ -316,7 +316,7 @@ func (b *ConnectorBuilder) CreateProfilesToMetrics(ctx context.Context, set conn
 
 	f, ok := connFact.(connectorprofiles.Factory)
 	if !ok {
-		return nil, errDataTypes(set.ID, componentprofiles.SignalProfiles, pipeline.SignalMetrics)
+		return nil, errDataTypes(set.ID, pipelineprofiles.SignalProfiles, pipeline.SignalMetrics)
 	}
 
 	logStabilityLevel(set.Logger, f.ProfilesToMetricsStability())
@@ -340,7 +340,7 @@ func (b *ConnectorBuilder) CreateProfilesToLogs(ctx context.Context, set connect
 
 	f, ok := connFact.(connectorprofiles.Factory)
 	if !ok {
-		return nil, errDataTypes(set.ID, componentprofiles.SignalProfiles, pipeline.SignalLogs)
+		return nil, errDataTypes(set.ID, pipelineprofiles.SignalProfiles, pipeline.SignalLogs)
 	}
 
 	logStabilityLevel(set.Logger, f.ProfilesToLogsStability())
@@ -364,7 +364,7 @@ func (b *ConnectorBuilder) CreateProfilesToProfiles(ctx context.Context, set con
 
 	f, ok := connFact.(connectorprofiles.Factory)
 	if !ok {
-		return nil, errDataTypes(set.ID, componentprofiles.SignalProfiles, componentprofiles.SignalProfiles)
+		return nil, errDataTypes(set.ID, pipelineprofiles.SignalProfiles, pipelineprofiles.SignalProfiles)
 	}
 
 	logStabilityLevel(set.Logger, f.ProfilesToProfilesStability())

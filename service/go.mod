@@ -11,7 +11,6 @@ require (
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector v0.111.0
 	go.opentelemetry.io/collector/component v0.111.0
-	go.opentelemetry.io/collector/component/componentprofiles v0.111.0
 	go.opentelemetry.io/collector/component/componentstatus v0.111.0
 	go.opentelemetry.io/collector/config/confighttp v0.111.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.111.0
@@ -31,6 +30,7 @@ require (
 	go.opentelemetry.io/collector/pdata/pprofile v0.111.0
 	go.opentelemetry.io/collector/pdata/testdata v0.111.0
 	go.opentelemetry.io/collector/pipeline v0.111.0
+	go.opentelemetry.io/collector/pipeline/pipelineprofiles v0.111.0
 	go.opentelemetry.io/collector/processor v0.111.0
 	go.opentelemetry.io/collector/processor/processorprofiles v0.111.0
 	go.opentelemetry.io/collector/receiver v0.111.0
@@ -177,8 +177,6 @@ replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../consumer/c
 
 replace go.opentelemetry.io/collector/consumer/consumertest => ../consumer/consumertest
 
-replace go.opentelemetry.io/collector/component/componentprofiles => ../component/componentprofiles
-
 replace go.opentelemetry.io/collector/client => ../client
 
 replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../receiver/receiverprofiles
@@ -190,3 +188,5 @@ replace go.opentelemetry.io/collector/connector/connectorprofiles => ../connecto
 replace go.opentelemetry.io/collector/exporter/exporterprofiles => ../exporter/exporterprofiles
 
 replace go.opentelemetry.io/collector/internal/globalsignal => ../internal/globalsignal
+
+replace go.opentelemetry.io/collector/pipeline/pipelineprofiles => ../pipeline/pipelineprofiles

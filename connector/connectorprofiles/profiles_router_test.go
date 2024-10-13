@@ -12,13 +12,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/component/componentprofiles"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/collector/pipeline/pipelineprofiles"
 )
 
 type mutatingProfilesSink struct {
@@ -51,7 +51,7 @@ func fuzzProfiles(numIDs, numCons, numProfiles int) func(*testing.T) {
 
 		// If any consumer is mutating, the router must report mutating
 		for i := 0; i < numCons; i++ {
-			allIDs = append(allIDs, pipeline.NewIDWithName(componentprofiles.SignalProfiles, "sink_"+strconv.Itoa(numCons)))
+			allIDs = append(allIDs, pipeline.NewIDWithName(pipelineprofiles.SignalProfiles, "sink_"+strconv.Itoa(numCons)))
 			// Random chance for each consumer to be mutating
 			if (numCons+numProfiles+i)%4 == 0 {
 				allCons = append(allCons, &mutatingProfilesSink{ProfilesSink: new(consumertest.ProfilesSink)})
@@ -111,8 +111,8 @@ func TestProfilessRouterConsumer(t *testing.T) {
 	ctx := context.Background()
 	td := testdata.GenerateProfiles(1)
 
-	fooID := pipeline.NewIDWithName(componentprofiles.SignalProfiles, "foo")
-	barID := pipeline.NewIDWithName(componentprofiles.SignalProfiles, "bar")
+	fooID := pipeline.NewIDWithName(pipelineprofiles.SignalProfiles, "foo")
+	barID := pipeline.NewIDWithName(pipelineprofiles.SignalProfiles, "bar")
 
 	foo := new(consumertest.ProfilesSink)
 	bar := new(consumertest.ProfilesSink)
@@ -153,7 +153,7 @@ func TestProfilessRouterConsumer(t *testing.T) {
 	assert.Nil(t, none)
 	require.Error(t, err)
 
-	fake, err := r.Consumer(pipeline.NewIDWithName(componentprofiles.SignalProfiles, "fake"))
+	fake, err := r.Consumer(pipeline.NewIDWithName(pipelineprofiles.SignalProfiles, "fake"))
 	assert.Nil(t, fake)
 	assert.Error(t, err)
 }
