@@ -75,5 +75,3 @@ replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/co
 replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
 
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
-
-replace go.opentelemetry.io/collector/internal/globalsignal => ../../internal/globalsignal

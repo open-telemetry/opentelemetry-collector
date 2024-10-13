@@ -20,7 +20,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.111.0 // indirect
 	go.opentelemetry.io/collector/consumer v0.111.0 // indirect
-	go.opentelemetry.io/collector/internal/globalsignal v0.111.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.17.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.111.0 // indirect
 	go.opentelemetry.io/otel v1.31.0 // indirect
@@ -66,5 +65,3 @@ replace go.opentelemetry.io/collector/exporter => ../
 replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../../receiver/receiverprofiles
 
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
-
-replace go.opentelemetry.io/collector/internal/globalsignal => ../../internal/globalsignal
