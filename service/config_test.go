@@ -44,7 +44,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "duplicate-processor-reference",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				pipe := cfg.Pipelines[pipeline.MustNewID("traces")]
+				pipe := cfg.Pipelines[pipeline.NewID(pipeline.SignalTraces)]
 				pipe.Processors = append(pipe.Processors, pipe.Processors...)
 				return cfg
 			},
@@ -108,7 +108,7 @@ func generateConfig() *Config {
 		},
 		Extensions: extensions.Config{component.MustNewID("nop")},
 		Pipelines: pipelines.Config{
-			pipeline.MustNewID("traces"): {
+			pipeline.NewID(pipeline.SignalTraces): {
 				Receivers:  []component.ID{component.MustNewID("nop")},
 				Processors: []component.ID{component.MustNewID("nop")},
 				Exporters:  []component.ID{component.MustNewID("nop")},

@@ -14,9 +14,9 @@ import (
 
 func TestInstanceID(t *testing.T) {
 	traces := component.MustNewID("traces")
-	tracesA := pipeline.MustNewIDWithName("traces", "a")
-	tracesB := pipeline.MustNewIDWithName("traces", "b")
-	tracesC := pipeline.MustNewIDWithName("traces", "c")
+	tracesA := pipeline.NewIDWithName(pipeline.SignalTraces, "a")
+	tracesB := pipeline.NewIDWithName(pipeline.SignalTraces, "b")
+	tracesC := pipeline.NewIDWithName(pipeline.SignalTraces, "c")
 
 	idTracesA := NewInstanceID(traces, component.KindReceiver, tracesA)
 	idTracesAll := NewInstanceID(traces, component.KindReceiver, tracesA, tracesB, tracesC)
@@ -74,9 +74,9 @@ func TestAllPipelineIDs(t *testing.T) {
 	instanceID := NewInstanceID(
 		component.MustNewID("traces"),
 		component.KindReceiver,
-		pipeline.MustNewIDWithName("traces", "a"),
-		pipeline.MustNewIDWithName("traces", "b"),
-		pipeline.MustNewIDWithName("traces", "c"),
+		pipeline.NewIDWithName(pipeline.SignalTraces, "a"),
+		pipeline.NewIDWithName(pipeline.SignalTraces, "b"),
+		pipeline.NewIDWithName(pipeline.SignalTraces, "c"),
 	)
 
 	count := 0

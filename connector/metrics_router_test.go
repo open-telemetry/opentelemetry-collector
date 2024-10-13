@@ -49,7 +49,7 @@ func fuzzMetrics(numIDs, numCons, numMetrics int) func(*testing.T) {
 
 		// If any consumer is mutating, the router must report mutating
 		for i := 0; i < numCons; i++ {
-			allIDs = append(allIDs, pipeline.MustNewIDWithName("sink", strconv.Itoa(numCons)))
+			allIDs = append(allIDs, pipeline.NewIDWithName(pipeline.SignalMetrics, "sink_"+strconv.Itoa(numCons)))
 			// Random chance for each consumer to be mutating
 			if (numCons+numMetrics+i)%4 == 0 {
 				allCons = append(allCons, &mutatingMetricsSink{MetricsSink: new(consumertest.MetricsSink)})
@@ -109,8 +109,8 @@ func TestMetricsRouterConsumers(t *testing.T) {
 	ctx := context.Background()
 	md := testdata.GenerateMetrics(1)
 
-	fooID := pipeline.MustNewID("foo")
-	barID := pipeline.MustNewID("bar")
+	fooID := pipeline.NewIDWithName(pipeline.SignalMetrics, "foo")
+	barID := pipeline.NewIDWithName(pipeline.SignalMetrics, "bar")
 
 	foo := new(consumertest.MetricsSink)
 	bar := new(consumertest.MetricsSink)
@@ -151,7 +151,7 @@ func TestMetricsRouterConsumers(t *testing.T) {
 	assert.Nil(t, none)
 	require.Error(t, err)
 
-	fake, err := r.Consumer(pipeline.MustNewID("fake"))
+	fake, err := r.Consumer(pipeline.NewIDWithName(pipeline.SignalMetrics, "fake"))
 	assert.Nil(t, fake)
 	assert.Error(t, err)
 }

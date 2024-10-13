@@ -102,11 +102,11 @@ func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 			},
 		},
 		Pipelines: pipelines.Config{
-			pipeline.MustNewID("traces"): {
+			pipeline.NewID(pipeline.SignalTraces): {
 				Receivers: []component.ID{component.NewID(component.MustNewType("test"))},
 				Exporters: []component.ID{component.NewID(nopType)},
 			},
-			pipeline.MustNewID("metrics"): {
+			pipeline.NewID(pipeline.SignalMetrics): {
 				Receivers: []component.ID{component.NewID(component.MustNewType("test"))},
 				Exporters: []component.ID{component.NewID(nopType)},
 			},
