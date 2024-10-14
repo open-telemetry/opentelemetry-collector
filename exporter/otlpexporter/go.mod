@@ -55,7 +55,6 @@ require (
 	go.opentelemetry.io/collector/extension v0.111.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.111.0 // indirect
 	go.opentelemetry.io/collector/extension/experimental/storage v0.111.0 // indirect
-	go.opentelemetry.io/collector/internal/globalsignal v0.111.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.111.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.111.0 // indirect
 	go.opentelemetry.io/collector/receiver v0.111.0 // indirect
@@ -124,8 +123,6 @@ replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../../receive
 replace go.opentelemetry.io/collector/exporter/exporterprofiles => ../exporterprofiles
 
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
-
-replace go.opentelemetry.io/collector/internal/globalsignal => ../../internal/globalsignal
 
 replace go.opentelemetry.io/collector => ../..
 

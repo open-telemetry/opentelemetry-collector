@@ -101,7 +101,6 @@ require (
 	go.opentelemetry.io/collector/extension/experimental/storage v0.111.0 // indirect
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.111.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.17.0 // indirect
-	go.opentelemetry.io/collector/internal/globalsignal v0.111.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.17.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.111.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.111.0 // indirect
@@ -148,8 +147,6 @@ require (
 )
 
 replace go.opentelemetry.io/collector => ../../
-
-replace go.opentelemetry.io/collector/internal/globalsignal => ../../internal/globalsignal
 
 replace go.opentelemetry.io/collector/client => ../../client
 

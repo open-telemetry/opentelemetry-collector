@@ -40,7 +40,6 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.111.0 // indirect
-	go.opentelemetry.io/collector/internal/globalsignal v0.111.0 // indirect
 	go.opentelemetry.io/collector/receiver/receiverprofiles v0.111.0 // indirect
 	golang.org/x/net v0.28.0 // indirect
 	golang.org/x/sys v0.26.0 // indirect
@@ -81,5 +80,3 @@ replace go.opentelemetry.io/collector/consumer/consumertest => ../consumer/consu
 replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../receiver/receiverprofiles
 
 replace go.opentelemetry.io/collector/exporter/exporterprofiles => ./exporterprofiles
-
-replace go.opentelemetry.io/collector/internal/globalsignal => ../internal/globalsignal
