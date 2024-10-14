@@ -51,8 +51,6 @@ replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../../consume
 
 replace go.opentelemetry.io/collector => ../..
 
-replace go.opentelemetry.io/collector/confmap => ../../confmap
-
 replace go.opentelemetry.io/collector/component => ../../component
 
 replace go.opentelemetry.io/collector/pdata => ../../pdata
