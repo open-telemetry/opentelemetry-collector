@@ -14,8 +14,8 @@ documented as an RFC. Controversial changes should also be documented as an RFC,
 community can have a chance to provide feedback. The goal of this process is to ensure we have a
 coherent vision before embarking on significant work.
 
-Ultimately, if any Collector maintainer feels that a change requires an RFC, then a merged RFC is a
-requirement for said change.
+Ultimately, if any opentelemetry-collector maintainer feels that a change requires an RFC, then a
+merged RFC is a requirement for said change.
 
 ## Contents
 
@@ -35,9 +35,9 @@ for merging it.
 
 ### Stakeholders
 
-To define merge criteria and voting, each RFC has a set of 'stakeholders'. All Collector approvers
-are considered stakeholders. Additional stakeholders (e.g. maintainers of related SIGs or experts)
-may be explicitly noted in the RFC.
+To define merge criteria and voting, each RFC has a set of 'stakeholders'. All
+opentelemetry-collector approvers are considered stakeholders. Additional stakeholders (e.g.
+maintainers of related SIGs or experts) may be explicitly noted in the RFC.
 
 ### Merge rules
 
@@ -46,7 +46,8 @@ We use a Lazy Consensus method with the following rules:
 1. *Quorum*: For an RFC to be mergeable, it needs to have at least **two approvals** from the
    approvers set as well as approvals from any additional stakeholders.
 2. *Waiting period*: Maintainers need to announce their intent to merge the RFC with a Github
-   comment, and wait for at least **4 business days** after making the announcement to merge the RFC.
+   comment, and wait for at least **4 business days** after making the announcement to merge the
+   RFC.
 3. *Objections*: Objections should be communicated as a 'request changes' review. All objections
    must be addressed or voted before merging an RFC. If unable to resolve an objection, any
    maintainer may call for a vote to be made on the objection (see below). The result is binding.
