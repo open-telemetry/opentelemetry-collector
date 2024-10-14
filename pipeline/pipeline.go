@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	"go.opentelemetry.io/collector/internal/globalsignal"
+	"go.opentelemetry.io/collector/pipeline/internal/globalsignal"
 )
 
 // typeAndNameSeparator is the separator that is used between type and name in type/name composite keys.

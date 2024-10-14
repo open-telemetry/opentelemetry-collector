@@ -26,4 +26,4 @@
 // Package cgroups provides utilities to access Linux control group (CGroups)
 // parameters (total memory, for example) for a given process.
 // The original implementation is taken from https://github.com/uber-go/automaxprocs
-package cgroups // import "go.opentelemetry.io/collector/internal/cgroups"
+package cgroups // import "go.opentelemetry.io/collector/internal/memorylimiter/cgroups"

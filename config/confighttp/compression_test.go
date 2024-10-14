@@ -415,7 +415,6 @@ func TestDecompressorAvoidDecompressionBomb(t *testing.T) {
 			compress: compressLz4,
 		},
 	} {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
