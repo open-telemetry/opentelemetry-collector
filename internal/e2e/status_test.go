@@ -193,7 +193,7 @@ func createDefaultReceiverConfig() component.Config {
 
 func createTraces(
 	_ context.Context,
-	set receiver.Settings,
+	_ receiver.Settings,
 	cfg component.Config,
 	_ consumer.Traces,
 ) (receiver.Traces, error) {
@@ -203,7 +203,6 @@ func createTraces(
 		func() (*testReceiver, error) {
 			return &testReceiver{}, nil
 		},
-		&set.TelemetrySettings,
 	)
 	if err != nil {
 		return nil, err
@@ -214,7 +213,7 @@ func createTraces(
 
 func createMetrics(
 	_ context.Context,
-	set receiver.Settings,
+	_ receiver.Settings,
 	cfg component.Config,
 	_ consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -224,7 +223,6 @@ func createMetrics(
 		func() (*testReceiver, error) {
 			return &testReceiver{}, nil
 		},
-		&set.TelemetrySettings,
 	)
 	if err != nil {
 		return nil, err
