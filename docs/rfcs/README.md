@@ -26,8 +26,7 @@ Collector SIG when merging it.
 
 ## Announcement
 
-RFCs should be announced widely including in the Collector SIG Slack channels and the Collector SIG
-meetings.
+RFCs should be announced in a Collector SIG meeting and on the #otel-collector-dev Slack channel.
 
 ## Approval process
 
@@ -36,33 +35,32 @@ for merging it.
 
 ### Stakeholders
 
-As with any other change, everybody is welcome to participate in the discussion of an RFC. To define
-merge criteria and voting, Each RFC has a set of 'stakeholders', which should contain, at a minimum,
-the Collector approvers, but may contain additional people (e.g. maintainers of related SIGs or
-experts). If the stakeholder set is not defined explicitly by the RFC author, the approvers set will
-be assumed.
+To define merge criteria and voting, each RFC has a set of 'stakeholders'. All Collector approvers
+are considered stakeholders. Additional stakeholders (e.g. maintainers of related SIGs or experts)
+may be explicitly noted in the RFC.
 
 ### Merge rules
 
 We use a Lazy Consensus method with the following rules:
 
 1. *Quorum*: For an RFC to be mergeable, it needs to have at least **two approvals** from the
-   stakeholder set.
+   approvers set as well as approvals from any additional stakeholders.
 2. *Waiting period*: Maintainers need to announce their intent to merge the RFC with a Github
-   comment, and wait for at least **4 business days** after making the announcement.
+   comment, and wait for at least **4 business days** after making the announcement to merge the RFC.
 3. *Objections*: Objections should be communicated as a 'request changes' review. All objections
    must be addressed or voted before merging an RFC. If unable to resolve an objection, any
-   maintainer may call for a vote to be made on the objection (see below).
+   maintainer may call for a vote to be made on the objection (see below). The result is binding.
 4. *Modifications*: Non-trivial modifications to an RFC reset the waiting period.
 
 ### Voting
 
 If there is no consensus on a particular issue, a vote may be called by any of the maintainers. The
 vote will be open to all stakeholders for at least **5 business days** or until at least one third
-of the stakeholders have voted, whichever comes last. The vote will be decided by simple majority.
+of the stakeholders have voted, whichever comes last. The vote will be decided by simple majority,
+restricting the set to approvers and then maintainers in case of a tie among stakeholders.
 
-Voting may be done through any means that ensure all stakeholders can vote and that the result is
-viewable by all stakeholders. The voting result should be documented in the RFC itself.
+Voting should be done on a dedicated issue via comments. The related discussion threads should be
+linked in the issue. The voting result should be documented in the RFC itself.
 
 # Modifications to this document
 
