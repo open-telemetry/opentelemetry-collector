@@ -51,7 +51,8 @@ We use a Lazy Consensus method with the following rules:
 3. *Objections*: Objections should be communicated as a 'request changes' review. All objections
    must be addressed or voted before merging an RFC. If unable to resolve an objection, any
    maintainer may call for a vote to be made on the objection (see below). The result is binding.
-4. *Modifications*: Non-trivial modifications to an RFC reset the waiting period.
+4. *Modifications*: Non-trivial modifications to an RFC reset the waiting period. RFC authors are
+   encouraged to re-request reviews if the RFC has been modified significantly.
 
 ### Voting
 
