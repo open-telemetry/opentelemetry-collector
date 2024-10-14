@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package globalsignal // import "go.opentelemetry.io/collector/internal/globalsignal"
+package globalsignal // import "go.opentelemetry.io/collector/pipeline/internal/globalsignal"
 
 import (
 	"fmt"

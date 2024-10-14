@@ -76,7 +76,6 @@ var (
 		"/extension/extensioncapabilities",
 		"/extension/zpagesextension",
 		"/featuregate",
-		"/internal/globalsignal",
 		"/pipeline",
 		"/pipeline/pipelineprofiles",
 		"/processor",

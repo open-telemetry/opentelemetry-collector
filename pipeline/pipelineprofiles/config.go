@@ -4,7 +4,7 @@
 package pipelineprofiles // import "go.opentelemetry.io/collector/pipeline/pipelineprofiles"
 
 import (
-	"go.opentelemetry.io/collector/internal/globalsignal"
+	"go.opentelemetry.io/collector/pipeline/internal/globalsignal"
 )
 
 var (
