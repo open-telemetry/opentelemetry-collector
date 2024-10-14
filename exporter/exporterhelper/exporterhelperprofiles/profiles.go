@@ -72,7 +72,7 @@ type profileExporter struct {
 	consumerprofiles.Profiles
 }
 
-// NewProfilesExporter creates an exporterprofiles.Profiless that records observability metrics and wraps every request with a Span.
+// NewProfilesExporter creates an exporterprofiles.Profiles that records observability metrics and wraps every request with a Span.
 func NewProfilesExporter(
 	ctx context.Context,
 	set exporter.Settings,
