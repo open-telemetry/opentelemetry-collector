@@ -27,15 +27,7 @@ type getExporters interface {
 	GetExporters() map[pipeline.Signal]map[component.ID]component.Component
 }
 
-// TODO: remove as part of https://github.com/open-telemetry/opentelemetry-collector/issues/7370 for service 1.0
-//
-// nolint
-type getExportersWithSignal interface {
-	GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component
-}
-
 var _ getExporters = (*Host)(nil)
-var _ getExportersWithSignal = (*Host)(nil)
 var _ component.Host = (*Host)(nil)
 
 type Host struct {
@@ -82,17 +74,6 @@ func (host *Host) GetExtensions() map[component.ID]component.Component {
 // https://github.com/open-telemetry/opentelemetry-collector/pull/7390#issuecomment-1483710184
 // for additional information.
 func (host *Host) GetExporters() map[pipeline.Signal]map[component.ID]component.Component {
-	return host.Pipelines.GetExporters()
-}
-
-// Deprecated: [0.79.0] This function will be removed in the future.
-// Several components in the contrib repository use this function so it cannot be removed
-// before those cases are removed. In most cases, use of this function can be replaced by a
-// connector. See https://github.com/open-telemetry/opentelemetry-collector/issues/7370 and
-// https://github.com/open-telemetry/opentelemetry-collector/pull/7390#issuecomment-1483710184
-// for additional information.
-// If you still need this, use GetExporters instead.
-func (host *Host) GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component {
 	return host.Pipelines.GetExporters()
 }
 
