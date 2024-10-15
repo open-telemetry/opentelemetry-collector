@@ -97,7 +97,8 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSe
 				ExporterSettings: be.Set,
 			},
 			be.queueCfg)
-		be.QueueSender = NewQueueSender(q, be.Set, be.queueCfg.NumConsumers, be.ExportFailureMessage, be.Obsrep)
+		be.QueueSender = NewQueueSender(q, be.Set, be.queueCfg.NumConsumers,
+			be.ExportFailureMessage, be.Obsrep, be.BatcherCfg, be.BatchMergeFunc, be.BatchMergeSplitfunc)
 		for _, op := range options {
 			err = multierr.Append(err, op(be))
 		}
@@ -105,10 +106,9 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSe
 
 	if be.BatcherCfg.Enabled {
 		bs := NewBatchSender(be.BatcherCfg, be.Set, be.BatchMergeFunc, be.BatchMergeSplitfunc)
-		if bs.mergeFunc == nil || bs.mergeSplitFunc == nil {
-			err = multierr.Append(err, fmt.Errorf("WithRequestBatchFuncs must be provided for the batcher applied to the request-based exporters"))
+		if !be.queueCfg.Enabled {
+			be.BatchSender = bs
 		}
-		be.BatchSender = bs
 	}
 
 	if err != nil {

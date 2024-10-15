@@ -11,7 +11,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -19,11 +18,13 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/internal"
 	"go.opentelemetry.io/collector/exporter/internal/queue"
 	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
@@ -212,7 +213,7 @@ func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
 		require.NoError(t, err)
 
 		qCfg := NewDefaultQueueConfig()
-		qCfg.NumConsumers = 0 // to make every request go straight to the queue
+		qCfg.NumConsumers = -1 // to make every request go straight to the queue
 		rCfg := configretry.NewDefaultBackOffConfig()
 		set := exporter.Settings{ID: defaultID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}
 		be, err := NewBaseExporter(set, dataType, newObservabilityConsumerSender,
@@ -220,7 +221,6 @@ func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
 			WithRetry(rCfg), WithQueue(qCfg))
 		require.NoError(t, err)
 		require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
-
 		require.NoError(t, tt.CheckExporterMetricGauge("otelcol_exporter_queue_capacity", int64(defaultQueueSize)))
 
 		for i := 0; i < 7; i++ {
@@ -438,6 +438,8 @@ func TestQueueSenderNoStartShutdown(t *testing.T) {
 		ExporterCreateSettings: exportertest.NewNopSettings(),
 	})
 	require.NoError(t, err)
-	qs := NewQueueSender(queue, set, 1, "", obsrep)
+
+	batcherCfg := exporterbatcher.Config{}
+	qs := NewQueueSender(queue, set, 1, "", obsrep, batcherCfg, nil, nil)
 	assert.NoError(t, qs.Shutdown(context.Background()))
 }
