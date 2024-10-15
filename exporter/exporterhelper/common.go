@@ -61,19 +61,11 @@ func WithCapabilities(capabilities consumer.Capabilities) Option {
 	return internal.WithCapabilities(capabilities)
 }
 
-// BatcherOption apply changes to batcher sender.
-type BatcherOption = internal.BatcherOption
-
-// WithRequestBatchFuncs sets the functions for merging and splitting batches for an exporter built for custom request types.
-func WithRequestBatchFuncs(mf exporterbatcher.BatchMergeFunc[Request], msf exporterbatcher.BatchMergeSplitFunc[Request]) BatcherOption {
-	return internal.WithRequestBatchFuncs(mf, msf)
-}
-
 // WithBatcher enables batching for an exporter based on custom request types.
 // For now, it can be used only with the New[Traces|Metrics|Logs]RequestExporter exporter helpers and
 // WithRequestBatchFuncs provided.
 // This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-func WithBatcher(cfg exporterbatcher.Config, opts ...BatcherOption) Option {
-	return internal.WithBatcher(cfg, opts...)
+func WithBatcher(cfg exporterbatcher.Config) Option {
+	return internal.WithBatcher(cfg)
 }
