@@ -29,9 +29,6 @@ type ObsrepSenderFactory = func(obsrep *ObsReport) RequestSender
 // Option apply changes to BaseExporter.
 type Option func(*BaseExporter) error
 
-// BatcherOption apply changes to batcher sender.
-type BatcherOption func(*BatchSender) error
-
 type BaseExporter struct {
 	component.StartFunc
 	component.ShutdownFunc
@@ -64,7 +61,6 @@ type BaseExporter struct {
 	queueCfg     exporterqueue.Config
 	queueFactory exporterqueue.Factory[internal.Request]
 	BatcherCfg   exporterbatcher.Config
-	BatcherOpts  []BatcherOption
 }
 
 func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSenderFactory, options ...Option) (*BaseExporter, error) {
@@ -109,9 +105,6 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSe
 
 	if be.BatcherCfg.Enabled {
 		bs := NewBatchSender(be.BatcherCfg, be.Set, be.BatchMergeFunc, be.BatchMergeSplitfunc)
-		for _, opt := range be.BatcherOpts {
-			err = multierr.Append(err, opt(bs))
-		}
 		if bs.mergeFunc == nil || bs.mergeSplitFunc == nil {
 			err = multierr.Append(err, fmt.Errorf("WithRequestBatchFuncs must be provided for the batcher applied to the request-based exporters"))
 		}
