@@ -69,11 +69,3 @@ func WithCapabilities(capabilities consumer.Capabilities) Option {
 func WithBatcher(cfg exporterbatcher.Config) Option {
 	return internal.WithBatcher(cfg)
 }
-
-// WithBatchFuncs enables setting custom batch merge functions.
-// This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-func WithBatchFuncs(mf exporterbatcher.BatchMergeFunc[Request],
-	msf exporterbatcher.BatchMergeSplitFunc[Request]) Option {
-	return internal.WithBatchFuncs(mf, msf)
-}
