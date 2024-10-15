@@ -106,6 +106,10 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSe
 
 	if be.BatcherCfg.Enabled {
 		bs := NewBatchSender(be.BatcherCfg, be.Set, be.BatchMergeFunc, be.BatchMergeSplitfunc)
+		if bs.mergeFunc == nil || bs.mergeSplitFunc == nil {
+			err = multierr.Append(err, fmt.Errorf("Batch merge function has to be provided"))
+		}
+		be.BatchSender = bs
 		if !be.queueCfg.Enabled {
 			be.BatchSender = bs
 		}
