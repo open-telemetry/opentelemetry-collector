@@ -46,6 +46,7 @@ replaces:
   - go.opentelemetry.io/collector/extension/extensioncapabilities => ${WORKSPACE_DIR}/extension/extensioncapabilities
   - go.opentelemetry.io/collector/extension/zpagesextension => ${WORKSPACE_DIR}/extension/zpagesextension
   - go.opentelemetry.io/collector/featuregate => ${WORKSPACE_DIR}/featuregate
+  - go.opentelemetry.io/collector/internal/memorylimiter => ${WORKSPACE_DIR}/internal/memorylimiter
   - go.opentelemetry.io/collector/otelcol => ${WORKSPACE_DIR}/otelcol
   - go.opentelemetry.io/collector/otelcol/otelcoltest => ${WORKSPACE_DIR}/otelcol/otelcoltest
   - go.opentelemetry.io/collector/pdata => ${WORKSPACE_DIR}/pdata
@@ -54,6 +55,7 @@ replaces:
   - go.opentelemetry.io/collector/pipeline => ${WORKSPACE_DIR}/pipeline
   - go.opentelemetry.io/collector/pipeline/pipelineprofiles => ${WORKSPACE_DIR}/pipeline/pipelineprofiles
   - go.opentelemetry.io/collector/processor => ${WORKSPACE_DIR}/processor
+  - go.opentelemetry.io/collector/processor/processortest => ${WORKSPACE_DIR}/processor/processortest
   - go.opentelemetry.io/collector/processor/processorprofiles => ${WORKSPACE_DIR}/processor/processorprofiles
   - go.opentelemetry.io/collector/receiver => ${WORKSPACE_DIR}/receiver
   - go.opentelemetry.io/collector/receiver/otlpreceiver => ${WORKSPACE_DIR}/receiver/otlpreceiver

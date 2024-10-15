@@ -31,12 +31,3 @@ type RequestErrorHandler interface {
 	// Otherwise, it should return the original Request.
 	OnError(error) Request
 }
-
-// extractPartialRequest returns a new Request that may contain the items left to be sent
-// if only some items failed to process and can be retried. Otherwise, it returns the original Request.
-func ExtractPartialRequest(req Request, err error) Request {
-	if errReq, ok := req.(RequestErrorHandler); ok {
-		return errReq.OnError(err)
-	}
-	return req
-}

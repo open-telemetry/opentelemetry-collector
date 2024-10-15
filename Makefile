@@ -302,6 +302,7 @@ check-contrib:
 		-replace go.opentelemetry.io/collector/extension/zpagesextension=$(CURDIR)/extension/zpagesextension  \
 		-replace go.opentelemetry.io/collector/featuregate=$(CURDIR)/featuregate  \
 		-replace go.opentelemetry.io/collector/filter=$(CURDIR)/filter  \
+		-replace go.opentelemetry.io/collector/internal/memorylimiter=$(CURDIR)/internal/memorylimiter  \
 		-replace go.opentelemetry.io/collector/otelcol=$(CURDIR)/otelcol  \
 		-replace go.opentelemetry.io/collector/otelcol/otelcoltest=$(CURDIR)/otelcol/otelcoltest  \
 		-replace go.opentelemetry.io/collector/pdata=$(CURDIR)/pdata  \
@@ -310,6 +311,7 @@ check-contrib:
 		-replace go.opentelemetry.io/collector/pipeline=$(CURDIR)/pipeline  \
 		-replace go.opentelemetry.io/collector/pipeline/pipelineprofiles=$(CURDIR)/pipeline/pipelineprofiles  \
 		-replace go.opentelemetry.io/collector/processor=$(CURDIR)/processor  \
+		-replace go.opentelemetry.io/collector/processor/processortest=$(CURDIR)/processor/processortest  \
 		-replace go.opentelemetry.io/collector/processor/batchprocessor=$(CURDIR)/processor/batchprocessor  \
 		-replace go.opentelemetry.io/collector/processor/memorylimiterprocessor=$(CURDIR)/processor/memorylimiterprocessor  \
 		-replace go.opentelemetry.io/collector/processor/processorprofiles=$(CURDIR)/processor/processorprofiles  \
@@ -369,6 +371,7 @@ restore-contrib:
 		-dropreplace go.opentelemetry.io/collector/extension/zpagesextension  \
 		-dropreplace go.opentelemetry.io/collector/featuregate  \
 		-dropreplace go.opentelemetry.io/collector/filter  \
+		-dropreplace go.opentelemetry.io/collector/internal/memorylimiter \
 		-dropreplace go.opentelemetry.io/collector/otelcol  \
 		-dropreplace go.opentelemetry.io/collector/otelcol/otelcoltest  \
 		-dropreplace go.opentelemetry.io/collector/pdata  \
@@ -377,6 +380,7 @@ restore-contrib:
 		-dropreplace go.opentelemetry.io/collector/pipeline  \
 		-dropreplace go.opentelemetry.io/collector/pipeline/pipelineprofiles \
 		-dropreplace go.opentelemetry.io/collector/processor  \
+		-dropreplace go.opentelemetry.io/collector/processortest  \
 		-dropreplace go.opentelemetry.io/collector/processor/batchprocessor  \
 		-dropreplace go.opentelemetry.io/collector/processor/memorylimiterprocessor  \
 		-dropreplace go.opentelemetry.io/collector/receiver  \

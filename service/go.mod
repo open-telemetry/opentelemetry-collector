@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	github.com/google/uuid v1.6.0
-	github.com/prometheus/client_golang v1.20.4
+	github.com/prometheus/client_golang v1.20.5
 	github.com/prometheus/client_model v0.6.1
 	github.com/prometheus/common v0.60.0
 	github.com/shirou/gopsutil/v4 v4.24.9
@@ -33,6 +33,7 @@ require (
 	go.opentelemetry.io/collector/pipeline/pipelineprofiles v0.111.0
 	go.opentelemetry.io/collector/processor v0.111.0
 	go.opentelemetry.io/collector/processor/processorprofiles v0.111.0
+	go.opentelemetry.io/collector/processor/processortest v0.111.0
 	go.opentelemetry.io/collector/receiver v0.111.0
 	go.opentelemetry.io/collector/receiver/receiverprofiles v0.111.0
 	go.opentelemetry.io/collector/semconv v0.111.0
@@ -141,6 +142,8 @@ replace go.opentelemetry.io/collector/config/configtelemetry => ../config/config
 replace go.opentelemetry.io/collector/pipeline => ../pipeline
 
 replace go.opentelemetry.io/collector/processor => ../processor
+
+replace go.opentelemetry.io/collector/processor/processortest => ../processor/processortest
 
 replace go.opentelemetry.io/collector/consumer => ../consumer
 

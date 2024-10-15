@@ -16,6 +16,7 @@ require (
 	go.opentelemetry.io/collector/otelcol v0.111.0
 	go.opentelemetry.io/collector/pipeline v0.111.0
 	go.opentelemetry.io/collector/processor v0.111.0
+	go.opentelemetry.io/collector/processor/processortest v0.111.0
 	go.opentelemetry.io/collector/receiver v0.111.0
 	go.opentelemetry.io/collector/service v0.111.0
 	go.uber.org/goleak v1.3.0
@@ -49,7 +50,7 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
-	github.com/prometheus/client_golang v1.20.4 // indirect
+	github.com/prometheus/client_golang v1.20.5 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.60.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
@@ -139,6 +140,8 @@ replace go.opentelemetry.io/collector/config/internal => ../../config/internal
 replace go.opentelemetry.io/collector/config/configtls => ../../config/configtls
 
 replace go.opentelemetry.io/collector/processor => ../../processor
+
+replace go.opentelemetry.io/collector/processor/processortest => ../../processor/processortest
 
 replace go.opentelemetry.io/collector/confmap => ../../confmap
 
