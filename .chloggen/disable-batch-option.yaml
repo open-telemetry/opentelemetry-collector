@@ -16,6 +16,9 @@ issues: [10368]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext:
+  Removed WithRequestBatchFuncs(BatcherOption) in favor of WithBatchFuncs(Option), where |
+  BatcherOption is a function that operates on batch sender and Option is one that operates |
+  on BaseExporter
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
