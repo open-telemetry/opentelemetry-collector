@@ -209,7 +209,6 @@ func decodeConfig(m *Conf, result any, errorUnused bool, skipTopLevelUnmarshaler
 		WeaklyTypedInput: false,
 		MatchName:        caseSensitiveMatchName,
 		DecodeHook: mapstructure.ComposeDecodeHookFunc(
-			optionalHookFunc(),
 			useExpandValue(),
 			expandNilStructPointersHookFunc(),
 			mapstructure.StringToSliceHookFunc(","),
@@ -436,38 +435,12 @@ type PrimitiveUnmarshaler interface {
 	UnmarshalPrimitive(val any) error
 }
 
-// optionalHookFunc applies logic when the to.Type is optional.Optional. When decoding primitive types,
-// we use reflect.Value's FieldByName API (https://pkg.go.dev/reflect#Value.FieldByName) and Set (https://pkg.go.dev/reflect#Value.Set) APIs
-// in order to set the Value and HasValue. Set cannot be used for struct field types, as the set value must be assignable to the target type,
-// so for structs we use optionals custom unmarshaller in order to cast the map to the struct.
-//
-// This logic relies on the fact that the hook only gets called when the value is explicitely set in the config,
-// so if we are in this hook, we know we can set HasValue to true.
-func optionalHookFunc() mapstructure.DecodeHookFuncValue {
-	return func(from reflect.Value, to reflect.Value) (any, error) {
-		_, ok := from.Interface().(map[string]any)
-		// As the type is generic, we check for the prefix. If castable to map,
-		// unmarshalerHookFunc will take care of it.
-		if strings.HasPrefix(to.Type().String(), "optional.Optional") && !ok {
-			unmarshaler, ok := to.Addr().Interface().(PrimitiveUnmarshaler)
-			if !ok {
-				return from.Interface(), nil
-			}
-			if err := unmarshaler.UnmarshalPrimitive(from.Interface()); err != nil {
-				return nil, err
-			}
-			return to.Interface(), nil
-		}
-
-		return from.Interface(), nil
-	}
-}
-
 // Provides a mechanism for individual structs to define their own unmarshal logic,
 // by implementing the Unmarshaler interface, unless skipTopLevelUnmarshaler is
 // true and the struct matches the top level object being unmarshaled.
 func unmarshalerHookFunc(result any, skipTopLevelUnmarshaler bool) mapstructure.DecodeHookFuncValue {
 	return func(from reflect.Value, to reflect.Value) (any, error) {
+
 		if !to.CanAddr() {
 			return from.Interface(), nil
 		}
@@ -485,7 +458,14 @@ func unmarshalerHookFunc(result any, skipTopLevelUnmarshaler bool) mapstructure.
 		}
 
 		if _, ok = from.Interface().(map[string]any); !ok {
-			return from.Interface(), nil
+			unmarshaler, ok := toPtr.(PrimitiveUnmarshaler)
+			if !ok {
+				return from.Interface(), nil
+			}
+			if err := unmarshaler.UnmarshalPrimitive(from.Interface()); err != nil {
+				return nil, err
+			}
+			return unmarshaler, nil
 		}
 
 		// Use the current object if not nil (to preserve other configs in the object), otherwise zero initialize.
