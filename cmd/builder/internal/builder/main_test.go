@@ -41,7 +41,6 @@ var (
 	replaceModules = []string{
 		"",
 		"/component",
-		"/component/componentprofiles",
 		"/component/componentstatus",
 		"/client",
 		"/config/configauth",
@@ -77,9 +76,10 @@ var (
 		"/extension/extensioncapabilities",
 		"/extension/zpagesextension",
 		"/featuregate",
-		"/internal/globalgates",
-		"/internal/globalsignal",
+		"/internal/memorylimiter",
+		"/otelcol",
 		"/pipeline",
+		"/pipeline/pipelineprofiles",
 		"/processor",
 		"/processor/batchprocessor",
 		"/processor/memorylimiterprocessor",
@@ -88,7 +88,6 @@ var (
 		"/receiver/nopreceiver",
 		"/receiver/otlpreceiver",
 		"/receiver/receiverprofiles",
-		"/otelcol",
 		"/pdata",
 		"/pdata/testdata",
 		"/pdata/pprofile",
@@ -123,8 +122,7 @@ func TestGenerateInvalidOutputPath(t *testing.T) {
 	cfg := newInitializedConfig(t)
 	cfg.Distribution.OutputPath = ":/invalid"
 	err := Generate(cfg)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "failed to create output path")
+	require.ErrorContains(t, err, "failed to create output path")
 }
 
 func TestVersioning(t *testing.T) {

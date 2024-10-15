@@ -17,7 +17,7 @@ import (
 
 var nopType = component.MustNewType("nop")
 
-// NewNopSettings returns a new nop settings for Create*Exporter functions.
+// NewNopSettings returns a new nop settings for Create* functions.
 func NewNopSettings() exporter.Settings {
 	return exporter.Settings{
 		ID:                component.NewIDWithName(nopType, uuid.NewString()),
@@ -28,40 +28,40 @@ func NewNopSettings() exporter.Settings {
 
 // NewNopFactory returns an exporter.Factory that constructs nop exporters.
 func NewNopFactory() exporter.Factory {
-	return exporter.NewFactory(
+	return exporterprofiles.NewFactory(
 		nopType,
 		func() component.Config { return &nopConfig{} },
-		exporter.WithTraces(createTracesExporter, component.StabilityLevelStable),
-		exporter.WithMetrics(createMetricsExporter, component.StabilityLevelStable),
-		exporter.WithLogs(createLogsExporter, component.StabilityLevelStable),
-		exporterprofiles.WithProfiles(createProfilesExporter, component.StabilityLevelAlpha),
+		exporterprofiles.WithTraces(createTraces, component.StabilityLevelStable),
+		exporterprofiles.WithMetrics(createMetrics, component.StabilityLevelStable),
+		exporterprofiles.WithLogs(createLogs, component.StabilityLevelStable),
+		exporterprofiles.WithProfiles(createProfiles, component.StabilityLevelAlpha),
 	)
 }
 
-func createTracesExporter(context.Context, exporter.Settings, component.Config) (exporter.Traces, error) {
+func createTraces(context.Context, exporter.Settings, component.Config) (exporter.Traces, error) {
 	return nopInstance, nil
 }
 
-func createMetricsExporter(context.Context, exporter.Settings, component.Config) (exporter.Metrics, error) {
+func createMetrics(context.Context, exporter.Settings, component.Config) (exporter.Metrics, error) {
 	return nopInstance, nil
 }
 
-func createLogsExporter(context.Context, exporter.Settings, component.Config) (exporter.Logs, error) {
+func createLogs(context.Context, exporter.Settings, component.Config) (exporter.Logs, error) {
 	return nopInstance, nil
 }
 
-func createProfilesExporter(context.Context, exporter.Settings, component.Config) (exporterprofiles.Profiles, error) {
+func createProfiles(context.Context, exporter.Settings, component.Config) (exporterprofiles.Profiles, error) {
 	return nopInstance, nil
 }
 
 type nopConfig struct{}
 
-var nopInstance = &nopExporter{
+var nopInstance = &nop{
 	Consumer: consumertest.NewNop(),
 }
 
-// nopExporter stores consumed traces, metrics, logs and profiles for testing purposes.
-type nopExporter struct {
+// nop stores consumed traces, metrics, logs and profiles for testing purposes.
+type nop struct {
 	component.StartFunc
 	component.ShutdownFunc
 	consumertest.Consumer

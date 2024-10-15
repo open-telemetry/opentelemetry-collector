@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componentprofiles"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectorprofiles"
@@ -21,26 +20,27 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/collector/pipeline/pipelineprofiles"
 )
 
 func TestConnectorBuilder(t *testing.T) {
 	defaultCfg := struct{}{}
 	factories, err := connector.MakeFactoryMap([]connector.Factory{
 		connector.NewFactory(component.MustNewType("err"), nil),
-		connector.NewFactory(
+		connectorprofiles.NewFactory(
 			component.MustNewType("all"),
 			func() component.Config { return &defaultCfg },
-			connector.WithTracesToTraces(createConnectorTracesToTraces, component.StabilityLevelDevelopment),
-			connector.WithTracesToMetrics(createConnectorTracesToMetrics, component.StabilityLevelDevelopment),
-			connector.WithTracesToLogs(createConnectorTracesToLogs, component.StabilityLevelDevelopment),
+			connectorprofiles.WithTracesToTraces(createConnectorTracesToTraces, component.StabilityLevelDevelopment),
+			connectorprofiles.WithTracesToMetrics(createConnectorTracesToMetrics, component.StabilityLevelDevelopment),
+			connectorprofiles.WithTracesToLogs(createConnectorTracesToLogs, component.StabilityLevelDevelopment),
 			connectorprofiles.WithTracesToProfiles(createConnectorTracesToProfiles, component.StabilityLevelDevelopment),
-			connector.WithMetricsToTraces(createConnectorMetricsToTraces, component.StabilityLevelAlpha),
-			connector.WithMetricsToMetrics(createConnectorMetricsToMetrics, component.StabilityLevelAlpha),
-			connector.WithMetricsToLogs(createConnectorMetricsToLogs, component.StabilityLevelAlpha),
+			connectorprofiles.WithMetricsToTraces(createConnectorMetricsToTraces, component.StabilityLevelAlpha),
+			connectorprofiles.WithMetricsToMetrics(createConnectorMetricsToMetrics, component.StabilityLevelAlpha),
+			connectorprofiles.WithMetricsToLogs(createConnectorMetricsToLogs, component.StabilityLevelAlpha),
 			connectorprofiles.WithMetricsToProfiles(createConnectorMetricsToProfiles, component.StabilityLevelAlpha),
-			connector.WithLogsToTraces(createConnectorLogsToTraces, component.StabilityLevelDeprecated),
-			connector.WithLogsToMetrics(createConnectorLogsToMetrics, component.StabilityLevelDeprecated),
-			connector.WithLogsToLogs(createConnectorLogsToLogs, component.StabilityLevelDeprecated),
+			connectorprofiles.WithLogsToTraces(createConnectorLogsToTraces, component.StabilityLevelDeprecated),
+			connectorprofiles.WithLogsToMetrics(createConnectorLogsToMetrics, component.StabilityLevelDeprecated),
+			connectorprofiles.WithLogsToLogs(createConnectorLogsToLogs, component.StabilityLevelDeprecated),
 			connectorprofiles.WithLogsToProfiles(createConnectorLogsToProfiles, component.StabilityLevelDeprecated),
 			connectorprofiles.WithProfilesToTraces(createConnectorProfilesToTraces, component.StabilityLevelDevelopment),
 			connectorprofiles.WithProfilesToMetrics(createConnectorProfilesToMetrics, component.StabilityLevelDevelopment),
@@ -146,7 +146,7 @@ func TestConnectorBuilder(t *testing.T) {
 				assert.Equal(t, nopConnectorInstance, t2l)
 			}
 			t2p, err := b.CreateTracesToProfiles(context.Background(), createConnectorSettings(tt.id), tt.nextProfiles)
-			if expectedErr := tt.err(pipeline.SignalTraces, componentprofiles.SignalProfiles); expectedErr != "" {
+			if expectedErr := tt.err(pipeline.SignalTraces, pipelineprofiles.SignalProfiles); expectedErr != "" {
 				assert.EqualError(t, err, expectedErr)
 				assert.Nil(t, t2p)
 			} else {
@@ -181,7 +181,7 @@ func TestConnectorBuilder(t *testing.T) {
 				assert.Equal(t, nopConnectorInstance, m2l)
 			}
 			m2p, err := b.CreateMetricsToProfiles(context.Background(), createConnectorSettings(tt.id), tt.nextProfiles)
-			if expectedErr := tt.err(pipeline.SignalMetrics, componentprofiles.SignalProfiles); expectedErr != "" {
+			if expectedErr := tt.err(pipeline.SignalMetrics, pipelineprofiles.SignalProfiles); expectedErr != "" {
 				assert.EqualError(t, err, expectedErr)
 				assert.Nil(t, m2p)
 			} else {
@@ -216,7 +216,7 @@ func TestConnectorBuilder(t *testing.T) {
 				assert.Equal(t, nopConnectorInstance, l2l)
 			}
 			l2p, err := b.CreateLogsToProfiles(context.Background(), createConnectorSettings(tt.id), tt.nextProfiles)
-			if expectedErr := tt.err(pipeline.SignalLogs, componentprofiles.SignalProfiles); expectedErr != "" {
+			if expectedErr := tt.err(pipeline.SignalLogs, pipelineprofiles.SignalProfiles); expectedErr != "" {
 				assert.EqualError(t, err, expectedErr)
 				assert.Nil(t, l2p)
 			} else {
@@ -225,7 +225,7 @@ func TestConnectorBuilder(t *testing.T) {
 			}
 
 			p2t, err := b.CreateProfilesToTraces(context.Background(), createConnectorSettings(tt.id), tt.nextTraces)
-			if expectedErr := tt.err(componentprofiles.SignalProfiles, pipeline.SignalTraces); expectedErr != "" {
+			if expectedErr := tt.err(pipelineprofiles.SignalProfiles, pipeline.SignalTraces); expectedErr != "" {
 				assert.EqualError(t, err, expectedErr)
 				assert.Nil(t, p2t)
 			} else {
@@ -233,7 +233,7 @@ func TestConnectorBuilder(t *testing.T) {
 				assert.Equal(t, nopConnectorInstance, p2t)
 			}
 			p2m, err := b.CreateProfilesToMetrics(context.Background(), createConnectorSettings(tt.id), tt.nextMetrics)
-			if expectedErr := tt.err(componentprofiles.SignalProfiles, pipeline.SignalMetrics); expectedErr != "" {
+			if expectedErr := tt.err(pipelineprofiles.SignalProfiles, pipeline.SignalMetrics); expectedErr != "" {
 				assert.EqualError(t, err, expectedErr)
 				assert.Nil(t, p2m)
 			} else {
@@ -241,7 +241,7 @@ func TestConnectorBuilder(t *testing.T) {
 				assert.Equal(t, nopConnectorInstance, p2m)
 			}
 			p2l, err := b.CreateProfilesToLogs(context.Background(), createConnectorSettings(tt.id), tt.nextLogs)
-			if expectedErr := tt.err(componentprofiles.SignalProfiles, pipeline.SignalLogs); expectedErr != "" {
+			if expectedErr := tt.err(pipelineprofiles.SignalProfiles, pipeline.SignalLogs); expectedErr != "" {
 				assert.EqualError(t, err, expectedErr)
 				assert.Nil(t, p2l)
 			} else {
@@ -249,7 +249,7 @@ func TestConnectorBuilder(t *testing.T) {
 				assert.Equal(t, nopConnectorInstance, p2l)
 			}
 			p2p, err := b.CreateProfilesToProfiles(context.Background(), createConnectorSettings(tt.id), tt.nextProfiles)
-			if expectedErr := tt.err(componentprofiles.SignalProfiles, componentprofiles.SignalProfiles); expectedErr != "" {
+			if expectedErr := tt.err(pipelineprofiles.SignalProfiles, pipelineprofiles.SignalProfiles); expectedErr != "" {
 				assert.EqualError(t, err, expectedErr)
 				assert.Nil(t, p2p)
 			} else {
@@ -263,20 +263,20 @@ func TestConnectorBuilder(t *testing.T) {
 func TestConnectorBuilderMissingConfig(t *testing.T) {
 	defaultCfg := struct{}{}
 	factories, err := connector.MakeFactoryMap([]connector.Factory{
-		connector.NewFactory(
+		connectorprofiles.NewFactory(
 			component.MustNewType("all"),
 			func() component.Config { return &defaultCfg },
-			connector.WithTracesToTraces(createConnectorTracesToTraces, component.StabilityLevelDevelopment),
-			connector.WithTracesToMetrics(createConnectorTracesToMetrics, component.StabilityLevelDevelopment),
-			connector.WithTracesToLogs(createConnectorTracesToLogs, component.StabilityLevelDevelopment),
+			connectorprofiles.WithTracesToTraces(createConnectorTracesToTraces, component.StabilityLevelDevelopment),
+			connectorprofiles.WithTracesToMetrics(createConnectorTracesToMetrics, component.StabilityLevelDevelopment),
+			connectorprofiles.WithTracesToLogs(createConnectorTracesToLogs, component.StabilityLevelDevelopment),
 			connectorprofiles.WithTracesToProfiles(createConnectorTracesToProfiles, component.StabilityLevelDevelopment),
-			connector.WithMetricsToTraces(createConnectorMetricsToTraces, component.StabilityLevelAlpha),
-			connector.WithMetricsToMetrics(createConnectorMetricsToMetrics, component.StabilityLevelAlpha),
-			connector.WithMetricsToLogs(createConnectorMetricsToLogs, component.StabilityLevelAlpha),
+			connectorprofiles.WithMetricsToTraces(createConnectorMetricsToTraces, component.StabilityLevelAlpha),
+			connectorprofiles.WithMetricsToMetrics(createConnectorMetricsToMetrics, component.StabilityLevelAlpha),
+			connectorprofiles.WithMetricsToLogs(createConnectorMetricsToLogs, component.StabilityLevelAlpha),
 			connectorprofiles.WithMetricsToProfiles(createConnectorMetricsToProfiles, component.StabilityLevelAlpha),
-			connector.WithLogsToTraces(createConnectorLogsToTraces, component.StabilityLevelDeprecated),
-			connector.WithLogsToMetrics(createConnectorLogsToMetrics, component.StabilityLevelDeprecated),
-			connector.WithLogsToLogs(createConnectorLogsToLogs, component.StabilityLevelDeprecated),
+			connectorprofiles.WithLogsToTraces(createConnectorLogsToTraces, component.StabilityLevelDeprecated),
+			connectorprofiles.WithLogsToMetrics(createConnectorLogsToMetrics, component.StabilityLevelDeprecated),
+			connectorprofiles.WithLogsToLogs(createConnectorLogsToLogs, component.StabilityLevelDeprecated),
 			connectorprofiles.WithLogsToProfiles(createConnectorLogsToProfiles, component.StabilityLevelDeprecated),
 			connectorprofiles.WithProfilesToTraces(createConnectorProfilesToTraces, component.StabilityLevelDevelopment),
 			connectorprofiles.WithProfilesToMetrics(createConnectorProfilesToMetrics, component.StabilityLevelDevelopment),
@@ -397,7 +397,7 @@ func TestNewNopConnectorConfigsAndFactories(t *testing.T) {
 	require.NoError(t, err)
 	assert.IsType(t, tracesToLogs, bTracesToLogs)
 
-	tracesToProfiles, err := factory.CreateTracesToProfiles(context.Background(), set, cfg, consumertest.NewNop())
+	tracesToProfiles, err := factory.(connectorprofiles.Factory).CreateTracesToProfiles(context.Background(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	bTracesToProfiles, err := builder.CreateTracesToProfiles(context.Background(), set, consumertest.NewNop())
 	require.NoError(t, err)
@@ -421,7 +421,7 @@ func TestNewNopConnectorConfigsAndFactories(t *testing.T) {
 	require.NoError(t, err)
 	assert.IsType(t, metricsToLogs, bMetricsToLogs)
 
-	metricsToProfiles, err := factory.CreateMetricsToProfiles(context.Background(), set, cfg, consumertest.NewNop())
+	metricsToProfiles, err := factory.(connectorprofiles.Factory).CreateMetricsToProfiles(context.Background(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	bMetricsToProfiles, err := builder.CreateMetricsToProfiles(context.Background(), set, consumertest.NewNop())
 	require.NoError(t, err)
@@ -445,31 +445,31 @@ func TestNewNopConnectorConfigsAndFactories(t *testing.T) {
 	require.NoError(t, err)
 	assert.IsType(t, logsToLogs, bLogsToLogs)
 
-	logsToProfiles, err := factory.CreateLogsToProfiles(context.Background(), set, cfg, consumertest.NewNop())
+	logsToProfiles, err := factory.(connectorprofiles.Factory).CreateLogsToProfiles(context.Background(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	bLogsToProfiles, err := builder.CreateLogsToProfiles(context.Background(), set, consumertest.NewNop())
 	require.NoError(t, err)
 	assert.IsType(t, logsToProfiles, bLogsToProfiles)
 
-	profilesToTraces, err := factory.CreateProfilesToTraces(context.Background(), set, cfg, consumertest.NewNop())
+	profilesToTraces, err := factory.(connectorprofiles.Factory).CreateProfilesToTraces(context.Background(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	bProfilesToTraces, err := builder.CreateProfilesToTraces(context.Background(), set, consumertest.NewNop())
 	require.NoError(t, err)
 	assert.IsType(t, profilesToTraces, bProfilesToTraces)
 
-	profilesToMetrics, err := factory.CreateProfilesToMetrics(context.Background(), set, cfg, consumertest.NewNop())
+	profilesToMetrics, err := factory.(connectorprofiles.Factory).CreateProfilesToMetrics(context.Background(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	bProfilesToMetrics, err := builder.CreateProfilesToMetrics(context.Background(), set, consumertest.NewNop())
 	require.NoError(t, err)
 	assert.IsType(t, profilesToMetrics, bProfilesToMetrics)
 
-	profilesToLogs, err := factory.CreateProfilesToLogs(context.Background(), set, cfg, consumertest.NewNop())
+	profilesToLogs, err := factory.(connectorprofiles.Factory).CreateProfilesToLogs(context.Background(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	bProfilesToLogs, err := builder.CreateProfilesToLogs(context.Background(), set, consumertest.NewNop())
 	require.NoError(t, err)
 	assert.IsType(t, profilesToLogs, bProfilesToLogs)
 
-	profilesToProfiles, err := factory.CreateProfilesToProfiles(context.Background(), set, cfg, consumertest.NewNop())
+	profilesToProfiles, err := factory.(connectorprofiles.Factory).CreateProfilesToProfiles(context.Background(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	bProfilesToProfiles, err := builder.CreateProfilesToProfiles(context.Background(), set, consumertest.NewNop())
 	require.NoError(t, err)

@@ -100,7 +100,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-receiver-reference",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				pipe := cfg.Service.PipelinesWithPipelineID[pipeline.MustNewID("traces")]
+				pipe := cfg.Service.Pipelines[pipeline.NewID(pipeline.SignalTraces)]
 				pipe.Receivers = append(pipe.Receivers, component.MustNewIDWithName("nop", "2"))
 				return cfg
 			},
@@ -110,7 +110,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-processor-reference",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				pipe := cfg.Service.PipelinesWithPipelineID[pipeline.MustNewID("traces")]
+				pipe := cfg.Service.Pipelines[pipeline.NewID(pipeline.SignalTraces)]
 				pipe.Processors = append(pipe.Processors, component.MustNewIDWithName("nop", "2"))
 				return cfg
 			},
@@ -120,7 +120,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-exporter-reference",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				pipe := cfg.Service.PipelinesWithPipelineID[pipeline.MustNewID("traces")]
+				pipe := cfg.Service.Pipelines[pipeline.NewID(pipeline.SignalTraces)]
 				pipe.Exporters = append(pipe.Exporters, component.MustNewIDWithName("nop", "2"))
 				return cfg
 			},
@@ -187,7 +187,7 @@ func TestConfigValidate(t *testing.T) {
 				cfg := generateConfig()
 				cfg.Receivers[component.MustNewID("nop2")] = &errConfig{}
 				cfg.Connectors[component.MustNewID("nop2")] = &errConfig{}
-				pipe := cfg.Service.PipelinesWithPipelineID[pipeline.MustNewID("traces")]
+				pipe := cfg.Service.Pipelines[pipeline.NewID(pipeline.SignalTraces)]
 				pipe.Receivers = append(pipe.Receivers, component.MustNewIDWithName("nop", "2"))
 				pipe.Exporters = append(pipe.Exporters, component.MustNewIDWithName("nop", "2"))
 				return cfg
@@ -200,7 +200,7 @@ func TestConfigValidate(t *testing.T) {
 				cfg := generateConfig()
 				cfg.Exporters[component.MustNewID("nop2")] = &errConfig{}
 				cfg.Connectors[component.MustNewID("nop2")] = &errConfig{}
-				pipe := cfg.Service.PipelinesWithPipelineID[pipeline.MustNewID("traces")]
+				pipe := cfg.Service.Pipelines[pipeline.NewID(pipeline.SignalTraces)]
 				pipe.Receivers = append(pipe.Receivers, component.MustNewIDWithName("nop", "2"))
 				pipe.Exporters = append(pipe.Exporters, component.MustNewIDWithName("nop", "2"))
 				return cfg
@@ -211,7 +211,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-connector-reference-as-receiver",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				pipe := cfg.Service.PipelinesWithPipelineID[pipeline.MustNewID("traces")]
+				pipe := cfg.Service.Pipelines[pipeline.NewID(pipeline.SignalTraces)]
 				pipe.Receivers = append(pipe.Receivers, component.MustNewIDWithName("nop", "conn2"))
 				return cfg
 			},
@@ -221,7 +221,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-connector-reference-as-receiver",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				pipe := cfg.Service.PipelinesWithPipelineID[pipeline.MustNewID("traces")]
+				pipe := cfg.Service.Pipelines[pipeline.NewID(pipeline.SignalTraces)]
 				pipe.Exporters = append(pipe.Exporters, component.MustNewIDWithName("nop", "conn2"))
 				return cfg
 			},
@@ -231,7 +231,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-service-config",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				cfg.Service.PipelinesWithPipelineID = nil
+				cfg.Service.Pipelines = nil
 				return cfg
 			},
 			expected: fmt.Errorf(`service::pipelines config validation failed: %w`, errors.New(`service must have at least one pipeline`)),
@@ -290,8 +290,8 @@ func generateConfig() *Config {
 				},
 			},
 			Extensions: []component.ID{component.MustNewID("nop")},
-			PipelinesWithPipelineID: pipelines.ConfigWithPipelineID{
-				pipeline.MustNewID("traces"): {
+			Pipelines: pipelines.Config{
+				pipeline.NewID(pipeline.SignalTraces): {
 					Receivers:  []component.ID{component.MustNewID("nop")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewID("nop")},

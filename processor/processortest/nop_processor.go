@@ -19,7 +19,7 @@ import (
 
 var nopType = component.MustNewType("nop")
 
-// NewNopSettings returns a new nop settings for Create*Processor functions.
+// NewNopSettings returns a new nop settings for Create* functions.
 func NewNopSettings() processor.Settings {
 	return processor.Settings{
 		ID:                component.NewIDWithName(nopType, uuid.NewString()),
@@ -33,37 +33,37 @@ func NewNopFactory() processor.Factory {
 	return processorprofiles.NewFactory(
 		nopType,
 		func() component.Config { return &nopConfig{} },
-		processorprofiles.WithTraces(createTracesProcessor, component.StabilityLevelStable),
-		processorprofiles.WithMetrics(createMetricsProcessor, component.StabilityLevelStable),
-		processorprofiles.WithLogs(createLogsProcessor, component.StabilityLevelStable),
-		processorprofiles.WithProfiles(createProfilesProcessor, component.StabilityLevelAlpha),
+		processorprofiles.WithTraces(createTraces, component.StabilityLevelStable),
+		processorprofiles.WithMetrics(createMetrics, component.StabilityLevelStable),
+		processorprofiles.WithLogs(createLogs, component.StabilityLevelStable),
+		processorprofiles.WithProfiles(createProfiles, component.StabilityLevelAlpha),
 	)
 }
 
-func createTracesProcessor(context.Context, processor.Settings, component.Config, consumer.Traces) (processor.Traces, error) {
+func createTraces(context.Context, processor.Settings, component.Config, consumer.Traces) (processor.Traces, error) {
 	return nopInstance, nil
 }
 
-func createMetricsProcessor(context.Context, processor.Settings, component.Config, consumer.Metrics) (processor.Metrics, error) {
+func createMetrics(context.Context, processor.Settings, component.Config, consumer.Metrics) (processor.Metrics, error) {
 	return nopInstance, nil
 }
 
-func createLogsProcessor(context.Context, processor.Settings, component.Config, consumer.Logs) (processor.Logs, error) {
+func createLogs(context.Context, processor.Settings, component.Config, consumer.Logs) (processor.Logs, error) {
 	return nopInstance, nil
 }
 
-func createProfilesProcessor(context.Context, processor.Settings, component.Config, consumerprofiles.Profiles) (processorprofiles.Profiles, error) {
+func createProfiles(context.Context, processor.Settings, component.Config, consumerprofiles.Profiles) (processorprofiles.Profiles, error) {
 	return nopInstance, nil
 }
 
 type nopConfig struct{}
 
-var nopInstance = &nopProcessor{
+var nopInstance = &nop{
 	Consumer: consumertest.NewNop(),
 }
 
-// nopProcessor acts as a processor for testing purposes.
-type nopProcessor struct {
+// nop acts as a processor for testing purposes.
+type nop struct {
 	component.StartFunc
 	component.ShutdownFunc
 	consumertest.Consumer

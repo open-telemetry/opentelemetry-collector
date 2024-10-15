@@ -44,7 +44,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "duplicate-processor-reference",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				pipe := cfg.PipelinesWithPipelineID[pipeline.MustNewID("traces")]
+				pipe := cfg.Pipelines[pipeline.NewID(pipeline.SignalTraces)]
 				pipe.Processors = append(pipe.Processors, pipe.Processors...)
 				return cfg
 			},
@@ -54,7 +54,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-service-pipeline-type",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				cfg.PipelinesWithPipelineID[pipeline.MustNewID("wrongtype")] = &pipelines.PipelineConfig{
+				cfg.Pipelines[pipeline.MustNewID("wrongtype")] = &pipelines.PipelineConfig{
 					Receivers:  []component.ID{component.MustNewID("nop")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewID("nop")},
@@ -107,8 +107,8 @@ func generateConfig() *Config {
 			},
 		},
 		Extensions: extensions.Config{component.MustNewID("nop")},
-		PipelinesWithPipelineID: pipelines.ConfigWithPipelineID{
-			pipeline.MustNewID("traces"): {
+		Pipelines: pipelines.Config{
+			pipeline.NewID(pipeline.SignalTraces): {
 				Receivers:  []component.ID{component.MustNewID("nop")},
 				Processors: []component.ID{component.MustNewID("nop")},
 				Exporters:  []component.ID{component.MustNewID("nop")},

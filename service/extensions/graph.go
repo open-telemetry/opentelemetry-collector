@@ -73,5 +73,5 @@ func cycleErr(err error, cycles [][]graph.Node) error {
 		names = append(names, node.extID.String())
 	}
 	cycleStr := "[" + strings.Join(names, " -> ") + "]"
-	return fmt.Errorf("unable to order extenions by dependencies, cycle found %s: %w", cycleStr, err)
+	return fmt.Errorf("unable to order extensions by dependencies, cycle found %s: %w", cycleStr, err)
 }

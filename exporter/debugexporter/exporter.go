@@ -1,10 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// NOTE: If you are making changes to this file, consider whether you want to make similar changes
-// to the Logging exporter in /exporter/internal/common/logging_exporter.go, which has similar logic.
-// This is especially important for security issues.
-
 package debugexporter // import "go.opentelemetry.io/collector/exporter/debugexporter"
 
 import (
@@ -14,7 +10,7 @@ import (
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/exporter/debugexporter/internal/normal"
-	"go.opentelemetry.io/collector/exporter/internal/otlptext"
+	"go.opentelemetry.io/collector/exporter/debugexporter/internal/otlptext"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -51,7 +47,7 @@ func newDebugExporter(logger *zap.Logger, verbosity configtelemetry.Level) *debu
 }
 
 func (s *debugExporter) pushTraces(_ context.Context, td ptrace.Traces) error {
-	s.logger.Info("TracesExporter",
+	s.logger.Info("Traces",
 		zap.Int("resource spans", td.ResourceSpans().Len()),
 		zap.Int("spans", td.SpanCount()))
 	if s.verbosity == configtelemetry.LevelBasic {
@@ -67,7 +63,7 @@ func (s *debugExporter) pushTraces(_ context.Context, td ptrace.Traces) error {
 }
 
 func (s *debugExporter) pushMetrics(_ context.Context, md pmetric.Metrics) error {
-	s.logger.Info("MetricsExporter",
+	s.logger.Info("Metrics",
 		zap.Int("resource metrics", md.ResourceMetrics().Len()),
 		zap.Int("metrics", md.MetricCount()),
 		zap.Int("data points", md.DataPointCount()))
@@ -84,7 +80,7 @@ func (s *debugExporter) pushMetrics(_ context.Context, md pmetric.Metrics) error
 }
 
 func (s *debugExporter) pushLogs(_ context.Context, ld plog.Logs) error {
-	s.logger.Info("LogsExporter",
+	s.logger.Info("Logs",
 		zap.Int("resource logs", ld.ResourceLogs().Len()),
 		zap.Int("log records", ld.LogRecordCount()))
 

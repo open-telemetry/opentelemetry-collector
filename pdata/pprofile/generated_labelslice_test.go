@@ -8,6 +8,7 @@ package pprofile
 
 import (
 	"testing"
+	"unsafe"
 
 	"github.com/stretchr/testify/assert"
 
@@ -19,7 +20,7 @@ func TestLabelSlice(t *testing.T) {
 	es := NewLabelSlice()
 	assert.Equal(t, 0, es.Len())
 	state := internal.StateMutable
-	es = newLabelSlice(&[]otlpprofiles.Label{}, &state)
+	es = newLabelSlice(&[]*otlpprofiles.Label{}, &state)
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewLabel()
@@ -35,7 +36,7 @@ func TestLabelSlice(t *testing.T) {
 
 func TestLabelSliceReadOnly(t *testing.T) {
 	sharedState := internal.StateReadOnly
-	es := newLabelSlice(&[]otlpprofiles.Label{}, &sharedState)
+	es := newLabelSlice(&[]*otlpprofiles.Label{}, &sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -122,6 +123,22 @@ func TestLabelSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestLabelSlice_Sort(t *testing.T) {
+	es := generateTestLabelSlice()
+	es.Sort(func(a, b Label) bool {
+		return uintptr(unsafe.Pointer(a.orig)) < uintptr(unsafe.Pointer(b.orig))
+	})
+	for i := 1; i < es.Len(); i++ {
+		assert.Less(t, uintptr(unsafe.Pointer(es.At(i-1).orig)), uintptr(unsafe.Pointer(es.At(i).orig)))
+	}
+	es.Sort(func(a, b Label) bool {
+		return uintptr(unsafe.Pointer(a.orig)) > uintptr(unsafe.Pointer(b.orig))
+	})
+	for i := 1; i < es.Len(); i++ {
+		assert.Greater(t, uintptr(unsafe.Pointer(es.At(i-1).orig)), uintptr(unsafe.Pointer(es.At(i).orig)))
+	}
+}
+
 func generateTestLabelSlice() LabelSlice {
 	es := NewLabelSlice()
 	fillTestLabelSlice(es)
@@ -129,9 +146,9 @@ func generateTestLabelSlice() LabelSlice {
 }
 
 func fillTestLabelSlice(es LabelSlice) {
-	*es.orig = make([]otlpprofiles.Label, 7)
+	*es.orig = make([]*otlpprofiles.Label, 7)
 	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = otlpprofiles.Label{}
-		fillTestLabel(newLabel(&(*es.orig)[i], es.state))
+		(*es.orig)[i] = &otlpprofiles.Label{}
+		fillTestLabel(newLabel((*es.orig)[i], es.state))
 	}
 }

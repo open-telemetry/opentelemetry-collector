@@ -14,8 +14,8 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/internal/iruntime"
 	"go.opentelemetry.io/collector/internal/memorylimiter"
+	"go.opentelemetry.io/collector/internal/memorylimiter/iruntime"
 )
 
 func TestMemoryPressureResponse(t *testing.T) {

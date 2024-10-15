@@ -42,8 +42,8 @@ import (
 
 type mockReceiver struct {
 	srv          *grpc.Server
-	requestCount *atomic.Int32
-	totalItems   *atomic.Int32
+	requestCount *atomic.Int64
+	totalItems   *atomic.Int64
 	mux          sync.Mutex
 	metadata     metadata.MD
 	exportError  error
@@ -69,9 +69,9 @@ type mockTracesReceiver struct {
 }
 
 func (r *mockTracesReceiver) Export(ctx context.Context, req ptraceotlp.ExportRequest) (ptraceotlp.ExportResponse, error) {
-	r.requestCount.Add(int32(1))
+	r.requestCount.Add(1)
 	td := req.Traces()
-	r.totalItems.Add(int32(td.SpanCount()))
+	r.totalItems.Add(int64(td.SpanCount()))
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	r.lastRequest = td
@@ -110,8 +110,8 @@ func otlpTracesReceiverOnGRPCServer(ln net.Listener, useTLS bool) (*mockTracesRe
 	rcv := &mockTracesReceiver{
 		mockReceiver: mockReceiver{
 			srv:          grpc.NewServer(sopts...),
-			requestCount: &atomic.Int32{},
-			totalItems:   &atomic.Int32{},
+			requestCount: new(atomic.Int64),
+			totalItems:   new(atomic.Int64),
 		},
 		exportResponse: ptraceotlp.NewExportResponse,
 	}
@@ -133,9 +133,9 @@ type mockLogsReceiver struct {
 }
 
 func (r *mockLogsReceiver) Export(ctx context.Context, req plogotlp.ExportRequest) (plogotlp.ExportResponse, error) {
-	r.requestCount.Add(int32(1))
+	r.requestCount.Add(1)
 	ld := req.Logs()
-	r.totalItems.Add(int32(ld.LogRecordCount()))
+	r.totalItems.Add(int64(ld.LogRecordCount()))
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	r.lastRequest = ld
@@ -159,8 +159,8 @@ func otlpLogsReceiverOnGRPCServer(ln net.Listener) *mockLogsReceiver {
 	rcv := &mockLogsReceiver{
 		mockReceiver: mockReceiver{
 			srv:          grpc.NewServer(),
-			requestCount: &atomic.Int32{},
-			totalItems:   &atomic.Int32{},
+			requestCount: new(atomic.Int64),
+			totalItems:   new(atomic.Int64),
 		},
 		exportResponse: plogotlp.NewExportResponse,
 	}
@@ -183,8 +183,8 @@ type mockMetricsReceiver struct {
 
 func (r *mockMetricsReceiver) Export(ctx context.Context, req pmetricotlp.ExportRequest) (pmetricotlp.ExportResponse, error) {
 	md := req.Metrics()
-	r.requestCount.Add(int32(1))
-	r.totalItems.Add(int32(md.DataPointCount()))
+	r.requestCount.Add(1)
+	r.totalItems.Add(int64(md.DataPointCount()))
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	r.lastRequest = md
@@ -208,8 +208,8 @@ func otlpMetricsReceiverOnGRPCServer(ln net.Listener) *mockMetricsReceiver {
 	rcv := &mockMetricsReceiver{
 		mockReceiver: mockReceiver{
 			srv:          grpc.NewServer(),
-			requestCount: &atomic.Int32{},
-			totalItems:   &atomic.Int32{},
+			requestCount: new(atomic.Int64),
+			totalItems:   new(atomic.Int64),
 		},
 		exportResponse: pmetricotlp.NewExportResponse,
 	}
@@ -254,7 +254,7 @@ func TestSendTraces(t *testing.T) {
 	logger, observed := observer.New(zap.DebugLevel)
 	set.TelemetrySettings.Logger = zap.New(logger)
 
-	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
+	exp, err := factory.CreateTraces(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 
@@ -366,7 +366,7 @@ func TestSendTracesWhenEndpointHasHttpScheme(t *testing.T) {
 				cfg.ClientConfig.TLSSetting.InsecureSkipVerify = true
 			}
 			set := exportertest.NewNopSettings()
-			exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
+			exp, err := factory.CreateTraces(context.Background(), set, cfg)
 			require.NoError(t, err)
 			require.NotNil(t, exp)
 
@@ -426,7 +426,7 @@ func TestSendMetrics(t *testing.T) {
 	logger, observed := observer.New(zap.DebugLevel)
 	set.TelemetrySettings.Logger = zap.New(logger)
 
-	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
+	exp, err := factory.CreateMetrics(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {
@@ -524,7 +524,7 @@ func TestSendTraceDataServerDownAndUp(t *testing.T) {
 		WaitForReady: true,
 	}
 	set := exportertest.NewNopSettings()
-	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
+	exp, err := factory.CreateTraces(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {
@@ -581,7 +581,7 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 		},
 	}
 	set := exportertest.NewNopSettings()
-	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
+	exp, err := factory.CreateTraces(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {
@@ -632,7 +632,7 @@ func TestSendTracesOnResourceExhaustion(t *testing.T) {
 		},
 	}
 	set := exportertest.NewNopSettings()
-	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
+	exp, err := factory.CreateTraces(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 
@@ -720,7 +720,7 @@ func TestSendLogData(t *testing.T) {
 	logger, observed := observer.New(zap.DebugLevel)
 	set.TelemetrySettings.Logger = zap.New(logger)
 
-	exp, err := factory.CreateLogsExporter(context.Background(), set, cfg)
+	exp, err := factory.CreateLogs(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {

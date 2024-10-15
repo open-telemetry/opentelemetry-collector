@@ -17,7 +17,7 @@ import (
 func TestConfigValidate(t *testing.T) {
 	var testCases = []struct {
 		name     string // test case name (also file name containing config yaml)
-		cfgFn    func() ConfigWithPipelineID
+		cfgFn    func() Config
 		expected error
 	}{
 		{
@@ -27,9 +27,9 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			name: "duplicate-processor-reference",
-			cfgFn: func() ConfigWithPipelineID {
+			cfgFn: func() Config {
 				cfg := generateConfig()
-				pipe := cfg[pipeline.MustNewID("traces")]
+				pipe := cfg[pipeline.NewID(pipeline.SignalTraces)]
 				pipe.Processors = append(pipe.Processors, pipe.Processors...)
 				return cfg
 			},
@@ -37,32 +37,32 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			name: "missing-pipeline-receivers",
-			cfgFn: func() ConfigWithPipelineID {
+			cfgFn: func() Config {
 				cfg := generateConfig()
-				cfg[pipeline.MustNewID("traces")].Receivers = nil
+				cfg[pipeline.NewID(pipeline.SignalTraces)].Receivers = nil
 				return cfg
 			},
 			expected: fmt.Errorf(`pipeline "traces": %w`, errMissingServicePipelineReceivers),
 		},
 		{
 			name: "missing-pipeline-exporters",
-			cfgFn: func() ConfigWithPipelineID {
+			cfgFn: func() Config {
 				cfg := generateConfig()
-				cfg[pipeline.MustNewID("traces")].Exporters = nil
+				cfg[pipeline.NewID(pipeline.SignalTraces)].Exporters = nil
 				return cfg
 			},
 			expected: fmt.Errorf(`pipeline "traces": %w`, errMissingServicePipelineExporters),
 		},
 		{
 			name: "missing-pipelines",
-			cfgFn: func() ConfigWithPipelineID {
+			cfgFn: func() Config {
 				return nil
 			},
 			expected: errMissingServicePipelines,
 		},
 		{
 			name: "invalid-service-pipeline-type",
-			cfgFn: func() ConfigWithPipelineID {
+			cfgFn: func() Config {
 				cfg := generateConfig()
 				cfg[pipeline.MustNewID("wrongtype")] = &PipelineConfig{
 					Receivers:  []component.ID{component.MustNewID("nop")},
@@ -83,9 +83,9 @@ func TestConfigValidate(t *testing.T) {
 	}
 }
 
-func generateConfig() ConfigWithPipelineID {
+func generateConfig() Config {
 	return map[pipeline.ID]*PipelineConfig{
-		pipeline.MustNewID("traces"): {
+		pipeline.NewID(pipeline.SignalTraces): {
 			Receivers:  []component.ID{component.MustNewID("nop")},
 			Processors: []component.ID{component.MustNewID("nop")},
 			Exporters:  []component.ID{component.MustNewID("nop")},

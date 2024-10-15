@@ -6,7 +6,7 @@ package pipeline // import "go.opentelemetry.io/collector/pipeline"
 import (
 	"errors"
 
-	"go.opentelemetry.io/collector/internal/globalsignal"
+	"go.opentelemetry.io/collector/pipeline/internal/globalsignal"
 )
 
 // Signal represents the signals supported by the collector. We currently support

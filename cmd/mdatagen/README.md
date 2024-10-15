@@ -26,7 +26,7 @@ An example of how this generated documentation looks can be found in [documentat
 ## Using the Metadata Generator
 
 In order for a component to benefit from the metadata generator (`mdatagen`) these requirements need to be met:
-1. A `metadata.yaml` file containing the metadata needs to be included in the component
+1. A yaml file containing the metadata that needs to be included in the component
 2. The component should declare a `go:generate mdatagen` directive which tells `mdatagen` what to generate
 
 As an example, here is a minimal `metadata.yaml` for the [OTLP receiver](https://github.com/open-telemetry/opentelemetry-collector/tree/main/receiver/otlpreceiver):
@@ -54,6 +54,31 @@ Below are some more examples that can be used for reference:
 * The host metrics receiver has internal subcomponents, each with their own `metadata.yaml` and `doc.go`. See [cpuscraper](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver/internal/scraper/cpuscraper) for example.
 
 You can run `cd cmd/mdatagen && $(GOCMD) install .` to install the `mdatagen` tool in `GOBIN` and then run `mdatagen metadata.yaml` to generate documentation for a specific component or you can run `make generate` to generate documentation for all components.
+
+### Generate multiple metadata packages
+
+By default, `mdatagen` will generate a package called `metadata` in the `internal` directory. If you want to generate a package with a different name, you can use the `generated_package_name` configuration field to provide an alternate name.
+
+```yaml
+type: otlp
+generated_package_name: customname
+status:
+  class: receiver
+  stability:
+    beta: [logs]
+    stable: [metrics, traces]
+```
+
+The most common scenario for this would be making major changes to a receiver's metadata without breaking what exists. In this scenario, `mdatagen` could produce separate packages for different metadata specs in the same receiver:
+
+```go
+//go:generate mdatagen metadata.yaml
+//go:generate mdatagen custom.yaml
+
+package main
+```
+
+With two different packages generated, the behaviour for which metadata is used can be easily controlled via featuregate or a similar mechanism.
 
 ## Contributing to the Metadata Generator
 

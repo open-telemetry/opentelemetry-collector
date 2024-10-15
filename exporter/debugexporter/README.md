@@ -24,7 +24,7 @@ See also the [Troubleshooting][troubleshooting_docs] document for examples on us
 
 The following settings are optional:
 
-- `verbosity` (default = `basic`): the verbosity of the logging export
+- `verbosity` (default = `basic`): the verbosity of the debug exporter
   (detailed|normal|basic). When set to `detailed`, pipeline data is verbosely
   logged.
 - `sampling_initial` (default = `2`): number of messages initially logged each
