@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -24,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/internal"
 	"go.opentelemetry.io/collector/exporter/internal/queue"
 	"go.opentelemetry.io/collector/pipeline"
-	"go.opentelemetry.io/otel/attribute"
 )
 
 func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
