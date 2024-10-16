@@ -13,6 +13,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 	"testing/iotest"
@@ -112,7 +113,15 @@ func TestHTTPClientCompression(t *testing.T) {
 
 			req, err := http.NewRequest(http.MethodGet, srv.URL, reqBody)
 			require.NoError(t, err, "failed to create request to test handler")
-			compression := configcompression.TypeWithLevel{Type: tt.encoding, Level: gzip.BestSpeed}
+			parts := strings.Split(string(tt.encoding), "/")
+			compressionLevel := configcompression.Level(gzip.BestSpeed)
+			compressionType := configcompression.Type(parts[0])
+			if len(parts) == 2 {
+				level, err := strconv.Atoi(parts[1])
+				require.NoError(t, err)
+				compressionLevel = configcompression.Level(level)
+			}
+			compression := configcompression.TypeWithLevel{Type: compressionType, Level: compressionLevel}
 			clientSettings := ClientConfig{
 				Endpoint:    srv.URL,
 				Compression: compression,
