@@ -3,5 +3,5 @@
 
 //go:generate mdatagen metadata.yaml
 
-// Package otlpexporter exports data by using the OTLP format to a gPRC endpoint.
+// Package otlpexporter exports data by using the OTLP format to a gRPC endpoint.
 package otlpexporter // import "go.opentelemetry.io/collector/exporter/otlpexporter"
