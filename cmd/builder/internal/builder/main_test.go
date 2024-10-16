@@ -81,6 +81,7 @@ var (
 		"/pipeline",
 		"/pipeline/pipelineprofiles",
 		"/processor",
+		"/processor/processortest",
 		"/processor/batchprocessor",
 		"/processor/memorylimiterprocessor",
 		"/processor/processorprofiles",

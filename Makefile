@@ -311,6 +311,7 @@ check-contrib:
 		-replace go.opentelemetry.io/collector/pipeline=$(CURDIR)/pipeline  \
 		-replace go.opentelemetry.io/collector/pipeline/pipelineprofiles=$(CURDIR)/pipeline/pipelineprofiles  \
 		-replace go.opentelemetry.io/collector/processor=$(CURDIR)/processor  \
+		-replace go.opentelemetry.io/collector/processor/processortest=$(CURDIR)/processor/processortest  \
 		-replace go.opentelemetry.io/collector/processor/batchprocessor=$(CURDIR)/processor/batchprocessor  \
 		-replace go.opentelemetry.io/collector/processor/memorylimiterprocessor=$(CURDIR)/processor/memorylimiterprocessor  \
 		-replace go.opentelemetry.io/collector/processor/processorprofiles=$(CURDIR)/processor/processorprofiles  \
@@ -379,6 +380,7 @@ restore-contrib:
 		-dropreplace go.opentelemetry.io/collector/pipeline  \
 		-dropreplace go.opentelemetry.io/collector/pipeline/pipelineprofiles \
 		-dropreplace go.opentelemetry.io/collector/processor  \
+		-dropreplace go.opentelemetry.io/collector/processortest  \
 		-dropreplace go.opentelemetry.io/collector/processor/batchprocessor  \
 		-dropreplace go.opentelemetry.io/collector/processor/memorylimiterprocessor  \
 		-dropreplace go.opentelemetry.io/collector/receiver  \
