@@ -43,6 +43,7 @@ func TestHTTPClientCompression(t *testing.T) {
 		DeflateLevel configcompression.Type = "deflate/1"
 		ZstdLevel    configcompression.Type = "zstd/11"
 	)
+	var level int
 
 	tests := []struct {
 		name        string
@@ -117,7 +118,7 @@ func TestHTTPClientCompression(t *testing.T) {
 			compressionLevel := configcompression.Level(gzip.BestSpeed)
 			compressionType := configcompression.Type(parts[0])
 			if len(parts) == 2 {
-				level, err := strconv.Atoi(parts[1])
+				level, err = strconv.Atoi(parts[1])
 				require.NoError(t, err)
 				compressionLevel = configcompression.Level(level)
 			}
