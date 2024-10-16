@@ -8,7 +8,6 @@ import (
 )
 
 var _ confmap.Unmarshaler = (*Optional[any])(nil)
-var _ confmap.PrimitiveUnmarshaler = (*Optional[any])(nil)
 
 type Optional[T any] struct {
 	value    T

@@ -431,7 +431,7 @@ func unmarshalerEmbeddedStructsHookFunc() mapstructure.DecodeHookFuncValue {
 	}
 }
 
-type PrimitiveUnmarshaler interface {
+type primitiveUnmarshaler interface {
 	UnmarshalPrimitive(val any) error
 }
 
@@ -458,7 +458,7 @@ func unmarshalerHookFunc(result any, skipTopLevelUnmarshaler bool) mapstructure.
 		}
 
 		if _, ok = from.Interface().(map[string]any); !ok {
-			unmarshaler, ok := toPtr.(PrimitiveUnmarshaler)
+			unmarshaler, ok := toPtr.(primitiveUnmarshaler)
 			if !ok {
 				return from.Interface(), nil
 			}
