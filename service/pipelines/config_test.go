@@ -29,7 +29,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "duplicate-processor-reference",
 			cfgFn: func() Config {
 				cfg := generateConfig()
-				pipe := cfg[pipeline.MustNewID("traces")]
+				pipe := cfg[pipeline.NewID(pipeline.SignalTraces)]
 				pipe.Processors = append(pipe.Processors, pipe.Processors...)
 				return cfg
 			},
@@ -39,7 +39,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "missing-pipeline-receivers",
 			cfgFn: func() Config {
 				cfg := generateConfig()
-				cfg[pipeline.MustNewID("traces")].Receivers = nil
+				cfg[pipeline.NewID(pipeline.SignalTraces)].Receivers = nil
 				return cfg
 			},
 			expected: fmt.Errorf(`pipeline "traces": %w`, errMissingServicePipelineReceivers),
@@ -48,7 +48,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "missing-pipeline-exporters",
 			cfgFn: func() Config {
 				cfg := generateConfig()
-				cfg[pipeline.MustNewID("traces")].Exporters = nil
+				cfg[pipeline.NewID(pipeline.SignalTraces)].Exporters = nil
 				return cfg
 			},
 			expected: fmt.Errorf(`pipeline "traces": %w`, errMissingServicePipelineExporters),
@@ -85,7 +85,7 @@ func TestConfigValidate(t *testing.T) {
 
 func generateConfig() Config {
 	return map[pipeline.ID]*PipelineConfig{
-		pipeline.MustNewID("traces"): {
+		pipeline.NewID(pipeline.SignalTraces): {
 			Receivers:  []component.ID{component.MustNewID("nop")},
 			Processors: []component.ID{component.MustNewID("nop")},
 			Exporters:  []component.ID{component.MustNewID("nop")},

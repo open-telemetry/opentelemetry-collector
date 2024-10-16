@@ -23,13 +23,11 @@ module-sets:
     version: v0.111.0
     modules:
       - go.opentelemetry.io/collector
-      - go.opentelemetry.io/collector/internal/globalgates
-      - go.opentelemetry.io/collector/internal/globalsignal
+      - go.opentelemetry.io/collector/internal/memorylimiter
       - go.opentelemetry.io/collector/cmd/builder
       - go.opentelemetry.io/collector/cmd/mdatagen
       - go.opentelemetry.io/collector/component
       - go.opentelemetry.io/collector/component/componentstatus
-      - go.opentelemetry.io/collector/component/componentprofiles
       - go.opentelemetry.io/collector/confmap/converter/expandconverter
       - go.opentelemetry.io/collector/config/configauth
       - go.opentelemetry.io/collector/config/configgrpc
@@ -60,6 +58,7 @@ module-sets:
       - go.opentelemetry.io/collector/pdata/pprofile
       - go.opentelemetry.io/collector/pdata/testdata
       - go.opentelemetry.io/collector/pipeline
+      - go.opentelemetry.io/collector/pipeline/pipelineprofiles
       - go.opentelemetry.io/collector/processor
       - go.opentelemetry.io/collector/processor/batchprocessor
       - go.opentelemetry.io/collector/processor/memorylimiterprocessor

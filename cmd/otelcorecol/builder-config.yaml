@@ -39,12 +39,8 @@ providers:
 
 replaces:
   - go.opentelemetry.io/collector => ../../
-  - go.opentelemetry.io/collector/internal/globalgates => ../../internal/globalgates
-  - go.opentelemetry.io/collector/internal/globalsignal => ../../internal/globalsignal
   - go.opentelemetry.io/collector/client => ../../client
-  - go.opentelemetry.io/collector/otelcol => ../../otelcol
   - go.opentelemetry.io/collector/component => ../../component
-  - go.opentelemetry.io/collector/component/componentprofiles => ../../component/componentprofiles
   - go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
   - go.opentelemetry.io/collector/config/configauth => ../../config/configauth
   - go.opentelemetry.io/collector/config/configcompression => ../../config/configcompression
@@ -81,10 +77,13 @@ replaces:
   - go.opentelemetry.io/collector/extension/memorylimiterextension => ../../extension/memorylimiterextension
   - go.opentelemetry.io/collector/extension/zpagesextension => ../../extension/zpagesextension
   - go.opentelemetry.io/collector/featuregate => ../../featuregate
+  - go.opentelemetry.io/collector/internal/memorylimiter => ../../internal/memorylimiter
+  - go.opentelemetry.io/collector/otelcol => ../../otelcol
   - go.opentelemetry.io/collector/pdata => ../../pdata
   - go.opentelemetry.io/collector/pdata/testdata => ../../pdata/testdata
   - go.opentelemetry.io/collector/pdata/pprofile => ../../pdata/pprofile
   - go.opentelemetry.io/collector/pipeline => ../../pipeline
+  - go.opentelemetry.io/collector/pipeline/pipelineprofiles => ../../pipeline/pipelineprofiles
   - go.opentelemetry.io/collector/processor => ../../processor
   - go.opentelemetry.io/collector/processor/batchprocessor => ../../processor/batchprocessor
   - go.opentelemetry.io/collector/processor/memorylimiterprocessor => ../../processor/memorylimiterprocessor

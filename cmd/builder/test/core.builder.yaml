@@ -15,7 +15,6 @@ replaces:
   - go.opentelemetry.io/collector => ${WORKSPACE_DIR}
   - go.opentelemetry.io/collector/client => ${WORKSPACE_DIR}/client
   - go.opentelemetry.io/collector/component => ${WORKSPACE_DIR}/component
-  - go.opentelemetry.io/collector/component/componentprofiles => ${WORKSPACE_DIR}/component/componentprofiles
   - go.opentelemetry.io/collector/component/componentstatus => ${WORKSPACE_DIR}/component/componentstatus
   - go.opentelemetry.io/collector/config/configauth => ${WORKSPACE_DIR}/config/configauth
   - go.opentelemetry.io/collector/config/configcompression => ${WORKSPACE_DIR}/config/configcompression
@@ -47,14 +46,14 @@ replaces:
   - go.opentelemetry.io/collector/extension/extensioncapabilities => ${WORKSPACE_DIR}/extension/extensioncapabilities
   - go.opentelemetry.io/collector/extension/zpagesextension => ${WORKSPACE_DIR}/extension/zpagesextension
   - go.opentelemetry.io/collector/featuregate => ${WORKSPACE_DIR}/featuregate
-  - go.opentelemetry.io/collector/internal/globalgates => ${WORKSPACE_DIR}/internal/globalgates
-  - go.opentelemetry.io/collector/internal/globalsignal => ${WORKSPACE_DIR}/internal/globalsignal
+  - go.opentelemetry.io/collector/internal/memorylimiter => ${WORKSPACE_DIR}/internal/memorylimiter
   - go.opentelemetry.io/collector/otelcol => ${WORKSPACE_DIR}/otelcol
   - go.opentelemetry.io/collector/otelcol/otelcoltest => ${WORKSPACE_DIR}/otelcol/otelcoltest
   - go.opentelemetry.io/collector/pdata => ${WORKSPACE_DIR}/pdata
   - go.opentelemetry.io/collector/pdata/pprofile => ${WORKSPACE_DIR}/pdata/pprofile
   - go.opentelemetry.io/collector/pdata/testdata => ${WORKSPACE_DIR}/pdata/testdata
   - go.opentelemetry.io/collector/pipeline => ${WORKSPACE_DIR}/pipeline
+  - go.opentelemetry.io/collector/pipeline/pipelineprofiles => ${WORKSPACE_DIR}/pipeline/pipelineprofiles
   - go.opentelemetry.io/collector/processor => ${WORKSPACE_DIR}/processor
   - go.opentelemetry.io/collector/processor/processorprofiles => ${WORKSPACE_DIR}/processor/processorprofiles
   - go.opentelemetry.io/collector/receiver => ${WORKSPACE_DIR}/receiver

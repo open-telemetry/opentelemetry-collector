@@ -166,6 +166,7 @@ func (pq *persistentQueue[T]) initPersistentContiguousStorage(ctx context.Contex
 		initEls = make([]permanentQueueEl, initIndexSize)
 	}
 
+	// nolint: gosec
 	pq.sizedChannel = newSizedChannel[permanentQueueEl](pq.set.Capacity, initEls, int64(initQueueSize))
 }
 
@@ -187,37 +188,6 @@ func (pq *persistentQueue[T]) restoreQueueSizeFromStorage(ctx context.Context) (
 		return 0, err
 	}
 	return bytesToItemIndex(val)
-}
-
-// Consume applies the provided function on the head of queue.
-// The call blocks until there is an item available or the queue is stopped.
-// The function returns true when an item is consumed or false if the queue is stopped.
-func (pq *persistentQueue[T]) Consume(consumeFunc func(context.Context, T) error) bool {
-	for {
-		var (
-			index    uint64
-			req      T
-			consumed bool
-		)
-
-		// If we are stopped we still process all the other events in the channel before, but we
-		// return fast in the `getNextItem`, so we will free the channel fast and get to the stop.
-		_, ok := pq.sizedChannel.pop(func(permanentQueueEl) int64 {
-			index, req, consumed = pq.getNextItem(context.Background())
-			if !consumed {
-				return 0
-			}
-			return pq.set.Sizer.Sizeof(req)
-		})
-		if !ok {
-			return false
-		}
-		if consumed {
-			consumeErr := consumeFunc(context.Background(), req)
-			pq.OnProcessingFinished(index, consumeErr)
-			return true
-		}
-	}
 }
 
 func (pq *persistentQueue[T]) Shutdown(ctx context.Context) error {
@@ -244,6 +214,7 @@ func (pq *persistentQueue[T]) backupQueueSize(ctx context.Context) error {
 		return nil
 	}
 
+	// nolint: gosec
 	return pq.client.Set(ctx, queueSizeKey, itemIndexToBytes(uint64(pq.Size())))
 }
 
@@ -302,6 +273,33 @@ func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
 	}
 
 	return nil
+}
+
+func (pq *persistentQueue[T]) Read(ctx context.Context) (uint64, context.Context, T, bool) {
+	for {
+		var (
+			index    uint64
+			req      T
+			consumed bool
+		)
+		_, ok := pq.sizedChannel.pop(func(permanentQueueEl) int64 {
+			size := int64(0)
+			index, req, consumed = pq.getNextItem(ctx)
+			if consumed {
+				size = pq.set.Sizer.Sizeof(req)
+			}
+			return size
+		})
+		if !ok {
+			return 0, nil, req, false
+		}
+		if consumed {
+			return index, context.TODO(), req, true
+		}
+
+		// If ok && !consumed, it means we are stopped. In this case, we still process all the other events
+		// in the channel before, so we will free the channel fast and get to the stop.
+	}
 }
 
 // getNextItem pulls the next available item from the persistent storage along with its index. Once processing is
@@ -528,6 +526,7 @@ func bytesToItemIndex(buf []byte) (uint64, error) {
 func itemIndexArrayToBytes(arr []uint64) []byte {
 	size := len(arr)
 	buf := make([]byte, 0, 4+size*8)
+	// nolint: gosec
 	buf = binary.LittleEndian.AppendUint32(buf, uint32(size))
 	for _, item := range arr {
 		buf = binary.LittleEndian.AppendUint64(buf, item)

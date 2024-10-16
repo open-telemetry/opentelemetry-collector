@@ -74,7 +74,7 @@ func run(ymlPath string) error {
 
 	tmplDir := "templates"
 
-	codeDir := filepath.Join(ymlDir, "internal", "metadata")
+	codeDir := filepath.Join(ymlDir, "internal", md.GeneratedPackageName)
 	if err = os.MkdirAll(codeDir, 0700); err != nil {
 		return fmt.Errorf("unable to create output directory %q: %w", codeDir, err)
 	}
@@ -99,7 +99,7 @@ func run(ymlPath string) error {
 			if err = inlineReplace(
 				filepath.Join(tmplDir, "readme.md.tmpl"),
 				filepath.Join(ymlDir, "README.md"),
-				md, statusStart, statusEnd); err != nil {
+				md, statusStart, statusEnd, md.GeneratedPackageName); err != nil {
 				return err
 			}
 		}
@@ -151,7 +151,7 @@ func run(ymlPath string) error {
 	}
 
 	for tmpl, dst := range toGenerate {
-		if err = generateFile(tmpl, dst, md, "metadata"); err != nil {
+		if err = generateFile(tmpl, dst, md, md.GeneratedPackageName); err != nil {
 			return err
 		}
 	}
@@ -361,7 +361,17 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 			}).ParseFS(TemplateFS, strings.ReplaceAll(tmplFile, "\\", "/")))
 }
 
-func inlineReplace(tmplFile string, outputFile string, md Metadata, start string, end string) error {
+func executeTemplate(tmplFile string, md Metadata, goPackage string) ([]byte, error) {
+	tmpl := templatize(tmplFile, md)
+	buf := bytes.Buffer{}
+
+	if err := tmpl.Execute(&buf, TemplateContext{Metadata: md, Package: goPackage}); err != nil {
+		return []byte{}, fmt.Errorf("failed executing template: %w", err)
+	}
+	return buf.Bytes(), nil
+}
+
+func inlineReplace(tmplFile string, outputFile string, md Metadata, start string, end string, goPackage string) error {
 	var readmeContents []byte
 	var err error
 	if readmeContents, err = os.ReadFile(outputFile); err != nil { // nolint: gosec
@@ -373,20 +383,16 @@ func inlineReplace(tmplFile string, outputFile string, md Metadata, start string
 		return nil
 	}
 
-	tmpl := templatize(tmplFile, md)
-	buf := bytes.Buffer{}
-
 	if md.GithubProject == "" {
 		md.GithubProject = "open-telemetry/opentelemetry-collector-contrib"
 	}
 
-	if err := tmpl.Execute(&buf, TemplateContext{Metadata: md, Package: "metadata"}); err != nil {
-		return fmt.Errorf("failed executing template: %w", err)
+	buf, err := executeTemplate(tmplFile, md, goPackage)
+	if err != nil {
+		return err
 	}
 
-	result := buf.String()
-
-	s := re.ReplaceAllString(string(readmeContents), result)
+	s := re.ReplaceAllString(string(readmeContents), string(buf))
 	if err := os.WriteFile(outputFile, []byte(s), 0600); err != nil {
 		return fmt.Errorf("failed writing %q: %w", outputFile, err)
 	}
@@ -395,21 +401,17 @@ func inlineReplace(tmplFile string, outputFile string, md Metadata, start string
 }
 
 func generateFile(tmplFile string, outputFile string, md Metadata, goPackage string) error {
-	tmpl := templatize(tmplFile, md)
-	buf := bytes.Buffer{}
-
-	if err := tmpl.Execute(&buf, TemplateContext{Metadata: md, Package: goPackage}); err != nil {
-		return fmt.Errorf("failed executing template: %w", err)
-	}
-
 	if err := os.Remove(outputFile); err != nil && !errors.Is(err, os.ErrNotExist) {
-		return fmt.Errorf("unable to remove genererated file %q: %w", outputFile, err)
+		return fmt.Errorf("unable to remove generated file %q: %w", outputFile, err)
 	}
 
-	result := buf.Bytes()
+	result, err := executeTemplate(tmplFile, md, goPackage)
+	if err != nil {
+		return err
+	}
 	var formatErr error
 	if strings.HasSuffix(outputFile, ".go") {
-		if formatted, err := format.Source(buf.Bytes()); err == nil {
+		if formatted, err := format.Source(result); err == nil {
 			result = formatted
 		} else {
 			formatErr = fmt.Errorf("failed formatting %s:%w", outputFile, err)

@@ -72,7 +72,7 @@ func newComponentsCommand(set CollectorSettings) *cobra.Command {
 					Name:   ext.Type(),
 					Module: factories.ExtensionModules[ext.Type()],
 					Stability: map[string]string{
-						"extension": ext.ExtensionStability().String(),
+						"extension": ext.Stability().String(),
 					},
 				})
 			}

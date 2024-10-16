@@ -21,7 +21,6 @@ var id = component.MustNewID("test")
 type baseComponent struct {
 	component.StartFunc
 	component.ShutdownFunc
-	telemetry *component.TelemetrySettings
 }
 
 func TestNewMap(t *testing.T) {
@@ -36,7 +35,6 @@ func TestNewSharedComponentsCreateError(t *testing.T) {
 	_, err := comps.LoadOrStore(
 		id,
 		func() (*baseComponent, error) { return nil, myErr },
-		newNopTelemetrySettings(),
 	)
 	require.ErrorIs(t, err, myErr)
 	assert.Empty(t, comps.components)
@@ -49,7 +47,6 @@ func TestSharedComponentsLoadOrStore(t *testing.T) {
 	got, err := comps.LoadOrStore(
 		id,
 		func() (*baseComponent, error) { return nop, nil },
-		newNopTelemetrySettings(),
 	)
 	require.NoError(t, err)
 	assert.Len(t, comps.components, 1)
@@ -57,7 +54,6 @@ func TestSharedComponentsLoadOrStore(t *testing.T) {
 	gotSecond, err := comps.LoadOrStore(
 		id,
 		func() (*baseComponent, error) { panic("should not be called") },
-		newNopTelemetrySettings(),
 	)
 
 	require.NoError(t, err)
@@ -69,7 +65,6 @@ func TestSharedComponentsLoadOrStore(t *testing.T) {
 	gotThird, err := comps.LoadOrStore(
 		id,
 		func() (*baseComponent, error) { return nop, nil },
-		newNopTelemetrySettings(),
 	)
 	require.NoError(t, err)
 	assert.NotSame(t, got, gotThird)
@@ -93,7 +88,6 @@ func TestSharedComponent(t *testing.T) {
 	got, err := comps.LoadOrStore(
 		id,
 		func() (*baseComponent, error) { return comp, nil },
-		newNopTelemetrySettings(),
 	)
 	require.NoError(t, err)
 	assert.Equal(t, wantErr, got.Start(context.Background(), componenttest.NewNopHost()))
@@ -171,14 +165,9 @@ func TestReportStatusOnStartShutdown(t *testing.T) {
 			var comp *Component[*baseComponent]
 			var err error
 			for i := 0; i < 3; i++ {
-				telemetrySettings := newNopTelemetrySettings()
-				if i == 0 {
-					base.telemetry = telemetrySettings
-				}
 				comp, err = comps.LoadOrStore(
 					id,
 					func() (*baseComponent, error) { return base, nil },
-					telemetrySettings,
 				)
 				require.NoError(t, err)
 			}
@@ -207,12 +196,6 @@ func TestReportStatusOnStartShutdown(t *testing.T) {
 			}
 		})
 	}
-}
-
-// newNopTelemetrySettings streamlines getting a pointer to a NopTelemetrySettings
-func newNopTelemetrySettings() *component.TelemetrySettings {
-	set := componenttest.NewNopTelemetrySettings()
-	return &set
 }
 
 var _ component.Host = (*testHost)(nil)

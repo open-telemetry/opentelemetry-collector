@@ -327,7 +327,7 @@ func TestInvalidStorageExtensionType(t *testing.T) {
 	factory := extensiontest.NewNopFactory()
 	extConfig := factory.CreateDefaultConfig()
 	settings := extensiontest.NewNopSettings()
-	extension, err := factory.CreateExtension(context.Background(), settings, extConfig)
+	extension, err := factory.Create(context.Background(), settings, extConfig)
 	require.NoError(t, err)
 	var extensions = map[component.ID]component.Component{
 		storageID: extension,
@@ -413,7 +413,7 @@ func TestPersistentQueue_CorruptedData(t *testing.T) {
 				require.NoError(t, err)
 			}
 			assert.Equal(t, 3, ps.Size())
-			require.True(t, ps.Consume(func(context.Context, tracesRequest) error {
+			require.True(t, consume(ps, func(context.Context, tracesRequest) error {
 				return experr.NewShutdownErr(nil)
 			}))
 			assert.Equal(t, 2, ps.Size())
@@ -486,7 +486,7 @@ func TestPersistentQueue_CurrentlyProcessedItems(t *testing.T) {
 
 	// We should be able to pull all remaining items now
 	for i := 0; i < 4; i++ {
-		newPs.Consume(func(_ context.Context, traces tracesRequest) error {
+		consume(newPs, func(_ context.Context, traces tracesRequest) error {
 			assert.Equal(t, req, traces)
 			return nil
 		})
@@ -499,8 +499,8 @@ func TestPersistentQueue_CurrentlyProcessedItems(t *testing.T) {
 	require.EqualValues(t, 6, newPs.writeIndex)
 
 	// There should be no items left in the storage
-	for i := 0; i < int(newPs.writeIndex); i++ {
-		bb, err := newPs.client.Get(context.Background(), getItemKey(uint64(i)))
+	for i := uint64(0); i < newPs.writeIndex; i++ {
+		bb, err := newPs.client.Get(context.Background(), getItemKey(i))
 		require.NoError(t, err)
 		require.Nil(t, bb)
 	}
@@ -520,7 +520,7 @@ func TestPersistentQueueStartWithNonDispatched(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	require.True(t, ps.Consume(func(context.Context, tracesRequest) error {
+	require.True(t, consume(ps, func(context.Context, tracesRequest) error {
 		// put one more item in
 		require.NoError(t, ps.Offer(context.Background(), req))
 		require.Equal(t, 5, ps.Size())
@@ -564,7 +564,7 @@ func TestPersistentQueueStartWithNonDispatchedConcurrent(t *testing.T) {
 		go func() {
 			defer conWg.Done()
 			for i := 0; i < 10; i++ {
-				assert.True(t, pq.Consume(func(context.Context, tracesRequest) error { return nil }))
+				assert.True(t, consume(pq, func(context.Context, tracesRequest) error { return nil }))
 			}
 		}()
 	}
@@ -615,13 +615,13 @@ func TestPersistentQueue_PutCloseReadClose(t *testing.T) {
 	require.Equal(t, 2, newPs.Size())
 
 	// Let's read both of the elements we put
-	newPs.Consume(func(_ context.Context, traces tracesRequest) error {
+	consume(newPs, func(_ context.Context, traces tracesRequest) error {
 		require.Equal(t, req, traces)
 		return nil
 	})
 	assert.Equal(t, 1, newPs.Size())
 
-	newPs.Consume(func(_ context.Context, traces tracesRequest) error {
+	consume(newPs, func(_ context.Context, traces tracesRequest) error {
 		require.Equal(t, req, traces)
 		return nil
 	})
@@ -663,7 +663,7 @@ func BenchmarkPersistentQueue_TraceSpans(b *testing.B) {
 			}
 
 			for i := 0; i < bb.N; i++ {
-				require.True(bb, ps.Consume(func(context.Context, tracesRequest) error { return nil }))
+				require.True(bb, consume(ps, func(context.Context, tracesRequest) error { return nil }))
 			}
 			require.NoError(b, ext.Shutdown(context.Background()))
 		})
@@ -781,7 +781,7 @@ func TestPersistentQueue_StorageFull(t *testing.T) {
 	// Subsequent items succeed, as deleting the first item frees enough space for the state update
 	reqCount--
 	for i := reqCount; i > 0; i-- {
-		require.True(t, ps.Consume(func(context.Context, tracesRequest) error { return nil }))
+		require.True(t, consume(ps, func(context.Context, tracesRequest) error { return nil }))
 	}
 
 	// We should be able to put a new item in
@@ -856,7 +856,7 @@ func TestPersistentQueue_ItemsCapacityUsageRestoredOnShutdown(t *testing.T) {
 	require.ErrorIs(t, pq.Offer(context.Background(), newTracesRequest(5, 5)), ErrQueueIsFull)
 	assert.Equal(t, 100, pq.Size())
 
-	assert.True(t, pq.Consume(func(_ context.Context, traces tracesRequest) error {
+	assert.True(t, consume(pq, func(_ context.Context, traces tracesRequest) error {
 		assert.Equal(t, 40, traces.traces.SpanCount())
 		return nil
 	}))
@@ -874,13 +874,13 @@ func TestPersistentQueue_ItemsCapacityUsageRestoredOnShutdown(t *testing.T) {
 	// Check the combined queue size.
 	assert.Equal(t, 70, newPQ.Size())
 
-	assert.True(t, newPQ.Consume(func(_ context.Context, traces tracesRequest) error {
+	assert.True(t, consume(newPQ, func(_ context.Context, traces tracesRequest) error {
 		assert.Equal(t, 40, traces.traces.SpanCount())
 		return nil
 	}))
 	assert.Equal(t, 30, newPQ.Size())
 
-	assert.True(t, newPQ.Consume(func(_ context.Context, traces tracesRequest) error {
+	assert.True(t, consume(newPQ, func(_ context.Context, traces tracesRequest) error {
 		assert.Equal(t, 20, traces.traces.SpanCount())
 		return nil
 	}))
@@ -901,7 +901,7 @@ func TestPersistentQueue_ItemsCapacityUsageIsNotPreserved(t *testing.T) {
 	assert.NoError(t, pq.Offer(context.Background(), newTracesRequest(5, 5)))
 	assert.Equal(t, 3, pq.Size())
 
-	assert.True(t, pq.Consume(func(_ context.Context, traces tracesRequest) error {
+	assert.True(t, consume(pq, func(_ context.Context, traces tracesRequest) error {
 		assert.Equal(t, 40, traces.traces.SpanCount())
 		return nil
 	}))
@@ -920,14 +920,14 @@ func TestPersistentQueue_ItemsCapacityUsageIsNotPreserved(t *testing.T) {
 	assert.Equal(t, 12, newPQ.Size())
 
 	// Consuming a restored request should reduce the restored size by 20 but it should not go to below zero
-	assert.True(t, newPQ.Consume(func(_ context.Context, traces tracesRequest) error {
+	assert.True(t, consume(newPQ, func(_ context.Context, traces tracesRequest) error {
 		assert.Equal(t, 20, traces.traces.SpanCount())
 		return nil
 	}))
 	assert.Equal(t, 0, newPQ.Size())
 
 	// Consuming another restored request should not affect the restored size since it's already dropped to 0.
-	assert.True(t, newPQ.Consume(func(_ context.Context, traces tracesRequest) error {
+	assert.True(t, consume(newPQ, func(_ context.Context, traces tracesRequest) error {
 		assert.Equal(t, 25, traces.traces.SpanCount())
 		return nil
 	}))
@@ -937,7 +937,7 @@ func TestPersistentQueue_ItemsCapacityUsageIsNotPreserved(t *testing.T) {
 	require.NoError(t, newPQ.Offer(context.Background(), newTracesRequest(5, 5)))
 	assert.Equal(t, 25, newPQ.Size())
 
-	assert.True(t, newPQ.Consume(func(_ context.Context, traces tracesRequest) error {
+	assert.True(t, consume(newPQ, func(_ context.Context, traces tracesRequest) error {
 		assert.Equal(t, 10, traces.traces.SpanCount())
 		return nil
 	}))
@@ -961,7 +961,7 @@ func TestPersistentQueue_RequestCapacityLessAfterRestart(t *testing.T) {
 
 	// Read the first request just to populate the read index in the storage.
 	// Otherwise, the write index won't be restored either.
-	assert.True(t, pq.Consume(func(_ context.Context, traces tracesRequest) error {
+	assert.True(t, consume(pq, func(_ context.Context, traces tracesRequest) error {
 		assert.Equal(t, 40, traces.traces.SpanCount())
 		return nil
 	}))
@@ -979,7 +979,7 @@ func TestPersistentQueue_RequestCapacityLessAfterRestart(t *testing.T) {
 	// Queue is full
 	require.Error(t, newPQ.Offer(context.Background(), newTracesRequest(2, 5)))
 
-	assert.True(t, newPQ.Consume(func(_ context.Context, traces tracesRequest) error {
+	assert.True(t, consume(newPQ, func(_ context.Context, traces tracesRequest) error {
 		assert.Equal(t, 20, traces.traces.SpanCount())
 		return nil
 	}))
@@ -988,7 +988,7 @@ func TestPersistentQueue_RequestCapacityLessAfterRestart(t *testing.T) {
 	// Still full
 	require.Error(t, newPQ.Offer(context.Background(), newTracesRequest(2, 5)))
 
-	assert.True(t, newPQ.Consume(func(_ context.Context, traces tracesRequest) error {
+	assert.True(t, consume(newPQ, func(_ context.Context, traces tracesRequest) error {
 		assert.Equal(t, 25, traces.traces.SpanCount())
 		return nil
 	}))
@@ -1015,7 +1015,7 @@ func TestPersistentQueue_RestoredUsedSizeIsCorrectedOnDrain(t *testing.T) {
 
 	// Consume 30 items
 	for i := 0; i < 3; i++ {
-		assert.True(t, pq.Consume(func(context.Context, tracesRequest) error { return nil }))
+		assert.True(t, consume(pq, func(context.Context, tracesRequest) error { return nil }))
 	}
 	// The used size is now 30, but the snapshot should have 50, because it's taken every 5 read/writes.
 	assert.Equal(t, 30, pq.Size())
@@ -1027,12 +1027,12 @@ func TestPersistentQueue_RestoredUsedSizeIsCorrectedOnDrain(t *testing.T) {
 	// In reality the size should be 30. Once the queue is drained, it will be updated to the correct size.
 	assert.Equal(t, 50, newPQ.Size())
 
-	assert.True(t, newPQ.Consume(func(context.Context, tracesRequest) error { return nil }))
-	assert.True(t, newPQ.Consume(func(context.Context, tracesRequest) error { return nil }))
+	assert.True(t, consume(newPQ, func(context.Context, tracesRequest) error { return nil }))
+	assert.True(t, consume(newPQ, func(context.Context, tracesRequest) error { return nil }))
 	assert.Equal(t, 30, newPQ.Size())
 
 	// Now the size must be correctly reflected
-	assert.True(t, newPQ.Consume(func(context.Context, tracesRequest) error { return nil }))
+	assert.True(t, consume(newPQ, func(context.Context, tracesRequest) error { return nil }))
 	assert.Equal(t, 0, newPQ.Size())
 
 	assert.NoError(t, newPQ.Shutdown(context.Background()))

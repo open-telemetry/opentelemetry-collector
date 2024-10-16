@@ -8,8 +8,8 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componentprofiles"
 	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/collector/pipeline/pipelineprofiles"
 )
 
 var (
@@ -31,7 +31,7 @@ func (cfg Config) Validate() error {
 	// only configured components.
 	for pipelineID, p := range cfg {
 		switch pipelineID.Signal() {
-		case pipeline.SignalTraces, pipeline.SignalMetrics, pipeline.SignalLogs, componentprofiles.SignalProfiles:
+		case pipeline.SignalTraces, pipeline.SignalMetrics, pipeline.SignalLogs, pipelineprofiles.SignalProfiles:
 			// Continue
 		default:
 			return fmt.Errorf("pipeline %q: unknown signal %q", pipelineID.String(), pipelineID.Signal())
