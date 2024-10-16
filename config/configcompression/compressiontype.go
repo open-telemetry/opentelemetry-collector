@@ -68,7 +68,7 @@ func (ct *TypeWithLevel) UnmarshalText(in []byte) error {
 		return nil
 	}
 
-	return fmt.Errorf("unsupported compression type/level %s/%d", compressionTyp, ct.Level)
+	return fmt.Errorf("unsupported compression type and level(default if not specified) %s - %d", compressionTyp, ct.Level)
 
 }
 
