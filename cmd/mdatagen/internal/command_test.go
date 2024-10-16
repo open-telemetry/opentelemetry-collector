@@ -501,7 +501,8 @@ func TestGenerateStatusMetadata(t *testing.T) {
 		{
 			name: "foo component with beta status",
 			md: Metadata{
-				Type: "foo",
+				Type:                 "foo",
+				GeneratedPackageName: "metadata",
 				Status: &Status{
 					Stability: map[component.StabilityLevel][]string{
 						component.StabilityLevelBeta: {"metrics"},
@@ -531,7 +532,8 @@ const (
 		{
 			name: "foo component with alpha status",
 			md: Metadata{
-				Type: "foo",
+				Type:                 "foo",
+				GeneratedPackageName: "metadata",
 				Status: &Status{
 					Stability: map[component.StabilityLevel][]string{
 						component.StabilityLevelAlpha: {"metrics"},
@@ -564,7 +566,7 @@ const (
 		t.Run(tt.name, func(t *testing.T) {
 			tmpdir := t.TempDir()
 			err := generateFile("templates/status.go.tmpl",
-				filepath.Join(tmpdir, "generated_status.go"), tt.md, "metadata")
+				filepath.Join(tmpdir, "generated_status.go"), tt.md)
 			require.NoError(t, err)
 			actual, err := os.ReadFile(filepath.Join(tmpdir, "generated_status.go")) // nolint: gosec
 			require.NoError(t, err)
@@ -583,7 +585,8 @@ func TestGenerateTelemetryMetadata(t *testing.T) {
 		{
 			name: "foo component with beta status",
 			md: Metadata{
-				Type: "foo",
+				Type:                 "foo",
+				GeneratedPackageName: "metadata",
 				Status: &Status{
 					Stability: map[component.StabilityLevel][]string{
 						component.StabilityLevelBeta: {"metrics"},
@@ -621,7 +624,8 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 		{
 			name: "foo component with alpha status",
 			md: Metadata{
-				Type: "foo",
+				Type:                 "foo",
+				GeneratedPackageName: "metadata",
 				Status: &Status{
 					Stability: map[component.StabilityLevel][]string{
 						component.StabilityLevelAlpha: {"metrics"},
@@ -662,7 +666,7 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 		t.Run(tt.name, func(t *testing.T) {
 			tmpdir := t.TempDir()
 			err := generateFile("templates/telemetry.go.tmpl",
-				filepath.Join(tmpdir, "generated_telemetry.go"), tt.md, "metadata")
+				filepath.Join(tmpdir, "generated_telemetry.go"), tt.md)
 			require.NoError(t, err)
 			actual, err := os.ReadFile(filepath.Join(tmpdir, "generated_telemetry.go")) // nolint: gosec
 			require.NoError(t, err)
