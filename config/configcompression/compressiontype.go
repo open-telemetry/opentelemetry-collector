@@ -16,8 +16,8 @@ type Type string
 type Level int
 
 type TypeWithLevel struct {
-	Type  Type
-	Level Level
+	Type  Type  `mapstructure:"type"`
+	Level Level `mapstructure:"level"`
 }
 
 const (
