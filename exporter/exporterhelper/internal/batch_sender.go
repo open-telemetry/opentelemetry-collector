@@ -24,9 +24,7 @@ import (
 // - concurrencyLimit is reached.
 type BatchSender struct {
 	BaseRequestSender
-	cfg            exporterbatcher.Config
-	mergeFunc      exporterbatcher.BatchMergeFunc[internal.Request]
-	mergeSplitFunc exporterbatcher.BatchMergeSplitFunc[internal.Request]
+	cfg exporterbatcher.Config
 
 	// concurrencyLimit is the maximum number of goroutines that can be blocked by the batcher.
 	// If this number is reached and all the goroutines are busy, the batch will be sent right away.
@@ -46,14 +44,11 @@ type BatchSender struct {
 }
 
 // newBatchSender returns a new batch consumer component.
-func NewBatchSender(cfg exporterbatcher.Config, set exporter.Settings,
-	mf exporterbatcher.BatchMergeFunc[internal.Request], msf exporterbatcher.BatchMergeSplitFunc[internal.Request]) *BatchSender {
+func NewBatchSender(cfg exporterbatcher.Config, set exporter.Settings) *BatchSender {
 	bs := &BatchSender{
 		activeBatch:        newEmptyBatch(),
 		cfg:                cfg,
 		logger:             set.Logger,
-		mergeFunc:          mf,
-		mergeSplitFunc:     msf,
 		shutdownCh:         nil,
 		shutdownCompleteCh: make(chan struct{}),
 		stopped:            &atomic.Bool{},
@@ -104,7 +99,7 @@ func (bs *BatchSender) Start(_ context.Context, _ component.Host) error {
 
 type batch struct {
 	ctx     context.Context
-	request internal.Request
+	request internal.BatchRequest
 	done    chan struct{}
 	err     error
 
@@ -147,19 +142,26 @@ func (bs *BatchSender) Send(ctx context.Context, req internal.Request) error {
 	}
 
 	if bs.cfg.MaxSizeItems > 0 {
-		return bs.sendMergeSplitBatch(ctx, req)
+		return bs.sendMergeSplitBatch(ctx, req.(internal.BatchRequest))
 	}
-	return bs.sendMergeBatch(ctx, req)
+	return bs.sendMergeBatch(ctx, req.(internal.BatchRequest))
 }
 
 // sendMergeSplitBatch sends the request to the batch which may be split into multiple requests.
-func (bs *BatchSender) sendMergeSplitBatch(ctx context.Context, req internal.Request) error {
+func (bs *BatchSender) sendMergeSplitBatch(ctx context.Context, req internal.BatchRequest) error {
 	bs.mu.Lock()
 
-	reqs, err := bs.mergeSplitFunc(ctx, bs.cfg.MaxSizeConfig, bs.activeBatch.request, req)
-	if err != nil || len(reqs) == 0 {
+	var reqs []internal.BatchRequest
+	var mergeSplitErr error
+	if bs.activeBatch.request == nil {
+		reqs, mergeSplitErr = req.MergeSplit(ctx, bs.cfg.MaxSizeConfig, nil)
+	} else {
+		reqs, mergeSplitErr = bs.activeBatch.request.MergeSplit(ctx, bs.cfg.MaxSizeConfig, req)
+	}
+
+	if mergeSplitErr != nil || len(reqs) == 0 {
 		bs.mu.Unlock()
-		return err
+		return mergeSplitErr
 	}
 
 	bs.activeRequests.Add(1)
@@ -196,12 +198,12 @@ func (bs *BatchSender) sendMergeSplitBatch(ctx context.Context, req internal.Req
 }
 
 // sendMergeBatch sends the request to the batch and waits for the batch to be exported.
-func (bs *BatchSender) sendMergeBatch(ctx context.Context, req internal.Request) error {
+func (bs *BatchSender) sendMergeBatch(ctx context.Context, req internal.BatchRequest) error {
 	bs.mu.Lock()
 
 	if bs.activeBatch.request != nil {
 		var err error
-		req, err = bs.mergeFunc(ctx, bs.activeBatch.request, req)
+		req, err = bs.activeBatch.request.Merge(ctx, req)
 		if err != nil {
 			bs.mu.Unlock()
 			return err
@@ -224,7 +226,7 @@ func (bs *BatchSender) sendMergeBatch(ctx context.Context, req internal.Request)
 // The context is only set once and is not updated after the first call.
 // Merging the context would be complex and require an additional goroutine to handle the context cancellation.
 // We take the approach of using the context from the first request since it's likely to have the shortest timeout.
-func (bs *BatchSender) updateActiveBatch(ctx context.Context, req internal.Request) {
+func (bs *BatchSender) updateActiveBatch(ctx context.Context, req internal.BatchRequest) {
 	if bs.activeBatch.request == nil {
 		bs.activeBatch.ctx = ctx
 	}

@@ -5,6 +5,8 @@ package internal // import "go.opentelemetry.io/collector/exporter/internal"
 
 import (
 	"context"
+
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 )
 
 // Request represents a single request that can be sent to an external endpoint.
@@ -17,6 +19,16 @@ type Request interface {
 	// sent. For example, for OTLP exporter, this value represents the number of spans,
 	// metric data points or log records.
 	ItemsCount() int
+}
+
+// BatchRequest represents a single request that can be sent to an external endpoint. It can be merged with
+// another BatchRequest and/or split into multiple given a size limit.
+// Experimental: This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+type BatchRequest interface {
+	Request
+	Merge(context.Context, BatchRequest) (BatchRequest, error)
+	MergeSplit(context.Context, exporterbatcher.MaxSizeConfig, BatchRequest) ([]BatchRequest, error)
 }
 
 // RequestErrorHandler is an optional interface that can be implemented by Request to provide a way handle partial
