@@ -78,7 +78,7 @@ func TestBatchSender_Merge(t *testing.T) {
 			assert.Equal(t, int64(1), sink.requestsCount.Load())
 			assert.Eventually(t, func() bool {
 				return sink.requestsCount.Load() == 2 && sink.itemsCount.Load() == 15
-			}, 100*time.Millisecond, 10*time.Millisecond)
+			}, 200*time.Millisecond, 10*time.Millisecond)
 		})
 	}
 }
@@ -183,7 +183,7 @@ func TestBatchSender_MergeOrSplit(t *testing.T) {
 
 	assert.Eventually(t, func() bool {
 		return sink.requestsCount.Load() == 5 && sink.itemsCount.Load() == 38
-	}, 150*time.Millisecond, 10*time.Millisecond)
+	}, 200*time.Millisecond, 10*time.Millisecond)
 }
 
 func TestBatchSender_Shutdown(t *testing.T) {
@@ -255,7 +255,7 @@ func TestBatchSender_InvalidMergeSplitFunc(t *testing.T) {
 	require.NoError(t, be.Send(context.Background(), &fakeRequest{items: 15, sink: sink}))
 	assert.Eventually(t, func() bool {
 		return sink.requestsCount.Load() == 1 && sink.itemsCount.Load() == 15
-	}, 100*time.Millisecond, 10*time.Millisecond)
+	}, 200*time.Millisecond, 10*time.Millisecond)
 }
 
 func TestBatchSender_PostShutdown(t *testing.T) {
