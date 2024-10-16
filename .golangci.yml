@@ -121,12 +121,15 @@ linters-settings:
           files:
             - "!**/*_test.go"
 
+  testifylint:
+    enable-all: true   
+
 linters:
   enable:
+    - copyloopvar
     - depguard
     - errcheck
     - errorlint
-    - exportloopref
     - gocritic
     - gofmt
     - goimports
@@ -136,6 +139,7 @@ linters:
     - revive
     - staticcheck
     - tenv
+    - testifylint
     - unconvert
     - unused
     - unparam

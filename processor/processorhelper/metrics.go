@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
 )
 
@@ -19,14 +20,14 @@ import (
 // If error is returned then returned data are ignored. It MUST not call the next component.
 type ProcessMetricsFunc func(context.Context, pmetric.Metrics) (pmetric.Metrics, error)
 
-type metricsProcessor struct {
+type metrics struct {
 	component.StartFunc
 	component.ShutdownFunc
 	consumer.Metrics
 }
 
-// NewMetricsProcessor creates a processor.Metrics that ensure context propagation and the right tags are set.
-func NewMetricsProcessor(
+// NewMetrics creates a processor.Metrics that ensure context propagation and the right tags are set.
+func NewMetrics(
 	_ context.Context,
 	set processor.Settings,
 	_ component.Config,
@@ -34,9 +35,13 @@ func NewMetricsProcessor(
 	metricsFunc ProcessMetricsFunc,
 	options ...Option,
 ) (processor.Metrics, error) {
-	// TODO: Add observability metrics support
 	if metricsFunc == nil {
 		return nil, errors.New("nil metricsFunc")
+	}
+
+	obs, err := newObsReport(set, pipeline.SignalMetrics)
+	if err != nil {
+		return nil, err
 	}
 
 	eventOptions := spanAttributes(set.ID)
@@ -44,22 +49,27 @@ func NewMetricsProcessor(
 	metricsConsumer, err := consumer.NewMetrics(func(ctx context.Context, md pmetric.Metrics) error {
 		span := trace.SpanFromContext(ctx)
 		span.AddEvent("Start processing.", eventOptions)
-		var err error
-		md, err = metricsFunc(ctx, md)
+		pointsIn := md.DataPointCount()
+
+		var errFunc error
+		md, errFunc = metricsFunc(ctx, md)
 		span.AddEvent("End processing.", eventOptions)
-		if err != nil {
-			if errors.Is(err, ErrSkipProcessingData) {
+		if errFunc != nil {
+			obs.recordInOut(ctx, pointsIn, 0)
+			if errors.Is(errFunc, ErrSkipProcessingData) {
 				return nil
 			}
-			return err
+			return errFunc
 		}
+		pointsOut := md.DataPointCount()
+		obs.recordInOut(ctx, pointsIn, pointsOut)
 		return nextConsumer.ConsumeMetrics(ctx, md)
 	}, bs.consumerOptions...)
 	if err != nil {
 		return nil, err
 	}
 
-	return &metricsProcessor{
+	return &metrics{
 		StartFunc:    bs.StartFunc,
 		ShutdownFunc: bs.ShutdownFunc,
 		Metrics:      metricsConsumer,

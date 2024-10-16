@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
 )
 
@@ -19,14 +20,14 @@ import (
 // If error is returned then returned data are ignored. It MUST not call the next component.
 type ProcessLogsFunc func(context.Context, plog.Logs) (plog.Logs, error)
 
-type logProcessor struct {
+type logs struct {
 	component.StartFunc
 	component.ShutdownFunc
 	consumer.Logs
 }
 
-// NewLogsProcessor creates a processor.Logs that ensure context propagation and the right tags are set.
-func NewLogsProcessor(
+// NewLogs creates a processor.Logs that ensure context propagation and the right tags are set.
+func NewLogs(
 	_ context.Context,
 	set processor.Settings,
 	_ component.Config,
@@ -34,9 +35,13 @@ func NewLogsProcessor(
 	logsFunc ProcessLogsFunc,
 	options ...Option,
 ) (processor.Logs, error) {
-	// TODO: Add observability metrics support
 	if logsFunc == nil {
 		return nil, errors.New("nil logsFunc")
+	}
+
+	obs, err := newObsReport(set, pipeline.SignalLogs)
+	if err != nil {
+		return nil, err
 	}
 
 	eventOptions := spanAttributes(set.ID)
@@ -44,22 +49,27 @@ func NewLogsProcessor(
 	logsConsumer, err := consumer.NewLogs(func(ctx context.Context, ld plog.Logs) error {
 		span := trace.SpanFromContext(ctx)
 		span.AddEvent("Start processing.", eventOptions)
-		var err error
-		ld, err = logsFunc(ctx, ld)
+		recordsIn := ld.LogRecordCount()
+
+		var errFunc error
+		ld, errFunc = logsFunc(ctx, ld)
 		span.AddEvent("End processing.", eventOptions)
-		if err != nil {
-			if errors.Is(err, ErrSkipProcessingData) {
+		if errFunc != nil {
+			obs.recordInOut(ctx, recordsIn, 0)
+			if errors.Is(errFunc, ErrSkipProcessingData) {
 				return nil
 			}
-			return err
+			return errFunc
 		}
+		recordsOut := ld.LogRecordCount()
+		obs.recordInOut(ctx, recordsIn, recordsOut)
 		return nextConsumer.ConsumeLogs(ctx, ld)
 	}, bs.consumerOptions...)
 	if err != nil {
 		return nil, err
 	}
 
-	return &logProcessor{
+	return &logs{
 		StartFunc:    bs.StartFunc,
 		ShutdownFunc: bs.ShutdownFunc,
 		Logs:         logsConsumer,

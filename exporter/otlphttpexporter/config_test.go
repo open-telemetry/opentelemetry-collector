@@ -4,6 +4,7 @@
 package otlphttpexporter
 
 import (
+	"net/http"
 	"path/filepath"
 	"testing"
 	"time"
@@ -24,18 +25,23 @@ import (
 func TestUnmarshalDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, confmap.New().Unmarshal(&cfg))
+	require.NoError(t, confmap.New().Unmarshal(&cfg))
 	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
 	// Default/Empty config is invalid.
 	assert.Error(t, component.ValidateConfig(cfg))
 }
 
 func TestUnmarshalConfig(t *testing.T) {
+	defaultMaxIdleConns := http.DefaultTransport.(*http.Transport).MaxIdleConns
+	defaultMaxIdleConnsPerHost := http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost
+	defaultMaxConnsPerHost := http.DefaultTransport.(*http.Transport).MaxConnsPerHost
+	defaultIdleConnTimeout := http.DefaultTransport.(*http.Transport).IdleConnTimeout
+
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, cm.Unmarshal(&cfg))
+	require.NoError(t, cm.Unmarshal(&cfg))
 	assert.Equal(t,
 		&Config{
 			RetryConfig: configretry.BackOffConfig{
@@ -46,7 +52,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				MaxInterval:         1 * time.Minute,
 				MaxElapsedTime:      10 * time.Minute,
 			},
-			QueueConfig: exporterhelper.QueueSettings{
+			QueueConfig: exporterhelper.QueueConfig{
 				Enabled:      true,
 				NumConsumers: 2,
 				QueueSize:    10,
@@ -67,10 +73,14 @@ func TestUnmarshalConfig(t *testing.T) {
 					},
 					Insecure: true,
 				},
-				ReadBufferSize:  123,
-				WriteBufferSize: 345,
-				Timeout:         time.Second * 10,
-				Compression:     "gzip",
+				ReadBufferSize:      123,
+				WriteBufferSize:     345,
+				Timeout:             time.Second * 10,
+				Compression:         "gzip",
+				MaxIdleConns:        &defaultMaxIdleConns,
+				MaxIdleConnsPerHost: &defaultMaxIdleConnsPerHost,
+				MaxConnsPerHost:     &defaultMaxConnsPerHost,
+				IdleConnTimeout:     &defaultIdleConnTimeout,
 			},
 		}, cfg)
 }
@@ -122,7 +132,7 @@ func TestUnmarshalEncoding(t *testing.T) {
 			if tt.shouldError {
 				assert.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.expected, encoding)
 			}
 		})

@@ -9,18 +9,12 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverprofiles"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
-
-// Receiver is an interface that allows using implementations of the builder
-// from different packages.
-type Receiver interface {
-	CreateTraces(context.Context, receiver.Settings, consumer.Traces) (receiver.Traces, error)
-	CreateMetrics(context.Context, receiver.Settings, consumer.Metrics) (receiver.Metrics, error)
-	CreateLogs(context.Context, receiver.Settings, consumer.Logs) (receiver.Logs, error)
-	Factory(component.Type) component.Factory
-}
 
 // ReceiverBuilder receiver is a helper struct that given a set of Configs and
 // Factories helps with creating receivers.
@@ -50,8 +44,8 @@ func (b *ReceiverBuilder) CreateTraces(ctx context.Context, set receiver.Setting
 		return nil, fmt.Errorf("receiver factory not available for: %q", set.ID)
 	}
 
-	logStabilityLevel(set.Logger, f.TracesReceiverStability())
-	return f.CreateTracesReceiver(ctx, set, cfg, next)
+	logStabilityLevel(set.Logger, f.TracesStability())
+	return f.CreateTraces(ctx, set, cfg, next)
 }
 
 // CreateMetrics creates a Metrics receiver based on the settings and config.
@@ -69,8 +63,8 @@ func (b *ReceiverBuilder) CreateMetrics(ctx context.Context, set receiver.Settin
 		return nil, fmt.Errorf("receiver factory not available for: %q", set.ID)
 	}
 
-	logStabilityLevel(set.Logger, f.MetricsReceiverStability())
-	return f.CreateMetricsReceiver(ctx, set, cfg, next)
+	logStabilityLevel(set.Logger, f.MetricsStability())
+	return f.CreateMetrics(ctx, set, cfg, next)
 }
 
 // CreateLogs creates a Logs receiver based on the settings and config.
@@ -88,8 +82,32 @@ func (b *ReceiverBuilder) CreateLogs(ctx context.Context, set receiver.Settings,
 		return nil, fmt.Errorf("receiver factory not available for: %q", set.ID)
 	}
 
-	logStabilityLevel(set.Logger, f.LogsReceiverStability())
-	return f.CreateLogsReceiver(ctx, set, cfg, next)
+	logStabilityLevel(set.Logger, f.LogsStability())
+	return f.CreateLogs(ctx, set, cfg, next)
+}
+
+// CreateProfiles creates a Profiles receiver based on the settings and config.
+func (b *ReceiverBuilder) CreateProfiles(ctx context.Context, set receiver.Settings, next consumerprofiles.Profiles) (receiverprofiles.Profiles, error) {
+	if next == nil {
+		return nil, errNilNextConsumer
+	}
+	cfg, existsCfg := b.cfgs[set.ID]
+	if !existsCfg {
+		return nil, fmt.Errorf("receiver %q is not configured", set.ID)
+	}
+
+	recvFact, existsFactory := b.factories[set.ID.Type()]
+	if !existsFactory {
+		return nil, fmt.Errorf("receiver factory not available for: %q", set.ID)
+	}
+
+	f, ok := recvFact.(receiverprofiles.Factory)
+	if !ok {
+		return nil, pipeline.ErrSignalNotSupported
+	}
+
+	logStabilityLevel(set.Logger, f.ProfilesStability())
+	return f.CreateProfiles(ctx, set, cfg, next)
 }
 
 func (b *ReceiverBuilder) Factory(componentType component.Type) component.Factory {

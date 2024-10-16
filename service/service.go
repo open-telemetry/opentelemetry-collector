@@ -23,8 +23,7 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/internal/localhostgate"
-	"go.opentelemetry.io/collector/internal/obsreportconfig"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
@@ -37,6 +36,15 @@ import (
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
+// useOtelWithSDKConfigurationForInternalTelemetryFeatureGate is the feature gate that controls whether the collector
+// supports configuring the OpenTelemetry SDK via configuration
+var _ = featuregate.GlobalRegistry().MustRegister(
+	"telemetry.useOtelWithSDKConfigurationForInternalTelemetry",
+	featuregate.StageStable,
+	featuregate.WithRegisterToVersion("v0.110.0"),
+	featuregate.WithRegisterDescription("controls whether the collector supports extended OpenTelemetry"+
+		"configuration for internal telemetry"))
+
 // Settings holds configuration for building a new Service.
 type Settings struct {
 	// BuildInfo provides collector start information.
@@ -45,41 +53,17 @@ type Settings struct {
 	// CollectorConf contains the Collector's current configuration
 	CollectorConf *confmap.Conf
 
-	// Receivers builder for receivers.
-	//
-	// Deprecated: [v0.108.0] use the [ReceiversConfigs] and [ReceiversFactories] options
-	// instead.
-	Receivers builders.Receiver
-
 	// Receivers configuration to its builder.
 	ReceiversConfigs   map[component.ID]component.Config
 	ReceiversFactories map[component.Type]receiver.Factory
-
-	// Processors builder for processors.
-	//
-	// Deprecated: [v0.108.0] use the [ProcessorsConfigs] and [ProcessorsFactories] options
-	// instead.
-	Processors builders.Processor
 
 	// Processors configuration to its builder.
 	ProcessorsConfigs   map[component.ID]component.Config
 	ProcessorsFactories map[component.Type]processor.Factory
 
-	// Exporters builder for exporters.
-	//
-	// Deprecated: [v0.108.0] use the [ReceiversConfigs] and [ReceiversFactories] options
-	// instead.
-	Exporters builders.Exporter
-
 	// exporters configuration to its builder.
 	ExportersConfigs   map[component.ID]component.Config
 	ExportersFactories map[component.Type]exporter.Factory
-
-	// Connectors builder for connectors.
-	//
-	// Deprecated: [v0.108.0] use the [ConnectorsConfigs] and [ConnectorsFactories] options
-	// instead.
-	Connectors builders.Connector
 
 	// Connectors configuration to its builder.
 	ConnectorsConfigs   map[component.ID]component.Config
@@ -112,42 +96,15 @@ type Service struct {
 
 // New creates a new Service, its telemetry, and Components.
 func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
-	disableHighCard := obsreportconfig.DisableHighCardinalityMetricsfeatureGate.IsEnabled()
-	extendedConfig := obsreportconfig.UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate.IsEnabled()
-
-	receivers := set.Receivers
-	if receivers == nil {
-		receivers = builders.NewReceiver(set.ReceiversConfigs, set.ReceiversFactories)
-	}
-
-	processors := set.Processors
-	if processors == nil {
-		processors = builders.NewProcessor(set.ProcessorsConfigs, set.ProcessorsFactories)
-	}
-
-	exporters := set.Exporters
-	if exporters == nil {
-		exporters = builders.NewExporter(set.ExportersConfigs, set.ExportersFactories)
-	}
-
-	connectors := set.Connectors
-	if connectors == nil {
-		connectors = builders.NewConnector(set.ConnectorsConfigs, set.ConnectorsFactories)
-	}
-
-	extensions := set.Extensions
-	if extensions == nil {
-		extensions = builders.NewExtension(set.ExtensionsConfigs, set.ExtensionsFactories)
-	}
-
 	srv := &Service{
 		buildInfo: set.BuildInfo,
 		host: &graph.Host{
-			Receivers:         receivers,
-			Processors:        processors,
-			Exporters:         exporters,
-			Connectors:        connectors,
-			Extensions:        extensions,
+			Receivers:  builders.NewReceiver(set.ReceiversConfigs, set.ReceiversFactories),
+			Processors: builders.NewProcessor(set.ProcessorsConfigs, set.ProcessorsFactories),
+			Exporters:  builders.NewExporter(set.ExportersConfigs, set.ExportersFactories),
+			Connectors: builders.NewConnector(set.ConnectorsConfigs, set.ConnectorsFactories),
+			Extensions: builders.NewExtension(set.ExtensionsConfigs, set.ExtensionsFactories),
+
 			ModuleInfo:        set.ModuleInfo,
 			BuildInfo:         set.BuildInfo,
 			AsyncErrorChannel: set.AsyncErrorChannel,
@@ -177,19 +134,12 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 
 	logger.Info("Setting up own telemetry...")
 
-	mp, err := newMeterProvider(
-		meterProviderSettings{
-			res:               res,
-			cfg:               cfg.Telemetry.Metrics,
-			asyncErrorChannel: set.AsyncErrorChannel,
-		},
-		disableHighCard,
-	)
+	mp, err := telFactory.CreateMeterProvider(ctx, telset, &cfg.Telemetry)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create metric provider: %w", err)
 	}
 
-	logsAboutMeterProvider(logger, cfg.Telemetry.Metrics, mp, extendedConfig)
+	logsAboutMeterProvider(logger, cfg.Telemetry.Metrics, mp)
 	srv.telemetrySettings = component.TelemetrySettings{
 		LeveledMeterProvider: func(level configtelemetry.Level) metric.MeterProvider {
 			if level <= cfg.Telemetry.Metrics.Level {
@@ -222,27 +172,21 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		return nil, err
 	}
 
-	if cfg.Telemetry.Metrics.Level != configtelemetry.LevelNone && cfg.Telemetry.Metrics.Address != "" {
-		// The process telemetry initialization requires the ballast size, which is available after the extensions are initialized.
-		if err = proctelemetry.RegisterProcessMetrics(srv.telemetrySettings); err != nil {
-			return nil, fmt.Errorf("failed to register process metrics: %w", err)
-		}
+	if err = proctelemetry.RegisterProcessMetrics(srv.telemetrySettings); err != nil {
+		return nil, fmt.Errorf("failed to register process metrics: %w", err)
 	}
 
 	return srv, nil
 }
 
-func logsAboutMeterProvider(logger *zap.Logger, cfg telemetry.MetricsConfig, mp metric.MeterProvider, extendedConfig bool) {
-	if cfg.Level == configtelemetry.LevelNone || (cfg.Address == "" && len(cfg.Readers) == 0) {
-		logger.Info(
-			"Skipped telemetry setup.",
-			zap.String(zapKeyTelemetryAddress, cfg.Address),
-			zap.Stringer(zapKeyTelemetryLevel, cfg.Level),
-		)
+func logsAboutMeterProvider(logger *zap.Logger, cfg telemetry.MetricsConfig, mp metric.MeterProvider) {
+	if cfg.Level == configtelemetry.LevelNone || len(cfg.Readers) == 0 {
+		logger.Info("Skipped telemetry setup.")
 		return
 	}
 
-	if len(cfg.Address) != 0 && extendedConfig {
+	//nolint
+	if len(cfg.Address) != 0 {
 		logger.Warn("service::telemetry::metrics::address is being deprecated in favor of service::telemetry::metrics::readers")
 	}
 
@@ -265,9 +209,6 @@ func (srv *Service) Start(ctx context.Context) error {
 		zap.Int("NumCPU", runtime.NumCPU()),
 	)
 
-	// enable status reporting
-	srv.host.Reporter.Ready()
-
 	if err := srv.host.ServiceExtensions.Start(ctx, srv.host); err != nil {
 		return fmt.Errorf("failed to start extensions: %w", err)
 	}
@@ -287,7 +228,6 @@ func (srv *Service) Start(ctx context.Context) error {
 	}
 
 	srv.telemetrySettings.Logger.Info("Everything is ready. Begin running and processing data.")
-	localhostgate.LogAboutUseLocalHostAsDefault(srv.telemetrySettings.Logger)
 	return nil
 }
 

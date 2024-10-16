@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
 )
 
@@ -19,14 +20,14 @@ import (
 // If error is returned then returned data are ignored. It MUST not call the next component.
 type ProcessTracesFunc func(context.Context, ptrace.Traces) (ptrace.Traces, error)
 
-type tracesProcessor struct {
+type traces struct {
 	component.StartFunc
 	component.ShutdownFunc
 	consumer.Traces
 }
 
-// NewTracesProcessor creates a processor.Traces that ensure context propagation and the right tags are set.
-func NewTracesProcessor(
+// NewTraces creates a processor.Traces that ensure context propagation and the right tags are set.
+func NewTraces(
 	_ context.Context,
 	set processor.Settings,
 	_ component.Config,
@@ -34,9 +35,13 @@ func NewTracesProcessor(
 	tracesFunc ProcessTracesFunc,
 	options ...Option,
 ) (processor.Traces, error) {
-	// TODO: Add observability Traces support
 	if tracesFunc == nil {
 		return nil, errors.New("nil tracesFunc")
+	}
+
+	obs, err := newObsReport(set, pipeline.SignalTraces)
+	if err != nil {
+		return nil, err
 	}
 
 	eventOptions := spanAttributes(set.ID)
@@ -44,15 +49,20 @@ func NewTracesProcessor(
 	traceConsumer, err := consumer.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
 		span := trace.SpanFromContext(ctx)
 		span.AddEvent("Start processing.", eventOptions)
-		var err error
-		td, err = tracesFunc(ctx, td)
+		spansIn := td.SpanCount()
+
+		var errFunc error
+		td, errFunc = tracesFunc(ctx, td)
 		span.AddEvent("End processing.", eventOptions)
-		if err != nil {
-			if errors.Is(err, ErrSkipProcessingData) {
+		if errFunc != nil {
+			obs.recordInOut(ctx, spansIn, 0)
+			if errors.Is(errFunc, ErrSkipProcessingData) {
 				return nil
 			}
-			return err
+			return errFunc
 		}
+		spansOut := td.SpanCount()
+		obs.recordInOut(ctx, spansIn, spansOut)
 		return nextConsumer.ConsumeTraces(ctx, td)
 	}, bs.consumerOptions...)
 
@@ -60,7 +70,7 @@ func NewTracesProcessor(
 		return nil, err
 	}
 
-	return &tracesProcessor{
+	return &traces{
 		StartFunc:    bs.StartFunc,
 		ShutdownFunc: bs.ShutdownFunc,
 		Traces:       traceConsumer,

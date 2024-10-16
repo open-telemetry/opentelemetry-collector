@@ -37,20 +37,20 @@ func TestExtensionBuilder(t *testing.T) {
 	b := NewExtension(cfgs, factories)
 
 	e, err := b.Create(context.Background(), createExtensionSettings(testID))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, e)
 
 	// Check that the extension has access to the resource attributes.
 	nop, ok := e.(nopExtension)
 	assert.True(t, ok)
-	assert.Equal(t, nop.Settings.Resource.Attributes().Len(), 0)
+	assert.Equal(t, 0, nop.Settings.Resource.Attributes().Len())
 
 	missingType, err := b.Create(context.Background(), createExtensionSettings(unknownID))
-	assert.EqualError(t, err, "extension factory not available for: \"unknown\"")
+	require.EqualError(t, err, "extension factory not available for: \"unknown\"")
 	assert.Nil(t, missingType)
 
 	missingCfg, err := b.Create(context.Background(), createExtensionSettings(component.NewIDWithName(testType, "foo")))
-	assert.EqualError(t, err, "extension \"test/foo\" is not configured")
+	require.EqualError(t, err, "extension \"test/foo\" is not configured")
 	assert.Nil(t, missingCfg)
 }
 
@@ -75,7 +75,7 @@ func TestNewNopExtensionConfigsAndFactories(t *testing.T) {
 	set := extensiontest.NewNopSettings()
 	set.ID = component.NewID(nopType)
 
-	ext, err := factory.CreateExtension(context.Background(), set, cfg)
+	ext, err := factory.Create(context.Background(), set, cfg)
 	require.NoError(t, err)
 	bExt, err := builder.Create(context.Background(), set)
 	require.NoError(t, err)

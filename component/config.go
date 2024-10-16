@@ -86,7 +86,7 @@ func callValidateIfPossible(v reflect.Value) error {
 	if reflect.PointerTo(v.Type()).Implements(configValidatorType) {
 		// If not addressable, then create a new *V pointer and set the value to current v.
 		if !v.CanAddr() {
-			pv := reflect.New(reflect.PtrTo(v.Type()).Elem())
+			pv := reflect.New(reflect.PointerTo(v.Type()).Elem())
 			pv.Elem().Set(v)
 			v = pv.Elem()
 		}
@@ -144,26 +144,6 @@ func MustNewType(strType string) Type {
 	}
 	return ty
 }
-
-// DataType is a special Type that represents the data types supported by the collector. We currently support
-// collecting metrics, traces and logs, this can expand in the future.
-type DataType = Type
-
-func mustNewDataType(strType string) DataType {
-	return MustNewType(strType)
-}
-
-// Currently supported data types. Add new data types here when new types are supported in the future.
-var (
-	// DataTypeTraces is the data type tag for traces.
-	DataTypeTraces = mustNewDataType("traces")
-
-	// DataTypeMetrics is the data type tag for metrics.
-	DataTypeMetrics = mustNewDataType("metrics")
-
-	// DataTypeLogs is the data type tag for logs.
-	DataTypeLogs = mustNewDataType("logs")
-)
 
 // nameRegexp is used to validate the name of a component. A name can consist of
 // 1 to 1024 unicode characters excluding whitespace, control characters, and

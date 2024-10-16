@@ -13,11 +13,18 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/embedded"
 	"go.opentelemetry.io/otel/trace/noop"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/internal/globalgates"
+	"go.opentelemetry.io/collector/featuregate"
 )
+
+var noopTracerProvider = featuregate.GlobalRegistry().MustRegister("service.noopTracerProvider",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterFromVersion("v0.107.0"),
+	featuregate.WithRegisterToVersion("v0.109.0"),
+	featuregate.WithRegisterDescription("Sets a Noop OpenTelemetry TracerProvider to reduce memory allocations. This featuregate is incompatible with the zPages extension."))
 
 const (
 	// supported trace propagators
@@ -29,28 +36,28 @@ var (
 	errUnsupportedPropagator = errors.New("unsupported trace propagator")
 )
 
-func attributes(set Settings, cfg Config) map[string]interface{} {
-	attrs := map[string]interface{}{
-		string(semconv.ServiceNameKey):    set.BuildInfo.Command,
-		string(semconv.ServiceVersionKey): set.BuildInfo.Version,
-	}
-	for k, v := range cfg.Resource {
-		if v != nil {
-			attrs[k] = *v
-		}
+type noopNoContextTracer struct {
+	embedded.Tracer
+}
 
-		// the new value is nil, delete the existing key
-		if _, ok := attrs[k]; ok && v == nil {
-			delete(attrs, k)
-		}
-	}
-	return attrs
+var noopSpan = noop.Span{}
+
+func (n *noopNoContextTracer) Start(ctx context.Context, _ string, _ ...trace.SpanStartOption) (context.Context, trace.Span) {
+	return ctx, noopSpan
+}
+
+type noopNoContextTracerProvider struct {
+	embedded.TracerProvider
+}
+
+func (n *noopNoContextTracerProvider) Tracer(_ string, _ ...trace.TracerOption) trace.Tracer {
+	return &noopNoContextTracer{}
 }
 
 // New creates a new Telemetry from Config.
 func newTracerProvider(ctx context.Context, set Settings, cfg Config) (trace.TracerProvider, error) {
-	if globalgates.NoopTracerProvider.IsEnabled() || cfg.Traces.Level == configtelemetry.LevelNone {
-		return noop.NewTracerProvider(), nil
+	if noopTracerProvider.IsEnabled() || cfg.Traces.Level == configtelemetry.LevelNone {
+		return &noopNoContextTracerProvider{}, nil
 	}
 
 	sch := semconv.SchemaURL

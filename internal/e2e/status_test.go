@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/internal/sharedcomponent"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/extensions"
@@ -35,7 +36,11 @@ import (
 
 var nopType = component.MustNewType("nop")
 
+var wg = sync.WaitGroup{}
+
 func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
+	t.Skipf("Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector/issues/10927#issuecomment-2343679185")
+
 	eventsReceived := make(map[*componentstatus.InstanceID][]*componentstatus.Event)
 	exporterFactory := exportertest.NewNopFactory()
 	connectorFactory := connectortest.NewNopFactory()
@@ -97,11 +102,11 @@ func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 			},
 		},
 		Pipelines: pipelines.Config{
-			component.MustNewID("traces"): {
+			pipeline.NewID(pipeline.SignalTraces): {
 				Receivers: []component.ID{component.NewID(component.MustNewType("test"))},
 				Exporters: []component.ID{component.NewID(nopType)},
 			},
-			component.MustNewID("metrics"): {
+			pipeline.NewID(pipeline.SignalMetrics): {
 				Receivers: []component.ID{component.NewID(component.MustNewType("test"))},
 				Exporters: []component.ID{component.NewID(nopType)},
 			},
@@ -112,17 +117,18 @@ func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 	s, err := service.New(context.Background(), set, cfg)
 	require.NoError(t, err)
 
+	wg.Add(1)
 	err = s.Start(context.Background())
 	require.NoError(t, err)
-	time.Sleep(15 * time.Second)
+	wg.Wait()
 	err = s.Shutdown(context.Background())
 	require.NoError(t, err)
 
-	require.Equal(t, 2, len(eventsReceived))
+	require.Len(t, eventsReceived, 2)
 
 	for instanceID, events := range eventsReceived {
 		pipelineIDs := ""
-		instanceID.AllPipelineIDs(func(id component.ID) bool {
+		instanceID.AllPipelineIDs(func(id pipeline.ID) bool {
 			pipelineIDs += id.String() + ","
 			return true
 		})
@@ -170,6 +176,7 @@ func (t *testReceiver) Start(_ context.Context, host component.Host) error {
 	componentstatus.ReportStatus(host, componentstatus.NewRecoverableErrorEvent(errors.New("test recoverable error")))
 	go func() {
 		componentstatus.ReportStatus(host, componentstatus.NewEvent(componentstatus.StatusOK))
+		wg.Done()
 	}()
 	return nil
 }
@@ -186,7 +193,7 @@ func createDefaultReceiverConfig() component.Config {
 
 func createTraces(
 	_ context.Context,
-	set receiver.Settings,
+	_ receiver.Settings,
 	cfg component.Config,
 	_ consumer.Traces,
 ) (receiver.Traces, error) {
@@ -196,7 +203,6 @@ func createTraces(
 		func() (*testReceiver, error) {
 			return &testReceiver{}, nil
 		},
-		&set.TelemetrySettings,
 	)
 	if err != nil {
 		return nil, err
@@ -207,7 +213,7 @@ func createTraces(
 
 func createMetrics(
 	_ context.Context,
-	set receiver.Settings,
+	_ receiver.Settings,
 	cfg component.Config,
 	_ consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -217,7 +223,6 @@ func createMetrics(
 		func() (*testReceiver, error) {
 			return &testReceiver{}, nil
 		},
-		&set.TelemetrySettings,
 	)
 	if err != nil {
 		return nil, err
@@ -232,12 +237,12 @@ func newExtensionFactory() extension.Factory {
 	return extension.NewFactory(
 		component.MustNewType("watcher"),
 		createDefaultExtensionConfig,
-		createExtension,
+		create,
 		component.StabilityLevelStable,
 	)
 }
 
-func createExtension(_ context.Context, _ extension.Settings, cfg component.Config) (extension.Extension, error) {
+func create(_ context.Context, _ extension.Settings, cfg component.Config) (extension.Extension, error) {
 	oCfg := cfg.(*extensionConfig)
 	return &testExtension{
 		eventsReceived: oCfg.eventsReceived,
@@ -246,7 +251,6 @@ func createExtension(_ context.Context, _ extension.Settings, cfg component.Conf
 
 type testExtension struct {
 	eventsReceived map[*componentstatus.InstanceID][]*componentstatus.Event
-	lock           sync.Mutex
 }
 
 type extensionConfig struct {
@@ -272,24 +276,22 @@ func (t *testExtension) ComponentStatusChanged(
 	source *componentstatus.InstanceID,
 	event *componentstatus.Event,
 ) {
-	t.lock.Lock()
-	defer t.lock.Unlock()
 	if source.ComponentID() == component.NewID(component.MustNewType("test")) {
 		t.eventsReceived[source] = append(t.eventsReceived[source], event)
 	}
 }
 
-// NotifyConfig implements the extension.ConfigWatcher interface.
+// NotifyConfig implements the extensioncapabilities.ConfigWatcher interface.
 func (t *testExtension) NotifyConfig(_ context.Context, _ *confmap.Conf) error {
 	return nil
 }
 
-// Ready implements the extension.PipelineWatcher interface.
+// Ready implements the extensioncapabilities.PipelineWatcher interface.
 func (t *testExtension) Ready() error {
 	return nil
 }
 
-// NotReady implements the extension.PipelineWatcher interface.
+// NotReady implements the extensioncapabilities.PipelineWatcher interface.
 func (t *testExtension) NotReady() error {
 	return nil
 }

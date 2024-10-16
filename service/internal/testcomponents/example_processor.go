@@ -8,18 +8,22 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processorprofiles"
 )
 
 var procType = component.MustNewType("exampleprocessor")
 
 // ExampleProcessorFactory is factory for ExampleProcessor.
-var ExampleProcessorFactory = processor.NewFactory(
+var ExampleProcessorFactory = processorprofiles.NewFactory(
 	procType,
 	createDefaultConfig,
-	processor.WithTraces(createTracesProcessor, component.StabilityLevelDevelopment),
-	processor.WithMetrics(createMetricsProcessor, component.StabilityLevelDevelopment),
-	processor.WithLogs(createLogsProcessor, component.StabilityLevelDevelopment))
+	processorprofiles.WithTraces(createTracesProcessor, component.StabilityLevelDevelopment),
+	processorprofiles.WithMetrics(createMetricsProcessor, component.StabilityLevelDevelopment),
+	processorprofiles.WithLogs(createLogsProcessor, component.StabilityLevelDevelopment),
+	processorprofiles.WithProfiles(createProfilesProcessor, component.StabilityLevelDevelopment),
+)
 
 // CreateDefaultConfig creates the default configuration for the Processor.
 func createDefaultConfig() component.Config {
@@ -47,11 +51,19 @@ func createLogsProcessor(_ context.Context, set processor.Settings, _ component.
 	}, nil
 }
 
+func createProfilesProcessor(_ context.Context, set processor.Settings, _ component.Config, nextConsumer consumerprofiles.Profiles) (processorprofiles.Profiles, error) {
+	return &ExampleProcessor{
+		ConsumeProfilesFunc: nextConsumer.ConsumeProfiles,
+		mutatesData:         set.ID.Name() == "mutate",
+	}, nil
+}
+
 type ExampleProcessor struct {
 	componentState
 	consumer.ConsumeTracesFunc
 	consumer.ConsumeMetricsFunc
 	consumer.ConsumeLogsFunc
+	consumerprofiles.ConsumeProfilesFunc
 	mutatesData bool
 }
 

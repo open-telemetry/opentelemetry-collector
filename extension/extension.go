@@ -8,48 +8,12 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 )
 
 // Extension is the interface for objects hosted by the OpenTelemetry Collector that
 // don't participate directly on data pipelines but provide some functionality
 // to the service, examples: health check endpoint, z-pages, etc.
 type Extension = component.Component
-
-// Dependent is an optional interface that can be implemented by extensions
-// that depend on other extensions and must be started only after their dependencies.
-// See https://github.com/open-telemetry/opentelemetry-collector/pull/8768 for examples.
-type Dependent interface {
-	Extension
-	Dependencies() []component.ID
-}
-
-// PipelineWatcher is an extra interface for Extension hosted by the OpenTelemetry
-// Collector that is to be implemented by extensions interested in changes to pipeline
-// states. Typically this will be used by extensions that change their behavior if data is
-// being ingested or not, e.g.: a k8s readiness probe.
-type PipelineWatcher interface {
-	// Ready notifies the Extension that all pipelines were built and the
-	// receivers were started, i.e.: the service is ready to receive data
-	// (note that it may already have received data when this method is called).
-	Ready() error
-
-	// NotReady notifies the Extension that all receivers are about to be stopped,
-	// i.e.: pipeline receivers will not accept new data.
-	// This is sent before receivers are stopped, so the Extension can take any
-	// appropriate actions before that happens.
-	NotReady() error
-}
-
-// ConfigWatcher is an interface that should be implemented by an extension that
-// wishes to be notified of the Collector's effective configuration.
-type ConfigWatcher interface {
-	// NotifyConfig notifies the extension of the Collector's current effective configuration.
-	// The extension owns the `confmap.Conf`. Callers must ensure that it's safe for
-	// extensions to store the `conf` pointer and use it concurrently with any other
-	// instances of `conf`.
-	NotifyConfig(ctx context.Context, conf *confmap.Conf) error
-}
 
 // ModuleInfo describes the go module for each component.
 type ModuleInfo struct {
@@ -77,18 +41,29 @@ type Settings struct {
 // CreateFunc is the equivalent of Factory.Create(...) function.
 type CreateFunc func(context.Context, Settings, component.Config) (Extension, error)
 
-// CreateExtension implements Factory.Create.
-func (f CreateFunc) CreateExtension(ctx context.Context, set Settings, cfg component.Config) (Extension, error) {
+// Create implements Factory.Create.
+func (f CreateFunc) Create(ctx context.Context, set Settings, cfg component.Config) (Extension, error) {
 	return f(ctx, set, cfg)
+}
+
+// Deprecated: [v0.112.0] use Create.
+func (f CreateFunc) CreateExtension(ctx context.Context, set Settings, cfg component.Config) (Extension, error) {
+	return f.Create(ctx, set, cfg)
 }
 
 type Factory interface {
 	component.Factory
 
-	// CreateExtension creates an extension based on the given config.
+	// Create an extension based on the given config.
+	Create(ctx context.Context, set Settings, cfg component.Config) (Extension, error)
+
+	// Deprecated: [v0.112.0] use Create.
 	CreateExtension(ctx context.Context, set Settings, cfg component.Config) (Extension, error)
 
-	// ExtensionStability gets the stability level of the Extension.
+	// Stability gets the stability level of the Extension.
+	Stability() component.StabilityLevel
+
+	// Deprecated: [v0.112.0] use Stability.
 	ExtensionStability() component.StabilityLevel
 
 	unexportedFactoryFunc()
@@ -106,6 +81,10 @@ func (f *factory) Type() component.Type {
 }
 
 func (f *factory) unexportedFactoryFunc() {}
+
+func (f *factory) Stability() component.StabilityLevel {
+	return f.extensionStability
+}
 
 func (f *factory) ExtensionStability() component.StabilityLevel {
 	return f.extensionStability
@@ -136,46 +115,4 @@ func MakeFactoryMap(factories ...Factory) (map[component.Type]Factory, error) {
 		fMap[f.Type()] = f
 	}
 	return fMap, nil
-}
-
-// Builder extension is a helper struct that given a set of Configs and Factories helps with creating extensions.
-//
-// Deprecated: [v0.108.0] this builder is being internalized within the service module,
-// and will be removed soon.
-type Builder struct {
-	cfgs      map[component.ID]component.Config
-	factories map[component.Type]Factory
-}
-
-// NewBuilder creates a new extension.Builder to help with creating components form a set of configs and factories.
-//
-// Deprecated: [v0.108.0] this builder is being internalized within the service module,
-// and will be removed soon.
-func NewBuilder(cfgs map[component.ID]component.Config, factories map[component.Type]Factory) *Builder {
-	return &Builder{cfgs: cfgs, factories: factories}
-}
-
-// Create creates an extension based on the settings and configs available.
-func (b *Builder) Create(ctx context.Context, set Settings) (Extension, error) {
-	cfg, existsCfg := b.cfgs[set.ID]
-	if !existsCfg {
-		return nil, fmt.Errorf("extension %q is not configured", set.ID)
-	}
-
-	f, existsFactory := b.factories[set.ID.Type()]
-	if !existsFactory {
-		return nil, fmt.Errorf("extension factory not available for: %q", set.ID)
-	}
-
-	sl := f.ExtensionStability()
-	if sl >= component.StabilityLevelAlpha {
-		set.Logger.Debug(sl.LogMessage())
-	} else {
-		set.Logger.Info(sl.LogMessage())
-	}
-	return f.CreateExtension(ctx, set, cfg)
-}
-
-func (b *Builder) Factory(componentType component.Type) component.Factory {
-	return b.factories[componentType]
 }

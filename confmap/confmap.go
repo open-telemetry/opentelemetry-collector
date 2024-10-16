@@ -172,8 +172,13 @@ func (l *Conf) Sub(key string) (*Conf, error) {
 		return New(), nil
 	}
 
-	if v, ok := data.(map[string]any); ok {
+	switch v := data.(type) {
+	case map[string]any:
 		return NewFromStringMap(v), nil
+	case expandedValue:
+		if m, ok := v.Value.(map[string]any); ok {
+			return NewFromStringMap(m), nil
+		}
 	}
 
 	return nil, fmt.Errorf("unexpected sub-config value kind for key:%s value:%v kind:%v", key, data, reflect.TypeOf(data).Kind())
@@ -518,10 +523,10 @@ type Marshaler interface {
 //	}
 //
 // The configuration provided by users may have following cases
-// 1. configuration have `keys` field and have a non-nil values for this key, the output should be overrided
+// 1. configuration have `keys` field and have a non-nil values for this key, the output should be overridden
 //   - for example, input is {"keys", ["c"]}, then output is Config{ Keys: ["c"]}
 //
-// 2. configuration have `keys` field and have an empty slice for this key, the output should be overrided by empty slics
+// 2. configuration have `keys` field and have an empty slice for this key, the output should be overridden by empty slices
 //   - for example, input is {"keys", []}, then output is Config{ Keys: []}
 //
 // 3. configuration have `keys` field and have nil value for this key, the output should be default config

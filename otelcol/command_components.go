@@ -72,7 +72,7 @@ func newComponentsCommand(set CollectorSettings) *cobra.Command {
 					Name:   ext.Type(),
 					Module: factories.ExtensionModules[ext.Type()],
 					Stability: map[string]string{
-						"extension": ext.ExtensionStability().String(),
+						"extension": ext.Stability().String(),
 					},
 				})
 			}
@@ -81,9 +81,9 @@ func newComponentsCommand(set CollectorSettings) *cobra.Command {
 					Name:   prs.Type(),
 					Module: factories.ProcessorModules[prs.Type()],
 					Stability: map[string]string{
-						"logs":    prs.LogsProcessorStability().String(),
-						"metrics": prs.MetricsProcessorStability().String(),
-						"traces":  prs.TracesProcessorStability().String(),
+						"logs":    prs.LogsStability().String(),
+						"metrics": prs.MetricsStability().String(),
+						"traces":  prs.TracesStability().String(),
 					},
 				})
 			}
@@ -92,9 +92,9 @@ func newComponentsCommand(set CollectorSettings) *cobra.Command {
 					Name:   rcv.Type(),
 					Module: factories.ReceiverModules[rcv.Type()],
 					Stability: map[string]string{
-						"logs":    rcv.LogsReceiverStability().String(),
-						"metrics": rcv.MetricsReceiverStability().String(),
-						"traces":  rcv.TracesReceiverStability().String(),
+						"logs":    rcv.LogsStability().String(),
+						"metrics": rcv.MetricsStability().String(),
+						"traces":  rcv.TracesStability().String(),
 					},
 				})
 			}
@@ -103,9 +103,9 @@ func newComponentsCommand(set CollectorSettings) *cobra.Command {
 					Name:   exp.Type(),
 					Module: factories.ExporterModules[exp.Type()],
 					Stability: map[string]string{
-						"logs":    exp.LogsExporterStability().String(),
-						"metrics": exp.MetricsExporterStability().String(),
-						"traces":  exp.TracesExporterStability().String(),
+						"logs":    exp.LogsStability().String(),
+						"metrics": exp.MetricsStability().String(),
+						"traces":  exp.TracesStability().String(),
 					},
 				})
 			}

@@ -7,6 +7,142 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.17.0/v0.111.0
+
+### 🛑 Breaking changes 🛑
+
+- `service/telemetry`: Change default metrics address to "localhost:8888" instead of ":8888" (#11251)
+  This behavior can be disabled by disabling the feature gate 'telemetry.UseLocalHostAsDefaultMetricsAddress'.
+- `loggingexporter`: Removed the deprecated logging exporter.  Use the debug exporter instead. (#11037)
+
+### 🚩 Deprecations 🚩
+
+- `service/telemetry`: Deprecate service::telemetry::metrics::address in favor of service::telemetry::metrics::readers. (#11205)
+- `processorhelper`: Deprecate BuildProcessorMetricName as it's no longer needed since introduction of mdatagen (#11302)
+
+### 💡 Enhancements 💡
+
+- `ocb`: create docker images for OCB, per https://github.com/open-telemetry/opentelemetry-collector-releases/pull/671 (#5712)
+  Adds standard Docker images for OCB to Dockerhub and GitHub, see hub.docker.com/r/otel/opentelemetry-collector-builder
+- `confighttp`: Snappy compression to lazy read for memory efficiency (#11177)
+- `httpsprovider`: Mark the httpsprovider as stable. (#11191)
+- `httpprovider`: Mark the httpprovider as stable. (#11191)
+- `yamlprovider`: Mark the yamlprovider as stable. (#11192)
+- `confmap`: Allow using any YAML structure as a string when loading configuration including time.Time formats (#10659)
+  Previously, fields with time.Time formats could not be used as strings in configurations
+  
+
+### 🧰 Bug fixes 🧰
+
+- `processorhelper`: Fix data race condition, concurrent writes to the err variable, causes UB (Undefined Behavior) (#11350)
+- `cmd/builder`: re-adds function to properly set and view version number of OpenTelemetry Collector Builder (ocb) binaries (#11208)
+- `pdata`: Unmarshal Span and SpanLink flags from JSON (#11267)
+
+## v1.16.0/v0.110.0
+
+### 🛑 Breaking changes 🛑
+
+- `processorhelper`: Update incoming/outgoing metrics to a single metric with a `otel.signal` attributes. (#11144)
+  The following metrics were added in the previous version
+  - otelcol_processor_incoming_spans
+  - otelcol_processor_outgoing_spans
+  - otelcol_processor_incoming_metric_points
+  - otelcol_processor_outgoing_metric_points
+  - otelcol_processor_incoming_log_records
+  - otelcol_processor_outgoing_log_records
+  
+  They are being replaced with the following to more closely align with OTEP 259:
+  - otelcol_processor_incoming_items
+  - otelcol_processor_outgoing_items
+  
+- `processorhelper`: Remove deprecated `[Traces|Metrics|Logs]`Inserted funcs (#11151)
+- `config`: Mark UseLocalHostAsDefaultHostfeatureGate as stable (#11235)
+
+### 🚩 Deprecations 🚩
+
+- `processorhelper`: deprecate accepted/refused/dropped metrics (#11201)
+  The following metrics are being deprecated as they were only used in a single
+  processor:
+    - `otelcol_processor_accepted_log_records`
+    - `otelcol_processor_accepted_metric_points`
+    - `otelcol_processor_accepted_spans`
+    - `otelcol_processor_dropped_log_records`
+    - `otelcol_processor_dropped_metric_points`
+    - `otelcol_processor_dropped_spans`
+    - `otelcol_processor_refused_log_records`
+    - `otelcol_processor_refused_metric_points`
+    - `otelcol_processor_refused_spans`
+  
+
+### 💡 Enhancements 💡
+
+- `pdata`: Add support to MoveTo for Map, allow avoiding copies (#11175)
+- `mdatagen`: Add stability field to telemetry metrics, allowing the generated description to include a stability string. (#11160)
+- `confignet`: Mark module as Stable. (#9801)
+- `confmap/provider/envprovider`: Support default values when env var is empty (#5228)
+- `mdatagen`: mdatagen `validateMetrics()` support validate metrics in `telemetry.metric` (#10925)
+- `service/telemetry`: Mark useOtelWithSDKConfigurationForInternalTelemetry as stable (#7532)
+- `mdatagen`: Use cobra for the command, add version flag (#11196)
+
+### 🧰 Bug fixes 🧰
+
+- `service`: Ensure process telemetry is registered when internal telemetry is configured with readers instead of an address. (#11093)
+- `mdatagen`: Fix incorrect generation of metric tests with boolean attributes. (#11169)
+- `otelcol`: Fix the Windows Event Log configuration when running the Collector as a Windows service. (#5297, #11051)
+- `builder`: Honor build_tags in config (#11156)
+- `builder`: Fix version for providers in the default config (#11123)
+- `cmd/builder`: Temporarily disable strict versioning checks (#11129, #11152)
+  The strict versioning check may be enabled by default in a future version once all configuration providers are stabilized.
+  
+- `confmap`: Fix loading config of a component from a different source. (#11154)
+  This issue only affected loading the whole component config, loading parts of a component config from a different source was working correctly.
+  
+
+## v1.15.0/v0.109.0
+
+### 🛑 Breaking changes 🛑
+
+- `scraperhelper`: Remove deprecated `ObsReport`, `ObsReportSettings`, `NewObsReport` types/funcs (#11086)
+- `confmap`: Remove stable `confmap.strictlyTypedInput` gate (#11008)
+- `confmap`: Removes stable `confmap.unifyEnvVarExpansion` feature gate. (#11007)
+- `ballastextension`: Removes the deprecated ballastextension (#10671)
+- `service`: Removes stable `service.disableOpenCensusBridge` feature gate (#11009)
+
+### 🚩 Deprecations 🚩
+
+- `processorhelper`: These funcs are not used anywhere, marking them deprecated. (#11083)
+
+### 🚀 New components 🚀
+
+- `extension/experimental/storage`: Move `extension/experimental/storage` into a separate module (#11022)
+
+### 💡 Enhancements 💡
+
+- `configtelemetry`: Add guidelines for each level of component telemetry (#10286)
+- `service`: move `useOtelWithSDKConfigurationForInternalTelemetry` gate to beta (#11091)
+- `service`: implement a no-op tracer provider that doesn't propagate the context (#11026)
+  The no-op tracer provider supported by the SDK incurs a memory cost of propagating the context no matter
+  what. This is not needed if tracing is not enabled in the Collector. This implementation of the no-op tracer
+  provider removes the need to allocate memory when tracing is disabled.
+  
+- `envprovider`: Mark module as stable (#10982)
+- `fileprovider`: Mark module as stable (#10983)
+- `processor`: Add incoming and outgoing counts for processors using processorhelper. (#10910)
+  Any processor using the processorhelper package (this is most processors) will automatically report
+  incoming and outgoing item counts. The new metrics are:
+  - otelcol_processor_incoming_spans
+  - otelcol_processor_outgoing_spans
+  - otelcol_processor_incoming_metric_points
+  - otelcol_processor_outgoing_metric_points
+  - otelcol_processor_incoming_log_records
+  - otelcol_processor_outgoing_log_records
+  
+
+### 🧰 Bug fixes 🧰
+
+- `configgrpc`: Change the value of max_recv_msg_size_mib from uint64 to int to avoid a case where misconfiguration caused an integer overflow. (#10948)
+- `exporterqueue`: Fix a bug in persistent queue that Offer can becomes deadlocked when queue is almost full (#11015)
+
 ## v1.14.1/v0.108.1
 
 ### 🧰 Bug fixes 🧰
@@ -235,7 +371,7 @@ This release includes 2 very important breaking changes.
   - Stop doing most kinds of implicit type casting when resolving configuration values
   - Use the original string representation of configuration values if the ${} syntax is used in inline position
   
-- `confighttp`: Use `confighttp.ServerConfig` as part of zpagesextension. See [https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md#server-configuration](server configuration) options. (#9368)
+- `confighttp`: Use `confighttp.ServerConfig` as part of zpagesextension. See [server configuration](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md#server-configuration) options. (#9368)
 
 ### 🧰 Bug fixes 🧰
 
@@ -2160,9 +2296,9 @@ There isn't a valid core binary for this release. Use v0.57.2 instead.
 - Deprecate global flag in `featuregates` (#5060)
 - Deprecate last funcs/structs in componenthelper (#5069)
 - Change structs in otlpgrpc to follow standard go encoding interfaces (#5062)
-  - Deprecate UnmarshalJSON[Traces|Metrics|Logs][Reques|Response] in favor of `UnmarshalJSON`.
-  - Deprecate [Traces|Metrics|Logs][Reques|Response].Marshal in favor of `MarshalProto`.
-  - Deprecate UnmarshalJSON[Traces|Metrics|Logs][Reques|Response] in favor of `UnmarshalProto`.
+  - Deprecate `UnmarshalJSON[Traces|Metrics|Logs][Reques|Response]` in favor of `UnmarshalJSON`.
+  - Deprecate `[Traces|Metrics|Logs][Reques|Response].Marshal` in favor of `MarshalProto`.
+  - Deprecate `UnmarshalJSON[Traces|Metrics|Logs][Reques|Response]` in favor of `UnmarshalProto`.
 - Deprecating following pdata methods/types following OTLP v0.15.0 upgrade (#5076):
       - InstrumentationLibrary is now InstrumentationScope
       - NewInstrumentationLibrary is now NewInstrumentationScope
@@ -2662,7 +2798,7 @@ This release is marked as "bad" since the metrics pipelines will produce bad dat
 
 - Remove Resize() from pdata slice APIs (#3675)
 - Remove the ballast allocation when `mem-ballast-size-mib` is set in command line (#3626)
-  - Use [`ballast extension`](./extension/ballastextension/README.md) to set memory ballast instead.
+  - Use `ballast extension` to set memory ballast instead.
 - Rename `DoubleDataPoint` to `NumberDataPoint` (#3633)
 - Remove `IntHistogram` (#3676)
 

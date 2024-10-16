@@ -54,32 +54,12 @@ s+\(.*\)PartialSuccess partial_success = \(.*\);+\1PartialSuccess partial_succes
 s+opentelemetry.proto.profiles.v1experimental.Profile \(.*\);+opentelemetry.proto.profiles.v1experimental.Profile \1\
   [ (gogoproto.nullable) = false ];+g
 
-s+repeated ValueType \(.*\);+repeated ValueType \1\
-  [ (gogoproto.nullable) = false ];+g
-
-s+repeated Sample \(.*\);+repeated Sample \1\
-  [ (gogoproto.nullable) = false ];+g
-
-s+repeated Mapping \(.*\);+repeated Mapping \1\
-  [ (gogoproto.nullable) = false ];+g
-
-s+repeated Location \(.*\);+repeated Location \1\
-  [ (gogoproto.nullable) = false ];+g
-
-s+repeated Label \(.*\);+repeated Label \1\
-  [ (gogoproto.nullable) = false ];+g
-
-s+repeated Function \(.*\);+repeated Function \1\
-  [ (gogoproto.nullable) = false ];+g
-
-s+repeated AttributeUnit \(.*\);+repeated AttributeUnit \1\
-  [ (gogoproto.nullable) = false ];+g
-
-s+repeated Link link_table \(.*\);+repeated Link link_table \1\
-  [ (gogoproto.nullable) = false ];+g
-
-s+repeated Line \(.*\);+repeated Line \1\
-  [ (gogoproto.nullable) = false ];+g
+s+bytes profile_id = \(.*\);+bytes profile_id = \1\
+	[\
+	// Use custom ProfileId data type for this field.\
+	(gogoproto.nullable) = false,\
+	(gogoproto.customtype) = "go.opentelemetry.io/collector/pdata/internal/data.ProfileID"\
+	];+g
 
 s+ValueType period_type \(.*\);+ValueType period_type \1\
   [ (gogoproto.nullable) = false ];+g

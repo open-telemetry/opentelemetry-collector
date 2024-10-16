@@ -12,11 +12,12 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterprofiles"
 )
 
 var nopType = component.MustNewType("nop")
 
-// NewNopSettings returns a new nop settings for Create*Exporter functions.
+// NewNopSettings returns a new nop settings for Create* functions.
 func NewNopSettings() exporter.Settings {
 	return exporter.Settings{
 		ID:                component.NewIDWithName(nopType, uuid.NewString()),
@@ -27,47 +28,41 @@ func NewNopSettings() exporter.Settings {
 
 // NewNopFactory returns an exporter.Factory that constructs nop exporters.
 func NewNopFactory() exporter.Factory {
-	return exporter.NewFactory(
+	return exporterprofiles.NewFactory(
 		nopType,
 		func() component.Config { return &nopConfig{} },
-		exporter.WithTraces(createTracesExporter, component.StabilityLevelStable),
-		exporter.WithMetrics(createMetricsExporter, component.StabilityLevelStable),
-		exporter.WithLogs(createLogsExporter, component.StabilityLevelStable),
+		exporterprofiles.WithTraces(createTraces, component.StabilityLevelStable),
+		exporterprofiles.WithMetrics(createMetrics, component.StabilityLevelStable),
+		exporterprofiles.WithLogs(createLogs, component.StabilityLevelStable),
+		exporterprofiles.WithProfiles(createProfiles, component.StabilityLevelAlpha),
 	)
 }
 
-func createTracesExporter(context.Context, exporter.Settings, component.Config) (exporter.Traces, error) {
+func createTraces(context.Context, exporter.Settings, component.Config) (exporter.Traces, error) {
 	return nopInstance, nil
 }
 
-func createMetricsExporter(context.Context, exporter.Settings, component.Config) (exporter.Metrics, error) {
+func createMetrics(context.Context, exporter.Settings, component.Config) (exporter.Metrics, error) {
 	return nopInstance, nil
 }
 
-func createLogsExporter(context.Context, exporter.Settings, component.Config) (exporter.Logs, error) {
+func createLogs(context.Context, exporter.Settings, component.Config) (exporter.Logs, error) {
+	return nopInstance, nil
+}
+
+func createProfiles(context.Context, exporter.Settings, component.Config) (exporterprofiles.Profiles, error) {
 	return nopInstance, nil
 }
 
 type nopConfig struct{}
 
-var nopInstance = &nopExporter{
+var nopInstance = &nop{
 	Consumer: consumertest.NewNop(),
 }
 
-// nopExporter stores consumed traces and metrics for testing purposes.
-type nopExporter struct {
+// nop stores consumed traces, metrics, logs and profiles for testing purposes.
+type nop struct {
 	component.StartFunc
 	component.ShutdownFunc
 	consumertest.Consumer
-}
-
-// NewNopBuilder returns an exporter.Builder that constructs nop receivers.
-//
-// Deprecated: [v0.108.0] this builder is being internalized within the service module,
-// and will be removed soon.
-func NewNopBuilder() *exporter.Builder {
-	nopFactory := NewNopFactory()
-	return exporter.NewBuilder(
-		map[component.ID]component.Config{component.NewID(nopType): nopFactory.CreateDefaultConfig()},
-		map[component.Type]exporter.Factory{nopType: nopFactory})
 }

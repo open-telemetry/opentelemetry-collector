@@ -1,21 +1,23 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package connector // import "go.opentelemetry.io/collector/connector"
+package connectorprofiles // import "go.opentelemetry.io/collector/connector/connectorprofiles"
 
 import (
 	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componentprofiles"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/internal"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/collector/pipeline/pipelineprofiles"
 )
 
 var (
@@ -25,28 +27,28 @@ var (
 
 func TestNewFactoryNoOptions(t *testing.T) {
 	defaultCfg := struct{}{}
-	factory := connector.NewFactory(testType, func() component.Config { return &defaultCfg })
+	factory := NewFactory(testType, func() component.Config { return &defaultCfg })
 	assert.EqualValues(t, testType, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
 	_, err := factory.CreateTracesToProfiles(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.Equal(t, err, internal.ErrDataTypes(testID, component.DataTypeTraces, componentprofiles.DataTypeProfiles))
+	assert.Equal(t, err, internal.ErrDataTypes(testID, pipeline.SignalTraces, pipelineprofiles.SignalProfiles))
 	_, err = factory.CreateMetricsToProfiles(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.Equal(t, err, internal.ErrDataTypes(testID, component.DataTypeMetrics, componentprofiles.DataTypeProfiles))
+	assert.Equal(t, err, internal.ErrDataTypes(testID, pipeline.SignalMetrics, pipelineprofiles.SignalProfiles))
 	_, err = factory.CreateLogsToProfiles(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.Equal(t, err, internal.ErrDataTypes(testID, component.DataTypeLogs, componentprofiles.DataTypeProfiles))
+	assert.Equal(t, err, internal.ErrDataTypes(testID, pipeline.SignalLogs, pipelineprofiles.SignalProfiles))
 
 	_, err = factory.CreateProfilesToTraces(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.Equal(t, err, internal.ErrDataTypes(testID, componentprofiles.DataTypeProfiles, component.DataTypeTraces))
+	assert.Equal(t, err, internal.ErrDataTypes(testID, pipelineprofiles.SignalProfiles, pipeline.SignalTraces))
 	_, err = factory.CreateProfilesToMetrics(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.Equal(t, err, internal.ErrDataTypes(testID, componentprofiles.DataTypeProfiles, component.DataTypeMetrics))
+	assert.Equal(t, err, internal.ErrDataTypes(testID, pipelineprofiles.SignalProfiles, pipeline.SignalMetrics))
 	_, err = factory.CreateProfilesToLogs(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.Equal(t, err, internal.ErrDataTypes(testID, componentprofiles.DataTypeProfiles, component.DataTypeLogs))
+	assert.Equal(t, err, internal.ErrDataTypes(testID, pipelineprofiles.SignalProfiles, pipeline.SignalLogs))
 }
 
 func TestNewFactoryWithSameTypes(t *testing.T) {
 	defaultCfg := struct{}{}
-	factory := connector.NewFactory(testType, func() component.Config { return &defaultCfg },
+	factory := NewFactory(testType, func() component.Config { return &defaultCfg },
 		WithProfilesToProfiles(createProfilesToProfiles, component.StabilityLevelAlpha),
 	)
 	assert.EqualValues(t, testType, factory.Type())
@@ -54,19 +56,19 @@ func TestNewFactoryWithSameTypes(t *testing.T) {
 
 	assert.Equal(t, component.StabilityLevelAlpha, factory.ProfilesToProfilesStability())
 	_, err := factory.CreateProfilesToProfiles(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	_, err = factory.CreateProfilesToTraces(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.Equal(t, err, internal.ErrDataTypes(testID, componentprofiles.DataTypeProfiles, component.DataTypeTraces))
+	assert.Equal(t, err, internal.ErrDataTypes(testID, pipelineprofiles.SignalProfiles, pipeline.SignalTraces))
 	_, err = factory.CreateProfilesToMetrics(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.Equal(t, err, internal.ErrDataTypes(testID, componentprofiles.DataTypeProfiles, component.DataTypeMetrics))
+	assert.Equal(t, err, internal.ErrDataTypes(testID, pipelineprofiles.SignalProfiles, pipeline.SignalMetrics))
 	_, err = factory.CreateProfilesToLogs(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.Equal(t, err, internal.ErrDataTypes(testID, componentprofiles.DataTypeProfiles, component.DataTypeLogs))
+	assert.Equal(t, err, internal.ErrDataTypes(testID, pipelineprofiles.SignalProfiles, pipeline.SignalLogs))
 }
 
 func TestNewFactoryWithTranslateTypes(t *testing.T) {
 	defaultCfg := struct{}{}
-	factory := connector.NewFactory(testType, func() component.Config { return &defaultCfg },
+	factory := NewFactory(testType, func() component.Config { return &defaultCfg },
 		WithTracesToProfiles(createTracesToProfiles, component.StabilityLevelBeta),
 		WithMetricsToProfiles(createMetricsToProfiles, component.StabilityLevelDevelopment),
 		WithLogsToProfiles(createLogsToProfiles, component.StabilityLevelAlpha),
@@ -79,27 +81,27 @@ func TestNewFactoryWithTranslateTypes(t *testing.T) {
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
 	_, err := factory.CreateProfilesToProfiles(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.Equal(t, err, internal.ErrDataTypes(testID, componentprofiles.DataTypeProfiles, componentprofiles.DataTypeProfiles))
+	assert.Equal(t, err, internal.ErrDataTypes(testID, pipelineprofiles.SignalProfiles, pipelineprofiles.SignalProfiles))
 
 	assert.Equal(t, component.StabilityLevelBeta, factory.TracesToProfilesStability())
 	_, err = factory.CreateTracesToProfiles(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelDevelopment, factory.MetricsToProfilesStability())
 	_, err = factory.CreateMetricsToProfiles(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelAlpha, factory.LogsToProfilesStability())
 	_, err = factory.CreateLogsToProfiles(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelBeta, factory.ProfilesToTracesStability())
 	_, err = factory.CreateProfilesToTraces(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelDevelopment, factory.ProfilesToMetricsStability())
 	_, err = factory.CreateProfilesToMetrics(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelAlpha, factory.ProfilesToLogsStability())
 	_, err = factory.CreateProfilesToLogs(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())

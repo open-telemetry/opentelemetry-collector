@@ -23,10 +23,10 @@ import (
 func TestBoundedQueue(t *testing.T) {
 	q := NewBoundedMemoryQueue[string](MemoryQueueSettings[string]{Sizer: &RequestSizer[string]{}, Capacity: 1})
 
-	assert.NoError(t, q.Offer(context.Background(), "a"))
+	require.NoError(t, q.Offer(context.Background(), "a"))
 
 	numConsumed := 0
-	assert.True(t, q.Consume(func(_ context.Context, item string) error {
+	assert.True(t, consume(q, func(_ context.Context, item string) error {
 		assert.Equal(t, "a", item)
 		numConsumed++
 		return nil
@@ -35,14 +35,14 @@ func TestBoundedQueue(t *testing.T) {
 	assert.Equal(t, 0, q.Size())
 
 	// produce two more items. The first one should be accepted, but not consumed.
-	assert.NoError(t, q.Offer(context.Background(), "b"))
+	require.NoError(t, q.Offer(context.Background(), "b"))
 	assert.Equal(t, 1, q.Size())
 
 	// the second should be rejected since the queue is full
-	assert.ErrorIs(t, q.Offer(context.Background(), "c"), ErrQueueIsFull)
+	require.ErrorIs(t, q.Offer(context.Background(), "c"), ErrQueueIsFull)
 	assert.Equal(t, 1, q.Size())
 
-	assert.True(t, q.Consume(func(_ context.Context, item string) error {
+	assert.True(t, consume(q, func(_ context.Context, item string) error {
 		assert.Equal(t, "b", item)
 		numConsumed++
 		return nil
@@ -50,16 +50,16 @@ func TestBoundedQueue(t *testing.T) {
 	assert.Equal(t, 2, numConsumed)
 
 	for _, toAddItem := range []string{"d", "e", "f"} {
-		assert.NoError(t, q.Offer(context.Background(), toAddItem))
-		assert.True(t, q.Consume(func(_ context.Context, item string) error {
+		require.NoError(t, q.Offer(context.Background(), toAddItem))
+		assert.True(t, consume(q, func(_ context.Context, item string) error {
 			assert.Equal(t, toAddItem, item)
 			numConsumed++
 			return nil
 		}))
 	}
 	assert.Equal(t, 5, numConsumed)
-	assert.NoError(t, q.Shutdown(context.Background()))
-	assert.False(t, q.Consume(func(_ context.Context, item string) error {
+	require.NoError(t, q.Shutdown(context.Background()))
+	assert.False(t, consume(q, func(_ context.Context, item string) error {
 		panic(item)
 	}))
 }
@@ -75,14 +75,14 @@ func TestShutdownWhileNotEmpty(t *testing.T) {
 
 	assert.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 	for i := 0; i < 10; i++ {
-		assert.NoError(t, q.Offer(context.Background(), strconv.FormatInt(int64(i), 10)))
+		require.NoError(t, q.Offer(context.Background(), strconv.FormatInt(int64(i), 10)))
 	}
 	assert.NoError(t, q.Shutdown(context.Background()))
 
 	assert.Equal(t, 10, q.Size())
 	numConsumed := 0
 	for i := 0; i < 10; i++ {
-		assert.True(t, q.Consume(func(_ context.Context, item string) error {
+		assert.True(t, consume(q, func(_ context.Context, item string) error {
 			assert.Equal(t, strconv.FormatInt(int64(i), 10), item)
 			numConsumed++
 			return nil
@@ -91,7 +91,7 @@ func TestShutdownWhileNotEmpty(t *testing.T) {
 	assert.Equal(t, 10, numConsumed)
 	assert.Equal(t, 0, q.Size())
 
-	assert.False(t, q.Consume(func(_ context.Context, item string) error {
+	assert.False(t, consume(q, func(_ context.Context, item string) error {
 		panic(item)
 	}))
 }
@@ -106,12 +106,12 @@ func Benchmark_QueueUsage_100000_requests(b *testing.B) {
 
 func Benchmark_QueueUsage_10000_items(b *testing.B) {
 	// each request has 10 items: 1000 requests = 10000 items
-	benchmarkQueueUsage(b, &ItemsSizer[fakeReq]{}, 1000)
+	benchmarkQueueUsage(b, &itemsSizer[fakeReq]{}, 1000)
 }
 
 func Benchmark_QueueUsage_1M_items(b *testing.B) {
 	// each request has 10 items: 100000 requests = 1M items
-	benchmarkQueueUsage(b, &ItemsSizer[fakeReq]{}, 100000)
+	benchmarkQueueUsage(b, &itemsSizer[fakeReq]{}, 100000)
 }
 
 func TestQueueUsage(t *testing.T) {
@@ -119,7 +119,7 @@ func TestQueueUsage(t *testing.T) {
 		queueUsage(t, &RequestSizer[fakeReq]{}, 10)
 	})
 	t.Run("items_based", func(t *testing.T) {
-		queueUsage(t, &ItemsSizer[fakeReq]{}, 10)
+		queueUsage(t, &itemsSizer[fakeReq]{}, 10)
 	})
 }
 
@@ -150,9 +150,9 @@ func TestZeroSizeNoConsumers(t *testing.T) {
 	q := NewBoundedMemoryQueue[string](MemoryQueueSettings[string]{Sizer: &RequestSizer[string]{}, Capacity: 0})
 
 	err := q.Start(context.Background(), componenttest.NewNopHost())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.ErrorIs(t, q.Offer(context.Background(), "a"), ErrQueueIsFull) // in process
+	require.ErrorIs(t, q.Offer(context.Background(), "a"), ErrQueueIsFull) // in process
 
 	assert.NoError(t, q.Shutdown(context.Background()))
 }

@@ -7,13 +7,6 @@ package component // import "go.opentelemetry.io/collector/component"
 
 import (
 	"context"
-	"errors"
-)
-
-var (
-	// ErrDataTypeIsNotSupported can be returned by receiver, exporter, processor or connector factory funcs that create the
-	// Component if the particular telemetry data type is not supported by the receiver, exporter, processor or connector factory.
-	ErrDataTypeIsNotSupported = errors.New("telemetry type is not supported")
 )
 
 // Component is either a receiver, exporter, processor, connector, or an extension.
@@ -165,9 +158,6 @@ func (sl StabilityLevel) LogMessage() string {
 }
 
 // Factory is implemented by all Component factories.
-//
-// This interface cannot be directly implemented. Implementations must
-// use the factory helpers for the appropriate component type.
 type Factory interface {
 	// Type gets the type of the component created by this factory.
 	Type() Type

@@ -4,23 +4,25 @@
 package internal // import "go.opentelemetry.io/collector/pdata/internal/cmd/pdatagen/internal"
 
 var pprofile = &Package{
-	name: "pprofile",
-	path: "pprofile",
-	imports: []string{
-		`"go.opentelemetry.io/collector/pdata/internal"`,
-		`"go.opentelemetry.io/collector/pdata/internal/data"`,
-		`otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"`,
-		`"go.opentelemetry.io/collector/pdata/pcommon"`,
-	},
-	testImports: []string{
-		`"testing"`,
-		`"unsafe"`,
-		``,
-		`"github.com/stretchr/testify/assert"`,
-		``,
-		`"go.opentelemetry.io/collector/pdata/internal"`,
-		`otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"`,
-		`"go.opentelemetry.io/collector/pdata/pcommon"`,
+	info: &PackageInfo{
+		name: "pprofile",
+		path: "pprofile",
+		imports: []string{
+			`"go.opentelemetry.io/collector/pdata/internal"`,
+			`"go.opentelemetry.io/collector/pdata/internal/data"`,
+			`otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"`,
+			`"go.opentelemetry.io/collector/pdata/pcommon"`,
+		},
+		testImports: []string{
+			`"testing"`,
+			`"unsafe"`,
+			``,
+			`"github.com/stretchr/testify/assert"`,
+			``,
+			`"go.opentelemetry.io/collector/pdata/internal"`,
+			`otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"`,
+			`"go.opentelemetry.io/collector/pdata/pcommon"`,
+		},
 	},
 	structs: []baseStruct{
 		resourceProfilesSlice,
@@ -99,10 +101,15 @@ var profileContainer = &messageValueStruct{
 	description:    "// ProfileContainer are an experimental implementation of the OpenTelemetry Profiles Data Model.\n",
 	originFullName: "otlpprofiles.ProfileContainer",
 	fields: []baseField{
-		&sliceField{
+		&primitiveTypedField{
 			fieldName:       "ProfileID",
 			originFieldName: "ProfileId",
-			returnSlice:     byteSlice,
+			returnType: &primitiveType{
+				structName: "ProfileID",
+				rawType:    "data.ProfileID",
+				defaultVal: "data.ProfileID([16]byte{})",
+				testVal:    "data.ProfileID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})",
+			},
 		},
 		&primitiveTypedField{
 			fieldName:       "StartTime",
@@ -225,7 +232,7 @@ var profile = &messageValueStruct{
 	},
 }
 
-var valueTypeSlice = &sliceOfValues{
+var valueTypeSlice = &sliceOfPtrs{
 	structName: "ValueTypeSlice",
 	element:    valueType,
 }
@@ -256,7 +263,7 @@ var valueType = &messageValueStruct{
 	},
 }
 
-var sampleSlice = &sliceOfValues{
+var sampleSlice = &sliceOfPtrs{
 	structName: "SampleSlice",
 	element:    sample,
 }
@@ -313,7 +320,7 @@ var sample = &messageValueStruct{
 	},
 }
 
-var labelSlice = &sliceOfValues{
+var labelSlice = &sliceOfPtrs{
 	structName: "LabelSlice",
 	element:    label,
 }
@@ -350,7 +357,7 @@ var label = &messageValueStruct{
 	},
 }
 
-var mappingSlice = &sliceOfValues{
+var mappingSlice = &sliceOfPtrs{
 	structName: "MappingSlice",
 	element:    mapping,
 }
@@ -436,7 +443,7 @@ var mapping = &messageValueStruct{
 	},
 }
 
-var locationSlice = &sliceOfValues{
+var locationSlice = &sliceOfPtrs{
 	structName: "LocationSlice",
 	element:    location,
 }
@@ -487,7 +494,7 @@ var location = &messageValueStruct{
 	},
 }
 
-var lineSlice = &sliceOfValues{
+var lineSlice = &sliceOfPtrs{
 	structName: "LineSlice",
 	element:    line,
 }
@@ -518,7 +525,7 @@ var line = &messageValueStruct{
 	},
 }
 
-var functionSlice = &sliceOfValues{
+var functionSlice = &sliceOfPtrs{
 	structName: "FunctionSlice",
 	element:    function,
 }
@@ -562,7 +569,7 @@ var function = &messageValueStruct{
 	},
 }
 
-var attributeUnitSlice = &sliceOfValues{
+var attributeUnitSlice = &sliceOfPtrs{
 	structName: "AttributeUnitSlice",
 	element:    attributeUnit,
 }
@@ -587,7 +594,7 @@ var attributeUnit = &messageValueStruct{
 	},
 }
 
-var linkSlice = &sliceOfValues{
+var linkSlice = &sliceOfPtrs{
 	structName: "LinkSlice",
 	element:    link,
 }

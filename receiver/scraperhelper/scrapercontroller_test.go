@@ -123,8 +123,8 @@ func TestScrapeController(t *testing.T) {
 		},
 	}
 
-	for _, test := range testCases {
-		test := test
+	for _, tt := range testCases {
+		test := tt
 		t.Run(test.name, func(t *testing.T) {
 			receiverID := component.MustNewID("receiver")
 			tt, err := componenttest.SetupTelemetry(receiverID)
@@ -223,8 +223,8 @@ func configureMetricOptions(t *testing.T, test metricsTestCase, initializeChs []
 
 		scrapeMetricsChs[i] = make(chan int)
 		tsm := &testScrapeMetrics{ch: scrapeMetricsChs[i], err: test.scrapeErr}
-		scp, err := NewScraper("scraper", tsm.scrape, scraperOptions...)
-		assert.NoError(t, err)
+		scp, err := NewScraper(component.MustNewType("scraper"), tsm.scrape, scraperOptions...)
+		require.NoError(t, err)
 
 		metricOptions = append(metricOptions, AddScraper(scp))
 	}
@@ -325,8 +325,8 @@ func TestSingleScrapePerInterval(t *testing.T) {
 
 	tickerCh := make(chan time.Time)
 
-	scp, err := NewScraper("scaper", tsm.scrape)
-	assert.NoError(t, err)
+	scp, err := NewScraper(component.MustNewType("scaper"), tsm.scrape)
+	require.NoError(t, err)
 
 	receiver, err := NewScraperControllerReceiver(
 		cfg,
@@ -367,7 +367,7 @@ func TestScrapeControllerStartsOnInit(t *testing.T) {
 		ch: make(chan int, 1),
 	}
 
-	scp, err := NewScraper("scraper", tsm.scrape)
+	scp, err := NewScraper(component.MustNewType("scraper"), tsm.scrape)
 	require.NoError(t, err, "Must not error when creating scraper")
 
 	r, err := NewScraperControllerReceiver(
@@ -383,8 +383,8 @@ func TestScrapeControllerStartsOnInit(t *testing.T) {
 
 	assert.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()), "Must not error on start")
 	<-time.After(500 * time.Nanosecond)
-	assert.NoError(t, r.Shutdown(context.Background()), "Must not have errored on shutdown")
-	assert.Equal(t, tsm.timesScrapeCalled, 1, "Must have been called as soon as the controller started")
+	require.NoError(t, r.Shutdown(context.Background()), "Must not have errored on shutdown")
+	assert.Equal(t, 1, tsm.timesScrapeCalled, "Must have been called as soon as the controller started")
 }
 
 func TestScrapeControllerInitialDelay(t *testing.T) {
@@ -403,7 +403,7 @@ func TestScrapeControllerInitialDelay(t *testing.T) {
 		}
 	)
 
-	scp, err := NewScraper("timed", func(context.Context) (pmetric.Metrics, error) {
+	scp, err := NewScraper(component.MustNewType("timed"), func(context.Context) (pmetric.Metrics, error) {
 		elapsed <- time.Now()
 		return pmetric.NewMetrics(), nil
 	})

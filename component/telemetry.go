@@ -22,14 +22,17 @@ type TelemetrySettings struct {
 	TracerProvider trace.TracerProvider
 
 	// MeterProvider that the factory can pass to other instrumented third-party libraries.
+	//
+	// Deprecated [v0.109.0]: use LeveledMeterProvider instead.
 	MeterProvider metric.MeterProvider
 
 	// LeveledMeterProvider returns a MeterProvider for a Level that the factory can
 	// pass to other instrumented third-party libraries.
 	LeveledMeterProvider func(level configtelemetry.Level) metric.MeterProvider
 
-	// MetricsLevel controls the level of detail for metrics emitted by the collector.
-	// Experimental: *NOTE* this field is experimental and may be changed or removed.
+	// MetricsLevel represents the configuration value set when the collector
+	// is configured. Components may use this level to decide whether it is
+	// appropriate to avoid computationally expensive calculations.
 	MetricsLevel configtelemetry.Level
 
 	// Resource contains the resource attributes for the collector's telemetry.

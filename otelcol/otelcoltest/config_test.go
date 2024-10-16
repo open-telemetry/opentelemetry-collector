@@ -11,12 +11,13 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service/pipelines"
 )
 
 func TestLoadConfig(t *testing.T) {
 	factories, err := NopFactories()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	cfg, err := LoadConfig(filepath.Join("testdata", "config.yaml"), factories)
 	require.NoError(t, err)
@@ -55,13 +56,13 @@ func TestLoadConfig(t *testing.T) {
 			Processors: []component.ID{component.MustNewID("nop")},
 			Exporters:  []component.ID{component.MustNewID("nop")},
 		},
-		cfg.Service.Pipelines[component.MustNewID("traces")],
+		cfg.Service.Pipelines[pipeline.NewID(pipeline.SignalTraces)],
 		"Did not load pipeline config correctly")
 }
 
 func TestLoadConfigAndValidate(t *testing.T) {
 	factories, err := NopFactories()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	cfgValidate, errValidate := LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 	require.NoError(t, errValidate)

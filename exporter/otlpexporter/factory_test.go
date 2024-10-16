@@ -27,27 +27,27 @@ func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
-	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
+	require.NoError(t, componenttest.CheckConfigStruct(cfg))
 	ocfg, ok := factory.CreateDefaultConfig().(*Config)
 	assert.True(t, ok)
-	assert.Equal(t, ocfg.RetryConfig, configretry.NewDefaultBackOffConfig())
-	assert.Equal(t, ocfg.QueueConfig, exporterhelper.NewDefaultQueueSettings())
-	assert.Equal(t, ocfg.TimeoutSettings, exporterhelper.NewDefaultTimeoutSettings())
-	assert.Equal(t, ocfg.Compression, configcompression.TypeGzip)
+	assert.Equal(t, configretry.NewDefaultBackOffConfig(), ocfg.RetryConfig)
+	assert.Equal(t, exporterhelper.NewDefaultQueueConfig(), ocfg.QueueConfig)
+	assert.Equal(t, exporterhelper.NewDefaultTimeoutConfig(), ocfg.TimeoutConfig)
+	assert.Equal(t, configcompression.TypeGzip, ocfg.Compression)
 }
 
-func TestCreateMetricsExporter(t *testing.T) {
+func TestCreateMetrics(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ClientConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	set := exportertest.NewNopSettings()
-	oexp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
-	require.Nil(t, err)
+	oexp, err := factory.CreateMetrics(context.Background(), set, cfg)
+	require.NoError(t, err)
 	require.NotNil(t, oexp)
 }
 
-func TestCreateTracesExporter(t *testing.T) {
+func TestCreateTraces(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	tests := []struct {
 		name            string
@@ -167,33 +167,33 @@ func TestCreateTracesExporter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := NewFactory()
 			set := exportertest.NewNopSettings()
-			consumer, err := factory.CreateTracesExporter(context.Background(), set, tt.config)
-			assert.NoError(t, err)
+			consumer, err := factory.CreateTraces(context.Background(), set, tt.config)
+			require.NoError(t, err)
 			assert.NotNil(t, consumer)
 			err = consumer.Start(context.Background(), componenttest.NewNopHost())
 			if tt.mustFailOnStart {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 			// Shutdown is called even when Start fails
 			err = consumer.Shutdown(context.Background())
 			if err != nil {
 				// Since the endpoint of OTLP exporter doesn't actually exist,
 				// exporter may already stop because it cannot connect.
-				assert.Equal(t, err.Error(), "rpc error: code = Canceled desc = grpc: the client connection is closing")
+				assert.Equal(t, "rpc error: code = Canceled desc = grpc: the client connection is closing", err.Error())
 			}
 		})
 	}
 }
 
-func TestCreateLogsExporter(t *testing.T) {
+func TestCreateLogs(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ClientConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	set := exportertest.NewNopSettings()
-	oexp, err := factory.CreateLogsExporter(context.Background(), set, cfg)
-	require.Nil(t, err)
+	oexp, err := factory.CreateLogs(context.Background(), set, cfg)
+	require.NoError(t, err)
 	require.NotNil(t, oexp)
 }
