@@ -16,13 +16,20 @@ issues: [10368]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext:
+<<<<<<< HEAD
   Removed WithRequestBatchFuncs(BatcherOption) in favor of WithBatchFuncs(Option), where |
   BatcherOption is a function that operates on batch sender and Option is one that operates |
   on BaseExporter
+=======
+>>>>>>> 5bc512747 (Added a change log)
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
 # Include 'user' if the change is relevant to end users.
 # Include 'api' if there is a change to a library API.
 # Default: '[user]'
+<<<<<<< HEAD
 change_logs: [api]
+=======
+change_logs: [api]
+>>>>>>> 5bc512747 (Added a change log)
