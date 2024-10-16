@@ -55,11 +55,6 @@ func newCompressor(compressionType configcompression.TypeWithLevel) (*compressor
 	case configcompression.TypeGzip:
 		gZipCompressor, exists = compressorPools.pools[mapKey]
 		if exists {
-			if gZipCompressor.pool.Get() == nil {
-				gZipCompressor.pool = sync.Pool{New: func() any { w, _ := gzip.NewWriterLevel(nil, int(compressionType.Level)); return w }}
-				compressorPools.pools[mapKey] = gZipCompressor
-				return gZipCompressor, nil
-			}
 			return gZipCompressor, nil
 		}
 		gZipCompressor = &compressor{}
@@ -77,11 +72,6 @@ func newCompressor(compressionType configcompression.TypeWithLevel) (*compressor
 		compression := zstd.EncoderLevelFromZstd(int(compressionType.Level))
 		encoderLevel := zstd.WithEncoderLevel(compression)
 		if exists {
-			if zstdCompressor.pool.Get() == nil {
-
-				zstdCompressor.pool = sync.Pool{New: func() any { zw, _ := zstd.NewWriter(nil, zstd.WithEncoderConcurrency(1), encoderLevel); return zw }}
-				return zstdCompressor, nil
-			}
 			return zstdCompressor, nil
 		}
 		zstdCompressor = &compressor{}
@@ -90,10 +80,6 @@ func newCompressor(compressionType configcompression.TypeWithLevel) (*compressor
 	case configcompression.TypeZlib, configcompression.TypeDeflate:
 		zlibCompressor, exists = compressorPools.pools[mapKey]
 		if exists {
-			if zlibCompressor.pool.Get() == nil {
-				zlibCompressor.pool = sync.Pool{New: func() any { w, _ := zlib.NewWriterLevel(nil, int(compressionType.Level)); return w }}
-				return zlibCompressor, nil
-			}
 			return zlibCompressor, nil
 		}
 		zlibCompressor = &compressor{}
