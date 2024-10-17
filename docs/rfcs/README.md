@@ -9,7 +9,7 @@ proposal, file an [OTEP][1] instead.
 ## Scope
 
 The Request For Comments (RFC) process is intended to be used for significant changes to the Collector. Major design
-decisions, specially those that imply a change that is hard to reverse, should generally be
+decisions, especially those that imply a change that is hard to reverse, should generally be
 documented as an RFC. Controversial changes should also be documented as an RFC, so that the
 community can have a chance to provide feedback. The goal of this process is to ensure we have a
 coherent vision before embarking on significant work.
@@ -49,12 +49,12 @@ We use a Lazy Consensus method with the following rules:
    comment. They will need to add a `rfc:final-comment-period` label to the PR and wait for at least
    **4 business days** after making the announcement to merge the RFC.
 3. *Objections*: Objections should be communicated as a 'request changes' review. All objections
-   must be addressed or voted before merging an RFC. If unable to resolve an objection, any
+   must be addressed before merging an RFC. If addressing an objection does not appear feasible, any
    maintainer may call for a vote to be made on the objection (see below). This will be signified by
    adding a `rfc:vote-needed` label to the PR. The voting result is binding and a maintainer can
-   drop any 'request changes' based on the vote results or consensus.
+   drop any 'request changes' reviews based on the vote results or consensus.
 4. *Modifications*: Non-trivial modifications to an RFC reset the waiting period. RFC authors must
-   re-request reviews if the RFC has been modified significantly.
+   re-request any approving, comment, or 'request changes' reviews if the RFC has been modified significantly.
 
 ### Voting
 
