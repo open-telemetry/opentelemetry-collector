@@ -46,13 +46,15 @@ We use a Lazy Consensus method with the following rules:
 1. *Quorum*: For an RFC to be mergeable, it needs to have at least **two approvals** from the
    approvers set as well as approvals from any additional stakeholders.
 2. *Waiting period*: Maintainers need to announce their intent to merge the RFC with a Github
-   comment, and wait for at least **4 business days** after making the announcement to merge the
-   RFC.
+   comment. They will need to add a `rfc:final-comment-period` label to the PR and wait for at least
+   **4 business days** after making the announcement to merge the RFC.
 3. *Objections*: Objections should be communicated as a 'request changes' review. All objections
    must be addressed or voted before merging an RFC. If unable to resolve an objection, any
-   maintainer may call for a vote to be made on the objection (see below). The result is binding.
-4. *Modifications*: Non-trivial modifications to an RFC reset the waiting period. RFC authors are
-   encouraged to re-request reviews if the RFC has been modified significantly.
+   maintainer may call for a vote to be made on the objection (see below). This will be signified by
+   adding a `rfc:vote-needed` label to the PR. The voting result is binding and a maintainer can
+   drop any 'request changes' based on the vote results or consensus.
+4. *Modifications*: Non-trivial modifications to an RFC reset the waiting period. RFC authors must
+   re-request reviews if the RFC has been modified significantly.
 
 ### Voting
 
@@ -64,10 +66,10 @@ restricting the set to approvers and then maintainers in case of a tie among sta
 Voting should be done on a dedicated issue via comments. The related discussion threads should be
 linked in the issue. The voting result should be documented in the RFC itself.
 
-# Modifications to this document
+# Modifications to existing RFCs and to this document
 
-Non-trivial modifications to this document should be done through the RFC process itself and have
-the same merge criteria.
+Non-trivial modifications to this document and to existing RFCs should be done through the RFC
+process itself and have the same merge criteria.
 
 [1]: https://github.com/open-telemetry/oteps
 [2]: https://github.com/open-telemetry/oteps/blob/main/0000-template.md
