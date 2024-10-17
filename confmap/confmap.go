@@ -431,11 +431,16 @@ func unmarshalerEmbeddedStructsHookFunc() mapstructure.DecodeHookFuncValue {
 	}
 }
 
+type primitiveUnmarshaler interface {
+	UnmarshalPrimitive(val any) error
+}
+
 // Provides a mechanism for individual structs to define their own unmarshal logic,
 // by implementing the Unmarshaler interface, unless skipTopLevelUnmarshaler is
 // true and the struct matches the top level object being unmarshaled.
 func unmarshalerHookFunc(result any, skipTopLevelUnmarshaler bool) mapstructure.DecodeHookFuncValue {
 	return func(from reflect.Value, to reflect.Value) (any, error) {
+
 		if !to.CanAddr() {
 			return from.Interface(), nil
 		}
@@ -453,7 +458,14 @@ func unmarshalerHookFunc(result any, skipTopLevelUnmarshaler bool) mapstructure.
 		}
 
 		if _, ok = from.Interface().(map[string]any); !ok {
-			return from.Interface(), nil
+			unmarshaler, ok := toPtr.(primitiveUnmarshaler)
+			if !ok {
+				return from.Interface(), nil
+			}
+			if err := unmarshaler.UnmarshalPrimitive(from.Interface()); err != nil {
+				return nil, err
+			}
+			return unmarshaler, nil
 		}
 
 		// Use the current object if not nil (to preserve other configs in the object), otherwise zero initialize.
