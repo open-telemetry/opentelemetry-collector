@@ -16,13 +16,32 @@ const DefaultTimeout = 5 * time.Second
 // Policy represents a policy towards handling short timeouts, which
 // are cases where an exporter component is configured for a timeout
 // and the arriving context has a shorter deadline.
+//
+// Here is the expected usaage of these three components, in
+// pseudo-code:
 type Policy string
 
 const (
+	// PolicySustain is the "sustain" policy.  This policy allows
+	// a request that might exceed its context deadline due to
+	// an independent timeout that is in the future but shorter
+	// than the context deadline.  This means to pass the context
+	// beca
 	PolicySustain Policy = "sustain"
-	PolicyIgnore  Policy = "ignore"
-	PolicyAbort   Policy = "abort"
-	policyUnset   Policy = ""
+
+	// PolicyIgnore is the "ignore" policy. This policy causes the
+	// component that is handling a request to ignore the incoming
+	// timeout, allowing the request to proceed as if no timeout
+	// were specified.
+	PolicyIgnore Policy = "ignore"
+
+	// PolicyAbort is the "abort" policy. This policy causes the
+	// component that is handling a request to immediately fail when the
+	// arriving request deadline will expire before a configured timeout
+	// to avoid attempting work with a short-timeout.
+	PolicyAbort Policy = "abort"
+
+	policyUnset Policy = ""
 
 	// PolicyDefault selects the original default behavior of the
 	// exporterhelper component, which is to send a request with
