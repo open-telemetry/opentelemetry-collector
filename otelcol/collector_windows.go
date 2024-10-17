@@ -225,6 +225,7 @@ func withWindowsCore(elog *eventlog.Log, serviceConfig **service.Config) func(za
 		// Use the Windows Event Log
 		encoderConfig := zap.NewProductionEncoderConfig()
 		encoderConfig.LineEnding = "\r\n"
+		encoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 		return windowsEventLogCore{core, elog, zapcore.NewConsoleEncoder(encoderConfig)}
 	}
 }
