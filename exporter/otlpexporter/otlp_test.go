@@ -30,11 +30,14 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterprofiles"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
+	"go.opentelemetry.io/collector/pdata/pprofile"
+	"go.opentelemetry.io/collector/pdata/pprofile/pprofileotlp"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.opentelemetry.io/collector/pdata/testdata"
@@ -221,6 +224,70 @@ func otlpMetricsReceiverOnGRPCServer(ln net.Listener) *mockMetricsReceiver {
 	}()
 
 	return rcv
+}
+
+type mockProfilesReceiver struct {
+	pprofileotlp.UnimplementedGRPCServer
+	mockReceiver
+	exportResponse func() pprofileotlp.ExportResponse
+	lastRequest    pprofile.Profiles
+}
+
+func (r *mockProfilesReceiver) Export(ctx context.Context, req pprofileotlp.ExportRequest) (pprofileotlp.ExportResponse, error) {
+	r.requestCount.Add(1)
+	td := req.Profiles()
+	r.totalItems.Add(int64(td.SampleCount()))
+	r.mux.Lock()
+	defer r.mux.Unlock()
+	r.lastRequest = td
+	r.metadata, _ = metadata.FromIncomingContext(ctx)
+	return r.exportResponse(), r.exportError
+}
+
+func (r *mockProfilesReceiver) getLastRequest() pprofile.Profiles {
+	r.mux.Lock()
+	defer r.mux.Unlock()
+	return r.lastRequest
+}
+
+func (r *mockProfilesReceiver) setExportResponse(fn func() pprofileotlp.ExportResponse) {
+	r.mux.Lock()
+	defer r.mux.Unlock()
+	r.exportResponse = fn
+}
+
+func otlpProfilesReceiverOnGRPCServer(ln net.Listener, useTLS bool) (*mockProfilesReceiver, error) {
+	sopts := []grpc.ServerOption{}
+
+	if useTLS {
+		_, currentFile, _, _ := runtime.Caller(0)
+		basepath := filepath.Dir(currentFile)
+		certpath := filepath.Join(basepath, filepath.Join("testdata", "test_cert.pem"))
+		keypath := filepath.Join(basepath, filepath.Join("testdata", "test_key.pem"))
+
+		creds, err := credentials.NewServerTLSFromFile(certpath, keypath)
+		if err != nil {
+			return nil, err
+		}
+		sopts = append(sopts, grpc.Creds(creds))
+	}
+
+	rcv := &mockProfilesReceiver{
+		mockReceiver: mockReceiver{
+			requestCount: &atomic.Int64{},
+			totalItems:   &atomic.Int64{},
+			srv:          grpc.NewServer(sopts...),
+		},
+		exportResponse: pprofileotlp.NewExportResponse,
+	}
+
+	// Now run it as a gRPC server
+	pprofileotlp.RegisterGRPCServer(rcv.srv, rcv)
+	go func() {
+		_ = rcv.srv.Serve(ln)
+	}()
+
+	return rcv, nil
 }
 
 func TestSendTraces(t *testing.T) {
@@ -794,4 +861,176 @@ func TestSendLogData(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), 1)
 	assert.Contains(t, observed.FilterLevelExact(zap.WarnLevel).All()[0].Message, "Partial success")
+}
+
+func TestSendProfiles(t *testing.T) {
+	// Start an OTLP-compatible receiver.
+	ln, err := net.Listen("tcp", "localhost:")
+	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
+	rcv, _ := otlpProfilesReceiverOnGRPCServer(ln, false)
+	// Also closes the connection.
+	defer rcv.srv.GracefulStop()
+
+	// Start an OTLP exporter and point to the receiver.
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	// Disable queuing to ensure that we execute the request when calling ConsumeProfiles
+	// otherwise we will not see any errors.
+	cfg.QueueConfig.Enabled = false
+	cfg.ClientConfig = configgrpc.ClientConfig{
+		Endpoint: ln.Addr().String(),
+		TLSSetting: configtls.ClientConfig{
+			Insecure: true,
+		},
+		Headers: map[string]configopaque.String{
+			"header": "header-value",
+		},
+	}
+	set := exportertest.NewNopSettings()
+	set.BuildInfo.Description = "Collector"
+	set.BuildInfo.Version = "1.2.3test"
+
+	// For testing the "Partial success" warning.
+	logger, observed := observer.New(zap.DebugLevel)
+	set.TelemetrySettings.Logger = zap.New(logger)
+
+	exp, err := factory.(exporterprofiles.Factory).CreateProfiles(context.Background(), set, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, exp)
+
+	defer func() {
+		require.NoError(t, exp.Shutdown(context.Background()))
+	}()
+
+	host := componenttest.NewNopHost()
+	require.NoError(t, exp.Start(context.Background(), host))
+
+	// Ensure that initially there is no data in the receiver.
+	assert.EqualValues(t, 0, rcv.requestCount.Load())
+
+	// Send empty profile.
+	td := pprofile.NewProfiles()
+	require.NoError(t, exp.ConsumeProfiles(context.Background(), td))
+
+	// Wait until it is received.
+	assert.Eventually(t, func() bool {
+		return rcv.requestCount.Load() > 0
+	}, 10*time.Second, 5*time.Millisecond)
+
+	// Ensure it was received empty.
+	assert.EqualValues(t, 0, rcv.totalItems.Load())
+
+	// A request with 2 profiles.
+	td = testdata.GenerateProfiles(2)
+
+	err = exp.ConsumeProfiles(context.Background(), td)
+	require.NoError(t, err)
+
+	// Wait until it is received.
+	assert.Eventually(t, func() bool {
+		return rcv.requestCount.Load() > 1
+	}, 10*time.Second, 5*time.Millisecond)
+
+	expectedHeader := []string{"header-value"}
+
+	// Verify received span.
+	assert.EqualValues(t, 2, rcv.totalItems.Load())
+	assert.EqualValues(t, 2, rcv.requestCount.Load())
+	assert.EqualValues(t, td, rcv.getLastRequest())
+
+	md := rcv.getMetadata()
+	require.EqualValues(t, expectedHeader, md.Get("header"))
+	require.Len(t, md.Get("User-Agent"), 1)
+	require.Contains(t, md.Get("User-Agent")[0], "Collector/1.2.3test")
+
+	// Return partial success
+	rcv.setExportResponse(func() pprofileotlp.ExportResponse {
+		response := pprofileotlp.NewExportResponse()
+		partialSuccess := response.PartialSuccess()
+		partialSuccess.SetErrorMessage("Some spans were not ingested")
+		partialSuccess.SetRejectedProfiles(1)
+
+		return response
+	})
+
+	// A request with 2 Profile entries.
+	td = testdata.GenerateProfiles(2)
+
+	err = exp.ConsumeProfiles(context.Background(), td)
+	require.NoError(t, err)
+	assert.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), 1)
+	assert.Contains(t, observed.FilterLevelExact(zap.WarnLevel).All()[0].Message, "Partial success")
+}
+
+func TestSendProfilesWhenEndpointHasHttpScheme(t *testing.T) {
+	tests := []struct {
+		name               string
+		useTLS             bool
+		scheme             string
+		gRPCClientSettings configgrpc.ClientConfig
+	}{
+		{
+			name:               "Use https scheme",
+			useTLS:             true,
+			scheme:             "https://",
+			gRPCClientSettings: configgrpc.ClientConfig{},
+		},
+		{
+			name:   "Use http scheme",
+			useTLS: false,
+			scheme: "http://",
+			gRPCClientSettings: configgrpc.ClientConfig{
+				TLSSetting: configtls.ClientConfig{
+					Insecure: true,
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			// Start an OTLP-compatible receiver.
+			ln, err := net.Listen("tcp", "localhost:")
+			require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
+			rcv, err := otlpProfilesReceiverOnGRPCServer(ln, test.useTLS)
+			require.NoError(t, err, "Failed to start mock OTLP receiver")
+			// Also closes the connection.
+			defer rcv.srv.GracefulStop()
+
+			// Start an OTLP exporter and point to the receiver.
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig().(*Config)
+			cfg.ClientConfig = test.gRPCClientSettings
+			cfg.ClientConfig.Endpoint = test.scheme + ln.Addr().String()
+			if test.useTLS {
+				cfg.ClientConfig.TLSSetting.InsecureSkipVerify = true
+			}
+			set := exportertest.NewNopSettings()
+			exp, err := factory.(exporterprofiles.Factory).CreateProfiles(context.Background(), set, cfg)
+			require.NoError(t, err)
+			require.NotNil(t, exp)
+
+			defer func() {
+				require.NoError(t, exp.Shutdown(context.Background()))
+			}()
+
+			host := componenttest.NewNopHost()
+			require.NoError(t, exp.Start(context.Background(), host))
+
+			// Ensure that initially there is no data in the receiver.
+			assert.EqualValues(t, 0, rcv.requestCount.Load())
+
+			// Send empty profile.
+			td := pprofile.NewProfiles()
+			require.NoError(t, exp.ConsumeProfiles(context.Background(), td))
+
+			// Wait until it is received.
+			assert.Eventually(t, func() bool {
+				return rcv.requestCount.Load() > 0
+			}, 10*time.Second, 5*time.Millisecond)
+
+			// Ensure it was received empty.
+			assert.EqualValues(t, 0, rcv.totalItems.Load())
+		})
+	}
 }

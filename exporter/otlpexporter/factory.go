@@ -15,17 +15,20 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles"
+	"go.opentelemetry.io/collector/exporter/exporterprofiles"
 	"go.opentelemetry.io/collector/exporter/otlpexporter/internal/metadata"
 )
 
 // NewFactory creates a factory for OTLP exporter.
 func NewFactory() exporter.Factory {
-	return exporter.NewFactory(
+	return exporterprofiles.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		exporter.WithTraces(createTraces, metadata.TracesStability),
-		exporter.WithMetrics(createMetrics, metadata.MetricsStability),
-		exporter.WithLogs(createLogs, metadata.LogsStability),
+		exporterprofiles.WithTraces(createTraces, metadata.TracesStability),
+		exporterprofiles.WithMetrics(createMetrics, metadata.MetricsStability),
+		exporterprofiles.WithLogs(createLogs, metadata.LogsStability),
+		exporterprofiles.WithProfiles(createProfilesExporter, metadata.ProfilesStability),
 	)
 }
 
@@ -95,6 +98,25 @@ func createLogs(
 	oCfg := cfg.(*Config)
 	return exporterhelper.NewLogs(ctx, set, cfg,
 		oce.pushLogs,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		exporterhelper.WithTimeout(oCfg.TimeoutConfig),
+		exporterhelper.WithRetry(oCfg.RetryConfig),
+		exporterhelper.WithQueue(oCfg.QueueConfig),
+		exporterhelper.WithBatcher(oCfg.BatcherConfig),
+		exporterhelper.WithStart(oce.start),
+		exporterhelper.WithShutdown(oce.shutdown),
+	)
+}
+
+func createProfilesExporter(
+	ctx context.Context,
+	set exporter.Settings,
+	cfg component.Config,
+) (exporterprofiles.Profiles, error) {
+	oce := newExporter(cfg, set)
+	oCfg := cfg.(*Config)
+	return exporterhelperprofiles.NewProfilesExporter(ctx, set, cfg,
+		oce.pushProfiles,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(oCfg.TimeoutConfig),
 		exporterhelper.WithRetry(oCfg.RetryConfig),
