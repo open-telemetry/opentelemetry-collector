@@ -136,7 +136,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 
 	mp, err := telFactory.CreateMeterProvider(ctx, telset, &cfg.Telemetry)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create metric provider: %w", err)
+		return nil, fmt.Errorf("failed to create meter provider: %w", err)
 	}
 
 	logsAboutMeterProvider(logger, cfg.Telemetry.Metrics, mp)
@@ -208,9 +208,6 @@ func (srv *Service) Start(ctx context.Context) error {
 		zap.String("Version", srv.buildInfo.Version),
 		zap.Int("NumCPU", runtime.NumCPU()),
 	)
-
-	// enable status reporting
-	srv.host.Reporter.Ready()
 
 	if err := srv.host.ServiceExtensions.Start(ctx, srv.host); err != nil {
 		return fmt.Errorf("failed to start extensions: %w", err)

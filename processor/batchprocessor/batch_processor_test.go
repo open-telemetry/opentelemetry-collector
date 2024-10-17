@@ -167,21 +167,25 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 }
 
 func TestBatchProcessorSentBySize(t *testing.T) {
+	const (
+		sendBatchSize          = 20
+		requestCount           = 100
+		spansPerRequest        = 5
+		expectedBatchesNum     = requestCount * spansPerRequest / sendBatchSize
+		expectedBatchingFactor = sendBatchSize / spansPerRequest
+	)
+
 	tel := setupTestTelemetry()
 	sizer := &ptrace.ProtoMarshaler{}
 	sink := new(consumertest.TracesSink)
 	cfg := createDefaultConfig().(*Config)
-	sendBatchSize := 20
-	cfg.SendBatchSize = uint32(sendBatchSize)
+	cfg.SendBatchSize = sendBatchSize
 	cfg.Timeout = 500 * time.Millisecond
 	creationSet := tel.NewSettings()
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg)
 	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
-
-	requestCount := 100
-	spansPerRequest := 5
 
 	start := time.Now()
 	sizeSum := 0
@@ -195,9 +199,6 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 
 	elapsed := time.Since(start)
 	require.LessOrEqual(t, elapsed.Nanoseconds(), cfg.Timeout.Nanoseconds())
-
-	expectedBatchesNum := requestCount * spansPerRequest / sendBatchSize
-	expectedBatchingFactor := sendBatchSize / spansPerRequest
 
 	require.Equal(t, requestCount*spansPerRequest, sink.SpanCount())
 	receivedTraces := sink.AllTraces()
@@ -286,12 +287,18 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 }
 
 func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
+	const (
+		sendBatchSize    = 20
+		sendBatchMaxSize = 37
+		requestCount     = 1
+		spansPerRequest  = 500
+		totalSpans       = requestCount * spansPerRequest
+	)
+
 	tel := setupTestTelemetry()
 	sizer := &ptrace.ProtoMarshaler{}
 	sink := new(consumertest.TracesSink)
 	cfg := createDefaultConfig().(*Config)
-	sendBatchSize := 20
-	sendBatchMaxSize := 37
 	cfg.SendBatchSize = uint32(sendBatchSize)
 	cfg.SendBatchMaxSize = uint32(sendBatchMaxSize)
 	cfg.Timeout = 500 * time.Millisecond
@@ -300,10 +307,6 @@ func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
 	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg)
 	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
-
-	requestCount := 1
-	spansPerRequest := 500
-	totalSpans := requestCount * spansPerRequest
 
 	start := time.Now()
 
@@ -319,11 +322,11 @@ func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
 	require.LessOrEqual(t, elapsed.Nanoseconds(), cfg.Timeout.Nanoseconds())
 
 	// The max batch size is not a divisor of the total number of spans
-	expectedBatchesNum := int(math.Ceil(float64(totalSpans) / float64(sendBatchMaxSize)))
+	expectedBatchesNum := math.Ceil(float64(totalSpans) / float64(sendBatchMaxSize))
 
 	require.Equal(t, totalSpans, sink.SpanCount())
 	receivedTraces := sink.AllTraces()
-	require.Len(t, receivedTraces, expectedBatchesNum)
+	require.Len(t, receivedTraces, int(expectedBatchesNum))
 	// we have to count the size after it was processed since splitTraces will cause some
 	// repeated ResourceSpan data to be sent through the processor
 	var min, max int
@@ -563,10 +566,12 @@ func TestBatchMetricProcessorBatchSize(t *testing.T) {
 		SendBatchSize: 50,
 	}
 
-	requestCount := 100
-	metricsPerRequest := 5
-	dataPointsPerMetric := 2 // Since the int counter uses two datapoints.
-	dataPointsPerRequest := metricsPerRequest * dataPointsPerMetric
+	const (
+		requestCount         = 100
+		metricsPerRequest    = 5
+		dataPointsPerMetric  = 2 // Since the int counter uses two datapoints.
+		dataPointsPerRequest = metricsPerRequest * dataPointsPerMetric
+	)
 	sink := new(consumertest.MetricsSink)
 
 	creationSet := tel.NewSettings()
@@ -587,12 +592,12 @@ func TestBatchMetricProcessorBatchSize(t *testing.T) {
 	elapsed := time.Since(start)
 	require.LessOrEqual(t, elapsed.Nanoseconds(), cfg.Timeout.Nanoseconds())
 
-	expectedBatchesNum := requestCount * dataPointsPerRequest / int(cfg.SendBatchSize)
+	expectedBatchesNum := requestCount * dataPointsPerRequest / cfg.SendBatchSize
 	expectedBatchingFactor := int(cfg.SendBatchSize) / dataPointsPerRequest
 
 	require.Equal(t, requestCount*2*metricsPerRequest, sink.DataPointCount())
 	receivedMds := sink.AllMetrics()
-	require.Len(t, receivedMds, expectedBatchesNum)
+	require.Len(t, receivedMds, int(expectedBatchesNum))
 	for _, md := range receivedMds {
 		require.Equal(t, expectedBatchingFactor, md.ResourceMetrics().Len())
 		for i := 0; i < expectedBatchingFactor; i++ {
@@ -616,8 +621,8 @@ func TestBatchMetricProcessorBatchSize(t *testing.T) {
 							1000_000, 2000_000, 3000_000, 4000_000, 5000_000, 6000_000, 7000_000, 8000_000, 9000_000},
 						BucketCounts: []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, uint64(expectedBatchesNum), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 						Sum:          int64(size),
-						Min:          metricdata.NewExtrema(int64(size / expectedBatchesNum)),
-						Max:          metricdata.NewExtrema(int64(size / expectedBatchesNum)),
+						Min:          metricdata.NewExtrema(int64(size / int(expectedBatchesNum))),
+						Max:          metricdata.NewExtrema(int64(size / int(expectedBatchesNum))),
 					},
 				},
 			},
@@ -946,8 +951,10 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 		SendBatchSize: 50,
 	}
 
-	requestCount := 100
-	logsPerRequest := 5
+	const (
+		requestCount   = 100
+		logsPerRequest = 5
+	)
 	sink := new(consumertest.LogsSink)
 
 	creationSet := tel.NewSettings()
@@ -968,12 +975,12 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 	elapsed := time.Since(start)
 	require.LessOrEqual(t, elapsed.Nanoseconds(), cfg.Timeout.Nanoseconds())
 
-	expectedBatchesNum := requestCount * logsPerRequest / int(cfg.SendBatchSize)
+	expectedBatchesNum := requestCount * logsPerRequest / cfg.SendBatchSize
 	expectedBatchingFactor := int(cfg.SendBatchSize) / logsPerRequest
 
 	require.Equal(t, requestCount*logsPerRequest, sink.LogRecordCount())
 	receivedMds := sink.AllLogs()
-	require.Len(t, receivedMds, expectedBatchesNum)
+	require.Len(t, receivedMds, int(expectedBatchesNum))
 	for _, ld := range receivedMds {
 		require.Equal(t, expectedBatchingFactor, ld.ResourceLogs().Len())
 		for i := 0; i < expectedBatchingFactor; i++ {
@@ -997,8 +1004,8 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 							1000_000, 2000_000, 3000_000, 4000_000, 5000_000, 6000_000, 7000_000, 8000_000, 9000_000},
 						BucketCounts: []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, uint64(expectedBatchesNum), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 						Sum:          int64(size),
-						Min:          metricdata.NewExtrema(int64(size / expectedBatchesNum)),
-						Max:          metricdata.NewExtrema(int64(size / expectedBatchesNum)),
+						Min:          metricdata.NewExtrema(int64(size / int(expectedBatchesNum))),
+						Max:          metricdata.NewExtrema(int64(size / int(expectedBatchesNum))),
 					},
 				},
 			},

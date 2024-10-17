@@ -218,7 +218,7 @@ func TestErrorResponses(t *testing.T) {
 				// Create without QueueConfig and RetryConfig so that ConsumeTraces
 				// returns the errors that we want to check immediately.
 			}
-			exp, err := createTracesExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+			exp, err := createTraces(context.Background(), exportertest.NewNopSettings(), cfg)
 			require.NoError(t, err)
 
 			// start the exporter
@@ -294,7 +294,7 @@ func TestUserAgent(t *testing.T) {
 						Headers: tt.headers,
 					},
 				}
-				exp, err := createTracesExporter(context.Background(), set, cfg)
+				exp, err := createTraces(context.Background(), set, cfg)
 				require.NoError(t, err)
 
 				// start the exporter
@@ -328,7 +328,7 @@ func TestUserAgent(t *testing.T) {
 						Headers: tt.headers,
 					},
 				}
-				exp, err := createMetricsExporter(context.Background(), set, cfg)
+				exp, err := createMetrics(context.Background(), set, cfg)
 				require.NoError(t, err)
 
 				// start the exporter
@@ -362,7 +362,7 @@ func TestUserAgent(t *testing.T) {
 						Headers: tt.headers,
 					},
 				}
-				exp, err := createLogsExporter(context.Background(), set, cfg)
+				exp, err := createLogs(context.Background(), set, cfg)
 				require.NoError(t, err)
 
 				// start the exporter
@@ -478,7 +478,7 @@ func TestPartialSuccess_logs(t *testing.T) {
 	logger, observed := observer.New(zap.DebugLevel)
 	set.TelemetrySettings.Logger = zap.New(logger)
 
-	exp, err := createLogsExporter(context.Background(), set, cfg)
+	exp, err := createLogs(context.Background(), set, cfg)
 	require.NoError(t, err)
 
 	// start the exporter
@@ -816,7 +816,7 @@ func TestPartialSuccess_traces(t *testing.T) {
 	set := exportertest.NewNopSettings()
 	logger, observed := observer.New(zap.DebugLevel)
 	set.TelemetrySettings.Logger = zap.New(logger)
-	exp, err := createTracesExporter(context.Background(), set, cfg)
+	exp, err := createTraces(context.Background(), set, cfg)
 	require.NoError(t, err)
 
 	// start the exporter
@@ -856,7 +856,7 @@ func TestPartialSuccess_metrics(t *testing.T) {
 	set := exportertest.NewNopSettings()
 	logger, observed := observer.New(zap.DebugLevel)
 	set.TelemetrySettings.Logger = zap.New(logger)
-	exp, err := createMetricsExporter(context.Background(), set, cfg)
+	exp, err := createMetrics(context.Background(), set, cfg)
 	require.NoError(t, err)
 
 	// start the exporter
@@ -909,7 +909,7 @@ func TestEncoding(t *testing.T) {
 					TracesEndpoint: fmt.Sprintf("%s/v1/traces", srv.URL),
 					Encoding:       tt.encoding,
 				}
-				exp, err := createTracesExporter(context.Background(), set, cfg)
+				exp, err := createTraces(context.Background(), set, cfg)
 				require.NoError(t, err)
 
 				// start the exporter
@@ -940,7 +940,7 @@ func TestEncoding(t *testing.T) {
 					MetricsEndpoint: fmt.Sprintf("%s/v1/metrics", srv.URL),
 					Encoding:        tt.encoding,
 				}
-				exp, err := createMetricsExporter(context.Background(), set, cfg)
+				exp, err := createMetrics(context.Background(), set, cfg)
 				require.NoError(t, err)
 
 				// start the exporter
@@ -971,7 +971,7 @@ func TestEncoding(t *testing.T) {
 					LogsEndpoint: fmt.Sprintf("%s/v1/logs", srv.URL),
 					Encoding:     tt.encoding,
 				}
-				exp, err := createLogsExporter(context.Background(), set, cfg)
+				exp, err := createLogs(context.Background(), set, cfg)
 				require.NoError(t, err)
 
 				// start the exporter

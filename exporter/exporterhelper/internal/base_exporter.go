@@ -29,9 +29,6 @@ type ObsrepSenderFactory = func(obsrep *ObsReport) RequestSender
 // Option apply changes to BaseExporter.
 type Option func(*BaseExporter) error
 
-// BatcherOption apply changes to batcher sender.
-type BatcherOption func(*BatchSender) error
-
 type BaseExporter struct {
 	component.StartFunc
 	component.ShutdownFunc
@@ -64,7 +61,6 @@ type BaseExporter struct {
 	queueCfg     exporterqueue.Config
 	queueFactory exporterqueue.Factory[internal.Request]
 	BatcherCfg   exporterbatcher.Config
-	BatcherOpts  []BatcherOption
 }
 
 func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSenderFactory, options ...Option) (*BaseExporter, error) {
@@ -109,9 +105,6 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSe
 
 	if be.BatcherCfg.Enabled {
 		bs := NewBatchSender(be.BatcherCfg, be.Set, be.BatchMergeFunc, be.BatchMergeSplitfunc)
-		for _, opt := range be.BatcherOpts {
-			err = multierr.Append(err, opt(bs))
-		}
 		if bs.mergeFunc == nil || bs.mergeSplitFunc == nil {
 			err = multierr.Append(err, fmt.Errorf("WithRequestBatchFuncs must be provided for the batcher applied to the request-based exporters"))
 		}
@@ -275,30 +268,14 @@ func WithCapabilities(capabilities consumer.Capabilities) Option {
 	}
 }
 
-// WithRequestBatchFuncs sets the functions for merging and splitting batches for an exporter built for custom request types.
-func WithRequestBatchFuncs(mf exporterbatcher.BatchMergeFunc[internal.Request], msf exporterbatcher.BatchMergeSplitFunc[internal.Request]) BatcherOption {
-	return func(bs *BatchSender) error {
-		if mf == nil || msf == nil {
-			return fmt.Errorf("WithRequestBatchFuncs must be provided with non-nil functions")
-		}
-		if bs.mergeFunc != nil || bs.mergeSplitFunc != nil {
-			return fmt.Errorf("WithRequestBatchFuncs can only be used once with request-based exporters")
-		}
-		bs.mergeFunc = mf
-		bs.mergeSplitFunc = msf
-		return nil
-	}
-}
-
 // WithBatcher enables batching for an exporter based on custom request types.
 // For now, it can be used only with the New[Traces|Metrics|Logs]RequestExporter exporter helpers and
 // WithRequestBatchFuncs provided.
 // This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-func WithBatcher(cfg exporterbatcher.Config, opts ...BatcherOption) Option {
+func WithBatcher(cfg exporterbatcher.Config) Option {
 	return func(o *BaseExporter) error {
 		o.BatcherCfg = cfg
-		o.BatcherOpts = opts
 		return nil
 	}
 }

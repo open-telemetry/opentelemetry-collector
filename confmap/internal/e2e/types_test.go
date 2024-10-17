@@ -165,12 +165,12 @@ func TestStrictTypeCasting(t *testing.T) {
 		{
 			value:        "t",
 			targetField:  TargetFieldBool,
-			unmarshalErr: "'field' expected type 'bool', got unconvertible type 'string', value: 't'",
+			unmarshalErr: "'field' expected type '%!s(bool=false)', got unconvertible type '\"t\"', value: '\"t\"'",
 		},
 		{
 			value:        "23",
 			targetField:  TargetFieldBool,
-			unmarshalErr: "'field' expected type 'bool', got unconvertible type 'int', value: '23'",
+			unmarshalErr: "'field' expected type '%!s(bool=false)', got unconvertible type '23', value: '23'",
 		},
 		{
 			value:       "{\"field\": 123}",

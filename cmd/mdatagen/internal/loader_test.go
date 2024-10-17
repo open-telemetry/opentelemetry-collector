@@ -22,9 +22,10 @@ func TestLoadMetadata(t *testing.T) {
 		{
 			name: "samplereceiver/metadata.yaml",
 			want: Metadata{
-				GithubProject:  "open-telemetry/opentelemetry-collector",
-				Type:           "sample",
-				SemConvVersion: "1.9.0",
+				GithubProject:        "open-telemetry/opentelemetry-collector",
+				GeneratedPackageName: "metadata",
+				Type:                 "sample",
+				SemConvVersion:       "1.9.0",
 				Status: &Status{
 					Class: "receiver",
 					Stability: map[component.StabilityLevel][]string{
@@ -297,11 +298,30 @@ func TestLoadMetadata(t *testing.T) {
 		{
 			name: "testdata/parent.yaml",
 			want: Metadata{
-				Type:            "subcomponent",
-				Parent:          "parentComponent",
-				ScopeName:       "go.opentelemetry.io/collector/cmd/mdatagen/internal",
-				ShortFolderName: "testdata",
-				Tests:           tests{Host: "componenttest.NewNopHost()"},
+				Type:                 "subcomponent",
+				Parent:               "parentComponent",
+				GeneratedPackageName: "metadata",
+				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal",
+				ShortFolderName:      "testdata",
+				Tests:                tests{Host: "componenttest.NewNopHost()"},
+			},
+		},
+		{
+			name: "testdata/generated_package_name.yaml",
+			want: Metadata{
+				Type:                 "custom",
+				GeneratedPackageName: "customname",
+				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal",
+				ShortFolderName:      "testdata",
+				Tests:                tests{Host: "componenttest.NewNopHost()"},
+				Status: &Status{
+					Class: "receiver",
+					Stability: map[component.StabilityLevel][]string{
+						component.StabilityLevelDevelopment: {"logs"},
+						component.StabilityLevelBeta:        {"traces"},
+						component.StabilityLevelStable:      {"metrics"},
+					},
+				},
 			},
 		},
 		{

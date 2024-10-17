@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/processor"
 )
 
-// NewUnhealthyProcessorCreateSettings returns a new nop settings for Create* functions.
+// Deprecated: [v0.112.0] not used. To be removed. Use NewNopSettings instead.
 func NewUnhealthyProcessorCreateSettings() processor.Settings {
 	return processor.Settings{
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),

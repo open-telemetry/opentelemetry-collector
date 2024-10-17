@@ -23,9 +23,9 @@ func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
-		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
-		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
+		exporter.WithTraces(createTraces, metadata.TracesStability),
+		exporter.WithMetrics(createMetrics, metadata.MetricsStability),
+		exporter.WithLogs(createLogs, metadata.LogsStability),
 	)
 }
 
@@ -48,14 +48,14 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createTracesExporter(
+func createTraces(
 	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
 	oce := newExporter(cfg, set)
 	oCfg := cfg.(*Config)
-	return exporterhelper.NewTracesExporter(ctx, set, cfg,
+	return exporterhelper.NewTraces(ctx, set, cfg,
 		oce.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(oCfg.TimeoutConfig),
@@ -67,14 +67,14 @@ func createTracesExporter(
 	)
 }
 
-func createMetricsExporter(
+func createMetrics(
 	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
 	oce := newExporter(cfg, set)
 	oCfg := cfg.(*Config)
-	return exporterhelper.NewMetricsExporter(ctx, set, cfg,
+	return exporterhelper.NewMetrics(ctx, set, cfg,
 		oce.pushMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(oCfg.TimeoutConfig),
@@ -86,14 +86,14 @@ func createMetricsExporter(
 	)
 }
 
-func createLogsExporter(
+func createLogs(
 	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
 	oce := newExporter(cfg, set)
 	oCfg := cfg.(*Config)
-	return exporterhelper.NewLogsExporter(ctx, set, cfg,
+	return exporterhelper.NewLogs(ctx, set, cfg,
 		oce.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(oCfg.TimeoutConfig),

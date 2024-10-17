@@ -34,20 +34,20 @@ func TestBatchSender_Merge(t *testing.T) {
 	}{
 		{
 			name:          "split_disabled",
-			batcherOption: WithBatcher(cfg, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc)),
+			batcherOption: WithBatcher(cfg),
 		},
 		{
 			name: "split_high_limit",
 			batcherOption: func() Option {
 				c := cfg
 				c.MaxSizeItems = 1000
-				return WithBatcher(c, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc))
+				return WithBatcher(c)
 			}(),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			be := queueBatchExporter(t, tt.batcherOption)
+			be := queueBatchExporter(t, tt.batcherOption, WithBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc))
 
 			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 			t.Cleanup(func() {
@@ -75,7 +75,7 @@ func TestBatchSender_Merge(t *testing.T) {
 			require.NoError(t, be.Send(context.Background(), &fakeRequest{items: 3, sink: sink,
 				mergeErr: errors.New("merge error")}))
 
-			assert.Equal(t, uint64(1), sink.requestsCount.Load())
+			assert.Equal(t, int64(1), sink.requestsCount.Load())
 			assert.Eventually(t, func() bool {
 				return sink.requestsCount.Load() == 2 && sink.itemsCount.Load() == 15
 			}, 100*time.Millisecond, 10*time.Millisecond)
@@ -89,19 +89,19 @@ func TestBatchSender_BatchExportError(t *testing.T) {
 	tests := []struct {
 		name             string
 		batcherOption    Option
-		expectedRequests uint64
-		expectedItems    uint64
+		expectedRequests int64
+		expectedItems    int64
 	}{
 		{
 			name:          "merge_only",
-			batcherOption: WithBatcher(cfg, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc)),
+			batcherOption: WithBatcher(cfg),
 		},
 		{
 			name: "merge_without_split_triggered",
 			batcherOption: func() Option {
 				c := cfg
 				c.MaxSizeItems = 200
-				return WithBatcher(c, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc))
+				return WithBatcher(c)
 			}(),
 		},
 		{
@@ -109,7 +109,7 @@ func TestBatchSender_BatchExportError(t *testing.T) {
 			batcherOption: func() Option {
 				c := cfg
 				c.MaxSizeItems = 20
-				return WithBatcher(c, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc))
+				return WithBatcher(c)
 			}(),
 			expectedRequests: 1,
 			expectedItems:    20,
@@ -117,7 +117,7 @@ func TestBatchSender_BatchExportError(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			be := queueBatchExporter(t, tt.batcherOption)
+			be := queueBatchExporter(t, tt.batcherOption, WithBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc))
 
 			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 			t.Cleanup(func() {
@@ -131,7 +131,7 @@ func TestBatchSender_BatchExportError(t *testing.T) {
 
 			// the first two requests should be blocked by the batchSender.
 			time.Sleep(50 * time.Millisecond)
-			assert.Equal(t, uint64(0), sink.requestsCount.Load())
+			assert.Equal(t, int64(0), sink.requestsCount.Load())
 
 			// the third request should trigger the export and cause an error.
 			errReq := &fakeRequest{items: 20, exportErr: errors.New("transient error"), sink: sink}
@@ -153,7 +153,7 @@ func TestBatchSender_MergeOrSplit(t *testing.T) {
 	cfg.MinSizeItems = 5
 	cfg.MaxSizeItems = 10
 	cfg.FlushTimeout = 100 * time.Millisecond
-	be := queueBatchExporter(t, WithBatcher(cfg, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc)))
+	be := queueBatchExporter(t, WithBatcher(cfg), WithBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc))
 
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
@@ -190,7 +190,7 @@ func TestBatchSender_MergeOrSplit(t *testing.T) {
 func TestBatchSender_Shutdown(t *testing.T) {
 	batchCfg := exporterbatcher.NewDefaultConfig()
 	batchCfg.MinSizeItems = 10
-	be := queueBatchExporter(t, WithBatcher(batchCfg, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc)))
+	be := queueBatchExporter(t, WithBatcher(batchCfg), WithBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc))
 
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -203,8 +203,8 @@ func TestBatchSender_Shutdown(t *testing.T) {
 	require.NoError(t, be.Shutdown(context.Background()))
 
 	// shutdown should force sending the batch
-	assert.Equal(t, uint64(1), sink.requestsCount.Load())
-	assert.Equal(t, uint64(3), sink.itemsCount.Load())
+	assert.Equal(t, int64(1), sink.requestsCount.Load())
+	assert.Equal(t, int64(3), sink.itemsCount.Load())
 }
 
 func TestBatchSender_Disabled(t *testing.T) {
@@ -212,7 +212,8 @@ func TestBatchSender_Disabled(t *testing.T) {
 	cfg.Enabled = false
 	cfg.MaxSizeItems = 5
 	be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender,
-		WithBatcher(cfg, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc)))
+		WithBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc),
+		WithBatcher(cfg))
 	require.NotNil(t, be)
 	require.NoError(t, err)
 
@@ -224,8 +225,8 @@ func TestBatchSender_Disabled(t *testing.T) {
 	sink := newFakeRequestSink()
 	// should be sent right away without splitting because batching is disabled.
 	require.NoError(t, be.Send(context.Background(), &fakeRequest{items: 8, sink: sink}))
-	assert.Equal(t, uint64(1), sink.requestsCount.Load())
-	assert.Equal(t, uint64(8), sink.itemsCount.Load())
+	assert.Equal(t, int64(1), sink.requestsCount.Load())
+	assert.Equal(t, int64(8), sink.itemsCount.Load())
 }
 
 func TestBatchSender_InvalidMergeSplitFunc(t *testing.T) {
@@ -241,7 +242,7 @@ func TestBatchSender_InvalidMergeSplitFunc(t *testing.T) {
 	cfg := exporterbatcher.NewDefaultConfig()
 	cfg.FlushTimeout = 50 * time.Millisecond
 	cfg.MaxSizeItems = 20
-	be := queueBatchExporter(t, WithBatcher(cfg, WithRequestBatchFuncs(fakeBatchMergeFunc, invalidMergeSplitFunc)))
+	be := queueBatchExporter(t, WithBatcher(cfg), WithBatchFuncs(fakeBatchMergeFunc, invalidMergeSplitFunc))
 
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
@@ -260,8 +261,8 @@ func TestBatchSender_InvalidMergeSplitFunc(t *testing.T) {
 
 func TestBatchSender_PostShutdown(t *testing.T) {
 	be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender,
-		WithBatcher(exporterbatcher.NewDefaultConfig(), WithRequestBatchFuncs(fakeBatchMergeFunc,
-			fakeBatchMergeSplitFunc)))
+		WithBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc),
+		WithBatcher(exporterbatcher.NewDefaultConfig()))
 	require.NotNil(t, be)
 	require.NoError(t, err)
 	assert.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -270,8 +271,8 @@ func TestBatchSender_PostShutdown(t *testing.T) {
 	// Closed batch sender should act as a pass-through to not block queue draining.
 	sink := newFakeRequestSink()
 	require.NoError(t, be.Send(context.Background(), &fakeRequest{items: 8, sink: sink}))
-	assert.Equal(t, uint64(1), sink.requestsCount.Load())
-	assert.Equal(t, uint64(8), sink.itemsCount.Load())
+	assert.Equal(t, int64(1), sink.requestsCount.Load())
+	assert.Equal(t, int64(8), sink.itemsCount.Load())
 }
 
 func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
@@ -281,8 +282,8 @@ func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
 	tests := []struct {
 		name             string
 		batcherCfg       exporterbatcher.Config
-		expectedRequests uint64
-		expectedItems    uint64
+		expectedRequests int64
+		expectedItems    int64
 	}{
 		{
 			name: "merge_only",
@@ -318,12 +319,12 @@ func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			qCfg := exporterqueue.NewDefaultConfig()
 			qCfg.NumConsumers = 2
 			be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender,
-				WithBatcher(tt.batcherCfg, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc)),
+				WithBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc),
+				WithBatcher(tt.batcherCfg),
 				WithRequestQueue(qCfg, exporterqueue.NewMemoryQueueFactory[internal.Request]()))
 			require.NotNil(t, be)
 			require.NoError(t, err)
@@ -378,7 +379,8 @@ func TestBatchSender_BatchBlocking(t *testing.T) {
 	bCfg := exporterbatcher.NewDefaultConfig()
 	bCfg.MinSizeItems = 3
 	be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender,
-		WithBatcher(bCfg, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc)))
+		WithBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc),
+		WithBatcher(bCfg))
 	require.NotNil(t, be)
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -397,8 +399,8 @@ func TestBatchSender_BatchBlocking(t *testing.T) {
 	wg.Wait()
 
 	// should be sent in two batches since the batch size is 3
-	assert.Equal(t, uint64(2), sink.requestsCount.Load())
-	assert.Equal(t, uint64(6), sink.itemsCount.Load())
+	assert.Equal(t, int64(2), sink.requestsCount.Load())
+	assert.Equal(t, int64(6), sink.itemsCount.Load())
 
 	require.NoError(t, be.Shutdown(context.Background()))
 }
@@ -408,7 +410,8 @@ func TestBatchSender_BatchCancelled(t *testing.T) {
 	bCfg := exporterbatcher.NewDefaultConfig()
 	bCfg.MinSizeItems = 2
 	be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender,
-		WithBatcher(bCfg, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc)))
+		WithBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc),
+		WithBatcher(bCfg))
 	require.NotNil(t, be)
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -433,8 +436,8 @@ func TestBatchSender_BatchCancelled(t *testing.T) {
 	wg.Wait()
 
 	// nothing should be delivered
-	assert.Equal(t, uint64(0), sink.requestsCount.Load())
-	assert.Equal(t, uint64(0), sink.itemsCount.Load())
+	assert.Equal(t, int64(0), sink.requestsCount.Load())
+	assert.Equal(t, int64(0), sink.itemsCount.Load())
 
 	require.NoError(t, be.Shutdown(context.Background()))
 }
@@ -443,7 +446,8 @@ func TestBatchSender_DrainActiveRequests(t *testing.T) {
 	bCfg := exporterbatcher.NewDefaultConfig()
 	bCfg.MinSizeItems = 2
 	be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender,
-		WithBatcher(bCfg, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc)))
+		WithBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc),
+		WithBatcher(bCfg))
 	require.NotNil(t, be)
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -468,8 +472,8 @@ func TestBatchSender_DrainActiveRequests(t *testing.T) {
 	// It should take 120 milliseconds to complete.
 	require.NoError(t, be.Shutdown(context.Background()))
 
-	assert.Equal(t, uint64(2), sink.requestsCount.Load())
-	assert.Equal(t, uint64(3), sink.itemsCount.Load())
+	assert.Equal(t, int64(2), sink.requestsCount.Load())
+	assert.Equal(t, int64(3), sink.itemsCount.Load())
 }
 
 func TestBatchSender_WithBatcherOption(t *testing.T) {
@@ -489,17 +493,8 @@ func TestBatchSender_WithBatcherOption(t *testing.T) {
 			expectedErr: false,
 		},
 		{
-			name: "funcs_set_twice",
-			opts: []Option{
-				WithBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc),
-				WithBatcher(exporterbatcher.NewDefaultConfig(), WithRequestBatchFuncs(fakeBatchMergeFunc,
-					fakeBatchMergeSplitFunc)),
-			},
-			expectedErr: true,
-		},
-		{
 			name:        "nil_funcs",
-			opts:        []Option{WithBatcher(exporterbatcher.NewDefaultConfig(), WithRequestBatchFuncs(nil, nil))},
+			opts:        []Option{WithBatchFuncs(nil, nil), WithBatcher(exporterbatcher.NewDefaultConfig())},
 			expectedErr: true,
 		},
 	}
@@ -519,7 +514,8 @@ func TestBatchSender_WithBatcherOption(t *testing.T) {
 
 func TestBatchSender_UnstartedShutdown(t *testing.T) {
 	be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender,
-		WithBatcher(exporterbatcher.NewDefaultConfig(), WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc)))
+		WithBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc),
+		WithBatcher(exporterbatcher.NewDefaultConfig()))
 	require.NoError(t, err)
 
 	err = be.Shutdown(context.Background())
@@ -543,7 +539,8 @@ func TestBatchSender_ShutdownDeadlock(t *testing.T) {
 	bCfg := exporterbatcher.NewDefaultConfig()
 	bCfg.FlushTimeout = 10 * time.Minute // high timeout to avoid the timeout to trigger
 	be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender,
-		WithBatcher(bCfg, WithRequestBatchFuncs(blockedBatchMergeFunc, fakeBatchMergeSplitFunc)))
+		WithBatchFuncs(blockedBatchMergeFunc, fakeBatchMergeSplitFunc),
+		WithBatcher(bCfg))
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -579,7 +576,8 @@ func TestBatchSenderWithTimeout(t *testing.T) {
 	tCfg := NewDefaultTimeoutConfig()
 	tCfg.Timeout = 50 * time.Millisecond
 	be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender,
-		WithBatcher(bCfg, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc)),
+		WithBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc),
+		WithBatcher(bCfg),
 		WithTimeout(tCfg))
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -638,7 +636,8 @@ func TestBatchSenderTimerResetNoConflict(t *testing.T) {
 	bCfg.MinSizeItems = 8
 	bCfg.FlushTimeout = 50 * time.Millisecond
 	be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender,
-		WithBatcher(bCfg, WithRequestBatchFuncs(delayBatchMergeFunc, fakeBatchMergeSplitFunc)))
+		WithBatchFuncs(delayBatchMergeFunc, fakeBatchMergeSplitFunc),
+		WithBatcher(bCfg))
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	sink := newFakeRequestSink()
@@ -654,7 +653,7 @@ func TestBatchSenderTimerResetNoConflict(t *testing.T) {
 
 	// The batch should be sent either with the flush interval or by reaching the minimum items size with no conflict
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-		assert.LessOrEqual(c, uint64(1), sink.requestsCount.Load())
+		assert.LessOrEqual(c, int64(1), sink.requestsCount.Load())
 		assert.EqualValues(c, 8, sink.itemsCount.Load())
 	}, 200*time.Millisecond, 10*time.Millisecond)
 
@@ -669,7 +668,8 @@ func TestBatchSenderTimerFlush(t *testing.T) {
 	bCfg.MinSizeItems = 8
 	bCfg.FlushTimeout = 100 * time.Millisecond
 	be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender,
-		WithBatcher(bCfg, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc)))
+		WithBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc),
+		WithBatcher(bCfg))
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	sink := newFakeRequestSink()
@@ -683,7 +683,7 @@ func TestBatchSenderTimerFlush(t *testing.T) {
 		assert.NoError(t, be.Send(context.Background(), &fakeRequest{items: 4, sink: sink}))
 	}()
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-		assert.LessOrEqual(c, uint64(1), sink.requestsCount.Load())
+		assert.LessOrEqual(c, int64(1), sink.requestsCount.Load())
 		assert.EqualValues(c, 8, sink.itemsCount.Load())
 	}, 30*time.Millisecond, 5*time.Millisecond)
 
@@ -694,20 +694,82 @@ func TestBatchSenderTimerFlush(t *testing.T) {
 
 	// Confirm that it is not flushed in 50ms
 	time.Sleep(60 * time.Millisecond)
-	assert.LessOrEqual(t, uint64(1), sink.requestsCount.Load())
+	assert.LessOrEqual(t, int64(1), sink.requestsCount.Load())
 	assert.EqualValues(t, 8, sink.itemsCount.Load())
 
 	// Confirm that it is flushed after 100ms (using 60+50=110 here to be safe)
 	time.Sleep(50 * time.Millisecond)
-	assert.LessOrEqual(t, uint64(2), sink.requestsCount.Load())
+	assert.LessOrEqual(t, int64(2), sink.requestsCount.Load())
 	assert.EqualValues(t, 12, sink.itemsCount.Load())
 	require.NoError(t, be.Shutdown(context.Background()))
 }
 
-func queueBatchExporter(t *testing.T, batchOption Option) *BaseExporter {
-	be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender, batchOption,
-		WithRequestQueue(exporterqueue.NewDefaultConfig(), exporterqueue.NewMemoryQueueFactory[internal.Request]()))
+func queueBatchExporter(t *testing.T, opts ...Option) *BaseExporter {
+	opts = append(opts, WithRequestQueue(exporterqueue.NewDefaultConfig(), exporterqueue.NewMemoryQueueFactory[internal.Request]()))
+	be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender, opts...)
 	require.NotNil(t, be)
 	require.NoError(t, err)
 	return be
+}
+
+func fakeBatchMergeFunc(_ context.Context, r1 internal.Request, r2 internal.Request) (internal.Request, error) {
+	if r1 == nil {
+		return r2, nil
+	}
+	fr1 := r1.(*fakeRequest)
+	fr2 := r2.(*fakeRequest)
+	if fr2.mergeErr != nil {
+		return nil, fr2.mergeErr
+	}
+	return &fakeRequest{
+		items:     fr1.items + fr2.items,
+		sink:      fr1.sink,
+		exportErr: fr2.exportErr,
+		delay:     fr1.delay + fr2.delay,
+	}, nil
+}
+
+func fakeBatchMergeSplitFunc(ctx context.Context, cfg exporterbatcher.MaxSizeConfig, r1 internal.Request, r2 internal.Request) ([]internal.Request, error) {
+	maxItems := cfg.MaxSizeItems
+	if maxItems == 0 {
+		r, err := fakeBatchMergeFunc(ctx, r1, r2)
+		return []internal.Request{r}, err
+	}
+
+	if r2.(*fakeRequest).mergeErr != nil {
+		return nil, r2.(*fakeRequest).mergeErr
+	}
+
+	fr2 := r2.(*fakeRequest)
+	fr2 = &fakeRequest{items: fr2.items, sink: fr2.sink, exportErr: fr2.exportErr, delay: fr2.delay}
+	var res []internal.Request
+
+	// fill fr1 to maxItems if it's not nil
+	if r1 != nil {
+		fr1 := r1.(*fakeRequest)
+		fr1 = &fakeRequest{items: fr1.items, sink: fr1.sink, exportErr: fr1.exportErr, delay: fr1.delay}
+		if fr2.items <= maxItems-fr1.items {
+			fr1.items += fr2.items
+			if fr2.exportErr != nil {
+				fr1.exportErr = fr2.exportErr
+			}
+			return []internal.Request{fr1}, nil
+		}
+		// if split is needed, we don't propagate exportErr from fr2 to fr1 to test more cases
+		fr2.items -= maxItems - fr1.items
+		fr1.items = maxItems
+		res = append(res, fr1)
+	}
+
+	// split fr2 to maxItems
+	for {
+		if fr2.items <= maxItems {
+			res = append(res, &fakeRequest{items: fr2.items, sink: fr2.sink, exportErr: fr2.exportErr, delay: fr2.delay})
+			break
+		}
+		res = append(res, &fakeRequest{items: maxItems, sink: fr2.sink, exportErr: fr2.exportErr, delay: fr2.delay})
+		fr2.items -= maxItems
+	}
+
+	return res, nil
 }
