@@ -81,7 +81,7 @@ Is this acceptable? Should we:
 The current implementation of component status reporting added a new field to `component.TelemetrySettings`, `ReportStatus`.  This field is technically optional, but would be marked as stable with component 1.0. Are we ok with 1 of the following?
 
 1. Including a component status reporting feature, `component.TelemetrySettings.ReportStatus`, in the 1.0 version of `component.TelemetrySettings`?
-2. Marking `component.TelemetrySettings.ReportStatus` as experimentatal via godoc comments in the 1.0 version of `component.TelemetrySettings`?
+2. Marking `component.TelemetrySettings.ReportStatus` as experimental via godoc comments in the 1.0 version of `component.TelemetrySettings`?
 
 Or should we refactor `component` somehow to remove `ReportStatus` from `component.TelemetrySettings`?
 

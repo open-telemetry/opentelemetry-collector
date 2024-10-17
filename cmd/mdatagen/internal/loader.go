@@ -276,6 +276,8 @@ type Metadata struct {
 	Parent string `mapstructure:"parent"`
 	// Status information for the component.
 	Status *Status `mapstructure:"status"`
+	// The name of the package that will be generated.
+	GeneratedPackageName string `mapstructure:"generated_package_name"`
 	// Telemetry information for the component.
 	Telemetry telemetry `mapstructure:"telemetry"`
 	// SemConvVersion is a version number of OpenTelemetry semantic conventions applied to the scraped metrics.
@@ -329,6 +331,9 @@ func LoadMetadata(filePath string) (Metadata, error) {
 		if err != nil {
 			return md, err
 		}
+	}
+	if md.GeneratedPackageName == "" {
+		md.GeneratedPackageName = "metadata"
 	}
 
 	if err = md.Validate(); err != nil {

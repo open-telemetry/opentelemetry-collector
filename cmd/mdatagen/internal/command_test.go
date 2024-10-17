@@ -12,10 +12,22 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
 )
+
+func TestNewCommand(t *testing.T) {
+	cmd, err := NewCommand()
+	require.NoError(t, err)
+
+	assert.NotNil(t, cmd)
+	assert.IsType(t, &cobra.Command{}, cmd)
+	assert.Equal(t, "mdatagen", cmd.Use)
+	assert.True(t, cmd.SilenceUsage)
+}
 
 func TestRunContents(t *testing.T) {
 	tests := []struct {
@@ -35,6 +47,16 @@ func TestRunContents(t *testing.T) {
 		{
 			yml:     "invalid.yaml",
 			wantErr: true,
+		},
+		{
+			yml:                 "basic_connector.yaml",
+			wantErr:             false,
+			wantStatusGenerated: true,
+		},
+		{
+			yml:                 "basic_receiver.yaml",
+			wantErr:             false,
+			wantStatusGenerated: true,
 		},
 		{
 			yml:                  "metrics_and_type.yaml",
@@ -107,6 +129,10 @@ func TestRunContents(t *testing.T) {
 			wantConfigGenerated:  true,
 			wantStatusGenerated:  true,
 		},
+		{
+			yml:                 "custom_generated_package_name.yaml",
+			wantStatusGenerated: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.yml, func(t *testing.T) {
@@ -129,12 +155,16 @@ foo
 			}
 			require.NoError(t, err)
 
+			md, err := LoadMetadata(metadataFile)
+			require.NoError(t, err)
+			generatedPackageDir := filepath.Join("internal", md.GeneratedPackageName)
+
 			var contents []byte
 			if tt.wantMetricsGenerated {
-				require.FileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_metrics.go"))
-				require.FileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_metrics_test.go"))
+				require.FileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_metrics.go"))
+				require.FileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_metrics_test.go"))
 				require.FileExists(t, filepath.Join(tmpdir, "documentation.md"))
-				contents, err = os.ReadFile(filepath.Join(tmpdir, "internal/metadata/generated_metrics.go")) // nolint: gosec
+				contents, err = os.ReadFile(filepath.Join(tmpdir, generatedPackageDir, "generated_metrics.go")) // nolint: gosec
 				require.NoError(t, err)
 				if tt.wantMetricsContext {
 					require.Contains(t, string(contents), "\"context\"")
@@ -142,23 +172,23 @@ foo
 					require.NotContains(t, string(contents), "\"context\"")
 				}
 			} else {
-				require.NoFileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_metrics.go"))
-				require.NoFileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_metrics_test.go"))
+				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_metrics.go"))
+				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_metrics_test.go"))
 			}
 
 			if tt.wantConfigGenerated {
-				require.FileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_config.go"))
-				require.FileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_config_test.go"))
+				require.FileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_config.go"))
+				require.FileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_config_test.go"))
 			} else {
-				require.NoFileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_config.go"))
-				require.NoFileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_config_test.go"))
+				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_config.go"))
+				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_config_test.go"))
 			}
 
 			if tt.wantTelemetryGenerated {
-				require.FileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_telemetry.go"))
-				require.FileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_telemetry_test.go"))
+				require.FileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_telemetry.go"))
+				require.FileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_telemetry_test.go"))
 				require.FileExists(t, filepath.Join(tmpdir, "documentation.md"))
-				contents, err = os.ReadFile(filepath.Join(tmpdir, "internal/metadata/generated_telemetry.go")) // nolint: gosec
+				contents, err = os.ReadFile(filepath.Join(tmpdir, generatedPackageDir, "generated_telemetry.go")) // nolint: gosec
 				require.NoError(t, err)
 				if tt.wantMetricsContext {
 					require.Contains(t, string(contents), "\"context\"")
@@ -166,8 +196,8 @@ foo
 					require.NotContains(t, string(contents), "\"context\"")
 				}
 			} else {
-				require.NoFileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_telemetry.go"))
-				require.NoFileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_telemetry_test.go"))
+				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_telemetry.go"))
+				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_telemetry_test.go"))
 			}
 
 			if !tt.wantMetricsGenerated && !tt.wantTelemetryGenerated && !tt.wantResourceAttributesGenerated {
@@ -175,12 +205,12 @@ foo
 			}
 
 			if tt.wantStatusGenerated {
-				require.FileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_status.go"))
+				require.FileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_status.go"))
 				contents, err = os.ReadFile(filepath.Join(tmpdir, "README.md")) // nolint: gosec
 				require.NoError(t, err)
 				require.NotContains(t, string(contents), "foo")
 			} else {
-				require.NoFileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_status.go"))
+				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_status.go"))
 				contents, err = os.ReadFile(filepath.Join(tmpdir, "README.md")) // nolint: gosec
 				require.NoError(t, err)
 				require.Contains(t, string(contents), "foo")
@@ -344,7 +374,7 @@ Some info about a component
 			componentClass: "receiver",
 			distros:        []string{"contrib"},
 			codeowners: &Codeowners{
-				Active: []string{"foo"},
+				Active: []string{"open-telemetry/collector-approvers"},
 			},
 		},
 		{
@@ -444,7 +474,7 @@ Some info about a component
 			readmeFile := filepath.Join(tmpdir, "README.md")
 			require.NoError(t, os.WriteFile(readmeFile, []byte(tt.markdown), 0600))
 
-			err := inlineReplace("templates/readme.md.tmpl", readmeFile, md, statusStart, statusEnd)
+			err := inlineReplace("templates/readme.md.tmpl", readmeFile, md, statusStart, statusEnd, "metadata")
 			require.NoError(t, err)
 
 			require.FileExists(t, filepath.Join(tmpdir, "README.md"))

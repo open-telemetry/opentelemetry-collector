@@ -102,11 +102,11 @@ func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 			},
 		},
 		Pipelines: pipelines.Config{
-			pipeline.MustNewID("traces"): {
+			pipeline.NewID(pipeline.SignalTraces): {
 				Receivers: []component.ID{component.NewID(component.MustNewType("test"))},
 				Exporters: []component.ID{component.NewID(nopType)},
 			},
-			pipeline.MustNewID("metrics"): {
+			pipeline.NewID(pipeline.SignalMetrics): {
 				Receivers: []component.ID{component.NewID(component.MustNewType("test"))},
 				Exporters: []component.ID{component.NewID(nopType)},
 			},
@@ -193,7 +193,7 @@ func createDefaultReceiverConfig() component.Config {
 
 func createTraces(
 	_ context.Context,
-	set receiver.Settings,
+	_ receiver.Settings,
 	cfg component.Config,
 	_ consumer.Traces,
 ) (receiver.Traces, error) {
@@ -203,7 +203,6 @@ func createTraces(
 		func() (*testReceiver, error) {
 			return &testReceiver{}, nil
 		},
-		&set.TelemetrySettings,
 	)
 	if err != nil {
 		return nil, err
@@ -214,7 +213,7 @@ func createTraces(
 
 func createMetrics(
 	_ context.Context,
-	set receiver.Settings,
+	_ receiver.Settings,
 	cfg component.Config,
 	_ consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -224,7 +223,6 @@ func createMetrics(
 		func() (*testReceiver, error) {
 			return &testReceiver{}, nil
 		},
-		&set.TelemetrySettings,
 	)
 	if err != nil {
 		return nil, err
@@ -239,12 +237,12 @@ func newExtensionFactory() extension.Factory {
 	return extension.NewFactory(
 		component.MustNewType("watcher"),
 		createDefaultExtensionConfig,
-		createExtension,
+		create,
 		component.StabilityLevelStable,
 	)
 }
 
-func createExtension(_ context.Context, _ extension.Settings, cfg component.Config) (extension.Extension, error) {
+func create(_ context.Context, _ extension.Settings, cfg component.Config) (extension.Extension, error) {
 	oCfg := cfg.(*extensionConfig)
 	return &testExtension{
 		eventsReceived: oCfg.eventsReceived,

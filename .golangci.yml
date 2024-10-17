@@ -126,10 +126,10 @@ linters-settings:
 
 linters:
   enable:
+    - copyloopvar
     - depguard
     - errcheck
     - errorlint
-    - exportloopref
     - gocritic
     - gofmt
     - goimports

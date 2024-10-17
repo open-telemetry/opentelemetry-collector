@@ -4,26 +4,28 @@
 package internal // import "go.opentelemetry.io/collector/pdata/internal/cmd/pdatagen/internal"
 
 var pmetric = &Package{
-	name: "pmetric",
-	path: "pmetric",
-	imports: []string{
-		`"sort"`,
-		``,
-		`"go.opentelemetry.io/collector/pdata/internal"`,
-		`"go.opentelemetry.io/collector/pdata/internal/data"`,
-		`otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"`,
-		`"go.opentelemetry.io/collector/pdata/pcommon"`,
-	},
-	testImports: []string{
-		`"testing"`,
-		`"unsafe"`,
-		``,
-		`"github.com/stretchr/testify/assert"`,
-		``,
-		`"go.opentelemetry.io/collector/pdata/internal"`,
-		`"go.opentelemetry.io/collector/pdata/internal/data"`,
-		`otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"`,
-		`"go.opentelemetry.io/collector/pdata/pcommon"`,
+	info: &PackageInfo{
+		name: "pmetric",
+		path: "pmetric",
+		imports: []string{
+			`"sort"`,
+			``,
+			`"go.opentelemetry.io/collector/pdata/internal"`,
+			`"go.opentelemetry.io/collector/pdata/internal/data"`,
+			`otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"`,
+			`"go.opentelemetry.io/collector/pdata/pcommon"`,
+		},
+		testImports: []string{
+			`"testing"`,
+			`"unsafe"`,
+			``,
+			`"github.com/stretchr/testify/assert"`,
+			``,
+			`"go.opentelemetry.io/collector/pdata/internal"`,
+			`"go.opentelemetry.io/collector/pdata/internal/data"`,
+			`otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"`,
+			`"go.opentelemetry.io/collector/pdata/pcommon"`,
+		},
 	},
 	structs: []baseStruct{
 		resourceMetricsSlice,

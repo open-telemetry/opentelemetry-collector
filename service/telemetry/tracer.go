@@ -17,8 +17,14 @@ import (
 	"go.opentelemetry.io/otel/trace/noop"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/internal/globalgates"
+	"go.opentelemetry.io/collector/featuregate"
 )
+
+var noopTracerProvider = featuregate.GlobalRegistry().MustRegister("service.noopTracerProvider",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterFromVersion("v0.107.0"),
+	featuregate.WithRegisterToVersion("v0.109.0"),
+	featuregate.WithRegisterDescription("Sets a Noop OpenTelemetry TracerProvider to reduce memory allocations. This featuregate is incompatible with the zPages extension."))
 
 const (
 	// supported trace propagators
@@ -50,7 +56,7 @@ func (n *noopNoContextTracerProvider) Tracer(_ string, _ ...trace.TracerOption) 
 
 // New creates a new Telemetry from Config.
 func newTracerProvider(ctx context.Context, set Settings, cfg Config) (trace.TracerProvider, error) {
-	if globalgates.NoopTracerProvider.IsEnabled() || cfg.Traces.Level == configtelemetry.LevelNone {
+	if noopTracerProvider.IsEnabled() || cfg.Traces.Level == configtelemetry.LevelNone {
 		return &noopNoContextTracerProvider{}, nil
 	}
 

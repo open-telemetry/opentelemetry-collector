@@ -149,7 +149,7 @@ func TestOrdering(t *testing.T) {
 				{name: "foo", deps: []string{"bar"}},
 				{name: "bar", deps: []string{"foo"}},
 			},
-			err: "unable to order extenions",
+			err: "unable to order extensions",
 		},
 	}
 	for _, testCase := range tests {
@@ -435,8 +435,6 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 				WithReporter(rep),
 			)
 			require.NoError(t, err)
-
-			rep.Ready()
 
 			assert.Equal(t, tt.startErr, extensions.Start(context.Background(), componenttest.NewNopHost()))
 			if tt.startErr == nil {
