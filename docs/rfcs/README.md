@@ -41,7 +41,7 @@ maintainers of related SIGs or experts) may be explicitly noted in the RFC.
 
 ### Merge rules
 
-We use a Lazy Consensus method with the following rules:
+We use a [Lazy Consensus](https://www.apache.org/foundation/glossary.html#LazyConsensus) method with the following rules:
 
 1. *Quorum*: For an RFC to be mergeable, it needs to have at least **two approvals** from the
    approvers set as well as approvals from any additional stakeholders.
