@@ -92,8 +92,6 @@ replace go.opentelemetry.io/collector/processor/processorprofiles => ../processo
 
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 
-replace go.opentelemetry.io/collector/internal/globalsignal => ../../internal/globalsignal
-
 replace go.opentelemetry.io/collector/extension => ../../extension
 
 replace go.opentelemetry.io/collector/config/configretry => ../../config/configretry
