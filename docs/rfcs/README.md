@@ -8,8 +8,8 @@ proposal, file an [OTEP][1] instead.
 
 ## Scope
 
-The RFC process is intended to be used for significant changes to the Collector. Major design
-decisions, specially those that imply a change that is hard to reverse, should probably be
+The Request For Comments (RFC) process is intended to be used for significant changes to the Collector. Major design
+decisions, specially those that imply a change that is hard to reverse, should generally be
 documented as an RFC. Controversial changes should also be documented as an RFC, so that the
 community can have a chance to provide feedback. The goal of this process is to ensure we have a
 coherent vision before embarking on significant work.
@@ -45,7 +45,7 @@ We use a Lazy Consensus method with the following rules:
 
 1. *Quorum*: For an RFC to be mergeable, it needs to have at least **two approvals** from the
    approvers set as well as approvals from any additional stakeholders.
-2. *Waiting period*: Maintainers need to announce their intent to merge the RFC with a Github
+2. *Waiting period*: Maintainers need to announce their intent to merge the RFC with a GitHub
    comment. They will need to add a `rfc:final-comment-period` label to the PR and wait for at least
    **4 business days** after making the announcement to merge the RFC.
 3. *Objections*: Objections should be communicated as a 'request changes' review. All objections
