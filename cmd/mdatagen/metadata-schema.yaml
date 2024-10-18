@@ -175,3 +175,20 @@ telemetry:
       # Optional: array of attributes that were defined in the attributes section that are emitted by this metric.
       # Note: Only the following attribute types are supported: <string|int|double|bool>
       attributes: [string]
+
+#Optional: Gate is an immutable object that is owned by the Registry and represents an individual feature that
+# may be enabled or disabled based on the lifecycle state of the feature and CLI flags specified by the user.
+feature_gates:
+  <feature_gate.name>:
+    #Required: id of the feature gate
+    id:
+    #Required: description of the gate
+    description:
+    #Required: current stage at which the feature gate is in the development lifecyle
+    stage:
+    #Optional: link to the issue where the gate has been discussed
+    reference_url:
+    #Optional: the release version from which the gate has been given the current stage
+    from_version:
+    #Optional: the release version till which the gate had the given lifecycle stage
+    to_version:

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
@@ -18,6 +19,20 @@ import (
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+)
+
+var (
+	// idRegexp is used to validate the ID of a Gate.
+	// IDs' characters must be alphanumeric or dots.
+	idRegexp           = regexp.MustCompile(`^[0-9a-zA-Z\.]*$`)
+	versionRegexp      = regexp.MustCompile(`^v(\d+)\.(\d+)\.(\d+)$`)
+	referenceURLRegexp = regexp.MustCompile(`^(https?:\/\/)?([a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+)(\/[^\s]*)?$`)
+	validStages        = map[string]bool{
+		"Alpha":      true,
+		"Beta":       true,
+		"Stable":     true,
+		"Deprecated": true,
+	}
 )
 
 type MetricName string
@@ -37,6 +52,16 @@ func (mn AttributeName) Render() (string, error) {
 }
 
 func (mn AttributeName) RenderUnexported() (string, error) {
+	return FormatIdentifier(string(mn), false)
+}
+
+type featureGateName string
+
+func (mn featureGateName) Render() (string, error) {
+	return FormatIdentifier(string(mn), true)
+}
+
+func (mn featureGateName) RenderUnexported() (string, error) {
 	return FormatIdentifier(string(mn), false)
 }
 
@@ -159,6 +184,7 @@ func (m *Metric) Unmarshal(parser *confmap.Conf) error {
 	}
 	return parser.Unmarshal(m)
 }
+
 func (m Metric) Data() MetricData {
 	if m.Sum != nil {
 		return m.Sum
@@ -296,6 +322,8 @@ type Metadata struct {
 	ShortFolderName string `mapstructure:"-"`
 	// Tests is the set of tests generated with the component
 	Tests tests `mapstructure:"tests"`
+	// FeatureGates that can be used for the component.
+	FeatureGates map[featureGateName]featureGate `mapstructure:"feature_gates"`
 }
 
 func setAttributesFullName(attrs map[AttributeName]Attribute) {
@@ -372,4 +400,51 @@ func packageName() (string, error) {
 		return "", err
 	}
 	return strings.TrimSpace(string(output)), nil
+}
+
+type featureGate struct {
+	// Required.
+	Id string `mapstructure:"id"`
+	// Description describes the purpose of the attribute.
+	Description string `mapstructure:"description"`
+	// Stage current stage at which the feature gate is in the development lifecyle
+	Stage string `mapstructure:"stage"`
+	// ReferenceURL can optionally give the url of the feature_gate
+	ReferenceURL string `mapstructure:"reference_url"`
+	// FromVersion optional field which gives the release version from which the gate has been given the current stage
+	FromVersion string `mapstructure:"from_version"`
+	// ToVersion optional field which gives the release version till which the gate the gate had the given lifecycle stage
+	ToVersion string `mapstructure:"to_version"`
+	// FeatureGateName name of the feature gate
+	FeatureGateName featureGateName `mapstructure:"-"`
+}
+
+func (f *featureGate) validate(parser *confmap.Conf) error {
+	if !parser.IsSet("id") {
+		return errors.New("missing required field: `id`")
+	}
+	var err []error
+	if !idRegexp.MatchString(fmt.Sprintf("%v", parser.Get("id"))) {
+		err = append(err, fmt.Errorf("invalid character(s) in ID"))
+	}
+	if !versionRegexp.MatchString(fmt.Sprintf("%v", parser.Get("from_version"))) {
+		err = append(err, fmt.Errorf("invalid character(s) in from_version"))
+	}
+	if !versionRegexp.MatchString(fmt.Sprintf("%v", parser.Get("to_version"))) {
+		err = append(err, fmt.Errorf("invalid character(s) in to_version"))
+	}
+	if !referenceURLRegexp.MatchString(fmt.Sprintf("%v", parser.Get("reference_url"))) {
+		err = append(err, fmt.Errorf("invalid character(s) in reference_url"))
+	}
+	if _, ok := validStages[fmt.Sprintf("%v", parser.Get("stage"))]; !ok {
+		err = append(err, fmt.Errorf("invalid stage"))
+	}
+	return errors.Join(err...)
+}
+
+func (f *featureGate) Unmarshal(parser *confmap.Conf) error {
+	if err := f.validate(parser); err != nil {
+		return err
+	}
+	return parser.Unmarshal(f)
 }
