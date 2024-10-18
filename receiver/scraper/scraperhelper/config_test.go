@@ -1,6 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
-// Deprecated: [v0.111.0] Use /scraper/scraperhelper instead.
+
 package scraperhelper
 
 import (
@@ -37,6 +37,7 @@ func TestScrapeControllerSettings(t *testing.T) {
 			errVal: `"timeout": requires positive value`,
 		},
 	} {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
