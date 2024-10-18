@@ -223,7 +223,7 @@ func (c *Config) coreModuleAndVersion() (string, string) {
 
 func (c *Config) allComponents() []Module {
 	return slices.Concat[[]Module](c.Exporters, c.Receivers, c.Processors,
-		c.Extensions, c.Connectors, *c.Providers)
+		c.Extensions, c.Connectors, c.Providers)
 }
 
 func (c *Config) readGoModFile() (string, map[string]string, error) {

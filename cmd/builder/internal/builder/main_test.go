@@ -198,7 +198,7 @@ func TestVersioning(t *testing.T) {
 					},
 				})
 				require.NoError(t, err)
-				cfg.Providers = &providers
+				cfg.Providers = providers
 				return cfg
 			},
 			expectedErr: nil,
@@ -213,7 +213,7 @@ func TestVersioning(t *testing.T) {
 						GoMod: "go.opentelemetry.io/collector/exporter/otlpexporter v0.97.0",
 					},
 				}
-				cfg.Providers = &[]Module{}
+				cfg.Providers = []Module{}
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				return cfg
 			},
@@ -230,7 +230,7 @@ func TestVersioning(t *testing.T) {
 						GoMod: "go.opentelemetry.io/collector/exporter/otlpexporter v0.97.0",
 					},
 				}
-				cfg.Providers = &[]Module{}
+				cfg.Providers = []Module{}
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				return cfg
 			},
@@ -326,7 +326,7 @@ func TestGenerateAndCompile(t *testing.T) {
 				require.NoError(t, err)
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
-				cfg.Providers = &[]Module{}
+				cfg.Providers = []Module{}
 				return cfg
 			},
 		},
@@ -456,6 +456,24 @@ func TestReplaceStatementsAreComplete(t *testing.T) {
 		},
 		{
 			GoMod: "go.opentelemetry.io/collector/processor/memorylimiterprocessor v1.9999.9999",
+		},
+	})
+	require.NoError(t, err)
+	cfg.Providers, err = parseModules([]Module{
+		{
+			GoMod: "go.opentelemetry.io/collector/confmap/provider/envprovider v1.9999.9999",
+		},
+		{
+			GoMod: "go.opentelemetry.io/collector/confmap/provider/fileprovider v1.9999.9999",
+		},
+		{
+			GoMod: "go.opentelemetry.io/collector/confmap/provider/httpprovider v1.9999.9999",
+		},
+		{
+			GoMod: "go.opentelemetry.io/collector/confmap/provider/httpsprovider v1.9999.9999",
+		},
+		{
+			GoMod: "go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.9999.9999",
 		},
 	})
 	require.NoError(t, err)

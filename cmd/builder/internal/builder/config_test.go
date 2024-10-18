@@ -88,7 +88,7 @@ func TestMissingModule(t *testing.T) {
 		{
 			cfg: Config{
 				Logger: zap.NewNop(),
-				Providers: &[]Module{{
+				Providers: []Module{{
 					Import: "invalid",
 				}},
 			},
@@ -324,11 +324,10 @@ func TestConfmapFactoryVersions(t *testing.T) {
 	}
 }
 
-func TestAddsDefaultProviders(t *testing.T) {
+func TestNoProviders(t *testing.T) {
 	cfg := NewDefaultConfig()
 	cfg.Providers = nil
-	require.NoError(t, cfg.ParseModules())
-	assert.Len(t, *cfg.Providers, 5)
+	require.EqualError(t, cfg.Validate(), "at least one provider is required")
 }
 
 func TestSkipsNilFieldValidation(t *testing.T) {
