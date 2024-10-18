@@ -5,6 +5,7 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -141,10 +142,15 @@ func (bs *BatchSender) Send(ctx context.Context, req internal.Request) error {
 		return bs.NextSender.Send(ctx, req)
 	}
 
-	if bs.cfg.MaxSizeItems > 0 {
-		return bs.sendMergeSplitBatch(ctx, req.(internal.BatchRequest))
+	batchReq, ok := req.(internal.BatchRequest)
+	if !ok {
+		return errors.New("Incoming request does not implement BatchRequest interface.")
 	}
-	return bs.sendMergeBatch(ctx, req.(internal.BatchRequest))
+
+	if bs.cfg.MaxSizeItems > 0 {
+		return bs.sendMergeSplitBatch(ctx, batchReq)
+	}
+	return bs.sendMergeBatch(ctx, batchReq)
 }
 
 // sendMergeSplitBatch sends the request to the batch which may be split into multiple requests.
