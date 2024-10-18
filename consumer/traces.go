@@ -19,7 +19,7 @@ type Traces interface {
 }
 
 // ConsumeTracesFunc is a helper function that is similar to ConsumeTraces.
-type ConsumeTracesFunc func(ctx context.Context, td ptrace.Traces) error
+type ConsumeTracesFunc ConsumeFunc[ptrace.Traces]
 
 // ConsumeTraces calls f(ctx, td).
 func (f ConsumeTracesFunc) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {

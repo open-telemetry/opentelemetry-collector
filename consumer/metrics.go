@@ -19,7 +19,7 @@ type Metrics interface {
 }
 
 // ConsumeMetricsFunc is a helper function that is similar to ConsumeMetrics.
-type ConsumeMetricsFunc func(ctx context.Context, md pmetric.Metrics) error
+type ConsumeMetricsFunc ConsumeFunc[pmetric.Metrics]
 
 // ConsumeMetrics calls f(ctx, md).
 func (f ConsumeMetricsFunc) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {

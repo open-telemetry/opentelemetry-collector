@@ -4,10 +4,13 @@
 package consumer // import "go.opentelemetry.io/collector/consumer"
 
 import (
+	"context"
 	"errors"
 
 	"go.opentelemetry.io/collector/consumer/internal"
 )
+
+type ConsumeFunc[T any] func(context.Context, T) error
 
 // Capabilities describes the capabilities of a Processor.
 type Capabilities = internal.Capabilities

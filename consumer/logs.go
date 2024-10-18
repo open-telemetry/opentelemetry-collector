@@ -19,7 +19,7 @@ type Logs interface {
 }
 
 // ConsumeLogsFunc is a helper function that is similar to ConsumeLogs.
-type ConsumeLogsFunc func(ctx context.Context, ld plog.Logs) error
+type ConsumeLogsFunc ConsumeFunc[plog.Logs]
 
 // ConsumeLogs calls f(ctx, ld).
 func (f ConsumeLogsFunc) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
