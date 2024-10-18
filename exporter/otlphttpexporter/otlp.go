@@ -20,6 +20,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -43,6 +44,7 @@ type baseExporter struct {
 	logsURL     string
 	profilesURL string
 	logger      *zap.Logger
+	host        component.Host
 	settings    component.TelemetrySettings
 	// Default user-agent header.
 	userAgent string
@@ -87,6 +89,7 @@ func (e *baseExporter) start(ctx context.Context, host component.Host) error {
 		return err
 	}
 	e.client = client
+	e.host = host
 	return nil
 }
 
@@ -173,7 +176,10 @@ func (e *baseExporter) pushProfiles(ctx context.Context, td pprofile.Profiles) e
 	return e.export(ctx, e.profilesURL, request, e.profilesPartialSuccessHandler)
 }
 
-func (e *baseExporter) export(ctx context.Context, url string, request []byte, partialSuccessHandler partialSuccessHandler) error {
+func (e *baseExporter) export(ctx context.Context, url string, request []byte, partialSuccessHandler partialSuccessHandler) (err error) {
+	defer func() {
+		e.reportStatusFromError(err)
+	}()
 	e.logger.Debug("Preparing to make HTTP request", zap.String("url", url))
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(request))
 	if err != nil {
@@ -240,6 +246,14 @@ func (e *baseExporter) export(ctx context.Context, url string, request []byte, p
 	}
 
 	return consumererror.NewPermanent(formattedErr)
+}
+
+func (e *baseExporter) reportStatusFromError(err error) {
+	if err != nil {
+		componentstatus.ReportStatus(e.host, componentstatus.NewRecoverableErrorEvent(err))
+		return
+	}
+	componentstatus.ReportStatus(e.host, componentstatus.NewEvent(componentstatus.StatusOK))
 }
 
 // Determine if the status code is retryable according to the specification.
