@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
 	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 	"golang.org/x/net/publicsuffix"
 
 	"go.opentelemetry.io/collector/component"
@@ -105,6 +106,10 @@ type ClientConfig struct {
 	HTTP2PingTimeout time.Duration `mapstructure:"http2_ping_timeout"`
 	// Cookies configures the cookie management of the HTTP client.
 	Cookies *CookiesConfig `mapstructure:"cookies"`
+
+	// AllowH2CUpgrade enables clients to upgrade an existing
+	// HTTP/1.1 connection to an HTTP/2 connection without using TLS.
+	AllowH2CUpgrade bool `mapstructure:"allow_h2c_upgrade"`
 }
 
 // CookiesConfig defines the configuration of the HTTP client regarding cookies served by the server.
@@ -327,6 +332,10 @@ type ServerConfig struct {
 	// is zero, the value of ReadTimeout is used. If both are
 	// zero, there is no timeout.
 	IdleTimeout time.Duration `mapstructure:"idle_timeout"`
+
+	// AllowH2CUpgrade enables clients to upgrade an existing
+	// HTTP/1.1 connection to an HTTP/2 connection without using TLS.
+	AllowH2CUpgrade bool `mapstructure:"allow_h2c_upgrade"`
 }
 
 // NewDefaultServerConfig returns ServerConfig type object with default values.
@@ -340,6 +349,7 @@ func NewDefaultServerConfig() ServerConfig {
 		WriteTimeout:      30 * time.Second,
 		ReadHeaderTimeout: 1 * time.Minute,
 		IdleTimeout:       1 * time.Minute,
+		AllowH2CUpgrade:   false,
 	}
 }
 
@@ -417,6 +427,12 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 	serverOpts := &toServerOptions{}
 	for _, o := range opts {
 		o.apply(serverOpts)
+	}
+
+	if hss.AllowH2CUpgrade {
+		settings.Logger.Warn("H2C Upgrade is enabled, this is not recommended for production environments")
+		h2s := &http2.Server{IdleTimeout: 0}
+		handler = h2c.NewHandler(handler, h2s)
 	}
 
 	if hss.MaxRequestBodySize <= 0 {
