@@ -33,6 +33,7 @@ module-sets:
       - go.opentelemetry.io/collector/config/configgrpc
       - go.opentelemetry.io/collector/config/confighttp
       - go.opentelemetry.io/collector/config/configtelemetry
+      - go.opentelemetry.io/collector/config/configtimeout
       - go.opentelemetry.io/collector/config/internal
       - go.opentelemetry.io/collector/connector
       - go.opentelemetry.io/collector/connector/connectortest
