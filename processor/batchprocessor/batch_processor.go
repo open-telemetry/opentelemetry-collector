@@ -376,8 +376,6 @@ func (b *shard) sendItems(trigger trigger) {
 
 	if err != nil {
 		b.processor.logger.Warn("Sender failed", zap.Error(err))
-		// TODO: it seems incorrect not to call telemetry.record()
-		// for errors.  Yes?
 		return
 	}
 
