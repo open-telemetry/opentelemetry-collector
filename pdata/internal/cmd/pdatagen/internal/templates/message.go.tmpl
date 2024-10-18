@@ -48,8 +48,8 @@ func New{{ .structName }}() {{ .structName }} {
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms {{ .structName }}) MoveTo(dest {{ .structName }}) {
-	ms.{{- if .isCommon }}getState(){{ else }}state{{ end }}.AssertMutable()
-	dest.{{- if .isCommon }}getState(){{ else }}state{{ end }}.AssertMutable()
+	ms.{{ .stateAccessor }}.AssertMutable()
+	dest.{{ .stateAccessor }}.AssertMutable()
 	*dest.{{ .origAccessor }} = *ms.{{ .origAccessor }}
 	*ms.{{ .origAccessor }} = {{ .originName }}{}
 }
@@ -70,7 +70,7 @@ func (ms {{ .structName }}) getState() *internal.State {
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms {{ .structName }}) CopyTo(dest {{ .structName }}) {
-	dest.{{- if .isCommon }}getState(){{ else }}state{{ end }}.AssertMutable()
+	dest.{{ .stateAccessor }}.AssertMutable()
 	{{- range .fields }}
 	{{ .GenerateCopyToValue $.messageStruct }}
 	{{- end }}
