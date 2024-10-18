@@ -6,17 +6,18 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
-// Deprecated: [v0.108.0] use LeveledMeter instead.
 func Meter(settings component.TelemetrySettings) metric.Meter {
 	return settings.MeterProvider.Meter("go.opentelemetry.io/collector/receiver/scraperhelper")
 }
 
+// Deprecated: [v0.112.0] use Meter instead.
 func LeveledMeter(settings component.TelemetrySettings, level configtelemetry.Level) metric.Meter {
 	return settings.LeveledMeterProvider(level).Meter("go.opentelemetry.io/collector/receiver/scraperhelper")
 }
@@ -31,7 +32,6 @@ type TelemetryBuilder struct {
 	meter                      metric.Meter
 	ScraperErroredMetricPoints metric.Int64Counter
 	ScraperScrapedMetricPoints metric.Int64Counter
-	meters                     map[configtelemetry.Level]metric.Meter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -48,23 +48,34 @@ func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
 // for a component
 func NewTelemetryBuilder(settings component.TelemetrySettings, options ...TelemetryBuilderOption) (*TelemetryBuilder, error) {
-	builder := TelemetryBuilder{meters: map[configtelemetry.Level]metric.Meter{}}
+	builder := TelemetryBuilder{}
 	for _, op := range options {
 		op.apply(&builder)
 	}
-	builder.meters[configtelemetry.LevelBasic] = LeveledMeter(settings, configtelemetry.LevelBasic)
+	builder.meter = Meter(settings)
 	var err, errs error
-	builder.ScraperErroredMetricPoints, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
+	builder.ScraperErroredMetricPoints, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
 		"otelcol_scraper_errored_metric_points",
 		metric.WithDescription("Number of metric points that were unable to be scraped."),
 		metric.WithUnit("{datapoints}"),
 	)
-	errs = errors.Join(errs, err)
-	builder.ScraperScrapedMetricPoints, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
+	if err != nil {
+		errs = errors.Join(errs, err)
+	}
+	builder.ScraperScrapedMetricPoints, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
 		"otelcol_scraper_scraped_metric_points",
 		metric.WithDescription("Number of metric points successfully scraped."),
 		metric.WithUnit("{datapoints}"),
 	)
-	errs = errors.Join(errs, err)
+	if err != nil {
+		errs = errors.Join(errs, err)
+	}
 	return &builder, errs
+}
+
+func getLeveledMeter(meter metric.Meter, cfgLevel, srvLevel configtelemetry.Level) metric.Meter {
+	if cfgLevel < srvLevel {
+		return meter
+	}
+	return noop.Meter{}
 }

@@ -6,17 +6,18 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
-// Deprecated: [v0.108.0] use LeveledMeter instead.
 func Meter(settings component.TelemetrySettings) metric.Meter {
 	return settings.MeterProvider.Meter("go.opentelemetry.io/collector/processor/memorylimiterprocessor")
 }
 
+// Deprecated: [v0.112.0] use Meter instead.
 func LeveledMeter(settings component.TelemetrySettings, level configtelemetry.Level) metric.Meter {
 	return settings.LeveledMeterProvider(level).Meter("go.opentelemetry.io/collector/processor/memorylimiterprocessor")
 }
@@ -35,7 +36,6 @@ type TelemetryBuilder struct {
 	ProcessorRefusedLogRecords    metric.Int64Counter
 	ProcessorRefusedMetricPoints  metric.Int64Counter
 	ProcessorRefusedSpans         metric.Int64Counter
-	meters                        map[configtelemetry.Level]metric.Meter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -52,47 +52,66 @@ func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
 // for a component
 func NewTelemetryBuilder(settings component.TelemetrySettings, options ...TelemetryBuilderOption) (*TelemetryBuilder, error) {
-	builder := TelemetryBuilder{meters: map[configtelemetry.Level]metric.Meter{}}
+	builder := TelemetryBuilder{}
 	for _, op := range options {
 		op.apply(&builder)
 	}
-	builder.meters[configtelemetry.LevelBasic] = LeveledMeter(settings, configtelemetry.LevelBasic)
+	builder.meter = Meter(settings)
 	var err, errs error
-	builder.ProcessorAcceptedLogRecords, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
+	builder.ProcessorAcceptedLogRecords, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
 		"otelcol_processor_accepted_log_records",
 		metric.WithDescription("Number of log records successfully pushed into the next component in the pipeline. [deprecated since v0.110.0]"),
 		metric.WithUnit("{records}"),
 	)
-	errs = errors.Join(errs, err)
-	builder.ProcessorAcceptedMetricPoints, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
+	if err != nil {
+		errs = errors.Join(errs, err)
+	}
+	builder.ProcessorAcceptedMetricPoints, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
 		"otelcol_processor_accepted_metric_points",
 		metric.WithDescription("Number of metric points successfully pushed into the next component in the pipeline. [deprecated since v0.110.0]"),
 		metric.WithUnit("{datapoints}"),
 	)
-	errs = errors.Join(errs, err)
-	builder.ProcessorAcceptedSpans, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
+	if err != nil {
+		errs = errors.Join(errs, err)
+	}
+	builder.ProcessorAcceptedSpans, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
 		"otelcol_processor_accepted_spans",
 		metric.WithDescription("Number of spans successfully pushed into the next component in the pipeline. [deprecated since v0.110.0]"),
 		metric.WithUnit("{spans}"),
 	)
-	errs = errors.Join(errs, err)
-	builder.ProcessorRefusedLogRecords, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
+	if err != nil {
+		errs = errors.Join(errs, err)
+	}
+	builder.ProcessorRefusedLogRecords, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
 		"otelcol_processor_refused_log_records",
 		metric.WithDescription("Number of log records that were rejected by the next component in the pipeline. [deprecated since v0.110.0]"),
 		metric.WithUnit("{records}"),
 	)
-	errs = errors.Join(errs, err)
-	builder.ProcessorRefusedMetricPoints, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
+	if err != nil {
+		errs = errors.Join(errs, err)
+	}
+	builder.ProcessorRefusedMetricPoints, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
 		"otelcol_processor_refused_metric_points",
 		metric.WithDescription("Number of metric points that were rejected by the next component in the pipeline. [deprecated since v0.110.0]"),
 		metric.WithUnit("{datapoints}"),
 	)
-	errs = errors.Join(errs, err)
-	builder.ProcessorRefusedSpans, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
+	if err != nil {
+		errs = errors.Join(errs, err)
+	}
+	builder.ProcessorRefusedSpans, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
 		"otelcol_processor_refused_spans",
 		metric.WithDescription("Number of spans that were rejected by the next component in the pipeline. [deprecated since v0.110.0]"),
 		metric.WithUnit("{spans}"),
 	)
-	errs = errors.Join(errs, err)
+	if err != nil {
+		errs = errors.Join(errs, err)
+	}
 	return &builder, errs
+}
+
+func getLeveledMeter(meter metric.Meter, cfgLevel, srvLevel configtelemetry.Level) metric.Meter {
+	if cfgLevel < srvLevel {
+		return meter
+	}
+	return noop.Meter{}
 }

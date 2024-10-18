@@ -29,6 +29,7 @@ func (tt *componentTestTelemetry) NewSettings() exporter.Settings {
 	settings.LeveledMeterProvider = func(_ configtelemetry.Level) metric.MeterProvider {
 		return tt.meterProvider
 	}
+	settings.MetricsLevel = configtelemetry.LevelDetailed
 	settings.ID = component.NewID(component.MustNewType("exporterhelper"))
 
 	return settings

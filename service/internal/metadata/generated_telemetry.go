@@ -7,17 +7,18 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
-// Deprecated: [v0.108.0] use LeveledMeter instead.
 func Meter(settings component.TelemetrySettings) metric.Meter {
 	return settings.MeterProvider.Meter("go.opentelemetry.io/collector/service")
 }
 
+// Deprecated: [v0.112.0] use Meter instead.
 func LeveledMeter(settings component.TelemetrySettings, level configtelemetry.Level) metric.Meter {
 	return settings.LeveledMeterProvider(level).Meter("go.opentelemetry.io/collector/service")
 }
@@ -42,7 +43,6 @@ type TelemetryBuilder struct {
 	observeProcessRuntimeTotalSysMemoryBytes func(context.Context, metric.Observer) error
 	ProcessUptime                            metric.Float64ObservableCounter
 	observeProcessUptime                     func(context.Context, metric.Observer) error
-	meters                                   map[configtelemetry.Level]metric.Meter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -119,59 +119,90 @@ func WithProcessUptimeCallback(cb func() float64, opts ...metric.ObserveOption) 
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
 // for a component
 func NewTelemetryBuilder(settings component.TelemetrySettings, options ...TelemetryBuilderOption) (*TelemetryBuilder, error) {
-	builder := TelemetryBuilder{meters: map[configtelemetry.Level]metric.Meter{}}
+	builder := TelemetryBuilder{}
 	for _, op := range options {
 		op.apply(&builder)
 	}
-	builder.meters[configtelemetry.LevelBasic] = LeveledMeter(settings, configtelemetry.LevelBasic)
+	builder.meter = Meter(settings)
 	var err, errs error
-	builder.ProcessCPUSeconds, err = builder.meters[configtelemetry.LevelBasic].Float64ObservableCounter(
+	builder.ProcessCPUSeconds, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Float64ObservableCounter(
 		"otelcol_process_cpu_seconds",
 		metric.WithDescription("Total CPU user and system time in seconds"),
 		metric.WithUnit("s"),
 	)
-	errs = errors.Join(errs, err)
-	_, err = builder.meters[configtelemetry.LevelBasic].RegisterCallback(builder.observeProcessCPUSeconds, builder.ProcessCPUSeconds)
-	errs = errors.Join(errs, err)
-	builder.ProcessMemoryRss, err = builder.meters[configtelemetry.LevelBasic].Int64ObservableGauge(
+	if err != nil {
+		errs = errors.Join(errs, err)
+	}
+	_, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).RegisterCallback(builder.observeProcessCPUSeconds, builder.ProcessCPUSeconds)
+	if err != nil {
+		errs = errors.Join(errs, err)
+	}
+	builder.ProcessMemoryRss, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64ObservableGauge(
 		"otelcol_process_memory_rss",
 		metric.WithDescription("Total physical memory (resident set size)"),
 		metric.WithUnit("By"),
 	)
-	errs = errors.Join(errs, err)
-	_, err = builder.meters[configtelemetry.LevelBasic].RegisterCallback(builder.observeProcessMemoryRss, builder.ProcessMemoryRss)
-	errs = errors.Join(errs, err)
-	builder.ProcessRuntimeHeapAllocBytes, err = builder.meters[configtelemetry.LevelBasic].Int64ObservableGauge(
+	if err != nil {
+		errs = errors.Join(errs, err)
+	}
+	_, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).RegisterCallback(builder.observeProcessMemoryRss, builder.ProcessMemoryRss)
+	if err != nil {
+		errs = errors.Join(errs, err)
+	}
+	builder.ProcessRuntimeHeapAllocBytes, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64ObservableGauge(
 		"otelcol_process_runtime_heap_alloc_bytes",
 		metric.WithDescription("Bytes of allocated heap objects (see 'go doc runtime.MemStats.HeapAlloc')"),
 		metric.WithUnit("By"),
 	)
-	errs = errors.Join(errs, err)
-	_, err = builder.meters[configtelemetry.LevelBasic].RegisterCallback(builder.observeProcessRuntimeHeapAllocBytes, builder.ProcessRuntimeHeapAllocBytes)
-	errs = errors.Join(errs, err)
-	builder.ProcessRuntimeTotalAllocBytes, err = builder.meters[configtelemetry.LevelBasic].Int64ObservableCounter(
+	if err != nil {
+		errs = errors.Join(errs, err)
+	}
+	_, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).RegisterCallback(builder.observeProcessRuntimeHeapAllocBytes, builder.ProcessRuntimeHeapAllocBytes)
+	if err != nil {
+		errs = errors.Join(errs, err)
+	}
+	builder.ProcessRuntimeTotalAllocBytes, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64ObservableCounter(
 		"otelcol_process_runtime_total_alloc_bytes",
 		metric.WithDescription("Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')"),
 		metric.WithUnit("By"),
 	)
-	errs = errors.Join(errs, err)
-	_, err = builder.meters[configtelemetry.LevelBasic].RegisterCallback(builder.observeProcessRuntimeTotalAllocBytes, builder.ProcessRuntimeTotalAllocBytes)
-	errs = errors.Join(errs, err)
-	builder.ProcessRuntimeTotalSysMemoryBytes, err = builder.meters[configtelemetry.LevelBasic].Int64ObservableGauge(
+	if err != nil {
+		errs = errors.Join(errs, err)
+	}
+	_, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).RegisterCallback(builder.observeProcessRuntimeTotalAllocBytes, builder.ProcessRuntimeTotalAllocBytes)
+	if err != nil {
+		errs = errors.Join(errs, err)
+	}
+	builder.ProcessRuntimeTotalSysMemoryBytes, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64ObservableGauge(
 		"otelcol_process_runtime_total_sys_memory_bytes",
 		metric.WithDescription("Total bytes of memory obtained from the OS (see 'go doc runtime.MemStats.Sys')"),
 		metric.WithUnit("By"),
 	)
-	errs = errors.Join(errs, err)
-	_, err = builder.meters[configtelemetry.LevelBasic].RegisterCallback(builder.observeProcessRuntimeTotalSysMemoryBytes, builder.ProcessRuntimeTotalSysMemoryBytes)
-	errs = errors.Join(errs, err)
-	builder.ProcessUptime, err = builder.meters[configtelemetry.LevelBasic].Float64ObservableCounter(
+	if err != nil {
+		errs = errors.Join(errs, err)
+	}
+	_, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).RegisterCallback(builder.observeProcessRuntimeTotalSysMemoryBytes, builder.ProcessRuntimeTotalSysMemoryBytes)
+	if err != nil {
+		errs = errors.Join(errs, err)
+	}
+	builder.ProcessUptime, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Float64ObservableCounter(
 		"otelcol_process_uptime",
 		metric.WithDescription("Uptime of the process"),
 		metric.WithUnit("s"),
 	)
-	errs = errors.Join(errs, err)
-	_, err = builder.meters[configtelemetry.LevelBasic].RegisterCallback(builder.observeProcessUptime, builder.ProcessUptime)
-	errs = errors.Join(errs, err)
+	if err != nil {
+		errs = errors.Join(errs, err)
+	}
+	_, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).RegisterCallback(builder.observeProcessUptime, builder.ProcessUptime)
+	if err != nil {
+		errs = errors.Join(errs, err)
+	}
 	return &builder, errs
+}
+
+func getLeveledMeter(meter metric.Meter, cfgLevel, srvLevel configtelemetry.Level) metric.Meter {
+	if cfgLevel < srvLevel {
+		return meter
+	}
+	return noop.Meter{}
 }
