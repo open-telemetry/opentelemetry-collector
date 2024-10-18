@@ -1151,46 +1151,6 @@ func TestComponentStatus(t *testing.T) {
 			componentStatus: componentstatus.StatusOK,
 		},
 		{
-			name:            "401",
-			responseStatus:  http.StatusUnauthorized,
-			componentStatus: componentstatus.StatusPermanentError,
-		},
-		{
-			name:            "403",
-			responseStatus:  http.StatusForbidden,
-			componentStatus: componentstatus.StatusPermanentError,
-		},
-		{
-			name:            "404",
-			responseStatus:  http.StatusNotFound,
-			componentStatus: componentstatus.StatusPermanentError,
-		},
-		{
-			name:            "405",
-			responseStatus:  http.StatusMethodNotAllowed,
-			componentStatus: componentstatus.StatusPermanentError,
-		},
-		{
-			name:            "413",
-			responseStatus:  http.StatusRequestEntityTooLarge,
-			componentStatus: componentstatus.StatusPermanentError,
-		},
-		{
-			name:            "414",
-			responseStatus:  http.StatusRequestURITooLong,
-			componentStatus: componentstatus.StatusPermanentError,
-		},
-		{
-			name:            "419",
-			responseStatus:  http.StatusTooManyRequests,
-			componentStatus: componentstatus.StatusRecoverableError,
-		},
-		{
-			name:            "431",
-			responseStatus:  http.StatusRequestHeaderFieldsTooLarge,
-			componentStatus: componentstatus.StatusPermanentError,
-		},
-		{
 			name:            "503",
 			responseStatus:  http.StatusServiceUnavailable,
 			componentStatus: componentstatus.StatusRecoverableError,

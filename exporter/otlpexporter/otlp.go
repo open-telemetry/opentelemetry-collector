@@ -98,7 +98,7 @@ func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) (err er
 	}()
 	req := ptraceotlp.NewExportRequestFromTraces(td)
 	resp, respErr := e.traceExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
-	if err = e.processError(respErr); err != nil {
+	if err = processError(respErr); err != nil {
 		return
 	}
 	partialSuccess := resp.PartialSuccess()
@@ -117,7 +117,7 @@ func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) (err
 	}()
 	req := pmetricotlp.NewExportRequestFromMetrics(md)
 	resp, respErr := e.metricExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
-	if err = e.processError(respErr); err != nil {
+	if err = processError(respErr); err != nil {
 		return
 	}
 	partialSuccess := resp.PartialSuccess()
@@ -136,7 +136,7 @@ func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) (err error) {
 	}()
 	req := plogotlp.NewExportRequestFromLogs(ld)
 	resp, respErr := e.logExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
-	if err = e.processError(respErr); err != nil {
+	if err = processError(respErr); err != nil {
 		return
 	}
 	partialSuccess := resp.PartialSuccess()
@@ -152,7 +152,7 @@ func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) (err error) {
 func (e *baseExporter) pushProfiles(ctx context.Context, td pprofile.Profiles) error {
 	req := pprofileotlp.NewExportRequestFromProfiles(td)
 	resp, respErr := e.profileExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
-	if err := e.processError(respErr); err != nil {
+	if err := processError(respErr); err != nil {
 		return err
 	}
 	partialSuccess := resp.PartialSuccess()
@@ -172,7 +172,7 @@ func (e *baseExporter) enhanceContext(ctx context.Context) context.Context {
 	return ctx
 }
 
-func (e *baseExporter) processError(err error) error {
+func processError(err error) error {
 	if err == nil {
 		// Request is successful, we are done.
 		return nil
@@ -183,11 +183,6 @@ func (e *baseExporter) processError(err error) error {
 	if st.Code() == codes.OK {
 		// Not really an error, still success.
 		return nil
-	}
-
-	// Now, this is a real error.
-	if isComponentPermanentError(st) {
-		componentstatus.ReportStatus(e.host, componentstatus.NewPermanentErrorEvent(err))
 	}
 
 	retryInfo := getRetryInfo(st)
@@ -252,22 +247,4 @@ func getThrottleDuration(t *errdetails.RetryInfo) time.Duration {
 		return time.Duration(t.RetryDelay.Seconds)*time.Second + time.Duration(t.RetryDelay.Nanos)*time.Nanosecond
 	}
 	return 0
-}
-
-// A component status of PermanentError indicates the component is in a state that will require user
-// intervention to fix. Typically this is a misconfiguration detected at runtime. A component
-// PermanentError has different semantics than a consumererror. For more information, see:
-// https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-status.md
-func isComponentPermanentError(st *status.Status) bool {
-	switch st.Code() {
-	case codes.NotFound:
-		return true
-	case codes.PermissionDenied:
-		return true
-	case codes.Unauthenticated:
-		return true
-	default:
-		return false
-	}
-
 }

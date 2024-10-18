@@ -1049,21 +1049,6 @@ func TestComponentStatus(t *testing.T) {
 			componentStatus: componentstatus.StatusOK,
 		},
 		{
-			name:            "Permission Denied",
-			exportError:     status.Error(codes.PermissionDenied, "permission denied"),
-			componentStatus: componentstatus.StatusPermanentError,
-		},
-		{
-			name:            "Not Found",
-			exportError:     status.Error(codes.NotFound, "not found"),
-			componentStatus: componentstatus.StatusPermanentError,
-		},
-		{
-			name:            "Unauthenticated",
-			exportError:     status.Error(codes.Unauthenticated, "unauthenticated"),
-			componentStatus: componentstatus.StatusPermanentError,
-		},
-		{
 			name:            "Resource Exhausted",
 			exportError:     status.Error(codes.ResourceExhausted, "resource exhausted"),
 			componentStatus: componentstatus.StatusRecoverableError,
@@ -1092,7 +1077,7 @@ func TestComponentStatus(t *testing.T) {
 				set := exportertest.NewNopSettings()
 				host := &testHost{Host: componenttest.NewNopHost()}
 
-				exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
+				exp, err := factory.CreateTraces(context.Background(), set, cfg)
 				require.NoError(t, err)
 				require.NotNil(t, exp)
 				require.NoError(t, exp.Start(context.Background(), host))
@@ -1133,7 +1118,7 @@ func TestComponentStatus(t *testing.T) {
 				set := exportertest.NewNopSettings()
 				host := &testHost{Host: componenttest.NewNopHost()}
 
-				exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
+				exp, err := factory.CreateMetrics(context.Background(), set, cfg)
 				require.NoError(t, err)
 				require.NotNil(t, exp)
 				require.NoError(t, exp.Start(context.Background(), host))
@@ -1173,7 +1158,7 @@ func TestComponentStatus(t *testing.T) {
 				set := exportertest.NewNopSettings()
 				host := &testHost{Host: componenttest.NewNopHost()}
 
-				exp, err := factory.CreateLogsExporter(context.Background(), set, cfg)
+				exp, err := factory.CreateLogs(context.Background(), set, cfg)
 				require.NoError(t, err)
 				require.NotNil(t, exp)
 				require.NoError(t, exp.Start(context.Background(), host))
