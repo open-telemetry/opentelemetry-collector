@@ -13,21 +13,56 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/client"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/testdata"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
+
+// sendTraces asynchronously sends a batch of trace data.
+func sendTraces(ctx context.Context, t *testing.T, batcher processor.Traces, wg *sync.WaitGroup, td ptrace.Traces) {
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		assert.NoError(t, batcher.ConsumeTraces(ctx, td))
+	}()
+}
+
+// sendMetrics asynchronously sends a batch of metrics data.
+func sendMetrics(ctx context.Context, t *testing.T, batcher processor.Metrics, wg *sync.WaitGroup, md pmetric.Metrics) {
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		assert.NoError(t, batcher.ConsumeMetrics(ctx, md))
+	}()
+}
+
+// sendLogs asynchronously sends a batch of log data.
+func sendLogs(ctx context.Context, t *testing.T, batcher processor.Logs, wg *sync.WaitGroup, ld plog.Logs) {
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		assert.NoError(t, batcher.ConsumeLogs(ctx, ld))
+	}()
+}
 
 func TestProcessorShutdown(t *testing.T) {
 	factory := NewFactory()
@@ -1398,4 +1433,280 @@ func TestBatchSplitOnly(t *testing.T) {
 	for _, ld := range receivedMds {
 		require.Equal(t, maxBatch, ld.LogRecordCount())
 	}
+}
+
+type (
+	testSender func(ctx context.Context, t *testing.T, bp *batchProcessor, wg *sync.WaitGroup, cnt int)
+
+	testCreate func(ctx context.Context, cfg *Config, procSet processor.Settings, exportSet exporter.Settings) *batchProcessor
+
+	testProfile struct {
+		sender testSender
+		create testCreate
+	}
+)
+
+func traceTestProfiles(t *testing.T) map[string]testProfile {
+	exportOpts := exporterhelper.WithQueue(
+		exporterhelper.QueueConfig{
+			Enabled: false,
+		},
+	)
+
+	return map[string]testProfile{
+		"traces": {
+			sender: func(ctx context.Context, t *testing.T, bp *batchProcessor, wg *sync.WaitGroup, cnt int) {
+				sendTraces(ctx, t, bp, wg, testdata.GenerateTraces(cnt))
+			},
+			create: func(ctx context.Context, cfg *Config, procSet processor.Settings, exportSet exporter.Settings) *batchProcessor {
+				next, err := exporterhelper.NewTracesExporter(
+					ctx,
+					exportSet,
+					*cfg,
+					func(context.Context, ptrace.Traces) error { return nil },
+					exportOpts,
+				)
+				require.NoError(t, err)
+				bp, err := newBatchTracesProcessor(procSet, next, cfg)
+				require.NoError(t, err)
+				return bp
+			},
+		},
+		"metrics": {
+			sender: func(ctx context.Context, t *testing.T, bp *batchProcessor, wg *sync.WaitGroup, cnt int) {
+				// Note that GenerateMetrics creates two points per requested point,
+				// so we halve the number and are required to use even counts.
+				sendMetrics(ctx, t, bp, wg, testdata.GenerateMetrics(cnt/2))
+			},
+			create: func(ctx context.Context, cfg *Config, procSet processor.Settings, exportSet exporter.Settings) *batchProcessor {
+				next, err := exporterhelper.NewMetricsExporter(
+					ctx,
+					exportSet,
+					*cfg,
+					func(context.Context, pmetric.Metrics) error { return nil },
+					exportOpts,
+				)
+				require.NoError(t, err)
+				bp, err := newBatchMetricsProcessor(procSet, next, cfg)
+				require.NoError(t, err)
+				return bp
+			},
+		},
+		"logs": {
+			sender: func(ctx context.Context, t *testing.T, bp *batchProcessor, wg *sync.WaitGroup, cnt int) {
+				sendLogs(ctx, t, bp, wg, testdata.GenerateLogs(cnt))
+			},
+			create: func(ctx context.Context, cfg *Config, procSet processor.Settings, exportSet exporter.Settings) *batchProcessor {
+				next, err := exporterhelper.NewLogsExporter(
+					ctx,
+					exportSet,
+					*cfg,
+					func(context.Context, plog.Logs) error { return nil },
+					exportOpts,
+				)
+				require.NoError(t, err)
+				bp, err := newBatchLogsProcessor(procSet, next, cfg)
+				require.NoError(t, err)
+				return bp
+			},
+		},
+	}
+}
+
+func TestBatchProcessorUnbrokenParentContextSingle(t *testing.T) {
+	for signal, profile := range traceTestProfiles(t) {
+		t.Run(signal, func(t *testing.T) {
+			testBatchProcessorUnbrokenParentContextSingle(t, signal, profile)
+		})
+	}
+}
+
+func testBatchProcessorUnbrokenParentContextSingle(t *testing.T, signal string, profile testProfile) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.SendBatchSize = 100
+	cfg.SendBatchMaxSize = 100
+	cfg.Timeout = 3 * time.Second
+	// Make itemsPerRequest match the batch size and it means single-batch exports,
+	// which avoid creating a new root span.
+	requestCount := 10
+	itemsPerRequest := 100
+	exp := tracetest.NewInMemoryExporter()
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithBatcher(exp),
+	)
+	otel.SetTracerProvider(tp)
+	tracer := tp.Tracer("otel")
+	bg, rootSp := tracer.Start(context.Background(), "test_parent")
+
+	exportSet := exporter.Settings{
+		ID:                component.MustNewID("test_exporter"),
+		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+	}
+
+	exportSet.TelemetrySettings.TracerProvider = tp
+
+	procSet := processortest.NewNopSettings()
+	procSet.MetricsLevel = configtelemetry.LevelDetailed
+	procSet.TracerProvider = tp
+
+	bp := profile.create(bg, cfg, procSet, exportSet)
+	require.NoError(t, bp.Start(context.Background(), componenttest.NewNopHost()))
+
+	var wg sync.WaitGroup
+	for requestNum := 0; requestNum < requestCount; requestNum++ {
+		profile.sender(bg, t, bp, &wg, itemsPerRequest)
+	}
+	wg.Wait()
+	rootSp.End()
+
+	// Because the callers return early, shutdown is the only way to
+	// wait for the batch processor to flush.
+	require.NoError(t, bp.Shutdown(context.Background()))
+
+	// need to flush tracerprovider
+	tp.ForceFlush(bg)
+
+	traces := exp.GetSpans()
+	numBatches := float64(itemsPerRequest*requestCount) / float64(cfg.SendBatchMaxSize)
+	assert.Len(t, traces, 2*int(math.Ceil(numBatches))+1)
+	for _, span := range traces {
+		switch span.Name {
+		case "batch_processor/export":
+			// more test below
+		case "exporter/test_exporter/" + signal:
+			continue
+		case "test_parent":
+			continue
+		default:
+			t.Error("unexpected span name:", span.Name)
+		}
+		// confirm parent is rootSp
+		assert.Equal(t, span.Parent, rootSp.SpanContext())
+	}
+
+	require.NoError(t, tp.Shutdown(context.Background()))
+}
+
+func TestBatchProcessorUnbrokenParentContextMultiple(t *testing.T) {
+	for signal, profile := range traceTestProfiles(t) {
+		t.Run(signal, func(t *testing.T) {
+			testBatchProcessorUnbrokenParentContextMultiple(t, signal, profile)
+		})
+	}
+}
+
+func testBatchProcessorUnbrokenParentContextMultiple(t *testing.T, signal string, profile testProfile) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.SendBatchSize = 100
+	cfg.SendBatchMaxSize = 100
+	cfg.Timeout = 3 * time.Second
+	requestCount := 50
+	// keep itemsPerRequest small to ensure multiple contexts end up in the same batch.
+	// this number has to be even, see comment on GenerateMetrics above.  Has to evenly
+	// divide batch size for the test logic below.
+	itemsPerRequest := 10
+	exp := tracetest.NewInMemoryExporter()
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithBatcher(exp),
+	)
+	otel.SetTracerProvider(tp)
+	tracer := tp.Tracer("otel")
+	bg := context.Background()
+
+	exportSet := exporter.Settings{
+		ID:                component.MustNewID("test_exporter"),
+		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+	}
+	exportSet.TelemetrySettings.TracerProvider = tp
+
+	procSet := processortest.NewNopSettings()
+	procSet.MetricsLevel = configtelemetry.LevelDetailed
+	procSet.TracerProvider = tp
+
+	bp := profile.create(bg, cfg, procSet, exportSet)
+
+	require.NoError(t, bp.Start(bg, componenttest.NewNopHost()))
+
+	var endLater []trace.Span
+	mkCtx := func() context.Context {
+		ctx, span := tracer.Start(bg, "test_context")
+		endLater = append(endLater, span)
+		return ctx
+	}
+	callCtxs := []context.Context{
+		mkCtx(),
+		mkCtx(),
+		mkCtx(),
+	}
+
+	var wg sync.WaitGroup
+	for requestNum := 0; requestNum < requestCount; requestNum++ {
+		num := requestNum % len(callCtxs)
+		profile.sender(callCtxs[num], t, bp, &wg, itemsPerRequest)
+	}
+	wg.Wait()
+
+	// Because the callers return early, shutdown is the only way to
+	// wait for the batch processor to flush.
+	require.NoError(t, bp.Shutdown(context.Background()))
+
+	// Flush and reset the internal traces exporter.
+	tp.ForceFlush(bg)
+	td := exp.GetSpans()
+	exp.Reset()
+
+	// Expect 2 spans per batch, one exporter and one batch processor.
+	numBatches := float64(itemsPerRequest*requestCount) / float64(cfg.SendBatchMaxSize)
+	assert.Len(t, td, 2*int(math.Ceil(numBatches)))
+
+	var expectSpanCtxs []trace.SpanContext
+	for _, span := range endLater {
+		expectSpanCtxs = append(expectSpanCtxs, span.SpanContext())
+	}
+	linksTotal := 0
+	for _, span := range td {
+		switch span.Name {
+		case "batch_processor/export":
+			// more test below
+		case "exporter/test_exporter/" + signal:
+			continue
+		default:
+			t.Error("unexpected span name:", span.Name)
+		}
+		linksTotal += len(span.Links)
+
+		var haveSpanCtxs []trace.SpanContext
+		uniqSpanCtxs := make(map[trace.SpanID]struct{})
+		for _, link := range span.Links {
+			if _, ok := uniqSpanCtxs[link.SpanContext.SpanID()]; ok {
+				continue
+			}
+			uniqSpanCtxs[link.SpanContext.SpanID()] = struct{}{}
+			haveSpanCtxs = append(haveSpanCtxs, link.SpanContext)
+		}
+
+		assert.ElementsMatch(t, expectSpanCtxs, haveSpanCtxs)
+	}
+
+	assert.Equal(t, requestCount, linksTotal)
+
+	// End the parent spans
+	for _, span := range endLater {
+		span.End()
+	}
+
+	tp.ForceFlush(bg)
+	td = exp.GetSpans()
+
+	assert.Len(t, td, len(callCtxs))
+	for _, span := range td {
+		switch span.Name {
+		case "test_context":
+		default:
+			t.Error("unexpected span name:", span.Name)
+		}
+		assert.NotEmpty(t, span.Links)
+	}
+
+	require.NoError(t, tp.Shutdown(context.Background()))
 }
