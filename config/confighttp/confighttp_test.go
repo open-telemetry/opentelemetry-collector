@@ -21,6 +21,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/embedded"
+	"go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -1533,4 +1536,92 @@ func TestDefaultHTTPServerSettings(t *testing.T) {
 	assert.Equal(t, 30*time.Second, httpServerSettings.WriteTimeout)
 	assert.Equal(t, time.Duration(0), httpServerSettings.ReadTimeout)
 	assert.Equal(t, 1*time.Minute, httpServerSettings.ReadHeaderTimeout)
+}
+
+// TracerProvider is an OpenTelemetry No-Op TracerProvider.
+type TracerProvider struct {
+	embedded.TracerProvider
+	ch chan string
+}
+
+// NewTracerProvider returns a TracerProvider that does not record any telemetry.
+func NewTracerProvider(ch chan string) TracerProvider {
+	return TracerProvider{ch: ch}
+}
+
+// Tracer returns an OpenTelemetry Tracer that does not record any telemetry.
+func (t TracerProvider) Tracer(string, ...trace.TracerOption) trace.Tracer {
+	return Tracer{ch: t.ch}
+}
+
+// Tracer is an OpenTelemetry No-Op Tracer.
+type Tracer struct {
+	embedded.Tracer
+	ch chan string
+}
+
+type Span struct {
+	noop.Span
+	name string
+}
+
+func (t Tracer) Start(ctx context.Context, name string, _ ...trace.SpanStartOption) (context.Context, trace.Span) {
+	t.ch <- name
+	return ctx, Span{name: name}
+}
+
+func TestOperationPrefix(t *testing.T) {
+	tests := []struct {
+		name             string
+		prefix           string
+		expectedSpanName string
+	}{
+		{
+			name:             "componentID prefix",
+			prefix:           "otlphttpreceiver",
+			expectedSpanName: "otlphttpreceiver:/",
+		},
+		{
+			name:             "empty prefix",
+			prefix:           "",
+			expectedSpanName: "/",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			nameChan := make(chan string, 1)
+			set := componenttest.NewNopTelemetrySettings()
+			set.TracerProvider = TracerProvider{ch: nameChan}
+			logger, _ := observer.New(zap.DebugLevel)
+			set.Logger = zap.New(logger)
+			setting := &ServerConfig{
+				Endpoint: "localhost:0",
+			}
+
+			ln, err := setting.ToListener(context.Background())
+			require.NoError(t, err)
+			s, err := setting.ToServer(
+				context.Background(),
+				componenttest.NewNopHost(),
+				set,
+				http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+					w.WriteHeader(http.StatusOK)
+				}),
+				WithSpanFormatter(PrefixFormatter(tt.prefix)),
+			)
+			require.NoError(t, err)
+			go func() {
+				_ = s.Serve(ln)
+			}()
+			status, err := http.Get(fmt.Sprintf("http://%s", ln.Addr().String()))
+			require.NoError(t, err)
+			require.Equal(t, http.StatusOK, status.StatusCode)
+			require.NoError(t, s.Close())
+
+			spanName := <-nameChan
+			require.Equal(t, tt.expectedSpanName, spanName)
+			require.False(t, strings.HasPrefix(spanName, ":"))
+		})
+	}
+
 }

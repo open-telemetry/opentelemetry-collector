@@ -372,11 +372,14 @@ func (hss *ServerConfig) ToListener(ctx context.Context) (net.Listener, error) {
 	return listener, nil
 }
 
+type spanFormatterFunc func(string, *http.Request) string
+
 // toServerOptions has options that change the behavior of the HTTP server
 // returned by ServerConfig.ToServer().
 type toServerOptions struct {
 	errHandler func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int)
 	decoders   map[string]func(body io.ReadCloser) (io.ReadCloser, error)
+	formater   func(string, *http.Request) string
 }
 
 // ToServerOption is an option to change the behavior of the HTTP server
@@ -410,11 +413,21 @@ func WithDecoder(key string, dec func(body io.ReadCloser) (io.ReadCloser, error)
 	})
 }
 
+// WithSpanFormatter specifies which formater to use for span.
+// Ideally, this prefix in span name should be the component's ID.
+func WithSpanFormatter(formater spanFormatterFunc) ToServerOption {
+	return toServerOptionFunc(func(opts *toServerOptions) {
+		opts.formater = formater
+	})
+}
+
 // ToServer creates an http.Server from settings object.
 func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
 	internal.WarnOnUnspecifiedHost(settings.Logger, hss.Endpoint)
 
-	serverOpts := &toServerOptions{}
+	serverOpts := &toServerOptions{
+		formater: PrefixFormatter(""), // use empty-prefix formater by default
+	}
 	for _, o := range opts {
 		o.apply(serverOpts)
 	}
@@ -462,14 +475,11 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 	otelOpts := []otelhttp.Option{
 		otelhttp.WithTracerProvider(settings.TracerProvider),
 		otelhttp.WithPropagators(otel.GetTextMapPropagator()),
-		otelhttp.WithSpanNameFormatter(func(_ string, r *http.Request) string {
-			return r.URL.Path
-		}),
+		otelhttp.WithSpanNameFormatter(serverOpts.formater),
 		otelhttp.WithMeterProvider(settings.LeveledMeterProvider(configtelemetry.LevelDetailed)),
 	}
 
 	// Enable OpenTelemetry observability plugin.
-	// TODO: Consider to use component ID string as prefix for all the operations.
 	handler = otelhttp.NewHandler(handler, "", otelOpts...)
 
 	// wrap the current handler in an interceptor that will add client.Info to the request's context
@@ -552,4 +562,13 @@ func maxRequestBodySizeInterceptor(next http.Handler, maxRecvSize int64) http.Ha
 		r.Body = http.MaxBytesReader(w, r.Body, maxRecvSize)
 		next.ServeHTTP(w, r)
 	})
+}
+
+func PrefixFormatter(prefix string) spanFormatterFunc {
+	return func(s string, r *http.Request) string {
+		if len(prefix) > 0 {
+			return fmt.Sprintf("%s:%s", prefix, r.URL.Path)
+		}
+		return r.URL.Path
+	}
 }
