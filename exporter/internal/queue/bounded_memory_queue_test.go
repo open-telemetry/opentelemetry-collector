@@ -106,12 +106,12 @@ func Benchmark_QueueUsage_100000_requests(b *testing.B) {
 
 func Benchmark_QueueUsage_10000_items(b *testing.B) {
 	// each request has 10 items: 1000 requests = 10000 items
-	benchmarkQueueUsage(b, &ItemsSizer[fakeReq]{}, 1000)
+	benchmarkQueueUsage(b, &itemsSizer[fakeReq]{}, 1000)
 }
 
 func Benchmark_QueueUsage_1M_items(b *testing.B) {
 	// each request has 10 items: 100000 requests = 1M items
-	benchmarkQueueUsage(b, &ItemsSizer[fakeReq]{}, 100000)
+	benchmarkQueueUsage(b, &itemsSizer[fakeReq]{}, 100000)
 }
 
 func TestQueueUsage(t *testing.T) {
@@ -119,7 +119,7 @@ func TestQueueUsage(t *testing.T) {
 		queueUsage(t, &RequestSizer[fakeReq]{}, 10)
 	})
 	t.Run("items_based", func(t *testing.T) {
-		queueUsage(t, &ItemsSizer[fakeReq]{}, 10)
+		queueUsage(t, &itemsSizer[fakeReq]{}, 10)
 	})
 }
 

@@ -13,10 +13,8 @@ func attributes(set Settings, cfg Config) map[string]interface{} {
 	for k, v := range cfg.Resource {
 		if v != nil {
 			attrs[k] = *v
-		}
-
-		// the new value is nil, delete the existing key
-		if _, ok := attrs[k]; ok && v == nil {
+		} else {
+			// the new value is nil, delete the existing key
 			delete(attrs, k)
 		}
 	}

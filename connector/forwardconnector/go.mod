@@ -7,6 +7,7 @@ require (
 	go.opentelemetry.io/collector/component v0.111.0
 	go.opentelemetry.io/collector/confmap v1.17.0
 	go.opentelemetry.io/collector/connector v0.111.0
+	go.opentelemetry.io/collector/connector/connectortest v0.111.0
 	go.opentelemetry.io/collector/consumer v0.111.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.111.0
 	go.opentelemetry.io/collector/pdata v1.17.0
@@ -45,7 +46,7 @@ require (
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/net v0.28.0 // indirect
 	golang.org/x/sys v0.26.0 // indirect
-	golang.org/x/text v0.17.0 // indirect
+	golang.org/x/text v0.18.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240822170219-fc7c04adadcd // indirect
 	google.golang.org/grpc v1.67.1 // indirect
 	google.golang.org/protobuf v1.35.1 // indirect
@@ -57,6 +58,8 @@ replace go.opentelemetry.io/collector => ../../
 replace go.opentelemetry.io/collector/component => ../../component
 
 replace go.opentelemetry.io/collector/connector => ../
+
+replace go.opentelemetry.io/collector/connector/connectortest => ../connectortest
 
 replace go.opentelemetry.io/collector/pdata => ../../pdata
 
