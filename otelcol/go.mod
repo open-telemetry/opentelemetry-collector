@@ -11,6 +11,7 @@ require (
 	go.opentelemetry.io/collector/confmap v1.17.0
 	go.opentelemetry.io/collector/connector v0.111.0
 	go.opentelemetry.io/collector/exporter v0.111.0
+	go.opentelemetry.io/collector/exporter/exportertest v0.111.0
 	go.opentelemetry.io/collector/extension v0.111.0
 	go.opentelemetry.io/collector/featuregate v1.17.0
 	go.opentelemetry.io/collector/pipeline v0.111.0
@@ -178,3 +179,5 @@ replace go.opentelemetry.io/collector/exporter/exporterprofiles => ../exporter/e
 replace go.opentelemetry.io/collector/pipeline => ../pipeline
 
 replace go.opentelemetry.io/collector/pipeline/pipelineprofiles => ../pipeline/pipelineprofiles
+
+replace go.opentelemetry.io/collector/exporter/exportertest => ../exporter/exportertest
