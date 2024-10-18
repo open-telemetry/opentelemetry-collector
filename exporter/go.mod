@@ -14,6 +14,7 @@ require (
 	go.opentelemetry.io/collector/extension v0.111.0
 	go.opentelemetry.io/collector/extension/experimental/storage v0.111.0
 	go.opentelemetry.io/collector/pdata v1.17.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.111.0
 	go.opentelemetry.io/collector/pdata/testdata v0.111.0
 	go.opentelemetry.io/collector/pipeline v0.111.0
 	go.opentelemetry.io/otel v1.31.0
@@ -38,7 +39,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.111.0 // indirect
 	go.opentelemetry.io/collector/exporter/exporterprofiles v0.111.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.111.0 // indirect
 	go.opentelemetry.io/collector/receiver v0.111.0 // indirect
 	go.opentelemetry.io/collector/receiver/receiverprofiles v0.111.0 // indirect
 	golang.org/x/net v0.28.0 // indirect
