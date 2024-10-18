@@ -12,11 +12,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pprofile"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
@@ -30,7 +28,7 @@ func TestMergeProfiles(t *testing.T) {
 }
 
 func TestMergeProfilesInvalidInput(t *testing.T) {
-	pr1 := &tracesRequest{td: testdata.GenerateTraces(2)}
+	pr1 := &dummyRequest{}
 	pr2 := &profilesRequest{pd: testdata.GenerateProfiles(3)}
 	_, err := pr2.Merge(context.Background(), pr1)
 	assert.Error(t, err)
@@ -131,7 +129,7 @@ func TestMergeSplitProfiles(t *testing.T) {
 }
 
 func TestMergeSplitProfilesInvalidInput(t *testing.T) {
-	r1 := &tracesRequest{td: testdata.GenerateTraces(2)}
+	r1 := &dummyRequest{}
 	r2 := &profilesRequest{pd: testdata.GenerateProfiles(3)}
 	_, err := r2.MergeSplit(context.Background(), exporterbatcher.MaxSizeConfig{}, r1)
 	assert.Error(t, err)
@@ -146,25 +144,23 @@ func TestExtractProfiles(t *testing.T) {
 	}
 }
 
-type tracesRequest struct {
-	td     ptrace.Traces
-	pusher consumer.ConsumeTracesFunc
+// dummyRequest implements BatchRequest. It is for checking that merging two request types would fail
+type dummyRequest struct {
 }
 
-func (req *tracesRequest) Export(ctx context.Context) error {
-	return req.pusher(ctx, req.td)
+func (req *dummyRequest) Export(_ context.Context) error {
+	return nil
 }
 
-func (req *tracesRequest) ItemsCount() int {
-	return req.td.SpanCount()
+func (req *dummyRequest) ItemsCount() int {
+	return 1
 }
 
-func (req *tracesRequest) Merge(_ context.Context, _ exporterhelper.BatchRequest) (exporterhelper.BatchRequest, error) {
+func (req *dummyRequest) Merge(_ context.Context, _ exporterhelper.BatchRequest) (exporterhelper.BatchRequest, error) {
 	return nil, nil
 }
 
-// MergeSplit splits and/or merges the profiles into multiple requests based on the MaxSizeConfig.
-func (req *tracesRequest) MergeSplit(_ context.Context, _ exporterbatcher.MaxSizeConfig, _ exporterhelper.BatchRequest) (
+func (req *dummyRequest) MergeSplit(_ context.Context, _ exporterbatcher.MaxSizeConfig, _ exporterhelper.BatchRequest) (
 	[]exporterhelper.BatchRequest, error) {
 	return nil, nil
 }
