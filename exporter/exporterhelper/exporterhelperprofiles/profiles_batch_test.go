@@ -23,7 +23,7 @@ import (
 func TestMergeProfiles(t *testing.T) {
 	pr1 := &profilesRequest{pd: testdata.GenerateProfiles(2)}
 	pr2 := &profilesRequest{pd: testdata.GenerateProfiles(3)}
-	res, err := mergeProfiles(context.Background(), pr1, pr2)
+	res, err := pr1.Merge(context.Background(), pr2)
 	require.NoError(t, err)
 	fmt.Fprintf(os.Stdout, "%#v\n", res.(*profilesRequest).pd)
 	assert.Equal(t, 5, res.(*profilesRequest).pd.SampleCount())
@@ -32,7 +32,7 @@ func TestMergeProfiles(t *testing.T) {
 func TestMergeProfilesInvalidInput(t *testing.T) {
 	pr1 := &tracesRequest{td: testdata.GenerateTraces(2)}
 	pr2 := &profilesRequest{pd: testdata.GenerateProfiles(3)}
-	_, err := mergeProfiles(context.Background(), pr1, pr2)
+	_, err := pr2.Merge(context.Background(), pr1)
 	assert.Error(t, err)
 }
 
@@ -40,8 +40,8 @@ func TestMergeSplitProfiles(t *testing.T) {
 	tests := []struct {
 		name     string
 		cfg      exporterbatcher.MaxSizeConfig
-		pr1      exporterhelper.Request
-		pr2      exporterhelper.Request
+		pr1      exporterhelper.BatchRequest
+		pr2      exporterhelper.BatchRequest
 		expected []*profilesRequest
 	}{
 		{
@@ -52,13 +52,6 @@ func TestMergeSplitProfiles(t *testing.T) {
 			expected: []*profilesRequest{{pd: pprofile.NewProfiles()}},
 		},
 		{
-			name:     "both_requests_nil",
-			cfg:      exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
-			pr1:      nil,
-			pr2:      nil,
-			expected: []*profilesRequest{},
-		},
-		{
 			name:     "first_request_empty",
 			cfg:      exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
 			pr1:      &profilesRequest{pd: pprofile.NewProfiles()},
@@ -66,17 +59,10 @@ func TestMergeSplitProfiles(t *testing.T) {
 			expected: []*profilesRequest{{pd: testdata.GenerateProfiles(5)}},
 		},
 		{
-			name:     "first_requests_nil",
+			name:     "first_empty_second_nil",
 			cfg:      exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
-			pr1:      nil,
-			pr2:      &profilesRequest{pd: testdata.GenerateProfiles(5)},
-			expected: []*profilesRequest{{pd: testdata.GenerateProfiles(5)}},
-		},
-		{
-			name:     "first_nil_second_empty",
-			cfg:      exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
-			pr1:      nil,
-			pr2:      &profilesRequest{pd: pprofile.NewProfiles()},
+			pr1:      &profilesRequest{pd: pprofile.NewProfiles()},
+			pr2:      nil,
 			expected: []*profilesRequest{{pd: pprofile.NewProfiles()}},
 		},
 		{
@@ -93,8 +79,8 @@ func TestMergeSplitProfiles(t *testing.T) {
 		{
 			name: "split_only",
 			cfg:  exporterbatcher.MaxSizeConfig{MaxSizeItems: 4},
-			pr1:  nil,
-			pr2:  &profilesRequest{pd: testdata.GenerateProfiles(10)},
+			pr1:  &profilesRequest{pd: testdata.GenerateProfiles(10)},
+			pr2:  nil,
 			expected: []*profilesRequest{
 				{pd: testdata.GenerateProfiles(4)},
 				{pd: testdata.GenerateProfiles(4)},
@@ -133,7 +119,7 @@ func TestMergeSplitProfiles(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := mergeSplitProfiles(context.Background(), tt.cfg, tt.pr1, tt.pr2)
+			res, err := tt.pr1.MergeSplit(context.Background(), tt.cfg, tt.pr2)
 			require.NoError(t, err)
 			assert.Equal(t, len(tt.expected), len(res))
 			for i, r := range res {
@@ -147,7 +133,7 @@ func TestMergeSplitProfiles(t *testing.T) {
 func TestMergeSplitProfilesInvalidInput(t *testing.T) {
 	r1 := &tracesRequest{td: testdata.GenerateTraces(2)}
 	r2 := &profilesRequest{pd: testdata.GenerateProfiles(3)}
-	_, err := mergeSplitProfiles(context.Background(), exporterbatcher.MaxSizeConfig{}, r1, r2)
+	_, err := r2.MergeSplit(context.Background(), exporterbatcher.MaxSizeConfig{}, r1)
 	assert.Error(t, err)
 }
 
@@ -171,4 +157,14 @@ func (req *tracesRequest) Export(ctx context.Context) error {
 
 func (req *tracesRequest) ItemsCount() int {
 	return req.td.SpanCount()
+}
+
+func (req *tracesRequest) Merge(_ context.Context, _ exporterhelper.BatchRequest) (exporterhelper.BatchRequest, error) {
+	return nil, nil
+}
+
+// MergeSplit splits and/or merges the profiles into multiple requests based on the MaxSizeConfig.
+func (req *tracesRequest) MergeSplit(_ context.Context, _ exporterbatcher.MaxSizeConfig, _ exporterhelper.BatchRequest) (
+	[]exporterhelper.BatchRequest, error) {
+	return nil, nil
 }
