@@ -28,19 +28,22 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
+	"go.opentelemetry.io/collector/pdata/pprofile"
+	"go.opentelemetry.io/collector/pdata/pprofile/pprofileotlp"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
 type baseExporter struct {
 	// Input configuration.
-	config     *Config
-	client     *http.Client
-	tracesURL  string
-	metricsURL string
-	logsURL    string
-	logger     *zap.Logger
-	settings   component.TelemetrySettings
+	config      *Config
+	client      *http.Client
+	tracesURL   string
+	metricsURL  string
+	logsURL     string
+	profilesURL string
+	logger      *zap.Logger
+	settings    component.TelemetrySettings
 	// Default user-agent header.
 	userAgent string
 }
@@ -147,6 +150,27 @@ func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 	}
 
 	return e.export(ctx, e.logsURL, request, e.logsPartialSuccessHandler)
+}
+
+func (e *baseExporter) pushProfiles(ctx context.Context, td pprofile.Profiles) error {
+	tr := pprofileotlp.NewExportRequestFromProfiles(td)
+
+	var err error
+	var request []byte
+	switch e.config.Encoding {
+	case EncodingJSON:
+		request, err = tr.MarshalJSON()
+	case EncodingProto:
+		request, err = tr.MarshalProto()
+	default:
+		err = fmt.Errorf("invalid encoding: %s", e.config.Encoding)
+	}
+
+	if err != nil {
+		return consumererror.NewPermanent(err)
+	}
+
+	return e.export(ctx, e.profilesURL, request, e.profilesPartialSuccessHandler)
 }
 
 func (e *baseExporter) export(ctx context.Context, url string, request []byte, partialSuccessHandler partialSuccessHandler) error {
@@ -388,6 +412,36 @@ func (e *baseExporter) logsPartialSuccessHandler(protoBytes []byte, contentType 
 		e.logger.Warn("Partial success response",
 			zap.String("message", exportResponse.PartialSuccess().ErrorMessage()),
 			zap.Int64("dropped_log_records", exportResponse.PartialSuccess().RejectedLogRecords()),
+		)
+	}
+	return nil
+}
+
+func (e *baseExporter) profilesPartialSuccessHandler(protoBytes []byte, contentType string) error {
+	if protoBytes == nil {
+		return nil
+	}
+	exportResponse := pprofileotlp.NewExportResponse()
+	switch contentType {
+	case protobufContentType:
+		err := exportResponse.UnmarshalProto(protoBytes)
+		if err != nil {
+			return fmt.Errorf("error parsing protobuf response: %w", err)
+		}
+	case jsonContentType:
+		err := exportResponse.UnmarshalJSON(protoBytes)
+		if err != nil {
+			return fmt.Errorf("error parsing json response: %w", err)
+		}
+	default:
+		return nil
+	}
+
+	partialSuccess := exportResponse.PartialSuccess()
+	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedProfiles() == 0) {
+		e.logger.Warn("Partial success response",
+			zap.String("message", exportResponse.PartialSuccess().ErrorMessage()),
+			zap.Int64("dropped_samples", exportResponse.PartialSuccess().RejectedProfiles()),
 		)
 	}
 	return nil

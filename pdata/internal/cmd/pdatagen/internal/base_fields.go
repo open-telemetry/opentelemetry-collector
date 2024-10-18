@@ -329,8 +329,8 @@ func (sf *sliceField) templateFields(ms *messageValueStruct) map[string]any {
 			return ""
 		}(),
 		"returnType":         sf.returnSlice.getName(),
-		"origAccessor":       origAccessor(ms),
-		"stateAccessor":      stateAccessor(ms),
+		"origAccessor":       origAccessor(ms.packageName),
+		"stateAccessor":      stateAccessor(ms.packageName),
 		"isCommon":           usedByOtherDataTypes(sf.returnSlice.getPackageName()),
 		"isBaseStructCommon": usedByOtherDataTypes(ms.packageName),
 		"originFieldName": func() string {
@@ -394,8 +394,8 @@ func (mf *messageValueField) templateFields(ms *messageValueStruct) map[string]a
 			}
 			return ""
 		}(),
-		"origAccessor":  origAccessor(ms),
-		"stateAccessor": stateAccessor(ms),
+		"origAccessor":  origAccessor(ms.packageName),
+		"stateAccessor": stateAccessor(ms.packageName),
 	}
 }
 
@@ -448,8 +448,8 @@ func (pf *primitiveField) templateFields(ms *messageValueStruct) map[string]any 
 		"lowerFieldName":   strings.ToLower(pf.fieldName),
 		"testValue":        pf.testVal,
 		"returnType":       pf.returnType,
-		"origAccessor":     origAccessor(ms),
-		"stateAccessor":    stateAccessor(ms),
+		"origAccessor":     origAccessor(ms.packageName),
+		"stateAccessor":    stateAccessor(ms.packageName),
 		"originStructName": ms.originFullName,
 		"originFieldName": func() string {
 			if pf.originFieldName == "" {
@@ -583,8 +583,8 @@ func (psf *primitiveSliceField) templateFields(ms *messageValueStruct) map[strin
 		"fieldName":      psf.fieldName,
 		"lowerFieldName": strings.ToLower(psf.fieldName),
 		"testValue":      psf.testVal,
-		"origAccessor":   origAccessor(ms),
-		"stateAccessor":  stateAccessor(ms),
+		"origAccessor":   origAccessor(ms.packageName),
+		"stateAccessor":  stateAccessor(ms.packageName),
 	}
 }
 
@@ -647,8 +647,8 @@ func (of *oneOfField) templateFields(ms *messageValueStruct) map[string]any {
 		"typeName":             of.typeName,
 		"originFieldName":      of.originFieldName,
 		"lowerOriginFieldName": strings.ToLower(of.originFieldName),
-		"origAccessor":         origAccessor(ms),
-		"stateAccessor":        stateAccessor(ms),
+		"origAccessor":         origAccessor(ms.packageName),
+		"stateAccessor":        stateAccessor(ms.packageName),
 		"values":               of.values,
 		"originTypePrefix":     ms.originFullName + "_",
 	}
@@ -846,15 +846,15 @@ func (opv *optionalPrimitiveValue) templateFields(ms *messageValueStruct) map[st
 
 var _ baseField = (*optionalPrimitiveValue)(nil)
 
-func origAccessor(bs *messageValueStruct) string {
-	if usedByOtherDataTypes(bs.packageName) {
+func origAccessor(packageName string) string {
+	if usedByOtherDataTypes(packageName) {
 		return "getOrig()"
 	}
 	return "orig"
 }
 
-func stateAccessor(bs *messageValueStruct) string {
-	if usedByOtherDataTypes(bs.packageName) {
+func stateAccessor(packageName string) string {
+	if usedByOtherDataTypes(packageName) {
 		return "getState()"
 	}
 	return "state"

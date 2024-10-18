@@ -16,11 +16,11 @@ import (
 )
 
 func TestInstrumentationScope_MoveTo(t *testing.T) {
-	ms := InstrumentationScope(internal.GenerateTestInstrumentationScope())
+	ms := generateTestInstrumentationScope()
 	dest := NewInstrumentationScope()
 	ms.MoveTo(dest)
 	assert.Equal(t, NewInstrumentationScope(), ms)
-	assert.Equal(t, InstrumentationScope(internal.GenerateTestInstrumentationScope()), dest)
+	assert.Equal(t, generateTestInstrumentationScope(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(newInstrumentationScope(&otlpcommon.InstrumentationScope{}, &sharedState)) })
 	assert.Panics(t, func() { newInstrumentationScope(&otlpcommon.InstrumentationScope{}, &sharedState).MoveTo(dest) })
@@ -31,7 +31,7 @@ func TestInstrumentationScope_CopyTo(t *testing.T) {
 	orig := NewInstrumentationScope()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = InstrumentationScope(internal.GenerateTestInstrumentationScope())
+	orig = generateTestInstrumentationScope()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 	sharedState := internal.StateReadOnly
@@ -74,4 +74,8 @@ func TestInstrumentationScope_DroppedAttributesCount(t *testing.T) {
 	assert.Panics(t, func() {
 		newInstrumentationScope(&otlpcommon.InstrumentationScope{}, &sharedState).SetDroppedAttributesCount(uint32(17))
 	})
+}
+
+func generateTestInstrumentationScope() InstrumentationScope {
+	return InstrumentationScope(internal.GenerateTestInstrumentationScope())
 }

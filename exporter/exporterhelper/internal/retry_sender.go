@@ -96,7 +96,9 @@ func (rs *retrySender) Send(ctx context.Context, req internal.Request) error {
 			return fmt.Errorf("not retryable error: %w", err)
 		}
 
-		req = internal.ExtractPartialRequest(req, err)
+		if errReq, ok := req.(internal.RequestErrorHandler); ok {
+			req = errReq.OnError(err)
+		}
 
 		backoffDelay := expBackoff.NextBackOff()
 		if backoffDelay == backoff.Stop {

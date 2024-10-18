@@ -27,6 +27,17 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 )
 
+type itemsCounter interface {
+	ItemsCount() int
+}
+
+// itemsSizer is a Sizer implementation that returns the size of a queue element as the number of items it contains.
+type itemsSizer[T itemsCounter] struct{}
+
+func (is *itemsSizer[T]) Sizeof(el T) int64 {
+	return int64(el.ItemsCount())
+}
+
 type tracesRequest struct {
 	traces ptrace.Traces
 }
@@ -97,7 +108,7 @@ func createTestPersistentQueueWithRequestsCapacity(t testing.TB, ext storage.Ext
 }
 
 func createTestPersistentQueueWithItemsCapacity(t testing.TB, ext storage.Extension, capacity int64) *persistentQueue[tracesRequest] {
-	return createTestPersistentQueueWithCapacityLimiter(t, ext, &ItemsSizer[tracesRequest]{}, capacity)
+	return createTestPersistentQueueWithCapacityLimiter(t, ext, &itemsSizer[tracesRequest]{}, capacity)
 }
 
 func createTestPersistentQueueWithCapacityLimiter(t testing.TB, ext storage.Extension, sizer Sizer[tracesRequest],
@@ -130,7 +141,7 @@ func TestPersistentQueue_FullCapacity(t *testing.T) {
 		},
 		{
 			name:           "items_capacity",
-			sizer:          &ItemsSizer[tracesRequest]{},
+			sizer:          &itemsSizer[tracesRequest]{},
 			capacity:       55,
 			sizeMultiplier: 10,
 		},

@@ -47,11 +47,11 @@ type Factory[T any] func(context.Context, Settings, Config) Queue[T]
 // NewMemoryQueueFactory returns a factory to create a new memory queue.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-func NewMemoryQueueFactory[T itemsCounter]() Factory[T] {
+func NewMemoryQueueFactory[T any]() Factory[T] {
 	return func(_ context.Context, _ Settings, cfg Config) Queue[T] {
 		return queue.NewBoundedMemoryQueue[T](queue.MemoryQueueSettings[T]{
-			Sizer:    sizerFromConfig[T](cfg),
-			Capacity: capacityFromConfig(cfg),
+			Sizer:    &queue.RequestSizer[T]{},
+			Capacity: int64(cfg.QueueSize),
 		})
 	}
 }
@@ -70,14 +70,14 @@ type PersistentQueueSettings[T any] struct {
 // If cfg.StorageID is nil then it falls back to memory queue.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-func NewPersistentQueueFactory[T itemsCounter](storageID *component.ID, factorySettings PersistentQueueSettings[T]) Factory[T] {
+func NewPersistentQueueFactory[T any](storageID *component.ID, factorySettings PersistentQueueSettings[T]) Factory[T] {
 	if storageID == nil {
 		return NewMemoryQueueFactory[T]()
 	}
 	return func(_ context.Context, set Settings, cfg Config) Queue[T] {
 		return queue.NewPersistentQueue[T](queue.PersistentQueueSettings[T]{
-			Sizer:            sizerFromConfig[T](cfg),
-			Capacity:         capacityFromConfig(cfg),
+			Sizer:            &queue.RequestSizer[T]{},
+			Capacity:         int64(cfg.QueueSize),
 			Signal:           set.Signal,
 			StorageID:        *storageID,
 			Marshaler:        factorySettings.Marshaler,
@@ -85,18 +85,4 @@ func NewPersistentQueueFactory[T itemsCounter](storageID *component.ID, factoryS
 			ExporterSettings: set.ExporterSettings,
 		})
 	}
-}
-
-type itemsCounter interface {
-	ItemsCount() int
-}
-
-func sizerFromConfig[T itemsCounter](Config) queue.Sizer[T] {
-	// TODO: Handle other ways to measure the queue size once they are added.
-	return &queue.RequestSizer[T]{}
-}
-
-func capacityFromConfig(cfg Config) int64 {
-	// TODO: Handle other ways to measure the queue size once they are added.
-	return int64(cfg.QueueSize)
 }

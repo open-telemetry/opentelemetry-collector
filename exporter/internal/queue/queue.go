@@ -38,20 +38,9 @@ type Queue[T any] interface {
 	OnProcessingFinished(index uint64, consumeErr error)
 }
 
-type itemsCounter interface {
-	ItemsCount() int
-}
-
 // Sizer is an interface that returns the size of the given element.
 type Sizer[T any] interface {
 	Sizeof(T) int64
-}
-
-// ItemsSizer is a Sizer implementation that returns the size of a queue element as the number of items it contains.
-type ItemsSizer[T itemsCounter] struct{}
-
-func (is *ItemsSizer[T]) Sizeof(el T) int64 {
-	return int64(el.ItemsCount())
 }
 
 // RequestSizer is a Sizer implementation that returns the size of a queue element as one request.

@@ -20,11 +20,19 @@ func Test{{ .structName }}(t *testing.T) {
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := New{{ .elementName }}()
+	{{- if .isCommon }}
+	testVal := {{ .elementName }}(internal.GenerateTest{{ .elementName }}())
+	{{- else }}
 	testVal := generateTest{{ .elementName }}()
+	{{- end }}
 	for i := 0; i < 7; i++ {
 		el := es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
+		{{- if .isCommon }}
+		internal.FillTest{{ .elementName }}(internal.{{ .elementName }}(el))
+		{{- else }}
 		fillTest{{ .elementName }}(el)
+		{{- end }}
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -65,14 +73,14 @@ func Test{{ .structName }}_EnsureCapacity(t *testing.T) {
 	const ensureSmallLen = 4
 	es.EnsureCapacity(ensureSmallLen)
 	assert.Less(t, ensureSmallLen, es.Len())
-	assert.Equal(t, es.Len(), cap(*es.orig))
+	assert.Equal(t, es.Len(), cap(*es.{{ .origAccessor }}))
 	assert.Equal(t, generateTest{{ .structName }}(), es)
 
 	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	es.EnsureCapacity(ensureLargeLen)
 	assert.Less(t, generateTest{{ .structName }}().Len(), ensureLargeLen)
-	assert.Equal(t, ensureLargeLen, cap(*es.orig))
+	assert.Equal(t, ensureLargeLen, cap(*es.{{ .origAccessor }}))
 	assert.Equal(t, generateTest{{ .structName }}(), es)
 }
 
@@ -123,26 +131,31 @@ func Test{{ .structName }}_RemoveIf(t *testing.T) {
 func Test{{ .structName }}_Sort(t *testing.T) {
 	es := generateTest{{ .structName }}()
 	es.Sort(func(a, b {{ .elementName }}) bool {
-		return uintptr(unsafe.Pointer(a.orig)) < uintptr(unsafe.Pointer(b.orig))
+		return uintptr(unsafe.Pointer(a.{{ .origAccessor }})) < uintptr(unsafe.Pointer(b.{{ .origAccessor }}))
 	})
 	for i := 1; i < es.Len(); i++ {
-		assert.Less(t, uintptr(unsafe.Pointer(es.At(i-1).orig)), uintptr(unsafe.Pointer(es.At(i).orig)))
+		assert.Less(t, uintptr(unsafe.Pointer(es.At(i-1).{{ .origAccessor }})), uintptr(unsafe.Pointer(es.At(i).{{ .origAccessor }})))
 	}
 	es.Sort(func(a, b {{ .elementName }}) bool {
-		return uintptr(unsafe.Pointer(a.orig)) > uintptr(unsafe.Pointer(b.orig))
+		return uintptr(unsafe.Pointer(a.{{ .origAccessor }})) > uintptr(unsafe.Pointer(b.{{ .origAccessor }}))
 	})
 	for i := 1; i < es.Len(); i++ {
-		assert.Greater(t, uintptr(unsafe.Pointer(es.At(i-1).orig)), uintptr(unsafe.Pointer(es.At(i).orig)))
+		assert.Greater(t, uintptr(unsafe.Pointer(es.At(i-1).{{ .origAccessor }})), uintptr(unsafe.Pointer(es.At(i).{{ .origAccessor }})))
 	}
 }
 {{- end }}
 
 func generateTest{{ .structName }}() {{ .structName }} {
+    {{- if .isCommon }}
+    return {{ .structName }}(internal.GenerateTest{{ .structName }}())
+    {{- else }}
 	es := New{{ .structName }}()
 	fillTest{{ .structName }}(es)
 	return es
+	{{- end }}
 }
 
+{{ if not .isCommon -}}
 func fillTest{{ .structName }}(es {{ .structName }}) {
 	*es.orig = make([]{{ .originElementType }}, 7)
 	for i := 0; i < 7; i++ {
@@ -150,3 +163,4 @@ func fillTest{{ .structName }}(es {{ .structName }}) {
 		fillTest{{ .elementName }}({{ .newElement }})
 	}
 }
+{{- end }}

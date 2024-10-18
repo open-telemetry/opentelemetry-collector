@@ -26,7 +26,7 @@ import (
 const (
 	metricPrefix = "otelcol_"
 	otelPrefix   = "otel_sdk_"
-	grpcPrefix   = "gprc_"
+	grpcPrefix   = "grpc_"
 	httpPrefix   = "http_"
 	counterName  = "test_counter"
 )
