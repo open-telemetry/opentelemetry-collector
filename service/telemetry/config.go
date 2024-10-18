@@ -184,7 +184,7 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 
 		c.Metrics.Readers = append(c.Metrics.Readers, config.MetricReader{
 			Pull: &config.PullMetricReader{
-				Exporter: config.MetricExporter{
+				Exporter: config.PullMetricExporter{
 					Prometheus: &config.Prometheus{
 						Host: &host,
 						Port: &portInt,
