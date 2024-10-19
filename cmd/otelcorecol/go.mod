@@ -95,6 +95,7 @@ require (
 	go.opentelemetry.io/collector/connector/connectorprofiles v0.111.0 // indirect
 	go.opentelemetry.io/collector/connector/connectortest v0.111.0 // indirect
 	go.opentelemetry.io/collector/consumer v0.111.0 // indirect
+	go.opentelemetry.io/collector/consumer/consumererror v0.111.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror/consumererrorprofiles v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.111.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.111.0 // indirect
@@ -270,3 +271,5 @@ replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../../receive
 replace go.opentelemetry.io/collector/semconv => ../../semconv
 
 replace go.opentelemetry.io/collector/service => ../../service
+
+replace go.opentelemetry.io/collector/consumer/consumererror => ../../consumer/consumererror
