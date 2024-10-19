@@ -196,6 +196,8 @@ replace go.opentelemetry.io/collector/consumer => ../../consumer
 
 replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../../consumer/consumerprofiles
 
+replace go.opentelemetry.io/collector/consumer/consumererror => ../../consumer/consumererror
+
 replace go.opentelemetry.io/collector/consumer/consumererror/consumererrorprofiles => ../../consumer/consumererror/consumererrorprofiles
 
 replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/consumertest
@@ -271,5 +273,3 @@ replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../../receive
 replace go.opentelemetry.io/collector/semconv => ../../semconv
 
 replace go.opentelemetry.io/collector/service => ../../service
-
-replace go.opentelemetry.io/collector/consumer/consumererror => ../../consumer/consumererror
