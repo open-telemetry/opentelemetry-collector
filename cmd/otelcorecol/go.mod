@@ -212,6 +212,8 @@ replace go.opentelemetry.io/collector/exporter => ../../exporter
 
 replace go.opentelemetry.io/collector/exporter/debugexporter => ../../exporter/debugexporter
 
+replace go.opentelemetry.io/collector/exporter/exportertest => ../../exporter/exportertest
+
 replace go.opentelemetry.io/collector/exporter/exporterprofiles => ../../exporter/exporterprofiles
 
 replace go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles => ../../exporter/exporterhelper/exporterhelperprofiles
@@ -271,5 +273,3 @@ replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../../receive
 replace go.opentelemetry.io/collector/semconv => ../../semconv
 
 replace go.opentelemetry.io/collector/service => ../../service
-
-replace go.opentelemetry.io/collector/exporter/exportertest => ../../exporter/exportertest
