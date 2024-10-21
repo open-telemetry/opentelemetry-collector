@@ -30,7 +30,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.111.0 // indirect
-	go.opentelemetry.io/collector/consumer v0.0.0-20241021181817-007f06b7c4a8 // indirect
+	go.opentelemetry.io/collector/consumer v0.111.1-0.20241021181817-007f06b7c4a8 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.0.0-20241021181817-007f06b7c4a8 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.111.0 // indirect
 	go.opentelemetry.io/collector/exporter/exporterprofiles v0.111.0 // indirect
