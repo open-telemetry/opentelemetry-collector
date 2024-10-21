@@ -14,9 +14,11 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterprofiles"
 	"go.opentelemetry.io/collector/exporter/debugexporter/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/debugexporter/internal/otlptext"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles"
 )
 
 // The value of "type" key in configuration.
@@ -35,6 +37,14 @@ func NewFactory() exporter.Factory {
 		exporter.WithTraces(createTraces, metadata.TracesStability),
 		exporter.WithMetrics(createMetrics, metadata.MetricsStability),
 		exporter.WithLogs(createLogs, metadata.LogsStability),
+	)
+}
+
+func NewFactoryProfiles() exporterprofiles.Factory {
+	return exporterprofiles.NewFactory(
+		componentType,
+		createDefaultConfig,
+		exporterprofiles.WithProfiles(createProfiles, metadata.ProfilesStability),
 	)
 }
 
@@ -77,6 +87,18 @@ func createLogs(ctx context.Context, set exporter.Settings, config component.Con
 	debug := newDebugExporter(exporterLogger, cfg.Verbosity)
 	return exporterhelper.NewLogs(ctx, set, config,
 		debug.pushLogs,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
+		exporterhelper.WithShutdown(otlptext.LoggerSync(exporterLogger)),
+	)
+}
+
+func createProfiles(ctx context.Context, set exporter.Settings, config component.Config) (exporterprofiles.Profiles, error) {
+	cfg := config.(*Config)
+	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
+	debug := newDebugExporter(exporterLogger, cfg.Verbosity)
+	return exporterhelperprofiles.NewProfilesExporter(ctx, set, config,
+		debug.pushProfiles,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithShutdown(otlptext.LoggerSync(exporterLogger)),

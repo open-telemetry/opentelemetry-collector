@@ -47,3 +47,12 @@ func TestCreateLogs(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, te)
 }
+
+func TestCreateFactoryProfiles(t *testing.T) {
+	factory := NewFactoryProfiles()
+	cfg := factory.CreateDefaultConfig()
+
+	te, err := factory.CreateProfiles(context.Background(), exportertest.NewNopSettings(), cfg)
+	require.NoError(t, err)
+	assert.NotNil(t, te)
+}
