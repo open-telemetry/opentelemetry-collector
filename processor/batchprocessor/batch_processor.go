@@ -47,15 +47,6 @@ type batchProcessor struct {
 	// with the appropriate signal.
 	batchFunc func() batch
 
-	// metadataKeys is the configured list of metadata keys.  When
-	// empty, the `singleton` batcher is used.  When non-empty,
-	// each distinct combination of metadata keys and values
-	// triggers a new batcher, counted in `goroutines`.
-	metadataKeys []string
-
-	// metadataLimit is the limiting size of the batchers map.
-	metadataLimit int
-
 	shutdownC  chan struct{}
 	goroutines sync.WaitGroup
 
@@ -138,17 +129,16 @@ func newBatchProcessor(set processor.Settings, cfg *Config, batchFunc func() bat
 		timeout:          cfg.Timeout,
 		batchFunc:        batchFunc,
 		shutdownC:        make(chan struct{}, 1),
-		metadataKeys:     mks,
-		metadataLimit:    int(cfg.MetadataCardinalityLimit),
 	}
-	if len(bp.metadataKeys) == 0 {
+	if len(mks) == 0 {
 		bp.batcher = &singleShardBatcher{
 			processor: bp,
-			single:    nil, // created in start
 		}
 	} else {
 		bp.batcher = &multiShardBatcher{
-			processor: bp,
+			metadataKeys:  mks,
+			metadataLimit: int(cfg.MetadataCardinalityLimit),
+			processor:     bp,
 		}
 	}
 
@@ -310,6 +300,15 @@ func (sb *singleShardBatcher) currentMetadataCardinality() int {
 
 // multiBatcher is used when metadataKeys is not empty.
 type multiShardBatcher struct {
+	// metadataKeys is the configured list of metadata keys.  When
+	// empty, the `singleton` batcher is used.  When non-empty,
+	// each distinct combination of metadata keys and values
+	// triggers a new batcher, counted in `goroutines`.
+	metadataKeys []string
+
+	// metadataLimit is the limiting size of the batchers map.
+	metadataLimit int
+
 	processor *batchProcessor
 	batchers  sync.Map
 
@@ -329,7 +328,7 @@ func (mb *multiShardBatcher) consume(ctx context.Context, data any) error {
 	info := client.FromContext(ctx)
 	md := map[string][]string{}
 	var attrs []attribute.KeyValue
-	for _, k := range mb.processor.metadataKeys {
+	for _, k := range mb.metadataKeys {
 		// Lookup the value in the incoming metadata, copy it
 		// into the outgoing metadata, and create a unique
 		// value for the attributeSet.
@@ -346,7 +345,7 @@ func (mb *multiShardBatcher) consume(ctx context.Context, data any) error {
 	b, ok := mb.batchers.Load(aset)
 	if !ok {
 		mb.lock.Lock()
-		if mb.processor.metadataLimit != 0 && mb.size >= mb.processor.metadataLimit {
+		if mb.metadataLimit != 0 && mb.size >= mb.metadataLimit {
 			mb.lock.Unlock()
 			return errTooManyBatchers
 		}
