@@ -96,8 +96,8 @@ type batch[T any] interface {
 	// export the current batch
 	export(ctx context.Context, req T) error
 
-	// splitBatch returns a full request built from pending items.
-	splitBatch(ctx context.Context, sendBatchMaxSize int) (sentBatchSize int, req T)
+	// split returns a full request built from pending items.
+	split(sendBatchMaxSize int) (sentBatchSize int, req T)
 
 	// itemCount returns the size of the current batch
 	itemCount() int
@@ -255,7 +255,7 @@ func (b *shard[T]) resetTimer() {
 }
 
 func (b *shard[T]) sendItems(trigger trigger) {
-	sent, req := b.batch.splitBatch(b.exportCtx, b.processor.sendBatchMaxSize)
+	sent, req := b.batch.split(b.processor.sendBatchMaxSize)
 
 	err := b.batch.export(b.exportCtx, req)
 	if err != nil {
@@ -447,7 +447,7 @@ func (bt *batchTraces) export(ctx context.Context, td ptrace.Traces) error {
 	return bt.nextConsumer.ConsumeTraces(ctx, td)
 }
 
-func (bt *batchTraces) splitBatch(_ context.Context, sendBatchMaxSize int) (int, ptrace.Traces) {
+func (bt *batchTraces) split(sendBatchMaxSize int) (int, ptrace.Traces) {
 	var td ptrace.Traces
 	var sent int
 	if sendBatchMaxSize > 0 && bt.itemCount() > sendBatchMaxSize {
@@ -486,7 +486,7 @@ func (bm *batchMetrics) export(ctx context.Context, md pmetric.Metrics) error {
 	return bm.nextConsumer.ConsumeMetrics(ctx, md)
 }
 
-func (bm *batchMetrics) splitBatch(_ context.Context, sendBatchMaxSize int) (int, pmetric.Metrics) {
+func (bm *batchMetrics) split(sendBatchMaxSize int) (int, pmetric.Metrics) {
 	var md pmetric.Metrics
 	var sent int
 	if sendBatchMaxSize > 0 && bm.dataPointCount > sendBatchMaxSize {
@@ -535,7 +535,7 @@ func (bl *batchLogs) export(ctx context.Context, ld plog.Logs) error {
 	return bl.nextConsumer.ConsumeLogs(ctx, ld)
 }
 
-func (bl *batchLogs) splitBatch(_ context.Context, sendBatchMaxSize int) (int, plog.Logs) {
+func (bl *batchLogs) split(sendBatchMaxSize int) (int, plog.Logs) {
 	var ld plog.Logs
 	var sent int
 

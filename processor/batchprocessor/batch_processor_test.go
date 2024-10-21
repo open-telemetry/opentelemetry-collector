@@ -691,7 +691,7 @@ func TestBatchMetrics_UnevenBatchMaxSize(t *testing.T) {
 
 	batchMetrics.add(md)
 	require.Equal(t, dataPointsPerMetric*metricsCount, batchMetrics.dataPointCount)
-	sent, req := batchMetrics.splitBatch(ctx, sendBatchMaxSize)
+	sent, req := batchMetrics.split(sendBatchMaxSize)
 	sendErr := batchMetrics.export(ctx, req)
 	require.NoError(t, sendErr)
 	require.Equal(t, sendBatchMaxSize, sent)
