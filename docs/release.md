@@ -91,6 +91,8 @@ The last step of the release process creates artifacts for the new version of th
 
     3. build and release ocb binaries under a separate tagged Github release, e.g. `cmd/builder/v0.85.0`
 
+    4. build and push ocb Docker images to `https://hub.docker.com/r/otel/opentelemetry-collector-builder` and the GitHub Container Registry within the releases repository
+
 ## Troubleshooting
 
 1. `unknown revision internal/coreinternal/v0.85.0` -- This is typically an indication that there's a dependency on a new module. You can fix it by adding a new `replaces` entry to the `go.mod` for the affected module.
