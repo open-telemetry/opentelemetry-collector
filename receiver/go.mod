@@ -8,7 +8,7 @@ require (
 	go.opentelemetry.io/collector/component v0.111.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.111.0
 	go.opentelemetry.io/collector/consumer v0.111.0
-	go.opentelemetry.io/collector/consumer/consumererror v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/consumer/consumererror v0.0.0-20241021093951-f2b31d131ae2
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.111.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.111.0
 	go.opentelemetry.io/collector/pdata v1.17.0
