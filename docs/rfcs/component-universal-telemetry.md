@@ -80,27 +80,27 @@ There are two straightforward measurements that can be made on any pdata:
 2. A measure of size, based on [ProtoMarshaler.Sizer()](https://github.com/open-telemetry/opentelemetry-collector/blob/9907ba50df0d5853c34d2962cf21da42e15a560d/pdata/ptrace/pb.go#L11).
   These are high cost to compute, so by default they should be disabled (and not calculated).
 
-The location of these measurements can be described in terms of whether the data is "incoming" or "outgoing", from the perspective of the
+The location of these measurements can be described in terms of whether the data is "consumed" or "produced", from the perspective of the
 component to which the telemetry is ascribed.
 
 1. Incoming measurements are attributed to the component which is _consuming_ the data.
 2. Outgoing measurements are attributed to the component which is _producing_ the data.
 
 For both metrics, an `outcome` attribute with possible values `success` and `failure` should be automatically recorded, corresponding to
-whether or not the corresponding function call returned an error. Specifically, incoming measurements will be recorded with `outcome` as
-`failure` when a call from the previous component the `ConsumeX` function returns an error, and `success` otherwise. Likewise, outgoing
+whether or not the corresponding function call returned an error. Specifically, consumed measurements will be recorded with `outcome` as
+`failure` when a call from the previous component the `ConsumeX` function returns an error, and `success` otherwise. Likewise, produced
 measurements will be recorded with `outcome` as `failure` when a call to the next consumer's `ConsumeX` function returns an error, and
 `success` otherwise.
 
 ```yaml
-    otelcol_component_incoming_items:
+    otelcol_component_consumed_items:
       enabled: true
       description: Number of items passed to the component.
       unit: "{items}"
       sum:
         value_type: int
         monotonic: true
-    otelcol_component_outgoing_items:
+    otelcol_component_produced_items:
       enabled: true
       description: Number of items emitted from the component.
       unit: "{items}"
@@ -108,14 +108,14 @@ measurements will be recorded with `outcome` as `failure` when a call to the nex
         value_type: int
         monotonic: true
 
-    otelcol_component_incoming_size:
+    otelcol_component_consumed_size:
       enabled: false
       description: Size of items passed to the component.
       unit: "By"
       sum:
         value_type: int
         monotonic: true
-    otelcol_component_outgoing_size:
+    otelcol_component_produced_size:
       enabled: false
       description: Size of items emitted from the component.
       unit: "By"
@@ -127,7 +127,7 @@ measurements will be recorded with `outcome` as `failure` when a call to the nex
 ### Auto-Instrumented Logs
 
 Metrics provide most of the observability we need but there are some gaps which logs can fill. Although metrics would describe the overall
-item counts, it is helpful in some cases to record more granular events. e.g. If an outgoing batch of 10,000 spans results in an error, but
+item counts, it is helpful in some cases to record more granular events. e.g. If a produced batch of 10,000 spans results in an error, but
 100 batches of 100 spans succeed, this may be a matter of batch size that can be detected by analyzing logs, while the corresponding metric
 reports only that a 50% success rate is observed.
 
@@ -146,7 +146,7 @@ of future possibilities.
 ### Auto-Instrumented Spans
 
 It is not clear that any spans can be captured automatically with the proposed mechanism. We have the ability to insert instrumentation both
-before and after processors and connectors. However, we generally cannot assume a 1:1 relationship between incoming and outgoing data.
+before and after processors and connectors. However, we generally cannot assume a 1:1 relationship between consumed and produced data.
 
 ## Additional Context
 
