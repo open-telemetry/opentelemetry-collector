@@ -86,7 +86,6 @@ func NewLogs(
 	}
 	logsOpts := []Option{
 		internal.WithMarshaler(logsRequestMarshaler), internal.WithUnmarshaler(newLogsRequestUnmarshalerFunc(pusher)),
-		internal.WithBatchFuncs(mergeLogs, mergeSplitLogs),
 	}
 	return NewLogsRequest(ctx, set, requestFromLogs(pusher), append(logsOpts, options...)...)
 }

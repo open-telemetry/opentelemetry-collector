@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/internal"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -53,6 +54,75 @@ func (r *fakeRequest) Export(ctx context.Context) error {
 
 func (r *fakeRequest) ItemsCount() int {
 	return r.items
+}
+
+func (r *fakeRequest) Merge(_ context.Context,
+	r2 internal.Request) (internal.Request, error) {
+	if r == nil {
+		return r2, nil
+	}
+	fr2 := r2.(*fakeRequest)
+	if fr2.mergeErr != nil {
+		return nil, fr2.mergeErr
+	}
+	return &fakeRequest{
+		items:     r.items + fr2.items,
+		sink:      r.sink,
+		exportErr: fr2.exportErr,
+		delay:     r.delay + fr2.delay,
+	}, nil
+}
+
+func (r *fakeRequest) MergeSplit(ctx context.Context, cfg exporterbatcher.MaxSizeConfig,
+	r2 internal.Request) ([]internal.Request, error) {
+	if r.mergeErr != nil {
+		return nil, r.mergeErr
+	}
+
+	maxItems := cfg.MaxSizeItems
+	if maxItems == 0 {
+		r, err := r.Merge(ctx, r2)
+		return []internal.Request{r}, err
+	}
+
+	var fr2 *fakeRequest
+	if r2 == nil {
+		fr2 = &fakeRequest{sink: r.sink, exportErr: r.exportErr, delay: r.delay}
+	} else {
+		if r2.(*fakeRequest).mergeErr != nil {
+			return nil, r2.(*fakeRequest).mergeErr
+		}
+		fr2 = r2.(*fakeRequest)
+		fr2 = &fakeRequest{items: fr2.items, sink: fr2.sink, exportErr: fr2.exportErr, delay: fr2.delay}
+	}
+	var res []internal.Request
+
+	// fill fr1 to maxItems if it's not nil
+
+	r = &fakeRequest{items: r.items, sink: r.sink, exportErr: r.exportErr, delay: r.delay}
+	if fr2.items <= maxItems-r.items {
+		r.items += fr2.items
+		if fr2.exportErr != nil {
+			r.exportErr = fr2.exportErr
+		}
+		return []internal.Request{r}, nil
+	}
+	// if split is needed, we don't propagate exportErr from fr2 to fr1 to test more cases
+	fr2.items -= maxItems - r.items
+	r.items = maxItems
+	res = append(res, r)
+
+	// split fr2 to maxItems
+	for {
+		if fr2.items <= maxItems {
+			res = append(res, &fakeRequest{items: fr2.items, sink: fr2.sink, exportErr: fr2.exportErr, delay: fr2.delay})
+			break
+		}
+		res = append(res, &fakeRequest{items: maxItems, sink: fr2.sink, exportErr: fr2.exportErr, delay: fr2.delay})
+		fr2.items -= maxItems
+	}
+
+	return res, nil
 }
 
 type FakeRequestConverter struct {
