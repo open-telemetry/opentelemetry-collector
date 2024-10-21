@@ -13,6 +13,7 @@ require (
 	go.opentelemetry.io/collector/config/configtls v1.17.0
 	go.opentelemetry.io/collector/confmap v1.17.0
 	go.opentelemetry.io/collector/consumer v0.111.0
+	go.opentelemetry.io/collector/consumer/consumererror v0.111.0
 	go.opentelemetry.io/collector/exporter v0.111.0
 	go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/exporter/exporterprofiles v0.111.0
@@ -134,6 +135,8 @@ replace go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprof
 replace go.opentelemetry.io/collector/exporter/exporterprofiles => ../exporterprofiles
 
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
+
+replace go.opentelemetry.io/collector/consumer/consumererror => ../../consumer/consumererror
 
 retract (
 	v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module, use v0.76.1

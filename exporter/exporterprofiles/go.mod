@@ -65,3 +65,5 @@ replace go.opentelemetry.io/collector/exporter => ../
 replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../../receiver/receiverprofiles
 
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
+
+replace go.opentelemetry.io/collector/consumer/consumererror => ../../consumer/consumererror
