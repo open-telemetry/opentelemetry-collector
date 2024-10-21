@@ -1,0 +1,32 @@
+# Validates all workflow files on PR changes
+
+name: Lint Workflow Files
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/**/*.yml'
+
+jobs:
+  lint-workflows:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install yamllint
+        run: pip install yamllint
+
+      - name: Run YAML syntax check
+        run: yamllint .github/workflows/*.yml
+
+      - name: Run Actions-specific checks
+        uses: reviewdog/action-actionlint@v1
+
+      - name: Reminder to Fix Errors
+        if: failure()
+        run: echo "Please ensure all linting errors are addressed before merging the pull request."
