@@ -92,7 +92,6 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/collector/client v1.17.0 // indirect
-	go.opentelemetry.io/collector/component/componentprofiles v0.111.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.111.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.17.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.17.0 // indirect
@@ -100,7 +99,6 @@ require (
 	go.opentelemetry.io/collector/config/internal v0.111.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.0.0-20241021181817-007f06b7c4a8 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.111.0 // indirect
-	go.opentelemetry.io/collector/internal/globalsignal v0.111.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.56.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.56.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp v0.7.0 // indirect

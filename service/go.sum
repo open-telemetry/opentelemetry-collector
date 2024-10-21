@@ -99,12 +99,6 @@ github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9de
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yusufpapurcu/wmi v1.2.4 h1:zFUKzehAFReQwLys1b/iSMl+JQGSCSjtVqQn9bBrPo0=
 github.com/yusufpapurcu/wmi v1.2.4/go.mod h1:SBZ9tNy3G9/m5Oi98Zks0QjeHVDvuK0qfxQmPyzfmi0=
-go.opentelemetry.io/collector/component/componentprofiles v0.111.0 h1:yT3Sa833G9GMiXkAOuYi30afd/5vTmDQpZo6+X/XjXM=
-go.opentelemetry.io/collector/component/componentprofiles v0.111.0/go.mod h1:v9cm6ndumcbCSqZDBs0vRReRW7KSYax1RZVhs/CiZCo=
-go.opentelemetry.io/collector/connector/connectorprofiles v0.111.0 h1:tJ4+hcWRhknw+cRw6d6dI4CyX3/puqnd1Rg9+mWdwHU=
-go.opentelemetry.io/collector/connector/connectorprofiles v0.111.0/go.mod h1:LdfE8hNYcEb+fI5kZp4w3ZGlTLFAmvHAPtTZxS6TZ38=
-go.opentelemetry.io/collector/internal/globalsignal v0.111.0 h1:oq0nSD+7K2Q1Fx5d3s6lPRdKZeTL0FEg4sIaR7ZJzIc=
-go.opentelemetry.io/collector/internal/globalsignal v0.111.0/go.mod h1:GqMXodPWOxK5uqpX8MaMXC2389y2XJTa5nPwf8FYDK8=
 go.opentelemetry.io/contrib/config v0.10.0 h1:2JknAzMaYjxrHkTnZh3eOme/Y2P5eHE2SWfhfV6Xd6c=
 go.opentelemetry.io/contrib/config v0.10.0/go.mod h1:aND2M6/KfNkntI5cyvHriR/zvZgPf8j9yETdSmvpfmc=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.56.0 h1:UP6IpuHFkUgOQL9FFQFrZ+5LiwhhYRbi7VZSIx6Nj5s=
