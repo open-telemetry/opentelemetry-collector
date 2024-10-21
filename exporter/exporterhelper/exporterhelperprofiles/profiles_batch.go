@@ -13,7 +13,7 @@ import (
 )
 
 // Merge merges two profiles requests into one.
-func (req *profilesRequest) Merge(_ context.Context, r2 exporterhelper.BatchRequest) (exporterhelper.BatchRequest, error) {
+func (req *profilesRequest) Merge(_ context.Context, r2 exporterhelper.Request) (exporterhelper.Request, error) {
 	tr2, ok2 := r2.(*profilesRequest)
 	if !ok2 {
 		return nil, errors.New("invalid input type")
@@ -23,9 +23,9 @@ func (req *profilesRequest) Merge(_ context.Context, r2 exporterhelper.BatchRequ
 }
 
 // MergeSplit splits and/or merges the profiles into multiple requests based on the MaxSizeConfig.
-func (req *profilesRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSizeConfig, r2 exporterhelper.BatchRequest) ([]exporterhelper.BatchRequest, error) {
+func (req *profilesRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSizeConfig, r2 exporterhelper.Request) ([]exporterhelper.Request, error) {
 	var (
-		res          []exporterhelper.BatchRequest
+		res          []exporterhelper.Request
 		destReq      *profilesRequest
 		capacityLeft = cfg.MaxSizeItems
 	)

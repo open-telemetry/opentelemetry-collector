@@ -12,7 +12,7 @@ import (
 )
 
 // mergeTraces merges two traces requests into one.
-func (req *tracesRequest) Merge(_ context.Context, r2 BatchRequest) (BatchRequest, error) {
+func (req *tracesRequest) Merge(_ context.Context, r2 Request) (Request, error) {
 	tr2, ok2 := r2.(*tracesRequest)
 	if !ok2 {
 		return nil, errors.New("invalid input type")
@@ -22,13 +22,13 @@ func (req *tracesRequest) Merge(_ context.Context, r2 BatchRequest) (BatchReques
 }
 
 // mergeSplitTraces splits and/or merges the traces into multiple requests based on the MaxSizeConfig.
-func (req *tracesRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSizeConfig, r2 BatchRequest) ([]BatchRequest, error) {
+func (req *tracesRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSizeConfig, r2 Request) ([]Request, error) {
 	var (
-		res          []BatchRequest
+		res          []Request
 		destReq      *tracesRequest
 		capacityLeft = cfg.MaxSizeItems
 	)
-	for _, req := range []BatchRequest{req, r2} {
+	for _, req := range []Request{req, r2} {
 		if req == nil {
 			continue
 		}

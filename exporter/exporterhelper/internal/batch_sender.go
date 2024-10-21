@@ -5,7 +5,6 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 
 import (
 	"context"
-	"errors"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -100,7 +99,7 @@ func (bs *BatchSender) Start(_ context.Context, _ component.Host) error {
 
 type batch struct {
 	ctx     context.Context
-	request internal.BatchRequest
+	request internal.Request
 	done    chan struct{}
 	err     error
 
@@ -142,22 +141,17 @@ func (bs *BatchSender) Send(ctx context.Context, req internal.Request) error {
 		return bs.NextSender.Send(ctx, req)
 	}
 
-	batchReq, ok := req.(internal.BatchRequest)
-	if !ok {
-		return errors.New("Incoming request does not implement BatchRequest interface.")
-	}
-
 	if bs.cfg.MaxSizeItems > 0 {
-		return bs.sendMergeSplitBatch(ctx, batchReq)
+		return bs.sendMergeSplitBatch(ctx, req)
 	}
-	return bs.sendMergeBatch(ctx, batchReq)
+	return bs.sendMergeBatch(ctx, req)
 }
 
 // sendMergeSplitBatch sends the request to the batch which may be split into multiple requests.
-func (bs *BatchSender) sendMergeSplitBatch(ctx context.Context, req internal.BatchRequest) error {
+func (bs *BatchSender) sendMergeSplitBatch(ctx context.Context, req internal.Request) error {
 	bs.mu.Lock()
 
-	var reqs []internal.BatchRequest
+	var reqs []internal.Request
 	var mergeSplitErr error
 	if bs.activeBatch.request == nil {
 		reqs, mergeSplitErr = req.MergeSplit(ctx, bs.cfg.MaxSizeConfig, nil)
@@ -204,7 +198,7 @@ func (bs *BatchSender) sendMergeSplitBatch(ctx context.Context, req internal.Bat
 }
 
 // sendMergeBatch sends the request to the batch and waits for the batch to be exported.
-func (bs *BatchSender) sendMergeBatch(ctx context.Context, req internal.BatchRequest) error {
+func (bs *BatchSender) sendMergeBatch(ctx context.Context, req internal.Request) error {
 	bs.mu.Lock()
 
 	if bs.activeBatch.request != nil {
@@ -232,7 +226,7 @@ func (bs *BatchSender) sendMergeBatch(ctx context.Context, req internal.BatchReq
 // The context is only set once and is not updated after the first call.
 // Merging the context would be complex and require an additional goroutine to handle the context cancellation.
 // We take the approach of using the context from the first request since it's likely to have the shortest timeout.
-func (bs *BatchSender) updateActiveBatch(ctx context.Context, req internal.BatchRequest) {
+func (bs *BatchSender) updateActiveBatch(ctx context.Context, req internal.Request) {
 	if bs.activeBatch.request == nil {
 		bs.activeBatch.ctx = ctx
 	}

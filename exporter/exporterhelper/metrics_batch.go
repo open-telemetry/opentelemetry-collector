@@ -12,7 +12,7 @@ import (
 )
 
 // mergeMetrics merges two metrics requests into one.
-func (req *metricsRequest) Merge(_ context.Context, r2 BatchRequest) (BatchRequest, error) {
+func (req *metricsRequest) Merge(_ context.Context, r2 Request) (Request, error) {
 	mr2, ok2 := r2.(*metricsRequest)
 	if !ok2 {
 		return nil, errors.New("invalid input type")
@@ -22,13 +22,13 @@ func (req *metricsRequest) Merge(_ context.Context, r2 BatchRequest) (BatchReque
 }
 
 // mergeSplitMetrics splits and/or merges the metrics into multiple requests based on the MaxSizeConfig.
-func (req *metricsRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSizeConfig, r2 BatchRequest) ([]BatchRequest, error) {
+func (req *metricsRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSizeConfig, r2 Request) ([]Request, error) {
 	var (
-		res          []BatchRequest
+		res          []Request
 		destReq      *metricsRequest
 		capacityLeft = cfg.MaxSizeItems
 	)
-	for _, req := range []BatchRequest{req, r2} {
+	for _, req := range []Request{req, r2} {
 		if req == nil {
 			continue
 		}

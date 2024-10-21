@@ -12,7 +12,7 @@ import (
 )
 
 // mergeLogs merges two logs requests into one.
-func (req *logsRequest) Merge(_ context.Context, r2 BatchRequest) (BatchRequest, error) {
+func (req *logsRequest) Merge(_ context.Context, r2 Request) (Request, error) {
 	lr2, ok2 := r2.(*logsRequest)
 	if !ok2 {
 		return nil, errors.New("invalid input type")
@@ -22,13 +22,13 @@ func (req *logsRequest) Merge(_ context.Context, r2 BatchRequest) (BatchRequest,
 }
 
 // mergeSplitLogs splits and/or merges the logs into multiple requests based on the MaxSizeConfig.
-func (req *logsRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSizeConfig, r2 BatchRequest) ([]BatchRequest, error) {
+func (req *logsRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSizeConfig, r2 Request) ([]Request, error) {
 	var (
-		res          []BatchRequest
+		res          []Request
 		destReq      *logsRequest
 		capacityLeft = cfg.MaxSizeItems
 	)
-	for _, req := range []BatchRequest{req, r2} {
+	for _, req := range []Request{req, r2} {
 		if req == nil {
 			continue
 		}

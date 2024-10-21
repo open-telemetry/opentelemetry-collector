@@ -34,8 +34,8 @@ func TestMergeSplitTraces(t *testing.T) {
 	tests := []struct {
 		name     string
 		cfg      exporterbatcher.MaxSizeConfig
-		tr1      BatchRequest
-		tr2      BatchRequest
+		tr1      Request
+		tr2      Request
 		expected []*tracesRequest
 	}{
 		{

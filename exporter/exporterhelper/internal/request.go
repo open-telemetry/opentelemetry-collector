@@ -57,7 +57,7 @@ func (r *fakeRequest) ItemsCount() int {
 }
 
 func (r *fakeRequest) Merge(_ context.Context,
-	r2 internal.BatchRequest) (internal.BatchRequest, error) {
+	r2 internal.Request) (internal.Request, error) {
 	if r == nil {
 		return r2, nil
 	}
@@ -74,7 +74,7 @@ func (r *fakeRequest) Merge(_ context.Context,
 }
 
 func (r *fakeRequest) MergeSplit(ctx context.Context, cfg exporterbatcher.MaxSizeConfig,
-	r2 internal.BatchRequest) ([]internal.BatchRequest, error) {
+	r2 internal.Request) ([]internal.Request, error) {
 	if r.mergeErr != nil {
 		return nil, r.mergeErr
 	}
@@ -82,7 +82,7 @@ func (r *fakeRequest) MergeSplit(ctx context.Context, cfg exporterbatcher.MaxSiz
 	maxItems := cfg.MaxSizeItems
 	if maxItems == 0 {
 		r, err := r.Merge(ctx, r2)
-		return []internal.BatchRequest{r}, err
+		return []internal.Request{r}, err
 	}
 
 	var fr2 *fakeRequest
@@ -95,7 +95,7 @@ func (r *fakeRequest) MergeSplit(ctx context.Context, cfg exporterbatcher.MaxSiz
 		fr2 = r2.(*fakeRequest)
 		fr2 = &fakeRequest{items: fr2.items, sink: fr2.sink, exportErr: fr2.exportErr, delay: fr2.delay}
 	}
-	var res []internal.BatchRequest
+	var res []internal.Request
 
 	// fill fr1 to maxItems if it's not nil
 
@@ -105,7 +105,7 @@ func (r *fakeRequest) MergeSplit(ctx context.Context, cfg exporterbatcher.MaxSiz
 		if fr2.exportErr != nil {
 			r.exportErr = fr2.exportErr
 		}
-		return []internal.BatchRequest{r}, nil
+		return []internal.Request{r}, nil
 	}
 	// if split is needed, we don't propagate exportErr from fr2 to fr1 to test more cases
 	fr2.items -= maxItems - r.items

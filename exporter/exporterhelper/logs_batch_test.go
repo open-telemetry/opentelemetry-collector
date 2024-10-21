@@ -35,8 +35,8 @@ func TestMergeSplitLogs(t *testing.T) {
 	tests := []struct {
 		name     string
 		cfg      exporterbatcher.MaxSizeConfig
-		lr1      internal.BatchRequest
-		lr2      internal.BatchRequest
+		lr1      internal.Request
+		lr2      internal.Request
 		expected []*logsRequest
 	}{
 		{

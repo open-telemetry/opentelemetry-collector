@@ -38,8 +38,8 @@ func TestMergeSplitProfiles(t *testing.T) {
 	tests := []struct {
 		name     string
 		cfg      exporterbatcher.MaxSizeConfig
-		pr1      exporterhelper.BatchRequest
-		pr2      exporterhelper.BatchRequest
+		pr1      exporterhelper.Request
+		pr2      exporterhelper.Request
 		expected []*profilesRequest
 	}{
 		{
@@ -144,7 +144,7 @@ func TestExtractProfiles(t *testing.T) {
 	}
 }
 
-// dummyRequest implements BatchRequest. It is for checking that merging two request types would fail
+// dummyRequest implements Request. It is for checking that merging two request types would fail
 type dummyRequest struct {
 }
 
@@ -156,11 +156,11 @@ func (req *dummyRequest) ItemsCount() int {
 	return 1
 }
 
-func (req *dummyRequest) Merge(_ context.Context, _ exporterhelper.BatchRequest) (exporterhelper.BatchRequest, error) {
+func (req *dummyRequest) Merge(_ context.Context, _ exporterhelper.Request) (exporterhelper.Request, error) {
 	return nil, nil
 }
 
-func (req *dummyRequest) MergeSplit(_ context.Context, _ exporterbatcher.MaxSizeConfig, _ exporterhelper.BatchRequest) (
-	[]exporterhelper.BatchRequest, error) {
+func (req *dummyRequest) MergeSplit(_ context.Context, _ exporterbatcher.MaxSizeConfig, _ exporterhelper.Request) (
+	[]exporterhelper.Request, error) {
 	return nil, nil
 }
