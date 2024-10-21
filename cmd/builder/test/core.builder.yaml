@@ -42,6 +42,7 @@ replaces:
   - go.opentelemetry.io/collector/exporter => ${WORKSPACE_DIR}/exporter
   - go.opentelemetry.io/collector/exporter/debugexporter => ${WORKSPACE_DIR}/exporter/debugexporter
   - go.opentelemetry.io/collector/exporter/exporterprofiles => ${WORKSPACE_DIR}/exporter/exporterprofiles
+  - go.opentelemetry.io/collector/exporter/exportertest => ${WORKSPACE_DIR}/exporter/exportertest
   - go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles => ${WORKSPACE_DIR}/exporter/exporterhelper/exporterhelperprofiles
   - go.opentelemetry.io/collector/extension => ${WORKSPACE_DIR}/extension
   - go.opentelemetry.io/collector/extension/auth => ${WORKSPACE_DIR}/extension/auth

@@ -70,6 +70,7 @@ var (
 		"/exporter",
 		"/exporter/debugexporter",
 		"/exporter/exporterprofiles",
+		"/exporter/exportertest",
 		"/exporter/exporterhelper/exporterhelperprofiles",
 		"/exporter/nopexporter",
 		"/exporter/otlpexporter",

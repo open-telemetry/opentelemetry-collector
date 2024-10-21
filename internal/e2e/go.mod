@@ -19,6 +19,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.111.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.111.0
 	go.opentelemetry.io/collector/exporter v0.111.0
+	go.opentelemetry.io/collector/exporter/exportertest v0.111.0
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.111.0
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.111.0
 	go.opentelemetry.io/collector/extension v0.111.0
@@ -214,6 +215,8 @@ replace go.opentelemetry.io/collector/exporter/exporterprofiles => ../../exporte
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 
 replace go.opentelemetry.io/collector/pipeline/pipelineprofiles => ../../pipeline/pipelineprofiles
+
+replace go.opentelemetry.io/collector/exporter/exportertest => ../../exporter/exportertest
 
 replace go.opentelemetry.io/collector/processor/processortest => ../../processor/processortest
 
