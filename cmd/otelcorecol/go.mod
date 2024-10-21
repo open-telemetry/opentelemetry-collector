@@ -96,10 +96,10 @@ require (
 	go.opentelemetry.io/collector/connector/connectortest v0.111.0 // indirect
 	go.opentelemetry.io/collector/consumer v0.111.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.111.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumererror/consumererrorprofiles v0.0.0-00010101000000-000000000000 // indirect
+	go.opentelemetry.io/collector/consumer/consumererror/consumererrorprofiles v0.0.0-20241021162523-3193106bf4b1 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.111.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.111.0 // indirect
-	go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles v0.0.0-00010101000000-000000000000 // indirect
+	go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles v0.0.0-20241021162523-3193106bf4b1 // indirect
 	go.opentelemetry.io/collector/exporter/exporterprofiles v0.111.0 // indirect
 	go.opentelemetry.io/collector/exporter/exportertest v0.111.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.111.0 // indirect
