@@ -7,7 +7,7 @@ change_type: breaking
 component: exporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Changed mergeFunc and mergeSplitFunc to be part of batch request.
+note: Made mergeFunc and mergeSplitFunc required method of exporter.Request
 
 # One or more tracking issues or pull requests related to the change
 issues: [10368]
