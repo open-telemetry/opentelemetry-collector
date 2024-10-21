@@ -97,6 +97,7 @@ require (
 	go.opentelemetry.io/collector/config/configopaque v1.17.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.17.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.111.0 // indirect
+	go.opentelemetry.io/collector/consumer/consumererror v0.111.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.111.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.56.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.56.0 // indirect
@@ -196,3 +197,5 @@ replace go.opentelemetry.io/collector/exporter/exporterprofiles => ../exporter/e
 replace go.opentelemetry.io/collector/pipeline/pipelineprofiles => ../pipeline/pipelineprofiles
 
 replace go.opentelemetry.io/collector/exporter/exportertest => ../exporter/exportertest
+
+replace go.opentelemetry.io/collector/consumer/consumererror => ../consumer/consumererror

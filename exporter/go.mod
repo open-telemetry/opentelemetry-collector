@@ -9,6 +9,7 @@ require (
 	go.opentelemetry.io/collector/config/configretry v1.17.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.111.0
 	go.opentelemetry.io/collector/consumer v0.111.0
+	go.opentelemetry.io/collector/consumer/consumererror v0.111.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.111.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.111.0
 	go.opentelemetry.io/collector/extension v0.111.0
@@ -83,3 +84,5 @@ replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../receiver/r
 replace go.opentelemetry.io/collector/exporter/exporterprofiles => ./exporterprofiles
 
 replace go.opentelemetry.io/collector/exporter/exportertest => ./exportertest
+
+replace go.opentelemetry.io/collector/consumer/consumererror => ../consumer/consumererror
