@@ -199,3 +199,5 @@ replace go.opentelemetry.io/collector/pipeline/pipelineprofiles => ../pipeline/p
 replace go.opentelemetry.io/collector/exporter/exportertest => ../exporter/exportertest
 
 replace go.opentelemetry.io/collector/consumer/consumererror => ../consumer/consumererror
+
+replace go.opentelemetry.io/collector/connector/connectorprofiles => ../connector/connectorprofiles
