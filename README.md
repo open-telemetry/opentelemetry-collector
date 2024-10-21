@@ -190,10 +190,10 @@ Here is a list of community roles with current and previous members:
 
 - Emeritus Triagers:
 
-   - [Andrew Hsu](https://github.com/andrewhsu), Lightstep
-   - [Alolita Sharma](https://github.com/alolita), Apple
-   - [Punya Biswal](https://github.com/punya), Google
-   - [Steve Flanders](https://github.com/flands), Splunk
+   - [Andrew Hsu](https://github.com/andrewhsu)
+   - [Alolita Sharma](https://github.com/alolita)
+   - [Punya Biswal](https://github.com/punya)
+   - [Steve Flanders](https://github.com/flands)
 
 - Approvers ([@open-telemetry/collector-approvers](https://github.com/orgs/open-telemetry/teams/collector-approvers)):
 
@@ -206,13 +206,13 @@ Here is a list of community roles with current and previous members:
 
 - Emeritus Approvers:
 
-   - [James Bebbington](https://github.com/james-bebbington), Google
-   - [Jay Camp](https://github.com/jrcamp), Splunk
-   - [Nail Islamov](https://github.com/nilebox), Google
-   - [Owais Lone](https://github.com/owais), Splunk
-   - [Rahul Patel](https://github.com/rghetia), Google
-   - [Steven Karis](https://github.com/sjkaris), Splunk
-   - [Anthony Mirabella](https://github.com/Aneurysm9), AWS
+   - [James Bebbington](https://github.com/james-bebbington)
+   - [Jay Camp](https://github.com/jrcamp)
+   - [Nail Islamov](https://github.com/nilebox)
+   - [Owais Lone](https://github.com/owais)
+   - [Rahul Patel](https://github.com/rghetia)
+   - [Steven Karis](https://github.com/sjkaris)
+   - [Anthony Mirabella](https://github.com/Aneurysm9)
 
 - Maintainers ([@open-telemetry/collector-maintainers](https://github.com/orgs/open-telemetry/teams/collector-maintainers)):
 
@@ -223,8 +223,8 @@ Here is a list of community roles with current and previous members:
 
 - Emeritus Maintainers:
 
-   - [Paulo Janotti](https://github.com/pjanotti), Splunk
-   - [Tigran Najaryan](https://github.com/tigrannajaryan), Splunk
+   - [Paulo Janotti](https://github.com/pjanotti)
+   - [Tigran Najaryan](https://github.com/tigrannajaryan)
 
 Learn more about roles in [Community membership](https://github.com/open-telemetry/community/blob/main/community-membership.md).
 In addition to what is described at the organization-level, the SIG Collector requires all core approvers to take part in rotating

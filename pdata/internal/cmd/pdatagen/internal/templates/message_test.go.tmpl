@@ -13,11 +13,11 @@ import (
 )
 
 func Test{{ .structName }}_MoveTo(t *testing.T) {
-	ms := {{ .generateTestData }}
+	ms := generateTest{{ .structName }}()
 	dest := New{{ .structName }}()
 	ms.MoveTo(dest)
 	assert.Equal(t, New{{ .structName }}(), ms)
-	assert.Equal(t, {{ .generateTestData }}, dest)
+	assert.Equal(t, generateTest{{ .structName }}(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(new{{ .structName }}(&{{ .originName }}{}, &sharedState)) })
 	assert.Panics(t, func() { new{{ .structName }}(&{{ .originName }}{}, &sharedState).MoveTo(dest) })
@@ -28,7 +28,7 @@ func Test{{ .structName }}_CopyTo(t *testing.T) {
 	orig := New{{ .structName }}()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = {{ .generateTestData }}
+	orig = generateTest{{ .structName }}()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 	sharedState := internal.StateReadOnly
@@ -39,13 +39,17 @@ func Test{{ .structName }}_CopyTo(t *testing.T) {
 {{ .GenerateAccessorsTest $.messageStruct }}
 {{ end }}
 
-{{- if not .isCommon }}
 func generateTest{{ .structName }}() {{ .structName }} {
+    {{- if .isCommon }}
+    return {{ .structName }}(internal.GenerateTest{{ .structName }}())
+    {{- else }}
 	tv := New{{ .structName }}()
 	fillTest{{ .structName }}(tv)
 	return tv
+	{{- end }}
 }
 
+{{ if not .isCommon -}}
 func fillTest{{ .structName }}(tv {{ .structName }}) {
 	{{- range .fields }}
 	{{ .GenerateSetWithTestValue $.messageStruct }}

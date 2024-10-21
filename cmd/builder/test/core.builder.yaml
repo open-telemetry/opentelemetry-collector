@@ -33,13 +33,16 @@ replaces:
   - go.opentelemetry.io/collector/confmap/provider/httpsprovider => ${WORKSPACE_DIR}/confmap/provider/httpsprovider
   - go.opentelemetry.io/collector/confmap/provider/yamlprovider => ${WORKSPACE_DIR}/confmap/provider/yamlprovider
   - go.opentelemetry.io/collector/consumer => ${WORKSPACE_DIR}/consumer
+  - go.opentelemetry.io/collector/consumer/consumererror => ${WORKSPACE_DIR}/consumer/consumererror
   - go.opentelemetry.io/collector/consumer/consumerprofiles => ${WORKSPACE_DIR}/consumer/consumerprofiles
   - go.opentelemetry.io/collector/consumer/consumertest => ${WORKSPACE_DIR}/consumer/consumertest
   - go.opentelemetry.io/collector/connector => ${WORKSPACE_DIR}/connector
+  - go.opentelemetry.io/collector/connector/connectortest => ${WORKSPACE_DIR}/connector/connectortest
   - go.opentelemetry.io/collector/connector/connectorprofiles => ${WORKSPACE_DIR}/connector/connectorprofiles
   - go.opentelemetry.io/collector/exporter => ${WORKSPACE_DIR}/exporter
   - go.opentelemetry.io/collector/exporter/debugexporter => ${WORKSPACE_DIR}/exporter/debugexporter
   - go.opentelemetry.io/collector/exporter/exporterprofiles => ${WORKSPACE_DIR}/exporter/exporterprofiles
+  - go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles => ${WORKSPACE_DIR}/exporter/exporterhelper/exporterhelperprofiles
   - go.opentelemetry.io/collector/extension => ${WORKSPACE_DIR}/extension
   - go.opentelemetry.io/collector/extension/auth => ${WORKSPACE_DIR}/extension/auth
   - go.opentelemetry.io/collector/extension/experimental/storage => ${WORKSPACE_DIR}/extension/experimental/storage
@@ -55,6 +58,7 @@ replaces:
   - go.opentelemetry.io/collector/pipeline => ${WORKSPACE_DIR}/pipeline
   - go.opentelemetry.io/collector/pipeline/pipelineprofiles => ${WORKSPACE_DIR}/pipeline/pipelineprofiles
   - go.opentelemetry.io/collector/processor => ${WORKSPACE_DIR}/processor
+  - go.opentelemetry.io/collector/processor/processortest => ${WORKSPACE_DIR}/processor/processortest
   - go.opentelemetry.io/collector/processor/processorprofiles => ${WORKSPACE_DIR}/processor/processorprofiles
   - go.opentelemetry.io/collector/receiver => ${WORKSPACE_DIR}/receiver
   - go.opentelemetry.io/collector/receiver/otlpreceiver => ${WORKSPACE_DIR}/receiver/otlpreceiver
