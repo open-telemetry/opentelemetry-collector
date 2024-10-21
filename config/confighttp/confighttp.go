@@ -372,8 +372,6 @@ func (hss *ServerConfig) ToListener(ctx context.Context) (net.Listener, error) {
 	return listener, nil
 }
 
-type spanFormatterFunc func(string, *http.Request) string
-
 // toServerOptions has options that change the behavior of the HTTP server
 // returned by ServerConfig.ToServer().
 type toServerOptions struct {
@@ -415,7 +413,7 @@ func WithDecoder(key string, dec func(body io.ReadCloser) (io.ReadCloser, error)
 
 // WithSpanFormatter specifies which formater to use for span.
 // Ideally, this prefix in span name should be the component's ID.
-func WithSpanFormatter(formater spanFormatterFunc) ToServerOption {
+func WithSpanFormatter(formater func(string, *http.Request) string) ToServerOption {
 	return toServerOptionFunc(func(opts *toServerOptions) {
 		opts.formater = formater
 	})
@@ -564,8 +562,8 @@ func maxRequestBodySizeInterceptor(next http.Handler, maxRecvSize int64) http.Ha
 	})
 }
 
-func PrefixFormatter(prefix string) spanFormatterFunc {
-	return func(s string, r *http.Request) string {
+func PrefixFormatter(prefix string) func(string, *http.Request) string {
+	return func(_ string, r *http.Request) string {
 		if len(prefix) > 0 {
 			return fmt.Sprintf("%s:%s", prefix, r.URL.Path)
 		}
