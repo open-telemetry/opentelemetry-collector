@@ -45,6 +45,8 @@ func newLogger(ctx context.Context, cfg LogsConfig, options []zap.Option) (*zap.
 					LoggerProvider: &config.LoggerProvider{
 						Processors: cfg.Processors,
 					},
+					// TODO: add resource
+					// Resource: &config.Resource{},
 				},
 			),
 		)
@@ -52,9 +54,16 @@ func newLogger(ctx context.Context, cfg LogsConfig, options []zap.Option) (*zap.
 		if err != nil {
 			return nil, err
 		}
-		logger = logger.WithOptions(zap.WrapCore(func(_ zapcore.Core) zapcore.Core {
-			return otelzap.NewCore("go.opentelemetry.io/collector/service/telemetry", otelzap.WithLoggerProvider(sdk.LoggerProvider()))
+
+		logger = logger.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
+			return zapcore.NewTee(
+				logger.Core(),
+				otelzap.NewCore("go.opentelemetry.io/collector/service/telemetry",
+					otelzap.WithLoggerProvider(sdk.LoggerProvider()),
+				),
+			)
 		}))
+
 	}
 
 	if cfg.Sampling != nil && cfg.Sampling.Enabled {
