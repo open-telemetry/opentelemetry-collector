@@ -11,8 +11,8 @@ require (
 	go.opentelemetry.io/collector/confmap v1.17.0
 	go.opentelemetry.io/collector/connector v0.111.0
 	go.opentelemetry.io/collector/connector/connectortest v0.0.0-20241021235809-403c782d50c6
-	go.opentelemetry.io/collector/exporter v0.111.0
-	go.opentelemetry.io/collector/exporter/exportertest v0.111.0
+	go.opentelemetry.io/collector/exporter v0.111.1-0.20241022132505-11767fed9dfe
+	go.opentelemetry.io/collector/exporter/exportertest v0.0.0-20241022132505-11767fed9dfe
 	go.opentelemetry.io/collector/extension v0.111.0
 	go.opentelemetry.io/collector/featuregate v1.17.0
 	go.opentelemetry.io/collector/pipeline v0.111.0
