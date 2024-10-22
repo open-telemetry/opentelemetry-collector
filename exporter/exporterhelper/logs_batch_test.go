@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/exporter/internal"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
@@ -18,7 +19,7 @@ import (
 func TestMergeLogs(t *testing.T) {
 	lr1 := &logsRequest{ld: testdata.GenerateLogs(2)}
 	lr2 := &logsRequest{ld: testdata.GenerateLogs(3)}
-	res, err := mergeLogs(context.Background(), lr1, lr2)
+	res, err := lr1.Merge(context.Background(), lr2)
 	require.NoError(t, err)
 	assert.Equal(t, 5, res.(*logsRequest).ld.LogRecordCount())
 }
@@ -26,7 +27,7 @@ func TestMergeLogs(t *testing.T) {
 func TestMergeLogsInvalidInput(t *testing.T) {
 	lr1 := &tracesRequest{td: testdata.GenerateTraces(2)}
 	lr2 := &logsRequest{ld: testdata.GenerateLogs(3)}
-	_, err := mergeLogs(context.Background(), lr1, lr2)
+	_, err := lr1.Merge(context.Background(), lr2)
 	assert.Error(t, err)
 }
 
@@ -34,8 +35,8 @@ func TestMergeSplitLogs(t *testing.T) {
 	tests := []struct {
 		name     string
 		cfg      exporterbatcher.MaxSizeConfig
-		lr1      Request
-		lr2      Request
+		lr1      internal.Request
+		lr2      internal.Request
 		expected []*logsRequest
 	}{
 		{
@@ -46,13 +47,6 @@ func TestMergeSplitLogs(t *testing.T) {
 			expected: []*logsRequest{{ld: plog.NewLogs()}},
 		},
 		{
-			name:     "both_requests_nil",
-			cfg:      exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
-			lr1:      nil,
-			lr2:      nil,
-			expected: []*logsRequest{},
-		},
-		{
 			name:     "first_request_empty",
 			cfg:      exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
 			lr1:      &logsRequest{ld: plog.NewLogs()},
@@ -60,17 +54,10 @@ func TestMergeSplitLogs(t *testing.T) {
 			expected: []*logsRequest{{ld: testdata.GenerateLogs(5)}},
 		},
 		{
-			name:     "first_requests_nil",
+			name:     "first_empty_second_nil",
 			cfg:      exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
-			lr1:      nil,
-			lr2:      &logsRequest{ld: testdata.GenerateLogs(5)},
-			expected: []*logsRequest{{ld: testdata.GenerateLogs(5)}},
-		},
-		{
-			name:     "first_nil_second_empty",
-			cfg:      exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
-			lr1:      nil,
-			lr2:      &logsRequest{ld: plog.NewLogs()},
+			lr1:      &logsRequest{ld: plog.NewLogs()},
+			lr2:      nil,
 			expected: []*logsRequest{{ld: plog.NewLogs()}},
 		},
 		{
@@ -87,7 +74,7 @@ func TestMergeSplitLogs(t *testing.T) {
 		{
 			name: "split_only",
 			cfg:  exporterbatcher.MaxSizeConfig{MaxSizeItems: 4},
-			lr1:  nil,
+			lr1:  &logsRequest{ld: plog.NewLogs()},
 			lr2:  &logsRequest{ld: testdata.GenerateLogs(10)},
 			expected: []*logsRequest{
 				{ld: testdata.GenerateLogs(4)},
@@ -132,7 +119,7 @@ func TestMergeSplitLogs(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := mergeSplitLogs(context.Background(), tt.cfg, tt.lr1, tt.lr2)
+			res, err := tt.lr1.MergeSplit(context.Background(), tt.cfg, tt.lr2)
 			require.NoError(t, err)
 			assert.Equal(t, len(tt.expected), len(res))
 			for i, r := range res {
@@ -146,7 +133,7 @@ func TestMergeSplitLogs(t *testing.T) {
 func TestMergeSplitLogsInvalidInput(t *testing.T) {
 	r1 := &tracesRequest{td: testdata.GenerateTraces(2)}
 	r2 := &logsRequest{ld: testdata.GenerateLogs(3)}
-	_, err := mergeSplitLogs(context.Background(), exporterbatcher.MaxSizeConfig{}, r1, r2)
+	_, err := r1.MergeSplit(context.Background(), exporterbatcher.MaxSizeConfig{}, r2)
 	assert.Error(t, err)
 }
 

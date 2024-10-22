@@ -15,8 +15,8 @@ require (
 	go.opentelemetry.io/collector/config/confignet v1.17.0
 	go.opentelemetry.io/collector/config/configtls v1.17.0
 	go.opentelemetry.io/collector/confmap v1.17.0
-	go.opentelemetry.io/collector/consumer v0.111.0
-	go.opentelemetry.io/collector/consumer/consumererror v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/consumer v0.111.1-0.20241021181817-007f06b7c4a8
+	go.opentelemetry.io/collector/consumer/consumererror v0.0.0-20241021093951-f2b31d131ae2
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.111.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.111.0
 	go.opentelemetry.io/collector/pdata v1.17.0
