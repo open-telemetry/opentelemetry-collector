@@ -7,13 +7,13 @@ require (
 	go.opentelemetry.io/collector v0.111.0
 	go.opentelemetry.io/collector/component v0.111.0
 	go.opentelemetry.io/collector/connector v0.111.0
-	go.opentelemetry.io/collector/consumer v0.111.1-0.20241021235809-403c782d50c6
+	go.opentelemetry.io/collector/consumer v0.111.1-0.20241022132505-11767fed9dfe
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.111.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.111.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.111.0
 	go.opentelemetry.io/collector/pdata/testdata v0.111.0
 	go.opentelemetry.io/collector/pipeline v0.111.0
-	go.opentelemetry.io/collector/pipeline/pipelineprofiles v0.0.0-20241021235809-403c782d50c6
+	go.opentelemetry.io/collector/pipeline/pipelineprofiles v0.0.0-20241022132505-11767fed9dfe
 )
 
 require (
