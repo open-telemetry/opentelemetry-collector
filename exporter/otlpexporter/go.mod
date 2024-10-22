@@ -13,12 +13,12 @@ require (
 	go.opentelemetry.io/collector/config/configretry v1.17.0
 	go.opentelemetry.io/collector/config/configtls v1.17.0
 	go.opentelemetry.io/collector/confmap v1.17.0
-	go.opentelemetry.io/collector/consumer v0.111.1-0.20241022132505-11767fed9dfe
-	go.opentelemetry.io/collector/consumer/consumererror v0.0.0-20241022132505-11767fed9dfe
-	go.opentelemetry.io/collector/exporter v0.111.1-0.20241022132505-11767fed9dfe
+	go.opentelemetry.io/collector/consumer v0.111.1-0.20241022144230-02ceda1496be
+	go.opentelemetry.io/collector/consumer/consumererror v0.0.0-20241022144230-02ceda1496be
+	go.opentelemetry.io/collector/exporter v0.111.1-0.20241022144230-02ceda1496be
 	go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles v0.0.0-20241022132505-11767fed9dfe
 	go.opentelemetry.io/collector/exporter/exporterprofiles v0.111.0
-	go.opentelemetry.io/collector/exporter/exportertest v0.0.0-20241022132505-11767fed9dfe
+	go.opentelemetry.io/collector/exporter/exportertest v0.0.0-20241022144230-02ceda1496be
 	go.opentelemetry.io/collector/pdata v1.17.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.111.0
 	go.opentelemetry.io/collector/pdata/testdata v0.111.0

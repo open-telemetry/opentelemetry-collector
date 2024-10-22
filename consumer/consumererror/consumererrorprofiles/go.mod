@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/consumer/consumererror v0.0.0-20241022132505-11767fed9dfe
+	go.opentelemetry.io/collector/consumer/consumererror v0.0.0-20241022144230-02ceda1496be
 	go.opentelemetry.io/collector/pdata/pprofile v0.111.0
 	go.opentelemetry.io/collector/pdata/testdata v0.111.0
 )
