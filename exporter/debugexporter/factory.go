@@ -30,7 +30,7 @@ const (
 )
 
 // NewFactory creates a factory for Debug exporter
-func NewFactory() exporterprofiles.Factory {
+func NewFactory() exporter.Factory {
 	return exporterprofiles.NewFactory(
 		componentType,
 		createDefaultConfig,
