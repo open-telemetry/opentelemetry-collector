@@ -8,22 +8,24 @@ import (
 
 	"go.opentelemetry.io/contrib/bridges/otelzap"
 	"go.opentelemetry.io/contrib/config"
+	"go.opentelemetry.io/otel/log"
+	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
-func newLogger(ctx context.Context, cfg LogsConfig, options []zap.Option) (*zap.Logger, error) {
+func newLogger(ctx context.Context, set Settings, cfg Config) (*zap.Logger, log.LoggerProvider, error) {
 	// Copied from NewProductionConfig.
 	zapCfg := &zap.Config{
-		Level:             zap.NewAtomicLevelAt(cfg.Level),
-		Development:       cfg.Development,
-		Encoding:          cfg.Encoding,
+		Level:             zap.NewAtomicLevelAt(cfg.Logs.Level),
+		Development:       cfg.Logs.Development,
+		Encoding:          cfg.Logs.Encoding,
 		EncoderConfig:     zap.NewProductionEncoderConfig(),
-		OutputPaths:       cfg.OutputPaths,
-		ErrorOutputPaths:  cfg.ErrorOutputPaths,
-		DisableCaller:     cfg.DisableCaller,
-		DisableStacktrace: cfg.DisableStacktrace,
-		InitialFields:     cfg.InitialFields,
+		OutputPaths:       cfg.Logs.OutputPaths,
+		ErrorOutputPaths:  cfg.Logs.ErrorOutputPaths,
+		DisableCaller:     cfg.Logs.DisableCaller,
+		DisableStacktrace: cfg.Logs.DisableStacktrace,
+		InitialFields:     cfg.Logs.InitialFields,
 	}
 
 	if zapCfg.Encoding == "console" {
@@ -31,46 +33,54 @@ func newLogger(ctx context.Context, cfg LogsConfig, options []zap.Option) (*zap.
 		zapCfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 	}
 
-	logger, err := zapCfg.Build(options...)
+	logger, err := zapCfg.Build(set.ZapOptions...)
 
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	if len(cfg.Processors) > 0 {
+	var lp log.LoggerProvider
+
+	if len(cfg.Logs.Processors) > 0 {
+		sch := semconv.SchemaURL
+		res := config.Resource{
+			SchemaUrl:  &sch,
+			Attributes: attributes(set, cfg),
+		}
 		sdk, err := config.NewSDK(
 			config.WithContext(ctx),
 			config.WithOpenTelemetryConfiguration(
 				config.OpenTelemetryConfiguration{
 					LoggerProvider: &config.LoggerProvider{
-						Processors: cfg.Processors,
+						Processors: cfg.Logs.Processors,
 					},
-					// TODO: add resource
-					// Resource: &config.Resource{},
+					Resource: &res,
 				},
 			),
 		)
 
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
+
+		lp = sdk.LoggerProvider()
 
 		logger = logger.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
 			return zapcore.NewTee(
 				logger.Core(),
 				otelzap.NewCore("go.opentelemetry.io/collector/service/telemetry",
-					otelzap.WithLoggerProvider(sdk.LoggerProvider()),
+					otelzap.WithLoggerProvider(lp),
 				),
 			)
 		}))
 
 	}
 
-	if cfg.Sampling != nil && cfg.Sampling.Enabled {
-		logger = newSampledLogger(logger, cfg.Sampling)
+	if cfg.Logs.Sampling != nil && cfg.Logs.Sampling.Enabled {
+		logger = newSampledLogger(logger, cfg.Logs.Sampling)
 	}
 
-	return logger, nil
+	return logger, lp, nil
 }
 
 func newSampledLogger(logger *zap.Logger, sc *LogsSamplingConfig) *zap.Logger {
