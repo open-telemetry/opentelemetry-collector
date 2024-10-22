@@ -353,6 +353,8 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 				instanceIDs[eStErr]: {
 					componentstatus.NewEvent(componentstatus.StatusStarting),
 					componentstatus.NewPermanentErrorEvent(assert.AnError),
+					componentstatus.NewEvent(componentstatus.StatusStopping),
+					componentstatus.NewEvent(componentstatus.StatusStopped),
 				},
 			},
 			startupErr: assert.AnError,
@@ -364,6 +366,8 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 				instanceIDs[rStErr]: {
 					componentstatus.NewEvent(componentstatus.StatusStarting),
 					componentstatus.NewPermanentErrorEvent(assert.AnError),
+					componentstatus.NewEvent(componentstatus.StatusStopping),
+					componentstatus.NewEvent(componentstatus.StatusStopped),
 				},
 				instanceIDs[eNoErr]: {
 					componentstatus.NewEvent(componentstatus.StatusStarting),
