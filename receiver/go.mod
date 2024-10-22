@@ -11,7 +11,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumererror v0.0.0-20241021093951-f2b31d131ae2
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.111.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.111.0
-	go.opentelemetry.io/collector/pdata v1.17.0
+	go.opentelemetry.io/collector/pdata v1.18.0
 	go.opentelemetry.io/collector/pipeline v0.111.0
 	go.opentelemetry.io/collector/receiver/receiverprofiles v0.111.0
 	go.opentelemetry.io/otel v1.31.0

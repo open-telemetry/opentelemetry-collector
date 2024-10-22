@@ -6,7 +6,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.111.0
-	go.opentelemetry.io/collector/config/configretry v1.17.0
+	go.opentelemetry.io/collector/config/configretry v1.18.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.111.0
 	go.opentelemetry.io/collector/consumer v0.111.1-0.20241022144230-02ceda1496be
 	go.opentelemetry.io/collector/consumer/consumererror v0.0.0-20241022144230-02ceda1496be
@@ -14,7 +14,7 @@ require (
 	go.opentelemetry.io/collector/exporter/exportertest v0.0.0-20241022144230-02ceda1496be
 	go.opentelemetry.io/collector/extension v0.111.0
 	go.opentelemetry.io/collector/extension/experimental/storage v0.111.0
-	go.opentelemetry.io/collector/pdata v1.17.0
+	go.opentelemetry.io/collector/pdata v1.18.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.111.0
 	go.opentelemetry.io/collector/pdata/testdata v0.111.0
 	go.opentelemetry.io/collector/pipeline v0.111.0

@@ -6,13 +6,13 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.111.0
-	go.opentelemetry.io/collector/config/configretry v1.17.0
+	go.opentelemetry.io/collector/config/configretry v1.18.0
 	go.opentelemetry.io/collector/consumer v0.111.1-0.20241022144230-02ceda1496be
 	go.opentelemetry.io/collector/consumer/consumererror v0.0.0-20241022144230-02ceda1496be
 	go.opentelemetry.io/collector/consumer/consumertest v0.111.0
 	go.opentelemetry.io/collector/exporter v0.111.1-0.20241022144230-02ceda1496be
 	go.opentelemetry.io/collector/exporter/exporterprofiles v0.111.0
-	go.opentelemetry.io/collector/pdata v1.17.0
+	go.opentelemetry.io/collector/pdata v1.18.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.111.0
 	go.opentelemetry.io/collector/pipeline v0.111.0
 	go.opentelemetry.io/collector/receiver v0.111.0

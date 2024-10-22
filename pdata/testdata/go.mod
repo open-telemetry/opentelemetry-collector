@@ -3,7 +3,7 @@ module go.opentelemetry.io/collector/pdata/testdata
 go 1.22.0
 
 require (
-	go.opentelemetry.io/collector/pdata v1.17.0
+	go.opentelemetry.io/collector/pdata v1.18.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.111.0
 )
 
