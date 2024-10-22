@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-// mergeTraces merges two traces requests into one.
+// Merge merges the provided traces request into the current request and returns the merged request.
 func (req *tracesRequest) Merge(_ context.Context, r2 Request) (Request, error) {
 	tr2, ok2 := r2.(*tracesRequest)
 	if !ok2 {
@@ -21,7 +21,8 @@ func (req *tracesRequest) Merge(_ context.Context, r2 Request) (Request, error) 
 	return req, nil
 }
 
-// mergeSplitTraces splits and/or merges the traces into multiple requests based on the MaxSizeConfig.
+// MergeSplit splits and/or merges the provided traces request and the current request into one or more requests
+// conforming with the MaxSizeConfig.
 func (req *tracesRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSizeConfig, r2 Request) ([]Request, error) {
 	var (
 		res          []Request
