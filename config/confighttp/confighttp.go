@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/config/internal"
+	"go.opentelemetry.io/collector/confmap/optional"
 	"go.opentelemetry.io/collector/extension/auth"
 )
 
@@ -71,11 +72,11 @@ type ClientConfig struct {
 
 	// MaxIdleConns is used to set a limit to the maximum idle HTTP connections the client can keep open.
 	// By default, it is set to 100.
-	MaxIdleConns *int `mapstructure:"max_idle_conns"`
+	MaxIdleConns optional.Optional[int] `mapstructure:"max_idle_conns"`
 
 	// MaxIdleConnsPerHost is used to set a limit to the maximum idle HTTP connections the host can keep open.
 	// By default, it is set to [http.DefaultTransport.MaxIdleConnsPerHost].
-	MaxIdleConnsPerHost *int `mapstructure:"max_idle_conns_per_host"`
+	MaxIdleConnsPerHost optional.Optional[int] `mapstructure:"max_idle_conns_per_host"`
 
 	// MaxConnsPerHost limits the total number of connections per host, including connections in the dialing,
 	// active, and idle states.
@@ -125,8 +126,8 @@ func NewDefaultClientConfig() ClientConfig {
 		ReadBufferSize:      defaultTransport.ReadBufferSize,
 		WriteBufferSize:     defaultTransport.WriteBufferSize,
 		Headers:             map[string]configopaque.String{},
-		MaxIdleConns:        &defaultTransport.MaxIdleConns,
-		MaxIdleConnsPerHost: &defaultTransport.MaxIdleConnsPerHost,
+		MaxIdleConns:        optional.WithDefault(12345),
+		MaxIdleConnsPerHost: optional.Optional[int]{},
 		MaxConnsPerHost:     &defaultTransport.MaxConnsPerHost,
 		IdleConnTimeout:     &defaultTransport.IdleConnTimeout,
 	}
@@ -149,12 +150,14 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 		transport.WriteBufferSize = hcs.WriteBufferSize
 	}
 
-	if hcs.MaxIdleConns != nil {
-		transport.MaxIdleConns = *hcs.MaxIdleConns
+	fmt.Printf("MaxIdleConns: %+v\n", hcs.MaxIdleConns)
+	if hcs.MaxIdleConns.HasValue() {
+		transport.MaxIdleConns = hcs.MaxIdleConns.Value()
 	}
 
-	if hcs.MaxIdleConnsPerHost != nil {
-		transport.MaxIdleConnsPerHost = *hcs.MaxIdleConnsPerHost
+	fmt.Printf("MaxIdleConnsPerHost: %+v\n", hcs.MaxIdleConnsPerHost)
+	if hcs.MaxIdleConnsPerHost.HasValue() {
+		transport.MaxIdleConnsPerHost = hcs.MaxIdleConnsPerHost.Value()
 	}
 
 	if hcs.MaxConnsPerHost != nil {
@@ -279,10 +282,10 @@ type ServerConfig struct {
 	TLSSetting *configtls.ServerConfig `mapstructure:"tls"`
 
 	// CORS configures the server for HTTP cross-origin resource sharing (CORS).
-	CORS *CORSConfig `mapstructure:"cors"`
+	CORS optional.Optional[CORSConfig] `mapstructure:"cors"`
 
 	// Auth for this receiver
-	Auth *AuthConfig `mapstructure:"auth"`
+	Auth optional.Optional[AuthConfig] `mapstructure:"auth"`
 
 	// MaxRequestBodySize sets the maximum request body size in bytes. Default: 20MiB.
 	MaxRequestBodySize int64 `mapstructure:"max_request_body_size"`
@@ -336,7 +339,7 @@ func NewDefaultServerConfig() ServerConfig {
 	return ServerConfig{
 		ResponseHeaders:   map[string]configopaque.String{},
 		TLSSetting:        &tlsDefaultServerConfig,
-		CORS:              NewDefaultCORSConfig(),
+		CORS:              optional.WithDefault(*NewDefaultCORSConfig()),
 		WriteTimeout:      30 * time.Second,
 		ReadHeaderTimeout: 1 * time.Minute,
 		IdleTimeout:       1 * time.Minute,
@@ -433,26 +436,29 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 		handler = maxRequestBodySizeInterceptor(handler, hss.MaxRequestBodySize)
 	}
 
-	if hss.Auth != nil {
-		server, err := hss.Auth.GetServerAuthenticator(context.Background(), host.GetExtensions())
+	fmt.Printf("AUTH: %+v\n", hss.Auth)
+	if hss.Auth.HasValue() {
+		server, err := hss.Auth.Value().GetServerAuthenticator(context.Background(), host.GetExtensions())
 		if err != nil {
 			return nil, err
 		}
 
-		handler = authInterceptor(handler, server, hss.Auth.RequestParameters)
+		handler = authInterceptor(handler, server, hss.Auth.Value().RequestParameters)
 	}
 
-	if hss.CORS != nil && len(hss.CORS.AllowedOrigins) > 0 {
+	fmt.Printf("CORS: %+v\n", hss.CORS)
+	if hss.CORS.HasValue() && len(hss.CORS.Value().AllowedOrigins) > 0 {
 		co := cors.Options{
-			AllowedOrigins:   hss.CORS.AllowedOrigins,
+			AllowedOrigins:   hss.CORS.Value().AllowedOrigins,
 			AllowCredentials: true,
-			AllowedHeaders:   hss.CORS.AllowedHeaders,
-			MaxAge:           hss.CORS.MaxAge,
+			AllowedHeaders:   hss.CORS.Value().AllowedHeaders,
+			MaxAge:           hss.CORS.Value().MaxAge,
 		}
 		handler = cors.New(co).Handler(handler)
 	}
-	if hss.CORS != nil && len(hss.CORS.AllowedOrigins) == 0 && len(hss.CORS.AllowedHeaders) > 0 {
+	if hss.CORS.HasValue() && len(hss.CORS.Value().AllowedOrigins) == 0 && len(hss.CORS.Value().AllowedHeaders) > 0 {
 		settings.Logger.Warn("The CORS configuration specifies allowed headers but no allowed origins, and is therefore ignored.")
+
 	}
 
 	if hss.ResponseHeaders != nil {
