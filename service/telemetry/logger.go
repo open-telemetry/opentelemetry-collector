@@ -67,7 +67,7 @@ func newLogger(ctx context.Context, set Settings, cfg Config) (*zap.Logger, log.
 
 		logger = logger.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
 			return zapcore.NewTee(
-				logger.Core(),
+				c,
 				otelzap.NewCore("go.opentelemetry.io/collector/service/telemetry",
 					otelzap.WithLoggerProvider(lp),
 				),
