@@ -74,9 +74,9 @@ func (ct *TypeWithLevel) UnmarshalText(in []byte) error {
 
 // Checks the validity of zlib/gzip/flate compression levels
 func isValidLevel(level int) bool {
-	return level == zlib.BestSpeed ||
-		level == zlib.BestCompression ||
-		level == zlib.DefaultCompression ||
+	return level == zlib.DefaultCompression ||
 		level == zlib.HuffmanOnly ||
-		level == zlib.NoCompression
+		level == zlib.NoCompression ||
+		level == zlib.BestSpeed ||
+		(level >= zlib.BestSpeed && level <= zlib.BestCompression)
 }
