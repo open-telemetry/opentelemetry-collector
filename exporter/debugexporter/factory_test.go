@@ -49,7 +49,7 @@ func TestCreateLogs(t *testing.T) {
 }
 
 func TestCreateFactoryProfiles(t *testing.T) {
-	factory := NewFactoryProfiles()
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
 	te, err := factory.CreateProfiles(context.Background(), exportertest.NewNopSettings(), cfg)

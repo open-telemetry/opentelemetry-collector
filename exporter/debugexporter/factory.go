@@ -14,11 +14,11 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterprofiles"
 	"go.opentelemetry.io/collector/exporter/debugexporter/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/debugexporter/internal/otlptext"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles"
+	"go.opentelemetry.io/collector/exporter/exporterprofiles"
 )
 
 // The value of "type" key in configuration.
@@ -30,20 +30,13 @@ const (
 )
 
 // NewFactory creates a factory for Debug exporter
-func NewFactory() exporter.Factory {
-	return exporter.NewFactory(
-		componentType,
-		createDefaultConfig,
-		exporter.WithTraces(createTraces, metadata.TracesStability),
-		exporter.WithMetrics(createMetrics, metadata.MetricsStability),
-		exporter.WithLogs(createLogs, metadata.LogsStability),
-	)
-}
-
-func NewFactoryProfiles() exporterprofiles.Factory {
+func NewFactory() exporterprofiles.Factory {
 	return exporterprofiles.NewFactory(
 		componentType,
 		createDefaultConfig,
+		exporterprofiles.WithTraces(createTraces, metadata.TracesStability),
+		exporterprofiles.WithMetrics(createMetrics, metadata.MetricsStability),
+		exporterprofiles.WithLogs(createLogs, metadata.LogsStability),
 		exporterprofiles.WithProfiles(createProfiles, metadata.ProfilesStability),
 	)
 }
