@@ -100,7 +100,7 @@ func generateConfig() *Config {
 				Level: configtelemetry.LevelNormal,
 				Readers: []config.MetricReader{
 					{
-						Pull: &config.PullMetricReader{Exporter: config.MetricExporter{Prometheus: &config.Prometheus{
+						Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: &config.Prometheus{
 							Host: newPtr("localhost"),
 							Port: newPtr(8080),
 						}}},
