@@ -11,25 +11,25 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-// mergeTraces merges two traces requests into one.
-func mergeTraces(_ context.Context, r1 Request, r2 Request) (Request, error) {
-	tr1, ok1 := r1.(*tracesRequest)
+// Merge merges the provided traces request into the current request and returns the merged request.
+func (req *tracesRequest) Merge(_ context.Context, r2 Request) (Request, error) {
 	tr2, ok2 := r2.(*tracesRequest)
-	if !ok1 || !ok2 {
+	if !ok2 {
 		return nil, errors.New("invalid input type")
 	}
-	tr2.td.ResourceSpans().MoveAndAppendTo(tr1.td.ResourceSpans())
-	return tr1, nil
+	tr2.td.ResourceSpans().MoveAndAppendTo(req.td.ResourceSpans())
+	return req, nil
 }
 
-// mergeSplitTraces splits and/or merges the traces into multiple requests based on the MaxSizeConfig.
-func mergeSplitTraces(_ context.Context, cfg exporterbatcher.MaxSizeConfig, r1 Request, r2 Request) ([]Request, error) {
+// MergeSplit splits and/or merges the provided traces request and the current request into one or more requests
+// conforming with the MaxSizeConfig.
+func (req *tracesRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSizeConfig, r2 Request) ([]Request, error) {
 	var (
 		res          []Request
 		destReq      *tracesRequest
 		capacityLeft = cfg.MaxSizeItems
 	)
-	for _, req := range []Request{r1, r2} {
+	for _, req := range []Request{req, r2} {
 		if req == nil {
 			continue
 		}

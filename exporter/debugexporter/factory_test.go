@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/exporter/exporterprofiles"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
@@ -44,6 +45,15 @@ func TestCreateLogs(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	te, err := factory.CreateLogs(context.Background(), exportertest.NewNopSettings(), cfg)
+	require.NoError(t, err)
+	assert.NotNil(t, te)
+}
+
+func TestCreateFactoryProfiles(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	te, err := factory.(exporterprofiles.Factory).CreateProfiles(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, te)
 }

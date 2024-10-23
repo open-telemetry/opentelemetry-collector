@@ -4,16 +4,17 @@ go 1.22.0
 
 require (
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/client v1.17.0
-	go.opentelemetry.io/collector/component v0.111.0
-	go.opentelemetry.io/collector/config/configtelemetry v0.111.0
-	go.opentelemetry.io/collector/confmap v1.17.0
-	go.opentelemetry.io/collector/consumer v0.111.0
-	go.opentelemetry.io/collector/consumer/consumertest v0.111.0
-	go.opentelemetry.io/collector/pdata v1.17.0
-	go.opentelemetry.io/collector/pdata/testdata v0.111.0
-	go.opentelemetry.io/collector/processor v0.111.0
-	go.opentelemetry.io/collector/processor/processortest v0.111.0
+	go.opentelemetry.io/collector/client v1.18.0
+	go.opentelemetry.io/collector/component v0.112.0
+	go.opentelemetry.io/collector/config/configtelemetry v0.112.0
+	go.opentelemetry.io/collector/confmap v1.18.0
+	go.opentelemetry.io/collector/consumer v0.112.0
+	go.opentelemetry.io/collector/consumer/consumererror v0.112.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.112.0
+	go.opentelemetry.io/collector/pdata v1.18.0
+	go.opentelemetry.io/collector/pdata/testdata v0.112.0
+	go.opentelemetry.io/collector/processor v0.112.0
+	go.opentelemetry.io/collector/processor/processortest v0.112.0
 	go.opentelemetry.io/otel v1.31.0
 	go.opentelemetry.io/otel/metric v1.31.0
 	go.opentelemetry.io/otel/sdk/metric v1.31.0
@@ -38,11 +39,11 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector/component/componentstatus v0.111.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumerprofiles v0.111.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.111.0 // indirect
-	go.opentelemetry.io/collector/pipeline v0.111.0 // indirect
-	go.opentelemetry.io/collector/processor/processorprofiles v0.111.0 // indirect
+	go.opentelemetry.io/collector/component/componentstatus v0.112.0 // indirect
+	go.opentelemetry.io/collector/consumer/consumerprofiles v0.112.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.112.0 // indirect
+	go.opentelemetry.io/collector/pipeline v0.112.0 // indirect
+	go.opentelemetry.io/collector/processor/processorprofiles v0.112.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.31.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.28.0 // indirect
@@ -88,3 +89,5 @@ replace go.opentelemetry.io/collector/processor/processorprofiles => ../processo
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 
 replace go.opentelemetry.io/collector/processor/processortest => ../processortest
+
+replace go.opentelemetry.io/collector/consumer/consumererror => ../../consumer/consumererror

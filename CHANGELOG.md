@@ -7,6 +7,31 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.18.0/v0.112.0
+
+### 🛑 Breaking changes 🛑
+
+- `consumer/consumererror`: Extract consumer/consumererror as a separate go module (#11440)
+- `exporter/expotertest`: Put expotertest into its own module (#11461)
+- `service`: Remove stable gate component.UseLocalHostAsDefaultHost (#11412)
+
+### 🚩 Deprecations 🚩
+
+- `processortest`: Deprecated 'NewUnhealthyProcessorCreateSettings'. Use NewNopSettings instead. (#11307)
+
+### 💡 Enhancements 💡
+
+- `mdatagen`: Added generated_package_name config field to support custom generated package name. (#11231)
+- `mdatagen`: Generate documentation for components with resource attributes only (#10705)
+- `confighttp`: Adding support for lz4 compression into the project (#9128)
+- `service`: Hide profiles support behind a feature gate while it remains alpha. (#11477)
+- `exporterhelper`: Retry sender will fail fast when the context timeout is shorter than the next retry interval. (#11183)
+
+### 🧰 Bug fixes 🧰
+
+- `cmd/builder`: Fix default configuration for builder for httpprovider, httpsprovider, and yamlprovider. (#11357)
+- `processorhelper`: Fix issue where in/out parameters were not recorded when error was returned from consumer. (#11351)
+
 ## v1.17.0/v0.111.0
 
 ### 🛑 Breaking changes 🛑

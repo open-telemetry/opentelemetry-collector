@@ -35,9 +35,6 @@ type BaseExporter struct {
 
 	Signal pipeline.Signal
 
-	BatchMergeFunc      exporterbatcher.BatchMergeFunc[internal.Request]
-	BatchMergeSplitfunc exporterbatcher.BatchMergeSplitFunc[internal.Request]
-
 	Marshaler   exporterqueue.Marshaler[internal.Request]
 	Unmarshaler exporterqueue.Unmarshaler[internal.Request]
 
@@ -104,10 +101,7 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSe
 	}
 
 	if be.BatcherCfg.Enabled {
-		bs := NewBatchSender(be.BatcherCfg, be.Set, be.BatchMergeFunc, be.BatchMergeSplitfunc)
-		if bs.mergeFunc == nil || bs.mergeSplitFunc == nil {
-			err = multierr.Append(err, fmt.Errorf("WithRequestBatchFuncs must be provided for the batcher applied to the request-based exporters"))
-		}
+		bs := NewBatchSender(be.BatcherCfg, be.Set)
 		be.BatchSender = bs
 	}
 
@@ -294,16 +288,6 @@ func WithMarshaler(marshaler exporterqueue.Marshaler[internal.Request]) Option {
 func WithUnmarshaler(unmarshaler exporterqueue.Unmarshaler[internal.Request]) Option {
 	return func(o *BaseExporter) error {
 		o.Unmarshaler = unmarshaler
-		return nil
-	}
-}
-
-// withBatchFuncs is used to set the functions for merging and splitting batches for OLTP-based exporters.
-// It must be provided as the first option when creating a new exporter helper.
-func WithBatchFuncs(mf exporterbatcher.BatchMergeFunc[internal.Request], msf exporterbatcher.BatchMergeSplitFunc[internal.Request]) Option {
-	return func(o *BaseExporter) error {
-		o.BatchMergeFunc = mf
-		o.BatchMergeSplitfunc = msf
 		return nil
 	}
 }

@@ -88,7 +88,6 @@ func NewProfilesExporter(
 	}
 	profilesOpts := []exporterhelper.Option{
 		internal.WithMarshaler(profilesRequestMarshaler), internal.WithUnmarshaler(newProfileRequestUnmarshalerFunc(pusher)),
-		internal.WithBatchFuncs(mergeProfiles, mergeSplitProfiles),
 	}
 	return NewProfilesRequestExporter(ctx, set, requestFromProfiles(pusher), append(profilesOpts, options...)...)
 }

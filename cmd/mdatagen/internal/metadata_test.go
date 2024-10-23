@@ -67,12 +67,12 @@ func TestValidate(t *testing.T) {
 		},
 		{
 			name: "testdata/no_metric_type.yaml",
-			wantErr: "metric system.cpu.time doesn't have a metric type key, " +
+			wantErr: "metric \"system.cpu.time\": missing metric type key, " +
 				"one of the following has to be specified: sum, gauge, histogram",
 		},
 		{
 			name: "testdata/two_metric_types.yaml",
-			wantErr: "metric system.cpu.time has more than one metric type keys, " +
+			wantErr: "metric \"system.cpu.time\": more than one metric type keys, " +
 				"only one of the following has to be specified: sum, gauge, histogram",
 		},
 		{

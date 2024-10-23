@@ -12,7 +12,7 @@ Before stabilizing a module, an approver or maintainer must make sure that the f
 - [ ] No TODOs in the module code that would require breaking changes
 - [ ] No deprecated symbols in the module
 - [ ] No symbols marked as experimental in the module
-- [ ] The module follows the [Coding guidelines](https://github.com/open-telemetry/opentelemetry-collector/blob/main/CONTRIBUTING.md)
+- [ ] The module follows the [Coding guidelines](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/coding-guidelines.md)
 
 Please also make sure to publicly announce our intent to stabilize the module on:
 
