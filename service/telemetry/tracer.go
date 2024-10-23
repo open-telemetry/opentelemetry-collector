@@ -54,7 +54,7 @@ func (n *noopNoContextTracerProvider) Tracer(_ string, _ ...trace.TracerOption) 
 	return &noopNoContextTracer{}
 }
 
-// New creates a new Telemetry from Config.
+// newTracerProvider creates a new TracerProvider from Config.
 func newTracerProvider(ctx context.Context, set Settings, cfg Config) (trace.TracerProvider, error) {
 	if noopTracerProvider.IsEnabled() || cfg.Traces.Level == configtelemetry.LevelNone {
 		return &noopNoContextTracerProvider{}, nil
