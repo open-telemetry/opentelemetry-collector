@@ -7,10 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"sort"
-	"strings"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 )
 
 // Distros is a collection of distributions that can be referenced in the metadata.yaml files.
@@ -70,7 +68,7 @@ func (s *Status) Validate() error {
 	if err := s.validateClass(); err != nil {
 		errs = errors.Join(errs, err)
 	}
-	if err := s.validateStability(); err != nil {
+	if err := s.Stability.Validate(); err != nil {
 		errs = errors.Join(errs, err)
 	}
 	return errs
@@ -86,16 +84,18 @@ func (s *Status) validateClass() error {
 	return nil
 }
 
-func (s *Status) validateStability() error {
+type StabilityMap map[component.StabilityLevel][]string
+
+func (ms StabilityMap) Validate() error {
 	var errs error
-	if len(s.Stability) == 0 {
+	if len(ms) == 0 {
 		return errors.New("missing stability")
 	}
-	for stability, component := range s.Stability {
-		if len(component) == 0 {
+	for stability, cmps := range ms {
+		if len(cmps) == 0 {
 			errs = errors.Join(errs, fmt.Errorf("missing component for stability: %v", stability))
 		}
-		for _, c := range component {
+		for _, c := range cmps {
 			if c != "metrics" &&
 				c != "traces" &&
 				c != "logs" &&
@@ -122,34 +122,4 @@ func (s *Status) validateStability() error {
 		}
 	}
 	return errs
-}
-
-type StabilityMap map[component.StabilityLevel][]string
-
-func (ms *StabilityMap) Unmarshal(parser *confmap.Conf) error {
-	*ms = make(StabilityMap)
-	raw := make(map[string][]string)
-	err := parser.Unmarshal(&raw)
-	if err != nil {
-		return err
-	}
-	for k, v := range raw {
-		switch strings.ToLower(k) {
-		case strings.ToLower(component.StabilityLevelUnmaintained.String()):
-			(*ms)[component.StabilityLevelUnmaintained] = v
-		case strings.ToLower(component.StabilityLevelDeprecated.String()):
-			(*ms)[component.StabilityLevelDeprecated] = v
-		case strings.ToLower(component.StabilityLevelDevelopment.String()):
-			(*ms)[component.StabilityLevelDevelopment] = v
-		case strings.ToLower(component.StabilityLevelAlpha.String()):
-			(*ms)[component.StabilityLevelAlpha] = v
-		case strings.ToLower(component.StabilityLevelBeta.String()):
-			(*ms)[component.StabilityLevelBeta] = v
-		case strings.ToLower(component.StabilityLevelStable.String()):
-			(*ms)[component.StabilityLevelStable] = v
-		default:
-			return errors.New("invalid stability level: " + k)
-		}
-	}
-	return nil
 }
