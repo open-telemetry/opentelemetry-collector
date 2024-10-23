@@ -318,7 +318,7 @@ func testCollectorStartHelperWithReaders(t *testing.T, tc ownMetricsTestCase, ne
 	cfg.Telemetry.Metrics.Readers = []config.MetricReader{
 		{
 			Pull: &config.PullMetricReader{
-				Exporter: config.MetricExporter{
+				Exporter: config.PullMetricExporter{
 					Prometheus: metricsAddr,
 				},
 			},
@@ -691,7 +691,7 @@ func newNopConfigPipelineConfigs(pipelineCfgs pipelines.Config) Config {
 				Level: configtelemetry.LevelBasic,
 				Readers: []config.MetricReader{
 					{
-						Pull: &config.PullMetricReader{Exporter: config.MetricExporter{Prometheus: &config.Prometheus{
+						Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: &config.Prometheus{
 							Host: newPtr("localhost"),
 							Port: newPtr(8888),
 						}}},
