@@ -1267,6 +1267,45 @@ func TestComponentStatus(t *testing.T) {
 			})
 		}
 	})
+
+	t.Run("profiles", func(t *testing.T) {
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				srv := createBackend("/v1development/profiles", func(writer http.ResponseWriter, _ *http.Request) {
+					writer.WriteHeader(tt.responseStatus)
+				})
+				defer srv.Close()
+
+				cfg := &Config{
+					ClientConfig: confighttp.ClientConfig{
+						Endpoint: srv.URL,
+					},
+					Encoding: EncodingProto,
+				}
+
+				set := exportertest.NewNopSettings()
+				host := &testHost{
+					Host: componenttest.NewNopHost(),
+				}
+
+				exp, err := createProfiles(context.Background(), set, cfg)
+				require.NoError(t, err)
+
+				err = exp.Start(context.Background(), host)
+				require.NoError(t, err)
+				t.Cleanup(func() {
+					require.NoError(t, exp.Shutdown(context.Background()))
+				})
+
+				pd := pprofile.NewProfiles()
+				err = exp.ConsumeProfiles(context.Background(), pd)
+				if tt.componentStatus != componentstatus.StatusOK {
+					require.Error(t, err)
+				}
+				assert.Equal(t, tt.componentStatus, host.lastStatus)
+			})
+		}
+	})
 }
 
 func createBackend(endpoint string, handler func(writer http.ResponseWriter, request *http.Request)) *httptest.Server {

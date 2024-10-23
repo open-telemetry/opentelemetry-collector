@@ -1174,6 +1174,46 @@ func TestComponentStatus(t *testing.T) {
 			})
 		}
 	})
+
+	t.Run("profiles", func(t *testing.T) {
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				ln, err := net.Listen("tcp", "localhost:")
+				require.NoError(t, err)
+
+				rcv, _ := otlpProfilesReceiverOnGRPCServer(ln, false)
+				rcv.setExportError(tt.exportError)
+				defer rcv.srv.GracefulStop()
+
+				factory := NewFactory()
+				cfg := factory.CreateDefaultConfig().(*Config)
+				cfg.QueueConfig.Enabled = false
+				cfg.ClientConfig = configgrpc.ClientConfig{
+					Endpoint: ln.Addr().String(),
+					TLSSetting: configtls.ClientConfig{
+						Insecure: true,
+					},
+				}
+
+				set := exportertest.NewNopSettings()
+				host := &testHost{Host: componenttest.NewNopHost()}
+
+				exp, err := factory.(exporterprofiles.Factory).CreateProfiles(context.Background(), set, cfg)
+				require.NoError(t, err)
+				require.NotNil(t, exp)
+				require.NoError(t, exp.Start(context.Background(), host))
+
+				defer func() {
+					assert.NoError(t, exp.Shutdown(context.Background()))
+				}()
+
+				pd := pprofile.NewProfiles()
+				err = exp.ConsumeProfiles(context.Background(), pd)
+				assert.Equal(t, tt.componentStatus != componentstatus.StatusOK, err != nil)
+				assert.Equal(t, tt.componentStatus, host.lastStatus)
+			})
+		}
+	})
 }
 
 var _ component.Host = (*testHost)(nil)
