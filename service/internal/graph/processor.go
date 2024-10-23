@@ -60,6 +60,8 @@ func (n *processorNode) buildComponent(ctx context.Context,
 		n.Component, err = builder.CreateLogs(ctx, set, next.(consumer.Logs))
 	case pipelineprofiles.SignalProfiles:
 		n.Component, err = builder.CreateProfiles(ctx, set, next.(consumerprofiles.Profiles))
+	case pipeline.SignalEntities:
+		n.Component, err = builder.CreateEntities(ctx, set, next.(consumer.Entities))
 	default:
 		return fmt.Errorf("error creating processor %q in pipeline %q, data type %q is not supported", set.ID, n.pipelineID.String(), n.pipelineID.Signal())
 	}

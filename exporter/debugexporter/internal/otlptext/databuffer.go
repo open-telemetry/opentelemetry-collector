@@ -440,6 +440,22 @@ func linkTableToMap(ls pprofile.LinkSlice) pcommon.Map {
 	return m
 }
 
+func (b *dataBuffer) logResourceEntities(rers pcommon.ResourceEntityRefSlice) {
+	if rers.Len() == 0 {
+		return
+	}
+
+	b.logEntry("Entities:")
+	for i := 0; i < rers.Len(); i++ {
+		rer := rers.At(i)
+		b.logEntry("Entity Ref #%d", i)
+		b.logEntry("     -> Entity Type: %s", rer.Type())
+		b.logEntry("     -> SchemaURL: %s", rer.SchemaUrl())
+		b.logEntry("     -> Identifying Attributes: %s", strings.Join(rer.IdAttrKeys().AsRaw(), ", "))
+		b.logEntry("     -> Descriptive Attributes: %s", strings.Join(rer.DescrAttrKeys().AsRaw(), ", "))
+	}
+}
+
 func valueToString(v pcommon.Value) string {
 	return fmt.Sprintf("%s(%s)", v.Type().String(), v.AsString())
 }

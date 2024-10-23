@@ -113,6 +113,26 @@ func (b *ConnectorBuilder) CreateTracesToProfiles(ctx context.Context, set conne
 	return f.CreateTracesToProfiles(ctx, set, cfg, next)
 }
 
+// CreateTracesToEntities creates a Traces connector based on the settings and config.
+func (b *ConnectorBuilder) CreateTracesToEntities(ctx context.Context, set connector.Settings,
+	next consumer.Entities) (connector.Traces, error) {
+	if next == nil {
+		return nil, errNilNextConsumer
+	}
+	cfg, existsCfg := b.cfgs[set.ID]
+	if !existsCfg {
+		return nil, fmt.Errorf("connector %q is not configured", set.ID)
+	}
+
+	f, existsFactory := b.factories[set.ID.Type()]
+	if !existsFactory {
+		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
+	}
+
+	logStabilityLevel(set.Logger, f.TracesToEntitiesStability())
+	return f.CreateTracesToEntities(ctx, set, cfg, next)
+}
+
 // CreateMetricsToTraces creates a Metrics connector based on the settings and config.
 func (b *ConnectorBuilder) CreateMetricsToTraces(ctx context.Context, set connector.Settings, next consumer.Traces) (connector.Metrics, error) {
 	if next == nil {
@@ -194,6 +214,26 @@ func (b *ConnectorBuilder) CreateMetricsToProfiles(ctx context.Context, set conn
 	return f.CreateMetricsToProfiles(ctx, set, cfg, next)
 }
 
+// CreateMetricsToEntities creates a Metrics connector based on the settings and config.
+func (b *ConnectorBuilder) CreateMetricsToEntities(ctx context.Context, set connector.Settings,
+	next consumer.Entities) (connector.Metrics, error) {
+	if next == nil {
+		return nil, errNilNextConsumer
+	}
+	cfg, existsCfg := b.cfgs[set.ID]
+	if !existsCfg {
+		return nil, fmt.Errorf("connector %q is not configured", set.ID)
+	}
+
+	f, existsFactory := b.factories[set.ID.Type()]
+	if !existsFactory {
+		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
+	}
+
+	logStabilityLevel(set.Logger, f.MetricsToEntitiesStability())
+	return f.CreateMetricsToEntities(ctx, set, cfg, next)
+}
+
 // CreateLogsToTraces creates a Logs connector based on the settings and config.
 func (b *ConnectorBuilder) CreateLogsToTraces(ctx context.Context, set connector.Settings, next consumer.Traces) (connector.Logs, error) {
 	if next == nil {
@@ -273,6 +313,26 @@ func (b *ConnectorBuilder) CreateLogsToProfiles(ctx context.Context, set connect
 
 	logStabilityLevel(set.Logger, f.LogsToProfilesStability())
 	return f.CreateLogsToProfiles(ctx, set, cfg, next)
+}
+
+// CreateLogsToEntities creates a Logs connector based on the settings and config.
+func (b *ConnectorBuilder) CreateLogsToEntities(ctx context.Context, set connector.Settings,
+	next consumer.Entities) (connector.Logs, error) {
+	if next == nil {
+		return nil, errNilNextConsumer
+	}
+	cfg, existsCfg := b.cfgs[set.ID]
+	if !existsCfg {
+		return nil, fmt.Errorf("connector %q is not configured", set.ID)
+	}
+
+	f, existsFactory := b.factories[set.ID.Type()]
+	if !existsFactory {
+		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
+	}
+
+	logStabilityLevel(set.Logger, f.LogsToEntitiesStability())
+	return f.CreateLogsToEntities(ctx, set, cfg, next)
 }
 
 // CreateProfilesToTraces creates a Profiles connector based on the settings and config.
@@ -369,6 +429,85 @@ func (b *ConnectorBuilder) CreateProfilesToProfiles(ctx context.Context, set con
 
 	logStabilityLevel(set.Logger, f.ProfilesToProfilesStability())
 	return f.CreateProfilesToProfiles(ctx, set, cfg, next)
+}
+
+// CreateEntitiesToTraces creates a Profiles connector based on the settings and config.
+func (b *ConnectorBuilder) CreateEntitiesToTraces(ctx context.Context, set connector.Settings, next consumer.Traces) (connector.Entities, error) {
+	if next == nil {
+		return nil, errNilNextConsumer
+	}
+	cfg, existsCfg := b.cfgs[set.ID]
+	if !existsCfg {
+		return nil, fmt.Errorf("connector %q is not configured", set.ID)
+	}
+
+	f, existsFactory := b.factories[set.ID.Type()]
+	if !existsFactory {
+		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
+	}
+
+	logStabilityLevel(set.Logger, f.EntitiesToTracesStability())
+	return f.CreateEntitiesToTraces(ctx, set, cfg, next)
+}
+
+// CreateEntitiesToMetrics creates a Entities connector based on the settings and config.
+func (b *ConnectorBuilder) CreateEntitiesToMetrics(ctx context.Context, set connector.Settings,
+	next consumer.Metrics) (connector.Entities, error) {
+	if next == nil {
+		return nil, errNilNextConsumer
+	}
+	cfg, existsCfg := b.cfgs[set.ID]
+	if !existsCfg {
+		return nil, fmt.Errorf("connector %q is not configured", set.ID)
+	}
+
+	f, existsFactory := b.factories[set.ID.Type()]
+	if !existsFactory {
+		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
+	}
+
+	logStabilityLevel(set.Logger, f.EntitiesToMetricsStability())
+	return f.CreateEntitiesToMetrics(ctx, set, cfg, next)
+}
+
+// CreateEntitiesToLogs creates a Entities connector based on the settings and config.
+func (b *ConnectorBuilder) CreateEntitiesToLogs(ctx context.Context, set connector.Settings,
+	next consumer.Logs) (connector.Entities, error) {
+	if next == nil {
+		return nil, errNilNextConsumer
+	}
+	cfg, existsCfg := b.cfgs[set.ID]
+	if !existsCfg {
+		return nil, fmt.Errorf("connector %q is not configured", set.ID)
+	}
+
+	f, existsFactory := b.factories[set.ID.Type()]
+	if !existsFactory {
+		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
+	}
+
+	logStabilityLevel(set.Logger, f.EntitiesToLogsStability())
+	return f.CreateEntitiesToLogs(ctx, set, cfg, next)
+}
+
+// CreateEntitiesToEntities creates a Entities connector based on the settings and config.
+func (b *ConnectorBuilder) CreateEntitiesToEntities(ctx context.Context, set connector.Settings,
+	next consumer.Entities) (connector.Entities, error) {
+	if next == nil {
+		return nil, errNilNextConsumer
+	}
+	cfg, existsCfg := b.cfgs[set.ID]
+	if !existsCfg {
+		return nil, fmt.Errorf("connector %q is not configured", set.ID)
+	}
+
+	f, existsFactory := b.factories[set.ID.Type()]
+	if !existsFactory {
+		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
+	}
+
+	logStabilityLevel(set.Logger, f.EntitiesToEntitiesStability())
+	return f.CreateEntitiesToEntities(ctx, set, cfg, next)
 }
 
 func (b *ConnectorBuilder) IsConfigured(componentID component.ID) bool {

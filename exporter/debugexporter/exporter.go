@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/exporter/debugexporter/internal/normal"
 	"go.opentelemetry.io/collector/exporter/debugexporter/internal/otlptext"
+	"go.opentelemetry.io/collector/pdata/pentity"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -22,12 +23,15 @@ type debugExporter struct {
 	logsMarshaler    plog.Marshaler
 	metricsMarshaler pmetric.Marshaler
 	tracesMarshaler  ptrace.Marshaler
+	entityMarshaler  pentity.Marshaler
 }
 
 func newDebugExporter(logger *zap.Logger, verbosity configtelemetry.Level) *debugExporter {
 	var logsMarshaler plog.Marshaler
 	var metricsMarshaler pmetric.Marshaler
 	var tracesMarshaler ptrace.Marshaler
+	// TODO: Implement separate entity marshalers
+	entityMarshaler := otlptext.NewTextEntitiesMarshaler()
 	if verbosity == configtelemetry.LevelDetailed {
 		logsMarshaler = otlptext.NewTextLogsMarshaler()
 		metricsMarshaler = otlptext.NewTextMetricsMarshaler()
@@ -43,6 +47,7 @@ func newDebugExporter(logger *zap.Logger, verbosity configtelemetry.Level) *debu
 		logsMarshaler:    logsMarshaler,
 		metricsMarshaler: metricsMarshaler,
 		tracesMarshaler:  tracesMarshaler,
+		entityMarshaler:  entityMarshaler,
 	}
 }
 
@@ -89,6 +94,23 @@ func (s *debugExporter) pushLogs(_ context.Context, ld plog.Logs) error {
 	}
 
 	buf, err := s.logsMarshaler.MarshalLogs(ld)
+	if err != nil {
+		return err
+	}
+	s.logger.Info(string(buf))
+	return nil
+}
+
+func (s *debugExporter) pushEntities(_ context.Context, ld pentity.Entities) error {
+	s.logger.Info("Entities",
+		zap.Int("resource entities", ld.ResourceEntities().Len()),
+		zap.Int("entities", ld.EntityCount()))
+
+	if s.verbosity == configtelemetry.LevelBasic {
+		return nil
+	}
+
+	buf, err := s.entityMarshaler.MarshalEntities(ld)
 	if err != nil {
 		return err
 	}

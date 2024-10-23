@@ -269,6 +269,15 @@ func (t telemetry) Levels() map[string]interface{} {
 	return levels
 }
 
+type Entity struct {
+	// Type of the entity.
+	Type string `mapstructure:"type"`
+	// Identifying attributes of the entity.
+	IDAttributes []AttributeName `mapstructure:"id_attributes"`
+	// Descriptive attributes of the entity.
+	DescriptiveAttributes []AttributeName `mapstructure:"descriptive_attributes"`
+}
+
 type Metadata struct {
 	// Type of the component.
 	Type string `mapstructure:"type"`
@@ -284,6 +293,8 @@ type Metadata struct {
 	SemConvVersion string `mapstructure:"sem_conv_version"`
 	// ResourceAttributes that can be emitted by the component.
 	ResourceAttributes map[AttributeName]Attribute `mapstructure:"resource_attributes"`
+	// Entities associated with the emitted resource attributes.
+	Entities []Entity `mapstructure:"entities"`
 	// Attributes emitted by one or more metrics.
 	Attributes map[AttributeName]Attribute `mapstructure:"attributes"`
 	// Metrics that can be emitted by the component.

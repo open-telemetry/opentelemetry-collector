@@ -37,6 +37,7 @@ func NewNopFactory() receiver.Factory {
 		receiverprofiles.WithMetrics(createMetrics, component.StabilityLevelStable),
 		receiverprofiles.WithLogs(createLogs, component.StabilityLevelStable),
 		receiverprofiles.WithProfiles(createProfiles, component.StabilityLevelAlpha),
+		receiverprofiles.WithEntities(createEntities, component.StabilityLevelAlpha),
 	)
 }
 
@@ -74,6 +75,10 @@ func createLogs(context.Context, receiver.Settings, component.Config, consumer.L
 }
 
 func createProfiles(context.Context, receiver.Settings, component.Config, consumerprofiles.Profiles) (receiverprofiles.Profiles, error) {
+	return nopInstance, nil
+}
+
+func createEntities(context.Context, receiver.Settings, component.Config, consumer.Entities) (receiver.Entities, error) {
 	return nopInstance, nil
 }
 

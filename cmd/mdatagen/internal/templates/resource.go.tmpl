@@ -46,6 +46,22 @@ func (rb *ResourceBuilder) Set{{ $name.Render }}(val {{ $attr.Type.Primitive }})
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
 	r := rb.res
+	{{- range $entity := .Entities }}
+	{{- range $attr := .IDAttributes }}
+	_, found{{ $attr.Render }} := r.Attributes().Get("{{ $attr }}")
+	{{- end }}
+	if {{ range $i, $attr := .IDAttributes }}{{ if $i }}&& {{ end }}found{{ $attr.Render }} {{ end }} {
+		ref := pcommon.NewResourceEntityRef()
+		ref.SetType("{{ $entity.Type }}")
+		ref.IdAttrKeys().Append({{ range $i, $attr := .IDAttributes }}{{ if $i }}, {{ end }}"{{ $attr }}"{{ end }})
+		{{- range $attr := .DescriptiveAttributes }}
+		if _, ok := r.Attributes().Get("{{ $attr }}"); ok {
+			ref.DescrAttrKeys().Append("{{ $attr }}")
+		}
+		{{- end }}
+		ref.CopyTo(r.Entities().AppendEmpty())
+	}
+	{{- end }}
 	rb.res = pcommon.NewResource()
 	return r
 }

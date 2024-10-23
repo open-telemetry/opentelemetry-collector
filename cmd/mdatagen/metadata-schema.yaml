@@ -59,6 +59,13 @@ resource_attributes:
       # Should be used for deprecated optional resource_attributes that will be removed soon.
       if_configured:
 
+# Optional: list of entities associated with the produced resource.
+entities:
+  - type: string
+    # Array of attribute names that are used to identify the entity.
+    id_attributes: [string]
+    # Optional: array of attribute names that are used to describe the entity.
+    descriptive_attributes: [string]
 
 # Optional: map of attribute definitions with the key being the attribute name and value
 # being described below.

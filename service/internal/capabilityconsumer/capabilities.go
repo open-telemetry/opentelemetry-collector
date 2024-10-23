@@ -71,3 +71,19 @@ type capProfiles struct {
 func (mts capProfiles) Capabilities() consumer.Capabilities {
 	return mts.cap
 }
+
+func NewEntities(entities consumer.Entities, cap consumer.Capabilities) consumer.Entities {
+	if entities.Capabilities() == cap {
+		return entities
+	}
+	return capEntities{Entities: entities, cap: cap}
+}
+
+type capEntities struct {
+	consumer.Entities
+	cap consumer.Capabilities
+}
+
+func (mts capEntities) Capabilities() consumer.Capabilities {
+	return mts.cap
+}

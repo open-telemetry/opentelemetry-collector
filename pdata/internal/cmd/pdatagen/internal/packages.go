@@ -18,6 +18,8 @@ const header = `// Copyright The OpenTelemetry Authors
 // AllPackages is a list of all packages that needs to be generated.
 var AllPackages = []*Package{
 	pcommon,
+	pentity,
+	pentityotlp,
 	plog,
 	plogotlp,
 	pmetric,

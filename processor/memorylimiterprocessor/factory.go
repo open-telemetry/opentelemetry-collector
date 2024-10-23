@@ -35,7 +35,8 @@ func NewFactory() processor.Factory {
 		createDefaultConfig,
 		processor.WithTraces(f.createTraces, metadata.TracesStability),
 		processor.WithMetrics(f.createMetrics, metadata.MetricsStability),
-		processor.WithLogs(f.createLogs, metadata.LogsStability))
+		processor.WithLogs(f.createLogs, metadata.LogsStability),
+		processor.WithEntities(f.createEntities, metadata.EntitiesStability))
 }
 
 // CreateDefaultConfig creates the default configuration for processor. Notice
@@ -90,6 +91,23 @@ func (f *factory) createLogs(
 	}
 	return processorhelper.NewLogs(ctx, set, cfg, nextConsumer,
 		memLimiter.processLogs,
+		processorhelper.WithCapabilities(processorCapabilities),
+		processorhelper.WithStart(memLimiter.start),
+		processorhelper.WithShutdown(memLimiter.shutdown))
+}
+
+func (f *factory) createEntities(
+	ctx context.Context,
+	set processor.Settings,
+	cfg component.Config,
+	nextConsumer consumer.Entities,
+) (processor.Entities, error) {
+	memLimiter, err := f.getMemoryLimiter(set, cfg)
+	if err != nil {
+		return nil, err
+	}
+	return processorhelper.NewEntities(ctx, set, cfg, nextConsumer,
+		memLimiter.processEntities,
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithStart(memLimiter.start),
 		processorhelper.WithShutdown(memLimiter.shutdown))
