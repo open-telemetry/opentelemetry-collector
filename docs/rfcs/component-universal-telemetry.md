@@ -93,14 +93,14 @@ measurements will be recorded with `outcome` as `failure` when a call to the nex
 `success` otherwise.
 
 ```yaml
-    otelcol_component_consumed_items:
+    otelcol.component.consumed.items:
       enabled: true
       description: Number of items passed to the component.
       unit: "{items}"
       sum:
         value_type: int
         monotonic: true
-    otelcol_component_produced_items:
+    otelcol.component.produced.items:
       enabled: true
       description: Number of items emitted from the component.
       unit: "{items}"
@@ -108,14 +108,14 @@ measurements will be recorded with `outcome` as `failure` when a call to the nex
         value_type: int
         monotonic: true
 
-    otelcol_component_consumed_size:
+    otelcol.component.consumed.size:
       enabled: false
       description: Size of items passed to the component.
       unit: "By"
       sum:
         value_type: int
         monotonic: true
-    otelcol_component_produced_size:
+    otelcol.component.produced.size:
       enabled: false
       description: Size of items emitted from the component.
       unit: "By"
