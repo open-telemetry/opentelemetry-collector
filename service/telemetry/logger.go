@@ -14,6 +14,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+// newLogger creates a Logger and a LoggerProvider from Config.
 func newLogger(ctx context.Context, set Settings, cfg Config) (*zap.Logger, log.LoggerProvider, error) {
 	// Copied from NewProductionConfig.
 	zapCfg := &zap.Config{
