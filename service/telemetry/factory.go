@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/contrib/config"
+	"go.opentelemetry.io/otel/log"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -50,7 +51,7 @@ type Factory interface {
 	CreateDefaultConfig() component.Config
 
 	// CreateLogger creates a logger.
-	CreateLogger(ctx context.Context, set Settings, cfg component.Config) (*zap.Logger, error)
+	CreateLogger(ctx context.Context, set Settings, cfg component.Config) (*zap.Logger, log.LoggerProvider, error)
 
 	// CreateTracerProvider creates a TracerProvider.
 	CreateTracerProvider(ctx context.Context, set Settings, cfg component.Config) (trace.TracerProvider, error)
@@ -65,9 +66,9 @@ type Factory interface {
 // NewFactory creates a new Factory.
 func NewFactory() Factory {
 	return newFactory(createDefaultConfig,
-		withLogger(func(_ context.Context, set Settings, cfg component.Config) (*zap.Logger, error) {
+		withLogger(func(ctx context.Context, set Settings, cfg component.Config) (*zap.Logger, log.LoggerProvider, error) {
 			c := *cfg.(*Config)
-			return newLogger(c.Logs, set.ZapOptions)
+			return newLogger(ctx, set, c)
 		}),
 		withTracerProvider(func(ctx context.Context, set Settings, cfg component.Config) (trace.TracerProvider, error) {
 			c := *cfg.(*Config)
