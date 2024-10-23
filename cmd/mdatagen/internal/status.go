@@ -11,15 +11,23 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-// Distros is a collection of distributions that can be referenced in the metadata.yaml files.
+// distroURL returns the collection of distributions that can be referenced in the metadata.yaml files.
 // The rules below apply to every distribution added to this list:
 // - The distribution is open source and maintained by the OpenTelemetry project.
 // - The link must point to a publicly accessible repository.
-var Distros = map[string]string{
-	"core":    "https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol",
-	"contrib": "https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib",
-	"k8s":     "https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-k8s",
-	"otlp":    "https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-otlp",
+func distroURL(name string) string {
+	switch name {
+	case "core":
+		return "https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol"
+	case "contrib":
+		return "https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib"
+	case "k8s":
+		return "https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-k8s"
+	case "otlp":
+		return "https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-otlp"
+	default:
+		return ""
+	}
 }
 
 type Codeowners struct {
