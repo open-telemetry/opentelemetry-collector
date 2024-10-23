@@ -6,16 +6,16 @@ ObsReport is a framework in order to provide internal telemetry accross componen
 
 ## ObsReport struct
 
-Typically, there will be an `ObsReport` struct, which will contain:
-- a [trace.Tracer](https://pkg.go.dev/go.opentelemetry.io/otel/trace@v1.31.0#Tracer): this will be used in order to generate traces
-- a [metadata.TelemetryBuilder](https://pkg.go.dev/go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata#TelemetryBuilder): this will be used to generate metrics
-- a [metric.MeasurementOption](https://pkg.go.dev/go.opentelemetry.io/otel/metric@v1.31.0#MeasurementOption): this will be used to add attributes on the telemetry
+The `ObsReport` struct must be defined and contain:
+- a [trace.Tracer](https://pkg.go.dev/go.opentelemetry.io/otel/trace@v1.31.0#Tracer): to generate traces
+- a [metadata.TelemetryBuilder](https://pkg.go.dev/go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata#TelemetryBuilder): to generate metrics
+- a [metric.MeasurementOption](https://pkg.go.dev/go.opentelemetry.io/otel/metric@v1.31.0#MeasurementOption): to add attributes on the telemetry
 
-The ObsReport struct can also contain custom fields that will be used when generating the telemetry. This can be a component.ID to add component identifying attributes, a span name prefix to use when generating traces ...etc
+The ObsReport struct can also contain custom fields that will be used when generating the telemetry. This can be a `component.ID` to add component identifying attributes, a span name prefix to use when generating traces ...etc
 
 ## Configuration
 
-Typically, the ObsReport struct will have a `ObsReportSettings` containing the fields necessary in order to create the ObsReport instance.
+The ObsReport struct will have a corresponding `ObsReportSettings` struct containing the fields necessary in order to create the ObsReport instance.
 
 - The tracer which is stored within the `ObsReport` struct should be created through the TracerProvider in the service's `TelemetrySettings`. 
 - The TelemetryBuilder which is stored within the `ObsReport` should be created via the auto generated `NewTelemetryBuilder` func, by providing the service's `TelemetrySettings`.
