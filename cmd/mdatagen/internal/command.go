@@ -81,16 +81,16 @@ func run(ymlPath string) error {
 	if md.Status != nil {
 		if md.Status.Class != "cmd" && md.Status.Class != "pkg" && !md.Status.NotComponent {
 			if err = generateFile(filepath.Join(tmplDir, "status.go.tmpl"),
-				filepath.Join(codeDir, "generated_status.go"), md, "metadata"); err != nil {
+				filepath.Join(codeDir, "generated_status.go"), md); err != nil {
 				return err
 			}
-			if err = generateFile(filepath.Join(tmplDir, "component_test.go.tmpl"),
+			if err = generateFileWithPackageName(filepath.Join(tmplDir, "component_test.go.tmpl"),
 				filepath.Join(ymlDir, "generated_component_test.go"), md, packageName); err != nil {
 				return err
 			}
 		}
 
-		if err = generateFile(filepath.Join(tmplDir, "package_test.go.tmpl"),
+		if err = generateFileWithPackageName(filepath.Join(tmplDir, "package_test.go.tmpl"),
 			filepath.Join(ymlDir, "generated_package_test.go"), md, packageName); err != nil {
 			return err
 		}
@@ -108,7 +108,7 @@ func run(ymlPath string) error {
 	toGenerate := map[string]string{}
 
 	if len(md.Telemetry.Metrics) != 0 { // if there are telemetry metrics, generate telemetry specific files
-		if err = generateFile(filepath.Join(tmplDir, "component_telemetry_test.go.tmpl"),
+		if err = generateFileWithPackageName(filepath.Join(tmplDir, "component_telemetry_test.go.tmpl"),
 			filepath.Join(ymlDir, "generated_component_telemetry_test.go"), md, packageName); err != nil {
 			return err
 		}
@@ -121,7 +121,7 @@ func run(ymlPath string) error {
 	}
 
 	for tmpl, dst := range toGenerate {
-		if err = generateFile(tmpl, dst, md, "metadata"); err != nil {
+		if err = generateFile(tmpl, dst, md); err != nil {
 			return err
 		}
 	}
@@ -151,7 +151,7 @@ func run(ymlPath string) error {
 	}
 
 	for tmpl, dst := range toGenerate {
-		if err = generateFile(tmpl, dst, md, md.GeneratedPackageName); err != nil {
+		if err = generateFile(tmpl, dst, md); err != nil {
 			return err
 		}
 	}
@@ -400,7 +400,11 @@ func inlineReplace(tmplFile string, outputFile string, md Metadata, start string
 	return nil
 }
 
-func generateFile(tmplFile string, outputFile string, md Metadata, goPackage string) error {
+func generateFile(tmplFile string, outputFile string, md Metadata) error {
+	return generateFileWithPackageName(tmplFile, outputFile, md, md.GeneratedPackageName)
+}
+
+func generateFileWithPackageName(tmplFile string, outputFile string, md Metadata, goPackage string) error {
 	if err := os.Remove(outputFile); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("unable to remove generated file %q: %w", outputFile, err)
 	}
