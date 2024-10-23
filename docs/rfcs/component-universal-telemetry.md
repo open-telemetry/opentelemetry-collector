@@ -81,10 +81,8 @@ There are two straightforward measurements that can be made on any pdata:
   These are high cost to compute, so by default they should be disabled (and not calculated).
 
 The location of these measurements can be described in terms of whether the data is "consumed" or "produced", from the perspective of the
-component to which the telemetry is ascribed.
-
-1. Incoming measurements are attributed to the component which is _consuming_ the data.
-2. Outgoing measurements are attributed to the component which is _producing_ the data.
+component to which the telemetry is attributed. Metrics which contain the term "procuded" describe data which is emitted from the component,
+while metrics which contain the term "consumed" describe data which is received by the component.
 
 For both metrics, an `outcome` attribute with possible values `success` and `failure` should be automatically recorded, corresponding to
 whether or not the corresponding function call returned an error. Specifically, consumed measurements will be recorded with `outcome` as
@@ -93,31 +91,87 @@ measurements will be recorded with `outcome` as `failure` when a call to the nex
 `success` otherwise.
 
 ```yaml
-    otelcol.component.consumed.items:
+    otelcol.receiver.produced.items:
       enabled: true
-      description: Number of items passed to the component.
+      description: Number of items emitted from the receiver.
       unit: "{items}"
       sum:
         value_type: int
         monotonic: true
-    otelcol.component.produced.items:
+    otelcol.processor.consumed.items:
       enabled: true
-      description: Number of items emitted from the component.
+      description: Number of items passed to the processor.
+      unit: "{items}"
+      sum:
+        value_type: int
+        monotonic: true
+    otelcol.processor.produced.items:
+      enabled: true
+      description: Number of items emitted from the processor.
+      unit: "{items}"
+      sum:
+        value_type: int
+        monotonic: true
+    otelcol.connector.consumed.items:
+      enabled: true
+      description: Number of items passed to the connector.
+      unit: "{items}"
+      sum:
+        value_type: int
+        monotonic: true
+    otelcol.connector.produced.items:
+      enabled: true
+      description: Number of items emitted from the connector.
+      unit: "{items}"
+      sum:
+        value_type: int
+        monotonic: true
+    otelcol.exporter.consumed.items:
+      enabled: true
+      description: Number of items passed to the exporter.
       unit: "{items}"
       sum:
         value_type: int
         monotonic: true
 
-    otelcol.component.consumed.size:
+   otelcol.receiver.produced.size:
       enabled: false
-      description: Size of items passed to the component.
+      description: Size of items emitted from the receiver.
       unit: "By"
       sum:
         value_type: int
         monotonic: true
-    otelcol.component.produced.size:
+    otelcol.processor.consumed.size:
       enabled: false
-      description: Size of items emitted from the component.
+      description: Size of items passed to the processor.
+      unit: "By"
+      sum:
+        value_type: int
+        monotonic: true
+    otelcol.processor.produced.size:
+      enabled: false
+      description: Size of items emitted from the processor.
+      unit: "By"
+      sum:
+        value_type: int
+        monotonic: true
+    otelcol.connector.consumed.size:
+      enabled: false
+      description: Size of items passed to the connector.
+      unit: "By"
+      sum:
+        value_type: int
+        monotonic: true
+    otelcol.connector.produced.size:
+      enabled: false
+      description: Size of items emitted from the connector.
+      unit: "By"
+      sum:
+        value_type: int
+        monotonic: true
+    otelcol.exporter.consumed.size:
+      enabled: false
+      description: Size of items passed to the exporter.
       unit: "By"
       sum:
         value_type: int
