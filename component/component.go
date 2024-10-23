@@ -153,8 +153,9 @@ func (sl StabilityLevel) LogMessage() string {
 		return "Beta component. May change in the future."
 	case StabilityLevelStable:
 		return "Stable component."
+	default:
+		return "Stability level of component is undefined"
 	}
-	return "Stability level of component is undefined"
 }
 
 // Factory is implemented by all Component factories.
