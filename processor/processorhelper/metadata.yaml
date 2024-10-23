@@ -1,10 +1,7 @@
 type: processorhelper
 
 status:
-  class: processor
   not_component: true
-  stability:
-    beta: [traces, metrics, logs]
 
 telemetry:
   metrics:
