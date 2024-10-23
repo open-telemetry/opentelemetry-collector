@@ -59,7 +59,7 @@ func createTraces(
 	oce := newExporter(cfg, set)
 	oCfg := cfg.(*Config)
 	return exporterhelper.NewTraces(ctx, set, cfg,
-		oce.pushTraces,
+		oce.pushTracesWithStatus,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(oCfg.TimeoutConfig),
 		exporterhelper.WithRetry(oCfg.RetryConfig),
@@ -78,7 +78,7 @@ func createMetrics(
 	oce := newExporter(cfg, set)
 	oCfg := cfg.(*Config)
 	return exporterhelper.NewMetrics(ctx, set, cfg,
-		oce.pushMetrics,
+		oce.pushMetricsWithStatus,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(oCfg.TimeoutConfig),
 		exporterhelper.WithRetry(oCfg.RetryConfig),
@@ -97,7 +97,7 @@ func createLogs(
 	oce := newExporter(cfg, set)
 	oCfg := cfg.(*Config)
 	return exporterhelper.NewLogs(ctx, set, cfg,
-		oce.pushLogs,
+		oce.pushLogsWithStatus,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(oCfg.TimeoutConfig),
 		exporterhelper.WithRetry(oCfg.RetryConfig),
@@ -116,7 +116,7 @@ func createProfilesExporter(
 	oce := newExporter(cfg, set)
 	oCfg := cfg.(*Config)
 	return exporterhelperprofiles.NewProfilesExporter(ctx, set, cfg,
-		oce.pushProfiles,
+		oce.pushProfilesWithStatus,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(oCfg.TimeoutConfig),
 		exporterhelper.WithRetry(oCfg.RetryConfig),

@@ -92,14 +92,11 @@ func (e *baseExporter) shutdown(context.Context) error {
 	return nil
 }
 
-func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) (err error) {
-	defer func() {
-		e.reportStatusFromError(err)
-	}()
+func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 	req := ptraceotlp.NewExportRequestFromTraces(td)
 	resp, respErr := e.traceExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
-	if err = processError(respErr); err != nil {
-		return
+	if err := processError(respErr); err != nil {
+		return err
 	}
 	partialSuccess := resp.PartialSuccess()
 	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedSpans() == 0) {
@@ -108,17 +105,23 @@ func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) (err er
 			zap.Int64("dropped_spans", resp.PartialSuccess().RejectedSpans()),
 		)
 	}
-	return
+	return nil
 }
 
-func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) (err error) {
-	defer func() {
-		e.reportStatusFromError(err)
-	}()
+func (e *baseExporter) pushTracesWithStatus(ctx context.Context, td ptrace.Traces) error {
+	if err := e.pushTraces(ctx, td); err != nil {
+		componentstatus.ReportStatus(e.host, componentstatus.NewRecoverableErrorEvent(err))
+		return err
+	}
+	componentstatus.ReportStatus(e.host, componentstatus.NewEvent(componentstatus.StatusOK))
+	return nil
+}
+
+func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
 	req := pmetricotlp.NewExportRequestFromMetrics(md)
 	resp, respErr := e.metricExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
-	if err = processError(respErr); err != nil {
-		return
+	if err := processError(respErr); err != nil {
+		return err
 	}
 	partialSuccess := resp.PartialSuccess()
 	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedDataPoints() == 0) {
@@ -127,17 +130,23 @@ func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) (err
 			zap.Int64("dropped_data_points", resp.PartialSuccess().RejectedDataPoints()),
 		)
 	}
-	return
+	return nil
 }
 
-func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) (err error) {
-	defer func() {
-		e.reportStatusFromError(err)
-	}()
+func (e *baseExporter) pushMetricsWithStatus(ctx context.Context, md pmetric.Metrics) error {
+	if err := e.pushMetrics(ctx, md); err != nil {
+		componentstatus.ReportStatus(e.host, componentstatus.NewRecoverableErrorEvent(err))
+		return err
+	}
+	componentstatus.ReportStatus(e.host, componentstatus.NewEvent(componentstatus.StatusOK))
+	return nil
+}
+
+func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 	req := plogotlp.NewExportRequestFromLogs(ld)
 	resp, respErr := e.logExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
-	if err = processError(respErr); err != nil {
-		return
+	if err := processError(respErr); err != nil {
+		return err
 	}
 	partialSuccess := resp.PartialSuccess()
 	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedLogRecords() == 0) {
@@ -146,7 +155,16 @@ func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) (err error) {
 			zap.Int64("dropped_log_records", resp.PartialSuccess().RejectedLogRecords()),
 		)
 	}
-	return
+	return nil
+}
+
+func (e *baseExporter) pushLogsWithStatus(ctx context.Context, ld plog.Logs) error {
+	if err := e.pushLogs(ctx, ld); err != nil {
+		componentstatus.ReportStatus(e.host, componentstatus.NewRecoverableErrorEvent(err))
+		return err
+	}
+	componentstatus.ReportStatus(e.host, componentstatus.NewEvent(componentstatus.StatusOK))
+	return nil
 }
 
 func (e *baseExporter) pushProfiles(ctx context.Context, td pprofile.Profiles) error {
@@ -162,6 +180,15 @@ func (e *baseExporter) pushProfiles(ctx context.Context, td pprofile.Profiles) e
 			zap.Int64("dropped_profiles", resp.PartialSuccess().RejectedProfiles()),
 		)
 	}
+	return nil
+}
+
+func (e *baseExporter) pushProfilesWithStatus(ctx context.Context, td pprofile.Profiles) error {
+	if err := e.pushProfiles(ctx, td); err != nil {
+		componentstatus.ReportStatus(e.host, componentstatus.NewRecoverableErrorEvent(err))
+		return err
+	}
+	componentstatus.ReportStatus(e.host, componentstatus.NewEvent(componentstatus.StatusOK))
 	return nil
 }
 
@@ -201,14 +228,6 @@ func processError(err error) error {
 
 	// Need to retry.
 	return err
-}
-
-func (e *baseExporter) reportStatusFromError(err error) {
-	if err != nil {
-		componentstatus.ReportStatus(e.host, componentstatus.NewRecoverableErrorEvent(err))
-		return
-	}
-	componentstatus.ReportStatus(e.host, componentstatus.NewEvent(componentstatus.StatusOK))
 }
 
 func shouldRetry(code codes.Code, retryInfo *errdetails.RetryInfo) bool {
