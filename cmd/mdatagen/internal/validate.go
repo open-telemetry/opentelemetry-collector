@@ -57,9 +57,19 @@ func (md *Metadata) validateStatus() error {
 		return nil
 	}
 
-	var errs error
 	if md.Status == nil {
 		return errors.New("missing status")
+	}
+
+	var errs error
+	if md.Status.NotComponent {
+		if md.Status.Class != "" {
+			errs = errors.Join(errs, errors.New("class should not be configured for non-components"))
+		}
+		if len(md.Status.Stability) != 0 {
+			errs = errors.Join(errs, errors.New("stability should not be configured for non-components"))
+		}
+		return errs
 	}
 	if err := md.Status.validateClass(); err != nil {
 		errs = errors.Join(errs, err)
