@@ -20,13 +20,12 @@ type batch struct {
 	idxList []uint64
 }
 
+// TODO
 type Batcher struct {
 	batchCfg exporterbatcher.Config
 
 	queue      Queue[internal.Request]
 	maxWorkers int
-
-	exportFunc func(context.Context, internal.Request) error
 
 	currentBatch *batch // the batch that is being built
 	timer        *time.Timer
@@ -35,34 +34,32 @@ type Batcher struct {
 	stopWG sync.WaitGroup
 }
 
-func NewBatcher(batchCfg exporterbatcher.Config, queue Queue[internal.Request],
-	maxWorkers int, exportFunc func(context.Context, internal.Request) error) *Batcher {
+func NewBatcher(batchCfg exporterbatcher.Config, queue Queue[internal.Request], maxWorkers int) *Batcher {
 	return &Batcher{
 		batchCfg:   batchCfg,
 		queue:      queue,
 		maxWorkers: maxWorkers,
-		exportFunc: exportFunc,
 		stopWG:     sync.WaitGroup{},
 		shutdownCh: make(chan bool, 1),
 	}
 }
 
-// If preconditions pass, flush() take an item from the head of batch list and exports it.
+// flush take an item from the head of batch list and exports it.
 func (qb *Batcher) flush(batchToFlush batch) {
-	err := qb.exportFunc(batchToFlush.ctx, batchToFlush.req)
+	err := batchToFlush.req.Export(batchToFlush.ctx)
 	for _, idx := range batchToFlush.idxList {
 		qb.queue.OnProcessingFinished(idx, err)
 	}
 }
 
-// flushAsync() starts a goroutine that calls flushIfNecessary(). It blocks until a worker is available.
+// flushAsync starts a goroutine that calls flushIfNecessary. It blocks until a worker is available.
 func (qb *Batcher) flushAsync(batchToFlush batch) {
 	// maxWorker = 0 means we don't limit the number of flushers.
 	if qb.maxWorkers == 0 {
 		qb.stopWG.Add(1)
 		go func() {
+			defer qb.stopWG.Done()
 			qb.flush(batchToFlush)
-			qb.stopWG.Done()
 		}()
 		return
 	}
@@ -71,6 +68,9 @@ func (qb *Batcher) flushAsync(batchToFlush batch) {
 
 // Start ensures that queue and all consumers are started.
 func (qb *Batcher) Start(ctx context.Context, host component.Host) error {
+	// TODO: queue start is done here to keep the behavior similar to queue consumer.
+	// However batcher should not be responsible for starting down the queue. Move this up to
+	// queue sender once queue consumer is cleaned up.
 	if err := qb.queue.Start(ctx, host); err != nil {
 		return err
 	}
@@ -117,8 +117,8 @@ func (qb *Batcher) Start(ctx context.Context, host component.Host) error {
 		}
 	}()
 
-	// The following goroutine is in charge of listening to timer and shutdown signal. This is a seperate goroutine
-	// from the reading-flushing, because we want to keep timer seperate blocking operations.
+	// The following goroutine is in charge of listening to timer and shutdown signal. This is a separate goroutine
+	// from the reading-flushing, because we want to keep timer separate blocking operations.
 	qb.stopWG.Add(1)
 	go func() {
 		defer qb.stopWG.Done()
@@ -137,6 +137,9 @@ func (qb *Batcher) Start(ctx context.Context, host component.Host) error {
 
 // Shutdown ensures that queue and all Batcher are stopped.
 func (qb *Batcher) Shutdown(ctx context.Context) error {
+	// TODO: queue shutdown is done here to keep the behavior similar to queue consumer.
+	// However batcher should not be responsible for shutting down the queue. Move this up to
+	// queue sender once queue consumer is cleaned up.
 	if err := qb.queue.Shutdown(ctx); err != nil {
 		return err
 	}

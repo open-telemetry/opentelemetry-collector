@@ -17,10 +17,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/internal"
 )
 
-func testExportFunc(ctx context.Context, req internal.Request) error {
-	return req.Export(ctx)
-}
-
 func TestBatcher_BatchNotEnabled_InfiniteWorkerPool(t *testing.T) {
 	cfg := exporterbatcher.NewDefaultConfig()
 	cfg.Enabled = false
@@ -32,7 +28,7 @@ func TestBatcher_BatchNotEnabled_InfiniteWorkerPool(t *testing.T) {
 		})
 
 	maxWorkers := 0
-	ba := NewBatcher(cfg, q, maxWorkers, testExportFunc)
+	ba := NewBatcher(cfg, q, maxWorkers)
 
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
