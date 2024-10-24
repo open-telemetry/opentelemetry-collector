@@ -36,9 +36,32 @@ func (c *Config) Validate() error {
 	if endpoint == "" {
 		return errors.New(`requires a non-empty "endpoint"`)
 	}
-
+	hostport := endpoint
+	if strings.HasPrefix(c.Endpoint, "http") {
+		// see https://github.com/open-telemetry/opentelemetry-collector/issues/10488
+		idx := strings.Index(hostport, "/")
+		if idx > -1 {
+			hostport = hostport[:idx]
+		}
+	} else if strings.HasPrefix(c.Endpoint, "dns") {
+		// see https://github.com/open-telemetry/opentelemetry-collector/issues/10488
+		validDNSRegex := regexp.MustCompile("^dns://([^/]+)/([^/]+)$|^dns:///([^/]+)$")
+		if !validDNSRegex.Match([]byte(c.Endpoint)) {
+			return fmt.Errorf("invalid dns scheme format")
+		}
+		matches := validDNSRegex.FindStringSubmatch(c.Endpoint)
+		if len(matches) > 1 {
+			if matches[2] != "" {
+				// with authority
+				hostport = matches[2]
+			} else if matches[3] != "" {
+				// without authority
+				hostport = matches[3]
+			}
+		}
+	}
 	// Validate that the port is in the address
-	_, port, err := net.SplitHostPort(endpoint)
+	_, port, err := net.SplitHostPort(hostport)
 	if err != nil {
 		return err
 	}
