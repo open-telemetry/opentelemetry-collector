@@ -121,13 +121,14 @@ func TestConnectorBuilder(t *testing.T) {
 			cfgs := map[component.ID]component.Config{tt.id: defaultCfg}
 			b := NewConnector(cfgs, factories)
 
-			t2t, err := b.CreateTracesToTraces(context.Background(), createConnectorSettings(tt.id), tt.nextTraces)
+			set := createConnectorSettings(tt.id)
+			t2t, err := b.CreateTracesToTraces(context.Background(), set, tt.nextTraces)
 			if expectedErr := tt.err(pipeline.SignalTraces, pipeline.SignalTraces); expectedErr != "" {
 				assert.EqualError(t, err, expectedErr)
 				assert.Nil(t, t2t)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, nopConnectorInstance, t2t)
+				assertTracesIsnopConnectorInstance(t, t2t)
 			}
 			t2m, err := b.CreateTracesToMetrics(context.Background(), createConnectorSettings(tt.id), tt.nextMetrics)
 			if expectedErr := tt.err(pipeline.SignalTraces, pipeline.SignalMetrics); expectedErr != "" {
@@ -135,7 +136,7 @@ func TestConnectorBuilder(t *testing.T) {
 				assert.Nil(t, t2m)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, nopConnectorInstance, t2m)
+				assertTracesIsnopConnectorInstance(t, t2m)
 			}
 			t2l, err := b.CreateTracesToLogs(context.Background(), createConnectorSettings(tt.id), tt.nextLogs)
 			if expectedErr := tt.err(pipeline.SignalTraces, pipeline.SignalLogs); expectedErr != "" {
@@ -143,7 +144,7 @@ func TestConnectorBuilder(t *testing.T) {
 				assert.Nil(t, t2l)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, nopConnectorInstance, t2l)
+				assertTracesIsnopConnectorInstance(t, t2l)
 			}
 			t2p, err := b.CreateTracesToProfiles(context.Background(), createConnectorSettings(tt.id), tt.nextProfiles)
 			if expectedErr := tt.err(pipeline.SignalTraces, pipelineprofiles.SignalProfiles); expectedErr != "" {
@@ -151,7 +152,7 @@ func TestConnectorBuilder(t *testing.T) {
 				assert.Nil(t, t2p)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, nopConnectorInstance, t2p)
+				assertTracesIsnopConnectorInstance(t, t2p)
 			}
 
 			m2t, err := b.CreateMetricsToTraces(context.Background(), createConnectorSettings(tt.id), tt.nextTraces)
@@ -474,6 +475,13 @@ func TestNewNopConnectorConfigsAndFactories(t *testing.T) {
 	bProfilesToProfiles, err := builder.CreateProfilesToProfiles(context.Background(), set, consumertest.NewNop())
 	require.NoError(t, err)
 	assert.IsType(t, profilesToProfiles, bProfilesToProfiles)
+}
+
+func assertTracesIsnopConnectorInstance(t *testing.T, conn connector.Traces) {
+	t.Helper()
+	dt, ok := conn.(*debugTraces)
+	require.True(t, ok)
+	assert.Equal(t, nopConnectorInstance, dt.tc)
 }
 
 var nopConnectorInstance = &nopConnector{
