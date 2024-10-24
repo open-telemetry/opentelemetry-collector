@@ -7,15 +7,15 @@ import (
 )
 
 func init() {
-{{- range .FeatureGates }}
+{{- range $name, $fg := .FeatureGates }}
     {
         var opts []featuregate.RegisterOption
         opts = append(opts
-            {{- if .from_version }}, featuregate.WithRegisterFromVersion("{{.from_version}}") {{- end }}
-            {{- if .description }}, featuregate.WithRegisterDescription("{{.description}}") {{- end }}
-            {{- if .reference_url }}, featuregate.WithRegisterReferenceURL("{{.reference_url}}") {{- end }}
-            {{- if .to_version }}, featuregate.WithRegisterToVersion("{{.to_version}}") {{- end }})
-        _ = featuregate.GlobalRegistry().MustRegister("{{.id}}", featuregate.{{.stage}}, opts...)
+            {{- if $fg.FromVersion }}, featuregate.WithRegisterFromVersion("{{ $fg.FromVersion }}") {{- end }}
+            {{- if $fg.Description }}, featuregate.WithRegisterDescription("{{ $fg.Description }}") {{- end }}
+            {{- if $fg.ReferenceURL }}, featuregate.WithRegisterReferenceURL("{{ $fg.ReferenceURL }}") {{- end }}
+            {{- if $fg.ToVersion }}, featuregate.WithRegisterToVersion("{{ $fg.ToVersion }}") {{- end }})
+        _ = featuregate.GlobalRegistry().MustRegister("{{ $fg.ID }}", featuregate.{{ $fg.Stage }}, opts...)
     }
 {{- end }}
 

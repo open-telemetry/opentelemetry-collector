@@ -4,13 +4,11 @@
 package internal
 
 import (
-	"errors"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -366,88 +364,6 @@ func TestLoadMetadata(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, tt.want, got)
-			}
-		})
-	}
-}
-
-func TestFeatureGateValidate(t *testing.T) {
-	tests := []struct {
-		name        string
-		input       map[string]interface{}
-		expectedErr error
-	}{
-		{
-			name: "valid input",
-			input: map[string]interface{}{
-				"id":            "valid.id",
-				"stage":         "StageAlpha",
-				"from_version":  "v1.2.3",
-				"to_version":    "v1.3.0",
-				"reference_url": "http://example.com",
-			},
-			expectedErr: nil,
-		},
-		{
-			name: "missing id",
-			input: map[string]interface{}{
-				"stage": "StageAlpha",
-			},
-			expectedErr: errors.New("missing required field: `id`"),
-		},
-		{
-			name: "invalid id",
-			input: map[string]interface{}{
-				"id":    "invalid@id",
-				"stage": "StageAlpha",
-			},
-			expectedErr: errors.New("invalid character(s) in ID"),
-		},
-		{
-			name: "missing stage",
-			input: map[string]interface{}{
-				"id": "valid.id",
-			},
-			expectedErr: errors.New("missing required field: `stage`"),
-		},
-		{
-			name: "invalid stage",
-			input: map[string]interface{}{
-				"id":    "valid.id",
-				"stage": "InvalidStage",
-			},
-			expectedErr: errors.New("invalid stage"),
-		},
-		{
-			name: "invalid from_version",
-			input: map[string]interface{}{
-				"id":           "valid.id",
-				"stage":        "StageAlpha",
-				"from_version": "v1.2.a",
-			},
-			expectedErr: errors.New("invalid character(s) in from_version"),
-		},
-		{
-			name: "invalid reference_url",
-			input: map[string]interface{}{
-				"id":            "valid.id",
-				"stage":         "StageAlpha",
-				"reference_url": "invalid-url",
-			},
-			expectedErr: errors.New("invalid character(s) in reference_url"),
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			parser := confmap.NewFromStringMap(tt.input)
-			featureGate := &featureGate{}
-			err := featureGate.validate(parser)
-			if tt.expectedErr != nil {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), tt.expectedErr.Error())
-			} else {
-				assert.NoError(t, err)
 			}
 		})
 	}

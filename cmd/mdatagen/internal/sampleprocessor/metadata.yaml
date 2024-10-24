@@ -72,16 +72,15 @@ feature_gates:
     id: useOTTLBridgeGate
     stage: StageAlpha
     description: When enabled, filterlog will convert filterlog configuration to OTTL and use filterottl evaluation
-    from_version: 1.0.0
+    from_version: v1.0.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18642
-    to_version: 2.0.0
-
+    to_version: v2.0.0
 
   allowFileDeletion:
     id: allowFileDeletionGate
     stage: StageStable
     description: When enabled, allows usage of the `delete_after_read` setting.
-    from_version": 1.5.0
+    from_version: v1.5.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16314
 
   allowFileCreation:
