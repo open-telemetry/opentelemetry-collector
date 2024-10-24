@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/internal"
 )
 
-func TestBatcher_BatchNotEnabled_InfiniteWorkerPool(t *testing.T) {
+func TestDisabledBatcher_InfiniteWorkerPool(t *testing.T) {
 	cfg := exporterbatcher.NewDefaultConfig()
 	cfg.Enabled = false
 
