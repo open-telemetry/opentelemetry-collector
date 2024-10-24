@@ -250,7 +250,7 @@ func (grpcDialOptionWrapper) isToClientConnOption() {}
 // ToClientConn creates a client connection to the given target. By default, it's
 // a non-blocking dial (the function won't wait for connections to be
 // established, and connecting happens in the background). To make it a blocking
-// dial, use the WithGrpcDiqlOption(grpc.WithBlock()) option.
+// dial, use the WithGrpcDialOption(grpc.WithBlock()) option.
 func (gcs *ClientConfig) ToClientConn(
 	ctx context.Context,
 	host component.Host,

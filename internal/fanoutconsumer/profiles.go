@@ -14,7 +14,7 @@ import (
 )
 
 // NewProfiles wraps multiple profile consumers in a single one.
-// It fanouts the incoming data to all the consumers, and does smart routing:
+// It fans out the incoming data to all the consumers, and does smart routing:
 //   - Clones only to the consumer that needs to mutate the data.
 //   - If all consumers needs to mutate the data one will get the original mutable data.
 func NewProfiles(tcs []consumerprofiles.Profiles) consumerprofiles.Profiles {

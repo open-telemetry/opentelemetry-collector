@@ -1,0 +1,10 @@
+type: custom
+
+generated_package_name: customname
+
+status:
+  class: receiver
+  stability:
+    development: [logs]
+    beta: [traces]
+    stable: [metrics]

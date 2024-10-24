@@ -75,6 +75,3 @@ func NewMetrics(
 		Metrics:      metricsConsumer,
 	}, nil
 }
-
-// Deprecated: [v0.111.0] use NewMetrics.
-var NewMetricsProcessor = NewMetrics

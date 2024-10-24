@@ -29,7 +29,7 @@ type Map[K comparable, V component.Component] struct {
 
 // LoadOrStore returns the already created instance if exists, otherwise creates a new instance
 // and adds it to the map of references.
-func (m *Map[K, V]) LoadOrStore(key K, create func() (V, error), telemetrySettings *component.TelemetrySettings) (*Component[V], error) {
+func (m *Map[K, V]) LoadOrStore(key K, create func() (V, error)) (*Component[V], error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	if c, ok := m.components[key]; ok {
@@ -47,7 +47,6 @@ func (m *Map[K, V]) LoadOrStore(key K, create func() (V, error), telemetrySettin
 			defer m.lock.Unlock()
 			delete(m.components, key)
 		},
-		telemetry: telemetrySettings,
 	}
 	m.components[key] = newComp
 	return newComp, nil
@@ -61,8 +60,6 @@ type Component[V component.Component] struct {
 	startOnce  sync.Once
 	stopOnce   sync.Once
 	removeFunc func()
-
-	telemetry *component.TelemetrySettings
 
 	hostWrapper *hostWrapper
 }
