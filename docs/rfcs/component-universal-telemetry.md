@@ -33,27 +33,27 @@ All signals should use the following attributes:
 
 - `otel.component.kind`: `receiver`
 - `otel.component.id`: The component ID
-- `otel.signal`: `logs`, `metrics`, `traces`
+- `otel.signal`: `logs`, `metrics`, `traces`, `profiles`
 
 ### Processors
 
 - `otel.component.kind`: `processor`
 - `otel.component.id`: The component ID
 - `otel.pipeline.id`: The pipeline ID
-- `otel.signal`: `logs`, `metrics`, `traces`
+- `otel.signal`: `logs`, `metrics`, `traces`, `profiles`
 
 ### Exporters
 
 - `otel.component.kind`: `exporter`
 - `otel.component.id`: The component ID
-- `otel.signal`: `logs`, `metrics` `traces`
+- `otel.signal`: `logs`, `metrics` `traces`, `profiles`
 
 ### Connectors
 
 - `otel.component.kind`: `connector`
 - `otel.component.id`: The component ID
 - `otel.signal`: `logs`, `metrics` `traces`
-- `otel.output.signal`: `logs`, `metrics` `traces`
+- `otel.output.signal`: `logs`, `metrics` `traces`, `profiles`
 
 Note: The `otel.signal`, `otel.output.signal`, or `otel.pipeline.id` attributes may be omitted if the corresponding component instances
 are unified by the component implementation. For example, the `otlp` receiver is a singleton, so its telemetry is not specific to a signal.
