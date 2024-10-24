@@ -72,7 +72,7 @@ feature_gates:
     id: useOTTLBridgeGate
     stage: StageAlpha
     description: When enabled, filterlog will convert filterlog configuration to OTTL and use filterottl evaluation
-    from_version": 1.0.0
+    from_version: 1.0.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18642
     to_version: 2.0.0
 
