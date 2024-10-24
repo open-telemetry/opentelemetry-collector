@@ -37,7 +37,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, 30*time.Second, ocfg.RetryConfig.MaxInterval, "default retry MaxInterval")
 	assert.True(t, ocfg.QueueConfig.Enabled, "default sending queue is enabled")
 	assert.Equal(t, EncodingProto, ocfg.Encoding)
-	assert.Equal(t, configcompression.TypeGzip, ocfg.Compression)
+	assert.Equal(t, configcompression.TypeGzip, ocfg.Compression.Type)
 }
 
 func TestCreateMetrics(t *testing.T) {
@@ -51,7 +51,7 @@ func TestCreateMetrics(t *testing.T) {
 	require.NotNil(t, oexp)
 }
 
-func clientConfig(endpoint string, headers map[string]configopaque.String, tlsSetting configtls.ClientConfig, compression configcompression.Type) confighttp.ClientConfig {
+func clientConfig(endpoint string, headers map[string]configopaque.String, tlsSetting configtls.ClientConfig, compression configcompression.TypeWithLevel) confighttp.ClientConfig {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.TLSSetting = tlsSetting
 	clientConfig.Compression = compression
@@ -65,7 +65,7 @@ func clientConfig(endpoint string, headers map[string]configopaque.String, tlsSe
 }
 
 func TestCreateTraces(t *testing.T) {
-	var configCompression configcompression.Type
+	var configCompression configcompression.TypeWithLevel
 	endpoint := "http://" + testutil.GetAvailableLocalAddress(t)
 
 	tests := []struct {
@@ -124,25 +124,25 @@ func TestCreateTraces(t *testing.T) {
 		{
 			name: "NoneCompression",
 			config: &Config{
-				ClientConfig: clientConfig(endpoint, nil, configtls.ClientConfig{}, "none"),
+				ClientConfig: clientConfig(endpoint, nil, configtls.ClientConfig{}, configcompression.TypeWithLevel{Type: "none", Level: 0}),
 			},
 		},
 		{
 			name: "GzipCompression",
 			config: &Config{
-				ClientConfig: clientConfig(endpoint, nil, configtls.ClientConfig{}, configcompression.TypeGzip),
+				ClientConfig: clientConfig(endpoint, nil, configtls.ClientConfig{}, configcompression.TypeWithLevel{Type: configcompression.TypeGzip, Level: 1}),
 			},
 		},
 		{
 			name: "SnappyCompression",
 			config: &Config{
-				ClientConfig: clientConfig(endpoint, nil, configtls.ClientConfig{}, configcompression.TypeSnappy),
+				ClientConfig: clientConfig(endpoint, nil, configtls.ClientConfig{}, configcompression.TypeWithLevel{Type: configcompression.TypeSnappy, Level: 0}),
 			},
 		},
 		{
 			name: "ZstdCompression",
 			config: &Config{
-				ClientConfig: clientConfig(endpoint, nil, configtls.ClientConfig{}, configcompression.TypeZstd),
+				ClientConfig: clientConfig(endpoint, nil, configtls.ClientConfig{}, configcompression.TypeWithLevel{Type: configcompression.TypeZstd, Level: 11}),
 			},
 		},
 		{
