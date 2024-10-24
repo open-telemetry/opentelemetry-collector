@@ -28,7 +28,7 @@ type Batcher struct {
 
 	exportFunc func(context.Context, internal.Request) error
 
-	readingBatch *batch
+	currentBatch *batch // the batch that is being built
 	timer        *time.Timer
 	shutdownCh   chan bool
 
@@ -55,8 +55,8 @@ func (qb *Batcher) flush(batchToFlush batch) {
 	}
 }
 
-// allocateFlusher() starts a goroutine that calls flushIfNecessary(). It blocks until a worker is available.
-func (qb *Batcher) allocateFlusher(batchToFlush batch) {
+// flushAsync() starts a goroutine that calls flushIfNecessary(). It blocks until a worker is available.
+func (qb *Batcher) flushAsync(batchToFlush batch) {
 	// maxWorker = 0 means we don't limit the number of flushers.
 	if qb.maxWorkers == 0 {
 		qb.stopWG.Add(1)
@@ -87,7 +87,10 @@ func (qb *Batcher) Start(ctx context.Context, host component.Host) error {
 		panic("not implemented")
 	}
 
-	// This goroutine keeps reading until flush is triggered because of request size.
+	// This goroutine reads and then flushes if request reaches size limit. There are two operations in this
+	// goroutine that could be blocking:
+	// 1. Reading from the queue is blocked until the queue is non-empty or until the queue is stopped.
+	// 2. flushAsync() blocks until there are idle workers in the worker pool.
 	qb.stopWG.Add(1)
 	go func() {
 		defer qb.stopWG.Done()
@@ -96,25 +99,26 @@ func (qb *Batcher) Start(ctx context.Context, host component.Host) error {
 
 			if !ok {
 				qb.shutdownCh <- true
-				if qb.readingBatch != nil {
-					panic("batching is supported yet so reading batch should always be nil")
+				if qb.currentBatch != nil {
+					panic("batching is not supported yet so reading batch should always be nil")
 				}
-
 				return
 			}
 			if !qb.batchCfg.Enabled {
-				qb.readingBatch = &batch{
+				qb.currentBatch = &batch{
 					req:     req,
 					ctx:     context.Background(),
 					idxList: []uint64{idx}}
-				qb.allocateFlusher(*qb.readingBatch)
-				qb.readingBatch = nil
+				qb.flushAsync(*qb.currentBatch)
+				qb.currentBatch = nil
 			} else {
 				panic("not implemented")
 			}
 		}
 	}()
 
+	// The following goroutine is in charge of listening to timer and shutdown signal. This is a seperate goroutine
+	// from the reading-flushing, because we want to keep timer seperate blocking operations.
 	qb.stopWG.Add(1)
 	go func() {
 		defer qb.stopWG.Done()
