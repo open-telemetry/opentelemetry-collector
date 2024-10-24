@@ -162,7 +162,10 @@ func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host)
 	}
 
 	var err error
-	if r.serverHTTP, err = r.cfg.HTTP.ToServer(ctx, host, r.settings.TelemetrySettings, httpMux, confighttp.WithErrorHandler(errorHandler)); err != nil {
+	if r.serverHTTP, err = r.cfg.HTTP.ToServer(ctx, host, r.settings.TelemetrySettings, httpMux,
+		confighttp.WithErrorHandler(errorHandler),
+		confighttp.WithSpanFormatter(confighttp.PrefixFormatter(r.settings.ID.String())),
+	); err != nil {
 		return err
 	}
 
