@@ -28,7 +28,8 @@ func TestDisabledBatcher_InfiniteWorkerPool(t *testing.T) {
 		})
 
 	maxWorkers := 0
-	ba := NewBatcher(cfg, q, maxWorkers)
+	ba, err := NewBatcher(cfg, q, maxWorkers)
+	require.Nil(t, err)
 
 	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
@@ -55,4 +56,34 @@ func TestDisabledBatcher_InfiniteWorkerPool(t *testing.T) {
 	assert.Eventually(t, func() bool {
 		return sink.requestsCount.Load() == 3 && sink.itemsCount.Load() == 38
 	}, 20*time.Millisecond, 10*time.Millisecond)
+}
+
+func TestDisabledBatcher_LimitedWorkerNotImplemented(t *testing.T) {
+	cfg := exporterbatcher.NewDefaultConfig()
+	cfg.Enabled = false
+	maxWorkers := 1
+
+	q := NewBoundedMemoryQueue[internal.Request](
+		MemoryQueueSettings[internal.Request]{
+			Sizer:    &RequestSizer[internal.Request]{},
+			Capacity: 10,
+		})
+
+	_, err := NewBatcher(cfg, q, maxWorkers)
+	require.NotNil(t, err)
+}
+
+func TestDisabledBatcher_BatchingNotImplemented(t *testing.T) {
+	cfg := exporterbatcher.NewDefaultConfig()
+	cfg.Enabled = true
+	maxWorkers := 0
+
+	q := NewBoundedMemoryQueue[internal.Request](
+		MemoryQueueSettings[internal.Request]{
+			Sizer:    &RequestSizer[internal.Request]{},
+			Capacity: 10,
+		})
+
+	_, err := NewBatcher(cfg, q, maxWorkers)
+	require.NotNil(t, err)
 }

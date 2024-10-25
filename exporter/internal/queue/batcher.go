@@ -5,6 +5,7 @@ package queue // import "go.opentelemetry.io/collector/exporter/internal/queue"
 
 import (
 	"context"
+	"errors"
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
@@ -30,13 +31,13 @@ type BaseBatcher struct {
 	stopWG     sync.WaitGroup
 }
 
-func NewBatcher(batchCfg exporterbatcher.Config, queue Queue[internal.Request], maxWorkers int) Batcher {
+func NewBatcher(batchCfg exporterbatcher.Config, queue Queue[internal.Request], maxWorkers int) (Batcher, error) {
 	if maxWorkers != 0 {
-		panic("not implemented")
+		return nil, errors.ErrUnsupported
 	}
 
 	if batchCfg.Enabled {
-		panic("not implemented")
+		return nil, errors.ErrUnsupported
 	}
 
 	return &DisabledBatcher{
@@ -46,7 +47,7 @@ func NewBatcher(batchCfg exporterbatcher.Config, queue Queue[internal.Request], 
 			maxWorkers: maxWorkers,
 			stopWG:     sync.WaitGroup{},
 		},
-	}
+	}, nil
 }
 
 // flush exports the incoming batch synchronously.
@@ -59,16 +60,11 @@ func (qb *BaseBatcher) flush(batchToFlush batch) {
 
 // flushAsync starts a goroutine that calls flushIfNecessary. It blocks until a worker is available.
 func (qb *BaseBatcher) flushAsync(batchToFlush batch) {
-	// maxWorker = 0 means we don't limit the number of flushers.
-	if qb.maxWorkers == 0 {
-		qb.stopWG.Add(1)
-		go func() {
-			defer qb.stopWG.Done()
-			qb.flush(batchToFlush)
-		}()
-		return
-	}
-	panic("not implemented")
+	qb.stopWG.Add(1)
+	go func() {
+		defer qb.stopWG.Done()
+		qb.flush(batchToFlush)
+	}()
 }
 
 // Shutdown ensures that queue and all Batcher are stopped.
