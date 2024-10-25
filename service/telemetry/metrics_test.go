@@ -15,15 +15,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/contrib/config"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.opentelemetry.io/collector/service/internal/promtest"
-	"go.opentelemetry.io/collector/service/internal/resource"
-	"go.opentelemetry.io/collector/service/telemetry/internal/otelinit"
 )
 
 const (
@@ -53,38 +51,56 @@ func TestTelemetryInit(t *testing.T) {
 				metricPrefix + otelPrefix + counterName: {
 					value: 13,
 					labels: map[string]string{
-						"service_name":        "otelcol",
-						"service_version":     "latest",
-						"service_instance_id": testInstanceID,
+						"service_name":           "otelcol",
+						"service_version":        "latest",
+						"service_instance_id":    testInstanceID,
+						"telemetry_sdk_language": "go",
+						"telemetry_sdk_name":     "opentelemetry",
+						"telemetry_sdk_version":  "1.31.0",
 					},
 				},
 				metricPrefix + grpcPrefix + counterName: {
 					value: 11,
 					labels: map[string]string{
-						"net_sock_peer_addr":  "",
-						"net_sock_peer_name":  "",
-						"net_sock_peer_port":  "",
-						"service_name":        "otelcol",
-						"service_version":     "latest",
-						"service_instance_id": testInstanceID,
+						"net_sock_peer_addr":     "",
+						"net_sock_peer_name":     "",
+						"net_sock_peer_port":     "",
+						"service_name":           "otelcol",
+						"service_version":        "latest",
+						"service_instance_id":    testInstanceID,
+						"telemetry_sdk_language": "go",
+						"telemetry_sdk_name":     "opentelemetry",
+						"telemetry_sdk_version":  "1.31.0",
 					},
 				},
 				metricPrefix + httpPrefix + counterName: {
 					value: 10,
 					labels: map[string]string{
-						"net_host_name":       "",
-						"net_host_port":       "",
-						"service_name":        "otelcol",
-						"service_version":     "latest",
-						"service_instance_id": testInstanceID,
+						"net_host_name":          "",
+						"net_host_port":          "",
+						"service_name":           "otelcol",
+						"service_version":        "latest",
+						"service_instance_id":    testInstanceID,
+						"telemetry_sdk_language": "go",
+						"telemetry_sdk_name":     "opentelemetry",
+						"telemetry_sdk_version":  "1.31.0",
 					},
 				},
 				"target_info": {
 					value: 0,
 					labels: map[string]string{
-						"service_name":        "otelcol",
-						"service_version":     "latest",
-						"service_instance_id": testInstanceID,
+						"service_name":           "otelcol",
+						"service_version":        "latest",
+						"service_instance_id":    testInstanceID,
+						"telemetry_sdk_language": "go",
+						"telemetry_sdk_name":     "opentelemetry",
+						"telemetry_sdk_version":  "1.31.0",
+					},
+				},
+				"promhttp_metric_handler_errors_total": {
+					value: 0,
+					labels: map[string]string{
+						"cause": "encoding",
 					},
 				},
 			},
@@ -96,33 +112,51 @@ func TestTelemetryInit(t *testing.T) {
 				metricPrefix + otelPrefix + counterName: {
 					value: 13,
 					labels: map[string]string{
-						"service_name":        "otelcol",
-						"service_version":     "latest",
-						"service_instance_id": testInstanceID,
+						"service_name":           "otelcol",
+						"service_version":        "latest",
+						"service_instance_id":    testInstanceID,
+						"telemetry_sdk_language": "go",
+						"telemetry_sdk_name":     "opentelemetry",
+						"telemetry_sdk_version":  "1.31.0",
 					},
 				},
 				metricPrefix + grpcPrefix + counterName: {
 					value: 11,
 					labels: map[string]string{
-						"service_name":        "otelcol",
-						"service_version":     "latest",
-						"service_instance_id": testInstanceID,
+						"service_name":           "otelcol",
+						"service_version":        "latest",
+						"service_instance_id":    testInstanceID,
+						"telemetry_sdk_language": "go",
+						"telemetry_sdk_name":     "opentelemetry",
+						"telemetry_sdk_version":  "1.31.0",
 					},
 				},
 				metricPrefix + httpPrefix + counterName: {
 					value: 10,
 					labels: map[string]string{
-						"service_name":        "otelcol",
-						"service_version":     "latest",
-						"service_instance_id": testInstanceID,
+						"service_name":           "otelcol",
+						"service_version":        "latest",
+						"service_instance_id":    testInstanceID,
+						"telemetry_sdk_language": "go",
+						"telemetry_sdk_name":     "opentelemetry",
+						"telemetry_sdk_version":  "1.31.0",
 					},
 				},
 				"target_info": {
 					value: 0,
 					labels: map[string]string{
-						"service_name":        "otelcol",
-						"service_version":     "latest",
-						"service_instance_id": testInstanceID,
+						"service_name":           "otelcol",
+						"service_version":        "latest",
+						"service_instance_id":    testInstanceID,
+						"telemetry_sdk_language": "go",
+						"telemetry_sdk_name":     "opentelemetry",
+						"telemetry_sdk_version":  "1.31.0",
+					},
+				},
+				"promhttp_metric_handler_errors_total": {
+					value: 0,
+					labels: map[string]string{
+						"cause": "encoding",
 					},
 				},
 			},
@@ -135,7 +169,7 @@ func TestTelemetryInit(t *testing.T) {
 				Metrics: MetricsConfig{
 					Level: configtelemetry.LevelDetailed,
 					Readers: []config.MetricReader{{
-						Pull: &config.PullMetricReader{Exporter: config.MetricExporter{Prometheus: prom}},
+						Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: prom}},
 					}},
 				},
 				Traces: TracesConfig{
@@ -151,14 +185,11 @@ func TestTelemetryInit(t *testing.T) {
 				},
 				Resource: map[string]*string{
 					semconv.AttributeServiceInstanceID: &testInstanceID,
+					semconv.AttributeServiceName:       ptr("otelcol"),
+					semconv.AttributeServiceVersion:    ptr("latest"),
 				},
 			}
-			set := meterProviderSettings{
-				res:               resource.New(component.NewDefaultBuildInfo(), cfg.Resource),
-				cfg:               cfg.Metrics,
-				asyncErrorChannel: make(chan error),
-			}
-			mp, err := newMeterProvider(set, tt.disableHighCard)
+			mp, err := newMeterProvider(context.Background(), Settings{}, *cfg, tt.disableHighCard)
 			require.NoError(t, err)
 			defer func() {
 				if prov, ok := mp.(interface{ Shutdown(context.Context) error }); ok {
@@ -169,11 +200,14 @@ func TestTelemetryInit(t *testing.T) {
 			createTestMetrics(t, mp)
 
 			metrics := getMetricsFromPrometheus(t, endpoint)
-			require.Equal(t, len(tt.expectedMetrics), len(metrics))
+			require.Len(t, metrics, len(tt.expectedMetrics))
 
 			for metricName, metricValue := range tt.expectedMetrics {
 				mf, present := metrics[metricName]
 				require.True(t, present, "expected metric %q was not present", metricName)
+				if metricName == "promhttp_metric_handler_errors_total" {
+					continue
+				}
 				require.Len(t, mf.Metric, 1, "only one measure should exist for metric %q", metricName)
 
 				labels := make(map[string]string)
@@ -194,13 +228,20 @@ func createTestMetrics(t *testing.T, mp metric.MeterProvider) {
 	require.NoError(t, err)
 	counter.Add(context.Background(), 13)
 
-	grpcExampleCounter, err := mp.Meter(otelinit.GRPCInstrumentation).Int64Counter(metricPrefix + grpcPrefix + counterName)
+	grpcExampleCounter, err := mp.Meter("go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc").Int64Counter(metricPrefix + grpcPrefix + counterName)
 	require.NoError(t, err)
-	grpcExampleCounter.Add(context.Background(), 11, metric.WithAttributeSet(otelinit.GRPCUnacceptableKeyValues))
+	grpcExampleCounter.Add(context.Background(), 11, metric.WithAttributeSet(attribute.NewSet(
+		attribute.String(semconv.AttributeNetSockPeerAddr, ""),
+		attribute.String(semconv.AttributeNetSockPeerPort, ""),
+		attribute.String(semconv.AttributeNetSockPeerName, ""),
+	)))
 
-	httpExampleCounter, err := mp.Meter(otelinit.HTTPInstrumentation).Int64Counter(metricPrefix + httpPrefix + counterName)
+	httpExampleCounter, err := mp.Meter("go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp").Int64Counter(metricPrefix + httpPrefix + counterName)
 	require.NoError(t, err)
-	httpExampleCounter.Add(context.Background(), 10, metric.WithAttributeSet(otelinit.HTTPUnacceptableKeyValues))
+	httpExampleCounter.Add(context.Background(), 10, metric.WithAttributeSet(attribute.NewSet(
+		attribute.String(semconv.AttributeNetHostName, ""),
+		attribute.String(semconv.AttributeNetHostPort, ""),
+	)))
 }
 
 func getMetricsFromPrometheus(t *testing.T, endpoint string) map[string]*io_prometheus_client.MetricFamily {
