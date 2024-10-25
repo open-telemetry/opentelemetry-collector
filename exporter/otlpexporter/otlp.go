@@ -17,6 +17,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
@@ -44,6 +45,7 @@ type baseExporter struct {
 	metadata        metadata.MD
 	callOptions     []grpc.CallOption
 
+	host     component.Host
 	settings component.TelemetrySettings
 
 	// Default user-agent header.
@@ -78,6 +80,7 @@ func (e *baseExporter) start(ctx context.Context, host component.Host) (err erro
 	e.callOptions = []grpc.CallOption{
 		grpc.WaitForReady(e.config.ClientConfig.WaitForReady),
 	}
+	e.host = host
 
 	return
 }
@@ -105,6 +108,15 @@ func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 	return nil
 }
 
+func (e *baseExporter) pushTracesWithStatus(ctx context.Context, td ptrace.Traces) error {
+	if err := e.pushTraces(ctx, td); err != nil {
+		componentstatus.ReportStatus(e.host, componentstatus.NewRecoverableErrorEvent(err))
+		return err
+	}
+	componentstatus.ReportStatus(e.host, componentstatus.NewEvent(componentstatus.StatusOK))
+	return nil
+}
+
 func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
 	req := pmetricotlp.NewExportRequestFromMetrics(md)
 	resp, respErr := e.metricExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
@@ -118,6 +130,15 @@ func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) erro
 			zap.Int64("dropped_data_points", resp.PartialSuccess().RejectedDataPoints()),
 		)
 	}
+	return nil
+}
+
+func (e *baseExporter) pushMetricsWithStatus(ctx context.Context, md pmetric.Metrics) error {
+	if err := e.pushMetrics(ctx, md); err != nil {
+		componentstatus.ReportStatus(e.host, componentstatus.NewRecoverableErrorEvent(err))
+		return err
+	}
+	componentstatus.ReportStatus(e.host, componentstatus.NewEvent(componentstatus.StatusOK))
 	return nil
 }
 
@@ -137,6 +158,15 @@ func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 	return nil
 }
 
+func (e *baseExporter) pushLogsWithStatus(ctx context.Context, ld plog.Logs) error {
+	if err := e.pushLogs(ctx, ld); err != nil {
+		componentstatus.ReportStatus(e.host, componentstatus.NewRecoverableErrorEvent(err))
+		return err
+	}
+	componentstatus.ReportStatus(e.host, componentstatus.NewEvent(componentstatus.StatusOK))
+	return nil
+}
+
 func (e *baseExporter) pushProfiles(ctx context.Context, td pprofile.Profiles) error {
 	req := pprofileotlp.NewExportRequestFromProfiles(td)
 	resp, respErr := e.profileExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
@@ -150,6 +180,15 @@ func (e *baseExporter) pushProfiles(ctx context.Context, td pprofile.Profiles) e
 			zap.Int64("dropped_profiles", resp.PartialSuccess().RejectedProfiles()),
 		)
 	}
+	return nil
+}
+
+func (e *baseExporter) pushProfilesWithStatus(ctx context.Context, td pprofile.Profiles) error {
+	if err := e.pushProfiles(ctx, td); err != nil {
+		componentstatus.ReportStatus(e.host, componentstatus.NewRecoverableErrorEvent(err))
+		return err
+	}
+	componentstatus.ReportStatus(e.host, componentstatus.NewEvent(componentstatus.StatusOK))
 	return nil
 }
 
@@ -173,7 +212,6 @@ func processError(err error) error {
 		return nil
 	}
 
-	// Now, this is a real error.
 	retryInfo := getRetryInfo(st)
 
 	if !shouldRetry(st.Code(), retryInfo) {
