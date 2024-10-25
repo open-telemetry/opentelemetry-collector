@@ -30,8 +30,10 @@ func TestDisabledBatcher_InfiniteWorkerPool(t *testing.T) {
 	maxWorkers := 0
 	ba := NewBatcher(cfg, q, maxWorkers)
 
+	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
+		require.NoError(t, q.Shutdown(context.Background()))
 		require.NoError(t, ba.Shutdown(context.Background()))
 	})
 

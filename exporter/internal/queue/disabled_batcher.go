@@ -16,14 +16,7 @@ type DisabledBatcher struct {
 }
 
 // Start starts the goroutine that reads from the queue and flushes asynchronously.
-func (qb *DisabledBatcher) Start(ctx context.Context, host component.Host) error {
-	// TODO: queue start is done here to keep the behavior similar to queue consumer.
-	// However batcher should not be responsible for starting or shuttting down the queue. Move this up to
-	// queue sender once queue consumer is cleaned up.
-	if err := qb.queue.Start(ctx, host); err != nil {
-		return err
-	}
-
+func (qb *DisabledBatcher) Start(_ context.Context, _ component.Host) error {
 	// This goroutine reads and then flushes.
 	// 1. Reading from the queue is blocked until the queue is non-empty or until the queue is stopped.
 	// 2. flushAsync() blocks until there are idle workers in the worker pool.

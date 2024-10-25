@@ -73,12 +73,6 @@ func (qb *BaseBatcher) flushAsync(batchToFlush batch) {
 
 // Shutdown ensures that queue and all Batcher are stopped.
 func (qb *BaseBatcher) Shutdown(ctx context.Context) error {
-	// TODO: queue shutdown is done here to keep the behavior similar to queue consumer.
-	// However batcher should not be responsible for shutting down the queue. Move this up to
-	// queue sender once queue consumer is cleaned up.
-	if err := qb.queue.Shutdown(ctx); err != nil {
-		return err
-	}
 	qb.stopWG.Wait()
 	return nil
 }
