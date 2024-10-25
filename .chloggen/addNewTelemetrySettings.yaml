@@ -7,7 +7,7 @@ change_type: enhancement
 component: mdatagen
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add newTelemtrySettings to be generated all the time even for pkg class
+note: Add newTelemetrySettings to be generated all the time even for pkg class
 
 # One or more tracking issues or pull requests related to the change
 issues: [11535]
