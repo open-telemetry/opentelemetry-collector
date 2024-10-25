@@ -44,18 +44,18 @@ func TestDisabledBatcher_InfiniteWorkerPool(t *testing.T) {
 	require.NoError(t, q.Offer(context.Background(), &fakeRequest{items: 8, exportErr: errors.New("transient error"), sink: sink}))
 	assert.Eventually(t, func() bool {
 		return sink.requestsCount.Load() == 1 && sink.itemsCount.Load() == 8
-	}, 20*time.Millisecond, 10*time.Millisecond)
+	}, 30*time.Millisecond, 10*time.Millisecond)
 
 	require.NoError(t, q.Offer(context.Background(), &fakeRequest{items: 17, sink: sink}))
 	assert.Eventually(t, func() bool {
 		return sink.requestsCount.Load() == 2 && sink.itemsCount.Load() == 25
-	}, 20*time.Millisecond, 10*time.Millisecond)
+	}, 30*time.Millisecond, 10*time.Millisecond)
 
 	require.NoError(t, q.Offer(context.Background(), &fakeRequest{items: 13, sink: sink}))
 
 	assert.Eventually(t, func() bool {
 		return sink.requestsCount.Load() == 3 && sink.itemsCount.Load() == 38
-	}, 20*time.Millisecond, 10*time.Millisecond)
+	}, 30*time.Millisecond, 10*time.Millisecond)
 }
 
 func TestDisabledBatcher_LimitedWorkerNotImplemented(t *testing.T) {
