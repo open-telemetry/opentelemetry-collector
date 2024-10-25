@@ -6,19 +6,125 @@ package internal // import "go.opentelemetry.io/collector/cmd/mdatagen/internal"
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-var (
-	_ MetricData = &gauge{}
-	_ MetricData = &sum{}
-	_ MetricData = &histogram{}
-)
+type MetricName string
+
+func (mn MetricName) Render() (string, error) {
+	return FormatIdentifier(string(mn), true)
+}
+
+func (mn MetricName) RenderUnexported() (string, error) {
+	return FormatIdentifier(string(mn), false)
+}
+
+type Metric struct {
+	// Enabled defines whether the metric is enabled by default.
+	Enabled bool `mapstructure:"enabled"`
+
+	// Warnings that will be shown to user under specified conditions.
+	Warnings Warnings `mapstructure:"warnings"`
+
+	// Description of the metric.
+	Description string `mapstructure:"description"`
+
+	// The stability level of the metric.
+	Stability Stability `mapstructure:"stability"`
+
+	// ExtendedDocumentation of the metric. If specified, this will
+	// be appended to the description used in generated documentation.
+	ExtendedDocumentation string `mapstructure:"extended_documentation"`
+
+	// Optional can be used to specify metrics that may
+	// or may not be present in all cases, depending on configuration.
+	Optional bool `mapstructure:"optional"`
+
+	// Unit of the metric.
+	Unit *string `mapstructure:"unit"`
+
+	// Sum stores metadata for sum metric type
+	Sum *Sum `mapstructure:"sum,omitempty"`
+	// Gauge stores metadata for gauge metric type
+	Gauge *Gauge `mapstructure:"gauge,omitempty"`
+	// Histogram stores metadata for histogram metric type
+	Histogram *Histogram `mapstructure:"histogram,omitempty"`
+
+	// Attributes is the list of attributes that the metric emits.
+	Attributes []AttributeName `mapstructure:"attributes"`
+
+	// Level specifies the minimum `configtelemetry.Level` for which
+	// the metric will be emitted. This only applies to internal telemetry
+	// configuration.
+	Level configtelemetry.Level `mapstructure:"level"`
+}
+
+type Stability struct {
+	Level string `mapstructure:"level"`
+	From  string `mapstructure:"from"`
+}
+
+func (s Stability) String() string {
+	if len(s.Level) == 0 || strings.EqualFold(s.Level, component.StabilityLevelStable.String()) {
+		return ""
+	}
+	if len(s.From) > 0 {
+		return fmt.Sprintf(" [%s since %s]", s.Level, s.From)
+	}
+	return fmt.Sprintf(" [%s]", s.Level)
+}
+
+func (m *Metric) validate() error {
+	var errs error
+	if m.Sum == nil && m.Gauge == nil && m.Histogram == nil {
+		errs = errors.Join(errs, errors.New("missing metric type key, "+
+			"one of the following has to be specified: sum, gauge, histogram"))
+	}
+	if (m.Sum != nil && m.Gauge != nil) || (m.Sum != nil && m.Histogram != nil) || (m.Gauge != nil && m.Histogram != nil) {
+		errs = errors.Join(errs, errors.New("more than one metric type keys, "+
+			"only one of the following has to be specified: sum, gauge, histogram"))
+	}
+	if m.Description == "" {
+		errs = errors.Join(errs, errors.New(`missing metric description`))
+	}
+	if m.Unit == nil {
+		errs = errors.Join(errs, errors.New(`missing metric unit`))
+	}
+	if m.Sum != nil {
+		errs = errors.Join(errs, m.Sum.Validate())
+	}
+	if m.Gauge != nil {
+		errs = errors.Join(errs, m.Gauge.Validate())
+	}
+	return errs
+}
+
+func (m *Metric) Unmarshal(parser *confmap.Conf) error {
+	if !parser.IsSet("enabled") {
+		return errors.New("missing required field: `enabled`")
+	}
+	return parser.Unmarshal(m)
+}
+func (m Metric) Data() MetricData {
+	if m.Sum != nil {
+		return m.Sum
+	}
+	if m.Gauge != nil {
+		return m.Gauge
+	}
+	if m.Histogram != nil {
+		return m.Histogram
+	}
+	return nil
+}
 
 // MetricData is generic interface for all metric datatypes.
 type MetricData interface {
@@ -76,6 +182,13 @@ func (mit MetricInputType) String() string {
 	return mit.InputType
 }
 
+func (mit MetricInputType) Validate() error {
+	if mit.InputType != "" && mit.InputType != "string" {
+		return fmt.Errorf("invalid `input_type` value \"%v\", must be \"\" or \"string\"", mit.InputType)
+	}
+	return nil
+}
+
 // MetricValueType defines the metric number type.
 type MetricValueType struct {
 	// ValueType is type of the metric number, options are "double", "int".
@@ -121,33 +234,35 @@ func (mvt MetricValueType) BasicType() string {
 	}
 }
 
-type gauge struct {
+var _ MetricData = (*Gauge)(nil)
+
+type Gauge struct {
 	MetricValueType `mapstructure:"value_type"`
 	MetricInputType `mapstructure:",squash"`
 	Async           bool `mapstructure:"async,omitempty"`
 }
 
 // Unmarshal is a custom unmarshaler for gauge. Needed mostly to avoid MetricValueType.Unmarshal inheritance.
-func (d *gauge) Unmarshal(parser *confmap.Conf) error {
+func (d *Gauge) Unmarshal(parser *confmap.Conf) error {
 	if err := d.MetricValueType.Unmarshal(parser); err != nil {
 		return err
 	}
 	return parser.Unmarshal(d, confmap.WithIgnoreUnused())
 }
 
-func (d gauge) Type() string {
+func (d *Gauge) Type() string {
 	return "Gauge"
 }
 
-func (d gauge) HasMonotonic() bool {
+func (d *Gauge) HasMonotonic() bool {
 	return false
 }
 
-func (d gauge) HasAggregated() bool {
+func (d *Gauge) HasAggregated() bool {
 	return false
 }
 
-func (d gauge) Instrument() string {
+func (d *Gauge) Instrument() string {
 	instrumentName := cases.Title(language.English).String(d.MetricValueType.BasicType())
 
 	if d.Async {
@@ -158,11 +273,13 @@ func (d gauge) Instrument() string {
 	return instrumentName
 }
 
-func (d gauge) IsAsync() bool {
+func (d *Gauge) IsAsync() bool {
 	return d.Async
 }
 
-type sum struct {
+var _ MetricData = (*Sum)(nil)
+
+type Sum struct {
 	AggregationTemporality `mapstructure:"aggregation_temporality"`
 	Mono                   `mapstructure:",squash"`
 	MetricValueType        `mapstructure:"value_type"`
@@ -171,7 +288,7 @@ type sum struct {
 }
 
 // Unmarshal is a custom unmarshaler for sum. Needed mostly to avoid MetricValueType.Unmarshal inheritance.
-func (d *sum) Unmarshal(parser *confmap.Conf) error {
+func (d *Sum) Unmarshal(parser *confmap.Conf) error {
 	if err := d.MetricValueType.Unmarshal(parser); err != nil {
 		return err
 	}
@@ -189,19 +306,19 @@ func (d *sum) Unmarshal(parser *confmap.Conf) error {
 // 	return parser.Unmarshal(m)
 // }
 
-func (d sum) Type() string {
+func (d *Sum) Type() string {
 	return "Sum"
 }
 
-func (d sum) HasMonotonic() bool {
+func (d *Sum) HasMonotonic() bool {
 	return true
 }
 
-func (d sum) HasAggregated() bool {
+func (d *Sum) HasAggregated() bool {
 	return true
 }
 
-func (d sum) Instrument() string {
+func (d *Sum) Instrument() string {
 	instrumentName := cases.Title(language.English).String(d.MetricValueType.BasicType())
 
 	if d.Async {
@@ -214,11 +331,13 @@ func (d sum) Instrument() string {
 	return instrumentName
 }
 
-func (d sum) IsAsync() bool {
+func (d *Sum) IsAsync() bool {
 	return d.Async
 }
 
-type histogram struct {
+var _ MetricData = (*Histogram)(nil)
+
+type Histogram struct {
 	AggregationTemporality `mapstructure:"aggregation_temporality"`
 	Mono                   `mapstructure:",squash"`
 	MetricValueType        `mapstructure:"value_type"`
@@ -227,31 +346,31 @@ type histogram struct {
 	Boundaries             []float64 `mapstructure:"bucket_boundaries"`
 }
 
-func (d histogram) Type() string {
+func (d *Histogram) Type() string {
 	return "Histogram"
 }
 
-func (d histogram) HasMonotonic() bool {
+func (d *Histogram) HasMonotonic() bool {
 	return false
 }
 
-func (d histogram) HasAggregated() bool {
+func (d *Histogram) HasAggregated() bool {
 	return false
 }
 
-func (d histogram) Instrument() string {
+func (d *Histogram) Instrument() string {
 	instrumentName := cases.Title(language.English).String(d.MetricValueType.BasicType())
 	return instrumentName + d.Type()
 }
 
 // Unmarshal is a custom unmarshaler for histogram. Needed mostly to avoid MetricValueType.Unmarshal inheritance.
-func (d *histogram) Unmarshal(parser *confmap.Conf) error {
+func (d *Histogram) Unmarshal(parser *confmap.Conf) error {
 	if err := d.MetricValueType.Unmarshal(parser); err != nil {
 		return err
 	}
 	return parser.Unmarshal(d, confmap.WithIgnoreUnused())
 }
 
-func (d histogram) IsAsync() bool {
+func (d *Histogram) IsAsync() bool {
 	return d.Async
 }

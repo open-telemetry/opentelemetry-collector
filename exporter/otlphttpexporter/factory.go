@@ -17,17 +17,20 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles"
+	"go.opentelemetry.io/collector/exporter/exporterprofiles"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter/internal/metadata"
 )
 
 // NewFactory creates a factory for OTLP exporter.
 func NewFactory() exporter.Factory {
-	return exporter.NewFactory(
+	return exporterprofiles.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		exporter.WithTraces(createTraces, metadata.TracesStability),
-		exporter.WithMetrics(createMetrics, metadata.MetricsStability),
-		exporter.WithLogs(createLogs, metadata.LogsStability),
+		exporterprofiles.WithTraces(createTraces, metadata.TracesStability),
+		exporterprofiles.WithMetrics(createMetrics, metadata.MetricsStability),
+		exporterprofiles.WithLogs(createLogs, metadata.LogsStability),
+		exporterprofiles.WithProfiles(createProfiles, metadata.ProfilesStability),
 	)
 }
 
@@ -139,6 +142,32 @@ func createLogs(
 
 	return exporterhelper.NewLogs(ctx, set, cfg,
 		oce.pushLogs,
+		exporterhelper.WithStart(oce.start),
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		// explicitly disable since we rely on http.Client timeout logic.
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
+		exporterhelper.WithRetry(oCfg.RetryConfig),
+		exporterhelper.WithQueue(oCfg.QueueConfig))
+}
+
+func createProfiles(
+	ctx context.Context,
+	set exporter.Settings,
+	cfg component.Config,
+) (exporterprofiles.Profiles, error) {
+	oce, err := newExporter(cfg, set)
+	if err != nil {
+		return nil, err
+	}
+	oCfg := cfg.(*Config)
+
+	oce.profilesURL, err = composeSignalURL(oCfg, "", "profiles", "v1development")
+	if err != nil {
+		return nil, err
+	}
+
+	return exporterhelperprofiles.NewProfilesExporter(ctx, set, cfg,
+		oce.pushProfiles,
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// explicitly disable since we rely on http.Client timeout logic.

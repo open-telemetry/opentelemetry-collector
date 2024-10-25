@@ -91,6 +91,8 @@ The last step of the release process creates artifacts for the new version of th
 
     3. build and release ocb binaries under a separate tagged Github release, e.g. `cmd/builder/v0.85.0`
 
+    4. build and push ocb Docker images to `https://hub.docker.com/r/otel/opentelemetry-collector-builder` and the GitHub Container Registry within the releases repository
+
 ## Troubleshooting
 
 1. `unknown revision internal/coreinternal/v0.85.0` -- This is typically an indication that there's a dependency on a new module. You can fix it by adding a new `replaces` entry to the `go.mod` for the affected module.
@@ -160,7 +162,6 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 
 | Date       | Version  | Release manager                                   |
 |------------|----------|---------------------------------------------------|
-| 2024-10-21 | v0.112.0 | [@evan-bradley](https://github.com/evan-bradley)  |
 | 2024-11-04 | v0.113.0 | [@djaglowski](https://github.com/djaglowski)      |
 | 2024-11-18 | v0.114.0 | [@TylerHelmuth](https://github.com/TylerHelmuth)  |
 | 2024-12-02 | v0.115.0 | [@atoulme](https://github.com/atoulme)            |
@@ -170,3 +171,4 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 | 2025-02-03 | v0.119.0 | [@bogdandrutu](https://github.com/bogdandrutu)    |
 | 2025-02-17 | v0.120.0 | [@jpkrohling](https://github.com/jpkrohling)      |
 | 2025-03-03 | v0.121.0 | [@mx-psi](https://github.com/mx-psi)              |
+| 2024-03-17 | v0.122.0 | [@evan-bradley](https://github.com/evan-bradley)  |

@@ -37,6 +37,10 @@ var (
 	sliceTemplateBytes []byte
 	sliceTemplate      = parseTemplate("slice.go", sliceTemplateBytes)
 
+	//go:embed templates/slice_internal.go.tmpl
+	sliceInternalTemplateBytes []byte
+	sliceInternalTemplate      = parseTemplate("slice_internal.go", sliceInternalTemplateBytes)
+
 	//go:embed templates/slice_test.go.tmpl
 	sliceTestTemplateBytes []byte
 	sliceTestTemplate      = parseTemplate("slice_test.go", sliceTestTemplateBytes)

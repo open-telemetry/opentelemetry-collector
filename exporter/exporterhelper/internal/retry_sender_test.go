@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/internal"
@@ -348,6 +349,14 @@ func (mer *mockErrorRequest) ItemsCount() int {
 	return 7
 }
 
+func (mer *mockErrorRequest) Merge(context.Context, internal.Request) (internal.Request, error) {
+	return nil, nil
+}
+
+func (mer *mockErrorRequest) MergeSplit(context.Context, exporterbatcher.MaxSizeConfig, internal.Request) ([]internal.Request, error) {
+	return nil, nil
+}
+
 func newErrorRequest() internal.Request {
 	return &mockErrorRequest{}
 }
@@ -388,6 +397,14 @@ func (m *mockRequest) checkNumRequests(t *testing.T, want int) {
 
 func (m *mockRequest) ItemsCount() int {
 	return m.cnt
+}
+
+func (m *mockRequest) Merge(context.Context, internal.Request) (internal.Request, error) {
+	return nil, nil
+}
+
+func (m *mockRequest) MergeSplit(context.Context, exporterbatcher.MaxSizeConfig, internal.Request) ([]internal.Request, error) {
+	return nil, nil
 }
 
 func newMockRequest(cnt int, consumeError error) *mockRequest {

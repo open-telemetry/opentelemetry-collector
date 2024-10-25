@@ -1,15 +1,15 @@
 dist:
   module: go.opentelemetry.io/collector/builder/test/core
-  otelcol_version: 0.111.0
+  otelcol_version: 0.112.0
 
 extensions:
-  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.111.0
+  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.112.0
 
 receivers:
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.111.0
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.112.0
 
 exporters:
-  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.111.0
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.112.0
 
 replaces:
   - go.opentelemetry.io/collector => ${WORKSPACE_DIR}
@@ -33,13 +33,17 @@ replaces:
   - go.opentelemetry.io/collector/confmap/provider/httpsprovider => ${WORKSPACE_DIR}/confmap/provider/httpsprovider
   - go.opentelemetry.io/collector/confmap/provider/yamlprovider => ${WORKSPACE_DIR}/confmap/provider/yamlprovider
   - go.opentelemetry.io/collector/consumer => ${WORKSPACE_DIR}/consumer
+  - go.opentelemetry.io/collector/consumer/consumererror => ${WORKSPACE_DIR}/consumer/consumererror
   - go.opentelemetry.io/collector/consumer/consumerprofiles => ${WORKSPACE_DIR}/consumer/consumerprofiles
   - go.opentelemetry.io/collector/consumer/consumertest => ${WORKSPACE_DIR}/consumer/consumertest
   - go.opentelemetry.io/collector/connector => ${WORKSPACE_DIR}/connector
+  - go.opentelemetry.io/collector/connector/connectortest => ${WORKSPACE_DIR}/connector/connectortest
   - go.opentelemetry.io/collector/connector/connectorprofiles => ${WORKSPACE_DIR}/connector/connectorprofiles
   - go.opentelemetry.io/collector/exporter => ${WORKSPACE_DIR}/exporter
   - go.opentelemetry.io/collector/exporter/debugexporter => ${WORKSPACE_DIR}/exporter/debugexporter
   - go.opentelemetry.io/collector/exporter/exporterprofiles => ${WORKSPACE_DIR}/exporter/exporterprofiles
+  - go.opentelemetry.io/collector/exporter/exportertest => ${WORKSPACE_DIR}/exporter/exportertest
+  - go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles => ${WORKSPACE_DIR}/exporter/exporterhelper/exporterhelperprofiles
   - go.opentelemetry.io/collector/extension => ${WORKSPACE_DIR}/extension
   - go.opentelemetry.io/collector/extension/auth => ${WORKSPACE_DIR}/extension/auth
   - go.opentelemetry.io/collector/extension/experimental/storage => ${WORKSPACE_DIR}/extension/experimental/storage

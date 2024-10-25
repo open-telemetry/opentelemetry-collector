@@ -86,7 +86,6 @@ func NewMetrics(
 	}
 	metricsOpts := []Option{
 		internal.WithMarshaler(metricsRequestMarshaler), internal.WithUnmarshaler(newMetricsRequestUnmarshalerFunc(pusher)),
-		internal.WithBatchFuncs(mergeMetrics, mergeSplitMetrics),
 	}
 	return NewMetricsRequest(ctx, set, requestFromMetrics(pusher), append(metricsOpts, options...)...)
 }
