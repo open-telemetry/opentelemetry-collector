@@ -10,6 +10,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/confmap"
 )
 
 func TestValidate(t *testing.T) {
@@ -139,6 +141,72 @@ func TestValidateMetricDuplicates(t *testing.T) {
 			}
 			seen[metricName] = receiver
 		}
+	}
+}
+
+func TestFeatureGateValidate(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   map[string]interface{}
+		wantErr string
+	}{
+		{
+			name: "missing id",
+			input: map[string]interface{}{
+				"stage": "StageAlpha",
+			},
+			wantErr: "missing required field: `id`",
+		},
+		{
+			name: "invalid id",
+			input: map[string]interface{}{
+				"id":    "invalid@id",
+				"stage": "StageAlpha",
+			},
+			wantErr: "invalid character(s) in ID",
+		},
+		{
+			name: "missing stage",
+			input: map[string]interface{}{
+				"id": "valid.id",
+			},
+			wantErr: "missing required field: `stage`",
+		},
+		{
+			name: "invalid stage",
+			input: map[string]interface{}{
+				"id":    "valid.id",
+				"stage": "InvalidStage",
+			},
+			wantErr: "invalid stage",
+		},
+		{
+			name: "invalid from_version",
+			input: map[string]interface{}{
+				"id":           "valid.id",
+				"stage":        "StageAlpha",
+				"from_version": "v1.2.a",
+			},
+			wantErr: "invalid character(s) in from_version",
+		},
+		{
+			name: "invalid reference_url",
+			input: map[string]interface{}{
+				"id":            "valid.id",
+				"stage":         "StageAlpha",
+				"reference_url": "invalid-url",
+			},
+			wantErr: "invalid character(s) in reference_url",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			parser := confmap.NewFromStringMap(tt.input)
+			err := validateFeatureGate(parser)
+			require.Error(t, err)
+			require.EqualError(t, err, tt.wantErr)
+		})
 	}
 }
 
