@@ -29,7 +29,7 @@ func TestDisabledBatcher_InfiniteWorkerPool(t *testing.T) {
 
 	maxWorkers := 0
 	ba, err := NewBatcher(cfg, q, maxWorkers)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
@@ -70,7 +70,7 @@ func TestDisabledBatcher_LimitedWorkerNotImplemented(t *testing.T) {
 		})
 
 	_, err := NewBatcher(cfg, q, maxWorkers)
-	require.NotNil(t, err)
+	require.Error(t, err)
 }
 
 func TestDisabledBatcher_BatchingNotImplemented(t *testing.T) {
@@ -85,5 +85,5 @@ func TestDisabledBatcher_BatchingNotImplemented(t *testing.T) {
 		})
 
 	_, err := NewBatcher(cfg, q, maxWorkers)
-	require.NotNil(t, err)
+	require.Error(t, err)
 }
