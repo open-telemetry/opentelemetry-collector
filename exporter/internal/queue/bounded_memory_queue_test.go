@@ -138,10 +138,12 @@ func queueUsage(tb testing.TB, sizer Sizer[fakeReq], requestsCount int) {
 		wg.Done()
 		return nil
 	})
+	require.NoError(tb, q.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(tb, consumers.Start(context.Background(), componenttest.NewNopHost()))
 	for j := 0; j < requestsCount; j++ {
 		require.NoError(tb, q.Offer(context.Background(), fakeReq{10}))
 	}
+	assert.NoError(tb, q.Shutdown(context.Background()))
 	assert.NoError(tb, consumers.Shutdown(context.Background()))
 	wg.Wait()
 }

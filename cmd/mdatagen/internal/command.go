@@ -209,10 +209,8 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 					}
 					return result
 				},
-				"inc": func(i int) int { return i + 1 },
-				"distroURL": func(name string) string {
-					return Distros[name]
-				},
+				"inc":       func(i int) int { return i + 1 },
+				"distroURL": distroURL,
 				"isExporter": func() bool {
 					return md.Status.Class == "exporter"
 				},

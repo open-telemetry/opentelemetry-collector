@@ -9,6 +9,39 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestDistroURL(t *testing.T) {
+	tests := []struct {
+		input  string
+		output string
+	}{
+		{
+			input:  "core",
+			output: "https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol",
+		},
+		{
+			input:  "contrib",
+			output: "https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib",
+		},
+		{
+			input:  "k8s",
+			output: "https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-k8s",
+		},
+		{
+			input:  "otlp",
+			output: "https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-otlp",
+		},
+		{
+			input:  "not_found",
+			output: "",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.input, func(t *testing.T) {
+			assert.Equal(t, test.output, distroURL(test.input))
+		})
+	}
+}
+
 func TestSortedDistributions(t *testing.T) {
 	tests := []struct {
 		name   string

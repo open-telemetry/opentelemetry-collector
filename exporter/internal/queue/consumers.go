@@ -27,11 +27,7 @@ func NewQueueConsumers[T any](q Queue[T], numConsumers int, consumeFunc func(con
 }
 
 // Start ensures that queue and all consumers are started.
-func (qc *Consumers[T]) Start(ctx context.Context, host component.Host) error {
-	if err := qc.queue.Start(ctx, host); err != nil {
-		return err
-	}
-
+func (qc *Consumers[T]) Start(_ context.Context, _ component.Host) error {
 	var startWG sync.WaitGroup
 	for i := 0; i < qc.numConsumers; i++ {
 		qc.stopWG.Add(1)
@@ -55,10 +51,7 @@ func (qc *Consumers[T]) Start(ctx context.Context, host component.Host) error {
 }
 
 // Shutdown ensures that queue and all consumers are stopped.
-func (qc *Consumers[T]) Shutdown(ctx context.Context) error {
-	if err := qc.queue.Shutdown(ctx); err != nil {
-		return err
-	}
+func (qc *Consumers[T]) Shutdown(_ context.Context) error {
 	qc.stopWG.Wait()
 	return nil
 }
