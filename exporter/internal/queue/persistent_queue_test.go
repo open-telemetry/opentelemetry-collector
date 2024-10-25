@@ -82,8 +82,10 @@ func createAndStartTestPersistentQueue(t *testing.T, sizer Sizer[tracesRequest],
 		{}: NewMockStorageExtension(nil),
 	}}
 	consumers := NewQueueConsumers(pq, numConsumers, consumeFunc)
+	require.NoError(t, pq.Start(context.Background(), host))
 	require.NoError(t, consumers.Start(context.Background(), host))
 	t.Cleanup(func() {
+		require.NoError(t, pq.Shutdown(context.Background()))
 		assert.NoError(t, consumers.Shutdown(context.Background()))
 	})
 	return pq
