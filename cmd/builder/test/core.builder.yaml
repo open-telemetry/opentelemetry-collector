@@ -51,6 +51,7 @@ replaces:
   - go.opentelemetry.io/collector/extension/zpagesextension => ${WORKSPACE_DIR}/extension/zpagesextension
   - go.opentelemetry.io/collector/featuregate => ${WORKSPACE_DIR}/featuregate
   - go.opentelemetry.io/collector/internal/memorylimiter => ${WORKSPACE_DIR}/internal/memorylimiter
+  - go.opentelemetry.io/collector/internal/fanoutconsumer => ${WORKSPACE_DIR}/fanoutconsumer
   - go.opentelemetry.io/collector/otelcol => ${WORKSPACE_DIR}/otelcol
   - go.opentelemetry.io/collector/otelcol/otelcoltest => ${WORKSPACE_DIR}/otelcol/otelcoltest
   - go.opentelemetry.io/collector/pdata => ${WORKSPACE_DIR}/pdata
