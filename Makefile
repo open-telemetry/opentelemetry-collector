@@ -240,7 +240,7 @@ genproto_sub:
 # Generate structs, functions and tests for pdata package. Must be used after any changes
 # to proto and after running `make genproto`
 genpdata:
-	$(GOCMD) run pdata/internal/cmd/pdatagen/main.go
+	pushd pdata/ && $(GOCMD) run ./internal/cmd/pdatagen/main.go && popd
 	$(MAKE) fmt
 
 # Generate semantic convention constants. Requires a clone of the opentelemetry-specification repo
