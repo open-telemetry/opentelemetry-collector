@@ -24,6 +24,7 @@ require (
 	go.opentelemetry.io/collector/pdata/testdata v0.112.0
 	go.opentelemetry.io/collector/receiver v0.112.0
 	go.opentelemetry.io/collector/receiver/receiverprofiles v0.112.0
+	go.opentelemetry.io/collector/receiver/receivertest v0.112.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241007155032-5fefd90f89a9
@@ -121,6 +122,8 @@ replace go.opentelemetry.io/collector/client => ../../client
 replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
 
 replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../receiverprofiles
+
+replace go.opentelemetry.io/collector/receiver/receivertest => ../receivertest
 
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 
