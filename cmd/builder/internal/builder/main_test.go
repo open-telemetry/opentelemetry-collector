@@ -82,6 +82,7 @@ var (
 		"/extension/zpagesextension",
 		"/featuregate",
 		"/internal/memorylimiter",
+		"/internal/sharedcomponent",
 		"/otelcol",
 		"/pipeline",
 		"/pipeline/pipelineprofiles",
