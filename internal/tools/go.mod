@@ -223,6 +223,8 @@ require (
 	mvdan.cc/unparam v0.0.0-20240528143540-8a5130ca722f // indirect
 )
 
+replace go.opentelemetry.io/collector/internal/fanoutconsumer => ../fanoutconsumer
+
 retract (
 	v0.57.1 // Release failed, use v0.57.2
 	v0.57.0 // Release failed, use v0.57.2
