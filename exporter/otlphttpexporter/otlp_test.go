@@ -255,7 +255,7 @@ func TestErrorResponses(t *testing.T) {
 
 func TestErrorResponseInvalidResponseBody(t *testing.T) {
 	resp := &http.Response{
-		StatusCode:    400,
+		StatusCode:    http.StatusBadRequest,
 		Body:          io.NopCloser(badReader{}),
 		ContentLength: 100,
 	}
@@ -294,7 +294,7 @@ func TestUserAgent(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				srv := createBackend("/v1/traces", func(writer http.ResponseWriter, request *http.Request) {
 					assert.Contains(t, request.Header.Get("user-agent"), tt.expectedUA)
-					writer.WriteHeader(200)
+					writer.WriteHeader(http.StatusOK)
 				})
 				defer srv.Close()
 
@@ -328,7 +328,7 @@ func TestUserAgent(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				srv := createBackend("/v1/metrics", func(writer http.ResponseWriter, request *http.Request) {
 					assert.Contains(t, request.Header.Get("user-agent"), tt.expectedUA)
-					writer.WriteHeader(200)
+					writer.WriteHeader(http.StatusOK)
 				})
 				defer srv.Close()
 
@@ -362,7 +362,7 @@ func TestUserAgent(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				srv := createBackend("/v1/logs", func(writer http.ResponseWriter, request *http.Request) {
 					assert.Contains(t, request.Header.Get("user-agent"), tt.expectedUA)
-					writer.WriteHeader(200)
+					writer.WriteHeader(http.StatusOK)
 				})
 				defer srv.Close()
 
@@ -398,7 +398,7 @@ func TestUserAgent(t *testing.T) {
 			t.Run(test.name, func(t *testing.T) {
 				srv := createBackend("/v1development/profiles", func(writer http.ResponseWriter, request *http.Request) {
 					assert.Contains(t, request.Header.Get("user-agent"), test.expectedUA)
-					writer.WriteHeader(200)
+					writer.WriteHeader(http.StatusOK)
 				})
 				defer srv.Close()
 
@@ -1013,7 +1013,7 @@ func TestEncoding(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				srv := createBackend("/v1/traces", func(writer http.ResponseWriter, request *http.Request) {
 					assert.Contains(t, request.Header.Get("content-type"), tt.expectedEncoding)
-					writer.WriteHeader(200)
+					writer.WriteHeader(http.StatusOK)
 				})
 				defer srv.Close()
 
@@ -1044,7 +1044,7 @@ func TestEncoding(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				srv := createBackend("/v1/metrics", func(writer http.ResponseWriter, request *http.Request) {
 					assert.Contains(t, request.Header.Get("content-type"), tt.expectedEncoding)
-					writer.WriteHeader(200)
+					writer.WriteHeader(http.StatusOK)
 				})
 				defer srv.Close()
 
@@ -1075,7 +1075,7 @@ func TestEncoding(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				srv := createBackend("/v1/logs", func(writer http.ResponseWriter, request *http.Request) {
 					assert.Contains(t, request.Header.Get("content-type"), tt.expectedEncoding)
-					writer.WriteHeader(200)
+					writer.WriteHeader(http.StatusOK)
 				})
 				defer srv.Close()
 
@@ -1108,7 +1108,7 @@ func TestEncoding(t *testing.T) {
 			t.Run(test.name, func(t *testing.T) {
 				srv := createBackend("/v1development/profiles", func(writer http.ResponseWriter, request *http.Request) {
 					assert.Contains(t, request.Header.Get("content-type"), test.expectedEncoding)
-					writer.WriteHeader(200)
+					writer.WriteHeader(http.StatusOK)
 				})
 				defer srv.Close()
 

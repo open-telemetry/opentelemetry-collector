@@ -4,12 +4,12 @@ go 1.22.0
 
 require (
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector v0.112.0
 	go.opentelemetry.io/collector/component v0.112.0
 	go.opentelemetry.io/collector/connector v0.112.0
 	go.opentelemetry.io/collector/consumer v0.112.0
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.112.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.112.0
+	go.opentelemetry.io/collector/internal/fanoutconsumer v0.112.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.112.0
 	go.opentelemetry.io/collector/pdata/testdata v0.112.0
 	go.opentelemetry.io/collector/pipeline v0.112.0
@@ -49,8 +49,6 @@ replace go.opentelemetry.io/collector/pdata/pprofile => ../../pdata/pprofile
 
 replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../../consumer/consumerprofiles
 
-replace go.opentelemetry.io/collector => ../..
-
 replace go.opentelemetry.io/collector/component => ../../component
 
 replace go.opentelemetry.io/collector/pdata => ../../pdata
@@ -62,3 +60,5 @@ replace go.opentelemetry.io/collector/pdata/testdata => ../../pdata/testdata
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 
 replace go.opentelemetry.io/collector/pipeline/pipelineprofiles => ../../pipeline/pipelineprofiles
+
+replace go.opentelemetry.io/collector/internal/fanoutconsumer => ../../internal/fanoutconsumer
