@@ -45,8 +45,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace go.opentelemetry.io/collector => ../../
-
 replace go.opentelemetry.io/collector/component => ../../component
 
 replace go.opentelemetry.io/collector/connector => ../../connector
@@ -66,8 +64,6 @@ replace go.opentelemetry.io/collector/connector/connectorprofiles => ../connecto
 replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
 
 replace go.opentelemetry.io/collector/pdata/testdata => ../../pdata/testdata
-
-replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
 
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 
