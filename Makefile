@@ -382,6 +382,7 @@ restore-contrib:
 		-dropreplace go.opentelemetry.io/collector/featuregate  \
 		-dropreplace go.opentelemetry.io/collector/filter  \
 		-dropreplace go.opentelemetry.io/collector/internal/memorylimiter \
+		-dropreplace go.opentelemetry.io/collector/internal/fanoutconsumer \
 		-dropreplace go.opentelemetry.io/collector/otelcol  \
 		-dropreplace go.opentelemetry.io/collector/otelcol/otelcoltest  \
 		-dropreplace go.opentelemetry.io/collector/pdata  \
