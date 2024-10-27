@@ -59,8 +59,6 @@ replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/con
 
 replace go.opentelemetry.io/collector/pdata/testdata => ../../pdata/testdata
 
-replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
-
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 
 replace go.opentelemetry.io/collector/pipeline/pipelineprofiles => ../../pipeline/pipelineprofiles
