@@ -28,6 +28,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.112.0
 	go.opentelemetry.io/collector/extension/zpagesextension v0.112.0
 	go.opentelemetry.io/collector/featuregate v1.18.0
+	go.opentelemetry.io/collector/internal/fanoutconsumer v0.112.0
 	go.opentelemetry.io/collector/pdata v1.18.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.112.0
 	go.opentelemetry.io/collector/pdata/testdata v0.112.0
@@ -200,3 +201,5 @@ replace go.opentelemetry.io/collector/exporter/exportertest => ../exporter/expor
 replace go.opentelemetry.io/collector/consumer/consumererror => ../consumer/consumererror
 
 replace go.opentelemetry.io/collector/connector/connectorprofiles => ../connector/connectorprofiles
+
+replace go.opentelemetry.io/collector/internal/fanoutconsumer => ../internal/fanoutconsumer
