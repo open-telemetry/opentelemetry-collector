@@ -19,6 +19,7 @@ require (
 	go.opentelemetry.io/collector/processor v0.112.0
 	go.opentelemetry.io/collector/processor/processortest v0.112.0
 	go.opentelemetry.io/collector/receiver v0.112.0
+	go.opentelemetry.io/collector/receiver/receivertest v0.112.0
 	go.opentelemetry.io/collector/service v0.112.0
 	go.opentelemetry.io/contrib/config v0.10.0
 	go.uber.org/goleak v1.3.0
@@ -175,6 +176,8 @@ replace go.opentelemetry.io/collector/component/componentstatus => ../component/
 replace go.opentelemetry.io/collector/extension/extensioncapabilities => ../extension/extensioncapabilities
 
 replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../receiver/receiverprofiles
+
+replace go.opentelemetry.io/collector/receiver/receivertest => ../receiver/receivertest
 
 replace go.opentelemetry.io/collector/processor/processorprofiles => ../processor/processorprofiles
 
