@@ -23,6 +23,7 @@ require (
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.112.0
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.112.0
 	go.opentelemetry.io/collector/extension v0.112.0
+	go.opentelemetry.io/collector/internal/sharedcomponent v0.112.0
 	go.opentelemetry.io/collector/pdata v1.18.0
 	go.opentelemetry.io/collector/pdata/testdata v0.112.0
 	go.opentelemetry.io/collector/pipeline v0.112.0
@@ -231,4 +232,6 @@ replace go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprof
 
 replace go.opentelemetry.io/collector/consumer/consumererror => ../../consumer/consumererror
 
-replace go.opentelemetry.io/collector/internal/fanoutconsumer => ../fanoutconsumer
+replace go.opentelemetry.io/collector/internal/fanoutconsumer => ../../internal/fanoutconsumer
+
+replace go.opentelemetry.io/collector/internal/sharedcomponent => ../../internal/sharedcomponent

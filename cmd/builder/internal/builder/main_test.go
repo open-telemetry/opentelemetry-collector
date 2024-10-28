@@ -83,6 +83,7 @@ var (
 		"/featuregate",
 		"/internal/memorylimiter",
 		"/internal/fanoutconsumer",
+		"/internal/sharedcomponent",
 		"/otelcol",
 		"/pipeline",
 		"/pipeline/pipelineprofiles",
