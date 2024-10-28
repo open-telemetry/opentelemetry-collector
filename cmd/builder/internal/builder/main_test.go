@@ -95,6 +95,7 @@ var (
 		"/receiver/nopreceiver",
 		"/receiver/otlpreceiver",
 		"/receiver/receiverprofiles",
+		"/receiver/receivertest",
 		"/pdata",
 		"/pdata/testdata",
 		"/pdata/pprofile",

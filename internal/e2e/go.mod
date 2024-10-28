@@ -28,6 +28,7 @@ require (
 	go.opentelemetry.io/collector/pipeline v0.112.0
 	go.opentelemetry.io/collector/receiver v0.112.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.112.0
+	go.opentelemetry.io/collector/receiver/receivertest v0.112.0
 	go.opentelemetry.io/collector/service v0.112.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
@@ -207,6 +208,8 @@ replace go.opentelemetry.io/collector/service => ../../service
 replace go.opentelemetry.io/collector/extension/extensioncapabilities => ../../extension/extensioncapabilities
 
 replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../../receiver/receiverprofiles
+
+replace go.opentelemetry.io/collector/receiver/receivertest => ../../receiver/receivertest
 
 replace go.opentelemetry.io/collector/processor/processorprofiles => ../../processor/processorprofiles
 
