@@ -38,6 +38,15 @@ To keep naming patterns consistent across the project, naming patterns are enfor
   - `func CreateTracesExport(...) {...}`
   - `func CreateTracesToTracesFunc(...) {...}`
 
+#### Configuration structs
+
+When naming configuration structs, use the following guidelines:
+
+- Separate the configuration set by end users in their YAML configuration from the configuration set by developers in the code into different structs.
+- Use the `Config` suffix for configuration structs that have end user configuration (i.e. that set in their YAML configuration). For example, `configgrpc.ClientConfig` ends in `Config` since it contains end user configuration.
+- Use the `Settings` suffix for configuration structs that are set by developers in the code. For example, `component.TelemetrySettings` ends in `Settings` since it is set by developers in the code.
+- Avoid redundant prefixes that are already implied by the package name. For example, use`configgrpc.ClientConfig` instead of `configgrpc.GRPCClientConfig`.
+
 ### Enumerations
 
 To keep naming patterns consistent across the project, enumeration patterns are enforced to make intent clear:
