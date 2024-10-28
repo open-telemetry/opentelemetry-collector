@@ -1194,7 +1194,7 @@ func TestServerAuth(t *testing.T) {
 	require.NoError(t, err)
 
 	// tt
-	srv.Handler.ServeHTTP(&httptest.ResponseRecorder{}, httptest.NewRequest("GET", "/", nil))
+	srv.Handler.ServeHTTP(&httptest.ResponseRecorder{}, httptest.NewRequest(http.MethodGet, "/", nil))
 
 	// verify
 	assert.True(t, handlerCalled)
@@ -1240,7 +1240,7 @@ func TestFailedServerAuth(t *testing.T) {
 
 	// tt
 	response := &httptest.ResponseRecorder{}
-	srv.Handler.ServeHTTP(response, httptest.NewRequest("GET", "/", nil))
+	srv.Handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/", nil))
 
 	// verify
 	assert.Equal(t, http.StatusUnauthorized, response.Result().StatusCode)
@@ -1429,7 +1429,7 @@ func TestAuthWithQueryParams(t *testing.T) {
 	require.NoError(t, err)
 
 	// tt
-	srv.Handler.ServeHTTP(&httptest.ResponseRecorder{}, httptest.NewRequest("GET", "/?auth=1", nil))
+	srv.Handler.ServeHTTP(&httptest.ResponseRecorder{}, httptest.NewRequest(http.MethodGet, "/?auth=1", nil))
 
 	// verify
 	assert.True(t, handlerCalled)

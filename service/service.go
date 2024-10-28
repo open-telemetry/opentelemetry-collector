@@ -148,7 +148,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 			if level <= cfg.Telemetry.Metrics.Level {
 				return mp
 			}
-			return noop.MeterProvider{}
+			return noop.NewMeterProvider()
 		},
 		Logger:         logger,
 		MeterProvider:  mp,

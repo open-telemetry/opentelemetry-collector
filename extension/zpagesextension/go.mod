@@ -74,8 +74,6 @@ replace go.opentelemetry.io/collector/consumer => ../../consumer
 
 replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
 
-replace go.opentelemetry.io/collector/pdata/testdata => ../../pdata/testdata
-
 replace go.opentelemetry.io/collector/config/configopaque => ../../config/configopaque
 
 replace go.opentelemetry.io/collector/config/internal => ../../config/internal
@@ -89,12 +87,6 @@ replace go.opentelemetry.io/collector/config/configauth => ../../config/configau
 replace go.opentelemetry.io/collector/extension/auth => ../auth
 
 replace go.opentelemetry.io/collector/config/confighttp => ../../config/confighttp
-
-replace go.opentelemetry.io/collector/pdata/pprofile => ../../pdata/pprofile
-
-replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../../consumer/consumerprofiles
-
-replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/consumertest
 
 replace go.opentelemetry.io/collector/client => ../../client
 
