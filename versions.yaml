@@ -25,6 +25,7 @@ module-sets:
       - go.opentelemetry.io/collector
       - go.opentelemetry.io/collector/internal/memorylimiter
       - go.opentelemetry.io/collector/internal/fanoutconsumer
+      - go.opentelemetry.io/collector/internal/sharedcomponent
       - go.opentelemetry.io/collector/cmd/builder
       - go.opentelemetry.io/collector/cmd/mdatagen
       - go.opentelemetry.io/collector/component
@@ -73,6 +74,7 @@ module-sets:
       - go.opentelemetry.io/collector/receiver/nopreceiver
       - go.opentelemetry.io/collector/receiver/otlpreceiver
       - go.opentelemetry.io/collector/receiver/receiverprofiles
+      - go.opentelemetry.io/collector/receiver/receivertest
       - go.opentelemetry.io/collector/semconv
       - go.opentelemetry.io/collector/service
       - go.opentelemetry.io/collector/filter

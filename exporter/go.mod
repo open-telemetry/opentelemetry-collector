@@ -42,6 +42,7 @@ require (
 	go.opentelemetry.io/collector/exporter/exporterprofiles v0.112.0 // indirect
 	go.opentelemetry.io/collector/receiver v0.112.0 // indirect
 	go.opentelemetry.io/collector/receiver/receiverprofiles v0.112.0 // indirect
+	go.opentelemetry.io/collector/receiver/receivertest v0.112.0 // indirect
 	golang.org/x/net v0.28.0 // indirect
 	golang.org/x/sys v0.26.0 // indirect
 	golang.org/x/text v0.17.0 // indirect
@@ -80,6 +81,8 @@ replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../consumer/c
 replace go.opentelemetry.io/collector/consumer/consumertest => ../consumer/consumertest
 
 replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../receiver/receiverprofiles
+
+replace go.opentelemetry.io/collector/receiver/receivertest => ../receiver/receivertest
 
 replace go.opentelemetry.io/collector/exporter/exporterprofiles => ./exporterprofiles
 

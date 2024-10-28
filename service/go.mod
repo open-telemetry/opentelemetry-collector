@@ -39,6 +39,7 @@ require (
 	go.opentelemetry.io/collector/processor/processortest v0.112.0
 	go.opentelemetry.io/collector/receiver v0.112.0
 	go.opentelemetry.io/collector/receiver/receiverprofiles v0.112.0
+	go.opentelemetry.io/collector/receiver/receivertest v0.112.0
 	go.opentelemetry.io/collector/semconv v0.112.0
 	go.opentelemetry.io/contrib/bridges/otelzap v0.6.0
 	go.opentelemetry.io/contrib/config v0.10.0
@@ -189,6 +190,8 @@ replace go.opentelemetry.io/collector/consumer/consumertest => ../consumer/consu
 replace go.opentelemetry.io/collector/client => ../client
 
 replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../receiver/receiverprofiles
+
+replace go.opentelemetry.io/collector/receiver/receivertest => ../receiver/receivertest
 
 replace go.opentelemetry.io/collector/processor/processorprofiles => ../processor/processorprofiles
 
