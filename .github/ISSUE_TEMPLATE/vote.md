@@ -10,13 +10,15 @@ A [vote](https://github.com/open-telemetry/opentelemetry-collector/blob/main/doc
 
 ### Stakeholders
 
-Any person in the community may vote. Votes of the stakeholders are binding. The stakeholders as defined in the RFC are:
+Any person in the community may vote. Votes of the stakeholders are binding. As defined in the RFC, there are N stakeholders for this RFC divided as follows:
 
-| Stakeholders |
-|-------------|
-| @open-telemetry/collector-approvers |
+| Stakeholders                        | As defined on date | Number of people |
+|-------------------------------------|--------------------|------------------|
+| @open-telemetry/collector-approvers | xxxx-xx-xx         | N                |
 
 <!--Add additional rows if there are additional stakeholders for the RFC-->
+
+For any stakeholder team, we consider the people that were part of the team at the time the vote is called.
 
 ### Voting options
 
@@ -31,7 +33,7 @@ Any person in the community may vote. Votes of the stakeholders are binding. The
 The vote is in progress.
 
 <!--Uncomment the sentence below when the vote has been closed and the result is known.-->
-<!--The vote has been closed. **Option N** has been selected with M votes from the stakeholders.-->
+<!--The vote has been closed. X stakeholders voted out of a total of Y. **Option N** has been selected with Z votes from the stakeholders.-->
 
 ### Vote process
 
