@@ -288,7 +288,7 @@ If you would like to help and become a Code Owner, you must meet the following r
 
 1. [Be a member of the OpenTelemetry organization](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#member).
 2. Be an existing [approver](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#approver) or [maintainer](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#maintainer) in at least one repository within the OpenTelemetry Github organization.
-3. Have contributed directly to the package you want to own.
+3. Have made significant contributions directly to the package you want to own.
 
 #### How to become a Code Owner
 
