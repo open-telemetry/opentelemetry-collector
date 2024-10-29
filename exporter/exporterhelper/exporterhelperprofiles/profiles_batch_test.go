@@ -156,6 +156,10 @@ func (req *dummyRequest) ItemsCount() int {
 	return 1
 }
 
+func (req *dummyRequest) BytesSize() int {
+	return 0
+}
+
 func (req *dummyRequest) Merge(_ context.Context, _ exporterhelper.Request) (exporterhelper.Request, error) {
 	return nil, nil
 }

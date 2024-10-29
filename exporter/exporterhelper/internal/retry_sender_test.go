@@ -349,6 +349,10 @@ func (mer *mockErrorRequest) ItemsCount() int {
 	return 7
 }
 
+func (mer *mockErrorRequest) BytesSize() int {
+	return 0
+}
+
 func (mer *mockErrorRequest) Merge(context.Context, internal.Request) (internal.Request, error) {
 	return nil, nil
 }
@@ -397,6 +401,10 @@ func (m *mockRequest) checkNumRequests(t *testing.T, want int) {
 
 func (m *mockRequest) ItemsCount() int {
 	return m.cnt
+}
+
+func (m *mockRequest) BytesSize() int {
+	return 0
 }
 
 func (m *mockRequest) Merge(context.Context, internal.Request) (internal.Request, error) {

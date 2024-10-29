@@ -16,17 +16,23 @@ const (
 
 	// AcceptedSpansKey used to identify spans accepted by the Collector.
 	AcceptedSpansKey = "accepted_spans"
+	// AcceptedSpansBytes used to identify spans accepted by the Collector in bytes.
+	AcceptedSpansBytesKey = "accepted_spans_bytes"
 	// RefusedSpansKey used to identify spans refused (ie.: not ingested) by the Collector.
 	RefusedSpansKey = "refused_spans"
 
 	// AcceptedMetricPointsKey used to identify metric points accepted by the Collector.
 	AcceptedMetricPointsKey = "accepted_metric_points"
+	// AcceptedMetricPointsBytes used to identify metric points accepted by the Collector in bytes.
+	AcceptedMetricPointsBytesKey = "accepted_metric_points_bytes"
 	// RefusedMetricPointsKey used to identify metric points refused (ie.: not ingested) by the
 	// Collector.
 	RefusedMetricPointsKey = "refused_metric_points"
 
 	// AcceptedLogRecordsKey used to identify log records accepted by the Collector.
 	AcceptedLogRecordsKey = "accepted_log_records"
+	// AcceptedLogBytesKey used to identify log records accepted by the Collector in bytes.
+	AcceptedLogBytesKey = "accepted_log_bytes"
 	// RefusedLogRecordsKey used to identify log records refused (ie.: not ingested) by the
 	// Collector.
 	RefusedLogRecordsKey = "refused_log_records"

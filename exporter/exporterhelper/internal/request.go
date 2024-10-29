@@ -56,6 +56,10 @@ func (r *fakeRequest) ItemsCount() int {
 	return r.items
 }
 
+func (r *fakeRequest) BytesSize() int {
+	return 0
+}
+
 func (r *fakeRequest) Merge(_ context.Context,
 	r2 internal.Request) (internal.Request, error) {
 	if r == nil {

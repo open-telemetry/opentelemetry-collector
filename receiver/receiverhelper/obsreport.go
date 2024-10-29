@@ -81,9 +81,10 @@ func (rec *ObsReport) EndTracesOp(
 	receiverCtx context.Context,
 	format string,
 	numReceivedSpans int,
+	bytesReceivedSpans int,
 	err error,
 ) {
-	rec.endOp(receiverCtx, format, numReceivedSpans, err, pipeline.SignalTraces)
+	rec.endOp(receiverCtx, format, numReceivedSpans, bytesReceivedSpans, err, pipeline.SignalTraces)
 }
 
 // StartLogsOp is called when a request is received from a client.
@@ -99,9 +100,10 @@ func (rec *ObsReport) EndLogsOp(
 	receiverCtx context.Context,
 	format string,
 	numReceivedLogRecords int,
+	bytesReceivedLogRecords int,
 	err error,
 ) {
-	rec.endOp(receiverCtx, format, numReceivedLogRecords, err, pipeline.SignalLogs)
+	rec.endOp(receiverCtx, format, numReceivedLogRecords, bytesReceivedLogRecords, err, pipeline.SignalLogs)
 }
 
 // StartMetricsOp is called when a request is received from a client.
@@ -117,9 +119,10 @@ func (rec *ObsReport) EndMetricsOp(
 	receiverCtx context.Context,
 	format string,
 	numReceivedPoints int,
+	bytesReceivedPoints int,
 	err error,
 ) {
-	rec.endOp(receiverCtx, format, numReceivedPoints, err, pipeline.SignalMetrics)
+	rec.endOp(receiverCtx, format, numReceivedPoints, bytesReceivedPoints, err, pipeline.SignalMetrics)
 }
 
 // startOp creates the span used to trace the operation. Returning
@@ -152,6 +155,7 @@ func (rec *ObsReport) endOp(
 	receiverCtx context.Context,
 	format string,
 	numReceivedItems int,
+	bytesReceivedItems int,
 	err error,
 	signal pipeline.Signal,
 ) {
@@ -168,22 +172,26 @@ func (rec *ObsReport) endOp(
 
 	// end span according to errors
 	if span.IsRecording() {
-		var acceptedItemsKey, refusedItemsKey string
+		var acceptedItemsKey, bytesItemsKey, refusedItemsKey string
 		switch signal {
 		case pipeline.SignalTraces:
 			acceptedItemsKey = internal.AcceptedSpansKey
+			bytesItemsKey = internal.AcceptedSpansBytesKey
 			refusedItemsKey = internal.RefusedSpansKey
 		case pipeline.SignalMetrics:
 			acceptedItemsKey = internal.AcceptedMetricPointsKey
+			bytesItemsKey = internal.AcceptedMetricPointsBytesKey
 			refusedItemsKey = internal.RefusedMetricPointsKey
 		case pipeline.SignalLogs:
 			acceptedItemsKey = internal.AcceptedLogRecordsKey
+			bytesItemsKey = internal.AcceptedLogBytesKey
 			refusedItemsKey = internal.RefusedLogRecordsKey
 		}
 
 		span.SetAttributes(
 			attribute.String(internal.FormatKey, format),
 			attribute.Int64(acceptedItemsKey, int64(numAccepted)),
+			attribute.Int64(bytesItemsKey, int64(bytesReceivedItems)),
 			attribute.Int64(refusedItemsKey, int64(numRefused)),
 		)
 		if err != nil {

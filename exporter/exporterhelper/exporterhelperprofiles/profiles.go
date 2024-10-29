@@ -28,12 +28,14 @@ var profilesUnmarshaler = &pprofile.ProtoUnmarshaler{}
 type profilesRequest struct {
 	pd     pprofile.Profiles
 	pusher consumerprofiles.ConsumeProfilesFunc
+	sizer  pprofile.Sizer
 }
 
 func newProfilesRequest(pd pprofile.Profiles, pusher consumerprofiles.ConsumeProfilesFunc) exporterhelper.Request {
 	return &profilesRequest{
 		pd:     pd,
 		pusher: pusher,
+		sizer:  &pprofile.ProtoMarshaler{},
 	}
 }
 
@@ -65,6 +67,10 @@ func (req *profilesRequest) Export(ctx context.Context) error {
 
 func (req *profilesRequest) ItemsCount() int {
 	return req.pd.SampleCount()
+}
+
+func (req *profilesRequest) BytesSize() int {
+	return req.sizer.ProfilesSize(req.pd)
 }
 
 type profileExporter struct {
@@ -157,6 +163,6 @@ func (tewo *profilesExporterWithObservability) Send(ctx context.Context, req exp
 	numSamples := req.ItemsCount()
 	// Forward the data to the next consumer (this pusher is the next).
 	err := tewo.NextSender.Send(c, req)
-	tewo.obsrep.EndProfilesOp(c, numSamples, err)
+	tewo.obsrep.EndProfilesOp(c, numSamples, req.BytesSize(), err)
 	return err
 }

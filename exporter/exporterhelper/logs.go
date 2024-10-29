@@ -26,12 +26,14 @@ var logsUnmarshaler = &plog.ProtoUnmarshaler{}
 type logsRequest struct {
 	ld     plog.Logs
 	pusher consumer.ConsumeLogsFunc
+	sizer  plog.Sizer
 }
 
 func newLogsRequest(ld plog.Logs, pusher consumer.ConsumeLogsFunc) Request {
 	return &logsRequest{
 		ld:     ld,
 		pusher: pusher,
+		sizer:  &plog.ProtoMarshaler{},
 	}
 }
 
@@ -63,6 +65,10 @@ func (req *logsRequest) Export(ctx context.Context) error {
 
 func (req *logsRequest) ItemsCount() int {
 	return req.ld.LogRecordCount()
+}
+
+func (req *logsRequest) BytesSize() int {
+	return req.sizer.LogsSize(req.ld)
 }
 
 type logsExporter struct {
@@ -164,6 +170,6 @@ func (lewo *logsExporterWithObservability) Send(ctx context.Context, req Request
 	c := lewo.obsrep.StartLogsOp(ctx)
 	numLogRecords := req.ItemsCount()
 	err := lewo.NextSender.Send(c, req)
-	lewo.obsrep.EndLogsOp(c, numLogRecords, err)
+	lewo.obsrep.EndLogsOp(c, numLogRecords, req.BytesSize(), err)
 	return err
 }

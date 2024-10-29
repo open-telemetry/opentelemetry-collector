@@ -39,8 +39,11 @@ type TelemetryBuilder struct {
 	ExporterSendFailedMetricPoints    metric.Int64Counter
 	ExporterSendFailedSpans           metric.Int64Counter
 	ExporterSentLogRecords            metric.Int64Counter
+	ExporterSentLogRecordsBytes       metric.Int64Counter
 	ExporterSentMetricPoints          metric.Int64Counter
+	ExporterSentMetricPointsBytes     metric.Int64Counter
 	ExporterSentSpans                 metric.Int64Counter
+	ExporterSentSpansBytes            metric.Int64Counter
 	meters                            map[configtelemetry.Level]metric.Meter
 }
 

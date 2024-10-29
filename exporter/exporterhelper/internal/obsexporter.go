@@ -57,10 +57,10 @@ func (or *ObsReport) StartTracesOp(ctx context.Context) context.Context {
 }
 
 // EndTracesOp completes the export operation that was started with startTracesOp.
-func (or *ObsReport) EndTracesOp(ctx context.Context, numSpans int, err error) {
+func (or *ObsReport) EndTracesOp(ctx context.Context, numSpans, bytesSpans int, err error) {
 	numSent, numFailedToSend := toNumItems(numSpans, err)
-	or.recordMetrics(context.WithoutCancel(ctx), pipeline.SignalTraces, numSent, numFailedToSend)
-	endSpan(ctx, err, numSent, numFailedToSend, SentSpansKey, FailedToSendSpansKey)
+	or.recordMetrics(context.WithoutCancel(ctx), pipeline.SignalTraces, numSent, int64(bytesSpans), numFailedToSend)
+	endSpan(ctx, err, numSent, int64(bytesSpans), numFailedToSend, SentSpansKey, SentSpansBytesKey, FailedToSendSpansKey)
 }
 
 // StartMetricsOp is called at the start of an Export operation.
@@ -74,10 +74,10 @@ func (or *ObsReport) StartMetricsOp(ctx context.Context) context.Context {
 // startMetricsOp.
 //
 // If needed, report your use case in https://github.com/open-telemetry/opentelemetry-collector/issues/10592.
-func (or *ObsReport) EndMetricsOp(ctx context.Context, numMetricPoints int, err error) {
+func (or *ObsReport) EndMetricsOp(ctx context.Context, numMetricPoints, bytesMetricPoints int, err error) {
 	numSent, numFailedToSend := toNumItems(numMetricPoints, err)
-	or.recordMetrics(context.WithoutCancel(ctx), pipeline.SignalMetrics, numSent, numFailedToSend)
-	endSpan(ctx, err, numSent, numFailedToSend, SentMetricPointsKey, FailedToSendMetricPointsKey)
+	or.recordMetrics(context.WithoutCancel(ctx), pipeline.SignalMetrics, numSent, int64(bytesMetricPoints), numFailedToSend)
+	endSpan(ctx, err, numSent, int64(bytesMetricPoints), numFailedToSend, SentMetricPointsKey, SentMetricPointsBytesKey, FailedToSendMetricPointsKey)
 }
 
 // StartLogsOp is called at the start of an Export operation.
@@ -88,10 +88,10 @@ func (or *ObsReport) StartLogsOp(ctx context.Context) context.Context {
 }
 
 // EndLogsOp completes the export operation that was started with startLogsOp.
-func (or *ObsReport) EndLogsOp(ctx context.Context, numLogRecords int, err error) {
+func (or *ObsReport) EndLogsOp(ctx context.Context, numLogRecords int, bytesLogRecords int, err error) {
 	numSent, numFailedToSend := toNumItems(numLogRecords, err)
-	or.recordMetrics(context.WithoutCancel(ctx), pipeline.SignalLogs, numSent, numFailedToSend)
-	endSpan(ctx, err, numSent, numFailedToSend, SentLogRecordsKey, FailedToSendLogRecordsKey)
+	or.recordMetrics(context.WithoutCancel(ctx), pipeline.SignalLogs, numSent, int64(bytesLogRecords), numFailedToSend)
+	endSpan(ctx, err, numSent, int64(bytesLogRecords), numFailedToSend, SentLogRecordsKey, SentLogRecordsBytesKey, FailedToSendLogRecordsKey)
 }
 
 // StartProfilesOp is called at the start of an Export operation.
@@ -102,9 +102,9 @@ func (or *ObsReport) StartProfilesOp(ctx context.Context) context.Context {
 }
 
 // EndProfilesOp completes the export operation that was started with startProfilesOp.
-func (or *ObsReport) EndProfilesOp(ctx context.Context, numSpans int, err error) {
+func (or *ObsReport) EndProfilesOp(ctx context.Context, numSpans, byteSpans int, err error) {
 	numSent, numFailedToSend := toNumItems(numSpans, err)
-	endSpan(ctx, err, numSent, numFailedToSend, SentSamplesKey, FailedToSendSamplesKey)
+	endSpan(ctx, err, numSent, int64(byteSpans), numFailedToSend, SentSamplesKey, SentSamplesBytesKey, FailedToSendSamplesKey)
 }
 
 // startOp creates the span used to trace the operation. Returning
@@ -115,30 +115,35 @@ func (or *ObsReport) startOp(ctx context.Context, operationSuffix string) contex
 	return ctx
 }
 
-func (or *ObsReport) recordMetrics(ctx context.Context, signal pipeline.Signal, sent, failed int64) {
-	var sentMeasure, failedMeasure metric.Int64Counter
+func (or *ObsReport) recordMetrics(ctx context.Context, signal pipeline.Signal, sent, bytes, failed int64) {
+	var sentMeasure, bytesMeasure, failedMeasure metric.Int64Counter
 	switch signal {
 	case pipeline.SignalTraces:
 		sentMeasure = or.TelemetryBuilder.ExporterSentSpans
+		bytesMeasure = or.TelemetryBuilder.ExporterSentSpansBytes
 		failedMeasure = or.TelemetryBuilder.ExporterSendFailedSpans
 	case pipeline.SignalMetrics:
 		sentMeasure = or.TelemetryBuilder.ExporterSentMetricPoints
+		bytesMeasure = or.TelemetryBuilder.ExporterSentMetricPointsBytes
 		failedMeasure = or.TelemetryBuilder.ExporterSendFailedMetricPoints
 	case pipeline.SignalLogs:
 		sentMeasure = or.TelemetryBuilder.ExporterSentLogRecords
+		bytesMeasure = or.TelemetryBuilder.ExporterSentLogRecordsBytes
 		failedMeasure = or.TelemetryBuilder.ExporterSendFailedLogRecords
 	}
 
 	sentMeasure.Add(ctx, sent, or.otelAttrs)
+	bytesMeasure.Add(ctx, bytes, or.otelAttrs)
 	failedMeasure.Add(ctx, failed, or.otelAttrs)
 }
 
-func endSpan(ctx context.Context, err error, numSent, numFailedToSend int64, sentItemsKey, failedToSendItemsKey string) {
+func endSpan(ctx context.Context, err error, numSent, bytesSent, numFailedToSend int64, sentItemsKey, sentBytesKey, failedToSendItemsKey string) {
 	span := trace.SpanFromContext(ctx)
 	// End the span according to errors.
 	if span.IsRecording() {
 		span.SetAttributes(
 			attribute.Int64(sentItemsKey, numSent),
+			attribute.Int64(sentBytesKey, bytesSent),
 			attribute.Int64(failedToSendItemsKey, numFailedToSend),
 		)
 		if err != nil {
