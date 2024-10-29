@@ -39,7 +39,7 @@ func NewProfiles(
 	}
 
 	bs := fromOptions(options)
-	profilessConsumer, err := consumerprofiles.NewProfiles(func(ctx context.Context, pd pprofile.Profiles) (err error) {
+	profilesConsumer, err := consumerprofiles.NewProfiles(func(ctx context.Context, pd pprofile.Profiles) (err error) {
 		pd, err = profilesFunc(ctx, pd)
 		if err != nil {
 			if errors.Is(err, processorhelper.ErrSkipProcessingData) {
@@ -56,6 +56,6 @@ func NewProfiles(
 	return &profiles{
 		StartFunc:    bs.StartFunc,
 		ShutdownFunc: bs.ShutdownFunc,
-		Profiles:     profilessConsumer,
+		Profiles:     profilesConsumer,
 	}, nil
 }
