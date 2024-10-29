@@ -105,15 +105,16 @@ var (
 	}
 )
 
-func newTestConfig() *Config {
-	cfg := NewDefaultConfig()
+func newTestConfig(t testing.TB) *Config {
+	cfg, err := NewDefaultConfig()
+	require.NoError(t, err)
 	cfg.downloadModules.wait = 0
 	cfg.downloadModules.numRetries = 1
 	return cfg
 }
 
 func newInitializedConfig(t *testing.T) *Config {
-	cfg := newTestConfig()
+	cfg := newTestConfig(t)
 	// Validate and ParseModules will be called before the config is
 	// given to Generate.
 	assert.NoError(t, cfg.Validate())
@@ -143,7 +144,7 @@ func TestVersioning(t *testing.T) {
 		{
 			name: "defaults",
 			cfgBuilder: func() *Config {
-				cfg := newTestConfig()
+				cfg := newTestConfig(t)
 				cfg.Distribution.Go = "go"
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				return cfg
@@ -153,7 +154,7 @@ func TestVersioning(t *testing.T) {
 		{
 			name: "only gomod file, skip generate",
 			cfgBuilder: func() *Config {
-				cfg := newTestConfig()
+				cfg := newTestConfig(t)
 				tempDir := t.TempDir()
 				err := makeModule(tempDir, []byte(goModTestFile))
 				require.NoError(t, err)
@@ -167,14 +168,14 @@ func TestVersioning(t *testing.T) {
 		{
 			name: "old component version",
 			cfgBuilder: func() *Config {
-				cfg := newTestConfig()
+				cfg := newTestConfig(t)
 				cfg.Distribution.Go = "go"
 				cfg.Exporters = []Module{
 					{
 						GoMod: "go.opentelemetry.io/collector/exporter/otlpexporter v0.112.0",
 					},
 				}
-				cfg.Providers = &[]Module{}
+				cfg.Providers = []Module{}
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				return cfg
 			},
@@ -183,7 +184,7 @@ func TestVersioning(t *testing.T) {
 		{
 			name: "old component version without strict mode",
 			cfgBuilder: func() *Config {
-				cfg := newTestConfig()
+				cfg := newTestConfig(t)
 				cfg.Distribution.Go = "go"
 				cfg.SkipStrictVersioning = true
 				cfg.Exporters = []Module{
@@ -191,7 +192,7 @@ func TestVersioning(t *testing.T) {
 						GoMod: "go.opentelemetry.io/collector/exporter/otlpexporter v0.112.0",
 					},
 				}
-				cfg.Providers = &[]Module{}
+				cfg.Providers = []Module{}
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				return cfg
 			},
@@ -233,7 +234,7 @@ func TestGenerateAndCompile(t *testing.T) {
 		{
 			name: "Default Configuration Compilation",
 			cfgBuilder: func(t *testing.T) *Config {
-				cfg := newTestConfig()
+				cfg := newTestConfig(t)
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				return cfg
@@ -242,7 +243,7 @@ func TestGenerateAndCompile(t *testing.T) {
 		{
 			name: "LDFlags Compilation",
 			cfgBuilder: func(t *testing.T) *Config {
-				cfg := newTestConfig()
+				cfg := newTestConfig(t)
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				cfg.LDFlags = `-X "test.gitVersion=0743dc6c6411272b98494a9b32a63378e84c34da" -X "test.gitTag=local-testing" -X "test.goVersion=go version go1.20.7 darwin/amd64"`
@@ -252,7 +253,7 @@ func TestGenerateAndCompile(t *testing.T) {
 		{
 			name: "Build Tags Compilation",
 			cfgBuilder: func(t *testing.T) *Config {
-				cfg := newTestConfig()
+				cfg := newTestConfig(t)
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				cfg.Distribution.BuildTags = "customTag"
@@ -262,7 +263,7 @@ func TestGenerateAndCompile(t *testing.T) {
 		{
 			name: "Debug Compilation",
 			cfgBuilder: func(t *testing.T) *Config {
-				cfg := newTestConfig()
+				cfg := newTestConfig(t)
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				cfg.Logger = zap.NewNop()
@@ -273,17 +274,17 @@ func TestGenerateAndCompile(t *testing.T) {
 		{
 			name: "No providers",
 			cfgBuilder: func(t *testing.T) *Config {
-				cfg := newTestConfig()
+				cfg := newTestConfig(t)
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
-				cfg.Providers = &[]Module{}
+				cfg.Providers = []Module{}
 				return cfg
 			},
 		},
 		{
 			name: "With confmap factories",
 			cfgBuilder: func(t *testing.T) *Config {
-				cfg := newTestConfig()
+				cfg := newTestConfig(t)
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				cfg.SkipStrictVersioning = true
@@ -293,7 +294,7 @@ func TestGenerateAndCompile(t *testing.T) {
 		{
 			name: "ConfResolverDefaultURIScheme set",
 			cfgBuilder: func(t *testing.T) *Config {
-				cfg := newTestConfig()
+				cfg := newTestConfig(t)
 				cfg.ConfResolver = ConfResolver{
 					DefaultURIScheme: "env",
 				}
@@ -340,7 +341,8 @@ func TestReplaceStatementsAreComplete(t *testing.T) {
 
 	var err error
 	dir := t.TempDir()
-	cfg := NewDefaultConfig()
+	cfg, err := NewDefaultConfig()
+	require.NoError(t, err)
 	cfg.Distribution.Go = "go"
 	cfg.Distribution.OutputPath = dir
 	cfg.Replaces = append(cfg.Replaces, generateReplaces()...)

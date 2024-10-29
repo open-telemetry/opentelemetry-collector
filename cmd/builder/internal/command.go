@@ -89,13 +89,14 @@ func initFlags(flags *flag.FlagSet) error {
 }
 
 func initConfig(flags *flag.FlagSet) (*builder.Config, error) {
-	cfg := builder.NewDefaultConfig()
+	cfg, err := builder.NewDefaultConfig()
+	if err != nil {
+		return nil, err
+	}
 
-	cfg.Logger.Info("OpenTelemetry Collector Builder",
-		zap.String("version", version))
+	cfg.Logger.Info("OpenTelemetry Collector Builder", zap.String("version", version))
 
 	var provider koanf.Provider
-
 	cfgFile, _ := flags.GetString(configFlag)
 	if cfgFile != "" {
 		cfg.Logger.Info("Using config file", zap.String("path", cfgFile))
@@ -108,12 +109,12 @@ func initConfig(flags *flag.FlagSet) (*builder.Config, error) {
 	}
 
 	k := koanf.New(".")
-	if err := k.Load(provider, yaml.Parser()); err != nil {
+	if err = k.Load(provider, yaml.Parser()); err != nil {
 		return nil, fmt.Errorf("failed to load configuration file: %w", err)
 	}
 
 	// handle env variables
-	if err := k.Load(env.Provider("", ".", func(s string) string {
+	if err = k.Load(env.Provider("", ".", func(s string) string {
 		// Only values from the `dist.` group can be set,
 		// and the subfields in `dist.` contain `_` in their names.
 		// All other fields are arrays and the koanf env provider doesn't provide a straightforward way to set arrays.
@@ -122,11 +123,11 @@ func initConfig(flags *flag.FlagSet) (*builder.Config, error) {
 		return nil, fmt.Errorf("failed to load environment variables: %w", err)
 	}
 
-	if err := k.UnmarshalWithConf("", cfg, koanf.UnmarshalConf{Tag: "mapstructure"}); err != nil {
+	if err = k.UnmarshalWithConf("", cfg, koanf.UnmarshalConf{Tag: "mapstructure"}); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal configuration: %w", err)
 	}
 
-	if err := applyFlags(flags, cfg); err != nil {
+	if err = applyFlags(flags, cfg); err != nil {
 		return nil, fmt.Errorf("failed to apply flags configuration: %w", err)
 	}
 

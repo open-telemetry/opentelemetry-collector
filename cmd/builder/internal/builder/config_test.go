@@ -88,11 +88,11 @@ func TestMissingModule(t *testing.T) {
 		{
 			cfg: Config{
 				Logger: zap.NewNop(),
-				Providers: &[]Module{{
+				Providers: []Module{{
 					Import: "invalid",
 				}},
 			},
-			err: ErrMissingGoMod,
+			err: errMissingGoMod,
 		},
 		{
 			cfg: Config{
@@ -101,7 +101,7 @@ func TestMissingModule(t *testing.T) {
 					Import: "invalid",
 				}},
 			},
-			err: ErrMissingGoMod,
+			err: errMissingGoMod,
 		},
 		{
 			cfg: Config{
@@ -110,7 +110,7 @@ func TestMissingModule(t *testing.T) {
 					Import: "invalid",
 				}},
 			},
-			err: ErrMissingGoMod,
+			err: errMissingGoMod,
 		},
 		{
 			cfg: Config{
@@ -119,7 +119,7 @@ func TestMissingModule(t *testing.T) {
 					Import: "invali",
 				}},
 			},
-			err: ErrMissingGoMod,
+			err: errMissingGoMod,
 		},
 		{
 			cfg: Config{
@@ -128,7 +128,7 @@ func TestMissingModule(t *testing.T) {
 					Import: "invalid",
 				}},
 			},
-			err: ErrMissingGoMod,
+			err: errMissingGoMod,
 		},
 		{
 			cfg: Config{
@@ -137,7 +137,7 @@ func TestMissingModule(t *testing.T) {
 					Import: "invalid",
 				}},
 			},
-			err: ErrMissingGoMod,
+			err: errMissingGoMod,
 		},
 	}
 
@@ -147,7 +147,8 @@ func TestMissingModule(t *testing.T) {
 }
 
 func TestNewDefaultConfig(t *testing.T) {
-	cfg := NewDefaultConfig()
+	cfg, err := NewDefaultConfig()
+	require.NoError(t, err)
 	require.NoError(t, cfg.ParseModules())
 	assert.NoError(t, cfg.Validate())
 	assert.NoError(t, cfg.SetGoPath())
@@ -224,20 +225,22 @@ func TestDebugOptionSetConfig(t *testing.T) {
 }
 
 func TestAddsDefaultProviders(t *testing.T) {
-	cfg := NewDefaultConfig()
-	cfg.Providers = nil
+	cfg, err := NewDefaultConfig()
+	require.NoError(t, err)
 	require.NoError(t, cfg.ParseModules())
-	assert.Len(t, *cfg.Providers, 5)
+	assert.Len(t, cfg.Providers, 5)
 }
 
 func TestSkipsNilFieldValidation(t *testing.T) {
-	cfg := NewDefaultConfig()
+	cfg, err := NewDefaultConfig()
+	require.NoError(t, err)
 	cfg.Providers = nil
 	assert.NoError(t, cfg.Validate())
 }
 
 func TestValidateDeprecatedOtelColVersion(t *testing.T) {
-	cfg := NewDefaultConfig()
+	cfg, err := NewDefaultConfig()
+	require.NoError(t, err)
 	cfg.Distribution.OtelColVersion = "test"
 	assert.Error(t, cfg.Validate())
 }
