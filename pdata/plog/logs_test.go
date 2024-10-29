@@ -19,7 +19,10 @@ import (
 )
 
 func TestLogRecordCount(t *testing.T) {
-	logs := NewLogs()
+	var logs Logs
+	assert.EqualValues(t, 0, logs.LogRecordCount())
+
+	logs = NewLogs()
 	assert.EqualValues(t, 0, logs.LogRecordCount())
 
 	rl := logs.ResourceLogs().AppendEmpty()

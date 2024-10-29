@@ -19,7 +19,10 @@ import (
 )
 
 func TestSpanCount(t *testing.T) {
-	traces := NewTraces()
+	var traces Traces
+	assert.EqualValues(t, 0, traces.SpanCount())
+
+	traces = NewTraces()
 	assert.EqualValues(t, 0, traces.SpanCount())
 
 	rs := traces.ResourceSpans().AppendEmpty()

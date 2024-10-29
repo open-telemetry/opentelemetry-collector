@@ -47,6 +47,10 @@ func (ms Metrics) ResourceMetrics() ResourceMetricsSlice {
 
 // MetricCount calculates the total number of metrics.
 func (ms Metrics) MetricCount() int {
+	if ms.getOrig() == nil {
+		return 0
+	}
+
 	metricCount := 0
 	rms := ms.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
@@ -62,6 +66,10 @@ func (ms Metrics) MetricCount() int {
 
 // DataPointCount calculates the total number of data points.
 func (ms Metrics) DataPointCount() (dataPointCount int) {
+	if ms.getOrig() == nil {
+		return 0
+	}
+
 	rms := ms.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)

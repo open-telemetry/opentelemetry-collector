@@ -60,7 +60,10 @@ func TestResourceMetricsWireCompatibility(t *testing.T) {
 }
 
 func TestMetricCount(t *testing.T) {
-	md := NewMetrics()
+	var md Metrics
+	assert.EqualValues(t, 0, md.MetricCount())
+
+	md = NewMetrics()
 	assert.EqualValues(t, 0, md.MetricCount())
 
 	rms := md.ResourceMetrics()
@@ -91,7 +94,10 @@ func TestMetricCountWithEmpty(t *testing.T) {
 }
 
 func TestMetricAndDataPointCount(t *testing.T) {
-	md := NewMetrics()
+	var md Metrics
+	assert.EqualValues(t, 0, md.DataPointCount())
+
+	md = NewMetrics()
 	dps := md.DataPointCount()
 	assert.EqualValues(t, 0, dps)
 

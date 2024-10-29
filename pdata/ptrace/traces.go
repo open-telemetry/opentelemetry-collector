@@ -42,6 +42,10 @@ func (ms Traces) CopyTo(dest Traces) {
 
 // SpanCount calculates the total number of spans.
 func (ms Traces) SpanCount() int {
+	if ms.getOrig() == nil {
+		return 0
+	}
+
 	spanCount := 0
 	rss := ms.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {

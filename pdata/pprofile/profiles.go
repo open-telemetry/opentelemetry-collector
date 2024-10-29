@@ -52,6 +52,10 @@ func (ms Profiles) MarkReadOnly() {
 
 // SampleCount calculates the total number of samples.
 func (ms Profiles) SampleCount() int {
+	if ms.getOrig() == nil {
+		return 0
+	}
+
 	sampleCount := 0
 	rps := ms.ResourceProfiles()
 	for i := 0; i < rps.Len(); i++ {

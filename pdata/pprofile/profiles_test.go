@@ -26,7 +26,10 @@ func TestReadOnlyProfilesInvalidUsage(t *testing.T) {
 }
 
 func TestSampleCount(t *testing.T) {
-	profiles := NewProfiles()
+	var profiles Profiles
+	assert.EqualValues(t, 0, profiles.SampleCount())
+
+	profiles = NewProfiles()
 	assert.EqualValues(t, 0, profiles.SampleCount())
 
 	rs := profiles.ResourceProfiles().AppendEmpty()

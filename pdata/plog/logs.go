@@ -42,6 +42,10 @@ func (ms Logs) CopyTo(dest Logs) {
 
 // LogRecordCount calculates the total number of log records.
 func (ms Logs) LogRecordCount() int {
+	if ms.getOrig() == nil {
+		return 0
+	}
+
 	logCount := 0
 	rss := ms.ResourceLogs()
 	for i := 0; i < rss.Len(); i++ {
