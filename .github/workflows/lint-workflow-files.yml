@@ -16,7 +16,7 @@ jobs:
 
       - name: Lint GitHub Workflow YAML Files with Docker
         run: |
-          docker run --rm -v "${{ github.workspace }}:/repo" --workdir /repo rhysd/actionlint:latest -color .github/workflows/*.yml .github/workflows/*.yaml
+          docker run --rm -v "${{ github.workspace }}:/repo" --workdir /repo rhysd/actionlint:1.7.3 -color .github/workflows/*.yml .github/workflows/*.yaml
 
       - name: Reminder to Address Linting Errors
         if: failure()
