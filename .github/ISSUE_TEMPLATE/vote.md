@@ -30,7 +30,7 @@ For any stakeholder team, we consider the people that were part of the team at t
 
 ### Result
 
-The vote is in progress.
+The vote is in progress. A minimum of X votes is required to select an option.
 
 <!--Uncomment the sentence below when the vote has been closed and the result is known.-->
 <!--The vote has been closed. X stakeholders voted out of a total of Y. **Option N** has been selected with Z votes from the stakeholders.-->
