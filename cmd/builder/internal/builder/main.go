@@ -214,10 +214,7 @@ func processAndWrite(cfg Config, tmpl *template.Template, outFile string, tmplPa
 }
 
 func (c *Config) coreModuleAndVersion() (string, string) {
-	module := "go.opentelemetry.io/collector"
-	if c.Distribution.RequireOtelColModule {
-		module += "/otelcol"
-	}
+	module := "go.opentelemetry.io/collector/otelcol"
 	return module, "v" + c.Distribution.OtelColVersion
 }
 
