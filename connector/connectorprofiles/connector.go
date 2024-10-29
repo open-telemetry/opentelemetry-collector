@@ -7,12 +7,12 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componentprofiles"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/internal"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/collector/pipeline/pipelineprofiles"
 )
 
 type Factory interface {
@@ -60,7 +60,7 @@ type CreateTracesToProfilesFunc func(context.Context, connector.Settings, compon
 // CreateTracesToProfiles implements Factory.CreateTracesToProfiles().
 func (f CreateTracesToProfilesFunc) CreateTracesToProfiles(ctx context.Context, set connector.Settings, cfg component.Config, next consumerprofiles.Profiles) (connector.Traces, error) {
 	if f == nil {
-		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalTraces, componentprofiles.SignalProfiles)
+		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalTraces, pipelineprofiles.SignalProfiles)
 	}
 	return f(ctx, set, cfg, next)
 }
@@ -71,7 +71,7 @@ type CreateMetricsToProfilesFunc func(context.Context, connector.Settings, compo
 // CreateMetricsToProfiles implements Factory.CreateMetricsToProfiles().
 func (f CreateMetricsToProfilesFunc) CreateMetricsToProfiles(ctx context.Context, set connector.Settings, cfg component.Config, next consumerprofiles.Profiles) (connector.Metrics, error) {
 	if f == nil {
-		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalMetrics, componentprofiles.SignalProfiles)
+		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalMetrics, pipelineprofiles.SignalProfiles)
 	}
 	return f(ctx, set, cfg, next)
 }
@@ -82,7 +82,7 @@ type CreateLogsToProfilesFunc func(context.Context, connector.Settings, componen
 // CreateLogsToProfiles implements Factory.CreateLogsToProfiles().
 func (f CreateLogsToProfilesFunc) CreateLogsToProfiles(ctx context.Context, set connector.Settings, cfg component.Config, next consumerprofiles.Profiles) (connector.Logs, error) {
 	if f == nil {
-		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalLogs, componentprofiles.SignalProfiles)
+		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalLogs, pipelineprofiles.SignalProfiles)
 	}
 	return f(ctx, set, cfg, next)
 }
@@ -93,7 +93,7 @@ type CreateProfilesToProfilesFunc func(context.Context, connector.Settings, comp
 // CreateProfilesToProfiles implements Factory.CreateProfilesToProfiles().
 func (f CreateProfilesToProfilesFunc) CreateProfilesToProfiles(ctx context.Context, set connector.Settings, cfg component.Config, next consumerprofiles.Profiles) (Profiles, error) {
 	if f == nil {
-		return nil, internal.ErrDataTypes(set.ID, componentprofiles.SignalProfiles, componentprofiles.SignalProfiles)
+		return nil, internal.ErrDataTypes(set.ID, pipelineprofiles.SignalProfiles, pipelineprofiles.SignalProfiles)
 	}
 	return f(ctx, set, cfg, next)
 }
@@ -104,7 +104,7 @@ type CreateProfilesToTracesFunc func(context.Context, connector.Settings, compon
 // CreateProfilesToTraces implements Factory.CreateProfilesToTraces().
 func (f CreateProfilesToTracesFunc) CreateProfilesToTraces(ctx context.Context, set connector.Settings, cfg component.Config, next consumer.Traces) (Profiles, error) {
 	if f == nil {
-		return nil, internal.ErrDataTypes(set.ID, componentprofiles.SignalProfiles, pipeline.SignalTraces)
+		return nil, internal.ErrDataTypes(set.ID, pipelineprofiles.SignalProfiles, pipeline.SignalTraces)
 	}
 	return f(ctx, set, cfg, next)
 }
@@ -115,7 +115,7 @@ type CreateProfilesToMetricsFunc func(context.Context, connector.Settings, compo
 // CreateProfilesToMetrics implements Factory.CreateProfilesToMetrics().
 func (f CreateProfilesToMetricsFunc) CreateProfilesToMetrics(ctx context.Context, set connector.Settings, cfg component.Config, next consumer.Metrics) (Profiles, error) {
 	if f == nil {
-		return nil, internal.ErrDataTypes(set.ID, componentprofiles.SignalProfiles, pipeline.SignalMetrics)
+		return nil, internal.ErrDataTypes(set.ID, pipelineprofiles.SignalProfiles, pipeline.SignalMetrics)
 	}
 	return f(ctx, set, cfg, next)
 }
@@ -126,7 +126,7 @@ type CreateProfilesToLogsFunc func(context.Context, connector.Settings, componen
 // CreateProfilesToLogs implements Factory.CreateProfilesToLogs().
 func (f CreateProfilesToLogsFunc) CreateProfilesToLogs(ctx context.Context, set connector.Settings, cfg component.Config, next consumer.Logs) (Profiles, error) {
 	if f == nil {
-		return nil, internal.ErrDataTypes(set.ID, componentprofiles.SignalProfiles, pipeline.SignalLogs)
+		return nil, internal.ErrDataTypes(set.ID, pipelineprofiles.SignalProfiles, pipeline.SignalLogs)
 	}
 	return f(ctx, set, cfg, next)
 }

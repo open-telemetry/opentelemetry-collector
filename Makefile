@@ -240,7 +240,7 @@ genproto_sub:
 # Generate structs, functions and tests for pdata package. Must be used after any changes
 # to proto and after running `make genproto`
 genpdata:
-	$(GOCMD) run pdata/internal/cmd/pdatagen/main.go
+	pushd pdata/ && $(GOCMD) run ./internal/cmd/pdatagen/main.go && popd
 	$(MAKE) fmt
 
 # Generate semantic convention constants. Requires a clone of the opentelemetry-specification repo
@@ -264,7 +264,6 @@ check-contrib:
 		-replace go.opentelemetry.io/collector/client=$(CURDIR)/client \
 		-replace go.opentelemetry.io/collector/cmd/mdatagen=$(CURDIR)/cmd/mdatagen \
 		-replace go.opentelemetry.io/collector/component=$(CURDIR)/component  \
-		-replace go.opentelemetry.io/collector/component/componentprofiles=$(CURDIR)/component/componentprofiles  \
 		-replace go.opentelemetry.io/collector/component/componentstatus=$(CURDIR)/component/componentstatus  \
 		-replace go.opentelemetry.io/collector/config/configauth=$(CURDIR)/config/configauth  \
 		-replace go.opentelemetry.io/collector/config/configcompression=$(CURDIR)/config/configcompression  \
@@ -284,14 +283,19 @@ check-contrib:
 		-replace go.opentelemetry.io/collector/confmap/provider/httpsprovider=$(CURDIR)/confmap/provider/httpsprovider  \
 		-replace go.opentelemetry.io/collector/confmap/provider/yamlprovider=$(CURDIR)/confmap/provider/yamlprovider  \
 		-replace go.opentelemetry.io/collector/connector=$(CURDIR)/connector  \
+		-replace go.opentelemetry.io/collector/connector/connectortest=$(CURDIR)/connector/connectortest  \
 		-replace go.opentelemetry.io/collector/connector/connectorprofiles=$(CURDIR)/connector/connectorprofiles  \
 		-replace go.opentelemetry.io/collector/connector/forwardconnector=$(CURDIR)/connector/forwardconnector  \
 		-replace go.opentelemetry.io/collector/consumer=$(CURDIR)/consumer  \
+		-replace go.opentelemetry.io/collector/consumer/consumererror=$(CURDIR)/consumer/consumererror  \
+		-replace go.opentelemetry.io/collector/consumer/consumererror/consumererrorprofiles=$(CURDIR)/consumer/consumererror/consumererrorprofiles  \
 		-replace go.opentelemetry.io/collector/consumer/consumerprofiles=$(CURDIR)/consumer/consumerprofiles  \
 		-replace go.opentelemetry.io/collector/consumer/consumertest=$(CURDIR)/consumer/consumertest  \
 		-replace go.opentelemetry.io/collector/exporter=$(CURDIR)/exporter  \
 		-replace go.opentelemetry.io/collector/exporter/debugexporter=$(CURDIR)/exporter/debugexporter  \
 		-replace go.opentelemetry.io/collector/exporter/exporterprofiles=$(CURDIR)/exporter/exporterprofiles  \
+		-replace go.opentelemetry.io/collector/exporter/exportertest=$(CURDIR)/exporter/exportertest  \
+		-replace go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles=$(CURDIR)/exporter/exporterhelper/exporterhelperprofiles  \
 		-replace go.opentelemetry.io/collector/exporter/nopexporter=$(CURDIR)/exporter/nopexporter  \
 		-replace go.opentelemetry.io/collector/exporter/otlpexporter=$(CURDIR)/exporter/otlpexporter  \
 		-replace go.opentelemetry.io/collector/exporter/otlphttpexporter=$(CURDIR)/exporter/otlphttpexporter  \
@@ -303,15 +307,18 @@ check-contrib:
 		-replace go.opentelemetry.io/collector/extension/zpagesextension=$(CURDIR)/extension/zpagesextension  \
 		-replace go.opentelemetry.io/collector/featuregate=$(CURDIR)/featuregate  \
 		-replace go.opentelemetry.io/collector/filter=$(CURDIR)/filter  \
-		-replace go.opentelemetry.io/collector/internal/globalgates=$(CURDIR)/internal/globalgates \
-		-replace go.opentelemetry.io/collector/internal/globalsignal=$(CURDIR)/internal/globalsignal \
+		-replace go.opentelemetry.io/collector/internal/memorylimiter=$(CURDIR)/internal/memorylimiter  \
+		-replace go.opentelemetry.io/collector/internal/fanoutconsumer=$(CURDIR)/internal/fanoutconsumer  \
+		-replace go.opentelemetry.io/collector/internal/sharedcomponent=$(CURDIR)/internal/sharedcomponent  \
 		-replace go.opentelemetry.io/collector/otelcol=$(CURDIR)/otelcol  \
 		-replace go.opentelemetry.io/collector/otelcol/otelcoltest=$(CURDIR)/otelcol/otelcoltest  \
 		-replace go.opentelemetry.io/collector/pdata=$(CURDIR)/pdata  \
 		-replace go.opentelemetry.io/collector/pdata/testdata=$(CURDIR)/pdata/testdata  \
 		-replace go.opentelemetry.io/collector/pdata/pprofile=$(CURDIR)/pdata/pprofile  \
 		-replace go.opentelemetry.io/collector/pipeline=$(CURDIR)/pipeline  \
+		-replace go.opentelemetry.io/collector/pipeline/pipelineprofiles=$(CURDIR)/pipeline/pipelineprofiles  \
 		-replace go.opentelemetry.io/collector/processor=$(CURDIR)/processor  \
+		-replace go.opentelemetry.io/collector/processor/processortest=$(CURDIR)/processor/processortest  \
 		-replace go.opentelemetry.io/collector/processor/batchprocessor=$(CURDIR)/processor/batchprocessor  \
 		-replace go.opentelemetry.io/collector/processor/memorylimiterprocessor=$(CURDIR)/processor/memorylimiterprocessor  \
 		-replace go.opentelemetry.io/collector/processor/processorprofiles=$(CURDIR)/processor/processorprofiles  \
@@ -319,6 +326,7 @@ check-contrib:
 		-replace go.opentelemetry.io/collector/receiver/nopreceiver=$(CURDIR)/receiver/nopreceiver  \
 		-replace go.opentelemetry.io/collector/receiver/otlpreceiver=$(CURDIR)/receiver/otlpreceiver  \
 		-replace go.opentelemetry.io/collector/receiver/receiverprofiles=$(CURDIR)/receiver/receiverprofiles  \
+		-replace go.opentelemetry.io/collector/receiver/receivertest=$(CURDIR)/receiver/receivertest  \
 		-replace go.opentelemetry.io/collector/semconv=$(CURDIR)/semconv  \
 		-replace go.opentelemetry.io/collector/service=$(CURDIR)/service"
 	@$(MAKE) -C $(CONTRIB_PATH) gotidy
@@ -336,7 +344,6 @@ restore-contrib:
 		-dropreplace go.opentelemetry.io/collector/client \
 		-dropreplace go.opentelemetry.io/collector/cmd/mdatagen \
 		-dropreplace go.opentelemetry.io/collector/component \
-		-dropreplace go.opentelemetry.io/collector/component/componentprofiles \
 		-dropreplace go.opentelemetry.io/collector/component/componentstatus \
 		-dropreplace go.opentelemetry.io/collector/config/configauth  \
 		-dropreplace go.opentelemetry.io/collector/config/configcompression  \
@@ -356,12 +363,16 @@ restore-contrib:
 		-dropreplace go.opentelemetry.io/collector/confmap/provider/httpsprovider  \
 		-dropreplace go.opentelemetry.io/collector/confmap/provider/yamlprovider  \
 		-dropreplace go.opentelemetry.io/collector/connector  \
+		-dropreplace go.opentelemetry.io/collector/connector/connectortest  \
 		-dropreplace go.opentelemetry.io/collector/connector/connectorprofiles  \
 		-dropreplace go.opentelemetry.io/collector/connector/forwardconnector  \
 		-dropreplace go.opentelemetry.io/collector/consumer  \
+		-dropreplace go.opentelemetry.io/collector/consumer/consumererror/consumererrorprofiles  \
 		-dropreplace go.opentelemetry.io/collector/consumer/consumerprofiles  \
 		-dropreplace go.opentelemetry.io/collector/consumer/consumertest  \
 		-dropreplace go.opentelemetry.io/collector/exporter  \
+		-dropreplace go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles  \
+		-dropreplace go.opentelemetry.io/collector/exporter/exportertest  \
 		-dropreplace go.opentelemetry.io/collector/exporter/debugexporter  \
 		-dropreplace go.opentelemetry.io/collector/exporter/nopexporter  \
 		-dropreplace go.opentelemetry.io/collector/exporter/otlpexporter  \
@@ -372,15 +383,18 @@ restore-contrib:
 		-dropreplace go.opentelemetry.io/collector/extension/zpagesextension  \
 		-dropreplace go.opentelemetry.io/collector/featuregate  \
 		-dropreplace go.opentelemetry.io/collector/filter  \
-		-dropreplace go.opentelemetry.io/collector/internal/globalgates \
-		-dropreplace go.opentelemetry.io/collector/internal/globalsignal \
+		-dropreplace go.opentelemetry.io/collector/internal/memorylimiter \
+		-dropreplace go.opentelemetry.io/collector/internal/fanoutconsumer \
+		-dropreplace go.opentelemetry.io/collector/internal/sharedcomponent \
 		-dropreplace go.opentelemetry.io/collector/otelcol  \
 		-dropreplace go.opentelemetry.io/collector/otelcol/otelcoltest  \
 		-dropreplace go.opentelemetry.io/collector/pdata  \
 		-dropreplace go.opentelemetry.io/collector/pdata/testdata  \
 		-dropreplace go.opentelemetry.io/collector/pdata/pprofile  \
 		-dropreplace go.opentelemetry.io/collector/pipeline  \
+		-dropreplace go.opentelemetry.io/collector/pipeline/pipelineprofiles \
 		-dropreplace go.opentelemetry.io/collector/processor  \
+		-dropreplace go.opentelemetry.io/collector/processortest  \
 		-dropreplace go.opentelemetry.io/collector/processor/batchprocessor  \
 		-dropreplace go.opentelemetry.io/collector/processor/memorylimiterprocessor  \
 		-dropreplace go.opentelemetry.io/collector/receiver  \

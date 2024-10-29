@@ -7,6 +7,8 @@ package component // import "go.opentelemetry.io/collector/component"
 
 import (
 	"context"
+	"fmt"
+	"strings"
 )
 
 // Component is either a receiver, exporter, processor, connector, or an extension.
@@ -119,6 +121,29 @@ const (
 	StabilityLevelStable
 )
 
+func (sl *StabilityLevel) UnmarshalText(in []byte) error {
+	str := strings.ToLower(string(in))
+	switch str {
+	case "undefined":
+		*sl = StabilityLevelUndefined
+	case "unmaintained":
+		*sl = StabilityLevelUnmaintained
+	case "deprecated":
+		*sl = StabilityLevelDeprecated
+	case "development":
+		*sl = StabilityLevelDevelopment
+	case "alpha":
+		*sl = StabilityLevelAlpha
+	case "beta":
+		*sl = StabilityLevelBeta
+	case "stable":
+		*sl = StabilityLevelStable
+	default:
+		return fmt.Errorf("unsupported stability level: %q", string(in))
+	}
+	return nil
+}
+
 func (sl StabilityLevel) String() string {
 	switch sl {
 	case StabilityLevelUndefined:
@@ -153,8 +178,9 @@ func (sl StabilityLevel) LogMessage() string {
 		return "Beta component. May change in the future."
 	case StabilityLevelStable:
 		return "Stable component."
+	default:
+		return "Stability level of component is undefined"
 	}
-	return "Stability level of component is undefined"
 }
 
 // Factory is implemented by all Component factories.

@@ -5,8 +5,8 @@ package telemetry
 
 import (
 	"context"
+	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	io_prometheus_client "github.com/prometheus/client_model/go"
@@ -26,7 +26,7 @@ import (
 const (
 	metricPrefix = "otelcol_"
 	otelPrefix   = "otel_sdk_"
-	grpcPrefix   = "gprc_"
+	grpcPrefix   = "grpc_"
 	httpPrefix   = "http_"
 	counterName  = "test_counter"
 )
@@ -43,8 +43,6 @@ func TestTelemetryInit(t *testing.T) {
 		name            string
 		disableHighCard bool
 		expectedMetrics map[string]metricValue
-		extendedConfig  bool
-		cfg             *Config
 	}{
 		{
 			name: "UseOpenTelemetryForInternalMetrics",
@@ -126,12 +124,16 @@ func TestTelemetryInit(t *testing.T) {
 				},
 			},
 		},
-		{
-			name:           "UseOTelWithSDKConfiguration",
-			extendedConfig: true,
-			cfg: &Config{
+	} {
+		prom := promtest.GetAvailableLocalAddressPrometheus(t)
+		endpoint := fmt.Sprintf("http://%s:%d/metrics", *prom.Host, *prom.Port)
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{
 				Metrics: MetricsConfig{
 					Level: configtelemetry.LevelDetailed,
+					Readers: []config.MetricReader{{
+						Pull: &config.PullMetricReader{Exporter: config.MetricExporter{Prometheus: prom}},
+					}},
 				},
 				Traces: TracesConfig{
 					Processors: []config.SpanProcessor{
@@ -147,76 +149,10 @@ func TestTelemetryInit(t *testing.T) {
 				Resource: map[string]*string{
 					semconv.AttributeServiceInstanceID: &testInstanceID,
 				},
-			},
-			expectedMetrics: map[string]metricValue{
-				metricPrefix + otelPrefix + counterName: {
-					value: 13,
-					labels: map[string]string{
-						"service_name":        "otelcol",
-						"service_version":     "latest",
-						"service_instance_id": testInstanceID,
-					},
-				},
-				metricPrefix + grpcPrefix + counterName: {
-					value: 11,
-					labels: map[string]string{
-						"net_sock_peer_addr":  "",
-						"net_sock_peer_name":  "",
-						"net_sock_peer_port":  "",
-						"service_name":        "otelcol",
-						"service_version":     "latest",
-						"service_instance_id": testInstanceID,
-					},
-				},
-				metricPrefix + httpPrefix + counterName: {
-					value: 10,
-					labels: map[string]string{
-						"net_host_name":       "",
-						"net_host_port":       "",
-						"service_name":        "otelcol",
-						"service_version":     "latest",
-						"service_instance_id": testInstanceID,
-					},
-				},
-				"target_info": {
-					value: 0,
-					labels: map[string]string{
-						"service_name":        "otelcol",
-						"service_version":     "latest",
-						"service_instance_id": testInstanceID,
-					},
-				},
-			},
-		},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.extendedConfig {
-				tt.cfg.Metrics.Readers = []config.MetricReader{
-					{
-						Pull: &config.PullMetricReader{
-							Exporter: config.MetricExporter{
-								Prometheus: promtest.GetAvailableLocalAddressPrometheus(t),
-							},
-						},
-					},
-				}
-			}
-			if tt.cfg == nil {
-				tt.cfg = &Config{
-					Resource: map[string]*string{
-						semconv.AttributeServiceInstanceID: &testInstanceID,
-					},
-					Metrics: MetricsConfig{
-						Level: configtelemetry.LevelDetailed,
-						Readers: []config.MetricReader{{
-							Pull: &config.PullMetricReader{Exporter: config.MetricExporter{Prometheus: promtest.GetAvailableLocalAddressPrometheus(t)}},
-						}},
-					},
-				}
 			}
 			set := meterProviderSettings{
-				res:               resource.New(component.NewDefaultBuildInfo(), tt.cfg.Resource),
-				cfg:               tt.cfg.Metrics,
+				res:               resource.New(component.NewDefaultBuildInfo(), cfg.Resource),
+				cfg:               cfg.Metrics,
 				asyncErrorChannel: make(chan error),
 			}
 			mp, err := newMeterProvider(set, tt.disableHighCard)
@@ -229,7 +165,7 @@ func TestTelemetryInit(t *testing.T) {
 
 			createTestMetrics(t, mp)
 
-			metrics := getMetricsFromPrometheus(t, mp.(*meterProvider).servers[0].Handler)
+			metrics := getMetricsFromPrometheus(t, endpoint)
 			require.Equal(t, len(tt.expectedMetrics), len(metrics))
 
 			for metricName, metricValue := range tt.expectedMetrics {
@@ -265,12 +201,12 @@ func createTestMetrics(t *testing.T, mp metric.MeterProvider) {
 	httpExampleCounter.Add(context.Background(), 10, metric.WithAttributeSet(otelinit.HTTPUnacceptableKeyValues))
 }
 
-func getMetricsFromPrometheus(t *testing.T, handler http.Handler) map[string]*io_prometheus_client.MetricFamily {
-	req, err := http.NewRequest(http.MethodGet, "/metrics", nil)
+func getMetricsFromPrometheus(t *testing.T, endpoint string) map[string]*io_prometheus_client.MetricFamily {
+	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
 	require.NoError(t, err)
 
-	rr := httptest.NewRecorder()
-	handler.ServeHTTP(rr, req)
+	rr, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
 
 	var parser expfmt.TextParser
 	parsed, err := parser.TextToMetricFamilies(rr.Body)

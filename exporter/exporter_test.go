@@ -22,11 +22,11 @@ func TestNewFactory(t *testing.T) {
 		func() component.Config { return &defaultCfg })
 	assert.EqualValues(t, testType, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
-	_, err := factory.CreateTracesExporter(context.Background(), Settings{}, &defaultCfg)
+	_, err := factory.CreateTraces(context.Background(), Settings{}, &defaultCfg)
 	require.Error(t, err)
-	_, err = factory.CreateMetricsExporter(context.Background(), Settings{}, &defaultCfg)
+	_, err = factory.CreateMetrics(context.Background(), Settings{}, &defaultCfg)
 	require.Error(t, err)
-	_, err = factory.CreateLogsExporter(context.Background(), Settings{}, &defaultCfg)
+	_, err = factory.CreateLogs(context.Background(), Settings{}, &defaultCfg)
 	assert.Error(t, err)
 }
 
@@ -42,16 +42,16 @@ func TestNewFactoryWithOptions(t *testing.T) {
 	assert.EqualValues(t, testType, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
-	assert.Equal(t, component.StabilityLevelDevelopment, factory.TracesExporterStability())
-	_, err := factory.CreateTracesExporter(context.Background(), Settings{}, &defaultCfg)
+	assert.Equal(t, component.StabilityLevelDevelopment, factory.TracesStability())
+	_, err := factory.CreateTraces(context.Background(), Settings{}, &defaultCfg)
 	require.NoError(t, err)
 
-	assert.Equal(t, component.StabilityLevelAlpha, factory.MetricsExporterStability())
-	_, err = factory.CreateMetricsExporter(context.Background(), Settings{}, &defaultCfg)
+	assert.Equal(t, component.StabilityLevelAlpha, factory.MetricsStability())
+	_, err = factory.CreateMetrics(context.Background(), Settings{}, &defaultCfg)
 	require.NoError(t, err)
 
-	assert.Equal(t, component.StabilityLevelDeprecated, factory.LogsExporterStability())
-	_, err = factory.CreateLogsExporter(context.Background(), Settings{}, &defaultCfg)
+	assert.Equal(t, component.StabilityLevelDeprecated, factory.LogsStability())
+	_, err = factory.CreateLogs(context.Background(), Settings{}, &defaultCfg)
 	assert.NoError(t, err)
 }
 
@@ -92,12 +92,12 @@ func TestMakeFactoryMap(t *testing.T) {
 	}
 }
 
-var nopInstance = &nopExporter{
+var nopInstance = &nop{
 	Consumer: consumertest.NewNop(),
 }
 
-// nopExporter stores consumed traces and metrics for testing purposes.
-type nopExporter struct {
+// nop stores consumed traces and metrics for testing purposes.
+type nop struct {
 	component.StartFunc
 	component.ShutdownFunc
 	consumertest.Consumer

@@ -37,7 +37,6 @@ func TestScrapeControllerSettings(t *testing.T) {
 			errVal: `"timeout": requires positive value`,
 		},
 	} {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 

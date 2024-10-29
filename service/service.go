@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"runtime"
 
+	"go.opentelemetry.io/otel/log"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/noop"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
@@ -92,6 +93,7 @@ type Service struct {
 	telemetrySettings component.TelemetrySettings
 	host              *graph.Host
 	collectorConf     *confmap.Conf
+	loggerProvider    log.LoggerProvider
 }
 
 // New creates a new Service, its telemetry, and Components.
@@ -122,10 +124,11 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		ZapOptions: set.LoggingOptions,
 	}
 
-	logger, err := telFactory.CreateLogger(ctx, telset, &cfg.Telemetry)
+	logger, lp, err := telFactory.CreateLogger(ctx, telset, &cfg.Telemetry)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create logger: %w", err)
 	}
+	srv.loggerProvider = lp
 
 	tracerProvider, err := telFactory.CreateTracerProvider(ctx, telset, &cfg.Telemetry)
 	if err != nil {
@@ -136,7 +139,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 
 	mp, err := telFactory.CreateMeterProvider(ctx, telset, &cfg.Telemetry)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create metric provider: %w", err)
+		return nil, fmt.Errorf("failed to create meter provider: %w", err)
 	}
 
 	logsAboutMeterProvider(logger, cfg.Telemetry.Metrics, mp)
@@ -145,7 +148,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 			if level <= cfg.Telemetry.Metrics.Level {
 				return mp
 			}
-			return noop.MeterProvider{}
+			return noop.NewMeterProvider()
 		},
 		Logger:         logger,
 		MeterProvider:  mp,
@@ -209,9 +212,6 @@ func (srv *Service) Start(ctx context.Context) error {
 		zap.Int("NumCPU", runtime.NumCPU()),
 	)
 
-	// enable status reporting
-	srv.host.Reporter.Ready()
-
 	if err := srv.host.ServiceExtensions.Start(ctx, srv.host); err != nil {
 		return fmt.Errorf("failed to start extensions: %w", err)
 	}
@@ -251,6 +251,12 @@ func (srv *Service) shutdownTelemetry(ctx context.Context) error {
 	if prov, ok := srv.telemetrySettings.TracerProvider.(shutdownable); ok {
 		if shutdownErr := prov.Shutdown(ctx); shutdownErr != nil {
 			err = multierr.Append(err, fmt.Errorf("failed to shutdown tracer provider: %w", shutdownErr))
+		}
+	}
+
+	if prov, ok := srv.loggerProvider.(shutdownable); ok {
+		if shutdownErr := prov.Shutdown(ctx); shutdownErr != nil {
+			err = multierr.Append(err, fmt.Errorf("failed to shutdown logger provider: %w", shutdownErr))
 		}
 	}
 	return err

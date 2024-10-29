@@ -126,10 +126,10 @@ linters-settings:
 
 linters:
   enable:
+    - copyloopvar
     - depguard
     - errcheck
     - errorlint
-    - exportloopref
     - gocritic
     - gofmt
     - goimports
@@ -143,6 +143,7 @@ linters:
     - unconvert
     - unused
     - unparam
+    - usestdlibvars
 
 issues:
   # Excluding configuration per-path, per-linter, per-text and per-source

@@ -1,0 +1,6 @@
+type: test
+
+status:
+  class: connector
+  stability:
+    beta: [traces_to_traces]

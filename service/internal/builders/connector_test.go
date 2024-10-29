@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componentprofiles"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectorprofiles"
@@ -21,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/collector/pipeline/pipelineprofiles"
 )
 
 func TestConnectorBuilder(t *testing.T) {
@@ -146,7 +146,7 @@ func TestConnectorBuilder(t *testing.T) {
 				assert.Equal(t, nopConnectorInstance, t2l)
 			}
 			t2p, err := b.CreateTracesToProfiles(context.Background(), createConnectorSettings(tt.id), tt.nextProfiles)
-			if expectedErr := tt.err(pipeline.SignalTraces, componentprofiles.SignalProfiles); expectedErr != "" {
+			if expectedErr := tt.err(pipeline.SignalTraces, pipelineprofiles.SignalProfiles); expectedErr != "" {
 				assert.EqualError(t, err, expectedErr)
 				assert.Nil(t, t2p)
 			} else {
@@ -181,7 +181,7 @@ func TestConnectorBuilder(t *testing.T) {
 				assert.Equal(t, nopConnectorInstance, m2l)
 			}
 			m2p, err := b.CreateMetricsToProfiles(context.Background(), createConnectorSettings(tt.id), tt.nextProfiles)
-			if expectedErr := tt.err(pipeline.SignalMetrics, componentprofiles.SignalProfiles); expectedErr != "" {
+			if expectedErr := tt.err(pipeline.SignalMetrics, pipelineprofiles.SignalProfiles); expectedErr != "" {
 				assert.EqualError(t, err, expectedErr)
 				assert.Nil(t, m2p)
 			} else {
@@ -216,7 +216,7 @@ func TestConnectorBuilder(t *testing.T) {
 				assert.Equal(t, nopConnectorInstance, l2l)
 			}
 			l2p, err := b.CreateLogsToProfiles(context.Background(), createConnectorSettings(tt.id), tt.nextProfiles)
-			if expectedErr := tt.err(pipeline.SignalLogs, componentprofiles.SignalProfiles); expectedErr != "" {
+			if expectedErr := tt.err(pipeline.SignalLogs, pipelineprofiles.SignalProfiles); expectedErr != "" {
 				assert.EqualError(t, err, expectedErr)
 				assert.Nil(t, l2p)
 			} else {
@@ -225,7 +225,7 @@ func TestConnectorBuilder(t *testing.T) {
 			}
 
 			p2t, err := b.CreateProfilesToTraces(context.Background(), createConnectorSettings(tt.id), tt.nextTraces)
-			if expectedErr := tt.err(componentprofiles.SignalProfiles, pipeline.SignalTraces); expectedErr != "" {
+			if expectedErr := tt.err(pipelineprofiles.SignalProfiles, pipeline.SignalTraces); expectedErr != "" {
 				assert.EqualError(t, err, expectedErr)
 				assert.Nil(t, p2t)
 			} else {
@@ -233,7 +233,7 @@ func TestConnectorBuilder(t *testing.T) {
 				assert.Equal(t, nopConnectorInstance, p2t)
 			}
 			p2m, err := b.CreateProfilesToMetrics(context.Background(), createConnectorSettings(tt.id), tt.nextMetrics)
-			if expectedErr := tt.err(componentprofiles.SignalProfiles, pipeline.SignalMetrics); expectedErr != "" {
+			if expectedErr := tt.err(pipelineprofiles.SignalProfiles, pipeline.SignalMetrics); expectedErr != "" {
 				assert.EqualError(t, err, expectedErr)
 				assert.Nil(t, p2m)
 			} else {
@@ -241,7 +241,7 @@ func TestConnectorBuilder(t *testing.T) {
 				assert.Equal(t, nopConnectorInstance, p2m)
 			}
 			p2l, err := b.CreateProfilesToLogs(context.Background(), createConnectorSettings(tt.id), tt.nextLogs)
-			if expectedErr := tt.err(componentprofiles.SignalProfiles, pipeline.SignalLogs); expectedErr != "" {
+			if expectedErr := tt.err(pipelineprofiles.SignalProfiles, pipeline.SignalLogs); expectedErr != "" {
 				assert.EqualError(t, err, expectedErr)
 				assert.Nil(t, p2l)
 			} else {
@@ -249,7 +249,7 @@ func TestConnectorBuilder(t *testing.T) {
 				assert.Equal(t, nopConnectorInstance, p2l)
 			}
 			p2p, err := b.CreateProfilesToProfiles(context.Background(), createConnectorSettings(tt.id), tt.nextProfiles)
-			if expectedErr := tt.err(componentprofiles.SignalProfiles, componentprofiles.SignalProfiles); expectedErr != "" {
+			if expectedErr := tt.err(pipelineprofiles.SignalProfiles, pipelineprofiles.SignalProfiles); expectedErr != "" {
 				assert.EqualError(t, err, expectedErr)
 				assert.Nil(t, p2p)
 			} else {

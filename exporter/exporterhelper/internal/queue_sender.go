@@ -100,6 +100,9 @@ func NewQueueSender(q exporterqueue.Queue[internal.Request], set exporter.Settin
 
 // Start is invoked during service startup.
 func (qs *QueueSender) Start(ctx context.Context, host component.Host) error {
+	if err := qs.queue.Start(ctx, host); err != nil {
+		return err
+	}
 	if err := qs.consumers.Start(ctx, host); err != nil {
 		return err
 	}
@@ -117,6 +120,9 @@ func (qs *QueueSender) Start(ctx context.Context, host component.Host) error {
 func (qs *QueueSender) Shutdown(ctx context.Context) error {
 	// Stop the queue and consumers, this will drain the queue and will call the retry (which is stopped) that will only
 	// try once every request.
+	if err := qs.queue.Shutdown(ctx); err != nil {
+		return err
+	}
 	return qs.consumers.Shutdown(ctx)
 }
 
