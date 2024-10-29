@@ -25,7 +25,7 @@ type profiles struct {
 	consumerprofiles.Profiles
 }
 
-// NewProfiles creates a processorprofiles.Profiles that ensure context propagation and the right tags are set.
+// NewProfiles creates a processorprofiles.Profiles that ensure context propagation.
 func NewProfiles(
 	_ context.Context,
 	_ processor.Settings,
