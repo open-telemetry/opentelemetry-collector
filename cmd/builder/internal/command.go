@@ -20,19 +20,13 @@ import (
 )
 
 const (
-	skipGenerateFlag               = "skip-generate"
-	skipCompilationFlag            = "skip-compilation"
-	skipGetModulesFlag             = "skip-get-modules"
-	skipStrictVersioningFlag       = "skip-strict-versioning"
-	ldflagsFlag                    = "ldflags"
-	distributionNameFlag           = "name"
-	distributionDescriptionFlag    = "description"
-	distributionVersionFlag        = "version"
-	distributionOtelColVersionFlag = "otelcol-version"
-	distributionOutputPathFlag     = "output-path"
-	distributionGoFlag             = "go"
-	distributionModuleFlag         = "module"
-	verboseFlag                    = "verbose"
+	skipGenerateFlag           = "skip-generate"
+	skipCompilationFlag        = "skip-compilation"
+	skipGetModulesFlag         = "skip-get-modules"
+	skipStrictVersioningFlag   = "skip-strict-versioning"
+	ldflagsFlag                = "ldflags"
+	distributionOutputPathFlag = "output-path"
+	verboseFlag                = "verbose"
 )
 
 var (
@@ -83,32 +77,8 @@ configuration is provided, ocb will generate a default Collector.
 	cmd.Flags().BoolVar(&cfg.SkipStrictVersioning, skipStrictVersioningFlag, true, "Whether builder should skip strictly checking the calculated versions following dependency resolution")
 	cmd.Flags().BoolVar(&cfg.Verbose, verboseFlag, false, "Whether builder should print verbose output (default false)")
 	cmd.Flags().StringVar(&cfg.LDFlags, ldflagsFlag, "", `ldflags to include in the "go build" command`)
-	cmd.Flags().StringVar(&cfg.Distribution.Name, distributionNameFlag, "otelcol-custom", "The executable name for the OpenTelemetry Collector distribution")
-	if err := cmd.Flags().MarkDeprecated(distributionNameFlag, "use config distribution::name"); err != nil {
-		return nil, err
-	}
-	cmd.Flags().StringVar(&cfg.Distribution.Description, distributionDescriptionFlag, "Custom OpenTelemetry Collector distribution", "A descriptive name for the OpenTelemetry Collector distribution")
-	if err := cmd.Flags().MarkDeprecated(distributionDescriptionFlag, "use config distribution::description"); err != nil {
-		return nil, err
-	}
-	cmd.Flags().StringVar(&cfg.Distribution.Version, distributionVersionFlag, "1.0.0", "The version for the OpenTelemetry Collector distribution")
-	if err := cmd.Flags().MarkDeprecated(distributionVersionFlag, "use config distribution::version"); err != nil {
-		return nil, err
-	}
-	cmd.Flags().StringVar(&cfg.Distribution.OtelColVersion, distributionOtelColVersionFlag, cfg.Distribution.OtelColVersion, "Which version of OpenTelemetry Collector to use as base")
-	if err := cmd.Flags().MarkDeprecated(distributionOtelColVersionFlag, "use config distribution::otelcol_version"); err != nil {
-		return nil, err
-	}
 	cmd.Flags().StringVar(&cfg.Distribution.OutputPath, distributionOutputPathFlag, cfg.Distribution.OutputPath, "Where to write the resulting files")
 	if err := cmd.Flags().MarkDeprecated(distributionOutputPathFlag, "use config distribution::output_path"); err != nil {
-		return nil, err
-	}
-	cmd.Flags().StringVar(&cfg.Distribution.Go, distributionGoFlag, "", "The Go binary to use during the compilation phase. Default: go from the PATH")
-	if err := cmd.Flags().MarkDeprecated(distributionGoFlag, "use config distribution::go"); err != nil {
-		return nil, err
-	}
-	cmd.Flags().StringVar(&cfg.Distribution.Module, distributionModuleFlag, "go.opentelemetry.io/collector/cmd/builder", "The Go module for the new distribution")
-	if err := cmd.Flags().MarkDeprecated(distributionModuleFlag, "use config distribution::module"); err != nil {
 		return nil, err
 	}
 	// version of this binary
@@ -184,27 +154,17 @@ func applyCfgFromFile(flags *flag.FlagSet, cfgFromFile builder.Config) {
 	if !flags.Changed(skipStrictVersioningFlag) && cfgFromFile.SkipStrictVersioning {
 		cfg.SkipStrictVersioning = cfgFromFile.SkipStrictVersioning
 	}
-	if !flags.Changed(distributionNameFlag) && cfgFromFile.Distribution.Name != "" {
-		cfg.Distribution.Name = cfgFromFile.Distribution.Name
-	}
-	if !flags.Changed(distributionDescriptionFlag) && cfgFromFile.Distribution.Description != "" {
-		cfg.Distribution.Description = cfgFromFile.Distribution.Description
-	}
-	if !flags.Changed(distributionVersionFlag) && cfgFromFile.Distribution.Version != "" {
-		cfg.Distribution.Version = cfgFromFile.Distribution.Version
-	}
-	if !flags.Changed(distributionOtelColVersionFlag) && cfgFromFile.Distribution.OtelColVersion != "" {
-		cfg.Distribution.OtelColVersion = cfgFromFile.Distribution.OtelColVersion
-	}
+
 	if !flags.Changed(distributionOutputPathFlag) && cfgFromFile.Distribution.OutputPath != "" {
 		cfg.Distribution.OutputPath = cfgFromFile.Distribution.OutputPath
 	}
-	if !flags.Changed(distributionGoFlag) && cfgFromFile.Distribution.Go != "" {
-		cfg.Distribution.Go = cfgFromFile.Distribution.Go
-	}
-	if !flags.Changed(distributionModuleFlag) && cfgFromFile.Distribution.Module != "" {
-		cfg.Distribution.Module = cfgFromFile.Distribution.Module
-	}
+
+	cfg.Distribution.Name = cfgFromFile.Distribution.Name
+	cfg.Distribution.Description = cfgFromFile.Distribution.Description
+	cfg.Distribution.Version = cfgFromFile.Distribution.Version
+	cfg.Distribution.OtelColVersion = cfgFromFile.Distribution.OtelColVersion
+	cfg.Distribution.Go = cfgFromFile.Distribution.Go
+	cfg.Distribution.Module = cfgFromFile.Distribution.Module
 	cfg.Distribution.BuildTags = cfgFromFile.Distribution.BuildTags
 	cfg.Distribution.DebugCompilation = cfgFromFile.Distribution.DebugCompilation
 }
