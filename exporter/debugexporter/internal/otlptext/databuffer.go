@@ -350,7 +350,6 @@ func (b *dataBuffer) logProfileMappings(ms pprofile.MappingSlice) {
 		b.logEntry("        Has filenames: %t", mapping.HasFilenames())
 		b.logEntry("        Has line numbers: %t", mapping.HasLineNumbers())
 		b.logEntry("        Has inline frames: %t", mapping.HasInlineFrames())
-
 	}
 }
 

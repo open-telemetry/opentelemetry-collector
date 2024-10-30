@@ -144,6 +144,7 @@ linters:
     - unused
     - unparam
     - usestdlibvars
+    - whitespace
 
 issues:
   # Excluding configuration per-path, per-linter, per-text and per-source

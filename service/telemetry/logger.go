@@ -74,7 +74,6 @@ func newLogger(ctx context.Context, set Settings, cfg Config) (*zap.Logger, log.
 				),
 			)
 		}))
-
 	}
 
 	if cfg.Logs.Sampling != nil && cfg.Logs.Sampling.Enabled {
