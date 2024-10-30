@@ -67,7 +67,7 @@ type Factory interface {
 // NewFactory creates a new Factory.
 func NewFactory() Factory {
 	return newFactory(createDefaultConfig,
-		withLogger(func(ctx context.Context, set Settings, cfg component.Config) (*zap.Logger, log.LoggerProvider, error) {
+		withLogger(func(_ context.Context, set Settings, cfg component.Config) (*zap.Logger, log.LoggerProvider, error) {
 			c := *cfg.(*Config)
 			return newLogger(set, c)
 		}),
