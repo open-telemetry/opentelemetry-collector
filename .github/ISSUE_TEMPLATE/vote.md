@@ -14,7 +14,7 @@ Any person in the community may vote. Votes of the stakeholders are binding. As 
 
 | Stakeholders                        | As defined on date | Number of people |
 |-------------------------------------|--------------------|------------------|
-| @open-telemetry/collector-approvers | xxxx-xx-xx         | N                |
+| @open-telemetry/collector-approvers | yyyy-mm-dd         | N                |
 
 <!--Add additional rows if there are additional stakeholders for the RFC-->
 
@@ -54,6 +54,6 @@ When starting the vote:
 For closing the vote:
 
 - [ ] At least five business days have passed since the vote was announced.
-- [ ] At least one third of the stakeholders have voted.
+- [ ] At least one-third of the stakeholders have voted.
 - [ ] The "Voting options" and "Result" sections have been updated reflecting the votes casted.
 - [ ] The RFC has been updated reflecting the votes casted.
