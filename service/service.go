@@ -123,7 +123,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	sch := semconv.SchemaURL
 	cfgRes := config.Resource{
 		SchemaUrl:  &sch,
-		Attributes: attributes(set.BuildInfo, cfg.Telemetry),
+		Attributes: attributes(res, cfg.Telemetry),
 	}
 
 	sdk, err := config.NewSDK(

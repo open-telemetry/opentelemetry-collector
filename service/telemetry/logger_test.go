@@ -42,24 +42,6 @@ func TestNewLogger(t *testing.T) {
 			wantCoreType: "*zapcore.ioCore",
 		},
 		{
-			name: "log config with processors and invalid config",
-			cfg: Config{
-				Logs: LogsConfig{
-					Encoding: "console",
-					Processors: []config.LogRecordProcessor{
-						{
-							Batch: &config.BatchLogRecordProcessor{
-								Exporter: config.LogRecordExporter{
-									OTLP: &config.OTLP{},
-								},
-							},
-						},
-					},
-				},
-			},
-			wantErr: errors.New("unsupported protocol \"\""),
-		},
-		{
 			name: "log config with processors",
 			cfg: Config{
 				Logs: LogsConfig{
@@ -85,7 +67,11 @@ func TestNewLogger(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			l, lp, err := newLogger(Settings{}, tt.cfg)
+			sdk, _ := config.NewSDK(config.WithOpenTelemetryConfiguration(config.OpenTelemetryConfiguration{LoggerProvider: &config.LoggerProvider{
+				Processors: tt.cfg.Logs.Processors,
+			}}))
+
+			l, lp, err := newLogger(Settings{SDK: &sdk}, tt.cfg)
 			if tt.wantErr != nil {
 				require.ErrorContains(t, err, tt.wantErr.Error())
 				require.Nil(t, tt.wantCoreType)

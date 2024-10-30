@@ -4,17 +4,17 @@
 package service // import "go.opentelemetry.io/collector/service"
 
 import (
-	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
+	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
-func attributes(buildInfo component.BuildInfo, cfg telemetry.Config) map[string]interface{} {
-	attrs := map[string]interface{}{
-		string(semconv.ServiceNameKey):    buildInfo.Command,
-		string(semconv.ServiceVersionKey): buildInfo.Version,
+func attributes(res *sdkresource.Resource, cfg telemetry.Config) map[string]interface{} {
+	attrs := map[string]interface{}{}
+	for _, r := range res.Attributes() {
+		attrs[string(r.Key)] = r.Value.AsString()
 	}
+
 	for k, v := range cfg.Resource {
 		if v != nil {
 			attrs[k] = *v

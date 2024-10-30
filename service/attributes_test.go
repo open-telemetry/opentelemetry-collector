@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/service/internal/resource"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -22,36 +23,43 @@ func TestAttributes(t *testing.T) {
 		{
 			name:           "no build info and no resource config",
 			cfg:            telemetry.Config{},
-			wantAttributes: map[string]interface{}{"service.name": "", "service.version": ""},
+			wantAttributes: map[string]interface{}{"service.name": "", "service.version": "", "service.instance.id": ""},
 		},
 		{
 			name:           "build info and no resource config",
 			cfg:            telemetry.Config{},
 			buildInfo:      component.BuildInfo{Command: "otelcoltest", Version: "0.0.0-test"},
-			wantAttributes: map[string]interface{}{"service.name": "otelcoltest", "service.version": "0.0.0-test"},
+			wantAttributes: map[string]interface{}{"service.name": "otelcoltest", "service.version": "0.0.0-test", "service.instance.id": ""},
 		},
 		{
 			name:           "no build info and resource config",
 			cfg:            telemetry.Config{Resource: map[string]*string{"service.name": newPtr("resource.name"), "service.version": newPtr("resource.version"), "test": newPtr("test")}},
-			wantAttributes: map[string]interface{}{"service.name": "resource.name", "service.version": "resource.version", "test": "test"},
+			wantAttributes: map[string]interface{}{"service.name": "resource.name", "service.version": "resource.version", "test": "test", "service.instance.id": ""},
 		},
 		{
 			name:           "build info and resource config",
 			buildInfo:      component.BuildInfo{Command: "otelcoltest", Version: "0.0.0-test"},
 			cfg:            telemetry.Config{Resource: map[string]*string{"service.name": newPtr("resource.name"), "service.version": newPtr("resource.version"), "test": newPtr("test")}},
-			wantAttributes: map[string]interface{}{"service.name": "resource.name", "service.version": "resource.version", "test": "test"},
+			wantAttributes: map[string]interface{}{"service.name": "resource.name", "service.version": "resource.version", "test": "test", "service.instance.id": ""},
 		},
 		{
 			name:           "deleting a nil value",
 			buildInfo:      component.BuildInfo{Command: "otelcoltest", Version: "0.0.0-test"},
 			cfg:            telemetry.Config{Resource: map[string]*string{"service.name": nil, "service.version": newPtr("resource.version"), "test": newPtr("test")}},
-			wantAttributes: map[string]interface{}{"service.version": "resource.version", "test": "test"},
+			wantAttributes: map[string]interface{}{"service.version": "resource.version", "test": "test", "service.instance.id": ""},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			attrs := attributes(tt.buildInfo, tt.cfg)
-			require.Equal(t, tt.wantAttributes, attrs)
+			attrs := attributes(resource.New(tt.buildInfo, tt.cfg.Resource), tt.cfg)
+			require.Len(t, attrs, len(tt.wantAttributes))
+			for k, v := range tt.wantAttributes {
+				if k == "service.instance.id" {
+					require.NotNil(t, attrs[k])
+				} else {
+					require.Equal(t, v, attrs[k])
+				}
+			}
 		})
 	}
 }

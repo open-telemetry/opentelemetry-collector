@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/contrib/config"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -48,7 +49,11 @@ func TestNewTracerProvider(t *testing.T) {
 			defer func() {
 				require.NoError(t, featuregate.GlobalRegistry().Set(noopTracerProvider.ID(), previousValue))
 			}()
-			provider, err := newTracerProvider(Settings{}, tt.cfg)
+			sdk, err := config.NewSDK(config.WithOpenTelemetryConfiguration(config.OpenTelemetryConfiguration{TracerProvider: &config.TracerProvider{
+				Processors: tt.cfg.Traces.Processors,
+			}}))
+			require.NoError(t, err)
+			provider, err := newTracerProvider(Settings{SDK: &sdk}, tt.cfg)
 			require.NoError(t, err)
 			require.IsType(t, tt.wantTracerProvider, provider)
 		})
