@@ -23,11 +23,13 @@ require (
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.112.0
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.112.0
 	go.opentelemetry.io/collector/extension v0.112.0
+	go.opentelemetry.io/collector/internal/sharedcomponent v0.112.0
 	go.opentelemetry.io/collector/pdata v1.18.0
 	go.opentelemetry.io/collector/pdata/testdata v0.112.0
 	go.opentelemetry.io/collector/pipeline v0.112.0
 	go.opentelemetry.io/collector/receiver v0.112.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.112.0
+	go.opentelemetry.io/collector/receiver/receivertest v0.112.0
 	go.opentelemetry.io/collector/service v0.112.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
@@ -67,7 +69,7 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/prometheus/client_golang v1.20.5 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
-	github.com/prometheus/common v0.60.0 // indirect
+	github.com/prometheus/common v0.60.1 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/shirou/gopsutil/v4 v4.24.9 // indirect
@@ -89,6 +91,7 @@ require (
 	go.opentelemetry.io/collector/extension/experimental/storage v0.112.0 // indirect
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.112.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.18.0 // indirect
+	go.opentelemetry.io/collector/internal/fanoutconsumer v0.112.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.112.0 // indirect
 	go.opentelemetry.io/collector/pipeline/pipelineprofiles v0.112.0 // indirect
 	go.opentelemetry.io/collector/processor v0.112.0 // indirect
@@ -207,6 +210,8 @@ replace go.opentelemetry.io/collector/extension/extensioncapabilities => ../../e
 
 replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../../receiver/receiverprofiles
 
+replace go.opentelemetry.io/collector/receiver/receivertest => ../../receiver/receivertest
+
 replace go.opentelemetry.io/collector/processor/processorprofiles => ../../processor/processorprofiles
 
 replace go.opentelemetry.io/collector/connector/connectorprofiles => ../../connector/connectorprofiles
@@ -226,3 +231,7 @@ replace go.opentelemetry.io/collector/consumer/consumererror/consumererrorprofil
 replace go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles => ../../exporter/exporterhelper/exporterhelperprofiles
 
 replace go.opentelemetry.io/collector/consumer/consumererror => ../../consumer/consumererror
+
+replace go.opentelemetry.io/collector/internal/fanoutconsumer => ../../internal/fanoutconsumer
+
+replace go.opentelemetry.io/collector/internal/sharedcomponent => ../../internal/sharedcomponent

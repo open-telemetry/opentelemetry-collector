@@ -6,7 +6,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/prometheus/client_golang v1.20.5
 	github.com/prometheus/client_model v0.6.1
-	github.com/prometheus/common v0.60.0
+	github.com/prometheus/common v0.60.1
 	github.com/shirou/gopsutil/v4 v4.24.9
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector v0.112.0
@@ -28,6 +28,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.112.0
 	go.opentelemetry.io/collector/extension/zpagesextension v0.112.0
 	go.opentelemetry.io/collector/featuregate v1.18.0
+	go.opentelemetry.io/collector/internal/fanoutconsumer v0.112.0
 	go.opentelemetry.io/collector/pdata v1.18.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.112.0
 	go.opentelemetry.io/collector/pdata/testdata v0.112.0
@@ -38,6 +39,7 @@ require (
 	go.opentelemetry.io/collector/processor/processortest v0.112.0
 	go.opentelemetry.io/collector/receiver v0.112.0
 	go.opentelemetry.io/collector/receiver/receiverprofiles v0.112.0
+	go.opentelemetry.io/collector/receiver/receivertest v0.112.0
 	go.opentelemetry.io/collector/semconv v0.112.0
 	go.opentelemetry.io/contrib/bridges/otelzap v0.6.0
 	go.opentelemetry.io/contrib/config v0.10.0
@@ -189,6 +191,8 @@ replace go.opentelemetry.io/collector/client => ../client
 
 replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../receiver/receiverprofiles
 
+replace go.opentelemetry.io/collector/receiver/receivertest => ../receiver/receivertest
+
 replace go.opentelemetry.io/collector/processor/processorprofiles => ../processor/processorprofiles
 
 replace go.opentelemetry.io/collector/exporter/exporterprofiles => ../exporter/exporterprofiles
@@ -200,3 +204,5 @@ replace go.opentelemetry.io/collector/exporter/exportertest => ../exporter/expor
 replace go.opentelemetry.io/collector/consumer/consumererror => ../consumer/consumererror
 
 replace go.opentelemetry.io/collector/connector/connectorprofiles => ../connector/connectorprofiles
+
+replace go.opentelemetry.io/collector/internal/fanoutconsumer => ../internal/fanoutconsumer

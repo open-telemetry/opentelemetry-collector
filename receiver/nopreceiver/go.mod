@@ -9,6 +9,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.112.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.112.0
 	go.opentelemetry.io/collector/receiver v0.112.0
+	go.opentelemetry.io/collector/receiver/receivertest v0.112.0
 	go.uber.org/goleak v1.3.0
 )
 
@@ -72,6 +73,8 @@ replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../../consume
 replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/consumertest
 
 replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../receiverprofiles
+
+replace go.opentelemetry.io/collector/receiver/receivertest => ../receivertest
 
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 

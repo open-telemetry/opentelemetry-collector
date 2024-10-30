@@ -69,7 +69,7 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/prometheus/client_golang v1.20.5 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
-	github.com/prometheus/common v0.60.0 // indirect
+	github.com/prometheus/common v0.60.1 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/shirou/gopsutil/v4 v4.24.9 // indirect
@@ -106,7 +106,9 @@ require (
 	go.opentelemetry.io/collector/extension/experimental/storage v0.112.0 // indirect
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.112.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.18.0 // indirect
+	go.opentelemetry.io/collector/internal/fanoutconsumer v0.112.0 // indirect
 	go.opentelemetry.io/collector/internal/memorylimiter v0.112.0 // indirect
+	go.opentelemetry.io/collector/internal/sharedcomponent v0.112.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.18.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.112.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.112.0 // indirect
@@ -115,6 +117,7 @@ require (
 	go.opentelemetry.io/collector/processor/processorprofiles v0.112.0 // indirect
 	go.opentelemetry.io/collector/processor/processortest v0.112.0 // indirect
 	go.opentelemetry.io/collector/receiver/receiverprofiles v0.112.0 // indirect
+	go.opentelemetry.io/collector/receiver/receivertest v0.112.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.112.0 // indirect
 	go.opentelemetry.io/collector/service v0.112.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.6.0 // indirect
@@ -244,6 +247,10 @@ replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 
 replace go.opentelemetry.io/collector/internal/memorylimiter => ../../internal/memorylimiter
 
+replace go.opentelemetry.io/collector/internal/fanoutconsumer => ../../internal/fanoutconsumer
+
+replace go.opentelemetry.io/collector/internal/sharedcomponent => ../../internal/sharedcomponent
+
 replace go.opentelemetry.io/collector/otelcol => ../../otelcol
 
 replace go.opentelemetry.io/collector/pdata => ../../pdata
@@ -273,6 +280,8 @@ replace go.opentelemetry.io/collector/receiver/nopreceiver => ../../receiver/nop
 replace go.opentelemetry.io/collector/receiver/otlpreceiver => ../../receiver/otlpreceiver
 
 replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../../receiver/receiverprofiles
+
+replace go.opentelemetry.io/collector/receiver/receivertest => ../../receiver/receivertest
 
 replace go.opentelemetry.io/collector/semconv => ../../semconv
 

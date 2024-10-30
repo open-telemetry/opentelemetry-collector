@@ -16,6 +16,7 @@ require (
 	go.opentelemetry.io/collector/pdata/pprofile v0.112.0
 	go.opentelemetry.io/collector/pipeline v0.112.0
 	go.opentelemetry.io/collector/receiver v0.112.0
+	go.opentelemetry.io/collector/receiver/receivertest v0.112.0
 	google.golang.org/grpc v1.67.1
 )
 
@@ -60,6 +61,8 @@ replace go.opentelemetry.io/collector/receiver => ../../receiver
 replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/consumertest
 
 replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../../receiver/receiverprofiles
+
+replace go.opentelemetry.io/collector/receiver/receivertest => ../../receiver/receivertest
 
 replace go.opentelemetry.io/collector/extension => ../../extension
 
