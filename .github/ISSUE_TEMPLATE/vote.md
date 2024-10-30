@@ -10,7 +10,9 @@ A [vote](https://github.com/open-telemetry/opentelemetry-collector/blob/main/doc
 
 ### Stakeholders
 
-Any person in the community may vote. Votes of the stakeholders are binding. As defined in the RFC, there are N stakeholders for this RFC divided as follows:
+Any person in the community may vote. Votes of the stakeholders are binding. Stakeholders are
+encouraged to consider the views from the wider community when casting their vote. As defined in the
+RFC, there are N stakeholders for this RFC divided as follows:
 
 | Stakeholders                        | As defined on date | Number of people |
 |-------------------------------------|--------------------|------------------|
