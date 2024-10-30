@@ -40,6 +40,7 @@ type Settings struct {
 	BuildInfo         component.BuildInfo
 	AsyncErrorChannel chan error
 	ZapOptions        []zap.Option
+	SDK               *config.SDK
 }
 
 // Factory is factory interface for telemetry.
@@ -68,11 +69,11 @@ func NewFactory() Factory {
 	return newFactory(createDefaultConfig,
 		withLogger(func(ctx context.Context, set Settings, cfg component.Config) (*zap.Logger, log.LoggerProvider, error) {
 			c := *cfg.(*Config)
-			return newLogger(ctx, set, c)
+			return newLogger(set, c)
 		}),
-		withTracerProvider(func(ctx context.Context, set Settings, cfg component.Config) (trace.TracerProvider, error) {
+		withTracerProvider(func(_ context.Context, set Settings, cfg component.Config) (trace.TracerProvider, error) {
 			c := *cfg.(*Config)
-			return newTracerProvider(ctx, set, c)
+			return newTracerProvider(set, c)
 		}),
 		withMeterProvider(func(_ context.Context, set Settings, cfg component.Config) (metric.MeterProvider, error) {
 			c := *cfg.(*Config)

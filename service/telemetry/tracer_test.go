@@ -4,7 +4,6 @@
 package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -49,7 +48,7 @@ func TestNewTracerProvider(t *testing.T) {
 			defer func() {
 				require.NoError(t, featuregate.GlobalRegistry().Set(noopTracerProvider.ID(), previousValue))
 			}()
-			provider, err := newTracerProvider(context.TODO(), Settings{}, tt.cfg)
+			provider, err := newTracerProvider(Settings{}, tt.cfg)
 			require.NoError(t, err)
 			require.IsType(t, tt.wantTracerProvider, provider)
 		})

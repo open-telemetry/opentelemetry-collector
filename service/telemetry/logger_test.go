@@ -85,7 +85,7 @@ func TestNewLogger(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			l, lp, err := newLogger(context.Background(), Settings{}, tt.cfg)
+			l, lp, err := newLogger(Settings{}, tt.cfg)
 			if tt.wantErr != nil {
 				require.ErrorContains(t, err, tt.wantErr.Error())
 				require.Nil(t, tt.wantCoreType)
