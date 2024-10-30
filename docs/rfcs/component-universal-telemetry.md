@@ -81,7 +81,7 @@ There are two straightforward measurements that can be made on any pdata:
   These are high cost to compute, so by default they should be disabled (and not calculated).
 
 The location of these measurements can be described in terms of whether the data is "consumed" or "produced", from the perspective of the
-component to which the telemetry is attributed. Metrics which contain the term "procuded" describe data which is emitted from the component,
+component to which the telemetry is attributed. Metrics which contain the term "produced" describe data which is emitted from the component,
 while metrics which contain the term "consumed" describe data which is received by the component.
 
 For both metrics, an `outcome` attribute with possible values `success` and `failure` should be automatically recorded, corresponding to
