@@ -133,6 +133,9 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 				LoggerProvider: &config.LoggerProvider{
 					Processors: cfg.Telemetry.Logs.Processors,
 				},
+				MeterProvider: &config.MeterProvider{
+					Readers: cfg.Telemetry.Metrics.Readers,
+				},
 				TracerProvider: &config.TracerProvider{
 					Processors: cfg.Telemetry.Traces.Processors,
 				},
