@@ -28,8 +28,10 @@ func newFakeRequestSink() *fakeRequestSink {
 type fakeRequest struct {
 	items     int
 	exportErr error
-	delay     time.Duration
-	sink      *fakeRequestSink
+
+	mergeErr error
+	delay    time.Duration
+	sink     *fakeRequestSink
 }
 
 func (r *fakeRequest) Export(ctx context.Context) error {
@@ -53,8 +55,17 @@ func (r *fakeRequest) ItemsCount() int {
 }
 
 func (r *fakeRequest) Merge(_ context.Context,
-	_ internal.Request) (internal.Request, error) {
-	return nil, errors.New("not implemented")
+	r2 internal.Request) (internal.Request, error) {
+	fr2 := r2.(*fakeRequest)
+	if fr2.mergeErr != nil {
+		return nil, fr2.mergeErr
+	}
+	return &fakeRequest{
+		items:     r.items + fr2.items,
+		sink:      r.sink,
+		exportErr: fr2.exportErr,
+		delay:     r.delay + fr2.delay,
+	}, nil
 }
 
 func (r *fakeRequest) MergeSplit(_ context.Context, _ exporterbatcher.MaxSizeConfig,
