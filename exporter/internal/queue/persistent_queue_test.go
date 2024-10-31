@@ -190,7 +190,6 @@ func TestPersistentQueue_Shutdown(t *testing.T) {
 	for i := 0; i < 1000; i++ {
 		assert.NoError(t, pq.Offer(context.Background(), req))
 	}
-
 }
 
 func TestPersistentQueue_ConsumersProducers(t *testing.T) {

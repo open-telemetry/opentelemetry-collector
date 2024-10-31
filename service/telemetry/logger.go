@@ -49,7 +49,6 @@ func newLogger(set Settings, cfg Config) (*zap.Logger, log.LoggerProvider, error
 				),
 			)
 		}))
-
 	}
 
 	if cfg.Logs.Sampling != nil && cfg.Logs.Sampling.Enabled {

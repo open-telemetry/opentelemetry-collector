@@ -52,6 +52,5 @@ func FuzzReceiverHandlers(f *testing.F) {
 			httpLogsReceiver := logs.New(r.nextLogs, r.obsrepHTTP)
 			handleLogs(resp, req, httpLogsReceiver)
 		}
-
 	})
 }

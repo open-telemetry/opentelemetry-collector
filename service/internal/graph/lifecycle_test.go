@@ -287,7 +287,6 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 }
 
 func TestStatusReportedOnStartupShutdown(t *testing.T) {
-
 	rNoErr := &testNode{id: component.MustNewIDWithName("r_no_err", "1")}
 	rStErr := &testNode{id: component.MustNewIDWithName("r_st_err", "1"), startErr: assert.AnError}
 	rSdErr := &testNode{id: component.MustNewIDWithName("r_sd_err", "1"), shutdownErr: assert.AnError}
@@ -318,7 +317,6 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 				assert.Equal(t, ev1.Err(), ev2.Err())
 			}
 		}
-
 	}
 
 	for _, tt := range []struct {

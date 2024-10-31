@@ -220,7 +220,6 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 			assert.EqualValues(t, 0, transport.MaxConnsPerHost)
 			assert.EqualValues(t, 90*time.Second, transport.IdleConnTimeout)
 			assert.False(t, transport.DisableKeepAlives)
-
 		})
 	}
 }
@@ -554,7 +553,6 @@ func TestHTTPServerWarning(t *testing.T) {
 			require.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), tt.len)
 		})
 	}
-
 }
 
 func TestHttpReception(t *testing.T) {
@@ -1279,7 +1277,6 @@ func TestServerWithDecoder(t *testing.T) {
 	srv.Handler.ServeHTTP(response, req)
 	// verify
 	assert.Equal(t, http.StatusOK, response.Result().StatusCode)
-
 }
 
 func TestServerWithDecompression(t *testing.T) {
@@ -1497,7 +1494,6 @@ func BenchmarkHttpRequest(b *testing.B) {
 			if !bb.clientPerThread {
 				c, err = hcs.ToClient(context.Background(), componenttest.NewNopHost(), nilProvidersSettings)
 				require.NoError(b, err)
-
 			}
 			b.RunParallel(func(pb *testing.PB) {
 				if c == nil {

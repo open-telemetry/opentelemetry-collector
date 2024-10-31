@@ -29,7 +29,6 @@ func (qb *DefaultBatcher) resetTimer() {
 
 // startReadingFlushingGoroutine starts a goroutine that reads and then flushes.
 func (qb *DefaultBatcher) startReadingFlushingGoroutine() {
-
 	qb.stopWG.Add(1)
 	go func() {
 		defer qb.stopWG.Done()
