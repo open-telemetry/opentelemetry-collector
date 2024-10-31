@@ -49,7 +49,6 @@ func BenchmarkCompression(b *testing.B) {
 		b.Run(fmt.Sprint(benchmark.name), func(b *testing.B) {
 			benchmark.function(b, benchmark.codec, &buffer, payload)
 		})
-
 	}
 }
 
