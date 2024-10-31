@@ -45,7 +45,6 @@ type registerableTracerProvider interface {
 }
 
 func (zpe *zpagesExtension) Start(ctx context.Context, host component.Host) error {
-
 	zPagesMux := http.NewServeMux()
 
 	sdktracer, ok := zpe.telemetry.TracerProvider.(registerableTracerProvider)

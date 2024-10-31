@@ -313,7 +313,6 @@ func newConfigWatcherExtension(fn func() error) *configWatcherExtension {
 	}
 
 	return comp
-
 }
 
 func newConfigWatcherExtensionFactory(name component.Type, fn func() error) extension.Factory {

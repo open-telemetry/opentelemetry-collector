@@ -117,7 +117,6 @@ func newInitializedConfig(t *testing.T) Config {
 	// Validate and ParseModules will be called before the config is
 	// given to Generate.
 	assert.NoError(t, cfg.Validate())
-	assert.NoError(t, cfg.SetBackwardsCompatibility())
 	assert.NoError(t, cfg.ParseModules())
 
 	return cfg
@@ -152,17 +151,6 @@ func TestVersioning(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
-			name: "require otelcol",
-			cfgBuilder: func() Config {
-				cfg := newTestConfig()
-				cfg.Distribution.Go = "go"
-				cfg.Distribution.RequireOtelColModule = true
-				cfg.Replaces = append(cfg.Replaces, replaces...)
-				return cfg
-			},
-			expectedErr: nil,
-		},
-		{
 			name: "only gomod file, skip generate",
 			cfgBuilder: func() Config {
 				cfg := newTestConfig()
@@ -175,38 +163,6 @@ func TestVersioning(t *testing.T) {
 				return cfg
 			},
 			expectedErr: ErrDepNotFound,
-		},
-		{
-			name: "old otel version",
-			cfgBuilder: func() Config {
-				cfg := newTestConfig()
-				cfg.Verbose = true
-				cfg.Distribution.Go = "go"
-				cfg.Distribution.OtelColVersion = "0.97.0"
-				cfg.Distribution.RequireOtelColModule = true
-				var err error
-				cfg.Exporters, err = parseModules([]Module{
-					{
-						GoMod: "go.opentelemetry.io/collector/exporter/otlpexporter v0.97.0",
-					},
-				})
-				require.NoError(t, err)
-				cfg.Receivers, err = parseModules([]Module{
-					{
-						GoMod: "go.opentelemetry.io/collector/receiver/otlpreceiver v0.97.0",
-					},
-				})
-				require.NoError(t, err)
-				providers, err := parseModules([]Module{
-					{
-						GoMod: "go.opentelemetry.io/collector/confmap/provider/envprovider v0.97.0",
-					},
-				})
-				require.NoError(t, err)
-				cfg.Providers = &providers
-				return cfg
-			},
-			expectedErr: nil,
 		},
 		{
 			name: "old component version",
@@ -245,7 +201,6 @@ func TestVersioning(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := tt.cfgBuilder()
-			require.NoError(t, cfg.SetBackwardsCompatibility())
 			require.NoError(t, cfg.Validate())
 			require.NoError(t, cfg.ParseModules())
 			err := GenerateAndCompile(cfg)
@@ -279,8 +234,6 @@ func TestGenerateAndCompile(t *testing.T) {
 			name: "Default Configuration Compilation",
 			cfgBuilder: func(t *testing.T) Config {
 				cfg := newTestConfig()
-				err := cfg.SetBackwardsCompatibility()
-				require.NoError(t, err)
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				return cfg
@@ -290,8 +243,6 @@ func TestGenerateAndCompile(t *testing.T) {
 			name: "LDFlags Compilation",
 			cfgBuilder: func(t *testing.T) Config {
 				cfg := newTestConfig()
-				err := cfg.SetBackwardsCompatibility()
-				require.NoError(t, err)
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				cfg.LDFlags = `-X "test.gitVersion=0743dc6c6411272b98494a9b32a63378e84c34da" -X "test.gitTag=local-testing" -X "test.goVersion=go version go1.20.7 darwin/amd64"`
@@ -302,8 +253,6 @@ func TestGenerateAndCompile(t *testing.T) {
 			name: "Build Tags Compilation",
 			cfgBuilder: func(t *testing.T) Config {
 				cfg := newTestConfig()
-				err := cfg.SetBackwardsCompatibility()
-				require.NoError(t, err)
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				cfg.Distribution.BuildTags = "customTag"
@@ -314,8 +263,6 @@ func TestGenerateAndCompile(t *testing.T) {
 			name: "Debug Compilation",
 			cfgBuilder: func(t *testing.T) Config {
 				cfg := newTestConfig()
-				err := cfg.SetBackwardsCompatibility()
-				require.NoError(t, err)
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				cfg.Logger = zap.NewNop()
@@ -327,8 +274,6 @@ func TestGenerateAndCompile(t *testing.T) {
 			name: "No providers",
 			cfgBuilder: func(t *testing.T) Config {
 				cfg := newTestConfig()
-				err := cfg.SetBackwardsCompatibility()
-				require.NoError(t, err)
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				cfg.Providers = &[]Module{}
@@ -339,8 +284,6 @@ func TestGenerateAndCompile(t *testing.T) {
 			name: "Pre-confmap factories",
 			cfgBuilder: func(t *testing.T) Config {
 				cfg := newTestConfig()
-				err := cfg.SetBackwardsCompatibility()
-				require.NoError(t, err)
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				cfg.Distribution.OtelColVersion = "0.98.0"
@@ -352,8 +295,6 @@ func TestGenerateAndCompile(t *testing.T) {
 			name: "With confmap factories",
 			cfgBuilder: func(t *testing.T) Config {
 				cfg := newTestConfig()
-				err := cfg.SetBackwardsCompatibility()
-				require.NoError(t, err)
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				cfg.Distribution.OtelColVersion = "0.99.0"
@@ -365,8 +306,6 @@ func TestGenerateAndCompile(t *testing.T) {
 			name: "ConfResolverDefaultURIScheme set",
 			cfgBuilder: func(t *testing.T) Config {
 				cfg := newTestConfig()
-				err := cfg.SetBackwardsCompatibility()
-				require.NoError(t, err)
 				cfg.ConfResolver = ConfResolver{
 					DefaultURIScheme: "env",
 				}
@@ -465,7 +404,6 @@ func TestReplaceStatementsAreComplete(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	require.NoError(t, cfg.SetBackwardsCompatibility())
 	require.NoError(t, cfg.Validate())
 	require.NoError(t, cfg.ParseModules())
 	err = GenerateAndCompile(cfg)

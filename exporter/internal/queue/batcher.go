@@ -33,12 +33,23 @@ type BaseBatcher struct {
 }
 
 func NewBatcher(batchCfg exporterbatcher.Config, queue Queue[internal.Request], maxWorkers int) (Batcher, error) {
-	if batchCfg.Enabled {
+	if !batchCfg.Enabled {
+		return &DisabledBatcher{
+			BaseBatcher{
+				batchCfg:   batchCfg,
+				queue:      queue,
+				maxWorkers: maxWorkers,
+				stopWG:     sync.WaitGroup{},
+			},
+		}, nil
+	}
+
+	if batchCfg.MaxSizeConfig.MaxSizeItems != 0 {
 		return nil, errors.ErrUnsupported
 	}
 
-	return &DisabledBatcher{
-		BaseBatcher{
+	return &DefaultBatcher{
+		BaseBatcher: BaseBatcher{
 			batchCfg:   batchCfg,
 			queue:      queue,
 			maxWorkers: maxWorkers,

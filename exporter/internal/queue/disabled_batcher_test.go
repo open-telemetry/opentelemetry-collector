@@ -70,18 +70,3 @@ func TestDisabledBatcher_Basic(t *testing.T) {
 		})
 	}
 }
-
-func TestDisabledBatcher_BatchingNotImplemented(t *testing.T) {
-	cfg := exporterbatcher.NewDefaultConfig()
-	cfg.Enabled = true
-	maxWorkers := 0
-
-	q := NewBoundedMemoryQueue[internal.Request](
-		MemoryQueueSettings[internal.Request]{
-			Sizer:    &RequestSizer[internal.Request]{},
-			Capacity: 10,
-		})
-
-	_, err := NewBatcher(cfg, q, maxWorkers)
-	require.Error(t, err)
-}

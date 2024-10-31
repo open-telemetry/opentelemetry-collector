@@ -70,13 +70,13 @@ When submitting a component to the community, consider breaking it down into sep
     factory structs.
   * This PR is usually trivial to review, so the size limit does not apply to
     it.
-  * The component should use [`In Development` Stability](https://github.com/open-telemetry/opentelemetry-collector#development) in its README.
+  * The component should use [`In Development` Stability](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development) in its README.
 * **Second PR** should include the concrete implementation of the component. If the
   size of this PR is larger than the recommended size consider splitting it into
   multiple PRs.
 * **Last PR** should mark the new component as `Alpha` stability and add it to the `otelcorecol`
   binary by updating the `otelcorecol/components.go` file. The component must be enabled
-  only after sufficient testing and only when it meets [`Alpha` stability requirements.](https://github.com/open-telemetry/opentelemetry-collector#alpha)
+  only after sufficient testing and only when it meets [`Alpha` stability requirements.](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha)
 * Once a new component has been added to the executable, please add the component
   to the [OpenTelemetry.io registry](https://github.com/open-telemetry/opentelemetry.io#adding-a-project-to-the-opentelemetry-registry).
 * intra-repository `replace` statements in `go.mod` files can be automatically inserted by running `make crosslink`. For more information
