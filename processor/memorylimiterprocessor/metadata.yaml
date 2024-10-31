@@ -17,7 +17,7 @@ tests:
 
 telemetry:
   metrics:
-    processor_accepted_spans:
+    processor_memory_limiter_accepted_spans:
       enabled: true
       description: Number of spans successfully pushed into the next component in the pipeline.
       stability:
@@ -28,7 +28,7 @@ telemetry:
         value_type: int
         monotonic: true
 
-    processor_refused_spans:
+    processor_memory_limiter_refused_spans:
       enabled: true
       description: Number of spans that were rejected by the next component in the pipeline.
       stability:
@@ -39,7 +39,7 @@ telemetry:
         value_type: int
         monotonic: true
 
-    processor_accepted_metric_points:
+    processor_memory_limiter_accepted_metric_points:
       enabled: true
       description: Number of metric points successfully pushed into the next component in the pipeline.
       stability:
@@ -50,7 +50,7 @@ telemetry:
         value_type: int
         monotonic: true
 
-    processor_refused_metric_points:
+    processor_memory_limiter_refused_metric_points:
       enabled: true
       description: Number of metric points that were rejected by the next component in the pipeline.
       stability:
@@ -61,7 +61,7 @@ telemetry:
         value_type: int
         monotonic: true
 
-    processor_accepted_log_records:
+    processor_memory_limiter_accepted_log_records:
       enabled: true
       description: Number of log records successfully pushed into the next component in the pipeline.
       stability:
@@ -72,7 +72,7 @@ telemetry:
         value_type: int
         monotonic: true
 
-    processor_refused_log_records:
+    processor_memory_limiter_refused_log_records:
       enabled: true
       description: Number of log records that were rejected by the next component in the pipeline.
       stability:
