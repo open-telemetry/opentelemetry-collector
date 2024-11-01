@@ -171,7 +171,7 @@ func TestVersioning(t *testing.T) {
 				cfg.Distribution.Go = "go"
 				cfg.Exporters = []Module{
 					{
-						GoMod: "go.opentelemetry.io/collector/exporter/otlpexporter v0.97.0",
+						GoMod: "go.opentelemetry.io/collector/exporter/otlpexporter v0.112.0",
 					},
 				}
 				cfg.Providers = &[]Module{}
@@ -188,7 +188,7 @@ func TestVersioning(t *testing.T) {
 				cfg.SkipStrictVersioning = true
 				cfg.Exporters = []Module{
 					{
-						GoMod: "go.opentelemetry.io/collector/exporter/otlpexporter v0.97.0",
+						GoMod: "go.opentelemetry.io/collector/exporter/otlpexporter v0.112.0",
 					},
 				}
 				cfg.Providers = &[]Module{}
@@ -281,23 +281,11 @@ func TestGenerateAndCompile(t *testing.T) {
 			},
 		},
 		{
-			name: "Pre-confmap factories",
-			cfgBuilder: func(t *testing.T) Config {
-				cfg := newTestConfig()
-				cfg.Distribution.OutputPath = t.TempDir()
-				cfg.Replaces = append(cfg.Replaces, replaces...)
-				cfg.Distribution.OtelColVersion = "0.98.0"
-				cfg.SkipStrictVersioning = true
-				return cfg
-			},
-		},
-		{
 			name: "With confmap factories",
 			cfgBuilder: func(t *testing.T) Config {
 				cfg := newTestConfig()
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
-				cfg.Distribution.OtelColVersion = "0.99.0"
 				cfg.SkipStrictVersioning = true
 				return cfg
 			},
@@ -355,11 +343,6 @@ func TestReplaceStatementsAreComplete(t *testing.T) {
 	cfg := NewDefaultConfig()
 	cfg.Distribution.Go = "go"
 	cfg.Distribution.OutputPath = dir
-	// Use a deliberately nonexistent version to simulate an unreleased
-	// version of the package. Not strictly necessary since this test
-	// will catch gaps in the replace statements before a release is in
-	// progress.
-	cfg.Distribution.OtelColVersion = "1.9999.9999"
 	cfg.Replaces = append(cfg.Replaces, generateReplaces()...)
 	// Configure all components that we want to use elsewhere in these tests.
 	// This ensures the resulting go.mod file has maximum coverage of modules

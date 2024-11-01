@@ -235,3 +235,9 @@ func TestSkipsNilFieldValidation(t *testing.T) {
 	cfg.Providers = nil
 	assert.NoError(t, cfg.Validate())
 }
+
+func TestValidateDeprecatedOtelColVersion(t *testing.T) {
+	cfg := NewDefaultConfig()
+	cfg.Distribution.OtelColVersion = "test"
+	assert.Error(t, cfg.Validate())
+}
