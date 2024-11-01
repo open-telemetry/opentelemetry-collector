@@ -261,7 +261,7 @@ func (gcs *ClientConfig) ToClientConn(
 	if err != nil {
 		return nil, err
 	}
-	//lint:ignore SA1019 see https://github.com/open-telemetry/opentelemetry-collector/pull/11575
+	//nolint:staticcheck
 	return grpc.DialContext(ctx, gcs.sanitizedEndpoint(), grpcOpts...)
 }
 
