@@ -77,6 +77,7 @@ func (e *exampleAuthData) GetAttribute(key string) any {
 	}
 	return nil
 }
+
 func (e *exampleAuthData) GetAttributeNames() []string {
 	return []string{"username"}
 }

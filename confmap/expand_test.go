@@ -14,7 +14,7 @@ import (
 )
 
 func TestResolverExpandEnvVars(t *testing.T) {
-	var testCases = []struct {
+	testCases := []struct {
 		name string // test case name (also file name containing config yaml)
 	}{
 		{name: "expand-with-no-env.yaml"},
@@ -75,7 +75,8 @@ func TestResolverExpandMapAndSliceValues(t *testing.T) {
 	provider := newFakeProvider("input", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
 		return NewRetrieved(map[string]any{
 			"test_map":   map[string]any{"recv": "${test:MAP_VALUE}"},
-			"test_slice": []any{"${test:MAP_VALUE}"}})
+			"test_slice": []any{"${test:MAP_VALUE}"},
+		})
 	})
 
 	const receiverExtraMapValue = "some map value"
@@ -90,7 +91,8 @@ func TestResolverExpandMapAndSliceValues(t *testing.T) {
 	require.NoError(t, err)
 	expectedMap := map[string]any{
 		"test_map":   map[string]any{"recv": receiverExtraMapValue},
-		"test_slice": []any{receiverExtraMapValue}}
+		"test_slice": []any{receiverExtraMapValue},
+	}
 	assert.Equal(t, expectedMap, cfgMap.ToStringMap())
 }
 

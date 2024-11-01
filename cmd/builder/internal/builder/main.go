@@ -77,7 +77,7 @@ func Generate(cfg *Config) error {
 
 	// if the file does not exist, try to create it
 	if _, err := os.Stat(cfg.Distribution.OutputPath); os.IsNotExist(err) {
-		if err = os.Mkdir(cfg.Distribution.OutputPath, 0750); err != nil {
+		if err = os.Mkdir(cfg.Distribution.OutputPath, 0o750); err != nil {
 			return fmt.Errorf("failed to create output path: %w", err)
 		}
 	} else if err != nil {
@@ -109,7 +109,7 @@ func Compile(cfg *Config) error {
 
 	cfg.Logger.Info("Compiling")
 
-	var ldflags = "-s -w"
+	ldflags := "-s -w"
 
 	args := []string{"build", "-trimpath", "-o", cfg.Distribution.Name}
 	if cfg.Distribution.DebugCompilation {

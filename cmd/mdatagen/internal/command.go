@@ -75,7 +75,7 @@ func run(ymlPath string) error {
 	tmplDir := "templates"
 
 	codeDir := filepath.Join(ymlDir, "internal", md.GeneratedPackageName)
-	if err = os.MkdirAll(codeDir, 0700); err != nil {
+	if err = os.MkdirAll(codeDir, 0o700); err != nil {
 		return fmt.Errorf("unable to create output directory %q: %w", codeDir, err)
 	}
 	if md.Status != nil {
@@ -130,7 +130,7 @@ func run(ymlPath string) error {
 		return nil
 	}
 
-	if err = os.MkdirAll(filepath.Join(codeDir, "testdata"), 0700); err != nil {
+	if err = os.MkdirAll(filepath.Join(codeDir, "testdata"), 0o700); err != nil {
 		return fmt.Errorf("unable to create output directory %q: %w", filepath.Join(codeDir, "testdata"), err)
 	}
 
@@ -376,7 +376,7 @@ func inlineReplace(tmplFile string, outputFile string, md Metadata, start string
 		return err
 	}
 
-	var re = regexp.MustCompile(fmt.Sprintf("%s[\\s\\S]*%s", start, end))
+	re := regexp.MustCompile(fmt.Sprintf("%s[\\s\\S]*%s", start, end))
 	if !re.Match(readmeContents) {
 		return nil
 	}
@@ -391,7 +391,7 @@ func inlineReplace(tmplFile string, outputFile string, md Metadata, start string
 	}
 
 	s := re.ReplaceAllString(string(readmeContents), string(buf))
-	if err := os.WriteFile(outputFile, []byte(s), 0600); err != nil {
+	if err := os.WriteFile(outputFile, []byte(s), 0o600); err != nil {
 		return fmt.Errorf("failed writing %q: %w", outputFile, err)
 	}
 
@@ -416,7 +416,7 @@ func generateFile(tmplFile string, outputFile string, md Metadata, goPackage str
 		}
 	}
 
-	if err := os.WriteFile(outputFile, result, 0600); err != nil {
+	if err := os.WriteFile(outputFile, result, 0o600); err != nil {
 		return fmt.Errorf("failed writing %q: %w", outputFile, err)
 	}
 

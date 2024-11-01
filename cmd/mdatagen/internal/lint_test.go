@@ -10,7 +10,7 @@ import (
 )
 
 func TestFormatIdentifier(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		input    string
 		want     string
 		exported bool

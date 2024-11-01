@@ -441,11 +441,11 @@ func TestLoadTLSServerConfigFailing(t *testing.T) {
 }
 
 func overwriteClientCA(t *testing.T, targetFilePath string, testdataFileName string) {
-	targetFile, err := os.OpenFile(filepath.Clean(targetFilePath), os.O_RDWR, 0600)
+	targetFile, err := os.OpenFile(filepath.Clean(targetFilePath), os.O_RDWR, 0o600)
 	require.NoError(t, err)
 
 	testdataFilePath := filepath.Join("testdata", testdataFileName)
-	testdataFile, err := os.OpenFile(filepath.Clean(testdataFilePath), os.O_RDONLY, 0200)
+	testdataFile, err := os.OpenFile(filepath.Clean(testdataFilePath), os.O_RDONLY, 0o200)
 	require.NoError(t, err)
 
 	_, err = io.Copy(targetFile, testdataFile)

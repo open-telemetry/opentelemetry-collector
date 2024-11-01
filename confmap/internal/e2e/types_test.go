@@ -408,7 +408,8 @@ func TestRecursiveMaps(t *testing.T) {
 			Env: ENV2{
 				Env2: Value{
 					Value: 123,
-				}},
+				},
+			},
 			Inline: "inline {env2: \"{value: 123}\"}",
 		}},
 		cfg,

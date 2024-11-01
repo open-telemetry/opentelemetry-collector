@@ -60,7 +60,7 @@ func TestErrorRecordedIfFileDeleted(t *testing.T) {
 
 	loader.returnErrorOnSubsequentCalls("test error on reload")
 
-	err = os.WriteFile(filePath, []byte("some_data"), 0600)
+	err = os.WriteFile(filePath, []byte("some_data"), 0o600)
 	require.NoError(t, err)
 
 	assert.Eventually(t, func() bool {

@@ -57,12 +57,14 @@ func TestNewDefaultClientConfig(t *testing.T) {
 
 	assert.Equal(t, expected, result)
 }
+
 func TestNewDefaultKeepaliveServerParameters(t *testing.T) {
 	expectedParams := &KeepaliveServerParameters{}
 	params := NewDefaultKeepaliveServerParameters()
 
 	assert.Equal(t, expectedParams, params)
 }
+
 func TestNewDefaultKeepaliveEnforcementPolicy(t *testing.T) {
 	expectedPolicy := &KeepaliveEnforcementPolicy{}
 
