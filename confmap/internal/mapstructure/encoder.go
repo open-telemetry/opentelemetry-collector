@@ -23,9 +23,7 @@ const (
 	optionSkip          = "-"
 )
 
-var (
-	errNonStringEncodedKey = errors.New("non string-encoded key")
-)
+var errNonStringEncodedKey = errors.New("non string-encoded key")
 
 // tagInfo stores the mapstructure tag details.
 type tagInfo struct {
