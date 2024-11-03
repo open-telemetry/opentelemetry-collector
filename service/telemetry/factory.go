@@ -26,14 +26,6 @@ var useLocalHostAsDefaultMetricsAddressFeatureGate = featuregate.GlobalRegistry(
 	featuregate.WithRegisterDescription("controls whether default Prometheus metrics server use localhost as the default host for their endpoints"),
 )
 
-// disableHighCardinalityMetricsFeatureGate is the feature gate that controls whether the collector should enable
-// potentially high cardinality metrics. The gate will be removed when the collector allows for view configuration.
-var disableHighCardinalityMetricsFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"telemetry.disableHighCardinalityMetrics",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("controls whether the collector should enable potentially high"+
-		"cardinality metrics. The gate will be removed when the collector allows for view configuration."))
-
 // Settings holds configuration for building Telemetry.
 type Settings struct {
 	BuildInfo         component.BuildInfo
@@ -76,8 +68,7 @@ func NewFactory() Factory {
 		}),
 		withMeterProvider(func(_ context.Context, set Settings, cfg component.Config) (metric.MeterProvider, error) {
 			c := *cfg.(*Config)
-			disableHighCard := disableHighCardinalityMetricsFeatureGate.IsEnabled()
-			return newMeterProvider(set, c, disableHighCard)
+			return newMeterProvider(set, c)
 		}),
 	)
 }
