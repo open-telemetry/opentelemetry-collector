@@ -42,7 +42,6 @@ func TestTelemetryInit(t *testing.T) {
 
 	for _, tt := range []struct {
 		name            string
-		disableHighCard bool
 		expectedMetrics map[string]metricValue
 	}{
 		{
@@ -51,106 +50,38 @@ func TestTelemetryInit(t *testing.T) {
 				metricPrefix + otelPrefix + counterName: {
 					value: 13,
 					labels: map[string]string{
-						"service_name":           "otelcol",
-						"service_version":        "latest",
-						"service_instance_id":    testInstanceID,
-						"telemetry_sdk_language": "go",
-						"telemetry_sdk_name":     "opentelemetry",
-						"telemetry_sdk_version":  "1.31.0",
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
 					},
 				},
 				metricPrefix + grpcPrefix + counterName: {
 					value: 11,
 					labels: map[string]string{
-						"net_sock_peer_addr":     "",
-						"net_sock_peer_name":     "",
-						"net_sock_peer_port":     "",
-						"service_name":           "otelcol",
-						"service_version":        "latest",
-						"service_instance_id":    testInstanceID,
-						"telemetry_sdk_language": "go",
-						"telemetry_sdk_name":     "opentelemetry",
-						"telemetry_sdk_version":  "1.31.0",
+						"net_sock_peer_addr":  "",
+						"net_sock_peer_name":  "",
+						"net_sock_peer_port":  "",
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
 					},
 				},
 				metricPrefix + httpPrefix + counterName: {
 					value: 10,
 					labels: map[string]string{
-						"net_host_name":          "",
-						"net_host_port":          "",
-						"service_name":           "otelcol",
-						"service_version":        "latest",
-						"service_instance_id":    testInstanceID,
-						"telemetry_sdk_language": "go",
-						"telemetry_sdk_name":     "opentelemetry",
-						"telemetry_sdk_version":  "1.31.0",
+						"net_host_name":       "",
+						"net_host_port":       "",
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
 					},
 				},
 				"target_info": {
 					value: 0,
 					labels: map[string]string{
-						"service_name":           "otelcol",
-						"service_version":        "latest",
-						"service_instance_id":    testInstanceID,
-						"telemetry_sdk_language": "go",
-						"telemetry_sdk_name":     "opentelemetry",
-						"telemetry_sdk_version":  "1.31.0",
-					},
-				},
-				"promhttp_metric_handler_errors_total": {
-					value: 0,
-					labels: map[string]string{
-						"cause": "encoding",
-					},
-				},
-			},
-		},
-		{
-			name:            "DisableHighCardinalityWithOtel",
-			disableHighCard: true,
-			expectedMetrics: map[string]metricValue{
-				metricPrefix + otelPrefix + counterName: {
-					value: 13,
-					labels: map[string]string{
-						"service_name":           "otelcol",
-						"service_version":        "latest",
-						"service_instance_id":    testInstanceID,
-						"telemetry_sdk_language": "go",
-						"telemetry_sdk_name":     "opentelemetry",
-						"telemetry_sdk_version":  "1.31.0",
-					},
-				},
-				metricPrefix + grpcPrefix + counterName: {
-					value: 11,
-					labels: map[string]string{
-						"service_name":           "otelcol",
-						"service_version":        "latest",
-						"service_instance_id":    testInstanceID,
-						"telemetry_sdk_language": "go",
-						"telemetry_sdk_name":     "opentelemetry",
-						"telemetry_sdk_version":  "1.31.0",
-					},
-				},
-				metricPrefix + httpPrefix + counterName: {
-					value: 10,
-					labels: map[string]string{
-						"service_name":           "otelcol",
-						"service_version":        "latest",
-						"service_instance_id":    testInstanceID,
-						"telemetry_sdk_language": "go",
-						"telemetry_sdk_name":     "opentelemetry",
-						"telemetry_sdk_version":  "1.31.0",
-					},
-				},
-				"target_info": {
-					value: 0,
-					labels: map[string]string{
-						"service_name":           "otelcol",
-						"service_version":        "latest",
-						"service_instance_id":    testInstanceID,
-						"telemetry_sdk_language": "go",
-						"telemetry_sdk_name":     "opentelemetry",
-						"telemetry_sdk_version":  "1.31.0",
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
 					},
 				},
 				"promhttp_metric_handler_errors_total": {
@@ -164,32 +95,36 @@ func TestTelemetryInit(t *testing.T) {
 	} {
 		prom := promtest.GetAvailableLocalAddressPrometheus(t)
 		endpoint := fmt.Sprintf("http://%s:%d/metrics", *prom.Host, *prom.Port)
+		cfg := Config{
+			Metrics: MetricsConfig{
+				Level: configtelemetry.LevelDetailed,
+				Readers: []config.MetricReader{{
+					Pull: &config.PullMetricReader{
+						Exporter: config.PullMetricExporter{Prometheus: prom},
+					},
+				}},
+			},
+		}
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := &Config{
-				Metrics: MetricsConfig{
-					Level: configtelemetry.LevelDetailed,
-					Readers: []config.MetricReader{{
-						Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: prom}},
-					}},
-				},
-				Traces: TracesConfig{
-					Processors: []config.SpanProcessor{
-						{
-							Batch: &config.BatchSpanProcessor{
-								Exporter: config.SpanExporter{
-									Console: config.Console{},
-								},
-							},
+			sdk, err := config.NewSDK(
+				config.WithContext(context.Background()),
+				config.WithOpenTelemetryConfiguration(config.OpenTelemetryConfiguration{
+					MeterProvider: &config.MeterProvider{
+						Readers: cfg.Metrics.Readers,
+					},
+					Resource: &config.Resource{
+						SchemaUrl: ptr(""),
+						Attributes: []config.AttributeNameValue{
+							{Name: semconv.AttributeServiceInstanceID, Value: testInstanceID},
+							{Name: semconv.AttributeServiceName, Value: "otelcol"},
+							{Name: semconv.AttributeServiceVersion, Value: "latest"},
 						},
 					},
-				},
-				Resource: map[string]*string{
-					semconv.AttributeServiceInstanceID: &testInstanceID,
-					semconv.AttributeServiceName:       ptr("otelcol"),
-					semconv.AttributeServiceVersion:    ptr("latest"),
-				},
-			}
-			mp, err := newMeterProvider(context.Background(), Settings{}, *cfg, tt.disableHighCard)
+				}),
+			)
+			require.NoError(t, err)
+
+			mp, err := newMeterProvider(Settings{SDK: &sdk}, cfg)
 			require.NoError(t, err)
 			defer func() {
 				if prov, ok := mp.(interface{ Shutdown(context.Context) error }); ok {
@@ -341,4 +276,6 @@ func TestInstrumentEnabled(t *testing.T) {
 	require.NoError(t, err)
 	_, ok = floatGauge.(enabledInstrument)
 	assert.True(t, ok, "Float64Gauge does not implement the experimental 'Enabled' method")
+func ptr[T any](v T) *T {
+	return &v
 }

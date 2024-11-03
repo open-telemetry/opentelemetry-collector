@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
+	semconv118 "go.opentelemetry.io/collector/semconv/v1.18.0"
 	semconv "go.opentelemetry.io/collector/semconv/v1.26.0"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/builders"
@@ -46,6 +47,14 @@ var _ = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterToVersion("v0.110.0"),
 	featuregate.WithRegisterDescription("controls whether the collector supports extended OpenTelemetry"+
 		"configuration for internal telemetry"))
+
+// disableHighCardinalityMetricsFeatureGate is the feature gate that controls whether the collector should enable
+// potentially high cardinality metrics. The gate will be removed when the collector allows for view configuration.
+var disableHighCardinalityMetricsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"telemetry.disableHighCardinalityMetrics",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("controls whether the collector should enable potentially high"+
+		"cardinality metrics. The gate will be removed when the collector allows for view configuration."))
 
 // Settings holds configuration for building a new Service.
 type Settings struct {
@@ -125,6 +134,8 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		Attributes: attributes(res, cfg.Telemetry),
 	}
 
+	views := disableHighCardinalityMetrics()
+
 	sdk, err := config.NewSDK(
 		config.WithContext(ctx),
 		config.WithOpenTelemetryConfiguration(
@@ -134,6 +145,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 				},
 				MeterProvider: &config.MeterProvider{
 					Readers: cfg.Telemetry.Metrics.Readers,
+					Views:   views,
 				},
 				TracerProvider: &config.TracerProvider{
 					Processors: cfg.Telemetry.Traces.Processors,
@@ -364,4 +376,44 @@ func pdataFromSdk(res *sdkresource.Resource) pcommon.Resource {
 		pcommonRes.Attributes().PutStr(string(keyValue.Key), keyValue.Value.AsString())
 	}
 	return pcommonRes
+}
+
+func disableHighCardinalityMetrics() []config.View {
+	var views []config.View
+	if disableHighCardinalityMetricsFeatureGate.IsEnabled() {
+		return views
+	}
+	return []config.View{
+		{
+			Selector: &config.ViewSelector{
+				MeterName: ptr("go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"),
+			},
+			Stream: &config.ViewStream{
+				AttributeKeys: &config.IncludeExclude{
+					Excluded: []string{
+						semconv118.AttributeNetSockPeerAddr,
+						semconv118.AttributeNetSockPeerPort,
+						semconv118.AttributeNetSockPeerName,
+					},
+				},
+			},
+		},
+		{
+			Selector: &config.ViewSelector{
+				MeterName: ptr("go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"),
+			},
+			Stream: &config.ViewStream{
+				AttributeKeys: &config.IncludeExclude{
+					Excluded: []string{
+						semconv118.AttributeNetHostName,
+						semconv118.AttributeNetHostPort,
+					},
+				},
+			},
+		},
+	}
+}
+
+func ptr[T any](v T) *T {
+	return &v
 }
