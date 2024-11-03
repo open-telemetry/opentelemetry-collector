@@ -30,7 +30,7 @@ func TestAttributes(t *testing.T) {
 			name:           "build info and no resource config",
 			cfg:            telemetry.Config{},
 			buildInfo:      component.BuildInfo{Command: "otelcoltest", Version: "0.0.0-test"},
-			wantAttributes: []config.AttributeNameValue{{Name: "service.name", Value: "otelcoltest"}, {Name: "service.version", Value: "0.0.0-test"}},
+			wantAttributes: []config.AttributeNameValue{{Name: "service.name", Value: "otelcoltest"}, {Name: "service.version", Value: "0.0.0-test"}, {Name: "service.instance.id", Value: ""}},
 		},
 		{
 			name:           "no build info and resource config",
@@ -54,11 +54,15 @@ func TestAttributes(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			attrs := attributes(resource.New(tt.buildInfo, tt.cfg.Resource), tt.cfg)
 			require.Len(t, attrs, len(tt.wantAttributes))
+			gotMap := map[string]any{}
+			for _, v := range attrs {
+				gotMap[v.Name] = v.Value
+			}
 			for _, v := range tt.wantAttributes {
 				if v.Name == "service.instance.id" {
-					require.NotNil(t, attrs[v.Name])
+					require.NotNil(t, gotMap[v.Name])
 				} else {
-					require.Equal(t, v, attrs[v.Name])
+					require.Equal(t, v.Value, gotMap[v.Name])
 				}
 			}
 		})
