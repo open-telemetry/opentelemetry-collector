@@ -59,8 +59,8 @@ func (qb *DefaultBatcher) startReadingFlushingGoroutine() {
 					continue
 				}
 
-				if reqList[0].ItemsCount() >= qb.batchCfg.MinSizeItems {
-					// If the incoming request is large enough that we decide to flush immediately, we flush all parts.
+				// If there was a split, we flush everything immediately.
+				if reqList[0].ItemsCount() >= qb.batchCfg.MinSizeItems || len(reqList) > 1 {
 					qb.currentBatch = nil
 					qb.currentBatchMu.Unlock()
 					for i := 0; i < len(reqList); i++ {
