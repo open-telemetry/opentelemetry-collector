@@ -61,7 +61,7 @@ type Distribution struct {
 	Name        string `mapstructure:"name"`
 	Go          string `mapstructure:"go"`
 	Description string `mapstructure:"description"`
-	// Deprecated: only here
+	// Deprecated: [v0.113.0] only here to return a detailed error and not failing during unmarshalling.
 	OtelColVersion   string `mapstructure:"otelcol_version"`
 	OutputPath       string `mapstructure:"output_path"`
 	Version          string `mapstructure:"version"`
@@ -83,7 +83,7 @@ type retry struct {
 }
 
 // NewDefaultConfig creates a new config, with default values
-func NewDefaultConfig() Config {
+func NewDefaultConfig() *Config {
 	log, err := zap.NewDevelopment()
 	if err != nil {
 		panic(fmt.Sprintf("failed to obtain a logger instance: %v", err))
@@ -94,7 +94,7 @@ func NewDefaultConfig() Config {
 		log.Error("failed to obtain a temporary directory", zap.Error(err))
 	}
 
-	return Config{
+	return &Config{
 		OtelColVersion: defaultOtelColVersion,
 		Logger:         log,
 		Distribution: Distribution{

@@ -105,14 +105,14 @@ var (
 	}
 )
 
-func newTestConfig() Config {
+func newTestConfig() *Config {
 	cfg := NewDefaultConfig()
 	cfg.downloadModules.wait = 0
 	cfg.downloadModules.numRetries = 1
 	return cfg
 }
 
-func newInitializedConfig(t *testing.T) Config {
+func newInitializedConfig(t *testing.T) *Config {
 	cfg := newTestConfig()
 	// Validate and ParseModules will be called before the config is
 	// given to Generate.
@@ -137,12 +137,12 @@ func TestVersioning(t *testing.T) {
 	replaces := generateReplaces()
 	tests := []struct {
 		name        string
-		cfgBuilder  func() Config
+		cfgBuilder  func() *Config
 		expectedErr error
 	}{
 		{
 			name: "defaults",
-			cfgBuilder: func() Config {
+			cfgBuilder: func() *Config {
 				cfg := newTestConfig()
 				cfg.Distribution.Go = "go"
 				cfg.Replaces = append(cfg.Replaces, replaces...)
@@ -152,7 +152,7 @@ func TestVersioning(t *testing.T) {
 		},
 		{
 			name: "only gomod file, skip generate",
-			cfgBuilder: func() Config {
+			cfgBuilder: func() *Config {
 				cfg := newTestConfig()
 				tempDir := t.TempDir()
 				err := makeModule(tempDir, []byte(goModTestFile))
@@ -166,7 +166,7 @@ func TestVersioning(t *testing.T) {
 		},
 		{
 			name: "old component version",
-			cfgBuilder: func() Config {
+			cfgBuilder: func() *Config {
 				cfg := newTestConfig()
 				cfg.Distribution.Go = "go"
 				cfg.Exporters = []Module{
@@ -182,7 +182,7 @@ func TestVersioning(t *testing.T) {
 		},
 		{
 			name: "old component version without strict mode",
-			cfgBuilder: func() Config {
+			cfgBuilder: func() *Config {
 				cfg := newTestConfig()
 				cfg.Distribution.Go = "go"
 				cfg.SkipStrictVersioning = true
@@ -228,11 +228,11 @@ func TestGenerateAndCompile(t *testing.T) {
 	replaces := generateReplaces()
 	testCases := []struct {
 		name       string
-		cfgBuilder func(t *testing.T) Config
+		cfgBuilder func(t *testing.T) *Config
 	}{
 		{
 			name: "Default Configuration Compilation",
-			cfgBuilder: func(t *testing.T) Config {
+			cfgBuilder: func(t *testing.T) *Config {
 				cfg := newTestConfig()
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
@@ -241,7 +241,7 @@ func TestGenerateAndCompile(t *testing.T) {
 		},
 		{
 			name: "LDFlags Compilation",
-			cfgBuilder: func(t *testing.T) Config {
+			cfgBuilder: func(t *testing.T) *Config {
 				cfg := newTestConfig()
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
@@ -251,7 +251,7 @@ func TestGenerateAndCompile(t *testing.T) {
 		},
 		{
 			name: "Build Tags Compilation",
-			cfgBuilder: func(t *testing.T) Config {
+			cfgBuilder: func(t *testing.T) *Config {
 				cfg := newTestConfig()
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
@@ -261,7 +261,7 @@ func TestGenerateAndCompile(t *testing.T) {
 		},
 		{
 			name: "Debug Compilation",
-			cfgBuilder: func(t *testing.T) Config {
+			cfgBuilder: func(t *testing.T) *Config {
 				cfg := newTestConfig()
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
@@ -272,7 +272,7 @@ func TestGenerateAndCompile(t *testing.T) {
 		},
 		{
 			name: "No providers",
-			cfgBuilder: func(t *testing.T) Config {
+			cfgBuilder: func(t *testing.T) *Config {
 				cfg := newTestConfig()
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
@@ -282,7 +282,7 @@ func TestGenerateAndCompile(t *testing.T) {
 		},
 		{
 			name: "With confmap factories",
-			cfgBuilder: func(t *testing.T) Config {
+			cfgBuilder: func(t *testing.T) *Config {
 				cfg := newTestConfig()
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
@@ -292,7 +292,7 @@ func TestGenerateAndCompile(t *testing.T) {
 		},
 		{
 			name: "ConfResolverDefaultURIScheme set",
-			cfgBuilder: func(t *testing.T) Config {
+			cfgBuilder: func(t *testing.T) *Config {
 				cfg := newTestConfig()
 				cfg.ConfResolver = ConfResolver{
 					DefaultURIScheme: "env",
