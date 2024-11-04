@@ -263,10 +263,10 @@ func TestServiceTelemetryCleanupOnError(t *testing.T) {
 
 func TestServiceTelemetry(t *testing.T) {
 	for _, tc := range ownMetricsTestCases() {
-		t.Run(fmt.Sprintf("ipv4_%s", tc.name), func(t *testing.T) {
+		t.Run("ipv4_"+tc.name, func(t *testing.T) {
 			testCollectorStartHelperWithReaders(t, tc, "tcp4")
 		})
-		t.Run(fmt.Sprintf("ipv6_%s", tc.name), func(t *testing.T) {
+		t.Run("ipv6_"+tc.name, func(t *testing.T) {
 			testCollectorStartHelperWithReaders(t, tc, "tcp6")
 		})
 	}

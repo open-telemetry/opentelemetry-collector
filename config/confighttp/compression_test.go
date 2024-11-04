@@ -9,7 +9,6 @@ import (
 	"compress/zlib"
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -335,7 +334,7 @@ type closeFailBody struct {
 }
 
 func (*closeFailBody) Close() error {
-	return fmt.Errorf("close failed")
+	return errors.New("close failed")
 }
 
 func TestHTTPContentCompressionRequestBodyCloseError(t *testing.T) {
