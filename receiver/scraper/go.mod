@@ -1,4 +1,4 @@
-module go.opentelemetry.io/collector/receiver
+module go.opentelemetry.io/collector/receiver/scraper
 
 go 1.22.0
 
@@ -8,14 +8,18 @@ require (
 	go.opentelemetry.io/collector/config/configtelemetry v0.112.0
 	go.opentelemetry.io/collector/consumer v0.112.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.112.0
+	go.opentelemetry.io/collector/pdata v1.18.0
 	go.opentelemetry.io/collector/pipeline v0.112.0
+	go.opentelemetry.io/collector/receiver v0.112.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.112.0
-	go.opentelemetry.io/collector/receiver/scraper v0.112.0
 	go.opentelemetry.io/otel v1.31.0
 	go.opentelemetry.io/otel/metric v1.31.0
+	go.opentelemetry.io/otel/sdk v1.31.0
 	go.opentelemetry.io/otel/sdk/metric v1.31.0
 	go.opentelemetry.io/otel/trace v1.31.0
 	go.uber.org/goleak v1.3.0
+	go.uber.org/multierr v1.11.0
+	go.uber.org/zap v1.27.0
 )
 
 require (
@@ -30,12 +34,8 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.112.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.112.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.18.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.112.0 // indirect
 	go.opentelemetry.io/collector/receiver/receiverprofiles v0.112.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.31.0 // indirect
-	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/net v0.28.0 // indirect
 	golang.org/x/sys v0.26.0 // indirect
 	golang.org/x/text v0.17.0 // indirect
@@ -45,30 +45,23 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace go.opentelemetry.io/collector/component => ../component
+replace (
+	go.opentelemetry.io/collector/component => ../../component
+	go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
+	go.opentelemetry.io/collector/consumer => ../../consumer
+	go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/consumertest
+	go.opentelemetry.io/collector/pdata => ../../pdata
+	go.opentelemetry.io/collector/pipeline => ../../pipeline
+	go.opentelemetry.io/collector/receiver => ..
+	go.opentelemetry.io/collector/receiver/receivertest => ../receivertest
+)
 
-replace go.opentelemetry.io/collector/consumer => ../consumer
+replace go.opentelemetry.io/collector/pdata/testdata => ../../pdata/testdata
 
-replace go.opentelemetry.io/collector/pdata => ../pdata
+replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../receiverprofiles
 
-replace go.opentelemetry.io/collector/pdata/testdata => ../pdata/testdata
+replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../../consumer/consumerprofiles
 
-replace go.opentelemetry.io/collector/config/configtelemetry => ../config/configtelemetry
+replace go.opentelemetry.io/collector/consumer/consumererror => ../../consumer/consumererror
 
-replace go.opentelemetry.io/collector/pdata/pprofile => ../pdata/pprofile
-
-replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../consumer/consumerprofiles
-
-replace go.opentelemetry.io/collector/consumer/consumertest => ../consumer/consumertest
-
-replace go.opentelemetry.io/collector/receiver/receiverprofiles => ./receiverprofiles
-
-replace go.opentelemetry.io/collector/receiver/receivertest => ./receivertest
-
-replace go.opentelemetry.io/collector/receiver/scraper => ./scraper
-
-retract v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module
-
-replace go.opentelemetry.io/collector/pipeline => ../pipeline
-
-replace go.opentelemetry.io/collector/consumer/consumererror => ../consumer/consumererror
+replace go.opentelemetry.io/collector/pdata/pprofile => ../../pdata/pprofile

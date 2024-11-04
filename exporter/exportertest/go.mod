@@ -64,6 +64,8 @@ replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../../receive
 
 replace go.opentelemetry.io/collector/receiver/receivertest => ../../receiver/receivertest
 
+replace go.opentelemetry.io/collector/receiver/scraper => ../../receiver/scraper
+
 replace go.opentelemetry.io/collector/extension => ../../extension
 
 replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry

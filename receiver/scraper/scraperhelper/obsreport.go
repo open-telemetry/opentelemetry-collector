@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package scraperhelper // import "go.opentelemetry.io/collector/receiver/scraperhelper"
+package scraperhelper // import "go.opentelemetry.io/collector/receiver/scraper/scraperhelper"
 
 import (
 	"context"
@@ -16,8 +16,8 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/internal"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
-	"go.opentelemetry.io/collector/receiver/scraperhelper/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/scraper/scrapererror"
+	"go.opentelemetry.io/collector/receiver/scraper/scraperhelper/internal/metadata"
 )
 
 // obsReport is a helper to add observability to a scraper.

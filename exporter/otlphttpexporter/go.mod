@@ -128,6 +128,8 @@ replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../../receive
 
 replace go.opentelemetry.io/collector/receiver/receivertest => ../../receiver/receivertest
 
+replace go.opentelemetry.io/collector/receiver/scraper => ../../receiver/scraper
+
 replace go.opentelemetry.io/collector/pipeline/pipelineprofiles => ../../pipeline/pipelineprofiles
 
 replace go.opentelemetry.io/collector/consumer/consumererror/consumererrorprofiles => ../../consumer/consumererror/consumererrorprofiles

@@ -86,6 +86,8 @@ replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/con
 
 replace go.opentelemetry.io/collector/receiver/receivertest => ../../receiver/receivertest
 
+replace go.opentelemetry.io/collector/receiver/scraper => ../../receiver/scraper
+
 retract (
 	v0.76.2
 	v0.76.1

@@ -327,6 +327,7 @@ check-contrib:
 		-replace go.opentelemetry.io/collector/receiver/otlpreceiver=$(CURDIR)/receiver/otlpreceiver  \
 		-replace go.opentelemetry.io/collector/receiver/receiverprofiles=$(CURDIR)/receiver/receiverprofiles  \
 		-replace go.opentelemetry.io/collector/receiver/receivertest=$(CURDIR)/receiver/receivertest  \
+		-replace go.opentelemetry.io/collector/receiver/scraper=$(CURDIR)/receiver/scraper  \
 		-replace go.opentelemetry.io/collector/semconv=$(CURDIR)/semconv  \
 		-replace go.opentelemetry.io/collector/service=$(CURDIR)/service"
 	@$(MAKE) -C $(CONTRIB_PATH) gotidy
@@ -400,6 +401,7 @@ restore-contrib:
 		-dropreplace go.opentelemetry.io/collector/receiver  \
 		-dropreplace go.opentelemetry.io/collector/receiver/nopreceiver  \
 		-dropreplace go.opentelemetry.io/collector/receiver/otlpreceiver  \
+		-dropreplace go.opentelemetry.io/collector/receiver/scraper  \
 		-dropreplace go.opentelemetry.io/collector/semconv  \
 		-dropreplace go.opentelemetry.io/collector/service"
 	@$(MAKE) -C $(CONTRIB_PATH) -j2 gotidy

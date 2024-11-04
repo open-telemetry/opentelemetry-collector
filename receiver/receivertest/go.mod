@@ -56,6 +56,8 @@ replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/con
 
 replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../receiverprofiles
 
+replace go.opentelemetry.io/collector/receiver/scraper => ../../receiver/scraper
+
 replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../../consumer/consumerprofiles
 
 replace go.opentelemetry.io/collector/consumer/consumererror => ../../consumer/consumererror

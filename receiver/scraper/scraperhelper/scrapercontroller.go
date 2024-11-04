@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package scraperhelper // import "go.opentelemetry.io/collector/receiver/scraperhelper"
+package scraperhelper // import "go.opentelemetry.io/collector/receiver/scraper/scraperhelper"
 
 import (
 	"context"
@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/receiver/scraper/scrapererror"
 )
 
 // ScraperControllerOption apply changes to internal options.
