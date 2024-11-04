@@ -142,19 +142,6 @@ func applyCfgFromFile(flags *flag.FlagSet, cfgFromFile builder.Config) {
 
 	cfg.ConfResolver.DefaultURIScheme = cfgFromFile.ConfResolver.DefaultURIScheme
 
-	if !flags.Changed(skipGenerateFlag) && cfgFromFile.SkipGenerate {
-		cfg.SkipGenerate = cfgFromFile.SkipGenerate
-	}
-	if !flags.Changed(skipCompilationFlag) && cfgFromFile.SkipCompilation {
-		cfg.SkipCompilation = cfgFromFile.SkipCompilation
-	}
-	if !flags.Changed(skipGetModulesFlag) && cfgFromFile.SkipGetModules {
-		cfg.SkipGetModules = cfgFromFile.SkipGetModules
-	}
-	if !flags.Changed(skipStrictVersioningFlag) && cfgFromFile.SkipStrictVersioning {
-		cfg.SkipStrictVersioning = cfgFromFile.SkipStrictVersioning
-	}
-
 	if !flags.Changed(distributionOutputPathFlag) && cfgFromFile.Distribution.OutputPath != "" {
 		cfg.Distribution.OutputPath = cfgFromFile.Distribution.OutputPath
 	}

@@ -74,7 +74,6 @@ func Test_applyCfgFromFile(t *testing.T) {
 		Path:   "testPath",
 	}
 	type args struct {
-		flags       *flag.FlagSet
 		cfgFromFile builder.Config
 	}
 	tests := []struct {
@@ -86,7 +85,6 @@ func Test_applyCfgFromFile(t *testing.T) {
 		{
 			name: "distribution, scheme, excludes, exporters, receivers, processors, replaces are applied correctly",
 			args: args{
-				flags: flag.NewFlagSet("version=1.0.0", 1),
 				cfgFromFile: builder.Config{
 					Logger:       zap.NewNop(),
 					Distribution: testDistribution,
@@ -114,150 +112,14 @@ func Test_applyCfgFromFile(t *testing.T) {
 			},
 			wantErr: false,
 		},
-		{
-			name: "Skip compilation false",
-			args: args{
-				flags: flag.NewFlagSet("version=1.0.0", 1),
-				cfgFromFile: builder.Config{
-					Logger:       zap.NewNop(),
-					Distribution: testDistribution,
-				},
-			},
-			want: builder.Config{
-				Logger:          zap.NewNop(),
-				SkipCompilation: false,
-				Distribution:    testDistribution,
-			},
-			wantErr: false,
-		},
-		{
-			name: "Skip compilation true",
-			args: args{
-				flags: flag.NewFlagSet("version=1.0.0", 1),
-				cfgFromFile: builder.Config{
-					Logger:          zap.NewNop(),
-					SkipCompilation: true,
-					Distribution:    testDistribution,
-				},
-			},
-			want: builder.Config{
-				Logger:          zap.NewNop(),
-				SkipCompilation: true,
-				Distribution:    testDistribution,
-			},
-			wantErr: false,
-		},
-		{
-			name: "Skip get modules false",
-			args: args{
-				flags: flag.NewFlagSet("version=1.0.0", 1),
-				cfgFromFile: builder.Config{
-					Logger:          zap.NewNop(),
-					SkipCompilation: true,
-					Distribution:    testDistribution,
-				},
-			},
-			want: builder.Config{
-				Logger:          zap.NewNop(),
-				SkipCompilation: true,
-				SkipGetModules:  false,
-				Distribution:    testDistribution,
-			},
-			wantErr: false,
-		},
-		{
-			name: "Skip get modules true",
-			args: args{
-				flags: flag.NewFlagSet("version=1.0.0", 1),
-				cfgFromFile: builder.Config{
-					Logger:          zap.NewNop(),
-					SkipCompilation: true,
-					SkipGetModules:  true,
-					Distribution:    testDistribution,
-				},
-			},
-			want: builder.Config{
-				Logger:          zap.NewNop(),
-				SkipCompilation: true,
-				SkipGetModules:  true,
-				Distribution:    testDistribution,
-			},
-			wantErr: false,
-		},
-		{
-			name: "Skip strict versioning true",
-			args: args{
-				flags: flag.NewFlagSet("version=1.0.0", 1),
-				cfgFromFile: builder.Config{
-					Logger:               zap.NewNop(),
-					SkipCompilation:      true,
-					SkipStrictVersioning: true,
-					Distribution:         testDistribution,
-				},
-			},
-			want: builder.Config{
-				Logger:               zap.NewNop(),
-				SkipCompilation:      true,
-				SkipGetModules:       true,
-				SkipStrictVersioning: true,
-				Distribution:         testDistribution,
-			},
-			wantErr: false,
-		},
-		{
-			name: "Skip generate false",
-			args: args{
-				flags: flag.NewFlagSet("version=1.0.0", 1),
-				cfgFromFile: builder.Config{
-					Logger:          zap.NewNop(),
-					SkipGenerate:    false,
-					SkipCompilation: true,
-					SkipGetModules:  true,
-					Distribution:    testDistribution,
-				},
-			},
-			want: builder.Config{
-				Logger:               zap.NewNop(),
-				SkipGenerate:         false,
-				SkipCompilation:      true,
-				SkipGetModules:       true,
-				SkipStrictVersioning: true,
-				Distribution:         testDistribution,
-			},
-			wantErr: false,
-		},
-		{
-			name: "Skip generate true",
-			args: args{
-				flags: flag.NewFlagSet("version=1.0.0", 1),
-				cfgFromFile: builder.Config{
-					Logger:          zap.NewNop(),
-					SkipGenerate:    true,
-					SkipCompilation: true,
-					SkipGetModules:  true,
-					Distribution:    testDistribution,
-				},
-			},
-			want: builder.Config{
-				Logger:               zap.NewNop(),
-				SkipGenerate:         true,
-				SkipCompilation:      true,
-				SkipGetModules:       true,
-				SkipStrictVersioning: true,
-				Distribution:         testDistribution,
-			},
-			wantErr: false,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			applyCfgFromFile(tt.args.flags, tt.args.cfgFromFile)
+			flags := flag.NewFlagSet("version=1.0.0", 1)
+
+			applyCfgFromFile(flags, tt.args.cfgFromFile)
 			assert.Equal(t, tt.want.ConfResolver.DefaultURIScheme, cfg.ConfResolver.DefaultURIScheme)
 			assert.Equal(t, tt.want.Distribution, cfg.Distribution)
-			assert.Equal(t, tt.want.SkipGenerate, cfg.SkipGenerate)
-			assert.Equal(t, tt.want.SkipCompilation, cfg.SkipCompilation)
-			assert.Equal(t, tt.want.SkipGetModules, cfg.SkipGetModules)
-			assert.True(t, cfg.SkipStrictVersioning)
 			assert.Equal(t, tt.want.Excludes, cfg.Excludes)
 			assert.Equal(t, tt.want.Exporters, cfg.Exporters)
 			assert.Equal(t, tt.want.Receivers, cfg.Receivers)
