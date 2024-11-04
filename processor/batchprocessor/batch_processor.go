@@ -129,6 +129,7 @@ func newBatchProcessor[T any](set processor.Settings, cfg *Config, batchFunc fun
 	if len(mks) == 0 {
 		bp.batcher = &singleShardBatcher[T]{
 			processor: bp,
+			single:    bp.newShard(nil),
 		}
 	} else {
 		bp.batcher = &multiShardBatcher[T]{
@@ -277,7 +278,6 @@ type singleShardBatcher[T any] struct {
 }
 
 func (sb *singleShardBatcher[T]) start(context.Context) error {
-	sb.single = sb.processor.newShard(nil)
 	sb.single.start()
 	return nil
 }
