@@ -149,7 +149,6 @@ func applyCfgFromFile(flags *flag.FlagSet, cfgFromFile builder.Config) {
 	cfg.Distribution.Name = cfgFromFile.Distribution.Name
 	cfg.Distribution.Description = cfgFromFile.Distribution.Description
 	cfg.Distribution.Version = cfgFromFile.Distribution.Version
-	cfg.Distribution.OtelColVersion = cfgFromFile.Distribution.OtelColVersion
 	cfg.Distribution.Go = cfgFromFile.Distribution.Go
 	cfg.Distribution.Module = cfgFromFile.Distribution.Module
 	cfg.Distribution.BuildTags = cfgFromFile.Distribution.BuildTags

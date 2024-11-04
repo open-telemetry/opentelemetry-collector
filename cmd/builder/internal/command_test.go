@@ -60,7 +60,6 @@ func Test_applyCfgFromFile(t *testing.T) {
 		Name:             "testName",
 		Go:               "testGO",
 		Description:      "testDescription",
-		OtelColVersion:   "testOtelColVersion",
 		OutputPath:       "testOutputPath",
 		Version:          "testVersion",
 		BuildTags:        "",

@@ -30,6 +30,8 @@ var (
 	skipStrictMsg      = "Use --skip-strict-versioning to temporarily disable this check. This flag will be removed in a future minor version"
 )
 
+const otelcolPath = "go.opentelemetry.io/collector/otelcol"
+
 func runGoCommand(cfg Config, args ...string) ([]byte, error) {
 	if cfg.Verbose {
 		cfg.Logger.Info("Running go subcommand.", zap.Any("arguments", args))
@@ -72,10 +74,6 @@ func Generate(cfg Config) error {
 	if cfg.SkipGenerate {
 		cfg.Logger.Info("Skipping generating source codes.")
 		return nil
-	}
-	// create a warning message for non-aligned builder and collector base
-	if cfg.Distribution.OtelColVersion != defaultOtelColVersion {
-		cfg.Logger.Info("You're building a distribution with non-aligned version of the builder. The version mismatch may cause a compilation failure. It's recommended to use the same version.", zap.String("collector-version", cfg.Distribution.OtelColVersion), zap.String("builder-version", defaultOtelColVersion))
 	}
 	// if the file does not exist, try to create it
 	if _, err := os.Stat(cfg.Distribution.OutputPath); os.IsNotExist(err) {
@@ -155,15 +153,14 @@ func GetModules(cfg Config) error {
 		return err
 	}
 
-	corePath, coreVersion := cfg.coreModuleAndVersion()
-	coreDepVersion, ok := dependencyVersions[corePath]
+	coreDepVersion, ok := dependencyVersions[otelcolPath]
 	if !ok {
-		return fmt.Errorf("core collector %w: '%s'. %s", ErrDepNotFound, corePath, skipStrictMsg)
+		return fmt.Errorf("core collector %w: '%s'. %s", ErrDepNotFound, otelcolPath, skipStrictMsg)
 	}
-	if semver.MajorMinor(coreDepVersion) != semver.MajorMinor(coreVersion) {
+	if semver.MajorMinor(coreDepVersion) != semver.MajorMinor(defaultOtelColVersion) {
 		return fmt.Errorf(
 			"%w: core collector version calculated by component dependencies %q does not match configured version %q. %s",
-			ErrVersionMismatch, coreDepVersion, coreVersion, skipStrictMsg)
+			ErrVersionMismatch, coreDepVersion, defaultOtelColVersion, skipStrictMsg)
 	}
 
 	for _, mod := range cfg.allComponents() {
@@ -211,11 +208,6 @@ func processAndWrite(cfg Config, tmpl *template.Template, outFile string, tmplPa
 
 	defer out.Close()
 	return tmpl.Execute(out, tmplParams)
-}
-
-func (c *Config) coreModuleAndVersion() (string, string) {
-	module := "go.opentelemetry.io/collector/otelcol"
-	return module, "v" + c.Distribution.OtelColVersion
 }
 
 func (c *Config) allComponents() []Module {
