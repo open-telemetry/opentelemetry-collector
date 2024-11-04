@@ -126,7 +126,7 @@ replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../receiverpr
 
 replace go.opentelemetry.io/collector/receiver/receivertest => ../receivertest
 
-replace go.opentelemetry.io/collector/receiver/scraper => ../../receiver/scraper
+replace go.opentelemetry.io/collector/receiver/scraper => ../scraper
 
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 
