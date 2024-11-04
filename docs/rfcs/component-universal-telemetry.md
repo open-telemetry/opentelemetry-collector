@@ -53,9 +53,9 @@ All signals should use the following attributes:
 - `otel.component.kind`: `connector`
 - `otel.component.id`: The component ID
 - `otel.signal`: `logs`, `metrics` `traces`
-- `otel.output.signal`: `logs`, `metrics` `traces`, `profiles`
+- `otel.signal.output`: `logs`, `metrics` `traces`, `profiles`
 
-Note: The `otel.signal`, `otel.output.signal`, or `otel.pipeline.id` attributes may be omitted if the corresponding component instances
+Note: The `otel.signal`, `otel.signal.output`, or `otel.pipeline.id` attributes may be omitted if the corresponding component instances
 are unified by the component implementation. For example, the `otlp` receiver is a singleton, so its telemetry is not specific to a signal.
 Similarly, the `memory_limiter` processor is a singleton, so its telemetry is not specific to a pipeline.
 
