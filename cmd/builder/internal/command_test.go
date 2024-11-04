@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/cmd/builder/internal/builder"
 )
@@ -54,102 +54,69 @@ func TestCommand(t *testing.T) {
 	}
 }
 
-func Test_applyCfgFromFile(t *testing.T) {
-	testDistribution := builder.Distribution{
-		Module:           "testModule",
-		Name:             "testName",
-		Go:               "testGO",
-		Description:      "testDescription",
-		OutputPath:       "testOutputPath",
-		Version:          "testVersion",
-		BuildTags:        "",
-		DebugCompilation: true,
-	}
-	testStringTable := []string{"A", "B", "C"}
-	testModule := builder.Module{
-		Name:   "testName",
-		GoMod:  "testGoMod",
-		Import: "testImport",
-		Path:   "testPath",
-	}
-	type args struct {
-		cfgFromFile builder.Config
-	}
+func TestApplyFlags(t *testing.T) {
 	tests := []struct {
-		name    string
-		args    args
-		want    builder.Config
-		wantErr bool
+		name  string
+		flags []string
+		want  *builder.Config
 	}{
 		{
-			name: "distribution, scheme, excludes, exporters, receivers, processors, replaces are applied correctly",
-			args: args{
-				cfgFromFile: builder.Config{
-					Logger:       zap.NewNop(),
-					Distribution: testDistribution,
-					Excludes:     testStringTable,
-					Processors:   []builder.Module{testModule},
-					Receivers:    []builder.Module{testModule},
-					Exporters:    []builder.Module{testModule},
-					Replaces:     testStringTable,
-					ConfResolver: builder.ConfResolver{
-						DefaultURIScheme: "env",
-					},
-				},
+			name: "Default flag values",
+			want: &builder.Config{
+				SkipStrictVersioning: true,
 			},
-			want: builder.Config{
-				Logger:       zap.NewNop(),
-				Distribution: testDistribution,
-				ConfResolver: builder.ConfResolver{
-					DefaultURIScheme: "env",
-				},
-				Excludes:   testStringTable,
-				Processors: []builder.Module{testModule},
-				Receivers:  []builder.Module{testModule},
-				Exporters:  []builder.Module{testModule},
-				Replaces:   testStringTable,
+		},
+		{
+			name:  "All flag values",
+			flags: []string{"--skip-generate=true", "--skip-compilation=true", "--skip-get-modules=true", "--skip-strict-versioning=true", "--ldflags=test", "--verbose=true"},
+			want: &builder.Config{
+				SkipGenerate:         true,
+				SkipCompilation:      true,
+				SkipGetModules:       true,
+				SkipStrictVersioning: true,
+				LDFlags:              "test",
+				Verbose:              true,
 			},
-			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			flags := flag.NewFlagSet("version=1.0.0", 1)
-
-			applyCfgFromFile(flags, tt.args.cfgFromFile)
-			assert.Equal(t, tt.want.ConfResolver.DefaultURIScheme, cfg.ConfResolver.DefaultURIScheme)
-			assert.Equal(t, tt.want.Distribution, cfg.Distribution)
-			assert.Equal(t, tt.want.Excludes, cfg.Excludes)
-			assert.Equal(t, tt.want.Exporters, cfg.Exporters)
-			assert.Equal(t, tt.want.Receivers, cfg.Receivers)
-			assert.Equal(t, tt.want.Processors, cfg.Processors)
-			assert.Equal(t, tt.want.Replaces, cfg.Replaces)
+			require.NoError(t, initFlags(flags))
+			require.NoError(t, flags.Parse(tt.flags))
+			cfg := builder.NewDefaultConfig()
+			require.NoError(t, applyFlags(flags, cfg))
+			assert.Equal(t, tt.want.SkipGenerate, cfg.SkipGenerate)
+			assert.Equal(t, tt.want.SkipCompilation, cfg.SkipCompilation)
+			assert.Equal(t, tt.want.SkipGetModules, cfg.SkipGetModules)
+			assert.Equal(t, tt.want.SkipStrictVersioning, cfg.SkipStrictVersioning)
+			assert.Equal(t, tt.want.LDFlags, cfg.LDFlags)
+			assert.Equal(t, tt.want.Verbose, cfg.Verbose)
 		})
 	}
 }
 
-func Test_initConfig(t *testing.T) {
-	type args struct {
-		flags *flag.FlagSet
-	}
+func TestInitConfig(t *testing.T) {
 	tests := []struct {
 		name    string
-		args    args
+		flags   *flag.FlagSet
 		wantErr bool
 	}{
 		{
-			name: "initConfig created correctly",
-			args: args{
-				flags: flag.NewFlagSet("version=1.0.0", 1),
-			},
+			name:    "initConfig created correctly",
+			flags:   flag.NewFlagSet("version=1.0.0", 1),
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := initConfig(tt.args.flags); (err != nil) != tt.wantErr {
-				t.Errorf("initConfig() error = %v, wantErr %v", err, tt.wantErr)
+			require.NoError(t, initFlags(tt.flags))
+			_, err := initConfig(tt.flags)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
 			}
+			require.NoError(t, err)
 		})
 	}
 }
