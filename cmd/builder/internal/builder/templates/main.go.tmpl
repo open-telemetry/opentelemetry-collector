@@ -11,6 +11,9 @@ import (
 	{{- range .Providers}}
 	{{.Name}} "{{.Import}}"
 	{{- end}}
+	{{- range .Converters}}
+	{{.Name}} "{{.Import}}"
+	{{- end}}	
 	"go.opentelemetry.io/collector/otelcol"
 )
 
@@ -31,6 +34,13 @@ func main() {
 					{{.Name}}.NewFactory(),
 					{{- end}}
 				},
+				{{- if .Converters }}
+				ConverterFactories: []confmap.ConverterFactory{
+					{{- range .Converters}}
+					{{.Name}}.NewFactory(),
+					{{- end}}
+				},
+				{{- end }}
 				{{- if .ConfResolver.DefaultURIScheme }}
 				DefaultScheme: "{{ .ConfResolver.DefaultURIScheme }}",
 				{{- end }}

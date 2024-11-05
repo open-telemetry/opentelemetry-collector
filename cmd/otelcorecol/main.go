@@ -35,6 +35,7 @@ func main() {
 					httpsprovider.NewFactory(),
 					yamlprovider.NewFactory(),
 				},
+				ConverterFactories: []confmap.ConverterFactory{},
 			},
 		},
 	}

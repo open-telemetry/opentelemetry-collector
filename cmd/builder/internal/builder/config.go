@@ -43,6 +43,7 @@ type Config struct {
 	Processors   []Module     `mapstructure:"processors"`
 	Connectors   []Module     `mapstructure:"connectors"`
 	Providers    []Module     `mapstructure:"providers"`
+	Converters   []Module     `mapstructure:"converters"`
 	Replaces     []string     `mapstructure:"replaces"`
 	Excludes     []string     `mapstructure:"excludes"`
 
@@ -142,6 +143,7 @@ func (c *Config) Validate() error {
 		validateModules("processor", c.Processors),
 		validateModules("connector", c.Connectors),
 		validateModules("provider", c.Providers),
+		validateModules("converter", c.Converters),
 	)
 }
 
@@ -194,7 +196,10 @@ func (c *Config) ParseModules() error {
 	if err != nil {
 		return err
 	}
-
+	c.Converters, err = parseModules(c.Converters)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -225,6 +230,10 @@ func parseModules(mods []Module) ([]Module, error) {
 			mod.Path, err = filepath.Abs(mod.Path)
 			if err != nil {
 				return mods, fmt.Errorf("module has a relative \"path\" element, but we couldn't resolve the current working dir: %w", err)
+			}
+			// Check if the path exists
+			if _, err := os.Stat(mod.Path); os.IsNotExist(err) {
+				return mods, fmt.Errorf("filepath does not exist: %s", mod.Path)
 			}
 		}
 
