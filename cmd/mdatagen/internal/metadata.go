@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"go.opentelemetry.io/collector/filter"
@@ -272,11 +273,11 @@ func (a Attribute) TestValue() string {
 	case pcommon.ValueTypeStr:
 		return fmt.Sprintf(`"%s-val"`, a.FullName)
 	case pcommon.ValueTypeInt:
-		return fmt.Sprintf("%d", len(a.FullName))
+		return strconv.Itoa(len(a.FullName))
 	case pcommon.ValueTypeDouble:
 		return fmt.Sprintf("%f", 0.1+float64(len(a.FullName)))
 	case pcommon.ValueTypeBool:
-		return fmt.Sprintf("%t", len(a.FullName)%2 == 0)
+		return strconv.FormatBool(len(a.FullName)%2 == 0)
 	case pcommon.ValueTypeMap:
 		return fmt.Sprintf(`map[string]any{"key1": "%s-val1", "key2": "%s-val2"}`, a.FullName, a.FullName)
 	case pcommon.ValueTypeSlice:
