@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -112,21 +111,11 @@ func NewDefaultConfig() (*Config, error) {
 			wait:       5 * time.Second,
 		},
 		Providers: []Module{
-			{
-				GoMod: "go.opentelemetry.io/collector/confmap/provider/envprovider " + defaultStableOtelColVersion,
-			},
-			{
-				GoMod: "go.opentelemetry.io/collector/confmap/provider/fileprovider " + defaultStableOtelColVersion,
-			},
-			{
-				GoMod: "go.opentelemetry.io/collector/confmap/provider/httpprovider " + defaultStableOtelColVersion,
-			},
-			{
-				GoMod: "go.opentelemetry.io/collector/confmap/provider/httpsprovider " + defaultStableOtelColVersion,
-			},
-			{
-				GoMod: "go.opentelemetry.io/collector/confmap/provider/yamlprovider " + defaultStableOtelColVersion,
-			},
+			{GoMod: "go.opentelemetry.io/collector/confmap/provider/envprovider " + defaultStableOtelColVersion},
+			{GoMod: "go.opentelemetry.io/collector/confmap/provider/fileprovider " + defaultStableOtelColVersion},
+			{GoMod: "go.opentelemetry.io/collector/confmap/provider/httpprovider " + defaultStableOtelColVersion},
+			{GoMod: "go.opentelemetry.io/collector/confmap/provider/httpsprovider " + defaultStableOtelColVersion},
+			{GoMod: "go.opentelemetry.io/collector/confmap/provider/yamlprovider " + defaultStableOtelColVersion},
 		},
 	}, nil
 }
@@ -136,14 +125,14 @@ func (c *Config) Validate() error {
 	if c.Distribution.OtelColVersion != "" {
 		return errors.New("`otelcol_version` has been removed. To build with an older Collector API, use an older (aligned) builder version instead")
 	}
-	return multierr.Combine(
-		validateModules("extension", c.Extensions),
-		validateModules("receiver", c.Receivers),
-		validateModules("exporter", c.Exporters),
-		validateModules("processor", c.Processors),
+	return errors.Join(
 		validateModules("connector", c.Connectors),
-		validateModules("provider", c.Providers),
 		validateModules("converter", c.Converters),
+		validateModules("exporter", c.Exporters),
+		validateModules("extension", c.Extensions),
+		validateModules("processor", c.Processors),
+		validateModules("provider", c.Providers),
+		validateModules("receiver", c.Receivers),
 	)
 }
 
@@ -165,42 +154,15 @@ func (c *Config) SetGoPath() error {
 
 // ParseModules will parse the Modules entries and populate the missing values
 func (c *Config) ParseModules() error {
-	var err error
-
-	c.Extensions, err = parseModules(c.Extensions)
-	if err != nil {
-		return err
-	}
-
-	c.Receivers, err = parseModules(c.Receivers)
-	if err != nil {
-		return err
-	}
-
-	c.Exporters, err = parseModules(c.Exporters)
-	if err != nil {
-		return err
-	}
-
-	c.Processors, err = parseModules(c.Processors)
-	if err != nil {
-		return err
-	}
-
-	c.Connectors, err = parseModules(c.Connectors)
-	if err != nil {
-		return err
-	}
-
-	c.Providers, err = parseModules(c.Providers)
-	if err != nil {
-		return err
-	}
-	c.Converters, err = parseModules(c.Converters)
-	if err != nil {
-		return err
-	}
-	return nil
+	return errors.Join(
+		parseModules(c.Connectors),
+		parseModules(c.Converters),
+		parseModules(c.Exporters),
+		parseModules(c.Extensions),
+		parseModules(c.Processors),
+		parseModules(c.Providers),
+		parseModules(c.Receivers),
+	)
 }
 
 func validateModules(name string, mods []Module) error {
@@ -212,33 +174,30 @@ func validateModules(name string, mods []Module) error {
 	return nil
 }
 
-func parseModules(mods []Module) ([]Module, error) {
-	var parsedModules []Module
-	for _, mod := range mods {
-		if mod.Import == "" {
-			mod.Import = strings.Split(mod.GoMod, " ")[0]
+func parseModules(mods []Module) error {
+	for i := range mods {
+		if mods[i].Import == "" {
+			mods[i].Import = strings.Split(mods[i].GoMod, " ")[0]
 		}
 
-		if mod.Name == "" {
-			parts := strings.Split(mod.Import, "/")
-			mod.Name = parts[len(parts)-1]
+		if mods[i].Name == "" {
+			parts := strings.Split(mods[i].Import, "/")
+			mods[i].Name = parts[len(parts)-1]
 		}
 
 		// Check if path is empty, otherwise filepath.Abs replaces it with current path ".".
-		if mod.Path != "" {
+		if mods[i].Path != "" {
 			var err error
-			mod.Path, err = filepath.Abs(mod.Path)
+			mods[i].Path, err = filepath.Abs(mods[i].Path)
 			if err != nil {
-				return mods, fmt.Errorf("module has a relative \"path\" element, but we couldn't resolve the current working dir: %w", err)
+				return fmt.Errorf("module has a relative \"path\" element, but we couldn't resolve the current working dir: %w", err)
 			}
 			// Check if the path exists
-			if _, err := os.Stat(mod.Path); os.IsNotExist(err) {
-				return mods, fmt.Errorf("filepath does not exist: %s", mod.Path)
+			if _, err := os.Stat(mods[i].Path); os.IsNotExist(err) {
+				return fmt.Errorf("filepath does not exist: %s", mods[i].Path)
 			}
 		}
-
-		parsedModules = append(parsedModules, mod)
 	}
 
-	return parsedModules, nil
+	return nil
 }
