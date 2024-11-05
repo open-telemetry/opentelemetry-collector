@@ -86,7 +86,6 @@ func NewTraces(
 	}
 	tracesOpts := []Option{
 		internal.WithMarshaler(tracesRequestMarshaler), internal.WithUnmarshaler(newTraceRequestUnmarshalerFunc(pusher)),
-		internal.WithBatchFuncs(mergeTraces, mergeSplitTraces),
 	}
 	return NewTracesRequest(ctx, set, requestFromTraces(pusher), append(tracesOpts, options...)...)
 }
