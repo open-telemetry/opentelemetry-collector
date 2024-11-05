@@ -16,7 +16,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const defaultBetaOtelColVersion = "v0.112.0"
+const defaultBetaOtelColVersion = "v0.113.0"
 const defaultStableOtelColVersion = "v1.17.0"
 
 var (
