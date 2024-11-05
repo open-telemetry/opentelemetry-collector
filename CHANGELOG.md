@@ -7,6 +7,30 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.19.0/v0.113.0
+
+### 🛑 Breaking changes 🛑
+
+- `internal/fanoutconsumer`: Extract internal/fanoutconsumer as a separate go module (#11441)
+- `builder`: Remove builder support to build old version, and the otelcol_version config (#11405)
+  User should remove this property from their config, to build older versions use older builders.
+- `receiver`: Make receivertest into its own module (#11462)
+- `builder`: Remove deprecated flags from Builder (#11576)
+  Here is the list of flags | --name, --description, --version, --otelcol-version, --go, --module
+- `internal/sharedcomponent`: Extract internal/sharedcomponent as a separate go module (#11442)
+
+### 💡 Enhancements 💡
+
+- `mdatagen`: Add otlp as supported distribution (#11527)
+- `batchprocessor`: Move single shard batcher creation to the constructor (#11594)
+- `service`: add support for using the otelzap bridge and emit logs using the OTel Go SDK (#10544)
+
+### 🧰 Bug fixes 🧰
+
+- `service`: ensure traces and logs emitted by the otel go SDK use the same resource information (#11578)
+- `config/configgrpc`: Patch for bug in the grpc-go NewClient that makes the way the hostname is resolved incompatible with the way proxy setting are applied. (#11537)
+- `builder`: Update builder default providers to lastest stable releases (#11566)
+
 ## v1.18.0/v0.112.0
 
 ### 🛑 Breaking changes 🛑
