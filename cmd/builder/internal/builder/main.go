@@ -75,6 +75,7 @@ func Generate(cfg *Config) error {
 		cfg.Logger.Info("Skipping generating source codes.")
 		return nil
 	}
+
 	// if the file does not exist, try to create it
 	if _, err := os.Stat(cfg.Distribution.OutputPath); os.IsNotExist(err) {
 		if err = os.Mkdir(cfg.Distribution.OutputPath, 0750); err != nil {
@@ -154,13 +155,14 @@ func GetModules(cfg *Config) error {
 	}
 
 	coreDepVersion, ok := dependencyVersions[otelcolPath]
+	betaVersion := semver.MajorMinor(defaultBetaOtelColVersion)
 	if !ok {
 		return fmt.Errorf("core collector %w: '%s'. %s", ErrDepNotFound, otelcolPath, skipStrictMsg)
 	}
-	if semver.MajorMinor(coreDepVersion) != semver.MajorMinor(defaultOtelColVersion) {
+	if semver.MajorMinor(coreDepVersion) != betaVersion {
 		return fmt.Errorf(
 			"%w: core collector version calculated by component dependencies %q does not match configured version %q. %s",
-			ErrVersionMismatch, coreDepVersion, defaultOtelColVersion, skipStrictMsg)
+			ErrVersionMismatch, coreDepVersion, betaVersion, skipStrictMsg)
 	}
 
 	for _, mod := range cfg.allComponents() {
@@ -211,8 +213,7 @@ func processAndWrite(cfg *Config, tmpl *template.Template, outFile string, tmplP
 }
 
 func (c *Config) allComponents() []Module {
-	return slices.Concat[[]Module](c.Exporters, c.Receivers, c.Processors,
-		c.Extensions, c.Connectors, *c.Providers)
+	return slices.Concat[[]Module](c.Exporters, c.Receivers, c.Processors, c.Extensions, c.Connectors, c.Providers)
 }
 
 func (c *Config) readGoModFile() (string, map[string]string, error) {
