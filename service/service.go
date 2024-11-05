@@ -137,6 +137,11 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 
 	views := disableHighCardinalityMetrics()
 
+	readers := cfg.Telemetry.Metrics.Readers
+	if cfg.Telemetry.Metrics.Level == configtelemetry.LevelNone {
+		readers = []config.MetricReader{}
+	}
+
 	sdk, err := config.NewSDK(
 		config.WithContext(ctx),
 		config.WithOpenTelemetryConfiguration(
@@ -145,7 +150,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 					Processors: cfg.Telemetry.Logs.Processors,
 				},
 				MeterProvider: &config.MeterProvider{
-					Readers: cfg.Telemetry.Metrics.Readers,
+					Readers: readers,
 					Views:   views,
 				},
 				TracerProvider: &config.TracerProvider{
