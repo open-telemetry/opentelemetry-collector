@@ -9,7 +9,7 @@ require (
 	go.opentelemetry.io/collector/component/componentstatus v0.112.0
 	go.opentelemetry.io/collector/config/configauth v0.112.0
 	go.opentelemetry.io/collector/config/confighttp v0.112.0
-	go.opentelemetry.io/collector/confmap v1.18.0
+	go.opentelemetry.io/collector/confmap v1.19.0
 	go.opentelemetry.io/collector/extension v0.112.0
 	go.opentelemetry.io/contrib/zpages v0.56.0
 	go.opentelemetry.io/otel/sdk v1.31.0
@@ -37,14 +37,14 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.21 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.11.1 // indirect
-	go.opentelemetry.io/collector/client v1.18.0 // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.18.0 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.18.0 // indirect
+	go.opentelemetry.io/collector/client v1.19.0 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.19.0 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.19.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.112.0 // indirect
-	go.opentelemetry.io/collector/config/configtls v1.18.0 // indirect
+	go.opentelemetry.io/collector/config/configtls v1.19.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.112.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.112.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.18.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.19.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.112.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.56.0 // indirect
 	go.opentelemetry.io/otel v1.31.0 // indirect
