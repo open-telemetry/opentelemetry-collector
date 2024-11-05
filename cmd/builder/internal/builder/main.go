@@ -32,7 +32,7 @@ var (
 
 const otelcolPath = "go.opentelemetry.io/collector/otelcol"
 
-func runGoCommand(cfg Config, args ...string) ([]byte, error) {
+func runGoCommand(cfg *Config, args ...string) ([]byte, error) {
 	if cfg.Verbose {
 		cfg.Logger.Info("Running go subcommand.", zap.Any("arguments", args))
 	}
@@ -56,7 +56,7 @@ func runGoCommand(cfg Config, args ...string) ([]byte, error) {
 }
 
 // GenerateAndCompile will generate the source files based on the given configuration, update go mod, and will compile into a binary
-func GenerateAndCompile(cfg Config) error {
+func GenerateAndCompile(cfg *Config) error {
 	if err := Generate(cfg); err != nil {
 		return err
 	}
@@ -70,11 +70,12 @@ func GenerateAndCompile(cfg Config) error {
 }
 
 // Generate assembles a new distribution based on the given configuration
-func Generate(cfg Config) error {
+func Generate(cfg *Config) error {
 	if cfg.SkipGenerate {
 		cfg.Logger.Info("Skipping generating source codes.")
 		return nil
 	}
+
 	// if the file does not exist, try to create it
 	if _, err := os.Stat(cfg.Distribution.OutputPath); os.IsNotExist(err) {
 		if err = os.Mkdir(cfg.Distribution.OutputPath, 0750); err != nil {
@@ -101,7 +102,7 @@ func Generate(cfg Config) error {
 }
 
 // Compile generates a binary from the sources based on the configuration
-func Compile(cfg Config) error {
+func Compile(cfg *Config) error {
 	if cfg.SkipCompilation {
 		cfg.Logger.Info("Generating source codes only, the distribution will not be compiled.")
 		return nil
@@ -132,7 +133,7 @@ func Compile(cfg Config) error {
 }
 
 // GetModules retrieves the go modules, updating go.mod and go.sum in the process
-func GetModules(cfg Config) error {
+func GetModules(cfg *Config) error {
 	if cfg.SkipGetModules {
 		cfg.Logger.Info("Generating source codes only, will not update go.mod and retrieve Go modules.")
 		return nil
@@ -154,13 +155,14 @@ func GetModules(cfg Config) error {
 	}
 
 	coreDepVersion, ok := dependencyVersions[otelcolPath]
+	betaVersion := semver.MajorMinor(defaultBetaOtelColVersion)
 	if !ok {
 		return fmt.Errorf("core collector %w: '%s'. %s", ErrDepNotFound, otelcolPath, skipStrictMsg)
 	}
-	if semver.MajorMinor(coreDepVersion) != semver.MajorMinor(defaultOtelColVersion) {
+	if semver.MajorMinor(coreDepVersion) != betaVersion {
 		return fmt.Errorf(
 			"%w: core collector version calculated by component dependencies %q does not match configured version %q. %s",
-			ErrVersionMismatch, coreDepVersion, defaultOtelColVersion, skipStrictMsg)
+			ErrVersionMismatch, coreDepVersion, betaVersion, skipStrictMsg)
 	}
 
 	for _, mod := range cfg.allComponents() {
@@ -185,7 +187,7 @@ func GetModules(cfg Config) error {
 	return downloadModules(cfg)
 }
 
-func downloadModules(cfg Config) error {
+func downloadModules(cfg *Config) error {
 	cfg.Logger.Info("Getting go modules")
 	failReason := "unknown"
 	for i := 1; i <= cfg.downloadModules.numRetries; i++ {
@@ -200,7 +202,7 @@ func downloadModules(cfg Config) error {
 	return fmt.Errorf("%w: %s", errDownloadFailed, failReason)
 }
 
-func processAndWrite(cfg Config, tmpl *template.Template, outFile string, tmplParams any) error {
+func processAndWrite(cfg *Config, tmpl *template.Template, outFile string, tmplParams any) error {
 	out, err := os.Create(filepath.Clean(filepath.Join(cfg.Distribution.OutputPath, outFile)))
 	if err != nil {
 		return err
@@ -211,13 +213,12 @@ func processAndWrite(cfg Config, tmpl *template.Template, outFile string, tmplPa
 }
 
 func (c *Config) allComponents() []Module {
-	return slices.Concat[[]Module](c.Exporters, c.Receivers, c.Processors,
-		c.Extensions, c.Connectors, *c.Providers)
+	return slices.Concat[[]Module](c.Exporters, c.Receivers, c.Processors, c.Extensions, c.Connectors, c.Providers)
 }
 
 func (c *Config) readGoModFile() (string, map[string]string, error) {
 	var modPath string
-	stdout, err := runGoCommand(*c, "mod", "edit", "-print")
+	stdout, err := runGoCommand(c, "mod", "edit", "-print")
 	if err != nil {
 		return modPath, nil, err
 	}

@@ -13,6 +13,7 @@ import (
 	"github.com/knadh/koanf/v2"
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/cmd/builder/internal/builder"
@@ -20,6 +21,7 @@ import (
 )
 
 const (
+	configFlag                 = "config"
 	skipGenerateFlag           = "skip-generate"
 	skipCompilationFlag        = "skip-compilation"
 	skipGetModulesFlag         = "skip-get-modules"
@@ -27,12 +29,6 @@ const (
 	ldflagsFlag                = "ldflags"
 	distributionOutputPathFlag = "output-path"
 	verboseFlag                = "verbose"
-)
-
-var (
-	cfgFile string
-	cfg     = builder.NewDefaultConfig()
-	k       = koanf.New(".")
 )
 
 // Command is the main entrypoint for this application
@@ -49,18 +45,19 @@ configuration is provided, ocb will generate a default Collector.
 `,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			if err := initConfig(cmd.Flags()); err != nil {
+			cfg, err := initConfig(cmd.Flags())
+			if err != nil {
 				return err
 			}
-			if err := cfg.Validate(); err != nil {
+			if err = cfg.Validate(); err != nil {
 				return fmt.Errorf("invalid configuration: %w", err)
 			}
 
-			if err := cfg.SetGoPath(); err != nil {
+			if err = cfg.SetGoPath(); err != nil {
 				return fmt.Errorf("go not found: %w", err)
 			}
 
-			if err := cfg.ParseModules(); err != nil {
+			if err = cfg.ParseModules(); err != nil {
 				return fmt.Errorf("invalid module configuration: %w", err)
 			}
 
@@ -68,89 +65,95 @@ configuration is provided, ocb will generate a default Collector.
 		},
 	}
 
-	cmd.Flags().StringVar(&cfgFile, "config", "", "build configuration file")
-
-	// the distribution parameters, which we accept as CLI flags as well
-	cmd.Flags().BoolVar(&cfg.SkipGenerate, skipGenerateFlag, false, "Whether builder should skip generating go code (default false)")
-	cmd.Flags().BoolVar(&cfg.SkipCompilation, skipCompilationFlag, false, "Whether builder should only generate go code with no compile of the collector (default false)")
-	cmd.Flags().BoolVar(&cfg.SkipGetModules, skipGetModulesFlag, false, "Whether builder should skip updating go.mod and retrieve Go module list (default false)")
-	cmd.Flags().BoolVar(&cfg.SkipStrictVersioning, skipStrictVersioningFlag, true, "Whether builder should skip strictly checking the calculated versions following dependency resolution")
-	cmd.Flags().BoolVar(&cfg.Verbose, verboseFlag, false, "Whether builder should print verbose output (default false)")
-	cmd.Flags().StringVar(&cfg.LDFlags, ldflagsFlag, "", `ldflags to include in the "go build" command`)
-	cmd.Flags().StringVar(&cfg.Distribution.OutputPath, distributionOutputPathFlag, cfg.Distribution.OutputPath, "Where to write the resulting files")
-	if err := cmd.Flags().MarkDeprecated(distributionOutputPathFlag, "use config distribution::output_path"); err != nil {
+	if err := initFlags(cmd.Flags()); err != nil {
 		return nil, err
 	}
+
 	// version of this binary
 	cmd.AddCommand(versionCommand())
 
 	return cmd, nil
 }
 
-func initConfig(flags *flag.FlagSet) error {
-	cfg.Logger.Info("OpenTelemetry Collector Builder",
-		zap.String("version", version))
+func initFlags(flags *flag.FlagSet) error {
+	flags.String(configFlag, "", "build configuration file")
+	// the distribution parameters, which we accept as CLI flags as well
+	flags.Bool(skipGenerateFlag, false, "Whether builder should skip generating go code (default false)")
+	flags.Bool(skipCompilationFlag, false, "Whether builder should only generate go code with no compile of the collector (default false)")
+	flags.Bool(skipGetModulesFlag, false, "Whether builder should skip updating go.mod and retrieve Go module list (default false)")
+	flags.Bool(skipStrictVersioningFlag, true, "Whether builder should skip strictly checking the calculated versions following dependency resolution")
+	flags.Bool(verboseFlag, false, "Whether builder should print verbose output (default false)")
+	flags.String(ldflagsFlag, "", `ldflags to include in the "go build" command`)
+	flags.String(distributionOutputPathFlag, "", "Where to write the resulting files")
+	return flags.MarkDeprecated(distributionOutputPathFlag, "use config distribution::output_path")
+}
+
+func initConfig(flags *flag.FlagSet) (*builder.Config, error) {
+	cfg, err := builder.NewDefaultConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	cfg.Logger.Info("OpenTelemetry Collector Builder", zap.String("version", version))
 
 	var provider koanf.Provider
-
+	cfgFile, _ := flags.GetString(configFlag)
 	if cfgFile != "" {
+		cfg.Logger.Info("Using config file", zap.String("path", cfgFile))
 		// load the config file
 		provider = file.Provider(cfgFile)
 	} else {
+		cfg.Logger.Info("Using default build configuration")
 		// or the default if the config isn't provided
 		provider = config.DefaultProvider()
-		cfg.Logger.Info("Using default build configuration")
 	}
 
-	if err := k.Load(provider, yaml.Parser()); err != nil {
-		return fmt.Errorf("failed to load configuration file: %w", err)
+	k := koanf.New(".")
+	if err = k.Load(provider, yaml.Parser()); err != nil {
+		return nil, fmt.Errorf("failed to load configuration file: %w", err)
 	}
 
 	// handle env variables
-	if err := k.Load(env.Provider("", ".", func(s string) string {
+	if err = k.Load(env.Provider("", ".", func(s string) string {
 		// Only values from the `dist.` group can be set,
 		// and the subfields in `dist.` contain `_` in their names.
 		// All other fields are arrays and the koanf env provider doesn't provide a straightforward way to set arrays.
 		return strings.Replace(strings.ToLower(s), "dist_", "dist.", 1)
 	}), nil); err != nil {
-		return fmt.Errorf("failed to load environment variables: %w", err)
+		return nil, fmt.Errorf("failed to load environment variables: %w", err)
 	}
 
-	cfgFromFile := builder.Config{}
-	if err := k.UnmarshalWithConf("", &cfgFromFile, koanf.UnmarshalConf{Tag: "mapstructure"}); err != nil {
-		return fmt.Errorf("failed to unmarshal configuration: %w", err)
+	if err = k.UnmarshalWithConf("", cfg, koanf.UnmarshalConf{Tag: "mapstructure"}); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal configuration: %w", err)
 	}
 
-	applyCfgFromFile(flags, cfgFromFile)
-
-	if cfgFile != "" {
-		cfg.Logger.Info("Using config file", zap.String("path", cfgFile))
+	if err = applyFlags(flags, cfg); err != nil {
+		return nil, fmt.Errorf("failed to apply flags configuration: %w", err)
 	}
 
-	return nil
+	return cfg, nil
 }
 
-func applyCfgFromFile(flags *flag.FlagSet, cfgFromFile builder.Config) {
-	cfg.Exporters = cfgFromFile.Exporters
-	cfg.Extensions = cfgFromFile.Extensions
-	cfg.Receivers = cfgFromFile.Receivers
-	cfg.Processors = cfgFromFile.Processors
-	cfg.Connectors = cfgFromFile.Connectors
-	cfg.Providers = cfgFromFile.Providers
-	cfg.Replaces = cfgFromFile.Replaces
-	cfg.Excludes = cfgFromFile.Excludes
+func applyFlags(flags *flag.FlagSet, cfg *builder.Config) error {
+	var errs, err error
+	cfg.SkipGenerate, err = flags.GetBool(skipGenerateFlag)
+	errs = multierr.Append(errs, err)
+	cfg.SkipCompilation, err = flags.GetBool(skipCompilationFlag)
+	errs = multierr.Append(errs, err)
+	cfg.SkipGetModules, err = flags.GetBool(skipGetModulesFlag)
+	errs = multierr.Append(errs, err)
+	cfg.SkipStrictVersioning, err = flags.GetBool(skipStrictVersioningFlag)
+	errs = multierr.Append(errs, err)
 
-	cfg.ConfResolver.DefaultURIScheme = cfgFromFile.ConfResolver.DefaultURIScheme
+	cfg.LDFlags, err = flags.GetString(ldflagsFlag)
+	errs = multierr.Append(errs, err)
+	cfg.Verbose, err = flags.GetBool(verboseFlag)
+	errs = multierr.Append(errs, err)
 
-	if !flags.Changed(distributionOutputPathFlag) && cfgFromFile.Distribution.OutputPath != "" {
-		cfg.Distribution.OutputPath = cfgFromFile.Distribution.OutputPath
+	if flags.Changed(distributionOutputPathFlag) {
+		cfg.Distribution.OutputPath, err = flags.GetString(distributionOutputPathFlag)
+		errs = multierr.Append(errs, err)
 	}
 
-	cfg.Distribution.Name = cfgFromFile.Distribution.Name
-	cfg.Distribution.Description = cfgFromFile.Distribution.Description
-	cfg.Distribution.Version = cfgFromFile.Distribution.Version
-	cfg.Distribution.Go = cfgFromFile.Distribution.Go
-	cfg.Distribution.Module = cfgFromFile.Distribution.Module
-	cfg.Distribution.BuildTags = cfgFromFile.Distribution.BuildTags
-	cfg.Distribution.DebugCompilation = cfgFromFile.Distribution.DebugCompilation
+	return errs
 }

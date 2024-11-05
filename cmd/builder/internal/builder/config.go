@@ -16,10 +16,13 @@ import (
 	"go.uber.org/zap"
 )
 
-const defaultOtelColVersion = "v0.112.0"
+const defaultBetaOtelColVersion = "v0.112.0"
+const defaultStableOtelColVersion = "v1.17.0"
 
-// ErrMissingGoMod indicates an empty gomod field
-var ErrMissingGoMod = errors.New("missing gomod specification for module")
+var (
+	// errMissingGoMod indicates an empty gomod field
+	errMissingGoMod = errors.New("missing gomod specification for module")
+)
 
 // Config holds the builder's configuration
 type Config struct {
@@ -39,7 +42,7 @@ type Config struct {
 	Receivers    []Module     `mapstructure:"receivers"`
 	Processors   []Module     `mapstructure:"processors"`
 	Connectors   []Module     `mapstructure:"connectors"`
-	Providers    *[]Module    `mapstructure:"providers"`
+	Providers    []Module     `mapstructure:"providers"`
 	Replaces     []string     `mapstructure:"replaces"`
 	Excludes     []string     `mapstructure:"excludes"`
 
@@ -61,7 +64,7 @@ type Distribution struct {
 	Name        string `mapstructure:"name"`
 	Go          string `mapstructure:"go"`
 	Description string `mapstructure:"description"`
-	// Deprecated: only here
+	// Deprecated: [v0.113.0] only here to return a detailed error and not failing during unmarshalling.
 	OtelColVersion   string `mapstructure:"otelcol_version"`
 	OutputPath       string `mapstructure:"output_path"`
 	Version          string `mapstructure:"version"`
@@ -83,7 +86,7 @@ type retry struct {
 }
 
 // NewDefaultConfig creates a new config, with default values
-func NewDefaultConfig() Config {
+func NewDefaultConfig() (*Config, error) {
 	log, err := zap.NewDevelopment()
 	if err != nil {
 		panic(fmt.Sprintf("failed to obtain a logger instance: %v", err))
@@ -91,11 +94,11 @@ func NewDefaultConfig() Config {
 
 	outputDir, err := os.MkdirTemp("", "otelcol-distribution")
 	if err != nil {
-		log.Error("failed to obtain a temporary directory", zap.Error(err))
+		return nil, err
 	}
 
-	return Config{
-		OtelColVersion: defaultOtelColVersion,
+	return &Config{
+		OtelColVersion: defaultBetaOtelColVersion,
 		Logger:         log,
 		Distribution: Distribution{
 			OutputPath: outputDir,
@@ -107,7 +110,24 @@ func NewDefaultConfig() Config {
 			numRetries: 3,
 			wait:       5 * time.Second,
 		},
-	}
+		Providers: []Module{
+			{
+				GoMod: "go.opentelemetry.io/collector/confmap/provider/envprovider " + defaultStableOtelColVersion,
+			},
+			{
+				GoMod: "go.opentelemetry.io/collector/confmap/provider/fileprovider " + defaultStableOtelColVersion,
+			},
+			{
+				GoMod: "go.opentelemetry.io/collector/confmap/provider/httpprovider " + defaultStableOtelColVersion,
+			},
+			{
+				GoMod: "go.opentelemetry.io/collector/confmap/provider/httpsprovider " + defaultStableOtelColVersion,
+			},
+			{
+				GoMod: "go.opentelemetry.io/collector/confmap/provider/yamlprovider " + defaultStableOtelColVersion,
+			},
+		},
+	}, nil
 }
 
 // Validate checks whether the current configuration is valid
@@ -115,17 +135,13 @@ func (c *Config) Validate() error {
 	if c.Distribution.OtelColVersion != "" {
 		return errors.New("`otelcol_version` has been removed. To build with an older Collector API, use an older (aligned) builder version instead")
 	}
-	var providersError error
-	if c.Providers != nil {
-		providersError = validateModules("provider", *c.Providers)
-	}
 	return multierr.Combine(
 		validateModules("extension", c.Extensions),
 		validateModules("receiver", c.Receivers),
 		validateModules("exporter", c.Exporters),
 		validateModules("processor", c.Processors),
 		validateModules("connector", c.Connectors),
-		providersError,
+		validateModules("provider", c.Providers),
 	)
 }
 
@@ -174,34 +190,9 @@ func (c *Config) ParseModules() error {
 		return err
 	}
 
-	if c.Providers != nil {
-		providers, err := parseModules(*c.Providers)
-		if err != nil {
-			return err
-		}
-		c.Providers = &providers
-	} else {
-		providers, err := parseModules([]Module{
-			{
-				GoMod: "go.opentelemetry.io/collector/confmap/provider/envprovider " + defaultOtelColVersion,
-			},
-			{
-				GoMod: "go.opentelemetry.io/collector/confmap/provider/fileprovider " + defaultOtelColVersion,
-			},
-			{
-				GoMod: "go.opentelemetry.io/collector/confmap/provider/httpprovider " + defaultOtelColVersion,
-			},
-			{
-				GoMod: "go.opentelemetry.io/collector/confmap/provider/httpsprovider " + defaultOtelColVersion,
-			},
-			{
-				GoMod: "go.opentelemetry.io/collector/confmap/provider/yamlprovider " + defaultOtelColVersion,
-			},
-		})
-		if err != nil {
-			return err
-		}
-		c.Providers = &providers
+	c.Providers, err = parseModules(c.Providers)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -210,7 +201,7 @@ func (c *Config) ParseModules() error {
 func validateModules(name string, mods []Module) error {
 	for i, mod := range mods {
 		if mod.GoMod == "" {
-			return fmt.Errorf("%s module at index %v: %w", name, i, ErrMissingGoMod)
+			return fmt.Errorf("%s module at index %v: %w", name, i, errMissingGoMod)
 		}
 	}
 	return nil
