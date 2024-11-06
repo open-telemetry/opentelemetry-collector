@@ -99,7 +99,7 @@ func TestTelemetryConfiguration(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			f := NewFactory()
 			set := Settings{ZapOptions: []zap.Option{}}
-			logger, err := f.CreateLogger(context.Background(), set, tt.cfg)
+			logger, _, err := f.CreateLogger(context.Background(), set, tt.cfg)
 			if tt.success {
 				require.NoError(t, err)
 				assert.NotNil(t, logger)
@@ -158,7 +158,7 @@ func TestSampledLogger(t *testing.T) {
 			f := NewFactory()
 			ctx := context.Background()
 			set := Settings{ZapOptions: []zap.Option{}}
-			logger, err := f.CreateLogger(ctx, set, tt.cfg)
+			logger, _, err := f.CreateLogger(ctx, set, tt.cfg)
 			require.NoError(t, err)
 			assert.NotNil(t, logger)
 		})

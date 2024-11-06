@@ -7,6 +7,66 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.19.0/v0.113.0
+
+### 🛑 Breaking changes 🛑
+
+- `builder`: Remove deprecated flags from Builder (#11576)
+  Here is the list of flags | --name, --description, --version, --otelcol-version, --go, --module
+
+### 🚀 New components 🚀
+
+- `processorhelperprofiles`: Add processorhelperprofiles to support profiles signal (#11556)
+
+### 💡 Enhancements 💡
+
+- `mdatagen`: Add newTelemetrySettings to be generated all the time even for pkg class (#11535)
+- `debugexporter`: Add profiles support to debug exporter (#11155)
+- `component`: Add UnmarshalText for StabilityLevel (#11520)
+
+## v1.18.0/v0.112.0
+
+### 🛑 Breaking changes 🛑
+
+- `service`: Change Host to not implement GetExportersWithSignal (#11444)
+  Use Host.GetExporters if still needed.
+- `componentstatus`: Remove deprecated `NewInstanceIDWithPipelineIDs`, `AllPipelineIDsWithPipelineIDs`, and `WithPipelineIDs`. Use `NewInstanceID`, `AllPipelineIDs` and `WithPipelines` instead. (#11363)
+- `configgrpc`: Removed deprecated `ClientConfig.ToClientConnWithOptions`/`ServerConfig.ToServerWithOptions`. (#11359, #9480)
+  These methods were renamed to `ClientConfig.ToClientConn`/`ServerConfig.ToServer` in v0.111.0.
+- `connector`: Put connectortest in its own module (#11216)
+- `exporter`: Disables setting batch option to batch sender directly. (#10368)
+  Removed WithRequestBatchFuncs(BatcherOption) in favor of WithBatchFuncs(Option), where | BatcherOption is a function that operates on batch sender and Option is one that operates | on BaseExporter
+- `exporter`: Made mergeFunc and mergeSplitFunc required method of exporter.Request (#10368)
+  mergeFunc and mergeSplitFunc used to be part of the configuration pass to the exporter. Now it is changed | to be a method function of request.
+- `componentprofiles`: Move componentprofiles to pipelineprofiles (#11421)
+- `processor`: Put processortest in its own module (#11218)
+- `receivertest`: Removed deprecated `NewNopFactoryForTypeWithSignal`. Use `NewNopFactoryForType` instead. (#11362)
+- `processor`: Remove deprecated funcs from processor package (#11368)
+- `receiver`: Remove deprecated funcs from receiver package (#11367)
+- `processorhelper`: Remove deprecated funcs/types from processorhelper & componenttest (#11302)
+- `service`: Remove deprecated `pipelines.ConfigWithPipelineID` and `Config.PipelinesWithPipelineID`. Use `pipelines.Config` and `Config.Pipelines` instead. (#11361)
+
+### 🚩 Deprecations 🚩
+
+- `extension`: Deprecate funcs that repeat extension in name (#11413)
+  Factory.CreateExtension -> Factory.Create |
+  Factory.ExtensionStability -> Factory.Stability
+  
+- `exporter`: Deprecate funcs that repeate exporter in name (#11370)
+  Factory.Create[Traces|Metrics|Logs|Profiles]Exporter -> Factory.Create[Traces|Metrics|Logs|Profiles] |
+  Factory.[Traces|Metrics|Logs|Profiles]ExporterStability -> Factory.[Traces|Metrics|Logs|Profiles]Stability
+  
+
+### 🚀 New components 🚀
+
+- `consumererrorprofiles`: Add new module consumereerrorprofiles for consumer error profiles. (#11131)
+
+### 💡 Enhancements 💡
+
+- `configcompression`: Add support for lz4 compression (#9128)
+- `otlpexporter`: Add profiles support to OTLP exporter (#11435)
+- `otlphttpexporter`: Add profiles support to OTLP HTTP exporter (#11450)
+
 ## v1.17.0/v0.111.0
 
 ### 🛑 Breaking changes 🛑

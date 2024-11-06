@@ -317,7 +317,6 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 			require.NoError(t, be.Shutdown(context.Background()))
 		})
 	}
-
 }
 
 func TestQueueFailedRequestDropped(t *testing.T) {

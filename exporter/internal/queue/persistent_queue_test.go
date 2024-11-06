@@ -82,8 +82,10 @@ func createAndStartTestPersistentQueue(t *testing.T, sizer Sizer[tracesRequest],
 		{}: NewMockStorageExtension(nil),
 	}}
 	consumers := NewQueueConsumers(pq, numConsumers, consumeFunc)
+	require.NoError(t, pq.Start(context.Background(), host))
 	require.NoError(t, consumers.Start(context.Background(), host))
 	t.Cleanup(func() {
+		require.NoError(t, pq.Shutdown(context.Background()))
 		assert.NoError(t, consumers.Shutdown(context.Background()))
 	})
 	return pq
@@ -188,7 +190,6 @@ func TestPersistentQueue_Shutdown(t *testing.T) {
 	for i := 0; i < 1000; i++ {
 		assert.NoError(t, pq.Offer(context.Background(), req))
 	}
-
 }
 
 func TestPersistentQueue_ConsumersProducers(t *testing.T) {
@@ -801,8 +802,8 @@ func TestPersistentQueue_StorageFull(t *testing.T) {
 }
 
 func TestPersistentQueue_ItemDispatchingFinish_ErrorHandling(t *testing.T) {
-	errDeletingItem := fmt.Errorf("error deleting item")
-	errUpdatingDispatched := fmt.Errorf("error updating dispatched items")
+	errDeletingItem := errors.New("error deleting item")
+	errUpdatingDispatched := errors.New("error updating dispatched items")
 	testCases := []struct {
 		storageErrors []error
 		expectedError error
