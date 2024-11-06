@@ -73,3 +73,8 @@ The component is planned to be removed in a future version and no further suppor
 ### Unmaintained
 
 A component identified as unmaintained does not have an active code owner. Such component may have never been assigned a code owner or a previously active code owner has not responded to requests for feedback within 6 weeks of being contacted. Issues and pull requests for unmaintained components will be labelled as such. After 6 months of being unmaintained, these components will be removed from official distribution. Components that are unmaintained are actively seeking contributors to become code owners.
+
+Components that were accepted based on being vendor-specific components will be marked as unmaintained if
+it has no active code owners from the vendor even if there are other code owners listed. Other active code
+owners may petition for its continued maintenance if they want, at which point the component will no
+longer be considered vendor-specific.
