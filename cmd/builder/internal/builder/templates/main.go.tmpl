@@ -8,6 +8,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
+	{{- range .Converters}}
+	{{.Name}} "{{.Import}}"
+	{{- end}}	
 	{{- range .Providers}}
 	{{.Name}} "{{.Import}}"
 	{{- end}}
@@ -31,6 +34,13 @@ func main() {
 					{{.Name}}.NewFactory(),
 					{{- end}}
 				},
+				{{- if .Converters }}
+				ConverterFactories: []confmap.ConverterFactory{
+					{{- range .Converters}}
+					{{.Name}}.NewFactory(),
+					{{- end}}
+				},
+				{{- end }}
 				{{- if .ConfResolver.DefaultURIScheme }}
 				DefaultScheme: "{{ .ConfResolver.DefaultURIScheme }}",
 				{{- end }}
