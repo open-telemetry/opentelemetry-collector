@@ -68,7 +68,7 @@ func TestErrorRecordedIfFileDeleted(t *testing.T) {
 	}, 5*time.Second, 10*time.Millisecond)
 
 	lastErr := reloader.getLastError()
-	assert.Equal(t, "test error on reload", fmt.Sprint(lastErr))
+	require.EqualError(t, lastErr, "test error on reload")
 
 	err = reloader.shutdown()
 	assert.NoError(t, err)

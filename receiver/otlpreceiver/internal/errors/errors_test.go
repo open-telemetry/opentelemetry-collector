@@ -4,7 +4,7 @@
 package errors // import "go.opentelemetry.io/collector/receiver/otlpreceiver/internal/util"
 
 import (
-	"fmt"
+	"errors"
 	"net/http"
 	"testing"
 
@@ -28,12 +28,12 @@ func Test_GetStatusFromError(t *testing.T) {
 		},
 		{
 			name:     "Permanent Error",
-			input:    consumererror.NewPermanent(fmt.Errorf("test")),
+			input:    consumererror.NewPermanent(errors.New("test")),
 			expected: status.New(codes.Internal, "Permanent error: test"),
 		},
 		{
 			name:     "Non-Permanent Error",
-			input:    fmt.Errorf("test"),
+			input:    errors.New("test"),
 			expected: status.New(codes.Unavailable, "test"),
 		},
 	}

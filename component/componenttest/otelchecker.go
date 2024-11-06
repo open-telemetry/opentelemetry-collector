@@ -37,8 +37,8 @@ func checkReceiverMetrics(reader *sdkmetric.ManualReader, receiver component.ID,
 func checkReceiver(reader *sdkmetric.ManualReader, receiver component.ID, datatype, protocol string, acceptedMetricPoints, droppedMetricPoints int64) error {
 	receiverAttrs := attributesForReceiverMetrics(receiver, protocol)
 	return multierr.Combine(
-		checkIntSum(reader, fmt.Sprintf("otelcol_receiver_accepted_%s", datatype), acceptedMetricPoints, receiverAttrs),
-		checkIntSum(reader, fmt.Sprintf("otelcol_receiver_refused_%s", datatype), droppedMetricPoints, receiverAttrs))
+		checkIntSum(reader, "otelcol_receiver_accepted_"+datatype, acceptedMetricPoints, receiverAttrs),
+		checkIntSum(reader, "otelcol_receiver_refused_"+datatype, droppedMetricPoints, receiverAttrs))
 }
 
 func checkExporterTraces(reader *sdkmetric.ManualReader, exporter component.ID, sent, sendFailed int64) error {
@@ -55,10 +55,10 @@ func checkExporterMetrics(reader *sdkmetric.ManualReader, exporter component.ID,
 
 func checkExporter(reader *sdkmetric.ManualReader, exporter component.ID, datatype string, sent, sendFailed int64) error {
 	exporterAttrs := attributesForExporterMetrics(exporter)
-	errs := checkIntSum(reader, fmt.Sprintf("otelcol_exporter_sent_%s", datatype), sent, exporterAttrs)
+	errs := checkIntSum(reader, "otelcol_exporter_sent_"+datatype, sent, exporterAttrs)
 	if sendFailed > 0 {
 		errs = multierr.Append(errs,
-			checkIntSum(reader, fmt.Sprintf("otelcol_exporter_send_failed_%s", datatype), sendFailed, exporterAttrs))
+			checkIntSum(reader, "otelcol_exporter_send_failed_"+datatype, sendFailed, exporterAttrs))
 	}
 	return errs
 }
@@ -68,7 +68,7 @@ func checkExporterEnqueueFailed(reader *sdkmetric.ManualReader, exporter compone
 		return nil
 	}
 	exporterAttrs := attributesForExporterMetrics(exporter)
-	return checkIntSum(reader, fmt.Sprintf("otelcol_exporter_enqueue_failed_%s", datatype), enqueueFailed, exporterAttrs)
+	return checkIntSum(reader, "otelcol_exporter_enqueue_failed_"+datatype, enqueueFailed, exporterAttrs)
 }
 
 func checkIntGauge(reader *sdkmetric.ManualReader, metric string, expected int64, expectedAttrs attribute.Set) error {

@@ -4,6 +4,7 @@
 package connector // import "go.opentelemetry.io/collector/connector"
 
 import (
+	"errors"
 	"fmt"
 
 	"go.uber.org/multierr"
@@ -48,7 +49,7 @@ func (r *logsRouter) PipelineIDs() []pipeline.ID {
 
 func (r *logsRouter) Consumer(pipelineIDs ...pipeline.ID) (consumer.Logs, error) {
 	if len(pipelineIDs) == 0 {
-		return nil, fmt.Errorf("missing consumers")
+		return nil, errors.New("missing consumers")
 	}
 	consumers := make([]consumer.Logs, 0, len(pipelineIDs))
 	var errors error

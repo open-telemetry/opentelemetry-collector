@@ -94,7 +94,7 @@ func TestTraceRoundTrip(t *testing.T) {
 		},
 		{
 			name:        "onlybase",
-			baseURL:     fmt.Sprintf("http://%s", addr),
+			baseURL:     "http://" + addr,
 			overrideURL: "",
 		},
 		{
@@ -147,7 +147,7 @@ func TestMetricsRoundTrip(t *testing.T) {
 		},
 		{
 			name:        "onlybase",
-			baseURL:     fmt.Sprintf("http://%s", addr),
+			baseURL:     "http://" + addr,
 			overrideURL: "",
 		},
 		{
@@ -200,7 +200,7 @@ func TestLogsRoundTrip(t *testing.T) {
 		},
 		{
 			name:        "onlybase",
-			baseURL:     fmt.Sprintf("http://%s", addr),
+			baseURL:     "http://" + addr,
 			overrideURL: "",
 		},
 		{

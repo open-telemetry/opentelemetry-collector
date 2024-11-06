@@ -51,7 +51,6 @@ func TestValidateConfig_ValidBatchSizes(t *testing.T) {
 		SendBatchMaxSize: 1000,
 	}
 	assert.NoError(t, cfg.Validate())
-
 }
 
 func TestValidateConfig_InvalidBatchSize(t *testing.T) {

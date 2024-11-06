@@ -382,7 +382,6 @@ func (pq *persistentQueue[T]) OnProcessingFinished(index uint64, consumeErr erro
 
 	// Ensure the used size and the channel size are in sync.
 	pq.sizedChannel.syncSize()
-
 }
 
 // retrieveAndEnqueueNotDispatchedReqs gets the items for which sending was not finished, cleans the storage

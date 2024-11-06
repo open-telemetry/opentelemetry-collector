@@ -29,7 +29,6 @@ func TestProtoSizer(t *testing.T) {
 	bytes, err := marshaler.MarshalLogs(ld)
 	require.NoError(t, err)
 	assert.Equal(t, len(bytes), size)
-
 }
 
 func TestProtoSizerEmptyLogs(t *testing.T) {

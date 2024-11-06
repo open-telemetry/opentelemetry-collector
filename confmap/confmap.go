@@ -102,7 +102,7 @@ func (l *Conf) Marshal(rawVal any, _ ...MarshalOption) error {
 	}
 	out, ok := data.(map[string]any)
 	if !ok {
-		return fmt.Errorf("invalid config encoding")
+		return errors.New("invalid config encoding")
 	}
 	return l.Merge(NewFromStringMap(out))
 }

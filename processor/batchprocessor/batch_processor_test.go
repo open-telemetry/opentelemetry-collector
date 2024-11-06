@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -1302,7 +1303,7 @@ func TestBatchProcessorMetadataCardinalityLimit(t *testing.T) {
 		td := testdata.GenerateTraces(1)
 		ctx := client.NewContext(bg, client.Info{
 			Metadata: client.NewMetadata(map[string][]string{
-				"token": {fmt.Sprint(requestNum)},
+				"token": {strconv.Itoa(requestNum)},
 			}),
 		})
 

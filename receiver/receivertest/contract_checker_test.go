@@ -230,7 +230,6 @@ func createLog(
 // TestConsumeContract is an example of testing of the receiver for the contract between the
 // receiver and next consumer.
 func TestConsumeContract(t *testing.T) {
-
 	// Number of log records to send per scenario.
 	const logsPerTest = 100
 
@@ -253,7 +252,6 @@ func TestConsumeContract(t *testing.T) {
 // TestConsumeMetricsContract is an example of testing of the receiver for the contract between the
 // receiver and next consumer.
 func TestConsumeMetricsContract(t *testing.T) {
-
 	// Number of metric data points to send per scenario.
 	const metricsPerTest = 100
 
@@ -276,7 +274,6 @@ func TestConsumeMetricsContract(t *testing.T) {
 // TestConsumeTracesContract is an example of testing of the receiver for the contract between the
 // receiver and next consumer.
 func TestConsumeTracesContract(t *testing.T) {
-
 	// Number of trace spans to send per scenario.
 	const spansPerTest = 100
 

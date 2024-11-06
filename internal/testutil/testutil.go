@@ -4,7 +4,6 @@
 package testutil // import "go.opentelemetry.io/collector/internal/testutil"
 
 import (
-	"fmt"
 	"net"
 	"os/exec"
 	"runtime"
@@ -74,7 +73,7 @@ func findAvailableAddress(network string, t testing.TB) string {
 	}
 	require.NotZero(t, host, "network must be either of tcp, tcp4 or tcp6")
 
-	ln, err := net.Listen("tcp", fmt.Sprintf("%s:0", host))
+	ln, err := net.Listen("tcp", host+":0")
 	require.NoError(t, err, "Failed to get a free local port")
 	// There is a possible race if something else takes this same port before
 	// the test uses it, however, that is unlikely in practice.

@@ -109,4 +109,3 @@ service:
 ```
 
 [filestorage]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/storage/filestorage
-[alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha

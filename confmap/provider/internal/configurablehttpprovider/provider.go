@@ -80,7 +80,6 @@ func (fmp *provider) createClient() (*http.Client, error) {
 }
 
 func (fmp *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
-
 	if !strings.HasPrefix(uri, string(fmp.scheme)+":") {
 		return nil, fmt.Errorf("%q uri is not supported by %q provider", uri, string(fmp.scheme))
 	}

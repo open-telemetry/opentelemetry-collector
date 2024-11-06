@@ -52,7 +52,6 @@ func newMeterProvider(set meterProviderSettings, disableHighCardinality bool) (m
 		}
 		if server != nil {
 			mp.servers = append(mp.servers, server)
-
 		}
 		opts = append(opts, sdkmetric.WithReader(r))
 	}

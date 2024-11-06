@@ -263,10 +263,10 @@ func TestServiceTelemetryCleanupOnError(t *testing.T) {
 
 func TestServiceTelemetry(t *testing.T) {
 	for _, tc := range ownMetricsTestCases() {
-		t.Run(fmt.Sprintf("ipv4_%s", tc.name), func(t *testing.T) {
+		t.Run("ipv4_"+tc.name, func(t *testing.T) {
 			testCollectorStartHelperWithReaders(t, tc, "tcp4")
 		})
-		t.Run(fmt.Sprintf("ipv6_%s", tc.name), func(t *testing.T) {
+		t.Run("ipv6_"+tc.name, func(t *testing.T) {
 			testCollectorStartHelperWithReaders(t, tc, "tcp6")
 		})
 	}
@@ -467,6 +467,46 @@ func TestServiceFatalError(t *testing.T) {
 	err = <-srv.host.AsyncErrorChannel
 
 	require.ErrorIs(t, err, assert.AnError)
+}
+
+func TestServiceInvalidTelemetryConfiguration(t *testing.T) {
+	tests := []struct {
+		name    string
+		wantErr error
+		cfg     telemetry.Config
+	}{
+		{
+			name: "log config with processors and invalid config",
+			cfg: telemetry.Config{
+				Logs: telemetry.LogsConfig{
+					Encoding: "console",
+					Processors: []config.LogRecordProcessor{
+						{
+							Batch: &config.BatchLogRecordProcessor{
+								Exporter: config.LogRecordExporter{
+									OTLP: &config.OTLP{},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: errors.New("unsupported protocol \"\""),
+		},
+	}
+	for _, tt := range tests {
+		set := newNopSettings()
+		set.AsyncErrorChannel = make(chan error)
+
+		cfg := newNopConfig()
+		cfg.Telemetry = tt.cfg
+		_, err := New(context.Background(), set, cfg)
+		if tt.wantErr != nil {
+			require.ErrorContains(t, err, tt.wantErr.Error())
+		} else {
+			require.NoError(t, err)
+		}
+	}
 }
 
 func assertResourceLabels(t *testing.T, res pcommon.Resource, expectedLabels map[string]labelValue) {

@@ -78,7 +78,6 @@ func NewScraperControllerReceiver(
 	nextConsumer consumer.Metrics,
 	options ...ScraperControllerOption,
 ) (component.Component, error) {
-
 	if cfg.CollectionInterval <= 0 {
 		return nil, errors.New("collection_interval must be a positive duration")
 	}

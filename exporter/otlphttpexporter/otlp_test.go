@@ -225,7 +225,7 @@ func TestErrorResponses(t *testing.T) {
 
 			cfg := &Config{
 				Encoding:       EncodingProto,
-				TracesEndpoint: fmt.Sprintf("%s/v1/traces", srv.URL),
+				TracesEndpoint: srv.URL + "/v1/traces",
 				// Create without QueueConfig and RetryConfig so that ConsumeTraces
 				// returns the errors that we want to check immediately.
 			}
@@ -300,7 +300,7 @@ func TestUserAgent(t *testing.T) {
 
 				cfg := &Config{
 					Encoding:       EncodingProto,
-					TracesEndpoint: fmt.Sprintf("%s/v1/traces", srv.URL),
+					TracesEndpoint: srv.URL + "/v1/traces",
 					ClientConfig: confighttp.ClientConfig{
 						Headers: tt.headers,
 					},
@@ -334,7 +334,7 @@ func TestUserAgent(t *testing.T) {
 
 				cfg := &Config{
 					Encoding:        EncodingProto,
-					MetricsEndpoint: fmt.Sprintf("%s/v1/metrics", srv.URL),
+					MetricsEndpoint: srv.URL + "/v1/metrics",
 					ClientConfig: confighttp.ClientConfig{
 						Headers: tt.headers,
 					},
@@ -368,7 +368,7 @@ func TestUserAgent(t *testing.T) {
 
 				cfg := &Config{
 					Encoding:     EncodingProto,
-					LogsEndpoint: fmt.Sprintf("%s/v1/logs", srv.URL),
+					LogsEndpoint: srv.URL + "/v1/logs",
 					ClientConfig: confighttp.ClientConfig{
 						Headers: tt.headers,
 					},
@@ -521,7 +521,7 @@ func TestPartialSuccess_logs(t *testing.T) {
 
 	cfg := &Config{
 		Encoding:     EncodingProto,
-		LogsEndpoint: fmt.Sprintf("%s/v1/logs", srv.URL),
+		LogsEndpoint: srv.URL + "/v1/logs",
 		ClientConfig: confighttp.ClientConfig{},
 	}
 	set := exportertest.NewNopSettings()
@@ -881,7 +881,7 @@ func TestPartialSuccess_traces(t *testing.T) {
 
 	cfg := &Config{
 		Encoding:       EncodingProto,
-		TracesEndpoint: fmt.Sprintf("%s/v1/traces", srv.URL),
+		TracesEndpoint: srv.URL + "/v1/traces",
 		ClientConfig:   confighttp.ClientConfig{},
 	}
 	set := exportertest.NewNopSettings()
@@ -921,7 +921,7 @@ func TestPartialSuccess_metrics(t *testing.T) {
 
 	cfg := &Config{
 		Encoding:        EncodingProto,
-		MetricsEndpoint: fmt.Sprintf("%s/v1/metrics", srv.URL),
+		MetricsEndpoint: srv.URL + "/v1/metrics",
 		ClientConfig:    confighttp.ClientConfig{},
 	}
 	set := exportertest.NewNopSettings()
@@ -1018,7 +1018,7 @@ func TestEncoding(t *testing.T) {
 				defer srv.Close()
 
 				cfg := &Config{
-					TracesEndpoint: fmt.Sprintf("%s/v1/traces", srv.URL),
+					TracesEndpoint: srv.URL + "/v1/traces",
 					Encoding:       tt.encoding,
 				}
 				exp, err := createTraces(context.Background(), set, cfg)
@@ -1049,7 +1049,7 @@ func TestEncoding(t *testing.T) {
 				defer srv.Close()
 
 				cfg := &Config{
-					MetricsEndpoint: fmt.Sprintf("%s/v1/metrics", srv.URL),
+					MetricsEndpoint: srv.URL + "/v1/metrics",
 					Encoding:        tt.encoding,
 				}
 				exp, err := createMetrics(context.Background(), set, cfg)
@@ -1080,7 +1080,7 @@ func TestEncoding(t *testing.T) {
 				defer srv.Close()
 
 				cfg := &Config{
-					LogsEndpoint: fmt.Sprintf("%s/v1/logs", srv.URL),
+					LogsEndpoint: srv.URL + "/v1/logs",
 					Encoding:     tt.encoding,
 				}
 				exp, err := createLogs(context.Background(), set, cfg)

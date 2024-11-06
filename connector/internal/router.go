@@ -4,6 +4,7 @@
 package internal // import "go.opentelemetry.io/collector/connector/internal"
 
 import (
+	"errors"
 	"fmt"
 
 	"go.uber.org/multierr"
@@ -35,7 +36,7 @@ func (r *BaseRouter[T]) PipelineIDs() []pipeline.ID {
 func (r *BaseRouter[T]) Consumer(pipelineIDs ...pipeline.ID) (T, error) {
 	var ret T
 	if len(pipelineIDs) == 0 {
-		return ret, fmt.Errorf("missing consumers")
+		return ret, errors.New("missing consumers")
 	}
 	consumers := make([]T, 0, len(pipelineIDs))
 	var errors error

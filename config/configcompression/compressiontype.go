@@ -39,5 +39,4 @@ func (ct *Type) UnmarshalText(in []byte) error {
 		return nil
 	}
 	return fmt.Errorf("unsupported compression type %q", typ)
-
 }

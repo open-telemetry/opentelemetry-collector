@@ -7,6 +7,23 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.19.0/v0.113.0
+
+### 🛑 Breaking changes 🛑
+
+- `builder`: Remove deprecated flags from Builder (#11576)
+  Here is the list of flags | --name, --description, --version, --otelcol-version, --go, --module
+
+### 🚀 New components 🚀
+
+- `processorhelperprofiles`: Add processorhelperprofiles to support profiles signal (#11556)
+
+### 💡 Enhancements 💡
+
+- `mdatagen`: Add newTelemetrySettings to be generated all the time even for pkg class (#11535)
+- `debugexporter`: Add profiles support to debug exporter (#11155)
+- `component`: Add UnmarshalText for StabilityLevel (#11520)
+
 ## v1.18.0/v0.112.0
 
 ### 🛑 Breaking changes 🛑

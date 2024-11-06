@@ -5,6 +5,7 @@ package configopaque // import "go.opentelemetry.io/collector/config/configopaqu
 
 import (
 	"encoding"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -69,7 +70,7 @@ func TestStringFmt(t *testing.T) {
 				case "%q", "%#v":
 					expected = "\"" + string(example) + "\""
 				case "%x":
-					expected = fmt.Sprintf("%x", []byte(example))
+					expected = hex.EncodeToString([]byte(example))
 				default:
 					t.Errorf("unexpected verb %q", verb)
 				}

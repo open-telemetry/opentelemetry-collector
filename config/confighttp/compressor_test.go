@@ -46,10 +46,9 @@ func BenchmarkCompression(b *testing.B) {
 
 	for i := range benchmarks {
 		benchmark := &benchmarks[i]
-		b.Run(fmt.Sprint(benchmark.name), func(b *testing.B) {
+		b.Run(benchmark.name, func(b *testing.B) {
 			benchmark.function(b, benchmark.codec, &buffer, payload)
 		})
-
 	}
 }
 

@@ -72,7 +72,6 @@ func TestValueReadOnly(t *testing.T) {
 	v.CopyTo(v2)
 	assert.Equal(t, v.AsRaw(), v2.AsRaw())
 	assert.Panics(t, func() { v2.CopyTo(v) })
-
 }
 
 func TestValueType(t *testing.T) {

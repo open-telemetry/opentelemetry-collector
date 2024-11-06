@@ -157,5 +157,4 @@ func TestNewRetrievedFromYAMLString(t *testing.T) {
 			}
 		})
 	}
-
 }

@@ -139,7 +139,6 @@ func TestUnmarshalInvalidConfig(t *testing.T) {
 			assert.ErrorContains(t, component.ValidateConfig(cfg), tt.errorMsg)
 		})
 	}
-
 }
 
 func TestValidDNSEndpoint(t *testing.T) {

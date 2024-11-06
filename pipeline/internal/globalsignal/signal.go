@@ -4,6 +4,7 @@
 package globalsignal // import "go.opentelemetry.io/collector/pipeline/internal/globalsignal"
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 )
@@ -31,7 +32,7 @@ var signalRegex = regexp.MustCompile(`^[a-z]{1,62}$`)
 // A Signal must consist of 1 to 62 lowercase ASCII alphabetic characters.
 func NewSignal(signal string) (Signal, error) {
 	if len(signal) == 0 {
-		return Signal{}, fmt.Errorf("signal must not be empty")
+		return Signal{}, errors.New("signal must not be empty")
 	}
 	if !signalRegex.MatchString(signal) {
 		return Signal{}, fmt.Errorf("invalid character(s) in type %q", signal)

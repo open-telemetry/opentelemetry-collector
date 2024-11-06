@@ -124,7 +124,6 @@ func TestMergeSplitProfiles(t *testing.T) {
 				assert.Equal(t, tt.expected[i], r.(*profilesRequest))
 			}
 		})
-
 	}
 }
 

@@ -92,5 +92,4 @@ func TestAllPipelineIDs(t *testing.T) {
 		return false
 	})
 	assert.Equal(t, 1, count)
-
 }

@@ -118,11 +118,11 @@ func (r *Registry) MustRegister(id string, stage Stage, opts ...RegisterOption) 
 
 func validateID(id string) error {
 	if id == "" {
-		return fmt.Errorf("empty ID")
+		return errors.New("empty ID")
 	}
 
 	if !idRegexp.MatchString(id) {
-		return fmt.Errorf("invalid character(s) in ID")
+		return errors.New("invalid character(s) in ID")
 	}
 	return nil
 }

@@ -48,7 +48,7 @@ func (t Type) MarshalText() ([]byte, error) {
 // - can only contain ASCII alphanumeric characters and '_'.
 func NewType(ty string) (Type, error) {
 	if len(ty) == 0 {
-		return Type{}, fmt.Errorf("id must not be empty")
+		return Type{}, errors.New("id must not be empty")
 	}
 	if !typeRegexp.MatchString(ty) {
 		return Type{}, fmt.Errorf("invalid character(s) in type %q", ty)

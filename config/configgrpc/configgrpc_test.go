@@ -560,7 +560,6 @@ func TestGRPCServerWarning(t *testing.T) {
 			require.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), test.len)
 		})
 	}
-
 }
 
 func TestGRPCServerSettingsError(t *testing.T) {
