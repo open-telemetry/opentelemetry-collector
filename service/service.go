@@ -172,12 +172,14 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 
 	logger, lp, err := telFactory.CreateLogger(ctx, telset, &cfg.Telemetry)
 	if err != nil {
+		err = multierr.Append(err, sdk.Shutdown(ctx))
 		return nil, fmt.Errorf("failed to create logger: %w", err)
 	}
 	srv.loggerProvider = lp
 
 	tracerProvider, err := telFactory.CreateTracerProvider(ctx, telset, &cfg.Telemetry)
 	if err != nil {
+		err = multierr.Append(err, sdk.Shutdown(ctx))
 		return nil, fmt.Errorf("failed to create tracer provider: %w", err)
 	}
 
@@ -185,6 +187,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 
 	mp, err := telFactory.CreateMeterProvider(ctx, telset, &cfg.Telemetry)
 	if err != nil {
+		err = multierr.Append(err, sdk.Shutdown(ctx))
 		return nil, fmt.Errorf("failed to create meter provider: %w", err)
 	}
 
