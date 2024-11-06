@@ -8,12 +8,12 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
-	{{- range .Providers}}
-	{{.Name}} "{{.Import}}"
-	{{- end}}
 	{{- range .Converters}}
 	{{.Name}} "{{.Import}}"
 	{{- end}}	
+	{{- range .Providers}}
+	{{.Name}} "{{.Import}}"
+	{{- end}}
 	"go.opentelemetry.io/collector/otelcol"
 )
 
