@@ -5,7 +5,6 @@ package queue // import "go.opentelemetry.io/collector/exporter/internal/queue"
 
 import (
 	"context"
-	"errors"
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
@@ -42,10 +41,6 @@ func NewBatcher(batchCfg exporterbatcher.Config, queue Queue[internal.Request], 
 				stopWG:     sync.WaitGroup{},
 			},
 		}, nil
-	}
-
-	if batchCfg.MaxSizeConfig.MaxSizeItems != 0 {
-		return nil, errors.ErrUnsupported
 	}
 
 	return &DefaultBatcher{

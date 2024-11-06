@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter/internal"
 )
 
 // DefaultBatcher continuously reads from the queue and flushes asynchronously if size limit is met or on timeout.
@@ -41,35 +42,73 @@ func (qb *DefaultBatcher) startReadingFlushingGoroutine() {
 			}
 
 			qb.currentBatchMu.Lock()
-			if qb.currentBatch == nil || qb.currentBatch.req == nil {
-				qb.resetTimer()
-				qb.currentBatch = &batch{
-					req:     req,
-					ctx:     ctx,
-					idxList: []uint64{idx}}
-			} else {
-				mergedReq, mergeErr := qb.currentBatch.req.Merge(qb.currentBatch.ctx, req)
-				if mergeErr != nil {
-					qb.queue.OnProcessingFinished(idx, mergeErr)
+
+			if qb.batchCfg.MaxSizeItems > 0 {
+				var reqList []internal.Request
+				var mergeSplitErr error
+				if qb.currentBatch == nil || qb.currentBatch.req == nil {
+					qb.resetTimer()
+					reqList, mergeSplitErr = req.MergeSplit(ctx, qb.batchCfg.MaxSizeConfig, nil)
+				} else {
+					reqList, mergeSplitErr = qb.currentBatch.req.MergeSplit(ctx, qb.batchCfg.MaxSizeConfig, req)
+				}
+
+				if mergeSplitErr != nil || reqList == nil {
+					qb.queue.OnProcessingFinished(idx, mergeSplitErr)
 					qb.currentBatchMu.Unlock()
 					continue
 				}
-				qb.currentBatch = &batch{
-					req:     mergedReq,
-					ctx:     qb.currentBatch.ctx,
-					idxList: append(qb.currentBatch.idxList, idx)}
-			}
 
-			if qb.currentBatch.req.ItemsCount() > qb.batchCfg.MinSizeItems {
-				batchToFlush := *qb.currentBatch
-				qb.currentBatch = nil
-				qb.currentBatchMu.Unlock()
-
-				// flushAsync() blocks until successfully started a goroutine for flushing.
-				qb.flushAsync(batchToFlush)
-				qb.resetTimer()
+				// If there was a split, we flush everything immediately.
+				if reqList[0].ItemsCount() >= qb.batchCfg.MinSizeItems || len(reqList) > 1 {
+					qb.currentBatch = nil
+					qb.currentBatchMu.Unlock()
+					for i := 0; i < len(reqList); i++ {
+						qb.flushAsync(batch{
+							req:     reqList[i],
+							ctx:     ctx,
+							idxList: []uint64{idx}})
+						// TODO: handle partial failure
+					}
+					qb.resetTimer()
+				} else {
+					qb.currentBatch = &batch{
+						req:     reqList[0],
+						ctx:     ctx,
+						idxList: []uint64{idx}}
+					qb.currentBatchMu.Unlock()
+				}
 			} else {
-				qb.currentBatchMu.Unlock()
+				if qb.currentBatch == nil || qb.currentBatch.req == nil {
+					qb.resetTimer()
+					qb.currentBatch = &batch{
+						req:     req,
+						ctx:     ctx,
+						idxList: []uint64{idx}}
+				} else {
+					mergedReq, mergeErr := qb.currentBatch.req.Merge(qb.currentBatch.ctx, req)
+					if mergeErr != nil {
+						qb.queue.OnProcessingFinished(idx, mergeErr)
+						qb.currentBatchMu.Unlock()
+						continue
+					}
+					qb.currentBatch = &batch{
+						req:     mergedReq,
+						ctx:     qb.currentBatch.ctx,
+						idxList: append(qb.currentBatch.idxList, idx)}
+				}
+
+				if qb.currentBatch.req.ItemsCount() >= qb.batchCfg.MinSizeItems {
+					batchToFlush := *qb.currentBatch
+					qb.currentBatch = nil
+					qb.currentBatchMu.Unlock()
+
+					// flushAsync() blocks until successfully started a goroutine for flushing.
+					qb.flushAsync(batchToFlush)
+					qb.resetTimer()
+				} else {
+					qb.currentBatchMu.Unlock()
+				}
 			}
 		}
 	}()
