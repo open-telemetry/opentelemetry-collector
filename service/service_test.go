@@ -497,7 +497,7 @@ func TestServiceInvalidTelemetryConfiguration(t *testing.T) {
 					},
 				},
 			},
-			wantErr: errors.New("unsupported protocol \"\""),
+			wantErr: errors.New("no valid log exporter"),
 		},
 	}
 	for _, tt := range tests {
@@ -556,12 +556,16 @@ func assertMetrics(t *testing.T, metricsAddr string, expectedLabels map[string]l
 		"otelcol_process_runtime_heap_alloc_bytes":       false,
 		"otelcol_process_runtime_total_alloc_bytes":      false,
 		"otelcol_process_uptime":                         false,
+		"promhttp_metric_handler_errors_total":           false,
 	}
 	for metricName, metricFamily := range parsed {
 		if _, ok := expectedMetrics[metricName]; !ok {
 			require.True(t, ok, "unexpected metric: %s", metricName)
 		}
 		expectedMetrics[metricName] = true
+		if metricName == "promhttp_metric_handler_errors_total" {
+			continue
+		}
 		if metricName != "target_info" {
 			// require is used here so test fails with a single message.
 			require.True(
