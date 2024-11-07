@@ -15,20 +15,17 @@ a dedicated set of people.
 
 ## Overview 
 
-I propose we create a new `collector-releases-approvers` Github team that are approvers on the
-opentelemetry-collector-releases repository and code owners for the Builder and release workflows.
-The existing approvers teams will focus on the Collector and Collector components codebases. This
-opens future possibilities for creating a separate WG/SIG for this and further improving our release
-process.
+I propose we create a new `collector-releases-approvers` Github team that are [approvers][2] on the
+[opentelemetry-collector-releases][3] repository and code owners for the Builder and release
+workflows. The existing approvers teams will focus on the Collector and Collector components
+codebases. This opens future possibilities for creating a separate WG/SIG for this and further
+improving our release process.
 
 ## Team scope and responsibilities
 
-The `collector-releases-approvers` team will have the following responsibilities:
-
-- Approvers for the opentelemetry-collector-releases repository.
-- Code owners for the OpenTelemetry Collector Builder.
-- Code owners for the release workflows for the opentelemetry-collector and
-  opentelemetry-collector-contrib repositories.
+The `collector-releases-approvers` team will be [approvers][2] for the
+opentelemetry-collector-releases repository. They will also be listed as [code owners][4] for the
+release workflows on the opentelemetry-collector and opentelemetry-collector-contrib repositories.
 
 The new team will not acquire any responsibilities related to the release; there will be no changes
 in the release rotation or release duties after this change.
@@ -45,6 +42,7 @@ If we are able to grow a healthy community around the releases repository, in th
 consider the following:
 
 - Having a dedicated SIG/WG for the opentelemetry-collector-releases repository.
+- Making the `collector-releases-approvers` code owners of the OpenTelemetry Collector Builder.
 - Having dedicated meetings for release retros that allow us to iteratively improve the Collector
   release process.
 - Splitting off the artifact and container release process to be independent from the source code
@@ -54,3 +52,6 @@ This proposal does not require us to do any of the above, but they are interesti
 the future.
 
 [1]: https://github.com/search?q=org%3Aopen-telemetry+label%3Arelease-retro++&type=issues&state=open
+[2]: https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#approver
+[3]: https://github.com/open-telemetry/opentelemetry-collector-releases
+[4]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/CONTRIBUTING.md#membership-roles-and-responsibilities
