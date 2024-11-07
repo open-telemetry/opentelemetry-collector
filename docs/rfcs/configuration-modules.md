@@ -146,7 +146,13 @@ creator could use the module receiver directly, supporting autodiscovery use
 cases.
 
 Module sources are provided via extensions, that components can use to discover
-modules by their name.
+modules by their name. For example the following extension could be used to
+provide templates from a local directory:
+```
+extensions:
+  file_modules:
+    path: "./modules"
+```
 
 As all pieces are implemented as independent components, each of them can be
 optionally used in distributions.
@@ -191,6 +197,11 @@ in the pipelines defined in the configuration by the user.
 
 Configuration of this feature can be done as a new top-level entry. This entry
 needs to be unmarshaled and removed from the config by the converter.
+```
+modules:
+  path: "./modules"
+```
+Different source implementations would need to be part of the converter itself.
 
 There is an implementation of this approach in [open-telemetry/opentelemetry-collector#8507](https://github.com/open-telemetry/opentelemetry-collector/pull/8507).
 
@@ -231,6 +242,8 @@ a similar fashion to option 2, creating new pipelines and plugging them to the
 pipelines in the configuration file using the forward connector. In contrast to
 option 2, configuration unmarshalling would be provided by the collector.
 
+Configuration of module sources would be done also the same way as in option 2.
+
 #### Trade-offs and mitigations
 
 * Potentially risky and complex implementation, as it is a significant change in
@@ -252,7 +265,8 @@ its user experience.
 
 Option 1, implementing modules as components, has the most straightforward
 implementation and the most natural user experience, it also combines better
-with existing features for receivers such as the receiver creator. On the other
+with existing features for receivers such as the receiver creator, and its
+module sources can be implemented as independent components. On the other
 hand, it has trade-offs that would be difficult to mitigate, specially about the
 architecture used to instantiate subcomponents, and about observability of the
 effective configuration. These trade-offs are shared though with the receiver
