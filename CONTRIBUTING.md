@@ -270,6 +270,31 @@ During the collector release process, all `./chloggen/*.yaml` files are transcri
 
 Alternatively, copy `./.chloggen/TEMPLATE.yaml`, or just create your file from scratch.
 
+## Membership, Roles, and Responsibilities
+
+### Membership levels
+
+See the [OpenTelemetry membership guide](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md) for information on how to become a member of the OpenTelemetry organization and the different roles available. In addition to the roles listed there we also have a Collector-specific role: code owners.
+
+### Becoming a Code Owner
+
+A Code Owner is responsible for one or multiple packages within the Collector. That responsibility includes maintaining the component, triaging and responding to issues, and reviewing pull requests.
+Maintainers are expected to seek feedback from code owners for changes that are not trivial, but they may merge PRs without code owner approval.
+
+Code Ownership does not have to be a full-time job. If you can find a couple hours to help out on a recurring basis, please consider pursuing Code Ownership.
+
+#### Requirements
+
+If you would like to help and become a Code Owner, you must meet the following requirements. These are more stringent requirements than those in the opentelemetry-collector-contrib repository due to the higher impact of changes in this repository:
+
+1. [Be a member of the OpenTelemetry organization](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#member).
+2. Be an existing [approver](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#approver) or [maintainer](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#maintainer) in at least one repository within the OpenTelemetry Github organization.
+3. Have made significant contributions directly to the package you want to own.
+
+#### How to become a Code Owner
+
+To become a Code Owner, open a PR that adds you to the [.github/CODEOWNERS](.github/CODEOWNERS) file. Make sure to ping existing code owners for the package you want to own to get their approval.
+
 ## Release
 
 See [release](docs/release.md) for details.

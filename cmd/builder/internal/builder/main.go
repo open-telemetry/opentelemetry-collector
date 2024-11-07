@@ -213,7 +213,7 @@ func processAndWrite(cfg *Config, tmpl *template.Template, outFile string, tmplP
 }
 
 func (c *Config) allComponents() []Module {
-	return slices.Concat[[]Module](c.Exporters, c.Receivers, c.Processors, c.Extensions, c.Connectors, c.Providers)
+	return slices.Concat[[]Module](c.Exporters, c.Receivers, c.Processors, c.Extensions, c.Connectors, c.Providers, c.Converters)
 }
 
 func (c *Config) readGoModFile() (string, map[string]string, error) {
