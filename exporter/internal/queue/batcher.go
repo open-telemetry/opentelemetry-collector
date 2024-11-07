@@ -5,7 +5,6 @@ package queue // import "go.opentelemetry.io/collector/exporter/internal/queue"
 
 import (
 	"context"
-	"errors"
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
@@ -33,12 +32,19 @@ type BaseBatcher struct {
 }
 
 func NewBatcher(batchCfg exporterbatcher.Config, queue Queue[internal.Request], maxWorkers int) (Batcher, error) {
-	if batchCfg.Enabled {
-		return nil, errors.ErrUnsupported
+	if !batchCfg.Enabled {
+		return &DisabledBatcher{
+			BaseBatcher{
+				batchCfg:   batchCfg,
+				queue:      queue,
+				maxWorkers: maxWorkers,
+				stopWG:     sync.WaitGroup{},
+			},
+		}, nil
 	}
 
-	return &DisabledBatcher{
-		BaseBatcher{
+	return &DefaultBatcher{
+		BaseBatcher: BaseBatcher{
 			batchCfg:   batchCfg,
 			queue:      queue,
 			maxWorkers: maxWorkers,
