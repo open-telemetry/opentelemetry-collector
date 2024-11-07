@@ -279,6 +279,7 @@ See the [OpenTelemetry membership guide](https://github.com/open-telemetry/commu
 ### Becoming a Code Owner
 
 A Code Owner is responsible for one or multiple packages within the Collector. That responsibility includes maintaining the component, triaging and responding to issues, and reviewing pull requests.
+Maintainers are expected to seek feedback from code owners for changes that are not trivial, but they may merge PRs without code owner approval.
 
 Code Ownership does not have to be a full-time job. If you can find a couple hours to help out on a recurring basis, please consider pursuing Code Ownership.
 
