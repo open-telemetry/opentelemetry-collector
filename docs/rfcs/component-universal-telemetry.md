@@ -31,31 +31,31 @@ All signals should use the following attributes:
 
 ### Receivers
 
-- `otel.component.kind`: `receiver`
-- `otel.component.id`: The component ID
-- `otel.signal`: `logs`, `metrics`, `traces`, `profiles`
+- `otelcol.component.kind`: `receiver`
+- `otelcol.component.id`: The component ID
+- `otelcol.signal`: `logs`, `metrics`, `traces`, `profiles`
 
 ### Processors
 
-- `otel.component.kind`: `processor`
-- `otel.component.id`: The component ID
-- `otel.pipeline.id`: The pipeline ID
-- `otel.signal`: `logs`, `metrics`, `traces`, `profiles`
+- `otelcol.component.kind`: `processor`
+- `otelcol.component.id`: The component ID
+- `otelcol.pipeline.id`: The pipeline ID
+- `otelcol.signal`: `logs`, `metrics`, `traces`, `profiles`
 
 ### Exporters
 
-- `otel.component.kind`: `exporter`
-- `otel.component.id`: The component ID
-- `otel.signal`: `logs`, `metrics` `traces`, `profiles`
+- `otelcol.component.kind`: `exporter`
+- `otelcol.component.id`: The component ID
+- `otelcol.signal`: `logs`, `metrics` `traces`, `profiles`
 
 ### Connectors
 
-- `otel.component.kind`: `connector`
-- `otel.component.id`: The component ID
-- `otel.signal`: `logs`, `metrics` `traces`
-- `otel.signal.output`: `logs`, `metrics` `traces`, `profiles`
+- `otelcol.component.kind`: `connector`
+- `otelcol.component.id`: The component ID
+- `otelcol.signal`: `logs`, `metrics` `traces`
+- `otelcol.signal.output`: `logs`, `metrics` `traces`, `profiles`
 
-Note: The `otel.signal`, `otel.signal.output`, or `otel.pipeline.id` attributes may be omitted if the corresponding component instances
+Note: The `otelcol.signal`, `otelcol.signal.output`, or `otelcol.pipeline.id` attributes may be omitted if the corresponding component instances
 are unified by the component implementation. For example, the `otlp` receiver is a singleton, so its telemetry is not specific to a signal.
 Similarly, the `memory_limiter` processor is a singleton, so its telemetry is not specific to a pipeline.
 
