@@ -1,5 +1,18 @@
 # OpenTelemetry Collector Releases approvers
 
+## Problem statement
+
+Release engineering requires a different set of skills and interests than developing the Collector
+codebase. As such, the set of contributors for the Collector releases has overlap with but is
+different from the set of contributors for the Collector codebase. We are missing out on retaining
+people who are more interested in these aspects. We can see this with the examples of the
+OpenTelemetry Operator repository and the OpenTelemetry Collector Helm Chart repository; they are
+able to work independently from the other Collector repositories and have been able to create an
+independent community. 
+
+We also have a [growing backlog][1] of issues related to the release process that would benefit from
+a dedicated set of people.
+
 ## Overview 
 
 I propose we create a new `collector-releases-approvers` Github team that are approvers on the
@@ -16,19 +29,6 @@ The `collector-releases-approvers` team will have the following responsibilities
 - Code owners for the OpenTelemetry Collector Builder.
 - Code owners for the release workflows for the opentelemetry-collector and
   opentelemetry-collector-contrib repositories.
-
-## Rationale
-
-Release engineering requires a different set of skills and interests than developing the Collector
-codebase. As such, the set of contributors for the Collector releases has overlap with but is
-different from the set of contributors for the Collector codebase. We are missing out on retaining
-people who are more interested in these aspects. We can see this with the examples of the
-OpenTelemetry Operator repository and the OpenTelemetry Collector Helm Chart repository; they are
-able to work independently from the other Collector repositories and have been able to create an
-independent community. 
-
-We also have a [growing backlog][1] of issues related to the release process that would benefit from
-a dedicated set of people.
 
 ## Initial team members
 
