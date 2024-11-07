@@ -12,6 +12,7 @@ require (
 	go.opentelemetry.io/collector v0.113.0
 	go.opentelemetry.io/collector/component v0.113.0
 	go.opentelemetry.io/collector/component/componentstatus v0.113.0
+	go.opentelemetry.io/collector/component/componenttest v0.113.0
 	go.opentelemetry.io/collector/config/confighttp v0.113.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.113.0
 	go.opentelemetry.io/collector/confmap v1.19.0
@@ -130,6 +131,8 @@ replace go.opentelemetry.io/collector/connector => ../connector
 replace go.opentelemetry.io/collector/connector/connectortest => ../connector/connectortest
 
 replace go.opentelemetry.io/collector/component => ../component
+
+replace go.opentelemetry.io/collector/component/componenttest => ../component/componenttest
 
 replace go.opentelemetry.io/collector/component/componentstatus => ../component/componentstatus
 

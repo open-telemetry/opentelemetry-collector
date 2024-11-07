@@ -9,6 +9,7 @@ require (
 	go.opentelemetry.io/collector v0.113.0
 	go.opentelemetry.io/collector/component v0.113.0
 	go.opentelemetry.io/collector/component/componentstatus v0.113.0
+	go.opentelemetry.io/collector/component/componenttest v0.113.0
 	go.opentelemetry.io/collector/config/configauth v0.113.0
 	go.opentelemetry.io/collector/config/configgrpc v0.113.0
 	go.opentelemetry.io/collector/config/confighttp v0.113.0
@@ -79,6 +80,8 @@ require (
 replace go.opentelemetry.io/collector => ../../
 
 replace go.opentelemetry.io/collector/component => ../../component
+
+replace go.opentelemetry.io/collector/component/componenttest => ../../component/componenttest
 
 replace go.opentelemetry.io/collector/config/configauth => ../../config/configauth
 

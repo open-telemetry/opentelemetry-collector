@@ -115,7 +115,7 @@ The last step of the release process creates artifacts for the new version of th
 2. Create a tag for the new release version by running:
    - `make push-tags TAG=v0.85.0`
 
-   If you set your remote using `https` you need to include `REMOTE=https://github.com/open-telemetry/opentelemetry-collector-contrib.git` in each command.
+   If you set your remote using `https` you need to include `REMOTE=https://github.com/open-telemetry/opentelemetry-collector-releases.git` in each command.
 
 3. Wait for the new tag build to pass successfully.
 
