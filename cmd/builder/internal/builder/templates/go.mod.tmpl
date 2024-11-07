@@ -8,6 +8,9 @@ require (
 	{{- range .Providers}}
 	{{if .GoMod}}{{.GoMod}}{{end}}
 	{{- end}}
+	{{- range .Converters}}
+	{{if .GoMod}}{{.GoMod}}{{end}}
+	{{- end}}
 	{{- range .Connectors}}
 	{{if .GoMod}}{{.GoMod}}{{end}}
 	{{- end}}
@@ -23,7 +26,7 @@ require (
 	{{- range .Processors}}
 	{{if .GoMod}}{{.GoMod}}{{end}}
 	{{- end}}
-	go.opentelemetry.io/collector/otelcol v{{.Distribution.OtelColVersion}}
+	go.opentelemetry.io/collector/otelcol {{.OtelColVersion}}
 )
 
 require (

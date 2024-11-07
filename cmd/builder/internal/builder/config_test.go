@@ -36,12 +36,27 @@ func TestParseModules(t *testing.T) {
 	assert.Equal(t, "repo", cfg.Extensions[0].Name)
 }
 
+func TestInvalidConverter(t *testing.T) {
+	// Create a Config instance with invalid Converters
+	config := &Config{
+		Converters: []Module{
+			{
+				Path: "./invalid/module/path", // Invalid module path to trigger an error
+			},
+		},
+	}
+
+	// Call the method and expect an error
+	err := config.ParseModules()
+	require.Error(t, err, "expected an error when parsing invalid modules")
+}
+
 func TestRelativePath(t *testing.T) {
 	// prepare
 	cfg := Config{
 		Extensions: []Module{{
 			GoMod: "some-module",
-			Path:  "./some-module",
+			Path:  "./templates",
 		}},
 	}
 
@@ -88,11 +103,11 @@ func TestMissingModule(t *testing.T) {
 		{
 			cfg: Config{
 				Logger: zap.NewNop(),
-				Providers: &[]Module{{
+				Providers: []Module{{
 					Import: "invalid",
 				}},
 			},
-			err: ErrMissingGoMod,
+			err: errMissingGoMod,
 		},
 		{
 			cfg: Config{
@@ -101,7 +116,7 @@ func TestMissingModule(t *testing.T) {
 					Import: "invalid",
 				}},
 			},
-			err: ErrMissingGoMod,
+			err: errMissingGoMod,
 		},
 		{
 			cfg: Config{
@@ -110,16 +125,16 @@ func TestMissingModule(t *testing.T) {
 					Import: "invalid",
 				}},
 			},
-			err: ErrMissingGoMod,
+			err: errMissingGoMod,
 		},
 		{
 			cfg: Config{
 				Logger: zap.NewNop(),
 				Exporters: []Module{{
-					Import: "invali",
+					Import: "invalid",
 				}},
 			},
-			err: ErrMissingGoMod,
+			err: errMissingGoMod,
 		},
 		{
 			cfg: Config{
@@ -128,7 +143,7 @@ func TestMissingModule(t *testing.T) {
 					Import: "invalid",
 				}},
 			},
-			err: ErrMissingGoMod,
+			err: errMissingGoMod,
 		},
 		{
 			cfg: Config{
@@ -137,7 +152,16 @@ func TestMissingModule(t *testing.T) {
 					Import: "invalid",
 				}},
 			},
-			err: ErrMissingGoMod,
+			err: errMissingGoMod,
+		},
+		{
+			cfg: Config{
+				Logger: zap.NewNop(),
+				Converters: []Module{{
+					Import: "invalid",
+				}},
+			},
+			err: errMissingGoMod,
 		},
 	}
 
@@ -147,7 +171,8 @@ func TestMissingModule(t *testing.T) {
 }
 
 func TestNewDefaultConfig(t *testing.T) {
-	cfg := NewDefaultConfig()
+	cfg, err := NewDefaultConfig()
+	require.NoError(t, err)
 	require.NoError(t, cfg.ParseModules())
 	assert.NoError(t, cfg.Validate())
 	assert.NoError(t, cfg.SetGoPath())
@@ -224,14 +249,23 @@ func TestDebugOptionSetConfig(t *testing.T) {
 }
 
 func TestAddsDefaultProviders(t *testing.T) {
-	cfg := NewDefaultConfig()
-	cfg.Providers = nil
+	cfg, err := NewDefaultConfig()
+	require.NoError(t, err)
 	require.NoError(t, cfg.ParseModules())
-	assert.Len(t, *cfg.Providers, 5)
+	assert.Len(t, cfg.Providers, 5)
 }
 
 func TestSkipsNilFieldValidation(t *testing.T) {
-	cfg := NewDefaultConfig()
+	cfg, err := NewDefaultConfig()
+	require.NoError(t, err)
 	cfg.Providers = nil
+	cfg.Converters = nil
 	assert.NoError(t, cfg.Validate())
+}
+
+func TestValidateDeprecatedOtelColVersion(t *testing.T) {
+	cfg, err := NewDefaultConfig()
+	require.NoError(t, err)
+	cfg.Distribution.OtelColVersion = "test"
+	assert.Error(t, cfg.Validate())
 }

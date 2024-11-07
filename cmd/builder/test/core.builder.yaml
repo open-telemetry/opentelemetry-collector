@@ -1,15 +1,16 @@
 dist:
+  name: core
   module: go.opentelemetry.io/collector/builder/test/core
-  otelcol_version: 0.112.0
+  go: ${GOBIN}
 
 extensions:
-  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.112.0
+  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.113.0
 
 receivers:
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.112.0
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.113.0
 
 exporters:
-  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.112.0
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.113.0
 
 replaces:
   - go.opentelemetry.io/collector => ${WORKSPACE_DIR}
@@ -34,6 +35,7 @@ replaces:
   - go.opentelemetry.io/collector/confmap/provider/yamlprovider => ${WORKSPACE_DIR}/confmap/provider/yamlprovider
   - go.opentelemetry.io/collector/consumer => ${WORKSPACE_DIR}/consumer
   - go.opentelemetry.io/collector/consumer/consumererror => ${WORKSPACE_DIR}/consumer/consumererror
+  - go.opentelemetry.io/collector/consumer/consumererror/consumererrorprofiles => ${WORKSPACE_DIR}/consumer/consumererror/consumererrorprofiles
   - go.opentelemetry.io/collector/consumer/consumerprofiles => ${WORKSPACE_DIR}/consumer/consumerprofiles
   - go.opentelemetry.io/collector/consumer/consumertest => ${WORKSPACE_DIR}/consumer/consumertest
   - go.opentelemetry.io/collector/connector => ${WORKSPACE_DIR}/connector
