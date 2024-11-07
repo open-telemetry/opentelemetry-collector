@@ -30,6 +30,9 @@ The `collector-releases-approvers` team will have the following responsibilities
 - Code owners for the release workflows for the opentelemetry-collector and
   opentelemetry-collector-contrib repositories.
 
+The new team will not acquire any responsibilities related to the release; there will be no changes
+in the release rotation or release duties after this change.
+
 ## Initial team members
 
 Initially, all members of the `collector-contrib-approvers` team will be part of the
