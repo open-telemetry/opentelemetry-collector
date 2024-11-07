@@ -36,6 +36,18 @@ Initially, all members of the `collector-contrib-approvers` team will be part of
 `collector-releases-approvers` team. The Collector maintainers will reach out to existing
 contributors to the Collector releases to invite them to join the team.
 
+## Prior art
+
+This introduces an approver group without a maintainer. It also introduces this team as a code owner for files in other repositories. There are prior instances of both of these patterns within the OpenTelemetry project:
+
+1. There are currently two SIGs that have approver teams without corresponding maintainer teams:
+  - The Docs SIG has multiple localization approver teams that have approver duties for the translations of the OpenTelemetry documentation.
+  - The Semantic Conventions SIG has multiple approver teams corresponding to different Working Groups and/or semantic conventions areas.
+2. There are multiple instances of teams being code owners:
+  - [opentelemetry-collector approvers are code owners for `examples/demo` in `opentelemetry-collector-contrib`][5]
+  - [Helm chart and Operator approvers are code owners for the k8s distro in `opentelemetry-collector-releases`][6]
+  - [Go instrumentation approvers are code owners of instrgen in `opentelemetry-go-contrib`][7]
+
 ## Future work
 
 If we are able to grow a healthy community around the releases repository, in the future we can
@@ -55,3 +67,6 @@ the future.
 [2]: https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#approver
 [3]: https://github.com/open-telemetry/opentelemetry-collector-releases
 [4]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/CONTRIBUTING.md#membership-roles-and-responsibilities
+[5]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/40fa8b8a925cadf569e785cbc85d6dfca152bde2/.github/CODEOWNERS#L40
+[6]: https://github.com/open-telemetry/opentelemetry-collector-releases/blob/3ba7931410d1696d9df7bef424b634a5d64cffbd/.github/CODEOWNERS#L17
+[7]: https://github.com/open-telemetry/opentelemetry-go-contrib/blob/c0cc77f10a2dae774161d6a03441b12c0e8b0816/CODEOWNERS#L73
