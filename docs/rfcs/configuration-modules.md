@@ -20,16 +20,17 @@ for the implementation.
 
 It is not a goal of this functionality to offer general templating for the OTel
 collector configuration. Scenarios where general templating is needed are
-probably better covered by configuration management tools.
+probably better covered by configuration management tools. General templating
+based on other tools could still be combined with configurations using modules.
 
 ## Terminology
 
 A note on terminology. We will use the term "modules" for this reusable
 configuration on this RFC. This is a term used in the industry for this kind of
-feature. Other name commonly used is "integrations", but this term is already
-used in the OTel ecosystem. Previous discussions use the term
-"templates". We are not using this term here to avoid coupling this feature with
-general templating.
+feature. Other name commonly used is "integrations", but this term is [already
+used](https://opentelemetry.io/ecosystem/integrations/) in the OTel ecosystem.
+Previous discussions use the term "templates". We are not using this term here
+to avoid assumptions related with general templating of configuration.
 
 ## Explanation
 
@@ -38,15 +39,16 @@ by their name and parameterize them with a set of variables. These modules will
 contain receivers and processors configured for signal collection from an
 specific service. Each module can contain any number of receivers, and any
 number of pipelines including at least one processor. Pipelines will only define
-receivers and processors, they won't define other components such as extensions
+receivers and processors. Modules won't include other components such as extensions
 or exporters.
 
 It should be possible to configure the source of the modules. For example they
 could be included in the configuration itself, in external files, in some hosted
-service or in config maps.
+service or in K8s config maps.
 
 This feature should play well with autodiscovery features such as the receiver
-creator, so it is possible to apply modules for autodiscovered loads.
+creator, so it is possible to apply modules for autodiscovered loads. It can be
+very handy when [defining configurations in annotations](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34427).
 
 See [open-telemetry/opentelemetry-collector-contrib#36116](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36116)
 for more details from the user point of view.
@@ -125,7 +127,7 @@ depending on the type of the pipeline.
 Some options are described here, and a general summary of pros and cons can be
 found below, to help making decisions.
 
-### Option 1: Module components
+### Option 1 (Recommended): Module components
 
 New receiver and processor components are implemented. They can instantiate the
 pipelines defined in the modules internally, by calling the subcomponent factories
@@ -145,7 +147,7 @@ synergies with any feature that accepts them. For example the receiver
 creator could use the module receiver directly, supporting autodiscovery use
 cases.
 
-Module sources are provided via extensions, that components can use to discover
+Module sources are provided via extensions that components can use to discover
 modules by their name. For example the following extension could be used to
 provide templates from a local directory:
 ```
@@ -162,7 +164,8 @@ POC for this approach is available in [elastic/opentelemetry-collector-component
 #### Trade-offs and mitigations
 
 * Are factory getters always going to be available in the `component.Host`? They
-  are not in the current interface.
+  are not in the current interface and could be a blocker if there are plans to
+  remove them.
 * Subcomponents are built on `Start()`, while components are usually created when
   unmarshalling the configuration.
 * Subcomponents are not available on the internal graph, so it is going to be
@@ -208,7 +211,7 @@ There is an implementation of this approach in [open-telemetry/opentelemetry-col
 #### Trade-offs and mitigations
 
 * The forward connector is an additional dependency that distributions must include
-  for modules to work. This can be mitigated by documentation and runtime checks.
+  for modules to work. This can be mitigated by documentation and/or runtime checks.
 * To modify components and pipelines in the configuration, this converter needs
   to be aware of the structure of the configuration. This is out of the scope
   for a converter, that are more intended for small replacements not dependant
@@ -218,6 +221,9 @@ There is an implementation of this approach in [open-telemetry/opentelemetry-col
   would be also mitigated by option 3.
 * Using modules with the autodiscovery features provided by the receiver creator
   needs explicit support in the converter or in the receiver creator.
+* Configuring modules [from k8s annotations](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34427#issuecomment-2413401158) may not be possible.
+  As this configuration would not be known when unmarshalling the collector
+  configuration. This can be difficult to mitigate with this option.
 
 ### Option 3: Config processor / Recursive unmarshalling
 
@@ -233,16 +239,18 @@ These processors are executed on partially parsed configuration, taking the
 opportunity to modify any part of the configuration. After all the config
 processors have been executed, a valid `otelcol.Config` must result.
 
-This approach is described in [open-telemetry/opentelemetry-collector#8940](https://github.com/open-telemetry/opentelemetry-collector/issues/8940), and could be leveraged also in other requested features, such as the
+This approach is described in [open-telemetry/opentelemetry-collector#8940](https://github.com/open-telemetry/opentelemetry-collector/issues/8940),
+and could be leveraged also in other requested features, such as the
 one for [component groups](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18509).
 
 Once this extension point is added, a new config provider would be implemented
 that would take care of expanding module subcomponents. Expansion would work in
 a similar fashion to option 2, creating new pipelines and plugging them to the
 pipelines in the configuration file using the forward connector. In contrast to
-option 2, configuration unmarshalling would be provided by the collector.
+option 2, configuration unmarshalling would be provided by the collector config
+provider.
 
-Configuration of module sources would be done also the same way as in option 2.
+Configuration of module sources would be done the same way as in option 2.
 
 #### Trade-offs and mitigations
 
@@ -255,37 +263,30 @@ Configuration of module sources would be done also the same way as in option 2.
   for modules to work. This can be mitigated by documentation and runtime checks.
 * Using modules with the autodiscovery features provided by the receiver creator
   needs explicit support in the converter or in the receiver creator.
+* Configuring modules [from k8s annotations](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34427#issuecomment-2413401158) may not be possible.
+  As this configuration would not be known when unmarshalling the collector
+  configuration. This can be difficult to mitigate with this option.
 
 ### Summary of options
 
-Some of the decision points around which trade-offs orbit are the observability
+Some of the decision points which trade-offs orbit around are the observability
 options for the effective configuration, its integration with the receiver
 creator for autodiscovery use cases or dynamic configuration in general, and
 its user experience.
 
-Option 1, implementing modules as components, has the most straightforward
-implementation and the most natural user experience, it also combines better
-with existing features for receivers such as the receiver creator, and its
-module sources can be implemented as independent components. On the other
-hand, it has trade-offs that would be difficult to mitigate, specially about the
-architecture used to instantiate subcomponents, and about observability of the
-effective configuration. These trade-offs are shared though with the receiver
-creator, and solving them could help in other areas as configuration reload.
+We recommend Option 1 because it provides a more natural user experience, based
+on optional components, and it works better when combined with the receiver
+creator, what can be important in autodiscovery use cases. Using Options 2 and 3
+with the receiver creator will require additional developments, and may be
+challenging to support configurations [based on annotations](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34427#issuecomment-2413401158), as these annotations
+cannot be known when unmarshalling the collector configuration.
 
-Option 2, the converter, could mimic a good user experience based also on
-components, what would feel natural for final users. The internal graph would
-have a representation of the effective configuration, what would help on
-observability. But its architecture exceeds a bit the scope of a converter, it
-requires an additional connector, and explicit implementations when combined
-with other features such as the receiver creator.
-
-Option 3, the config processor, could also mimic a good user experience based on
-components. The internal graph would also have a representation of the effective
-configuration. Additionally, adding support for config processors would
-introduce an interesting extension point that could help to solve other feature
-requests. It has though a more complex implementation, more coupled to changes
-in the core, and it also requires an additional connector and explicit
-implementations to be combined with other features such as the receiver creator.
+The main reasons to avoid Option 1 are that it instantiates components on `Start()`,
+what could be breaking architectural boundaries, and that it would be difficult to
+give visibility on the "effective configuration". Though these trade-offs are also
+present to some point in the receiver creator, that is already used in the OTel
+collector ecosystem, and we consider them less relevant than the usability
+trade-offs of Options 2 and 3,
 
 ## Prior art and alternatives
 
