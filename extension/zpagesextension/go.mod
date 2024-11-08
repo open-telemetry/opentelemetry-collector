@@ -72,7 +72,7 @@ replace go.opentelemetry.io/collector/confmap => ../../confmap
 
 replace go.opentelemetry.io/collector/extension => ../
 
-replace go.opentelemetry.io/collector/extension/extensiontest => .. //extensiontest
+replace go.opentelemetry.io/collector/extension/extensiontest => ../extensiontest
 
 replace go.opentelemetry.io/collector/pdata => ../../pdata
 
