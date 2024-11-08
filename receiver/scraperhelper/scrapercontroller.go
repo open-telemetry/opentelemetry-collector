@@ -161,7 +161,12 @@ func (sc *controller) Shutdown(ctx context.Context) error {
 func (sc *controller) startScraping() {
 	go func() {
 		if sc.initialDelay > 0 {
-			<-time.After(sc.initialDelay)
+			select {
+			case <-time.After(sc.initialDelay):
+			case <-sc.done:
+				sc.terminated <- struct{}{}
+				return
+			}
 		}
 
 		if sc.tickerCh == nil {
