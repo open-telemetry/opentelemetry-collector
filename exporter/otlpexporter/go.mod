@@ -151,3 +151,5 @@ retract (
 )
 
 replace go.opentelemetry.io/collector/exporter/exportertest => ../exportertest
+
+replace go.opentelemetry.io/collector/extension/extensiontest => ../../extension/extensiontest

@@ -12,6 +12,7 @@ require (
 	go.opentelemetry.io/collector/config/confighttp v0.113.0
 	go.opentelemetry.io/collector/confmap v1.19.0
 	go.opentelemetry.io/collector/extension v0.113.0
+	go.opentelemetry.io/collector/extension/extensiontest v0.113.0
 	go.opentelemetry.io/contrib/zpages v0.56.0
 	go.opentelemetry.io/otel/sdk v1.32.0
 	go.opentelemetry.io/otel/trace v1.32.0
@@ -70,6 +71,8 @@ replace go.opentelemetry.io/collector/component/componenttest => ../../component
 replace go.opentelemetry.io/collector/confmap => ../../confmap
 
 replace go.opentelemetry.io/collector/extension => ../
+
+replace go.opentelemetry.io/collector/extension/extensiontest => .. //extensiontest
 
 replace go.opentelemetry.io/collector/pdata => ../../pdata
 

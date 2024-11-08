@@ -79,6 +79,7 @@ replaces:
   - go.opentelemetry.io/collector/extension/auth => ../../extension/auth
   - go.opentelemetry.io/collector/extension/experimental/storage => ../../extension/experimental/storage
   - go.opentelemetry.io/collector/extension/extensioncapabilities => ../../extension/extensioncapabilities
+  - go.opentelemetry.io/collector/extension/extensiontest => ../../extension/extensiontest
   - go.opentelemetry.io/collector/extension/memorylimiterextension => ../../extension/memorylimiterextension
   - go.opentelemetry.io/collector/extension/zpagesextension => ../../extension/zpagesextension
   - go.opentelemetry.io/collector/featuregate => ../../featuregate
