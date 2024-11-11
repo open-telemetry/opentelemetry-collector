@@ -50,7 +50,9 @@ func TestDefaultBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T) {
 					Capacity: 10,
 				})
 
-			ba, err := NewBatcher(cfg, q, tt.maxWorkers)
+			ba, err := NewBatcher(cfg, q,
+				func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },
+				tt.maxWorkers)
 			require.NoError(t, err)
 
 			require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
@@ -108,7 +110,9 @@ func TestDefaultBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 					Capacity: 10,
 				})
 
-			ba, err := NewBatcher(cfg, q, tt.maxWorkers)
+			ba, err := NewBatcher(cfg, q,
+				func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },
+				tt.maxWorkers)
 			require.NoError(t, err)
 
 			require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
@@ -172,7 +176,9 @@ func TestDefaultBatcher_NoSplit_WithTimeout(t *testing.T) {
 					Capacity: 10,
 				})
 
-			ba, err := NewBatcher(cfg, q, tt.maxWorkers)
+			ba, err := NewBatcher(cfg, q,
+				func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },
+				tt.maxWorkers)
 			require.NoError(t, err)
 
 			require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
@@ -236,7 +242,9 @@ func TestDefaultBatcher_Split_TimeoutDisabled(t *testing.T) {
 					Capacity: 10,
 				})
 
-			ba, err := NewBatcher(cfg, q, tt.maxWorkers)
+			ba, err := NewBatcher(cfg, q,
+				func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },
+				tt.maxWorkers)
 			require.NoError(t, err)
 
 			require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
