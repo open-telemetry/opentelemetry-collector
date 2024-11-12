@@ -225,14 +225,12 @@ func initOTLPgRPCExporter(ctx context.Context, otlpConfig *config.OTLPMetric) (s
 		opts = append(opts, otlpmetricgrpc.WithEndpoint(u.Host))
 		if u.Scheme == "http" {
 			opts = append(opts, otlpmetricgrpc.WithInsecure())
-		} else {
-			if otlpConfig.Certificate != nil {
-				creds, err := credentials.NewClientTLSFromFile(*otlpConfig.Certificate, "")
-				if err != nil {
-					return nil, fmt.Errorf("could not create client tls credentials: %w", err)
-				}
-				opts = append(opts, otlpmetricgrpc.WithTLSCredentials(creds))
+		} else if otlpConfig.Certificate != nil {
+			creds, err := credentials.NewClientTLSFromFile(*otlpConfig.Certificate, "")
+			if err != nil {
+				return nil, fmt.Errorf("could not create client tls credentials: %w", err)
 			}
+			opts = append(opts, otlpmetricgrpc.WithTLSCredentials(creds))
 		}
 	}
 
