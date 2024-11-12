@@ -1234,7 +1234,6 @@ func TestConnectorRouter(t *testing.T) {
 	assert.NoError(t, profilesReceiver.ConsumeProfiles(ctx, testdata.GenerateProfiles(1)))
 	assert.Len(t, profilesRight.Profiles, 3)
 	assert.Len(t, profilesLeft.Profiles, 2)
-
 }
 
 func TestGraphBuildErrors(t *testing.T) {

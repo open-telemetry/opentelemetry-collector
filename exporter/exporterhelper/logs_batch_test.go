@@ -126,7 +126,6 @@ func TestMergeSplitLogs(t *testing.T) {
 				assert.Equal(t, tt.expected[i], r.(*logsRequest))
 			}
 		})
-
 	}
 }
 

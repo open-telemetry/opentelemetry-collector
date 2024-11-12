@@ -38,6 +38,15 @@ To keep naming patterns consistent across the project, naming patterns are enfor
   - `func CreateTracesExport(...) {...}`
   - `func CreateTracesToTracesFunc(...) {...}`
 
+#### Configuration structs
+
+When naming configuration structs, use the following guidelines:
+
+- Separate the configuration set by end users in their YAML configuration from the configuration set by developers in the code into different structs.
+- Use the `Config` suffix for configuration structs that have end user configuration (i.e. that set in their YAML configuration). For example, `configgrpc.ClientConfig` ends in `Config` since it contains end user configuration.
+- Use the `Settings` suffix for configuration structs that are set by developers in the code. For example, `component.TelemetrySettings` ends in `Settings` since it is set by developers in the code.
+- Avoid redundant prefixes that are already implied by the package name. For example, use`configgrpc.ClientConfig` instead of `configgrpc.GRPCClientConfig`.
+
 ### Enumerations
 
 To keep naming patterns consistent across the project, enumeration patterns are enforced to make intent clear:
@@ -387,47 +396,7 @@ for the following situations. Note that these changes should still be recorded a
 
 #### Configuration changes
 
-##### Alpha components
-
-Configuration for alpha components can be changed with minimal notice. Documenting them as part of the changelog is
-sufficient. We still recommend giving users one or two minor versions' notice before breaking the configuration, such as
-when removing or renaming a configuration option. Providing a migration path in the component's repository is NOT
-required for alpha components, although it is still recommended.
-
-- when adding a new configuration option, components MAY mark the new option as required and are not required to provide
-  a reasonable default.
-- when renaming a configuration option, components MAY treat the old name as an alias to the new one and log a WARN
-  level message in case the old option is being used.
-- when removing a configuration option, components MAY keep the old option for a few minor releases and log a WARN level
-  message instructing users to remove the option.
-
-##### Beta components
-
-One of the requirements for a component to be marked as beta is to have its configuration options stabilized. Therefore,
-backward incompatible changes should be rare events for beta components. Users of those components are not expecting to
-have their Collector instances failing at startup because of a configuration change. When doing backward incompatible
-changes, component owners should add the migration path to a place within the component's repository, linked from the
-component's main README. This is to ensure that people using older instructions can understand how to migrate to the
-latest version of the component.
-
-When adding a new required option:
-- the option MUST come with a sensible default value
-
-When renaming or removing a configuration option:
-- the option MUST be deprecated in one version
-- a WARN level message should be logged, with a link to a place within the component's repository where the change is
-  documented and a migration path is provided
-- the option MUST be kept for at least N+1 version and MAY be hidden behind a feature gate in N+2
-- the option and the WARN level message MUST NOT be removed earlier than N+2 or 6 months, whichever comes later
-
-Additionally, when removing an option:
-- the option MAY be made non-operational already by the same version where it is deprecated
-
-##### Stable components
-
-Stable components MUST be compatible between minor versions unless critical security issues are found. In that case, the
-component owner MUST provide a migration path and a reasonable time frame for users to upgrade. The same rules from beta
-components apply to stable when it comes to configuration changes.
+See [docs/component-stability.md](component-stability.md) for more information on how to handle configuration changes.
 
 ### Specification Tracking
 
