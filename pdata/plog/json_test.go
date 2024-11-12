@@ -68,7 +68,7 @@ func TestJSONMarshal(t *testing.T) {
 	encoder := &JSONMarshaler{}
 	jsonBuf, err := encoder.MarshalLogs(logsOTLP)
 	require.NoError(t, err)
-	assert.Equal(t, logsJSON, string(jsonBuf))
+	assert.JSONEq(t, logsJSON, string(jsonBuf))
 }
 
 func TestJSONUnmarshalInvalid(t *testing.T) {
