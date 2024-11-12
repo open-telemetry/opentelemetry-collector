@@ -1,6 +1,8 @@
 module go.opentelemetry.io/collector/exporter/otlphttpexporter
 
-go 1.22.0
+go 1.22.7
+
+toolchain go1.22.9
 
 require (
 	github.com/stretchr/testify v1.9.0
@@ -23,8 +25,8 @@ require (
 	go.opentelemetry.io/collector/pdata/pprofile v0.113.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240822170219-fc7c04adadcd
-	google.golang.org/grpc v1.67.1
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240903143218-8af14fe29dc1
+	google.golang.org/grpc v1.68.0
 	google.golang.org/protobuf v1.35.1
 )
 
