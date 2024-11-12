@@ -425,3 +425,37 @@ func TestScrapeControllerInitialDelay(t *testing.T) {
 
 	assert.NoError(t, r.Shutdown(context.Background()), "Must not error closing down")
 }
+
+func TestShutdownBeforeScrapeCanStart(t *testing.T) {
+	cfg := ControllerConfig{
+		CollectionInterval: time.Second,
+		InitialDelay:       5 * time.Second,
+	}
+
+	scp, err := NewScraper(component.MustNewType("timed"), func(context.Context) (pmetric.Metrics, error) {
+		// make the scraper wait for long enough it would disrupt a shutdown.
+		time.Sleep(30 * time.Second)
+		return pmetric.NewMetrics(), nil
+	})
+	require.NoError(t, err, "Must not error when creating scraper")
+
+	r, err := NewScraperControllerReceiver(
+		&cfg,
+		receivertest.NewNopSettings(),
+		new(consumertest.MetricsSink),
+		AddScraper(scp),
+	)
+	require.NoError(t, err, "Must not error when creating receiver")
+	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+	shutdown := make(chan struct{}, 1)
+	go func() {
+		assert.NoError(t, r.Shutdown(context.Background()))
+		close(shutdown)
+	}()
+	timer := time.NewTicker(10 * time.Second)
+	select {
+	case <-timer.C:
+		require.Fail(t, "shutdown should not wait for scraping")
+	case <-shutdown:
+	}
+}
