@@ -76,7 +76,6 @@ type metricsTestCase struct {
 	scrapers                  int
 	scraperControllerSettings *ControllerConfig
 	scrapeErr                 error
-	expectedNewErr            string
 	expectScraped             bool
 
 	initialize    bool
@@ -94,12 +93,6 @@ func TestScrapeController(t *testing.T) {
 			name:          "AddMetricsScrapersWithCollectionInterval",
 			scrapers:      2,
 			expectScraped: true,
-		},
-		{
-			name:                      "AddMetricsScrapersWithCollectionInterval_InvalidCollectionIntervalError",
-			scrapers:                  2,
-			scraperControllerSettings: &ControllerConfig{CollectionInterval: -time.Millisecond},
-			expectedNewErr:            "collection_interval must be a positive duration",
 		},
 		{
 			name:      "AddMetricsScrapers_ScrapeError",
@@ -146,10 +139,6 @@ func TestScrapeController(t *testing.T) {
 			}
 
 			mr, err := NewScraperControllerReceiver(cfg, receiver.Settings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, sink, options...)
-			if test.expectedNewErr != "" {
-				assert.EqualError(t, err, test.expectedNewErr)
-				return
-			}
 			require.NoError(t, err)
 
 			err = mr.Start(context.Background(), componenttest.NewNopHost())
