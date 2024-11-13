@@ -205,14 +205,11 @@ func getMetricsFromPrometheus(t *testing.T, endpoint string) map[string]*io_prom
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 	}
-	var (
-		req *http.Request
-		err error
-		rr  *http.Response
-	)
-	req, err = http.NewRequest(http.MethodGet, endpoint, nil)
+
+	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
 	require.NoError(t, err)
 
+	var rr *http.Response
 	maxRetries := 5
 	for i := 0; i < maxRetries; i++ {
 		rr, err = client.Do(req)
@@ -220,6 +217,7 @@ func getMetricsFromPrometheus(t *testing.T, endpoint string) map[string]*io_prom
 			break
 		}
 
+		// skip sleep on last retry
 		if i < maxRetries-1 {
 			time.Sleep(2 * time.Second) // Wait before retrying
 		}
