@@ -388,9 +388,14 @@ func TestGrpcClientConfigInvalidBalancer(t *testing.T) {
 
 func TestGRPCClientSettingsError(t *testing.T) {
 	tlsClientConfigCADoesntExist := configtls.NewDefaultClientConfig()
-	tlsConfig := configtls.NewDefaultConfig()
-	tlsConfig.CAFile = "/doesnt/exist"
-	tlsClientConfigCADoesntExist.Config = tlsConfig
+	tlsConfigWithCAFile := configtls.NewDefaultConfig()
+	tlsConfigWithCAFile.CAFile = "/doesnt/exist"
+	tlsClientConfigCADoesntExist.Config = tlsConfigWithCAFile
+
+	tlsClientConfigCertDoesntExist := configtls.NewDefaultClientConfig()
+	tlsConfigWithCertFile := configtls.NewDefaultConfig()
+	tlsConfigWithCertFile.CertFile = "/doesnt/exist"
+	tlsClientConfigCertDoesntExist.Config = tlsConfigWithCertFile
 
 	tlsClientConfigWithInsecure := configtls.NewDefaultClientConfig()
 	tlsClientConfigWithInsecure.Insecure = true
@@ -415,7 +420,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 				Headers:     nil,
 				Endpoint:    "",
 				Compression: "",
-				TLSSetting:  tlsClientConfigCADoesntExist,
+				TLSSetting:  tlsClientConfigCertDoesntExist,
 				Keepalive:   nil,
 			},
 		},
