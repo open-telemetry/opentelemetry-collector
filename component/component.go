@@ -167,7 +167,7 @@ func (sl StabilityLevel) String() string {
 func (sl StabilityLevel) LogMessage() string {
 	switch sl {
 	case StabilityLevelUnmaintained:
-		return "Unmaintained component. Actively looking for contributors. Component will become deprecated after 6 months of remaining unmaintained."
+		return "Unmaintained component. Actively looking for contributors. Component will become deprecated after 3 months of remaining unmaintained."
 	case StabilityLevelDeprecated:
 		return "Deprecated component. Will be removed in future releases."
 	case StabilityLevelDevelopment:
