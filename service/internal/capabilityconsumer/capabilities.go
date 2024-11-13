@@ -8,11 +8,11 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 )
 
-func NewLogs(logs consumer.Logs, cap consumer.Capabilities) consumer.Logs {
-	if logs.Capabilities() == cap {
+func NewLogs(logs consumer.Logs, capabilities consumer.Capabilities) consumer.Logs {
+	if logs.Capabilities() == capabilities {
 		return logs
 	}
-	return capLogs{Logs: logs, cap: cap}
+	return capLogs{Logs: logs, cap: capabilities}
 }
 
 type capLogs struct {
@@ -24,11 +24,11 @@ func (mts capLogs) Capabilities() consumer.Capabilities {
 	return mts.cap
 }
 
-func NewMetrics(metrics consumer.Metrics, cap consumer.Capabilities) consumer.Metrics {
-	if metrics.Capabilities() == cap {
+func NewMetrics(metrics consumer.Metrics, capabilities consumer.Capabilities) consumer.Metrics {
+	if metrics.Capabilities() == capabilities {
 		return metrics
 	}
-	return capMetrics{Metrics: metrics, cap: cap}
+	return capMetrics{Metrics: metrics, cap: capabilities}
 }
 
 type capMetrics struct {
@@ -40,11 +40,11 @@ func (mts capMetrics) Capabilities() consumer.Capabilities {
 	return mts.cap
 }
 
-func NewTraces(traces consumer.Traces, cap consumer.Capabilities) consumer.Traces {
-	if traces.Capabilities() == cap {
+func NewTraces(traces consumer.Traces, capabilities consumer.Capabilities) consumer.Traces {
+	if traces.Capabilities() == capabilities {
 		return traces
 	}
-	return capTraces{Traces: traces, cap: cap}
+	return capTraces{Traces: traces, cap: capabilities}
 }
 
 type capTraces struct {
@@ -56,11 +56,11 @@ func (mts capTraces) Capabilities() consumer.Capabilities {
 	return mts.cap
 }
 
-func NewProfiles(profiles consumerprofiles.Profiles, cap consumer.Capabilities) consumerprofiles.Profiles {
-	if profiles.Capabilities() == cap {
+func NewProfiles(profiles consumerprofiles.Profiles, capabilities consumer.Capabilities) consumerprofiles.Profiles {
+	if profiles.Capabilities() == capabilities {
 		return profiles
 	}
-	return capProfiles{Profiles: profiles, cap: cap}
+	return capProfiles{Profiles: profiles, cap: capabilities}
 }
 
 type capProfiles struct {
