@@ -30,14 +30,22 @@ func (of scraperControllerOptionFunc) apply(e *controller) {
 	of(e)
 }
 
-// AddScraper configures the provided scrape function to be called
+// Deprecated: [v0.114.0] use AddScraperWithType.
+func AddScraper(scraper Scraper) ScraperControllerOption {
+	return AddScraperWithType(scraper.ID().Type(), scraper)
+}
+
+// AddScraperWithType configures the provided scrape function to be called
 // with the specified options, and at the specified collection interval.
 //
 // Observability information will be reported, and the scraped metrics
 // will be passed to the next consumer.
-func AddScraper(scraper Scraper) ScraperControllerOption {
+func AddScraperWithType(t component.Type, scraper Scraper) ScraperControllerOption {
 	return scraperControllerOptionFunc(func(o *controller) {
-		o.scrapers = append(o.scrapers, scraper)
+		o.scrapers = append(o.scrapers, scraperWithID{
+			Scraper: scraper,
+			id:      component.NewID(t),
+		})
 	})
 }
 
@@ -58,7 +66,7 @@ type controller struct {
 	timeout            time.Duration
 	nextConsumer       consumer.Metrics
 
-	scrapers    []Scraper
+	scrapers    []scraperWithID
 	obsScrapers []*obsReport
 
 	tickerCh <-chan time.Time
@@ -67,6 +75,11 @@ type controller struct {
 	wg   sync.WaitGroup
 
 	obsrecv *receiverhelper.ObsReport
+}
+
+type scraperWithID struct {
+	Scraper
+	id component.ID
 }
 
 // NewScraperControllerReceiver creates a Receiver with the configured options, that can control multiple scrapers.
@@ -104,7 +117,7 @@ func NewScraperControllerReceiver(
 	for i, scraper := range sc.scrapers {
 		sc.obsScrapers[i], err = newScraper(obsReportSettings{
 			ReceiverID:             sc.id,
-			Scraper:                scraper.ID(),
+			Scraper:                scraper.id,
 			ReceiverCreateSettings: set,
 		})
 		if err != nil {
@@ -190,7 +203,7 @@ func (sc *controller) scrapeMetricsAndReport() {
 		md, err := scraper.Scrape(ctx)
 
 		if err != nil {
-			sc.logger.Error("Error scraping metrics", zap.Error(err), zap.Stringer("scraper", scraper.ID()))
+			sc.logger.Error("Error scraping metrics", zap.Error(err), zap.Stringer("scraper", scraper.id))
 			if !scrapererror.IsPartialScrapeError(err) {
 				scrp.EndMetricsOp(ctx, 0, err)
 				continue
