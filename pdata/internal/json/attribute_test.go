@@ -183,9 +183,7 @@ func TestReadValueInvliadBytesValue(t *testing.T) {
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 
 	ReadValue(iter, &otlpcommon.AnyValue{})
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "base64")
-	}
+	assert.ErrorContains(t, iter.Error, "base64")
 }
 
 func TestReadArrayUnknownField(t *testing.T) {
