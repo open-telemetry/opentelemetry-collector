@@ -262,7 +262,7 @@ check-contrib:
 	$(eval MOD_PATHS := "" $(ALL_MODULES:.%=%))
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit \
 		$(addprefix -replace ,$(join $(MOD_PATHS:%=go.opentelemetry.io/collector%),$(MOD_PATHS:%==$(CURDIR)%)))"
-	@$(MAKE) -C $(CONTRIB_PATH) gotidy
+	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod tidy"
 
 	@if [ -z "$(SKIP_REGENERATE)" ]; then \
 		$(MAKE) regenerate-contrib; \
