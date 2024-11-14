@@ -39,7 +39,7 @@ func TestParseModules(t *testing.T) {
 func TestInvalidConverter(t *testing.T) {
 	// Create a Config instance with invalid Converters
 	config := &Config{
-		Converters: []Module{
+		ConfmapConverters: []Module{
 			{
 				Path: "./invalid/module/path", // Invalid module path to trigger an error
 			},
@@ -103,7 +103,7 @@ func TestMissingModule(t *testing.T) {
 		{
 			cfg: Config{
 				Logger: zap.NewNop(),
-				Providers: []Module{{
+				ConfmapProviders: []Module{{
 					Import: "invalid",
 				}},
 			},
@@ -157,7 +157,7 @@ func TestMissingModule(t *testing.T) {
 		{
 			cfg: Config{
 				Logger: zap.NewNop(),
-				Converters: []Module{{
+				ConfmapConverters: []Module{{
 					Import: "invalid",
 				}},
 			},
@@ -252,14 +252,14 @@ func TestAddsDefaultProviders(t *testing.T) {
 	cfg, err := NewDefaultConfig()
 	require.NoError(t, err)
 	require.NoError(t, cfg.ParseModules())
-	assert.Len(t, cfg.Providers, 5)
+	assert.Len(t, cfg.ConfmapProviders, 5)
 }
 
 func TestSkipsNilFieldValidation(t *testing.T) {
 	cfg, err := NewDefaultConfig()
 	require.NoError(t, err)
-	cfg.Providers = nil
-	cfg.Converters = nil
+	cfg.ConfmapProviders = nil
+	cfg.ConfmapConverters = nil
 	assert.NoError(t, cfg.Validate())
 }
 
