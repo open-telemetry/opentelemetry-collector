@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"runtime"
 
+	"go.opentelemetry.io/contrib/config"
 	"go.opentelemetry.io/otel/log"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/noop"
@@ -28,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
+	semconv "go.opentelemetry.io/collector/semconv/v1.26.0"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/graph"
@@ -118,10 +120,36 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	res := resource.New(set.BuildInfo, cfg.Telemetry.Resource)
 	pcommonRes := pdataFromSdk(res)
 
+	sch := semconv.SchemaURL
+	cfgRes := config.Resource{
+		SchemaUrl:  &sch,
+		Attributes: attributes(res, cfg.Telemetry),
+	}
+
+	sdk, err := config.NewSDK(
+		config.WithContext(ctx),
+		config.WithOpenTelemetryConfiguration(
+			config.OpenTelemetryConfiguration{
+				LoggerProvider: &config.LoggerProvider{
+					Processors: cfg.Telemetry.Logs.Processors,
+				},
+				TracerProvider: &config.TracerProvider{
+					Processors: cfg.Telemetry.Traces.Processors,
+				},
+				Resource: &cfgRes,
+			},
+		),
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to create SDK: %w", err)
+	}
+
 	telFactory := telemetry.NewFactory()
 	telset := telemetry.Settings{
 		BuildInfo:  set.BuildInfo,
 		ZapOptions: set.LoggingOptions,
+		SDK:        &sdk,
 	}
 
 	logger, lp, err := telFactory.CreateLogger(ctx, telset, &cfg.Telemetry)
@@ -148,7 +176,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 			if level <= cfg.Telemetry.Metrics.Level {
 				return mp
 			}
-			return noop.MeterProvider{}
+			return noop.NewMeterProvider()
 		},
 		Logger:         logger,
 		MeterProvider:  mp,

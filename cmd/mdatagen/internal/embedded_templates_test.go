@@ -49,5 +49,4 @@ func TestEnsureTemplatesLoaded(t *testing.T) {
 		return nil
 	}))
 	assert.Equal(t, len(templateFiles), count, "Must match the expected number of calls")
-
 }

@@ -5,7 +5,7 @@ package scraperhelper // import "go.opentelemetry.io/collector/receiver/scraperh
 
 import (
 	"context"
-	"errors"
+	"sync"
 	"time"
 
 	"go.uber.org/multierr"
@@ -30,14 +30,22 @@ func (of scraperControllerOptionFunc) apply(e *controller) {
 	of(e)
 }
 
-// AddScraper configures the provided scrape function to be called
+// Deprecated: [v0.114.0] use AddScraperWithType.
+func AddScraper(scraper Scraper) ScraperControllerOption {
+	return AddScraperWithType(scraper.ID().Type(), scraper)
+}
+
+// AddScraperWithType configures the provided scrape function to be called
 // with the specified options, and at the specified collection interval.
 //
 // Observability information will be reported, and the scraped metrics
 // will be passed to the next consumer.
-func AddScraper(scraper Scraper) ScraperControllerOption {
+func AddScraperWithType(t component.Type, scraper Scraper) ScraperControllerOption {
 	return scraperControllerOptionFunc(func(o *controller) {
-		o.scrapers = append(o.scrapers, scraper)
+		o.scrapers = append(o.scrapers, scraperWithID{
+			Scraper: scraper,
+			id:      component.NewID(t),
+		})
 	})
 }
 
@@ -58,17 +66,20 @@ type controller struct {
 	timeout            time.Duration
 	nextConsumer       consumer.Metrics
 
-	scrapers    []Scraper
+	scrapers    []scraperWithID
 	obsScrapers []*obsReport
 
 	tickerCh <-chan time.Time
 
-	initialized bool
-	done        chan struct{}
-	terminated  chan struct{}
+	done chan struct{}
+	wg   sync.WaitGroup
 
-	obsrecv      *receiverhelper.ObsReport
-	recvSettings receiver.Settings
+	obsrecv *receiverhelper.ObsReport
+}
+
+type scraperWithID struct {
+	Scraper
+	id component.ID
 }
 
 // NewScraperControllerReceiver creates a Receiver with the configured options, that can control multiple scrapers.
@@ -78,11 +89,6 @@ func NewScraperControllerReceiver(
 	nextConsumer consumer.Metrics,
 	options ...ScraperControllerOption,
 ) (component.Component, error) {
-
-	if cfg.CollectionInterval <= 0 {
-		return nil, errors.New("collection_interval must be a positive duration")
-	}
-
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             set.ID,
 		Transport:              "",
@@ -100,9 +106,7 @@ func NewScraperControllerReceiver(
 		timeout:            cfg.Timeout,
 		nextConsumer:       nextConsumer,
 		done:               make(chan struct{}),
-		terminated:         make(chan struct{}),
 		obsrecv:            obsrecv,
-		recvSettings:       set,
 	}
 
 	for _, op := range options {
@@ -111,14 +115,11 @@ func NewScraperControllerReceiver(
 
 	sc.obsScrapers = make([]*obsReport, len(sc.scrapers))
 	for i, scraper := range sc.scrapers {
-		scrp, err := newScraper(obsReportSettings{
+		sc.obsScrapers[i], err = newScraper(obsReportSettings{
 			ReceiverID:             sc.id,
-			Scraper:                scraper.ID(),
-			ReceiverCreateSettings: sc.recvSettings,
+			Scraper:                scraper.id,
+			ReceiverCreateSettings: set,
 		})
-
-		sc.obsScrapers[i] = scrp
-
 		if err != nil {
 			return nil, err
 		}
@@ -135,20 +136,15 @@ func (sc *controller) Start(ctx context.Context, host component.Host) error {
 		}
 	}
 
-	sc.initialized = true
 	sc.startScraping()
 	return nil
 }
 
 // Shutdown the receiver, invoked during service shutdown.
 func (sc *controller) Shutdown(ctx context.Context) error {
-	sc.stopScraping()
-
-	// wait until scraping ticker has terminated
-	if sc.initialized {
-		<-sc.terminated
-	}
-
+	// Signal the goroutine to stop.
+	close(sc.done)
+	sc.wg.Wait()
 	var errs error
 	for _, scraper := range sc.scrapers {
 		errs = multierr.Append(errs, scraper.Shutdown(ctx))
@@ -160,9 +156,15 @@ func (sc *controller) Shutdown(ctx context.Context) error {
 // startScraping initiates a ticker that calls Scrape based on the configured
 // collection interval.
 func (sc *controller) startScraping() {
+	sc.wg.Add(1)
 	go func() {
+		defer sc.wg.Done()
 		if sc.initialDelay > 0 {
-			<-time.After(sc.initialDelay)
+			select {
+			case <-time.After(sc.initialDelay):
+			case <-sc.done:
+				return
+			}
 		}
 
 		if sc.tickerCh == nil {
@@ -180,7 +182,6 @@ func (sc *controller) startScraping() {
 			case <-sc.tickerCh:
 				sc.scrapeMetricsAndReport()
 			case <-sc.done:
-				sc.terminated <- struct{}{}
 				return
 			}
 		}
@@ -202,7 +203,7 @@ func (sc *controller) scrapeMetricsAndReport() {
 		md, err := scraper.Scrape(ctx)
 
 		if err != nil {
-			sc.logger.Error("Error scraping metrics", zap.Error(err), zap.Stringer("scraper", scraper.ID()))
+			sc.logger.Error("Error scraping metrics", zap.Error(err), zap.Stringer("scraper", scraper.id))
 			if !scrapererror.IsPartialScrapeError(err) {
 				scrp.EndMetricsOp(ctx, 0, err)
 				continue
@@ -216,11 +217,6 @@ func (sc *controller) scrapeMetricsAndReport() {
 	ctx = sc.obsrecv.StartMetricsOp(ctx)
 	err := sc.nextConsumer.ConsumeMetrics(ctx, metrics)
 	sc.obsrecv.EndMetricsOp(ctx, "", dataPointCount, err)
-}
-
-// stopScraping stops the ticker
-func (sc *controller) stopScraping() {
-	close(sc.done)
 }
 
 // withScrapeContext will return a context that has no deadline if timeout is 0

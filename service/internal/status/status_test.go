@@ -175,7 +175,6 @@ func TestValidSeqsToStopped(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestStatusFuncs(t *testing.T) {

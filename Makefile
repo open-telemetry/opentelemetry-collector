@@ -240,7 +240,7 @@ genproto_sub:
 # Generate structs, functions and tests for pdata package. Must be used after any changes
 # to proto and after running `make genproto`
 genpdata:
-	$(GOCMD) run pdata/internal/cmd/pdatagen/main.go
+	pushd pdata/ && $(GOCMD) run ./internal/cmd/pdatagen/main.go && popd
 	$(MAKE) fmt
 
 # Generate semantic convention constants. Requires a clone of the opentelemetry-specification repo
@@ -264,6 +264,7 @@ check-contrib:
 		-replace go.opentelemetry.io/collector/client=$(CURDIR)/client \
 		-replace go.opentelemetry.io/collector/cmd/mdatagen=$(CURDIR)/cmd/mdatagen \
 		-replace go.opentelemetry.io/collector/component=$(CURDIR)/component  \
+		-replace go.opentelemetry.io/collector/component/componenttest=$(CURDIR)/component/componenttest  \
 		-replace go.opentelemetry.io/collector/component/componentstatus=$(CURDIR)/component/componentstatus  \
 		-replace go.opentelemetry.io/collector/config/configauth=$(CURDIR)/config/configauth  \
 		-replace go.opentelemetry.io/collector/config/configcompression=$(CURDIR)/config/configcompression  \
@@ -276,7 +277,6 @@ check-contrib:
 		-replace go.opentelemetry.io/collector/config/configtls=$(CURDIR)/config/configtls  \
 		-replace go.opentelemetry.io/collector/config/internal=$(CURDIR)/config/internal  \
 		-replace go.opentelemetry.io/collector/confmap=$(CURDIR)/confmap  \
-		-replace go.opentelemetry.io/collector/confmap/converter/expandconverter=$(CURDIR)/confmap/converter/expandconverter  \
 		-replace go.opentelemetry.io/collector/confmap/provider/envprovider=$(CURDIR)/confmap/provider/envprovider  \
 		-replace go.opentelemetry.io/collector/confmap/provider/fileprovider=$(CURDIR)/confmap/provider/fileprovider  \
 		-replace go.opentelemetry.io/collector/confmap/provider/httpprovider=$(CURDIR)/confmap/provider/httpprovider  \
@@ -308,6 +308,8 @@ check-contrib:
 		-replace go.opentelemetry.io/collector/featuregate=$(CURDIR)/featuregate  \
 		-replace go.opentelemetry.io/collector/filter=$(CURDIR)/filter  \
 		-replace go.opentelemetry.io/collector/internal/memorylimiter=$(CURDIR)/internal/memorylimiter  \
+		-replace go.opentelemetry.io/collector/internal/fanoutconsumer=$(CURDIR)/internal/fanoutconsumer  \
+		-replace go.opentelemetry.io/collector/internal/sharedcomponent=$(CURDIR)/internal/sharedcomponent  \
 		-replace go.opentelemetry.io/collector/otelcol=$(CURDIR)/otelcol  \
 		-replace go.opentelemetry.io/collector/otelcol/otelcoltest=$(CURDIR)/otelcol/otelcoltest  \
 		-replace go.opentelemetry.io/collector/pdata=$(CURDIR)/pdata  \
@@ -324,6 +326,7 @@ check-contrib:
 		-replace go.opentelemetry.io/collector/receiver/nopreceiver=$(CURDIR)/receiver/nopreceiver  \
 		-replace go.opentelemetry.io/collector/receiver/otlpreceiver=$(CURDIR)/receiver/otlpreceiver  \
 		-replace go.opentelemetry.io/collector/receiver/receiverprofiles=$(CURDIR)/receiver/receiverprofiles  \
+		-replace go.opentelemetry.io/collector/receiver/receivertest=$(CURDIR)/receiver/receivertest  \
 		-replace go.opentelemetry.io/collector/semconv=$(CURDIR)/semconv  \
 		-replace go.opentelemetry.io/collector/service=$(CURDIR)/service"
 	@$(MAKE) -C $(CONTRIB_PATH) gotidy
@@ -341,6 +344,7 @@ restore-contrib:
 		-dropreplace go.opentelemetry.io/collector/client \
 		-dropreplace go.opentelemetry.io/collector/cmd/mdatagen \
 		-dropreplace go.opentelemetry.io/collector/component \
+		-dropreplace go.opentelemetry.io/collector/component/componenttest \
 		-dropreplace go.opentelemetry.io/collector/component/componentstatus \
 		-dropreplace go.opentelemetry.io/collector/config/configauth  \
 		-dropreplace go.opentelemetry.io/collector/config/configcompression  \
@@ -353,7 +357,6 @@ restore-contrib:
 		-dropreplace go.opentelemetry.io/collector/config/configtls  \
 		-dropreplace go.opentelemetry.io/collector/config/internal  \
 		-dropreplace go.opentelemetry.io/collector/confmap  \
-		-dropreplace go.opentelemetry.io/collector/confmap/converter/expandconverter  \
 		-dropreplace go.opentelemetry.io/collector/confmap/provider/envprovider  \
 		-dropreplace go.opentelemetry.io/collector/confmap/provider/fileprovider  \
 		-dropreplace go.opentelemetry.io/collector/confmap/provider/httpprovider  \
@@ -381,6 +384,8 @@ restore-contrib:
 		-dropreplace go.opentelemetry.io/collector/featuregate  \
 		-dropreplace go.opentelemetry.io/collector/filter  \
 		-dropreplace go.opentelemetry.io/collector/internal/memorylimiter \
+		-dropreplace go.opentelemetry.io/collector/internal/fanoutconsumer \
+		-dropreplace go.opentelemetry.io/collector/internal/sharedcomponent \
 		-dropreplace go.opentelemetry.io/collector/otelcol  \
 		-dropreplace go.opentelemetry.io/collector/otelcol/otelcoltest  \
 		-dropreplace go.opentelemetry.io/collector/pdata  \

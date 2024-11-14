@@ -6,6 +6,7 @@ package configtls // import "go.opentelemetry.io/collector/config/configtls"
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"sync"
 
@@ -78,7 +79,7 @@ func (r *clientCAsFileReloader) getLastError() error {
 
 func (r *clientCAsFileReloader) startWatching() error {
 	if r.shutdownCH != nil {
-		return fmt.Errorf("client CA file watcher already started")
+		return errors.New("client CA file watcher already started")
 	}
 
 	watcher, err := fsnotify.NewWatcher()
@@ -132,7 +133,7 @@ func (r *clientCAsFileReloader) handleWatcherEvents() {
 
 func (r *clientCAsFileReloader) shutdown() error {
 	if r.shutdownCH == nil {
-		return fmt.Errorf("client CAs file watcher is not running")
+		return errors.New("client CAs file watcher is not running")
 	}
 	r.shutdownCH <- true
 	close(r.shutdownCH)

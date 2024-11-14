@@ -108,7 +108,7 @@ func (k Kind) String() string {
 // StabilityLevel represents the stability level of the component created by the factory.
 // The stability level is used to determine if the component should be used in production
 // or not. For more details see:
-// https://github.com/open-telemetry/opentelemetry-collector#stability-levels
+// https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#stability-levels
 type StabilityLevel int
 
 const (
@@ -167,7 +167,7 @@ func (sl StabilityLevel) String() string {
 func (sl StabilityLevel) LogMessage() string {
 	switch sl {
 	case StabilityLevelUnmaintained:
-		return "Unmaintained component. Actively looking for contributors. Component will become deprecated after 6 months of remaining unmaintained."
+		return "Unmaintained component. Actively looking for contributors. Component will become deprecated after 3 months of remaining unmaintained."
 	case StabilityLevelDeprecated:
 		return "Deprecated component. Will be removed in future releases."
 	case StabilityLevelDevelopment:
