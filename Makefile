@@ -277,7 +277,6 @@ check-contrib:
 		-replace go.opentelemetry.io/collector/config/configtls=$(CURDIR)/config/configtls  \
 		-replace go.opentelemetry.io/collector/config/internal=$(CURDIR)/config/internal  \
 		-replace go.opentelemetry.io/collector/confmap=$(CURDIR)/confmap  \
-		-replace go.opentelemetry.io/collector/confmap/converter/expandconverter=$(CURDIR)/confmap/converter/expandconverter  \
 		-replace go.opentelemetry.io/collector/confmap/provider/envprovider=$(CURDIR)/confmap/provider/envprovider  \
 		-replace go.opentelemetry.io/collector/confmap/provider/fileprovider=$(CURDIR)/confmap/provider/fileprovider  \
 		-replace go.opentelemetry.io/collector/confmap/provider/httpprovider=$(CURDIR)/confmap/provider/httpprovider  \
@@ -359,7 +358,6 @@ restore-contrib:
 		-dropreplace go.opentelemetry.io/collector/config/configtls  \
 		-dropreplace go.opentelemetry.io/collector/config/internal  \
 		-dropreplace go.opentelemetry.io/collector/confmap  \
-		-dropreplace go.opentelemetry.io/collector/confmap/converter/expandconverter  \
 		-dropreplace go.opentelemetry.io/collector/confmap/provider/envprovider  \
 		-dropreplace go.opentelemetry.io/collector/confmap/provider/fileprovider  \
 		-dropreplace go.opentelemetry.io/collector/confmap/provider/httpprovider  \

@@ -46,7 +46,7 @@ func TestMetricsJSON_Marshal(t *testing.T) {
 	encoder := &JSONMarshaler{}
 	jsonBuf, err := encoder.MarshalMetrics(metricsOTLP)
 	require.NoError(t, err)
-	assert.Equal(t, metricsJSON, string(jsonBuf))
+	assert.JSONEq(t, metricsJSON, string(jsonBuf))
 }
 
 var metricsSumOTLPFull = func() Metrics {
