@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -201,6 +202,10 @@ func (c *Config) ParseModules() error {
 		return err
 	}
 	return nil
+}
+
+func (c *Config) allComponents() []Module {
+	return slices.Concat[[]Module](c.Exporters, c.Receivers, c.Processors, c.Extensions, c.Connectors, c.Providers, c.Converters)
 }
 
 func validateModules(name string, mods []Module) error {

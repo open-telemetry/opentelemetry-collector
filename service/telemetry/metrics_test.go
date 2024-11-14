@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
+	"time"
 
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
@@ -201,11 +202,29 @@ func createTestMetrics(t *testing.T, mp metric.MeterProvider) {
 }
 
 func getMetricsFromPrometheus(t *testing.T, endpoint string) map[string]*io_prometheus_client.MetricFamily {
+	client := &http.Client{
+		Timeout: 10 * time.Second,
+	}
+
 	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
 	require.NoError(t, err)
 
-	rr, err := http.DefaultClient.Do(req)
-	require.NoError(t, err)
+	var rr *http.Response
+	maxRetries := 5
+	for i := 0; i < maxRetries; i++ {
+		rr, err = client.Do(req)
+		if err == nil && rr.StatusCode == http.StatusOK {
+			break
+		}
+
+		// skip sleep on last retry
+		if i < maxRetries-1 {
+			time.Sleep(2 * time.Second) // Wait before retrying
+		}
+	}
+	require.NoError(t, err, "failed to get metrics from Prometheus after %d attempts", maxRetries)
+	require.Equal(t, http.StatusOK, rr.StatusCode, "unexpected status code after %d attempts", maxRetries)
+	defer rr.Body.Close()
 
 	var parser expfmt.TextParser
 	parsed, err := parser.TextToMetricFamilies(rr.Body)

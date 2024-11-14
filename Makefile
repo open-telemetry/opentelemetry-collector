@@ -264,6 +264,7 @@ check-contrib:
 		-replace go.opentelemetry.io/collector/client=$(CURDIR)/client \
 		-replace go.opentelemetry.io/collector/cmd/mdatagen=$(CURDIR)/cmd/mdatagen \
 		-replace go.opentelemetry.io/collector/component=$(CURDIR)/component  \
+		-replace go.opentelemetry.io/collector/component/componenttest=$(CURDIR)/component/componenttest  \
 		-replace go.opentelemetry.io/collector/component/componentstatus=$(CURDIR)/component/componentstatus  \
 		-replace go.opentelemetry.io/collector/config/configauth=$(CURDIR)/config/configauth  \
 		-replace go.opentelemetry.io/collector/config/configcompression=$(CURDIR)/config/configcompression  \
@@ -276,7 +277,6 @@ check-contrib:
 		-replace go.opentelemetry.io/collector/config/configtls=$(CURDIR)/config/configtls  \
 		-replace go.opentelemetry.io/collector/config/internal=$(CURDIR)/config/internal  \
 		-replace go.opentelemetry.io/collector/confmap=$(CURDIR)/confmap  \
-		-replace go.opentelemetry.io/collector/confmap/converter/expandconverter=$(CURDIR)/confmap/converter/expandconverter  \
 		-replace go.opentelemetry.io/collector/confmap/provider/envprovider=$(CURDIR)/confmap/provider/envprovider  \
 		-replace go.opentelemetry.io/collector/confmap/provider/fileprovider=$(CURDIR)/confmap/provider/fileprovider  \
 		-replace go.opentelemetry.io/collector/confmap/provider/httpprovider=$(CURDIR)/confmap/provider/httpprovider  \
@@ -344,6 +344,7 @@ restore-contrib:
 		-dropreplace go.opentelemetry.io/collector/client \
 		-dropreplace go.opentelemetry.io/collector/cmd/mdatagen \
 		-dropreplace go.opentelemetry.io/collector/component \
+		-dropreplace go.opentelemetry.io/collector/component/componenttest \
 		-dropreplace go.opentelemetry.io/collector/component/componentstatus \
 		-dropreplace go.opentelemetry.io/collector/config/configauth  \
 		-dropreplace go.opentelemetry.io/collector/config/configcompression  \
@@ -356,7 +357,6 @@ restore-contrib:
 		-dropreplace go.opentelemetry.io/collector/config/configtls  \
 		-dropreplace go.opentelemetry.io/collector/config/internal  \
 		-dropreplace go.opentelemetry.io/collector/confmap  \
-		-dropreplace go.opentelemetry.io/collector/confmap/converter/expandconverter  \
 		-dropreplace go.opentelemetry.io/collector/confmap/provider/envprovider  \
 		-dropreplace go.opentelemetry.io/collector/confmap/provider/fileprovider  \
 		-dropreplace go.opentelemetry.io/collector/confmap/provider/httpprovider  \
