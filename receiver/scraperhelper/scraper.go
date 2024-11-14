@@ -24,7 +24,7 @@ func (sf ScrapeFunc) Scrape(ctx context.Context) (pmetric.Metrics, error) {
 type Scraper interface {
 	component.Component
 
-	// ID returns the scraper id.
+	// Deprecated: [v0.114.0] use AddScraperWithType.
 	ID() component.ID
 	Scrape(context.Context) (pmetric.Metrics, error)
 }
@@ -67,8 +67,7 @@ func (b *baseScraper) ID() component.ID {
 	return b.id
 }
 
-// NewScraper creates a Scraper that calls Scrape at the specified collection interval,
-// reports observability information, and passes the scraped metrics to the next consumer.
+// Deprecated: [v0.114.0] use NewScraperWithoutType.
 func NewScraper(t component.Type, scrape ScrapeFunc, options ...ScraperOption) (Scraper, error) {
 	if scrape == nil {
 		return nil, errNilFunc
@@ -76,6 +75,22 @@ func NewScraper(t component.Type, scrape ScrapeFunc, options ...ScraperOption) (
 	bs := &baseScraper{
 		ScrapeFunc: scrape,
 		id:         component.NewID(t),
+	}
+	for _, op := range options {
+		op.apply(bs)
+	}
+
+	return bs, nil
+}
+
+// NewScraperWithoutType creates a Scraper that calls Scrape at the specified collection interval,
+// reports observability information, and passes the scraped metrics to the next consumer.
+func NewScraperWithoutType(scrape ScrapeFunc, options ...ScraperOption) (Scraper, error) {
+	if scrape == nil {
+		return nil, errNilFunc
+	}
+	bs := &baseScraper{
+		ScrapeFunc: scrape,
 	}
 	for _, op := range options {
 		op.apply(bs)

@@ -140,11 +140,3 @@ func (rs *retrySender) Send(ctx context.Context, req internal.Request) error {
 		}
 	}
 }
-
-// max returns the larger of x or y.
-func max(x, y time.Duration) time.Duration {
-	if x < y {
-		return y
-	}
-	return x
-}

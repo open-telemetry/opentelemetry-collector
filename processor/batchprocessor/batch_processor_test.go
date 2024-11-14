@@ -330,14 +330,11 @@ func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
 	require.Len(t, receivedTraces, int(expectedBatchesNum))
 	// we have to count the size after it was processed since splitTraces will cause some
 	// repeated ResourceSpan data to be sent through the processor
-	var min, max int
+	minSize := math.MaxInt
+	maxSize := math.MinInt
 	for _, td := range receivedTraces {
-		if min == 0 || sizer.TracesSize(td) < min {
-			min = sizer.TracesSize(td)
-		}
-		if sizer.TracesSize(td) > max {
-			max = sizer.TracesSize(td)
-		}
+		minSize = min(minSize, sizer.TracesSize(td))
+		maxSize = max(maxSize, sizer.TracesSize(td))
 		sizeSum += sizer.TracesSize(td)
 	}
 
@@ -357,8 +354,8 @@ func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
 							1000_000, 2000_000, 3000_000, 4000_000, 5000_000, 6000_000, 7000_000, 8000_000, 9000_000},
 						BucketCounts: []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, uint64(expectedBatchesNum - 1), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 						Sum:          int64(sizeSum),
-						Min:          metricdata.NewExtrema(int64(min)),
-						Max:          metricdata.NewExtrema(int64(max)),
+						Min:          metricdata.NewExtrema(int64(minSize)),
+						Max:          metricdata.NewExtrema(int64(maxSize)),
 					},
 				},
 			},
