@@ -37,16 +37,16 @@ type Config struct {
 	LDFlags              string `mapstructure:"-"`
 	Verbose              bool   `mapstructure:"-"`
 
-	Distribution     Distribution `mapstructure:"dist"`
-	Exporters        []Module     `mapstructure:"exporters"`
-	Extensions       []Module     `mapstructure:"extensions"`
-	Receivers        []Module     `mapstructure:"receivers"`
-	Processors       []Module     `mapstructure:"processors"`
-	Connectors       []Module     `mapstructure:"connectors"`
-	ConfmapProviders []Module     `mapstructure:"providers"`
-	ConfmapConverters       []Module     `mapstructure:"converters"`
-	Replaces         []string     `mapstructure:"replaces"`
-	Excludes         []string     `mapstructure:"excludes"`
+	Distribution      Distribution `mapstructure:"dist"`
+	Exporters         []Module     `mapstructure:"exporters"`
+	Extensions        []Module     `mapstructure:"extensions"`
+	Receivers         []Module     `mapstructure:"receivers"`
+	Processors        []Module     `mapstructure:"processors"`
+	Connectors        []Module     `mapstructure:"connectors"`
+	ConfmapProviders  []Module     `mapstructure:"providers"`
+	ConfmapConverters []Module     `mapstructure:"converters"`
+	Replaces          []string     `mapstructure:"replaces"`
+	Excludes          []string     `mapstructure:"excludes"`
 
 	ConfResolver ConfResolver `mapstructure:"conf_resolver"`
 
