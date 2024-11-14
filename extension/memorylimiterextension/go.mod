@@ -8,6 +8,7 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.0.0-20241112045949-9c4c007a12b4
 	go.opentelemetry.io/collector/confmap v1.19.0
 	go.opentelemetry.io/collector/extension v0.113.0
+	go.opentelemetry.io/collector/extension/extensiontest v0.113.0
 	go.opentelemetry.io/collector/internal/memorylimiter v0.113.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
@@ -65,3 +66,5 @@ replace go.opentelemetry.io/collector/pdata => ../../pdata
 replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
 
 replace go.opentelemetry.io/collector/internal/memorylimiter => ../../internal/memorylimiter
+
+replace go.opentelemetry.io/collector/extension/extensiontest => ../../extension/extensiontest

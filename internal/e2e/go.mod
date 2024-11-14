@@ -91,6 +91,7 @@ require (
 	go.opentelemetry.io/collector/extension/auth v0.113.0 // indirect
 	go.opentelemetry.io/collector/extension/experimental/storage v0.113.0 // indirect
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.113.0 // indirect
+	go.opentelemetry.io/collector/extension/extensiontest v0.113.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.19.0 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.113.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.113.0 // indirect
@@ -238,3 +239,5 @@ replace go.opentelemetry.io/collector/consumer/consumererror => ../../consumer/c
 replace go.opentelemetry.io/collector/internal/fanoutconsumer => ../../internal/fanoutconsumer
 
 replace go.opentelemetry.io/collector/internal/sharedcomponent => ../../internal/sharedcomponent
+
+replace go.opentelemetry.io/collector/extension/extensiontest => ../../extension/extensiontest

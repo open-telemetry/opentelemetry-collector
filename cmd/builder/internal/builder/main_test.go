@@ -80,6 +80,7 @@ var (
 		"/extension/auth",
 		"/extension/experimental/storage",
 		"/extension/extensioncapabilities",
+		"/extension/extensiontest",
 		"/extension/zpagesextension",
 		"/featuregate",
 		"/internal/memorylimiter",
