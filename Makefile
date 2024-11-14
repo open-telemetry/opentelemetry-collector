@@ -277,15 +277,11 @@ check-contrib:
 
 .PHONY: regenerate-contrib
 regenerate-contrib:
-	@echo -e "\nInstalling tools into contrib"
+	@echo -e "\nInstalling latest mdatagen"
 	$(MAKE) -C $(CONTRIB_PATH) install-tools
-	@rm -f $(CONTRIB_PATH)/.tools/mdatagen $(CONTRIB_PATH)/.tools/builder
-	@pushd cmd/mdatagen && $(GOCMD) install . && popd || { echo ">> could not build mdatagen"; exit 1; }
-	@pushd cmd/builder && GOBIN=$(CONTRIB_PATH)/.tools $(GOCMD) install . && popd || { echo ">> could not build builder"; exit 1; }
+	pushd cmd/mdatagen && $(GOCMD) install . && popd || { echo ">> could not build mdatagen"; exit 1; }
 
 	@echo -e "\nRegenerating contrib"
-	$(MAKE) -C $(CONTRIB_PATH) genotelcontribcol
-	$(MAKE) -C $(CONTRIB_PATH) genoteltestbedcol
 	$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) generate ./..."
 	$(MAKE) -C $(CONTRIB_PATH) gofmt
 
@@ -296,7 +292,7 @@ restore-contrib:
 	$(eval MOD_PATHS := "" $(ALL_MODULES:.%=%))
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit \
 		$(addprefix -dropreplace ,$(MOD_PATHS:%=go.opentelemetry.io/collector%))"
-	@$(MAKE) -C $(CONTRIB_PATH) -j2 gotidy
+	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod tidy"
 
 # List of directories where certificates are stored for unit tests.
 CERT_DIRS := localhost|""|config/configgrpc/testdata \
