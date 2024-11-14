@@ -90,3 +90,5 @@ replace go.opentelemetry.io/collector/consumer => ../../consumer
 replace go.opentelemetry.io/collector/consumer/consumererror => ../../consumer/consumererror
 
 replace go.opentelemetry.io/collector/extension/extensiontest => ../../extension/extensiontest
+
+replace go.opentelemetry.io/collector/scraper => ../../scraper

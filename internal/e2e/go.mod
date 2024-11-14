@@ -241,3 +241,5 @@ replace go.opentelemetry.io/collector/internal/fanoutconsumer => ../../internal/
 replace go.opentelemetry.io/collector/internal/sharedcomponent => ../../internal/sharedcomponent
 
 replace go.opentelemetry.io/collector/extension/extensiontest => ../../extension/extensiontest
+
+replace go.opentelemetry.io/collector/scraper => ../../scraper

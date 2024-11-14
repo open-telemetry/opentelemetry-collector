@@ -12,6 +12,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.20.0
 	go.opentelemetry.io/collector/pipeline v0.114.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.114.0
+	go.opentelemetry.io/collector/scraper v0.114.0
 	go.opentelemetry.io/otel v1.32.0
 	go.opentelemetry.io/otel/metric v1.32.0
 	go.opentelemetry.io/otel/sdk v1.32.0
@@ -72,3 +73,5 @@ retract v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module
 replace go.opentelemetry.io/collector/pipeline => ../pipeline
 
 replace go.opentelemetry.io/collector/consumer/consumererror => ../consumer/consumererror
+
+replace go.opentelemetry.io/collector/scraper => ../scraper

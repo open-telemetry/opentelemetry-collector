@@ -113,3 +113,5 @@ replace go.opentelemetry.io/collector/exporter/exportertest => ../exportertest
 replace go.opentelemetry.io/collector/consumer/consumererror => ../../consumer/consumererror
 
 replace go.opentelemetry.io/collector/extension/extensiontest => ../../extension/extensiontest
+
+replace go.opentelemetry.io/collector/scraper => ../../scraper

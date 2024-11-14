@@ -102,6 +102,7 @@ var (
 		"/pdata",
 		"/pdata/testdata",
 		"/pdata/pprofile",
+		"/scraper",
 		"/semconv",
 		"/service",
 	}
