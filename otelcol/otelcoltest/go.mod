@@ -15,7 +15,7 @@ require (
 	go.opentelemetry.io/collector/exporter v0.113.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.113.0
 	go.opentelemetry.io/collector/extension v0.113.0
-	go.opentelemetry.io/collector/extension/extensiontest v0.113.0
+	go.opentelemetry.io/collector/extension/extensiontest v0.0.0-20241114161639-3fe42eba8085
 	go.opentelemetry.io/collector/otelcol v0.113.0
 	go.opentelemetry.io/collector/pipeline v0.113.0
 	go.opentelemetry.io/collector/processor v0.113.0
