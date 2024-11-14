@@ -76,6 +76,7 @@ module-sets:
       - go.opentelemetry.io/collector/receiver/otlpreceiver
       - go.opentelemetry.io/collector/receiver/receiverprofiles
       - go.opentelemetry.io/collector/receiver/receivertest
+      - go.opentelemetry.io/collector/scraper
       - go.opentelemetry.io/collector/semconv
       - go.opentelemetry.io/collector/service
       - go.opentelemetry.io/collector/filter
