@@ -287,6 +287,7 @@ regenerate-contrib:
 	$(MAKE) -C $(CONTRIB_PATH) genotelcontribcol
 	$(MAKE) -C $(CONTRIB_PATH) genoteltestbedcol
 	$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) generate ./..."
+	$(MAKE) -C $(CONTRIB_PATH) gofmt
 
 # Restores contrib to its original state after running check-contrib.
 .PHONY: restore-contrib
