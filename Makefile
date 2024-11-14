@@ -278,6 +278,7 @@ check-contrib:
 .PHONY: regenerate-contrib
 regenerate-contrib:
 	@echo -e "\nInstalling tools into contrib"
+	$(MAKE) -C $(CONTRIB_PATH) install-tools
 	@rm -f $(CONTRIB_PATH)/.tools/mdatagen $(CONTRIB_PATH)/.tools/builder
 	@pushd cmd/mdatagen && $(GOCMD) install . && popd || { echo ">> could not build mdatagen"; exit 1; }
 	@pushd cmd/builder && GOBIN=$(CONTRIB_PATH)/.tools $(GOCMD) install . && popd || { echo ">> could not build builder"; exit 1; }
