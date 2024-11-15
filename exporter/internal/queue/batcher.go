@@ -94,9 +94,3 @@ func (qb *BaseBatcher) flushAsync(batchToFlush batch) {
 		qb.workerPool <- true
 	}()
 }
-
-// Shutdown ensures that queue and all Batcher are stopped.
-func (qb *BaseBatcher) Shutdown(_ context.Context) error {
-	qb.stopWG.Wait()
-	return nil
-}

@@ -14,6 +14,7 @@ require (
 	go.opentelemetry.io/collector/exporter v0.113.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.113.0
 	go.opentelemetry.io/collector/extension v0.113.0
+	go.opentelemetry.io/collector/extension/extensiontest v0.0.0-20241114161639-3fe42eba8085
 	go.opentelemetry.io/collector/featuregate v1.19.0
 	go.opentelemetry.io/collector/pipeline v0.113.0
 	go.opentelemetry.io/collector/processor v0.113.0
@@ -68,7 +69,7 @@ require (
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
-	go.opentelemetry.io/collector/component/componenttest v0.113.0 // indirect
+	go.opentelemetry.io/collector/component/componenttest v0.0.0-20241112045949-9c4c007a12b4 // indirect
 	go.opentelemetry.io/collector/connector/connectorprofiles v0.113.0 // indirect
 	go.opentelemetry.io/collector/consumer v0.113.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.113.0 // indirect
@@ -104,7 +105,7 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.32.0 // indirect
 	go.opentelemetry.io/otel/trace v1.32.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.3.1 // indirect
-	golang.org/x/net v0.30.0 // indirect
+	golang.org/x/net v0.31.0 // indirect
 	golang.org/x/text v0.20.0 // indirect
 	gonum.org/v1/gonum v0.15.1 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20241104194629-dd2ea8efbc28 // indirect
@@ -199,3 +200,5 @@ replace go.opentelemetry.io/collector/processor/processortest => ../processor/pr
 replace go.opentelemetry.io/collector/consumer/consumererror => ../consumer/consumererror
 
 replace go.opentelemetry.io/collector/internal/fanoutconsumer => ../internal/fanoutconsumer
+
+replace go.opentelemetry.io/collector/extension/extensiontest => ../extension/extensiontest
