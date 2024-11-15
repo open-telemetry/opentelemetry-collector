@@ -67,6 +67,9 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	for _, op := range options {
 		op.apply(&builder)
 	}
+	if settings.LeveledMeterProvider == nil {
+		return nil, errors.New("TelemetrySettings must have a LeveledMeterProvider")
+	}
 	builder.meters[configtelemetry.LevelBasic] = LeveledMeter(settings, configtelemetry.LevelBasic)
 	builder.meters[configtelemetry.LevelDetailed] = LeveledMeter(settings, configtelemetry.LevelDetailed)
 	var err, errs error

@@ -76,3 +76,9 @@ func TestNewTelemetryBuilder(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, applied)
 }
+
+func TestNewTelemetryBuilderNoLeveledMeterProvider(t *testing.T) {
+	set := component.TelemetrySettings{}
+	_, err := NewTelemetryBuilder(set)
+	require.Error(t, err, "expected telemetry builder with no LeveledMeter to fail")
+}
