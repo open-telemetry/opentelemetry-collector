@@ -27,6 +27,7 @@ require (
 	go.opentelemetry.io/collector/exporter/exportertest v0.113.0
 	go.opentelemetry.io/collector/extension v0.113.0
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.113.0
+	go.opentelemetry.io/collector/extension/extensiontest v0.113.0
 	go.opentelemetry.io/collector/extension/zpagesextension v0.113.0
 	go.opentelemetry.io/collector/featuregate v1.19.0
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.113.0
@@ -114,7 +115,7 @@ require (
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.31.0 // indirect
 	go.opentelemetry.io/otel/sdk/log v0.7.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.3.1 // indirect
-	golang.org/x/net v0.30.0 // indirect
+	golang.org/x/net v0.31.0 // indirect
 	golang.org/x/sys v0.27.0 // indirect
 	golang.org/x/text v0.20.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20241104194629-dd2ea8efbc28 // indirect
@@ -209,3 +210,5 @@ replace go.opentelemetry.io/collector/consumer/consumererror => ../consumer/cons
 replace go.opentelemetry.io/collector/connector/connectorprofiles => ../connector/connectorprofiles
 
 replace go.opentelemetry.io/collector/internal/fanoutconsumer => ../internal/fanoutconsumer
+
+replace go.opentelemetry.io/collector/extension/extensiontest => ../extension/extensiontest

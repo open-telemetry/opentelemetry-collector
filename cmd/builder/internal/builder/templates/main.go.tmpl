@@ -8,10 +8,10 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
-	{{- range .Converters}}
+	{{- range .ConfmapConverters}}
 	{{.Name}} "{{.Import}}"
 	{{- end}}	
-	{{- range .Providers}}
+	{{- range .ConfmapProviders}}
 	{{.Name}} "{{.Import}}"
 	{{- end}}
 	"go.opentelemetry.io/collector/otelcol"
@@ -30,13 +30,13 @@ func main() {
 		ConfigProviderSettings: otelcol.ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
 				ProviderFactories: []confmap.ProviderFactory{
-					{{- range .Providers}}
+					{{- range .ConfmapProviders}}
 					{{.Name}}.NewFactory(),
 					{{- end}}
 				},
-				{{- if .Converters }}
+				{{- if .ConfmapConverters }}
 				ConverterFactories: []confmap.ConverterFactory{
-					{{- range .Converters}}
+					{{- range .ConfmapConverters}}
 					{{.Name}}.NewFactory(),
 					{{- end}}
 				},
