@@ -73,10 +73,12 @@ For example, logs with multiline body will be output as multiple lines.
 Here's an example output:
 
 ```console
-2025-04-17T10:40:44.560+0200    info    Traces  {"otelcol.component.id": "debug/normal", "otelcol.component.kind": "Exporter", "otelcol.signal": "traces", "resource spans": 1, "spans": 2}
-2025-04-17T10:40:44.560+0200    info    okey-dokey-0 fafdac970271dd2ce89de2442c0518c7 3875f436d989d0e5 net.sock.peer.addr=1.2.3.4 peer.service=telemetrygen-client
-lets-go fafdac970271dd2ce89de2442c0518c7 d98de4cb8e2a0ad6 net.sock.peer.addr=1.2.3.4 peer.service=telemetrygen-server
-        {"otelcol.component.id": "debug/normal", "otelcol.component.kind": "Exporter", "otelcol.signal": "traces"}
+2025-05-09T19:57:16.332+0200    info    Traces  {"resource": {}, "otelcol.component.id": "debug/normal", "otelcol.component.kind": "exporter", "otelcol.signal": "traces", "resource spans": 1, "spans": 2}
+2025-05-09T19:57:16.332+0200    info    ResourceTraces #0 SchemaUrl=https://opentelemetry.io/schemas/1.25.0 service.name=telemetrygen
+ScopeTraces #0 SchemaUrl= Name=telemetrygen Version=
+okey-dokey-0 ab1030bd4ee554af936542b01d7b4807 1d8c93663d043aa8 net.sock.peer.addr=1.2.3.4 peer.service=telemetrygen-client
+lets-go ab1030bd4ee554af936542b01d7b4807 0d238e8a2f97733f net.sock.peer.addr=1.2.3.4 peer.service=telemetrygen-server
+        {"resource": {}, "otelcol.component.id": "debug/normal", "otelcol.component.kind": "exporter", "otelcol.signal": "traces"}
 ```
 
 ### Detailed verbosity
