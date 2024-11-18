@@ -11,6 +11,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -203,6 +205,74 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 		memorylimiter.GetMemoryFn = iruntime.TotalMemory
 		memorylimiter.ReadMemStatsFn = runtime.ReadMemStats
 	})
+}
+
+func TestMetricsTelemetry(t *testing.T) {
+	tel := setupTestTelemetry()
+	cfg := &Config{
+		CheckInterval:         time.Second,
+		MemoryLimitPercentage: 50,
+		MemorySpikePercentage: 10,
+	}
+	metrics, err := NewFactory().CreateMetrics(context.Background(), tel.NewSettings(), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	require.NoError(t, metrics.Start(context.Background(), componenttest.NewNopHost()))
+
+	md := pmetric.NewMetrics()
+	md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptySum().DataPoints().AppendEmpty()
+	for requestNum := 0; requestNum < 10; requestNum++ {
+		require.NoError(t, metrics.ConsumeMetrics(context.Background(), md))
+	}
+	require.NoError(t, metrics.Shutdown(context.Background()))
+
+	tel.assertMetrics(t, []metricdata.Metrics{
+		{
+			Name:        "otelcol_processor_accepted_metric_points",
+			Description: "Number of metric points successfully pushed into the next component in the pipeline. [deprecated since v0.110.0]",
+			Unit:        "{datapoints}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      10,
+						Attributes: attribute.NewSet(attribute.String("processor", "memory_limiter")),
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_processor_incoming_items",
+			Description: "Number of items passed to the processor. [alpha]",
+			Unit:        "{items}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      10,
+						Attributes: attribute.NewSet(attribute.String("processor", "memory_limiter"), attribute.String("otel.signal", "metrics")),
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_processor_outgoing_items",
+			Description: "Number of items emitted from the processor. [alpha]",
+			Unit:        "{items}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      10,
+						Attributes: attribute.NewSet(attribute.String("processor", "memory_limiter"), attribute.String("otel.signal", "metrics")),
+					},
+				},
+			},
+		},
+	})
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 // TestTraceMemoryPressureResponse manipulates results from querying memory and
