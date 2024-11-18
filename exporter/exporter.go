@@ -56,12 +56,6 @@ type Factory interface {
 	// TracesStability gets the stability level of the Traces exporter.
 	TracesStability() component.StabilityLevel
 
-	// Deprecated: [v0.112.0] use CreateTraces.
-	CreateTracesExporter(ctx context.Context, set Settings, cfg component.Config) (Traces, error)
-
-	// Deprecated: [v0.112.0] use TracesStability.
-	TracesExporterStability() component.StabilityLevel
-
 	// CreateMetrics creates a Metrics exporter based on this config.
 	// If the exporter type does not support metrics,
 	// this function returns the error [pipeline.ErrSignalNotSupported].
@@ -70,12 +64,6 @@ type Factory interface {
 	// MetricsStability gets the stability level of the Metrics exporter.
 	MetricsStability() component.StabilityLevel
 
-	// Deprecated: [v0.112.0] use CreateMetrics.
-	CreateMetricsExporter(ctx context.Context, set Settings, cfg component.Config) (Metrics, error)
-
-	// Deprecated: [v0.112.0] use MetricsStability.
-	MetricsExporterStability() component.StabilityLevel
-
 	// CreateLogs creates a Logs exporter based on the config.
 	// If the exporter type does not support logs,
 	// this function returns the error [pipeline.ErrSignalNotSupported].
@@ -83,12 +71,6 @@ type Factory interface {
 
 	// LogsStability gets the stability level of the Logs exporter.
 	LogsStability() component.StabilityLevel
-
-	// Deprecated: [v0.112.0] use CreateLogs.
-	CreateLogsExporter(ctx context.Context, set Settings, cfg component.Config) (Logs, error)
-
-	// Deprecated: [v0.112.0] use LogsStability.
-	LogsExporterStability() component.StabilityLevel
 
 	unexportedFactoryFunc()
 }
@@ -119,11 +101,6 @@ func (f CreateTracesFunc) CreateTraces(ctx context.Context, set Settings, cfg co
 	return f(ctx, set, cfg)
 }
 
-// Deprecated: [v0.112.0] use CreateTraces.
-func (f CreateTracesFunc) CreateTracesExporter(ctx context.Context, set Settings, cfg component.Config) (Traces, error) {
-	return f.CreateTraces(ctx, set, cfg)
-}
-
 // CreateMetricsFunc is the equivalent of Factory.CreateMetrics.
 type CreateMetricsFunc func(context.Context, Settings, component.Config) (Metrics, error)
 
@@ -135,11 +112,6 @@ func (f CreateMetricsFunc) CreateMetrics(ctx context.Context, set Settings, cfg 
 	return f(ctx, set, cfg)
 }
 
-// Deprecated: [v0.112.0] use CreateMetrics.
-func (f CreateMetricsFunc) CreateMetricsExporter(ctx context.Context, set Settings, cfg component.Config) (Metrics, error) {
-	return f.CreateMetrics(ctx, set, cfg)
-}
-
 // CreateLogsFunc is the equivalent of Factory.CreateLogs.
 type CreateLogsFunc func(context.Context, Settings, component.Config) (Logs, error)
 
@@ -149,11 +121,6 @@ func (f CreateLogsFunc) CreateLogs(ctx context.Context, set Settings, cfg compon
 		return nil, pipeline.ErrSignalNotSupported
 	}
 	return f(ctx, set, cfg)
-}
-
-// Deprecated: [v0.112.0] use CreateLogs.
-func (f CreateLogsFunc) CreateLogsExporter(ctx context.Context, set Settings, cfg component.Config) (Logs, error) {
-	return f.CreateLogs(ctx, set, cfg)
 }
 
 type factory struct {
@@ -182,21 +149,6 @@ func (f *factory) MetricsStability() component.StabilityLevel {
 }
 
 func (f *factory) LogsStability() component.StabilityLevel {
-	return f.logsStabilityLevel
-}
-
-// Deprecated: [v0.112.0] use TracesStability.
-func (f *factory) TracesExporterStability() component.StabilityLevel {
-	return f.tracesStabilityLevel
-}
-
-// Deprecated: [v0.112.0] use MetricsStability.
-func (f *factory) MetricsExporterStability() component.StabilityLevel {
-	return f.metricsStabilityLevel
-}
-
-// Deprecated: [v0.112.0] use LogsStability.
-func (f *factory) LogsExporterStability() component.StabilityLevel {
 	return f.logsStabilityLevel
 }
 

@@ -17,7 +17,6 @@ import (
 )
 
 func TestTracesText(t *testing.T) {
-
 	tests := []struct {
 		name string
 		in   ptrace.Traces

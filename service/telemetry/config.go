@@ -4,6 +4,7 @@
 package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"strconv"
@@ -105,6 +106,10 @@ type LogsConfig struct {
 	//
 	// By default, there is no initial field.
 	InitialFields map[string]any `mapstructure:"initial_fields"`
+
+	// Processors allow configuration of log record processors to emit logs to
+	// any number of suported backends.
+	Processors []config.LogRecordProcessor `mapstructure:"processors"`
 }
 
 // LogsSamplingConfig sets a sampling strategy for the logger. Sampling caps the
@@ -201,7 +206,7 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 func (c *Config) Validate() error {
 	// Check when service telemetry metric level is not none, the metrics readers should not be empty
 	if c.Metrics.Level != configtelemetry.LevelNone && len(c.Metrics.Readers) == 0 {
-		return fmt.Errorf("collector telemetry metrics reader should exist when metric level is not none")
+		return errors.New("collector telemetry metrics reader should exist when metric level is not none")
 	}
 
 	return nil

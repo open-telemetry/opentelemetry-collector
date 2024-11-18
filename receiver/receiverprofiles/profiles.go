@@ -113,5 +113,4 @@ func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefa
 	}
 	opts.factory.Factory = receiver.NewFactory(cfgType, createDefaultConfig, opts.opts...)
 	return opts.factory
-
 }

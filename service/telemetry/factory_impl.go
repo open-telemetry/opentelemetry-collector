@@ -6,6 +6,8 @@ package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/log"
+	lognoop "go.opentelemetry.io/otel/log/noop"
 	"go.opentelemetry.io/otel/metric"
 	metricnoop "go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
@@ -45,7 +47,7 @@ func (f *factory) CreateDefaultConfig() component.Config {
 }
 
 // createLoggerFunc is the equivalent of Factory.CreateLogger.
-type createLoggerFunc func(context.Context, Settings, component.Config) (*zap.Logger, error)
+type createLoggerFunc func(context.Context, Settings, component.Config) (*zap.Logger, log.LoggerProvider, error)
 
 // withLogger overrides the default no-op logger.
 func withLogger(createLogger createLoggerFunc) factoryOption {
@@ -54,9 +56,9 @@ func withLogger(createLogger createLoggerFunc) factoryOption {
 	})
 }
 
-func (f *factory) CreateLogger(ctx context.Context, set Settings, cfg component.Config) (*zap.Logger, error) {
+func (f *factory) CreateLogger(ctx context.Context, set Settings, cfg component.Config) (*zap.Logger, log.LoggerProvider, error) {
 	if f.createLoggerFunc == nil {
-		return zap.NewNop(), nil
+		return zap.NewNop(), lognoop.NewLoggerProvider(), nil
 	}
 	return f.createLoggerFunc(ctx, set, cfg)
 }

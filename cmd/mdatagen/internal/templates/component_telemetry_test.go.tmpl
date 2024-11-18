@@ -15,8 +15,9 @@ import (
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
     
 	"go.opentelemetry.io/collector/component"
-	{{- if or isConnector isExporter isExtension isProcessor isReceiver }}
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	{{- if or isConnector isExporter isExtension isProcessor isReceiver }}
 	"go.opentelemetry.io/collector/{{ .Status.Class }}"
 	"go.opentelemetry.io/collector/{{ .Status.Class }}/{{ .Status.Class }}test"
 	{{- end }}
@@ -29,17 +30,22 @@ type componentTestTelemetry struct {
 
 {{- if or isConnector isExporter isExtension isProcessor isReceiver }}
 func (tt *componentTestTelemetry) NewSettings() {{ .Status.Class }}.Settings {
-	settings := {{ .Status.Class }}test.NewNopSettings()
-	settings.MeterProvider = tt.meterProvider
-	settings.LeveledMeterProvider = func(_ configtelemetry.Level) metric.MeterProvider {
+	set := {{ .Status.Class }}test.NewNopSettings()
+	set.ID = component.NewID(component.MustNewType("{{ .Type }}"))
+	set.TelemetrySettings = tt.newTelemetrySettings()
+	return set
+}
+{{- end }}
+
+func (tt *componentTestTelemetry) newTelemetrySettings() component.TelemetrySettings {
+	set := componenttest.NewNopTelemetrySettings()
+	set.MeterProvider = tt.meterProvider
+	set.MetricsLevel = configtelemetry.LevelDetailed
+	set.LeveledMeterProvider = func(_ configtelemetry.Level) metric.MeterProvider {
 		return tt.meterProvider
 	}
-	settings.ID = component.NewID(component.MustNewType("{{ .Type }}"))
-
-	return settings
+	return set
 }
-
-{{- end }}
 
 func setupTestTelemetry() componentTestTelemetry {
 	reader := sdkmetric.NewManualReader()

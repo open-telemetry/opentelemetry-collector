@@ -86,13 +86,9 @@ func NewTraces(
 	}
 	tracesOpts := []Option{
 		internal.WithMarshaler(tracesRequestMarshaler), internal.WithUnmarshaler(newTraceRequestUnmarshalerFunc(pusher)),
-		internal.WithBatchFuncs(mergeTraces, mergeSplitTraces),
 	}
 	return NewTracesRequest(ctx, set, requestFromTraces(pusher), append(tracesOpts, options...)...)
 }
-
-// Deprecated: [v0.112.0] use NewTraces.
-var NewTracesExporter = NewTraces
 
 // RequestFromTracesFunc converts ptrace.Traces into a user-defined Request.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
@@ -148,9 +144,6 @@ func NewTracesRequest(
 		Traces:       tc,
 	}, err
 }
-
-// Deprecated: [v0.112.0] use NewTracesRequest.
-var NewTracesRequestExporter = NewTracesRequest
 
 type tracesWithObservability struct {
 	internal.BaseRequestSender

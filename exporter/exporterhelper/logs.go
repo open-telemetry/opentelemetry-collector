@@ -86,13 +86,9 @@ func NewLogs(
 	}
 	logsOpts := []Option{
 		internal.WithMarshaler(logsRequestMarshaler), internal.WithUnmarshaler(newLogsRequestUnmarshalerFunc(pusher)),
-		internal.WithBatchFuncs(mergeLogs, mergeSplitLogs),
 	}
 	return NewLogsRequest(ctx, set, requestFromLogs(pusher), append(logsOpts, options...)...)
 }
-
-// Deprecated: [v0.112.0] use NewLogs.
-var NewLogsExporter = NewLogs
 
 // RequestFromLogsFunc converts plog.Logs data into a user-defined request.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
@@ -148,9 +144,6 @@ func NewLogsRequest(
 		Logs:         lc,
 	}, err
 }
-
-// Deprecated: [v0.112.0] use NewLogsRequest.
-var NewLogsRequestExporter = NewLogsRequest
 
 type logsExporterWithObservability struct {
 	internal.BaseRequestSender
