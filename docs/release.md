@@ -62,8 +62,8 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
 ## Releasing opentelemetry-collector-contrib
 
 1. Open a PR to Contrib to use the newly released Core version by doing the following:
-   - Manually update `dist.version`, `dist.otelcol_version` and core collector module versions in `cmd/otelcontribcol/builder-config.yaml`
-   - Manually update `dist.version`, `dist.otelcol_version` and core collector module versions in `cmd/oteltestbedcol/builder-config.yaml`
+   - Manually update `dist.version` and core collector module versions in `cmd/otelcontribcol/builder-config.yaml`
+   - Manually update `dist.version` and core collector module versions in `cmd/oteltestbedcol/builder-config.yaml`
    - Run `make genotelcontribcol genoteltestbedcol`
    - Commit the changes
    - Run `make update-otel OTEL_VERSION=v0.85.0 OTEL_STABLE_VERSION=v1.1.0`
