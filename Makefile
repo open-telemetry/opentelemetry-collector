@@ -278,13 +278,9 @@ check-contrib:
 
 .PHONY: regenerate-contrib
 regenerate-contrib:
-	@echo -e "\nInstalling latest mdatagen"
-	$(MAKE) -C $(CONTRIB_PATH) install-tools
-	pushd cmd/mdatagen && $(GOCMD) install . && popd || { echo ">> could not build mdatagen"; exit 1; }
-
 	@echo -e "\nRegenerating contrib"
-	$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) generate ./..."
-	$(MAKE) -C $(CONTRIB_PATH) gofmt
+	$(MAKE) -C $(CONTRIB_PATH) -B install-tools
+	$(MAKE) -C $(CONTRIB_PATH) generate
 
 # Restores contrib to its original state after running check-contrib.
 .PHONY: restore-contrib
