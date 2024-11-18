@@ -5,18 +5,18 @@ go 1.22.0
 require (
 	github.com/mostynb/go-grpc-compression v1.2.3
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/client v1.19.0
+	go.opentelemetry.io/collector/client v1.20.0
 	go.opentelemetry.io/collector/component v0.113.0
 	go.opentelemetry.io/collector/component/componenttest v0.0.0-20241112045949-9c4c007a12b4
 	go.opentelemetry.io/collector/config/configauth v0.113.0
-	go.opentelemetry.io/collector/config/configcompression v1.19.0
-	go.opentelemetry.io/collector/config/confignet v1.19.0
-	go.opentelemetry.io/collector/config/configopaque v1.19.0
+	go.opentelemetry.io/collector/config/configcompression v1.20.0
+	go.opentelemetry.io/collector/config/confignet v1.20.0
+	go.opentelemetry.io/collector/config/configopaque v1.20.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.113.0
-	go.opentelemetry.io/collector/config/configtls v1.19.0
+	go.opentelemetry.io/collector/config/configtls v1.20.0
 	go.opentelemetry.io/collector/config/internal v0.113.0
 	go.opentelemetry.io/collector/extension/auth v0.113.0
-	go.opentelemetry.io/collector/pdata v1.19.0
+	go.opentelemetry.io/collector/pdata v1.20.0
 	go.opentelemetry.io/collector/pdata/testdata v0.113.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.56.0
 	go.opentelemetry.io/otel v1.32.0

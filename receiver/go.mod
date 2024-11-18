@@ -9,7 +9,7 @@ require (
 	go.opentelemetry.io/collector/config/configtelemetry v0.113.0
 	go.opentelemetry.io/collector/consumer v0.113.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.113.0
-	go.opentelemetry.io/collector/pdata v1.19.0
+	go.opentelemetry.io/collector/pdata v1.20.0
 	go.opentelemetry.io/collector/pipeline v0.113.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.113.0
 	go.opentelemetry.io/otel v1.32.0

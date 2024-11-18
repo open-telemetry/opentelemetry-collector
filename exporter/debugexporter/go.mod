@@ -7,13 +7,13 @@ require (
 	go.opentelemetry.io/collector/component v0.113.0
 	go.opentelemetry.io/collector/component/componenttest v0.0.0-20241112045949-9c4c007a12b4
 	go.opentelemetry.io/collector/config/configtelemetry v0.113.0
-	go.opentelemetry.io/collector/confmap v1.19.0
+	go.opentelemetry.io/collector/confmap v1.20.0
 	go.opentelemetry.io/collector/consumer v0.113.0
 	go.opentelemetry.io/collector/exporter v0.113.0
 	go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles v0.113.0
 	go.opentelemetry.io/collector/exporter/exporterprofiles v0.113.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.113.0
-	go.opentelemetry.io/collector/pdata v1.19.0
+	go.opentelemetry.io/collector/pdata v1.20.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.113.0
 	go.opentelemetry.io/collector/pdata/testdata v0.113.0
 	go.uber.org/goleak v1.3.0
@@ -38,7 +38,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector/config/configretry v1.19.0 // indirect
+	go.opentelemetry.io/collector/config/configretry v1.20.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.113.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror/consumererrorprofiles v0.113.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.113.0 // indirect
