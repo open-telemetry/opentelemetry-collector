@@ -13,8 +13,8 @@ require (
 	go.opentelemetry.io/collector/consumer/consumererror v0.113.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.113.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.113.0
-	go.opentelemetry.io/collector/extension v0.113.0
 	go.opentelemetry.io/collector/extension/experimental/storage v0.113.0
+	go.opentelemetry.io/collector/extension/extensiontest v0.0.0-20241114161639-3fe42eba8085
 	go.opentelemetry.io/collector/pdata v1.19.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.113.0
 	go.opentelemetry.io/collector/pdata/testdata v0.113.0
@@ -41,6 +41,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.113.0 // indirect
 	go.opentelemetry.io/collector/exporter/exporterprofiles v0.113.0 // indirect
+	go.opentelemetry.io/collector/extension v0.113.0 // indirect
 	go.opentelemetry.io/collector/receiver v0.113.0 // indirect
 	go.opentelemetry.io/collector/receiver/receiverprofiles v0.113.0 // indirect
 	go.opentelemetry.io/collector/receiver/receivertest v0.113.0 // indirect
@@ -92,3 +93,5 @@ replace go.opentelemetry.io/collector/exporter/exporterprofiles => ./exporterpro
 replace go.opentelemetry.io/collector/exporter/exportertest => ./exportertest
 
 replace go.opentelemetry.io/collector/consumer/consumererror => ../consumer/consumererror
+
+replace go.opentelemetry.io/collector/extension/extensiontest => ../extension/extensiontest

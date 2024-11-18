@@ -26,14 +26,15 @@ type componentTestTelemetry struct {
 
 func (tt *componentTestTelemetry) NewSettings() processor.Settings {
 	set := processortest.NewNopSettings()
-	set.TelemetrySettings = tt.newTelemetrySettings()
 	set.ID = component.NewID(component.MustNewType("processorhelper"))
+	set.TelemetrySettings = tt.newTelemetrySettings()
 	return set
 }
 
 func (tt *componentTestTelemetry) newTelemetrySettings() component.TelemetrySettings {
 	set := componenttest.NewNopTelemetrySettings()
 	set.MeterProvider = tt.meterProvider
+	set.MetricsLevel = configtelemetry.LevelDetailed
 	set.LeveledMeterProvider = func(_ configtelemetry.Level) metric.MeterProvider {
 		return tt.meterProvider
 	}
