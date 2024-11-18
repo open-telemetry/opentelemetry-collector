@@ -34,10 +34,7 @@ type compressor struct {
 
 var (
 	compressorPools                   = &compressorMap{pools: make(map[string]*compressor)}
-	gZipCompressor                    = &compressor{}
 	snappyCompressor                  = &compressor{}
-	zstdCompressor                    = &compressor{}
-	zlibCompressor                    = &compressor{}
 	lz4Compressor                     = &compressor{}
 	_                writeCloserReset = (*gzip.Writer)(nil)
 	_                writeCloserReset = (*snappy.Writer)(nil)
@@ -50,11 +47,10 @@ var (
 // The validity of input is already checked when NewCompressRoundTripper was called in confighttp,
 func newCompressor(compressionType configcompression.TypeWithLevel) (*compressor, error) {
 	mapKey := fmt.Sprintf("%s/%d", compressionType.Type, compressionType.Level)
-	var exists bool
 	switch compressionType.Type {
 	case configcompression.TypeGzip:
-		gZipCompressor, exists = compressorPools.pools[mapKey]
-		if exists {
+		gZipCompressor, gzipExists := compressorPools.pools[mapKey]
+		if gzipExists {
 			return gZipCompressor, nil
 		}
 		gZipCompressor = &compressor{}
@@ -68,18 +64,18 @@ func newCompressor(compressionType configcompression.TypeWithLevel) (*compressor
 		}
 		return snappyCompressor, nil
 	case configcompression.TypeZstd:
-		zstdCompressor, exists = compressorPools.pools[mapKey]
+		zstdCompressor, zstdExists := compressorPools.pools[mapKey]
 		compression := zstd.EncoderLevelFromZstd(int(compressionType.Level))
 		encoderLevel := zstd.WithEncoderLevel(compression)
-		if exists {
+		if zstdExists {
 			return zstdCompressor, nil
 		}
 		zstdCompressor = &compressor{}
 		zstdCompressor.pool = sync.Pool{New: func() any { zw, _ := zstd.NewWriter(nil, zstd.WithEncoderConcurrency(1), encoderLevel); return zw }}
 		return zstdCompressor, nil
 	case configcompression.TypeZlib, configcompression.TypeDeflate:
-		zlibCompressor, exists = compressorPools.pools[mapKey]
-		if exists {
+		zlibCompressor, zlibExists := compressorPools.pools[mapKey]
+		if zlibExists {
 			return zlibCompressor, nil
 		}
 		zlibCompressor = &compressor{}

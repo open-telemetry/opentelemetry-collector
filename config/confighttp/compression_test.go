@@ -12,7 +12,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"strconv"
 	"strings"
 	"testing"
 	"testing/iotest"
@@ -37,12 +36,11 @@ func TestHTTPClientCompression(t *testing.T) {
 	compressedLz4Body := compressLz4(t, testBody)
 
 	const (
-		GzipLevel    configcompression.Type = "gzip/1"
-		ZlibLevel    configcompression.Type = "zlib/1"
-		DeflateLevel configcompression.Type = "deflate/1"
-		ZstdLevel    configcompression.Type = "zstd/11"
+		gzipLevel    configcompression.Type = "gzip/1"
+		zlibLevel    configcompression.Type = "zlib/1"
+		deflateLevel configcompression.Type = "deflate/1"
+		zstdLevel    configcompression.Type = "zstd/11"
 	)
-	var level int
 
 	tests := []struct {
 		name        string
@@ -64,19 +62,19 @@ func TestHTTPClientCompression(t *testing.T) {
 		},
 		{
 			name:        "ValidGzip",
-			encoding:    GzipLevel,
+			encoding:    gzipLevel,
 			reqBody:     compressedGzipBody.Bytes(),
 			shouldError: false,
 		},
 		{
 			name:        "ValidZlib",
-			encoding:    ZlibLevel,
+			encoding:    zlibLevel,
 			reqBody:     compressedZlibBody.Bytes(),
 			shouldError: false,
 		},
 		{
 			name:        "ValidDeflate",
-			encoding:    DeflateLevel,
+			encoding:    deflateLevel,
 			reqBody:     compressedDeflateBody.Bytes(),
 			shouldError: false,
 		},
@@ -88,7 +86,7 @@ func TestHTTPClientCompression(t *testing.T) {
 		},
 		{
 			name:        "ValidZstd",
-			encoding:    ZstdLevel,
+			encoding:    zstdLevel,
 			reqBody:     compressedZstdBody.Bytes(),
 			shouldError: false,
 		},
@@ -113,15 +111,9 @@ func TestHTTPClientCompression(t *testing.T) {
 
 			req, err := http.NewRequest(http.MethodGet, srv.URL, reqBody)
 			require.NoError(t, err, "failed to create request to test handler")
-			parts := strings.Split(string(tt.encoding), "/")
-			compressionLevel := configcompression.Level(gzip.BestSpeed)
-			compressionType := configcompression.Type(parts[0])
-			if len(parts) == 2 {
-				level, err = strconv.Atoi(parts[1])
-				require.NoError(t, err)
-				compressionLevel = configcompression.Level(level)
-			}
-			compression := configcompression.TypeWithLevel{Type: compressionType, Level: compressionLevel}
+			compression := configcompression.TypeWithLevel{}
+			err = compression.UnmarshalText([]byte(tt.encoding))
+			require.NoError(t, err)
 			clientSettings := ClientConfig{
 				Endpoint:    srv.URL,
 				Compression: compression,

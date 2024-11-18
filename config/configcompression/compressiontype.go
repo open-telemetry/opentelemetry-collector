@@ -69,7 +69,6 @@ func (ct *TypeWithLevel) UnmarshalText(in []byte) error {
 	}
 
 	return fmt.Errorf("unsupported compression type and level(default if not specified) %s - %d", compressionTyp, ct.Level)
-
 }
 
 // Checks the validity of zlib/gzip/flate compression levels
