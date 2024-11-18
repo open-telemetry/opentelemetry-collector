@@ -66,7 +66,7 @@ type Distribution struct {
 	Name        string `mapstructure:"name"`
 	Go          string `mapstructure:"go"`
 	Description string `mapstructure:"description"`
-	// Deprecated: [v0.114.0] only here to return a detailed error and not failing during unmarshalling.
+	// Deprecated: [v0.113.0] only here to return a detailed error and not failing during unmarshalling.
 	OtelColVersion   string `mapstructure:"otelcol_version"`
 	OutputPath       string `mapstructure:"output_path"`
 	Version          string `mapstructure:"version"`
