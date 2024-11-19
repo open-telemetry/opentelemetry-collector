@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper"
 )
 
 // ScraperControllerOption apply changes to internal options.
@@ -30,18 +31,25 @@ func (of scraperControllerOptionFunc) apply(e *controller) {
 	of(e)
 }
 
-// AddScraperWithType configures the provided scrape function to be called
+// AddScraper configures the provided scrape function to be called
 // with the specified options, and at the specified collection interval.
 //
 // Observability information will be reported, and the scraped metrics
 // will be passed to the next consumer.
-func AddScraperWithType(t component.Type, scraper Scraper) ScraperControllerOption {
+func AddScraper(t component.Type, scraper scraper.Metrics) ScraperControllerOption {
 	return scraperControllerOptionFunc(func(o *controller) {
 		o.scrapers = append(o.scrapers, scraperWithID{
-			Scraper: scraper,
+			Metrics: scraper,
 			id:      component.NewID(t),
 		})
 	})
+}
+
+// Deprecated: [v0.115.0] use AddScraper.
+func AddScraperWithType(t component.Type, scraper Scraper) ScraperControllerOption {
+	// Ignore the error since it cannot happen because the Scrape func cannot be nil here.
+	scrp, _ := NewScraper(scraper.Scrape, WithStart(scraper.Start), WithShutdown(scraper.Shutdown))
+	return AddScraper(t, scrp)
 }
 
 // WithTickerChannel allows you to override the scraper controller's ticker
@@ -73,7 +81,7 @@ type controller struct {
 }
 
 type scraperWithID struct {
-	Scraper
+	scraper.Metrics
 	id component.ID
 }
 
@@ -109,10 +117,10 @@ func NewScraperControllerReceiver(
 	}
 
 	sc.obsScrapers = make([]*obsReport, len(sc.scrapers))
-	for i, scraper := range sc.scrapers {
+	for i, scp := range sc.scrapers {
 		sc.obsScrapers[i], err = newScraper(obsReportSettings{
 			ReceiverID:             sc.id,
-			Scraper:                scraper.id,
+			Scraper:                scp.id,
 			ReceiverCreateSettings: set,
 		})
 		if err != nil {
@@ -125,8 +133,8 @@ func NewScraperControllerReceiver(
 
 // Start the receiver, invoked during service start.
 func (sc *controller) Start(ctx context.Context, host component.Host) error {
-	for _, scraper := range sc.scrapers {
-		if err := scraper.Start(ctx, host); err != nil {
+	for _, scrp := range sc.scrapers {
+		if err := scrp.Start(ctx, host); err != nil {
 			return err
 		}
 	}
@@ -141,8 +149,8 @@ func (sc *controller) Shutdown(ctx context.Context) error {
 	close(sc.done)
 	sc.wg.Wait()
 	var errs error
-	for _, scraper := range sc.scrapers {
-		errs = multierr.Append(errs, scraper.Shutdown(ctx))
+	for _, scrp := range sc.scrapers {
+		errs = multierr.Append(errs, scrp.Shutdown(ctx))
 	}
 
 	return errs
@@ -192,19 +200,20 @@ func (sc *controller) scrapeMetricsAndReport() {
 
 	metrics := pmetric.NewMetrics()
 
-	for i, scraper := range sc.scrapers {
-		scrp := sc.obsScrapers[i]
-		ctx = scrp.StartMetricsOp(ctx)
-		md, err := scraper.Scrape(ctx)
+	for i, scrp := range sc.scrapers {
+		obsScrp := sc.obsScrapers[i]
+		ctx = obsScrp.StartMetricsOp(ctx)
 
+		md, err := scrp.ScrapeMetrics(ctx)
 		if err != nil {
-			sc.logger.Error("Error scraping metrics", zap.Error(err), zap.Stringer("scraper", scraper.id))
+			sc.logger.Error("Error scraping metrics", zap.Error(err), zap.Stringer("scraper", scrp.id))
 			if !scrapererror.IsPartialScrapeError(err) {
-				scrp.EndMetricsOp(ctx, 0, err)
+				obsScrp.EndMetricsOp(ctx, 0, err)
 				continue
 			}
 		}
-		scrp.EndMetricsOp(ctx, md.MetricCount(), err)
+
+		obsScrp.EndMetricsOp(ctx, md.MetricCount(), err)
 		md.ResourceMetrics().MoveAndAppendTo(metrics.ResourceMetrics())
 	}
 

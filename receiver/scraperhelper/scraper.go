@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/scraper"
 )
 
 var errNilFunc = errors.New("nil scrape func")
@@ -16,14 +17,18 @@ var errNilFunc = errors.New("nil scrape func")
 // ScrapeFunc scrapes metrics.
 type ScrapeFunc func(context.Context) (pmetric.Metrics, error)
 
-func (sf ScrapeFunc) Scrape(ctx context.Context) (pmetric.Metrics, error) {
+func (sf ScrapeFunc) ScrapeMetrics(ctx context.Context) (pmetric.Metrics, error) {
 	return sf(ctx)
 }
 
-// Scraper is the base interface for scrapers.
+// Deprecated: [v0.115.0] use ScrapeMetrics.
+func (sf ScrapeFunc) Scrape(ctx context.Context) (pmetric.Metrics, error) {
+	return sf.ScrapeMetrics(ctx)
+}
+
+// Deprecated: [v0.115.0] use scraper.Metrics.
 type Scraper interface {
 	component.Component
-
 	Scrape(context.Context) (pmetric.Metrics, error)
 }
 
@@ -52,17 +57,20 @@ func WithShutdown(shutdown component.ShutdownFunc) ScraperOption {
 	})
 }
 
-var _ Scraper = (*baseScraper)(nil)
-
 type baseScraper struct {
 	component.StartFunc
 	component.ShutdownFunc
 	ScrapeFunc
 }
 
-// NewScraperWithoutType creates a Scraper that calls Scrape at the specified collection interval,
+// NewScraper creates a scraper.Metrics that calls ScrapeMetrics at the specified collection interval,
 // reports observability information, and passes the scraped metrics to the next consumer.
-func NewScraperWithoutType(scrape ScrapeFunc, options ...ScraperOption) (Scraper, error) {
+func NewScraper(scrape ScrapeFunc, options ...ScraperOption) (scraper.Metrics, error) {
+	return newBaseScraper(scrape, options...)
+}
+
+// TODO: Remove this and embed into NewScraper when  NewScraperWithoutType is removed.
+func newBaseScraper(scrape ScrapeFunc, options ...ScraperOption) (*baseScraper, error) {
 	if scrape == nil {
 		return nil, errNilFunc
 	}
@@ -74,4 +82,9 @@ func NewScraperWithoutType(scrape ScrapeFunc, options ...ScraperOption) (Scraper
 	}
 
 	return bs, nil
+}
+
+// Deprecated: [v0.115.0] use NewScraper.
+func NewScraperWithoutType(scrape ScrapeFunc, options ...ScraperOption) (Scraper, error) {
+	return newBaseScraper(scrape, options...)
 }

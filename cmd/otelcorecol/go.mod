@@ -289,6 +289,8 @@ replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../../receive
 
 replace go.opentelemetry.io/collector/receiver/receivertest => ../../receiver/receivertest
 
+replace go.opentelemetry.io/collector/scraper => ../../scraper
+
 replace go.opentelemetry.io/collector/semconv => ../../semconv
 
 replace go.opentelemetry.io/collector/service => ../../service
