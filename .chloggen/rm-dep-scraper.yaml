@@ -4,13 +4,13 @@
 change_type: breaking
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: extension
+component: scraperhelper
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Remove deprecated funcs CreateExtension and ExtensionStability
+note: Remove deprecated scraperhelper funcs Scraper.ID, NewScraper, AddScraper.
 
 # One or more tracking issues or pull requests related to the change
-issues: [11663]
+issues: [11710]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
