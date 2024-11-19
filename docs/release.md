@@ -95,7 +95,7 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
 
 5. Wait for the new tag build to pass successfully.
 
-6. A new `v0.85.0` release should be automatically created on Github by now. Edit it and use the contents from the CHANGELOG.md as the release's description.
+6. A new `v0.85.0` release should be automatically created on Github by now. Edit it and use the contents from the CHANGELOG.md as the release's description. At the top of the release notes add a section listing the unmaintained components ([example](https://github.com/open-telemetry/opentelemetry-collector-contrib/releases/tag/v0.114.0)).
 
 ## Producing the artifacts
 
