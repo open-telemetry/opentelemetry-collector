@@ -44,15 +44,10 @@ func (textProfilesMarshaler) MarshalProfiles(pd pprofile.Profiles) ([]byte, erro
 				buf.logEntry("    Drop frames: %d", profile.Profile().DropFrames())
 				buf.logEntry("    Keep frames: %d", profile.Profile().KeepFrames())
 
-				buf.logProfileSamples(profile.Profile().Sample())
+				buf.logProfileSamples(profile.Profile().Sample(), profile.Profile().AttributeTable())
 				buf.logProfileMappings(profile.Profile().Mapping())
 				buf.logProfileLocations(profile.Profile().Location())
 				buf.logProfileFunctions(profile.Profile().Function())
-
-				buf.logAttributesWithIndentation(
-					"Attribute table",
-					profile.Profile().AttributeTable(),
-					4)
 
 				buf.logAttributesWithIndentation(
 					"Attribute units",
