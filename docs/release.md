@@ -115,9 +115,10 @@ The last step of the release process creates artifacts for the new version of th
    - `git checkout main && git fetch upstream && git rebase upstream/main`
 
 5. Create a tag for the new release version by running:
+   
+   ⚠️ If you set your remote using `https` you need to include `REMOTE=https://github.com/open-telemetry/opentelemetry-collector-contrib.git` in each command. ⚠️
+   
    - `make push-tags TAG=v0.85.0`
-
-   If you set your remote using `https` you need to include `REMOTE=https://github.com/open-telemetry/opentelemetry-collector-releases.git` in each command.
 
 6. Wait for the new tag build to pass successfully.
 
@@ -158,6 +159,8 @@ The last step of the release process creates artifacts for the new version of th
    fix and re-run the release; it is safe to re-run the workflows that already
    succeeded. Publishing container images can be done multiple times, and
    publishing artifacts to GitHub will fail without any adverse effects.
+
+8. `unable to tag modules: unable to load repo config: branch config: invalid merge` when running `make push-tags` -- this is likely a bug with go-git. The current work-around is to clone the repository again and push the tags from the fresh clone.  
 
 ## Bugfix releases
 
