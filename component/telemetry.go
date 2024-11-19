@@ -24,9 +24,7 @@ type TelemetrySettings struct {
 	// MeterProvider that the factory can pass to other instrumented third-party libraries.
 	MeterProvider metric.MeterProvider
 
-	// LeveledMeterProvider returns a MeterProvider for a Level that the factory can
-	// pass to other instrumented third-party libraries.
-	// Deprecated [v0.114.0]: use MeterProvider instead.
+	// Deprecated: [v0.114.0] use MeterProvider instead.
 	LeveledMeterProvider func(level configtelemetry.Level) metric.MeterProvider
 
 	// MetricsLevel represents the configuration value set when the collector
