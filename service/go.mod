@@ -212,3 +212,5 @@ replace go.opentelemetry.io/collector/connector/connectorprofiles => ../connecto
 replace go.opentelemetry.io/collector/internal/fanoutconsumer => ../internal/fanoutconsumer
 
 replace go.opentelemetry.io/collector/extension/extensiontest => ../extension/extensiontest
+
+replace go.opentelemetry.io/collector/extension/auth/authtest => /Users/jade.guiton/go/src/github.com/DataDog/otel/opentelemetry-collector/extension/auth/authtest

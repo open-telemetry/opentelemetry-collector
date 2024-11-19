@@ -292,3 +292,5 @@ replace go.opentelemetry.io/collector/receiver/receivertest => ../../receiver/re
 replace go.opentelemetry.io/collector/semconv => ../../semconv
 
 replace go.opentelemetry.io/collector/service => ../../service
+
+replace go.opentelemetry.io/collector/extension/auth/authtest => /Users/jade.guiton/go/src/github.com/DataDog/otel/opentelemetry-collector/extension/auth/authtest
