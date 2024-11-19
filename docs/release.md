@@ -221,6 +221,6 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 | 2025-02-03 | v0.119.0 | [@bogdandrutu](https://github.com/bogdandrutu)    |
 | 2025-02-17 | v0.120.0 | [@jpkrohling](https://github.com/jpkrohling)      |
 | 2025-03-03 | v0.121.0 | [@mx-psi](https://github.com/mx-psi)              |
-| 2024-03-17 | v0.122.0 | [@evan-bradley](https://github.com/evan-bradley)  |
-| 2024-03-31 | v0.123.0 | [@djaglowski](https://github.com/djaglowski)      |
-| 2024-04-14 | v0.124.0 | [@TylerHelmuth](https://github.com/TylerHelmuth)  |
+| 2025-03-17 | v0.122.0 | [@evan-bradley](https://github.com/evan-bradley)  |
+| 2025-03-31 | v0.123.0 | [@djaglowski](https://github.com/djaglowski)      |
+| 2025-04-14 | v0.124.0 | [@TylerHelmuth](https://github.com/TylerHelmuth)  |
