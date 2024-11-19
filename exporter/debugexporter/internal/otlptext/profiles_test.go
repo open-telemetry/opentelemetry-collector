@@ -72,11 +72,10 @@ func extendProfiles(profiles pprofile.Profiles) pprofile.Profiles {
 			location.SetTypeIndex(5)
 			location.Attributes().FromRaw([]uint64{6, 7})
 
-			_ = profile.Profile().AttributeTable().FromRaw(map[string]any{
-				"value": map[string]any{
-					"intValue": "42",
-				},
-			})
+			at := profile.Profile().AttributeTable()
+			a := at.AppendEmpty()
+			a.SetKey("intValue")
+			a.Value().SetInt(42)
 
 			attributeUnits := profile.Profile().AttributeUnits().AppendEmpty()
 			attributeUnits.SetAttributeKey(1)

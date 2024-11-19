@@ -77,8 +77,8 @@ func (ms Profile) Function() FunctionSlice {
 }
 
 // AttributeTable returns the AttributeTable associated with this Profile.
-func (ms Profile) AttributeTable() pcommon.Map {
-	return pcommon.Map(internal.NewMap(&ms.orig.AttributeTable, ms.state))
+func (ms Profile) AttributeTable() AttributeTableSlice {
+	return newAttributeTableSlice(&ms.orig.AttributeTable, ms.state)
 }
 
 // AttributeUnits returns the AttributeUnits associated with this Profile.

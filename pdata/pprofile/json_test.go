@@ -104,7 +104,10 @@ var profilesOTLP = func() Profiles {
 	f.SetStartLine(5)
 	// Add attribute table
 	at := pro.AttributeTable()
-	at.PutInt("answer", 42)
+	a := at.AppendEmpty()
+	a.SetKey("answer")
+	a.Value().SetInt(42)
+
 	// Add attribute units
 	au := pro.AttributeUnits().AppendEmpty()
 	au.SetAttributeKey(1)
