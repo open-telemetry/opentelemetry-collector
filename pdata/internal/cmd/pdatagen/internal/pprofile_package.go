@@ -46,6 +46,8 @@ var pprofile = &Package{
 		line,
 		functionSlice,
 		function,
+		attributeTableSlice,
+		attribute,
 		attributeUnitSlice,
 		attributeUnit,
 		linkSlice,
@@ -161,7 +163,7 @@ var profile = &messageValueStruct{
 		},
 		&sliceField{
 			fieldName:   "AttributeTable",
-			returnSlice: mapStruct,
+			returnSlice: attributeTableSlice,
 		},
 		&sliceField{
 			fieldName:   "AttributeUnits",
@@ -521,6 +523,29 @@ var line = &messageValueStruct{
 			returnType: "int64",
 			defaultVal: "int64(0)",
 			testVal:    "int64(1)",
+		},
+	},
+}
+
+var attributeTableSlice = &sliceOfValues{
+	structName: "AttributeTableSlice",
+	element:    attribute,
+}
+
+var attribute = &messageValueStruct{
+	structName:     "Attribute",
+	description:    "// Attribute describes an attribute stored in a profile's attribute table.",
+	originFullName: "v1.KeyValue",
+	fields: []baseField{
+		&primitiveField{
+			fieldName:  "Key",
+			returnType: "string",
+			defaultVal: `""`,
+			testVal:    `"key"`,
+		},
+		&messageValueField{
+			fieldName:     "Value",
+			returnMessage: anyValue,
 		},
 	},
 }

@@ -83,9 +83,9 @@ func TestProfile_Function(t *testing.T) {
 
 func TestProfile_AttributeTable(t *testing.T) {
 	ms := NewProfile()
-	assert.Equal(t, pcommon.NewMap(), ms.AttributeTable())
-	internal.FillTestMap(internal.Map(ms.AttributeTable()))
-	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.AttributeTable())
+	assert.Equal(t, NewAttributeTableSlice(), ms.AttributeTable())
+	fillTestAttributeTableSlice(ms.AttributeTable())
+	assert.Equal(t, generateTestAttributeTableSlice(), ms.AttributeTable())
 }
 
 func TestProfile_AttributeUnits(t *testing.T) {
@@ -187,7 +187,7 @@ func fillTestProfile(tv Profile) {
 	fillTestLocationSlice(newLocationSlice(&tv.orig.Location, tv.state))
 	internal.FillTestInt64Slice(internal.NewInt64Slice(&tv.orig.LocationIndices, tv.state))
 	fillTestFunctionSlice(newFunctionSlice(&tv.orig.Function, tv.state))
-	internal.FillTestMap(internal.NewMap(&tv.orig.AttributeTable, tv.state))
+	fillTestAttributeTableSlice(newAttributeTableSlice(&tv.orig.AttributeTable, tv.state))
 	fillTestAttributeUnitSlice(newAttributeUnitSlice(&tv.orig.AttributeUnits, tv.state))
 	fillTestLinkSlice(newLinkSlice(&tv.orig.LinkTable, tv.state))
 	internal.FillTestStringSlice(internal.NewStringSlice(&tv.orig.StringTable, tv.state))
