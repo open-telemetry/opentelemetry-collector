@@ -329,8 +329,10 @@ func (b *dataBuffer) logProfileSamples(ss pprofile.SampleSlice, attrs pprofile.A
 		if lai := sample.Attributes().Len(); lai > 0 {
 			b.logEntry("        Attributes:")
 			for j := 0; j < lai; j++ {
-				attr := attrs.At(int(sample.Attributes().At(j)))
-				b.logEntry("             -> %s: %s", attr.Key(), attr.Value().AsRaw())
+				if sample.Attributes().At(j) <= math.MaxInt32 {
+					attr := attrs.At(int(sample.Attributes().At(j))) // nolint:gosec // overflow has been checked
+					b.logEntry("             -> %s: %s", attr.Key(), attr.Value().AsRaw())
+				}
 			}
 		}
 
