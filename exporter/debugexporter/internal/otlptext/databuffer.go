@@ -303,7 +303,7 @@ func (b *dataBuffer) logExemplars(description string, se pmetric.ExemplarSlice) 
 	}
 }
 
-func (b *dataBuffer) logProfileSamples(ss pprofile.SampleSlice) {
+func (b *dataBuffer) logProfileSamples(ss pprofile.SampleSlice, attrs pprofile.AttributeTableSlice) {
 	if ss.Len() == 0 {
 		return
 	}
@@ -325,7 +325,15 @@ func (b *dataBuffer) logProfileSamples(ss pprofile.SampleSlice) {
 			}
 		}
 		b.logEntry("        Value: %d", sample.Value().AsRaw())
-		b.logEntry("        Attributes: %d", sample.Attributes().AsRaw())
+
+		if lai := sample.Attributes().Len(); lai > 0 {
+			b.logEntry("        Attributes:")
+			for j := 0; j < lai; j++ {
+				attr := attrs.At(int(sample.Attributes().At(j)))
+				b.logEntry("             -> %s: %s", attr.Key(), attr.Value().AsRaw())
+			}
+		}
+
 		b.logEntry("        Link: %d", sample.Link())
 	}
 }

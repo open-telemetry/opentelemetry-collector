@@ -23,7 +23,8 @@ Profile #0
              -> Num: 3
              -> Num unit: 4
         Value: [4]
-        Attributes: [5]
+        Attributes:
+             -> key: value
         Link: 42
     Location #0
         ID: 2
@@ -36,8 +37,6 @@ Profile #0
         Is folded: true
         Type index: 5
         Attributes: [6 7]
-    Attribute table:
-         -> value: Map({"intValue":"42"})
     Attribute units:
          -> attributeKey: Int(1)
          -> unit: Int(5)
@@ -56,7 +55,8 @@ Profile #1
         Location length: 20
         Stacktrace ID index: 8
         Value: [9]
-        Attributes: [10]
+        Attributes:
+             -> key: value
         Link: 44
     Mapping #0
         ID: 1
