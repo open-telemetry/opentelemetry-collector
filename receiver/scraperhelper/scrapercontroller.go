@@ -30,11 +30,6 @@ func (of scraperControllerOptionFunc) apply(e *controller) {
 	of(e)
 }
 
-// Deprecated: [v0.114.0] use AddScraperWithType.
-func AddScraper(scraper Scraper) ScraperControllerOption {
-	return AddScraperWithType(scraper.ID().Type(), scraper)
-}
-
 // AddScraperWithType configures the provided scrape function to be called
 // with the specified options, and at the specified collection interval.
 //
