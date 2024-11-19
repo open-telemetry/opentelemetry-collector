@@ -76,4 +76,4 @@ replace go.opentelemetry.io/collector/consumer => ../../consumer
 
 replace go.opentelemetry.io/collector/client => ../../client
 
-replace go.opentelemetry.io/collector/extension/auth/authtest => /Users/jade.guiton/go/src/github.com/DataDog/otel/opentelemetry-collector/extension/auth/authtest
+replace go.opentelemetry.io/collector/extension/auth/authtest => ../../extension/auth/authtest

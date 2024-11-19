@@ -203,4 +203,4 @@ replace go.opentelemetry.io/collector/internal/fanoutconsumer => ../internal/fan
 
 replace go.opentelemetry.io/collector/extension/extensiontest => ../extension/extensiontest
 
-replace go.opentelemetry.io/collector/extension/auth/authtest => /Users/jade.guiton/go/src/github.com/DataDog/otel/opentelemetry-collector/extension/auth/authtest
+replace go.opentelemetry.io/collector/extension/auth/authtest => ../extension/auth/authtest

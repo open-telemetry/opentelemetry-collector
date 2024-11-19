@@ -105,4 +105,4 @@ retract (
 	v0.69.0 // Release failed, use v0.69.1
 )
 
-replace go.opentelemetry.io/collector/extension/auth/authtest => /Users/jade.guiton/go/src/github.com/DataDog/otel/opentelemetry-collector/extension/auth/authtest
+replace go.opentelemetry.io/collector/extension/auth/authtest => ../../extension/auth/authtest
