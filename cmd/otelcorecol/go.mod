@@ -239,6 +239,8 @@ replace go.opentelemetry.io/collector/extension => ../../extension
 
 replace go.opentelemetry.io/collector/extension/auth => ../../extension/auth
 
+replace go.opentelemetry.io/collector/extension/auth/authtest => ../../extension/auth/authtest
+
 replace go.opentelemetry.io/collector/extension/experimental/storage => ../../extension/experimental/storage
 
 replace go.opentelemetry.io/collector/extension/extensioncapabilities => ../../extension/extensioncapabilities
@@ -292,5 +294,3 @@ replace go.opentelemetry.io/collector/receiver/receivertest => ../../receiver/re
 replace go.opentelemetry.io/collector/semconv => ../../semconv
 
 replace go.opentelemetry.io/collector/service => ../../service
-
-replace go.opentelemetry.io/collector/extension/auth/authtest => ../../extension/auth/authtest
