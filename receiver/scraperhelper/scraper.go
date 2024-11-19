@@ -26,7 +26,7 @@ func (sf ScrapeFunc) Scrape(ctx context.Context) (pmetric.Metrics, error) {
 	return sf.ScrapeMetrics(ctx)
 }
 
-// Deprecated: [v0.115.0] use scrape.Metrics.
+// Deprecated: [v0.115.0] use scraper.Metrics.
 type Scraper interface {
 	component.Component
 	Scrape(context.Context) (pmetric.Metrics, error)
