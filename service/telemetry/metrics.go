@@ -36,6 +36,7 @@ type meterProviderSettings struct {
 	asyncErrorChannel chan error
 }
 
+// newMeterProvider creates a new MeterProvider from Config.
 func newMeterProvider(set meterProviderSettings, disableHighCardinality bool) (metric.MeterProvider, error) {
 	if set.cfg.Level == configtelemetry.LevelNone || len(set.cfg.Readers) == 0 {
 		return noop.NewMeterProvider(), nil
@@ -51,7 +52,6 @@ func newMeterProvider(set meterProviderSettings, disableHighCardinality bool) (m
 		}
 		if server != nil {
 			mp.servers = append(mp.servers, server)
-
 		}
 		opts = append(opts, sdkmetric.WithReader(r))
 	}

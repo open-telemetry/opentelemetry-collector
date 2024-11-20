@@ -86,13 +86,9 @@ func NewMetrics(
 	}
 	metricsOpts := []Option{
 		internal.WithMarshaler(metricsRequestMarshaler), internal.WithUnmarshaler(newMetricsRequestUnmarshalerFunc(pusher)),
-		internal.WithBatchFuncs(mergeMetrics, mergeSplitMetrics),
 	}
 	return NewMetricsRequest(ctx, set, requestFromMetrics(pusher), append(metricsOpts, options...)...)
 }
-
-// Deprecated: [v0.112.0] use NewMetrics.
-var NewMetricsExporter = NewMetrics
 
 // RequestFromMetricsFunc converts pdata.Metrics into a user-defined request.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
@@ -148,9 +144,6 @@ func NewMetricsRequest(
 		Metrics:      mc,
 	}, err
 }
-
-// Deprecated: [v0.112.0] use NewMetricsRequest.
-var NewMetricsRequestExporter = NewMetricsRequest
 
 type metricsSenderWithObservability struct {
 	internal.BaseRequestSender

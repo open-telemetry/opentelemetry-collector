@@ -5,7 +5,7 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -34,9 +34,6 @@ type BaseExporter struct {
 	component.ShutdownFunc
 
 	Signal pipeline.Signal
-
-	BatchMergeFunc      exporterbatcher.BatchMergeFunc[internal.Request]
-	BatchMergeSplitfunc exporterbatcher.BatchMergeSplitFunc[internal.Request]
 
 	Marshaler   exporterqueue.Marshaler[internal.Request]
 	Unmarshaler exporterqueue.Unmarshaler[internal.Request]
@@ -104,10 +101,7 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSe
 	}
 
 	if be.BatcherCfg.Enabled {
-		bs := NewBatchSender(be.BatcherCfg, be.Set, be.BatchMergeFunc, be.BatchMergeSplitfunc)
-		if bs.mergeFunc == nil || bs.mergeSplitFunc == nil {
-			err = multierr.Append(err, fmt.Errorf("WithRequestBatchFuncs must be provided for the batcher applied to the request-based exporters"))
-		}
+		bs := NewBatchSender(be.BatcherCfg, be.Set)
 		be.BatchSender = bs
 	}
 
@@ -220,7 +214,7 @@ func WithRetry(config configretry.BackOffConfig) Option {
 func WithQueue(config QueueConfig) Option {
 	return func(o *BaseExporter) error {
 		if o.Marshaler == nil || o.Unmarshaler == nil {
-			return fmt.Errorf("WithQueue option is not available for the new request exporters, use WithRequestQueue instead")
+			return errors.New("WithQueue option is not available for the new request exporters, use WithRequestQueue instead")
 		}
 		if !config.Enabled {
 			o.ExportFailureMessage += " Try enabling sending_queue to survive temporary failures."
@@ -246,7 +240,7 @@ func WithQueue(config QueueConfig) Option {
 func WithRequestQueue(cfg exporterqueue.Config, queueFactory exporterqueue.Factory[internal.Request]) Option {
 	return func(o *BaseExporter) error {
 		if o.Marshaler != nil || o.Unmarshaler != nil {
-			return fmt.Errorf("WithRequestQueue option must be used with the new request exporters only, use WithQueue instead")
+			return errors.New("WithRequestQueue option must be used with the new request exporters only, use WithQueue instead")
 		}
 		if !cfg.Enabled {
 			o.ExportFailureMessage += " Try enabling sending_queue to survive temporary failures."
@@ -294,16 +288,6 @@ func WithMarshaler(marshaler exporterqueue.Marshaler[internal.Request]) Option {
 func WithUnmarshaler(unmarshaler exporterqueue.Unmarshaler[internal.Request]) Option {
 	return func(o *BaseExporter) error {
 		o.Unmarshaler = unmarshaler
-		return nil
-	}
-}
-
-// withBatchFuncs is used to set the functions for merging and splitting batches for OLTP-based exporters.
-// It must be provided as the first option when creating a new exporter helper.
-func WithBatchFuncs(mf exporterbatcher.BatchMergeFunc[internal.Request], msf exporterbatcher.BatchMergeSplitFunc[internal.Request]) Option {
-	return func(o *BaseExporter) error {
-		o.BatchMergeFunc = mf
-		o.BatchMergeSplitfunc = msf
 		return nil
 	}
 }

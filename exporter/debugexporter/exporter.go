@@ -13,36 +13,42 @@ import (
 	"go.opentelemetry.io/collector/exporter/debugexporter/internal/otlptext"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 type debugExporter struct {
-	verbosity        configtelemetry.Level
-	logger           *zap.Logger
-	logsMarshaler    plog.Marshaler
-	metricsMarshaler pmetric.Marshaler
-	tracesMarshaler  ptrace.Marshaler
+	verbosity         configtelemetry.Level
+	logger            *zap.Logger
+	logsMarshaler     plog.Marshaler
+	metricsMarshaler  pmetric.Marshaler
+	tracesMarshaler   ptrace.Marshaler
+	profilesMarshaler pprofile.Marshaler
 }
 
 func newDebugExporter(logger *zap.Logger, verbosity configtelemetry.Level) *debugExporter {
 	var logsMarshaler plog.Marshaler
 	var metricsMarshaler pmetric.Marshaler
 	var tracesMarshaler ptrace.Marshaler
+	var profilesMarshaler pprofile.Marshaler
 	if verbosity == configtelemetry.LevelDetailed {
 		logsMarshaler = otlptext.NewTextLogsMarshaler()
 		metricsMarshaler = otlptext.NewTextMetricsMarshaler()
 		tracesMarshaler = otlptext.NewTextTracesMarshaler()
+		profilesMarshaler = otlptext.NewTextProfilesMarshaler()
 	} else {
 		logsMarshaler = normal.NewNormalLogsMarshaler()
 		metricsMarshaler = normal.NewNormalMetricsMarshaler()
 		tracesMarshaler = normal.NewNormalTracesMarshaler()
+		profilesMarshaler = normal.NewNormalProfilesMarshaler()
 	}
 	return &debugExporter{
-		verbosity:        verbosity,
-		logger:           logger,
-		logsMarshaler:    logsMarshaler,
-		metricsMarshaler: metricsMarshaler,
-		tracesMarshaler:  tracesMarshaler,
+		verbosity:         verbosity,
+		logger:            logger,
+		logsMarshaler:     logsMarshaler,
+		metricsMarshaler:  metricsMarshaler,
+		tracesMarshaler:   tracesMarshaler,
+		profilesMarshaler: profilesMarshaler,
 	}
 }
 
@@ -89,6 +95,23 @@ func (s *debugExporter) pushLogs(_ context.Context, ld plog.Logs) error {
 	}
 
 	buf, err := s.logsMarshaler.MarshalLogs(ld)
+	if err != nil {
+		return err
+	}
+	s.logger.Info(string(buf))
+	return nil
+}
+
+func (s *debugExporter) pushProfiles(_ context.Context, pd pprofile.Profiles) error {
+	s.logger.Info("Profiles",
+		zap.Int("resource profiles", pd.ResourceProfiles().Len()),
+		zap.Int("sample records", pd.SampleCount()))
+
+	if s.verbosity == configtelemetry.LevelBasic {
+		return nil
+	}
+
+	buf, err := s.profilesMarshaler.MarshalProfiles(pd)
 	if err != nil {
 		return err
 	}
