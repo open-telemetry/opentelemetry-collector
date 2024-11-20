@@ -7,6 +7,122 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.20.0/v0.114.0
+
+### 💡 Enhancements 💡
+
+- `cmd/builder`: Allow for replacing of local Providers and Converters when building custom collector with ocb. (#11649)
+  Use the property `path` under `gomod` to replace an go module with a local folder in
+  builder-config.yaml. Ex:
+  ```
+  providers:
+    - gomod: module.url/my/custom/provider v1.2.3
+      path: /path/to/local/provider
+  ```
+  
+- `cmd/builder`: Allow configuring `confmap.Converter` components in ocb. (#11582)
+  If no converters are specified, there will be no converters added.
+  Currently, the only published converter is `expandconverter` which is 
+  deprecated as of v0.107.0, but can still be added for testing purposes.
+  
+  To configure a custom converter, make sure your converter implements the converter
+  interface and is published as a go module (or replaced locally if not published).
+  You may then use the `converters` key in your OCB build manifest with a list of
+  Go modules (and replaces as necessary) to include your converter.
+  
+  Please note that converters are order-dependent. The confmap will apply converters
+  in order of which they are listed in your manifest if there is more than one.
+  
+- `all`: shorten time period before removing an unmaintained component from 6 months to 3 months (#11664)
+
+### 🧰 Bug fixes 🧰
+
+- `all`: Updates dialer timeout section documentation in confignet README (#11685)
+- `scraperhelper`: If the scraper shuts down, do not scrape first. (#11632)
+  When the scraper is shutting down, it currently will scrape at least once.
+  With this change, upon receiving a shutdown order, the receiver's scraperhelper will exit immediately.
+  
+
+## v1.19.0/v0.113.0
+
+### 🛑 Breaking changes 🛑
+
+- `internal/fanoutconsumer`: Extract internal/fanoutconsumer as a separate go module (#11441)
+- `builder`: Remove builder support to build old version, and the otelcol_version config (#11405)
+  User should remove this property from their config, to build older versions use older builders.
+- `receiver`: Make receivertest into its own module (#11462)
+- `builder`: Remove deprecated flags from Builder (#11576)
+  Here is the list of flags | --name, --description, --version, --otelcol-version, --go, --module
+- `internal/sharedcomponent`: Extract internal/sharedcomponent as a separate go module (#11442)
+
+### 💡 Enhancements 💡
+
+- `mdatagen`: Add otlp as supported distribution (#11527)
+- `batchprocessor`: Move single shard batcher creation to the constructor (#11594)
+- `service`: add support for using the otelzap bridge and emit logs using the OTel Go SDK (#10544)
+
+### 🧰 Bug fixes 🧰
+
+- `service`: ensure traces and logs emitted by the otel go SDK use the same resource information (#11578)
+- `config/configgrpc`: Patch for bug in the grpc-go NewClient that makes the way the hostname is resolved incompatible with the way proxy setting are applied. (#11537)
+- `builder`: Update builder default providers to lastest stable releases (#11566)
+
+## v1.18.0/v0.112.0
+
+### 🛑 Breaking changes 🛑
+
+- `consumer/consumererror`: Extract consumer/consumererror as a separate go module (#11440)
+- `exporter/expotertest`: Put expotertest into its own module (#11461)
+- `service`: Remove stable gate component.UseLocalHostAsDefaultHost (#11412)
+
+### 🚩 Deprecations 🚩
+
+- `processortest`: Deprecated 'NewUnhealthyProcessorCreateSettings'. Use NewNopSettings instead. (#11307)
+
+### 💡 Enhancements 💡
+
+- `mdatagen`: Added generated_package_name config field to support custom generated package name. (#11231)
+- `mdatagen`: Generate documentation for components with resource attributes only (#10705)
+- `confighttp`: Adding support for lz4 compression into the project (#9128)
+- `service`: Hide profiles support behind a feature gate while it remains alpha. (#11477)
+- `exporterhelper`: Retry sender will fail fast when the context timeout is shorter than the next retry interval. (#11183)
+
+### 🧰 Bug fixes 🧰
+
+- `cmd/builder`: Fix default configuration for builder for httpprovider, httpsprovider, and yamlprovider. (#11357)
+- `processorhelper`: Fix issue where in/out parameters were not recorded when error was returned from consumer. (#11351)
+
+## v1.17.0/v0.111.0
+
+### 🛑 Breaking changes 🛑
+
+- `service/telemetry`: Change default metrics address to "localhost:8888" instead of ":8888" (#11251)
+  This behavior can be disabled by disabling the feature gate 'telemetry.UseLocalHostAsDefaultMetricsAddress'.
+- `loggingexporter`: Removed the deprecated logging exporter.  Use the debug exporter instead. (#11037)
+
+### 🚩 Deprecations 🚩
+
+- `service/telemetry`: Deprecate service::telemetry::metrics::address in favor of service::telemetry::metrics::readers. (#11205)
+- `processorhelper`: Deprecate BuildProcessorMetricName as it's no longer needed since introduction of mdatagen (#11302)
+
+### 💡 Enhancements 💡
+
+- `ocb`: create docker images for OCB, per https://github.com/open-telemetry/opentelemetry-collector-releases/pull/671 (#5712)
+  Adds standard Docker images for OCB to Dockerhub and GitHub, see hub.docker.com/r/otel/opentelemetry-collector-builder
+- `confighttp`: Snappy compression to lazy read for memory efficiency (#11177)
+- `httpsprovider`: Mark the httpsprovider as stable. (#11191)
+- `httpprovider`: Mark the httpprovider as stable. (#11191)
+- `yamlprovider`: Mark the yamlprovider as stable. (#11192)
+- `confmap`: Allow using any YAML structure as a string when loading configuration including time.Time formats (#10659)
+  Previously, fields with time.Time formats could not be used as strings in configurations
+  
+
+### 🧰 Bug fixes 🧰
+
+- `processorhelper`: Fix data race condition, concurrent writes to the err variable, causes UB (Undefined Behavior) (#11350)
+- `cmd/builder`: re-adds function to properly set and view version number of OpenTelemetry Collector Builder (ocb) binaries (#11208)
+- `pdata`: Unmarshal Span and SpanLink flags from JSON (#11267)
+
 ## v1.16.0/v0.110.0
 
 ### 🛑 Breaking changes 🛑

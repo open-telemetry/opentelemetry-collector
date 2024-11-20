@@ -16,6 +16,8 @@ import (
 	"github.com/mostynb/go-grpc-compression/nonclobbering/zstd"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/noop"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/codes"
@@ -250,7 +252,7 @@ func (grpcDialOptionWrapper) isToClientConnOption() {}
 // ToClientConn creates a client connection to the given target. By default, it's
 // a non-blocking dial (the function won't wait for connections to be
 // established, and connecting happens in the background). To make it a blocking
-// dial, use the WithGrpcDiqlOption(grpc.WithBlock()) option.
+// dial, use the WithGrpcDialOption(grpc.WithBlock()) option.
 func (gcs *ClientConfig) ToClientConn(
 	ctx context.Context,
 	host component.Host,
@@ -261,19 +263,8 @@ func (gcs *ClientConfig) ToClientConn(
 	if err != nil {
 		return nil, err
 	}
-	return grpc.NewClient(gcs.sanitizedEndpoint(), grpcOpts...)
-}
-
-// ToClientConnWithOptions is the same as [ClientConfig.ToClientConn].
-//
-// Deprecated: [v0.111.0] Use [ClientConfig.ToClientConn] instead.
-func (gcs *ClientConfig) ToClientConnWithOptions(
-	ctx context.Context,
-	host component.Host,
-	settings component.TelemetrySettings,
-	extraOpts ...ToClientConnOption,
-) (*grpc.ClientConn, error) {
-	return gcs.ToClientConn(ctx, host, settings, extraOpts...)
+	//nolint:staticcheck //SA1019 see https://github.com/open-telemetry/opentelemetry-collector/pull/11575
+	return grpc.DialContext(ctx, gcs.sanitizedEndpoint(), grpcOpts...)
 }
 
 func (gcs *ClientConfig) getGrpcDialOptions(
@@ -348,7 +339,7 @@ func (gcs *ClientConfig) getGrpcDialOptions(
 	otelOpts := []otelgrpc.Option{
 		otelgrpc.WithTracerProvider(settings.TracerProvider),
 		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
-		otelgrpc.WithMeterProvider(settings.LeveledMeterProvider(configtelemetry.LevelDetailed)),
+		otelgrpc.WithMeterProvider(getLeveledMeterProvider(settings)),
 	}
 
 	// Enable OpenTelemetry observability plugin.
@@ -406,18 +397,6 @@ func (gss *ServerConfig) ToServer(
 		return nil, err
 	}
 	return grpc.NewServer(grpcOpts...), nil
-}
-
-// ToServerWithOptions is the same as [ServerConfig.ToServer].
-//
-// Deprecated: [v0.111.0] Use [ServerConfig.ToServer] instead.
-func (gss *ServerConfig) ToServerWithOptions(
-	ctx context.Context,
-	host component.Host,
-	settings component.TelemetrySettings,
-	extraOpts ...ToServerOption,
-) (*grpc.Server, error) {
-	return gss.ToServer(ctx, host, settings, extraOpts...)
 }
 
 func (gss *ServerConfig) getGrpcServerOptions(
@@ -504,7 +483,7 @@ func (gss *ServerConfig) getGrpcServerOptions(
 	otelOpts := []otelgrpc.Option{
 		otelgrpc.WithTracerProvider(settings.TracerProvider),
 		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
-		otelgrpc.WithMeterProvider(settings.LeveledMeterProvider(configtelemetry.LevelDetailed)),
+		otelgrpc.WithMeterProvider(getLeveledMeterProvider(settings)),
 	}
 
 	// Enable OpenTelemetry observability plugin.
@@ -597,4 +576,11 @@ func authStreamServerInterceptor(srv any, stream grpc.ServerStream, _ *grpc.Stre
 	}
 
 	return handler(srv, wrapServerStream(ctx, stream))
+}
+
+func getLeveledMeterProvider(settings component.TelemetrySettings) metric.MeterProvider {
+	if configtelemetry.LevelDetailed <= settings.MetricsLevel {
+		return settings.MeterProvider
+	}
+	return noop.MeterProvider{}
 }

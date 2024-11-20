@@ -7,6 +7,122 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.20.0/v0.114.0
+
+### 🛑 Breaking changes 🛑
+
+- `extensiontest`: Make extensiontest into its own module (#11463)
+- `component`: Make componenttest into its own module (#11464)
+- `expandconverter`: Remove deprecated expandvar converter (#11672)
+- `exporter`: Remove deprecated funcs Create[*]Exporter and [*]ExporterStability (#11662)
+- `exporterhelper`: Remove derprecated NewLogs[Request]Exporter funcs (#11661)
+- `extension`: Remove deprecated funcs CreateExtension and ExtensionStability (#11663)
+- `processortest`: Remove deprecated func NewUnhealthyProcessorCreateSettings (#11665)
+
+### 🚩 Deprecations 🚩
+
+- `component`: Deprecate `TelemetrySettings.LeveledMeterProvider` and undo deprecation of `TelemetrySettings.MeterProvider` (#11061)
+- `scraperhelper`: Deprecate Scraper.ID func, pass type when register Scraper (#11238)
+
+## v1.19.0/v0.113.0
+
+### 🛑 Breaking changes 🛑
+
+- `builder`: Remove deprecated flags from Builder (#11576)
+  Here is the list of flags | --name, --description, --version, --otelcol-version, --go, --module
+
+### 🚀 New components 🚀
+
+- `processorhelperprofiles`: Add processorhelperprofiles to support profiles signal (#11556)
+
+### 💡 Enhancements 💡
+
+- `mdatagen`: Add newTelemetrySettings to be generated all the time even for pkg class (#11535)
+- `debugexporter`: Add profiles support to debug exporter (#11155)
+- `component`: Add UnmarshalText for StabilityLevel (#11520)
+
+## v1.18.0/v0.112.0
+
+### 🛑 Breaking changes 🛑
+
+- `service`: Change Host to not implement GetExportersWithSignal (#11444)
+  Use Host.GetExporters if still needed.
+- `componentstatus`: Remove deprecated `NewInstanceIDWithPipelineIDs`, `AllPipelineIDsWithPipelineIDs`, and `WithPipelineIDs`. Use `NewInstanceID`, `AllPipelineIDs` and `WithPipelines` instead. (#11363)
+- `configgrpc`: Removed deprecated `ClientConfig.ToClientConnWithOptions`/`ServerConfig.ToServerWithOptions`. (#11359, #9480)
+  These methods were renamed to `ClientConfig.ToClientConn`/`ServerConfig.ToServer` in v0.111.0.
+- `connector`: Put connectortest in its own module (#11216)
+- `exporter`: Disables setting batch option to batch sender directly. (#10368)
+  Removed WithRequestBatchFuncs(BatcherOption) in favor of WithBatchFuncs(Option), where | BatcherOption is a function that operates on batch sender and Option is one that operates | on BaseExporter
+- `exporter`: Made mergeFunc and mergeSplitFunc required method of exporter.Request (#10368)
+  mergeFunc and mergeSplitFunc used to be part of the configuration pass to the exporter. Now it is changed | to be a method function of request.
+- `componentprofiles`: Move componentprofiles to pipelineprofiles (#11421)
+- `processor`: Put processortest in its own module (#11218)
+- `receivertest`: Removed deprecated `NewNopFactoryForTypeWithSignal`. Use `NewNopFactoryForType` instead. (#11362)
+- `processor`: Remove deprecated funcs from processor package (#11368)
+- `receiver`: Remove deprecated funcs from receiver package (#11367)
+- `processorhelper`: Remove deprecated funcs/types from processorhelper & componenttest (#11302)
+- `service`: Remove deprecated `pipelines.ConfigWithPipelineID` and `Config.PipelinesWithPipelineID`. Use `pipelines.Config` and `Config.Pipelines` instead. (#11361)
+
+### 🚩 Deprecations 🚩
+
+- `extension`: Deprecate funcs that repeat extension in name (#11413)
+  Factory.CreateExtension -> Factory.Create |
+  Factory.ExtensionStability -> Factory.Stability
+  
+- `exporter`: Deprecate funcs that repeate exporter in name (#11370)
+  Factory.Create[Traces|Metrics|Logs|Profiles]Exporter -> Factory.Create[Traces|Metrics|Logs|Profiles] |
+  Factory.[Traces|Metrics|Logs|Profiles]ExporterStability -> Factory.[Traces|Metrics|Logs|Profiles]Stability
+  
+
+### 🚀 New components 🚀
+
+- `consumererrorprofiles`: Add new module consumereerrorprofiles for consumer error profiles. (#11131)
+
+### 💡 Enhancements 💡
+
+- `configcompression`: Add support for lz4 compression (#9128)
+- `otlpexporter`: Add profiles support to OTLP exporter (#11435)
+- `otlphttpexporter`: Add profiles support to OTLP HTTP exporter (#11450)
+
+## v1.17.0/v0.111.0
+
+### 🛑 Breaking changes 🛑
+
+- `service/telemetry`: Change default metrics address to "localhost:8888" instead of ":8888" (#11251)
+  This behavior can be disabled by disabling the feature gate 'telemetry.UseLocalHostAsDefaultMetricsAddress'.
+- `componentprofiles`: Removed deprecated `DataTypeProfiles`.  Use `SignalProfiles` instead. (#11312)
+- `configgrpc`: Replace ToClientConn and ToServer with ToClientConnWithOptions and ToServerWithOptions. (#11271, #9480)
+  `ClientConfig.ToClientConn` and `ServerConfig.ToServer` were deprecated in v0.110.0 in favor of
+  `ClientConfig.ToClientConnWithOptions` and `ServerConfig.ToServerWithOptions` which use a more
+  flexible option type. The original functions are now removed, and the new ones are renamed to the
+  old names. The `WithOptions` names are kept as deprecated aliases for now.
+  
+- `exporterhelper`: Removed deprecated `QueueTimeout`/`TimeoutSettings` aliases in favor of `QueueConfig`/`TimeoutConfig`. (#11264, #6767)
+  `NewDefaultQueueSettings` and `NewDefaultTimeoutSettings` have been similarly renamed.
+- `exporterqueue`: Remove deprecated `Settings.DataType`. Use `Settings.Signal` instead. (#11305)
+- `exportertest`: Remove deprecated `CheckConsumeContractParams.DataType`. Use `CheckConsumeContractParams.Signal` instead. (#11305)
+- `component`: Removed deprecated `ErrDataTypeIsNotSupported`, `DataType`, `DataTypeTraces`, `DataTypeMetrics`, and `DataTypeLogs`.  Use `pipeline.ErrSignalNotSupported`, `pipeline.Signal`, `pipeline.SignalTraces`, `pipeline.SignalMetrics`, and `pipeline.SignalLogs` instead. (#11253)
+- `pdata/pprofile`: Replace slices of values to slices of pointers for the `Mapping`, `Location`, `Line`, `Function`, `AttributeUnit`, `Link`, `Value`, `Sample` and `Labels` attributes. (#11339)
+- `receivertest`: Remove deprecated `CheckConsumeContractParams.DataType`. Use `CheckConsumeContractParams.Signal` instead. (#11304)
+- `scraperhelper`: Remove deprecated function `NewScraperWithComponentType`. (#11294)
+- `processorhelper`: Remove deprecated funcs form processorhelper.ObsReport (#11289)
+  The "otelcol_processor_dropped_log_records", "otelcol_processor_dropped_log_records" | and "otelcol_processor_dropped_spans" metrics are complete removed, before they were always record with 0 values.
+
+### 🚩 Deprecations 🚩
+
+- `componentstatus`: Deprecated `NewInstanceIDWithPipelineIDs`, `AllPipelineIDsWithPipelineIDs`, and `WithPipelineIDs`. Use `NewInstanceID`, `AllPipelineIDs`, and `WithPipelines` instead. (#11313)
+- `processorhelper`: Deprecate unused and empty struct processorhelper.ObsReport (#11293)
+- `processor`: Deprecate funcs that repeat "processor" in name (#11310)
+  Factory.Create[Traces|Metrics|Logs|Profiles]Processor -> Factory.Create[Traces|Metrics|Logs|Profiles]
+  Factory.[Traces|Metrics|Logs|Profiles]ProcessorStability -> Factory.[Traces|Metrics|Logs|Profiles]Stability
+  
+- `receiver`: Deprecate funcs that repeat "receiver" in name (#11287)
+  Factory.Create[Traces|Metrics|Logs|Profiles]Receiver -> Factory.Create[Traces|Metrics|Logs|Profiles]
+  Factory.[Traces|Metrics|Logs|Profiles]ReceiverStability -> Factory.[Traces|Metrics|Logs|Profiles]Stability
+  
+- `receivertest`: Deprecated `NewNopFactoryForTypeWithSignal`. Use `NewNopFactoryForType` instead. (#11304)
+- `service`: Deprecates `Config.PipelinesWithPipelineID`, `pipelines.ConfigWithPipelineID` and `GetExportersWithSignal` interface implementation. Use `Config.Pipelines`, `pipelines.Config`, and `GetExporters` interface implementation instead. (#11303)
+
 ## v1.16.0/v0.110.0
 
 ### 🛑 Breaking changes 🛑

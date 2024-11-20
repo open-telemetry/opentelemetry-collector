@@ -23,7 +23,7 @@ type ObsReport struct {
 	tracer         trace.Tracer
 	Signal         pipeline.Signal
 
-	otelAttrs        []attribute.KeyValue
+	otelAttrs        metric.MeasurementOption
 	TelemetryBuilder *metadata.TelemetryBuilder
 }
 
@@ -41,12 +41,10 @@ func NewExporter(cfg ObsReportSettings) (*ObsReport, error) {
 	}
 
 	return &ObsReport{
-		spanNamePrefix: ExporterPrefix + cfg.ExporterID.String(),
-		tracer:         cfg.ExporterCreateSettings.TracerProvider.Tracer(cfg.ExporterID.String()),
-		Signal:         cfg.Signal,
-		otelAttrs: []attribute.KeyValue{
-			attribute.String(ExporterKey, cfg.ExporterID.String()),
-		},
+		spanNamePrefix:   ExporterPrefix + cfg.ExporterID.String(),
+		tracer:           cfg.ExporterCreateSettings.TracerProvider.Tracer(cfg.ExporterID.String()),
+		Signal:           cfg.Signal,
+		otelAttrs:        metric.WithAttributeSet(attribute.NewSet(attribute.String(ExporterKey, cfg.ExporterID.String()))),
 		TelemetryBuilder: telemetryBuilder,
 	}, nil
 }
@@ -96,6 +94,19 @@ func (or *ObsReport) EndLogsOp(ctx context.Context, numLogRecords int, err error
 	endSpan(ctx, err, numSent, numFailedToSend, SentLogRecordsKey, FailedToSendLogRecordsKey)
 }
 
+// StartProfilesOp is called at the start of an Export operation.
+// The returned context should be used in other calls to the Exporter functions
+// dealing with the same export operation.
+func (or *ObsReport) StartProfilesOp(ctx context.Context) context.Context {
+	return or.startOp(ctx, ExportTraceDataOperationSuffix)
+}
+
+// EndProfilesOp completes the export operation that was started with startProfilesOp.
+func (or *ObsReport) EndProfilesOp(ctx context.Context, numSpans int, err error) {
+	numSent, numFailedToSend := toNumItems(numSpans, err)
+	endSpan(ctx, err, numSent, numFailedToSend, SentSamplesKey, FailedToSendSamplesKey)
+}
+
 // startOp creates the span used to trace the operation. Returning
 // the updated context and the created span.
 func (or *ObsReport) startOp(ctx context.Context, operationSuffix string) context.Context {
@@ -118,8 +129,8 @@ func (or *ObsReport) recordMetrics(ctx context.Context, signal pipeline.Signal, 
 		failedMeasure = or.TelemetryBuilder.ExporterSendFailedLogRecords
 	}
 
-	sentMeasure.Add(ctx, sent, metric.WithAttributes(or.otelAttrs...))
-	failedMeasure.Add(ctx, failed, metric.WithAttributes(or.otelAttrs...))
+	sentMeasure.Add(ctx, sent, or.otelAttrs)
+	failedMeasure.Add(ctx, failed, or.otelAttrs)
 }
 
 func endSpan(ctx context.Context, err error, numSent, numFailedToSend int64, sentItemsKey, failedToSendItemsKey string) {
@@ -155,5 +166,5 @@ func (or *ObsReport) RecordEnqueueFailure(ctx context.Context, signal pipeline.S
 		enqueueFailedMeasure = or.TelemetryBuilder.ExporterEnqueueFailedLogRecords
 	}
 
-	enqueueFailedMeasure.Add(ctx, failed, metric.WithAttributes(or.otelAttrs...))
+	enqueueFailedMeasure.Add(ctx, failed, or.otelAttrs)
 }

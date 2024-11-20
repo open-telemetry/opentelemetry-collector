@@ -810,7 +810,7 @@ const (
 	// Stability: experimental
 	// Examples: 'arn:aws:lambda:REGION:ACCOUNT_ID:function:my-function', '//run.googl
 	// eapis.com/projects/PROJECT_ID/locations/LOCATION_ID/services/SERVICE_ID', '/sub
-	// scriptions/<SUBSCIPTION_GUID>/resourceGroups/<RG>/providers/Microsoft.Web/sites
+	// scriptions/<SUBSCRIPTION_GUID>/resourceGroups/<RG>/providers/Microsoft.Web/sites
 	// /<FUNCAPP>/functions/<FUNC>'
 	// Note: On some cloud providers, it may not be possible to determine the full ID
 	// at startup,
@@ -827,7 +827,7 @@ const (
 	// <li>GCP: The URI of the resource</li>
 	// <li>Azure: The Fully Qualified Resource ID of the invoked function,
 	// not the function app, having the form
-	// /subscriptions/<SUBSCIPTION_GUID>/resourceGroups/<RG>/providers/Microsoft.Web/s
+	// /subscriptions/<SUBSCRIPTION_GUID>/resourceGroups/<RG>/providers/Microsoft.Web/s
 	// ites/<FUNCAPP>/functions/<FUNC>.
 	// This means that a span attribute MUST be used, as an Azure function app can
 	// host multiple functions that would usually share
@@ -3009,7 +3009,7 @@ const (
 
 // The generic attributes that may be used in any Log Record.
 const (
-	// The complete orignal Log Record.
+	// The complete original Log Record.
 	//
 	// Type: string
 	// Requirement Level: Optional

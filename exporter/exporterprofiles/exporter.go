@@ -21,13 +21,13 @@ type Profiles interface {
 type Factory interface {
 	exporter.Factory
 
-	// CreateProfilesExporter creates a ProfilesExporter based on this config.
+	// CreateProfiles creates a Profiles exporter based on this config.
 	// If the exporter type does not support tracing,
 	// this function returns the error [pipeline.ErrSignalNotSupported].
-	CreateProfilesExporter(ctx context.Context, set exporter.Settings, cfg component.Config) (Profiles, error)
+	CreateProfiles(ctx context.Context, set exporter.Settings, cfg component.Config) (Profiles, error)
 
-	// ProfilesExporterStability gets the stability level of the ProfilesExporter.
-	ProfilesExporterStability() component.StabilityLevel
+	// ProfilesStability gets the stability level of the Profiles exporter.
+	ProfilesStability() component.StabilityLevel
 }
 
 // FactoryOption apply changes to ReceiverOptions.
@@ -51,8 +51,8 @@ type factoryOpts struct {
 // CreateProfilesFunc is the equivalent of Factory.CreateProfiles.
 type CreateProfilesFunc func(context.Context, exporter.Settings, component.Config) (Profiles, error)
 
-// CreateProfilesExporter implements Factory.CreateProfiles.
-func (f CreateProfilesFunc) CreateProfilesExporter(ctx context.Context, set exporter.Settings, cfg component.Config) (Profiles, error) {
+// CreateProfiles implements Factory.CreateProfiles.
+func (f CreateProfilesFunc) CreateProfiles(ctx context.Context, set exporter.Settings, cfg component.Config) (Profiles, error) {
 	if f == nil {
 		return nil, pipeline.ErrSignalNotSupported
 	}
@@ -94,7 +94,7 @@ type factory struct {
 	profilesStabilityLevel component.StabilityLevel
 }
 
-func (f *factory) ProfilesExporterStability() component.StabilityLevel {
+func (f *factory) ProfilesStability() component.StabilityLevel {
 	return f.profilesStabilityLevel
 }
 

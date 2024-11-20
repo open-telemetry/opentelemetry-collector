@@ -48,53 +48,53 @@ type Settings struct {
 type Factory interface {
 	component.Factory
 
-	// CreateTracesExporter creates a TracesExporter based on this config.
+	// CreateTraces creates a Traces exporter based on this config.
 	// If the exporter type does not support tracing,
 	// this function returns the error [pipeline.ErrSignalNotSupported].
-	CreateTracesExporter(ctx context.Context, set Settings, cfg component.Config) (Traces, error)
+	CreateTraces(ctx context.Context, set Settings, cfg component.Config) (Traces, error)
 
-	// TracesExporterStability gets the stability level of the TracesExporter.
-	TracesExporterStability() component.StabilityLevel
+	// TracesStability gets the stability level of the Traces exporter.
+	TracesStability() component.StabilityLevel
 
-	// CreateMetricsExporter creates a MetricsExporter based on this config.
+	// CreateMetrics creates a Metrics exporter based on this config.
 	// If the exporter type does not support metrics,
 	// this function returns the error [pipeline.ErrSignalNotSupported].
-	CreateMetricsExporter(ctx context.Context, set Settings, cfg component.Config) (Metrics, error)
+	CreateMetrics(ctx context.Context, set Settings, cfg component.Config) (Metrics, error)
 
-	// MetricsExporterStability gets the stability level of the MetricsExporter.
-	MetricsExporterStability() component.StabilityLevel
+	// MetricsStability gets the stability level of the Metrics exporter.
+	MetricsStability() component.StabilityLevel
 
-	// CreateLogsExporter creates a LogsExporter based on the config.
+	// CreateLogs creates a Logs exporter based on the config.
 	// If the exporter type does not support logs,
 	// this function returns the error [pipeline.ErrSignalNotSupported].
-	CreateLogsExporter(ctx context.Context, set Settings, cfg component.Config) (Logs, error)
+	CreateLogs(ctx context.Context, set Settings, cfg component.Config) (Logs, error)
 
-	// LogsExporterStability gets the stability level of the LogsExporter.
-	LogsExporterStability() component.StabilityLevel
+	// LogsStability gets the stability level of the Logs exporter.
+	LogsStability() component.StabilityLevel
 
 	unexportedFactoryFunc()
 }
 
 // FactoryOption apply changes to Factory.
 type FactoryOption interface {
-	// applyExporterFactoryOption applies the option.
-	applyExporterFactoryOption(o *factory)
+	// applyOption applies the option.
+	applyOption(o *factory)
 }
 
 var _ FactoryOption = (*factoryOptionFunc)(nil)
 
-// factoryOptionFunc is an ExporterFactoryOption created through a function.
+// factoryOptionFunc is an FactoryOption created through a function.
 type factoryOptionFunc func(*factory)
 
-func (f factoryOptionFunc) applyExporterFactoryOption(o *factory) {
+func (f factoryOptionFunc) applyOption(o *factory) {
 	f(o)
 }
 
 // CreateTracesFunc is the equivalent of Factory.CreateTraces.
 type CreateTracesFunc func(context.Context, Settings, component.Config) (Traces, error)
 
-// CreateTracesExporter implements Factory.CreateTraces.
-func (f CreateTracesFunc) CreateTracesExporter(ctx context.Context, set Settings, cfg component.Config) (Traces, error) {
+// CreateTraces implements Factory.CreateTraces.
+func (f CreateTracesFunc) CreateTraces(ctx context.Context, set Settings, cfg component.Config) (Traces, error) {
 	if f == nil {
 		return nil, pipeline.ErrSignalNotSupported
 	}
@@ -104,8 +104,8 @@ func (f CreateTracesFunc) CreateTracesExporter(ctx context.Context, set Settings
 // CreateMetricsFunc is the equivalent of Factory.CreateMetrics.
 type CreateMetricsFunc func(context.Context, Settings, component.Config) (Metrics, error)
 
-// CreateMetricsExporter implements Factory.CreateMetrics.
-func (f CreateMetricsFunc) CreateMetricsExporter(ctx context.Context, set Settings, cfg component.Config) (Metrics, error) {
+// CreateMetrics implements Factory.CreateMetrics.
+func (f CreateMetricsFunc) CreateMetrics(ctx context.Context, set Settings, cfg component.Config) (Metrics, error) {
 	if f == nil {
 		return nil, pipeline.ErrSignalNotSupported
 	}
@@ -115,8 +115,8 @@ func (f CreateMetricsFunc) CreateMetricsExporter(ctx context.Context, set Settin
 // CreateLogsFunc is the equivalent of Factory.CreateLogs.
 type CreateLogsFunc func(context.Context, Settings, component.Config) (Logs, error)
 
-// CreateLogsExporter implements Factory.CreateLogs.
-func (f CreateLogsFunc) CreateLogsExporter(ctx context.Context, set Settings, cfg component.Config) (Logs, error) {
+// CreateLogs implements Factory.CreateLogs.
+func (f CreateLogsFunc) CreateLogs(ctx context.Context, set Settings, cfg component.Config) (Logs, error) {
 	if f == nil {
 		return nil, pipeline.ErrSignalNotSupported
 	}
@@ -140,19 +140,19 @@ func (f *factory) Type() component.Type {
 
 func (f *factory) unexportedFactoryFunc() {}
 
-func (f *factory) TracesExporterStability() component.StabilityLevel {
+func (f *factory) TracesStability() component.StabilityLevel {
 	return f.tracesStabilityLevel
 }
 
-func (f *factory) MetricsExporterStability() component.StabilityLevel {
+func (f *factory) MetricsStability() component.StabilityLevel {
 	return f.metricsStabilityLevel
 }
 
-func (f *factory) LogsExporterStability() component.StabilityLevel {
+func (f *factory) LogsStability() component.StabilityLevel {
 	return f.logsStabilityLevel
 }
 
-// WithTraces overrides the default "error not supported" implementation for CreateTracesExporter and the default "undefined" stability level.
+// WithTraces overrides the default "error not supported" implementation for Factory.CreateTraces and the default "undefined" stability level.
 func WithTraces(createTraces CreateTracesFunc, sl component.StabilityLevel) FactoryOption {
 	return factoryOptionFunc(func(o *factory) {
 		o.tracesStabilityLevel = sl
@@ -160,7 +160,7 @@ func WithTraces(createTraces CreateTracesFunc, sl component.StabilityLevel) Fact
 	})
 }
 
-// WithMetrics overrides the default "error not supported" implementation for CreateMetricsExporter and the default "undefined" stability level.
+// WithMetrics overrides the default "error not supported" implementation for Factory.CreateMetrics and the default "undefined" stability level.
 func WithMetrics(createMetrics CreateMetricsFunc, sl component.StabilityLevel) FactoryOption {
 	return factoryOptionFunc(func(o *factory) {
 		o.metricsStabilityLevel = sl
@@ -168,7 +168,7 @@ func WithMetrics(createMetrics CreateMetricsFunc, sl component.StabilityLevel) F
 	})
 }
 
-// WithLogs overrides the default "error not supported" implementation for CreateLogsExporter and the default "undefined" stability level.
+// WithLogs overrides the default "error not supported" implementation for Factory.CreateLogs and the default "undefined" stability level.
 func WithLogs(createLogs CreateLogsFunc, sl component.StabilityLevel) FactoryOption {
 	return factoryOptionFunc(func(o *factory) {
 		o.logsStabilityLevel = sl
@@ -183,7 +183,7 @@ func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefa
 		CreateDefaultConfigFunc: createDefaultConfig,
 	}
 	for _, opt := range options {
-		opt.applyExporterFactoryOption(f)
+		opt.applyOption(f)
 	}
 	return f
 }

@@ -11,6 +11,8 @@ import (
 	"fmt"
 	"runtime"
 
+	"go.opentelemetry.io/contrib/config"
+	"go.opentelemetry.io/otel/log"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/noop"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
@@ -27,13 +29,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
+	semconv "go.opentelemetry.io/collector/semconv/v1.26.0"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/graph"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
 	"go.opentelemetry.io/collector/service/internal/resource"
 	"go.opentelemetry.io/collector/service/internal/status"
-	"go.opentelemetry.io/collector/service/pipelines"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -93,6 +95,7 @@ type Service struct {
 	telemetrySettings component.TelemetrySettings
 	host              *graph.Host
 	collectorConf     *confmap.Conf
+	loggerProvider    log.LoggerProvider
 }
 
 // New creates a new Service, its telemetry, and Components.
@@ -117,16 +120,43 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	res := resource.New(set.BuildInfo, cfg.Telemetry.Resource)
 	pcommonRes := pdataFromSdk(res)
 
+	sch := semconv.SchemaURL
+	cfgRes := config.Resource{
+		SchemaUrl:  &sch,
+		Attributes: attributes(res, cfg.Telemetry),
+	}
+
+	sdk, err := config.NewSDK(
+		config.WithContext(ctx),
+		config.WithOpenTelemetryConfiguration(
+			config.OpenTelemetryConfiguration{
+				LoggerProvider: &config.LoggerProvider{
+					Processors: cfg.Telemetry.Logs.Processors,
+				},
+				TracerProvider: &config.TracerProvider{
+					Processors: cfg.Telemetry.Traces.Processors,
+				},
+				Resource: &cfgRes,
+			},
+		),
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to create SDK: %w", err)
+	}
+
 	telFactory := telemetry.NewFactory()
 	telset := telemetry.Settings{
 		BuildInfo:  set.BuildInfo,
 		ZapOptions: set.LoggingOptions,
+		SDK:        &sdk,
 	}
 
-	logger, err := telFactory.CreateLogger(ctx, telset, &cfg.Telemetry)
+	logger, lp, err := telFactory.CreateLogger(ctx, telset, &cfg.Telemetry)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create logger: %w", err)
 	}
+	srv.loggerProvider = lp
 
 	tracerProvider, err := telFactory.CreateTracerProvider(ctx, telset, &cfg.Telemetry)
 	if err != nil {
@@ -137,7 +167,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 
 	mp, err := telFactory.CreateMeterProvider(ctx, telset, &cfg.Telemetry)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create metric provider: %w", err)
+		return nil, fmt.Errorf("failed to create meter provider: %w", err)
 	}
 
 	logsAboutMeterProvider(logger, cfg.Telemetry.Metrics, mp)
@@ -146,7 +176,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 			if level <= cfg.Telemetry.Metrics.Level {
 				return mp
 			}
-			return noop.MeterProvider{}
+			return noop.NewMeterProvider()
 		},
 		Logger:         logger,
 		MeterProvider:  mp,
@@ -210,9 +240,6 @@ func (srv *Service) Start(ctx context.Context) error {
 		zap.Int("NumCPU", runtime.NumCPU()),
 	)
 
-	// enable status reporting
-	srv.host.Reporter.Ready()
-
 	if err := srv.host.ServiceExtensions.Start(ctx, srv.host); err != nil {
 		return fmt.Errorf("failed to start extensions: %w", err)
 	}
@@ -252,6 +279,12 @@ func (srv *Service) shutdownTelemetry(ctx context.Context) error {
 	if prov, ok := srv.telemetrySettings.TracerProvider.(shutdownable); ok {
 		if shutdownErr := prov.Shutdown(ctx); shutdownErr != nil {
 			err = multierr.Append(err, fmt.Errorf("failed to shutdown tracer provider: %w", shutdownErr))
+		}
+	}
+
+	if prov, ok := srv.loggerProvider.(shutdownable); ok {
+		if shutdownErr := prov.Shutdown(ctx); shutdownErr != nil {
+			err = multierr.Append(err, fmt.Errorf("failed to shutdown logger provider: %w", shutdownErr))
 		}
 	}
 	return err
@@ -305,14 +338,6 @@ func (srv *Service) initExtensions(ctx context.Context, cfg extensions.Config) e
 
 // Creates the pipeline graph.
 func (srv *Service) initGraph(ctx context.Context, cfg Config) error {
-	// nolint
-	if len(cfg.PipelinesWithPipelineID) > 0 {
-		cfg.Pipelines = make(pipelines.Config, len(cfg.PipelinesWithPipelineID))
-		for k, v := range cfg.PipelinesWithPipelineID {
-			cfg.Pipelines[k] = v
-		}
-	}
-
 	var err error
 	if srv.host.Pipelines, err = graph.Build(ctx, graph.Settings{
 		Telemetry:        srv.telemetrySettings,

@@ -10,11 +10,22 @@ import (
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 type componentTestTelemetry struct {
 	reader        *sdkmetric.ManualReader
 	meterProvider *sdkmetric.MeterProvider
+}
+
+func (tt *componentTestTelemetry) newTelemetrySettings() component.TelemetrySettings {
+	set := componenttest.NewNopTelemetrySettings()
+	set.MeterProvider = tt.meterProvider
+	set.MetricsLevel = configtelemetry.LevelDetailed
+	return set
 }
 
 func setupTestTelemetry() componentTestTelemetry {

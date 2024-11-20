@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/collector/pipeline/pipelineprofiles"
 )
 
 type mutatingProfilesSink struct {
@@ -29,10 +30,10 @@ func (mts *mutatingProfilesSink) Capabilities() consumer.Capabilities {
 }
 
 func TestProfilesRouterMultiplexing(t *testing.T) {
-	var max = 20
-	for numIDs := 1; numIDs < max; numIDs++ {
-		for numCons := 1; numCons < max; numCons++ {
-			for numProfiles := 1; numProfiles < max; numProfiles++ {
+	var num = 20
+	for numIDs := 1; numIDs < num; numIDs++ {
+		for numCons := 1; numCons < num; numCons++ {
+			for numProfiles := 1; numProfiles < num; numProfiles++ {
 				t.Run(
 					fmt.Sprintf("%d-ids/%d-cons/%d-logs", numIDs, numCons, numProfiles),
 					fuzzProfiles(numIDs, numCons, numProfiles),
@@ -50,7 +51,7 @@ func fuzzProfiles(numIDs, numCons, numProfiles int) func(*testing.T) {
 
 		// If any consumer is mutating, the router must report mutating
 		for i := 0; i < numCons; i++ {
-			allIDs = append(allIDs, pipeline.MustNewIDWithName("sink", strconv.Itoa(numCons)))
+			allIDs = append(allIDs, pipeline.NewIDWithName(pipelineprofiles.SignalProfiles, "sink_"+strconv.Itoa(numCons)))
 			// Random chance for each consumer to be mutating
 			if (numCons+numProfiles+i)%4 == 0 {
 				allCons = append(allCons, &mutatingProfilesSink{ProfilesSink: new(consumertest.ProfilesSink)})
@@ -110,8 +111,8 @@ func TestProfilessRouterConsumer(t *testing.T) {
 	ctx := context.Background()
 	td := testdata.GenerateProfiles(1)
 
-	fooID := pipeline.MustNewID("foo")
-	barID := pipeline.MustNewID("bar")
+	fooID := pipeline.NewIDWithName(pipelineprofiles.SignalProfiles, "foo")
+	barID := pipeline.NewIDWithName(pipelineprofiles.SignalProfiles, "bar")
 
 	foo := new(consumertest.ProfilesSink)
 	bar := new(consumertest.ProfilesSink)
@@ -152,7 +153,7 @@ func TestProfilessRouterConsumer(t *testing.T) {
 	assert.Nil(t, none)
 	require.Error(t, err)
 
-	fake, err := r.Consumer(pipeline.MustNewID("fake"))
+	fake, err := r.Consumer(pipeline.NewIDWithName(pipelineprofiles.SignalProfiles, "fake"))
 	assert.Nil(t, fake)
 	assert.Error(t, err)
 }

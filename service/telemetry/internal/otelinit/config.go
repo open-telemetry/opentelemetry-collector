@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -48,17 +49,17 @@ const (
 
 var (
 	// GRPCUnacceptableKeyValues is a list of high cardinality grpc attributes that should be filtered out.
-	GRPCUnacceptableKeyValues = []attribute.KeyValue{
+	GRPCUnacceptableKeyValues = attribute.NewSet(
 		attribute.String(semconv.AttributeNetSockPeerAddr, ""),
 		attribute.String(semconv.AttributeNetSockPeerPort, ""),
 		attribute.String(semconv.AttributeNetSockPeerName, ""),
-	}
+	)
 
 	// HTTPUnacceptableKeyValues is a list of high cardinality http attributes that should be filtered out.
-	HTTPUnacceptableKeyValues = []attribute.KeyValue{
+	HTTPUnacceptableKeyValues = attribute.NewSet(
 		attribute.String(semconv.AttributeNetHostName, ""),
 		attribute.String(semconv.AttributeNetHostPort, ""),
-	}
+	)
 
 	errNoValidMetricExporter = errors.New("no valid metric exporter")
 )
@@ -123,18 +124,17 @@ func disableHighCardinalityViews(disableHighCardinality bool) []sdkmetric.View {
 		sdkmetric.NewView(
 			sdkmetric.Instrument{Scope: instrumentation.Scope{Name: GRPCInstrumentation}},
 			sdkmetric.Stream{
-				AttributeFilter: cardinalityFilter(GRPCUnacceptableKeyValues...),
+				AttributeFilter: cardinalityFilter(GRPCUnacceptableKeyValues),
 			}),
 		sdkmetric.NewView(
 			sdkmetric.Instrument{Scope: instrumentation.Scope{Name: HTTPInstrumentation}},
 			sdkmetric.Stream{
-				AttributeFilter: cardinalityFilter(HTTPUnacceptableKeyValues...),
+				AttributeFilter: cardinalityFilter(HTTPUnacceptableKeyValues),
 			}),
 	}
 }
 
-func cardinalityFilter(kvs ...attribute.KeyValue) attribute.Filter {
-	filter := attribute.NewSet(kvs...)
+func cardinalityFilter(filter attribute.Set) attribute.Filter {
 	return func(kv attribute.KeyValue) bool {
 		return !filter.HasValue(kv.Key)
 	}
@@ -143,10 +143,10 @@ func cardinalityFilter(kvs ...attribute.KeyValue) attribute.Filter {
 func initPrometheusExporter(prometheusConfig *config.Prometheus, asyncErrorChannel chan error, serverWG *sync.WaitGroup) (sdkmetric.Reader, *http.Server, error) {
 	promRegistry := prometheus.NewRegistry()
 	if prometheusConfig.Host == nil {
-		return nil, nil, fmt.Errorf("host must be specified")
+		return nil, nil, errors.New("host must be specified")
 	}
 	if prometheusConfig.Port == nil {
-		return nil, nil, fmt.Errorf("port must be specified")
+		return nil, nil, errors.New("port must be specified")
 	}
 
 	opts := []otelprom.Option{
@@ -164,7 +164,7 @@ func initPrometheusExporter(prometheusConfig *config.Prometheus, asyncErrorChann
 		return nil, nil, fmt.Errorf("error creating otel prometheus exporter: %w", err)
 	}
 
-	return exporter, InitPrometheusServer(promRegistry, net.JoinHostPort(*prometheusConfig.Host, fmt.Sprintf("%d", *prometheusConfig.Port)), asyncErrorChannel, serverWG), nil
+	return exporter, InitPrometheusServer(promRegistry, net.JoinHostPort(*prometheusConfig.Host, strconv.Itoa(*prometheusConfig.Port)), asyncErrorChannel, serverWG), nil
 }
 
 func initPullExporter(exporter config.MetricExporter, asyncErrorChannel chan error, serverWG *sync.WaitGroup) (sdkmetric.Reader, *http.Server, error) {
@@ -208,7 +208,7 @@ func initPeriodicExporter(ctx context.Context, exporter config.MetricExporter, o
 
 func normalizeEndpoint(endpoint string) string {
 	if !strings.HasPrefix(endpoint, "https://") && !strings.HasPrefix(endpoint, "http://") {
-		return fmt.Sprintf("http://%s", endpoint)
+		return "http://" + endpoint
 	}
 	return endpoint
 }

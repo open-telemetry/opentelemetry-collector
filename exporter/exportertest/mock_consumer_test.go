@@ -129,11 +129,9 @@ func TestConsumeLogsNonPermanent(t *testing.T) {
 	assert.Equal(t, 0, mc.reqCounter.error.permanent)
 	assert.Equal(t, 0, mc.reqCounter.success)
 	assert.Equal(t, 1, mc.reqCounter.total)
-
 }
 
 func TestConsumeLogsPermanent(t *testing.T) {
-
 	mc := newMockConsumer(returnPermanentError)
 	validData := createLog("logId")
 	err := mc.ConsumeLogs(context.Background(), validData)
@@ -144,7 +142,6 @@ func TestConsumeLogsPermanent(t *testing.T) {
 	assert.Equal(t, 1, mc.reqCounter.error.permanent)
 	assert.Equal(t, 0, mc.reqCounter.success)
 	assert.Equal(t, 1, mc.reqCounter.total)
-
 }
 
 func TestConsumeLogsSuccess(t *testing.T) {
@@ -158,7 +155,6 @@ func TestConsumeLogsSuccess(t *testing.T) {
 	assert.Equal(t, 0, mc.reqCounter.error.permanent)
 	assert.Equal(t, 1, mc.reqCounter.success)
 	assert.Equal(t, 1, mc.reqCounter.total)
-
 }
 
 func TestConsumeTracesNonPermanent(t *testing.T) {
@@ -172,11 +168,9 @@ func TestConsumeTracesNonPermanent(t *testing.T) {
 	assert.Equal(t, 0, mc.reqCounter.error.permanent)
 	assert.Equal(t, 0, mc.reqCounter.success)
 	assert.Equal(t, 1, mc.reqCounter.total)
-
 }
 
 func TestConsumeTracesPermanent(t *testing.T) {
-
 	mc := newMockConsumer(returnPermanentError)
 	validData := createTrace("traceId")
 	err := mc.ConsumeTraces(context.Background(), validData)
@@ -187,7 +181,6 @@ func TestConsumeTracesPermanent(t *testing.T) {
 	assert.Equal(t, 1, mc.reqCounter.error.permanent)
 	assert.Equal(t, 0, mc.reqCounter.success)
 	assert.Equal(t, 1, mc.reqCounter.total)
-
 }
 
 func TestConsumeTracesSuccess(t *testing.T) {
@@ -201,7 +194,6 @@ func TestConsumeTracesSuccess(t *testing.T) {
 	assert.Equal(t, 0, mc.reqCounter.error.permanent)
 	assert.Equal(t, 1, mc.reqCounter.success)
 	assert.Equal(t, 1, mc.reqCounter.total)
-
 }
 func TestConsumeMetricsNonPermanent(t *testing.T) {
 	mc := newMockConsumer(returnNonPermanentError)
@@ -214,7 +206,6 @@ func TestConsumeMetricsNonPermanent(t *testing.T) {
 	assert.Equal(t, 0, mc.reqCounter.error.permanent)
 	assert.Equal(t, 0, mc.reqCounter.success)
 	assert.Equal(t, 1, mc.reqCounter.total)
-
 }
 
 func TestConsumeMetricsPermanent(t *testing.T) {
@@ -228,7 +219,6 @@ func TestConsumeMetricsPermanent(t *testing.T) {
 	assert.Equal(t, 1, mc.reqCounter.error.permanent)
 	assert.Equal(t, 0, mc.reqCounter.success)
 	assert.Equal(t, 1, mc.reqCounter.total)
-
 }
 
 func TestConsumeMetricsSuccess(t *testing.T) {
@@ -242,10 +232,9 @@ func TestConsumeMetricsSuccess(t *testing.T) {
 	assert.Equal(t, 0, mc.reqCounter.error.permanent)
 	assert.Equal(t, 1, mc.reqCounter.success)
 	assert.Equal(t, 1, mc.reqCounter.total)
-
 }
 
-func TestCapabilites(t *testing.T) {
+func TestCapabilities(t *testing.T) {
 	mc := newMockConsumer(func() error { return nil })
 	assert.Equal(t, consumer.Capabilities{}, mc.Capabilities())
 }

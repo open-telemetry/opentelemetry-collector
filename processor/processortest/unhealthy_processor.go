@@ -8,19 +8,10 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor"
 )
-
-// NewUnhealthyProcessorCreateSettings returns a new nop settings for Create* functions.
-func NewUnhealthyProcessorCreateSettings() processor.Settings {
-	return processor.Settings{
-		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
-		BuildInfo:         component.NewDefaultBuildInfo(),
-	}
-}
 
 // NewUnhealthyProcessorFactory returns a processor.Factory that constructs nop processors.
 func NewUnhealthyProcessorFactory() processor.Factory {

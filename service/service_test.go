@@ -22,7 +22,6 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componentprofiles"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -32,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/collector/pipeline/pipelineprofiles"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/promtest"
@@ -242,42 +242,15 @@ func TestServiceGetExporters(t *testing.T) {
 	assert.Contains(t, expMap[pipeline.SignalMetrics], component.NewID(nopType))
 	assert.Len(t, expMap[pipeline.SignalLogs], 1)
 	assert.Contains(t, expMap[pipeline.SignalLogs], component.NewID(nopType))
-	assert.Len(t, expMap[componentprofiles.SignalProfiles], 1)
-	assert.Contains(t, expMap[componentprofiles.SignalProfiles], component.NewID(nopType))
-}
-
-func TestServiceGetExportersWithSignal(t *testing.T) {
-	srv, err := New(context.Background(), newNopSettings(), newNopConfig())
-	require.NoError(t, err)
-
-	assert.NoError(t, srv.Start(context.Background()))
-	t.Cleanup(func() {
-		assert.NoError(t, srv.Shutdown(context.Background()))
-	})
-
-	// nolint
-	expMap := srv.host.GetExportersWithSignal()
-
-	v, ok := expMap[pipeline.SignalTraces]
-	assert.True(t, ok)
-	assert.NotNil(t, v)
-
-	assert.Len(t, expMap, 4)
-	assert.Len(t, expMap[pipeline.SignalTraces], 1)
-	assert.Contains(t, expMap[pipeline.SignalTraces], component.NewID(nopType))
-	assert.Len(t, expMap[pipeline.SignalMetrics], 1)
-	assert.Contains(t, expMap[pipeline.SignalMetrics], component.NewID(nopType))
-	assert.Len(t, expMap[pipeline.SignalLogs], 1)
-	assert.Contains(t, expMap[pipeline.SignalLogs], component.NewID(nopType))
-	assert.Len(t, expMap[componentprofiles.SignalProfiles], 1)
-	assert.Contains(t, expMap[componentprofiles.SignalProfiles], component.NewID(nopType))
+	assert.Len(t, expMap[pipelineprofiles.SignalProfiles], 1)
+	assert.Contains(t, expMap[pipelineprofiles.SignalProfiles], component.NewID(nopType))
 }
 
 // TestServiceTelemetryCleanupOnError tests that if newService errors due to an invalid config telemetry is cleaned up
 // and another service with a valid config can be started right after.
 func TestServiceTelemetryCleanupOnError(t *testing.T) {
 	invalidCfg := newNopConfig()
-	invalidCfg.Pipelines[pipeline.MustNewID("traces")].Processors[0] = component.MustNewID("invalid")
+	invalidCfg.Pipelines[pipeline.NewID(pipeline.SignalTraces)].Processors[0] = component.MustNewID("invalid")
 	// Create a service with an invalid config and expect an error
 	_, err := New(context.Background(), newNopSettings(), invalidCfg)
 	require.Error(t, err)
@@ -290,10 +263,10 @@ func TestServiceTelemetryCleanupOnError(t *testing.T) {
 
 func TestServiceTelemetry(t *testing.T) {
 	for _, tc := range ownMetricsTestCases() {
-		t.Run(fmt.Sprintf("ipv4_%s", tc.name), func(t *testing.T) {
+		t.Run("ipv4_"+tc.name, func(t *testing.T) {
 			testCollectorStartHelperWithReaders(t, tc, "tcp4")
 		})
-		t.Run(fmt.Sprintf("ipv6_%s", tc.name), func(t *testing.T) {
+		t.Run("ipv6_"+tc.name, func(t *testing.T) {
 			testCollectorStartHelperWithReaders(t, tc, "tcp6")
 		})
 	}
@@ -496,6 +469,46 @@ func TestServiceFatalError(t *testing.T) {
 	require.ErrorIs(t, err, assert.AnError)
 }
 
+func TestServiceInvalidTelemetryConfiguration(t *testing.T) {
+	tests := []struct {
+		name    string
+		wantErr error
+		cfg     telemetry.Config
+	}{
+		{
+			name: "log config with processors and invalid config",
+			cfg: telemetry.Config{
+				Logs: telemetry.LogsConfig{
+					Encoding: "console",
+					Processors: []config.LogRecordProcessor{
+						{
+							Batch: &config.BatchLogRecordProcessor{
+								Exporter: config.LogRecordExporter{
+									OTLP: &config.OTLP{},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: errors.New("unsupported protocol \"\""),
+		},
+	}
+	for _, tt := range tests {
+		set := newNopSettings()
+		set.AsyncErrorChannel = make(chan error)
+
+		cfg := newNopConfig()
+		cfg.Telemetry = tt.cfg
+		_, err := New(context.Background(), set, cfg)
+		if tt.wantErr != nil {
+			require.ErrorContains(t, err, tt.wantErr.Error())
+		} else {
+			require.NoError(t, err)
+		}
+	}
+}
+
 func assertResourceLabels(t *testing.T, res pcommon.Resource, expectedLabels map[string]labelValue) {
 	for key, labelValue := range expectedLabels {
 		lookupKey, ok := prometheusToOtelConv[key]
@@ -624,22 +637,22 @@ func newNopSettings() Settings {
 
 func newNopConfig() Config {
 	return newNopConfigPipelineConfigs(pipelines.Config{
-		pipeline.MustNewID("traces"): {
+		pipeline.NewID(pipeline.SignalTraces): {
 			Receivers:  []component.ID{component.NewID(nopType)},
 			Processors: []component.ID{component.NewID(nopType)},
 			Exporters:  []component.ID{component.NewID(nopType)},
 		},
-		pipeline.MustNewID("metrics"): {
+		pipeline.NewID(pipeline.SignalMetrics): {
 			Receivers:  []component.ID{component.NewID(nopType)},
 			Processors: []component.ID{component.NewID(nopType)},
 			Exporters:  []component.ID{component.NewID(nopType)},
 		},
-		pipeline.MustNewID("logs"): {
+		pipeline.NewID(pipeline.SignalLogs): {
 			Receivers:  []component.ID{component.NewID(nopType)},
 			Processors: []component.ID{component.NewID(nopType)},
 			Exporters:  []component.ID{component.NewID(nopType)},
 		},
-		pipeline.MustNewID("profiles"): {
+		pipeline.NewID(pipelineprofiles.SignalProfiles): {
 			Receivers:  []component.ID{component.NewID(nopType)},
 			Processors: []component.ID{component.NewID(nopType)},
 			Exporters:  []component.ID{component.NewID(nopType)},

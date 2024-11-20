@@ -28,10 +28,10 @@ func (mts *mutatingTracesSink) Capabilities() consumer.Capabilities {
 }
 
 func TestTracesRouterMultiplexing(t *testing.T) {
-	var max = 20
-	for numIDs := 1; numIDs < max; numIDs++ {
-		for numCons := 1; numCons < max; numCons++ {
-			for numTraces := 1; numTraces < max; numTraces++ {
+	var num = 20
+	for numIDs := 1; numIDs < num; numIDs++ {
+		for numCons := 1; numCons < num; numCons++ {
+			for numTraces := 1; numTraces < num; numTraces++ {
 				t.Run(
 					fmt.Sprintf("%d-ids/%d-cons/%d-logs", numIDs, numCons, numTraces),
 					fuzzTraces(numIDs, numCons, numTraces),
@@ -49,7 +49,7 @@ func fuzzTraces(numIDs, numCons, numTraces int) func(*testing.T) {
 
 		// If any consumer is mutating, the router must report mutating
 		for i := 0; i < numCons; i++ {
-			allIDs = append(allIDs, pipeline.MustNewIDWithName("sink", strconv.Itoa(numCons)))
+			allIDs = append(allIDs, pipeline.NewIDWithName(pipeline.SignalTraces, "sink_"+strconv.Itoa(numCons)))
 			// Random chance for each consumer to be mutating
 			if (numCons+numTraces+i)%4 == 0 {
 				allCons = append(allCons, &mutatingTracesSink{TracesSink: new(consumertest.TracesSink)})
@@ -109,8 +109,8 @@ func TestTracesRouterConsumer(t *testing.T) {
 	ctx := context.Background()
 	td := testdata.GenerateTraces(1)
 
-	fooID := pipeline.MustNewID("foo")
-	barID := pipeline.MustNewID("bar")
+	fooID := pipeline.NewIDWithName(pipeline.SignalTraces, "foo")
+	barID := pipeline.NewIDWithName(pipeline.SignalTraces, "bar")
 
 	foo := new(consumertest.TracesSink)
 	bar := new(consumertest.TracesSink)
@@ -151,7 +151,7 @@ func TestTracesRouterConsumer(t *testing.T) {
 	assert.Nil(t, none)
 	require.Error(t, err)
 
-	fake, err := r.Consumer(pipeline.MustNewID("fake"))
+	fake, err := r.Consumer(pipeline.NewIDWithName(pipeline.SignalTraces, "fake"))
 	assert.Nil(t, fake)
 	assert.Error(t, err)
 }

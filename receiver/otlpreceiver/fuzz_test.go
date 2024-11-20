@@ -19,7 +19,7 @@ import (
 
 func FuzzReceiverHandlers(f *testing.F) {
 	f.Fuzz(func(_ *testing.T, data []byte, pb bool, handler int) {
-		req, err := http.NewRequest("POST", "", bytes.NewReader(data))
+		req, err := http.NewRequest(http.MethodPost, "", bytes.NewReader(data))
 		if err != nil {
 			return
 		}
@@ -52,6 +52,5 @@ func FuzzReceiverHandlers(f *testing.F) {
 			httpLogsReceiver := logs.New(r.nextLogs, r.obsrepHTTP)
 			handleLogs(resp, req, httpLogsReceiver)
 		}
-
 	})
 }

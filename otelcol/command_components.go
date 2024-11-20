@@ -41,7 +41,6 @@ func newComponentsCommand(set CollectorSettings) *cobra.Command {
 		Long:  "Outputs available components in this collector distribution including their stability levels. The output format is not stable and can change between releases.",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, _ []string) error {
-
 			factories, err := set.Factories()
 			if err != nil {
 				return fmt.Errorf("failed to initialize factories: %w", err)
@@ -72,7 +71,7 @@ func newComponentsCommand(set CollectorSettings) *cobra.Command {
 					Name:   ext.Type(),
 					Module: factories.ExtensionModules[ext.Type()],
 					Stability: map[string]string{
-						"extension": ext.ExtensionStability().String(),
+						"extension": ext.Stability().String(),
 					},
 				})
 			}
@@ -103,9 +102,9 @@ func newComponentsCommand(set CollectorSettings) *cobra.Command {
 					Name:   exp.Type(),
 					Module: factories.ExporterModules[exp.Type()],
 					Stability: map[string]string{
-						"logs":    exp.LogsExporterStability().String(),
-						"metrics": exp.MetricsExporterStability().String(),
-						"traces":  exp.TracesExporterStability().String(),
+						"logs":    exp.LogsStability().String(),
+						"metrics": exp.MetricsStability().String(),
+						"traces":  exp.TracesStability().String(),
 					},
 				})
 			}
