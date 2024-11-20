@@ -571,6 +571,7 @@ func PrefixFormatter(prefix string) func(string, *http.Request) string {
 		}
 		return r.URL.Path
 	}
+}
 
 func getLeveledMeterProvider(settings component.TelemetrySettings) metric.MeterProvider {
 	if configtelemetry.LevelDetailed <= settings.MetricsLevel {
