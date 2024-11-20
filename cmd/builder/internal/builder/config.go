@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -16,7 +17,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const defaultBetaOtelColVersion = "v0.113.0"
+const defaultBetaOtelColVersion = "v0.114.0"
 const defaultStableOtelColVersion = "v1.17.0"
 
 var (
@@ -36,15 +37,16 @@ type Config struct {
 	LDFlags              string `mapstructure:"-"`
 	Verbose              bool   `mapstructure:"-"`
 
-	Distribution Distribution `mapstructure:"dist"`
-	Exporters    []Module     `mapstructure:"exporters"`
-	Extensions   []Module     `mapstructure:"extensions"`
-	Receivers    []Module     `mapstructure:"receivers"`
-	Processors   []Module     `mapstructure:"processors"`
-	Connectors   []Module     `mapstructure:"connectors"`
-	Providers    []Module     `mapstructure:"providers"`
-	Replaces     []string     `mapstructure:"replaces"`
-	Excludes     []string     `mapstructure:"excludes"`
+	Distribution      Distribution `mapstructure:"dist"`
+	Exporters         []Module     `mapstructure:"exporters"`
+	Extensions        []Module     `mapstructure:"extensions"`
+	Receivers         []Module     `mapstructure:"receivers"`
+	Processors        []Module     `mapstructure:"processors"`
+	Connectors        []Module     `mapstructure:"connectors"`
+	ConfmapProviders  []Module     `mapstructure:"providers"`
+	ConfmapConverters []Module     `mapstructure:"converters"`
+	Replaces          []string     `mapstructure:"replaces"`
+	Excludes          []string     `mapstructure:"excludes"`
 
 	ConfResolver ConfResolver `mapstructure:"conf_resolver"`
 
@@ -110,7 +112,7 @@ func NewDefaultConfig() (*Config, error) {
 			numRetries: 3,
 			wait:       5 * time.Second,
 		},
-		Providers: []Module{
+		ConfmapProviders: []Module{
 			{
 				GoMod: "go.opentelemetry.io/collector/confmap/provider/envprovider " + defaultStableOtelColVersion,
 			},
@@ -141,7 +143,8 @@ func (c *Config) Validate() error {
 		validateModules("exporter", c.Exporters),
 		validateModules("processor", c.Processors),
 		validateModules("connector", c.Connectors),
-		validateModules("provider", c.Providers),
+		validateModules("provider", c.ConfmapProviders),
+		validateModules("converter", c.ConfmapConverters),
 	)
 }
 
@@ -190,12 +193,19 @@ func (c *Config) ParseModules() error {
 		return err
 	}
 
-	c.Providers, err = parseModules(c.Providers)
+	c.ConfmapProviders, err = parseModules(c.ConfmapProviders)
 	if err != nil {
 		return err
 	}
-
+	c.ConfmapConverters, err = parseModules(c.ConfmapConverters)
+	if err != nil {
+		return err
+	}
 	return nil
+}
+
+func (c *Config) allComponents() []Module {
+	return slices.Concat[[]Module](c.Exporters, c.Receivers, c.Processors, c.Extensions, c.Connectors, c.ConfmapProviders, c.ConfmapConverters)
 }
 
 func validateModules(name string, mods []Module) error {
@@ -225,6 +235,10 @@ func parseModules(mods []Module) ([]Module, error) {
 			mod.Path, err = filepath.Abs(mod.Path)
 			if err != nil {
 				return mods, fmt.Errorf("module has a relative \"path\" element, but we couldn't resolve the current working dir: %w", err)
+			}
+			// Check if the path exists
+			if _, err := os.Stat(mod.Path); os.IsNotExist(err) {
+				return mods, fmt.Errorf("filepath does not exist: %s", mod.Path)
 			}
 		}
 

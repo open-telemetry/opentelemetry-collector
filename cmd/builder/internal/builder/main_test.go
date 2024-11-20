@@ -41,6 +41,7 @@ var (
 	replaceModules = []string{
 		"",
 		"/component",
+		"/component/componenttest",
 		"/component/componentstatus",
 		"/client",
 		"/config/configauth",
@@ -77,8 +78,10 @@ var (
 		"/exporter/otlphttpexporter",
 		"/extension",
 		"/extension/auth",
+		"/extension/auth/authtest",
 		"/extension/experimental/storage",
 		"/extension/extensioncapabilities",
+		"/extension/extensiontest",
 		"/extension/zpagesextension",
 		"/featuregate",
 		"/internal/memorylimiter",
@@ -100,6 +103,7 @@ var (
 		"/pdata",
 		"/pdata/testdata",
 		"/pdata/pprofile",
+		"/scraper",
 		"/semconv",
 		"/service",
 	}
@@ -175,7 +179,7 @@ func TestVersioning(t *testing.T) {
 						GoMod: "go.opentelemetry.io/collector/exporter/otlpexporter v0.112.0",
 					},
 				}
-				cfg.Providers = []Module{}
+				cfg.ConfmapProviders = []Module{}
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				return cfg
 			},
@@ -192,7 +196,7 @@ func TestVersioning(t *testing.T) {
 						GoMod: "go.opentelemetry.io/collector/exporter/otlpexporter v0.112.0",
 					},
 				}
-				cfg.Providers = []Module{}
+				cfg.ConfmapProviders = []Module{}
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				return cfg
 			},
@@ -277,7 +281,7 @@ func TestGenerateAndCompile(t *testing.T) {
 				cfg := newTestConfig(t)
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
-				cfg.Providers = []Module{}
+				cfg.ConfmapProviders = []Module{}
 				return cfg
 			},
 		},
