@@ -154,4 +154,6 @@ replace go.opentelemetry.io/collector/exporter/exportertest => ../exportertest
 
 replace go.opentelemetry.io/collector/extension/extensiontest => ../../extension/extensiontest
 
+replace go.opentelemetry.io/collector/extension/auth/authtest => ../../extension/auth/authtest
+
 replace go.opentelemetry.io/collector/scraper => ../../scraper

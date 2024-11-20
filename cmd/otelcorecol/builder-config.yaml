@@ -77,6 +77,7 @@ replaces:
   - go.opentelemetry.io/collector/exporter/otlphttpexporter => ../../exporter/otlphttpexporter
   - go.opentelemetry.io/collector/extension => ../../extension
   - go.opentelemetry.io/collector/extension/auth => ../../extension/auth
+  - go.opentelemetry.io/collector/extension/auth/authtest => ../../extension/auth/authtest
   - go.opentelemetry.io/collector/extension/experimental/storage => ../../extension/experimental/storage
   - go.opentelemetry.io/collector/extension/extensioncapabilities => ../../extension/extensioncapabilities
   - go.opentelemetry.io/collector/extension/extensiontest => ../../extension/extensiontest
