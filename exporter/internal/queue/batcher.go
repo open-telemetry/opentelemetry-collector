@@ -5,7 +5,6 @@ package queue // import "go.opentelemetry.io/collector/exporter/internal/queue"
 
 import (
 	"context"
-	"errors"
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
@@ -29,23 +28,24 @@ type BaseBatcher struct {
 	queue      Queue[internal.Request]
 	maxWorkers int
 	workerPool chan bool
+	exportFunc func(ctx context.Context, req internal.Request) error
 	stopWG     sync.WaitGroup
 }
 
-func NewBatcher(batchCfg exporterbatcher.Config, queue Queue[internal.Request], maxWorkers int) (Batcher, error) {
+func NewBatcher(batchCfg exporterbatcher.Config,
+	queue Queue[internal.Request],
+	exportFunc func(ctx context.Context, req internal.Request) error,
+	maxWorkers int) (Batcher, error) {
 	if !batchCfg.Enabled {
 		return &DisabledBatcher{
 			BaseBatcher{
 				batchCfg:   batchCfg,
 				queue:      queue,
 				maxWorkers: maxWorkers,
+				exportFunc: exportFunc,
 				stopWG:     sync.WaitGroup{},
 			},
 		}, nil
-	}
-
-	if batchCfg.MaxSizeConfig.MaxSizeItems != 0 {
-		return nil, errors.ErrUnsupported
 	}
 
 	return &DefaultBatcher{
@@ -53,6 +53,7 @@ func NewBatcher(batchCfg exporterbatcher.Config, queue Queue[internal.Request], 
 			batchCfg:   batchCfg,
 			queue:      queue,
 			maxWorkers: maxWorkers,
+			exportFunc: exportFunc,
 			stopWG:     sync.WaitGroup{},
 		},
 	}, nil
@@ -70,7 +71,7 @@ func (qb *BaseBatcher) startWorkerPool() {
 
 // flush exports the incoming batch synchronously.
 func (qb *BaseBatcher) flush(batchToFlush batch) {
-	err := batchToFlush.req.Export(batchToFlush.ctx)
+	err := qb.exportFunc(batchToFlush.ctx, batchToFlush.req)
 	for _, idx := range batchToFlush.idxList {
 		qb.queue.OnProcessingFinished(idx, err)
 	}
@@ -92,10 +93,4 @@ func (qb *BaseBatcher) flushAsync(batchToFlush batch) {
 		qb.flush(batchToFlush)
 		qb.workerPool <- true
 	}()
-}
-
-// Shutdown ensures that queue and all Batcher are stopped.
-func (qb *BaseBatcher) Shutdown(_ context.Context) error {
-	qb.stopWG.Wait()
-	return nil
 }

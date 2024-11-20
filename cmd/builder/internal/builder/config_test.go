@@ -36,12 +36,27 @@ func TestParseModules(t *testing.T) {
 	assert.Equal(t, "repo", cfg.Extensions[0].Name)
 }
 
+func TestInvalidConverter(t *testing.T) {
+	// Create a Config instance with invalid Converters
+	config := &Config{
+		ConfmapConverters: []Module{
+			{
+				Path: "./invalid/module/path", // Invalid module path to trigger an error
+			},
+		},
+	}
+
+	// Call the method and expect an error
+	err := config.ParseModules()
+	require.Error(t, err, "expected an error when parsing invalid modules")
+}
+
 func TestRelativePath(t *testing.T) {
 	// prepare
 	cfg := Config{
 		Extensions: []Module{{
 			GoMod: "some-module",
-			Path:  "./some-module",
+			Path:  "./templates",
 		}},
 	}
 
@@ -88,7 +103,7 @@ func TestMissingModule(t *testing.T) {
 		{
 			cfg: Config{
 				Logger: zap.NewNop(),
-				Providers: []Module{{
+				ConfmapProviders: []Module{{
 					Import: "invalid",
 				}},
 			},
@@ -116,7 +131,7 @@ func TestMissingModule(t *testing.T) {
 			cfg: Config{
 				Logger: zap.NewNop(),
 				Exporters: []Module{{
-					Import: "invali",
+					Import: "invalid",
 				}},
 			},
 			err: errMissingGoMod,
@@ -134,6 +149,15 @@ func TestMissingModule(t *testing.T) {
 			cfg: Config{
 				Logger: zap.NewNop(),
 				Connectors: []Module{{
+					Import: "invalid",
+				}},
+			},
+			err: errMissingGoMod,
+		},
+		{
+			cfg: Config{
+				Logger: zap.NewNop(),
+				ConfmapConverters: []Module{{
 					Import: "invalid",
 				}},
 			},
@@ -228,13 +252,14 @@ func TestAddsDefaultProviders(t *testing.T) {
 	cfg, err := NewDefaultConfig()
 	require.NoError(t, err)
 	require.NoError(t, cfg.ParseModules())
-	assert.Len(t, cfg.Providers, 5)
+	assert.Len(t, cfg.ConfmapProviders, 5)
 }
 
 func TestSkipsNilFieldValidation(t *testing.T) {
 	cfg, err := NewDefaultConfig()
 	require.NoError(t, err)
-	cfg.Providers = nil
+	cfg.ConfmapProviders = nil
+	cfg.ConfmapConverters = nil
 	assert.NoError(t, cfg.Validate())
 }
 

@@ -22,7 +22,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5.1.0
         with:
-          go-version: ~1.22.8
+          go-version: ~1.22.9
           cache: false
       - name: Cache Go
         id: go-cache
@@ -45,7 +45,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5.1.0
         with:
-          go-version: ~1.22.8
+          go-version: ~1.22.9
           cache: false
       - name: Cache Go
         id: go-cache
@@ -69,7 +69,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5.1.0
         with:
-          go-version: ~1.22.8
+          go-version: ~1.22.9
           cache: false
       - name: Cache Go
         id: go-cache
@@ -94,7 +94,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5.1.0
         with:
-          go-version: ~1.22.8
+          go-version: ~1.22.9
           cache: false
       - name: Cache Go
         id: go-cache
@@ -194,7 +194,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5.1.0
         with:
-          go-version: ~1.22.8
+          go-version: ~1.22.9
           cache: false
       - name: Cache Go
         id: go-cache
@@ -212,7 +212,7 @@ jobs:
       - name: Run Unit Tests With Coverage
         run: make gotest-with-cover
       - name: Upload coverage report
-        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # 4.6.0
+        uses: codecov/codecov-action@5c47607acb93fed5485fdbf7232e8a31425f672a # 5.0.2
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
@@ -256,7 +256,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5.1.0
         with:
-          go-version: ~1.22.8
+          go-version: ~1.22.9
           cache: false
       - name: Cache Go
         id: go-cache

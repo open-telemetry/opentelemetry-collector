@@ -30,10 +30,10 @@ func (mts *mutatingProfilesSink) Capabilities() consumer.Capabilities {
 }
 
 func TestProfilesRouterMultiplexing(t *testing.T) {
-	var max = 20
-	for numIDs := 1; numIDs < max; numIDs++ {
-		for numCons := 1; numCons < max; numCons++ {
-			for numProfiles := 1; numProfiles < max; numProfiles++ {
+	var num = 20
+	for numIDs := 1; numIDs < num; numIDs++ {
+		for numCons := 1; numCons < num; numCons++ {
+			for numProfiles := 1; numProfiles < num; numProfiles++ {
 				t.Run(
 					fmt.Sprintf("%d-ids/%d-cons/%d-logs", numIDs, numCons, numProfiles),
 					fuzzProfiles(numIDs, numCons, numProfiles),

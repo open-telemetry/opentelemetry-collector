@@ -7,6 +7,40 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.20.0/v0.114.0
+
+### 🛑 Breaking changes 🛑
+
+- `extensiontest`: Make extensiontest into its own module (#11463)
+- `component`: Make componenttest into its own module (#11464)
+- `expandconverter`: Remove deprecated expandvar converter (#11672)
+- `exporter`: Remove deprecated funcs Create[*]Exporter and [*]ExporterStability (#11662)
+- `exporterhelper`: Remove derprecated NewLogs[Request]Exporter funcs (#11661)
+- `extension`: Remove deprecated funcs CreateExtension and ExtensionStability (#11663)
+- `processortest`: Remove deprecated func NewUnhealthyProcessorCreateSettings (#11665)
+
+### 🚩 Deprecations 🚩
+
+- `component`: Deprecate `TelemetrySettings.LeveledMeterProvider` and undo deprecation of `TelemetrySettings.MeterProvider` (#11061)
+- `scraperhelper`: Deprecate Scraper.ID func, pass type when register Scraper (#11238)
+
+## v1.19.0/v0.113.0
+
+### 🛑 Breaking changes 🛑
+
+- `builder`: Remove deprecated flags from Builder (#11576)
+  Here is the list of flags | --name, --description, --version, --otelcol-version, --go, --module
+
+### 🚀 New components 🚀
+
+- `processorhelperprofiles`: Add processorhelperprofiles to support profiles signal (#11556)
+
+### 💡 Enhancements 💡
+
+- `mdatagen`: Add newTelemetrySettings to be generated all the time even for pkg class (#11535)
+- `debugexporter`: Add profiles support to debug exporter (#11155)
+- `component`: Add UnmarshalText for StabilityLevel (#11520)
+
 ## v1.18.0/v0.112.0
 
 ### 🛑 Breaking changes 🛑

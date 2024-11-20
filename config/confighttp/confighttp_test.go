@@ -14,13 +14,13 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -51,7 +51,7 @@ var (
 	dummyID       = component.MustNewID("dummy")
 	nonExistingID = component.MustNewID("nonexisting")
 	// Omit TracerProvider and MeterProvider in TelemetrySettings as otelhttp.Transport cannot be introspected
-	nilProvidersSettings = component.TelemetrySettings{Logger: zap.NewNop(), MetricsLevel: configtelemetry.LevelNone, LeveledMeterProvider: func(_ configtelemetry.Level) metric.MeterProvider { return nil }}
+	nilProvidersSettings = component.TelemetrySettings{Logger: zap.NewNop(), MetricsLevel: configtelemetry.LevelNone}
 )
 
 func TestAllHTTPClientSettings(t *testing.T) {
@@ -813,7 +813,7 @@ func TestHttpCors(t *testing.T) {
 				_ = s.Serve(ln)
 			}()
 
-			url := fmt.Sprintf("http://%s", ln.Addr().String())
+			url := "http://" + ln.Addr().String()
 
 			expectedStatus := http.StatusNoContent
 			if tt.CORSConfig == nil || len(tt.AllowedOrigins) == 0 {
@@ -933,7 +933,7 @@ func TestHttpServerHeaders(t *testing.T) {
 				_ = s.Serve(ln)
 			}()
 
-			url := fmt.Sprintf("http://%s", ln.Addr().String())
+			url := "http://" + ln.Addr().String()
 
 			// Verify allowed domain gets responses that allow CORS.
 			verifyHeadersResp(t, url, tt.headers)
@@ -973,7 +973,7 @@ func verifyCorsResp(t *testing.T, url string, origin string, set *CORSConfig, ex
 		wantAllowOrigin = origin
 		wantAllowMethods = "POST"
 		if set != nil && set.MaxAge != 0 {
-			wantMaxAge = fmt.Sprintf("%d", set.MaxAge)
+			wantMaxAge = strconv.Itoa(set.MaxAge)
 		}
 	}
 	assert.Equal(t, wantAllowOrigin, gotAllowOrigin)
