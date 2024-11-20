@@ -4,13 +4,13 @@ dist:
   go: ${GOBIN}
 
 extensions:
-  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.113.0
+  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.114.0
 
 receivers:
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.113.0
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.114.0
 
 exporters:
-  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.113.0
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.114.0
 
 replaces:
   - go.opentelemetry.io/collector => ${WORKSPACE_DIR}
@@ -49,6 +49,7 @@ replaces:
   - go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles => ${WORKSPACE_DIR}/exporter/exporterhelper/exporterhelperprofiles
   - go.opentelemetry.io/collector/extension => ${WORKSPACE_DIR}/extension
   - go.opentelemetry.io/collector/extension/auth => ${WORKSPACE_DIR}/extension/auth
+  - go.opentelemetry.io/collector/extension/auth/authtest => ${WORKSPACE_DIR}/extension/auth/authtest
   - go.opentelemetry.io/collector/extension/experimental/storage => ${WORKSPACE_DIR}/extension/experimental/storage
   - go.opentelemetry.io/collector/extension/extensioncapabilities => ${WORKSPACE_DIR}/extension/extensioncapabilities
   - go.opentelemetry.io/collector/extension/extensiontest => ${WORKSPACE_DIR}/extension/extensiontest
@@ -71,5 +72,6 @@ replaces:
   - go.opentelemetry.io/collector/receiver/otlpreceiver => ${WORKSPACE_DIR}/receiver/otlpreceiver
   - go.opentelemetry.io/collector/receiver/receiverprofiles => ${WORKSPACE_DIR}/receiver/receiverprofiles
   - go.opentelemetry.io/collector/receiver/receivertest => ${WORKSPACE_DIR}/receiver/receivertest
+  - go.opentelemetry.io/collector/scraper => ${WORKSPACE_DIR}/scraper
   - go.opentelemetry.io/collector/semconv => ${WORKSPACE_DIR}/semconv
   - go.opentelemetry.io/collector/service => ${WORKSPACE_DIR}/service

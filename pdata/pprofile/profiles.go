@@ -59,7 +59,7 @@ func (ms Profiles) SampleCount() int {
 		sps := rp.ScopeProfiles()
 		for j := 0; j < sps.Len(); j++ {
 			pcs := sps.At(j).Profiles()
-			for k := 0; j < pcs.Len(); j++ {
+			for k := 0; k < pcs.Len(); k++ {
 				sampleCount += pcs.At(k).Profile().Sample().Len()
 			}
 		}

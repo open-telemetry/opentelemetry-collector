@@ -5,19 +5,20 @@ go 1.22.0
 require (
 	github.com/mostynb/go-grpc-compression v1.2.3
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/client v1.19.0
-	go.opentelemetry.io/collector/component v0.113.0
-	go.opentelemetry.io/collector/component/componenttest v0.0.0-20241112045949-9c4c007a12b4
-	go.opentelemetry.io/collector/config/configauth v0.113.0
-	go.opentelemetry.io/collector/config/configcompression v1.19.0
-	go.opentelemetry.io/collector/config/confignet v1.19.0
-	go.opentelemetry.io/collector/config/configopaque v1.19.0
-	go.opentelemetry.io/collector/config/configtelemetry v0.113.0
-	go.opentelemetry.io/collector/config/configtls v1.19.0
-	go.opentelemetry.io/collector/config/internal v0.113.0
-	go.opentelemetry.io/collector/extension/auth v0.113.0
-	go.opentelemetry.io/collector/pdata v1.19.0
-	go.opentelemetry.io/collector/pdata/testdata v0.113.0
+	go.opentelemetry.io/collector/client v1.20.0
+	go.opentelemetry.io/collector/component v0.114.0
+	go.opentelemetry.io/collector/component/componenttest v0.114.0
+	go.opentelemetry.io/collector/config/configauth v0.114.0
+	go.opentelemetry.io/collector/config/configcompression v1.20.0
+	go.opentelemetry.io/collector/config/confignet v1.20.0
+	go.opentelemetry.io/collector/config/configopaque v1.20.0
+	go.opentelemetry.io/collector/config/configtelemetry v0.114.0
+	go.opentelemetry.io/collector/config/configtls v1.20.0
+	go.opentelemetry.io/collector/config/internal v0.114.0
+	go.opentelemetry.io/collector/extension/auth v0.114.0
+	go.opentelemetry.io/collector/extension/auth/authtest v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/pdata v1.20.0
+	go.opentelemetry.io/collector/pdata/testdata v0.114.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.56.0
 	go.opentelemetry.io/otel v1.32.0
 	go.opentelemetry.io/otel/metric v1.32.0
@@ -39,8 +40,8 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector/extension v0.113.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.113.0 // indirect
+	go.opentelemetry.io/collector/extension v0.114.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.114.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.32.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.32.0 // indirect
 	go.opentelemetry.io/otel/trace v1.32.0 // indirect
@@ -49,7 +50,7 @@ require (
 	golang.org/x/sys v0.27.0 // indirect
 	golang.org/x/text v0.19.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241007155032-5fefd90f89a9 // indirect
-	google.golang.org/protobuf v1.35.1 // indirect
+	google.golang.org/protobuf v1.35.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
@@ -84,3 +85,5 @@ replace go.opentelemetry.io/collector/component => ../../component
 replace go.opentelemetry.io/collector/component/componenttest => ../../component/componenttest
 
 replace go.opentelemetry.io/collector/consumer => ../../consumer
+
+replace go.opentelemetry.io/collector/extension/auth/authtest => ../../extension/auth/authtest
