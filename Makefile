@@ -280,7 +280,7 @@ check-contrib:
 regenerate-contrib:
 	@echo -e "\nRegenerating contrib"
 	$(MAKE) -C $(CONTRIB_PATH) -B install-tools
-	$(MAKE) -C $(CONTRIB_PATH) generate
+	$(MAKE) -C $(CONTRIB_PATH) generate GROUP=all
 
 # Restores contrib to its original state after running check-contrib.
 .PHONY: restore-contrib
