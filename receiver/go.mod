@@ -12,6 +12,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.20.0
 	go.opentelemetry.io/collector/pipeline v0.114.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.114.0
+	go.opentelemetry.io/collector/scraper v0.114.0
 	go.opentelemetry.io/otel v1.32.0
 	go.opentelemetry.io/otel/metric v1.32.0
 	go.opentelemetry.io/otel/sdk v1.32.0
@@ -41,7 +42,7 @@ require (
 	golang.org/x/text v0.17.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240822170219-fc7c04adadcd // indirect
 	google.golang.org/grpc v1.67.1 // indirect
-	google.golang.org/protobuf v1.35.1 // indirect
+	google.golang.org/protobuf v1.35.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
@@ -72,3 +73,5 @@ retract v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module
 replace go.opentelemetry.io/collector/pipeline => ../pipeline
 
 replace go.opentelemetry.io/collector/consumer/consumererror => ../consumer/consumererror
+
+replace go.opentelemetry.io/collector/scraper => ../scraper

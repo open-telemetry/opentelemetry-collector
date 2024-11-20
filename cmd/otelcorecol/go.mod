@@ -155,7 +155,7 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20241104194629-dd2ea8efbc28 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241104194629-dd2ea8efbc28 // indirect
 	google.golang.org/grpc v1.67.1 // indirect
-	google.golang.org/protobuf v1.35.1 // indirect
+	google.golang.org/protobuf v1.35.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
@@ -290,6 +290,8 @@ replace go.opentelemetry.io/collector/receiver/otlpreceiver => ../../receiver/ot
 replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../../receiver/receiverprofiles
 
 replace go.opentelemetry.io/collector/receiver/receivertest => ../../receiver/receivertest
+
+replace go.opentelemetry.io/collector/scraper => ../../scraper
 
 replace go.opentelemetry.io/collector/semconv => ../../semconv
 

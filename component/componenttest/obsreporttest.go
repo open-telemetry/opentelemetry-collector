@@ -8,7 +8,6 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -130,11 +129,8 @@ func SetupTelemetry(id component.ID) (TestTelemetry, error) {
 		Logger:         zap.NewNop(),
 		TracerProvider: sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(settings.SpanRecorder)),
 		MeterProvider:  mp,
-		LeveledMeterProvider: func(_ configtelemetry.Level) metric.MeterProvider {
-			return mp
-		},
-		MetricsLevel: configtelemetry.LevelDetailed,
-		Resource:     pcommon.NewResource(),
+		MetricsLevel:   configtelemetry.LevelDetailed,
+		Resource:       pcommon.NewResource(),
 	}
 
 	return settings, nil
