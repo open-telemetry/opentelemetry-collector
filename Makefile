@@ -265,8 +265,8 @@ check-contrib:
 		$(addprefix -replace ,$(join $(ALL_MOD_PATHS:%=go.opentelemetry.io/collector%=),$(ALL_MOD_PATHS:%=$(CURDIR)%)))"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod tidy"
 
-	@if [ -z "$(SKIP_REGENERATE)" ]; then \
-		$(MAKE) regenerate-contrib; \
+	@if [ -z "$(SKIP_GENERATE)" ]; then \
+		$(MAKE) generate-contrib; \
 	fi
 
 	@echo -e "\nRunning tests"
@@ -276,9 +276,9 @@ check-contrib:
 		$(MAKE) restore-contrib; \
 	fi
 
-.PHONY: regenerate-contrib
-regenerate-contrib:
-	@echo -e "\nRegenerating contrib"
+.PHONY: generate-contrib
+generate-contrib:
+	@echo -e "\nGenerating files in contrib"
 	$(MAKE) -C $(CONTRIB_PATH) -B install-tools
 	$(MAKE) -C $(CONTRIB_PATH) generate GROUP=all
 
