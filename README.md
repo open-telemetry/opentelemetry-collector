@@ -85,10 +85,6 @@ Wednesday:
 - [09:00 PT](https://dateful.com/convert/pst-pdt-pacific-time?t=0900)
 - [05:00 PT](https://dateful.com/convert/pst-pdt-pacific-time?t=0500)
 
-Please see the [OpenTelemetry meeting
-calendar](https://calendar.google.com/calendar/u/0/r?cid=c_2bf73e3b6b530da4babd444e72b76a6ad893a5c3f43cf40467abc7a9a897f977@group.calendar.google.com)
-for the meeting dates and links to the Zoom meeting room.
-
 Contributors to the project are also welcome to have ad-hoc meetings for synchronous discussions about specific points.
 Post a note in #otel-collector on Slack inviting others, specifying the topic to be discussed. Unless there are strong
 reasons to keep the meeting private, please make it an open invitation for other contributors to join. Try also to
