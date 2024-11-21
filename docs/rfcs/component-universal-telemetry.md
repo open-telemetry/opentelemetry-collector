@@ -72,6 +72,12 @@ the mechanism. Currently, that package is `service/internal/graph`, but this may
 ascribed to individual component packages, both because the instrumentation scope is intended to describe the origin of the telemetry,
 and because no mechanism is presently identified which would allow us to determine the characteristics of a component-specific scope.
 
+### Instrumentation Scope
+
+All telemetry described in this RFC should include a scope name which corresponds to the package which implements the telemetry. If the
+package is internal, then the scope name should be that of the module which contains the package. For example,
+`go.opentelemetry.io/service` should be used instead of `go.opentelemetry.io/service/internal/graph`.
+
 ### Auto-Instrumented Metrics
 
 There are two straightforward measurements that can be made on any pdata:
