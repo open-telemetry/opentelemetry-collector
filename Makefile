@@ -263,19 +263,30 @@ check-contrib:
 	@echo Setting contrib at $(CONTRIB_PATH) to use this core checkout
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit \
 		$(addprefix -replace ,$(join $(ALL_MOD_PATHS:%=go.opentelemetry.io/collector%=),$(ALL_MOD_PATHS:%=$(CURDIR)%)))"
-	@$(MAKE) -C $(CONTRIB_PATH) gotidy
+	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod tidy"
+
+	@$(MAKE) generate-contrib
+
+	@echo -e "\nRunning tests"
 	@$(MAKE) -C $(CONTRIB_PATH) gotest
+
 	@if [ -z "$(SKIP_RESTORE_CONTRIB)" ]; then \
 		$(MAKE) restore-contrib; \
 	fi
 
+.PHONY: generate-contrib
+generate-contrib:
+	@echo -e "\nGenerating files in contrib"
+	$(MAKE) -C $(CONTRIB_PATH) -B install-tools
+	$(MAKE) -C $(CONTRIB_PATH) generate GROUP=all
+
 # Restores contrib to its original state after running check-contrib.
 .PHONY: restore-contrib
 restore-contrib:
-	@echo Restoring contrib at $(CONTRIB_PATH) to its original state
+	@echo -e "\nRestoring contrib at $(CONTRIB_PATH) to its original state"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit \
 		$(addprefix -dropreplace ,$(ALL_MOD_PATHS:%=go.opentelemetry.io/collector%))"
-	@$(MAKE) -C $(CONTRIB_PATH) -j2 gotidy
+	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod tidy"
 
 # List of directories where certificates are stored for unit tests.
 CERT_DIRS := localhost|""|config/configgrpc/testdata \
