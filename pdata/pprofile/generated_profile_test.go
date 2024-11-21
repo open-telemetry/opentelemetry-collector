@@ -126,6 +126,14 @@ func TestProfile_Duration(t *testing.T) {
 	assert.Equal(t, testValDuration, ms.Duration())
 }
 
+func TestProfile_StartTime(t *testing.T) {
+	ms := NewProfile()
+	assert.Equal(t, pcommon.Timestamp(0), ms.StartTime())
+	testValStartTime := pcommon.Timestamp(1234567890)
+	ms.SetStartTime(testValStartTime)
+	assert.Equal(t, testValStartTime, ms.StartTime())
+}
+
 func TestProfile_PeriodType(t *testing.T) {
 	ms := NewProfile()
 	fillTestValueType(ms.PeriodType())
@@ -216,6 +224,7 @@ func fillTestProfile(tv Profile) {
 	internal.FillTestStringSlice(internal.NewStringSlice(&tv.orig.StringTable, tv.state))
 	tv.orig.TimeNanos = 1234567890
 	tv.orig.DurationNanos = 1234567890
+	tv.orig.TimeNanos = 1234567890
 	fillTestValueType(newValueType(&tv.orig.PeriodType, tv.state))
 	tv.orig.Period = int64(1)
 	internal.FillTestInt32Slice(internal.NewInt32Slice(&tv.orig.CommentStrindices, tv.state))

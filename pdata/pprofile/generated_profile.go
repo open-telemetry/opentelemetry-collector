@@ -119,6 +119,17 @@ func (ms Profile) SetDuration(v pcommon.Timestamp) {
 	ms.orig.DurationNanos = int64(v)
 }
 
+// StartTime returns the starttime associated with this Profile.
+func (ms Profile) StartTime() pcommon.Timestamp {
+	return pcommon.Timestamp(ms.orig.TimeNanos)
+}
+
+// SetStartTime replaces the starttime associated with this Profile.
+func (ms Profile) SetStartTime(v pcommon.Timestamp) {
+	ms.state.AssertMutable()
+	ms.orig.TimeNanos = int64(v)
+}
+
 // PeriodType returns the periodtype associated with this Profile.
 func (ms Profile) PeriodType() ValueType {
 	return newValueType(&ms.orig.PeriodType, ms.state)
@@ -209,6 +220,7 @@ func (ms Profile) CopyTo(dest Profile) {
 	ms.StringTable().CopyTo(dest.StringTable())
 	dest.SetTime(ms.Time())
 	dest.SetDuration(ms.Duration())
+	dest.SetStartTime(ms.StartTime())
 	ms.PeriodType().CopyTo(dest.PeriodType())
 	dest.SetPeriod(ms.Period())
 	ms.CommentStrindices().CopyTo(dest.CommentStrindices())

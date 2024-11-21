@@ -162,6 +162,17 @@ var profile = &messageValueStruct{
 				testVal:     "1234567890",
 			},
 		},
+		&primitiveTypedField{
+			fieldName:       "StartTime",
+			originFieldName: "TimeNanos",
+			returnType: &primitiveType{
+				structName:  "Timestamp",
+				packageName: "pcommon",
+				rawType:     "int64",
+				defaultVal:  "0",
+				testVal:     "1234567890",
+			},
+		},
 		&messageValueField{
 			fieldName:     "PeriodType",
 			returnMessage: valueType,
