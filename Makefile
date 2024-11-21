@@ -265,9 +265,7 @@ check-contrib:
 		$(addprefix -replace ,$(join $(ALL_MOD_PATHS:%=go.opentelemetry.io/collector%=),$(ALL_MOD_PATHS:%=$(CURDIR)%)))"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod tidy"
 
-	@if [ -z "$(SKIP_GENERATE)" ]; then \
-		$(MAKE) generate-contrib; \
-	fi
+	@$(MAKE) generate-contrib
 
 	@echo -e "\nRunning tests"
 	@$(MAKE) -C $(CONTRIB_PATH) gotest
