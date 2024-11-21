@@ -44,7 +44,7 @@ func TestSampleCount(t *testing.T) {
 	ils2 := rs.ScopeProfiles().AppendEmpty()
 	assert.EqualValues(t, 1, profiles.SampleCount())
 
-	ps2 := ils2.Profiles().AppendEmpty().Profile()
+	ps2 := ils2.Profiles().AppendEmpty()
 	assert.EqualValues(t, 1, profiles.SampleCount())
 
 	ps2.Sample().AppendEmpty()
