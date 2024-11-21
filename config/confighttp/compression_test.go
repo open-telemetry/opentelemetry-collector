@@ -26,21 +26,119 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 )
 
-func TestHTTPClientCompression(t *testing.T) {
+func TestHTTPClientCompressionwithLevel(t *testing.T) {
 	testBody := []byte("uncompressed_text")
 	compressedGzipBody := compressGzip(t, testBody)
 	compressedZlibBody := compressZlib(t, testBody)
 	compressedDeflateBody := compressZlib(t, testBody)
-	compressedSnappyBody := compressSnappy(t, testBody)
 	compressedZstdBody := compressZstd(t, testBody)
-	compressedLz4Body := compressLz4(t, testBody)
 
 	const (
-		gzipLevel    configcompression.Type = "gzip/1"
-		zlibLevel    configcompression.Type = "zlib/1"
-		deflateLevel configcompression.Type = "deflate/1"
-		zstdLevel    configcompression.Type = "zstd/11"
+		gzipLevel    configcompression.Level = 1
+		zlibLevel    configcompression.Level = 1
+		deflateLevel configcompression.Level = 1
+		zstdLevel    configcompression.Level = 11
 	)
+
+	tests := []struct {
+		name        string
+		enclevel    configcompression.Level
+		enctype     configcompression.Type
+		reqBody     []byte
+		shouldError bool
+	}{
+		{
+			name:        "ValidEmpty",
+			enctype:     "",
+			reqBody:     testBody,
+			shouldError: false,
+		},
+		{
+			name:        "ValidNone",
+			enctype:     "none",
+			reqBody:     testBody,
+			shouldError: false,
+		},
+		{
+			name:        "ValidGzip",
+			enctype:     "gzip",
+			enclevel:    gzipLevel,
+			reqBody:     compressedGzipBody.Bytes(),
+			shouldError: false,
+		},
+		{
+			name:        "InvalidGzip",
+			enctype:     "gzip",
+			enclevel:    20,
+			reqBody:     compressedGzipBody.Bytes(),
+			shouldError: true,
+		},
+		{
+			name:        "ValidZlib",
+			enctype:     "zlib",
+			enclevel:    zlibLevel,
+			reqBody:     compressedZlibBody.Bytes(),
+			shouldError: false,
+		},
+		{
+			name:        "ValidDeflate",
+			enctype:     "deflate",
+			enclevel:    deflateLevel,
+			reqBody:     compressedDeflateBody.Bytes(),
+			shouldError: false,
+		},
+		{
+			name:        "ValidZstd",
+			enctype:     "zstd",
+			enclevel:    zstdLevel,
+			reqBody:     compressedZstdBody.Bytes(),
+			shouldError: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				body, err := io.ReadAll(r.Body)
+				assert.NoError(t, err, "failed to read request body: %v", err)
+				assert.EqualValues(t, tt.reqBody, body)
+				w.WriteHeader(http.StatusOK)
+			}))
+			t.Cleanup(srv.Close)
+
+			reqBody := bytes.NewBuffer(testBody)
+
+			req, err := http.NewRequest(http.MethodGet, srv.URL, reqBody)
+			require.NoError(t, err, "failed to create request to test handler")
+			compression := configcompression.TypeWithLevel{}
+			err = compression.UnmarshalText([]byte(tt.enctype))
+			compression.Level = tt.enclevel
+			err = compression.Validate()
+			if tt.shouldError {
+				assert.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			clientSettings := ClientConfig{
+				Endpoint:    srv.URL,
+				Compression: compression,
+			}
+			client, err := clientSettings.ToClient(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+			require.NoError(t, err)
+			res, err := client.Do(req)
+			require.NoError(t, err)
+
+			_, err = io.ReadAll(res.Body)
+			require.NoError(t, err)
+			require.NoError(t, res.Body.Close(), "failed to close request body: %v", err)
+		})
+	}
+
+}
+
+func TestHTTPClientCompression(t *testing.T) {
+	testBody := []byte("uncompressed_text")
+	compressedSnappyBody := compressSnappy(t, testBody)
+	compressedLz4Body := compressLz4(t, testBody)
 
 	tests := []struct {
 		name        string
@@ -61,33 +159,9 @@ func TestHTTPClientCompression(t *testing.T) {
 			shouldError: false,
 		},
 		{
-			name:        "ValidGzip",
-			encoding:    gzipLevel,
-			reqBody:     compressedGzipBody.Bytes(),
-			shouldError: false,
-		},
-		{
-			name:        "ValidZlib",
-			encoding:    zlibLevel,
-			reqBody:     compressedZlibBody.Bytes(),
-			shouldError: false,
-		},
-		{
-			name:        "ValidDeflate",
-			encoding:    deflateLevel,
-			reqBody:     compressedDeflateBody.Bytes(),
-			shouldError: false,
-		},
-		{
 			name:        "ValidSnappy",
 			encoding:    configcompression.TypeSnappy,
 			reqBody:     compressedSnappyBody.Bytes(),
-			shouldError: false,
-		},
-		{
-			name:        "ValidZstd",
-			encoding:    zstdLevel,
-			reqBody:     compressedZstdBody.Bytes(),
 			shouldError: false,
 		},
 		{

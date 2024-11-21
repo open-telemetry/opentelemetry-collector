@@ -4,7 +4,6 @@
 package configcompression
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -49,12 +48,6 @@ func TestUnmarshalText(t *testing.T) {
 			isCompressed:    true,
 		},
 		{
-			name:            "ValidZstdLevel",
-			compressionName: []byte("zstd/11"),
-			shouldError:     false,
-			isCompressed:    true,
-		},
-		{
 			name:            "ValidEmpty",
 			compressionName: []byte(""),
 			shouldError:     false,
@@ -75,34 +68,6 @@ func TestUnmarshalText(t *testing.T) {
 			compressionName: []byte("ggip"),
 			shouldError:     true,
 		},
-		{
-			name:            "InvalidSnappy",
-			compressionName: []byte("snappy/1"),
-			shouldError:     true,
-		},
-		{
-			name:            "InvalidNone",
-			compressionName: []byte("none/1"),
-			shouldError:     true,
-		},
-		{
-			name:            "InvalidGzip",
-			compressionName: []byte("gzip/10"),
-			shouldError:     true,
-			isCompressed:    true,
-		},
-		{
-			name:            "InvalidZlib",
-			compressionName: []byte("zlib/10"),
-			shouldError:     true,
-			isCompressed:    true,
-		},
-		{
-			name:            "InvalidZstdLevel",
-			compressionName: []byte("zstd/ten"),
-			shouldError:     true,
-			isCompressed:    true,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -113,7 +78,7 @@ func TestUnmarshalText(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			ct := Type(strings.Split(string(tt.compressionName), "/")[0])
+			ct := Type(tt.compressionName)
 			assert.Equal(t, temp.Type, ct)
 			assert.Equal(t, tt.isCompressed, ct.IsCompressed())
 		})

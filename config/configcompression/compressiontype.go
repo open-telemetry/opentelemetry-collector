@@ -5,8 +5,6 @@ package configcompression // import "go.opentelemetry.io/collector/config/config
 
 import (
 	"fmt"
-	"strconv"
-	"strings"
 
 	"github.com/klauspost/compress/zlib"
 )
@@ -21,14 +19,15 @@ type TypeWithLevel struct {
 }
 
 const (
-	TypeGzip    Type = "gzip"
-	TypeZlib    Type = "zlib"
-	TypeDeflate Type = "deflate"
-	TypeSnappy  Type = "snappy"
-	TypeZstd    Type = "zstd"
-	TypeLz4     Type = "lz4"
-	typeNone    Type = "none"
-	typeEmpty   Type = ""
+	TypeGzip    Type  = "gzip"
+	TypeZlib    Type  = "zlib"
+	TypeDeflate Type  = "deflate"
+	TypeSnappy  Type  = "snappy"
+	TypeZstd    Type  = "zstd"
+	TypeLz4     Type  = "lz4"
+	typeNone    Type  = "none"
+	typeEmpty   Type  = ""
+	LevelNone   Level = 0
 )
 
 // IsCompressed returns false if CompressionType is nil, none, or empty.
@@ -38,42 +37,40 @@ func (ct *Type) IsCompressed() bool {
 }
 
 func (ct *TypeWithLevel) UnmarshalText(in []byte) error {
-	var err error
-	parts := strings.Split(string(in), "/")
-	compressionTyp := Type(parts[0])
-	level := zlib.DefaultCompression
-	if len(parts) == 2 {
-		level, err = strconv.Atoi(parts[1])
-		if err != nil {
-			return fmt.Errorf("invalid compression level: %q", parts[1])
-		}
-		if compressionTyp == TypeSnappy ||
-			compressionTyp == TypeLz4 ||
-			compressionTyp == typeNone ||
-			compressionTyp == typeEmpty {
-			return fmt.Errorf("compression level is not supported for %q", compressionTyp)
-		}
+	typ := Type(in)
+	if typ == TypeGzip ||
+		typ == TypeZlib ||
+		typ == TypeDeflate ||
+		typ == TypeSnappy ||
+		typ == TypeZstd ||
+		typ == TypeLz4 ||
+		typ == typeNone ||
+		typ == typeEmpty {
+		*&ct.Type = typ
+		return nil
 	}
-	ct.Level = Level(level)
-	if (compressionTyp == TypeGzip && isValidLevel(level)) ||
-		(compressionTyp == TypeZlib && isValidLevel(level)) ||
-		(compressionTyp == TypeDeflate && isValidLevel(level)) ||
-		compressionTyp == TypeSnappy ||
-		compressionTyp == TypeLz4 ||
-		compressionTyp == TypeZstd ||
-		compressionTyp == typeNone ||
-		compressionTyp == typeEmpty {
-		ct.Level = Level(level)
-		ct.Type = compressionTyp
+	return fmt.Errorf("unsupported compression type %q", typ)
+}
+
+func (ct *TypeWithLevel) Validate() error {
+	if (ct.Type == TypeGzip && isValidLevel(int(ct.Level))) ||
+		(ct.Type == TypeZlib && isValidLevel(int(ct.Level))) ||
+		(ct.Type == TypeDeflate && isValidLevel(int(ct.Level))) ||
+		ct.Type == TypeSnappy ||
+		ct.Type == TypeLz4 ||
+		ct.Type == TypeZstd ||
+		ct.Type == typeNone ||
+		ct.Type == typeEmpty {
 		return nil
 	}
 
-	return fmt.Errorf("unsupported compression type and level(default if not specified) %s - %d", compressionTyp, ct.Level)
+	return fmt.Errorf("unsupported compression type and level %s - %d", ct.Type, ct.Level)
 }
 
 // Checks the validity of zlib/gzip/flate compression levels
 func isValidLevel(level int) bool {
 	return level == zlib.DefaultCompression ||
+		level == int(LevelNone) ||
 		level == zlib.HuffmanOnly ||
 		level == zlib.NoCompression ||
 		level == zlib.BestSpeed ||

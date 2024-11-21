@@ -77,7 +77,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				ReadBufferSize:      123,
 				WriteBufferSize:     345,
 				Timeout:             time.Second * 10,
-				Compression:         configcompression.TypeWithLevel{Type: "gzip", Level: -1},
+				Compression:         configcompression.TypeWithLevel{Type: "gzip", Level: 0},
 				MaxIdleConns:        &defaultMaxIdleConns,
 				MaxIdleConnsPerHost: &defaultMaxIdleConnsPerHost,
 				MaxConnsPerHost:     &defaultMaxConnsPerHost,
