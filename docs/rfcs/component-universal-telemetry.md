@@ -94,42 +94,42 @@ measurements will be recorded with `outcome` as `failure` when a call to the nex
     otelcol.receiver.produced.items:
       enabled: true
       description: Number of items emitted from the receiver.
-      unit: "{items}"
+      unit: "{item}"
       sum:
         value_type: int
         monotonic: true
     otelcol.processor.consumed.items:
       enabled: true
       description: Number of items passed to the processor.
-      unit: "{items}"
+      unit: "{item}"
       sum:
         value_type: int
         monotonic: true
     otelcol.processor.produced.items:
       enabled: true
       description: Number of items emitted from the processor.
-      unit: "{items}"
+      unit: "{item}"
       sum:
         value_type: int
         monotonic: true
     otelcol.connector.consumed.items:
       enabled: true
       description: Number of items passed to the connector.
-      unit: "{items}"
+      unit: "{item}"
       sum:
         value_type: int
         monotonic: true
     otelcol.connector.produced.items:
       enabled: true
       description: Number of items emitted from the connector.
-      unit: "{items}"
+      unit: "{item}"
       sum:
         value_type: int
         monotonic: true
     otelcol.exporter.consumed.items:
       enabled: true
       description: Number of items passed to the exporter.
-      unit: "{items}"
+      unit: "{item}"
       sum:
         value_type: int
         monotonic: true
