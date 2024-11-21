@@ -18,7 +18,7 @@ require (
 	go.opentelemetry.io/collector/config/configtls v1.20.0
 	go.opentelemetry.io/collector/config/internal v0.114.0
 	go.opentelemetry.io/collector/extension/auth v0.114.0
-	go.opentelemetry.io/collector/extension/auth/authtest v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/extension/auth/authtest v0.0.0-20241120164440-f2e05b5089bb
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.56.0
 	go.opentelemetry.io/otel v1.32.0
 	go.opentelemetry.io/otel/metric v1.32.0
