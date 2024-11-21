@@ -78,7 +78,7 @@ There are two straightforward measurements that can be made on any pdata:
 
 1. A count of "items" (spans, data points, or log records). These are low cost but broadly useful, so they should be enabled by default.
 2. A measure of size, based on [ProtoMarshaler.Sizer()](https://github.com/open-telemetry/opentelemetry-collector/blob/9907ba50df0d5853c34d2962cf21da42e15a560d/pdata/ptrace/pb.go#L11).
-  These are high cost to compute, so by default they should be disabled (and not calculated).
+  These may be high cost to compute, so by default they should be disabled (and not calculated). This default setting may change in the future if it is demonstrated that the cost is generally acceptable.
 
 The location of these measurements can be described in terms of whether the data is "consumed" or "produced", from the perspective of the
 component to which the telemetry is attributed. Metrics which contain the term "produced" describe data which is emitted from the component,
