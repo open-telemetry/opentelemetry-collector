@@ -24,9 +24,9 @@ type configSettings struct {
 	Service    service.Config                                `mapstructure:"service"`
 }
 
-// unmarshal the configSettings from a confmap.Conf.
+// Unmarshal the configSettings from a confmap.Conf.
 // After the config is unmarshalled, `Validate()` must be called to validate.
-func unmarshal(v *confmap.Conf, factories Factories) (*configSettings, error) {
+func Unmarshal(v *confmap.Conf, factories Factories) (*configSettings, error) {
 	telFactory := telemetry.NewFactory()
 	defaultTelConfig := *telFactory.CreateDefaultConfig().(*telemetry.Config)
 

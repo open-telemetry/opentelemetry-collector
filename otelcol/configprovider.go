@@ -80,7 +80,7 @@ func (cm *configProvider) Get(ctx context.Context, factories Factories) (*Config
 	}
 
 	var cfg *configSettings
-	if cfg, err = unmarshal(conf, factories); err != nil {
+	if cfg, err = Unmarshal(conf, factories); err != nil {
 		return nil, fmt.Errorf("cannot unmarshal the configuration: %w", err)
 	}
 
