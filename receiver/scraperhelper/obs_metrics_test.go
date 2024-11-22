@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper"
 )
 
 var (
@@ -47,7 +48,7 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 		{items: 15, err: nil},
 	}
 	for i := range params {
-		var sf ScrapeFunc
+		var sf scraper.ScrapeMetricsFunc
 		sf, err = newObsMetrics(func(context.Context) (pmetric.Metrics, error) {
 			return testdata.GenerateMetrics(params[i].items), params[i].err
 		}, receiverID, scraperID, tt.TelemetrySettings())
@@ -94,7 +95,7 @@ func TestCheckScraperMetrics(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	var sf ScrapeFunc
+	var sf scraper.ScrapeMetricsFunc
 	sf, err = newObsMetrics(func(context.Context) (pmetric.Metrics, error) {
 		return testdata.GenerateMetrics(7), nil
 	}, receiverID, scraperID, tt.TelemetrySettings())
