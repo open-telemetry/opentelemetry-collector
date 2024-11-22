@@ -280,7 +280,7 @@ func assertScraperSpan(t *testing.T, expectedErr error, spans []sdktrace.ReadOnl
 
 	scraperSpan := false
 	for _, span := range spans {
-		if span.Name() == "scraper/receiver/scraper/MetricsScraped" {
+		if span.Name() == "scraper/scraper/ScrapeMetrics" {
 			scraperSpan = true
 			assert.Equal(t, expectedStatusCode, span.Status().Code)
 			assert.Equal(t, expectedStatusMessage, span.Status().Description)
