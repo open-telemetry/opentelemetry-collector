@@ -16,8 +16,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/internal"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.opentelemetry.io/collector/receiver/scraperhelper/internal/metadata"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 )
 
 const (
