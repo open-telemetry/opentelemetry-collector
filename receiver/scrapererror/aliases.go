@@ -7,15 +7,15 @@ package scrapererror // import "go.opentelemetry.io/collector/receiver/scraperer
 
 import "go.opentelemetry.io/collector/scraper/scrapererror"
 
-var (
-	ScrapeErrors       scrapererror.ScrapeErrors
-	PartialScrapeError scrapererror.PartialScrapeError
+type (
+	ScrapeErrors       = scrapererror.ScrapeErrors
+	PartialScrapeError = scrapererror.PartialScrapeError
 )
 
 var (
-	AddPartial = ScrapeErrors.AddPartial
-	Add        = ScrapeErrors.Add
-	Combine    = ScrapeErrors.Combine
+	AddPartial = (*ScrapeErrors).AddPartial
+	Add        = (*ScrapeErrors).Add
+	Combine    = (*ScrapeErrors).Combine
 )
 
 var (
