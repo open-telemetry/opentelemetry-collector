@@ -164,6 +164,7 @@ Here is a list of community roles with current and previous members:
 
   - [Andrzej Stencel](https://github.com/andrzej-stencel), Elastic
   - [Damien Mathieu](https://github.com/dmathieu), Elastic
+  - [Jade Guiton](https://github.com/jade-guiton-dd), Datadog
   - Actively seeking contributors to triage issues
 
 - Emeritus Triagers:
