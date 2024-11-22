@@ -11,6 +11,8 @@ telemetry:
   metrics:
     receiver_accepted_spans:
       enabled: true
+      stability:
+        level: alpha
       description: Number of spans successfully pushed into the pipeline.
       unit: "{spans}"
       sum:
@@ -19,6 +21,8 @@ telemetry:
 
     receiver_refused_spans:
       enabled: true
+      stability:
+        level: alpha
       description: Number of spans that could not be pushed into the pipeline.
       unit: "{spans}"
       sum:
@@ -27,6 +31,8 @@ telemetry:
 
     receiver_accepted_metric_points:
       enabled: true
+      stability:
+        level: alpha
       description: Number of metric points successfully pushed into the pipeline.
       unit: "{datapoints}"
       sum:
@@ -35,6 +41,8 @@ telemetry:
 
     receiver_refused_metric_points:
       enabled: true
+      stability:
+        level: alpha
       description: Number of metric points that could not be pushed into the pipeline.
       unit: "{datapoints}"
       sum:
@@ -43,6 +51,8 @@ telemetry:
 
     receiver_accepted_log_records:
       enabled: true
+      stability:
+        level: alpha
       description: Number of log records successfully pushed into the pipeline.
       unit: "{records}"
       sum:
@@ -51,6 +61,8 @@ telemetry:
 
     receiver_refused_log_records:
       enabled: true
+      stability:
+        level: alpha
       description: Number of log records that could not be pushed into the pipeline.
       unit: "{records}"
       sum:
