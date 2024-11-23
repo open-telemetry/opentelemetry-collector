@@ -221,6 +221,7 @@ func decodeConfig(m *Conf, result any, errorUnused bool, skipTopLevelUnmarshaler
 			unmarshalerEmbeddedStructsHookFunc(),
 			zeroSliceHookFunc(),
 		),
+		DecodeNil: true,
 	}
 	decoder, err := mapstructure.NewDecoder(dc)
 	if err != nil {
@@ -537,7 +538,9 @@ type Marshaler interface {
 func zeroSliceHookFunc() mapstructure.DecodeHookFuncValue {
 	return func(from reflect.Value, to reflect.Value) (interface{}, error) {
 		if to.CanSet() && to.Kind() == reflect.Slice && from.Kind() == reflect.Slice {
-			to.Set(reflect.MakeSlice(to.Type(), from.Len(), from.Cap()))
+			if !from.IsNil() {
+				to.Set(reflect.MakeSlice(to.Type(), from.Len(), from.Cap()))
+			}
 		}
 
 		return from.Interface(), nil
