@@ -1167,7 +1167,7 @@ func TestComponentStatus(t *testing.T) {
 
 				cfg := &Config{
 					Encoding:       EncodingProto,
-					TracesEndpoint: fmt.Sprintf("%s/v1/traces", srv.URL),
+					TracesEndpoint: srv.URL + "%s/v1/traces",
 				}
 
 				set := exportertest.NewNopSettings()
@@ -1204,7 +1204,7 @@ func TestComponentStatus(t *testing.T) {
 
 				cfg := &Config{
 					Encoding:        EncodingProto,
-					MetricsEndpoint: fmt.Sprintf("%s/v1/metrics", srv.URL),
+					MetricsEndpoint: srv.URL + "%s/v1/metrics",
 				}
 
 				set := exportertest.NewNopSettings()
@@ -1241,7 +1241,7 @@ func TestComponentStatus(t *testing.T) {
 
 				cfg := &Config{
 					Encoding:     EncodingProto,
-					LogsEndpoint: fmt.Sprintf("%s/v1/logs", srv.URL),
+					LogsEndpoint: srv.URL + "%s/v1/logs",
 				}
 
 				set := exportertest.NewNopSettings()
