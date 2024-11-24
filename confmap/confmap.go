@@ -133,6 +133,10 @@ func sanitizeExpanded(a any, useOriginal bool) any {
 		return c
 	case []any:
 		var newSlice []any
+		if reflect.ValueOf(m).IsNil() {
+			return newSlice
+		}
+		newSlice = []any{}
 		for _, e := range m {
 			newSlice = append(newSlice, sanitizeExpanded(e, useOriginal))
 		}
@@ -540,12 +544,10 @@ type Marshaler interface {
 //   - for example, input is {}, then output is Config{ Keys: ["a", "b"]}
 func zeroSliceHookFunc() mapstructure.DecodeHookFuncValue {
 	return func(from reflect.Value, to reflect.Value) (interface{}, error) {
-		if !from.IsValid() {
-			return from, nil
-		}
-
 		if to.CanSet() && to.Kind() == reflect.Slice && from.Kind() == reflect.Slice {
-			to.Set(reflect.MakeSlice(to.Type(), from.Len(), from.Cap()))
+			if !from.IsNil() {
+				to.Set(reflect.MakeSlice(to.Type(), from.Len(), from.Cap()))
+			}
 		}
 
 		return from.Interface(), nil
