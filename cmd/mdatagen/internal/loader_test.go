@@ -33,7 +33,7 @@ func TestLoadMetadata(t *testing.T) {
 						component.StabilityLevelBeta:        {"traces"},
 						component.StabilityLevelStable:      {"metrics"},
 					},
-					Distributions: nil,
+					Distributions: []string{},
 					Codeowners: &Codeowners{
 						Active: []string{"dmitryax"},
 					},
