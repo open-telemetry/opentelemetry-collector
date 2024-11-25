@@ -19,6 +19,7 @@ module-sets:
       - go.opentelemetry.io/collector/config/configretry
       - go.opentelemetry.io/collector/config/configtls
       - go.opentelemetry.io/collector/config/confignet
+      - go.opentelemetry.io/collector/consumer
   beta:
     version: v0.114.0
     modules:
@@ -40,7 +41,6 @@ module-sets:
       - go.opentelemetry.io/collector/connector/connectortest
       - go.opentelemetry.io/collector/connector/connectorprofiles
       - go.opentelemetry.io/collector/connector/forwardconnector
-      - go.opentelemetry.io/collector/consumer
       - go.opentelemetry.io/collector/consumer/consumerprofiles
       - go.opentelemetry.io/collector/consumer/consumererror
       - go.opentelemetry.io/collector/consumer/consumererror/consumererrorprofiles
