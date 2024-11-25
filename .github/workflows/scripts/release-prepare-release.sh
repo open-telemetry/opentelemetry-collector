@@ -41,7 +41,7 @@ if [ "${CANDIDATE_BETA}" != "" ]; then
 fi
 git push origin "${BRANCH}"
 
-gh pr create --title "[chore] Prepare release ${RELEASE_VERSION}" --body "
+gh pr create --title "[chore] Prepare release ${RELEASE_VERSION}" --label release:prepare --body "
 The following commands were run to prepare this release:
 ${COMMANDS}
 "

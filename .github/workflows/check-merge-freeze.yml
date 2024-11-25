@@ -1,0 +1,22 @@
+name: Merge freeze
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, synchronize, reopened, labeled, unlabeled]
+    branches: [main]
+  merge_group:
+    types: [checks_requested]
+
+jobs:
+  check-merge-freeze:
+    name: Check
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'release:prepare') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/workflows/scripts
+      - run: ./.github/workflows/scripts/check-merge-freeze.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: open-telemetry/opentelemetry-collector
