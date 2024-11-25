@@ -75,6 +75,8 @@ type QueueSender struct {
 	batcher        queue.Batcher
 	consumers      *queue.Consumers[internal.Request]
 
+	shutdownCallbacks []func()
+
 	obsrep     *ObsReport
 	exporterID component.ID
 }
@@ -127,18 +129,37 @@ func (qs *QueueSender) Start(ctx context.Context, host component.Host) error {
 	}
 
 	dataTypeAttr := attribute.String(DataTypeKey, qs.obsrep.Signal.String())
-	return multierr.Append(
-		qs.obsrep.TelemetryBuilder.InitExporterQueueSize(func() int64 { return int64(qs.queue.Size()) },
-			metric.WithAttributeSet(attribute.NewSet(qs.traceAttribute, dataTypeAttr))),
-		qs.obsrep.TelemetryBuilder.InitExporterQueueCapacity(func() int64 { return int64(qs.queue.Capacity()) },
-			metric.WithAttributeSet(attribute.NewSet(qs.traceAttribute))),
-	)
+
+	reg1, err1 := qs.obsrep.TelemetryBuilder.InitExporterQueueSize(func() int64 { return int64(qs.queue.Size()) },
+		metric.WithAttributeSet(attribute.NewSet(qs.traceAttribute, dataTypeAttr)))
+
+	qs.shutdownCallbacks = append(qs.shutdownCallbacks, func() {
+		if reg1 != nil {
+			_ = reg1.Unregister()
+		}
+	})
+
+	reg2, err2 := qs.obsrep.TelemetryBuilder.InitExporterQueueCapacity(func() int64 { return int64(qs.queue.Capacity()) },
+		metric.WithAttributeSet(attribute.NewSet(qs.traceAttribute)))
+
+	qs.shutdownCallbacks = append(qs.shutdownCallbacks, func() {
+		if reg2 != nil {
+			_ = reg2.Unregister()
+		}
+	})
+
+	return multierr.Append(err1, err2)
 }
 
 // Shutdown is invoked during service shutdown.
 func (qs *QueueSender) Shutdown(ctx context.Context) error {
 	// Stop the queue and consumers, this will drain the queue and will call the retry (which is stopped) that will only
 	// try once every request.
+
+	for _, callback := range qs.shutdownCallbacks {
+		callback()
+	}
+
 	if err := qs.queue.Shutdown(ctx); err != nil {
 		return err
 	}
