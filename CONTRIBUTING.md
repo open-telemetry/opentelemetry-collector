@@ -96,6 +96,37 @@ Reporting bugs is an important contribution. Please make sure to include:
 * The OpenTelemetry version you are running
 * If possible, steps to reproduce
 
+### Adding Labels via Comments
+
+In order to facilitate proper label usage and to empower Code Owners, you are able to add labels to issues via comments. To add a label through a comment, post a new comment on an issue starting with `/label`, followed by a space-separated list of your desired labels. Supported labels come from the table below, or correspond to a component defined in the [CODEOWNERS file](.github/CODEOWNERS).
+
+The following general labels are supported:
+
+| Label                    | Label in Comment         |
+|--------------------------|--------------------------|
+| `arm64`                  | `arm64`                  |
+| `good first issue`       | `good-first-issue`       |
+| `help wanted`            | `help-wanted`            |
+| `discussion needed`      | `discussion-needed`      |
+| `os:macos`               | `os:macos`               |
+| `os:windows`             | `os:windows`             |
+| `waiting for author`     | `waiting-for-author`     |
+| `waiting-for-codeowners` | `waiting-for-codeowners` |
+| `bug`                    | `bug`                    |
+| `priority:p0`            | `priority:p0`            |
+| `priority:p1`            | `priority:p1`            |
+| `priority:p2`            | `priority:p2`            |
+| `priority:p3`            | `priority:p3`            |
+| `Stale`                  | `stale`                  |
+
+To delete a label, prepend the label with `-`. Note that you must make a new comment to modify labels; you cannot edit an existing comment.
+
+Example label comment:
+
+```
+/label help-wanted -arm64
+```
+
 ## How to contribute
 
 ### Before you start
