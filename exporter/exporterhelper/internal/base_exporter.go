@@ -26,7 +26,7 @@ import (
 )
 
 var usePullingBasedExporterQueueBatcher = featuregate.GlobalRegistry().MustRegister(
-	"telemetry.UsePullingBasedExporterQueueBatcher",
+	"exporter.UsePullingBasedExporterQueueBatcher",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterFromVersion("v0.114.0"),
 	featuregate.WithRegisterDescription("if set to true, turns on the pulling-based exporter queue bathcer"),
