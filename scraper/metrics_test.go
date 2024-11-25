@@ -18,7 +18,7 @@ import (
 )
 
 func TestNewMetrics(t *testing.T) {
-	mp, err := NewMetrics(context.Background(), nopSettings(), newTestScrapeMetricsFunc(nil))
+	mp, err := NewMetrics(newTestScrapeMetricsFunc(nil))
 	require.NoError(t, err)
 
 	require.NoError(t, mp.Start(context.Background(), componenttest.NewNopHost()))
@@ -30,7 +30,7 @@ func TestNewMetrics(t *testing.T) {
 
 func TestNewMetrics_WithOptions(t *testing.T) {
 	want := errors.New("my_error")
-	mp, err := NewMetrics(context.Background(), nopSettings(), newTestScrapeMetricsFunc(nil),
+	mp, err := NewMetrics(newTestScrapeMetricsFunc(nil),
 		WithStart(func(context.Context, component.Host) error { return want }),
 		WithShutdown(func(context.Context) error { return want }))
 	require.NoError(t, err)
@@ -40,13 +40,13 @@ func TestNewMetrics_WithOptions(t *testing.T) {
 }
 
 func TestNewMetrics_NilRequiredFields(t *testing.T) {
-	_, err := NewMetrics(context.Background(), nopSettings(), nil)
+	_, err := NewMetrics(nil)
 	require.Error(t, err)
 }
 
 func TestNewMetrics_ProcessMetricsError(t *testing.T) {
 	want := errors.New("my_error")
-	mp, err := NewMetrics(context.Background(), nopSettings(), newTestScrapeMetricsFunc(want))
+	mp, err := NewMetrics(newTestScrapeMetricsFunc(want))
 	require.NoError(t, err)
 	_, err = mp.ScrapeMetrics(context.Background())
 	require.ErrorIs(t, err, want)
@@ -60,7 +60,7 @@ func TestMetricsConcurrency(t *testing.T) {
 	dps.AppendEmpty()
 	dps.AppendEmpty()
 
-	mp, err := NewMetrics(context.Background(), nopSettings(), newTestScrapeMetricsFunc(nil))
+	mp, err := NewMetrics(newTestScrapeMetricsFunc(nil))
 	require.NoError(t, err)
 	require.NoError(t, mp.Start(context.Background(), componenttest.NewNopHost()))
 
