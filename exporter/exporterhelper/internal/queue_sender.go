@@ -94,26 +94,18 @@ func NewQueueSender(
 		exporterID:     set.ID,
 	}
 
-	if usePullingBasedExporterQueueBatcher.IsEnabled() {
-		exportFunc := func(ctx context.Context, req internal.Request) error {
-			err := qs.NextSender.Send(ctx, req)
-			if err != nil {
-				set.Logger.Error("Exporting failed. Dropping data."+exportFailureMessage,
-					zap.Error(err), zap.Int("dropped_items", req.ItemsCount()))
-			}
-			return err
+	exportFunc := func(ctx context.Context, req internal.Request) error {
+		err := qs.NextSender.Send(ctx, req)
+		if err != nil {
+			set.Logger.Error("Exporting failed. Dropping data."+exportFailureMessage,
+				zap.Error(err), zap.Int("dropped_items", req.ItemsCount()))
 		}
+		return err
+	}
+	if usePullingBasedExporterQueueBatcher.IsEnabled() {
 		qs.batcher, _ = queue.NewBatcher(batcherCfg, q, exportFunc, numConsumers)
 	} else {
-		consumeFunc := func(ctx context.Context, req internal.Request) error {
-			err := qs.NextSender.Send(ctx, req)
-			if err != nil {
-				set.Logger.Error("Exporting failed. Dropping data."+exportFailureMessage,
-					zap.Error(err), zap.Int("dropped_items", req.ItemsCount()))
-			}
-			return err
-		}
-		qs.consumers = queue.NewQueueConsumers[internal.Request](q, numConsumers, consumeFunc)
+		qs.consumers = queue.NewQueueConsumers[internal.Request](q, numConsumers, exportFunc)
 	}
 	return qs
 }
