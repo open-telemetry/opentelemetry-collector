@@ -97,55 +97,55 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	var err, errs error
 	builder.ExporterEnqueueFailedLogRecords, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
 		"otelcol_exporter_enqueue_failed_log_records",
-		metric.WithDescription("Number of log records failed to be added to the sending queue."),
+		metric.WithDescription("Number of log records failed to be added to the sending queue. [alpha]"),
 		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterEnqueueFailedMetricPoints, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
 		"otelcol_exporter_enqueue_failed_metric_points",
-		metric.WithDescription("Number of metric points failed to be added to the sending queue."),
+		metric.WithDescription("Number of metric points failed to be added to the sending queue. [alpha]"),
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterEnqueueFailedSpans, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
 		"otelcol_exporter_enqueue_failed_spans",
-		metric.WithDescription("Number of spans failed to be added to the sending queue."),
+		metric.WithDescription("Number of spans failed to be added to the sending queue. [alpha]"),
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterSendFailedLogRecords, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
 		"otelcol_exporter_send_failed_log_records",
-		metric.WithDescription("Number of log records in failed attempts to send to destination."),
+		metric.WithDescription("Number of log records in failed attempts to send to destination. [alpha]"),
 		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterSendFailedMetricPoints, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
 		"otelcol_exporter_send_failed_metric_points",
-		metric.WithDescription("Number of metric points in failed attempts to send to destination."),
+		metric.WithDescription("Number of metric points in failed attempts to send to destination. [alpha]"),
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterSendFailedSpans, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
 		"otelcol_exporter_send_failed_spans",
-		metric.WithDescription("Number of spans in failed attempts to send to destination."),
+		metric.WithDescription("Number of spans in failed attempts to send to destination. [alpha]"),
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterSentLogRecords, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
 		"otelcol_exporter_sent_log_records",
-		metric.WithDescription("Number of log record successfully sent to destination."),
+		metric.WithDescription("Number of log record successfully sent to destination. [alpha]"),
 		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterSentMetricPoints, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
 		"otelcol_exporter_sent_metric_points",
-		metric.WithDescription("Number of metric points successfully sent to destination."),
+		metric.WithDescription("Number of metric points successfully sent to destination. [alpha]"),
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterSentSpans, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
 		"otelcol_exporter_sent_spans",
-		metric.WithDescription("Number of spans successfully sent to destination."),
+		metric.WithDescription("Number of spans successfully sent to destination. [alpha]"),
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)

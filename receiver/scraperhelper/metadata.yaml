@@ -11,6 +11,8 @@ telemetry:
   metrics:
     scraper_scraped_metric_points:
       enabled: true
+      stability:
+        level: alpha
       description: Number of metric points successfully scraped.
       unit: "{datapoints}"
       sum:
@@ -19,6 +21,8 @@ telemetry:
 
     scraper_errored_metric_points:
       enabled: true
+      stability:
+        level: alpha
       description: Number of metric points that were unable to be scraped.
       unit: "{datapoints}"
       sum:
