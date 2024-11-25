@@ -7,7 +7,7 @@ change_type: breaking
 component: exporterqueue
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Change exporter queue batching to use a pulling model.
+note: Introduce a feature gate exporter.UsePullingBasedExporterQueueBatcher to use the new pulling model in exporter queue batching.
 
 # One or more tracking issues or pull requests related to the change
 issues: [8122, 10368]
