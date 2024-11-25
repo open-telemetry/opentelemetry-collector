@@ -133,7 +133,7 @@ func sanitizeExpanded(a any, useOriginal bool) any {
 		return c
 	case []any:
 		var newSlice []any
-		if reflect.ValueOf(m).IsNil() {
+		if m == nil {
 			return newSlice
 		}
 		newSlice = []any{}
