@@ -42,12 +42,15 @@ func newLogger(set Settings, cfg Config) (*zap.Logger, log.LoggerProvider, error
 		lp = set.SDK.LoggerProvider()
 
 		logger = logger.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
-			core, _ := zapcore.NewIncreaseLevelCore(zapcore.NewTee(
+			core, err := zapcore.NewIncreaseLevelCore(zapcore.NewTee(
 				c,
 				otelzap.NewCore("go.opentelemetry.io/collector/service/telemetry",
 					otelzap.WithLoggerProvider(lp),
 				),
 			), zap.NewAtomicLevelAt(cfg.Logs.Level))
+			if err != nil {
+				panic(err)
+			}
 			return core
 		}))
 	}
