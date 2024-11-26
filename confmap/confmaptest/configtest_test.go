@@ -30,6 +30,13 @@ func TestLoadConf(t *testing.T) {
 	assert.Equal(t, map[string]any{"floating": 3.14}, cfg.ToStringMap())
 }
 
+func TestToStringMapSanitizeNil(t *testing.T) {
+	cfg, err := LoadConf(filepath.Join("testdata", "nil.yaml"))
+	require.NoError(t, err)
+	var nilVal interface{}
+	assert.Equal(t, map[string]any{"slice": nilVal}, cfg.ToStringMap())
+}
+
 func TestToStringMapSanitizeEmptySlice(t *testing.T) {
 	cfg, err := LoadConf(filepath.Join("testdata", "empty-slice.yaml"))
 	require.NoError(t, err)
