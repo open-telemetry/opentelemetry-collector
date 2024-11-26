@@ -54,6 +54,9 @@ to run, operate and maintain multiple agents/collectors in order to support
 open-source telemetry data formats (e.g. Jaeger, Prometheus, etc.) to
 multiple open-source or commercial back-ends.
 
+
+
+
 Objectives:
 
 - Usable: Reasonable default configuration, supports popular protocols, runs and collects out of the box.
