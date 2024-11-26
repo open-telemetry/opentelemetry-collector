@@ -10,7 +10,8 @@ on:
 jobs:
   check-merge-freeze:
     name: Check
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'release:prepare') }}
+    # This condition is to avoid blocking the PR causing the freeze in the first place.
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'release:merge-freeze') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
