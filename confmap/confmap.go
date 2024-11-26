@@ -133,6 +133,10 @@ func sanitizeExpanded(a any, useOriginal bool) any {
 		return c
 	case []any:
 		var newSlice []any
+		if m == nil {
+			return newSlice
+		}
+		newSlice = []any{}
 		for _, e := range m {
 			newSlice = append(newSlice, sanitizeExpanded(e, useOriginal))
 		}
