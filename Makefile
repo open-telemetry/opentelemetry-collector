@@ -445,3 +445,16 @@ mdatagen-test:
 	cd cmd/mdatagen && $(GOCMD) install .
 	cd cmd/mdatagen && $(GOCMD) generate ./...
 	cd cmd/mdatagen && $(GOCMD) test ./...
+
+.PHONY: generate-gh-issue-templates
+generate-gh-issue-templates:
+	cd cmd/githubgen && $(GOCMD) install .
+	githubgen issue-templates
+
+.PHONY: githubgen-install
+githubgen-install:
+	cd cmd/githubgen && $(GOCMD) install .
+
+.PHONY: gengithub
+gengithub: githubgen-install
+	githubgen
