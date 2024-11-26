@@ -212,7 +212,7 @@ jobs:
       - name: Run Unit Tests With Coverage
         run: make gotest-with-cover
       - name: Upload coverage report
-        uses: codecov/codecov-action@288befbd1044bd1756afb0bdae077549e0ddb31f # 5.0.5
+        uses: codecov/codecov-action@015f24e6818733317a2da2edd6290ab26238649a # 5.0.7
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
