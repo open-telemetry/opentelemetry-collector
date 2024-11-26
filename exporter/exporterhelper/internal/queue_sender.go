@@ -159,6 +159,7 @@ func (qs *QueueSender) Shutdown(ctx context.Context) error {
 	for _, callback := range qs.shutdownCallbacks {
 		callback()
 	}
+	qs.shutdownCallbacks = nil
 
 	if err := qs.queue.Shutdown(ctx); err != nil {
 		return err
