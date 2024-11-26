@@ -25,7 +25,7 @@ COMMON_LABELS["good-first-issue"]="good first issue"
 COMMON_LABELS["help-wanted"]="help wanted"
 COMMON_LABELS["needs-discussion"]="needs discussion"
 COMMON_LABELS["needs-triage"]="needs triage"
-COMMON_LABELS["os:mac"]="os:mac"
+COMMON_LABELS["os:macos"]="os:macos"
 COMMON_LABELS["os:windows"]="os:windows"
 COMMON_LABELS["waiting-for-author"]="waiting for author"
 
