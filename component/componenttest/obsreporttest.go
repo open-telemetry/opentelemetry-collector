@@ -5,17 +5,18 @@ package componenttest // import "go.opentelemetry.io/collector/component/compone
 
 import (
 	"context"
+	"errors"
 
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
-	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 const (
@@ -32,12 +33,10 @@ const (
 )
 
 type TestTelemetry struct {
-	ts           component.TelemetrySettings
 	id           component.ID
+	ts           component.TelemetrySettings
 	SpanRecorder *tracetest.SpanRecorder
-
-	reader        *sdkmetric.ManualReader
-	meterProvider *sdkmetric.MeterProvider
+	reader       *sdkmetric.ManualReader
 }
 
 // CheckExporterTraces checks that for the current exported values for trace exporter metrics match given values.
@@ -101,12 +100,9 @@ func (tts *TestTelemetry) CheckScraperMetrics(receiver component.ID, scraper com
 
 // Shutdown unregisters any views and shuts down the SpanRecorder
 func (tts *TestTelemetry) Shutdown(ctx context.Context) error {
-	var errs error
-	errs = multierr.Append(errs, tts.SpanRecorder.Shutdown(ctx))
-	if tts.meterProvider != nil {
-		errs = multierr.Append(errs, tts.meterProvider.Shutdown(ctx))
-	}
-	return errs
+	return errors.Join(
+		tts.ts.TracerProvider.(*sdktrace.TracerProvider).Shutdown(ctx),
+		tts.ts.MeterProvider.(*sdkmetric.MeterProvider).Shutdown(ctx))
 }
 
 // TelemetrySettings returns the TestTelemetry's TelemetrySettings
@@ -118,23 +114,23 @@ func (tts *TestTelemetry) TelemetrySettings() component.TelemetrySettings {
 // The caller must pass the ID of the component being tested. The ID will be used by the CreateSettings and Check methods.
 // The caller must defer a call to `Shutdown` on the returned TestTelemetry.
 func SetupTelemetry(id component.ID) (TestTelemetry, error) {
-	sr := new(tracetest.SpanRecorder)
-	tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
-
 	settings := TestTelemetry{
-		ts:           NewNopTelemetrySettings(),
 		id:           id,
-		SpanRecorder: sr,
+		reader:       sdkmetric.NewManualReader(),
+		SpanRecorder: new(tracetest.SpanRecorder),
 	}
-	settings.ts.TracerProvider = tp
 
-	settings.reader = sdkmetric.NewManualReader()
-	settings.meterProvider = sdkmetric.NewMeterProvider(
+	mp := sdkmetric.NewMeterProvider(
 		sdkmetric.WithResource(resource.Empty()),
 		sdkmetric.WithReader(settings.reader),
 	)
-	settings.ts.LeveledMeterProvider = func(_ configtelemetry.Level) metric.MeterProvider {
-		return settings.meterProvider
+
+	settings.ts = component.TelemetrySettings{
+		Logger:         zap.NewNop(),
+		TracerProvider: sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(settings.SpanRecorder)),
+		MeterProvider:  mp,
+		MetricsLevel:   configtelemetry.LevelDetailed,
+		Resource:       pcommon.NewResource(),
 	}
 
 	return settings, nil

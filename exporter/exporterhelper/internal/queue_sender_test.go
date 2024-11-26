@@ -27,87 +27,112 @@ import (
 )
 
 func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
-	qCfg := NewDefaultQueueConfig()
-	qCfg.NumConsumers = 1
-	rCfg := configretry.NewDefaultBackOffConfig()
-	be, err := NewBaseExporter(defaultSettings, defaultSignal, newObservabilityConsumerSender,
-		WithMarshaler(mockRequestMarshaler), WithUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
-		WithRetry(rCfg), WithQueue(qCfg))
-	require.NoError(t, err)
-	ocs := be.ObsrepSender.(*observabilityConsumerSender)
-	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
+	runTest := func(testName string, enableQueueBatcher bool) {
+		t.Run(testName, func(t *testing.T) {
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			qCfg := NewDefaultQueueConfig()
+			qCfg.NumConsumers = 1
+			rCfg := configretry.NewDefaultBackOffConfig()
+			be, err := NewBaseExporter(defaultSettings, defaultSignal, newObservabilityConsumerSender,
+				WithMarshaler(mockRequestMarshaler), WithUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
+				WithRetry(rCfg), WithQueue(qCfg))
+			require.NoError(t, err)
+			ocs := be.ObsrepSender.(*observabilityConsumerSender)
+			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 
-	firstMockR := newErrorRequest()
-	ocs.run(func() {
-		// This is asynchronous so it should just enqueue, no errors expected.
-		require.NoError(t, be.Send(context.Background(), firstMockR))
-	})
+			firstMockR := newErrorRequest()
+			ocs.run(func() {
+				// This is asynchronous so it should just enqueue, no errors expected.
+				require.NoError(t, be.Send(context.Background(), firstMockR))
+			})
 
-	// Enqueue another request to ensure when calling shutdown we drain the queue.
-	secondMockR := newMockRequest(3, nil)
-	ocs.run(func() {
-		// This is asynchronous so it should just enqueue, no errors expected.
-		require.NoError(t, be.Send(context.Background(), secondMockR))
-	})
+			// Enqueue another request to ensure when calling shutdown we drain the queue.
+			secondMockR := newMockRequest(3, nil)
+			ocs.run(func() {
+				// This is asynchronous so it should just enqueue, no errors expected.
+				require.NoError(t, be.Send(context.Background(), secondMockR))
+			})
 
-	require.LessOrEqual(t, 1, be.QueueSender.(*QueueSender).queue.Size())
+			require.LessOrEqual(t, 1, be.QueueSender.(*QueueSender).queue.Size())
 
-	require.NoError(t, be.Shutdown(context.Background()))
+			require.NoError(t, be.Shutdown(context.Background()))
 
-	secondMockR.checkNumRequests(t, 1)
-	ocs.checkSendItemsCount(t, 3)
-	ocs.checkDroppedItemsCount(t, 7)
-	require.Zero(t, be.QueueSender.(*QueueSender).queue.Size())
+			secondMockR.checkNumRequests(t, 1)
+			ocs.checkSendItemsCount(t, 3)
+			ocs.checkDroppedItemsCount(t, 7)
+			require.Zero(t, be.QueueSender.(*QueueSender).queue.Size())
+		})
+	}
+	runTest("enable_queue_batcher", true)
+	runTest("disable_queue_batcher", false)
 }
 
 func TestQueuedRetry_DoNotPreserveCancellation(t *testing.T) {
-	qCfg := NewDefaultQueueConfig()
-	qCfg.NumConsumers = 1
-	rCfg := configretry.NewDefaultBackOffConfig()
-	be, err := NewBaseExporter(defaultSettings, defaultSignal, newObservabilityConsumerSender,
-		WithMarshaler(mockRequestMarshaler), WithUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
-		WithRetry(rCfg), WithQueue(qCfg))
-	require.NoError(t, err)
-	ocs := be.ObsrepSender.(*observabilityConsumerSender)
-	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
-	t.Cleanup(func() {
-		assert.NoError(t, be.Shutdown(context.Background()))
-	})
+	runTest := func(testName string, enableQueueBatcher bool) {
+		t.Run(testName, func(t *testing.T) {
+			resetFeatureGate := setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			qCfg := NewDefaultQueueConfig()
+			qCfg.NumConsumers = 1
+			rCfg := configretry.NewDefaultBackOffConfig()
+			be, err := NewBaseExporter(defaultSettings, defaultSignal, newObservabilityConsumerSender,
+				WithMarshaler(mockRequestMarshaler), WithUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
+				WithRetry(rCfg), WithQueue(qCfg))
+			require.NoError(t, err)
+			ocs := be.ObsrepSender.(*observabilityConsumerSender)
+			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
+			t.Cleanup(func() {
+				assert.NoError(t, be.Shutdown(context.Background()))
+				resetFeatureGate()
+			})
 
-	ctx, cancelFunc := context.WithCancel(context.Background())
-	cancelFunc()
-	mockR := newMockRequest(2, nil)
-	ocs.run(func() {
-		// This is asynchronous so it should just enqueue, no errors expected.
-		require.NoError(t, be.Send(ctx, mockR))
-	})
-	ocs.awaitAsyncProcessing()
+			ctx, cancelFunc := context.WithCancel(context.Background())
+			cancelFunc()
+			mockR := newMockRequest(2, nil)
+			ocs.run(func() {
+				// This is asynchronous so it should just enqueue, no errors expected.
+				require.NoError(t, be.Send(ctx, mockR))
+			})
+			ocs.awaitAsyncProcessing()
 
-	mockR.checkNumRequests(t, 1)
-	ocs.checkSendItemsCount(t, 2)
-	ocs.checkDroppedItemsCount(t, 0)
-	require.Zero(t, be.QueueSender.(*QueueSender).queue.Size())
+			mockR.checkNumRequests(t, 1)
+			ocs.checkSendItemsCount(t, 2)
+			ocs.checkDroppedItemsCount(t, 0)
+			require.Zero(t, be.QueueSender.(*QueueSender).queue.Size())
+		})
+	}
+
+	runTest("enable_queue_batcher", true)
+	runTest("disable_queue_batcher", false)
 }
 
 func TestQueuedRetry_RejectOnFull(t *testing.T) {
-	qCfg := NewDefaultQueueConfig()
-	qCfg.QueueSize = 0
-	qCfg.NumConsumers = 0
-	set := exportertest.NewNopSettings()
-	logger, observed := observer.New(zap.ErrorLevel)
-	set.Logger = zap.New(logger)
-	be, err := NewBaseExporter(set, defaultSignal, newNoopObsrepSender,
-		WithMarshaler(mockRequestMarshaler), WithUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
-		WithQueue(qCfg))
-	require.NoError(t, err)
-	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
-	t.Cleanup(func() {
-		assert.NoError(t, be.Shutdown(context.Background()))
-	})
-	require.Error(t, be.Send(context.Background(), newMockRequest(2, nil)))
-	assert.Len(t, observed.All(), 1)
-	assert.Equal(t, "Exporting failed. Rejecting data.", observed.All()[0].Message)
-	assert.Equal(t, "sending queue is full", observed.All()[0].ContextMap()["error"])
+	runTest := func(testName string, enableQueueBatcher bool) {
+		t.Run(testName, func(t *testing.T) {
+			resetFeatureGate := setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			qCfg := NewDefaultQueueConfig()
+			qCfg.QueueSize = 0
+			qCfg.NumConsumers = 0
+			set := exportertest.NewNopSettings()
+			logger, observed := observer.New(zap.ErrorLevel)
+			set.Logger = zap.New(logger)
+			be, err := NewBaseExporter(set, defaultSignal, newNoopObsrepSender,
+				WithMarshaler(mockRequestMarshaler), WithUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
+				WithQueue(qCfg))
+			require.NoError(t, err)
+			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
+			t.Cleanup(func() {
+				assert.NoError(t, be.Shutdown(context.Background()))
+				resetFeatureGate()
+			})
+			require.Error(t, be.Send(context.Background(), newMockRequest(2, nil)))
+			assert.Len(t, observed.All(), 1)
+			assert.Equal(t, "Exporting failed. Rejecting data.", observed.All()[0].Message)
+			assert.Equal(t, "sending queue is full", observed.All()[0].ContextMap()["error"])
+		})
+	}
+
+	runTest("enable_queue_batcher", true)
+	runTest("disable_queue_batcher", false)
 }
 
 func TestQueuedRetryHappyPath(t *testing.T) {
@@ -162,8 +187,13 @@ func TestQueuedRetryHappyPath(t *testing.T) {
 			},
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+
+	runTest := func(testName string, enableQueueBatcher bool, tt struct {
+		name         string
+		queueOptions []Option
+	}) {
+		t.Run(testName, func(t *testing.T) {
+			resetFeatureGate := setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			tel, err := componenttest.SetupTelemetry(defaultID)
 			require.NoError(t, err)
 			t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
@@ -189,6 +219,7 @@ func TestQueuedRetryHappyPath(t *testing.T) {
 			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 			t.Cleanup(func() {
 				assert.NoError(t, be.Shutdown(context.Background()))
+				resetFeatureGate()
 			})
 
 			// Wait until all batches received
@@ -203,67 +234,94 @@ func TestQueuedRetryHappyPath(t *testing.T) {
 			ocs.checkDroppedItemsCount(t, 0)
 		})
 	}
-}
-
-func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
-	dataTypes := []pipeline.Signal{pipeline.SignalLogs, pipeline.SignalTraces, pipeline.SignalMetrics}
-	for _, dataType := range dataTypes {
-		tt, err := componenttest.SetupTelemetry(defaultID)
-		require.NoError(t, err)
-
-		qCfg := NewDefaultQueueConfig()
-		qCfg.NumConsumers = 0 // to make every request go straight to the queue
-		rCfg := configretry.NewDefaultBackOffConfig()
-		set := exporter.Settings{ID: defaultID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}
-		be, err := NewBaseExporter(set, dataType, newObservabilityConsumerSender,
-			WithMarshaler(mockRequestMarshaler), WithUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
-			WithRetry(rCfg), WithQueue(qCfg))
-		require.NoError(t, err)
-		require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
-
-		require.NoError(t, tt.CheckExporterMetricGauge("otelcol_exporter_queue_capacity", int64(defaultQueueSize)))
-
-		for i := 0; i < 7; i++ {
-			require.NoError(t, be.Send(context.Background(), newErrorRequest()))
-		}
-		require.NoError(t, tt.CheckExporterMetricGauge("otelcol_exporter_queue_size", int64(7),
-			attribute.String(DataTypeKey, dataType.String())))
-
-		assert.NoError(t, be.Shutdown(context.Background()))
+	for _, tt := range tests {
+		runTest(tt.name+"_enable_queue_batcher", true, tt)
+		runTest(tt.name+"_disable_queue_batcher", false, tt)
 	}
 }
 
-func TestNoCancellationContext(t *testing.T) {
-	deadline := time.Now().Add(1 * time.Second)
-	ctx, cancelFunc := context.WithDeadline(context.Background(), deadline)
-	cancelFunc()
-	require.Error(t, ctx.Err())
-	d, ok := ctx.Deadline()
-	require.True(t, ok)
-	require.Equal(t, deadline, d)
+func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
+	runTest := func(testName string, enableQueueBatcher bool) {
+		t.Run(testName, func(t *testing.T) {
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			dataTypes := []pipeline.Signal{pipeline.SignalLogs, pipeline.SignalTraces, pipeline.SignalMetrics}
+			for _, dataType := range dataTypes {
+				tt, err := componenttest.SetupTelemetry(defaultID)
+				require.NoError(t, err)
 
-	nctx := context.WithoutCancel(ctx)
-	require.NoError(t, nctx.Err())
-	d, ok = nctx.Deadline()
-	assert.False(t, ok)
-	assert.True(t, d.IsZero())
+				qCfg := NewDefaultQueueConfig()
+				qCfg.NumConsumers = -1 // to make QueueMetricsReportedvery request go straight to the queue
+				rCfg := configretry.NewDefaultBackOffConfig()
+				set := exporter.Settings{ID: defaultID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}
+				be, err := NewBaseExporter(set, dataType, newObservabilityConsumerSender,
+					WithMarshaler(mockRequestMarshaler), WithUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
+					WithRetry(rCfg), WithQueue(qCfg))
+				require.NoError(t, err)
+				require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
+
+				require.NoError(t, tt.CheckExporterMetricGauge("otelcol_exporter_queue_capacity", int64(defaultQueueSize)))
+
+				for i := 0; i < 7; i++ {
+					require.NoError(t, be.Send(context.Background(), newErrorRequest()))
+				}
+				require.NoError(t, tt.CheckExporterMetricGauge("otelcol_exporter_queue_size", int64(7),
+					attribute.String(DataTypeKey, dataType.String())))
+
+				assert.NoError(t, be.Shutdown(context.Background()))
+			}
+		})
+	}
+	runTest("enable_queue_batcher", true)
+	runTest("disable_queue_batcher", false)
+}
+
+func TestNoCancellationContext(t *testing.T) {
+	runTest := func(testName string, enableQueueBatcher bool) {
+		t.Run(testName, func(t *testing.T) {
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			deadline := time.Now().Add(1 * time.Second)
+			ctx, cancelFunc := context.WithDeadline(context.Background(), deadline)
+			cancelFunc()
+			require.Error(t, ctx.Err())
+			d, ok := ctx.Deadline()
+			require.True(t, ok)
+			require.Equal(t, deadline, d)
+
+			nctx := context.WithoutCancel(ctx)
+			require.NoError(t, nctx.Err())
+			d, ok = nctx.Deadline()
+			assert.False(t, ok)
+			assert.True(t, d.IsZero())
+		})
+	}
+
+	runTest("enable_queue_batcher", true)
+	runTest("disable_queue_batcher", false)
 }
 
 func TestQueueConfig_Validate(t *testing.T) {
-	qCfg := NewDefaultQueueConfig()
-	require.NoError(t, qCfg.Validate())
+	runTest := func(testName string, enableQueueBatcher bool) {
+		t.Run(testName, func(t *testing.T) {
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			qCfg := NewDefaultQueueConfig()
+			require.NoError(t, qCfg.Validate())
 
-	qCfg.QueueSize = 0
-	require.EqualError(t, qCfg.Validate(), "queue size must be positive")
+			qCfg.QueueSize = 0
+			require.EqualError(t, qCfg.Validate(), "queue size must be positive")
 
-	qCfg = NewDefaultQueueConfig()
-	qCfg.NumConsumers = 0
+			qCfg = NewDefaultQueueConfig()
+			qCfg.NumConsumers = 0
 
-	require.EqualError(t, qCfg.Validate(), "number of queue consumers must be positive")
+			require.EqualError(t, qCfg.Validate(), "number of queue consumers must be positive")
 
-	// Confirm Validate doesn't return error with invalid config when feature is disabled
-	qCfg.Enabled = false
-	assert.NoError(t, qCfg.Validate())
+			// Confirm Validate doesn't return error with invalid config when feature is disabled
+			qCfg.Enabled = false
+			assert.NoError(t, qCfg.Validate())
+		})
+	}
+
+	runTest("enable_queue_batcher", true)
+	runTest("disable_queue_batcher", false)
 }
 
 func TestQueueRetryWithDisabledQueue(t *testing.T) {
@@ -295,8 +353,12 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	runTest := func(testName string, enableQueueBatcher bool, tt struct {
+		name         string
+		queueOptions []Option
+	}) {
+		t.Run(testName, func(t *testing.T) {
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			set := exportertest.NewNopSettings()
 			logger, observed := observer.New(zap.ErrorLevel)
 			set.Logger = zap.New(logger)
@@ -317,126 +379,171 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 			require.NoError(t, be.Shutdown(context.Background()))
 		})
 	}
+	for _, tt := range tests {
+		runTest(tt.name+"_enable_queue_batcher", true, tt)
+		runTest(tt.name+"_disable_queue_batcher", false, tt)
+	}
 }
 
 func TestQueueFailedRequestDropped(t *testing.T) {
-	set := exportertest.NewNopSettings()
-	logger, observed := observer.New(zap.ErrorLevel)
-	set.Logger = zap.New(logger)
-	be, err := NewBaseExporter(set, pipeline.SignalLogs, newNoopObsrepSender,
-		WithRequestQueue(exporterqueue.NewDefaultConfig(), exporterqueue.NewMemoryQueueFactory[internal.Request]()))
-	require.NoError(t, err)
-	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
-	mockR := newMockRequest(2, errors.New("some error"))
-	require.NoError(t, be.Send(context.Background(), mockR))
-	require.NoError(t, be.Shutdown(context.Background()))
-	mockR.checkNumRequests(t, 1)
-	assert.Len(t, observed.All(), 1)
-	assert.Equal(t, "Exporting failed. Dropping data.", observed.All()[0].Message)
+	runTest := func(testName string, enableQueueBatcher bool) {
+		t.Run(testName, func(t *testing.T) {
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			set := exportertest.NewNopSettings()
+			logger, observed := observer.New(zap.ErrorLevel)
+			set.Logger = zap.New(logger)
+			be, err := NewBaseExporter(set, pipeline.SignalLogs, newNoopObsrepSender,
+				WithRequestQueue(exporterqueue.NewDefaultConfig(), exporterqueue.NewMemoryQueueFactory[internal.Request]()))
+			require.NoError(t, err)
+			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
+			mockR := newMockRequest(2, errors.New("some error"))
+			require.NoError(t, be.Send(context.Background(), mockR))
+			require.NoError(t, be.Shutdown(context.Background()))
+			mockR.checkNumRequests(t, 1)
+			assert.Len(t, observed.All(), 1)
+			assert.Equal(t, "Exporting failed. Dropping data.", observed.All()[0].Message)
+		})
+	}
+
+	runTest("enable_queue_batcher", true)
+	runTest("disable_queue_batcher", false)
 }
 
 func TestQueuedRetryPersistenceEnabled(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(defaultID)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+	runTest := func(testName string, enableQueueBatcher bool) {
+		t.Run(testName, func(t *testing.T) {
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			tt, err := componenttest.SetupTelemetry(defaultID)
+			require.NoError(t, err)
+			t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	qCfg := NewDefaultQueueConfig()
-	storageID := component.MustNewIDWithName("file_storage", "storage")
-	qCfg.StorageID = &storageID // enable persistence
-	rCfg := configretry.NewDefaultBackOffConfig()
-	set := exporter.Settings{ID: defaultID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}
-	be, err := NewBaseExporter(set, defaultSignal, newObservabilityConsumerSender,
-		WithMarshaler(mockRequestMarshaler), WithUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
-		WithRetry(rCfg), WithQueue(qCfg))
-	require.NoError(t, err)
+			qCfg := NewDefaultQueueConfig()
+			storageID := component.MustNewIDWithName("file_storage", "storage")
+			qCfg.StorageID = &storageID // enable persistence
+			rCfg := configretry.NewDefaultBackOffConfig()
+			set := exporter.Settings{ID: defaultID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}
+			be, err := NewBaseExporter(set, defaultSignal, newObservabilityConsumerSender,
+				WithMarshaler(mockRequestMarshaler), WithUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
+				WithRetry(rCfg), WithQueue(qCfg))
+			require.NoError(t, err)
 
-	var extensions = map[component.ID]component.Component{
-		storageID: queue.NewMockStorageExtension(nil),
+			var extensions = map[component.ID]component.Component{
+				storageID: queue.NewMockStorageExtension(nil),
+			}
+			host := &MockHost{Ext: extensions}
+
+			// we start correctly with a file storage extension
+			require.NoError(t, be.Start(context.Background(), host))
+			require.NoError(t, be.Shutdown(context.Background()))
+		})
 	}
-	host := &MockHost{Ext: extensions}
 
-	// we start correctly with a file storage extension
-	require.NoError(t, be.Start(context.Background(), host))
-	require.NoError(t, be.Shutdown(context.Background()))
+	runTest("enable_queue_batcher", true)
+	runTest("disable_queue_batcher", false)
 }
 
 func TestQueuedRetryPersistenceEnabledStorageError(t *testing.T) {
-	storageError := errors.New("could not get storage client")
-	tt, err := componenttest.SetupTelemetry(defaultID)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+	runTest := func(testName string, enableQueueBatcher bool) {
+		t.Run(testName, func(t *testing.T) {
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			storageError := errors.New("could not get storage client")
+			tt, err := componenttest.SetupTelemetry(defaultID)
+			require.NoError(t, err)
+			t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	qCfg := NewDefaultQueueConfig()
-	storageID := component.MustNewIDWithName("file_storage", "storage")
-	qCfg.StorageID = &storageID // enable persistence
-	rCfg := configretry.NewDefaultBackOffConfig()
-	set := exporter.Settings{ID: defaultID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}
-	be, err := NewBaseExporter(set, defaultSignal, newObservabilityConsumerSender, WithMarshaler(mockRequestMarshaler),
-		WithUnmarshaler(mockRequestUnmarshaler(&mockRequest{})), WithRetry(rCfg), WithQueue(qCfg))
-	require.NoError(t, err)
+			qCfg := NewDefaultQueueConfig()
+			storageID := component.MustNewIDWithName("file_storage", "storage")
+			qCfg.StorageID = &storageID // enable persistence
+			rCfg := configretry.NewDefaultBackOffConfig()
+			set := exporter.Settings{ID: defaultID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}
+			be, err := NewBaseExporter(set, defaultSignal, newObservabilityConsumerSender, WithMarshaler(mockRequestMarshaler),
+				WithUnmarshaler(mockRequestUnmarshaler(&mockRequest{})), WithRetry(rCfg), WithQueue(qCfg))
+			require.NoError(t, err)
 
-	var extensions = map[component.ID]component.Component{
-		storageID: queue.NewMockStorageExtension(storageError),
+			var extensions = map[component.ID]component.Component{
+				storageID: queue.NewMockStorageExtension(storageError),
+			}
+			host := &MockHost{Ext: extensions}
+
+			// we fail to start if we get an error creating the storage client
+			require.Error(t, be.Start(context.Background(), host), "could not get storage client")
+		})
 	}
-	host := &MockHost{Ext: extensions}
 
-	// we fail to start if we get an error creating the storage client
-	require.Error(t, be.Start(context.Background(), host), "could not get storage client")
+	runTest("enable_queue_batcher", true)
+	runTest("disable_queue_batcher", false)
 }
 
 func TestQueuedRetryPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
-	qCfg := NewDefaultQueueConfig()
-	qCfg.NumConsumers = 1
-	storageID := component.MustNewIDWithName("file_storage", "storage")
-	qCfg.StorageID = &storageID // enable persistence to ensure data is re-queued on shutdown
+	runTest := func(testName string, enableQueueBatcher bool) {
+		t.Run(testName, func(t *testing.T) {
+			resetFeatureGate := setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			qCfg := NewDefaultQueueConfig()
+			qCfg.NumConsumers = 1
+			storageID := component.MustNewIDWithName("file_storage", "storage")
+			qCfg.StorageID = &storageID // enable persistence to ensure data is re-queued on shutdown
 
-	rCfg := configretry.NewDefaultBackOffConfig()
-	rCfg.InitialInterval = time.Millisecond
-	rCfg.MaxElapsedTime = 0 // retry infinitely so shutdown can be triggered
+			rCfg := configretry.NewDefaultBackOffConfig()
+			rCfg.InitialInterval = time.Millisecond
+			rCfg.MaxElapsedTime = 0 // retry infinitely so shutdown can be triggered
 
-	mockReq := newErrorRequest()
-	be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender, WithMarshaler(mockRequestMarshaler),
-		WithUnmarshaler(mockRequestUnmarshaler(mockReq)), WithRetry(rCfg), WithQueue(qCfg))
-	require.NoError(t, err)
+			mockReq := newErrorRequest()
+			be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender, WithMarshaler(mockRequestMarshaler),
+				WithUnmarshaler(mockRequestUnmarshaler(mockReq)), WithRetry(rCfg), WithQueue(qCfg))
+			require.NoError(t, err)
 
-	var extensions = map[component.ID]component.Component{
-		storageID: queue.NewMockStorageExtension(nil),
+			var extensions = map[component.ID]component.Component{
+				storageID: queue.NewMockStorageExtension(nil),
+			}
+			host := &MockHost{Ext: extensions}
+
+			require.NoError(t, be.Start(context.Background(), host))
+
+			// Invoke queuedRetrySender so the producer will put the item for consumer to poll
+			require.NoError(t, be.Send(context.Background(), mockReq))
+
+			// first wait for the item to be consumed from the queue
+			assert.Eventually(t, func() bool {
+				return be.QueueSender.(*QueueSender).queue.Size() == 0
+			}, time.Second, 1*time.Millisecond)
+
+			// shuts down the exporter, unsent data should be preserved as in-flight data in the persistent queue.
+			require.NoError(t, be.Shutdown(context.Background()))
+
+			// start the exporter again replacing the preserved mockRequest in the unmarshaler with a new one that doesn't fail.
+			replacedReq := newMockRequest(1, nil)
+			be, err = NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender, WithMarshaler(mockRequestMarshaler),
+				WithUnmarshaler(mockRequestUnmarshaler(replacedReq)), WithRetry(rCfg), WithQueue(qCfg))
+			require.NoError(t, err)
+			require.NoError(t, be.Start(context.Background(), host))
+			t.Cleanup(func() {
+				require.NoError(t, be.Shutdown(context.Background()))
+				resetFeatureGate()
+			})
+
+			// wait for the item to be consumed from the queue
+			replacedReq.checkNumRequests(t, 1)
+		})
 	}
-	host := &MockHost{Ext: extensions}
-
-	require.NoError(t, be.Start(context.Background(), host))
-
-	// Invoke queuedRetrySender so the producer will put the item for consumer to poll
-	require.NoError(t, be.Send(context.Background(), mockReq))
-
-	// first wait for the item to be consumed from the queue
-	assert.Eventually(t, func() bool {
-		return be.QueueSender.(*QueueSender).queue.Size() == 0
-	}, time.Second, 1*time.Millisecond)
-
-	// shuts down the exporter, unsent data should be preserved as in-flight data in the persistent queue.
-	require.NoError(t, be.Shutdown(context.Background()))
-
-	// start the exporter again replacing the preserved mockRequest in the unmarshaler with a new one that doesn't fail.
-	replacedReq := newMockRequest(1, nil)
-	be, err = NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender, WithMarshaler(mockRequestMarshaler),
-		WithUnmarshaler(mockRequestUnmarshaler(replacedReq)), WithRetry(rCfg), WithQueue(qCfg))
-	require.NoError(t, err)
-	require.NoError(t, be.Start(context.Background(), host))
-	t.Cleanup(func() { require.NoError(t, be.Shutdown(context.Background())) })
-
-	// wait for the item to be consumed from the queue
-	replacedReq.checkNumRequests(t, 1)
+	runTest("enable_queue_batcher", true)
+	runTest("disable_queue_batcher", false)
 }
 
 func TestQueueSenderNoStartShutdown(t *testing.T) {
-	queue := queue.NewBoundedMemoryQueue[internal.Request](queue.MemoryQueueSettings[internal.Request]{})
-	set := exportertest.NewNopSettings()
-	obsrep, err := NewExporter(ObsReportSettings{
-		ExporterID:             exporterID,
-		ExporterCreateSettings: exportertest.NewNopSettings(),
-	})
-	require.NoError(t, err)
-	qs := NewQueueSender(queue, set, 1, "", obsrep)
-	assert.NoError(t, qs.Shutdown(context.Background()))
+	runTest := func(testName string, enableQueueBatcher bool) {
+		t.Run(testName, func(t *testing.T) {
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			queue := queue.NewBoundedMemoryQueue[internal.Request](queue.MemoryQueueSettings[internal.Request]{})
+			set := exportertest.NewNopSettings()
+			obsrep, err := NewExporter(ObsReportSettings{
+				ExporterID:             exporterID,
+				ExporterCreateSettings: exportertest.NewNopSettings(),
+			})
+			require.NoError(t, err)
+			qs := NewQueueSender(queue, set, 1, "", obsrep)
+			assert.NoError(t, qs.Shutdown(context.Background()))
+		})
+	}
+	runTest("enable_queue_batcher", true)
+	runTest("disable_queue_batcher", false)
 }

@@ -41,6 +41,15 @@ func TestSampleCount(t *testing.T) {
 	ps.Sample().AppendEmpty()
 	assert.EqualValues(t, 1, profiles.SampleCount())
 
+	ils2 := rs.ScopeProfiles().AppendEmpty()
+	assert.EqualValues(t, 1, profiles.SampleCount())
+
+	ps2 := ils2.Profiles().AppendEmpty().Profile()
+	assert.EqualValues(t, 1, profiles.SampleCount())
+
+	ps2.Sample().AppendEmpty()
+	assert.EqualValues(t, 2, profiles.SampleCount())
+
 	rms := profiles.ResourceProfiles()
 	rms.EnsureCapacity(3)
 	rms.AppendEmpty().ScopeProfiles().AppendEmpty()
@@ -48,8 +57,8 @@ func TestSampleCount(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		ilss.AppendEmpty()
 	}
-	// 5 + 1 (from rms.At(0) initialized first)
-	assert.EqualValues(t, 6, profiles.SampleCount())
+	// 5 + 2 (from rms.At(0) and rms.At(1) initialized first)
+	assert.EqualValues(t, 7, profiles.SampleCount())
 }
 
 func TestSampleCountWithEmpty(t *testing.T) {

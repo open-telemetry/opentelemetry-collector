@@ -62,7 +62,7 @@ func TestNewLogger(t *testing.T) {
 					},
 				},
 			},
-			wantCoreType: "zapcore.multiCore",
+			wantCoreType: "*zapcore.levelFilterCore",
 		},
 	}
 	for _, tt := range tests {

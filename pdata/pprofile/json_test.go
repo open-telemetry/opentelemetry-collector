@@ -167,9 +167,7 @@ func TestUnmarshalJsoniterProfileInvalidProfileIDField(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	NewProfileContainer().unmarshalJsoniter(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "parse profile_id")
-	}
+	assert.ErrorContains(t, iter.Error, "parse profile_id")
 }
 
 func TestUnmarshalJsoniterResourceProfiles(t *testing.T) {
@@ -287,9 +285,7 @@ func TestUnmarshalJsoniterLinkInvalidTraceIDField(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	NewLink().unmarshalJsoniter(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "parse trace_id")
-	}
+	assert.ErrorContains(t, iter.Error, "parse trace_id")
 }
 
 func TestUnmarshalJsoniterSpanLinkInvalidSpanIDField(t *testing.T) {
@@ -297,9 +293,7 @@ func TestUnmarshalJsoniterSpanLinkInvalidSpanIDField(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	NewLink().unmarshalJsoniter(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "parse span_id")
-	}
+	assert.ErrorContains(t, iter.Error, "parse span_id")
 }
 
 func TestUnmarshalJsoniterLabel(t *testing.T) {

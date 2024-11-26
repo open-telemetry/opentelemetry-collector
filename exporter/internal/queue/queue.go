@@ -34,7 +34,7 @@ type Queue[T any] interface {
 	// The function blocks until an item is available or if the queue is stopped.
 	// Returns false if reading failed or if the queue is stopped.
 	Read(context.Context) (uint64, context.Context, T, bool)
-	// Should be called to remove the item of the given index from the queue once processing is finished.
+	// OnProcessingFinished should be called to remove the item of the given index from the queue once processing is finished.
 	OnProcessingFinished(index uint64, consumeErr error)
 }
 

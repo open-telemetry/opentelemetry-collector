@@ -139,8 +139,7 @@ func TestCheckConfigStruct(t *testing.T) {
 			if tt.wantErrMsgSubStr == "" {
 				assert.NoError(t, err)
 			} else {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), tt.wantErrMsgSubStr)
+				require.ErrorContains(t, err, tt.wantErrMsgSubStr)
 			}
 		})
 	}

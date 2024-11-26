@@ -7,6 +7,42 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.20.0/v0.114.0
+
+### 💡 Enhancements 💡
+
+- `cmd/builder`: Allow for replacing of local Providers and Converters when building custom collector with ocb. (#11649)
+  Use the property `path` under `gomod` to replace an go module with a local folder in
+  builder-config.yaml. Ex:
+  ```
+  providers:
+    - gomod: module.url/my/custom/provider v1.2.3
+      path: /path/to/local/provider
+  ```
+  
+- `cmd/builder`: Allow configuring `confmap.Converter` components in ocb. (#11582)
+  If no converters are specified, there will be no converters added.
+  Currently, the only published converter is `expandconverter` which is 
+  deprecated as of v0.107.0, but can still be added for testing purposes.
+  
+  To configure a custom converter, make sure your converter implements the converter
+  interface and is published as a go module (or replaced locally if not published).
+  You may then use the `converters` key in your OCB build manifest with a list of
+  Go modules (and replaces as necessary) to include your converter.
+  
+  Please note that converters are order-dependent. The confmap will apply converters
+  in order of which they are listed in your manifest if there is more than one.
+  
+- `all`: shorten time period before removing an unmaintained component from 6 months to 3 months (#11664)
+
+### 🧰 Bug fixes 🧰
+
+- `all`: Updates dialer timeout section documentation in confignet README (#11685)
+- `scraperhelper`: If the scraper shuts down, do not scrape first. (#11632)
+  When the scraper is shutting down, it currently will scrape at least once.
+  With this change, upon receiving a shutdown order, the receiver's scraperhelper will exit immediately.
+  
+
 ## v1.19.0/v0.113.0
 
 ### 🛑 Breaking changes 🛑
