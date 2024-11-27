@@ -5,10 +5,10 @@ module {{.Distribution.Module}}
 go 1.22
 
 require (
-	{{- range .Providers}}
+	{{- range .ConfmapConverters}}
 	{{if .GoMod}}{{.GoMod}}{{end}}
 	{{- end}}
-	{{- range .Converters}}
+	{{- range .ConfmapProviders}}
 	{{if .GoMod}}{{.GoMod}}{{end}}
 	{{- end}}
 	{{- range .Connectors}}
@@ -34,6 +34,12 @@ require (
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
 )
 
+{{- range .ConfmapConverters}}
+{{if ne .Path ""}}replace {{.GoMod}} => {{.Path}}{{end}}
+{{- end}}
+{{- range .ConfmapProviders}}
+{{if ne .Path ""}}replace {{.GoMod}} => {{.Path}}{{end}}
+{{- end}}
 {{- range .Connectors}}
 {{if ne .Path ""}}replace {{.GoMod}} => {{.Path}}{{end}}
 {{- end}}

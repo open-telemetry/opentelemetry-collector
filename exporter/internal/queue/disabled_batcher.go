@@ -38,3 +38,9 @@ func (qb *DisabledBatcher) Start(_ context.Context, _ component.Host) error {
 	}()
 	return nil
 }
+
+// Shutdown ensures that queue and all Batcher are stopped.
+func (qb *DisabledBatcher) Shutdown(_ context.Context) error {
+	qb.stopWG.Wait()
+	return nil
+}

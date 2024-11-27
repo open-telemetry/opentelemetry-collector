@@ -68,7 +68,7 @@ func TestJSONMarshal(t *testing.T) {
 	encoder := &JSONMarshaler{}
 	jsonBuf, err := encoder.MarshalLogs(logsOTLP)
 	require.NoError(t, err)
-	assert.Equal(t, logsJSON, string(jsonBuf))
+	assert.JSONEq(t, logsJSON, string(jsonBuf))
 }
 
 func TestJSONUnmarshalInvalid(t *testing.T) {
@@ -123,8 +123,7 @@ func TestUnmarshalJsoniterLogWrongTraceID(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	NewLogRecord().unmarshalJsoniter(iter)
-	require.Error(t, iter.Error)
-	assert.Contains(t, iter.Error.Error(), "parse trace_id")
+	require.ErrorContains(t, iter.Error, "parse trace_id")
 }
 
 func TestUnmarshalJsoniterLogWrongSpanID(t *testing.T) {
@@ -132,8 +131,7 @@ func TestUnmarshalJsoniterLogWrongSpanID(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	NewLogRecord().unmarshalJsoniter(iter)
-	require.Error(t, iter.Error)
-	assert.Contains(t, iter.Error.Error(), "parse span_id")
+	require.ErrorContains(t, iter.Error, "parse span_id")
 }
 
 func BenchmarkJSONUnmarshal(b *testing.B) {
