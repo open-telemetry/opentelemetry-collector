@@ -138,7 +138,9 @@ func run(folder string, allowlistFilePath string, generators []generator) error 
 				}
 			}
 			if m.Status.Codeowners == nil {
-				return fmt.Errorf("component %q has no codeowners section", key)
+				// TODO to be changed back to fmt.Errorf once codeowners for all components are defined
+				log.Println(fmt.Sprintf("WARNING: component %q has no codeowners section", key))
+				return nil
 			}
 			for _, id := range m.Status.Codeowners.Active {
 				allCodeowners[id] = struct{}{}
