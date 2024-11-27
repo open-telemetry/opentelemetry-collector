@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package scrapererror provides aliases for package scraper/scrapererror.
-// deprecated as of [v0.115.0]
+// Deprecated: [v0.115.0] Use `scraper/scrapererror` instead.
 package scrapererror // import "go.opentelemetry.io/collector/receiver/scrapererror"
 
 import "go.opentelemetry.io/collector/scraper/scrapererror"
