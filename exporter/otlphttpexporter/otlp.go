@@ -20,6 +20,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -43,6 +44,7 @@ type baseExporter struct {
 	logsURL     string
 	profilesURL string
 	logger      *zap.Logger
+	host        component.Host
 	settings    component.TelemetrySettings
 	// Default user-agent header.
 	userAgent string
@@ -87,6 +89,7 @@ func (e *baseExporter) start(ctx context.Context, host component.Host) error {
 		return err
 	}
 	e.client = client
+	e.host = host
 	return nil
 }
 
@@ -111,6 +114,15 @@ func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 	return e.export(ctx, e.tracesURL, request, e.tracesPartialSuccessHandler)
 }
 
+func (e *baseExporter) pushTracesWithStatus(ctx context.Context, td ptrace.Traces) error {
+	if err := e.pushTraces(ctx, td); err != nil {
+		componentstatus.ReportStatus(e.host, componentstatus.NewRecoverableErrorEvent(err))
+		return err
+	}
+	componentstatus.ReportStatus(e.host, componentstatus.NewEvent(componentstatus.StatusOK))
+	return nil
+}
+
 func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
 	tr := pmetricotlp.NewExportRequestFromMetrics(md)
 
@@ -129,6 +141,15 @@ func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) erro
 		return consumererror.NewPermanent(err)
 	}
 	return e.export(ctx, e.metricsURL, request, e.metricsPartialSuccessHandler)
+}
+
+func (e *baseExporter) pushMetricsWithStatus(ctx context.Context, md pmetric.Metrics) error {
+	if err := e.pushMetrics(ctx, md); err != nil {
+		componentstatus.ReportStatus(e.host, componentstatus.NewRecoverableErrorEvent(err))
+		return err
+	}
+	componentstatus.ReportStatus(e.host, componentstatus.NewEvent(componentstatus.StatusOK))
+	return nil
 }
 
 func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
@@ -152,6 +173,15 @@ func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 	return e.export(ctx, e.logsURL, request, e.logsPartialSuccessHandler)
 }
 
+func (e *baseExporter) pushLogsWithStatus(ctx context.Context, ld plog.Logs) error {
+	if err := e.pushLogs(ctx, ld); err != nil {
+		componentstatus.ReportStatus(e.host, componentstatus.NewRecoverableErrorEvent(err))
+		return err
+	}
+	componentstatus.ReportStatus(e.host, componentstatus.NewEvent(componentstatus.StatusOK))
+	return nil
+}
+
 func (e *baseExporter) pushProfiles(ctx context.Context, td pprofile.Profiles) error {
 	tr := pprofileotlp.NewExportRequestFromProfiles(td)
 
@@ -171,6 +201,15 @@ func (e *baseExporter) pushProfiles(ctx context.Context, td pprofile.Profiles) e
 	}
 
 	return e.export(ctx, e.profilesURL, request, e.profilesPartialSuccessHandler)
+}
+
+func (e *baseExporter) pushProfilesWithStatus(ctx context.Context, td pprofile.Profiles) error {
+	if err := e.pushProfiles(ctx, td); err != nil {
+		componentstatus.ReportStatus(e.host, componentstatus.NewRecoverableErrorEvent(err))
+		return err
+	}
+	componentstatus.ReportStatus(e.host, componentstatus.NewEvent(componentstatus.StatusOK))
+	return nil
 }
 
 func (e *baseExporter) export(ctx context.Context, url string, request []byte, partialSuccessHandler partialSuccessHandler) error {
