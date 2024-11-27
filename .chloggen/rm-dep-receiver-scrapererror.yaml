@@ -7,7 +7,7 @@ change_type: deprecation
 component: receiver/scraper
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Move receiver/scraperhelper package to scraper/scraperhelper and deprecate original receiver/scraperhelper package.
+note: Move receiver/scrapererror package to scraper/scrapererror and deprecate original receiver/scrapererror package.
 
 # One or more tracking issues or pull requests related to the change
 issues: [11003]
