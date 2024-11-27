@@ -87,5 +87,5 @@ func TestMakeFactoryMap(t *testing.T) {
 }
 
 func createMetrics(context.Context, Settings, component.Config) (Metrics, error) {
-	return NewMetrics(context.Background(), nopSettings(), newTestScrapeMetricsFunc(nil))
+	return NewMetrics(newTestScrapeMetricsFunc(nil))
 }
