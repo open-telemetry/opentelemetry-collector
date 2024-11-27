@@ -6,7 +6,6 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"io/fs"
 	"log"
 	"os"
@@ -45,7 +44,7 @@ func main() {
 		case "distributions":
 			generators = append(generators, distributionsGenerator{})
 		default:
-			panic(fmt.Sprintf("Unknown generator: %s", arg))
+			panic("Unknown generator: " + arg)
 		}
 	}
 	if len(generators) == 0 {
@@ -140,7 +139,7 @@ func run(folder string, allowlistFilePath string, generators []generator) error 
 			}
 			if m.Status.Codeowners == nil {
 				// TODO to be changed back to fmt.Errorf once codeowners for all components are defined
-				log.Println(fmt.Sprintf("WARNING: component %q has no codeowners section", key))
+				log.Printf("WARNING: component %q has no codeowners section", key)
 				return nil
 			}
 			for _, id := range m.Status.Codeowners.Active {
@@ -164,7 +163,7 @@ func run(folder string, allowlistFilePath string, generators []generator) error 
 	sort.Strings(codeownersList)
 
 	var distributions []distributionData
-	dd, err := os.ReadFile(filepath.Join(folder, "distributions.yaml"))
+	dd, err := os.ReadFile(filepath.Join(folder, "distributions.yaml")) // nolint: gosec
 	if err != nil {
 		return err
 	}

@@ -4,6 +4,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -176,7 +177,7 @@ func (cg codeownersGenerator) getGithubMembers() (map[string]struct{}, error) {
 	}
 	githubToken := os.Getenv("GITHUB_TOKEN")
 	if githubToken == "" {
-		return nil, fmt.Errorf("Set the environment variable `GITHUB_TOKEN` to a PAT token to authenticate")
+		return nil, errors.New("set the environment variable `GITHUB_TOKEN` to a PAT token to authenticate")
 	}
 	client := github.NewTokenClient(context.Background(), githubToken)
 	var allUsers []*github.User

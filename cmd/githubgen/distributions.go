@@ -4,7 +4,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -53,7 +52,7 @@ func (cg distributionsGenerator) generate(data *githubData) error {
 		if err != nil {
 			return nil
 		}
-		err = os.WriteFile(filepath.Join("reports", "distributions", fmt.Sprintf("%s.yaml", dist.Name)), b, 0o600)
+		err = os.WriteFile(filepath.Join("reports", "distributions", dist.Name+".yaml"), b, 0o600)
 		if err != nil {
 			return nil
 		}

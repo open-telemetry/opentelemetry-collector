@@ -50,7 +50,7 @@ func (itg issueTemplatesGenerator) generate(data *githubData) error {
 		return err
 	}
 	for _, e := range entries {
-		templateContents, err := os.ReadFile(filepath.Join(issuesFolder, e.Name()))
+		templateContents, err := os.ReadFile(filepath.Join(issuesFolder, e.Name())) // nolint: gosec
 		if err != nil {
 			return err
 		}
