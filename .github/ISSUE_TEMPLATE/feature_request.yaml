@@ -17,6 +17,7 @@ body:
       - cmd/mdatagen/internal/sampleprocessor
       - cmd/mdatagen/internal/samplereceiver
       - connector/forward
+      - docs/rfcs
       - exporter/debug
       - exporter/exporterhelper
       - exporter/nop
