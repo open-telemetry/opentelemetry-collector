@@ -13,8 +13,26 @@ body:
       # Do not manually edit it.
       # Start Collector components list
       - cmd/githubgen
-      - cmd/opampsupervisor
-      - testbed/mockdatasenders/mockdatadogagentexporter
+      - cmd/mdatagen
+      - cmd/mdatagen/internal/sampleprocessor
+      - cmd/mdatagen/internal/samplereceiver
+      - connector/forward
+      - exporter/debug
+      - exporter/exporterhelper
+      - exporter/nop
+      - exporter/otlp
+      - exporter/otlphttp
+      - extension/memorylimiter
+      - extension/zpages
+      - processor/batch
+      - processor/memorylimiter
+      - processor/processorhelper
+      - receiver/nop
+      - receiver/otlp
+      - receiver/receiverhelper
+      - receiver/scraperhelper
+      - scraper
+      - service
       # End Collector components list
   - type: textarea
     attributes:
