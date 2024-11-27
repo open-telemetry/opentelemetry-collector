@@ -13,9 +13,10 @@ import (
 	"path/filepath"
 	"sort"
 
+	"gopkg.in/yaml.v3"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
-	"gopkg.in/yaml.v3"
 )
 
 const unmaintainedStatus = "unmaintained"
