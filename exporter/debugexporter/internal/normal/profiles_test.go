@@ -29,8 +29,8 @@ func TestMarshalProfiles(t *testing.T) {
 				profiles := pprofile.NewProfiles()
 				profile := profiles.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
 				profile.SetProfileID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
-				profile.Profile().Sample().AppendEmpty()
-				profile.Profile().Sample().AppendEmpty()
+				profile.Sample().AppendEmpty()
+				profile.Sample().AppendEmpty()
 				profile.Attributes().PutStr("key1", "value1")
 				return profiles
 			}(),

@@ -8,7 +8,7 @@ package pprofile
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
+	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -46,17 +46,6 @@ func (ms Mapping) MoveTo(dest Mapping) {
 	*ms.orig = otlpprofiles.Mapping{}
 }
 
-// ID returns the id associated with this Mapping.
-func (ms Mapping) ID() uint64 {
-	return ms.orig.Id
-}
-
-// SetID replaces the id associated with this Mapping.
-func (ms Mapping) SetID(v uint64) {
-	ms.state.AssertMutable()
-	ms.orig.Id = v
-}
-
 // MemoryStart returns the memorystart associated with this Mapping.
 func (ms Mapping) MemoryStart() uint64 {
 	return ms.orig.MemoryStart
@@ -90,42 +79,20 @@ func (ms Mapping) SetFileOffset(v uint64) {
 	ms.orig.FileOffset = v
 }
 
-// Filename returns the filename associated with this Mapping.
-func (ms Mapping) Filename() int64 {
-	return ms.orig.Filename
+// FilenameStrindex returns the filenamestrindex associated with this Mapping.
+func (ms Mapping) FilenameStrindex() int32 {
+	return ms.orig.FilenameStrindex
 }
 
-// SetFilename replaces the filename associated with this Mapping.
-func (ms Mapping) SetFilename(v int64) {
+// SetFilenameStrindex replaces the filenamestrindex associated with this Mapping.
+func (ms Mapping) SetFilenameStrindex(v int32) {
 	ms.state.AssertMutable()
-	ms.orig.Filename = v
+	ms.orig.FilenameStrindex = v
 }
 
-// BuildID returns the buildid associated with this Mapping.
-func (ms Mapping) BuildID() int64 {
-	return ms.orig.BuildId
-}
-
-// SetBuildID replaces the buildid associated with this Mapping.
-func (ms Mapping) SetBuildID(v int64) {
-	ms.state.AssertMutable()
-	ms.orig.BuildId = v
-}
-
-// BuildIDKind returns the buildidkind associated with this Mapping.
-func (ms Mapping) BuildIDKind() otlpprofiles.BuildIdKind {
-	return ms.orig.BuildIdKind
-}
-
-// SetBuildIDKind replaces the buildidkind associated with this Mapping.
-func (ms Mapping) SetBuildIDKind(v otlpprofiles.BuildIdKind) {
-	ms.state.AssertMutable()
-	ms.orig.BuildIdKind = v
-}
-
-// Attributes returns the Attributes associated with this Mapping.
-func (ms Mapping) Attributes() pcommon.UInt64Slice {
-	return pcommon.UInt64Slice(internal.NewUInt64Slice(&ms.orig.Attributes, ms.state))
+// AttributeIndices returns the AttributeIndices associated with this Mapping.
+func (ms Mapping) AttributeIndices() pcommon.Int32Slice {
+	return pcommon.Int32Slice(internal.NewInt32Slice(&ms.orig.AttributeIndices, ms.state))
 }
 
 // HasFunctions returns the hasfunctions associated with this Mapping.
@@ -175,14 +142,11 @@ func (ms Mapping) SetHasInlineFrames(v bool) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Mapping) CopyTo(dest Mapping) {
 	dest.state.AssertMutable()
-	dest.SetID(ms.ID())
 	dest.SetMemoryStart(ms.MemoryStart())
 	dest.SetMemoryLimit(ms.MemoryLimit())
 	dest.SetFileOffset(ms.FileOffset())
-	dest.SetFilename(ms.Filename())
-	dest.SetBuildID(ms.BuildID())
-	dest.SetBuildIDKind(ms.BuildIDKind())
-	ms.Attributes().CopyTo(dest.Attributes())
+	dest.SetFilenameStrindex(ms.FilenameStrindex())
+	ms.AttributeIndices().CopyTo(dest.AttributeIndices())
 	dest.SetHasFunctions(ms.HasFunctions())
 	dest.SetHasFilenames(ms.HasFilenames())
 	dest.SetHasLineNumbers(ms.HasLineNumbers())

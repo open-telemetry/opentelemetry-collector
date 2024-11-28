@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	github.com/hashicorp/go-version v1.7.0
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	go.uber.org/goleak v1.3.0
 )
 

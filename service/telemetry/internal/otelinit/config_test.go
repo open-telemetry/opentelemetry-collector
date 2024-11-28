@@ -6,7 +6,9 @@ package otelinit
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/url"
+	"path/filepath"
 	"reflect"
 	"sync"
 	"testing"
@@ -526,6 +528,46 @@ func TestMetricReader(t *testing.T) {
 				},
 			},
 			wantErr: errors.New("unsupported temporality preference \"invalid\""),
+		},
+		{
+			name: "periodic/otlp-grpc-good-ca-certificate",
+			reader: config.MetricReader{
+				Periodic: &config.PeriodicMetricReader{
+					Exporter: config.MetricExporter{
+						OTLP: &config.OTLPMetric{
+							Protocol:    "grpc/protobuf",
+							Endpoint:    "https://localhost:4317",
+							Compression: strPtr("gzip"),
+							Timeout:     intPtr(1000),
+							Certificate: strPtr(filepath.Join("testdata", "ca.crt")),
+							Headers: map[string]string{
+								"test": "test1",
+							},
+						},
+					},
+				},
+			},
+			wantReader: sdkmetric.NewPeriodicReader(otlpGRPCExporter),
+		},
+		{
+			name: "periodic/otlp-grpc-bad-ca-certificate",
+			reader: config.MetricReader{
+				Periodic: &config.PeriodicMetricReader{
+					Exporter: config.MetricExporter{
+						OTLP: &config.OTLPMetric{
+							Protocol:    "grpc/protobuf",
+							Endpoint:    "https://localhost:4317",
+							Compression: strPtr("gzip"),
+							Timeout:     intPtr(1000),
+							Certificate: strPtr(filepath.Join("testdata", "bad_cert.crt")),
+							Headers: map[string]string{
+								"test": "test1",
+							},
+						},
+					},
+				},
+			},
+			wantErr: fmt.Errorf("could not create client tls credentials: %w", errors.New("credentials: failed to append certificates")),
 		},
 	}
 	for _, tt := range testCases {

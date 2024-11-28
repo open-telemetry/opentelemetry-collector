@@ -29,6 +29,7 @@ import (
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/resource"
+	"google.golang.org/grpc/credentials"
 
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 )
@@ -224,6 +225,12 @@ func initOTLPgRPCExporter(ctx context.Context, otlpConfig *config.OTLPMetric) (s
 		opts = append(opts, otlpmetricgrpc.WithEndpoint(u.Host))
 		if u.Scheme == "http" {
 			opts = append(opts, otlpmetricgrpc.WithInsecure())
+		} else if otlpConfig.Certificate != nil {
+			creds, err := credentials.NewClientTLSFromFile(*otlpConfig.Certificate, "")
+			if err != nil {
+				return nil, fmt.Errorf("could not create client tls credentials: %w", err)
+			}
+			opts = append(opts, otlpmetricgrpc.WithTLSCredentials(creds))
 		}
 	}
 

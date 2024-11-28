@@ -3,7 +3,7 @@ module go.opentelemetry.io/collector/component/componentstatus
 go 1.22.0
 
 require (
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.114.0
 	go.opentelemetry.io/collector/pipeline v0.114.0
 )

@@ -22,7 +22,6 @@ func TestProtoSizer(t *testing.T) {
 	td.ResourceProfiles().AppendEmpty().
 		ScopeProfiles().AppendEmpty().
 		Profiles().AppendEmpty().
-		Profile().
 		StringTable().Append("foobar")
 
 	size := marshaler.ProfilesSize(td)
@@ -66,11 +65,10 @@ func BenchmarkProfilesFromProto(b *testing.B) {
 
 func generateBenchmarkProfiles(samplesCount int) Profiles {
 	md := NewProfiles()
-	ilm := md.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty().Profile()
+	ilm := md.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
 	ilm.Sample().EnsureCapacity(samplesCount)
 	for i := 0; i < samplesCount; i++ {
 		im := ilm.Sample().AppendEmpty()
-		im.LocationIndex().Append(1)
 		im.SetLocationsStartIndex(2)
 		im.SetLocationsLength(10)
 	}

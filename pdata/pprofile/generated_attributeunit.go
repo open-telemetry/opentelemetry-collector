@@ -8,7 +8,7 @@ package pprofile
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
+	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 // AttributeUnit Represents a mapping between Attribute Keys and Units.
@@ -45,31 +45,31 @@ func (ms AttributeUnit) MoveTo(dest AttributeUnit) {
 	*ms.orig = otlpprofiles.AttributeUnit{}
 }
 
-// AttributeKey returns the attributekey associated with this AttributeUnit.
-func (ms AttributeUnit) AttributeKey() int64 {
-	return ms.orig.AttributeKey
+// AttributeKeyStrindex returns the attributekeystrindex associated with this AttributeUnit.
+func (ms AttributeUnit) AttributeKeyStrindex() int32 {
+	return ms.orig.AttributeKeyStrindex
 }
 
-// SetAttributeKey replaces the attributekey associated with this AttributeUnit.
-func (ms AttributeUnit) SetAttributeKey(v int64) {
+// SetAttributeKeyStrindex replaces the attributekeystrindex associated with this AttributeUnit.
+func (ms AttributeUnit) SetAttributeKeyStrindex(v int32) {
 	ms.state.AssertMutable()
-	ms.orig.AttributeKey = v
+	ms.orig.AttributeKeyStrindex = v
 }
 
-// Unit returns the unit associated with this AttributeUnit.
-func (ms AttributeUnit) Unit() int64 {
-	return ms.orig.Unit
+// UnitStrindex returns the unitstrindex associated with this AttributeUnit.
+func (ms AttributeUnit) UnitStrindex() int32 {
+	return ms.orig.UnitStrindex
 }
 
-// SetUnit replaces the unit associated with this AttributeUnit.
-func (ms AttributeUnit) SetUnit(v int64) {
+// SetUnitStrindex replaces the unitstrindex associated with this AttributeUnit.
+func (ms AttributeUnit) SetUnitStrindex(v int32) {
 	ms.state.AssertMutable()
-	ms.orig.Unit = v
+	ms.orig.UnitStrindex = v
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms AttributeUnit) CopyTo(dest AttributeUnit) {
 	dest.state.AssertMutable()
-	dest.SetAttributeKey(ms.AttributeKey())
-	dest.SetUnit(ms.Unit())
+	dest.SetAttributeKeyStrindex(ms.AttributeKeyStrindex())
+	dest.SetUnitStrindex(ms.UnitStrindex())
 }
