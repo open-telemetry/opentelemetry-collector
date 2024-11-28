@@ -377,8 +377,9 @@ func (hss *ServerConfig) ToListener(ctx context.Context) (net.Listener, error) {
 // toServerOptions has options that change the behavior of the HTTP server
 // returned by ServerConfig.ToServer().
 type toServerOptions struct {
-	errHandler func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int)
-	decoders   map[string]func(body io.ReadCloser) (io.ReadCloser, error)
+	errHandler   func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int)
+	decoders     map[string]func(body io.ReadCloser) (io.ReadCloser, error)
+	otelhttpOpts []otelhttp.Option
 }
 
 // ToServerOption is an option to change the behavior of the HTTP server
@@ -409,6 +410,14 @@ func WithDecoder(key string, dec func(body io.ReadCloser) (io.ReadCloser, error)
 			opts.decoders = map[string]func(body io.ReadCloser) (io.ReadCloser, error){}
 		}
 		opts.decoders[key] = dec
+	})
+}
+
+// WithOtelHTTPOptions allows providing (or overriding) options passed
+// to the otelhttp.NewHandler() function.
+func WithOtelHTTPOptions(httpopts ...otelhttp.Option) ToServerOption {
+	return toServerOptionFunc(func(opts *toServerOptions) {
+		opts.otelhttpOpts = append(opts.otelhttpOpts, httpopts...)
 	})
 }
 
@@ -461,14 +470,16 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 		handler = responseHeadersHandler(handler, hss.ResponseHeaders)
 	}
 
-	otelOpts := []otelhttp.Option{
-		otelhttp.WithTracerProvider(settings.TracerProvider),
-		otelhttp.WithPropagators(otel.GetTextMapPropagator()),
-		otelhttp.WithSpanNameFormatter(func(_ string, r *http.Request) string {
-			return r.URL.Path
-		}),
-		otelhttp.WithMeterProvider(getLeveledMeterProvider(settings)),
-	}
+	otelOpts := append(
+		[]otelhttp.Option{
+			otelhttp.WithTracerProvider(settings.TracerProvider),
+			otelhttp.WithPropagators(otel.GetTextMapPropagator()),
+			otelhttp.WithSpanNameFormatter(func(_ string, r *http.Request) string {
+				return r.URL.Path
+			}),
+			otelhttp.WithMeterProvider(getLeveledMeterProvider(settings)),
+		},
+		serverOpts.otelhttpOpts...)
 
 	// Enable OpenTelemetry observability plugin.
 	// TODO: Consider to use component ID string as prefix for all the operations.
