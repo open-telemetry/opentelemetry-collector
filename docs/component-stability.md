@@ -66,6 +66,74 @@ Stable components MUST be compatible between minor versions unless critical secu
 component owner MUST provide a migration path and a reasonable time frame for users to upgrade. The same rules from beta
 components apply to stable when it comes to configuration changes.
 
+#### Observability requirements
+
+Stable components should emit enough internal telemetry to let users detect errors, as well as data
+loss and performance issues inside the component, and to help diagnose them if possible.
+
+The internal telemetry of a stable component should allow observing the following:
+
+1. How much data the component receives.
+
+  For receivers, this could be a metric counting requests, received bytes, scraping attempts, etc.
+
+  For other components, this would typically be the number of items (log records, metric points,
+  spans) received through the `Consumer` API.
+
+2. How much data the component outputs.
+
+  For exporters, this could be a metric counting requests, sent bytes, etc.
+
+  For other components, this would typically be the number of items forwarded through the `Consumer`
+  API.
+
+3. How much data is dropped because of errors.
+
+  For receivers, this could include a metric counting payloads that could not be parsed in.
+  
+  For receivers and exporters, this could include a metric counting requests that failed because
+  of network errors.
+
+  The goal is to be able to easily pinpoint the source of data loss in the Collector pipeline, so
+  this should either:
+  - only include errors internal to the component, or;
+  - allow distinguishing said errors from ones originating in an external service, or propagated
+    from downstream Collector components.
+
+4. Details for error conditions.
+
+  This could be in the form of logs or spans detailing the reason for an error. As much detail as
+  necessary should be provided to ease debugging. Processed signal data should not be included for
+  security and privacy reasons.
+
+5. Other discrepancies between input and output. This may include:
+
+  - How much data is dropped as part of normal operation (eg. filtered out).
+
+  - How much data is created by the component.
+
+  - How much data is currently held by the component (eg. an UpDownCounter keeping track of the
+    size of an internal queue).
+
+6. Processing performance.
+
+  This could be a histogram of end-to-end component latency, measured as the time between external
+  requests or `Consumer` API calls.
+
+When measuring amounts of data, counting data items (spans, log records, metric points) is
+recommended. Where this can't easily be done, any relevant unit may be used, as long as zero is a
+reliable indicator of the absence of data. In any case, the type of all metrics should be properly
+documented (not "1").
+
+If data can be dropped/created/held at multiple distinct points in a component's pipeline (eg.
+scraping, validation, processing, etc.), it is recommended to define additional attributes to help
+diagnose the specific source of the discrepancy, or to define different signals for each.
+
+Note that some of this internal telemetry may already be provided by pipeline auto-instrumentation,
+or helpers modules (such as `receiverhelper`, `scraperhelper`, `processorhelper`, or
+`exporterhelper`). Please check the documentation to verify which parts, if any, need to be
+implemented manually.
+
 ### Deprecated
 
 The component is planned to be removed in a future version and no further support will be provided. Note that new issues will likely not be worked on. When a component enters "deprecated" mode, it is expected to exist for at least two minor releases. See the component's readme file for more details on when a component will cease to exist.
