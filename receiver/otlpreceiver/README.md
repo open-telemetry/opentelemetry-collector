@@ -41,7 +41,7 @@ The following settings are configurable:
 - `endpoint` (default = localhost:4317 for grpc protocol, localhost:4318 http protocol):
   host:port to which the receiver is going to receive data. The valid syntax is
   described at https://github.com/grpc/grpc/blob/master/doc/naming.md. See our 
-  [security best practices doc](/docs/security-best-practices.md#safeguards-against-denial-of-service-attacks)
+  [security best practices doc](docs/security-best-practices.md#safeguards-against-denial-of-service-attacks)
   to understand how to set the endpoint in different environments.
 
 ## Advanced Configuration
