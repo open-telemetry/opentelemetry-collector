@@ -75,10 +75,10 @@ type QueueSender struct {
 	batcher        queue.Batcher
 	consumers      *queue.Consumers[internal.Request]
 
-	shutdownCallbacks []func()
-
-	obsrep     *ObsReport
-	exporterID component.ID
+	obsrep      *ObsReport
+	exporterID  component.ID
+	logger      *zap.Logger
+	shutdownFns []component.ShutdownFunc
 }
 
 func NewQueueSender(
@@ -94,6 +94,7 @@ func NewQueueSender(
 		traceAttribute: attribute.String(ExporterKey, set.ID.String()),
 		obsrep:         obsrep,
 		exporterID:     set.ID,
+		logger:         set.Logger,
 	}
 
 	exportFunc := func(ctx context.Context, req internal.Request) error {
@@ -133,19 +134,21 @@ func (qs *QueueSender) Start(ctx context.Context, host component.Host) error {
 	reg1, err1 := qs.obsrep.TelemetryBuilder.InitExporterQueueSize(func() int64 { return int64(qs.queue.Size()) },
 		metric.WithAttributeSet(attribute.NewSet(qs.traceAttribute, dataTypeAttr)))
 
-	qs.shutdownCallbacks = append(qs.shutdownCallbacks, func() {
+	qs.shutdownFns = append(qs.shutdownFns, func(context.Context) error {
 		if reg1 != nil {
-			_ = reg1.Unregister()
+			return reg1.Unregister()
 		}
+		return nil
 	})
 
 	reg2, err2 := qs.obsrep.TelemetryBuilder.InitExporterQueueCapacity(func() int64 { return int64(qs.queue.Capacity()) },
 		metric.WithAttributeSet(attribute.NewSet(qs.traceAttribute)))
 
-	qs.shutdownCallbacks = append(qs.shutdownCallbacks, func() {
+	qs.shutdownFns = append(qs.shutdownFns, func(context.Context) error {
 		if reg2 != nil {
-			_ = reg2.Unregister()
+			return reg2.Unregister()
 		}
+		return nil
 	})
 
 	return multierr.Append(err1, err2)
@@ -156,10 +159,13 @@ func (qs *QueueSender) Shutdown(ctx context.Context) error {
 	// Stop the queue and consumers, this will drain the queue and will call the retry (which is stopped) that will only
 	// try once every request.
 
-	for _, callback := range qs.shutdownCallbacks {
-		callback()
+	for _, fn := range qs.shutdownFns {
+		err := fn(ctx)
+		if err != nil {
+			qs.logger.Warn("Error while shutting down QueueSender", zap.Error(err))
+		}
 	}
-	qs.shutdownCallbacks = nil
+	qs.shutdownFns = nil
 
 	if err := qs.queue.Shutdown(ctx); err != nil {
 		return err
