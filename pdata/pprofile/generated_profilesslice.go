@@ -10,37 +10,37 @@ import (
 	"sort"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
+	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
-// LabelSlice logically represents a slice of Label.
+// ProfilesSlice logically represents a slice of Profile.
 //
 // This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
-// Must use NewLabelSlice function to create new instances.
+// Must use NewProfilesSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type LabelSlice struct {
-	orig  *[]*otlpprofiles.Label
+type ProfilesSlice struct {
+	orig  *[]*otlpprofiles.Profile
 	state *internal.State
 }
 
-func newLabelSlice(orig *[]*otlpprofiles.Label, state *internal.State) LabelSlice {
-	return LabelSlice{orig: orig, state: state}
+func newProfilesSlice(orig *[]*otlpprofiles.Profile, state *internal.State) ProfilesSlice {
+	return ProfilesSlice{orig: orig, state: state}
 }
 
-// NewLabelSlice creates a LabelSlice with 0 elements.
+// NewProfilesSlice creates a ProfilesSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
-func NewLabelSlice() LabelSlice {
-	orig := []*otlpprofiles.Label(nil)
+func NewProfilesSlice() ProfilesSlice {
+	orig := []*otlpprofiles.Profile(nil)
 	state := internal.StateMutable
-	return newLabelSlice(&orig, &state)
+	return newProfilesSlice(&orig, &state)
 }
 
 // Len returns the number of elements in the slice.
 //
-// Returns "0" for a newly instance created with "NewLabelSlice()".
-func (es LabelSlice) Len() int {
+// Returns "0" for a newly instance created with "NewProfilesSlice()".
+func (es ProfilesSlice) Len() int {
 	return len(*es.orig)
 }
 
@@ -52,45 +52,45 @@ func (es LabelSlice) Len() int {
 //	    e := es.At(i)
 //	    ... // Do something with the element
 //	}
-func (es LabelSlice) At(i int) Label {
-	return newLabel((*es.orig)[i], es.state)
+func (es ProfilesSlice) At(i int) Profile {
+	return newProfile((*es.orig)[i], es.state)
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
 // 1. If the newCap <= cap then no change in capacity.
 // 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
 //
-// Here is how a new LabelSlice can be initialized:
+// Here is how a new ProfilesSlice can be initialized:
 //
-//	es := NewLabelSlice()
+//	es := NewProfilesSlice()
 //	es.EnsureCapacity(4)
 //	for i := 0; i < 4; i++ {
 //	    e := es.AppendEmpty()
 //	    // Here should set all the values for e.
 //	}
-func (es LabelSlice) EnsureCapacity(newCap int) {
+func (es ProfilesSlice) EnsureCapacity(newCap int) {
 	es.state.AssertMutable()
 	oldCap := cap(*es.orig)
 	if newCap <= oldCap {
 		return
 	}
 
-	newOrig := make([]*otlpprofiles.Label, len(*es.orig), newCap)
+	newOrig := make([]*otlpprofiles.Profile, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
 
-// AppendEmpty will append to the end of the slice an empty Label.
-// It returns the newly added Label.
-func (es LabelSlice) AppendEmpty() Label {
+// AppendEmpty will append to the end of the slice an empty Profile.
+// It returns the newly added Profile.
+func (es ProfilesSlice) AppendEmpty() Profile {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, &otlpprofiles.Label{})
+	*es.orig = append(*es.orig, &otlpprofiles.Profile{})
 	return es.At(es.Len() - 1)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
-func (es LabelSlice) MoveAndAppendTo(dest LabelSlice) {
+func (es ProfilesSlice) MoveAndAppendTo(dest ProfilesSlice) {
 	es.state.AssertMutable()
 	dest.state.AssertMutable()
 	if *dest.orig == nil {
@@ -104,7 +104,7 @@ func (es LabelSlice) MoveAndAppendTo(dest LabelSlice) {
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
-func (es LabelSlice) RemoveIf(f func(Label) bool) {
+func (es ProfilesSlice) RemoveIf(f func(Profile) bool) {
 	es.state.AssertMutable()
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
@@ -123,30 +123,30 @@ func (es LabelSlice) RemoveIf(f func(Label) bool) {
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
-func (es LabelSlice) CopyTo(dest LabelSlice) {
+func (es ProfilesSlice) CopyTo(dest ProfilesSlice) {
 	dest.state.AssertMutable()
 	srcLen := es.Len()
 	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 		for i := range *es.orig {
-			newLabel((*es.orig)[i], es.state).CopyTo(newLabel((*dest.orig)[i], dest.state))
+			newProfile((*es.orig)[i], es.state).CopyTo(newProfile((*dest.orig)[i], dest.state))
 		}
 		return
 	}
-	origs := make([]otlpprofiles.Label, srcLen)
-	wrappers := make([]*otlpprofiles.Label, srcLen)
+	origs := make([]otlpprofiles.Profile, srcLen)
+	wrappers := make([]*otlpprofiles.Profile, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newLabel((*es.orig)[i], es.state).CopyTo(newLabel(wrappers[i], dest.state))
+		newProfile((*es.orig)[i], es.state).CopyTo(newProfile(wrappers[i], dest.state))
 	}
 	*dest.orig = wrappers
 }
 
-// Sort sorts the Label elements within LabelSlice given the
-// provided less function so that two instances of LabelSlice
+// Sort sorts the Profile elements within ProfilesSlice given the
+// provided less function so that two instances of ProfilesSlice
 // can be compared.
-func (es LabelSlice) Sort(less func(a, b Label) bool) {
+func (es ProfilesSlice) Sort(less func(a, b Profile) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
