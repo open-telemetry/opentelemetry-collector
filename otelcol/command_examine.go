@@ -35,7 +35,7 @@ func newExamineSubCommand(set CollectorSettings, flagSet *flag.FlagSet) *cobra.C
 			if err != nil {
 				return err
 			}
-			log.Printf("%s", b)
+			log.Printf("\n%s", b)
 			return nil
 		},
 	}
