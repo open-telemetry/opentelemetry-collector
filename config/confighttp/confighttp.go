@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
+	confighttpinternal "go.opentelemetry.io/collector/config/confighttp/internal"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -376,11 +377,7 @@ func (hss *ServerConfig) ToListener(ctx context.Context) (net.Listener, error) {
 
 // toServerOptions has options that change the behavior of the HTTP server
 // returned by ServerConfig.ToServer().
-type toServerOptions struct {
-	errHandler   func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int)
-	decoders     map[string]func(body io.ReadCloser) (io.ReadCloser, error)
-	otelhttpOpts []otelhttp.Option
-}
+type toServerOptions confighttpinternal.ToServerOptions
 
 // ToServerOption is an option to change the behavior of the HTTP server
 // returned by ServerConfig.ToServer().
@@ -398,7 +395,7 @@ func (of toServerOptionFunc) apply(e *toServerOptions) {
 // when there is a failure inside httpContentDecompressor.
 func WithErrorHandler(e func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int)) ToServerOption {
 	return toServerOptionFunc(func(opts *toServerOptions) {
-		opts.errHandler = e
+		opts.ErrHandler = e
 	})
 }
 
@@ -406,18 +403,10 @@ func WithErrorHandler(e func(w http.ResponseWriter, r *http.Request, errorMsg st
 // by the caller.
 func WithDecoder(key string, dec func(body io.ReadCloser) (io.ReadCloser, error)) ToServerOption {
 	return toServerOptionFunc(func(opts *toServerOptions) {
-		if opts.decoders == nil {
-			opts.decoders = map[string]func(body io.ReadCloser) (io.ReadCloser, error){}
+		if opts.Decoders == nil {
+			opts.Decoders = map[string]func(body io.ReadCloser) (io.ReadCloser, error){}
 		}
-		opts.decoders[key] = dec
-	})
-}
-
-// WithOtelHTTPOptions allows providing (or overriding) options passed
-// to the otelhttp.NewHandler() function.
-func WithOtelHTTPOptions(httpopts ...otelhttp.Option) ToServerOption {
-	return toServerOptionFunc(func(opts *toServerOptions) {
-		opts.otelhttpOpts = append(opts.otelhttpOpts, httpopts...)
+		opts.Decoders[key] = dec
 	})
 }
 
@@ -438,7 +427,13 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 		hss.CompressionAlgorithms = defaultCompressionAlgorithms
 	}
 
-	handler = httpContentDecompressor(handler, hss.MaxRequestBodySize, serverOpts.errHandler, hss.CompressionAlgorithms, serverOpts.decoders)
+	handler = httpContentDecompressor(
+		handler,
+		hss.MaxRequestBodySize,
+		serverOpts.ErrHandler,
+		hss.CompressionAlgorithms,
+		serverOpts.Decoders,
+	)
 
 	if hss.MaxRequestBodySize > 0 {
 		handler = maxRequestBodySizeInterceptor(handler, hss.MaxRequestBodySize)
@@ -479,7 +474,7 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 			}),
 			otelhttp.WithMeterProvider(getLeveledMeterProvider(settings)),
 		},
-		serverOpts.otelhttpOpts...)
+		serverOpts.OtelhttpOpts...)
 
 	// Enable OpenTelemetry observability plugin.
 	// TODO: Consider to use component ID string as prefix for all the operations.
