@@ -8,8 +8,9 @@ import (
 	"log"
 
 	"github.com/spf13/cobra"
-	"go.opentelemetry.io/collector/confmap"
 	"gopkg.in/yaml.v3"
+
+	"go.opentelemetry.io/collector/confmap"
 )
 
 // newExamineSubCommand constructs a new examine sub command using the given CollectorSettings.
