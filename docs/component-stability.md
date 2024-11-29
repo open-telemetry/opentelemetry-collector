@@ -126,7 +126,7 @@ The internal telemetry of a stable pipeline component should allow observing the
     necessary should be provided to ease debugging. Processed signal data should not be included for
     security and privacy reasons.
 
-5. Other discrepancies between input and output. This may include:
+5. Other possible discrepancies between input and output, if any. This may include:
 
     - How much data is dropped as part of normal operation (eg. filtered out).
 
@@ -137,8 +137,8 @@ The internal telemetry of a stable pipeline component should allow observing the
 
 6. Processing performance.
 
-    This could be spans for each operation of the component, or a histogram of end-to-end component
-    latency.
+    This could include spans for each operation of the component, or a histogram of end-to-end
+    component latency.
     
     The goal is to be able to easily pinpoint the source of latency in the Collector pipeline, so
     this should either:
@@ -146,9 +146,9 @@ The internal telemetry of a stable pipeline component should allow observing the
     - allow distinguishing this latency from that caused by an external service, or from time spent
         in downstream Collector components.
 
-When measuring amounts of data, counting data items (spans, log records, metric points) is
-recommended. Where this can't easily be done, any relevant unit may be used, as long as zero is a
-reliable indicator of the absence of data. In any case, all metrics should have a defined unit (not "1").
+When measuring amounts of data, counting items is recommended. Where this can't easily be done, any
+relevant unit may be used, as long as zero is a reliable indicator of the absence of data. In any
+case, all metrics should have a defined unit (not "1").
 
 If data can be dropped/created/held at multiple distinct points in a component's pipeline (eg.
 scraping, validation, processing, etc.), it is recommended to define additional attributes to help
