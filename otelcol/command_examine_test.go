@@ -15,7 +15,6 @@ import (
 )
 
 func TestExamineCommand(t *testing.T) {
-
 	tests := []struct {
 		name      string
 		set       confmap.ResolverSettings
