@@ -18,13 +18,14 @@
 .github/CODEOWNERS      @codeboten @BogdanDrutu @dmitryax @mx-psi
 docs/rfc                @codeboten @BogdanDrutu @dmitryax @mx-psi
 
-confmap/                 @mx-psi @evan-bradley
-exporter/debugexporter   @andrzej-stencel
-exporter/exporterhelper  @BogdanDrutu @dmitryax
-exporter/nopexporter     @evan-bradley
-pdata/                   @BogdanDrutu @dmitryax
-receiver/nopreceiver     @evan-bradley
-service/internal/graph   @djaglowski
+confmap/                        @mx-psi @evan-bradley
+exporter/debugexporter          @andrzej-stencel
+exporter/exporterhelper         @BogdanDrutu @dmitryax
+exporter/nopexporter            @evan-bradley
+pdata/                          @BogdanDrutu @dmitryax
+receiver/nopreceiver            @evan-bradley
+service/internal/graph          @djaglowski
+extension/experimental/storage  @swiatekm
 
 # Profiling-related modules
 pdata/pprofile                                  @mx-psi @dmathieu
