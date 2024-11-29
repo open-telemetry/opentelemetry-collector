@@ -122,8 +122,7 @@ The internal telemetry of a stable component should allow observing the followin
 
 When measuring amounts of data, counting data items (spans, log records, metric points) is
 recommended. Where this can't easily be done, any relevant unit may be used, as long as zero is a
-reliable indicator of the absence of data. In any case, the type of all metrics should be properly
-documented (not "1").
+reliable indicator of the absence of data. In any case, all metrics should have a defined unit (not "1").
 
 If data can be dropped/created/held at multiple distinct points in a component's pipeline (eg.
 scraping, validation, processing, etc.), it is recommended to define additional attributes to help
