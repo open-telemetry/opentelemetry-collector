@@ -26,11 +26,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
-	confighttpinternal "go.opentelemetry.io/collector/config/confighttp/internal"
+	"go.opentelemetry.io/collector/config/confighttp/internal"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/config/internal"
+	configinternal "go.opentelemetry.io/collector/config/internal"
 	"go.opentelemetry.io/collector/extension/auth"
 )
 
@@ -377,24 +377,16 @@ func (hss *ServerConfig) ToListener(ctx context.Context) (net.Listener, error) {
 
 // toServerOptions has options that change the behavior of the HTTP server
 // returned by ServerConfig.ToServer().
-type toServerOptions confighttpinternal.ToServerOptions
+type toServerOptions = internal.ToServerOptions
 
 // ToServerOption is an option to change the behavior of the HTTP server
 // returned by ServerConfig.ToServer().
-type ToServerOption interface {
-	apply(*toServerOptions)
-}
-
-type toServerOptionFunc func(*toServerOptions)
-
-func (of toServerOptionFunc) apply(e *toServerOptions) {
-	of(e)
-}
+type ToServerOption = internal.ToServerOption
 
 // WithErrorHandler overrides the HTTP error handler that gets invoked
 // when there is a failure inside httpContentDecompressor.
 func WithErrorHandler(e func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int)) ToServerOption {
-	return toServerOptionFunc(func(opts *toServerOptions) {
+	return internal.ToServerOptionFunc(func(opts *toServerOptions) {
 		opts.ErrHandler = e
 	})
 }
@@ -402,7 +394,7 @@ func WithErrorHandler(e func(w http.ResponseWriter, r *http.Request, errorMsg st
 // WithDecoder provides support for additional decoders to be configured
 // by the caller.
 func WithDecoder(key string, dec func(body io.ReadCloser) (io.ReadCloser, error)) ToServerOption {
-	return toServerOptionFunc(func(opts *toServerOptions) {
+	return internal.ToServerOptionFunc(func(opts *toServerOptions) {
 		if opts.Decoders == nil {
 			opts.Decoders = map[string]func(body io.ReadCloser) (io.ReadCloser, error){}
 		}
@@ -412,12 +404,10 @@ func WithDecoder(key string, dec func(body io.ReadCloser) (io.ReadCloser, error)
 
 // ToServer creates an http.Server from settings object.
 func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
-	internal.WarnOnUnspecifiedHost(settings.Logger, hss.Endpoint)
+	configinternal.WarnOnUnspecifiedHost(settings.Logger, hss.Endpoint)
 
 	serverOpts := &toServerOptions{}
-	for _, o := range opts {
-		o.apply(serverOpts)
-	}
+	serverOpts.Apply(opts...)
 
 	if hss.MaxRequestBodySize <= 0 {
 		hss.MaxRequestBodySize = defaultMaxRequestBodySize
