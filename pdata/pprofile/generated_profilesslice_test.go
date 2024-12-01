@@ -13,91 +13,91 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
+	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
-func TestLabelSlice(t *testing.T) {
-	es := NewLabelSlice()
+func TestProfilesSlice(t *testing.T) {
+	es := NewProfilesSlice()
 	assert.Equal(t, 0, es.Len())
 	state := internal.StateMutable
-	es = newLabelSlice(&[]*otlpprofiles.Label{}, &state)
+	es = newProfilesSlice(&[]*otlpprofiles.Profile{}, &state)
 	assert.Equal(t, 0, es.Len())
 
-	emptyVal := NewLabel()
-	testVal := generateTestLabel()
+	emptyVal := NewProfile()
+	testVal := generateTestProfile()
 	for i := 0; i < 7; i++ {
 		el := es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		fillTestLabel(el)
+		fillTestProfile(el)
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
 }
 
-func TestLabelSliceReadOnly(t *testing.T) {
+func TestProfilesSliceReadOnly(t *testing.T) {
 	sharedState := internal.StateReadOnly
-	es := newLabelSlice(&[]*otlpprofiles.Label{}, &sharedState)
+	es := newProfilesSlice(&[]*otlpprofiles.Profile{}, &sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
-	es2 := NewLabelSlice()
+	es2 := NewProfilesSlice()
 	es.CopyTo(es2)
 	assert.Panics(t, func() { es2.CopyTo(es) })
 	assert.Panics(t, func() { es.MoveAndAppendTo(es2) })
 	assert.Panics(t, func() { es2.MoveAndAppendTo(es) })
 }
 
-func TestLabelSlice_CopyTo(t *testing.T) {
-	dest := NewLabelSlice()
+func TestProfilesSlice_CopyTo(t *testing.T) {
+	dest := NewProfilesSlice()
 	// Test CopyTo to empty
-	NewLabelSlice().CopyTo(dest)
-	assert.Equal(t, NewLabelSlice(), dest)
+	NewProfilesSlice().CopyTo(dest)
+	assert.Equal(t, NewProfilesSlice(), dest)
 
 	// Test CopyTo larger slice
-	generateTestLabelSlice().CopyTo(dest)
-	assert.Equal(t, generateTestLabelSlice(), dest)
+	generateTestProfilesSlice().CopyTo(dest)
+	assert.Equal(t, generateTestProfilesSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestLabelSlice().CopyTo(dest)
-	assert.Equal(t, generateTestLabelSlice(), dest)
+	generateTestProfilesSlice().CopyTo(dest)
+	assert.Equal(t, generateTestProfilesSlice(), dest)
 }
 
-func TestLabelSlice_EnsureCapacity(t *testing.T) {
-	es := generateTestLabelSlice()
+func TestProfilesSlice_EnsureCapacity(t *testing.T) {
+	es := generateTestProfilesSlice()
 
 	// Test ensure smaller capacity.
 	const ensureSmallLen = 4
 	es.EnsureCapacity(ensureSmallLen)
 	assert.Less(t, ensureSmallLen, es.Len())
 	assert.Equal(t, es.Len(), cap(*es.orig))
-	assert.Equal(t, generateTestLabelSlice(), es)
+	assert.Equal(t, generateTestProfilesSlice(), es)
 
 	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	es.EnsureCapacity(ensureLargeLen)
-	assert.Less(t, generateTestLabelSlice().Len(), ensureLargeLen)
+	assert.Less(t, generateTestProfilesSlice().Len(), ensureLargeLen)
 	assert.Equal(t, ensureLargeLen, cap(*es.orig))
-	assert.Equal(t, generateTestLabelSlice(), es)
+	assert.Equal(t, generateTestProfilesSlice(), es)
 }
 
-func TestLabelSlice_MoveAndAppendTo(t *testing.T) {
+func TestProfilesSlice_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
-	expectedSlice := generateTestLabelSlice()
-	dest := NewLabelSlice()
-	src := generateTestLabelSlice()
+	expectedSlice := generateTestProfilesSlice()
+	dest := NewProfilesSlice()
+	src := generateTestProfilesSlice()
 	src.MoveAndAppendTo(dest)
-	assert.Equal(t, generateTestLabelSlice(), dest)
+	assert.Equal(t, generateTestProfilesSlice(), dest)
 	assert.Equal(t, 0, src.Len())
 	assert.Equal(t, expectedSlice.Len(), dest.Len())
 
 	// Test MoveAndAppendTo empty slice
 	src.MoveAndAppendTo(dest)
-	assert.Equal(t, generateTestLabelSlice(), dest)
+	assert.Equal(t, generateTestProfilesSlice(), dest)
 	assert.Equal(t, 0, src.Len())
 	assert.Equal(t, expectedSlice.Len(), dest.Len())
 
 	// Test MoveAndAppendTo not empty slice
-	generateTestLabelSlice().MoveAndAppendTo(dest)
+	generateTestProfilesSlice().MoveAndAppendTo(dest)
 	assert.Equal(t, 2*expectedSlice.Len(), dest.Len())
 	for i := 0; i < expectedSlice.Len(); i++ {
 		assert.Equal(t, expectedSlice.At(i), dest.At(i))
@@ -105,33 +105,33 @@ func TestLabelSlice_MoveAndAppendTo(t *testing.T) {
 	}
 }
 
-func TestLabelSlice_RemoveIf(t *testing.T) {
+func TestProfilesSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf on empty slice
-	emptySlice := NewLabelSlice()
-	emptySlice.RemoveIf(func(el Label) bool {
+	emptySlice := NewProfilesSlice()
+	emptySlice.RemoveIf(func(el Profile) bool {
 		t.Fail()
 		return false
 	})
 
 	// Test RemoveIf
-	filtered := generateTestLabelSlice()
+	filtered := generateTestProfilesSlice()
 	pos := 0
-	filtered.RemoveIf(func(el Label) bool {
+	filtered.RemoveIf(func(el Profile) bool {
 		pos++
 		return pos%3 == 0
 	})
 	assert.Equal(t, 5, filtered.Len())
 }
 
-func TestLabelSlice_Sort(t *testing.T) {
-	es := generateTestLabelSlice()
-	es.Sort(func(a, b Label) bool {
+func TestProfilesSlice_Sort(t *testing.T) {
+	es := generateTestProfilesSlice()
+	es.Sort(func(a, b Profile) bool {
 		return uintptr(unsafe.Pointer(a.orig)) < uintptr(unsafe.Pointer(b.orig))
 	})
 	for i := 1; i < es.Len(); i++ {
 		assert.Less(t, uintptr(unsafe.Pointer(es.At(i-1).orig)), uintptr(unsafe.Pointer(es.At(i).orig)))
 	}
-	es.Sort(func(a, b Label) bool {
+	es.Sort(func(a, b Profile) bool {
 		return uintptr(unsafe.Pointer(a.orig)) > uintptr(unsafe.Pointer(b.orig))
 	})
 	for i := 1; i < es.Len(); i++ {
@@ -139,16 +139,16 @@ func TestLabelSlice_Sort(t *testing.T) {
 	}
 }
 
-func generateTestLabelSlice() LabelSlice {
-	es := NewLabelSlice()
-	fillTestLabelSlice(es)
+func generateTestProfilesSlice() ProfilesSlice {
+	es := NewProfilesSlice()
+	fillTestProfilesSlice(es)
 	return es
 }
 
-func fillTestLabelSlice(es LabelSlice) {
-	*es.orig = make([]*otlpprofiles.Label, 7)
+func fillTestProfilesSlice(es ProfilesSlice) {
+	*es.orig = make([]*otlpprofiles.Profile, 7)
 	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlpprofiles.Label{}
-		fillTestLabel(newLabel((*es.orig)[i], es.state))
+		(*es.orig)[i] = &otlpprofiles.Profile{}
+		fillTestProfile(newProfile((*es.orig)[i], es.state))
 	}
 }

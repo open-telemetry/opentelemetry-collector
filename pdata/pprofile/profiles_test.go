@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal/data"
-	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1experimental"
-	otlpprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
+	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
+	otlpprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -35,7 +35,7 @@ func TestSampleCount(t *testing.T) {
 	ils := rs.ScopeProfiles().AppendEmpty()
 	assert.EqualValues(t, 0, profiles.SampleCount())
 
-	ps := ils.Profiles().AppendEmpty().Profile()
+	ps := ils.Profiles().AppendEmpty()
 	assert.EqualValues(t, 0, profiles.SampleCount())
 
 	ps.Sample().AppendEmpty()
@@ -44,7 +44,7 @@ func TestSampleCount(t *testing.T) {
 	ils2 := rs.ScopeProfiles().AppendEmpty()
 	assert.EqualValues(t, 1, profiles.SampleCount())
 
-	ps2 := ils2.Profiles().AppendEmpty().Profile()
+	ps2 := ils2.Profiles().AppendEmpty()
 	assert.EqualValues(t, 1, profiles.SampleCount())
 
 	ps2.Sample().AppendEmpty()
@@ -53,7 +53,7 @@ func TestSampleCount(t *testing.T) {
 	rms := profiles.ResourceProfiles()
 	rms.EnsureCapacity(3)
 	rms.AppendEmpty().ScopeProfiles().AppendEmpty()
-	ilss := rms.AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty().Profile().Sample()
+	ilss := rms.AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty().Sample()
 	for i := 0; i < 5; i++ {
 		ilss.AppendEmpty()
 	}
@@ -77,12 +77,10 @@ func TestSampleCountWithEmpty(t *testing.T) {
 			{
 				ScopeProfiles: []*otlpprofile.ScopeProfiles{
 					{
-						Profiles: []*otlpprofile.ProfileContainer{
+						Profiles: []*otlpprofile.Profile{
 							{
-								Profile: otlpprofile.Profile{
-									Sample: []*otlpprofile.Sample{
-										{},
-									},
+								Sample: []*otlpprofile.Sample{
+									{},
 								},
 							},
 						},
@@ -122,18 +120,18 @@ func BenchmarkProfilesUsage(b *testing.B) {
 					s := iss.Profiles().At(k)
 					s.SetProfileID(testValProfileID)
 					assert.Equal(b, testValProfileID, s.ProfileID())
-					s.SetStartTime(ts)
-					assert.Equal(b, ts, s.StartTime())
-					s.SetEndTime(ts)
-					assert.Equal(b, ts, s.EndTime())
+					s.SetTime(ts)
+					assert.Equal(b, ts, s.Time())
+					s.SetDuration(ts)
+					assert.Equal(b, ts, s.Duration())
 				}
 				s := iss.Profiles().AppendEmpty()
 				s.SetProfileID(testSecondValProfileID)
-				s.SetStartTime(ts)
-				s.SetEndTime(ts)
+				s.SetTime(ts)
+				s.SetDuration(ts)
 				s.Attributes().PutStr("foo1", "bar1")
 				s.Attributes().PutStr("foo2", "bar2")
-				iss.Profiles().RemoveIf(func(lr ProfileContainer) bool {
+				iss.Profiles().RemoveIf(func(lr Profile) bool {
 					return lr.ProfileID() == testSecondValProfileID
 				})
 			}

@@ -8,7 +8,8 @@ package pprofile
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
+	"go.opentelemetry.io/collector/pdata/internal/data"
+	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -56,29 +57,29 @@ func (ms Profile) Sample() SampleSlice {
 	return newSampleSlice(&ms.orig.Sample, ms.state)
 }
 
-// Mapping returns the Mapping associated with this Profile.
-func (ms Profile) Mapping() MappingSlice {
-	return newMappingSlice(&ms.orig.Mapping, ms.state)
+// MappingTable returns the MappingTable associated with this Profile.
+func (ms Profile) MappingTable() MappingSlice {
+	return newMappingSlice(&ms.orig.MappingTable, ms.state)
 }
 
-// Location returns the Location associated with this Profile.
-func (ms Profile) Location() LocationSlice {
-	return newLocationSlice(&ms.orig.Location, ms.state)
+// LocationTable returns the LocationTable associated with this Profile.
+func (ms Profile) LocationTable() LocationSlice {
+	return newLocationSlice(&ms.orig.LocationTable, ms.state)
 }
 
 // LocationIndices returns the LocationIndices associated with this Profile.
-func (ms Profile) LocationIndices() pcommon.Int64Slice {
-	return pcommon.Int64Slice(internal.NewInt64Slice(&ms.orig.LocationIndices, ms.state))
+func (ms Profile) LocationIndices() pcommon.Int32Slice {
+	return pcommon.Int32Slice(internal.NewInt32Slice(&ms.orig.LocationIndices, ms.state))
 }
 
-// Function returns the Function associated with this Profile.
-func (ms Profile) Function() FunctionSlice {
-	return newFunctionSlice(&ms.orig.Function, ms.state)
+// FunctionTable returns the FunctionTable associated with this Profile.
+func (ms Profile) FunctionTable() FunctionSlice {
+	return newFunctionSlice(&ms.orig.FunctionTable, ms.state)
 }
 
 // AttributeTable returns the AttributeTable associated with this Profile.
-func (ms Profile) AttributeTable() pcommon.Map {
-	return pcommon.Map(internal.NewMap(&ms.orig.AttributeTable, ms.state))
+func (ms Profile) AttributeTable() AttributeTableSlice {
+	return newAttributeTableSlice(&ms.orig.AttributeTable, ms.state)
 }
 
 // AttributeUnits returns the AttributeUnits associated with this Profile.
@@ -96,35 +97,13 @@ func (ms Profile) StringTable() pcommon.StringSlice {
 	return pcommon.StringSlice(internal.NewStringSlice(&ms.orig.StringTable, ms.state))
 }
 
-// DropFrames returns the dropframes associated with this Profile.
-func (ms Profile) DropFrames() int64 {
-	return ms.orig.DropFrames
-}
-
-// SetDropFrames replaces the dropframes associated with this Profile.
-func (ms Profile) SetDropFrames(v int64) {
-	ms.state.AssertMutable()
-	ms.orig.DropFrames = v
-}
-
-// KeepFrames returns the keepframes associated with this Profile.
-func (ms Profile) KeepFrames() int64 {
-	return ms.orig.KeepFrames
-}
-
-// SetKeepFrames replaces the keepframes associated with this Profile.
-func (ms Profile) SetKeepFrames(v int64) {
-	ms.state.AssertMutable()
-	ms.orig.KeepFrames = v
-}
-
-// StartTime returns the starttime associated with this Profile.
-func (ms Profile) StartTime() pcommon.Timestamp {
+// Time returns the time associated with this Profile.
+func (ms Profile) Time() pcommon.Timestamp {
 	return pcommon.Timestamp(ms.orig.TimeNanos)
 }
 
-// SetStartTime replaces the starttime associated with this Profile.
-func (ms Profile) SetStartTime(v pcommon.Timestamp) {
+// SetTime replaces the time associated with this Profile.
+func (ms Profile) SetTime(v pcommon.Timestamp) {
 	ms.state.AssertMutable()
 	ms.orig.TimeNanos = int64(v)
 }
@@ -138,6 +117,17 @@ func (ms Profile) Duration() pcommon.Timestamp {
 func (ms Profile) SetDuration(v pcommon.Timestamp) {
 	ms.state.AssertMutable()
 	ms.orig.DurationNanos = int64(v)
+}
+
+// StartTime returns the starttime associated with this Profile.
+func (ms Profile) StartTime() pcommon.Timestamp {
+	return pcommon.Timestamp(ms.orig.TimeNanos)
+}
+
+// SetStartTime replaces the starttime associated with this Profile.
+func (ms Profile) SetStartTime(v pcommon.Timestamp) {
+	ms.state.AssertMutable()
+	ms.orig.TimeNanos = int64(v)
 }
 
 // PeriodType returns the periodtype associated with this Profile.
@@ -156,20 +146,63 @@ func (ms Profile) SetPeriod(v int64) {
 	ms.orig.Period = v
 }
 
-// Comment returns the Comment associated with this Profile.
-func (ms Profile) Comment() pcommon.Int64Slice {
-	return pcommon.Int64Slice(internal.NewInt64Slice(&ms.orig.Comment, ms.state))
+// CommentStrindices returns the CommentStrindices associated with this Profile.
+func (ms Profile) CommentStrindices() pcommon.Int32Slice {
+	return pcommon.Int32Slice(internal.NewInt32Slice(&ms.orig.CommentStrindices, ms.state))
 }
 
-// DefaultSampleType returns the defaultsampletype associated with this Profile.
-func (ms Profile) DefaultSampleType() int64 {
-	return ms.orig.DefaultSampleType
+// DefaultSampleTypeStrindex returns the defaultsampletypestrindex associated with this Profile.
+func (ms Profile) DefaultSampleTypeStrindex() int32 {
+	return ms.orig.DefaultSampleTypeStrindex
 }
 
-// SetDefaultSampleType replaces the defaultsampletype associated with this Profile.
-func (ms Profile) SetDefaultSampleType(v int64) {
+// SetDefaultSampleTypeStrindex replaces the defaultsampletypestrindex associated with this Profile.
+func (ms Profile) SetDefaultSampleTypeStrindex(v int32) {
 	ms.state.AssertMutable()
-	ms.orig.DefaultSampleType = v
+	ms.orig.DefaultSampleTypeStrindex = v
+}
+
+// ProfileID returns the profileid associated with this Profile.
+func (ms Profile) ProfileID() ProfileID {
+	return ProfileID(ms.orig.ProfileId)
+}
+
+// SetProfileID replaces the profileid associated with this Profile.
+func (ms Profile) SetProfileID(v ProfileID) {
+	ms.state.AssertMutable()
+	ms.orig.ProfileId = data.ProfileID(v)
+}
+
+// Attributes returns the Attributes associated with this Profile.
+func (ms Profile) Attributes() pcommon.Map {
+	return pcommon.Map(internal.NewMap(&ms.orig.Attributes, ms.state))
+}
+
+// DroppedAttributesCount returns the droppedattributescount associated with this Profile.
+func (ms Profile) DroppedAttributesCount() uint32 {
+	return ms.orig.DroppedAttributesCount
+}
+
+// SetDroppedAttributesCount replaces the droppedattributescount associated with this Profile.
+func (ms Profile) SetDroppedAttributesCount(v uint32) {
+	ms.state.AssertMutable()
+	ms.orig.DroppedAttributesCount = v
+}
+
+// OriginalPayloadFormat returns the originalpayloadformat associated with this Profile.
+func (ms Profile) OriginalPayloadFormat() string {
+	return ms.orig.OriginalPayloadFormat
+}
+
+// SetOriginalPayloadFormat replaces the originalpayloadformat associated with this Profile.
+func (ms Profile) SetOriginalPayloadFormat(v string) {
+	ms.state.AssertMutable()
+	ms.orig.OriginalPayloadFormat = v
+}
+
+// OriginalPayload returns the OriginalPayload associated with this Profile.
+func (ms Profile) OriginalPayload() pcommon.ByteSlice {
+	return pcommon.ByteSlice(internal.NewByteSlice(&ms.orig.OriginalPayload, ms.state))
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
@@ -177,20 +210,24 @@ func (ms Profile) CopyTo(dest Profile) {
 	dest.state.AssertMutable()
 	ms.SampleType().CopyTo(dest.SampleType())
 	ms.Sample().CopyTo(dest.Sample())
-	ms.Mapping().CopyTo(dest.Mapping())
-	ms.Location().CopyTo(dest.Location())
+	ms.MappingTable().CopyTo(dest.MappingTable())
+	ms.LocationTable().CopyTo(dest.LocationTable())
 	ms.LocationIndices().CopyTo(dest.LocationIndices())
-	ms.Function().CopyTo(dest.Function())
+	ms.FunctionTable().CopyTo(dest.FunctionTable())
 	ms.AttributeTable().CopyTo(dest.AttributeTable())
 	ms.AttributeUnits().CopyTo(dest.AttributeUnits())
 	ms.LinkTable().CopyTo(dest.LinkTable())
 	ms.StringTable().CopyTo(dest.StringTable())
-	dest.SetDropFrames(ms.DropFrames())
-	dest.SetKeepFrames(ms.KeepFrames())
-	dest.SetStartTime(ms.StartTime())
+	dest.SetTime(ms.Time())
 	dest.SetDuration(ms.Duration())
+	dest.SetStartTime(ms.StartTime())
 	ms.PeriodType().CopyTo(dest.PeriodType())
 	dest.SetPeriod(ms.Period())
-	ms.Comment().CopyTo(dest.Comment())
-	dest.SetDefaultSampleType(ms.DefaultSampleType())
+	ms.CommentStrindices().CopyTo(dest.CommentStrindices())
+	dest.SetDefaultSampleTypeStrindex(ms.DefaultSampleTypeStrindex())
+	dest.SetProfileID(ms.ProfileID())
+	ms.Attributes().CopyTo(dest.Attributes())
+	dest.SetDroppedAttributesCount(ms.DroppedAttributesCount())
+	dest.SetOriginalPayloadFormat(ms.OriginalPayloadFormat())
+	ms.OriginalPayload().CopyTo(dest.OriginalPayload())
 }
