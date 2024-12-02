@@ -9,7 +9,7 @@ import (
 	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 )
 
@@ -17,7 +17,7 @@ import (
 // It fans out the incoming data to all the consumers, and does smart routing:
 //   - Clones only to the consumer that needs to mutate the data.
 //   - If all consumers needs to mutate the data one will get the original mutable data.
-func NewProfiles(tcs []consumerprofiles.Profiles) consumerprofiles.Profiles {
+func NewProfiles(tcs []xconsumer.Profiles) xconsumer.Profiles {
 	// Don't wrap if there is only one non-mutating consumer.
 	if len(tcs) == 1 && !tcs[0].Capabilities().MutatesData {
 		return tcs[0]
@@ -35,8 +35,8 @@ func NewProfiles(tcs []consumerprofiles.Profiles) consumerprofiles.Profiles {
 }
 
 type profilesConsumer struct {
-	mutable  []consumerprofiles.Profiles
-	readonly []consumerprofiles.Profiles
+	mutable  []xconsumer.Profiles
+	readonly []xconsumer.Profiles
 }
 
 func (tsc *profilesConsumer) Capabilities() consumer.Capabilities {

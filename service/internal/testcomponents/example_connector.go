@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectorprofiles"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
@@ -84,7 +84,7 @@ func createExampleTracesToLogs(_ context.Context, set connector.Settings, _ comp
 	}, nil
 }
 
-func createExampleTracesToProfiles(_ context.Context, set connector.Settings, _ component.Config, profiles consumerprofiles.Profiles) (connector.Traces, error) {
+func createExampleTracesToProfiles(_ context.Context, set connector.Settings, _ component.Config, profiles xconsumer.Profiles) (connector.Traces, error) {
 	return &ExampleConnector{
 		ConsumeTracesFunc: func(ctx context.Context, td ptrace.Traces) error {
 			return profiles.ConsumeProfiles(ctx, testdata.GenerateProfiles(td.SpanCount()))
@@ -118,7 +118,7 @@ func createExampleMetricsToLogs(_ context.Context, set connector.Settings, _ com
 	}, nil
 }
 
-func createExampleMetricsToProfiles(_ context.Context, set connector.Settings, _ component.Config, profiles consumerprofiles.Profiles) (connector.Metrics, error) {
+func createExampleMetricsToProfiles(_ context.Context, set connector.Settings, _ component.Config, profiles xconsumer.Profiles) (connector.Metrics, error) {
 	return &ExampleConnector{
 		ConsumeMetricsFunc: func(ctx context.Context, md pmetric.Metrics) error {
 			return profiles.ConsumeProfiles(ctx, testdata.GenerateProfiles(md.MetricCount()))
@@ -152,7 +152,7 @@ func createExampleLogsToLogs(_ context.Context, set connector.Settings, _ compon
 	}, nil
 }
 
-func createExampleLogsToProfiles(_ context.Context, set connector.Settings, _ component.Config, profiles consumerprofiles.Profiles) (connector.Logs, error) {
+func createExampleLogsToProfiles(_ context.Context, set connector.Settings, _ component.Config, profiles xconsumer.Profiles) (connector.Logs, error) {
 	return &ExampleConnector{
 		ConsumeLogsFunc: func(ctx context.Context, ld plog.Logs) error {
 			return profiles.ConsumeProfiles(ctx, testdata.GenerateProfiles(ld.LogRecordCount()))
@@ -188,7 +188,7 @@ func createExampleProfilesToLogs(_ context.Context, set connector.Settings, _ co
 	}, nil
 }
 
-func createExampleProfilesToProfiles(_ context.Context, set connector.Settings, _ component.Config, profiles consumerprofiles.Profiles) (connectorprofiles.Profiles, error) {
+func createExampleProfilesToProfiles(_ context.Context, set connector.Settings, _ component.Config, profiles xconsumer.Profiles) (connectorprofiles.Profiles, error) {
 	return &ExampleConnector{
 		ConsumeProfilesFunc: profiles.ConsumeProfiles,
 		mutatesData:         set.ID.Name() == "mutate",
@@ -200,7 +200,7 @@ type ExampleConnector struct {
 	consumer.ConsumeTracesFunc
 	consumer.ConsumeMetricsFunc
 	consumer.ConsumeLogsFunc
-	consumerprofiles.ConsumeProfilesFunc
+	xconsumer.ConsumeProfilesFunc
 	mutatesData bool
 }
 

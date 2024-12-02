@@ -5,25 +5,25 @@ package connectorprofiles // import "go.opentelemetry.io/collector/connector/con
 
 import (
 	"go.opentelemetry.io/collector/connector/internal"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
 type ProfilesRouterAndConsumer interface {
-	consumerprofiles.Profiles
-	Consumer(...pipeline.ID) (consumerprofiles.Profiles, error)
+	xconsumer.Profiles
+	Consumer(...pipeline.ID) (xconsumer.Profiles, error)
 	PipelineIDs() []pipeline.ID
 	privateFunc()
 }
 
 type profilesRouter struct {
-	consumerprofiles.Profiles
-	internal.BaseRouter[consumerprofiles.Profiles]
+	xconsumer.Profiles
+	internal.BaseRouter[xconsumer.Profiles]
 }
 
-func NewProfilesRouter(cm map[pipeline.ID]consumerprofiles.Profiles) ProfilesRouterAndConsumer {
-	consumers := make([]consumerprofiles.Profiles, 0, len(cm))
+func NewProfilesRouter(cm map[pipeline.ID]xconsumer.Profiles) ProfilesRouterAndConsumer {
+	consumers := make([]xconsumer.Profiles, 0, len(cm))
 	for _, cons := range cm {
 		consumers = append(consumers, cons)
 	}

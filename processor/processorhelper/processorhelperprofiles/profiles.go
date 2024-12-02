@@ -8,7 +8,7 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
@@ -22,7 +22,7 @@ type ProcessProfilesFunc func(context.Context, pprofile.Profiles) (pprofile.Prof
 type profiles struct {
 	component.StartFunc
 	component.ShutdownFunc
-	consumerprofiles.Profiles
+	xconsumer.Profiles
 }
 
 // NewProfiles creates a processorprofiles.Profiles that ensure context propagation.
@@ -30,7 +30,7 @@ func NewProfiles(
 	_ context.Context,
 	_ processor.Settings,
 	_ component.Config,
-	nextConsumer consumerprofiles.Profiles,
+	nextConsumer xconsumer.Profiles,
 	profilesFunc ProcessProfilesFunc,
 	options ...Option,
 ) (processorprofiles.Profiles, error) {
@@ -39,7 +39,7 @@ func NewProfiles(
 	}
 
 	bs := fromOptions(options)
-	profilesConsumer, err := consumerprofiles.NewProfiles(func(ctx context.Context, pd pprofile.Profiles) (err error) {
+	profilesConsumer, err := xconsumer.NewProfiles(func(ctx context.Context, pd pprofile.Profiles) (err error) {
 		pd, err = profilesFunc(ctx, pd)
 		if err != nil {
 			if errors.Is(err, processorhelper.ErrSkipProcessingData) {
