@@ -5,7 +5,7 @@ package graph // import "go.opentelemetry.io/collector/service/internal/graph"
 
 import (
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/consumer/consumerexp"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -25,7 +25,7 @@ type capabilitiesNode struct {
 	consumer.ConsumeTracesFunc
 	consumer.ConsumeMetricsFunc
 	consumer.ConsumeLogsFunc
-	consumerprofiles.ConsumeProfilesFunc
+	consumerexp.ConsumeProfilesFunc
 }
 
 func newCapabilitiesNode(pipelineID pipeline.ID) *capabilitiesNode {

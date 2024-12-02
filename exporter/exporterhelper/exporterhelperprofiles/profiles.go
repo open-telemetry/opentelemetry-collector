@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumererror/consumererrorprofiles"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/consumer/consumerexp"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
@@ -27,17 +27,17 @@ var profilesUnmarshaler = &pprofile.ProtoUnmarshaler{}
 
 type profilesRequest struct {
 	pd     pprofile.Profiles
-	pusher consumerprofiles.ConsumeProfilesFunc
+	pusher consumerexp.ConsumeProfilesFunc
 }
 
-func newProfilesRequest(pd pprofile.Profiles, pusher consumerprofiles.ConsumeProfilesFunc) exporterhelper.Request {
+func newProfilesRequest(pd pprofile.Profiles, pusher consumerexp.ConsumeProfilesFunc) exporterhelper.Request {
 	return &profilesRequest{
 		pd:     pd,
 		pusher: pusher,
 	}
 }
 
-func newProfileRequestUnmarshalerFunc(pusher consumerprofiles.ConsumeProfilesFunc) exporterqueue.Unmarshaler[exporterhelper.Request] {
+func newProfileRequestUnmarshalerFunc(pusher consumerexp.ConsumeProfilesFunc) exporterqueue.Unmarshaler[exporterhelper.Request] {
 	return func(bytes []byte) (exporterhelper.Request, error) {
 		profiles, err := profilesUnmarshaler.UnmarshalProfiles(bytes)
 		if err != nil {
@@ -69,7 +69,7 @@ func (req *profilesRequest) ItemsCount() int {
 
 type profileExporter struct {
 	*internal.BaseExporter
-	consumerprofiles.Profiles
+	consumerexp.Profiles
 }
 
 // NewProfilesExporter creates an exporterprofiles.Profiles that records observability metrics and wraps every request with a Span.
@@ -77,7 +77,7 @@ func NewProfilesExporter(
 	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config,
-	pusher consumerprofiles.ConsumeProfilesFunc,
+	pusher consumerexp.ConsumeProfilesFunc,
 	options ...exporterhelper.Option,
 ) (exporterprofiles.Profiles, error) {
 	if cfg == nil {
@@ -98,7 +98,7 @@ func NewProfilesExporter(
 type RequestFromProfilesFunc func(context.Context, pprofile.Profiles) (exporterhelper.Request, error)
 
 // requestFromProfiles returns a RequestFromProfilesFunc that converts pprofile.Profiles into a Request.
-func requestFromProfiles(pusher consumerprofiles.ConsumeProfilesFunc) RequestFromProfilesFunc {
+func requestFromProfiles(pusher consumerexp.ConsumeProfilesFunc) RequestFromProfilesFunc {
 	return func(_ context.Context, profiles pprofile.Profiles) (exporterhelper.Request, error) {
 		return newProfilesRequest(profiles, pusher), nil
 	}
@@ -126,7 +126,7 @@ func NewProfilesRequestExporter(
 		return nil, err
 	}
 
-	tc, err := consumerprofiles.NewProfiles(func(ctx context.Context, pd pprofile.Profiles) error {
+	tc, err := consumerexp.NewProfiles(func(ctx context.Context, pd pprofile.Profiles) error {
 		req, cErr := converter(ctx, pd)
 		if cErr != nil {
 			set.Logger.Error("Failed to convert profiles. Dropping data.",

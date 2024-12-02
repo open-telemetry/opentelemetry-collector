@@ -8,7 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/consumer/consumerexp"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorprofiles"
 )
@@ -51,7 +51,7 @@ func createLogsProcessor(_ context.Context, set processor.Settings, _ component.
 	}, nil
 }
 
-func createProfilesProcessor(_ context.Context, set processor.Settings, _ component.Config, nextConsumer consumerprofiles.Profiles) (processorprofiles.Profiles, error) {
+func createProfilesProcessor(_ context.Context, set processor.Settings, _ component.Config, nextConsumer consumerexp.Profiles) (processorprofiles.Profiles, error) {
 	return &ExampleProcessor{
 		ConsumeProfilesFunc: nextConsumer.ConsumeProfiles,
 		mutatesData:         set.ID.Name() == "mutate",
@@ -63,7 +63,7 @@ type ExampleProcessor struct {
 	consumer.ConsumeTracesFunc
 	consumer.ConsumeMetricsFunc
 	consumer.ConsumeLogsFunc
-	consumerprofiles.ConsumeProfilesFunc
+	consumerexp.ConsumeProfilesFunc
 	mutatesData bool
 }
 
