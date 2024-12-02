@@ -3,7 +3,7 @@ module go.opentelemetry.io/collector/exporter/otlpexporter
 go 1.22.0
 
 require (
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector v0.114.0
 	go.opentelemetry.io/collector/component v0.114.0
 	go.opentelemetry.io/collector/component/componenttest v0.114.0
@@ -40,6 +40,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
@@ -61,6 +62,7 @@ require (
 	go.opentelemetry.io/collector/extension v0.114.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.114.0 // indirect
 	go.opentelemetry.io/collector/extension/experimental/storage v0.114.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.20.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.114.0 // indirect
 	go.opentelemetry.io/collector/pipeline/pipelineprofiles v0.114.0 // indirect
 	go.opentelemetry.io/collector/receiver v0.114.0 // indirect
@@ -157,3 +159,5 @@ replace go.opentelemetry.io/collector/extension/extensiontest => ../../extension
 replace go.opentelemetry.io/collector/extension/auth/authtest => ../../extension/auth/authtest
 
 replace go.opentelemetry.io/collector/scraper => ../../scraper
+
+replace go.opentelemetry.io/collector/featuregate => ../../featuregate

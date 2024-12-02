@@ -5,7 +5,7 @@ go 1.22.0
 require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/json-iterator/go v1.1.12
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	google.golang.org/grpc v1.67.1

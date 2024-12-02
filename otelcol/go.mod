@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	github.com/spf13/cobra v1.8.1
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.114.0
 	go.opentelemetry.io/collector/component/componentstatus v0.114.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.114.0

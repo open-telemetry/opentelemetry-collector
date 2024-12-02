@@ -9,21 +9,15 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/scraper"
 )
 
 var errNilFunc = errors.New("nil scrape func")
 
-// ScrapeFunc scrapes metrics.
+// Deprecated: [v0.115.0] use scraper.ScrapeMetricsFunc.
 type ScrapeFunc func(context.Context) (pmetric.Metrics, error)
 
-func (sf ScrapeFunc) ScrapeMetrics(ctx context.Context) (pmetric.Metrics, error) {
-	return sf(ctx)
-}
-
-// Deprecated: [v0.115.0] use ScrapeMetrics.
 func (sf ScrapeFunc) Scrape(ctx context.Context) (pmetric.Metrics, error) {
-	return sf.ScrapeMetrics(ctx)
+	return sf(ctx)
 }
 
 // Deprecated: [v0.115.0] use scraper.Metrics.
@@ -32,7 +26,7 @@ type Scraper interface {
 	Scrape(context.Context) (pmetric.Metrics, error)
 }
 
-// ScraperOption apply changes to internal options.
+// Deprecated: [v0.115.0] use scraper.Option.
 type ScraperOption interface {
 	apply(*baseScraper)
 }
@@ -43,14 +37,14 @@ func (of scraperOptionFunc) apply(e *baseScraper) {
 	of(e)
 }
 
-// WithStart sets the function that will be called on startup.
+// Deprecated: [v0.115.0] use scraper.WithStart.
 func WithStart(start component.StartFunc) ScraperOption {
 	return scraperOptionFunc(func(o *baseScraper) {
 		o.StartFunc = start
 	})
 }
 
-// WithShutdown sets the function that will be called on shutdown.
+// Deprecated: [v0.115.0] use scraper.WithShutdown.
 func WithShutdown(shutdown component.ShutdownFunc) ScraperOption {
 	return scraperOptionFunc(func(o *baseScraper) {
 		o.ShutdownFunc = shutdown
@@ -63,14 +57,8 @@ type baseScraper struct {
 	ScrapeFunc
 }
 
-// NewScraper creates a scraper.Metrics that calls ScrapeMetrics at the specified collection interval,
-// reports observability information, and passes the scraped metrics to the next consumer.
-func NewScraper(scrape ScrapeFunc, options ...ScraperOption) (scraper.Metrics, error) {
-	return newBaseScraper(scrape, options...)
-}
-
-// TODO: Remove this and embed into NewScraper when  NewScraperWithoutType is removed.
-func newBaseScraper(scrape ScrapeFunc, options ...ScraperOption) (*baseScraper, error) {
+// Deprecated: [v0.115.0] use scraper.NewMetrics.
+func NewScraperWithoutType(scrape ScrapeFunc, options ...ScraperOption) (Scraper, error) {
 	if scrape == nil {
 		return nil, errNilFunc
 	}
@@ -82,9 +70,4 @@ func newBaseScraper(scrape ScrapeFunc, options ...ScraperOption) (*baseScraper, 
 	}
 
 	return bs, nil
-}
-
-// Deprecated: [v0.115.0] use NewScraper.
-func NewScraperWithoutType(scrape ScrapeFunc, options ...ScraperOption) (Scraper, error) {
-	return newBaseScraper(scrape, options...)
 }

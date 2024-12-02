@@ -3,7 +3,7 @@ module go.opentelemetry.io/collector/exporter/exporterprofiles
 go 1.22.0
 
 require (
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.114.0
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.114.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.114.0
@@ -77,3 +77,5 @@ replace go.opentelemetry.io/collector/receiver/receivertest => ../../receiver/re
 replace go.opentelemetry.io/collector/extension/extensiontest => ../../extension/extensiontest
 
 replace go.opentelemetry.io/collector/scraper => ../../scraper
+
+replace go.opentelemetry.io/collector/featuregate => ../../featuregate
