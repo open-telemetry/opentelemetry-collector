@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/consumer/consumerexp"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor"
 )
@@ -42,6 +42,6 @@ type nopProcessor struct {
 	consumertest.Consumer
 }
 
-func createProfiles(context.Context, processor.Settings, component.Config, consumerprofiles.Profiles) (Profiles, error) {
+func createProfiles(context.Context, processor.Settings, component.Config, consumerexp.Profiles) (Profiles, error) {
 	return nopInstance, nil
 }

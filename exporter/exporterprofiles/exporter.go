@@ -7,7 +7,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/consumer/consumerexp"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pipeline"
 )
@@ -15,7 +15,7 @@ import (
 // Profiles is an exporter that can consume profiles.
 type Profiles interface {
 	component.Component
-	consumerprofiles.Profiles
+	consumerexp.Profiles
 }
 
 type Factory interface {

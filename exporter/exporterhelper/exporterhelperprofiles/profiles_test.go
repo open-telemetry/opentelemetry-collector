@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumererror/consumererrorprofiles"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/consumer/consumerexp"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -286,7 +286,7 @@ func TestProfilesRequestExporter_WithShutdown_ReturnError(t *testing.T) {
 	assert.Equal(t, want, le.Shutdown(context.Background()))
 }
 
-func newPushProfilesData(retError error) consumerprofiles.ConsumeProfilesFunc {
+func newPushProfilesData(retError error) consumerexp.ConsumeProfilesFunc {
 	return func(_ context.Context, _ pprofile.Profiles) error {
 		return retError
 	}

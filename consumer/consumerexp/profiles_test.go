@@ -1,8 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// Deprecated: [0.115.0] This package is deprecated. Use "go.opentelemetry.io/collector/consumer/consumerexp" instead.
-package consumerprofiles
+package consumerexp
 
 import (
 	"context"

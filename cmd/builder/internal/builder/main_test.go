@@ -63,7 +63,7 @@ var (
 		"/consumer",
 		"/consumer/consumererror",
 		"/consumer/consumererror/consumererrorprofiles",
-		"/consumer/consumerprofiles",
+		"/consumer/consumerexp",
 		"/consumer/consumertest",
 		"/connector",
 		"/connector/connectortest",

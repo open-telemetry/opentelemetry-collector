@@ -57,7 +57,7 @@ require (
 	go.opentelemetry.io/collector/config/configtelemetry v0.114.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.114.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror/consumererrorprofiles v0.114.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumerprofiles v0.114.0 // indirect
+	go.opentelemetry.io/collector/consumer/consumerexp v0.114.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.114.0 // indirect
 	go.opentelemetry.io/collector/extension v0.114.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.114.0 // indirect
@@ -123,7 +123,7 @@ replace go.opentelemetry.io/collector/consumer => ../../consumer
 
 replace go.opentelemetry.io/collector/config/configretry => ../../config/configretry
 
-replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../../consumer/consumerprofiles
+replace go.opentelemetry.io/collector/consumer/consumerexp => ../../consumer/consumerexp
 
 replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/consumertest
 
