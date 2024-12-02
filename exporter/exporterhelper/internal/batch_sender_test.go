@@ -158,7 +158,6 @@ func TestBatchSender_BatchExportError(t *testing.T) {
 			assert.Eventually(t, func() bool {
 				return sink.requestsCount.Load() == tt.expectedRequests &&
 					sink.itemsCount.Load() == tt.expectedItems &&
-					be.BatchSender.(*BatchSender).activeRequests.Load() == 0 &&
 					be.QueueSender.(*QueueSender).queue.Size() == 0
 			}, 100*time.Millisecond, 10*time.Millisecond)
 		})

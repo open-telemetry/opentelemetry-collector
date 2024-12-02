@@ -16,8 +16,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 )
 
 // ScraperControllerOption apply changes to internal options.
@@ -46,10 +46,10 @@ func AddScraper(t component.Type, scraper scraper.Metrics) ScraperControllerOpti
 }
 
 // Deprecated: [v0.115.0] use AddScraper.
-func AddScraperWithType(t component.Type, scraper Scraper) ScraperControllerOption {
+func AddScraperWithType(t component.Type, scrp Scraper) ScraperControllerOption {
 	// Ignore the error since it cannot happen because the Scrape func cannot be nil here.
-	scrp, _ := NewScraper(scraper.Scrape, WithStart(scraper.Start), WithShutdown(scraper.Shutdown))
-	return AddScraper(t, scrp)
+	newScrp, _ := scraper.NewMetrics(scrp.Scrape, scraper.WithStart(scrp.Start), scraper.WithShutdown(scrp.Shutdown))
+	return AddScraper(t, newScrp)
 }
 
 // WithTickerChannel allows you to override the scraper controller's ticker
@@ -116,12 +116,12 @@ func NewScraperControllerReceiver(
 	for i := range sc.scrapers {
 		telSet := set.TelemetrySettings
 		telSet.Logger = telSet.Logger.With(zap.String("scraper", sc.scrapers[i].id.String()))
-		var obsScrp ScrapeFunc
+		var obsScrp scraper.ScrapeMetricsFunc
 		obsScrp, err = newObsMetrics(sc.scrapers[i].ScrapeMetrics, set.ID, sc.scrapers[i].id, telSet)
 		if err != nil {
 			return nil, err
 		}
-		sc.obsScrapers[i], err = NewScraper(obsScrp, WithStart(sc.scrapers[i].Start), WithShutdown(sc.scrapers[i].Shutdown))
+		sc.obsScrapers[i], err = scraper.NewMetrics(obsScrp, scraper.WithStart(sc.scrapers[i].Start), scraper.WithShutdown(sc.scrapers[i].Shutdown))
 		if err != nil {
 			return nil, err
 		}
