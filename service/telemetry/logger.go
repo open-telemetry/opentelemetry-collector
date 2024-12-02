@@ -13,11 +13,13 @@ import (
 // newLogger creates a Logger and a LoggerProvider from Config.
 func newLogger(set Settings, cfg Config) (*zap.Logger, log.LoggerProvider, error) {
 	// Copied from NewProductionConfig.
+	ec := zap.NewProductionEncoderConfig()
+	ec.EncodeTime = zapcore.ISO8601TimeEncoder
 	zapCfg := &zap.Config{
 		Level:             zap.NewAtomicLevelAt(cfg.Logs.Level),
 		Development:       cfg.Logs.Development,
 		Encoding:          cfg.Logs.Encoding,
-		EncoderConfig:     zap.NewProductionEncoderConfig(),
+		EncoderConfig:     ec,
 		OutputPaths:       cfg.Logs.OutputPaths,
 		ErrorOutputPaths:  cfg.Logs.ErrorOutputPaths,
 		DisableCaller:     cfg.Logs.DisableCaller,
