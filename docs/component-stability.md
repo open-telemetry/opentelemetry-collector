@@ -71,8 +71,13 @@ components apply to stable when it comes to configuration changes.
 Stable components should emit enough internal telemetry to let users detect errors, as well as data
 loss and performance issues inside the component, and to help diagnose them if possible.
 
-This section defines the categories of values that should be observable through internal telemetry
-for all stable pipeline components. (Extensions are not covered.)
+For extension components, this means some way to monitor errors (for example through logs or span
+events), and some way to monitor performance (for example through spans or histograms). Because
+extensions can be so diverse, the details will be up to the component authors, and no further
+constraints are set out in this document.
+
+For pipeline components however, this section details the kinds of values that should be observable
+via internal telemetry for all stable components.
 
 **Notes:**
 - The following categories MUST all be covered, unless justification is given as to why
@@ -111,8 +116,8 @@ The internal telemetry of a stable pipeline component should allow observing the
 
     For receivers, this could include a metric counting payloads that could not be parsed in.
 
-    For receivers and exporters that make use of the network, this could include a metric counting
-    requests that failed because of network errors.
+    For receivers and exporters that interact with an external service, this could include a metric
+    counting requests that failed because of network errors.
 
     The goal is to be able to easily pinpoint the source of data loss in the Collector pipeline, so
     this should either:
