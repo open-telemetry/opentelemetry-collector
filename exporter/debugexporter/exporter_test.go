@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
@@ -68,6 +69,21 @@ func TestLogsNoErrors(t *testing.T) {
 	}
 }
 
+func TestProfilesNoErrors(t *testing.T) {
+	for _, tc := range createTestCases() {
+		t.Run(tc.name, func(t *testing.T) {
+			lle, err := createProfiles(context.Background(), exportertest.NewNopSettings(), createDefaultConfig())
+			require.NotNil(t, lle)
+			assert.NoError(t, err)
+
+			assert.NoError(t, lle.ConsumeProfiles(context.Background(), pprofile.NewProfiles()))
+			assert.NoError(t, lle.ConsumeProfiles(context.Background(), testdata.GenerateProfiles(10)))
+
+			assert.NoError(t, lle.Shutdown(context.Background()))
+		})
+	}
+}
+
 func TestErrors(t *testing.T) {
 	le := newDebugExporter(zaptest.NewLogger(t), configtelemetry.LevelDetailed)
 	require.NotNil(t, le)
@@ -76,9 +92,11 @@ func TestErrors(t *testing.T) {
 	le.tracesMarshaler = &errMarshaler{err: errWant}
 	le.metricsMarshaler = &errMarshaler{err: errWant}
 	le.logsMarshaler = &errMarshaler{err: errWant}
+	le.profilesMarshaler = &errMarshaler{err: errWant}
 	assert.Equal(t, errWant, le.pushTraces(context.Background(), ptrace.NewTraces()))
 	assert.Equal(t, errWant, le.pushMetrics(context.Background(), pmetric.NewMetrics()))
 	assert.Equal(t, errWant, le.pushLogs(context.Background(), plog.NewLogs()))
+	assert.Equal(t, errWant, le.pushProfiles(context.Background(), pprofile.NewProfiles()))
 }
 
 type testCase struct {
@@ -118,5 +136,9 @@ func (e errMarshaler) MarshalMetrics(pmetric.Metrics) ([]byte, error) {
 }
 
 func (e errMarshaler) MarshalTraces(ptrace.Traces) ([]byte, error) {
+	return nil, e.err
+}
+
+func (e errMarshaler) MarshalProfiles(pprofile.Profiles) ([]byte, error) {
 	return nil, e.err
 }

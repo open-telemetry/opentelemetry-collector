@@ -54,5 +54,4 @@ func TestShouldWarn(t *testing.T) {
 			assert.Equal(t, shouldWarn(test.endpoint), test.warn)
 		})
 	}
-
 }
