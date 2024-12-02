@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
+	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 func TestFunction_MoveTo(t *testing.T) {
@@ -38,40 +38,31 @@ func TestFunction_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newFunction(&otlpprofiles.Function{}, &sharedState)) })
 }
 
-func TestFunction_ID(t *testing.T) {
+func TestFunction_NameStrindex(t *testing.T) {
 	ms := NewFunction()
-	assert.Equal(t, uint64(0), ms.ID())
-	ms.SetID(uint64(1))
-	assert.Equal(t, uint64(1), ms.ID())
+	assert.Equal(t, int32(0), ms.NameStrindex())
+	ms.SetNameStrindex(int32(1))
+	assert.Equal(t, int32(1), ms.NameStrindex())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newFunction(&otlpprofiles.Function{}, &sharedState).SetID(uint64(1)) })
+	assert.Panics(t, func() { newFunction(&otlpprofiles.Function{}, &sharedState).SetNameStrindex(int32(1)) })
 }
 
-func TestFunction_Name(t *testing.T) {
+func TestFunction_SystemNameStrindex(t *testing.T) {
 	ms := NewFunction()
-	assert.Equal(t, int64(0), ms.Name())
-	ms.SetName(int64(1))
-	assert.Equal(t, int64(1), ms.Name())
+	assert.Equal(t, int32(0), ms.SystemNameStrindex())
+	ms.SetSystemNameStrindex(int32(1))
+	assert.Equal(t, int32(1), ms.SystemNameStrindex())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newFunction(&otlpprofiles.Function{}, &sharedState).SetName(int64(1)) })
+	assert.Panics(t, func() { newFunction(&otlpprofiles.Function{}, &sharedState).SetSystemNameStrindex(int32(1)) })
 }
 
-func TestFunction_SystemName(t *testing.T) {
+func TestFunction_FilenameStrindex(t *testing.T) {
 	ms := NewFunction()
-	assert.Equal(t, int64(0), ms.SystemName())
-	ms.SetSystemName(int64(1))
-	assert.Equal(t, int64(1), ms.SystemName())
+	assert.Equal(t, int32(0), ms.FilenameStrindex())
+	ms.SetFilenameStrindex(int32(1))
+	assert.Equal(t, int32(1), ms.FilenameStrindex())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newFunction(&otlpprofiles.Function{}, &sharedState).SetSystemName(int64(1)) })
-}
-
-func TestFunction_Filename(t *testing.T) {
-	ms := NewFunction()
-	assert.Equal(t, int64(0), ms.Filename())
-	ms.SetFilename(int64(1))
-	assert.Equal(t, int64(1), ms.Filename())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newFunction(&otlpprofiles.Function{}, &sharedState).SetFilename(int64(1)) })
+	assert.Panics(t, func() { newFunction(&otlpprofiles.Function{}, &sharedState).SetFilenameStrindex(int32(1)) })
 }
 
 func TestFunction_StartLine(t *testing.T) {
@@ -90,9 +81,8 @@ func generateTestFunction() Function {
 }
 
 func fillTestFunction(tv Function) {
-	tv.orig.Id = uint64(1)
-	tv.orig.Name = int64(1)
-	tv.orig.SystemName = int64(1)
-	tv.orig.Filename = int64(1)
+	tv.orig.NameStrindex = int32(1)
+	tv.orig.SystemNameStrindex = int32(1)
+	tv.orig.FilenameStrindex = int32(1)
 	tv.orig.StartLine = int64(1)
 }

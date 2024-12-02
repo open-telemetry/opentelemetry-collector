@@ -124,18 +124,7 @@ func (qb *DefaultBatcher) startTimeBasedFlushingGoroutine() {
 			case <-qb.shutdownCh:
 				return
 			case <-qb.timer.C:
-				qb.currentBatchMu.Lock()
-				if qb.currentBatch == nil || qb.currentBatch.req == nil {
-					qb.currentBatchMu.Unlock()
-					continue
-				}
-				batchToFlush := *qb.currentBatch
-				qb.currentBatch = nil
-				qb.currentBatchMu.Unlock()
-
-				// flushAsync() blocks until successfully started a goroutine for flushing.
-				qb.flushAsync(batchToFlush)
-				qb.resetTimer()
+				qb.flushCurrentBatchIfNecessary()
 			}
 		}
 	}()
@@ -143,6 +132,11 @@ func (qb *DefaultBatcher) startTimeBasedFlushingGoroutine() {
 
 // Start starts the goroutine that reads from the queue and flushes asynchronously.
 func (qb *DefaultBatcher) Start(_ context.Context, _ component.Host) error {
+	// maxWorker being -1 means batcher is disabled. This is for testing queue sender metrics.
+	if qb.maxWorkers == -1 {
+		return nil
+	}
+
 	qb.startWorkerPool()
 	qb.shutdownCh = make(chan bool, 1)
 
@@ -155,6 +149,28 @@ func (qb *DefaultBatcher) Start(_ context.Context, _ component.Host) error {
 
 	qb.startReadingFlushingGoroutine()
 	qb.startTimeBasedFlushingGoroutine()
+	return nil
+}
 
+// flushCurrentBatchIfNecessary sends out the current request batch if it is not nil
+func (qb *DefaultBatcher) flushCurrentBatchIfNecessary() {
+	qb.currentBatchMu.Lock()
+	if qb.currentBatch == nil || qb.currentBatch.req == nil {
+		qb.currentBatchMu.Unlock()
+		return
+	}
+	batchToFlush := *qb.currentBatch
+	qb.currentBatch = nil
+	qb.currentBatchMu.Unlock()
+
+	// flushAsync() blocks until successfully started a goroutine for flushing.
+	qb.flushAsync(batchToFlush)
+	qb.resetTimer()
+}
+
+// Shutdown ensures that queue and all Batcher are stopped.
+func (qb *DefaultBatcher) Shutdown(_ context.Context) error {
+	qb.flushCurrentBatchIfNecessary()
+	qb.stopWG.Wait()
 	return nil
 }

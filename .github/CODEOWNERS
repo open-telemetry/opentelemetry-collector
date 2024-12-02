@@ -13,3 +13,7 @@
 #
 
 * @open-telemetry/collector-approvers
+
+# List all maintainers individually so all of them are notified
+.github/CODEOWNERS @codeboten @BogdanDrutu @dmitryax @mx-psi
+docs/rfc           @codeboten @BogdanDrutu @dmitryax @mx-psi
