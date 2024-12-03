@@ -7,6 +7,22 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.21.0/v0.115.0
+
+### 🛑 Breaking changes 🛑
+
+- `extension/auth/authtest`: `authtest` is now its own module (#11465, #11705)
+- `pdata/pprofile`: AttributeTable is now a slice rather than a map (#11706)
+- `scraperhelper`: Remove deprecated scraperhelper funcs Scraper.ID, NewScraper, AddScraper. (#11710)
+- `mdatagen`: Remove deprecated LeveledMeter from the generated code (#11696)
+
+### 🚩 Deprecations 🚩
+
+- `component`: Mark `TelemetrySettings.LeveledMeterProvider` as deprecated (#11697)
+- `receiver/scraper`: Move receiver/scrapererror package to scraper/scrapererror and deprecate original receiver/scrapererror package. (#11003)
+- `scraperhelper`: Make Scraper compatible with the new scraper.Metrics (#11682)
+  Deprecate scraperhelper.Scraper in favor of scraper.Metrics
+
 ## v1.20.0/v0.114.0
 
 ### 🛑 Breaking changes 🛑
