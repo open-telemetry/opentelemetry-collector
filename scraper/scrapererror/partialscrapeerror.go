@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package scrapererror // import "go.opentelemetry.io/collector/receiver/scrapererror"
+package scrapererror // import "go.opentelemetry.io/collector/scraper/scrapererror"
 
 import "errors"
 

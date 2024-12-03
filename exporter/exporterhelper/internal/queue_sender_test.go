@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/internal"
@@ -540,7 +541,7 @@ func TestQueueSenderNoStartShutdown(t *testing.T) {
 				ExporterCreateSettings: exportertest.NewNopSettings(),
 			})
 			require.NoError(t, err)
-			qs := NewQueueSender(queue, set, 1, "", obsrep)
+			qs := NewQueueSender(queue, set, 1, "", obsrep, exporterbatcher.NewDefaultConfig())
 			assert.NoError(t, qs.Shutdown(context.Background()))
 		})
 	}
