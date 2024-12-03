@@ -78,6 +78,7 @@ var (
 		"/exporter/otlphttpexporter",
 		"/extension",
 		"/extension/auth",
+		"/extension/auth/authtest",
 		"/extension/experimental/storage",
 		"/extension/extensioncapabilities",
 		"/extension/extensiontest",
@@ -102,6 +103,7 @@ var (
 		"/pdata",
 		"/pdata/testdata",
 		"/pdata/pprofile",
+		"/scraper",
 		"/semconv",
 		"/service",
 	}

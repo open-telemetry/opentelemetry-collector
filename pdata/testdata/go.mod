@@ -3,8 +3,8 @@ module go.opentelemetry.io/collector/pdata/testdata
 go 1.22.0
 
 require (
-	go.opentelemetry.io/collector/pdata v1.19.0
-	go.opentelemetry.io/collector/pdata/pprofile v0.113.0
+	go.opentelemetry.io/collector/pdata v1.20.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.114.0
 )
 
 require (
@@ -18,7 +18,7 @@ require (
 	golang.org/x/text v0.17.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240814211410-ddb44dafa142 // indirect
 	google.golang.org/grpc v1.67.1 // indirect
-	google.golang.org/protobuf v1.35.1 // indirect
+	google.golang.org/protobuf v1.35.2 // indirect
 )
 
 replace go.opentelemetry.io/collector/pdata => ../

@@ -17,11 +17,6 @@ func Meter(settings component.TelemetrySettings) metric.Meter {
 	return settings.MeterProvider.Meter("go.opentelemetry.io/collector/receiver/receiverhelper")
 }
 
-// Deprecated: [v0.114.0] use Meter instead.
-func LeveledMeter(settings component.TelemetrySettings, level configtelemetry.Level) metric.Meter {
-	return settings.LeveledMeterProvider(level).Meter("go.opentelemetry.io/collector/receiver/receiverhelper")
-}
-
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
 	return settings.TracerProvider.Tracer("go.opentelemetry.io/collector/receiver/receiverhelper")
 }
@@ -60,37 +55,37 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	var err, errs error
 	builder.ReceiverAcceptedLogRecords, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
 		"otelcol_receiver_accepted_log_records",
-		metric.WithDescription("Number of log records successfully pushed into the pipeline."),
+		metric.WithDescription("Number of log records successfully pushed into the pipeline. [alpha]"),
 		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ReceiverAcceptedMetricPoints, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
 		"otelcol_receiver_accepted_metric_points",
-		metric.WithDescription("Number of metric points successfully pushed into the pipeline."),
+		metric.WithDescription("Number of metric points successfully pushed into the pipeline. [alpha]"),
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ReceiverAcceptedSpans, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
 		"otelcol_receiver_accepted_spans",
-		metric.WithDescription("Number of spans successfully pushed into the pipeline."),
+		metric.WithDescription("Number of spans successfully pushed into the pipeline. [alpha]"),
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ReceiverRefusedLogRecords, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
 		"otelcol_receiver_refused_log_records",
-		metric.WithDescription("Number of log records that could not be pushed into the pipeline."),
+		metric.WithDescription("Number of log records that could not be pushed into the pipeline. [alpha]"),
 		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ReceiverRefusedMetricPoints, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
 		"otelcol_receiver_refused_metric_points",
-		metric.WithDescription("Number of metric points that could not be pushed into the pipeline."),
+		metric.WithDescription("Number of metric points that could not be pushed into the pipeline. [alpha]"),
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ReceiverRefusedSpans, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
 		"otelcol_receiver_refused_spans",
-		metric.WithDescription("Number of spans that could not be pushed into the pipeline."),
+		metric.WithDescription("Number of spans that could not be pushed into the pipeline. [alpha]"),
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)

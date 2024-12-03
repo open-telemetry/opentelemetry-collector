@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
+	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -39,38 +39,22 @@ func TestSample_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newSample(&otlpprofiles.Sample{}, &sharedState)) })
 }
 
-func TestSample_LocationIndex(t *testing.T) {
-	ms := NewSample()
-	assert.Equal(t, pcommon.NewUInt64Slice(), ms.LocationIndex())
-	internal.FillTestUInt64Slice(internal.UInt64Slice(ms.LocationIndex()))
-	assert.Equal(t, pcommon.UInt64Slice(internal.GenerateTestUInt64Slice()), ms.LocationIndex())
-}
-
 func TestSample_LocationsStartIndex(t *testing.T) {
 	ms := NewSample()
-	assert.Equal(t, uint64(0), ms.LocationsStartIndex())
-	ms.SetLocationsStartIndex(uint64(1))
-	assert.Equal(t, uint64(1), ms.LocationsStartIndex())
+	assert.Equal(t, int32(0), ms.LocationsStartIndex())
+	ms.SetLocationsStartIndex(int32(1))
+	assert.Equal(t, int32(1), ms.LocationsStartIndex())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newSample(&otlpprofiles.Sample{}, &sharedState).SetLocationsStartIndex(uint64(1)) })
+	assert.Panics(t, func() { newSample(&otlpprofiles.Sample{}, &sharedState).SetLocationsStartIndex(int32(1)) })
 }
 
 func TestSample_LocationsLength(t *testing.T) {
 	ms := NewSample()
-	assert.Equal(t, uint64(0), ms.LocationsLength())
-	ms.SetLocationsLength(uint64(1))
-	assert.Equal(t, uint64(1), ms.LocationsLength())
+	assert.Equal(t, int32(0), ms.LocationsLength())
+	ms.SetLocationsLength(int32(1))
+	assert.Equal(t, int32(1), ms.LocationsLength())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newSample(&otlpprofiles.Sample{}, &sharedState).SetLocationsLength(uint64(1)) })
-}
-
-func TestSample_StacktraceIdIndex(t *testing.T) {
-	ms := NewSample()
-	assert.Equal(t, uint32(0), ms.StacktraceIdIndex())
-	ms.SetStacktraceIdIndex(uint32(1))
-	assert.Equal(t, uint32(1), ms.StacktraceIdIndex())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newSample(&otlpprofiles.Sample{}, &sharedState).SetStacktraceIdIndex(uint32(1)) })
+	assert.Panics(t, func() { newSample(&otlpprofiles.Sample{}, &sharedState).SetLocationsLength(int32(1)) })
 }
 
 func TestSample_Value(t *testing.T) {
@@ -80,27 +64,11 @@ func TestSample_Value(t *testing.T) {
 	assert.Equal(t, pcommon.Int64Slice(internal.GenerateTestInt64Slice()), ms.Value())
 }
 
-func TestSample_Label(t *testing.T) {
+func TestSample_AttributeIndices(t *testing.T) {
 	ms := NewSample()
-	assert.Equal(t, NewLabelSlice(), ms.Label())
-	fillTestLabelSlice(ms.Label())
-	assert.Equal(t, generateTestLabelSlice(), ms.Label())
-}
-
-func TestSample_Attributes(t *testing.T) {
-	ms := NewSample()
-	assert.Equal(t, pcommon.NewUInt64Slice(), ms.Attributes())
-	internal.FillTestUInt64Slice(internal.UInt64Slice(ms.Attributes()))
-	assert.Equal(t, pcommon.UInt64Slice(internal.GenerateTestUInt64Slice()), ms.Attributes())
-}
-
-func TestSample_Link(t *testing.T) {
-	ms := NewSample()
-	assert.Equal(t, uint64(0), ms.Link())
-	ms.SetLink(uint64(1))
-	assert.Equal(t, uint64(1), ms.Link())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newSample(&otlpprofiles.Sample{}, &sharedState).SetLink(uint64(1)) })
+	assert.Equal(t, pcommon.NewInt32Slice(), ms.AttributeIndices())
+	internal.FillTestInt32Slice(internal.Int32Slice(ms.AttributeIndices()))
+	assert.Equal(t, pcommon.Int32Slice(internal.GenerateTestInt32Slice()), ms.AttributeIndices())
 }
 
 func TestSample_TimestampsUnixNano(t *testing.T) {
@@ -117,13 +85,9 @@ func generateTestSample() Sample {
 }
 
 func fillTestSample(tv Sample) {
-	internal.FillTestUInt64Slice(internal.NewUInt64Slice(&tv.orig.LocationIndex, tv.state))
-	tv.orig.LocationsStartIndex = uint64(1)
-	tv.orig.LocationsLength = uint64(1)
-	tv.orig.StacktraceIdIndex = uint32(1)
+	tv.orig.LocationsStartIndex = int32(1)
+	tv.orig.LocationsLength = int32(1)
 	internal.FillTestInt64Slice(internal.NewInt64Slice(&tv.orig.Value, tv.state))
-	fillTestLabelSlice(newLabelSlice(&tv.orig.Label, tv.state))
-	internal.FillTestUInt64Slice(internal.NewUInt64Slice(&tv.orig.Attributes, tv.state))
-	tv.orig.Link = uint64(1)
+	internal.FillTestInt32Slice(internal.NewInt32Slice(&tv.orig.AttributeIndices, tv.state))
 	internal.FillTestUInt64Slice(internal.NewUInt64Slice(&tv.orig.TimestampsUnixNano, tv.state))
 }
