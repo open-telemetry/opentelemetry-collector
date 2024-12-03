@@ -15,6 +15,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/internal"
 	"go.opentelemetry.io/collector/exporter/internal/queue"
@@ -71,14 +72,20 @@ type QueueSender struct {
 	queue          exporterqueue.Queue[internal.Request]
 	numConsumers   int
 	traceAttribute attribute.KeyValue
+	batcher        queue.Batcher
 	consumers      *queue.Consumers[internal.Request]
 
 	obsrep     *ObsReport
 	exporterID component.ID
 }
 
-func NewQueueSender(q exporterqueue.Queue[internal.Request], set exporter.Settings, numConsumers int,
-	exportFailureMessage string, obsrep *ObsReport) *QueueSender {
+func NewQueueSender(
+	q exporterqueue.Queue[internal.Request],
+	set exporter.Settings,
+	numConsumers int,
+	exportFailureMessage string,
+	obsrep *ObsReport,
+	batcherCfg exporterbatcher.Config) *QueueSender {
 	qs := &QueueSender{
 		queue:          q,
 		numConsumers:   numConsumers,
@@ -86,7 +93,8 @@ func NewQueueSender(q exporterqueue.Queue[internal.Request], set exporter.Settin
 		obsrep:         obsrep,
 		exporterID:     set.ID,
 	}
-	consumeFunc := func(ctx context.Context, req internal.Request) error {
+
+	exportFunc := func(ctx context.Context, req internal.Request) error {
 		err := qs.NextSender.Send(ctx, req)
 		if err != nil {
 			set.Logger.Error("Exporting failed. Dropping data."+exportFailureMessage,
@@ -94,7 +102,11 @@ func NewQueueSender(q exporterqueue.Queue[internal.Request], set exporter.Settin
 		}
 		return err
 	}
-	qs.consumers = queue.NewQueueConsumers[internal.Request](q, numConsumers, consumeFunc)
+	if usePullingBasedExporterQueueBatcher.IsEnabled() {
+		qs.batcher, _ = queue.NewBatcher(batcherCfg, q, exportFunc, numConsumers)
+	} else {
+		qs.consumers = queue.NewQueueConsumers[internal.Request](q, numConsumers, exportFunc)
+	}
 	return qs
 }
 
@@ -103,8 +115,15 @@ func (qs *QueueSender) Start(ctx context.Context, host component.Host) error {
 	if err := qs.queue.Start(ctx, host); err != nil {
 		return err
 	}
-	if err := qs.consumers.Start(ctx, host); err != nil {
-		return err
+
+	if usePullingBasedExporterQueueBatcher.IsEnabled() {
+		if err := qs.batcher.Start(ctx, host); err != nil {
+			return err
+		}
+	} else {
+		if err := qs.consumers.Start(ctx, host); err != nil {
+			return err
+		}
 	}
 
 	dataTypeAttr := attribute.String(DataTypeKey, qs.obsrep.Signal.String())
@@ -122,6 +141,9 @@ func (qs *QueueSender) Shutdown(ctx context.Context) error {
 	// try once every request.
 	if err := qs.queue.Shutdown(ctx); err != nil {
 		return err
+	}
+	if usePullingBasedExporterQueueBatcher.IsEnabled() {
+		return qs.batcher.Shutdown(ctx)
 	}
 	return qs.consumers.Shutdown(ctx)
 }
