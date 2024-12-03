@@ -93,7 +93,7 @@ description is a recommendation, and is not normative.
 helper modules (such as `receiverhelper`, `scraperhelper`, `processorhelper`, or `exporterhelper`).
 Please check the documentation to verify which parts, if any, need to be implemented manually.
 
-**Definition:** In the following, an "item" refers generically to a single log record, metric event,
+**Definition:** In the following, an "item" refers generically to a single log record, metric point,
 or span.
 
 The internal telemetry of a stable pipeline component should allow observing the following:
