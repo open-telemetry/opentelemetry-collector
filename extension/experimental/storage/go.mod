@@ -3,13 +3,13 @@ module go.opentelemetry.io/collector/extension/experimental/storage
 go 1.22.0
 
 require (
-	go.opentelemetry.io/collector/component v0.114.0
-	go.opentelemetry.io/collector/extension v0.114.0
+	go.opentelemetry.io/collector/component v0.115.0
+	go.opentelemetry.io/collector/extension v0.115.0
 )
 
 require (
 	github.com/gogo/protobuf v1.3.2 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.114.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.115.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.21.0 // indirect
 	go.opentelemetry.io/otel v1.32.0 // indirect
 	go.opentelemetry.io/otel/metric v1.32.0 // indirect
