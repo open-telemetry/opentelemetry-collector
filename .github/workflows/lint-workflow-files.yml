@@ -1,0 +1,25 @@
+name: Lint GitHub Workflow YAML Files
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/*.yml'
+      - '.github/workflows/*.yaml'
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Lint GitHub Workflow YAML Files with Docker
+        run: |
+          docker run --rm -v "${{ github.workspace }}:/repo" --workdir /repo rhysd/actionlint:1.7.3 -color .github/workflows/*.yml .github/workflows/*.yaml
+
+      - name: Reminder to Address Linting Errors
+        if: failure()
+        run: |
+          echo "⚠️ Please address all linting errors before merging this pull request."
+
