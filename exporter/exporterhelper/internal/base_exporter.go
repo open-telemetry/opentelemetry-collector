@@ -5,7 +5,7 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -21,7 +21,15 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterqueue" // BaseExporter contains common fields between different exporter types.
 	"go.opentelemetry.io/collector/exporter/internal"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pipeline"
+)
+
+var usePullingBasedExporterQueueBatcher = featuregate.GlobalRegistry().MustRegister(
+	"exporter.UsePullingBasedExporterQueueBatcher",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterFromVersion("v0.115.0"),
+	featuregate.WithRegisterDescription("if set to true, turns on the pulling-based exporter queue bathcer"),
 )
 
 type ObsrepSenderFactory = func(obsrep *ObsReport) RequestSender
@@ -94,13 +102,14 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSe
 				ExporterSettings: be.Set,
 			},
 			be.queueCfg)
-		be.QueueSender = NewQueueSender(q, be.Set, be.queueCfg.NumConsumers, be.ExportFailureMessage, be.Obsrep)
+		be.QueueSender = NewQueueSender(q, be.Set, be.queueCfg.NumConsumers, be.ExportFailureMessage, be.Obsrep, be.BatcherCfg)
 		for _, op := range options {
 			err = multierr.Append(err, op(be))
 		}
 	}
 
-	if be.BatcherCfg.Enabled {
+	if !usePullingBasedExporterQueueBatcher.IsEnabled() && be.BatcherCfg.Enabled ||
+		usePullingBasedExporterQueueBatcher.IsEnabled() && be.BatcherCfg.Enabled && !be.queueCfg.Enabled {
 		bs := NewBatchSender(be.BatcherCfg, be.Set)
 		be.BatchSender = bs
 	}
@@ -214,7 +223,7 @@ func WithRetry(config configretry.BackOffConfig) Option {
 func WithQueue(config QueueConfig) Option {
 	return func(o *BaseExporter) error {
 		if o.Marshaler == nil || o.Unmarshaler == nil {
-			return fmt.Errorf("WithQueue option is not available for the new request exporters, use WithRequestQueue instead")
+			return errors.New("WithQueue option is not available for the new request exporters, use WithRequestQueue instead")
 		}
 		if !config.Enabled {
 			o.ExportFailureMessage += " Try enabling sending_queue to survive temporary failures."
@@ -240,7 +249,7 @@ func WithQueue(config QueueConfig) Option {
 func WithRequestQueue(cfg exporterqueue.Config, queueFactory exporterqueue.Factory[internal.Request]) Option {
 	return func(o *BaseExporter) error {
 		if o.Marshaler != nil || o.Unmarshaler != nil {
-			return fmt.Errorf("WithRequestQueue option must be used with the new request exporters only, use WithQueue instead")
+			return errors.New("WithRequestQueue option must be used with the new request exporters only, use WithQueue instead")
 		}
 		if !cfg.Enabled {
 			o.ExportFailureMessage += " Try enabling sending_queue to survive temporary failures."

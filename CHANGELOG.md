@@ -7,6 +7,99 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.21.0/v0.115.0
+
+### 🛑 Breaking changes 🛑
+
+- `otelcol`: Change all logged timestamps to ISO8601. (#10543)
+  This makes log timestamps human-readable (as opposed to epoch seconds in
+  scientific notation), but may break users trying to parse logged lines in the
+  old format.
+- `pdata/pprofile`: Upgrade pdata to opentelemetry-proto v1.4.0 (#11722)
+
+### 🚩 Deprecations 🚩
+
+- `scraperhelper`: Deprecate all Scraper helpers in scraperhelper (#11732)
+  Deprecate ScrapeFunc, ScraperOption, WithStart, WithShutdown in favor of equivalent funcs in scraper package.
+
+### 💡 Enhancements 💡
+
+- `exporterqueue`: Introduce a feature gate exporter.UsePullingBasedExporterQueueBatcher to use the new pulling model in exporter queue batching. (#8122, #10368)
+  If both queuing and batching is enabled for exporter, we now use a pulling model instead of a
+  pushing model. num_consumer in queue configuration is now used to specify the maximum number of
+  concurrent workers that are sending out the request. 
+  
+- `service`: label metrics as alpha to communicate their stability (#11729)
+- `consumer`: Mark consumer as stable. (#9046)
+- `service`: Add support for ca certificates in telemetry metrics otlp grpc exporter (#11633)
+  Before this change the Certificate value in config was silently ignored.
+
+### 🧰 Bug fixes 🧰
+
+- `service`: ensure OTLP emitted logs respect severity (#11718)
+- `featuregate`: Fix an unfriendly display message `runtime error` when featuregate is used to display command line usage. (#11651)
+- `profiles`: Fix iteration over scope profiles while counting the samples. (#11688)
+
+## v1.20.0/v0.114.0
+
+### 💡 Enhancements 💡
+
+- `cmd/builder`: Allow for replacing of local Providers and Converters when building custom collector with ocb. (#11649)
+  Use the property `path` under `gomod` to replace an go module with a local folder in
+  builder-config.yaml. Ex:
+  ```
+  providers:
+    - gomod: module.url/my/custom/provider v1.2.3
+      path: /path/to/local/provider
+  ```
+  
+- `cmd/builder`: Allow configuring `confmap.Converter` components in ocb. (#11582)
+  If no converters are specified, there will be no converters added.
+  Currently, the only published converter is `expandconverter` which is 
+  deprecated as of v0.107.0, but can still be added for testing purposes.
+  
+  To configure a custom converter, make sure your converter implements the converter
+  interface and is published as a go module (or replaced locally if not published).
+  You may then use the `converters` key in your OCB build manifest with a list of
+  Go modules (and replaces as necessary) to include your converter.
+  
+  Please note that converters are order-dependent. The confmap will apply converters
+  in order of which they are listed in your manifest if there is more than one.
+  
+- `all`: shorten time period before removing an unmaintained component from 6 months to 3 months (#11664)
+
+### 🧰 Bug fixes 🧰
+
+- `all`: Updates dialer timeout section documentation in confignet README (#11685)
+- `scraperhelper`: If the scraper shuts down, do not scrape first. (#11632)
+  When the scraper is shutting down, it currently will scrape at least once.
+  With this change, upon receiving a shutdown order, the receiver's scraperhelper will exit immediately.
+  
+
+## v1.19.0/v0.113.0
+
+### 🛑 Breaking changes 🛑
+
+- `internal/fanoutconsumer`: Extract internal/fanoutconsumer as a separate go module (#11441)
+- `builder`: Remove builder support to build old version, and the otelcol_version config (#11405)
+  User should remove this property from their config, to build older versions use older builders.
+- `receiver`: Make receivertest into its own module (#11462)
+- `builder`: Remove deprecated flags from Builder (#11576)
+  Here is the list of flags | --name, --description, --version, --otelcol-version, --go, --module
+- `internal/sharedcomponent`: Extract internal/sharedcomponent as a separate go module (#11442)
+
+### 💡 Enhancements 💡
+
+- `mdatagen`: Add otlp as supported distribution (#11527)
+- `batchprocessor`: Move single shard batcher creation to the constructor (#11594)
+- `service`: add support for using the otelzap bridge and emit logs using the OTel Go SDK (#10544)
+
+### 🧰 Bug fixes 🧰
+
+- `service`: ensure traces and logs emitted by the otel go SDK use the same resource information (#11578)
+- `config/configgrpc`: Patch for bug in the grpc-go NewClient that makes the way the hostname is resolved incompatible with the way proxy setting are applied. (#11537)
+- `builder`: Update builder default providers to lastest stable releases (#11566)
+
 ## v1.18.0/v0.112.0
 
 ### 🛑 Breaking changes 🛑

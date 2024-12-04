@@ -14,13 +14,13 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -51,7 +51,7 @@ var (
 	dummyID       = component.MustNewID("dummy")
 	nonExistingID = component.MustNewID("nonexisting")
 	// Omit TracerProvider and MeterProvider in TelemetrySettings as otelhttp.Transport cannot be introspected
-	nilProvidersSettings = component.TelemetrySettings{Logger: zap.NewNop(), MetricsLevel: configtelemetry.LevelNone, LeveledMeterProvider: func(_ configtelemetry.Level) metric.MeterProvider { return nil }}
+	nilProvidersSettings = component.TelemetrySettings{Logger: zap.NewNop(), MetricsLevel: configtelemetry.LevelNone}
 )
 
 func TestAllHTTPClientSettings(t *testing.T) {
@@ -220,7 +220,6 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 			assert.EqualValues(t, 0, transport.MaxConnsPerHost)
 			assert.EqualValues(t, 90*time.Second, transport.IdleConnTimeout)
 			assert.False(t, transport.DisableKeepAlives)
-
 		})
 	}
 }
@@ -645,7 +644,6 @@ func TestHTTPServerWarning(t *testing.T) {
 			require.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), tt.len)
 		})
 	}
-
 }
 
 func TestHttpReception(t *testing.T) {
@@ -906,7 +904,7 @@ func TestHttpCors(t *testing.T) {
 				_ = s.Serve(ln)
 			}()
 
-			url := fmt.Sprintf("http://%s", ln.Addr().String())
+			url := "http://" + ln.Addr().String()
 
 			expectedStatus := http.StatusNoContent
 			if tt.CORSConfig == nil || len(tt.AllowedOrigins) == 0 {
@@ -1026,7 +1024,7 @@ func TestHttpServerHeaders(t *testing.T) {
 				_ = s.Serve(ln)
 			}()
 
-			url := fmt.Sprintf("http://%s", ln.Addr().String())
+			url := "http://" + ln.Addr().String()
 
 			// Verify allowed domain gets responses that allow CORS.
 			verifyHeadersResp(t, url, tt.headers)
@@ -1066,7 +1064,7 @@ func verifyCorsResp(t *testing.T, url string, origin string, set *CORSConfig, ex
 		wantAllowOrigin = origin
 		wantAllowMethods = "POST"
 		if set != nil && set.MaxAge != 0 {
-			wantMaxAge = fmt.Sprintf("%d", set.MaxAge)
+			wantMaxAge = strconv.Itoa(set.MaxAge)
 		}
 	}
 	assert.Equal(t, wantAllowOrigin, gotAllowOrigin)
@@ -1370,7 +1368,6 @@ func TestServerWithDecoder(t *testing.T) {
 	srv.Handler.ServeHTTP(response, req)
 	// verify
 	assert.Equal(t, http.StatusOK, response.Result().StatusCode)
-
 }
 
 func TestServerWithDecompression(t *testing.T) {
@@ -1588,7 +1585,6 @@ func BenchmarkHttpRequest(b *testing.B) {
 			if !bb.clientPerThread {
 				c, err = hcs.ToClient(context.Background(), componenttest.NewNopHost(), nilProvidersSettings)
 				require.NoError(b, err)
-
 			}
 			b.RunParallel(func(pb *testing.PB) {
 				if c == nil {

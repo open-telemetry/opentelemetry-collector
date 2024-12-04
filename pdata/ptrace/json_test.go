@@ -104,7 +104,7 @@ func TestJSONMarshal(t *testing.T) {
 	encoder := &JSONMarshaler{}
 	jsonBuf, err := encoder.MarshalTraces(tracesOTLP)
 	require.NoError(t, err)
-	assert.Equal(t, tracesJSON, string(jsonBuf))
+	assert.JSONEq(t, tracesJSON, string(jsonBuf))
 }
 
 func TestJSONUnmarshalInvalid(t *testing.T) {
@@ -159,9 +159,7 @@ func TestUnmarshalJsoniterSpanInvalidTraceIDField(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	NewSpan().unmarshalJsoniter(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "parse trace_id")
-	}
+	assert.ErrorContains(t, iter.Error, "parse trace_id")
 }
 
 func TestUnmarshalJsoniterSpanInvalidSpanIDField(t *testing.T) {
@@ -169,9 +167,7 @@ func TestUnmarshalJsoniterSpanInvalidSpanIDField(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	NewSpan().unmarshalJsoniter(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "parse span_id")
-	}
+	assert.ErrorContains(t, iter.Error, "parse span_id")
 }
 
 func TestUnmarshalJsoniterSpanInvalidParentSpanIDField(t *testing.T) {
@@ -179,9 +175,7 @@ func TestUnmarshalJsoniterSpanInvalidParentSpanIDField(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	NewSpan().unmarshalJsoniter(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "parse parent_span_id")
-	}
+	assert.ErrorContains(t, iter.Error, "parse parent_span_id")
 }
 
 func TestUnmarshalJsoniterSpanStatus(t *testing.T) {
@@ -209,9 +203,7 @@ func TestUnmarshalJsoniterSpanLinkInvalidTraceIDField(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	NewSpanLink().unmarshalJsoniter(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "parse trace_id")
-	}
+	assert.ErrorContains(t, iter.Error, "parse trace_id")
 }
 
 func TestUnmarshalJsoniterSpanLinkInvalidSpanIDField(t *testing.T) {
@@ -219,9 +211,7 @@ func TestUnmarshalJsoniterSpanLinkInvalidSpanIDField(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	NewSpanLink().unmarshalJsoniter(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "parse span_id")
-	}
+	assert.ErrorContains(t, iter.Error, "parse span_id")
 }
 
 func TestUnmarshalJsoniterSpanEvent(t *testing.T) {

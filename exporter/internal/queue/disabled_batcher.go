@@ -17,6 +17,13 @@ type DisabledBatcher struct {
 
 // Start starts the goroutine that reads from the queue and flushes asynchronously.
 func (qb *DisabledBatcher) Start(_ context.Context, _ component.Host) error {
+	// maxWorker being -1 means batcher is disabled. This is for testing queue sender metrics.
+	if qb.maxWorkers == -1 {
+		return nil
+	}
+
+	qb.startWorkerPool()
+
 	// This goroutine reads and then flushes.
 	// 1. Reading from the queue is blocked until the queue is non-empty or until the queue is stopped.
 	// 2. flushAsync() blocks until there are idle workers in the worker pool.
@@ -34,5 +41,11 @@ func (qb *DisabledBatcher) Start(_ context.Context, _ component.Host) error {
 				idxList: []uint64{idx}})
 		}
 	}()
+	return nil
+}
+
+// Shutdown ensures that queue and all Batcher are stopped.
+func (qb *DisabledBatcher) Shutdown(_ context.Context) error {
+	qb.stopWG.Wait()
 	return nil
 }
