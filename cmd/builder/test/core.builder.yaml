@@ -5,10 +5,10 @@ dist:
   output_path: ${OUTPUT_PATH}
 
 extensions:
-  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.114.0
+  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.115.0
 
 receivers:
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.114.0
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.115.0
 
 exporters:
-  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.114.0
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.115.0
