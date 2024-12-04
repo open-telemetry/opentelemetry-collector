@@ -2,7 +2,6 @@ dist:
   name: core
   module: go.opentelemetry.io/collector/builder/test/core
   go: ${GOBIN}
-  output_path: ${OUTPUT_PATH}
 
 extensions:
   - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.115.0
