@@ -137,8 +137,11 @@ The internal telemetry of a stable pipeline component should allow observing the
 
     - How much data is created by the component.
 
-    - How much data is currently held by the component (eg. an UpDownCounter keeping track of the
-        size of an internal queue).
+    - How much data is currently held by the component, and how much can be held if there is a fixed
+        capacity.
+    
+        This would typically be an UpDownCounter keeping track of the size of an internal queue, along
+        with a gauge exposing the queue's capacity.
 
 6. Processing performance.
 
@@ -150,10 +153,18 @@ The internal telemetry of a stable pipeline component should allow observing the
     - only include time spent processing inside the component, or;
     - allow distinguishing this latency from that caused by an external service, or from time spent
         in downstream Collector components.
+    
+    As an application of this, components which hold items in a queue should allow differentiating
+    between time spent processing a batch of data and time where the batch is simply waiting in the
+    queue.
+    
+    If multiple spans are emitted for a given batch (before and after a queue for example), they
+    should either belong to the same trace, or have span links between them, so that they can be
+    correlated.
 
-When measuring amounts of data, counting items is recommended. Where this can't easily be done, any
-relevant unit may be used, as long as zero is a reliable indicator of the absence of data. In any
-case, all metrics should have a defined unit (not "1").
+When measuring amounts of data, it is recommended to use "items" as your unit of measure. Where this
+can't easily be done, any relevant unit may be used, as long as zero is a reliable indicator of the
+absence of data. In any case, all metrics should have a defined unit (not "1").
 
 If data can be dropped/created/held at multiple distinct points in a component's pipeline (eg.
 scraping, validation, processing, etc.), it is recommended to define additional attributes to help
