@@ -74,6 +74,9 @@ type ClientConfig struct {
 	// The compression key for supported compression types within collector.
 	Compression configcompression.Type `mapstructure:"compression"`
 
+	// Advanced configuration options for the Compression
+	CompressionConfig configcompression.CompressionConfig `mapstructure:"compression_config"`
+
 	// MaxIdleConns is used to set a limit to the maximum idle HTTP connections the client can keep open.
 	// By default, it is set to 100.
 	MaxIdleConns *int `mapstructure:"max_idle_conns"`
@@ -222,7 +225,7 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 	// Compress the body using specified compression methods if non-empty string is provided.
 	// Supporting gzip, zlib, deflate, snappy, and zstd; none is treated as uncompressed.
 	if hcs.Compression.IsCompressed() {
-		clientTransport, err = newCompressRoundTripper(clientTransport, hcs.Compression)
+		clientTransport, err = newCompressRoundTripper(clientTransport, hcs.Compression, hcs.CompressionConfig)
 		if err != nil {
 			return nil, err
 		}
