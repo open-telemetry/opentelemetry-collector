@@ -119,7 +119,9 @@ func TestHTTPClientCompression(t *testing.T) {
 
 			req, err := http.NewRequest(http.MethodGet, srv.URL, reqBody)
 			require.NoError(t, err, "failed to create request to test handler")
-			compressionType := configcompression.Type(tt.encoding)
+			compressionType := tt.encoding
+			err = compressionType.UnmarshalText([]byte(tt.encoding))
+			require.NoError(t, err)
 			compression_config := newCompressionConfig(tt.enclevel)
 			err = compression_config.Validate()
 			clientSettings := ClientConfig{
@@ -127,7 +129,6 @@ func TestHTTPClientCompression(t *testing.T) {
 				Compression:       tt.encoding,
 				CompressionConfig: newCompressionConfig(tt.enclevel),
 			}
-			compressionType.UnmarshalText([]byte(tt.encoding))
 			if tt.shouldError {
 				assert.Error(t, err)
 				message := fmt.Sprintf("unsupported compression type and level %s - %d", tt.encoding, tt.enclevel)
