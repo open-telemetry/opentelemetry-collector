@@ -337,9 +337,6 @@ func TestHTTPClientSettingsError(t *testing.T) {
 }
 
 func TestMaxRedirects(t *testing.T) {
-	toIntPtr := func(i int) *int {
-		return &i
-	}
 	tests := []struct {
 		name             string
 		settings         ClientConfig
@@ -347,26 +344,29 @@ func TestMaxRedirects(t *testing.T) {
 		expectedErrStr   string
 	}{
 		{
-			name:             "No redirects config",
-			settings:         ClientConfig{},
-			expectedRequests: 10,
+			name:             "No redirects config (Default Go max redirects)",
+			settings:         NewDefaultClientConfig(),
+			expectedRequests: 11,
 			// default client returns an error, custom implementations should return a ErrUseLastResponse which the internal http package will skip it to let the users select the previous response without closing the body.
 			expectedErrStr: "stopped after 10 redirects",
 		},
 		{
 			name:             "Zero redirects",
-			settings:         ClientConfig{MaxRedirects: toIntPtr(0)},
+			settings:         ClientConfig{MaxRedirects: 0},
 			expectedRequests: 1,
+			expectedErrStr: "stopped after 0 redirects",
 		},
 		{
 			name:             "One redirect",
-			settings:         ClientConfig{MaxRedirects: toIntPtr(1)},
+			settings:         ClientConfig{MaxRedirects: 1},
 			expectedRequests: 2,
+			expectedErrStr: "stopped after 1 redirects",
 		},
 		{
 			name:             "Defined max redirects",
-			settings:         ClientConfig{MaxRedirects: toIntPtr(5)},
+			settings:         ClientConfig{MaxRedirects: 5},
 			expectedRequests: 6,
+			expectedErrStr: "stopped after 5 redirects",
 		},
 	}
 
