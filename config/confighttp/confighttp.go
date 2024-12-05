@@ -4,6 +4,7 @@
 package confighttp // import "go.opentelemetry.io/collector/config/confighttp"
 
 import (
+	"compress/zlib"
 	"context"
 	"crypto/tls"
 	"errors"
@@ -75,7 +76,7 @@ type ClientConfig struct {
 	Compression configcompression.Type `mapstructure:"compression"`
 
 	// Advanced configuration options for the Compression
-	CompressionConfig configcompression.CompressionConfig `mapstructure:"compression_config"`
+	CompressionParams configcompression.CompressionParams `mapstructure:"compression_params"`
 
 	// MaxIdleConns is used to set a limit to the maximum idle HTTP connections the client can keep open.
 	// By default, it is set to 100.
@@ -138,6 +139,33 @@ func NewDefaultClientConfig() ClientConfig {
 		MaxConnsPerHost:     &defaultTransport.MaxConnsPerHost,
 		IdleConnTimeout:     &defaultTransport.IdleConnTimeout,
 	}
+}
+
+// Checks the validity of zlib/gzip/flate compression levels
+func isValidLevel(level configcompression.Level) bool {
+	return level == zlib.DefaultCompression ||
+		level == configcompression.LevelNone ||
+		level == zlib.HuffmanOnly ||
+		level == zlib.NoCompression ||
+		level == zlib.BestSpeed ||
+		(level >= zlib.BestSpeed && level <= zlib.BestCompression)
+}
+
+func (hcs *ClientConfig) Validate() error {
+	if hcs.Compression.IsCompressed() {
+		if (hcs.Compression == configcompression.TypeGzip && isValidLevel(hcs.CompressionParams.Level)) ||
+			(hcs.Compression == configcompression.TypeZlib && isValidLevel(hcs.CompressionParams.Level)) ||
+			(hcs.Compression == configcompression.TypeDeflate && isValidLevel(hcs.CompressionParams.Level)) ||
+			hcs.Compression == configcompression.TypeSnappy ||
+			hcs.Compression == configcompression.TypeLz4 ||
+			hcs.Compression == configcompression.TypeZstd ||
+			hcs.Compression == configcompression.TypeNone ||
+			hcs.Compression == configcompression.TypeEmpty {
+			return nil
+		}
+		return fmt.Errorf("unsupported compression type and level %s - %d", hcs.Compression, hcs.CompressionParams.Level)
+	}
+	return nil
 }
 
 // ToClient creates an HTTP client.
@@ -225,7 +253,7 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 	// Compress the body using specified compression methods if non-empty string is provided.
 	// Supporting gzip, zlib, deflate, snappy, and zstd; none is treated as uncompressed.
 	if hcs.Compression.IsCompressed() {
-		clientTransport, err = newCompressRoundTripper(clientTransport, hcs.Compression, hcs.CompressionConfig)
+		clientTransport, err = newCompressRoundTripper(clientTransport, hcs.Compression, hcs.CompressionParams)
 		if err != nil {
 			return nil, err
 		}

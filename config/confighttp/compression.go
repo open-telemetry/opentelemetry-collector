@@ -23,7 +23,7 @@ import (
 type compressRoundTripper struct {
 	rt                http.RoundTripper
 	compressionType   configcompression.Type
-	compressionConfig configcompression.CompressionConfig
+	CompressionParams configcompression.CompressionParams
 	compressor        *compressor
 }
 
@@ -77,21 +77,21 @@ var availableDecoders = map[string]func(body io.ReadCloser) (io.ReadCloser, erro
 	},
 }
 
-func newCompressionConfig(level configcompression.Level) configcompression.CompressionConfig {
-	return configcompression.CompressionConfig{
+func newCompressionParams(level configcompression.Level) configcompression.CompressionParams {
+	return configcompression.CompressionParams{
 		Level: level,
 	}
 }
 
-func newCompressRoundTripper(rt http.RoundTripper, compressionType configcompression.Type, compressionConfig configcompression.CompressionConfig) (*compressRoundTripper, error) {
-	encoder, err := newCompressor(compressionType, compressionConfig)
+func newCompressRoundTripper(rt http.RoundTripper, compressionType configcompression.Type, compressionParams configcompression.CompressionParams) (*compressRoundTripper, error) {
+	encoder, err := newCompressor(compressionType, compressionParams)
 	if err != nil {
 		return nil, err
 	}
 	return &compressRoundTripper{
 		rt:                rt,
 		compressionType:   compressionType,
-		compressionConfig: compressionConfig,
+		CompressionParams: compressionParams,
 		compressor:        encoder,
 	}, nil
 }

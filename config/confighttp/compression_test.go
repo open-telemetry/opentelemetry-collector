@@ -122,15 +122,14 @@ func TestHTTPClientCompression(t *testing.T) {
 			compressionType := tt.encoding
 			err = compressionType.UnmarshalText([]byte(tt.encoding))
 			require.NoError(t, err)
-			compression_config := newCompressionConfig(tt.enclevel)
-			err = compression_config.Validate()
 			clientSettings := ClientConfig{
 				Endpoint:          srv.URL,
 				Compression:       tt.encoding,
-				CompressionConfig: newCompressionConfig(tt.enclevel),
+				CompressionParams: newCompressionParams(tt.enclevel),
 			}
+			err = clientSettings.Validate()
 			if tt.shouldError {
-				assert.Error(t, err)
+				require.Error(t, err)
 				message := fmt.Sprintf("unsupported compression type and level %s - %d", tt.encoding, tt.enclevel)
 				assert.Equal(t, message, err.Error())
 				return
@@ -139,7 +138,7 @@ func TestHTTPClientCompression(t *testing.T) {
 			require.NoError(t, err)
 			res, err := client.Do(req)
 			if tt.shouldError {
-				assert.Error(t, err)
+				require.Error(t, err)
 				return
 			}
 			require.NoError(t, err)
@@ -329,8 +328,8 @@ func TestHTTPContentCompressionRequestWithNilBody(t *testing.T) {
 	require.NoError(t, err, "failed to create request to test handler")
 
 	client := srv.Client()
-	compression_config := newCompressionConfig(gzip.BestSpeed)
-	client.Transport, err = newCompressRoundTripper(http.DefaultTransport, configcompression.TypeGzip, compression_config)
+	compressionParams := newCompressionParams(gzip.BestSpeed)
+	client.Transport, err = newCompressRoundTripper(http.DefaultTransport, configcompression.TypeGzip, compressionParams)
 	require.NoError(t, err)
 	res, err := client.Do(req)
 	require.NoError(t, err)
@@ -350,8 +349,8 @@ func TestHTTPContentCompressionCopyError(t *testing.T) {
 	require.NoError(t, err)
 
 	client := srv.Client()
-	compression_config := newCompressionConfig(gzip.BestSpeed)
-	client.Transport, err = newCompressRoundTripper(http.DefaultTransport, configcompression.TypeGzip, compression_config)
+	compressionParams := newCompressionParams(gzip.BestSpeed)
+	client.Transport, err = newCompressRoundTripper(http.DefaultTransport, configcompression.TypeGzip, compressionParams)
 	require.NoError(t, err)
 	_, err = client.Do(req)
 	require.Error(t, err)
@@ -375,8 +374,8 @@ func TestHTTPContentCompressionRequestBodyCloseError(t *testing.T) {
 	require.NoError(t, err)
 
 	client := srv.Client()
-	compression_config := newCompressionConfig(gzip.BestSpeed)
-	client.Transport, err = newCompressRoundTripper(http.DefaultTransport, configcompression.TypeGzip, compression_config)
+	compressionParams := newCompressionParams(gzip.BestSpeed)
+	client.Transport, err = newCompressRoundTripper(http.DefaultTransport, configcompression.TypeGzip, compressionParams)
 	require.NoError(t, err)
 	_, err = client.Do(req)
 	require.Error(t, err)

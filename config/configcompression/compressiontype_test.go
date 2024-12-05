@@ -71,7 +71,7 @@ func TestUnmarshalText(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			temp := typeNone
+			temp := TypeNone
 			err := temp.UnmarshalText(tt.compressionName)
 			if tt.shouldError {
 				assert.Error(t, err)

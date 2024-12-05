@@ -45,8 +45,8 @@ var (
 
 // writerFactory defines writer field in CompressRoundTripper.
 // The validity of input is already checked when NewCompressRoundTripper was called in confighttp,
-func newCompressor(compressionType configcompression.Type, compressionConfig configcompression.CompressionConfig) (*compressor, error) {
-	mapKey := fmt.Sprintf("%s/%d", compressionType, compressionConfig.Level)
+func newCompressor(compressionType configcompression.Type, compressionParams configcompression.CompressionParams) (*compressor, error) {
+	mapKey := fmt.Sprintf("%s/%d", compressionType, compressionParams.Level)
 	switch compressionType {
 	case configcompression.TypeGzip:
 		gZipCompressor, gzipExists := compressorPools.pools[mapKey]
@@ -54,7 +54,7 @@ func newCompressor(compressionType configcompression.Type, compressionConfig con
 			return gZipCompressor, nil
 		}
 		gZipCompressor = &compressor{}
-		gZipCompressor.pool = sync.Pool{New: func() any { w, _ := gzip.NewWriterLevel(nil, int(compressionConfig.Level)); return w }}
+		gZipCompressor.pool = sync.Pool{New: func() any { w, _ := gzip.NewWriterLevel(nil, int(compressionParams.Level)); return w }}
 		compressorPools.pools[mapKey] = gZipCompressor
 		return gZipCompressor, nil
 	case configcompression.TypeSnappy:
@@ -65,7 +65,7 @@ func newCompressor(compressionType configcompression.Type, compressionConfig con
 		return snappyCompressor, nil
 	case configcompression.TypeZstd:
 		zstdCompressor, zstdExists := compressorPools.pools[mapKey]
-		compression := zstd.EncoderLevelFromZstd(int(compressionConfig.Level))
+		compression := zstd.EncoderLevelFromZstd(int(compressionParams.Level))
 		encoderLevel := zstd.WithEncoderLevel(compression)
 		if zstdExists {
 			return zstdCompressor, nil
@@ -79,7 +79,7 @@ func newCompressor(compressionType configcompression.Type, compressionConfig con
 			return zlibCompressor, nil
 		}
 		zlibCompressor = &compressor{}
-		zlibCompressor.pool = sync.Pool{New: func() any { w, _ := zlib.NewWriterLevel(nil, int(compressionConfig.Level)); return w }}
+		zlibCompressor.pool = sync.Pool{New: func() any { w, _ := zlib.NewWriterLevel(nil, int(compressionParams.Level)); return w }}
 		compressorPools.pools[mapKey] = zlibCompressor
 		return zlibCompressor, nil
 	case configcompression.TypeLz4:
