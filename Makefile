@@ -261,11 +261,9 @@ ALL_MOD_PATHS := "" $(ALL_MODULES:.%=%)
 .PHONY: check-contrib
 check-contrib:
 	@echo Setting contrib at $(CONTRIB_PATH) to use this core checkout
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit \
+	@$(MAKE) -j2 -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit \
 		$(addprefix -replace ,$(join $(ALL_MOD_PATHS:%=go.opentelemetry.io/collector%=),$(ALL_MOD_PATHS:%=$(CURDIR)%)))"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod tidy"
-
-	@$(MAKE) generate-contrib
+	@$(MAKE) -j2 -C $(CONTRIB_PATH) gotidy
 
 	@echo -e "\nRunning tests"
 	@$(MAKE) -C $(CONTRIB_PATH) gotest
