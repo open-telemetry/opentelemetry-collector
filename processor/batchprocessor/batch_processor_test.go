@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -26,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/testdata"
+	"go.opentelemetry.io/collector/processor/batchprocessor/internal/metadatatest"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
 
@@ -171,7 +173,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 		expectedBatchingFactor = sendBatchSize / spansPerRequest
 	)
 
-	tel := setupTestTelemetry()
+	tel := metadatatest.SetupTestTelemetry()
 	sizer := &ptrace.ProtoMarshaler{}
 	sink := new(consumertest.TracesSink)
 	cfg := createDefaultConfig().(*Config)
@@ -207,7 +209,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 		}
 	}
 
-	tel.assertMetrics(t, []metricdata.Metrics{
+	tel.AssertMetrics(t, []metricdata.Metrics{
 		{
 			Name:        "otelcol_processor_batch_batch_send_size_bytes",
 			Description: "Number of bytes in batch that was sent",
@@ -278,7 +280,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, metricdatatest.IgnoreTimestamp())
 	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
@@ -291,7 +293,7 @@ func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
 		totalSpans       = requestCount * spansPerRequest
 	)
 
-	tel := setupTestTelemetry()
+	tel := metadatatest.SetupTestTelemetry()
 	sizer := &ptrace.ProtoMarshaler{}
 	sink := new(consumertest.TracesSink)
 	cfg := createDefaultConfig().(*Config)
@@ -332,7 +334,7 @@ func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
 		sizeSum += sizer.TracesSize(td)
 	}
 
-	tel.assertMetrics(t, []metricdata.Metrics{
+	tel.AssertMetrics(t, []metricdata.Metrics{
 		{
 			Name:        "otelcol_processor_batch_batch_send_size_bytes",
 			Description: "Number of bytes in batch that was sent",
@@ -418,7 +420,7 @@ func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, metricdatatest.IgnoreTimestamp())
 	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
@@ -543,7 +545,7 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 }
 
 func TestBatchMetricProcessorBatchSize(t *testing.T) {
-	tel := setupTestTelemetry()
+	tel := metadatatest.SetupTestTelemetry()
 	sizer := &pmetric.ProtoMarshaler{}
 
 	// Instantiate the batch processor with low config values to test data
@@ -590,7 +592,7 @@ func TestBatchMetricProcessorBatchSize(t *testing.T) {
 		}
 	}
 
-	tel.assertMetrics(t, []metricdata.Metrics{
+	tel.AssertMetrics(t, []metricdata.Metrics{
 		{
 			Name:        "otelcol_processor_batch_batch_send_size_bytes",
 			Description: "Number of bytes in batch that was sent",
@@ -661,7 +663,7 @@ func TestBatchMetricProcessorBatchSize(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, metricdatatest.IgnoreTimestamp())
 	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
@@ -919,7 +921,7 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 }
 
 func TestBatchLogProcessor_BatchSize(t *testing.T) {
-	tel := setupTestTelemetry()
+	tel := metadatatest.SetupTestTelemetry()
 	sizer := &plog.ProtoMarshaler{}
 
 	// Instantiate the batch processor with low config values to test data
@@ -964,7 +966,7 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 		}
 	}
 
-	tel.assertMetrics(t, []metricdata.Metrics{
+	tel.AssertMetrics(t, []metricdata.Metrics{
 		{
 			Name:        "otelcol_processor_batch_batch_send_size_bytes",
 			Description: "Number of bytes in batch that was sent",
@@ -1035,7 +1037,7 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, metricdatatest.IgnoreTimestamp())
 	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
