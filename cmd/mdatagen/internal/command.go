@@ -78,6 +78,10 @@ func run(ymlPath string) error {
 	if err = os.MkdirAll(codeDir, 0o700); err != nil {
 		return fmt.Errorf("unable to create output directory %q: %w", codeDir, err)
 	}
+	testDir := filepath.Join(ymlDir, "internal", md.GeneratedPackageName+"test")
+	if err = os.MkdirAll(testDir, 0o700); err != nil {
+		return fmt.Errorf("unable to create output test directory %q: %w", codeDir, err)
+	}
 	if md.Status != nil {
 		if md.Status.Class != "cmd" && md.Status.Class != "pkg" && !md.Status.NotComponent {
 			if err = generateFile(filepath.Join(tmplDir, "status.go.tmpl"),
@@ -114,6 +118,8 @@ func run(ymlPath string) error {
 		}
 		toGenerate[filepath.Join(tmplDir, "telemetry.go.tmpl")] = filepath.Join(codeDir, "generated_telemetry.go")
 		toGenerate[filepath.Join(tmplDir, "telemetry_test.go.tmpl")] = filepath.Join(codeDir, "generated_telemetry_test.go")
+		toGenerate[filepath.Join(tmplDir, "telemetrytest.go.tmpl")] = filepath.Join(testDir, "generated_telemetrytest.go")
+		toGenerate[filepath.Join(tmplDir, "telemetrytest_test.go.tmpl")] = filepath.Join(testDir, "generated_telemetrytest_test.go")
 	}
 
 	if len(md.Metrics) != 0 || len(md.Telemetry.Metrics) != 0 || len(md.ResourceAttributes) != 0 { // if there's metrics or internal metrics, generate documentation for them
