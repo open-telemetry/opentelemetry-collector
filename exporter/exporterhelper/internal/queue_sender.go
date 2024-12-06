@@ -134,22 +134,20 @@ func (qs *QueueSender) Start(ctx context.Context, host component.Host) error {
 	reg1, err1 := qs.obsrep.TelemetryBuilder.InitExporterQueueSize(func() int64 { return int64(qs.queue.Size()) },
 		metric.WithAttributeSet(attribute.NewSet(qs.traceAttribute, dataTypeAttr)))
 
-	qs.shutdownFns = append(qs.shutdownFns, func(context.Context) error {
-		if reg1 != nil {
+	if reg1 != nil {
+		qs.shutdownFns = append(qs.shutdownFns, func(context.Context) error {
 			return reg1.Unregister()
-		}
-		return nil
-	})
+		})
+	}
 
 	reg2, err2 := qs.obsrep.TelemetryBuilder.InitExporterQueueCapacity(func() int64 { return int64(qs.queue.Capacity()) },
 		metric.WithAttributeSet(attribute.NewSet(qs.traceAttribute)))
 
-	qs.shutdownFns = append(qs.shutdownFns, func(context.Context) error {
-		if reg2 != nil {
+	if reg2 != nil {
+		qs.shutdownFns = append(qs.shutdownFns, func(context.Context) error {
 			return reg2.Unregister()
-		}
-		return nil
-	})
+		})
+	}
 
 	return multierr.Append(err1, err2)
 }
