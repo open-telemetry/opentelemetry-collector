@@ -4,13 +4,13 @@
 change_type: breaking
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: pdata/pprofile
+component: scraperhelper
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: AttributeTable is now a slice rather than a map
+note: Remove deprecated scraperhelper.Scraper and helpers
 
 # One or more tracking issues or pull requests related to the change
-issues: [11706]
+issues: [11803]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.

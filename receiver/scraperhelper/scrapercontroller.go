@@ -16,8 +16,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 )
 
 // ScraperControllerOption apply changes to internal options.
@@ -43,13 +43,6 @@ func AddScraper(t component.Type, scraper scraper.Metrics) ScraperControllerOpti
 			id:      component.NewID(t),
 		})
 	})
-}
-
-// Deprecated: [v0.115.0] use AddScraper.
-func AddScraperWithType(t component.Type, scrp Scraper) ScraperControllerOption {
-	// Ignore the error since it cannot happen because the Scrape func cannot be nil here.
-	newScrp, _ := scraper.NewMetrics(scrp.Scrape, scraper.WithStart(scrp.Start), scraper.WithShutdown(scrp.Shutdown))
-	return AddScraper(t, newScrp)
 }
 
 // WithTickerChannel allows you to override the scraper controller's ticker

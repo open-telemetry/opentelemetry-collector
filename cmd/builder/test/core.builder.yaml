@@ -4,74 +4,10 @@ dist:
   go: ${GOBIN}
 
 extensions:
-  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.114.0
+  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.115.0
 
 receivers:
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.114.0
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.115.0
 
 exporters:
-  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.114.0
-
-replaces:
-  - go.opentelemetry.io/collector => ${WORKSPACE_DIR}
-  - go.opentelemetry.io/collector/client => ${WORKSPACE_DIR}/client
-  - go.opentelemetry.io/collector/component => ${WORKSPACE_DIR}/component
-  - go.opentelemetry.io/collector/component/componenttest => ${WORKSPACE_DIR}/component/componenttest
-  - go.opentelemetry.io/collector/component/componentstatus => ${WORKSPACE_DIR}/component/componentstatus
-  - go.opentelemetry.io/collector/config/configauth => ${WORKSPACE_DIR}/config/configauth
-  - go.opentelemetry.io/collector/config/configcompression => ${WORKSPACE_DIR}/config/configcompression
-  - go.opentelemetry.io/collector/config/configgrpc => ${WORKSPACE_DIR}/config/configgrpc
-  - go.opentelemetry.io/collector/config/confighttp => ${WORKSPACE_DIR}/config/confighttp
-  - go.opentelemetry.io/collector/config/confignet => ${WORKSPACE_DIR}/config/confignet
-  - go.opentelemetry.io/collector/config/configopaque => ${WORKSPACE_DIR}/config/configopaque
-  - go.opentelemetry.io/collector/config/configretry => ${WORKSPACE_DIR}/config/configretry
-  - go.opentelemetry.io/collector/config/configtelemetry => ${WORKSPACE_DIR}/config/configtelemetry
-  - go.opentelemetry.io/collector/config/configtls => ${WORKSPACE_DIR}/config/configtls
-  - go.opentelemetry.io/collector/config/internal => ${WORKSPACE_DIR}/config/internal
-  - go.opentelemetry.io/collector/confmap => ${WORKSPACE_DIR}/confmap
-  - go.opentelemetry.io/collector/confmap/provider/envprovider => ${WORKSPACE_DIR}/confmap/provider/envprovider
-  - go.opentelemetry.io/collector/confmap/provider/fileprovider => ${WORKSPACE_DIR}/confmap/provider/fileprovider
-  - go.opentelemetry.io/collector/confmap/provider/httpprovider => ${WORKSPACE_DIR}/confmap/provider/httpprovider
-  - go.opentelemetry.io/collector/confmap/provider/httpsprovider => ${WORKSPACE_DIR}/confmap/provider/httpsprovider
-  - go.opentelemetry.io/collector/confmap/provider/yamlprovider => ${WORKSPACE_DIR}/confmap/provider/yamlprovider
-  - go.opentelemetry.io/collector/consumer => ${WORKSPACE_DIR}/consumer
-  - go.opentelemetry.io/collector/consumer/consumererror => ${WORKSPACE_DIR}/consumer/consumererror
-  - go.opentelemetry.io/collector/consumer/consumererror/consumererrorprofiles => ${WORKSPACE_DIR}/consumer/consumererror/consumererrorprofiles
-  - go.opentelemetry.io/collector/consumer/consumerprofiles => ${WORKSPACE_DIR}/consumer/consumerprofiles
-  - go.opentelemetry.io/collector/consumer/consumertest => ${WORKSPACE_DIR}/consumer/consumertest
-  - go.opentelemetry.io/collector/connector => ${WORKSPACE_DIR}/connector
-  - go.opentelemetry.io/collector/connector/connectortest => ${WORKSPACE_DIR}/connector/connectortest
-  - go.opentelemetry.io/collector/connector/connectorprofiles => ${WORKSPACE_DIR}/connector/connectorprofiles
-  - go.opentelemetry.io/collector/exporter => ${WORKSPACE_DIR}/exporter
-  - go.opentelemetry.io/collector/exporter/debugexporter => ${WORKSPACE_DIR}/exporter/debugexporter
-  - go.opentelemetry.io/collector/exporter/exporterprofiles => ${WORKSPACE_DIR}/exporter/exporterprofiles
-  - go.opentelemetry.io/collector/exporter/exportertest => ${WORKSPACE_DIR}/exporter/exportertest
-  - go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles => ${WORKSPACE_DIR}/exporter/exporterhelper/exporterhelperprofiles
-  - go.opentelemetry.io/collector/extension => ${WORKSPACE_DIR}/extension
-  - go.opentelemetry.io/collector/extension/auth => ${WORKSPACE_DIR}/extension/auth
-  - go.opentelemetry.io/collector/extension/auth/authtest => ${WORKSPACE_DIR}/extension/auth/authtest
-  - go.opentelemetry.io/collector/extension/experimental/storage => ${WORKSPACE_DIR}/extension/experimental/storage
-  - go.opentelemetry.io/collector/extension/extensioncapabilities => ${WORKSPACE_DIR}/extension/extensioncapabilities
-  - go.opentelemetry.io/collector/extension/extensiontest => ${WORKSPACE_DIR}/extension/extensiontest
-  - go.opentelemetry.io/collector/extension/zpagesextension => ${WORKSPACE_DIR}/extension/zpagesextension
-  - go.opentelemetry.io/collector/featuregate => ${WORKSPACE_DIR}/featuregate
-  - go.opentelemetry.io/collector/internal/memorylimiter => ${WORKSPACE_DIR}/internal/memorylimiter
-  - go.opentelemetry.io/collector/internal/fanoutconsumer => ${WORKSPACE_DIR}/internal/fanoutconsumer
-  - go.opentelemetry.io/collector/internal/sharedcomponent => ${WORKSPACE_DIR}/internal/sharedcomponent
-  - go.opentelemetry.io/collector/otelcol => ${WORKSPACE_DIR}/otelcol
-  - go.opentelemetry.io/collector/otelcol/otelcoltest => ${WORKSPACE_DIR}/otelcol/otelcoltest
-  - go.opentelemetry.io/collector/pdata => ${WORKSPACE_DIR}/pdata
-  - go.opentelemetry.io/collector/pdata/pprofile => ${WORKSPACE_DIR}/pdata/pprofile
-  - go.opentelemetry.io/collector/pdata/testdata => ${WORKSPACE_DIR}/pdata/testdata
-  - go.opentelemetry.io/collector/pipeline => ${WORKSPACE_DIR}/pipeline
-  - go.opentelemetry.io/collector/pipeline/pipelineprofiles => ${WORKSPACE_DIR}/pipeline/pipelineprofiles
-  - go.opentelemetry.io/collector/processor => ${WORKSPACE_DIR}/processor
-  - go.opentelemetry.io/collector/processor/processortest => ${WORKSPACE_DIR}/processor/processortest
-  - go.opentelemetry.io/collector/processor/processorprofiles => ${WORKSPACE_DIR}/processor/processorprofiles
-  - go.opentelemetry.io/collector/receiver => ${WORKSPACE_DIR}/receiver
-  - go.opentelemetry.io/collector/receiver/otlpreceiver => ${WORKSPACE_DIR}/receiver/otlpreceiver
-  - go.opentelemetry.io/collector/receiver/receiverprofiles => ${WORKSPACE_DIR}/receiver/receiverprofiles
-  - go.opentelemetry.io/collector/receiver/receivertest => ${WORKSPACE_DIR}/receiver/receivertest
-  - go.opentelemetry.io/collector/scraper => ${WORKSPACE_DIR}/scraper
-  - go.opentelemetry.io/collector/semconv => ${WORKSPACE_DIR}/semconv
-  - go.opentelemetry.io/collector/service => ${WORKSPACE_DIR}/service
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.115.0
