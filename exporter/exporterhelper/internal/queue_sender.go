@@ -10,7 +10,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -149,7 +148,7 @@ func (qs *QueueSender) Start(ctx context.Context, host component.Host) error {
 		})
 	}
 
-	return multierr.Append(err1, err2)
+	return errors.Join(err1, err2)
 }
 
 // Shutdown is invoked during service shutdown.
