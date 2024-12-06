@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 )
 
+// Deprecated: [v0.116.0] use metadatatest.TestTelemetry
 type componentTestTelemetry struct {
 	reader        *sdkmetric.ManualReader
 	meterProvider *sdkmetric.MeterProvider
@@ -37,6 +38,7 @@ func (tt *componentTestTelemetry) newTelemetrySettings() component.TelemetrySett
 	return set
 }
 
+// Deprecated: [v0.116.0] use metadatatest.SetupTestTelemetry
 func setupTestTelemetry() componentTestTelemetry {
 	reader := sdkmetric.NewManualReader()
 	return componentTestTelemetry{
