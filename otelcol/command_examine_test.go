@@ -7,10 +7,10 @@ import (
 	"bytes"
 	"log"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
@@ -87,7 +87,7 @@ func TestExamineCommand(t *testing.T) {
 	}
 }
 
-func TestConfig2(t *testing.T) {
+func TestConfig(t *testing.T) {
 	tests := []struct {
 		name        string
 		configs     []string
@@ -124,15 +124,30 @@ func TestConfig2(t *testing.T) {
 					DefaultScheme: "file",
 				},
 			}
-			var output bytes.Buffer
-			log.SetOutput(&output)
+			var logOutput bytes.Buffer
+			log.SetOutput(&logOutput)
 
 			cmd := newExamineSubCommand(CollectorSettings{ConfigProviderSettings: set}, flags(featuregate.GlobalRegistry()))
 			require.NoError(t, cmd.Execute())
 
-			expectedConfig, err := os.ReadFile(test.finalConfig)
+			expectedOutput, err := os.ReadFile(test.finalConfig)
 			require.NoError(t, err)
-			require.True(t, strings.HasSuffix(strings.TrimSpace(output.String()), strings.TrimSpace(string(expectedConfig))))
+
+			actualOutput := extractYAML(t, logOutput.Bytes())
+
+			actualConfig := make(map[string]any, 0)
+			expectedConfig := make(map[string]any, 0)
+
+			require.NoError(t, yaml.Unmarshal(bytes.TrimSpace(actualOutput), actualConfig))
+			require.NoError(t, yaml.Unmarshal(bytes.TrimSpace(expectedOutput), expectedConfig))
+
+			require.Equal(t, expectedConfig, actualConfig)
 		})
 	}
+}
+
+func extractYAML(t *testing.T, b []byte) []byte {
+	arr := bytes.SplitN(b, []byte("\n"), 2)
+	require.True(t, len(arr) > 1)
+	return arr[1]
 }
