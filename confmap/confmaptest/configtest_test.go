@@ -36,7 +36,7 @@ func TestToStringMapSanitizeNil(t *testing.T) {
 	assert.Equal(t, map[string]any{"slice": nil}, cfg.ToStringMap())
 }
 
-func TestToStringMapSanitizeEmptySlice(t *testing.T) {
+func TestToStringMapEmptySlice(t *testing.T) {
 	cfg, err := LoadConf(filepath.Join("testdata", "empty-slice.yaml"))
 	require.NoError(t, err)
 	assert.Equal(t, map[string]any{"slice": []interface{}{}}, cfg.ToStringMap())
