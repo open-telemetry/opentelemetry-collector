@@ -1,0 +1,6 @@
+type: githubgen
+
+status:
+  class: cmd
+  codeowners:
+    active: [atoulme]
