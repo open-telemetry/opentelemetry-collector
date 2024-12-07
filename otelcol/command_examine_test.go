@@ -4,6 +4,10 @@
 package otelcol // import "go.opentelemetry.io/collector/otelcol"
 
 import (
+	"bytes"
+	"log"
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -68,6 +72,56 @@ func TestExamineCommand(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
+		})
+	}
+}
+
+func TestConfig2(t *testing.T) {
+	tests := []struct {
+		name        string
+		configs     []string
+		finalConfig string
+	}{
+		{
+			name: "two-configs",
+			configs: []string{
+				"file:testdata/configs/1-config-first.yaml",
+				"file:testdata/configs/1-config-second.yaml",
+			},
+			finalConfig: "testdata/configs/1-config-output.yaml",
+		},
+		{
+			name: "two-configs-yaml",
+			configs: []string{
+				"file:testdata/configs/1-config-first.yaml",
+				"file:testdata/configs/1-config-second.yaml",
+				"yaml:service::pipelines::logs::receviers: [foo,bar]",
+				"yaml:service::pipelines::logs::exporters: [foo,bar]",
+			},
+			finalConfig: "testdata/configs/2-config-output.yaml",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			set := ConfigProviderSettings{
+				ResolverSettings: confmap.ResolverSettings{
+					URIs: test.configs,
+					ProviderFactories: []confmap.ProviderFactory{
+						fileprovider.NewFactory(),
+						yamlprovider.NewFactory(),
+					},
+					DefaultScheme: "file",
+				},
+			}
+			var output bytes.Buffer
+			log.SetOutput(&output)
+
+			cmd := newExamineSubCommand(CollectorSettings{ConfigProviderSettings: set}, flags(featuregate.GlobalRegistry()))
+			require.NoError(t, cmd.Execute())
+
+			expectedConfig, err := os.ReadFile(test.finalConfig)
+			require.NoError(t, err)
+			require.True(t, strings.HasSuffix(strings.TrimSpace(output.String()), strings.TrimSpace(string(expectedConfig))))
 		})
 	}
 }

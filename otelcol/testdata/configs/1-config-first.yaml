@@ -1,0 +1,6 @@
+receivers:
+    bar:
+        key: val
+exporters:
+    bar:
+        key: val
