@@ -58,6 +58,17 @@ func TestExamineCommand(t *testing.T) {
 			},
 			errString: "at least one Provider must be supplied",
 		},
+		{
+			name: "valid URI - invalid scheme name",
+			set: confmap.ResolverSettings{
+				URIs:          []string{"yaml:processors::batch/foo::timeout: 3s"},
+				DefaultScheme: "foo",
+				ProviderFactories: []confmap.ProviderFactory{
+					yamlprovider.NewFactory(),
+				},
+			},
+			errString: "configuration: DefaultScheme not found in providers list",
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
