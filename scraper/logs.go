@@ -14,6 +14,7 @@ import (
 type Logs interface {
 	component.Component
 
+	// ScrapeLogs is the base interface to indicate that how should logs be scraped.
 	ScrapeLogs(context.Context) (plog.Logs, error)
 }
 
