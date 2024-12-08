@@ -5,6 +5,7 @@ package otelcol // import "go.opentelemetry.io/collector/otelcol"
 
 import (
 	"flag"
+	"fmt"
 	"log"
 
 	"github.com/spf13/cobra"
@@ -26,15 +27,15 @@ func newExamineSubCommand(set CollectorSettings, flagSet *flag.FlagSet) *cobra.C
 			}
 			resolver, err := confmap.NewResolver(set.ConfigProviderSettings.ResolverSettings)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to create new resolver: %w", err)
 			}
 			conf, err := resolver.Resolve(cmd.Context())
 			if err != nil {
-				return err
+				return fmt.Errorf("error while resolving config: %w", err)
 			}
 			b, err := yaml.Marshal(conf.ToStringMap())
 			if err != nil {
-				return err
+				return fmt.Errorf("error while marshaling to yaml: %w", err)
 			}
 			log.Printf("\n%s", b)
 			return nil
