@@ -148,6 +148,6 @@ func TestConfig(t *testing.T) {
 
 func extractYAML(t *testing.T, b []byte) []byte {
 	arr := bytes.SplitN(b, []byte("\n"), 2)
-	require.True(t, len(arr) > 1)
+	require.Greater(t, len(arr), 1)
 	return arr[1]
 }
