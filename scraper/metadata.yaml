@@ -4,4 +4,4 @@ github_project: open-telemetry/opentelemetry-collector
 status:
   class: pkg
   stability:
-    development: [metrics]
+    development: [metrics, logs]
