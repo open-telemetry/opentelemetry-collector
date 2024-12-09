@@ -4,7 +4,7 @@
 change_type: 'enhancement'
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: container
+component: image
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: "Set Dockerfile's USER_GID as non root. OpenTelemetry Collector releases issue: https://github.com/open-telemetry/opentelemetry-collector-releases/issues/662"
