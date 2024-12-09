@@ -486,7 +486,7 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 		ReadHeaderTimeout: hss.ReadHeaderTimeout,
 		WriteTimeout:      hss.WriteTimeout,
 		IdleTimeout:       hss.IdleTimeout,
-		// Setting the server error logger
+		// Setting the Server error logger
 		ErrorLog: zap.NewStdLog(settings.Logger),
 	}
 
