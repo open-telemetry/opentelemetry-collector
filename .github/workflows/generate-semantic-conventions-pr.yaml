@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   check-versions:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       latest-version: ${{ steps.check-versions.outputs.latest-version }}
       already-added: ${{ steps.check-versions.outputs.already-added }}
@@ -51,7 +51,7 @@ jobs:
   update-semantic-conventions:
     permissions:
       contents: write # for Git to git push
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: |
       needs.check-versions.outputs.already-added != 'true' &&
       needs.check-versions.outputs.already-opened != 'true'
