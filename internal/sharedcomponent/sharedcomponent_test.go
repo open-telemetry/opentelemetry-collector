@@ -210,27 +210,3 @@ type testHost struct {
 func (h *testHost) Report(e *componentstatus.Event) {
 	h.newStatusFunc(h.InstanceID, e)
 }
-
-func TestReportWithExistingEvent(t *testing.T) {
-	reportedStatuses := make([]componentstatus.Status, 0)
-	newStatusFunc := func(id *componentstatus.InstanceID, ev *componentstatus.Event) {
-		reportedStatuses = append(reportedStatuses, ev.Status())
-	}
-	base := &baseComponent{}
-	base.StartFunc = func(_ context.Context, host component.Host) error {
-		e := componentstatus.NewEvent(componentstatus.StatusOK)
-		componentstatus.ReportStatus(host, e)
-		componentstatus.ReportStatus(host, e)
-		return nil
-	}
-	comps := NewMap[component.ID, *baseComponent]()
-	comp, err := comps.LoadOrStore(
-		id,
-		func() (*baseComponent, error) { return base, nil },
-	)
-	require.NoError(t, err)
-	baseHost := componenttest.NewNopHost()
-	err = comp.Start(context.Background(), &testHost{Host: baseHost, InstanceID: &componentstatus.InstanceID{}, newStatusFunc: newStatusFunc})
-	require.NoError(t, err)
-	require.Equal(t, 3, len(reportedStatuses))
-}

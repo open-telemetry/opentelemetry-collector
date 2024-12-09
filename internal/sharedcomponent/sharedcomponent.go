@@ -116,26 +116,13 @@ func (h *hostWrapper) GetExtensions() map[component.ID]component.Component {
 	return h.host.GetExtensions()
 }
 
-func (h *hostWrapper) hasEvent(e *componentstatus.Event) bool {
-	hasEvent := false
-	h.previousEvents.Do(func(a any) {
-		if previousEvent, ok := a.(*componentstatus.Event); ok && previousEvent == e {
-			hasEvent = true
-		}
-	})
-	return hasEvent
-}
-
 func (h *hostWrapper) Report(e *componentstatus.Event) {
 	// Only remember an event if it will be emitted and it has not been sent already.
 	h.lock.Lock()
-	if len(h.sources) > 0 && !h.hasEvent(e) {
+	if len(h.sources) > 0 {
 		h.previousEvents.Value = e
 		h.previousEvents = h.previousEvents.Next()
 	}
-	h.lock.Unlock()
-
-	h.lock.Lock()
 	for _, s := range h.sources {
 		s.Report(e)
 	}
