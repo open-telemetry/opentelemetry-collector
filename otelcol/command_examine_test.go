@@ -138,7 +138,9 @@ func TestConfig(t *testing.T) {
 
 			expectedOutput, err := os.ReadFile(test.finalConfig)
 			require.NoError(t, err)
+
 			actualOutput, err := os.ReadFile(tmpFile.Name())
+			require.NoError(t, err)
 
 			actualConfig := make(map[string]any, 0)
 			expectedConfig := make(map[string]any, 0)
