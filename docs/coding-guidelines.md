@@ -47,6 +47,12 @@ When naming configuration structs, use the following guidelines:
 - Use the `Settings` suffix for configuration structs that are set by developers in the code. For example, `component.TelemetrySettings` ends in `Settings` since it is set by developers in the code.
 - Avoid redundant prefixes that are already implied by the package name. For example, use`configgrpc.ClientConfig` instead of `configgrpc.GRPCClientConfig`.
 
+#### Experimental module naming
+
+Experimental modules can be introduced as submodules of stable modules. They MUST have the same name as the stable
+modules prefixed with `x`. For example, `config/confighttp` module can have an experimental module named
+`config/confighttp/xconfighttp` that contains experimental APIs.
+
 ### Enumerations
 
 To keep naming patterns consistent across the project, enumeration patterns are enforced to make intent clear:
