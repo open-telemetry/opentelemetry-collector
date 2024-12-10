@@ -7,6 +7,39 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.21.0/v0.115.0
+
+### 🛑 Breaking changes 🛑
+
+- `extension/auth/authtest`: `authtest` is now its own module (#11465, #11705)
+- `pdata/pprofile`: AttributeTable is now a slice rather than a map (#11706)
+- `scraperhelper`: Remove deprecated scraperhelper funcs Scraper.ID, NewScraper, AddScraper. (#11710)
+- `mdatagen`: Remove deprecated LeveledMeter from the generated code (#11696)
+
+### 🚩 Deprecations 🚩
+
+- `component`: Mark `TelemetrySettings.LeveledMeterProvider` as deprecated (#11697)
+- `receiver/scraper`: Move receiver/scrapererror package to scraper/scrapererror and deprecate original receiver/scrapererror package. (#11003)
+- `scraperhelper`: Make Scraper compatible with the new scraper.Metrics (#11682)
+  Deprecate scraperhelper.Scraper in favor of scraper.Metrics
+
+## v1.20.0/v0.114.0
+
+### 🛑 Breaking changes 🛑
+
+- `extensiontest`: Make extensiontest into its own module (#11463)
+- `component`: Make componenttest into its own module (#11464)
+- `expandconverter`: Remove deprecated expandvar converter (#11672)
+- `exporter`: Remove deprecated funcs Create[*]Exporter and [*]ExporterStability (#11662)
+- `exporterhelper`: Remove derprecated NewLogs[Request]Exporter funcs (#11661)
+- `extension`: Remove deprecated funcs CreateExtension and ExtensionStability (#11663)
+- `processortest`: Remove deprecated func NewUnhealthyProcessorCreateSettings (#11665)
+
+### 🚩 Deprecations 🚩
+
+- `component`: Deprecate `TelemetrySettings.LeveledMeterProvider` and undo deprecation of `TelemetrySettings.MeterProvider` (#11061)
+- `scraperhelper`: Deprecate Scraper.ID func, pass type when register Scraper (#11238)
+
 ## v1.19.0/v0.113.0
 
 ### 🛑 Breaking changes 🛑

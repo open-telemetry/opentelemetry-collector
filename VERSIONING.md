@@ -62,6 +62,9 @@ Unless otherwise specified in the documentation, the following may change in any
 * **Protocol compatibility**. Changing the default minimum version of a supported protocol (e.g. TLS) or dropping support for protocols when there are security concerns is not considered a breaking change.
 * **Dependency updates**. Updating dependencies is not considered a breaking change except when their types are part of the
 public API or the update may change the behavior of applications in an incompatible way.
+* **Underlying type for interfaces**. If a struct exported as an interface has an experimental
+method, this method may change or be removed in a minor version. The method will be published in an
+optional interface under an experimental module to signal it is experimental.
 
 ### Configuration structures
 

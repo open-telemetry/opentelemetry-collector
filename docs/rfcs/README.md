@@ -46,8 +46,9 @@ We use a [Lazy Consensus](https://www.apache.org/foundation/glossary.html#LazyCo
 1. *Quorum*: For an RFC to be mergeable, it needs to have at least **two approvals** from the
    approvers set as well as approvals from any additional stakeholders.
 2. *Waiting period*: Maintainers need to announce their intent to merge the RFC with a GitHub
-   comment. They will need to add a `rfc:final-comment-period` label to the PR and wait for at least
-   **4 business days** after making the announcement to merge the RFC.
+   comment. They will need to add a `rfc:final-comment-period` label to the PR, comment on the PR
+   and note the final comment period in the #otel-collector-dev CNCF Slack channel, and wait for at
+   least **4 business days** after making the announcement to merge the RFC.
 3. *Objections*: Objections should be communicated as a 'request changes' review. All objections
    must be addressed before merging an RFC. If addressing an objection does not appear feasible, any
    maintainer may call for a vote to be made on the objection (see below). This will be signified by
@@ -55,6 +56,9 @@ We use a [Lazy Consensus](https://www.apache.org/foundation/glossary.html#LazyCo
    drop any 'request changes' reviews based on the vote results or consensus.
 4. *Modifications*: Non-trivial modifications to an RFC reset the waiting period. RFC authors must
    re-request any approving, comment, or 'request changes' reviews if the RFC has been modified significantly.
+5. *All conversations are resolved*: All Github conversations on the PR must be marked as resolved
+   before merging. The RFC author may resolve conversations at their discretion, but they must
+   explain in the conversation thread why they believe it is appropriate to do so.
 
 ### Voting
 

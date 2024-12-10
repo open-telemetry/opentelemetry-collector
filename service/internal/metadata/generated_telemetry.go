@@ -18,11 +18,6 @@ func Meter(settings component.TelemetrySettings) metric.Meter {
 	return settings.MeterProvider.Meter("go.opentelemetry.io/collector/service")
 }
 
-// Deprecated: [v0.114.0] use Meter instead.
-func LeveledMeter(settings component.TelemetrySettings, level configtelemetry.Level) metric.Meter {
-	return settings.LeveledMeterProvider(level).Meter("go.opentelemetry.io/collector/service")
-}
-
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
 	return settings.TracerProvider.Tracer("go.opentelemetry.io/collector/service")
 }
@@ -127,7 +122,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	var err, errs error
 	builder.ProcessCPUSeconds, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Float64ObservableCounter(
 		"otelcol_process_cpu_seconds",
-		metric.WithDescription("Total CPU user and system time in seconds"),
+		metric.WithDescription("Total CPU user and system time in seconds [alpha]"),
 		metric.WithUnit("s"),
 	)
 	errs = errors.Join(errs, err)
@@ -135,7 +130,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.ProcessMemoryRss, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64ObservableGauge(
 		"otelcol_process_memory_rss",
-		metric.WithDescription("Total physical memory (resident set size)"),
+		metric.WithDescription("Total physical memory (resident set size) [alpha]"),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
@@ -143,7 +138,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.ProcessRuntimeHeapAllocBytes, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64ObservableGauge(
 		"otelcol_process_runtime_heap_alloc_bytes",
-		metric.WithDescription("Bytes of allocated heap objects (see 'go doc runtime.MemStats.HeapAlloc')"),
+		metric.WithDescription("Bytes of allocated heap objects (see 'go doc runtime.MemStats.HeapAlloc') [alpha]"),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
@@ -151,7 +146,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.ProcessRuntimeTotalAllocBytes, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64ObservableCounter(
 		"otelcol_process_runtime_total_alloc_bytes",
-		metric.WithDescription("Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')"),
+		metric.WithDescription("Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc') [alpha]"),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
@@ -159,7 +154,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.ProcessRuntimeTotalSysMemoryBytes, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64ObservableGauge(
 		"otelcol_process_runtime_total_sys_memory_bytes",
-		metric.WithDescription("Total bytes of memory obtained from the OS (see 'go doc runtime.MemStats.Sys')"),
+		metric.WithDescription("Total bytes of memory obtained from the OS (see 'go doc runtime.MemStats.Sys') [alpha]"),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
@@ -167,7 +162,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.ProcessUptime, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Float64ObservableCounter(
 		"otelcol_process_uptime",
-		metric.WithDescription("Uptime of the process"),
+		metric.WithDescription("Uptime of the process [alpha]"),
 		metric.WithUnit("s"),
 	)
 	errs = errors.Join(errs, err)
