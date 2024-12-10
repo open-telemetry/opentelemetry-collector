@@ -1,0 +1,12 @@
+level: "info"
+processors:
+  - batch:
+      exporter:
+        otlp:
+          protocol: http/protobuf
+          endpoint: 127.0.0.1:4317
+          headers:
+            "key1": "value1"
+  - simple:
+      exporter:
+        console: {}
