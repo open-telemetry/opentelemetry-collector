@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"runtime"
 
-	"go.opentelemetry.io/contrib/config"
+	config "go.opentelemetry.io/contrib/config/v0.3.0"
 	"go.opentelemetry.io/otel/log"
 	"go.opentelemetry.io/otel/metric"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
@@ -129,10 +129,6 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	pcommonRes := pdataFromSdk(res)
 
 	sch := semconv.SchemaURL
-	cfgRes := config.Resource{
-		SchemaUrl:  &sch,
-		Attributes: attributes(res, cfg.Telemetry),
-	}
 
 	views := disableHighCardinalityMetrics()
 
@@ -155,7 +151,10 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 				TracerProvider: &config.TracerProvider{
 					Processors: cfg.Telemetry.Traces.Processors,
 				},
-				Resource: &cfgRes,
+				Resource: &config.Resource{
+					SchemaUrl:  &sch,
+					Attributes: attributes(res, cfg.Telemetry),
+				},
 			},
 		),
 	)
