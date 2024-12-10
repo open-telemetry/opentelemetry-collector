@@ -36,8 +36,7 @@ import (
 	"go.opentelemetry.io/collector/extension/auth/authtest"
 )
 
-type customRoundTripper struct {
-}
+type customRoundTripper struct{}
 
 var _ http.RoundTripper = (*customRoundTripper)(nil)
 
@@ -430,7 +429,8 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
 					mockID: &authtest.MockClient{
-						ResultRoundTripper: &customRoundTripper{}, MustError: true},
+						ResultRoundTripper: &customRoundTripper{}, MustError: true,
+					},
 				},
 			},
 		},

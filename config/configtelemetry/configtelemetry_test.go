@@ -11,8 +11,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var _ encoding.TextMarshaler = (*Level)(nil)
-var _ encoding.TextUnmarshaler = (*Level)(nil)
+var (
+	_ encoding.TextMarshaler   = (*Level)(nil)
+	_ encoding.TextUnmarshaler = (*Level)(nil)
+)
 
 func TestUnmarshalText(t *testing.T) {
 	tests := []struct {
