@@ -6,7 +6,6 @@ package otelcol // import "go.opentelemetry.io/collector/otelcol"
 import (
 	"flag"
 	"fmt"
-	"log"
 
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -37,7 +36,7 @@ func newExamineSubCommand(set CollectorSettings, flagSet *flag.FlagSet) *cobra.C
 			if err != nil {
 				return fmt.Errorf("error while marshaling to yaml: %w", err)
 			}
-			log.Printf("\n%s", b)
+			fmt.Printf("%s", b)
 			return nil
 		},
 	}

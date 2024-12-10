@@ -5,7 +5,6 @@ package otelcol // import "go.opentelemetry.io/collector/otelcol"
 
 import (
 	"bytes"
-	"log"
 	"os"
 	"testing"
 
@@ -124,16 +123,22 @@ func TestConfig(t *testing.T) {
 					DefaultScheme: "file",
 				},
 			}
-			var logOutput bytes.Buffer
-			log.SetOutput(&logOutput)
+			tmpFile, err := os.CreateTemp(t.TempDir(), "*")
+			require.NoError(t, err)
+
+			// save the os.Stdout and temporarily set it to temp file
+			oldStdout := os.Stdout
+			os.Stdout = tmpFile
 
 			cmd := newExamineSubCommand(CollectorSettings{ConfigProviderSettings: set}, flags(featuregate.GlobalRegistry()))
 			require.NoError(t, cmd.Execute())
 
+			// restore os.Stdout
+			os.Stdout = oldStdout
+
 			expectedOutput, err := os.ReadFile(test.finalConfig)
 			require.NoError(t, err)
-
-			actualOutput := extractYAML(t, logOutput.Bytes())
+			actualOutput, err := os.ReadFile(tmpFile.Name())
 
 			actualConfig := make(map[string]any, 0)
 			expectedConfig := make(map[string]any, 0)
@@ -144,10 +149,4 @@ func TestConfig(t *testing.T) {
 			require.Equal(t, expectedConfig, actualConfig)
 		})
 	}
-}
-
-func extractYAML(t *testing.T, b []byte) []byte {
-	arr := bytes.SplitN(b, []byte("\n"), 2)
-	require.Greater(t, len(arr), 1)
-	return arr[1]
 }
