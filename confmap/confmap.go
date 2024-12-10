@@ -133,6 +133,10 @@ func sanitizeExpanded(a any, useOriginal bool) any {
 		return c
 	case []any:
 		var newSlice []any
+		if m == nil {
+			return newSlice
+		}
+		newSlice = []any{}
 		for _, e := range m {
 			newSlice = append(newSlice, sanitizeExpanded(e, useOriginal))
 		}
@@ -221,6 +225,7 @@ func decodeConfig(m *Conf, result any, errorUnused bool, skipTopLevelUnmarshaler
 			unmarshalerEmbeddedStructsHookFunc(),
 			zeroSliceHookFunc(),
 		),
+		DecodeNil: true,
 	}
 	decoder, err := mapstructure.NewDecoder(dc)
 	if err != nil {
@@ -329,6 +334,9 @@ func useExpandValue() mapstructure.DecodeHookFuncType {
 // Config{Thing: &SomeStruct{}} instead of Config{Thing: nil}
 func expandNilStructPointersHookFunc() mapstructure.DecodeHookFuncValue {
 	return func(from reflect.Value, to reflect.Value) (any, error) {
+		if !from.IsValid() {
+			return from, nil
+		}
 		// ensure we are dealing with map to map comparison
 		if from.Kind() == reflect.Map && to.Kind() == reflect.Map {
 			toElem := to.Type().Elem()
@@ -537,7 +545,9 @@ type Marshaler interface {
 func zeroSliceHookFunc() mapstructure.DecodeHookFuncValue {
 	return func(from reflect.Value, to reflect.Value) (interface{}, error) {
 		if to.CanSet() && to.Kind() == reflect.Slice && from.Kind() == reflect.Slice {
-			to.Set(reflect.MakeSlice(to.Type(), from.Len(), from.Cap()))
+			if !from.IsNil() {
+				to.Set(reflect.MakeSlice(to.Type(), from.Len(), from.Cap()))
+			}
 		}
 
 		return from.Interface(), nil
