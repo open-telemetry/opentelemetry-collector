@@ -428,7 +428,7 @@ func (g *Graph) StartAll(ctx context.Context, host *Host) error {
 					zap.String("type", instanceID.Kind().String()),
 					zap.String("id", instanceID.ComponentID().String()),
 				)
-			return compErr
+			return fmt.Errorf("failed to start %s %s: %w", instanceID.ComponentID().String(), strings.ToLower(instanceID.Kind().String()), compErr)
 		}
 
 		host.Reporter.ReportOKIfStarting(instanceID)
@@ -603,9 +603,11 @@ func connectorStability(f connector.Factory, expType, recType pipeline.Signal) c
 	return component.StabilityLevelUndefined
 }
 
-var _ getExporters = (*HostWrapper)(nil)
-var _ component.Host = (*HostWrapper)(nil)
-var _ componentstatus.Reporter = (*HostWrapper)(nil)
+var (
+	_ getExporters             = (*HostWrapper)(nil)
+	_ component.Host           = (*HostWrapper)(nil)
+	_ componentstatus.Reporter = (*HostWrapper)(nil)
+)
 
 type HostWrapper struct {
 	*Host
