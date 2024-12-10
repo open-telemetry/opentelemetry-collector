@@ -125,6 +125,7 @@ func TestConfig(t *testing.T) {
 			}
 			tmpFile, err := os.CreateTemp(t.TempDir(), "*")
 			require.NoError(t, err)
+			t.Cleanup(func() { _ = tmpFile.Close() })
 
 			// save the os.Stdout and temporarily set it to temp file
 			oldStdout := os.Stdout
