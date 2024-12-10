@@ -15,5 +15,23 @@
 * @open-telemetry/collector-approvers
 
 # List all maintainers individually so all of them are notified
-.github/CODEOWNERS @codeboten @BogdanDrutu @dmitryax @mx-psi
-docs/rfc           @codeboten @BogdanDrutu @dmitryax @mx-psi
+.github/CODEOWNERS      @codeboten @BogdanDrutu @dmitryax @mx-psi
+docs/rfc                @codeboten @BogdanDrutu @dmitryax @mx-psi
+
+confmap/                        @mx-psi @evan-bradley
+exporter/debugexporter          @andrzej-stencel
+exporter/exporterhelper         @BogdanDrutu @dmitryax
+exporter/nopexporter            @evan-bradley
+pdata/                          @BogdanDrutu @dmitryax
+receiver/nopreceiver            @evan-bradley
+service/internal/graph          @djaglowski
+extension/experimental/storage  @swiatekm
+
+# Profiling-related modules
+pdata/pprofile                                  @mx-psi @dmathieu
+consumer/consumerprofiles                       @mx-psi @dmathieu
+connector/connectorprofiles                     @mx-psi @dmathieu
+exporter/exporterhelper/exporterhelperprofiles  @mx-psi @dmathieu
+exporter/exporterprofiles                       @mx-psi @dmathieu
+processor/processorprofiles                     @mx-psi @dmathieu
+receiver/receiverprofiles                       @mx-psi @dmathieu
