@@ -428,7 +428,7 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 			}
 			pg.componentGraph.SetEdge(simple.Edge{F: e0, T: e1})
 
-			assert.ErrorIs(t, pg.StartAll(context.Background(), &Host{Reporter: rep}), tt.startupErr)
+			require.ErrorIs(t, pg.StartAll(context.Background(), &Host{Reporter: rep}), tt.startupErr)
 			assert.Equal(t, tt.shutdownErr, pg.ShutdownAll(context.Background(), rep))
 			assertEqualStatuses(t, tt.expectedStatuses, actualStatuses)
 		})
