@@ -269,6 +269,10 @@ func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
 					attribute.String(DataTypeKey, dataType.String())))
 
 				assert.NoError(t, be.Shutdown(context.Background()))
+				// metrics should be unregistered at shutdown to prevent memory leak
+				require.Error(t, tt.CheckExporterMetricGauge("otelcol_exporter_queue_capacity", int64(defaultQueueSize)))
+				require.Error(t, tt.CheckExporterMetricGauge("otelcol_exporter_queue_size", int64(7),
+					attribute.String(DataTypeKey, dataType.String())))
 			}
 		})
 	}

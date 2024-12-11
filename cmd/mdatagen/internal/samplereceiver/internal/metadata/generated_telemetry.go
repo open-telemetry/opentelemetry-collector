@@ -55,7 +55,7 @@ func WithProcessRuntimeTotalAllocBytesCallback(cb func() int64, opts ...metric.O
 }
 
 // InitQueueLength configures the QueueLength metric.
-func (builder *TelemetryBuilder) InitQueueLength(cb func() int64, opts ...metric.ObserveOption) error {
+func (builder *TelemetryBuilder) InitQueueLength(cb func() int64, opts ...metric.ObserveOption) (metric.Registration, error) {
 	var err error
 	builder.QueueLength, err = builder.meter.Int64ObservableGauge(
 		"otelcol_queue_length",
@@ -63,13 +63,13 @@ func (builder *TelemetryBuilder) InitQueueLength(cb func() int64, opts ...metric
 		metric.WithUnit("{items}"),
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	_, err = builder.meter.RegisterCallback(func(_ context.Context, o metric.Observer) error {
+	reg, err := builder.meter.RegisterCallback(func(_ context.Context, o metric.Observer) error {
 		o.ObserveInt64(builder.QueueLength, cb(), opts...)
 		return nil
 	}, builder.QueueLength)
-	return err
+	return reg, err
 }
 
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
