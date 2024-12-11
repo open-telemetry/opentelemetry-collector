@@ -4,10 +4,10 @@
 change_type: "enhancement"
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: confighttp
+component: xconfighttp
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Add WithOtelHTTPOptions to confighttp.ToServerOption"
+note: "Add WithOtelHTTPOptions to experimenta module xconfighttp"
 
 # One or more tracking issues or pull requests related to the change
 issues: [11770]
