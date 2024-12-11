@@ -7,7 +7,7 @@ change_type: "enhancement"
 component: xconfighttp
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Add WithOtelHTTPOptions to experimenta module xconfighttp"
+note: "Add WithOtelHTTPOptions to experimental module xconfighttp"
 
 # One or more tracking issues or pull requests related to the change
 issues: [11770]
