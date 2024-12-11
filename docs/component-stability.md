@@ -79,19 +79,17 @@ constraints are set out in this document.
 For pipeline components however, this section details the kinds of values that should be observable
 via internal telemetry for all stable components.
 
-**Notes:**
-- The following categories MUST all be covered, unless justification is given as to why
-one may not be applicable.
-
-- However, for each category, many reasonable implementations are possible, as long as the relevant
-information can be derived from the emitted telemetry; everything after the basic category
-description is a recommendation, and is not normative.
-
-- Of course, a component may define additional internal telemetry which is not in this list.
-
-- Some of this internal telemetry may already be provided by pipeline auto-instrumentation or
-helper modules (such as `receiverhelper`, `scraperhelper`, `processorhelper`, or `exporterhelper`).
-Please check the documentation to verify which parts, if any, need to be implemented manually.
+> [!NOTE]
+> - The following categories MUST all be covered, unless justification is given as to why one may
+>   not be applicable.
+> - However, for each category, many reasonable implementations are possible, as long as the
+>   relevant information can be derived from the emitted telemetry; everything after the basic
+>   category description is a recommendation, and is not normative.
+> - Of course, a component may define additional internal telemetry which is not in this list.
+> - Some of this internal telemetry may already be provided by pipeline auto-instrumentation or
+>   helper modules (such as `receiverhelper`, `scraperhelper`, `processorhelper`, or
+>   `exporterhelper`). Please check the documentation to verify which parts, if any, need to be
+>   implemented manually.
 
 **Definition:** In the following, an "item" refers generically to a single log record, metric point,
 or span.
