@@ -44,6 +44,11 @@ type Config struct {
 // the collector uses mapstructure and not yaml tags.
 type LogsConfig = migration.LogsConfigV030
 
+// LogsSamplingConfig sets a sampling strategy for the logger. Sampling caps the
+// global CPU and I/O load that logging puts on your process while attempting
+// to preserve a representative subset of your logs.
+type LogsSamplingConfig = migration.LogsSamplingConfig
+
 // MetricsConfig exposes the common Telemetry configuration for one component.
 // Experimental: *NOTE* this structure is subject to change or removal in the future.
 type MetricsConfig = migration.MetricsConfigV030
