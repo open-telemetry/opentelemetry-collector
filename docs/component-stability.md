@@ -117,6 +117,9 @@ The internal telemetry of a stable pipeline component should allow observing the
     For receivers and exporters that interact with an external service, this could include a metric
     counting requests that failed because of network errors.
 
+    For processors, this could be an `outcome` (`success` or `failure`) attribute on a "received
+    items" metric defined for point 1.
+
     The goal is to be able to easily pinpoint the source of data loss in the Collector pipeline, so
     this should either:
     - only include errors internal to the component, or;
@@ -163,6 +166,10 @@ The internal telemetry of a stable pipeline component should allow observing the
 When measuring amounts of data, it is recommended to use "items" as your unit of measure. Where this
 can't easily be done, any relevant unit may be used, as long as zero is a reliable indicator of the
 absence of data. In any case, all metrics should have a defined unit (not "1").
+
+All internal telemetry emitted by a component should have attributes identifying the specific
+component instance that it originates from. This should follow the same conventions as the
+[pipeline universal telemetry](rfcs/component-universal-telemetry.md).
 
 If data can be dropped/created/held at multiple distinct points in a component's pipeline (eg.
 scraping, validation, processing, etc.), it is recommended to define additional attributes to help
