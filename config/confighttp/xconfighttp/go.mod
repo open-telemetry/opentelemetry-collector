@@ -50,3 +50,31 @@ require (
 )
 
 replace go.opentelemetry.io/collector/config/confighttp => ../../confighttp
+
+replace go.opentelemetry.io/collector/config/internal => ../../internal
+
+replace go.opentelemetry.io/collector/config/configtelemetry => ../../configtelemetry
+
+replace go.opentelemetry.io/collector/client => ../../../client
+
+replace go.opentelemetry.io/collector/consumer => ../../../consumer
+
+replace go.opentelemetry.io/collector/extension/auth/authtest => ../../../extension/auth/authtest
+
+replace go.opentelemetry.io/collector/component/componenttest => ../../../component/componenttest
+
+replace go.opentelemetry.io/collector/config/configauth => ../../configauth
+
+replace go.opentelemetry.io/collector/pdata => ../../../pdata
+
+replace go.opentelemetry.io/collector/extension/auth => ../../../extension/auth
+
+replace go.opentelemetry.io/collector/config/configopaque => ../../configopaque
+
+replace go.opentelemetry.io/collector/component => ../../../component
+
+replace go.opentelemetry.io/collector/extension => ../../../extension
+
+replace go.opentelemetry.io/collector/config/configtls => ../../configtls
+
+replace go.opentelemetry.io/collector/config/configcompression => ../../configcompression
