@@ -10,7 +10,7 @@ component: confighttp
 note: "Added Zap as the default error log in confighttp "
 
 # One or more tracking issues or pull requests related to the change
-issues: [1180]
+issues: [11820]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
