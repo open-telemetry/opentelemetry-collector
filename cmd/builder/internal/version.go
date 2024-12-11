@@ -10,9 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	version = ""
-)
+var version = ""
 
 func init() {
 	// the second returned value is a boolean, which is true if the binaries are built with module support.
