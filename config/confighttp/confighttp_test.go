@@ -74,10 +74,8 @@ func TestAllHTTPClientSettings(t *testing.T) {
 		{
 			name: "all_valid_settings",
 			settings: ClientConfig{
-				Endpoint: "localhost:1234",
-				TLSSetting: configtls.ClientConfig{
-					Insecure: false,
-				},
+				Endpoint:             "localhost:1234",
+				TLSSetting:           configtls.NewDefaultClientConfig(),
 				ReadBufferSize:       1024,
 				WriteBufferSize:      512,
 				MaxIdleConns:         &maxIdleConns,
@@ -95,10 +93,8 @@ func TestAllHTTPClientSettings(t *testing.T) {
 		{
 			name: "all_valid_settings_with_none_compression",
 			settings: ClientConfig{
-				Endpoint: "localhost:1234",
-				TLSSetting: configtls.ClientConfig{
-					Insecure: false,
-				},
+				Endpoint:             "localhost:1234",
+				TLSSetting:           configtls.NewDefaultClientConfig(),
 				ReadBufferSize:       1024,
 				WriteBufferSize:      512,
 				MaxIdleConns:         &maxIdleConns,
@@ -115,10 +111,8 @@ func TestAllHTTPClientSettings(t *testing.T) {
 		{
 			name: "all_valid_settings_with_gzip_compression",
 			settings: ClientConfig{
-				Endpoint: "localhost:1234",
-				TLSSetting: configtls.ClientConfig{
-					Insecure: false,
-				},
+				Endpoint:             "localhost:1234",
+				TLSSetting:           configtls.NewDefaultClientConfig(),
 				ReadBufferSize:       1024,
 				WriteBufferSize:      512,
 				MaxIdleConns:         &maxIdleConns,
@@ -135,10 +129,8 @@ func TestAllHTTPClientSettings(t *testing.T) {
 		{
 			name: "all_valid_settings_http2_health_check",
 			settings: ClientConfig{
-				Endpoint: "localhost:1234",
-				TLSSetting: configtls.ClientConfig{
-					Insecure: false,
-				},
+				Endpoint:             "localhost:1234",
+				TLSSetting:           configtls.NewDefaultClientConfig(),
 				ReadBufferSize:       1024,
 				WriteBufferSize:      512,
 				MaxIdleConns:         &maxIdleConns,
@@ -195,10 +187,8 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 		{
 			name: "valid_partial_settings",
 			settings: ClientConfig{
-				Endpoint: "localhost:1234",
-				TLSSetting: configtls.ClientConfig{
-					Insecure: false,
-				},
+				Endpoint:        "localhost:1234",
+				TLSSetting:      configtls.NewDefaultClientConfig(),
 				ReadBufferSize:  1024,
 				WriteBufferSize: 512,
 			},
@@ -286,6 +276,15 @@ func TestProxyURL(t *testing.T) {
 }
 
 func TestHTTPClientSettingsError(t *testing.T) {
+	tlsConfigCADoesntExist := configtls.NewDefaultConfig()
+	tlsConfigCADoesntExist.CAFile = "/doesnt/exist"
+	tlsClientConfigCADoesntExist := configtls.NewDefaultClientConfig()
+	tlsClientConfigCADoesntExist.Config = tlsConfigCADoesntExist
+
+	tlsConfigCertDoesntExist := configtls.NewDefaultConfig()
+	tlsConfigCertDoesntExist.CertFile = "/doesnt/exist"
+	tlsClientConfigCertDoesntExist := configtls.NewDefaultClientConfig()
+	tlsClientConfigCertDoesntExist.Config = tlsConfigCertDoesntExist
 	host := &mockHost{
 		ext: map[component.ID]component.Component{},
 	}
@@ -296,27 +295,15 @@ func TestHTTPClientSettingsError(t *testing.T) {
 		{
 			err: "^failed to load TLS config: failed to load CA CertPool File: failed to load cert /doesnt/exist:",
 			settings: ClientConfig{
-				Endpoint: "",
-				TLSSetting: configtls.ClientConfig{
-					Config: configtls.Config{
-						CAFile: "/doesnt/exist",
-					},
-					Insecure:   false,
-					ServerName: "",
-				},
+				Endpoint:   "",
+				TLSSetting: tlsClientConfigCADoesntExist,
 			},
 		},
 		{
 			err: "^failed to load TLS config: failed to load TLS cert and key: for auth via TLS, provide both certificate and key, or neither",
 			settings: ClientConfig{
-				Endpoint: "",
-				TLSSetting: configtls.ClientConfig{
-					Config: configtls.Config{
-						CertFile: "/doesnt/exist",
-					},
-					Insecure:   false,
-					ServerName: "",
-				},
+				Endpoint:   "",
+				TLSSetting: tlsClientConfigCertDoesntExist,
 			},
 		},
 		{
@@ -556,6 +543,50 @@ func TestHTTPServerWarning(t *testing.T) {
 }
 
 func TestHttpReception(t *testing.T) {
+	tlsClientConfigWithInsecure := configtls.NewDefaultClientConfig()
+	tlsClientConfigWithInsecure.Insecure = true
+
+	tlsConfigWithCerts1 := configtls.NewDefaultConfig()
+	tlsConfigWithCerts1.CAFile = filepath.Join("testdata", "ca.crt")
+	tlsConfigWithCerts1.CertFile = filepath.Join("testdata", "server.crt")
+	tlsConfigWithCerts1.KeyFile = filepath.Join("testdata", "server.key")
+	tlsServerConfigWithCerts := configtls.NewDefaultServerConfig()
+	tlsServerConfigWithCerts.Config = tlsConfigWithCerts1
+
+	tlsConfigWithCAFile1 := configtls.NewDefaultConfig()
+	tlsConfigWithCAFile1.CAFile = filepath.Join("testdata", "ca.crt")
+	tlsClientConfigWithCAFile := configtls.NewDefaultClientConfig()
+	tlsClientConfigWithCAFile.Config = tlsConfigWithCAFile1
+	tlsClientConfigWithCAFile.ServerName = "localhost"
+
+	tlsConfigWithCertsAndClientCA := configtls.NewDefaultConfig()
+	tlsConfigWithCertsAndClientCA.CAFile = filepath.Join("testdata", "ca.crt")
+	tlsConfigWithCertsAndClientCA.CertFile = filepath.Join("testdata", "server.crt")
+	tlsConfigWithCertsAndClientCA.KeyFile = filepath.Join("testdata", "server.key")
+	tlsServerConfigWithCertsAndClientCA := configtls.NewDefaultServerConfig()
+	tlsServerConfigWithCertsAndClientCA.Config = tlsConfigWithCertsAndClientCA
+	tlsServerConfigWithCertsAndClientCA.ClientCAFile = filepath.Join("testdata", "ca.crt")
+
+	tlsConfigWithCAFile2 := configtls.NewDefaultConfig()
+	tlsConfigWithCAFile2.CAFile = filepath.Join("testdata", "ca.crt")
+	tlsServerConfigWithCAFile := configtls.NewDefaultServerConfig()
+	tlsServerConfigWithCAFile.Config = tlsConfigWithCAFile2
+
+	tlsConfigWithCertsAndWrongClientCA := configtls.NewDefaultConfig()
+	tlsConfigWithCertsAndWrongClientCA.CAFile = filepath.Join("testdata", "ca.crt")
+	tlsConfigWithCertsAndWrongClientCA.CertFile = filepath.Join("testdata", "server.crt")
+	tlsConfigWithCertsAndWrongClientCA.KeyFile = filepath.Join("testdata", "server.key")
+	tlsServerConfigWithCertsAndWrongClientCA := configtls.NewDefaultServerConfig()
+	tlsServerConfigWithCertsAndWrongClientCA.Config = tlsConfigWithCertsAndWrongClientCA
+	tlsServerConfigWithCertsAndWrongClientCA.ClientCAFile = filepath.Join("testdata", "server.crt")
+
+	tlsConfigWithCerts3 := configtls.NewDefaultConfig()
+	tlsConfigWithCerts3.CAFile = filepath.Join("testdata", "ca.crt")
+	tlsConfigWithCerts3.CertFile = filepath.Join("testdata", "client.crt")
+	tlsConfigWithCerts3.KeyFile = filepath.Join("testdata", "client.key")
+	tlsClientConfigWithCerts2 := configtls.NewDefaultClientConfig()
+	tlsClientConfigWithCerts2.Config = tlsConfigWithCerts3
+	tlsClientConfigWithCerts2.ServerName = "localhost"
 	tests := []struct {
 		name           string
 		tlsServerCreds *configtls.ServerConfig
@@ -566,114 +597,41 @@ func TestHttpReception(t *testing.T) {
 		{
 			name:           "noTLS",
 			tlsServerCreds: nil,
-			tlsClientCreds: &configtls.ClientConfig{
-				Insecure: true,
-			},
+			tlsClientCreds: &tlsClientConfigWithInsecure,
 		},
 		{
-			name: "TLS",
-			tlsServerCreds: &configtls.ServerConfig{
-				Config: configtls.Config{
-					CAFile:   filepath.Join("testdata", "ca.crt"),
-					CertFile: filepath.Join("testdata", "server.crt"),
-					KeyFile:  filepath.Join("testdata", "server.key"),
-				},
-			},
-			tlsClientCreds: &configtls.ClientConfig{
-				Config: configtls.Config{
-					CAFile: filepath.Join("testdata", "ca.crt"),
-				},
-				ServerName: "localhost",
-			},
+			name:           "TLS",
+			tlsServerCreds: &tlsServerConfigWithCerts,
+			tlsClientCreds: &tlsClientConfigWithCAFile,
 		},
 		{
-			name: "TLS (HTTP/1.1)",
-			tlsServerCreds: &configtls.ServerConfig{
-				Config: configtls.Config{
-					CAFile:   filepath.Join("testdata", "ca.crt"),
-					CertFile: filepath.Join("testdata", "server.crt"),
-					KeyFile:  filepath.Join("testdata", "server.key"),
-				},
-			},
-			tlsClientCreds: &configtls.ClientConfig{
-				Config: configtls.Config{
-					CAFile: filepath.Join("testdata", "ca.crt"),
-				},
-				ServerName: "localhost",
-			},
-			forceHTTP1: true,
+			name:           "TLS (HTTP/1.1)",
+			tlsServerCreds: &tlsServerConfigWithCerts,
+			tlsClientCreds: &tlsClientConfigWithCAFile,
+			forceHTTP1:     true,
 		},
 		{
-			name: "NoServerCertificates",
-			tlsServerCreds: &configtls.ServerConfig{
-				Config: configtls.Config{
-					CAFile: filepath.Join("testdata", "ca.crt"),
-				},
-			},
-			tlsClientCreds: &configtls.ClientConfig{
-				Config: configtls.Config{
-					CAFile: filepath.Join("testdata", "ca.crt"),
-				},
-				ServerName: "localhost",
-			},
-			hasError: true,
+			name:           "NoServerCertificates",
+			tlsServerCreds: &tlsServerConfigWithCAFile,
+			tlsClientCreds: &tlsClientConfigWithCAFile,
+			hasError:       true,
 		},
 		{
-			name: "mTLS",
-			tlsServerCreds: &configtls.ServerConfig{
-				Config: configtls.Config{
-					CAFile:   filepath.Join("testdata", "ca.crt"),
-					CertFile: filepath.Join("testdata", "server.crt"),
-					KeyFile:  filepath.Join("testdata", "server.key"),
-				},
-				ClientCAFile: filepath.Join("testdata", "ca.crt"),
-			},
-			tlsClientCreds: &configtls.ClientConfig{
-				Config: configtls.Config{
-					CAFile:   filepath.Join("testdata", "ca.crt"),
-					CertFile: filepath.Join("testdata", "client.crt"),
-					KeyFile:  filepath.Join("testdata", "client.key"),
-				},
-				ServerName: "localhost",
-			},
+			name:           "mTLS",
+			tlsServerCreds: &tlsServerConfigWithCertsAndClientCA,
+			tlsClientCreds: &tlsClientConfigWithCerts2,
 		},
 		{
-			name: "NoClientCertificate",
-			tlsServerCreds: &configtls.ServerConfig{
-				Config: configtls.Config{
-					CAFile:   filepath.Join("testdata", "ca.crt"),
-					CertFile: filepath.Join("testdata", "server.crt"),
-					KeyFile:  filepath.Join("testdata", "server.key"),
-				},
-				ClientCAFile: filepath.Join("testdata", "ca.crt"),
-			},
-			tlsClientCreds: &configtls.ClientConfig{
-				Config: configtls.Config{
-					CAFile: filepath.Join("testdata", "ca.crt"),
-				},
-				ServerName: "localhost",
-			},
-			hasError: true,
+			name:           "NoClientCertificate",
+			tlsServerCreds: &tlsServerConfigWithCertsAndClientCA,
+			tlsClientCreds: &tlsClientConfigWithCAFile,
+			hasError:       true,
 		},
 		{
-			name: "WrongClientCA",
-			tlsServerCreds: &configtls.ServerConfig{
-				Config: configtls.Config{
-					CAFile:   filepath.Join("testdata", "ca.crt"),
-					CertFile: filepath.Join("testdata", "server.crt"),
-					KeyFile:  filepath.Join("testdata", "server.key"),
-				},
-				ClientCAFile: filepath.Join("testdata", "server.crt"),
-			},
-			tlsClientCreds: &configtls.ClientConfig{
-				Config: configtls.Config{
-					CAFile:   filepath.Join("testdata", "ca.crt"),
-					CertFile: filepath.Join("testdata", "client.crt"),
-					KeyFile:  filepath.Join("testdata", "client.key"),
-				},
-				ServerName: "localhost",
-			},
-			hasError: true,
+			name:           "WrongClientCA",
+			tlsServerCreds: &tlsServerConfigWithCertsAndWrongClientCA,
+			tlsClientCreds: &tlsClientConfigWithCerts2,
+			hasError:       true,
 		},
 	}
 	// prepare
@@ -1024,7 +982,7 @@ func TestHttpClientHeaders(t *testing.T) {
 			serverURL, _ := url.Parse(server.URL)
 			setting := ClientConfig{
 				Endpoint:        serverURL.String(),
-				TLSSetting:      configtls.ClientConfig{},
+				TLSSetting:      configtls.NewDefaultClientConfig(),
 				ReadBufferSize:  0,
 				WriteBufferSize: 0,
 				Timeout:         0,
@@ -1060,7 +1018,7 @@ func TestHttpClientHostHeader(t *testing.T) {
 		serverURL, _ := url.Parse(server.URL)
 		setting := ClientConfig{
 			Endpoint:        serverURL.String(),
-			TLSSetting:      configtls.ClientConfig{},
+			TLSSetting:      configtls.NewDefaultClientConfig(),
 			ReadBufferSize:  0,
 			WriteBufferSize: 0,
 			Timeout:         0,
@@ -1418,6 +1376,19 @@ func (nh *mockHost) GetExtensions() map[component.ID]component.Component {
 }
 
 func BenchmarkHttpRequest(b *testing.B) {
+	tlsConfigWithCerts := configtls.NewDefaultConfig()
+	tlsConfigWithCerts.CAFile = filepath.Join("testdata", "ca.crt")
+	tlsConfigWithCerts.CertFile = filepath.Join("testdata", "server.crt")
+	tlsConfigWithCerts.KeyFile = filepath.Join("testdata", "server.key")
+	tlsServerConfigWithCerts := configtls.NewDefaultServerConfig()
+	tlsServerConfigWithCerts.Config = tlsConfigWithCerts
+
+	tlsConfigWithCAFile := configtls.NewDefaultConfig()
+	tlsConfigWithCAFile.CAFile = filepath.Join("testdata", "ca.crt")
+	tlsClientConfigWithCAFile := configtls.NewDefaultClientConfig()
+	tlsClientConfigWithCAFile.Config = tlsConfigWithCAFile
+	tlsClientConfigWithCAFile.ServerName = "localhost"
+
 	tests := []struct {
 		name            string
 		forceHTTP1      bool
@@ -1445,19 +1416,8 @@ func BenchmarkHttpRequest(b *testing.B) {
 		},
 	}
 
-	tlsServerCreds := &configtls.ServerConfig{
-		Config: configtls.Config{
-			CAFile:   filepath.Join("testdata", "ca.crt"),
-			CertFile: filepath.Join("testdata", "server.crt"),
-			KeyFile:  filepath.Join("testdata", "server.key"),
-		},
-	}
-	tlsClientCreds := &configtls.ClientConfig{
-		Config: configtls.Config{
-			CAFile: filepath.Join("testdata", "ca.crt"),
-		},
-		ServerName: "localhost",
-	}
+	tlsServerCreds := &tlsServerConfigWithCerts
+	tlsClientCreds := &tlsClientConfigWithCAFile
 
 	hss := &ServerConfig{
 		Endpoint:   "localhost:0",
