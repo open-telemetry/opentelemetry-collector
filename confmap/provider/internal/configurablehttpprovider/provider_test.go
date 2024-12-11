@@ -52,7 +52,6 @@ func answerGet(w http.ResponseWriter, _ *http.Request) {
 // https://go.dev/src/crypto/tls/generate_cert.go
 func generateCertificate(hostname string) (cert string, key string, err error) {
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
-
 	if err != nil {
 		return "", "", fmt.Errorf("Failed to generate private key: %w", err)
 	}
@@ -62,7 +61,6 @@ func generateCertificate(hostname string) (cert string, key string, err error) {
 	notAfter := notBefore.Add(time.Hour * 12)
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
-
 	if err != nil {
 		return "", "", fmt.Errorf("Failed to generate serial number: %w", err)
 	}
@@ -81,7 +79,6 @@ func generateCertificate(hostname string) (cert string, key string, err error) {
 		DNSNames:              []string{hostname},
 	}
 	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, &priv.PublicKey, priv)
-
 	if err != nil {
 		return "", "", fmt.Errorf("Failed to create certificate: %w", err)
 	}
@@ -100,13 +97,11 @@ func generateCertificate(hostname string) (cert string, key string, err error) {
 	}
 
 	keyOut, err := os.CreateTemp("", "key*.pem")
-
 	if err != nil {
 		return "", "", fmt.Errorf("Failed to open key.pem for writing: %w", err)
 	}
 
 	privBytes, err := x509.MarshalPKCS8PrivateKey(priv)
-
 	if err != nil {
 		return "", "", fmt.Errorf("Unable to marshal private key: %w", err)
 	}
