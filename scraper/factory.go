@@ -32,13 +32,11 @@ type Factory interface {
 	// CreateMetrics creates a Metrics scraper based on this config.
 	// If the scraper type does not support metrics,
 	// this function returns the error [pipeline.ErrSignalNotSupported].
-	// Implementers can assume `next` is never nil.
 	CreateMetrics(ctx context.Context, set Settings, cfg component.Config) (Metrics, error)
 
 	// CreateLogs creates a Logs scraper based on this config.
 	// If the scraper type does not support logs,
 	// this function returns the error [pipeline.ErrSignalNotSupported].
-	// Implementers can assume `next` is never nil.
 	CreateLogs(ctx context.Context, set Settings, cfg component.Config) (Logs, error)
 
 	// MetricsStability gets the stability level of the Metrics scraper.
