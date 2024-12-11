@@ -1,4 +1,4 @@
-module go.opentelemetry.io/collector/config/confighttp/confighttpexperimental
+module go.opentelemetry.io/collector/config/confighttp/xconfighttp
 
 go 1.22.0
 
