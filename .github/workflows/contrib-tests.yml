@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   contrib-tests-matrix:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'Skip Contrib Tests') }}
     strategy:
       fail-fast: false
@@ -54,7 +54,7 @@ jobs:
           make CONTRIB_PATH=$contrib_path SKIP_RESTORE_CONTRIB=true GROUP=${{ matrix.group }} check-contrib
 
   contrib_tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'Skip Contrib Tests') }}
     needs: [contrib-tests-matrix]
     steps:
