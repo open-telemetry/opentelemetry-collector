@@ -39,7 +39,7 @@ func TestToStringMapSanitizeNil(t *testing.T) {
 func TestToStringMapEmptySlice(t *testing.T) {
 	cfg, err := LoadConf(filepath.Join("testdata", "empty-slice.yaml"))
 	require.NoError(t, err)
-	assert.Equal(t, map[string]any{"slice": []interface{}{}}, cfg.ToStringMap())
+	assert.Equal(t, map[string]any{"slice": []any{}}, cfg.ToStringMap())
 }
 
 func TestValidateProviderScheme(t *testing.T) {
