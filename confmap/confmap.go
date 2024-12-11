@@ -291,7 +291,8 @@ func useExpandValue() mapstructure.DecodeHookFuncType {
 	return func(
 		_ reflect.Type,
 		to reflect.Type,
-		data any) (any, error) {
+		data any,
+	) (any, error) {
 		if exp, ok := data.(expandedValue); ok {
 			v := castTo(exp, to.Kind() == reflect.String)
 			// See https://github.com/open-telemetry/opentelemetry-collector/issues/10949

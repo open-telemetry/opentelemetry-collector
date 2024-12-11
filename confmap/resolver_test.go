@@ -302,7 +302,8 @@ func TestBackwardsCompatibilityForFilePath(t *testing.T) {
 						return nil, errors.New(uri)
 					}),
 				},
-				ConverterFactories: nil})
+				ConverterFactories: nil,
+			})
 			if tt.expectBuildErr {
 				assert.Error(t, err)
 				return
@@ -324,7 +325,8 @@ func TestResolver(t *testing.T) {
 				return nil
 			}}),
 		},
-		ConverterFactories: nil})
+		ConverterFactories: nil,
+	})
 	require.NoError(t, err)
 	_, errN := resolver.Resolve(context.Background())
 	require.NoError(t, errN)
@@ -355,7 +357,8 @@ func TestResolverNewLinesInOpaqueValue(t *testing.T) {
 	_, err := NewResolver(ResolverSettings{
 		URIs:               []string{"mock:receivers:\n nop:\n"},
 		ProviderFactories:  []ProviderFactory{newMockProvider(&mockProvider{retM: map[string]any{}})},
-		ConverterFactories: nil})
+		ConverterFactories: nil,
+	})
 	assert.NoError(t, err)
 }
 
@@ -363,7 +366,8 @@ func TestResolverNoLocations(t *testing.T) {
 	_, err := NewResolver(ResolverSettings{
 		URIs:               []string{},
 		ProviderFactories:  []ProviderFactory{newMockProvider(&mockProvider{})},
-		ConverterFactories: nil})
+		ConverterFactories: nil,
+	})
 	assert.Error(t, err)
 }
 
@@ -371,7 +375,8 @@ func TestResolverNoProviders(t *testing.T) {
 	_, err := NewResolver(ResolverSettings{
 		URIs:               []string{filepath.Join("testdata", "config.yaml")},
 		ProviderFactories:  nil,
-		ConverterFactories: nil})
+		ConverterFactories: nil,
+	})
 	assert.Error(t, err)
 }
 
@@ -379,7 +384,8 @@ func TestResolverShutdownClosesWatch(t *testing.T) {
 	resolver, err := NewResolver(ResolverSettings{
 		URIs:               []string{filepath.Join("testdata", "config.yaml")},
 		ProviderFactories:  []ProviderFactory{newFileProvider(t)},
-		ConverterFactories: nil})
+		ConverterFactories: nil,
+	})
 	require.NoError(t, err)
 	_, errN := resolver.Resolve(context.Background())
 	require.NoError(t, errN)
