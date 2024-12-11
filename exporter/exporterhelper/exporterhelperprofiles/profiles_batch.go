@@ -117,7 +117,7 @@ func extractScopeProfiles(srcSS pprofile.ScopeProfiles, count int) pprofile.Scop
 	destSS := pprofile.NewScopeProfiles()
 	destSS.SetSchemaUrl(srcSS.SchemaUrl())
 	srcSS.Scope().CopyTo(destSS.Scope())
-	srcSS.Profiles().RemoveIf(func(srcProfile pprofile.ProfileContainer) bool {
+	srcSS.Profiles().RemoveIf(func(srcProfile pprofile.Profile) bool {
 		if count == 0 {
 			return false
 		}
@@ -132,8 +132,8 @@ func extractScopeProfiles(srcSS pprofile.ScopeProfiles, count int) pprofile.Scop
 func samplesCount(rs pprofile.ResourceProfiles) int {
 	count := 0
 	rs.ScopeProfiles().RemoveIf(func(ss pprofile.ScopeProfiles) bool {
-		ss.Profiles().RemoveIf(func(sp pprofile.ProfileContainer) bool {
-			count += sp.Profile().Sample().Len()
+		ss.Profiles().RemoveIf(func(sp pprofile.Profile) bool {
+			count += sp.Sample().Len()
 			return false
 		})
 		return false

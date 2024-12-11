@@ -32,9 +32,10 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
    corresponding entries, add missing changelog entries. If the changes are
    insignificant, consider not releasing a new version for stable modules.
 
-3. Manually run the action [Automation - Prepare Release](https://github.com/open-telemetry/opentelemetry-collector/actions/workflows/prepare-release.yml). This action will create an issue to track the progress of the release and a pull request to update the changelog and version numbers in the repo. **While this PR is open all merging in Core should be halted**.
+3. Manually run the action [Automation - Prepare Release](https://github.com/open-telemetry/opentelemetry-collector/actions/workflows/prepare-release.yml). This action will create an issue to track the progress of the release and a pull request to update the changelog and version numbers in the repo.
    - When prompted, enter the version numbers determined in Step 2, but do not include a leading `v`.
    - If not intending to release stable modules, do not specify a version for `Release candidate version stable`.
+   - **While this PR is open all merging in Core should be halted**. This should be enforced automatically: the `Merge freeze / Check` CI check will fail and the merge queue will reject PRs as long as a PR with the `release:merge-freeze` label is open.
    - If the PR needs updated in any way you can make the changes in a fork and PR those changes into the `prepare-release-prs/x` branch. You do not need to wait for the CI to pass in this prep-to-prep PR.
    -  🛑 **Do not move forward until this PR is merged.** 🛑
 
@@ -105,24 +106,26 @@ The last step of the release process creates artifacts for the new version of th
 
 2. Update the builder version in `OTELCOL_BUILDER_VERSION` to the new release in the `Makefile`. While this might not be strictly necessary for every release, this is a good practice.
 
-3. Create a pull request with the change and ensure the build completes successfully. See [example](https://github.com/open-telemetry/opentelemetry-collector-releases/pull/71).
+3. Run `make chlog-update VERSION="${RELEASE_VERSION}"` with the version of the artifacts.
+
+4. Create a pull request with the change and ensure the build completes successfully. See [example](https://github.com/open-telemetry/opentelemetry-collector-releases/pull/71).
    -  🛑 **Do not move forward until this PR is merged.** 🛑
 
-4. Check out main and ensure it has the "Prepare release" commit in your local
+5. Check out main and ensure it has the "Prepare release" commit in your local
    copy by pulling in the latest from
    `open-telemetry/opentelemetry-collector-releases`. Assuming your upstream
    remote is named `upstream`, you can try running:
    - `git checkout main && git fetch upstream && git rebase upstream/main`
 
-5. Create a tag for the new release version by running:
+6. Create a tag for the new release version by running:
    
    ⚠️ If you set your remote using `https` you need to include `REMOTE=https://github.com/open-telemetry/opentelemetry-collector-contrib.git` in each command. ⚠️
    
    - `make push-tags TAG=v0.85.0`
 
-6. Wait for the new tag build to pass successfully.
+7. Wait for the new tag build to pass successfully.
 
-7. Ensure the "Release Core", "Release Contrib", "Release k8s", and "Builder - Release" actions pass, this will
+8. Ensure the "Release Core", "Release Contrib", "Release k8s", and "Builder - Release" actions pass, this will
 
     1. push new container images to `https://hub.docker.com/repository/docker/otel/opentelemetry-collector`, `https://hub.docker.com/repository/docker/otel/opentelemetry-collector-contrib` and `https://hub.docker.com/repository/docker/otel/opentelemetry-collector-k8s`
 
@@ -131,6 +134,8 @@ The last step of the release process creates artifacts for the new version of th
     3. build and release ocb binaries under a separate tagged Github release, e.g. `cmd/builder/v0.85.0`
 
     4. build and push ocb Docker images to `https://hub.docker.com/r/otel/opentelemetry-collector-builder` and the GitHub Container Registry within the releases repository
+
+9. Update the release notes with the CHANGELOG.md updates.
 
 ## Troubleshooting
 

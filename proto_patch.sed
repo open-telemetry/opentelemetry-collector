@@ -1,6 +1,6 @@
 s+go.opentelemetry.io/proto/otlp/+go.opentelemetry.io/collector/pdata/internal/data/protogen/+g
 
-s+package opentelemetry.proto.\(.*\).v\(.*\);+package opentelemetry.proto.\1.v\2;\
+s+package opentelemetry\.proto\.\(.*\)\.v\(.*\);+package opentelemetry.proto.\1.v\2;\
 \
 import "gogoproto/gogo.proto";+g
 
@@ -51,7 +51,7 @@ s+\(.*\)PartialSuccess partial_success = \(.*\);+\1PartialSuccess partial_succes
 #
 # Profiles replacements
 #
-s+opentelemetry.proto.profiles.v1experimental.Profile \(.*\);+opentelemetry.proto.profiles.v1experimental.Profile \1\
+s+opentelemetry.proto.profiles.v1development.Profile \(.*\);+opentelemetry.proto.profiles.v1development.Profile \1\
   [ (gogoproto.nullable) = false ];+g
 
 s+bytes profile_id = \(.*\);+bytes profile_id = \1\
