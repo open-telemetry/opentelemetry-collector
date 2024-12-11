@@ -13,7 +13,7 @@ import (
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/contrib/config"
+	config "go.opentelemetry.io/contrib/config/v0.3.0"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
