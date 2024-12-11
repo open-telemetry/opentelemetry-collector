@@ -32,9 +32,10 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
    corresponding entries, add missing changelog entries. If the changes are
    insignificant, consider not releasing a new version for stable modules.
 
-3. Manually run the action [Automation - Prepare Release](https://github.com/open-telemetry/opentelemetry-collector/actions/workflows/prepare-release.yml). This action will create an issue to track the progress of the release and a pull request to update the changelog and version numbers in the repo. **While this PR is open all merging in Core should be halted**.
+3. Manually run the action [Automation - Prepare Release](https://github.com/open-telemetry/opentelemetry-collector/actions/workflows/prepare-release.yml). This action will create an issue to track the progress of the release and a pull request to update the changelog and version numbers in the repo.
    - When prompted, enter the version numbers determined in Step 2, but do not include a leading `v`.
    - If not intending to release stable modules, do not specify a version for `Release candidate version stable`.
+   - **While this PR is open all merging in Core should be halted**. This should be enforced automatically: the `Merge freeze / Check` CI check will fail and the merge queue will reject PRs as long as a PR with the `release:merge-freeze` label is open.
    - If the PR needs updated in any way you can make the changes in a fork and PR those changes into the `prepare-release-prs/x` branch. You do not need to wait for the CI to pass in this prep-to-prep PR.
    -  🛑 **Do not move forward until this PR is merged.** 🛑
 

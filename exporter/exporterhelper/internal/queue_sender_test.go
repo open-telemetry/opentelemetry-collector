@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/internal"
@@ -268,6 +269,10 @@ func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
 					attribute.String(DataTypeKey, dataType.String())))
 
 				assert.NoError(t, be.Shutdown(context.Background()))
+				// metrics should be unregistered at shutdown to prevent memory leak
+				require.Error(t, tt.CheckExporterMetricGauge("otelcol_exporter_queue_capacity", int64(defaultQueueSize)))
+				require.Error(t, tt.CheckExporterMetricGauge("otelcol_exporter_queue_size", int64(7),
+					attribute.String(DataTypeKey, dataType.String())))
 			}
 		})
 	}
@@ -540,7 +545,7 @@ func TestQueueSenderNoStartShutdown(t *testing.T) {
 				ExporterCreateSettings: exportertest.NewNopSettings(),
 			})
 			require.NoError(t, err)
-			qs := NewQueueSender(queue, set, 1, "", obsrep)
+			qs := NewQueueSender(queue, set, 1, "", obsrep, exporterbatcher.NewDefaultConfig())
 			assert.NoError(t, qs.Shutdown(context.Background()))
 		})
 	}
