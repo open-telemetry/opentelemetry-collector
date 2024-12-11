@@ -17,13 +17,13 @@ import (
 	"go.uber.org/zap"
 )
 
-const defaultBetaOtelColVersion = "v0.115.0"
-const defaultStableOtelColVersion = "v1.21.0"
-
-var (
-	// errMissingGoMod indicates an empty gomod field
-	errMissingGoMod = errors.New("missing gomod specification for module")
+const (
+	defaultBetaOtelColVersion   = "v0.115.0"
+	defaultStableOtelColVersion = "v1.21.0"
 )
+
+// errMissingGoMod indicates an empty gomod field
+var errMissingGoMod = errors.New("missing gomod specification for module")
 
 // Config holds the builder's configuration
 type Config struct {
