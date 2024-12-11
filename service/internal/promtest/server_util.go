@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"testing"
 
-	"go.opentelemetry.io/contrib/config"
+	config "go.opentelemetry.io/contrib/config/v0.3.0"
 
 	"go.opentelemetry.io/collector/internal/testutil"
 )
