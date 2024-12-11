@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package xconfighttp// import "go.opentelemetry.io/collector/config/confighttp/xconfighttp"
+package xconfighttp // import "go.opentelemetry.io/collector/config/confighttp/xconfighttp"
 
 import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
