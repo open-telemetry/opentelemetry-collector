@@ -481,7 +481,10 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 		next:            handler,
 		includeMetadata: hss.IncludeMetadata,
 	}
-	errorLog, _ := zap.NewStdLogAt(settings.Logger, zapcore.ErrorLevel)
+	errorLog, err := zap.NewStdLogAt(settings.Logger, zapcore.ErrorLevel)
+	if err != nil {
+		return nil, err
+	}
 	server := &http.Server{
 		Handler:           handler,
 		ReadTimeout:       hss.ReadTimeout,
