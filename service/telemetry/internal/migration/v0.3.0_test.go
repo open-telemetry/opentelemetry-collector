@@ -8,12 +8,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
-func TestUnmarshalLogsConfigV020(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "v0.2.0_logs.yaml"))
+func TestUnmarshalLogsConfigV030(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "v0.3.0_logs.yaml"))
 	require.NoError(t, err)
 
 	cfg := LogsConfigV030{}
@@ -21,8 +20,8 @@ func TestUnmarshalLogsConfigV020(t *testing.T) {
 	require.Len(t, cfg.Processors, 2)
 }
 
-func TestUnmarshalTracesConfigV020(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "v0.2.0_traces.yaml"))
+func TestUnmarshalTracesConfigV030(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "v0.3.0_traces.yaml"))
 	require.NoError(t, err)
 
 	cfg := TracesConfigV030{}
@@ -30,8 +29,8 @@ func TestUnmarshalTracesConfigV020(t *testing.T) {
 	require.Len(t, cfg.Processors, 2)
 }
 
-func TestUnmarshalMetricsConfigV020(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "v0.2.0_metrics.yaml"))
+func TestUnmarshalMetricsConfigV030(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "v0.3.0_metrics.yaml"))
 	require.NoError(t, err)
 
 	cfg := MetricsConfigV030{}
