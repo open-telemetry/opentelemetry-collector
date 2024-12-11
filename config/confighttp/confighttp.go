@@ -482,9 +482,7 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 		includeMetadata: hss.IncludeMetadata,
 	}
 	errorLog, err := zap.NewStdLogAt(settings.Logger, zapcore.ErrorLevel)
-	if err != nil {
-		return nil, err
-	}
+
 	server := &http.Server{
 		Handler:           handler,
 		ReadTimeout:       hss.ReadTimeout,
@@ -494,7 +492,7 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 		ErrorLog:          errorLog,
 	}
 
-	return server, nil
+	return server, err
 }
 
 func responseHeadersHandler(handler http.Handler, headers map[string]configopaque.String) http.Handler {
