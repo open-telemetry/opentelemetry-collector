@@ -15,23 +15,23 @@
 * @open-telemetry/collector-approvers
 
 # List all maintainers individually so all of them are notified
-.github/CODEOWNERS      @codeboten @BogdanDrutu @dmitryax @mx-psi
-docs/rfc                @codeboten @BogdanDrutu @dmitryax @mx-psi
+.github/CODEOWNERS      @open-telemetry/collector-approvers @codeboten @BogdanDrutu @dmitryax @mx-psi
+docs/rfc                @open-telemetry/collector-approvers @codeboten @BogdanDrutu @dmitryax @mx-psi
 
-confmap/                        @mx-psi @evan-bradley
-exporter/debugexporter          @andrzej-stencel
-exporter/exporterhelper         @BogdanDrutu @dmitryax
-exporter/nopexporter            @evan-bradley
-pdata/                          @BogdanDrutu @dmitryax
-receiver/nopreceiver            @evan-bradley
-service/internal/graph          @djaglowski
-extension/experimental/storage  @swiatekm
+confmap/                        @open-telemetry/collector-approvers @mx-psi @evan-bradley
+exporter/debugexporter          @open-telemetry/collector-approvers @andrzej-stencel
+exporter/exporterhelper         @open-telemetry/collector-approvers @BogdanDrutu @dmitryax
+exporter/nopexporter            @open-telemetry/collector-approvers @evan-bradley
+pdata/                          @open-telemetry/collector-approvers @BogdanDrutu @dmitryax
+receiver/nopreceiver            @open-telemetry/collector-approvers @evan-bradley
+service/internal/graph          @open-telemetry/collector-approvers @djaglowski
+extension/experimental/storage  @open-telemetry/collector-approvers @swiatekm
 
 # Profiling-related modules
-pdata/pprofile                                  @mx-psi @dmathieu
-consumer/consumerprofiles                       @mx-psi @dmathieu
-connector/connectorprofiles                     @mx-psi @dmathieu
-exporter/exporterhelper/exporterhelperprofiles  @mx-psi @dmathieu
-exporter/exporterprofiles                       @mx-psi @dmathieu
-processor/processorprofiles                     @mx-psi @dmathieu
-receiver/receiverprofiles                       @mx-psi @dmathieu
+pdata/pprofile                                  @open-telemetry/collector-approvers @mx-psi @dmathieu
+consumer/consumerprofiles                       @open-telemetry/collector-approvers @mx-psi @dmathieu
+connector/connectorprofiles                     @open-telemetry/collector-approvers @mx-psi @dmathieu
+exporter/exporterhelper/exporterhelperprofiles  @open-telemetry/collector-approvers @mx-psi @dmathieu
+exporter/exporterprofiles                       @open-telemetry/collector-approvers @mx-psi @dmathieu
+processor/processorprofiles                     @open-telemetry/collector-approvers @mx-psi @dmathieu
+receiver/receiverprofiles                       @open-telemetry/collector-approvers @mx-psi @dmathieu
