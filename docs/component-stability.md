@@ -78,3 +78,52 @@ Components that were accepted based on being vendor-specific components will be 
 they have no active code owners from the vendor even if there are other code owners listed. As part of being marked unmaintained, we'll attempt to contact the vendor to notify them of the change. Other active code
 owners may petition for its continued maintenance if they want, at which point the component will no
 longer be considered vendor-specific.
+
+## Graduating between stability levels
+
+Components can graduate between stability levels. The process for doing so is as follows:
+
+1. One of the component owners should file an issue with the 'Graduation' issue template to request
+   the graduation.
+2. An approver is assigned in a rotating basis to evaluate the request and provide feedback. For
+   vendor specific components, the approver should be from a different employer to the one owning
+   the component.
+3. If approved, a PR to change the stability level should be opened and MUST be approved by all
+   listed code owners.
+
+## Graduation criteria
+
+In addition to the requirements outlined above, additional criteria should be met before a component
+can graduate to a higher stability level. These ensure that the component is ready for the increased
+usage and scrutiny that comes with a higher stability level, and that the community around it is
+sufficiently healthy.
+
+If the graduation criteria are not met, the approver should provide feedback on what is missing and
+how to address it. The component owners can then address the feedback and re-request graduation on
+the same issue.
+
+## In development to alpha
+
+No additional criteria are required to graduate from development to alpha.
+
+## Alpha to beta
+
+To graduate any signal from alpha to beta on a component:
+1. The component MUST have at least two active code owners.
+2. The code owners for non-vendor-specific components SHOULD have at least two different employers.
+3. Within the 30 days prior to the graduation request, the code owners MUST have reviewed and
+   replied to at least 80% of the issues and pull requests opened against the component. This
+   excludes general PRs or issues that are not specific to the component itself (e.g. repo-wide API
+   updates). It is not necessary that the issues and PRs are closed or merged, but the thay have
+   been reviewed and replied to appropriately.
+
+## Beta to stable
+
+To graduate any signal from beta to stable on a component:
+1. The component MUST have at least three active code owners.
+2. The code owners for non-vendor-specific components SHOULD have at least two different employers.
+3. Within the 60 days prior to the graduation request, the code owners MUST have reviewed and
+   replied to at least 80% of the issues and pull requests opened against the component. This
+   excludes general PRs or issues that are not specific to the component itself (e.g. repo-wide API
+   updates). It is not necessary that the issues and PRs are closed or merged, but the thay have
+   been reviewed and replied to appropriately.
