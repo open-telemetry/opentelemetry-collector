@@ -114,7 +114,7 @@ To graduate any signal from alpha to beta on a component:
 3. Within the 30 days prior to the graduation request, the code owners MUST have reviewed and
    replied to at least 80% of the issues and pull requests opened against the component. This
    excludes general PRs or issues that are not specific to the component itself (e.g. repo-wide API
-   updates). It is not necessary that the issues and PRs are closed or merged, but the thay have
+   updates). It is not necessary that the issues and PRs are closed or merged, but that they have
    been reviewed and replied to appropriately.
 
 ## Beta to stable
@@ -125,5 +125,5 @@ To graduate any signal from beta to stable on a component:
 3. Within the 60 days prior to the graduation request, the code owners MUST have reviewed and
    replied to at least 80% of the issues and pull requests opened against the component. This
    excludes general PRs or issues that are not specific to the component itself (e.g. repo-wide API
-   updates). It is not necessary that the issues and PRs are closed or merged, but the thay have
+   updates). It is not necessary that the issues and PRs are closed or merged, but that they have
    been reviewed and replied to appropriately.
