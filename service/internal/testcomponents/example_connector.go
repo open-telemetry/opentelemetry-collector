@@ -187,6 +187,7 @@ func createExampleProfilesToLogs(_ context.Context, set connector.Settings, _ co
 		mutatesData: set.ID.Name() == "mutate",
 	}, nil
 }
+
 func createExampleProfilesToProfiles(_ context.Context, set connector.Settings, _ component.Config, profiles consumerprofiles.Profiles) (connectorprofiles.Profiles, error) {
 	return &ExampleConnector{
 		ConsumeProfilesFunc: profiles.ConsumeProfiles,

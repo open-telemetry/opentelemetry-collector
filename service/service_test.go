@@ -58,10 +58,12 @@ type ownMetricsTestCase struct {
 	expectedLabels      map[string]labelValue
 }
 
-var testResourceAttrValue = "resource_attr_test_value" // #nosec G101: Potential hardcoded credentials
-var testInstanceID = "test_instance_id"
-var testServiceVersion = "2022-05-20"
-var testServiceName = "test name"
+var (
+	testResourceAttrValue = "resource_attr_test_value" // #nosec G101: Potential hardcoded credentials
+	testInstanceID        = "test_instance_id"
+	testServiceVersion    = "2022-05-20"
+	testServiceName       = "test name"
+)
 
 // prometheusToOtelConv is used to check that the expected resource labels exist as
 // part of the otel resource attributes.
@@ -71,25 +73,28 @@ var prometheusToOtelConv = map[string]string{
 	"service_version":     "service.version",
 }
 
-const metricsVersion = "test version"
-const otelCommand = "otelcoltest"
+const (
+	metricsVersion = "test version"
+	otelCommand    = "otelcoltest"
+)
 
 func ownMetricsTestCases() []ownMetricsTestCase {
-	return []ownMetricsTestCase{{
-		name:                "no resource",
-		userDefinedResource: nil,
-		// All labels added to all collector metrics by default are listed below.
-		// These labels are hard coded here in order to avoid inadvertent changes:
-		// at this point changing labels should be treated as a breaking changing
-		// and requires a good justification. The reason is that changes to metric
-		// names or labels can break alerting, dashboards, etc that are used to
-		// monitor the Collector in production deployments.
-		expectedLabels: map[string]labelValue{
-			"service_instance_id": {state: labelAnyValue},
-			"service_name":        {label: otelCommand, state: labelSpecificValue},
-			"service_version":     {label: metricsVersion, state: labelSpecificValue},
+	return []ownMetricsTestCase{
+		{
+			name:                "no resource",
+			userDefinedResource: nil,
+			// All labels added to all collector metrics by default are listed below.
+			// These labels are hard coded here in order to avoid inadvertent changes:
+			// at this point changing labels should be treated as a breaking changing
+			// and requires a good justification. The reason is that changes to metric
+			// names or labels can break alerting, dashboards, etc that are used to
+			// monitor the Collector in production deployments.
+			expectedLabels: map[string]labelValue{
+				"service_instance_id": {state: labelAnyValue},
+				"service_name":        {label: otelCommand, state: labelSpecificValue},
+				"service_version":     {label: metricsVersion, state: labelSpecificValue},
+			},
 		},
-	},
 		{
 			name: "resource with custom attr",
 			userDefinedResource: map[string]*string{
@@ -167,7 +172,8 @@ func ownMetricsTestCases() []ownMetricsTestCase {
 				"service_name":        {label: otelCommand, state: labelSpecificValue},
 				"service_version":     {state: labelNotPresent},
 			},
-		}}
+		},
+	}
 }
 
 var (
@@ -397,7 +403,7 @@ func TestExtensionNotificationFailure(t *testing.T) {
 	set := newNopSettings()
 	cfg := newNopConfig()
 
-	var extName = component.MustNewType("configWatcher")
+	extName := component.MustNewType("configWatcher")
 	configWatcherExtensionFactory := newConfigWatcherExtensionFactory(extName)
 	set.ExtensionsConfigs = map[component.ID]component.Config{component.NewID(extName): configWatcherExtensionFactory.CreateDefaultConfig()}
 	set.ExtensionsFactories = map[component.Type]extension.Factory{extName: configWatcherExtensionFactory}
@@ -419,7 +425,7 @@ func TestNilCollectorEffectiveConfig(t *testing.T) {
 	set.CollectorConf = nil
 	cfg := newNopConfig()
 
-	var extName = component.MustNewType("configWatcher")
+	extName := component.MustNewType("configWatcher")
 	configWatcherExtensionFactory := newConfigWatcherExtensionFactory(extName)
 	set.ExtensionsConfigs = map[component.ID]component.Config{component.NewID(extName): configWatcherExtensionFactory.CreateDefaultConfig()}
 	set.ExtensionsFactories = map[component.Type]extension.Factory{extName: configWatcherExtensionFactory}
@@ -683,11 +689,13 @@ func newNopConfigPipelineConfigs(pipelineCfgs pipelines.Config) Config {
 			},
 			Metrics: telemetry.MetricsConfig{
 				Level: configtelemetry.LevelBasic,
-				Readers: []config.MetricReader{{
-					Pull: &config.PullMetricReader{Exporter: config.MetricExporter{Prometheus: &config.Prometheus{
-						Host: newPtr("localhost"),
-						Port: newPtr(8888),
-					}}}},
+				Readers: []config.MetricReader{
+					{
+						Pull: &config.PullMetricReader{Exporter: config.MetricExporter{Prometheus: &config.Prometheus{
+							Host: newPtr("localhost"),
+							Port: newPtr(8888),
+						}}},
+					},
 				},
 			},
 		},
