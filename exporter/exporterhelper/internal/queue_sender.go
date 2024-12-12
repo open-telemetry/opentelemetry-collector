@@ -86,7 +86,8 @@ func NewQueueSender(
 	numConsumers int,
 	exportFailureMessage string,
 	obsrep *ObsReport,
-	batcherCfg exporterbatcher.Config) *QueueSender {
+	batcherCfg exporterbatcher.Config,
+) *QueueSender {
 	qs := &QueueSender{
 		queue:          q,
 		numConsumers:   numConsumers,

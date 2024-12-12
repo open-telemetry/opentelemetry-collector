@@ -138,9 +138,11 @@ func createProfilesToProfiles(context.Context, connector.Settings, component.Con
 func createProfilesToTraces(context.Context, connector.Settings, component.Config, consumer.Traces) (Profiles, error) {
 	return nopInstance, nil
 }
+
 func createProfilesToMetrics(context.Context, connector.Settings, component.Config, consumer.Metrics) (Profiles, error) {
 	return nopInstance, nil
 }
+
 func createProfilesToLogs(context.Context, connector.Settings, component.Config, consumer.Logs) (Profiles, error) {
 	return nopInstance, nil
 }

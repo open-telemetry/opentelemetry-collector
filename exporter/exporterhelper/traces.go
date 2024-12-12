@@ -20,8 +20,10 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 )
 
-var tracesMarshaler = &ptrace.ProtoMarshaler{}
-var tracesUnmarshaler = &ptrace.ProtoUnmarshaler{}
+var (
+	tracesMarshaler   = &ptrace.ProtoMarshaler{}
+	tracesUnmarshaler = &ptrace.ProtoUnmarshaler{}
+)
 
 type tracesRequest struct {
 	td     ptrace.Traces

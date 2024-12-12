@@ -22,8 +22,10 @@ import (
 	"go.opentelemetry.io/collector/pipeline/pipelineprofiles"
 )
 
-var profilesMarshaler = &pprofile.ProtoMarshaler{}
-var profilesUnmarshaler = &pprofile.ProtoUnmarshaler{}
+var (
+	profilesMarshaler   = &pprofile.ProtoMarshaler{}
+	profilesUnmarshaler = &pprofile.ProtoUnmarshaler{}
+)
 
 type profilesRequest struct {
 	pd     pprofile.Profiles
