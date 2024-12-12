@@ -5,7 +5,7 @@ go 1.22.0
 require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component/componenttest v0.115.0
-	go.opentelemetry.io/collector/config/confighttp v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/config/confighttp v0.115.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.56.0
 	go.opentelemetry.io/otel/sdk v1.32.0
 	go.opentelemetry.io/otel/trace v1.32.0
