@@ -83,6 +83,7 @@ func createMetricsToMetricsConnector(context.Context, connector.Settings, compon
 func createMetricsToLogsConnector(context.Context, connector.Settings, component.Config, consumer.Logs) (connector.Metrics, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
+
 func createMetricsToProfilesConnector(context.Context, connector.Settings, component.Config, consumerprofiles.Profiles) (connector.Metrics, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
@@ -98,6 +99,7 @@ func createLogsToMetricsConnector(context.Context, connector.Settings, component
 func createLogsToLogsConnector(context.Context, connector.Settings, component.Config, consumer.Logs) (connector.Logs, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
+
 func createLogsToProfilesConnector(context.Context, connector.Settings, component.Config, consumerprofiles.Profiles) (connector.Logs, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
@@ -113,6 +115,7 @@ func createProfilesToMetricsConnector(context.Context, connector.Settings, compo
 func createProfilesToLogsConnector(context.Context, connector.Settings, component.Config, consumer.Logs) (connectorprofiles.Profiles, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
+
 func createProfilesToProfilesConnector(context.Context, connector.Settings, component.Config, consumerprofiles.Profiles) (connectorprofiles.Profiles, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }

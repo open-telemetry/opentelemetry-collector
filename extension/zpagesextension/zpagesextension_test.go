@@ -31,8 +31,10 @@ func newZPagesHost() *zpagesHost {
 
 func (*zpagesHost) RegisterZPages(*http.ServeMux, string) {}
 
-var _ registerableTracerProvider = (*registerableProvider)(nil)
-var _ registerableTracerProvider = sdktrace.NewTracerProvider()
+var (
+	_ registerableTracerProvider = (*registerableProvider)(nil)
+	_ registerableTracerProvider = sdktrace.NewTracerProvider()
+)
 
 type registerableProvider struct {
 	trace.TracerProvider

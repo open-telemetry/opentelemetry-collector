@@ -39,10 +39,12 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
-const tracesTelemetryType = "traces"
-const metricsTelemetryType = "metrics"
-const logsTelemetryType = "logs"
-const profilesTelemetryType = "profiles"
+const (
+	tracesTelemetryType   = "traces"
+	metricsTelemetryType  = "metrics"
+	logsTelemetryType     = "logs"
+	profilesTelemetryType = "profiles"
+)
 
 type responseSerializer interface {
 	MarshalJSON() ([]byte, error)

@@ -20,8 +20,10 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 )
 
-var logsMarshaler = &plog.ProtoMarshaler{}
-var logsUnmarshaler = &plog.ProtoUnmarshaler{}
+var (
+	logsMarshaler   = &plog.ProtoMarshaler{}
+	logsUnmarshaler = &plog.ProtoUnmarshaler{}
+)
 
 type logsRequest struct {
 	ld     plog.Logs

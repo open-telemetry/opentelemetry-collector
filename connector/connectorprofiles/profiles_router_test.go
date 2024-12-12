@@ -30,7 +30,7 @@ func (mts *mutatingProfilesSink) Capabilities() consumer.Capabilities {
 }
 
 func TestProfilesRouterMultiplexing(t *testing.T) {
-	var num = 20
+	num := 20
 	for numIDs := 1; numIDs < num; numIDs++ {
 		for numCons := 1; numCons < num; numCons++ {
 			for numProfiles := 1; numProfiles < num; numProfiles++ {

@@ -40,9 +40,7 @@ const (
 	fakeProfilesParentSpanName = "fake_profiles_parent_span_name"
 )
 
-var (
-	fakeProfilesExporterConfig = struct{}{}
-)
+var fakeProfilesExporterConfig = struct{}{}
 
 func TestProfilesRequest(t *testing.T) {
 	lr := newProfilesRequest(testdata.GenerateProfiles(1), nil)
@@ -301,8 +299,10 @@ func generateProfilesTraffic(t *testing.T, tracer trace.Tracer, le exporterprofi
 	}
 }
 
+// nolint: unparam
 func checkWrapSpanForProfilesExporter(t *testing.T, sr *tracetest.SpanRecorder, tracer trace.Tracer, le exporterprofiles.Profiles,
-	wantError error, numSampleRecords int64) { // nolint: unparam
+	wantError error, numSampleRecords int64,
+) {
 	const numRequests = 5
 	generateProfilesTraffic(t, tracer, le, numRequests, wantError)
 

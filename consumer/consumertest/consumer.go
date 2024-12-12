@@ -37,10 +37,12 @@ type Consumer interface {
 	unexported()
 }
 
-var _ consumer.Logs = (Consumer)(nil)
-var _ consumer.Metrics = (Consumer)(nil)
-var _ consumer.Traces = (Consumer)(nil)
-var _ consumerprofiles.Profiles = (Consumer)(nil)
+var (
+	_ consumer.Logs             = (Consumer)(nil)
+	_ consumer.Metrics          = (Consumer)(nil)
+	_ consumer.Traces           = (Consumer)(nil)
+	_ consumerprofiles.Profiles = (Consumer)(nil)
+)
 
 type nonMutatingConsumer struct{}
 
