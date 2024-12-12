@@ -55,6 +55,7 @@ func TestExport_NonPermanentErrorConsumer(t *testing.T) {
 	assert.IsType(t, status.Error(codes.Unknown, ""), err)
 	assert.Equal(t, pprofileotlp.ExportResponse{}, resp)
 }
+
 func TestExport_PermanentErrorConsumer(t *testing.T) {
 	ld := testdata.GenerateProfiles(1)
 	req := pprofileotlp.NewExportRequestFromProfiles(ld)

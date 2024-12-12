@@ -58,6 +58,7 @@ func TestExport_NonPermanentErrorConsumer(t *testing.T) {
 	assert.IsType(t, status.Error(codes.Unknown, ""), err)
 	assert.Equal(t, ptraceotlp.ExportResponse{}, resp)
 }
+
 func TestExport_PermanentErrorConsumer(t *testing.T) {
 	ld := testdata.GenerateTraces(1)
 	req := ptraceotlp.NewExportRequestFromTraces(ld)
