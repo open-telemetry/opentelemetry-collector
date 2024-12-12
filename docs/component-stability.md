@@ -30,6 +30,10 @@ required for alpha components, although it is still recommended.
 - when removing a configuration option, components MAY keep the old option for a few minor releases and log a WARN level
   message instructing users to remove the option.
 
+#### Documentation requirements
+
+Alpha components should document how to use them in the most common situations, including:
+- One or more example configuration snippets for the most common use cases.
 
 ### Beta
 
@@ -56,6 +60,19 @@ When renaming or removing a configuration option:
 Additionally, when removing an option:
 - the option MAY be made non-operational already by the same version where it is deprecated
 
+#### Documentation requirements
+
+Beta components should have a set of documentation that documents its usage in most cases,
+including:
+- One or more example configuration snippets for the most common use cases.
+- Advanced configuration options that are known to be used in common environments.
+- Warnings about known limitations and ways to misuse the component.
+
+Receivers that produce a fixed set of telemetry should document the telemetry they produce,
+including:
+- For all signals, the resource attributes that are expected to be present in telemetry.
+- For metrics, the name, description, type, units and attributes of each metric.
+
 ### Stable
 
 The component is ready for general availability. Bugs and performance problems should be reported and there's an expectation that the component owners will work on them. Breaking changes, including configuration options and the component's output are not expected to happen without prior notice, unless under special circumstances.
@@ -65,6 +82,24 @@ The component is ready for general availability. Bugs and performance problems s
 Stable components MUST be compatible between minor versions unless critical security issues are found. In that case, the
 component owner MUST provide a migration path and a reasonable time frame for users to upgrade. The same rules from beta
 components apply to stable when it comes to configuration changes.
+
+#### Documentation requirements
+
+Stable components should have a complete set of documentation, including:
+- One or more example configuration snippets for the most common use cases.
+- All configuration options supported by the component and a description for each of them.
+- All component-specific feature gates including a description for them and when they should be
+  used.
+- All component-specific self-observability features that are not available for other components and
+  what they provide.
+- Compatibility guarantees with external dependencies including the versions it is compatible with
+  and under what conditions.
+- Warnings about known limitations and ways to misuse the component.
+
+Receivers that produce a fixed set of telemetry should document the telemetry they produce,
+including:
+- For all signals, the resource attributes that are expected to be present in telemetry.
+- For metrics, the name, description, type, units and attributes of each metric.
 
 ### Deprecated
 
