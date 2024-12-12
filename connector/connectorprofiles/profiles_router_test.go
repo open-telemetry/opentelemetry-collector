@@ -13,8 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/pipeline"
@@ -46,8 +46,8 @@ func TestProfilesRouterMultiplexing(t *testing.T) {
 func fuzzProfiles(numIDs, numCons, numProfiles int) func(*testing.T) {
 	return func(t *testing.T) {
 		allIDs := make([]pipeline.ID, 0, numCons)
-		allCons := make([]consumerprofiles.Profiles, 0, numCons)
-		allConsMap := make(map[pipeline.ID]consumerprofiles.Profiles)
+		allCons := make([]xconsumer.Profiles, 0, numCons)
+		allConsMap := make(map[pipeline.ID]xconsumer.Profiles)
 
 		// If any consumer is mutating, the router must report mutating
 		for i := 0; i < numCons; i++ {
@@ -116,7 +116,7 @@ func TestProfilessRouterConsumer(t *testing.T) {
 
 	foo := new(consumertest.ProfilesSink)
 	bar := new(consumertest.ProfilesSink)
-	r := NewProfilesRouter(map[pipeline.ID]consumerprofiles.Profiles{fooID: foo, barID: bar})
+	r := NewProfilesRouter(map[pipeline.ID]xconsumer.Profiles{fooID: foo, barID: bar})
 
 	rcs := r.PipelineIDs()
 	assert.Len(t, rcs, 2)

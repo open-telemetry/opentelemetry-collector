@@ -1,20 +1,11 @@
-module go.opentelemetry.io/collector/consumer/consumerprofiles
+module go.opentelemetry.io/collector/consumer/xconsumer
 
 go 1.22.0
 
-replace go.opentelemetry.io/collector/pdata => ../../pdata
-
-replace go.opentelemetry.io/collector/pdata/pprofile => ../../pdata/pprofile
-
-replace go.opentelemetry.io/collector/consumer => ../
-
-replace go.opentelemetry.io/collector/consumer/xconsumer => ../xconsumer
-
 require (
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/consumer v1.21.0
-	go.opentelemetry.io/collector/consumer/xconsumer v0.0.0-00010101000000-000000000000
-	go.opentelemetry.io/collector/pdata/pprofile v0.115.0
+	go.opentelemetry.io/collector/consumer v0.114.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.114.0
 )
 
 require (
@@ -34,3 +25,9 @@ require (
 	google.golang.org/protobuf v1.35.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace go.opentelemetry.io/collector/pdata => ../../pdata
+
+replace go.opentelemetry.io/collector/pdata/pprofile => ../../pdata/pprofile
+
+replace go.opentelemetry.io/collector/consumer => ../

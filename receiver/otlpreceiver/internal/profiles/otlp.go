@@ -6,7 +6,7 @@ package profiles // import "go.opentelemetry.io/collector/receiver/otlpreceiver/
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pdata/pprofile/pprofileotlp"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
 )
@@ -14,11 +14,11 @@ import (
 // Receiver is the type used to handle spans from OpenTelemetry exporters.
 type Receiver struct {
 	pprofileotlp.UnimplementedGRPCServer
-	nextConsumer consumerprofiles.Profiles
+	nextConsumer xconsumer.Profiles
 }
 
 // New creates a new Receiver reference.
-func New(nextConsumer consumerprofiles.Profiles) *Receiver {
+func New(nextConsumer xconsumer.Profiles) *Receiver {
 	return &Receiver{
 		nextConsumer: nextConsumer,
 	}

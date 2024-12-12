@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectorprofiles"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/pipelineprofiles"
@@ -319,7 +319,7 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 				n.baseConsumer = cc
 				n.ConsumeLogsFunc = cc.ConsumeLogs
 			case pipelineprofiles.SignalProfiles:
-				cc := capabilityconsumer.NewProfiles(next.(consumerprofiles.Profiles), capability)
+				cc := capabilityconsumer.NewProfiles(next.(xconsumer.Profiles), capability)
 				n.baseConsumer = cc
 				n.ConsumeProfilesFunc = cc.ConsumeProfiles
 			}
@@ -345,9 +345,9 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 				}
 				n.baseConsumer = fanoutconsumer.NewLogs(consumers)
 			case pipelineprofiles.SignalProfiles:
-				consumers := make([]consumerprofiles.Profiles, 0, len(nexts))
+				consumers := make([]xconsumer.Profiles, 0, len(nexts))
 				for _, next := range nexts {
-					consumers = append(consumers, next.(consumerprofiles.Profiles))
+					consumers = append(consumers, next.(xconsumer.Profiles))
 				}
 				n.baseConsumer = fanoutconsumer.NewProfiles(consumers)
 			}

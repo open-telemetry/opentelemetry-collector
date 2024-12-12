@@ -7,14 +7,14 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
 )
 
 // Profiles receiver receives profiles.
 // Its purpose is to translate data from any format to the collector's internal profile format.
-// Profiles receiver feeds a consumerprofiles.Profiles with data.
+// Profiles receiver feeds a xconsumer.Profiles with data.
 //
 // For example, it could be a pprof data source which translates pprof profiles into pprofile.Profiles.
 type Profiles interface {
@@ -31,17 +31,17 @@ type Factory interface {
 	// CreateProfiles creates a Profiles based on this config.
 	// If the receiver type does not support tracing or if the config is not valid
 	// an error will be returned instead. `next` is never nil.
-	CreateProfiles(ctx context.Context, set receiver.Settings, cfg component.Config, next consumerprofiles.Profiles) (Profiles, error)
+	CreateProfiles(ctx context.Context, set receiver.Settings, cfg component.Config, next xconsumer.Profiles) (Profiles, error)
 
 	// ProfilesStability gets the stability level of the Profiles receiver.
 	ProfilesStability() component.StabilityLevel
 }
 
 // CreateProfilesFunc is the equivalent of Factory.CreateProfiles.
-type CreateProfilesFunc func(context.Context, receiver.Settings, component.Config, consumerprofiles.Profiles) (Profiles, error)
+type CreateProfilesFunc func(context.Context, receiver.Settings, component.Config, xconsumer.Profiles) (Profiles, error)
 
 // CreateProfiles implements Factory.CreateProfiles.
-func (f CreateProfilesFunc) CreateProfiles(ctx context.Context, set receiver.Settings, cfg component.Config, next consumerprofiles.Profiles) (Profiles, error) {
+func (f CreateProfilesFunc) CreateProfiles(ctx context.Context, set receiver.Settings, cfg component.Config, next xconsumer.Profiles) (Profiles, error) {
 	if f == nil {
 		return nil, pipeline.ErrSignalNotSupported
 	}

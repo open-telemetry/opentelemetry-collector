@@ -13,8 +13,8 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectorprofiles"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 )
 
 var nopType = component.MustNewType("nop")
@@ -68,7 +68,7 @@ func createTracesToLogsConnector(context.Context, connector.Settings, component.
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 
-func createTracesToProfilesConnector(context.Context, connector.Settings, component.Config, consumerprofiles.Profiles) (connector.Traces, error) {
+func createTracesToProfilesConnector(context.Context, connector.Settings, component.Config, xconsumer.Profiles) (connector.Traces, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 
@@ -84,7 +84,7 @@ func createMetricsToLogsConnector(context.Context, connector.Settings, component
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 
-func createMetricsToProfilesConnector(context.Context, connector.Settings, component.Config, consumerprofiles.Profiles) (connector.Metrics, error) {
+func createMetricsToProfilesConnector(context.Context, connector.Settings, component.Config, xconsumer.Profiles) (connector.Metrics, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 
@@ -100,7 +100,7 @@ func createLogsToLogsConnector(context.Context, connector.Settings, component.Co
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 
-func createLogsToProfilesConnector(context.Context, connector.Settings, component.Config, consumerprofiles.Profiles) (connector.Logs, error) {
+func createLogsToProfilesConnector(context.Context, connector.Settings, component.Config, xconsumer.Profiles) (connector.Logs, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 
@@ -116,7 +116,7 @@ func createProfilesToLogsConnector(context.Context, connector.Settings, componen
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 
-func createProfilesToProfilesConnector(context.Context, connector.Settings, component.Config, consumerprofiles.Profiles) (connectorprofiles.Profiles, error) {
+func createProfilesToProfilesConnector(context.Context, connector.Settings, component.Config, xconsumer.Profiles) (connectorprofiles.Profiles, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 

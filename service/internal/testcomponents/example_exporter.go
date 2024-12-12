@@ -77,7 +77,7 @@ func (exp *ExampleExporter) ConsumeLogs(_ context.Context, ld plog.Logs) error {
 	return nil
 }
 
-// ConsumeProfiles receives pprofile.Profiles for processing by the consumerprofiles.Profiles.
+// ConsumeProfiles receives pprofile.Profiles for processing by the xconsumer.Profiles.
 func (exp *ExampleExporter) ConsumeProfiles(_ context.Context, td pprofile.Profiles) error {
 	exp.Profiles = append(exp.Profiles, td)
 	return nil
