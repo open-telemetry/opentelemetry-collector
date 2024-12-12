@@ -18,6 +18,9 @@ In order to have more people comfortable with the release process, and in order 
 
 It is possible that a core approver isn't a contrib approver. In that case, the release manager should coordinate with a contrib approver for the steps requiring this role, such as branch creation or tag publishing.
 
+To ensure the rest of the community is informed about the release and can properly help the release manager, the release manager should open a thread on the #otel-collector-dev CNCF Slack channel and provide updates there.
+The thread should be shared with all Collector leads (core and contrib approvers and maintainers).
+
 ## Releasing opentelemetry-collector
 
 1. Update Contrib to use the latest in development version of Core by running `make update-otel` in Contrib root directory. This is to ensure that the latest core does not break contrib in any way. If it results in any changes, submit a PR to Contrib. If you are unable to run `make update-otel`, it is possible to skip this step and resolve conflicts with Contrib after Core is released, but this is generally inadvisable.

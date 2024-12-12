@@ -145,6 +145,10 @@ func TestDefaultBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 }
 
 func TestDefaultBatcher_NoSplit_WithTimeout(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector/issues/11869")
+	}
+
 	tests := []struct {
 		name       string
 		maxWorkers int
