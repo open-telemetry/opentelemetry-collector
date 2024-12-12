@@ -75,7 +75,7 @@ When adding a new module remember to update the following:
 1. Add a changelog note for the new module.
 1. Add the module in `versions.yaml`.
 1. Use `make crosslink` to make sure the module replaces are added correctly throughout the
-   codebase.
+   codebase. You may also have to manually add some of the replaces.
 1. Update the [otelcorecol
    manifest](https://github.com/open-telemetry/opentelemetry-collector/blob/main/cmd/otelcorecol/builder-config.yaml)
    and [builder
