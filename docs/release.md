@@ -144,8 +144,8 @@ After the release is complete, the release manager should do the following steps
 1. Create an issue or update existing issues for each problem encountered throughout the release in
 the appropriate repositories and label them with the `release:retro` label. The release manager
 should share the list of issues that affected the release with the Collector leads.
-2. Update the [release schedule](#release-schedule) section of this document to remove the first
-   line and add themselves to the bottom of the list.
+2. Update the [release schedule](#release-schedule) section of this document to remove the completed
+releases and add new schedules to the bottom of the list.
 
 ## Troubleshooting
 
