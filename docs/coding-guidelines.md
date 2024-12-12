@@ -67,8 +67,7 @@ We use the following rules for some common situations where we split into separa
    their own module, named as it will be after integration. For example, if adding profile support
    to `pdata`, you should add a separate module `pdata/pprofile` for the experimental code.
 1. Experimental code that will be added to an existing stable module can be a submodule with the
-   same name, but prefixed with x. They MUST have the same name as the stable modules prefixed with
-   `x`. For example, `config/confighttp` module can have an experimental module named
+   same name, but prefixed with an `x`. For example, `config/confighttp` module can have an experimental module named
    `config/confighttp/xconfighttp` that contains experimental APIs.
 
 When adding a new module remember to update the following:
