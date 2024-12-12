@@ -11,9 +11,7 @@ import (
 	"go.uber.org/multierr"
 )
 
-var (
-	errNonPositiveInterval = errors.New("requires positive value")
-)
+var errNonPositiveInterval = errors.New("requires positive value")
 
 // ControllerConfig defines common settings for a scraper controller
 // configuration. Scraper controller receivers can embed this struct, instead

@@ -490,12 +490,15 @@ type nopConnector struct {
 func createConnectorTracesToTraces(context.Context, connector.Settings, component.Config, consumer.Traces) (connector.Traces, error) {
 	return nopConnectorInstance, nil
 }
+
 func createConnectorTracesToMetrics(context.Context, connector.Settings, component.Config, consumer.Metrics) (connector.Traces, error) {
 	return nopConnectorInstance, nil
 }
+
 func createConnectorTracesToLogs(context.Context, connector.Settings, component.Config, consumer.Logs) (connector.Traces, error) {
 	return nopConnectorInstance, nil
 }
+
 func createConnectorTracesToProfiles(context.Context, connector.Settings, component.Config, consumerprofiles.Profiles) (connector.Traces, error) {
 	return nopConnectorInstance, nil
 }
@@ -503,12 +506,15 @@ func createConnectorTracesToProfiles(context.Context, connector.Settings, compon
 func createConnectorMetricsToTraces(context.Context, connector.Settings, component.Config, consumer.Traces) (connector.Metrics, error) {
 	return nopConnectorInstance, nil
 }
+
 func createConnectorMetricsToMetrics(context.Context, connector.Settings, component.Config, consumer.Metrics) (connector.Metrics, error) {
 	return nopConnectorInstance, nil
 }
+
 func createConnectorMetricsToLogs(context.Context, connector.Settings, component.Config, consumer.Logs) (connector.Metrics, error) {
 	return nopConnectorInstance, nil
 }
+
 func createConnectorMetricsToProfiles(context.Context, connector.Settings, component.Config, consumerprofiles.Profiles) (connector.Metrics, error) {
 	return nopConnectorInstance, nil
 }
@@ -516,12 +522,15 @@ func createConnectorMetricsToProfiles(context.Context, connector.Settings, compo
 func createConnectorLogsToTraces(context.Context, connector.Settings, component.Config, consumer.Traces) (connector.Logs, error) {
 	return nopConnectorInstance, nil
 }
+
 func createConnectorLogsToMetrics(context.Context, connector.Settings, component.Config, consumer.Metrics) (connector.Logs, error) {
 	return nopConnectorInstance, nil
 }
+
 func createConnectorLogsToLogs(context.Context, connector.Settings, component.Config, consumer.Logs) (connector.Logs, error) {
 	return nopConnectorInstance, nil
 }
+
 func createConnectorLogsToProfiles(context.Context, connector.Settings, component.Config, consumerprofiles.Profiles) (connector.Logs, error) {
 	return nopConnectorInstance, nil
 }
@@ -529,12 +538,15 @@ func createConnectorLogsToProfiles(context.Context, connector.Settings, componen
 func createConnectorProfilesToTraces(context.Context, connector.Settings, component.Config, consumer.Traces) (connectorprofiles.Profiles, error) {
 	return nopConnectorInstance, nil
 }
+
 func createConnectorProfilesToMetrics(context.Context, connector.Settings, component.Config, consumer.Metrics) (connectorprofiles.Profiles, error) {
 	return nopConnectorInstance, nil
 }
+
 func createConnectorProfilesToLogs(context.Context, connector.Settings, component.Config, consumer.Logs) (connectorprofiles.Profiles, error) {
 	return nopConnectorInstance, nil
 }
+
 func createConnectorProfilesToProfiles(context.Context, connector.Settings, component.Config, consumerprofiles.Profiles) (connectorprofiles.Profiles, error) {
 	return nopConnectorInstance, nil
 }

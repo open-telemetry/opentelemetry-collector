@@ -45,6 +45,7 @@ func createMetricsExporter(context.Context, exporter.Settings, component.Config)
 func createLogsExporter(context.Context, exporter.Settings, component.Config) (exporter.Logs, error) {
 	return &ExampleExporter{}, nil
 }
+
 func createProfilesExporter(context.Context, exporter.Settings, component.Config) (exporterprofiles.Profiles, error) {
 	return &ExampleExporter{}, nil
 }

@@ -20,7 +20,8 @@ var testType = component.MustNewType("test")
 func nopSettings() Settings {
 	return Settings{
 		ID:                component.NewID(testType),
-		TelemetrySettings: componenttest.NewNopTelemetrySettings()}
+		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+	}
 }
 
 func TestNewFactory(t *testing.T) {
@@ -35,7 +36,7 @@ func TestNewFactory(t *testing.T) {
 }
 
 func TestNewFactoryWithOptions(t *testing.T) {
-	var testType = component.MustNewType("test")
+	testType := component.MustNewType("test")
 	defaultCfg := struct{}{}
 	f := NewFactory(
 		testType,
