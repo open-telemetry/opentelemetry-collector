@@ -105,6 +105,7 @@ the same issue.
 ## In development to alpha
 
 No additional criteria are required to graduate from development to alpha.
+The component still needs to meet the general requirements for alpha components.
 
 ## Alpha to beta
 
