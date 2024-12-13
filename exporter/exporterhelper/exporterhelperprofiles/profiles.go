@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/xexporter"
 	"go.opentelemetry.io/collector/pdata/pprofile"
-	"go.opentelemetry.io/collector/pipeline/pipelineprofiles"
+	"go.opentelemetry.io/collector/pipeline/xpipeline"
 )
 
 var (
@@ -123,7 +123,7 @@ func NewProfilesRequestExporter(
 		return nil, errNilProfilesConverter
 	}
 
-	be, err := internal.NewBaseExporter(set, pipelineprofiles.SignalProfiles, newProfilesExporterWithObservability, options...)
+	be, err := internal.NewBaseExporter(set, xpipeline.SignalProfiles, newProfilesExporterWithObservability, options...)
 	if err != nil {
 		return nil, err
 	}

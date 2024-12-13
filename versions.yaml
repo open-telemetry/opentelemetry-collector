@@ -70,6 +70,7 @@ module-sets:
       - go.opentelemetry.io/collector/pdata/testdata
       - go.opentelemetry.io/collector/pipeline
       - go.opentelemetry.io/collector/pipeline/pipelineprofiles
+      - go.opentelemetry.io/collector/pipeline/xpipeline
       - go.opentelemetry.io/collector/processor
       - go.opentelemetry.io/collector/processor/processortest
       - go.opentelemetry.io/collector/processor/batchprocessor

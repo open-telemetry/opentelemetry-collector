@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/collector/pdata/pprofile v0.115.0
 	go.opentelemetry.io/collector/pdata/testdata v0.115.0
 	go.opentelemetry.io/collector/pipeline v0.115.0
-	go.opentelemetry.io/collector/pipeline/pipelineprofiles v0.115.0
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.115.0
 )
 
 require (
@@ -59,6 +59,6 @@ replace go.opentelemetry.io/collector/pdata/testdata => ../../pdata/testdata
 
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 
-replace go.opentelemetry.io/collector/pipeline/pipelineprofiles => ../../pipeline/pipelineprofiles
+replace go.opentelemetry.io/collector/pipeline/xpipeline => ../../pipeline/xpipeline
 
 replace go.opentelemetry.io/collector/internal/fanoutconsumer => ../../internal/fanoutconsumer

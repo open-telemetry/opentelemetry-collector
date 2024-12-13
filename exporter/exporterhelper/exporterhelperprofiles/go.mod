@@ -17,7 +17,7 @@ require (
 	go.opentelemetry.io/collector/exporter/xexporter v0.115.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.115.0
 	go.opentelemetry.io/collector/pdata/testdata v0.115.0
-	go.opentelemetry.io/collector/pipeline/pipelineprofiles v0.115.0
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.115.0
 	go.opentelemetry.io/otel v1.32.0
 	go.opentelemetry.io/otel/sdk v1.32.0
 	go.opentelemetry.io/otel/trace v1.32.0
@@ -91,7 +91,7 @@ replace go.opentelemetry.io/collector/config/configtelemetry => ../../../config/
 
 replace go.opentelemetry.io/collector/config/configretry => ../../../config/configretry
 
-replace go.opentelemetry.io/collector/pipeline/pipelineprofiles => ../../../pipeline/pipelineprofiles
+replace go.opentelemetry.io/collector/pipeline/xpipeline => ../../../pipeline/xpipeline
 
 replace go.opentelemetry.io/collector/extension/experimental/storage => ../../../extension/experimental/storage
 

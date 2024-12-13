@@ -32,7 +32,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
 	"go.opentelemetry.io/collector/pipeline"
-	"go.opentelemetry.io/collector/pipeline/pipelineprofiles"
+	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
 	"go.opentelemetry.io/collector/service/internal/status"
@@ -318,7 +318,7 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 				cc := capabilityconsumer.NewLogs(next.(consumer.Logs), capability)
 				n.baseConsumer = cc
 				n.ConsumeLogsFunc = cc.ConsumeLogs
-			case pipelineprofiles.SignalProfiles:
+			case xpipeline.SignalProfiles:
 				cc := capabilityconsumer.NewProfiles(next.(xconsumer.Profiles), capability)
 				n.baseConsumer = cc
 				n.ConsumeProfilesFunc = cc.ConsumeProfiles
@@ -344,7 +344,7 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 					consumers = append(consumers, next.(consumer.Logs))
 				}
 				n.baseConsumer = fanoutconsumer.NewLogs(consumers)
-			case pipelineprofiles.SignalProfiles:
+			case xpipeline.SignalProfiles:
 				consumers := make([]xconsumer.Profiles, 0, len(nexts))
 				for _, next := range nexts {
 					consumers = append(consumers, next.(xconsumer.Profiles))
@@ -484,7 +484,7 @@ func (g *Graph) GetExporters() map[pipeline.Signal]map[component.ID]component.Co
 	exportersMap[pipeline.SignalTraces] = make(map[component.ID]component.Component)
 	exportersMap[pipeline.SignalMetrics] = make(map[component.ID]component.Component)
 	exportersMap[pipeline.SignalLogs] = make(map[component.ID]component.Component)
-	exportersMap[pipelineprofiles.SignalProfiles] = make(map[component.ID]component.Component)
+	exportersMap[xpipeline.SignalProfiles] = make(map[component.ID]component.Component)
 
 	for _, pg := range g.pipelines {
 		for _, expNode := range pg.exporters {
@@ -547,7 +547,7 @@ func connectorStability(f connector.Factory, expType, recType pipeline.Signal) c
 			return f.TracesToMetricsStability()
 		case pipeline.SignalLogs:
 			return f.TracesToLogsStability()
-		case pipelineprofiles.SignalProfiles:
+		case xpipeline.SignalProfiles:
 			fprof, ok := f.(connectorprofiles.Factory)
 			if !ok {
 				return component.StabilityLevelUndefined
@@ -562,7 +562,7 @@ func connectorStability(f connector.Factory, expType, recType pipeline.Signal) c
 			return f.MetricsToMetricsStability()
 		case pipeline.SignalLogs:
 			return f.MetricsToLogsStability()
-		case pipelineprofiles.SignalProfiles:
+		case xpipeline.SignalProfiles:
 			fprof, ok := f.(connectorprofiles.Factory)
 			if !ok {
 				return component.StabilityLevelUndefined
@@ -577,14 +577,14 @@ func connectorStability(f connector.Factory, expType, recType pipeline.Signal) c
 			return f.LogsToMetricsStability()
 		case pipeline.SignalLogs:
 			return f.LogsToLogsStability()
-		case pipelineprofiles.SignalProfiles:
+		case xpipeline.SignalProfiles:
 			fprof, ok := f.(connectorprofiles.Factory)
 			if !ok {
 				return component.StabilityLevelUndefined
 			}
 			return fprof.LogsToProfilesStability()
 		}
-	case pipelineprofiles.SignalProfiles:
+	case xpipeline.SignalProfiles:
 		fprof, ok := f.(connectorprofiles.Factory)
 		if !ok {
 			return component.StabilityLevelUndefined
@@ -596,7 +596,7 @@ func connectorStability(f connector.Factory, expType, recType pipeline.Signal) c
 			return fprof.ProfilesToMetricsStability()
 		case pipeline.SignalLogs:
 			return fprof.ProfilesToLogsStability()
-		case pipelineprofiles.SignalProfiles:
+		case xpipeline.SignalProfiles:
 			return fprof.ProfilesToProfilesStability()
 		}
 	}
