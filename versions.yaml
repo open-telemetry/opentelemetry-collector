@@ -77,7 +77,7 @@ module-sets:
       - go.opentelemetry.io/collector/receiver
       - go.opentelemetry.io/collector/receiver/nopreceiver
       - go.opentelemetry.io/collector/receiver/otlpreceiver
-      - go.opentelemetry.io/collector/receiver/receiverprofiles
+      - go.opentelemetry.io/collector/receiver/xreceiver
       - go.opentelemetry.io/collector/receiver/receivertest
       - go.opentelemetry.io/collector/scraper
       - go.opentelemetry.io/collector/semconv
@@ -90,3 +90,4 @@ excluded-modules:
   - go.opentelemetry.io/collector/internal/e2e
   - go.opentelemetry.io/collector/internal/tools
   - go.opentelemetry.io/collector/confmap/internal/e2e
+  - go.opentelemetry.io/collector/receiver/receiverprofiles

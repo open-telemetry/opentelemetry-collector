@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorprofiles"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/receiverprofiles"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 	"go.opentelemetry.io/collector/service/internal/testcomponents"
 	"go.opentelemetry.io/collector/service/pipelines"
 )
@@ -195,18 +195,18 @@ func newBadConnectorFactory() connector.Factory {
 }
 
 func newErrReceiverFactory() receiver.Factory {
-	return receiverprofiles.NewFactory(component.MustNewType("err"),
+	return xreceiver.NewFactory(component.MustNewType("err"),
 		func() component.Config { return &struct{}{} },
-		receiverprofiles.WithTraces(func(context.Context, receiver.Settings, component.Config, consumer.Traces) (receiver.Traces, error) {
+		xreceiver.WithTraces(func(context.Context, receiver.Settings, component.Config, consumer.Traces) (receiver.Traces, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		receiverprofiles.WithLogs(func(context.Context, receiver.Settings, component.Config, consumer.Logs) (receiver.Logs, error) {
+		xreceiver.WithLogs(func(context.Context, receiver.Settings, component.Config, consumer.Logs) (receiver.Logs, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		receiverprofiles.WithMetrics(func(context.Context, receiver.Settings, component.Config, consumer.Metrics) (receiver.Metrics, error) {
+		xreceiver.WithMetrics(func(context.Context, receiver.Settings, component.Config, consumer.Metrics) (receiver.Metrics, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		receiverprofiles.WithProfiles(func(context.Context, receiver.Settings, component.Config, xconsumer.Profiles) (receiverprofiles.Profiles, error) {
+		xreceiver.WithProfiles(func(context.Context, receiver.Settings, component.Config, xconsumer.Profiles) (xreceiver.Profiles, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
 	)

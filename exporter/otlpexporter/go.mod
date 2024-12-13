@@ -58,7 +58,7 @@ require (
 	go.opentelemetry.io/collector/config/internal v0.115.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror/consumererrorprofiles v0.115.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.115.0 // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.115.0 // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.115.1-0.20241213185000-4593ba7de234 // indirect
 	go.opentelemetry.io/collector/extension v0.115.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.115.0 // indirect
 	go.opentelemetry.io/collector/extension/experimental/storage v0.115.0 // indirect
@@ -66,8 +66,8 @@ require (
 	go.opentelemetry.io/collector/pipeline v0.115.0 // indirect
 	go.opentelemetry.io/collector/pipeline/pipelineprofiles v0.115.0 // indirect
 	go.opentelemetry.io/collector/receiver v0.115.0 // indirect
-	go.opentelemetry.io/collector/receiver/receiverprofiles v0.115.0 // indirect
 	go.opentelemetry.io/collector/receiver/receivertest v0.115.0 // indirect
+	go.opentelemetry.io/collector/receiver/xreceiver v0.115.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.56.0 // indirect
 	go.opentelemetry.io/otel v1.32.0 // indirect
 	go.opentelemetry.io/otel/metric v1.32.0 // indirect
@@ -129,7 +129,7 @@ replace go.opentelemetry.io/collector/consumer/xconsumer => ../../consumer/xcons
 
 replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/consumertest
 
-replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../../receiver/receiverprofiles
+replace go.opentelemetry.io/collector/receiver/xreceiver => ../../receiver/xreceiver
 
 replace go.opentelemetry.io/collector/receiver/receivertest => ../../receiver/receivertest
 

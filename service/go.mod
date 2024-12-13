@@ -21,7 +21,7 @@ require (
 	go.opentelemetry.io/collector/connector/connectortest v0.115.0
 	go.opentelemetry.io/collector/consumer v1.21.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.115.0
-	go.opentelemetry.io/collector/consumer/xconsumer v0.115.0
+	go.opentelemetry.io/collector/consumer/xconsumer v0.115.1-0.20241213185000-4593ba7de234
 	go.opentelemetry.io/collector/exporter v0.115.0
 	go.opentelemetry.io/collector/exporter/exporterprofiles v0.115.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.115.0
@@ -40,8 +40,8 @@ require (
 	go.opentelemetry.io/collector/processor/processorprofiles v0.115.0
 	go.opentelemetry.io/collector/processor/processortest v0.115.0
 	go.opentelemetry.io/collector/receiver v0.115.0
-	go.opentelemetry.io/collector/receiver/receiverprofiles v0.115.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.115.0
+	go.opentelemetry.io/collector/receiver/xreceiver v0.115.0
 	go.opentelemetry.io/collector/semconv v0.115.0
 	go.opentelemetry.io/contrib/bridges/otelzap v0.6.0
 	go.opentelemetry.io/contrib/config v0.10.0
@@ -193,7 +193,7 @@ replace go.opentelemetry.io/collector/consumer/consumertest => ../consumer/consu
 
 replace go.opentelemetry.io/collector/client => ../client
 
-replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../receiver/receiverprofiles
+replace go.opentelemetry.io/collector/receiver/xreceiver => ../receiver/xreceiver
 
 replace go.opentelemetry.io/collector/receiver/receivertest => ../receiver/receivertest
 

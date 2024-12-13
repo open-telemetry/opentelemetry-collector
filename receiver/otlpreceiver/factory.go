@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/internal/sharedcomponent"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
-	"go.opentelemetry.io/collector/receiver/receiverprofiles"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 )
 
 const (
@@ -27,13 +27,13 @@ const (
 
 // NewFactory creates a new OTLP receiver factory.
 func NewFactory() receiver.Factory {
-	return receiverprofiles.NewFactory(
+	return xreceiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiverprofiles.WithTraces(createTraces, metadata.TracesStability),
-		receiverprofiles.WithMetrics(createMetrics, metadata.MetricsStability),
-		receiverprofiles.WithLogs(createLog, metadata.LogsStability),
-		receiverprofiles.WithProfiles(createProfiles, metadata.ProfilesStability),
+		xreceiver.WithTraces(createTraces, metadata.TracesStability),
+		xreceiver.WithMetrics(createMetrics, metadata.MetricsStability),
+		xreceiver.WithLogs(createLog, metadata.LogsStability),
+		xreceiver.WithProfiles(createProfiles, metadata.ProfilesStability),
 	)
 }
 
@@ -133,7 +133,7 @@ func createProfiles(
 	set receiver.Settings,
 	cfg component.Config,
 	nextConsumer xconsumer.Profiles,
-) (receiverprofiles.Profiles, error) {
+) (xreceiver.Profiles, error) {
 	oCfg := cfg.(*Config)
 	r, err := receivers.LoadOrStore(
 		oCfg,

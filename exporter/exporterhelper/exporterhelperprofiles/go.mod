@@ -11,7 +11,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumererror v0.115.0
 	go.opentelemetry.io/collector/consumer/consumererror/consumererrorprofiles v0.115.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.115.0
-	go.opentelemetry.io/collector/consumer/xconsumer v0.115.0
+	go.opentelemetry.io/collector/consumer/xconsumer v0.115.1-0.20241213185000-4593ba7de234
 	go.opentelemetry.io/collector/exporter v0.115.0
 	go.opentelemetry.io/collector/exporter/exporterprofiles v0.115.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.115.0
@@ -43,8 +43,8 @@ require (
 	go.opentelemetry.io/collector/pdata v1.21.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.115.0 // indirect
 	go.opentelemetry.io/collector/receiver v0.115.0 // indirect
-	go.opentelemetry.io/collector/receiver/receiverprofiles v0.115.0 // indirect
 	go.opentelemetry.io/collector/receiver/receivertest v0.115.0 // indirect
+	go.opentelemetry.io/collector/receiver/xreceiver v0.115.0 // indirect
 	go.opentelemetry.io/otel/metric v1.32.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.32.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
@@ -77,7 +77,7 @@ replace go.opentelemetry.io/collector/component => ../../../component
 
 replace go.opentelemetry.io/collector/component/componenttest => ../../../component/componenttest
 
-replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../../../receiver/receiverprofiles
+replace go.opentelemetry.io/collector/receiver/xreceiver => ../../../receiver/xreceiver
 
 replace go.opentelemetry.io/collector/receiver/receivertest => ../../../receiver/receivertest
 

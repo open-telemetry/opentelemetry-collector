@@ -11,7 +11,7 @@ require (
 	go.opentelemetry.io/collector/connector/connectorprofiles v0.115.0
 	go.opentelemetry.io/collector/consumer v1.21.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.115.0
-	go.opentelemetry.io/collector/consumer/xconsumer v0.115.0
+	go.opentelemetry.io/collector/consumer/xconsumer v0.115.1-0.20241213185000-4593ba7de234
 	go.opentelemetry.io/collector/pdata v1.21.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.115.0
 	go.uber.org/goleak v1.3.0
