@@ -31,8 +31,8 @@ type componentTestTelemetry struct {
 {{- if or isConnector isExporter isExtension isProcessor isReceiver }}
 func (tt *componentTestTelemetry) NewSettings() {{ .Status.Class }}.Settings {
 	set := {{ .Status.Class }}test.NewNopSettings()
-	set.TelemetrySettings = tt.newTelemetrySettings()
 	set.ID = component.NewID(component.MustNewType("{{ .Type }}"))
+	set.TelemetrySettings = tt.newTelemetrySettings()
 	return set
 }
 {{- end }}
@@ -40,9 +40,7 @@ func (tt *componentTestTelemetry) NewSettings() {{ .Status.Class }}.Settings {
 func (tt *componentTestTelemetry) newTelemetrySettings() component.TelemetrySettings {
 	set := componenttest.NewNopTelemetrySettings()
 	set.MeterProvider = tt.meterProvider
-	set.LeveledMeterProvider = func(_ configtelemetry.Level) metric.MeterProvider {
-		return tt.meterProvider
-	}
+	set.MetricsLevel = configtelemetry.LevelDetailed
 	return set
 }
 

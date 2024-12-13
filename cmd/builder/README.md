@@ -126,7 +126,7 @@ Finally, load the OpenTelemetry Collector as a project in the IDE, configure deb
 The configuration file is composed of two main parts: `dist` and module types. All `dist` options can be specified via command line flags:
 
 ```console
-ocb --config=config.yaml --name="my-otelcol"
+ocb --config=config.yaml
 ```
 
 The module types are specified at the top-level, and might be: `extensions`, `exporters`, `receivers` and `processors`. They all accept a list of components, and each component is required to have at least the `gomod` entry. When not specified, the `import` value is inferred from the `gomod`. When not specified, the `name` is inferred from the `import`.

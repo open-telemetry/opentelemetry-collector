@@ -28,10 +28,10 @@ func (mts *mutatingMetricsSink) Capabilities() consumer.Capabilities {
 }
 
 func TestMetricsRouterMultiplexing(t *testing.T) {
-	var max = 20
-	for numIDs := 1; numIDs < max; numIDs++ {
-		for numCons := 1; numCons < max; numCons++ {
-			for numMetrics := 1; numMetrics < max; numMetrics++ {
+	num := 20
+	for numIDs := 1; numIDs < num; numIDs++ {
+		for numCons := 1; numCons < num; numCons++ {
+			for numMetrics := 1; numMetrics < num; numMetrics++ {
 				t.Run(
 					fmt.Sprintf("%d-ids/%d-cons/%d-logs", numIDs, numCons, numMetrics),
 					fuzzMetrics(numIDs, numCons, numMetrics),

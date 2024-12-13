@@ -13,8 +13,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorprofiles"
 	"go.opentelemetry.io/collector/processor/processortest"
@@ -42,7 +42,7 @@ func TestProcessorBuilder(t *testing.T) {
 		nextTraces   consumer.Traces
 		nextLogs     consumer.Logs
 		nextMetrics  consumer.Metrics
-		nextProfiles consumerprofiles.Profiles
+		nextProfiles xconsumer.Profiles
 	}{
 		{
 			name:         "unknown",
@@ -237,7 +237,7 @@ func createProcessorLogs(context.Context, processor.Settings, component.Config, 
 	return nopProcessorInstance, nil
 }
 
-func createProcessorProfiles(context.Context, processor.Settings, component.Config, consumerprofiles.Profiles) (processorprofiles.Profiles, error) {
+func createProcessorProfiles(context.Context, processor.Settings, component.Config, xconsumer.Profiles) (processorprofiles.Profiles, error) {
 	return nopProcessorInstance, nil
 }
 

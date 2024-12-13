@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -16,13 +17,13 @@ import (
 	"go.uber.org/zap"
 )
 
-const defaultBetaOtelColVersion = "v0.113.0"
-const defaultStableOtelColVersion = "v1.17.0"
-
-var (
-	// errMissingGoMod indicates an empty gomod field
-	errMissingGoMod = errors.New("missing gomod specification for module")
+const (
+	defaultBetaOtelColVersion   = "v0.115.0"
+	defaultStableOtelColVersion = "v1.21.0"
 )
+
+// errMissingGoMod indicates an empty gomod field
+var errMissingGoMod = errors.New("missing gomod specification for module")
 
 // Config holds the builder's configuration
 type Config struct {
@@ -36,16 +37,16 @@ type Config struct {
 	LDFlags              string `mapstructure:"-"`
 	Verbose              bool   `mapstructure:"-"`
 
-	Distribution Distribution `mapstructure:"dist"`
-	Exporters    []Module     `mapstructure:"exporters"`
-	Extensions   []Module     `mapstructure:"extensions"`
-	Receivers    []Module     `mapstructure:"receivers"`
-	Processors   []Module     `mapstructure:"processors"`
-	Connectors   []Module     `mapstructure:"connectors"`
-	Providers    []Module     `mapstructure:"providers"`
-	Converters   []Module     `mapstructure:"converters"`
-	Replaces     []string     `mapstructure:"replaces"`
-	Excludes     []string     `mapstructure:"excludes"`
+	Distribution      Distribution `mapstructure:"dist"`
+	Exporters         []Module     `mapstructure:"exporters"`
+	Extensions        []Module     `mapstructure:"extensions"`
+	Receivers         []Module     `mapstructure:"receivers"`
+	Processors        []Module     `mapstructure:"processors"`
+	Connectors        []Module     `mapstructure:"connectors"`
+	ConfmapProviders  []Module     `mapstructure:"providers"`
+	ConfmapConverters []Module     `mapstructure:"converters"`
+	Replaces          []string     `mapstructure:"replaces"`
+	Excludes          []string     `mapstructure:"excludes"`
 
 	ConfResolver ConfResolver `mapstructure:"conf_resolver"`
 
@@ -111,7 +112,7 @@ func NewDefaultConfig() (*Config, error) {
 			numRetries: 3,
 			wait:       5 * time.Second,
 		},
-		Providers: []Module{
+		ConfmapProviders: []Module{
 			{
 				GoMod: "go.opentelemetry.io/collector/confmap/provider/envprovider " + defaultStableOtelColVersion,
 			},
@@ -142,8 +143,8 @@ func (c *Config) Validate() error {
 		validateModules("exporter", c.Exporters),
 		validateModules("processor", c.Processors),
 		validateModules("connector", c.Connectors),
-		validateModules("provider", c.Providers),
-		validateModules("converter", c.Converters),
+		validateModules("provider", c.ConfmapProviders),
+		validateModules("converter", c.ConfmapConverters),
 	)
 }
 
@@ -192,15 +193,19 @@ func (c *Config) ParseModules() error {
 		return err
 	}
 
-	c.Providers, err = parseModules(c.Providers)
+	c.ConfmapProviders, err = parseModules(c.ConfmapProviders)
 	if err != nil {
 		return err
 	}
-	c.Converters, err = parseModules(c.Converters)
+	c.ConfmapConverters, err = parseModules(c.ConfmapConverters)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func (c *Config) allComponents() []Module {
+	return slices.Concat[[]Module](c.Exporters, c.Receivers, c.Processors, c.Extensions, c.Connectors, c.ConfmapProviders, c.ConfmapConverters)
 }
 
 func validateModules(name string, mods []Module) error {

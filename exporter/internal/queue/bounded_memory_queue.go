@@ -45,7 +45,7 @@ func (q *boundedMemoryQueue[T]) Read(_ context.Context) (uint64, context.Context
 	return 0, item.ctx, item.req, ok
 }
 
-// Should be called to remove the item of the given index from the queue once processing is finished.
+// OnProcessingFinished should be called to remove the item of the given index from the queue once processing is finished.
 // For in memory queue, this function is noop.
 func (q *boundedMemoryQueue[T]) OnProcessingFinished(uint64, error) {
 }

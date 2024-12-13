@@ -44,7 +44,7 @@ var example = TestStruct{
 func TestStringJSON(t *testing.T) {
 	bytes, err := json.Marshal(example)
 	require.NoError(t, err)
-	assert.Equal(t, `{"opaque":"[REDACTED]","plain":"plain"}`, string(bytes))
+	assert.JSONEq(t, `{"opaque":"[REDACTED]","plain":"plain"}`, string(bytes))
 }
 
 func TestStringFmt(t *testing.T) {

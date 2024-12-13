@@ -84,7 +84,7 @@ func TestStabilityLevelString(t *testing.T) {
 
 func TestStabilityLevelLogMessage(t *testing.T) {
 	assert.Equal(t, "Stability level of component is undefined", StabilityLevelUndefined.LogMessage())
-	assert.Equal(t, "Unmaintained component. Actively looking for contributors. Component will become deprecated after 6 months of remaining unmaintained.", StabilityLevelUnmaintained.LogMessage())
+	assert.Equal(t, "Unmaintained component. Actively looking for contributors. Component will become deprecated after 3 months of remaining unmaintained.", StabilityLevelUnmaintained.LogMessage())
 	assert.Equal(t, "Deprecated component. Will be removed in future releases.", StabilityLevelDeprecated.LogMessage())
 	assert.Equal(t, "Development component. May change in the future.", StabilityLevelDevelopment.LogMessage())
 	assert.Equal(t, "Alpha component. May change in the future.", StabilityLevelAlpha.LogMessage())

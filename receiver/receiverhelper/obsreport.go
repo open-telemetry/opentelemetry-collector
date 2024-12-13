@@ -55,7 +55,7 @@ func newReceiver(cfg ObsReportSettings) (*ObsReport, error) {
 		return nil, err
 	}
 	return &ObsReport{
-		spanNamePrefix: internal.ReceiverPrefix + cfg.ReceiverID.String(),
+		spanNamePrefix: internal.ReceiverKey + internal.SpanNameSep + cfg.ReceiverID.String(),
 		transport:      cfg.Transport,
 		longLivedCtx:   cfg.LongLivedCtx,
 		tracer:         cfg.ReceiverCreateSettings.TracerProvider.Tracer(cfg.ReceiverID.String()),

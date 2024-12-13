@@ -171,10 +171,10 @@ ocb:
 OPENTELEMETRY_PROTO_SRC_DIR=pdata/internal/opentelemetry-proto
 
 # The branch matching the current version of the proto to use
-OPENTELEMETRY_PROTO_VERSION=v1.3.1
+OPENTELEMETRY_PROTO_VERSION=v1.4.0
 
 # Find all .proto files.
-OPENTELEMETRY_PROTO_FILES := $(subst $(OPENTELEMETRY_PROTO_SRC_DIR)/,,$(wildcard $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/*/v1/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/collector/*/v1/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/*/v1experimental/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/collector/*/v1experimental/*.proto))
+OPENTELEMETRY_PROTO_FILES := $(subst $(OPENTELEMETRY_PROTO_SRC_DIR)/,,$(wildcard $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/*/v1/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/collector/*/v1/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/*/v1development/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/collector/*/v1development/*.proto))
 
 # Target directory to write generated files to.
 PROTO_TARGET_GEN_DIR=pdata/internal/data/protogen
@@ -254,155 +254,37 @@ gensemconv: $(SEMCONVGEN) $(SEMCONVKIT)
 	$(SEMCONVGEN) -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/model/. --only=attribute_group -p conventionType=attribute_group -f generated_attribute_group.go
 	$(SEMCONVKIT) -output "semconv/$(SPECTAG)" -tag "$(SPECTAG)"
 
+ALL_MOD_PATHS := "" $(ALL_MODULES:.%=%)
+
 # Checks that the HEAD of the contrib repo checked out in CONTRIB_PATH compiles
 # against the current version of this repo.
 .PHONY: check-contrib
 check-contrib:
 	@echo Setting contrib at $(CONTRIB_PATH) to use this core checkout
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit \
-		-replace go.opentelemetry.io/collector=$(CURDIR) \
-		-replace go.opentelemetry.io/collector/client=$(CURDIR)/client \
-		-replace go.opentelemetry.io/collector/cmd/mdatagen=$(CURDIR)/cmd/mdatagen \
-		-replace go.opentelemetry.io/collector/component=$(CURDIR)/component  \
-		-replace go.opentelemetry.io/collector/component/componentstatus=$(CURDIR)/component/componentstatus  \
-		-replace go.opentelemetry.io/collector/config/configauth=$(CURDIR)/config/configauth  \
-		-replace go.opentelemetry.io/collector/config/configcompression=$(CURDIR)/config/configcompression  \
-		-replace go.opentelemetry.io/collector/config/configgrpc=$(CURDIR)/config/configgrpc  \
-		-replace go.opentelemetry.io/collector/config/confighttp=$(CURDIR)/config/confighttp  \
-		-replace go.opentelemetry.io/collector/config/confignet=$(CURDIR)/config/confignet  \
-		-replace go.opentelemetry.io/collector/config/configopaque=$(CURDIR)/config/configopaque  \
-		-replace go.opentelemetry.io/collector/config/configretry=$(CURDIR)/config/configretry  \
-		-replace go.opentelemetry.io/collector/config/configtelemetry=$(CURDIR)/config/configtelemetry  \
-		-replace go.opentelemetry.io/collector/config/configtls=$(CURDIR)/config/configtls  \
-		-replace go.opentelemetry.io/collector/config/internal=$(CURDIR)/config/internal  \
-		-replace go.opentelemetry.io/collector/confmap=$(CURDIR)/confmap  \
-		-replace go.opentelemetry.io/collector/confmap/converter/expandconverter=$(CURDIR)/confmap/converter/expandconverter  \
-		-replace go.opentelemetry.io/collector/confmap/provider/envprovider=$(CURDIR)/confmap/provider/envprovider  \
-		-replace go.opentelemetry.io/collector/confmap/provider/fileprovider=$(CURDIR)/confmap/provider/fileprovider  \
-		-replace go.opentelemetry.io/collector/confmap/provider/httpprovider=$(CURDIR)/confmap/provider/httpprovider  \
-		-replace go.opentelemetry.io/collector/confmap/provider/httpsprovider=$(CURDIR)/confmap/provider/httpsprovider  \
-		-replace go.opentelemetry.io/collector/confmap/provider/yamlprovider=$(CURDIR)/confmap/provider/yamlprovider  \
-		-replace go.opentelemetry.io/collector/connector=$(CURDIR)/connector  \
-		-replace go.opentelemetry.io/collector/connector/connectortest=$(CURDIR)/connector/connectortest  \
-		-replace go.opentelemetry.io/collector/connector/connectorprofiles=$(CURDIR)/connector/connectorprofiles  \
-		-replace go.opentelemetry.io/collector/connector/forwardconnector=$(CURDIR)/connector/forwardconnector  \
-		-replace go.opentelemetry.io/collector/consumer=$(CURDIR)/consumer  \
-		-replace go.opentelemetry.io/collector/consumer/consumererror=$(CURDIR)/consumer/consumererror  \
-		-replace go.opentelemetry.io/collector/consumer/consumererror/consumererrorprofiles=$(CURDIR)/consumer/consumererror/consumererrorprofiles  \
-		-replace go.opentelemetry.io/collector/consumer/consumerprofiles=$(CURDIR)/consumer/consumerprofiles  \
-		-replace go.opentelemetry.io/collector/consumer/consumertest=$(CURDIR)/consumer/consumertest  \
-		-replace go.opentelemetry.io/collector/exporter=$(CURDIR)/exporter  \
-		-replace go.opentelemetry.io/collector/exporter/debugexporter=$(CURDIR)/exporter/debugexporter  \
-		-replace go.opentelemetry.io/collector/exporter/exporterprofiles=$(CURDIR)/exporter/exporterprofiles  \
-		-replace go.opentelemetry.io/collector/exporter/exportertest=$(CURDIR)/exporter/exportertest  \
-		-replace go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles=$(CURDIR)/exporter/exporterhelper/exporterhelperprofiles  \
-		-replace go.opentelemetry.io/collector/exporter/nopexporter=$(CURDIR)/exporter/nopexporter  \
-		-replace go.opentelemetry.io/collector/exporter/otlpexporter=$(CURDIR)/exporter/otlpexporter  \
-		-replace go.opentelemetry.io/collector/exporter/otlphttpexporter=$(CURDIR)/exporter/otlphttpexporter  \
-		-replace go.opentelemetry.io/collector/extension=$(CURDIR)/extension  \
-		-replace go.opentelemetry.io/collector/extension/auth=$(CURDIR)/extension/auth  \
-		-replace go.opentelemetry.io/collector/extension/experimental/storage=$(CURDIR)/extension/experimental/storage  \
-		-replace go.opentelemetry.io/collector/extension/extensioncapabilities=$(CURDIR)/extension/extensioncapabilities  \
-		-replace go.opentelemetry.io/collector/extension/memorylimiterextension=$(CURDIR)/extension/memorylimiterextension  \
-		-replace go.opentelemetry.io/collector/extension/zpagesextension=$(CURDIR)/extension/zpagesextension  \
-		-replace go.opentelemetry.io/collector/featuregate=$(CURDIR)/featuregate  \
-		-replace go.opentelemetry.io/collector/filter=$(CURDIR)/filter  \
-		-replace go.opentelemetry.io/collector/internal/memorylimiter=$(CURDIR)/internal/memorylimiter  \
-		-replace go.opentelemetry.io/collector/internal/fanoutconsumer=$(CURDIR)/internal/fanoutconsumer  \
-		-replace go.opentelemetry.io/collector/internal/sharedcomponent=$(CURDIR)/internal/sharedcomponent  \
-		-replace go.opentelemetry.io/collector/otelcol=$(CURDIR)/otelcol  \
-		-replace go.opentelemetry.io/collector/otelcol/otelcoltest=$(CURDIR)/otelcol/otelcoltest  \
-		-replace go.opentelemetry.io/collector/pdata=$(CURDIR)/pdata  \
-		-replace go.opentelemetry.io/collector/pdata/testdata=$(CURDIR)/pdata/testdata  \
-		-replace go.opentelemetry.io/collector/pdata/pprofile=$(CURDIR)/pdata/pprofile  \
-		-replace go.opentelemetry.io/collector/pipeline=$(CURDIR)/pipeline  \
-		-replace go.opentelemetry.io/collector/pipeline/pipelineprofiles=$(CURDIR)/pipeline/pipelineprofiles  \
-		-replace go.opentelemetry.io/collector/processor=$(CURDIR)/processor  \
-		-replace go.opentelemetry.io/collector/processor/processortest=$(CURDIR)/processor/processortest  \
-		-replace go.opentelemetry.io/collector/processor/batchprocessor=$(CURDIR)/processor/batchprocessor  \
-		-replace go.opentelemetry.io/collector/processor/memorylimiterprocessor=$(CURDIR)/processor/memorylimiterprocessor  \
-		-replace go.opentelemetry.io/collector/processor/processorprofiles=$(CURDIR)/processor/processorprofiles  \
-		-replace go.opentelemetry.io/collector/receiver=$(CURDIR)/receiver  \
-		-replace go.opentelemetry.io/collector/receiver/nopreceiver=$(CURDIR)/receiver/nopreceiver  \
-		-replace go.opentelemetry.io/collector/receiver/otlpreceiver=$(CURDIR)/receiver/otlpreceiver  \
-		-replace go.opentelemetry.io/collector/receiver/receiverprofiles=$(CURDIR)/receiver/receiverprofiles  \
-		-replace go.opentelemetry.io/collector/receiver/receivertest=$(CURDIR)/receiver/receivertest  \
-		-replace go.opentelemetry.io/collector/semconv=$(CURDIR)/semconv  \
-		-replace go.opentelemetry.io/collector/service=$(CURDIR)/service"
-	@$(MAKE) -C $(CONTRIB_PATH) gotidy
+	@$(MAKE) -j2 -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit \
+		$(addprefix -replace ,$(join $(ALL_MOD_PATHS:%=go.opentelemetry.io/collector%=),$(ALL_MOD_PATHS:%=$(CURDIR)%)))"
+	@$(MAKE) -j2 -C $(CONTRIB_PATH) gotidy
+
+	@echo -e "\nRunning tests"
 	@$(MAKE) -C $(CONTRIB_PATH) gotest
+
 	@if [ -z "$(SKIP_RESTORE_CONTRIB)" ]; then \
 		$(MAKE) restore-contrib; \
 	fi
 
+.PHONY: generate-contrib
+generate-contrib:
+	@echo -e "\nGenerating files in contrib"
+	$(MAKE) -C $(CONTRIB_PATH) -B install-tools
+	$(MAKE) -C $(CONTRIB_PATH) generate GROUP=all
+
 # Restores contrib to its original state after running check-contrib.
 .PHONY: restore-contrib
 restore-contrib:
-	@echo Restoring contrib at $(CONTRIB_PATH) to its original state
+	@echo -e "\nRestoring contrib at $(CONTRIB_PATH) to its original state"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit \
-		-dropreplace go.opentelemetry.io/collector \
-		-dropreplace go.opentelemetry.io/collector/client \
-		-dropreplace go.opentelemetry.io/collector/cmd/mdatagen \
-		-dropreplace go.opentelemetry.io/collector/component \
-		-dropreplace go.opentelemetry.io/collector/component/componentstatus \
-		-dropreplace go.opentelemetry.io/collector/config/configauth  \
-		-dropreplace go.opentelemetry.io/collector/config/configcompression  \
-		-dropreplace go.opentelemetry.io/collector/config/configgrpc  \
-		-dropreplace go.opentelemetry.io/collector/config/confighttp  \
-		-dropreplace go.opentelemetry.io/collector/config/confignet  \
-		-dropreplace go.opentelemetry.io/collector/config/configopaque  \
-		-dropreplace go.opentelemetry.io/collector/config/configretry  \
-		-dropreplace go.opentelemetry.io/collector/config/configtelemetry  \
-		-dropreplace go.opentelemetry.io/collector/config/configtls  \
-		-dropreplace go.opentelemetry.io/collector/config/internal  \
-		-dropreplace go.opentelemetry.io/collector/confmap  \
-		-dropreplace go.opentelemetry.io/collector/confmap/converter/expandconverter  \
-		-dropreplace go.opentelemetry.io/collector/confmap/provider/envprovider  \
-		-dropreplace go.opentelemetry.io/collector/confmap/provider/fileprovider  \
-		-dropreplace go.opentelemetry.io/collector/confmap/provider/httpprovider  \
-		-dropreplace go.opentelemetry.io/collector/confmap/provider/httpsprovider  \
-		-dropreplace go.opentelemetry.io/collector/confmap/provider/yamlprovider  \
-		-dropreplace go.opentelemetry.io/collector/connector  \
-		-dropreplace go.opentelemetry.io/collector/connector/connectortest  \
-		-dropreplace go.opentelemetry.io/collector/connector/connectorprofiles  \
-		-dropreplace go.opentelemetry.io/collector/connector/forwardconnector  \
-		-dropreplace go.opentelemetry.io/collector/consumer  \
-		-dropreplace go.opentelemetry.io/collector/consumer/consumererror/consumererrorprofiles  \
-		-dropreplace go.opentelemetry.io/collector/consumer/consumerprofiles  \
-		-dropreplace go.opentelemetry.io/collector/consumer/consumertest  \
-		-dropreplace go.opentelemetry.io/collector/exporter  \
-		-dropreplace go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles  \
-		-dropreplace go.opentelemetry.io/collector/exporter/exportertest  \
-		-dropreplace go.opentelemetry.io/collector/exporter/debugexporter  \
-		-dropreplace go.opentelemetry.io/collector/exporter/nopexporter  \
-		-dropreplace go.opentelemetry.io/collector/exporter/otlpexporter  \
-		-dropreplace go.opentelemetry.io/collector/exporter/otlphttpexporter  \
-		-dropreplace go.opentelemetry.io/collector/extension  \
-		-dropreplace go.opentelemetry.io/collector/extension/auth  \
-		-dropreplace go.opentelemetry.io/collector/extension/memorylimiterextension  \
-		-dropreplace go.opentelemetry.io/collector/extension/zpagesextension  \
-		-dropreplace go.opentelemetry.io/collector/featuregate  \
-		-dropreplace go.opentelemetry.io/collector/filter  \
-		-dropreplace go.opentelemetry.io/collector/internal/memorylimiter \
-		-dropreplace go.opentelemetry.io/collector/internal/fanoutconsumer \
-		-dropreplace go.opentelemetry.io/collector/internal/sharedcomponent \
-		-dropreplace go.opentelemetry.io/collector/otelcol  \
-		-dropreplace go.opentelemetry.io/collector/otelcol/otelcoltest  \
-		-dropreplace go.opentelemetry.io/collector/pdata  \
-		-dropreplace go.opentelemetry.io/collector/pdata/testdata  \
-		-dropreplace go.opentelemetry.io/collector/pdata/pprofile  \
-		-dropreplace go.opentelemetry.io/collector/pipeline  \
-		-dropreplace go.opentelemetry.io/collector/pipeline/pipelineprofiles \
-		-dropreplace go.opentelemetry.io/collector/processor  \
-		-dropreplace go.opentelemetry.io/collector/processortest  \
-		-dropreplace go.opentelemetry.io/collector/processor/batchprocessor  \
-		-dropreplace go.opentelemetry.io/collector/processor/memorylimiterprocessor  \
-		-dropreplace go.opentelemetry.io/collector/receiver  \
-		-dropreplace go.opentelemetry.io/collector/receiver/nopreceiver  \
-		-dropreplace go.opentelemetry.io/collector/receiver/otlpreceiver  \
-		-dropreplace go.opentelemetry.io/collector/semconv  \
-		-dropreplace go.opentelemetry.io/collector/service"
-	@$(MAKE) -C $(CONTRIB_PATH) -j2 gotidy
+		$(addprefix -dropreplace ,$(ALL_MOD_PATHS:%=go.opentelemetry.io/collector%))"
+	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod tidy"
 
 # List of directories where certificates are stored for unit tests.
 CERT_DIRS := localhost|""|config/configgrpc/testdata \

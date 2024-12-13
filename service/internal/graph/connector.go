@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectorprofiles"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/pipelineprofiles"
 	"go.opentelemetry.io/collector/service/internal/builders"
@@ -178,9 +178,9 @@ func (n *connectorNode) buildProfiles(
 	builder *builders.ConnectorBuilder,
 	nexts []baseConsumer,
 ) error {
-	consumers := make(map[pipeline.ID]consumerprofiles.Profiles, len(nexts))
+	consumers := make(map[pipeline.ID]xconsumer.Profiles, len(nexts))
 	for _, next := range nexts {
-		consumers[next.(*capabilitiesNode).pipelineID] = next.(consumerprofiles.Profiles)
+		consumers[next.(*capabilitiesNode).pipelineID] = next.(xconsumer.Profiles)
 	}
 	next := connectorprofiles.NewProfilesRouter(consumers)
 

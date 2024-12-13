@@ -12,10 +12,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-var (
-	// ErrQueueIsFull is the error returned when an item is offered to the Queue and the queue is full.
-	ErrQueueIsFull = errors.New("sending queue is full")
-)
+// ErrQueueIsFull is the error returned when an item is offered to the Queue and the queue is full.
+var ErrQueueIsFull = errors.New("sending queue is full")
 
 // Queue defines a producer-consumer exchange which can be backed by e.g. the memory-based ring buffer queue
 // (boundedMemoryQueue) or via a disk-based queue (persistentQueue)
@@ -34,7 +32,7 @@ type Queue[T any] interface {
 	// The function blocks until an item is available or if the queue is stopped.
 	// Returns false if reading failed or if the queue is stopped.
 	Read(context.Context) (uint64, context.Context, T, bool)
-	// Should be called to remove the item of the given index from the queue once processing is finished.
+	// OnProcessingFinished should be called to remove the item of the given index from the queue once processing is finished.
 	OnProcessingFinished(index uint64, consumeErr error)
 }
 

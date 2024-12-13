@@ -57,7 +57,8 @@ func (r *fakeRequest) ItemsCount() int {
 }
 
 func (r *fakeRequest) Merge(_ context.Context,
-	r2 internal.Request) (internal.Request, error) {
+	r2 internal.Request,
+) (internal.Request, error) {
 	if r == nil {
 		return r2, nil
 	}
@@ -74,7 +75,8 @@ func (r *fakeRequest) Merge(_ context.Context,
 }
 
 func (r *fakeRequest) MergeSplit(ctx context.Context, cfg exporterbatcher.MaxSizeConfig,
-	r2 internal.Request) ([]internal.Request, error) {
+	r2 internal.Request,
+) ([]internal.Request, error) {
 	if r.mergeErr != nil {
 		return nil, r.mergeErr
 	}
@@ -125,26 +127,26 @@ func (r *fakeRequest) MergeSplit(ctx context.Context, cfg exporterbatcher.MaxSiz
 	return res, nil
 }
 
-type FakeRequestConverter struct {
-	MetricsError  error
-	TracesError   error
-	LogsError     error
-	ProfilesError error
-	RequestError  error
+func RequestFromMetricsFunc(reqErr error) func(context.Context, pmetric.Metrics) (internal.Request, error) {
+	return func(_ context.Context, md pmetric.Metrics) (internal.Request, error) {
+		return &fakeRequest{items: md.DataPointCount(), exportErr: reqErr}, nil
+	}
 }
 
-func (frc *FakeRequestConverter) RequestFromMetricsFunc(_ context.Context, md pmetric.Metrics) (internal.Request, error) {
-	return &fakeRequest{items: md.DataPointCount(), exportErr: frc.RequestError}, frc.MetricsError
+func RequestFromTracesFunc(reqErr error) func(context.Context, ptrace.Traces) (internal.Request, error) {
+	return func(_ context.Context, td ptrace.Traces) (internal.Request, error) {
+		return &fakeRequest{items: td.SpanCount(), exportErr: reqErr}, nil
+	}
 }
 
-func (frc *FakeRequestConverter) RequestFromTracesFunc(_ context.Context, md ptrace.Traces) (internal.Request, error) {
-	return &fakeRequest{items: md.SpanCount(), exportErr: frc.RequestError}, frc.TracesError
+func RequestFromLogsFunc(reqErr error) func(context.Context, plog.Logs) (internal.Request, error) {
+	return func(_ context.Context, ld plog.Logs) (internal.Request, error) {
+		return &fakeRequest{items: ld.LogRecordCount(), exportErr: reqErr}, nil
+	}
 }
 
-func (frc *FakeRequestConverter) RequestFromLogsFunc(_ context.Context, md plog.Logs) (internal.Request, error) {
-	return &fakeRequest{items: md.LogRecordCount(), exportErr: frc.RequestError}, frc.LogsError
-}
-
-func (frc *FakeRequestConverter) RequestFromProfilesFunc(_ context.Context, md pprofile.Profiles) (internal.Request, error) {
-	return &fakeRequest{items: md.SampleCount(), exportErr: frc.RequestError}, frc.ProfilesError
+func RequestFromProfilesFunc(reqErr error) func(context.Context, pprofile.Profiles) (internal.Request, error) {
+	return func(_ context.Context, pd pprofile.Profiles) (internal.Request, error) {
+		return &fakeRequest{items: pd.SampleCount(), exportErr: reqErr}, nil
+	}
 }

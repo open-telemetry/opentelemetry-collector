@@ -3,7 +3,7 @@
 
 module-sets:
   stable:
-    version: v1.19.0
+    version: v1.21.0
     modules:
       - go.opentelemetry.io/collector/client
       - go.opentelemetry.io/collector/featuregate
@@ -19,8 +19,9 @@ module-sets:
       - go.opentelemetry.io/collector/config/configretry
       - go.opentelemetry.io/collector/config/configtls
       - go.opentelemetry.io/collector/config/confignet
+      - go.opentelemetry.io/collector/consumer
   beta:
-    version: v0.113.0
+    version: v0.115.0
     modules:
       - go.opentelemetry.io/collector
       - go.opentelemetry.io/collector/internal/memorylimiter
@@ -29,19 +30,19 @@ module-sets:
       - go.opentelemetry.io/collector/cmd/builder
       - go.opentelemetry.io/collector/cmd/mdatagen
       - go.opentelemetry.io/collector/component
+      - go.opentelemetry.io/collector/component/componenttest
       - go.opentelemetry.io/collector/component/componentstatus
-      - go.opentelemetry.io/collector/confmap/converter/expandconverter
       - go.opentelemetry.io/collector/config/configauth
       - go.opentelemetry.io/collector/config/configgrpc
       - go.opentelemetry.io/collector/config/confighttp
+      - go.opentelemetry.io/collector/config/confighttp/xconfighttp
       - go.opentelemetry.io/collector/config/configtelemetry
       - go.opentelemetry.io/collector/config/internal
       - go.opentelemetry.io/collector/connector
       - go.opentelemetry.io/collector/connector/connectortest
       - go.opentelemetry.io/collector/connector/connectorprofiles
       - go.opentelemetry.io/collector/connector/forwardconnector
-      - go.opentelemetry.io/collector/consumer
-      - go.opentelemetry.io/collector/consumer/consumerprofiles
+      - go.opentelemetry.io/collector/consumer/xconsumer
       - go.opentelemetry.io/collector/consumer/consumererror
       - go.opentelemetry.io/collector/consumer/consumererror/consumererrorprofiles
       - go.opentelemetry.io/collector/consumer/consumertest
@@ -54,9 +55,11 @@ module-sets:
       - go.opentelemetry.io/collector/exporter/otlpexporter
       - go.opentelemetry.io/collector/exporter/otlphttpexporter
       - go.opentelemetry.io/collector/extension
-      - go.opentelemetry.io/collector/extension/extensioncapabilities
       - go.opentelemetry.io/collector/extension/auth
+      - go.opentelemetry.io/collector/extension/auth/authtest
       - go.opentelemetry.io/collector/extension/experimental/storage
+      - go.opentelemetry.io/collector/extension/extensioncapabilities
+      - go.opentelemetry.io/collector/extension/extensiontest
       - go.opentelemetry.io/collector/extension/zpagesextension
       - go.opentelemetry.io/collector/extension/memorylimiterextension
       - go.opentelemetry.io/collector/otelcol
@@ -74,14 +77,17 @@ module-sets:
       - go.opentelemetry.io/collector/receiver
       - go.opentelemetry.io/collector/receiver/nopreceiver
       - go.opentelemetry.io/collector/receiver/otlpreceiver
-      - go.opentelemetry.io/collector/receiver/receiverprofiles
+      - go.opentelemetry.io/collector/receiver/xreceiver
       - go.opentelemetry.io/collector/receiver/receivertest
+      - go.opentelemetry.io/collector/scraper
       - go.opentelemetry.io/collector/semconv
       - go.opentelemetry.io/collector/service
       - go.opentelemetry.io/collector/filter
 
 excluded-modules:
+  - go.opentelemetry.io/collector/consumer/consumerprofiles
   - go.opentelemetry.io/collector/cmd/otelcorecol
   - go.opentelemetry.io/collector/internal/e2e
   - go.opentelemetry.io/collector/internal/tools
   - go.opentelemetry.io/collector/confmap/internal/e2e
+  - go.opentelemetry.io/collector/receiver/receiverprofiles

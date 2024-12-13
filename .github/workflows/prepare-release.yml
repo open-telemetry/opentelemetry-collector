@@ -94,14 +94,15 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5.1.0
         with:
-          go-version: ~1.22.8
+          go-version: ~1.22.9
       # Prepare Core for release.
       #   - Update CHANGELOG.md file, this is done via chloggen
       #   - Run make prepare-release PREVIOUS_VERSION=1.0.0 RELEASE_CANDIDATE=1.1.0 MODSET=stable
       #   - Run make prepare-release PREVIOUS_VERSION=0.52.0 RELEASE_CANDIDATE=0.53.0 MODSET=beta
       - name: Prepare release for core
         env:
-          GITHUB_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
+          BOT_GITHUB_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: open-telemetry/opentelemetry-collector
           CANDIDATE_BETA: ${{ inputs.candidate-beta }}
           CANDIDATE_STABLE: ${{ inputs.candidate-stable }}

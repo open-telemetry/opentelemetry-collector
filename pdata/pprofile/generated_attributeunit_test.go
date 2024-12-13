@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
+	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 func TestAttributeUnit_MoveTo(t *testing.T) {
@@ -38,22 +38,24 @@ func TestAttributeUnit_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newAttributeUnit(&otlpprofiles.AttributeUnit{}, &sharedState)) })
 }
 
-func TestAttributeUnit_AttributeKey(t *testing.T) {
+func TestAttributeUnit_AttributeKeyStrindex(t *testing.T) {
 	ms := NewAttributeUnit()
-	assert.Equal(t, int64(0), ms.AttributeKey())
-	ms.SetAttributeKey(int64(1))
-	assert.Equal(t, int64(1), ms.AttributeKey())
+	assert.Equal(t, int32(0), ms.AttributeKeyStrindex())
+	ms.SetAttributeKeyStrindex(int32(1))
+	assert.Equal(t, int32(1), ms.AttributeKeyStrindex())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newAttributeUnit(&otlpprofiles.AttributeUnit{}, &sharedState).SetAttributeKey(int64(1)) })
+	assert.Panics(t, func() {
+		newAttributeUnit(&otlpprofiles.AttributeUnit{}, &sharedState).SetAttributeKeyStrindex(int32(1))
+	})
 }
 
-func TestAttributeUnit_Unit(t *testing.T) {
+func TestAttributeUnit_UnitStrindex(t *testing.T) {
 	ms := NewAttributeUnit()
-	assert.Equal(t, int64(0), ms.Unit())
-	ms.SetUnit(int64(1))
-	assert.Equal(t, int64(1), ms.Unit())
+	assert.Equal(t, int32(0), ms.UnitStrindex())
+	ms.SetUnitStrindex(int32(1))
+	assert.Equal(t, int32(1), ms.UnitStrindex())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newAttributeUnit(&otlpprofiles.AttributeUnit{}, &sharedState).SetUnit(int64(1)) })
+	assert.Panics(t, func() { newAttributeUnit(&otlpprofiles.AttributeUnit{}, &sharedState).SetUnitStrindex(int32(1)) })
 }
 
 func generateTestAttributeUnit() AttributeUnit {
@@ -63,6 +65,6 @@ func generateTestAttributeUnit() AttributeUnit {
 }
 
 func fillTestAttributeUnit(tv AttributeUnit) {
-	tv.orig.AttributeKey = int64(1)
-	tv.orig.Unit = int64(1)
+	tv.orig.AttributeKeyStrindex = int32(1)
+	tv.orig.UnitStrindex = int32(1)
 }

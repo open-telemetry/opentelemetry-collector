@@ -35,7 +35,6 @@ type Extension interface {
 //
 //	[overwrite | not-found | no-op] from "real" problems
 type Client interface {
-
 	// Get will retrieve data from storage that corresponds to the
 	// specified key. It should return (nil, nil) if not found
 	Get(ctx context.Context, key string) ([]byte, error)

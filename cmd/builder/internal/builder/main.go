@@ -10,7 +10,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"slices"
 	"strings"
 	"text/template"
 	"time"
@@ -78,7 +77,7 @@ func Generate(cfg *Config) error {
 
 	// if the file does not exist, try to create it
 	if _, err := os.Stat(cfg.Distribution.OutputPath); os.IsNotExist(err) {
-		if err = os.Mkdir(cfg.Distribution.OutputPath, 0750); err != nil {
+		if err = os.Mkdir(cfg.Distribution.OutputPath, 0o750); err != nil {
 			return fmt.Errorf("failed to create output path: %w", err)
 		}
 	} else if err != nil {
@@ -110,7 +109,7 @@ func Compile(cfg *Config) error {
 
 	cfg.Logger.Info("Compiling")
 
-	var ldflags = "-s -w"
+	ldflags := "-s -w"
 
 	args := []string{"build", "-trimpath", "-o", cfg.Distribution.Name}
 	if cfg.Distribution.DebugCompilation {
@@ -149,7 +148,7 @@ func GetModules(cfg *Config) error {
 
 	// Perform strict version checking.  For each component listed and the
 	// otelcol core dependency, check that the enclosing go module matches.
-	modulePath, dependencyVersions, err := cfg.readGoModFile()
+	modulePath, dependencyVersions, err := readGoModFile(cfg)
 	if err != nil {
 		return err
 	}
@@ -212,13 +211,9 @@ func processAndWrite(cfg *Config, tmpl *template.Template, outFile string, tmplP
 	return tmpl.Execute(out, tmplParams)
 }
 
-func (c *Config) allComponents() []Module {
-	return slices.Concat[[]Module](c.Exporters, c.Receivers, c.Processors, c.Extensions, c.Connectors, c.Providers, c.Converters)
-}
-
-func (c *Config) readGoModFile() (string, map[string]string, error) {
+func readGoModFile(cfg *Config) (string, map[string]string, error) {
 	var modPath string
-	stdout, err := runGoCommand(c, "mod", "edit", "-print")
+	stdout, err := runGoCommand(cfg, "mod", "edit", "-print")
 	if err != nil {
 		return modPath, nil, err
 	}
@@ -226,7 +221,7 @@ func (c *Config) readGoModFile() (string, map[string]string, error) {
 	if err != nil {
 		return modPath, nil, err
 	}
-	if parsedFile != nil && parsedFile.Module != nil {
+	if parsedFile.Module != nil {
 		modPath = parsedFile.Module.Mod.Path
 	}
 	dependencies := map[string]string{}

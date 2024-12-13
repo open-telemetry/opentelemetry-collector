@@ -9,7 +9,7 @@ import (
 	jsoniter "github.com/json-iterator/go"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1experimental"
+	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 

@@ -27,6 +27,7 @@ var pcommon = &Package{
 		float64Slice,
 		uInt64Slice,
 		int64Slice,
+		int32Slice,
 		stringSlice,
 	},
 }
@@ -201,6 +202,16 @@ var int64Slice = &primitiveSliceStruct{
 	structName:           "Int64Slice",
 	packageName:          "pcommon",
 	itemType:             "int64",
+	testOrigVal:          "1, 2, 3",
+	testInterfaceOrigVal: []interface{}{1, 2, 3},
+	testSetVal:           "5",
+	testNewVal:           "1, 5, 3",
+}
+
+var int32Slice = &primitiveSliceStruct{
+	structName:           "Int32Slice",
+	packageName:          "pcommon",
+	itemType:             "int32",
 	testOrigVal:          "1, 2, 3",
 	testInterfaceOrigVal: []interface{}{1, 2, 3},
 	testSetVal:           "5",

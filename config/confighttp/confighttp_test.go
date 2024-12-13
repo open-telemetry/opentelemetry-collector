@@ -21,7 +21,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -37,8 +36,7 @@ import (
 	"go.opentelemetry.io/collector/extension/auth/authtest"
 )
 
-type customRoundTripper struct {
-}
+type customRoundTripper struct{}
 
 var _ http.RoundTripper = (*customRoundTripper)(nil)
 
@@ -52,7 +50,7 @@ var (
 	dummyID       = component.MustNewID("dummy")
 	nonExistingID = component.MustNewID("nonexisting")
 	// Omit TracerProvider and MeterProvider in TelemetrySettings as otelhttp.Transport cannot be introspected
-	nilProvidersSettings = component.TelemetrySettings{Logger: zap.NewNop(), MetricsLevel: configtelemetry.LevelNone, LeveledMeterProvider: func(_ configtelemetry.Level) metric.MeterProvider { return nil }}
+	nilProvidersSettings = component.TelemetrySettings{Logger: zap.NewNop(), MetricsLevel: configtelemetry.LevelNone}
 )
 
 func TestAllHTTPClientSettings(t *testing.T) {
@@ -431,7 +429,8 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
 					mockID: &authtest.MockClient{
-						ResultRoundTripper: &customRoundTripper{}, MustError: true},
+						ResultRoundTripper: &customRoundTripper{}, MustError: true,
+					},
 				},
 			},
 		},

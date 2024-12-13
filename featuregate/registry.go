@@ -23,10 +23,8 @@ var (
 	idRegexp = regexp.MustCompile(`^[0-9a-zA-Z\.]*$`)
 )
 
-var (
-	// ErrAlreadyRegistered is returned when adding a Gate that is already registered.
-	ErrAlreadyRegistered = errors.New("gate is already registered")
-)
+// ErrAlreadyRegistered is returned when adding a Gate that is already registered.
+var ErrAlreadyRegistered = errors.New("gate is already registered")
 
 // GlobalRegistry returns the global Registry.
 func GlobalRegistry() *Registry {

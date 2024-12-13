@@ -7,9 +7,11 @@ on:
   pull_request:
     types: [opened, ready_for_review, synchronize, reopened, labeled, unlabeled]
     branches: [main]
+  merge_group:
+    types: [checks_requested]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref }}
+  group: ${{ github.workflow }}-${{ github.ref_name }}
   cancel-in-progress: true
 
 permissions:
@@ -43,7 +45,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5.1.0
         with:
-          go-version: ~1.22.8
+          go-version: ~1.22.9
           cache: false
       - name: Run Contrib Tests
         run: |

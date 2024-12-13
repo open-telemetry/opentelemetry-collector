@@ -65,7 +65,7 @@ func TestLogs_NilLogger(t *testing.T) {
 }
 
 func TestLogsRequest_NilLogger(t *testing.T) {
-	le, err := NewLogsRequest(context.Background(), exporter.Settings{}, (&internal.FakeRequestConverter{}).RequestFromLogsFunc)
+	le, err := NewLogsRequest(context.Background(), exporter.Settings{}, internal.RequestFromLogsFunc(nil))
 	require.Nil(t, le)
 	require.Equal(t, errNilLogger, err)
 }
@@ -97,7 +97,7 @@ func TestLogs_Default(t *testing.T) {
 func TestLogsRequest_Default(t *testing.T) {
 	ld := plog.NewLogs()
 	le, err := NewLogsRequest(context.Background(), exportertest.NewNopSettings(),
-		(&internal.FakeRequestConverter{}).RequestFromLogsFunc)
+		internal.RequestFromLogsFunc(nil))
 	assert.NotNil(t, le)
 	require.NoError(t, err)
 
@@ -119,7 +119,7 @@ func TestLogs_WithCapabilities(t *testing.T) {
 func TestLogsRequest_WithCapabilities(t *testing.T) {
 	capabilities := consumer.Capabilities{MutatesData: true}
 	le, err := NewLogsRequest(context.Background(), exportertest.NewNopSettings(),
-		(&internal.FakeRequestConverter{}).RequestFromLogsFunc, WithCapabilities(capabilities))
+		internal.RequestFromLogsFunc(nil), WithCapabilities(capabilities))
 	require.NoError(t, err)
 	require.NotNil(t, le)
 
@@ -139,7 +139,9 @@ func TestLogsRequest_Default_ConvertError(t *testing.T) {
 	ld := plog.NewLogs()
 	want := errors.New("convert_error")
 	le, err := NewLogsRequest(context.Background(), exportertest.NewNopSettings(),
-		(&internal.FakeRequestConverter{LogsError: want}).RequestFromLogsFunc)
+		func(context.Context, plog.Logs) (Request, error) {
+			return nil, want
+		})
 	require.NoError(t, err)
 	require.NotNil(t, le)
 	require.Equal(t, consumererror.NewPermanent(want), le.ConsumeLogs(context.Background(), ld))
@@ -149,7 +151,7 @@ func TestLogsRequest_Default_ExportError(t *testing.T) {
 	ld := plog.NewLogs()
 	want := errors.New("export_error")
 	le, err := NewLogsRequest(context.Background(), exportertest.NewNopSettings(),
-		(&internal.FakeRequestConverter{RequestError: want}).RequestFromLogsFunc)
+		internal.RequestFromLogsFunc(want))
 	require.NoError(t, err)
 	require.NotNil(t, le)
 	require.Equal(t, want, le.ConsumeLogs(context.Background(), ld))
@@ -213,7 +215,7 @@ func TestLogsRequest_WithRecordMetrics(t *testing.T) {
 
 	le, err := NewLogsRequest(context.Background(),
 		exporter.Settings{ID: fakeLogsName, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-		(&internal.FakeRequestConverter{}).RequestFromLogsFunc)
+		internal.RequestFromLogsFunc(nil))
 	require.NoError(t, err)
 	require.NotNil(t, le)
 
@@ -240,7 +242,7 @@ func TestLogsRequest_WithRecordMetrics_ExportError(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	le, err := NewLogsRequest(context.Background(), exporter.Settings{ID: fakeLogsName, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-		(&internal.FakeRequestConverter{RequestError: want}).RequestFromLogsFunc)
+		internal.RequestFromLogsFunc(want))
 	require.NoError(t, err)
 	require.NotNil(t, le)
 
@@ -292,7 +294,7 @@ func TestLogsRequest_WithSpan(t *testing.T) {
 	otel.SetTracerProvider(set.TracerProvider)
 	defer otel.SetTracerProvider(nooptrace.NewTracerProvider())
 
-	le, err := NewLogsRequest(context.Background(), set, (&internal.FakeRequestConverter{}).RequestFromLogsFunc)
+	le, err := NewLogsRequest(context.Background(), set, internal.RequestFromLogsFunc(nil))
 	require.NoError(t, err)
 	require.NotNil(t, le)
 	checkWrapSpanForLogs(t, sr, set.TracerProvider.Tracer("test"), le, nil, 1)
@@ -320,7 +322,7 @@ func TestLogsRequest_WithSpan_ReturnError(t *testing.T) {
 	defer otel.SetTracerProvider(nooptrace.NewTracerProvider())
 
 	want := errors.New("my_error")
-	le, err := NewLogsRequest(context.Background(), set, (&internal.FakeRequestConverter{RequestError: want}).RequestFromLogsFunc)
+	le, err := NewLogsRequest(context.Background(), set, internal.RequestFromLogsFunc(want))
 	require.NoError(t, err)
 	require.NotNil(t, le)
 	checkWrapSpanForLogs(t, sr, set.TracerProvider.Tracer("test"), le, want, 1)
@@ -343,7 +345,7 @@ func TestLogsRequest_WithShutdown(t *testing.T) {
 	shutdown := func(context.Context) error { shutdownCalled = true; return nil }
 
 	le, err := NewLogsRequest(context.Background(), exportertest.NewNopSettings(),
-		(&internal.FakeRequestConverter{}).RequestFromLogsFunc, WithShutdown(shutdown))
+		internal.RequestFromLogsFunc(nil), WithShutdown(shutdown))
 	assert.NotNil(t, le)
 	assert.NoError(t, err)
 
@@ -367,7 +369,7 @@ func TestLogsRequest_WithShutdown_ReturnError(t *testing.T) {
 	shutdownErr := func(context.Context) error { return want }
 
 	le, err := NewLogsRequest(context.Background(), exportertest.NewNopSettings(),
-		(&internal.FakeRequestConverter{}).RequestFromLogsFunc, WithShutdown(shutdownErr))
+		internal.RequestFromLogsFunc(nil), WithShutdown(shutdownErr))
 	assert.NotNil(t, le)
 	require.NoError(t, err)
 
@@ -411,8 +413,10 @@ func generateLogsTraffic(t *testing.T, tracer trace.Tracer, le exporter.Logs, nu
 	}
 }
 
+// nolint: unparam
 func checkWrapSpanForLogs(t *testing.T, sr *tracetest.SpanRecorder, tracer trace.Tracer, le exporter.Logs,
-	wantError error, numLogRecords int64) { // nolint: unparam
+	wantError error, numLogRecords int64,
+) {
 	const numRequests = 5
 	generateLogsTraffic(t, tracer, le, numRequests, wantError)
 

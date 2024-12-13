@@ -46,25 +46,14 @@ func (f CreateFunc) Create(ctx context.Context, set Settings, cfg component.Conf
 	return f(ctx, set, cfg)
 }
 
-// Deprecated: [v0.112.0] use Create.
-func (f CreateFunc) CreateExtension(ctx context.Context, set Settings, cfg component.Config) (Extension, error) {
-	return f.Create(ctx, set, cfg)
-}
-
 type Factory interface {
 	component.Factory
 
 	// Create an extension based on the given config.
 	Create(ctx context.Context, set Settings, cfg component.Config) (Extension, error)
 
-	// Deprecated: [v0.112.0] use Create.
-	CreateExtension(ctx context.Context, set Settings, cfg component.Config) (Extension, error)
-
 	// Stability gets the stability level of the Extension.
 	Stability() component.StabilityLevel
-
-	// Deprecated: [v0.112.0] use Stability.
-	ExtensionStability() component.StabilityLevel
 
 	unexportedFactoryFunc()
 }
@@ -86,16 +75,13 @@ func (f *factory) Stability() component.StabilityLevel {
 	return f.extensionStability
 }
 
-func (f *factory) ExtensionStability() component.StabilityLevel {
-	return f.extensionStability
-}
-
 // NewFactory returns a new Factory  based on this configuration.
 func NewFactory(
 	cfgType component.Type,
 	createDefaultConfig component.CreateDefaultConfigFunc,
 	createServiceExtension CreateFunc,
-	sl component.StabilityLevel) Factory {
+	sl component.StabilityLevel,
+) Factory {
 	return &factory{
 		cfgType:                 cfgType,
 		CreateDefaultConfigFunc: createDefaultConfig,

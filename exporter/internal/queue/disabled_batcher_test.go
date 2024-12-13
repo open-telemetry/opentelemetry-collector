@@ -46,7 +46,9 @@ func TestDisabledBatcher_Basic(t *testing.T) {
 					Capacity: 10,
 				})
 
-			ba, err := NewBatcher(cfg, q, tt.maxWorkers)
+			ba, err := NewBatcher(cfg, q,
+				func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },
+				tt.maxWorkers)
 			require.NoError(t, err)
 
 			require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))

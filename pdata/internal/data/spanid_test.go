@@ -42,13 +42,13 @@ func TestSpanIDMarshal(t *testing.T) {
 func TestSpanIDMarshalJSON(t *testing.T) {
 	sid := SpanID([8]byte{})
 	json, err := sid.MarshalJSON()
-	assert.EqualValues(t, []byte(`""`), json)
 	require.NoError(t, err)
+	assert.JSONEq(t, `""`, string(json))
 
 	sid = [8]byte{0x12, 0x23, 0xAD, 0x12, 0x23, 0xAD, 0x12, 0x23}
 	json, err = sid.MarshalJSON()
-	assert.EqualValues(t, []byte(`"1223ad1223ad1223"`), json)
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	assert.JSONEq(t, `"1223ad1223ad1223"`, string(json))
 }
 
 func TestSpanIDUnmarshal(t *testing.T) {

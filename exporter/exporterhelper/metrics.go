@@ -20,8 +20,10 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 )
 
-var metricsMarshaler = &pmetric.ProtoMarshaler{}
-var metricsUnmarshaler = &pmetric.ProtoUnmarshaler{}
+var (
+	metricsMarshaler   = &pmetric.ProtoMarshaler{}
+	metricsUnmarshaler = &pmetric.ProtoUnmarshaler{}
+)
 
 type metricsRequest struct {
 	md     pmetric.Metrics
@@ -90,9 +92,6 @@ func NewMetrics(
 	return NewMetricsRequest(ctx, set, requestFromMetrics(pusher), append(metricsOpts, options...)...)
 }
 
-// Deprecated: [v0.112.0] use NewMetrics.
-var NewMetricsExporter = NewMetrics
-
 // RequestFromMetricsFunc converts pdata.Metrics into a user-defined request.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
@@ -147,9 +146,6 @@ func NewMetricsRequest(
 		Metrics:      mc,
 	}, err
 }
-
-// Deprecated: [v0.112.0] use NewMetricsRequest.
-var NewMetricsRequestExporter = NewMetricsRequest
 
 type metricsSenderWithObservability struct {
 	internal.BaseRequestSender

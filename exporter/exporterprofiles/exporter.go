@@ -7,7 +7,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pipeline"
 )
@@ -15,7 +15,7 @@ import (
 // Profiles is an exporter that can consume profiles.
 type Profiles interface {
 	component.Component
-	consumerprofiles.Profiles
+	xconsumer.Profiles
 }
 
 type Factory interface {
@@ -28,12 +28,6 @@ type Factory interface {
 
 	// ProfilesStability gets the stability level of the Profiles exporter.
 	ProfilesStability() component.StabilityLevel
-
-	// Deprecated: [v0.112.0] use CreateProfiles.
-	CreateProfilesExporter(ctx context.Context, set exporter.Settings, cfg component.Config) (Profiles, error)
-
-	// Deprecated: [v0.112.0] use ProfilesExporterStability.
-	ProfilesExporterStability() component.StabilityLevel
 }
 
 // FactoryOption apply changes to ReceiverOptions.
@@ -63,11 +57,6 @@ func (f CreateProfilesFunc) CreateProfiles(ctx context.Context, set exporter.Set
 		return nil, pipeline.ErrSignalNotSupported
 	}
 	return f(ctx, set, cfg)
-}
-
-// Deprecated: [v0.112.0] use CreateProfiles.
-func (f CreateProfilesFunc) CreateProfilesExporter(ctx context.Context, set exporter.Settings, cfg component.Config) (Profiles, error) {
-	return f.CreateProfiles(ctx, set, cfg)
 }
 
 // WithTraces overrides the default "error not supported" implementation for CreateTraces and the default "undefined" stability level.
@@ -106,11 +95,6 @@ type factory struct {
 }
 
 func (f *factory) ProfilesStability() component.StabilityLevel {
-	return f.profilesStabilityLevel
-}
-
-// Deprecated: [v0.112.0] use ProfilesStability.
-func (f *factory) ProfilesExporterStability() component.StabilityLevel {
 	return f.profilesStabilityLevel
 }
 

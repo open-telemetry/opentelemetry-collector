@@ -169,11 +169,11 @@ func memoryQuotaV2(cgroupv2MountPoint, cgroupv2MemoryMax string) (int64, bool, e
 		if value == "max" {
 			return -1, false, nil
 		}
-		max, err := strconv.ParseInt(value, 10, 64)
+		maxVal, err := strconv.ParseInt(value, 10, 64)
 		if err != nil {
 			return -1, false, err
 		}
-		return max, true, nil
+		return maxVal, true, nil
 	}
 	if err := scanner.Err(); err != nil {
 		return -1, false, err

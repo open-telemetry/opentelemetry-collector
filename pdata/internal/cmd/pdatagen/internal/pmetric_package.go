@@ -517,6 +517,7 @@ var sumField = &optionalPrimitiveValue{
 	defaultVal: "float64(0.0)",
 	testVal:    "float64(17.13)",
 }
+
 var minField = &optionalPrimitiveValue{
 	fieldName:  "Min",
 	returnType: "float64",

@@ -41,7 +41,12 @@ if [ "${CANDIDATE_BETA}" != "" ]; then
 fi
 git push origin "${BRANCH}"
 
-gh pr create --title "[chore] Prepare release ${RELEASE_VERSION}" --body "
+# Use OpenTelemetryBot account to create PR, allowing workflows to run
+PR=$(GITHUB_TOKEN="$BOT_GITHUB_TOKEN" gh pr create --title "[chore] Prepare release ${RELEASE_VERSION}" --body "
 The following commands were run to prepare this release:
 ${COMMANDS}
-"
+")
+
+# The `release:merge-freeze` label will cause the `check-merge-freeze` workflow to fail, enforcing the freeze.
+# The bot does not have permissions to add labels, so this is done using the CI action token.
+gh pr edit "$PR" --add-label release:merge-freeze || echo "Failed to add merge-freeze label"

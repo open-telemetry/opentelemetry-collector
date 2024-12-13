@@ -33,7 +33,7 @@ func (normalProfilesMarshaler) MarshalProfiles(pd pprofile.Profiles) ([]byte, er
 				buffer.WriteString(profile.ProfileID().String())
 
 				buffer.WriteString(" samples=")
-				buffer.WriteString(strconv.Itoa(profile.Profile().Sample().Len()))
+				buffer.WriteString(strconv.Itoa(profile.Sample().Len()))
 
 				if profile.Attributes().Len() > 0 {
 					profileAttributes := writeAttributes(profile.Attributes())

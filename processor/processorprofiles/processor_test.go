@@ -10,13 +10,13 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/processor"
 )
 
 func TestNewFactoryWithProfiles(t *testing.T) {
-	var testType = component.MustNewType("test")
+	testType := component.MustNewType("test")
 	defaultCfg := struct{}{}
 	factory := NewFactory(
 		testType,
@@ -42,6 +42,6 @@ type nopProcessor struct {
 	consumertest.Consumer
 }
 
-func createProfiles(context.Context, processor.Settings, component.Config, consumerprofiles.Profiles) (Profiles, error) {
+func createProfiles(context.Context, processor.Settings, component.Config, xconsumer.Profiles) (Profiles, error) {
 	return nopInstance, nil
 }

@@ -66,9 +66,168 @@ func (nh *mockHost) GetExtensions() map[component.ID]component.Component {
 	return nh.ext
 }
 
+func newFakeBoundedStorageClient(maxSizeInBytes int) *fakeBoundedStorageClient {
+	return &fakeBoundedStorageClient{
+		st:             map[string][]byte{},
+		MaxSizeInBytes: maxSizeInBytes,
+	}
+}
+
+// this storage client mimics the behavior of actual storage engines with limited storage space available
+// in general, real storage engines often have a per-write-transaction storage overhead, needing to keep
+// both the old and the new value stored until the transaction is committed
+// this is useful for testing the persistent queue queue behavior with a full disk
+type fakeBoundedStorageClient struct {
+	MaxSizeInBytes int
+	st             map[string][]byte
+	sizeInBytes    int
+	mux            sync.Mutex
+}
+
+func (m *fakeBoundedStorageClient) Get(ctx context.Context, key string) ([]byte, error) {
+	op := storage.GetOperation(key)
+	if err := m.Batch(ctx, op); err != nil {
+		return nil, err
+	}
+
+	return op.Value, nil
+}
+
+func (m *fakeBoundedStorageClient) Set(ctx context.Context, key string, value []byte) error {
+	return m.Batch(ctx, storage.SetOperation(key, value))
+}
+
+func (m *fakeBoundedStorageClient) Delete(ctx context.Context, key string) error {
+	return m.Batch(ctx, storage.DeleteOperation(key))
+}
+
+func (m *fakeBoundedStorageClient) Close(context.Context) error {
+	return nil
+}
+
+func (m *fakeBoundedStorageClient) Batch(_ context.Context, ops ...storage.Operation) error {
+	m.mux.Lock()
+	defer m.mux.Unlock()
+
+	totalAdded, totalRemoved := m.getTotalSizeChange(ops)
+
+	// the assumption here is that the new data needs to coexist with the old data on disk
+	// for the transaction to succeed
+	// this seems to be true for the file storage extension at least
+	if m.sizeInBytes+totalAdded > m.MaxSizeInBytes {
+		return fmt.Errorf("insufficient space available: %w", syscall.ENOSPC)
+	}
+
+	for _, op := range ops {
+		switch op.Type {
+		case storage.Get:
+			op.Value = m.st[op.Key]
+		case storage.Set:
+			m.st[op.Key] = op.Value
+		case storage.Delete:
+			delete(m.st, op.Key)
+		default:
+			return errors.New("wrong operation type")
+		}
+	}
+
+	m.sizeInBytes += totalAdded - totalRemoved
+
+	return nil
+}
+
+func (m *fakeBoundedStorageClient) SetMaxSizeInBytes(newMaxSize int) {
+	m.mux.Lock()
+	defer m.mux.Unlock()
+	m.MaxSizeInBytes = newMaxSize
+}
+
+func (m *fakeBoundedStorageClient) GetSizeInBytes() int {
+	m.mux.Lock()
+	defer m.mux.Unlock()
+	return m.sizeInBytes
+}
+
+func (m *fakeBoundedStorageClient) getTotalSizeChange(ops []storage.Operation) (totalAdded int, totalRemoved int) {
+	totalAdded, totalRemoved = 0, 0
+	for _, op := range ops {
+		switch op.Type {
+		case storage.Set:
+			if oldValue, ok := m.st[op.Key]; ok {
+				totalRemoved += len(oldValue)
+			} else {
+				totalAdded += len(op.Key)
+			}
+			totalAdded += len(op.Value)
+		case storage.Delete:
+			if value, ok := m.st[op.Key]; ok {
+				totalRemoved += len(op.Key)
+				totalRemoved += len(value)
+			}
+		default:
+		}
+	}
+	return totalAdded, totalRemoved
+}
+
+func newFakeStorageClientWithErrors(errors []error) *fakeStorageClientWithErrors {
+	return &fakeStorageClientWithErrors{
+		errors: errors,
+	}
+}
+
+// this storage client just returns errors from a list in order
+// used for testing error handling
+type fakeStorageClientWithErrors struct {
+	errors         []error
+	nextErrorIndex int
+	mux            sync.Mutex
+}
+
+func (m *fakeStorageClientWithErrors) Get(ctx context.Context, key string) ([]byte, error) {
+	op := storage.GetOperation(key)
+	err := m.Batch(ctx, op)
+	if err != nil {
+		return nil, err
+	}
+
+	return op.Value, nil
+}
+
+func (m *fakeStorageClientWithErrors) Set(ctx context.Context, key string, value []byte) error {
+	return m.Batch(ctx, storage.SetOperation(key, value))
+}
+
+func (m *fakeStorageClientWithErrors) Delete(ctx context.Context, key string) error {
+	return m.Batch(ctx, storage.DeleteOperation(key))
+}
+
+func (m *fakeStorageClientWithErrors) Close(context.Context) error {
+	return nil
+}
+
+func (m *fakeStorageClientWithErrors) Batch(context.Context, ...storage.Operation) error {
+	m.mux.Lock()
+	defer m.mux.Unlock()
+
+	if m.nextErrorIndex >= len(m.errors) {
+		return nil
+	}
+
+	m.nextErrorIndex++
+	return m.errors[m.nextErrorIndex-1]
+}
+
+func (m *fakeStorageClientWithErrors) Reset() {
+	m.mux.Lock()
+	defer m.mux.Unlock()
+	m.nextErrorIndex = 0
+}
+
 // createAndStartTestPersistentQueue creates and starts a fake queue with the given capacity and number of consumers.
 func createAndStartTestPersistentQueue(t *testing.T, sizer Sizer[tracesRequest], capacity int64, numConsumers int,
-	consumeFunc func(_ context.Context, item tracesRequest) error) Queue[tracesRequest] {
+	consumeFunc func(_ context.Context, item tracesRequest) error,
+) Queue[tracesRequest] {
 	pq := NewPersistentQueue[tracesRequest](PersistentQueueSettings[tracesRequest]{
 		Sizer:            sizer,
 		Capacity:         capacity,
@@ -114,7 +273,8 @@ func createTestPersistentQueueWithItemsCapacity(t testing.TB, ext storage.Extens
 }
 
 func createTestPersistentQueueWithCapacityLimiter(t testing.TB, ext storage.Extension, sizer Sizer[tracesRequest],
-	capacity int64) *persistentQueue[tracesRequest] {
+	capacity int64,
+) *persistentQueue[tracesRequest] {
 	pq := NewPersistentQueue[tracesRequest](PersistentQueueSettings[tracesRequest]{
 		Sizer:            sizer,
 		Capacity:         capacity,
@@ -182,7 +342,8 @@ func TestPersistentQueue_FullCapacity(t *testing.T) {
 
 func TestPersistentQueue_Shutdown(t *testing.T) {
 	pq := createAndStartTestPersistentQueue(t, &RequestSizer[tracesRequest]{}, 1001, 100, func(context.Context,
-		tracesRequest) error {
+		tracesRequest,
+	) error {
 		return nil
 	})
 	req := newTracesRequest(1, 10)
@@ -226,7 +387,8 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 			numMessagesConsumed := &atomic.Int32{}
 			pq := createAndStartTestPersistentQueue(t, &RequestSizer[tracesRequest]{}, 1000, c.numConsumers,
 				func(context.Context,
-					tracesRequest) error {
+					tracesRequest,
+				) error {
 					numMessagesConsumed.Add(int32(1))
 					return nil
 				})
@@ -310,7 +472,7 @@ func TestToStorageClient(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			storageID := component.MustNewIDWithName("file_storage", strconv.Itoa(tt.storageIndex))
 
-			var extensions = map[component.ID]component.Component{}
+			extensions := map[component.ID]component.Component{}
 			for i := 0; i < tt.numStorages; i++ {
 				extensions[component.MustNewIDWithName("file_storage", strconv.Itoa(i))] = NewMockStorageExtension(tt.getClientError)
 			}
@@ -341,7 +503,7 @@ func TestInvalidStorageExtensionType(t *testing.T) {
 	settings := extensiontest.NewNopSettings()
 	extension, err := factory.Create(context.Background(), settings, extConfig)
 	require.NoError(t, err)
-	var extensions = map[component.ID]component.Component{
+	extensions := map[component.ID]component.Component{
 		storageID: extension,
 	}
 	host := &mockHost{ext: extensions}

@@ -12,46 +12,47 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 func TestNewFactory(t *testing.T) {
-	var testType = component.MustNewType("test")
+	testType := component.MustNewType("test")
 	defaultCfg := struct{}{}
-	factory := NewFactory(
+	f := NewFactory(
 		testType,
 		func() component.Config { return &defaultCfg })
-	assert.EqualValues(t, testType, factory.Type())
-	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
-	_, err := factory.CreateTraces(context.Background(), Settings{}, &defaultCfg)
-	require.Error(t, err)
-	_, err = factory.CreateMetrics(context.Background(), Settings{}, &defaultCfg)
-	require.Error(t, err)
-	_, err = factory.CreateLogs(context.Background(), Settings{}, &defaultCfg)
-	assert.Error(t, err)
+	assert.EqualValues(t, testType, f.Type())
+	assert.EqualValues(t, &defaultCfg, f.CreateDefaultConfig())
+	_, err := f.CreateTraces(context.Background(), Settings{}, &defaultCfg)
+	require.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
+	_, err = f.CreateMetrics(context.Background(), Settings{}, &defaultCfg)
+	require.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
+	_, err = f.CreateLogs(context.Background(), Settings{}, &defaultCfg)
+	require.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
 }
 
 func TestNewFactoryWithOptions(t *testing.T) {
-	var testType = component.MustNewType("test")
+	testType := component.MustNewType("test")
 	defaultCfg := struct{}{}
-	factory := NewFactory(
+	f := NewFactory(
 		testType,
 		func() component.Config { return &defaultCfg },
 		WithTraces(createTraces, component.StabilityLevelDevelopment),
 		WithMetrics(createMetrics, component.StabilityLevelAlpha),
 		WithLogs(createLogs, component.StabilityLevelDeprecated))
-	assert.EqualValues(t, testType, factory.Type())
-	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
+	assert.EqualValues(t, testType, f.Type())
+	assert.EqualValues(t, &defaultCfg, f.CreateDefaultConfig())
 
-	assert.Equal(t, component.StabilityLevelDevelopment, factory.TracesStability())
-	_, err := factory.CreateTraces(context.Background(), Settings{}, &defaultCfg)
+	assert.Equal(t, component.StabilityLevelDevelopment, f.TracesStability())
+	_, err := f.CreateTraces(context.Background(), Settings{}, &defaultCfg)
 	require.NoError(t, err)
 
-	assert.Equal(t, component.StabilityLevelAlpha, factory.MetricsStability())
-	_, err = factory.CreateMetrics(context.Background(), Settings{}, &defaultCfg)
+	assert.Equal(t, component.StabilityLevelAlpha, f.MetricsStability())
+	_, err = f.CreateMetrics(context.Background(), Settings{}, &defaultCfg)
 	require.NoError(t, err)
 
-	assert.Equal(t, component.StabilityLevelDeprecated, factory.LogsStability())
-	_, err = factory.CreateLogs(context.Background(), Settings{}, &defaultCfg)
+	assert.Equal(t, component.StabilityLevelDeprecated, f.LogsStability())
+	_, err = f.CreateLogs(context.Background(), Settings{}, &defaultCfg)
 	assert.NoError(t, err)
 }
 

@@ -6,6 +6,7 @@ package queue
 import (
 	"context"
 	"errors"
+	"runtime"
 	"testing"
 	"time"
 
@@ -50,7 +51,9 @@ func TestDefaultBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T) {
 					Capacity: 10,
 				})
 
-			ba, err := NewBatcher(cfg, q, tt.maxWorkers)
+			ba, err := NewBatcher(cfg, q,
+				func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },
+				tt.maxWorkers)
 			require.NoError(t, err)
 
 			require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
@@ -108,7 +111,9 @@ func TestDefaultBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 					Capacity: 10,
 				})
 
-			ba, err := NewBatcher(cfg, q, tt.maxWorkers)
+			ba, err := NewBatcher(cfg, q,
+				func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },
+				tt.maxWorkers)
 			require.NoError(t, err)
 
 			require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
@@ -140,6 +145,10 @@ func TestDefaultBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 }
 
 func TestDefaultBatcher_NoSplit_WithTimeout(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector/issues/11869")
+	}
+
 	tests := []struct {
 		name       string
 		maxWorkers int
@@ -172,7 +181,9 @@ func TestDefaultBatcher_NoSplit_WithTimeout(t *testing.T) {
 					Capacity: 10,
 				})
 
-			ba, err := NewBatcher(cfg, q, tt.maxWorkers)
+			ba, err := NewBatcher(cfg, q,
+				func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },
+				tt.maxWorkers)
 			require.NoError(t, err)
 
 			require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
@@ -201,6 +212,10 @@ func TestDefaultBatcher_NoSplit_WithTimeout(t *testing.T) {
 }
 
 func TestDefaultBatcher_Split_TimeoutDisabled(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector/issues/11847")
+	}
+
 	tests := []struct {
 		name       string
 		maxWorkers int
@@ -236,7 +251,9 @@ func TestDefaultBatcher_Split_TimeoutDisabled(t *testing.T) {
 					Capacity: 10,
 				})
 
-			ba, err := NewBatcher(cfg, q, tt.maxWorkers)
+			ba, err := NewBatcher(cfg, q,
+				func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },
+				tt.maxWorkers)
 			require.NoError(t, err)
 
 			require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
@@ -268,4 +285,41 @@ func TestDefaultBatcher_Split_TimeoutDisabled(t *testing.T) {
 			}, 100*time.Millisecond, 10*time.Millisecond)
 		})
 	}
+}
+
+func TestDefaultBatcher_Shutdown(t *testing.T) {
+	batchCfg := exporterbatcher.NewDefaultConfig()
+	batchCfg.MinSizeItems = 10
+	batchCfg.FlushTimeout = 100 * time.Second
+
+	q := NewBoundedMemoryQueue[internal.Request](
+		MemoryQueueSettings[internal.Request]{
+			Sizer:    &RequestSizer[internal.Request]{},
+			Capacity: 10,
+		})
+
+	ba, err := NewBatcher(batchCfg, q,
+		func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },
+		2)
+	require.NoError(t, err)
+
+	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
+
+	sink := newFakeRequestSink()
+
+	require.NoError(t, q.Offer(context.Background(), &fakeRequest{items: 1, sink: sink}))
+	require.NoError(t, q.Offer(context.Background(), &fakeRequest{items: 2, sink: sink}))
+
+	// Give the batcher some time to read from queue
+	time.Sleep(100 * time.Millisecond)
+
+	assert.Equal(t, int64(0), sink.requestsCount.Load())
+	assert.Equal(t, int64(0), sink.itemsCount.Load())
+
+	require.NoError(t, q.Shutdown(context.Background()))
+	require.NoError(t, ba.Shutdown(context.Background()))
+
+	assert.Equal(t, int64(1), sink.requestsCount.Load())
+	assert.Equal(t, int64(3), sink.itemsCount.Load())
 }
