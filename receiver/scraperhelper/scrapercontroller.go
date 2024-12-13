@@ -45,13 +45,6 @@ func AddScraper(t component.Type, scraper scraper.Metrics) ScraperControllerOpti
 	})
 }
 
-// Deprecated: [v0.115.0] use AddScraper.
-func AddScraperWithType(t component.Type, scrp Scraper) ScraperControllerOption {
-	// Ignore the error since it cannot happen because the Scrape func cannot be nil here.
-	newScrp, _ := scraper.NewMetrics(scrp.Scrape, scraper.WithStart(scrp.Start), scraper.WithShutdown(scrp.Shutdown))
-	return AddScraper(t, newScrp)
-}
-
 // WithTickerChannel allows you to override the scraper controller's ticker
 // channel to specify when scrape is called. This is only expected to be
 // used by tests.

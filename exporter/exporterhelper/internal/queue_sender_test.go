@@ -192,7 +192,8 @@ func TestQueuedRetryHappyPath(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool, tt struct {
 		name         string
 		queueOptions []Option
-	}) {
+	},
+	) {
 		t.Run(testName, func(t *testing.T) {
 			resetFeatureGate := setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			tel, err := componenttest.SetupTelemetry(defaultID)
@@ -269,6 +270,10 @@ func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
 					attribute.String(DataTypeKey, dataType.String())))
 
 				assert.NoError(t, be.Shutdown(context.Background()))
+				// metrics should be unregistered at shutdown to prevent memory leak
+				require.Error(t, tt.CheckExporterMetricGauge("otelcol_exporter_queue_capacity", int64(defaultQueueSize)))
+				require.Error(t, tt.CheckExporterMetricGauge("otelcol_exporter_queue_size", int64(7),
+					attribute.String(DataTypeKey, dataType.String())))
 			}
 		})
 	}
@@ -357,7 +362,8 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool, tt struct {
 		name         string
 		queueOptions []Option
-	}) {
+	},
+	) {
 		t.Run(testName, func(t *testing.T) {
 			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			set := exportertest.NewNopSettings()
@@ -428,7 +434,7 @@ func TestQueuedRetryPersistenceEnabled(t *testing.T) {
 				WithRetry(rCfg), WithQueue(qCfg))
 			require.NoError(t, err)
 
-			var extensions = map[component.ID]component.Component{
+			extensions := map[component.ID]component.Component{
 				storageID: queue.NewMockStorageExtension(nil),
 			}
 			host := &MockHost{Ext: extensions}
@@ -461,7 +467,7 @@ func TestQueuedRetryPersistenceEnabledStorageError(t *testing.T) {
 				WithUnmarshaler(mockRequestUnmarshaler(&mockRequest{})), WithRetry(rCfg), WithQueue(qCfg))
 			require.NoError(t, err)
 
-			var extensions = map[component.ID]component.Component{
+			extensions := map[component.ID]component.Component{
 				storageID: queue.NewMockStorageExtension(storageError),
 			}
 			host := &MockHost{Ext: extensions}
@@ -493,7 +499,7 @@ func TestQueuedRetryPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 				WithUnmarshaler(mockRequestUnmarshaler(mockReq)), WithRetry(rCfg), WithQueue(qCfg))
 			require.NoError(t, err)
 
-			var extensions = map[component.ID]component.Component{
+			extensions := map[component.ID]component.Component{
 				storageID: queue.NewMockStorageExtension(nil),
 			}
 			host := &MockHost{Ext: extensions}

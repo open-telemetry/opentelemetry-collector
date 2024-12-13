@@ -20,8 +20,10 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 )
 
-var metricsMarshaler = &pmetric.ProtoMarshaler{}
-var metricsUnmarshaler = &pmetric.ProtoUnmarshaler{}
+var (
+	metricsMarshaler   = &pmetric.ProtoMarshaler{}
+	metricsUnmarshaler = &pmetric.ProtoUnmarshaler{}
+)
 
 type metricsRequest struct {
 	md     pmetric.Metrics

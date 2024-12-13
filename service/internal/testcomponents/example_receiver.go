@@ -8,21 +8,21 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/receiverprofiles"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 )
 
 var receiverType = component.MustNewType("examplereceiver")
 
 // ExampleReceiverFactory is factory for ExampleReceiver.
-var ExampleReceiverFactory = receiverprofiles.NewFactory(
+var ExampleReceiverFactory = xreceiver.NewFactory(
 	receiverType,
 	createReceiverDefaultConfig,
-	receiverprofiles.WithTraces(createTraces, component.StabilityLevelDevelopment),
-	receiverprofiles.WithMetrics(createMetrics, component.StabilityLevelDevelopment),
-	receiverprofiles.WithLogs(createLogs, component.StabilityLevelDevelopment),
-	receiverprofiles.WithProfiles(createProfiles, component.StabilityLevelDevelopment),
+	xreceiver.WithTraces(createTraces, component.StabilityLevelDevelopment),
+	xreceiver.WithMetrics(createMetrics, component.StabilityLevelDevelopment),
+	xreceiver.WithLogs(createLogs, component.StabilityLevelDevelopment),
+	xreceiver.WithProfiles(createProfiles, component.StabilityLevelDevelopment),
 )
 
 func createReceiverDefaultConfig() component.Config {
@@ -70,8 +70,8 @@ func createProfiles(
 	_ context.Context,
 	_ receiver.Settings,
 	cfg component.Config,
-	nextConsumer consumerprofiles.Profiles,
-) (receiverprofiles.Profiles, error) {
+	nextConsumer xconsumer.Profiles,
+) (xreceiver.Profiles, error) {
 	tr := createReceiver(cfg)
 	tr.ConsumeProfilesFunc = nextConsumer.ConsumeProfiles
 	return tr, nil
@@ -98,7 +98,7 @@ type ExampleReceiver struct {
 	consumer.ConsumeTracesFunc
 	consumer.ConsumeMetricsFunc
 	consumer.ConsumeLogsFunc
-	consumerprofiles.ConsumeProfilesFunc
+	xconsumer.ConsumeProfilesFunc
 }
 
 // This is the map of already created example receivers for particular configurations.

@@ -228,9 +228,11 @@ type nopConnector struct {
 func createTracesToTraces(context.Context, Settings, component.Config, consumer.Traces) (Traces, error) {
 	return nopInstance, nil
 }
+
 func createTracesToMetrics(context.Context, Settings, component.Config, consumer.Metrics) (Traces, error) {
 	return nopInstance, nil
 }
+
 func createTracesToLogs(context.Context, Settings, component.Config, consumer.Logs) (Traces, error) {
 	return nopInstance, nil
 }
@@ -238,9 +240,11 @@ func createTracesToLogs(context.Context, Settings, component.Config, consumer.Lo
 func createMetricsToTraces(context.Context, Settings, component.Config, consumer.Traces) (Metrics, error) {
 	return nopInstance, nil
 }
+
 func createMetricsToMetrics(context.Context, Settings, component.Config, consumer.Metrics) (Metrics, error) {
 	return nopInstance, nil
 }
+
 func createMetricsToLogs(context.Context, Settings, component.Config, consumer.Logs) (Metrics, error) {
 	return nopInstance, nil
 }
@@ -248,9 +252,11 @@ func createMetricsToLogs(context.Context, Settings, component.Config, consumer.L
 func createLogsToTraces(context.Context, Settings, component.Config, consumer.Traces) (Logs, error) {
 	return nopInstance, nil
 }
+
 func createLogsToMetrics(context.Context, Settings, component.Config, consumer.Metrics) (Logs, error) {
 	return nopInstance, nil
 }
+
 func createLogsToLogs(context.Context, Settings, component.Config, consumer.Logs) (Logs, error) {
 	return nopInstance, nil
 }

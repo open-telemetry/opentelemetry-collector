@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/contrib/config"
 	"go.opentelemetry.io/otel/log"
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/noop"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -140,7 +139,6 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 			},
 		),
 	)
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to create SDK: %w", err)
 	}
@@ -172,12 +170,6 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 
 	logsAboutMeterProvider(logger, cfg.Telemetry.Metrics, mp)
 	srv.telemetrySettings = component.TelemetrySettings{
-		LeveledMeterProvider: func(level configtelemetry.Level) metric.MeterProvider {
-			if level <= cfg.Telemetry.Metrics.Level {
-				return mp
-			}
-			return noop.NewMeterProvider()
-		},
 		Logger:         logger,
 		MeterProvider:  mp,
 		TracerProvider: tracerProvider,

@@ -11,8 +11,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorprofiles"
 )
@@ -52,7 +52,7 @@ func createLogs(context.Context, processor.Settings, component.Config, consumer.
 	return nopInstance, nil
 }
 
-func createProfiles(context.Context, processor.Settings, component.Config, consumerprofiles.Profiles) (processorprofiles.Profiles, error) {
+func createProfiles(context.Context, processor.Settings, component.Config, xconsumer.Profiles) (processorprofiles.Profiles, error) {
 	return nopInstance, nil
 }
 

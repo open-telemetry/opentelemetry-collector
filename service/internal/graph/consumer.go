@@ -6,7 +6,7 @@ package graph // import "go.opentelemetry.io/collector/service/internal/graph"
 import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 )
 
 // baseConsumer redeclared here since not public in consumer package. May consider to make that public.
@@ -35,5 +35,5 @@ type componentLogs struct {
 
 type componentProfiles struct {
 	component.Component
-	consumerprofiles.Profiles
+	xconsumer.Profiles
 }

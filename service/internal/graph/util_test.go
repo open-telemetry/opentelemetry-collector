@@ -13,8 +13,8 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectorprofiles"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterprofiles"
 	"go.opentelemetry.io/collector/pipeline"
@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorprofiles"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/receiverprofiles"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 	"go.opentelemetry.io/collector/service/internal/testcomponents"
 	"go.opentelemetry.io/collector/service/pipelines"
 )
@@ -198,18 +198,18 @@ func newBadConnectorFactory() connector.Factory {
 }
 
 func newErrReceiverFactory() receiver.Factory {
-	return receiverprofiles.NewFactory(component.MustNewType("err"),
+	return xreceiver.NewFactory(component.MustNewType("err"),
 		func() component.Config { return &struct{}{} },
-		receiverprofiles.WithTraces(func(context.Context, receiver.Settings, component.Config, consumer.Traces) (receiver.Traces, error) {
+		xreceiver.WithTraces(func(context.Context, receiver.Settings, component.Config, consumer.Traces) (receiver.Traces, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		receiverprofiles.WithLogs(func(context.Context, receiver.Settings, component.Config, consumer.Logs) (receiver.Logs, error) {
+		xreceiver.WithLogs(func(context.Context, receiver.Settings, component.Config, consumer.Logs) (receiver.Logs, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		receiverprofiles.WithMetrics(func(context.Context, receiver.Settings, component.Config, consumer.Metrics) (receiver.Metrics, error) {
+		xreceiver.WithMetrics(func(context.Context, receiver.Settings, component.Config, consumer.Metrics) (receiver.Metrics, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		receiverprofiles.WithProfiles(func(context.Context, receiver.Settings, component.Config, consumerprofiles.Profiles) (receiverprofiles.Profiles, error) {
+		xreceiver.WithProfiles(func(context.Context, receiver.Settings, component.Config, xconsumer.Profiles) (xreceiver.Profiles, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
 	)
@@ -227,7 +227,7 @@ func newErrProcessorFactory() processor.Factory {
 		processorprofiles.WithMetrics(func(context.Context, processor.Settings, component.Config, consumer.Metrics) (processor.Metrics, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		processorprofiles.WithProfiles(func(context.Context, processor.Settings, component.Config, consumerprofiles.Profiles) (processorprofiles.Profiles, error) {
+		processorprofiles.WithProfiles(func(context.Context, processor.Settings, component.Config, xconsumer.Profiles) (processorprofiles.Profiles, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
 	)
@@ -264,7 +264,7 @@ func newErrConnectorFactory() connector.Factory {
 		connectorprofiles.WithTracesToLogs(func(context.Context, connector.Settings, component.Config, consumer.Logs) (connector.Traces, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
-		connectorprofiles.WithTracesToProfiles(func(context.Context, connector.Settings, component.Config, consumerprofiles.Profiles) (connector.Traces, error) {
+		connectorprofiles.WithTracesToProfiles(func(context.Context, connector.Settings, component.Config, xconsumer.Profiles) (connector.Traces, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
 
@@ -277,7 +277,7 @@ func newErrConnectorFactory() connector.Factory {
 		connectorprofiles.WithMetricsToLogs(func(context.Context, connector.Settings, component.Config, consumer.Logs) (connector.Metrics, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
-		connectorprofiles.WithMetricsToProfiles(func(context.Context, connector.Settings, component.Config, consumerprofiles.Profiles) (connector.Metrics, error) {
+		connectorprofiles.WithMetricsToProfiles(func(context.Context, connector.Settings, component.Config, xconsumer.Profiles) (connector.Metrics, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
 
@@ -290,7 +290,7 @@ func newErrConnectorFactory() connector.Factory {
 		connectorprofiles.WithLogsToLogs(func(context.Context, connector.Settings, component.Config, consumer.Logs) (connector.Logs, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
-		connectorprofiles.WithLogsToProfiles(func(context.Context, connector.Settings, component.Config, consumerprofiles.Profiles) (connector.Logs, error) {
+		connectorprofiles.WithLogsToProfiles(func(context.Context, connector.Settings, component.Config, xconsumer.Profiles) (connector.Logs, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
 
@@ -303,7 +303,7 @@ func newErrConnectorFactory() connector.Factory {
 		connectorprofiles.WithProfilesToLogs(func(context.Context, connector.Settings, component.Config, consumer.Logs) (connectorprofiles.Profiles, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
-		connectorprofiles.WithProfilesToProfiles(func(context.Context, connector.Settings, component.Config, consumerprofiles.Profiles) (connectorprofiles.Profiles, error) {
+		connectorprofiles.WithProfilesToProfiles(func(context.Context, connector.Settings, component.Config, xconsumer.Profiles) (connectorprofiles.Profiles, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
 	)
