@@ -20,7 +20,7 @@ type nopExtension struct {
 }
 
 func TestNewFactory(t *testing.T) {
-	var testType = component.MustNewType("test")
+	testType := component.MustNewType("test")
 	defaultCfg := struct{}{}
 	nopExtensionInstance := new(nopExtension)
 

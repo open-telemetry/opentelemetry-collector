@@ -7,7 +7,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
 )
@@ -22,7 +22,7 @@ type Factory interface {
 	// CreateProfiles creates a Profiles processor based on this config.
 	// If the processor type does not support tracing or if the config is not valid,
 	// an error will be returned instead.
-	CreateProfiles(ctx context.Context, set processor.Settings, cfg component.Config, next consumerprofiles.Profiles) (Profiles, error)
+	CreateProfiles(ctx context.Context, set processor.Settings, cfg component.Config, next xconsumer.Profiles) (Profiles, error)
 
 	// ProfilesStability gets the stability level of the Profiles processor.
 	ProfilesStability() component.StabilityLevel
@@ -31,15 +31,15 @@ type Factory interface {
 // Profiles is a processor that can consume profiles.
 type Profiles interface {
 	component.Component
-	consumerprofiles.Profiles
+	xconsumer.Profiles
 }
 
 // CreateProfilesFunc is the equivalent of Factory.CreateProfiles().
 // CreateProfilesFunc is the equivalent of Factory.CreateProfiles().
-type CreateProfilesFunc func(context.Context, processor.Settings, component.Config, consumerprofiles.Profiles) (Profiles, error)
+type CreateProfilesFunc func(context.Context, processor.Settings, component.Config, xconsumer.Profiles) (Profiles, error)
 
 // CreateProfiles implements Factory.CreateProfiles.
-func (f CreateProfilesFunc) CreateProfiles(ctx context.Context, set processor.Settings, cfg component.Config, next consumerprofiles.Profiles) (Profiles, error) {
+func (f CreateProfilesFunc) CreateProfiles(ctx context.Context, set processor.Settings, cfg component.Config, next xconsumer.Profiles) (Profiles, error) {
 	if f == nil {
 		return nil, pipeline.ErrSignalNotSupported
 	}

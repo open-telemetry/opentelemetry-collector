@@ -398,6 +398,7 @@ var locationSlice = &sliceOfPtrs{
 	structName: "LocationSlice",
 	element:    location,
 }
+
 var location = &messageValueStruct{
 	structName:     "Location",
 	description:    "// Location describes function and line table debug information.",

@@ -17,9 +17,8 @@ import (
 )
 
 func newConfig(yamlBytes []byte, factories Factories) (*Config, error) {
-	var stringMap = map[string]interface{}{}
+	stringMap := map[string]interface{}{}
 	err := yaml.Unmarshal(yamlBytes, stringMap)
-
 	if err != nil {
 		return nil, err
 	}

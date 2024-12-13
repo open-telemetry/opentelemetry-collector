@@ -14,8 +14,8 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/internal"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/pipelineprofiles"
 )
@@ -119,28 +119,30 @@ type nopConnector struct {
 	consumertest.Consumer
 }
 
-func createTracesToProfiles(context.Context, connector.Settings, component.Config, consumerprofiles.Profiles) (connector.Traces, error) {
+func createTracesToProfiles(context.Context, connector.Settings, component.Config, xconsumer.Profiles) (connector.Traces, error) {
 	return nopInstance, nil
 }
 
-func createMetricsToProfiles(context.Context, connector.Settings, component.Config, consumerprofiles.Profiles) (connector.Metrics, error) {
+func createMetricsToProfiles(context.Context, connector.Settings, component.Config, xconsumer.Profiles) (connector.Metrics, error) {
 	return nopInstance, nil
 }
 
-func createLogsToProfiles(context.Context, connector.Settings, component.Config, consumerprofiles.Profiles) (connector.Logs, error) {
+func createLogsToProfiles(context.Context, connector.Settings, component.Config, xconsumer.Profiles) (connector.Logs, error) {
 	return nopInstance, nil
 }
 
-func createProfilesToProfiles(context.Context, connector.Settings, component.Config, consumerprofiles.Profiles) (Profiles, error) {
+func createProfilesToProfiles(context.Context, connector.Settings, component.Config, xconsumer.Profiles) (Profiles, error) {
 	return nopInstance, nil
 }
 
 func createProfilesToTraces(context.Context, connector.Settings, component.Config, consumer.Traces) (Profiles, error) {
 	return nopInstance, nil
 }
+
 func createProfilesToMetrics(context.Context, connector.Settings, component.Config, consumer.Metrics) (Profiles, error) {
 	return nopInstance, nil
 }
+
 func createProfilesToLogs(context.Context, connector.Settings, component.Config, consumer.Logs) (Profiles, error) {
 	return nopInstance, nil
 }

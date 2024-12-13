@@ -140,6 +140,16 @@ The last step of the release process creates artifacts for the new version of th
 
 9. Update the release notes with the CHANGELOG.md updates.
 
+## Post-release steps
+
+After the release is complete, the release manager should do the following steps:
+
+1. Create an issue or update existing issues for each problem encountered throughout the release in
+the appropriate repositories and label them with the `release:retro` label. The release manager
+should share the list of issues that affected the release with the Collector leads.
+2. Update the [release schedule](#release-schedule) section of this document to remove the completed
+releases and add new schedules to the bottom of the list.
+
 ## Troubleshooting
 
 1. `unknown revision internal/coreinternal/v0.85.0` -- This is typically an indication that there's a dependency on a new module. You can fix it by adding a new `replaces` entry to the `go.mod` for the affected module.

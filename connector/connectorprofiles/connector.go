@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/internal"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/pipelineprofiles"
 )
@@ -18,15 +18,15 @@ import (
 type Factory interface {
 	connector.Factory
 
-	CreateTracesToProfiles(ctx context.Context, set connector.Settings, cfg component.Config, next consumerprofiles.Profiles) (connector.Traces, error)
-	CreateMetricsToProfiles(ctx context.Context, set connector.Settings, cfg component.Config, next consumerprofiles.Profiles) (connector.Metrics, error)
-	CreateLogsToProfiles(ctx context.Context, set connector.Settings, cfg component.Config, next consumerprofiles.Profiles) (connector.Logs, error)
+	CreateTracesToProfiles(ctx context.Context, set connector.Settings, cfg component.Config, next xconsumer.Profiles) (connector.Traces, error)
+	CreateMetricsToProfiles(ctx context.Context, set connector.Settings, cfg component.Config, next xconsumer.Profiles) (connector.Metrics, error)
+	CreateLogsToProfiles(ctx context.Context, set connector.Settings, cfg component.Config, next xconsumer.Profiles) (connector.Logs, error)
 
 	TracesToProfilesStability() component.StabilityLevel
 	MetricsToProfilesStability() component.StabilityLevel
 	LogsToProfilesStability() component.StabilityLevel
 
-	CreateProfilesToProfiles(ctx context.Context, set connector.Settings, cfg component.Config, next consumerprofiles.Profiles) (Profiles, error)
+	CreateProfilesToProfiles(ctx context.Context, set connector.Settings, cfg component.Config, next xconsumer.Profiles) (Profiles, error)
 	CreateProfilesToTraces(ctx context.Context, set connector.Settings, cfg component.Config, next consumer.Traces) (Profiles, error)
 	CreateProfilesToMetrics(ctx context.Context, set connector.Settings, cfg component.Config, next consumer.Metrics) (Profiles, error)
 	CreateProfilesToLogs(ctx context.Context, set connector.Settings, cfg component.Config, next consumer.Logs) (Profiles, error)
@@ -39,7 +39,7 @@ type Factory interface {
 
 // A Profiles connector acts as an exporter from a profiles pipeline and a receiver
 // to one or more traces, metrics, logs, or profiles pipelines.
-// Profiles feeds a consumer.Traces, consumer.Metrics, consumer.Logs, or consumerprofiles.Profiles with data.
+// Profiles feeds a consumer.Traces, consumer.Metrics, consumer.Logs, or xconsumer.Profiles with data.
 //
 // Examples:
 //   - Profiles could be collected in one pipeline and routed to another profiles pipeline
@@ -51,14 +51,14 @@ type Factory interface {
 //     criteria are met.
 type Profiles interface {
 	component.Component
-	consumerprofiles.Profiles
+	xconsumer.Profiles
 }
 
 // CreateTracesToProfilesFunc is the equivalent of Factory.CreateTracesToProfiles().
-type CreateTracesToProfilesFunc func(context.Context, connector.Settings, component.Config, consumerprofiles.Profiles) (connector.Traces, error)
+type CreateTracesToProfilesFunc func(context.Context, connector.Settings, component.Config, xconsumer.Profiles) (connector.Traces, error)
 
 // CreateTracesToProfiles implements Factory.CreateTracesToProfiles().
-func (f CreateTracesToProfilesFunc) CreateTracesToProfiles(ctx context.Context, set connector.Settings, cfg component.Config, next consumerprofiles.Profiles) (connector.Traces, error) {
+func (f CreateTracesToProfilesFunc) CreateTracesToProfiles(ctx context.Context, set connector.Settings, cfg component.Config, next xconsumer.Profiles) (connector.Traces, error) {
 	if f == nil {
 		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalTraces, pipelineprofiles.SignalProfiles)
 	}
@@ -66,10 +66,10 @@ func (f CreateTracesToProfilesFunc) CreateTracesToProfiles(ctx context.Context, 
 }
 
 // CreateMetricsToProfilesFunc is the equivalent of Factory.CreateMetricsToProfiles().
-type CreateMetricsToProfilesFunc func(context.Context, connector.Settings, component.Config, consumerprofiles.Profiles) (connector.Metrics, error)
+type CreateMetricsToProfilesFunc func(context.Context, connector.Settings, component.Config, xconsumer.Profiles) (connector.Metrics, error)
 
 // CreateMetricsToProfiles implements Factory.CreateMetricsToProfiles().
-func (f CreateMetricsToProfilesFunc) CreateMetricsToProfiles(ctx context.Context, set connector.Settings, cfg component.Config, next consumerprofiles.Profiles) (connector.Metrics, error) {
+func (f CreateMetricsToProfilesFunc) CreateMetricsToProfiles(ctx context.Context, set connector.Settings, cfg component.Config, next xconsumer.Profiles) (connector.Metrics, error) {
 	if f == nil {
 		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalMetrics, pipelineprofiles.SignalProfiles)
 	}
@@ -77,10 +77,10 @@ func (f CreateMetricsToProfilesFunc) CreateMetricsToProfiles(ctx context.Context
 }
 
 // CreateLogsToProfilesFunc is the equivalent of Factory.CreateLogsToProfiles().
-type CreateLogsToProfilesFunc func(context.Context, connector.Settings, component.Config, consumerprofiles.Profiles) (connector.Logs, error)
+type CreateLogsToProfilesFunc func(context.Context, connector.Settings, component.Config, xconsumer.Profiles) (connector.Logs, error)
 
 // CreateLogsToProfiles implements Factory.CreateLogsToProfiles().
-func (f CreateLogsToProfilesFunc) CreateLogsToProfiles(ctx context.Context, set connector.Settings, cfg component.Config, next consumerprofiles.Profiles) (connector.Logs, error) {
+func (f CreateLogsToProfilesFunc) CreateLogsToProfiles(ctx context.Context, set connector.Settings, cfg component.Config, next xconsumer.Profiles) (connector.Logs, error) {
 	if f == nil {
 		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalLogs, pipelineprofiles.SignalProfiles)
 	}
@@ -88,10 +88,10 @@ func (f CreateLogsToProfilesFunc) CreateLogsToProfiles(ctx context.Context, set 
 }
 
 // CreateProfilesToProfilesFunc is the equivalent of Factory.CreateProfilesToProfiles().
-type CreateProfilesToProfilesFunc func(context.Context, connector.Settings, component.Config, consumerprofiles.Profiles) (Profiles, error)
+type CreateProfilesToProfilesFunc func(context.Context, connector.Settings, component.Config, xconsumer.Profiles) (Profiles, error)
 
 // CreateProfilesToProfiles implements Factory.CreateProfilesToProfiles().
-func (f CreateProfilesToProfilesFunc) CreateProfilesToProfiles(ctx context.Context, set connector.Settings, cfg component.Config, next consumerprofiles.Profiles) (Profiles, error) {
+func (f CreateProfilesToProfilesFunc) CreateProfilesToProfiles(ctx context.Context, set connector.Settings, cfg component.Config, next xconsumer.Profiles) (Profiles, error) {
 	if f == nil {
 		return nil, internal.ErrDataTypes(set.ID, pipelineprofiles.SignalProfiles, pipelineprofiles.SignalProfiles)
 	}

@@ -12,10 +12,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-var (
-	// ErrQueueIsFull is the error returned when an item is offered to the Queue and the queue is full.
-	ErrQueueIsFull = errors.New("sending queue is full")
-)
+// ErrQueueIsFull is the error returned when an item is offered to the Queue and the queue is full.
+var ErrQueueIsFull = errors.New("sending queue is full")
 
 // Queue defines a producer-consumer exchange which can be backed by e.g. the memory-based ring buffer queue
 // (boundedMemoryQueue) or via a disk-based queue (persistentQueue)

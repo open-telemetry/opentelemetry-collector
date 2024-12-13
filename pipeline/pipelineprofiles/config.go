@@ -7,6 +7,4 @@ import (
 	"go.opentelemetry.io/collector/pipeline/internal/globalsignal"
 )
 
-var (
-	SignalProfiles = globalsignal.MustNewSignal("profiles")
-)
+var SignalProfiles = globalsignal.MustNewSignal("profiles")

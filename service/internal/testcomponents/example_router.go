@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectorprofiles"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
@@ -79,7 +79,7 @@ func createExampleLogsRouter(_ context.Context, _ connector.Settings, cfg compon
 	}, nil
 }
 
-func createExampleProfilesRouter(_ context.Context, _ connector.Settings, cfg component.Config, profiles consumerprofiles.Profiles) (connectorprofiles.Profiles, error) {
+func createExampleProfilesRouter(_ context.Context, _ connector.Settings, cfg component.Config, profiles xconsumer.Profiles) (connectorprofiles.Profiles, error) {
 	c := cfg.(ExampleRouterConfig)
 	r := profiles.(connectorprofiles.ProfilesRouterAndConsumer)
 	left, _ := r.Consumer(c.Profiles.Left)
@@ -105,8 +105,8 @@ type ExampleRouter struct {
 	logsLeft  consumer.Logs
 	logsNum   int
 
-	profilesRight consumerprofiles.Profiles
-	profilesLeft  consumerprofiles.Profiles
+	profilesRight xconsumer.Profiles
+	profilesLeft  xconsumer.Profiles
 	profilesNum   int
 }
 

@@ -82,7 +82,8 @@ func TestSharedComponent(t *testing.T) {
 		ShutdownFunc: func(context.Context) error {
 			calledStop++
 			return wantErr
-		}}
+		},
+	}
 
 	comps := NewMap[component.ID, *baseComponent]()
 	got, err := comps.LoadOrStore(
@@ -198,8 +199,10 @@ func TestReportStatusOnStartShutdown(t *testing.T) {
 	}
 }
 
-var _ component.Host = (*testHost)(nil)
-var _ componentstatus.Reporter = (*testHost)(nil)
+var (
+	_ component.Host           = (*testHost)(nil)
+	_ componentstatus.Reporter = (*testHost)(nil)
+)
 
 type testHost struct {
 	component.Host

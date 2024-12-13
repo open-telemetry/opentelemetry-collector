@@ -9,7 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorprofiles"
@@ -86,7 +86,7 @@ func (b *ProcessorBuilder) CreateLogs(ctx context.Context, set processor.Setting
 }
 
 // CreateProfiles creates a Profiles processor based on the settings and config.
-func (b *ProcessorBuilder) CreateProfiles(ctx context.Context, set processor.Settings, next consumerprofiles.Profiles) (processorprofiles.Profiles, error) {
+func (b *ProcessorBuilder) CreateProfiles(ctx context.Context, set processor.Settings, next xconsumer.Profiles) (processorprofiles.Profiles, error) {
 	if next == nil {
 		return nil, errNilNextConsumer
 	}

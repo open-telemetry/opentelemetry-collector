@@ -37,7 +37,7 @@ func (c *errConfig) Validate() error {
 }
 
 func TestConfigValidate(t *testing.T) {
-	var testCases = []struct {
+	testCases := []struct {
 		name     string // test case name (also file name containing config yaml)
 		cfgFn    func() *Config
 		expected error

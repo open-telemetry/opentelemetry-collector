@@ -139,7 +139,6 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 			},
 		),
 	)
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to create SDK: %w", err)
 	}

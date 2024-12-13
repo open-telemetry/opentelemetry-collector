@@ -27,8 +27,10 @@ type getExporters interface {
 	GetExporters() map[pipeline.Signal]map[component.ID]component.Component
 }
 
-var _ getExporters = (*Host)(nil)
-var _ component.Host = (*Host)(nil)
+var (
+	_ getExporters   = (*Host)(nil)
+	_ component.Host = (*Host)(nil)
+)
 
 type Host struct {
 	AsyncErrorChannel chan error
@@ -92,10 +94,8 @@ const (
 	zFeaturePath   = "featurez"
 )
 
-var (
-	// InfoVar is a singleton instance of the Info struct.
-	runtimeInfoVar [][2]string
-)
+// InfoVar is a singleton instance of the Info struct.
+var runtimeInfoVar [][2]string
 
 func init() {
 	runtimeInfoVar = [][2]string{

@@ -9,7 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverprofiles"
@@ -87,7 +87,7 @@ func (b *ReceiverBuilder) CreateLogs(ctx context.Context, set receiver.Settings,
 }
 
 // CreateProfiles creates a Profiles receiver based on the settings and config.
-func (b *ReceiverBuilder) CreateProfiles(ctx context.Context, set receiver.Settings, next consumerprofiles.Profiles) (receiverprofiles.Profiles, error) {
+func (b *ReceiverBuilder) CreateProfiles(ctx context.Context, set receiver.Settings, next xconsumer.Profiles) (receiverprofiles.Profiles, error) {
 	if next == nil {
 		return nil, errNilNextConsumer
 	}

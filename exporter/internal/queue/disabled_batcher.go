@@ -38,7 +38,8 @@ func (qb *DisabledBatcher) Start(_ context.Context, _ component.Host) error {
 			qb.flushAsync(batch{
 				req:     req,
 				ctx:     context.Background(),
-				idxList: []uint64{idx}})
+				idxList: []uint64{idx},
+			})
 		}
 	}()
 	return nil

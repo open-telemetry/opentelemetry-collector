@@ -80,7 +80,8 @@ func NewFactory(
 	cfgType component.Type,
 	createDefaultConfig component.CreateDefaultConfigFunc,
 	createServiceExtension CreateFunc,
-	sl component.StabilityLevel) Factory {
+	sl component.StabilityLevel,
+) Factory {
 	return &factory{
 		cfgType:                 cfgType,
 		CreateDefaultConfigFunc: createDefaultConfig,

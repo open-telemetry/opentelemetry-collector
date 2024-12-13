@@ -33,7 +33,6 @@ func newLogger(set Settings, cfg Config) (*zap.Logger, log.LoggerProvider, error
 	}
 
 	logger, err := zapCfg.Build(set.ZapOptions...)
-
 	if err != nil {
 		return nil, nil, err
 	}
