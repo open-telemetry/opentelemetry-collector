@@ -81,7 +81,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.21.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.115.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.115.0 // indirect
-	go.opentelemetry.io/collector/pipeline/pipelineprofiles v0.115.0 // indirect
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.115.0 // indirect
 	go.opentelemetry.io/collector/processor/xprocessor v0.115.0 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.115.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.115.0 // indirect
@@ -191,7 +191,7 @@ replace go.opentelemetry.io/collector/exporter/xexporter => ../exporter/xexporte
 
 replace go.opentelemetry.io/collector/pipeline => ../pipeline
 
-replace go.opentelemetry.io/collector/pipeline/pipelineprofiles => ../pipeline/pipelineprofiles
+replace go.opentelemetry.io/collector/pipeline/xpipeline => ../pipeline/xpipeline
 
 replace go.opentelemetry.io/collector/exporter/exportertest => ../exporter/exportertest
 

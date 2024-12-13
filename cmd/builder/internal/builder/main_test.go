@@ -88,7 +88,7 @@ var replaceModules = []string{
 	"/internal/sharedcomponent",
 	"/otelcol",
 	"/pipeline",
-	"/pipeline/pipelineprofiles",
+	"/pipeline/xpipeline",
 	"/processor",
 	"/processor/processortest",
 	"/processor/batchprocessor",

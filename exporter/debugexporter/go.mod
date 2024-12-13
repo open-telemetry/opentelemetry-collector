@@ -48,7 +48,7 @@ require (
 	go.opentelemetry.io/collector/extension/experimental/storage v0.115.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.21.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.115.0 // indirect
-	go.opentelemetry.io/collector/pipeline/pipelineprofiles v0.115.0 // indirect
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.115.0 // indirect
 	go.opentelemetry.io/collector/receiver v0.115.0 // indirect
 	go.opentelemetry.io/collector/receiver/receivertest v0.115.0 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.115.0 // indirect
@@ -108,7 +108,7 @@ replace go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprof
 
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 
-replace go.opentelemetry.io/collector/pipeline/pipelineprofiles => ../../pipeline/pipelineprofiles
+replace go.opentelemetry.io/collector/pipeline/xpipeline => ../../pipeline/xpipeline
 
 replace go.opentelemetry.io/collector/exporter/exportertest => ../exportertest
 

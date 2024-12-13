@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/xexporter"
 	"go.opentelemetry.io/collector/pipeline"
-	"go.opentelemetry.io/collector/pipeline/pipelineprofiles"
+	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/xprocessor"
 	"go.opentelemetry.io/collector/receiver"
@@ -79,7 +79,7 @@ func (g *Graph) getReceivers() map[pipeline.Signal]map[component.ID]component.Co
 	receiversMap[pipeline.SignalTraces] = make(map[component.ID]component.Component)
 	receiversMap[pipeline.SignalMetrics] = make(map[component.ID]component.Component)
 	receiversMap[pipeline.SignalLogs] = make(map[component.ID]component.Component)
-	receiversMap[pipelineprofiles.SignalProfiles] = make(map[component.ID]component.Component)
+	receiversMap[xpipeline.SignalProfiles] = make(map[component.ID]component.Component)
 
 	for _, pg := range g.pipelines {
 		for _, rcvrNode := range pg.receivers {
