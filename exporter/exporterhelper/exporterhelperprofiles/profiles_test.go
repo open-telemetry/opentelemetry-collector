@@ -29,9 +29,9 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
-	"go.opentelemetry.io/collector/exporter/exporterprofiles"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/internal/queue"
+	"go.opentelemetry.io/collector/exporter/xexporter"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
@@ -290,7 +290,7 @@ func newPushProfilesData(retError error) xconsumer.ConsumeProfilesFunc {
 	}
 }
 
-func generateProfilesTraffic(t *testing.T, tracer trace.Tracer, le exporterprofiles.Profiles, numRequests int, wantError error) {
+func generateProfilesTraffic(t *testing.T, tracer trace.Tracer, le xexporter.Profiles, numRequests int, wantError error) {
 	ld := testdata.GenerateProfiles(1)
 	ctx, span := tracer.Start(context.Background(), fakeProfilesParentSpanName)
 	defer span.End()
@@ -300,7 +300,7 @@ func generateProfilesTraffic(t *testing.T, tracer trace.Tracer, le exporterprofi
 }
 
 // nolint: unparam
-func checkWrapSpanForProfilesExporter(t *testing.T, sr *tracetest.SpanRecorder, tracer trace.Tracer, le exporterprofiles.Profiles,
+func checkWrapSpanForProfilesExporter(t *testing.T, sr *tracetest.SpanRecorder, tracer trace.Tracer, le xexporter.Profiles,
 	wantError error, numSampleRecords int64,
 ) {
 	const numRequests = 5

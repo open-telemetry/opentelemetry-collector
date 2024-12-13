@@ -23,8 +23,8 @@ require (
 	go.opentelemetry.io/collector/consumer/consumertest v0.115.0
 	go.opentelemetry.io/collector/consumer/xconsumer v0.115.1-0.20241213185000-4593ba7de234
 	go.opentelemetry.io/collector/exporter v0.115.0
-	go.opentelemetry.io/collector/exporter/exporterprofiles v0.115.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.115.0
+	go.opentelemetry.io/collector/exporter/xexporter v0.115.0
 	go.opentelemetry.io/collector/extension v0.115.0
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.115.0
 	go.opentelemetry.io/collector/extension/extensiontest v0.115.0
@@ -199,7 +199,7 @@ replace go.opentelemetry.io/collector/receiver/receivertest => ../receiver/recei
 
 replace go.opentelemetry.io/collector/processor/xprocessor => ../processor/xprocessor
 
-replace go.opentelemetry.io/collector/exporter/exporterprofiles => ../exporter/exporterprofiles
+replace go.opentelemetry.io/collector/exporter/xexporter => ../exporter/xexporter
 
 replace go.opentelemetry.io/collector/pipeline/pipelineprofiles => ../pipeline/pipelineprofiles
 

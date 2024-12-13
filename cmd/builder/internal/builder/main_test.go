@@ -69,7 +69,7 @@ var replaceModules = []string{
 	"/connector/connectorprofiles",
 	"/exporter",
 	"/exporter/debugexporter",
-	"/exporter/exporterprofiles",
+	"/exporter/xexporter",
 	"/exporter/exportertest",
 	"/exporter/exporterhelper/exporterhelperprofiles",
 	"/exporter/nopexporter",

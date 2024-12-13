@@ -55,6 +55,7 @@ module-sets:
       - go.opentelemetry.io/collector/exporter/nopexporter
       - go.opentelemetry.io/collector/exporter/otlpexporter
       - go.opentelemetry.io/collector/exporter/otlphttpexporter
+      - go.opentelemetry.io/collector/exporter/xexporter
       - go.opentelemetry.io/collector/extension
       - go.opentelemetry.io/collector/extension/auth
       - go.opentelemetry.io/collector/extension/auth/authtest
