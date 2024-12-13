@@ -16,7 +16,7 @@ permissions:
 jobs:
   changedfiles:
     name: changed files
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       PR_HEAD: ${{ github.event.pull_request.head.sha }}
     outputs:
@@ -37,7 +37,7 @@ jobs:
 
             echo "files=$files" >> $GITHUB_OUTPUT
   check-links:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: changedfiles
     if: ${{needs.changedfiles.outputs.files}}
     steps:
