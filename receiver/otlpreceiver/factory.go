@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/internal/sharedcomponent"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
@@ -132,7 +132,7 @@ func createProfiles(
 	_ context.Context,
 	set receiver.Settings,
 	cfg component.Config,
-	nextConsumer consumerprofiles.Profiles,
+	nextConsumer xconsumer.Profiles,
 ) (receiverprofiles.Profiles, error) {
 	oCfg := cfg.(*Config)
 	r, err := receivers.LoadOrStore(

@@ -8,7 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverprofiles"
 )
@@ -70,7 +70,7 @@ func createProfiles(
 	_ context.Context,
 	_ receiver.Settings,
 	cfg component.Config,
-	nextConsumer consumerprofiles.Profiles,
+	nextConsumer xconsumer.Profiles,
 ) (receiverprofiles.Profiles, error) {
 	tr := createReceiver(cfg)
 	tr.ConsumeProfilesFunc = nextConsumer.ConsumeProfiles
@@ -98,7 +98,7 @@ type ExampleReceiver struct {
 	consumer.ConsumeTracesFunc
 	consumer.ConsumeMetricsFunc
 	consumer.ConsumeLogsFunc
-	consumerprofiles.ConsumeProfilesFunc
+	xconsumer.ConsumeProfilesFunc
 }
 
 // This is the map of already created example receivers for particular configurations.

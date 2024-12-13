@@ -35,7 +35,8 @@ type BaseBatcher struct {
 func NewBatcher(batchCfg exporterbatcher.Config,
 	queue Queue[internal.Request],
 	exportFunc func(ctx context.Context, req internal.Request) error,
-	maxWorkers int) (Batcher, error) {
+	maxWorkers int,
+) (Batcher, error) {
 	if !batchCfg.Enabled {
 		return &DisabledBatcher{
 			BaseBatcher{
