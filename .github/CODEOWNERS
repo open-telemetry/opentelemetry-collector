@@ -33,6 +33,7 @@ consumer/consumerprofiles                      @open-telemetry/collector-approve
 consumer/xconsumer                             @open-telemetry/collector-approvers @mx-psi @dmathieu
 connector/connectorprofiles                    @open-telemetry/collector-approvers @mx-psi @dmathieu
 exporter/exporterhelper/exporterhelperprofiles @open-telemetry/collector-approvers @mx-psi @dmathieu
+exporter/exporterhelper/xexporterhelper        @open-telemetry/collector-approvers @mx-psi @dmathieu
 exporter/exporterprofiles                      @open-telemetry/collector-approvers @mx-psi @dmathieu
 exporter/xexporter                             @open-telemetry/collector-approvers @mx-psi @dmathieu
 processor/processorprofiles                    @open-telemetry/collector-approvers @mx-psi @dmathieu

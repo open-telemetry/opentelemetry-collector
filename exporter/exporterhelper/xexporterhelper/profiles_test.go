@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package exporterhelperprofiles
+package xexporterhelper
 
 import (
 	"context"
@@ -23,8 +23,10 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/consumer/consumererror/xconsumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -39,6 +41,47 @@ const (
 )
 
 var fakeProfilesExporterConfig = struct{}{}
+
+func TestProfilesRequest(t *testing.T) {
+	lr := newProfilesRequest(testdata.GenerateProfiles(1), nil)
+
+	profileErr := xconsumererror.NewProfiles(errors.New("some error"), pprofile.NewProfiles())
+	assert.EqualValues(
+		t,
+		newProfilesRequest(pprofile.NewProfiles(), nil),
+		lr.(exporterhelper.RequestErrorHandler).OnError(profileErr),
+	)
+}
+
+func TestProfilesExporter_InvalidName(t *testing.T) {
+	le, err := NewProfilesExporter(context.Background(), exportertest.NewNopSettings(), nil, newPushProfilesData(nil))
+	require.Nil(t, le)
+	require.Equal(t, errNilConfig, err)
+}
+
+func TestProfilesExporter_NilLogger(t *testing.T) {
+	le, err := NewProfilesExporter(context.Background(), exporter.Settings{}, &fakeProfilesExporterConfig, newPushProfilesData(nil))
+	require.Nil(t, le)
+	require.Equal(t, errNilLogger, err)
+}
+
+func TestProfilesRequestExporter_NilLogger(t *testing.T) {
+	le, err := NewProfilesRequestExporter(context.Background(), exporter.Settings{}, internal.RequestFromProfilesFunc(nil))
+	require.Nil(t, le)
+	require.Equal(t, errNilLogger, err)
+}
+
+func TestProfilesExporter_NilPushProfilesData(t *testing.T) {
+	le, err := NewProfilesExporter(context.Background(), exportertest.NewNopSettings(), &fakeProfilesExporterConfig, nil)
+	require.Nil(t, le)
+	require.Equal(t, errNilPushProfileData, err)
+}
+
+func TestProfilesRequestExporter_NilProfilesConverter(t *testing.T) {
+	le, err := NewProfilesRequestExporter(context.Background(), exportertest.NewNopSettings(), nil)
+	require.Nil(t, le)
+	require.Equal(t, errNilProfilesConverter, err)
+}
 
 func TestProfilesExporter_Default(t *testing.T) {
 	ld := pprofile.NewProfiles()
