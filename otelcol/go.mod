@@ -74,7 +74,7 @@ require (
 	go.opentelemetry.io/collector/consumer v1.21.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.115.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.115.0 // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.115.0 // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.115.1-0.20241213185000-4593ba7de234 // indirect
 	go.opentelemetry.io/collector/exporter/exporterprofiles v0.115.0 // indirect
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.115.0 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.115.0 // indirect
