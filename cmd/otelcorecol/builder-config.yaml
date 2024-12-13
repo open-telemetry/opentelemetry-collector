@@ -97,7 +97,7 @@ replaces:
   - go.opentelemetry.io/collector/processor/processortest => ../../processor/processortest
   - go.opentelemetry.io/collector/processor/batchprocessor => ../../processor/batchprocessor
   - go.opentelemetry.io/collector/processor/memorylimiterprocessor => ../../processor/memorylimiterprocessor
-  - go.opentelemetry.io/collector/processor/processorprofiles => ../../processor/processorprofiles
+  - go.opentelemetry.io/collector/processor/xprocessor => ../../processor/xprocessor
   - go.opentelemetry.io/collector/receiver => ../../receiver
   - go.opentelemetry.io/collector/receiver/nopreceiver => ../../receiver/nopreceiver
   - go.opentelemetry.io/collector/receiver/otlpreceiver => ../../receiver/otlpreceiver

@@ -12,8 +12,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
-	"go.opentelemetry.io/collector/processor/processorprofiles"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/collector/processor/xprocessor"
 )
 
 // ProcessorBuilder processor is a helper struct that given a set of Configs
@@ -86,7 +86,7 @@ func (b *ProcessorBuilder) CreateLogs(ctx context.Context, set processor.Setting
 }
 
 // CreateProfiles creates a Profiles processor based on the settings and config.
-func (b *ProcessorBuilder) CreateProfiles(ctx context.Context, set processor.Settings, next xconsumer.Profiles) (processorprofiles.Profiles, error) {
+func (b *ProcessorBuilder) CreateProfiles(ctx context.Context, set processor.Settings, next xconsumer.Profiles) (xprocessor.Profiles, error) {
 	if next == nil {
 		return nil, errNilNextConsumer
 	}
@@ -100,7 +100,7 @@ func (b *ProcessorBuilder) CreateProfiles(ctx context.Context, set processor.Set
 		return nil, fmt.Errorf("processor factory not available for: %q", set.ID)
 	}
 
-	f, ok := procFact.(processorprofiles.Factory)
+	f, ok := procFact.(xprocessor.Factory)
 	if !ok {
 		return nil, pipeline.ErrSignalNotSupported
 	}

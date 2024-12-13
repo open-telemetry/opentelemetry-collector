@@ -11,8 +11,8 @@ require (
 	go.opentelemetry.io/collector/consumer/xconsumer v0.115.1-0.20241213185000-4593ba7de234
 	go.opentelemetry.io/collector/pdata/pprofile v0.115.0
 	go.opentelemetry.io/collector/processor v0.115.0
-	go.opentelemetry.io/collector/processor/processorprofiles v0.115.0
 	go.opentelemetry.io/collector/processor/processortest v0.115.0
+	go.opentelemetry.io/collector/processor/xprocessor v0.115.0
 )
 
 require (
@@ -72,4 +72,4 @@ replace go.opentelemetry.io/collector/component/componentstatus => ../../../comp
 
 replace go.opentelemetry.io/collector/processor/processortest => ../../processortest
 
-replace go.opentelemetry.io/collector/processor/processorprofiles => ../../processorprofiles
+replace go.opentelemetry.io/collector/processor/xprocessor => ../../xprocessor
