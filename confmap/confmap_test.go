@@ -706,7 +706,8 @@ func TestNilValuesUnchanged(t *testing.T) {
 	require.NoError(t, err)
 
 	confFromStruct := New()
-	confFromStruct.Marshal(slicesStruct)
+	err = confFromStruct.Marshal(slicesStruct)
+	require.NoError(t, err)
 
 	require.Equal(t, nilCfg, nilConf.ToStringMap())
 	require.EqualValues(t, nilConf.ToStringMap(), confFromStruct.ToStringMap())
@@ -727,7 +728,8 @@ func TestEmptySliceUnchanged(t *testing.T) {
 	require.NoError(t, err)
 
 	confFromStruct := New()
-	confFromStruct.Marshal(slicesStruct)
+	err = confFromStruct.Marshal(slicesStruct)
+	require.NoError(t, err)
 
 	require.Equal(t, nilCfg, nilConf.ToStringMap())
 	require.EqualValues(t, nilConf.ToStringMap(), confFromStruct.ToStringMap())
