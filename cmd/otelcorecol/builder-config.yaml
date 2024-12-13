@@ -101,8 +101,8 @@ replaces:
   - go.opentelemetry.io/collector/receiver => ../../receiver
   - go.opentelemetry.io/collector/receiver/nopreceiver => ../../receiver/nopreceiver
   - go.opentelemetry.io/collector/receiver/otlpreceiver => ../../receiver/otlpreceiver
-  - go.opentelemetry.io/collector/receiver/receiverprofiles => ../../receiver/receiverprofiles
   - go.opentelemetry.io/collector/receiver/receivertest => ../../receiver/receivertest
+  - go.opentelemetry.io/collector/receiver/xreceiver => ../../receiver/xreceiver
   - go.opentelemetry.io/collector/scraper => ../../scraper
   - go.opentelemetry.io/collector/semconv => ../../semconv
   - go.opentelemetry.io/collector/service => ../../service

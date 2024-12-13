@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/receiverprofiles"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 )
 
 var defaultComponentType = component.MustNewType("nop")
@@ -30,13 +30,13 @@ func NewNopSettings() receiver.Settings {
 
 // NewNopFactory returns a receiver.Factory that constructs nop receivers supporting all data types.
 func NewNopFactory() receiver.Factory {
-	return receiverprofiles.NewFactory(
+	return xreceiver.NewFactory(
 		defaultComponentType,
 		func() component.Config { return &nopConfig{} },
-		receiverprofiles.WithTraces(createTraces, component.StabilityLevelStable),
-		receiverprofiles.WithMetrics(createMetrics, component.StabilityLevelStable),
-		receiverprofiles.WithLogs(createLogs, component.StabilityLevelStable),
-		receiverprofiles.WithProfiles(createProfiles, component.StabilityLevelAlpha),
+		xreceiver.WithTraces(createTraces, component.StabilityLevelStable),
+		xreceiver.WithMetrics(createMetrics, component.StabilityLevelStable),
+		xreceiver.WithLogs(createLogs, component.StabilityLevelStable),
+		xreceiver.WithProfiles(createProfiles, component.StabilityLevelAlpha),
 	)
 }
 
@@ -73,7 +73,7 @@ func createLogs(context.Context, receiver.Settings, component.Config, consumer.L
 	return nopInstance, nil
 }
 
-func createProfiles(context.Context, receiver.Settings, component.Config, xconsumer.Profiles) (receiverprofiles.Profiles, error) {
+func createProfiles(context.Context, receiver.Settings, component.Config, xconsumer.Profiles) (xreceiver.Profiles, error) {
 	return nopInstance, nil
 }
 

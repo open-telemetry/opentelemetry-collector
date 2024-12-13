@@ -16,21 +16,21 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/receiverprofiles"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 )
 
 func TestReceiverBuilder(t *testing.T) {
 	defaultCfg := struct{}{}
 	factories, err := receiver.MakeFactoryMap([]receiver.Factory{
 		receiver.NewFactory(component.MustNewType("err"), nil),
-		receiverprofiles.NewFactory(
+		xreceiver.NewFactory(
 			component.MustNewType("all"),
 			func() component.Config { return &defaultCfg },
-			receiverprofiles.WithTraces(createReceiverTraces, component.StabilityLevelDevelopment),
-			receiverprofiles.WithMetrics(createReceiverMetrics, component.StabilityLevelAlpha),
-			receiverprofiles.WithLogs(createReceiverLogs, component.StabilityLevelDeprecated),
-			receiverprofiles.WithProfiles(createReceiverProfiles, component.StabilityLevelAlpha),
+			xreceiver.WithTraces(createReceiverTraces, component.StabilityLevelDevelopment),
+			xreceiver.WithMetrics(createReceiverMetrics, component.StabilityLevelAlpha),
+			xreceiver.WithLogs(createReceiverLogs, component.StabilityLevelDeprecated),
+			xreceiver.WithProfiles(createReceiverProfiles, component.StabilityLevelAlpha),
 		),
 	}...)
 	require.NoError(t, err)
@@ -136,13 +136,13 @@ func TestReceiverBuilder(t *testing.T) {
 func TestReceiverBuilderMissingConfig(t *testing.T) {
 	defaultCfg := struct{}{}
 	factories, err := receiver.MakeFactoryMap([]receiver.Factory{
-		receiverprofiles.NewFactory(
+		xreceiver.NewFactory(
 			component.MustNewType("all"),
 			func() component.Config { return &defaultCfg },
-			receiverprofiles.WithTraces(createReceiverTraces, component.StabilityLevelDevelopment),
-			receiverprofiles.WithMetrics(createReceiverMetrics, component.StabilityLevelAlpha),
-			receiverprofiles.WithLogs(createReceiverLogs, component.StabilityLevelDeprecated),
-			receiverprofiles.WithProfiles(createReceiverProfiles, component.StabilityLevelAlpha),
+			xreceiver.WithTraces(createReceiverTraces, component.StabilityLevelDevelopment),
+			xreceiver.WithMetrics(createReceiverMetrics, component.StabilityLevelAlpha),
+			xreceiver.WithLogs(createReceiverLogs, component.StabilityLevelDeprecated),
+			xreceiver.WithProfiles(createReceiverProfiles, component.StabilityLevelAlpha),
 		),
 	}...)
 
@@ -207,7 +207,7 @@ func TestNewNopReceiverConfigsAndFactories(t *testing.T) {
 	require.NoError(t, err)
 	assert.IsType(t, logs, bLogs)
 
-	profiles, err := factory.(receiverprofiles.Factory).CreateProfiles(context.Background(), set, cfg, consumertest.NewNop())
+	profiles, err := factory.(xreceiver.Factory).CreateProfiles(context.Background(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	bProfiles, err := builder.CreateProfiles(context.Background(), set, consumertest.NewNop())
 	require.NoError(t, err)
@@ -245,6 +245,6 @@ func createReceiverLogs(context.Context, receiver.Settings, component.Config, co
 	return nopReceiverInstance, nil
 }
 
-func createReceiverProfiles(context.Context, receiver.Settings, component.Config, xconsumer.Profiles) (receiverprofiles.Profiles, error) {
+func createReceiverProfiles(context.Context, receiver.Settings, component.Config, xconsumer.Profiles) (xreceiver.Profiles, error) {
 	return nopReceiverInstance, nil
 }
