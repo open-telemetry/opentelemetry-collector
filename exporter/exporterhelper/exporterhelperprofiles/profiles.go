@@ -16,8 +16,8 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
-	"go.opentelemetry.io/collector/exporter/exporterprofiles"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
+	"go.opentelemetry.io/collector/exporter/xexporter"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pipeline/pipelineprofiles"
 )
@@ -74,14 +74,14 @@ type profileExporter struct {
 	xconsumer.Profiles
 }
 
-// NewProfilesExporter creates an exporterprofiles.Profiles that records observability metrics and wraps every request with a Span.
+// NewProfilesExporter creates an xexporter.Profiles that records observability metrics and wraps every request with a Span.
 func NewProfilesExporter(
 	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config,
 	pusher xconsumer.ConsumeProfilesFunc,
 	options ...exporterhelper.Option,
-) (exporterprofiles.Profiles, error) {
+) (xexporter.Profiles, error) {
 	if cfg == nil {
 		return nil, errNilConfig
 	}
@@ -114,7 +114,7 @@ func NewProfilesRequestExporter(
 	set exporter.Settings,
 	converter RequestFromProfilesFunc,
 	options ...exporterhelper.Option,
-) (exporterprofiles.Profiles, error) {
+) (xexporter.Profiles, error) {
 	if set.Logger == nil {
 		return nil, errNilLogger
 	}

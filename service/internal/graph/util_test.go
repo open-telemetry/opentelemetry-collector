@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterprofiles"
+	"go.opentelemetry.io/collector/exporter/xexporter"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/pipelineprofiles"
 	"go.opentelemetry.io/collector/processor"
@@ -231,18 +231,18 @@ func newErrProcessorFactory() processor.Factory {
 }
 
 func newErrExporterFactory() exporter.Factory {
-	return exporterprofiles.NewFactory(component.MustNewType("err"),
+	return xexporter.NewFactory(component.MustNewType("err"),
 		func() component.Config { return &struct{}{} },
-		exporterprofiles.WithTraces(func(context.Context, exporter.Settings, component.Config) (exporter.Traces, error) {
+		xexporter.WithTraces(func(context.Context, exporter.Settings, component.Config) (exporter.Traces, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		exporterprofiles.WithLogs(func(context.Context, exporter.Settings, component.Config) (exporter.Logs, error) {
+		xexporter.WithLogs(func(context.Context, exporter.Settings, component.Config) (exporter.Logs, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		exporterprofiles.WithMetrics(func(context.Context, exporter.Settings, component.Config) (exporter.Metrics, error) {
+		xexporter.WithMetrics(func(context.Context, exporter.Settings, component.Config) (exporter.Metrics, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		exporterprofiles.WithProfiles(func(context.Context, exporter.Settings, component.Config) (exporterprofiles.Profiles, error) {
+		xexporter.WithProfiles(func(context.Context, exporter.Settings, component.Config) (xexporter.Profiles, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
 	)
