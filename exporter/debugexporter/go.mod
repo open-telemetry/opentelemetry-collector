@@ -10,7 +10,7 @@ require (
 	go.opentelemetry.io/collector/confmap v1.21.0
 	go.opentelemetry.io/collector/consumer v1.21.0
 	go.opentelemetry.io/collector/exporter v0.115.0
-	go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles v0.115.0
+	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.115.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.115.0
 	go.opentelemetry.io/collector/exporter/xexporter v0.115.0
 	go.opentelemetry.io/collector/pdata v1.21.0
@@ -41,7 +41,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.21.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.115.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.115.0 // indirect
+	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.115.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.115.1-0.20241213185000-4593ba7de234 // indirect
 	go.opentelemetry.io/collector/extension v0.115.0 // indirect
@@ -104,7 +104,7 @@ replace go.opentelemetry.io/collector/receiver/xreceiver => ../../receiver/xrece
 
 replace go.opentelemetry.io/collector/exporter/xexporter => ../xexporter
 
-replace go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles => ../exporterhelper/exporterhelperprofiles
+replace go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper => ../exporterhelper/xexporterhelper
 
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 

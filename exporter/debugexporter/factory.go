@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/debugexporter/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/debugexporter/internal/otlptext"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
 	"go.opentelemetry.io/collector/exporter/xexporter"
 )
 
@@ -90,7 +90,7 @@ func createProfiles(ctx context.Context, set exporter.Settings, config component
 	cfg := config.(*Config)
 	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
 	debug := newDebugExporter(exporterLogger, cfg.Verbosity)
-	return exporterhelperprofiles.NewProfilesExporter(ctx, set, config,
+	return xexporterhelper.NewProfilesExporter(ctx, set, config,
 		debug.pushProfiles,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),

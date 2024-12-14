@@ -97,10 +97,10 @@ require (
 	go.opentelemetry.io/collector/connector/connectortest v0.115.0 // indirect
 	go.opentelemetry.io/collector/consumer v1.21.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.115.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.115.0 // indirect
+	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.115.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.115.1-0.20241213185000-4593ba7de234 // indirect
-	go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles v0.115.0 // indirect
+	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.115.0 // indirect
 	go.opentelemetry.io/collector/exporter/exportertest v0.115.0 // indirect
 	go.opentelemetry.io/collector/exporter/xexporter v0.115.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.115.0 // indirect
@@ -227,7 +227,7 @@ replace go.opentelemetry.io/collector/exporter/exportertest => ../../exporter/ex
 
 replace go.opentelemetry.io/collector/exporter/xexporter => ../../exporter/xexporter
 
-replace go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles => ../../exporter/exporterhelper/exporterhelperprofiles
+replace go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper => ../../exporter/exporterhelper/xexporterhelper
 
 replace go.opentelemetry.io/collector/exporter/nopexporter => ../../exporter/nopexporter
 

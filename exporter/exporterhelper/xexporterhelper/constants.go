@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package exporterhelperprofiles // import "go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles"
+package xexporterhelper // import "go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
 
 import (
 	"errors"

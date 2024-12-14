@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
 	"go.opentelemetry.io/collector/exporter/otlpexporter/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/xexporter"
 )
@@ -115,7 +115,7 @@ func createProfilesExporter(
 ) (xexporter.Profiles, error) {
 	oce := newExporter(cfg, set)
 	oCfg := cfg.(*Config)
-	return exporterhelperprofiles.NewProfilesExporter(ctx, set, cfg,
+	return xexporterhelper.NewProfilesExporter(ctx, set, cfg,
 		oce.pushProfiles,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(oCfg.TimeoutConfig),

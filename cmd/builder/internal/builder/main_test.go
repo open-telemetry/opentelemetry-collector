@@ -71,7 +71,7 @@ var replaceModules = []string{
 	"/exporter/debugexporter",
 	"/exporter/xexporter",
 	"/exporter/exportertest",
-	"/exporter/exporterhelper/exporterhelperprofiles",
+	"/exporter/exporterhelper/xexporterhelper",
 	"/exporter/nopexporter",
 	"/exporter/otlpexporter",
 	"/exporter/otlphttpexporter",
