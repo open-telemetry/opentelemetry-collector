@@ -17,8 +17,8 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/exporter/exporterprofiles"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/exporter/xexporter"
 	"go.opentelemetry.io/collector/internal/testutil"
 )
 
@@ -205,7 +205,7 @@ func TestCreateProfiles(t *testing.T) {
 	cfg.ClientConfig.Endpoint = "http://" + testutil.GetAvailableLocalAddress(t)
 
 	set := exportertest.NewNopSettings()
-	oexp, err := factory.(exporterprofiles.Factory).CreateProfiles(context.Background(), set, cfg)
+	oexp, err := factory.(xexporter.Factory).CreateProfiles(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, oexp)
 }

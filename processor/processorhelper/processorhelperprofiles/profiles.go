@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
-	"go.opentelemetry.io/collector/processor/processorprofiles"
+	"go.opentelemetry.io/collector/processor/xprocessor"
 )
 
 // ProcessProfilesFunc is a helper function that processes the incoming data and returns the data to be sent to the next component.
@@ -25,7 +25,7 @@ type profiles struct {
 	xconsumer.Profiles
 }
 
-// NewProfiles creates a processorprofiles.Profiles that ensure context propagation.
+// NewProfiles creates a xprocessor.Profiles that ensure context propagation.
 func NewProfiles(
 	_ context.Context,
 	_ processor.Settings,
@@ -33,7 +33,7 @@ func NewProfiles(
 	nextConsumer xconsumer.Profiles,
 	profilesFunc ProcessProfilesFunc,
 	options ...Option,
-) (processorprofiles.Profiles, error) {
+) (xprocessor.Profiles, error) {
 	if profilesFunc == nil {
 		return nil, errors.New("nil profilesFunc")
 	}

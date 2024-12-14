@@ -15,13 +15,13 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterprofiles"
+	"go.opentelemetry.io/collector/exporter/xexporter"
 	"go.opentelemetry.io/collector/pipeline"
-	"go.opentelemetry.io/collector/pipeline/pipelineprofiles"
+	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/processor"
-	"go.opentelemetry.io/collector/processor/processorprofiles"
+	"go.opentelemetry.io/collector/processor/xprocessor"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/receiverprofiles"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 	"go.opentelemetry.io/collector/service/internal/testcomponents"
 	"go.opentelemetry.io/collector/service/pipelines"
 )
@@ -79,7 +79,7 @@ func (g *Graph) getReceivers() map[pipeline.Signal]map[component.ID]component.Co
 	receiversMap[pipeline.SignalTraces] = make(map[component.ID]component.Component)
 	receiversMap[pipeline.SignalMetrics] = make(map[component.ID]component.Component)
 	receiversMap[pipeline.SignalLogs] = make(map[component.ID]component.Component)
-	receiversMap[pipelineprofiles.SignalProfiles] = make(map[component.ID]component.Component)
+	receiversMap[xpipeline.SignalProfiles] = make(map[component.ID]component.Component)
 
 	for _, pg := range g.pipelines {
 		for _, rcvrNode := range pg.receivers {
@@ -195,54 +195,54 @@ func newBadConnectorFactory() connector.Factory {
 }
 
 func newErrReceiverFactory() receiver.Factory {
-	return receiverprofiles.NewFactory(component.MustNewType("err"),
+	return xreceiver.NewFactory(component.MustNewType("err"),
 		func() component.Config { return &struct{}{} },
-		receiverprofiles.WithTraces(func(context.Context, receiver.Settings, component.Config, consumer.Traces) (receiver.Traces, error) {
+		xreceiver.WithTraces(func(context.Context, receiver.Settings, component.Config, consumer.Traces) (receiver.Traces, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		receiverprofiles.WithLogs(func(context.Context, receiver.Settings, component.Config, consumer.Logs) (receiver.Logs, error) {
+		xreceiver.WithLogs(func(context.Context, receiver.Settings, component.Config, consumer.Logs) (receiver.Logs, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		receiverprofiles.WithMetrics(func(context.Context, receiver.Settings, component.Config, consumer.Metrics) (receiver.Metrics, error) {
+		xreceiver.WithMetrics(func(context.Context, receiver.Settings, component.Config, consumer.Metrics) (receiver.Metrics, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		receiverprofiles.WithProfiles(func(context.Context, receiver.Settings, component.Config, xconsumer.Profiles) (receiverprofiles.Profiles, error) {
+		xreceiver.WithProfiles(func(context.Context, receiver.Settings, component.Config, xconsumer.Profiles) (xreceiver.Profiles, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
 	)
 }
 
 func newErrProcessorFactory() processor.Factory {
-	return processorprofiles.NewFactory(component.MustNewType("err"),
+	return xprocessor.NewFactory(component.MustNewType("err"),
 		func() component.Config { return &struct{}{} },
-		processorprofiles.WithTraces(func(context.Context, processor.Settings, component.Config, consumer.Traces) (processor.Traces, error) {
+		xprocessor.WithTraces(func(context.Context, processor.Settings, component.Config, consumer.Traces) (processor.Traces, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		processorprofiles.WithLogs(func(context.Context, processor.Settings, component.Config, consumer.Logs) (processor.Logs, error) {
+		xprocessor.WithLogs(func(context.Context, processor.Settings, component.Config, consumer.Logs) (processor.Logs, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		processorprofiles.WithMetrics(func(context.Context, processor.Settings, component.Config, consumer.Metrics) (processor.Metrics, error) {
+		xprocessor.WithMetrics(func(context.Context, processor.Settings, component.Config, consumer.Metrics) (processor.Metrics, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		processorprofiles.WithProfiles(func(context.Context, processor.Settings, component.Config, xconsumer.Profiles) (processorprofiles.Profiles, error) {
+		xprocessor.WithProfiles(func(context.Context, processor.Settings, component.Config, xconsumer.Profiles) (xprocessor.Profiles, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
 	)
 }
 
 func newErrExporterFactory() exporter.Factory {
-	return exporterprofiles.NewFactory(component.MustNewType("err"),
+	return xexporter.NewFactory(component.MustNewType("err"),
 		func() component.Config { return &struct{}{} },
-		exporterprofiles.WithTraces(func(context.Context, exporter.Settings, component.Config) (exporter.Traces, error) {
+		xexporter.WithTraces(func(context.Context, exporter.Settings, component.Config) (exporter.Traces, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		exporterprofiles.WithLogs(func(context.Context, exporter.Settings, component.Config) (exporter.Logs, error) {
+		xexporter.WithLogs(func(context.Context, exporter.Settings, component.Config) (exporter.Logs, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		exporterprofiles.WithMetrics(func(context.Context, exporter.Settings, component.Config) (exporter.Metrics, error) {
+		xexporter.WithMetrics(func(context.Context, exporter.Settings, component.Config) (exporter.Metrics, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		exporterprofiles.WithProfiles(func(context.Context, exporter.Settings, component.Config) (exporterprofiles.Profiles, error) {
+		xexporter.WithProfiles(func(context.Context, exporter.Settings, component.Config) (xexporter.Profiles, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
 	)

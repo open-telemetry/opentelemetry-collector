@@ -16,21 +16,21 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/processor"
-	"go.opentelemetry.io/collector/processor/processorprofiles"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/collector/processor/xprocessor"
 )
 
 func TestProcessorBuilder(t *testing.T) {
 	defaultCfg := struct{}{}
 	factories, err := processor.MakeFactoryMap([]processor.Factory{
 		processor.NewFactory(component.MustNewType("err"), nil),
-		processorprofiles.NewFactory(
+		xprocessor.NewFactory(
 			component.MustNewType("all"),
 			func() component.Config { return &defaultCfg },
-			processorprofiles.WithTraces(createProcessorTraces, component.StabilityLevelDevelopment),
-			processorprofiles.WithMetrics(createProcessorMetrics, component.StabilityLevelAlpha),
-			processorprofiles.WithLogs(createProcessorLogs, component.StabilityLevelDeprecated),
-			processorprofiles.WithProfiles(createProcessorProfiles, component.StabilityLevelDevelopment),
+			xprocessor.WithTraces(createProcessorTraces, component.StabilityLevelDevelopment),
+			xprocessor.WithMetrics(createProcessorMetrics, component.StabilityLevelAlpha),
+			xprocessor.WithLogs(createProcessorLogs, component.StabilityLevelDeprecated),
+			xprocessor.WithProfiles(createxprocessor, component.StabilityLevelDevelopment),
 		),
 	}...)
 	require.NoError(t, err)
@@ -136,13 +136,13 @@ func TestProcessorBuilder(t *testing.T) {
 func TestProcessorBuilderMissingConfig(t *testing.T) {
 	defaultCfg := struct{}{}
 	factories, err := processor.MakeFactoryMap([]processor.Factory{
-		processorprofiles.NewFactory(
+		xprocessor.NewFactory(
 			component.MustNewType("all"),
 			func() component.Config { return &defaultCfg },
-			processorprofiles.WithTraces(createProcessorTraces, component.StabilityLevelDevelopment),
-			processorprofiles.WithMetrics(createProcessorMetrics, component.StabilityLevelAlpha),
-			processorprofiles.WithLogs(createProcessorLogs, component.StabilityLevelDeprecated),
-			processorprofiles.WithProfiles(createProcessorProfiles, component.StabilityLevelDevelopment),
+			xprocessor.WithTraces(createProcessorTraces, component.StabilityLevelDevelopment),
+			xprocessor.WithMetrics(createProcessorMetrics, component.StabilityLevelAlpha),
+			xprocessor.WithLogs(createProcessorLogs, component.StabilityLevelDeprecated),
+			xprocessor.WithProfiles(createxprocessor, component.StabilityLevelDevelopment),
 		),
 	}...)
 
@@ -207,7 +207,7 @@ func TestNewNopProcessorBuilder(t *testing.T) {
 	require.NoError(t, err)
 	assert.IsType(t, logs, bLogs)
 
-	profiles, err := factory.(processorprofiles.Factory).CreateProfiles(context.Background(), set, cfg, consumertest.NewNop())
+	profiles, err := factory.(xprocessor.Factory).CreateProfiles(context.Background(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	bProfiles, err := builder.CreateProfiles(context.Background(), set, consumertest.NewNop())
 	require.NoError(t, err)
@@ -237,7 +237,7 @@ func createProcessorLogs(context.Context, processor.Settings, component.Config, 
 	return nopProcessorInstance, nil
 }
 
-func createProcessorProfiles(context.Context, processor.Settings, component.Config, xconsumer.Profiles) (processorprofiles.Profiles, error) {
+func createxprocessor(context.Context, processor.Settings, component.Config, xconsumer.Profiles) (xprocessor.Profiles, error) {
 	return nopProcessorInstance, nil
 }
 

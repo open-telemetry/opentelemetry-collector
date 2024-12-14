@@ -30,8 +30,8 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterprofiles"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/exporter/xexporter"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -894,7 +894,7 @@ func TestSendProfiles(t *testing.T) {
 	logger, observed := observer.New(zap.DebugLevel)
 	set.TelemetrySettings.Logger = zap.New(logger)
 
-	exp, err := factory.(exporterprofiles.Factory).CreateProfiles(context.Background(), set, cfg)
+	exp, err := factory.(xexporter.Factory).CreateProfiles(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 
@@ -1006,7 +1006,7 @@ func TestSendProfilesWhenEndpointHasHttpScheme(t *testing.T) {
 				cfg.ClientConfig.TLSSetting.InsecureSkipVerify = true
 			}
 			set := exportertest.NewNopSettings()
-			exp, err := factory.(exporterprofiles.Factory).CreateProfiles(context.Background(), set, cfg)
+			exp, err := factory.(xexporter.Factory).CreateProfiles(context.Background(), set, cfg)
 			require.NoError(t, err)
 			require.NotNil(t, exp)
 

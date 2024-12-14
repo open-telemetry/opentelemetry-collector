@@ -10,13 +10,13 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.115.0
 	go.opentelemetry.io/collector/consumer v1.21.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.115.0
-	go.opentelemetry.io/collector/consumer/xconsumer v0.115.0
+	go.opentelemetry.io/collector/consumer/xconsumer v0.115.1-0.20241213185000-4593ba7de234
 	go.opentelemetry.io/collector/pdata v1.21.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.115.0
 	go.opentelemetry.io/collector/pdata/testdata v0.115.0
 	go.opentelemetry.io/collector/pipeline v0.115.0
 	go.opentelemetry.io/collector/processor v0.115.0
-	go.opentelemetry.io/collector/processor/processorprofiles v0.115.0
+	go.opentelemetry.io/collector/processor/xprocessor v0.115.0
 	go.uber.org/goleak v1.3.0
 )
 
@@ -66,7 +66,7 @@ replace go.opentelemetry.io/collector/pdata/testdata => ../../pdata/testdata
 
 replace go.opentelemetry.io/collector/processor => ../../processor
 
-replace go.opentelemetry.io/collector/processor/processorprofiles => ../../processor/processorprofiles
+replace go.opentelemetry.io/collector/processor/xprocessor => ../../processor/xprocessor
 
 replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
 

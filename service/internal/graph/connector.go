@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pipeline"
-	"go.opentelemetry.io/collector/pipeline/pipelineprofiles"
+	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
 	"go.opentelemetry.io/collector/service/internal/components"
@@ -61,7 +61,7 @@ func (n *connectorNode) buildComponent(
 		return n.buildMetrics(ctx, set, builder, nexts)
 	case pipeline.SignalLogs:
 		return n.buildLogs(ctx, set, builder, nexts)
-	case pipelineprofiles.SignalProfiles:
+	case xpipeline.SignalProfiles:
 		return n.buildProfiles(ctx, set, builder, nexts)
 	}
 	return nil
@@ -96,7 +96,7 @@ func (n *connectorNode) buildTraces(
 		n.Component, err = builder.CreateMetricsToTraces(ctx, set, next)
 	case pipeline.SignalLogs:
 		n.Component, err = builder.CreateLogsToTraces(ctx, set, next)
-	case pipelineprofiles.SignalProfiles:
+	case xpipeline.SignalProfiles:
 		n.Component, err = builder.CreateProfilesToTraces(ctx, set, next)
 	}
 	return err
@@ -131,7 +131,7 @@ func (n *connectorNode) buildMetrics(
 		n.Component, err = builder.CreateTracesToMetrics(ctx, set, next)
 	case pipeline.SignalLogs:
 		n.Component, err = builder.CreateLogsToMetrics(ctx, set, next)
-	case pipelineprofiles.SignalProfiles:
+	case xpipeline.SignalProfiles:
 		n.Component, err = builder.CreateProfilesToMetrics(ctx, set, next)
 	}
 	return err
@@ -166,7 +166,7 @@ func (n *connectorNode) buildLogs(
 		n.Component, err = builder.CreateTracesToLogs(ctx, set, next)
 	case pipeline.SignalMetrics:
 		n.Component, err = builder.CreateMetricsToLogs(ctx, set, next)
-	case pipelineprofiles.SignalProfiles:
+	case xpipeline.SignalProfiles:
 		n.Component, err = builder.CreateProfilesToLogs(ctx, set, next)
 	}
 	return err
@@ -186,7 +186,7 @@ func (n *connectorNode) buildProfiles(
 
 	var err error
 	switch n.exprPipelineType {
-	case pipelineprofiles.SignalProfiles:
+	case xpipeline.SignalProfiles:
 		var conn connectorprofiles.Profiles
 		conn, err = builder.CreateProfilesToProfiles(ctx, set, next)
 		if err != nil {

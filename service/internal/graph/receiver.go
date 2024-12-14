@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
 	"go.opentelemetry.io/collector/pipeline"
-	"go.opentelemetry.io/collector/pipeline/pipelineprofiles"
+	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/components"
@@ -65,7 +65,7 @@ func (n *receiverNode) buildComponent(ctx context.Context,
 			consumers = append(consumers, next.(consumer.Logs))
 		}
 		n.Component, err = builder.CreateLogs(ctx, set, fanoutconsumer.NewLogs(consumers))
-	case pipelineprofiles.SignalProfiles:
+	case xpipeline.SignalProfiles:
 		var consumers []xconsumer.Profiles
 		for _, next := range nexts {
 			consumers = append(consumers, next.(xconsumer.Profiles))

@@ -9,8 +9,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterprofiles"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/exporter/xexporter"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -74,7 +74,7 @@ func (b *ExporterBuilder) CreateLogs(ctx context.Context, set exporter.Settings)
 }
 
 // CreateProfiles creates a Profiles exporter based on the settings and config.
-func (b *ExporterBuilder) CreateProfiles(ctx context.Context, set exporter.Settings) (exporterprofiles.Profiles, error) {
+func (b *ExporterBuilder) CreateProfiles(ctx context.Context, set exporter.Settings) (xexporter.Profiles, error) {
 	cfg, existsCfg := b.cfgs[set.ID]
 	if !existsCfg {
 		return nil, fmt.Errorf("exporter %q is not configured", set.ID)
@@ -85,7 +85,7 @@ func (b *ExporterBuilder) CreateProfiles(ctx context.Context, set exporter.Setti
 		return nil, fmt.Errorf("exporter factory not available for: %q", set.ID)
 	}
 
-	f, ok := expFact.(exporterprofiles.Factory)
+	f, ok := expFact.(xexporter.Factory)
 	if !ok {
 		return nil, pipeline.ErrSignalNotSupported
 	}

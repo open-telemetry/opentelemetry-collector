@@ -10,19 +10,19 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/processor"
-	"go.opentelemetry.io/collector/processor/processorprofiles"
+	"go.opentelemetry.io/collector/processor/xprocessor"
 )
 
 var procType = component.MustNewType("exampleprocessor")
 
 // ExampleProcessorFactory is factory for ExampleProcessor.
-var ExampleProcessorFactory = processorprofiles.NewFactory(
+var ExampleProcessorFactory = xprocessor.NewFactory(
 	procType,
 	createDefaultConfig,
-	processorprofiles.WithTraces(createTracesProcessor, component.StabilityLevelDevelopment),
-	processorprofiles.WithMetrics(createMetricsProcessor, component.StabilityLevelDevelopment),
-	processorprofiles.WithLogs(createLogsProcessor, component.StabilityLevelDevelopment),
-	processorprofiles.WithProfiles(createProfilesProcessor, component.StabilityLevelDevelopment),
+	xprocessor.WithTraces(createTracesProcessor, component.StabilityLevelDevelopment),
+	xprocessor.WithMetrics(createMetricsProcessor, component.StabilityLevelDevelopment),
+	xprocessor.WithLogs(createLogsProcessor, component.StabilityLevelDevelopment),
+	xprocessor.WithProfiles(createProfilesProcessor, component.StabilityLevelDevelopment),
 )
 
 // CreateDefaultConfig creates the default configuration for the Processor.
@@ -51,7 +51,7 @@ func createLogsProcessor(_ context.Context, set processor.Settings, _ component.
 	}, nil
 }
 
-func createProfilesProcessor(_ context.Context, set processor.Settings, _ component.Config, nextConsumer xconsumer.Profiles) (processorprofiles.Profiles, error) {
+func createProfilesProcessor(_ context.Context, set processor.Settings, _ component.Config, nextConsumer xconsumer.Profiles) (xprocessor.Profiles, error) {
 	return &ExampleProcessor{
 		ConsumeProfilesFunc: nextConsumer.ConsumeProfiles,
 		mutatesData:         set.ID.Name() == "mutate",

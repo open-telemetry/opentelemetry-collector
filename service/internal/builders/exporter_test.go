@@ -14,21 +14,21 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterprofiles"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/exporter/xexporter"
 )
 
 func TestExporterBuilder(t *testing.T) {
 	defaultCfg := struct{}{}
 	factories, err := exporter.MakeFactoryMap([]exporter.Factory{
 		exporter.NewFactory(component.MustNewType("err"), nil),
-		exporterprofiles.NewFactory(
+		xexporter.NewFactory(
 			component.MustNewType("all"),
 			func() component.Config { return &defaultCfg },
-			exporterprofiles.WithTraces(createExporterTraces, component.StabilityLevelDevelopment),
-			exporterprofiles.WithMetrics(createExporterMetrics, component.StabilityLevelAlpha),
-			exporterprofiles.WithLogs(createExporterLogs, component.StabilityLevelDeprecated),
-			exporterprofiles.WithProfiles(createExporterProfiles, component.StabilityLevelDevelopment),
+			xexporter.WithTraces(createExporterTraces, component.StabilityLevelDevelopment),
+			xexporter.WithMetrics(createExporterMetrics, component.StabilityLevelAlpha),
+			xexporter.WithLogs(createExporterLogs, component.StabilityLevelDeprecated),
+			xexporter.WithProfiles(createxexporter, component.StabilityLevelDevelopment),
 		),
 	}...)
 	require.NoError(t, err)
@@ -105,13 +105,13 @@ func TestExporterBuilder(t *testing.T) {
 func TestExporterBuilderMissingConfig(t *testing.T) {
 	defaultCfg := struct{}{}
 	factories, err := exporter.MakeFactoryMap([]exporter.Factory{
-		exporterprofiles.NewFactory(
+		xexporter.NewFactory(
 			component.MustNewType("all"),
 			func() component.Config { return &defaultCfg },
-			exporterprofiles.WithTraces(createExporterTraces, component.StabilityLevelDevelopment),
-			exporterprofiles.WithMetrics(createExporterMetrics, component.StabilityLevelAlpha),
-			exporterprofiles.WithLogs(createExporterLogs, component.StabilityLevelDeprecated),
-			exporterprofiles.WithProfiles(createExporterProfiles, component.StabilityLevelDevelopment),
+			xexporter.WithTraces(createExporterTraces, component.StabilityLevelDevelopment),
+			xexporter.WithMetrics(createExporterMetrics, component.StabilityLevelAlpha),
+			xexporter.WithLogs(createExporterLogs, component.StabilityLevelDeprecated),
+			xexporter.WithProfiles(createxexporter, component.StabilityLevelDevelopment),
 		),
 	}...)
 
@@ -176,7 +176,7 @@ func TestNewNopExporterConfigsAndFactories(t *testing.T) {
 	require.NoError(t, err)
 	assert.IsType(t, logs, bLogs)
 
-	profiles, err := factory.(exporterprofiles.Factory).CreateProfiles(context.Background(), set, cfg)
+	profiles, err := factory.(xexporter.Factory).CreateProfiles(context.Background(), set, cfg)
 	require.NoError(t, err)
 	bProfiles, err := builder.CreateProfiles(context.Background(), set)
 	require.NoError(t, err)
@@ -206,7 +206,7 @@ func createExporterLogs(context.Context, exporter.Settings, component.Config) (e
 	return nopExporterInstance, nil
 }
 
-func createExporterProfiles(context.Context, exporter.Settings, component.Config) (exporterprofiles.Profiles, error) {
+func createxexporter(context.Context, exporter.Settings, component.Config) (xexporter.Profiles, error) {
 	return nopExporterInstance, nil
 }
 

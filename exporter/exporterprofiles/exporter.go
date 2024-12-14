@@ -1,109 +1,42 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+// Deprecated: [0.116.0] Use go.opentelemetry.io/collector/exporter/xexporter instead.
 package exporterprofiles // import "go.opentelemetry.io/collector/exporter/exporterprofiles"
 
-import (
-	"context"
-
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/xconsumer"
-	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/pipeline"
-)
+import "go.opentelemetry.io/collector/exporter/xexporter"
 
 // Profiles is an exporter that can consume profiles.
-type Profiles interface {
-	component.Component
-	xconsumer.Profiles
-}
+// Deprecated: [0.116.0] Use xeporter.Profiles instead.
+type Profiles = xexporter.Profiles
 
-type Factory interface {
-	exporter.Factory
-
-	// CreateProfiles creates a Profiles exporter based on this config.
-	// If the exporter type does not support tracing,
-	// this function returns the error [pipeline.ErrSignalNotSupported].
-	CreateProfiles(ctx context.Context, set exporter.Settings, cfg component.Config) (Profiles, error)
-
-	// ProfilesStability gets the stability level of the Profiles exporter.
-	ProfilesStability() component.StabilityLevel
-}
+// Deprecated: [0.116.0] Use xeporter.Factory instead.
+type Factory = xexporter.Factory
 
 // FactoryOption apply changes to ReceiverOptions.
-type FactoryOption interface {
-	// applyOption applies the option.
-	applyOption(o *factoryOpts)
-}
-
-// factoryOptionFunc is an ReceiverFactoryOption created through a function.
-type factoryOptionFunc func(*factoryOpts)
-
-func (f factoryOptionFunc) applyOption(o *factoryOpts) {
-	f(o)
-}
-
-type factoryOpts struct {
-	opts []exporter.FactoryOption
-	*factory
-}
+// Deprecated: [0.116.0] Use xeporter.FactoryOption instead.
+type FactoryOption = xexporter.FactoryOption
 
 // CreateProfilesFunc is the equivalent of Factory.CreateProfiles.
-type CreateProfilesFunc func(context.Context, exporter.Settings, component.Config) (Profiles, error)
-
-// CreateProfiles implements Factory.CreateProfiles.
-func (f CreateProfilesFunc) CreateProfiles(ctx context.Context, set exporter.Settings, cfg component.Config) (Profiles, error) {
-	if f == nil {
-		return nil, pipeline.ErrSignalNotSupported
-	}
-	return f(ctx, set, cfg)
-}
+// Deprecated: [0.116.0] Use xeporter.CreateProfilesFunc instead.
+type CreateProfilesFunc = xexporter.CreateProfilesFunc
 
 // WithTraces overrides the default "error not supported" implementation for CreateTraces and the default "undefined" stability level.
-func WithTraces(createTraces exporter.CreateTracesFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
-		o.opts = append(o.opts, exporter.WithTraces(createTraces, sl))
-	})
-}
+// Deprecated: [0.116.0] Use xeporter.WithTraces instead.
+var WithTraces = xexporter.WithTraces
 
 // WithMetrics overrides the default "error not supported" implementation for CreateMetrics and the default "undefined" stability level.
-func WithMetrics(createMetrics exporter.CreateMetricsFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
-		o.opts = append(o.opts, exporter.WithMetrics(createMetrics, sl))
-	})
-}
+// Deprecated: [0.116.0] Use xeporter.WithMetrics instead.
+var WithMetrics = xexporter.WithMetrics
 
 // WithLogs overrides the default "error not supported" implementation for CreateLogs and the default "undefined" stability level.
-func WithLogs(createLogs exporter.CreateLogsFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
-		o.opts = append(o.opts, exporter.WithLogs(createLogs, sl))
-	})
-}
+// Deprecated: [0.116.0] Use xeporter.WithLogs instead.
+var WithLogs = xexporter.WithLogs
 
 // WithProfiles overrides the default "error not supported" implementation for CreateProfilesExporter and the default "undefined" stability level.
-func WithProfiles(createProfiles CreateProfilesFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
-		o.profilesStabilityLevel = sl
-		o.CreateProfilesFunc = createProfiles
-	})
-}
-
-type factory struct {
-	exporter.Factory
-	CreateProfilesFunc
-	profilesStabilityLevel component.StabilityLevel
-}
-
-func (f *factory) ProfilesStability() component.StabilityLevel {
-	return f.profilesStabilityLevel
-}
+// Deprecated: [0.116.0] Use xeporter.WithProfiles instead.
+var WithProfiles = xexporter.WithProfiles
 
 // NewFactory returns a Factory.
-func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefaultConfigFunc, options ...FactoryOption) Factory {
-	opts := factoryOpts{factory: &factory{}}
-	for _, opt := range options {
-		opt.applyOption(&opts)
-	}
-	opts.factory.Factory = exporter.NewFactory(cfgType, createDefaultConfig, opts.opts...)
-	return opts.factory
-}
+// Deprecated: [0.116.0] Use xeporter.NewFactory instead.
+var NewFactory = xexporter.NewFactory

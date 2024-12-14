@@ -11,15 +11,15 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/consumer/consumererror/consumererrorprofiles"
+	"go.opentelemetry.io/collector/consumer/consumererror/xconsumererror"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
-	"go.opentelemetry.io/collector/exporter/exporterprofiles"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
+	"go.opentelemetry.io/collector/exporter/xexporter"
 	"go.opentelemetry.io/collector/pdata/pprofile"
-	"go.opentelemetry.io/collector/pipeline/pipelineprofiles"
+	"go.opentelemetry.io/collector/pipeline/xpipeline"
 )
 
 var (
@@ -54,7 +54,7 @@ func profilesRequestMarshaler(req exporterhelper.Request) ([]byte, error) {
 }
 
 func (req *profilesRequest) OnError(err error) exporterhelper.Request {
-	var profileError consumererrorprofiles.Profiles
+	var profileError xconsumererror.Profiles
 	if errors.As(err, &profileError) {
 		return newProfilesRequest(profileError.Data(), req.pusher)
 	}
@@ -74,14 +74,14 @@ type profileExporter struct {
 	xconsumer.Profiles
 }
 
-// NewProfilesExporter creates an exporterprofiles.Profiles that records observability metrics and wraps every request with a Span.
+// NewProfilesExporter creates an xexporter.Profiles that records observability metrics and wraps every request with a Span.
 func NewProfilesExporter(
 	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config,
 	pusher xconsumer.ConsumeProfilesFunc,
 	options ...exporterhelper.Option,
-) (exporterprofiles.Profiles, error) {
+) (xexporter.Profiles, error) {
 	if cfg == nil {
 		return nil, errNilConfig
 	}
@@ -114,7 +114,7 @@ func NewProfilesRequestExporter(
 	set exporter.Settings,
 	converter RequestFromProfilesFunc,
 	options ...exporterhelper.Option,
-) (exporterprofiles.Profiles, error) {
+) (xexporter.Profiles, error) {
 	if set.Logger == nil {
 		return nil, errNilLogger
 	}
@@ -123,7 +123,7 @@ func NewProfilesRequestExporter(
 		return nil, errNilProfilesConverter
 	}
 
-	be, err := internal.NewBaseExporter(set, pipelineprofiles.SignalProfiles, newProfilesExporterWithObservability, options...)
+	be, err := internal.NewBaseExporter(set, xpipeline.SignalProfiles, newProfilesExporterWithObservability, options...)
 	if err != nil {
 		return nil, err
 	}

@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/debugexporter/internal/otlptext"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles"
-	"go.opentelemetry.io/collector/exporter/exporterprofiles"
+	"go.opentelemetry.io/collector/exporter/xexporter"
 )
 
 // The value of "type" key in configuration.
@@ -31,13 +31,13 @@ const (
 
 // NewFactory creates a factory for Debug exporter
 func NewFactory() exporter.Factory {
-	return exporterprofiles.NewFactory(
+	return xexporter.NewFactory(
 		componentType,
 		createDefaultConfig,
-		exporterprofiles.WithTraces(createTraces, metadata.TracesStability),
-		exporterprofiles.WithMetrics(createMetrics, metadata.MetricsStability),
-		exporterprofiles.WithLogs(createLogs, metadata.LogsStability),
-		exporterprofiles.WithProfiles(createProfiles, metadata.ProfilesStability),
+		xexporter.WithTraces(createTraces, metadata.TracesStability),
+		xexporter.WithMetrics(createMetrics, metadata.MetricsStability),
+		xexporter.WithLogs(createLogs, metadata.LogsStability),
+		xexporter.WithProfiles(createProfiles, metadata.ProfilesStability),
 	)
 }
 
@@ -86,7 +86,7 @@ func createLogs(ctx context.Context, set exporter.Settings, config component.Con
 	)
 }
 
-func createProfiles(ctx context.Context, set exporter.Settings, config component.Config) (exporterprofiles.Profiles, error) {
+func createProfiles(ctx context.Context, set exporter.Settings, config component.Config) (xexporter.Profiles, error) {
 	cfg := config.(*Config)
 	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
 	debug := newDebugExporter(exporterLogger, cfg.Verbosity)

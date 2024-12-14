@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pipeline"
-	"go.opentelemetry.io/collector/pipeline/pipelineprofiles"
+	"go.opentelemetry.io/collector/pipeline/xpipeline"
 )
 
 func TestConfigValidate(t *testing.T) {
@@ -80,7 +80,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "disabled-featuregate-profiles",
 			cfgFn: func(*testing.T) Config {
 				cfg := generateConfig(t)
-				cfg[pipeline.NewID(pipelineprofiles.SignalProfiles)] = &PipelineConfig{
+				cfg[pipeline.NewID(xpipeline.SignalProfiles)] = &PipelineConfig{
 					Receivers:  []component.ID{component.MustNewID("nop")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewID("nop")},
@@ -95,7 +95,7 @@ func TestConfigValidate(t *testing.T) {
 				require.NoError(t, featuregate.GlobalRegistry().Set(serviceProfileSupportGateID, true))
 
 				cfg := generateConfig(t)
-				cfg[pipeline.NewID(pipelineprofiles.SignalProfiles)] = &PipelineConfig{
+				cfg[pipeline.NewID(xpipeline.SignalProfiles)] = &PipelineConfig{
 					Receivers:  []component.ID{component.MustNewID("nop")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewID("nop")},
