@@ -13,7 +13,7 @@ replace go.opentelemetry.io/collector/consumer/xconsumer => ../xconsumer
 require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/consumer v1.21.0
-	go.opentelemetry.io/collector/consumer/xconsumer v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/consumer/xconsumer v0.0.0-20241214150434-e9bc4bde924e
 	go.opentelemetry.io/collector/pdata/pprofile v0.115.0
 )
 
