@@ -8,7 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
-	"go.opentelemetry.io/collector/connector/connectorprofiles"
+	"go.opentelemetry.io/collector/connector/xconnector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pipeline"
@@ -182,12 +182,12 @@ func (n *connectorNode) buildProfiles(
 	for _, next := range nexts {
 		consumers[next.(*capabilitiesNode).pipelineID] = next.(xconsumer.Profiles)
 	}
-	next := connectorprofiles.NewProfilesRouter(consumers)
+	next := xconnector.NewProfilesRouter(consumers)
 
 	var err error
 	switch n.exprPipelineType {
 	case xpipeline.SignalProfiles:
-		var conn connectorprofiles.Profiles
+		var conn xconnector.Profiles
 		conn, err = builder.CreateProfilesToProfiles(ctx, set, next)
 		if err != nil {
 			return err

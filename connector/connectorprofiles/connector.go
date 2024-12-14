@@ -1,41 +1,13 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+// Deprecated: [0.116.0] Use go.opentelemetry.io/collector/connector/xconnector instead.
 package connectorprofiles // import "go.opentelemetry.io/collector/connector/connectorprofiles"
 
-import (
-	"context"
+import "go.opentelemetry.io/collector/connector/xconnector"
 
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/connector"
-	"go.opentelemetry.io/collector/connector/internal"
-	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/xconsumer"
-	"go.opentelemetry.io/collector/pipeline"
-	"go.opentelemetry.io/collector/pipeline/xpipeline"
-)
-
-type Factory interface {
-	connector.Factory
-
-	CreateTracesToProfiles(ctx context.Context, set connector.Settings, cfg component.Config, next xconsumer.Profiles) (connector.Traces, error)
-	CreateMetricsToProfiles(ctx context.Context, set connector.Settings, cfg component.Config, next xconsumer.Profiles) (connector.Metrics, error)
-	CreateLogsToProfiles(ctx context.Context, set connector.Settings, cfg component.Config, next xconsumer.Profiles) (connector.Logs, error)
-
-	TracesToProfilesStability() component.StabilityLevel
-	MetricsToProfilesStability() component.StabilityLevel
-	LogsToProfilesStability() component.StabilityLevel
-
-	CreateProfilesToProfiles(ctx context.Context, set connector.Settings, cfg component.Config, next xconsumer.Profiles) (Profiles, error)
-	CreateProfilesToTraces(ctx context.Context, set connector.Settings, cfg component.Config, next consumer.Traces) (Profiles, error)
-	CreateProfilesToMetrics(ctx context.Context, set connector.Settings, cfg component.Config, next consumer.Metrics) (Profiles, error)
-	CreateProfilesToLogs(ctx context.Context, set connector.Settings, cfg component.Config, next consumer.Logs) (Profiles, error)
-
-	ProfilesToProfilesStability() component.StabilityLevel
-	ProfilesToTracesStability() component.StabilityLevel
-	ProfilesToMetricsStability() component.StabilityLevel
-	ProfilesToLogsStability() component.StabilityLevel
-}
+// Deprecated: [0.116.0] Use xconnector.Factory instead.
+type Factory = xconnector.Factory
 
 // A Profiles connector acts as an exporter from a profiles pipeline and a receiver
 // to one or more traces, metrics, logs, or profiles pipelines.
@@ -49,283 +21,106 @@ type Factory interface {
 //     the number of profiles observed.
 //   - Profiles could be analyzed by a logs connector that emits events when particular
 //     criteria are met.
-type Profiles interface {
-	component.Component
-	xconsumer.Profiles
-}
+//
+// Deprecated: [0.116.0] Use xconnector.Profiles instead.
+type Profiles = xconnector.Profiles
 
 // CreateTracesToProfilesFunc is the equivalent of Factory.CreateTracesToProfiles().
-type CreateTracesToProfilesFunc func(context.Context, connector.Settings, component.Config, xconsumer.Profiles) (connector.Traces, error)
-
-// CreateTracesToProfiles implements Factory.CreateTracesToProfiles().
-func (f CreateTracesToProfilesFunc) CreateTracesToProfiles(ctx context.Context, set connector.Settings, cfg component.Config, next xconsumer.Profiles) (connector.Traces, error) {
-	if f == nil {
-		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalTraces, xpipeline.SignalProfiles)
-	}
-	return f(ctx, set, cfg, next)
-}
+// Deprecated: [0.116.0] Use xconnector.CreateTracesToProfilesFunc instead.
+type CreateTracesToProfilesFunc = xconnector.CreateTracesToProfilesFunc
 
 // CreateMetricsToProfilesFunc is the equivalent of Factory.CreateMetricsToProfiles().
-type CreateMetricsToProfilesFunc func(context.Context, connector.Settings, component.Config, xconsumer.Profiles) (connector.Metrics, error)
-
-// CreateMetricsToProfiles implements Factory.CreateMetricsToProfiles().
-func (f CreateMetricsToProfilesFunc) CreateMetricsToProfiles(ctx context.Context, set connector.Settings, cfg component.Config, next xconsumer.Profiles) (connector.Metrics, error) {
-	if f == nil {
-		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalMetrics, xpipeline.SignalProfiles)
-	}
-	return f(ctx, set, cfg, next)
-}
+// Deprecated: [0.116.0] Use xconnector.CreateMetricsToProfilesFunc instead.
+type CreateMetricsToProfilesFunc = xconnector.CreateMetricsToProfilesFunc
 
 // CreateLogsToProfilesFunc is the equivalent of Factory.CreateLogsToProfiles().
-type CreateLogsToProfilesFunc func(context.Context, connector.Settings, component.Config, xconsumer.Profiles) (connector.Logs, error)
-
-// CreateLogsToProfiles implements Factory.CreateLogsToProfiles().
-func (f CreateLogsToProfilesFunc) CreateLogsToProfiles(ctx context.Context, set connector.Settings, cfg component.Config, next xconsumer.Profiles) (connector.Logs, error) {
-	if f == nil {
-		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalLogs, xpipeline.SignalProfiles)
-	}
-	return f(ctx, set, cfg, next)
-}
+// Deprecated: [0.116.0] Use xconnector.CreateLogsToProfilesFunc instead.
+type CreateLogsToProfilesFunc = xconnector.CreateLogsToProfilesFunc
 
 // CreateProfilesToProfilesFunc is the equivalent of Factory.CreateProfilesToProfiles().
-type CreateProfilesToProfilesFunc func(context.Context, connector.Settings, component.Config, xconsumer.Profiles) (Profiles, error)
-
-// CreateProfilesToProfiles implements Factory.CreateProfilesToProfiles().
-func (f CreateProfilesToProfilesFunc) CreateProfilesToProfiles(ctx context.Context, set connector.Settings, cfg component.Config, next xconsumer.Profiles) (Profiles, error) {
-	if f == nil {
-		return nil, internal.ErrDataTypes(set.ID, xpipeline.SignalProfiles, xpipeline.SignalProfiles)
-	}
-	return f(ctx, set, cfg, next)
-}
+// Deprecated: [0.116.0] Use xconnector.CreateProfilesToProfilesFunc instead.
+type CreateProfilesToProfilesFunc = xconnector.CreateProfilesToProfilesFunc
 
 // CreateProfilesToTracesFunc is the equivalent of Factory.CreateProfilesToTraces().
-type CreateProfilesToTracesFunc func(context.Context, connector.Settings, component.Config, consumer.Traces) (Profiles, error)
-
-// CreateProfilesToTraces implements Factory.CreateProfilesToTraces().
-func (f CreateProfilesToTracesFunc) CreateProfilesToTraces(ctx context.Context, set connector.Settings, cfg component.Config, next consumer.Traces) (Profiles, error) {
-	if f == nil {
-		return nil, internal.ErrDataTypes(set.ID, xpipeline.SignalProfiles, pipeline.SignalTraces)
-	}
-	return f(ctx, set, cfg, next)
-}
+// Deprecated: [0.116.0] Use xconnector.CreateProfilesToTracesFunc instead.
+type CreateProfilesToTracesFunc = xconnector.CreateProfilesToTracesFunc
 
 // CreateProfilesToMetricsFunc is the equivalent of Factory.CreateProfilesToMetrics().
-type CreateProfilesToMetricsFunc func(context.Context, connector.Settings, component.Config, consumer.Metrics) (Profiles, error)
-
-// CreateProfilesToMetrics implements Factory.CreateProfilesToMetrics().
-func (f CreateProfilesToMetricsFunc) CreateProfilesToMetrics(ctx context.Context, set connector.Settings, cfg component.Config, next consumer.Metrics) (Profiles, error) {
-	if f == nil {
-		return nil, internal.ErrDataTypes(set.ID, xpipeline.SignalProfiles, pipeline.SignalMetrics)
-	}
-	return f(ctx, set, cfg, next)
-}
+// Deprecated: [0.116.0] Use xconnector.CreateProfilesToMetricsFunc instead.
+type CreateProfilesToMetricsFunc = xconnector.CreateProfilesToMetricsFunc
 
 // CreateProfilesToLogsFunc is the equivalent of Factory.CreateProfilesToLogs().
-type CreateProfilesToLogsFunc func(context.Context, connector.Settings, component.Config, consumer.Logs) (Profiles, error)
-
-// CreateProfilesToLogs implements Factory.CreateProfilesToLogs().
-func (f CreateProfilesToLogsFunc) CreateProfilesToLogs(ctx context.Context, set connector.Settings, cfg component.Config, next consumer.Logs) (Profiles, error) {
-	if f == nil {
-		return nil, internal.ErrDataTypes(set.ID, xpipeline.SignalProfiles, pipeline.SignalLogs)
-	}
-	return f(ctx, set, cfg, next)
-}
+// Deprecated: [0.116.0] Use xconnector.CreateProfilesToLogsFunc instead.
+type CreateProfilesToLogsFunc = xconnector.CreateProfilesToLogsFunc
 
 // FactoryOption apply changes to ReceiverOptions.
-type FactoryOption interface {
-	// applyOption applies the option.
-	applyOption(o *factoryOpts)
-}
-
-// factoryOptionFunc is an ReceiverFactoryOption created through a function.
-type factoryOptionFunc func(*factoryOpts)
-
-func (f factoryOptionFunc) applyOption(o *factoryOpts) {
-	f(o)
-}
-
-type factoryOpts struct {
-	opts []connector.FactoryOption
-
-	*factory
-}
+// Deprecated: [0.116.0] Use xconnector.FactoryOption instead.
+type FactoryOption = xconnector.FactoryOption
 
 // WithTracesToTraces overrides the default "error not supported" implementation for WithTracesToTraces and the default "undefined" stability level.
-func WithTracesToTraces(createTracesToTraces connector.CreateTracesToTracesFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
-		o.opts = append(o.opts, connector.WithTracesToTraces(createTracesToTraces, sl))
-	})
-}
+// Deprecated: [0.116.0] Use xconnector.WithTracesToTraces instead.
+var WithTracesToTraces = xconnector.WithTracesToTraces
 
 // WithTracesToMetrics overrides the default "error not supported" implementation for WithTracesToMetrics and the default "undefined" stability level.
-func WithTracesToMetrics(createTracesToMetrics connector.CreateTracesToMetricsFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
-		o.opts = append(o.opts, connector.WithTracesToMetrics(createTracesToMetrics, sl))
-	})
-}
+// Deprecated: [0.116.0] Use xconnector.WithTracesToMetrics instead.
+var WithTracesToMetrics = xconnector.WithTracesToMetrics
 
 // WithTracesToLogs overrides the default "error not supported" implementation for WithTracesToLogs and the default "undefined" stability level.
-func WithTracesToLogs(createTracesToLogs connector.CreateTracesToLogsFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
-		o.opts = append(o.opts, connector.WithTracesToLogs(createTracesToLogs, sl))
-	})
-}
+// Deprecated: [0.116.0] Use xconnector.WithTracesToLogs instead.
+var WithTracesToLogs = xconnector.WithTracesToLogs
 
 // WithMetricsToTraces overrides the default "error not supported" implementation for WithMetricsToTraces and the default "undefined" stability level.
-func WithMetricsToTraces(createMetricsToTraces connector.CreateMetricsToTracesFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
-		o.opts = append(o.opts, connector.WithMetricsToTraces(createMetricsToTraces, sl))
-	})
-}
+// Deprecated: [0.116.0] Use xconnector.WithMetricsToTraces instead.
+var WithMetricsToTraces = xconnector.WithMetricsToTraces
 
 // WithMetricsToMetrics overrides the default "error not supported" implementation for WithMetricsToMetrics and the default "undefined" stability level.
-func WithMetricsToMetrics(createMetricsToMetrics connector.CreateMetricsToMetricsFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
-		o.opts = append(o.opts, connector.WithMetricsToMetrics(createMetricsToMetrics, sl))
-	})
-}
+// Deprecated: [0.116.0] Use xconnector.WithMetricsToMetrics instead.
+var WithMetricsToMetrics = xconnector.WithMetricsToMetrics
 
 // WithMetricsToLogs overrides the default "error not supported" implementation for WithMetricsToLogs and the default "undefined" stability level.
-func WithMetricsToLogs(createMetricsToLogs connector.CreateMetricsToLogsFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
-		o.opts = append(o.opts, connector.WithMetricsToLogs(createMetricsToLogs, sl))
-	})
-}
+// Deprecated: [0.116.0] Use xconnector.WithMetricsToLogs instead.
+var WithMetricsToLogs = xconnector.WithMetricsToLogs
 
 // WithLogsToTraces overrides the default "error not supported" implementation for WithLogsToTraces and the default "undefined" stability level.
-func WithLogsToTraces(createLogsToTraces connector.CreateLogsToTracesFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
-		o.opts = append(o.opts, connector.WithLogsToTraces(createLogsToTraces, sl))
-	})
-}
+// Deprecated: [0.116.0] Use xconnector.WithLogsToTraces instead.
+var WithLogsToTraces = xconnector.WithLogsToTraces
 
 // WithLogsToMetrics overrides the default "error not supported" implementation for WithLogsToMetrics and the default "undefined" stability level.
-func WithLogsToMetrics(createLogsToMetrics connector.CreateLogsToMetricsFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
-		o.opts = append(o.opts, connector.WithLogsToMetrics(createLogsToMetrics, sl))
-	})
-}
+// Deprecated: [0.116.0] Use xconnector.WithLogsToMetrics instead.
+var WithLogsToMetrics = xconnector.WithLogsToMetrics
 
 // WithLogsToLogs overrides the default "error not supported" implementation for WithLogsToLogs and the default "undefined" stability level.
-func WithLogsToLogs(createLogsToLogs connector.CreateLogsToLogsFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
-		o.opts = append(o.opts, connector.WithLogsToLogs(createLogsToLogs, sl))
-	})
-}
+// Deprecated: [0.116.0] Use xconnector.WithLogsToLogs instead.
+var WithLogsToLogs = xconnector.WithLogsToLogs
 
 // WithTracesToProfiles overrides the default "error not supported" implementation for WithTracesToProfiles and the default "undefined" stability level.
-func WithTracesToProfiles(createTracesToProfiles CreateTracesToProfilesFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
-		o.tracesToProfilesStabilityLevel = sl
-		o.CreateTracesToProfilesFunc = createTracesToProfiles
-	})
-}
+// Deprecated: [0.116.0] Use xconnector.WithTracesToProfiles instead.
+var WithTracesToProfiles = xconnector.WithTracesToProfiles
 
 // WithMetricsToProfiles overrides the default "error not supported" implementation for WithMetricsToProfiles and the default "undefined" stability level.
-func WithMetricsToProfiles(createMetricsToProfiles CreateMetricsToProfilesFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
-		o.metricsToProfilesStabilityLevel = sl
-		o.CreateMetricsToProfilesFunc = createMetricsToProfiles
-	})
-}
+// Deprecated: [0.116.0] Use xconnector.WithMetricsToProfiles instead.
+var WithMetricsToProfiles = xconnector.WithMetricsToProfiles
 
 // WithLogsToProfiles overrides the default "error not supported" implementation for WithLogsToProfiles and the default "undefined" stability level.
-func WithLogsToProfiles(createLogsToProfiles CreateLogsToProfilesFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
-		o.logsToProfilesStabilityLevel = sl
-		o.CreateLogsToProfilesFunc = createLogsToProfiles
-	})
-}
+// Deprecated: [0.116.0] Use xconnector.WithLogsToProfiles instead.
+var WithLogsToProfiles = xconnector.WithLogsToProfiles
 
 // WithProfilesToProfiles overrides the default "error not supported" implementation for WithProfilesToProfiles and the default "undefined" stability level.
-func WithProfilesToProfiles(createProfilesToProfiles CreateProfilesToProfilesFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
-		o.profilesToProfilesStabilityLevel = sl
-		o.CreateProfilesToProfilesFunc = createProfilesToProfiles
-	})
-}
+// Deprecated: [0.116.0] Use xconnector.WithProfilesToProfiles instead.
+var WithProfilesToProfiles = xconnector.WithProfilesToProfiles
 
 // WithProfilesToTraces overrides the default "error not supported" implementation for WithProfilesToTraces and the default "undefined" stability level.
-func WithProfilesToTraces(createProfilesToTraces CreateProfilesToTracesFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
-		o.profilesToTracesStabilityLevel = sl
-		o.CreateProfilesToTracesFunc = createProfilesToTraces
-	})
-}
+// Deprecated: [0.116.0] Use xconnector.WithProfilesToTraces instead.
+var WithProfilesToTraces = xconnector.WithProfilesToTraces
 
 // WithProfilesToMetrics overrides the default "error not supported" implementation for WithProfilesToMetrics and the default "undefined" stability level.
-func WithProfilesToMetrics(createProfilesToMetrics CreateProfilesToMetricsFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
-		o.profilesToMetricsStabilityLevel = sl
-		o.CreateProfilesToMetricsFunc = createProfilesToMetrics
-	})
-}
+// Deprecated: [0.116.0] Use xconnector.WithProfilesToMetrics instead.
+var WithProfilesToMetrics = xconnector.WithProfilesToMetrics
 
 // WithProfilesToLogs overrides the default "error not supported" implementation for WithProfilesToLogs and the default "undefined" stability level.
-func WithProfilesToLogs(createProfilesToLogs CreateProfilesToLogsFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
-		o.profilesToLogsStabilityLevel = sl
-		o.CreateProfilesToLogsFunc = createProfilesToLogs
-	})
-}
-
-// factory implements the Factory interface.
-type factory struct {
-	connector.Factory
-
-	CreateTracesToProfilesFunc
-	CreateMetricsToProfilesFunc
-	CreateLogsToProfilesFunc
-
-	CreateProfilesToProfilesFunc
-	CreateProfilesToTracesFunc
-	CreateProfilesToMetricsFunc
-	CreateProfilesToLogsFunc
-
-	tracesToProfilesStabilityLevel  component.StabilityLevel
-	metricsToProfilesStabilityLevel component.StabilityLevel
-	logsToProfilesStabilityLevel    component.StabilityLevel
-
-	profilesToProfilesStabilityLevel component.StabilityLevel
-	profilesToTracesStabilityLevel   component.StabilityLevel
-	profilesToMetricsStabilityLevel  component.StabilityLevel
-	profilesToLogsStabilityLevel     component.StabilityLevel
-}
-
-func (f *factory) TracesToProfilesStability() component.StabilityLevel {
-	return f.tracesToProfilesStabilityLevel
-}
-
-func (f *factory) MetricsToProfilesStability() component.StabilityLevel {
-	return f.metricsToProfilesStabilityLevel
-}
-
-func (f *factory) LogsToProfilesStability() component.StabilityLevel {
-	return f.logsToProfilesStabilityLevel
-}
-
-func (f *factory) ProfilesToProfilesStability() component.StabilityLevel {
-	return f.profilesToProfilesStabilityLevel
-}
-
-func (f *factory) ProfilesToTracesStability() component.StabilityLevel {
-	return f.profilesToTracesStabilityLevel
-}
-
-func (f *factory) ProfilesToMetricsStability() component.StabilityLevel {
-	return f.profilesToMetricsStabilityLevel
-}
-
-func (f *factory) ProfilesToLogsStability() component.StabilityLevel {
-	return f.profilesToLogsStabilityLevel
-}
+// Deprecated: [0.116.0] Use xconnector.WithProfilesToLogs instead.
+var WithProfilesToLogs = xconnector.WithProfilesToLogs
 
 // NewFactory returns a Factory.
-func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefaultConfigFunc, options ...FactoryOption) Factory {
-	opts := factoryOpts{factory: &factory{}}
-	for _, opt := range options {
-		opt.applyOption(&opts)
-	}
-	opts.Factory = connector.NewFactory(cfgType, createDefaultConfig, opts.opts...)
-	return opts.factory
-}
+// Deprecated: [0.116.0] Use xconnector.NewFactory instead.
+var NewFactory = xconnector.NewFactory

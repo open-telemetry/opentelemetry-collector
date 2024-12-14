@@ -82,7 +82,7 @@ require (
 	go.opentelemetry.io/collector/config/configcompression v1.21.0 // indirect
 	go.opentelemetry.io/collector/config/confignet v1.21.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.115.0 // indirect
-	go.opentelemetry.io/collector/connector/connectorprofiles v0.115.0 // indirect
+	go.opentelemetry.io/collector/connector/xconnector v0.115.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.115.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.115.1-0.20241213185000-4593ba7de234 // indirect
@@ -218,7 +218,7 @@ replace go.opentelemetry.io/collector/receiver/receivertest => ../../receiver/re
 
 replace go.opentelemetry.io/collector/processor/xprocessor => ../../processor/xprocessor
 
-replace go.opentelemetry.io/collector/connector/connectorprofiles => ../../connector/connectorprofiles
+replace go.opentelemetry.io/collector/connector/xconnector => ../../connector/xconnector
 
 replace go.opentelemetry.io/collector/exporter/xexporter => ../../exporter/xexporter
 
