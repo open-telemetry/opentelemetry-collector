@@ -61,7 +61,7 @@ var replaceModules = []string{
 	"/confmap/provider/yamlprovider",
 	"/consumer",
 	"/consumer/consumererror",
-	"/consumer/consumererror/consumererrorprofiles",
+	"/consumer/consumererror/xconsumererror",
 	"/consumer/xconsumer",
 	"/consumer/consumertest",
 	"/connector",

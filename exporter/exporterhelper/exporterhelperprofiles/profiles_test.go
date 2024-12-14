@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/consumer/consumererror/consumererrorprofiles"
+	"go.opentelemetry.io/collector/consumer/consumererror/xconsumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -45,7 +45,7 @@ var fakeProfilesExporterConfig = struct{}{}
 func TestProfilesRequest(t *testing.T) {
 	lr := newProfilesRequest(testdata.GenerateProfiles(1), nil)
 
-	profileErr := consumererrorprofiles.NewProfiles(errors.New("some error"), pprofile.NewProfiles())
+	profileErr := xconsumererror.NewProfiles(errors.New("some error"), pprofile.NewProfiles())
 	assert.EqualValues(
 		t,
 		newProfilesRequest(pprofile.NewProfiles(), nil),

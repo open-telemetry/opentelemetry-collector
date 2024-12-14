@@ -11,7 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/consumer/consumererror/consumererrorprofiles"
+	"go.opentelemetry.io/collector/consumer/consumererror/xconsumererror"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -54,7 +54,7 @@ func profilesRequestMarshaler(req exporterhelper.Request) ([]byte, error) {
 }
 
 func (req *profilesRequest) OnError(err error) exporterhelper.Request {
-	var profileError consumererrorprofiles.Profiles
+	var profileError xconsumererror.Profiles
 	if errors.As(err, &profileError) {
 		return newProfilesRequest(profileError.Data(), req.pusher)
 	}
