@@ -134,7 +134,17 @@ linters-settings:
             - "!**/*_test.go"
 
   testifylint:
-    enable-all: true   
+    enable-all: true
+
+  thelper:
+    test:
+      begin: false
+    benchmark:
+      begin: false
+    tb:
+      begin: false
+    fuzz:
+      begin: false
 
 linters:
   enable:
@@ -153,6 +163,7 @@ linters:
     - staticcheck
     - tenv
     - testifylint
+    - thelper
     - unconvert
     - unused
     - unparam
