@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/connector"
-	"go.opentelemetry.io/collector/connector/connectorprofiles"
+	"go.opentelemetry.io/collector/connector/xconnector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
@@ -548,7 +548,7 @@ func connectorStability(f connector.Factory, expType, recType pipeline.Signal) c
 		case pipeline.SignalLogs:
 			return f.TracesToLogsStability()
 		case xpipeline.SignalProfiles:
-			fprof, ok := f.(connectorprofiles.Factory)
+			fprof, ok := f.(xconnector.Factory)
 			if !ok {
 				return component.StabilityLevelUndefined
 			}
@@ -563,7 +563,7 @@ func connectorStability(f connector.Factory, expType, recType pipeline.Signal) c
 		case pipeline.SignalLogs:
 			return f.MetricsToLogsStability()
 		case xpipeline.SignalProfiles:
-			fprof, ok := f.(connectorprofiles.Factory)
+			fprof, ok := f.(xconnector.Factory)
 			if !ok {
 				return component.StabilityLevelUndefined
 			}
@@ -578,14 +578,14 @@ func connectorStability(f connector.Factory, expType, recType pipeline.Signal) c
 		case pipeline.SignalLogs:
 			return f.LogsToLogsStability()
 		case xpipeline.SignalProfiles:
-			fprof, ok := f.(connectorprofiles.Factory)
+			fprof, ok := f.(xconnector.Factory)
 			if !ok {
 				return component.StabilityLevelUndefined
 			}
 			return fprof.LogsToProfilesStability()
 		}
 	case xpipeline.SignalProfiles:
-		fprof, ok := f.(connectorprofiles.Factory)
+		fprof, ok := f.(xconnector.Factory)
 		if !ok {
 			return component.StabilityLevelUndefined
 		}

@@ -66,7 +66,7 @@ var replaceModules = []string{
 	"/consumer/consumertest",
 	"/connector",
 	"/connector/connectortest",
-	"/connector/connectorprofiles",
+	"/connector/xconnector",
 	"/exporter",
 	"/exporter/debugexporter",
 	"/exporter/xexporter",

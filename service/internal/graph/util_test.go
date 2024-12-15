@@ -10,7 +10,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
-	"go.opentelemetry.io/collector/connector/connectorprofiles"
+	"go.opentelemetry.io/collector/connector/xconnector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
@@ -164,7 +164,7 @@ func unwrapExampleConnector(c *connectorNode) *testcomponents.ExampleConnector {
 		return ct.(*testcomponents.ExampleConnector)
 	case componentProfiles: // consumes profiles, emits profiles
 		return ct.Component.(*testcomponents.ExampleConnector)
-	case connectorprofiles.Profiles: // consumes profiles, emits something else
+	case xconnector.Profiles: // consumes profiles, emits something else
 		return ct.(*testcomponents.ExampleConnector)
 	}
 	return nil
@@ -249,58 +249,58 @@ func newErrExporterFactory() exporter.Factory {
 }
 
 func newErrConnectorFactory() connector.Factory {
-	return connectorprofiles.NewFactory(component.MustNewType("err"), func() component.Config {
+	return xconnector.NewFactory(component.MustNewType("err"), func() component.Config {
 		return &struct{}{}
 	},
-		connectorprofiles.WithTracesToTraces(func(context.Context, connector.Settings, component.Config, consumer.Traces) (connector.Traces, error) {
+		xconnector.WithTracesToTraces(func(context.Context, connector.Settings, component.Config, consumer.Traces) (connector.Traces, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
-		connectorprofiles.WithTracesToMetrics(func(context.Context, connector.Settings, component.Config, consumer.Metrics) (connector.Traces, error) {
+		xconnector.WithTracesToMetrics(func(context.Context, connector.Settings, component.Config, consumer.Metrics) (connector.Traces, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
-		connectorprofiles.WithTracesToLogs(func(context.Context, connector.Settings, component.Config, consumer.Logs) (connector.Traces, error) {
+		xconnector.WithTracesToLogs(func(context.Context, connector.Settings, component.Config, consumer.Logs) (connector.Traces, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
-		connectorprofiles.WithTracesToProfiles(func(context.Context, connector.Settings, component.Config, xconsumer.Profiles) (connector.Traces, error) {
-			return &errComponent{}, nil
-		}, component.StabilityLevelUnmaintained),
-
-		connectorprofiles.WithMetricsToTraces(func(context.Context, connector.Settings, component.Config, consumer.Traces) (connector.Metrics, error) {
-			return &errComponent{}, nil
-		}, component.StabilityLevelUnmaintained),
-		connectorprofiles.WithMetricsToMetrics(func(context.Context, connector.Settings, component.Config, consumer.Metrics) (connector.Metrics, error) {
-			return &errComponent{}, nil
-		}, component.StabilityLevelUnmaintained),
-		connectorprofiles.WithMetricsToLogs(func(context.Context, connector.Settings, component.Config, consumer.Logs) (connector.Metrics, error) {
-			return &errComponent{}, nil
-		}, component.StabilityLevelUnmaintained),
-		connectorprofiles.WithMetricsToProfiles(func(context.Context, connector.Settings, component.Config, xconsumer.Profiles) (connector.Metrics, error) {
+		xconnector.WithTracesToProfiles(func(context.Context, connector.Settings, component.Config, xconsumer.Profiles) (connector.Traces, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
 
-		connectorprofiles.WithLogsToTraces(func(context.Context, connector.Settings, component.Config, consumer.Traces) (connector.Logs, error) {
+		xconnector.WithMetricsToTraces(func(context.Context, connector.Settings, component.Config, consumer.Traces) (connector.Metrics, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
-		connectorprofiles.WithLogsToMetrics(func(context.Context, connector.Settings, component.Config, consumer.Metrics) (connector.Logs, error) {
+		xconnector.WithMetricsToMetrics(func(context.Context, connector.Settings, component.Config, consumer.Metrics) (connector.Metrics, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
-		connectorprofiles.WithLogsToLogs(func(context.Context, connector.Settings, component.Config, consumer.Logs) (connector.Logs, error) {
+		xconnector.WithMetricsToLogs(func(context.Context, connector.Settings, component.Config, consumer.Logs) (connector.Metrics, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
-		connectorprofiles.WithLogsToProfiles(func(context.Context, connector.Settings, component.Config, xconsumer.Profiles) (connector.Logs, error) {
+		xconnector.WithMetricsToProfiles(func(context.Context, connector.Settings, component.Config, xconsumer.Profiles) (connector.Metrics, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
 
-		connectorprofiles.WithProfilesToTraces(func(context.Context, connector.Settings, component.Config, consumer.Traces) (connectorprofiles.Profiles, error) {
+		xconnector.WithLogsToTraces(func(context.Context, connector.Settings, component.Config, consumer.Traces) (connector.Logs, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
-		connectorprofiles.WithProfilesToMetrics(func(context.Context, connector.Settings, component.Config, consumer.Metrics) (connectorprofiles.Profiles, error) {
+		xconnector.WithLogsToMetrics(func(context.Context, connector.Settings, component.Config, consumer.Metrics) (connector.Logs, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
-		connectorprofiles.WithProfilesToLogs(func(context.Context, connector.Settings, component.Config, consumer.Logs) (connectorprofiles.Profiles, error) {
+		xconnector.WithLogsToLogs(func(context.Context, connector.Settings, component.Config, consumer.Logs) (connector.Logs, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
-		connectorprofiles.WithProfilesToProfiles(func(context.Context, connector.Settings, component.Config, xconsumer.Profiles) (connectorprofiles.Profiles, error) {
+		xconnector.WithLogsToProfiles(func(context.Context, connector.Settings, component.Config, xconsumer.Profiles) (connector.Logs, error) {
+			return &errComponent{}, nil
+		}, component.StabilityLevelUnmaintained),
+
+		xconnector.WithProfilesToTraces(func(context.Context, connector.Settings, component.Config, consumer.Traces) (xconnector.Profiles, error) {
+			return &errComponent{}, nil
+		}, component.StabilityLevelUnmaintained),
+		xconnector.WithProfilesToMetrics(func(context.Context, connector.Settings, component.Config, consumer.Metrics) (xconnector.Profiles, error) {
+			return &errComponent{}, nil
+		}, component.StabilityLevelUnmaintained),
+		xconnector.WithProfilesToLogs(func(context.Context, connector.Settings, component.Config, consumer.Logs) (xconnector.Profiles, error) {
+			return &errComponent{}, nil
+		}, component.StabilityLevelUnmaintained),
+		xconnector.WithProfilesToProfiles(func(context.Context, connector.Settings, component.Config, xconsumer.Profiles) (xconnector.Profiles, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),
 	)

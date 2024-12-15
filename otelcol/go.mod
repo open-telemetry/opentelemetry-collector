@@ -70,7 +70,7 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/collector/component/componenttest v0.115.0 // indirect
-	go.opentelemetry.io/collector/connector/connectorprofiles v0.115.0 // indirect
+	go.opentelemetry.io/collector/connector/xconnector v0.115.0 // indirect
 	go.opentelemetry.io/collector/consumer v1.21.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.115.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.115.0 // indirect
@@ -185,7 +185,7 @@ replace go.opentelemetry.io/collector/receiver/receivertest => ../receiver/recei
 
 replace go.opentelemetry.io/collector/processor/xprocessor => ../processor/xprocessor
 
-replace go.opentelemetry.io/collector/connector/connectorprofiles => ../connector/connectorprofiles
+replace go.opentelemetry.io/collector/connector/xconnector => ../connector/xconnector
 
 replace go.opentelemetry.io/collector/exporter/xexporter => ../exporter/xexporter
 

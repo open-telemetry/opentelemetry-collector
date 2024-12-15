@@ -17,8 +17,8 @@ require (
 	go.opentelemetry.io/collector/config/configtelemetry v0.115.0
 	go.opentelemetry.io/collector/confmap v1.21.0
 	go.opentelemetry.io/collector/connector v0.115.0
-	go.opentelemetry.io/collector/connector/connectorprofiles v0.115.0
 	go.opentelemetry.io/collector/connector/connectortest v0.115.0
+	go.opentelemetry.io/collector/connector/xconnector v0.115.0
 	go.opentelemetry.io/collector/consumer v1.21.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.115.0
 	go.opentelemetry.io/collector/consumer/xconsumer v0.115.1-0.20241213185000-4593ba7de234
@@ -207,7 +207,7 @@ replace go.opentelemetry.io/collector/exporter/exportertest => ../exporter/expor
 
 replace go.opentelemetry.io/collector/consumer/consumererror => ../consumer/consumererror
 
-replace go.opentelemetry.io/collector/connector/connectorprofiles => ../connector/connectorprofiles
+replace go.opentelemetry.io/collector/connector/xconnector => ../connector/xconnector
 
 replace go.opentelemetry.io/collector/internal/fanoutconsumer => ../internal/fanoutconsumer
 
