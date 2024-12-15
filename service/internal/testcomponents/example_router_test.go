@@ -12,8 +12,8 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/connector"
-	"go.opentelemetry.io/collector/connector/connectorprofiles"
 	"go.opentelemetry.io/collector/connector/connectortest"
+	"go.opentelemetry.io/collector/connector/xconnector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
@@ -160,7 +160,7 @@ func TestProfilesRouter(t *testing.T) {
 	// The service will build a router to give to every connector.
 	// Many connectors will just call router.ConsumeProfiles,
 	// but some implementation will call RouteProfiles instead.
-	router := connectorprofiles.NewProfilesRouter(
+	router := xconnector.NewProfilesRouter(
 		map[pipeline.ID]xconsumer.Profiles{
 			leftID:  sinkLeft,
 			rightID: sinkRight,

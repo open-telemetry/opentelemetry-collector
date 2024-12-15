@@ -8,10 +8,9 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.115.0
 	go.opentelemetry.io/collector/consumer v1.21.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.115.0
-	go.opentelemetry.io/collector/consumer/xconsumer v0.115.1-0.20241213185000-4593ba7de234
 	go.opentelemetry.io/collector/pdata/pprofile v0.115.0
 	go.opentelemetry.io/collector/processor v0.115.0
-	go.opentelemetry.io/collector/processor/processorprofiles v0.115.0
+	go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/processor/processortest v0.115.0
 )
 
@@ -27,9 +26,11 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.115.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.115.0 // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.115.1-0.20241213185000-4593ba7de234 // indirect
 	go.opentelemetry.io/collector/pdata v1.21.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.115.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.115.0 // indirect
+	go.opentelemetry.io/collector/processor/xprocessor v0.115.0 // indirect
 	go.opentelemetry.io/otel v1.32.0 // indirect
 	go.opentelemetry.io/otel/metric v1.32.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.32.0 // indirect
@@ -72,4 +73,6 @@ replace go.opentelemetry.io/collector/component/componentstatus => ../../../comp
 
 replace go.opentelemetry.io/collector/processor/processortest => ../../processortest
 
-replace go.opentelemetry.io/collector/processor/processorprofiles => ../../processorprofiles
+replace go.opentelemetry.io/collector/processor/xprocessor => ../../xprocessor
+
+replace go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper => ../xprocessorhelper

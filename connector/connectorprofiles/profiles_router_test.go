@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/pipeline"
-	"go.opentelemetry.io/collector/pipeline/pipelineprofiles"
+	"go.opentelemetry.io/collector/pipeline/xpipeline"
 )
 
 type mutatingProfilesSink struct {
@@ -51,7 +51,7 @@ func fuzzProfiles(numIDs, numCons, numProfiles int) func(*testing.T) {
 
 		// If any consumer is mutating, the router must report mutating
 		for i := 0; i < numCons; i++ {
-			allIDs = append(allIDs, pipeline.NewIDWithName(pipelineprofiles.SignalProfiles, "sink_"+strconv.Itoa(numCons)))
+			allIDs = append(allIDs, pipeline.NewIDWithName(xpipeline.SignalProfiles, "sink_"+strconv.Itoa(numCons)))
 			// Random chance for each consumer to be mutating
 			if (numCons+numProfiles+i)%4 == 0 {
 				allCons = append(allCons, &mutatingProfilesSink{ProfilesSink: new(consumertest.ProfilesSink)})
@@ -111,8 +111,8 @@ func TestProfilessRouterConsumer(t *testing.T) {
 	ctx := context.Background()
 	td := testdata.GenerateProfiles(1)
 
-	fooID := pipeline.NewIDWithName(pipelineprofiles.SignalProfiles, "foo")
-	barID := pipeline.NewIDWithName(pipelineprofiles.SignalProfiles, "bar")
+	fooID := pipeline.NewIDWithName(xpipeline.SignalProfiles, "foo")
+	barID := pipeline.NewIDWithName(xpipeline.SignalProfiles, "bar")
 
 	foo := new(consumertest.ProfilesSink)
 	bar := new(consumertest.ProfilesSink)
@@ -153,7 +153,7 @@ func TestProfilessRouterConsumer(t *testing.T) {
 	assert.Nil(t, none)
 	require.Error(t, err)
 
-	fake, err := r.Consumer(pipeline.NewIDWithName(pipelineprofiles.SignalProfiles, "fake"))
+	fake, err := r.Consumer(pipeline.NewIDWithName(xpipeline.SignalProfiles, "fake"))
 	assert.Nil(t, fake)
 	assert.Error(t, err)
 }

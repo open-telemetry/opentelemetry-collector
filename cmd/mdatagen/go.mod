@@ -52,7 +52,7 @@ require (
 	go.opentelemetry.io/collector/pdata/pprofile v0.115.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.115.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.115.0 // indirect
-	go.opentelemetry.io/collector/processor/processorprofiles v0.115.0 // indirect
+	go.opentelemetry.io/collector/processor/xprocessor v0.115.0 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.115.0 // indirect
 	go.opentelemetry.io/otel v1.32.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.32.0 // indirect
@@ -105,7 +105,7 @@ replace go.opentelemetry.io/collector/receiver/xreceiver => ../../receiver/xrece
 
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 
-replace go.opentelemetry.io/collector/processor/processorprofiles => ../../processor/processorprofiles
+replace go.opentelemetry.io/collector/processor/xprocessor => ../../processor/xprocessor
 
 replace go.opentelemetry.io/collector/processor/processortest => ../../processor/processortest
 

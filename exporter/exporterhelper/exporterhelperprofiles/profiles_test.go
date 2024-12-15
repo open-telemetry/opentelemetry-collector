@@ -23,15 +23,13 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/consumer/consumererror/consumererrorprofiles"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
-	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
-	"go.opentelemetry.io/collector/exporter/exporterprofiles"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/internal/queue"
+	"go.opentelemetry.io/collector/exporter/xexporter"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
@@ -41,47 +39,6 @@ const (
 )
 
 var fakeProfilesExporterConfig = struct{}{}
-
-func TestProfilesRequest(t *testing.T) {
-	lr := newProfilesRequest(testdata.GenerateProfiles(1), nil)
-
-	profileErr := consumererrorprofiles.NewProfiles(errors.New("some error"), pprofile.NewProfiles())
-	assert.EqualValues(
-		t,
-		newProfilesRequest(pprofile.NewProfiles(), nil),
-		lr.(exporterhelper.RequestErrorHandler).OnError(profileErr),
-	)
-}
-
-func TestProfilesExporter_InvalidName(t *testing.T) {
-	le, err := NewProfilesExporter(context.Background(), exportertest.NewNopSettings(), nil, newPushProfilesData(nil))
-	require.Nil(t, le)
-	require.Equal(t, errNilConfig, err)
-}
-
-func TestProfilesExporter_NilLogger(t *testing.T) {
-	le, err := NewProfilesExporter(context.Background(), exporter.Settings{}, &fakeProfilesExporterConfig, newPushProfilesData(nil))
-	require.Nil(t, le)
-	require.Equal(t, errNilLogger, err)
-}
-
-func TestProfilesRequestExporter_NilLogger(t *testing.T) {
-	le, err := NewProfilesRequestExporter(context.Background(), exporter.Settings{}, internal.RequestFromProfilesFunc(nil))
-	require.Nil(t, le)
-	require.Equal(t, errNilLogger, err)
-}
-
-func TestProfilesExporter_NilPushProfilesData(t *testing.T) {
-	le, err := NewProfilesExporter(context.Background(), exportertest.NewNopSettings(), &fakeProfilesExporterConfig, nil)
-	require.Nil(t, le)
-	require.Equal(t, errNilPushProfileData, err)
-}
-
-func TestProfilesRequestExporter_NilProfilesConverter(t *testing.T) {
-	le, err := NewProfilesRequestExporter(context.Background(), exportertest.NewNopSettings(), nil)
-	require.Nil(t, le)
-	require.Equal(t, errNilProfilesConverter, err)
-}
 
 func TestProfilesExporter_Default(t *testing.T) {
 	ld := pprofile.NewProfiles()
@@ -290,7 +247,7 @@ func newPushProfilesData(retError error) xconsumer.ConsumeProfilesFunc {
 	}
 }
 
-func generateProfilesTraffic(t *testing.T, tracer trace.Tracer, le exporterprofiles.Profiles, numRequests int, wantError error) {
+func generateProfilesTraffic(t *testing.T, tracer trace.Tracer, le xexporter.Profiles, numRequests int, wantError error) {
 	ld := testdata.GenerateProfiles(1)
 	ctx, span := tracer.Start(context.Background(), fakeProfilesParentSpanName)
 	defer span.End()
@@ -300,7 +257,7 @@ func generateProfilesTraffic(t *testing.T, tracer trace.Tracer, le exporterprofi
 }
 
 // nolint: unparam
-func checkWrapSpanForProfilesExporter(t *testing.T, sr *tracetest.SpanRecorder, tracer trace.Tracer, le exporterprofiles.Profiles,
+func checkWrapSpanForProfilesExporter(t *testing.T, sr *tracetest.SpanRecorder, tracer trace.Tracer, le xexporter.Profiles,
 	wantError error, numSampleRecords int64,
 ) {
 	const numRequests = 5

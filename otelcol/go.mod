@@ -70,19 +70,19 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/collector/component/componenttest v0.115.0 // indirect
-	go.opentelemetry.io/collector/connector/connectorprofiles v0.115.0 // indirect
+	go.opentelemetry.io/collector/connector/xconnector v0.115.0 // indirect
 	go.opentelemetry.io/collector/consumer v1.21.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.115.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.115.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.115.1-0.20241213185000-4593ba7de234 // indirect
-	go.opentelemetry.io/collector/exporter/exporterprofiles v0.115.0 // indirect
+	go.opentelemetry.io/collector/exporter/xexporter v0.115.0 // indirect
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.115.0 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.115.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.21.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.115.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.115.0 // indirect
-	go.opentelemetry.io/collector/pipeline/pipelineprofiles v0.115.0 // indirect
-	go.opentelemetry.io/collector/processor/processorprofiles v0.115.0 // indirect
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.115.0 // indirect
+	go.opentelemetry.io/collector/processor/xprocessor v0.115.0 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.115.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.115.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.6.0 // indirect
@@ -183,15 +183,15 @@ replace go.opentelemetry.io/collector/receiver/xreceiver => ../receiver/xreceive
 
 replace go.opentelemetry.io/collector/receiver/receivertest => ../receiver/receivertest
 
-replace go.opentelemetry.io/collector/processor/processorprofiles => ../processor/processorprofiles
+replace go.opentelemetry.io/collector/processor/xprocessor => ../processor/xprocessor
 
-replace go.opentelemetry.io/collector/connector/connectorprofiles => ../connector/connectorprofiles
+replace go.opentelemetry.io/collector/connector/xconnector => ../connector/xconnector
 
-replace go.opentelemetry.io/collector/exporter/exporterprofiles => ../exporter/exporterprofiles
+replace go.opentelemetry.io/collector/exporter/xexporter => ../exporter/xexporter
 
 replace go.opentelemetry.io/collector/pipeline => ../pipeline
 
-replace go.opentelemetry.io/collector/pipeline/pipelineprofiles => ../pipeline/pipelineprofiles
+replace go.opentelemetry.io/collector/pipeline/xpipeline => ../pipeline/xpipeline
 
 replace go.opentelemetry.io/collector/exporter/exportertest => ../exporter/exportertest
 

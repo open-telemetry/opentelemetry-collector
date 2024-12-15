@@ -1,36 +1,13 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+// Deprecated: [0.116.0] Use go.opentelemetry.io/collector/connector/xconnector instead.
 package connectorprofiles // import "go.opentelemetry.io/collector/connector/connectorprofiles"
 
-import (
-	"go.opentelemetry.io/collector/connector/internal"
-	"go.opentelemetry.io/collector/consumer/xconsumer"
-	"go.opentelemetry.io/collector/internal/fanoutconsumer"
-	"go.opentelemetry.io/collector/pipeline"
-)
+import "go.opentelemetry.io/collector/connector/xconnector"
 
-type ProfilesRouterAndConsumer interface {
-	xconsumer.Profiles
-	Consumer(...pipeline.ID) (xconsumer.Profiles, error)
-	PipelineIDs() []pipeline.ID
-	privateFunc()
-}
+// Deprecated: [0.116.0] Use xconnector.ProfilesRouterAndConsumer instead.
+type ProfilesRouterAndConsumer = xconnector.ProfilesRouterAndConsumer
 
-type profilesRouter struct {
-	xconsumer.Profiles
-	internal.BaseRouter[xconsumer.Profiles]
-}
-
-func NewProfilesRouter(cm map[pipeline.ID]xconsumer.Profiles) ProfilesRouterAndConsumer {
-	consumers := make([]xconsumer.Profiles, 0, len(cm))
-	for _, cons := range cm {
-		consumers = append(consumers, cons)
-	}
-	return &profilesRouter{
-		Profiles:   fanoutconsumer.NewProfiles(consumers),
-		BaseRouter: internal.NewBaseRouter(fanoutconsumer.NewProfiles, cm),
-	}
-}
-
-func (r *profilesRouter) privateFunc() {}
+// Deprecated: [0.116.0] Use xconnector.NewProfilesRouter instead.
+var NewProfilesRouter = xconnector.NewProfilesRouter

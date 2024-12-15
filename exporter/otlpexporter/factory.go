@@ -15,20 +15,20 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles"
-	"go.opentelemetry.io/collector/exporter/exporterprofiles"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
 	"go.opentelemetry.io/collector/exporter/otlpexporter/internal/metadata"
+	"go.opentelemetry.io/collector/exporter/xexporter"
 )
 
 // NewFactory creates a factory for OTLP exporter.
 func NewFactory() exporter.Factory {
-	return exporterprofiles.NewFactory(
+	return xexporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		exporterprofiles.WithTraces(createTraces, metadata.TracesStability),
-		exporterprofiles.WithMetrics(createMetrics, metadata.MetricsStability),
-		exporterprofiles.WithLogs(createLogs, metadata.LogsStability),
-		exporterprofiles.WithProfiles(createProfilesExporter, metadata.ProfilesStability),
+		xexporter.WithTraces(createTraces, metadata.TracesStability),
+		xexporter.WithMetrics(createMetrics, metadata.MetricsStability),
+		xexporter.WithLogs(createLogs, metadata.LogsStability),
+		xexporter.WithProfiles(createProfilesExporter, metadata.ProfilesStability),
 	)
 }
 
@@ -112,10 +112,10 @@ func createProfilesExporter(
 	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config,
-) (exporterprofiles.Profiles, error) {
+) (xexporter.Profiles, error) {
 	oce := newExporter(cfg, set)
 	oCfg := cfg.(*Config)
-	return exporterhelperprofiles.NewProfilesExporter(ctx, set, cfg,
+	return xexporterhelper.NewProfilesExporter(ctx, set, cfg,
 		oce.pushProfiles,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(oCfg.TimeoutConfig),
