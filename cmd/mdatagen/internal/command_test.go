@@ -281,8 +281,11 @@ func TestRun(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := run(tt.args.ymlPath); (err != nil) != tt.wantErr {
-				t.Errorf("run() error = %v, wantErr %v", err, tt.wantErr)
+			err := run(tt.args.ymlPath)
+			if !tt.wantErr {
+				require.NoError(t, err, "run()")
+			} else {
+				require.Error(t, err)
 			}
 		})
 	}

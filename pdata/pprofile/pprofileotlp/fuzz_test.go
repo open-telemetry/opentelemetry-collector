@@ -6,6 +6,8 @@ package pprofileotlp // import "go.opentelemetry.io/collector/pdata/pprofile/ppr
 import (
 	"bytes"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 var unexpectedBytes = "expected the same bytes from unmarshaling and marshaling."
@@ -18,23 +20,14 @@ func FuzzRequestUnmarshalJSON(f *testing.F) {
 			return
 		}
 		b1, err := er.MarshalJSON()
-		if err != nil {
-			t.Fatalf("failed to marshal valid struct:  %v", err)
-		}
+		require.NoError(t, err, "failed to marshal valid struct")
 
 		er = NewExportRequest()
-		err = er.UnmarshalJSON(b1)
-		if err != nil {
-			t.Fatalf("failed to unmarshal valid bytes:  %v", err)
-		}
+		require.NoError(t, er.UnmarshalJSON(b1), "failed to unmarshal valid bytes")
 		b2, err := er.MarshalJSON()
-		if err != nil {
-			t.Fatalf("failed to marshal valid struct:  %v", err)
-		}
+		require.NoError(t, err, "failed to marshal valid struct")
 
-		if !bytes.Equal(b1, b2) {
-			t.Fatalf("%s. \nexpected %d but got %d\n", unexpectedBytes, b1, b2)
-		}
+		require.True(t, bytes.Equal(b1, b2), "%s. \nexpected %d but got %d\n", unexpectedBytes, b1, b2)
 	})
 }
 
@@ -46,23 +39,14 @@ func FuzzResponseUnmarshalJSON(f *testing.F) {
 			return
 		}
 		b1, err := er.MarshalJSON()
-		if err != nil {
-			t.Fatalf("failed to marshal valid struct:  %v", err)
-		}
+		require.NoError(t, err, "failed to marshal valid struct")
 
 		er = NewExportResponse()
-		err = er.UnmarshalJSON(b1)
-		if err != nil {
-			t.Fatalf("failed to unmarshal valid bytes:  %v", err)
-		}
+		require.NoError(t, er.UnmarshalJSON(b1), "failed to unmarshal valid bytes")
 		b2, err := er.MarshalJSON()
-		if err != nil {
-			t.Fatalf("failed to marshal valid struct:  %v", err)
-		}
+		require.NoError(t, err, "failed to marshal valid struct")
 
-		if !bytes.Equal(b1, b2) {
-			t.Fatalf("%s. \nexpected %d but got %d\n", unexpectedBytes, b1, b2)
-		}
+		require.True(t, bytes.Equal(b1, b2), "%s. \nexpected %d but got %d\n", unexpectedBytes, b1, b2)
 	})
 }
 
@@ -74,23 +58,14 @@ func FuzzRequestUnmarshalProto(f *testing.F) {
 			return
 		}
 		b1, err := er.MarshalProto()
-		if err != nil {
-			t.Fatalf("failed to marshal valid struct:  %v", err)
-		}
+		require.NoError(t, err, "failed to marshal valid struct")
 
 		er = NewExportRequest()
-		err = er.UnmarshalProto(b1)
-		if err != nil {
-			t.Fatalf("failed to unmarshal valid bytes:  %v", err)
-		}
+		require.NoError(t, er.UnmarshalProto(b1), "failed to unmarshal valid bytes")
 		b2, err := er.MarshalProto()
-		if err != nil {
-			t.Fatalf("failed to marshal valid struct:  %v", err)
-		}
+		require.NoError(t, err, "failed to marshal valid struct")
 
-		if !bytes.Equal(b1, b2) {
-			t.Fatalf("%s. \nexpected %d but got %d\n", unexpectedBytes, b1, b2)
-		}
+		require.True(t, bytes.Equal(b1, b2), "%s. \nexpected %d but got %d\n", unexpectedBytes, b1, b2)
 	})
 }
 
@@ -102,22 +77,13 @@ func FuzzResponseUnmarshalProto(f *testing.F) {
 			return
 		}
 		b1, err := er.MarshalProto()
-		if err != nil {
-			t.Fatalf("failed to marshal valid struct:  %v", err)
-		}
+		require.NoError(t, err, "failed to marshal valid struct")
 
 		er = NewExportResponse()
-		err = er.UnmarshalProto(b1)
-		if err != nil {
-			t.Fatalf("failed to unmarshal valid bytes:  %v", err)
-		}
+		require.NoError(t, er.UnmarshalProto(b1), "failed to unmarshal valid bytes")
 		b2, err := er.MarshalProto()
-		if err != nil {
-			t.Fatalf("failed to marshal valid struct:  %v", err)
-		}
+		require.NoError(t, err, "failed to marshal valid struct")
 
-		if !bytes.Equal(b1, b2) {
-			t.Fatalf("%s. \nexpected %d but got %d\n", unexpectedBytes, b1, b2)
-		}
+		require.True(t, bytes.Equal(b1, b2), "%s. \nexpected %d but got %d\n", unexpectedBytes, b1, b2)
 	})
 }
