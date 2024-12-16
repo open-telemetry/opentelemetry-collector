@@ -3,7 +3,7 @@
 
 module-sets:
   stable:
-    version: v1.21.0
+    version: v1.22.0
     modules:
       - go.opentelemetry.io/collector/client
       - go.opentelemetry.io/collector/featuregate
