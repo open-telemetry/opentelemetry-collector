@@ -34,10 +34,10 @@ func main() {
 					{{.Name}}.NewFactory(),
 					{{- end}}
 				}, ProviderModules: map[string]string{
-                    {{- range .ConfmapProviders}}
-                    "{{.Name}}": "{{.GoMod}}",
-                    {{- end}}
-                },
+					{{- range .ConfmapProviders}}
+					"{{.Name}}": "{{.GoMod}}",
+					{{- end}}
+				},
 				{{- if .ConfmapConverters }}
 				ConverterFactories: []confmap.ConverterFactory{
 					{{- range .ConfmapConverters}}
