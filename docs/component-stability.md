@@ -66,6 +66,115 @@ Stable components MUST be compatible between minor versions unless critical secu
 component owner MUST provide a migration path and a reasonable time frame for users to upgrade. The same rules from beta
 components apply to stable when it comes to configuration changes.
 
+#### Observability requirements
+
+Stable components should emit enough internal telemetry to let users detect errors, as well as data
+loss and performance issues inside the component, and to help diagnose them if possible.
+
+For extension components, this means some way to monitor errors (for example through logs or span
+events), and some way to monitor performance (for example through spans or histograms). Because
+extensions can be so diverse, the details will be up to the component authors, and no further
+constraints are set out in this document.
+
+For pipeline components however, this section details the kinds of values that should be observable
+via internal telemetry for all stable components.
+
+> [!NOTE]
+> - The following categories MUST all be covered, unless justification is given as to why one may
+>   not be applicable.
+> - However, for each category, many reasonable implementations are possible, as long as the
+>   relevant information can be derived from the emitted telemetry; everything after the basic
+>   category description is a recommendation, and is not normative.
+> - Of course, a component may define additional internal telemetry which is not in this list.
+> - Some of this internal telemetry may already be provided by pipeline auto-instrumentation or
+>   helper modules (such as `receiverhelper`, `scraperhelper`, `processorhelper`, or
+>   `exporterhelper`). Please check the documentation to verify which parts, if any, need to be
+>   implemented manually.
+
+**Definition:** In the following, an "item" refers generically to a single log record, metric point,
+or span.
+
+The internal telemetry of a stable pipeline component should allow observing the following:
+
+1. How much data the component receives.
+
+    For receivers, this could be a metric counting requests, received bytes, scraping attempts, etc.
+
+    For other components, this would typically be the number of items received through the
+    `Consumer` API.
+
+2. How much data the component outputs.
+
+    For exporters, this could be a metric counting requests, sent bytes, etc.
+
+    For other components, this would typically be the number of items forwarded to the next
+    component through the `Consumer` API.
+
+3. How much data is dropped because of errors.
+
+    For receivers, this could include a metric counting payloads that could not be parsed in.
+
+    For receivers and exporters that interact with an external service, this could include a metric
+    counting requests that failed because of network errors.
+
+    For processors, this could be an `outcome` (`success` or `failure`) attribute on a "received
+    items" metric defined for point 1.
+
+    The goal is to be able to easily pinpoint the source of data loss in the Collector pipeline, so
+    this should either:
+    - only include errors internal to the component, or;
+    - allow distinguishing said errors from ones originating in an external service, or propagated
+        from downstream Collector components.
+
+4. Details for error conditions.
+
+    This could be in the form of logs or spans detailing the reason for an error. As much detail as
+    necessary should be provided to ease debugging. Processed signal data should not be included for
+    security and privacy reasons.
+
+5. Other possible discrepancies between input and output, if any. This may include:
+
+    - How much data is dropped as part of normal operation (eg. filtered out).
+
+    - How much data is created by the component.
+
+    - How much data is currently held by the component, and how much can be held if there is a fixed
+        capacity.
+    
+        This would typically be an UpDownCounter keeping track of the size of an internal queue, along
+        with a gauge exposing the queue's capacity.
+
+6. Processing performance.
+
+    This could include spans for each operation of the component, or a histogram of end-to-end
+    component latency.
+    
+    The goal is to be able to easily pinpoint the source of latency in the Collector pipeline, so
+    this should either:
+    - only include time spent processing inside the component, or;
+    - allow distinguishing this latency from that caused by an external service, or from time spent
+        in downstream Collector components.
+    
+    As an application of this, components which hold items in a queue should allow differentiating
+    between time spent processing a batch of data and time where the batch is simply waiting in the
+    queue.
+    
+    If multiple spans are emitted for a given batch (before and after a queue for example), they
+    should either belong to the same trace, or have span links between them, so that they can be
+    correlated.
+
+When measuring amounts of data, it is recommended to use "items" as your unit of measure. Where this
+can't easily be done, any relevant unit may be used, as long as zero is a reliable indicator of the
+absence of data. In any case, all metrics should have a defined unit (not "1").
+
+All internal telemetry emitted by a component should have attributes identifying the specific
+component instance that it originates from. This should follow the same conventions as the
+[pipeline universal telemetry](rfcs/component-universal-telemetry.md).
+
+If data can be dropped/created/held at multiple distinct points in a component's pipeline (eg.
+scraping, validation, processing, etc.), it is recommended to define additional attributes to help
+diagnose the specific source of the discrepancy, or to define different signals for each.
+
 ### Deprecated
 
 The component is planned to be removed in a future version and no further support will be provided. Note that new issues will likely not be worked on. When a component enters "deprecated" mode, it is expected to exist for at least two minor releases. See the component's readme file for more details on when a component will cease to exist.
