@@ -34,6 +34,12 @@ func main() {
 					httpprovider.NewFactory(),
 					httpsprovider.NewFactory(),
 					yamlprovider.NewFactory(),
+				}, ProviderModules: map[string]string{
+					"envprovider":   "go.opentelemetry.io/collector/confmap/provider/envprovider v1.22.0",
+					"fileprovider":  "go.opentelemetry.io/collector/confmap/provider/fileprovider v1.22.0",
+					"httpprovider":  "go.opentelemetry.io/collector/confmap/provider/httpprovider v1.22.0",
+					"httpsprovider": "go.opentelemetry.io/collector/confmap/provider/httpsprovider v1.22.0",
+					"yamlprovider":  "go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.22.0",
 				},
 			},
 		},
