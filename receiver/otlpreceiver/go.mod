@@ -18,15 +18,15 @@ require (
 	go.opentelemetry.io/collector/confmap v1.21.0
 	go.opentelemetry.io/collector/consumer v1.21.0
 	go.opentelemetry.io/collector/consumer/consumererror v0.115.0
-	go.opentelemetry.io/collector/consumer/consumerprofiles v0.115.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.115.0
+	go.opentelemetry.io/collector/consumer/xconsumer v0.0.0-20241215143820-6147243aaaa1
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.115.0
 	go.opentelemetry.io/collector/pdata v1.21.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.115.0
 	go.opentelemetry.io/collector/pdata/testdata v0.115.0
 	go.opentelemetry.io/collector/receiver v0.115.0
-	go.opentelemetry.io/collector/receiver/receiverprofiles v0.115.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.115.0
+	go.opentelemetry.io/collector/receiver/xreceiver v0.0.0-20241215143820-6147243aaaa1
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241007155032-5fefd90f89a9
@@ -117,7 +117,7 @@ replace go.opentelemetry.io/collector/consumer => ../../consumer
 
 replace go.opentelemetry.io/collector/pdata/pprofile => ../../pdata/pprofile
 
-replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../../consumer/consumerprofiles
+replace go.opentelemetry.io/collector/consumer/xconsumer => ../../consumer/xconsumer
 
 replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/consumertest
 
@@ -125,7 +125,7 @@ replace go.opentelemetry.io/collector/client => ../../client
 
 replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
 
-replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../receiverprofiles
+replace go.opentelemetry.io/collector/receiver/xreceiver => ../xreceiver
 
 replace go.opentelemetry.io/collector/receiver/receivertest => ../receivertest
 

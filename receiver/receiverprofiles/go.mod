@@ -5,10 +5,10 @@ go 1.22.0
 require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.115.0
-	go.opentelemetry.io/collector/consumer/consumerprofiles v0.115.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.115.0
-	go.opentelemetry.io/collector/pipeline v0.115.0
+	go.opentelemetry.io/collector/consumer/xconsumer v0.0.0-20241215143820-6147243aaaa1
 	go.opentelemetry.io/collector/receiver v0.115.0
+	go.opentelemetry.io/collector/receiver/xreceiver v0.0.0-20241215143820-6147243aaaa1
 )
 
 require (
@@ -22,6 +22,7 @@ require (
 	go.opentelemetry.io/collector/consumer v1.21.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.21.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.115.0 // indirect
+	go.opentelemetry.io/collector/pipeline v0.115.0 // indirect
 	go.opentelemetry.io/otel v1.32.0 // indirect
 	go.opentelemetry.io/otel/metric v1.32.0 // indirect
 	go.opentelemetry.io/otel/trace v1.32.0 // indirect
@@ -38,13 +39,15 @@ require (
 
 replace go.opentelemetry.io/collector/receiver => ../
 
+replace go.opentelemetry.io/collector/receiver/xreceiver => ../xreceiver
+
 replace go.opentelemetry.io/collector/consumer => ../../consumer
 
 replace go.opentelemetry.io/collector/component => ../../component
 
 replace go.opentelemetry.io/collector/component/componenttest => ../../component/componenttest
 
-replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../../consumer/consumerprofiles
+replace go.opentelemetry.io/collector/consumer/xconsumer => ../../consumer/xconsumer
 
 replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
 

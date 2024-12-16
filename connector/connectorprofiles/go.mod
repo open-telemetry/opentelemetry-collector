@@ -6,14 +6,14 @@ require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.115.0
 	go.opentelemetry.io/collector/connector v0.115.0
+	go.opentelemetry.io/collector/connector/xconnector v0.0.0-20241215143820-6147243aaaa1
 	go.opentelemetry.io/collector/consumer v1.21.0
-	go.opentelemetry.io/collector/consumer/consumerprofiles v0.115.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.115.0
-	go.opentelemetry.io/collector/internal/fanoutconsumer v0.115.0
+	go.opentelemetry.io/collector/consumer/xconsumer v0.0.0-20241215143820-6147243aaaa1
 	go.opentelemetry.io/collector/pdata/pprofile v0.115.0
 	go.opentelemetry.io/collector/pdata/testdata v0.115.0
 	go.opentelemetry.io/collector/pipeline v0.115.0
-	go.opentelemetry.io/collector/pipeline/pipelineprofiles v0.115.0
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.0.0-20241215143820-6147243aaaa1
 )
 
 require (
@@ -24,6 +24,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.115.0 // indirect
+	go.opentelemetry.io/collector/internal/fanoutconsumer v0.115.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.21.0 // indirect
 	go.opentelemetry.io/otel v1.32.0 // indirect
 	go.opentelemetry.io/otel/metric v1.32.0 // indirect
@@ -41,13 +42,15 @@ require (
 
 replace go.opentelemetry.io/collector/connector => ../
 
+replace go.opentelemetry.io/collector/connector/xconnector => ../xconnector
+
 replace go.opentelemetry.io/collector/consumer => ../../consumer
 
 replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/consumertest
 
 replace go.opentelemetry.io/collector/pdata/pprofile => ../../pdata/pprofile
 
-replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../../consumer/consumerprofiles
+replace go.opentelemetry.io/collector/consumer/xconsumer => ../../consumer/xconsumer
 
 replace go.opentelemetry.io/collector/component => ../../component
 
@@ -59,6 +62,6 @@ replace go.opentelemetry.io/collector/pdata/testdata => ../../pdata/testdata
 
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 
-replace go.opentelemetry.io/collector/pipeline/pipelineprofiles => ../../pipeline/pipelineprofiles
+replace go.opentelemetry.io/collector/pipeline/xpipeline => ../../pipeline/xpipeline
 
 replace go.opentelemetry.io/collector/internal/fanoutconsumer => ../../internal/fanoutconsumer

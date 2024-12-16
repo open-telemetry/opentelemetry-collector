@@ -13,12 +13,12 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/pipeline"
-	"go.opentelemetry.io/collector/pipeline/pipelineprofiles"
+	"go.opentelemetry.io/collector/pipeline/xpipeline"
 )
 
 type mutatingProfilesSink struct {
@@ -30,7 +30,7 @@ func (mts *mutatingProfilesSink) Capabilities() consumer.Capabilities {
 }
 
 func TestProfilesRouterMultiplexing(t *testing.T) {
-	var num = 20
+	num := 20
 	for numIDs := 1; numIDs < num; numIDs++ {
 		for numCons := 1; numCons < num; numCons++ {
 			for numProfiles := 1; numProfiles < num; numProfiles++ {
@@ -46,12 +46,12 @@ func TestProfilesRouterMultiplexing(t *testing.T) {
 func fuzzProfiles(numIDs, numCons, numProfiles int) func(*testing.T) {
 	return func(t *testing.T) {
 		allIDs := make([]pipeline.ID, 0, numCons)
-		allCons := make([]consumerprofiles.Profiles, 0, numCons)
-		allConsMap := make(map[pipeline.ID]consumerprofiles.Profiles)
+		allCons := make([]xconsumer.Profiles, 0, numCons)
+		allConsMap := make(map[pipeline.ID]xconsumer.Profiles)
 
 		// If any consumer is mutating, the router must report mutating
 		for i := 0; i < numCons; i++ {
-			allIDs = append(allIDs, pipeline.NewIDWithName(pipelineprofiles.SignalProfiles, "sink_"+strconv.Itoa(numCons)))
+			allIDs = append(allIDs, pipeline.NewIDWithName(xpipeline.SignalProfiles, "sink_"+strconv.Itoa(numCons)))
 			// Random chance for each consumer to be mutating
 			if (numCons+numProfiles+i)%4 == 0 {
 				allCons = append(allCons, &mutatingProfilesSink{ProfilesSink: new(consumertest.ProfilesSink)})
@@ -111,12 +111,12 @@ func TestProfilessRouterConsumer(t *testing.T) {
 	ctx := context.Background()
 	td := testdata.GenerateProfiles(1)
 
-	fooID := pipeline.NewIDWithName(pipelineprofiles.SignalProfiles, "foo")
-	barID := pipeline.NewIDWithName(pipelineprofiles.SignalProfiles, "bar")
+	fooID := pipeline.NewIDWithName(xpipeline.SignalProfiles, "foo")
+	barID := pipeline.NewIDWithName(xpipeline.SignalProfiles, "bar")
 
 	foo := new(consumertest.ProfilesSink)
 	bar := new(consumertest.ProfilesSink)
-	r := NewProfilesRouter(map[pipeline.ID]consumerprofiles.Profiles{fooID: foo, barID: bar})
+	r := NewProfilesRouter(map[pipeline.ID]xconsumer.Profiles{fooID: foo, barID: bar})
 
 	rcs := r.PipelineIDs()
 	assert.Len(t, rcs, 2)
@@ -153,7 +153,7 @@ func TestProfilessRouterConsumer(t *testing.T) {
 	assert.Nil(t, none)
 	require.Error(t, err)
 
-	fake, err := r.Consumer(pipeline.NewIDWithName(pipelineprofiles.SignalProfiles, "fake"))
+	fake, err := r.Consumer(pipeline.NewIDWithName(xpipeline.SignalProfiles, "fake"))
 	assert.Nil(t, fake)
 	assert.Error(t, err)
 }
