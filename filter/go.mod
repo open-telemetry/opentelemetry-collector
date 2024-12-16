@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/confmap v1.21.0
+	go.opentelemetry.io/collector/confmap v1.22.0
 )
 
 require (
