@@ -49,7 +49,8 @@ func TestBatchSender_Merge(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool, tt struct {
 		name          string
 		batcherOption Option
-	}) {
+	},
+	) {
 		t.Run(testName, func(t *testing.T) {
 			resetFeatureGate := setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			be := queueBatchExporter(t, tt.batcherOption)
@@ -78,8 +79,10 @@ func TestBatchSender_Merge(t *testing.T) {
 			time.Sleep(50 * time.Millisecond)
 
 			// should be ignored because of the merge error.
-			require.NoError(t, be.Send(context.Background(), &fakeRequest{items: 3, sink: sink,
-				mergeErr: errors.New("merge error")}))
+			require.NoError(t, be.Send(context.Background(), &fakeRequest{
+				items: 3, sink: sink,
+				mergeErr: errors.New("merge error"),
+			}))
 
 			assert.Equal(t, int64(1), sink.requestsCount.Load())
 			assert.Eventually(t, func() bool {
@@ -130,7 +133,8 @@ func TestBatchSender_BatchExportError(t *testing.T) {
 		batcherOption    Option
 		expectedRequests int64
 		expectedItems    int64
-	}) {
+	},
+	) {
 		t.Run(testName, func(t *testing.T) {
 			resetFeatureGate := setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			be := queueBatchExporter(t, tt.batcherOption)
@@ -200,8 +204,10 @@ func TestBatchSender_MergeOrSplit(t *testing.T) {
 			}, 50*time.Millisecond, 10*time.Millisecond)
 
 			// request that cannot be split should be dropped.
-			require.NoError(t, be.Send(context.Background(), &fakeRequest{items: 11, sink: sink,
-				mergeErr: errors.New("split error")}))
+			require.NoError(t, be.Send(context.Background(), &fakeRequest{
+				items: 11, sink: sink,
+				mergeErr: errors.New("split error"),
+			}))
 
 			// big request should be broken down into two requests, both are sent right away.
 			require.NoError(t, be.Send(context.Background(), &fakeRequest{items: 13, sink: sink}))

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package exporterhelperprofiles
+package xexporterhelper
 
 import (
 	"context"
@@ -144,8 +144,7 @@ func TestExtractProfiles(t *testing.T) {
 }
 
 // dummyRequest implements Request. It is for checking that merging two request types would fail
-type dummyRequest struct {
-}
+type dummyRequest struct{}
 
 func (req *dummyRequest) Export(_ context.Context) error {
 	return nil
@@ -160,6 +159,7 @@ func (req *dummyRequest) Merge(_ context.Context, _ exporterhelper.Request) (exp
 }
 
 func (req *dummyRequest) MergeSplit(_ context.Context, _ exporterbatcher.MaxSizeConfig, _ exporterhelper.Request) (
-	[]exporterhelper.Request, error) {
+	[]exporterhelper.Request, error,
+) {
 	return nil, nil
 }

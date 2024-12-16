@@ -421,8 +421,10 @@ func generateTraceTraffic(t *testing.T, tracer trace.Tracer, te exporter.Traces,
 	}
 }
 
+// nolint: unparam
 func checkWrapSpanForTraces(t *testing.T, sr *tracetest.SpanRecorder, tracer trace.Tracer,
-	te exporter.Traces, wantError error, numSpans int64) { // nolint: unparam
+	te exporter.Traces, wantError error, numSpans int64,
+) {
 	const numRequests = 5
 	generateTraceTraffic(t, tracer, te, numRequests, wantError)
 

@@ -8,9 +8,7 @@ import (
 	"testing"
 )
 
-var (
-	unexpectedBytes = "expected the same bytes from unmarshaling and marshaling."
-)
+var unexpectedBytes = "expected the same bytes from unmarshaling and marshaling."
 
 func FuzzUnmarshalJsonLogs(f *testing.F) {
 	f.Fuzz(func(t *testing.T, data []byte) {

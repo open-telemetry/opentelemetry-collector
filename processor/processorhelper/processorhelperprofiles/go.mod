@@ -7,11 +7,10 @@ require (
 	go.opentelemetry.io/collector/component v0.115.0
 	go.opentelemetry.io/collector/component/componenttest v0.115.0
 	go.opentelemetry.io/collector/consumer v1.21.0
-	go.opentelemetry.io/collector/consumer/consumerprofiles v0.115.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.115.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.115.0
 	go.opentelemetry.io/collector/processor v0.115.0
-	go.opentelemetry.io/collector/processor/processorprofiles v0.115.0
+	go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.0.0-20241215143820-6147243aaaa1
 	go.opentelemetry.io/collector/processor/processortest v0.115.0
 )
 
@@ -27,9 +26,11 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.115.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.115.0 // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.0.0-20241215143820-6147243aaaa1 // indirect
 	go.opentelemetry.io/collector/pdata v1.21.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.115.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.115.0 // indirect
+	go.opentelemetry.io/collector/processor/xprocessor v0.0.0-20241215143820-6147243aaaa1 // indirect
 	go.opentelemetry.io/otel v1.32.0 // indirect
 	go.opentelemetry.io/otel/metric v1.32.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.32.0 // indirect
@@ -56,7 +57,7 @@ replace go.opentelemetry.io/collector/processor => ../../../processor
 
 replace go.opentelemetry.io/collector/consumer => ../../../consumer
 
-replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../../../consumer/consumerprofiles
+replace go.opentelemetry.io/collector/consumer/xconsumer => ../../../consumer/xconsumer
 
 replace go.opentelemetry.io/collector/component => ../../../component
 
@@ -72,4 +73,6 @@ replace go.opentelemetry.io/collector/component/componentstatus => ../../../comp
 
 replace go.opentelemetry.io/collector/processor/processortest => ../../processortest
 
-replace go.opentelemetry.io/collector/processor/processorprofiles => ../../processorprofiles
+replace go.opentelemetry.io/collector/processor/xprocessor => ../../xprocessor
+
+replace go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper => ../xprocessorhelper

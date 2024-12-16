@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.opentelemetry.io/collector/processor/processorprofiles"
+	"go.opentelemetry.io/collector/processor/xprocessor"
 )
 
 func TestNewNopFactory(t *testing.T) {
@@ -49,7 +49,7 @@ func TestNewNopFactory(t *testing.T) {
 	assert.NoError(t, logs.ConsumeLogs(context.Background(), plog.NewLogs()))
 	assert.NoError(t, logs.Shutdown(context.Background()))
 
-	profiles, err := factory.(processorprofiles.Factory).CreateProfiles(context.Background(), NewNopSettings(), cfg, consumertest.NewNop())
+	profiles, err := factory.(xprocessor.Factory).CreateProfiles(context.Background(), NewNopSettings(), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	assert.Equal(t, consumer.Capabilities{MutatesData: false}, profiles.Capabilities())
 	assert.NoError(t, profiles.Start(context.Background(), componenttest.NewNopHost()))

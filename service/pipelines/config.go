@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pipeline"
-	"go.opentelemetry.io/collector/pipeline/pipelineprofiles"
+	"go.opentelemetry.io/collector/pipeline/xpipeline"
 )
 
 var (
@@ -42,7 +42,7 @@ func (cfg Config) Validate() error {
 		switch pipelineID.Signal() {
 		case pipeline.SignalTraces, pipeline.SignalMetrics, pipeline.SignalLogs:
 			// Continue
-		case pipelineprofiles.SignalProfiles:
+		case xpipeline.SignalProfiles:
 			if !serviceProfileSupportGate.IsEnabled() {
 				return fmt.Errorf(
 					"pipeline %q: profiling signal support is at alpha level, gated under the %q feature gate",
