@@ -63,12 +63,12 @@ We use the following rules for some common situations where we split into separa
    `config/configgrpc` and `config/confighttp` are separate modules.
 1. Testing helpers should be in a separate submodule with the suffix `test`. For example, if you
    have a module `component`, the helpers should be in `component/componenttest`.
-1. Experimental packages or groups that will later be merged into another module should be in
-   their own module, named as it will be after integration. For example, if adding profile support
-   to `pdata`, you should add a separate module `pdata/pprofile` for the experimental code.
-1. Experimental code that will be added to an existing stable module can be a submodule with the
-   same name, but prefixed with an `x`. For example, `config/confighttp` module can have an experimental module named
-   `config/confighttp/xconfighttp` that contains experimental APIs.
+1. Experimental packages that will later be added to another module should be in their own module,
+   named as they will be after integration. For example, if adding a `pprofile` package to `pdata`,
+   you should add a separate module `pdata/pprofile` for the experimental code.
+1. Experimental code that will be added to an existing package in a stable module can be a submodule
+   with the same name, but prefixed with an `x`. For example, `config/confighttp` module can have an
+   experimental module named `config/confighttp/xconfighttp` that contains experimental APIs.
 
 When adding a new module remember to update the following:
 1. Add a changelog note for the new module.
