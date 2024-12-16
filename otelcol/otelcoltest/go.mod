@@ -5,11 +5,11 @@ go 1.22.0
 require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.115.0
-	go.opentelemetry.io/collector/confmap v1.21.0
-	go.opentelemetry.io/collector/confmap/provider/envprovider v1.21.0
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.21.0
-	go.opentelemetry.io/collector/confmap/provider/httpprovider v1.21.0
-	go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.21.0
+	go.opentelemetry.io/collector/confmap v1.22.0
+	go.opentelemetry.io/collector/confmap/provider/envprovider v1.22.0
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.22.0
+	go.opentelemetry.io/collector/confmap/provider/httpprovider v1.22.0
+	go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.22.0
 	go.opentelemetry.io/collector/connector v0.115.0
 	go.opentelemetry.io/collector/connector/connectortest v0.115.0
 	go.opentelemetry.io/collector/exporter v0.115.0
@@ -68,15 +68,15 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.115.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.115.0 // indirect
 	go.opentelemetry.io/collector/connector/xconnector v0.0.0-20241215143820-6147243aaaa1 // indirect
-	go.opentelemetry.io/collector/consumer v1.21.0 // indirect
+	go.opentelemetry.io/collector/consumer v1.22.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.115.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.115.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.0.0-20241215143820-6147243aaaa1 // indirect
 	go.opentelemetry.io/collector/exporter/xexporter v0.0.0-20241215143820-6147243aaaa1 // indirect
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.115.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.21.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.22.0 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.115.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.21.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.22.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.115.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.115.0 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.0.0-20241215143820-6147243aaaa1 // indirect
