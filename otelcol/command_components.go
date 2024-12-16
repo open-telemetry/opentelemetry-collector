@@ -31,6 +31,7 @@ type componentsOutput struct {
 	Exporters  []componentWithStability
 	Connectors []componentWithStability
 	Extensions []componentWithStability
+	Providers  []string
 }
 
 // newComponentsCommand constructs a new components command using the given CollectorSettings.
@@ -109,6 +110,14 @@ func newComponentsCommand(set CollectorSettings) *cobra.Command {
 				})
 			}
 			components.BuildInfo = set.BuildInfo
+
+			confmapProviderFactories := set.ConfigProviderSettings.ResolverSettings.ProviderFactories
+			for _, confmapProvider := range confmapProviderFactories {
+				provider := confmapProvider.Create(set.ConfigProviderSettings.ResolverSettings.ProviderSettings)
+				scheme := provider.Scheme()
+				components.Providers = append(components.Providers, scheme)
+			}
+
 			yamlData, err := yaml.Marshal(components)
 			if err != nil {
 				return err
