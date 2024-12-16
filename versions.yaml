@@ -21,7 +21,7 @@ module-sets:
       - go.opentelemetry.io/collector/config/confignet
       - go.opentelemetry.io/collector/consumer
   beta:
-    version: v0.115.0
+    version: v0.116.0
     modules:
       - go.opentelemetry.io/collector
       - go.opentelemetry.io/collector/internal/memorylimiter
