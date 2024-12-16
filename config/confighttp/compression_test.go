@@ -41,7 +41,7 @@ func TestHTTPClientCompression(t *testing.T) {
 	tests := []struct {
 		name        string
 		encoding    configcompression.Type
-		enclevel    configcompression.Level
+		level       configcompression.Level
 		reqBody     []byte
 		shouldError bool
 	}{
@@ -60,28 +60,35 @@ func TestHTTPClientCompression(t *testing.T) {
 		{
 			name:        "ValidGzip",
 			encoding:    configcompression.TypeGzip,
-			enclevel:    gzip.BestSpeed,
+			level:       gzip.BestSpeed,
 			reqBody:     compressedGzipBody.Bytes(),
 			shouldError: false,
 		},
 		{
 			name:        "InvalidGzip",
 			encoding:    configcompression.TypeGzip,
-			enclevel:    invalidGzipLevel,
+			level:       invalidGzipLevel,
+			reqBody:     compressedGzipBody.Bytes(),
+			shouldError: true,
+		},
+		{
+			name:        "InvalidCompression",
+			encoding:    configcompression.Type("invalid"),
+			level:       invalidGzipLevel,
 			reqBody:     compressedGzipBody.Bytes(),
 			shouldError: true,
 		},
 		{
 			name:        "ValidZlib",
 			encoding:    configcompression.TypeZlib,
-			enclevel:    gzip.BestSpeed,
+			level:       gzip.BestSpeed,
 			reqBody:     compressedZlibBody.Bytes(),
 			shouldError: false,
 		},
 		{
 			name:        "ValidDeflate",
 			encoding:    configcompression.TypeDeflate,
-			enclevel:    gzip.BestSpeed,
+			level:       gzip.BestSpeed,
 			reqBody:     compressedDeflateBody.Bytes(),
 			shouldError: false,
 		},
@@ -94,7 +101,7 @@ func TestHTTPClientCompression(t *testing.T) {
 		{
 			name:        "ValidZstd",
 			encoding:    configcompression.TypeZstd,
-			enclevel:    gzip.BestSpeed,
+			level:       gzip.BestSpeed,
 			reqBody:     compressedZstdBody.Bytes(),
 			shouldError: false,
 		},
@@ -119,18 +126,15 @@ func TestHTTPClientCompression(t *testing.T) {
 
 			req, err := http.NewRequest(http.MethodGet, srv.URL, reqBody)
 			require.NoError(t, err, "failed to create request to test handler")
-			compressionType := tt.encoding
-			err = compressionType.UnmarshalText([]byte(tt.encoding))
-			require.NoError(t, err)
 			clientSettings := ClientConfig{
 				Endpoint:          srv.URL,
 				Compression:       tt.encoding,
-				CompressionParams: newCompressionParams(tt.enclevel),
+				CompressionParams: newCompressionParams(tt.level),
 			}
 			err = clientSettings.Validate()
 			if tt.shouldError {
 				require.Error(t, err)
-				message := fmt.Sprintf("unsupported compression type and level %s - %d", tt.encoding, tt.enclevel)
+				message := fmt.Sprintf("unsupported compression type and level %s - %d", tt.encoding, tt.level)
 				assert.Equal(t, message, err.Error())
 				return
 			}
@@ -138,7 +142,7 @@ func TestHTTPClientCompression(t *testing.T) {
 			require.NoError(t, err)
 			res, err := client.Do(req)
 			if tt.shouldError {
-				require.Error(t, err)
+				assert.Error(t, err)
 				return
 			}
 			require.NoError(t, err)
