@@ -7,14 +7,13 @@ import (
 	"context"
 	"errors"
 
-	"go.opentelemetry.io/collector/pdata/plog"
-
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/internal"
 	"go.opentelemetry.io/collector/receiver/scraperhelper/internal/metadata"
