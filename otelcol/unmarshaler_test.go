@@ -157,7 +157,7 @@ func TestServiceUnmarshalError(t *testing.T) {
 					},
 				},
 			}),
-			expectError: "error decoding 'telemetry': decoding failed due to the following error(s):\n\nerror decoding 'logs.level': unrecognized level: \"UNKNOWN\"",
+			expectError: "error decoding 'telemetry': decoding failed due to the following error(s):\n\nerror decoding 'logs': decoding failed due to the following error(s):\n\nerror decoding 'level': unrecognized level: \"UNKNOWN\"",
 		},
 		{
 			name: "invalid-metrics-level",
@@ -168,7 +168,7 @@ func TestServiceUnmarshalError(t *testing.T) {
 					},
 				},
 			}),
-			expectError: "error decoding 'telemetry': decoding failed due to the following error(s):\n\nerror decoding 'metrics.level': unknown metrics level \"unknown\"",
+			expectError: "error decoding 'telemetry': decoding failed due to the following error(s):\n\nerror decoding 'metrics': decoding failed due to the following error(s):\n\nerror decoding 'level': unknown metrics level \"unknown\"",
 		},
 		{
 			name: "invalid-service-extensions-section",
