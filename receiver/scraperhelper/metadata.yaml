@@ -28,3 +28,23 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+
+    scraper_scraped_log_records:
+      enabled: true
+      stability:
+        level: alpha
+      description: Number of log records successfully scraped.
+      unit: "{datapoints}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    scraper_errored_log_records:
+      enabled: true
+      stability:
+        level: alpha
+      description: Number of log records that were unable to be scraped.
+      unit: "{datapoints}"
+      sum:
+        value_type: int
+        monotonic: true
