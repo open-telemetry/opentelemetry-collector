@@ -78,7 +78,6 @@ module-sets:
       - go.opentelemetry.io/collector/processor/batchprocessor
       - go.opentelemetry.io/collector/processor/memorylimiterprocessor
       - go.opentelemetry.io/collector/processor/processorprofiles
-      - go.opentelemetry.io/collector/processor/processorhelper/processorhelperprofiles
       - go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper
       - go.opentelemetry.io/collector/processor/xprocessor
       - go.opentelemetry.io/collector/receiver
