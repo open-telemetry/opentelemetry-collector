@@ -33,7 +33,11 @@ func main() {
 					{{- range .ConfmapProviders}}
 					{{.Name}}.NewFactory(),
 					{{- end}}
-				},
+				}, ProviderModules: map[string]string{
+                    {{- range .ConfmapProviders}}
+                    "{{.Name}}": "{{.GoMod}}",
+                    {{- end}}
+                },
 				{{- if .ConfmapConverters }}
 				ConverterFactories: []confmap.ConverterFactory{
 					{{- range .ConfmapConverters}}
