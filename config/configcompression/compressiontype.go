@@ -3,9 +3,7 @@
 
 package configcompression // import "go.opentelemetry.io/collector/config/configcompression"
 
-import (
-	"fmt"
-)
+import "fmt"
 
 // Type represents a compression method
 type Type string
@@ -17,15 +15,14 @@ type CompressionParams struct {
 }
 
 const (
-	TypeGzip    Type  = "gzip"
-	TypeZlib    Type  = "zlib"
-	TypeDeflate Type  = "deflate"
-	TypeSnappy  Type  = "snappy"
-	TypeZstd    Type  = "zstd"
-	TypeLz4     Type  = "lz4"
-	TypeNone    Type  = "none"
-	TypeEmpty   Type  = ""
-	LevelNone   Level = 0
+	TypeGzip    Type = "gzip"
+	TypeZlib    Type = "zlib"
+	TypeDeflate Type = "deflate"
+	TypeSnappy  Type = "snappy"
+	TypeZstd    Type = "zstd"
+	TypeLz4     Type = "lz4"
+	TypeNone    Type = "none"
+	TypeEmpty   Type = ""
 )
 
 // IsCompressed returns false if CompressionType is nil, none, or empty.

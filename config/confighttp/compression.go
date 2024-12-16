@@ -23,7 +23,7 @@ import (
 type compressRoundTripper struct {
 	rt                http.RoundTripper
 	compressionType   configcompression.Type
-	CompressionParams configcompression.CompressionParams
+	compressionParams configcompression.CompressionParams
 	compressor        *compressor
 }
 
@@ -91,7 +91,7 @@ func newCompressRoundTripper(rt http.RoundTripper, compressionType configcompres
 	return &compressRoundTripper{
 		rt:                rt,
 		compressionType:   compressionType,
-		CompressionParams: compressionParams,
+		compressionParams: compressionParams,
 		compressor:        encoder,
 	}, nil
 }

@@ -144,10 +144,8 @@ func NewDefaultClientConfig() ClientConfig {
 // Checks the validity of zlib/gzip/flate compression levels
 func isValidLevel(level configcompression.Level) bool {
 	return level == zlib.DefaultCompression ||
-		level == configcompression.LevelNone ||
 		level == zlib.HuffmanOnly ||
 		level == zlib.NoCompression ||
-		level == zlib.BestSpeed ||
 		(level >= zlib.BestSpeed && level <= zlib.BestCompression)
 }
 
