@@ -41,12 +41,12 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumerprofiles v0.115.0 // indirect
-	go.opentelemetry.io/collector/exporter/exporterprofiles v0.115.0 // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.0.0-20241215143820-6147243aaaa1 // indirect
+	go.opentelemetry.io/collector/exporter/xexporter v0.0.0-20241215143820-6147243aaaa1 // indirect
 	go.opentelemetry.io/collector/extension v0.115.0 // indirect
 	go.opentelemetry.io/collector/receiver v0.115.0 // indirect
-	go.opentelemetry.io/collector/receiver/receiverprofiles v0.115.0 // indirect
 	go.opentelemetry.io/collector/receiver/receivertest v0.115.0 // indirect
+	go.opentelemetry.io/collector/receiver/xreceiver v0.0.0-20241215143820-6147243aaaa1 // indirect
 	golang.org/x/net v0.29.0 // indirect
 	golang.org/x/sys v0.27.0 // indirect
 	golang.org/x/text v0.18.0 // indirect
@@ -82,15 +82,15 @@ replace go.opentelemetry.io/collector/config/configretry => ../config/configretr
 
 replace go.opentelemetry.io/collector/config/configtelemetry => ../config/configtelemetry
 
-replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../consumer/consumerprofiles
+replace go.opentelemetry.io/collector/consumer/xconsumer => ../consumer/xconsumer
 
 replace go.opentelemetry.io/collector/consumer/consumertest => ../consumer/consumertest
 
-replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../receiver/receiverprofiles
+replace go.opentelemetry.io/collector/receiver/xreceiver => ../receiver/xreceiver
 
 replace go.opentelemetry.io/collector/receiver/receivertest => ../receiver/receivertest
 
-replace go.opentelemetry.io/collector/exporter/exporterprofiles => ./exporterprofiles
+replace go.opentelemetry.io/collector/exporter/xexporter => ./xexporter
 
 replace go.opentelemetry.io/collector/exporter/exportertest => ./exportertest
 

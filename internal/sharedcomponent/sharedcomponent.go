@@ -102,8 +102,10 @@ func (c *Component[V]) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-var _ component.Host = (*hostWrapper)(nil)
-var _ componentstatus.Reporter = (*hostWrapper)(nil)
+var (
+	_ component.Host           = (*hostWrapper)(nil)
+	_ componentstatus.Reporter = (*hostWrapper)(nil)
+)
 
 type hostWrapper struct {
 	host           component.Host

@@ -9,19 +9,17 @@ require (
 	go.opentelemetry.io/collector/config/configretry v1.21.0
 	go.opentelemetry.io/collector/consumer v1.21.0
 	go.opentelemetry.io/collector/consumer/consumererror v0.115.0
-	go.opentelemetry.io/collector/consumer/consumererror/consumererrorprofiles v0.115.0
-	go.opentelemetry.io/collector/consumer/consumerprofiles v0.115.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.115.0
+	go.opentelemetry.io/collector/consumer/xconsumer v0.0.0-20241215143820-6147243aaaa1
 	go.opentelemetry.io/collector/exporter v0.115.0
-	go.opentelemetry.io/collector/exporter/exporterprofiles v0.115.0
+	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.0.0-20241215143820-6147243aaaa1
 	go.opentelemetry.io/collector/exporter/exportertest v0.115.0
+	go.opentelemetry.io/collector/exporter/xexporter v0.0.0-20241215143820-6147243aaaa1
 	go.opentelemetry.io/collector/pdata/pprofile v0.115.0
 	go.opentelemetry.io/collector/pdata/testdata v0.115.0
-	go.opentelemetry.io/collector/pipeline/pipelineprofiles v0.115.0
 	go.opentelemetry.io/otel v1.32.0
 	go.opentelemetry.io/otel/sdk v1.32.0
 	go.opentelemetry.io/otel/trace v1.32.0
-	go.uber.org/zap v1.27.0
 )
 
 require (
@@ -37,17 +35,20 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.115.0 // indirect
+	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.0.0-20241215143820-6147243aaaa1 // indirect
 	go.opentelemetry.io/collector/extension v0.115.0 // indirect
 	go.opentelemetry.io/collector/extension/experimental/storage v0.115.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.21.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.21.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.115.0 // indirect
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.0.0-20241215143820-6147243aaaa1 // indirect
 	go.opentelemetry.io/collector/receiver v0.115.0 // indirect
-	go.opentelemetry.io/collector/receiver/receiverprofiles v0.115.0 // indirect
 	go.opentelemetry.io/collector/receiver/receivertest v0.115.0 // indirect
+	go.opentelemetry.io/collector/receiver/xreceiver v0.0.0-20241215143820-6147243aaaa1 // indirect
 	go.opentelemetry.io/otel/metric v1.32.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.32.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
+	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/net v0.29.0 // indirect
 	golang.org/x/sys v0.27.0 // indirect
 	golang.org/x/text v0.18.0 // indirect
@@ -67,17 +68,17 @@ replace go.opentelemetry.io/collector/exporter => ../../
 
 replace go.opentelemetry.io/collector/consumer => ../../../consumer
 
-replace go.opentelemetry.io/collector/consumer/consumererror/consumererrorprofiles => ../../../consumer/consumererror/consumererrorprofiles
+replace go.opentelemetry.io/collector/consumer/consumererror/xconsumererror => ../../../consumer/consumererror/xconsumererror
 
 replace go.opentelemetry.io/collector/receiver => ../../../receiver
 
-replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../../../consumer/consumerprofiles
+replace go.opentelemetry.io/collector/consumer/xconsumer => ../../../consumer/xconsumer
 
 replace go.opentelemetry.io/collector/component => ../../../component
 
 replace go.opentelemetry.io/collector/component/componenttest => ../../../component/componenttest
 
-replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../../../receiver/receiverprofiles
+replace go.opentelemetry.io/collector/receiver/xreceiver => ../../../receiver/xreceiver
 
 replace go.opentelemetry.io/collector/receiver/receivertest => ../../../receiver/receivertest
 
@@ -85,19 +86,21 @@ replace go.opentelemetry.io/collector/extension => ../../../extension
 
 replace go.opentelemetry.io/collector/pdata => ../../../pdata
 
-replace go.opentelemetry.io/collector/exporter/exporterprofiles => ../../exporterprofiles
+replace go.opentelemetry.io/collector/exporter/xexporter => ../../xexporter
 
 replace go.opentelemetry.io/collector/config/configtelemetry => ../../../config/configtelemetry
 
 replace go.opentelemetry.io/collector/config/configretry => ../../../config/configretry
 
-replace go.opentelemetry.io/collector/pipeline/pipelineprofiles => ../../../pipeline/pipelineprofiles
+replace go.opentelemetry.io/collector/pipeline/xpipeline => ../../../pipeline/xpipeline
 
 replace go.opentelemetry.io/collector/extension/experimental/storage => ../../../extension/experimental/storage
 
 replace go.opentelemetry.io/collector/pipeline => ../../../pipeline
 
 replace go.opentelemetry.io/collector/exporter/exportertest => ../../exportertest
+
+replace go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper => ../xexporterhelper
 
 replace go.opentelemetry.io/collector/consumer/consumererror => ../../../consumer/consumererror
 

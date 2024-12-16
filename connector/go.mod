@@ -24,7 +24,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.115.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumerprofiles v0.115.0 // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.0.0-20241215143820-6147243aaaa1 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.115.0 // indirect
 	go.opentelemetry.io/otel v1.32.0 // indirect
 	go.opentelemetry.io/otel/metric v1.32.0 // indirect
@@ -51,7 +51,7 @@ replace go.opentelemetry.io/collector/pdata/testdata => ../pdata/testdata
 
 replace go.opentelemetry.io/collector/pdata/pprofile => ../pdata/pprofile
 
-replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../consumer/consumerprofiles
+replace go.opentelemetry.io/collector/consumer/xconsumer => ../consumer/xconsumer
 
 replace go.opentelemetry.io/collector/consumer/consumertest => ../consumer/consumertest
 

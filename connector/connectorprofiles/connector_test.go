@@ -14,10 +14,10 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/internal"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pipeline"
-	"go.opentelemetry.io/collector/pipeline/pipelineprofiles"
+	"go.opentelemetry.io/collector/pipeline/xpipeline"
 )
 
 var (
@@ -32,18 +32,18 @@ func TestNewFactoryNoOptions(t *testing.T) {
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
 	_, err := factory.CreateTracesToProfiles(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.Equal(t, err, internal.ErrDataTypes(testID, pipeline.SignalTraces, pipelineprofiles.SignalProfiles))
+	assert.Equal(t, err, internal.ErrDataTypes(testID, pipeline.SignalTraces, xpipeline.SignalProfiles))
 	_, err = factory.CreateMetricsToProfiles(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.Equal(t, err, internal.ErrDataTypes(testID, pipeline.SignalMetrics, pipelineprofiles.SignalProfiles))
+	assert.Equal(t, err, internal.ErrDataTypes(testID, pipeline.SignalMetrics, xpipeline.SignalProfiles))
 	_, err = factory.CreateLogsToProfiles(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.Equal(t, err, internal.ErrDataTypes(testID, pipeline.SignalLogs, pipelineprofiles.SignalProfiles))
+	assert.Equal(t, err, internal.ErrDataTypes(testID, pipeline.SignalLogs, xpipeline.SignalProfiles))
 
 	_, err = factory.CreateProfilesToTraces(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.Equal(t, err, internal.ErrDataTypes(testID, pipelineprofiles.SignalProfiles, pipeline.SignalTraces))
+	assert.Equal(t, err, internal.ErrDataTypes(testID, xpipeline.SignalProfiles, pipeline.SignalTraces))
 	_, err = factory.CreateProfilesToMetrics(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.Equal(t, err, internal.ErrDataTypes(testID, pipelineprofiles.SignalProfiles, pipeline.SignalMetrics))
+	assert.Equal(t, err, internal.ErrDataTypes(testID, xpipeline.SignalProfiles, pipeline.SignalMetrics))
 	_, err = factory.CreateProfilesToLogs(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.Equal(t, err, internal.ErrDataTypes(testID, pipelineprofiles.SignalProfiles, pipeline.SignalLogs))
+	assert.Equal(t, err, internal.ErrDataTypes(testID, xpipeline.SignalProfiles, pipeline.SignalLogs))
 }
 
 func TestNewFactoryWithSameTypes(t *testing.T) {
@@ -59,11 +59,11 @@ func TestNewFactoryWithSameTypes(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = factory.CreateProfilesToTraces(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.Equal(t, err, internal.ErrDataTypes(testID, pipelineprofiles.SignalProfiles, pipeline.SignalTraces))
+	assert.Equal(t, err, internal.ErrDataTypes(testID, xpipeline.SignalProfiles, pipeline.SignalTraces))
 	_, err = factory.CreateProfilesToMetrics(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.Equal(t, err, internal.ErrDataTypes(testID, pipelineprofiles.SignalProfiles, pipeline.SignalMetrics))
+	assert.Equal(t, err, internal.ErrDataTypes(testID, xpipeline.SignalProfiles, pipeline.SignalMetrics))
 	_, err = factory.CreateProfilesToLogs(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.Equal(t, err, internal.ErrDataTypes(testID, pipelineprofiles.SignalProfiles, pipeline.SignalLogs))
+	assert.Equal(t, err, internal.ErrDataTypes(testID, xpipeline.SignalProfiles, pipeline.SignalLogs))
 }
 
 func TestNewFactoryWithTranslateTypes(t *testing.T) {
@@ -81,7 +81,7 @@ func TestNewFactoryWithTranslateTypes(t *testing.T) {
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
 	_, err := factory.CreateProfilesToProfiles(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
-	assert.Equal(t, err, internal.ErrDataTypes(testID, pipelineprofiles.SignalProfiles, pipelineprofiles.SignalProfiles))
+	assert.Equal(t, err, internal.ErrDataTypes(testID, xpipeline.SignalProfiles, xpipeline.SignalProfiles))
 
 	assert.Equal(t, component.StabilityLevelBeta, factory.TracesToProfilesStability())
 	_, err = factory.CreateTracesToProfiles(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
@@ -119,28 +119,30 @@ type nopConnector struct {
 	consumertest.Consumer
 }
 
-func createTracesToProfiles(context.Context, connector.Settings, component.Config, consumerprofiles.Profiles) (connector.Traces, error) {
+func createTracesToProfiles(context.Context, connector.Settings, component.Config, xconsumer.Profiles) (connector.Traces, error) {
 	return nopInstance, nil
 }
 
-func createMetricsToProfiles(context.Context, connector.Settings, component.Config, consumerprofiles.Profiles) (connector.Metrics, error) {
+func createMetricsToProfiles(context.Context, connector.Settings, component.Config, xconsumer.Profiles) (connector.Metrics, error) {
 	return nopInstance, nil
 }
 
-func createLogsToProfiles(context.Context, connector.Settings, component.Config, consumerprofiles.Profiles) (connector.Logs, error) {
+func createLogsToProfiles(context.Context, connector.Settings, component.Config, xconsumer.Profiles) (connector.Logs, error) {
 	return nopInstance, nil
 }
 
-func createProfilesToProfiles(context.Context, connector.Settings, component.Config, consumerprofiles.Profiles) (Profiles, error) {
+func createProfilesToProfiles(context.Context, connector.Settings, component.Config, xconsumer.Profiles) (Profiles, error) {
 	return nopInstance, nil
 }
 
 func createProfilesToTraces(context.Context, connector.Settings, component.Config, consumer.Traces) (Profiles, error) {
 	return nopInstance, nil
 }
+
 func createProfilesToMetrics(context.Context, connector.Settings, component.Config, consumer.Metrics) (Profiles, error) {
 	return nopInstance, nil
 }
+
 func createProfilesToLogs(context.Context, connector.Settings, component.Config, consumer.Logs) (Profiles, error) {
 	return nopInstance, nil
 }

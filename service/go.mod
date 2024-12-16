@@ -17,14 +17,14 @@ require (
 	go.opentelemetry.io/collector/config/configtelemetry v0.115.0
 	go.opentelemetry.io/collector/confmap v1.21.0
 	go.opentelemetry.io/collector/connector v0.115.0
-	go.opentelemetry.io/collector/connector/connectorprofiles v0.115.0
 	go.opentelemetry.io/collector/connector/connectortest v0.115.0
+	go.opentelemetry.io/collector/connector/xconnector v0.0.0-20241215143820-6147243aaaa1
 	go.opentelemetry.io/collector/consumer v1.21.0
-	go.opentelemetry.io/collector/consumer/consumerprofiles v0.115.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.115.0
+	go.opentelemetry.io/collector/consumer/xconsumer v0.0.0-20241215143820-6147243aaaa1
 	go.opentelemetry.io/collector/exporter v0.115.0
-	go.opentelemetry.io/collector/exporter/exporterprofiles v0.115.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.115.0
+	go.opentelemetry.io/collector/exporter/xexporter v0.0.0-20241215143820-6147243aaaa1
 	go.opentelemetry.io/collector/extension v0.115.0
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.115.0
 	go.opentelemetry.io/collector/extension/extensiontest v0.115.0
@@ -35,13 +35,13 @@ require (
 	go.opentelemetry.io/collector/pdata/pprofile v0.115.0
 	go.opentelemetry.io/collector/pdata/testdata v0.115.0
 	go.opentelemetry.io/collector/pipeline v0.115.0
-	go.opentelemetry.io/collector/pipeline/pipelineprofiles v0.115.0
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.0.0-20241215143820-6147243aaaa1
 	go.opentelemetry.io/collector/processor v0.115.0
-	go.opentelemetry.io/collector/processor/processorprofiles v0.115.0
 	go.opentelemetry.io/collector/processor/processortest v0.115.0
+	go.opentelemetry.io/collector/processor/xprocessor v0.0.0-20241215143820-6147243aaaa1
 	go.opentelemetry.io/collector/receiver v0.115.0
-	go.opentelemetry.io/collector/receiver/receiverprofiles v0.115.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.115.0
+	go.opentelemetry.io/collector/receiver/xreceiver v0.0.0-20241215143820-6147243aaaa1
 	go.opentelemetry.io/collector/semconv v0.115.0
 	go.opentelemetry.io/contrib/bridges/otelzap v0.6.0
 	go.opentelemetry.io/contrib/config v0.10.0
@@ -187,27 +187,27 @@ replace go.opentelemetry.io/collector/config/configcompression => ../config/conf
 
 replace go.opentelemetry.io/collector/pdata/pprofile => ../pdata/pprofile
 
-replace go.opentelemetry.io/collector/consumer/consumerprofiles => ../consumer/consumerprofiles
+replace go.opentelemetry.io/collector/consumer/xconsumer => ../consumer/xconsumer
 
 replace go.opentelemetry.io/collector/consumer/consumertest => ../consumer/consumertest
 
 replace go.opentelemetry.io/collector/client => ../client
 
-replace go.opentelemetry.io/collector/receiver/receiverprofiles => ../receiver/receiverprofiles
+replace go.opentelemetry.io/collector/receiver/xreceiver => ../receiver/xreceiver
 
 replace go.opentelemetry.io/collector/receiver/receivertest => ../receiver/receivertest
 
-replace go.opentelemetry.io/collector/processor/processorprofiles => ../processor/processorprofiles
+replace go.opentelemetry.io/collector/processor/xprocessor => ../processor/xprocessor
 
-replace go.opentelemetry.io/collector/exporter/exporterprofiles => ../exporter/exporterprofiles
+replace go.opentelemetry.io/collector/exporter/xexporter => ../exporter/xexporter
 
-replace go.opentelemetry.io/collector/pipeline/pipelineprofiles => ../pipeline/pipelineprofiles
+replace go.opentelemetry.io/collector/pipeline/xpipeline => ../pipeline/xpipeline
 
 replace go.opentelemetry.io/collector/exporter/exportertest => ../exporter/exportertest
 
 replace go.opentelemetry.io/collector/consumer/consumererror => ../consumer/consumererror
 
-replace go.opentelemetry.io/collector/connector/connectorprofiles => ../connector/connectorprofiles
+replace go.opentelemetry.io/collector/connector/xconnector => ../connector/xconnector
 
 replace go.opentelemetry.io/collector/internal/fanoutconsumer => ../internal/fanoutconsumer
 
