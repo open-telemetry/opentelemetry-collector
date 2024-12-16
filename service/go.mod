@@ -15,11 +15,11 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.115.0
 	go.opentelemetry.io/collector/config/confighttp v0.115.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.115.0
-	go.opentelemetry.io/collector/confmap v1.21.0
+	go.opentelemetry.io/collector/confmap v1.22.0
 	go.opentelemetry.io/collector/connector v0.115.0
 	go.opentelemetry.io/collector/connector/connectortest v0.115.0
 	go.opentelemetry.io/collector/connector/xconnector v0.0.0-20241215143820-6147243aaaa1
-	go.opentelemetry.io/collector/consumer v1.21.0
+	go.opentelemetry.io/collector/consumer v1.22.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.115.0
 	go.opentelemetry.io/collector/consumer/xconsumer v0.0.0-20241215143820-6147243aaaa1
 	go.opentelemetry.io/collector/exporter v0.115.0
@@ -29,9 +29,9 @@ require (
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.115.0
 	go.opentelemetry.io/collector/extension/extensiontest v0.115.0
 	go.opentelemetry.io/collector/extension/zpagesextension v0.115.0
-	go.opentelemetry.io/collector/featuregate v1.21.0
+	go.opentelemetry.io/collector/featuregate v1.22.0
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.115.0
-	go.opentelemetry.io/collector/pdata v1.21.0
+	go.opentelemetry.io/collector/pdata v1.22.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.115.0
 	go.opentelemetry.io/collector/pdata/testdata v0.115.0
 	go.opentelemetry.io/collector/pipeline v0.115.0
@@ -98,11 +98,11 @@ require (
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
-	go.opentelemetry.io/collector/client v1.21.0 // indirect
+	go.opentelemetry.io/collector/client v1.22.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.115.0 // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.21.0 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.21.0 // indirect
-	go.opentelemetry.io/collector/config/configtls v1.21.0 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.22.0 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.22.0 // indirect
+	go.opentelemetry.io/collector/config/configtls v1.22.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.115.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.115.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.115.0 // indirect
