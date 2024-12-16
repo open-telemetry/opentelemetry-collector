@@ -26,26 +26,6 @@ import (
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 )
 
-//type testInitialize struct {
-//	ch  chan bool
-//	err error
-//}
-
-//func (ts *testInitialize) start(context.Context, component.Host) error {
-//	ts.ch <- true
-//	return ts.err
-//}
-//
-//type testClose struct {
-//	ch  chan bool
-//	err error
-//}
-
-//func (ts *testClose) shutdown(context.Context) error {
-//	ts.ch <- true
-//	return ts.err
-//}
-
 type testScrapeLogs struct {
 	ch                chan int
 	timesScrapeCalled int
@@ -64,13 +44,6 @@ func (ts *testScrapeLogs) scrape(context.Context) (plog.Logs, error) {
 	md.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("test")
 	return md, nil
 }
-
-//func newTestNoDelaySettings() *ControllerConfig {
-//	return &ControllerConfig{
-//		CollectionInterval: time.Second,
-//		InitialDelay:       0,
-//	}
-//}
 
 type logsTestCase struct {
 	name string
@@ -237,20 +210,6 @@ func getLogsExpectedShutdownErr(test logsTestCase) error {
 	}
 
 	return errs
-}
-
-func assertLogsChannelsCalled(t *testing.T, chs []chan bool, message string) {
-	for _, ic := range chs {
-		assertChannelCalled(t, ic, message)
-	}
-}
-
-func assertLogsChannelCalled(t *testing.T, ch chan bool, message string) {
-	select {
-	case <-ch:
-	default:
-		assert.Fail(t, message)
-	}
 }
 
 func assertLogsReceiverSpan(t *testing.T, spans []sdktrace.ReadOnlySpan) {
