@@ -39,8 +39,7 @@ type ResolverSettings struct {
 	// It is required to have at least one factory.
 	ProviderFactories []ProviderFactory
 
-	// ProviderFactories is a slice of Provider factories.
-	// It is required to have at least one factory.
+	// ProviderModules maps provider types to their respective go modules.
 	ProviderModules map[string]string
 
 	// DefaultScheme is the scheme that is used if ${} syntax is used but no schema is provided.
