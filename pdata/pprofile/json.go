@@ -167,9 +167,9 @@ func (p Profile) unmarshalJsoniter(iter *jsoniter.Iterator) {
 			})
 		case "defaultSampleTypeStrindex", "default_sample_type_strindex":
 			p.orig.DefaultSampleTypeStrindex = json.ReadInt32(iter)
-		case "attributes":
+		case "attributeIndices", "attribute_indices":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				p.orig.Attributes = append(p.orig.Attributes, json.ReadAttribute(iter))
+				p.AttributeIndices().Append(json.ReadInt32(iter))
 				return true
 			})
 		case "droppedAttributesCount", "dropped_attributes_count":
