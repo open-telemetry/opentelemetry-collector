@@ -57,10 +57,6 @@ test-with-cover: $(GOTESTSUM)
 	$(GOTESTSUM) --packages="./..." -- $(GOTEST_OPT) -cover ./... -covermode=atomic -coverpkg $(COVER_PKGS) -args -test.gocoverdir="$(PWD)/coverage/unit"
 
 .PHONY: benchmark
-benchmark:
-	$(GOTEST) -bench=. -run=notests ./... | tee benchmark.txt
-
-.PHONY: benchmark
 benchmark: $(GOTESTSUM)
 	$(GOTESTSUM) --packages="$(ALL_PKGS)" -- -bench=. -run=notests ./... | tee benchmark.txt
 
