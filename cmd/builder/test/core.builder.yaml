@@ -45,7 +45,6 @@ replaces:
   - go.opentelemetry.io/collector/connector/xconnector => ${WORKSPACE_DIR}/connector/xconnector
   - go.opentelemetry.io/collector/exporter => ${WORKSPACE_DIR}/exporter
   - go.opentelemetry.io/collector/exporter/debugexporter => ${WORKSPACE_DIR}/exporter/debugexporter
-  - go.opentelemetry.io/collector/exporter/exporterprofiles => ${WORKSPACE_DIR}/exporter/exporterprofiles
   - go.opentelemetry.io/collector/exporter/xexporter => ${WORKSPACE_DIR}/exporter/xexporter
   - go.opentelemetry.io/collector/exporter/exportertest => ${WORKSPACE_DIR}/exporter/exportertest
   - go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper => ${WORKSPACE_DIR}/exporter/exporterhelper/xexporterhelper
