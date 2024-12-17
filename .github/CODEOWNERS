@@ -34,7 +34,6 @@ consumer/xconsumer                      @open-telemetry/collector-approvers @mx-
 connector/connectorprofiles             @open-telemetry/collector-approvers @mx-psi @dmathieu
 connector/xconnector                    @open-telemetry/collector-approvers @mx-psi @dmathieu
 exporter/exporterhelper/xexporterhelper @open-telemetry/collector-approvers @mx-psi @dmathieu
-exporter/exporterprofiles               @open-telemetry/collector-approvers @mx-psi @dmathieu
 exporter/xexporter                      @open-telemetry/collector-approvers @mx-psi @dmathieu
 processor/processorprofiles             @open-telemetry/collector-approvers @mx-psi @dmathieu
 processor/xprocessor                    @open-telemetry/collector-approvers @mx-psi @dmathieu
