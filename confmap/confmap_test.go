@@ -689,6 +689,50 @@ func TestZeroSliceHookFunc(t *testing.T) {
 	}
 }
 
+func TestNilValuesUnchanged(t *testing.T) {
+	type structWithSlices struct {
+		Strings []string `mapstructure:"strings"`
+	}
+
+	slicesStruct := &structWithSlices{}
+
+	nilCfg := map[string]any{
+		"strings": []any(nil),
+	}
+	nilConf := NewFromStringMap(nilCfg)
+	err := nilConf.Unmarshal(slicesStruct)
+	require.NoError(t, err)
+
+	confFromStruct := New()
+	err = confFromStruct.Marshal(slicesStruct)
+	require.NoError(t, err)
+
+	require.Equal(t, nilCfg, nilConf.ToStringMap())
+	require.EqualValues(t, nilConf.ToStringMap(), confFromStruct.ToStringMap())
+}
+
+func TestEmptySliceUnchanged(t *testing.T) {
+	type structWithSlices struct {
+		Strings []string `mapstructure:"strings"`
+	}
+
+	slicesStruct := &structWithSlices{}
+
+	nilCfg := map[string]any{
+		"strings": []any{},
+	}
+	nilConf := NewFromStringMap(nilCfg)
+	err := nilConf.Unmarshal(slicesStruct)
+	require.NoError(t, err)
+
+	confFromStruct := New()
+	err = confFromStruct.Marshal(slicesStruct)
+	require.NoError(t, err)
+
+	require.Equal(t, nilCfg, nilConf.ToStringMap())
+	require.EqualValues(t, nilConf.ToStringMap(), confFromStruct.ToStringMap())
+}
+
 type C struct {
 	Modifiers []string `mapstructure:"modifiers"`
 }
