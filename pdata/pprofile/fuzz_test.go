@@ -6,6 +6,8 @@ package pprofile // import "go.opentelemetry.io/collector/pdata/pprofile"
 import (
 	"bytes"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 var unexpectedBytes = "expected the same bytes from unmarshaling and marshaling."
@@ -19,23 +21,15 @@ func FuzzUnmarshalProfiles(f *testing.F) {
 		}
 		m1 := &JSONMarshaler{}
 		b1, err := m1.MarshalProfiles(ld1)
-		if err != nil {
-			t.Fatalf("failed to marshal valid struct:  %v", err)
-		}
+		require.NoError(t, err, "failed to marshal valid struct")
 
 		u2 := &JSONUnmarshaler{}
 		ld2, err := u2.UnmarshalProfiles(b1)
-		if err != nil {
-			t.Fatalf("failed to unmarshal valid bytes:  %v", err)
-		}
+		require.NoError(t, err, "failed to unmarshal valid bytes")
 		m2 := &JSONMarshaler{}
 		b2, err := m2.MarshalProfiles(ld2)
-		if err != nil {
-			t.Fatalf("failed to marshal valid struct:  %v", err)
-		}
+		require.NoError(t, err, "failed to marshal valid struct")
 
-		if !bytes.Equal(b1, b2) {
-			t.Fatalf("%s. \nexpected %d but got %d\n", unexpectedBytes, b1, b2)
-		}
+		require.True(t, bytes.Equal(b1, b2), "%s. \nexpected %d but got %d\n", unexpectedBytes, b1, b2)
 	})
 }

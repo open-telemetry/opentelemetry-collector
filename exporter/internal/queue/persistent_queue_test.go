@@ -264,15 +264,15 @@ func createTestPersistentQueueWithClient(client storage.Client) *persistentQueue
 	return pq
 }
 
-func createTestPersistentQueueWithRequestsCapacity(t testing.TB, ext storage.Extension, capacity int64) *persistentQueue[tracesRequest] {
-	return createTestPersistentQueueWithCapacityLimiter(t, ext, &RequestSizer[tracesRequest]{}, capacity)
+func createTestPersistentQueueWithRequestsCapacity(tb testing.TB, ext storage.Extension, capacity int64) *persistentQueue[tracesRequest] {
+	return createTestPersistentQueueWithCapacityLimiter(tb, ext, &RequestSizer[tracesRequest]{}, capacity)
 }
 
-func createTestPersistentQueueWithItemsCapacity(t testing.TB, ext storage.Extension, capacity int64) *persistentQueue[tracesRequest] {
-	return createTestPersistentQueueWithCapacityLimiter(t, ext, &itemsSizer[tracesRequest]{}, capacity)
+func createTestPersistentQueueWithItemsCapacity(tb testing.TB, ext storage.Extension, capacity int64) *persistentQueue[tracesRequest] {
+	return createTestPersistentQueueWithCapacityLimiter(tb, ext, &itemsSizer[tracesRequest]{}, capacity)
 }
 
-func createTestPersistentQueueWithCapacityLimiter(t testing.TB, ext storage.Extension, sizer Sizer[tracesRequest],
+func createTestPersistentQueueWithCapacityLimiter(tb testing.TB, ext storage.Extension, sizer Sizer[tracesRequest],
 	capacity int64,
 ) *persistentQueue[tracesRequest] {
 	pq := NewPersistentQueue[tracesRequest](PersistentQueueSettings[tracesRequest]{
@@ -284,7 +284,7 @@ func createTestPersistentQueueWithCapacityLimiter(t testing.TB, ext storage.Exte
 		Unmarshaler:      unmarshalTracesRequest,
 		ExporterSettings: exportertest.NewNopSettings(),
 	}).(*persistentQueue[tracesRequest])
-	require.NoError(t, pq.Start(context.Background(), &mockHost{ext: map[component.ID]component.Component{{}: ext}}))
+	require.NoError(tb, pq.Start(context.Background(), &mockHost{ext: map[component.ID]component.Component{{}: ext}}))
 	return pq
 }
 

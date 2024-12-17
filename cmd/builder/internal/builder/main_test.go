@@ -107,9 +107,9 @@ var replaceModules = []string{
 	"/service",
 }
 
-func newTestConfig(t testing.TB) *Config {
+func newTestConfig(tb testing.TB) *Config {
 	cfg, err := NewDefaultConfig()
-	require.NoError(t, err)
+	require.NoError(tb, err)
 	cfg.downloadModules.wait = 0
 	cfg.downloadModules.numRetries = 1
 	return cfg

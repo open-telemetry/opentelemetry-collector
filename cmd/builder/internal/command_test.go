@@ -36,20 +36,21 @@ func TestCommand(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := Command()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Command() error = %v, wantErr %v", err, tt.wantErr)
-				return
+			if !tt.wantErr {
+				require.NoErrorf(t, err, "Command()")
+				assert.Equal(t, tt.want.Aliases, got.Aliases)
+				assert.Equal(t, tt.want.Annotations, got.Annotations)
+				assert.Equal(t, tt.want.ValidArgs, got.ValidArgs)
+				assert.Equal(t, tt.want.ArgAliases, got.ArgAliases)
+				assert.Equal(t, tt.want.Use, got.Use)
+				assert.Equal(t, tt.want.SilenceUsage, got.SilenceUsage)
+				assert.Equal(t, tt.want.SilenceErrors, got.SilenceErrors)
+				assert.True(t, strings.HasPrefix(got.Long, tt.want.Long))
+				assert.Empty(t, got.Short)
+				assert.NotEqual(t, tt.want.HasFlags(), got.Flags().HasFlags())
+			} else {
+				require.Error(t, err)
 			}
-			assert.Equal(t, tt.want.Aliases, got.Aliases)
-			assert.Equal(t, tt.want.Annotations, got.Annotations)
-			assert.Equal(t, tt.want.ValidArgs, got.ValidArgs)
-			assert.Equal(t, tt.want.ArgAliases, got.ArgAliases)
-			assert.Equal(t, tt.want.Use, got.Use)
-			assert.Equal(t, tt.want.SilenceUsage, got.SilenceUsage)
-			assert.Equal(t, tt.want.SilenceErrors, got.SilenceErrors)
-			assert.True(t, strings.HasPrefix(got.Long, tt.want.Long))
-			assert.Empty(t, got.Short)
-			assert.NotEqual(t, tt.want.HasFlags(), got.Flags().HasFlags())
 		})
 	}
 }

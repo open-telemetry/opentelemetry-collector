@@ -954,12 +954,9 @@ func verifyCorsResp(t *testing.T, url string, origin string, set *CORSConfig, ex
 	req.Header.Set("Access-Control-Request-Method", "POST")
 
 	resp, err := http.DefaultClient.Do(req)
-	require.NoError(t, err, "Error sending OPTIONS to http server: %v", err)
-
-	err = resp.Body.Close()
-	if err != nil {
-		t.Errorf("Error closing OPTIONS response body, %v", err)
-	}
+	require.NoError(t, err, "Error sending OPTIONS to http server")
+	require.NotNil(t, resp.Body)
+	require.NoError(t, resp.Body.Close(), "Error closing OPTIONS response body")
 
 	assert.Equal(t, wantStatus, resp.StatusCode)
 
@@ -983,15 +980,12 @@ func verifyCorsResp(t *testing.T, url string, origin string, set *CORSConfig, ex
 
 func verifyHeadersResp(t *testing.T, url string, expected map[string]configopaque.String) {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
-	require.NoError(t, err, "Error creating request: %v", err)
+	require.NoError(t, err, "Error creating request")
 
 	resp, err := http.DefaultClient.Do(req)
-	require.NoError(t, err, "Error sending request to http server: %v", err)
-
-	err = resp.Body.Close()
-	if err != nil {
-		t.Errorf("Error closing response body, %v", err)
-	}
+	require.NoError(t, err, "Error sending request to http server")
+	require.NotNil(t, resp.Body)
+	require.NoError(t, resp.Body.Close(), "Error closing response body")
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
