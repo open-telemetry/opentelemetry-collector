@@ -31,7 +31,6 @@ require (
 	go.opentelemetry.io/collector/config/configopaque v1.22.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.116.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.22.0 // indirect
-	go.opentelemetry.io/collector/config/internal v0.116.0 // indirect
 	go.opentelemetry.io/collector/extension v0.116.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.116.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.22.0 // indirect
@@ -50,8 +49,6 @@ require (
 )
 
 replace go.opentelemetry.io/collector/config/confighttp => ../../confighttp
-
-replace go.opentelemetry.io/collector/config/internal => ../../internal
 
 replace go.opentelemetry.io/collector/config/configtelemetry => ../../configtelemetry
 

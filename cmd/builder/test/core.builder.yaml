@@ -27,7 +27,6 @@ replaces:
   - go.opentelemetry.io/collector/config/configretry => ${WORKSPACE_DIR}/config/configretry
   - go.opentelemetry.io/collector/config/configtelemetry => ${WORKSPACE_DIR}/config/configtelemetry
   - go.opentelemetry.io/collector/config/configtls => ${WORKSPACE_DIR}/config/configtls
-  - go.opentelemetry.io/collector/config/internal => ${WORKSPACE_DIR}/config/internal
   - go.opentelemetry.io/collector/confmap => ${WORKSPACE_DIR}/confmap
   - go.opentelemetry.io/collector/confmap/provider/envprovider => ${WORKSPACE_DIR}/confmap/provider/envprovider
   - go.opentelemetry.io/collector/confmap/provider/fileprovider => ${WORKSPACE_DIR}/confmap/provider/fileprovider

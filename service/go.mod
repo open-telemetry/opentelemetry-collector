@@ -103,7 +103,6 @@ require (
 	go.opentelemetry.io/collector/config/configcompression v1.22.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.22.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.22.0 // indirect
-	go.opentelemetry.io/collector/config/internal v0.116.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.116.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.116.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.56.0 // indirect
@@ -178,8 +177,6 @@ replace go.opentelemetry.io/collector/config/configopaque => ../config/configopa
 replace go.opentelemetry.io/collector/config/confighttp => ../config/confighttp
 
 replace go.opentelemetry.io/collector/config/configauth => ../config/configauth
-
-replace go.opentelemetry.io/collector/config/internal => ../config/internal
 
 replace go.opentelemetry.io/collector/config/configtls => ../config/configtls
 

@@ -202,8 +202,6 @@ replace go.opentelemetry.io/collector/config/configcompression => ../../config/c
 
 replace go.opentelemetry.io/collector/config/confighttp => ../../config/confighttp
 
-replace go.opentelemetry.io/collector/config/internal => ../../config/internal
-
 replace go.opentelemetry.io/collector/client => ../../client
 
 replace go.opentelemetry.io/collector/extension/auth => ../../extension/auth

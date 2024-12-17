@@ -157,8 +157,6 @@ replace go.opentelemetry.io/collector/config/configretry => ../config/configretr
 
 replace go.opentelemetry.io/collector/config/confighttp => ../config/confighttp
 
-replace go.opentelemetry.io/collector/config/internal => ../config/internal
-
 replace go.opentelemetry.io/collector/config/configauth => ../config/configauth
 
 replace go.opentelemetry.io/collector/extension/auth => ../extension/auth
