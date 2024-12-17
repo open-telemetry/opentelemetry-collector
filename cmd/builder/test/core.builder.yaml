@@ -66,7 +66,6 @@ replaces:
   - go.opentelemetry.io/collector/pdata/pprofile => ${WORKSPACE_DIR}/pdata/pprofile
   - go.opentelemetry.io/collector/pdata/testdata => ${WORKSPACE_DIR}/pdata/testdata
   - go.opentelemetry.io/collector/pipeline => ${WORKSPACE_DIR}/pipeline
-  - go.opentelemetry.io/collector/pipeline/pipelineprofiles => ${WORKSPACE_DIR}/pipeline/pipelineprofiles
   - go.opentelemetry.io/collector/pipeline/xpipeline => ${WORKSPACE_DIR}/pipeline/xpipeline
   - go.opentelemetry.io/collector/processor => ${WORKSPACE_DIR}/processor
   - go.opentelemetry.io/collector/processor/processortest => ${WORKSPACE_DIR}/processor/processortest
