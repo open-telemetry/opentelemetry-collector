@@ -38,5 +38,4 @@ exporter/exporterprofiles               @open-telemetry/collector-approvers @mx-
 exporter/xexporter                      @open-telemetry/collector-approvers @mx-psi @dmathieu
 processor/processorprofiles             @open-telemetry/collector-approvers @mx-psi @dmathieu
 processor/xprocessor                    @open-telemetry/collector-approvers @mx-psi @dmathieu
-receiver/receiverprofiles               @open-telemetry/collector-approvers @mx-psi @dmathieu
 receiver/xreceiver                      @open-telemetry/collector-approvers @mx-psi @dmathieu
