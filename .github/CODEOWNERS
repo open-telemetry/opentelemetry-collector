@@ -31,7 +31,6 @@ extension/experimental/storage  @open-telemetry/collector-approvers @swiatekm
 pdata/pprofile                          @open-telemetry/collector-approvers @mx-psi @dmathieu
 consumer/consumerprofiles               @open-telemetry/collector-approvers @mx-psi @dmathieu
 consumer/xconsumer                      @open-telemetry/collector-approvers @mx-psi @dmathieu
-connector/connectorprofiles             @open-telemetry/collector-approvers @mx-psi @dmathieu
 connector/xconnector                    @open-telemetry/collector-approvers @mx-psi @dmathieu
 exporter/exporterhelper/xexporterhelper @open-telemetry/collector-approvers @mx-psi @dmathieu
 exporter/exporterprofiles               @open-telemetry/collector-approvers @mx-psi @dmathieu
