@@ -61,17 +61,17 @@ var replaceModules = []string{
 	"/confmap/provider/yamlprovider",
 	"/consumer",
 	"/consumer/consumererror",
-	"/consumer/consumererror/consumererrorprofiles",
-	"/consumer/consumerprofiles",
+	"/consumer/consumererror/xconsumererror",
+	"/consumer/xconsumer",
 	"/consumer/consumertest",
 	"/connector",
 	"/connector/connectortest",
-	"/connector/connectorprofiles",
+	"/connector/xconnector",
 	"/exporter",
 	"/exporter/debugexporter",
-	"/exporter/exporterprofiles",
+	"/exporter/xexporter",
 	"/exporter/exportertest",
-	"/exporter/exporterhelper/exporterhelperprofiles",
+	"/exporter/exporterhelper/xexporterhelper",
 	"/exporter/nopexporter",
 	"/exporter/otlpexporter",
 	"/exporter/otlphttpexporter",
@@ -88,17 +88,17 @@ var replaceModules = []string{
 	"/internal/sharedcomponent",
 	"/otelcol",
 	"/pipeline",
-	"/pipeline/pipelineprofiles",
+	"/pipeline/xpipeline",
 	"/processor",
 	"/processor/processortest",
 	"/processor/batchprocessor",
 	"/processor/memorylimiterprocessor",
-	"/processor/processorprofiles",
+	"/processor/xprocessor",
 	"/receiver",
 	"/receiver/nopreceiver",
 	"/receiver/otlpreceiver",
-	"/receiver/receiverprofiles",
 	"/receiver/receivertest",
+	"/receiver/xreceiver",
 	"/pdata",
 	"/pdata/testdata",
 	"/pdata/pprofile",
@@ -107,9 +107,9 @@ var replaceModules = []string{
 	"/service",
 }
 
-func newTestConfig(t testing.TB) *Config {
+func newTestConfig(tb testing.TB) *Config {
 	cfg, err := NewDefaultConfig()
-	require.NoError(t, err)
+	require.NoError(tb, err)
 	cfg.downloadModules.wait = 0
 	cfg.downloadModules.numRetries = 1
 	return cfg

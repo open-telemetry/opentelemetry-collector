@@ -7,6 +7,30 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.22.0/v0.116.0
+
+### 🛑 Breaking changes 🛑
+
+- `component`: Remove deprecated TelemetrySettings.LeveledMeterProvider (#11811)
+- `scraperhelper`: Remove deprecated scraperhelper.Scraper and helpers (#11803)
+
+### 🚩 Deprecations 🚩
+
+- `connector`: Deprecate connectorprofiles module in favor of xconnector to allow adding more experimental data types. (#11778)
+- `consumererror`: Deprecate consumererrorprofiles module in favor of xconsumererror to allow adding more experimental data types. (#11778)
+- `consumer`: Deprecate consumerprofiles module in favor of xconsumer to allow adding more experimental data types. (#11778)
+- `exporterhelper`: Deprecate exporterhelperprofiles module in favor of xexporterhelper to allow adding more experimental data types. (#11778)
+- `exporter`: Deprecate exporterprofiles module in favor of xexporter to allow adding more experimental data types. (#11778)
+- `pipeline`: Deprecate pipelineprofiles module in favor of xpipeline to allow adding more experimental data types. (#11778)
+- `processorhelper`: Deprecate processorhelperprofiles module in favor of xprocessorhelper to allow adding more experimental data types. (#11778)
+- `processor`: Deprecate processorprofiles module in favor of xprocessor to allow adding more experimental data types. (#11778)
+- `receiver`: Deprecate receiverprofiles module in favor of xreceiver to allow adding more experimental data types. (#11778)
+- `receiver/scrapererror`: Remove the receiver/scrapererror alias. (#11003)
+
+### 💡 Enhancements 💡
+
+- `receiver/scraperhelper`: Add scraper for logs (#11238)
+
 ## v1.21.0/v0.115.0
 
 ### 🛑 Breaking changes 🛑

@@ -67,7 +67,8 @@ func (qb *DefaultBatcher) startReadingFlushingGoroutine() {
 						qb.flushAsync(batch{
 							req:     reqList[i],
 							ctx:     ctx,
-							idxList: []uint64{idx}})
+							idxList: []uint64{idx},
+						})
 						// TODO: handle partial failure
 					}
 					qb.resetTimer()
@@ -75,7 +76,8 @@ func (qb *DefaultBatcher) startReadingFlushingGoroutine() {
 					qb.currentBatch = &batch{
 						req:     reqList[0],
 						ctx:     ctx,
-						idxList: []uint64{idx}}
+						idxList: []uint64{idx},
+					}
 					qb.currentBatchMu.Unlock()
 				}
 			} else {
@@ -84,7 +86,8 @@ func (qb *DefaultBatcher) startReadingFlushingGoroutine() {
 					qb.currentBatch = &batch{
 						req:     req,
 						ctx:     ctx,
-						idxList: []uint64{idx}}
+						idxList: []uint64{idx},
+					}
 				} else {
 					mergedReq, mergeErr := qb.currentBatch.req.Merge(qb.currentBatch.ctx, req)
 					if mergeErr != nil {
@@ -95,7 +98,8 @@ func (qb *DefaultBatcher) startReadingFlushingGoroutine() {
 					qb.currentBatch = &batch{
 						req:     mergedReq,
 						ctx:     qb.currentBatch.ctx,
-						idxList: append(qb.currentBatch.idxList, idx)}
+						idxList: append(qb.currentBatch.idxList, idx),
+					}
 				}
 
 				if qb.currentBatch.req.ItemsCount() >= qb.batchCfg.MinSizeItems {
