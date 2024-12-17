@@ -51,7 +51,7 @@ Before the release, make sure there are no open release blockers in [core](https
    `open-telemetry/opentelemetry-collector`. Assuming your upstream remote is
    named `upstream`, you can try the following commands:
    - `git checkout main && git fetch upstream && git rebase upstream/main`
-   - `git switch -c release/<release series>`
+   - `git switch -c release/<release series>` # append the commit hash of the PR in the last step if it is not the head of mainline
    - `git push -u upstream release/<release series>`
 
 5. Make sure you are on `release/<release-series>`. Tag the module groups with the new release version by running:
@@ -90,7 +90,7 @@ Before the release, make sure there are no open release blockers in [core](https
    new branch to `open-telemetry/opentelemetry-collector-contrib`. Assuming your
    upstream remote is named `upstream`, you can try the following commands:
    - `git checkout main && git fetch upstream && git rebase upstream/main`
-   - `git switch -c release/<release series>`
+   - `git switch -c release/<release series>` # append the commit hash of the PR in the last step if it is not the head of mainline
    - `git push -u upstream release/<release series>`
 
 4. Make sure you are on `release/<release-series>`. Tag all the module groups with the new release version by running:
