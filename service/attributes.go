@@ -9,8 +9,8 @@ import (
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
-func attributes(res *sdkresource.Resource, cfg telemetry.Config) map[string]interface{} {
-	attrs := map[string]interface{}{}
+func attributes(res *sdkresource.Resource, cfg telemetry.Config) map[string]any {
+	attrs := map[string]any{}
 	for _, r := range res.Attributes() {
 		attrs[string(r.Key)] = r.Value.AsString()
 	}
