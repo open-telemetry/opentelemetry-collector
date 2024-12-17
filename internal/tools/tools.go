@@ -26,6 +26,7 @@ import (
 	_ "golang.org/x/tools/cmd/goimports"
 	_ "golang.org/x/vuln/cmd/govulncheck"
 	_ "mvdan.cc/gofumpt"
+	_ "gotest.tools/gotestsum"
 
 	_ "go.opentelemetry.io/collector/internal/tools/semconvkit"
 )
