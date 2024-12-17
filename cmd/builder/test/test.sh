@@ -114,10 +114,11 @@ base=$(mktemp -d)
 echo "Running the tests in ${base}"
 
 replaces="$base/replaces"
-# Get path of all core modules, in sorted order, without the initial dot
-core_mods=$(cd ../.. && find . -type f -name "go.mod" -exec dirname {} \; | sort | sed 's/.//')
+# Get path of all core modules, in sorted order
+core_mods=$(cd ../.. && find . -type f -name "go.mod" -exec dirname {} \; | sort)
 echo "replaces:" >> "$replaces"
-for mod in $core_mods; do
+for mod_path in $core_mods; do
+    mod=${mod_path#"."} # remove initial dot
     echo "  - go.opentelemetry.io/collector$mod => \${WORKSPACE_DIR}$mod" >> "$replaces"
 done
 echo "Wrote replace statements to $replaces"
