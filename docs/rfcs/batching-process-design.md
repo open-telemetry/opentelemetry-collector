@@ -261,7 +261,7 @@ companion RFC.
 
 ##### Concurrent batch processor
 
-The OpenTelemetry Protocol with Apache Arrow project's ]`concurrentbatch`
+The OpenTelemetry Protocol with Apache Arrow project's [`concurrentbatch`
 processor](https://github.com/open-telemetry/otel-arrow/blob/main/collector/processor/concurrentbatchprocessor/README.md)
 is derived from the core batch processor. It has added solutions for
 the problems outlined above, including error propagation, trace
