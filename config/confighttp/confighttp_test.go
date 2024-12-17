@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
@@ -512,45 +511,6 @@ func TestHTTPServerSettingsError(t *testing.T) {
 		t.Run(tt.err, func(t *testing.T) {
 			_, err := tt.settings.ToListener(context.Background())
 			assert.Regexp(t, tt.err, err)
-		})
-	}
-}
-
-func TestHTTPServerWarning(t *testing.T) {
-	tests := []struct {
-		name     string
-		settings ServerConfig
-		len      int
-	}{
-		{
-			settings: ServerConfig{
-				Endpoint: "0.0.0.0:0",
-			},
-			len: 1,
-		},
-		{
-			settings: ServerConfig{
-				Endpoint: "127.0.0.1:0",
-			},
-			len: 0,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			set := componenttest.NewNopTelemetrySettings()
-			logger, observed := observer.New(zap.DebugLevel)
-			set.Logger = zap.New(logger)
-
-			_, err := tt.settings.ToServer(
-				context.Background(),
-				componenttest.NewNopHost(),
-				set,
-				http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-					_, errWrite := fmt.Fprint(w, "tt")
-					assert.NoError(t, errWrite)
-				}))
-			require.NoError(t, err)
-			require.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), tt.len)
 		})
 	}
 }
