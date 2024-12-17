@@ -9,5 +9,11 @@ import "go.opentelemetry.io/collector/pdata/pcommon"
 //
 // Deprecated: [v0.117.0] This field has been removed, and replaced with AttributeIndices
 func (ms Profile) Attributes() pcommon.Map {
-	return pcommon.NewMap()
+	m := pcommon.NewMap()
+	for _, i := range ms.AttributeIndices().AsRaw() {
+		a := ms.AttributeTable().At(int(i))
+		m.PutStr(a.Key(), a.Value().AsString())
+	}
+
+	return m
 }
