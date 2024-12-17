@@ -141,8 +141,6 @@ replace go.opentelemetry.io/collector/config/configopaque => ../../config/config
 
 replace go.opentelemetry.io/collector/config/configgrpc => ../../config/configgrpc
 
-replace go.opentelemetry.io/collector/config/internal => ../../config/internal
-
 replace go.opentelemetry.io/collector/config/confignet => ../../config/confignet
 
 replace go.opentelemetry.io/collector/config/confighttp => ../../config/confighttp

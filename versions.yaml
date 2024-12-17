@@ -37,7 +37,6 @@ module-sets:
       - go.opentelemetry.io/collector/config/confighttp
       - go.opentelemetry.io/collector/config/confighttp/xconfighttp
       - go.opentelemetry.io/collector/config/configtelemetry
-      - go.opentelemetry.io/collector/config/internal
       - go.opentelemetry.io/collector/connector
       - go.opentelemetry.io/collector/connector/connectortest
       - go.opentelemetry.io/collector/connector/forwardconnector

@@ -81,8 +81,6 @@ replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/con
 
 replace go.opentelemetry.io/collector/config/configopaque => ../../config/configopaque
 
-replace go.opentelemetry.io/collector/config/internal => ../../config/internal
-
 replace go.opentelemetry.io/collector/config/configtls => ../../config/configtls
 
 replace go.opentelemetry.io/collector/config/configcompression => ../../config/configcompression

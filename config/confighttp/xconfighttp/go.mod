@@ -50,8 +50,6 @@ require (
 
 replace go.opentelemetry.io/collector/config/confighttp => ../../confighttp
 
-replace go.opentelemetry.io/collector/config/internal => ../../internal
-
 replace go.opentelemetry.io/collector/config/configtelemetry => ../../configtelemetry
 
 replace go.opentelemetry.io/collector/client => ../../../client
