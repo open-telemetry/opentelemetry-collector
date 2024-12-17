@@ -74,10 +74,6 @@ linters-settings:
       # See https://github.com/open-telemetry/opentelemetry-collector/issues/2789
       - fieldalignment
 
-  revive:
-    # minimal confidence for issues, default is 0.8
-    min-confidence: 0.8
-
   gofmt:
     # simplify code: gofmt with `-s` option, true by default
     simplify: true
@@ -111,6 +107,12 @@ linters-settings:
     sprintf1: true
     # Optimizes into strings concatenation.
     strconcat: true
+
+  revive:
+    # minimal confidence for issues, default is 0.8
+    min-confidence: 0.8
+    rules:
+      - name: use-any
 
   depguard:
     rules:
