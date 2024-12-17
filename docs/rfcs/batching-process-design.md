@@ -1,6 +1,8 @@
 # Error transmission through a batching processor with concurrency
 
-Establish normative guidelines for components that batch telemetry to follow so that the batchprocessor and exporterhelper-based batch_sender behave in similar ways with good defaults.
+Establish normative guidelines for components that batch telemetry to follow
+so that the batchprocessor and exporterhelper-based batch_sender behave in
+similar ways with good defaults.
 
 ## Motivation
 
@@ -161,10 +163,31 @@ error immediately.
 | Metadata  | Yes | No | Can it batch by metadata key value(s)? |
 | Tracing  | No | No | Instrumented for tracing? |
 | Error transmission | No | Yes | Are export errors returned to callers? |
-| Concurrency allowed | No | Yes | Does the component limit concurrency? |
+| Concurrency enabled | No | Merge: Yes; MergeSplit: No | Does the component limit concurrency? |
 | Independence | Yes | No | Are all data exported independently? |
 
 ### Change proposal
+
+#### Queue sender defaults
+
+A central aspect of this presentation focuses on the queue sender,
+which along with one of the batching processors defines the behavior
+of most OpenTelemetry pipelines. Therefore, the default queue sender
+behavior is critical.
+
+This proposal argues in favor of the user, who does not want default
+behavior that leads to data loss. This requires one or more changes
+in the exporterhelper:
+
+1. Disable the queue sender by default. In this configuration, requests
+   become synchronous through the batch processor, and responses are delayed
+   until whole batches covering the caller's input have been processed.
+   Assuming the other requirements in this proposal are also carried out,
+   this means that pipelines will block each caller awaiting end-to-end
+   success, by default.
+2. Prevent start-up without a persistent queue configured; users would
+   have to opt-in to the in-memory queue if they want to return success
+   with no persistent store and not await end-to-end success.
 
 #### Batch processor: required
 
@@ -198,14 +221,15 @@ outcomes:
 
 #### Batch trace context
 
-Should outgoing requests be instrumented by a trace Span linked to the incoming trace contexts? This document proposes yes, in
-one of two ways:
+Should outgoing requests be instrumented by a trace Span linked
+to the incoming trace contexts? This document proposes yes, as
+follows.
 
-1. When an export corresponds with data for a single incoming
-   request, the request's original context is used as the parent.
-2. When an export corresponds with data from multiple incoming
-   requests, the incoming trace contexts are linked with the new
-   root span.
+1. Create a new root span at the moment each batch starts.
+2. For each new request incorporated into the batch, call
+   `AddLink()` on the pair of spans.
+3. Use the associated root span as the context for each
+   export call.
 
 #### Empty request handling
 
@@ -217,12 +241,12 @@ no metric data points, and logs requests with no log records.
 
 For a batching process, these requests can be problematic.  If
 request size is measured in item count, these "empty" requests
-leave batch size unchanged, and could cause unbounded memory
-growth.
+leave batch size unchanged, therefore they can cause unbounded
+memory growth.
 
 This document proposes a consistent treatment for empty requests:
 batching processes should return immediate success, which is the
-behavior of the batching processor currently.
+current behavior of the batch processor.
 
 #### Outgoing context deadline
 
@@ -230,17 +254,34 @@ Should the batching process set an outgoing context deadline
 to convey the maximum amount of time to consider processing
 the request?
 
-Neither existing component uses an outgoing context deadline.
-This could lead to resource exhaustion, in some cases, by
-allowing requests to remain pending indefinitely.
+This and several related questions are broken out into a
+companion RFC.
 
-On the one hand, this support may not be necessary, since in
-most cases the batching process is followed by an exporter, which
-includes a timeout sender option, capable of ensuring a default
-timeout.
+#### Prototypes
 
-On the other hand, the batching process knows the callers'
-actual deadlines, and it could even use this information to
-form batches.
+##### Concurrent batch processor
 
-This proposal makes no specific recommendation.
+The OpenTelemetry Protocol with Apache Arrow project's ]`concurrentbatch`
+processor](https://github.com/open-telemetry/otel-arrow/blob/main/collector/processor/concurrentbatchprocessor/README.md)
+is derived from the core batch processor. It has added solutions for
+the problems outlined above, including error propagation, trace
+propagation, and concurrency.
+
+This code can be contributed back to the core with a series of minor
+changes, some having an associated feature gate.
+
+A. Add tracing support, as described above.
+B. Make "early return" a new behavior, feature gate from on (current behavior) to off (desired behavior); otherwise, wait for the response and return the error.
+C. Make "concurrency_limit" a new setting measuring concurrency added by this component, feature gate from 1 (current behavior) to limited (e.g., 10, 100)
+
+Note that "concurrency_limit" is defined in terms that do not
+count the incoming concurrency, as it is compulsory.  A limit of
+
+##### Batch sender
+
+This has not been prototyped. The exporterhelper code can be modified,
+for the batch sender to conform with this proposal.
+
+A. Add tracing support, as described above.
+B. Make "concurrency_limit" a new setting measuring concurrency added by this component, feature gate from 0 (current behavior) to limited (e.g., 10, 100)
+C. Add metadata keys support, identical to the batch processor.
