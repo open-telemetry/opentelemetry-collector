@@ -11,7 +11,7 @@ import (
 )
 
 func attributes(res *sdkresource.Resource, cfg telemetry.Config) []config.AttributeNameValue {
-	attrsMap := map[string]interface{}{}
+	attrsMap := map[string]any{}
 	for _, r := range res.Attributes() {
 		attrsMap[string(r.Key)] = r.Value.AsString()
 	}
