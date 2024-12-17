@@ -33,7 +33,7 @@ test_build_config() {
     echo "Starting test '${test}' at $(date)" >> "${out}/test.log"
 
     final_build_config=$(basename "${build_config}")
-    "${WORKSPACE_DIR}/.tools/envsubst" < "$build_config" > "${out}/${final_build_config}"
+    "${WORKSPACE_DIR}/.tools/envsubst" -o "${out}/${final_build_config}" -i <(cat "$build_config" "$replaces")
     if ! go run . --config "${out}/${final_build_config}" --output-path "${out}" > "${out}/builder.log" 2>&1; then
         echo "❌ FAIL ${test}. Failed to compile the test ${test}. Build logs:"
         cat "${out}/builder.log"
@@ -112,6 +112,16 @@ tests="core"
 
 base=$(mktemp -d)
 echo "Running the tests in ${base}"
+
+replaces="$base/replaces"
+# Get path of all core modules, in sorted order
+core_mods=$(cd ../.. && find . -type f -name "go.mod" -exec dirname {} \; | sort)
+echo "replaces:" >> "$replaces"
+for mod_path in $core_mods; do
+    mod=${mod_path#"."} # remove initial dot
+    echo "  - go.opentelemetry.io/collector$mod => \${WORKSPACE_DIR}$mod" >> "$replaces"
+done
+echo "Wrote replace statements to $replaces"
 
 failed=false
 
