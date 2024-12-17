@@ -54,7 +54,7 @@ test: $(GOTESTSUM)
 .PHONY: test-with-cover
 test-with-cover: $(GOTESTSUM)
 	mkdir -p $(PWD)/coverage/unit
-	$(GOTESTSUM) --packages="./..." -- $(GOTEST_OPT) -cover ./... -covermode=atomic -coverpkg $(COVER_PKGS) -args -test.gocoverdir="$(PWD)/coverage/unit"
+	$(GOTESTSUM) --packages="./..." -- $(GOTEST_OPT) -cover -covermode=atomic -coverpkg $(COVER_PKGS) -args -test.gocoverdir="$(PWD)/coverage/unit"
 
 .PHONY: benchmark
 benchmark: $(GOTESTSUM)
