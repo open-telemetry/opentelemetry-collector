@@ -80,6 +80,15 @@ func TestLogRecord_Flags(t *testing.T) {
 	assert.Equal(t, testValFlags, ms.Flags())
 }
 
+func TestLogRecord_EventName(t *testing.T) {
+	ms := NewLogRecord()
+	assert.Equal(t, "", ms.EventName())
+	ms.SetEventName("")
+	assert.Equal(t, "", ms.EventName())
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { newLogRecord(&otlplogs.LogRecord{}, &sharedState).SetEventName("") })
+}
+
 func TestLogRecord_SeverityText(t *testing.T) {
 	ms := NewLogRecord()
 	assert.Equal(t, "", ms.SeverityText())
@@ -131,6 +140,7 @@ func fillTestLogRecord(tv LogRecord) {
 	tv.orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	tv.orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
 	tv.orig.Flags = 1
+	tv.orig.EventName = ""
 	tv.orig.SeverityText = "INFO"
 	tv.orig.SeverityNumber = otlplogs.SeverityNumber(5)
 	internal.FillTestValue(internal.NewValue(&tv.orig.Body, tv.state))
