@@ -2,7 +2,7 @@ name: Merge freeze
 
 on:
   pull_request:
-    types: [opened, ready_for_review, synchronize, reopened, labeled, unlabeled]
+    types: [opened, ready_for_review, synchronize, reopened, labeled, unlabeled, enqueued]
     branches: [main]
   merge_group:
     types: [checks_requested]
