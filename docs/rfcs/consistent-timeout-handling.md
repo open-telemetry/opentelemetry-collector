@@ -197,3 +197,11 @@ New configuration fields, matching the Timeout sender:
 - `max_timeout` (duration): Limits the allowable timeout for new requests.
 - `ignore_timeout` (bool): Erase the arriving request context timeout,
   apply `max_timeout` instead.
+
+## Implementation details
+
+To implement the `ignore_timeout` support and either to to raise the
+timeout of a request within the Golang `context.Context` framwork,
+it will be necessary to use a call to `context.WithoutCancel()`. This
+function allows a context to be severed from its deadline, so that
+a new, larger deadline can be installed.
