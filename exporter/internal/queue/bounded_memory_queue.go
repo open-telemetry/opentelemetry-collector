@@ -56,6 +56,10 @@ func (q *boundedMemoryQueue[T]) Shutdown(context.Context) error {
 	return nil
 }
 
+func (q *boundedMemoryQueue[T]) IsBlocking() bool {
+	return false
+}
+
 type memQueueEl[T any] struct {
 	req T
 	ctx context.Context
