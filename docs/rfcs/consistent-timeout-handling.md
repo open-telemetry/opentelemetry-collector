@@ -57,7 +57,7 @@ For this outcome to be achieved, we require:
 
 - Batch processor/sender propagates maximum deadline in batch
 - If enabled, queue sender blocks until queue space is available
-- Timeout sender configured not to lower already-set timeout.
+- Timeout sender configured not to lower an already-configured timeout.
 
 ## Explanation
 
@@ -136,72 +136,273 @@ This component attempts to enqueue a request. If the queue is full
 or unavailable, it immediately returns a queue-full error.
 
 When the deadline permits it, is there an option to wait for entry
-into the queue? If no deadline is set, is there be an option to
+into the queue? If no deadline is set, is there an option to
 wait indefinitely?
 
 ### Receiver support
 
-Especially when gRPC is in use, requests typically arrive with a pre-set
-deadline. In a collector-to-collector pipeline scenario, the receiver
-will set a request deadline corresponding with the deadline set in the
-exporter's Timeout sender.
+Especially when gRPC is in use, requests typically arrive with a pre-
+configured deadline. In a collector-to-collector pipeline scenario, the
+receiver will set a request deadline corresponding with the timeout
+set by the Timeout sender.
 
 If the timeout is especially small, can it be set to a minimum value?
 If the timeout is especially large or unset, can it set to a maximum value?
+
+## Golang-specific guidelines
+
+The Golang Context follows pipeline data through the OpenTelemetry Collector.
+There are several signals combined into this parameter that component authors
+should be aware of.
+
+- Deadline: the Context carries an optional deadline. Libraries such as
+  gRPC propagate deadline from client-to-server.
+- Cancellation: the Context carries a `Done()` channel, which allows a
+  goroutine to abort when the caller is no longer interested in a
+  result due to deadline expired, broken connection, etc.
+- client.Metadata: the collector `client` package supports propagating
+  the source connection details, authorization data, and metadata expressed
+  as key-value pairs.
+
+### Making a synchronous call
+
+Many components, generally those designed to transform data in a pipeline,
+are described as synchronous. In this calling convention, the caller
+becomes responsible for deadline and cancellation.
+
+```golang
+func (my *myComponent) Consume(ctx context.Context, req data.Request) error {
+    // prepare to call the following component
+    nextReq := someLogic(req)
+    // pass the context in synchronous calls;
+    if err := my.next.Consume(ctx, nextReq); err != nil {
+        // propagate the returned error
+        return err
+    }
+    return nil
+}
+```
+
+### Making an asynchronous call
+
+When a component performs an operation that potentially blocks the request,
+be sure to use the `ctx.Done()` channel in every `select` statement.  Components
+should avoid bare, blocking channel operations:
+
+```golang
+    // don't do this
+    go asyncTask(ctx, req, someChan)
+    resp := <-someChannel
+```
+
+Do this instead:
+
+```golang
+    // pass context, so the async task can be deadline-aware
+    go asyncTask(ctx, req, someChan)
+    var resp Response
+    select {
+    case <-ctx.Done():
+        // cancellation: return the error cause.
+        return ctx.Err()
+    case resp = <-respChan:
+        // success: continue processing
+    }
+```
+
+### Check for cancellation
+
+To simply check whether a request context is viable, not cancelled,
+before proceeding with a calculation:
+
+```golang
+    select {
+    case <-ctx.Done():
+        // the context is cancelled, maybe deadline-exceeded.
+        return ctx.Err()
+    default:
+        // OK to continue
+    }
+```
 
 ## Specific proposal
 
 ### Timeout sender
 
-We propose additional fields in the configuration:
+The existing TimeoutConfig struct has one field.  In the current
+implementation, due to the "no later than" semantics of `WithDeadline()`,
+the `timeout` field can be interpreted as a maximum timeout value.
+The existing configuration struct should be re-documented:
 
-- `min_timeout` (duration): When an arriving request has a timeout less
-  than this value, the request immediately fails with a deadline-exceeded
-  error. Invalid if set greater than the `timeout` field.
-- `max_timeout` (duration): Limits the allowable timeout for exports.
-- `ignore_timeout` (bool): When true, the incoming timeout is erased,
-  results in `timeout` taking effect unconditionally.
+```golang
+type TimeoutConfig struct {
+ // Timeout is the maximum allowed timeout for requests made
+ // by this exporter component. If non-zero, the outgoing
+ // request context will have a timeout no-later-than this
+ // duration. If zero, the existing timeout (if any) will
+ // propagate to the outgoing request unmodified. This field
+ // must not be negative.
+ Timeout time.Duration `mapstructure:"timeout"`
+}
+```
+
+We propose an additional `min_timeout` to limit timeout in the other
+direction:
+
+```golang
+  // MinTimeout, if >= 0, and an arriving request has a timeout less
+  // than this duration. the request immediately fails with a
+  // deadline-exceeded error. If negative, the arriving request
+  // deadline is unchecked.
+  MinTimeout time.Duration `mapstructure:"min_timeout"
+```
+
+The two fields are meant to be interepreted in combation, according to
+this matrix:
+
+| Explanation | Timeout = 0 | Timeout > 0 |
+| -- | -- | -- |
+| **MinTimeout<0** | No minimum, no maximum case. In this case, the deadline is explicitly erased. | A maximum timeout is imposed, but the deadline is not checked. |
+| **MinTimeout≥0** | The deadline is checked, but a new maximum is not imposed. Allows existing and no-deadline requests to pass. | The deadline is checked and a maximum is imposed. |
+
+Note that the existing behavior does not match the comment in the
+existing configuration structure. A `timeout` setting of 0 did not
+achieve "no timeout", it simply avoided imposing a maximum. This
+proposal states that to achieve no timeout, the user must configure
+both no (maximum) timeout and no minimum timeout.
+
+The current component uses a default Timeout of `5s`. This proposal
+would use default MinTimeout of `0`, meaning to enforce a non-negative
+deadline. The proposed logic is given below.
 
 ### Retry sender
 
-A new field, consistent with the timeout sender:
-
-- `ignore_timeout` (bool): When true, the incoming timeout is erased,
-  results in the `max_elapsed` and the subsequent Timeout sender's
-  `timeout` taking effect unconditionally.
+This component is already deadline-aware.
 
 ### Queue sender
 
-A new field, consistent with the timeout sender:
+A new field will be introduced, with default matching the
+original behavior of this component.
 
-- `ignore_timeout` (bool): When true, the incoming timeout is erased,
-  results in fail-fast semantics. The caller will not block awaiting
-  queue space.
+```golang
+  // FailFast indicates that the queue should immediately
+  // reject requests when the queue is full, without considering
+  // the request deadline. Default: true.
+  FailFast bool `mapstructure:"fail_fast"`
+```
 
-When there is a timeout, block until queue space is available.
+In case the new FailFast flag is false, there are two cases:
+
+1. The request has a deadline. In this case, wait until the deadline
+   to enqueue the request.
+2. The request has no deadline. In this case, let the request block
+   indefinitely until it can be enqueued.
 
 ### Batch processor/sender
 
-Respect cancellation.
+As discussed in the companion RFC, batching processes should
+transmit errors, which means waiting for batch responses, and
+they should respect cancellation.
 
-Use outgoing context deadline equal to the maximum deadline
-in the batch.
+This proposal states that batching processes should also use
+an outgoing context deadline. Batching logic should keep track
+of the maximum deadline over requests with a deadline in each
+batch. The batch deadline shall be set to the maximum deadline
+of any in the batch. Only when all requests in the batch do not
+have a deadline, will the outgoing batch request have no
+request deadline.
+
+It will be the case that no-deadline requests combined into a batch
+with requests that have a deadline will cause the no-deadline request
+to have a deadline. This is intentional. Users are encouraged
+to use deadlines always and/or use separate pipelines for requests
+with and without deadlines.
 
 ### Receiver helper
 
-New configuration fields, matching the Timeout sender:
+Receivers are the entry point for data entering a Collector
+pipeline. Receivers are responsible for setting the initial
+context deadline for each request. This proposal states that
+receivers should be encouraged with an opt-in mechanism to
+offer standard timeout configuration. The configuration of
+this opt-in support follows the Timeout sender:
 
-- `min_timeout` (duration): When an arriving request has a timeout less
-  than this value, the request immediately fails with a deadline-exceeded
-  error.
-- `max_timeout` (duration): Limits the allowable timeout for new requests.
-- `ignore_timeout` (bool): Erase the arriving request context timeout,
-  apply `max_timeout` instead.
+- `min_timeout` (duration): Limits the allowable timeout for new requests to a minimum value.
+- `timeout` (duration): Limits the allowable timeout for new requests to a maximum value. Must be >= 0.
+
+The Timeout sender's behavior matrix applies. `min_timeout`
+controls whether an arriving timeout, if any, is enforced, and
+`timeout` controls whether a timeout is imposed. If `min_timeout`
+is negative and `timeout` is zero, the timeout is explicitly
+erased from the context.
+
+The default `min_timeout` is zero (i.e., enforce arriving deadlines)
+and `timeout` is zero (i.e., allow no-deadline to pass).
 
 ## Implementation details
 
-To implement the `ignore_timeout` support and either to to raise the
-timeout of a request within the Golang `context.Context` framwork,
-it will be necessary to use a call to `context.WithoutCancel()`. This
-function allows a context to be severed from its deadline, so that
-a new, larger deadline can be installed.
+The logic to modify a context given timeout configuration is
+shown below. This logic would be used in the exporterhelper
+Timeout sender as wel as a new, receiverhelper mechanism that
+allowing components to opt-in to this behavior.
+
+```golang
+ if ts.cfg.MinTimeout >= 0 {
+     if deadline, has := ctx.Deadline(); has {
+        if time.Until(deadline) <= ts.cfg.MinTimeout {
+            return context.DeadlineExceeded
+        }
+    }
+ } else if ts.cfg.Timeout == 0 {
+   // No minimum, no maximum case. Erase incoming request timeout.
+   ctx = context.WithoutCancel(ctx)
+ }
+
+ if ts.cfg.Timeout != 0 {
+   var cancel context.CancelFunc
+   ctx, cancel = context.WithTimeout(ctx, ts.cfg.Timeout)
+   defer cancel()
+ }
+ // pass ctx in a synchronous call to the next component
+```
+
+## Summary
+
+This proposal introduces several new configuration fields and
+behaviors, including:
+
+- Timeout sender: `min_timeout` enforcement
+- Queue sender: `fail_fast` option
+- Batch processor/sender: cancellation, outgoing deadline
+- Receiver helper: `timeout` limit and `min_timeout` enforcement
+
+The example posed in the introduction, aiming to allow an OpenTelemetry
+SDK user to control end-to-end timeout behavior, can be configured as
+follows:
+
+- The SDK's export `timeout` value is configured by the user
+- The OTLP receiver propagates the client's original timeout
+- The Batch processor, if configured, propagates a batch timeout
+- The Queue sender, if configured, has `fail_fast` false
+- The Batch sender, if configured, propagates a batch timeout
+- The Retry sender or Timeout component is configured to take
+  advantage of the client's timeout, either by allowing retries
+  and raising `max_elapsed`, or by raising the maximum `timeout`.
+
+In another example, consider the case where a collector wishes
+to explicitly disregard a client-specified timeout. While ignoring
+the timeout means potentially breaking error transmission, this
+can also ensure successful delivery in cases where the deadline
+is unrealistic. For example:
+
+- The SDK's export `timeout` value is set unrealistically low
+- The receiver's `min_timeout` is -1, `timeout` is 0, which erases
+  the arriving timeout
+- The batch processor will propagate no deadline
+- The Queue sender, if enabled, has `fail_fast` false
+- The Timeout sender sets the final deadline based on its `timeout`.
+
+Taken together, these new features will ensure OpenTelemetry pipelines
+can be configured to support a range of timeout behavior while at the
+same time recognizing request cancellation to avoid wasteful
+computation.
