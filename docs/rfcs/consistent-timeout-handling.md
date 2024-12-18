@@ -121,7 +121,7 @@ calculated retry attempt.
 ### Batch processor and sender: existing
 
 These components are expected to have identical batching behavior,
-as discussed in a [companion RFC](). As stated in that proposal,
+as discussed in a [companion RFC](https://github.com/open-telemetry/opentelemetry-collector/pull/11947). As stated in that proposal,
 these components are not deadline-aware. For error transmission and
 consistent treatment of timeout, a batching process should wait for
 the request to complete, until context cancellation, or until the
