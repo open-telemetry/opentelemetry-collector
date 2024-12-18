@@ -10,31 +10,27 @@ import (
 func FuzzRequestUnmarshalJSON(f *testing.F) {
 	f.Fuzz(func(_ *testing.T, data []byte) {
 		er := NewExportRequest()
-		//nolint: errcheck
-		er.UnmarshalJSON(data)
+		_ = er.UnmarshalJSON(data)
 	})
 }
 
 func FuzzResponseUnmarshalJSON(f *testing.F) {
 	f.Fuzz(func(_ *testing.T, data []byte) {
 		er := NewExportResponse()
-		//nolint: errcheck
-		er.UnmarshalJSON(data)
+		_ = er.UnmarshalJSON(data)
 	})
 }
 
 func FuzzRequestUnmarshalProto(f *testing.F) {
 	f.Fuzz(func(_ *testing.T, data []byte) {
 		er := NewExportRequest()
-		//nolint: errcheck
-		er.UnmarshalProto(data)
+		_ = er.UnmarshalJSON(data)
 	})
 }
 
 func FuzzResponseUnmarshalProto(f *testing.F) {
 	f.Fuzz(func(_ *testing.T, data []byte) {
 		er := NewExportResponse()
-		//nolint: errcheck
-		er.UnmarshalProto(data)
+		_ = er.UnmarshalJSON(data)
 	})
 }

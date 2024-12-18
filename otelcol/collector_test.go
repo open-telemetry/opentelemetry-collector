@@ -569,9 +569,9 @@ func newEnvProvider() confmap.ProviderFactory {
 	})
 }
 
-func newDefaultConfigProviderSettings(t testing.TB, uris []string) ConfigProviderSettings {
+func newDefaultConfigProviderSettings(tb testing.TB, uris []string) ConfigProviderSettings {
 	fileProvider := newFakeProvider("file", func(_ context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
-		return confmap.NewRetrieved(newConfFromFile(t, uri[5:]))
+		return confmap.NewRetrieved(newConfFromFile(tb, uri[5:]))
 	})
 	return ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
@@ -585,12 +585,12 @@ func newDefaultConfigProviderSettings(t testing.TB, uris []string) ConfigProvide
 }
 
 // newConfFromFile creates a new Conf by reading the given file.
-func newConfFromFile(t testing.TB, fileName string) map[string]any {
+func newConfFromFile(tb testing.TB, fileName string) map[string]any {
 	content, err := os.ReadFile(filepath.Clean(fileName))
-	require.NoErrorf(t, err, "unable to read the file %v", fileName)
+	require.NoErrorf(tb, err, "unable to read the file %v", fileName)
 
 	var data map[string]any
-	require.NoError(t, yaml.Unmarshal(content, &data), "unable to parse yaml")
+	require.NoError(tb, yaml.Unmarshal(content, &data), "unable to parse yaml")
 
 	return confmap.NewFromStringMap(data).ToStringMap()
 }

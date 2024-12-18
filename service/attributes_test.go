@@ -18,35 +18,35 @@ func TestAttributes(t *testing.T) {
 		name           string
 		cfg            telemetry.Config
 		buildInfo      component.BuildInfo
-		wantAttributes map[string]interface{}
+		wantAttributes map[string]any
 	}{
 		{
 			name:           "no build info and no resource config",
 			cfg:            telemetry.Config{},
-			wantAttributes: map[string]interface{}{"service.name": "", "service.version": "", "service.instance.id": ""},
+			wantAttributes: map[string]any{"service.name": "", "service.version": "", "service.instance.id": ""},
 		},
 		{
 			name:           "build info and no resource config",
 			cfg:            telemetry.Config{},
 			buildInfo:      component.BuildInfo{Command: "otelcoltest", Version: "0.0.0-test"},
-			wantAttributes: map[string]interface{}{"service.name": "otelcoltest", "service.version": "0.0.0-test", "service.instance.id": ""},
+			wantAttributes: map[string]any{"service.name": "otelcoltest", "service.version": "0.0.0-test", "service.instance.id": ""},
 		},
 		{
 			name:           "no build info and resource config",
 			cfg:            telemetry.Config{Resource: map[string]*string{"service.name": newPtr("resource.name"), "service.version": newPtr("resource.version"), "test": newPtr("test")}},
-			wantAttributes: map[string]interface{}{"service.name": "resource.name", "service.version": "resource.version", "test": "test", "service.instance.id": ""},
+			wantAttributes: map[string]any{"service.name": "resource.name", "service.version": "resource.version", "test": "test", "service.instance.id": ""},
 		},
 		{
 			name:           "build info and resource config",
 			buildInfo:      component.BuildInfo{Command: "otelcoltest", Version: "0.0.0-test"},
 			cfg:            telemetry.Config{Resource: map[string]*string{"service.name": newPtr("resource.name"), "service.version": newPtr("resource.version"), "test": newPtr("test")}},
-			wantAttributes: map[string]interface{}{"service.name": "resource.name", "service.version": "resource.version", "test": "test", "service.instance.id": ""},
+			wantAttributes: map[string]any{"service.name": "resource.name", "service.version": "resource.version", "test": "test", "service.instance.id": ""},
 		},
 		{
 			name:           "deleting a nil value",
 			buildInfo:      component.BuildInfo{Command: "otelcoltest", Version: "0.0.0-test"},
 			cfg:            telemetry.Config{Resource: map[string]*string{"service.name": nil, "service.version": newPtr("resource.version"), "test": newPtr("test")}},
-			wantAttributes: map[string]interface{}{"service.version": "resource.version", "test": "test", "service.instance.id": ""},
+			wantAttributes: map[string]any{"service.version": "resource.version", "test": "test", "service.instance.id": ""},
 		},
 	}
 	for _, tt := range tests {

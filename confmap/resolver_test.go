@@ -60,9 +60,9 @@ type fakeProvider struct {
 	logger *zap.Logger
 }
 
-func newFileProvider(t testing.TB) ProviderFactory {
+func newFileProvider(tb testing.TB) ProviderFactory {
 	return newFakeProvider("file", func(_ context.Context, uri string, _ WatcherFunc) (*Retrieved, error) {
-		return NewRetrieved(newConfFromFile(t, uri[5:]))
+		return NewRetrieved(newConfFromFile(tb, uri[5:]))
 	})
 }
 
@@ -76,9 +76,9 @@ func newFakeProvider(scheme string, ret func(ctx context.Context, uri string, wa
 	})
 }
 
-func newObservableFileProvider(t testing.TB) (ProviderFactory, *fakeProvider) {
+func newObservableFileProvider(tb testing.TB) (ProviderFactory, *fakeProvider) {
 	return newObservableProvider("file", func(_ context.Context, uri string, _ WatcherFunc) (*Retrieved, error) {
-		return NewRetrieved(newConfFromFile(t, uri[5:]))
+		return NewRetrieved(newConfFromFile(tb, uri[5:]))
 	})
 }
 

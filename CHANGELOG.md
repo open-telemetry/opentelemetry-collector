@@ -7,6 +7,21 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.22.0/v0.116.0
+
+### 🛑 Breaking changes 🛑
+
+- `pdata/pprofile`: Remove deprecated `Profile.EndTime` and `Profile.SetEndTime` methods. (#11796)
+
+### 💡 Enhancements 💡
+
+- `xconfighttp`: Add WithOtelHTTPOptions to experimental module xconfighttp (#11770)
+
+### 🧰 Bug fixes 🧰
+
+- `exporterhelper`: Fix memory leak at exporter shutdown (#11401)
+- `sharedcomponent`: Remove race-condition and cleanup locking (#11819)
+
 ## v1.21.0/v0.115.0
 
 ### 🛑 Breaking changes 🛑

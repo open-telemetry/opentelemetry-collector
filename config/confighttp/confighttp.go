@@ -30,7 +30,6 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
-	configinternal "go.opentelemetry.io/collector/config/internal"
 	"go.opentelemetry.io/collector/extension/auth"
 )
 
@@ -407,8 +406,6 @@ func WithDecoder(key string, dec func(body io.ReadCloser) (io.ReadCloser, error)
 
 // ToServer creates an http.Server from settings object.
 func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
-	configinternal.WarnOnUnspecifiedHost(settings.Logger, hss.Endpoint)
-
 	serverOpts := &toServerOptions{}
 	serverOpts.Apply(opts...)
 

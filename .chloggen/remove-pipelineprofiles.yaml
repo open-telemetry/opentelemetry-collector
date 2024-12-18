@@ -1,21 +1,14 @@
-# Use this changelog template to create an entry for release notes.
-
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: deprecation
+change_type: breaking
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: receiver/scrapererror
+component: pipeline
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Remove the receiver/scrapererror alias.
+note: Remove deprecated pipelineprofiles module, use xpipeline instead.
 
 # One or more tracking issues or pull requests related to the change
-issues: [11003]
-
-# (Optional) One or more lines of additional information to render under the primary note.
-# These lines will be padded with 2 spaces and then inserted directly into the document.
-# Use pipe (|) for multiline entries.
-subtext:
+issues: [11778]
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
