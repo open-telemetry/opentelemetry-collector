@@ -536,7 +536,7 @@ type Marshaler interface {
 // 4. configuration have no `keys` field specified, the output should be default config
 //   - for example, input is {}, then output is Config{ Keys: ["a", "b"]}
 func zeroSliceHookFunc() mapstructure.DecodeHookFuncValue {
-	return func(from reflect.Value, to reflect.Value) (interface{}, error) {
+	return func(from reflect.Value, to reflect.Value) (any, error) {
 		if to.CanSet() && to.Kind() == reflect.Slice && from.Kind() == reflect.Slice {
 			to.Set(reflect.MakeSlice(to.Type(), from.Len(), from.Cap()))
 		}

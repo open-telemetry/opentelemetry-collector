@@ -187,3 +187,12 @@ Components that were accepted based on being vendor-specific components will be 
 they have no active code owners from the vendor even if there are other code owners listed. As part of being marked unmaintained, we'll attempt to contact the vendor to notify them of the change. Other active code
 owners may petition for its continued maintenance if they want, at which point the component will no
 longer be considered vendor-specific.
+
+## Versioning
+
+Components are Go modules and as such follow [semantic versioning](https://semver.org/). Go API stability guarantees are covered in the [VERSIONING.md](../VERSIONING.md) document.
+The versioning of the components applies to all signals simultaneously. For a component to be marked as 1.x it MUST be stable for at least one signal.
+
+Even if a component has a 1.x or greater version, its behavior for specific signals might change in ways that break end users if the component is not stable for a particular signal.
+Go API stability guarantees apply to ALL signals, regardless of their stability level. 
+This means that signal-specific configuration options MUST NOT be removed or changed in a way that breaks our Go API compatibility promise, even if the signal is not stable.

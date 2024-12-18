@@ -92,7 +92,7 @@ jobs:
           REPO: open-telemetry/opentelemetry-collector-contrib
         run: ./.github/workflows/scripts/release-check-build-status.sh
       - name: Setup Go
-        uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5.1.0
+        uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a # v5.2.0
         with:
           go-version: ~1.22.9
       # Prepare Core for release.
@@ -101,8 +101,7 @@ jobs:
       #   - Run make prepare-release PREVIOUS_VERSION=0.52.0 RELEASE_CANDIDATE=0.53.0 MODSET=beta
       - name: Prepare release for core
         env:
-          BOT_GITHUB_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
           REPO: open-telemetry/opentelemetry-collector
           CANDIDATE_BETA: ${{ inputs.candidate-beta }}
           CANDIDATE_STABLE: ${{ inputs.candidate-stable }}

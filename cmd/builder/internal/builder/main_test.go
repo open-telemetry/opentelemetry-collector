@@ -52,7 +52,6 @@ var replaceModules = []string{
 	"/config/configretry",
 	"/config/configtelemetry",
 	"/config/configtls",
-	"/config/internal",
 	"/confmap",
 	"/confmap/provider/envprovider",
 	"/confmap/provider/fileprovider",
@@ -107,9 +106,9 @@ var replaceModules = []string{
 	"/service",
 }
 
-func newTestConfig(t testing.TB) *Config {
+func newTestConfig(tb testing.TB) *Config {
 	cfg, err := NewDefaultConfig()
-	require.NoError(t, err)
+	require.NoError(tb, err)
 	cfg.downloadModules.wait = 0
 	cfg.downloadModules.numRetries = 1
 	return cfg

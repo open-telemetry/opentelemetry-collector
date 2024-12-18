@@ -6,6 +6,8 @@ package plog // import "go.opentelemetry.io/collector/pdata/plog"
 import (
 	"bytes"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 var unexpectedBytes = "expected the same bytes from unmarshaling and marshaling."
@@ -19,24 +21,16 @@ func FuzzUnmarshalJsonLogs(f *testing.F) {
 		}
 		m1 := &JSONMarshaler{}
 		b1, err := m1.MarshalLogs(ld1)
-		if err != nil {
-			t.Fatalf("failed to marshal valid struct:  %v", err)
-		}
+		require.NoError(t, err, "failed to marshal valid struct")
 
 		u2 := &JSONUnmarshaler{}
 		ld2, err := u2.UnmarshalLogs(b1)
-		if err != nil {
-			t.Fatalf("failed to unmarshal valid bytes:  %v", err)
-		}
+		require.NoError(t, err, "failed to unmarshal valid bytes")
 		m2 := &JSONMarshaler{}
 		b2, err := m2.MarshalLogs(ld2)
-		if err != nil {
-			t.Fatalf("failed to marshal valid struct:  %v", err)
-		}
+		require.NoError(t, err, "failed to marshal valid struct")
 
-		if !bytes.Equal(b1, b2) {
-			t.Fatalf("%s. \nexpected %d but got %d\n", unexpectedBytes, b1, b2)
-		}
+		require.True(t, bytes.Equal(b1, b2), "%s. \nexpected %d but got %d\n", unexpectedBytes, b1, b2)
 	})
 }
 
@@ -49,23 +43,15 @@ func FuzzUnmarshalPBLogs(f *testing.F) {
 		}
 		m1 := &ProtoMarshaler{}
 		b1, err := m1.MarshalLogs(ld1)
-		if err != nil {
-			t.Fatalf("failed to marshal valid struct:  %v", err)
-		}
+		require.NoError(t, err, "failed to marshal valid struct")
 
 		u2 := &ProtoUnmarshaler{}
 		ld2, err := u2.UnmarshalLogs(b1)
-		if err != nil {
-			t.Fatalf("failed to unmarshal valid bytes:  %v", err)
-		}
+		require.NoError(t, err, "failed to unmarshal valid bytes")
 		m2 := &ProtoMarshaler{}
 		b2, err := m2.MarshalLogs(ld2)
-		if err != nil {
-			t.Fatalf("failed to marshal valid struct:  %v", err)
-		}
+		require.NoError(t, err, "failed to marshal valid struct")
 
-		if !bytes.Equal(b1, b2) {
-			t.Fatalf("%s. \nexpected %d but got %d\n", unexpectedBytes, b1, b2)
-		}
+		require.True(t, bytes.Equal(b1, b2), "%s. \nexpected %d but got %d\n", unexpectedBytes, b1, b2)
 	})
 }
