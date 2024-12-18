@@ -7,6 +7,20 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.116.1
+
+### 🛑 Breaking changes 🛑
+
+- `connector`: Remove deprecated connectorprofiles module, use xconnector instead. (#11778)
+- `consumererror`: Remove deprecated consumererrorprofiles module, use xconsumererror instead. (#11778)
+- `consumer`: Remove deprecated consumerprofiles module, use xconsumer instead. (#11778)
+- `exporterhelper`: Remove deprecated exporterhelperprofiles module, use xexporterhelper instead. (#11778)
+- `exporter`: Remove deprecated exporterprofiles module, use xexporter instead. (#11778)
+- `pipeline`: Remove deprecated pipelineprofiles module, use xpipeline instead. (#11778)
+- `processorhelper`: Remove deprecated processorhelperprofiles module, use xprocessorhelper instead. (#11778)
+- `processor`: Remove deprecated processorprofiles module, use xprocessor instead. (#11778)
+- `receiver`: Remove deprecated receiverprofiles module, use xreceiver instead. (#11778)
+
 ## v1.22.0/v0.116.0
 
 ### 🛑 Breaking changes 🛑

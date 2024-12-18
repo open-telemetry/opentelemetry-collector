@@ -7,6 +7,12 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.116.1
+
+### 🛑 Breaking changes 🛑
+
+- `otelcol`: This PR removes the warning when 0.0.0.0 is used (#11713, #8510)
+
 ## v1.22.0/v0.116.0
 
 ### 🛑 Breaking changes 🛑
