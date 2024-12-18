@@ -7,7 +7,6 @@ COVER_PKGS := $(shell go list ./... | tr "\n" ",")
 GOTEST_TIMEOUT?=240s
 GOTEST_OPT?= -race -timeout $(GOTEST_TIMEOUT)
 GOCMD?= go
-GOTEST=$(GOCMD) test
 GOOS := $(shell $(GOCMD) env GOOS)
 GOARCH := $(shell $(GOCMD) env GOARCH)
 
@@ -37,6 +36,7 @@ MULTIMOD     := $(TOOLS_BIN_DIR)/multimod
 PORTO        := $(TOOLS_BIN_DIR)/porto
 SEMCONVGEN   := $(TOOLS_BIN_DIR)/semconvgen
 SEMCONVKIT   := $(TOOLS_BIN_DIR)/semconvkit
+GOTESTSUM    := $(TOOLS_BIN_DIR)/gotestsum
 
 .PHONY: install-tools
 install-tools: $(TOOLS_BIN_NAMES)
@@ -48,17 +48,17 @@ $(TOOLS_BIN_NAMES): $(TOOLS_BIN_DIR) $(TOOLS_MOD_DIR)/go.mod
 	cd $(TOOLS_MOD_DIR) && $(GOCMD) build -o $@ -trimpath $(filter %/$(notdir $@),$(TOOLS_PKG_NAMES))
 
 .PHONY: test
-test:
-	$(GOTEST) $(GOTEST_OPT) ./...
+test: $(GOTESTSUM)
+	$(GOTESTSUM) --packages="./..." -- $(GOTEST_OPT)
 
 .PHONY: test-with-cover
-test-with-cover: $(GO_ACC)
+test-with-cover: $(GOTESTSUM)
 	mkdir -p $(PWD)/coverage/unit
-	$(GOTEST) $(GOTEST_OPT) -cover ./... -covermode=atomic -coverpkg $(COVER_PKGS) -args -test.gocoverdir="$(PWD)/coverage/unit"
+	$(GOTESTSUM) --packages="./..." -- $(GOTEST_OPT) -cover -covermode=atomic -coverpkg $(COVER_PKGS) -args -test.gocoverdir="$(PWD)/coverage/unit"
 
 .PHONY: benchmark
-benchmark:
-	$(GOTEST) -bench=. -run=notests ./... | tee benchmark.txt
+benchmark: $(GOTESTSUM)
+	$(GOTESTSUM) --packages="$(ALL_PKGS)" -- -bench=. -run=notests ./... | tee benchmark.txt
 
 .PHONY: fmt
 fmt: common/gofmt common/goimports common/gofumpt
