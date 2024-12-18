@@ -105,7 +105,7 @@ func NewQueueSender(
 		}
 		return err
 	}
-	if usePullingBasedExporterQueueBatcher.IsEnabled() {
+	if UsePullingBasedExporterQueueBatcher.IsEnabled() {
 		qs.batcher, _ = queue.NewBatcher(batcherCfg, q, exportFunc, numConsumers)
 	} else {
 		qs.consumers = queue.NewQueueConsumers[internal.Request](q, numConsumers, exportFunc)
@@ -119,7 +119,7 @@ func (qs *QueueSender) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 
-	if usePullingBasedExporterQueueBatcher.IsEnabled() {
+	if UsePullingBasedExporterQueueBatcher.IsEnabled() {
 		if err := qs.batcher.Start(ctx, host); err != nil {
 			return err
 		}
@@ -168,7 +168,7 @@ func (qs *QueueSender) Shutdown(ctx context.Context) error {
 	if err := qs.queue.Shutdown(ctx); err != nil {
 		return err
 	}
-	if usePullingBasedExporterQueueBatcher.IsEnabled() {
+	if UsePullingBasedExporterQueueBatcher.IsEnabled() {
 		return qs.batcher.Shutdown(ctx)
 	}
 	return qs.consumers.Shutdown(ctx)

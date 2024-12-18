@@ -40,7 +40,7 @@ func newNoopObsrepSender(*ObsReport) RequestSender {
 func TestBaseExporter(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			defer setFeatureGateForTest(t, UsePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender)
 			require.NoError(t, err)
 			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -54,7 +54,7 @@ func TestBaseExporter(t *testing.T) {
 func TestBaseExporterWithOptions(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			defer setFeatureGateForTest(t, UsePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			want := errors.New("my error")
 			be, err := NewBaseExporter(
 				defaultSettings, defaultSignal, newNoopObsrepSender,
@@ -74,7 +74,7 @@ func TestBaseExporterWithOptions(t *testing.T) {
 func TestQueueOptionsWithRequestExporter(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			defer setFeatureGateForTest(t, UsePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			bs, err := NewBaseExporter(exportertest.NewNopSettings(), defaultSignal, newNoopObsrepSender,
 				WithRetry(configretry.NewDefaultBackOffConfig()))
 			require.NoError(t, err)
@@ -98,7 +98,7 @@ func TestQueueOptionsWithRequestExporter(t *testing.T) {
 func TestBaseExporterLogging(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			defer setFeatureGateForTest(t, UsePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			set := exportertest.NewNopSettings()
 			logger, observed := observer.New(zap.DebugLevel)
 			set.Logger = zap.New(logger)

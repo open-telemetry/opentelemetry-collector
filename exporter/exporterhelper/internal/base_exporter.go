@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 )
 
-var usePullingBasedExporterQueueBatcher = featuregate.GlobalRegistry().MustRegister(
+var UsePullingBasedExporterQueueBatcher = featuregate.GlobalRegistry().MustRegister(
 	"exporter.UsePullingBasedExporterQueueBatcher",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterFromVersion("v0.115.0"),
@@ -108,8 +108,8 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSe
 		}
 	}
 
-	if !usePullingBasedExporterQueueBatcher.IsEnabled() && be.BatcherCfg.Enabled ||
-		usePullingBasedExporterQueueBatcher.IsEnabled() && be.BatcherCfg.Enabled && !be.queueCfg.Enabled {
+	if !UsePullingBasedExporterQueueBatcher.IsEnabled() && be.BatcherCfg.Enabled ||
+		UsePullingBasedExporterQueueBatcher.IsEnabled() && be.BatcherCfg.Enabled && !be.queueCfg.Enabled {
 		bs := NewBatchSender(be.BatcherCfg, be.Set)
 		be.BatchSender = bs
 	}

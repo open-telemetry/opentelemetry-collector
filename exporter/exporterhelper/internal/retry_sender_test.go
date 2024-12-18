@@ -40,7 +40,7 @@ func mockRequestMarshaler(internal.Request) ([]byte, error) {
 func TestQueuedRetry_DropOnPermanentError(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			resetFeatureGate := setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			resetFeatureGate := setFeatureGateForTest(t, UsePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			qCfg := NewDefaultQueueConfig()
 			rCfg := configretry.NewDefaultBackOffConfig()
 			mockR := newMockRequest(2, consumererror.NewPermanent(errors.New("bad data")))
@@ -72,7 +72,7 @@ func TestQueuedRetry_DropOnPermanentError(t *testing.T) {
 func TestQueuedRetry_DropOnNoRetry(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			resetFeatureGate := setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			resetFeatureGate := setFeatureGateForTest(t, UsePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			qCfg := NewDefaultQueueConfig()
 			rCfg := configretry.NewDefaultBackOffConfig()
 			rCfg.Enabled = false
@@ -106,7 +106,7 @@ func TestQueuedRetry_DropOnNoRetry(t *testing.T) {
 func TestQueuedRetry_OnError(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			resetFeatureGate := setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			resetFeatureGate := setFeatureGateForTest(t, UsePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			qCfg := NewDefaultQueueConfig()
 			qCfg.NumConsumers = 1
 			rCfg := configretry.NewDefaultBackOffConfig()
@@ -143,7 +143,7 @@ func TestQueuedRetry_OnError(t *testing.T) {
 func TestQueuedRetry_MaxElapsedTime(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			resetFeatureGate := setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			resetFeatureGate := setFeatureGateForTest(t, UsePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			qCfg := NewDefaultQueueConfig()
 			qCfg.NumConsumers = 1
 			rCfg := configretry.NewDefaultBackOffConfig()
@@ -200,7 +200,7 @@ func (e wrappedError) Unwrap() error {
 func TestQueuedRetry_ThrottleError(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			resetFeatureGate := setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			resetFeatureGate := setFeatureGateForTest(t, UsePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			qCfg := NewDefaultQueueConfig()
 			qCfg.NumConsumers = 1
 			rCfg := configretry.NewDefaultBackOffConfig()
@@ -241,7 +241,7 @@ func TestQueuedRetry_ThrottleError(t *testing.T) {
 func TestQueuedRetry_RetryOnError(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			resetFeatureGate := setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			resetFeatureGate := setFeatureGateForTest(t, UsePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			qCfg := NewDefaultQueueConfig()
 			qCfg.NumConsumers = 1
 			qCfg.QueueSize = 1
@@ -279,7 +279,7 @@ func TestQueuedRetry_RetryOnError(t *testing.T) {
 func TestQueueRetryWithNoQueue(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			defer setFeatureGateForTest(t, UsePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			rCfg := configretry.NewDefaultBackOffConfig()
 			rCfg.MaxElapsedTime = time.Nanosecond // fail fast
 			be, err := NewBaseExporter(exportertest.NewNopSettings(), pipeline.SignalLogs, newObservabilityConsumerSender, WithRetry(rCfg))
@@ -304,7 +304,7 @@ func TestQueueRetryWithNoQueue(t *testing.T) {
 func TestQueueRetryWithDisabledRetires(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			defer setFeatureGateForTest(t, UsePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			rCfg := configretry.NewDefaultBackOffConfig()
 			rCfg.Enabled = false
 			set := exportertest.NewNopSettings()
@@ -335,7 +335,7 @@ func TestQueueRetryWithDisabledRetires(t *testing.T) {
 func TestRetryWithContextTimeout(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			defer setFeatureGateForTest(t, UsePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			const testTimeout = 10 * time.Second
 
 			rCfg := configretry.NewDefaultBackOffConfig()
