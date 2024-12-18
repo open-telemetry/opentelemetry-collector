@@ -28,7 +28,7 @@ require (
 	go.uber.org/zap v1.27.0
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842
 	golang.org/x/sys v0.28.0
-	google.golang.org/grpc v1.68.1
+	google.golang.org/grpc v1.69.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -156,8 +156,6 @@ replace go.opentelemetry.io/collector/featuregate => ../featuregate
 replace go.opentelemetry.io/collector/config/configretry => ../config/configretry
 
 replace go.opentelemetry.io/collector/config/confighttp => ../config/confighttp
-
-replace go.opentelemetry.io/collector/config/internal => ../config/internal
 
 replace go.opentelemetry.io/collector/config/configauth => ../config/configauth
 
