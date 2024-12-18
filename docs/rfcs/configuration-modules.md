@@ -303,6 +303,90 @@ approach depends on the order of configuration flags, and doesn't provide a
 defined abstraction for sharing configuration, so we consider it would be better
 to define this abstraction.
 
+Other alternatives could be based on external tools already available in the CNCF
+ecosystem, such as Kustomize or Helm. They could cover some use cases, but at
+least for the mentioned tools, they would be limited to Kubernetes. Given the
+relevance of these tools, their relationship with this feature is detailed below.
+
+### Kustomize
+
+Kustomize is a tool for declarative management of Kubernetes configuration. In
+that regard, it could be used to organize the OTel Collector configuration when
+deployed on this environment, and provide similar benefits to the proposal in
+this document. But it would not be useful in other environments.
+
+It would be also difficult to use. Shareable modular configuration based on
+Kustomize would be based on composition of resources, where user-specific
+settings would be provided as [JSON patches](https://kubectl.docs.kubernetes.io/references/kustomize/kustomization/patchesjson6902/)
+or as [replacements](https://kubectl.docs.kubernetes.io/references/kustomize/kustomization/replacements/).
+In both cases it is needed to know the structure of the final configuration,
+what may not be possible for shared configuration, specially if it can be used
+in different places, or in combination with the receiver creator.
+
+Kustomize could be used though in combination with modules. For example
+kustomize could be used to deploy templates in a configmap, like in the
+following example:
+```yaml
+nameSuffix: ""
+resources:
+- service-account.yml
+- cluster-role.yml
+- role-binding.yml
+- otel-collector.yml
+configMapGenerator:
+- name: templates
+  files:
+  - templates/nginx.yml
+```
+
+And then the template can be used in the collector configuration, like in this
+example where the module is used with the receiver creator:
+```yaml
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+...
+spec:
+  volumes:
+    - name: templates
+      configMap:
+        name: templates
+    - name: data
+      emptyDir:
+  volumeMounts:
+    - name: templates
+      mountPath: /templates
+      readOnly: true
+    - name: data
+      mountPath: /data
+  config:
+    extensions:
+      k8s_observer:
+        auth_type: serviceAccount
+        observe_pods: true
+      file_modules:
+        path: "/templates"
+      file_storage:
+        directory: "/data"
+    receivers:
+      receiver_creator:
+        watch_observers: [k8s_observer]
+        receivers:
+          module/nginx:
+            rule: type == "port" && pod.name matches "nginx"
+            config:
+              name: "nginx"
+              parameters:
+                endpoint: 'http://`host`:`port`/nginx-status'
+                access_paths:
+                - '/var/log/pods/`pod.namespace`_`pod.name`_`pod.uid`/`container_name`/*.log'
+                storage_resource: file_storage
+...
+```
+
+### Helm
+
+TODO
+
 ## Open questions
 
 ### What templating language to use?
