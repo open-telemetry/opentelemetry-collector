@@ -35,7 +35,6 @@ replaces:
   - go.opentelemetry.io/collector/confmap/provider/yamlprovider => ${WORKSPACE_DIR}/confmap/provider/yamlprovider
   - go.opentelemetry.io/collector/consumer => ${WORKSPACE_DIR}/consumer
   - go.opentelemetry.io/collector/consumer/consumererror => ${WORKSPACE_DIR}/consumer/consumererror
-  - go.opentelemetry.io/collector/consumer/consumererror/consumererrorprofiles => ${WORKSPACE_DIR}/consumer/consumererror/consumererrorprofiles
   - go.opentelemetry.io/collector/consumer/consumererror/xconsumererror => ${WORKSPACE_DIR}/consumer/consumererror/xconsumererror
   - go.opentelemetry.io/collector/consumer/xconsumer => ${WORKSPACE_DIR}/consumer/xconsumer
   - go.opentelemetry.io/collector/consumer/consumertest => ${WORKSPACE_DIR}/consumer/consumertest

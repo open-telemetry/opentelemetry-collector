@@ -192,7 +192,7 @@ func TestProfilesExporter_WithSpan(t *testing.T) {
 	le, err := NewProfilesExporter(context.Background(), set, &fakeProfilesExporterConfig, newPushProfilesData(nil))
 	require.NoError(t, err)
 	require.NotNil(t, le)
-	checkWrapSpanForProfilesExporter(t, sr, set.TracerProvider.Tracer("test"), le, nil, 1)
+	checkWrapSpanForProfilesExporter(t, sr, set.TracerProvider.Tracer("test"), le, nil)
 }
 
 func TestProfilesRequestExporter_WithSpan(t *testing.T) {
@@ -205,7 +205,7 @@ func TestProfilesRequestExporter_WithSpan(t *testing.T) {
 	le, err := NewProfilesRequestExporter(context.Background(), set, internal.RequestFromProfilesFunc(nil))
 	require.NoError(t, err)
 	require.NotNil(t, le)
-	checkWrapSpanForProfilesExporter(t, sr, set.TracerProvider.Tracer("test"), le, nil, 1)
+	checkWrapSpanForProfilesExporter(t, sr, set.TracerProvider.Tracer("test"), le, nil)
 }
 
 func TestProfilesExporter_WithSpan_ReturnError(t *testing.T) {
@@ -219,7 +219,7 @@ func TestProfilesExporter_WithSpan_ReturnError(t *testing.T) {
 	le, err := NewProfilesExporter(context.Background(), set, &fakeProfilesExporterConfig, newPushProfilesData(want))
 	require.NoError(t, err)
 	require.NotNil(t, le)
-	checkWrapSpanForProfilesExporter(t, sr, set.TracerProvider.Tracer("test"), le, want, 1)
+	checkWrapSpanForProfilesExporter(t, sr, set.TracerProvider.Tracer("test"), le, want)
 }
 
 func TestProfilesRequestExporter_WithSpan_ReturnError(t *testing.T) {
@@ -233,7 +233,7 @@ func TestProfilesRequestExporter_WithSpan_ReturnError(t *testing.T) {
 	le, err := NewProfilesRequestExporter(context.Background(), set, internal.RequestFromProfilesFunc(want))
 	require.NoError(t, err)
 	require.NotNil(t, le)
-	checkWrapSpanForProfilesExporter(t, sr, set.TracerProvider.Tracer("test"), le, want, 1)
+	checkWrapSpanForProfilesExporter(t, sr, set.TracerProvider.Tracer("test"), le, want)
 }
 
 func TestProfilesExporter_WithShutdown(t *testing.T) {
@@ -299,10 +299,7 @@ func generateProfilesTraffic(t *testing.T, tracer trace.Tracer, le xexporter.Pro
 	}
 }
 
-// nolint: unparam
-func checkWrapSpanForProfilesExporter(t *testing.T, sr *tracetest.SpanRecorder, tracer trace.Tracer, le xexporter.Profiles,
-	wantError error, numSampleRecords int64,
-) {
+func checkWrapSpanForProfilesExporter(t *testing.T, sr *tracetest.SpanRecorder, tracer trace.Tracer, le xexporter.Profiles, wantError error) {
 	const numRequests = 5
 	generateProfilesTraffic(t, tracer, le, numRequests, wantError)
 
@@ -316,11 +313,11 @@ func checkWrapSpanForProfilesExporter(t *testing.T, sr *tracetest.SpanRecorder, 
 		require.Equalf(t, parentSpan.SpanContext(), sd.Parent(), "Exporter span not a child\nSpanData %v", sd)
 		internal.CheckStatus(t, sd, wantError)
 
-		sentSampleRecords := numSampleRecords
-		var failedToSendSampleRecords int64
+		sentSampleRecords := int64(1)
+		failedToSendSampleRecords := int64(0)
 		if wantError != nil {
 			sentSampleRecords = 0
-			failedToSendSampleRecords = numSampleRecords
+			failedToSendSampleRecords = 1
 		}
 		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: internal.SentSamplesKey, Value: attribute.Int64Value(sentSampleRecords)}, "SpanData %v", sd)
 		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: internal.FailedToSendSamplesKey, Value: attribute.Int64Value(failedToSendSampleRecords)}, "SpanData %v", sd)
