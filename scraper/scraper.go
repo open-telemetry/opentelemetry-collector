@@ -12,7 +12,7 @@ import (
 
 var errNilFunc = errors.New("nil scrape func")
 
-// ScrapeFunc scrapes metrics.
+// ScrapeFunc scrapes data.
 type ScrapeFunc[T any] func(context.Context) (T, error)
 
 // Option apply changes to internal options.

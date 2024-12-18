@@ -446,39 +446,39 @@ func TestDecompressorAvoidDecompressionBomb(t *testing.T) {
 	}
 }
 
-func compressGzip(t testing.TB, body []byte) *bytes.Buffer {
+func compressGzip(tb testing.TB, body []byte) *bytes.Buffer {
 	var buf bytes.Buffer
 	gw := gzip.NewWriter(&buf)
 	_, err := gw.Write(body)
-	require.NoError(t, err)
-	require.NoError(t, gw.Close())
+	require.NoError(tb, err)
+	require.NoError(tb, gw.Close())
 	return &buf
 }
 
-func compressZlib(t testing.TB, body []byte) *bytes.Buffer {
+func compressZlib(tb testing.TB, body []byte) *bytes.Buffer {
 	var buf bytes.Buffer
 	zw := zlib.NewWriter(&buf)
 	_, err := zw.Write(body)
-	require.NoError(t, err)
-	require.NoError(t, zw.Close())
+	require.NoError(tb, err)
+	require.NoError(tb, zw.Close())
 	return &buf
 }
 
-func compressSnappy(t testing.TB, body []byte) *bytes.Buffer {
+func compressSnappy(tb testing.TB, body []byte) *bytes.Buffer {
 	var buf bytes.Buffer
 	sw := snappy.NewBufferedWriter(&buf)
 	_, err := sw.Write(body)
-	require.NoError(t, err)
-	require.NoError(t, sw.Close())
+	require.NoError(tb, err)
+	require.NoError(tb, sw.Close())
 	return &buf
 }
 
-func compressZstd(t testing.TB, body []byte) *bytes.Buffer {
+func compressZstd(tb testing.TB, body []byte) *bytes.Buffer {
 	var buf bytes.Buffer
 	zw, _ := zstd.NewWriter(&buf)
 	_, err := zw.Write(body)
-	require.NoError(t, err)
-	require.NoError(t, zw.Close())
+	require.NoError(tb, err)
+	require.NoError(tb, zw.Close())
 	return &buf
 }
 

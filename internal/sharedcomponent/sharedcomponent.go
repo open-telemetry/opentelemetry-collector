@@ -102,8 +102,10 @@ func (c *Component[V]) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-var _ component.Host = (*hostWrapper)(nil)
-var _ componentstatus.Reporter = (*hostWrapper)(nil)
+var (
+	_ component.Host           = (*hostWrapper)(nil)
+	_ componentstatus.Reporter = (*hostWrapper)(nil)
+)
 
 type hostWrapper struct {
 	host           component.Host
@@ -119,6 +121,7 @@ func (h *hostWrapper) GetExtensions() map[component.ID]component.Component {
 func (h *hostWrapper) Report(e *componentstatus.Event) {
 	// Only remember an event if it will be emitted and it has not been sent already.
 	h.lock.Lock()
+	defer h.lock.Unlock()
 	if len(h.sources) > 0 {
 		h.previousEvents.Value = e
 		h.previousEvents = h.previousEvents.Next()
@@ -126,21 +129,17 @@ func (h *hostWrapper) Report(e *componentstatus.Event) {
 	for _, s := range h.sources {
 		s.Report(e)
 	}
-	h.lock.Unlock()
 }
 
 func (h *hostWrapper) addSource(s componentstatus.Reporter) {
 	h.lock.Lock()
+	defer h.lock.Unlock()
 	h.previousEvents.Do(func(a any) {
 		if e, ok := a.(*componentstatus.Event); ok {
 			s.Report(e)
 		}
 	})
-	h.lock.Unlock()
-
-	h.lock.Lock()
 	h.sources = append(h.sources, s)
-	h.lock.Unlock()
 }
 
 // Shutdown shuts down the underlying component.

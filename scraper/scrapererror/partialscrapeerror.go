@@ -6,13 +6,13 @@ package scrapererror // import "go.opentelemetry.io/collector/scraper/scrapererr
 import "errors"
 
 // PartialScrapeError is an error to represent
-// that a subset of metrics were failed to be scraped.
+// that a subset of data were failed to be scraped.
 type PartialScrapeError struct {
 	error
 	Failed int
 }
 
-// NewPartialScrapeError creates PartialScrapeError for failed metrics.
+// NewPartialScrapeError creates PartialScrapeError for failed data.
 // Use this error type only when a subset of data was failed to be scraped.
 func NewPartialScrapeError(err error, failed int) PartialScrapeError {
 	return PartialScrapeError{

@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pipeline"
-	"go.opentelemetry.io/collector/pipeline/pipelineprofiles"
+	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/components"
 )
@@ -56,7 +56,7 @@ func (n *exporterNode) buildComponent(
 		n.Component, err = builder.CreateMetrics(ctx, set)
 	case pipeline.SignalLogs:
 		n.Component, err = builder.CreateLogs(ctx, set)
-	case pipelineprofiles.SignalProfiles:
+	case xpipeline.SignalProfiles:
 		n.Component, err = builder.CreateProfiles(ctx, set)
 	default:
 		return fmt.Errorf("error creating exporter %q for data type %q is not supported", set.ID, n.pipelineType)

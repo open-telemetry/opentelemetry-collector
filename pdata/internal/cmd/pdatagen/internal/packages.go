@@ -46,7 +46,7 @@ type PackageInfo struct {
 func (p *Package) GenerateFiles() error {
 	for _, s := range p.structs {
 		path := filepath.Join(p.info.path, "generated_"+strings.ToLower(s.getName())+".go")
-		if err := os.WriteFile(path, s.generate(p.info), 0600); err != nil {
+		if err := os.WriteFile(path, s.generate(p.info), 0o600); err != nil {
 			return err
 		}
 	}
@@ -57,7 +57,7 @@ func (p *Package) GenerateFiles() error {
 func (p *Package) GenerateTestFiles() error {
 	for _, s := range p.structs {
 		path := filepath.Join(p.info.path, "generated_"+strings.ToLower(s.getName())+"_test.go")
-		if err := os.WriteFile(path, s.generateTests(p.info), 0600); err != nil {
+		if err := os.WriteFile(path, s.generateTests(p.info), 0o600); err != nil {
 			return err
 		}
 	}
@@ -72,7 +72,7 @@ func (p *Package) GenerateInternalFiles() error {
 
 	for _, s := range p.structs {
 		path := filepath.Join("internal", "generated_wrapper_"+strings.ToLower(s.getName())+".go")
-		if err := os.WriteFile(path, s.generateInternal(p.info), 0600); err != nil {
+		if err := os.WriteFile(path, s.generateInternal(p.info), 0o600); err != nil {
 			return err
 		}
 	}
