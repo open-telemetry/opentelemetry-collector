@@ -101,8 +101,23 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSe
 		be.QueueSender = NewQueueSender(q, be.Set, be.queueCfg.NumConsumers, be.ExportFailureMessage, be.Obsrep, be.BatcherCfg)
 	}
 
-	if !usePullingBasedExporterQueueBatcher.IsEnabled() && be.BatcherCfg.Enabled ||
-		usePullingBasedExporterQueueBatcher.IsEnabled() && be.BatcherCfg.Enabled && !be.queueCfg.Enabled {
+	if usePullingBasedExporterQueueBatcher.IsEnabled() && be.BatcherCfg.Enabled && !be.queueCfg.Enabled {
+		be.queueFactory = exporterqueue.NewBlockingMemoryQueue[internal.Request]()
+		be.queueCfg.QueueSize = 20
+		q := be.queueFactory(
+			context.Background(),
+			exporterqueue.Settings{
+				Signal:           be.Signal,
+				ExporterSettings: be.Set,
+			},
+			be.queueCfg)
+		be.QueueSender = NewQueueSender(q, be.Set, be.queueCfg.NumConsumers, be.ExportFailureMessage, be.Obsrep, be.BatcherCfg)
+		for _, op := range options {
+			err = multierr.Append(err, op(be))
+		}
+	}
+
+	if !usePullingBasedExporterQueueBatcher.IsEnabled() && be.BatcherCfg.Enabled {
 		bs := NewBatchSender(be.BatcherCfg, be.Set)
 		be.BatchSender = bs
 	}

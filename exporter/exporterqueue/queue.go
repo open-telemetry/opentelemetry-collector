@@ -73,6 +73,18 @@ func NewMemoryQueueFactory[T any]() Factory[T] {
 	}
 }
 
+// NewBlockingMemoryQueue returns a factory to create a new blocking memory queue.
+// Experimental: This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+func NewBlockingMemoryQueue[T any]() Factory[T] {
+	return func(_ context.Context, _ Settings, cfg Config) Queue[T] {
+		return queue.NewBlockingMemoryQueue[T](queue.BlockingMemoryQueueSettings[T]{
+			Sizer:    &queue.RequestSizer[T]{},
+			Capacity: int64(cfg.QueueSize),
+		})
+	}
+}
+
 // PersistentQueueSettings defines developer settings for the persistent queue factory.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
