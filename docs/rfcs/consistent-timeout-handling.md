@@ -204,13 +204,13 @@ Do this instead:
 
 ### Check for cancellation
 
-To simply check whether a request context is viable, not cancelled,
+To simply check whether a request context is viable, not canceled,
 before proceeding with a calculation:
 
 ```golang
     select {
     case <-ctx.Done():
-        // the context is cancelled, maybe deadline-exceeded.
+        // the context is canceled, maybe deadline-exceeded.
         return ctx.Err()
     default:
         // OK to continue
@@ -260,7 +260,7 @@ type TimeoutConfig struct {
 }
 ```
 
-The two fields are meant to be interepreted in combination, according to
+The two fields are meant to be interpreted in combination, according to
 this matrix:
 
 | Explanation | Timeout=0 | Timeout>0 |
