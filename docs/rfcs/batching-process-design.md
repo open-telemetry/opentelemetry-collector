@@ -1,8 +1,7 @@
 # Error transmission through a batching processor with concurrency
 
 Establish normative guidelines for components that batch telemetry to follow
-so that the batchprocessor and exporterhelper-based batch_sender behave in
-similar ways with good defaults.
+so that the batchprocessor and exporterhelper-based batch_sender have similar behavior.
 
 ## Motivation
 
@@ -60,32 +59,31 @@ of the OpenTelemetry data model to combine many requests into one
 request.  Here is the logical sequence of events that
 takes place as a request makes its way through a batch processor:
 
-A. The request arrives when the preceding component calls `Consume()`
+1. The request arrives when the preceding component calls `Consume()`
    on this component with Context and data.
-B. The request is placed into a channel.
-C. The request is removed from a channel by a background thread and
+1. The request is placed into a channel.
+1. The request is removed from a channel by a background thread and
    entered into the pending state.
-D. The batching process calls export one or more times containing data
+1. The batching process calls export one or more times containing data
    from the original request, receiving responses possibly with errors
    which are logged.
-E. The `Consume()` call returns control to the caller.
+1. The `Consume()` call returns control to the caller.
 
-In the batch processor, the request producer performs step A and B,
-and then it skips to F. Since the processor returns before the export
-completes, it always returns success. We refer to this behavior as
+In the batch processor, the request producer performs step 1 and 2,
+and then it skips to 5, returning success before the export completes. We refer to this behavior as
 "error suppression". The background thread, independently, observes steps
-C, D, and E, after which errors (if any) are logged.
+3 and 4, after which any errors are logged.
 
-The batch procsesor performs steps D and E multiple times in sequence, with
+The batch procsesor performs steps 4 multiple times in sequence, with
 never more than one export at a time. Effective concurrency is limited to
 1 within the component, however this is usually alleviated by the use of
-a "queue_sender" later in the pipeline. When the exporterhelper's queue sender
+a Queue sender, later in the pipeline. When the exporterhelper's Queue sender
 is enabled and the queue has space, it immediately returns success (a
 form of error suppression), which allows the batch processor to issue multiple
-batches at a time.
+batches at a time into the queue.
 
 The batch processor does not consult the incoming request's Context deadline
-or allow request context cancellation to interrupt step B. Step D is executed
+or allow request context cancellation to interrupt step 2. Step 4 is executed
 without a context deadline.
 
 Trace context is interrupted. By default, incoming gRPC metadata is not propagated.
@@ -101,18 +99,18 @@ sub-component situated after the queue sender, and it is used to compute
 batches in the intended encoding used by the exporter. It follows a different
 sequence of events compared to the processor:
 
-A. Check if there is a pending batch.
-B. If there is no pending batch, it creates a new one and starts a timer.
-C. Add the incoming data to the pending batch.
-D. Send the batch to the exporter.
-E. Wait for the batch-error.
-F. Each caller returns the batch-error.
+1. Check if there is a pending batch.
+1. If there is no pending batch, it creates a new one and starts a timer.
+1. Add the incoming data to the pending batch.
+1. Send the batch to the exporter.
+1. Wait for the batch error.
+1. Each caller returns the batch error.
 
-Unlike the batch processor, errors are propagated, not suppressed.
+Unlike the batch processor, errors are transmitted back to the callers, not suppressed.
 
 Trace context is interrupted. Outgoing requests have empty `client.Metadata`.
 
-The context deadline of the caller is not considered in step E. In step D, the
+The context deadline of the caller is not considered in step 5. In step 4, the
 export is made without a context deadline; a subsequent timeout sender typically
 configures a timeout for the export.
 
@@ -127,7 +125,7 @@ interfaces an exporter component provides:
 
 Concurrency behavior varies. In the case where `MergeSplit()` is used, there is
 a potential for multiple requests to emit from a single request. In this case,
-steps D through F are executed repeatedly while there are more requests, meaning:
+steps 4 and 5 are executed repeatedly while there are more requests, meaning:
 
 1. Exports are synchronous and sequential.
 2. An error causes aborting of subsequent parts of the request.
@@ -137,13 +135,13 @@ steps D through F are executed repeatedly while there are more requests, meaning
 The queue sender provides key functionality that determines the overall behavior
 of both batching components. When enabled, the queue sender will return success
 to the caller as soon as the request is enqueued. In the background, it concurrently
-exports requests in the queue using a configurable number of threads.
+exports requests in the queue using a configurable number of execution threads.
 
 It is worth evaluating the behavior of the queue sender with a persistent queue
 and with an in-memory queue:
 
 - Persistent queue: In this case, the queue stores the request before returning
-  success. There is not a chance of data loss.
+  success. This component is not directly responsible for data loss.
 - In-memory queue: In this case, the queue acts as a form of error suppression.
   Callers do not wait for the export to return, so there is a chance of data loss
   in this configuration.
@@ -163,7 +161,7 @@ error immediately.
 | Metadata  | Yes | No | Can it batch by metadata key value(s)? |
 | Tracing  | No | No | Instrumented for tracing? |
 | Error transmission | No | Yes | Are export errors returned to callers? |
-| Concurrency enabled | No | Merge: Yes; MergeSplit: No | Does the component limit concurrency? |
+| Concurrency enabled | No | Merge: Yes<br> MergeSplit: No | Does the component allow concurrent export? |
 | Independence | Yes | No | Are all data exported independently? |
 
 ### Change proposal
@@ -194,7 +192,7 @@ in the exporterhelper:
 The batch processor MUST be modified to achieve the following
 outcomes:
 
-- Allow concurrent exports. When the processor has a batch of
+- Allow concurrent exports. When the processor has a complete batch of
   data available to send, it will send the data immediately.
 - Transmit errors back to callers. Callers will be blocked
   while one or more requests are issued and wait on responses.
@@ -255,7 +253,7 @@ to convey the maximum amount of time to consider processing
 the request?
 
 This and several related questions are broken out into a
-companion RFC.
+[companion RFC](https://github.com/open-telemetry/opentelemetry-collector/pull/11948).
 
 #### Prototypes
 
@@ -270,18 +268,15 @@ propagation, and concurrency.
 This code can be contributed back to the core with a series of minor
 changes, some having an associated feature gate.
 
-A. Add tracing support, as described above.
-B. Make "early return" a new behavior, feature gate from on (current behavior) to off (desired behavior); otherwise, wait for the response and return the error.
-C. Make "concurrency_limit" a new setting measuring concurrency added by this component, feature gate from 1 (current behavior) to limited (e.g., 10, 100)
-
-Note that "concurrency_limit" is defined in terms that do not
-count the incoming concurrency, as it is compulsory.  A limit of
+1. Add tracing support, as described above.
+1. Make "early return" a new feature gate from on (current behavior) to off (desired behavior); when early return is enabled, suppress errors and return; otherwise, wait for the response and return the error.
+1. Make "concurrency_limit" a new setting measuring concurrency added by this component, feature gate from 1 (current behavior) to limited (e.g., 10, 100)
 
 ##### Batch sender
 
 This has not been prototyped. The exporterhelper code can be modified,
 for the batch sender to conform with this proposal.
 
-A. Add tracing support, as described above.
-B. Make "concurrency_limit" a new setting measuring concurrency added by this component, feature gate from 0 (current behavior) to limited (e.g., 10, 100)
-C. Add metadata keys support, identical to the batch processor.
+1. Add tracing support, as described above.
+1. Make "concurrency_limit" a new setting measuring concurrency added by this component, feature gate from 0 (current behavior) to limited (e.g., 10, 100)
+1. Add metadata keys support, identical to the batch processor.
