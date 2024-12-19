@@ -45,7 +45,7 @@ func TestValidateConfig_DefaultBatchMaxSize(t *testing.T) {
 	assert.NoError(t, cfg.Validate())
 }
 
-func TestValidateConfig_ValidBatchSizes(t *testing.T) {
+func TestValidateConfig_ValidBatchSizeLowerThanMaxSize(t *testing.T) {
 	cfg := &Config{
 		SendBatchSize:    100,
 		SendBatchMaxSize: 1000,
@@ -53,12 +53,20 @@ func TestValidateConfig_ValidBatchSizes(t *testing.T) {
 	assert.NoError(t, cfg.Validate())
 }
 
-func TestValidateConfig_InvalidBatchSize(t *testing.T) {
+func TestValidateConfig_ValidBatchSizeGreaterThanMaxSize(t *testing.T) {
 	cfg := &Config{
 		SendBatchSize:    1000,
 		SendBatchMaxSize: 100,
 	}
-	assert.Error(t, cfg.Validate())
+	assert.NoError(t, cfg.Validate())
+}
+
+func TestValidateConfig_ValidBatchSizeEqualsToMaxSize(t *testing.T) {
+	cfg := &Config{
+		SendBatchSize:    100,
+		SendBatchMaxSize: 100,
+	}
+	assert.NoError(t, cfg.Validate())
 }
 
 func TestValidateConfig_InvalidTimeout(t *testing.T) {

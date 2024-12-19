@@ -23,7 +23,7 @@ type Config struct {
 	// subject to only send_batch_max_size.
 	SendBatchSize uint32 `mapstructure:"send_batch_size"`
 
-	// SendBatchMaxSize is the maximum size of a batch. It must be larger than SendBatchSize.
+	// SendBatchMaxSize is the maximum size of a batch.
 	// Larger batches are split into smaller units.
 	// Default value is 0, that means no maximum size.
 	SendBatchMaxSize uint32 `mapstructure:"send_batch_max_size"`
@@ -50,9 +50,6 @@ var _ component.Config = (*Config)(nil)
 
 // Validate checks if the processor configuration is valid
 func (cfg *Config) Validate() error {
-	if cfg.SendBatchMaxSize > 0 && cfg.SendBatchMaxSize < cfg.SendBatchSize {
-		return errors.New("send_batch_max_size must be greater or equal to send_batch_size")
-	}
 	uniq := map[string]bool{}
 	for _, k := range cfg.MetadataKeys {
 		l := strings.ToLower(k)

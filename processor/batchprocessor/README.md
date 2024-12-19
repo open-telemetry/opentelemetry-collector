@@ -37,7 +37,6 @@ ignored as data will be sent immediately, subject to only `send_batch_max_size`.
 - `send_batch_max_size` (default = 0): The upper limit of the batch size.
   `0` means no upper limit of the batch size.
   This property ensures that larger batches are split into smaller units.
-  It must be greater than or equal to `send_batch_size`.
 - `metadata_keys` (default = empty): When set, this processor will
   create one batcher instance per distinct combination of values in
   the `client.Metadata`.
