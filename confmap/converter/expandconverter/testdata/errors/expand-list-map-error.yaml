@@ -1,3 +1,0 @@
-test_map:
-  extra_list_map:
-    - { recv.1: "some list map value_1",recv.2: "${EXTRA_LIST_MAP_V#ALUE_2}" }

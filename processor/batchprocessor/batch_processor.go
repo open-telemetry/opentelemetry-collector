@@ -37,7 +37,7 @@ var errTooManyBatchers = consumererror.NewPermanent(errors.New("too many batcher
 // Batches are sent out with any of the following conditions:
 // - batch size reaches cfg.SendBatchSize
 // - cfg.Timeout is elapsed since the timestamp when the previous batch was sent out.
-type batchProcessor struct {
+type batchProcessor[T any] struct {
 	logger           *zap.Logger
 	timeout          time.Duration
 	sendBatchSize    int
@@ -45,38 +45,36 @@ type batchProcessor struct {
 
 	// batchFunc is a factory for new batch objects corresponding
 	// with the appropriate signal.
-	batchFunc func() batch
-
-	// metadataKeys is the configured list of metadata keys.  When
-	// empty, the `singleton` batcher is used.  When non-empty,
-	// each distinct combination of metadata keys and values
-	// triggers a new batcher, counted in `goroutines`.
-	metadataKeys []string
-
-	// metadataLimit is the limiting size of the batchers map.
-	metadataLimit int
+	batchFunc func() batch[T]
 
 	shutdownC  chan struct{}
 	goroutines sync.WaitGroup
 
 	telemetry *batchProcessorTelemetry
 
-	//  batcher will be either *singletonBatcher or *multiBatcher
-	batcher batcher
+	// batcher will be either *singletonBatcher or *multiBatcher
+	batcher batcher[T]
 }
 
-type batcher interface {
-	consume(ctx context.Context, data any) error
+// batcher is describes a *singletonBatcher or *multiBatcher.
+type batcher[T any] interface {
+	// start initializes background resources used by this batcher.
+	start(ctx context.Context) error
+
+	// consume incorporates a new item of data into the pending batch.
+	consume(ctx context.Context, data T) error
+
+	// currentMetadataCardinality returns the number of shards.
 	currentMetadataCardinality() int
 }
 
 // shard is a single instance of the batch logic.  When metadata
 // keys are in use, one of these is created per distinct combination
 // of values.
-type shard struct {
+type shard[T any] struct {
 	// processor refers to this processor, for access to common
 	// configuration.
-	processor *batchProcessor
+	processor *batchProcessor[T]
 
 	// exportCtx is a context with the metadata key-values
 	// corresponding with this shard set.
@@ -86,38 +84,40 @@ type shard struct {
 	timer *time.Timer
 
 	// newItem is used to receive data items from producers.
-	newItem chan any
+	newItem chan T
 
 	// batch is an in-flight data item containing one of the
 	// underlying data types.
-	batch batch
+	batch batch[T]
 }
 
 // batch is an interface generalizing the individual signal types.
-type batch interface {
+type batch[T any] interface {
 	// export the current batch
-	export(ctx context.Context, sendBatchMaxSize int, returnBytes bool) (sentBatchSize int, sentBatchBytes int, err error)
+	export(ctx context.Context, req T) error
+
+	// split returns a full request built from pending items.
+	split(sendBatchMaxSize int) (sentBatchSize int, req T)
 
 	// itemCount returns the size of the current batch
 	itemCount() int
 
 	// add item to the current batch
-	add(item any)
+	add(item T)
+
+	// sizeBytes counts the OTLP encoding size of the batch
+	sizeBytes(item T) int
 }
 
-var _ consumer.Traces = (*batchProcessor)(nil)
-var _ consumer.Metrics = (*batchProcessor)(nil)
-var _ consumer.Logs = (*batchProcessor)(nil)
-
 // newBatchProcessor returns a new batch processor component.
-func newBatchProcessor(set processor.Settings, cfg *Config, batchFunc func() batch) (*batchProcessor, error) {
+func newBatchProcessor[T any](set processor.Settings, cfg *Config, batchFunc func() batch[T]) (*batchProcessor[T], error) {
 	// use lower-case, to be consistent with http/2 headers.
 	mks := make([]string, len(cfg.MetadataKeys))
 	for i, k := range cfg.MetadataKeys {
 		mks[i] = strings.ToLower(k)
 	}
 	sort.Strings(mks)
-	bp := &batchProcessor{
+	bp := &batchProcessor[T]{
 		logger: set.Logger,
 
 		sendBatchSize:    int(cfg.SendBatchSize),
@@ -125,16 +125,17 @@ func newBatchProcessor(set processor.Settings, cfg *Config, batchFunc func() bat
 		timeout:          cfg.Timeout,
 		batchFunc:        batchFunc,
 		shutdownC:        make(chan struct{}, 1),
-		metadataKeys:     mks,
-		metadataLimit:    int(cfg.MetadataCardinalityLimit),
 	}
-	if len(bp.metadataKeys) == 0 {
-		s := bp.newShard(nil)
-		s.start()
-		bp.batcher = &singleShardBatcher{batcher: s}
+	if len(mks) == 0 {
+		bp.batcher = &singleShardBatcher[T]{
+			processor: bp,
+			single:    bp.newShard(nil),
+		}
 	} else {
-		bp.batcher = &multiShardBatcher{
-			batchProcessor: bp,
+		bp.batcher = &multiShardBatcher[T]{
+			metadataKeys:  mks,
+			metadataLimit: int(cfg.MetadataCardinalityLimit),
+			processor:     bp,
 		}
 	}
 
@@ -148,30 +149,30 @@ func newBatchProcessor(set processor.Settings, cfg *Config, batchFunc func() bat
 }
 
 // newShard gets or creates a batcher corresponding with attrs.
-func (bp *batchProcessor) newShard(md map[string][]string) *shard {
+func (bp *batchProcessor[T]) newShard(md map[string][]string) *shard[T] {
 	exportCtx := client.NewContext(context.Background(), client.Info{
 		Metadata: client.NewMetadata(md),
 	})
-	b := &shard{
+	b := &shard[T]{
 		processor: bp,
-		newItem:   make(chan any, runtime.NumCPU()),
+		newItem:   make(chan T, runtime.NumCPU()),
 		exportCtx: exportCtx,
 		batch:     bp.batchFunc(),
 	}
 	return b
 }
 
-func (bp *batchProcessor) Capabilities() consumer.Capabilities {
+func (bp *batchProcessor[T]) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 
 // Start is invoked during service startup.
-func (bp *batchProcessor) Start(context.Context, component.Host) error {
-	return nil
+func (bp *batchProcessor[T]) Start(ctx context.Context, _ component.Host) error {
+	return bp.batcher.start(ctx)
 }
 
 // Shutdown is invoked during service shutdown.
-func (bp *batchProcessor) Shutdown(context.Context) error {
+func (bp *batchProcessor[T]) Shutdown(context.Context) error {
 	close(bp.shutdownC)
 
 	// Wait until all goroutines are done.
@@ -179,12 +180,12 @@ func (bp *batchProcessor) Shutdown(context.Context) error {
 	return nil
 }
 
-func (b *shard) start() {
+func (b *shard[T]) start() {
 	b.processor.goroutines.Add(1)
 	go b.startLoop()
 }
 
-func (b *shard) startLoop() {
+func (b *shard[T]) startLoop() {
 	defer b.processor.goroutines.Done()
 
 	// timerCh ensures we only block when there is a
@@ -214,9 +215,6 @@ func (b *shard) startLoop() {
 			}
 			return
 		case item := <-b.newItem:
-			if item == nil {
-				continue
-			}
 			b.processItem(item)
 		case <-timerCh:
 			if b.batch.itemCount() > 0 {
@@ -227,7 +225,7 @@ func (b *shard) startLoop() {
 	}
 }
 
-func (b *shard) processItem(item any) {
+func (b *shard[T]) processItem(item T) {
 	b.batch.add(item)
 	sent := false
 	for b.batch.itemCount() > 0 && (!b.hasTimer() || b.batch.itemCount() >= b.processor.sendBatchSize) {
@@ -241,50 +239,71 @@ func (b *shard) processItem(item any) {
 	}
 }
 
-func (b *shard) hasTimer() bool {
+func (b *shard[T]) hasTimer() bool {
 	return b.timer != nil
 }
 
-func (b *shard) stopTimer() {
+func (b *shard[T]) stopTimer() {
 	if b.hasTimer() && !b.timer.Stop() {
 		<-b.timer.C
 	}
 }
 
-func (b *shard) resetTimer() {
+func (b *shard[T]) resetTimer() {
 	if b.hasTimer() {
 		b.timer.Reset(b.processor.timeout)
 	}
 }
 
-func (b *shard) sendItems(trigger trigger) {
-	sent, bytes, err := b.batch.export(b.exportCtx, b.processor.sendBatchMaxSize, b.processor.telemetry.detailed)
+func (b *shard[T]) sendItems(trigger trigger) {
+	sent, req := b.batch.split(b.processor.sendBatchMaxSize)
+
+	err := b.batch.export(b.exportCtx, req)
 	if err != nil {
 		b.processor.logger.Warn("Sender failed", zap.Error(err))
-	} else {
-		b.processor.telemetry.record(trigger, int64(sent), int64(bytes))
+		return
 	}
+	var bytes int
+	if b.processor.telemetry.detailed {
+		bytes = b.batch.sizeBytes(req)
+	}
+	b.processor.telemetry.record(trigger, int64(sent), int64(bytes))
 }
 
 // singleShardBatcher is used when metadataKeys is empty, to avoid the
 // additional lock and map operations used in multiBatcher.
-type singleShardBatcher struct {
-	batcher *shard
+type singleShardBatcher[T any] struct {
+	processor *batchProcessor[T]
+	single    *shard[T]
 }
 
-func (sb *singleShardBatcher) consume(_ context.Context, data any) error {
-	sb.batcher.newItem <- data
+func (sb *singleShardBatcher[T]) start(context.Context) error {
+	sb.single.start()
 	return nil
 }
 
-func (sb *singleShardBatcher) currentMetadataCardinality() int {
+func (sb *singleShardBatcher[T]) consume(_ context.Context, data T) error {
+	sb.single.newItem <- data
+	return nil
+}
+
+func (sb *singleShardBatcher[T]) currentMetadataCardinality() int {
 	return 1
 }
 
-// multiBatcher is used when metadataKeys is not empty.
-type multiShardBatcher struct {
-	*batchProcessor
-	batchers sync.Map
+// multiShardBatcher is used when metadataKeys is not empty.
+type multiShardBatcher[T any] struct {
+	// metadataKeys is the configured list of metadata keys.  When
+	// empty, the `singleton` batcher is used.  When non-empty,
+	// each distinct combination of metadata keys and values
+	// triggers a new batcher, counted in `goroutines`.
+	metadataKeys []string
+
+	// metadataLimit is the limiting size of the batchers map.
+	metadataLimit int
+
+	processor *batchProcessor[T]
+	batchers  sync.Map
 
 	// Guards the size and the storing logic to ensure no more than limit items are stored.
 	// If we are willing to allow "some" extra items than the limit this can be removed and size can be made atomic.
@@ -292,7 +311,11 @@ type multiShardBatcher struct {
 	size int
 }
 
-func (mb *multiShardBatcher) consume(ctx context.Context, data any) error {
+func (mb *multiShardBatcher[T]) start(context.Context) error {
+	return nil
+}
+
+func (mb *multiShardBatcher[T]) consume(ctx context.Context, data T) error {
 	// Get each metadata key value, form the corresponding
 	// attribute set for use as a map lookup key.
 	info := client.FromContext(ctx)
@@ -321,54 +344,77 @@ func (mb *multiShardBatcher) consume(ctx context.Context, data any) error {
 		}
 
 		// aset.ToSlice() returns the sorted, deduplicated,
-		// and name-downcased list of attributes.
+		// and name-lowercased list of attributes.
 		var loaded bool
-		b, loaded = mb.batchers.LoadOrStore(aset, mb.newShard(md))
+		b, loaded = mb.batchers.LoadOrStore(aset, mb.processor.newShard(md))
 		if !loaded {
 			// Start the goroutine only if we added the object to the map, otherwise is already started.
-			b.(*shard).start()
+			b.(*shard[T]).start()
 			mb.size++
 		}
 		mb.lock.Unlock()
 	}
-	b.(*shard).newItem <- data
+	b.(*shard[T]).newItem <- data
 	return nil
 }
 
-func (mb *multiShardBatcher) currentMetadataCardinality() int {
+func (mb *multiShardBatcher[T]) currentMetadataCardinality() int {
 	mb.lock.Lock()
 	defer mb.lock.Unlock()
 	return mb.size
 }
 
-// ConsumeTraces implements TracesProcessor
-func (bp *batchProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-	return bp.batcher.consume(ctx, td)
+type tracesBatchProcessor struct {
+	*batchProcessor[ptrace.Traces]
 }
 
-// ConsumeMetrics implements MetricsProcessor
-func (bp *batchProcessor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	return bp.batcher.consume(ctx, md)
+// newTracesBatchProcessor creates a new batch processor that batches traces by size or with timeout
+func newTracesBatchProcessor(set processor.Settings, next consumer.Traces, cfg *Config) (processor.Traces, error) {
+	bp, err := newBatchProcessor(set, cfg, func() batch[ptrace.Traces] { return newBatchTraces(next) })
+	if err != nil {
+		return nil, err
+	}
+	return &tracesBatchProcessor{batchProcessor: bp}, nil
 }
 
-// ConsumeLogs implements LogsProcessor
-func (bp *batchProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
-	return bp.batcher.consume(ctx, ld)
+func (t *tracesBatchProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+	return t.batcher.consume(ctx, td)
 }
 
-// newBatchTracesProcessor creates a new batch processor that batches traces by size or with timeout
-func newBatchTracesProcessor(set processor.Settings, next consumer.Traces, cfg *Config) (*batchProcessor, error) {
-	return newBatchProcessor(set, cfg, func() batch { return newBatchTraces(next) })
+type metricsBatchProcessor struct {
+	*batchProcessor[pmetric.Metrics]
 }
 
-// newBatchMetricsProcessor creates a new batch processor that batches metrics by size or with timeout
-func newBatchMetricsProcessor(set processor.Settings, next consumer.Metrics, cfg *Config) (*batchProcessor, error) {
-	return newBatchProcessor(set, cfg, func() batch { return newBatchMetrics(next) })
+// newMetricsBatchProcessor creates a new batch processor that batches metrics by size or with timeout
+func newMetricsBatchProcessor(set processor.Settings, next consumer.Metrics, cfg *Config) (processor.Metrics, error) {
+	bp, err := newBatchProcessor(set, cfg, func() batch[pmetric.Metrics] { return newMetricsBatch(next) })
+	if err != nil {
+		return nil, err
+	}
+	return &metricsBatchProcessor{batchProcessor: bp}, nil
 }
 
-// newBatchLogsProcessor creates a new batch processor that batches logs by size or with timeout
-func newBatchLogsProcessor(set processor.Settings, next consumer.Logs, cfg *Config) (*batchProcessor, error) {
-	return newBatchProcessor(set, cfg, func() batch { return newBatchLogs(next) })
+// ConsumeMetrics implements processor.Metrics
+func (m *metricsBatchProcessor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+	return m.batcher.consume(ctx, md)
+}
+
+type logsBatchProcessor struct {
+	*batchProcessor[plog.Logs]
+}
+
+// newLogsBatchProcessor creates a new batch processor that batches logs by size or with timeout
+func newLogsBatchProcessor(set processor.Settings, next consumer.Logs, cfg *Config) (processor.Logs, error) {
+	bp, err := newBatchProcessor(set, cfg, func() batch[plog.Logs] { return newBatchLogs(next) })
+	if err != nil {
+		return nil, err
+	}
+	return &logsBatchProcessor{batchProcessor: bp}, nil
+}
+
+// ConsumeLogs implements processor.Logs
+func (l *logsBatchProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+	return l.batcher.consume(ctx, ld)
 }
 
 type batchTraces struct {
@@ -383,8 +429,7 @@ func newBatchTraces(nextConsumer consumer.Traces) *batchTraces {
 }
 
 // add updates current batchTraces by adding new TraceData object
-func (bt *batchTraces) add(item any) {
-	td := item.(ptrace.Traces)
+func (bt *batchTraces) add(td ptrace.Traces) {
 	newSpanCount := td.SpanCount()
 	if newSpanCount == 0 {
 		return
@@ -394,24 +439,28 @@ func (bt *batchTraces) add(item any) {
 	td.ResourceSpans().MoveAndAppendTo(bt.traceData.ResourceSpans())
 }
 
-func (bt *batchTraces) export(ctx context.Context, sendBatchMaxSize int, returnBytes bool) (int, int, error) {
-	var req ptrace.Traces
+func (bt *batchTraces) sizeBytes(td ptrace.Traces) int {
+	return bt.sizer.TracesSize(td)
+}
+
+func (bt *batchTraces) export(ctx context.Context, td ptrace.Traces) error {
+	return bt.nextConsumer.ConsumeTraces(ctx, td)
+}
+
+func (bt *batchTraces) split(sendBatchMaxSize int) (int, ptrace.Traces) {
+	var td ptrace.Traces
 	var sent int
-	var bytes int
 	if sendBatchMaxSize > 0 && bt.itemCount() > sendBatchMaxSize {
-		req = splitTraces(sendBatchMaxSize, bt.traceData)
+		td = splitTraces(sendBatchMaxSize, bt.traceData)
 		bt.spanCount -= sendBatchMaxSize
 		sent = sendBatchMaxSize
 	} else {
-		req = bt.traceData
+		td = bt.traceData
 		sent = bt.spanCount
 		bt.traceData = ptrace.NewTraces()
 		bt.spanCount = 0
 	}
-	if returnBytes {
-		bytes = bt.sizer.TracesSize(req)
-	}
-	return sent, bytes, bt.nextConsumer.ConsumeTraces(ctx, req)
+	return sent, td
 }
 
 func (bt *batchTraces) itemCount() int {
@@ -425,37 +474,40 @@ type batchMetrics struct {
 	sizer          pmetric.Sizer
 }
 
-func newBatchMetrics(nextConsumer consumer.Metrics) *batchMetrics {
+func newMetricsBatch(nextConsumer consumer.Metrics) *batchMetrics {
 	return &batchMetrics{nextConsumer: nextConsumer, metricData: pmetric.NewMetrics(), sizer: &pmetric.ProtoMarshaler{}}
 }
 
-func (bm *batchMetrics) export(ctx context.Context, sendBatchMaxSize int, returnBytes bool) (int, int, error) {
-	var req pmetric.Metrics
+func (bm *batchMetrics) sizeBytes(md pmetric.Metrics) int {
+	return bm.sizer.MetricsSize(md)
+}
+
+func (bm *batchMetrics) export(ctx context.Context, md pmetric.Metrics) error {
+	return bm.nextConsumer.ConsumeMetrics(ctx, md)
+}
+
+func (bm *batchMetrics) split(sendBatchMaxSize int) (int, pmetric.Metrics) {
+	var md pmetric.Metrics
 	var sent int
-	var bytes int
 	if sendBatchMaxSize > 0 && bm.dataPointCount > sendBatchMaxSize {
-		req = splitMetrics(sendBatchMaxSize, bm.metricData)
+		md = splitMetrics(sendBatchMaxSize, bm.metricData)
 		bm.dataPointCount -= sendBatchMaxSize
 		sent = sendBatchMaxSize
 	} else {
-		req = bm.metricData
+		md = bm.metricData
 		sent = bm.dataPointCount
 		bm.metricData = pmetric.NewMetrics()
 		bm.dataPointCount = 0
 	}
-	if returnBytes {
-		bytes = bm.sizer.MetricsSize(req)
-	}
-	return sent, bytes, bm.nextConsumer.ConsumeMetrics(ctx, req)
+
+	return sent, md
 }
 
 func (bm *batchMetrics) itemCount() int {
 	return bm.dataPointCount
 }
 
-func (bm *batchMetrics) add(item any) {
-	md := item.(pmetric.Metrics)
-
+func (bm *batchMetrics) add(md pmetric.Metrics) {
 	newDataPointCount := md.DataPointCount()
 	if newDataPointCount == 0 {
 		return
@@ -475,34 +527,36 @@ func newBatchLogs(nextConsumer consumer.Logs) *batchLogs {
 	return &batchLogs{nextConsumer: nextConsumer, logData: plog.NewLogs(), sizer: &plog.ProtoMarshaler{}}
 }
 
-func (bl *batchLogs) export(ctx context.Context, sendBatchMaxSize int, returnBytes bool) (int, int, error) {
-	var req plog.Logs
+func (bl *batchLogs) sizeBytes(ld plog.Logs) int {
+	return bl.sizer.LogsSize(ld)
+}
+
+func (bl *batchLogs) export(ctx context.Context, ld plog.Logs) error {
+	return bl.nextConsumer.ConsumeLogs(ctx, ld)
+}
+
+func (bl *batchLogs) split(sendBatchMaxSize int) (int, plog.Logs) {
+	var ld plog.Logs
 	var sent int
-	var bytes int
 
 	if sendBatchMaxSize > 0 && bl.logCount > sendBatchMaxSize {
-		req = splitLogs(sendBatchMaxSize, bl.logData)
+		ld = splitLogs(sendBatchMaxSize, bl.logData)
 		bl.logCount -= sendBatchMaxSize
 		sent = sendBatchMaxSize
 	} else {
-		req = bl.logData
+		ld = bl.logData
 		sent = bl.logCount
 		bl.logData = plog.NewLogs()
 		bl.logCount = 0
 	}
-	if returnBytes {
-		bytes = bl.sizer.LogsSize(req)
-	}
-	return sent, bytes, bl.nextConsumer.ConsumeLogs(ctx, req)
+	return sent, ld
 }
 
 func (bl *batchLogs) itemCount() int {
 	return bl.logCount
 }
 
-func (bl *batchLogs) add(item any) {
-	ld := item.(plog.Logs)
-
+func (bl *batchLogs) add(ld plog.Logs) {
 	newLogsCount := ld.LogRecordCount()
 	if newLogsCount == 0 {
 		return

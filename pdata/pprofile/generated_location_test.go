@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
+	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -39,22 +39,14 @@ func TestLocation_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newLocation(&otlpprofiles.Location{}, &sharedState)) })
 }
 
-func TestLocation_ID(t *testing.T) {
-	ms := NewLocation()
-	assert.Equal(t, uint64(0), ms.ID())
-	ms.SetID(uint64(1))
-	assert.Equal(t, uint64(1), ms.ID())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newLocation(&otlpprofiles.Location{}, &sharedState).SetID(uint64(1)) })
-}
-
 func TestLocation_MappingIndex(t *testing.T) {
 	ms := NewLocation()
-	assert.Equal(t, uint64(0), ms.MappingIndex())
-	ms.SetMappingIndex(uint64(1))
-	assert.Equal(t, uint64(1), ms.MappingIndex())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newLocation(&otlpprofiles.Location{}, &sharedState).SetMappingIndex(uint64(1)) })
+	assert.Equal(t, int32(0), ms.MappingIndex())
+	ms.SetMappingIndex(int32(1))
+	assert.True(t, ms.HasMappingIndex())
+	assert.Equal(t, int32(1), ms.MappingIndex())
+	ms.RemoveMappingIndex()
+	assert.False(t, ms.HasMappingIndex())
 }
 
 func TestLocation_Address(t *testing.T) {
@@ -82,20 +74,11 @@ func TestLocation_IsFolded(t *testing.T) {
 	assert.Panics(t, func() { newLocation(&otlpprofiles.Location{}, &sharedState).SetIsFolded(true) })
 }
 
-func TestLocation_TypeIndex(t *testing.T) {
+func TestLocation_AttributeIndices(t *testing.T) {
 	ms := NewLocation()
-	assert.Equal(t, uint32(0), ms.TypeIndex())
-	ms.SetTypeIndex(uint32(1))
-	assert.Equal(t, uint32(1), ms.TypeIndex())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newLocation(&otlpprofiles.Location{}, &sharedState).SetTypeIndex(uint32(1)) })
-}
-
-func TestLocation_Attributes(t *testing.T) {
-	ms := NewLocation()
-	assert.Equal(t, pcommon.NewUInt64Slice(), ms.Attributes())
-	internal.FillTestUInt64Slice(internal.UInt64Slice(ms.Attributes()))
-	assert.Equal(t, pcommon.UInt64Slice(internal.GenerateTestUInt64Slice()), ms.Attributes())
+	assert.Equal(t, pcommon.NewInt32Slice(), ms.AttributeIndices())
+	internal.FillTestInt32Slice(internal.Int32Slice(ms.AttributeIndices()))
+	assert.Equal(t, pcommon.Int32Slice(internal.GenerateTestInt32Slice()), ms.AttributeIndices())
 }
 
 func generateTestLocation() Location {
@@ -105,11 +88,9 @@ func generateTestLocation() Location {
 }
 
 func fillTestLocation(tv Location) {
-	tv.orig.Id = uint64(1)
-	tv.orig.MappingIndex = uint64(1)
+	tv.orig.MappingIndex_ = &otlpprofiles.Location_MappingIndex{MappingIndex: int32(1)}
 	tv.orig.Address = uint64(1)
 	fillTestLineSlice(newLineSlice(&tv.orig.Line, tv.state))
 	tv.orig.IsFolded = true
-	tv.orig.TypeIndex = uint32(1)
-	internal.FillTestUInt64Slice(internal.NewUInt64Slice(&tv.orig.Attributes, tv.state))
+	internal.FillTestInt32Slice(internal.NewInt32Slice(&tv.orig.AttributeIndices, tv.state))
 }

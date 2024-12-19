@@ -75,7 +75,7 @@ func newErrMapType() *errMapType {
 }
 
 func TestValidateConfig(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		name     string
 		cfg      any
 		expected error
@@ -306,7 +306,6 @@ func TestNewType(t *testing.T) {
 		{name: "kinetica"},
 		{name: "kubeletstats"},
 		{name: "loadbalancing"},
-		{name: "logging"},
 		{name: "logicmonitor"},
 		{name: "logstransform"},
 		{name: "logzio"},

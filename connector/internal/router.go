@@ -4,38 +4,39 @@
 package internal // import "go.opentelemetry.io/collector/connector/internal"
 
 import (
+	"errors"
 	"fmt"
 
 	"go.uber.org/multierr"
 
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 type BaseRouter[T any] struct {
 	fanout    func([]T) T
-	Consumers map[component.ID]T
+	Consumers map[pipeline.ID]T
 }
 
-func NewBaseRouter[T any](fanout func([]T) T, cm map[component.ID]T) BaseRouter[T] {
-	consumers := make(map[component.ID]T, len(cm))
+func NewBaseRouter[T any](fanout func([]T) T, cm map[pipeline.ID]T) BaseRouter[T] {
+	consumers := make(map[pipeline.ID]T, len(cm))
 	for k, v := range cm {
 		consumers[k] = v
 	}
 	return BaseRouter[T]{fanout: fanout, Consumers: consumers}
 }
 
-func (r *BaseRouter[T]) PipelineIDs() []component.ID {
-	ids := make([]component.ID, 0, len(r.Consumers))
+func (r *BaseRouter[T]) PipelineIDs() []pipeline.ID {
+	ids := make([]pipeline.ID, 0, len(r.Consumers))
 	for id := range r.Consumers {
 		ids = append(ids, id)
 	}
 	return ids
 }
 
-func (r *BaseRouter[T]) Consumer(pipelineIDs ...component.ID) (T, error) {
+func (r *BaseRouter[T]) Consumer(pipelineIDs ...pipeline.ID) (T, error) {
 	var ret T
 	if len(pipelineIDs) == 0 {
-		return ret, fmt.Errorf("missing consumers")
+		return ret, errors.New("missing consumers")
 	}
 	consumers := make([]T, 0, len(pipelineIDs))
 	var errors error

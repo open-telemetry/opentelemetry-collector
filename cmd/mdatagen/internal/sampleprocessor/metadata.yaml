@@ -1,0 +1,68 @@
+# Sample metadata file with all available configurations for a receiver.
+
+type: sample
+scope_name: go.opentelemetry.io/collector/internal/receiver/samplereceiver
+github_project: open-telemetry/opentelemetry-collector
+
+sem_conv_version: 1.9.0
+
+status:
+  class: processor
+  stability:
+    development: [logs]
+    beta: [traces]
+    stable: [metrics]
+  distributions: []
+  unsupported_platforms: [freebsd, illumos]
+  codeowners:
+    active: [some]
+  warnings:
+    - Any additional information that should be brought to the consumer's attention
+
+resource_attributes:
+  string.resource.attr:
+    description: Resource attribute with any string value.
+    type: string
+    enabled: true
+
+  string.enum.resource.attr:
+    description: Resource attribute with a known set of string values.
+    type: string
+    enum: [one, two]
+    enabled: true
+
+  optional.resource.attr:
+    description: Explicitly disabled ResourceAttribute.
+    type: string
+    enabled: false
+
+  slice.resource.attr:
+    description: Resource attribute with a slice value.
+    type: slice
+    enabled: true
+
+  map.resource.attr:
+    description: Resource attribute with a map value.
+    type: map
+    enabled: true
+
+  string.resource.attr_disable_warning:
+    description: Resource attribute with any string value.
+    type: string
+    enabled: true
+    warnings:
+      if_enabled_not_set: This resource_attribute will be disabled by default soon.
+
+  string.resource.attr_remove_warning:
+    description: Resource attribute with any string value.
+    type: string
+    enabled: false
+    warnings:
+      if_configured: This resource_attribute is deprecated and will be removed soon.
+
+  string.resource.attr_to_be_removed:
+    description: Resource attribute with any string value.
+    type: string
+    enabled: true
+    warnings:
+      if_enabled: This resource_attribute is deprecated and will be removed soon.

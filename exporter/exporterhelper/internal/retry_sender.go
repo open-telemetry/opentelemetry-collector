@@ -96,7 +96,9 @@ func (rs *retrySender) Send(ctx context.Context, req internal.Request) error {
 			return fmt.Errorf("not retryable error: %w", err)
 		}
 
-		req = internal.ExtractPartialRequest(req, err)
+		if errReq, ok := req.(internal.RequestErrorHandler); ok {
+			req = errReq.OnError(err)
+		}
 
 		backoffDelay := expBackoff.NextBackOff()
 		if backoffDelay == backoff.Stop {
@@ -106,6 +108,12 @@ func (rs *retrySender) Send(ctx context.Context, req internal.Request) error {
 		throttleErr := throttleRetry{}
 		if errors.As(err, &throttleErr) {
 			backoffDelay = max(backoffDelay, throttleErr.delay)
+		}
+
+		if deadline, has := ctx.Deadline(); has && time.Until(deadline) < backoffDelay {
+			// The delay is longer than the deadline.  There is no point in
+			// waiting for cancelation.
+			return fmt.Errorf("request will be cancelled before next retry: %w", err)
 		}
 
 		backoffDelayStr := backoffDelay.String()
@@ -131,12 +139,4 @@ func (rs *retrySender) Send(ctx context.Context, req internal.Request) error {
 		case <-time.After(backoffDelay):
 		}
 	}
-}
-
-// max returns the larger of x or y.
-func max(x, y time.Duration) time.Duration {
-	if x < y {
-		return y
-	}
-	return x
 }

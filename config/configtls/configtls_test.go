@@ -251,8 +251,7 @@ func TestOptionsToConfig(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			cfg, err := test.options.loadTLSConfig()
 			if test.expectError != "" {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), test.expectError)
+				assert.ErrorContains(t, err, test.expectError)
 			} else {
 				require.NoError(t, err)
 				assert.NotNil(t, cfg)
@@ -328,7 +327,6 @@ func TestLoadTLSServerConfig(t *testing.T) {
 }
 
 func TestLoadTLSServerConfigReload(t *testing.T) {
-
 	tmpCaPath := createTempClientCaFile(t)
 
 	overwriteClientCA(t, tmpCaPath, "ca-1.crt")
@@ -359,7 +357,6 @@ func TestLoadTLSServerConfigReload(t *testing.T) {
 }
 
 func TestLoadTLSServerConfigFailingReload(t *testing.T) {
-
 	tmpCaPath := createTempClientCaFile(t)
 
 	overwriteClientCA(t, tmpCaPath, "ca-1.crt")
@@ -390,7 +387,6 @@ func TestLoadTLSServerConfigFailingReload(t *testing.T) {
 }
 
 func TestLoadTLSServerConfigFailingInitialLoad(t *testing.T) {
-
 	tmpCaPath := createTempClientCaFile(t)
 
 	overwriteClientCA(t, tmpCaPath, "testCA-bad.txt")
@@ -406,7 +402,6 @@ func TestLoadTLSServerConfigFailingInitialLoad(t *testing.T) {
 }
 
 func TestLoadTLSServerConfigWrongPath(t *testing.T) {
-
 	tmpCaPath := createTempClientCaFile(t)
 
 	tlsSetting := ServerConfig{
@@ -420,7 +415,6 @@ func TestLoadTLSServerConfigWrongPath(t *testing.T) {
 }
 
 func TestLoadTLSServerConfigFailing(t *testing.T) {
-
 	tmpCaPath := createTempClientCaFile(t)
 
 	overwriteClientCA(t, tmpCaPath, "ca-1.crt")
@@ -447,11 +441,11 @@ func TestLoadTLSServerConfigFailing(t *testing.T) {
 }
 
 func overwriteClientCA(t *testing.T, targetFilePath string, testdataFileName string) {
-	targetFile, err := os.OpenFile(filepath.Clean(targetFilePath), os.O_RDWR, 0600)
+	targetFile, err := os.OpenFile(filepath.Clean(targetFilePath), os.O_RDWR, 0o600)
 	require.NoError(t, err)
 
 	testdataFilePath := filepath.Join("testdata", testdataFileName)
-	testdataFile, err := os.OpenFile(filepath.Clean(testdataFilePath), os.O_RDONLY, 0200)
+	testdataFile, err := os.OpenFile(filepath.Clean(testdataFilePath), os.O_RDONLY, 0o200)
 	require.NoError(t, err)
 
 	_, err = io.Copy(targetFile, testdataFile)
@@ -567,7 +561,7 @@ func TestCertificateReload(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotNil(t, cfg)
 
-			// Asssert that we loaded the original certificate
+			// Assert that we loaded the original certificate
 			cert, err := cfg.GetCertificate(&tls.ClientHelloInfo{})
 			require.NoError(t, err)
 			assert.NotNil(t, cert)

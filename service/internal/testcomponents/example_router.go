@@ -8,30 +8,31 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
-	"go.opentelemetry.io/collector/connector/connectorprofiles"
+	"go.opentelemetry.io/collector/connector/xconnector"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 var routerType = component.MustNewType("examplerouter")
 
 // ExampleRouterFactory is factory for ExampleRouter.
-var ExampleRouterFactory = connector.NewFactory(
+var ExampleRouterFactory = xconnector.NewFactory(
 	routerType,
 	createExampleRouterDefaultConfig,
-	connector.WithTracesToTraces(createExampleTracesRouter, component.StabilityLevelDevelopment),
-	connector.WithMetricsToMetrics(createExampleMetricsRouter, component.StabilityLevelDevelopment),
-	connector.WithLogsToLogs(createExampleLogsRouter, component.StabilityLevelDevelopment),
-	connectorprofiles.WithProfilesToProfiles(createExampleProfilesRouter, component.StabilityLevelDevelopment),
+	xconnector.WithTracesToTraces(createExampleTracesRouter, component.StabilityLevelDevelopment),
+	xconnector.WithMetricsToMetrics(createExampleMetricsRouter, component.StabilityLevelDevelopment),
+	xconnector.WithLogsToLogs(createExampleLogsRouter, component.StabilityLevelDevelopment),
+	xconnector.WithProfilesToProfiles(createExampleProfilesRouter, component.StabilityLevelDevelopment),
 )
 
 type LeftRightConfig struct {
-	Left  component.ID `mapstructure:"left"`
-	Right component.ID `mapstructure:"right"`
+	Left  pipeline.ID `mapstructure:"left"`
+	Right pipeline.ID `mapstructure:"right"`
 }
 
 type ExampleRouterConfig struct {
@@ -78,9 +79,9 @@ func createExampleLogsRouter(_ context.Context, _ connector.Settings, cfg compon
 	}, nil
 }
 
-func createExampleProfilesRouter(_ context.Context, _ connector.Settings, cfg component.Config, profiles consumerprofiles.Profiles) (connectorprofiles.Profiles, error) {
+func createExampleProfilesRouter(_ context.Context, _ connector.Settings, cfg component.Config, profiles xconsumer.Profiles) (xconnector.Profiles, error) {
 	c := cfg.(ExampleRouterConfig)
-	r := profiles.(connectorprofiles.ProfilesRouterAndConsumer)
+	r := profiles.(xconnector.ProfilesRouterAndConsumer)
 	left, _ := r.Consumer(c.Profiles.Left)
 	right, _ := r.Consumer(c.Profiles.Right)
 	return &ExampleRouter{
@@ -104,8 +105,8 @@ type ExampleRouter struct {
 	logsLeft  consumer.Logs
 	logsNum   int
 
-	profilesRight consumerprofiles.Profiles
-	profilesLeft  consumerprofiles.Profiles
+	profilesRight xconsumer.Profiles
+	profilesLeft  xconsumer.Profiles
 	profilesNum   int
 }
 

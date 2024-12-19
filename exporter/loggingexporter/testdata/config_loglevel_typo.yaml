@@ -1,2 +1,0 @@
-# Typo in the configuration that assumes that this property is camelcase
-logLevel: debug

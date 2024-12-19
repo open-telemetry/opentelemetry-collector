@@ -112,6 +112,8 @@ func (dest Span) unmarshalJsoniter(iter *jsoniter.Iterator) {
 			if err := dest.orig.ParentSpanId.UnmarshalJSON([]byte(iter.ReadString())); err != nil {
 				iter.ReportError("readSpan.parentSpanId", fmt.Sprintf("parse parent_span_id:%v", err))
 			}
+		case "flags":
+			dest.orig.Flags = json.ReadUint32(iter)
 		case "name":
 			dest.orig.Name = iter.ReadString()
 		case "kind":
@@ -184,6 +186,8 @@ func (dest SpanLink) unmarshalJsoniter(iter *jsoniter.Iterator) {
 			})
 		case "droppedAttributesCount", "dropped_attributes_count":
 			dest.orig.DroppedAttributesCount = json.ReadUint32(iter)
+		case "flags":
+			dest.orig.Flags = json.ReadUint32(iter)
 		default:
 			iter.Skip()
 		}

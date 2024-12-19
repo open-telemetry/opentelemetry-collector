@@ -17,29 +17,29 @@ func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		metadata.Type,
 		func() component.Config { return &struct{}{} },
-		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
-		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
-		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
+		exporter.WithTraces(createTraces, metadata.TracesStability),
+		exporter.WithMetrics(createMetrics, metadata.MetricsStability),
+		exporter.WithLogs(createLogs, metadata.LogsStability),
 	)
 }
 
-func createTracesExporter(context.Context, exporter.Settings, component.Config) (exporter.Traces, error) {
+func createTraces(context.Context, exporter.Settings, component.Config) (exporter.Traces, error) {
 	return nopInstance, nil
 }
 
-func createMetricsExporter(context.Context, exporter.Settings, component.Config) (exporter.Metrics, error) {
+func createMetrics(context.Context, exporter.Settings, component.Config) (exporter.Metrics, error) {
 	return nopInstance, nil
 }
 
-func createLogsExporter(context.Context, exporter.Settings, component.Config) (exporter.Logs, error) {
+func createLogs(context.Context, exporter.Settings, component.Config) (exporter.Logs, error) {
 	return nopInstance, nil
 }
 
-var nopInstance = &nopExporter{
+var nopInstance = &nop{
 	Consumer: consumertest.NewNop(),
 }
 
-type nopExporter struct {
+type nop struct {
 	component.StartFunc
 	component.ShutdownFunc
 	consumertest.Consumer

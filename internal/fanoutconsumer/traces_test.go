@@ -81,13 +81,13 @@ func TestTracesMultiplexingMutating(t *testing.T) {
 		}
 	}
 
-	assert.NotSame(t, td, p1.AllTraces()[0])
-	assert.NotSame(t, td, p1.AllTraces()[1])
+	assert.NotSame(t, &td, &p1.AllTraces()[0])
+	assert.NotSame(t, &td, &p1.AllTraces()[1])
 	assert.EqualValues(t, td, p1.AllTraces()[0])
 	assert.EqualValues(t, td, p1.AllTraces()[1])
 
-	assert.NotSame(t, td, p2.AllTraces()[0])
-	assert.NotSame(t, td, p2.AllTraces()[1])
+	assert.NotSame(t, &td, &p2.AllTraces()[0])
+	assert.NotSame(t, &td, &p2.AllTraces()[1])
 	assert.EqualValues(t, td, p2.AllTraces()[0])
 	assert.EqualValues(t, td, p2.AllTraces()[1])
 
@@ -156,8 +156,8 @@ func TestTracesMultiplexingMixLastMutating(t *testing.T) {
 		}
 	}
 
-	assert.NotSame(t, td, p1.AllTraces()[0])
-	assert.NotSame(t, td, p1.AllTraces()[1])
+	assert.NotSame(t, &td, &p1.AllTraces()[0])
+	assert.NotSame(t, &td, &p1.AllTraces()[1])
 	assert.EqualValues(t, td, p1.AllTraces()[0])
 	assert.EqualValues(t, td, p1.AllTraces()[1])
 
@@ -168,8 +168,8 @@ func TestTracesMultiplexingMixLastMutating(t *testing.T) {
 	assert.EqualValues(t, td, p2.AllTraces()[1])
 
 	// For this consumer, will clone the initial data.
-	assert.NotSame(t, td, p3.AllTraces()[0])
-	assert.NotSame(t, td, p3.AllTraces()[1])
+	assert.NotSame(t, &td, &p3.AllTraces()[0])
+	assert.NotSame(t, &td, &p3.AllTraces()[1])
 	assert.EqualValues(t, td, p3.AllTraces()[0])
 	assert.EqualValues(t, td, p3.AllTraces()[1])
 
@@ -194,13 +194,13 @@ func TestTracesMultiplexingMixLastNonMutating(t *testing.T) {
 		}
 	}
 
-	assert.NotSame(t, td, p1.AllTraces()[0])
-	assert.NotSame(t, td, p1.AllTraces()[1])
+	assert.NotSame(t, &td, &p1.AllTraces()[0])
+	assert.NotSame(t, &td, &p1.AllTraces()[1])
 	assert.EqualValues(t, td, p1.AllTraces()[0])
 	assert.EqualValues(t, td, p1.AllTraces()[1])
 
-	assert.NotSame(t, td, p2.AllTraces()[0])
-	assert.NotSame(t, td, p2.AllTraces()[1])
+	assert.NotSame(t, &td, &p2.AllTraces()[0])
+	assert.NotSame(t, &td, &p2.AllTraces()[1])
 	assert.EqualValues(t, td, p2.AllTraces()[0])
 	assert.EqualValues(t, td, p2.AllTraces()[1])
 

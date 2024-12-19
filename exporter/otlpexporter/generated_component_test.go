@@ -39,21 +39,21 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "logs",
 			createFn: func(ctx context.Context, set exporter.Settings, cfg component.Config) (component.Component, error) {
-				return factory.CreateLogsExporter(ctx, set, cfg)
+				return factory.CreateLogs(ctx, set, cfg)
 			},
 		},
 
 		{
 			name: "metrics",
 			createFn: func(ctx context.Context, set exporter.Settings, cfg component.Config) (component.Component, error) {
-				return factory.CreateMetricsExporter(ctx, set, cfg)
+				return factory.CreateMetrics(ctx, set, cfg)
 			},
 		},
 
 		{
 			name: "traces",
 			createFn: func(ctx context.Context, set exporter.Settings, cfg component.Config) (component.Component, error) {
-				return factory.CreateTracesExporter(ctx, set, cfg)
+				return factory.CreateTraces(ctx, set, cfg)
 			},
 		},
 	}

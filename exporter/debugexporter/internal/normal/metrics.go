@@ -6,6 +6,7 @@ package normal // import "go.opentelemetry.io/collector/exporter/debugexporter/i
 import (
 	"bytes"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -60,7 +61,7 @@ func writeNumberDataPoints(metric pmetric.Metric, dataPoints pmetric.NumberDataP
 		var value string
 		switch dataPoint.ValueType() {
 		case pmetric.NumberDataPointValueTypeInt:
-			value = fmt.Sprintf("%v", dataPoint.IntValue())
+			value = strconv.FormatInt(dataPoint.IntValue(), 10)
 		case pmetric.NumberDataPointValueTypeDouble:
 			value = fmt.Sprintf("%v", dataPoint.DoubleValue())
 		}

@@ -15,10 +15,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
@@ -34,8 +31,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/extension/auth"
 	"go.opentelemetry.io/collector/extension/auth/authtest"
-	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/globalgates"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
@@ -60,12 +55,14 @@ func TestNewDefaultClientConfig(t *testing.T) {
 
 	assert.Equal(t, expected, result)
 }
+
 func TestNewDefaultKeepaliveServerParameters(t *testing.T) {
 	expectedParams := &KeepaliveServerParameters{}
 	params := NewDefaultKeepaliveServerParameters()
 
 	assert.Equal(t, expectedParams, params)
 }
+
 func TestNewDefaultKeepaliveEnforcementPolicy(t *testing.T) {
 	expectedPolicy := &KeepaliveEnforcementPolicy{}
 
@@ -94,21 +91,6 @@ func TestNewDefaultServerConfig(t *testing.T) {
 	assert.Equal(t, expected, result)
 }
 
-// testBalancerBuilder facilitates testing validateBalancerName().
-type testBalancerBuilder struct{}
-
-func (testBalancerBuilder) Build(balancer.ClientConn, balancer.BuildOptions) balancer.Balancer {
-	return nil
-}
-
-func (testBalancerBuilder) Name() string {
-	return "configgrpc_balancer_test"
-}
-
-func init() {
-	balancer.Register(testBalancerBuilder{})
-}
-
 var (
 	componentID   = component.MustNewID("component")
 	testAuthID    = component.MustNewID("testauth")
@@ -126,9 +108,31 @@ func TestDefaultGrpcClientSettings(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	opts, err := gcs.toDialOptions(context.Background(), componenttest.NewNopHost(), tt.TelemetrySettings())
+	opts, err := gcs.getGrpcDialOptions(context.Background(), componenttest.NewNopHost(), tt.TelemetrySettings(), []ToClientConnOption{})
 	require.NoError(t, err)
 	assert.Len(t, opts, 2)
+}
+
+func TestGrpcClientExtraOption(t *testing.T) {
+	tt, err := componenttest.SetupTelemetry(componentID)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	gcs := &ClientConfig{
+		TLSSetting: configtls.ClientConfig{
+			Insecure: true,
+		},
+	}
+	extraOpt := grpc.WithUserAgent("test-agent")
+	opts, err := gcs.getGrpcDialOptions(
+		context.Background(),
+		componenttest.NewNopHost(),
+		tt.TelemetrySettings(),
+		[]ToClientConnOption{WithGrpcDialOption(extraOpt)},
+	)
+	require.NoError(t, err)
+	assert.Len(t, opts, 3)
+	assert.Equal(t, opts[2], extraOpt)
 }
 
 func TestAllGrpcClientSettings(t *testing.T) {
@@ -231,7 +235,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			opts, err := test.settings.toDialOptions(context.Background(), test.host, tt.TelemetrySettings())
+			opts, err := test.settings.getGrpcDialOptions(context.Background(), test.host, tt.TelemetrySettings(), []ToClientConnOption{})
 			require.NoError(t, err)
 			assert.Len(t, opts, 9)
 		})
@@ -244,9 +248,26 @@ func TestDefaultGrpcServerSettings(t *testing.T) {
 			Endpoint: "0.0.0.0:1234",
 		},
 	}
-	opts, err := gss.toServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+	opts, err := gss.getGrpcServerOptions(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), []ToServerOption{})
 	require.NoError(t, err)
 	assert.Len(t, opts, 3)
+}
+
+func TestGrpcServerExtraOption(t *testing.T) {
+	gss := &ServerConfig{
+		NetAddr: confignet.AddrConfig{
+			Endpoint: "0.0.0.0:1234",
+		},
+	}
+	extraOpt := grpc.ConnectionTimeout(1_000_000_000)
+	opts, err := gss.getGrpcServerOptions(
+		componenttest.NewNopHost(),
+		componenttest.NewNopTelemetrySettings(),
+		[]ToServerOption{WithGrpcServerOption(extraOpt)},
+	)
+	require.NoError(t, err)
+	assert.Len(t, opts, 4)
+	assert.Equal(t, opts[3], extraOpt)
 }
 
 func TestGrpcServerValidate(t *testing.T) {
@@ -296,7 +317,7 @@ func TestGrpcServerValidate(t *testing.T) {
 		t.Run(tt.err, func(t *testing.T) {
 			err := tt.gss.Validate()
 			require.Error(t, err)
-			assert.Regexp(t, tt.err, err)
+			assert.ErrorContains(t, err, tt.err)
 		})
 	}
 }
@@ -329,7 +350,7 @@ func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
 			},
 		},
 	}
-	opts, err := gss.toServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+	opts, err := gss.getGrpcServerOptions(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), []ToServerOption{})
 	require.NoError(t, err)
 	assert.Len(t, opts, 10)
 }
@@ -353,18 +374,37 @@ func TestGrpcServerAuthSettings(t *testing.T) {
 	assert.NotNil(t, srv)
 }
 
-func TestGRPCClientSettingsError(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(componentID)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+func TestGrpcClientConfigInvalidBalancer(t *testing.T) {
+	settings := ClientConfig{
+		Headers: map[string]configopaque.String{
+			"test": "test",
+		},
+		Endpoint:    "localhost:1234",
+		Compression: "gzip",
+		TLSSetting: configtls.ClientConfig{
+			Insecure: false,
+		},
+		Keepalive: &KeepaliveClientConfig{
+			Time:                time.Second,
+			Timeout:             time.Second,
+			PermitWithoutStream: true,
+		},
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		WaitForReady:    true,
+		BalancerName:    "test",
+	}
+	assert.ErrorContains(t, settings.Validate(), "invalid balancer_name: test")
+}
 
+func TestGRPCClientSettingsError(t *testing.T) {
 	tests := []struct {
 		settings ClientConfig
 		err      string
 		host     component.Host
 	}{
 		{
-			err: "^failed to load TLS config: failed to load CA CertPool File: failed to load cert /doesnt/exist:",
+			err: "failed to load TLS config: failed to load CA CertPool File: failed to load cert /doesnt/exist:",
 			settings: ClientConfig{
 				Headers:     nil,
 				Endpoint:    "",
@@ -380,7 +420,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 			},
 		},
 		{
-			err: "^failed to load TLS config: failed to load TLS cert and key: for auth via TLS, provide both certificate and key, or neither",
+			err: "failed to load TLS config: failed to load TLS cert and key: for auth via TLS, provide both certificate and key, or neither",
 			settings: ClientConfig{
 				Headers:     nil,
 				Endpoint:    "",
@@ -393,28 +433,6 @@ func TestGRPCClientSettingsError(t *testing.T) {
 					ServerName: "",
 				},
 				Keepalive: nil,
-			},
-		},
-		{
-			err: "invalid balancer_name: test",
-			settings: ClientConfig{
-				Headers: map[string]configopaque.String{
-					"test": "test",
-				},
-				Endpoint:    "localhost:1234",
-				Compression: "gzip",
-				TLSSetting: configtls.ClientConfig{
-					Insecure: false,
-				},
-				Keepalive: &KeepaliveClientConfig{
-					Time:                time.Second,
-					Timeout:             time.Second,
-					PermitWithoutStream: true,
-				},
-				ReadBufferSize:  1024,
-				WriteBufferSize: 1024,
-				WaitForReady:    true,
-				BalancerName:    "test",
 			},
 		},
 		{
@@ -469,9 +487,10 @@ func TestGRPCClientSettingsError(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.err, func(t *testing.T) {
-			_, err := test.settings.ToClientConn(context.Background(), test.host, tt.TelemetrySettings())
+			require.NoError(t, test.settings.Validate())
+			_, err := test.settings.ToClientConn(context.Background(), test.host, componenttest.NewNopTelemetrySettings())
 			require.Error(t, err)
-			assert.Regexp(t, test.err, err)
+			assert.ErrorContains(t, err, test.err)
 		})
 	}
 }
@@ -488,67 +507,9 @@ func TestUseSecure(t *testing.T) {
 		TLSSetting:  configtls.ClientConfig{},
 		Keepalive:   nil,
 	}
-	dialOpts, err := gcs.toDialOptions(context.Background(), componenttest.NewNopHost(), tt.TelemetrySettings())
+	dialOpts, err := gcs.getGrpcDialOptions(context.Background(), componenttest.NewNopHost(), tt.TelemetrySettings(), []ToClientConnOption{})
 	require.NoError(t, err)
 	assert.Len(t, dialOpts, 2)
-}
-
-func TestGRPCServerWarning(t *testing.T) {
-	prev := globalgates.UseLocalHostAsDefaultHostfeatureGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(globalgates.UseLocalHostAsDefaultHostID, false))
-	defer func() {
-		// Restore previous value.
-		require.NoError(t, featuregate.GlobalRegistry().Set(globalgates.UseLocalHostAsDefaultHostID, prev))
-	}()
-
-	tests := []struct {
-		name     string
-		settings ServerConfig
-		len      int
-	}{
-		{
-			settings: ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Endpoint:  "0.0.0.0:1234",
-					Transport: confignet.TransportTypeTCP,
-				},
-			},
-			len: 1,
-		},
-		{
-			settings: ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Endpoint:  "127.0.0.1:1234",
-					Transport: confignet.TransportTypeTCP,
-				},
-			},
-			len: 0,
-		},
-		{
-			settings: ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Endpoint:  "0.0.0.0:1234",
-					Transport: confignet.TransportTypeUnix,
-				},
-			},
-			len: 0,
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			set := componenttest.NewNopTelemetrySettings()
-			logger, observed := observer.New(zap.DebugLevel)
-			set.Logger = zap.New(logger)
-
-			opts, err := test.settings.toServerOption(componenttest.NewNopHost(), set)
-			require.NoError(t, err)
-			require.NotNil(t, opts)
-			_ = grpc.NewServer(opts...)
-
-			require.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), test.len)
-		})
-	}
-
 }
 
 func TestGRPCServerSettingsError(t *testing.T) {
@@ -557,7 +518,7 @@ func TestGRPCServerSettingsError(t *testing.T) {
 		err      string
 	}{
 		{
-			err: "^failed to load TLS config: failed to load CA CertPool File: failed to load cert /doesnt/exist:",
+			err: "failed to load TLS config: failed to load CA CertPool File: failed to load cert /doesnt/exist:",
 			settings: ServerConfig{
 				NetAddr: confignet.AddrConfig{
 					Endpoint:  "127.0.0.1:1234",
@@ -571,7 +532,7 @@ func TestGRPCServerSettingsError(t *testing.T) {
 			},
 		},
 		{
-			err: "^failed to load TLS config: failed to load TLS cert and key: for auth via TLS, provide both certificate and key, or neither",
+			err: "failed to load TLS config: failed to load TLS cert and key: for auth via TLS, provide both certificate and key, or neither",
 			settings: ServerConfig{
 				NetAddr: confignet.AddrConfig{
 					Endpoint:  "127.0.0.1:1234",
@@ -585,7 +546,7 @@ func TestGRPCServerSettingsError(t *testing.T) {
 			},
 		},
 		{
-			err: "^failed to load client CA CertPool: failed to load CA /doesnt/exist:",
+			err: "failed to load client CA CertPool: failed to load CA /doesnt/exist:",
 			settings: ServerConfig{
 				NetAddr: confignet.AddrConfig{
 					Endpoint:  "127.0.0.1:1234",
@@ -600,7 +561,7 @@ func TestGRPCServerSettingsError(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.err, func(t *testing.T) {
 			_, err := test.settings.ToServer(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
-			assert.Regexp(t, test.err, err)
+			assert.ErrorContains(t, err, test.err)
 		})
 	}
 }

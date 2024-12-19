@@ -13,46 +13,47 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 func TestNewFactory(t *testing.T) {
-	var testType = component.MustNewType("test")
+	testType := component.MustNewType("test")
 	defaultCfg := struct{}{}
-	factory := NewFactory(
+	f := NewFactory(
 		testType,
 		func() component.Config { return &defaultCfg })
-	assert.EqualValues(t, testType, factory.Type())
-	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
-	_, err := factory.CreateTracesProcessor(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
-	require.Error(t, err)
-	_, err = factory.CreateMetricsProcessor(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
-	require.Error(t, err)
-	_, err = factory.CreateLogsProcessor(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
-	assert.Error(t, err)
+	assert.EqualValues(t, testType, f.Type())
+	assert.EqualValues(t, &defaultCfg, f.CreateDefaultConfig())
+	_, err := f.CreateTraces(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
+	require.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
+	_, err = f.CreateMetrics(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
+	require.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
+	_, err = f.CreateLogs(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
+	require.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
 }
 
 func TestNewFactoryWithOptions(t *testing.T) {
-	var testType = component.MustNewType("test")
+	testType := component.MustNewType("test")
 	defaultCfg := struct{}{}
-	factory := NewFactory(
+	f := NewFactory(
 		testType,
 		func() component.Config { return &defaultCfg },
 		WithTraces(createTraces, component.StabilityLevelAlpha),
 		WithMetrics(createMetrics, component.StabilityLevelBeta),
 		WithLogs(createLogs, component.StabilityLevelUnmaintained))
-	assert.EqualValues(t, testType, factory.Type())
-	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
+	assert.EqualValues(t, testType, f.Type())
+	assert.EqualValues(t, &defaultCfg, f.CreateDefaultConfig())
 
-	assert.Equal(t, component.StabilityLevelAlpha, factory.TracesProcessorStability())
-	_, err := factory.CreateTracesProcessor(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
+	assert.Equal(t, component.StabilityLevelAlpha, f.TracesStability())
+	_, err := f.CreateTraces(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
 	require.NoError(t, err)
 
-	assert.Equal(t, component.StabilityLevelBeta, factory.MetricsProcessorStability())
-	_, err = factory.CreateMetricsProcessor(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
+	assert.Equal(t, component.StabilityLevelBeta, f.MetricsStability())
+	_, err = f.CreateMetrics(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
 	require.NoError(t, err)
 
-	assert.Equal(t, component.StabilityLevelUnmaintained, factory.LogsProcessorStability())
-	_, err = factory.CreateLogsProcessor(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
+	assert.Equal(t, component.StabilityLevelUnmaintained, f.LogsStability())
+	_, err = f.CreateLogs(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
 	assert.NoError(t, err)
 }
 

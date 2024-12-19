@@ -79,7 +79,6 @@ func Test_UnmarshalMarshalled(t *testing.T) {
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-
 			conf := confmap.New()
 			err := conf.Marshal(tc.inCfg)
 			require.NoError(t, err)

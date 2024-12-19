@@ -28,6 +28,11 @@ const (
 	// FailedToSendLogRecordsKey used to track logs that failed to be sent by exporters.
 	FailedToSendLogRecordsKey = "send_failed_log_records"
 
+	// SentSamplesKey used to track profiles samples sent by exporters.
+	SentSamplesKey = "sent_samples"
+	// FailedToSendSamplesKey used to track samples that failed to be sent by exporters.
+	FailedToSendSamplesKey = "send_failed_samples"
+
 	ExporterPrefix                 = ExporterKey + spanNameSep
 	ExportTraceDataOperationSuffix = spanNameSep + "traces"
 	ExportMetricsOperationSuffix   = spanNameSep + "metrics"

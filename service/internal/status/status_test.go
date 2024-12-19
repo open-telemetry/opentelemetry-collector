@@ -75,17 +75,19 @@ func TestStatusFSM(t *testing.T) {
 			expectedErrorCount: 2,
 		},
 		{
-			name: "PermanentError is terminal",
+			name: "PermanentError is stoppable",
 			reportedStatuses: []componentstatus.Status{
 				componentstatus.StatusStarting,
 				componentstatus.StatusOK,
 				componentstatus.StatusPermanentError,
 				componentstatus.StatusOK,
+				componentstatus.StatusStopping,
 			},
 			expectedStatuses: []componentstatus.Status{
 				componentstatus.StatusStarting,
 				componentstatus.StatusOK,
 				componentstatus.StatusPermanentError,
+				componentstatus.StatusStopping,
 			},
 			expectedErrorCount: 1,
 		},
@@ -154,7 +156,7 @@ func TestValidSeqsToStopped(t *testing.T) {
 	}
 
 	for _, ev := range events {
-		name := fmt.Sprintf("transition from: %s to: %s invalid", ev.Status(), componentstatus.StatusStopped)
+		name := fmt.Sprintf("transition from: %s to: %s", ev.Status(), componentstatus.StatusStopped)
 		t.Run(name, func(t *testing.T) {
 			fsm := newFSM(func(*componentstatus.Event) {})
 			if ev.Status() != componentstatus.StatusStarting {
@@ -165,9 +167,9 @@ func TestValidSeqsToStopped(t *testing.T) {
 			err := fsm.transition(componentstatus.NewEvent(componentstatus.StatusStopped))
 			require.ErrorIs(t, err, errInvalidStateTransition)
 
-			// stopping -> stopped is allowed for non-fatal, non-permanent errors
+			// stopping -> stopped is allowed for non-fatal errors
 			err = fsm.transition(componentstatus.NewEvent(componentstatus.StatusStopping))
-			if ev.Status() == componentstatus.StatusPermanentError || ev.Status() == componentstatus.StatusFatalError {
+			if ev.Status() == componentstatus.StatusFatalError {
 				require.ErrorIs(t, err, errInvalidStateTransition)
 			} else {
 				require.NoError(t, err)
@@ -175,7 +177,6 @@ func TestValidSeqsToStopped(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestStatusFuncs(t *testing.T) {
@@ -214,7 +215,6 @@ func TestStatusFuncs(t *testing.T) {
 		})
 	comp1Func := NewReportStatusFunc(id1, rep.ReportStatus)
 	comp2Func := NewReportStatusFunc(id2, rep.ReportStatus)
-	rep.Ready()
 
 	for _, st := range statuses1 {
 		comp1Func(componentstatus.NewEvent(st))
@@ -237,13 +237,11 @@ func TestStatusFuncsConcurrent(t *testing.T) {
 		func(err error) {
 			require.NoError(t, err)
 		})
-	rep.Ready()
 
 	wg := sync.WaitGroup{}
 	wg.Add(len(ids))
 
 	for _, id := range ids {
-		id := id
 		go func() {
 			compFn := NewReportStatusFunc(id, rep.ReportStatus)
 			compFn(componentstatus.NewEvent(componentstatus.StatusStarting))
@@ -257,24 +255,6 @@ func TestStatusFuncsConcurrent(t *testing.T) {
 
 	wg.Wait()
 	require.Equal(t, 8004, count)
-}
-
-func TestReporterReady(t *testing.T) {
-	statusFunc := func(*componentstatus.InstanceID, *componentstatus.Event) {}
-	var err error
-	rep := NewReporter(statusFunc,
-		func(e error) {
-			err = e
-		})
-	id := &componentstatus.InstanceID{}
-
-	rep.ReportStatus(id, componentstatus.NewEvent(componentstatus.StatusStarting))
-	require.ErrorIs(t, err, ErrStatusNotReady)
-	rep.Ready()
-
-	err = nil
-	rep.ReportStatus(id, componentstatus.NewEvent(componentstatus.StatusStarting))
-	require.NoError(t, err)
 }
 
 func TestReportComponentOKIfStarting(t *testing.T) {
@@ -338,7 +318,6 @@ func TestReportComponentOKIfStarting(t *testing.T) {
 					require.NoError(t, err)
 				},
 			)
-			rep.Ready()
 
 			id := &componentstatus.InstanceID{}
 			for _, status := range tt.initialStatuses {

@@ -13,6 +13,7 @@ import (
 
 	"github.com/golang/snappy"
 	"github.com/klauspost/compress/zstd"
+	"github.com/pierrec/lz4/v4"
 
 	"go.opentelemetry.io/collector/config/configcompression"
 )
@@ -32,6 +33,13 @@ var (
 	zStdPool                  = &compressor{pool: sync.Pool{New: func() any { zw, _ := zstd.NewWriter(nil, zstd.WithEncoderConcurrency(1)); return zw }}}
 	_        writeCloserReset = (*zlib.Writer)(nil)
 	zLibPool                  = &compressor{pool: sync.Pool{New: func() any { return zlib.NewWriter(nil) }}}
+	_        writeCloserReset = (*lz4.Writer)(nil)
+	lz4Pool                   = &compressor{pool: sync.Pool{New: func() any {
+		lz := lz4.NewWriter(nil)
+		// Setting concurrency to 1 to disable async decoding by goroutines. This will reduce the overall memory footprint and pool
+		_ = lz.Apply(lz4.ConcurrencyOption(1))
+		return lz
+	}}}
 )
 
 type compressor struct {
@@ -50,6 +58,8 @@ func newCompressor(compressionType configcompression.Type) (*compressor, error) 
 		return zStdPool, nil
 	case configcompression.TypeZlib, configcompression.TypeDeflate:
 		return zLibPool, nil
+	case configcompression.TypeLz4:
+		return lz4Pool, nil
 	}
 	return nil, errors.New("unsupported compression type, ")
 }

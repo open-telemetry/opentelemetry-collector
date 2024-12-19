@@ -8,7 +8,7 @@ The following telemetry is emitted by this component.
 
 ### otelcol_scraper_errored_metric_points
 
-Number of metric points that were unable to be scraped.
+Number of metric points that were unable to be scraped. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
@@ -16,7 +16,7 @@ Number of metric points that were unable to be scraped.
 
 ### otelcol_scraper_scraped_metric_points
 
-Number of metric points successfully scraped.
+Number of metric points successfully scraped. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |

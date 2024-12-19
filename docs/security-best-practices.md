@@ -82,7 +82,7 @@ sensitive and non-sensitive data as the Collector MUST support environment
 variable expansion.
 
 > For more information on environment variable expansion, see
-> [this](https://opentelemetry.io/docs/collector/configuration/#configuration-environment-variables)
+> [this](https://opentelemetry.io/docs/collector/configuration/#environment-variables)
 > documentation.
 
 When defining Go structs for configuration data that may contain sensitive information, use the `configopaque` package to define fields with the `configopaque.String` type. This ensures that the data is masked when serialized to prevent accidental exposure.
@@ -147,9 +147,6 @@ receivers:
 
 Generally, `localhost`-like addresses should be preferred over the 0.0.0.0 address.
 For more information, see [CWE-1327](https://cwe.mitre.org/data/definitions/1327.html).
-
-To change the default endpoint to be `localhost`-bound in all components, enable the `component.UseLocalHostAsDefaultHost` feature gate. This feature gate will be enabled by default in the Collector in a future release.
-
 
 If `localhost` resolves to a different IP due to your DNS settings then explicitly use the loopback IP instead: `127.0.0.1` for IPv4 or `::1` for IPv6. In IPv6 setups, ensure your system supports both IPv4 and IPv6 loopback addresses to avoid issues.
 

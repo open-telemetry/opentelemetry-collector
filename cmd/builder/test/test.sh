@@ -11,6 +11,7 @@ GOBIN=$(go env GOBIN)
 if [[ "$GO" == "" ]]; then
     GOBIN=$(which go)
 fi
+export GOBIN
 
 if [[ "$GOBIN" == "" ]]; then
     echo "Could not determine which Go binary to use."
@@ -33,15 +34,15 @@ test_build_config() {
 
     final_build_config=$(basename "${build_config}")
     "${WORKSPACE_DIR}/.tools/envsubst" < "$build_config" > "${out}/${final_build_config}"
-    if ! go run . --go "${GOBIN}" --config "${out}/${final_build_config}" --output-path "${out}" --name otelcol-built-test > "${out}/builder.log" 2>&1; then
+    if ! go run . --config "${out}/${final_build_config}" --output-path "${out}" > "${out}/builder.log" 2>&1; then
         echo "❌ FAIL ${test}. Failed to compile the test ${test}. Build logs:"
         cat "${out}/builder.log"
         failed=true
         return
     fi
 
-    if [ ! -f "${out}/otelcol-built-test" ]; then
-        echo "❌ FAIL ${test}. Binary not found for ${test} at '${out}/otelcol-built-test'. Build logs:"
+    if [ ! -f "${out}/${test}" ]; then
+        echo "❌ FAIL ${test}. Binary not found for ${test} at '${out}/${test}'. Build logs:"
         cat "${out}/builder.log"
         failed=true
         return
@@ -54,7 +55,7 @@ test_build_config() {
         return
     fi
 
-    "${out}/otelcol-built-test" --config "./test/${test}.otel.yaml" > "${out}/otelcol.log" 2>&1 &
+    "${out}/${test}" --config "./test/${test}.otel.yaml" > "${out}/otelcol.log" 2>&1 &
     pid=$!
 
     retries=0

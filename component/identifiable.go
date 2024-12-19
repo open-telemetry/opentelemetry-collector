@@ -6,11 +6,68 @@ package component // import "go.opentelemetry.io/collector/component"
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 )
 
 // typeAndNameSeparator is the separator that is used between type and name in type/name composite keys.
 const typeAndNameSeparator = "/"
+
+var (
+	// typeRegexp is used to validate the type of component.
+	// A type must start with an ASCII alphabetic character and
+	// can only contain ASCII alphanumeric characters and '_'.
+	// This must be kept in sync with the regex in cmd/mdatagen/validate.go.
+	typeRegexp = regexp.MustCompile(`^[a-zA-Z][0-9a-zA-Z_]{0,62}$`)
+
+	// nameRegexp is used to validate the name of a component. A name can consist of
+	// 1 to 1024 Unicode characters excluding whitespace, control characters, and
+	// symbols.
+	nameRegexp = regexp.MustCompile(`^[^\pZ\pC\pS]+$`)
+)
+
+// Type is the component type as it is used in the config.
+type Type struct {
+	name string
+}
+
+// String returns the string representation of the type.
+func (t Type) String() string {
+	return t.name
+}
+
+// MarshalText marshals returns the Type name.
+func (t Type) MarshalText() ([]byte, error) {
+	return []byte(t.name), nil
+}
+
+// NewType creates a type. It returns an error if the type is invalid.
+// A type must
+// - have at least one character,
+// - start with an ASCII alphabetic character and
+// - can only contain ASCII alphanumeric characters and '_'.
+func NewType(ty string) (Type, error) {
+	if len(ty) == 0 {
+		return Type{}, errors.New("id must not be empty")
+	}
+	if !typeRegexp.MatchString(ty) {
+		return Type{}, fmt.Errorf("invalid character(s) in type %q", ty)
+	}
+	return Type{name: ty}, nil
+}
+
+// MustNewType creates a type. It panics if the type is invalid.
+// A type must
+// - have at least one character,
+// - start with an ASCII alphabetic character and
+// - can only contain ASCII alphanumeric characters and '_'.
+func MustNewType(strType string) Type {
+	ty, err := NewType(strType)
+	if err != nil {
+		panic(err)
+	}
+	return ty
+}
 
 // ID represents the identity for a component. It combines two values:
 // * type - the Type of the component.
@@ -103,4 +160,14 @@ func (id ID) String() string {
 	}
 
 	return id.typeVal.String() + typeAndNameSeparator + id.nameVal
+}
+
+func validateName(nameStr string) error {
+	if len(nameStr) > 1024 {
+		return fmt.Errorf("name %q is longer than 1024 characters (%d characters)", nameStr, len(nameStr))
+	}
+	if !nameRegexp.MatchString(nameStr) {
+		return fmt.Errorf("invalid character(s) in name %q", nameStr)
+	}
+	return nil
 }

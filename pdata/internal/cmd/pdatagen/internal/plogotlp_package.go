@@ -7,15 +7,19 @@ import (
 )
 
 var plogotlp = &Package{
-	name: "plogotlp",
-	path: filepath.Join("plog", "plogotlp"),
-	imports: []string{
-		`otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"`,
-	},
-	testImports: []string{
-		`"testing"`,
-		``,
-		`"github.com/stretchr/testify/assert"`,
+	info: &PackageInfo{
+		name: "plogotlp",
+		path: filepath.Join("plog", "plogotlp"),
+		imports: []string{
+			`otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"`,
+		},
+		testImports: []string{
+			`"testing"`,
+			``,
+			`"github.com/stretchr/testify/assert"`,
+			``,
+			`"go.opentelemetry.io/collector/pdata/internal"`,
+		},
 	},
 	structs: []baseStruct{
 		exportLogsPartialSuccess,

@@ -12,10 +12,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-var (
-	// ErrQueueIsFull is the error returned when an item is offered to the Queue and the queue is full.
-	ErrQueueIsFull = errors.New("sending queue is full")
-)
+// ErrQueueIsFull is the error returned when an item is offered to the Queue and the queue is full.
+var ErrQueueIsFull = errors.New("sending queue is full")
 
 // Queue defines a producer-consumer exchange which can be backed by e.g. the memory-based ring buffer queue
 // (boundedMemoryQueue) or via a disk-based queue (persistentQueue)
@@ -25,30 +23,22 @@ type Queue[T any] interface {
 	// without violating capacity restrictions. If success returns no error.
 	// It returns ErrQueueIsFull if no space is currently available.
 	Offer(ctx context.Context, item T) error
-	// Consume applies the provided function on the head of queue.
-	// The call blocks until there is an item available or the queue is stopped.
-	// The function returns true when an item is consumed or false if the queue is stopped.
-	Consume(func(ctx context.Context, item T) error) bool
 	// Size returns the current Size of the queue
 	Size() int
 	// Capacity returns the capacity of the queue.
 	Capacity() int
-}
-
-type itemsCounter interface {
-	ItemsCount() int
+	// Read pulls the next available item from the queue along with its index. Once processing is
+	// finished, the index should be called with OnProcessingFinished to clean up the storage.
+	// The function blocks until an item is available or if the queue is stopped.
+	// Returns false if reading failed or if the queue is stopped.
+	Read(context.Context) (uint64, context.Context, T, bool)
+	// OnProcessingFinished should be called to remove the item of the given index from the queue once processing is finished.
+	OnProcessingFinished(index uint64, consumeErr error)
 }
 
 // Sizer is an interface that returns the size of the given element.
 type Sizer[T any] interface {
 	Sizeof(T) int64
-}
-
-// ItemsSizer is a Sizer implementation that returns the size of a queue element as the number of items it contains.
-type ItemsSizer[T itemsCounter] struct{}
-
-func (is *ItemsSizer[T]) Sizeof(el T) int64 {
-	return int64(el.ItemsCount())
 }
 
 // RequestSizer is a Sizer implementation that returns the size of a queue element as one request.

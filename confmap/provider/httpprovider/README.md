@@ -9,5 +9,5 @@ How this new component httpprovider works?
 Expected URI format:
 - http://...
 
-Prerequistes:
+Prerequisites:
 - Need to setup a HTTP server ahead, which returns with a config files according to the given URI

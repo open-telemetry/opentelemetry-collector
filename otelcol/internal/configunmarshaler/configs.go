@@ -4,6 +4,7 @@
 package configunmarshaler // import "go.opentelemetry.io/collector/otelcol/internal/configunmarshaler"
 
 import (
+	"errors"
 	"fmt"
 
 	"golang.org/x/exp/maps"
@@ -64,6 +65,9 @@ func (c *Configs[F]) Configs() map[component.ID]component.Config {
 }
 
 func errorUnknownType(id component.ID, factories []component.Type) error {
+	if id.Type().String() == "logging" {
+		return errors.New("the logging exporter has been deprecated, use the debug exporter instead")
+	}
 	return fmt.Errorf("unknown type: %q for id: %q (valid values: %v)", id.Type(), id, factories)
 }
 

@@ -81,13 +81,13 @@ func TestLogsMultiplexingMutating(t *testing.T) {
 		}
 	}
 
-	assert.NotSame(t, ld, p1.AllLogs()[0])
-	assert.NotSame(t, ld, p1.AllLogs()[1])
+	assert.NotSame(t, &ld, &p1.AllLogs()[0])
+	assert.NotSame(t, &ld, &p1.AllLogs()[1])
 	assert.EqualValues(t, ld, p1.AllLogs()[0])
 	assert.EqualValues(t, ld, p1.AllLogs()[1])
 
-	assert.NotSame(t, ld, p2.AllLogs()[0])
-	assert.NotSame(t, ld, p2.AllLogs()[1])
+	assert.NotSame(t, &ld, &p2.AllLogs()[0])
+	assert.NotSame(t, &ld, &p2.AllLogs()[1])
 	assert.EqualValues(t, ld, p2.AllLogs()[0])
 	assert.EqualValues(t, ld, p2.AllLogs()[1])
 
@@ -155,8 +155,8 @@ func TestLogsMultiplexingMixLastMutating(t *testing.T) {
 		}
 	}
 
-	assert.NotSame(t, ld, p1.AllLogs()[0])
-	assert.NotSame(t, ld, p1.AllLogs()[1])
+	assert.NotSame(t, &ld, &p1.AllLogs()[0])
+	assert.NotSame(t, &ld, &p1.AllLogs()[1])
 	assert.EqualValues(t, ld, p1.AllLogs()[0])
 	assert.EqualValues(t, ld, p1.AllLogs()[1])
 
@@ -167,8 +167,8 @@ func TestLogsMultiplexingMixLastMutating(t *testing.T) {
 	assert.EqualValues(t, ld, p2.AllLogs()[1])
 
 	// For this consumer, will clone the initial data.
-	assert.NotSame(t, ld, p3.AllLogs()[0])
-	assert.NotSame(t, ld, p3.AllLogs()[1])
+	assert.NotSame(t, &ld, &p3.AllLogs()[0])
+	assert.NotSame(t, &ld, &p3.AllLogs()[1])
 	assert.EqualValues(t, ld, p3.AllLogs()[0])
 	assert.EqualValues(t, ld, p3.AllLogs()[1])
 
@@ -193,13 +193,13 @@ func TestLogsMultiplexingMixLastNonMutating(t *testing.T) {
 		}
 	}
 
-	assert.NotSame(t, ld, p1.AllLogs()[0])
-	assert.NotSame(t, ld, p1.AllLogs()[1])
+	assert.NotSame(t, &ld, &p1.AllLogs()[0])
+	assert.NotSame(t, &ld, &p1.AllLogs()[1])
 	assert.EqualValues(t, ld, p1.AllLogs()[0])
 	assert.EqualValues(t, ld, p1.AllLogs()[1])
 
-	assert.NotSame(t, ld, p2.AllLogs()[0])
-	assert.NotSame(t, ld, p2.AllLogs()[1])
+	assert.NotSame(t, &ld, &p2.AllLogs()[0])
+	assert.NotSame(t, &ld, &p2.AllLogs()[1])
 	assert.EqualValues(t, ld, p2.AllLogs()[0])
 	assert.EqualValues(t, ld, p2.AllLogs()[1])
 

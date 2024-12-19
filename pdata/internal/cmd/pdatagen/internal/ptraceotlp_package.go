@@ -8,15 +8,19 @@ import (
 )
 
 var ptraceotlp = &Package{
-	name: "ptraceotlp",
-	path: filepath.Join("ptrace", "ptraceotlp"),
-	imports: []string{
-		`otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"`,
-	},
-	testImports: []string{
-		`"testing"`,
-		``,
-		`"github.com/stretchr/testify/assert"`,
+	info: &PackageInfo{
+		name: "ptraceotlp",
+		path: filepath.Join("ptrace", "ptraceotlp"),
+		imports: []string{
+			`otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"`,
+		},
+		testImports: []string{
+			`"testing"`,
+			``,
+			`"github.com/stretchr/testify/assert"`,
+			``,
+			`"go.opentelemetry.io/collector/pdata/internal"`,
+		},
 	},
 	structs: []baseStruct{
 		exportTracePartialSuccess,

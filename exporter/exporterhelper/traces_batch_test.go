@@ -18,7 +18,7 @@ import (
 func TestMergeTraces(t *testing.T) {
 	tr1 := &tracesRequest{td: testdata.GenerateTraces(2)}
 	tr2 := &tracesRequest{td: testdata.GenerateTraces(3)}
-	res, err := mergeTraces(context.Background(), tr1, tr2)
+	res, err := tr1.Merge(context.Background(), tr2)
 	require.NoError(t, err)
 	assert.Equal(t, 5, res.(*tracesRequest).td.SpanCount())
 }
@@ -26,7 +26,7 @@ func TestMergeTraces(t *testing.T) {
 func TestMergeTracesInvalidInput(t *testing.T) {
 	tr1 := &logsRequest{ld: testdata.GenerateLogs(2)}
 	tr2 := &tracesRequest{td: testdata.GenerateTraces(3)}
-	_, err := mergeTraces(context.Background(), tr1, tr2)
+	_, err := tr1.Merge(context.Background(), tr2)
 	assert.Error(t, err)
 }
 
@@ -46,13 +46,6 @@ func TestMergeSplitTraces(t *testing.T) {
 			expected: []*tracesRequest{{td: ptrace.NewTraces()}},
 		},
 		{
-			name:     "both_requests_nil",
-			cfg:      exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
-			tr1:      nil,
-			tr2:      nil,
-			expected: []*tracesRequest{},
-		},
-		{
 			name:     "first_request_empty",
 			cfg:      exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
 			tr1:      &tracesRequest{td: ptrace.NewTraces()},
@@ -67,10 +60,10 @@ func TestMergeSplitTraces(t *testing.T) {
 			expected: []*tracesRequest{{td: testdata.GenerateTraces(5)}},
 		},
 		{
-			name:     "first_nil_second_empty",
+			name:     "first_empty_second_nil",
 			cfg:      exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
-			tr1:      nil,
-			tr2:      &tracesRequest{td: ptrace.NewTraces()},
+			tr1:      &tracesRequest{td: ptrace.NewTraces()},
+			tr2:      nil,
 			expected: []*tracesRequest{{td: ptrace.NewTraces()}},
 		},
 		{
@@ -87,7 +80,7 @@ func TestMergeSplitTraces(t *testing.T) {
 		{
 			name: "split_only",
 			cfg:  exporterbatcher.MaxSizeConfig{MaxSizeItems: 4},
-			tr1:  nil,
+			tr1:  &tracesRequest{td: ptrace.NewTraces()},
 			tr2:  &tracesRequest{td: testdata.GenerateTraces(10)},
 			expected: []*tracesRequest{
 				{td: testdata.GenerateTraces(4)},
@@ -133,7 +126,7 @@ func TestMergeSplitTraces(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := mergeSplitTraces(context.Background(), tt.cfg, tt.tr1, tt.tr2)
+			res, err := tt.tr1.MergeSplit(context.Background(), tt.cfg, tt.tr2)
 			require.NoError(t, err)
 			assert.Equal(t, len(tt.expected), len(res))
 			for i := range res {
@@ -146,7 +139,7 @@ func TestMergeSplitTraces(t *testing.T) {
 func TestMergeSplitTracesInvalidInput(t *testing.T) {
 	r1 := &tracesRequest{td: testdata.GenerateTraces(2)}
 	r2 := &metricsRequest{md: testdata.GenerateMetrics(3)}
-	_, err := mergeSplitTraces(context.Background(), exporterbatcher.MaxSizeConfig{MaxSizeItems: 10}, r1, r2)
+	_, err := r1.MergeSplit(context.Background(), exporterbatcher.MaxSizeConfig{MaxSizeItems: 10}, r2)
 	assert.Error(t, err)
 }
 

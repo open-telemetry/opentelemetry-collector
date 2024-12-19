@@ -5,7 +5,7 @@ package pprofile // import "go.opentelemetry.io/collector/pdata/pprofile"
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
+	otlpprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 var _ MarshalSizer = (*ProtoMarshaler)(nil)

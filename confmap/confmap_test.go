@@ -6,6 +6,7 @@ package confmap
 import (
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -213,14 +214,14 @@ func TestMapKeyStringToMapKeyTextUnmarshalerHookFunc(t *testing.T) {
 	assert.Equal(t, map[TestID]string{"string": "this is a string"}, cfg.Map)
 }
 
-type UintConfig struct {
-	UintTest uint32 `mapstructure:"uint_test"`
+type Uint32Config struct {
+	Value uint32 `mapstructure:"value"`
 }
 
-func TestUintUnmarshalerSuccess(t *testing.T) {
+func TestUint32UnmarshalerSuccess(t *testing.T) {
 	tests := []struct {
 		name      string
-		testValue int
+		testValue uint32
 	}{
 		{
 			name:      "Test convert 0 to uint",
@@ -230,34 +231,50 @@ func TestUintUnmarshalerSuccess(t *testing.T) {
 			name:      "Test positive uint conversion",
 			testValue: 1000,
 		},
+		{
+			name:      "Test largest uint64 conversion",
+			testValue: math.MaxUint32,
+		},
 	}
 
 	for _, tt := range tests {
-		tt := tt
-
 		t.Run(tt.name, func(t *testing.T) {
 			stringMap := map[string]any{
-				"uint_test": tt.testValue,
+				"value": int(tt.testValue),
 			}
 			conf := NewFromStringMap(stringMap)
-			cfg := &UintConfig{}
+			cfg := &Uint32Config{}
 			err := conf.Unmarshal(cfg)
 
 			require.NoError(t, err)
-			assert.Equal(t, cfg.UintTest, uint32(tt.testValue))
+			assert.Equal(t, cfg.Value, tt.testValue)
 		})
 	}
 }
 
-func TestUint64Unmarshaler(t *testing.T) {
-	negativeInt := -1000
-	testValue := uint64(negativeInt)
-
-	type Uint64Config struct {
-		UintTest uint64 `mapstructure:"uint_test"`
-	}
+func TestUint32UnmarshalerFailure(t *testing.T) {
+	testValue := -1000
 	stringMap := map[string]any{
-		"uint_test": testValue,
+		"value": testValue,
+	}
+	conf := NewFromStringMap(stringMap)
+	cfg := &Uint32Config{}
+	err := conf.Unmarshal(cfg)
+
+	assert.ErrorContains(t, err, fmt.Sprintf("decoding failed due to the following error(s):\n\ncannot parse 'value', %d overflows uint", testValue))
+}
+
+type Uint64Config struct {
+	Value uint64 `mapstructure:"value"`
+}
+
+func TestUint64Unmarshaler(t *testing.T) {
+	// Equivalent to -1000, but converted to uint64
+	value := uint64(1000)
+	testValue := ^(value - 1)
+
+	stringMap := map[string]any{
+		"value": testValue,
 	}
 
 	conf := NewFromStringMap(stringMap)
@@ -265,20 +282,19 @@ func TestUint64Unmarshaler(t *testing.T) {
 	err := conf.Unmarshal(cfg)
 
 	require.NoError(t, err)
-	assert.Equal(t, cfg.UintTest, testValue)
+	assert.Equal(t, cfg.Value, testValue)
 }
 
-func TestUintUnmarshalerFailure(t *testing.T) {
+func TestUint64UnmarshalerFailure(t *testing.T) {
 	testValue := -1000
 	stringMap := map[string]any{
-		"uint_test": testValue,
+		"value": testValue,
 	}
 	conf := NewFromStringMap(stringMap)
-	cfg := &UintConfig{}
+	cfg := &Uint64Config{}
 	err := conf.Unmarshal(cfg)
 
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), fmt.Sprintf("decoding failed due to the following error(s):\n\ncannot parse 'uint_test', %d overflows uint", testValue))
+	assert.ErrorContains(t, err, fmt.Sprintf("decoding failed due to the following error(s):\n\ncannot parse 'value', %d overflows uint", testValue))
 }
 
 func TestMapKeyStringToMapKeyTextUnmarshalerHookFuncDuplicateID(t *testing.T) {
@@ -366,12 +382,12 @@ func TestMarshaler(t *testing.T) {
 }
 
 // newConfFromFile creates a new Conf by reading the given file.
-func newConfFromFile(t testing.TB, fileName string) map[string]any {
+func newConfFromFile(tb testing.TB, fileName string) map[string]any {
 	content, err := os.ReadFile(filepath.Clean(fileName))
-	require.NoErrorf(t, err, "unable to read the file %v", fileName)
+	require.NoErrorf(tb, err, "unable to read the file %v", fileName)
 
 	var data map[string]any
-	require.NoError(t, yaml.Unmarshal(content, &data), "unable to parse yaml")
+	require.NoError(tb, yaml.Unmarshal(content, &data), "unable to parse yaml")
 
 	return NewFromStringMap(data).ToStringMap()
 }
@@ -433,15 +449,13 @@ func (ec *EmbeddedConfig2) Unmarshal(component *Conf) error {
 	return nil
 }
 
-type EmbeddedConfigWithError struct {
-}
+type EmbeddedConfigWithError struct{}
 
 func (ecwe *EmbeddedConfigWithError) Unmarshal(_ *Conf) error {
 	return errors.New("embedded error")
 }
 
-type EmbeddedConfigWithMarshalError struct {
-}
+type EmbeddedConfigWithMarshalError struct{}
 
 func (ecwe EmbeddedConfigWithMarshalError) Marshal(_ *Conf) error {
 	return errors.New("marshaling error")
@@ -664,8 +678,6 @@ func TestZeroSliceHookFunc(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
-
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := NewFromStringMap(tt.cfg)
 
@@ -850,7 +862,8 @@ func TestExpandedValue(t *testing.T) {
 		"key": expandedValue{
 			Value:    0xdeadbeef,
 			Original: "original",
-		}})
+		},
+	})
 	assert.Equal(t, 0xdeadbeef, cm.Get("key"))
 	assert.Equal(t, map[string]any{"key": 0xdeadbeef}, cm.ToStringMap())
 

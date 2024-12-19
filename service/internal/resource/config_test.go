@@ -103,7 +103,6 @@ func TestNew(t *testing.T) {
 			assert.EqualValues(t, tt.want, got)
 		})
 	}
-
 }
 
 func pdataFromSdk(res *sdkresource.Resource) pcommon.Resource {

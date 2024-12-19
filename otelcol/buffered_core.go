@@ -6,7 +6,7 @@
 package otelcol // import "go.opentelemetry.io/collector/otelcol"
 
 import (
-	"fmt"
+	"errors"
 	"sync"
 
 	"go.uber.org/zap/zapcore"
@@ -55,7 +55,7 @@ func (bc *bufferedCore) Write(ent zapcore.Entry, fields []zapcore.Field) error {
 	bc.mu.Lock()
 	defer bc.mu.Unlock()
 	if bc.logsTaken {
-		return fmt.Errorf("the buffered logs have already been taken so writing is no longer supported")
+		return errors.New("the buffered logs have already been taken so writing is no longer supported")
 	}
 	all := make([]zapcore.Field, 0, len(fields)+len(bc.context))
 	all = append(all, bc.context...)

@@ -6,6 +6,7 @@ package confmap // import "go.opentelemetry.io/collector/confmap"
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
@@ -235,7 +236,7 @@ func checkRawConfType(rawConf any) error {
 		return nil
 	}
 	switch rawConf.(type) {
-	case int, int32, int64, float32, float64, bool, string, []any, map[string]any:
+	case int, int32, int64, float32, float64, bool, string, []any, map[string]any, time.Time:
 		return nil
 	default:
 		return fmt.Errorf(

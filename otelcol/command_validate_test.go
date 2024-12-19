@@ -17,8 +17,7 @@ import (
 func TestValidateSubCommandNoConfig(t *testing.T) {
 	cmd := newValidateSubCommand(CollectorSettings{Factories: nopFactories}, flags(featuregate.GlobalRegistry()))
 	err := cmd.Execute()
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "at least one config flag must be provided")
+	require.ErrorContains(t, err, "at least one config flag must be provided")
 }
 
 func TestValidateSubCommandInvalidComponents(t *testing.T) {
@@ -34,6 +33,5 @@ func TestValidateSubCommandInvalidComponents(t *testing.T) {
 		},
 	}}, flags(featuregate.GlobalRegistry()))
 	err := cmd.Execute()
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "unknown type: \"nosuchprocessor\"")
+	require.ErrorContains(t, err, "unknown type: \"nosuchprocessor\"")
 }

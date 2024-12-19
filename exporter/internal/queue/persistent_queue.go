@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/internal/experr"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 // persistentQueue provides a persistent queue implementation backed by file storage extension
@@ -85,7 +86,7 @@ var (
 type PersistentQueueSettings[T any] struct {
 	Sizer            Sizer[T]
 	Capacity         int64
-	DataType         component.DataType
+	Signal           pipeline.Signal
 	StorageID        component.ID
 	Marshaler        func(req T) ([]byte, error)
 	Unmarshaler      func([]byte) (T, error)
@@ -104,7 +105,7 @@ func NewPersistentQueue[T any](set PersistentQueueSettings[T]) Queue[T] {
 
 // Start starts the persistentQueue with the given number of consumers.
 func (pq *persistentQueue[T]) Start(ctx context.Context, host component.Host) error {
-	storageClient, err := toStorageClient(ctx, pq.set.StorageID, host, pq.set.ExporterSettings.ID, pq.set.DataType)
+	storageClient, err := toStorageClient(ctx, pq.set.StorageID, host, pq.set.ExporterSettings.ID, pq.set.Signal)
 	if err != nil {
 		return err
 	}
@@ -165,6 +166,7 @@ func (pq *persistentQueue[T]) initPersistentContiguousStorage(ctx context.Contex
 		initEls = make([]permanentQueueEl, initIndexSize)
 	}
 
+	// nolint: gosec
 	pq.sizedChannel = newSizedChannel[permanentQueueEl](pq.set.Capacity, initEls, int64(initQueueSize))
 }
 
@@ -186,36 +188,6 @@ func (pq *persistentQueue[T]) restoreQueueSizeFromStorage(ctx context.Context) (
 		return 0, err
 	}
 	return bytesToItemIndex(val)
-}
-
-// Consume applies the provided function on the head of queue.
-// The call blocks until there is an item available or the queue is stopped.
-// The function returns true when an item is consumed or false if the queue is stopped.
-func (pq *persistentQueue[T]) Consume(consumeFunc func(context.Context, T) error) bool {
-	for {
-		var (
-			req                  T
-			onProcessingFinished func(error)
-			consumed             bool
-		)
-
-		// If we are stopped we still process all the other events in the channel before, but we
-		// return fast in the `getNextItem`, so we will free the channel fast and get to the stop.
-		_, ok := pq.sizedChannel.pop(func(permanentQueueEl) int64 {
-			req, onProcessingFinished, consumed = pq.getNextItem(context.Background())
-			if !consumed {
-				return 0
-			}
-			return pq.set.Sizer.Sizeof(req)
-		})
-		if !ok {
-			return false
-		}
-		if consumed {
-			onProcessingFinished(consumeFunc(context.Background(), req))
-			return true
-		}
-	}
 }
 
 func (pq *persistentQueue[T]) Shutdown(ctx context.Context) error {
@@ -242,6 +214,7 @@ func (pq *persistentQueue[T]) backupQueueSize(ctx context.Context) error {
 		return nil
 	}
 
+	// nolint: gosec
 	return pq.client.Set(ctx, queueSizeKey, itemIndexToBytes(uint64(pq.Size())))
 }
 
@@ -302,20 +275,48 @@ func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
 	return nil
 }
 
-// getNextItem pulls the next available item from the persistent storage along with a callback function that should be
-// called after the item is processed to clean up the storage. If no new item is available, returns false.
-func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (T, func(error), bool) {
+func (pq *persistentQueue[T]) Read(ctx context.Context) (uint64, context.Context, T, bool) {
+	for {
+		var (
+			index    uint64
+			req      T
+			consumed bool
+		)
+		_, ok := pq.sizedChannel.pop(func(permanentQueueEl) int64 {
+			size := int64(0)
+			index, req, consumed = pq.getNextItem(ctx)
+			if consumed {
+				size = pq.set.Sizer.Sizeof(req)
+			}
+			return size
+		})
+		if !ok {
+			return 0, nil, req, false
+		}
+		if consumed {
+			return index, context.TODO(), req, true
+		}
+
+		// If ok && !consumed, it means we are stopped. In this case, we still process all the other events
+		// in the channel before, so we will free the channel fast and get to the stop.
+	}
+}
+
+// getNextItem pulls the next available item from the persistent storage along with its index. Once processing is
+// finished, the index should be called with OnProcessingFinished to clean up the storage. If no new item is available,
+// returns false.
+func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (uint64, T, bool) {
 	pq.mu.Lock()
 	defer pq.mu.Unlock()
 
 	var request T
 
 	if pq.stopped {
-		return request, nil, false
+		return 0, request, false
 	}
 
 	if pq.readIndex == pq.writeIndex {
-		return request, nil, false
+		return 0, request, false
 	}
 
 	index := pq.readIndex
@@ -339,45 +340,48 @@ func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (T, func(error), 
 			pq.logger.Error("Error deleting item from queue", zap.Error(err))
 		}
 
-		return request, nil, false
+		return 0, request, false
 	}
 
 	// Increase the reference count, so the client is not closed while the request is being processed.
 	// The client cannot be closed because we hold the lock since last we checked `stopped`.
 	pq.refClient++
-	return request, func(consumeErr error) {
-		// Delete the item from the persistent storage after it was processed.
-		pq.mu.Lock()
-		// Always unref client even if the consumer is shutdown because we always ref it for every valid request.
-		defer func() {
-			if err = pq.unrefClient(ctx); err != nil {
-				pq.logger.Error("Error closing the storage client", zap.Error(err))
-			}
-			pq.mu.Unlock()
-		}()
 
-		if experr.IsShutdownErr(consumeErr) {
-			// The queue is shutting down, don't mark the item as dispatched, so it's picked up again after restart.
-			// TODO: Handle partially delivered requests by updating their values in the storage.
-			return
+	return index, request, true
+}
+
+// Should be called to remove the item of the given index from the queue once processing is finished.
+func (pq *persistentQueue[T]) OnProcessingFinished(index uint64, consumeErr error) {
+	// Delete the item from the persistent storage after it was processed.
+	pq.mu.Lock()
+	// Always unref client even if the consumer is shutdown because we always ref it for every valid request.
+	defer func() {
+		if err := pq.unrefClient(context.Background()); err != nil {
+			pq.logger.Error("Error closing the storage client", zap.Error(err))
 		}
+		pq.mu.Unlock()
+	}()
 
-		if err = pq.itemDispatchingFinish(ctx, index); err != nil {
-			pq.logger.Error("Error deleting item from queue", zap.Error(err))
+	if experr.IsShutdownErr(consumeErr) {
+		// The queue is shutting down, don't mark the item as dispatched, so it's picked up again after restart.
+		// TODO: Handle partially delivered requests by updating their values in the storage.
+		return
+	}
+
+	if err := pq.itemDispatchingFinish(context.Background(), index); err != nil {
+		pq.logger.Error("Error deleting item from queue", zap.Error(err))
+	}
+
+	// Back up the queue size to storage on every 10 reads. The stored value is used to recover the queue size
+	// in case if the collector is killed. The recovered queue size is allowed to be inaccurate.
+	if (pq.readIndex % 10) == 0 {
+		if qsErr := pq.backupQueueSize(context.Background()); qsErr != nil {
+			pq.logger.Error("Error writing queue size to storage", zap.Error(qsErr))
 		}
+	}
 
-		// Back up the queue size to storage on every 10 reads. The stored value is used to recover the queue size
-		// in case if the collector is killed. The recovered queue size is allowed to be inaccurate.
-		if (pq.readIndex % 10) == 0 {
-			if qsErr := pq.backupQueueSize(ctx); qsErr != nil {
-				pq.logger.Error("Error writing queue size to storage", zap.Error(err))
-			}
-		}
-
-		// Ensure the used size and the channel size are in sync.
-		pq.sizedChannel.syncSize()
-
-	}, true
+	// Ensure the used size and the channel size are in sync.
+	pq.sizedChannel.syncSize()
 }
 
 // retrieveAndEnqueueNotDispatchedReqs gets the items for which sending was not finished, cleans the storage
@@ -485,7 +489,7 @@ func (pq *persistentQueue[T]) itemDispatchingFinish(ctx context.Context, index u
 	return nil
 }
 
-func toStorageClient(ctx context.Context, storageID component.ID, host component.Host, ownerID component.ID, signal component.DataType) (storage.Client, error) {
+func toStorageClient(ctx context.Context, storageID component.ID, host component.Host, ownerID component.ID, signal pipeline.Signal) (storage.Client, error) {
 	ext, found := host.GetExtensions()[storageID]
 	if !found {
 		return nil, errNoStorageClient
@@ -521,6 +525,7 @@ func bytesToItemIndex(buf []byte) (uint64, error) {
 func itemIndexArrayToBytes(arr []uint64) []byte {
 	size := len(arr)
 	buf := make([]byte, 0, 4+size*8)
+	// nolint: gosec
 	buf = binary.LittleEndian.AppendUint32(buf, uint32(size))
 	for _, item := range arr {
 		buf = binary.LittleEndian.AppendUint64(buf, item)

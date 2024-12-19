@@ -65,7 +65,6 @@ func (ms ExportResponse) unmarshalJsoniter(iter *jsoniter.Iterator) {
 		}
 		return true
 	})
-
 }
 
 // PartialSuccess returns the ExportLogsPartialSuccess associated with this ExportResponse.

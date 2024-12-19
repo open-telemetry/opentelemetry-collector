@@ -81,13 +81,13 @@ func TestMetricsMultiplexingMutating(t *testing.T) {
 		}
 	}
 
-	assert.NotSame(t, md, p1.AllMetrics()[0])
-	assert.NotSame(t, md, p1.AllMetrics()[1])
+	assert.NotSame(t, &md, &p1.AllMetrics()[0])
+	assert.NotSame(t, &md, &p1.AllMetrics()[1])
 	assert.EqualValues(t, md, p1.AllMetrics()[0])
 	assert.EqualValues(t, md, p1.AllMetrics()[1])
 
-	assert.NotSame(t, md, p2.AllMetrics()[0])
-	assert.NotSame(t, md, p2.AllMetrics()[1])
+	assert.NotSame(t, &md, &p2.AllMetrics()[0])
+	assert.NotSame(t, &md, &p2.AllMetrics()[1])
 	assert.EqualValues(t, md, p2.AllMetrics()[0])
 	assert.EqualValues(t, md, p2.AllMetrics()[1])
 
@@ -155,8 +155,8 @@ func TestMetricsMultiplexingMixLastMutating(t *testing.T) {
 		}
 	}
 
-	assert.NotSame(t, md, p1.AllMetrics()[0])
-	assert.NotSame(t, md, p1.AllMetrics()[1])
+	assert.NotSame(t, &md, &p1.AllMetrics()[0])
+	assert.NotSame(t, &md, &p1.AllMetrics()[1])
 	assert.EqualValues(t, md, p1.AllMetrics()[0])
 	assert.EqualValues(t, md, p1.AllMetrics()[1])
 
@@ -167,8 +167,8 @@ func TestMetricsMultiplexingMixLastMutating(t *testing.T) {
 	assert.EqualValues(t, md, p2.AllMetrics()[1])
 
 	// For this consumer, will clone the initial data.
-	assert.NotSame(t, md, p3.AllMetrics()[0])
-	assert.NotSame(t, md, p3.AllMetrics()[1])
+	assert.NotSame(t, &md, &p3.AllMetrics()[0])
+	assert.NotSame(t, &md, &p3.AllMetrics()[1])
 	assert.EqualValues(t, md, p3.AllMetrics()[0])
 	assert.EqualValues(t, md, p3.AllMetrics()[1])
 
@@ -193,13 +193,13 @@ func TestMetricsMultiplexingMixLastNonMutating(t *testing.T) {
 		}
 	}
 
-	assert.NotSame(t, md, p1.AllMetrics()[0])
-	assert.NotSame(t, md, p1.AllMetrics()[1])
+	assert.NotSame(t, &md, &p1.AllMetrics()[0])
+	assert.NotSame(t, &md, &p1.AllMetrics()[1])
 	assert.EqualValues(t, md, p1.AllMetrics()[0])
 	assert.EqualValues(t, md, p1.AllMetrics()[1])
 
-	assert.NotSame(t, md, p2.AllMetrics()[0])
-	assert.NotSame(t, md, p2.AllMetrics()[1])
+	assert.NotSame(t, &md, &p2.AllMetrics()[0])
+	assert.NotSame(t, &md, &p2.AllMetrics()[1])
 	assert.EqualValues(t, md, p2.AllMetrics()[0])
 	assert.EqualValues(t, md, p2.AllMetrics()[1])
 

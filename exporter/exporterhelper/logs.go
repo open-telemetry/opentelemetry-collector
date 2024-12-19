@@ -17,10 +17,13 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/internal/queue"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
-var logsMarshaler = &plog.ProtoMarshaler{}
-var logsUnmarshaler = &plog.ProtoUnmarshaler{}
+var (
+	logsMarshaler   = &plog.ProtoMarshaler{}
+	logsUnmarshaler = &plog.ProtoUnmarshaler{}
+)
 
 type logsRequest struct {
 	ld     plog.Logs
@@ -69,8 +72,8 @@ type logsExporter struct {
 	consumer.Logs
 }
 
-// NewLogsExporter creates an exporter.Logs that records observability metrics and wraps every request with a Span.
-func NewLogsExporter(
+// NewLogs creates an exporter.Logs that records observability metrics and wraps every request with a Span.
+func NewLogs(
 	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config,
@@ -85,9 +88,8 @@ func NewLogsExporter(
 	}
 	logsOpts := []Option{
 		internal.WithMarshaler(logsRequestMarshaler), internal.WithUnmarshaler(newLogsRequestUnmarshalerFunc(pusher)),
-		internal.WithBatchFuncs(mergeLogs, mergeSplitLogs),
 	}
-	return NewLogsRequestExporter(ctx, set, requestFromLogs(pusher), append(logsOpts, options...)...)
+	return NewLogsRequest(ctx, set, requestFromLogs(pusher), append(logsOpts, options...)...)
 }
 
 // RequestFromLogsFunc converts plog.Logs data into a user-defined request.
@@ -102,10 +104,10 @@ func requestFromLogs(pusher consumer.ConsumeLogsFunc) RequestFromLogsFunc {
 	}
 }
 
-// NewLogsRequestExporter creates new logs exporter based on custom LogsConverter and RequestSender.
+// NewLogsRequest creates new logs exporter based on custom LogsConverter and RequestSender.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-func NewLogsRequestExporter(
+func NewLogsRequest(
 	_ context.Context,
 	set exporter.Settings,
 	converter RequestFromLogsFunc,
@@ -119,7 +121,7 @@ func NewLogsRequestExporter(
 		return nil, errNilLogsConverter
 	}
 
-	be, err := internal.NewBaseExporter(set, component.DataTypeLogs, newLogsExporterWithObservability, options...)
+	be, err := internal.NewBaseExporter(set, pipeline.SignalLogs, newLogsWithObservability, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +136,7 @@ func NewLogsRequestExporter(
 		}
 		sErr := be.Send(ctx, req)
 		if errors.Is(sErr, queue.ErrQueueIsFull) {
-			be.Obsrep.RecordEnqueueFailure(ctx, component.DataTypeLogs, int64(req.ItemsCount()))
+			be.Obsrep.RecordEnqueueFailure(ctx, pipeline.SignalLogs, int64(req.ItemsCount()))
 		}
 		return sErr
 	}, be.ConsumerOptions...)
@@ -150,7 +152,7 @@ type logsExporterWithObservability struct {
 	obsrep *internal.ObsReport
 }
 
-func newLogsExporterWithObservability(obsrep *internal.ObsReport) internal.RequestSender {
+func newLogsWithObservability(obsrep *internal.ObsReport) internal.RequestSender {
 	return &logsExporterWithObservability{obsrep: obsrep}
 }
 

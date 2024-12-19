@@ -24,9 +24,7 @@ import (
 // - concurrencyLimit is reached.
 type BatchSender struct {
 	BaseRequestSender
-	cfg            exporterbatcher.Config
-	mergeFunc      exporterbatcher.BatchMergeFunc[internal.Request]
-	mergeSplitFunc exporterbatcher.BatchMergeSplitFunc[internal.Request]
+	cfg exporterbatcher.Config
 
 	// concurrencyLimit is the maximum number of goroutines that can be blocked by the batcher.
 	// If this number is reached and all the goroutines are busy, the batch will be sent right away.
@@ -46,14 +44,11 @@ type BatchSender struct {
 }
 
 // newBatchSender returns a new batch consumer component.
-func NewBatchSender(cfg exporterbatcher.Config, set exporter.Settings,
-	mf exporterbatcher.BatchMergeFunc[internal.Request], msf exporterbatcher.BatchMergeSplitFunc[internal.Request]) *BatchSender {
+func NewBatchSender(cfg exporterbatcher.Config, set exporter.Settings) *BatchSender {
 	bs := &BatchSender{
 		activeBatch:        newEmptyBatch(),
 		cfg:                cfg,
 		logger:             set.Logger,
-		mergeFunc:          mf,
-		mergeSplitFunc:     msf,
 		shutdownCh:         nil,
 		shutdownCompleteCh: make(chan struct{}),
 		stopped:            &atomic.Bool{},
@@ -156,10 +151,17 @@ func (bs *BatchSender) Send(ctx context.Context, req internal.Request) error {
 func (bs *BatchSender) sendMergeSplitBatch(ctx context.Context, req internal.Request) error {
 	bs.mu.Lock()
 
-	reqs, err := bs.mergeSplitFunc(ctx, bs.cfg.MaxSizeConfig, bs.activeBatch.request, req)
-	if err != nil || len(reqs) == 0 {
+	var reqs []internal.Request
+	var mergeSplitErr error
+	if bs.activeBatch.request == nil {
+		reqs, mergeSplitErr = req.MergeSplit(ctx, bs.cfg.MaxSizeConfig, nil)
+	} else {
+		reqs, mergeSplitErr = bs.activeBatch.request.MergeSplit(ctx, bs.cfg.MaxSizeConfig, req)
+	}
+
+	if mergeSplitErr != nil || len(reqs) == 0 {
 		bs.mu.Unlock()
-		return err
+		return mergeSplitErr
 	}
 
 	bs.activeRequests.Add(1)
@@ -201,7 +203,7 @@ func (bs *BatchSender) sendMergeBatch(ctx context.Context, req internal.Request)
 
 	if bs.activeBatch.request != nil {
 		var err error
-		req, err = bs.mergeFunc(ctx, bs.activeBatch.request, req)
+		req, err = bs.activeBatch.request.Merge(ctx, req)
 		if err != nil {
 			bs.mu.Unlock()
 			return err

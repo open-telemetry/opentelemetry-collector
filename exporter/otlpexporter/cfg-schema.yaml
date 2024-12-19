@@ -68,8 +68,8 @@ fields:
 - name: endpoint
   kind: string
   doc: |
-    The target to which the exporter is going to send traces or metrics,
-    using the gRPC protocol. The valid syntax is described at
+    The target to which the exporter is going to send traces, metrics, logs or
+    profiles using the gRPC protocol. The valid syntax is described at
     https://github.com/grpc/grpc/blob/master/doc/naming.md.
 - name: compression
   kind: string

@@ -41,6 +41,8 @@ if [ "${CANDIDATE_BETA}" != "" ]; then
 fi
 git push origin "${BRANCH}"
 
+# Use OpenTelemetryBot account to create PR, allowing workflows to run
+# The title must match the checks in check-merge-freeze.yml
 gh pr create --title "[chore] Prepare release ${RELEASE_VERSION}" --body "
 The following commands were run to prepare this release:
 ${COMMANDS}
