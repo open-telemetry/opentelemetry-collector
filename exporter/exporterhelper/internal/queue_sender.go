@@ -178,10 +178,12 @@ func (qs *QueueSender) Shutdown(ctx context.Context) error {
 func (qs *QueueSender) Send(ctx context.Context, req internal.Request) error {
 	// Prevent cancellation and deadline to propagate to the context stored in the queue.
 	// The grpc/http based receivers will cancel the request context after this function returns.
-	c := context.WithoutCancel(ctx)
+	if !usePullingBasedExporterQueueBatcher.IsEnabled() && !qs.queue.IsBlocking() {
+		ctx = context.WithoutCancel(ctx)
+	}
 
-	span := trace.SpanFromContext(c)
-	if err := qs.queue.Offer(c, req); err != nil {
+	span := trace.SpanFromContext(ctx)
+	if err := qs.queue.Offer(ctx, req); err != nil {
 		span.AddEvent("Failed to enqueue item.", trace.WithAttributes(qs.traceAttribute))
 		return err
 	}
