@@ -70,14 +70,6 @@ questions faced by the core sub-components.
 - Retry sender (exporterhelper)
 - Queue sender (exporterhelper)
 
-There appears to several patterns, in general:
-
-1. The component synchronously waits for another process, subject to a timeout in the request context;
-2. The component synchronously calls another process, while subject
-   to a timeout in the request context;
-3. The component is configured with a timeout, while subject to
-   a shorter timeout.
-
 In the following sub-sections, we raise questions about the existing
 support for timeouts.
 
@@ -225,55 +217,57 @@ before proceeding with a calculation:
     }
 ```
 
-## Specific proposal
+## Specific proposals
 
 ### Timeout sender
 
-The existing TimeoutConfig struct has one field.  In the current
-implementation, due to the "no later than" semantics of `WithDeadline()`,
-the `timeout` field can be interpreted as a maximum timeout value.
-The existing configuration struct should be re-documented:
+The existing TimeoutConfig struct has one field.  The current documentation
+for `timeout` reads:
+
+```golang
+ // Timeout is the timeout for every attempt to send data to the backend.
+ // A zero timeout means no timeout.
+```
+
+In the current implementation, due to the "no later than" semantics of
+`WithDeadline()`, the `timeout` field can be interpreted as a maximum
+timeout value. We propose an additional `min_timeout` to limit timeout
+in the other direction:
 
 ```golang
 type TimeoutConfig struct {
  // Timeout is the maximum allowed timeout for requests made
  // by this exporter component. If non-zero, the outgoing
  // request context will have a timeout no-later-than this
- // duration. If zero, the existing timeout (if any) will
- // propagate to the outgoing request unmodified. This field
- // must not be negative.
+ // duration. This field must not be negative.
+ //
+ // If this field is zero, the interpretation depends on
+ // the setting of MinTimeout.
  Timeout time.Duration `mapstructure:"timeout"`
-}
-```
 
-We propose an additional `min_timeout` to limit timeout in the other
-direction:
-
-```golang
   // MinTimeout, if >= 0, and an arriving request has a timeout less
   // than this duration. the request immediately fails with a
   // deadline-exceeded error. If negative, the arriving request
   // deadline is unchecked.
+  //
+  // In case MinTimeout <= 0 (i.e, deadline unchecked) and Timeout == 0,
+  // special meaning is given. In this case, the timeout is erased from the
+  // context.
   MinTimeout time.Duration `mapstructure:"min_timeout"
+}
 ```
 
-The two fields are meant to be interepreted in combation, according to
+The two fields are meant to be interepreted in combination, according to
 this matrix:
 
-| Explanation | Timeout = 0 | Timeout > 0 |
+| Explanation | Timeout=0 | Timeout>0 |
 | -- | -- | -- |
 | **MinTimeout<0** | No minimum, no maximum case. In this case, the deadline is explicitly erased. | A maximum timeout is imposed, but the deadline is not checked. |
 | **MinTimeout≥0** | The deadline is checked, but a new maximum is not imposed. Allows existing and no-deadline requests to pass. | The deadline is checked and a maximum is imposed. |
 
-Note that the existing behavior does not match the comment in the
-existing configuration structure. A `timeout` setting of 0 did not
-achieve "no timeout", it simply avoided imposing a maximum. This
-proposal states that to achieve no timeout, the user must configure
-both no (maximum) timeout and no minimum timeout.
-
 The current component uses a default Timeout of `5s`. This proposal
 would use default MinTimeout of `0`, meaning to enforce a non-negative
-deadline. The proposed logic is given below.
+deadline, rejecting expired contexts. The proposed logic is given below.
 
 ### Retry sender
 
