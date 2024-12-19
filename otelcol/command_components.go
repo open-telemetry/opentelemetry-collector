@@ -24,6 +24,11 @@ type componentWithStability struct {
 	Stability map[string]string
 }
 
+type componentWithOutStability struct {
+	Name   string
+	Module string
+}
+
 type componentsOutput struct {
 	BuildInfo  component.BuildInfo
 	Receivers  []componentWithStability
@@ -31,6 +36,7 @@ type componentsOutput struct {
 	Exporters  []componentWithStability
 	Connectors []componentWithStability
 	Extensions []componentWithStability
+	Providers  []componentWithOutStability
 }
 
 // newComponentsCommand constructs a new components command using the given CollectorSettings.
@@ -109,6 +115,18 @@ func newComponentsCommand(set CollectorSettings) *cobra.Command {
 				})
 			}
 			components.BuildInfo = set.BuildInfo
+
+			confmapProviderFactories := set.ConfigProviderSettings.ResolverSettings.ProviderFactories
+			for _, confmapProvider := range confmapProviderFactories {
+				provider := confmapProvider.Create(set.ConfigProviderSettings.ResolverSettings.ProviderSettings)
+				scheme := provider.Scheme()
+				module := set.ConfigProviderSettings.ResolverSettings.ProviderModules[scheme+"provider"]
+				components.Providers = append(components.Providers, componentWithOutStability{
+					Name:   scheme,
+					Module: module,
+				})
+			}
+
 			yamlData, err := yaml.Marshal(components)
 			if err != nil {
 				return err
