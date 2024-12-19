@@ -34,6 +34,8 @@ type Queue[T any] interface {
 	Read(context.Context) (uint64, context.Context, T, bool)
 	// OnProcessingFinished should be called to remove the item of the given index from the queue once processing is finished.
 	OnProcessingFinished(index uint64, consumeErr error)
+	// Returns a boolean to tell whether the queue is blocking
+	IsBlocking() bool
 }
 
 // Sizer is an interface that returns the size of the given element.
