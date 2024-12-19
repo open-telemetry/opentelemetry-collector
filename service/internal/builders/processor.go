@@ -108,6 +108,31 @@ func (b *ProcessorBuilder) CreateProfiles(ctx context.Context, set processor.Set
 	return f.CreateProfiles(ctx, set, cfg, next)
 }
 
+// CreateEntities creates a Entities processor based on the settings and config.
+func (b *ProcessorBuilder) CreateEntities(ctx context.Context, set processor.Settings,
+	next xconsumer.Entities,
+) (xprocessor.Entities, error) {
+	if next == nil {
+		return nil, errNilNextConsumer
+	}
+	cfg, existsCfg := b.cfgs[set.ID]
+	if !existsCfg {
+		return nil, fmt.Errorf("processor %q is not configured", set.ID)
+	}
+
+	procFact, existsFactory := b.factories[set.ID.Type()]
+	if !existsFactory {
+		return nil, fmt.Errorf("processor factory not available for: %q", set.ID)
+	}
+
+	f, ok := procFact.(xprocessor.Factory)
+	if !ok {
+		return nil, pipeline.ErrSignalNotSupported
+	}
+	logStabilityLevel(set.Logger, f.EntitiesStability())
+	return f.CreateEntities(ctx, set, cfg, next)
+}
+
 func (b *ProcessorBuilder) Factory(componentType component.Type) component.Factory {
 	return b.factories[componentType]
 }

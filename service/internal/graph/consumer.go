@@ -37,3 +37,8 @@ type componentProfiles struct {
 	component.Component
 	xconsumer.Profiles
 }
+
+type componentEntities struct {
+	component.Component
+	xconsumer.Entities
+}
