@@ -27,7 +27,7 @@ Definitions:
 - the *timeout* of a configuration struct is the duration that will be added
   relative to the current time until a deadline. No timeout means no deadline.
 
-Here are some of the scenarios where consistent behavior is desireable:
+Here are some of the scenarios where consistent behavior is desirable:
 
 - A request arrives with an already-expired deadline. Should the component
   immediately return a deadline-exceeded error status?
@@ -229,7 +229,8 @@ for `timeout` reads:
  // A zero timeout means no timeout.
 ```
 
-In the current implementation, due to the "no later than" semantics of
+These statements are only true in case the Queue sender is used, which
+ignores the request deadline. Otherwise, due to the "no later than" semantics of
 `WithDeadline()`, the `timeout` field can be interpreted as a maximum
 timeout value. We propose an additional `min_timeout` to limit timeout
 in the other direction:
@@ -248,11 +249,13 @@ type TimeoutConfig struct {
   // MinTimeout, if >= 0, and an arriving request has a timeout less
   // than this duration. the request immediately fails with a
   // deadline-exceeded error. If negative, the arriving request
-  // deadline is unchecked.
+  // deadline is unchecked. MinTimeout=0 implies checking for an
+  // expired deadline. MinTimeout>0 implies requiring the user to
+  // have a minimum timeout.
   //
-  // In case MinTimeout <= 0 (i.e, deadline unchecked) and Timeout == 0,
+  // In case MinTimeout<0 (i.e, deadline unchecked) and Timeout == 0,
   // special meaning is given. In this case, the timeout is erased from the
-  // context.
+  // context using context.WithoutCancel().
   MinTimeout time.Duration `mapstructure:"min_timeout"
 }
 ```
@@ -267,7 +270,7 @@ this matrix:
 
 The current component uses a default Timeout of `5s`. This proposal
 would use default MinTimeout of `0`, meaning to enforce a non-negative
-deadline, rejecting expired contexts. The proposed logic is given below.
+deadline, rejecting expired contexts. Proposed context-handling logic is listed below.
 
 ### Retry sender
 
@@ -306,8 +309,8 @@ of any in the batch. Only when all requests in the batch do not
 have a deadline, will the outgoing batch request have no
 request deadline.
 
-It will be the case that no-deadline requests combined into a batch
-with requests that have a deadline will cause the no-deadline request
+Under this scheme, requests with no deadline, combined into a batch
+of requests that do have a deadline will cause the deadline-free request
 to have a deadline. This is intentional. Users are encouraged
 to use deadlines always and/or use separate pipelines for requests
 with and without deadlines.
@@ -321,7 +324,7 @@ receivers should be encouraged with an opt-in mechanism to
 offer standard timeout configuration. The configuration of
 this opt-in support follows the Timeout sender:
 
-- `min_timeout` (duration): Limits the allowable timeout for new requests to a minimum value.
+- `min_timeout` (duration): Limits the allowable timeout for new requests to a minimum value. >=0 means deadline checking.
 - `timeout` (duration): Limits the allowable timeout for new requests to a maximum value. Must be >= 0.
 
 The Timeout sender's behavior matrix applies. `min_timeout`
