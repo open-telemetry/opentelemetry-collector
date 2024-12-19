@@ -204,8 +204,8 @@ var profile = &messageValueStruct{
 			},
 		},
 		&sliceField{
-			fieldName:   "Attributes",
-			returnSlice: mapStruct,
+			fieldName:   "AttributeIndices",
+			returnSlice: int32Slice,
 		},
 		droppedAttributesCount,
 		&primitiveField{
