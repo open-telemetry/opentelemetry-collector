@@ -188,9 +188,27 @@ they have no active code owners from the vendor even if there are other code own
 owners may petition for its continued maintenance if they want, at which point the component will no
 longer be considered vendor-specific.
 
-## Graduating between stability levels
+## Moving between stability levels
 
-Components can graduate between stability levels. The process for doing so is as follows:
+Components can move between stability levels. The valid transitions are described in the following diagram:
+
+```mermaid
+stateDiagram-v2
+    state Maintained {
+    InDevelopment --> Alpha
+    Alpha --> Beta
+    Beta --> Stable
+    }
+
+    InDevelopment: In Development
+
+    Maintained --> Unmaintained
+    Unmaintained --> Maintained
+    Maintained --> Deprecated
+    Deprecated --> Maintained: (should be rare)
+```
+
+To move within the 'Maintained' ladder ("graduate"), the process for doing so is as follows:
 
 1. One of the component owners should file an issue with the 'Graduation' issue template to request
    the graduation.
