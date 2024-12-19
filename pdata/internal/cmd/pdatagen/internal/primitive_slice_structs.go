@@ -16,7 +16,7 @@ type primitiveSliceStruct struct {
 	itemType    string
 
 	testOrigVal          string
-	testInterfaceOrigVal []interface{}
+	testInterfaceOrigVal []any
 	testSetVal           string
 	testNewVal           string
 }

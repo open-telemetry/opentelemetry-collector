@@ -20,7 +20,7 @@ func TestMarshalText(t *testing.T) {
 
 func TestUnmarshalText(t *testing.T) {
 	validType := MustNewType("valid_type")
-	var testCases = []struct {
+	testCases := []struct {
 		name        string
 		expectedErr bool
 		expectedID  ID

@@ -36,7 +36,7 @@
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="https://opentelemetry.io/docs/collector/configuration/">Configuration</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="https://opentelemetry.io/docs/collector/internal-telemetry/#use-internal-telemetry-to-monitor-the-collector</a>
+    <a href="https://opentelemetry.io/docs/collector/internal-telemetry/#use-internal-telemetry-to-monitor-the-collector">Monitoring</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="docs/security-best-practices.md">Security</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
@@ -97,7 +97,7 @@ calls and don't want them to feel excluded.
 
 ## Supported OTLP version
 
-This code base is currently built against using OTLP protocol v1.3.1,
+This code base is currently built against using OTLP protocol v1.4.0,
 considered Stable. [See the OpenTelemetry Protocol Stability
 definition
 here.](https://github.com/open-telemetry/opentelemetry-proto?tab=readme-ov-file#stability-definition)

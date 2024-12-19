@@ -285,7 +285,7 @@ func TestNotifyConfig(t *testing.T) {
 				Extensions: builders.NewExtension(tt.extensionsConfigs, tt.factories),
 			}, tt.serviceExtensions)
 			require.NoError(t, err)
-			errs := extensions.NotifyConfig(context.Background(), confmap.NewFromStringMap(map[string]interface{}{}))
+			errs := extensions.NotifyConfig(context.Background(), confmap.NewFromStringMap(map[string]any{}))
 			assert.Equal(t, tt.want, errs)
 		})
 	}
