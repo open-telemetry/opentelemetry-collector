@@ -5,7 +5,7 @@ so that the batchprocessor and exporterhelper-based batch_sender have similar be
 
 ## Motivation
 
-We are motivated, first, to have consistent behavior across two forms of batching process: (1) `batchprocessor`, and (2) `exporterhelper/internal/batch_sender`.  Today, these two core components exhibit diferent behaviors.
+We are motivated, first, to have consistent behavior across two forms of batching process: (1) `batchprocessor`, and (2) `exporterhelper/internal/batch_sender`.  Today, these two core components exhibit different behaviors.
 
 Second, to establish conditions and requirements for error transmission, tracing instrumentation, and concurrency from these components.
 
