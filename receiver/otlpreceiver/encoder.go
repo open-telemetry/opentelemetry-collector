@@ -10,6 +10,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	spb "google.golang.org/genproto/googleapis/rpc/status"
 
+	"go.opentelemetry.io/collector/pdata/pentity/pentityotlp"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/pdata/pprofile/pprofileotlp"
@@ -32,11 +33,13 @@ type encoder interface {
 	unmarshalMetricsRequest(buf []byte) (pmetricotlp.ExportRequest, error)
 	unmarshalLogsRequest(buf []byte) (plogotlp.ExportRequest, error)
 	unmarshalProfilesRequest(buf []byte) (pprofileotlp.ExportRequest, error)
+	unmarshalEntitiesRequest(buf []byte) (pentityotlp.ExportRequest, error)
 
 	marshalTracesResponse(ptraceotlp.ExportResponse) ([]byte, error)
 	marshalMetricsResponse(pmetricotlp.ExportResponse) ([]byte, error)
 	marshalLogsResponse(plogotlp.ExportResponse) ([]byte, error)
 	marshalProfilesResponse(pprofileotlp.ExportResponse) ([]byte, error)
+	marshalEntitiesResponse(pentityotlp.ExportResponse) ([]byte, error)
 
 	marshalStatus(rsp *spb.Status) ([]byte, error)
 
@@ -69,6 +72,12 @@ func (protoEncoder) unmarshalProfilesRequest(buf []byte) (pprofileotlp.ExportReq
 	return req, err
 }
 
+func (protoEncoder) unmarshalEntitiesRequest(buf []byte) (pentityotlp.ExportRequest, error) {
+	req := pentityotlp.NewExportRequest()
+	err := req.UnmarshalProto(buf)
+	return req, err
+}
+
 func (protoEncoder) marshalTracesResponse(resp ptraceotlp.ExportResponse) ([]byte, error) {
 	return resp.MarshalProto()
 }
@@ -82,6 +91,10 @@ func (protoEncoder) marshalLogsResponse(resp plogotlp.ExportResponse) ([]byte, e
 }
 
 func (protoEncoder) marshalProfilesResponse(resp pprofileotlp.ExportResponse) ([]byte, error) {
+	return resp.MarshalProto()
+}
+
+func (protoEncoder) marshalEntitiesResponse(resp pentityotlp.ExportResponse) ([]byte, error) {
 	return resp.MarshalProto()
 }
 
@@ -119,6 +132,12 @@ func (jsonEncoder) unmarshalProfilesRequest(buf []byte) (pprofileotlp.ExportRequ
 	return req, err
 }
 
+func (jsonEncoder) unmarshalEntitiesRequest(buf []byte) (pentityotlp.ExportRequest, error) {
+	req := pentityotlp.NewExportRequest()
+	err := req.UnmarshalJSON(buf)
+	return req, err
+}
+
 func (jsonEncoder) marshalTracesResponse(resp ptraceotlp.ExportResponse) ([]byte, error) {
 	return resp.MarshalJSON()
 }
@@ -132,6 +151,10 @@ func (jsonEncoder) marshalLogsResponse(resp plogotlp.ExportResponse) ([]byte, er
 }
 
 func (jsonEncoder) marshalProfilesResponse(resp pprofileotlp.ExportResponse) ([]byte, error) {
+	return resp.MarshalJSON()
+}
+
+func (jsonEncoder) marshalEntitiesResponse(resp pentityotlp.ExportResponse) ([]byte, error) {
 	return resp.MarshalJSON()
 }
 
