@@ -17,7 +17,7 @@ func newLogs(orig *otlpcollectorlog.ExportLogsServiceRequest) Logs {
 	return Logs(internal.NewLogs(orig, &state))
 }
 
-func (ms Logs) getOrig() *otlpcollectorlog.ExportLogsServiceRequest {
+func (ms Logs) GetOrig() *otlpcollectorlog.ExportLogsServiceRequest {
 	return internal.GetOrigLogs(internal.Logs(ms))
 }
 
@@ -57,7 +57,7 @@ func (ms Logs) LogRecordCount() int {
 
 // ResourceLogs returns the ResourceLogsSlice associated with this Logs.
 func (ms Logs) ResourceLogs() ResourceLogsSlice {
-	return newResourceLogsSlice(&ms.getOrig().ResourceLogs, internal.GetLogsState(internal.Logs(ms)))
+	return newResourceLogsSlice(&ms.GetOrig().ResourceLogs, internal.GetLogsState(internal.Logs(ms)))
 }
 
 // MarkReadOnly marks the Logs as shared so that no further modifications can be done on it.

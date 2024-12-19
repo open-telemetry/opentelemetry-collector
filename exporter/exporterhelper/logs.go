@@ -63,6 +63,10 @@ func (req *logsRequest) Export(ctx context.Context) error {
 	return req.pusher(ctx, req.ld)
 }
 
+func (req *logsRequest) BytesSize() int {
+	return req.ld.GetOrig().Size()
+}
+
 func (req *logsRequest) ItemsCount() int {
 	return req.ld.LogRecordCount()
 }
