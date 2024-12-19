@@ -22,6 +22,8 @@ TOOLS_PKG_NAMES := $(shell grep -E $(TOOLS_MOD_REGEX) < $(TOOLS_MOD_DIR)/tools.g
 TOOLS_BIN_NAMES := $(addprefix $(TOOLS_BIN_DIR)/, $(notdir $(shell echo $(TOOLS_PKG_NAMES))))
 CHLOGGEN_CONFIG := .chloggen/config.yaml
 
+JUNIT_OUT_DIR ?= $(TOOLS_MOD_DIR)/testresults/
+
 ADDLICENSE   := $(TOOLS_BIN_DIR)/addlicense
 APIDIFF      := $(TOOLS_BIN_DIR)/apidiff
 CHECKFILE    := $(TOOLS_BIN_DIR)/checkfile
@@ -61,7 +63,7 @@ test-with-cover: $(GOTESTSUM)
 .PHONY: test-with-junit
 test-with-junit: $(GOTESTSUM)
 	mkdir -p $(TOOLS_MOD_DIR)/testresults
-	$(GOTESTSUM) --packages="./..." --junitfile $(TOOLS_MOD_DIR)/testresults/$(CURR_MOD)-junit.xml -- $(GOTEST_OPT) ./...
+	$(GOTESTSUM) --packages="./..." --junitfile $(JUNIT_OUT_DIR)/$(CURR_MOD)-junit.xml -- $(GOTEST_OPT) ./...
 
 .PHONY: benchmark
 benchmark: $(GOTESTSUM)
