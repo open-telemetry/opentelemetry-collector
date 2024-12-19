@@ -322,6 +322,10 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 				cc := capabilityconsumer.NewProfiles(next.(xconsumer.Profiles), capability)
 				n.baseConsumer = cc
 				n.ConsumeProfilesFunc = cc.ConsumeProfiles
+			case xpipeline.SignalEntities:
+				cc := capabilityconsumer.NewEntities(next.(xconsumer.Entities), capability)
+				n.baseConsumer = cc
+				n.ConsumeEntitiesFunc = cc.ConsumeEntities
 			}
 		case *fanOutNode:
 			nexts := g.nextConsumers(n.ID())
@@ -350,6 +354,12 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 					consumers = append(consumers, next.(xconsumer.Profiles))
 				}
 				n.baseConsumer = fanoutconsumer.NewProfiles(consumers)
+			case xpipeline.SignalEntities:
+				consumers := make([]xconsumer.Entities, 0, len(nexts))
+				for _, next := range nexts {
+					consumers = append(consumers, next.(xconsumer.Entities))
+				}
+				n.baseConsumer = fanoutconsumer.NewEntities(consumers)
 			}
 		}
 		if err != nil {
@@ -485,6 +495,7 @@ func (g *Graph) GetExporters() map[pipeline.Signal]map[component.ID]component.Co
 	exportersMap[pipeline.SignalMetrics] = make(map[component.ID]component.Component)
 	exportersMap[pipeline.SignalLogs] = make(map[component.ID]component.Component)
 	exportersMap[xpipeline.SignalProfiles] = make(map[component.ID]component.Component)
+	exportersMap[xpipeline.SignalEntities] = make(map[component.ID]component.Component)
 
 	for _, pg := range g.pipelines {
 		for _, expNode := range pg.exporters {
@@ -548,11 +559,11 @@ func connectorStability(f connector.Factory, expType, recType pipeline.Signal) c
 		case pipeline.SignalLogs:
 			return f.TracesToLogsStability()
 		case xpipeline.SignalProfiles:
-			fprof, ok := f.(xconnector.Factory)
+			xf, ok := f.(xconnector.Factory)
 			if !ok {
 				return component.StabilityLevelUndefined
 			}
-			return fprof.TracesToProfilesStability()
+			return xf.TracesToProfilesStability()
 		}
 	case pipeline.SignalMetrics:
 		switch recType {
@@ -563,11 +574,11 @@ func connectorStability(f connector.Factory, expType, recType pipeline.Signal) c
 		case pipeline.SignalLogs:
 			return f.MetricsToLogsStability()
 		case xpipeline.SignalProfiles:
-			fprof, ok := f.(xconnector.Factory)
+			xf, ok := f.(xconnector.Factory)
 			if !ok {
 				return component.StabilityLevelUndefined
 			}
-			return fprof.MetricsToProfilesStability()
+			return xf.MetricsToProfilesStability()
 		}
 	case pipeline.SignalLogs:
 		switch recType {
@@ -578,26 +589,41 @@ func connectorStability(f connector.Factory, expType, recType pipeline.Signal) c
 		case pipeline.SignalLogs:
 			return f.LogsToLogsStability()
 		case xpipeline.SignalProfiles:
-			fprof, ok := f.(xconnector.Factory)
+			xf, ok := f.(xconnector.Factory)
 			if !ok {
 				return component.StabilityLevelUndefined
 			}
-			return fprof.LogsToProfilesStability()
+			return xf.LogsToProfilesStability()
 		}
 	case xpipeline.SignalProfiles:
-		fprof, ok := f.(xconnector.Factory)
+		xf, ok := f.(xconnector.Factory)
 		if !ok {
 			return component.StabilityLevelUndefined
 		}
 		switch recType {
 		case pipeline.SignalTraces:
-			return fprof.ProfilesToTracesStability()
+			return xf.ProfilesToTracesStability()
 		case pipeline.SignalMetrics:
-			return fprof.ProfilesToMetricsStability()
+			return xf.ProfilesToMetricsStability()
 		case pipeline.SignalLogs:
-			return fprof.ProfilesToLogsStability()
+			return xf.ProfilesToLogsStability()
 		case xpipeline.SignalProfiles:
-			return fprof.ProfilesToProfilesStability()
+			return xf.ProfilesToProfilesStability()
+		}
+	case xpipeline.SignalEntities:
+		xf, ok := f.(xconnector.Factory)
+		if !ok {
+			return component.StabilityLevelUndefined
+		}
+		switch recType {
+		case pipeline.SignalTraces:
+			return xf.EntitiesToTracesStability()
+		case pipeline.SignalMetrics:
+			return xf.EntitiesToMetricsStability()
+		case pipeline.SignalLogs:
+			return xf.EntitiesToLogsStability()
+		case xpipeline.SignalEntities:
+			return xf.EntitiesToEntitiesStability()
 		}
 	}
 	return component.StabilityLevelUndefined

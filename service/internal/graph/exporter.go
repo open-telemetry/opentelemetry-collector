@@ -58,6 +58,8 @@ func (n *exporterNode) buildComponent(
 		n.Component, err = builder.CreateLogs(ctx, set)
 	case xpipeline.SignalProfiles:
 		n.Component, err = builder.CreateProfiles(ctx, set)
+	case xpipeline.SignalEntities:
+		n.Component, err = builder.CreateEntities(ctx, set)
 	default:
 		return fmt.Errorf("error creating exporter %q for data type %q is not supported", set.ID, n.pipelineType)
 	}

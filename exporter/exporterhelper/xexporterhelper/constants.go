@@ -16,4 +16,8 @@ var (
 	errNilPushProfileData = errors.New("nil PushProfiles")
 	// errNilProfilesConverter is returned when a nil RequestFromProfilesFunc is given.
 	errNilProfilesConverter = errors.New("nil RequestFromProfilesFunc")
+	// errNilPushEntitiesData is returned when a nil PushEntities is given.
+	errNilPushEntitiesData = errors.New("nil PushEntities")
+	// errNilEntitiesConverter is returned when a nil RequestFromEntitiesFunc is given.
+	errNilEntitiesConverter = errors.New("nil RequestFromProfilesFunc")
 )
