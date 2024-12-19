@@ -40,7 +40,7 @@ func (*JSONUnmarshaler) UnmarshalLogs(buf []byte) (Logs, error) {
 	if iter.Error != nil {
 		return Logs{}, iter.Error
 	}
-	otlp.MigrateLogs(ld.getOrig().ResourceLogs)
+	otlp.MigrateLogs(ld.GetOrig().ResourceLogs)
 	return ld, nil
 }
 

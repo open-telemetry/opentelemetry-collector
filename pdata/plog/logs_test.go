@@ -71,7 +71,7 @@ func TestToFromLogOtlp(t *testing.T) {
 	otlp := &otlpcollectorlog.ExportLogsServiceRequest{}
 	logs := newLogs(otlp)
 	assert.EqualValues(t, NewLogs(), logs)
-	assert.EqualValues(t, otlp, logs.getOrig())
+	assert.EqualValues(t, otlp, logs.GetOrig())
 }
 
 func TestResourceLogsWireCompatibility(t *testing.T) {
@@ -84,7 +84,7 @@ func TestResourceLogsWireCompatibility(t *testing.T) {
 	fillTestResourceLogsSlice(logs.ResourceLogs())
 
 	// Marshal its underlying ProtoBuf to wire.
-	wire1, err := gogoproto.Marshal(logs.getOrig())
+	wire1, err := gogoproto.Marshal(logs.GetOrig())
 	require.NoError(t, err)
 	assert.NotNil(t, wire1)
 
@@ -105,7 +105,7 @@ func TestResourceLogsWireCompatibility(t *testing.T) {
 
 	// Now compare that the original and final ProtoBuf messages are the same.
 	// This proves that goproto and gogoproto marshaling/unmarshaling are wire compatible.
-	assert.EqualValues(t, logs.getOrig(), &gogoprotoRS2)
+	assert.EqualValues(t, logs.GetOrig(), &gogoprotoRS2)
 }
 
 func TestLogsCopyTo(t *testing.T) {
