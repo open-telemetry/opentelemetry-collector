@@ -435,3 +435,8 @@ mdatagen-test:
 	cd cmd/mdatagen && $(GOCMD) install .
 	cd cmd/mdatagen && $(GOCMD) generate ./...
 	cd cmd/mdatagen && $(GOCMD) test ./...
+
+.PHONY: gotest
+gotest:
+	go install gotest.tools/gotestsum@v1.12.0
+	@$(MAKE) for-all-target TARGET="test-junit"
