@@ -90,11 +90,20 @@ The location of these measurements can be described in terms of whether the data
 component to which the telemetry is attributed. Metrics which contain the term "produced" describe data which is emitted from the component,
 while metrics which contain the term "consumed" describe data which is received by the component.
 
-For both metrics, an `outcome` attribute with possible values `success` and `failure` should be automatically recorded, corresponding to
-whether or not the corresponding function call returned an error. Specifically, consumed measurements will be recorded with `outcome` as
-`failure` when a call from the previous component the `ConsumeX` function returns an error, and `success` otherwise. Likewise, produced
-measurements will be recorded with `outcome` as `failure` when a call to the next consumer's `ConsumeX` function returns an error, and
-`success` otherwise.
+For both metrics, an `outcome` attribute with possible values `success`, `failure`, and `rejected` should be automatically recorded,
+corresponding to whether or not the corresponding function call returned an error, and whether the error originates from the next
+component(s) in the pipeline, or from one further downstream.
+
+Specifically, a call to `ConsumeX` is recorded with:
+- `outcome = success` if the call returns `nil`;
+- `outcome = failure` if the call returns a regular error;
+- `outcome = rejected` if the call returns an error tagged as coming from downstream.
+After inspecting the error, the instrumentation layer should tag it as coming from downstream before returning it to the parent component.
+
+The upstream component which called `ConsumeX` will have this `outcome` attribute applied to its produced measurements, and the downstream
+component that `ConsumeX` was called on will have the attribute applied to its consumed measurements.
+
+Errors should be "tagged as coming from downstream" the same way permanent errors are currently handled: they can be wrapped in a `type downstreamError struct { err error }` wrapper error type, then checked with `errors.As`. Note that care may need to be taken when dealing with the `multiError`s returned by the `fanoutconsumer`. (If PR #11085 introducing a single generic `Error` type is merged, an additional `downstream bool` field can be added to it to serve the same purpose.)
 
 ```yaml
     otelcol.receiver.produced.items:
