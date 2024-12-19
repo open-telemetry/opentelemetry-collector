@@ -168,8 +168,10 @@ jobs:
           path: ~/.cache/go-build
           key: unittest-${{ runner.os }}-${{ matrix.runner }}-go-build-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
       - name: Run Unit Tests
+        env:
+          JUNIT_OUT_DIR: internal/tools/testresults/
         run: |
-          make -j4 gotest
+          JUNIT_OUT_DIR=${{ env.JUNIT_OUT_DIR }} make -j4 gotest-with-junit
   unittest:
     if: always()
     runs-on: ubuntu-latest
