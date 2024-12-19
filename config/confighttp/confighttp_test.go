@@ -82,7 +82,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				MaxIdleConnsPerHost:  &maxIdleConnsPerHost,
 				MaxConnsPerHost:      &maxConnsPerHost,
 				IdleConnTimeout:      &idleConnTimeout,
-				Compression:          "",
+				Compression:          configcompression.TypeWithLevel{Type: "", Level: 1},
 				DisableKeepAlives:    true,
 				Cookies:              &CookiesConfig{Enabled: true},
 				HTTP2ReadIdleTimeout: idleConnTimeout,
@@ -103,7 +103,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				MaxIdleConnsPerHost:  &maxIdleConnsPerHost,
 				MaxConnsPerHost:      &maxConnsPerHost,
 				IdleConnTimeout:      &idleConnTimeout,
-				Compression:          "none",
+				Compression:          configcompression.TypeWithLevel{Type: "none", Level: 1},
 				DisableKeepAlives:    true,
 				HTTP2ReadIdleTimeout: idleConnTimeout,
 				HTTP2PingTimeout:     http2PingTimeout,
@@ -123,7 +123,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				MaxIdleConnsPerHost:  &maxIdleConnsPerHost,
 				MaxConnsPerHost:      &maxConnsPerHost,
 				IdleConnTimeout:      &idleConnTimeout,
-				Compression:          "gzip",
+				Compression:          configcompression.TypeWithLevel{Type: "gzip", Level: 1},
 				DisableKeepAlives:    true,
 				HTTP2ReadIdleTimeout: idleConnTimeout,
 				HTTP2PingTimeout:     http2PingTimeout,
@@ -143,7 +143,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				MaxIdleConnsPerHost:  &maxIdleConnsPerHost,
 				MaxConnsPerHost:      &maxConnsPerHost,
 				IdleConnTimeout:      &idleConnTimeout,
-				Compression:          "gzip",
+				Compression:          configcompression.TypeWithLevel{Type: "gzip", Level: 1},
 				DisableKeepAlives:    true,
 				HTTP2ReadIdleTimeout: idleConnTimeout,
 				HTTP2PingTimeout:     http2PingTimeout,
@@ -172,7 +172,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				assert.EqualValues(t, 30*time.Second, transport.IdleConnTimeout)
 				assert.True(t, transport.DisableKeepAlives)
 			case *compressRoundTripper:
-				assert.EqualValues(t, "gzip", transport.compressionType)
+				assert.EqualValues(t, "gzip", transport.compressionType.Type)
 			}
 		})
 	}
@@ -409,7 +409,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			settings: ClientConfig{
 				Endpoint:    "localhost:1234",
 				Auth:        &configauth.Authentication{AuthenticatorID: component.MustNewID("mock")},
-				Compression: configcompression.TypeGzip,
+				Compression: configcompression.TypeWithLevel{Type: configcompression.TypeGzip, Level: -1},
 			},
 			shouldErr: false,
 			host: &mockHost{
@@ -447,10 +447,10 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			transport := client.Transport
 
 			// Compression should wrap Auth, unwrap it
-			if tt.settings.Compression.IsCompressed() {
+			if tt.settings.Compression.Type.IsCompressed() {
 				ct, ok := transport.(*compressRoundTripper)
 				assert.True(t, ok)
-				assert.Equal(t, tt.settings.Compression, ct.compressionType)
+				assert.Equal(t, tt.settings.Compression.Type, ct.compressionType.Type)
 				transport = ct.rt
 			}
 
