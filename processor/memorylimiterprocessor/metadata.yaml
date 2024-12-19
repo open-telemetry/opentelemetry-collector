@@ -4,7 +4,7 @@ github_project: open-telemetry/opentelemetry-collector
 status:
   class: processor
   stability:
-    beta: [traces, metrics, logs]
+    beta: [traces, metrics, logs, entities]
   distributions: [core, contrib, k8s]
 
 tests:

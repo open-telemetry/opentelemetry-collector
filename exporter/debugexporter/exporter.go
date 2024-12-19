@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/exporter/debugexporter/internal/normal"
 	"go.opentelemetry.io/collector/exporter/debugexporter/internal/otlptext"
+	"go.opentelemetry.io/collector/pdata/pentity"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
@@ -24,6 +25,7 @@ type debugExporter struct {
 	metricsMarshaler  pmetric.Marshaler
 	tracesMarshaler   ptrace.Marshaler
 	profilesMarshaler pprofile.Marshaler
+	entityMarshaler   pentity.Marshaler
 }
 
 func newDebugExporter(logger *zap.Logger, verbosity configtelemetry.Level) *debugExporter {
@@ -31,6 +33,8 @@ func newDebugExporter(logger *zap.Logger, verbosity configtelemetry.Level) *debu
 	var metricsMarshaler pmetric.Marshaler
 	var tracesMarshaler ptrace.Marshaler
 	var profilesMarshaler pprofile.Marshaler
+	// TODO: Implement separate entity marshalers
+	entityMarshaler := otlptext.NewTextEntitiesMarshaler()
 	if verbosity == configtelemetry.LevelDetailed {
 		logsMarshaler = otlptext.NewTextLogsMarshaler()
 		metricsMarshaler = otlptext.NewTextMetricsMarshaler()
@@ -49,6 +53,7 @@ func newDebugExporter(logger *zap.Logger, verbosity configtelemetry.Level) *debu
 		metricsMarshaler:  metricsMarshaler,
 		tracesMarshaler:   tracesMarshaler,
 		profilesMarshaler: profilesMarshaler,
+		entityMarshaler:   entityMarshaler,
 	}
 }
 
@@ -112,6 +117,23 @@ func (s *debugExporter) pushProfiles(_ context.Context, pd pprofile.Profiles) er
 	}
 
 	buf, err := s.profilesMarshaler.MarshalProfiles(pd)
+	if err != nil {
+		return err
+	}
+	s.logger.Info(string(buf))
+	return nil
+}
+
+func (s *debugExporter) pushEntities(_ context.Context, ld pentity.Entities) error {
+	s.logger.Info("Entities",
+		zap.Int("resource entities", ld.ResourceEntities().Len()),
+		zap.Int("entities", ld.EntityCount()))
+
+	if s.verbosity == configtelemetry.LevelBasic {
+		return nil
+	}
+
+	buf, err := s.entityMarshaler.MarshalEntities(ld)
 	if err != nil {
 		return err
 	}

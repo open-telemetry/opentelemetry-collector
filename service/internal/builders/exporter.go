@@ -94,6 +94,26 @@ func (b *ExporterBuilder) CreateProfiles(ctx context.Context, set exporter.Setti
 	return f.CreateProfiles(ctx, set, cfg)
 }
 
+// CreateEntities creates a Entities exporter based on the settings and config.
+func (b *ExporterBuilder) CreateEntities(ctx context.Context, set exporter.Settings) (xexporter.Entities, error) {
+	cfg, existsCfg := b.cfgs[set.ID]
+	if !existsCfg {
+		return nil, fmt.Errorf("exporter %q is not configured", set.ID)
+	}
+
+	expFact, existsFactory := b.factories[set.ID.Type()]
+	if !existsFactory {
+		return nil, fmt.Errorf("exporter factory not available for: %q", set.ID)
+	}
+
+	f, ok := expFact.(xexporter.Factory)
+	if !ok {
+		return nil, pipeline.ErrSignalNotSupported
+	}
+	logStabilityLevel(set.Logger, f.EntitiesStability())
+	return f.CreateEntities(ctx, set, cfg)
+}
+
 func (b *ExporterBuilder) Factory(componentType component.Type) component.Factory {
 	return b.factories[componentType]
 }

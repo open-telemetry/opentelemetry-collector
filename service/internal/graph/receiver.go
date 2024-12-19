@@ -71,6 +71,12 @@ func (n *receiverNode) buildComponent(ctx context.Context,
 			consumers = append(consumers, next.(xconsumer.Profiles))
 		}
 		n.Component, err = builder.CreateProfiles(ctx, set, fanoutconsumer.NewProfiles(consumers))
+	case xpipeline.SignalEntities:
+		var consumers []xconsumer.Entities
+		for _, next := range nexts {
+			consumers = append(consumers, next.(xconsumer.Entities))
+		}
+		n.Component, err = builder.CreateEntities(ctx, set, fanoutconsumer.NewEntities(consumers))
 	default:
 		return fmt.Errorf("error creating receiver %q for data type %q is not supported", set.ID, n.pipelineType)
 	}

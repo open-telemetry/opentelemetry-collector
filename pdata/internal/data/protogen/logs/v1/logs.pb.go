@@ -232,6 +232,8 @@ type ResourceLogs struct {
 	// https://opentelemetry.io/docs/specs/otel/schemas/#schema-url
 	// This schema_url applies to the data in the "resource" field. It does not apply
 	// to the data in the "scope_logs" field which have their own schema_url field.
+	//
+	// This field is deprecated in favour of Resource.entities.schema_url.
 	SchemaUrl string `protobuf:"bytes,3,opt,name=schema_url,json=schemaUrl,proto3" json:"schema_url,omitempty"`
 }
 

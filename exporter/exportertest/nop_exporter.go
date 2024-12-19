@@ -35,6 +35,7 @@ func NewNopFactory() exporter.Factory {
 		xexporter.WithMetrics(createMetrics, component.StabilityLevelStable),
 		xexporter.WithLogs(createLogs, component.StabilityLevelStable),
 		xexporter.WithProfiles(createProfiles, component.StabilityLevelAlpha),
+		xexporter.WithEntities(createEntities, component.StabilityLevelStable),
 	)
 }
 
@@ -51,6 +52,10 @@ func createLogs(context.Context, exporter.Settings, component.Config) (exporter.
 }
 
 func createProfiles(context.Context, exporter.Settings, component.Config) (xexporter.Profiles, error) {
+	return nopInstance, nil
+}
+
+func createEntities(context.Context, exporter.Settings, component.Config) (xexporter.Entities, error) {
 	return nopInstance, nil
 }
 

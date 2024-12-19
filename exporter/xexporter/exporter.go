@@ -18,6 +18,12 @@ type Profiles interface {
 	xconsumer.Profiles
 }
 
+// Entities is an exporter that can consume entities.
+type Entities interface {
+	component.Component
+	xconsumer.Entities
+}
+
 type Factory interface {
 	exporter.Factory
 
@@ -28,6 +34,14 @@ type Factory interface {
 
 	// ProfilesStability gets the stability level of the Profiles exporter.
 	ProfilesStability() component.StabilityLevel
+
+	// CreateEntities creates an EntitiesExporter based on the config.
+	// If the exporter type does not support entities,
+	// this function returns the error [pipeline.ErrSignalNotSupported].
+	CreateEntities(ctx context.Context, set exporter.Settings, cfg component.Config) (Entities, error)
+
+	// EntitiesStability gets the stability level of the EntityExporter.
+	EntitiesStability() component.StabilityLevel
 }
 
 // FactoryOption apply changes to ReceiverOptions.
@@ -53,6 +67,19 @@ type CreateProfilesFunc func(context.Context, exporter.Settings, component.Confi
 
 // CreateProfiles implements Factory.CreateProfiles.
 func (f CreateProfilesFunc) CreateProfiles(ctx context.Context, set exporter.Settings, cfg component.Config) (Profiles, error) {
+	if f == nil {
+		return nil, pipeline.ErrSignalNotSupported
+	}
+	return f(ctx, set, cfg)
+}
+
+// CreateEntitiesFunc is the equivalent of Factory.CreateEntities.
+type CreateEntitiesFunc func(context.Context, exporter.Settings, component.Config) (Entities, error)
+
+// CreateEntities implements Factory.CreateEntities.
+func (f CreateEntitiesFunc) CreateEntities(ctx context.Context, set exporter.Settings, cfg component.Config) (Entities,
+	error,
+) {
 	if f == nil {
 		return nil, pipeline.ErrSignalNotSupported
 	}
@@ -88,14 +115,30 @@ func WithProfiles(createProfiles CreateProfilesFunc, sl component.StabilityLevel
 	})
 }
 
+// WithEntities overrides the default "error not supported" implementation for CreateEntities and the default "undefined" stability level.
+func WithEntities(createEntities CreateEntitiesFunc, sl component.StabilityLevel) FactoryOption {
+	return factoryOptionFunc(func(o *factoryOpts) {
+		o.entitiesStabilityLevel = sl
+		o.CreateEntitiesFunc = createEntities
+	})
+}
+
 type factory struct {
 	exporter.Factory
+
 	CreateProfilesFunc
+	CreateEntitiesFunc
+
 	profilesStabilityLevel component.StabilityLevel
+	entitiesStabilityLevel component.StabilityLevel
 }
 
 func (f *factory) ProfilesStability() component.StabilityLevel {
 	return f.profilesStabilityLevel
+}
+
+func (f *factory) EntitiesStability() component.StabilityLevel {
+	return f.entitiesStabilityLevel
 }
 
 // NewFactory returns a Factory.

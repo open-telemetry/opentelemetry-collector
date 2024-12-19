@@ -67,6 +67,7 @@ replaces:
   - go.opentelemetry.io/collector/processor => ${WORKSPACE_DIR}/processor
   - go.opentelemetry.io/collector/processor/processortest => ${WORKSPACE_DIR}/processor/processortest
   - go.opentelemetry.io/collector/processor/xprocessor => ${WORKSPACE_DIR}/processor/xprocessor
+  - go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper => ${WORKSPACE_DIR}/processor/processorhelper/xprocessorhelper
   - go.opentelemetry.io/collector/receiver => ${WORKSPACE_DIR}/receiver
   - go.opentelemetry.io/collector/receiver/otlpreceiver => ${WORKSPACE_DIR}/receiver/otlpreceiver
   - go.opentelemetry.io/collector/receiver/xreceiver => ${WORKSPACE_DIR}/receiver/xreceiver

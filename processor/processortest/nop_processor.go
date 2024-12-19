@@ -37,6 +37,7 @@ func NewNopFactory() processor.Factory {
 		xprocessor.WithMetrics(createMetrics, component.StabilityLevelStable),
 		xprocessor.WithLogs(createLogs, component.StabilityLevelStable),
 		xprocessor.WithProfiles(createProfiles, component.StabilityLevelAlpha),
+		xprocessor.WithEntities(createEntities, component.StabilityLevelStable),
 	)
 }
 
@@ -53,6 +54,10 @@ func createLogs(context.Context, processor.Settings, component.Config, consumer.
 }
 
 func createProfiles(context.Context, processor.Settings, component.Config, xconsumer.Profiles) (xprocessor.Profiles, error) {
+	return nopInstance, nil
+}
+
+func createEntities(context.Context, processor.Settings, component.Config, xconsumer.Entities) (xprocessor.Entities, error) {
 	return nopInstance, nil
 }
 

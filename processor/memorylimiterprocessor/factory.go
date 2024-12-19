@@ -11,9 +11,12 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor/internal/metadata"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper"
+	"go.opentelemetry.io/collector/processor/xprocessor"
 )
 
 var processorCapabilities = consumer.Capabilities{MutatesData: false}
@@ -30,12 +33,13 @@ func NewFactory() processor.Factory {
 	f := &factory{
 		memoryLimiters: map[component.Config]*memoryLimiterProcessor{},
 	}
-	return processor.NewFactory(
+	return xprocessor.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		processor.WithTraces(f.createTraces, metadata.TracesStability),
-		processor.WithMetrics(f.createMetrics, metadata.MetricsStability),
-		processor.WithLogs(f.createLogs, metadata.LogsStability))
+		xprocessor.WithTraces(f.createTraces, metadata.TracesStability),
+		xprocessor.WithMetrics(f.createMetrics, metadata.MetricsStability),
+		xprocessor.WithLogs(f.createLogs, metadata.LogsStability),
+		xprocessor.WithEntities(f.createEntities, metadata.EntitiesStability))
 }
 
 // CreateDefaultConfig creates the default configuration for processor. Notice
@@ -93,6 +97,23 @@ func (f *factory) createLogs(
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithStart(memLimiter.start),
 		processorhelper.WithShutdown(memLimiter.shutdown))
+}
+
+func (f *factory) createEntities(
+	ctx context.Context,
+	set processor.Settings,
+	cfg component.Config,
+	nextConsumer xconsumer.Entities,
+) (xprocessor.Entities, error) {
+	memLimiter, err := f.getMemoryLimiter(set, cfg)
+	if err != nil {
+		return nil, err
+	}
+	return xprocessorhelper.NewEntities(ctx, set, cfg, nextConsumer,
+		memLimiter.processEntities,
+		xprocessorhelper.WithCapabilities(processorCapabilities),
+		xprocessorhelper.WithStart(memLimiter.start),
+		xprocessorhelper.WithShutdown(memLimiter.shutdown))
 }
 
 // getMemoryLimiter checks if we have a cached memoryLimiter with a specific config,

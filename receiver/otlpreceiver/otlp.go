@@ -18,11 +18,13 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
+	"go.opentelemetry.io/collector/pdata/pentity/pentityotlp"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/pdata/pprofile/pprofileotlp"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/entities"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/logs"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metrics"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/profiles"
@@ -40,6 +42,7 @@ type otlpReceiver struct {
 	nextMetrics  consumer.Metrics
 	nextLogs     consumer.Logs
 	nextProfiles xconsumer.Profiles
+	nextEntities xconsumer.Entities
 	shutdownWG   sync.WaitGroup
 
 	obsrepGRPC *receiverhelper.ObsReport
@@ -58,6 +61,7 @@ func newOtlpReceiver(cfg *Config, set *receiver.Settings) (*otlpReceiver, error)
 		nextMetrics:  nil,
 		nextLogs:     nil,
 		nextProfiles: nil,
+		nextEntities: nil,
 		settings:     set,
 	}
 
@@ -109,6 +113,10 @@ func (r *otlpReceiver) startGRPCServer(host component.Host) error {
 		pprofileotlp.RegisterGRPCServer(r.serverGRPC, profiles.New(r.nextProfiles))
 	}
 
+	if r.nextEntities != nil {
+		pentityotlp.RegisterGRPCServer(r.serverGRPC, entities.New(r.nextEntities, r.obsrepGRPC))
+	}
+
 	r.settings.Logger.Info("Starting GRPC server", zap.String("endpoint", r.cfg.GRPC.NetAddr.Endpoint))
 	var gln net.Listener
 	if gln, err = r.cfg.GRPC.NetAddr.Listen(context.Background()); err != nil {
@@ -158,6 +166,13 @@ func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host)
 		httpProfilesReceiver := profiles.New(r.nextProfiles)
 		httpMux.HandleFunc(defaultProfilesURLPath, func(resp http.ResponseWriter, req *http.Request) {
 			handleProfiles(resp, req, httpProfilesReceiver)
+		})
+	}
+
+	if r.nextEntities != nil {
+		httpProfilesReceiver := entities.New(r.nextEntities, r.obsrepHTTP)
+		httpMux.HandleFunc(defaultProfilesURLPath, func(resp http.ResponseWriter, req *http.Request) {
+			handleEntities(resp, req, httpProfilesReceiver)
 		})
 	}
 
@@ -229,4 +244,8 @@ func (r *otlpReceiver) registerLogsConsumer(lc consumer.Logs) {
 
 func (r *otlpReceiver) registerProfilesConsumer(tc xconsumer.Profiles) {
 	r.nextProfiles = tc
+}
+
+func (r *otlpReceiver) registerEntitiesConsumer(ec xconsumer.Entities) {
+	r.nextEntities = ec
 }

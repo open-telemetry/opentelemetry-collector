@@ -21,6 +21,13 @@ type Profiles interface {
 	component.Component
 }
 
+// Entities receiver receives entities.
+// Its purpose is to translate data from any format to the collector's internal entities data format.
+// EntitiesReceiver feeds a xconsumer.Entities with data.
+type Entities interface {
+	component.Component
+}
+
 // Factory is a factory interface for receivers.
 //
 // This interface cannot be directly implemented. Implementations must
@@ -35,6 +42,14 @@ type Factory interface {
 
 	// ProfilesStability gets the stability level of the Profiles receiver.
 	ProfilesStability() component.StabilityLevel
+
+	// CreateEntities creates a EntitiesReceiver based on this config.
+	// If the receiver type does not support the data type or if the config is not valid
+	// an error will be returned instead.
+	CreateEntities(ctx context.Context, set receiver.Settings, cfg component.Config, nextConsumer xconsumer.Entities) (Entities, error)
+
+	// EntitiesStability gets the stability level of the EntitiesReceiver.
+	EntitiesStability() component.StabilityLevel
 }
 
 // CreateProfilesFunc is the equivalent of Factory.CreateProfiles.
@@ -46,6 +61,22 @@ func (f CreateProfilesFunc) CreateProfiles(ctx context.Context, set receiver.Set
 		return nil, pipeline.ErrSignalNotSupported
 	}
 	return f(ctx, set, cfg, next)
+}
+
+// CreateEntitiesFunc is the equivalent of ReceiverFactory.CreateEntitiesReceiver().
+type CreateEntitiesFunc func(context.Context, receiver.Settings, component.Config, xconsumer.Entities) (Entities, error)
+
+// CreateEntities implements Factory.CreateEntitiesReceiver().
+func (f CreateEntitiesFunc) CreateEntities(
+	ctx context.Context,
+	set receiver.Settings,
+	cfg component.Config,
+	nextConsumer xconsumer.Entities,
+) (Entities, error) {
+	if f == nil {
+		return nil, pipeline.ErrSignalNotSupported
+	}
+	return f(ctx, set, cfg, nextConsumer)
 }
 
 // FactoryOption apply changes to Factory.
@@ -65,10 +96,16 @@ type factory struct {
 	receiver.Factory
 	CreateProfilesFunc
 	profilesStabilityLevel component.StabilityLevel
+	CreateEntitiesFunc
+	entitiesStabilityLevel component.StabilityLevel
 }
 
 func (f *factory) ProfilesStability() component.StabilityLevel {
 	return f.profilesStabilityLevel
+}
+
+func (f *factory) EntitiesStability() component.StabilityLevel {
+	return f.entitiesStabilityLevel
 }
 
 type factoryOpts struct {
@@ -102,6 +139,14 @@ func WithProfiles(createProfiles CreateProfilesFunc, sl component.StabilityLevel
 	return factoryOptionFunc(func(o *factoryOpts) {
 		o.profilesStabilityLevel = sl
 		o.CreateProfilesFunc = createProfiles
+	})
+}
+
+// WithEntities overrides the default "error not supported" implementation for CreateEntitiesReceiver and the default "undefined" stability level.
+func WithEntities(createEntities CreateEntitiesFunc, sl component.StabilityLevel) FactoryOption {
+	return factoryOptionFunc(func(o *factoryOpts) {
+		o.entitiesStabilityLevel = sl
+		o.CreateEntitiesFunc = createEntities
 	})
 }
 

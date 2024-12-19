@@ -107,6 +107,19 @@ func (or *ObsReport) EndProfilesOp(ctx context.Context, numSpans int, err error)
 	endSpan(ctx, err, numSent, numFailedToSend, SentSamplesKey, FailedToSendSamplesKey)
 }
 
+// StartEntitiesOp is called at the start of an Export operation.
+// The returned context should be used in other calls to the Exporter functions
+// dealing with the same export operation.
+func (or *ObsReport) StartEntitiesOp(ctx context.Context) context.Context {
+	return or.startOp(ctx, ExportTraceDataOperationSuffix)
+}
+
+// EndEntitiesOp completes the export operation that was started with startEntitiesOp.
+func (or *ObsReport) EndEntitiesOp(ctx context.Context, numEntities int, err error) {
+	numSent, numFailedToSend := toNumItems(numEntities, err)
+	endSpan(ctx, err, numSent, numFailedToSend, SentSamplesKey, FailedToSendSamplesKey)
+}
+
 // startOp creates the span used to trace the operation. Returning
 // the updated context and the created span.
 func (or *ObsReport) startOp(ctx context.Context, operationSuffix string) context.Context {

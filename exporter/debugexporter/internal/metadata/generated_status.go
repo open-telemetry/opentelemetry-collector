@@ -16,4 +16,5 @@ const (
 	MetricsStability  = component.StabilityLevelDevelopment
 	LogsStability     = component.StabilityLevelDevelopment
 	ProfilesStability = component.StabilityLevelDevelopment
+	EntitiesStability = component.StabilityLevelDevelopment
 )

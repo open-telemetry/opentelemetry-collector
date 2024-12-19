@@ -22,7 +22,7 @@ func (textTracesMarshaler) MarshalTraces(td ptrace.Traces) ([]byte, error) {
 		buf.logEntry("ResourceSpans #%d", i)
 		rs := rss.At(i)
 		buf.logEntry("Resource SchemaURL: %s", rs.SchemaUrl())
-		buf.logAttributes("Resource attributes", rs.Resource().Attributes())
+		marshalResource(rs.Resource(), &buf)
 		ilss := rs.ScopeSpans()
 		for j := 0; j < ilss.Len(); j++ {
 			buf.logEntry("ScopeSpans #%d", j)

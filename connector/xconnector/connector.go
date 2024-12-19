@@ -35,6 +35,24 @@ type Factory interface {
 	ProfilesToTracesStability() component.StabilityLevel
 	ProfilesToMetricsStability() component.StabilityLevel
 	ProfilesToLogsStability() component.StabilityLevel
+
+	CreateTracesToEntities(ctx context.Context, set connector.Settings, cfg component.Config, next xconsumer.Entities) (connector.Traces, error)
+	CreateMetricsToEntities(ctx context.Context, set connector.Settings, cfg component.Config, next xconsumer.Entities) (connector.Metrics, error)
+	CreateLogsToEntities(ctx context.Context, set connector.Settings, cfg component.Config, next xconsumer.Entities) (connector.Logs, error)
+
+	TracesToEntitiesStability() component.StabilityLevel
+	MetricsToEntitiesStability() component.StabilityLevel
+	LogsToEntitiesStability() component.StabilityLevel
+
+	CreateEntitiesToEntities(ctx context.Context, set connector.Settings, cfg component.Config, next xconsumer.Entities) (Entities, error)
+	CreateEntitiesToTraces(ctx context.Context, set connector.Settings, cfg component.Config, next consumer.Traces) (Entities, error)
+	CreateEntitiesToMetrics(ctx context.Context, set connector.Settings, cfg component.Config, next consumer.Metrics) (Entities, error)
+	CreateEntitiesToLogs(ctx context.Context, set connector.Settings, cfg component.Config, next consumer.Logs) (Entities, error)
+
+	EntitiesToEntitiesStability() component.StabilityLevel
+	EntitiesToTracesStability() component.StabilityLevel
+	EntitiesToMetricsStability() component.StabilityLevel
+	EntitiesToLogsStability() component.StabilityLevel
 }
 
 // A Profiles connector acts as an exporter from a profiles pipeline and a receiver
@@ -127,6 +145,108 @@ type CreateProfilesToLogsFunc func(context.Context, connector.Settings, componen
 func (f CreateProfilesToLogsFunc) CreateProfilesToLogs(ctx context.Context, set connector.Settings, cfg component.Config, next consumer.Logs) (Profiles, error) {
 	if f == nil {
 		return nil, internal.ErrDataTypes(set.ID, xpipeline.SignalProfiles, pipeline.SignalLogs)
+	}
+	return f(ctx, set, cfg, next)
+}
+
+// A Entities connector acts as an exporter from a profiles pipeline and a receiver
+// to one or more traces, metrics, logs, or profiles pipelines.
+// Entities feeds a consumer.Traces, consumer.Metrics, consumer.Logs, or xconsumer.Entities with data.
+//
+// Examples:
+//   - Entities could be collected in one pipeline and routed to another profiles pipeline
+//     based on criteria such as attributes or other content of the profile. The second
+//     pipeline can then process and export the profile to the appropriate backend.
+//   - Entities could be summarized by a metrics connector that emits statistics describing
+//     the number of profiles observed.
+//   - Entities could be analyzed by a logs connector that emits events when particular
+//     criteria are met.
+type Entities interface {
+	component.Component
+	xconsumer.Entities
+}
+
+// CreateTracesToEntitiesFunc is the equivalent of Factory.CreateTracesToEntities().
+type CreateTracesToEntitiesFunc func(context.Context, connector.Settings, component.Config,
+	xconsumer.Entities) (connector.Traces, error)
+
+// CreateTracesToEntities implements Factory.CreateTracesToEntities().
+func (f CreateTracesToEntitiesFunc) CreateTracesToEntities(ctx context.Context, set connector.Settings,
+	cfg component.Config, next xconsumer.Entities,
+) (connector.Traces, error) {
+	if f == nil {
+		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalTraces, xpipeline.SignalEntities)
+	}
+	return f(ctx, set, cfg, next)
+}
+
+// CreateMetricsToEntitiesFunc is the equivalent of Factory.CreateMetricsToEntities().
+type CreateMetricsToEntitiesFunc func(context.Context, connector.Settings, component.Config,
+	xconsumer.Entities) (connector.Metrics, error)
+
+// CreateMetricsToEntities implements Factory.CreateMetricsToEntities().
+func (f CreateMetricsToEntitiesFunc) CreateMetricsToEntities(ctx context.Context, set connector.Settings,
+	cfg component.Config, next xconsumer.Entities,
+) (connector.Metrics, error) {
+	if f == nil {
+		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalMetrics, xpipeline.SignalEntities)
+	}
+	return f(ctx, set, cfg, next)
+}
+
+// CreateLogsToEntitiesFunc is the equivalent of Factory.CreateLogsToEntities().
+type CreateLogsToEntitiesFunc func(context.Context, connector.Settings, component.Config,
+	xconsumer.Entities) (connector.Logs, error)
+
+// CreateLogsToEntities implements Factory.CreateLogsToEntities().
+func (f CreateLogsToEntitiesFunc) CreateLogsToEntities(ctx context.Context, set connector.Settings, cfg component.Config, next xconsumer.Entities) (connector.Logs, error) {
+	if f == nil {
+		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalLogs, xpipeline.SignalEntities)
+	}
+	return f(ctx, set, cfg, next)
+}
+
+// CreateEntitiesToEntitiesFunc is the equivalent of Factory.CreateEntitiesToEntities().
+type CreateEntitiesToEntitiesFunc func(context.Context, connector.Settings, component.Config, xconsumer.Entities) (Entities,
+	error)
+
+// CreateEntitiesToEntities implements Factory.CreateEntitiesToEntities().
+func (f CreateEntitiesToEntitiesFunc) CreateEntitiesToEntities(ctx context.Context, set connector.Settings, cfg component.Config, next xconsumer.Entities) (Entities, error) {
+	if f == nil {
+		return nil, internal.ErrDataTypes(set.ID, xpipeline.SignalEntities, xpipeline.SignalEntities)
+	}
+	return f(ctx, set, cfg, next)
+}
+
+// CreateEntitiesToTracesFunc is the equivalent of Factory.CreateEntitiesToTraces().
+type CreateEntitiesToTracesFunc func(context.Context, connector.Settings, component.Config, consumer.Traces) (Entities, error)
+
+// CreateEntitiesToTraces implements Factory.CreateEntitiesToTraces().
+func (f CreateEntitiesToTracesFunc) CreateEntitiesToTraces(ctx context.Context, set connector.Settings, cfg component.Config, next consumer.Traces) (Entities, error) {
+	if f == nil {
+		return nil, internal.ErrDataTypes(set.ID, xpipeline.SignalEntities, pipeline.SignalTraces)
+	}
+	return f(ctx, set, cfg, next)
+}
+
+// CreateEntitiesToMetricsFunc is the equivalent of Factory.CreateEntitiesToMetrics().
+type CreateEntitiesToMetricsFunc func(context.Context, connector.Settings, component.Config, consumer.Metrics) (Entities, error)
+
+// CreateEntitiesToMetrics implements Factory.CreateEntitiesToMetrics().
+func (f CreateEntitiesToMetricsFunc) CreateEntitiesToMetrics(ctx context.Context, set connector.Settings, cfg component.Config, next consumer.Metrics) (Entities, error) {
+	if f == nil {
+		return nil, internal.ErrDataTypes(set.ID, xpipeline.SignalEntities, pipeline.SignalMetrics)
+	}
+	return f(ctx, set, cfg, next)
+}
+
+// CreateEntitiesToLogsFunc is the equivalent of Factory.CreateEntitiesToLogs().
+type CreateEntitiesToLogsFunc func(context.Context, connector.Settings, component.Config, consumer.Logs) (Entities, error)
+
+// CreateEntitiesToLogs implements Factory.CreateEntitiesToLogs().
+func (f CreateEntitiesToLogsFunc) CreateEntitiesToLogs(ctx context.Context, set connector.Settings, cfg component.Config, next consumer.Logs) (Entities, error) {
+	if f == nil {
+		return nil, internal.ErrDataTypes(set.ID, xpipeline.SignalEntities, pipeline.SignalLogs)
 	}
 	return f(ctx, set, cfg, next)
 }
@@ -269,6 +389,81 @@ func WithProfilesToLogs(createProfilesToLogs CreateProfilesToLogsFunc, sl compon
 	})
 }
 
+// WithTracesToEntities overrides the default "error not supported" implementation for WithTracesToEntities and the
+// default
+// "undefined" stability level.
+func WithTracesToEntities(createTracesToEntities CreateTracesToEntitiesFunc,
+	sl component.StabilityLevel,
+) FactoryOption {
+	return factoryOptionFunc(func(o *factoryOpts) {
+		o.tracesToEntitiesStabilityLevel = sl
+		o.CreateTracesToEntitiesFunc = createTracesToEntities
+	})
+}
+
+// WithMetricsToEntities overrides the default "error not supported" implementation for WithMetricsToEntities and the
+// default "undefined" stability level.
+func WithMetricsToEntities(createMetricsToEntities CreateMetricsToEntitiesFunc,
+	sl component.StabilityLevel,
+) FactoryOption {
+	return factoryOptionFunc(func(o *factoryOpts) {
+		o.metricsToEntitiesStabilityLevel = sl
+		o.CreateMetricsToEntitiesFunc = createMetricsToEntities
+	})
+}
+
+// WithLogsToEntities overrides the default "error not supported" implementation for WithLogsToEntities and the default
+// "undefined" stability level.
+func WithLogsToEntities(createLogsToEntities CreateLogsToEntitiesFunc, sl component.StabilityLevel) FactoryOption {
+	return factoryOptionFunc(func(o *factoryOpts) {
+		o.logsToEntitiesStabilityLevel = sl
+		o.CreateLogsToEntitiesFunc = createLogsToEntities
+	})
+}
+
+// WithEntitiesToEntities overrides the default "error not supported" implementation for WithEntitiesToEntities and the
+// default "undefined" stability level.
+func WithEntitiesToEntities(createEntitiesToEntities CreateEntitiesToEntitiesFunc,
+	sl component.StabilityLevel,
+) FactoryOption {
+	return factoryOptionFunc(func(o *factoryOpts) {
+		o.entitiesToEntitiesStabilityLevel = sl
+		o.CreateEntitiesToEntitiesFunc = createEntitiesToEntities
+	})
+}
+
+// WithEntitiesToTraces overrides the default "error not supported" implementation for WithEntitiesToTraces and the
+// default
+// "undefined" stability level.
+func WithEntitiesToTraces(createEntitiesToTraces CreateEntitiesToTracesFunc,
+	sl component.StabilityLevel,
+) FactoryOption {
+	return factoryOptionFunc(func(o *factoryOpts) {
+		o.entitiesToTracesStabilityLevel = sl
+		o.CreateEntitiesToTracesFunc = createEntitiesToTraces
+	})
+}
+
+// WithEntitiesToMetrics overrides the default "error not supported" implementation for WithEntitiesToMetrics and the
+// default "undefined" stability level.
+func WithEntitiesToMetrics(createEntitiesToMetrics CreateEntitiesToMetricsFunc,
+	sl component.StabilityLevel,
+) FactoryOption {
+	return factoryOptionFunc(func(o *factoryOpts) {
+		o.entitiesToMetricsStabilityLevel = sl
+		o.CreateEntitiesToMetricsFunc = createEntitiesToMetrics
+	})
+}
+
+// WithEntitiesToLogs overrides the default "error not supported" implementation for WithEntitiesToLogs and the default
+// "undefined" stability level.
+func WithEntitiesToLogs(createProfilesToLogs CreateProfilesToLogsFunc, sl component.StabilityLevel) FactoryOption {
+	return factoryOptionFunc(func(o *factoryOpts) {
+		o.entitiesToLogsStabilityLevel = sl
+		o.CreateProfilesToLogsFunc = createProfilesToLogs
+	})
+}
+
 // factory implements the Factory interface.
 type factory struct {
 	connector.Factory
@@ -282,6 +477,15 @@ type factory struct {
 	CreateProfilesToMetricsFunc
 	CreateProfilesToLogsFunc
 
+	CreateTracesToEntitiesFunc
+	CreateMetricsToEntitiesFunc
+	CreateLogsToEntitiesFunc
+
+	CreateEntitiesToEntitiesFunc
+	CreateEntitiesToTracesFunc
+	CreateEntitiesToMetricsFunc
+	CreateEntitiesToLogsFunc
+
 	tracesToProfilesStabilityLevel  component.StabilityLevel
 	metricsToProfilesStabilityLevel component.StabilityLevel
 	logsToProfilesStabilityLevel    component.StabilityLevel
@@ -290,6 +494,15 @@ type factory struct {
 	profilesToTracesStabilityLevel   component.StabilityLevel
 	profilesToMetricsStabilityLevel  component.StabilityLevel
 	profilesToLogsStabilityLevel     component.StabilityLevel
+
+	tracesToEntitiesStabilityLevel  component.StabilityLevel
+	metricsToEntitiesStabilityLevel component.StabilityLevel
+	logsToEntitiesStabilityLevel    component.StabilityLevel
+
+	entitiesToEntitiesStabilityLevel component.StabilityLevel
+	entitiesToTracesStabilityLevel   component.StabilityLevel
+	entitiesToMetricsStabilityLevel  component.StabilityLevel
+	entitiesToLogsStabilityLevel     component.StabilityLevel
 }
 
 func (f *factory) TracesToProfilesStability() component.StabilityLevel {
@@ -318,6 +531,34 @@ func (f *factory) ProfilesToMetricsStability() component.StabilityLevel {
 
 func (f *factory) ProfilesToLogsStability() component.StabilityLevel {
 	return f.profilesToLogsStabilityLevel
+}
+
+func (f *factory) TracesToEntitiesStability() component.StabilityLevel {
+	return f.tracesToEntitiesStabilityLevel
+}
+
+func (f *factory) MetricsToEntitiesStability() component.StabilityLevel {
+	return f.metricsToEntitiesStabilityLevel
+}
+
+func (f *factory) LogsToEntitiesStability() component.StabilityLevel {
+	return f.logsToEntitiesStabilityLevel
+}
+
+func (f *factory) EntitiesToEntitiesStability() component.StabilityLevel {
+	return f.entitiesToEntitiesStabilityLevel
+}
+
+func (f *factory) EntitiesToTracesStability() component.StabilityLevel {
+	return f.entitiesToTracesStabilityLevel
+}
+
+func (f *factory) EntitiesToMetricsStability() component.StabilityLevel {
+	return f.entitiesToMetricsStabilityLevel
+}
+
+func (f *factory) EntitiesToLogsStability() component.StabilityLevel {
+	return f.entitiesToLogsStabilityLevel
 }
 
 // NewFactory returns a Factory.

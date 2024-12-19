@@ -12,6 +12,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.22.0
 	go.opentelemetry.io/collector/pdata/testdata v0.116.0
 	go.opentelemetry.io/collector/pipeline v0.116.0
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.116.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.116.0
 	go.opentelemetry.io/collector/scraper v0.116.0
 	go.opentelemetry.io/otel v1.32.0
@@ -64,6 +65,8 @@ replace go.opentelemetry.io/collector/pdata/pprofile => ../pdata/pprofile
 replace go.opentelemetry.io/collector/consumer/xconsumer => ../consumer/xconsumer
 
 replace go.opentelemetry.io/collector/consumer/consumertest => ../consumer/consumertest
+
+replace go.opentelemetry.io/collector/pipeline/xpipeline => ../pipeline/xpipeline
 
 replace go.opentelemetry.io/collector/receiver/xreceiver => ./xreceiver
 

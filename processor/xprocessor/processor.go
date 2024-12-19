@@ -26,6 +26,15 @@ type Factory interface {
 
 	// ProfilesStability gets the stability level of the Profiles processor.
 	ProfilesStability() component.StabilityLevel
+
+	// CreateEntities creates an Entities processor based on this config.
+	// If the processor type does not support entities,
+	// this function returns the error [pipeline.ErrSignalNotSupported].
+	// Implementers can assume `next` is never nil.
+	CreateEntities(ctx context.Context, set processor.Settings, cfg component.Config, next xconsumer.Entities) (Entities, error)
+
+	// EntitiesStability gets the stability level of the Entities processor.
+	EntitiesStability() component.StabilityLevel
 }
 
 // Profiles is a processor that can consume profiles.
@@ -34,12 +43,29 @@ type Profiles interface {
 	xconsumer.Profiles
 }
 
+// Entities is a processor that can consume entities.
+type Entities interface {
+	component.Component
+	xconsumer.Entities
+}
+
 // CreateProfilesFunc is the equivalent of Factory.CreateProfiles().
 // CreateProfilesFunc is the equivalent of Factory.CreateProfiles().
 type CreateProfilesFunc func(context.Context, processor.Settings, component.Config, xconsumer.Profiles) (Profiles, error)
 
 // CreateProfiles implements Factory.CreateProfiles.
 func (f CreateProfilesFunc) CreateProfiles(ctx context.Context, set processor.Settings, cfg component.Config, next xconsumer.Profiles) (Profiles, error) {
+	if f == nil {
+		return nil, pipeline.ErrSignalNotSupported
+	}
+	return f(ctx, set, cfg, next)
+}
+
+// CreateEntitiesFunc is the equivalent of Factory.CreateEntities().
+type CreateEntitiesFunc func(context.Context, processor.Settings, component.Config, xconsumer.Entities) (Entities, error)
+
+// CreateEntities implements Factory.CreateEntities.
+func (f CreateEntitiesFunc) CreateEntities(ctx context.Context, set processor.Settings, cfg component.Config, next xconsumer.Entities) (Entities, error) {
 	if f == nil {
 		return nil, pipeline.ErrSignalNotSupported
 	}
@@ -63,10 +89,16 @@ type factory struct {
 	processor.Factory
 	CreateProfilesFunc
 	profilesStabilityLevel component.StabilityLevel
+	CreateEntitiesFunc
+	entitiesStabilityLevel component.StabilityLevel
 }
 
 func (f factory) ProfilesStability() component.StabilityLevel {
 	return f.profilesStabilityLevel
+}
+
+func (f factory) EntitiesStability() component.StabilityLevel {
+	return f.entitiesStabilityLevel
 }
 
 type factoryOpts struct {
@@ -100,6 +132,14 @@ func WithProfiles(createProfiles CreateProfilesFunc, sl component.StabilityLevel
 	return factoryOptionFunc(func(o *factoryOpts) {
 		o.profilesStabilityLevel = sl
 		o.CreateProfilesFunc = createProfiles
+	})
+}
+
+// WithEntities overrides the default "error not supported" implementation for CreateEntities and the default "undefined" stability level.
+func WithEntities(createEntities CreateEntitiesFunc, sl component.StabilityLevel) FactoryOption {
+	return factoryOptionFunc(func(o *factoryOpts) {
+		o.entitiesStabilityLevel = sl
+		o.CreateEntitiesFunc = createEntities
 	})
 }
 
