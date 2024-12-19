@@ -56,6 +56,10 @@ gotest-with-cover:
 	@$(MAKE) for-all-target TARGET="test-with-cover"
 	$(GOCMD) tool covdata textfmt -i=./coverage/unit -o ./coverage.txt
 
+.PHONY: gotest-with-junit
+gotest-with-junit:
+	@$(MAKE) for-all-target TARGET="test-with-junit"
+
 .PHONY: gotestifylint-fix
 gotestifylint-fix:
 	$(MAKE) for-all-target TARGET="testifylint-fix"

@@ -4,6 +4,8 @@ ALL_PKGS := $(sort $(shell go list ./...))
 # COVER_PKGS is the list of packages to include in the coverage
 COVER_PKGS := $(shell go list ./... | tr "\n" ",")
 
+CURR_MOD := $(shell go list -m | tr '/' '-' )
+
 GOTEST_TIMEOUT?=240s
 GOTEST_OPT?= -race -timeout $(GOTEST_TIMEOUT)
 GOCMD?= go
@@ -55,6 +57,11 @@ test: $(GOTESTSUM)
 test-with-cover: $(GOTESTSUM)
 	mkdir -p $(PWD)/coverage/unit
 	$(GOTESTSUM) --packages="./..." -- $(GOTEST_OPT) -cover -covermode=atomic -coverpkg $(COVER_PKGS) -args -test.gocoverdir="$(PWD)/coverage/unit"
+
+.PHONY: test-with-junit
+test-with-junit: $(GOTESTSUM)
+	mkdir -p $(TOOLS_MOD_DIR)/testresults
+	$(GOTESTSUM) --packages="./..." --junitfile $(TOOLS_MOD_DIR)/testresults/$(CURR_MOD)-junit.xml -- $(GOTEST_OPT) ./...
 
 .PHONY: benchmark
 benchmark: $(GOTESTSUM)
