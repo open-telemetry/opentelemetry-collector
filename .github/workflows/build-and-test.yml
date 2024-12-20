@@ -170,8 +170,11 @@ jobs:
       - name: Run Unit Tests
         run: |
           make -j4 gotest-with-junit
-      - name: list files
-        run: git ls-files . --exclude-standard --others
+      - uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ runner.os }}-${{ matrix.runner }}-${{ matrix.go-version }}
+          path: internal/tools/testresults/
+          retention-days: 4
   unittest:
     if: always()
     runs-on: ubuntu-latest
