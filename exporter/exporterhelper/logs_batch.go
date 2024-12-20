@@ -25,9 +25,10 @@ func (req *logsRequest) Merge(_ context.Context, r2 Request) (Request, error) {
 // conforming with the MaxSizeConfig.
 func (req *logsRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSizeConfig, r2 Request) ([]Request, error) {
 	var (
-		res          []Request
-		destReq      *logsRequest
-		capacityLeft = cfg.MaxSizeItems
+		res     []Request
+		destReq *logsRequest
+		// capacityLeft = cfg.MaxSizeItems
+		capacityLeft = cfg.MaxSizeBytes
 	)
 	for _, req := range []Request{req, r2} {
 		if req == nil {
@@ -37,22 +38,22 @@ func (req *logsRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSiz
 		if !ok {
 			return nil, errors.New("invalid input type")
 		}
-		if srcReq.ld.LogRecordCount() <= capacityLeft {
+		if srcReq.ld.GetOrig().Size() <= capacityLeft {
 			if destReq == nil {
 				destReq = srcReq
 			} else {
 				srcReq.ld.ResourceLogs().MoveAndAppendTo(destReq.ld.ResourceLogs())
 			}
-			capacityLeft -= destReq.ld.LogRecordCount()
+			capacityLeft -= destReq.ld.GetOrig().Size()
 			continue
 		}
 
 		for {
 			extractedLogs := extractLogs(srcReq.ld, capacityLeft)
-			if extractedLogs.LogRecordCount() == 0 {
+			if extractedLogs.GetOrig().Size() == 0 {
 				break
 			}
-			capacityLeft -= extractedLogs.LogRecordCount()
+			capacityLeft -= extractedLogs.GetOrig().Size()
 			if destReq == nil {
 				destReq = &logsRequest{ld: extractedLogs, pusher: srcReq.pusher}
 			} else {

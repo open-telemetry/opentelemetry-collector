@@ -28,6 +28,20 @@ func (qb *DefaultBatcher) resetTimer() {
 	}
 }
 
+func (qb *DefaultBatcher) maxSizeLimitExists() bool {
+	return qb.batchCfg.MaxSizeItems > 0 || qb.batchCfg.MaxSizeBytes > 0
+}
+
+func (qb *DefaultBatcher) reachedMinSizeThreadhold(req internal.Request) bool {
+	if qb.batchCfg.MinSizeItems > 0 {
+		return req.ItemsCount() >= qb.batchCfg.MinSizeItems
+	} else if qb.batchCfg.MinSizeBytes > 0 {
+		return req.BytesSize() >= qb.batchCfg.MinSizeBytes
+	} else {
+		return true
+	}
+}
+
 // startReadingFlushingGoroutine starts a goroutine that reads and then flushes.
 func (qb *DefaultBatcher) startReadingFlushingGoroutine() {
 	qb.stopWG.Add(1)
@@ -43,7 +57,7 @@ func (qb *DefaultBatcher) startReadingFlushingGoroutine() {
 
 			qb.currentBatchMu.Lock()
 
-			if qb.batchCfg.MaxSizeItems > 0 {
+			if qb.maxSizeLimitExists() {
 				var reqList []internal.Request
 				var mergeSplitErr error
 				if qb.currentBatch == nil || qb.currentBatch.req == nil {
@@ -60,7 +74,7 @@ func (qb *DefaultBatcher) startReadingFlushingGoroutine() {
 				}
 
 				// If there was a split, we flush everything immediately.
-				if reqList[0].ItemsCount() >= qb.batchCfg.MinSizeItems || len(reqList) > 1 {
+				if qb.reachedMinSizeThreadhold(reqList[0]) || len(reqList) > 1 {
 					qb.currentBatch = nil
 					qb.currentBatchMu.Unlock()
 					for i := 0; i < len(reqList); i++ {
@@ -102,7 +116,7 @@ func (qb *DefaultBatcher) startReadingFlushingGoroutine() {
 					}
 				}
 
-				if qb.currentBatch.req.ItemsCount() >= qb.batchCfg.MinSizeItems {
+				if qb.reachedMinSizeThreadhold(qb.currentBatch.req) {
 					batchToFlush := *qb.currentBatch
 					qb.currentBatch = nil
 					qb.currentBatchMu.Unlock()
