@@ -27,6 +27,10 @@ The following settings are required:
 zPages. Use localhost:<port> to make it available only locally, or ":<port>" to
 make it available on all network interfaces.
 
+The following settings can be optionally configured:
+
+- `enable_expvar` (default = false): Enable the expvar services. For detail see [ExpvarZ](#expvarz).
+
 Example:
 ```yaml
 extensions:
@@ -77,6 +81,12 @@ example
 They also allow you to quickly examine error samples
 
 Example URL: http://localhost:55679/debug/tracez
+
+### ExpvarZ
+
+The ExpvarZ exposes the useful information about Go runtime, OTEL components could levearge [expvar](https://pkg.go.dev/expvar) library to expose their own state.
+
+Example URL: http://localhost:55679/debug/expvarz
 
 ## Warnings
 
