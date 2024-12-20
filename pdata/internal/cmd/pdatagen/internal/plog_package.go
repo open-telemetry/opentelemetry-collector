@@ -107,6 +107,12 @@ var logRecord = &messageValueStruct{
 			},
 		},
 		&primitiveField{
+			fieldName:  "EventName",
+			returnType: "string",
+			defaultVal: `""`,
+			testVal:    `""`,
+		},
+		&primitiveField{
 			fieldName:  "SeverityText",
 			returnType: "string",
 			defaultVal: `""`,
