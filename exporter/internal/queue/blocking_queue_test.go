@@ -6,32 +6,32 @@ package queue
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
-	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestBlockingMemoryQueue(t *testing.T) {
+	var wg sync.WaitGroup
 	q := NewBlockingMemoryQueue[string](BlockingMemoryQueueSettings[string]{Sizer: &RequestSizer[string]{}, Capacity: 1})
 
-	done := false
 	err := errors.New("This is an error")
+	wg.Add(1)
 	go func() {
-		require.EqualError(t, q.Offer(context.Background(), "a"), err.Error())
-		done = true
+		assert.EqualError(t, q.Offer(context.Background(), "a"), err.Error()) // Blocks until OnProcessingFinished is called
+		wg.Done()
 	}()
 
-	require.False(t, done)
 	index, ctx, req, ok := q.Read(context.Background())
-	require.Equal(t, index, uint64(0))
-	require.Equal(t, ctx, context.Background())
-	require.Equal(t, req, "a")
-	require.True(t, ok)
+	for !ok {
+		index, ctx, req, ok = q.Read(context.Background())
+	}
 
-	require.False(t, done)
+	require.Equal(t, uint64(0), index)
+	require.Equal(t, context.Background(), ctx)
+	require.Equal(t, "a", req)
 	q.OnProcessingFinished(index, err)
-
-	time.Sleep(100 * time.Millisecond)
-	require.True(t, done)
+	wg.Wait()
 }
