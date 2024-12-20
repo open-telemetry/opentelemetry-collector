@@ -169,7 +169,7 @@ jobs:
           key: unittest-${{ runner.os }}-${{ matrix.runner }}-go-build-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
       - name: Run Unit Tests
         run: |
-          JUNIT_OUT_DIR=${{ github.workspace }}/internal/tools/testresults make -j4 gotest-with-junit
+          make -j4 gotest-with-junit
       - name: list files
         run: git ls-files . --exclude-standard --others
   unittest:
