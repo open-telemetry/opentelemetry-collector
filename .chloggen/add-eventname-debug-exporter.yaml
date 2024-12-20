@@ -7,7 +7,7 @@ change_type: enhancement
 component: debugexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Add EventName to debug exporter for Logs. EventName was added as top-level field in the LogRecord from 0.15 of proto definition."
+note: "Add EventName to debug exporter for Logs. EventName was added as top-level field in the LogRecord from 1.5.0 of proto definition."
 
 # One or more tracking issues or pull requests related to the change
 issues: [11966]
