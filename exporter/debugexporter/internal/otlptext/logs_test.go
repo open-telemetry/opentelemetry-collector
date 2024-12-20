@@ -47,6 +47,7 @@ func TestLogsText(t *testing.T) {
 				l.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)))
 				l.SetSeverityNumber(plog.SeverityNumberInfo)
 				l.SetSeverityText("INFO")
+				l.SetEventName("my.event")
 				bm := l.Body().SetEmptyMap()
 				bm.PutStr("key1", "val1")
 				bmm := bm.PutEmptyMap("key2")

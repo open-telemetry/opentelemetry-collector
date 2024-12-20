@@ -33,6 +33,7 @@ func fillLogOne(log plog.LogRecord) {
 	log.SetDroppedAttributesCount(1)
 	log.SetSeverityNumber(plog.SeverityNumberInfo)
 	log.SetSeverityText("Info")
+	log.SetEventName("my.event")
 	log.SetSpanID([8]byte{0x01, 0x02, 0x04, 0x08})
 	log.SetTraceID([16]byte{0x08, 0x04, 0x02, 0x01})
 
@@ -48,6 +49,7 @@ func fillLogTwo(log plog.LogRecord) {
 	log.SetDroppedAttributesCount(1)
 	log.SetSeverityNumber(plog.SeverityNumberInfo)
 	log.SetSeverityText("Info")
+	log.SetEventName("my.event")
 
 	attrs := log.Attributes()
 	attrs.PutStr("customer", "acme")
