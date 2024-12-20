@@ -62,7 +62,7 @@ test-with-cover: $(GOTESTSUM)
 
 .PHONY: test-with-junit
 test-with-junit: $(GOTESTSUM)
-	mkdir -p $(TOOLS_MOD_DIR)/testresults
+	mkdir -p $(JUNIT_OUT_DIR)
 	$(GOTESTSUM) --packages="./..." --junitfile $(JUNIT_OUT_DIR)/$(CURR_MOD)-junit.xml -- $(GOTEST_OPT) ./...
 
 .PHONY: benchmark
