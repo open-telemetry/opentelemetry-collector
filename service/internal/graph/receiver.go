@@ -16,14 +16,13 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/components"
+	"go.opentelemetry.io/collector/service/internal/graph/attribute"
 )
-
-const receiverSeed = "receiver"
 
 // A receiver instance can be shared by multiple pipelines of the same type.
 // Therefore, nodeID is derived from "pipeline type" and "component ID".
 type receiverNode struct {
-	nodeID
+	*attribute.Attributes
 	componentID  component.ID
 	pipelineType pipeline.Signal
 	component.Component
@@ -31,7 +30,7 @@ type receiverNode struct {
 
 func newReceiverNode(pipelineType pipeline.Signal, recvID component.ID) *receiverNode {
 	return &receiverNode{
-		nodeID:       newNodeID(receiverSeed, pipelineType.String(), recvID.String()),
+		Attributes:   attribute.Receiver(pipelineType, recvID),
 		componentID:  recvID,
 		pipelineType: pipelineType,
 	}
