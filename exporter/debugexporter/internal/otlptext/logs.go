@@ -38,7 +38,9 @@ func (textLogsMarshaler) MarshalLogs(ld plog.Logs) ([]byte, error) {
 				buf.logEntry("Timestamp: %s", lr.Timestamp())
 				buf.logEntry("SeverityText: %s", lr.SeverityText())
 				buf.logEntry("SeverityNumber: %s(%d)", lr.SeverityNumber(), lr.SeverityNumber())
-				buf.logEntry("EventName: %s", lr.EventName())
+				if lr.EventName() != "" {
+					buf.logEntry("EventName: %s", lr.EventName())
+				}
 				buf.logEntry("Body: %s", valueToString(lr.Body()))
 				buf.logAttributes("Attributes", lr.Attributes())
 				buf.logEntry("Trace ID: %s", lr.TraceID())
