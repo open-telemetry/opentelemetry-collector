@@ -239,7 +239,7 @@ There are two Changelogs for this repository:
 
 An entry into the changelog is required for the following reasons:
 
-- Changes made to the behaviour of the component
+- Changes made to the behavior of the component
 - Changes to the configuration
 - Changes to default settings
 - New components being added
