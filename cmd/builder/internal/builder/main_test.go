@@ -52,7 +52,6 @@ var replaceModules = []string{
 	"/config/configretry",
 	"/config/configtelemetry",
 	"/config/configtls",
-	"/config/internal",
 	"/confmap",
 	"/confmap/provider/envprovider",
 	"/confmap/provider/fileprovider",

@@ -90,11 +90,6 @@ linters-settings:
     locale: US
     ignore-words:
       - cancelled
-      - metre
-      - meter
-      - metres
-      - kilometre
-      - kilometres
 
   perfsprint:
     # Optimizes even if it requires an int or uint type cast.

@@ -51,7 +51,6 @@ replaces:
   - go.opentelemetry.io/collector/config/configretry => ../../config/configretry
   - go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
   - go.opentelemetry.io/collector/config/configtls => ../../config/configtls
-  - go.opentelemetry.io/collector/config/internal => ../../config/internal
   - go.opentelemetry.io/collector/confmap => ../../confmap
   - go.opentelemetry.io/collector/confmap/provider/envprovider => ../../confmap/provider/envprovider
   - go.opentelemetry.io/collector/confmap/provider/fileprovider => ../../confmap/provider/fileprovider
