@@ -20,6 +20,8 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/noop"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/publicsuffix"
 
@@ -475,6 +477,7 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 		next:            handler,
 		includeMetadata: hss.IncludeMetadata,
 	}
+	errorLog, err := zap.NewStdLogAt(settings.Logger, zapcore.ErrorLevel)
 
 	server := &http.Server{
 		Handler:           handler,
@@ -482,9 +485,10 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 		ReadHeaderTimeout: hss.ReadHeaderTimeout,
 		WriteTimeout:      hss.WriteTimeout,
 		IdleTimeout:       hss.IdleTimeout,
+		ErrorLog:          errorLog,
 	}
 
-	return server, nil
+	return server, err
 }
 
 func responseHeadersHandler(handler http.Handler, headers map[string]configopaque.String) http.Handler {
