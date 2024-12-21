@@ -63,6 +63,8 @@ func (n *connectorNode) buildComponent(
 		return n.buildLogs(ctx, set, builder, nexts)
 	case xpipeline.SignalProfiles:
 		return n.buildProfiles(ctx, set, builder, nexts)
+	case xpipeline.SignalEntities:
+		return n.buildEntities(ctx, set, builder, nexts)
 	}
 	return nil
 }
@@ -203,6 +205,41 @@ func (n *connectorNode) buildProfiles(
 		n.Component, err = builder.CreateMetricsToProfiles(ctx, set, next)
 	case pipeline.SignalLogs:
 		n.Component, err = builder.CreateLogsToProfiles(ctx, set, next)
+	}
+	return err
+}
+
+func (n *connectorNode) buildEntities(
+	ctx context.Context,
+	set connector.Settings,
+	builder *builders.ConnectorBuilder,
+	nexts []baseConsumer,
+) error {
+	consumers := make(map[pipeline.ID]xconsumer.Entities, len(nexts))
+	for _, next := range nexts {
+		consumers[next.(*capabilitiesNode).pipelineID] = next.(xconsumer.Entities)
+	}
+	next := xconnector.NewEntitiesRouter(consumers)
+
+	var err error
+	switch n.exprPipelineType {
+	case xpipeline.SignalEntities:
+		var conn xconnector.Entities
+		conn, err = builder.CreateEntitiesToEntities(ctx, set, next)
+		if err != nil {
+			return err
+		}
+		n.Component = componentEntities{
+			Component: conn,
+			Entities:  capabilityconsumer.NewEntities(conn, aggregateCap(conn, nexts)),
+		}
+		return nil
+	case pipeline.SignalTraces:
+		n.Component, err = builder.CreateTracesToEntities(ctx, set, next)
+	case pipeline.SignalMetrics:
+		n.Component, err = builder.CreateMetricsToEntities(ctx, set, next)
+	case pipeline.SignalLogs:
+		n.Component, err = builder.CreateLogsToEntities(ctx, set, next)
 	}
 	return err
 }
