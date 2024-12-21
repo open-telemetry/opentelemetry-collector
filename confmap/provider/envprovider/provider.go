@@ -52,11 +52,11 @@ func (emp *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFu
 	}
 
 	val, exists := os.LookupEnv(envVarName)
-	if !exists {
+	if !exists || val == "" {
 		if defaultValuePtr != nil {
 			val = *defaultValuePtr
 		} else {
-			emp.logger.Warn("Configuration references unset environment variable", zap.String("name", envVarName))
+			emp.logger.Warn("Configuration references unset/empty environment variable", zap.String("name", envVarName))
 		}
 	} else if len(val) == 0 {
 		emp.logger.Info("Configuration references empty environment variable", zap.String("name", envVarName))
