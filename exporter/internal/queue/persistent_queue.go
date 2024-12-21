@@ -560,3 +560,7 @@ func bytesToItemIndexArray(buf []byte) ([]uint64, error) {
 	}
 	return val, nil
 }
+
+func (pq *persistentQueue[T]) IsBlocking() bool {
+	return false
+}
