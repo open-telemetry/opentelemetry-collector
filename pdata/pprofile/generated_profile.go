@@ -173,9 +173,9 @@ func (ms Profile) SetProfileID(v ProfileID) {
 	ms.orig.ProfileId = data.ProfileID(v)
 }
 
-// Attributes returns the Attributes associated with this Profile.
-func (ms Profile) Attributes() pcommon.Map {
-	return pcommon.Map(internal.NewMap(&ms.orig.Attributes, ms.state))
+// AttributeIndices returns the AttributeIndices associated with this Profile.
+func (ms Profile) AttributeIndices() pcommon.Int32Slice {
+	return pcommon.Int32Slice(internal.NewInt32Slice(&ms.orig.AttributeIndices, ms.state))
 }
 
 // DroppedAttributesCount returns the droppedattributescount associated with this Profile.
@@ -226,7 +226,7 @@ func (ms Profile) CopyTo(dest Profile) {
 	ms.CommentStrindices().CopyTo(dest.CommentStrindices())
 	dest.SetDefaultSampleTypeStrindex(ms.DefaultSampleTypeStrindex())
 	dest.SetProfileID(ms.ProfileID())
-	ms.Attributes().CopyTo(dest.Attributes())
+	ms.AttributeIndices().CopyTo(dest.AttributeIndices())
 	dest.SetDroppedAttributesCount(ms.DroppedAttributesCount())
 	dest.SetOriginalPayloadFormat(ms.OriginalPayloadFormat())
 	ms.OriginalPayload().CopyTo(dest.OriginalPayload())

@@ -129,8 +129,7 @@ func BenchmarkProfilesUsage(b *testing.B) {
 				s.SetProfileID(testSecondValProfileID)
 				s.SetTime(ts)
 				s.SetDuration(ts)
-				s.Attributes().PutStr("foo1", "bar1")
-				s.Attributes().PutStr("foo2", "bar2")
+				s.AttributeIndices().Append(1)
 				iss.Profiles().RemoveIf(func(lr Profile) bool {
 					return lr.ProfileID() == testSecondValProfileID
 				})
