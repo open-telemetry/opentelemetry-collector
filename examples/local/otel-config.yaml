@@ -33,5 +33,9 @@ service:
       receivers: [otlp]
       processors: [memory_limiter, batch]
       exporters: [debug]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [debug]
 
   extensions: [zpages]
