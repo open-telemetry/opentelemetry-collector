@@ -204,3 +204,5 @@ replace go.opentelemetry.io/collector/extension/extensiontest => ../extension/ex
 replace go.opentelemetry.io/collector/extension/auth/authtest => ../extension/auth/authtest
 
 replace go.opentelemetry.io/collector/scraper => ../scraper
+
+replace go.opentelemetry.io/collector/scraper/scraperhelper => ../scraper/scraperhelper

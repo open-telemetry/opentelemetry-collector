@@ -290,6 +290,8 @@ replace go.opentelemetry.io/collector/receiver/xreceiver => ../../receiver/xrece
 
 replace go.opentelemetry.io/collector/scraper => ../../scraper
 
+replace go.opentelemetry.io/collector/scraper/scraperhelper => ../../scraper/scraperhelper
+
 replace go.opentelemetry.io/collector/semconv => ../../semconv
 
 replace go.opentelemetry.io/collector/service => ../../service

@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/internal"
+	"go.opentelemetry.io/collector/receiver/receiverhelper/internal"
 	"go.opentelemetry.io/collector/receiver/receiverhelper/internal/metadata"
 )
 
