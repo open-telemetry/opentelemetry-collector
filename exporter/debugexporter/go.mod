@@ -60,7 +60,7 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20241015192408-796eee8c2d53 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20241104194629-dd2ea8efbc28 // indirect
 	google.golang.org/grpc v1.69.2 // indirect
 	google.golang.org/protobuf v1.36.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
@@ -119,3 +119,5 @@ replace go.opentelemetry.io/collector/extension/extensiontest => ../../extension
 replace go.opentelemetry.io/collector/scraper => ../../scraper
 
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
+
+replace go.opentelemetry.io/collector/scraper/scraperhelper => ../../scraper/scraperhelper
