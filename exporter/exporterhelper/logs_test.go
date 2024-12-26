@@ -284,7 +284,7 @@ func TestLogs_WithSpan(t *testing.T) {
 	le, err := NewLogs(context.Background(), set, &fakeLogsConfig, newPushLogsData(nil))
 	require.NoError(t, err)
 	require.NotNil(t, le)
-	checkWrapSpanForLogs(t, sr, set.TracerProvider.Tracer("test"), le, nil, 1)
+	checkWrapSpanForLogs(t, sr, set.TracerProvider.Tracer("test"), le, nil)
 }
 
 func TestLogsRequest_WithSpan(t *testing.T) {
@@ -297,7 +297,7 @@ func TestLogsRequest_WithSpan(t *testing.T) {
 	le, err := NewLogsRequest(context.Background(), set, internal.RequestFromLogsFunc(nil))
 	require.NoError(t, err)
 	require.NotNil(t, le)
-	checkWrapSpanForLogs(t, sr, set.TracerProvider.Tracer("test"), le, nil, 1)
+	checkWrapSpanForLogs(t, sr, set.TracerProvider.Tracer("test"), le, nil)
 }
 
 func TestLogs_WithSpan_ReturnError(t *testing.T) {
@@ -311,7 +311,7 @@ func TestLogs_WithSpan_ReturnError(t *testing.T) {
 	le, err := NewLogs(context.Background(), set, &fakeLogsConfig, newPushLogsData(want))
 	require.NoError(t, err)
 	require.NotNil(t, le)
-	checkWrapSpanForLogs(t, sr, set.TracerProvider.Tracer("test"), le, want, 1)
+	checkWrapSpanForLogs(t, sr, set.TracerProvider.Tracer("test"), le, want)
 }
 
 func TestLogsRequest_WithSpan_ReturnError(t *testing.T) {
@@ -325,7 +325,7 @@ func TestLogsRequest_WithSpan_ReturnError(t *testing.T) {
 	le, err := NewLogsRequest(context.Background(), set, internal.RequestFromLogsFunc(want))
 	require.NoError(t, err)
 	require.NotNil(t, le)
-	checkWrapSpanForLogs(t, sr, set.TracerProvider.Tracer("test"), le, want, 1)
+	checkWrapSpanForLogs(t, sr, set.TracerProvider.Tracer("test"), le, want)
 }
 
 func TestLogs_WithShutdown(t *testing.T) {
@@ -413,8 +413,7 @@ func generateLogsTraffic(t *testing.T, tracer trace.Tracer, le exporter.Logs, nu
 	}
 }
 
-func checkWrapSpanForLogs(t *testing.T, sr *tracetest.SpanRecorder, tracer trace.Tracer, le exporter.Logs,
-	wantError error, numLogRecords int64) { // nolint: unparam
+func checkWrapSpanForLogs(t *testing.T, sr *tracetest.SpanRecorder, tracer trace.Tracer, le exporter.Logs, wantError error) {
 	const numRequests = 5
 	generateLogsTraffic(t, tracer, le, numRequests, wantError)
 
@@ -428,11 +427,11 @@ func checkWrapSpanForLogs(t *testing.T, sr *tracetest.SpanRecorder, tracer trace
 		require.Equalf(t, parentSpan.SpanContext(), sd.Parent(), "Exporter span not a child\nSpanData %v", sd)
 		internal.CheckStatus(t, sd, wantError)
 
-		sentLogRecords := numLogRecords
-		var failedToSendLogRecords int64
+		sentLogRecords := int64(1)
+		failedToSendLogRecords := int64(0)
 		if wantError != nil {
 			sentLogRecords = 0
-			failedToSendLogRecords = numLogRecords
+			failedToSendLogRecords = 1
 		}
 		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: internal.SentLogRecordsKey, Value: attribute.Int64Value(sentLogRecords)}, "SpanData %v", sd)
 		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: internal.FailedToSendLogRecordsKey, Value: attribute.Int64Value(failedToSendLogRecords)}, "SpanData %v", sd)

@@ -7,11 +7,10 @@ on:
     types: [checks_requested]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref }}
+  group: ${{ github.workflow }}-${{ github.ref_name }}
   cancel-in-progress: true
 
-permissions:
-  contents: read
+permissions: read-all
 
 jobs:
   changedfiles:
@@ -29,13 +28,13 @@ jobs:
       - name: Get changed files
         id: changes
         run: |
-            files=$(git diff --name-only --diff-filter=ACMRTUXB $(git merge-base origin/main $PR_HEAD) $PR_HEAD | grep .md$ | xargs)
-            
-            if [ -z "$files" ] && git diff --name-only $(git merge-base origin/main $PR_HEAD) $PR_HEAD | grep -q "package.json"; then
-              files="**/*.md"
-            fi
+          files=$(git diff --name-only --diff-filter=ACMRTUXB $(git merge-base origin/main $PR_HEAD) $PR_HEAD | grep .md$ | xargs)
 
-            echo "files=$files" >> $GITHUB_OUTPUT
+          if [ -z "$files" ] && git diff --name-only $(git merge-base origin/main $PR_HEAD) $PR_HEAD | grep -q "package.json"; then
+            files="**/*.md"
+          fi
+
+          echo "files=$files" >> $GITHUB_OUTPUT
   check-links:
     runs-on: ubuntu-latest
     needs: changedfiles
@@ -47,7 +46,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install markdown-link-check
-        run: npm install
+        run: npm ci
 
       - name: Run markdown-link-check
         run: |

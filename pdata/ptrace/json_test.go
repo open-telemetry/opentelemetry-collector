@@ -13,8 +13,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-var _ Marshaler = (*JSONMarshaler)(nil)
-var _ Unmarshaler = (*JSONUnmarshaler)(nil)
+var (
+	_ Marshaler   = (*JSONMarshaler)(nil)
+	_ Unmarshaler = (*JSONUnmarshaler)(nil)
+)
 
 var tracesOTLP = func() Traces {
 	startTimestamp := pcommon.Timestamp(1684617382541971000)

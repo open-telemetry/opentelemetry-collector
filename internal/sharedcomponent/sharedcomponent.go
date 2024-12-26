@@ -7,8 +7,8 @@
 package sharedcomponent // import "go.opentelemetry.io/collector/internal/sharedcomponent"
 
 import (
+	"container/ring"
 	"context"
-	"slices"
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
@@ -77,7 +77,7 @@ func (c *Component[V]) Start(ctx context.Context, host component.Host) error {
 			c.hostWrapper = &hostWrapper{
 				host:           host,
 				sources:        make([]componentstatus.Reporter, 0),
-				previousEvents: make([]*componentstatus.Event, 0),
+				previousEvents: ring.New(5),
 			}
 			statusReporter, isStatusReporter := host.(componentstatus.Reporter)
 			if isStatusReporter {
@@ -102,13 +102,15 @@ func (c *Component[V]) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-var _ component.Host = (*hostWrapper)(nil)
-var _ componentstatus.Reporter = (*hostWrapper)(nil)
+var (
+	_ component.Host           = (*hostWrapper)(nil)
+	_ componentstatus.Reporter = (*hostWrapper)(nil)
+)
 
 type hostWrapper struct {
 	host           component.Host
 	sources        []componentstatus.Reporter
-	previousEvents []*componentstatus.Event
+	previousEvents *ring.Ring
 	lock           sync.Mutex
 }
 
@@ -119,28 +121,25 @@ func (h *hostWrapper) GetExtensions() map[component.ID]component.Component {
 func (h *hostWrapper) Report(e *componentstatus.Event) {
 	// Only remember an event if it will be emitted and it has not been sent already.
 	h.lock.Lock()
-	if len(h.sources) > 0 && !slices.Contains(h.previousEvents, e) {
-		h.previousEvents = append(h.previousEvents, e)
+	defer h.lock.Unlock()
+	if len(h.sources) > 0 {
+		h.previousEvents.Value = e
+		h.previousEvents = h.previousEvents.Next()
 	}
-	h.lock.Unlock()
-
-	h.lock.Lock()
 	for _, s := range h.sources {
 		s.Report(e)
 	}
-	h.lock.Unlock()
 }
 
 func (h *hostWrapper) addSource(s componentstatus.Reporter) {
 	h.lock.Lock()
-	for _, e := range h.previousEvents {
-		s.Report(e)
-	}
-	h.lock.Unlock()
-
-	h.lock.Lock()
+	defer h.lock.Unlock()
+	h.previousEvents.Do(func(a any) {
+		if e, ok := a.(*componentstatus.Event); ok {
+			s.Report(e)
+		}
+	})
 	h.sources = append(h.sources, s)
-	h.lock.Unlock()
 }
 
 // Shutdown shuts down the underlying component.

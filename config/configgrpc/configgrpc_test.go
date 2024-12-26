@@ -15,8 +15,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -57,12 +55,14 @@ func TestNewDefaultClientConfig(t *testing.T) {
 
 	assert.Equal(t, expected, result)
 }
+
 func TestNewDefaultKeepaliveServerParameters(t *testing.T) {
 	expectedParams := &KeepaliveServerParameters{}
 	params := NewDefaultKeepaliveServerParameters()
 
 	assert.Equal(t, expectedParams, params)
 }
+
 func TestNewDefaultKeepaliveEnforcementPolicy(t *testing.T) {
 	expectedPolicy := &KeepaliveEnforcementPolicy{}
 
@@ -510,56 +510,6 @@ func TestUseSecure(t *testing.T) {
 	dialOpts, err := gcs.getGrpcDialOptions(context.Background(), componenttest.NewNopHost(), tt.TelemetrySettings(), []ToClientConnOption{})
 	require.NoError(t, err)
 	assert.Len(t, dialOpts, 2)
-}
-
-func TestGRPCServerWarning(t *testing.T) {
-	tests := []struct {
-		name     string
-		settings ServerConfig
-		len      int
-	}{
-		{
-			settings: ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Endpoint:  "0.0.0.0:1234",
-					Transport: confignet.TransportTypeTCP,
-				},
-			},
-			len: 1,
-		},
-		{
-			settings: ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Endpoint:  "127.0.0.1:1234",
-					Transport: confignet.TransportTypeTCP,
-				},
-			},
-			len: 0,
-		},
-		{
-			settings: ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Endpoint:  "0.0.0.0:1234",
-					Transport: confignet.TransportTypeUnix,
-				},
-			},
-			len: 0,
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			set := componenttest.NewNopTelemetrySettings()
-			logger, observed := observer.New(zap.DebugLevel)
-			set.Logger = zap.New(logger)
-
-			opts, err := test.settings.getGrpcServerOptions(componenttest.NewNopHost(), set, []ToServerOption{})
-			require.NoError(t, err)
-			require.NotNil(t, opts)
-			_ = grpc.NewServer(opts...)
-
-			require.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), test.len)
-		})
-	}
 }
 
 func TestGRPCServerSettingsError(t *testing.T) {

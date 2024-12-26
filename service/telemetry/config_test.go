@@ -117,11 +117,13 @@ func TestConfigValidate(t *testing.T) {
 			cfg: &Config{
 				Metrics: MetricsConfig{
 					Level: configtelemetry.LevelBasic,
-					Readers: []config.MetricReader{{
-						Pull: &config.PullMetricReader{Exporter: config.MetricExporter{Prometheus: &config.Prometheus{
-							Host: newPtr("127.0.0.1"),
-							Port: newPtr(3333),
-						}}}},
+					Readers: []config.MetricReader{
+						{
+							Pull: &config.PullMetricReader{Exporter: config.MetricExporter{Prometheus: &config.Prometheus{
+								Host: newPtr("127.0.0.1"),
+								Port: newPtr(3333),
+							}}},
+						},
 					},
 				},
 			},
