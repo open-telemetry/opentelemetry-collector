@@ -3,7 +3,7 @@ module go.opentelemetry.io/collector/config/configretry
 go 1.22.0
 
 require (
-	github.com/cenkalti/backoff/v4 v4.3.0
+	github.com/cenkalti/backoff/v5 v5.0.0
 	github.com/stretchr/testify v1.10.0
 	go.uber.org/goleak v1.3.0
 )
