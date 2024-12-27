@@ -75,11 +75,9 @@ func TestQueueOptionsWithRequestExporter(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
 			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
-			bs, err := NewBaseExporter(exportertest.NewNopSettings(), defaultSignal, newNoopObsrepSender,
+			_, err := NewBaseExporter(exportertest.NewNopSettings(), defaultSignal, newNoopObsrepSender,
 				WithRetry(configretry.NewDefaultBackOffConfig()))
 			require.NoError(t, err)
-			require.Nil(t, bs.Marshaler)
-			require.Nil(t, bs.Unmarshaler)
 			_, err = NewBaseExporter(exportertest.NewNopSettings(), defaultSignal, newNoopObsrepSender,
 				WithRetry(configretry.NewDefaultBackOffConfig()), WithQueue(NewDefaultQueueConfig()))
 			require.Error(t, err)
