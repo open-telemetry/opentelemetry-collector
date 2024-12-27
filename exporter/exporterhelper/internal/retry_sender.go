@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -75,13 +75,13 @@ func (rs *retrySender) Send(ctx context.Context, req request.Request) error {
 		RandomizationFactor: rs.cfg.RandomizationFactor,
 		Multiplier:          rs.cfg.Multiplier,
 		MaxInterval:         rs.cfg.MaxInterval,
-		MaxElapsedTime:      rs.cfg.MaxElapsedTime,
-		Stop:                backoff.Stop,
-		Clock:               backoff.SystemClock,
 	}
-	expBackoff.Reset()
 	span := trace.SpanFromContext(ctx)
 	retryNum := int64(0)
+	var maxElapsedTime time.Time
+	if rs.cfg.MaxElapsedTime > 0 {
+		maxElapsedTime = time.Now().Add(rs.cfg.MaxElapsedTime)
+	}
 	for {
 		span.AddEvent(
 			"Sending request.",
@@ -111,7 +111,13 @@ func (rs *retrySender) Send(ctx context.Context, req request.Request) error {
 			backoffDelay = max(backoffDelay, throttleErr.delay)
 		}
 
-		if deadline, has := ctx.Deadline(); has && time.Until(deadline) < backoffDelay {
+		nextRetryTime := time.Now().Add(backoffDelay)
+		if !maxElapsedTime.IsZero() && maxElapsedTime.Before(nextRetryTime) {
+			// The delay is longer than the maxElapsedTime.
+			return fmt.Errorf("no more retries left: %w", err)
+		}
+
+		if deadline, has := ctx.Deadline(); has && deadline.Before(nextRetryTime) {
 			// The delay is longer than the deadline.  There is no point in
 			// waiting for cancelation.
 			return fmt.Errorf("request will be cancelled before next retry: %w", err)
