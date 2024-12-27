@@ -1,14 +1,13 @@
 name: Shellcheck lint
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
   merge_group:
     types: [checks_requested]
 
-permissions:
-  contents: read
+permissions: read-all
 
 jobs:
   shellcheck:
