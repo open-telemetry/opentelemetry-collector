@@ -10,8 +10,7 @@ on:
     branches:
       - main
 
-permissions:
-  contents: read
+permissions: read-all
 
 jobs:
   Check-Compatibility:
