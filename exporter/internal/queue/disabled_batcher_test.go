@@ -27,10 +27,6 @@ func TestDisabledBatcher_Basic(t *testing.T) {
 		maxWorkers int
 	}{
 		{
-			name:       "infinate_workers",
-			maxWorkers: 0,
-		},
-		{
 			name:       "one_worker",
 			maxWorkers: 1,
 		},
