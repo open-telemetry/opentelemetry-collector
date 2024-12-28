@@ -15,11 +15,11 @@ func TestQueueConfig_Validate(t *testing.T) {
 	require.NoError(t, qCfg.Validate())
 
 	qCfg.NumConsumers = 0
-	require.EqualError(t, qCfg.Validate(), "number of consumers must be positive")
+	require.EqualError(t, qCfg.Validate(), "`num_consumers` must be positive")
 
 	qCfg = NewDefaultConfig()
 	qCfg.QueueSize = 0
-	require.EqualError(t, qCfg.Validate(), "queue size must be positive")
+	require.EqualError(t, qCfg.Validate(), "`queue_size` must be positive")
 
 	// Confirm Validate doesn't return error with invalid config when feature is disabled
 	qCfg.Enabled = false
