@@ -179,6 +179,8 @@ func TestNewDefaultConfig(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 	assert.False(t, cfg.Distribution.DebugCompilation)
 	assert.Empty(t, cfg.Distribution.BuildTags)
+	assert.Empty(t, cfg.LDFlags)
+	assert.Empty(t, cfg.GCFlags)
 }
 
 func TestNewBuiltinConfig(t *testing.T) {
