@@ -69,13 +69,14 @@ func TestApplyFlags(t *testing.T) {
 		},
 		{
 			name:  "All flag values",
-			flags: []string{"--skip-generate=true", "--skip-compilation=true", "--skip-get-modules=true", "--skip-strict-versioning=true", "--ldflags=test", "--verbose=true"},
+			flags: []string{"--skip-generate=true", "--skip-compilation=true", "--skip-get-modules=true", "--skip-strict-versioning=true", "--ldflags=test", "--gcflags=test", "--verbose=true"},
 			want: &builder.Config{
 				SkipGenerate:         true,
 				SkipCompilation:      true,
 				SkipGetModules:       true,
 				SkipStrictVersioning: true,
 				LDFlags:              "test",
+				GCFlags:              "test",
 				Verbose:              true,
 			},
 		},

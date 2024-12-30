@@ -109,17 +109,28 @@ func Compile(cfg *Config) error {
 
 	cfg.Logger.Info("Compiling")
 
-	ldflags := "-s -w"
+	ldflags := "-s -w" // we strip the symbols by default for smaller binaries
+	gcflags := ""
 
 	args := []string{"build", "-trimpath", "-o", cfg.Distribution.Name}
 	if cfg.Distribution.DebugCompilation {
 		cfg.Logger.Info("Debug compilation is enabled, the debug symbols will be left on the resulting binary")
 		ldflags = cfg.LDFlags
-		args = append(args, "-gcflags=all=-N -l")
-	} else if len(cfg.LDFlags) > 0 {
-		ldflags += " " + cfg.LDFlags
+		gcflags = "all=-N -l"
+	} else {
+		if cfg.LDSet {
+			cfg.Logger.Info("Using custom ldflags", zap.String("ldflags", cfg.LDFlags))
+			ldflags = cfg.LDFlags
+		}
+		if cfg.GCSet {
+			cfg.Logger.Info("Using custom gcflags", zap.String("gcflags", cfg.GCFlags))
+			gcflags = cfg.GCFlags
+		}
 	}
+
 	args = append(args, "-ldflags="+ldflags)
+	args = append(args, "-gcflags="+gcflags)
+
 	if cfg.Distribution.BuildTags != "" {
 		args = append(args, "-tags", cfg.Distribution.BuildTags)
 	}
