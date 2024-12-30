@@ -16,8 +16,11 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
   cancel-in-progress: true
 
-permissions:
-  contents: read
+permissions: read-all
+
+env:
+  # renovate: datasource=github-releases depName=tcort/markdown-link-check
+  MD_LINK_CHECK_VERSION: "3.12.2"
 
 jobs:
   changelog:
@@ -79,7 +82,7 @@ jobs:
       - name: Render .chloggen changelog entries
         run: make chlog-preview > changelog_preview.md
       - name: Install markdown-link-check
-        run: npm install
+        run: npm install -g markdown-link-check@${{ env.MD_LINK_CHECK_VERSION }}
       - name: Run markdown-link-check
         run: |
           npx --no -- markdown-link-check \
