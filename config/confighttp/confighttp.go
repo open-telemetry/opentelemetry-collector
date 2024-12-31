@@ -26,15 +26,18 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/config/confighttp/internal"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/config/internal"
 	"go.opentelemetry.io/collector/extension/auth"
 )
 
-const headerContentEncoding = "Content-Encoding"
-const defaultMaxRequestBodySize = 20 * 1024 * 1024 // 20MiB
+const (
+	headerContentEncoding     = "Content-Encoding"
+	defaultMaxRequestBodySize = 20 * 1024 * 1024 // 20MiB
+)
+
 var defaultCompressionAlgorithms = []string{"", "gzip", "zstd", "zlib", "snappy", "deflate", "lz4"}
 
 // ClientConfig defines settings for creating an HTTP client.
@@ -376,50 +379,35 @@ func (hss *ServerConfig) ToListener(ctx context.Context) (net.Listener, error) {
 
 // toServerOptions has options that change the behavior of the HTTP server
 // returned by ServerConfig.ToServer().
-type toServerOptions struct {
-	errHandler func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int)
-	decoders   map[string]func(body io.ReadCloser) (io.ReadCloser, error)
-}
+type toServerOptions = internal.ToServerOptions
 
 // ToServerOption is an option to change the behavior of the HTTP server
 // returned by ServerConfig.ToServer().
-type ToServerOption interface {
-	apply(*toServerOptions)
-}
-
-type toServerOptionFunc func(*toServerOptions)
-
-func (of toServerOptionFunc) apply(e *toServerOptions) {
-	of(e)
-}
+type ToServerOption = internal.ToServerOption
 
 // WithErrorHandler overrides the HTTP error handler that gets invoked
 // when there is a failure inside httpContentDecompressor.
 func WithErrorHandler(e func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int)) ToServerOption {
-	return toServerOptionFunc(func(opts *toServerOptions) {
-		opts.errHandler = e
+	return internal.ToServerOptionFunc(func(opts *toServerOptions) {
+		opts.ErrHandler = e
 	})
 }
 
 // WithDecoder provides support for additional decoders to be configured
 // by the caller.
 func WithDecoder(key string, dec func(body io.ReadCloser) (io.ReadCloser, error)) ToServerOption {
-	return toServerOptionFunc(func(opts *toServerOptions) {
-		if opts.decoders == nil {
-			opts.decoders = map[string]func(body io.ReadCloser) (io.ReadCloser, error){}
+	return internal.ToServerOptionFunc(func(opts *toServerOptions) {
+		if opts.Decoders == nil {
+			opts.Decoders = map[string]func(body io.ReadCloser) (io.ReadCloser, error){}
 		}
-		opts.decoders[key] = dec
+		opts.Decoders[key] = dec
 	})
 }
 
 // ToServer creates an http.Server from settings object.
 func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
-	internal.WarnOnUnspecifiedHost(settings.Logger, hss.Endpoint)
-
 	serverOpts := &toServerOptions{}
-	for _, o := range opts {
-		o.apply(serverOpts)
-	}
+	serverOpts.Apply(opts...)
 
 	if hss.MaxRequestBodySize <= 0 {
 		hss.MaxRequestBodySize = defaultMaxRequestBodySize
@@ -429,7 +417,13 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 		hss.CompressionAlgorithms = defaultCompressionAlgorithms
 	}
 
-	handler = httpContentDecompressor(handler, hss.MaxRequestBodySize, serverOpts.errHandler, hss.CompressionAlgorithms, serverOpts.decoders)
+	handler = httpContentDecompressor(
+		handler,
+		hss.MaxRequestBodySize,
+		serverOpts.ErrHandler,
+		hss.CompressionAlgorithms,
+		serverOpts.Decoders,
+	)
 
 	if hss.MaxRequestBodySize > 0 {
 		handler = maxRequestBodySizeInterceptor(handler, hss.MaxRequestBodySize)
@@ -461,14 +455,16 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 		handler = responseHeadersHandler(handler, hss.ResponseHeaders)
 	}
 
-	otelOpts := []otelhttp.Option{
-		otelhttp.WithTracerProvider(settings.TracerProvider),
-		otelhttp.WithPropagators(otel.GetTextMapPropagator()),
-		otelhttp.WithSpanNameFormatter(func(_ string, r *http.Request) string {
-			return r.URL.Path
-		}),
-		otelhttp.WithMeterProvider(getLeveledMeterProvider(settings)),
-	}
+	otelOpts := append(
+		[]otelhttp.Option{
+			otelhttp.WithTracerProvider(settings.TracerProvider),
+			otelhttp.WithPropagators(otel.GetTextMapPropagator()),
+			otelhttp.WithSpanNameFormatter(func(_ string, r *http.Request) string {
+				return r.URL.Path
+			}),
+			otelhttp.WithMeterProvider(getLeveledMeterProvider(settings)),
+		},
+		serverOpts.OtelhttpOpts...)
 
 	// Enable OpenTelemetry observability plugin.
 	// TODO: Consider to use component ID string as prefix for all the operations.

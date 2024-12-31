@@ -284,7 +284,7 @@ func TestTraces_WithSpan(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
-	checkWrapSpanForTraces(t, sr, set.TracerProvider.Tracer("test"), te, nil, 1)
+	checkWrapSpanForTraces(t, sr, set.TracerProvider.Tracer("test"), te, nil)
 }
 
 func TestTracesRequest_WithSpan(t *testing.T) {
@@ -298,7 +298,7 @@ func TestTracesRequest_WithSpan(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
-	checkWrapSpanForTraces(t, sr, set.TracerProvider.Tracer("test"), te, nil, 1)
+	checkWrapSpanForTraces(t, sr, set.TracerProvider.Tracer("test"), te, nil)
 }
 
 func TestTraces_WithSpan_ReturnError(t *testing.T) {
@@ -313,7 +313,7 @@ func TestTraces_WithSpan_ReturnError(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
-	checkWrapSpanForTraces(t, sr, set.TracerProvider.Tracer("test"), te, want, 1)
+	checkWrapSpanForTraces(t, sr, set.TracerProvider.Tracer("test"), te, want)
 }
 
 func TestTracesRequest_WithSpan_ExportError(t *testing.T) {
@@ -328,7 +328,7 @@ func TestTracesRequest_WithSpan_ExportError(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
-	checkWrapSpanForTraces(t, sr, set.TracerProvider.Tracer("test"), te, want, 1)
+	checkWrapSpanForTraces(t, sr, set.TracerProvider.Tracer("test"), te, want)
 }
 
 func TestTraces_WithShutdown(t *testing.T) {
@@ -421,8 +421,7 @@ func generateTraceTraffic(t *testing.T, tracer trace.Tracer, te exporter.Traces,
 	}
 }
 
-func checkWrapSpanForTraces(t *testing.T, sr *tracetest.SpanRecorder, tracer trace.Tracer,
-	te exporter.Traces, wantError error, numSpans int64) { // nolint: unparam
+func checkWrapSpanForTraces(t *testing.T, sr *tracetest.SpanRecorder, tracer trace.Tracer, te exporter.Traces, wantError error) {
 	const numRequests = 5
 	generateTraceTraffic(t, tracer, te, numRequests, wantError)
 
@@ -437,11 +436,11 @@ func checkWrapSpanForTraces(t *testing.T, sr *tracetest.SpanRecorder, tracer tra
 		require.Equalf(t, parentSpan.SpanContext(), sd.Parent(), "Exporter span not a child\nSpanData %v", sd)
 		internal.CheckStatus(t, sd, wantError)
 
-		sentSpans := numSpans
-		var failedToSendSpans int64
+		sentSpans := int64(1)
+		failedToSendSpans := int64(0)
 		if wantError != nil {
 			sentSpans = 0
-			failedToSendSpans = numSpans
+			failedToSendSpans = 1
 		}
 		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: internal.SentSpansKey, Value: attribute.Int64Value(sentSpans)}, "SpanData %v", sd)
 		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: internal.FailedToSendSpansKey, Value: attribute.Int64Value(failedToSendSpans)}, "SpanData %v", sd)

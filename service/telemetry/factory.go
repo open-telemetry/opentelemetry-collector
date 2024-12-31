@@ -115,11 +115,13 @@ func createDefaultConfig() component.Config {
 		},
 		Metrics: MetricsConfig{
 			Level: configtelemetry.LevelNormal,
-			Readers: []config.MetricReader{{
-				Pull: &config.PullMetricReader{Exporter: config.MetricExporter{Prometheus: &config.Prometheus{
-					Host: &metricsHost,
-					Port: newPtr(8888),
-				}}}},
+			Readers: []config.MetricReader{
+				{
+					Pull: &config.PullMetricReader{Exporter: config.MetricExporter{Prometheus: &config.Prometheus{
+						Host: &metricsHost,
+						Port: newPtr(8888),
+					}}},
+				},
 			},
 		},
 	}

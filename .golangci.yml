@@ -74,10 +74,6 @@ linters-settings:
       # See https://github.com/open-telemetry/opentelemetry-collector/issues/2789
       - fieldalignment
 
-  revive:
-    # minimal confidence for issues, default is 0.8
-    min-confidence: 0.8
-
   gofmt:
     # simplify code: gofmt with `-s` option, true by default
     simplify: true
@@ -94,11 +90,6 @@ linters-settings:
     locale: US
     ignore-words:
       - cancelled
-      - metre
-      - meter
-      - metres
-      - kilometre
-      - kilometres
 
   perfsprint:
     # Optimizes even if it requires an int or uint type cast.
@@ -111,6 +102,12 @@ linters-settings:
     sprintf1: true
     # Optimizes into strings concatenation.
     strconcat: true
+
+  revive:
+    # minimal confidence for issues, default is 0.8
+    min-confidence: 0.8
+    rules:
+      - name: use-any
 
   depguard:
     rules:
@@ -134,7 +131,17 @@ linters-settings:
             - "!**/*_test.go"
 
   testifylint:
-    enable-all: true   
+    enable-all: true
+
+  thelper:
+    test:
+      begin: false
+    benchmark:
+      begin: false
+    tb:
+      begin: false
+    fuzz:
+      begin: false
 
 linters:
   enable:
@@ -143,7 +150,7 @@ linters:
     - errcheck
     - errorlint
     - gocritic
-    - gofmt
+    - gofumpt
     - goimports
     - gosec
     - govet
@@ -153,6 +160,7 @@ linters:
     - staticcheck
     - tenv
     - testifylint
+    - thelper
     - unconvert
     - unused
     - unparam
