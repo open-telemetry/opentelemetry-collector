@@ -27,7 +27,7 @@ const (
 	skipGetModulesFlag         = "skip-get-modules"
 	skipStrictVersioningFlag   = "skip-strict-versioning"
 	ldflagsFlag                = "ldflags"
-	gcflagsFlag 			   = "gcflags"
+	gcflagsFlag                = "gcflags"
 	distributionOutputPathFlag = "output-path"
 	verboseFlag                = "verbose"
 )
@@ -147,10 +147,17 @@ func applyFlags(flags *flag.FlagSet, cfg *builder.Config) error {
 	cfg.SkipStrictVersioning, err = flags.GetBool(skipStrictVersioningFlag)
 	errs = multierr.Append(errs, err)
 
-	cfg.LDFlags, err = flags.GetString(ldflagsFlag)
-	errs = multierr.Append(errs, err)
-	cfg.GCFlags, err = flags.GetString(gcflagsFlag)
-	errs = multierr.Append(errs, err)
+	if flags.Changed(ldflagsFlag) {
+		cfg.LDSet = true
+		cfg.LDFlags, err = flags.GetString(ldflagsFlag)
+		errs = multierr.Append(errs, err)
+	}
+	if flags.Changed(gcflagsFlag) {
+		cfg.GCSet = true
+		cfg.GCFlags, err = flags.GetString(gcflagsFlag)
+		errs = multierr.Append(errs, err)
+	}
+
 	cfg.Verbose, err = flags.GetBool(verboseFlag)
 	errs = multierr.Append(errs, err)
 

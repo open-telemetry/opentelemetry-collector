@@ -118,11 +118,11 @@ func Compile(cfg *Config) error {
 		ldflags = cfg.LDFlags
 		gcflags = "all=-N -l"
 	} else {
-		if len(cfg.LDFlags) > 0 {
+		if cfg.LDSet {
 			cfg.Logger.Info("Using custom ldflags", zap.String("ldflags", cfg.LDFlags))
 			ldflags = cfg.LDFlags
 		}
-		if len(cfg.GCFlags) > 0 {
+		if cfg.GCSet {
 			cfg.Logger.Info("Using custom gcflags", zap.String("gcflags", cfg.GCFlags))
 			gcflags = cfg.GCFlags
 		}
