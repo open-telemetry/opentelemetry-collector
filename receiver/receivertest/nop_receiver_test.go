@@ -10,18 +10,15 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/xreceiver"
 )
 
-var nopType = component.MustNewType("nop")
-
 func TestNewNopFactory(t *testing.T) {
 	factory := NewNopFactory()
 	require.NotNil(t, factory)
-	assert.Equal(t, nopType, factory.Type())
+	assert.Equal(t, "nop", factory.Type().String())
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, &nopConfig{}, cfg)
 

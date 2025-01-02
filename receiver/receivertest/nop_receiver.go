@@ -40,8 +40,7 @@ func NewNopFactory() receiver.Factory {
 	)
 }
 
-// NewNopFactoryForType returns a receiver.Factory that constructs nop receivers supporting only the
-// given data type.
+// Deprecated: [v0.117.0] use NewNopFactory or create own factory.
 func NewNopFactoryForType(signal pipeline.Signal) receiver.Factory {
 	var factoryOpt receiver.FactoryOption
 	switch signal {
