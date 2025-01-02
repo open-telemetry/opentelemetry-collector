@@ -15,6 +15,7 @@ require (
 	go.opentelemetry.io/collector/exporter v0.116.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.116.0
 	go.opentelemetry.io/collector/exporter/xexporter v0.116.0
+	go.opentelemetry.io/collector/pdata v1.22.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.116.0
 	go.opentelemetry.io/collector/pdata/testdata v0.116.0
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.116.0
@@ -40,7 +41,6 @@ require (
 	go.opentelemetry.io/collector/extension v0.116.0 // indirect
 	go.opentelemetry.io/collector/extension/experimental/storage v0.116.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.22.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.22.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.116.0 // indirect
 	go.opentelemetry.io/collector/receiver v0.116.0 // indirect
 	go.opentelemetry.io/collector/receiver/receivertest v0.116.0 // indirect
