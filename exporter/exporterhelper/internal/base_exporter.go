@@ -41,8 +41,6 @@ type BaseExporter struct {
 	component.StartFunc
 	component.ShutdownFunc
 
-	Signal pipeline.Signal
-
 	Marshaler   exporterqueue.Marshaler[internal.Request]
 	Unmarshaler exporterqueue.Unmarshaler[internal.Request]
 
@@ -75,8 +73,6 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSe
 	}
 
 	be := &BaseExporter{
-		Signal: signal,
-
 		BatchSender:   &BaseRequestSender{},
 		QueueSender:   &BaseRequestSender{},
 		ObsrepSender:  osf(obsReport),
@@ -98,7 +94,7 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSe
 		q := be.queueFactory(
 			context.Background(),
 			exporterqueue.Settings{
-				Signal:           be.Signal,
+				Signal:           signal,
 				ExporterSettings: be.Set,
 			},
 			be.queueCfg)
