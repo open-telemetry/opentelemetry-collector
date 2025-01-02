@@ -196,6 +196,10 @@ func TestQueuedRetryHappyPath(t *testing.T) {
 	) {
 		t.Run(testName, func(t *testing.T) {
 			resetFeatureGate := setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			t.Cleanup(func() {
+				resetFeatureGate()
+			})
+
 			tel, err := componenttest.SetupTelemetry(defaultID)
 			require.NoError(t, err)
 			t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
@@ -221,7 +225,6 @@ func TestQueuedRetryHappyPath(t *testing.T) {
 			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 			t.Cleanup(func() {
 				assert.NoError(t, be.Shutdown(context.Background()))
-				resetFeatureGate()
 			})
 
 			// Wait until all batches received
