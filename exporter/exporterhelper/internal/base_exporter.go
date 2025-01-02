@@ -107,7 +107,7 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSe
 		q := be.queueFactory(
 			context.Background(),
 			exporterqueue.Settings{
-				Signal:           be.Signal,
+				Signal:           signal,
 				ExporterSettings: be.Set,
 			},
 			be.queueCfg)
