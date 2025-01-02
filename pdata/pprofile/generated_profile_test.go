@@ -173,11 +173,11 @@ func TestProfile_ProfileID(t *testing.T) {
 	assert.Equal(t, testValProfileID, ms.ProfileID())
 }
 
-func TestProfile_Attributes(t *testing.T) {
+func TestProfile_AttributeIndices(t *testing.T) {
 	ms := NewProfile()
-	assert.Equal(t, pcommon.NewMap(), ms.Attributes())
-	internal.FillTestMap(internal.Map(ms.Attributes()))
-	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.Attributes())
+	assert.Equal(t, pcommon.NewInt32Slice(), ms.AttributeIndices())
+	internal.FillTestInt32Slice(internal.Int32Slice(ms.AttributeIndices()))
+	assert.Equal(t, pcommon.Int32Slice(internal.GenerateTestInt32Slice()), ms.AttributeIndices())
 }
 
 func TestProfile_DroppedAttributesCount(t *testing.T) {
@@ -230,7 +230,7 @@ func fillTestProfile(tv Profile) {
 	internal.FillTestInt32Slice(internal.NewInt32Slice(&tv.orig.CommentStrindices, tv.state))
 	tv.orig.DefaultSampleTypeStrindex = int32(1)
 	tv.orig.ProfileId = data.ProfileID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes, tv.state))
+	internal.FillTestInt32Slice(internal.NewInt32Slice(&tv.orig.AttributeIndices, tv.state))
 	tv.orig.DroppedAttributesCount = uint32(17)
 	tv.orig.OriginalPayloadFormat = "original payload"
 	internal.FillTestByteSlice(internal.NewByteSlice(&tv.orig.OriginalPayload, tv.state))

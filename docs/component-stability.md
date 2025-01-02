@@ -188,6 +188,36 @@ they have no active code owners from the vendor even if there are other code own
 owners may petition for its continued maintenance if they want, at which point the component will no
 longer be considered vendor-specific.
 
+## Moving between stability levels
+
+Components can move between stability levels. The valid transitions are described in the following diagram:
+
+```mermaid
+stateDiagram-v2
+    state Maintained {
+    InDevelopment --> Alpha
+    Alpha --> Beta
+    Beta --> Stable
+    }
+
+    InDevelopment: In Development
+
+    Maintained --> Unmaintained
+    Unmaintained --> Maintained
+    Maintained --> Deprecated
+    Deprecated --> Maintained: (should be rare)
+```
+
+To move within the 'Maintained' ladder ("graduate"), the process for doing so is as follows:
+
+1. One of the component owners should file an issue with the 'Graduation' issue template to request
+   the graduation.
+2. An approver is assigned in a rotating basis to evaluate the request and provide feedback. For
+   vendor specific components, the approver should be from a different employer to the one owning
+   the component.
+3. If approved, a PR to change the stability level should be opened and MUST be approved by all
+   listed code owners.
+
 ## Versioning
 
 Components are Go modules and as such follow [semantic versioning](https://semver.org/). Go API stability guarantees are covered in the [VERSIONING.md](../VERSIONING.md) document.
