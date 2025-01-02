@@ -26,7 +26,6 @@ type Batcher interface {
 type BaseBatcher struct {
 	batchCfg   exporterbatcher.Config
 	queue      Queue[internal.Request]
-	maxWorkers int
 	workerPool chan bool
 	exportFunc func(ctx context.Context, req internal.Request) error
 	stopWG     sync.WaitGroup
@@ -38,35 +37,26 @@ func NewBatcher(batchCfg exporterbatcher.Config,
 	maxWorkers int,
 ) (Batcher, error) {
 	if !batchCfg.Enabled {
-		return &DisabledBatcher{
-			BaseBatcher{
-				batchCfg:   batchCfg,
-				queue:      queue,
-				maxWorkers: maxWorkers,
-				exportFunc: exportFunc,
-				stopWG:     sync.WaitGroup{},
-			},
-		}, nil
+		return &DisabledBatcher{BaseBatcher: newBaseBatcher(batchCfg, queue, exportFunc, maxWorkers)}, nil
 	}
 
-	return &DefaultBatcher{
-		BaseBatcher: BaseBatcher{
-			batchCfg:   batchCfg,
-			queue:      queue,
-			maxWorkers: maxWorkers,
-			exportFunc: exportFunc,
-			stopWG:     sync.WaitGroup{},
-		},
-	}, nil
+	return &DefaultBatcher{BaseBatcher: newBaseBatcher(batchCfg, queue, exportFunc, maxWorkers)}, nil
 }
 
-func (qb *BaseBatcher) startWorkerPool() {
-	if qb.maxWorkers == 0 {
-		return
+func newBaseBatcher(batchCfg exporterbatcher.Config,
+	queue Queue[internal.Request],
+	exportFunc func(ctx context.Context, req internal.Request) error,
+	maxWorkers int,
+) BaseBatcher {
+	workerPool := make(chan bool, maxWorkers)
+	for i := 0; i < maxWorkers; i++ {
+		workerPool <- true
 	}
-	qb.workerPool = make(chan bool, qb.maxWorkers)
-	for i := 0; i < qb.maxWorkers; i++ {
-		qb.workerPool <- true
+	return BaseBatcher{
+		batchCfg:   batchCfg,
+		queue:      queue,
+		workerPool: workerPool,
+		exportFunc: exportFunc,
 	}
 }
 
@@ -81,17 +71,12 @@ func (qb *BaseBatcher) flush(batchToFlush batch) {
 // flushAsync starts a goroutine that calls flushIfNecessary. It blocks until a worker is available.
 func (qb *BaseBatcher) flushAsync(batchToFlush batch) {
 	qb.stopWG.Add(1)
-	if qb.maxWorkers == 0 {
-		go func() {
-			defer qb.stopWG.Done()
-			qb.flush(batchToFlush)
-		}()
-		return
-	}
 	<-qb.workerPool
 	go func() {
-		defer qb.stopWG.Done()
+		defer func() {
+			qb.workerPool <- true
+			qb.stopWG.Done()
+		}()
 		qb.flush(batchToFlush)
-		qb.workerPool <- true
 	}()
 }
