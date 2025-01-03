@@ -24,7 +24,7 @@ func (req *metricsRequest) Merge(_ context.Context, r2 Request) (Request, error)
 // MergeSplit splits and/or merges the provided metrics request and the current request into one or more requests
 // conforming with the MaxSizeConfig.
 func (req *metricsRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSizeConfig, r2 Request) ([]Request, error) {
-	var req2 *metricsRequest = nil
+	var req2 *metricsRequest
 	if r2 != nil {
 		var ok bool
 		req2, ok = r2.(*metricsRequest)
