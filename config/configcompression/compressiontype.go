@@ -8,6 +8,12 @@ import "fmt"
 // Type represents a compression method
 type Type string
 
+type Level int
+
+type CompressionParams struct {
+	Level Level `mapstructure:"level"`
+}
+
 const (
 	TypeGzip    Type = "gzip"
 	TypeZlib    Type = "zlib"
@@ -15,14 +21,14 @@ const (
 	TypeSnappy  Type = "snappy"
 	TypeZstd    Type = "zstd"
 	TypeLz4     Type = "lz4"
-	typeNone    Type = "none"
-	typeEmpty   Type = ""
+	TypeNone    Type = "none"
+	TypeEmpty   Type = ""
 )
 
 // IsCompressed returns false if CompressionType is nil, none, or empty.
 // Otherwise, returns true.
 func (ct *Type) IsCompressed() bool {
-	return *ct != typeEmpty && *ct != typeNone
+	return *ct != TypeEmpty && *ct != TypeNone
 }
 
 func (ct *Type) UnmarshalText(in []byte) error {
@@ -33,8 +39,8 @@ func (ct *Type) UnmarshalText(in []byte) error {
 		typ == TypeSnappy ||
 		typ == TypeZstd ||
 		typ == TypeLz4 ||
-		typ == typeNone ||
-		typ == typeEmpty {
+		typ == TypeNone ||
+		typ == TypeEmpty {
 		*ct = typ
 		return nil
 	}
