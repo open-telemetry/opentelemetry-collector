@@ -131,7 +131,6 @@ func NewMountPointFromLine(line string) (*MountPoint, error) {
 // the host file system path in the mount namespace the *MountPoint belongs to.
 func (mp *MountPoint) Translate(absPath string) (string, error) {
 	relPath, err := filepath.Rel(mp.Root, absPath)
-
 	if err != nil {
 		return "", err
 	}

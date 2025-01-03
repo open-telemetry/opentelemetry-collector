@@ -8,7 +8,7 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
@@ -159,7 +159,7 @@ func (sle *LogsSink) Reset() {
 	sle.logRecordCount = 0
 }
 
-// ProfilesSink is a consumerprofiles.Profiles that acts like a sink that
+// ProfilesSink is a xconsumer.Profiles that acts like a sink that
 // stores all profiles and allows querying them for testing.
 type ProfilesSink struct {
 	nonMutatingConsumer
@@ -168,7 +168,7 @@ type ProfilesSink struct {
 	sampleCount int
 }
 
-var _ consumerprofiles.Profiles = (*ProfilesSink)(nil)
+var _ xconsumer.Profiles = (*ProfilesSink)(nil)
 
 // ConsumeProfiles stores profiles to this sink.
 func (ste *ProfilesSink) ConsumeProfiles(_ context.Context, td pprofile.Profiles) error {

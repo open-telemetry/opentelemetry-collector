@@ -11,10 +11,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/processor"
-	"go.opentelemetry.io/collector/processor/processorprofiles"
+	"go.opentelemetry.io/collector/processor/xprocessor"
 )
 
 var nopType = component.MustNewType("nop")
@@ -30,13 +30,13 @@ func NewNopSettings() processor.Settings {
 
 // NewNopFactory returns a component.ProcessorFactory that constructs nop processors.
 func NewNopFactory() processor.Factory {
-	return processorprofiles.NewFactory(
+	return xprocessor.NewFactory(
 		nopType,
 		func() component.Config { return &nopConfig{} },
-		processorprofiles.WithTraces(createTraces, component.StabilityLevelStable),
-		processorprofiles.WithMetrics(createMetrics, component.StabilityLevelStable),
-		processorprofiles.WithLogs(createLogs, component.StabilityLevelStable),
-		processorprofiles.WithProfiles(createProfiles, component.StabilityLevelAlpha),
+		xprocessor.WithTraces(createTraces, component.StabilityLevelStable),
+		xprocessor.WithMetrics(createMetrics, component.StabilityLevelStable),
+		xprocessor.WithLogs(createLogs, component.StabilityLevelStable),
+		xprocessor.WithProfiles(createProfiles, component.StabilityLevelAlpha),
 	)
 }
 
@@ -52,7 +52,7 @@ func createLogs(context.Context, processor.Settings, component.Config, consumer.
 	return nopInstance, nil
 }
 
-func createProfiles(context.Context, processor.Settings, component.Config, consumerprofiles.Profiles) (processorprofiles.Profiles, error) {
+func createProfiles(context.Context, processor.Settings, component.Config, xconsumer.Profiles) (xprocessor.Profiles, error) {
 	return nopInstance, nil
 }
 

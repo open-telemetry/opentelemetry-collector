@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/pdata/pprofile/pprofileotlp"
@@ -39,7 +39,7 @@ type otlpReceiver struct {
 	nextTraces   consumer.Traces
 	nextMetrics  consumer.Metrics
 	nextLogs     consumer.Logs
-	nextProfiles consumerprofiles.Profiles
+	nextProfiles xconsumer.Profiles
 	shutdownWG   sync.WaitGroup
 
 	obsrepGRPC *receiverhelper.ObsReport
@@ -227,6 +227,6 @@ func (r *otlpReceiver) registerLogsConsumer(lc consumer.Logs) {
 	r.nextLogs = lc
 }
 
-func (r *otlpReceiver) registerProfilesConsumer(tc consumerprofiles.Profiles) {
+func (r *otlpReceiver) registerProfilesConsumer(tc xconsumer.Profiles) {
 	r.nextProfiles = tc
 }

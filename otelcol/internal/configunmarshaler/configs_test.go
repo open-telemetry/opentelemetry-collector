@@ -77,7 +77,7 @@ func TestUnmarshal(t *testing.T) {
 func TestUnmarshalError(t *testing.T) {
 	for _, tk := range testKinds {
 		t.Run(tk.kind, func(t *testing.T) {
-			var testCases = []struct {
+			testCases := []struct {
 				name string
 				conf *confmap.Conf
 				// string that the error must contain

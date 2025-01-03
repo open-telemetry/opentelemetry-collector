@@ -14,8 +14,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-var _ Marshaler = (*JSONMarshaler)(nil)
-var _ Unmarshaler = (*JSONUnmarshaler)(nil)
+var (
+	_ Marshaler   = (*JSONMarshaler)(nil)
+	_ Unmarshaler = (*JSONUnmarshaler)(nil)
+)
 
 var logsOTLP = func() Logs {
 	ld := NewLogs()

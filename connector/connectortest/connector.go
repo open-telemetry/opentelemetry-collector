@@ -11,10 +11,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/connector"
-	"go.opentelemetry.io/collector/connector/connectorprofiles"
+	"go.opentelemetry.io/collector/connector/xconnector"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 )
 
 var nopType = component.MustNewType("nop")
@@ -32,27 +32,27 @@ type nopConfig struct{}
 
 // NewNopFactory returns a connector.Factory that constructs nop processors.
 func NewNopFactory() connector.Factory {
-	return connectorprofiles.NewFactory(
+	return xconnector.NewFactory(
 		nopType,
 		func() component.Config {
 			return &nopConfig{}
 		},
-		connectorprofiles.WithTracesToTraces(createTracesToTracesConnector, component.StabilityLevelDevelopment),
-		connectorprofiles.WithTracesToMetrics(createTracesToMetricsConnector, component.StabilityLevelDevelopment),
-		connectorprofiles.WithTracesToLogs(createTracesToLogsConnector, component.StabilityLevelDevelopment),
-		connectorprofiles.WithTracesToProfiles(createTracesToProfilesConnector, component.StabilityLevelAlpha),
-		connectorprofiles.WithMetricsToTraces(createMetricsToTracesConnector, component.StabilityLevelDevelopment),
-		connectorprofiles.WithMetricsToMetrics(createMetricsToMetricsConnector, component.StabilityLevelDevelopment),
-		connectorprofiles.WithMetricsToLogs(createMetricsToLogsConnector, component.StabilityLevelDevelopment),
-		connectorprofiles.WithMetricsToProfiles(createMetricsToProfilesConnector, component.StabilityLevelAlpha),
-		connectorprofiles.WithLogsToTraces(createLogsToTracesConnector, component.StabilityLevelDevelopment),
-		connectorprofiles.WithLogsToMetrics(createLogsToMetricsConnector, component.StabilityLevelDevelopment),
-		connectorprofiles.WithLogsToLogs(createLogsToLogsConnector, component.StabilityLevelDevelopment),
-		connectorprofiles.WithLogsToProfiles(createLogsToProfilesConnector, component.StabilityLevelAlpha),
-		connectorprofiles.WithProfilesToTraces(createProfilesToTracesConnector, component.StabilityLevelAlpha),
-		connectorprofiles.WithProfilesToMetrics(createProfilesToMetricsConnector, component.StabilityLevelAlpha),
-		connectorprofiles.WithProfilesToLogs(createProfilesToLogsConnector, component.StabilityLevelAlpha),
-		connectorprofiles.WithProfilesToProfiles(createProfilesToProfilesConnector, component.StabilityLevelAlpha),
+		xconnector.WithTracesToTraces(createTracesToTracesConnector, component.StabilityLevelDevelopment),
+		xconnector.WithTracesToMetrics(createTracesToMetricsConnector, component.StabilityLevelDevelopment),
+		xconnector.WithTracesToLogs(createTracesToLogsConnector, component.StabilityLevelDevelopment),
+		xconnector.WithTracesToProfiles(createTracesToProfilesConnector, component.StabilityLevelAlpha),
+		xconnector.WithMetricsToTraces(createMetricsToTracesConnector, component.StabilityLevelDevelopment),
+		xconnector.WithMetricsToMetrics(createMetricsToMetricsConnector, component.StabilityLevelDevelopment),
+		xconnector.WithMetricsToLogs(createMetricsToLogsConnector, component.StabilityLevelDevelopment),
+		xconnector.WithMetricsToProfiles(createMetricsToProfilesConnector, component.StabilityLevelAlpha),
+		xconnector.WithLogsToTraces(createLogsToTracesConnector, component.StabilityLevelDevelopment),
+		xconnector.WithLogsToMetrics(createLogsToMetricsConnector, component.StabilityLevelDevelopment),
+		xconnector.WithLogsToLogs(createLogsToLogsConnector, component.StabilityLevelDevelopment),
+		xconnector.WithLogsToProfiles(createLogsToProfilesConnector, component.StabilityLevelAlpha),
+		xconnector.WithProfilesToTraces(createProfilesToTracesConnector, component.StabilityLevelAlpha),
+		xconnector.WithProfilesToMetrics(createProfilesToMetricsConnector, component.StabilityLevelAlpha),
+		xconnector.WithProfilesToLogs(createProfilesToLogsConnector, component.StabilityLevelAlpha),
+		xconnector.WithProfilesToProfiles(createProfilesToProfilesConnector, component.StabilityLevelAlpha),
 	)
 }
 
@@ -68,7 +68,7 @@ func createTracesToLogsConnector(context.Context, connector.Settings, component.
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 
-func createTracesToProfilesConnector(context.Context, connector.Settings, component.Config, consumerprofiles.Profiles) (connector.Traces, error) {
+func createTracesToProfilesConnector(context.Context, connector.Settings, component.Config, xconsumer.Profiles) (connector.Traces, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 
@@ -83,7 +83,8 @@ func createMetricsToMetricsConnector(context.Context, connector.Settings, compon
 func createMetricsToLogsConnector(context.Context, connector.Settings, component.Config, consumer.Logs) (connector.Metrics, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
-func createMetricsToProfilesConnector(context.Context, connector.Settings, component.Config, consumerprofiles.Profiles) (connector.Metrics, error) {
+
+func createMetricsToProfilesConnector(context.Context, connector.Settings, component.Config, xconsumer.Profiles) (connector.Metrics, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 
@@ -98,22 +99,24 @@ func createLogsToMetricsConnector(context.Context, connector.Settings, component
 func createLogsToLogsConnector(context.Context, connector.Settings, component.Config, consumer.Logs) (connector.Logs, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
-func createLogsToProfilesConnector(context.Context, connector.Settings, component.Config, consumerprofiles.Profiles) (connector.Logs, error) {
+
+func createLogsToProfilesConnector(context.Context, connector.Settings, component.Config, xconsumer.Profiles) (connector.Logs, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 
-func createProfilesToTracesConnector(context.Context, connector.Settings, component.Config, consumer.Traces) (connectorprofiles.Profiles, error) {
+func createProfilesToTracesConnector(context.Context, connector.Settings, component.Config, consumer.Traces) (xconnector.Profiles, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 
-func createProfilesToMetricsConnector(context.Context, connector.Settings, component.Config, consumer.Metrics) (connectorprofiles.Profiles, error) {
+func createProfilesToMetricsConnector(context.Context, connector.Settings, component.Config, consumer.Metrics) (xconnector.Profiles, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 
-func createProfilesToLogsConnector(context.Context, connector.Settings, component.Config, consumer.Logs) (connectorprofiles.Profiles, error) {
+func createProfilesToLogsConnector(context.Context, connector.Settings, component.Config, consumer.Logs) (xconnector.Profiles, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
-func createProfilesToProfilesConnector(context.Context, connector.Settings, component.Config, consumerprofiles.Profiles) (connectorprofiles.Profiles, error) {
+
+func createProfilesToProfilesConnector(context.Context, connector.Settings, component.Config, xconsumer.Profiles) (xconnector.Profiles, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 

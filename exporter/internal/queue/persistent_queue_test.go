@@ -226,7 +226,8 @@ func (m *fakeStorageClientWithErrors) Reset() {
 
 // createAndStartTestPersistentQueue creates and starts a fake queue with the given capacity and number of consumers.
 func createAndStartTestPersistentQueue(t *testing.T, sizer Sizer[tracesRequest], capacity int64, numConsumers int,
-	consumeFunc func(_ context.Context, item tracesRequest) error) Queue[tracesRequest] {
+	consumeFunc func(_ context.Context, item tracesRequest) error,
+) Queue[tracesRequest] {
 	pq := NewPersistentQueue[tracesRequest](PersistentQueueSettings[tracesRequest]{
 		Sizer:            sizer,
 		Capacity:         capacity,
@@ -263,16 +264,17 @@ func createTestPersistentQueueWithClient(client storage.Client) *persistentQueue
 	return pq
 }
 
-func createTestPersistentQueueWithRequestsCapacity(t testing.TB, ext storage.Extension, capacity int64) *persistentQueue[tracesRequest] {
-	return createTestPersistentQueueWithCapacityLimiter(t, ext, &RequestSizer[tracesRequest]{}, capacity)
+func createTestPersistentQueueWithRequestsCapacity(tb testing.TB, ext storage.Extension, capacity int64) *persistentQueue[tracesRequest] {
+	return createTestPersistentQueueWithCapacityLimiter(tb, ext, &RequestSizer[tracesRequest]{}, capacity)
 }
 
-func createTestPersistentQueueWithItemsCapacity(t testing.TB, ext storage.Extension, capacity int64) *persistentQueue[tracesRequest] {
-	return createTestPersistentQueueWithCapacityLimiter(t, ext, &itemsSizer[tracesRequest]{}, capacity)
+func createTestPersistentQueueWithItemsCapacity(tb testing.TB, ext storage.Extension, capacity int64) *persistentQueue[tracesRequest] {
+	return createTestPersistentQueueWithCapacityLimiter(tb, ext, &itemsSizer[tracesRequest]{}, capacity)
 }
 
-func createTestPersistentQueueWithCapacityLimiter(t testing.TB, ext storage.Extension, sizer Sizer[tracesRequest],
-	capacity int64) *persistentQueue[tracesRequest] {
+func createTestPersistentQueueWithCapacityLimiter(tb testing.TB, ext storage.Extension, sizer Sizer[tracesRequest],
+	capacity int64,
+) *persistentQueue[tracesRequest] {
 	pq := NewPersistentQueue[tracesRequest](PersistentQueueSettings[tracesRequest]{
 		Sizer:            sizer,
 		Capacity:         capacity,
@@ -282,7 +284,7 @@ func createTestPersistentQueueWithCapacityLimiter(t testing.TB, ext storage.Exte
 		Unmarshaler:      unmarshalTracesRequest,
 		ExporterSettings: exportertest.NewNopSettings(),
 	}).(*persistentQueue[tracesRequest])
-	require.NoError(t, pq.Start(context.Background(), &mockHost{ext: map[component.ID]component.Component{{}: ext}}))
+	require.NoError(tb, pq.Start(context.Background(), &mockHost{ext: map[component.ID]component.Component{{}: ext}}))
 	return pq
 }
 
@@ -340,7 +342,8 @@ func TestPersistentQueue_FullCapacity(t *testing.T) {
 
 func TestPersistentQueue_Shutdown(t *testing.T) {
 	pq := createAndStartTestPersistentQueue(t, &RequestSizer[tracesRequest]{}, 1001, 100, func(context.Context,
-		tracesRequest) error {
+		tracesRequest,
+	) error {
 		return nil
 	})
 	req := newTracesRequest(1, 10)
@@ -384,7 +387,8 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 			numMessagesConsumed := &atomic.Int32{}
 			pq := createAndStartTestPersistentQueue(t, &RequestSizer[tracesRequest]{}, 1000, c.numConsumers,
 				func(context.Context,
-					tracesRequest) error {
+					tracesRequest,
+				) error {
 					numMessagesConsumed.Add(int32(1))
 					return nil
 				})
@@ -468,7 +472,7 @@ func TestToStorageClient(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			storageID := component.MustNewIDWithName("file_storage", strconv.Itoa(tt.storageIndex))
 
-			var extensions = map[component.ID]component.Component{}
+			extensions := map[component.ID]component.Component{}
 			for i := 0; i < tt.numStorages; i++ {
 				extensions[component.MustNewIDWithName("file_storage", strconv.Itoa(i))] = NewMockStorageExtension(tt.getClientError)
 			}
@@ -499,7 +503,7 @@ func TestInvalidStorageExtensionType(t *testing.T) {
 	settings := extensiontest.NewNopSettings()
 	extension, err := factory.Create(context.Background(), settings, extConfig)
 	require.NoError(t, err)
-	var extensions = map[component.ID]component.Component{
+	extensions := map[component.ID]component.Component{
 		storageID: extension,
 	}
 	host := &mockHost{ext: extensions}

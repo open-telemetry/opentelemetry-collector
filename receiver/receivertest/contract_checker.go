@@ -271,8 +271,10 @@ func (ds idSet) union(other idSet) (union idSet, duplicates []UniqueIDAttrVal) {
 // between the receiver and it next consumer.
 type consumeDecisionFunc func(ids idSet) error
 
-var errNonPermanent = errors.New("non permanent error")
-var errPermanent = errors.New("permanent error")
+var (
+	errNonPermanent = errors.New("non permanent error")
+	errPermanent    = errors.New("permanent error")
+)
 
 // randomNonPermanentErrorConsumeDecision is a decision function that succeeds approximately
 // half of the time and fails with a non-permanent error the rest of the time.

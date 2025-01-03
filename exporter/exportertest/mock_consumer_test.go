@@ -195,6 +195,7 @@ func TestConsumeTracesSuccess(t *testing.T) {
 	assert.Equal(t, 1, mc.reqCounter.success)
 	assert.Equal(t, 1, mc.reqCounter.total)
 }
+
 func TestConsumeMetricsNonPermanent(t *testing.T) {
 	mc := newMockConsumer(returnNonPermanentError)
 	validData := createMetric("metricId")

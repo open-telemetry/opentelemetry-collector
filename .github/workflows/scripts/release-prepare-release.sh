@@ -41,8 +41,9 @@ if [ "${CANDIDATE_BETA}" != "" ]; then
 fi
 git push origin "${BRANCH}"
 
-# The `release:merge-freeze` label will cause the `check-merge-freeze` workflow to fail, enforcing the freeze.
-gh pr create --title "[chore] Prepare release ${RELEASE_VERSION}" --label release:merge-freeze --body "
+# Use OpenTelemetryBot account to create PR, allowing workflows to run
+# The title must match the checks in check-merge-freeze.yml
+gh pr create --title "[chore] Prepare release ${RELEASE_VERSION}" --body "
 The following commands were run to prepare this release:
 ${COMMANDS}
 "

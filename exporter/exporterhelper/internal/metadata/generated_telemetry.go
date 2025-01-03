@@ -51,7 +51,7 @@ func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 }
 
 // InitExporterQueueCapacity configures the ExporterQueueCapacity metric.
-func (builder *TelemetryBuilder) InitExporterQueueCapacity(cb func() int64, opts ...metric.ObserveOption) error {
+func (builder *TelemetryBuilder) InitExporterQueueCapacity(cb func() int64, opts ...metric.ObserveOption) (metric.Registration, error) {
 	var err error
 	builder.ExporterQueueCapacity, err = builder.meter.Int64ObservableGauge(
 		"otelcol_exporter_queue_capacity",
@@ -59,17 +59,17 @@ func (builder *TelemetryBuilder) InitExporterQueueCapacity(cb func() int64, opts
 		metric.WithUnit("{batches}"),
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	_, err = builder.meter.RegisterCallback(func(_ context.Context, o metric.Observer) error {
+	reg, err := builder.meter.RegisterCallback(func(_ context.Context, o metric.Observer) error {
 		o.ObserveInt64(builder.ExporterQueueCapacity, cb(), opts...)
 		return nil
 	}, builder.ExporterQueueCapacity)
-	return err
+	return reg, err
 }
 
 // InitExporterQueueSize configures the ExporterQueueSize metric.
-func (builder *TelemetryBuilder) InitExporterQueueSize(cb func() int64, opts ...metric.ObserveOption) error {
+func (builder *TelemetryBuilder) InitExporterQueueSize(cb func() int64, opts ...metric.ObserveOption) (metric.Registration, error) {
 	var err error
 	builder.ExporterQueueSize, err = builder.meter.Int64ObservableGauge(
 		"otelcol_exporter_queue_size",
@@ -77,13 +77,13 @@ func (builder *TelemetryBuilder) InitExporterQueueSize(cb func() int64, opts ...
 		metric.WithUnit("{batches}"),
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	_, err = builder.meter.RegisterCallback(func(_ context.Context, o metric.Observer) error {
+	reg, err := builder.meter.RegisterCallback(func(_ context.Context, o metric.Observer) error {
 		o.ObserveInt64(builder.ExporterQueueSize, cb(), opts...)
 		return nil
 	}, builder.ExporterQueueSize)
-	return err
+	return reg, err
 }
 
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry

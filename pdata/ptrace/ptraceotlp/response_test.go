@@ -12,8 +12,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var _ json.Unmarshaler = ExportResponse{}
-var _ json.Marshaler = ExportResponse{}
+var (
+	_ json.Unmarshaler = ExportResponse{}
+	_ json.Marshaler   = ExportResponse{}
+)
 
 func TestExportResponseJSON(t *testing.T) {
 	jsonStr := `{"partialSuccess": {"rejectedSpans":1, "errorMessage":"nothing"}}`

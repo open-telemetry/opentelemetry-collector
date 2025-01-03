@@ -28,7 +28,7 @@ func (mts *mutatingTracesSink) Capabilities() consumer.Capabilities {
 }
 
 func TestTracesRouterMultiplexing(t *testing.T) {
-	var num = 20
+	num := 20
 	for numIDs := 1; numIDs < num; numIDs++ {
 		for numCons := 1; numCons < num; numCons++ {
 			for numTraces := 1; numTraces < num; numTraces++ {

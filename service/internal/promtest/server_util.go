@@ -13,12 +13,12 @@ import (
 	"go.opentelemetry.io/collector/internal/testutil"
 )
 
-func GetAvailableLocalIPv6AddressPrometheus(t testing.TB) *config.Prometheus {
-	return addrToPrometheus(testutil.GetAvailableLocalIPv6Address(t))
+func GetAvailableLocalIPv6AddressPrometheus(tb testing.TB) *config.Prometheus {
+	return addrToPrometheus(testutil.GetAvailableLocalIPv6Address(tb))
 }
 
-func GetAvailableLocalAddressPrometheus(t testing.TB) *config.Prometheus {
-	return addrToPrometheus(testutil.GetAvailableLocalAddress(t))
+func GetAvailableLocalAddressPrometheus(tb testing.TB) *config.Prometheus {
+	return addrToPrometheus(testutil.GetAvailableLocalAddress(tb))
 }
 
 func addrToPrometheus(address string) *config.Prometheus {

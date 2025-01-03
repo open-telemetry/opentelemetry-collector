@@ -19,8 +19,8 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/exporter/exporterprofiles"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/exporter/xexporter"
 	"go.opentelemetry.io/collector/internal/testutil"
 )
 
@@ -319,7 +319,7 @@ func TestCreateProfiles(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := NewFactory()
 			set := exportertest.NewNopSettings()
-			consumer, err := factory.(exporterprofiles.Factory).CreateProfiles(context.Background(), set, tt.config)
+			consumer, err := factory.(xexporter.Factory).CreateProfiles(context.Background(), set, tt.config)
 			require.NoError(t, err)
 			assert.NotNil(t, consumer)
 			err = consumer.Start(context.Background(), componenttest.NewNopHost())

@@ -9,11 +9,11 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/receiverprofiles"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 )
 
 // ReceiverBuilder receiver is a helper struct that given a set of Configs and
@@ -87,7 +87,7 @@ func (b *ReceiverBuilder) CreateLogs(ctx context.Context, set receiver.Settings,
 }
 
 // CreateProfiles creates a Profiles receiver based on the settings and config.
-func (b *ReceiverBuilder) CreateProfiles(ctx context.Context, set receiver.Settings, next consumerprofiles.Profiles) (receiverprofiles.Profiles, error) {
+func (b *ReceiverBuilder) CreateProfiles(ctx context.Context, set receiver.Settings, next xconsumer.Profiles) (xreceiver.Profiles, error) {
 	if next == nil {
 		return nil, errNilNextConsumer
 	}
@@ -101,7 +101,7 @@ func (b *ReceiverBuilder) CreateProfiles(ctx context.Context, set receiver.Setti
 		return nil, fmt.Errorf("receiver factory not available for: %q", set.ID)
 	}
 
-	f, ok := recvFact.(receiverprofiles.Factory)
+	f, ok := recvFact.(xreceiver.Factory)
 	if !ok {
 		return nil, pipeline.ErrSignalNotSupported
 	}

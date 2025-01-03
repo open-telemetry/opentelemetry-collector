@@ -49,7 +49,8 @@ func TestBatchSender_Merge(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool, tt struct {
 		name          string
 		batcherOption Option
-	}) {
+	},
+	) {
 		t.Run(testName, func(t *testing.T) {
 			resetFeatureGate := setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			be := queueBatchExporter(t, tt.batcherOption)
@@ -78,8 +79,10 @@ func TestBatchSender_Merge(t *testing.T) {
 			time.Sleep(50 * time.Millisecond)
 
 			// should be ignored because of the merge error.
-			require.NoError(t, be.Send(context.Background(), &fakeRequest{items: 3, sink: sink,
-				mergeErr: errors.New("merge error")}))
+			require.NoError(t, be.Send(context.Background(), &fakeRequest{
+				items: 3, sink: sink,
+				mergeErr: errors.New("merge error"),
+			}))
 
 			assert.Equal(t, int64(1), sink.requestsCount.Load())
 			assert.Eventually(t, func() bool {
@@ -130,7 +133,8 @@ func TestBatchSender_BatchExportError(t *testing.T) {
 		batcherOption    Option
 		expectedRequests int64
 		expectedItems    int64
-	}) {
+	},
+	) {
 		t.Run(testName, func(t *testing.T) {
 			resetFeatureGate := setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			be := queueBatchExporter(t, tt.batcherOption)
@@ -200,8 +204,10 @@ func TestBatchSender_MergeOrSplit(t *testing.T) {
 			}, 50*time.Millisecond, 10*time.Millisecond)
 
 			// request that cannot be split should be dropped.
-			require.NoError(t, be.Send(context.Background(), &fakeRequest{items: 11, sink: sink,
-				mergeErr: errors.New("split error")}))
+			require.NoError(t, be.Send(context.Background(), &fakeRequest{
+				items: 11, sink: sink,
+				mergeErr: errors.New("split error"),
+			}))
 
 			// big request should be broken down into two requests, both are sent right away.
 			require.NoError(t, be.Send(context.Background(), &fakeRequest{items: 13, sink: sink}))
@@ -219,7 +225,7 @@ func TestBatchSender_MergeOrSplit(t *testing.T) {
 func TestBatchSender_Shutdown(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
 			batchCfg := exporterbatcher.NewDefaultConfig()
 			batchCfg.MinSizeItems = 10
 			be := queueBatchExporter(t, WithBatcher(batchCfg))
@@ -247,7 +253,7 @@ func TestBatchSender_Shutdown(t *testing.T) {
 func TestBatchSender_Disabled(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
 			cfg := exporterbatcher.NewDefaultConfig()
 			cfg.Enabled = false
 			cfg.MaxSizeItems = 5
@@ -305,7 +311,7 @@ func TestBatchSender_Disabled(t *testing.T) {
 func TestBatchSender_PostShutdown(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
 			be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender,
 				WithBatcher(exporterbatcher.NewDefaultConfig()))
 			require.NotNil(t, be)
@@ -426,7 +432,7 @@ func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
 func TestBatchSender_BatchBlocking(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
 			bCfg := exporterbatcher.NewDefaultConfig()
 			bCfg.MinSizeItems = 3
 			be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender,
@@ -463,7 +469,7 @@ func TestBatchSender_BatchBlocking(t *testing.T) {
 func TestBatchSender_BatchCancelled(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
 			bCfg := exporterbatcher.NewDefaultConfig()
 			bCfg.MinSizeItems = 2
 			be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender,
@@ -505,7 +511,7 @@ func TestBatchSender_BatchCancelled(t *testing.T) {
 func TestBatchSender_DrainActiveRequests(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
 			bCfg := exporterbatcher.NewDefaultConfig()
 			bCfg.MinSizeItems = 2
 			be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender,
@@ -545,7 +551,7 @@ func TestBatchSender_DrainActiveRequests(t *testing.T) {
 func TestBatchSender_UnstartedShutdown(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
 			be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender,
 				WithBatcher(exporterbatcher.NewDefaultConfig()))
 			require.NoError(t, err)
@@ -608,7 +614,7 @@ func TestBatchSender_UnstartedShutdown(t *testing.T) {
 func TestBatchSenderWithTimeout(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
 			bCfg := exporterbatcher.NewDefaultConfig()
 			bCfg.MinSizeItems = 10
 			tCfg := NewDefaultTimeoutConfig()
@@ -703,7 +709,7 @@ func TestBatchSenderWithTimeout(t *testing.T) {
 func TestBatchSenderTimerFlush(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
 			if runtime.GOOS == "windows" {
 				t.Skip("skipping flaky test on Windows, see https://github.com/open-telemetry/opentelemetry-collector/issues/10802")
 			}

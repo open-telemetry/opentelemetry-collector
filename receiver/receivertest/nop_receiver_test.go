@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/receiver/receiverprofiles"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 )
 
 var nopType = component.MustNewType("nop")
@@ -40,7 +40,7 @@ func TestNewNopFactory(t *testing.T) {
 	assert.NoError(t, logs.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, logs.Shutdown(context.Background()))
 
-	profiles, err := factory.(receiverprofiles.Factory).CreateProfiles(context.Background(), NewNopSettings(), cfg, consumertest.NewNop())
+	profiles, err := factory.(xreceiver.Factory).CreateProfiles(context.Background(), NewNopSettings(), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	assert.NoError(t, profiles.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, profiles.Shutdown(context.Background()))

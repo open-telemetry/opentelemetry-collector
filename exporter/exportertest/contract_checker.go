@@ -106,7 +106,8 @@ func checkConsumeContractScenario(t *testing.T, params CheckConsumeContractParam
 }
 
 func checkMetrics(t *testing.T, params CheckConsumeContractParams, mockReceiver component.Component,
-	mockConsumer *mockConsumer, checkIfTestPassed func(*testing.T, int, requestCounter)) {
+	mockConsumer *mockConsumer, checkIfTestPassed func(*testing.T, int, requestCounter),
+) {
 	ctx := context.Background()
 	var exp exporter.Metrics
 	var err error

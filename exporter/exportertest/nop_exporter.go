@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterprofiles"
+	"go.opentelemetry.io/collector/exporter/xexporter"
 )
 
 var nopType = component.MustNewType("nop")
@@ -28,13 +28,13 @@ func NewNopSettings() exporter.Settings {
 
 // NewNopFactory returns an exporter.Factory that constructs nop exporters.
 func NewNopFactory() exporter.Factory {
-	return exporterprofiles.NewFactory(
+	return xexporter.NewFactory(
 		nopType,
 		func() component.Config { return &nopConfig{} },
-		exporterprofiles.WithTraces(createTraces, component.StabilityLevelStable),
-		exporterprofiles.WithMetrics(createMetrics, component.StabilityLevelStable),
-		exporterprofiles.WithLogs(createLogs, component.StabilityLevelStable),
-		exporterprofiles.WithProfiles(createProfiles, component.StabilityLevelAlpha),
+		xexporter.WithTraces(createTraces, component.StabilityLevelStable),
+		xexporter.WithMetrics(createMetrics, component.StabilityLevelStable),
+		xexporter.WithLogs(createLogs, component.StabilityLevelStable),
+		xexporter.WithProfiles(createProfiles, component.StabilityLevelAlpha),
 	)
 }
 
@@ -50,7 +50,7 @@ func createLogs(context.Context, exporter.Settings, component.Config) (exporter.
 	return nopInstance, nil
 }
 
-func createProfiles(context.Context, exporter.Settings, component.Config) (exporterprofiles.Profiles, error) {
+func createProfiles(context.Context, exporter.Settings, component.Config) (xexporter.Profiles, error) {
 	return nopInstance, nil
 }
 

@@ -47,6 +47,41 @@ When naming configuration structs, use the following guidelines:
 - Use the `Settings` suffix for configuration structs that are set by developers in the code. For example, `component.TelemetrySettings` ends in `Settings` since it is set by developers in the code.
 - Avoid redundant prefixes that are already implied by the package name. For example, use`configgrpc.ClientConfig` instead of `configgrpc.GRPCClientConfig`.
 
+### Module organization
+
+As usual in Go projects, organize your code into packages grouping related functionality. To ensure
+that we can evolve different parts of the API independently, you should also group related packages
+into modules.
+
+We use the following rules for some common situations where we split into separate modules:
+1. Each top-level directory should be a separate module.
+1. Each component referenceable by the OpenTelemetry Collector Builder should be in a separate
+   module. For example, the OTLP receiver is in its own module, different from that of other
+   receivers.
+1. Consider splitting into separate modules if the API may evolve independently in separate groups
+   of packages. For example, the configuration related to HTTP and gRPC evolve independently, so
+   `config/configgrpc` and `config/confighttp` are separate modules.
+1. Testing helpers should be in a separate submodule with the suffix `test`. For example, if you
+   have a module `component`, the helpers should be in `component/componenttest`.
+1. Experimental packages that will later be added to another module should be in their own module,
+   named as they will be after integration. For example, if adding a `pprofile` package to `pdata`,
+   you should add a separate module `pdata/pprofile` for the experimental code.
+1. Experimental code that will be added to an existing package in a stable module can be a submodule
+   with the same name, but prefixed with an `x`. For example, `config/confighttp` module can have an
+   experimental module named `config/confighttp/xconfighttp` that contains experimental APIs.
+
+When adding a new module remember to update the following:
+1. Add a changelog note for the new module.
+1. Add the module in `versions.yaml`.
+1. Use `make crosslink` to make sure the module replaces are added correctly throughout the
+   codebase. You may also have to manually add some of the replaces.
+1. Update the [otelcorecol
+   manifest](https://github.com/open-telemetry/opentelemetry-collector/blob/main/cmd/otelcorecol/builder-config.yaml)
+   and [builder
+   tests](https://github.com/open-telemetry/opentelemetry-collector/blob/main/cmd/builder/internal/builder/main_test.go).
+1. Open a follow up PR to update pseudo-versions in all go.mod files. See [this example
+   PR](https://github.com/open-telemetry/opentelemetry-collector/pull/11668).
+
 ### Enumerations
 
 To keep naming patterns consistent across the project, enumeration patterns are enforced to make intent clear:

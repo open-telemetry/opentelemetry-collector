@@ -204,8 +204,8 @@ var profile = &messageValueStruct{
 			},
 		},
 		&sliceField{
-			fieldName:   "Attributes",
-			returnSlice: mapStruct,
+			fieldName:   "AttributeIndices",
+			returnSlice: int32Slice,
 		},
 		droppedAttributesCount,
 		&primitiveField{
@@ -398,6 +398,7 @@ var locationSlice = &sliceOfPtrs{
 	structName: "LocationSlice",
 	element:    location,
 }
+
 var location = &messageValueStruct{
 	structName:     "Location",
 	description:    "// Location describes function and line table debug information.",

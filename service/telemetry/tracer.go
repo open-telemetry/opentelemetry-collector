@@ -30,9 +30,7 @@ const (
 	b3Propagator           = "b3"
 )
 
-var (
-	errUnsupportedPropagator = errors.New("unsupported trace propagator")
-)
+var errUnsupportedPropagator = errors.New("unsupported trace propagator")
 
 type noopNoContextTracer struct {
 	embedded.Tracer

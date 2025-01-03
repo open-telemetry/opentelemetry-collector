@@ -71,7 +71,7 @@ func TestUnmarshalUnknownTopLevel(t *testing.T) {
 }
 
 func TestPipelineConfigUnmarshalError(t *testing.T) {
-	var testCases = []struct {
+	testCases := []struct {
 		// test case name (also file name containing config yaml)
 		name string
 		conf *confmap.Conf
@@ -141,7 +141,7 @@ func TestPipelineConfigUnmarshalError(t *testing.T) {
 }
 
 func TestServiceUnmarshalError(t *testing.T) {
-	var testCases = []struct {
+	testCases := []struct {
 		// test case name (also file name containing config yaml)
 		name string
 		conf *confmap.Conf

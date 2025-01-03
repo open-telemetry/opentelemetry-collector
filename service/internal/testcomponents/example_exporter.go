@@ -9,7 +9,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterprofiles"
+	"go.opentelemetry.io/collector/exporter/xexporter"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
@@ -21,13 +21,13 @@ var testType = component.MustNewType("exampleexporter")
 const stability = component.StabilityLevelDevelopment
 
 // ExampleExporterFactory is factory for ExampleExporter.
-var ExampleExporterFactory = exporterprofiles.NewFactory(
+var ExampleExporterFactory = xexporter.NewFactory(
 	testType,
 	createExporterDefaultConfig,
-	exporterprofiles.WithTraces(createTracesExporter, stability),
-	exporterprofiles.WithMetrics(createMetricsExporter, stability),
-	exporterprofiles.WithLogs(createLogsExporter, stability),
-	exporterprofiles.WithProfiles(createProfilesExporter, stability),
+	xexporter.WithTraces(createTracesExporter, stability),
+	xexporter.WithMetrics(createMetricsExporter, stability),
+	xexporter.WithLogs(createLogsExporter, stability),
+	xexporter.WithProfiles(createProfilesExporter, stability),
 )
 
 func createExporterDefaultConfig() component.Config {
@@ -45,7 +45,8 @@ func createMetricsExporter(context.Context, exporter.Settings, component.Config)
 func createLogsExporter(context.Context, exporter.Settings, component.Config) (exporter.Logs, error) {
 	return &ExampleExporter{}, nil
 }
-func createProfilesExporter(context.Context, exporter.Settings, component.Config) (exporterprofiles.Profiles, error) {
+
+func createProfilesExporter(context.Context, exporter.Settings, component.Config) (xexporter.Profiles, error) {
 	return &ExampleExporter{}, nil
 }
 
@@ -76,7 +77,7 @@ func (exp *ExampleExporter) ConsumeLogs(_ context.Context, ld plog.Logs) error {
 	return nil
 }
 
-// ConsumeProfiles receives pprofile.Profiles for processing by the consumerprofiles.Profiles.
+// ConsumeProfiles receives pprofile.Profiles for processing by the xconsumer.Profiles.
 func (exp *ExampleExporter) ConsumeProfiles(_ context.Context, td pprofile.Profiles) error {
 	exp.Profiles = append(exp.Profiles, td)
 	return nil

@@ -56,7 +56,7 @@ func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 {{- range $name, $metric := .Telemetry.Metrics }}
 {{- if $metric.Optional }}
 // Init{{ $name.Render }} configures the {{ $name.Render }} metric.
-func (builder *TelemetryBuilder) Init{{ $name.Render }}({{ if $metric.Data.Async -}}cb func() {{ $metric.Data.BasicType }}{{- end }}, opts ...metric.ObserveOption) error {
+func (builder *TelemetryBuilder) Init{{ $name.Render }}({{ if $metric.Data.Async -}}cb func() {{ $metric.Data.BasicType }}{{- end }}, opts ...metric.ObserveOption) (metric.Registration, error) {
     var err error
     builder.{{ $name.Render }}, err = builder.meter.{{ $metric.Data.Instrument }}(
         "otelcol_{{ $name }}",
@@ -68,14 +68,14 @@ func (builder *TelemetryBuilder) Init{{ $name.Render }}({{ if $metric.Data.Async
     )
     {{- if $metric.Data.Async }}
     if err != nil {
-        return err
+        return nil, err
     }
-    _, err = builder.meter.RegisterCallback(func(_ context.Context, o metric.Observer) error {
+    reg, err := builder.meter.RegisterCallback(func(_ context.Context, o metric.Observer) error {
         o.Observe{{ casesTitle $metric.Data.BasicType }}(builder.{{ $name.Render }}, cb(), opts...)
         return nil
     }, builder.{{ $name.Render }})
     {{- end }}
-    return err
+    return reg, err
 }
 
     {{- else }}

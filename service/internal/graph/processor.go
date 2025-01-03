@@ -9,9 +9,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pipeline"
-	"go.opentelemetry.io/collector/pipeline/pipelineprofiles"
+	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/components"
@@ -58,8 +58,8 @@ func (n *processorNode) buildComponent(ctx context.Context,
 		n.Component, err = builder.CreateMetrics(ctx, set, next.(consumer.Metrics))
 	case pipeline.SignalLogs:
 		n.Component, err = builder.CreateLogs(ctx, set, next.(consumer.Logs))
-	case pipelineprofiles.SignalProfiles:
-		n.Component, err = builder.CreateProfiles(ctx, set, next.(consumerprofiles.Profiles))
+	case xpipeline.SignalProfiles:
+		n.Component, err = builder.CreateProfiles(ctx, set, next.(xconsumer.Profiles))
 	default:
 		return fmt.Errorf("error creating processor %q in pipeline %q, data type %q is not supported", set.ID, n.pipelineID.String(), n.pipelineID.Signal())
 	}

@@ -21,7 +21,7 @@ import (
 )
 
 func TestConfigValidate(t *testing.T) {
-	var testCases = []struct {
+	testCases := []struct {
 		name     string // test case name (also file name containing config yaml)
 		cfgFn    func() *Config
 		expected error
@@ -98,11 +98,13 @@ func generateConfig() *Config {
 			},
 			Metrics: telemetry.MetricsConfig{
 				Level: configtelemetry.LevelNormal,
-				Readers: []config.MetricReader{{
-					Pull: &config.PullMetricReader{Exporter: config.MetricExporter{Prometheus: &config.Prometheus{
-						Host: newPtr("localhost"),
-						Port: newPtr(8080),
-					}}}},
+				Readers: []config.MetricReader{
+					{
+						Pull: &config.PullMetricReader{Exporter: config.MetricExporter{Prometheus: &config.Prometheus{
+							Host: newPtr("localhost"),
+							Port: newPtr(8080),
+						}}},
+					},
 				},
 			},
 		},

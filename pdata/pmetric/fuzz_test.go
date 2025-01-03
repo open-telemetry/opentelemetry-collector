@@ -10,7 +10,6 @@ import (
 func FuzzUnmarshalMetrics(f *testing.F) {
 	f.Fuzz(func(_ *testing.T, data []byte) {
 		u := &JSONUnmarshaler{}
-		//nolint: errcheck
 		_, _ = u.UnmarshalMetrics(data)
 	})
 }

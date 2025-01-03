@@ -810,6 +810,7 @@ func generateTestProtoGaugeMetric() *otlpmetrics.Metric {
 		},
 	}
 }
+
 func generateTestProtoSumMetric() *otlpmetrics.Metric {
 	return &otlpmetrics.Metric{
 		Name:        "my_metric_double",

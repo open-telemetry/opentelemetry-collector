@@ -27,7 +27,7 @@ func Example_simpleUnmarshaling() {
 		panic(err)
 	}
 	fmt.Printf("Configuration contains the following:\nDisk: %q\nScrape: %s\n", scrapeInfo.Disk, scrapeInfo.Scrape)
-	//Output: Configuration contains the following:
+	// Output: Configuration contains the following:
 	// Disk: "c"
 	// Scrape: 5s
 }
@@ -53,7 +53,7 @@ func Example_embeddedUnmarshaling() {
 		panic(err)
 	}
 	fmt.Printf("Configuration contains the following:\nDisk: %q\nScrape: %s\nEnabled: %v\n", scrapeInfo.Disk, scrapeInfo.Scrape, scrapeInfo.Enabled)
-	//Output: Configuration contains the following:
+	// Output: Configuration contains the following:
 	// Disk: "c"
 	// Scrape: 5s
 	// Enabled: true
@@ -105,7 +105,7 @@ func Example_embeddedManualUnmarshaling() {
 		panic(err)
 	}
 	fmt.Printf("Configuration contains the following:\nNetworks: %q\nWifi: %v\nEnabled: %v\n", scrapeInfo.Networks, scrapeInfo.Wifi, scrapeInfo.Enabled)
-	//Output: Configuration contains the following:
+	// Output: Configuration contains the following:
 	// Networks: ["eth0" "eth1" "wlan0"]
 	// Wifi: true
 	// Enabled: true
@@ -121,7 +121,7 @@ func Example_manualUnmarshaling() {
 		panic(err)
 	}
 	fmt.Printf("Configuration contains the following:\nDisk: %q\nScrape: %s\n", scrapeInfo.Disk, scrapeInfo.Scrape)
-	//Output: Configuration contains the following:
+	// Output: Configuration contains the following:
 	// Disk: "Beatles"
 	// Scrape: 10s
 }

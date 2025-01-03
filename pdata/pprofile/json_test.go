@@ -13,8 +13,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-var _ Marshaler = (*JSONMarshaler)(nil)
-var _ Unmarshaler = (*JSONUnmarshaler)(nil)
+var (
+	_ Marshaler   = (*JSONMarshaler)(nil)
+	_ Unmarshaler = (*JSONUnmarshaler)(nil)
+)
 
 var profilesOTLP = func() Profiles {
 	startTimestamp := pcommon.Timestamp(1684617382541971000)
@@ -41,8 +43,7 @@ var profilesOTLP = func() Profiles {
 	pro.SetProfileID(profileID)
 	pro.SetTime(startTimestamp)
 	pro.SetDuration(durationTimestamp)
-	pro.Attributes().PutStr("hello", "world")
-	pro.Attributes().PutStr("foo", "bar")
+	pro.AttributeIndices().Append(1)
 	pro.SetDroppedAttributesCount(1)
 
 	// Add sample type
@@ -120,7 +121,7 @@ var profilesOTLP = func() Profiles {
 	return pd
 }()
 
-var profilesJSON = `{"resourceProfiles":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}},{"key":"service.name","value":{"stringValue":"testService"}}],"droppedAttributesCount":1},"scopeProfiles":[{"scope":{"name":"scope name","version":"scope version"},"profiles":[{"sampleType":[{"typeStrindex":1,"unitStrindex":2}],"sample":[{"locationsStartIndex":1,"locationsLength":10,"value":["3"],"attributeIndices":[1],"timestampsUnixNano":["12345"]}],"mappingTable":[{"memoryStart":"2","memoryLimit":"3","fileOffset":"4","filenameStrindex":5,"attributeIndices":[7,8],"hasFunctions":true,"hasFilenames":true,"hasLineNumbers":true,"hasInlineFrames":true}],"locationTable":[{"mappingIndex":3,"address":"4","line":[{"functionIndex":1,"line":"2","column":"3"}],"isFolded":true,"attributeIndices":[6,7]}],"locationIndices":[1],"functionTable":[{"nameStrindex":2,"systemNameStrindex":3,"filenameStrindex":4,"startLine":"5"}],"attributeTable":[{"key":"answer","value":{"intValue":"42"}}],"attributeUnits":[{"attributeKeyStrindex":1,"unitStrindex":5}],"linkTable":[{"traceId":"0102030405060708090a0b0c0d0e0f10","spanId":"1112131415161718"}],"stringTable":["foobar"],"timeNanos":"1234","durationNanos":"5678","periodType":{"typeStrindex":1,"unitStrindex":2},"period":"3","commentStrindices":[1,2],"defaultSampleTypeStrindex":4,"profileId":"0102030405060708090a0b0c0d0e0f10","attributes":[{"key":"hello","value":{"stringValue":"world"}},{"key":"foo","value":{"stringValue":"bar"}}],"droppedAttributesCount":1}],"schemaUrl":"schemaURL"}],"schemaUrl":"schemaURL"}]}`
+var profilesJSON = `{"resourceProfiles":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}},{"key":"service.name","value":{"stringValue":"testService"}}],"droppedAttributesCount":1},"scopeProfiles":[{"scope":{"name":"scope name","version":"scope version"},"profiles":[{"sampleType":[{"typeStrindex":1,"unitStrindex":2}],"sample":[{"locationsStartIndex":1,"locationsLength":10,"value":["3"],"attributeIndices":[1],"timestampsUnixNano":["12345"]}],"mappingTable":[{"memoryStart":"2","memoryLimit":"3","fileOffset":"4","filenameStrindex":5,"attributeIndices":[7,8],"hasFunctions":true,"hasFilenames":true,"hasLineNumbers":true,"hasInlineFrames":true}],"locationTable":[{"mappingIndex":3,"address":"4","line":[{"functionIndex":1,"line":"2","column":"3"}],"isFolded":true,"attributeIndices":[6,7]}],"locationIndices":[1],"functionTable":[{"nameStrindex":2,"systemNameStrindex":3,"filenameStrindex":4,"startLine":"5"}],"attributeTable":[{"key":"answer","value":{"intValue":"42"}}],"attributeUnits":[{"attributeKeyStrindex":1,"unitStrindex":5}],"linkTable":[{"traceId":"0102030405060708090a0b0c0d0e0f10","spanId":"1112131415161718"}],"stringTable":["foobar"],"timeNanos":"1234","durationNanos":"5678","periodType":{"typeStrindex":1,"unitStrindex":2},"period":"3","commentStrindices":[1,2],"defaultSampleTypeStrindex":4,"profileId":"0102030405060708090a0b0c0d0e0f10","attributeIndices":[1],"droppedAttributesCount":1}],"schemaUrl":"schemaURL"}],"schemaUrl":"schemaURL"}]}`
 
 func TestJSONUnmarshal(t *testing.T) {
 	decoder := &JSONUnmarshaler{}

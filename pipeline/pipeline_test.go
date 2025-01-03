@@ -42,7 +42,7 @@ func TestMarshalText(t *testing.T) {
 
 func TestUnmarshalText(t *testing.T) {
 	validSignal := globalsignal.MustNewSignal("valid")
-	var testCases = []struct {
+	testCases := []struct {
 		idStr       string
 		expectedErr bool
 		expectedID  ID

@@ -17,7 +17,7 @@ import (
 )
 
 func TestExtensionBuilder(t *testing.T) {
-	var testType = component.MustNewType("test")
+	testType := component.MustNewType("test")
 	defaultCfg := struct{}{}
 	testID := component.NewID(testType)
 	unknownID := component.MustNewID("unknown")

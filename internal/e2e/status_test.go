@@ -39,8 +39,6 @@ var nopType = component.MustNewType("nop")
 var wg = sync.WaitGroup{}
 
 func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
-	t.Skipf("Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector/issues/10927#issuecomment-2343679185")
-
 	eventsReceived := make(map[*componentstatus.InstanceID][]*componentstatus.Event)
 	exporterFactory := exportertest.NewNopFactory()
 	connectorFactory := connectortest.NewNopFactory()
@@ -135,27 +133,30 @@ func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 
 		t.Logf("checking errors for %v - %v - %v", pipelineIDs, instanceID.Kind().String(), instanceID.ComponentID().String())
 
+		var expectedEvents []componentstatus.Status
+		// The StatusOk is not guaranteed to be in the slice, set it according to the number of captured states
+		assert.True(t, len(events) == 4 || len(events) == 5)
+		if len(events) == 4 {
+			expectedEvents = []componentstatus.Status{
+				componentstatus.StatusStarting,
+				componentstatus.StatusRecoverableError,
+				componentstatus.StatusStopping,
+				componentstatus.StatusStopped,
+			}
+		} else {
+			expectedEvents = []componentstatus.Status{
+				componentstatus.StatusStarting,
+				componentstatus.StatusRecoverableError,
+				componentstatus.StatusOK,
+				componentstatus.StatusStopping,
+				componentstatus.StatusStopped,
+			}
+		}
+
 		eventStr := ""
 		for i, e := range events {
 			eventStr += fmt.Sprintf("%v,", e.Status())
-			if i == 0 {
-				assert.Equal(t, componentstatus.StatusStarting, e.Status())
-			}
-			if i == 1 {
-				assert.Equal(t, componentstatus.StatusRecoverableError, e.Status())
-			}
-			if i == 2 {
-				assert.Equal(t, componentstatus.StatusOK, e.Status())
-			}
-			if i == 3 {
-				assert.Equal(t, componentstatus.StatusStopping, e.Status())
-			}
-			if i == 4 {
-				assert.Equal(t, componentstatus.StatusStopped, e.Status())
-			}
-			if i >= 5 {
-				assert.Fail(t, "received too many events")
-			}
+			assert.Equal(t, expectedEvents[i], e.Status())
 		}
 		t.Logf("events received: %v", eventStr)
 	}
