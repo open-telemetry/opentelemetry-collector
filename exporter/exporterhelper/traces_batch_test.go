@@ -136,6 +136,14 @@ func TestMergeSplitTraces(t *testing.T) {
 	}
 }
 
+func TestMergeSplitTracesInputNotModifiedIfErrorReturned(t *testing.T) {
+	r1 := &tracesRequest{td: testdata.GenerateTraces(18)}
+	r2 := &logsRequest{ld: testdata.GenerateLogs(3)}
+	_, err := r1.MergeSplit(context.Background(), exporterbatcher.MaxSizeConfig{MaxSizeItems: 10}, r2)
+	assert.Error(t, err)
+	assert.Equal(t, 18, r1.ItemsCount())
+}
+
 func TestMergeSplitTracesInvalidInput(t *testing.T) {
 	r1 := &tracesRequest{td: testdata.GenerateTraces(2)}
 	r2 := &metricsRequest{md: testdata.GenerateMetrics(3)}

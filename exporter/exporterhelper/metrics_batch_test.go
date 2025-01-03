@@ -129,6 +129,14 @@ func TestMergeSplitMetrics(t *testing.T) {
 	}
 }
 
+func TestMergeSplitMetricsInputNotModifiedIfErrorReturned(t *testing.T) {
+	r1 := &metricsRequest{md: testdata.GenerateMetrics(18)} // 18 metrics, 36 data points
+	r2 := &logsRequest{ld: testdata.GenerateLogs(3)}
+	_, err := r1.MergeSplit(context.Background(), exporterbatcher.MaxSizeConfig{MaxSizeItems: 10}, r2)
+	assert.Error(t, err)
+	assert.Equal(t, 36, r1.ItemsCount())
+}
+
 func TestMergeSplitMetricsInvalidInput(t *testing.T) {
 	r1 := &tracesRequest{td: testdata.GenerateTraces(2)}
 	r2 := &metricsRequest{md: testdata.GenerateMetrics(3)}

@@ -24,18 +24,23 @@ func (req *tracesRequest) Merge(_ context.Context, r2 Request) (Request, error) 
 // MergeSplit splits and/or merges the provided traces request and the current request into one or more requests
 // conforming with the MaxSizeConfig.
 func (req *tracesRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSizeConfig, r2 Request) ([]Request, error) {
+	var req2 *tracesRequest = nil
+	if r2 != nil {
+		var ok bool
+		req2, ok = r2.(*tracesRequest)
+		if !ok {
+			return nil, errors.New("invalid input type")
+		}
+	}
+
 	var (
 		res          []Request
 		destReq      *tracesRequest
 		capacityLeft = cfg.MaxSizeItems
 	)
-	for _, req := range []Request{req, r2} {
-		if req == nil {
+	for _, srcReq := range []*tracesRequest{req, req2} {
+		if srcReq == nil {
 			continue
-		}
-		srcReq, ok := req.(*tracesRequest)
-		if !ok {
-			return nil, errors.New("invalid input type")
 		}
 		if srcReq.td.SpanCount() <= capacityLeft {
 			if destReq == nil {
