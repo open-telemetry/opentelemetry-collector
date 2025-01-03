@@ -252,6 +252,16 @@ func TestGenerateAndCompile(t *testing.T) {
 			},
 		},
 		{
+			name: "GCFlags Compilation",
+			cfgBuilder: func(t *testing.T) *Config {
+				cfg := newTestConfig(t)
+				cfg.Distribution.OutputPath = t.TempDir()
+				cfg.Replaces = append(cfg.Replaces, replaces...)
+				cfg.GCFlags = `all=-N -l`
+				return cfg
+			},
+		},
+		{
 			name: "Build Tags Compilation",
 			cfgBuilder: func(t *testing.T) *Config {
 				cfg := newTestConfig(t)

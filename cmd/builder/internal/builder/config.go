@@ -35,6 +35,9 @@ type Config struct {
 	SkipGetModules       bool   `mapstructure:"-"`
 	SkipStrictVersioning bool   `mapstructure:"-"`
 	LDFlags              string `mapstructure:"-"`
+	LDSet 				 bool   `mapstructure:"-"` // only used to override LDFlags
+	GCFlags              string `mapstructure:"-"`
+	GCSet				 bool   `mapstructure:"-"` // only used to override GCFlags
 	Verbose              bool   `mapstructure:"-"`
 
 	Distribution      Distribution `mapstructure:"dist"`
@@ -71,7 +74,7 @@ type Distribution struct {
 	OutputPath       string `mapstructure:"output_path"`
 	Version          string `mapstructure:"version"`
 	BuildTags        string `mapstructure:"build_tags"`
-	DebugCompilation bool   `mapstructure:"debug_compilation"`
+	DebugCompilation bool   `mapstructure:"debug_compilation"` // TODO depercate?
 }
 
 // Module represents a receiver, exporter, processor or extension for the distribution
