@@ -38,7 +38,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.116.0 // indirect
 	go.opentelemetry.io/collector/extension v0.116.0 // indirect
-	go.opentelemetry.io/collector/extension/experimental/storage v0.116.0 // indirect
+	go.opentelemetry.io/collector/extension/xextension v0.116.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.22.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.22.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.116.0 // indirect
@@ -93,8 +93,6 @@ replace go.opentelemetry.io/collector/config/configretry => ../../../config/conf
 
 replace go.opentelemetry.io/collector/pipeline/xpipeline => ../../../pipeline/xpipeline
 
-replace go.opentelemetry.io/collector/extension/experimental/storage => ../../../extension/experimental/storage
-
 replace go.opentelemetry.io/collector/pipeline => ../../../pipeline
 
 replace go.opentelemetry.io/collector/exporter/exportertest => ../../exportertest
@@ -108,3 +106,5 @@ replace go.opentelemetry.io/collector/scraper => ../../../scraper
 replace go.opentelemetry.io/collector/featuregate => ../../../featuregate
 
 replace go.opentelemetry.io/collector/scraper/scraperhelper => ../../../scraper/scraperhelper
+
+replace go.opentelemetry.io/collector/extension/xextension => ../../../extension/xextension

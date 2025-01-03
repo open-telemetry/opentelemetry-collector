@@ -1,14 +1,15 @@
-module go.opentelemetry.io/collector/extension/experimental/storage
+module go.opentelemetry.io/collector/extension/xextension
 
 go 1.22.0
 
-require go.opentelemetry.io/collector/extension/xextension v0.116.0
+require (
+	go.opentelemetry.io/collector/component v0.116.0
+	go.opentelemetry.io/collector/extension v0.116.0
+)
 
 require (
 	github.com/gogo/protobuf v1.3.2 // indirect
-	go.opentelemetry.io/collector/component v0.116.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.116.0 // indirect
-	go.opentelemetry.io/collector/extension v0.116.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.22.0 // indirect
 	go.opentelemetry.io/otel v1.32.0 // indirect
 	go.opentelemetry.io/otel/metric v1.32.0 // indirect
@@ -23,12 +24,10 @@ require (
 	google.golang.org/protobuf v1.36.1 // indirect
 )
 
-replace go.opentelemetry.io/collector/extension => ../../
+replace go.opentelemetry.io/collector/extension => ../
 
-replace go.opentelemetry.io/collector/extension/xextension => ../../xextension
+replace go.opentelemetry.io/collector/component => ../../component
 
-replace go.opentelemetry.io/collector/component => ../../../component
+replace go.opentelemetry.io/collector/pdata => ../../pdata
 
-replace go.opentelemetry.io/collector/pdata => ../../../pdata
-
-replace go.opentelemetry.io/collector/config/configtelemetry => ../../../config/configtelemetry
+replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry

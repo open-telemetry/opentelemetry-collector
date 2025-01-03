@@ -135,8 +135,6 @@ replace go.opentelemetry.io/collector/extension/zpagesextension => ../extension/
 
 replace go.opentelemetry.io/collector/extension => ../extension
 
-replace go.opentelemetry.io/collector/extension/experimental/storage => ../extension/experimental/storage
-
 replace go.opentelemetry.io/collector/exporter => ../exporter
 
 replace go.opentelemetry.io/collector/confmap => ../confmap
@@ -206,3 +204,5 @@ replace go.opentelemetry.io/collector/extension/auth/authtest => ../extension/au
 replace go.opentelemetry.io/collector/scraper => ../scraper
 
 replace go.opentelemetry.io/collector/scraper/scraperhelper => ../scraper/scraperhelper
+
+replace go.opentelemetry.io/collector/extension/xextension => ../extension/xextension

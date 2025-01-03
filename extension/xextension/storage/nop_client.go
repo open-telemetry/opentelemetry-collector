@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package storage // import "go.opentelemetry.io/collector/extension/experimental/storage"
+package storage // import "go.opentelemetry.io/collector/extension/xextension/storage"
 
 import "context"
 
@@ -35,6 +35,6 @@ func (c nopClient) Close(context.Context) error {
 }
 
 // Batch does nothing, and returns nil, nil
-func (c nopClient) Batch(context.Context, ...Operation) error {
+func (c nopClient) Batch(context.Context, ...*Operation) error {
 	return nil // no result, but no problem
 }
