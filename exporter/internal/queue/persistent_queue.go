@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/internal/experr"
-	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -249,7 +249,7 @@ func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
 		}
 
 		// Carry out a transaction where we both add the item and update the write index
-		ops := []storage.Operation{
+		ops := []*storage.Operation{
 			storage.SetOperation(writeIndexKey, itemIndexToBytes(newIndex)),
 			storage.SetOperation(itemKey, reqBuf),
 		}
@@ -350,7 +350,7 @@ func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (uint64, T, bool)
 	return index, request, true
 }
 
-// Should be called to remove the item of the given index from the queue once processing is finished.
+// OnProcessingFinished should be called to remove the item of the given index from the queue once processing is finished.
 func (pq *persistentQueue[T]) OnProcessingFinished(index uint64, consumeErr error) {
 	// Delete the item from the persistent storage after it was processed.
 	pq.mu.Lock()
@@ -408,8 +408,8 @@ func (pq *persistentQueue[T]) retrieveAndEnqueueNotDispatchedReqs(ctx context.Co
 
 	pq.logger.Info("Fetching items left for dispatch by consumers", zap.Int(zapNumberOfItems,
 		len(dispatchedItems)))
-	retrieveBatch := make([]storage.Operation, len(dispatchedItems))
-	cleanupBatch := make([]storage.Operation, len(dispatchedItems))
+	retrieveBatch := make([]*storage.Operation, len(dispatchedItems))
+	cleanupBatch := make([]*storage.Operation, len(dispatchedItems))
 	for i, it := range dispatchedItems {
 		key := getItemKey(it)
 		retrieveBatch[i] = storage.GetOperation(key)
