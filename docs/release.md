@@ -107,30 +107,32 @@ Before the release, make sure there are no open release blockers in [core](https
 
 The last step of the release process creates artifacts for the new version of the collector and publishes images to Dockerhub. The steps in this portion of the release are done in the [opentelemetry-collector-releases](https://github.com/open-telemetry/opentelemetry-collector-releases) repo.
 
-1. Update the `./distributions/**/manifest.yaml` files to include the new release version.
+1. As of https://github.com/open-telemetry/opentelemetry-collector-releases/pull/684, sub-steps 1-4 below are now automated. Manually run GitHub Action workflow "Update Version in Distributions and Prepare PR" which will update the minor version automatically (e.g. v0.116.0 -> v0.117.0) or manually provide a new version if releasing a bugfix or skipping a version. Select "create pr" option to commit the changes and allow GitHub bot to create a draft PR with changes from sub-steps 1-3 included. Alternatively, you can run the ['bump-versions.sh' script locally in the opentelemetry-collector-releases repo](https://github.com/open-telemetry/opentelemetry-collector-releases/blob/main/.github/workflows/scripts/bump-versions.sh) with optional arguments for next version number(s) and whether to commit changes and create PR with GitHub CLI.
 
-2. Update the builder version in `OTELCOL_BUILDER_VERSION` to the new release in the `Makefile`. While this might not be strictly necessary for every release, this is a good practice.
+   1. Update the `./distributions/**/manifest.yaml` files to include the new release version.
 
-3. Run `make chlog-update VERSION="${RELEASE_VERSION}"` with the version of the artifacts.
+   2. Update the builder version in `OTELCOL_BUILDER_VERSION` to the new release in the `Makefile`. While this might not be strictly necessary for every release, this is a good practice.
 
-4. Create a pull request with the change and ensure the build completes successfully. See [example](https://github.com/open-telemetry/opentelemetry-collector-releases/pull/71).
+   3. Run `make chlog-update VERSION="${RELEASE_VERSION}"` with the version of the artifacts.
+
+   4. Create a pull request with the change and ensure the build completes successfully. See [example](https://github.com/open-telemetry/opentelemetry-collector-releases/pull/71).
    -  🛑 **Do not move forward until this PR is merged.** 🛑
 
-5. Check out main and ensure it has the "Prepare release" commit in your local
+2. Check out main and ensure it has the "Prepare release" commit in your local
    copy by pulling in the latest from
    `open-telemetry/opentelemetry-collector-releases`. Assuming your upstream
    remote is named `upstream`, you can try running:
    - `git checkout main && git fetch upstream && git rebase upstream/main`
 
-6. Create a tag for the new release version by running:
+3. Create a tag for the new release version by running:
    
    ⚠️ If you set your remote using `https` you need to include `REMOTE=https://github.com/open-telemetry/opentelemetry-collector-contrib.git` in each command. ⚠️
    
    - `make push-tags TAG=v0.85.0`
 
-7. Wait for the new tag build to pass successfully.
+4. Wait for the new tag build to pass successfully.
 
-8. Ensure the "Release Core", "Release Contrib", "Release k8s", and "Builder - Release" actions pass, this will
+5. Ensure the "Release Core", "Release Contrib", "Release k8s", and "Builder - Release" actions pass, this will
 
     1. push new container images to `https://hub.docker.com/repository/docker/otel/opentelemetry-collector`, `https://hub.docker.com/repository/docker/otel/opentelemetry-collector-contrib` and `https://hub.docker.com/repository/docker/otel/opentelemetry-collector-k8s`
 
@@ -140,7 +142,7 @@ The last step of the release process creates artifacts for the new version of th
 
     4. build and push ocb Docker images to `https://hub.docker.com/r/otel/opentelemetry-collector-builder` and the GitHub Container Registry within the releases repository
 
-9. Update the release notes with the CHANGELOG.md updates.
+6. Update the release notes with the CHANGELOG.md updates.
 
 ## Post-release steps
 
