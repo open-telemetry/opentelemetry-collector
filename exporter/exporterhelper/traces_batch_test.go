@@ -18,15 +18,15 @@ import (
 func TestMergeTraces(t *testing.T) {
 	tr1 := &tracesRequest{td: testdata.GenerateTraces(2)}
 	tr2 := &tracesRequest{td: testdata.GenerateTraces(3)}
-	res, err := tr1.Merge(context.Background(), tr2)
+	res, err := tr1.MergeSplit(context.Background(), exporterbatcher.MaxSizeConfig{}, tr2)
 	require.NoError(t, err)
-	assert.Equal(t, 5, res.(*tracesRequest).td.SpanCount())
+	assert.Equal(t, 5, res[0].(*tracesRequest).td.SpanCount())
 }
 
 func TestMergeTracesInvalidInput(t *testing.T) {
 	tr1 := &logsRequest{ld: testdata.GenerateLogs(2)}
 	tr2 := &tracesRequest{td: testdata.GenerateTraces(3)}
-	_, err := tr1.Merge(context.Background(), tr2)
+	_, err := tr1.MergeSplit(context.Background(), exporterbatcher.MaxSizeConfig{}, tr2)
 	require.Error(t, err)
 }
 

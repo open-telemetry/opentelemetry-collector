@@ -18,15 +18,15 @@ import (
 func TestMergeMetrics(t *testing.T) {
 	mr1 := &metricsRequest{md: testdata.GenerateMetrics(2)}
 	mr2 := &metricsRequest{md: testdata.GenerateMetrics(3)}
-	res, err := mr1.Merge(context.Background(), mr2)
+	res, err := mr1.MergeSplit(context.Background(), exporterbatcher.MaxSizeConfig{}, mr2)
 	require.NoError(t, err)
-	assert.Equal(t, 5, res.(*metricsRequest).md.MetricCount())
+	assert.Equal(t, 5, res[0].(*metricsRequest).md.MetricCount())
 }
 
 func TestMergeMetricsInvalidInput(t *testing.T) {
 	mr1 := &tracesRequest{td: testdata.GenerateTraces(2)}
 	mr2 := &metricsRequest{md: testdata.GenerateMetrics(3)}
-	_, err := mr1.Merge(context.Background(), mr2)
+	_, err := mr1.MergeSplit(context.Background(), exporterbatcher.MaxSizeConfig{}, mr2)
 	require.Error(t, err)
 }
 

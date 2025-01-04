@@ -11,16 +11,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-// Merge merges the provided logs request into the current request and returns the merged request.
-func (req *logsRequest) Merge(_ context.Context, r2 Request) (Request, error) {
-	lr2, ok2 := r2.(*logsRequest)
-	if !ok2 {
-		return nil, errors.New("invalid input type")
-	}
-	lr2.ld.ResourceLogs().MoveAndAppendTo(req.ld.ResourceLogs())
-	return req, nil
-}
-
 // MergeSplit splits and/or merges the provided logs request and the current request into one or more requests
 // conforming with the MaxSizeConfig.
 func (req *logsRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSizeConfig, r2 Request) ([]Request, error) {
@@ -31,6 +21,11 @@ func (req *logsRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSiz
 		if !ok {
 			return nil, errors.New("invalid input type")
 		}
+	}
+
+	if cfg.MaxSizeItems == 0 {
+		req2.ld.ResourceLogs().MoveAndAppendTo(req.ld.ResourceLogs())
+		return []Request{req}, nil
 	}
 
 	var (
