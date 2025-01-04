@@ -138,11 +138,11 @@ func (host *Host) zPagesRequest(w http.ResponseWriter, _ *http.Request) {
 func handleFeaturezRequest(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	zpages.WriteHTMLPageHeader(w, zpages.HeaderData{Title: "Feature Gates"})
-	zpages.WriteHTMLFeaturesTable(w, getFeaturesTableData())
+	zpages.WriteHTMLFeaturesTable(w, GetFeaturesTableData())
 	zpages.WriteHTMLPageFooter(w)
 }
 
-func getFeaturesTableData() zpages.FeatureGateTableData {
+func GetFeaturesTableData() zpages.FeatureGateTableData {
 	data := zpages.FeatureGateTableData{}
 	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
 		data.Rows = append(data.Rows, zpages.FeatureGateTableRowData{

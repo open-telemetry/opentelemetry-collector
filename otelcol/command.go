@@ -4,12 +4,16 @@
 package otelcol // import "go.opentelemetry.io/collector/otelcol"
 
 import (
+	// Standard library
 	"errors"
 	"flag"
 
+	// Third party
 	"github.com/spf13/cobra"
 
+	// Project internal
 	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/service"
 )
 
 // NewCommand constructs a new cobra.Command using the given CollectorSettings.
@@ -36,6 +40,7 @@ func NewCommand(set CollectorSettings) *cobra.Command {
 			return col.Run(cmd.Context())
 		},
 	}
+	rootCmd.AddCommand(newFeaturesCommand())
 	rootCmd.AddCommand(newComponentsCommand(set))
 	rootCmd.AddCommand(newValidateSubCommand(set, flagSet))
 	rootCmd.Flags().AddGoFlagSet(flagSet)
@@ -62,4 +67,18 @@ func updateSettingsUsingFlags(set *CollectorSettings, flags *flag.FlagSet) error
 		return errors.New("at least one Provider must be supplied")
 	}
 	return nil
+}
+
+func newFeaturesCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "features [feature-id]",
+		Short: "Display feature gates information",
+		Long:  "Display information about available feature gates and their status",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) > 0 {
+				return service.DisplayFeature(args[0])
+			}
+			return service.DisplayFeatures()
+		},
+	}
 }
