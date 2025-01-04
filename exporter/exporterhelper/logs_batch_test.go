@@ -19,15 +19,15 @@ import (
 func TestMergeLogs(t *testing.T) {
 	lr1 := &logsRequest{ld: testdata.GenerateLogs(2)}
 	lr2 := &logsRequest{ld: testdata.GenerateLogs(3)}
-	res, err := lr1.Merge(context.Background(), lr2)
+	res, err := lr1.MergeSplit(context.Background(), exporterbatcher.MaxSizeConfig{}, lr2)
 	require.NoError(t, err)
-	assert.Equal(t, 5, res.(*logsRequest).ld.LogRecordCount())
+	require.Equal(t, 5, res[0].(*logsRequest).ld.LogRecordCount())
 }
 
 func TestMergeLogsInvalidInput(t *testing.T) {
 	lr1 := &tracesRequest{td: testdata.GenerateTraces(2)}
 	lr2 := &logsRequest{ld: testdata.GenerateLogs(3)}
-	_, err := lr1.Merge(context.Background(), lr2)
+	_, err := lr1.MergeSplit(context.Background(), exporterbatcher.MaxSizeConfig{}, lr2)
 	require.Error(t, err)
 }
 
