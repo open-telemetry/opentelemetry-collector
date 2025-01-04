@@ -104,7 +104,7 @@ func requestFromTraces(pusher consumer.ConsumeTracesFunc) RequestFromTracesFunc 
 	}
 }
 
-// NewTracesRequest creates a new traces exporter based on a custom TracesConverter and RequestSender.
+// NewTracesRequest creates a new traces exporter based on a custom TracesConverter and Sender.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func NewTracesRequest(
@@ -148,11 +148,11 @@ func NewTracesRequest(
 }
 
 type tracesWithObservability struct {
-	internal.BaseRequestSender
+	internal.BaseSender[Request]
 	obsrep *internal.ObsReport
 }
 
-func newTracesWithObservability(obsrep *internal.ObsReport) internal.RequestSender {
+func newTracesWithObservability(obsrep *internal.ObsReport) internal.Sender[Request] {
 	return &tracesWithObservability{obsrep: obsrep}
 }
 

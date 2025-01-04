@@ -33,8 +33,8 @@ var (
 	}()
 )
 
-func newNoopObsrepSender(*ObsReport) RequestSender {
-	return &BaseRequestSender{}
+func newNoopObsrepSender(*ObsReport) Sender[internal.Request] {
+	return &BaseSender[internal.Request]{}
 }
 
 func TestBaseExporter(t *testing.T) {
