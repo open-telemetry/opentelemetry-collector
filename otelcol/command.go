@@ -4,14 +4,11 @@
 package otelcol // import "go.opentelemetry.io/collector/otelcol"
 
 import (
-	// Standard library
 	"errors"
 	"flag"
 
-	// Third party
 	"github.com/spf13/cobra"
 
-	// Project internal
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/service"
 )
