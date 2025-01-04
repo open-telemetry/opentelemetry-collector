@@ -106,7 +106,7 @@ func requestFromProfiles(pusher xconsumer.ConsumeProfilesFunc) RequestFromProfil
 	}
 }
 
-// NewProfilesRequestExporter creates a new profiles exporter based on a custom ProfilesConverter and RequestSender.
+// NewProfilesRequestExporter creates a new profiles exporter based on a custom ProfilesConverter and Sender.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func NewProfilesRequestExporter(
@@ -146,11 +146,11 @@ func NewProfilesRequestExporter(
 }
 
 type profilesExporterWithObservability struct {
-	internal.BaseRequestSender
+	internal.BaseSender[exporterhelper.Request]
 	obsrep *internal.ObsReport
 }
 
-func newProfilesExporterWithObservability(obsrep *internal.ObsReport) internal.RequestSender {
+func newProfilesExporterWithObservability(obsrep *internal.ObsReport) internal.Sender[exporterhelper.Request] {
 	return &profilesExporterWithObservability{obsrep: obsrep}
 }
 

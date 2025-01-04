@@ -32,7 +32,7 @@ var usePullingBasedExporterQueueBatcher = featuregate.GlobalRegistry().MustRegis
 	featuregate.WithRegisterDescription("if set to true, turns on the pulling-based exporter queue bathcer"),
 )
 
-type ObsrepSenderFactory = func(obsrep *ObsReport) RequestSender
+type ObsrepSenderFactory = func(obsrep *ObsReport) Sender[internal.Request]
 
 // Option apply changes to BaseExporter.
 type Option func(*BaseExporter) error
@@ -53,10 +53,10 @@ type BaseExporter struct {
 	// Chain of senders that the exporter helper applies before passing the data to the actual exporter.
 	// The data is handled by each sender in the respective order starting from the queueSender.
 	// Most of the senders are optional, and initialized with a no-op path-through sender.
-	BatchSender   RequestSender
-	QueueSender   RequestSender
-	ObsrepSender  RequestSender
-	RetrySender   RequestSender
+	BatchSender   Sender[internal.Request]
+	QueueSender   Sender[internal.Request]
+	ObsrepSender  Sender[internal.Request]
+	RetrySender   Sender[internal.Request]
 	TimeoutSender *TimeoutSender // TimeoutSender is always initialized.
 
 	ConsumerOptions []consumer.Option
@@ -73,10 +73,10 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSe
 	}
 
 	be := &BaseExporter{
-		BatchSender:   &BaseRequestSender{},
-		QueueSender:   &BaseRequestSender{},
+		BatchSender:   &BaseSender[internal.Request]{},
+		QueueSender:   &BaseSender[internal.Request]{},
 		ObsrepSender:  osf(obsReport),
-		RetrySender:   &BaseRequestSender{},
+		RetrySender:   &BaseSender[internal.Request]{},
 		TimeoutSender: &TimeoutSender{cfg: NewDefaultTimeoutConfig()},
 
 		Set:    set,

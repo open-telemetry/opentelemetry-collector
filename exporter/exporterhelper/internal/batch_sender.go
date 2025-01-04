@@ -23,7 +23,7 @@ import (
 // - cfg.FlushTimeout is elapsed since the timestamp when the previous batch was sent out.
 // - concurrencyLimit is reached.
 type BatchSender struct {
-	BaseRequestSender
+	BaseSender[internal.Request]
 	cfg exporterbatcher.Config
 
 	// concurrencyLimit is the maximum number of goroutines that can be blocked by the batcher.
