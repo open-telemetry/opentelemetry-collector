@@ -24,18 +24,23 @@ func (req *logsRequest) Merge(_ context.Context, r2 Request) (Request, error) {
 // MergeSplit splits and/or merges the provided logs request and the current request into one or more requests
 // conforming with the MaxSizeConfig.
 func (req *logsRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSizeConfig, r2 Request) ([]Request, error) {
+	var req2 *logsRequest
+	if r2 != nil {
+		var ok bool
+		req2, ok = r2.(*logsRequest)
+		if !ok {
+			return nil, errors.New("invalid input type")
+		}
+	}
+
 	var (
 		res          []Request
 		destReq      *logsRequest
 		capacityLeft = cfg.MaxSizeItems
 	)
-	for _, req := range []Request{req, r2} {
-		if req == nil {
+	for _, srcReq := range []*logsRequest{req, req2} {
+		if srcReq == nil {
 			continue
-		}
-		srcReq, ok := req.(*logsRequest)
-		if !ok {
-			return nil, errors.New("invalid input type")
 		}
 		if srcReq.ld.LogRecordCount() <= capacityLeft {
 			if destReq == nil {
