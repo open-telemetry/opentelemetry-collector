@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package storage // import "go.opentelemetry.io/collector/extension/experimental/storage"
+package storage // import "go.opentelemetry.io/collector/extension/xextension/storage"
 
 import "context"
 

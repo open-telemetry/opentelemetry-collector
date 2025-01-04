@@ -49,10 +49,10 @@ replaces:
   - go.opentelemetry.io/collector/extension => ${WORKSPACE_DIR}/extension
   - go.opentelemetry.io/collector/extension/auth => ${WORKSPACE_DIR}/extension/auth
   - go.opentelemetry.io/collector/extension/auth/authtest => ${WORKSPACE_DIR}/extension/auth/authtest
-  - go.opentelemetry.io/collector/extension/experimental/storage => ${WORKSPACE_DIR}/extension/experimental/storage
   - go.opentelemetry.io/collector/extension/extensioncapabilities => ${WORKSPACE_DIR}/extension/extensioncapabilities
   - go.opentelemetry.io/collector/extension/extensiontest => ${WORKSPACE_DIR}/extension/extensiontest
   - go.opentelemetry.io/collector/extension/zpagesextension => ${WORKSPACE_DIR}/extension/zpagesextension
+  - go.opentelemetry.io/collector/extension/xextension => ${WORKSPACE_DIR}/extension/xextension
   - go.opentelemetry.io/collector/featuregate => ${WORKSPACE_DIR}/featuregate
   - go.opentelemetry.io/collector/internal/memorylimiter => ${WORKSPACE_DIR}/internal/memorylimiter
   - go.opentelemetry.io/collector/internal/fanoutconsumer => ${WORKSPACE_DIR}/internal/fanoutconsumer

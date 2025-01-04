@@ -13,8 +13,8 @@ require (
 	go.opentelemetry.io/collector/consumer/consumererror v0.116.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.116.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.116.0
-	go.opentelemetry.io/collector/extension/experimental/storage v0.116.0
 	go.opentelemetry.io/collector/extension/extensiontest v0.116.0
+	go.opentelemetry.io/collector/extension/xextension v0.116.0
 	go.opentelemetry.io/collector/featuregate v1.22.0
 	go.opentelemetry.io/collector/pdata v1.22.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.116.0
@@ -64,8 +64,6 @@ replace go.opentelemetry.io/collector/consumer => ../consumer
 
 replace go.opentelemetry.io/collector/extension => ../extension
 
-replace go.opentelemetry.io/collector/extension/experimental/storage => ../extension/experimental/storage
-
 replace go.opentelemetry.io/collector/pdata => ../pdata
 
 replace go.opentelemetry.io/collector/pdata/testdata => ../pdata/testdata
@@ -101,3 +99,5 @@ replace go.opentelemetry.io/collector/extension/extensiontest => ../extension/ex
 replace go.opentelemetry.io/collector/scraper => ../scraper
 
 replace go.opentelemetry.io/collector/featuregate => ../featuregate
+
+replace go.opentelemetry.io/collector/extension/xextension => ../extension/xextension
