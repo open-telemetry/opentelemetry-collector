@@ -28,7 +28,7 @@ func TestMergeLogsInvalidInput(t *testing.T) {
 	lr1 := &tracesRequest{td: testdata.GenerateTraces(2)}
 	lr2 := &logsRequest{ld: testdata.GenerateLogs(3)}
 	_, err := lr1.Merge(context.Background(), lr2)
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestMergeSplitLogs(t *testing.T) {
@@ -129,11 +129,19 @@ func TestMergeSplitLogs(t *testing.T) {
 	}
 }
 
+func TestMergeSplitLogsInputNotModifiedIfErrorReturned(t *testing.T) {
+	r1 := &logsRequest{ld: testdata.GenerateLogs(18)}
+	r2 := &tracesRequest{td: testdata.GenerateTraces(3)}
+	_, err := r1.MergeSplit(context.Background(), exporterbatcher.MaxSizeConfig{MaxSizeItems: 10}, r2)
+	require.Error(t, err)
+	assert.Equal(t, 18, r1.ItemsCount())
+}
+
 func TestMergeSplitLogsInvalidInput(t *testing.T) {
 	r1 := &tracesRequest{td: testdata.GenerateTraces(2)}
 	r2 := &logsRequest{ld: testdata.GenerateLogs(3)}
 	_, err := r1.MergeSplit(context.Background(), exporterbatcher.MaxSizeConfig{}, r2)
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestExtractLogs(t *testing.T) {
