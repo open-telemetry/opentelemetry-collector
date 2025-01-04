@@ -89,14 +89,15 @@ func (qb *DefaultBatcher) startReadingFlushingGoroutine() {
 						idxList: []uint64{idx},
 					}
 				} else {
-					mergedReq, mergeErr := qb.currentBatch.req.Merge(qb.currentBatch.ctx, req)
+					// TODO: consolidate implementation for the cases where MaxSizeConfig is specified and the case where it is not specified
+					mergedReq, mergeErr := qb.currentBatch.req.MergeSplit(qb.currentBatch.ctx, qb.batchCfg.MaxSizeConfig, req)
 					if mergeErr != nil {
 						qb.queue.OnProcessingFinished(idx, mergeErr)
 						qb.currentBatchMu.Unlock()
 						continue
 					}
 					qb.currentBatch = &batch{
-						req:     mergedReq,
+						req:     mergedReq[0],
 						ctx:     qb.currentBatch.ctx,
 						idxList: append(qb.currentBatch.idxList, idx),
 					}
