@@ -104,7 +104,7 @@ func requestFromMetrics(pusher consumer.ConsumeMetricsFunc) RequestFromMetricsFu
 	}
 }
 
-// NewMetricsRequest creates a new metrics exporter based on a custom MetricsConverter and RequestSender.
+// NewMetricsRequest creates a new metrics exporter based on a custom MetricsConverter and Sender.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func NewMetricsRequest(
@@ -148,11 +148,11 @@ func NewMetricsRequest(
 }
 
 type metricsSenderWithObservability struct {
-	internal.BaseRequestSender
+	internal.BaseSender[Request]
 	obsrep *internal.ObsReport
 }
 
-func newMetricsSenderWithObservability(obsrep *internal.ObsReport) internal.RequestSender {
+func newMetricsSenderWithObservability(obsrep *internal.ObsReport) internal.Sender[Request] {
 	return &metricsSenderWithObservability{obsrep: obsrep}
 }
 
