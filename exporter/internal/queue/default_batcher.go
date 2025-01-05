@@ -14,22 +14,22 @@ import (
 )
 
 // DefaultBatcher continuously reads from the queue and flushes asynchronously if size limit is met or on timeout.
-type DefaultBatcher struct {
-	BaseBatcher
+type DefaultBatcher[K internal.Request] struct {
+	BaseBatcher[K]
 	currentBatchMu sync.Mutex
-	currentBatch   *batch
+	currentBatch   *batch[K]
 	timer          *time.Timer
 	shutdownCh     chan bool
 }
 
-func (qb *DefaultBatcher) resetTimer() {
+func (qb *DefaultBatcher[K]) resetTimer() {
 	if qb.batchCfg.FlushTimeout != 0 {
 		qb.timer.Reset(qb.batchCfg.FlushTimeout)
 	}
 }
 
 // startReadingFlushingGoroutine starts a goroutine that reads and then flushes.
-func (qb *DefaultBatcher) startReadingFlushingGoroutine() {
+func (qb *DefaultBatcher[K]) startReadingFlushingGoroutine() {
 	qb.stopWG.Add(1)
 	go func() {
 		defer qb.stopWG.Done()
@@ -44,13 +44,13 @@ func (qb *DefaultBatcher) startReadingFlushingGoroutine() {
 			qb.currentBatchMu.Lock()
 
 			if qb.batchCfg.MaxSizeItems > 0 {
-				var reqList []internal.Request
+				var reqList []K
 				var mergeSplitErr error
-				if qb.currentBatch == nil || qb.currentBatch.req == nil {
+				if qb.currentBatch == nil {
 					qb.resetTimer()
-					reqList, mergeSplitErr = req.MergeSplit(ctx, qb.batchCfg.MaxSizeConfig, nil)
+					reqList, mergeSplitErr = qb.merger.MergeSplit(req, nil, qb.batchCfg.MaxSizeConfig)
 				} else {
-					reqList, mergeSplitErr = qb.currentBatch.req.MergeSplit(ctx, qb.batchCfg.MaxSizeConfig, req)
+					reqList, mergeSplitErr = qb.merger.MergeSplit(qb.currentBatch.req, req, qb.batchCfg.MaxSizeConfig)
 				}
 
 				if mergeSplitErr != nil || reqList == nil {
@@ -64,7 +64,7 @@ func (qb *DefaultBatcher) startReadingFlushingGoroutine() {
 					qb.currentBatch = nil
 					qb.currentBatchMu.Unlock()
 					for i := 0; i < len(reqList); i++ {
-						qb.flush(batch{
+						qb.flush(batch[K]{
 							req:     reqList[i],
 							ctx:     ctx,
 							idxList: []uint64{idx},
@@ -73,7 +73,7 @@ func (qb *DefaultBatcher) startReadingFlushingGoroutine() {
 					}
 					qb.resetTimer()
 				} else {
-					qb.currentBatch = &batch{
+					qb.currentBatch = &batch[K]{
 						req:     reqList[0],
 						ctx:     ctx,
 						idxList: []uint64{idx},
@@ -81,22 +81,22 @@ func (qb *DefaultBatcher) startReadingFlushingGoroutine() {
 					qb.currentBatchMu.Unlock()
 				}
 			} else {
-				if qb.currentBatch == nil || qb.currentBatch.req == nil {
+				if qb.currentBatch == nil {
 					qb.resetTimer()
-					qb.currentBatch = &batch{
+					qb.currentBatch = &batch[K]{
 						req:     req,
 						ctx:     ctx,
 						idxList: []uint64{idx},
 					}
 				} else {
 					// TODO: consolidate implementation for the cases where MaxSizeConfig is specified and the case where it is not specified
-					mergedReq, mergeErr := qb.currentBatch.req.MergeSplit(qb.currentBatch.ctx, qb.batchCfg.MaxSizeConfig, req)
+					mergedReq, mergeErr := qb.merger.MergeSplit(qb.currentBatch.req, req, qb.batchCfg.MaxSizeConfig)
 					if mergeErr != nil {
 						qb.queue.OnProcessingFinished(idx, mergeErr)
 						qb.currentBatchMu.Unlock()
 						continue
 					}
-					qb.currentBatch = &batch{
+					qb.currentBatch = &batch[K]{
 						req:     mergedReq[0],
 						ctx:     qb.currentBatch.ctx,
 						idxList: append(qb.currentBatch.idxList, idx),
@@ -120,7 +120,7 @@ func (qb *DefaultBatcher) startReadingFlushingGoroutine() {
 }
 
 // startTimeBasedFlushingGoroutine starts a goroutine that flushes on timeout.
-func (qb *DefaultBatcher) startTimeBasedFlushingGoroutine() {
+func (qb *DefaultBatcher[K]) startTimeBasedFlushingGoroutine() {
 	qb.stopWG.Add(1)
 	go func() {
 		defer qb.stopWG.Done()
@@ -136,7 +136,7 @@ func (qb *DefaultBatcher) startTimeBasedFlushingGoroutine() {
 }
 
 // Start starts the goroutine that reads from the queue and flushes asynchronously.
-func (qb *DefaultBatcher) Start(_ context.Context, _ component.Host) error {
+func (qb *DefaultBatcher[K]) Start(_ context.Context, _ component.Host) error {
 	// maxWorker being -1 means batcher is disabled. This is for testing queue sender metrics.
 	if qb.maxWorkers == -1 {
 		return nil
@@ -157,9 +157,9 @@ func (qb *DefaultBatcher) Start(_ context.Context, _ component.Host) error {
 }
 
 // flushCurrentBatchIfNecessary sends out the current request batch if it is not nil
-func (qb *DefaultBatcher) flushCurrentBatchIfNecessary() {
+func (qb *DefaultBatcher[K]) flushCurrentBatchIfNecessary() {
 	qb.currentBatchMu.Lock()
-	if qb.currentBatch == nil || qb.currentBatch.req == nil {
+	if qb.currentBatch == nil {
 		qb.currentBatchMu.Unlock()
 		return
 	}
@@ -173,7 +173,7 @@ func (qb *DefaultBatcher) flushCurrentBatchIfNecessary() {
 }
 
 // Shutdown ensures that queue and all Batcher are stopped.
-func (qb *DefaultBatcher) Shutdown(_ context.Context) error {
+func (qb *DefaultBatcher[K]) Shutdown(_ context.Context) error {
 	qb.flushCurrentBatchIfNecessary()
 	qb.stopWG.Wait()
 	return nil

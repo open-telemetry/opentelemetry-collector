@@ -11,12 +11,12 @@ import (
 
 // DisabledBatcher is a special-case of Batcher that has no size limit for sending. Any items read from the queue will
 // be sent out (asynchronously) immediately regardless of the size.
-type DisabledBatcher struct {
-	BaseBatcher
+type DisabledBatcher[K any] struct {
+	BaseBatcher[K]
 }
 
 // Start starts the goroutine that reads from the queue and flushes asynchronously.
-func (qb *DisabledBatcher) Start(_ context.Context, _ component.Host) error {
+func (qb *DisabledBatcher[K]) Start(_ context.Context, _ component.Host) error {
 	// maxWorker being -1 means batcher is disabled. This is for testing queue sender metrics.
 	if qb.maxWorkers == -1 {
 		return nil
@@ -33,7 +33,7 @@ func (qb *DisabledBatcher) Start(_ context.Context, _ component.Host) error {
 			if !ok {
 				return
 			}
-			qb.flush(batch{
+			qb.flush(batch[K]{
 				req:     req,
 				ctx:     context.Background(),
 				idxList: []uint64{idx},
@@ -44,7 +44,7 @@ func (qb *DisabledBatcher) Start(_ context.Context, _ component.Host) error {
 }
 
 // Shutdown ensures that queue and all Batcher are stopped.
-func (qb *DisabledBatcher) Shutdown(_ context.Context) error {
+func (qb *DisabledBatcher[K]) Shutdown(_ context.Context) error {
 	qb.stopWG.Wait()
 	return nil
 }
