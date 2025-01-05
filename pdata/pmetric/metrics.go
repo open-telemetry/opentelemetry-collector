@@ -60,6 +60,10 @@ func (ms Metrics) MetricCount() int {
 	return metricCount
 }
 
+func (ms Metrics) ByteSize() int {
+	return ms.getOrig().Size()
+}
+
 // DataPointCount calculates the total number of data points.
 func (ms Metrics) DataPointCount() (dataPointCount int) {
 	rms := ms.ResourceMetrics()

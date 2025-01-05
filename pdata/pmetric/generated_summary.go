@@ -45,6 +45,10 @@ func (ms Summary) MoveTo(dest Summary) {
 	*ms.orig = otlpmetrics.Summary{}
 }
 
+func (ms Summary) Size() int {
+	return ms.orig.Size()
+}
+
 // DataPoints returns the DataPoints associated with this Summary.
 func (ms Summary) DataPoints() SummaryDataPointSlice {
 	return newSummaryDataPointSlice(&ms.orig.DataPoints, ms.state)

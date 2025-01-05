@@ -45,6 +45,10 @@ func (ms Sum) MoveTo(dest Sum) {
 	*ms.orig = otlpmetrics.Sum{}
 }
 
+func (ms Sum) Size() int {
+	return ms.orig.Size()
+}
+
 // AggregationTemporality returns the aggregationtemporality associated with this Sum.
 func (ms Sum) AggregationTemporality() AggregationTemporality {
 	return AggregationTemporality(ms.orig.AggregationTemporality)

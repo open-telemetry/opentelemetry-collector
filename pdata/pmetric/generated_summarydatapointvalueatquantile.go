@@ -45,6 +45,10 @@ func (ms SummaryDataPointValueAtQuantile) MoveTo(dest SummaryDataPointValueAtQua
 	*ms.orig = otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
 }
 
+func (ms SummaryDataPointValueAtQuantile) Size() int {
+	return ms.orig.Size()
+}
+
 // Quantile returns the quantile associated with this SummaryDataPointValueAtQuantile.
 func (ms SummaryDataPointValueAtQuantile) Quantile() float64 {
 	return ms.orig.Quantile

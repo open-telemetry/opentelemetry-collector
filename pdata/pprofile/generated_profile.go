@@ -47,6 +47,10 @@ func (ms Profile) MoveTo(dest Profile) {
 	*ms.orig = otlpprofiles.Profile{}
 }
 
+func (ms Profile) Size() int {
+	return ms.orig.Size()
+}
+
 // SampleType returns the SampleType associated with this Profile.
 func (ms Profile) SampleType() ValueTypeSlice {
 	return newValueTypeSlice(&ms.orig.SampleType, ms.state)

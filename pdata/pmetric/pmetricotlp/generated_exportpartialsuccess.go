@@ -45,6 +45,10 @@ func (ms ExportPartialSuccess) MoveTo(dest ExportPartialSuccess) {
 	*ms.orig = otlpcollectormetrics.ExportMetricsPartialSuccess{}
 }
 
+func (ms ExportPartialSuccess) Size() int {
+	return ms.orig.Size()
+}
+
 // RejectedDataPoints returns the rejecteddatapoints associated with this ExportPartialSuccess.
 func (ms ExportPartialSuccess) RejectedDataPoints() int64 {
 	return ms.orig.RejectedDataPoints

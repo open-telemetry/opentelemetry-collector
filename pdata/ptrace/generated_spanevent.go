@@ -47,6 +47,10 @@ func (ms SpanEvent) MoveTo(dest SpanEvent) {
 	*ms.orig = otlptrace.Span_Event{}
 }
 
+func (ms SpanEvent) Size() int {
+	return ms.orig.Size()
+}
+
 // Timestamp returns the timestamp associated with this SpanEvent.
 func (ms SpanEvent) Timestamp() pcommon.Timestamp {
 	return pcommon.Timestamp(ms.orig.TimeUnixNano)

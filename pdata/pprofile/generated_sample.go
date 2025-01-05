@@ -46,6 +46,10 @@ func (ms Sample) MoveTo(dest Sample) {
 	*ms.orig = otlpprofiles.Sample{}
 }
 
+func (ms Sample) Size() int {
+	return ms.orig.Size()
+}
+
 // LocationsStartIndex returns the locationsstartindex associated with this Sample.
 func (ms Sample) LocationsStartIndex() int32 {
 	return ms.orig.LocationsStartIndex

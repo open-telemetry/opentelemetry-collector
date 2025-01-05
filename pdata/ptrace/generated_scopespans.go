@@ -46,6 +46,10 @@ func (ms ScopeSpans) MoveTo(dest ScopeSpans) {
 	*ms.orig = otlptrace.ScopeSpans{}
 }
 
+func (ms ScopeSpans) Size() int {
+	return ms.orig.Size()
+}
+
 // Scope returns the scope associated with this ScopeSpans.
 func (ms ScopeSpans) Scope() pcommon.InstrumentationScope {
 	return pcommon.InstrumentationScope(internal.NewInstrumentationScope(&ms.orig.Scope, ms.state))

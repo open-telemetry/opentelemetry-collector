@@ -155,6 +155,10 @@ func (req *dummyRequest) ItemsCount() int {
 	return 1
 }
 
+func (req *dummyRequest) ByteSize() int {
+	return 1
+}
+
 func (req *dummyRequest) MergeSplit(_ context.Context, _ exporterbatcher.MaxSizeConfig, _ exporterhelper.Request) (
 	[]exporterhelper.Request, error,
 ) {

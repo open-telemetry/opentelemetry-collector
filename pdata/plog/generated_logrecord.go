@@ -47,6 +47,10 @@ func (ms LogRecord) MoveTo(dest LogRecord) {
 	*ms.orig = otlplogs.LogRecord{}
 }
 
+func (ms LogRecord) Size() int {
+	return ms.orig.Size()
+}
+
 // ObservedTimestamp returns the observedtimestamp associated with this LogRecord.
 func (ms LogRecord) ObservedTimestamp() pcommon.Timestamp {
 	return pcommon.Timestamp(ms.orig.ObservedTimeUnixNano)

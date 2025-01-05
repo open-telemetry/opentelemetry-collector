@@ -46,6 +46,10 @@ func (ms Status) MoveTo(dest Status) {
 	*ms.orig = otlptrace.Status{}
 }
 
+func (ms Status) Size() int {
+	return ms.orig.Size()
+}
+
 // Code returns the code associated with this Status.
 func (ms Status) Code() StatusCode {
 	return StatusCode(ms.orig.Code)

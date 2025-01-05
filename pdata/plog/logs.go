@@ -21,6 +21,10 @@ func (ms Logs) getOrig() *otlpcollectorlog.ExportLogsServiceRequest {
 	return internal.GetOrigLogs(internal.Logs(ms))
 }
 
+func (ms Logs) GetOrig() *otlpcollectorlog.ExportLogsServiceRequest {
+	return ms.getOrig()
+}
+
 func (ms Logs) getState() *internal.State {
 	return internal.GetLogsState(internal.Logs(ms))
 }
@@ -53,6 +57,10 @@ func (ms Logs) LogRecordCount() int {
 		}
 	}
 	return logCount
+}
+
+func (ms Logs) ByteSize() int {
+	return ms.getOrig().Size()
 }
 
 // ResourceLogs returns the ResourceLogsSlice associated with this Logs.

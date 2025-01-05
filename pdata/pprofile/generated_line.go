@@ -45,6 +45,10 @@ func (ms Line) MoveTo(dest Line) {
 	*ms.orig = otlpprofiles.Line{}
 }
 
+func (ms Line) Size() int {
+	return ms.orig.Size()
+}
+
 // FunctionIndex returns the functionindex associated with this Line.
 func (ms Line) FunctionIndex() int32 {
 	return ms.orig.FunctionIndex

@@ -56,6 +56,10 @@ func (r *fakeRequest) ItemsCount() int {
 	return r.items
 }
 
+func (r *fakeRequest) ByteSize() int {
+	return r.items
+}
+
 func (r *fakeRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSizeConfig, r2 internal.Request) ([]internal.Request, error) {
 	if r.mergeErr != nil {
 		return nil, r.mergeErr

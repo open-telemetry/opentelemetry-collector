@@ -54,6 +54,10 @@ func (ms Traces) SpanCount() int {
 	return spanCount
 }
 
+func (ms Traces) ByteSize() int {
+	return ms.getOrig().Size()
+}
+
 // ResourceSpans returns the ResourceSpansSlice associated with this Metrics.
 func (ms Traces) ResourceSpans() ResourceSpansSlice {
 	return newResourceSpansSlice(&ms.getOrig().ResourceSpans, internal.GetTracesState(internal.Traces(ms)))

@@ -45,6 +45,10 @@ func (ms Function) MoveTo(dest Function) {
 	*ms.orig = otlpprofiles.Function{}
 }
 
+func (ms Function) Size() int {
+	return ms.orig.Size()
+}
+
 // NameStrindex returns the namestrindex associated with this Function.
 func (ms Function) NameStrindex() int32 {
 	return ms.orig.NameStrindex

@@ -48,6 +48,10 @@ func (ms Span) MoveTo(dest Span) {
 	*ms.orig = otlptrace.Span{}
 }
 
+func (ms Span) Size() int {
+	return ms.orig.Size()
+}
+
 // TraceID returns the traceid associated with this Span.
 func (ms Span) TraceID() pcommon.TraceID {
 	return pcommon.TraceID(ms.orig.TraceId)

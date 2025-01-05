@@ -46,6 +46,10 @@ func (ms Mapping) MoveTo(dest Mapping) {
 	*ms.orig = otlpprofiles.Mapping{}
 }
 
+func (ms Mapping) Size() int {
+	return ms.orig.Size()
+}
+
 // MemoryStart returns the memorystart associated with this Mapping.
 func (ms Mapping) MemoryStart() uint64 {
 	return ms.orig.MemoryStart

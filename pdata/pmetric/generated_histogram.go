@@ -45,6 +45,10 @@ func (ms Histogram) MoveTo(dest Histogram) {
 	*ms.orig = otlpmetrics.Histogram{}
 }
 
+func (ms Histogram) Size() int {
+	return ms.orig.Size()
+}
+
 // AggregationTemporality returns the aggregationtemporality associated with this Histogram.
 func (ms Histogram) AggregationTemporality() AggregationTemporality {
 	return AggregationTemporality(ms.orig.AggregationTemporality)

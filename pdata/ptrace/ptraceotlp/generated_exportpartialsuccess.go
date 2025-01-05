@@ -45,6 +45,10 @@ func (ms ExportPartialSuccess) MoveTo(dest ExportPartialSuccess) {
 	*ms.orig = otlpcollectortrace.ExportTracePartialSuccess{}
 }
 
+func (ms ExportPartialSuccess) Size() int {
+	return ms.orig.Size()
+}
+
 // RejectedSpans returns the rejectedspans associated with this ExportPartialSuccess.
 func (ms ExportPartialSuccess) RejectedSpans() int64 {
 	return ms.orig.RejectedSpans

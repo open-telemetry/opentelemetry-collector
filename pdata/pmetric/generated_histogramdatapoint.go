@@ -46,6 +46,10 @@ func (ms HistogramDataPoint) MoveTo(dest HistogramDataPoint) {
 	*ms.orig = otlpmetrics.HistogramDataPoint{}
 }
 
+func (ms HistogramDataPoint) Size() int {
+	return ms.orig.Size()
+}
+
 // Attributes returns the Attributes associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) Attributes() pcommon.Map {
 	return pcommon.Map(internal.NewMap(&ms.orig.Attributes, ms.state))

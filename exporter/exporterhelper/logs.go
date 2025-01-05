@@ -66,6 +66,10 @@ func (req *logsRequest) ItemsCount() int {
 	return req.ld.LogRecordCount()
 }
 
+func (req *logsRequest) ByteSize() int {
+	return req.ld.ByteSize()
+}
+
 type logsExporter struct {
 	*internal.BaseExporter
 	consumer.Logs

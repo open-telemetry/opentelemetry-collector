@@ -45,6 +45,10 @@ func (ms ValueType) MoveTo(dest ValueType) {
 	*ms.orig = otlpprofiles.ValueType{}
 }
 
+func (ms ValueType) Size() int {
+	return ms.orig.Size()
+}
+
 // TypeStrindex returns the typestrindex associated with this ValueType.
 func (ms ValueType) TypeStrindex() int32 {
 	return ms.orig.TypeStrindex

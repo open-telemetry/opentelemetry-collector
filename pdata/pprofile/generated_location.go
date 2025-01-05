@@ -46,6 +46,10 @@ func (ms Location) MoveTo(dest Location) {
 	*ms.orig = otlpprofiles.Location{}
 }
 
+func (ms Location) Size() int {
+	return ms.orig.Size()
+}
+
 // MappingIndex returns the mappingindex associated with this Location.
 func (ms Location) MappingIndex() int32 {
 	return ms.orig.GetMappingIndex()

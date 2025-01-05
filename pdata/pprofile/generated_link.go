@@ -47,6 +47,10 @@ func (ms Link) MoveTo(dest Link) {
 	*ms.orig = otlpprofiles.Link{}
 }
 
+func (ms Link) Size() int {
+	return ms.orig.Size()
+}
+
 // TraceID returns the traceid associated with this Link.
 func (ms Link) TraceID() pcommon.TraceID {
 	return pcommon.TraceID(ms.orig.TraceId)

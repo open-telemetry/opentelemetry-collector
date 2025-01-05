@@ -45,6 +45,10 @@ func (ms AttributeUnit) MoveTo(dest AttributeUnit) {
 	*ms.orig = otlpprofiles.AttributeUnit{}
 }
 
+func (ms AttributeUnit) Size() int {
+	return ms.orig.Size()
+}
+
 // AttributeKeyStrindex returns the attributekeystrindex associated with this AttributeUnit.
 func (ms AttributeUnit) AttributeKeyStrindex() int32 {
 	return ms.orig.AttributeKeyStrindex

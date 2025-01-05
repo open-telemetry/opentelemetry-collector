@@ -66,6 +66,10 @@ func (req *tracesRequest) ItemsCount() int {
 	return req.td.SpanCount()
 }
 
+func (req *tracesRequest) ByteSize() int {
+	return req.td.ByteSize()
+}
+
 type tracesExporter struct {
 	*internal.BaseExporter
 	consumer.Traces

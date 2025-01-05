@@ -46,6 +46,10 @@ func (ms Attribute) MoveTo(dest Attribute) {
 	*ms.orig = v1.KeyValue{}
 }
 
+func (ms Attribute) Size() int {
+	return ms.orig.Size()
+}
+
 // Key returns the key associated with this Attribute.
 func (ms Attribute) Key() string {
 	return ms.orig.Key

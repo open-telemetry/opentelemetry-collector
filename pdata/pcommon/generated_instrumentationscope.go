@@ -42,6 +42,10 @@ func (ms InstrumentationScope) MoveTo(dest InstrumentationScope) {
 	*ms.getOrig() = otlpcommon.InstrumentationScope{}
 }
 
+func (ms InstrumentationScope) Size() int {
+	return ms.getOrig().Size()
+}
+
 func (ms InstrumentationScope) getOrig() *otlpcommon.InstrumentationScope {
 	return internal.GetOrigInstrumentationScope(internal.InstrumentationScope(ms))
 }

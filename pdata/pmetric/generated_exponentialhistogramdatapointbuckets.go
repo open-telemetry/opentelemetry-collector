@@ -46,6 +46,10 @@ func (ms ExponentialHistogramDataPointBuckets) MoveTo(dest ExponentialHistogramD
 	*ms.orig = otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
 }
 
+func (ms ExponentialHistogramDataPointBuckets) Size() int {
+	return ms.orig.Size()
+}
+
 // Offset returns the offset associated with this ExponentialHistogramDataPointBuckets.
 func (ms ExponentialHistogramDataPointBuckets) Offset() int32 {
 	return ms.orig.Offset

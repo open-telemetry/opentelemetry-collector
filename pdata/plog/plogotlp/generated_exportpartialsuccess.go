@@ -45,6 +45,10 @@ func (ms ExportPartialSuccess) MoveTo(dest ExportPartialSuccess) {
 	*ms.orig = otlpcollectorlog.ExportLogsPartialSuccess{}
 }
 
+func (ms ExportPartialSuccess) Size() int {
+	return ms.orig.Size()
+}
+
 // RejectedLogRecords returns the rejectedlogrecords associated with this ExportPartialSuccess.
 func (ms ExportPartialSuccess) RejectedLogRecords() int64 {
 	return ms.orig.RejectedLogRecords

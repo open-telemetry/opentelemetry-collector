@@ -46,6 +46,10 @@ func (ms ResourceLogs) MoveTo(dest ResourceLogs) {
 	*ms.orig = otlplogs.ResourceLogs{}
 }
 
+func (ms ResourceLogs) Size() int {
+	return ms.orig.Size()
+}
+
 // Resource returns the resource associated with this ResourceLogs.
 func (ms ResourceLogs) Resource() pcommon.Resource {
 	return pcommon.Resource(internal.NewResource(&ms.orig.Resource, ms.state))

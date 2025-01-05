@@ -46,6 +46,10 @@ func (ms SummaryDataPoint) MoveTo(dest SummaryDataPoint) {
 	*ms.orig = otlpmetrics.SummaryDataPoint{}
 }
 
+func (ms SummaryDataPoint) Size() int {
+	return ms.orig.Size()
+}
+
 // Attributes returns the Attributes associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) Attributes() pcommon.Map {
 	return pcommon.Map(internal.NewMap(&ms.orig.Attributes, ms.state))

@@ -66,6 +66,10 @@ func (req *metricsRequest) ItemsCount() int {
 	return req.md.DataPointCount()
 }
 
+func (req *metricsRequest) ByteSize() int {
+	return req.md.ByteSize()
+}
+
 type metricsExporter struct {
 	*internal.BaseExporter
 	consumer.Metrics

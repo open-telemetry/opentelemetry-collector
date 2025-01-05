@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/internal/storagetest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -47,6 +48,29 @@ func uint64Unmarshaler(bytes []byte) (uint64, error) {
 		return 0, errInvalidValue
 	}
 	return binary.LittleEndian.Uint64(bytes), nil
+}
+
+type tracesRequest struct {
+	traces ptrace.Traces
+}
+
+func (tr tracesRequest) ItemsCount() int {
+	return tr.traces.SpanCount()
+}
+
+func (tr tracesRequest) ByteSize() int {
+	return tr.traces.SpanCount()
+}
+
+func marshalTracesRequest(tr tracesRequest) ([]byte, error) {
+	marshaler := &ptrace.ProtoMarshaler{}
+	return marshaler.MarshalTraces(tr.traces)
+}
+
+func unmarshalTracesRequest(bytes []byte) (tracesRequest, error) {
+	unmarshaler := &ptrace.ProtoUnmarshaler{}
+	traces, err := unmarshaler.UnmarshalTraces(bytes)
+	return tracesRequest{traces: traces}, err
 }
 
 type mockHost struct {

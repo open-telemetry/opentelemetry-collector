@@ -42,6 +42,10 @@ func (ms Resource) MoveTo(dest Resource) {
 	*ms.getOrig() = otlpresource.Resource{}
 }
 
+func (ms Resource) Size() int {
+	return ms.getOrig().Size()
+}
+
 func (ms Resource) getOrig() *otlpresource.Resource {
 	return internal.GetOrigResource(internal.Resource(ms))
 }

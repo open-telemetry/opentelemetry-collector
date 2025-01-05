@@ -54,6 +54,10 @@ func (ms {{ .structName }}) MoveTo(dest {{ .structName }}) {
 	*ms.{{ .origAccessor }} = {{ .originName }}{}
 }
 
+func(ms {{ .structName }}) Size() int {
+	return ms.{{ .origAccessor }}.Size()
+}
+
 {{ if .isCommon -}}
 func (ms {{ .structName }}) getOrig() *{{ .originName }} {
 	return internal.GetOrig{{ .structName }}(internal.{{ .structName }}(ms))

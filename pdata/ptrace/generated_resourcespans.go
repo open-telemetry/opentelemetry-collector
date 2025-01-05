@@ -46,6 +46,10 @@ func (ms ResourceSpans) MoveTo(dest ResourceSpans) {
 	*ms.orig = otlptrace.ResourceSpans{}
 }
 
+func (ms ResourceSpans) Size() int {
+	return ms.orig.Size()
+}
+
 // Resource returns the resource associated with this ResourceSpans.
 func (ms ResourceSpans) Resource() pcommon.Resource {
 	return pcommon.Resource(internal.NewResource(&ms.orig.Resource, ms.state))

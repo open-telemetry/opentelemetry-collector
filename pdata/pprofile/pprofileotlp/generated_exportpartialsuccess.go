@@ -45,6 +45,10 @@ func (ms ExportPartialSuccess) MoveTo(dest ExportPartialSuccess) {
 	*ms.orig = otlpcollectorprofile.ExportProfilesPartialSuccess{}
 }
 
+func (ms ExportPartialSuccess) Size() int {
+	return ms.orig.Size()
+}
+
 // RejectedProfiles returns the rejectedprofiles associated with this ExportPartialSuccess.
 func (ms ExportPartialSuccess) RejectedProfiles() int64 {
 	return ms.orig.RejectedProfiles

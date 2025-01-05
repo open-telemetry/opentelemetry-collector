@@ -47,6 +47,10 @@ func (ms Metric) MoveTo(dest Metric) {
 	*ms.orig = otlpmetrics.Metric{}
 }
 
+func (ms Metric) Size() int {
+	return ms.orig.Size()
+}
+
 // Name returns the name associated with this Metric.
 func (ms Metric) Name() string {
 	return ms.orig.Name
