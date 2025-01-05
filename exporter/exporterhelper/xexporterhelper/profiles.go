@@ -69,6 +69,10 @@ func (req *profilesRequest) ItemsCount() int {
 	return req.pd.SampleCount()
 }
 
+func (req *profilesRequest) ByteSize() int {
+	return req.pd.SampleCount()
+}
+
 type profileExporter struct {
 	*internal.BaseExporter
 	xconsumer.Profiles
