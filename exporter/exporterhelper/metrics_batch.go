@@ -37,13 +37,15 @@ func (req *metricsRequest) MergeSplit(_ context.Context, cfg exporterbatcher.Max
 		if srcReq == nil {
 			continue
 		}
-		if srcReq.md.DataPointCount() <= capacityLeft {
+
+		srcCount := srcReq.md.DataPointCount()
+		if srcCount <= capacityLeft {
 			if destReq == nil {
 				destReq = srcReq
 			} else {
 				srcReq.md.ResourceMetrics().MoveAndAppendTo(destReq.md.ResourceMetrics())
 			}
-			capacityLeft -= destReq.md.DataPointCount()
+			capacityLeft -= srcCount
 			continue
 		}
 

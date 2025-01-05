@@ -37,13 +37,15 @@ func (req *tracesRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxS
 		if srcReq == nil {
 			continue
 		}
-		if srcReq.td.SpanCount() <= capacityLeft {
+
+		srcCount := srcReq.td.SpanCount()
+		if srcCount <= capacityLeft {
 			if destReq == nil {
 				destReq = srcReq
 			} else {
 				srcReq.td.ResourceSpans().MoveAndAppendTo(destReq.td.ResourceSpans())
 			}
-			capacityLeft -= destReq.td.SpanCount()
+			capacityLeft -= srcCount
 			continue
 		}
 
