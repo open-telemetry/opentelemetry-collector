@@ -77,10 +77,10 @@ replaces:
   - go.opentelemetry.io/collector/extension => ../../extension
   - go.opentelemetry.io/collector/extension/auth => ../../extension/auth
   - go.opentelemetry.io/collector/extension/auth/authtest => ../../extension/auth/authtest
-  - go.opentelemetry.io/collector/extension/experimental/storage => ../../extension/experimental/storage
   - go.opentelemetry.io/collector/extension/extensioncapabilities => ../../extension/extensioncapabilities
   - go.opentelemetry.io/collector/extension/extensiontest => ../../extension/extensiontest
   - go.opentelemetry.io/collector/extension/memorylimiterextension => ../../extension/memorylimiterextension
+  - go.opentelemetry.io/collector/extension/xextension => ../../extension/xextension
   - go.opentelemetry.io/collector/extension/zpagesextension => ../../extension/zpagesextension
   - go.opentelemetry.io/collector/featuregate => ../../featuregate
   - go.opentelemetry.io/collector/internal/memorylimiter => ../../internal/memorylimiter
@@ -103,5 +103,6 @@ replaces:
   - go.opentelemetry.io/collector/receiver/receivertest => ../../receiver/receivertest
   - go.opentelemetry.io/collector/receiver/xreceiver => ../../receiver/xreceiver
   - go.opentelemetry.io/collector/scraper => ../../scraper
+  - go.opentelemetry.io/collector/scraper/scraperhelper => ../../scraper/scraperhelper
   - go.opentelemetry.io/collector/semconv => ../../semconv
   - go.opentelemetry.io/collector/service => ../../service

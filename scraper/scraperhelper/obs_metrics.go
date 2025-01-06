@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package scraperhelper // import "go.opentelemetry.io/collector/receiver/scraperhelper"
+package scraperhelper // import "go.opentelemetry.io/collector/scraper/scraperhelper"
 
 import (
 	"context"
@@ -15,10 +15,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pipeline"
-	"go.opentelemetry.io/collector/receiver/internal"
-	"go.opentelemetry.io/collector/receiver/scraperhelper/internal/metadata"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/metadata"
 )
 
 const (
@@ -30,6 +29,12 @@ const (
 	// erroredMetricPointsKey used to identify metric points errored (i.e.
 	// unable to be scraped) by the Collector.
 	erroredMetricPointsKey = "errored_metric_points"
+
+	spanNameSep = "/"
+	// receiverKey used to identify receivers in metrics and traces.
+	receiverKey = "receiver"
+	// FormatKey used to identify the format of the data received.
+	formatKey = "format"
 )
 
 func newObsMetrics(delegate scraper.ScrapeMetricsFunc, receiverID component.ID, scraperID component.ID, telSettings component.TelemetrySettings) (scraper.ScrapeMetricsFunc, error) {
@@ -39,9 +44,9 @@ func newObsMetrics(delegate scraper.ScrapeMetricsFunc, receiverID component.ID, 
 	}
 
 	tracer := metadata.Tracer(telSettings)
-	spanName := scraperKey + internal.SpanNameSep + scraperID.String() + internal.SpanNameSep + "ScrapeMetrics"
+	spanName := scraperKey + spanNameSep + scraperID.String() + spanNameSep + "ScrapeMetrics"
 	otelAttrs := metric.WithAttributeSet(attribute.NewSet(
-		attribute.String(internal.ReceiverKey, receiverID.String()),
+		attribute.String(receiverKey, receiverID.String()),
 		attribute.String(scraperKey, scraperID.String()),
 	))
 
@@ -69,7 +74,7 @@ func newObsMetrics(delegate scraper.ScrapeMetricsFunc, receiverID component.ID, 
 		// end span according to errors
 		if span.IsRecording() {
 			span.SetAttributes(
-				attribute.String(internal.FormatKey, pipeline.SignalMetrics.String()),
+				attribute.String(formatKey, pipeline.SignalMetrics.String()),
 				attribute.Int64(scrapedMetricPointsKey, int64(numScrapedMetrics)),
 				attribute.Int64(erroredMetricPointsKey, int64(numErroredMetrics)),
 			)
