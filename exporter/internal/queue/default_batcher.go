@@ -64,7 +64,7 @@ func (qb *DefaultBatcher) startReadingFlushingGoroutine() {
 					qb.currentBatch = nil
 					qb.currentBatchMu.Unlock()
 					for i := 0; i < len(reqList); i++ {
-						qb.flushAsync(batch{
+						qb.flush(batch{
 							req:     reqList[i],
 							ctx:     ctx,
 							idxList: []uint64{idx},
@@ -108,8 +108,8 @@ func (qb *DefaultBatcher) startReadingFlushingGoroutine() {
 					qb.currentBatch = nil
 					qb.currentBatchMu.Unlock()
 
-					// flushAsync() blocks until successfully started a goroutine for flushing.
-					qb.flushAsync(batchToFlush)
+					// flush() blocks until successfully started a goroutine for flushing.
+					qb.flush(batchToFlush)
 					qb.resetTimer()
 				} else {
 					qb.currentBatchMu.Unlock()
@@ -142,7 +142,6 @@ func (qb *DefaultBatcher) Start(_ context.Context, _ component.Host) error {
 		return nil
 	}
 
-	qb.startWorkerPool()
 	qb.shutdownCh = make(chan bool, 1)
 
 	if qb.batchCfg.FlushTimeout == 0 {
@@ -168,8 +167,8 @@ func (qb *DefaultBatcher) flushCurrentBatchIfNecessary() {
 	qb.currentBatch = nil
 	qb.currentBatchMu.Unlock()
 
-	// flushAsync() blocks until successfully started a goroutine for flushing.
-	qb.flushAsync(batchToFlush)
+	// flush() blocks until successfully started a goroutine for flushing.
+	qb.flush(batchToFlush)
 	qb.resetTimer()
 }
 
