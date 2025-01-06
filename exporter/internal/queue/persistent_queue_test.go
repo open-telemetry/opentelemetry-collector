@@ -20,8 +20,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/internal/experr"
-	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/extension/extensiontest"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pipeline"
@@ -105,7 +105,7 @@ func (m *fakeBoundedStorageClient) Close(context.Context) error {
 	return nil
 }
 
-func (m *fakeBoundedStorageClient) Batch(_ context.Context, ops ...storage.Operation) error {
+func (m *fakeBoundedStorageClient) Batch(_ context.Context, ops ...*storage.Operation) error {
 	m.mux.Lock()
 	defer m.mux.Unlock()
 
@@ -148,7 +148,7 @@ func (m *fakeBoundedStorageClient) GetSizeInBytes() int {
 	return m.sizeInBytes
 }
 
-func (m *fakeBoundedStorageClient) getTotalSizeChange(ops []storage.Operation) (totalAdded int, totalRemoved int) {
+func (m *fakeBoundedStorageClient) getTotalSizeChange(ops []*storage.Operation) (totalAdded int, totalRemoved int) {
 	totalAdded, totalRemoved = 0, 0
 	for _, op := range ops {
 		switch op.Type {
@@ -206,7 +206,7 @@ func (m *fakeStorageClientWithErrors) Close(context.Context) error {
 	return nil
 }
 
-func (m *fakeStorageClientWithErrors) Batch(context.Context, ...storage.Operation) error {
+func (m *fakeStorageClientWithErrors) Batch(context.Context, ...*storage.Operation) error {
 	m.mux.Lock()
 	defer m.mux.Unlock()
 

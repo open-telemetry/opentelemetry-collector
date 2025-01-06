@@ -168,8 +168,6 @@ replace go.opentelemetry.io/collector/config/configretry => ../config/configretr
 
 replace go.opentelemetry.io/collector/extension/auth => ../extension/auth
 
-replace go.opentelemetry.io/collector/extension/experimental/storage => ../extension/experimental/storage
-
 replace go.opentelemetry.io/collector/extension/extensioncapabilities => ../extension/extensioncapabilities
 
 replace go.opentelemetry.io/collector/config/configopaque => ../config/configopaque
@@ -215,3 +213,5 @@ replace go.opentelemetry.io/collector/extension/auth/authtest => ../extension/au
 replace go.opentelemetry.io/collector/scraper => ../scraper
 
 replace go.opentelemetry.io/collector/scraper/scraperhelper => ../scraper/scraperhelper
+
+replace go.opentelemetry.io/collector/extension/xextension => ../extension/xextension
