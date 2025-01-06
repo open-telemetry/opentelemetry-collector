@@ -60,7 +60,7 @@ require (
 	go.opentelemetry.io/collector/consumer/xconsumer v0.116.0 // indirect
 	go.opentelemetry.io/collector/extension v0.116.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.116.0 // indirect
-	go.opentelemetry.io/collector/extension/experimental/storage v0.116.0 // indirect
+	go.opentelemetry.io/collector/extension/xextension v0.116.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.22.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.116.0 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.116.0 // indirect
@@ -103,8 +103,6 @@ replace go.opentelemetry.io/collector/exporter => ../
 replace go.opentelemetry.io/collector/extension => ../../extension
 
 replace go.opentelemetry.io/collector/extension/auth => ../../extension/auth
-
-replace go.opentelemetry.io/collector/extension/experimental/storage => ../../extension/experimental/storage
 
 replace go.opentelemetry.io/collector/pdata => ../../pdata
 
@@ -160,3 +158,5 @@ replace go.opentelemetry.io/collector/scraper => ../../scraper
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 
 replace go.opentelemetry.io/collector/scraper/scraperhelper => ../../scraper/scraperhelper
+
+replace go.opentelemetry.io/collector/extension/xextension => ../../extension/xextension

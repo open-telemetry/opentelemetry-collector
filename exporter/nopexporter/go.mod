@@ -78,8 +78,6 @@ replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/con
 
 replace go.opentelemetry.io/collector/extension => ../../extension
 
-replace go.opentelemetry.io/collector/extension/experimental/storage => ../../extension/experimental/storage
-
 replace go.opentelemetry.io/collector/pdata/pprofile => ../../pdata/pprofile
 
 replace go.opentelemetry.io/collector/consumer/xconsumer => ../../consumer/xconsumer
@@ -105,3 +103,5 @@ replace go.opentelemetry.io/collector/scraper => ../../scraper
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 
 replace go.opentelemetry.io/collector/scraper/scraperhelper => ../../scraper/scraperhelper
+
+replace go.opentelemetry.io/collector/extension/xextension => ../../extension/xextension
