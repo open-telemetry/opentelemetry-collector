@@ -7,7 +7,7 @@ toolchain go1.23.2
 require (
 	github.com/a8m/envsubst v1.4.2
 	github.com/client9/misspell v0.3.4
-	github.com/golangci/golangci-lint v1.63.3
+	github.com/golangci/golangci-lint v1.63.4
 	github.com/google/addlicense v1.1.1
 	github.com/jcchavezs/porto v0.7.0
 	github.com/pavius/impi v0.0.3
