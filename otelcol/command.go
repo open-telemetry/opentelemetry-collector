@@ -6,11 +6,13 @@ package otelcol // import "go.opentelemetry.io/collector/otelcol"
 import (
 	"errors"
 	"flag"
-
+	"fmt"
+	"text/tabwriter"
+    "os"
 	"github.com/spf13/cobra"
 
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/service"
+	//"go.opentelemetry.io/collector/service"
 )
 
 // NewCommand constructs a new cobra.Command using the given CollectorSettings.
@@ -67,15 +69,43 @@ func updateSettingsUsingFlags(set *CollectorSettings, flags *flag.FlagSet) error
 }
 
 func newFeaturesCommand() *cobra.Command {
-	return &cobra.Command{
-		Use:   "features [feature-id]",
-		Short: "Display feature gates information",
-		Long:  "Display information about available feature gates and their status",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) > 0 {
-				return service.DisplayFeature(args[0])
-			}
-			return service.DisplayFeatures()
-		},
-	}
+    return &cobra.Command{
+        Use:   "features [feature-id]",
+        Short: "Display feature gates information",
+        Long:  "Display information about available feature gates and their status",
+        RunE: func(cmd *cobra.Command, args []string) error {
+            if len(args) > 0 {
+                found := false
+                featuregate.GlobalRegistry().VisitAll(func(g *featuregate.Gate) {
+                    if g.ID() == args[0] {
+                        found = true
+                        fmt.Printf("Feature: %s\n", g.ID())
+                        fmt.Printf("Enabled: %v\n", g.IsEnabled())
+                        fmt.Printf("Stage: %s\n", g.Stage())
+                        fmt.Printf("Description: %s\n", g.Description())
+                        fmt.Printf("From Version: %s\n", g.FromVersion())
+                        if g.ToVersion() != "" {
+                            fmt.Printf("To Version: %s\n", g.ToVersion())
+                        }
+                    }
+                })
+                if !found {
+                    return fmt.Errorf("feature %q not found", args[0])
+                }
+                return nil
+            }
+
+            w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+            fmt.Fprintf(w, "ID\tEnabled\tStage\tDescription\n")
+            featuregate.GlobalRegistry().VisitAll(func(g *featuregate.Gate) {
+                fmt.Fprintf(w, "%s\t%v\t%s\t%s\n",
+                    g.ID(),
+                    g.IsEnabled(),
+                    g.Stage(),
+                    g.Description())
+            })
+            return w.Flush()
+        },
+    }
 }
+
