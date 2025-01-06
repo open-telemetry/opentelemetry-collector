@@ -11,16 +11,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-// Merge merges the provided metrics request into the current request and returns the merged request.
-func (req *metricsRequest) Merge(_ context.Context, r2 Request) (Request, error) {
-	mr2, ok2 := r2.(*metricsRequest)
-	if !ok2 {
-		return nil, errors.New("invalid input type")
-	}
-	mr2.md.ResourceMetrics().MoveAndAppendTo(req.md.ResourceMetrics())
-	return req, nil
-}
-
 // MergeSplit splits and/or merges the provided metrics request and the current request into one or more requests
 // conforming with the MaxSizeConfig.
 func (req *metricsRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSizeConfig, r2 Request) ([]Request, error) {
@@ -33,6 +23,11 @@ func (req *metricsRequest) MergeSplit(_ context.Context, cfg exporterbatcher.Max
 		}
 	}
 
+	if cfg.MaxSizeItems == 0 {
+		req2.md.ResourceMetrics().MoveAndAppendTo(req.md.ResourceMetrics())
+		return []Request{req}, nil
+	}
+
 	var (
 		res          []Request
 		destReq      *metricsRequest
@@ -42,13 +37,15 @@ func (req *metricsRequest) MergeSplit(_ context.Context, cfg exporterbatcher.Max
 		if srcReq == nil {
 			continue
 		}
-		if srcReq.md.DataPointCount() <= capacityLeft {
+
+		srcCount := srcReq.md.DataPointCount()
+		if srcCount <= capacityLeft {
 			if destReq == nil {
 				destReq = srcReq
 			} else {
 				srcReq.md.ResourceMetrics().MoveAndAppendTo(destReq.md.ResourceMetrics())
 			}
-			capacityLeft -= destReq.md.DataPointCount()
+			capacityLeft -= srcCount
 			continue
 		}
 
