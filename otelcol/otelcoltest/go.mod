@@ -164,8 +164,6 @@ replace go.opentelemetry.io/collector/exporter => ../../exporter
 
 replace go.opentelemetry.io/collector/semconv => ../../semconv
 
-replace go.opentelemetry.io/collector/extension/experimental/storage => ../../extension/experimental/storage
-
 replace go.opentelemetry.io/collector/consumer/xconsumer => ../../consumer/xconsumer
 
 replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/consumertest
@@ -221,3 +219,5 @@ replace go.opentelemetry.io/collector/extension/auth/authtest => ../../extension
 replace go.opentelemetry.io/collector/scraper => ../../scraper
 
 replace go.opentelemetry.io/collector/scraper/scraperhelper => ../../scraper/scraperhelper
+
+replace go.opentelemetry.io/collector/extension/xextension => ../../extension/xextension

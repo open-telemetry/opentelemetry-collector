@@ -45,7 +45,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumertest v0.116.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.116.0 // indirect
 	go.opentelemetry.io/collector/extension v0.116.0 // indirect
-	go.opentelemetry.io/collector/extension/experimental/storage v0.116.0 // indirect
+	go.opentelemetry.io/collector/extension/xextension v0.116.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.22.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.116.0 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.116.0 // indirect
@@ -88,8 +88,6 @@ replace go.opentelemetry.io/collector/receiver/receivertest => ../../receiver/re
 
 replace go.opentelemetry.io/collector/extension => ../../extension
 
-replace go.opentelemetry.io/collector/extension/experimental/storage => ../../extension/experimental/storage
-
 replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
 
 replace go.opentelemetry.io/collector/config/configretry => ../../config/configretry
@@ -121,3 +119,5 @@ replace go.opentelemetry.io/collector/scraper => ../../scraper
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 
 replace go.opentelemetry.io/collector/scraper/scraperhelper => ../../scraper/scraperhelper
+
+replace go.opentelemetry.io/collector/extension/xextension => ../../extension/xextension
