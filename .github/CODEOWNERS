@@ -25,7 +25,7 @@ exporter/nopexporter            @open-telemetry/collector-approvers @evan-bradle
 pdata/                          @open-telemetry/collector-approvers @BogdanDrutu @dmitryax
 receiver/nopreceiver            @open-telemetry/collector-approvers @evan-bradley
 service/internal/graph          @open-telemetry/collector-approvers @djaglowski
-extension/experimental/storage  @open-telemetry/collector-approvers @swiatekm
+extension/xextension            @open-telemetry/collector-approvers @swiatekm
 
 # Profiling-related modules
 pdata/pprofile                          @open-telemetry/collector-approvers @mx-psi @dmathieu

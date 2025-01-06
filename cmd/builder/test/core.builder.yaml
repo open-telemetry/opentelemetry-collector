@@ -11,4 +11,3 @@ receivers:
 
 exporters:
   - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.116.0
-

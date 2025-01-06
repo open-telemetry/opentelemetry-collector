@@ -1,79 +1,135 @@
 {
-    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-    "labels": [
-      "renovatebot",
-      "dependencies"
-    ],
-    "constraints": {
-      "go": "1.22"
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "labels": [
+    "renovatebot",
+    "dependencies"
+  ],
+  "constraints": {
+    "go": "1.22"
+  },
+  "extends": [
+    "config:recommended"
+  ],
+  "schedule": [
+    "on tuesday"
+  ],
+  "packageRules": [
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchUpdateTypes": [
+        "pin",
+        "pinDigest",
+        "digest",
+        "lockFileMaintenance",
+        "rollback",
+        "bump",
+        "replacement"
+      ],
+      "enabled": false
     },
-    "extends": ["config:recommended"],
-    "schedule": ["every tuesday"],
-    "packageRules": [
-      {
-        "matchManagers": ["gomod"],
-        "matchUpdateTypes": ["pin", "pinDigest", "digest", "lockFileMaintenance", "rollback", "bump", "replacement"],
-        "enabled": false
-      },
-      {
-        "matchManagers": ["gomod"],
-        "matchUpdateTypes": ["major"],
-        "prBodyNotes": [":warning: MAJOR VERSION UPDATE :warning: - please manually update this package"],
-        "labels": ["dependency-major-update"]
-      },
-      {
-        "matchManagers": ["dockerfile"],
-        "groupName": "dockerfile deps"
-      },
-      {
-        "matchManagers": ["docker-compose"],
-        "groupName": "docker-compose deps"
-      },
-      {
-        "matchManagers": ["github-actions"],
-        "groupName": "github-actions deps"
-      },
-      {
-        "matchManagers": ["gomod"],
-        "matchSourceUrls": [
-          "https://github.com/open-telemetry/opentelemetry-go-contrib"
-        ],
-        "groupName": "All opentelemetry-go-contrib packages"
-      },
-      {
-        "matchManagers": ["gomod"],
-        "matchSourceUrlPrefixes": ["https://go.opentelemetry.io/otel"],
-        "groupName": "All go.opentelemetry.io/contrib packages"
-      },
-      {
-        "matchManagers": ["gomod"],
-        "matchSourceUrlPrefixes": ["https://google.golang.org"],
-        "groupName": "All google.golang.org packages"
-      },
-      {
-        "matchManagers": ["gomod"],
-        "matchPackagePrefixes": ["golang.org/x"],
-        "groupName": "All golang.org/x packages"
-      },
-      {
-        "matchManagers": ["gomod"],
-        "matchPackagePrefixes": ["go.opentelemetry.io/collector"],
-        "groupName": "All go.opentelemetry.io/collector packages"
-      },
-      {
-        "matchManagers": ["gomod"],
-        "matchPackagePrefixes": ["go.opentelemetry.io/build-tools"],
-        "groupName": "All go.opentelemetry.io/build-tools packages"
-      },
-      {
-        "matchManagers": ["gomod"],
-        "matchDepTypes": ["toolchain"],
-        "enabled": false
-      }
-    ],
-    "ignoreDeps": [
-      "github.com/mattn/go-ieproxy"
-    ],
-    "prConcurrentLimit": 200,
-    "suppressNotifications": ["prEditedNotification"]
-  }
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "prBodyNotes": [
+        ":warning: MAJOR VERSION UPDATE :warning: - please manually update this package"
+      ],
+      "labels": [
+        "dependency-major-update"
+      ]
+    },
+    {
+      "matchManagers": [
+        "dockerfile"
+      ],
+      "groupName": "dockerfile deps"
+    },
+    {
+      "matchManagers": [
+        "docker-compose"
+      ],
+      "groupName": "docker-compose deps"
+    },
+    {
+      "matchManagers": [
+        "github-actions"
+      ],
+      "groupName": "github-actions deps"
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchSourceUrls": [
+        "https://github.com/open-telemetry/opentelemetry-go-contrib"
+      ],
+      "groupName": "All opentelemetry-go-contrib packages"
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "groupName": "All go.opentelemetry.io/contrib packages",
+      "matchSourceUrls": [
+        "https://go.opentelemetry.io/otel{/,}**"
+      ]
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "groupName": "All google.golang.org packages",
+      "matchSourceUrls": [
+        "https://google.golang.org{/,}**"
+      ]
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "groupName": "All golang.org/x packages",
+      "matchPackageNames": [
+        "golang.org/x{/,}**"
+      ]
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "groupName": "All go.opentelemetry.io/collector packages",
+      "matchPackageNames": [
+        "go.opentelemetry.io/collector{/,}**"
+      ]
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "groupName": "All go.opentelemetry.io/build-tools packages",
+      "matchPackageNames": [
+        "go.opentelemetry.io/build-tools{/,}**"
+      ]
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchDepTypes": [
+        "toolchain"
+      ],
+      "enabled": false
+    }
+  ],
+  "ignoreDeps": [
+    "github.com/mattn/go-ieproxy"
+  ],
+  "prConcurrentLimit": 200,
+  "suppressNotifications": [
+    "prEditedNotification"
+  ]
+}
