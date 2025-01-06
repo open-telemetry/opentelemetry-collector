@@ -67,7 +67,7 @@ func (qCfg *QueueConfig) Validate() error {
 }
 
 type QueueSender struct {
-	BaseRequestSender
+	BaseSender[internal.Request]
 	queue          exporterqueue.Queue[internal.Request]
 	numConsumers   int
 	traceAttribute attribute.KeyValue
