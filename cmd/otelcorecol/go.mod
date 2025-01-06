@@ -103,9 +103,9 @@ require (
 	go.opentelemetry.io/collector/exporter/exportertest v0.116.0 // indirect
 	go.opentelemetry.io/collector/exporter/xexporter v0.116.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.116.0 // indirect
-	go.opentelemetry.io/collector/extension/experimental/storage v0.116.0 // indirect
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.116.0 // indirect
 	go.opentelemetry.io/collector/extension/extensiontest v0.116.0 // indirect
+	go.opentelemetry.io/collector/extension/xextension v0.116.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.22.0 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.116.0 // indirect
 	go.opentelemetry.io/collector/internal/memorylimiter v0.116.0 // indirect
@@ -238,13 +238,13 @@ replace go.opentelemetry.io/collector/extension/auth => ../../extension/auth
 
 replace go.opentelemetry.io/collector/extension/auth/authtest => ../../extension/auth/authtest
 
-replace go.opentelemetry.io/collector/extension/experimental/storage => ../../extension/experimental/storage
-
 replace go.opentelemetry.io/collector/extension/extensioncapabilities => ../../extension/extensioncapabilities
 
 replace go.opentelemetry.io/collector/extension/extensiontest => ../../extension/extensiontest
 
 replace go.opentelemetry.io/collector/extension/memorylimiterextension => ../../extension/memorylimiterextension
+
+replace go.opentelemetry.io/collector/extension/xextension => ../../extension/xextension
 
 replace go.opentelemetry.io/collector/extension/zpagesextension => ../../extension/zpagesextension
 
@@ -289,6 +289,8 @@ replace go.opentelemetry.io/collector/receiver/receivertest => ../../receiver/re
 replace go.opentelemetry.io/collector/receiver/xreceiver => ../../receiver/xreceiver
 
 replace go.opentelemetry.io/collector/scraper => ../../scraper
+
+replace go.opentelemetry.io/collector/scraper/scraperhelper => ../../scraper/scraperhelper
 
 replace go.opentelemetry.io/collector/semconv => ../../semconv
 

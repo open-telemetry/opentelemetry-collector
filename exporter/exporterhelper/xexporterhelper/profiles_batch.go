@@ -37,13 +37,15 @@ func (req *profilesRequest) MergeSplit(_ context.Context, cfg exporterbatcher.Ma
 		if srcReq == nil {
 			continue
 		}
-		if srcReq.pd.SampleCount() <= capacityLeft {
+
+		srcCount := srcReq.pd.SampleCount()
+		if srcCount <= capacityLeft {
 			if destReq == nil {
 				destReq = srcReq
 			} else {
 				srcReq.pd.ResourceProfiles().MoveAndAppendTo(destReq.pd.ResourceProfiles())
 			}
-			capacityLeft -= destReq.pd.SampleCount()
+			capacityLeft -= srcCount
 			continue
 		}
 

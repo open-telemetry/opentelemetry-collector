@@ -61,6 +61,7 @@ module-sets:
       - go.opentelemetry.io/collector/extension/extensiontest
       - go.opentelemetry.io/collector/extension/zpagesextension
       - go.opentelemetry.io/collector/extension/memorylimiterextension
+      - go.opentelemetry.io/collector/extension/xextension
       - go.opentelemetry.io/collector/otelcol
       - go.opentelemetry.io/collector/otelcol/otelcoltest
       - go.opentelemetry.io/collector/pdata/pprofile
@@ -79,6 +80,7 @@ module-sets:
       - go.opentelemetry.io/collector/receiver/receivertest
       - go.opentelemetry.io/collector/receiver/xreceiver
       - go.opentelemetry.io/collector/scraper
+      - go.opentelemetry.io/collector/scraper/scraperhelper
       - go.opentelemetry.io/collector/scraper/scrapertest
       - go.opentelemetry.io/collector/semconv
       - go.opentelemetry.io/collector/service

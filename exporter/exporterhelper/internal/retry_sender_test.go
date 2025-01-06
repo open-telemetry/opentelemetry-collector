@@ -477,13 +477,13 @@ func newMockRequest(cnt int, consumeError error) *mockRequest {
 }
 
 type observabilityConsumerSender struct {
-	BaseRequestSender
+	BaseSender[internal.Request]
 	waitGroup         *sync.WaitGroup
 	sentItemsCount    *atomic.Int64
 	droppedItemsCount *atomic.Int64
 }
 
-func newObservabilityConsumerSender(*ObsReport) RequestSender {
+func newObservabilityConsumerSender(*ObsReport) Sender[internal.Request] {
 	return &observabilityConsumerSender{
 		waitGroup:         new(sync.WaitGroup),
 		droppedItemsCount: &atomic.Int64{},
