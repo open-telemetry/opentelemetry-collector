@@ -21,16 +21,17 @@ import (
 func TestMergeProfiles(t *testing.T) {
 	pr1 := &profilesRequest{pd: testdata.GenerateProfiles(2)}
 	pr2 := &profilesRequest{pd: testdata.GenerateProfiles(3)}
-	res, err := pr1.Merge(context.Background(), pr2)
+	res, err := pr1.MergeSplit(context.Background(), exporterbatcher.MaxSizeConfig{}, pr2)
 	require.NoError(t, err)
-	fmt.Fprintf(os.Stdout, "%#v\n", res.(*profilesRequest).pd)
-	assert.Equal(t, 5, res.(*profilesRequest).pd.SampleCount())
+	assert.Len(t, res, 1)
+	fmt.Fprintf(os.Stdout, "%#v\n", res[0].(*profilesRequest).pd)
+	assert.Equal(t, 5, res[0].(*profilesRequest).pd.SampleCount())
 }
 
 func TestMergeProfilesInvalidInput(t *testing.T) {
 	pr1 := &dummyRequest{}
 	pr2 := &profilesRequest{pd: testdata.GenerateProfiles(3)}
-	_, err := pr2.Merge(context.Background(), pr1)
+	_, err := pr2.MergeSplit(context.Background(), exporterbatcher.MaxSizeConfig{}, pr1)
 	assert.Error(t, err)
 }
 
@@ -152,10 +153,6 @@ func (req *dummyRequest) Export(_ context.Context) error {
 
 func (req *dummyRequest) ItemsCount() int {
 	return 1
-}
-
-func (req *dummyRequest) Merge(_ context.Context, _ exporterhelper.Request) (exporterhelper.Request, error) {
-	return nil, nil
 }
 
 func (req *dummyRequest) MergeSplit(_ context.Context, _ exporterbatcher.MaxSizeConfig, _ exporterhelper.Request) (

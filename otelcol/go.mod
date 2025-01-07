@@ -27,8 +27,8 @@ require (
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842
-	golang.org/x/sys v0.28.0
-	google.golang.org/grpc v1.69.0
+	golang.org/x/sys v0.29.0
+	google.golang.org/grpc v1.69.2
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -64,7 +64,7 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.61.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
-	github.com/shirou/gopsutil/v4 v4.24.11 // indirect
+	github.com/shirou/gopsutil/v4 v4.24.12 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
@@ -105,12 +105,12 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.32.0 // indirect
 	go.opentelemetry.io/otel/trace v1.32.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.3.1 // indirect
-	golang.org/x/net v0.33.0 // indirect
+	golang.org/x/net v0.34.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
 	gonum.org/v1/gonum v0.15.1 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20241104194629-dd2ea8efbc28 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241104194629-dd2ea8efbc28 // indirect
-	google.golang.org/protobuf v1.36.0 // indirect
+	google.golang.org/protobuf v1.36.1 // indirect
 )
 
 replace go.opentelemetry.io/collector => ../
@@ -134,8 +134,6 @@ replace go.opentelemetry.io/collector/pdata/pprofile => ../pdata/pprofile
 replace go.opentelemetry.io/collector/extension/zpagesextension => ../extension/zpagesextension
 
 replace go.opentelemetry.io/collector/extension => ../extension
-
-replace go.opentelemetry.io/collector/extension/experimental/storage => ../extension/experimental/storage
 
 replace go.opentelemetry.io/collector/exporter => ../exporter
 
@@ -204,3 +202,7 @@ replace go.opentelemetry.io/collector/extension/extensiontest => ../extension/ex
 replace go.opentelemetry.io/collector/extension/auth/authtest => ../extension/auth/authtest
 
 replace go.opentelemetry.io/collector/scraper => ../scraper
+
+replace go.opentelemetry.io/collector/scraper/scraperhelper => ../scraper/scraperhelper
+
+replace go.opentelemetry.io/collector/extension/xextension => ../extension/xextension
