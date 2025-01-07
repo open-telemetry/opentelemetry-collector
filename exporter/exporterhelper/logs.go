@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
-	"go.opentelemetry.io/collector/exporter/internal/queue"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pipeline"
 )
@@ -135,7 +134,7 @@ func NewLogsRequest(
 			return consumererror.NewPermanent(cErr)
 		}
 		sErr := be.Send(ctx, req)
-		if errors.Is(sErr, queue.ErrQueueIsFull) {
+		if errors.Is(sErr, exporterqueue.ErrQueueIsFull) {
 			be.Obsrep.RecordEnqueueFailure(ctx, pipeline.SignalLogs, int64(req.ItemsCount()))
 		}
 		return sErr

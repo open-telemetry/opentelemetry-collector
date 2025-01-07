@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/internal"
 )
 
@@ -25,7 +26,7 @@ type Batcher interface {
 
 type BaseBatcher struct {
 	batchCfg exporterbatcher.Config
-	queue    Queue[internal.Request]
+	queue    exporterqueue.Queue[internal.Request]
 	// TODO: Remove when the -1 hack for testing is removed.
 	maxWorkers int
 	workerPool chan bool
@@ -34,7 +35,7 @@ type BaseBatcher struct {
 }
 
 func NewBatcher(batchCfg exporterbatcher.Config,
-	queue Queue[internal.Request],
+	queue exporterqueue.Queue[internal.Request],
 	exportFunc func(ctx context.Context, req internal.Request) error,
 	maxWorkers int,
 ) (Batcher, error) {
@@ -45,7 +46,7 @@ func NewBatcher(batchCfg exporterbatcher.Config,
 }
 
 func newBaseBatcher(batchCfg exporterbatcher.Config,
-	queue Queue[internal.Request],
+	queue exporterqueue.Queue[internal.Request],
 	exportFunc func(ctx context.Context, req internal.Request) error,
 	maxWorkers int,
 ) BaseBatcher {
