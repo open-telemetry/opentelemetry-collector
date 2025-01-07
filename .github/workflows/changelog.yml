@@ -13,11 +13,14 @@ on:
     types: [checks_requested]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref }}
+  group: ${{ github.workflow }}-${{ github.ref_name }}
   cancel-in-progress: true
 
-permissions:
-  contents: read
+permissions: read-all
+
+env:
+  # renovate: datasource=github-releases depName=tcort/markdown-link-check
+  MD_LINK_CHECK_VERSION: "3.12.2"
 
 jobs:
   changelog:
@@ -32,7 +35,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Setup Go
-        uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5.1.0
+        uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a # v5.2.0
         with:
           go-version: ~1.22.9
       - name: Cache Go
@@ -79,7 +82,7 @@ jobs:
       - name: Render .chloggen changelog entries
         run: make chlog-preview > changelog_preview.md
       - name: Install markdown-link-check
-        run: npm install
+        run: npm install -g markdown-link-check@${{ env.MD_LINK_CHECK_VERSION }}
       - name: Run markdown-link-check
         run: |
           npx --no -- markdown-link-check \

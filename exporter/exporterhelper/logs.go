@@ -20,8 +20,10 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 )
 
-var logsMarshaler = &plog.ProtoMarshaler{}
-var logsUnmarshaler = &plog.ProtoUnmarshaler{}
+var (
+	logsMarshaler   = &plog.ProtoMarshaler{}
+	logsUnmarshaler = &plog.ProtoUnmarshaler{}
+)
 
 type logsRequest struct {
 	ld     plog.Logs
@@ -102,7 +104,7 @@ func requestFromLogs(pusher consumer.ConsumeLogsFunc) RequestFromLogsFunc {
 	}
 }
 
-// NewLogsRequest creates new logs exporter based on custom LogsConverter and RequestSender.
+// NewLogsRequest creates new logs exporter based on custom LogsConverter and Sender.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func NewLogsRequest(
@@ -146,11 +148,11 @@ func NewLogsRequest(
 }
 
 type logsExporterWithObservability struct {
-	internal.BaseRequestSender
+	internal.BaseSender[Request]
 	obsrep *internal.ObsReport
 }
 
-func newLogsWithObservability(obsrep *internal.ObsReport) internal.RequestSender {
+func newLogsWithObservability(obsrep *internal.ObsReport) internal.Sender[Request] {
 	return &logsExporterWithObservability{obsrep: obsrep}
 }
 

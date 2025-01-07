@@ -75,17 +75,19 @@ func TestStatusFSM(t *testing.T) {
 			expectedErrorCount: 2,
 		},
 		{
-			name: "PermanentError is terminal",
+			name: "PermanentError is stoppable",
 			reportedStatuses: []componentstatus.Status{
 				componentstatus.StatusStarting,
 				componentstatus.StatusOK,
 				componentstatus.StatusPermanentError,
 				componentstatus.StatusOK,
+				componentstatus.StatusStopping,
 			},
 			expectedStatuses: []componentstatus.Status{
 				componentstatus.StatusStarting,
 				componentstatus.StatusOK,
 				componentstatus.StatusPermanentError,
+				componentstatus.StatusStopping,
 			},
 			expectedErrorCount: 1,
 		},
@@ -154,7 +156,7 @@ func TestValidSeqsToStopped(t *testing.T) {
 	}
 
 	for _, ev := range events {
-		name := fmt.Sprintf("transition from: %s to: %s invalid", ev.Status(), componentstatus.StatusStopped)
+		name := fmt.Sprintf("transition from: %s to: %s", ev.Status(), componentstatus.StatusStopped)
 		t.Run(name, func(t *testing.T) {
 			fsm := newFSM(func(*componentstatus.Event) {})
 			if ev.Status() != componentstatus.StatusStarting {
@@ -165,9 +167,9 @@ func TestValidSeqsToStopped(t *testing.T) {
 			err := fsm.transition(componentstatus.NewEvent(componentstatus.StatusStopped))
 			require.ErrorIs(t, err, errInvalidStateTransition)
 
-			// stopping -> stopped is allowed for non-fatal, non-permanent errors
+			// stopping -> stopped is allowed for non-fatal errors
 			err = fsm.transition(componentstatus.NewEvent(componentstatus.StatusStopping))
-			if ev.Status() == componentstatus.StatusPermanentError || ev.Status() == componentstatus.StatusFatalError {
+			if ev.Status() == componentstatus.StatusFatalError {
 				require.ErrorIs(t, err, errInvalidStateTransition)
 			} else {
 				require.NoError(t, err)

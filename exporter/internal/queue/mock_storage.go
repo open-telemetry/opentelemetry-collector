@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 )
 
 type mockStorageExtension struct {
@@ -65,7 +65,7 @@ func (m *mockStorageClient) Close(context.Context) error {
 	return nil
 }
 
-func (m *mockStorageClient) Batch(_ context.Context, ops ...storage.Operation) error {
+func (m *mockStorageClient) Batch(_ context.Context, ops ...*storage.Operation) error {
 	if m.isClosed() {
 		panic("client already closed")
 	}
