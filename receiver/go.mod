@@ -7,7 +7,7 @@ require (
 	go.opentelemetry.io/collector/component v0.116.0
 	go.opentelemetry.io/collector/component/componenttest v0.116.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.116.0
-	go.opentelemetry.io/collector/consumer v1.22.0
+	go.opentelemetry.io/collector/consumer v1.23.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.116.0
 	go.opentelemetry.io/collector/pipeline v0.116.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.116.0
@@ -31,7 +31,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.116.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.116.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.22.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.23.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.116.0 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.116.0 // indirect
 	go.opentelemetry.io/collector/scraper v0.116.0 // indirect
