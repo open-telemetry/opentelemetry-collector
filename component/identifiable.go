@@ -127,9 +127,8 @@ func (id *ID) UnmarshalText(text []byte) error {
 	if typeStr == "" {
 		if hasName {
 			return fmt.Errorf("in %q id: the part before %s should not be empty", idStr, typeAndNameSeparator)
-		} else {
-			return errors.New("id must not be empty")
 		}
+		return errors.New("id must not be empty")
 	}
 
 	if hasName {
