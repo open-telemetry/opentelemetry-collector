@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package queue // import "go.opentelemetry.io/collector/exporter/internal/queue"
+package exporterqueue // import "go.opentelemetry.io/collector/exporter/exporterqueue"
 
 import "sync/atomic"
 

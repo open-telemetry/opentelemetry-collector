@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package queue
+package exporterqueue
 
 import (
 	"context"
@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/internal/experr"
+	"go.opentelemetry.io/collector/exporter/internal/storagetest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -31,7 +32,7 @@ type itemsCounter interface {
 	ItemsCount() int
 }
 
-// itemsSizer is a Sizer implementation that returns the size of a queue element as the number of items it contains.
+// itemsSizer is a sizer implementation that returns the size of a queue element as the number of items it contains.
 type itemsSizer[T itemsCounter] struct{}
 
 func (is *itemsSizer[T]) Sizeof(el T) int64 {
@@ -225,64 +226,63 @@ func (m *fakeStorageClientWithErrors) Reset() {
 }
 
 // createAndStartTestPersistentQueue creates and starts a fake queue with the given capacity and number of consumers.
-func createAndStartTestPersistentQueue(t *testing.T, sizer Sizer[tracesRequest], capacity int64, numConsumers int,
+func createAndStartTestPersistentQueue(t *testing.T, sizer sizer[tracesRequest], capacity int64, numConsumers int,
 	consumeFunc func(_ context.Context, item tracesRequest) error,
 ) Queue[tracesRequest] {
-	pq := NewPersistentQueue[tracesRequest](PersistentQueueSettings[tracesRequest]{
-		Sizer:            sizer,
-		Capacity:         capacity,
-		Signal:           pipeline.SignalTraces,
-		StorageID:        component.ID{},
-		Marshaler:        marshalTracesRequest,
-		Unmarshaler:      unmarshalTracesRequest,
-		ExporterSettings: exportertest.NewNopSettings(),
+	pq := newPersistentQueue[tracesRequest](persistentQueueSettings[tracesRequest]{
+		sizer:       sizer,
+		capacity:    capacity,
+		signal:      pipeline.SignalTraces,
+		storageID:   component.ID{},
+		marshaler:   marshalTracesRequest,
+		unmarshaler: unmarshalTracesRequest,
+		set:         exportertest.NewNopSettings(),
 	})
 	host := &mockHost{ext: map[component.ID]component.Component{
-		{}: NewMockStorageExtension(nil),
+		{}: storagetest.NewMockStorageExtension(nil),
 	}}
-	consumers := NewQueueConsumers(pq, numConsumers, consumeFunc)
 	require.NoError(t, pq.Start(context.Background(), host))
-	require.NoError(t, consumers.Start(context.Background(), host))
+	ac := newAsyncConsumer(pq, numConsumers, consumeFunc)
 	t.Cleanup(func() {
 		require.NoError(t, pq.Shutdown(context.Background()))
-		assert.NoError(t, consumers.Shutdown(context.Background()))
+		assert.NoError(t, ac.Shutdown(context.Background()))
 	})
 	return pq
 }
 
 func createTestPersistentQueueWithClient(client storage.Client) *persistentQueue[tracesRequest] {
-	pq := NewPersistentQueue[tracesRequest](PersistentQueueSettings[tracesRequest]{
-		Sizer:            &RequestSizer[tracesRequest]{},
-		Capacity:         1000,
-		Signal:           pipeline.SignalTraces,
-		StorageID:        component.ID{},
-		Marshaler:        marshalTracesRequest,
-		Unmarshaler:      unmarshalTracesRequest,
-		ExporterSettings: exportertest.NewNopSettings(),
+	pq := newPersistentQueue[tracesRequest](persistentQueueSettings[tracesRequest]{
+		sizer:       &requestSizer[tracesRequest]{},
+		capacity:    1000,
+		signal:      pipeline.SignalTraces,
+		storageID:   component.ID{},
+		marshaler:   marshalTracesRequest,
+		unmarshaler: unmarshalTracesRequest,
+		set:         exportertest.NewNopSettings(),
 	}).(*persistentQueue[tracesRequest])
 	pq.initClient(context.Background(), client)
 	return pq
 }
 
 func createTestPersistentQueueWithRequestsCapacity(tb testing.TB, ext storage.Extension, capacity int64) *persistentQueue[tracesRequest] {
-	return createTestPersistentQueueWithCapacityLimiter(tb, ext, &RequestSizer[tracesRequest]{}, capacity)
+	return createTestPersistentQueueWithCapacityLimiter(tb, ext, &requestSizer[tracesRequest]{}, capacity)
 }
 
 func createTestPersistentQueueWithItemsCapacity(tb testing.TB, ext storage.Extension, capacity int64) *persistentQueue[tracesRequest] {
 	return createTestPersistentQueueWithCapacityLimiter(tb, ext, &itemsSizer[tracesRequest]{}, capacity)
 }
 
-func createTestPersistentQueueWithCapacityLimiter(tb testing.TB, ext storage.Extension, sizer Sizer[tracesRequest],
+func createTestPersistentQueueWithCapacityLimiter(tb testing.TB, ext storage.Extension, sizer sizer[tracesRequest],
 	capacity int64,
 ) *persistentQueue[tracesRequest] {
-	pq := NewPersistentQueue[tracesRequest](PersistentQueueSettings[tracesRequest]{
-		Sizer:            sizer,
-		Capacity:         capacity,
-		Signal:           pipeline.SignalTraces,
-		StorageID:        component.ID{},
-		Marshaler:        marshalTracesRequest,
-		Unmarshaler:      unmarshalTracesRequest,
-		ExporterSettings: exportertest.NewNopSettings(),
+	pq := newPersistentQueue[tracesRequest](persistentQueueSettings[tracesRequest]{
+		sizer:       sizer,
+		capacity:    capacity,
+		signal:      pipeline.SignalTraces,
+		storageID:   component.ID{},
+		marshaler:   marshalTracesRequest,
+		unmarshaler: unmarshalTracesRequest,
+		set:         exportertest.NewNopSettings(),
 	}).(*persistentQueue[tracesRequest])
 	require.NoError(tb, pq.Start(context.Background(), &mockHost{ext: map[component.ID]component.Component{{}: ext}}))
 	return pq
@@ -291,13 +291,13 @@ func createTestPersistentQueueWithCapacityLimiter(tb testing.TB, ext storage.Ext
 func TestPersistentQueue_FullCapacity(t *testing.T) {
 	tests := []struct {
 		name           string
-		sizer          Sizer[tracesRequest]
+		sizer          sizer[tracesRequest]
 		capacity       int64
 		sizeMultiplier int
 	}{
 		{
 			name:           "requests_capacity",
-			sizer:          &RequestSizer[tracesRequest]{},
+			sizer:          &requestSizer[tracesRequest]{},
 			capacity:       5,
 			sizeMultiplier: 1,
 		},
@@ -341,7 +341,7 @@ func TestPersistentQueue_FullCapacity(t *testing.T) {
 }
 
 func TestPersistentQueue_Shutdown(t *testing.T) {
-	pq := createAndStartTestPersistentQueue(t, &RequestSizer[tracesRequest]{}, 1001, 100, func(context.Context,
+	pq := createAndStartTestPersistentQueue(t, &requestSizer[tracesRequest]{}, 1001, 100, func(context.Context,
 		tracesRequest,
 	) error {
 		return nil
@@ -385,7 +385,7 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 			req := newTracesRequest(1, 10)
 
 			numMessagesConsumed := &atomic.Int32{}
-			pq := createAndStartTestPersistentQueue(t, &RequestSizer[tracesRequest]{}, 1000, c.numConsumers,
+			pq := createAndStartTestPersistentQueue(t, &requestSizer[tracesRequest]{}, 1000, c.numConsumers,
 				func(context.Context,
 					tracesRequest,
 				) error {
@@ -474,7 +474,7 @@ func TestToStorageClient(t *testing.T) {
 
 			extensions := map[component.ID]component.Component{}
 			for i := 0; i < tt.numStorages; i++ {
-				extensions[component.MustNewIDWithName("file_storage", strconv.Itoa(i))] = NewMockStorageExtension(tt.getClientError)
+				extensions[component.MustNewIDWithName("file_storage", strconv.Itoa(i))] = storagetest.NewMockStorageExtension(tt.getClientError)
 			}
 			host := &mockHost{ext: extensions}
 			ownerID := component.MustNewID("foo_exporter")
@@ -518,7 +518,7 @@ func TestInvalidStorageExtensionType(t *testing.T) {
 }
 
 func TestPersistentQueue_StopAfterBadStart(t *testing.T) {
-	pq := NewPersistentQueue[tracesRequest](PersistentQueueSettings[tracesRequest]{})
+	pq := newPersistentQueue[tracesRequest](persistentQueueSettings[tracesRequest]{})
 	// verify that stopping a un-start/started w/error queue does not panic
 	assert.NoError(t, pq.Shutdown(context.Background()))
 }
@@ -578,7 +578,7 @@ func TestPersistentQueue_CorruptedData(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			ext := NewMockStorageExtension(nil)
+			ext := storagetest.NewMockStorageExtension(nil)
 			ps := createTestPersistentQueueWithRequestsCapacity(t, ext, 1000)
 
 			// Put some items, make sure they are loaded and shutdown the storage...
@@ -626,7 +626,7 @@ func TestPersistentQueue_CorruptedData(t *testing.T) {
 func TestPersistentQueue_CurrentlyProcessedItems(t *testing.T) {
 	req := newTracesRequest(5, 10)
 
-	ext := NewMockStorageExtension(nil)
+	ext := storagetest.NewMockStorageExtension(nil)
 	ps := createTestPersistentQueueWithRequestsCapacity(t, ext, 1000)
 
 	for i := 0; i < 5; i++ {
@@ -685,7 +685,7 @@ func TestPersistentQueue_CurrentlyProcessedItems(t *testing.T) {
 func TestPersistentQueueStartWithNonDispatched(t *testing.T) {
 	req := newTracesRequest(5, 10)
 
-	ext := NewMockStorageExtension(nil)
+	ext := storagetest.NewMockStorageExtension(nil)
 	ps := createTestPersistentQueueWithRequestsCapacity(t, ext, 5)
 
 	// Put in items up to capacity
@@ -710,7 +710,7 @@ func TestPersistentQueueStartWithNonDispatched(t *testing.T) {
 func TestPersistentQueueStartWithNonDispatchedConcurrent(t *testing.T) {
 	req := newTracesRequest(1, 1)
 
-	ext := NewMockStorageExtensionWithDelay(nil, 20*time.Nanosecond)
+	ext := storagetest.NewMockStorageExtensionWithDelay(nil, 20*time.Nanosecond)
 	pq := createTestPersistentQueueWithItemsCapacity(t, ext, 25)
 
 	proWg := sync.WaitGroup{}
@@ -773,7 +773,7 @@ func TestPersistentQueueStartWithNonDispatchedConcurrent(t *testing.T) {
 
 func TestPersistentQueue_PutCloseReadClose(t *testing.T) {
 	req := newTracesRequest(5, 10)
-	ext := NewMockStorageExtension(nil)
+	ext := storagetest.NewMockStorageExtension(nil)
 	ps := createTestPersistentQueueWithRequestsCapacity(t, ext, 1000)
 	assert.Equal(t, 0, ps.Size())
 
@@ -824,7 +824,7 @@ func BenchmarkPersistentQueue_TraceSpans(b *testing.B) {
 
 	for _, c := range cases {
 		b.Run(fmt.Sprintf("#traces: %d #spansPerTrace: %d", c.numTraces, c.numSpansPerTrace), func(bb *testing.B) {
-			ext := NewMockStorageExtension(nil)
+			ext := storagetest.NewMockStorageExtension(nil)
 			ps := createTestPersistentQueueWithRequestsCapacity(b, ext, 10000000)
 
 			req := newTracesRequest(c.numTraces, c.numSpansPerTrace)
@@ -903,20 +903,20 @@ func TestItemIndexArrayMarshaling(t *testing.T) {
 }
 
 func TestPersistentQueue_ShutdownWhileConsuming(t *testing.T) {
-	ps := createTestPersistentQueueWithRequestsCapacity(t, NewMockStorageExtension(nil), 1000)
+	ps := createTestPersistentQueueWithRequestsCapacity(t, storagetest.NewMockStorageExtension(nil), 1000)
 
 	assert.Equal(t, 0, ps.Size())
-	assert.False(t, ps.client.(*mockStorageClient).isClosed())
+	assert.False(t, ps.client.(*storagetest.MockStorageClient).IsClosed())
 
 	require.NoError(t, ps.Offer(context.Background(), newTracesRequest(5, 10)))
 
 	index, _, ok := ps.getNextItem(context.Background())
 	require.True(t, ok)
-	assert.False(t, ps.client.(*mockStorageClient).isClosed())
+	assert.False(t, ps.client.(*storagetest.MockStorageClient).IsClosed())
 	require.NoError(t, ps.Shutdown(context.Background()))
-	assert.False(t, ps.client.(*mockStorageClient).isClosed())
+	assert.False(t, ps.client.(*storagetest.MockStorageClient).IsClosed())
 	ps.OnProcessingFinished(index, nil)
-	assert.True(t, ps.client.(*mockStorageClient).isClosed())
+	assert.True(t, ps.client.(*storagetest.MockStorageClient).IsClosed())
 }
 
 func TestPersistentQueue_StorageFull(t *testing.T) {
@@ -1016,7 +1016,7 @@ func TestPersistentQueue_ItemDispatchingFinish_ErrorHandling(t *testing.T) {
 }
 
 func TestPersistentQueue_ItemsCapacityUsageRestoredOnShutdown(t *testing.T) {
-	ext := NewMockStorageExtension(nil)
+	ext := storagetest.NewMockStorageExtension(nil)
 	pq := createTestPersistentQueueWithItemsCapacity(t, ext, 100)
 
 	assert.Equal(t, 0, pq.Size())
@@ -1065,7 +1065,7 @@ func TestPersistentQueue_ItemsCapacityUsageRestoredOnShutdown(t *testing.T) {
 
 // This test covers the case when the items capacity queue is enabled for the first time.
 func TestPersistentQueue_ItemsCapacityUsageIsNotPreserved(t *testing.T) {
-	ext := NewMockStorageExtension(nil)
+	ext := storagetest.NewMockStorageExtension(nil)
 	pq := createTestPersistentQueueWithRequestsCapacity(t, ext, 100)
 
 	assert.Equal(t, 0, pq.Size())
@@ -1123,7 +1123,7 @@ func TestPersistentQueue_ItemsCapacityUsageIsNotPreserved(t *testing.T) {
 // This test covers the case when the queue is restarted with the less capacity than needed to restore the queued items.
 // In that case, the queue has to be restored anyway even if it exceeds the capacity limit.
 func TestPersistentQueue_RequestCapacityLessAfterRestart(t *testing.T) {
-	ext := NewMockStorageExtension(nil)
+	ext := storagetest.NewMockStorageExtension(nil)
 	pq := createTestPersistentQueueWithRequestsCapacity(t, ext, 100)
 
 	assert.Equal(t, 0, pq.Size())
@@ -1177,7 +1177,7 @@ func TestPersistentQueue_RequestCapacityLessAfterRestart(t *testing.T) {
 // This test covers the case when the persistent storage is recovered from a snapshot which has
 // bigger value for the used size than the size of the actual items in the storage.
 func TestPersistentQueue_RestoredUsedSizeIsCorrectedOnDrain(t *testing.T) {
-	ext := NewMockStorageExtension(nil)
+	ext := storagetest.NewMockStorageExtension(nil)
 	pq := createTestPersistentQueueWithItemsCapacity(t, ext, 1000)
 
 	assert.Equal(t, 0, pq.Size())
