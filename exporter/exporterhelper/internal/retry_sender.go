@@ -44,7 +44,7 @@ func NewThrottleRetry(err error, delay time.Duration) error {
 }
 
 type retrySender struct {
-	BaseRequestSender
+	BaseSender[internal.Request]
 	traceAttribute attribute.KeyValue
 	cfg            configretry.BackOffConfig
 	stopCh         chan struct{}
@@ -65,7 +65,7 @@ func (rs *retrySender) Shutdown(context.Context) error {
 	return nil
 }
 
-// send implements the requestSender interface
+// Send implements the requestSender interface
 func (rs *retrySender) Send(ctx context.Context, req internal.Request) error {
 	// Do not use NewExponentialBackOff since it calls Reset and the code here must
 	// call Reset after changing the InitialInterval (this saves an unnecessary call to Now).

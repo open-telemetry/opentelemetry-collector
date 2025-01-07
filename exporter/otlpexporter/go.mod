@@ -25,9 +25,9 @@ require (
 	go.opentelemetry.io/collector/pdata/testdata v0.116.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20241015192408-796eee8c2d53
-	google.golang.org/grpc v1.69.0
-	google.golang.org/protobuf v1.36.0
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20241104194629-dd2ea8efbc28
+	google.golang.org/grpc v1.69.2
+	google.golang.org/protobuf v1.36.1
 )
 
 require (
@@ -60,7 +60,7 @@ require (
 	go.opentelemetry.io/collector/consumer/xconsumer v0.116.0 // indirect
 	go.opentelemetry.io/collector/extension v0.116.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.116.0 // indirect
-	go.opentelemetry.io/collector/extension/experimental/storage v0.116.0 // indirect
+	go.opentelemetry.io/collector/extension/xextension v0.116.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.22.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.116.0 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.116.0 // indirect
@@ -103,8 +103,6 @@ replace go.opentelemetry.io/collector/exporter => ../
 replace go.opentelemetry.io/collector/extension => ../../extension
 
 replace go.opentelemetry.io/collector/extension/auth => ../../extension/auth
-
-replace go.opentelemetry.io/collector/extension/experimental/storage => ../../extension/experimental/storage
 
 replace go.opentelemetry.io/collector/pdata => ../../pdata
 
@@ -158,3 +156,7 @@ replace go.opentelemetry.io/collector/extension/auth/authtest => ../../extension
 replace go.opentelemetry.io/collector/scraper => ../../scraper
 
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
+
+replace go.opentelemetry.io/collector/scraper/scraperhelper => ../../scraper/scraperhelper
+
+replace go.opentelemetry.io/collector/extension/xextension => ../../extension/xextension

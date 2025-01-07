@@ -4,30 +4,30 @@
 package internal // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 
 import (
-	"context" // RequestSender is an abstraction of a sender for a request independent of the type of the data (traces, metrics, logs).
+	"context" // Sender is an abstraction of a sender for a request independent of the type of the data (traces, metrics, logs).
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/internal"
 )
 
-type RequestSender interface {
+type Sender[K any] interface {
 	component.Component
-	Send(context.Context, internal.Request) error
-	SetNextSender(nextSender RequestSender)
+	Send(context.Context, K) error
+	SetNextSender(nextSender Sender[K])
 }
 
-type BaseRequestSender struct {
+type BaseSender[K any] struct {
 	component.StartFunc
 	component.ShutdownFunc
-	NextSender RequestSender
+	NextSender Sender[K]
 }
 
-var _ RequestSender = (*BaseRequestSender)(nil)
+var _ Sender[internal.Request] = (*BaseSender[internal.Request])(nil)
 
-func (b *BaseRequestSender) Send(ctx context.Context, req internal.Request) error {
+func (b *BaseSender[K]) Send(ctx context.Context, req K) error {
 	return b.NextSender.Send(ctx, req)
 }
 
-func (b *BaseRequestSender) SetNextSender(nextSender RequestSender) {
+func (b *BaseSender[K]) SetNextSender(nextSender Sender[K]) {
 	b.NextSender = nextSender
 }

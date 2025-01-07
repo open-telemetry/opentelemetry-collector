@@ -10,8 +10,11 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
   cancel-in-progress: true
 
-permissions:
-  contents: read
+permissions: read-all
+
+env:
+  # renovate: datasource=github-releases depName=tcort/markdown-link-check
+  MD_LINK_CHECK_VERSION: "3.12.2"
 
 jobs:
   changedfiles:
@@ -47,7 +50,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install markdown-link-check
-        run: npm ci
+        run: npm install -g markdown-link-check@${{ env.MD_LINK_CHECK_VERSION }}
 
       - name: Run markdown-link-check
         run: |

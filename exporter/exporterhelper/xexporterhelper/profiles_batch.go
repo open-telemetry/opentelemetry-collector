@@ -12,38 +12,40 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 )
 
-// Merge merges two profiles requests into one.
-func (req *profilesRequest) Merge(_ context.Context, r2 exporterhelper.Request) (exporterhelper.Request, error) {
-	tr2, ok2 := r2.(*profilesRequest)
-	if !ok2 {
-		return nil, errors.New("invalid input type")
-	}
-	tr2.pd.ResourceProfiles().MoveAndAppendTo(req.pd.ResourceProfiles())
-	return req, nil
-}
-
 // MergeSplit splits and/or merges the profiles into multiple requests based on the MaxSizeConfig.
 func (req *profilesRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSizeConfig, r2 exporterhelper.Request) ([]exporterhelper.Request, error) {
+	var req2 *profilesRequest
+	if r2 != nil {
+		var ok bool
+		req2, ok = r2.(*profilesRequest)
+		if !ok {
+			return nil, errors.New("invalid input type")
+		}
+	}
+
+	if cfg.MaxSizeItems == 0 {
+		req2.pd.ResourceProfiles().MoveAndAppendTo(req.pd.ResourceProfiles())
+		return []exporterhelper.Request{req}, nil
+	}
+
 	var (
 		res          []exporterhelper.Request
 		destReq      *profilesRequest
 		capacityLeft = cfg.MaxSizeItems
 	)
-	for _, r := range []exporterhelper.Request{req, r2} {
-		if r == nil {
+	for _, srcReq := range []*profilesRequest{req, req2} {
+		if srcReq == nil {
 			continue
 		}
-		srcReq, ok := r.(*profilesRequest)
-		if !ok {
-			return nil, errors.New("invalid input type")
-		}
-		if srcReq.pd.SampleCount() <= capacityLeft {
+
+		srcCount := srcReq.pd.SampleCount()
+		if srcCount <= capacityLeft {
 			if destReq == nil {
 				destReq = srcReq
 			} else {
 				srcReq.pd.ResourceProfiles().MoveAndAppendTo(destReq.pd.ResourceProfiles())
 			}
-			capacityLeft -= destReq.pd.SampleCount()
+			capacityLeft -= srcCount
 			continue
 		}
 
