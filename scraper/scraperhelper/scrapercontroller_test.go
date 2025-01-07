@@ -117,8 +117,7 @@ func TestScrapeController(t *testing.T) {
 		},
 	}
 
-	for _, tt := range testCases {
-		test := tt
+	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			receiverID := component.MustNewID("receiver")
 			tt, err := componenttest.SetupTelemetry(receiverID)
@@ -179,9 +178,9 @@ func TestScrapeController(t *testing.T) {
 
 				spans := tt.SpanRecorder.Ended()
 				assertReceiverSpan(t, spans)
-				assertReceiverViews(t, tt, sink)
+				assertReceiverMetrics(t, tt, sink)
 				assertScraperSpan(t, test.scrapeErr, spans)
-				assertScraperViews(t, tt, test.scrapeErr, sink)
+				assertScraperMetrics(t, tt, test.scrapeErr, sink)
 			}
 
 			err = mr.Shutdown(context.Background())
@@ -263,7 +262,7 @@ func assertReceiverSpan(t *testing.T, spans []sdktrace.ReadOnlySpan) {
 	assert.True(t, receiverSpan)
 }
 
-func assertReceiverViews(t *testing.T, tt componenttest.TestTelemetry, sink *consumertest.MetricsSink) {
+func assertReceiverMetrics(t *testing.T, tt componenttest.TestTelemetry, sink *consumertest.MetricsSink) {
 	dataPointCount := 0
 	for _, md := range sink.AllMetrics() {
 		dataPointCount += md.DataPointCount()
@@ -291,7 +290,7 @@ func assertScraperSpan(t *testing.T, expectedErr error, spans []sdktrace.ReadOnl
 	assert.True(t, scraperSpan)
 }
 
-func assertScraperViews(t *testing.T, tt componenttest.TestTelemetry, expectedErr error, sink *consumertest.MetricsSink) {
+func assertScraperMetrics(t *testing.T, tt componenttest.TestTelemetry, expectedErr error, sink *consumertest.MetricsSink) {
 	expectedScraped := int64(sink.DataPointCount())
 	expectedErrored := int64(0)
 	if expectedErr != nil {

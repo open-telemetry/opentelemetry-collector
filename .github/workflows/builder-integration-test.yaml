@@ -15,7 +15,7 @@ on:
 
   # manual execution
   workflow_dispatch:
-  
+
   merge_group:
     types: [checks_requested]
 
@@ -23,8 +23,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
   cancel-in-progress: true
 
-permissions:
-  contents: read
+permissions: read-all
 
 jobs:
   integration-test:

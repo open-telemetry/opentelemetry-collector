@@ -30,7 +30,7 @@ import (
 func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
 			qCfg := NewDefaultQueueConfig()
 			qCfg.NumConsumers = 1
 			rCfg := configretry.NewDefaultBackOffConfig()
@@ -245,7 +245,7 @@ func TestQueuedRetryHappyPath(t *testing.T) {
 func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
 			dataTypes := []pipeline.Signal{pipeline.SignalLogs, pipeline.SignalTraces, pipeline.SignalMetrics}
 			for _, dataType := range dataTypes {
 				tt, err := componenttest.SetupTelemetry(defaultID)
@@ -284,7 +284,7 @@ func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
 func TestNoCancellationContext(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
 			deadline := time.Now().Add(1 * time.Second)
 			ctx, cancelFunc := context.WithDeadline(context.Background(), deadline)
 			cancelFunc()
@@ -308,7 +308,7 @@ func TestNoCancellationContext(t *testing.T) {
 func TestQueueConfig_Validate(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
 			qCfg := NewDefaultQueueConfig()
 			require.NoError(t, qCfg.Validate())
 
@@ -365,7 +365,7 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 	},
 	) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
 			set := exportertest.NewNopSettings()
 			logger, observed := observer.New(zap.ErrorLevel)
 			set.Logger = zap.New(logger)
@@ -395,7 +395,7 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 func TestQueueFailedRequestDropped(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
 			set := exportertest.NewNopSettings()
 			logger, observed := observer.New(zap.ErrorLevel)
 			set.Logger = zap.New(logger)
@@ -419,7 +419,7 @@ func TestQueueFailedRequestDropped(t *testing.T) {
 func TestQueuedRetryPersistenceEnabled(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
 			tt, err := componenttest.SetupTelemetry(defaultID)
 			require.NoError(t, err)
 			t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
@@ -452,7 +452,7 @@ func TestQueuedRetryPersistenceEnabled(t *testing.T) {
 func TestQueuedRetryPersistenceEnabledStorageError(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
 			storageError := errors.New("could not get storage client")
 			tt, err := componenttest.SetupTelemetry(defaultID)
 			require.NoError(t, err)
@@ -539,7 +539,7 @@ func TestQueuedRetryPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 func TestQueueSenderNoStartShutdown(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
 			queue := queue.NewBoundedMemoryQueue[internal.Request](queue.MemoryQueueSettings[internal.Request]{})
 			set := exportertest.NewNopSettings()
 			obsrep, err := NewExporter(ObsReportSettings{

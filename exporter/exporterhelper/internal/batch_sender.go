@@ -23,7 +23,7 @@ import (
 // - cfg.FlushTimeout is elapsed since the timestamp when the previous batch was sent out.
 // - concurrencyLimit is reached.
 type BatchSender struct {
-	BaseRequestSender
+	BaseSender[internal.Request]
 	cfg exporterbatcher.Config
 
 	// concurrencyLimit is the maximum number of goroutines that can be blocked by the batcher.
@@ -202,12 +202,12 @@ func (bs *BatchSender) sendMergeBatch(ctx context.Context, req internal.Request)
 	bs.mu.Lock()
 
 	if bs.activeBatch.request != nil {
-		var err error
-		req, err = bs.activeBatch.request.Merge(ctx, req)
+		res, err := bs.activeBatch.request.MergeSplit(ctx, bs.cfg.MaxSizeConfig, req)
 		if err != nil {
 			bs.mu.Unlock()
 			return err
 		}
+		req = res[0]
 	}
 
 	bs.activeRequests.Add(1)
