@@ -15,13 +15,13 @@ type ControllerConfig = nsch.ControllerConfig
 var NewDefaultControllerConfig = nsch.NewDefaultControllerConfig
 
 // Deprecated: [v0.117.0] import "go.opentelemetry.io/collector/scraper/scraperhelper"
-type ScraperControllerOption = nsch.ScraperControllerOption
+type ScraperControllerOption = nsch.MetricsScraperControllerOption
 
 // Deprecated: [v0.117.0] import "go.opentelemetry.io/collector/scraper/scraperhelper"
-var AddScraper = nsch.AddScraper
+var AddScraper = nsch.AddMetricsScraper
 
 // Deprecated: [v0.117.0] import "go.opentelemetry.io/collector/scraper/scraperhelper"
-var WithTickerChannel = nsch.WithTickerChannel
+var WithTickerChannel = nsch.WithMetricsTickerChannel
 
 // Deprecated: [v0.117.0] import "go.opentelemetry.io/collector/scraper/scraperhelper"
-var NewScraperControllerReceiver = nsch.NewScraperControllerReceiver
+var NewScraperControllerReceiver = nsch.NewMetricsScraperControllerReceiver

@@ -130,7 +130,7 @@ func TestScrapeController(t *testing.T) {
 			options := configureMetricOptions(t, test, initializeChs, scrapeMetricsChs, closeChs)
 
 			tickerCh := make(chan time.Time)
-			options = append(options, WithTickerChannel(tickerCh))
+			options = append(options, WithMetricsTickerChannel(tickerCh))
 
 			sink := new(consumertest.MetricsSink)
 			cfg := newTestNoDelaySettings()
@@ -138,7 +138,7 @@ func TestScrapeController(t *testing.T) {
 				cfg = test.scraperControllerSettings
 			}
 
-			mr, err := NewScraperControllerReceiver(cfg, receiver.Settings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, sink, options...)
+			mr, err := NewMetricsScraperControllerReceiver(cfg, receiver.Settings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, sink, options...)
 			require.NoError(t, err)
 
 			err = mr.Start(context.Background(), componenttest.NewNopHost())
@@ -194,8 +194,8 @@ func TestScrapeController(t *testing.T) {
 	}
 }
 
-func configureMetricOptions(t *testing.T, test metricsTestCase, initializeChs []chan bool, scrapeMetricsChs []chan int, closeChs []chan bool) []ScraperControllerOption {
-	var metricOptions []ScraperControllerOption
+func configureMetricOptions(t *testing.T, test metricsTestCase, initializeChs []chan bool, scrapeMetricsChs []chan int, closeChs []chan bool) []MetricsScraperControllerOption {
+	var metricOptions []MetricsScraperControllerOption
 
 	for i := 0; i < test.scrapers; i++ {
 		var scraperOptions []scraper.Option
@@ -215,7 +215,7 @@ func configureMetricOptions(t *testing.T, test metricsTestCase, initializeChs []
 		scp, err := scraper.NewMetrics(tsm.scrape, scraperOptions...)
 		require.NoError(t, err)
 
-		metricOptions = append(metricOptions, AddScraper(component.MustNewType("scraper"), scp))
+		metricOptions = append(metricOptions, AddMetricsScraper(component.MustNewType("scraper"), scp))
 	}
 
 	return metricOptions
@@ -317,12 +317,12 @@ func TestSingleScrapePerInterval(t *testing.T) {
 	scp, err := scraper.NewMetrics(tsm.scrape)
 	require.NoError(t, err)
 
-	recv, err := NewScraperControllerReceiver(
+	recv, err := NewMetricsScraperControllerReceiver(
 		cfg,
 		receivertest.NewNopSettings(),
 		new(consumertest.MetricsSink),
-		AddScraper(component.MustNewType("scaper"), scp),
-		WithTickerChannel(tickerCh),
+		AddMetricsScraper(component.MustNewType("scraper"), scp),
+		WithMetricsTickerChannel(tickerCh),
 	)
 	require.NoError(t, err)
 
@@ -359,14 +359,14 @@ func TestScrapeControllerStartsOnInit(t *testing.T) {
 	scp, err := scraper.NewMetrics(tsm.scrape)
 	require.NoError(t, err, "Must not error when creating scraper")
 
-	r, err := NewScraperControllerReceiver(
+	r, err := NewMetricsScraperControllerReceiver(
 		&ControllerConfig{
 			CollectionInterval: time.Hour,
 			InitialDelay:       0,
 		},
 		receivertest.NewNopSettings(),
 		new(consumertest.MetricsSink),
-		AddScraper(component.MustNewType("scaper"), scp),
+		AddMetricsScraper(component.MustNewType("scaper"), scp),
 	)
 	require.NoError(t, err, "Must not error when creating scrape controller")
 
@@ -398,11 +398,11 @@ func TestScrapeControllerInitialDelay(t *testing.T) {
 	})
 	require.NoError(t, err, "Must not error when creating scraper")
 
-	r, err := NewScraperControllerReceiver(
+	r, err := NewMetricsScraperControllerReceiver(
 		&cfg,
 		receivertest.NewNopSettings(),
 		new(consumertest.MetricsSink),
-		AddScraper(component.MustNewType("scaper"), scp),
+		AddMetricsScraper(component.MustNewType("scraper"), scp),
 	)
 	require.NoError(t, err, "Must not error when creating receiver")
 
@@ -428,11 +428,11 @@ func TestShutdownBeforeScrapeCanStart(t *testing.T) {
 	})
 	require.NoError(t, err, "Must not error when creating scraper")
 
-	r, err := NewScraperControllerReceiver(
+	r, err := NewMetricsScraperControllerReceiver(
 		&cfg,
 		receivertest.NewNopSettings(),
 		new(consumertest.MetricsSink),
-		AddScraper(component.MustNewType("scaper"), scp),
+		AddMetricsScraper(component.MustNewType("scraper"), scp),
 	)
 	require.NoError(t, err, "Must not error when creating receiver")
 	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))

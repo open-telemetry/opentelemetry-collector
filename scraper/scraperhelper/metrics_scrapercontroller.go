@@ -20,47 +20,47 @@ import (
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 )
 
-// ScraperControllerOption apply changes to internal options.
-type ScraperControllerOption interface {
-	apply(*controller)
+// MetricsScraperControllerOption apply changes to internal options.
+type MetricsScraperControllerOption interface {
+	apply(*metricsController)
 }
 
-type scraperControllerOptionFunc func(*controller)
+type metricsScraperControllerOptionFunc func(*metricsController)
 
-func (of scraperControllerOptionFunc) apply(e *controller) {
+func (of metricsScraperControllerOptionFunc) apply(e *metricsController) {
 	of(e)
 }
 
-// AddScraper configures the provided scrape function to be called
+// AddMetricsScraper configures the provided scrape function to be called
 // with the specified options, and at the specified collection interval.
 //
 // Observability information will be reported, and the scraped metrics
 // will be passed to the next consumer.
-func AddScraper(t component.Type, scraper scraper.Metrics) ScraperControllerOption {
-	return scraperControllerOptionFunc(func(o *controller) {
-		o.scrapers = append(o.scrapers, scraperWithID{
+func AddMetricsScraper(t component.Type, scraper scraper.Metrics) MetricsScraperControllerOption {
+	return metricsScraperControllerOptionFunc(func(o *metricsController) {
+		o.scrapers = append(o.scrapers, metricsScraperWithID{
 			Metrics: scraper,
 			id:      component.NewID(t),
 		})
 	})
 }
 
-// WithTickerChannel allows you to override the scraper controller's ticker
+// WithMetricsTickerChannel allows you to override the scraper controller's ticker
 // channel to specify when scrape is called. This is only expected to be
 // used by tests.
-func WithTickerChannel(tickerCh <-chan time.Time) ScraperControllerOption {
-	return scraperControllerOptionFunc(func(o *controller) {
+func WithMetricsTickerChannel(tickerCh <-chan time.Time) MetricsScraperControllerOption {
+	return metricsScraperControllerOptionFunc(func(o *metricsController) {
 		o.tickerCh = tickerCh
 	})
 }
 
-type controller struct {
+type metricsController struct {
 	collectionInterval time.Duration
 	initialDelay       time.Duration
 	timeout            time.Duration
 	nextConsumer       consumer.Metrics
 
-	scrapers    []scraperWithID
+	scrapers    []metricsScraperWithID
 	obsScrapers []scraper.Metrics
 
 	tickerCh <-chan time.Time
@@ -71,17 +71,17 @@ type controller struct {
 	obsrecv *receiverhelper.ObsReport
 }
 
-type scraperWithID struct {
+type metricsScraperWithID struct {
 	scraper.Metrics
 	id component.ID
 }
 
-// NewScraperControllerReceiver creates a Receiver with the configured options, that can control multiple scrapers.
-func NewScraperControllerReceiver(
+// NewMetricsScraperControllerReceiver creates a Receiver with the configured options, that can control multiple scrapers.
+func NewMetricsScraperControllerReceiver(
 	cfg *ControllerConfig,
 	set receiver.Settings,
 	nextConsumer consumer.Metrics,
-	options ...ScraperControllerOption,
+	options ...MetricsScraperControllerOption,
 ) (component.Component, error) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             set.ID,
@@ -92,7 +92,7 @@ func NewScraperControllerReceiver(
 		return nil, err
 	}
 
-	sc := &controller{
+	sc := &metricsController{
 		collectionInterval: cfg.CollectionInterval,
 		initialDelay:       cfg.InitialDelay,
 		timeout:            cfg.Timeout,
@@ -124,7 +124,7 @@ func NewScraperControllerReceiver(
 }
 
 // Start the receiver, invoked during service start.
-func (sc *controller) Start(ctx context.Context, host component.Host) error {
+func (sc *metricsController) Start(ctx context.Context, host component.Host) error {
 	for _, scrp := range sc.obsScrapers {
 		if err := scrp.Start(ctx, host); err != nil {
 			return err
@@ -136,7 +136,7 @@ func (sc *controller) Start(ctx context.Context, host component.Host) error {
 }
 
 // Shutdown the receiver, invoked during service shutdown.
-func (sc *controller) Shutdown(ctx context.Context) error {
+func (sc *metricsController) Shutdown(ctx context.Context) error {
 	// Signal the goroutine to stop.
 	close(sc.done)
 	sc.wg.Wait()
@@ -150,7 +150,7 @@ func (sc *controller) Shutdown(ctx context.Context) error {
 
 // startScraping initiates a ticker that calls Scrape based on the configured
 // collection interval.
-func (sc *controller) startScraping() {
+func (sc *metricsController) startScraping() {
 	sc.wg.Add(1)
 	go func() {
 		defer sc.wg.Done()
@@ -186,7 +186,7 @@ func (sc *controller) startScraping() {
 // scrapeMetricsAndReport calls the Scrape function for each of the configured
 // Scrapers, records observability information, and passes the scraped metrics
 // to the next component.
-func (sc *controller) scrapeMetricsAndReport() {
+func (sc *metricsController) scrapeMetricsAndReport() {
 	ctx, done := withScrapeContext(sc.timeout)
 	defer done()
 
