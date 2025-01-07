@@ -86,6 +86,12 @@ func (tts *TestTelemetry) CheckReceiverMetrics(protocol string, acceptedMetricPo
 	return checkReceiverMetrics(tts.reader, tts.id, protocol, acceptedMetricPoints, droppedMetricPoints)
 }
 
+// CheckScraperLogs checks that for the current exported values for logs scraper metrics match given values.
+// Note: SetupTelemetry must be called before this function.
+func (tts *TestTelemetry) CheckScraperLogs(receiver component.ID, scraper component.ID, scrapedLogRecords, erroredLogRecords int64) error {
+	return checkScraperLogs(tts.reader, receiver, scraper, scrapedLogRecords, erroredLogRecords)
+}
+
 // CheckScraperMetrics checks that for the current exported values for metrics scraper metrics match given values.
 func (tts *TestTelemetry) CheckScraperMetrics(receiver component.ID, scraper component.ID, scrapedMetricPoints, erroredMetricPoints int64) error {
 	return checkScraperMetrics(tts.reader, receiver, scraper, scrapedMetricPoints, erroredMetricPoints)
