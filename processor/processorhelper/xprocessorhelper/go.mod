@@ -4,15 +4,15 @@ go 1.22.0
 
 require (
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v0.116.0
-	go.opentelemetry.io/collector/component/componenttest v0.116.0
+	go.opentelemetry.io/collector/component v0.117.0
+	go.opentelemetry.io/collector/component/componenttest v0.117.0
 	go.opentelemetry.io/collector/consumer v1.23.0
-	go.opentelemetry.io/collector/consumer/consumertest v0.116.0
-	go.opentelemetry.io/collector/consumer/xconsumer v0.116.0
-	go.opentelemetry.io/collector/pdata/pprofile v0.116.0
-	go.opentelemetry.io/collector/processor v0.116.0
-	go.opentelemetry.io/collector/processor/processortest v0.116.0
-	go.opentelemetry.io/collector/processor/xprocessor v0.116.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.117.0
+	go.opentelemetry.io/collector/consumer/xconsumer v0.117.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.117.0
+	go.opentelemetry.io/collector/processor v0.117.0
+	go.opentelemetry.io/collector/processor/processortest v0.117.0
+	go.opentelemetry.io/collector/processor/xprocessor v0.117.0
 )
 
 require (
@@ -25,11 +25,11 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector/component/componentstatus v0.116.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.116.0 // indirect
+	go.opentelemetry.io/collector/component/componentstatus v0.117.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.117.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.23.0 // indirect
-	go.opentelemetry.io/collector/pdata/testdata v0.116.0 // indirect
-	go.opentelemetry.io/collector/pipeline v0.116.0 // indirect
+	go.opentelemetry.io/collector/pdata/testdata v0.117.0 // indirect
+	go.opentelemetry.io/collector/pipeline v0.117.0 // indirect
 	go.opentelemetry.io/otel v1.32.0 // indirect
 	go.opentelemetry.io/otel/metric v1.32.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.32.0 // indirect
