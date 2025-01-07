@@ -11,7 +11,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 ### 🛑 Breaking changes 🛑
 
-- `otelcol`: This PR removes the warning when 0.0.0.0 is used (#11713, #8510)
+- `otelcol`: Remove warnings when 0.0.0.0 is used (#11713, #8510)
 
 ### 🧰 Bug fixes 🧰
 
