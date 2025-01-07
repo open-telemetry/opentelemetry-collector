@@ -29,6 +29,7 @@ type TelemetryBuilder struct {
 	BatchSizeTriggerSend                 metric.Int64Counter
 	ProcessRuntimeTotalAllocBytes        metric.Int64ObservableCounter
 	observeProcessRuntimeTotalAllocBytes func(context.Context, metric.Observer) error
+	QueueCapacity                        metric.Int64Gauge
 	QueueLength                          metric.Int64ObservableGauge
 	RequestDuration                      metric.Float64Histogram
 }
@@ -94,6 +95,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	)
 	errs = errors.Join(errs, err)
 	_, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).RegisterCallback(builder.observeProcessRuntimeTotalAllocBytes, builder.ProcessRuntimeTotalAllocBytes)
+	errs = errors.Join(errs, err)
+	builder.QueueCapacity, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Gauge(
+		"otelcol_queue_capacity",
+		metric.WithDescription("Queue capacity - sync gauge example."),
+		metric.WithUnit("{items}"),
+	)
 	errs = errors.Join(errs, err)
 	builder.RequestDuration, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Float64Histogram(
 		"otelcol_request_duration",
