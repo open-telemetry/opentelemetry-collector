@@ -19,13 +19,6 @@ on:
 permissions: read-all
 
 jobs:
-  debug-merge-freeze:
-    name: Debug
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - run: 'echo github.event.pull_request.title: ${{ github.event.pull_request.title }}, github.event.merge_group.head_commit.message: ${{ github.event.merge_group.head_commit.message }}, github.event.pull_request.user.login: ${{ github.event.pull_request.user.login }}, github.event.merge_group.head_commit.author.name: ${{ github.event.merge_group.head_commit.author.name }}'
-
   check-merge-freeze:
     name: Check
     # This condition is to avoid blocking the PR causing the freeze in the first place.
