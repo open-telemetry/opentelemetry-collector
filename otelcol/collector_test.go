@@ -576,10 +576,6 @@ func newDefaultConfigProviderSettings(tb testing.TB, uris []string) ConfigProvid
 	return ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
 			URIs: uris,
-			ProviderModules: map[string]string{
-				"envprovider":  "go.opentelemetry.io/collector/confmap/provider/envprovider v1.2.3",
-				"fileprovider": "go.opentelemetry.io/collector/confmap/provider/fileprovider v1.2.3",
-			},
 			ProviderFactories: []confmap.ProviderFactory{
 				fileProvider,
 				newEnvProvider(),

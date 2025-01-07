@@ -39,9 +39,6 @@ type ResolverSettings struct {
 	// It is required to have at least one factory.
 	ProviderFactories []ProviderFactory
 
-	// ProviderModules maps provider types to their respective go modules.
-	ProviderModules map[string]string
-
 	// DefaultScheme is the scheme that is used if ${} syntax is used but no schema is provided.
 	// If no DefaultScheme is set, ${} with no schema will not be expanded.
 	// It is strongly recommended to set "env" as the default scheme to align with the
