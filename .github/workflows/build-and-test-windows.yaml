@@ -42,7 +42,7 @@ jobs:
         run: make gotest-with-junit
       - uses: actions/upload-artifact@v4
         with:
-          name: test-results_${{ runner.os }}_window-latest_${{ runner.arch }}_${{ steps.setup-go.outputs.go-version }}
+          name: test-results_${{ runner.os }}_${{ runner.arch }}_${{ steps.setup-go.outputs.go-version }}
           path: internal/tools/testresults/
           retention-days: 4
 

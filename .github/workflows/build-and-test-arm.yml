@@ -52,7 +52,7 @@ jobs:
         run: make -j4 gotest-with-junit
       - uses: actions/upload-artifact@v4
         with:
-          name: test-results_${{ runner.os }}_${{ matrix.os }}_${{ runner.arch }}_${{ steps.setup-go.outputs.go-version }}
+          name: test-results_${{ runner.os }}_${{ runner.arch }}_${{ steps.setup-go.outputs.go-version }}
           path: internal/tools/testresults/
           retention-days: 4
   arm-unittest:

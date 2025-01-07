@@ -141,9 +141,9 @@ jobs:
   unittest-matrix:
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        runner: [ubuntu-latest]
         go-version: ["~1.23", "~1.22"] # 1.20 needs quotes otherwise it's interpreted as 1.2
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runner }}
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
@@ -161,18 +161,18 @@ jobs:
           path: |
             ~/go/bin
             ~/go/pkg/mod
-          key: go-cache-${{ runner.os }}-${{ matrix.os }}-${{ hashFiles('**/go.sum') }}
+          key: go-cache-${{ runner.os }}-${{ matrix.runner }}-${{ hashFiles('**/go.sum') }}
       - name: Cache Build
         uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
         with:
           path: ~/.cache/go-build
-          key: unittest-${{ runner.os }}-${{ matrix.os }}-go-build-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
+          key: unittest-${{ runner.os }}-${{ matrix.runner }}-go-build-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
       - name: Run Unit Tests
         run: |
           make -j4 gotest-with-junit
       - uses: actions/upload-artifact@v4
         with:
-          name: test-results_${{ runner.os }}_${{ matrix.os }}_${{ runner.arch }}_${{ steps.setup-go.outputs.go-version }}
+          name: test-results_${{ runner.os }}_${{ runner.arch }}_${{ steps.setup-go.outputs.go-version }}
           path: internal/tools/testresults/
           retention-days: 4
   unittest:
