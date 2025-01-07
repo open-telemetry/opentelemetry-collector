@@ -22,11 +22,9 @@ func (qb *DisabledBatcher) Start(_ context.Context, _ component.Host) error {
 		return nil
 	}
 
-	qb.startWorkerPool()
-
 	// This goroutine reads and then flushes.
 	// 1. Reading from the queue is blocked until the queue is non-empty or until the queue is stopped.
-	// 2. flushAsync() blocks until there are idle workers in the worker pool.
+	// 2. flush() blocks until there are idle workers in the worker pool.
 	qb.stopWG.Add(1)
 	go func() {
 		defer qb.stopWG.Done()
@@ -35,7 +33,7 @@ func (qb *DisabledBatcher) Start(_ context.Context, _ component.Host) error {
 			if !ok {
 				return
 			}
-			qb.flushAsync(batch{
+			qb.flush(batch{
 				req:     req,
 				ctx:     context.Background(),
 				idxList: []uint64{idx},

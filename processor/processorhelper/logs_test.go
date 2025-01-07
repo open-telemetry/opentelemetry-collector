@@ -13,12 +13,14 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/processor/processorhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
 
@@ -118,7 +120,7 @@ func TestLogs_RecordInOut(t *testing.T) {
 	incomingLogRecords.AppendEmpty()
 	incomingLogRecords.AppendEmpty()
 
-	testTelemetry := setupTestTelemetry()
+	testTelemetry := metadatatest.SetupTelemetry()
 	lp, err := NewLogs(context.Background(), testTelemetry.NewSettings(), &testLogsCfg, consumertest.NewNop(), mockAggregate)
 	require.NoError(t, err)
 
@@ -126,7 +128,7 @@ func TestLogs_RecordInOut(t *testing.T) {
 	assert.NoError(t, lp.ConsumeLogs(context.Background(), incomingLogs))
 	assert.NoError(t, lp.Shutdown(context.Background()))
 
-	testTelemetry.assertMetrics(t, []metricdata.Metrics{
+	testTelemetry.AssertMetrics(t, []metricdata.Metrics{
 		{
 			Name:        "otelcol_processor_incoming_items",
 			Description: "Number of items passed to the processor. [alpha]",
@@ -157,7 +159,7 @@ func TestLogs_RecordInOut(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, metricdatatest.IgnoreTimestamp())
 }
 
 func TestLogs_RecordIn_ErrorOut(t *testing.T) {
@@ -174,7 +176,7 @@ func TestLogs_RecordIn_ErrorOut(t *testing.T) {
 	incomingLogRecords.AppendEmpty()
 	incomingLogRecords.AppendEmpty()
 
-	testTelemetry := setupTestTelemetry()
+	testTelemetry := metadatatest.SetupTelemetry()
 	lp, err := NewLogs(context.Background(), testTelemetry.NewSettings(), &testLogsCfg, consumertest.NewNop(), mockErr)
 	require.NoError(t, err)
 
@@ -182,7 +184,7 @@ func TestLogs_RecordIn_ErrorOut(t *testing.T) {
 	require.Error(t, lp.ConsumeLogs(context.Background(), incomingLogs))
 	require.NoError(t, lp.Shutdown(context.Background()))
 
-	testTelemetry.assertMetrics(t, []metricdata.Metrics{
+	testTelemetry.AssertMetrics(t, []metricdata.Metrics{
 		{
 			Name:        "otelcol_processor_incoming_items",
 			Description: "Number of items passed to the processor. [alpha]",
@@ -213,5 +215,5 @@ func TestLogs_RecordIn_ErrorOut(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, metricdatatest.IgnoreTimestamp())
 }

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package storage // import "go.opentelemetry.io/collector/extension/experimental/storage"
+package storage // import "go.opentelemetry.io/collector/extension/xextension/storage"
 
 import (
 	"context"
@@ -47,48 +47,46 @@ type Client interface {
 	Delete(ctx context.Context, key string) error
 
 	// Batch handles specified operations in batch. Get operation results are put in-place
-	Batch(ctx context.Context, ops ...Operation) error
+	Batch(ctx context.Context, ops ...*Operation) error
 
 	// Close will release any resources held by the client
 	Close(ctx context.Context) error
 }
 
-type opType int
+type OpType int
 
 const (
-	Get opType = iota
+	Get OpType = iota
 	Set
 	Delete
 )
 
-type operation struct {
+type Operation struct {
 	// Key specifies key which is going to be get/set/deleted
 	Key string
 	// Value specifies value that is going to be set or holds result of get operation
 	Value []byte
 	// Type describes the operation type
-	Type opType
+	Type OpType
 }
 
-type Operation *operation
-
-func SetOperation(key string, value []byte) Operation {
-	return &operation{
+func SetOperation(key string, value []byte) *Operation {
+	return &Operation{
 		Key:   key,
 		Value: value,
 		Type:  Set,
 	}
 }
 
-func GetOperation(key string) Operation {
-	return &operation{
+func GetOperation(key string) *Operation {
+	return &Operation{
 		Key:  key,
 		Type: Get,
 	}
 }
 
-func DeleteOperation(key string) Operation {
-	return &operation{
+func DeleteOperation(key string) *Operation {
+	return &Operation{
 		Key:  key,
 		Type: Delete,
 	}
