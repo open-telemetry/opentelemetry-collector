@@ -26,11 +26,9 @@ func TestSetupTelemetry(t *testing.T) {
 	require.NotNil(t, tb)
     {{- range $name, $metric := .Telemetry.Metrics }}
         {{- if (and (not $metric.Optional) (not $metric.Data.Async)) }}
-            {{ if eq $metric.Data.Type "Gauge" -}}
-            	tb.{{ $name.Render }}.Set(context.Background(), 1)
-            {{- else if eq $metric.Data.Type "Sum" -}}
+            {{- if eq $metric.Data.Type "Sum" }}
             	tb.{{ $name.Render }}.Add(context.Background(), 1)
-            {{- else if eq $metric.Data.Type "Histogram" -}}
+            {{- else }}
             	tb.{{ $name.Render }}.Record(context.Background(), 1)
             {{- end }}
         {{- end }}
