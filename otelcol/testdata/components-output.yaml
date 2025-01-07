@@ -41,3 +41,8 @@ extensions:
       module: go.opentelemetry.io/collector/extension/extensiontest v1.2.3
       stability:
         extension: Stable
+providers:
+    - name: file
+      module: go.opentelemetry.io/collector/confmap/provider/fileprovider v1.2.3
+    - name: env
+      module: go.opentelemetry.io/collector/confmap/provider/envprovider v1.2.3
