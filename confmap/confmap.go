@@ -60,7 +60,8 @@ type UnmarshalOption interface {
 }
 
 type unmarshalOption struct {
-	ignoreUnused bool
+	ignoreUnused   bool
+	invokeValidate bool
 }
 
 // WithIgnoreUnused sets an option to ignore errors if existing
@@ -69,6 +70,16 @@ type unmarshalOption struct {
 func WithIgnoreUnused() UnmarshalOption {
 	return unmarshalOptionFunc(func(uo *unmarshalOption) {
 		uo.ignoreUnused = true
+	})
+}
+
+// WithInvokeValidate sets an option to invoke the Validate method
+// of unmarshalled types that implement ConfigValidator.
+// When used, config validation with be executed automatically
+// as part of unmarshalling.
+func WithInvokeValidate() UnmarshalOption {
+	return unmarshalOptionFunc(func(uo *unmarshalOption) {
+		uo.invokeValidate = true
 	})
 }
 
@@ -160,7 +171,11 @@ func (l *Conf) Unmarshal(result any, opts ...UnmarshalOption) error {
 	if err != nil {
 		return err
 	}
-	return validate(reflect.ValueOf(result))
+
+	if set.invokeValidate {
+		return validate(reflect.ValueOf(result))
+	}
+	return nil
 }
 
 type marshalOption struct{}
