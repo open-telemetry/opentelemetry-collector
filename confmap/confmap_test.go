@@ -964,3 +964,108 @@ func TestStringyTypes(t *testing.T) {
 		assert.Equal(t, tt.isStringy, isStringyStructure(to))
 	}
 }
+
+type validateConfig struct {
+	String      string                          `mapstructure:"string"`
+	Nested      nestedValidateConfig            `mapstructure:"nested"`
+	SliceNested []nestedValidateConfig          `mapstructure:"slice"`
+	MapNested   map[string]nestedValidateConfig `mapstructure:"map"`
+}
+
+func (c *validateConfig) Validate() error {
+	if c.String == "error" {
+		return errors.New("error in validateConfig because String")
+	}
+	return nil
+}
+
+type nestedValidateConfig struct {
+	String string `mapstructure:"string"`
+}
+
+func (c *nestedValidateConfig) Validate() error {
+	if c.String == "error" {
+		return errors.New("error in nestedValidateConfig because String")
+	}
+	return nil
+}
+
+func TestUnmarshalInvokesValidate(t *testing.T) {
+	tests := []struct {
+		name  string
+		input map[string]any
+		err   error
+	}{
+		{
+			name: "Validation passes",
+			input: map[string]any{
+				"string": "value",
+				"nested": nestedValidateConfig{
+					String: "value",
+				},
+				"slice": []nestedValidateConfig{
+					{
+						String: "value",
+					},
+				},
+				"map": map[string]nestedValidateConfig{
+					"key": {
+						String: "value",
+					},
+				},
+			},
+			err: nil,
+		},
+		{
+			name: "Validation fails because String",
+			input: map[string]any{
+				"string": "error",
+			},
+			err: errors.New("error in validateConfig because String"),
+		},
+		{
+			name: "Validation fails because nested String",
+			input: map[string]any{
+				"nested": nestedValidateConfig{
+					String: "error",
+				},
+			},
+			err: errors.New("error in nestedValidateConfig because String"),
+		},
+		{
+			name: "Validation fails because nested slice String",
+			input: map[string]any{
+				"slice": []nestedValidateConfig{
+					{
+						String: "error",
+					},
+				},
+			},
+			err: errors.New("error in nestedValidateConfig because String"),
+		},
+		{
+			name: "Validation fails because nested map String",
+			input: map[string]any{
+				"map": map[string]nestedValidateConfig{
+					"key": {
+						String: "error",
+					},
+				},
+			},
+			err: errors.New("error in nestedValidateConfig because String"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			conf := NewFromStringMap(tt.input)
+			c := &validateConfig{}
+			err := conf.Unmarshal(c, WithInvokeValidate())
+			if tt.err == nil {
+				require.NoError(t, err)
+			} else {
+				require.Equal(t, tt.err, err)
+			}
+		})
+	}
+}
