@@ -74,7 +74,7 @@ func WithIgnoreUnused() UnmarshalOption {
 }
 
 // WithInvokeValidate sets an option to invoke the Validate method
-// of unmarshalled types that implement ConfigValidator.
+// of unmarshalled types that implement Validator.
 // When used, config validation with be executed automatically
 // as part of unmarshalling.
 func WithInvokeValidate() UnmarshalOption {
@@ -89,15 +89,15 @@ func (fn unmarshalOptionFunc) apply(set *unmarshalOption) {
 	fn(set)
 }
 
-// ConfigValidator defines an optional interface for configurations to implement to do validation.
-type ConfigValidator interface {
+// Validator defines an optional interface for configurations to implement to do validation.
+type Validator interface {
 	// Validate the configuration and returns an error if invalid.
 	Validate() error
 }
 
 // As interface types are only used for static typing, a common idiom to find the reflection Type
 // for an interface type Foo is to use a *Foo value.
-var configValidatorType = reflect.TypeOf((*ConfigValidator)(nil)).Elem()
+var configValidatorType = reflect.TypeOf((*Validator)(nil)).Elem()
 
 func validate(v reflect.Value) error {
 	// Validate the value itself.
@@ -141,12 +141,12 @@ func validate(v reflect.Value) error {
 }
 
 func callValidateIfPossible(v reflect.Value) error {
-	// If the value type implements ConfigValidator just call Validate
+	// If the value type implements Validator just call Validate
 	if v.Type().Implements(configValidatorType) {
-		return v.Interface().(ConfigValidator).Validate()
+		return v.Interface().(Validator).Validate()
 	}
 
-	// If the pointer type implements ConfigValidator call Validate on the pointer to the current value.
+	// If the pointer type implements Validator call Validate on the pointer to the current value.
 	if reflect.PointerTo(v.Type()).Implements(configValidatorType) {
 		// If not addressable, then create a new *V pointer and set the value to current v.
 		if !v.CanAddr() {
@@ -154,7 +154,7 @@ func callValidateIfPossible(v reflect.Value) error {
 			pv.Elem().Set(v)
 			v = pv.Elem()
 		}
-		return v.Addr().Interface().(ConfigValidator).Validate()
+		return v.Addr().Interface().(Validator).Validate()
 	}
 
 	return nil
