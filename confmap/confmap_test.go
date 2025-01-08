@@ -1069,3 +1069,76 @@ func TestUnmarshalInvokesValidate(t *testing.T) {
 		})
 	}
 }
+
+type topConfig struct {
+	CustomUnmarshalConfig customUnmarshalConfig `mapstructure:"custom"`
+}
+
+type customUnmarshalConfig struct {
+	String string               `mapstructure:"string"`
+	Nested nestedValidateConfig `mapstructure:"nested"`
+}
+
+// Unmarshal a confmap.Conf into the config struct.
+func (c *customUnmarshalConfig) Unmarshal(conf *Conf) error {
+	err := conf.Unmarshal(c)
+	if err != nil {
+		return err
+	}
+	if c.String == "" {
+		c.String = "some fancy value"
+	}
+	return nil
+}
+
+func TestCustomUnmarshalInvokesValidate(t *testing.T) {
+	input := map[string]any{
+		"custom": map[string]any{
+			"nested": map[string]any{
+				"string": "error",
+			},
+		},
+	}
+	conf := NewFromStringMap(input)
+	c := &topConfig{}
+	err := conf.Unmarshal(c, WithInvokeValidate())
+	require.Equal(t, errors.New("error in nestedValidateConfig because String"), err)
+
+	input = map[string]any{
+		"custom": map[string]any{
+			"nested": map[string]any{
+				"string": "value",
+			},
+		},
+	}
+	conf = NewFromStringMap(input)
+	c = &topConfig{}
+	err = conf.Unmarshal(c, WithInvokeValidate())
+	require.NoError(t, err)
+	assert.Equal(t, "some fancy value", c.CustomUnmarshalConfig.String)
+	assert.Equal(t, "value", c.CustomUnmarshalConfig.Nested.String)
+}
+
+type manualUnmarshalConfig struct {
+	Nested nestedValidateConfig `mapstructure:"nested"`
+}
+
+// Unmarshal a confmap.Conf into the config struct.
+func (c *manualUnmarshalConfig) Unmarshal(_ *Conf) error {
+	c.Nested = nestedValidateConfig{
+		String: "error",
+	}
+	return nil
+}
+
+func TestValidateIsInvokedWhenManuallyUnmarshalling(t *testing.T) {
+	input := map[string]any{
+		"nested": map[string]any{
+			"string": "anything",
+		},
+	}
+	conf := NewFromStringMap(input)
+	c := &manualUnmarshalConfig{}
+	err := conf.Unmarshal(c, WithInvokeValidate())
+	require.Equal(t, errors.New("error in nestedValidateConfig because String"), err)
+}
