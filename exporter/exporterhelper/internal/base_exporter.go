@@ -102,7 +102,7 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSe
 	}
 
 	if usePullingBasedExporterQueueBatcher.IsEnabled() && be.BatcherCfg.Enabled && !be.queueCfg.Enabled {
-		be.queueFactory = exporterqueue.NewBlockingMemoryQueue[internal.Request]()
+		be.queueFactory = exporterqueue.NewBlockingMemoryQueueFactory[internal.Request]()
 		be.queueCfg.QueueSize = 20
 		q := be.queueFactory(
 			context.Background(),

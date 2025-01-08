@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package queue
+package exporterqueue
 
 import (
 	"context"
@@ -15,7 +15,7 @@ import (
 
 func TestBlockingMemoryQueue(t *testing.T) {
 	var wg sync.WaitGroup
-	q := NewBlockingMemoryQueue[string](BlockingMemoryQueueSettings[string]{Sizer: &RequestSizer[string]{}, Capacity: 1})
+	q := NewBlockingMemoryQueue[string](blockingMemoryQueueSettings[string]{Sizer: &requestSizer[string]{}, Capacity: 1})
 
 	err := errors.New("This is an error")
 	wg.Add(1)

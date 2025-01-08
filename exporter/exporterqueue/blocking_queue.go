@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package queue // import "go.opentelemetry.io/collector/exporter/internal/queue"
+package exporterqueue // import "go.opentelemetry.io/collector/exporter/exporterqueue"
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 type blockingMemoryQueue[T any] struct {
 	component.StartFunc
 	*sizedChannel[blockingMemQueueEl[T]]
-	sizer Sizer[T]
+	sizer sizer[T]
 
 	mu        sync.Mutex
 	nextIndex uint64
@@ -22,14 +22,14 @@ type blockingMemoryQueue[T any] struct {
 }
 
 // MemoryQueueSettings defines internal parameters for boundedMemoryQueue creation.
-type BlockingMemoryQueueSettings[T any] struct {
-	Sizer    Sizer[T]
+type blockingMemoryQueueSettings[T any] struct {
+	Sizer    sizer[T]
 	Capacity int64
 }
 
 // NewBoundedMemoryQueue constructs the new queue of specified capacity, and with an optional
 // callback for dropped items (e.g. useful to emit metrics).
-func NewBlockingMemoryQueue[T any](set BlockingMemoryQueueSettings[T]) Queue[T] {
+func NewBlockingMemoryQueue[T any](set blockingMemoryQueueSettings[T]) Queue[T] {
 	return &blockingMemoryQueue[T]{
 		sizedChannel: newSizedChannel[blockingMemQueueEl[T]](set.Capacity, nil, 0),
 		sizer:        set.Sizer,
