@@ -91,7 +91,9 @@ func (g *Graph) getReceivers() map[pipeline.Signal]map[component.ID]component.Co
 			if !ok {
 				continue
 			}
-			receiversMap[rcvrNode.pipelineType][rcvrNode.componentID] = rcvrNode.Component
+			for signal := range rcvrNode.pipelineTypes {
+				receiversMap[signal][rcvrNode.componentID] = rcvrNode.Component
+			}
 		}
 	}
 	return receiversMap

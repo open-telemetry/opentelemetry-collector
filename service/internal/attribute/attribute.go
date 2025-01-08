@@ -7,6 +7,7 @@ import (
 	"hash/fnv"
 
 	"go.opentelemetry.io/otel/attribute"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pipeline"
@@ -47,10 +48,25 @@ func (a Attributes) ID() int64 {
 	return a.id
 }
 
+func (a Attributes) Logger(logger *zap.Logger) *zap.Logger {
+	fields := make([]zap.Field, 0, a.set.Len())
+	for _, kv := range a.set.ToSlice() {
+		fields = append(fields, zap.String(string(kv.Key), kv.Value.AsString()))
+	}
+	return logger.With(fields...)
+}
+
 func Receiver(pipelineType pipeline.Signal, id component.ID) *Attributes {
 	return newAttributes(
 		attribute.String(componentKindKey, component.KindReceiver.String()),
 		attribute.String(signalKey, pipelineType.String()),
+		attribute.String(componentIDKey, id.String()),
+	)
+}
+
+func SharedReceiver(id component.ID) *Attributes {
+	return newAttributes(
+		attribute.String(componentKindKey, component.KindReceiver.String()),
 		attribute.String(componentIDKey, id.String()),
 	)
 }
@@ -68,6 +84,13 @@ func Exporter(pipelineType pipeline.Signal, id component.ID) *Attributes {
 	return newAttributes(
 		attribute.String(componentKindKey, component.KindExporter.String()),
 		attribute.String(signalKey, pipelineType.String()),
+		attribute.String(componentIDKey, id.String()),
+	)
+}
+
+func SharedExporter(id component.ID) *Attributes {
+	return newAttributes(
+		attribute.String(componentKindKey, component.KindExporter.String()),
 		attribute.String(componentIDKey, id.String()),
 	)
 }

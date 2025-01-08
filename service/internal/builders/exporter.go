@@ -94,7 +94,7 @@ func (b *ExporterBuilder) CreateProfiles(ctx context.Context, set exporter.Setti
 	return f.CreateProfiles(ctx, set, cfg)
 }
 
-func (b *ExporterBuilder) Factory(componentType component.Type) component.Factory {
+func (b *ExporterBuilder) Factory(componentType component.Type) exporter.Factory {
 	return b.factories[componentType]
 }
 

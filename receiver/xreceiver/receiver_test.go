@@ -22,6 +22,7 @@ func TestNewFactoryWithProfiles(t *testing.T) {
 		testType,
 		func() component.Config { return &defaultCfg },
 		WithProfiles(createProfiles, component.StabilityLevelAlpha),
+		WithSharedInstance(),
 	)
 	assert.EqualValues(t, testType, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())

@@ -17,8 +17,8 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensioncapabilities"
+	"go.opentelemetry.io/collector/service/internal/attribute"
 	"go.opentelemetry.io/collector/service/internal/builders"
-	"go.opentelemetry.io/collector/service/internal/components"
 	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/internal/zpages"
 )
@@ -38,7 +38,7 @@ type Extensions struct {
 func (bes *Extensions) Start(ctx context.Context, host component.Host) error {
 	bes.telemetry.Logger.Info("Starting extensions...")
 	for _, extID := range bes.extensionIDs {
-		extLogger := components.ExtensionLogger(bes.telemetry.Logger, extID)
+		extLogger := attribute.Extension(extID).Logger(bes.telemetry.Logger)
 		extLogger.Info("Extension is starting...")
 		instanceID := bes.instanceIDs[extID]
 		ext := bes.extMap[extID]
@@ -216,7 +216,7 @@ func New(ctx context.Context, set Settings, cfg Config, options ...Option) (*Ext
 			BuildInfo:         set.BuildInfo,
 			ModuleInfo:        set.ModuleInfo,
 		}
-		extSet.TelemetrySettings.Logger = components.ExtensionLogger(set.Telemetry.Logger, extID)
+		extSet.TelemetrySettings.Logger = attribute.Extension(extID).Logger(set.Telemetry.Logger)
 
 		ext, err := set.Extensions.Create(ctx, extSet)
 		if err != nil {

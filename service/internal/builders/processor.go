@@ -108,7 +108,7 @@ func (b *ProcessorBuilder) CreateProfiles(ctx context.Context, set processor.Set
 	return f.CreateProfiles(ctx, set, cfg, next)
 }
 
-func (b *ProcessorBuilder) Factory(componentType component.Type) component.Factory {
+func (b *ProcessorBuilder) Factory(componentType component.Type) processor.Factory {
 	return b.factories[componentType]
 }
 

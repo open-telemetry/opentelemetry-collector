@@ -1096,6 +1096,208 @@ func TestInstances(t *testing.T) {
 				component.MustNewID("exampleexporter"):  4, // one per signal
 			},
 		},
+		{
+			name: "shared_receiver",
+			pipelineConfigs: pipelines.Config{
+				pipeline.NewIDWithName(pipeline.SignalTraces, "1"): {
+					Receivers:  []component.ID{component.MustNewID("sharedreceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+				},
+				pipeline.NewIDWithName(pipeline.SignalTraces, "2"): {
+					Receivers:  []component.ID{component.MustNewID("sharedreceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+				},
+				pipeline.NewIDWithName(pipeline.SignalMetrics, "1"): {
+					Receivers:  []component.ID{component.MustNewID("sharedreceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+				},
+				pipeline.NewIDWithName(pipeline.SignalMetrics, "2"): {
+					Receivers:  []component.ID{component.MustNewID("sharedreceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+				},
+				pipeline.NewIDWithName(pipeline.SignalLogs, "1"): {
+					Receivers:  []component.ID{component.MustNewID("sharedreceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+				},
+				pipeline.NewIDWithName(pipeline.SignalLogs, "2"): {
+					Receivers:  []component.ID{component.MustNewID("sharedreceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+				},
+				pipeline.NewIDWithName(xpipeline.SignalProfiles, "1"): {
+					Receivers:  []component.ID{component.MustNewID("sharedreceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+				},
+				pipeline.NewIDWithName(xpipeline.SignalProfiles, "2"): {
+					Receivers:  []component.ID{component.MustNewID("sharedreceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+				},
+			},
+			expectInstances: map[component.ID]int{
+				component.MustNewID("sharedreceiver"):   1, // shared
+				component.MustNewID("exampleprocessor"): 8, // one per pipeline
+				component.MustNewID("exampleexporter"):  4, // each data type has an instance
+			},
+		},
+		{
+			name: "shared_exporter",
+			pipelineConfigs: pipelines.Config{
+				pipeline.NewIDWithName(pipeline.SignalTraces, "1"): {
+					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("sharedexporter")},
+				},
+				pipeline.NewIDWithName(pipeline.SignalTraces, "2"): {
+					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("sharedexporter")},
+				},
+				pipeline.NewIDWithName(pipeline.SignalMetrics, "1"): {
+					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("sharedexporter")},
+				},
+				pipeline.NewIDWithName(pipeline.SignalMetrics, "2"): {
+					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("sharedexporter")},
+				},
+				pipeline.NewIDWithName(pipeline.SignalLogs, "1"): {
+					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("sharedexporter")},
+				},
+				pipeline.NewIDWithName(pipeline.SignalLogs, "2"): {
+					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("sharedexporter")},
+				},
+				pipeline.NewIDWithName(xpipeline.SignalProfiles, "1"): {
+					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("sharedexporter")},
+				},
+				pipeline.NewIDWithName(xpipeline.SignalProfiles, "2"): {
+					Receivers:  []component.ID{component.MustNewID("examplereceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("sharedexporter")},
+				},
+			},
+			expectInstances: map[component.ID]int{
+				component.MustNewID("examplereceiver"):  4, // each data type has an instance
+				component.MustNewID("exampleprocessor"): 8, // one per pipeline
+				component.MustNewID("sharedexporter"):   1, // shared
+			},
+		},
+		{
+			name: "shared_receiver_and_exporter",
+			pipelineConfigs: pipelines.Config{
+				pipeline.NewIDWithName(pipeline.SignalTraces, "1"): {
+					Receivers:  []component.ID{component.MustNewID("sharedreceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("sharedexporter")},
+				},
+				pipeline.NewIDWithName(pipeline.SignalTraces, "2"): {
+					Receivers:  []component.ID{component.MustNewID("sharedreceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("sharedexporter")},
+				},
+				pipeline.NewIDWithName(pipeline.SignalMetrics, "1"): {
+					Receivers:  []component.ID{component.MustNewID("sharedreceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("sharedexporter")},
+				},
+				pipeline.NewIDWithName(pipeline.SignalMetrics, "2"): {
+					Receivers:  []component.ID{component.MustNewID("sharedreceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("sharedexporter")},
+				},
+				pipeline.NewIDWithName(pipeline.SignalLogs, "1"): {
+					Receivers:  []component.ID{component.MustNewID("sharedreceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("sharedexporter")},
+				},
+				pipeline.NewIDWithName(pipeline.SignalLogs, "2"): {
+					Receivers:  []component.ID{component.MustNewID("sharedreceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("sharedexporter")},
+				},
+				pipeline.NewIDWithName(xpipeline.SignalProfiles, "1"): {
+					Receivers:  []component.ID{component.MustNewID("sharedreceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("sharedexporter")},
+				},
+				pipeline.NewIDWithName(xpipeline.SignalProfiles, "2"): {
+					Receivers:  []component.ID{component.MustNewID("sharedreceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("sharedexporter")},
+				},
+			},
+			expectInstances: map[component.ID]int{
+				component.MustNewID("sharedreceiver"):   1, // shared
+				component.MustNewID("exampleprocessor"): 8, // one per pipeline
+				component.MustNewID("sharedexporter"):   1, // shared
+			},
+		},
+		{
+			name: "mixed",
+			pipelineConfigs: pipelines.Config{
+				pipeline.NewIDWithName(pipeline.SignalTraces, "1"): {
+					Receivers:  []component.ID{component.MustNewID("sharedreceiver"), component.MustNewID("examplereceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("sharedexporter"), component.MustNewID("exampleexporter")},
+				},
+				pipeline.NewIDWithName(pipeline.SignalTraces, "2"): {
+					Receivers:  []component.ID{component.MustNewID("sharedreceiver"), component.MustNewID("examplereceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("sharedexporter"), component.MustNewID("exampleexporter")},
+				},
+				pipeline.NewIDWithName(pipeline.SignalMetrics, "1"): {
+					Receivers:  []component.ID{component.MustNewID("sharedreceiver"), component.MustNewID("examplereceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("sharedexporter"), component.MustNewID("exampleexporter")},
+				},
+				pipeline.NewIDWithName(pipeline.SignalMetrics, "2"): {
+					Receivers:  []component.ID{component.MustNewID("sharedreceiver"), component.MustNewID("examplereceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("sharedexporter"), component.MustNewID("exampleexporter")},
+				},
+				pipeline.NewIDWithName(pipeline.SignalLogs, "1"): {
+					Receivers:  []component.ID{component.MustNewID("sharedreceiver"), component.MustNewID("examplereceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("sharedexporter"), component.MustNewID("exampleexporter")},
+				},
+				pipeline.NewIDWithName(pipeline.SignalLogs, "2"): {
+					Receivers:  []component.ID{component.MustNewID("sharedreceiver"), component.MustNewID("examplereceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("sharedexporter"), component.MustNewID("exampleexporter")},
+				},
+				pipeline.NewIDWithName(xpipeline.SignalProfiles, "1"): {
+					Receivers:  []component.ID{component.MustNewID("sharedreceiver"), component.MustNewID("examplereceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("sharedexporter"), component.MustNewID("exampleexporter")},
+				},
+				pipeline.NewIDWithName(xpipeline.SignalProfiles, "2"): {
+					Receivers:  []component.ID{component.MustNewID("sharedreceiver"), component.MustNewID("examplereceiver")},
+					Processors: []component.ID{component.MustNewID("exampleprocessor")},
+					Exporters:  []component.ID{component.MustNewID("sharedexporter"), component.MustNewID("exampleexporter")},
+				},
+			},
+			expectInstances: map[component.ID]int{
+				component.MustNewID("sharedreceiver"):   1, // shared
+				component.MustNewID("examplereceiver"):  4, // one per signal
+				component.MustNewID("exampleprocessor"): 8, // one per pipeline
+				component.MustNewID("sharedexporter"):   1, // shared
+				component.MustNewID("exampleexporter"):  4, // one per signal
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1106,9 +1308,11 @@ func TestInstances(t *testing.T) {
 				ReceiverBuilder: builders.NewReceiver(
 					map[component.ID]component.Config{
 						component.MustNewID("examplereceiver"): testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
+						component.MustNewID("sharedreceiver"):  testcomponents.SharedReceiverFactory.CreateDefaultConfig(),
 					},
 					map[component.Type]receiver.Factory{
 						testcomponents.ExampleReceiverFactory.Type(): testcomponents.ExampleReceiverFactory,
+						testcomponents.SharedReceiverFactory.Type():  testcomponents.SharedReceiverFactory,
 					},
 				),
 				ProcessorBuilder: builders.NewProcessor(
@@ -1122,9 +1326,11 @@ func TestInstances(t *testing.T) {
 				ExporterBuilder: builders.NewExporter(
 					map[component.ID]component.Config{
 						component.MustNewID("exampleexporter"): testcomponents.ExampleExporterFactory.CreateDefaultConfig(),
+						component.MustNewID("sharedexporter"):  testcomponents.SharedExporterFactory.CreateDefaultConfig(),
 					},
 					map[component.Type]exporter.Factory{
 						testcomponents.ExampleExporterFactory.Type(): testcomponents.ExampleExporterFactory,
+						testcomponents.SharedExporterFactory.Type():  testcomponents.SharedExporterFactory,
 					},
 				),
 				ConnectorBuilder: builders.NewConnector(map[component.ID]component.Config{}, map[component.Type]connector.Factory{}),
@@ -2321,11 +2527,11 @@ func TestGraphBuildErrors(t *testing.T) {
 				},
 			},
 			expected: `cycle detected: ` +
-				`connector "nop/conn" (logs to logs) -> ` +
-				`processor "nop" in pipeline "logs/1" -> ` +
 				`connector "nop/conn1" (logs to logs) -> ` +
 				`processor "nop" in pipeline "logs/2" -> ` +
-				`connector "nop/conn" (logs to logs)`,
+				`connector "nop/conn" (logs to logs) -> ` +
+				`processor "nop" in pipeline "logs/1" -> ` +
+				`connector "nop/conn1" (logs to logs)`,
 		},
 		{
 			name: "not_allowed_deep_cycle_profiles.yaml",
@@ -2427,13 +2633,13 @@ func TestGraphBuildErrors(t *testing.T) {
 				},
 			},
 			expected: `cycle detected: ` +
-				`connector "nop/forkagain" (traces to traces) -> ` +
-				`processor "nop" in pipeline "traces/copy2b" -> ` +
 				`connector "nop/rawlog" (traces to logs) -> ` +
 				`processor "nop" in pipeline "logs/raw" -> ` +
 				`connector "nop/fork" (logs to traces) -> ` +
 				`processor "nop" in pipeline "traces/copy2" -> ` +
-				`connector "nop/forkagain" (traces to traces)`,
+				`connector "nop/forkagain" (traces to traces) -> ` +
+				`processor "nop" in pipeline "traces/copy2b" -> ` +
+				`connector "nop/rawlog" (traces to logs)`,
 		},
 		{
 			name: "unknown_exporter_config",
@@ -2465,7 +2671,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.MustNewID("unknown")},
 				},
 			},
-			expected: "failed to create \"unknown\" exporter for data type \"traces\": exporter factory not available for: \"unknown\"",
+			expected: "exporter factory not available for: \"unknown\"",
 		},
 		{
 			name: "unknown_processor_config",
@@ -2505,7 +2711,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters:  []component.ID{component.MustNewID("nop")},
 				},
 			},
-			expected: "failed to create \"unknown\" processor, in pipeline \"metrics\": processor factory not available for: \"unknown\"",
+			expected: "processor factory not available for: \"unknown\"",
 		},
 		{
 			name: "unknown_receiver_config",
@@ -2537,7 +2743,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
 			},
-			expected: "failed to create \"unknown\" receiver for data type \"logs\": receiver factory not available for: \"unknown\"",
+			expected: "receiver factory not available for: \"unknown\"",
 		},
 		{
 			name: "unknown_connector_factory",

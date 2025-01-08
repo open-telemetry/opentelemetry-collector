@@ -7,7 +7,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pipeline"
-	"go.opentelemetry.io/collector/service/internal/graph/attribute"
+	"go.opentelemetry.io/collector/service/internal/attribute"
 )
 
 var _ consumerNode = (*capabilitiesNode)(nil)

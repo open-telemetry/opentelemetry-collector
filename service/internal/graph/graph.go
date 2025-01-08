@@ -111,13 +111,28 @@ func (g *Graph) createNodes(set Settings) error {
 				connectorsAsReceiver[recvID] = append(connectorsAsReceiver[recvID], pipelineID)
 				continue
 			}
-			rcvrNode := g.createReceiver(pipelineID, recvID)
+			factory := set.ReceiverBuilder.Factory(recvID.Type())
+			if factory == nil {
+				return fmt.Errorf("receiver factory not available for: %q", recvID.Type())
+			}
+			var rcvrNode *receiverNode
+			if factory.Metadata().SharedInstance {
+				rcvrNode = g.sharedReceiver(recvID)
+				rcvrNode.withSignalType(pipelineID.Signal())
+			} else {
+				rcvrNode = g.createReceiver(pipelineID, recvID)
+			}
 			pipe.receivers[rcvrNode.ID()] = rcvrNode
 		}
 
 		pipe.capabilitiesNode = newCapabilitiesNode(pipelineID)
 
 		for _, procID := range pipelineCfg.Processors {
+			factory := set.ProcessorBuilder.Factory(procID.Type())
+			if factory == nil {
+				return fmt.Errorf("processor factory not available for: %q", procID.Type())
+			}
+
 			procNode := g.createProcessor(pipelineID, procID)
 			pipe.processors = append(pipe.processors, procNode)
 		}
@@ -130,8 +145,19 @@ func (g *Graph) createNodes(set Settings) error {
 				connectorsAsExporter[exprID] = append(connectorsAsExporter[exprID], pipelineID)
 				continue
 			}
-			expNode := g.createExporter(pipelineID, exprID)
-			pipe.exporters[expNode.ID()] = expNode
+			factory := set.ExporterBuilder.Factory(exprID.Type())
+			if factory == nil {
+				return fmt.Errorf("exporter factory not available for: %q", exprID.Type())
+			}
+
+			var exprNode *exporterNode
+			if factory.Metadata().SharedInstance {
+				exprNode = g.sharedExporter(exprID)
+				exprNode.withSignalType(pipelineID.Signal())
+			} else {
+				exprNode = g.createExporter(pipelineID, exprID)
+			}
+			pipe.exporters[exprNode.ID()] = exprNode
 		}
 	}
 
@@ -140,7 +166,6 @@ func (g *Graph) createNodes(set Settings) error {
 		if factory == nil {
 			return fmt.Errorf("connector factory not available for: %q", connID.Type())
 		}
-		connFactory := factory.(connector.Factory)
 
 		expTypes := make(map[pipeline.Signal]bool)
 		for _, pipelineID := range connectorsAsExporter[connID] {
@@ -160,7 +185,7 @@ func (g *Graph) createNodes(set Settings) error {
 		for expType := range expTypes {
 			for recType := range recTypes {
 				// Typechecks the connector's receiving and exporting datatypes.
-				if connectorStability(connFactory, expType, recType) != component.StabilityLevelUndefined {
+				if connectorStability(factory, expType, recType) != component.StabilityLevelUndefined {
 					expTypes[expType] = true
 					recTypes[recType] = true
 				}
@@ -182,18 +207,27 @@ func (g *Graph) createNodes(set Settings) error {
 
 		for _, eID := range connectorsAsExporter[connID] {
 			for _, rID := range connectorsAsReceiver[connID] {
-				if connectorStability(connFactory, eID.Signal(), rID.Signal()) == component.StabilityLevelUndefined {
+				if connectorStability(factory, eID.Signal(), rID.Signal()) == component.StabilityLevelUndefined {
 					// Connector is not supported for this combination, but we know it is used correctly elsewhere
 					continue
 				}
-				connNode := g.createConnector(eID, rID, connID)
 
+				connNode := g.createConnector(eID, rID, connID)
 				g.pipelines[eID].exporters[connNode.ID()] = connNode
 				g.pipelines[rID].receivers[connNode.ID()] = connNode
 			}
 		}
 	}
 	return nil
+}
+
+func (g *Graph) sharedReceiver(recvID component.ID) *receiverNode {
+	rcvrNode := newSharedReceiverNode(recvID)
+	if node := g.componentGraph.Node(rcvrNode.ID()); node != nil {
+		return g.componentGraph.Node(rcvrNode.ID()).(*receiverNode)
+	}
+	g.componentGraph.AddNode(rcvrNode)
+	return rcvrNode
 }
 
 func (g *Graph) createReceiver(pipelineID pipeline.ID, recvID component.ID) *receiverNode {
@@ -217,6 +251,15 @@ func (g *Graph) createProcessor(pipelineID pipeline.ID, procID component.ID) *pr
 		procID, component.KindProcessor, pipelineID,
 	)
 	return procNode
+}
+
+func (g *Graph) sharedExporter(exprID component.ID) *exporterNode {
+	expNode := newSharedExporterNode(exprID)
+	if node := g.componentGraph.Node(expNode.ID()); node != nil {
+		return g.componentGraph.Node(expNode.ID()).(*exporterNode)
+	}
+	g.componentGraph.AddNode(expNode)
+	return expNode
 }
 
 func (g *Graph) createExporter(pipelineID pipeline.ID, exprID component.ID) *exporterNode {
@@ -490,7 +533,9 @@ func (g *Graph) GetExporters() map[pipeline.Signal]map[component.ID]component.Co
 		for _, expNode := range pg.exporters {
 			// Skip connectors, otherwise individual components can introduce cycles
 			if expNode, ok := g.componentGraph.Node(expNode.ID()).(*exporterNode); ok {
-				exportersMap[expNode.pipelineType][expNode.componentID] = expNode.Component
+				for signal := range expNode.pipelineTypes {
+					exportersMap[signal][expNode.componentID] = expNode.Component
+				}
 			}
 		}
 	}
@@ -529,7 +574,8 @@ func cycleErr(err error, cycles [][]graph.Node) error {
 		case *processorNode:
 			componentDetails = append(componentDetails, fmt.Sprintf("processor %q in pipeline %q", n.componentID, n.pipelineID.String()))
 		case *connectorNode:
-			componentDetails = append(componentDetails, fmt.Sprintf("connector %q (%s to %s)", n.componentID, n.exprPipelineType, n.rcvrPipelineType))
+			componentDetails = append(componentDetails, fmt.Sprintf("connector %q (%s to %s)", n.componentID, n.exprPipelineType,
+				n.rcvrPipelineType))
 		default:
 			continue // skip capabilities/fanout nodes
 		}

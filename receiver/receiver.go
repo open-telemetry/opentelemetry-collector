@@ -92,7 +92,7 @@ type Factory interface {
 
 // Metadata contains metadata describing the component that is created by the factory.
 type Metadata struct {
-	SingletonInstance bool
+	SharedInstance bool
 }
 
 // FactoryOption apply changes to Factory.
@@ -199,10 +199,10 @@ func WithLogs(createLogs CreateLogsFunc, sl component.StabilityLevel) FactoryOpt
 	})
 }
 
-// AsSingletonInstance indicates that the factory always returns the same instance of the component.
-func AsSingletonInstance() FactoryOption {
+// WithSharedInstance indicates that the factory always returns the same instance of the component for a given component ID.
+func WithSharedInstance() FactoryOption {
 	return factoryOptionFunc(func(o *factory) {
-		o.metadata.SingletonInstance = true
+		o.metadata.SharedInstance = true
 	})
 }
 

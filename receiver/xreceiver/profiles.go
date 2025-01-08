@@ -105,10 +105,10 @@ func WithProfiles(createProfiles CreateProfilesFunc, sl component.StabilityLevel
 	})
 }
 
-// AsSingletonInstance sets the receiver as a singleton instance.
-func AsSingletonInstance() FactoryOption {
+// WithSharedInstance WithSharedInstance indicates that the factory always returns the same instance of the component for a given component ID.
+func WithSharedInstance() FactoryOption {
 	return factoryOptionFunc(func(o *factoryOpts) {
-		o.opts = append(o.opts, receiver.AsSingletonInstance())
+		o.opts = append(o.opts, receiver.WithSharedInstance())
 	})
 }
 

@@ -34,7 +34,7 @@ func NewFactory() receiver.Factory {
 		xreceiver.WithMetrics(createMetrics, metadata.MetricsStability),
 		xreceiver.WithLogs(createLog, metadata.LogsStability),
 		xreceiver.WithProfiles(createProfiles, metadata.ProfilesStability),
-		xreceiver.AsSingletonInstance(),
+		xreceiver.WithSharedInstance(),
 	)
 }
 

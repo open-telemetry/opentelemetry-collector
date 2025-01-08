@@ -13,9 +13,8 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/service/internal/attribute"
 	"go.opentelemetry.io/collector/service/internal/builders"
-	"go.opentelemetry.io/collector/service/internal/components"
-	"go.opentelemetry.io/collector/service/internal/graph/attribute"
 )
 
 var _ consumerNode = (*processorNode)(nil)
@@ -47,7 +46,7 @@ func (n *processorNode) buildComponent(ctx context.Context,
 	builder *builders.ProcessorBuilder,
 	next baseConsumer,
 ) error {
-	tel.Logger = components.ProcessorLogger(tel.Logger, n.componentID, n.pipelineID)
+	tel.Logger = n.Attributes.Logger(tel.Logger)
 	set := processor.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
 	var err error
 	switch n.pipelineID.Signal() {

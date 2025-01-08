@@ -58,6 +58,19 @@ func TestReceiver(t *testing.T) {
 	}
 }
 
+func TestSharedReceiver(t *testing.T) {
+	for _, id := range cIDs {
+		r := SharedReceiver(id)
+		componentKind, ok := r.Attributes().Value(componentKindKey)
+		require.True(t, ok)
+		require.Equal(t, component.KindReceiver.String(), componentKind.AsString())
+
+		componentID, ok := r.Attributes().Value(componentIDKey)
+		require.True(t, ok)
+		require.Equal(t, id.String(), componentID.AsString())
+	}
+}
+
 func TestProcessor(t *testing.T) {
 	for _, pID := range pIDs {
 		for _, id := range cIDs {
@@ -93,6 +106,19 @@ func TestExporter(t *testing.T) {
 			require.True(t, ok)
 			require.Equal(t, id.String(), componentID.AsString())
 		}
+	}
+}
+
+func TestSharedExporter(t *testing.T) {
+	for _, id := range cIDs {
+		e := SharedExporter(id)
+		componentKind, ok := e.Attributes().Value(componentKindKey)
+		require.True(t, ok)
+		require.Equal(t, component.KindExporter.String(), componentKind.AsString())
+
+		componentID, ok := e.Attributes().Value(componentIDKey)
+		require.True(t, ok)
+		require.Equal(t, id.String(), componentID.AsString())
 	}
 }
 
@@ -155,6 +181,9 @@ func createExampleSets() []*Attributes {
 			sets = append(sets, Receiver(sig, id))
 		}
 	}
+	for _, id := range cIDs {
+		sets = append(sets, SharedReceiver(id))
+	}
 
 	// Processor examples.
 	for _, pID := range pIDs {
@@ -168,6 +197,9 @@ func createExampleSets() []*Attributes {
 		for _, id := range cIDs {
 			sets = append(sets, Exporter(sig, id))
 		}
+	}
+	for _, id := range cIDs {
+		sets = append(sets, SharedExporter(id))
 	}
 
 	// Connector examples.

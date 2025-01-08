@@ -376,7 +376,7 @@ func (b *ConnectorBuilder) IsConfigured(componentID component.ID) bool {
 	return ok
 }
 
-func (b *ConnectorBuilder) Factory(componentType component.Type) component.Factory {
+func (b *ConnectorBuilder) Factory(componentType component.Type) connector.Factory {
 	return b.factories[componentType]
 }
 

@@ -110,7 +110,7 @@ func (b *ReceiverBuilder) CreateProfiles(ctx context.Context, set receiver.Setti
 	return f.CreateProfiles(ctx, set, cfg, next)
 }
 
-func (b *ReceiverBuilder) Factory(componentType component.Type) component.Factory {
+func (b *ReceiverBuilder) Factory(componentType component.Type) receiver.Factory {
 	return b.factories[componentType]
 }
 

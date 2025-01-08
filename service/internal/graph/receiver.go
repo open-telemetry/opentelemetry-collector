@@ -14,26 +14,37 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/service/internal/attribute"
 	"go.opentelemetry.io/collector/service/internal/builders"
-	"go.opentelemetry.io/collector/service/internal/components"
-	"go.opentelemetry.io/collector/service/internal/graph/attribute"
 )
 
 // A receiver instance can be shared by multiple pipelines of the same type.
 // Therefore, nodeID is derived from "pipeline type" and "component ID".
 type receiverNode struct {
 	*attribute.Attributes
-	componentID  component.ID
-	pipelineType pipeline.Signal
+	componentID   component.ID
+	pipelineTypes map[pipeline.Signal]struct{}
 	component.Component
 }
 
 func newReceiverNode(pipelineType pipeline.Signal, recvID component.ID) *receiverNode {
 	return &receiverNode{
-		Attributes:   attribute.Receiver(pipelineType, recvID),
-		componentID:  recvID,
-		pipelineType: pipelineType,
+		Attributes:    attribute.Receiver(pipelineType, recvID),
+		componentID:   recvID,
+		pipelineTypes: map[pipeline.Signal]struct{}{pipelineType: {}},
 	}
+}
+
+func newSharedReceiverNode(recvID component.ID) *receiverNode {
+	return &receiverNode{
+		Attributes:    attribute.SharedReceiver(recvID),
+		componentID:   recvID,
+		pipelineTypes: map[pipeline.Signal]struct{}{},
+	}
+}
+
+func (n *receiverNode) withSignalType(pipelineType pipeline.Signal) {
+	n.pipelineTypes[pipelineType] = struct{}{}
 }
 
 func (n *receiverNode) buildComponent(ctx context.Context,
@@ -42,39 +53,41 @@ func (n *receiverNode) buildComponent(ctx context.Context,
 	builder *builders.ReceiverBuilder,
 	nexts []baseConsumer,
 ) error {
-	tel.Logger = components.ReceiverLogger(tel.Logger, n.componentID, n.pipelineType)
+	tel.Logger = n.Attributes.Logger(tel.Logger)
 	set := receiver.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
 	var err error
-	switch n.pipelineType {
-	case pipeline.SignalTraces:
-		var consumers []consumer.Traces
-		for _, next := range nexts {
-			consumers = append(consumers, next.(consumer.Traces))
+	for signal := range n.pipelineTypes {
+		switch signal {
+		case pipeline.SignalTraces:
+			var consumers []consumer.Traces
+			for _, next := range nexts {
+				consumers = append(consumers, next.(consumer.Traces))
+			}
+			n.Component, err = builder.CreateTraces(ctx, set, fanoutconsumer.NewTraces(consumers))
+		case pipeline.SignalMetrics:
+			var consumers []consumer.Metrics
+			for _, next := range nexts {
+				consumers = append(consumers, next.(consumer.Metrics))
+			}
+			n.Component, err = builder.CreateMetrics(ctx, set, fanoutconsumer.NewMetrics(consumers))
+		case pipeline.SignalLogs:
+			var consumers []consumer.Logs
+			for _, next := range nexts {
+				consumers = append(consumers, next.(consumer.Logs))
+			}
+			n.Component, err = builder.CreateLogs(ctx, set, fanoutconsumer.NewLogs(consumers))
+		case xpipeline.SignalProfiles:
+			var consumers []xconsumer.Profiles
+			for _, next := range nexts {
+				consumers = append(consumers, next.(xconsumer.Profiles))
+			}
+			n.Component, err = builder.CreateProfiles(ctx, set, fanoutconsumer.NewProfiles(consumers))
+		default:
+			return fmt.Errorf("error creating receiver %q for data type %q is not supported", set.ID, signal)
 		}
-		n.Component, err = builder.CreateTraces(ctx, set, fanoutconsumer.NewTraces(consumers))
-	case pipeline.SignalMetrics:
-		var consumers []consumer.Metrics
-		for _, next := range nexts {
-			consumers = append(consumers, next.(consumer.Metrics))
+		if err != nil {
+			return fmt.Errorf("failed to create %q receiver for data type %q: %w", set.ID, signal, err)
 		}
-		n.Component, err = builder.CreateMetrics(ctx, set, fanoutconsumer.NewMetrics(consumers))
-	case pipeline.SignalLogs:
-		var consumers []consumer.Logs
-		for _, next := range nexts {
-			consumers = append(consumers, next.(consumer.Logs))
-		}
-		n.Component, err = builder.CreateLogs(ctx, set, fanoutconsumer.NewLogs(consumers))
-	case xpipeline.SignalProfiles:
-		var consumers []xconsumer.Profiles
-		for _, next := range nexts {
-			consumers = append(consumers, next.(xconsumer.Profiles))
-		}
-		n.Component, err = builder.CreateProfiles(ctx, set, fanoutconsumer.NewProfiles(consumers))
-	default:
-		return fmt.Errorf("error creating receiver %q for data type %q is not supported", set.ID, n.pipelineType)
-	}
-	if err != nil {
-		return fmt.Errorf("failed to create %q receiver for data type %q: %w", set.ID, n.pipelineType, err)
 	}
 	return nil
 }

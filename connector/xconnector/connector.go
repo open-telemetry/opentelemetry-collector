@@ -269,13 +269,6 @@ func WithProfilesToLogs(createProfilesToLogs CreateProfilesToLogsFunc, sl compon
 	})
 }
 
-// AsSingletonInstance sets the connector as a singleton instance.
-func AsSingletonInstance() FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
-		o.opts = append(o.opts, connector.AsSingletonInstance())
-	})
-}
-
 // factory implements the Factory interface.
 type factory struct {
 	connector.Factory
