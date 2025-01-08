@@ -96,10 +96,6 @@ replace go.opentelemetry.io/collector/consumer/consumererror => ../consumer/cons
 
 replace go.opentelemetry.io/collector/extension/extensiontest => ../extension/extensiontest
 
-replace go.opentelemetry.io/collector/scraper => ../scraper
-
 replace go.opentelemetry.io/collector/featuregate => ../featuregate
-
-replace go.opentelemetry.io/collector/scraper/scraperhelper => ../scraper/scraperhelper
 
 replace go.opentelemetry.io/collector/extension/xextension => ../extension/xextension
