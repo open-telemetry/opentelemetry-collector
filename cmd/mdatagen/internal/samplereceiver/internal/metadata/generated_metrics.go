@@ -15,7 +15,7 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 )
 
-// AttributeEnumAttr specifies the a value enum_attr attribute.
+// AttributeEnumAttr specifies the value enum_attr attribute.
 type AttributeEnumAttr int
 
 const (

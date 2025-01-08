@@ -12,6 +12,10 @@ concurrency:
 
 permissions: read-all
 
+env:
+  # renovate: datasource=github-releases depName=tcort/markdown-link-check
+  MD_LINK_CHECK_VERSION: "3.12.2"
+
 jobs:
   changedfiles:
     name: changed files
@@ -45,13 +49,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install markdown-link-check
-        run: npm ci
-
-      - name: Run markdown-link-check
-        run: |
-          npx --no -- markdown-link-check \
-            --verbose \
-            --config .github/workflows/check_links_config.json \
-            ${{needs.changedfiles.outputs.files}} \
-            || { echo "Check that anchor links are lowercase"; exit 1; }
+      - name: Link Checker
+        id: lychee
+        uses: lycheeverse/lychee-action@f796c8b7d468feb9b8c0a46da3fac0af6874d374
+        with:
+          args: "--verbose --no-progress ${{needs.changedfiles.outputs.files}} --config .github/lychee.toml"

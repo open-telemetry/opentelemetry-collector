@@ -418,10 +418,6 @@ func (mer *mockErrorRequest) ItemsCount() int {
 	return 7
 }
 
-func (mer *mockErrorRequest) Merge(context.Context, internal.Request) (internal.Request, error) {
-	return nil, nil
-}
-
 func (mer *mockErrorRequest) MergeSplit(context.Context, exporterbatcher.MaxSizeConfig, internal.Request) ([]internal.Request, error) {
 	return nil, nil
 }
@@ -468,10 +464,6 @@ func (m *mockRequest) ItemsCount() int {
 	return m.cnt
 }
 
-func (m *mockRequest) Merge(context.Context, internal.Request) (internal.Request, error) {
-	return nil, nil
-}
-
 func (m *mockRequest) MergeSplit(context.Context, exporterbatcher.MaxSizeConfig, internal.Request) ([]internal.Request, error) {
 	return nil, nil
 }
@@ -485,13 +477,13 @@ func newMockRequest(cnt int, consumeError error) *mockRequest {
 }
 
 type observabilityConsumerSender struct {
-	BaseRequestSender
+	BaseSender[internal.Request]
 	waitGroup         *sync.WaitGroup
 	sentItemsCount    *atomic.Int64
 	droppedItemsCount *atomic.Int64
 }
 
-func newObservabilityConsumerSender(*ObsReport) RequestSender {
+func newObservabilityConsumerSender(*ObsReport) Sender[internal.Request] {
 	return &observabilityConsumerSender{
 		waitGroup:         new(sync.WaitGroup),
 		droppedItemsCount: &atomic.Int64{},

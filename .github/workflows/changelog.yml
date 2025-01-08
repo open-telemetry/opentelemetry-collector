@@ -77,12 +77,8 @@ jobs:
       # In order to validate any links in the yaml file, render the config to markdown
       - name: Render .chloggen changelog entries
         run: make chlog-preview > changelog_preview.md
-      - name: Install markdown-link-check
-        run: npm ci
-      - name: Run markdown-link-check
-        run: |
-          npx --no -- markdown-link-check \
-            --verbose \
-            --config .github/workflows/check_links_config.json \
-            changelog_preview.md \
-            || { echo "Check that anchor links are lowercase"; exit 1; }
+      - name: Link Checker
+        id: lychee
+        uses: lycheeverse/lychee-action@f796c8b7d468feb9b8c0a46da3fac0af6874d374
+        with:
+          args: "--verbose --no-progress ./changelog_preview.md --config .github/lychee.toml"
