@@ -23,7 +23,7 @@ import (
 
 {{ range $name, $info := .Attributes }}
 {{- if $info.Enum -}}
-// Attribute{{ $name.Render }} specifies the a value {{ $name }} attribute.
+// Attribute{{ $name.Render }} specifies the value {{ $name }} attribute.
 type Attribute{{ $name.Render }} int
 
 const (

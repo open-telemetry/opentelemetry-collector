@@ -35,7 +35,7 @@ func NewDefaultTimeoutConfig() TimeoutConfig {
 
 // TimeoutSender is a requestSender that adds a `timeout` to every request that passes this sender.
 type TimeoutSender struct {
-	BaseRequestSender
+	BaseSender[internal.Request]
 	cfg TimeoutConfig
 }
 

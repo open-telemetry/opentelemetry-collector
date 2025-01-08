@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/internal"
-	"go.opentelemetry.io/collector/exporter/internal/queue"
+	"go.opentelemetry.io/collector/exporter/internal/storagetest"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -435,7 +435,7 @@ func TestQueuedRetryPersistenceEnabled(t *testing.T) {
 			require.NoError(t, err)
 
 			extensions := map[component.ID]component.Component{
-				storageID: queue.NewMockStorageExtension(nil),
+				storageID: storagetest.NewMockStorageExtension(nil),
 			}
 			host := &MockHost{Ext: extensions}
 
@@ -468,7 +468,7 @@ func TestQueuedRetryPersistenceEnabledStorageError(t *testing.T) {
 			require.NoError(t, err)
 
 			extensions := map[component.ID]component.Component{
-				storageID: queue.NewMockStorageExtension(storageError),
+				storageID: storagetest.NewMockStorageExtension(storageError),
 			}
 			host := &MockHost{Ext: extensions}
 
@@ -500,7 +500,7 @@ func TestQueuedRetryPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 			require.NoError(t, err)
 
 			extensions := map[component.ID]component.Component{
-				storageID: queue.NewMockStorageExtension(nil),
+				storageID: storagetest.NewMockStorageExtension(nil),
 			}
 			host := &MockHost{Ext: extensions}
 
@@ -540,11 +540,17 @@ func TestQueueSenderNoStartShutdown(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
 			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
-			queue := queue.NewBoundedMemoryQueue[internal.Request](queue.MemoryQueueSettings[internal.Request]{})
 			set := exportertest.NewNopSettings()
+			queue := exporterqueue.NewMemoryQueueFactory[internal.Request]()(
+				context.Background(),
+				exporterqueue.Settings{
+					Signal:           pipeline.SignalTraces,
+					ExporterSettings: set,
+				},
+				exporterqueue.NewDefaultConfig())
 			obsrep, err := NewExporter(ObsReportSettings{
 				ExporterID:             exporterID,
-				ExporterCreateSettings: exportertest.NewNopSettings(),
+				ExporterCreateSettings: set,
 			})
 			require.NoError(t, err)
 			qs := NewQueueSender(queue, set, 1, "", obsrep, exporterbatcher.NewDefaultConfig())

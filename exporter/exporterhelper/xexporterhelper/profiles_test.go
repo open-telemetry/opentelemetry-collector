@@ -30,7 +30,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/exporter/internal/queue"
+	"go.opentelemetry.io/collector/exporter/internal/storagetest"
 	"go.opentelemetry.io/collector/exporter/xexporter"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/testdata"
@@ -170,7 +170,7 @@ func TestProfilesExporter_WithPersistentQueue(t *testing.T) {
 	require.NoError(t, err)
 
 	host := &internal.MockHost{Ext: map[component.ID]component.Component{
-		storageID: queue.NewMockStorageExtension(nil),
+		storageID: storagetest.NewMockStorageExtension(nil),
 	}}
 	require.NoError(t, te.Start(context.Background(), host))
 	t.Cleanup(func() { require.NoError(t, te.Shutdown(context.Background())) })
