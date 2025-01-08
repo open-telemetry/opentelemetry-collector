@@ -151,14 +151,12 @@ func isValidLevel(level configcompression.Level) bool {
 
 func (hcs *ClientConfig) Validate() error {
 	if hcs.Compression.IsCompressed() {
-		if (hcs.Compression == configcompression.TypeGzip && isValidLevel(hcs.CompressionParams.Level)) ||
-			(hcs.Compression == configcompression.TypeZlib && isValidLevel(hcs.CompressionParams.Level)) ||
-			(hcs.Compression == configcompression.TypeDeflate && isValidLevel(hcs.CompressionParams.Level)) ||
-			hcs.Compression == configcompression.TypeSnappy ||
-			hcs.Compression == configcompression.TypeLz4 ||
-			hcs.Compression == configcompression.TypeZstd ||
-			hcs.Compression == configcompression.TypeNone ||
-			hcs.Compression == configcompression.TypeEmpty {
+		switch hcs.Compression {
+		case configcompression.TypeGzip, configcompression.TypeZlib, configcompression.TypeDeflate:
+			if isValidLevel(hcs.CompressionParams.Level) {
+				return nil
+			}
+		case configcompression.TypeSnappy, configcompression.TypeLz4, configcompression.TypeZstd:
 			return nil
 		}
 		return fmt.Errorf("unsupported compression type and level %s - %d", hcs.Compression, hcs.CompressionParams.Level)

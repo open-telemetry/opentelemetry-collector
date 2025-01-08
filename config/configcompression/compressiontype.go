@@ -21,14 +21,14 @@ const (
 	TypeSnappy  Type = "snappy"
 	TypeZstd    Type = "zstd"
 	TypeLz4     Type = "lz4"
-	TypeNone    Type = "none"
-	TypeEmpty   Type = ""
+	typeNone    Type = "none"
+	typeEmpty   Type = ""
 )
 
 // IsCompressed returns false if CompressionType is nil, none, or empty.
 // Otherwise, returns true.
 func (ct *Type) IsCompressed() bool {
-	return *ct != TypeEmpty && *ct != TypeNone
+	return *ct != typeEmpty && *ct != typeNone
 }
 
 func (ct *Type) UnmarshalText(in []byte) error {
@@ -39,8 +39,8 @@ func (ct *Type) UnmarshalText(in []byte) error {
 		typ == TypeSnappy ||
 		typ == TypeZstd ||
 		typ == TypeLz4 ||
-		typ == TypeNone ||
-		typ == TypeEmpty {
+		typ == typeNone ||
+		typ == typeEmpty {
 		*ct = typ
 		return nil
 	}

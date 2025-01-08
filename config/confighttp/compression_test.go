@@ -101,7 +101,7 @@ func TestHTTPClientCompression(t *testing.T) {
 		{
 			name:        "ValidZstd",
 			encoding:    configcompression.TypeZstd,
-			level:       gzip.BestSpeed,
+			level:       99,
 			reqBody:     compressedZstdBody.Bytes(),
 			shouldError: false,
 		},
@@ -137,6 +137,8 @@ func TestHTTPClientCompression(t *testing.T) {
 				message := fmt.Sprintf("unsupported compression type and level %s - %d", tt.encoding, tt.level)
 				assert.Equal(t, message, err.Error())
 				return
+			} else {
+				require.NoError(t, err)
 			}
 			client, err := clientSettings.ToClient(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 			require.NoError(t, err)
