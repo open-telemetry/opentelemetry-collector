@@ -13,6 +13,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/scraper"
@@ -86,4 +87,12 @@ func newObsMetrics(delegate scraper.ScrapeMetricsFunc, receiverID component.ID, 
 
 		return md, err
 	}, nil
+}
+
+// TODO: This will be implemented in another PR and will be removed soon.
+func newObsLogs(delegate scraper.ScrapeLogsFunc, _ component.ID, _ component.ID, tel component.TelemetrySettings) (scraper.ScrapeLogsFunc, error) {
+	if _, err := metadata.NewTelemetryBuilder(tel); err != nil {
+		return nil, err
+	}
+	return func(ctx context.Context) (plog.Logs, error) { return delegate(ctx) }, nil
 }

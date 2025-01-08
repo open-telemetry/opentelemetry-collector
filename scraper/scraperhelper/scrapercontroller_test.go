@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -51,6 +52,12 @@ type testScrapeMetrics struct {
 	err               error
 }
 
+type testScrapeLogs struct {
+	ch                chan int
+	timesScrapeCalled int
+	err               error
+}
+
 func (ts *testScrapeMetrics) scrape(context.Context) (pmetric.Metrics, error) {
 	ts.timesScrapeCalled++
 	ts.ch <- ts.timesScrapeCalled
@@ -61,6 +68,19 @@ func (ts *testScrapeMetrics) scrape(context.Context) (pmetric.Metrics, error) {
 
 	md := pmetric.NewMetrics()
 	md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
+	return md, nil
+}
+
+func (ts *testScrapeLogs) scrape(context.Context) (plog.Logs, error) {
+	ts.timesScrapeCalled++
+	ts.ch <- ts.timesScrapeCalled
+
+	if ts.err != nil {
+		return plog.Logs{}, ts.err
+	}
+
+	md := plog.NewLogs()
+	md.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("")
 	return md, nil
 }
 
@@ -138,7 +158,7 @@ func TestScrapeController(t *testing.T) {
 				cfg = test.scraperControllerSettings
 			}
 
-			mr, err := NewScraperControllerReceiver(cfg, receiver.Settings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, sink, options...)
+			mr, err := NewMetricsScraperControllerReceiver(cfg, receiver.Settings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, sink, options...)
 			require.NoError(t, err)
 
 			err = mr.Start(context.Background(), componenttest.NewNopHost())
@@ -215,7 +235,7 @@ func configureMetricOptions(t *testing.T, test metricsTestCase, initializeChs []
 		scp, err := scraper.NewMetrics(tsm.scrape, scraperOptions...)
 		require.NoError(t, err)
 
-		metricOptions = append(metricOptions, AddScraper(component.MustNewType("scraper"), scp))
+		metricOptions = append(metricOptions, AddMetricsScraper(component.MustNewType("scraper"), scp))
 	}
 
 	return metricOptions
@@ -306,7 +326,7 @@ func assertScraperMetrics(t *testing.T, tt componenttest.TestTelemetry, expected
 	require.NoError(t, tt.CheckScraperMetrics(component.MustNewID("receiver"), component.MustNewID("scraper"), expectedScraped, expectedErrored))
 }
 
-func TestSingleScrapePerInterval(t *testing.T) {
+func TestSingleMetricsScrapePerInterval(t *testing.T) {
 	scrapeMetricsCh := make(chan int, 10)
 	tsm := &testScrapeMetrics{ch: scrapeMetricsCh}
 
@@ -317,11 +337,11 @@ func TestSingleScrapePerInterval(t *testing.T) {
 	scp, err := scraper.NewMetrics(tsm.scrape)
 	require.NoError(t, err)
 
-	recv, err := NewScraperControllerReceiver(
+	recv, err := NewMetricsScraperControllerReceiver(
 		cfg,
 		receivertest.NewNopSettings(),
 		new(consumertest.MetricsSink),
-		AddScraper(component.MustNewType("scaper"), scp),
+		AddMetricsScraper(component.MustNewType("scraper"), scp),
 		WithTickerChannel(tickerCh),
 	)
 	require.NoError(t, err)
@@ -349,7 +369,50 @@ func TestSingleScrapePerInterval(t *testing.T) {
 	}
 }
 
-func TestScrapeControllerStartsOnInit(t *testing.T) {
+func TestSingleLogsScrapePerInterval(t *testing.T) {
+	scrapeLogsCh := make(chan int, 10)
+	tsm := &testScrapeLogs{ch: scrapeLogsCh}
+
+	cfg := newTestNoDelaySettings()
+
+	tickerCh := make(chan time.Time)
+
+	scp, err := scraper.NewLogs(tsm.scrape)
+	require.NoError(t, err)
+
+	recv, err := NewLogsScraperControllerReceiver(
+		cfg,
+		receivertest.NewNopSettings(),
+		new(consumertest.LogsSink),
+		AddLogsScraper(component.MustNewType("scraper"), scp),
+		WithTickerChannel(tickerCh),
+	)
+	require.NoError(t, err)
+
+	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() { require.NoError(t, recv.Shutdown(context.Background())) }()
+
+	tickerCh <- time.Now()
+
+	assert.Eventually(
+		t,
+		func() bool {
+			return <-scrapeLogsCh == 2
+		},
+		300*time.Millisecond,
+		100*time.Millisecond,
+		"Make sure the scraper channel is called twice",
+	)
+
+	select {
+	case <-scrapeLogsCh:
+		assert.Fail(t, "Scrape was called more than twice")
+	case <-time.After(100 * time.Millisecond):
+		return
+	}
+}
+
+func TestMetricsScrapeControllerStartsOnInit(t *testing.T) {
 	t.Parallel()
 
 	tsm := &testScrapeMetrics{
@@ -359,14 +422,14 @@ func TestScrapeControllerStartsOnInit(t *testing.T) {
 	scp, err := scraper.NewMetrics(tsm.scrape)
 	require.NoError(t, err, "Must not error when creating scraper")
 
-	r, err := NewScraperControllerReceiver(
+	r, err := NewMetricsScraperControllerReceiver(
 		&ControllerConfig{
 			CollectionInterval: time.Hour,
 			InitialDelay:       0,
 		},
 		receivertest.NewNopSettings(),
 		new(consumertest.MetricsSink),
-		AddScraper(component.MustNewType("scaper"), scp),
+		AddMetricsScraper(component.MustNewType("scraper"), scp),
 	)
 	require.NoError(t, err, "Must not error when creating scrape controller")
 
@@ -376,7 +439,34 @@ func TestScrapeControllerStartsOnInit(t *testing.T) {
 	assert.Equal(t, 1, tsm.timesScrapeCalled, "Must have been called as soon as the controller started")
 }
 
-func TestScrapeControllerInitialDelay(t *testing.T) {
+func TestLogsScrapeControllerStartsOnInit(t *testing.T) {
+	t.Parallel()
+
+	tsm := &testScrapeLogs{
+		ch: make(chan int, 1),
+	}
+
+	scp, err := scraper.NewLogs(tsm.scrape)
+	require.NoError(t, err, "Must not error when creating scraper")
+
+	r, err := NewLogsScraperControllerReceiver(
+		&ControllerConfig{
+			CollectionInterval: time.Hour,
+			InitialDelay:       0,
+		},
+		receivertest.NewNopSettings(),
+		new(consumertest.LogsSink),
+		AddLogsScraper(component.MustNewType("scraper"), scp),
+	)
+	require.NoError(t, err, "Must not error when creating scrape controller")
+
+	assert.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()), "Must not error on start")
+	<-time.After(500 * time.Nanosecond)
+	require.NoError(t, r.Shutdown(context.Background()), "Must not have errored on shutdown")
+	assert.Equal(t, 1, tsm.timesScrapeCalled, "Must have been called as soon as the controller started")
+}
+
+func TestMetricsScrapeControllerInitialDelay(t *testing.T) {
 	if testing.Short() {
 		t.Skip("This requires real time to pass, skipping")
 		return
@@ -398,11 +488,11 @@ func TestScrapeControllerInitialDelay(t *testing.T) {
 	})
 	require.NoError(t, err, "Must not error when creating scraper")
 
-	r, err := NewScraperControllerReceiver(
+	r, err := NewMetricsScraperControllerReceiver(
 		&cfg,
 		receivertest.NewNopSettings(),
 		new(consumertest.MetricsSink),
-		AddScraper(component.MustNewType("scaper"), scp),
+		AddMetricsScraper(component.MustNewType("scraper"), scp),
 	)
 	require.NoError(t, err, "Must not error when creating receiver")
 
@@ -415,7 +505,46 @@ func TestScrapeControllerInitialDelay(t *testing.T) {
 	assert.NoError(t, r.Shutdown(context.Background()), "Must not error closing down")
 }
 
-func TestShutdownBeforeScrapeCanStart(t *testing.T) {
+func TestLogsScrapeControllerInitialDelay(t *testing.T) {
+	if testing.Short() {
+		t.Skip("This requires real time to pass, skipping")
+		return
+	}
+
+	t.Parallel()
+
+	var (
+		elapsed = make(chan time.Time, 1)
+		cfg     = ControllerConfig{
+			CollectionInterval: time.Second,
+			InitialDelay:       300 * time.Millisecond,
+		}
+	)
+
+	scp, err := scraper.NewLogs(func(context.Context) (plog.Logs, error) {
+		elapsed <- time.Now()
+		return plog.NewLogs(), nil
+	})
+	require.NoError(t, err, "Must not error when creating scraper")
+
+	r, err := NewLogsScraperControllerReceiver(
+		&cfg,
+		receivertest.NewNopSettings(),
+		new(consumertest.LogsSink),
+		AddLogsScraper(component.MustNewType("scraper"), scp),
+	)
+	require.NoError(t, err, "Must not error when creating receiver")
+
+	t0 := time.Now()
+	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()), "Must not error when starting")
+	t1 := <-elapsed
+
+	assert.GreaterOrEqual(t, t1.Sub(t0), 300*time.Millisecond, "Must have had 300ms pass as defined by initial delay")
+
+	assert.NoError(t, r.Shutdown(context.Background()), "Must not error closing down")
+}
+
+func TestShutdownBeforeMetricsScrapeCanStart(t *testing.T) {
 	cfg := ControllerConfig{
 		CollectionInterval: time.Second,
 		InitialDelay:       5 * time.Second,
@@ -428,11 +557,45 @@ func TestShutdownBeforeScrapeCanStart(t *testing.T) {
 	})
 	require.NoError(t, err, "Must not error when creating scraper")
 
-	r, err := NewScraperControllerReceiver(
+	r, err := NewMetricsScraperControllerReceiver(
 		&cfg,
 		receivertest.NewNopSettings(),
 		new(consumertest.MetricsSink),
-		AddScraper(component.MustNewType("scaper"), scp),
+		AddMetricsScraper(component.MustNewType("scraper"), scp),
+	)
+	require.NoError(t, err, "Must not error when creating receiver")
+	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+	shutdown := make(chan struct{}, 1)
+	go func() {
+		assert.NoError(t, r.Shutdown(context.Background()))
+		close(shutdown)
+	}()
+	timer := time.NewTicker(10 * time.Second)
+	select {
+	case <-timer.C:
+		require.Fail(t, "shutdown should not wait for scraping")
+	case <-shutdown:
+	}
+}
+
+func TestShutdownBeforeLogsScrapeCanStart(t *testing.T) {
+	cfg := ControllerConfig{
+		CollectionInterval: time.Second,
+		InitialDelay:       5 * time.Second,
+	}
+
+	scp, err := scraper.NewLogs(func(context.Context) (plog.Logs, error) {
+		// make the scraper wait for long enough it would disrupt a shutdown.
+		time.Sleep(30 * time.Second)
+		return plog.NewLogs(), nil
+	})
+	require.NoError(t, err, "Must not error when creating scraper")
+
+	r, err := NewLogsScraperControllerReceiver(
+		&cfg,
+		receivertest.NewNopSettings(),
+		new(consumertest.LogsSink),
+		AddLogsScraper(component.MustNewType("scraper"), scp),
 	)
 	require.NoError(t, err, "Must not error when creating receiver")
 	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
