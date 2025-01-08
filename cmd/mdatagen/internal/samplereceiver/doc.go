@@ -3,5 +3,6 @@
 
 // Generate a test metrics builder from a sample metrics set covering all configuration options.
 //go:generate mdatagen metadata.yaml
+//go:generate mdatagen metadata_custom.yaml
 
 package samplereceiver // import "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplereceiver"
