@@ -10,7 +10,7 @@ component: receiver/scraperhelper
 note: Removing the deprecated receiver/scraperhelper package
 
 # One or more tracking issues or pull requests related to the change
-issues: [12043]
+issues: [12054]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
