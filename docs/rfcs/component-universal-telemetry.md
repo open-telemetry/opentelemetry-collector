@@ -91,8 +91,8 @@ component to which the telemetry is attributed. Metrics which contain the term "
 while metrics which contain the term "consumed" describe data which is received by the component.
 
 For both metrics, an `outcome` attribute with possible values `success`, `failure`, and `rejected` should be automatically recorded,
-corresponding to whether or not the corresponding function call returned an error, and whether the error originates from the next
-component(s) in the pipeline, or from one further downstream.
+based on whether the corresponding function call returned successfully, returned an internal error, or propagated an error from a
+component further downstream.
 
 Specifically, a call to `ConsumeX` is recorded with:
 - `outcome = success` if the call returns `nil`;
