@@ -112,7 +112,15 @@ type Factory interface {
 	LogsToMetricsStability() component.StabilityLevel
 	LogsToLogsStability() component.StabilityLevel
 
+	// Metadata returns the metadata describing the receiver.
+	Metadata() Metadata
+
 	unexportedFactoryFunc()
+}
+
+// Metadata contains metadata describing the component that is created by the factory.
+type Metadata struct {
+	SingletonInstance bool
 }
 
 // FactoryOption applies changes to Factory.
@@ -301,6 +309,13 @@ func WithLogsToLogs(createLogsToLogs CreateLogsToLogsFunc, sl component.Stabilit
 	})
 }
 
+// AsSingletonInstance indicates that the factory always returns the same instance of the component.
+func AsSingletonInstance() FactoryOption {
+	return factoryOptionFunc(func(o *factory) {
+		o.metadata.SingletonInstance = true
+	})
+}
+
 // factory implements the Factory interface.
 type factory struct {
 	cfgType component.Type
@@ -329,6 +344,8 @@ type factory struct {
 	logsToTracesStabilityLevel  component.StabilityLevel
 	logsToMetricsStabilityLevel component.StabilityLevel
 	logsToLogsStabilityLevel    component.StabilityLevel
+
+	metadata Metadata
 }
 
 // Type returns the type of component.
@@ -372,6 +389,10 @@ func (f *factory) LogsToMetricsStability() component.StabilityLevel {
 
 func (f *factory) LogsToLogsStability() component.StabilityLevel {
 	return f.logsToLogsStabilityLevel
+}
+
+func (f *factory) Metadata() Metadata {
+	return f.metadata
 }
 
 // NewFactory returns a Factory.

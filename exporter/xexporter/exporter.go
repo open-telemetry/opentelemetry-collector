@@ -88,6 +88,13 @@ func WithProfiles(createProfiles CreateProfilesFunc, sl component.StabilityLevel
 	})
 }
 
+// AsSingletonInstance sets the exporter as a singleton instance.
+func AsSingletonInstance() FactoryOption {
+	return factoryOptionFunc(func(o *factoryOpts) {
+		o.opts = append(o.opts, exporter.AsSingletonInstance())
+	})
+}
+
 type factory struct {
 	exporter.Factory
 	CreateProfilesFunc

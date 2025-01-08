@@ -29,6 +29,7 @@ func TestNewFactory(t *testing.T) {
 	require.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
 	_, err = f.CreateLogs(context.Background(), Settings{}, &defaultCfg)
 	require.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
+	assert.False(t, f.Metadata().SingletonInstance)
 }
 
 func TestNewFactoryWithOptions(t *testing.T) {
@@ -39,7 +40,8 @@ func TestNewFactoryWithOptions(t *testing.T) {
 		func() component.Config { return &defaultCfg },
 		WithTraces(createTraces, component.StabilityLevelDevelopment),
 		WithMetrics(createMetrics, component.StabilityLevelAlpha),
-		WithLogs(createLogs, component.StabilityLevelDeprecated))
+		WithLogs(createLogs, component.StabilityLevelDeprecated),
+		AsSingletonInstance())
 	assert.EqualValues(t, testType, f.Type())
 	assert.EqualValues(t, &defaultCfg, f.CreateDefaultConfig())
 
@@ -54,6 +56,8 @@ func TestNewFactoryWithOptions(t *testing.T) {
 	assert.Equal(t, component.StabilityLevelDeprecated, f.LogsStability())
 	_, err = f.CreateLogs(context.Background(), Settings{}, &defaultCfg)
 	assert.NoError(t, err)
+
+	assert.True(t, f.Metadata().SingletonInstance)
 }
 
 func TestMakeFactoryMap(t *testing.T) {

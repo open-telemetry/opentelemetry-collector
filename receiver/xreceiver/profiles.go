@@ -105,6 +105,13 @@ func WithProfiles(createProfiles CreateProfilesFunc, sl component.StabilityLevel
 	})
 }
 
+// AsSingletonInstance sets the receiver as a singleton instance.
+func AsSingletonInstance() FactoryOption {
+	return factoryOptionFunc(func(o *factoryOpts) {
+		o.opts = append(o.opts, receiver.AsSingletonInstance())
+	})
+}
+
 // NewFactory returns a Factory.
 func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefaultConfigFunc, options ...FactoryOption) Factory {
 	opts := factoryOpts{factory: &factory{}}

@@ -72,7 +72,15 @@ type Factory interface {
 	// LogsStability gets the stability level of the Logs exporter.
 	LogsStability() component.StabilityLevel
 
+	// Metadata returns the metadata describing the receiver.
+	Metadata() Metadata
+
 	unexportedFactoryFunc()
+}
+
+// Metadata contains metadata describing the component that is created by the factory.
+type Metadata struct {
+	SingletonInstance bool
 }
 
 // FactoryOption apply changes to Factory.
@@ -132,6 +140,7 @@ type factory struct {
 	metricsStabilityLevel component.StabilityLevel
 	CreateLogsFunc
 	logsStabilityLevel component.StabilityLevel
+	metadata           Metadata
 }
 
 func (f *factory) Type() component.Type {
@@ -150,6 +159,10 @@ func (f *factory) MetricsStability() component.StabilityLevel {
 
 func (f *factory) LogsStability() component.StabilityLevel {
 	return f.logsStabilityLevel
+}
+
+func (f *factory) Metadata() Metadata {
+	return f.metadata
 }
 
 // WithTraces overrides the default "error not supported" implementation for Factory.CreateTraces and the default "undefined" stability level.
@@ -173,6 +186,13 @@ func WithLogs(createLogs CreateLogsFunc, sl component.StabilityLevel) FactoryOpt
 	return factoryOptionFunc(func(o *factory) {
 		o.logsStabilityLevel = sl
 		o.CreateLogsFunc = createLogs
+	})
+}
+
+// AsSingletonInstance indicates that the factory always returns the same instance of the component.
+func AsSingletonInstance() FactoryOption {
+	return factoryOptionFunc(func(o *factory) {
+		o.metadata.SingletonInstance = true
 	})
 }
 

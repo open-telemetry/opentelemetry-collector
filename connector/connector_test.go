@@ -48,6 +48,8 @@ func TestNewFactoryNoOptions(t *testing.T) {
 	assert.Equal(t, err, internal.ErrDataTypes(testID, pipeline.SignalLogs, pipeline.SignalMetrics))
 	_, err = factory.CreateLogsToLogs(context.Background(), Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	assert.Equal(t, err, internal.ErrDataTypes(testID, pipeline.SignalLogs, pipeline.SignalLogs))
+
+	assert.False(t, factory.Metadata().SingletonInstance)
 }
 
 func TestNewFactoryWithSameTypes(t *testing.T) {
@@ -55,7 +57,8 @@ func TestNewFactoryWithSameTypes(t *testing.T) {
 	factory := NewFactory(testType, func() component.Config { return &defaultCfg },
 		WithTracesToTraces(createTracesToTraces, component.StabilityLevelAlpha),
 		WithMetricsToMetrics(createMetricsToMetrics, component.StabilityLevelBeta),
-		WithLogsToLogs(createLogsToLogs, component.StabilityLevelUnmaintained))
+		WithLogsToLogs(createLogsToLogs, component.StabilityLevelUnmaintained),
+		AsSingletonInstance())
 	assert.EqualValues(t, testType, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
@@ -85,6 +88,8 @@ func TestNewFactoryWithSameTypes(t *testing.T) {
 	assert.Equal(t, err, internal.ErrDataTypes(testID, pipeline.SignalLogs, pipeline.SignalTraces))
 	_, err = factory.CreateLogsToMetrics(context.Background(), Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	assert.Equal(t, err, internal.ErrDataTypes(testID, pipeline.SignalLogs, pipeline.SignalMetrics))
+
+	assert.True(t, factory.Metadata().SingletonInstance)
 }
 
 func TestNewFactoryWithTranslateTypes(t *testing.T) {
