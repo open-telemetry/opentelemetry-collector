@@ -15,8 +15,6 @@ import (
 	"github.com/knadh/koanf/maps"
 	"github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/v2"
-	"go.uber.org/multierr"
-
 	encoder "go.opentelemetry.io/collector/confmap/internal/mapstructure"
 )
 
@@ -108,36 +106,52 @@ func validate(v reflect.Value) error {
 	case reflect.Ptr, reflect.Interface:
 		return validate(v.Elem())
 	case reflect.Struct:
-		var errs error
-		errs = multierr.Append(errs, callValidateIfPossible(v))
+		err := callValidateIfPossible(v)
+		if err != nil {
+			return err
+		}
 		// Reflect on the pointed data and check each of its fields.
 		for i := 0; i < v.NumField(); i++ {
 			if !v.Type().Field(i).IsExported() {
 				continue
 			}
-			errs = multierr.Append(errs, validate(v.Field(i)))
+			err = validate(v.Field(i))
+			if err != nil {
+				return err
+			}
 		}
-		return errs
 	case reflect.Slice, reflect.Array:
-		var errs error
-		errs = multierr.Append(errs, callValidateIfPossible(v))
+		err := callValidateIfPossible(v)
+		if err != nil {
+			return err
+		}
 		// Reflect on the pointed data and check each of its fields.
 		for i := 0; i < v.Len(); i++ {
-			errs = multierr.Append(errs, validate(v.Index(i)))
+			err = validate(v.Index(i))
+			if err != nil {
+				return err
+			}
 		}
-		return errs
 	case reflect.Map:
-		var errs error
-		errs = multierr.Append(errs, callValidateIfPossible(v))
+		err := callValidateIfPossible(v)
+		if err != nil {
+			return err
+		}
 		iter := v.MapRange()
 		for iter.Next() {
-			errs = multierr.Append(errs, validate(iter.Key()))
-			errs = multierr.Append(errs, validate(iter.Value()))
+			err = validate(iter.Key())
+			if err != nil {
+				return err
+			}
+			err = validate(iter.Value())
+			if err != nil {
+				return err
+			}
 		}
-		return errs
 	default:
 		return callValidateIfPossible(v)
 	}
+	return nil
 }
 
 func callValidateIfPossible(v reflect.Value) error {

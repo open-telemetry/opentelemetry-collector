@@ -168,10 +168,6 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		return fmt.Errorf("failed to get config: %w", err)
 	}
 
-	if err = cfg.Validate(); err != nil {
-		return fmt.Errorf("invalid configuration: %w", err)
-	}
-
 	col.serviceConfig = &cfg.Service
 
 	conf := confmap.New()
@@ -253,12 +249,11 @@ func (col *Collector) DryRun(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to initialize factories: %w", err)
 	}
-	cfg, err := col.configProvider.Get(ctx, factories)
+	_, err = col.configProvider.Get(ctx, factories)
 	if err != nil {
 		return fmt.Errorf("failed to get config: %w", err)
 	}
-
-	return cfg.Validate()
+	return nil
 }
 
 func newFallbackLogger(options []zap.Option) (*zap.Logger, error) {
