@@ -40,13 +40,11 @@ type TestTelemetry struct {
 }
 
 // CheckExporterTraces checks that for the current exported values for trace exporter metrics match given values.
-// Note: SetupTelemetry must be called before this function.
 func (tts *TestTelemetry) CheckExporterTraces(sentSpans, sendFailedSpans int64) error {
 	return checkExporterTraces(tts.reader, tts.id, sentSpans, sendFailedSpans)
 }
 
 // CheckExporterMetrics checks that for the current exported values for metrics exporter metrics match given values.
-// Note: SetupTelemetry must be called before this function.
 func (tts *TestTelemetry) CheckExporterMetrics(sentMetricsPoints, sendFailedMetricsPoints int64) error {
 	return checkExporterMetrics(tts.reader, tts.id, sentMetricsPoints, sendFailedMetricsPoints)
 }
@@ -64,7 +62,6 @@ func (tts *TestTelemetry) CheckExporterEnqueueFailedLogs(enqueueFailed int64) er
 }
 
 // CheckExporterLogs checks that for the current exported values for logs exporter metrics match given values.
-// Note: SetupTelemetry must be called before this function.
 func (tts *TestTelemetry) CheckExporterLogs(sentLogRecords, sendFailedLogRecords int64) error {
 	return checkExporterLogs(tts.reader, tts.id, sentLogRecords, sendFailedLogRecords)
 }
@@ -75,25 +72,21 @@ func (tts *TestTelemetry) CheckExporterMetricGauge(metric string, val int64, ext
 }
 
 // CheckReceiverTraces checks that for the current exported values for trace receiver metrics match given values.
-// Note: SetupTelemetry must be called before this function.
 func (tts *TestTelemetry) CheckReceiverTraces(protocol string, acceptedSpans, droppedSpans int64) error {
 	return checkReceiverTraces(tts.reader, tts.id, protocol, acceptedSpans, droppedSpans)
 }
 
 // CheckReceiverLogs checks that for the current exported values for logs receiver metrics match given values.
-// Note: SetupTelemetry must be called before this function.
 func (tts *TestTelemetry) CheckReceiverLogs(protocol string, acceptedLogRecords, droppedLogRecords int64) error {
 	return checkReceiverLogs(tts.reader, tts.id, protocol, acceptedLogRecords, droppedLogRecords)
 }
 
 // CheckReceiverMetrics checks that for the current exported values for metrics receiver metrics match given values.
-// Note: SetupTelemetry must be called before this function.
 func (tts *TestTelemetry) CheckReceiverMetrics(protocol string, acceptedMetricPoints, droppedMetricPoints int64) error {
 	return checkReceiverMetrics(tts.reader, tts.id, protocol, acceptedMetricPoints, droppedMetricPoints)
 }
 
 // CheckScraperMetrics checks that for the current exported values for metrics scraper metrics match given values.
-// Note: SetupTelemetry must be called before this function.
 func (tts *TestTelemetry) CheckScraperMetrics(receiver component.ID, scraper component.ID, scrapedMetricPoints, erroredMetricPoints int64) error {
 	return checkScraperMetrics(tts.reader, receiver, scraper, scrapedMetricPoints, erroredMetricPoints)
 }

@@ -674,8 +674,7 @@ func TestOTLPReceiverHTTPTracesIngestTest(t *testing.T) {
 			errStatus := &spb.Status{}
 			require.NoError(t, proto.Unmarshal(respBytes, errStatus))
 			assert.Equal(t, ingestionState.expectedStatusCode, resp.StatusCode)
-			// nolint:gosec
-			assert.Equal(t, ingestionState.expectedCode, codes.Code(errStatus.Code))
+			assert.EqualValues(t, ingestionState.expectedCode, errStatus.Code)
 		}
 	}
 

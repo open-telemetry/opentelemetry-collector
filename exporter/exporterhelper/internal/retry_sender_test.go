@@ -279,7 +279,7 @@ func TestQueuedRetry_RetryOnError(t *testing.T) {
 func TestQueueRetryWithNoQueue(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
 			rCfg := configretry.NewDefaultBackOffConfig()
 			rCfg.MaxElapsedTime = time.Nanosecond // fail fast
 			be, err := NewBaseExporter(exportertest.NewNopSettings(), pipeline.SignalLogs, newObservabilityConsumerSender, WithRetry(rCfg))
@@ -304,7 +304,7 @@ func TestQueueRetryWithNoQueue(t *testing.T) {
 func TestQueueRetryWithDisabledRetires(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
 			rCfg := configretry.NewDefaultBackOffConfig()
 			rCfg.Enabled = false
 			set := exportertest.NewNopSettings()
@@ -335,7 +335,7 @@ func TestQueueRetryWithDisabledRetires(t *testing.T) {
 func TestRetryWithContextTimeout(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
 			const testTimeout = 10 * time.Second
 
 			rCfg := configretry.NewDefaultBackOffConfig()
@@ -418,10 +418,6 @@ func (mer *mockErrorRequest) ItemsCount() int {
 	return 7
 }
 
-func (mer *mockErrorRequest) Merge(context.Context, internal.Request) (internal.Request, error) {
-	return nil, nil
-}
-
 func (mer *mockErrorRequest) MergeSplit(context.Context, exporterbatcher.MaxSizeConfig, internal.Request) ([]internal.Request, error) {
 	return nil, nil
 }
@@ -468,10 +464,6 @@ func (m *mockRequest) ItemsCount() int {
 	return m.cnt
 }
 
-func (m *mockRequest) Merge(context.Context, internal.Request) (internal.Request, error) {
-	return nil, nil
-}
-
 func (m *mockRequest) MergeSplit(context.Context, exporterbatcher.MaxSizeConfig, internal.Request) ([]internal.Request, error) {
 	return nil, nil
 }
@@ -485,13 +477,13 @@ func newMockRequest(cnt int, consumeError error) *mockRequest {
 }
 
 type observabilityConsumerSender struct {
-	BaseRequestSender
+	BaseSender[internal.Request]
 	waitGroup         *sync.WaitGroup
 	sentItemsCount    *atomic.Int64
 	droppedItemsCount *atomic.Int64
 }
 
-func newObservabilityConsumerSender(*ObsReport) RequestSender {
+func newObservabilityConsumerSender(*ObsReport) Sender[internal.Request] {
 	return &observabilityConsumerSender{
 		waitGroup:         new(sync.WaitGroup),
 		droppedItemsCount: &atomic.Int64{},

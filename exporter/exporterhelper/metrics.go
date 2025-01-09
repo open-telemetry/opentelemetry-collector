@@ -15,13 +15,14 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
-	"go.opentelemetry.io/collector/exporter/internal/queue"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
-var metricsMarshaler = &pmetric.ProtoMarshaler{}
-var metricsUnmarshaler = &pmetric.ProtoUnmarshaler{}
+var (
+	metricsMarshaler   = &pmetric.ProtoMarshaler{}
+	metricsUnmarshaler = &pmetric.ProtoUnmarshaler{}
+)
 
 type metricsRequest struct {
 	md     pmetric.Metrics
@@ -102,7 +103,7 @@ func requestFromMetrics(pusher consumer.ConsumeMetricsFunc) RequestFromMetricsFu
 	}
 }
 
-// NewMetricsRequest creates a new metrics exporter based on a custom MetricsConverter and RequestSender.
+// NewMetricsRequest creates a new metrics exporter based on a custom MetricsConverter and Sender.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func NewMetricsRequest(
@@ -133,7 +134,7 @@ func NewMetricsRequest(
 			return consumererror.NewPermanent(cErr)
 		}
 		sErr := be.Send(ctx, req)
-		if errors.Is(sErr, queue.ErrQueueIsFull) {
+		if errors.Is(sErr, exporterqueue.ErrQueueIsFull) {
 			be.Obsrep.RecordEnqueueFailure(ctx, pipeline.SignalMetrics, int64(req.ItemsCount()))
 		}
 		return sErr
@@ -146,11 +147,11 @@ func NewMetricsRequest(
 }
 
 type metricsSenderWithObservability struct {
-	internal.BaseRequestSender
+	internal.BaseSender[Request]
 	obsrep *internal.ObsReport
 }
 
-func newMetricsSenderWithObservability(obsrep *internal.ObsReport) internal.RequestSender {
+func newMetricsSenderWithObservability(obsrep *internal.ObsReport) internal.Sender[Request] {
 	return &metricsSenderWithObservability{obsrep: obsrep}
 }
 

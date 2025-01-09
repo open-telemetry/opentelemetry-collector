@@ -7,6 +7,31 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.23.0/v0.117.0
+
+### 🛑 Breaking changes 🛑
+
+- `otelcol`: Remove warnings when 0.0.0.0 is used (#11713, #8510)
+
+### 🧰 Bug fixes 🧰
+
+- `internal/sharedcomponent`: Fixed bug where sharedcomponent would use too much memory remembering all the previously reported statuses (#11826)
+
+## v1.22.0/v0.116.0
+
+### 🛑 Breaking changes 🛑
+
+- `pdata/pprofile`: Remove deprecated `Profile.EndTime` and `Profile.SetEndTime` methods. (#11796)
+
+### 💡 Enhancements 💡
+
+- `xconfighttp`: Add WithOtelHTTPOptions to experimental module xconfighttp (#11770)
+
+### 🧰 Bug fixes 🧰
+
+- `exporterhelper`: Fix memory leak at exporter shutdown (#11401)
+- `sharedcomponent`: Remove race-condition and cleanup locking (#11819)
+
 ## v1.21.0/v0.115.0
 
 ### 🛑 Breaking changes 🛑

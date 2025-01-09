@@ -6,6 +6,7 @@ package queue
 import (
 	"context"
 	"errors"
+	"runtime"
 	"testing"
 	"time"
 
@@ -14,7 +15,10 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/exporter/exporterqueue"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/internal"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 func TestDefaultBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T) {
@@ -44,11 +48,13 @@ func TestDefaultBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T) {
 				MinSizeItems: 0,
 			}
 
-			q := NewBoundedMemoryQueue[internal.Request](
-				MemoryQueueSettings[internal.Request]{
-					Sizer:    &RequestSizer[internal.Request]{},
-					Capacity: 10,
-				})
+			q := exporterqueue.NewMemoryQueueFactory[internal.Request]()(
+				context.Background(),
+				exporterqueue.Settings{
+					Signal:           pipeline.SignalTraces,
+					ExporterSettings: exportertest.NewNopSettings(),
+				},
+				exporterqueue.NewDefaultConfig())
 
 			ba, err := NewBatcher(cfg, q,
 				func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },
@@ -104,11 +110,13 @@ func TestDefaultBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 				MinSizeItems: 10,
 			}
 
-			q := NewBoundedMemoryQueue[internal.Request](
-				MemoryQueueSettings[internal.Request]{
-					Sizer:    &RequestSizer[internal.Request]{},
-					Capacity: 10,
-				})
+			q := exporterqueue.NewMemoryQueueFactory[internal.Request]()(
+				context.Background(),
+				exporterqueue.Settings{
+					Signal:           pipeline.SignalTraces,
+					ExporterSettings: exportertest.NewNopSettings(),
+				},
+				exporterqueue.NewDefaultConfig())
 
 			ba, err := NewBatcher(cfg, q,
 				func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },
@@ -144,6 +152,10 @@ func TestDefaultBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 }
 
 func TestDefaultBatcher_NoSplit_WithTimeout(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector/issues/11869")
+	}
+
 	tests := []struct {
 		name       string
 		maxWorkers int
@@ -170,11 +182,13 @@ func TestDefaultBatcher_NoSplit_WithTimeout(t *testing.T) {
 				MinSizeItems: 100,
 			}
 
-			q := NewBoundedMemoryQueue[internal.Request](
-				MemoryQueueSettings[internal.Request]{
-					Sizer:    &RequestSizer[internal.Request]{},
-					Capacity: 10,
-				})
+			q := exporterqueue.NewMemoryQueueFactory[internal.Request]()(
+				context.Background(),
+				exporterqueue.Settings{
+					Signal:           pipeline.SignalTraces,
+					ExporterSettings: exportertest.NewNopSettings(),
+				},
+				exporterqueue.NewDefaultConfig())
 
 			ba, err := NewBatcher(cfg, q,
 				func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },
@@ -207,6 +221,10 @@ func TestDefaultBatcher_NoSplit_WithTimeout(t *testing.T) {
 }
 
 func TestDefaultBatcher_Split_TimeoutDisabled(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector/issues/11847")
+	}
+
 	tests := []struct {
 		name       string
 		maxWorkers int
@@ -236,11 +254,13 @@ func TestDefaultBatcher_Split_TimeoutDisabled(t *testing.T) {
 				MaxSizeItems: 100,
 			}
 
-			q := NewBoundedMemoryQueue[internal.Request](
-				MemoryQueueSettings[internal.Request]{
-					Sizer:    &RequestSizer[internal.Request]{},
-					Capacity: 10,
-				})
+			q := exporterqueue.NewMemoryQueueFactory[internal.Request]()(
+				context.Background(),
+				exporterqueue.Settings{
+					Signal:           pipeline.SignalTraces,
+					ExporterSettings: exportertest.NewNopSettings(),
+				},
+				exporterqueue.NewDefaultConfig())
 
 			ba, err := NewBatcher(cfg, q,
 				func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },
@@ -283,11 +303,13 @@ func TestDefaultBatcher_Shutdown(t *testing.T) {
 	batchCfg.MinSizeItems = 10
 	batchCfg.FlushTimeout = 100 * time.Second
 
-	q := NewBoundedMemoryQueue[internal.Request](
-		MemoryQueueSettings[internal.Request]{
-			Sizer:    &RequestSizer[internal.Request]{},
-			Capacity: 10,
-		})
+	q := exporterqueue.NewMemoryQueueFactory[internal.Request]()(
+		context.Background(),
+		exporterqueue.Settings{
+			Signal:           pipeline.SignalTraces,
+			ExporterSettings: exportertest.NewNopSettings(),
+		},
+		exporterqueue.NewDefaultConfig())
 
 	ba, err := NewBatcher(batchCfg, q,
 		func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },

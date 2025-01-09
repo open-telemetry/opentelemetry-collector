@@ -37,81 +37,79 @@ require (
 	modulePrefix = "go.opentelemetry.io/collector"
 )
 
-var (
-	replaceModules = []string{
-		"",
-		"/component",
-		"/component/componenttest",
-		"/component/componentstatus",
-		"/client",
-		"/config/configauth",
-		"/config/configcompression",
-		"/config/configgrpc",
-		"/config/confighttp",
-		"/config/confignet",
-		"/config/configopaque",
-		"/config/configretry",
-		"/config/configtelemetry",
-		"/config/configtls",
-		"/config/internal",
-		"/confmap",
-		"/confmap/provider/envprovider",
-		"/confmap/provider/fileprovider",
-		"/confmap/provider/httpprovider",
-		"/confmap/provider/httpsprovider",
-		"/confmap/provider/yamlprovider",
-		"/consumer",
-		"/consumer/consumererror",
-		"/consumer/consumererror/consumererrorprofiles",
-		"/consumer/consumerprofiles",
-		"/consumer/consumertest",
-		"/connector",
-		"/connector/connectortest",
-		"/connector/connectorprofiles",
-		"/exporter",
-		"/exporter/debugexporter",
-		"/exporter/exporterprofiles",
-		"/exporter/exportertest",
-		"/exporter/exporterhelper/exporterhelperprofiles",
-		"/exporter/nopexporter",
-		"/exporter/otlpexporter",
-		"/exporter/otlphttpexporter",
-		"/extension",
-		"/extension/auth",
-		"/extension/auth/authtest",
-		"/extension/experimental/storage",
-		"/extension/extensioncapabilities",
-		"/extension/extensiontest",
-		"/extension/zpagesextension",
-		"/featuregate",
-		"/internal/memorylimiter",
-		"/internal/fanoutconsumer",
-		"/internal/sharedcomponent",
-		"/otelcol",
-		"/pipeline",
-		"/pipeline/pipelineprofiles",
-		"/processor",
-		"/processor/processortest",
-		"/processor/batchprocessor",
-		"/processor/memorylimiterprocessor",
-		"/processor/processorprofiles",
-		"/receiver",
-		"/receiver/nopreceiver",
-		"/receiver/otlpreceiver",
-		"/receiver/receiverprofiles",
-		"/receiver/receivertest",
-		"/pdata",
-		"/pdata/testdata",
-		"/pdata/pprofile",
-		"/scraper",
-		"/semconv",
-		"/service",
-	}
-)
+var replaceModules = []string{
+	"",
+	"/component",
+	"/component/componenttest",
+	"/component/componentstatus",
+	"/client",
+	"/config/configauth",
+	"/config/configcompression",
+	"/config/configgrpc",
+	"/config/confighttp",
+	"/config/confignet",
+	"/config/configopaque",
+	"/config/configretry",
+	"/config/configtelemetry",
+	"/config/configtls",
+	"/confmap",
+	"/confmap/provider/envprovider",
+	"/confmap/provider/fileprovider",
+	"/confmap/provider/httpprovider",
+	"/confmap/provider/httpsprovider",
+	"/confmap/provider/yamlprovider",
+	"/consumer",
+	"/consumer/consumererror",
+	"/consumer/consumererror/xconsumererror",
+	"/consumer/xconsumer",
+	"/consumer/consumertest",
+	"/connector",
+	"/connector/connectortest",
+	"/connector/xconnector",
+	"/exporter",
+	"/exporter/debugexporter",
+	"/exporter/xexporter",
+	"/exporter/exportertest",
+	"/exporter/exporterhelper/xexporterhelper",
+	"/exporter/nopexporter",
+	"/exporter/otlpexporter",
+	"/exporter/otlphttpexporter",
+	"/extension",
+	"/extension/auth",
+	"/extension/auth/authtest",
+	"/extension/extensioncapabilities",
+	"/extension/extensiontest",
+	"/extension/zpagesextension",
+	"/extension/xextension",
+	"/featuregate",
+	"/internal/memorylimiter",
+	"/internal/fanoutconsumer",
+	"/internal/sharedcomponent",
+	"/otelcol",
+	"/pdata",
+	"/pdata/testdata",
+	"/pdata/pprofile",
+	"/pipeline",
+	"/pipeline/xpipeline",
+	"/processor",
+	"/processor/processortest",
+	"/processor/batchprocessor",
+	"/processor/memorylimiterprocessor",
+	"/processor/xprocessor",
+	"/receiver",
+	"/receiver/nopreceiver",
+	"/receiver/otlpreceiver",
+	"/receiver/receivertest",
+	"/receiver/xreceiver",
+	"/scraper/scraperhelper",
+	"/scraper",
+	"/semconv",
+	"/service",
+}
 
-func newTestConfig(t testing.TB) *Config {
+func newTestConfig(tb testing.TB) *Config {
 	cfg, err := NewDefaultConfig()
-	require.NoError(t, err)
+	require.NoError(tb, err)
 	cfg.downloadModules.wait = 0
 	cfg.downloadModules.numRetries = 1
 	return cfg
@@ -429,14 +427,14 @@ func verifyGoMod(t *testing.T, dir string, replaceMods map[string]bool) {
 func makeModule(dir string, fileContents []byte) error {
 	// if the file does not exist, try to create it
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		if err = os.Mkdir(dir, 0750); err != nil {
+		if err = os.Mkdir(dir, 0o750); err != nil {
 			return fmt.Errorf("failed to create output path: %w", err)
 		}
 	} else if err != nil {
 		return fmt.Errorf("failed to create output path: %w", err)
 	}
 
-	err := os.WriteFile(filepath.Clean(filepath.Join(dir, "go.mod")), fileContents, 0600)
+	err := os.WriteFile(filepath.Clean(filepath.Join(dir, "go.mod")), fileContents, 0o600)
 	if err != nil {
 		return fmt.Errorf("failed to write go.mod file: %w", err)
 	}

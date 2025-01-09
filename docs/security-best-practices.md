@@ -82,7 +82,7 @@ sensitive and non-sensitive data as the Collector MUST support environment
 variable expansion.
 
 > For more information on environment variable expansion, see
-> [this](https://opentelemetry.io/docs/collector/configuration/#configuration-environment-variables)
+> [this](https://opentelemetry.io/docs/collector/configuration/#environment-variables)
 > documentation.
 
 When defining Go structs for configuration data that may contain sensitive information, use the `configopaque` package to define fields with the `configopaque.String` type. This ensures that the data is masked when serialized to prevent accidental exposure.

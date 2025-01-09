@@ -75,8 +75,12 @@ func run(ymlPath string) error {
 	tmplDir := "templates"
 
 	codeDir := filepath.Join(ymlDir, "internal", md.GeneratedPackageName)
-	if err = os.MkdirAll(codeDir, 0700); err != nil {
+	if err = os.MkdirAll(codeDir, 0o700); err != nil {
 		return fmt.Errorf("unable to create output directory %q: %w", codeDir, err)
+	}
+	testDir := filepath.Join(ymlDir, "internal", md.GeneratedPackageName+"test")
+	if err = os.MkdirAll(testDir, 0o700); err != nil {
+		return fmt.Errorf("unable to create output test directory %q: %w", codeDir, err)
 	}
 	if md.Status != nil {
 		if md.Status.Class != "cmd" && md.Status.Class != "pkg" && !md.Status.NotComponent {
@@ -114,6 +118,8 @@ func run(ymlPath string) error {
 		}
 		toGenerate[filepath.Join(tmplDir, "telemetry.go.tmpl")] = filepath.Join(codeDir, "generated_telemetry.go")
 		toGenerate[filepath.Join(tmplDir, "telemetry_test.go.tmpl")] = filepath.Join(codeDir, "generated_telemetry_test.go")
+		toGenerate[filepath.Join(tmplDir, "telemetrytest.go.tmpl")] = filepath.Join(testDir, "generated_telemetrytest.go")
+		toGenerate[filepath.Join(tmplDir, "telemetrytest_test.go.tmpl")] = filepath.Join(testDir, "generated_telemetrytest_test.go")
 	}
 
 	if len(md.Metrics) != 0 || len(md.Telemetry.Metrics) != 0 || len(md.ResourceAttributes) != 0 { // if there's metrics or internal metrics, generate documentation for them
@@ -134,7 +140,7 @@ func run(ymlPath string) error {
 		return nil
 	}
 
-	if err = os.MkdirAll(filepath.Join(codeDir, "testdata"), 0700); err != nil {
+	if err = os.MkdirAll(filepath.Join(codeDir, "testdata"), 0o700); err != nil {
 		return fmt.Errorf("unable to create output directory %q: %w", filepath.Join(codeDir, "testdata"), err)
 	}
 
@@ -395,7 +401,7 @@ func inlineReplace(tmplFile string, outputFile string, md Metadata, start string
 	}
 
 	s := re.ReplaceAllString(string(readmeContents), string(buf))
-	if err := os.WriteFile(outputFile, []byte(s), 0600); err != nil {
+	if err := os.WriteFile(outputFile, []byte(s), 0o600); err != nil {
 		return fmt.Errorf("failed writing %q: %w", outputFile, err)
 	}
 
@@ -420,7 +426,7 @@ func generateFile(tmplFile string, outputFile string, md Metadata, goPackage str
 		}
 	}
 
-	if err := os.WriteFile(outputFile, result, 0600); err != nil {
+	if err := os.WriteFile(outputFile, result, 0o600); err != nil {
 		return fmt.Errorf("failed writing %q: %w", outputFile, err)
 	}
 

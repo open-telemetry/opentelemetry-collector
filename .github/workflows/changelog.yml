@@ -13,11 +13,10 @@ on:
     types: [checks_requested]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref }}
+  group: ${{ github.workflow }}-${{ github.ref_name }}
   cancel-in-progress: true
 
-permissions:
-  contents: read
+permissions: read-all
 
 jobs:
   changelog:
@@ -32,7 +31,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Setup Go
-        uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5.1.0
+        uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a # v5.2.0
         with:
           go-version: ~1.22.9
       - name: Cache Go
@@ -78,12 +77,9 @@ jobs:
       # In order to validate any links in the yaml file, render the config to markdown
       - name: Render .chloggen changelog entries
         run: make chlog-preview > changelog_preview.md
-      - name: Install markdown-link-check
-        run: npm install
-      - name: Run markdown-link-check
-        run: |
-          npx --no -- markdown-link-check \
-            --verbose \
-            --config .github/workflows/check_links_config.json \
-            changelog_preview.md \
-            || { echo "Check that anchor links are lowercase"; exit 1; }
+      - name: Link Checker
+        id: lychee
+        uses: lycheeverse/lychee-action@f796c8b7d468feb9b8c0a46da3fac0af6874d374
+        with:
+          args: "--verbose --no-progress ./changelog_preview.md --config .github/lychee.toml"
+          failIfEmpty: false

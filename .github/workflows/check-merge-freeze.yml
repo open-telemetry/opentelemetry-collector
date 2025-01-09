@@ -2,16 +2,29 @@ name: Merge freeze
 
 on:
   pull_request:
-    types: [opened, ready_for_review, synchronize, reopened, labeled, unlabeled]
+    types:
+      [
+        opened,
+        ready_for_review,
+        synchronize,
+        reopened,
+        labeled,
+        unlabeled,
+        enqueued,
+      ]
     branches: [main]
   merge_group:
     types: [checks_requested]
+
+permissions: read-all
 
 jobs:
   check-merge-freeze:
     name: Check
     # This condition is to avoid blocking the PR causing the freeze in the first place.
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'release:merge-freeze') }}
+    if: |
+      (!startsWith(github.event.pull_request.title || github.event.merge_group.head_commit.message, '[chore] Prepare release')) ||
+      (!(github.event.pull_request.user.login == 'opentelemetrybot' || github.event.merge_group.head_commit.author.name == 'OpenTelemetry Bot'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
