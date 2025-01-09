@@ -4,7 +4,6 @@
 package confighttp // import "go.opentelemetry.io/collector/config/confighttp"
 
 import (
-	"compress/zlib"
 	"context"
 	"crypto/tls"
 	"errors"
@@ -141,25 +140,11 @@ func NewDefaultClientConfig() ClientConfig {
 	}
 }
 
-// Checks the validity of zlib/gzip/flate compression levels
-func isValidLevel(level configcompression.Level) bool {
-	return level == zlib.DefaultCompression ||
-		level == zlib.HuffmanOnly ||
-		level == zlib.NoCompression ||
-		(level >= zlib.BestSpeed && level <= zlib.BestCompression)
-}
-
 func (hcs *ClientConfig) Validate() error {
 	if hcs.Compression.IsCompressed() {
-		switch hcs.Compression {
-		case configcompression.TypeGzip, configcompression.TypeZlib, configcompression.TypeDeflate:
-			if isValidLevel(hcs.CompressionParams.Level) {
-				return nil
-			}
-		case configcompression.TypeSnappy, configcompression.TypeLz4, configcompression.TypeZstd:
-			return nil
+		if err := hcs.Compression.ValidateParams(hcs.CompressionParams); err != nil {
+			return err
 		}
-		return fmt.Errorf("unsupported compression type and level %s - %d", hcs.Compression, hcs.CompressionParams.Level)
 	}
 	return nil
 }

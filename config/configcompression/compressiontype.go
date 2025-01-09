@@ -3,7 +3,10 @@
 
 package configcompression // import "go.opentelemetry.io/collector/config/configcompression"
 
-import "fmt"
+import (
+	"compress/zlib"
+	"fmt"
+)
 
 // Type represents a compression method
 type Type string
@@ -27,22 +30,37 @@ const (
 
 // IsCompressed returns false if CompressionType is nil, none, or empty.
 // Otherwise, returns true.
-func (ct *Type) IsCompressed() bool {
-	return *ct != typeEmpty && *ct != typeNone
+func (t Type) IsCompressed() bool {
+	return t != typeEmpty && t != typeNone
 }
 
-func (ct *Type) UnmarshalText(in []byte) error {
-	typ := Type(in)
-	if typ == TypeGzip ||
-		typ == TypeZlib ||
-		typ == TypeDeflate ||
-		typ == TypeSnappy ||
-		typ == TypeZstd ||
-		typ == TypeLz4 ||
-		typ == typeNone ||
-		typ == typeEmpty {
-		*ct = typ
+func (t Type) Validate() error {
+	switch t {
+	case TypeGzip, TypeZlib, TypeDeflate, TypeSnappy, TypeZstd, TypeLz4,
+		typeNone, typeEmpty:
 		return nil
 	}
-	return fmt.Errorf("unsupported compression type %q", typ)
+	return fmt.Errorf("unsupported compression type %q", t)
+}
+
+func (t Type) ValidateParams(p CompressionParams) error {
+	switch t {
+	case TypeGzip, TypeZlib, TypeDeflate:
+		if p.Level == zlib.DefaultCompression ||
+			p.Level == zlib.HuffmanOnly ||
+			p.Level == zlib.NoCompression ||
+			(p.Level >= zlib.BestSpeed && p.Level <= zlib.BestCompression) {
+			return nil
+		}
+	case TypeZstd:
+		// Supports arbitrary levels: zstd will map any given
+		// level to the nearest internally supported level.
+		return nil
+	case TypeSnappy, TypeLz4, typeNone, typeEmpty:
+		if p.Level != 0 && (t == TypeSnappy || t == TypeLz4) {
+			return fmt.Errorf("unsupported parameters %+v for compression type %q", p, t)
+		}
+		return nil
+	}
+	return fmt.Errorf("unsupported parameters %+v for compression type %q", p, t)
 }

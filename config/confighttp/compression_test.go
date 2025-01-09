@@ -99,6 +99,13 @@ func TestHTTPClientCompression(t *testing.T) {
 			shouldError: false,
 		},
 		{
+			name:        "InvalidSnappy",
+			encoding:    configcompression.TypeSnappy,
+			level:       gzip.BestSpeed,
+			reqBody:     compressedSnappyBody.Bytes(),
+			shouldError: true,
+		},
+		{
 			name:        "ValidZstd",
 			encoding:    configcompression.TypeZstd,
 			level:       99,
@@ -110,6 +117,13 @@ func TestHTTPClientCompression(t *testing.T) {
 			encoding:    configcompression.TypeLz4,
 			reqBody:     compressedLz4Body.Bytes(),
 			shouldError: false,
+		},
+		{
+			name:        "InvalidLz4",
+			encoding:    configcompression.TypeLz4,
+			level:       gzip.BestSpeed,
+			reqBody:     compressedLz4Body.Bytes(),
+			shouldError: true,
 		},
 	}
 	for _, tt := range tests {
@@ -134,10 +148,11 @@ func TestHTTPClientCompression(t *testing.T) {
 			err = clientSettings.Validate()
 			if tt.shouldError {
 				require.Error(t, err)
-				message := fmt.Sprintf("unsupported compression type and level %s - %d", tt.encoding, tt.level)
+				message := fmt.Sprintf("unsupported parameters {Level:%+v} for compression type %q", tt.level, tt.encoding)
 				assert.Equal(t, message, err.Error())
 				return
 			}
+			require.NoError(t, err)
 			client, err := clientSettings.ToClient(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 			require.NoError(t, err)
 			res, err := client.Do(req)
