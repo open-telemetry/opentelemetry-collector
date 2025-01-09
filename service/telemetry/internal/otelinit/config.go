@@ -208,7 +208,9 @@ func initPeriodicExporter(ctx context.Context, exporter config.MetricExporter, o
 }
 
 func normalizeEndpoint(endpoint string) string {
-	if !strings.HasPrefix(endpoint, "https://") && !strings.HasPrefix(endpoint, "http://") {
+	if !strings.HasPrefix(endpoint, "https://") &&
+		!strings.HasPrefix(endpoint, "http://") &&
+		!strings.HasPrefix(endpoint, "unix:") {
 		return "http://" + endpoint
 	}
 	return endpoint
@@ -273,6 +275,9 @@ func initOTLPHTTPExporter(ctx context.Context, otlpConfig *config.OTLPMetric) (s
 		u, err := url.ParseRequestURI(normalizeEndpoint(otlpConfig.Endpoint))
 		if err != nil {
 			return nil, err
+		}
+		if u.Scheme != "http" && u.Scheme != "https" {
+			return nil, fmt.Errorf("unsupported scheme %q", u.Scheme)
 		}
 		opts = append(opts, otlpmetrichttp.WithEndpoint(u.Host))
 

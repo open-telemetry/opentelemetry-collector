@@ -412,6 +412,25 @@ func TestMetricReader(t *testing.T) {
 			wantReader: sdkmetric.NewPeriodicReader(otlpHTTPExporter),
 		},
 		{
+			name: "periodic/otlp-http-exporter-unix-socket-endpoint",
+			reader: config.MetricReader{
+				Periodic: &config.PeriodicMetricReader{
+					Exporter: config.MetricExporter{
+						OTLP: &config.OTLPMetric{
+							Protocol:    "http/protobuf",
+							Endpoint:    "unix:collector.sock",
+							Compression: strPtr("gzip"),
+							Timeout:     intPtr(1000),
+							Headers: map[string]string{
+								"test": "test1",
+							},
+						},
+					},
+				},
+			},
+			wantErr: errors.New("unsupported scheme \"unix\""),
+		},
+		{
 			name: "periodic/otlp-http-invalid-endpoint",
 			reader: config.MetricReader{
 				Periodic: &config.PeriodicMetricReader{
@@ -528,6 +547,25 @@ func TestMetricReader(t *testing.T) {
 				},
 			},
 			wantErr: errors.New("unsupported temporality preference \"invalid\""),
+		},
+		{
+			name: "periodic/otlp-http-unix-socket-endpoint",
+			reader: config.MetricReader{
+				Periodic: &config.PeriodicMetricReader{
+					Exporter: config.MetricExporter{
+						OTLP: &config.OTLPMetric{
+							Protocol:    "grpc/protobuf",
+							Endpoint:    "unix:collector.sock",
+							Compression: strPtr("gzip"),
+							Timeout:     intPtr(1000),
+							Headers: map[string]string{
+								"test": "test1",
+							},
+						},
+					},
+				},
+			},
+			wantReader: sdkmetric.NewPeriodicReader(otlpGRPCExporter),
 		},
 		{
 			name: "periodic/otlp-grpc-good-ca-certificate",
