@@ -90,9 +90,7 @@ func newObsMetrics(delegate scraper.ScrapeMetricsFunc, receiverID component.ID, 
 }
 
 // TODO: This will be implemented in another PR and will be removed soon.
-func newObsLogs(delegate scraper.ScrapeLogsFunc, _ component.ID, _ component.ID, tel component.TelemetrySettings) (scraper.ScrapeLogsFunc, error) {
-	if _, err := metadata.NewTelemetryBuilder(tel); err != nil {
-		return nil, err
-	}
+// nolint:unparam
+func newObsLogs(delegate scraper.ScrapeLogsFunc, _ component.ID, _ component.ID, _ component.TelemetrySettings) (scraper.ScrapeLogsFunc, error) {
 	return func(ctx context.Context) (plog.Logs, error) { return delegate(ctx) }, nil
 }

@@ -172,15 +172,10 @@ func NewLogsScraperControllerReceiver(
 		telSet := set.TelemetrySettings
 		telSet.Logger = telSet.Logger.With(zap.String("scraper", sc.logsScrapers[i].id.String()))
 		var obsScrp scraper.ScrapeLogsFunc
-		// TODO: add an obs for logs
-		obsScrp, err = newObsLogs(sc.logsScrapers[i].ScrapeLogs, set.ID, sc.logsScrapers[i].id, telSet)
-		if err != nil {
-			return nil, err
-		}
-		sc.obsLogsScrapers[i], err = scraper.NewLogs(obsScrp, scraper.WithStart(sc.logsScrapers[i].Logs.Start), scraper.WithShutdown(sc.logsScrapers[i].Logs.Shutdown))
-		if err != nil {
-			return nil, err
-		}
+		// TODO: Use the newObsLogs in #12036
+		obsScrp, _ = newObsLogs(sc.logsScrapers[i].ScrapeLogs, set.ID, sc.logsScrapers[i].id, telSet)
+		sc.obsLogsScrapers[i], _ = scraper.NewLogs(obsScrp, scraper.WithStart(sc.logsScrapers[i].Logs.Start), scraper.WithShutdown(sc.logsScrapers[i].Logs.Shutdown))
+		// END TODO: Use the newObsLogs in #12036
 	}
 
 	return sc, nil
