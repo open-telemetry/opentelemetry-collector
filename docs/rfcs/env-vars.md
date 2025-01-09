@@ -149,7 +149,7 @@ expect the string to be `0123`).
 
 The Configuration WG defines an [*environment variable expansion feature
 for SDK
-configurations*](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/configuration/file-configuration.md#environment-variable-substitution).
+configurations*](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/configuration/data-model.md#environment-variable-substitution).
 This accepts only non empty alphanumeric + underscore identifiers
 starting with alphabetic or underscore. If the Configuration WG were to
 expand this in the future (e.g. to include other features present in
