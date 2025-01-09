@@ -22,6 +22,7 @@ func TestSetupTelemetry(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, tb)
 	tb.BatchSizeTriggerSend.Add(context.Background(), 1)
+	tb.QueueCapacity.Record(context.Background(), 1)
 	tb.RequestDuration.Record(context.Background(), 1)
 
 	testTel.AssertMetrics(t, []metricdata.Metrics{
@@ -44,6 +45,16 @@ func TestSetupTelemetry(t *testing.T) {
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
 				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_queue_capacity",
+			Description: "Queue capacity - sync gauge example.",
+			Unit:        "{items}",
+			Data: metricdata.Gauge[int64]{
 				DataPoints: []metricdata.DataPoint[int64]{
 					{},
 				},

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package queue // import "go.opentelemetry.io/collector/exporter/internal/queue"
+package storagetest // import "go.opentelemetry.io/collector/exporter/internal/storagetest"
 
 import (
 	"context"
@@ -26,7 +26,7 @@ func (m *mockStorageExtension) GetClient(context.Context, component.Kind, compon
 	if m.getClientError != nil {
 		return nil, m.getClientError
 	}
-	return &mockStorageClient{st: &m.st, closed: &atomic.Bool{}, executionDelay: m.executionDelay}, nil
+	return &MockStorageClient{st: &m.st, closed: &atomic.Bool{}, executionDelay: m.executionDelay}, nil
 }
 
 func NewMockStorageExtension(getClientError error) storage.Extension {
@@ -40,33 +40,33 @@ func NewMockStorageExtensionWithDelay(getClientError error, executionDelay time.
 	}
 }
 
-type mockStorageClient struct {
+type MockStorageClient struct {
 	st             *sync.Map
 	closed         *atomic.Bool
 	executionDelay time.Duration // simulate real storage client delay
 }
 
-func (m *mockStorageClient) Get(ctx context.Context, s string) ([]byte, error) {
+func (m *MockStorageClient) Get(ctx context.Context, s string) ([]byte, error) {
 	getOp := storage.GetOperation(s)
 	err := m.Batch(ctx, getOp)
 	return getOp.Value, err
 }
 
-func (m *mockStorageClient) Set(ctx context.Context, s string, bytes []byte) error {
+func (m *MockStorageClient) Set(ctx context.Context, s string, bytes []byte) error {
 	return m.Batch(ctx, storage.SetOperation(s, bytes))
 }
 
-func (m *mockStorageClient) Delete(ctx context.Context, s string) error {
+func (m *MockStorageClient) Delete(ctx context.Context, s string) error {
 	return m.Batch(ctx, storage.DeleteOperation(s))
 }
 
-func (m *mockStorageClient) Close(context.Context) error {
+func (m *MockStorageClient) Close(context.Context) error {
 	m.closed.Store(true)
 	return nil
 }
 
-func (m *mockStorageClient) Batch(_ context.Context, ops ...*storage.Operation) error {
-	if m.isClosed() {
+func (m *MockStorageClient) Batch(_ context.Context, ops ...*storage.Operation) error {
+	if m.IsClosed() {
 		panic("client already closed")
 	}
 	if m.executionDelay != 0 {
@@ -92,6 +92,6 @@ func (m *mockStorageClient) Batch(_ context.Context, ops ...*storage.Operation) 
 	return nil
 }
 
-func (m *mockStorageClient) isClosed() bool {
+func (m *MockStorageClient) IsClosed() bool {
 	return m.closed.Load()
 }

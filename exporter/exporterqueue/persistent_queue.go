@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package queue // import "go.opentelemetry.io/collector/exporter/internal/queue"
+package exporterqueue // import "go.opentelemetry.io/collector/exporter/exporterqueue"
 
 import (
 	"context"
@@ -49,7 +49,7 @@ type persistentQueue[T any] struct {
 	// 2. capacity control based on the size of the items.
 	*sizedChannel[permanentQueueEl]
 
-	set    PersistentQueueSettings[T]
+	set    persistentQueueSettings[T]
 	logger *zap.Logger
 	client storage.Client
 
@@ -83,29 +83,29 @@ var (
 	errWrongExtensionType = errors.New("requested extension is not a storage extension")
 )
 
-type PersistentQueueSettings[T any] struct {
-	Sizer            Sizer[T]
-	Capacity         int64
-	Signal           pipeline.Signal
-	StorageID        component.ID
-	Marshaler        func(req T) ([]byte, error)
-	Unmarshaler      func([]byte) (T, error)
-	ExporterSettings exporter.Settings
+type persistentQueueSettings[T any] struct {
+	sizer       sizer[T]
+	capacity    int64
+	signal      pipeline.Signal
+	storageID   component.ID
+	marshaler   Marshaler[T]
+	unmarshaler Unmarshaler[T]
+	set         exporter.Settings
 }
 
-// NewPersistentQueue creates a new queue backed by file storage; name and signal must be a unique combination that identifies the queue storage
-func NewPersistentQueue[T any](set PersistentQueueSettings[T]) Queue[T] {
-	_, isRequestSized := set.Sizer.(*RequestSizer[T])
+// newPersistentQueue creates a new queue backed by file storage; name and signal must be a unique combination that identifies the queue storage
+func newPersistentQueue[T any](set persistentQueueSettings[T]) Queue[T] {
+	_, isRequestSized := set.sizer.(*requestSizer[T])
 	return &persistentQueue[T]{
 		set:            set,
-		logger:         set.ExporterSettings.Logger,
+		logger:         set.set.Logger,
 		isRequestSized: isRequestSized,
 	}
 }
 
 // Start starts the persistentQueue with the given number of consumers.
 func (pq *persistentQueue[T]) Start(ctx context.Context, host component.Host) error {
-	storageClient, err := toStorageClient(ctx, pq.set.StorageID, host, pq.set.ExporterSettings.ID, pq.set.Signal)
+	storageClient, err := toStorageClient(ctx, pq.set.storageID, host, pq.set.set.ID, pq.set.signal)
 	if err != nil {
 		return err
 	}
@@ -167,7 +167,7 @@ func (pq *persistentQueue[T]) initPersistentContiguousStorage(ctx context.Contex
 	}
 
 	// nolint: gosec
-	pq.sizedChannel = newSizedChannel[permanentQueueEl](pq.set.Capacity, initEls, int64(initQueueSize))
+	pq.sizedChannel = newSizedChannel[permanentQueueEl](pq.set.capacity, initEls, int64(initQueueSize))
 }
 
 // permanentQueueEl is the type of the elements passed to the sizedChannel by the persistentQueue.
@@ -239,11 +239,11 @@ func (pq *persistentQueue[T]) Offer(ctx context.Context, req T) error {
 
 // putInternal is the internal version that requires caller to hold the mutex lock.
 func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
-	err := pq.sizedChannel.push(permanentQueueEl{}, pq.set.Sizer.Sizeof(req), func() error {
+	err := pq.sizedChannel.push(permanentQueueEl{}, pq.set.sizer.Sizeof(req), func() error {
 		itemKey := getItemKey(pq.writeIndex)
 		newIndex := pq.writeIndex + 1
 
-		reqBuf, err := pq.set.Marshaler(req)
+		reqBuf, err := pq.set.marshaler(req)
 		if err != nil {
 			return err
 		}
@@ -286,7 +286,7 @@ func (pq *persistentQueue[T]) Read(ctx context.Context) (uint64, context.Context
 			size := int64(0)
 			index, req, consumed = pq.getNextItem(ctx)
 			if consumed {
-				size = pq.set.Sizer.Sizeof(req)
+				size = pq.set.sizer.Sizeof(req)
 			}
 			return size
 		})
@@ -330,7 +330,7 @@ func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (uint64, T, bool)
 		getOp)
 
 	if err == nil {
-		request, err = pq.set.Unmarshaler(getOp.Value)
+		request, err = pq.set.unmarshaler(getOp.Value)
 	}
 
 	if err != nil {
@@ -433,7 +433,7 @@ func (pq *persistentQueue[T]) retrieveAndEnqueueNotDispatchedReqs(ctx context.Co
 			pq.logger.Warn("Failed retrieving item", zap.String(zapKey, op.Key), zap.Error(errValueNotSet))
 			continue
 		}
-		req, err := pq.set.Unmarshaler(op.Value)
+		req, err := pq.set.unmarshaler(op.Value)
 		// If error happened or item is nil, it will be efficiently ignored
 		if err != nil {
 			pq.logger.Warn("Failed unmarshalling item", zap.String(zapKey, op.Key), zap.Error(err))
