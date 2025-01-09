@@ -76,6 +76,10 @@ and
 [http](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp)
 helper functions.
 
+## Safeguards against denial of service attacks
+
+See the [Collector configuration security documentation](https://opentelemetry.io/docs/security/config-best-practices/#protect-against-denial-of-service-attacks) to learn how to safeguard against denial of service attacks. 
+
 ## Extensions
 
 Component developers SHOULD NOT expose health or telemetry data outside the
