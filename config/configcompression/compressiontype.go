@@ -57,7 +57,7 @@ func (t Type) ValidateParams(p CompressionParams) error {
 		// level to the nearest internally supported level.
 		return nil
 	case TypeSnappy, TypeLz4, typeNone, typeEmpty:
-		if p.Level != 0 && (t == TypeSnappy || t == TypeLz4) {
+		if p.Level != 0 {
 			return fmt.Errorf("unsupported parameters %+v for compression type %q", p, t)
 		}
 		return nil
