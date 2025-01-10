@@ -88,7 +88,7 @@ func TestLoadConfigEnv(t *testing.T) {
 			cfg, err := LoadConfigAndValidate(tt.file, factories)
 			require.NoError(t, err)
 
-			assert.Equal(t, cfg.Service.Pipelines[pipeline.NewID(pipeline.SignalTraces)].Receivers, []component.ID{component.MustNewID("nop")})
+			assert.Equal(t, []component.ID{component.MustNewID("nop")}, cfg.Service.Pipelines[pipeline.NewID(pipeline.SignalTraces)].Receivers)
 		})
 	}
 }
