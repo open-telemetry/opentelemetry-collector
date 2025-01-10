@@ -16,7 +16,7 @@ func (s sizerInt) Sizeof(el int) int64 {
 	return int64(el)
 }
 
-func TestSizedCapacityChannel(t *testing.T) {
+func TestSizedChannel(t *testing.T) {
 	q := newSizedChannel[int](7, sizerInt{})
 	require.NoError(t, q.push(1))
 	assert.Equal(t, 1, q.Size())
@@ -45,12 +45,7 @@ func TestSizedCapacityChannel(t *testing.T) {
 	assert.Equal(t, 0, el)
 }
 
-func TestSizedCapacityChannel_Offer_sizedNotFullButChannelFull(t *testing.T) {
+func TestSizedChannel_OfferInvalidSize(t *testing.T) {
 	q := newSizedChannel[int](1, sizerInt{})
-	require.NoError(t, q.push(1))
-
-	q.used.Store(0)
-	err := q.push(1)
-	require.Error(t, err)
-	assert.Equal(t, ErrQueueIsFull, err)
+	require.ErrorIs(t, q.push(0), errInvalidSize)
 }

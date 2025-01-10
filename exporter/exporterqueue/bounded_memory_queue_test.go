@@ -99,55 +99,38 @@ func TestShutdownWhileNotEmpty(t *testing.T) {
 	}))
 }
 
-func Benchmark_QueueUsage_1000_requests(b *testing.B) {
-	benchmarkQueueUsage(b, &requestSizer[ptrace.Traces]{}, 1000)
-}
-
-func Benchmark_QueueUsage_100000_requests(b *testing.B) {
-	benchmarkQueueUsage(b, &requestSizer[ptrace.Traces]{}, 100000)
-}
-
-func Benchmark_QueueUsage_10000_items(b *testing.B) {
-	// each request has 10 items: 1000 requests = 10000 items
-	benchmarkQueueUsage(b, &itemsSizer{}, 1000)
-}
-
-func Benchmark_QueueUsage_1M_items(b *testing.B) {
-	// each request has 10 items: 100000 requests = 1M items
-	benchmarkQueueUsage(b, &itemsSizer{}, 100000)
-}
-
 func TestQueueUsage(t *testing.T) {
-	t.Run("requests_based", func(t *testing.T) {
-		queueUsage(t, &requestSizer[ptrace.Traces]{}, 10)
-	})
-	t.Run("items_based", func(t *testing.T) {
-		queueUsage(t, &itemsSizer{}, 10)
-	})
-}
-
-func benchmarkQueueUsage(b *testing.B, sizer sizer[ptrace.Traces], requestsCount int) {
-	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
-		queueUsage(b, sizer, requestsCount)
+	tests := []struct {
+		name  string
+		sizer sizer[ptrace.Traces]
+	}{
+		{
+			name:  "requests_based",
+			sizer: &requestSizer[ptrace.Traces]{},
+		},
+		{
+			name:  "items_based",
+			sizer: &itemsSizer{},
+		},
 	}
-}
-
-func queueUsage(tb testing.TB, sizer sizer[ptrace.Traces], requestsCount int) {
-	q := newBoundedMemoryQueue[ptrace.Traces](memoryQueueSettings[ptrace.Traces]{sizer: sizer, capacity: int64(10 * requestsCount)})
-	consumed := &atomic.Int64{}
-	require.NoError(tb, q.Start(context.Background(), componenttest.NewNopHost()))
-	ac := newAsyncConsumer(q, 1, func(context.Context, ptrace.Traces) error {
-		consumed.Add(1)
-		return nil
-	})
-	td := testdata.GenerateTraces(10)
-	for j := 0; j < requestsCount; j++ {
-		require.NoError(tb, q.Offer(context.Background(), td))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			q := newBoundedMemoryQueue[ptrace.Traces](memoryQueueSettings[ptrace.Traces]{sizer: tt.sizer, capacity: int64(100)})
+			consumed := &atomic.Int64{}
+			require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
+			ac := newAsyncConsumer(q, 1, func(context.Context, ptrace.Traces) error {
+				consumed.Add(1)
+				return nil
+			})
+			td := testdata.GenerateTraces(10)
+			for j := 0; j < 10; j++ {
+				require.NoError(t, q.Offer(context.Background(), td))
+			}
+			assert.NoError(t, q.Shutdown(context.Background()))
+			assert.NoError(t, ac.Shutdown(context.Background()))
+			assert.Equal(t, int64(10), consumed.Load())
+		})
 	}
-	assert.NoError(tb, q.Shutdown(context.Background()))
-	assert.NoError(tb, ac.Shutdown(context.Background()))
-	assert.Equal(tb, int64(requestsCount), consumed.Load())
 }
 
 func TestZeroSizeNoConsumers(t *testing.T) {
@@ -199,4 +182,40 @@ func newAsyncConsumer[T any](q Queue[T], numConsumers int, consumeFunc func(cont
 func (qc *asyncConsumer) Shutdown(_ context.Context) error {
 	qc.stopWG.Wait()
 	return nil
+}
+
+func BenchmarkOffer(b *testing.B) {
+	tests := []struct {
+		name  string
+		sizer sizer[ptrace.Traces]
+	}{
+		{
+			name:  "requests_based",
+			sizer: &requestSizer[ptrace.Traces]{},
+		},
+		{
+			name:  "items_based",
+			sizer: &itemsSizer{},
+		},
+	}
+	for _, tt := range tests {
+		b.Run(tt.name, func(b *testing.B) {
+			q := newBoundedMemoryQueue[ptrace.Traces](memoryQueueSettings[ptrace.Traces]{sizer: &requestSizer[ptrace.Traces]{}, capacity: int64(10 * b.N)})
+			consumed := &atomic.Int64{}
+			require.NoError(b, q.Start(context.Background(), componenttest.NewNopHost()))
+			ac := newAsyncConsumer(q, 1, func(context.Context, ptrace.Traces) error {
+				consumed.Add(1)
+				return nil
+			})
+			td := testdata.GenerateTraces(10)
+			b.ResetTimer()
+			b.ReportAllocs()
+			for j := 0; j < b.N; j++ {
+				require.NoError(b, q.Offer(context.Background(), td))
+			}
+			assert.NoError(b, q.Shutdown(context.Background()))
+			assert.NoError(b, ac.Shutdown(context.Background()))
+			assert.Equal(b, int64(b.N), consumed.Load())
+		})
+	}
 }
