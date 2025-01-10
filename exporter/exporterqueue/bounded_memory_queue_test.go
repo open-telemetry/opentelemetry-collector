@@ -16,6 +16,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
 // In this test we run a queue with capacity 1 and a single consumer.
@@ -98,49 +100,50 @@ func TestShutdownWhileNotEmpty(t *testing.T) {
 }
 
 func Benchmark_QueueUsage_1000_requests(b *testing.B) {
-	benchmarkQueueUsage(b, &requestSizer[fakeReq]{}, 1000)
+	benchmarkQueueUsage(b, &requestSizer[ptrace.Traces]{}, 1000)
 }
 
 func Benchmark_QueueUsage_100000_requests(b *testing.B) {
-	benchmarkQueueUsage(b, &requestSizer[fakeReq]{}, 100000)
+	benchmarkQueueUsage(b, &requestSizer[ptrace.Traces]{}, 100000)
 }
 
 func Benchmark_QueueUsage_10000_items(b *testing.B) {
 	// each request has 10 items: 1000 requests = 10000 items
-	benchmarkQueueUsage(b, &itemsSizer[fakeReq]{}, 1000)
+	benchmarkQueueUsage(b, &itemsSizer{}, 1000)
 }
 
 func Benchmark_QueueUsage_1M_items(b *testing.B) {
 	// each request has 10 items: 100000 requests = 1M items
-	benchmarkQueueUsage(b, &itemsSizer[fakeReq]{}, 100000)
+	benchmarkQueueUsage(b, &itemsSizer{}, 100000)
 }
 
 func TestQueueUsage(t *testing.T) {
 	t.Run("requests_based", func(t *testing.T) {
-		queueUsage(t, &requestSizer[fakeReq]{}, 10)
+		queueUsage(t, &requestSizer[ptrace.Traces]{}, 10)
 	})
 	t.Run("items_based", func(t *testing.T) {
-		queueUsage(t, &itemsSizer[fakeReq]{}, 10)
+		queueUsage(t, &itemsSizer{}, 10)
 	})
 }
 
-func benchmarkQueueUsage(b *testing.B, sizer sizer[fakeReq], requestsCount int) {
+func benchmarkQueueUsage(b *testing.B, sizer sizer[ptrace.Traces], requestsCount int) {
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		queueUsage(b, sizer, requestsCount)
 	}
 }
 
-func queueUsage(tb testing.TB, sizer sizer[fakeReq], requestsCount int) {
-	q := newBoundedMemoryQueue[fakeReq](memoryQueueSettings[fakeReq]{sizer: sizer, capacity: int64(10 * requestsCount)})
+func queueUsage(tb testing.TB, sizer sizer[ptrace.Traces], requestsCount int) {
+	q := newBoundedMemoryQueue[ptrace.Traces](memoryQueueSettings[ptrace.Traces]{sizer: sizer, capacity: int64(10 * requestsCount)})
 	consumed := &atomic.Int64{}
 	require.NoError(tb, q.Start(context.Background(), componenttest.NewNopHost()))
-	ac := newAsyncConsumer(q, 1, func(context.Context, fakeReq) error {
+	ac := newAsyncConsumer(q, 1, func(context.Context, ptrace.Traces) error {
 		consumed.Add(1)
 		return nil
 	})
+	td := testdata.GenerateTraces(10)
 	for j := 0; j < requestsCount; j++ {
-		require.NoError(tb, q.Offer(context.Background(), fakeReq{10}))
+		require.NoError(tb, q.Offer(context.Background(), td))
 	}
 	assert.NoError(tb, q.Shutdown(context.Background()))
 	assert.NoError(tb, ac.Shutdown(context.Background()))
@@ -156,14 +159,6 @@ func TestZeroSizeNoConsumers(t *testing.T) {
 	require.ErrorIs(t, q.Offer(context.Background(), "a"), ErrQueueIsFull) // in process
 
 	assert.NoError(t, q.Shutdown(context.Background()))
-}
-
-type fakeReq struct {
-	itemsCount int
-}
-
-func (r fakeReq) ItemsCount() int {
-	return r.itemsCount
 }
 
 func consume[T any](q Queue[T], consumeFunc func(context.Context, T) error) bool {
