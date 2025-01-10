@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporterhelper"
+
 import "go.opentelemetry.io/collector/exporter/internal"
 
 // Request represents a single request that can be sent to an external endpoint.

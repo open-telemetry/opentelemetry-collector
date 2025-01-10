@@ -3,7 +3,7 @@
 // Copyright (c) 2017 Uber Technologies, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-package queue // import "go.opentelemetry.io/collector/exporter/internal/queue"
+package exporterqueue // import "go.opentelemetry.io/collector/exporter/exporterqueue"
 
 import (
 	"context"
@@ -17,31 +17,29 @@ import (
 type boundedMemoryQueue[T any] struct {
 	component.StartFunc
 	*sizedChannel[memQueueEl[T]]
-	sizer Sizer[T]
 }
 
-// MemoryQueueSettings defines internal parameters for boundedMemoryQueue creation.
-type MemoryQueueSettings[T any] struct {
-	Sizer    Sizer[T]
-	Capacity int64
+// memoryQueueSettings defines internal parameters for boundedMemoryQueue creation.
+type memoryQueueSettings[T any] struct {
+	sizer    sizer[T]
+	capacity int64
 }
 
-// NewBoundedMemoryQueue constructs the new queue of specified capacity, and with an optional
+// newBoundedMemoryQueue constructs the new queue of specified capacity, and with an optional
 // callback for dropped items (e.g. useful to emit metrics).
-func NewBoundedMemoryQueue[T any](set MemoryQueueSettings[T]) Queue[T] {
+func newBoundedMemoryQueue[T any](set memoryQueueSettings[T]) Queue[T] {
 	return &boundedMemoryQueue[T]{
-		sizedChannel: newSizedChannel[memQueueEl[T]](set.Capacity, nil, 0),
-		sizer:        set.Sizer,
+		sizedChannel: newSizedChannel[memQueueEl[T]](set.capacity, memQueueElSizer[T]{sizer: set.sizer}),
 	}
 }
 
 // Offer is used by the producer to submit new item to the queue. Calling this method on a stopped queue will panic.
 func (q *boundedMemoryQueue[T]) Offer(ctx context.Context, req T) error {
-	return q.sizedChannel.push(memQueueEl[T]{ctx: ctx, req: req}, q.sizer.Sizeof(req), nil)
+	return q.sizedChannel.push(memQueueEl[T]{ctx: ctx, req: req})
 }
 
 func (q *boundedMemoryQueue[T]) Read(_ context.Context) (uint64, context.Context, T, bool) {
-	item, ok := q.sizedChannel.pop(func(el memQueueEl[T]) int64 { return q.sizer.Sizeof(el.req) })
+	item, ok := q.sizedChannel.pop()
 	return 0, item.ctx, item.req, ok
 }
 
@@ -59,4 +57,12 @@ func (q *boundedMemoryQueue[T]) Shutdown(context.Context) error {
 type memQueueEl[T any] struct {
 	req T
 	ctx context.Context
+}
+
+type memQueueElSizer[T any] struct {
+	sizer sizer[T]
+}
+
+func (mqes memQueueElSizer[T]) Sizeof(el memQueueEl[T]) int64 {
+	return mqes.sizer.Sizeof(el.req)
 }
