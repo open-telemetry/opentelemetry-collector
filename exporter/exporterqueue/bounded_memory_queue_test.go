@@ -35,15 +35,15 @@ func TestBoundedQueue(t *testing.T) {
 		return nil
 	}))
 	assert.Equal(t, 1, numConsumed)
-	assert.Equal(t, 0, q.Size())
+	assert.Equal(t, int64(0), q.Size())
 
 	// produce two more items. The first one should be accepted, but not consumed.
 	require.NoError(t, q.Offer(context.Background(), "b"))
-	assert.Equal(t, 1, q.Size())
+	assert.Equal(t, int64(1), q.Size())
 
 	// the second should be rejected since the queue is full
 	require.ErrorIs(t, q.Offer(context.Background(), "c"), ErrQueueIsFull)
-	assert.Equal(t, 1, q.Size())
+	assert.Equal(t, int64(1), q.Size())
 
 	assert.True(t, consume(q, func(_ context.Context, item string) error {
 		assert.Equal(t, "b", item)
@@ -82,7 +82,7 @@ func TestShutdownWhileNotEmpty(t *testing.T) {
 	}
 	assert.NoError(t, q.Shutdown(context.Background()))
 
-	assert.Equal(t, 10, q.Size())
+	assert.Equal(t, int64(10), q.Size())
 	numConsumed := 0
 	for i := 0; i < 10; i++ {
 		assert.True(t, consume(q, func(_ context.Context, item string) error {
@@ -92,7 +92,7 @@ func TestShutdownWhileNotEmpty(t *testing.T) {
 		}))
 	}
 	assert.Equal(t, 10, numConsumed)
-	assert.Equal(t, 0, q.Size())
+	assert.Equal(t, int64(0), q.Size())
 
 	assert.False(t, consume(q, func(_ context.Context, item string) error {
 		panic(item)
