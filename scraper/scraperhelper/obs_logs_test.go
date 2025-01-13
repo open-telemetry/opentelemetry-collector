@@ -51,20 +51,20 @@ func TestScrapeLogsDataOp(t *testing.T) {
 		switch {
 		case params[i].err == nil:
 			scrapedLogRecords += params[i].items
-			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: scrapedLogRecordsKey, Value: attribute.Int64Value(int64(params[i].items))})
-			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: erroredLogRecordsKey, Value: attribute.Int64Value(0)})
+			require.Contains(t, span.Attributes(), attribute.Int64(scrapedLogRecordsKey, int64(params[i].items)))
+			require.Contains(t, span.Attributes(), attribute.Int64(erroredLogRecordsKey, 0))
 			assert.Equal(t, codes.Unset, span.Status().Code)
 		case errors.Is(params[i].err, errFake):
 			// Since we get an error, we cannot record any metrics because we don't know if the returned plog.Logs is valid instance.
-			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: scrapedLogRecordsKey, Value: attribute.Int64Value(0)})
-			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: erroredLogRecordsKey, Value: attribute.Int64Value(0)})
+			require.Contains(t, span.Attributes(), attribute.Int64(scrapedLogRecordsKey, 0))
+			require.Contains(t, span.Attributes(), attribute.Int64(erroredLogRecordsKey, 0))
 			assert.Equal(t, codes.Error, span.Status().Code)
 			assert.Equal(t, params[i].err.Error(), span.Status().Description)
 		case errors.Is(params[i].err, partialErrFake):
 			scrapedLogRecords += params[i].items
 			erroredLogRecords += 2
-			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: scrapedLogRecordsKey, Value: attribute.Int64Value(int64(params[i].items))})
-			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: erroredLogRecordsKey, Value: attribute.Int64Value(2)})
+			require.Contains(t, span.Attributes(), attribute.Int64(scrapedLogRecordsKey, int64(params[i].items)))
+			require.Contains(t, span.Attributes(), attribute.Int64(erroredLogRecordsKey, 2))
 			assert.Equal(t, codes.Error, span.Status().Code)
 			assert.Equal(t, params[i].err.Error(), span.Status().Description)
 		default:
