@@ -14,8 +14,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 type Telemetry struct {
@@ -29,12 +27,6 @@ func SetupTelemetry() Telemetry {
 		reader:        reader,
 		meterProvider: sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader)),
 	}
-}
-func (tt *Telemetry) NewSettings() receiver.Settings {
-	set := receivertest.NewNopSettings()
-	set.ID = component.NewID(component.MustNewType("scraperhelper"))
-	set.TelemetrySettings = tt.NewTelemetrySettings()
-	return set
 }
 
 func (tt *Telemetry) NewTelemetrySettings() component.TelemetrySettings {
