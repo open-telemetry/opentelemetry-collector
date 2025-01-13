@@ -131,7 +131,7 @@ func (qs *QueueSender) Start(ctx context.Context, host component.Host) error {
 
 	dataTypeAttr := attribute.String(DataTypeKey, qs.obsrep.Signal.String())
 
-	reg1, err1 := qs.obsrep.TelemetryBuilder.InitExporterQueueSize(func() int64 { return int64(qs.queue.Size()) },
+	reg1, err1 := qs.obsrep.TelemetryBuilder.InitExporterQueueSize(func() int64 { return qs.queue.Size() },
 		metric.WithAttributeSet(attribute.NewSet(qs.traceAttribute, dataTypeAttr)))
 
 	if reg1 != nil {
@@ -140,7 +140,7 @@ func (qs *QueueSender) Start(ctx context.Context, host component.Host) error {
 		})
 	}
 
-	reg2, err2 := qs.obsrep.TelemetryBuilder.InitExporterQueueCapacity(func() int64 { return int64(qs.queue.Capacity()) },
+	reg2, err2 := qs.obsrep.TelemetryBuilder.InitExporterQueueCapacity(func() int64 { return qs.queue.Capacity() },
 		metric.WithAttributeSet(attribute.NewSet(qs.traceAttribute)))
 
 	if reg2 != nil {

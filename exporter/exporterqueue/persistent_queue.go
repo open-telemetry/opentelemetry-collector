@@ -112,14 +112,14 @@ func (pq *persistentQueue[T]) Start(ctx context.Context, host component.Host) er
 	return nil
 }
 
-func (pq *persistentQueue[T]) Size() int {
+func (pq *persistentQueue[T]) Size() int64 {
 	pq.mu.Lock()
 	defer pq.mu.Unlock()
-	return int(pq.queueSize)
+	return pq.queueSize
 }
 
-func (pq *persistentQueue[T]) Capacity() int {
-	return int(pq.set.capacity)
+func (pq *persistentQueue[T]) Capacity() int64 {
+	return pq.set.capacity
 }
 
 func (pq *persistentQueue[T]) initClient(ctx context.Context, client storage.Client) {
