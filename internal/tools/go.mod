@@ -14,6 +14,7 @@ require (
 	go.opentelemetry.io/build-tools/checkfile v0.15.0
 	go.opentelemetry.io/build-tools/chloggen v0.15.0
 	go.opentelemetry.io/build-tools/crosslink v0.15.0
+	go.opentelemetry.io/build-tools/githubgen v0.0.0-20250113080240-74d4b2b12e5f
 	go.opentelemetry.io/build-tools/multimod v0.15.1-0.20250105162204-3f22feb044ba
 	go.opentelemetry.io/build-tools/semconvgen v0.15.0
 	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0
@@ -102,6 +103,8 @@ require (
 	github.com/golangci/revgrep v0.5.3 // indirect
 	github.com/golangci/unconvert v0.0.0-20240309020433-c5143eacb3ed // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
+	github.com/google/go-github/v66 v66.0.0 // indirect
+	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/gordonklaus/ineffassign v0.1.0 // indirect
 	github.com/gostaticanalysis/analysisutil v0.7.1 // indirect
@@ -124,6 +127,9 @@ require (
 	github.com/kisielk/errcheck v1.8.0 // indirect
 	github.com/kisielk/gotool v1.0.0 // indirect
 	github.com/kkHAIKE/contextcheck v1.1.5 // indirect
+	github.com/knadh/koanf/maps v0.1.1 // indirect
+	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
+	github.com/knadh/koanf/v2 v2.1.2 // indirect
 	github.com/kulti/thelper v0.6.3 // indirect
 	github.com/kunwardeep/paralleltest v1.0.10 // indirect
 	github.com/kyoh86/exportloopref v0.1.11 // indirect
@@ -143,8 +149,10 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
 	github.com/mgechev/revive v1.5.1 // indirect
+	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.1-0.20220423185008-bf980b35cac4 // indirect
+	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/moricho/tparallel v0.3.2 // indirect
 	github.com/nakabonne/nestif v0.3.1 // indirect
 	github.com/nishanths/exhaustive v0.12.0 // indirect
@@ -214,6 +222,8 @@ require (
 	go-simpler.org/musttag v0.13.0 // indirect
 	go-simpler.org/sloglint v0.7.2 // indirect
 	go.opentelemetry.io/build-tools v0.15.0 // indirect
+	go.opentelemetry.io/collector/confmap v1.23.0 // indirect
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.23.0 // indirect
 	go.uber.org/automaxprocs v1.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
@@ -239,3 +249,5 @@ retract (
 	v0.57.1 // Release failed, use v0.57.2
 	v0.57.0 // Release failed, use v0.57.2
 )
+
+replace go.opentelemetry.io/build-tools/githubgen v0.0.0-20250113080240-74d4b2b12e5f => ../../../opentelemetry-go-build-tools/githubgen
