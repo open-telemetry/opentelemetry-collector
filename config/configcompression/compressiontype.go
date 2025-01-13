@@ -18,14 +18,15 @@ type CompressionParams struct {
 }
 
 const (
-	TypeGzip    Type = "gzip"
-	TypeZlib    Type = "zlib"
-	TypeDeflate Type = "deflate"
-	TypeSnappy  Type = "snappy"
-	TypeZstd    Type = "zstd"
-	TypeLz4     Type = "lz4"
-	typeNone    Type = "none"
-	typeEmpty   Type = ""
+	TypeGzip                Type = "gzip"
+	TypeZlib                Type = "zlib"
+	TypeDeflate             Type = "deflate"
+	TypeSnappy              Type = "snappy"
+	TypeZstd                Type = "zstd"
+	TypeLz4                 Type = "lz4"
+	typeNone                Type = "none"
+	typeEmpty               Type = ""
+	DefaultCompressionLevel      = zlib.DefaultCompression
 )
 
 // IsCompressed returns false if CompressionType is nil, none, or empty.

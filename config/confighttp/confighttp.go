@@ -234,6 +234,10 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 	// Compress the body using specified compression methods if non-empty string is provided.
 	// Supporting gzip, zlib, deflate, snappy, and zstd; none is treated as uncompressed.
 	if hcs.Compression.IsCompressed() {
+		// If the compression level is not set, use the default level.
+		if hcs.CompressionParams.Level == 0 {
+			hcs.CompressionParams.Level = configcompression.DefaultCompressionLevel
+		}
 		clientTransport, err = newCompressRoundTripper(clientTransport, hcs.Compression, hcs.CompressionParams)
 		if err != nil {
 			return nil, err
