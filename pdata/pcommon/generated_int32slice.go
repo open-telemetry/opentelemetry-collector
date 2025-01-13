@@ -7,6 +7,8 @@
 package pcommon
 
 import (
+	"iter"
+
 	"go.opentelemetry.io/collector/pdata/internal"
 )
 
@@ -53,6 +55,17 @@ func (ms Int32Slice) Len() int {
 // Equivalent of int32Slice[i].
 func (ms Int32Slice) At(i int) int32 {
 	return (*ms.getOrig())[i]
+}
+
+// All returns an iterator over index-value pairs in the slice.
+func (ms Int32Slice) All() iter.Seq2[int, int32] {
+	return func(yield func(int, int32) bool) {
+		for i := 0; i < ms.Len(); i++ {
+			if !yield(i, ms.At(i)) {
+				return
+			}
+		}
+	}
 }
 
 // SetAt sets int32 item at particular index.

@@ -4,6 +4,8 @@
 package pcommon // import "go.opentelemetry.io/collector/pdata/pcommon"
 
 import (
+	"iter"
+
 	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/pdata/internal"
@@ -56,6 +58,21 @@ func (es Slice) Len() int {
 //	}
 func (es Slice) At(ix int) Value {
 	return newValue(&(*es.getOrig())[ix], es.getState())
+}
+
+// All returns an iterator over index-value pairs in the slice.
+//
+//	for i, v := range es.All() {
+//	    ... // Do something with index-value pair
+//	}
+func (es Slice) All() iter.Seq2[int, Value] {
+	return func(yield func(int, Value) bool) {
+		for i := 0; i < es.Len(); i++ {
+			if !yield(i, es.At(i)) {
+				return
+			}
+		}
+	}
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
