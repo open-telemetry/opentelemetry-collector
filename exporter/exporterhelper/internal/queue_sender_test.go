@@ -54,7 +54,7 @@ func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
 				require.NoError(t, be.Send(context.Background(), secondMockR))
 			})
 
-			require.LessOrEqual(t, 1, be.QueueSender.(*QueueSender).queue.Size())
+			require.LessOrEqual(t, int64(1), be.QueueSender.(*QueueSender).queue.Size())
 
 			require.NoError(t, be.Shutdown(context.Background()))
 

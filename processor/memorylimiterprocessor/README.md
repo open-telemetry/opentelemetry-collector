@@ -117,14 +117,21 @@ processors:
     spike_limit_mib: 800
 ```
 
+- Hard limit will be set to **4000 MiB**.
+- Soft limit will be set to 4000 - 800 = **3200 MiB**.
+
 ```yaml
 processors:
   memory_limiter:
     check_interval: 1s
-    limit_percentage: 50
-    spike_limit_percentage: 30
+    limit_percentage: 80
+    spike_limit_percentage: 15
 ```
+
+On a machine with 1000 MiB total memory available:
+
+- Hard limit will be set to 1000 * 0.80 = **800 MiB**.
+- Soft limit will be set to 1000 * 0.80 - 1000 * 0.15 = 1000 * 0.65 = **650 MiB**.
 
 Refer to [config.yaml](../../internal/memorylimiter/testdata/config.yaml) for detailed
 examples on using the processor.
-
