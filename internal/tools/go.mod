@@ -11,11 +11,11 @@ require (
 	github.com/google/addlicense v1.1.1
 	github.com/jcchavezs/porto v0.7.0
 	github.com/pavius/impi v0.0.3
-	go.opentelemetry.io/build-tools/checkfile v0.15.0
-	go.opentelemetry.io/build-tools/chloggen v0.15.0
-	go.opentelemetry.io/build-tools/crosslink v0.15.0
-	go.opentelemetry.io/build-tools/multimod v0.15.1-0.20250105162204-3f22feb044ba
-	go.opentelemetry.io/build-tools/semconvgen v0.15.0
+	go.opentelemetry.io/build-tools/checkfile v0.16.0
+	go.opentelemetry.io/build-tools/chloggen v0.16.0
+	go.opentelemetry.io/build-tools/crosslink v0.16.0
+	go.opentelemetry.io/build-tools/multimod v0.16.0
+	go.opentelemetry.io/build-tools/semconvgen v0.16.0
 	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0
 	golang.org/x/tools v0.29.0
 	golang.org/x/vuln v1.1.3
@@ -213,7 +213,7 @@ require (
 	gitlab.com/bosi/decorder v0.4.2 // indirect
 	go-simpler.org/musttag v0.13.0 // indirect
 	go-simpler.org/sloglint v0.7.2 // indirect
-	go.opentelemetry.io/build-tools v0.15.0 // indirect
+	go.opentelemetry.io/build-tools v0.16.0 // indirect
 	go.uber.org/automaxprocs v1.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
