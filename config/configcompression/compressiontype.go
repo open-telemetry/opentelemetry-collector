@@ -31,21 +31,28 @@ const (
 
 // IsCompressed returns false if CompressionType is nil, none, or empty.
 // Otherwise, returns true.
-func (t Type) IsCompressed() bool {
-	return t != typeEmpty && t != typeNone
+func (ct *Type) IsCompressed() bool {
+	return *ct != typeEmpty && *ct != typeNone
 }
 
-func (t Type) Validate() error {
-	switch t {
-	case TypeGzip, TypeZlib, TypeDeflate, TypeSnappy, TypeZstd, TypeLz4,
-		typeNone, typeEmpty:
+func (ct *Type) UnmarshalText(in []byte) error {
+	typ := Type(in)
+	if typ == TypeGzip ||
+		typ == TypeZlib ||
+		typ == TypeDeflate ||
+		typ == TypeSnappy ||
+		typ == TypeZstd ||
+		typ == TypeLz4 ||
+		typ == typeNone ||
+		typ == typeEmpty {
+		*ct = typ
 		return nil
 	}
-	return fmt.Errorf("unsupported compression type %q", t)
+	return fmt.Errorf("unsupported compression type %q", typ)
 }
 
-func (t Type) ValidateParams(p CompressionParams) error {
-	switch t {
+func (ct *Type) ValidateParams(p CompressionParams) error {
+	switch *ct {
 	case TypeGzip, TypeZlib, TypeDeflate:
 		if p.Level == zlib.DefaultCompression ||
 			p.Level == zlib.HuffmanOnly ||
@@ -59,9 +66,9 @@ func (t Type) ValidateParams(p CompressionParams) error {
 		return nil
 	case TypeSnappy, TypeLz4, typeNone, typeEmpty:
 		if p.Level != 0 {
-			return fmt.Errorf("unsupported parameters %+v for compression type %q", p, t)
+			return fmt.Errorf("unsupported parameters %+v for compression type %q", p, *ct)
 		}
 		return nil
 	}
-	return fmt.Errorf("unsupported parameters %+v for compression type %q", p, t)
+	return fmt.Errorf("unsupported parameters %+v for compression type %q", p, *ct)
 }

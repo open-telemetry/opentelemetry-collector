@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestValidate(t *testing.T) {
+func TestUnmarshalText(t *testing.T) {
 	tests := []struct {
 		name            string
 		compressionName []byte
@@ -72,8 +72,8 @@ func TestValidate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			temp := Type(tt.compressionName)
-			err := temp.Validate()
+			temp := typeNone
+			err := temp.UnmarshalText(tt.compressionName)
 			if tt.shouldError {
 				assert.Error(t, err)
 				return
