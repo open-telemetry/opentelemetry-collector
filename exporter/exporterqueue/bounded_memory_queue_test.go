@@ -16,8 +16,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
 // In this test we run a queue with capacity 1 and a single consumer.
@@ -102,11 +100,11 @@ func TestShutdownWhileNotEmpty(t *testing.T) {
 func TestQueueUsage(t *testing.T) {
 	tests := []struct {
 		name  string
-		sizer sizer[ptrace.Traces]
+		sizer sizer[uint64]
 	}{
 		{
 			name:  "requests_based",
-			sizer: &requestSizer[ptrace.Traces]{},
+			sizer: &requestSizer[uint64]{},
 		},
 		{
 			name:  "items_based",
@@ -115,20 +113,60 @@ func TestQueueUsage(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			q := newBoundedMemoryQueue[ptrace.Traces](memoryQueueSettings[ptrace.Traces]{sizer: tt.sizer, capacity: int64(100)})
+			q := newBoundedMemoryQueue[uint64](memoryQueueSettings[uint64]{sizer: tt.sizer, capacity: int64(100)})
 			consumed := &atomic.Int64{}
 			require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
-			ac := newAsyncConsumer(q, 1, func(context.Context, ptrace.Traces) error {
+			ac := newAsyncConsumer(q, 1, func(context.Context, uint64) error {
 				consumed.Add(1)
 				return nil
 			})
-			td := testdata.GenerateTraces(10)
 			for j := 0; j < 10; j++ {
-				require.NoError(t, q.Offer(context.Background(), td))
+				require.NoError(t, q.Offer(context.Background(), uint64(10)))
 			}
 			assert.NoError(t, q.Shutdown(context.Background()))
 			assert.NoError(t, ac.Shutdown(context.Background()))
 			assert.Equal(t, int64(10), consumed.Load())
+		})
+	}
+}
+
+func TestBlockingQueueUsage(t *testing.T) {
+	tests := []struct {
+		name  string
+		sizer sizer[uint64]
+	}{
+		{
+			name:  "requests_based",
+			sizer: &requestSizer[uint64]{},
+		},
+		{
+			name:  "items_based",
+			sizer: &itemsSizer{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			q := newBoundedMemoryQueue[uint64](memoryQueueSettings[uint64]{sizer: tt.sizer, capacity: int64(100), blocking: true})
+			consumed := &atomic.Int64{}
+			require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
+			ac := newAsyncConsumer(q, 10, func(context.Context, uint64) error {
+				consumed.Add(1)
+				return nil
+			})
+			wg := &sync.WaitGroup{}
+			for i := 0; i < 10; i++ {
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					for j := 0; j < 100_000; j++ {
+						assert.NoError(t, q.Offer(context.Background(), uint64(10)))
+					}
+				}()
+			}
+			wg.Wait()
+			assert.NoError(t, q.Shutdown(context.Background()))
+			assert.NoError(t, ac.Shutdown(context.Background()))
+			assert.Equal(t, int64(1_000_000), consumed.Load())
 		})
 	}
 }
@@ -149,8 +187,7 @@ func consume[T any](q Queue[T], consumeFunc func(context.Context, T) error) bool
 	if !ok {
 		return false
 	}
-	consumeErr := consumeFunc(ctx, req)
-	q.OnProcessingFinished(index, consumeErr)
+	q.OnProcessingFinished(index, consumeFunc(ctx, req))
 	return true
 }
 
@@ -170,8 +207,7 @@ func newAsyncConsumer[T any](q Queue[T], numConsumers int, consumeFunc func(cont
 				if !ok {
 					return
 				}
-				consumeErr := consumeFunc(ctx, req)
-				q.OnProcessingFinished(index, consumeErr)
+				q.OnProcessingFinished(index, consumeFunc(ctx, req))
 			}
 		}()
 	}
@@ -187,11 +223,11 @@ func (qc *asyncConsumer) Shutdown(_ context.Context) error {
 func BenchmarkOffer(b *testing.B) {
 	tests := []struct {
 		name  string
-		sizer sizer[ptrace.Traces]
+		sizer sizer[uint64]
 	}{
 		{
 			name:  "requests_based",
-			sizer: &requestSizer[ptrace.Traces]{},
+			sizer: &requestSizer[uint64]{},
 		},
 		{
 			name:  "items_based",
@@ -200,18 +236,17 @@ func BenchmarkOffer(b *testing.B) {
 	}
 	for _, tt := range tests {
 		b.Run(tt.name, func(b *testing.B) {
-			q := newBoundedMemoryQueue[ptrace.Traces](memoryQueueSettings[ptrace.Traces]{sizer: &requestSizer[ptrace.Traces]{}, capacity: int64(10 * b.N)})
+			q := newBoundedMemoryQueue[uint64](memoryQueueSettings[uint64]{sizer: &requestSizer[uint64]{}, capacity: int64(10 * b.N)})
 			consumed := &atomic.Int64{}
 			require.NoError(b, q.Start(context.Background(), componenttest.NewNopHost()))
-			ac := newAsyncConsumer(q, 1, func(context.Context, ptrace.Traces) error {
+			ac := newAsyncConsumer(q, 1, func(context.Context, uint64) error {
 				consumed.Add(1)
 				return nil
 			})
-			td := testdata.GenerateTraces(10)
 			b.ResetTimer()
 			b.ReportAllocs()
 			for j := 0; j < b.N; j++ {
-				require.NoError(b, q.Offer(context.Background(), td))
+				require.NoError(b, q.Offer(context.Background(), uint64(10)))
 			}
 			assert.NoError(b, q.Shutdown(context.Background()))
 			assert.NoError(b, ac.Shutdown(context.Background()))

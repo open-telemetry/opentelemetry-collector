@@ -50,22 +50,26 @@ type sizedQueue[T any] struct {
 	sizer sizer[T]
 	cap   int64
 
-	mu          sync.Mutex
-	hasElements *sync.Cond
-	items       *linkedQueue[T]
-	size        int64
-	stopped     bool
+	mu              sync.Mutex
+	hasMoreElements *sync.Cond
+	hasMoreSpace    *cond
+	items           *linkedQueue[T]
+	size            int64
+	stopped         bool
+	blocking        bool
 }
 
 // newSizedQueue creates a sized elements channel. Each element is assigned a size by the provided sizer.
 // capacity is the capacity of the queue.
-func newSizedQueue[T any](capacity int64, sizer sizer[T]) *sizedQueue[T] {
+func newSizedQueue[T any](capacity int64, sizer sizer[T], blocking bool) *sizedQueue[T] {
 	sq := &sizedQueue[T]{
-		sizer: sizer,
-		cap:   capacity,
-		items: &linkedQueue[T]{},
+		sizer:    sizer,
+		cap:      capacity,
+		items:    &linkedQueue[T]{},
+		blocking: blocking,
 	}
-	sq.hasElements = sync.NewCond(&sq.mu)
+	sq.hasMoreElements = sync.NewCond(&sq.mu)
+	sq.hasMoreSpace = newCond(&sq.mu)
 	return sq
 }
 
@@ -84,14 +88,20 @@ func (sq *sizedQueue[T]) Offer(ctx context.Context, el T) error {
 	sq.mu.Lock()
 	defer sq.mu.Unlock()
 
-	if sq.size+elSize > sq.cap {
-		return ErrQueueIsFull
+	for sq.size+elSize > sq.cap {
+		if !sq.blocking {
+			return ErrQueueIsFull
+		}
+		// Wait for more space or before the ctx is Done.
+		if err := sq.hasMoreSpace.Wait(ctx); err != nil {
+			return err
+		}
 	}
 
 	sq.size += elSize
 	sq.items.push(ctx, el, elSize)
 	// Signal one consumer if any.
-	sq.hasElements.Signal()
+	sq.hasMoreElements.Signal()
 	return nil
 }
 
@@ -104,9 +114,10 @@ func (sq *sizedQueue[T]) pop() (context.Context, T, bool) {
 
 	for {
 		if sq.size > 0 {
-			ctx, el, elSize := sq.items.pop()
+			elCtx, el, elSize := sq.items.pop()
 			sq.size -= elSize
-			return ctx, el, true
+			sq.hasMoreSpace.Signal()
+			return elCtx, el, true
 		}
 
 		if sq.stopped {
@@ -114,7 +125,9 @@ func (sq *sizedQueue[T]) pop() (context.Context, T, bool) {
 			return context.Background(), el, false
 		}
 
-		sq.hasElements.Wait()
+		// TODO: Need to change the Queue interface to return an error to allow distinguish between shutdown and context canceled.
+		//  Until then use the sync.Cond.
+		sq.hasMoreElements.Wait()
 	}
 }
 
@@ -123,7 +136,7 @@ func (sq *sizedQueue[T]) Shutdown(context.Context) error {
 	sq.mu.Lock()
 	defer sq.mu.Unlock()
 	sq.stopped = true
-	sq.hasElements.Broadcast()
+	sq.hasMoreElements.Broadcast()
 	return nil
 }
 
