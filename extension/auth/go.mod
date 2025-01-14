@@ -8,7 +8,7 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.117.0
 	go.opentelemetry.io/collector/extension v0.117.0
 	go.uber.org/goleak v1.3.0
-	google.golang.org/grpc v1.69.2
+	google.golang.org/grpc v1.69.4
 )
 
 require (
