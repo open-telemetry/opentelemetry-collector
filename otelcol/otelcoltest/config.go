@@ -6,6 +6,7 @@ package otelcoltest // import "go.opentelemetry.io/collector/otelcol/otelcoltest
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
@@ -40,5 +41,5 @@ func LoadConfigAndValidate(fileName string, factories otelcol.Factories) (*otelc
 	if err != nil {
 		return nil, err
 	}
-	return cfg, cfg.Validate()
+	return cfg, component.ValidateConfig(cfg)
 }

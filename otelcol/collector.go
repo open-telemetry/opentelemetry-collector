@@ -171,7 +171,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		return fmt.Errorf("failed to get config: %w", err)
 	}
 
-	if err = cfg.Validate(); err != nil {
+	if err = component.ValidateConfig(cfg); err != nil {
 		return fmt.Errorf("invalid configuration: %w", err)
 	}
 
@@ -261,7 +261,7 @@ func (col *Collector) DryRun(ctx context.Context) error {
 		return fmt.Errorf("failed to get config: %w", err)
 	}
 
-	return cfg.Validate()
+	return component.ValidateConfig(cfg)
 }
 
 func newFallbackLogger(options []zap.Option) (*zap.Logger, error) {
