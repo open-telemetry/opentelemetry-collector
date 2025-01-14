@@ -64,11 +64,9 @@ func (ct *Type) ValidateParams(p CompressionParams) error {
 		// Supports arbitrary levels: zstd will map any given
 		// level to the nearest internally supported level.
 		return nil
-	case TypeSnappy, TypeLz4, typeNone, typeEmpty:
-		if p.Level != 0 {
-			return fmt.Errorf("unsupported parameters %+v for compression type %q", p, *ct)
-		}
-		return nil
 	}
-	return fmt.Errorf("unsupported parameters %+v for compression type %q", p, *ct)
+	if p.Level != 0 {
+		return fmt.Errorf("unsupported parameters %+v for compression type %q", p, *ct)
+	}
+	return nil
 }
