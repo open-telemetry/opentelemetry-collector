@@ -25,8 +25,9 @@ var (
 )
 
 type logsRequest struct {
-	ld     plog.Logs
-	pusher consumer.ConsumeLogsFunc
+	ld       plog.Logs
+	pusher   consumer.ConsumeLogsFunc
+	byteSize int
 }
 
 func newLogsRequest(ld plog.Logs, pusher consumer.ConsumeLogsFunc) Request {

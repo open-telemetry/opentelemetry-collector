@@ -252,42 +252,86 @@ func TestMergeSplitLogsBasedOnByteSize(t *testing.T) {
 	}
 }
 
-func BenchmarkSplittingBasedOnItemCountManyLogs(b *testing.B) {
-	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 10}
+func BenchmarkSplittingBasedOnItemCountManySmallLogs(b *testing.B) {
+	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 10000}
 	for i := 0; i < b.N; i++ {
-		lr1 := &logsRequest{ld: testdata.GenerateLogs(9)}
+		lr1 := &logsRequest{ld: testdata.GenerateLogs(10)}
 		for j := 0; j < 1000; j++ {
-			lr2 := &logsRequest{ld: testdata.GenerateLogs(9)}
+			lr2 := &logsRequest{ld: testdata.GenerateLogs(10)}
 			lr1.MergeSplit(context.Background(), cfg, lr2)
 		}
 	}
 }
 
-func BenchmarkSplittingBasedOnByteSizeManyLogs(b *testing.B) {
-	cfg := exporterbatcher.MaxSizeConfig{MaxSizeBytes: 1010}
+func BenchmarkSplittingBasedOnByteSizeManySmallLogs(b *testing.B) {
+	cfg := exporterbatcher.MaxSizeConfig{MaxSizeBytes: 1010000}
 	for i := 0; i < b.N; i++ {
-		lr1 := &logsRequest{ld: testdata.GenerateLogs(9)}
+		lr1 := &logsRequest{ld: testdata.GenerateLogs(10)}
 		for j := 0; j < 1000; j++ {
-			lr2 := &logsRequest{ld: testdata.GenerateLogs(9)}
+			lr2 := &logsRequest{ld: testdata.GenerateLogs(10)}
+			lr1.MergeSplit(context.Background(), cfg, lr2)
+		}
+	}
+}
+
+func BenchmarkSplittingBasedOnItemCountManyLogsSlightlyAboveLimit(b *testing.B) {
+	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 10000}
+	for i := 0; i < b.N; i++ {
+		lr1 := &logsRequest{ld: testdata.GenerateLogs(10001)}
+		for j := 0; j < 10; j++ {
+			lr2 := &logsRequest{ld: testdata.GenerateLogs(10001)}
+			lr1.MergeSplit(context.Background(), cfg, lr2)
+		}
+	}
+}
+
+func BenchmarkSplittingBasedOnByteSizeManyLogsSlightlyAboveLimit(b *testing.B) {
+	cfg := exporterbatcher.MaxSizeConfig{MaxSizeBytes: 960052} // 960052 corresponds to 10000 generated logs
+	for i := 0; i < b.N; i++ {
+		lr1 := &logsRequest{ld: testdata.GenerateLogs(10001)}
+		for j := 0; j < 10; j++ {
+			lr2 := &logsRequest{ld: testdata.GenerateLogs(10001)}
+			lr1.MergeSplit(context.Background(), cfg, lr2)
+		}
+	}
+}
+
+func BenchmarkSplittingBasedOnItemCountManyLogsSlightlyBelowLimit(b *testing.B) {
+	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 10000}
+	for i := 0; i < b.N; i++ {
+		lr1 := &logsRequest{ld: testdata.GenerateLogs(9999)}
+		for j := 0; j < 10; j++ {
+			lr2 := &logsRequest{ld: testdata.GenerateLogs(9999)}
+			lr1.MergeSplit(context.Background(), cfg, lr2)
+		}
+	}
+}
+
+func BenchmarkSplittingBasedOnByteSizeManyLogsSlightlyBelowLimit(b *testing.B) {
+	cfg := exporterbatcher.MaxSizeConfig{MaxSizeBytes: 960052} // 960052 corresponds to 10000 generated logs
+	for i := 0; i < b.N; i++ {
+		lr1 := &logsRequest{ld: testdata.GenerateLogs(9999)}
+		for j := 0; j < 10; j++ {
+			lr2 := &logsRequest{ld: testdata.GenerateLogs(9999)}
 			lr1.MergeSplit(context.Background(), cfg, lr2)
 		}
 	}
 }
 
 func BenchmarkSplittingBasedOnItemCountHugeLog(b *testing.B) {
-	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 10}
+	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 10000}
 	for i := 0; i < b.N; i++ {
 		lr1 := &logsRequest{ld: testdata.GenerateLogs(1)}
-		lr2 := &logsRequest{ld: testdata.GenerateLogs(1000)}
+		lr2 := &logsRequest{ld: testdata.GenerateLogs(100000)} // l2 is of size 9.600054 MB
 		lr1.MergeSplit(context.Background(), cfg, lr2)
 	}
 }
 
 func BenchmarkSplittingBasedOnByteSizeHugeLog(b *testing.B) {
-	cfg := exporterbatcher.MaxSizeConfig{MaxSizeBytes: 1010}
+	cfg := exporterbatcher.MaxSizeConfig{MaxSizeBytes: 970000}
 	for i := 0; i < b.N; i++ {
 		lr1 := &logsRequest{ld: testdata.GenerateLogs(1)}
-		lr2 := &logsRequest{ld: testdata.GenerateLogs(1000)}
+		lr2 := &logsRequest{ld: testdata.GenerateLogs(100000)}
 		lr1.MergeSplit(context.Background(), cfg, lr2)
 	}
 }

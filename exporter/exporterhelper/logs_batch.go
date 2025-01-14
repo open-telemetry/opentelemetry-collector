@@ -46,12 +46,22 @@ func (req *logsRequest) mergeSplitBasedOnByteSize(cfg exporterbatcher.MaxSizeCon
 			continue
 		}
 
-		ByteSize := srcReq.ld.ByteSize()
+		ByteSize := srcReq.byteSize
+		if ByteSize == 0 {
+			ByteSize = srcReq.ld.ByteSize()
+		}
+		if ByteSize > capacityLeft && capacityLeft < cfg.MaxSizeBytes {
+			res = append(res, destReq)
+			destReq = nil
+			capacityLeft = cfg.MaxSizeBytes
+		}
+
 		if ByteSize <= capacityLeft {
 			if destReq == nil {
 				destReq = srcReq
 			} else {
 				srcReq.ld.ResourceLogs().MoveAndAppendTo(destReq.ld.ResourceLogs())
+				destReq.byteSize += ByteSize
 			}
 			capacityLeft -= ByteSize
 			continue
