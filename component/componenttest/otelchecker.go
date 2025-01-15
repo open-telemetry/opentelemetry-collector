@@ -15,13 +15,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-func checkScraperLogs(reader *sdkmetric.ManualReader, receiver component.ID, scraper component.ID, scrapedLogRecords, erroredLogRecords int64) error {
-	scraperAttrs := attributesForScraperMetrics(receiver, scraper)
-	return multierr.Combine(
-		checkIntSum(reader, "otelcol_scraper_scraped_log_records", scrapedLogRecords, scraperAttrs),
-		checkIntSum(reader, "otelcol_scraper_errored_log_records", erroredLogRecords, scraperAttrs))
-}
-
 func checkScraperMetrics(reader *sdkmetric.ManualReader, receiver component.ID, scraper component.ID, scrapedMetricPoints, erroredMetricPoints int64) error {
 	scraperAttrs := attributesForScraperMetrics(receiver, scraper)
 	return multierr.Combine(
