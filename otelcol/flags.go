@@ -6,6 +6,7 @@ package otelcol // import "go.opentelemetry.io/collector/otelcol"
 import (
 	"errors"
 	"flag"
+	"fmt"
 	"strings"
 
 	"go.opentelemetry.io/collector/featuregate"
@@ -14,6 +15,10 @@ import (
 const (
 	configFlag = "config"
 )
+
+type flagValue struct {
+	reg *featuregate.Registry
+}
 
 type configFlagValue struct {
 	values []string
@@ -51,6 +56,43 @@ func flags(reg *featuregate.Registry) *flag.FlagSet {
 
 	reg.RegisterFlags(flagSet)
 	return flagSet
+}
+
+// Function to beautify and print the feature flags.
+func featureflags(reg *featuregate.Registry)  {
+	f := &flagValue{reg: reg}
+	if f.reg == nil {
+		return 
+	}
+	c := 1
+	
+	f.reg.VisitAll(func(g *featuregate.Gate) {
+		str := ""
+		id := g.ID()
+		desc := g.Description()
+		if !g.IsEnabled() {
+			id = "-" + id
+		}
+		str += fmt.Sprint(c) + "." + id + "\n"
+		str+= "Description: "+desc + "\n"
+		ref := g.ReferenceURL()
+		from := g.FromVersion()
+		to := g.ToVersion()
+		if(ref != ""){
+			str+= "ReferenceURL: "+ref + "\n"
+		}
+		if(from != "v<nil>"){
+			str+= "From version: "+from + "\n"
+			
+		}
+		if(to != "v<nil>"){
+			str+= "From version: "+to + "\n"
+			
+		}
+		// str += "\n"
+		c+=1
+		fmt.Println(str)
+	})
 }
 
 func getConfigFlag(flagSet *flag.FlagSet) []string {

@@ -42,6 +42,11 @@ func NewCommand(set CollectorSettings) *cobra.Command {
 	return rootCmd
 }
 
+// Helper function for "make features" commmand for Jaeger
+func FeatureCommand(set CollectorSettings)  {
+	featureflags(featuregate.GlobalRegistry())
+}
+
 // Puts command line flags from flags into the CollectorSettings, to be used during config resolution.
 func updateSettingsUsingFlags(set *CollectorSettings, flags *flag.FlagSet) error {
 	resolverSet := &set.ConfigProviderSettings.ResolverSettings
