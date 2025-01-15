@@ -18,7 +18,7 @@ func (s sizerInt) Sizeof(el int) int64 {
 }
 
 func TestSizedQueue(t *testing.T) {
-	q := newSizedQueue[int](7, sizerInt{})
+	q := newSizedQueue[int](7, sizerInt{}, false)
 	require.NoError(t, q.Offer(context.Background(), 1))
 	assert.Equal(t, int64(1), q.Size())
 	assert.Equal(t, int64(7), q.Capacity())
@@ -47,7 +47,7 @@ func TestSizedQueue(t *testing.T) {
 }
 
 func TestSizedQueue_DrainAllElements(t *testing.T) {
-	q := newSizedQueue[int](7, sizerInt{})
+	q := newSizedQueue[int](7, sizerInt{}, false)
 	require.NoError(t, q.Offer(context.Background(), 1))
 	require.NoError(t, q.Offer(context.Background(), 3))
 
@@ -68,12 +68,12 @@ func TestSizedQueue_DrainAllElements(t *testing.T) {
 }
 
 func TestSizedChannel_OfferInvalidSize(t *testing.T) {
-	q := newSizedQueue[int](1, sizerInt{})
+	q := newSizedQueue[int](1, sizerInt{}, false)
 	require.ErrorIs(t, q.Offer(context.Background(), -1), errInvalidSize)
 }
 
 func TestSizedChannel_OfferZeroSize(t *testing.T) {
-	q := newSizedQueue[int](1, sizerInt{})
+	q := newSizedQueue[int](1, sizerInt{}, false)
 	require.NoError(t, q.Offer(context.Background(), 0))
 	require.NoError(t, q.Shutdown(context.Background()))
 	// Because the size 0 is ignored, nothing to drain.
