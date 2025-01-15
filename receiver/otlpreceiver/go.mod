@@ -43,6 +43,7 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
@@ -61,6 +62,7 @@ require (
 	go.opentelemetry.io/collector/config/configtelemetry v0.117.0 // indirect
 	go.opentelemetry.io/collector/extension v0.117.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.117.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.23.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.117.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.56.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.56.0 // indirect

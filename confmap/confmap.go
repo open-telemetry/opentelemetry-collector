@@ -17,7 +17,15 @@ import (
 	"github.com/knadh/koanf/v2"
 
 	encoder "go.opentelemetry.io/collector/confmap/internal/mapstructure"
+	"go.opentelemetry.io/collector/featuregate"
 )
+
+const MergeComponentsAppendID = "confmap.MergeComponentsAppend"
+
+var MergeComponentsAppend = featuregate.GlobalRegistry().MustRegister(MergeComponentsAppendID,
+	featuregate.StageAlpha,
+	featuregate.WithRegisterFromVersion("v0.117.0"),
+	featuregate.WithRegisterDescription("Overrides default koanf merging strategy and combines slices."))
 
 const (
 	// KeyDelimiter is used as the default key delimiter in the default koanf instance.
@@ -159,8 +167,23 @@ func (l *Conf) IsSet(key string) bool {
 
 // Merge merges the input given configuration into the existing config.
 // Note that the given map may be modified.
+
 func (l *Conf) Merge(in *Conf) error {
+	if MergeComponentsAppend.IsEnabled() {
+		return l.mergeWithFunc(in, mergeComponentsAppend)
+	}
+	return l.merge(in)
+}
+
+func (l *Conf) merge(in *Conf) error {
 	return l.k.Merge(in.k)
+}
+
+// MergeWithFunc merges the input given configuration into the existing config.
+// Note that the given map may be modified.
+func (l *Conf) mergeWithFunc(in *Conf, mergeFunc MergeFunc) error {
+	// Currently, custom merge functions are supported only via koanf.Load
+	return l.k.Load(confmap.Provider(in.ToStringMap(), ""), nil, koanf.WithMergeFunc(mergeFunc))
 }
 
 // Sub returns new Conf instance representing a sub-config of this instance.
@@ -172,13 +195,8 @@ func (l *Conf) Sub(key string) (*Conf, error) {
 		return New(), nil
 	}
 
-	switch v := data.(type) {
-	case map[string]any:
+	if v, ok := data.(map[string]any); ok {
 		return NewFromStringMap(v), nil
-	case expandedValue:
-		if m, ok := v.Value.(map[string]any); ok {
-			return NewFromStringMap(m), nil
-		}
 	}
 
 	return nil, fmt.Errorf("unexpected sub-config value kind for key:%s value:%v kind:%v", key, data, reflect.TypeOf(data).Kind())
@@ -563,4 +581,75 @@ func newConfmapModuleFactory[T any, S any](f createConfmapFunc[T, S]) moduleFact
 	return confmapModuleFactory[T, S]{
 		f: f,
 	}
+}
+
+type MergeFunc func(map[string]any, map[string]any) error
+
+func mergeComponentsAppend(new, old map[string]any) error {
+	newService := maps.Search(new, []string{"service"})
+	oldService := maps.Search(old, []string{"service"})
+	if oldSer, ok := oldService.(map[string]any); ok {
+		if newSer, ok := newService.(map[string]any); ok {
+			mergeServices(newSer, oldSer)
+			// override the `service` in new config.
+			new["service"] = newSer
+		}
+	}
+	// merge rest of the config.
+	maps.Merge(new, old)
+	return nil
+}
+
+func mergeServices(new, old map[string]any) {
+	for oldKey, oVal := range old {
+		nVal, newOk := new[oldKey]
+		if !newOk {
+			new[oldKey] = oVal
+			continue
+		}
+
+		newVal := reflect.ValueOf(nVal)
+		oldVal := reflect.ValueOf(oVal)
+
+		if newVal.Kind() != oldVal.Kind() {
+			// different kinds, override the old config
+			new[oldKey] = oVal
+			continue
+		}
+
+		switch oldVal.Kind() {
+		case reflect.Array, reflect.Slice:
+			// both of them are array. Merge them
+			new[oldKey] = mergeSlice(oldVal, newVal)
+		case reflect.Map:
+			// both of them are maps. Recursively call the MergeAppend
+			mergeServices(nVal.(map[string]any), oVal.(map[string]any))
+		default:
+			// Default case, override the old config
+			new[oldKey] = oVal
+		}
+	}
+}
+
+func mergeSlice(old, new reflect.Value) any {
+	if old.Type() != new.Type() {
+		return new
+	}
+	oldSlice := reflect.MakeSlice(old.Type(), 0, old.Cap()+new.Cap())
+	for i := 0; i < old.Len(); i++ {
+		oldSlice = reflect.Append(oldSlice, old.Index(i))
+	}
+
+OUTER2:
+	for i := 0; i < new.Len(); i++ {
+		for j := 0; j < oldSlice.Len(); j++ {
+			// name-aware merging.
+			// For eg. if oldSlice=["foo","bar"] and new=["foo","barX"], resulting array should be ["foo","bar","barx"]
+			if oldSlice.Index(j).Equal(new.Index(i)) {
+				continue OUTER2
+			}
+		}
+		oldSlice = reflect.Append(oldSlice, new.Index(i))
+	}
+	return oldSlice.Interface()
 }
