@@ -69,6 +69,7 @@ func NewMemoryQueueFactory[T any]() Factory[T] {
 		return newBoundedMemoryQueue[T](memoryQueueSettings[T]{
 			sizer:    &requestSizer[T]{},
 			capacity: int64(cfg.QueueSize),
+			blocking: cfg.Blocking,
 		})
 	}
 }
@@ -95,6 +96,7 @@ func NewPersistentQueueFactory[T any](storageID *component.ID, factorySettings P
 		return newPersistentQueue[T](persistentQueueSettings[T]{
 			sizer:       &requestSizer[T]{},
 			capacity:    int64(cfg.QueueSize),
+			blocking:    cfg.Blocking,
 			signal:      set.Signal,
 			storageID:   *storageID,
 			marshaler:   factorySettings.Marshaler,
