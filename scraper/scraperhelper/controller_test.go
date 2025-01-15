@@ -138,7 +138,7 @@ func TestScrapeController(t *testing.T) {
 				cfg = test.scraperControllerSettings
 			}
 
-			mr, err := NewScraperControllerReceiver(cfg, receiver.Settings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, sink, options...)
+			mr, err := NewMetricsController(cfg, receiver.Settings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, sink, options...)
 			require.NoError(t, err)
 
 			err = mr.Start(context.Background(), componenttest.NewNopHost())
@@ -194,8 +194,8 @@ func TestScrapeController(t *testing.T) {
 	}
 }
 
-func configureMetricOptions(t *testing.T, test metricsTestCase, initializeChs []chan bool, scrapeMetricsChs []chan int, closeChs []chan bool) []ScraperControllerOption {
-	var metricOptions []ScraperControllerOption
+func configureMetricOptions(t *testing.T, test metricsTestCase, initializeChs []chan bool, scrapeMetricsChs []chan int, closeChs []chan bool) []ControllerOption {
+	var metricOptions []ControllerOption
 
 	for i := 0; i < test.scrapers; i++ {
 		var scraperOptions []scraper.Option
@@ -317,7 +317,7 @@ func TestSingleScrapePerInterval(t *testing.T) {
 	scp, err := scraper.NewMetrics(tsm.scrape)
 	require.NoError(t, err)
 
-	recv, err := NewScraperControllerReceiver(
+	recv, err := NewMetricsController(
 		cfg,
 		receivertest.NewNopSettings(),
 		new(consumertest.MetricsSink),
@@ -359,7 +359,7 @@ func TestScrapeControllerStartsOnInit(t *testing.T) {
 	scp, err := scraper.NewMetrics(tsm.scrape)
 	require.NoError(t, err, "Must not error when creating scraper")
 
-	r, err := NewScraperControllerReceiver(
+	r, err := NewMetricsController(
 		&ControllerConfig{
 			CollectionInterval: time.Hour,
 			InitialDelay:       0,
@@ -398,7 +398,7 @@ func TestScrapeControllerInitialDelay(t *testing.T) {
 	})
 	require.NoError(t, err, "Must not error when creating scraper")
 
-	r, err := NewScraperControllerReceiver(
+	r, err := NewMetricsController(
 		&cfg,
 		receivertest.NewNopSettings(),
 		new(consumertest.MetricsSink),
@@ -428,7 +428,7 @@ func TestShutdownBeforeScrapeCanStart(t *testing.T) {
 	})
 	require.NoError(t, err, "Must not error when creating scraper")
 
-	r, err := NewScraperControllerReceiver(
+	r, err := NewMetricsController(
 		&cfg,
 		receivertest.NewNopSettings(),
 		new(consumertest.MetricsSink),

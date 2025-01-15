@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/testdata"
+	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/metadatatest"
 )
@@ -55,9 +56,11 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 		{items: 15, err: nil},
 	}
 	for i := range params {
-		sf, err := newObsMetrics(func(context.Context) (pmetric.Metrics, error) {
+		sm, err := scraper.NewMetrics(func(context.Context) (pmetric.Metrics, error) {
 			return testdata.GenerateMetrics(params[i].items), params[i].err
-		}, receiverID, scraperID, tel)
+		})
+		require.NoError(t, err)
+		sf, err := wrapObsMetrics(sm, receiverID, scraperID, tel)
 		require.NoError(t, err)
 		_, err = sf.ScrapeMetrics(parentCtx)
 		require.ErrorIs(t, err, params[i].err)
@@ -100,9 +103,11 @@ func TestCheckScraperMetrics(t *testing.T) {
 	tt := metadatatest.SetupTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	sf, err := newObsMetrics(func(context.Context) (pmetric.Metrics, error) {
+	sm, err := scraper.NewMetrics(func(context.Context) (pmetric.Metrics, error) {
 		return testdata.GenerateMetrics(7), nil
-	}, receiverID, scraperID, tt.NewTelemetrySettings())
+	})
+	require.NoError(t, err)
+	sf, err := wrapObsMetrics(sm, receiverID, scraperID, tt.NewTelemetrySettings())
 	require.NoError(t, err)
 	_, err = sf.ScrapeMetrics(context.Background())
 	require.NoError(t, err)
