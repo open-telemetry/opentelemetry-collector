@@ -2,10 +2,9 @@ type: scraperhelper
 github_project: open-telemetry/opentelemetry-collector
 
 status:
-  class: receiver
-  not_component: true
+  class: pkg
   stability:
-    beta: [traces, metrics, logs]
+    beta: [metrics, logs]
 
 telemetry:
   metrics:
