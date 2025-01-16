@@ -10,6 +10,8 @@ import (
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -19,15 +21,21 @@ import (
 )
 
 type Telemetry struct {
+	Spanrecorder *tracetest.SpanRecorder
+
 	reader        *sdkmetric.ManualReader
 	meterProvider *sdkmetric.MeterProvider
+	traceProvider *sdktrace.TracerProvider
 }
 
 func SetupTelemetry() Telemetry {
 	reader := sdkmetric.NewManualReader()
+	spanRecorder := new(tracetest.SpanRecorder)
 	return Telemetry{
 		reader:        reader,
+		Spanrecorder:  spanRecorder,
 		meterProvider: sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader)),
+		traceProvider: sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spanRecorder)),
 	}
 }
 func (tt *Telemetry) NewSettings() receiver.Settings {
@@ -41,6 +49,7 @@ func (tt *Telemetry) NewTelemetrySettings() component.TelemetrySettings {
 	set := componenttest.NewNopTelemetrySettings()
 	set.MeterProvider = tt.meterProvider
 	set.MetricsLevel = configtelemetry.LevelDetailed
+	set.TracerProvider = tt.traceProvider
 	return set
 }
 
