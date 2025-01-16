@@ -143,13 +143,6 @@ func getMetric(reader *sdkmetric.ManualReader, expectedName string) (metricdata.
 	return metricdata.Metrics{}, fmt.Errorf("metric '%s' not found", expectedName)
 }
 
-func attributesForScraperMetrics(receiver component.ID, scraper component.ID) attribute.Set {
-	return attribute.NewSet(
-		attribute.String(receiverTag, receiver.String()),
-		attribute.String(scraperTag, scraper.String()),
-	)
-}
-
 // attributesForReceiverMetrics returns the attributes that are needed for the receiver metrics.
 func attributesForReceiverMetrics(receiver component.ID, transport string) attribute.Set {
 	return attribute.NewSet(

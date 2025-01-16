@@ -30,6 +30,8 @@ import (
 	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/metadatatest"
 )
 
+const transportTag = "transport"
+
 type testInitialize struct {
 	ch  chan bool
 	err error
@@ -323,7 +325,7 @@ func assertMetrics(t *testing.T, tt metadatatest.Telemetry, receiver component.I
 					{
 						Attributes: attribute.NewSet(
 							attribute.String(receiverKey, receiver.String()),
-							attribute.String("transport", "")),
+							attribute.String(transportTag, "")),
 						Value: int64(dataPointCounts),
 					},
 				},
@@ -340,7 +342,7 @@ func assertMetrics(t *testing.T, tt metadatatest.Telemetry, receiver component.I
 					{
 						Attributes: attribute.NewSet(
 							attribute.String(receiverKey, receiver.String()),
-							attribute.String("transport", "")),
+							attribute.String(transportTag, "")),
 						Value: 0,
 					},
 				},
