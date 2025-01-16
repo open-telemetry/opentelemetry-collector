@@ -87,7 +87,10 @@ func (s *Status) validateClass() error {
 	if s.Class == "" {
 		return errors.New("missing class")
 	}
-	if s.Class != "receiver" && s.Class != "processor" && s.Class != "exporter" && s.Class != "connector" && s.Class != "extension" && s.Class != "cmd" && s.Class != "pkg" {
+	if s.Class != "receiver" && s.Class != "processor" &&
+		s.Class != "exporter" && s.Class != "connector" &&
+		s.Class != "extension" && s.Class != "scraper" &&
+		s.Class != "cmd" && s.Class != "pkg" {
 		return fmt.Errorf("invalid class: %v", s.Class)
 	}
 	return nil

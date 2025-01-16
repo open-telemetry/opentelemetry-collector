@@ -19,6 +19,8 @@ require (
 	go.opentelemetry.io/collector/processor/processortest v0.117.0
 	go.opentelemetry.io/collector/receiver v0.117.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.117.0
+	go.opentelemetry.io/collector/scraper v0.117.0
+	go.opentelemetry.io/collector/scraper/scrapertest v0.117.0
 	go.opentelemetry.io/collector/semconv v0.117.0
 	go.opentelemetry.io/otel/metric v1.32.0
 	go.opentelemetry.io/otel/sdk/metric v1.32.0
@@ -114,3 +116,7 @@ replace go.opentelemetry.io/collector/component/componentstatus => ../../compone
 replace go.opentelemetry.io/collector/processor => ../../processor
 
 replace go.opentelemetry.io/collector/consumer/consumererror => ../../consumer/consumererror
+
+replace go.opentelemetry.io/collector/scraper => ../../scraper
+
+replace go.opentelemetry.io/collector/scraper/scrapertest => ../../scraper/scrapertest
