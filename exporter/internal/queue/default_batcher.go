@@ -43,77 +43,41 @@ func (qb *DefaultBatcher) startReadingFlushingGoroutine() {
 
 			qb.currentBatchMu.Lock()
 
-			if qb.batchCfg.MaxSizeItems > 0 {
-				var reqList []internal.Request
-				var mergeSplitErr error
-				if qb.currentBatch == nil || qb.currentBatch.req == nil {
-					qb.resetTimer()
-					reqList, mergeSplitErr = req.MergeSplit(ctx, qb.batchCfg.MaxSizeConfig, nil)
-				} else {
-					reqList, mergeSplitErr = qb.currentBatch.req.MergeSplit(ctx, qb.batchCfg.MaxSizeConfig, req)
-				}
-
-				if mergeSplitErr != nil || reqList == nil {
-					qb.queue.OnProcessingFinished(idx, mergeSplitErr)
-					qb.currentBatchMu.Unlock()
-					continue
-				}
-
-				// If there was a split, we flush everything immediately.
-				if reqList[0].ItemsCount() >= qb.batchCfg.MinSizeItems || len(reqList) > 1 {
-					qb.currentBatch = nil
-					qb.currentBatchMu.Unlock()
-					for i := 0; i < len(reqList); i++ {
-						qb.flush(batch{
-							req:     reqList[i],
-							ctx:     ctx,
-							idxList: []uint64{idx},
-						})
-						// TODO: handle partial failure
-					}
-					qb.resetTimer()
-				} else {
-					qb.currentBatch = &batch{
-						req:     reqList[0],
-						ctx:     ctx,
-						idxList: []uint64{idx},
-					}
-					qb.currentBatchMu.Unlock()
-				}
+			var reqList []internal.Request
+			var mergeSplitErr error
+			if qb.currentBatch == nil || qb.currentBatch.req == nil {
+				qb.resetTimer()
+				reqList, mergeSplitErr = req.MergeSplit(ctx, qb.batchCfg.MaxSizeConfig, nil)
 			} else {
-				if qb.currentBatch == nil || qb.currentBatch.req == nil {
-					qb.resetTimer()
-					qb.currentBatch = &batch{
-						req:     req,
+				reqList, mergeSplitErr = qb.currentBatch.req.MergeSplit(ctx, qb.batchCfg.MaxSizeConfig, req)
+			}
+
+			if mergeSplitErr != nil || reqList == nil {
+				qb.queue.OnProcessingFinished(idx, mergeSplitErr)
+				qb.currentBatchMu.Unlock()
+				continue
+			}
+
+			// If there was a split, we flush everything immediately.
+			if reqList[0].ItemsCount() >= qb.batchCfg.MinSizeItems || len(reqList) > 1 {
+				qb.currentBatch = nil
+				qb.currentBatchMu.Unlock()
+				for i := 0; i < len(reqList); i++ {
+					qb.flush(batch{
+						req:     reqList[i],
 						ctx:     ctx,
 						idxList: []uint64{idx},
-					}
-				} else {
-					// TODO: consolidate implementation for the cases where MaxSizeConfig is specified and the case where it is not specified
-					mergedReq, mergeErr := qb.currentBatch.req.MergeSplit(qb.currentBatch.ctx, qb.batchCfg.MaxSizeConfig, req)
-					if mergeErr != nil {
-						qb.queue.OnProcessingFinished(idx, mergeErr)
-						qb.currentBatchMu.Unlock()
-						continue
-					}
-					qb.currentBatch = &batch{
-						req:     mergedReq[0],
-						ctx:     qb.currentBatch.ctx,
-						idxList: append(qb.currentBatch.idxList, idx),
-					}
+					})
+					// TODO: handle partial failure
 				}
-
-				if qb.currentBatch.req.ItemsCount() >= qb.batchCfg.MinSizeItems {
-					batchToFlush := *qb.currentBatch
-					qb.currentBatch = nil
-					qb.currentBatchMu.Unlock()
-
-					// flush() blocks until successfully started a goroutine for flushing.
-					qb.flush(batchToFlush)
-					qb.resetTimer()
-				} else {
-					qb.currentBatchMu.Unlock()
+				qb.resetTimer()
+			} else {
+				qb.currentBatch = &batch{
+					req:     reqList[0],
+					ctx:     ctx,
+					idxList: []uint64{idx},
 				}
+				qb.currentBatchMu.Unlock()
 			}
 		}
 	}()
