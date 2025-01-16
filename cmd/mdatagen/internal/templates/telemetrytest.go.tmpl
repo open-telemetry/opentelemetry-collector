@@ -28,7 +28,6 @@ type Telemetry struct {
 	reader        *sdkmetric.ManualReader
 	meterProvider *sdkmetric.MeterProvider
 	traceProvider *sdktrace.TracerProvider
-
 }
 
 func SetupTelemetry() Telemetry {
