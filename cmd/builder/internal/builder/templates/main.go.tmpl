@@ -47,7 +47,7 @@ func main() {
 			},
 		}, ProviderModules: map[string]string{
 			{{- range .ConfmapProviders}}
-			"{{.Name}}": "{{.GoMod}}",
+			{{.Name}}.NewFactory().Create(confmap.ProviderSettings{}).Scheme(): "{{.GoMod}}",
 			{{- end}}
            },
 	}

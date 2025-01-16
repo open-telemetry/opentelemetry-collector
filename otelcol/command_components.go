@@ -116,14 +116,10 @@ func newComponentsCommand(set CollectorSettings) *cobra.Command {
 			}
 			components.BuildInfo = set.BuildInfo
 
-			confmapProviderFactories := set.ConfigProviderSettings.ResolverSettings.ProviderFactories
-			for _, confmapProvider := range confmapProviderFactories {
-				provider := confmapProvider.Create(set.ConfigProviderSettings.ResolverSettings.ProviderSettings)
-				scheme := provider.Scheme()
-				module := set.ProviderModules[scheme+"provider"]
+			for providerScheme, providerModuleModule := range set.ProviderModules {
 				components.Providers = append(components.Providers, componentWithoutStability{
-					Name:   scheme,
-					Module: module,
+					Name:   providerScheme,
+					Module: providerModuleModule,
 				})
 			}
 

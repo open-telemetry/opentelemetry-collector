@@ -22,8 +22,7 @@ func TestNewBuildSubCommand(t *testing.T) {
 		Factories:              nopFactories,
 		ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-nop.yaml")}),
 		ProviderModules: map[string]string{
-			"envprovider":  "go.opentelemetry.io/collector/confmap/provider/envprovider v1.2.3",
-			"fileprovider": "go.opentelemetry.io/collector/confmap/provider/fileprovider v1.2.3",
+			"nop": "go.opentelemetry.io/collector/confmap/provider/testprovider v1.2.3",
 		},
 	}
 	cmd := NewCommand(set)
