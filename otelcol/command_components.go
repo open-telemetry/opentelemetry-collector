@@ -25,7 +25,7 @@ type componentWithStability struct {
 }
 
 type componentWithoutStability struct {
-	Name   string
+	Scheme string
 	Module string
 }
 
@@ -118,7 +118,7 @@ func newComponentsCommand(set CollectorSettings) *cobra.Command {
 
 			for providerScheme, providerModuleModule := range set.ProviderModules {
 				components.Providers = append(components.Providers, componentWithoutStability{
-					Name:   providerScheme,
+					Scheme: providerScheme,
 					Module: providerModuleModule,
 				})
 			}
