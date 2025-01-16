@@ -86,11 +86,6 @@ func (tts *TestTelemetry) CheckReceiverMetrics(protocol string, acceptedMetricPo
 	return checkReceiverMetrics(tts.reader, tts.id, protocol, acceptedMetricPoints, droppedMetricPoints)
 }
 
-// CheckScraperMetrics checks that for the current exported values for metrics scraper metrics match given values.
-func (tts *TestTelemetry) CheckScraperMetrics(receiver component.ID, scraper component.ID, scrapedMetricPoints, erroredMetricPoints int64) error {
-	return checkScraperMetrics(tts.reader, receiver, scraper, scrapedMetricPoints, erroredMetricPoints)
-}
-
 // Shutdown unregisters any views and shuts down the SpanRecorder
 func (tts *TestTelemetry) Shutdown(ctx context.Context) error {
 	return errors.Join(

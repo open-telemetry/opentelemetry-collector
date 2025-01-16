@@ -15,13 +15,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-func checkScraperMetrics(reader *sdkmetric.ManualReader, receiver component.ID, scraper component.ID, scrapedMetricPoints, erroredMetricPoints int64) error {
-	scraperAttrs := attributesForScraperMetrics(receiver, scraper)
-	return multierr.Combine(
-		checkIntSum(reader, "otelcol_scraper_scraped_metric_points", scrapedMetricPoints, scraperAttrs),
-		checkIntSum(reader, "otelcol_scraper_errored_metric_points", erroredMetricPoints, scraperAttrs))
-}
-
 func checkReceiverTraces(reader *sdkmetric.ManualReader, receiver component.ID, protocol string, accepted, dropped int64) error {
 	return checkReceiver(reader, receiver, "spans", protocol, accepted, dropped)
 }
