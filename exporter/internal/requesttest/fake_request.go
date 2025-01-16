@@ -67,6 +67,10 @@ func (r *FakeRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSizeC
 
 	maxItems := cfg.MaxSizeItems
 	if maxItems == 0 {
+		if r2 == nil {
+			return []internal.Request{r}, nil
+		}
+
 		fr2 := r2.(*FakeRequest)
 		if fr2.MergeErr != nil {
 			return nil, fr2.MergeErr
