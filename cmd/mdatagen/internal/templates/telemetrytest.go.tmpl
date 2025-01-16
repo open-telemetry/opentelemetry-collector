@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	{{- if or isConnector isExporter isExtension isProcessor isReceiver }}
+	{{- if or isConnector isExporter isExtension isProcessor isReceiver isScraper }}
 	"go.opentelemetry.io/collector/{{ .Status.Class }}"
 	"go.opentelemetry.io/collector/{{ .Status.Class }}/{{ .Status.Class }}test"
 	{{- end }}
@@ -33,7 +33,7 @@ func SetupTelemetry() Telemetry {
 	}
 }
 
-{{- if or isConnector isExporter isExtension isProcessor isReceiver }}
+{{- if or isConnector isExporter isExtension isProcessor isReceiver isScraper }}
 func (tt *Telemetry) NewSettings() {{ .Status.Class }}.Settings {
 	set := {{ .Status.Class }}test.NewNopSettings()
 	set.ID = component.NewID(component.MustNewType("{{ .Type }}"))
