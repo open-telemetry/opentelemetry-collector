@@ -145,9 +145,10 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 
 	telFactory := telemetry.NewFactory()
 	telset := telemetry.Settings{
-		BuildInfo:  set.BuildInfo,
-		ZapOptions: set.LoggingOptions,
-		SDK:        &sdk,
+		AsyncErrorChannel: set.AsyncErrorChannel,
+		BuildInfo:         set.BuildInfo,
+		ZapOptions:        set.LoggingOptions,
+		SDK:               &sdk,
 	}
 
 	logger, lp, err := telFactory.CreateLogger(ctx, telset, &cfg.Telemetry)
