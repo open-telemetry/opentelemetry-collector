@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -21,9 +22,9 @@ import (
 )
 
 type Telemetry struct {
-	Spanrecorder *tracetest.SpanRecorder
+	Reader       *sdkmetric.ManualReader
+	SpanRecorder *tracetest.SpanRecorder
 
-	reader        *sdkmetric.ManualReader
 	meterProvider *sdkmetric.MeterProvider
 	traceProvider *sdktrace.TracerProvider
 }
@@ -32,8 +33,9 @@ func SetupTelemetry() Telemetry {
 	reader := sdkmetric.NewManualReader()
 	spanRecorder := new(tracetest.SpanRecorder)
 	return Telemetry{
-		reader:        reader,
-		Spanrecorder:  spanRecorder,
+		Reader:       reader,
+		SpanRecorder: spanRecorder,
+
 		meterProvider: sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader)),
 		traceProvider: sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spanRecorder)),
 	}
@@ -55,7 +57,7 @@ func (tt *Telemetry) NewTelemetrySettings() component.TelemetrySettings {
 
 func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, opts ...metricdatatest.Option) {
 	var md metricdata.ResourceMetrics
-	require.NoError(t, tt.reader.Collect(context.Background(), &md))
+	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
 	// ensure all required metrics are present
 	for _, want := range expected {
 		got := getMetric(want.Name, md)
@@ -67,7 +69,10 @@ func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, 
 }
 
 func (tt *Telemetry) Shutdown(ctx context.Context) error {
-	return tt.meterProvider.Shutdown(ctx)
+	return multierr.Combine(
+		tt.meterProvider.Shutdown(ctx),
+		tt.traceProvider.Shutdown(ctx),
+	)
 }
 
 func getMetric(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
