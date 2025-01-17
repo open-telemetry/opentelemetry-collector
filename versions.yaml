@@ -56,7 +56,6 @@ module-sets:
       - go.opentelemetry.io/collector/extension
       - go.opentelemetry.io/collector/extension/auth
       - go.opentelemetry.io/collector/extension/auth/authtest
-      - go.opentelemetry.io/collector/extension/experimental/storage
       - go.opentelemetry.io/collector/extension/extensioncapabilities
       - go.opentelemetry.io/collector/extension/extensiontest
       - go.opentelemetry.io/collector/extension/zpagesextension
