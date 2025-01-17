@@ -44,7 +44,7 @@ func TestScrapeLogsDataOp(t *testing.T) {
 		require.ErrorIs(t, err, params[i].err)
 	}
 
-	spans := tt.Spanrecorder.Ended()
+	spans := tt.SpanRecorder.Ended()
 	require.Equal(t, len(params), len(spans))
 
 	var scrapedLogRecords, erroredLogRecords int
