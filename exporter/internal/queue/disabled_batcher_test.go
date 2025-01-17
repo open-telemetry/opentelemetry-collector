@@ -14,7 +14,10 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/exporter/exporterqueue"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/internal"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 func TestDisabledBatcher_Basic(t *testing.T) {
@@ -40,11 +43,13 @@ func TestDisabledBatcher_Basic(t *testing.T) {
 			cfg := exporterbatcher.NewDefaultConfig()
 			cfg.Enabled = false
 
-			q := NewBoundedMemoryQueue[internal.Request](
-				MemoryQueueSettings[internal.Request]{
-					Sizer:    &RequestSizer[internal.Request]{},
-					Capacity: 10,
-				})
+			q := exporterqueue.NewMemoryQueueFactory[internal.Request]()(
+				context.Background(),
+				exporterqueue.Settings{
+					Signal:           pipeline.SignalTraces,
+					ExporterSettings: exportertest.NewNopSettings(),
+				},
+				exporterqueue.NewDefaultConfig())
 
 			ba, err := NewBatcher(cfg, q,
 				func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },

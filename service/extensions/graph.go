@@ -40,11 +40,11 @@ func computeOrder(exts *Extensions) ([]component.ID, error) {
 		n := nodes[extID]
 		if dep, ok := ext.(extensioncapabilities.Dependent); ok {
 			for _, depID := range dep.Dependencies() {
-				if d, ok := nodes[depID]; ok {
-					graph.SetEdge(graph.NewEdge(d, n))
-				} else {
+				d, ok := nodes[depID]
+				if !ok {
 					return nil, fmt.Errorf("unable to find extension %s on which extension %s depends", depID, extID)
 				}
+				graph.SetEdge(graph.NewEdge(d, n))
 			}
 		}
 	}

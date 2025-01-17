@@ -101,7 +101,7 @@ This option is used to calculate `memory_limit` from the total available memory.
 For instance setting of 75% with the total memory of 1GiB will result in the limit of 750 MiB.
 The fixed memory setting (`limit_mib`) takes precedence
 over the percentage configuration.
-- `spike_limit_percentage` (default = 0): Maximum spike expected between the
+- `spike_limit_percentage` (default = 20% of `limit_percentage`): Maximum spike expected between the
 measurements of memory usage. The value must be less than `limit_percentage`.
 This option is used to calculate `spike_limit_mib` from the total available memory.
 For instance setting of 25% with the total memory of 1GiB will result in the spike limit of 250MiB.
@@ -117,14 +117,21 @@ processors:
     spike_limit_mib: 800
 ```
 
+- Hard limit will be set to **4000 MiB**.
+- Soft limit will be set to 4000 - 800 = **3200 MiB**.
+
 ```yaml
 processors:
   memory_limiter:
     check_interval: 1s
-    limit_percentage: 50
-    spike_limit_percentage: 30
+    limit_percentage: 80
+    spike_limit_percentage: 15
 ```
+
+On a machine with 1000 MiB total memory available:
+
+- Hard limit will be set to 1000 * 0.80 = **800 MiB**.
+- Soft limit will be set to 1000 * 0.80 - 1000 * 0.15 = 1000 * 0.65 = **650 MiB**.
 
 Refer to [config.yaml](../../internal/memorylimiter/testdata/config.yaml) for detailed
 examples on using the processor.
-
