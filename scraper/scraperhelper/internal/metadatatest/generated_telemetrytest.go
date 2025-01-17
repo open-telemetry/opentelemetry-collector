@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -59,7 +60,10 @@ func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, 
 }
 
 func (tt *Telemetry) Shutdown(ctx context.Context) error {
-	return tt.meterProvider.Shutdown(ctx)
+	return multierr.Combine(
+		tt.meterProvider.Shutdown(ctx),
+		tt.traceProvider.Shutdown(ctx),
+	)
 }
 
 func getMetric(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
