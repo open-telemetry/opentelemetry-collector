@@ -11,8 +11,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/component"
@@ -23,7 +27,10 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/metadatatest"
 )
+
+const transportTag = "transport"
 
 type testInitialize struct {
 	ch  chan bool
@@ -120,8 +127,15 @@ func TestScrapeController(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			receiverID := component.MustNewID("receiver")
-			tt, err := componenttest.SetupTelemetry(receiverID)
-			require.NoError(t, err)
+			tt := metadatatest.SetupTelemetry()
+
+			tel := tt.NewTelemetrySettings()
+			// TODO: Add capability for tracing testing in metadatatest.
+			spanRecorder := new(tracetest.SpanRecorder)
+			tel.TracerProvider = sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spanRecorder))
+
+			_, parentSpan := tel.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+			defer parentSpan.End()
 			t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 			initializeChs := make([]chan bool, test.scrapers)
@@ -138,7 +152,7 @@ func TestScrapeController(t *testing.T) {
 				cfg = test.scraperControllerSettings
 			}
 
-			mr, err := NewMetricsController(cfg, receiver.Settings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, sink, options...)
+			mr, err := NewMetricsController(cfg, receiver.Settings{ID: receiverID, TelemetrySettings: tel, BuildInfo: component.NewDefaultBuildInfo()}, sink, options...)
 			require.NoError(t, err)
 
 			err = mr.Start(context.Background(), componenttest.NewNopHost())
@@ -176,11 +190,10 @@ func TestScrapeController(t *testing.T) {
 					assert.GreaterOrEqual(t, sink.DataPointCount(), iterations)
 				}
 
-				spans := tt.SpanRecorder.Ended()
+				spans := spanRecorder.Ended()
 				assertReceiverSpan(t, spans)
-				assertReceiverMetrics(t, tt, sink)
 				assertScraperSpan(t, test.scrapeErr, spans)
-				assertScraperMetrics(t, tt, test.scrapeErr, sink)
+				assertMetrics(t, tt, receiverID, component.MustNewID("scraper"), test.scrapeErr, sink)
 			}
 
 			err = mr.Shutdown(context.Background())
@@ -262,14 +275,6 @@ func assertReceiverSpan(t *testing.T, spans []sdktrace.ReadOnlySpan) {
 	assert.True(t, receiverSpan)
 }
 
-func assertReceiverMetrics(t *testing.T, tt componenttest.TestTelemetry, sink *consumertest.MetricsSink) {
-	dataPointCount := 0
-	for _, md := range sink.AllMetrics() {
-		dataPointCount += md.DataPointCount()
-	}
-	require.NoError(t, tt.CheckReceiverMetrics("", int64(dataPointCount), 0))
-}
-
 func assertScraperSpan(t *testing.T, expectedErr error, spans []sdktrace.ReadOnlySpan) {
 	expectedStatusCode := codes.Unset
 	expectedStatusMessage := ""
@@ -290,7 +295,12 @@ func assertScraperSpan(t *testing.T, expectedErr error, spans []sdktrace.ReadOnl
 	assert.True(t, scraperSpan)
 }
 
-func assertScraperMetrics(t *testing.T, tt componenttest.TestTelemetry, expectedErr error, sink *consumertest.MetricsSink) {
+func assertMetrics(t *testing.T, tt metadatatest.Telemetry, receiver component.ID, scraper component.ID, expectedErr error, sink *consumertest.MetricsSink) {
+	dataPointCounts := 0
+	for _, md := range sink.AllMetrics() {
+		dataPointCounts += md.DataPointCount()
+	}
+
 	expectedScraped := int64(sink.DataPointCount())
 	expectedErrored := int64(0)
 	if expectedErr != nil {
@@ -303,7 +313,76 @@ func assertScraperMetrics(t *testing.T, tt componenttest.TestTelemetry, expected
 		}
 	}
 
-	require.NoError(t, tt.CheckScraperMetrics(component.MustNewID("receiver"), component.MustNewID("scraper"), expectedScraped, expectedErrored))
+	tt.AssertMetrics(t, []metricdata.Metrics{
+		{
+			Name:        "otelcol_receiver_accepted_metric_points",
+			Description: "Number of metric points successfully pushed into the pipeline. [alpha]",
+			Unit:        "{datapoints}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Attributes: attribute.NewSet(
+							attribute.String(receiverKey, receiver.String()),
+							attribute.String(transportTag, "")),
+						Value: int64(dataPointCounts),
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_receiver_refused_metric_points",
+			Description: "Number of metric points that could not be pushed into the pipeline. [alpha]",
+			Unit:        "{datapoints}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Attributes: attribute.NewSet(
+							attribute.String(receiverKey, receiver.String()),
+							attribute.String(transportTag, "")),
+						Value: 0,
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_scraper_scraped_metric_points",
+			Description: "Number of metric points successfully scraped. [alpha]",
+			Unit:        "{datapoints}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Attributes: attribute.NewSet(
+							attribute.String(receiverKey, receiver.String()),
+							attribute.String(scraperKey, scraper.String())),
+						Value: expectedScraped,
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_scraper_errored_metric_points",
+			Description: "Number of metric points that were unable to be scraped. [alpha]",
+			Unit:        "{datapoints}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Attributes: attribute.NewSet(
+							attribute.String(receiverKey, receiver.String()),
+							attribute.String(scraperKey, scraper.String())),
+						Value: expectedErrored,
+					},
+				},
+			},
+		},
+	}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
 func TestSingleScrapePerInterval(t *testing.T) {
