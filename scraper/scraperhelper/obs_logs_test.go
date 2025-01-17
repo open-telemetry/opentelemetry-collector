@@ -14,8 +14,6 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -28,9 +26,6 @@ func TestScrapeLogsDataOp(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	tel := tt.NewTelemetrySettings()
-	// TODO: Add capability for tracing testing in metadatatest.
-	spanRecorder := new(tracetest.SpanRecorder)
-	tel.TracerProvider = sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spanRecorder))
 
 	parentCtx, parentSpan := tel.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
@@ -49,7 +44,7 @@ func TestScrapeLogsDataOp(t *testing.T) {
 		require.ErrorIs(t, err, params[i].err)
 	}
 
-	spans := spanRecorder.Ended()
+	spans := tt.SpanRecorder.Ended()
 	require.Equal(t, len(params), len(spans))
 
 	var scrapedLogRecords, erroredLogRecords int
