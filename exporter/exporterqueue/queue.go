@@ -105,3 +105,15 @@ func NewPersistentQueueFactory[T any](storageID *component.ID, factorySettings P
 		})
 	}
 }
+
+// NewDisabledQueueFactory returns a factory to create a new disabled queue.
+// Experimental: This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+func NewDisabledQueueFactory[T any]() Factory[T] {
+	return func(_ context.Context, _ Settings, cfg Config) Queue[T] {
+		return NewDisabledQueue[T](disabledQueueSettings[T]{
+			sizer:    &requestSizer[T]{},
+			capacity: int64(cfg.QueueSize),
+		})
+	}
+}

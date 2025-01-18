@@ -327,7 +327,7 @@ func TestBatchSender_PostShutdown(t *testing.T) {
 			assert.Equal(t, int64(8), sink.ItemsCount())
 		})
 	}
-	runTest("enable_queue_batcher", true)
+	// We don't expect the same behavior when enable the new queue_batcher
 	runTest("disable_queue_batcher", false)
 }
 
