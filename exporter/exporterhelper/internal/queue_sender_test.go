@@ -553,7 +553,7 @@ func TestQueueSenderNoStartShutdown(t *testing.T) {
 				ExporterCreateSettings: set,
 			})
 			require.NoError(t, err)
-			qs := NewQueueSender(queue, set, 1, "", obsrep, exporterbatcher.NewDefaultConfig())
+			qs := NewQueueSender(queue, set, 1, "", obsrep, exporterbatcher.NewDefaultConfig(), true)
 			assert.NoError(t, qs.Shutdown(context.Background()))
 		})
 	}

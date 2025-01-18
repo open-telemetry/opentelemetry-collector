@@ -76,6 +76,8 @@ type QueueSender struct {
 	batcher        queue.Batcher
 	consumers      *queue.Consumers[internal.Request]
 
+	enabled bool
+
 	obsrep      *ObsReport
 	exporterID  component.ID
 	logger      *zap.Logger
@@ -89,6 +91,7 @@ func NewQueueSender(
 	exportFailureMessage string,
 	obsrep *ObsReport,
 	batcherCfg exporterbatcher.Config,
+	enabled bool,
 ) *QueueSender {
 	qs := &QueueSender{
 		queue:          q,
@@ -97,6 +100,7 @@ func NewQueueSender(
 		obsrep:         obsrep,
 		exporterID:     set.ID,
 		logger:         set.Logger,
+		enabled:        enabled,
 	}
 
 	exportFunc := func(ctx context.Context, req internal.Request) error {
@@ -180,10 +184,12 @@ func (qs *QueueSender) Shutdown(ctx context.Context) error {
 func (qs *QueueSender) Send(ctx context.Context, req internal.Request) error {
 	// Prevent cancellation and deadline to propagate to the context stored in the queue.
 	// The grpc/http based receivers will cancel the request context after this function returns.
-	c := context.WithoutCancel(ctx)
+	if qs.enabled {
+		ctx = context.WithoutCancel(ctx)
+	}
 
-	span := trace.SpanFromContext(c)
-	if err := qs.queue.Offer(c, req); err != nil {
+	span := trace.SpanFromContext(ctx)
+	if err := qs.queue.Offer(ctx, req); err != nil {
 		span.AddEvent("Failed to enqueue item.", trace.WithAttributes(qs.traceAttribute))
 		return err
 	}
