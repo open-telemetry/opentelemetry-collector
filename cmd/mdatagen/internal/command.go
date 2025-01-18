@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"go/format"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -109,13 +110,14 @@ func run(ymlPath string) error {
 		}
 	}
 
-	toGenerate := map[string]string{}
+	// TODO: Remove this after version v0.122.0 when all the deprecated code should be deleted.
+	//  https://github.com/open-telemetry/opentelemetry-collector/issues/12067
+	if err = os.Remove(filepath.Join(ymlDir, "generated_component_telemetry_test.go")); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("unable to remove generated file \"generated_component_telemetry_test.go\": %w", err)
+	}
 
+	toGenerate := map[string]string{}
 	if len(md.Telemetry.Metrics) != 0 { // if there are telemetry metrics, generate telemetry specific files
-		if err = generateFile(filepath.Join(tmplDir, "component_telemetry_test.go.tmpl"),
-			filepath.Join(ymlDir, "generated_component_telemetry_test.go"), md, packageName); err != nil {
-			return err
-		}
 		toGenerate[filepath.Join(tmplDir, "telemetry.go.tmpl")] = filepath.Join(codeDir, "generated_telemetry.go")
 		toGenerate[filepath.Join(tmplDir, "telemetry_test.go.tmpl")] = filepath.Join(codeDir, "generated_telemetry_test.go")
 		toGenerate[filepath.Join(tmplDir, "telemetrytest.go.tmpl")] = filepath.Join(testDir, "generated_telemetrytest.go")
@@ -231,6 +233,9 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 				},
 				"isConnector": func() bool {
 					return md.Status.Class == "connector"
+				},
+				"isScraper": func() bool {
+					return md.Status.Class == "scraper"
 				},
 				"isCommand": func() bool {
 					return md.Status.Class == "cmd"
@@ -405,7 +410,7 @@ func inlineReplace(tmplFile string, outputFile string, md Metadata, start string
 }
 
 func generateFile(tmplFile string, outputFile string, md Metadata, goPackage string) error {
-	if err := os.Remove(outputFile); err != nil && !errors.Is(err, os.ErrNotExist) {
+	if err := os.Remove(outputFile); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("unable to remove generated file %q: %w", outputFile, err)
 	}
 

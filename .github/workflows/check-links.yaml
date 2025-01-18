@@ -54,3 +54,4 @@ jobs:
         uses: lycheeverse/lychee-action@f796c8b7d468feb9b8c0a46da3fac0af6874d374
         with:
           args: "--verbose --no-progress ${{needs.changedfiles.outputs.files}} --config .github/lychee.toml"
+          failIfEmpty: false

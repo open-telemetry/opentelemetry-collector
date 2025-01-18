@@ -115,6 +115,9 @@ linters-settings:
       - name: context-keys-type
       # Importing with `.` makes the programs much harder to understand
       - name: dot-imports
+      - name: early-return
+        arguments:
+          - "preserveScope"
       # Empty blocks make code less readable and could be a symptom of a bug or unfinished refactoring.
       - name: empty-block
       # for better readability, variables of type `error` must be named with the prefix `err`.
@@ -137,10 +140,13 @@ linters-settings:
       - name: redefines-builtin-id
       # redundant else-blocks that can be eliminated from the code.
       - name: superfluous-else
+        arguments:
+          - "preserveScope"
       # prevent confusing name for variables when using `time` package
       - name: time-naming
       # warns when an exported function or method returns a value of an un-exported type.
       - name: unexported-return
+      - name: unnecessary-stmt
       # spots and proposes to remove unreachable code. also helps to spot errors
       - name: unreachable-code
       # Functions or methods with unused parameters can be a symptom of an unfinished refactoring or a bug.
