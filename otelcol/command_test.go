@@ -162,9 +162,9 @@ func Test_UseUnifiedEnvVarExpansionRules(t *testing.T) {
 	}
 }
 
-func TestNewFeaturesCommand(t *testing.T) {
-	t.Run("list all features", func(t *testing.T) {
-		cmd := newFeaturesCommand()
+func TestNewFeatureGateCommand(t *testing.T) {
+	t.Run("list all featuregates", func(t *testing.T) {
+		cmd := newFeatureGateCommand()
 		require.NotNil(t, cmd)
 
 		// Capture stdout
@@ -185,8 +185,8 @@ func TestNewFeaturesCommand(t *testing.T) {
 		assert.Contains(t, output, "Stage")
 		assert.Contains(t, output, "Description")
 	})
-	t.Run("specific feature details", func(t *testing.T) {
-		cmd := newFeaturesCommand()
+	t.Run("specific featuregate details", func(t *testing.T) {
+		cmd := newFeatureGateCommand()
 
 		// Register a test feature gate in the global registry
 		featuregate.GlobalRegistry().MustRegister("test.feature", featuregate.StageBeta,
@@ -210,8 +210,8 @@ func TestNewFeaturesCommand(t *testing.T) {
 		assert.Contains(t, output, "Stage: Beta")
 	})
 
-	t.Run("non-existent feature", func(t *testing.T) {
-		cmd := newFeaturesCommand()
+	t.Run("non-existent featuregate", func(t *testing.T) {
+		cmd := newFeatureGateCommand()
 		err := cmd.RunE(cmd, []string{"non.existent.feature"})
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "feature \"non.existent.feature\" not found")

@@ -39,7 +39,7 @@ func NewCommand(set CollectorSettings) *cobra.Command {
 			return col.Run(cmd.Context())
 		},
 	}
-	rootCmd.AddCommand(newFeaturesCommand())
+	rootCmd.AddCommand(newFeatureGateCommand())
 	rootCmd.AddCommand(newComponentsCommand(set))
 	rootCmd.AddCommand(newValidateSubCommand(set, flagSet))
 	rootCmd.Flags().AddGoFlagSet(flagSet)
@@ -68,9 +68,9 @@ func updateSettingsUsingFlags(set *CollectorSettings, flags *flag.FlagSet) error
 	return nil
 }
 
-func newFeaturesCommand() *cobra.Command {
+func newFeatureGateCommand() *cobra.Command {
 	return &cobra.Command{
-		Use:   "features [feature-id]",
+		Use:   "featuregate [feature-id]",
 		Short: "Display feature gates information",
 		Long:  "Display information about available feature gates and their status",
 		RunE: func(_ *cobra.Command, args []string) error {
