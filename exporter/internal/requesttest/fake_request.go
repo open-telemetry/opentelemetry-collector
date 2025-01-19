@@ -92,7 +92,10 @@ func (r *FakeRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSizeC
 		fr2 = &FakeRequest{Items: fr2.Items, Sink: fr2.Sink, ExportErr: fr2.ExportErr, Delay: fr2.Delay}
 	}
 	var res []internal.Request
-	r = &FakeRequest{Items: r.Items, Sink: fr2.Sink, ExportErr: fr2.ExportErr, Delay: fr2.Delay}
+
+	// fill fr1 to maxItems if it's not nil
+
+	r = &FakeRequest{Items: r.Items, Sink: r.Sink, ExportErr: r.ExportErr, Delay: r.Delay}
 	if fr2.Items <= maxItems-r.Items {
 		r.Items += fr2.Items
 		if fr2.ExportErr != nil {
