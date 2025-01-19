@@ -64,33 +64,22 @@ func featureflags(reg *featuregate.Registry)  {
 	if f.reg == nil {
 		return 
 	}
-	c := 1
-	
 	f.reg.VisitAll(func(g *featuregate.Gate) {
 		str := ""
 		id := g.ID()
 		desc := g.Description()
-		if !g.IsEnabled() {
-			id = "-" + id
-		}
-		str += fmt.Sprint(c) + "." + id + "\n"
+		str += id + "\n"
 		str+= "Description: "+desc + "\n"
 		ref := g.ReferenceURL()
-		from := g.FromVersion()
-		to := g.ToVersion()
 		if(ref != ""){
 			str+= "ReferenceURL: "+ref + "\n"
 		}
-		if(from != "v<nil>"){
-			str+= "From version: "+from + "\n"
-			
+		if !g.IsEnabled() {
+			str+= "Default state: " + "On"
+		} else{
+			str+= "Default state: " + "Off"
 		}
-		if(to != "v<nil>"){
-			str+= "From version: "+to + "\n"
-			
-		}
-		// str += "\n"
-		c+=1
+		str += "\n"
 		fmt.Println(str)
 	})
 }
