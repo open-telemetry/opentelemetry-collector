@@ -35,7 +35,7 @@ func Example_receiver() {
 
 	// Extract the client information based on your original context and set it
 	// to Addr
-	// nolint
+	//nolint:govet
 	cl.Addr = &net.IPAddr{
 		IP: net.IPv4(1, 2, 3, 4),
 	}
