@@ -8,8 +8,10 @@ import (
 	"net/http"
 	"sync"
 
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/noop"
+	"go.opentelemetry.io/otel/sdk/instrumentation"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/multierr"
@@ -54,6 +56,21 @@ func newMeterProvider(set meterProviderSettings, disableHighCardinality bool) (m
 			mp.servers = append(mp.servers, server)
 		}
 		opts = append(opts, sdkmetric.WithReader(r))
+	}
+
+	if set.cfg.Level != configtelemetry.LevelDetailed {
+		// Drop all otelhttp metrics if the level is not detailed.
+		opts = append(opts, sdkmetric.WithView(
+			sdkmetric.NewView(
+				sdkmetric.Instrument{
+					Scope: instrumentation.Scope{
+						Name: otelhttp.ScopeName,
+					},
+				},
+				sdkmetric.Stream{
+					Aggregation: sdkmetric.AggregationDrop{},
+				},
+			)))
 	}
 
 	var err error
