@@ -43,7 +43,7 @@ git push --set-upstream origin "${BRANCH}"
 
 # Use OpenTelemetryBot account to create PR, allowing workflows to run
 # The title must match the checks in check-merge-freeze.yml
-gh pr create --head $(git branch --show-current) --title "[chore] Prepare release ${RELEASE_VERSION}" --body "
+gh pr create --head "$(git branch --show-current)" --title "[chore] Prepare release ${RELEASE_VERSION}" --body "
 The following commands were run to prepare this release:
 ${COMMANDS}
 "
