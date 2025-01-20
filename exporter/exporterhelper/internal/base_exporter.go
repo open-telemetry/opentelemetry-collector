@@ -222,6 +222,7 @@ func WithQueue(config QueueConfig) Option {
 			Enabled:      config.Enabled,
 			NumConsumers: config.NumConsumers,
 			QueueSize:    config.QueueSize,
+			Blocking:     config.Blocking,
 		}
 		o.queueFactory = exporterqueue.NewPersistentQueueFactory[internal.Request](config.StorageID, exporterqueue.PersistentQueueSettings[internal.Request]{
 			Marshaler:   o.Marshaler,
