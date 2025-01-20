@@ -58,7 +58,7 @@ func newMeterProvider(set meterProviderSettings, disableHighCardinality bool) (m
 		opts = append(opts, sdkmetric.WithReader(r))
 	}
 
-	if set.cfg.Level != configtelemetry.LevelDetailed {
+	if set.cfg.Level < configtelemetry.LevelDetailed {
 		// Drop all otelhttp metrics if the level is not detailed.
 		opts = append(opts, sdkmetric.WithView(
 			sdkmetric.NewView(
