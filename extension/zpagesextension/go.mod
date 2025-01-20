@@ -4,15 +4,15 @@ go 1.22.0
 
 require (
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector v0.117.0
-	go.opentelemetry.io/collector/component v0.117.0
-	go.opentelemetry.io/collector/component/componentstatus v0.117.0
-	go.opentelemetry.io/collector/component/componenttest v0.117.0
-	go.opentelemetry.io/collector/config/configauth v0.117.0
-	go.opentelemetry.io/collector/config/confighttp v0.117.0
+	go.opentelemetry.io/collector v0.118.0
+	go.opentelemetry.io/collector/component v0.118.0
+	go.opentelemetry.io/collector/component/componentstatus v0.118.0
+	go.opentelemetry.io/collector/component/componenttest v0.118.0
+	go.opentelemetry.io/collector/config/configauth v0.118.0
+	go.opentelemetry.io/collector/config/confighttp v0.118.0
 	go.opentelemetry.io/collector/confmap v1.24.0
-	go.opentelemetry.io/collector/extension v0.117.0
-	go.opentelemetry.io/collector/extension/extensiontest v0.117.0
+	go.opentelemetry.io/collector/extension v0.118.0
+	go.opentelemetry.io/collector/extension/extensiontest v0.118.0
 	go.opentelemetry.io/contrib/zpages v0.56.0
 	go.opentelemetry.io/otel/sdk v1.32.0
 	go.opentelemetry.io/otel/trace v1.32.0
@@ -42,11 +42,11 @@ require (
 	go.opentelemetry.io/collector/client v1.24.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.24.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.24.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.117.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.118.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.24.0 // indirect
-	go.opentelemetry.io/collector/extension/auth v0.117.0 // indirect
+	go.opentelemetry.io/collector/extension/auth v0.118.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.24.0 // indirect
-	go.opentelemetry.io/collector/pipeline v0.117.0 // indirect
+	go.opentelemetry.io/collector/pipeline v0.118.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.56.0 // indirect
 	go.opentelemetry.io/otel v1.32.0 // indirect
 	go.opentelemetry.io/otel/metric v1.32.0 // indirect
