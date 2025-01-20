@@ -1,0 +1,8 @@
+type: profile
+
+status:
+  codeowners:
+    active:
+      - swiatekm
+  stability:
+    development: [profiles]

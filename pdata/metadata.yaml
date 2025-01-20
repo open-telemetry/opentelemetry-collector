@@ -1,0 +1,7 @@
+type: service
+
+status:
+  codeowners:
+    active:
+      - BogdanDrutu
+      - dmitryax

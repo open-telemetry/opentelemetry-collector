@@ -1,0 +1,9 @@
+type: profile
+
+status:
+  codeowners:
+    active:
+      - mx-psi
+      - dmathieu
+  stability:
+    development: [profiles]
