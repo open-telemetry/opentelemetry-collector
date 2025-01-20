@@ -9,10 +9,10 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.117.0
 	go.opentelemetry.io/collector/connector v0.117.0
 	go.opentelemetry.io/collector/connector/xconnector v0.117.0
-	go.opentelemetry.io/collector/consumer v1.23.0
+	go.opentelemetry.io/collector/consumer v1.24.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.117.0
 	go.opentelemetry.io/collector/consumer/xconsumer v0.117.0
-	go.opentelemetry.io/collector/pdata v1.23.0
+	go.opentelemetry.io/collector/pdata v1.24.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.117.0
 	go.uber.org/goleak v1.3.0
 )
