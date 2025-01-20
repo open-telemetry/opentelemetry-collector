@@ -448,13 +448,11 @@ mdatagen-test:
 
 .PHONY: generate-gh-issue-templates
 generate-gh-issue-templates:
-	cd cmd/githubgen && $(GOCMD) install .
-	githubgen issue-templates
+	$(GITHUBGEN) issue-templates
 
-.PHONY: githubgen-install
-githubgen-install:
-	cd cmd/githubgen && $(GOCMD) install .
+.PHONY: generate-codeowners
+generate-codeowners:
+	$(GITHUBGEN) --skipgithub --default-codeowner "open-telemetry/collector-approvers" codeowners
 
 .PHONY: gengithub
-gengithub: githubgen-install
-	githubgen
+gengithub: $(GITHUBGEN) generate-codeowners generate-gh-issue-templates
