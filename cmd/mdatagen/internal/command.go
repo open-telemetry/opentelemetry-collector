@@ -234,6 +234,9 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 				"isConnector": func() bool {
 					return md.Status.Class == "connector"
 				},
+				"isScraper": func() bool {
+					return md.Status.Class == "scraper"
+				},
 				"isCommand": func() bool {
 					return md.Status.Class == "cmd"
 				},

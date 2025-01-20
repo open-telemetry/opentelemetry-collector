@@ -261,7 +261,7 @@ func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
 				require.NoError(t, err)
 				require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 
-				require.NoError(t, tt.CheckExporterMetricGauge("otelcol_exporter_queue_capacity", int64(defaultQueueSize)))
+				require.NoError(t, tt.CheckExporterMetricGauge("otelcol_exporter_queue_capacity", int64(1000)))
 
 				for i := 0; i < 7; i++ {
 					require.NoError(t, be.Send(context.Background(), newErrorRequest()))
@@ -271,7 +271,7 @@ func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
 
 				assert.NoError(t, be.Shutdown(context.Background()))
 				// metrics should be unregistered at shutdown to prevent memory leak
-				require.Error(t, tt.CheckExporterMetricGauge("otelcol_exporter_queue_capacity", int64(defaultQueueSize)))
+				require.Error(t, tt.CheckExporterMetricGauge("otelcol_exporter_queue_capacity", int64(1000)))
 				require.Error(t, tt.CheckExporterMetricGauge("otelcol_exporter_queue_size", int64(7),
 					attribute.String(DataTypeKey, dataType.String())))
 			}
@@ -313,12 +313,12 @@ func TestQueueConfig_Validate(t *testing.T) {
 			require.NoError(t, qCfg.Validate())
 
 			qCfg.QueueSize = 0
-			require.EqualError(t, qCfg.Validate(), "queue size must be positive")
+			require.EqualError(t, qCfg.Validate(), "`queue_size` must be positive")
 
 			qCfg = NewDefaultQueueConfig()
 			qCfg.NumConsumers = 0
 
-			require.EqualError(t, qCfg.Validate(), "number of queue consumers must be positive")
+			require.EqualError(t, qCfg.Validate(), "`num_consumers` must be positive")
 
 			// Confirm Validate doesn't return error with invalid config when feature is disabled
 			qCfg.Enabled = false
