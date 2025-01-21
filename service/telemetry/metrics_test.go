@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/contrib/config"
 	"go.opentelemetry.io/otel/metric"
@@ -242,7 +242,7 @@ func TestInstrumentEnabled(t *testing.T) {
 	set := meterProviderSettings{
 		res: sdkresource.Default(),
 		cfg: MetricsConfig{
-			Level:   configtelemetry.LevelDetailed,
+			Level: configtelemetry.LevelDetailed,
 			Readers: []config.MetricReader{{
 				Pull: &config.PullMetricReader{Exporter: config.MetricExporter{Prometheus: prom}},
 			}},
