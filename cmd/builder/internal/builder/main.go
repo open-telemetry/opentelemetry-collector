@@ -36,7 +36,7 @@ func runGoCommand(cfg *Config, args ...string) ([]byte, error) {
 		cfg.Logger.Info("Running go subcommand.", zap.Any("arguments", args))
 	}
 
-	// #nosec G204 -- cfg.Distribution.Go is trusted to be a safe path and the caller is assumed to have carried out necessary input validation
+	//nolint:gosec // #nosec G204 -- cfg.Distribution.Go is trusted to be a safe path and the caller is assumed to have carried out necessary input validation
 	cmd := exec.Command(cfg.Distribution.Go, args...)
 	cmd.Dir = cfg.Distribution.OutputPath
 

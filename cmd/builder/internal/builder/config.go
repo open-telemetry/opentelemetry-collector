@@ -151,8 +151,8 @@ func (c *Config) Validate() error {
 // SetGoPath sets go path
 func (c *Config) SetGoPath() error {
 	if !c.SkipCompilation || !c.SkipGetModules {
-		// #nosec G204
-		if _, err := exec.Command(c.Distribution.Go, "env").CombinedOutput(); err != nil { // nolint G204
+		//nolint:gosec // #nosec G204
+		if _, err := exec.Command(c.Distribution.Go, "env").CombinedOutput(); err != nil {
 			path, err := exec.LookPath("go")
 			if err != nil {
 				return ErrGoNotFound

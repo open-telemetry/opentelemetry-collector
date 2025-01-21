@@ -403,7 +403,7 @@ func TestReplaceStatementsAreComplete(t *testing.T) {
 
 func verifyGoMod(t *testing.T, dir string, replaceMods map[string]bool) {
 	gomodpath := path.Join(dir, "go.mod")
-	// #nosec G304 We control this path and generate the file inside, so we can assume it is safe.
+	//nolint:gosec // #nosec G304 We control this path and generate the file inside, so we can assume it is safe.
 	gomod, err := os.ReadFile(gomodpath)
 	require.NoError(t, err)
 
