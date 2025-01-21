@@ -383,7 +383,7 @@ func executeTemplate(tmplFile string, md Metadata, goPackage string) ([]byte, er
 func inlineReplace(tmplFile string, outputFile string, md Metadata, start string, end string, goPackage string) error {
 	var readmeContents []byte
 	var err error
-	if readmeContents, err = os.ReadFile(outputFile); err != nil { // nolint: gosec
+	if readmeContents, err = os.ReadFile(outputFile); err != nil { //nolint:gosec
 		return err
 	}
 
