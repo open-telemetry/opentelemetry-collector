@@ -81,7 +81,7 @@ func (tts *TestTelemetry) CheckReceiverLogs(protocol string, acceptedLogRecords,
 	return checkReceiverLogs(tts.reader, tts.id, protocol, acceptedLogRecords, droppedLogRecords)
 }
 
-// Deprecated: [v0.118.0] use metadatatest.AssertMetrics instead.
+// Deprecated: [v0.119.0] use metadatatest.AssertMetrics instead.
 // CheckReceiverMetrics checks that for the current exported values for metrics receiver metrics match given values.
 func (tts *TestTelemetry) CheckReceiverMetrics(protocol string, acceptedMetricPoints, droppedMetricPoints int64) error {
 	return checkReceiverMetrics(tts.reader, tts.id, protocol, acceptedMetricPoints, droppedMetricPoints)
