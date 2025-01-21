@@ -19,9 +19,6 @@ import (
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 )
 
-// Deprecated: [v0.118.0] use ControllerOption.
-type ScraperControllerOption = ControllerOption
-
 // ControllerOption apply changes to internal options.
 type ControllerOption interface {
 	apply(*controllerOptions)
@@ -180,16 +177,6 @@ func (sc *controller[T]) startScraping() {
 			}
 		}
 	}()
-}
-
-// Deprecated: [v0.118.0] Use NewMetricsController.
-func NewScraperControllerReceiver(
-	cfg *ControllerConfig,
-	set receiver.Settings,
-	nextConsumer consumer.Metrics,
-	options ...ControllerOption,
-) (component.Component, error) {
-	return NewMetricsController(cfg, set, nextConsumer, options...)
 }
 
 // NewMetricsController creates a receiver.Metrics with the configured options, that can control multiple scraper.Metrics.
