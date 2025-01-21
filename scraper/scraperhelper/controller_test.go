@@ -348,7 +348,7 @@ func configureLogOptions(t *testing.T, test scraperTestCase, initializeChs []cha
 		scp, err := scraper.NewLogs(ts.scrapeLogs, scraperOptions...)
 		require.NoError(t, err)
 
-		logsOptions = append(logsOptions, AddLogsScraper(component.MustNewType("scraper"), scp))
+		logsOptions = append(logsOptions, addLogsScraper(component.MustNewType("scraper"), scp))
 	}
 
 	return logsOptions
@@ -375,7 +375,7 @@ func configureMetricOptions(t *testing.T, test scraperTestCase, initializeChs []
 		scp, err := scraper.NewMetrics(ts.scrapeMetrics, scraperOptions...)
 		require.NoError(t, err)
 
-		metricOptions = append(metricOptions, AddMetricsScraper(component.MustNewType("scraper"), scp))
+		metricOptions = append(metricOptions, AddScraper(component.MustNewType("scraper"), scp))
 	}
 
 	return metricOptions
@@ -637,7 +637,7 @@ func TestSingleLogsScraperPerInterval(t *testing.T) {
 		cfg,
 		receivertest.NewNopSettings(),
 		new(consumertest.LogsSink),
-		AddLogsScraper(component.MustNewType("scraper"), scp),
+		addLogsScraper(component.MustNewType("scraper"), scp),
 		WithTickerChannel(tickerCh),
 	)
 	require.NoError(t, err)
@@ -680,7 +680,7 @@ func TestSingleMetricsScraperPerInterval(t *testing.T) {
 		cfg,
 		receivertest.NewNopSettings(),
 		new(consumertest.MetricsSink),
-		AddMetricsScraper(component.MustNewType("scraper"), scp),
+		AddScraper(component.MustNewType("scraper"), scp),
 		WithTickerChannel(tickerCh),
 	)
 	require.NoError(t, err)
@@ -725,7 +725,7 @@ func TestLogsScraperControllerStartsOnInit(t *testing.T) {
 		},
 		receivertest.NewNopSettings(),
 		new(consumertest.LogsSink),
-		AddLogsScraper(component.MustNewType("scraper"), scp),
+		addLogsScraper(component.MustNewType("scraper"), scp),
 	)
 	require.NoError(t, err, "Must not error when creating scrape controller")
 
@@ -752,7 +752,7 @@ func TestMetricsScraperControllerStartsOnInit(t *testing.T) {
 		},
 		receivertest.NewNopSettings(),
 		new(consumertest.MetricsSink),
-		AddMetricsScraper(component.MustNewType("scraper"), scp),
+		AddScraper(component.MustNewType("scraper"), scp),
 	)
 	require.NoError(t, err, "Must not error when creating scrape controller")
 
@@ -788,7 +788,7 @@ func TestLogsScraperControllerInitialDelay(t *testing.T) {
 		&cfg,
 		receivertest.NewNopSettings(),
 		new(consumertest.LogsSink),
-		AddLogsScraper(component.MustNewType("scraper"), scp),
+		addLogsScraper(component.MustNewType("scraper"), scp),
 	)
 	require.NoError(t, err, "Must not error when creating receiver")
 
@@ -827,7 +827,7 @@ func TestMetricsScraperControllerInitialDelay(t *testing.T) {
 		&cfg,
 		receivertest.NewNopSettings(),
 		new(consumertest.MetricsSink),
-		AddMetricsScraper(component.MustNewType("scraper"), scp),
+		AddScraper(component.MustNewType("scraper"), scp),
 	)
 	require.NoError(t, err, "Must not error when creating receiver")
 
@@ -857,7 +857,7 @@ func TestLogsScraperShutdownBeforeScrapeCanStart(t *testing.T) {
 		&cfg,
 		receivertest.NewNopSettings(),
 		new(consumertest.LogsSink),
-		AddLogsScraper(component.MustNewType("scraper"), scp),
+		addLogsScraper(component.MustNewType("scraper"), scp),
 	)
 	require.NoError(t, err, "Must not error when creating receiver")
 	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
@@ -891,7 +891,7 @@ func TestMetricsScraperShutdownBeforeScrapeCanStart(t *testing.T) {
 		&cfg,
 		receivertest.NewNopSettings(),
 		new(consumertest.MetricsSink),
-		AddMetricsScraper(component.MustNewType("scraper"), scp),
+		AddScraper(component.MustNewType("scraper"), scp),
 	)
 	require.NoError(t, err, "Must not error when creating receiver")
 	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
@@ -906,4 +906,12 @@ func TestMetricsScraperShutdownBeforeScrapeCanStart(t *testing.T) {
 		require.Fail(t, "shutdown should not wait for scraping")
 	case <-shutdown:
 	}
+}
+
+func addLogsScraper(t component.Type, sc scraper.Logs) ControllerOption {
+	f := scraper.NewFactory(t, nil,
+		scraper.WithLogs(func(context.Context, scraper.Settings, component.Config) (scraper.Logs, error) {
+			return sc, nil
+		}, component.StabilityLevelAlpha))
+	return AddFactoryWithConfig(f, nil)
 }

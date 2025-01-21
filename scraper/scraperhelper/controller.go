@@ -34,28 +34,12 @@ func (of optionFunc) apply(e *controllerOptions) {
 	of(e)
 }
 
-// AddLogsScraper configures the scraper.Logs to be called with the specified options,
-// and at the specified collection interval.
-//
-// Observability information will be reported, and the scraped logs
-// will be passed to the next consumer.
-func AddLogsScraper(t component.Type, sc scraper.Logs) ControllerOption {
-	f := scraper.NewFactory(t, nil,
-		scraper.WithLogs(func(context.Context, scraper.Settings, component.Config) (scraper.Logs, error) {
-			return sc, nil
-		}, component.StabilityLevelAlpha))
-	return AddFactoryWithConfig(f, nil)
-}
-
-// Deprecated: [v0.119.0] use AddMetricsScraper.
-var AddScraper = AddMetricsScraper
-
-// AddMetricsScraper configures the scraper.Metrics to be called with the specified options,
+// AddScraper configures the scraper.Metrics to be called with the specified options,
 // and at the specified collection interval.
 //
 // Observability information will be reported, and the scraped metrics
 // will be passed to the next consumer.
-func AddMetricsScraper(t component.Type, sc scraper.Metrics) ControllerOption {
+func AddScraper(t component.Type, sc scraper.Metrics) ControllerOption {
 	f := scraper.NewFactory(t, nil,
 		scraper.WithMetrics(func(context.Context, scraper.Settings, component.Config) (scraper.Metrics, error) {
 			return sc, nil
