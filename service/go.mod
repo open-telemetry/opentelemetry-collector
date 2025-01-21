@@ -43,7 +43,7 @@ require (
 	go.opentelemetry.io/collector/receiver/receivertest v0.118.0
 	go.opentelemetry.io/collector/receiver/xreceiver v0.118.0
 	go.opentelemetry.io/collector/semconv v0.118.0
-	go.opentelemetry.io/contrib/bridges/otelzap v0.6.0
+	go.opentelemetry.io/contrib/bridges/otelzap v0.9.0
 	go.opentelemetry.io/contrib/config v0.10.0
 	go.opentelemetry.io/contrib/propagators/b3 v1.31.0
 	go.opentelemetry.io/otel v1.34.0
