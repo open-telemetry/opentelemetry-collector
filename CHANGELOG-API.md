@@ -7,6 +7,35 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.24.0/v0.118.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporterqueue`: Change Queue Size and Capacity to return explicit int64. (#12076)
+- `receiver/scraperhelper`: Removing the deprecated receiver/scraperhelper package (#12054)
+- `processorteset`: Revert the nop_processor.NewNopSettings change, as it is no longer needed (#11433)
+- `experimental/storage`: Remove deprecated package/module experimental/storage (#12109)
+- `mdatagen`: Remove deprecated generated_component_telemetry_test file from being generated and delete it. (#12068)
+- `receivertest`: Remove deprecated receivertest.NewNopFactoryForType (#12110)
+
+### 🚩 Deprecations 🚩
+
+- `componenttest`: Deprecate CheckScraperMetrics in componenenttest (#12105)
+  Use `metadatatest.AssertMetrics` instead of `obsreporttest.CheckScraperMetrics`
+- `scraperhelper`: Deprecate `scraperhelper.NewScraperControllerReceiver` and `scraperhelper.ScraperControllerOption`. (#12103)
+  Use `scraperhelper.NewMetricsController` instead of `scraperhelper.NewScraperControllerReceiver` | Use `scraperhelper.ScraperControllerOption` instead of `scraperhelper.ControllerOption`
+
+### 💡 Enhancements 💡
+
+- `exporterhelper`: Add capability for memory and persistent queue to block when add items (#12074)
+- `scraper/scraperhelper`: Add obs_logs for scraper/scraperhelper (#12036)
+  This change adds obs for logs in scraper/scraperhelper, also introduced new metrics for scraping logs.
+- `mdatagen`: Add scraper component type support to mdatagen (#12092)
+- `mdatagen`: Add tracing support in metadatatest (#12106)
+- `exporterhelper`: Change persistent queue to not use sized channel, improve memory usage and simplify sized_channel. (#12060)
+- `confighttp`: Added support for configuring compression levels. (#10467)
+  A new configuration option called CompressionParams has been added to confighttp. | This allows users to configure the compression levels for the confighttp client.
+
 ## v1.23.0/v0.117.0
 
 ### 🛑 Breaking changes 🛑

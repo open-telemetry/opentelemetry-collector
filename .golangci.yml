@@ -91,6 +91,9 @@ linters-settings:
     ignore-words:
       - cancelled
 
+  nolintlint:
+    require-specific: true
+
   perfsprint:
     # Optimizes even if it requires an int or uint type cast.
     int-conversion: true
@@ -204,6 +207,7 @@ linters:
     - gosec
     - govet
     - misspell
+    - nolintlint
     - perfsprint
     - revive
     - staticcheck

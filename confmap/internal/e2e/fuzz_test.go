@@ -19,16 +19,16 @@ func targetNested[T any](t *testing.T, value string) {
 	resolver := NewResolver(t, "types_expand.yaml")
 
 	// Use os.Setenv so we can check the error and return instead of failing the fuzzing.
-	os.Setenv("ENV", "${env:ENV2}") // nolint:tenv
+	os.Setenv("ENV", "${env:ENV2}") //nolint:tenv
 	defer os.Unsetenv("ENV")
-	err := os.Setenv("ENV2", value) // nolint:tenv
+	err := os.Setenv("ENV2", value) //nolint:tenv
 	defer os.Unsetenv("ENV2")
 	if err != nil {
 		return
 	}
 	confNested, errResolveNested := resolver.Resolve(context.Background())
 
-	err = os.Setenv("ENV", value) // nolint:tenv
+	err = os.Setenv("ENV", value) //nolint:tenv
 	if err != nil {
 		return
 	}

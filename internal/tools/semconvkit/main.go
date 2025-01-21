@@ -40,7 +40,7 @@ func render(src, dest string, data *SemanticConventions) error {
 	}
 	for _, tmpl := range tmpls.Templates() {
 		target := filepath.Join(dest, strings.TrimSuffix(tmpl.Name(), ".tmpl"))
-		// nolint: gosec
+		//nolint:gosec
 		wr, err := os.Create(target)
 		if err != nil {
 			return err
