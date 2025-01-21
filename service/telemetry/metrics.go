@@ -38,6 +38,15 @@ type meterProviderSettings struct {
 	asyncErrorChannel chan error
 }
 
+func dropViewOption(instrument sdkmetric.Instrument) sdkmetric.Option {
+	return sdkmetric.WithView(sdkmetric.NewView(
+		instrument,
+		sdkmetric.Stream{
+			Aggregation: sdkmetric.AggregationDrop{},
+		},
+	))
+}
+
 // newMeterProvider creates a new MeterProvider from Config.
 func newMeterProvider(set meterProviderSettings, disableHighCardinality bool) (metric.MeterProvider, error) {
 	if set.cfg.Level == configtelemetry.LevelNone || len(set.cfg.Readers) == 0 {
@@ -60,17 +69,10 @@ func newMeterProvider(set meterProviderSettings, disableHighCardinality bool) (m
 
 	if set.cfg.Level < configtelemetry.LevelDetailed {
 		// Drop all otelhttp metrics if the level is not detailed.
-		opts = append(opts, sdkmetric.WithView(
-			sdkmetric.NewView(
-				sdkmetric.Instrument{
-					Scope: instrumentation.Scope{
-						Name: otelhttp.ScopeName,
-					},
-				},
-				sdkmetric.Stream{
-					Aggregation: sdkmetric.AggregationDrop{},
-				},
-			)))
+		opts = append(opts, dropViewOption(sdkmetric.Instrument{
+			Scope: instrumentation.Scope{Name: otelhttp.ScopeName},
+		},
+		))
 	}
 
 	var err error
