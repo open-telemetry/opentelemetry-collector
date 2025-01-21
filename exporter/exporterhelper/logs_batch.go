@@ -38,12 +38,14 @@ func (req *logsRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSiz
 			continue
 		}
 
-		srcCount := srcReq.ld.LogRecordCount()
+		srcCount := srcReq.ItemsCount()
 		if srcCount <= capacityLeft {
 			if destReq == nil {
 				destReq = srcReq
 			} else {
 				srcReq.ld.ResourceLogs().MoveAndAppendTo(destReq.ld.ResourceLogs())
+				destReq.setCachedItemsCount(srcCount)
+				srcReq.setCachedItemsCount(0)
 			}
 			capacityLeft -= srcCount
 			continue
@@ -51,16 +53,21 @@ func (req *logsRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSiz
 
 		for {
 			extractedLogs := extractLogs(srcReq.ld, capacityLeft)
-			if extractedLogs.LogRecordCount() == 0 {
+			extractedCount := extractedLogs.LogRecordCount()
+			if extractedCount == 0 {
 				break
 			}
-			capacityLeft -= extractedLogs.LogRecordCount()
+
 			if destReq == nil {
-				destReq = newLogsRequest(extractedLogs, srcReq.pusher).(*logsRequest)
+				destReq = &logsRequest{ld: extractedLogs, pusher: srcReq.pusher, cachedItemsCount: extractedCount}
 			} else {
 				extractedLogs.ResourceLogs().MoveAndAppendTo(destReq.ld.ResourceLogs())
+				destReq.setCachedItemsCount(destReq.ItemsCount() + extractedCount)
+				srcReq.setCachedItemsCount(srcReq.ItemsCount() - extractedCount)
 			}
+
 			// Create new batch once capacity is reached.
+			capacityLeft -= extractedCount
 			if capacityLeft == 0 {
 				res = append(res, destReq)
 				destReq = nil
