@@ -47,7 +47,7 @@ func AddLogsScraper(t component.Type, sc scraper.Logs) ControllerOption {
 	return AddFactoryWithConfig(f, nil)
 }
 
-// Deprecated: [v0.118.0] use AddMetricsScraper.
+// Deprecated: [v0.119.0] use AddMetricsScraper.
 var AddScraper = AddMetricsScraper
 
 // AddMetricsScraper configures the scraper.Metrics to be called with the specified options,
