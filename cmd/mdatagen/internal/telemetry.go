@@ -11,11 +11,3 @@ type Telemetry struct {
 	Level   configtelemetry.Level `mapstructure:"level"`
 	Metrics map[MetricName]Metric `mapstructure:"metrics"`
 }
-
-func (t Telemetry) Levels() map[string]any {
-	levels := map[string]any{}
-	for _, m := range t.Metrics {
-		levels[m.Level.String()] = nil
-	}
-	return levels
-}
