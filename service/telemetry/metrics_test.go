@@ -10,11 +10,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/contrib/config"
 	"go.opentelemetry.io/otel/metric"
+	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -231,4 +233,71 @@ func getMetricsFromPrometheus(t *testing.T, endpoint string) map[string]*io_prom
 	require.NoError(t, err)
 
 	return parsed
+}
+
+// Test that the MeterProvider implements the 'Enabled' functionality.
+// See https://pkg.go.dev/go.opentelemetry.io/otel/sdk/metric/internal/x#readme-instrument-enabled.
+func TestInstrumentEnabled(t *testing.T) {
+	prom := promtest.GetAvailableLocalAddressPrometheus(t)
+	set := meterProviderSettings{
+		res: sdkresource.Default(),
+		cfg: MetricsConfig{
+			Level:   configtelemetry.LevelDetailed,
+			Readers: []config.MetricReader{{
+				Pull: &config.PullMetricReader{Exporter: config.MetricExporter{Prometheus: prom}},
+			}},
+		},
+		asyncErrorChannel: make(chan error),
+	}
+	meterProvider, err := newMeterProvider(set, false)
+	defer func() {
+		if prov, ok := meterProvider.(interface{ Shutdown(context.Context) error }); ok {
+			require.NoError(t, prov.Shutdown(context.Background()))
+		}
+	}()
+	require.NoError(t, err)
+
+	meter := meterProvider.Meter("go.opentelemetry.io/collector/service/telemetry")
+
+	type enabledInstrument interface{ Enabled(context.Context) bool }
+
+	intCnt, err := meter.Int64Counter("int64.counter")
+	require.NoError(t, err)
+	_, ok := intCnt.(enabledInstrument)
+	assert.True(t, ok, "Int64Counter does not implement the experimental 'Enabled' method")
+
+	intUpDownCnt, err := meter.Int64UpDownCounter("int64.updowncounter")
+	require.NoError(t, err)
+	_, ok = intUpDownCnt.(enabledInstrument)
+	assert.True(t, ok, "Int64UpDownCounter does not implement the experimental 'Enabled' method")
+
+	intHist, err := meter.Int64Histogram("int64.updowncounter")
+	require.NoError(t, err)
+	_, ok = intHist.(enabledInstrument)
+	assert.True(t, ok, "Int64Histogram does not implement the experimental 'Enabled' method")
+
+	intGauge, err := meter.Int64Gauge("int64.updowncounter")
+	require.NoError(t, err)
+	_, ok = intGauge.(enabledInstrument)
+	assert.True(t, ok, "Int64Gauge does not implement the experimental 'Enabled' method")
+
+	floatCnt, err := meter.Float64Counter("int64.updowncounter")
+	require.NoError(t, err)
+	_, ok = floatCnt.(enabledInstrument)
+	assert.True(t, ok, "Float64Counter does not implement the experimental 'Enabled' method")
+
+	floatUpDownCnt, err := meter.Float64UpDownCounter("int64.updowncounter")
+	require.NoError(t, err)
+	_, ok = floatUpDownCnt.(enabledInstrument)
+	assert.True(t, ok, "Float64UpDownCounter does not implement the experimental 'Enabled' method")
+
+	floatHist, err := meter.Float64Histogram("int64.updowncounter")
+	require.NoError(t, err)
+	_, ok = floatHist.(enabledInstrument)
+	assert.True(t, ok, "Float64Histogram does not implement the experimental 'Enabled' method")
+
+	floatGauge, err := meter.Float64Gauge("int64.updowncounter")
+	require.NoError(t, err)
+	_, ok = floatGauge.(enabledInstrument)
+	assert.True(t, ok, "Float64Gauge does not implement the experimental 'Enabled' method")
 }
