@@ -15,24 +15,36 @@ body:
       - cmd/mdatagen
       - cmd/mdatagen/internal/sampleprocessor
       - cmd/mdatagen/internal/samplereceiver
+      - cmd/mdatagen/internal/samplescraper
+      - confmap
       - connector/forward
+      - connector/x
+      - consumer/xconsumer
       - docs/rfcs
       - exporter/debug
       - exporter/exporterhelper
+      - exporter/exporterhelper/xexporterhelper
       - exporter/nop
       - exporter/otlp
       - exporter/otlphttp
+      - exporter/x
       - extension/memorylimiter
+      - extension/x
       - extension/zpages
+      - pdata
+      - pdata/pprofile
       - processor/batch
       - processor/memorylimiter
       - processor/processorhelper
+      - processor/x
       - receiver/nop
       - receiver/otlp
       - receiver/receiverhelper
+      - receiver/x
       - scraper
       - scraper/scraperhelper
       - service
+      - service/internal/graph
       # End Collector components list
   - type: textarea
     attributes:
