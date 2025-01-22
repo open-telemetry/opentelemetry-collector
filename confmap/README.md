@@ -37,7 +37,7 @@ that can be used by code that is oblivious to the usage of `Providers` and `Conv
 or an individual value (partial configuration) when the `configURI` is embedded into the `Conf` as a values using
 the syntax `${configURI}`.
 
-**Limitation:** 
+**Limitation:**
 - When embedding a `${configURI}` the uri cannot contain dollar sign ("$") character unless it embeds another uri.
 - The number of URIs is limited to 100.
 
@@ -87,7 +87,7 @@ The `Resolve` method proceeds in the following steps:
 After the configuration was processed, the `Resolver` can be used as a single point to watch for updates in the
 configuration retrieved via the `Provider` used to retrieve the “initial” configuration and to generate the “effective” one.
 
-```terminal      
+```terminal
          Resolver              Provider
             │                     │
    Watch    │                     │
@@ -99,16 +99,81 @@ configuration retrieved via the `Provider` used to retrieve the “initial” co
             │      onChange       │
             │◄────────────────────┤
 ◄───────────┤                     │
+
 ```
 
-The `Resolver` does that by passing an `onChange` func to each `Provider.Retrieve` call and capturing all watch events. 
+The `Resolver` does that by passing an `onChange` func to each `Provider.Retrieve` call and capturing all watch events.
+
+Calling the `onChange` func from a provider triggers the collector to re-resolve new configuration:
+
+```terminal
+         Resolver              Provider
+            │                     │
+   Watch    │                     │
+───────────►│                     │
+            │                     │
+            .                     .
+            .                     .
+            .                     .
+            │      onChange       │
+            │◄────────────────────┤
+◄───────────┤                     │
+            |                     |
+  Resolve   │                     │
+───────────►│                     │
+            │                     │
+            │      Retrieve       │
+            ├────────────────────►│
+            │        Conf         │
+            │◄────────────────────┤
+◄───────────┤                     │
+```
+
+Example of `Provider` with `onChange` func that periodically gets notified:
+
+```golang
+type UpdatingProvider struct { }
+
+func (p UpdatingProvider) Retrieve(ctx context.Context, uri string, watcher confmap.WatcherFunc) (*confmap.Retrieved, error) {
+    ticker := time.Ticker(30 * time.Second)
+
+    retrieved := provider.NewRetrieved(getCurrentConfig(), provider.WithRetrievedClose(func (ctx context) error {
+        // the provider should call this function when it no longer wants config updates
+        close(ticker)
+    }))
+
+    go func() {
+        for {
+            select {
+            case <-ctx.Done():
+                // if the context is closed, then we should stop sending updates
+                close(ticker)
+                return
+            case _, ticking <- ticker:
+                if !ticking {
+                    // if ticking stopped, then closeFunc was called
+                    return
+                }
+                // otherwise, notify the watcher that a new config is available
+                // the watcher is expected to call Provider.Retrieve again to get the update
+                // note that the collector calls closeFunc before calling Retrieve for the second time,
+                // so these go functions don't accumulate indefinitely. (see otelcol/collector.go, Collector.reloadConfiguration)
+                watcher(&confmap.ChangeEvent{})
+            }
+        }
+    }()
+
+    return retrieved, nil
+}
+```
+
 
 ## Troubleshooting
 
 ### Null Maps
 
 Due to how our underlying merge library, [koanf](https://github.com/knadh/koanf), behaves, configuration resolution
-will treat configuration such as 
+will treat configuration such as
 
 ```yaml
 processors:
