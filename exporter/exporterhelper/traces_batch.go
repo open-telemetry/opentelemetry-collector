@@ -56,7 +56,7 @@ func (req *tracesRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxS
 			}
 			capacityLeft -= extractedTraces.SpanCount()
 			if destReq == nil {
-				destReq = &tracesRequest{td: extractedTraces, pusher: srcReq.pusher}
+				destReq = newTracesRequest(extractedTraces, srcReq.pusher).(*tracesRequest)
 			} else {
 				extractedTraces.ResourceSpans().MoveAndAppendTo(destReq.td.ResourceSpans())
 			}
