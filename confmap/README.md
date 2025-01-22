@@ -129,44 +129,7 @@ Calling the `onChange` func from a provider triggers the collector to re-resolve
 ◄───────────┤                     │
 ```
 
-Example of `Provider` with `onChange` func that periodically gets notified:
-
-```golang
-type UpdatingProvider struct { }
-
-func (p UpdatingProvider) Retrieve(ctx context.Context, uri string, watcher confmap.WatcherFunc) (*confmap.Retrieved, error) {
-    ticker := time.Ticker(30 * time.Second)
-
-    retrieved := provider.NewRetrieved(getCurrentConfig(), provider.WithRetrievedClose(func (ctx context) error {
-        // the provider should call this function when it no longer wants config updates
-        close(ticker)
-    }))
-
-    go func() {
-        for {
-            select {
-            case <-ctx.Done():
-                // if the context is closed, then we should stop sending updates
-                close(ticker)
-                return
-            case _, ticking <- ticker:
-                if !ticking {
-                    // if ticking stopped, then closeFunc was called
-                    return
-                }
-                // otherwise, notify the watcher that a new config is available
-                // the watcher is expected to call Provider.Retrieve again to get the update
-                // note that the collector calls closeFunc before calling Retrieve for the second time,
-                // so these go functions don't accumulate indefinitely. (see otelcol/collector.go, Collector.reloadConfiguration)
-                watcher(&confmap.ChangeEvent{})
-            }
-        }
-    }()
-
-    return retrieved, nil
-}
-```
-
+An example of a `Provider` with an `onChange` func that periodically gets notified can be found in provider_test.go as UpdatingProvider
 
 ## Troubleshooting
 

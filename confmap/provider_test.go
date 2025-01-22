@@ -6,12 +6,86 @@ package confmap
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// This is an example of a provider that calls a provided WatcherFunc to update configuration dynamically every second.
+// The example is useful for implementing Providers of configuration that changes over time.
+type UpdatingProvider struct{}
+
+func (p UpdatingProvider) getCurrentConfig(_ string) any {
+	return "hello"
+}
+
+func (p UpdatingProvider) Retrieve(ctx context.Context, uri string, watcher WatcherFunc) (*Retrieved, error) {
+	ticker := time.NewTicker(1 * time.Second)
+	stop := make(chan bool, 1)
+
+	retrieved, err := NewRetrieved(p.getCurrentConfig(uri), WithRetrievedClose(func(_ context.Context) error {
+		// the provider should call this function when it no longer wants config updates
+		ticker.Stop()
+		stop <- true
+		return nil
+	}))
+	if err != nil {
+		return nil, err
+	}
+	// it's necessary to start a go function that can notify the caller of changes asynchronously
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				// if the context is closed, then we should stop sending updates
+				ticker.Stop()
+				return
+			case <-stop:
+				// closeFunc was called, so stop updating the watcher
+				fmt.Println("unsubscribing watcher")
+				return
+			case <-ticker.C:
+				// the configuration has "changed". Notify the watcher that a new config is available
+				// the watcher is expected to call Provider.Retrieve again to get the update
+				// note that the collector calls closeFunc before calling Retrieve for the second time,
+				// so these go functions don't accumulate indefinitely. (see otelcol/collector.go, Collector.reloadConfiguration)
+				watcher(&ChangeEvent{})
+			}
+		}
+	}()
+
+	return retrieved, nil
+}
+
+func ExampleProvider() {
+	provider := UpdatingProvider{}
+
+	watcherFunc := func(_ *ChangeEvent) {
+		fmt.Println("received notification of new config")
+	}
+
+	retrieved, err := provider.Retrieve(context.Background(), "example", watcherFunc)
+	if err != nil {
+		fmt.Println("received an error")
+	} else {
+		fmt.Printf("received: %s\n", retrieved.rawConf)
+	}
+
+	// sleep for 1.5 seconds (1s for a new configuration, and 0.5 more to prevent races. Too close to 2s and we risk getting notified twice)
+	time.Sleep(1500 * time.Millisecond)
+	// signal that we no longer want updates
+	retrieved.Close(context.Background())
+	// give the go function chance to honor our request
+	time.Sleep(100 * time.Millisecond)
+
+	// Output:
+	// received: hello
+	// received notification of new config
+	// unsubscribing watcher
+}
 
 func TestNewRetrieved(t *testing.T) {
 	ret, err := NewRetrieved(nil)
