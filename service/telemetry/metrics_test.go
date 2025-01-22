@@ -14,7 +14,7 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/contrib/config"
+	config "go.opentelemetry.io/contrib/config/v0.3.0"
 	"go.opentelemetry.io/otel/metric"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 
@@ -135,7 +135,7 @@ func TestTelemetryInit(t *testing.T) {
 				Metrics: MetricsConfig{
 					Level: configtelemetry.LevelDetailed,
 					Readers: []config.MetricReader{{
-						Pull: &config.PullMetricReader{Exporter: config.MetricExporter{Prometheus: prom}},
+						Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: prom}},
 					}},
 				},
 				Traces: TracesConfig{
@@ -244,7 +244,7 @@ func TestInstrumentEnabled(t *testing.T) {
 		cfg: MetricsConfig{
 			Level: configtelemetry.LevelDetailed,
 			Readers: []config.MetricReader{{
-				Pull: &config.PullMetricReader{Exporter: config.MetricExporter{Prometheus: prom}},
+				Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: prom}},
 			}},
 		},
 		asyncErrorChannel: make(chan error),

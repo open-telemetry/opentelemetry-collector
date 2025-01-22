@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	"go.opentelemetry.io/contrib/config"
+	config "go.opentelemetry.io/contrib/config/v0.3.0"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -189,7 +189,7 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 
 		c.Metrics.Readers = append(c.Metrics.Readers, config.MetricReader{
 			Pull: &config.PullMetricReader{
-				Exporter: config.MetricExporter{
+				Exporter: config.PullMetricExporter{
 					Prometheus: &config.Prometheus{
 						Host: &host,
 						Port: &portInt,

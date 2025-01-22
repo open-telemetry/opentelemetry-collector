@@ -53,11 +53,17 @@ func TestAttributes(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			attrs := attributes(resource.New(tt.buildInfo, tt.cfg.Resource), tt.cfg)
 			require.Len(t, attrs, len(tt.wantAttributes))
+
+			attrMap := map[string]any{}
+			for _, attr := range attrs {
+				attrMap[attr.Name] = attr.Value
+			}
+
 			for k, v := range tt.wantAttributes {
 				if k == "service.instance.id" {
-					require.NotNil(t, attrs[k])
+					require.NotNil(t, attrMap[k])
 				} else {
-					require.Equal(t, v, attrs[k])
+					require.Equal(t, v, attrMap[k])
 				}
 			}
 		})

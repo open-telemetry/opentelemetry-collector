@@ -7,7 +7,7 @@ import (
 	"context"
 	"time"
 
-	"go.opentelemetry.io/contrib/config"
+	config "go.opentelemetry.io/contrib/config/v0.3.0"
 	"go.opentelemetry.io/otel/log"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
@@ -117,7 +117,7 @@ func createDefaultConfig() component.Config {
 			Level: configtelemetry.LevelNormal,
 			Readers: []config.MetricReader{
 				{
-					Pull: &config.PullMetricReader{Exporter: config.MetricExporter{Prometheus: &config.Prometheus{
+					Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: &config.Prometheus{
 						Host: &metricsHost,
 						Port: newPtr(8888),
 					}}},

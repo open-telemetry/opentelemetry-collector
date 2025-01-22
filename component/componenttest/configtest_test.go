@@ -52,6 +52,12 @@ func TestCheckConfigStruct(t *testing.T) {
 			}{},
 		},
 		{
+			name: "remain_mapstructure_tag",
+			config: struct {
+				AdditionalProperties any `mapstructure:",remain"`
+			}{},
+		},
+		{
 			name: "not_struct_nor_pointer",
 			config: func(x int) int {
 				return x * x

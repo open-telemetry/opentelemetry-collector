@@ -17,7 +17,7 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/contrib/config"
+	config "go.opentelemetry.io/contrib/config/v0.3.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -318,7 +318,7 @@ func testCollectorStartHelperWithReaders(t *testing.T, tc ownMetricsTestCase, ne
 	cfg.Telemetry.Metrics.Readers = []config.MetricReader{
 		{
 			Pull: &config.PullMetricReader{
-				Exporter: config.MetricExporter{
+				Exporter: config.PullMetricExporter{
 					Prometheus: metricsAddr,
 				},
 			},
@@ -476,6 +476,7 @@ func TestServiceFatalError(t *testing.T) {
 }
 
 func TestServiceInvalidTelemetryConfiguration(t *testing.T) {
+	var str string
 	tests := []struct {
 		name    string
 		wantErr error
@@ -490,7 +491,9 @@ func TestServiceInvalidTelemetryConfiguration(t *testing.T) {
 						{
 							Batch: &config.BatchLogRecordProcessor{
 								Exporter: config.LogRecordExporter{
-									OTLP: &config.OTLP{},
+									OTLP: &config.OTLP{
+										Protocol: &str,
+									},
 								},
 							},
 						},
@@ -691,7 +694,7 @@ func newNopConfigPipelineConfigs(pipelineCfgs pipelines.Config) Config {
 				Level: configtelemetry.LevelBasic,
 				Readers: []config.MetricReader{
 					{
-						Pull: &config.PullMetricReader{Exporter: config.MetricExporter{Prometheus: &config.Prometheus{
+						Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: &config.Prometheus{
 							Host: newPtr("localhost"),
 							Port: newPtr(8888),
 						}}},

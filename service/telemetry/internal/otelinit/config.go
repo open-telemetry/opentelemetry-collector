@@ -191,23 +191,20 @@ func initPeriodicExporter(ctx context.Context, exporter config.PushMetricExporte
 	if exporter.OTLP != nil {
 		var err error
 		var exp sdkmetric.Exporter
-
-		if exporter.OTLP.Protocol == nil {
-			return nil, nil, errors.New("OTLP protocol not set")
+		if exporter.OTLP.Protocol != nil {
+			switch *exporter.OTLP.Protocol {
+			case protocolProtobufHTTP:
+				exp, err = initOTLPHTTPExporter(ctx, exporter.OTLP)
+			case protocolProtobufGRPC:
+				exp, err = initOTLPgRPCExporter(ctx, exporter.OTLP)
+			default:
+				return nil, nil, fmt.Errorf("unsupported protocol %s", *exporter.OTLP.Protocol)
+			}
+			if err != nil {
+				return nil, nil, err
+			}
+			return sdkmetric.NewPeriodicReader(exp, opts...), nil, nil
 		}
-
-		switch *exporter.OTLP.Protocol {
-		case protocolProtobufHTTP:
-			exp, err = initOTLPHTTPExporter(ctx, exporter.OTLP)
-		case protocolProtobufGRPC:
-			exp, err = initOTLPgRPCExporter(ctx, exporter.OTLP)
-		default:
-			return nil, nil, fmt.Errorf("unsupported protocol %s", *exporter.OTLP.Protocol)
-		}
-		if err != nil {
-			return nil, nil, err
-		}
-		return sdkmetric.NewPeriodicReader(exp, opts...), nil, nil
 	}
 	return nil, nil, errNoValidMetricExporter
 }
@@ -222,7 +219,7 @@ func normalizeEndpoint(endpoint string) string {
 func initOTLPgRPCExporter(ctx context.Context, otlpConfig *config.OTLPMetric) (sdkmetric.Exporter, error) {
 	opts := []otlpmetricgrpc.Option{}
 
-	if otlpConfig.Endpoint != nil && len(*otlpConfig.Endpoint) > 0 {
+	if otlpConfig.Endpoint != nil {
 		u, err := url.ParseRequestURI(normalizeEndpoint(*otlpConfig.Endpoint))
 		if err != nil {
 			return nil, err
@@ -252,7 +249,12 @@ func initOTLPgRPCExporter(ctx context.Context, otlpConfig *config.OTLPMetric) (s
 		opts = append(opts, otlpmetricgrpc.WithTimeout(time.Millisecond*time.Duration(*otlpConfig.Timeout)))
 	}
 	if len(otlpConfig.Headers) > 0 {
-		opts = append(opts, otlpmetricgrpc.WithHeaders(convertHeadersToMap(otlpConfig.Headers)))
+		m := map[string]string{}
+
+		for _, h := range otlpConfig.Headers {
+			m[h.Name] = *h.Value
+		}
+		opts = append(opts, otlpmetricgrpc.WithHeaders(m))
 	}
 	if otlpConfig.TemporalityPreference != nil {
 		switch *otlpConfig.TemporalityPreference {
@@ -273,7 +275,7 @@ func initOTLPgRPCExporter(ctx context.Context, otlpConfig *config.OTLPMetric) (s
 func initOTLPHTTPExporter(ctx context.Context, otlpConfig *config.OTLPMetric) (sdkmetric.Exporter, error) {
 	opts := []otlpmetrichttp.Option{}
 
-	if otlpConfig.Endpoint != nil && len(*otlpConfig.Endpoint) > 0 {
+	if otlpConfig.Endpoint != nil {
 		u, err := url.ParseRequestURI(normalizeEndpoint(*otlpConfig.Endpoint))
 		if err != nil {
 			return nil, err
@@ -301,7 +303,12 @@ func initOTLPHTTPExporter(ctx context.Context, otlpConfig *config.OTLPMetric) (s
 		opts = append(opts, otlpmetrichttp.WithTimeout(time.Millisecond*time.Duration(*otlpConfig.Timeout)))
 	}
 	if len(otlpConfig.Headers) > 0 {
-		opts = append(opts, otlpmetrichttp.WithHeaders(convertHeadersToMap(otlpConfig.Headers)))
+		m := map[string]string{}
+
+		for _, h := range otlpConfig.Headers {
+			m[h.Name] = *h.Value
+		}
+		opts = append(opts, otlpmetrichttp.WithHeaders(m))
 	}
 	if otlpConfig.TemporalityPreference != nil {
 		switch *otlpConfig.TemporalityPreference {
@@ -343,17 +350,4 @@ func temporalityPreferenceLowMemory(ik sdkmetric.InstrumentKind) metricdata.Temp
 	default:
 		return metricdata.DeltaTemporality
 	}
-}
-
-func convertHeadersToMap(pairs []config.NameStringValuePair) map[string]string {
-	m := map[string]string{}
-	for _, pair := range pairs {
-		// Skip null values
-		if pair.Value == nil {
-			continue
-		}
-		m[pair.Name] = *pair.Value
-	}
-
-	return m
 }
