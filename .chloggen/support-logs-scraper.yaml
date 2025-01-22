@@ -4,13 +4,13 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: exporterhelper
+component: scraper
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Change persistent queue to not use sized channel, improve memory usage and simplify sized_channel.
+note: Support logs scraper
 
 # One or more tracking issues or pull requests related to the change
-issues: [12060]
+issues: [12116]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.

@@ -4,13 +4,13 @@
 change_type: breaking
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: exporterqueue
+component: scraperhelper
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Change Queue Size and Capacity to return explicit int64.
+note: Remove deprecated ScrapperControllerOption and NewScraperControllerMetrics from scraperhelper.
 
 # One or more tracking issues or pull requests related to the change
-issues: [12076]
+issues: [12147]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
