@@ -28,6 +28,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
+	_ "google.golang.org/grpc/xds" // register xDS balancer
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
