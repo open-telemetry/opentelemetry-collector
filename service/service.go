@@ -130,7 +130,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 
 	sch := semconv.SchemaURL
 
-	views := disableHighCardinalityMetrics()
+	views := configureViews(cfg.Telemetry.Metrics.Level)
 
 	readers := cfg.Telemetry.Metrics.Readers
 	if cfg.Telemetry.Metrics.Level == configtelemetry.LevelNone {
@@ -230,8 +230,7 @@ func logsAboutMeterProvider(logger *zap.Logger, cfg telemetry.MetricsConfig, mp 
 		return
 	}
 
-	//nolint:staticcheck
-	if len(cfg.Address) != 0 {
+	if len(cfg.Address) != 0 { //nolint SA1019
 		logger.Warn("service::telemetry::metrics::address is being deprecated in favor of service::telemetry::metrics::readers")
 	}
 
@@ -385,40 +384,133 @@ func pdataFromSdk(res *sdkresource.Resource) pcommon.Resource {
 	return pcommonRes
 }
 
-func disableHighCardinalityMetrics() []config.View {
-	var views []config.View
+func dropViewOption(selector *config.ViewSelector) config.View {
+	return config.View{
+		Selector: selector,
+		Stream: &config.ViewStream{
+			Aggregation: &config.ViewStreamAggregation{
+				Drop: config.ViewStreamAggregationDrop{},
+			},
+		},
+	}
+}
+
+func configureViews(level configtelemetry.Level) []config.View {
+	views := []config.View{}
+
 	if disableHighCardinalityMetricsFeatureGate.IsEnabled() {
-		return views
+		views = append(views, []config.View{
+			{
+				Selector: &config.ViewSelector{
+					MeterName: ptr("go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"),
+				},
+				Stream: &config.ViewStream{
+					AttributeKeys: &config.IncludeExclude{
+						Excluded: []string{
+							semconv118.AttributeNetSockPeerAddr,
+							semconv118.AttributeNetSockPeerPort,
+							semconv118.AttributeNetSockPeerName,
+						},
+					},
+				},
+			},
+			{
+				Selector: &config.ViewSelector{
+					MeterName: ptr("go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"),
+				},
+				Stream: &config.ViewStream{
+					AttributeKeys: &config.IncludeExclude{
+						Excluded: []string{
+							semconv118.AttributeNetHostName,
+							semconv118.AttributeNetHostPort,
+						},
+					},
+				},
+			},
+		}...)
 	}
-	return []config.View{
-		{
-			Selector: &config.ViewSelector{
+
+	if level < configtelemetry.LevelDetailed {
+		// Drop all otelhttp and otelgrpc metrics if the level is not detailed.
+		views = append(views,
+			dropViewOption(&config.ViewSelector{
 				MeterName: ptr("go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"),
-			},
-			Stream: &config.ViewStream{
-				AttributeKeys: &config.IncludeExclude{
-					Excluded: []string{
-						semconv118.AttributeNetSockPeerAddr,
-						semconv118.AttributeNetSockPeerPort,
-						semconv118.AttributeNetSockPeerName,
-					},
-				},
-			},
-		},
-		{
-			Selector: &config.ViewSelector{
+			}),
+			dropViewOption(&config.ViewSelector{
 				MeterName: ptr("go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"),
-			},
-			Stream: &config.ViewStream{
-				AttributeKeys: &config.IncludeExclude{
-					Excluded: []string{
-						semconv118.AttributeNetHostName,
-						semconv118.AttributeNetHostPort,
-					},
-				},
-			},
-		},
+			}),
+		)
 	}
+
+	// otel-arrow library metrics
+	// See https://github.com/open-telemetry/otel-arrow/blob/c39257/pkg/otel/arrow_record/consumer.go#L174-L176
+	if level < configtelemetry.LevelNormal {
+		scope := ptr("otel-arrow/pkg/otel/arrow_record")
+		views = append(views,
+			dropViewOption(&config.ViewSelector{
+				MeterName:      scope,
+				InstrumentName: ptr("arrow_batch_records"),
+			}),
+			dropViewOption(&config.ViewSelector{
+				MeterName:      scope,
+				InstrumentName: ptr("arrow_schema_resets"),
+			}),
+			dropViewOption(&config.ViewSelector{
+				MeterName:      scope,
+				InstrumentName: ptr("arrow_memory_inuse"),
+			}),
+		)
+	}
+
+	// contrib's internal/otelarrow/netstats metrics
+	// See
+	// - https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/a25f05/internal/otelarrow/netstats/netstats.go#L130
+	// - https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/a25f05/internal/otelarrow/netstats/netstats.go#L165
+	if level < configtelemetry.LevelDetailed {
+		scope := ptr("github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats")
+
+		views = append(views,
+			// Compressed size metrics.
+			dropViewOption(&config.ViewSelector{
+				MeterName:      scope,
+				InstrumentName: ptr("otelcol_*_compressed_size"),
+			}),
+			dropViewOption(&config.ViewSelector{
+				MeterName:      scope,
+				InstrumentName: ptr("otelcol_*_compressed_size"),
+			}),
+
+			// makeRecvMetrics for exporters.
+			dropViewOption(&config.ViewSelector{
+				MeterName:      scope,
+				InstrumentName: ptr("otelcol_exporter_recv"),
+			}),
+			dropViewOption(&config.ViewSelector{
+				MeterName:      scope,
+				InstrumentName: ptr("otelcol_exporter_recv_wire"),
+			}),
+
+			// makeSentMetrics for receivers.
+			dropViewOption(&config.ViewSelector{
+				MeterName:      scope,
+				InstrumentName: ptr("otelcol_receiver_sent"),
+			}),
+			dropViewOption(&config.ViewSelector{
+				MeterName:      scope,
+				InstrumentName: ptr("otelcol_receiver_sent_wire"),
+			}),
+		)
+	}
+
+	// Batch processor metrics
+	if level < configtelemetry.LevelDetailed {
+		scope := ptr("go.opentelemetry.io/collector/processor/batchprocessor")
+		views = append(views, dropViewOption(&config.ViewSelector{
+			MeterName:      scope,
+			InstrumentName: ptr("otelcol_processor_batch_batch_send_size_bytes"),
+		}))
+	}
+	return views
 }
 
 func ptr[T any](v T) *T {

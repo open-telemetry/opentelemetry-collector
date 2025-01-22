@@ -17,7 +17,6 @@ import (
 	config "go.opentelemetry.io/contrib/config/v0.3.0"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
@@ -215,17 +214,32 @@ func getMetricsFromPrometheus(t *testing.T, endpoint string) map[string]*io_prom
 // See https://pkg.go.dev/go.opentelemetry.io/otel/sdk/metric/internal/x#readme-instrument-enabled.
 func TestInstrumentEnabled(t *testing.T) {
 	prom := promtest.GetAvailableLocalAddressPrometheus(t)
-	set := meterProviderSettings{
-		res: sdkresource.Default(),
-		cfg: MetricsConfig{
+	cfg := Config{
+		Metrics: MetricsConfig{
 			Level: configtelemetry.LevelDetailed,
 			Readers: []config.MetricReader{{
-				Pull: &config.PullMetricReader{Exporter: config.MetricExporter{Prometheus: prom}},
+				Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: prom}},
 			}},
 		},
-		asyncErrorChannel: make(chan error),
 	}
-	meterProvider, err := newMeterProvider(set, false)
+	sdk, err := config.NewSDK(
+		config.WithContext(context.Background()),
+		config.WithOpenTelemetryConfiguration(config.OpenTelemetryConfiguration{
+			MeterProvider: &config.MeterProvider{
+				Readers: cfg.Metrics.Readers,
+			},
+			Resource: &config.Resource{
+				SchemaUrl: ptr(""),
+				Attributes: []config.AttributeNameValue{
+					{Name: semconv.AttributeServiceInstanceID, Value: testInstanceID},
+					{Name: semconv.AttributeServiceName, Value: "otelcol"},
+					{Name: semconv.AttributeServiceVersion, Value: "latest"},
+				},
+			},
+		}),
+	)
+	require.NoError(t, err)
+	meterProvider, err := newMeterProvider(Settings{SDK: &sdk}, cfg)
 	defer func() {
 		if prov, ok := meterProvider.(interface{ Shutdown(context.Context) error }); ok {
 			require.NoError(t, prov.Shutdown(context.Background()))
@@ -276,6 +290,8 @@ func TestInstrumentEnabled(t *testing.T) {
 	require.NoError(t, err)
 	_, ok = floatGauge.(enabledInstrument)
 	assert.True(t, ok, "Float64Gauge does not implement the experimental 'Enabled' method")
+}
+
 func ptr[T any](v T) *T {
 	return &v
 }

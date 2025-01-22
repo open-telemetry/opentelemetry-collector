@@ -68,14 +68,14 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 		return nil
 	}
 
-	if len(c.Metrics.Address) != 0 { // nolint SA1019
-		host, port, err := net.SplitHostPort(c.Metrics.Address) // nolint SA1019
+	if len(c.Metrics.Address) != 0 { //nolint SA1019
+		host, port, err := net.SplitHostPort(c.Metrics.Address) //nolint SA1019
 		if err != nil {
-			return fmt.Errorf("failing to parse metrics address %q: %w", c.Metrics.Address, err) // nolint SA1019
+			return fmt.Errorf("failing to parse metrics address %q: %w", c.Metrics.Address, err) //nolint SA1019
 		}
 		portInt, err := strconv.Atoi(port)
 		if err != nil {
-			return fmt.Errorf("failing to extract the port from the metrics address %q: %w", c.Metrics.Address, err) // nolint SA1019
+			return fmt.Errorf("failing to extract the port from the metrics address %q: %w", c.Metrics.Address, err) //nolint SA1019
 		}
 
 		// User did not overwrite readers, so we will remove the default configured reader.
