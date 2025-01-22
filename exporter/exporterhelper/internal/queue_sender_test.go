@@ -541,6 +541,7 @@ func TestQueueSenderNoStartShutdown(t *testing.T) {
 		t.Run(testName, func(t *testing.T) {
 			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
 			set := exportertest.NewNopSettings()
+			set.ID = exporterID
 			queue := exporterqueue.NewMemoryQueueFactory[internal.Request]()(
 				context.Background(),
 				exporterqueue.Settings{
@@ -549,8 +550,7 @@ func TestQueueSenderNoStartShutdown(t *testing.T) {
 				},
 				exporterqueue.NewDefaultConfig())
 			obsrep, err := NewExporter(ObsReportSettings{
-				ExporterID:             exporterID,
-				ExporterCreateSettings: set,
+				ExporterSettings: set,
 			})
 			require.NoError(t, err)
 			qs := NewQueueSender(queue, set, 1, "", obsrep, exporterbatcher.NewDefaultConfig())
