@@ -72,3 +72,23 @@ func TestLoadConfigAndValidate(t *testing.T) {
 
 	assert.Equal(t, cfg, cfgValidate)
 }
+
+func TestLoadConfigEnv(t *testing.T) {
+	factories, err := NopFactories()
+	require.NoError(t, err)
+
+	for _, tt := range []struct {
+		file string
+	}{
+		{file: filepath.Join("testdata", "config_env.yaml")},
+		{file: filepath.Join("testdata", "config_default_scheme.yaml")},
+	} {
+		t.Run(tt.file, func(t *testing.T) {
+			t.Setenv("RECEIVERS", "[nop]")
+			cfg, err := LoadConfigAndValidate(tt.file, factories)
+			require.NoError(t, err)
+
+			assert.Equal(t, []component.ID{component.MustNewID("nop")}, cfg.Service.Pipelines[pipeline.NewID(pipeline.SignalTraces)].Receivers)
+		})
+	}
+}

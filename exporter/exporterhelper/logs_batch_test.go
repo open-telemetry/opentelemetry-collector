@@ -17,16 +17,16 @@ import (
 )
 
 func TestMergeLogs(t *testing.T) {
-	lr1 := &logsRequest{ld: testdata.GenerateLogs(2)}
-	lr2 := &logsRequest{ld: testdata.GenerateLogs(3)}
+	lr1 := newLogsRequest(testdata.GenerateLogs(2), nil)
+	lr2 := newLogsRequest(testdata.GenerateLogs(3), nil)
 	res, err := lr1.MergeSplit(context.Background(), exporterbatcher.MaxSizeConfig{}, lr2)
 	require.NoError(t, err)
 	require.Equal(t, 5, res[0].(*logsRequest).ld.LogRecordCount())
 }
 
 func TestMergeLogsInvalidInput(t *testing.T) {
-	lr1 := &tracesRequest{td: testdata.GenerateTraces(2)}
-	lr2 := &logsRequest{ld: testdata.GenerateLogs(3)}
+	lr1 := newTracesRequest(testdata.GenerateTraces(2), nil)
+	lr2 := newLogsRequest(testdata.GenerateLogs(3), nil)
 	_, err := lr1.MergeSplit(context.Background(), exporterbatcher.MaxSizeConfig{}, lr2)
 	require.Error(t, err)
 }
@@ -42,78 +42,78 @@ func TestMergeSplitLogs(t *testing.T) {
 		{
 			name:     "both_requests_empty",
 			cfg:      exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
-			lr1:      &logsRequest{ld: plog.NewLogs()},
-			lr2:      &logsRequest{ld: plog.NewLogs()},
-			expected: []*logsRequest{{ld: plog.NewLogs()}},
+			lr1:      newLogsRequest(plog.NewLogs(), nil),
+			lr2:      newLogsRequest(plog.NewLogs(), nil),
+			expected: []*logsRequest{newLogsRequest(plog.NewLogs(), nil).(*logsRequest)},
 		},
 		{
 			name:     "first_request_empty",
 			cfg:      exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
-			lr1:      &logsRequest{ld: plog.NewLogs()},
-			lr2:      &logsRequest{ld: testdata.GenerateLogs(5)},
-			expected: []*logsRequest{{ld: testdata.GenerateLogs(5)}},
+			lr1:      newLogsRequest(plog.NewLogs(), nil),
+			lr2:      newLogsRequest(testdata.GenerateLogs(5), nil),
+			expected: []*logsRequest{newLogsRequest(testdata.GenerateLogs(5), nil).(*logsRequest)},
 		},
 		{
 			name:     "first_empty_second_nil",
 			cfg:      exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
-			lr1:      &logsRequest{ld: plog.NewLogs()},
+			lr1:      newLogsRequest(plog.NewLogs(), nil),
 			lr2:      nil,
-			expected: []*logsRequest{{ld: plog.NewLogs()}},
+			expected: []*logsRequest{newLogsRequest(plog.NewLogs(), nil).(*logsRequest)},
 		},
 		{
 			name: "merge_only",
 			cfg:  exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
-			lr1:  &logsRequest{ld: testdata.GenerateLogs(4)},
-			lr2:  &logsRequest{ld: testdata.GenerateLogs(6)},
-			expected: []*logsRequest{{ld: func() plog.Logs {
+			lr1:  newLogsRequest(testdata.GenerateLogs(4), nil),
+			lr2:  newLogsRequest(testdata.GenerateLogs(6), nil),
+			expected: []*logsRequest{newLogsRequest(func() plog.Logs {
 				logs := testdata.GenerateLogs(4)
 				testdata.GenerateLogs(6).ResourceLogs().MoveAndAppendTo(logs.ResourceLogs())
 				return logs
-			}()}},
+			}(), nil).(*logsRequest)},
 		},
 		{
 			name: "split_only",
 			cfg:  exporterbatcher.MaxSizeConfig{MaxSizeItems: 4},
-			lr1:  &logsRequest{ld: plog.NewLogs()},
-			lr2:  &logsRequest{ld: testdata.GenerateLogs(10)},
+			lr1:  newLogsRequest(plog.NewLogs(), nil),
+			lr2:  newLogsRequest(testdata.GenerateLogs(10), nil),
 			expected: []*logsRequest{
-				{ld: testdata.GenerateLogs(4)},
-				{ld: testdata.GenerateLogs(4)},
-				{ld: testdata.GenerateLogs(2)},
+				newLogsRequest(testdata.GenerateLogs(4), nil).(*logsRequest),
+				newLogsRequest(testdata.GenerateLogs(4), nil).(*logsRequest),
+				newLogsRequest(testdata.GenerateLogs(2), nil).(*logsRequest),
 			},
 		},
 		{
 			name: "merge_and_split",
 			cfg:  exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
-			lr1:  &logsRequest{ld: testdata.GenerateLogs(8)},
-			lr2:  &logsRequest{ld: testdata.GenerateLogs(20)},
+			lr1:  newLogsRequest(testdata.GenerateLogs(8), nil),
+			lr2:  newLogsRequest(testdata.GenerateLogs(20), nil),
 			expected: []*logsRequest{
-				{ld: func() plog.Logs {
+				newLogsRequest(func() plog.Logs {
 					logs := testdata.GenerateLogs(8)
 					testdata.GenerateLogs(2).ResourceLogs().MoveAndAppendTo(logs.ResourceLogs())
 					return logs
-				}()},
-				{ld: testdata.GenerateLogs(10)},
-				{ld: testdata.GenerateLogs(8)},
+				}(), nil).(*logsRequest),
+				newLogsRequest(testdata.GenerateLogs(10), nil).(*logsRequest),
+				newLogsRequest(testdata.GenerateLogs(8), nil).(*logsRequest),
 			},
 		},
 		{
 			name: "scope_logs_split",
 			cfg:  exporterbatcher.MaxSizeConfig{MaxSizeItems: 4},
-			lr1: &logsRequest{ld: func() plog.Logs {
+			lr1: newLogsRequest(func() plog.Logs {
 				ld := testdata.GenerateLogs(4)
 				ld.ResourceLogs().At(0).ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("extra log")
 				return ld
-			}()},
-			lr2: &logsRequest{ld: testdata.GenerateLogs(2)},
+			}(), nil),
+			lr2: newLogsRequest(testdata.GenerateLogs(2), nil),
 			expected: []*logsRequest{
-				{ld: testdata.GenerateLogs(4)},
-				{ld: func() plog.Logs {
+				newLogsRequest(testdata.GenerateLogs(4), nil).(*logsRequest),
+				newLogsRequest(func() plog.Logs {
 					ld := testdata.GenerateLogs(0)
 					ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().AppendEmpty().Body().SetStr("extra log")
 					testdata.GenerateLogs(2).ResourceLogs().MoveAndAppendTo(ld.ResourceLogs())
 					return ld
-				}()},
+				}(), nil).(*logsRequest),
 			},
 		},
 	}
@@ -130,16 +130,16 @@ func TestMergeSplitLogs(t *testing.T) {
 }
 
 func TestMergeSplitLogsInputNotModifiedIfErrorReturned(t *testing.T) {
-	r1 := &logsRequest{ld: testdata.GenerateLogs(18)}
-	r2 := &tracesRequest{td: testdata.GenerateTraces(3)}
+	r1 := newLogsRequest(testdata.GenerateLogs(18), nil)
+	r2 := newTracesRequest(testdata.GenerateTraces(3), nil)
 	_, err := r1.MergeSplit(context.Background(), exporterbatcher.MaxSizeConfig{MaxSizeItems: 10}, r2)
 	require.Error(t, err)
 	assert.Equal(t, 18, r1.ItemsCount())
 }
 
 func TestMergeSplitLogsInvalidInput(t *testing.T) {
-	r1 := &tracesRequest{td: testdata.GenerateTraces(2)}
-	r2 := &logsRequest{ld: testdata.GenerateLogs(3)}
+	r1 := newTracesRequest(testdata.GenerateTraces(2), nil)
+	r2 := newLogsRequest(testdata.GenerateLogs(3), nil)
 	_, err := r1.MergeSplit(context.Background(), exporterbatcher.MaxSizeConfig{}, r2)
 	require.Error(t, err)
 }

@@ -28,9 +28,9 @@ type Queue[T any] interface {
 	// It returns ErrQueueIsFull if no space is currently available.
 	Offer(ctx context.Context, item T) error
 	// Size returns the current Size of the queue
-	Size() int
+	Size() int64
 	// Capacity returns the capacity of the queue.
-	Capacity() int
+	Capacity() int64
 	// Read pulls the next available item from the queue along with its index. Once processing is
 	// finished, the index should be called with OnProcessingFinished to clean up the storage.
 	// The function blocks until an item is available or if the queue is stopped.
@@ -69,6 +69,7 @@ func NewMemoryQueueFactory[T any]() Factory[T] {
 		return newBoundedMemoryQueue[T](memoryQueueSettings[T]{
 			sizer:    &requestSizer[T]{},
 			capacity: int64(cfg.QueueSize),
+			blocking: cfg.Blocking,
 		})
 	}
 }
@@ -95,6 +96,7 @@ func NewPersistentQueueFactory[T any](storageID *component.ID, factorySettings P
 		return newPersistentQueue[T](persistentQueueSettings[T]{
 			sizer:       &requestSizer[T]{},
 			capacity:    int64(cfg.QueueSize),
+			blocking:    cfg.Blocking,
 			signal:      set.Signal,
 			storageID:   *storageID,
 			marshaler:   factorySettings.Marshaler,

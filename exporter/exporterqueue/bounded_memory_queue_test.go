@@ -33,15 +33,15 @@ func TestBoundedQueue(t *testing.T) {
 		return nil
 	}))
 	assert.Equal(t, 1, numConsumed)
-	assert.Equal(t, 0, q.Size())
+	assert.Equal(t, int64(0), q.Size())
 
 	// produce two more items. The first one should be accepted, but not consumed.
 	require.NoError(t, q.Offer(context.Background(), "b"))
-	assert.Equal(t, 1, q.Size())
+	assert.Equal(t, int64(1), q.Size())
 
 	// the second should be rejected since the queue is full
 	require.ErrorIs(t, q.Offer(context.Background(), "c"), ErrQueueIsFull)
-	assert.Equal(t, 1, q.Size())
+	assert.Equal(t, int64(1), q.Size())
 
 	assert.True(t, consume(q, func(_ context.Context, item string) error {
 		assert.Equal(t, "b", item)
@@ -80,7 +80,7 @@ func TestShutdownWhileNotEmpty(t *testing.T) {
 	}
 	assert.NoError(t, q.Shutdown(context.Background()))
 
-	assert.Equal(t, 10, q.Size())
+	assert.Equal(t, int64(10), q.Size())
 	numConsumed := 0
 	for i := 0; i < 10; i++ {
 		assert.True(t, consume(q, func(_ context.Context, item string) error {
@@ -90,61 +90,85 @@ func TestShutdownWhileNotEmpty(t *testing.T) {
 		}))
 	}
 	assert.Equal(t, 10, numConsumed)
-	assert.Equal(t, 0, q.Size())
+	assert.Equal(t, int64(0), q.Size())
 
 	assert.False(t, consume(q, func(_ context.Context, item string) error {
 		panic(item)
 	}))
 }
 
-func Benchmark_QueueUsage_1000_requests(b *testing.B) {
-	benchmarkQueueUsage(b, &requestSizer[fakeReq]{}, 1000)
-}
-
-func Benchmark_QueueUsage_100000_requests(b *testing.B) {
-	benchmarkQueueUsage(b, &requestSizer[fakeReq]{}, 100000)
-}
-
-func Benchmark_QueueUsage_10000_items(b *testing.B) {
-	// each request has 10 items: 1000 requests = 10000 items
-	benchmarkQueueUsage(b, &itemsSizer[fakeReq]{}, 1000)
-}
-
-func Benchmark_QueueUsage_1M_items(b *testing.B) {
-	// each request has 10 items: 100000 requests = 1M items
-	benchmarkQueueUsage(b, &itemsSizer[fakeReq]{}, 100000)
-}
-
 func TestQueueUsage(t *testing.T) {
-	t.Run("requests_based", func(t *testing.T) {
-		queueUsage(t, &requestSizer[fakeReq]{}, 10)
-	})
-	t.Run("items_based", func(t *testing.T) {
-		queueUsage(t, &itemsSizer[fakeReq]{}, 10)
-	})
-}
-
-func benchmarkQueueUsage(b *testing.B, sizer sizer[fakeReq], requestsCount int) {
-	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
-		queueUsage(b, sizer, requestsCount)
+	tests := []struct {
+		name  string
+		sizer sizer[uint64]
+	}{
+		{
+			name:  "requests_based",
+			sizer: &requestSizer[uint64]{},
+		},
+		{
+			name:  "items_based",
+			sizer: &itemsSizer{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			q := newBoundedMemoryQueue[uint64](memoryQueueSettings[uint64]{sizer: tt.sizer, capacity: int64(100)})
+			consumed := &atomic.Int64{}
+			require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
+			ac := newAsyncConsumer(q, 1, func(context.Context, uint64) error {
+				consumed.Add(1)
+				return nil
+			})
+			for j := 0; j < 10; j++ {
+				require.NoError(t, q.Offer(context.Background(), uint64(10)))
+			}
+			assert.NoError(t, q.Shutdown(context.Background()))
+			assert.NoError(t, ac.Shutdown(context.Background()))
+			assert.Equal(t, int64(10), consumed.Load())
+		})
 	}
 }
 
-func queueUsage(tb testing.TB, sizer sizer[fakeReq], requestsCount int) {
-	q := newBoundedMemoryQueue[fakeReq](memoryQueueSettings[fakeReq]{sizer: sizer, capacity: int64(10 * requestsCount)})
-	consumed := &atomic.Int64{}
-	require.NoError(tb, q.Start(context.Background(), componenttest.NewNopHost()))
-	ac := newAsyncConsumer(q, 1, func(context.Context, fakeReq) error {
-		consumed.Add(1)
-		return nil
-	})
-	for j := 0; j < requestsCount; j++ {
-		require.NoError(tb, q.Offer(context.Background(), fakeReq{10}))
+func TestBlockingQueueUsage(t *testing.T) {
+	tests := []struct {
+		name  string
+		sizer sizer[uint64]
+	}{
+		{
+			name:  "requests_based",
+			sizer: &requestSizer[uint64]{},
+		},
+		{
+			name:  "items_based",
+			sizer: &itemsSizer{},
+		},
 	}
-	assert.NoError(tb, q.Shutdown(context.Background()))
-	assert.NoError(tb, ac.Shutdown(context.Background()))
-	assert.Equal(tb, int64(requestsCount), consumed.Load())
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			q := newBoundedMemoryQueue[uint64](memoryQueueSettings[uint64]{sizer: tt.sizer, capacity: int64(100), blocking: true})
+			consumed := &atomic.Int64{}
+			require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
+			ac := newAsyncConsumer(q, 10, func(context.Context, uint64) error {
+				consumed.Add(1)
+				return nil
+			})
+			wg := &sync.WaitGroup{}
+			for i := 0; i < 10; i++ {
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					for j := 0; j < 100_000; j++ {
+						assert.NoError(t, q.Offer(context.Background(), uint64(10)))
+					}
+				}()
+			}
+			wg.Wait()
+			assert.NoError(t, q.Shutdown(context.Background()))
+			assert.NoError(t, ac.Shutdown(context.Background()))
+			assert.Equal(t, int64(1_000_000), consumed.Load())
+		})
+	}
 }
 
 func TestZeroSizeNoConsumers(t *testing.T) {
@@ -158,21 +182,12 @@ func TestZeroSizeNoConsumers(t *testing.T) {
 	assert.NoError(t, q.Shutdown(context.Background()))
 }
 
-type fakeReq struct {
-	itemsCount int
-}
-
-func (r fakeReq) ItemsCount() int {
-	return r.itemsCount
-}
-
 func consume[T any](q Queue[T], consumeFunc func(context.Context, T) error) bool {
 	index, ctx, req, ok := q.Read(context.Background())
 	if !ok {
 		return false
 	}
-	consumeErr := consumeFunc(ctx, req)
-	q.OnProcessingFinished(index, consumeErr)
+	q.OnProcessingFinished(index, consumeFunc(ctx, req))
 	return true
 }
 
@@ -192,8 +207,7 @@ func newAsyncConsumer[T any](q Queue[T], numConsumers int, consumeFunc func(cont
 				if !ok {
 					return
 				}
-				consumeErr := consumeFunc(ctx, req)
-				q.OnProcessingFinished(index, consumeErr)
+				q.OnProcessingFinished(index, consumeFunc(ctx, req))
 			}
 		}()
 	}
@@ -204,4 +218,39 @@ func newAsyncConsumer[T any](q Queue[T], numConsumers int, consumeFunc func(cont
 func (qc *asyncConsumer) Shutdown(_ context.Context) error {
 	qc.stopWG.Wait()
 	return nil
+}
+
+func BenchmarkOffer(b *testing.B) {
+	tests := []struct {
+		name  string
+		sizer sizer[uint64]
+	}{
+		{
+			name:  "requests_based",
+			sizer: &requestSizer[uint64]{},
+		},
+		{
+			name:  "items_based",
+			sizer: &itemsSizer{},
+		},
+	}
+	for _, tt := range tests {
+		b.Run(tt.name, func(b *testing.B) {
+			q := newBoundedMemoryQueue[uint64](memoryQueueSettings[uint64]{sizer: &requestSizer[uint64]{}, capacity: int64(10 * b.N)})
+			consumed := &atomic.Int64{}
+			require.NoError(b, q.Start(context.Background(), componenttest.NewNopHost()))
+			ac := newAsyncConsumer(q, 1, func(context.Context, uint64) error {
+				consumed.Add(1)
+				return nil
+			})
+			b.ResetTimer()
+			b.ReportAllocs()
+			for j := 0; j < b.N; j++ {
+				require.NoError(b, q.Offer(context.Background(), uint64(10)))
+			}
+			assert.NoError(b, q.Shutdown(context.Background()))
+			assert.NoError(b, ac.Shutdown(context.Background()))
+			assert.Equal(b, int64(b.N), consumed.Load())
+		})
+	}
 }

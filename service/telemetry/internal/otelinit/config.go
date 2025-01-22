@@ -239,7 +239,6 @@ func initOTLPgRPCExporter(ctx context.Context, otlpConfig *config.OTLPMetric) (s
 		case "gzip":
 			opts = append(opts, otlpmetricgrpc.WithCompressor(*otlpConfig.Compression))
 		case "none":
-			break
 		default:
 			return nil, fmt.Errorf("unsupported compression %q", *otlpConfig.Compression)
 		}
