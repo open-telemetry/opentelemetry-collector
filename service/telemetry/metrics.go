@@ -75,6 +75,73 @@ func newMeterProvider(set meterProviderSettings, disableHighCardinality bool) (m
 		))
 	}
 
+	// otel-arrow library metrics
+	// See https://github.com/open-telemetry/otel-arrow/blob/c39257/pkg/otel/arrow_record/consumer.go#L174-L176
+	if set.cfg.Level < configtelemetry.LevelNormal {
+		scope := instrumentation.Scope{Name: "otel-arrow/pkg/otel/arrow_record"}
+		opts = append(opts,
+			dropViewOption(sdkmetric.Instrument{
+				Name:  "arrow_batch_records",
+				Scope: scope,
+			}),
+			dropViewOption(sdkmetric.Instrument{
+				Name:  "arrow_schema_resets",
+				Scope: scope,
+			}),
+			dropViewOption(sdkmetric.Instrument{
+				Name:  "arrow_memory_inuse",
+				Scope: scope,
+			}),
+		)
+	}
+
+	// contrib's internal/otelarrow/netstats metrics
+	// See
+	// - https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/a25f05/internal/otelarrow/netstats/netstats.go#L130
+	// - https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/a25f05/internal/otelarrow/netstats/netstats.go#L165
+	if set.cfg.Level < configtelemetry.LevelDetailed {
+		scope := instrumentation.Scope{Name: "github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats"}
+		// Compressed size metrics.
+		opts = append(opts, dropViewOption(sdkmetric.Instrument{
+			Name:  "otelcol_*_compressed_size",
+			Scope: scope,
+		}))
+
+		opts = append(opts, dropViewOption(sdkmetric.Instrument{
+			Name:  "otelcol_*_compressed_size",
+			Scope: scope,
+		}))
+
+		// makeRecvMetrics for exporters.
+		opts = append(opts, dropViewOption(sdkmetric.Instrument{
+			Name:  "otelcol_exporter_recv",
+			Scope: scope,
+		}))
+		opts = append(opts, dropViewOption(sdkmetric.Instrument{
+			Name:  "otelcol_exporter_recv_wire",
+			Scope: scope,
+		}))
+
+		// makeSentMetrics for receivers.
+		opts = append(opts, dropViewOption(sdkmetric.Instrument{
+			Name:  "otelcol_receiver_sent",
+			Scope: scope,
+		}))
+		opts = append(opts, dropViewOption(sdkmetric.Instrument{
+			Name:  "otelcol_receiver_sent_wire",
+			Scope: scope,
+		}))
+	}
+
+	// Batch processor metrics
+	if set.cfg.Level < configtelemetry.LevelDetailed {
+		scope := instrumentation.Scope{Name: "go.opentelemetry.io/collector/processor/batchprocessor"}
+		opts = append(opts, dropViewOption(sdkmetric.Instrument{
+			Name:  "otelcol_processor_batch_batch_send_size_bytes",
+			Scope: scope,
+		}))
+	}
+
 	var err error
 	mp.MeterProvider, err = otelinit.InitOpenTelemetry(set.res, opts, disableHighCardinality)
 	if err != nil {
