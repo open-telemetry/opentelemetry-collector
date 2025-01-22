@@ -20,8 +20,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/internal/queue"
 )
 
-const defaultQueueSize = 1000
-
 // QueueConfig defines configuration for queueing batches before sending to the consumerSender.
 type QueueConfig struct {
 	// Enabled indicates whether to not enqueue batches before sending to the consumerSender.
@@ -32,6 +30,9 @@ type QueueConfig struct {
 	NumConsumers int `mapstructure:"num_consumers"`
 	// QueueSize is the maximum number of batches allowed in queue at a given time.
 	QueueSize int `mapstructure:"queue_size"`
+	// Blocking controls the queue behavior when full.
+	// If true it blocks until enough space to add the new request to the queue.
+	Blocking bool `mapstructure:"blocking"`
 	// StorageID if not empty, enables the persistent storage and uses the component specified
 	// as a storage extension for the persistent queue
 	StorageID *component.ID `mapstructure:"storage"`
@@ -45,7 +46,8 @@ func NewDefaultQueueConfig() QueueConfig {
 		// By default, batches are 8192 spans, for a total of up to 8 million spans in the queue
 		// This can be estimated at 1-4 GB worth of maximum memory usage
 		// This default is probably still too high, and may be adjusted further down in a future release
-		QueueSize: defaultQueueSize,
+		QueueSize: 1_000,
+		Blocking:  false,
 	}
 }
 
@@ -56,18 +58,18 @@ func (qCfg *QueueConfig) Validate() error {
 	}
 
 	if qCfg.QueueSize <= 0 {
-		return errors.New("queue size must be positive")
+		return errors.New("`queue_size` must be positive")
 	}
 
 	if qCfg.NumConsumers <= 0 {
-		return errors.New("number of queue consumers must be positive")
+		return errors.New("`num_consumers` must be positive")
 	}
 
 	return nil
 }
 
 type QueueSender struct {
-	BaseRequestSender
+	BaseSender[internal.Request]
 	queue          exporterqueue.Queue[internal.Request]
 	numConsumers   int
 	traceAttribute attribute.KeyValue
@@ -131,7 +133,7 @@ func (qs *QueueSender) Start(ctx context.Context, host component.Host) error {
 
 	dataTypeAttr := attribute.String(DataTypeKey, qs.obsrep.Signal.String())
 
-	reg1, err1 := qs.obsrep.TelemetryBuilder.InitExporterQueueSize(func() int64 { return int64(qs.queue.Size()) },
+	reg1, err1 := qs.obsrep.TelemetryBuilder.InitExporterQueueSize(func() int64 { return qs.queue.Size() },
 		metric.WithAttributeSet(attribute.NewSet(qs.traceAttribute, dataTypeAttr)))
 
 	if reg1 != nil {
@@ -140,7 +142,7 @@ func (qs *QueueSender) Start(ctx context.Context, host component.Host) error {
 		})
 	}
 
-	reg2, err2 := qs.obsrep.TelemetryBuilder.InitExporterQueueCapacity(func() int64 { return int64(qs.queue.Capacity()) },
+	reg2, err2 := qs.obsrep.TelemetryBuilder.InitExporterQueueCapacity(func() int64 { return qs.queue.Capacity() },
 		metric.WithAttributeSet(attribute.NewSet(qs.traceAttribute)))
 
 	if reg2 != nil {

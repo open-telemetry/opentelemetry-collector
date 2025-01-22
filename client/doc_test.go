@@ -15,7 +15,7 @@ import (
 
 func Example_receiver() {
 	// Your receiver get a next consumer when it's constructed
-	next, err := consumer.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
+	next, err := consumer.NewTraces(func(_ context.Context, _ ptrace.Traces) error {
 		return nil
 	})
 	if err != nil {
@@ -35,7 +35,7 @@ func Example_receiver() {
 
 	// Extract the client information based on your original context and set it
 	// to Addr
-	// nolint
+	//nolint:govet
 	cl.Addr = &net.IPAddr{
 		IP: net.IPv4(1, 2, 3, 4),
 	}

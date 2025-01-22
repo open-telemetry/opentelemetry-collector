@@ -25,6 +25,7 @@ func LoadConfig(fileName string, factories otelcol.Factories) (*otelcol.Config, 
 				yamlprovider.NewFactory(),
 				httpprovider.NewFactory(),
 			},
+			DefaultScheme: "env",
 		},
 	})
 	if err != nil {

@@ -6,46 +6,86 @@
 package proctelemetry
 
 import (
-	"fmt"
-	"strings"
 	"testing"
-	"time"
 
-	io_prometheus_client "github.com/prometheus/client_model/go"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+
+	"go.opentelemetry.io/collector/service/internal/metadatatest"
 )
 
 func TestProcessTelemetryWithHostProc(t *testing.T) {
-	tel := setupTelemetry(t)
 	// Make the sure the environment variable value is not used.
 	t.Setenv("HOST_PROC", "foo/bar")
-
-	require.NoError(t, RegisterProcessMetrics(tel.TelemetrySettings, WithHostProc("/proc")))
-
-	// Check that the metrics are actually filled.
-	time.Sleep(200 * time.Millisecond)
-
-	mp, err := fetchPrometheusMetrics(tel.promHandler)
-	require.NoError(t, err)
-
-	for _, metricName := range expectedMetrics {
-		metric, ok := mp[metricName]
-		require.True(t, ok)
-		require.Len(t, metric.Metric, 1)
-		var metricValue float64
-		if metric.GetType() == io_prometheus_client.MetricType_COUNTER {
-			metricValue = metric.Metric[0].GetCounter().GetValue()
-		} else {
-			metricValue = metric.Metric[0].GetGauge().GetValue()
-		}
-		if strings.HasPrefix(metricName, "otelcol_process_uptime") || strings.HasPrefix(metricName, "otelcol_process_cpu_seconds") {
-			// This likely will still be zero when running the test.
-			assert.GreaterOrEqual(t, metricValue, float64(0), metricName)
-			continue
-		}
-
-		fmt.Println(metricName)
-		assert.Greater(t, metricValue, float64(0), metricName)
-	}
+	tel := metadatatest.SetupTelemetry()
+	require.NoError(t, RegisterProcessMetrics(tel.NewTelemetrySettings(), WithHostProc("/proc")))
+	tel.AssertMetrics(t, []metricdata.Metrics{
+		{
+			Name:        "otelcol_process_uptime",
+			Description: "Uptime of the process [alpha]",
+			Unit:        "s",
+			Data: metricdata.Sum[float64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[float64]{
+					{},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_process_runtime_heap_alloc_bytes",
+			Description: "Bytes of allocated heap objects (see 'go doc runtime.MemStats.HeapAlloc') [alpha]",
+			Unit:        "By",
+			Data: metricdata.Gauge[int64]{
+				DataPoints: []metricdata.DataPoint[int64]{
+					{},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_process_runtime_total_alloc_bytes",
+			Description: "Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc') [alpha]",
+			Unit:        "By",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_process_runtime_total_sys_memory_bytes",
+			Description: "Total bytes of memory obtained from the OS (see 'go doc runtime.MemStats.Sys') [alpha]",
+			Unit:        "By",
+			Data: metricdata.Gauge[int64]{
+				DataPoints: []metricdata.DataPoint[int64]{
+					{},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_process_cpu_seconds",
+			Description: "Total CPU user and system time in seconds [alpha]",
+			Unit:        "s",
+			Data: metricdata.Sum[float64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[float64]{
+					{},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_process_memory_rss",
+			Description: "Total physical memory (resident set size) [alpha]",
+			Unit:        "By",
+			Data: metricdata.Gauge[int64]{
+				DataPoints: []metricdata.DataPoint[int64]{
+					{},
+				},
+			},
+		},
+	}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
 }

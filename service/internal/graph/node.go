@@ -17,6 +17,6 @@ func (n nodeID) ID() int64 {
 func newNodeID(parts ...string) nodeID {
 	h := fnv.New64a()
 	h.Write([]byte(strings.Join(parts, "|")))
-	// nolint:gosec
+	//nolint:gosec
 	return nodeID(h.Sum64())
 }
