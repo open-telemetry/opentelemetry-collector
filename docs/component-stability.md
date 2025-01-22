@@ -2,10 +2,12 @@
 
 ## Stability levels
 
-The collector components and implementation are in different stages of stability, and usually split between
-functionality and configuration. The status for each component is available in the README file for the component. While
-we intend to provide high-quality components as part of this repository, we acknowledge that not all of them are ready
-for prime time. As such, each component should list its current stability level for each telemetry signal, according to
+The Collector components and implementation are in different stages of stability, and usually split between
+functionality and configuration. While we intend to provide high-quality components as part of this repository,
+we acknowledge that not all of them are ready for prime time. Moreover, the stability of components that can
+handle multiple signals can depend on the signal in question.
+
+As such, each component should list its current stability level for each telemetry signal in its README file, according to
 the following definitions:
 
 ### Development
@@ -220,9 +222,9 @@ To move within the 'Maintained' ladder ("graduate"), the process for doing so is
 
 ## Versioning
 
-Components are Go modules and as such follow [semantic versioning](https://semver.org/). Go API stability guarantees are covered in the [VERSIONING.md](../VERSIONING.md) document.
-The versioning of the components applies to all signals simultaneously. For a component to be marked as 1.x it MUST be stable for at least one signal.
-
+For a component to be marked as 1.x it MUST be stable for at least one signal.
 Even if a component has a 1.x or greater version, its behavior for specific signals might change in ways that break end users if the component is not stable for a particular signal.
-Go API stability guarantees apply to ALL signals, regardless of their stability level. 
-This means that signal-specific configuration options MUST NOT be removed or changed in a way that breaks our Go API compatibility promise, even if the signal is not stable.
+
+However, components are Go modules and as such follow [semantic versioning](https://semver.org/). Go API stability guarantees are covered in the [VERSIONING.md](../VERSIONING.md) document.
+The versioning of a component, and the Go API stability guarantees that come with it, apply to ALL signals simultaneously, regardless of their stability level.
+This means that, once a component is marked as 1.x, signal-specific configuration options MUST NOT be removed or changed in a way that breaks our Go API compatibility promise, even if the signal is not stable.
