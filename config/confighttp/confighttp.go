@@ -30,7 +30,6 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
-	configinternal "go.opentelemetry.io/collector/config/internal"
 	"go.opentelemetry.io/collector/extension/auth"
 )
 
@@ -74,6 +73,9 @@ type ClientConfig struct {
 
 	// The compression key for supported compression types within collector.
 	Compression configcompression.Type `mapstructure:"compression"`
+
+	// Advanced configuration options for the Compression
+	CompressionParams configcompression.CompressionParams `mapstructure:"compression_params"`
 
 	// MaxIdleConns is used to set a limit to the maximum idle HTTP connections the client can keep open.
 	// By default, it is set to 100.
@@ -136,6 +138,15 @@ func NewDefaultClientConfig() ClientConfig {
 		MaxConnsPerHost:     &defaultTransport.MaxConnsPerHost,
 		IdleConnTimeout:     &defaultTransport.IdleConnTimeout,
 	}
+}
+
+func (hcs *ClientConfig) Validate() error {
+	if hcs.Compression.IsCompressed() {
+		if err := hcs.Compression.ValidateParams(hcs.CompressionParams); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // ToClient creates an HTTP client.
@@ -223,7 +234,11 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 	// Compress the body using specified compression methods if non-empty string is provided.
 	// Supporting gzip, zlib, deflate, snappy, and zstd; none is treated as uncompressed.
 	if hcs.Compression.IsCompressed() {
-		clientTransport, err = newCompressRoundTripper(clientTransport, hcs.Compression)
+		// If the compression level is not set, use the default level.
+		if hcs.CompressionParams.Level == 0 {
+			hcs.CompressionParams.Level = configcompression.DefaultCompressionLevel
+		}
+		clientTransport, err = newCompressRoundTripper(clientTransport, hcs.Compression, hcs.CompressionParams)
 		if err != nil {
 			return nil, err
 		}
@@ -407,8 +422,6 @@ func WithDecoder(key string, dec func(body io.ReadCloser) (io.ReadCloser, error)
 
 // ToServer creates an http.Server from settings object.
 func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
-	configinternal.WarnOnUnspecifiedHost(settings.Logger, hss.Endpoint)
-
 	serverOpts := &toServerOptions{}
 	serverOpts.Apply(opts...)
 

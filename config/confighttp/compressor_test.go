@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/klauspost/compress/zstd"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/config/configcompression"
 )
@@ -66,9 +67,7 @@ func benchmarkCompression(b *testing.B, _ configcompression.Type, buf *bytes.Buf
 			enc, _ = zstd.NewWriter(nil, zstd.WithEncoderConcurrency(5))
 			enc.(writeCloserReset).Reset(buf)
 			_, copyErr := io.Copy(enc, stringReadCloser)
-			if copyErr != nil {
-				b.Fatal(copyErr)
-			}
+			require.NoError(b, copyErr)
 		}
 	})
 }
@@ -87,9 +86,7 @@ func benchmarkCompressionNoConcurrency(b *testing.B, _ configcompression.Type, b
 			enc, _ = zstd.NewWriter(nil, zstd.WithEncoderConcurrency(1))
 			enc.(writeCloserReset).Reset(buf)
 			_, copyErr := io.Copy(enc, stringReadCloser)
-			if copyErr != nil {
-				b.Fatal(copyErr)
-			}
+			require.NoError(b, copyErr)
 		}
 	})
 }

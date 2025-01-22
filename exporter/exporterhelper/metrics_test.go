@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/exporter/internal/queue"
+	"go.opentelemetry.io/collector/exporter/internal/storagetest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
@@ -170,7 +170,7 @@ func TestMetrics_WithPersistentQueue(t *testing.T) {
 	require.NoError(t, err)
 
 	host := &internal.MockHost{Ext: map[component.ID]component.Component{
-		storageID: queue.NewMockStorageExtension(nil),
+		storageID: storagetest.NewMockStorageExtension(nil),
 	}}
 	require.NoError(t, te.Start(context.Background(), host))
 	t.Cleanup(func() { require.NoError(t, te.Shutdown(context.Background())) })
@@ -286,7 +286,7 @@ func TestMetrics_WithSpan(t *testing.T) {
 	me, err := NewMetrics(context.Background(), set, &fakeMetricsConfig, newPushMetricsData(nil))
 	require.NoError(t, err)
 	require.NotNil(t, me)
-	checkWrapSpanForMetrics(t, sr, set.TracerProvider.Tracer("test"), me, nil, 2)
+	checkWrapSpanForMetrics(t, sr, set.TracerProvider.Tracer("test"), me, nil)
 }
 
 func TestMetricsRequest_WithSpan(t *testing.T) {
@@ -299,7 +299,7 @@ func TestMetricsRequest_WithSpan(t *testing.T) {
 	me, err := NewMetricsRequest(context.Background(), set, internal.RequestFromMetricsFunc(nil))
 	require.NoError(t, err)
 	require.NotNil(t, me)
-	checkWrapSpanForMetrics(t, sr, set.TracerProvider.Tracer("test"), me, nil, 2)
+	checkWrapSpanForMetrics(t, sr, set.TracerProvider.Tracer("test"), me, nil)
 }
 
 func TestMetrics_WithSpan_ReturnError(t *testing.T) {
@@ -313,7 +313,7 @@ func TestMetrics_WithSpan_ReturnError(t *testing.T) {
 	me, err := NewMetrics(context.Background(), set, &fakeMetricsConfig, newPushMetricsData(want))
 	require.NoError(t, err)
 	require.NotNil(t, me)
-	checkWrapSpanForMetrics(t, sr, set.TracerProvider.Tracer("test"), me, want, 2)
+	checkWrapSpanForMetrics(t, sr, set.TracerProvider.Tracer("test"), me, want)
 }
 
 func TestMetricsRequest_WithSpan_ExportError(t *testing.T) {
@@ -327,7 +327,7 @@ func TestMetricsRequest_WithSpan_ExportError(t *testing.T) {
 	me, err := NewMetricsRequest(context.Background(), set, internal.RequestFromMetricsFunc(want))
 	require.NoError(t, err)
 	require.NotNil(t, me)
-	checkWrapSpanForMetrics(t, sr, set.TracerProvider.Tracer("test"), me, want, 2)
+	checkWrapSpanForMetrics(t, sr, set.TracerProvider.Tracer("test"), me, want)
 }
 
 func TestMetrics_WithShutdown(t *testing.T) {
@@ -420,10 +420,7 @@ func generateMetricsTraffic(t *testing.T, tracer trace.Tracer, me exporter.Metri
 	}
 }
 
-// nolint: unparam
-func checkWrapSpanForMetrics(t *testing.T, sr *tracetest.SpanRecorder, tracer trace.Tracer,
-	me exporter.Metrics, wantError error, numMetricPoints int64,
-) {
+func checkWrapSpanForMetrics(t *testing.T, sr *tracetest.SpanRecorder, tracer trace.Tracer, me exporter.Metrics, wantError error) {
 	const numRequests = 5
 	generateMetricsTraffic(t, tracer, me, numRequests, wantError)
 
@@ -437,11 +434,11 @@ func checkWrapSpanForMetrics(t *testing.T, sr *tracetest.SpanRecorder, tracer tr
 		require.Equalf(t, parentSpan.SpanContext(), sd.Parent(), "Exporter span not a child\nSpanData %v", sd)
 		internal.CheckStatus(t, sd, wantError)
 
-		sentMetricPoints := numMetricPoints
-		var failedToSendMetricPoints int64
+		sentMetricPoints := int64(2)
+		failedToSendMetricPoints := int64(0)
 		if wantError != nil {
 			sentMetricPoints = 0
-			failedToSendMetricPoints = numMetricPoints
+			failedToSendMetricPoints = 2
 		}
 		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: internal.SentMetricPointsKey, Value: attribute.Int64Value(sentMetricPoints)}, "SpanData %v", sd)
 		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: internal.FailedToSendMetricPointsKey, Value: attribute.Int64Value(failedToSendMetricPoints)}, "SpanData %v", sd)

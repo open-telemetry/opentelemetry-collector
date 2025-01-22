@@ -15,7 +15,12 @@ import (
 
 func Example_receiver() {
 	// Your receiver get a next consumer when it's constructed
-	var next consumer.Traces
+	next, err := consumer.NewTraces(func(_ context.Context, _ ptrace.Traces) error {
+		return nil
+	})
+	if err != nil {
+		panic(err)
+	}
 
 	// You'll convert the incoming data into pipeline data
 	td := ptrace.NewTraces()
@@ -30,13 +35,16 @@ func Example_receiver() {
 
 	// Extract the client information based on your original context and set it
 	// to Addr
-	cl.Addr = &net.IPAddr{ // nolint
+	//nolint:govet
+	cl.Addr = &net.IPAddr{
 		IP: net.IPv4(1, 2, 3, 4),
 	}
 
 	// When you are done, propagate the context down the pipeline to the next
-	// consumer
-	next.ConsumeTraces(ctx, td) // nolint
+	// consumer and handle error.
+	if err = next.ConsumeTraces(ctx, td); err != nil {
+		panic(err)
+	}
 }
 
 func Example_processor() {

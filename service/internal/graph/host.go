@@ -21,8 +21,6 @@ import (
 )
 
 // TODO: remove as part of https://github.com/open-telemetry/opentelemetry-collector/issues/7370 for service 1.0
-//
-// nolint
 type getExporters interface {
 	GetExporters() map[pipeline.Signal]map[component.ID]component.Component
 }

@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/internal"
 )
 
@@ -24,8 +25,9 @@ type Batcher interface {
 }
 
 type BaseBatcher struct {
-	batchCfg   exporterbatcher.Config
-	queue      Queue[internal.Request]
+	batchCfg exporterbatcher.Config
+	queue    exporterqueue.Queue[internal.Request]
+	// TODO: Remove when the -1 hack for testing is removed.
 	maxWorkers int
 	workerPool chan bool
 	exportFunc func(ctx context.Context, req internal.Request) error
@@ -33,65 +35,52 @@ type BaseBatcher struct {
 }
 
 func NewBatcher(batchCfg exporterbatcher.Config,
-	queue Queue[internal.Request],
+	queue exporterqueue.Queue[internal.Request],
 	exportFunc func(ctx context.Context, req internal.Request) error,
 	maxWorkers int,
 ) (Batcher, error) {
 	if !batchCfg.Enabled {
-		return &DisabledBatcher{
-			BaseBatcher{
-				batchCfg:   batchCfg,
-				queue:      queue,
-				maxWorkers: maxWorkers,
-				exportFunc: exportFunc,
-				stopWG:     sync.WaitGroup{},
-			},
-		}, nil
+		return &DisabledBatcher{BaseBatcher: newBaseBatcher(batchCfg, queue, exportFunc, maxWorkers)}, nil
 	}
-
-	return &DefaultBatcher{
-		BaseBatcher: BaseBatcher{
-			batchCfg:   batchCfg,
-			queue:      queue,
-			maxWorkers: maxWorkers,
-			exportFunc: exportFunc,
-			stopWG:     sync.WaitGroup{},
-		},
-	}, nil
+	return &DefaultBatcher{BaseBatcher: newBaseBatcher(batchCfg, queue, exportFunc, maxWorkers)}, nil
 }
 
-func (qb *BaseBatcher) startWorkerPool() {
-	if qb.maxWorkers == 0 {
-		return
+func newBaseBatcher(batchCfg exporterbatcher.Config,
+	queue exporterqueue.Queue[internal.Request],
+	exportFunc func(ctx context.Context, req internal.Request) error,
+	maxWorkers int,
+) BaseBatcher {
+	var workerPool chan bool
+	if maxWorkers > 0 {
+		workerPool = make(chan bool, maxWorkers)
+		for i := 0; i < maxWorkers; i++ {
+			workerPool <- true
+		}
 	}
-	qb.workerPool = make(chan bool, qb.maxWorkers)
-	for i := 0; i < qb.maxWorkers; i++ {
-		qb.workerPool <- true
+	return BaseBatcher{
+		batchCfg:   batchCfg,
+		queue:      queue,
+		maxWorkers: maxWorkers,
+		workerPool: workerPool,
+		exportFunc: exportFunc,
+		stopWG:     sync.WaitGroup{},
 	}
 }
 
-// flush exports the incoming batch synchronously.
+// flush starts a goroutine that calls exportFunc. It blocks until a worker is available if necessary.
 func (qb *BaseBatcher) flush(batchToFlush batch) {
-	err := qb.exportFunc(batchToFlush.ctx, batchToFlush.req)
-	for _, idx := range batchToFlush.idxList {
-		qb.queue.OnProcessingFinished(idx, err)
-	}
-}
-
-// flushAsync starts a goroutine that calls flushIfNecessary. It blocks until a worker is available.
-func (qb *BaseBatcher) flushAsync(batchToFlush batch) {
 	qb.stopWG.Add(1)
-	if qb.maxWorkers == 0 {
-		go func() {
-			defer qb.stopWG.Done()
-			qb.flush(batchToFlush)
-		}()
-		return
+	if qb.workerPool != nil {
+		<-qb.workerPool
 	}
-	<-qb.workerPool
 	go func() {
 		defer qb.stopWG.Done()
-		qb.flush(batchToFlush)
-		qb.workerPool <- true
+		err := qb.exportFunc(batchToFlush.ctx, batchToFlush.req)
+		for _, idx := range batchToFlush.idxList {
+			qb.queue.OnProcessingFinished(idx, err)
+		}
+		if qb.workerPool != nil {
+			qb.workerPool <- true
+		}
 	}()
 }

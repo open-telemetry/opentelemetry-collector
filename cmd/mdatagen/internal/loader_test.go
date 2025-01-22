@@ -288,6 +288,16 @@ func TestLoadMetadata(t *testing.T) {
 								Async: true,
 							},
 						},
+						"queue_capacity": {
+							Enabled:     true,
+							Description: "Queue capacity - sync gauge example.",
+							Unit:        strPtr("{items}"),
+							Gauge: &Gauge{
+								MetricValueType: MetricValueType{
+									ValueType: pmetric.NumberDataPointValueTypeInt,
+								},
+							},
+						},
 					},
 				},
 				ScopeName:       "go.opentelemetry.io/collector/internal/receiver/samplereceiver",

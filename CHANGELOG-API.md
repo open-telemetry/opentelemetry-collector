@@ -7,6 +7,87 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.24.0/v0.118.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporterqueue`: Change Queue Size and Capacity to return explicit int64. (#12076)
+- `receiver/scraperhelper`: Removing the deprecated receiver/scraperhelper package (#12054)
+- `processorteset`: Revert the nop_processor.NewNopSettings change, as it is no longer needed (#11433)
+- `experimental/storage`: Remove deprecated package/module experimental/storage (#12109)
+- `mdatagen`: Remove deprecated generated_component_telemetry_test file from being generated and delete it. (#12068)
+- `receivertest`: Remove deprecated receivertest.NewNopFactoryForType (#12110)
+
+### 🚩 Deprecations 🚩
+
+- `componenttest`: Deprecate CheckScraperMetrics in componenenttest (#12105)
+  Use `metadatatest.AssertMetrics` instead of `obsreporttest.CheckScraperMetrics`
+- `scraperhelper`: Deprecate `scraperhelper.NewScraperControllerReceiver` and `scraperhelper.ScraperControllerOption`. (#12103)
+  Use `scraperhelper.NewMetricsController` instead of `scraperhelper.NewScraperControllerReceiver` | Use `scraperhelper.ScraperControllerOption` instead of `scraperhelper.ControllerOption`
+
+### 💡 Enhancements 💡
+
+- `exporterhelper`: Add capability for memory and persistent queue to block when add items (#12074)
+- `scraper/scraperhelper`: Add obs_logs for scraper/scraperhelper (#12036)
+  This change adds obs for logs in scraper/scraperhelper, also introduced new metrics for scraping logs.
+- `mdatagen`: Add scraper component type support to mdatagen (#12092)
+- `mdatagen`: Add tracing support in metadatatest (#12106)
+- `exporterhelper`: Change persistent queue to not use sized channel, improve memory usage and simplify sized_channel. (#12060)
+- `confighttp`: Added support for configuring compression levels. (#10467)
+  A new configuration option called CompressionParams has been added to confighttp. | This allows users to configure the compression levels for the confighttp client.
+
+## v1.23.0/v0.117.0
+
+### 🛑 Breaking changes 🛑
+
+- `pdata/pprofile`: Remove duplicate Attributes field from profile (#11932)
+- `connector`: Remove deprecated connectorprofiles module, use xconnector instead. (#11778)
+- `consumererror`: Remove deprecated consumererrorprofiles module, use xconsumererror instead. (#11778)
+- `consumer`: Remove deprecated consumerprofiles module, use xconsumer instead. (#11778)
+- `exporterhelper`: Remove deprecated exporterhelperprofiles module, use xexporterhelper instead. (#11778)
+- `exporter`: Remove deprecated exporterprofiles module, use xexporter instead. (#11778)
+- `pipeline`: Remove deprecated pipelineprofiles module, use xpipeline instead. (#11778)
+- `processorhelper`: Remove deprecated processorhelperprofiles module, use xprocessorhelper instead. (#11778)
+- `processor`: Remove deprecated processorprofiles module, use xprocessor instead. (#11778)
+- `receiver`: Remove deprecated receiverprofiles module, use xreceiver instead. (#11778)
+- `exporterhelper`: Remove Merge function from experimental Request interface (#12012)
+
+### 🚩 Deprecations 🚩
+
+- `mdatagen`: Deprecate component_test in favor of metadatatest (#11812)
+- `receivertest`: Deprecate receivertest.NewNopFactoryForType (#11993)
+- `extension/experimental`: Deprecate extension/experimental in favor of extension/xextension (#12010)
+- `scraperhelper`: Move scraperhelper under scraper and in a separate module. (#11003)
+
+### 💡 Enhancements 💡
+
+- `scrapertest`: Add scrapertest package in a separate module (#11988)
+- `pdata`: Upgrade pdata to opentelemetry-proto v1.5.0 (#11932)
+
+## v1.22.0/v0.116.0
+
+### 🛑 Breaking changes 🛑
+
+- `component`: Remove deprecated TelemetrySettings.LeveledMeterProvider (#11811)
+- `scraperhelper`: Remove deprecated scraperhelper.Scraper and helpers (#11803)
+
+### 🚩 Deprecations 🚩
+
+- `connector`: Deprecate connectorprofiles module in favor of xconnector to allow adding more experimental data types. (#11778)
+- `consumererror`: Deprecate consumererrorprofiles module in favor of xconsumererror to allow adding more experimental data types. (#11778)
+- `consumer`: Deprecate consumerprofiles module in favor of xconsumer to allow adding more experimental data types. (#11778)
+- `exporterhelper`: Deprecate exporterhelperprofiles module in favor of xexporterhelper to allow adding more experimental data types. (#11778)
+- `exporter`: Deprecate exporterprofiles module in favor of xexporter to allow adding more experimental data types. (#11778)
+- `pipeline`: Deprecate pipelineprofiles module in favor of xpipeline to allow adding more experimental data types. (#11778)
+- `processorhelper`: Deprecate processorhelperprofiles module in favor of xprocessorhelper to allow adding more experimental data types. (#11778)
+- `processor`: Deprecate processorprofiles module in favor of xprocessor to allow adding more experimental data types. (#11778)
+- `receiver`: Deprecate receiverprofiles module in favor of xreceiver to allow adding more experimental data types. (#11778)
+- `receiver/scrapererror`: Remove the receiver/scrapererror alias. (#11003)
+
+### 💡 Enhancements 💡
+
+- `receiver/scraperhelper`: Add scraper for logs (#11238)
+
 ## v1.21.0/v0.115.0
 
 ### 🛑 Breaking changes 🛑
