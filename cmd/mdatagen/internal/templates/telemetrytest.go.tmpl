@@ -31,14 +31,30 @@ type Telemetry struct {
 	traceProvider *sdktrace.TracerProvider
 }
 
-func SetupTelemetry() Telemetry {
+type SetupTelemetryOption struct {
+   sdkMetricOption *sdkmetric.Option
+}
+
+func WithSDKMetricOption(option sdkmetric.Option) SetupTelemetryOption {
+	return SetupTelemetryOption{sdkMetricOption: &option}
+}
+
+func SetupTelemetry(options ...SetupTelemetryOption) Telemetry {
 	reader := sdkmetric.NewManualReader()
 	spanRecorder := new(tracetest.SpanRecorder)
+
+	sdkMetricOptions := []sdkmetric.Option{sdkmetric.WithReader(reader)}
+	for _, option := range options {
+		if option.sdkMetricOption != nil {
+			sdkMetricOptions = append(sdkMetricOptions, *option.sdkMetricOption)
+		}
+	}
+
 	return Telemetry{
 		Reader:        reader,
 		SpanRecorder:  spanRecorder,
 
-		meterProvider: sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader)),
+		meterProvider: sdkmetric.NewMeterProvider(sdkMetricOptions...),
 		traceProvider: sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spanRecorder)),
 	}
 }
