@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"sync"
 
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/noop"
@@ -68,11 +69,15 @@ func newMeterProvider(set meterProviderSettings, disableHighCardinality bool) (m
 	}
 
 	if set.cfg.Level < configtelemetry.LevelDetailed {
-		// Drop all otelhttp metrics if the level is not detailed.
-		opts = append(opts, dropViewOption(sdkmetric.Instrument{
-			Scope: instrumentation.Scope{Name: otelhttp.ScopeName},
-		},
-		))
+		// Drop all otelhttp and otelgrpc metrics if the level is not detailed.
+		opts = append(opts,
+			dropViewOption(sdkmetric.Instrument{
+				Scope: instrumentation.Scope{Name: otelhttp.ScopeName},
+			}),
+			dropViewOption(sdkmetric.Instrument{
+				Scope: instrumentation.Scope{Name: otelgrpc.ScopeName},
+			}),
+		)
 	}
 
 	// otel-arrow library metrics
