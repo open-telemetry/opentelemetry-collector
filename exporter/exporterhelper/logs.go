@@ -129,7 +129,7 @@ func NewLogsRequest(
 		return nil, errNilLogsConverter
 	}
 
-	be, err := internal.NewBaseExporter(set, pipeline.SignalLogs, newLogsWithObservability, options...)
+	be, err := internal.NewBaseExporter(set, pipeline.SignalLogs, internal.NewObsReportSender, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +144,7 @@ func NewLogsRequest(
 		}
 		sErr := be.Send(ctx, req)
 		if errors.Is(sErr, exporterqueue.ErrQueueIsFull) {
-			be.Obsrep.RecordEnqueueFailure(ctx, pipeline.SignalLogs, int64(req.ItemsCount()))
+			be.Obsrep.RecordEnqueueFailure(ctx, int64(req.ItemsCount()))
 		}
 		return sErr
 	}, be.ConsumerOptions...)
@@ -153,21 +153,4 @@ func NewLogsRequest(
 		BaseExporter: be,
 		Logs:         lc,
 	}, err
-}
-
-type logsExporterWithObservability struct {
-	internal.BaseSender[Request]
-	obsrep *internal.ObsReport
-}
-
-func newLogsWithObservability(obsrep *internal.ObsReport) internal.Sender[Request] {
-	return &logsExporterWithObservability{obsrep: obsrep}
-}
-
-func (lewo *logsExporterWithObservability) Send(ctx context.Context, req Request) error {
-	c := lewo.obsrep.StartLogsOp(ctx)
-	numLogRecords := req.ItemsCount()
-	err := lewo.NextSender.Send(c, req)
-	lewo.obsrep.EndLogsOp(c, numLogRecords, err)
-	return err
 }
