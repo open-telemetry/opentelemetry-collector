@@ -31,6 +31,7 @@ type MinSizeConfig struct {
 	// sent regardless of the timeout. There is no guarantee that the batch size always greater than this value.
 	// This option requires the Request to implement RequestItemsCounter interface. Otherwise, it will be ignored.
 	MinSizeItems int `mapstructure:"min_size_items"`
+	MinSizeBytes int `mapstructure:"min_size_bytes"`
 }
 
 // MaxSizeConfig defines the configuration for the maximum number of items in a batch.
@@ -41,17 +42,33 @@ type MaxSizeConfig struct {
 	// If the batch size exceeds this value, it will be broken up into smaller batches if possible.
 	// Setting this value to zero disables the maximum size limit.
 	MaxSizeItems int `mapstructure:"max_size_items"`
+	MaxSizeBytes int `mapstructure:"max_size_bytes"`
 }
 
 func (c Config) Validate() error {
+	if c.MinSizeBytes != 0 && c.MinSizeItems != 0 ||
+		c.MinSizeBytes != 0 && c.MaxSizeItems != 0 ||
+		c.MinSizeItems != 0 && c.MaxSizeBytes != 0 ||
+		c.MaxSizeBytes != 0 && c.MaxSizeItems != 0 {
+		return errors.New("byte size limit and item limit cannot be specified at the same time")
+	}
 	if c.MinSizeItems < 0 {
 		return errors.New("min_size_items must be greater than or equal to zero")
+	}
+	if c.MinSizeBytes < 0 {
+		return errors.New("min_size_bytes must be greater than or equal to zero")
 	}
 	if c.MaxSizeItems < 0 {
 		return errors.New("max_size_items must be greater than or equal to zero")
 	}
+	if c.MaxSizeBytes < 0 {
+		return errors.New("max_size_bytes must be greater than or equal to zero")
+	}
 	if c.MaxSizeItems != 0 && c.MaxSizeItems < c.MinSizeItems {
 		return errors.New("max_size_items must be greater than or equal to min_size_items")
+	}
+	if c.MaxSizeBytes != 0 && c.MaxSizeBytes < c.MinSizeBytes {
+		return errors.New("max_size_bytes must be greater than or equal to min_size_bytes")
 	}
 	if c.FlushTimeout <= 0 {
 		return errors.New("timeout must be greater than zero")
