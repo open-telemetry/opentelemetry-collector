@@ -19,7 +19,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"go.opentelemetry.io/contrib/config"
+	config "go.opentelemetry.io/contrib/config/v0.3.0"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
@@ -168,14 +168,14 @@ func initPrometheusExporter(prometheusConfig *config.Prometheus, asyncErrorChann
 	return exporter, InitPrometheusServer(promRegistry, net.JoinHostPort(*prometheusConfig.Host, strconv.Itoa(*prometheusConfig.Port)), asyncErrorChannel, serverWG), nil
 }
 
-func initPullExporter(exporter config.MetricExporter, asyncErrorChannel chan error, serverWG *sync.WaitGroup) (sdkmetric.Reader, *http.Server, error) {
+func initPullExporter(exporter config.PullMetricExporter, asyncErrorChannel chan error, serverWG *sync.WaitGroup) (sdkmetric.Reader, *http.Server, error) {
 	if exporter.Prometheus != nil {
 		return initPrometheusExporter(exporter.Prometheus, asyncErrorChannel, serverWG)
 	}
 	return nil, nil, errNoValidMetricExporter
 }
 
-func initPeriodicExporter(ctx context.Context, exporter config.MetricExporter, opts ...sdkmetric.PeriodicReaderOption) (sdkmetric.Reader, *http.Server, error) {
+func initPeriodicExporter(ctx context.Context, exporter config.PushMetricExporter, opts ...sdkmetric.PeriodicReaderOption) (sdkmetric.Reader, *http.Server, error) {
 	if exporter.Console != nil {
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
@@ -191,13 +191,18 @@ func initPeriodicExporter(ctx context.Context, exporter config.MetricExporter, o
 	if exporter.OTLP != nil {
 		var err error
 		var exp sdkmetric.Exporter
-		switch exporter.OTLP.Protocol {
+
+		if exporter.OTLP.Protocol == nil {
+			return nil, nil, errors.New("OTLP protocol not set")
+		}
+
+		switch *exporter.OTLP.Protocol {
 		case protocolProtobufHTTP:
 			exp, err = initOTLPHTTPExporter(ctx, exporter.OTLP)
 		case protocolProtobufGRPC:
 			exp, err = initOTLPgRPCExporter(ctx, exporter.OTLP)
 		default:
-			return nil, nil, fmt.Errorf("unsupported protocol %s", exporter.OTLP.Protocol)
+			return nil, nil, fmt.Errorf("unsupported protocol %s", *exporter.OTLP.Protocol)
 		}
 		if err != nil {
 			return nil, nil, err
@@ -217,8 +222,8 @@ func normalizeEndpoint(endpoint string) string {
 func initOTLPgRPCExporter(ctx context.Context, otlpConfig *config.OTLPMetric) (sdkmetric.Exporter, error) {
 	opts := []otlpmetricgrpc.Option{}
 
-	if len(otlpConfig.Endpoint) > 0 {
-		u, err := url.ParseRequestURI(normalizeEndpoint(otlpConfig.Endpoint))
+	if otlpConfig.Endpoint != nil && len(*otlpConfig.Endpoint) > 0 {
+		u, err := url.ParseRequestURI(normalizeEndpoint(*otlpConfig.Endpoint))
 		if err != nil {
 			return nil, err
 		}
@@ -247,7 +252,7 @@ func initOTLPgRPCExporter(ctx context.Context, otlpConfig *config.OTLPMetric) (s
 		opts = append(opts, otlpmetricgrpc.WithTimeout(time.Millisecond*time.Duration(*otlpConfig.Timeout)))
 	}
 	if len(otlpConfig.Headers) > 0 {
-		opts = append(opts, otlpmetricgrpc.WithHeaders(otlpConfig.Headers))
+		opts = append(opts, otlpmetricgrpc.WithHeaders(convertHeadersToMap(otlpConfig.Headers)))
 	}
 	if otlpConfig.TemporalityPreference != nil {
 		switch *otlpConfig.TemporalityPreference {
@@ -268,8 +273,8 @@ func initOTLPgRPCExporter(ctx context.Context, otlpConfig *config.OTLPMetric) (s
 func initOTLPHTTPExporter(ctx context.Context, otlpConfig *config.OTLPMetric) (sdkmetric.Exporter, error) {
 	opts := []otlpmetrichttp.Option{}
 
-	if len(otlpConfig.Endpoint) > 0 {
-		u, err := url.ParseRequestURI(normalizeEndpoint(otlpConfig.Endpoint))
+	if otlpConfig.Endpoint != nil && len(*otlpConfig.Endpoint) > 0 {
+		u, err := url.ParseRequestURI(normalizeEndpoint(*otlpConfig.Endpoint))
 		if err != nil {
 			return nil, err
 		}
@@ -296,7 +301,7 @@ func initOTLPHTTPExporter(ctx context.Context, otlpConfig *config.OTLPMetric) (s
 		opts = append(opts, otlpmetrichttp.WithTimeout(time.Millisecond*time.Duration(*otlpConfig.Timeout)))
 	}
 	if len(otlpConfig.Headers) > 0 {
-		opts = append(opts, otlpmetrichttp.WithHeaders(otlpConfig.Headers))
+		opts = append(opts, otlpmetrichttp.WithHeaders(convertHeadersToMap(otlpConfig.Headers)))
 	}
 	if otlpConfig.TemporalityPreference != nil {
 		switch *otlpConfig.TemporalityPreference {
@@ -338,4 +343,17 @@ func temporalityPreferenceLowMemory(ik sdkmetric.InstrumentKind) metricdata.Temp
 	default:
 		return metricdata.DeltaTemporality
 	}
+}
+
+func convertHeadersToMap(pairs []config.NameStringValuePair) map[string]string {
+	m := map[string]string{}
+	for _, pair := range pairs {
+		// Skip null values
+		if pair.Value == nil {
+			continue
+		}
+		m[pair.Name] = *pair.Value
+	}
+
+	return m
 }

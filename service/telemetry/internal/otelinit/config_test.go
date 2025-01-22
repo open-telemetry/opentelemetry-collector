@@ -15,7 +15,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/contrib/config"
+	config "go.opentelemetry.io/contrib/config/v0.3.0"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	otelprom "go.opentelemetry.io/otel/exporters/prometheus"
@@ -53,24 +53,13 @@ func TestMetricReader(t *testing.T) {
 	}{
 		{
 			name:    "noreader",
-			wantErr: errors.New("unsupported metric reader type {<nil> <nil>}"),
-		},
-		{
-			name: "pull prometheus invalid exporter",
-			reader: config.MetricReader{
-				Pull: &config.PullMetricReader{
-					Exporter: config.MetricExporter{
-						OTLP: &config.OTLPMetric{},
-					},
-				},
-			},
-			wantErr: errNoValidMetricExporter,
+			wantErr: errors.New("unsupported metric reader type {<nil> [] <nil>}"),
 		},
 		{
 			name: "pull/prometheus-invalid-config-no-host",
 			reader: config.MetricReader{
 				Pull: &config.PullMetricReader{
-					Exporter: config.MetricExporter{
+					Exporter: config.PullMetricExporter{
 						Prometheus: &config.Prometheus{},
 					},
 				},
@@ -81,7 +70,7 @@ func TestMetricReader(t *testing.T) {
 			name: "pull/prometheus-invalid-config-no-port",
 			reader: config.MetricReader{
 				Pull: &config.PullMetricReader{
-					Exporter: config.MetricExporter{
+					Exporter: config.PullMetricExporter{
 						Prometheus: &config.Prometheus{
 							Host: strPtr("localhost"),
 						},
@@ -94,7 +83,7 @@ func TestMetricReader(t *testing.T) {
 			name: "pull/prometheus-valid",
 			reader: config.MetricReader{
 				Pull: &config.PullMetricReader{
-					Exporter: config.MetricExporter{
+					Exporter: config.PullMetricExporter{
 						Prometheus: &config.Prometheus{
 							Host: strPtr("localhost"),
 							Port: intPtr(8080),
@@ -103,20 +92,6 @@ func TestMetricReader(t *testing.T) {
 				},
 			},
 			wantReader: promExporter,
-		},
-		{
-			name: "periodic/invalid-exporter",
-			reader: config.MetricReader{
-				Periodic: &config.PeriodicMetricReader{
-					Exporter: config.MetricExporter{
-						Prometheus: &config.Prometheus{
-							Host: strPtr("localhost"),
-							Port: intPtr(8080),
-						},
-					},
-				},
-			},
-			wantErr: errNoValidMetricExporter,
 		},
 		{
 			name: "periodic/no-exporter",
@@ -129,7 +104,7 @@ func TestMetricReader(t *testing.T) {
 			name: "periodic/console-exporter",
 			reader: config.MetricReader{
 				Periodic: &config.PeriodicMetricReader{
-					Exporter: config.MetricExporter{
+					Exporter: config.PushMetricExporter{
 						Console: config.Console{},
 					},
 				},
@@ -142,7 +117,7 @@ func TestMetricReader(t *testing.T) {
 				Periodic: &config.PeriodicMetricReader{
 					Interval: intPtr(10),
 					Timeout:  intPtr(5),
-					Exporter: config.MetricExporter{
+					Exporter: config.PushMetricExporter{
 						Console: config.Console{},
 					},
 				},
@@ -153,9 +128,9 @@ func TestMetricReader(t *testing.T) {
 			name: "periodic/otlp-exporter-invalid-protocol",
 			reader: config.MetricReader{
 				Periodic: &config.PeriodicMetricReader{
-					Exporter: config.MetricExporter{
+					Exporter: config.PushMetricExporter{
 						OTLP: &config.OTLPMetric{
-							Protocol: *strPtr("http/invalid"),
+							Protocol: strPtr("http/invalid"),
 						},
 					},
 				},
@@ -166,13 +141,13 @@ func TestMetricReader(t *testing.T) {
 			name: "periodic/otlp-grpc-exporter-no-endpoint",
 			reader: config.MetricReader{
 				Periodic: &config.PeriodicMetricReader{
-					Exporter: config.MetricExporter{
+					Exporter: config.PushMetricExporter{
 						OTLP: &config.OTLPMetric{
-							Protocol:    "grpc/protobuf",
+							Protocol:    strPtr("grpc/protobuf"),
 							Compression: strPtr("gzip"),
 							Timeout:     intPtr(1000),
-							Headers: map[string]string{
-								"test": "test1",
+							Headers: []config.NameStringValuePair{
+								{Name: "test", Value: strPtr("test1")},
 							},
 						},
 					},
@@ -184,14 +159,14 @@ func TestMetricReader(t *testing.T) {
 			name: "periodic/otlp-grpc-exporter",
 			reader: config.MetricReader{
 				Periodic: &config.PeriodicMetricReader{
-					Exporter: config.MetricExporter{
+					Exporter: config.PushMetricExporter{
 						OTLP: &config.OTLPMetric{
-							Protocol:    "grpc/protobuf",
-							Endpoint:    "http://localhost:4317",
+							Protocol:    strPtr("grpc/protobuf"),
+							Endpoint:    strPtr("http://localhost:4317"),
 							Compression: strPtr("none"),
 							Timeout:     intPtr(1000),
-							Headers: map[string]string{
-								"test": "test1",
+							Headers: []config.NameStringValuePair{
+								{Name: "test", Value: strPtr("test1")},
 							},
 						},
 					},
@@ -203,14 +178,14 @@ func TestMetricReader(t *testing.T) {
 			name: "periodic/otlp-grpc-exporter-no-scheme",
 			reader: config.MetricReader{
 				Periodic: &config.PeriodicMetricReader{
-					Exporter: config.MetricExporter{
+					Exporter: config.PushMetricExporter{
 						OTLP: &config.OTLPMetric{
-							Protocol:    "grpc/protobuf",
-							Endpoint:    "localhost:4317",
+							Protocol:    strPtr("grpc/protobuf"),
+							Endpoint:    strPtr("localhost:4317"),
 							Compression: strPtr("gzip"),
 							Timeout:     intPtr(1000),
-							Headers: map[string]string{
-								"test": "test1",
+							Headers: []config.NameStringValuePair{
+								{Name: "test", Value: strPtr("test1")},
 							},
 						},
 					},
@@ -222,14 +197,14 @@ func TestMetricReader(t *testing.T) {
 			name: "periodic/otlp-grpc-invalid-endpoint",
 			reader: config.MetricReader{
 				Periodic: &config.PeriodicMetricReader{
-					Exporter: config.MetricExporter{
+					Exporter: config.PushMetricExporter{
 						OTLP: &config.OTLPMetric{
-							Protocol:    "grpc/protobuf",
-							Endpoint:    " ",
+							Protocol:    strPtr("grpc/protobuf"),
+							Endpoint:    strPtr(" "),
 							Compression: strPtr("gzip"),
 							Timeout:     intPtr(1000),
-							Headers: map[string]string{
-								"test": "test1",
+							Headers: []config.NameStringValuePair{
+								{Name: "test", Value: strPtr("test1")},
 							},
 						},
 					},
@@ -241,14 +216,14 @@ func TestMetricReader(t *testing.T) {
 			name: "periodic/otlp-grpc-invalid-compression",
 			reader: config.MetricReader{
 				Periodic: &config.PeriodicMetricReader{
-					Exporter: config.MetricExporter{
+					Exporter: config.PushMetricExporter{
 						OTLP: &config.OTLPMetric{
-							Protocol:    "grpc/protobuf",
-							Endpoint:    "localhost:4317",
+							Protocol:    strPtr("grpc/protobuf"),
+							Endpoint:    strPtr("localhost:4317"),
 							Compression: strPtr("invalid"),
 							Timeout:     intPtr(1000),
-							Headers: map[string]string{
-								"test": "test1",
+							Headers: []config.NameStringValuePair{
+								{Name: "test", Value: strPtr("test1")},
 							},
 						},
 					},
@@ -260,14 +235,14 @@ func TestMetricReader(t *testing.T) {
 			name: "periodic/otlp-grpc-delta-temporality",
 			reader: config.MetricReader{
 				Periodic: &config.PeriodicMetricReader{
-					Exporter: config.MetricExporter{
+					Exporter: config.PushMetricExporter{
 						OTLP: &config.OTLPMetric{
-							Protocol:    "grpc/protobuf",
-							Endpoint:    "localhost:4318",
+							Protocol:    strPtr("grpc/protobuf"),
+							Endpoint:    strPtr("localhost:4317"),
 							Compression: strPtr("none"),
 							Timeout:     intPtr(1000),
-							Headers: map[string]string{
-								"test": "test1",
+							Headers: []config.NameStringValuePair{
+								{Name: "test", Value: strPtr("test1")},
 							},
 							TemporalityPreference: strPtr("delta"),
 						},
@@ -280,14 +255,14 @@ func TestMetricReader(t *testing.T) {
 			name: "periodic/otlp-grpc-cumulative-temporality",
 			reader: config.MetricReader{
 				Periodic: &config.PeriodicMetricReader{
-					Exporter: config.MetricExporter{
+					Exporter: config.PushMetricExporter{
 						OTLP: &config.OTLPMetric{
-							Protocol:    "grpc/protobuf",
-							Endpoint:    "localhost:4318",
+							Protocol:    strPtr("grpc/protobuf"),
+							Endpoint:    strPtr("localhost:4317"),
 							Compression: strPtr("none"),
 							Timeout:     intPtr(1000),
-							Headers: map[string]string{
-								"test": "test1",
+							Headers: []config.NameStringValuePair{
+								{Name: "test", Value: strPtr("test1")},
 							},
 							TemporalityPreference: strPtr("cumulative"),
 						},
@@ -300,14 +275,14 @@ func TestMetricReader(t *testing.T) {
 			name: "periodic/otlp-grpc-lowmemory-temporality",
 			reader: config.MetricReader{
 				Periodic: &config.PeriodicMetricReader{
-					Exporter: config.MetricExporter{
+					Exporter: config.PushMetricExporter{
 						OTLP: &config.OTLPMetric{
-							Protocol:    "grpc/protobuf",
-							Endpoint:    "localhost:4318",
+							Protocol:    strPtr("grpc/protobuf"),
+							Endpoint:    strPtr("localhost:4317"),
 							Compression: strPtr("none"),
 							Timeout:     intPtr(1000),
-							Headers: map[string]string{
-								"test": "test1",
+							Headers: []config.NameStringValuePair{
+								{Name: "test", Value: strPtr("test1")},
 							},
 							TemporalityPreference: strPtr("lowmemory"),
 						},
@@ -320,14 +295,14 @@ func TestMetricReader(t *testing.T) {
 			name: "periodic/otlp-grpc-invalid-temporality",
 			reader: config.MetricReader{
 				Periodic: &config.PeriodicMetricReader{
-					Exporter: config.MetricExporter{
+					Exporter: config.PushMetricExporter{
 						OTLP: &config.OTLPMetric{
-							Protocol:    "grpc/protobuf",
-							Endpoint:    "localhost:4318",
+							Protocol:    strPtr("grpc/protobuf"),
+							Endpoint:    strPtr("localhost:4317"),
 							Compression: strPtr("none"),
 							Timeout:     intPtr(1000),
-							Headers: map[string]string{
-								"test": "test1",
+							Headers: []config.NameStringValuePair{
+								{Name: "test", Value: strPtr("test1")},
 							},
 							TemporalityPreference: strPtr("invalid"),
 						},
@@ -340,14 +315,14 @@ func TestMetricReader(t *testing.T) {
 			name: "periodic/otlp-http-exporter",
 			reader: config.MetricReader{
 				Periodic: &config.PeriodicMetricReader{
-					Exporter: config.MetricExporter{
+					Exporter: config.PushMetricExporter{
 						OTLP: &config.OTLPMetric{
-							Protocol:    "http/protobuf",
-							Endpoint:    "http://localhost:4318",
+							Protocol:    strPtr("http/protobuf"),
+							Endpoint:    strPtr("http://localhost:4318"),
 							Compression: strPtr("gzip"),
 							Timeout:     intPtr(1000),
-							Headers: map[string]string{
-								"test": "test1",
+							Headers: []config.NameStringValuePair{
+								{Name: "test", Value: strPtr("test1")},
 							},
 						},
 					},
@@ -359,14 +334,14 @@ func TestMetricReader(t *testing.T) {
 			name: "periodic/otlp-http-exporter-with-path",
 			reader: config.MetricReader{
 				Periodic: &config.PeriodicMetricReader{
-					Exporter: config.MetricExporter{
+					Exporter: config.PushMetricExporter{
 						OTLP: &config.OTLPMetric{
-							Protocol:    "http/protobuf",
-							Endpoint:    "http://localhost:4318/path/123",
+							Protocol:    strPtr("http/protobuf"),
+							Endpoint:    strPtr("http://localhost:4318/path/123"),
 							Compression: strPtr("none"),
 							Timeout:     intPtr(1000),
-							Headers: map[string]string{
-								"test": "test1",
+							Headers: []config.NameStringValuePair{
+								{Name: "test", Value: strPtr("test1")},
 							},
 						},
 					},
@@ -378,13 +353,13 @@ func TestMetricReader(t *testing.T) {
 			name: "periodic/otlp-http-exporter-no-endpoint",
 			reader: config.MetricReader{
 				Periodic: &config.PeriodicMetricReader{
-					Exporter: config.MetricExporter{
+					Exporter: config.PushMetricExporter{
 						OTLP: &config.OTLPMetric{
-							Protocol:    "http/protobuf",
+							Protocol:    strPtr("http/protobuf"),
 							Compression: strPtr("gzip"),
 							Timeout:     intPtr(1000),
-							Headers: map[string]string{
-								"test": "test1",
+							Headers: []config.NameStringValuePair{
+								{Name: "test", Value: strPtr("test1")},
 							},
 						},
 					},
@@ -396,14 +371,14 @@ func TestMetricReader(t *testing.T) {
 			name: "periodic/otlp-http-exporter-no-scheme",
 			reader: config.MetricReader{
 				Periodic: &config.PeriodicMetricReader{
-					Exporter: config.MetricExporter{
+					Exporter: config.PushMetricExporter{
 						OTLP: &config.OTLPMetric{
-							Protocol:    "http/protobuf",
-							Endpoint:    "localhost:4318",
+							Protocol:    strPtr("http/protobuf"),
+							Endpoint:    strPtr("localhost:4317"),
 							Compression: strPtr("gzip"),
 							Timeout:     intPtr(1000),
-							Headers: map[string]string{
-								"test": "test1",
+							Headers: []config.NameStringValuePair{
+								{Name: "test", Value: strPtr("test1")},
 							},
 						},
 					},
@@ -415,14 +390,14 @@ func TestMetricReader(t *testing.T) {
 			name: "periodic/otlp-http-invalid-endpoint",
 			reader: config.MetricReader{
 				Periodic: &config.PeriodicMetricReader{
-					Exporter: config.MetricExporter{
+					Exporter: config.PushMetricExporter{
 						OTLP: &config.OTLPMetric{
-							Protocol:    "http/protobuf",
-							Endpoint:    " ",
+							Protocol:    strPtr("http/protobuf"),
+							Endpoint:    strPtr(" "),
 							Compression: strPtr("gzip"),
 							Timeout:     intPtr(1000),
-							Headers: map[string]string{
-								"test": "test1",
+							Headers: []config.NameStringValuePair{
+								{Name: "test", Value: strPtr("test1")},
 							},
 						},
 					},
@@ -434,14 +409,14 @@ func TestMetricReader(t *testing.T) {
 			name: "periodic/otlp-http-invalid-compression",
 			reader: config.MetricReader{
 				Periodic: &config.PeriodicMetricReader{
-					Exporter: config.MetricExporter{
+					Exporter: config.PushMetricExporter{
 						OTLP: &config.OTLPMetric{
-							Protocol:    "http/protobuf",
-							Endpoint:    "localhost:4318",
+							Protocol:    strPtr("http/protobuf"),
+							Endpoint:    strPtr("localhost:4317"),
 							Compression: strPtr("invalid"),
 							Timeout:     intPtr(1000),
-							Headers: map[string]string{
-								"test": "test1",
+							Headers: []config.NameStringValuePair{
+								{Name: "test", Value: strPtr("test1")},
 							},
 						},
 					},
@@ -453,14 +428,14 @@ func TestMetricReader(t *testing.T) {
 			name: "periodic/otlp-http-cumulative-temporality",
 			reader: config.MetricReader{
 				Periodic: &config.PeriodicMetricReader{
-					Exporter: config.MetricExporter{
+					Exporter: config.PushMetricExporter{
 						OTLP: &config.OTLPMetric{
-							Protocol:    "http/protobuf",
-							Endpoint:    "localhost:4318",
+							Protocol:    strPtr("http/protobuf"),
+							Endpoint:    strPtr("localhost:4317"),
 							Compression: strPtr("none"),
 							Timeout:     intPtr(1000),
-							Headers: map[string]string{
-								"test": "test1",
+							Headers: []config.NameStringValuePair{
+								{Name: "test", Value: strPtr("test1")},
 							},
 							TemporalityPreference: strPtr("cumulative"),
 						},
@@ -473,14 +448,14 @@ func TestMetricReader(t *testing.T) {
 			name: "periodic/otlp-http-lowmemory-temporality",
 			reader: config.MetricReader{
 				Periodic: &config.PeriodicMetricReader{
-					Exporter: config.MetricExporter{
+					Exporter: config.PushMetricExporter{
 						OTLP: &config.OTLPMetric{
-							Protocol:    "http/protobuf",
-							Endpoint:    "localhost:4318",
+							Protocol:    strPtr("http/protobuf"),
+							Endpoint:    strPtr("localhost:4317"),
 							Compression: strPtr("none"),
 							Timeout:     intPtr(1000),
-							Headers: map[string]string{
-								"test": "test1",
+							Headers: []config.NameStringValuePair{
+								{Name: "test", Value: strPtr("test1")},
 							},
 							TemporalityPreference: strPtr("lowmemory"),
 						},
@@ -493,14 +468,14 @@ func TestMetricReader(t *testing.T) {
 			name: "periodic/otlp-http-delta-temporality",
 			reader: config.MetricReader{
 				Periodic: &config.PeriodicMetricReader{
-					Exporter: config.MetricExporter{
+					Exporter: config.PushMetricExporter{
 						OTLP: &config.OTLPMetric{
-							Protocol:    "http/protobuf",
-							Endpoint:    "localhost:4318",
+							Protocol:    strPtr("http/protobuf"),
+							Endpoint:    strPtr("localhost:4317"),
 							Compression: strPtr("none"),
 							Timeout:     intPtr(1000),
-							Headers: map[string]string{
-								"test": "test1",
+							Headers: []config.NameStringValuePair{
+								{Name: "test", Value: strPtr("test1")},
 							},
 							TemporalityPreference: strPtr("delta"),
 						},
@@ -513,14 +488,14 @@ func TestMetricReader(t *testing.T) {
 			name: "periodic/otlp-http-invalid-temporality",
 			reader: config.MetricReader{
 				Periodic: &config.PeriodicMetricReader{
-					Exporter: config.MetricExporter{
+					Exporter: config.PushMetricExporter{
 						OTLP: &config.OTLPMetric{
-							Protocol:    "http/protobuf",
-							Endpoint:    "localhost:4318",
+							Protocol:    strPtr("http/protobuf"),
+							Endpoint:    strPtr("localhost:4317"),
 							Compression: strPtr("none"),
 							Timeout:     intPtr(1000),
-							Headers: map[string]string{
-								"test": "test1",
+							Headers: []config.NameStringValuePair{
+								{Name: "test", Value: strPtr("test1")},
 							},
 							TemporalityPreference: strPtr("invalid"),
 						},
@@ -533,15 +508,15 @@ func TestMetricReader(t *testing.T) {
 			name: "periodic/otlp-grpc-good-ca-certificate",
 			reader: config.MetricReader{
 				Periodic: &config.PeriodicMetricReader{
-					Exporter: config.MetricExporter{
+					Exporter: config.PushMetricExporter{
 						OTLP: &config.OTLPMetric{
-							Protocol:    "grpc/protobuf",
-							Endpoint:    "https://localhost:4317",
+							Protocol:    strPtr("grpc/protobuf"),
+							Endpoint:    strPtr("https://localhost:4317"),
 							Compression: strPtr("gzip"),
 							Timeout:     intPtr(1000),
 							Certificate: strPtr(filepath.Join("testdata", "ca.crt")),
-							Headers: map[string]string{
-								"test": "test1",
+							Headers: []config.NameStringValuePair{
+								{Name: "test", Value: strPtr("test1")},
 							},
 						},
 					},
@@ -553,15 +528,15 @@ func TestMetricReader(t *testing.T) {
 			name: "periodic/otlp-grpc-bad-ca-certificate",
 			reader: config.MetricReader{
 				Periodic: &config.PeriodicMetricReader{
-					Exporter: config.MetricExporter{
+					Exporter: config.PushMetricExporter{
 						OTLP: &config.OTLPMetric{
-							Protocol:    "grpc/protobuf",
-							Endpoint:    "https://localhost:4317",
+							Protocol:    strPtr("grpc/protobuf"),
+							Endpoint:    strPtr("https://localhost:4317"),
 							Compression: strPtr("gzip"),
 							Timeout:     intPtr(1000),
 							Certificate: strPtr(filepath.Join("testdata", "bad_cert.crt")),
-							Headers: map[string]string{
-								"test": "test1",
+							Headers: []config.NameStringValuePair{
+								{Name: "test", Value: strPtr("test1")},
 							},
 						},
 					},
