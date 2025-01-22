@@ -144,4 +144,4 @@ func TestMergeSplitManySmallLogs(t *testing.T) {
 		merged = append(merged[0:len(merged)-1], res...)
 	}
 	assert.Len(t, merged, 2)
-}
+
