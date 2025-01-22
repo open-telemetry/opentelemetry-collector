@@ -123,7 +123,7 @@ func TestMergeSplitMetrics(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, len(tt.expected), len(res))
 			for i := range res {
-				assert.Equal(t, tt.expected[i], res[i].(*metricsRequest))
+				assert.Equal(t, tt.expected[i].md, res[i].(*metricsRequest).md)
 			}
 		})
 	}
@@ -158,4 +158,44 @@ func TestExtractMetricsInvalidMetric(t *testing.T) {
 	extractedMetrics := extractMetrics(md, 10)
 	assert.Equal(t, testdata.GenerateMetricsMetricTypeInvalid(), extractedMetrics)
 	assert.Equal(t, 0, md.ResourceMetrics().Len())
+}
+
+func BenchmarkSplittingBasedOnItemCountManySmallMetrics(b *testing.B) {
+	// All requests merge into a single batch.
+	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 20000}
+	for i := 0; i < b.N; i++ {
+		merged := []Request{&metricsRequest{md: testdata.GenerateMetrics(10)}}
+		for j := 0; j < 1000; j++ {
+			lr2 := &metricsRequest{md: testdata.GenerateMetrics(10)}
+			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), cfg, lr2)
+			merged = append(merged[0:len(merged)-1], res...)
+		}
+		assert.Len(b, merged, 1)
+	}
+}
+
+func BenchmarkSplittingBasedOnItemCountManyMetricsSlightlyAboveLimit(b *testing.B) {
+	// Every incoming request results in a split.
+	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 20000}
+	for i := 0; i < b.N; i++ {
+		merged := []Request{&metricsRequest{md: testdata.GenerateMetrics(0)}}
+		for j := 0; j < 10; j++ {
+			lr2 := &metricsRequest{md: testdata.GenerateMetrics(10001)}
+			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), cfg, lr2)
+			merged = append(merged[0:len(merged)-1], res...)
+		}
+		assert.Len(b, merged, 11)
+	}
+}
+
+func BenchmarkSplittingBasedOnItemCountHugeMetrics(b *testing.B) {
+	// One request splits into many batches.
+	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 20000}
+	for i := 0; i < b.N; i++ {
+		merged := []Request{&metricsRequest{md: testdata.GenerateMetrics(0)}}
+		lr2 := &metricsRequest{md: testdata.GenerateMetrics(100000)}
+		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), cfg, lr2)
+		merged = append(merged[0:len(merged)-1], res...)
+		assert.Len(b, merged, 10)
+	}
 }

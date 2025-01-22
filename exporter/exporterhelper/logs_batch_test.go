@@ -123,7 +123,7 @@ func TestMergeSplitLogs(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, len(tt.expected), len(res))
 			for i, r := range res {
-				assert.Equal(t, tt.expected[i], r.(*logsRequest))
+				assert.Equal(t, tt.expected[i].ld, r.(*logsRequest).ld)
 			}
 		})
 	}
@@ -150,5 +150,45 @@ func TestExtractLogs(t *testing.T) {
 		extractedLogs := extractLogs(ld, i)
 		assert.Equal(t, i, extractedLogs.LogRecordCount())
 		assert.Equal(t, 10-i, ld.LogRecordCount())
+	}
+}
+
+func BenchmarkSplittingBasedOnItemCountManySmallLogs(b *testing.B) {
+	// All requests merge into a single batch.
+	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 10000}
+	for i := 0; i < b.N; i++ {
+		merged := []Request{&logsRequest{ld: testdata.GenerateLogs(10)}}
+		for j := 0; j < 1000; j++ {
+			lr2 := &logsRequest{ld: testdata.GenerateLogs(10)}
+			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), cfg, lr2)
+			merged = append(merged[0:len(merged)-1], res...)
+		}
+		assert.Len(b, merged, 1)
+	}
+}
+
+func BenchmarkSplittingBasedOnItemCountManyLogsSlightlyAboveLimit(b *testing.B) {
+	// Every incoming request results in a split.
+	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 10000}
+	for i := 0; i < b.N; i++ {
+		merged := []Request{&logsRequest{ld: testdata.GenerateLogs(0)}}
+		for j := 0; j < 10; j++ {
+			lr2 := &logsRequest{ld: testdata.GenerateLogs(10001)}
+			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), cfg, lr2)
+			merged = append(merged[0:len(merged)-1], res...)
+		}
+		assert.Len(b, merged, 11)
+	}
+}
+
+func BenchmarkSplittingBasedOnItemCountHugeLogs(b *testing.B) {
+	// One request splits into many batches.
+	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 10000}
+	for i := 0; i < b.N; i++ {
+		merged := []Request{&logsRequest{ld: testdata.GenerateLogs(0)}}
+		lr2 := &logsRequest{ld: testdata.GenerateLogs(100000)}
+		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), cfg, lr2)
+		merged = append(merged[0:len(merged)-1], res...)
+		assert.Len(b, merged, 10)
 	}
 }
