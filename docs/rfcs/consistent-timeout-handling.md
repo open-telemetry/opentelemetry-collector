@@ -27,7 +27,7 @@ Definitions:
 - the *timeout* of a configuration struct is the duration that will be added
   relative to the current time until a deadline. No timeout means no deadline.
 
-Here are some of the scenarios where consistent behavior is desirable:
+Here are some of the scenarios where timeout handling comes into question:
 
 - A request arrives with an already-expired deadline. Should the component
   immediately return a deadline-exceeded error status?
@@ -45,10 +45,13 @@ Here are some of the scenarios where consistent behavior is desirable:
   - retry sender has a maximum elapsed timeout of `1m`, arriving request has `5s`
     timeout.
 
-Since there are many components, we choose a success criteria aimed at
-giving OpenTelemetry SDK users a first-class experience. Our goal is that
-an OpenTelemetry SDK configured with its OTLP/gRPC exporter sending to
-an OpenTelemetry Collector gateway which forwards to another OpenTelemetry
+How should we answer these questions? In some cases, there is a potential
+for optional behavior to support every use-case.  One success criteria
+would be to address OpenTelemetry SDK users. This proposal is that users
+should be reasonably able to guess at what will happen in various configurations.
+
+Our goal is that an OpenTelemetry SDK configured with its OTLP/gRPC exporter
+sending to an OpenTelemetry Collector gateway which forwards to another OpenTelemetry
 service has a good user experience. This requires that when pipeline latency
 rises, the user can adjust their export timeout to improve success,
 without unnecessary retries.
@@ -208,13 +211,10 @@ To simply check whether a request context is viable, not canceled,
 before proceeding with a calculation:
 
 ```golang
-    select {
-    case <-ctx.Done():
-        // the context is canceled, maybe deadline-exceeded.
-        return ctx.Err()
-    default:
-        // OK to continue
+    if err := ctx.Err(); err != nil {
+      return err
     }
+    // OK to continue
 ```
 
 ## Specific proposals
@@ -274,7 +274,7 @@ deadline, rejecting expired contexts. Proposed context-handling logic is listed 
 
 ### Retry sender
 
-This component is already deadline-aware.
+This component is already deadline-aware. No action is required.
 
 ### Queue sender
 
