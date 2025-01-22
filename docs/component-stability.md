@@ -66,6 +66,8 @@ Beta components should have a set of documentation that documents its usage in m
 including:
 - One or more example configuration snippets for the most common use cases.
 - Advanced configuration options that are known to be used in common environments.
+- All component-specific feature gates including a description for them and when they should be
+  used.
 - Warnings about known limitations and ways to misuse the component.
 
 Receivers that produce a fixed set of telemetry should document the telemetry they produce,
