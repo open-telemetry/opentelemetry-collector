@@ -25,8 +25,9 @@ var (
 )
 
 type logsRequest struct {
-	ld     plog.Logs
-	pusher consumer.ConsumeLogsFunc
+	ld             plog.Logs
+	pusher         consumer.ConsumeLogsFunc
+	cachedByteSize int
 }
 
 func newLogsRequest(ld plog.Logs, pusher consumer.ConsumeLogsFunc) Request {
@@ -64,6 +65,21 @@ func (req *logsRequest) Export(ctx context.Context) error {
 
 func (req *logsRequest) ItemsCount() int {
 	return req.ld.LogRecordCount()
+}
+
+func (req *logsRequest) ByteSize() int {
+	if req.cachedByteSize == 0 {
+		req.cachedByteSize = logsMarshaler.LogsSize(req.ld)
+	}
+	return req.cachedByteSize
+}
+
+func (req *logsRequest) invalidateCachedByteSize() {
+	req.cachedByteSize = 0
+}
+
+func (req *logsRequest) updateCachedByteSize(delta int) {
+	req.cachedByteSize += delta
 }
 
 type logsExporter struct {

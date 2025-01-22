@@ -418,6 +418,10 @@ func (mer *mockErrorRequest) ItemsCount() int {
 	return 7
 }
 
+func (mer *mockErrorRequest) ByteSize() int {
+	return 7
+}
+
 func (mer *mockErrorRequest) MergeSplit(context.Context, exporterbatcher.MaxSizeConfig, internal.Request) ([]internal.Request, error) {
 	return nil, nil
 }
@@ -461,6 +465,10 @@ func (m *mockRequest) checkNumRequests(t *testing.T, want int) {
 }
 
 func (m *mockRequest) ItemsCount() int {
+	return m.cnt
+}
+
+func (m *mockRequest) ByteSize() int {
 	return m.cnt
 }
 
