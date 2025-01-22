@@ -12,15 +12,13 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 )
-
-// Deprecated: [v0.118.0] use ControllerOption.
-type ScraperControllerOption = ControllerOption
 
 // ControllerOption apply changes to internal options.
 type ControllerOption interface {
@@ -182,14 +180,28 @@ func (sc *controller[T]) startScraping() {
 	}()
 }
 
-// Deprecated: [v0.118.0] Use NewMetricsController.
-func NewScraperControllerReceiver(
-	cfg *ControllerConfig,
-	set receiver.Settings,
-	nextConsumer consumer.Metrics,
+// NewLogsController creates a receiver.Logs with the configured options, that can control multiple scraper.Logs.
+func NewLogsController(cfg *ControllerConfig,
+	rSet receiver.Settings,
+	nextConsumer consumer.Logs,
 	options ...ControllerOption,
-) (component.Component, error) {
-	return NewMetricsController(cfg, set, nextConsumer, options...)
+) (receiver.Logs, error) {
+	co := getOptions(options)
+	scrapers := make([]scraper.Logs, 0, len(co.factoriesWithConfig))
+	for _, fwc := range co.factoriesWithConfig {
+		set := getSettings(fwc.f.Type(), rSet)
+		s, err := fwc.f.CreateLogs(context.Background(), set, fwc.cfg)
+		if err != nil {
+			return nil, err
+		}
+		s, err = wrapObsLogs(s, rSet.ID, set.ID, set.TelemetrySettings)
+		if err != nil {
+			return nil, err
+		}
+		scrapers = append(scrapers, s)
+	}
+	return newController[scraper.Logs](
+		cfg, rSet, scrapers, func(c *controller[scraper.Logs]) { scrapeLogs(c, nextConsumer) }, co.tickerCh)
 }
 
 // NewMetricsController creates a receiver.Metrics with the configured options, that can control multiple scraper.Metrics.
@@ -214,6 +226,25 @@ func NewMetricsController(cfg *ControllerConfig,
 	}
 	return newController[scraper.Metrics](
 		cfg, rSet, scrapers, func(c *controller[scraper.Metrics]) { scrapeMetrics(c, nextConsumer) }, co.tickerCh)
+}
+
+func scrapeLogs(c *controller[scraper.Logs], nextConsumer consumer.Logs) {
+	ctx, done := withScrapeContext(c.timeout)
+	defer done()
+
+	logs := plog.NewLogs()
+	for i := range c.scrapers {
+		md, err := c.scrapers[i].ScrapeLogs(ctx)
+		if err != nil && !scrapererror.IsPartialScrapeError(err) {
+			continue
+		}
+		md.ResourceLogs().MoveAndAppendTo(logs.ResourceLogs())
+	}
+
+	logRecordCount := logs.LogRecordCount()
+	ctx = c.obsrecv.StartMetricsOp(ctx)
+	err := nextConsumer.ConsumeLogs(ctx, logs)
+	c.obsrecv.EndMetricsOp(ctx, "", logRecordCount, err)
 }
 
 func scrapeMetrics(c *controller[scraper.Metrics], nextConsumer consumer.Metrics) {
