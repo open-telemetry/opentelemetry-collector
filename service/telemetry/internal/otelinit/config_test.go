@@ -138,6 +138,19 @@ func TestMetricReader(t *testing.T) {
 			wantErr: errors.New("unsupported protocol http/invalid"),
 		},
 		{
+			name: "periodic/otlp-exporter-nil-protocol",
+			reader: config.MetricReader{
+				Periodic: &config.PeriodicMetricReader{
+					Exporter: config.PushMetricExporter{
+						OTLP: &config.OTLPMetric{
+							Protocol: nil,
+						},
+					},
+				},
+			},
+			wantErr: errors.New("OTLP protocol not set"),
+		},
+		{
 			name: "periodic/otlp-grpc-exporter-no-endpoint",
 			reader: config.MetricReader{
 				Periodic: &config.PeriodicMetricReader{
@@ -573,4 +586,17 @@ func TestMetricReader(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestHeadersToMap(t *testing.T) {
+	pairs := []config.NameStringValuePair{
+		{Name: "zero", Value: strPtr("zeroValue")},
+		{Name: "one", Value: strPtr("oneValue")},
+		{Name: "nil", Value: nil},
+	}
+
+	m := convertHeadersToMap(pairs)
+	_, ok := m["nil"]
+	assert.False(t, ok)
+	assert.Len(t, m, 2)
 }
