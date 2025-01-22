@@ -25,6 +25,10 @@ func (s *Sink) ItemsCount() int64 {
 	return s.itemsCount.Load()
 }
 
+func (s *Sink) ByteSize() int64 {
+	return s.itemsCount.Load()
+}
+
 func NewSink() *Sink {
 	return &Sink{
 		requestsCount: new(atomic.Int64),
@@ -57,6 +61,10 @@ func (r *FakeRequest) Export(ctx context.Context) error {
 }
 
 func (r *FakeRequest) ItemsCount() int {
+	return r.Items
+}
+
+func (r *FakeRequest) ByteSize() int {
 	return r.Items
 }
 

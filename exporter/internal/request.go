@@ -16,9 +16,10 @@ type Request interface {
 	// Export exports the request to an external endpoint.
 	Export(ctx context.Context) error
 	// ItemsCount returns a number of basic items in the request where item is the smallest piece of data that can be
-	// sent. For example, for OTLP exporter, this value represents the number of spans,
-	// metric data points or log records.
+	// sent. For example, for OTLP exporter, this value represents the number of spans, metric data points or log records.
 	ItemsCount() int
+	// ByteSize returns the serialized byte size of of the request.
+	ByteSize() int
 	// MergeSplit is a function that merge and/or splits this request with another one into multiple requests based on the
 	// configured limit provided in MaxSizeConfig.
 	// MergeSplit does not split if all fields in MaxSizeConfig are not initialized (zero).
