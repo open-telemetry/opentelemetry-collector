@@ -5,6 +5,9 @@ package componenttest // import "go.opentelemetry.io/collector/component/compone
 
 import (
 	"go.opentelemetry.io/otel/attribute"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
 	"go.opentelemetry.io/collector/component"
 )
@@ -90,7 +93,9 @@ func (tts *TestTelemetry) TelemetrySettings() component.TelemetrySettings {
 // The caller must defer a call to `Shutdown` on the returned TestTelemetry.
 func SetupTelemetry(id component.ID) (TestTelemetry, error) {
 	return TestTelemetry{
-		Telemetry: NewTelemetry(),
-		id:        id,
+		Telemetry: NewTelemetry(
+			WithMetricOptions(sdkmetric.WithResource(resource.Empty())),
+			WithTraceOptions(sdktrace.WithResource(resource.Empty()))),
+		id: id,
 	}, nil
 }

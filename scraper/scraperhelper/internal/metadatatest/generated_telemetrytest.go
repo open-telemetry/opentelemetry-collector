@@ -17,8 +17,8 @@ type Telemetry struct {
 	componenttest.Telemetry
 }
 
-func SetupTelemetry() Telemetry {
-	return Telemetry{Telemetry: componenttest.NewTelemetry()}
+func SetupTelemetry(opts ...componenttest.TelemetryOption) Telemetry {
+	return Telemetry{Telemetry: componenttest.NewTelemetry(opts...)}
 }
 
 func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, opts ...metricdatatest.Option) {

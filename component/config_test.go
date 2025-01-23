@@ -36,6 +36,10 @@ type configChildTypeDef struct {
 	ChildPtr *errType
 }
 
+type configChildInterface struct {
+	Child Config
+}
+
 type errConfig struct {
 	err error
 }
@@ -96,6 +100,16 @@ func TestValidateConfig(t *testing.T) {
 			expected: errors.New("pointer type"),
 		},
 		{
+			name:     "child interface with nil",
+			cfg:      configChildInterface{},
+			expected: nil,
+		},
+		{
+			name:     "pointer to child interface with nil",
+			cfg:      &configChildInterface{},
+			expected: nil,
+		},
+		{
 			name:     "nil",
 			cfg:      nil,
 			expected: nil,
@@ -124,6 +138,26 @@ func TestValidateConfig(t *testing.T) {
 			name:     "child struct pointer",
 			cfg:      &configChildStruct{ChildPtr: &errConfig{err: errors.New("child struct pointer")}},
 			expected: errors.New("child struct pointer"),
+		},
+		{
+			name:     "child interface",
+			cfg:      configChildInterface{Child: errConfig{err: errors.New("child interface")}},
+			expected: errors.New("child interface"),
+		},
+		{
+			name:     "pointer to child interface",
+			cfg:      &configChildInterface{Child: errConfig{err: errors.New("pointer to child interface")}},
+			expected: errors.New("pointer to child interface"),
+		},
+		{
+			name:     "child interface with pointer",
+			cfg:      configChildInterface{Child: &errConfig{err: errors.New("child interface with pointer")}},
+			expected: errors.New("child interface with pointer"),
+		},
+		{
+			name:     "pointer to child interface with pointer",
+			cfg:      &configChildInterface{Child: &errConfig{err: errors.New("pointer to child interface with pointer")}},
+			expected: errors.New("pointer to child interface with pointer"),
 		},
 		{
 			name:     "child slice",

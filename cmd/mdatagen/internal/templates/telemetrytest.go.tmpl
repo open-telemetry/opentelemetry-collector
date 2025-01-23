@@ -24,8 +24,8 @@ type Telemetry struct {
 	componenttest.Telemetry
 }
 
-func SetupTelemetry() Telemetry {
-	return Telemetry{ Telemetry: componenttest.NewTelemetry() }
+func SetupTelemetry(opts ...componenttest.TelemetryOption) Telemetry {
+	return Telemetry{ Telemetry: componenttest.NewTelemetry(opts...) }
 }
 
 {{- if or isConnector isExporter isExtension isProcessor isReceiver isScraper }}
