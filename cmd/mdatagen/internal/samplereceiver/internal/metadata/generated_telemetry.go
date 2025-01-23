@@ -7,11 +7,9 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/otel/metric"
-	noopmetric "go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -29,6 +27,7 @@ type TelemetryBuilder struct {
 	BatchSizeTriggerSend                 metric.Int64Counter
 	ProcessRuntimeTotalAllocBytes        metric.Int64ObservableCounter
 	observeProcessRuntimeTotalAllocBytes func(context.Context, metric.Observer) error
+	QueueCapacity                        metric.Int64Gauge
 	QueueLength                          metric.Int64ObservableGauge
 	RequestDuration                      metric.Float64Histogram
 }
@@ -81,21 +80,27 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
-	builder.BatchSizeTriggerSend, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
+	builder.BatchSizeTriggerSend, err = builder.meter.Int64Counter(
 		"otelcol_batch_size_trigger_send",
 		metric.WithDescription("Number of times the batch was sent due to a size trigger [deprecated since v0.110.0]"),
 		metric.WithUnit("{times}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessRuntimeTotalAllocBytes, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64ObservableCounter(
+	builder.ProcessRuntimeTotalAllocBytes, err = builder.meter.Int64ObservableCounter(
 		"otelcol_process_runtime_total_alloc_bytes",
 		metric.WithDescription("Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')"),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
-	_, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).RegisterCallback(builder.observeProcessRuntimeTotalAllocBytes, builder.ProcessRuntimeTotalAllocBytes)
+	_, err = builder.meter.RegisterCallback(builder.observeProcessRuntimeTotalAllocBytes, builder.ProcessRuntimeTotalAllocBytes)
 	errs = errors.Join(errs, err)
-	builder.RequestDuration, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Float64Histogram(
+	builder.QueueCapacity, err = builder.meter.Int64Gauge(
+		"otelcol_queue_capacity",
+		metric.WithDescription("Queue capacity - sync gauge example."),
+		metric.WithUnit("{items}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.RequestDuration, err = builder.meter.Float64Histogram(
 		"otelcol_request_duration",
 		metric.WithDescription("Duration of request [alpha]"),
 		metric.WithUnit("s"),
@@ -103,11 +108,4 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs
-}
-
-func getLeveledMeter(meter metric.Meter, cfgLevel, srvLevel configtelemetry.Level) metric.Meter {
-	if cfgLevel <= srvLevel {
-		return meter
-	}
-	return noopmetric.Meter{}
 }

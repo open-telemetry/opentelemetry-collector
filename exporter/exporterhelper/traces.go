@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
-	"go.opentelemetry.io/collector/exporter/internal/queue"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pipeline"
 )
@@ -26,14 +25,16 @@ var (
 )
 
 type tracesRequest struct {
-	td     ptrace.Traces
-	pusher consumer.ConsumeTracesFunc
+	td               ptrace.Traces
+	pusher           consumer.ConsumeTracesFunc
+	cachedItemsCount int
 }
 
 func newTracesRequest(td ptrace.Traces, pusher consumer.ConsumeTracesFunc) Request {
 	return &tracesRequest{
-		td:     td,
-		pusher: pusher,
+		td:               td,
+		pusher:           pusher,
+		cachedItemsCount: -1,
 	}
 }
 
@@ -64,7 +65,14 @@ func (req *tracesRequest) Export(ctx context.Context) error {
 }
 
 func (req *tracesRequest) ItemsCount() int {
-	return req.td.SpanCount()
+	if req.cachedItemsCount == -1 {
+		req.cachedItemsCount = req.td.SpanCount()
+	}
+	return req.cachedItemsCount
+}
+
+func (req *tracesRequest) setCachedItemsCount(count int) {
+	req.cachedItemsCount = count
 }
 
 type tracesExporter struct {
@@ -135,7 +143,7 @@ func NewTracesRequest(
 			return consumererror.NewPermanent(cErr)
 		}
 		sErr := be.Send(ctx, req)
-		if errors.Is(sErr, queue.ErrQueueIsFull) {
+		if errors.Is(sErr, exporterqueue.ErrQueueIsFull) {
 			be.Obsrep.RecordEnqueueFailure(ctx, pipeline.SignalTraces, int64(req.ItemsCount()))
 		}
 		return sErr

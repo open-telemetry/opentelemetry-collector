@@ -38,11 +38,13 @@ func (req *tracesRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxS
 			continue
 		}
 
-		srcCount := srcReq.td.SpanCount()
+		srcCount := srcReq.ItemsCount()
 		if srcCount <= capacityLeft {
 			if destReq == nil {
 				destReq = srcReq
 			} else {
+				destReq.setCachedItemsCount(srcCount)
+				srcReq.setCachedItemsCount(0)
 				srcReq.td.ResourceSpans().MoveAndAppendTo(destReq.td.ResourceSpans())
 			}
 			capacityLeft -= srcCount
@@ -51,16 +53,21 @@ func (req *tracesRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxS
 
 		for {
 			extractedTraces := extractTraces(srcReq.td, capacityLeft)
-			if extractedTraces.SpanCount() == 0 {
+			extractedCount := extractedTraces.SpanCount()
+			if extractedCount == 0 {
 				break
 			}
-			capacityLeft -= extractedTraces.SpanCount()
+
 			if destReq == nil {
-				destReq = &tracesRequest{td: extractedTraces, pusher: srcReq.pusher}
+				destReq = &tracesRequest{td: extractedTraces, pusher: srcReq.pusher, cachedItemsCount: extractedCount}
 			} else {
+				destReq.setCachedItemsCount(destReq.ItemsCount() + extractedCount)
+				srcReq.setCachedItemsCount(srcReq.ItemsCount() - extractedCount)
 				extractedTraces.ResourceSpans().MoveAndAppendTo(destReq.td.ResourceSpans())
 			}
+
 			// Create new batch once capacity is reached.
+			capacityLeft -= extractedCount
 			if capacityLeft == 0 {
 				res = append(res, destReq)
 				destReq = nil

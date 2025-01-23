@@ -16,16 +16,16 @@ import (
 )
 
 func TestMergeMetrics(t *testing.T) {
-	mr1 := &metricsRequest{md: testdata.GenerateMetrics(2)}
-	mr2 := &metricsRequest{md: testdata.GenerateMetrics(3)}
+	mr1 := newMetricsRequest(testdata.GenerateMetrics(2), nil)
+	mr2 := newMetricsRequest(testdata.GenerateMetrics(3), nil)
 	res, err := mr1.MergeSplit(context.Background(), exporterbatcher.MaxSizeConfig{}, mr2)
 	require.NoError(t, err)
 	assert.Equal(t, 5, res[0].(*metricsRequest).md.MetricCount())
 }
 
 func TestMergeMetricsInvalidInput(t *testing.T) {
-	mr1 := &tracesRequest{td: testdata.GenerateTraces(2)}
-	mr2 := &metricsRequest{md: testdata.GenerateMetrics(3)}
+	mr1 := newTracesRequest(testdata.GenerateTraces(2), nil)
+	mr2 := newMetricsRequest(testdata.GenerateMetrics(3), nil)
 	_, err := mr1.MergeSplit(context.Background(), exporterbatcher.MaxSizeConfig{}, mr2)
 	require.Error(t, err)
 }
@@ -41,79 +41,79 @@ func TestMergeSplitMetrics(t *testing.T) {
 		{
 			name:     "both_requests_empty",
 			cfg:      exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
-			mr1:      &metricsRequest{md: pmetric.NewMetrics()},
-			mr2:      &metricsRequest{md: pmetric.NewMetrics()},
-			expected: []*metricsRequest{{md: pmetric.NewMetrics()}},
+			mr1:      newMetricsRequest(pmetric.NewMetrics(), nil),
+			mr2:      newMetricsRequest(pmetric.NewMetrics(), nil),
+			expected: []*metricsRequest{newMetricsRequest(pmetric.NewMetrics(), nil).(*metricsRequest)},
 		},
 		{
 			name:     "first_request_empty",
 			cfg:      exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
-			mr1:      &metricsRequest{md: pmetric.NewMetrics()},
-			mr2:      &metricsRequest{md: testdata.GenerateMetrics(5)},
-			expected: []*metricsRequest{{md: testdata.GenerateMetrics(5)}},
+			mr1:      newMetricsRequest(pmetric.NewMetrics(), nil),
+			mr2:      newMetricsRequest(testdata.GenerateMetrics(5), nil),
+			expected: []*metricsRequest{newMetricsRequest(testdata.GenerateMetrics(5), nil).(*metricsRequest)},
 		},
 		{
 			name:     "first_empty_second_nil",
 			cfg:      exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
-			mr1:      &metricsRequest{md: pmetric.NewMetrics()},
+			mr1:      newMetricsRequest(pmetric.NewMetrics(), nil),
 			mr2:      nil,
-			expected: []*metricsRequest{{md: pmetric.NewMetrics()}},
+			expected: []*metricsRequest{newMetricsRequest(pmetric.NewMetrics(), nil).(*metricsRequest)},
 		},
 		{
 			name: "merge_only",
 			cfg:  exporterbatcher.MaxSizeConfig{MaxSizeItems: 60},
-			mr1:  &metricsRequest{md: testdata.GenerateMetrics(10)},
-			mr2:  &metricsRequest{md: testdata.GenerateMetrics(14)},
-			expected: []*metricsRequest{{md: func() pmetric.Metrics {
+			mr1:  newMetricsRequest(testdata.GenerateMetrics(10), nil),
+			mr2:  newMetricsRequest(testdata.GenerateMetrics(14), nil),
+			expected: []*metricsRequest{newMetricsRequest(func() pmetric.Metrics {
 				metrics := testdata.GenerateMetrics(10)
 				testdata.GenerateMetrics(14).ResourceMetrics().MoveAndAppendTo(metrics.ResourceMetrics())
 				return metrics
-			}()}},
+			}(), nil).(*metricsRequest)},
 		},
 		{
 			name: "split_only",
 			cfg:  exporterbatcher.MaxSizeConfig{MaxSizeItems: 14},
-			mr1:  &metricsRequest{md: pmetric.NewMetrics()},
-			mr2:  &metricsRequest{md: testdata.GenerateMetrics(15)}, // 15 metrics, 30 data points
+			mr1:  newMetricsRequest(pmetric.NewMetrics(), nil),
+			mr2:  newMetricsRequest(testdata.GenerateMetrics(15), nil), // 15 metrics, 30 data points
 			expected: []*metricsRequest{
-				{md: testdata.GenerateMetrics(7)}, // 7 metrics, 14 data points
-				{md: testdata.GenerateMetrics(7)}, // 7 metrics, 14 data points
-				{md: testdata.GenerateMetrics(1)}, // 1 metric, 2 data points
+				newMetricsRequest(testdata.GenerateMetrics(7), nil).(*metricsRequest), // 7 metrics, 14 data points
+				newMetricsRequest(testdata.GenerateMetrics(7), nil).(*metricsRequest), // 7 metrics, 14 data points
+				newMetricsRequest(testdata.GenerateMetrics(1), nil).(*metricsRequest), // 1 metric, 2 data points
 			},
 		},
 		{
 			name: "split_and_merge",
 			cfg:  exporterbatcher.MaxSizeConfig{MaxSizeItems: 28},
-			mr1:  &metricsRequest{md: testdata.GenerateMetrics(7)},  // 7 metrics, 14 data points
-			mr2:  &metricsRequest{md: testdata.GenerateMetrics(25)}, // 25 metrics, 50 data points
+			mr1:  newMetricsRequest(testdata.GenerateMetrics(7), nil),  // 7 metrics, 14 data points
+			mr2:  newMetricsRequest(testdata.GenerateMetrics(25), nil), // 25 metrics, 50 data points
 			expected: []*metricsRequest{
-				{md: func() pmetric.Metrics {
+				newMetricsRequest(func() pmetric.Metrics {
 					metrics := testdata.GenerateMetrics(7)
 					testdata.GenerateMetrics(7).ResourceMetrics().MoveAndAppendTo(metrics.ResourceMetrics())
 					return metrics
-				}()},
-				{md: testdata.GenerateMetrics(14)}, // 14 metrics, 28 data points
-				{md: testdata.GenerateMetrics(4)},  // 4 metrics, 8 data points
+				}(), nil).(*metricsRequest),
+				newMetricsRequest(testdata.GenerateMetrics(14), nil).(*metricsRequest), // 14 metrics, 28 data points
+				newMetricsRequest(testdata.GenerateMetrics(4), nil).(*metricsRequest),  // 4 metrics, 8 data points
 			},
 		},
 		{
 			name: "scope_metrics_split",
 			cfg:  exporterbatcher.MaxSizeConfig{MaxSizeItems: 8},
-			mr1: &metricsRequest{md: func() pmetric.Metrics {
+			mr1: newMetricsRequest(func() pmetric.Metrics {
 				md := testdata.GenerateMetrics(4)
 				extraScopeMetrics := md.ResourceMetrics().At(0).ScopeMetrics().AppendEmpty()
 				testdata.GenerateMetrics(4).ResourceMetrics().At(0).ScopeMetrics().At(0).MoveTo(extraScopeMetrics)
 				extraScopeMetrics.Scope().SetName("extra scope")
 				return md
-			}()},
+			}(), nil),
 			mr2: nil,
 			expected: []*metricsRequest{
-				{md: testdata.GenerateMetrics(4)},
-				{md: func() pmetric.Metrics {
+				newMetricsRequest(testdata.GenerateMetrics(4), nil).(*metricsRequest),
+				newMetricsRequest(func() pmetric.Metrics {
 					md := testdata.GenerateMetrics(4)
 					md.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().SetName("extra scope")
 					return md
-				}()},
+				}(), nil).(*metricsRequest),
 			},
 		},
 	}
@@ -123,23 +123,23 @@ func TestMergeSplitMetrics(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, len(tt.expected), len(res))
 			for i := range res {
-				assert.Equal(t, tt.expected[i], res[i].(*metricsRequest))
+				assert.Equal(t, tt.expected[i].md, res[i].(*metricsRequest).md)
 			}
 		})
 	}
 }
 
 func TestMergeSplitMetricsInputNotModifiedIfErrorReturned(t *testing.T) {
-	r1 := &metricsRequest{md: testdata.GenerateMetrics(18)} // 18 metrics, 36 data points
-	r2 := &logsRequest{ld: testdata.GenerateLogs(3)}
+	r1 := newMetricsRequest(testdata.GenerateMetrics(18), nil) // 18 metrics, 36 data points
+	r2 := newLogsRequest(testdata.GenerateLogs(3), nil)
 	_, err := r1.MergeSplit(context.Background(), exporterbatcher.MaxSizeConfig{MaxSizeItems: 10}, r2)
 	require.Error(t, err)
 	assert.Equal(t, 36, r1.ItemsCount())
 }
 
 func TestMergeSplitMetricsInvalidInput(t *testing.T) {
-	r1 := &tracesRequest{td: testdata.GenerateTraces(2)}
-	r2 := &metricsRequest{md: testdata.GenerateMetrics(3)}
+	r1 := newTracesRequest(testdata.GenerateTraces(2), nil)
+	r2 := newMetricsRequest(testdata.GenerateMetrics(3), nil)
 	_, err := r1.MergeSplit(context.Background(), exporterbatcher.MaxSizeConfig{MaxSizeItems: 10}, r2)
 	require.Error(t, err)
 }
@@ -158,4 +158,44 @@ func TestExtractMetricsInvalidMetric(t *testing.T) {
 	extractedMetrics := extractMetrics(md, 10)
 	assert.Equal(t, testdata.GenerateMetricsMetricTypeInvalid(), extractedMetrics)
 	assert.Equal(t, 0, md.ResourceMetrics().Len())
+}
+
+func BenchmarkSplittingBasedOnItemCountManySmallMetrics(b *testing.B) {
+	// All requests merge into a single batch.
+	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 20000}
+	for i := 0; i < b.N; i++ {
+		merged := []Request{&metricsRequest{md: testdata.GenerateMetrics(10)}}
+		for j := 0; j < 1000; j++ {
+			lr2 := &metricsRequest{md: testdata.GenerateMetrics(10)}
+			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), cfg, lr2)
+			merged = append(merged[0:len(merged)-1], res...)
+		}
+		assert.Len(b, merged, 1)
+	}
+}
+
+func BenchmarkSplittingBasedOnItemCountManyMetricsSlightlyAboveLimit(b *testing.B) {
+	// Every incoming request results in a split.
+	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 20000}
+	for i := 0; i < b.N; i++ {
+		merged := []Request{&metricsRequest{md: testdata.GenerateMetrics(0)}}
+		for j := 0; j < 10; j++ {
+			lr2 := &metricsRequest{md: testdata.GenerateMetrics(10001)}
+			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), cfg, lr2)
+			merged = append(merged[0:len(merged)-1], res...)
+		}
+		assert.Len(b, merged, 11)
+	}
+}
+
+func BenchmarkSplittingBasedOnItemCountHugeMetrics(b *testing.B) {
+	// One request splits into many batches.
+	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 20000}
+	for i := 0; i < b.N; i++ {
+		merged := []Request{&metricsRequest{md: testdata.GenerateMetrics(0)}}
+		lr2 := &metricsRequest{md: testdata.GenerateMetrics(100000)}
+		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), cfg, lr2)
+		merged = append(merged[0:len(merged)-1], res...)
+		assert.Len(b, merged, 10)
+	}
 }

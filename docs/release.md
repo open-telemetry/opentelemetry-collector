@@ -25,7 +25,7 @@ Before the release, make sure there are no open release blockers in [core](https
 
 ## Releasing opentelemetry-collector
 
-1. Update Contrib to use the latest in development version of Core by running `make update-otel` in Contrib root directory. This is to ensure that the latest core does not break contrib in any way. If it results in any changes, submit a PR to Contrib. If you are unable to run `make update-otel`, it is possible to skip this step and resolve conflicts with Contrib after Core is released, but this is generally inadvisable.
+1. Update Contrib to use the latest in development version of Core by running [Update contrib to the latest core source](https://github.com/open-telemetry/opentelemetry-collector-contrib/actions/workflows/update-otel.yaml). This is to ensure that the latest core does not break contrib in any way. If the job is failing for any reason, you can do it locally by running `make update-otel` in Contrib root directory and pushing a PR. If you are unable to run `make update-otel`, it is possible to skip this step and resolve conflicts with Contrib after Core is released, but this is generally inadvisable.
    -  🛑 **Do not move forward until this PR is merged.**
 
 2. Determine the version number that will be assigned to the release. Usually, we increment the minor version number and set the patch number to 0. In this document, we are using `v0.85.0` as the version to be released, following `v0.84.0`.
@@ -40,7 +40,7 @@ Before the release, make sure there are no open release blockers in [core](https
 3. Manually run the action [Automation - Prepare Release](https://github.com/open-telemetry/opentelemetry-collector/actions/workflows/prepare-release.yml). This action will create an issue to track the progress of the release and a pull request to update the changelog and version numbers in the repo.
    - When prompted, enter the version numbers determined in Step 2, but do not include a leading `v`.
    - If not intending to release stable modules, do not specify a version for `Release candidate version stable`.
-   - **While this PR is open all merging in Core should be halted**. This should be enforced automatically: the `Merge freeze / Check` CI check will fail and the merge queue will reject PRs as long as a PR with the `release:merge-freeze` label is open.
+   - **While this PR is open all merging in Core should be halted**. This should be enforced automatically: the `Merge freeze / Check` CI check will fail and the merge queue will reject PRs as long as there is an open PR with `[chore] Prepare release` in its title.
    - If the PR needs updated in any way you can make the changes in a fork and PR those changes into the `prepare-release-prs/x` branch. You do not need to wait for the CI to pass in this prep-to-prep PR.
    -  🛑 **Do not move forward until this PR is merged.** 🛑
 
@@ -126,7 +126,7 @@ The last step of the release process creates artifacts for the new version of th
 
 3. Create a tag for the new release version by running:
    
-   ⚠️ If you set your remote using `https` you need to include `REMOTE=https://github.com/open-telemetry/opentelemetry-collector-contrib.git` in each command. ⚠️
+   ⚠️ If you set your remote using `https` you need to include `REMOTE=https://github.com/open-telemetry/opentelemetry-collector-releases.git` in each command. ⚠️
    
    - `make push-tags TAG=v0.85.0`
 
@@ -236,8 +236,6 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 
 | Date       | Version  | Release manager                                   |
 |------------|----------|---------------------------------------------------|
-| 2025-01-06 | v0.117.0 | [@dmitryax](https://github.com/dmitryax)          |
-| 2025-01-20 | v0.118.0 | [@codeboten](https://github.com/codeboten)        |
 | 2025-02-03 | v0.119.0 | [@bogdandrutu](https://github.com/bogdandrutu)    |
 | 2025-02-17 | v0.120.0 | [@jpkrohling](https://github.com/jpkrohling)      |
 | 2025-03-03 | v0.121.0 | [@mx-psi](https://github.com/mx-psi)              |
@@ -246,3 +244,5 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 | 2025-04-14 | v0.124.0 | [@TylerHelmuth](https://github.com/TylerHelmuth)  |
 | 2025-04-28 | v0.125.0 | [@atoulme](https://github.com/atoulme)            |
 | 2025-05-12 | v0.126.0 | [@songy23](https://github.com/songy23)            |
+| 2025-05-26 | v0.127.0 | [@dmitryax](https://github.com/dmitryax)          |
+| 2025-06-09 | v0.118.0 | [@codeboten](https://github.com/codeboten)        |

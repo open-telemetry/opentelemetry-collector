@@ -27,7 +27,7 @@ import (
 
 var usePullingBasedExporterQueueBatcher = featuregate.GlobalRegistry().MustRegister(
 	"exporter.UsePullingBasedExporterQueueBatcher",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterFromVersion("v0.115.0"),
 	featuregate.WithRegisterDescription("if set to true, turns on the pulling-based exporter queue bathcer"),
 )
@@ -67,7 +67,7 @@ type BaseExporter struct {
 }
 
 func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSenderFactory, options ...Option) (*BaseExporter, error) {
-	obsReport, err := NewExporter(ObsReportSettings{ExporterID: set.ID, ExporterCreateSettings: set, Signal: signal})
+	obsReport, err := NewExporter(ObsReportSettings{ExporterSettings: set, Signal: signal})
 	if err != nil {
 		return nil, err
 	}
@@ -222,6 +222,7 @@ func WithQueue(config QueueConfig) Option {
 			Enabled:      config.Enabled,
 			NumConsumers: config.NumConsumers,
 			QueueSize:    config.QueueSize,
+			Blocking:     config.Blocking,
 		}
 		o.queueFactory = exporterqueue.NewPersistentQueueFactory[internal.Request](config.StorageID, exporterqueue.PersistentQueueSettings[internal.Request]{
 			Marshaler:   o.Marshaler,

@@ -7,6 +7,32 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.24.0/v0.118.0
+
+### 💡 Enhancements 💡
+
+- `exporterhelper`: Add blocking option to control queue behavior when full (#12090)
+- `debugexporter`: Add EventName to debug exporter for Logs. EventName was added as top-level field in the LogRecord from 1.5.0 of proto definition. (#11966)
+- `confighttp`: Added support for configuring compression levels. (#10467)
+  A new configuration option called CompressionParams has been added to confighttp. | This allows users to configure the compression levels for the confighttp client.
+- `exporterhelper`: Change the memory queue implementation to not pre-allocate capacity objects. (#12070)
+  This change improves memory usage of the collector under low utilization and is a prerequisite for supporting different other size limitations (number of items, bytes).
+
+### 🧰 Bug fixes 🧰
+
+- `mdatagen`: apply fieldalignment to generated code (#12121)
+- `otelcoltest`: Set `DefaultScheme` to `env` in the test `ConfigProvider` to replicate the default provider used by the Collector. (#12066)
+
+## v1.23.0/v0.117.0
+
+### 🛑 Breaking changes 🛑
+
+- `otelcol`: Remove warnings when 0.0.0.0 is used (#11713, #8510)
+
+### 🧰 Bug fixes 🧰
+
+- `internal/sharedcomponent`: Fixed bug where sharedcomponent would use too much memory remembering all the previously reported statuses (#11826)
+
 ## v1.22.0/v0.116.0
 
 ### 🛑 Breaking changes 🛑
