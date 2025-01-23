@@ -126,7 +126,7 @@ func NewTracesRequest(
 		return nil, errNilTracesConverter
 	}
 
-	be, err := internal.NewBaseExporter(set, pipeline.SignalTraces, newTracesWithObservability, options...)
+	be, err := internal.NewBaseExporter(set, pipeline.SignalTraces, internal.NewObsReportSender, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +141,7 @@ func NewTracesRequest(
 		}
 		sErr := be.Send(ctx, req)
 		if errors.Is(sErr, exporterqueue.ErrQueueIsFull) {
-			be.Obsrep.RecordEnqueueFailure(ctx, pipeline.SignalTraces, int64(req.ItemsCount()))
+			be.Obsrep.RecordEnqueueFailure(ctx, int64(req.ItemsCount()))
 		}
 		return sErr
 	}, be.ConsumerOptions...)
@@ -150,22 +150,4 @@ func NewTracesRequest(
 		BaseExporter: be,
 		Traces:       tc,
 	}, err
-}
-
-type tracesWithObservability struct {
-	internal.BaseSender[Request]
-	obsrep *internal.ObsReport
-}
-
-func newTracesWithObservability(obsrep *internal.ObsReport) internal.Sender[Request] {
-	return &tracesWithObservability{obsrep: obsrep}
-}
-
-func (tewo *tracesWithObservability) Send(ctx context.Context, req Request) error {
-	c := tewo.obsrep.StartTracesOp(ctx)
-	numTraceSpans := req.ItemsCount()
-	// Forward the data to the next consumer (this pusher is the next).
-	err := tewo.NextSender.Send(c, req)
-	tewo.obsrep.EndTracesOp(c, numTraceSpans, err)
-	return err
 }
