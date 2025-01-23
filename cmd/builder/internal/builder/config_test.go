@@ -177,7 +177,6 @@ func TestNewDefaultConfig(t *testing.T) {
 	assert.NoError(t, cfg.Validate())
 	assert.NoError(t, cfg.SetGoPath())
 	require.NoError(t, cfg.Validate())
-	assert.False(t, cfg.Distribution.DebugCompilation)
 	assert.Empty(t, cfg.Distribution.BuildTags)
 	assert.False(t, cfg.LDSet)
 	assert.Empty(t, cfg.LDFlags)
@@ -238,18 +237,6 @@ func TestBuildTagConfig(t *testing.T) {
 	}
 	require.NoError(t, cfg.Validate())
 	assert.Equal(t, "customTag", cfg.Distribution.BuildTags)
-}
-
-func TestDebugOptionSetConfig(t *testing.T) {
-	cfg := Config{
-		Distribution: Distribution{
-			DebugCompilation: true,
-		},
-		SkipCompilation: true,
-		SkipGetModules:  true,
-	}
-	require.NoError(t, cfg.Validate())
-	assert.True(t, cfg.Distribution.DebugCompilation)
 }
 
 func TestAddsDefaultProviders(t *testing.T) {
