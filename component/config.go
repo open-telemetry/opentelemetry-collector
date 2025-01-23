@@ -39,7 +39,7 @@ func validate(v reflect.Value) error {
 	switch v.Kind() {
 	case reflect.Invalid:
 		return nil
-	case reflect.Ptr:
+	case reflect.Ptr, reflect.Interface:
 		return validate(v.Elem())
 	case reflect.Struct:
 		var errs error
