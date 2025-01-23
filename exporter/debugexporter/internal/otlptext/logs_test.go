@@ -40,6 +40,25 @@ func TestLogsText(t *testing.T) {
 			out:  "two_records.out",
 		},
 		{
+			name: "log_with_event_name",
+			in: func() plog.Logs {
+				ls := plog.NewLogs()
+				l := ls.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+				l.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)))
+				l.SetSeverityNumber(plog.SeverityNumberInfo)
+				l.SetSeverityText("Info")
+				l.SetEventName("event_name")
+				l.Body().SetStr("This is a log message")
+				attrs := l.Attributes()
+				attrs.PutStr("app", "server")
+				attrs.PutInt("instance_num", 1)
+				l.SetSpanID([8]byte{0x01, 0x02, 0x04, 0x08})
+				l.SetTraceID([16]byte{0x08, 0x04, 0x02, 0x01})
+				return ls
+			}(),
+			out: "log_with_event_name.out",
+		},
+		{
 			name: "logs_with_embedded_maps",
 			in: func() plog.Logs {
 				ls := plog.NewLogs()

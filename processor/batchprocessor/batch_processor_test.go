@@ -212,7 +212,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 	tel.AssertMetrics(t, []metricdata.Metrics{
 		{
 			Name:        "otelcol_processor_batch_batch_send_size_bytes",
-			Description: "Number of bytes in batch that was sent",
+			Description: "Number of bytes in batch that was sent. Only available on detailed level.",
 			Unit:        "By",
 			Data: metricdata.Histogram[int64]{
 				Temporality: metricdata.CumulativeTemporality,
@@ -339,7 +339,7 @@ func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
 	tel.AssertMetrics(t, []metricdata.Metrics{
 		{
 			Name:        "otelcol_processor_batch_batch_send_size_bytes",
-			Description: "Number of bytes in batch that was sent",
+			Description: "Number of bytes in batch that was sent. Only available on detailed level.",
 			Unit:        "By",
 			Data: metricdata.Histogram[int64]{
 				Temporality: metricdata.CumulativeTemporality,
@@ -599,7 +599,7 @@ func TestBatchMetricProcessorBatchSize(t *testing.T) {
 	tel.AssertMetrics(t, []metricdata.Metrics{
 		{
 			Name:        "otelcol_processor_batch_batch_send_size_bytes",
-			Description: "Number of bytes in batch that was sent",
+			Description: "Number of bytes in batch that was sent. Only available on detailed level.",
 			Unit:        "By",
 			Data: metricdata.Histogram[int64]{
 				Temporality: metricdata.CumulativeTemporality,
@@ -975,7 +975,7 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 	tel.AssertMetrics(t, []metricdata.Metrics{
 		{
 			Name:        "otelcol_processor_batch_batch_send_size_bytes",
-			Description: "Number of bytes in batch that was sent",
+			Description: "Number of bytes in batch that was sent. Only available on detailed level.",
 			Unit:        "By",
 			Data: metricdata.Histogram[int64]{
 				Temporality: metricdata.CumulativeTemporality,

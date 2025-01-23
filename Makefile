@@ -189,8 +189,9 @@ PROTO_PACKAGE=go.opentelemetry.io/collector/$(PROTO_TARGET_GEN_DIR)
 # Intermediate directory used during generation.
 PROTO_INTERMEDIATE_DIR=pdata/internal/.patched-otlp-proto
 
+DOCKERCMD ?= docker
 DOCKER_PROTOBUF ?= otel/build-protobuf:0.23.0
-PROTOC := docker run --rm -u ${shell id -u} -v${PWD}:${PWD} -w${PWD}/$(PROTO_INTERMEDIATE_DIR) ${DOCKER_PROTOBUF} --proto_path=${PWD}
+PROTOC := $(DOCKERCMD) run --rm -u ${shell id -u} -v${PWD}:${PWD} -w${PWD}/$(PROTO_INTERMEDIATE_DIR) ${DOCKER_PROTOBUF} --proto_path=${PWD}
 PROTO_INCLUDES := -I/usr/include/github.com/gogo/protobuf -I./
 
 # Cleanup temporary directory
@@ -402,9 +403,14 @@ clean:
 
 .PHONY: checklinks
 checklinks:
-	command -v markdown-link-check >/dev/null 2>&1 || { echo >&2 "markdown-link-check not installed. Run 'npm install -g markdown-link-check'"; exit 1; }
-	find . -name \*.md -print0 | xargs -0 -n1 \
-		markdown-link-check -q -c ./.github/workflows/check_links_config.json || true
+	command -v $(DOCKERCMD) >/dev/null 2>&1 || { echo >&2 "$(DOCKERCMD) not installed. Install before continuing"; exit 1; }
+	$(DOCKERCMD) run -w /home/repo --rm \
+		--mount 'type=bind,source='$(PWD)',target=/home/repo' \
+		lycheeverse/lychee \
+		--config .github/lychee.toml \
+		--root-dir /home/repo \
+		-v \
+		--no-progress './**/*.md'
 
 # error message "failed to sync logger:  sync /dev/stderr: inappropriate ioctl for device"
 # is a known issue but does not affect function.

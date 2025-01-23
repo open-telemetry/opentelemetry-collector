@@ -26,6 +26,8 @@ var (
 	nameRegexp = regexp.MustCompile(`^[^\pZ\pC\pS]+$`)
 )
 
+var _ fmt.Stringer = Type{}
+
 // Type is the component type as it is used in the config.
 type Type struct {
 	name string

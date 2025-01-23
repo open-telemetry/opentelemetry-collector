@@ -19,10 +19,10 @@ var receiverType = component.MustNewType("examplereceiver")
 var ExampleReceiverFactory = xreceiver.NewFactory(
 	receiverType,
 	createReceiverDefaultConfig,
-	xreceiver.WithTraces(createTraces, component.StabilityLevelDevelopment),
-	xreceiver.WithMetrics(createMetrics, component.StabilityLevelDevelopment),
-	xreceiver.WithLogs(createLogs, component.StabilityLevelDevelopment),
-	xreceiver.WithProfiles(createProfiles, component.StabilityLevelDevelopment),
+	xreceiver.WithTraces(createTracesReceiver, component.StabilityLevelDevelopment),
+	xreceiver.WithMetrics(createMetricsReceiver, component.StabilityLevelDevelopment),
+	xreceiver.WithLogs(createLogsReceiver, component.StabilityLevelDevelopment),
+	xreceiver.WithProfiles(createProfilesReceiver, component.StabilityLevelDevelopment),
 )
 
 func createReceiverDefaultConfig() component.Config {
@@ -30,7 +30,7 @@ func createReceiverDefaultConfig() component.Config {
 }
 
 // createTraces creates a receiver.Traces based on this config.
-func createTraces(
+func createTracesReceiver(
 	_ context.Context,
 	_ receiver.Settings,
 	cfg component.Config,
@@ -42,7 +42,7 @@ func createTraces(
 }
 
 // createMetrics creates a receiver.Metrics based on this config.
-func createMetrics(
+func createMetricsReceiver(
 	_ context.Context,
 	_ receiver.Settings,
 	cfg component.Config,
@@ -54,7 +54,7 @@ func createMetrics(
 }
 
 // createLogs creates a receiver.Logs based on this config.
-func createLogs(
+func createLogsReceiver(
 	_ context.Context,
 	_ receiver.Settings,
 	cfg component.Config,
@@ -66,7 +66,7 @@ func createLogs(
 }
 
 // createProfiles creates a receiver.Profiles based on this config.
-func createProfiles(
+func createProfilesReceiver(
 	_ context.Context,
 	_ receiver.Settings,
 	cfg component.Config,

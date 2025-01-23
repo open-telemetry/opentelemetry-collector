@@ -69,6 +69,9 @@ type CollectorSettings struct {
 	// confmap.Providers watch for configuration changes.
 	ConfigProviderSettings ConfigProviderSettings
 
+	// ProviderModules maps provider schemes to their respective go modules.
+	ProviderModules map[string]string
+
 	// LoggingOptions provides a way to change behavior of zap logging.
 	LoggingOptions []zap.Option
 

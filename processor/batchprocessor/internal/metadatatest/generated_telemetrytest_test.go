@@ -40,7 +40,7 @@ func TestSetupTelemetry(t *testing.T) {
 		},
 		{
 			Name:        "otelcol_processor_batch_batch_send_size_bytes",
-			Description: "Number of bytes in batch that was sent",
+			Description: "Number of bytes in batch that was sent. Only available on detailed level.",
 			Unit:        "By",
 			Data: metricdata.Histogram[int64]{
 				Temporality: metricdata.CumulativeTemporality,
