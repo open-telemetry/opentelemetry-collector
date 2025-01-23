@@ -27,7 +27,7 @@ func (p UpdatingProvider) Retrieve(ctx context.Context, uri string, watcher Watc
 	stop := make(chan bool, 1)
 
 	retrieved, err := NewRetrieved(p.getCurrentConfig(uri), WithRetrievedClose(func(_ context.Context) error {
-		// the provider should call this function when it no longer wants config updates
+		// the retriever should call this function when it no longer wants config updates
 		ticker.Stop()
 		stop <- true
 		return nil
