@@ -11,54 +11,63 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-// mergeTraces merges two traces requests into one.
-func mergeTraces(_ context.Context, r1 Request, r2 Request) (Request, error) {
-	tr1, ok1 := r1.(*tracesRequest)
-	tr2, ok2 := r2.(*tracesRequest)
-	if !ok1 || !ok2 {
-		return nil, errors.New("invalid input type")
+// MergeSplit splits and/or merges the provided traces request and the current request into one or more requests
+// conforming with the MaxSizeConfig.
+func (req *tracesRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSizeConfig, r2 Request) ([]Request, error) {
+	var req2 *tracesRequest
+	if r2 != nil {
+		var ok bool
+		req2, ok = r2.(*tracesRequest)
+		if !ok {
+			return nil, errors.New("invalid input type")
+		}
 	}
-	tr2.td.ResourceSpans().MoveAndAppendTo(tr1.td.ResourceSpans())
-	return tr1, nil
-}
 
-// mergeSplitTraces splits and/or merges the traces into multiple requests based on the MaxSizeConfig.
-func mergeSplitTraces(_ context.Context, cfg exporterbatcher.MaxSizeConfig, r1 Request, r2 Request) ([]Request, error) {
+	if cfg.MaxSizeItems == 0 {
+		req2.td.ResourceSpans().MoveAndAppendTo(req.td.ResourceSpans())
+		return []Request{req}, nil
+	}
+
 	var (
 		res          []Request
 		destReq      *tracesRequest
 		capacityLeft = cfg.MaxSizeItems
 	)
-	for _, req := range []Request{r1, r2} {
-		if req == nil {
+	for _, srcReq := range []*tracesRequest{req, req2} {
+		if srcReq == nil {
 			continue
 		}
-		srcReq, ok := req.(*tracesRequest)
-		if !ok {
-			return nil, errors.New("invalid input type")
-		}
-		if srcReq.td.SpanCount() <= capacityLeft {
+
+		srcCount := srcReq.ItemsCount()
+		if srcCount <= capacityLeft {
 			if destReq == nil {
 				destReq = srcReq
 			} else {
+				destReq.setCachedItemsCount(srcCount)
+				srcReq.setCachedItemsCount(0)
 				srcReq.td.ResourceSpans().MoveAndAppendTo(destReq.td.ResourceSpans())
 			}
-			capacityLeft -= destReq.td.SpanCount()
+			capacityLeft -= srcCount
 			continue
 		}
 
 		for {
 			extractedTraces := extractTraces(srcReq.td, capacityLeft)
-			if extractedTraces.SpanCount() == 0 {
+			extractedCount := extractedTraces.SpanCount()
+			if extractedCount == 0 {
 				break
 			}
-			capacityLeft -= extractedTraces.SpanCount()
+
 			if destReq == nil {
-				destReq = &tracesRequest{td: extractedTraces, pusher: srcReq.pusher}
+				destReq = &tracesRequest{td: extractedTraces, pusher: srcReq.pusher, cachedItemsCount: extractedCount}
 			} else {
+				destReq.setCachedItemsCount(destReq.ItemsCount() + extractedCount)
+				srcReq.setCachedItemsCount(srcReq.ItemsCount() - extractedCount)
 				extractedTraces.ResourceSpans().MoveAndAppendTo(destReq.td.ResourceSpans())
 			}
+
 			// Create new batch once capacity is reached.
+			capacityLeft -= extractedCount
 			if capacityLeft == 0 {
 				res = append(res, destReq)
 				destReq = nil

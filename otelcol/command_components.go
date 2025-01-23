@@ -24,6 +24,11 @@ type componentWithStability struct {
 	Stability map[string]string
 }
 
+type componentWithoutStability struct {
+	Scheme string
+	Module string
+}
+
 type componentsOutput struct {
 	BuildInfo  component.BuildInfo
 	Receivers  []componentWithStability
@@ -31,6 +36,7 @@ type componentsOutput struct {
 	Exporters  []componentWithStability
 	Connectors []componentWithStability
 	Extensions []componentWithStability
+	Providers  []componentWithoutStability
 }
 
 // newComponentsCommand constructs a new components command using the given CollectorSettings.
@@ -41,7 +47,6 @@ func newComponentsCommand(set CollectorSettings) *cobra.Command {
 		Long:  "Outputs available components in this collector distribution including their stability levels. The output format is not stable and can change between releases.",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, _ []string) error {
-
 			factories, err := set.Factories()
 			if err != nil {
 				return fmt.Errorf("failed to initialize factories: %w", err)
@@ -72,7 +77,7 @@ func newComponentsCommand(set CollectorSettings) *cobra.Command {
 					Name:   ext.Type(),
 					Module: factories.ExtensionModules[ext.Type()],
 					Stability: map[string]string{
-						"extension": ext.ExtensionStability().String(),
+						"extension": ext.Stability().String(),
 					},
 				})
 			}
@@ -81,9 +86,9 @@ func newComponentsCommand(set CollectorSettings) *cobra.Command {
 					Name:   prs.Type(),
 					Module: factories.ProcessorModules[prs.Type()],
 					Stability: map[string]string{
-						"logs":    prs.LogsProcessorStability().String(),
-						"metrics": prs.MetricsProcessorStability().String(),
-						"traces":  prs.TracesProcessorStability().String(),
+						"logs":    prs.LogsStability().String(),
+						"metrics": prs.MetricsStability().String(),
+						"traces":  prs.TracesStability().String(),
 					},
 				})
 			}
@@ -92,9 +97,9 @@ func newComponentsCommand(set CollectorSettings) *cobra.Command {
 					Name:   rcv.Type(),
 					Module: factories.ReceiverModules[rcv.Type()],
 					Stability: map[string]string{
-						"logs":    rcv.LogsReceiverStability().String(),
-						"metrics": rcv.MetricsReceiverStability().String(),
-						"traces":  rcv.TracesReceiverStability().String(),
+						"logs":    rcv.LogsStability().String(),
+						"metrics": rcv.MetricsStability().String(),
+						"traces":  rcv.TracesStability().String(),
 					},
 				})
 			}
@@ -103,13 +108,21 @@ func newComponentsCommand(set CollectorSettings) *cobra.Command {
 					Name:   exp.Type(),
 					Module: factories.ExporterModules[exp.Type()],
 					Stability: map[string]string{
-						"logs":    exp.LogsExporterStability().String(),
-						"metrics": exp.MetricsExporterStability().String(),
-						"traces":  exp.TracesExporterStability().String(),
+						"logs":    exp.LogsStability().String(),
+						"metrics": exp.MetricsStability().String(),
+						"traces":  exp.TracesStability().String(),
 					},
 				})
 			}
 			components.BuildInfo = set.BuildInfo
+
+			for providerScheme, providerModuleModule := range set.ProviderModules {
+				components.Providers = append(components.Providers, componentWithoutStability{
+					Scheme: providerScheme,
+					Module: providerModuleModule,
+				})
+			}
+
 			yamlData, err := yaml.Marshal(components)
 			if err != nil {
 				return err

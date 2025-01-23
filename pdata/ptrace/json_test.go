@@ -13,8 +13,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-var _ Marshaler = (*JSONMarshaler)(nil)
-var _ Unmarshaler = (*JSONUnmarshaler)(nil)
+var (
+	_ Marshaler   = (*JSONMarshaler)(nil)
+	_ Unmarshaler = (*JSONUnmarshaler)(nil)
+)
 
 var tracesOTLP = func() Traces {
 	startTimestamp := pcommon.Timestamp(1684617382541971000)
@@ -37,6 +39,7 @@ var tracesOTLP = func() Traces {
 	il.SetSchemaUrl("schemaURL")
 	// Add spans.
 	sp := il.Spans().AppendEmpty()
+	sp.SetFlags(1)
 	sp.SetName("testSpan")
 	sp.SetKind(SpanKindClient)
 	sp.SetDroppedAttributesCount(1)
@@ -83,13 +86,14 @@ var tracesOTLP = func() Traces {
 	link.Attributes().PutInt("int", 1)
 	link.Attributes().PutDouble("double", 1.1)
 	link.Attributes().PutEmptyBytes("bytes").FromRaw([]byte("foo"))
+	link.SetFlags(1)
 	// Add another span.
 	sp2 := il.Spans().AppendEmpty()
 	sp2.SetName("testSpan2")
 	return td
 }()
 
-var tracesJSON = `{"resourceSpans":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}},{"key":"service.name","value":{"stringValue":"testService"}}],"droppedAttributesCount":1},"scopeSpans":[{"scope":{"name":"scope name","version":"scope version"},"spans":[{"traceId":"0102030405060708090a0b0c0d0e0f10","spanId":"1112131415161718","traceState":"state","parentSpanId":"1112131415161718","name":"testSpan","kind":3,"startTimeUnixNano":"1684617382541971000","endTimeUnixNano":"1684623646539558000","attributes":[{"key":"string","value":{"stringValue":"value"}},{"key":"bool","value":{"boolValue":true}},{"key":"int","value":{"intValue":"1"}},{"key":"double","value":{"doubleValue":1.1}},{"key":"bytes","value":{"bytesValue":"Zm9v"}},{"key":"array","value":{"arrayValue":{"values":[{"intValue":"1"},{"stringValue":"str"}]}}},{"key":"kvList","value":{"kvlistValue":{"values":[{"key":"int","value":{"intValue":"1"}},{"key":"string","value":{"stringValue":"string"}}]}}}],"droppedAttributesCount":1,"events":[{"timeUnixNano":"1684620382541971000","name":"eventName","attributes":[{"key":"string","value":{"stringValue":"value"}},{"key":"bool","value":{"boolValue":true}},{"key":"int","value":{"intValue":"1"}},{"key":"double","value":{"doubleValue":1.1}},{"key":"bytes","value":{"bytesValue":"Zm9v"}}],"droppedAttributesCount":1}],"droppedEventsCount":1,"links":[{"traceId":"0102030405060708090a0b0c0d0e0f10","spanId":"1112131415161718","traceState":"state","attributes":[{"key":"string","value":{"stringValue":"value"}},{"key":"bool","value":{"boolValue":true}},{"key":"int","value":{"intValue":"1"}},{"key":"double","value":{"doubleValue":1.1}},{"key":"bytes","value":{"bytesValue":"Zm9v"}}],"droppedAttributesCount":1}],"droppedLinksCount":1,"status":{"message":"message","code":1}},{"traceId":"","spanId":"","parentSpanId":"","name":"testSpan2","status":{}}],"schemaUrl":"schemaURL"}],"schemaUrl":"schemaURL"}]}`
+var tracesJSON = `{"resourceSpans":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}},{"key":"service.name","value":{"stringValue":"testService"}}],"droppedAttributesCount":1},"scopeSpans":[{"scope":{"name":"scope name","version":"scope version"},"spans":[{"traceId":"0102030405060708090a0b0c0d0e0f10","spanId":"1112131415161718","traceState":"state","parentSpanId":"1112131415161718","flags":1,"name":"testSpan","kind":3,"startTimeUnixNano":"1684617382541971000","endTimeUnixNano":"1684623646539558000","attributes":[{"key":"string","value":{"stringValue":"value"}},{"key":"bool","value":{"boolValue":true}},{"key":"int","value":{"intValue":"1"}},{"key":"double","value":{"doubleValue":1.1}},{"key":"bytes","value":{"bytesValue":"Zm9v"}},{"key":"array","value":{"arrayValue":{"values":[{"intValue":"1"},{"stringValue":"str"}]}}},{"key":"kvList","value":{"kvlistValue":{"values":[{"key":"int","value":{"intValue":"1"}},{"key":"string","value":{"stringValue":"string"}}]}}}],"droppedAttributesCount":1,"events":[{"timeUnixNano":"1684620382541971000","name":"eventName","attributes":[{"key":"string","value":{"stringValue":"value"}},{"key":"bool","value":{"boolValue":true}},{"key":"int","value":{"intValue":"1"}},{"key":"double","value":{"doubleValue":1.1}},{"key":"bytes","value":{"bytesValue":"Zm9v"}}],"droppedAttributesCount":1}],"droppedEventsCount":1,"links":[{"traceId":"0102030405060708090a0b0c0d0e0f10","spanId":"1112131415161718","traceState":"state","attributes":[{"key":"string","value":{"stringValue":"value"}},{"key":"bool","value":{"boolValue":true}},{"key":"int","value":{"intValue":"1"}},{"key":"double","value":{"doubleValue":1.1}},{"key":"bytes","value":{"bytesValue":"Zm9v"}}],"droppedAttributesCount":1,"flags":1}],"droppedLinksCount":1,"status":{"message":"message","code":1}},{"traceId":"","spanId":"","parentSpanId":"","name":"testSpan2","status":{}}],"schemaUrl":"schemaURL"}],"schemaUrl":"schemaURL"}]}`
 
 func TestJSONUnmarshal(t *testing.T) {
 	decoder := &JSONUnmarshaler{}
@@ -102,7 +106,7 @@ func TestJSONMarshal(t *testing.T) {
 	encoder := &JSONMarshaler{}
 	jsonBuf, err := encoder.MarshalTraces(tracesOTLP)
 	require.NoError(t, err)
-	assert.Equal(t, tracesJSON, string(jsonBuf))
+	assert.JSONEq(t, tracesJSON, string(jsonBuf))
 }
 
 func TestJSONUnmarshalInvalid(t *testing.T) {
@@ -157,9 +161,7 @@ func TestUnmarshalJsoniterSpanInvalidTraceIDField(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	NewSpan().unmarshalJsoniter(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "parse trace_id")
-	}
+	assert.ErrorContains(t, iter.Error, "parse trace_id")
 }
 
 func TestUnmarshalJsoniterSpanInvalidSpanIDField(t *testing.T) {
@@ -167,9 +169,7 @@ func TestUnmarshalJsoniterSpanInvalidSpanIDField(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	NewSpan().unmarshalJsoniter(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "parse span_id")
-	}
+	assert.ErrorContains(t, iter.Error, "parse span_id")
 }
 
 func TestUnmarshalJsoniterSpanInvalidParentSpanIDField(t *testing.T) {
@@ -177,9 +177,7 @@ func TestUnmarshalJsoniterSpanInvalidParentSpanIDField(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	NewSpan().unmarshalJsoniter(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "parse parent_span_id")
-	}
+	assert.ErrorContains(t, iter.Error, "parse parent_span_id")
 }
 
 func TestUnmarshalJsoniterSpanStatus(t *testing.T) {
@@ -207,9 +205,7 @@ func TestUnmarshalJsoniterSpanLinkInvalidTraceIDField(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	NewSpanLink().unmarshalJsoniter(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "parse trace_id")
-	}
+	assert.ErrorContains(t, iter.Error, "parse trace_id")
 }
 
 func TestUnmarshalJsoniterSpanLinkInvalidSpanIDField(t *testing.T) {
@@ -217,9 +213,7 @@ func TestUnmarshalJsoniterSpanLinkInvalidSpanIDField(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	NewSpanLink().unmarshalJsoniter(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "parse span_id")
-	}
+	assert.ErrorContains(t, iter.Error, "parse span_id")
 }
 
 func TestUnmarshalJsoniterSpanEvent(t *testing.T) {

@@ -4,14 +4,28 @@
 package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
 
 import (
+	"errors"
 	"fmt"
+	"net"
+	"strconv"
 	"time"
 
 	"go.opentelemetry.io/contrib/config"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/featuregate"
 )
+
+var _ confmap.Unmarshaler = (*Config)(nil)
+
+var disableAddressFieldForInternalTelemetryFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"telemetry.disableAddressFieldForInternalTelemetry",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterFromVersion("v0.111.0"),
+	featuregate.WithRegisterToVersion("v0.114.0"),
+	featuregate.WithRegisterDescription("controls whether the deprecated address field for internal telemetry is still supported"))
 
 // Config defines the configurable settings for service telemetry.
 type Config struct {
@@ -92,6 +106,10 @@ type LogsConfig struct {
 	//
 	// By default, there is no initial field.
 	InitialFields map[string]any `mapstructure:"initial_fields"`
+
+	// Processors allow configuration of log record processors to emit logs to
+	// any number of suported backends.
+	Processors []config.LogRecordProcessor `mapstructure:"processors"`
 }
 
 // LogsSamplingConfig sets a sampling strategy for the logger. Sampling caps the
@@ -119,7 +137,7 @@ type MetricsConfig struct {
 	//  - "detailed" adds dimensions and views to the previous levels.
 	Level configtelemetry.Level `mapstructure:"level"`
 
-	// Address is the [address]:port that metrics exposition should be bound to.
+	// Deprecated: [v0.111.0] use readers configuration.
 	Address string `mapstructure:"address"`
 
 	// Readers allow configuration of metric readers to emit metrics to
@@ -139,15 +157,56 @@ type TracesConfig struct {
 	// context propagation is disabled.
 	Propagators []string `mapstructure:"propagators"`
 	// Processors allow configuration of span processors to emit spans to
-	// any number of suported backends.
+	// any number of supported backends.
 	Processors []config.SpanProcessor `mapstructure:"processors"`
+}
+
+func (c *Config) Unmarshal(conf *confmap.Conf) error {
+	if err := conf.Unmarshal(c); err != nil {
+		return err
+	}
+
+	// If the support for "metrics::address" is disabled, nothing to do.
+	// TODO: when this gate is marked stable remove the whole Unmarshal definition.
+	if disableAddressFieldForInternalTelemetryFeatureGate.IsEnabled() {
+		return nil
+	}
+
+	if len(c.Metrics.Address) != 0 {
+		host, port, err := net.SplitHostPort(c.Metrics.Address)
+		if err != nil {
+			return fmt.Errorf("failing to parse metrics address %q: %w", c.Metrics.Address, err)
+		}
+		portInt, err := strconv.Atoi(port)
+		if err != nil {
+			return fmt.Errorf("failing to extract the port from the metrics address %q: %w", c.Metrics.Address, err)
+		}
+
+		// User did not overwrite readers, so we will remove the default configured reader.
+		if !conf.IsSet("metrics::readers") {
+			c.Metrics.Readers = nil
+		}
+
+		c.Metrics.Readers = append(c.Metrics.Readers, config.MetricReader{
+			Pull: &config.PullMetricReader{
+				Exporter: config.MetricExporter{
+					Prometheus: &config.Prometheus{
+						Host: &host,
+						Port: &portInt,
+					},
+				},
+			},
+		})
+	}
+
+	return nil
 }
 
 // Validate checks whether the current configuration is valid
 func (c *Config) Validate() error {
-	// Check when service telemetry metric level is not none, the metrics address should not be empty
-	if c.Metrics.Level != configtelemetry.LevelNone && c.Metrics.Address == "" && len(c.Metrics.Readers) == 0 {
-		return fmt.Errorf("collector telemetry metric address or reader should exist when metric level is not none")
+	// Check when service telemetry metric level is not none, the metrics readers should not be empty
+	if c.Metrics.Level != configtelemetry.LevelNone && len(c.Metrics.Readers) == 0 {
+		return errors.New("collector telemetry metrics reader should exist when metric level is not none")
 	}
 
 	return nil

@@ -5,14 +5,14 @@ package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
 
 import (
 	"context"
-	"net"
 	"net/http"
-	"strconv"
 	"sync"
 
-	"go.opentelemetry.io/contrib/config"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/noop"
+	"go.opentelemetry.io/otel/sdk/instrumentation"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/multierr"
@@ -39,33 +39,19 @@ type meterProviderSettings struct {
 	asyncErrorChannel chan error
 }
 
-func newMeterProvider(set meterProviderSettings, disableHighCardinality bool) (metric.MeterProvider, error) {
-	if set.cfg.Level == configtelemetry.LevelNone || (set.cfg.Address == "" && len(set.cfg.Readers) == 0) {
-		return noop.NewMeterProvider(), nil
-	}
+func dropViewOption(instrument sdkmetric.Instrument) sdkmetric.Option {
+	return sdkmetric.WithView(sdkmetric.NewView(
+		instrument,
+		sdkmetric.Stream{
+			Aggregation: sdkmetric.AggregationDrop{},
+		},
+	))
+}
 
-	if len(set.cfg.Address) != 0 {
-		host, port, err := net.SplitHostPort(set.cfg.Address)
-		if err != nil {
-			return nil, err
-		}
-		portInt, err := strconv.Atoi(port)
-		if err != nil {
-			return nil, err
-		}
-		if set.cfg.Readers == nil {
-			set.cfg.Readers = []config.MetricReader{}
-		}
-		set.cfg.Readers = append(set.cfg.Readers, config.MetricReader{
-			Pull: &config.PullMetricReader{
-				Exporter: config.MetricExporter{
-					Prometheus: &config.Prometheus{
-						Host: &host,
-						Port: &portInt,
-					},
-				},
-			},
-		})
+// newMeterProvider creates a new MeterProvider from Config.
+func newMeterProvider(set meterProviderSettings, disableHighCardinality bool) (metric.MeterProvider, error) {
+	if set.cfg.Level == configtelemetry.LevelNone || len(set.cfg.Readers) == 0 {
+		return noop.NewMeterProvider(), nil
 	}
 
 	mp := &meterProvider{}
@@ -78,9 +64,87 @@ func newMeterProvider(set meterProviderSettings, disableHighCardinality bool) (m
 		}
 		if server != nil {
 			mp.servers = append(mp.servers, server)
-
 		}
 		opts = append(opts, sdkmetric.WithReader(r))
+	}
+
+	if set.cfg.Level < configtelemetry.LevelDetailed {
+		// Drop all otelhttp and otelgrpc metrics if the level is not detailed.
+		opts = append(opts,
+			dropViewOption(sdkmetric.Instrument{
+				Scope: instrumentation.Scope{Name: otelhttp.ScopeName},
+			}),
+			dropViewOption(sdkmetric.Instrument{
+				Scope: instrumentation.Scope{Name: otelgrpc.ScopeName},
+			}),
+		)
+	}
+
+	// otel-arrow library metrics
+	// See https://github.com/open-telemetry/otel-arrow/blob/c39257/pkg/otel/arrow_record/consumer.go#L174-L176
+	if set.cfg.Level < configtelemetry.LevelNormal {
+		scope := instrumentation.Scope{Name: "otel-arrow/pkg/otel/arrow_record"}
+		opts = append(opts,
+			dropViewOption(sdkmetric.Instrument{
+				Name:  "arrow_batch_records",
+				Scope: scope,
+			}),
+			dropViewOption(sdkmetric.Instrument{
+				Name:  "arrow_schema_resets",
+				Scope: scope,
+			}),
+			dropViewOption(sdkmetric.Instrument{
+				Name:  "arrow_memory_inuse",
+				Scope: scope,
+			}),
+		)
+	}
+
+	// contrib's internal/otelarrow/netstats metrics
+	// See
+	// - https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/a25f05/internal/otelarrow/netstats/netstats.go#L130
+	// - https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/a25f05/internal/otelarrow/netstats/netstats.go#L165
+	if set.cfg.Level < configtelemetry.LevelDetailed {
+		scope := instrumentation.Scope{Name: "github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats"}
+		// Compressed size metrics.
+		opts = append(opts, dropViewOption(sdkmetric.Instrument{
+			Name:  "otelcol_*_compressed_size",
+			Scope: scope,
+		}))
+
+		opts = append(opts, dropViewOption(sdkmetric.Instrument{
+			Name:  "otelcol_*_compressed_size",
+			Scope: scope,
+		}))
+
+		// makeRecvMetrics for exporters.
+		opts = append(opts, dropViewOption(sdkmetric.Instrument{
+			Name:  "otelcol_exporter_recv",
+			Scope: scope,
+		}))
+		opts = append(opts, dropViewOption(sdkmetric.Instrument{
+			Name:  "otelcol_exporter_recv_wire",
+			Scope: scope,
+		}))
+
+		// makeSentMetrics for receivers.
+		opts = append(opts, dropViewOption(sdkmetric.Instrument{
+			Name:  "otelcol_receiver_sent",
+			Scope: scope,
+		}))
+		opts = append(opts, dropViewOption(sdkmetric.Instrument{
+			Name:  "otelcol_receiver_sent_wire",
+			Scope: scope,
+		}))
+	}
+
+	// Batch processor metrics
+	if set.cfg.Level < configtelemetry.LevelDetailed {
+		scope := instrumentation.Scope{Name: "go.opentelemetry.io/collector/processor/batchprocessor"}
+		opts = append(opts, dropViewOption(sdkmetric.Instrument{
+			Name:  "otelcol_processor_batch_batch_send_size_bytes",
+			Scope: scope,
+		}))
 	}
 
 	var err error

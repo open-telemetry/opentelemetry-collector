@@ -14,15 +14,14 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
@@ -34,12 +33,9 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/extension/auth"
 	"go.opentelemetry.io/collector/extension/auth/authtest"
-	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/globalgates"
 )
 
-type customRoundTripper struct {
-}
+type customRoundTripper struct{}
 
 var _ http.RoundTripper = (*customRoundTripper)(nil)
 
@@ -53,7 +49,7 @@ var (
 	dummyID       = component.MustNewID("dummy")
 	nonExistingID = component.MustNewID("nonexisting")
 	// Omit TracerProvider and MeterProvider in TelemetrySettings as otelhttp.Transport cannot be introspected
-	nilProvidersSettings = component.TelemetrySettings{Logger: zap.NewNop(), MetricsLevel: configtelemetry.LevelNone, LeveledMeterProvider: func(_ configtelemetry.Level) metric.MeterProvider { return nil }}
+	nilProvidersSettings = component.TelemetrySettings{Logger: zap.NewNop(), MetricsLevel: configtelemetry.LevelNone}
 )
 
 func TestAllHTTPClientSettings(t *testing.T) {
@@ -222,7 +218,6 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 			assert.EqualValues(t, 0, transport.MaxConnsPerHost)
 			assert.EqualValues(t, 90*time.Second, transport.IdleConnTimeout)
 			assert.False(t, transport.DisableKeepAlives)
-
 		})
 	}
 }
@@ -433,7 +428,8 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
 					mockID: &authtest.MockClient{
-						ResultRoundTripper: &customRoundTripper{}, MustError: true},
+						ResultRoundTripper: &customRoundTripper{}, MustError: true,
+					},
 				},
 			},
 		},
@@ -517,53 +513,6 @@ func TestHTTPServerSettingsError(t *testing.T) {
 			assert.Regexp(t, tt.err, err)
 		})
 	}
-}
-
-func TestHTTPServerWarning(t *testing.T) {
-	prev := globalgates.UseLocalHostAsDefaultHostfeatureGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(globalgates.UseLocalHostAsDefaultHostID, false))
-	defer func() {
-		// Restore previous value.
-		require.NoError(t, featuregate.GlobalRegistry().Set(globalgates.UseLocalHostAsDefaultHostID, prev))
-	}()
-
-	tests := []struct {
-		name     string
-		settings ServerConfig
-		len      int
-	}{
-		{
-			settings: ServerConfig{
-				Endpoint: "0.0.0.0:0",
-			},
-			len: 1,
-		},
-		{
-			settings: ServerConfig{
-				Endpoint: "127.0.0.1:0",
-			},
-			len: 0,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			set := componenttest.NewNopTelemetrySettings()
-			logger, observed := observer.New(zap.DebugLevel)
-			set.Logger = zap.New(logger)
-
-			_, err := tt.settings.ToServer(
-				context.Background(),
-				componenttest.NewNopHost(),
-				set,
-				http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-					_, errWrite := fmt.Fprint(w, "tt")
-					assert.NoError(t, errWrite)
-				}))
-			require.NoError(t, err)
-			require.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), tt.len)
-		})
-	}
-
 }
 
 func TestHttpReception(t *testing.T) {
@@ -824,7 +773,7 @@ func TestHttpCors(t *testing.T) {
 				_ = s.Serve(ln)
 			}()
 
-			url := fmt.Sprintf("http://%s", ln.Addr().String())
+			url := "http://" + ln.Addr().String()
 
 			expectedStatus := http.StatusNoContent
 			if tt.CORSConfig == nil || len(tt.AllowedOrigins) == 0 {
@@ -944,7 +893,7 @@ func TestHttpServerHeaders(t *testing.T) {
 				_ = s.Serve(ln)
 			}()
 
-			url := fmt.Sprintf("http://%s", ln.Addr().String())
+			url := "http://" + ln.Addr().String()
 
 			// Verify allowed domain gets responses that allow CORS.
 			verifyHeadersResp(t, url, tt.headers)
@@ -965,12 +914,9 @@ func verifyCorsResp(t *testing.T, url string, origin string, set *CORSConfig, ex
 	req.Header.Set("Access-Control-Request-Method", "POST")
 
 	resp, err := http.DefaultClient.Do(req)
-	require.NoError(t, err, "Error sending OPTIONS to http server: %v", err)
-
-	err = resp.Body.Close()
-	if err != nil {
-		t.Errorf("Error closing OPTIONS response body, %v", err)
-	}
+	require.NoError(t, err, "Error sending OPTIONS to http server")
+	require.NotNil(t, resp.Body)
+	require.NoError(t, resp.Body.Close(), "Error closing OPTIONS response body")
 
 	assert.Equal(t, wantStatus, resp.StatusCode)
 
@@ -984,7 +930,7 @@ func verifyCorsResp(t *testing.T, url string, origin string, set *CORSConfig, ex
 		wantAllowOrigin = origin
 		wantAllowMethods = "POST"
 		if set != nil && set.MaxAge != 0 {
-			wantMaxAge = fmt.Sprintf("%d", set.MaxAge)
+			wantMaxAge = strconv.Itoa(set.MaxAge)
 		}
 	}
 	assert.Equal(t, wantAllowOrigin, gotAllowOrigin)
@@ -994,15 +940,12 @@ func verifyCorsResp(t *testing.T, url string, origin string, set *CORSConfig, ex
 
 func verifyHeadersResp(t *testing.T, url string, expected map[string]configopaque.String) {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
-	require.NoError(t, err, "Error creating request: %v", err)
+	require.NoError(t, err, "Error creating request")
 
 	resp, err := http.DefaultClient.Do(req)
-	require.NoError(t, err, "Error sending request to http server: %v", err)
-
-	err = resp.Body.Close()
-	if err != nil {
-		t.Errorf("Error closing response body, %v", err)
-	}
+	require.NoError(t, err, "Error sending request to http server")
+	require.NotNil(t, resp.Body)
+	require.NoError(t, resp.Body.Close(), "Error closing response body")
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -1178,7 +1121,7 @@ func TestServerAuth(t *testing.T) {
 	require.NoError(t, err)
 
 	// tt
-	srv.Handler.ServeHTTP(&httptest.ResponseRecorder{}, httptest.NewRequest("GET", "/", nil))
+	srv.Handler.ServeHTTP(&httptest.ResponseRecorder{}, httptest.NewRequest(http.MethodGet, "/", nil))
 
 	// verify
 	assert.True(t, handlerCalled)
@@ -1224,7 +1167,7 @@ func TestFailedServerAuth(t *testing.T) {
 
 	// tt
 	response := &httptest.ResponseRecorder{}
-	srv.Handler.ServeHTTP(response, httptest.NewRequest("GET", "/", nil))
+	srv.Handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/", nil))
 
 	// verify
 	assert.Equal(t, http.StatusUnauthorized, response.Result().StatusCode)
@@ -1288,7 +1231,6 @@ func TestServerWithDecoder(t *testing.T) {
 	srv.Handler.ServeHTTP(response, req)
 	// verify
 	assert.Equal(t, http.StatusOK, response.Result().StatusCode)
-
 }
 
 func TestServerWithDecompression(t *testing.T) {
@@ -1413,7 +1355,7 @@ func TestAuthWithQueryParams(t *testing.T) {
 	require.NoError(t, err)
 
 	// tt
-	srv.Handler.ServeHTTP(&httptest.ResponseRecorder{}, httptest.NewRequest("GET", "/?auth=1", nil))
+	srv.Handler.ServeHTTP(&httptest.ResponseRecorder{}, httptest.NewRequest(http.MethodGet, "/?auth=1", nil))
 
 	// verify
 	assert.True(t, handlerCalled)
@@ -1506,7 +1448,6 @@ func BenchmarkHttpRequest(b *testing.B) {
 			if !bb.clientPerThread {
 				c, err = hcs.ToClient(context.Background(), componenttest.NewNopHost(), nilProvidersSettings)
 				require.NoError(b, err)
-
 			}
 			b.RunParallel(func(pb *testing.PB) {
 				if c == nil {

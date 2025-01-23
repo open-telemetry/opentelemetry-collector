@@ -42,13 +42,13 @@ func TestTraceIDMarshal(t *testing.T) {
 func TestTraceIDMarshalJSON(t *testing.T) {
 	tid := TraceID([16]byte{})
 	json, err := tid.MarshalJSON()
-	assert.EqualValues(t, []byte(`""`), json)
 	require.NoError(t, err)
+	assert.JSONEq(t, `""`, string(json))
 
 	tid = [16]byte{0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78}
 	json, err = tid.MarshalJSON()
-	assert.EqualValues(t, []byte(`"12345678123456781234567812345678"`), json)
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	assert.JSONEq(t, `"12345678123456781234567812345678"`, string(json))
 }
 
 func TestTraceIDUnmarshal(t *testing.T) {

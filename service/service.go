@@ -11,8 +11,9 @@ import (
 	"fmt"
 	"runtime"
 
+	"go.opentelemetry.io/contrib/config"
+	"go.opentelemetry.io/otel/log"
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/noop"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -24,10 +25,10 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/globalgates"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
+	semconv "go.opentelemetry.io/collector/semconv/v1.26.0"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/graph"
@@ -93,6 +94,7 @@ type Service struct {
 	telemetrySettings component.TelemetrySettings
 	host              *graph.Host
 	collectorConf     *confmap.Conf
+	loggerProvider    log.LoggerProvider
 }
 
 // New creates a new Service, its telemetry, and Components.
@@ -117,16 +119,42 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	res := resource.New(set.BuildInfo, cfg.Telemetry.Resource)
 	pcommonRes := pdataFromSdk(res)
 
+	sch := semconv.SchemaURL
+	cfgRes := config.Resource{
+		SchemaUrl:  &sch,
+		Attributes: attributes(res, cfg.Telemetry),
+	}
+
+	sdk, err := config.NewSDK(
+		config.WithContext(ctx),
+		config.WithOpenTelemetryConfiguration(
+			config.OpenTelemetryConfiguration{
+				LoggerProvider: &config.LoggerProvider{
+					Processors: cfg.Telemetry.Logs.Processors,
+				},
+				TracerProvider: &config.TracerProvider{
+					Processors: cfg.Telemetry.Traces.Processors,
+				},
+				Resource: &cfgRes,
+			},
+		),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create SDK: %w", err)
+	}
+
 	telFactory := telemetry.NewFactory()
 	telset := telemetry.Settings{
 		BuildInfo:  set.BuildInfo,
 		ZapOptions: set.LoggingOptions,
+		SDK:        &sdk,
 	}
 
-	logger, err := telFactory.CreateLogger(ctx, telset, &cfg.Telemetry)
+	logger, lp, err := telFactory.CreateLogger(ctx, telset, &cfg.Telemetry)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create logger: %w", err)
 	}
+	srv.loggerProvider = lp
 
 	tracerProvider, err := telFactory.CreateTracerProvider(ctx, telset, &cfg.Telemetry)
 	if err != nil {
@@ -137,17 +165,11 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 
 	mp, err := telFactory.CreateMeterProvider(ctx, telset, &cfg.Telemetry)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create metric provider: %w", err)
+		return nil, fmt.Errorf("failed to create meter provider: %w", err)
 	}
 
 	logsAboutMeterProvider(logger, cfg.Telemetry.Metrics, mp)
 	srv.telemetrySettings = component.TelemetrySettings{
-		LeveledMeterProvider: func(level configtelemetry.Level) metric.MeterProvider {
-			if level <= cfg.Telemetry.Metrics.Level {
-				return mp
-			}
-			return noop.MeterProvider{}
-		},
 		Logger:         logger,
 		MeterProvider:  mp,
 		TracerProvider: tracerProvider,
@@ -186,6 +208,7 @@ func logsAboutMeterProvider(logger *zap.Logger, cfg telemetry.MetricsConfig, mp 
 		return
 	}
 
+	//nolint:staticcheck
 	if len(cfg.Address) != 0 {
 		logger.Warn("service::telemetry::metrics::address is being deprecated in favor of service::telemetry::metrics::readers")
 	}
@@ -209,9 +232,6 @@ func (srv *Service) Start(ctx context.Context) error {
 		zap.Int("NumCPU", runtime.NumCPU()),
 	)
 
-	// enable status reporting
-	srv.host.Reporter.Ready()
-
 	if err := srv.host.ServiceExtensions.Start(ctx, srv.host); err != nil {
 		return fmt.Errorf("failed to start extensions: %w", err)
 	}
@@ -231,7 +251,6 @@ func (srv *Service) Start(ctx context.Context) error {
 	}
 
 	srv.telemetrySettings.Logger.Info("Everything is ready. Begin running and processing data.")
-	logAboutUseLocalHostAsDefault(srv.telemetrySettings.Logger)
 	return nil
 }
 
@@ -252,6 +271,12 @@ func (srv *Service) shutdownTelemetry(ctx context.Context) error {
 	if prov, ok := srv.telemetrySettings.TracerProvider.(shutdownable); ok {
 		if shutdownErr := prov.Shutdown(ctx); shutdownErr != nil {
 			err = multierr.Append(err, fmt.Errorf("failed to shutdown tracer provider: %w", shutdownErr))
+		}
+	}
+
+	if prov, ok := srv.loggerProvider.(shutdownable); ok {
+		if shutdownErr := prov.Shutdown(ctx); shutdownErr != nil {
+			err = multierr.Append(err, fmt.Errorf("failed to shutdown logger provider: %w", shutdownErr))
 		}
 	}
 	return err
@@ -336,14 +361,4 @@ func pdataFromSdk(res *sdkresource.Resource) pcommon.Resource {
 		pcommonRes.Attributes().PutStr(string(keyValue.Key), keyValue.Value.AsString())
 	}
 	return pcommonRes
-}
-
-// logAboutUseLocalHostAsDefault logs about the upcoming change from 0.0.0.0 to localhost on server-like components.
-func logAboutUseLocalHostAsDefault(logger *zap.Logger) {
-	if globalgates.UseLocalHostAsDefaultHostfeatureGate.IsEnabled() {
-		logger.Info(
-			"The default endpoints for all servers in components have changed to use localhost instead of 0.0.0.0. Disable the feature gate to temporarily revert to the previous default.",
-			zap.String("feature gate ID", globalgates.UseLocalHostAsDefaultHostID),
-		)
-	}
 }

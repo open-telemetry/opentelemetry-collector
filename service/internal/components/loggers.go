@@ -9,6 +9,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 const (
@@ -21,21 +22,21 @@ const (
 	zapReceiverInPipeline = "receiver_in_pipeline"
 )
 
-func ReceiverLogger(logger *zap.Logger, id component.ID, dt component.DataType) *zap.Logger {
+func ReceiverLogger(logger *zap.Logger, id component.ID, dt pipeline.Signal) *zap.Logger {
 	return logger.With(
 		zap.String(zapKindKey, strings.ToLower(component.KindReceiver.String())),
 		zap.String(zapNameKey, id.String()),
 		zap.String(zapDataTypeKey, dt.String()))
 }
 
-func ProcessorLogger(logger *zap.Logger, id component.ID, pipelineID component.ID) *zap.Logger {
+func ProcessorLogger(logger *zap.Logger, id component.ID, pipelineID pipeline.ID) *zap.Logger {
 	return logger.With(
 		zap.String(zapKindKey, strings.ToLower(component.KindProcessor.String())),
 		zap.String(zapNameKey, id.String()),
 		zap.String(zapPipelineKey, pipelineID.String()))
 }
 
-func ExporterLogger(logger *zap.Logger, id component.ID, dt component.DataType) *zap.Logger {
+func ExporterLogger(logger *zap.Logger, id component.ID, dt pipeline.Signal) *zap.Logger {
 	return logger.With(
 		zap.String(zapKindKey, strings.ToLower(component.KindExporter.String())),
 		zap.String(zapDataTypeKey, dt.String()),
@@ -48,7 +49,7 @@ func ExtensionLogger(logger *zap.Logger, id component.ID) *zap.Logger {
 		zap.String(zapNameKey, id.String()))
 }
 
-func ConnectorLogger(logger *zap.Logger, id component.ID, expDT, rcvDT component.DataType) *zap.Logger {
+func ConnectorLogger(logger *zap.Logger, id component.ID, expDT, rcvDT pipeline.Signal) *zap.Logger {
 	return logger.With(
 		zap.String(zapKindKey, strings.ToLower(component.KindConnector.String())),
 		zap.String(zapNameKey, id.String()),

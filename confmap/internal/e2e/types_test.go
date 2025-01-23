@@ -39,7 +39,7 @@ type TargetConfig[T any] struct {
 	Field T `mapstructure:"field"`
 }
 
-func NewResolver(t testing.TB, path string) *confmap.Resolver {
+func NewResolver(tb testing.TB, path string) *confmap.Resolver {
 	resolver, err := confmap.NewResolver(confmap.ResolverSettings{
 		URIs: []string{filepath.Join("testdata", path)},
 		ProviderFactories: []confmap.ProviderFactory{
@@ -48,7 +48,7 @@ func NewResolver(t testing.TB, path string) *confmap.Resolver {
 		},
 		DefaultScheme: "env",
 	})
-	require.NoError(t, err)
+	require.NoError(tb, err)
 	return resolver
 }
 
@@ -165,12 +165,12 @@ func TestStrictTypeCasting(t *testing.T) {
 		{
 			value:        "t",
 			targetField:  TargetFieldBool,
-			unmarshalErr: "'field' expected type 'bool', got unconvertible type 'string', value: 't'",
+			unmarshalErr: "'field' expected type '%!s(bool=false)', got unconvertible type '\"t\"', value: '\"t\"'",
 		},
 		{
 			value:        "23",
 			targetField:  TargetFieldBool,
-			unmarshalErr: "'field' expected type 'bool', got unconvertible type 'int', value: '23'",
+			unmarshalErr: "'field' expected type '%!s(bool=false)', got unconvertible type '23', value: '23'",
 		},
 		{
 			value:       "{\"field\": 123}",
@@ -196,6 +196,16 @@ func TestStrictTypeCasting(t *testing.T) {
 			value:       "2006-01-02T15:04:05Z07:00",
 			targetField: TargetFieldInlineString,
 			expected:    "inline field with 2006-01-02T15:04:05Z07:00 expansion",
+		},
+		{
+			value:       "2023-03-20T03:17:55.432328Z",
+			targetField: TargetFieldString,
+			expected:    "2023-03-20T03:17:55.432328Z",
+		},
+		{
+			value:       "2023-03-20T03:17:55.432328Z",
+			targetField: TargetFieldInlineString,
+			expected:    "inline field with 2023-03-20T03:17:55.432328Z expansion",
 		},
 		// issue 10787
 		{
@@ -398,7 +408,8 @@ func TestRecursiveMaps(t *testing.T) {
 			Env: ENV2{
 				Env2: Value{
 					Value: 123,
-				}},
+				},
+			},
 			Inline: "inline {env2: \"{value: 123}\"}",
 		}},
 		cfg,

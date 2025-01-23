@@ -5,7 +5,6 @@ package componenttest
 
 import (
 	"io"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -140,8 +139,7 @@ func TestCheckConfigStruct(t *testing.T) {
 			if tt.wantErrMsgSubStr == "" {
 				assert.NoError(t, err)
 			} else {
-				require.Error(t, err)
-				assert.True(t, strings.Contains(err.Error(), tt.wantErrMsgSubStr))
+				require.ErrorContains(t, err, tt.wantErrMsgSubStr)
 			}
 		})
 	}

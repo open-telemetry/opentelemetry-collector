@@ -149,7 +149,7 @@ func TestOrdering(t *testing.T) {
 				{name: "foo", deps: []string{"bar"}},
 				{name: "bar", deps: []string{"foo"}},
 			},
-			err: "unable to order extenions",
+			err: "unable to order extensions",
 		},
 	}
 	for _, testCase := range tests {
@@ -285,7 +285,7 @@ func TestNotifyConfig(t *testing.T) {
 				Extensions: builders.NewExtension(tt.extensionsConfigs, tt.factories),
 			}, tt.serviceExtensions)
 			require.NoError(t, err)
-			errs := extensions.NotifyConfig(context.Background(), confmap.NewFromStringMap(map[string]interface{}{}))
+			errs := extensions.NotifyConfig(context.Background(), confmap.NewFromStringMap(map[string]any{}))
 			assert.Equal(t, tt.want, errs)
 		})
 	}
@@ -313,7 +313,6 @@ func newConfigWatcherExtension(fn func() error) *configWatcherExtension {
 	}
 
 	return comp
-
 }
 
 func newConfigWatcherExtensionFactory(name component.Type, fn func() error) extension.Factory {
@@ -435,8 +434,6 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 				WithReporter(rep),
 			)
 			require.NoError(t, err)
-
-			rep.Ready()
 
 			assert.Equal(t, tt.startErr, extensions.Start(context.Background(), componenttest.NewNopHost()))
 			if tt.startErr == nil {

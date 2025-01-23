@@ -7,8 +7,10 @@
 package pprofile
 
 import (
+	"sort"
+
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
+	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 // MappingSlice logically represents a slice of Mapping.
@@ -19,18 +21,18 @@ import (
 // Must use NewMappingSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type MappingSlice struct {
-	orig  *[]otlpprofiles.Mapping
+	orig  *[]*otlpprofiles.Mapping
 	state *internal.State
 }
 
-func newMappingSlice(orig *[]otlpprofiles.Mapping, state *internal.State) MappingSlice {
+func newMappingSlice(orig *[]*otlpprofiles.Mapping, state *internal.State) MappingSlice {
 	return MappingSlice{orig: orig, state: state}
 }
 
 // NewMappingSlice creates a MappingSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewMappingSlice() MappingSlice {
-	orig := []otlpprofiles.Mapping(nil)
+	orig := []*otlpprofiles.Mapping(nil)
 	state := internal.StateMutable
 	return newMappingSlice(&orig, &state)
 }
@@ -51,7 +53,7 @@ func (es MappingSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es MappingSlice) At(i int) Mapping {
-	return newMapping(&(*es.orig)[i], es.state)
+	return newMapping((*es.orig)[i], es.state)
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -73,7 +75,7 @@ func (es MappingSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]otlpprofiles.Mapping, len(*es.orig), newCap)
+	newOrig := make([]*otlpprofiles.Mapping, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
@@ -82,7 +84,7 @@ func (es MappingSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Mapping.
 func (es MappingSlice) AppendEmpty() Mapping {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, otlpprofiles.Mapping{})
+	*es.orig = append(*es.orig, &otlpprofiles.Mapping{})
 	return es.At(es.Len() - 1)
 }
 
@@ -127,10 +129,24 @@ func (es MappingSlice) CopyTo(dest MappingSlice) {
 	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-	} else {
-		(*dest.orig) = make([]otlpprofiles.Mapping, srcLen)
+		for i := range *es.orig {
+			newMapping((*es.orig)[i], es.state).CopyTo(newMapping((*dest.orig)[i], dest.state))
+		}
+		return
 	}
+	origs := make([]otlpprofiles.Mapping, srcLen)
+	wrappers := make([]*otlpprofiles.Mapping, srcLen)
 	for i := range *es.orig {
-		newMapping(&(*es.orig)[i], es.state).CopyTo(newMapping(&(*dest.orig)[i], dest.state))
+		wrappers[i] = &origs[i]
+		newMapping((*es.orig)[i], es.state).CopyTo(newMapping(wrappers[i], dest.state))
 	}
+	*dest.orig = wrappers
+}
+
+// Sort sorts the Mapping elements within MappingSlice given the
+// provided less function so that two instances of MappingSlice
+// can be compared.
+func (es MappingSlice) Sort(less func(a, b Mapping) bool) {
+	es.state.AssertMutable()
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }

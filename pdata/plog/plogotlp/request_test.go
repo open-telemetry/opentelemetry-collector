@@ -12,8 +12,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var _ json.Unmarshaler = ExportRequest{}
-var _ json.Marshaler = ExportRequest{}
+var (
+	_ json.Unmarshaler = ExportRequest{}
+	_ json.Marshaler   = ExportRequest{}
+)
 
 var logsRequestJSON = []byte(`
 	{

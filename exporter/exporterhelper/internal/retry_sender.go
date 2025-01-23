@@ -44,19 +44,17 @@ func NewThrottleRetry(err error, delay time.Duration) error {
 }
 
 type retrySender struct {
-	BaseRequestSender
-	traceAttribute attribute.KeyValue
-	cfg            configretry.BackOffConfig
-	stopCh         chan struct{}
-	logger         *zap.Logger
+	BaseSender[internal.Request]
+	cfg    configretry.BackOffConfig
+	stopCh chan struct{}
+	logger *zap.Logger
 }
 
 func newRetrySender(config configretry.BackOffConfig, set exporter.Settings) *retrySender {
 	return &retrySender{
-		traceAttribute: attribute.String(ExporterKey, set.ID.String()),
-		cfg:            config,
-		stopCh:         make(chan struct{}),
-		logger:         set.Logger,
+		cfg:    config,
+		stopCh: make(chan struct{}),
+		logger: set.Logger,
 	}
 }
 
@@ -65,7 +63,7 @@ func (rs *retrySender) Shutdown(context.Context) error {
 	return nil
 }
 
-// send implements the requestSender interface
+// Send implements the requestSender interface
 func (rs *retrySender) Send(ctx context.Context, req internal.Request) error {
 	// Do not use NewExponentialBackOff since it calls Reset and the code here must
 	// call Reset after changing the InitialInterval (this saves an unnecessary call to Now).
@@ -84,7 +82,7 @@ func (rs *retrySender) Send(ctx context.Context, req internal.Request) error {
 	for {
 		span.AddEvent(
 			"Sending request.",
-			trace.WithAttributes(rs.traceAttribute, attribute.Int64("retry_num", retryNum)))
+			trace.WithAttributes(attribute.Int64("retry_num", retryNum)))
 
 		err := rs.NextSender.Send(ctx, req)
 		if err == nil {
@@ -96,7 +94,9 @@ func (rs *retrySender) Send(ctx context.Context, req internal.Request) error {
 			return fmt.Errorf("not retryable error: %w", err)
 		}
 
-		req = internal.ExtractPartialRequest(req, err)
+		if errReq, ok := req.(internal.RequestErrorHandler); ok {
+			req = errReq.OnError(err)
+		}
 
 		backoffDelay := expBackoff.NextBackOff()
 		if backoffDelay == backoff.Stop {
@@ -108,11 +108,16 @@ func (rs *retrySender) Send(ctx context.Context, req internal.Request) error {
 			backoffDelay = max(backoffDelay, throttleErr.delay)
 		}
 
+		if deadline, has := ctx.Deadline(); has && time.Until(deadline) < backoffDelay {
+			// The delay is longer than the deadline.  There is no point in
+			// waiting for cancelation.
+			return fmt.Errorf("request will be cancelled before next retry: %w", err)
+		}
+
 		backoffDelayStr := backoffDelay.String()
 		span.AddEvent(
 			"Exporting failed. Will retry the request after interval.",
 			trace.WithAttributes(
-				rs.traceAttribute,
 				attribute.String("interval", backoffDelayStr),
 				attribute.String("error", err.Error())))
 		rs.logger.Info(
@@ -131,12 +136,4 @@ func (rs *retrySender) Send(ctx context.Context, req internal.Request) error {
 		case <-time.After(backoffDelay):
 		}
 	}
-}
-
-// max returns the larger of x or y.
-func max(x, y time.Duration) time.Duration {
-	if x < y {
-		return y
-	}
-	return x
 }

@@ -8,9 +8,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
-	"go.opentelemetry.io/collector/connector/connectorprofiles"
+	"go.opentelemetry.io/collector/connector/xconnector"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
@@ -21,38 +21,38 @@ import (
 var connType = component.MustNewType("exampleconnector")
 
 // ExampleConnectorFactory is factory for ExampleConnector.
-var ExampleConnectorFactory = connector.NewFactory(
+var ExampleConnectorFactory = xconnector.NewFactory(
 	connType,
 	createExampleConnectorDefaultConfig,
 
-	connector.WithTracesToTraces(createExampleTracesToTraces, component.StabilityLevelDevelopment),
-	connector.WithTracesToMetrics(createExampleTracesToMetrics, component.StabilityLevelDevelopment),
-	connector.WithTracesToLogs(createExampleTracesToLogs, component.StabilityLevelDevelopment),
-	connectorprofiles.WithTracesToProfiles(createExampleTracesToProfiles, component.StabilityLevelDevelopment),
+	xconnector.WithTracesToTraces(createExampleTracesToTraces, component.StabilityLevelDevelopment),
+	xconnector.WithTracesToMetrics(createExampleTracesToMetrics, component.StabilityLevelDevelopment),
+	xconnector.WithTracesToLogs(createExampleTracesToLogs, component.StabilityLevelDevelopment),
+	xconnector.WithTracesToProfiles(createExampleTracesToProfiles, component.StabilityLevelDevelopment),
 
-	connector.WithMetricsToTraces(createExampleMetricsToTraces, component.StabilityLevelDevelopment),
-	connector.WithMetricsToMetrics(createExampleMetricsToMetrics, component.StabilityLevelDevelopment),
-	connector.WithMetricsToLogs(createExampleMetricsToLogs, component.StabilityLevelDevelopment),
-	connectorprofiles.WithMetricsToProfiles(createExampleMetricsToProfiles, component.StabilityLevelDevelopment),
+	xconnector.WithMetricsToTraces(createExampleMetricsToTraces, component.StabilityLevelDevelopment),
+	xconnector.WithMetricsToMetrics(createExampleMetricsToMetrics, component.StabilityLevelDevelopment),
+	xconnector.WithMetricsToLogs(createExampleMetricsToLogs, component.StabilityLevelDevelopment),
+	xconnector.WithMetricsToProfiles(createExampleMetricsToProfiles, component.StabilityLevelDevelopment),
 
-	connector.WithLogsToTraces(createExampleLogsToTraces, component.StabilityLevelDevelopment),
-	connector.WithLogsToMetrics(createExampleLogsToMetrics, component.StabilityLevelDevelopment),
-	connector.WithLogsToLogs(createExampleLogsToLogs, component.StabilityLevelDevelopment),
-	connectorprofiles.WithLogsToProfiles(createExampleLogsToProfiles, component.StabilityLevelDevelopment),
+	xconnector.WithLogsToTraces(createExampleLogsToTraces, component.StabilityLevelDevelopment),
+	xconnector.WithLogsToMetrics(createExampleLogsToMetrics, component.StabilityLevelDevelopment),
+	xconnector.WithLogsToLogs(createExampleLogsToLogs, component.StabilityLevelDevelopment),
+	xconnector.WithLogsToProfiles(createExampleLogsToProfiles, component.StabilityLevelDevelopment),
 
-	connectorprofiles.WithProfilesToTraces(createExampleProfilesToTraces, component.StabilityLevelDevelopment),
-	connectorprofiles.WithProfilesToMetrics(createExampleProfilesToMetrics, component.StabilityLevelDevelopment),
-	connectorprofiles.WithProfilesToLogs(createExampleProfilesToLogs, component.StabilityLevelDevelopment),
-	connectorprofiles.WithProfilesToProfiles(createExampleProfilesToProfiles, component.StabilityLevelDevelopment),
+	xconnector.WithProfilesToTraces(createExampleProfilesToTraces, component.StabilityLevelDevelopment),
+	xconnector.WithProfilesToMetrics(createExampleProfilesToMetrics, component.StabilityLevelDevelopment),
+	xconnector.WithProfilesToLogs(createExampleProfilesToLogs, component.StabilityLevelDevelopment),
+	xconnector.WithProfilesToProfiles(createExampleProfilesToProfiles, component.StabilityLevelDevelopment),
 )
 
-var MockForwardConnectorFactory = connector.NewFactory(
+var MockForwardConnectorFactory = xconnector.NewFactory(
 	component.MustNewType("mockforward"),
 	createExampleConnectorDefaultConfig,
-	connector.WithTracesToTraces(createExampleTracesToTraces, component.StabilityLevelDevelopment),
-	connector.WithMetricsToMetrics(createExampleMetricsToMetrics, component.StabilityLevelDevelopment),
-	connector.WithLogsToLogs(createExampleLogsToLogs, component.StabilityLevelDevelopment),
-	connectorprofiles.WithProfilesToProfiles(createExampleProfilesToProfiles, component.StabilityLevelDevelopment),
+	xconnector.WithTracesToTraces(createExampleTracesToTraces, component.StabilityLevelDevelopment),
+	xconnector.WithMetricsToMetrics(createExampleMetricsToMetrics, component.StabilityLevelDevelopment),
+	xconnector.WithLogsToLogs(createExampleLogsToLogs, component.StabilityLevelDevelopment),
+	xconnector.WithProfilesToProfiles(createExampleProfilesToProfiles, component.StabilityLevelDevelopment),
 )
 
 func createExampleConnectorDefaultConfig() component.Config {
@@ -84,7 +84,7 @@ func createExampleTracesToLogs(_ context.Context, set connector.Settings, _ comp
 	}, nil
 }
 
-func createExampleTracesToProfiles(_ context.Context, set connector.Settings, _ component.Config, profiles consumerprofiles.Profiles) (connector.Traces, error) {
+func createExampleTracesToProfiles(_ context.Context, set connector.Settings, _ component.Config, profiles xconsumer.Profiles) (connector.Traces, error) {
 	return &ExampleConnector{
 		ConsumeTracesFunc: func(ctx context.Context, td ptrace.Traces) error {
 			return profiles.ConsumeProfiles(ctx, testdata.GenerateProfiles(td.SpanCount()))
@@ -118,7 +118,7 @@ func createExampleMetricsToLogs(_ context.Context, set connector.Settings, _ com
 	}, nil
 }
 
-func createExampleMetricsToProfiles(_ context.Context, set connector.Settings, _ component.Config, profiles consumerprofiles.Profiles) (connector.Metrics, error) {
+func createExampleMetricsToProfiles(_ context.Context, set connector.Settings, _ component.Config, profiles xconsumer.Profiles) (connector.Metrics, error) {
 	return &ExampleConnector{
 		ConsumeMetricsFunc: func(ctx context.Context, md pmetric.Metrics) error {
 			return profiles.ConsumeProfiles(ctx, testdata.GenerateProfiles(md.MetricCount()))
@@ -152,7 +152,7 @@ func createExampleLogsToLogs(_ context.Context, set connector.Settings, _ compon
 	}, nil
 }
 
-func createExampleLogsToProfiles(_ context.Context, set connector.Settings, _ component.Config, profiles consumerprofiles.Profiles) (connector.Logs, error) {
+func createExampleLogsToProfiles(_ context.Context, set connector.Settings, _ component.Config, profiles xconsumer.Profiles) (connector.Logs, error) {
 	return &ExampleConnector{
 		ConsumeLogsFunc: func(ctx context.Context, ld plog.Logs) error {
 			return profiles.ConsumeProfiles(ctx, testdata.GenerateProfiles(ld.LogRecordCount()))
@@ -161,7 +161,7 @@ func createExampleLogsToProfiles(_ context.Context, set connector.Settings, _ co
 	}, nil
 }
 
-func createExampleProfilesToTraces(_ context.Context, set connector.Settings, _ component.Config, traces consumer.Traces) (connectorprofiles.Profiles, error) {
+func createExampleProfilesToTraces(_ context.Context, set connector.Settings, _ component.Config, traces consumer.Traces) (xconnector.Profiles, error) {
 	return &ExampleConnector{
 		ConsumeProfilesFunc: func(ctx context.Context, _ pprofile.Profiles) error {
 			return traces.ConsumeTraces(ctx, testdata.GenerateTraces(1))
@@ -170,7 +170,7 @@ func createExampleProfilesToTraces(_ context.Context, set connector.Settings, _ 
 	}, nil
 }
 
-func createExampleProfilesToMetrics(_ context.Context, set connector.Settings, _ component.Config, metrics consumer.Metrics) (connectorprofiles.Profiles, error) {
+func createExampleProfilesToMetrics(_ context.Context, set connector.Settings, _ component.Config, metrics consumer.Metrics) (xconnector.Profiles, error) {
 	return &ExampleConnector{
 		ConsumeProfilesFunc: func(ctx context.Context, _ pprofile.Profiles) error {
 			return metrics.ConsumeMetrics(ctx, testdata.GenerateMetrics(1))
@@ -179,7 +179,7 @@ func createExampleProfilesToMetrics(_ context.Context, set connector.Settings, _
 	}, nil
 }
 
-func createExampleProfilesToLogs(_ context.Context, set connector.Settings, _ component.Config, logs consumer.Logs) (connectorprofiles.Profiles, error) {
+func createExampleProfilesToLogs(_ context.Context, set connector.Settings, _ component.Config, logs consumer.Logs) (xconnector.Profiles, error) {
 	return &ExampleConnector{
 		ConsumeProfilesFunc: func(ctx context.Context, _ pprofile.Profiles) error {
 			return logs.ConsumeLogs(ctx, testdata.GenerateLogs(1))
@@ -187,7 +187,8 @@ func createExampleProfilesToLogs(_ context.Context, set connector.Settings, _ co
 		mutatesData: set.ID.Name() == "mutate",
 	}, nil
 }
-func createExampleProfilesToProfiles(_ context.Context, set connector.Settings, _ component.Config, profiles consumerprofiles.Profiles) (connectorprofiles.Profiles, error) {
+
+func createExampleProfilesToProfiles(_ context.Context, set connector.Settings, _ component.Config, profiles xconsumer.Profiles) (xconnector.Profiles, error) {
 	return &ExampleConnector{
 		ConsumeProfilesFunc: profiles.ConsumeProfiles,
 		mutatesData:         set.ID.Name() == "mutate",
@@ -199,7 +200,7 @@ type ExampleConnector struct {
 	consumer.ConsumeTracesFunc
 	consumer.ConsumeMetricsFunc
 	consumer.ConsumeLogsFunc
-	consumerprofiles.ConsumeProfilesFunc
+	xconsumer.ConsumeProfilesFunc
 	mutatesData bool
 }
 

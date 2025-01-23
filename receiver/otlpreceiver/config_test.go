@@ -141,7 +141,6 @@ func TestUnmarshalConfig(t *testing.T) {
 				},
 			},
 		}, cfg)
-
 }
 
 func TestUnmarshalConfigUnix(t *testing.T) {

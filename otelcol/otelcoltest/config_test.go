@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service/pipelines"
 )
 
@@ -55,7 +56,7 @@ func TestLoadConfig(t *testing.T) {
 			Processors: []component.ID{component.MustNewID("nop")},
 			Exporters:  []component.ID{component.MustNewID("nop")},
 		},
-		cfg.Service.Pipelines[component.MustNewID("traces")],
+		cfg.Service.Pipelines[pipeline.NewID(pipeline.SignalTraces)],
 		"Did not load pipeline config correctly")
 }
 
@@ -70,4 +71,24 @@ func TestLoadConfigAndValidate(t *testing.T) {
 	require.NoError(t, errLoad)
 
 	assert.Equal(t, cfg, cfgValidate)
+}
+
+func TestLoadConfigEnv(t *testing.T) {
+	factories, err := NopFactories()
+	require.NoError(t, err)
+
+	for _, tt := range []struct {
+		file string
+	}{
+		{file: filepath.Join("testdata", "config_env.yaml")},
+		{file: filepath.Join("testdata", "config_default_scheme.yaml")},
+	} {
+		t.Run(tt.file, func(t *testing.T) {
+			t.Setenv("RECEIVERS", "[nop]")
+			cfg, err := LoadConfigAndValidate(tt.file, factories)
+			require.NoError(t, err)
+
+			assert.Equal(t, []component.ID{component.MustNewID("nop")}, cfg.Service.Pipelines[pipeline.NewID(pipeline.SignalTraces)].Receivers)
+		})
+	}
 }

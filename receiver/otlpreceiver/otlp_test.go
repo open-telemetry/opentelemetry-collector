@@ -674,7 +674,7 @@ func TestOTLPReceiverHTTPTracesIngestTest(t *testing.T) {
 			errStatus := &spb.Status{}
 			require.NoError(t, proto.Unmarshal(respBytes, errStatus))
 			assert.Equal(t, ingestionState.expectedStatusCode, resp.StatusCode)
-			assert.Equal(t, ingestionState.expectedCode, codes.Code(errStatus.Code))
+			assert.EqualValues(t, ingestionState.expectedCode, errStatus.Code)
 		}
 	}
 
@@ -700,7 +700,7 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 		},
 	}
 
-	r, err := NewFactory().CreateTracesReceiver(
+	r, err := NewFactory().CreateTraces(
 		context.Background(),
 		receivertest.NewNopSettings(),
 		cfg,
@@ -769,7 +769,7 @@ func TestHTTPInvalidTLSCredentials(t *testing.T) {
 	}
 
 	// TLS is resolved during Start for HTTP.
-	r, err := NewFactory().CreateTracesReceiver(
+	r, err := NewFactory().CreateTraces(
 		context.Background(),
 		receivertest.NewNopSettings(),
 		cfg,
@@ -1016,7 +1016,7 @@ func TestShutdown(t *testing.T) {
 	cfg.HTTP.Endpoint = endpointHTTP
 	set := receivertest.NewNopSettings()
 	set.ID = otlpReceiverID
-	r, err := NewFactory().CreateTracesReceiver(
+	r, err := NewFactory().CreateTraces(
 		context.Background(),
 		set,
 		cfg,
@@ -1203,30 +1203,30 @@ func (esc *errOrSinkConsumer) Reset() {
 }
 
 // Reset deletes any stored in the sinks, resets error to nil.
-func (esc *errOrSinkConsumer) checkData(t *testing.T, data any, len int) {
+func (esc *errOrSinkConsumer) checkData(t *testing.T, data any, dataLen int) {
 	switch data.(type) {
 	case ptrace.Traces:
 		allTraces := esc.TracesSink.AllTraces()
-		require.Len(t, allTraces, len)
-		if len > 0 {
+		require.Len(t, allTraces, dataLen)
+		if dataLen > 0 {
 			require.Equal(t, allTraces[0], data)
 		}
 	case pmetric.Metrics:
 		allMetrics := esc.MetricsSink.AllMetrics()
-		require.Len(t, allMetrics, len)
-		if len > 0 {
+		require.Len(t, allMetrics, dataLen)
+		if dataLen > 0 {
 			require.Equal(t, allMetrics[0], data)
 		}
 	case plog.Logs:
 		allLogs := esc.LogsSink.AllLogs()
-		require.Len(t, allLogs, len)
-		if len > 0 {
+		require.Len(t, allLogs, dataLen)
+		if dataLen > 0 {
 			require.Equal(t, allLogs[0], data)
 		}
 	case pprofile.Profiles:
 		allProfiles := esc.ProfilesSink.AllProfiles()
-		require.Len(t, allProfiles, len)
-		if len > 0 {
+		require.Len(t, allProfiles, dataLen)
+		if dataLen > 0 {
 			require.Equal(t, allProfiles[0], data)
 		}
 	}

@@ -37,77 +37,87 @@ require (
 	modulePrefix = "go.opentelemetry.io/collector"
 )
 
-var (
-	replaceModules = []string{
-		"",
-		"/component",
-		"/component/componentprofiles",
-		"/component/componentstatus",
-		"/client",
-		"/config/configauth",
-		"/config/configcompression",
-		"/config/configgrpc",
-		"/config/confighttp",
-		"/config/confignet",
-		"/config/configopaque",
-		"/config/configretry",
-		"/config/configtelemetry",
-		"/config/configtls",
-		"/config/internal",
-		"/confmap",
-		"/confmap/provider/envprovider",
-		"/confmap/provider/fileprovider",
-		"/confmap/provider/httpprovider",
-		"/confmap/provider/httpsprovider",
-		"/confmap/provider/yamlprovider",
-		"/consumer",
-		"/consumer/consumerprofiles",
-		"/consumer/consumertest",
-		"/connector",
-		"/connector/connectorprofiles",
-		"/exporter",
-		"/exporter/debugexporter",
-		"/exporter/exporterprofiles",
-		"/exporter/nopexporter",
-		"/exporter/otlpexporter",
-		"/exporter/otlphttpexporter",
-		"/extension",
-		"/extension/auth",
-		"/extension/experimental/storage",
-		"/extension/extensioncapabilities",
-		"/extension/zpagesextension",
-		"/featuregate",
-		"/internal/globalgates",
-		"/processor",
-		"/processor/batchprocessor",
-		"/processor/memorylimiterprocessor",
-		"/processor/processorprofiles",
-		"/receiver",
-		"/receiver/nopreceiver",
-		"/receiver/otlpreceiver",
-		"/receiver/receiverprofiles",
-		"/otelcol",
-		"/pdata",
-		"/pdata/testdata",
-		"/pdata/pprofile",
-		"/semconv",
-		"/service",
-	}
-)
+var replaceModules = []string{
+	"",
+	"/component",
+	"/component/componenttest",
+	"/component/componentstatus",
+	"/client",
+	"/config/configauth",
+	"/config/configcompression",
+	"/config/configgrpc",
+	"/config/confighttp",
+	"/config/confignet",
+	"/config/configopaque",
+	"/config/configretry",
+	"/config/configtelemetry",
+	"/config/configtls",
+	"/confmap",
+	"/confmap/provider/envprovider",
+	"/confmap/provider/fileprovider",
+	"/confmap/provider/httpprovider",
+	"/confmap/provider/httpsprovider",
+	"/confmap/provider/yamlprovider",
+	"/consumer",
+	"/consumer/consumererror",
+	"/consumer/consumererror/xconsumererror",
+	"/consumer/xconsumer",
+	"/consumer/consumertest",
+	"/connector",
+	"/connector/connectortest",
+	"/connector/xconnector",
+	"/exporter",
+	"/exporter/debugexporter",
+	"/exporter/xexporter",
+	"/exporter/exportertest",
+	"/exporter/exporterhelper/xexporterhelper",
+	"/exporter/nopexporter",
+	"/exporter/otlpexporter",
+	"/exporter/otlphttpexporter",
+	"/extension",
+	"/extension/auth",
+	"/extension/auth/authtest",
+	"/extension/extensioncapabilities",
+	"/extension/extensiontest",
+	"/extension/zpagesextension",
+	"/extension/xextension",
+	"/featuregate",
+	"/internal/memorylimiter",
+	"/internal/fanoutconsumer",
+	"/internal/sharedcomponent",
+	"/otelcol",
+	"/pdata",
+	"/pdata/testdata",
+	"/pdata/pprofile",
+	"/pipeline",
+	"/pipeline/xpipeline",
+	"/processor",
+	"/processor/processortest",
+	"/processor/batchprocessor",
+	"/processor/memorylimiterprocessor",
+	"/processor/xprocessor",
+	"/receiver",
+	"/receiver/nopreceiver",
+	"/receiver/otlpreceiver",
+	"/receiver/receivertest",
+	"/receiver/xreceiver",
+	"/semconv",
+	"/service",
+}
 
-func newTestConfig() Config {
-	cfg := NewDefaultConfig()
+func newTestConfig(tb testing.TB) *Config {
+	cfg, err := NewDefaultConfig()
+	require.NoError(tb, err)
 	cfg.downloadModules.wait = 0
 	cfg.downloadModules.numRetries = 1
 	return cfg
 }
 
-func newInitializedConfig(t *testing.T) Config {
-	cfg := newTestConfig()
+func newInitializedConfig(t *testing.T) *Config {
+	cfg := newTestConfig(t)
 	// Validate and ParseModules will be called before the config is
 	// given to Generate.
 	assert.NoError(t, cfg.Validate())
-	assert.NoError(t, cfg.SetBackwardsCompatibility())
 	assert.NoError(t, cfg.ParseModules())
 
 	return cfg
@@ -121,33 +131,21 @@ func TestGenerateInvalidOutputPath(t *testing.T) {
 	cfg := newInitializedConfig(t)
 	cfg.Distribution.OutputPath = ":/invalid"
 	err := Generate(cfg)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "failed to create output path")
+	require.ErrorContains(t, err, "failed to create output path")
 }
 
 func TestVersioning(t *testing.T) {
 	replaces := generateReplaces()
 	tests := []struct {
 		name        string
-		cfgBuilder  func() Config
+		cfgBuilder  func() *Config
 		expectedErr error
 	}{
 		{
 			name: "defaults",
-			cfgBuilder: func() Config {
-				cfg := newTestConfig()
+			cfgBuilder: func() *Config {
+				cfg := newTestConfig(t)
 				cfg.Distribution.Go = "go"
-				cfg.Replaces = append(cfg.Replaces, replaces...)
-				return cfg
-			},
-			expectedErr: nil,
-		},
-		{
-			name: "require otelcol",
-			cfgBuilder: func() Config {
-				cfg := newTestConfig()
-				cfg.Distribution.Go = "go"
-				cfg.Distribution.RequireOtelColModule = true
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				return cfg
 			},
@@ -155,8 +153,8 @@ func TestVersioning(t *testing.T) {
 		},
 		{
 			name: "only gomod file, skip generate",
-			cfgBuilder: func() Config {
-				cfg := newTestConfig()
+			cfgBuilder: func() *Config {
+				cfg := newTestConfig(t)
 				tempDir := t.TempDir()
 				err := makeModule(tempDir, []byte(goModTestFile))
 				require.NoError(t, err)
@@ -168,48 +166,16 @@ func TestVersioning(t *testing.T) {
 			expectedErr: ErrDepNotFound,
 		},
 		{
-			name: "old otel version",
-			cfgBuilder: func() Config {
-				cfg := newTestConfig()
-				cfg.Verbose = true
-				cfg.Distribution.Go = "go"
-				cfg.Distribution.OtelColVersion = "0.97.0"
-				cfg.Distribution.RequireOtelColModule = true
-				var err error
-				cfg.Exporters, err = parseModules([]Module{
-					{
-						GoMod: "go.opentelemetry.io/collector/exporter/otlpexporter v0.97.0",
-					},
-				})
-				require.NoError(t, err)
-				cfg.Receivers, err = parseModules([]Module{
-					{
-						GoMod: "go.opentelemetry.io/collector/receiver/otlpreceiver v0.97.0",
-					},
-				})
-				require.NoError(t, err)
-				providers, err := parseModules([]Module{
-					{
-						GoMod: "go.opentelemetry.io/collector/confmap/provider/envprovider v0.97.0",
-					},
-				})
-				require.NoError(t, err)
-				cfg.Providers = &providers
-				return cfg
-			},
-			expectedErr: nil,
-		},
-		{
 			name: "old component version",
-			cfgBuilder: func() Config {
-				cfg := newTestConfig()
+			cfgBuilder: func() *Config {
+				cfg := newTestConfig(t)
 				cfg.Distribution.Go = "go"
 				cfg.Exporters = []Module{
 					{
-						GoMod: "go.opentelemetry.io/collector/exporter/otlpexporter v0.97.0",
+						GoMod: "go.opentelemetry.io/collector/exporter/otlpexporter v0.112.0",
 					},
 				}
-				cfg.Providers = &[]Module{}
+				cfg.ConfmapProviders = []Module{}
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				return cfg
 			},
@@ -217,16 +183,16 @@ func TestVersioning(t *testing.T) {
 		},
 		{
 			name: "old component version without strict mode",
-			cfgBuilder: func() Config {
-				cfg := newTestConfig()
+			cfgBuilder: func() *Config {
+				cfg := newTestConfig(t)
 				cfg.Distribution.Go = "go"
 				cfg.SkipStrictVersioning = true
 				cfg.Exporters = []Module{
 					{
-						GoMod: "go.opentelemetry.io/collector/exporter/otlpexporter v0.97.0",
+						GoMod: "go.opentelemetry.io/collector/exporter/otlpexporter v0.112.0",
 					},
 				}
-				cfg.Providers = &[]Module{}
+				cfg.ConfmapProviders = []Module{}
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				return cfg
 			},
@@ -236,7 +202,6 @@ func TestVersioning(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := tt.cfgBuilder()
-			require.NoError(t, cfg.SetBackwardsCompatibility())
 			require.NoError(t, cfg.Validate())
 			require.NoError(t, cfg.ParseModules())
 			err := GenerateAndCompile(cfg)
@@ -264,14 +229,12 @@ func TestGenerateAndCompile(t *testing.T) {
 	replaces := generateReplaces()
 	testCases := []struct {
 		name       string
-		cfgBuilder func(t *testing.T) Config
+		cfgBuilder func(t *testing.T) *Config
 	}{
 		{
 			name: "Default Configuration Compilation",
-			cfgBuilder: func(t *testing.T) Config {
-				cfg := newTestConfig()
-				err := cfg.SetBackwardsCompatibility()
-				require.NoError(t, err)
+			cfgBuilder: func(t *testing.T) *Config {
+				cfg := newTestConfig(t)
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				return cfg
@@ -279,22 +242,30 @@ func TestGenerateAndCompile(t *testing.T) {
 		},
 		{
 			name: "LDFlags Compilation",
-			cfgBuilder: func(t *testing.T) Config {
-				cfg := newTestConfig()
-				err := cfg.SetBackwardsCompatibility()
-				require.NoError(t, err)
+			cfgBuilder: func(t *testing.T) *Config {
+				cfg := newTestConfig(t)
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
+				cfg.LDSet = true
 				cfg.LDFlags = `-X "test.gitVersion=0743dc6c6411272b98494a9b32a63378e84c34da" -X "test.gitTag=local-testing" -X "test.goVersion=go version go1.20.7 darwin/amd64"`
 				return cfg
 			},
 		},
 		{
+			name: "GCFlags Compilation",
+			cfgBuilder: func(t *testing.T) *Config {
+				cfg := newTestConfig(t)
+				cfg.Distribution.OutputPath = t.TempDir()
+				cfg.Replaces = append(cfg.Replaces, replaces...)
+				cfg.GCSet = true
+				cfg.GCFlags = `all=-N -l`
+				return cfg
+			},
+		},
+		{
 			name: "Build Tags Compilation",
-			cfgBuilder: func(t *testing.T) Config {
-				cfg := newTestConfig()
-				err := cfg.SetBackwardsCompatibility()
-				require.NoError(t, err)
+			cfgBuilder: func(t *testing.T) *Config {
+				cfg := newTestConfig(t)
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				cfg.Distribution.BuildTags = "customTag"
@@ -303,10 +274,8 @@ func TestGenerateAndCompile(t *testing.T) {
 		},
 		{
 			name: "Debug Compilation",
-			cfgBuilder: func(t *testing.T) Config {
-				cfg := newTestConfig()
-				err := cfg.SetBackwardsCompatibility()
-				require.NoError(t, err)
+			cfgBuilder: func(t *testing.T) *Config {
+				cfg := newTestConfig(t)
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				cfg.Logger = zap.NewNop()
@@ -316,48 +285,28 @@ func TestGenerateAndCompile(t *testing.T) {
 		},
 		{
 			name: "No providers",
-			cfgBuilder: func(t *testing.T) Config {
-				cfg := newTestConfig()
-				err := cfg.SetBackwardsCompatibility()
-				require.NoError(t, err)
+			cfgBuilder: func(t *testing.T) *Config {
+				cfg := newTestConfig(t)
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
-				cfg.Providers = &[]Module{}
-				return cfg
-			},
-		},
-		{
-			name: "Pre-confmap factories",
-			cfgBuilder: func(t *testing.T) Config {
-				cfg := newTestConfig()
-				err := cfg.SetBackwardsCompatibility()
-				require.NoError(t, err)
-				cfg.Distribution.OutputPath = t.TempDir()
-				cfg.Replaces = append(cfg.Replaces, replaces...)
-				cfg.Distribution.OtelColVersion = "0.98.0"
-				cfg.SkipStrictVersioning = true
+				cfg.ConfmapProviders = []Module{}
 				return cfg
 			},
 		},
 		{
 			name: "With confmap factories",
-			cfgBuilder: func(t *testing.T) Config {
-				cfg := newTestConfig()
-				err := cfg.SetBackwardsCompatibility()
-				require.NoError(t, err)
+			cfgBuilder: func(t *testing.T) *Config {
+				cfg := newTestConfig(t)
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
-				cfg.Distribution.OtelColVersion = "0.99.0"
 				cfg.SkipStrictVersioning = true
 				return cfg
 			},
 		},
 		{
 			name: "ConfResolverDefaultURIScheme set",
-			cfgBuilder: func(t *testing.T) Config {
-				cfg := newTestConfig()
-				err := cfg.SetBackwardsCompatibility()
-				require.NoError(t, err)
+			cfgBuilder: func(t *testing.T) *Config {
+				cfg := newTestConfig(t)
 				cfg.ConfResolver = ConfResolver{
 					DefaultURIScheme: "env",
 				}
@@ -404,14 +353,10 @@ func TestReplaceStatementsAreComplete(t *testing.T) {
 
 	var err error
 	dir := t.TempDir()
-	cfg := NewDefaultConfig()
+	cfg, err := NewDefaultConfig()
+	require.NoError(t, err)
 	cfg.Distribution.Go = "go"
 	cfg.Distribution.OutputPath = dir
-	// Use a deliberately nonexistent version to simulate an unreleased
-	// version of the package. Not strictly necessary since this test
-	// will catch gaps in the replace statements before a release is in
-	// progress.
-	cfg.Distribution.OtelColVersion = "1.9999.9999"
 	cfg.Replaces = append(cfg.Replaces, generateReplaces()...)
 	// Configure all components that we want to use elsewhere in these tests.
 	// This ensures the resulting go.mod file has maximum coverage of modules
@@ -456,7 +401,6 @@ func TestReplaceStatementsAreComplete(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	require.NoError(t, cfg.SetBackwardsCompatibility())
 	require.NoError(t, cfg.Validate())
 	require.NoError(t, cfg.ParseModules())
 	err = GenerateAndCompile(cfg)
@@ -471,7 +415,7 @@ func TestReplaceStatementsAreComplete(t *testing.T) {
 
 func verifyGoMod(t *testing.T, dir string, replaceMods map[string]bool) {
 	gomodpath := path.Join(dir, "go.mod")
-	// #nosec G304 We control this path and generate the file inside, so we can assume it is safe.
+	//nolint:gosec // #nosec G304 We control this path and generate the file inside, so we can assume it is safe.
 	gomod, err := os.ReadFile(gomodpath)
 	require.NoError(t, err)
 
@@ -493,14 +437,14 @@ func verifyGoMod(t *testing.T, dir string, replaceMods map[string]bool) {
 func makeModule(dir string, fileContents []byte) error {
 	// if the file does not exist, try to create it
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		if err = os.Mkdir(dir, 0750); err != nil {
+		if err = os.Mkdir(dir, 0o750); err != nil {
 			return fmt.Errorf("failed to create output path: %w", err)
 		}
 	} else if err != nil {
 		return fmt.Errorf("failed to create output path: %w", err)
 	}
 
-	err := os.WriteFile(filepath.Clean(filepath.Join(dir, "go.mod")), fileContents, 0600)
+	err := os.WriteFile(filepath.Clean(filepath.Join(dir, "go.mod")), fileContents, 0o600)
 	if err != nil {
 		return fmt.Errorf("failed to write go.mod file: %w", err)
 	}

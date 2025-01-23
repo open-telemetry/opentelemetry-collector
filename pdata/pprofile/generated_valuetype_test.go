@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
+	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 func TestValueType_MoveTo(t *testing.T) {
@@ -38,22 +38,22 @@ func TestValueType_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newValueType(&otlpprofiles.ValueType{}, &sharedState)) })
 }
 
-func TestValueType_Type(t *testing.T) {
+func TestValueType_TypeStrindex(t *testing.T) {
 	ms := NewValueType()
-	assert.Equal(t, int64(0), ms.Type())
-	ms.SetType(int64(1))
-	assert.Equal(t, int64(1), ms.Type())
+	assert.Equal(t, int32(0), ms.TypeStrindex())
+	ms.SetTypeStrindex(int32(1))
+	assert.Equal(t, int32(1), ms.TypeStrindex())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newValueType(&otlpprofiles.ValueType{}, &sharedState).SetType(int64(1)) })
+	assert.Panics(t, func() { newValueType(&otlpprofiles.ValueType{}, &sharedState).SetTypeStrindex(int32(1)) })
 }
 
-func TestValueType_Unit(t *testing.T) {
+func TestValueType_UnitStrindex(t *testing.T) {
 	ms := NewValueType()
-	assert.Equal(t, int64(0), ms.Unit())
-	ms.SetUnit(int64(1))
-	assert.Equal(t, int64(1), ms.Unit())
+	assert.Equal(t, int32(0), ms.UnitStrindex())
+	ms.SetUnitStrindex(int32(1))
+	assert.Equal(t, int32(1), ms.UnitStrindex())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newValueType(&otlpprofiles.ValueType{}, &sharedState).SetUnit(int64(1)) })
+	assert.Panics(t, func() { newValueType(&otlpprofiles.ValueType{}, &sharedState).SetUnitStrindex(int32(1)) })
 }
 
 func TestValueType_AggregationTemporality(t *testing.T) {
@@ -74,7 +74,7 @@ func generateTestValueType() ValueType {
 }
 
 func fillTestValueType(tv ValueType) {
-	tv.orig.Type = int64(1)
-	tv.orig.Unit = int64(1)
+	tv.orig.TypeStrindex = int32(1)
+	tv.orig.UnitStrindex = int32(1)
 	tv.orig.AggregationTemporality = otlpprofiles.AggregationTemporality(1)
 }

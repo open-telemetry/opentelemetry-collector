@@ -11,54 +11,63 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-// mergeLogs merges two logs requests into one.
-func mergeLogs(_ context.Context, r1 Request, r2 Request) (Request, error) {
-	lr1, ok1 := r1.(*logsRequest)
-	lr2, ok2 := r2.(*logsRequest)
-	if !ok1 || !ok2 {
-		return nil, errors.New("invalid input type")
+// MergeSplit splits and/or merges the provided logs request and the current request into one or more requests
+// conforming with the MaxSizeConfig.
+func (req *logsRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSizeConfig, r2 Request) ([]Request, error) {
+	var req2 *logsRequest
+	if r2 != nil {
+		var ok bool
+		req2, ok = r2.(*logsRequest)
+		if !ok {
+			return nil, errors.New("invalid input type")
+		}
 	}
-	lr2.ld.ResourceLogs().MoveAndAppendTo(lr1.ld.ResourceLogs())
-	return lr1, nil
-}
 
-// mergeSplitLogs splits and/or merges the logs into multiple requests based on the MaxSizeConfig.
-func mergeSplitLogs(_ context.Context, cfg exporterbatcher.MaxSizeConfig, r1 Request, r2 Request) ([]Request, error) {
+	if cfg.MaxSizeItems == 0 {
+		req2.ld.ResourceLogs().MoveAndAppendTo(req.ld.ResourceLogs())
+		return []Request{req}, nil
+	}
+
 	var (
 		res          []Request
 		destReq      *logsRequest
 		capacityLeft = cfg.MaxSizeItems
 	)
-	for _, req := range []Request{r1, r2} {
-		if req == nil {
+	for _, srcReq := range []*logsRequest{req, req2} {
+		if srcReq == nil {
 			continue
 		}
-		srcReq, ok := req.(*logsRequest)
-		if !ok {
-			return nil, errors.New("invalid input type")
-		}
-		if srcReq.ld.LogRecordCount() <= capacityLeft {
+
+		srcCount := srcReq.ItemsCount()
+		if srcCount <= capacityLeft {
 			if destReq == nil {
 				destReq = srcReq
 			} else {
 				srcReq.ld.ResourceLogs().MoveAndAppendTo(destReq.ld.ResourceLogs())
+				destReq.setCachedItemsCount(srcCount)
+				srcReq.setCachedItemsCount(0)
 			}
-			capacityLeft -= destReq.ld.LogRecordCount()
+			capacityLeft -= srcCount
 			continue
 		}
 
 		for {
 			extractedLogs := extractLogs(srcReq.ld, capacityLeft)
-			if extractedLogs.LogRecordCount() == 0 {
+			extractedCount := extractedLogs.LogRecordCount()
+			if extractedCount == 0 {
 				break
 			}
-			capacityLeft -= extractedLogs.LogRecordCount()
+
 			if destReq == nil {
-				destReq = &logsRequest{ld: extractedLogs, pusher: srcReq.pusher}
+				destReq = &logsRequest{ld: extractedLogs, pusher: srcReq.pusher, cachedItemsCount: extractedCount}
 			} else {
 				extractedLogs.ResourceLogs().MoveAndAppendTo(destReq.ld.ResourceLogs())
+				destReq.setCachedItemsCount(destReq.ItemsCount() + extractedCount)
+				srcReq.setCachedItemsCount(srcReq.ItemsCount() - extractedCount)
 			}
+
 			// Create new batch once capacity is reached.
+			capacityLeft -= extractedCount
 			if capacityLeft == 0 {
 				res = append(res, destReq)
 				destReq = nil

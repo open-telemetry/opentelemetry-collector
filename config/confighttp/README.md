@@ -23,9 +23,31 @@ README](../configtls/README.md).
 - [`read_buffer_size`](https://golang.org/pkg/net/http/#Transport)
 - [`timeout`](https://golang.org/pkg/net/http/#Client)
 - [`write_buffer_size`](https://golang.org/pkg/net/http/#Transport)
-- `compression`: Compression type to use among `gzip`, `zstd`, `snappy`, `zlib`, and `deflate`.
+- `compression`: Compression type to use among `gzip`, `zstd`, `snappy`, `zlib`, `deflate`, and `lz4`.
   - look at the documentation for the server-side of the communication.
   - `none` will be treated as uncompressed, and any other inputs will cause an error.
+- `compression_params` : Configure advanced compression options
+  - `level`: Configure compression level for `compression` type
+  - The following are valid combinations of `compression` and `level`
+    - `gzip`
+      - BestSpeed: `1`
+      - BestCompression: `9`
+      - DefaultCompression: `-1`
+    - `zlib`
+      - BestSpeed: `1`
+      - BestCompression: `9`
+      - DefaultCompression: `-1`
+    - `deflate`
+      - BestSpeed: `1`
+      - BestCompression: `9`
+      - DefaultCompression: `-1`
+    - `zstd`
+      - SpeedFastest: `1`
+      - SpeedDefault: `3`
+      - SpeedBetterCompression: `6`
+      - SpeedBestCompression: `11`
+    - `snappy`
+      No compression levels supported yet
 - [`max_idle_conns`](https://golang.org/pkg/net/http/#Transport)
 - [`max_idle_conns_per_host`](https://golang.org/pkg/net/http/#Transport)
 - [`max_conns_per_host`](https://golang.org/pkg/net/http/#Transport)
@@ -52,7 +74,9 @@ exporter:
     headers:
       test1: "value1"
       "test 2": "value 2"
-    compression: zstd
+    compression: gzip
+    compression_params:
+      level: 1
     cookies:
       enabled: true
 ```
@@ -68,8 +92,8 @@ is hosted at a different [origin][origin]. If left blank or set to `null`, CORS
 will not be enabled.
   - `allowed_origins`: A list of [origins][origin] allowed to send requests to
   the receiver. An origin may contain a wildcard (`*`) to replace 0 or more
-  characters (e.g., `https://*.example.com`). To allow any origin, set to
-  `["*"]`. If no origins are listed, CORS will not be enabled.
+  characters (e.g., `https://*.example.com`). **Do not use** a plain wildcard
+  `["*"]`, as our CORS response includes `Access-Control-Allow-Credentials: true`, which makes browsers to **disallow a plain wildcard** (this is a security standard). To allow any origin, you can specify at least the protocol, for example `["https://*", "http://*"]`. If no origins are listed, CORS will not be enabled.
   - `allowed_headers`: Allow CORS requests to include headers outside the
   [default safelist][cors-headers]. By default, safelist headers and
   `X-Requested-With` will be allowed. To allow any request header, set to
@@ -79,7 +103,7 @@ will not be enabled.
   not set, browsers use a default of 5 seconds.
 - `endpoint`: Valid value syntax available [here](https://github.com/grpc/grpc/blob/master/doc/naming.md)
 - `max_request_body_size`: configures the maximum allowed body size in bytes for a single request. Default: `20971520` (20MiB)
-- `compression_algorithms`: configures the list of compression algorithms the server can accept. Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate"]
+- `compression_algorithms`: configures the list of compression algorithms the server can accept. Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate", "lz4"]
 - [`tls`](../configtls/README.md)
 - [`auth`](../configauth/README.md)
   - `request_params`: a list of query parameter names to add to the auth context, along with the HTTP headers
@@ -111,7 +135,7 @@ processors:
   attributes:
     actions:
       - key: http.client_ip
-        from_context: X-Forwarded-For
+        from_context: metadata.x-forwarded-for
         action: upsert
 ```
 

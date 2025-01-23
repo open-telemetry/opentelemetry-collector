@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/exporter/xexporter"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -21,29 +22,38 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-func TestCreateMetricsExporter(t *testing.T) {
+func TestCreateMetrics(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	me, err := factory.CreateMetricsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+	me, err := factory.CreateMetrics(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, me)
 }
 
-func TestCreateTracesExporter(t *testing.T) {
+func TestCreateTraces(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	te, err := factory.CreateTracesExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+	te, err := factory.CreateTraces(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, te)
 }
 
-func TestCreateLogsExporter(t *testing.T) {
+func TestCreateLogs(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	te, err := factory.CreateLogsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+	te, err := factory.CreateLogs(context.Background(), exportertest.NewNopSettings(), cfg)
+	require.NoError(t, err)
+	assert.NotNil(t, te)
+}
+
+func TestCreateFactoryProfiles(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	te, err := factory.(xexporter.Factory).CreateProfiles(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, te)
 }
