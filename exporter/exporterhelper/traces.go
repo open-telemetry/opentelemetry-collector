@@ -25,14 +25,16 @@ var (
 )
 
 type tracesRequest struct {
-	td     ptrace.Traces
-	pusher consumer.ConsumeTracesFunc
+	td               ptrace.Traces
+	pusher           consumer.ConsumeTracesFunc
+	cachedItemsCount int
 }
 
 func newTracesRequest(td ptrace.Traces, pusher consumer.ConsumeTracesFunc) Request {
 	return &tracesRequest{
-		td:     td,
-		pusher: pusher,
+		td:               td,
+		pusher:           pusher,
+		cachedItemsCount: -1,
 	}
 }
 
@@ -63,7 +65,14 @@ func (req *tracesRequest) Export(ctx context.Context) error {
 }
 
 func (req *tracesRequest) ItemsCount() int {
-	return req.td.SpanCount()
+	if req.cachedItemsCount == -1 {
+		req.cachedItemsCount = req.td.SpanCount()
+	}
+	return req.cachedItemsCount
+}
+
+func (req *tracesRequest) setCachedItemsCount(count int) {
+	req.cachedItemsCount = count
 }
 
 type tracesExporter struct {

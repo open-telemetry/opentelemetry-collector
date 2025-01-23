@@ -130,7 +130,7 @@ func TestMergeSplitTraces(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, len(tt.expected), len(res))
 			for i := range res {
-				assert.Equal(t, tt.expected[i], res[i].(*tracesRequest))
+				assert.Equal(t, tt.expected[i].td, res[i].(*tracesRequest).td)
 			}
 		})
 	}
@@ -157,5 +157,45 @@ func TestExtractTraces(t *testing.T) {
 		extractedTraces := extractTraces(td, i)
 		assert.Equal(t, i, extractedTraces.SpanCount())
 		assert.Equal(t, 10-i, td.SpanCount())
+	}
+}
+
+func BenchmarkSplittingBasedOnItemCountManySmallTraces(b *testing.B) {
+	// All requests merge into a single batch.
+	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 10000}
+	for i := 0; i < b.N; i++ {
+		merged := []Request{&tracesRequest{td: testdata.GenerateTraces(10)}}
+		for j := 0; j < 1000; j++ {
+			lr2 := &tracesRequest{td: testdata.GenerateTraces(10)}
+			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), cfg, lr2)
+			merged = append(merged[0:len(merged)-1], res...)
+		}
+		assert.Len(b, merged, 1)
+	}
+}
+
+func BenchmarkSplittingBasedOnItemCountManyTracesSlightlyAboveLimit(b *testing.B) {
+	// Every incoming request results in a split.
+	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 10000}
+	for i := 0; i < b.N; i++ {
+		merged := []Request{&tracesRequest{td: testdata.GenerateTraces(0)}}
+		for j := 0; j < 10; j++ {
+			lr2 := &tracesRequest{td: testdata.GenerateTraces(10001)}
+			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), cfg, lr2)
+			merged = append(merged[0:len(merged)-1], res...)
+		}
+		assert.Len(b, merged, 11)
+	}
+}
+
+func BenchmarkSplittingBasedOnItemCountHugeTraces(b *testing.B) {
+	// One request splits into many batches.
+	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 10000}
+	for i := 0; i < b.N; i++ {
+		merged := []Request{&tracesRequest{td: testdata.GenerateTraces(0)}}
+		lr2 := &tracesRequest{td: testdata.GenerateTraces(100000)}
+		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), cfg, lr2)
+		merged = append(merged[0:len(merged)-1], res...)
+		assert.Len(b, merged, 10)
 	}
 }

@@ -70,11 +70,10 @@ func (qCfg *QueueConfig) Validate() error {
 
 type QueueSender struct {
 	BaseSender[internal.Request]
-	queue          exporterqueue.Queue[internal.Request]
-	numConsumers   int
-	traceAttribute attribute.KeyValue
-	batcher        queue.Batcher
-	consumers      *queue.Consumers[internal.Request]
+	queue        exporterqueue.Queue[internal.Request]
+	numConsumers int
+	batcher      queue.Batcher
+	consumers    *queue.Consumers[internal.Request]
 
 	obsrep      *ObsReport
 	exporterID  component.ID
@@ -91,12 +90,11 @@ func NewQueueSender(
 	batcherCfg exporterbatcher.Config,
 ) *QueueSender {
 	qs := &QueueSender{
-		queue:          q,
-		numConsumers:   numConsumers,
-		traceAttribute: attribute.String(ExporterKey, set.ID.String()),
-		obsrep:         obsrep,
-		exporterID:     set.ID,
-		logger:         set.Logger,
+		queue:        q,
+		numConsumers: numConsumers,
+		obsrep:       obsrep,
+		exporterID:   set.ID,
+		logger:       set.Logger,
 	}
 
 	exportFunc := func(ctx context.Context, req internal.Request) error {
@@ -131,10 +129,11 @@ func (qs *QueueSender) Start(ctx context.Context, host component.Host) error {
 		}
 	}
 
+	exporterAttr := attribute.String(ExporterKey, qs.exporterID.String())
 	dataTypeAttr := attribute.String(DataTypeKey, qs.obsrep.Signal.String())
 
 	reg1, err1 := qs.obsrep.TelemetryBuilder.InitExporterQueueSize(func() int64 { return qs.queue.Size() },
-		metric.WithAttributeSet(attribute.NewSet(qs.traceAttribute, dataTypeAttr)))
+		metric.WithAttributeSet(attribute.NewSet(exporterAttr, dataTypeAttr)))
 
 	if reg1 != nil {
 		qs.shutdownFns = append(qs.shutdownFns, func(context.Context) error {
@@ -143,7 +142,7 @@ func (qs *QueueSender) Start(ctx context.Context, host component.Host) error {
 	}
 
 	reg2, err2 := qs.obsrep.TelemetryBuilder.InitExporterQueueCapacity(func() int64 { return qs.queue.Capacity() },
-		metric.WithAttributeSet(attribute.NewSet(qs.traceAttribute)))
+		metric.WithAttributeSet(attribute.NewSet(exporterAttr)))
 
 	if reg2 != nil {
 		qs.shutdownFns = append(qs.shutdownFns, func(context.Context) error {
@@ -184,11 +183,11 @@ func (qs *QueueSender) Send(ctx context.Context, req internal.Request) error {
 
 	span := trace.SpanFromContext(c)
 	if err := qs.queue.Offer(c, req); err != nil {
-		span.AddEvent("Failed to enqueue item.", trace.WithAttributes(qs.traceAttribute))
+		span.AddEvent("Failed to enqueue item.")
 		return err
 	}
 
-	span.AddEvent("Enqueued item.", trace.WithAttributes(qs.traceAttribute))
+	span.AddEvent("Enqueued item.")
 	return nil
 }
 
