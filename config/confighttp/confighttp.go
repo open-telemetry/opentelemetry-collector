@@ -33,8 +33,11 @@ import (
 	"go.opentelemetry.io/collector/extension/auth"
 )
 
-const headerContentEncoding = "Content-Encoding"
-const defaultMaxRequestBodySize = 20 * 1024 * 1024 // 20MiB
+const (
+	headerContentEncoding     = "Content-Encoding"
+	defaultMaxRequestBodySize = 20 * 1024 * 1024 // 20MiB
+)
+
 var defaultCompressionAlgorithms = []string{"", "gzip", "zstd", "zlib", "snappy", "deflate"}
 
 // ClientConfig defines settings for creating an HTTP client.
@@ -481,7 +484,6 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 	}
 
 	errorLog, err := zap.NewStdLogAt(settings.Logger, zapcore.ErrorLevel)
-
 	if err != nil {
 		return nil, err // If an error occurs while creating the logger, return nil and the error
 	}
