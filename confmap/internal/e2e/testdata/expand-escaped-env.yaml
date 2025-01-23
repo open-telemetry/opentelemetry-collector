@@ -33,3 +33,9 @@ test_map:
   key16: "${env:ENV_LIST}"
   # map is escaped
   key17: "${env:ENV_MAP}"
+  # nested $$ -> escaped $
+  key18: "${env:ENV_NESTED_DOLLARSIGN}"
+  # nested $$$ -> escaped $$
+  key19: "${env:ENV_NESTED_DOLLARSIGN_ESCAPED}"
+  # nested env var syntax is expanded
+  key20: "${env:ENV_EXPAND_NESTED}"
