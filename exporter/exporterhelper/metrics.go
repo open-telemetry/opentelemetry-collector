@@ -34,7 +34,7 @@ func newMetricsRequest(md pmetric.Metrics, pusher consumer.ConsumeMetricsFunc) R
 	return &metricsRequest{
 		md:               md,
 		pusher:           pusher,
-		cachedItemsCount: -1,
+		cachedItemsCount: md.DataPointCount(),
 	}
 }
 
@@ -65,9 +65,6 @@ func (req *metricsRequest) Export(ctx context.Context) error {
 }
 
 func (req *metricsRequest) ItemsCount() int {
-	if req.cachedItemsCount == -1 {
-		req.cachedItemsCount = req.md.DataPointCount()
-	}
 	return req.cachedItemsCount
 }
 
