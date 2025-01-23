@@ -21,6 +21,8 @@ func Test_EscapedEnvVars_NoDefaultScheme(t *testing.T) {
 	t.Setenv("ENV_VALUE", expandedValue)
 	t.Setenv("ENV_LIST", "['$$ESCAPE_ME','$${ESCAPE_ME}','$${env:ESCAPE_ME}']")
 	t.Setenv("ENV_MAP", "{'key1':'$$ESCAPE_ME','key2':'$${ESCAPE_ME}','key3':'$${env:ESCAPE_ME}'}")
+	t.Setenv("ENV_NESTED_DOLLARSIGN", "here is 1 $$")
+	t.Setenv("ENV_NESTED_DOLLARSIGN_ESCAPED", "here are 2 $$$")
 
 	expectedMap := map[string]any{
 		"test_map": map[string]any{
@@ -41,6 +43,8 @@ func Test_EscapedEnvVars_NoDefaultScheme(t *testing.T) {
 			"key15": "$ENV_VALUE",
 			"key16": []any{"$ESCAPE_ME", "${ESCAPE_ME}", "${env:ESCAPE_ME}"},
 			"key17": map[string]any{"key1": "$ESCAPE_ME", "key2": "${ESCAPE_ME}", "key3": "${env:ESCAPE_ME}"},
+			"key18": "here is 1 $",
+			"key19": "here are 2 $$",
 		},
 	}
 

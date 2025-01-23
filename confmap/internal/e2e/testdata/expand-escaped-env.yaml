@@ -33,3 +33,6 @@ test_map:
   key16: "${env:ENV_LIST}"
   # map is escaped
   key17: "${env:ENV_MAP}"
+  # expanded $$ is not escaped
+  key18: "${env:ENV_NESTED_DOLLARSIGN}"
+  key19: "${env:ENV_NESTED_DOLLARSIGN_ESCAPED}"
