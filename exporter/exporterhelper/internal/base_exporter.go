@@ -67,7 +67,7 @@ type BaseExporter struct {
 }
 
 func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSenderFactory, options ...Option) (*BaseExporter, error) {
-	obsReport, err := NewExporter(ObsReportSettings{ExporterSettings: set, Signal: signal})
+	obsReport, err := NewObsReport(ObsReportSettings{ExporterSettings: set, Signal: signal})
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +121,7 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSe
 	return be, nil
 }
 
-// send sends the request using the first sender in the chain.
+// Send sends the request using the first sender in the chain.
 func (be *BaseExporter) Send(ctx context.Context, req internal.Request) error {
 	err := be.QueueSender.Send(ctx, req)
 	if err != nil {
@@ -282,7 +282,7 @@ func WithMarshaler(marshaler exporterqueue.Marshaler[internal.Request]) Option {
 	}
 }
 
-// withUnmarshaler is used to set the request unmarshaler for the new exporter helper.
+// WithUnmarshaler is used to set the request unmarshaler for the new exporter helper.
 // It must be provided as the first option when creating a new exporter helper.
 func WithUnmarshaler(unmarshaler exporterqueue.Unmarshaler[internal.Request]) Option {
 	return func(o *BaseExporter) error {
