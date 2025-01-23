@@ -18,6 +18,8 @@ import (
 	"github.com/rs/cors"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/publicsuffix"
 
@@ -489,15 +491,21 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 		includeMetadata: hss.IncludeMetadata,
 	}
 
+	errorLog, err := zap.NewStdLogAt(settings.Logger, zapcore.ErrorLevel)
+	if err != nil {
+		return nil, err // If an error occurs while creating the logger, return nil and the error
+	}
+
 	server := &http.Server{
 		Handler:           handler,
 		ReadTimeout:       hss.ReadTimeout,
 		ReadHeaderTimeout: hss.ReadHeaderTimeout,
 		WriteTimeout:      hss.WriteTimeout,
 		IdleTimeout:       hss.IdleTimeout,
+		ErrorLog:          errorLog,
 	}
 
-	return server, nil
+	return server, err
 }
 
 func responseHeadersHandler(handler http.Handler, headers map[string]configopaque.String) http.Handler {
