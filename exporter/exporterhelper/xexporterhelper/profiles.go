@@ -28,14 +28,16 @@ var (
 )
 
 type profilesRequest struct {
-	pd     pprofile.Profiles
-	pusher xconsumer.ConsumeProfilesFunc
+	pd               pprofile.Profiles
+	pusher           xconsumer.ConsumeProfilesFunc
+	cachedItemsCount int
 }
 
 func newProfilesRequest(pd pprofile.Profiles, pusher xconsumer.ConsumeProfilesFunc) exporterhelper.Request {
 	return &profilesRequest{
-		pd:     pd,
-		pusher: pusher,
+		pd:               pd,
+		pusher:           pusher,
+		cachedItemsCount: pd.SampleCount(),
 	}
 }
 
@@ -66,7 +68,11 @@ func (req *profilesRequest) Export(ctx context.Context) error {
 }
 
 func (req *profilesRequest) ItemsCount() int {
-	return req.pd.SampleCount()
+	return req.cachedItemsCount
+}
+
+func (req *profilesRequest) setCachedItemsCount(count int) {
+	req.cachedItemsCount = count
 }
 
 type profileExporter struct {
