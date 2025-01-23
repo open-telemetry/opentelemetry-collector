@@ -70,6 +70,10 @@ type Config struct {
 	// ReloadInterval specifies the duration after which the certificate will be reloaded
 	// If not set, it will never be reloaded (optional)
 	ReloadInterval time.Duration `mapstructure:"reload_interval"`
+
+	// contains the elliptic curves that will be used in
+	// an ECDHE handshake, in preference order
+	CurvePreferences []string `mapstructure:"curve_preferences"`
 }
 
 // NewDefaultConfig creates a new TLSSetting with any default values set.
@@ -231,6 +235,14 @@ func (c Config) loadTLSConfig() (*tls.Config, error) {
 	if err != nil {
 		return nil, err
 	}
+	curvePreferences := make([]tls.CurveID, 0, len(c.CurvePreferences))
+	for _, curve := range c.CurvePreferences {
+		curveId, ok := tlsCurveTypes[curve]
+		if !ok {
+			return nil, fmt.Errorf("invalid curve type: %s. Expected values are [P-256, P-384, P-521, X25519]", curveId)
+		}
+		curvePreferences = append(curvePreferences, curveId)
+	}
 
 	return &tls.Config{
 		RootCAs:              certPool,
@@ -239,6 +251,7 @@ func (c Config) loadTLSConfig() (*tls.Config, error) {
 		MinVersion:           minTLS,
 		MaxVersion:           maxTLS,
 		CipherSuites:         cipherSuites,
+		CurvePreferences:     curvePreferences,
 	}, nil
 }
 
@@ -447,4 +460,11 @@ var tlsVersions = map[string]uint16{
 	"1.1": tls.VersionTLS11,
 	"1.2": tls.VersionTLS12,
 	"1.3": tls.VersionTLS13,
+}
+
+var tlsCurveTypes = map[string]tls.CurveID{
+	"P-256":  tls.CurveP256,
+	"P-384":  tls.CurveP384,
+	"P-521":  tls.CurveP521,
+	"X25519": tls.X25519,
 }

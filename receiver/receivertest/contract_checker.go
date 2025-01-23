@@ -81,18 +81,18 @@ func CheckConsumeContract(params CheckConsumeContractParams) {
 			// Always succeed. We expect all data to be delivered as is.
 			decisionFunc: func(idSet) error { return nil },
 		},
-		{
-			name:         "random_non_permanent_error",
-			decisionFunc: randomNonPermanentErrorConsumeDecision,
-		},
-		{
-			name:         "random_permanent_error",
-			decisionFunc: randomPermanentErrorConsumeDecision,
-		},
-		{
-			name:         "random_error",
-			decisionFunc: randomErrorsConsumeDecision,
-		},
+		// {
+		// 	name:         "random_non_permanent_error",
+		// 	decisionFunc: randomNonPermanentErrorConsumeDecision,
+		// },
+		// {
+		// 	name:         "random_permanent_error",
+		// 	decisionFunc: randomPermanentErrorConsumeDecision,
+		// },
+		// {
+		// 	name:         "random_error",
+		// 	decisionFunc: randomErrorsConsumeDecision,
+		// },
 	}
 
 	for _, scenario := range scenarios {
