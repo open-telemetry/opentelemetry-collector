@@ -29,7 +29,6 @@ type TelemetrySettings struct {
 	// appropriate to avoid computationally expensive calculations.
 	//
 	// Deprecated: [v0.119.0] Use https://pkg.go.dev/go.opentelemetry.io/otel/sdk/metric@v1.34.0/internal/x#readme-instrument-enabled instead.
-	// This field is always set to `configtelemetry.LevelDetailed` and will be removed in v0.120.0.
 	// Components will temporarily need to add a view to `service/telemetry` to drop metrics based on the level.
 	MetricsLevel configtelemetry.Level
 

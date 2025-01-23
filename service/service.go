@@ -173,8 +173,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		Logger:         logger,
 		MeterProvider:  mp,
 		TracerProvider: tracerProvider,
-		// Set MetricsLevel to Detailed during the transition period.
-		MetricsLevel: configtelemetry.LevelDetailed,
+		MetricsLevel:   cfg.Telemetry.Metrics.Level,
 		// Construct telemetry attributes from build info and config's resource attributes.
 		Resource: pcommonRes,
 	}
