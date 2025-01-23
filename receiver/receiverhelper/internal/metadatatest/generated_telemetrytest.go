@@ -20,8 +20,8 @@ type Telemetry struct {
 	componenttest.Telemetry
 }
 
-func SetupTelemetry() Telemetry {
-	return Telemetry{Telemetry: componenttest.NewTelemetry()}
+func SetupTelemetry(opts ...componenttest.TelemetryOption) Telemetry {
+	return Telemetry{Telemetry: componenttest.NewTelemetry(opts...)}
 }
 func (tt *Telemetry) NewSettings() receiver.Settings {
 	set := receivertest.NewNopSettings()
