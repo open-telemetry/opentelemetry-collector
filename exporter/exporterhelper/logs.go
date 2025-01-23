@@ -34,7 +34,7 @@ func newLogsRequest(ld plog.Logs, pusher consumer.ConsumeLogsFunc) Request {
 	return &logsRequest{
 		ld:               ld,
 		pusher:           pusher,
-		cachedItemsCount: -1,
+		cachedItemsCount: ld.LogRecordCount(),
 	}
 }
 
@@ -65,9 +65,6 @@ func (req *logsRequest) Export(ctx context.Context) error {
 }
 
 func (req *logsRequest) ItemsCount() int {
-	if req.cachedItemsCount == -1 {
-		req.cachedItemsCount = req.ld.LogRecordCount()
-	}
 	return req.cachedItemsCount
 }
 

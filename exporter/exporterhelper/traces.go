@@ -34,7 +34,7 @@ func newTracesRequest(td ptrace.Traces, pusher consumer.ConsumeTracesFunc) Reque
 	return &tracesRequest{
 		td:               td,
 		pusher:           pusher,
-		cachedItemsCount: -1,
+		cachedItemsCount: td.SpanCount(),
 	}
 }
 
@@ -65,9 +65,6 @@ func (req *tracesRequest) Export(ctx context.Context) error {
 }
 
 func (req *tracesRequest) ItemsCount() int {
-	if req.cachedItemsCount == -1 {
-		req.cachedItemsCount = req.td.SpanCount()
-	}
 	return req.cachedItemsCount
 }
 
