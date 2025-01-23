@@ -7,7 +7,7 @@ change_type: enhancement
 component: configtls
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Allow users to mentioned their preferred curve types for ECDHE handshake
+note: Allow users to mention their preferred curve types for ECDHE handshake
 
 # One or more tracking issues or pull requests related to the change
 issues: [12174]
