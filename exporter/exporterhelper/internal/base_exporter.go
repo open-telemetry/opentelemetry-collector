@@ -67,7 +67,7 @@ type BaseExporter struct {
 }
 
 func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSenderFactory, options ...Option) (*BaseExporter, error) {
-	obsReport, err := NewExporter(ObsReportSettings{ExporterID: set.ID, ExporterCreateSettings: set, Signal: signal})
+	obsReport, err := NewExporter(ObsReportSettings{ExporterSettings: set, Signal: signal})
 	if err != nil {
 		return nil, err
 	}
