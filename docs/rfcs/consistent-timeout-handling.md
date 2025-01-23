@@ -17,64 +17,54 @@ the Context, except to pass it, synchronously, to the next component.
 For components that batch telemetry (e.g., batch processor, batch sender),
 for those that may or may not block (e.g., queue sender), and for those
 that are explicitly focused on time (e.g., retry, timeout senders), we
-can ideally wish for consistent behavior.
+can ideally wish for predictable behavior matching user expectations.
 
-Definitions:
+The gRPC framework automatically implements context deadline and cancellation.
+This feature and its on-by-default nature are meant to encourage good
+practice--that computer systems should not wait indefinitely for other
+computer systems, and that computer systems should proactively cancel
+in-flight work, to avoid queuing retries behind yet more retries.
 
-- the *timeout* of a context is the duration until its deadline. An expired
-  deadline has no timeout, whereas a viable deadline has not yet expired. A
-  context can have no deadline, and thus no timeout.
-- the *timeout* of a configuration struct is the duration that will be added
-  relative to the current time until a deadline. No timeout means no deadline.
-
-Here are some of the scenarios where timeout handling comes into question:
-
-- A request arrives with an already-expired deadline. Should the component
-  immediately return a deadline-exceeded error status?
-- A request arrives with a viable deadline, but the request does not
-  succeed in time. Should the component immediately return a deadline-exceeded
-  status, or should it wait for its response?
-- A request arrives and has to acquire a resource (e.g., space in a queue) that
-  is not immediately available. Should the component fail "fast" or stall the
-  request, hoping the resource will become available before the deadline?
-- A request arrives and the component calls for an additive timeout that is
-  greater than the request's deadline.  For example:
-  - a batch processor is configured with `1s` timeout, and an arriving
-    request has a `0.5s` timeout
-  - timeout sender has `5s` configured timeout, arriving request has `2s` timeout
-  - retry sender has a maximum elapsed timeout of `1m`, arriving request has `5s`
-    timeout.
-
-How should we answer these questions? In some cases, there is a potential
-for optional behavior to support every use-case.  One success criteria
-would be to address OpenTelemetry SDK users. This proposal is that users
-should be reasonably able to guess at what will happen in various configurations.
-
-Our goal is that an OpenTelemetry SDK configured with its OTLP/gRPC exporter
-sending to an OpenTelemetry Collector gateway which forwards to another OpenTelemetry
-service has a good user experience. This requires that when pipeline latency
-rises, the user can adjust their export timeout to improve success,
-without unnecessary retries.
-
-For this outcome to be achieved, we require:
-
-- Batch processor/sender propagates maximum deadline in batch
-- If enabled, queue sender blocks until queue space is available
-- Timeout sender configured not to lower an already-configured timeout.
+As a motivating example used in this document, we consider a gateway
+collector that receives telemetry from an OpenTelemetry SDK and sends to an
+OTLP backend service.
 
 ## Explanation
 
-The questions listed in the motivation above correspond with common
-questions faced by the core sub-components.
+Here are questions that we aim to answer in this document:
 
-- Batch processor
-- Batch sender (exporterbatcher)
-- Timeout sender (exporterhelper)
-- Retry sender (exporterhelper)
-- Queue sender (exporterhelper)
+- What happens when backend latency is longer than than the SDK timeout?
+- What happens when the SDK produces more than the backend can consume?
+- If a queue sender is in use, or not?
+- If the queue sender is used, what happens when the queue is full?
+
+An important concept in examining the Collector's behavior is _backpressure_.
+When a pipeline implements backpressure, in our example, the SDK will wait up until
+its timeout for the Collector to respond. By delaying responses, the Collector
+and the backend both have a way to slow the pipeline and to retry failures.
+Timeout establishes a limit on how long the caller will wait for a response
+before retrying or moving on.
+
+Back-pressure is important because callers are naturally limited in terms of
+how much data they can produce when they have to wait for a response. When a
+pipeline returns before it has successfully processed a complete request,
+the producer is instead encouraged to produce data faster than the pipeline
+can consume.
 
 In the following sub-sections, we raise questions about the existing
-support for timeouts.
+support for timeouts in core Collector components based on these scenarios.
+If the queue is in use, then back-pressure is intentionally avoided--
+the SDK is allowed to write into the queue as fast as it can, but this
+only helps with temporary overload. With or without a queue, the SDK
+will eventually see timeout or failure if the backend is overloaded.
+However, if the Collector does not implement backpressure and support
+cancellation, the failure modes are worse.
+
+Therefore, this RFC states that it is in the Collector's interest to
+preserve back-pressure as much as possible, by waiting for each request
+to have a response up until its context deadline and by propagating
+timeouts through the pipeline. The sections below examine existing
+conditions.
 
 ### Timeout sender: existing
 
@@ -93,7 +83,7 @@ next component after calling `context.WithTimeout()`:
 > WithTimeout returns WithDeadline(parent, time.Now().Add(timeout)).
 
 The Timeout sender, therefore, can only be used to shorten a timeout.
-There is no built-in support for extending, ignoring, or preserving
+There is no built-in support for extending or ignoring
 existing context deadlines in a Collector pipeline. No special treatment
 is given to the case where request deadline has already expired.
 
