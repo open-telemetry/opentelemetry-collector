@@ -15,7 +15,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 type mockMeter struct {
@@ -45,9 +44,6 @@ func (m mockTracerProvider) Tracer(name string, opts ...trace.TracerOption) trac
 
 func TestProviders(t *testing.T) {
 	set := component.TelemetrySettings{
-		LeveledMeterProvider: func(_ configtelemetry.Level) metric.MeterProvider {
-			return mockMeterProvider{}
-		},
 		MeterProvider:  mockMeterProvider{},
 		TracerProvider: mockTracerProvider{},
 	}

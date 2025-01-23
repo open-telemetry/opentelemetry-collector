@@ -20,7 +20,8 @@ var testType = component.MustNewType("test")
 func nopSettings() Settings {
 	return Settings{
 		ID:                component.NewID(testType),
-		TelemetrySettings: componenttest.NewNopTelemetrySettings()}
+		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+	}
 }
 
 func TestNewFactory(t *testing.T) {
@@ -30,22 +31,29 @@ func TestNewFactory(t *testing.T) {
 		func() component.Config { return &defaultCfg })
 	assert.EqualValues(t, testType, f.Type())
 	assert.EqualValues(t, &defaultCfg, f.CreateDefaultConfig())
-	_, err := f.CreateMetrics(context.Background(), nopSettings(), &defaultCfg)
+	_, err := f.CreateLogs(context.Background(), nopSettings(), &defaultCfg)
+	require.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
+	_, err = f.CreateMetrics(context.Background(), nopSettings(), &defaultCfg)
 	require.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
 }
 
 func TestNewFactoryWithOptions(t *testing.T) {
-	var testType = component.MustNewType("test")
+	testType := component.MustNewType("test")
 	defaultCfg := struct{}{}
 	f := NewFactory(
 		testType,
 		func() component.Config { return &defaultCfg },
+		WithLogs(createLogs, component.StabilityLevelAlpha),
 		WithMetrics(createMetrics, component.StabilityLevelAlpha))
 	assert.EqualValues(t, testType, f.Type())
 	assert.EqualValues(t, &defaultCfg, f.CreateDefaultConfig())
 
+	assert.Equal(t, component.StabilityLevelAlpha, f.LogsStability())
+	_, err := f.CreateLogs(context.Background(), Settings{}, &defaultCfg)
+	require.NoError(t, err)
+
 	assert.Equal(t, component.StabilityLevelAlpha, f.MetricsStability())
-	_, err := f.CreateMetrics(context.Background(), Settings{}, &defaultCfg)
+	_, err = f.CreateMetrics(context.Background(), Settings{}, &defaultCfg)
 	require.NoError(t, err)
 }
 
@@ -86,6 +94,10 @@ func TestMakeFactoryMap(t *testing.T) {
 	}
 }
 
+func createLogs(context.Context, Settings, component.Config) (Logs, error) {
+	return NewLogs(newTestScrapeLogsFunc(nil))
+}
+
 func createMetrics(context.Context, Settings, component.Config) (Metrics, error) {
-	return NewMetrics(context.Background(), nopSettings(), newTestScrapeMetricsFunc(nil))
+	return NewMetrics(newTestScrapeMetricsFunc(nil))
 }

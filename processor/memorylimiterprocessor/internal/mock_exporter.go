@@ -28,13 +28,12 @@ func (e *MockExporter) Capabilities() consumer.Capabilities {
 func (e *MockExporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	e.acceptedLogCount.Add(int64(ld.LogRecordCount()))
 
-	if e.destAvailable.Load() {
-		// Destination is available, immediately deliver.
-		e.deliveredLogCount.Add(int64(ld.LogRecordCount()))
-	} else {
+	if !e.destAvailable.Load() {
 		// Destination is not available. Queue the logs in the exporter.
 		return e.Logs.ConsumeLogs(ctx, ld)
 	}
+	// Destination is available, immediately deliver.
+	e.deliveredLogCount.Add(int64(ld.LogRecordCount()))
 	return nil
 }
 

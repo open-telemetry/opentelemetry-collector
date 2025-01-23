@@ -8,7 +8,7 @@ The following telemetry is emitted by this component.
 
 ### otelcol_receiver_accepted_log_records
 
-Number of log records successfully pushed into the pipeline.
+Number of log records successfully pushed into the pipeline. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
@@ -16,7 +16,7 @@ Number of log records successfully pushed into the pipeline.
 
 ### otelcol_receiver_accepted_metric_points
 
-Number of metric points successfully pushed into the pipeline.
+Number of metric points successfully pushed into the pipeline. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
@@ -24,7 +24,7 @@ Number of metric points successfully pushed into the pipeline.
 
 ### otelcol_receiver_accepted_spans
 
-Number of spans successfully pushed into the pipeline.
+Number of spans successfully pushed into the pipeline. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
@@ -32,7 +32,7 @@ Number of spans successfully pushed into the pipeline.
 
 ### otelcol_receiver_refused_log_records
 
-Number of log records that could not be pushed into the pipeline.
+Number of log records that could not be pushed into the pipeline. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
@@ -40,7 +40,7 @@ Number of log records that could not be pushed into the pipeline.
 
 ### otelcol_receiver_refused_metric_points
 
-Number of metric points that could not be pushed into the pipeline.
+Number of metric points that could not be pushed into the pipeline. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
@@ -48,7 +48,7 @@ Number of metric points that could not be pushed into the pipeline.
 
 ### otelcol_receiver_refused_spans
 
-Number of spans that could not be pushed into the pipeline.
+Number of spans that could not be pushed into the pipeline. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |

@@ -13,3 +13,25 @@
 #
 
 * @open-telemetry/collector-approvers
+
+# List all maintainers individually so all of them are notified
+.github/CODEOWNERS      @open-telemetry/collector-approvers @codeboten @BogdanDrutu @dmitryax @mx-psi
+docs/rfc                @open-telemetry/collector-approvers @codeboten @BogdanDrutu @dmitryax @mx-psi
+
+confmap/                        @open-telemetry/collector-approvers @mx-psi @evan-bradley
+exporter/debugexporter          @open-telemetry/collector-approvers @andrzej-stencel
+exporter/exporterhelper         @open-telemetry/collector-approvers @BogdanDrutu @dmitryax
+exporter/nopexporter            @open-telemetry/collector-approvers @evan-bradley
+pdata/                          @open-telemetry/collector-approvers @BogdanDrutu @dmitryax
+receiver/nopreceiver            @open-telemetry/collector-approvers @evan-bradley
+service/internal/graph          @open-telemetry/collector-approvers @djaglowski
+extension/xextension            @open-telemetry/collector-approvers @swiatekm
+
+# Profiling-related modules
+pdata/pprofile                          @open-telemetry/collector-approvers @mx-psi @dmathieu
+consumer/xconsumer                      @open-telemetry/collector-approvers @mx-psi @dmathieu
+connector/xconnector                    @open-telemetry/collector-approvers @mx-psi @dmathieu
+exporter/exporterhelper/xexporterhelper @open-telemetry/collector-approvers @mx-psi @dmathieu
+exporter/xexporter                      @open-telemetry/collector-approvers @mx-psi @dmathieu
+processor/xprocessor                    @open-telemetry/collector-approvers @mx-psi @dmathieu
+receiver/xreceiver                      @open-telemetry/collector-approvers @mx-psi @dmathieu

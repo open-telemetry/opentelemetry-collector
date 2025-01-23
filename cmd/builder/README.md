@@ -110,7 +110,20 @@ Use `ocb --help` to learn about which flags are available.
 
 ## Debug
 
-To keep the debug symbols in the resulting OpenTelemetry Collector binary, set the configuration property `debug_compilation` to true.
+### Debug symbols
+
+By default, the LDflags are set to `-s -w`, which strips debugging symbols to produce a smaller OpenTelemetry Collector binary. To retain debugging symbols and DWARF debugging data in the binary, override the LDflags as shown:
+
+```console 
+ocb --ldflags="" --config=builder-config.yaml.
+```
+
+### Debugging with Delve
+
+To ensure the code being executed matches the written code exactly, debugging symbols must be preserved, and compiler inlining and optimizations disabled. You can achieve this in two ways:
+
+1. Set the configuration property `debug_compilation` to true.
+2. Manually override the ldflags and gcflags `ocb --ldflags="" --gcflags="all=-N -l" --config=builder-config.yaml.`
 
 Then install `go-delve` and run OpenTelemetry Collector with `dlv` command as the following example:
 
@@ -126,7 +139,7 @@ Finally, load the OpenTelemetry Collector as a project in the IDE, configure deb
 The configuration file is composed of two main parts: `dist` and module types. All `dist` options can be specified via command line flags:
 
 ```console
-ocb --config=config.yaml --name="my-otelcol"
+ocb --config=config.yaml
 ```
 
 The module types are specified at the top-level, and might be: `extensions`, `exporters`, `receivers` and `processors`. They all accept a list of components, and each component is required to have at least the `gomod` entry. When not specified, the `import` value is inferred from the `gomod`. When not specified, the `name` is inferred from the `import`.

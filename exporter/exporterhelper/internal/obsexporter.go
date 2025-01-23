@@ -11,7 +11,6 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
 	"go.opentelemetry.io/collector/pipeline"
@@ -23,28 +22,32 @@ type ObsReport struct {
 	tracer         trace.Tracer
 	Signal         pipeline.Signal
 
-	otelAttrs        metric.MeasurementOption
+	spanAttrs        trace.SpanStartEventOption
+	metricsAttrs     metric.MeasurementOption
 	TelemetryBuilder *metadata.TelemetryBuilder
 }
 
 // ObsReportSettings are settings for creating an ObsReport.
 type ObsReportSettings struct {
-	ExporterID             component.ID
-	ExporterCreateSettings exporter.Settings
-	Signal                 pipeline.Signal
+	ExporterSettings exporter.Settings
+	Signal           pipeline.Signal
 }
 
-func NewExporter(cfg ObsReportSettings) (*ObsReport, error) {
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(cfg.ExporterCreateSettings.TelemetrySettings)
+func NewExporter(set ObsReportSettings) (*ObsReport, error) {
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.ExporterSettings.TelemetrySettings)
 	if err != nil {
 		return nil, err
 	}
 
+	idStr := set.ExporterSettings.ID.String()
+	expAttr := attribute.String(ExporterKey, idStr)
+
 	return &ObsReport{
-		spanNamePrefix:   ExporterPrefix + cfg.ExporterID.String(),
-		tracer:           cfg.ExporterCreateSettings.TracerProvider.Tracer(cfg.ExporterID.String()),
-		Signal:           cfg.Signal,
-		otelAttrs:        metric.WithAttributeSet(attribute.NewSet(attribute.String(ExporterKey, cfg.ExporterID.String()))),
+		spanNamePrefix:   ExporterPrefix + idStr,
+		tracer:           metadata.Tracer(set.ExporterSettings.TelemetrySettings),
+		Signal:           set.Signal,
+		spanAttrs:        trace.WithAttributes(expAttr, attribute.String(DataTypeKey, set.Signal.String())),
+		metricsAttrs:     metric.WithAttributeSet(attribute.NewSet(expAttr)),
 		TelemetryBuilder: telemetryBuilder,
 	}, nil
 }
@@ -111,7 +114,7 @@ func (or *ObsReport) EndProfilesOp(ctx context.Context, numSpans int, err error)
 // the updated context and the created span.
 func (or *ObsReport) startOp(ctx context.Context, operationSuffix string) context.Context {
 	spanName := or.spanNamePrefix + operationSuffix
-	ctx, _ = or.tracer.Start(ctx, spanName)
+	ctx, _ = or.tracer.Start(ctx, spanName, or.spanAttrs)
 	return ctx
 }
 
@@ -129,8 +132,8 @@ func (or *ObsReport) recordMetrics(ctx context.Context, signal pipeline.Signal, 
 		failedMeasure = or.TelemetryBuilder.ExporterSendFailedLogRecords
 	}
 
-	sentMeasure.Add(ctx, sent, or.otelAttrs)
-	failedMeasure.Add(ctx, failed, or.otelAttrs)
+	sentMeasure.Add(ctx, sent, or.metricsAttrs)
+	failedMeasure.Add(ctx, failed, or.metricsAttrs)
 }
 
 func endSpan(ctx context.Context, err error, numSent, numFailedToSend int64, sentItemsKey, failedToSendItemsKey string) {
@@ -166,5 +169,5 @@ func (or *ObsReport) RecordEnqueueFailure(ctx context.Context, signal pipeline.S
 		enqueueFailedMeasure = or.TelemetryBuilder.ExporterEnqueueFailedLogRecords
 	}
 
-	enqueueFailedMeasure.Add(ctx, failed, or.otelAttrs)
+	enqueueFailedMeasure.Add(ctx, failed, or.metricsAttrs)
 }

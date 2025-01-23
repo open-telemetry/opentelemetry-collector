@@ -16,8 +16,6 @@ import (
 	"github.com/mostynb/go-grpc-compression/nonclobbering/zstd"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/noop"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/codes"
@@ -35,9 +33,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/config/internal"
 	"go.opentelemetry.io/collector/extension/auth"
 )
 
@@ -339,7 +335,7 @@ func (gcs *ClientConfig) getGrpcDialOptions(
 	otelOpts := []otelgrpc.Option{
 		otelgrpc.WithTracerProvider(settings.TracerProvider),
 		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
-		otelgrpc.WithMeterProvider(getLeveledMeterProvider(settings)),
+		otelgrpc.WithMeterProvider(settings.MeterProvider),
 	}
 
 	// Enable OpenTelemetry observability plugin.
@@ -404,11 +400,6 @@ func (gss *ServerConfig) getGrpcServerOptions(
 	settings component.TelemetrySettings,
 	extraOpts []ToServerOption,
 ) ([]grpc.ServerOption, error) {
-	switch gss.NetAddr.Transport {
-	case confignet.TransportTypeTCP, confignet.TransportTypeTCP4, confignet.TransportTypeTCP6, confignet.TransportTypeUDP, confignet.TransportTypeUDP4, confignet.TransportTypeUDP6:
-		internal.WarnOnUnspecifiedHost(settings.Logger, gss.NetAddr.Endpoint)
-	}
-
 	var opts []grpc.ServerOption
 
 	if gss.TLSSetting != nil {
@@ -483,7 +474,7 @@ func (gss *ServerConfig) getGrpcServerOptions(
 	otelOpts := []otelgrpc.Option{
 		otelgrpc.WithTracerProvider(settings.TracerProvider),
 		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
-		otelgrpc.WithMeterProvider(getLeveledMeterProvider(settings)),
+		otelgrpc.WithMeterProvider(settings.MeterProvider),
 	}
 
 	// Enable OpenTelemetry observability plugin.
@@ -576,11 +567,4 @@ func authStreamServerInterceptor(srv any, stream grpc.ServerStream, _ *grpc.Stre
 	}
 
 	return handler(srv, wrapServerStream(ctx, stream))
-}
-
-func getLeveledMeterProvider(settings component.TelemetrySettings) metric.MeterProvider {
-	if configtelemetry.LevelDetailed <= settings.MetricsLevel {
-		return settings.MeterProvider
-	}
-	return noop.MeterProvider{}
 }

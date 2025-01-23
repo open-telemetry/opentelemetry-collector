@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
+	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -58,9 +58,9 @@ func TestScopeProfiles_SchemaUrl(t *testing.T) {
 
 func TestScopeProfiles_Profiles(t *testing.T) {
 	ms := NewScopeProfiles()
-	assert.Equal(t, NewProfilesContainersSlice(), ms.Profiles())
-	fillTestProfilesContainersSlice(ms.Profiles())
-	assert.Equal(t, generateTestProfilesContainersSlice(), ms.Profiles())
+	assert.Equal(t, NewProfilesSlice(), ms.Profiles())
+	fillTestProfilesSlice(ms.Profiles())
+	assert.Equal(t, generateTestProfilesSlice(), ms.Profiles())
 }
 
 func generateTestScopeProfiles() ScopeProfiles {
@@ -72,5 +72,5 @@ func generateTestScopeProfiles() ScopeProfiles {
 func fillTestScopeProfiles(tv ScopeProfiles) {
 	internal.FillTestInstrumentationScope(internal.NewInstrumentationScope(&tv.orig.Scope, tv.state))
 	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	fillTestProfilesContainersSlice(newProfilesContainersSlice(&tv.orig.Profiles, tv.state))
+	fillTestProfilesSlice(newProfilesSlice(&tv.orig.Profiles, tv.state))
 }

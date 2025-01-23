@@ -14,8 +14,10 @@ import (
 
 type ctxKey struct{}
 
-var oneCtxKey = ctxKey{}
-var otherCtxKey = ctxKey{}
+var (
+	oneCtxKey   = ctxKey{}
+	otherCtxKey = ctxKey{}
+)
 
 func TestWrapServerStream(t *testing.T) {
 	ctx := context.WithValue(context.TODO(), oneCtxKey, 1)

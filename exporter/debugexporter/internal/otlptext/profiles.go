@@ -36,36 +36,28 @@ func (textProfilesMarshaler) MarshalProfiles(pd pprofile.Profiles) ([]byte, erro
 				buf.logEntry("Profile #%d", k)
 				profile := profiles.At(k)
 				buf.logAttr("Profile ID", profile.ProfileID())
-				buf.logAttr("Start time", profile.StartTime().String())
-				buf.logAttr("End time", profile.EndTime().String())
-				buf.logAttributes("Attributes", profile.Attributes())
+				buf.logAttr("Start time", profile.Time().String())
+				buf.logAttr("Duration", profile.Duration().String())
 				buf.logAttr("Dropped attributes count", strconv.FormatUint(uint64(profile.DroppedAttributesCount()), 10))
-				buf.logEntry("    Location indices: %d", profile.Profile().LocationIndices().AsRaw())
-				buf.logEntry("    Drop frames: %d", profile.Profile().DropFrames())
-				buf.logEntry("    Keep frames: %d", profile.Profile().KeepFrames())
+				buf.logEntry("    Location indices: %d", profile.LocationIndices().AsRaw())
 
-				buf.logProfileSamples(profile.Profile().Sample())
-				buf.logProfileMappings(profile.Profile().Mapping())
-				buf.logProfileLocations(profile.Profile().Location())
-				buf.logProfileFunctions(profile.Profile().Function())
-
-				buf.logAttributesWithIndentation(
-					"Attribute table",
-					profile.Profile().AttributeTable(),
-					4)
+				buf.logProfileSamples(profile.Sample(), profile.AttributeTable())
+				buf.logProfileMappings(profile.MappingTable())
+				buf.logProfileLocations(profile.LocationTable())
+				buf.logProfileFunctions(profile.FunctionTable())
 
 				buf.logAttributesWithIndentation(
 					"Attribute units",
-					attributeUnitsToMap(profile.Profile().AttributeUnits()),
+					attributeUnitsToMap(profile.AttributeUnits()),
 					4)
 
 				buf.logAttributesWithIndentation(
 					"Link table",
-					linkTableToMap(profile.Profile().LinkTable()),
+					linkTableToMap(profile.LinkTable()),
 					4)
 
-				buf.logStringTable(profile.Profile().StringTable())
-				buf.logComment(profile.Profile().Comment())
+				buf.logStringTable(profile.StringTable())
+				buf.logComment(profile.CommentStrindices())
 			}
 		}
 	}

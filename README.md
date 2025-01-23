@@ -36,7 +36,7 @@
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="https://opentelemetry.io/docs/collector/configuration/">Configuration</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="https://opentelemetry.io/docs/collector/internal-telemetry/#use-internal-telemetry-to-monitor-the-collector</a>
+    <a href="https://opentelemetry.io/docs/collector/internal-telemetry/#use-internal-telemetry-to-monitor-the-collector">Monitoring</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="docs/security-best-practices.md">Security</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
@@ -73,15 +73,20 @@ video calls. Everyone is invited to join those calls, which typically serves the
 - look for a sponsor for a proposed component after trying already via GitHub and Slack
 - get attention to a specific pull-request that got stuck and is difficult to discuss asynchronously
 
-Between 11 July 2024 and 09 January 2025, we'll have our video calls rotating between three time slots, in order to
-allow everyone to join at least once every three meetings:
+We rotate our video calls between three time slots, in order to
+allow everyone to join at least once every three meetings. The rotation order is as follows:
 
-- [00:00 UTC](https://dateful.com/convert/utc?t=0000)
-- [12:00 UTC](https://dateful.com/convert/utc?t=1200)
-- [16:00 UTC](https://dateful.com/convert/utc?t=1600)
+Tuesday:
+
+- [17:00 PT](https://dateful.com/convert/pst-pdt-pacific-time?t=1700)
+
+Wednesday:
+
+- [09:00 PT](https://dateful.com/convert/pst-pdt-pacific-time?t=0900)
+- [05:00 PT](https://dateful.com/convert/pst-pdt-pacific-time?t=0500)
 
 Contributors to the project are also welcome to have ad-hoc meetings for synchronous discussions about specific points.
-Post a note in #otel-collector on Slack inviting others, specifying the topic to be discussed. Unless there are strong
+Post a note in #otel-collector-dev on Slack inviting others, specifying the topic to be discussed. Unless there are strong
 reasons to keep the meeting private, please make it an open invitation for other contributors to join. Try also to
 identify who would be the other contributors interested on that topic and in which timezones they are.
 
@@ -92,7 +97,7 @@ calls and don't want them to feel excluded.
 
 ## Supported OTLP version
 
-This code base is currently built against using OTLP protocol v1.3.1,
+This code base is currently built against using OTLP protocol v1.5.0,
 considered Stable. [See the OpenTelemetry Protocol Stability
 definition
 here.](https://github.com/open-telemetry/opentelemetry-proto?tab=readme-ov-file#stability-definition)
@@ -159,6 +164,7 @@ Here is a list of community roles with current and previous members:
 
   - [Andrzej Stencel](https://github.com/andrzej-stencel), Elastic
   - [Damien Mathieu](https://github.com/dmathieu), Elastic
+  - [Jade Guiton](https://github.com/jade-guiton-dd), Datadog
   - Actively seeking contributors to triage issues
 
 - Emeritus Triagers:

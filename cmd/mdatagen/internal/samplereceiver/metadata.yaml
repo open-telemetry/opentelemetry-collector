@@ -197,3 +197,9 @@ telemetry:
       gauge:
         async: true
         value_type: int
+    queue_capacity:
+      enabled: true
+      description: Queue capacity - sync gauge example.
+      unit: "{items}"
+      gauge:
+        value_type: int

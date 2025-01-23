@@ -8,7 +8,7 @@ package pprofile
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
+	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 // Function describes a function, including its human-readable name, system name, source file, and starting line number in the source.
@@ -45,48 +45,37 @@ func (ms Function) MoveTo(dest Function) {
 	*ms.orig = otlpprofiles.Function{}
 }
 
-// ID returns the id associated with this Function.
-func (ms Function) ID() uint64 {
-	return ms.orig.Id
+// NameStrindex returns the namestrindex associated with this Function.
+func (ms Function) NameStrindex() int32 {
+	return ms.orig.NameStrindex
 }
 
-// SetID replaces the id associated with this Function.
-func (ms Function) SetID(v uint64) {
+// SetNameStrindex replaces the namestrindex associated with this Function.
+func (ms Function) SetNameStrindex(v int32) {
 	ms.state.AssertMutable()
-	ms.orig.Id = v
+	ms.orig.NameStrindex = v
 }
 
-// Name returns the name associated with this Function.
-func (ms Function) Name() int64 {
-	return ms.orig.Name
+// SystemNameStrindex returns the systemnamestrindex associated with this Function.
+func (ms Function) SystemNameStrindex() int32 {
+	return ms.orig.SystemNameStrindex
 }
 
-// SetName replaces the name associated with this Function.
-func (ms Function) SetName(v int64) {
+// SetSystemNameStrindex replaces the systemnamestrindex associated with this Function.
+func (ms Function) SetSystemNameStrindex(v int32) {
 	ms.state.AssertMutable()
-	ms.orig.Name = v
+	ms.orig.SystemNameStrindex = v
 }
 
-// SystemName returns the systemname associated with this Function.
-func (ms Function) SystemName() int64 {
-	return ms.orig.SystemName
+// FilenameStrindex returns the filenamestrindex associated with this Function.
+func (ms Function) FilenameStrindex() int32 {
+	return ms.orig.FilenameStrindex
 }
 
-// SetSystemName replaces the systemname associated with this Function.
-func (ms Function) SetSystemName(v int64) {
+// SetFilenameStrindex replaces the filenamestrindex associated with this Function.
+func (ms Function) SetFilenameStrindex(v int32) {
 	ms.state.AssertMutable()
-	ms.orig.SystemName = v
-}
-
-// Filename returns the filename associated with this Function.
-func (ms Function) Filename() int64 {
-	return ms.orig.Filename
-}
-
-// SetFilename replaces the filename associated with this Function.
-func (ms Function) SetFilename(v int64) {
-	ms.state.AssertMutable()
-	ms.orig.Filename = v
+	ms.orig.FilenameStrindex = v
 }
 
 // StartLine returns the startline associated with this Function.
@@ -103,9 +92,8 @@ func (ms Function) SetStartLine(v int64) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Function) CopyTo(dest Function) {
 	dest.state.AssertMutable()
-	dest.SetID(ms.ID())
-	dest.SetName(ms.Name())
-	dest.SetSystemName(ms.SystemName())
-	dest.SetFilename(ms.Filename())
+	dest.SetNameStrindex(ms.NameStrindex())
+	dest.SetSystemNameStrindex(ms.SystemNameStrindex())
+	dest.SetFilenameStrindex(ms.FilenameStrindex())
 	dest.SetStartLine(ms.StartLine())
 }

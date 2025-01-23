@@ -13,11 +13,13 @@ import (
 // newLogger creates a Logger and a LoggerProvider from Config.
 func newLogger(set Settings, cfg Config) (*zap.Logger, log.LoggerProvider, error) {
 	// Copied from NewProductionConfig.
+	ec := zap.NewProductionEncoderConfig()
+	ec.EncodeTime = zapcore.ISO8601TimeEncoder
 	zapCfg := &zap.Config{
 		Level:             zap.NewAtomicLevelAt(cfg.Logs.Level),
 		Development:       cfg.Logs.Development,
 		Encoding:          cfg.Logs.Encoding,
-		EncoderConfig:     zap.NewProductionEncoderConfig(),
+		EncoderConfig:     ec,
 		OutputPaths:       cfg.Logs.OutputPaths,
 		ErrorOutputPaths:  cfg.Logs.ErrorOutputPaths,
 		DisableCaller:     cfg.Logs.DisableCaller,
@@ -31,7 +33,6 @@ func newLogger(set Settings, cfg Config) (*zap.Logger, log.LoggerProvider, error
 	}
 
 	logger, err := zapCfg.Build(set.ZapOptions...)
-
 	if err != nil {
 		return nil, nil, err
 	}
@@ -42,12 +43,16 @@ func newLogger(set Settings, cfg Config) (*zap.Logger, log.LoggerProvider, error
 		lp = set.SDK.LoggerProvider()
 
 		logger = logger.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
-			return zapcore.NewTee(
+			core, err := zapcore.NewIncreaseLevelCore(zapcore.NewTee(
 				c,
 				otelzap.NewCore("go.opentelemetry.io/collector/service/telemetry",
 					otelzap.WithLoggerProvider(lp),
 				),
-			)
+			), zap.NewAtomicLevelAt(cfg.Logs.Level))
+			if err != nil {
+				panic(err)
+			}
+			return core
 		}))
 	}
 

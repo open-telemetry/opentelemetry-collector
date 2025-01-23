@@ -303,7 +303,7 @@ func (b *dataBuffer) logExemplars(description string, se pmetric.ExemplarSlice) 
 	}
 }
 
-func (b *dataBuffer) logProfileSamples(ss pprofile.SampleSlice) {
+func (b *dataBuffer) logProfileSamples(ss pprofile.SampleSlice, attrs pprofile.AttributeTableSlice) {
 	if ss.Len() == 0 {
 		return
 	}
@@ -312,21 +312,16 @@ func (b *dataBuffer) logProfileSamples(ss pprofile.SampleSlice) {
 		b.logEntry("    Sample #%d", i)
 		sample := ss.At(i)
 
-		b.logEntry("        Location index: %d", sample.LocationIndex().AsRaw())
 		b.logEntry("        Location length: %d", sample.LocationsLength())
-		b.logEntry("        Stacktrace ID index: %d", sample.StacktraceIdIndex())
-		if lb := sample.Label().Len(); lb > 0 {
-			for j := 0; j < lb; j++ {
-				b.logEntry("        Label #%d", j)
-				b.logEntry("             -> Key: %d", sample.Label().At(j).Key())
-				b.logEntry("             -> Str: %d", sample.Label().At(j).Str())
-				b.logEntry("             -> Num: %d", sample.Label().At(j).Num())
-				b.logEntry("             -> Num unit: %d", sample.Label().At(j).NumUnit())
+		b.logEntry("        Value: %d", sample.Value().AsRaw())
+
+		if lai := sample.AttributeIndices().Len(); lai > 0 {
+			b.logEntry("        Attributes:")
+			for j := 0; j < lai; j++ {
+				attr := attrs.At(int(sample.AttributeIndices().At(j)))
+				b.logEntry("             -> %s: %s", attr.Key(), attr.Value().AsRaw())
 			}
 		}
-		b.logEntry("        Value: %d", sample.Value().AsRaw())
-		b.logEntry("        Attributes: %d", sample.Attributes().AsRaw())
-		b.logEntry("        Link: %d", sample.Link())
 	}
 }
 
@@ -339,13 +334,11 @@ func (b *dataBuffer) logProfileMappings(ms pprofile.MappingSlice) {
 		b.logEntry("    Mapping #%d", i)
 		mapping := ms.At(i)
 
-		b.logEntry("        ID: %d", mapping.ID())
 		b.logEntry("        Memory start: %d", mapping.MemoryStart())
 		b.logEntry("        Memory limit: %d", mapping.MemoryLimit())
 		b.logEntry("        File offset: %d", mapping.FileOffset())
-		b.logEntry("        File name: %d", mapping.Filename())
-		b.logEntry("        Build ID: %d", mapping.BuildID())
-		b.logEntry("        Attributes: %d", mapping.Attributes().AsRaw())
+		b.logEntry("        File name: %d", mapping.FilenameStrindex())
+		b.logEntry("        Attributes: %d", mapping.AttributeIndices().AsRaw())
 		b.logEntry("        Has functions: %t", mapping.HasFunctions())
 		b.logEntry("        Has filenames: %t", mapping.HasFilenames())
 		b.logEntry("        Has line numbers: %t", mapping.HasLineNumbers())
@@ -362,7 +355,6 @@ func (b *dataBuffer) logProfileLocations(ls pprofile.LocationSlice) {
 		b.logEntry("    Location #%d", i)
 		location := ls.At(i)
 
-		b.logEntry("        ID: %d", location.ID())
 		b.logEntry("        Mapping index: %d", location.MappingIndex())
 		b.logEntry("        Address: %d", location.Address())
 		if ll := location.Line().Len(); ll > 0 {
@@ -375,8 +367,7 @@ func (b *dataBuffer) logProfileLocations(ls pprofile.LocationSlice) {
 			}
 		}
 		b.logEntry("        Is folded: %t", location.IsFolded())
-		b.logEntry("        Type index: %d", location.TypeIndex())
-		b.logEntry("        Attributes: %d", location.Attributes().AsRaw())
+		b.logEntry("        Attributes: %d", location.AttributeIndices().AsRaw())
 	}
 }
 
@@ -389,10 +380,9 @@ func (b *dataBuffer) logProfileFunctions(fs pprofile.FunctionSlice) {
 		b.logEntry("    Function #%d", i)
 		function := fs.At(i)
 
-		b.logEntry("        ID: %d", function.ID())
-		b.logEntry("        Name: %d", function.Name())
-		b.logEntry("        System name: %d", function.SystemName())
-		b.logEntry("        Filename: %d", function.Filename())
+		b.logEntry("        Name: %d", function.NameStrindex())
+		b.logEntry("        System name: %d", function.SystemNameStrindex())
+		b.logEntry("        Filename: %d", function.FilenameStrindex())
 		b.logEntry("        Start line: %d", function.StartLine())
 	}
 }
@@ -408,7 +398,7 @@ func (b *dataBuffer) logStringTable(ss pcommon.StringSlice) {
 	}
 }
 
-func (b *dataBuffer) logComment(c pcommon.Int64Slice) {
+func (b *dataBuffer) logComment(c pcommon.Int32Slice) {
 	if c.Len() == 0 {
 		return
 	}
@@ -423,8 +413,8 @@ func attributeUnitsToMap(aus pprofile.AttributeUnitSlice) pcommon.Map {
 	m := pcommon.NewMap()
 	for i := 0; i < aus.Len(); i++ {
 		au := aus.At(i)
-		m.PutInt("attributeKey", au.AttributeKey())
-		m.PutInt("unit", au.Unit())
+		m.PutInt("attributeKey", int64(au.AttributeKeyStrindex()))
+		m.PutInt("unit", int64(au.UnitStrindex()))
 	}
 	return m
 }

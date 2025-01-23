@@ -12,7 +12,6 @@ import (
 	"golang.org/x/text/language"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -60,11 +59,6 @@ type Metric struct {
 
 	// Attributes is the list of attributes that the metric emits.
 	Attributes []AttributeName `mapstructure:"attributes"`
-
-	// Level specifies the minimum `configtelemetry.Level` for which
-	// the metric will be emitted. This only applies to internal telemetry
-	// configuration.
-	Level configtelemetry.Level `mapstructure:"level"`
 }
 
 type Stability struct {
@@ -113,6 +107,7 @@ func (m *Metric) Unmarshal(parser *confmap.Conf) error {
 	}
 	return parser.Unmarshal(m)
 }
+
 func (m Metric) Data() MetricData {
 	if m.Sum != nil {
 		return m.Sum
@@ -355,7 +350,7 @@ func (d *Histogram) HasMonotonic() bool {
 }
 
 func (d *Histogram) HasAggregated() bool {
-	return false
+	return true
 }
 
 func (d *Histogram) Instrument() string {

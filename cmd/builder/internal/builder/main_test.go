@@ -37,79 +37,77 @@ require (
 	modulePrefix = "go.opentelemetry.io/collector"
 )
 
-var (
-	replaceModules = []string{
-		"",
-		"/component",
-		"/component/componenttest",
-		"/component/componentstatus",
-		"/client",
-		"/config/configauth",
-		"/config/configcompression",
-		"/config/configgrpc",
-		"/config/confighttp",
-		"/config/confignet",
-		"/config/configopaque",
-		"/config/configretry",
-		"/config/configtelemetry",
-		"/config/configtls",
-		"/config/internal",
-		"/confmap",
-		"/confmap/provider/envprovider",
-		"/confmap/provider/fileprovider",
-		"/confmap/provider/httpprovider",
-		"/confmap/provider/httpsprovider",
-		"/confmap/provider/yamlprovider",
-		"/consumer",
-		"/consumer/consumererror",
-		"/consumer/consumererror/consumererrorprofiles",
-		"/consumer/consumerprofiles",
-		"/consumer/consumertest",
-		"/connector",
-		"/connector/connectortest",
-		"/connector/connectorprofiles",
-		"/exporter",
-		"/exporter/debugexporter",
-		"/exporter/exporterprofiles",
-		"/exporter/exportertest",
-		"/exporter/exporterhelper/exporterhelperprofiles",
-		"/exporter/nopexporter",
-		"/exporter/otlpexporter",
-		"/exporter/otlphttpexporter",
-		"/extension",
-		"/extension/auth",
-		"/extension/experimental/storage",
-		"/extension/extensioncapabilities",
-		"/extension/extensiontest",
-		"/extension/zpagesextension",
-		"/featuregate",
-		"/internal/memorylimiter",
-		"/internal/fanoutconsumer",
-		"/internal/sharedcomponent",
-		"/otelcol",
-		"/pipeline",
-		"/pipeline/pipelineprofiles",
-		"/processor",
-		"/processor/processortest",
-		"/processor/batchprocessor",
-		"/processor/memorylimiterprocessor",
-		"/processor/processorprofiles",
-		"/receiver",
-		"/receiver/nopreceiver",
-		"/receiver/otlpreceiver",
-		"/receiver/receiverprofiles",
-		"/receiver/receivertest",
-		"/pdata",
-		"/pdata/testdata",
-		"/pdata/pprofile",
-		"/semconv",
-		"/service",
-	}
-)
+var replaceModules = []string{
+	"",
+	"/component",
+	"/component/componenttest",
+	"/component/componentstatus",
+	"/client",
+	"/config/configauth",
+	"/config/configcompression",
+	"/config/configgrpc",
+	"/config/confighttp",
+	"/config/confignet",
+	"/config/configopaque",
+	"/config/configretry",
+	"/config/configtelemetry",
+	"/config/configtls",
+	"/confmap",
+	"/confmap/provider/envprovider",
+	"/confmap/provider/fileprovider",
+	"/confmap/provider/httpprovider",
+	"/confmap/provider/httpsprovider",
+	"/confmap/provider/yamlprovider",
+	"/consumer",
+	"/consumer/consumererror",
+	"/consumer/consumererror/xconsumererror",
+	"/consumer/xconsumer",
+	"/consumer/consumertest",
+	"/connector",
+	"/connector/connectortest",
+	"/connector/xconnector",
+	"/exporter",
+	"/exporter/debugexporter",
+	"/exporter/xexporter",
+	"/exporter/exportertest",
+	"/exporter/exporterhelper/xexporterhelper",
+	"/exporter/nopexporter",
+	"/exporter/otlpexporter",
+	"/exporter/otlphttpexporter",
+	"/extension",
+	"/extension/auth",
+	"/extension/auth/authtest",
+	"/extension/extensioncapabilities",
+	"/extension/extensiontest",
+	"/extension/zpagesextension",
+	"/extension/xextension",
+	"/featuregate",
+	"/internal/memorylimiter",
+	"/internal/fanoutconsumer",
+	"/internal/sharedcomponent",
+	"/otelcol",
+	"/pdata",
+	"/pdata/testdata",
+	"/pdata/pprofile",
+	"/pipeline",
+	"/pipeline/xpipeline",
+	"/processor",
+	"/processor/processortest",
+	"/processor/batchprocessor",
+	"/processor/memorylimiterprocessor",
+	"/processor/xprocessor",
+	"/receiver",
+	"/receiver/nopreceiver",
+	"/receiver/otlpreceiver",
+	"/receiver/receivertest",
+	"/receiver/xreceiver",
+	"/semconv",
+	"/service",
+}
 
-func newTestConfig(t testing.TB) *Config {
+func newTestConfig(tb testing.TB) *Config {
 	cfg, err := NewDefaultConfig()
-	require.NoError(t, err)
+	require.NoError(tb, err)
 	cfg.downloadModules.wait = 0
 	cfg.downloadModules.numRetries = 1
 	return cfg
@@ -248,7 +246,19 @@ func TestGenerateAndCompile(t *testing.T) {
 				cfg := newTestConfig(t)
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
+				cfg.LDSet = true
 				cfg.LDFlags = `-X "test.gitVersion=0743dc6c6411272b98494a9b32a63378e84c34da" -X "test.gitTag=local-testing" -X "test.goVersion=go version go1.20.7 darwin/amd64"`
+				return cfg
+			},
+		},
+		{
+			name: "GCFlags Compilation",
+			cfgBuilder: func(t *testing.T) *Config {
+				cfg := newTestConfig(t)
+				cfg.Distribution.OutputPath = t.TempDir()
+				cfg.Replaces = append(cfg.Replaces, replaces...)
+				cfg.GCSet = true
+				cfg.GCFlags = `all=-N -l`
 				return cfg
 			},
 		},
@@ -405,7 +415,7 @@ func TestReplaceStatementsAreComplete(t *testing.T) {
 
 func verifyGoMod(t *testing.T, dir string, replaceMods map[string]bool) {
 	gomodpath := path.Join(dir, "go.mod")
-	// #nosec G304 We control this path and generate the file inside, so we can assume it is safe.
+	//nolint:gosec // #nosec G304 We control this path and generate the file inside, so we can assume it is safe.
 	gomod, err := os.ReadFile(gomodpath)
 	require.NoError(t, err)
 
@@ -427,14 +437,14 @@ func verifyGoMod(t *testing.T, dir string, replaceMods map[string]bool) {
 func makeModule(dir string, fileContents []byte) error {
 	// if the file does not exist, try to create it
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		if err = os.Mkdir(dir, 0750); err != nil {
+		if err = os.Mkdir(dir, 0o750); err != nil {
 			return fmt.Errorf("failed to create output path: %w", err)
 		}
 	} else if err != nil {
 		return fmt.Errorf("failed to create output path: %w", err)
 	}
 
-	err := os.WriteFile(filepath.Clean(filepath.Join(dir, "go.mod")), fileContents, 0600)
+	err := os.WriteFile(filepath.Clean(filepath.Join(dir, "go.mod")), fileContents, 0o600)
 	if err != nil {
 		return fmt.Errorf("failed to write go.mod file: %w", err)
 	}

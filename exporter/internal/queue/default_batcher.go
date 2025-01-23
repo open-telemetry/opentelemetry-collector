@@ -64,10 +64,11 @@ func (qb *DefaultBatcher) startReadingFlushingGoroutine() {
 					qb.currentBatch = nil
 					qb.currentBatchMu.Unlock()
 					for i := 0; i < len(reqList); i++ {
-						qb.flushAsync(batch{
+						qb.flush(batch{
 							req:     reqList[i],
 							ctx:     ctx,
-							idxList: []uint64{idx}})
+							idxList: []uint64{idx},
+						})
 						// TODO: handle partial failure
 					}
 					qb.resetTimer()
@@ -75,7 +76,8 @@ func (qb *DefaultBatcher) startReadingFlushingGoroutine() {
 					qb.currentBatch = &batch{
 						req:     reqList[0],
 						ctx:     ctx,
-						idxList: []uint64{idx}}
+						idxList: []uint64{idx},
+					}
 					qb.currentBatchMu.Unlock()
 				}
 			} else {
@@ -84,18 +86,21 @@ func (qb *DefaultBatcher) startReadingFlushingGoroutine() {
 					qb.currentBatch = &batch{
 						req:     req,
 						ctx:     ctx,
-						idxList: []uint64{idx}}
+						idxList: []uint64{idx},
+					}
 				} else {
-					mergedReq, mergeErr := qb.currentBatch.req.Merge(qb.currentBatch.ctx, req)
+					// TODO: consolidate implementation for the cases where MaxSizeConfig is specified and the case where it is not specified
+					mergedReq, mergeErr := qb.currentBatch.req.MergeSplit(qb.currentBatch.ctx, qb.batchCfg.MaxSizeConfig, req)
 					if mergeErr != nil {
 						qb.queue.OnProcessingFinished(idx, mergeErr)
 						qb.currentBatchMu.Unlock()
 						continue
 					}
 					qb.currentBatch = &batch{
-						req:     mergedReq,
+						req:     mergedReq[0],
 						ctx:     qb.currentBatch.ctx,
-						idxList: append(qb.currentBatch.idxList, idx)}
+						idxList: append(qb.currentBatch.idxList, idx),
+					}
 				}
 
 				if qb.currentBatch.req.ItemsCount() >= qb.batchCfg.MinSizeItems {
@@ -103,8 +108,8 @@ func (qb *DefaultBatcher) startReadingFlushingGoroutine() {
 					qb.currentBatch = nil
 					qb.currentBatchMu.Unlock()
 
-					// flushAsync() blocks until successfully started a goroutine for flushing.
-					qb.flushAsync(batchToFlush)
+					// flush() blocks until successfully started a goroutine for flushing.
+					qb.flush(batchToFlush)
 					qb.resetTimer()
 				} else {
 					qb.currentBatchMu.Unlock()
@@ -132,7 +137,11 @@ func (qb *DefaultBatcher) startTimeBasedFlushingGoroutine() {
 
 // Start starts the goroutine that reads from the queue and flushes asynchronously.
 func (qb *DefaultBatcher) Start(_ context.Context, _ component.Host) error {
-	qb.startWorkerPool()
+	// maxWorker being -1 means batcher is disabled. This is for testing queue sender metrics.
+	if qb.maxWorkers == -1 {
+		return nil
+	}
+
 	qb.shutdownCh = make(chan bool, 1)
 
 	if qb.batchCfg.FlushTimeout == 0 {
@@ -158,8 +167,8 @@ func (qb *DefaultBatcher) flushCurrentBatchIfNecessary() {
 	qb.currentBatch = nil
 	qb.currentBatchMu.Unlock()
 
-	// flushAsync() blocks until successfully started a goroutine for flushing.
-	qb.flushAsync(batchToFlush)
+	// flush() blocks until successfully started a goroutine for flushing.
+	qb.flush(batchToFlush)
 	qb.resetTimer()
 }
 

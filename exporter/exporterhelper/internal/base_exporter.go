@@ -21,10 +21,18 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterqueue" // BaseExporter contains common fields between different exporter types.
 	"go.opentelemetry.io/collector/exporter/internal"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
-type ObsrepSenderFactory = func(obsrep *ObsReport) RequestSender
+var usePullingBasedExporterQueueBatcher = featuregate.GlobalRegistry().MustRegister(
+	"exporter.UsePullingBasedExporterQueueBatcher",
+	featuregate.StageBeta,
+	featuregate.WithRegisterFromVersion("v0.115.0"),
+	featuregate.WithRegisterDescription("if set to true, turns on the pulling-based exporter queue bathcer"),
+)
+
+type ObsrepSenderFactory = func(obsrep *ObsReport) Sender[internal.Request]
 
 // Option apply changes to BaseExporter.
 type Option func(*BaseExporter) error
@@ -32,8 +40,6 @@ type Option func(*BaseExporter) error
 type BaseExporter struct {
 	component.StartFunc
 	component.ShutdownFunc
-
-	Signal pipeline.Signal
 
 	Marshaler   exporterqueue.Marshaler[internal.Request]
 	Unmarshaler exporterqueue.Unmarshaler[internal.Request]
@@ -47,10 +53,10 @@ type BaseExporter struct {
 	// Chain of senders that the exporter helper applies before passing the data to the actual exporter.
 	// The data is handled by each sender in the respective order starting from the queueSender.
 	// Most of the senders are optional, and initialized with a no-op path-through sender.
-	BatchSender   RequestSender
-	QueueSender   RequestSender
-	ObsrepSender  RequestSender
-	RetrySender   RequestSender
+	BatchSender   Sender[internal.Request]
+	QueueSender   Sender[internal.Request]
+	ObsrepSender  Sender[internal.Request]
+	RetrySender   Sender[internal.Request]
 	TimeoutSender *TimeoutSender // TimeoutSender is always initialized.
 
 	ConsumerOptions []consumer.Option
@@ -61,18 +67,16 @@ type BaseExporter struct {
 }
 
 func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSenderFactory, options ...Option) (*BaseExporter, error) {
-	obsReport, err := NewExporter(ObsReportSettings{ExporterID: set.ID, ExporterCreateSettings: set, Signal: signal})
+	obsReport, err := NewExporter(ObsReportSettings{ExporterSettings: set, Signal: signal})
 	if err != nil {
 		return nil, err
 	}
 
 	be := &BaseExporter{
-		Signal: signal,
-
-		BatchSender:   &BaseRequestSender{},
-		QueueSender:   &BaseRequestSender{},
+		BatchSender:   &BaseSender[internal.Request]{},
+		QueueSender:   &BaseSender[internal.Request]{},
 		ObsrepSender:  osf(obsReport),
-		RetrySender:   &BaseRequestSender{},
+		RetrySender:   &BaseSender[internal.Request]{},
 		TimeoutSender: &TimeoutSender{cfg: NewDefaultTimeoutConfig()},
 
 		Set:    set,
@@ -90,23 +94,17 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSe
 		q := be.queueFactory(
 			context.Background(),
 			exporterqueue.Settings{
-				Signal:           be.Signal,
+				Signal:           signal,
 				ExporterSettings: be.Set,
 			},
 			be.queueCfg)
-		be.QueueSender = NewQueueSender(q, be.Set, be.queueCfg.NumConsumers, be.ExportFailureMessage, be.Obsrep)
-		for _, op := range options {
-			err = multierr.Append(err, op(be))
-		}
+		be.QueueSender = NewQueueSender(q, be.Set, be.queueCfg.NumConsumers, be.ExportFailureMessage, be.Obsrep, be.BatcherCfg)
 	}
 
-	if be.BatcherCfg.Enabled {
+	if !usePullingBasedExporterQueueBatcher.IsEnabled() && be.BatcherCfg.Enabled ||
+		usePullingBasedExporterQueueBatcher.IsEnabled() && be.BatcherCfg.Enabled && !be.queueCfg.Enabled {
 		bs := NewBatchSender(be.BatcherCfg, be.Set)
 		be.BatchSender = bs
-	}
-
-	if err != nil {
-		return nil, err
 	}
 
 	be.connectSenders()
@@ -224,6 +222,7 @@ func WithQueue(config QueueConfig) Option {
 			Enabled:      config.Enabled,
 			NumConsumers: config.NumConsumers,
 			QueueSize:    config.QueueSize,
+			Blocking:     config.Blocking,
 		}
 		o.queueFactory = exporterqueue.NewPersistentQueueFactory[internal.Request](config.StorageID, exporterqueue.PersistentQueueSettings[internal.Request]{
 			Marshaler:   o.Marshaler,

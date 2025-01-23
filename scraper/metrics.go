@@ -30,7 +30,7 @@ type metrics struct {
 }
 
 // NewMetrics creates a new Metrics scraper.
-func NewMetrics(_ context.Context, _ Settings, scrape ScrapeMetricsFunc, options ...Option) (Metrics, error) {
+func NewMetrics(scrape ScrapeMetricsFunc, options ...Option) (Metrics, error) {
 	if scrape == nil {
 		return nil, errNilFunc
 	}
