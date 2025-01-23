@@ -73,6 +73,7 @@ type Config struct {
 
 	// contains the elliptic curves that will be used in
 	// an ECDHE handshake, in preference order
+	// Defaults to empty list and "crypto/tls" defaults are used, internally.
 	CurvePreferences []string `mapstructure:"curve_preferences"`
 }
 
