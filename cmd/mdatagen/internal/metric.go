@@ -350,7 +350,7 @@ func (d *Histogram) HasMonotonic() bool {
 }
 
 func (d *Histogram) HasAggregated() bool {
-	return false
+	return true
 }
 
 func (d *Histogram) Instrument() string {

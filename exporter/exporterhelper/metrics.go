@@ -25,14 +25,16 @@ var (
 )
 
 type metricsRequest struct {
-	md     pmetric.Metrics
-	pusher consumer.ConsumeMetricsFunc
+	md               pmetric.Metrics
+	pusher           consumer.ConsumeMetricsFunc
+	cachedItemsCount int
 }
 
 func newMetricsRequest(md pmetric.Metrics, pusher consumer.ConsumeMetricsFunc) Request {
 	return &metricsRequest{
-		md:     md,
-		pusher: pusher,
+		md:               md,
+		pusher:           pusher,
+		cachedItemsCount: -1,
 	}
 }
 
@@ -63,7 +65,14 @@ func (req *metricsRequest) Export(ctx context.Context) error {
 }
 
 func (req *metricsRequest) ItemsCount() int {
-	return req.md.DataPointCount()
+	if req.cachedItemsCount == -1 {
+		req.cachedItemsCount = req.md.DataPointCount()
+	}
+	return req.cachedItemsCount
+}
+
+func (req *metricsRequest) setCachedItemsCount(count int) {
+	req.cachedItemsCount = count
 }
 
 type metricsExporter struct {
