@@ -33,9 +33,9 @@ func NewFactory() processor.Factory {
 	return processor.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		processor.WithTraces(f.createTracesProcessor, metadata.TracesStability),
-		processor.WithMetrics(f.createMetricsProcessor, metadata.MetricsStability),
-		processor.WithLogs(f.createLogsProcessor, metadata.LogsStability))
+		processor.WithTraces(f.createTraces, metadata.TracesStability),
+		processor.WithMetrics(f.createMetrics, metadata.MetricsStability),
+		processor.WithLogs(f.createLogs, metadata.LogsStability))
 }
 
 // CreateDefaultConfig creates the default configuration for processor. Notice
@@ -44,7 +44,7 @@ func createDefaultConfig() component.Config {
 	return &Config{}
 }
 
-func (f *factory) createTracesProcessor(
+func (f *factory) createTraces(
 	ctx context.Context,
 	set processor.Settings,
 	cfg component.Config,
@@ -54,14 +54,14 @@ func (f *factory) createTracesProcessor(
 	if err != nil {
 		return nil, err
 	}
-	return processorhelper.NewTracesProcessor(ctx, set, cfg, nextConsumer,
+	return processorhelper.NewTraces(ctx, set, cfg, nextConsumer,
 		memLimiter.processTraces,
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithStart(memLimiter.start),
 		processorhelper.WithShutdown(memLimiter.shutdown))
 }
 
-func (f *factory) createMetricsProcessor(
+func (f *factory) createMetrics(
 	ctx context.Context,
 	set processor.Settings,
 	cfg component.Config,
@@ -71,14 +71,14 @@ func (f *factory) createMetricsProcessor(
 	if err != nil {
 		return nil, err
 	}
-	return processorhelper.NewMetricsProcessor(ctx, set, cfg, nextConsumer,
+	return processorhelper.NewMetrics(ctx, set, cfg, nextConsumer,
 		memLimiter.processMetrics,
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithStart(memLimiter.start),
 		processorhelper.WithShutdown(memLimiter.shutdown))
 }
 
-func (f *factory) createLogsProcessor(
+func (f *factory) createLogs(
 	ctx context.Context,
 	set processor.Settings,
 	cfg component.Config,
@@ -88,7 +88,7 @@ func (f *factory) createLogsProcessor(
 	if err != nil {
 		return nil, err
 	}
-	return processorhelper.NewLogsProcessor(ctx, set, cfg, nextConsumer,
+	return processorhelper.NewLogs(ctx, set, cfg, nextConsumer,
 		memLimiter.processLogs,
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithStart(memLimiter.start),

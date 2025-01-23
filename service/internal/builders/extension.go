@@ -43,20 +43,20 @@ func (b *ExtensionBuilder) Create(ctx context.Context, set extension.Settings) (
 		return nil, fmt.Errorf("extension factory not available for: %q", set.ID)
 	}
 
-	sl := f.ExtensionStability()
+	sl := f.Stability()
 	if sl >= component.StabilityLevelAlpha {
 		set.Logger.Debug(sl.LogMessage())
 	} else {
 		set.Logger.Info(sl.LogMessage())
 	}
-	return f.CreateExtension(ctx, set, cfg)
+	return f.Create(ctx, set, cfg)
 }
 
 func (b *ExtensionBuilder) Factory(componentType component.Type) component.Factory {
 	return b.factories[componentType]
 }
 
-// NewNopProcessorConfigsAndFactories returns a configuration and factories that allows building a new nop processor.
+// NewNopExtensionConfigsAndFactories returns a configuration and factories that allows building a new nop processor.
 func NewNopExtensionConfigsAndFactories() (map[component.ID]component.Config, map[component.Type]extension.Factory) {
 	nopFactory := extensiontest.NewNopFactory()
 	configs := map[component.ID]component.Config{

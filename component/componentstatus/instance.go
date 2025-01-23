@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 // pipelineDelim is the delimiter for internal representation of pipeline
@@ -26,7 +27,7 @@ type InstanceID struct {
 }
 
 // NewInstanceID returns an ID that uniquely identifies a component.
-func NewInstanceID(componentID component.ID, kind component.Kind, pipelineIDs ...component.ID) *InstanceID {
+func NewInstanceID(componentID component.ID, kind component.Kind, pipelineIDs ...pipeline.ID) *InstanceID {
 	instanceID := &InstanceID{
 		componentID: componentID,
 		kind:        kind,
@@ -47,14 +48,14 @@ func (id *InstanceID) Kind() component.Kind {
 
 // AllPipelineIDs calls f for each pipeline this instance is associated with. If
 // f returns false it will stop iteration.
-func (id *InstanceID) AllPipelineIDs(f func(component.ID) bool) {
+func (id *InstanceID) AllPipelineIDs(f func(pipeline.ID) bool) {
 	var bs []byte
 	for _, b := range []byte(id.pipelineIDs) {
 		if b != pipelineDelim {
 			bs = append(bs, b)
 			continue
 		}
-		pipelineID := component.ID{}
+		pipelineID := pipeline.ID{}
 		err := pipelineID.UnmarshalText(bs)
 		bs = bs[:0]
 		if err != nil {
@@ -68,7 +69,7 @@ func (id *InstanceID) AllPipelineIDs(f func(component.ID) bool) {
 
 // WithPipelines returns a new InstanceID updated to include the given
 // pipelineIDs.
-func (id *InstanceID) WithPipelines(pipelineIDs ...component.ID) *InstanceID {
+func (id *InstanceID) WithPipelines(pipelineIDs ...pipeline.ID) *InstanceID {
 	instanceID := &InstanceID{
 		componentID: id.componentID,
 		kind:        id.kind,
@@ -78,7 +79,7 @@ func (id *InstanceID) WithPipelines(pipelineIDs ...component.ID) *InstanceID {
 	return instanceID
 }
 
-func (id *InstanceID) addPipelines(pipelineIDs []component.ID) {
+func (id *InstanceID) addPipelines(pipelineIDs []pipeline.ID) {
 	delim := string(pipelineDelim)
 	strIDs := strings.Split(id.pipelineIDs, delim)
 	for _, pID := range pipelineIDs {

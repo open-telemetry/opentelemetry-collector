@@ -31,19 +31,6 @@ const (
 	// Collector.
 	RefusedLogRecordsKey = "refused_log_records"
 
-	// ScraperKey used to identify scrapers in metrics and traces.
-	ScraperKey = "scraper"
-
-	// ScrapedMetricPointsKey used to identify metric points scraped by the
-	// Collector.
-	ScrapedMetricPointsKey = "scraped_metric_points"
-	// ErroredMetricPointsKey used to identify metric points errored (i.e.
-	// unable to be scraped) by the Collector.
-	ErroredMetricPointsKey        = "errored_metric_points"
-	ScraperPrefix                 = ScraperKey + SpanNameSep
-	ScraperMetricsOperationSuffix = SpanNameSep + "MetricsScraped"
-
-	ReceiverPrefix                  = ReceiverKey + SpanNameSep
 	ReceiveTraceDataOperationSuffix = SpanNameSep + "TraceDataReceived"
 	ReceiverMetricsOperationSuffix  = SpanNameSep + "MetricsReceived"
 	ReceiverLogsOperationSuffix     = SpanNameSep + "LogsReceived"

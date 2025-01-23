@@ -20,7 +20,7 @@ type nopExtension struct {
 }
 
 func TestNewFactory(t *testing.T) {
-	var testType = component.MustNewType("test")
+	testType := component.MustNewType("test")
 	defaultCfg := struct{}{}
 	nopExtensionInstance := new(nopExtension)
 
@@ -34,8 +34,8 @@ func TestNewFactory(t *testing.T) {
 	assert.EqualValues(t, testType, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
-	assert.Equal(t, component.StabilityLevelDevelopment, factory.ExtensionStability())
-	ext, err := factory.CreateExtension(context.Background(), Settings{}, &defaultCfg)
+	assert.Equal(t, component.StabilityLevelDevelopment, factory.Stability())
+	ext, err := factory.Create(context.Background(), Settings{}, &defaultCfg)
 	require.NoError(t, err)
 	assert.Same(t, nopExtensionInstance, ext)
 }

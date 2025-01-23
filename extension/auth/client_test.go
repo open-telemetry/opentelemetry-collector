@@ -115,5 +115,4 @@ func TestWithPerRPCCredentials(t *testing.T) {
 	assert.True(t, called)
 	assert.NotNil(t, p)
 	assert.NoError(t, err)
-
 }

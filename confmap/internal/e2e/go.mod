@@ -3,19 +3,19 @@ module go.opentelemetry.io/collector/confmap/internal/e2e
 go 1.22.0
 
 require (
-	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/config/configopaque v1.15.0
-	go.opentelemetry.io/collector/confmap v1.15.0
-	go.opentelemetry.io/collector/confmap/provider/envprovider v1.15.0
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.15.0
+	github.com/stretchr/testify v1.10.0
+	go.opentelemetry.io/collector/config/configopaque v1.24.0
+	go.opentelemetry.io/collector/confmap v1.24.0
+	go.opentelemetry.io/collector/confmap/provider/envprovider v1.24.0
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.24.0
 )
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/go-viper/mapstructure/v2 v2.1.0 // indirect
+	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
-	github.com/knadh/koanf/v2 v2.1.1 // indirect
+	github.com/knadh/koanf/v2 v2.1.2 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect

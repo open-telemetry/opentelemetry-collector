@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -28,8 +29,8 @@ import (
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/resource"
+	"google.golang.org/grpc/credentials"
 
-	"go.opentelemetry.io/collector/processor/processorhelper"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 )
 
@@ -49,17 +50,17 @@ const (
 
 var (
 	// GRPCUnacceptableKeyValues is a list of high cardinality grpc attributes that should be filtered out.
-	GRPCUnacceptableKeyValues = []attribute.KeyValue{
+	GRPCUnacceptableKeyValues = attribute.NewSet(
 		attribute.String(semconv.AttributeNetSockPeerAddr, ""),
 		attribute.String(semconv.AttributeNetSockPeerPort, ""),
 		attribute.String(semconv.AttributeNetSockPeerName, ""),
-	}
+	)
 
 	// HTTPUnacceptableKeyValues is a list of high cardinality http attributes that should be filtered out.
-	HTTPUnacceptableKeyValues = []attribute.KeyValue{
+	HTTPUnacceptableKeyValues = attribute.NewSet(
 		attribute.String(semconv.AttributeNetHostName, ""),
 		attribute.String(semconv.AttributeNetHostPort, ""),
-	}
+	)
 
 	errNoValidMetricExporter = errors.New("no valid metric exporter")
 )
@@ -85,7 +86,7 @@ func InitMetricReader(ctx context.Context, reader config.MetricReader, asyncErro
 func InitOpenTelemetry(res *resource.Resource, options []sdkmetric.Option, disableHighCardinality bool) (*sdkmetric.MeterProvider, error) {
 	opts := []sdkmetric.Option{
 		sdkmetric.WithResource(res),
-		sdkmetric.WithView(batchViews(disableHighCardinality)...),
+		sdkmetric.WithView(disableHighCardinalityViews(disableHighCardinality)...),
 	}
 
 	opts = append(opts, options...)
@@ -116,44 +117,25 @@ func InitPrometheusServer(registry *prometheus.Registry, address string, asyncEr
 	return server
 }
 
-func batchViews(disableHighCardinality bool) []sdkmetric.View {
-	views := []sdkmetric.View{
-		sdkmetric.NewView(
-			sdkmetric.Instrument{Name: processorhelper.BuildCustomMetricName("batch", "batch_send_size")},
-			sdkmetric.Stream{Aggregation: sdkmetric.AggregationExplicitBucketHistogram{
-				Boundaries: []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000},
-			}},
-		),
-		sdkmetric.NewView(
-			sdkmetric.Instrument{Name: processorhelper.BuildCustomMetricName("batch", "batch_send_size_bytes")},
-			sdkmetric.Stream{Aggregation: sdkmetric.AggregationExplicitBucketHistogram{
-				Boundaries: []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000,
-					100_000, 200_000, 300_000, 400_000, 500_000, 600_000, 700_000, 800_000, 900_000,
-					1000_000, 2000_000, 3000_000, 4000_000, 5000_000, 6000_000, 7000_000, 8000_000, 9000_000},
-			}},
-		),
+func disableHighCardinalityViews(disableHighCardinality bool) []sdkmetric.View {
+	if !disableHighCardinality {
+		return nil
 	}
-	if disableHighCardinality {
-		views = append(views, sdkmetric.NewView(sdkmetric.Instrument{
-			Scope: instrumentation.Scope{
-				Name: GRPCInstrumentation,
-			},
-		}, sdkmetric.Stream{
-			AttributeFilter: cardinalityFilter(GRPCUnacceptableKeyValues...),
-		}))
-		views = append(views, sdkmetric.NewView(sdkmetric.Instrument{
-			Scope: instrumentation.Scope{
-				Name: HTTPInstrumentation,
-			},
-		}, sdkmetric.Stream{
-			AttributeFilter: cardinalityFilter(HTTPUnacceptableKeyValues...),
-		}))
+	return []sdkmetric.View{
+		sdkmetric.NewView(
+			sdkmetric.Instrument{Scope: instrumentation.Scope{Name: GRPCInstrumentation}},
+			sdkmetric.Stream{
+				AttributeFilter: cardinalityFilter(GRPCUnacceptableKeyValues),
+			}),
+		sdkmetric.NewView(
+			sdkmetric.Instrument{Scope: instrumentation.Scope{Name: HTTPInstrumentation}},
+			sdkmetric.Stream{
+				AttributeFilter: cardinalityFilter(HTTPUnacceptableKeyValues),
+			}),
 	}
-	return views
 }
 
-func cardinalityFilter(kvs ...attribute.KeyValue) attribute.Filter {
-	filter := attribute.NewSet(kvs...)
+func cardinalityFilter(filter attribute.Set) attribute.Filter {
 	return func(kv attribute.KeyValue) bool {
 		return !filter.HasValue(kv.Key)
 	}
@@ -162,10 +144,10 @@ func cardinalityFilter(kvs ...attribute.KeyValue) attribute.Filter {
 func initPrometheusExporter(prometheusConfig *config.Prometheus, asyncErrorChannel chan error, serverWG *sync.WaitGroup) (sdkmetric.Reader, *http.Server, error) {
 	promRegistry := prometheus.NewRegistry()
 	if prometheusConfig.Host == nil {
-		return nil, nil, fmt.Errorf("host must be specified")
+		return nil, nil, errors.New("host must be specified")
 	}
 	if prometheusConfig.Port == nil {
-		return nil, nil, fmt.Errorf("port must be specified")
+		return nil, nil, errors.New("port must be specified")
 	}
 
 	opts := []otelprom.Option{
@@ -183,7 +165,7 @@ func initPrometheusExporter(prometheusConfig *config.Prometheus, asyncErrorChann
 		return nil, nil, fmt.Errorf("error creating otel prometheus exporter: %w", err)
 	}
 
-	return exporter, InitPrometheusServer(promRegistry, net.JoinHostPort(*prometheusConfig.Host, fmt.Sprintf("%d", *prometheusConfig.Port)), asyncErrorChannel, serverWG), nil
+	return exporter, InitPrometheusServer(promRegistry, net.JoinHostPort(*prometheusConfig.Host, strconv.Itoa(*prometheusConfig.Port)), asyncErrorChannel, serverWG), nil
 }
 
 func initPullExporter(exporter config.MetricExporter, asyncErrorChannel chan error, serverWG *sync.WaitGroup) (sdkmetric.Reader, *http.Server, error) {
@@ -227,7 +209,7 @@ func initPeriodicExporter(ctx context.Context, exporter config.MetricExporter, o
 
 func normalizeEndpoint(endpoint string) string {
 	if !strings.HasPrefix(endpoint, "https://") && !strings.HasPrefix(endpoint, "http://") {
-		return fmt.Sprintf("http://%s", endpoint)
+		return "http://" + endpoint
 	}
 	return endpoint
 }
@@ -243,6 +225,12 @@ func initOTLPgRPCExporter(ctx context.Context, otlpConfig *config.OTLPMetric) (s
 		opts = append(opts, otlpmetricgrpc.WithEndpoint(u.Host))
 		if u.Scheme == "http" {
 			opts = append(opts, otlpmetricgrpc.WithInsecure())
+		} else if otlpConfig.Certificate != nil {
+			creds, err := credentials.NewClientTLSFromFile(*otlpConfig.Certificate, "")
+			if err != nil {
+				return nil, fmt.Errorf("could not create client tls credentials: %w", err)
+			}
+			opts = append(opts, otlpmetricgrpc.WithTLSCredentials(creds))
 		}
 	}
 
@@ -251,7 +239,6 @@ func initOTLPgRPCExporter(ctx context.Context, otlpConfig *config.OTLPMetric) (s
 		case "gzip":
 			opts = append(opts, otlpmetricgrpc.WithCompressor(*otlpConfig.Compression))
 		case "none":
-			break
 		default:
 			return nil, fmt.Errorf("unsupported compression %q", *otlpConfig.Compression)
 		}

@@ -40,11 +40,11 @@ func computeOrder(exts *Extensions) ([]component.ID, error) {
 		n := nodes[extID]
 		if dep, ok := ext.(extensioncapabilities.Dependent); ok {
 			for _, depID := range dep.Dependencies() {
-				if d, ok := nodes[depID]; ok {
-					graph.SetEdge(graph.NewEdge(d, n))
-				} else {
+				d, ok := nodes[depID]
+				if !ok {
 					return nil, fmt.Errorf("unable to find extension %s on which extension %s depends", depID, extID)
 				}
+				graph.SetEdge(graph.NewEdge(d, n))
 			}
 		}
 	}
@@ -73,5 +73,5 @@ func cycleErr(err error, cycles [][]graph.Node) error {
 		names = append(names, node.extID.String())
 	}
 	cycleStr := "[" + strings.Join(names, " -> ") + "]"
-	return fmt.Errorf("unable to order extenions by dependencies, cycle found %s: %w", cycleStr, err)
+	return fmt.Errorf("unable to order extensions by dependencies, cycle found %s: %w", cycleStr, err)
 }

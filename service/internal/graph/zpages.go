@@ -41,7 +41,7 @@ func (g *Graph) HandleZPages(w http.ResponseWriter, r *http.Request) {
 		}
 		procIDs := make([]string, 0, len(p.processors))
 		for _, c := range p.processors {
-			procIDs = append(procIDs, c.componentID.String())
+			procIDs = append(procIDs, c.(*processorNode).componentID.String())
 		}
 		exprIDs := make([]string, 0, len(p.exporters))
 		for _, c := range p.exporters {
@@ -55,7 +55,7 @@ func (g *Graph) HandleZPages(w http.ResponseWriter, r *http.Request) {
 
 		sumData.Rows = append(sumData.Rows, zpages.SummaryPipelinesTableRowData{
 			FullName:    c.String(),
-			InputType:   c.Type().String(),
+			InputType:   c.Signal().String(),
 			MutatesData: p.capabilitiesNode.getConsumer().Capabilities().MutatesData,
 			Receivers:   recvIDs,
 			Processors:  procIDs,

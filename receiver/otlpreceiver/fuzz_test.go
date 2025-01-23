@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/logs"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metrics"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/trace"
@@ -18,7 +19,7 @@ import (
 
 func FuzzReceiverHandlers(f *testing.F) {
 	f.Fuzz(func(_ *testing.T, data []byte, pb bool, handler int) {
-		req, err := http.NewRequest("POST", "", bytes.NewReader(data))
+		req, err := http.NewRequest(http.MethodPost, "", bytes.NewReader(data))
 		if err != nil {
 			return
 		}
@@ -35,6 +36,10 @@ func FuzzReceiverHandlers(f *testing.F) {
 		if err != nil {
 			panic(err)
 		}
+		r.nextTraces = consumertest.NewNop()
+		r.nextLogs = consumertest.NewNop()
+		r.nextMetrics = consumertest.NewNop()
+		r.nextProfiles = consumertest.NewNop()
 		resp := httptest.NewRecorder()
 		switch handler % 3 {
 		case 0:
@@ -47,6 +52,5 @@ func FuzzReceiverHandlers(f *testing.F) {
 			httpLogsReceiver := logs.New(r.nextLogs, r.obsrepHTTP)
 			handleLogs(resp, req, httpLogsReceiver)
 		}
-
 	})
 }

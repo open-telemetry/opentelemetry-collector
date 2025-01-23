@@ -7,8 +7,10 @@
 package pprofile
 
 import (
+	"sort"
+
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
+	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 // SampleSlice logically represents a slice of Sample.
@@ -19,18 +21,18 @@ import (
 // Must use NewSampleSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type SampleSlice struct {
-	orig  *[]otlpprofiles.Sample
+	orig  *[]*otlpprofiles.Sample
 	state *internal.State
 }
 
-func newSampleSlice(orig *[]otlpprofiles.Sample, state *internal.State) SampleSlice {
+func newSampleSlice(orig *[]*otlpprofiles.Sample, state *internal.State) SampleSlice {
 	return SampleSlice{orig: orig, state: state}
 }
 
 // NewSampleSlice creates a SampleSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewSampleSlice() SampleSlice {
-	orig := []otlpprofiles.Sample(nil)
+	orig := []*otlpprofiles.Sample(nil)
 	state := internal.StateMutable
 	return newSampleSlice(&orig, &state)
 }
@@ -51,7 +53,7 @@ func (es SampleSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es SampleSlice) At(i int) Sample {
-	return newSample(&(*es.orig)[i], es.state)
+	return newSample((*es.orig)[i], es.state)
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -73,7 +75,7 @@ func (es SampleSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]otlpprofiles.Sample, len(*es.orig), newCap)
+	newOrig := make([]*otlpprofiles.Sample, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
@@ -82,7 +84,7 @@ func (es SampleSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Sample.
 func (es SampleSlice) AppendEmpty() Sample {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, otlpprofiles.Sample{})
+	*es.orig = append(*es.orig, &otlpprofiles.Sample{})
 	return es.At(es.Len() - 1)
 }
 
@@ -127,10 +129,24 @@ func (es SampleSlice) CopyTo(dest SampleSlice) {
 	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-	} else {
-		(*dest.orig) = make([]otlpprofiles.Sample, srcLen)
+		for i := range *es.orig {
+			newSample((*es.orig)[i], es.state).CopyTo(newSample((*dest.orig)[i], dest.state))
+		}
+		return
 	}
+	origs := make([]otlpprofiles.Sample, srcLen)
+	wrappers := make([]*otlpprofiles.Sample, srcLen)
 	for i := range *es.orig {
-		newSample(&(*es.orig)[i], es.state).CopyTo(newSample(&(*dest.orig)[i], dest.state))
+		wrappers[i] = &origs[i]
+		newSample((*es.orig)[i], es.state).CopyTo(newSample(wrappers[i], dest.state))
 	}
+	*dest.orig = wrappers
+}
+
+// Sort sorts the Sample elements within SampleSlice given the
+// provided less function so that two instances of SampleSlice
+// can be compared.
+func (es SampleSlice) Sort(less func(a, b Sample) bool) {
+	es.state.AssertMutable()
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }

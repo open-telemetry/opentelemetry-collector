@@ -5,7 +5,7 @@ package pprofile // import "go.opentelemetry.io/collector/pdata/pprofile"
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1experimental"
+	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
 )
 
 // profiles is the top-level struct that is propagated through the profiles pipeline.
@@ -59,8 +59,8 @@ func (ms Profiles) SampleCount() int {
 		sps := rp.ScopeProfiles()
 		for j := 0; j < sps.Len(); j++ {
 			pcs := sps.At(j).Profiles()
-			for k := 0; j < pcs.Len(); j++ {
-				sampleCount += pcs.At(k).Profile().Sample().Len()
+			for k := 0; k < pcs.Len(); k++ {
+				sampleCount += pcs.At(k).Sample().Len()
 			}
 		}
 	}

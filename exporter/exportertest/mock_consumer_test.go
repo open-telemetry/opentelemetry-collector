@@ -53,8 +53,7 @@ func TestIDFromMetrics(t *testing.T) {
 	invalidData := pmetric.NewMetrics() // Create an invalid pmetric.Metrics object with missing attribute
 	invalidData.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptyHistogram().DataPoints().AppendEmpty().Attributes()
 	_, err = idFromMetrics(invalidData)
-	require.Error(t, err)
-	assert.Equal(t, err.Error(), fmt.Sprintf("invalid data element, attribute %q is missing", uniqueIDAttrName))
+	require.EqualError(t, err, fmt.Sprintf("invalid data element, attribute %q is missing", uniqueIDAttrName))
 
 	// Test case 3: Wrong attribute type
 	var intID int64 = 12
@@ -62,8 +61,7 @@ func TestIDFromMetrics(t *testing.T) {
 	wrongAttribute.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().
 		SetEmptyHistogram().DataPoints().AppendEmpty().Attributes().PutInt(uniqueIDAttrName, intID)
 	_, err = idFromMetrics(wrongAttribute)
-	require.Error(t, err)
-	assert.Equal(t, err.Error(), fmt.Sprintf("invalid data element, attribute %q is wrong type Int", uniqueIDAttrName))
+	assert.EqualError(t, err, fmt.Sprintf("invalid data element, attribute %q is wrong type Int", uniqueIDAttrName))
 }
 
 func TestIDFromTraces(t *testing.T) {
@@ -78,8 +76,7 @@ func TestIDFromTraces(t *testing.T) {
 	invalidData := ptrace.NewTraces()
 	invalidData.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().Attributes()
 	_, err = idFromTraces(invalidData)
-	require.Error(t, err)
-	assert.Equal(t, err.Error(), fmt.Sprintf("invalid data element, attribute %q is missing", uniqueIDAttrName))
+	require.EqualError(t, err, fmt.Sprintf("invalid data element, attribute %q is missing", uniqueIDAttrName))
 
 	// Test case 3: Wrong attribute type
 	var intID int64 = 12
@@ -87,8 +84,7 @@ func TestIDFromTraces(t *testing.T) {
 	wrongAttribute.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().Attributes().
 		PutInt(uniqueIDAttrName, intID)
 	_, err = idFromTraces(wrongAttribute)
-	require.Error(t, err)
-	assert.Equal(t, err.Error(), fmt.Sprintf("invalid data element, attribute %q is wrong type Int", uniqueIDAttrName))
+	assert.EqualError(t, err, fmt.Sprintf("invalid data element, attribute %q is wrong type Int", uniqueIDAttrName))
 }
 
 func TestIDFromLogs(t *testing.T) {
@@ -103,8 +99,7 @@ func TestIDFromLogs(t *testing.T) {
 	invalidData := plog.NewLogs()
 	invalidData.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Attributes()
 	_, err = idFromLogs(invalidData)
-	require.Error(t, err)
-	assert.Equal(t, err.Error(), fmt.Sprintf("invalid data element, attribute %q is missing", uniqueIDAttrName))
+	require.EqualError(t, err, fmt.Sprintf("invalid data element, attribute %q is missing", uniqueIDAttrName))
 
 	// Test case 3: Wrong attribute type
 	var intID int64 = 12
@@ -112,8 +107,7 @@ func TestIDFromLogs(t *testing.T) {
 	wrongAttribute.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Attributes().
 		PutInt(uniqueIDAttrName, intID)
 	_, err = idFromLogs(wrongAttribute)
-	require.Error(t, err)
-	assert.Equal(t, err.Error(), fmt.Sprintf("invalid data element, attribute %q is wrong type Int", uniqueIDAttrName))
+	assert.EqualError(t, err, fmt.Sprintf("invalid data element, attribute %q is wrong type Int", uniqueIDAttrName))
 }
 
 func returnNonPermanentError() error {
@@ -135,11 +129,9 @@ func TestConsumeLogsNonPermanent(t *testing.T) {
 	assert.Equal(t, 0, mc.reqCounter.error.permanent)
 	assert.Equal(t, 0, mc.reqCounter.success)
 	assert.Equal(t, 1, mc.reqCounter.total)
-
 }
 
 func TestConsumeLogsPermanent(t *testing.T) {
-
 	mc := newMockConsumer(returnPermanentError)
 	validData := createLog("logId")
 	err := mc.ConsumeLogs(context.Background(), validData)
@@ -150,7 +142,6 @@ func TestConsumeLogsPermanent(t *testing.T) {
 	assert.Equal(t, 1, mc.reqCounter.error.permanent)
 	assert.Equal(t, 0, mc.reqCounter.success)
 	assert.Equal(t, 1, mc.reqCounter.total)
-
 }
 
 func TestConsumeLogsSuccess(t *testing.T) {
@@ -164,7 +155,6 @@ func TestConsumeLogsSuccess(t *testing.T) {
 	assert.Equal(t, 0, mc.reqCounter.error.permanent)
 	assert.Equal(t, 1, mc.reqCounter.success)
 	assert.Equal(t, 1, mc.reqCounter.total)
-
 }
 
 func TestConsumeTracesNonPermanent(t *testing.T) {
@@ -178,11 +168,9 @@ func TestConsumeTracesNonPermanent(t *testing.T) {
 	assert.Equal(t, 0, mc.reqCounter.error.permanent)
 	assert.Equal(t, 0, mc.reqCounter.success)
 	assert.Equal(t, 1, mc.reqCounter.total)
-
 }
 
 func TestConsumeTracesPermanent(t *testing.T) {
-
 	mc := newMockConsumer(returnPermanentError)
 	validData := createTrace("traceId")
 	err := mc.ConsumeTraces(context.Background(), validData)
@@ -193,7 +181,6 @@ func TestConsumeTracesPermanent(t *testing.T) {
 	assert.Equal(t, 1, mc.reqCounter.error.permanent)
 	assert.Equal(t, 0, mc.reqCounter.success)
 	assert.Equal(t, 1, mc.reqCounter.total)
-
 }
 
 func TestConsumeTracesSuccess(t *testing.T) {
@@ -207,8 +194,8 @@ func TestConsumeTracesSuccess(t *testing.T) {
 	assert.Equal(t, 0, mc.reqCounter.error.permanent)
 	assert.Equal(t, 1, mc.reqCounter.success)
 	assert.Equal(t, 1, mc.reqCounter.total)
-
 }
+
 func TestConsumeMetricsNonPermanent(t *testing.T) {
 	mc := newMockConsumer(returnNonPermanentError)
 	validData := createMetric("metricId")
@@ -220,7 +207,6 @@ func TestConsumeMetricsNonPermanent(t *testing.T) {
 	assert.Equal(t, 0, mc.reqCounter.error.permanent)
 	assert.Equal(t, 0, mc.reqCounter.success)
 	assert.Equal(t, 1, mc.reqCounter.total)
-
 }
 
 func TestConsumeMetricsPermanent(t *testing.T) {
@@ -234,7 +220,6 @@ func TestConsumeMetricsPermanent(t *testing.T) {
 	assert.Equal(t, 1, mc.reqCounter.error.permanent)
 	assert.Equal(t, 0, mc.reqCounter.success)
 	assert.Equal(t, 1, mc.reqCounter.total)
-
 }
 
 func TestConsumeMetricsSuccess(t *testing.T) {
@@ -248,10 +233,9 @@ func TestConsumeMetricsSuccess(t *testing.T) {
 	assert.Equal(t, 0, mc.reqCounter.error.permanent)
 	assert.Equal(t, 1, mc.reqCounter.success)
 	assert.Equal(t, 1, mc.reqCounter.total)
-
 }
 
-func TestCapabilites(t *testing.T) {
+func TestCapabilities(t *testing.T) {
 	mc := newMockConsumer(func() error { return nil })
 	assert.Equal(t, consumer.Capabilities{}, mc.Capabilities())
 }

@@ -41,19 +41,19 @@ type Settings struct {
 // CreateFunc is the equivalent of Factory.Create(...) function.
 type CreateFunc func(context.Context, Settings, component.Config) (Extension, error)
 
-// CreateExtension implements Factory.Create.
-func (f CreateFunc) CreateExtension(ctx context.Context, set Settings, cfg component.Config) (Extension, error) {
+// Create implements Factory.Create.
+func (f CreateFunc) Create(ctx context.Context, set Settings, cfg component.Config) (Extension, error) {
 	return f(ctx, set, cfg)
 }
 
 type Factory interface {
 	component.Factory
 
-	// CreateExtension creates an extension based on the given config.
-	CreateExtension(ctx context.Context, set Settings, cfg component.Config) (Extension, error)
+	// Create an extension based on the given config.
+	Create(ctx context.Context, set Settings, cfg component.Config) (Extension, error)
 
-	// ExtensionStability gets the stability level of the Extension.
-	ExtensionStability() component.StabilityLevel
+	// Stability gets the stability level of the Extension.
+	Stability() component.StabilityLevel
 
 	unexportedFactoryFunc()
 }
@@ -71,7 +71,7 @@ func (f *factory) Type() component.Type {
 
 func (f *factory) unexportedFactoryFunc() {}
 
-func (f *factory) ExtensionStability() component.StabilityLevel {
+func (f *factory) Stability() component.StabilityLevel {
 	return f.extensionStability
 }
 
@@ -80,7 +80,8 @@ func NewFactory(
 	cfgType component.Type,
 	createDefaultConfig component.CreateDefaultConfigFunc,
 	createServiceExtension CreateFunc,
-	sl component.StabilityLevel) Factory {
+	sl component.StabilityLevel,
+) Factory {
 	return &factory{
 		cfgType:                 cfgType,
 		CreateDefaultConfigFunc: createDefaultConfig,

@@ -69,6 +69,9 @@ type CollectorSettings struct {
 	// confmap.Providers watch for configuration changes.
 	ConfigProviderSettings ConfigProviderSettings
 
+	// ProviderModules maps provider schemes to their respective go modules.
+	ProviderModules map[string]string
+
 	// LoggingOptions provides a way to change behavior of zap logging.
 	LoggingOptions []zap.Option
 
@@ -95,7 +98,7 @@ type Collector struct {
 
 	serviceConfig *service.Config
 	service       *service.Service
-	state         *atomic.Int32
+	state         *atomic.Int64
 
 	// shutdownChan is used to terminate the collector.
 	shutdownChan chan struct{}
@@ -121,8 +124,8 @@ func NewCollector(set CollectorSettings) (*Collector, error) {
 		return nil, err
 	}
 
-	state := &atomic.Int32{}
-	state.Store(int32(StateStarting))
+	state := new(atomic.Int64)
+	state.Store(int64(StateStarting))
 	return &Collector{
 		set:          set,
 		state:        state,
@@ -148,7 +151,7 @@ func (col *Collector) Shutdown() {
 	state := col.GetState()
 	if state == StateRunning || state == StateStarting {
 		defer func() {
-			recover() // nolint:errcheck
+			_ = recover()
 		}()
 		close(col.shutdownChan)
 	}
@@ -366,5 +369,5 @@ func (col *Collector) shutdown(ctx context.Context) error {
 
 // setCollectorState provides current state of the collector
 func (col *Collector) setCollectorState(state State) {
-	col.state.Store(int32(state))
+	col.state.Store(int64(state))
 }

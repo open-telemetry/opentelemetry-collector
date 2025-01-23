@@ -18,7 +18,7 @@ func NewFactory() extension.Factory {
 	return extension.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		createExtension,
+		create,
 		metadata.ExtensionStability)
 }
 
@@ -28,6 +28,6 @@ func createDefaultConfig() component.Config {
 	return &Config{}
 }
 
-func createExtension(_ context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
+func create(_ context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
 	return newMemoryLimiter(cfg.(*Config), set.TelemetrySettings.Logger)
 }

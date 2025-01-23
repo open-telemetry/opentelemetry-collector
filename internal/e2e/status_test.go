@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/internal/sharedcomponent"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/extensions"
@@ -38,8 +39,6 @@ var nopType = component.MustNewType("nop")
 var wg = sync.WaitGroup{}
 
 func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
-	t.Skipf("Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector/issues/10927#issuecomment-2343679185")
-
 	eventsReceived := make(map[*componentstatus.InstanceID][]*componentstatus.Event)
 	exporterFactory := exportertest.NewNopFactory()
 	connectorFactory := connectortest.NewNopFactory()
@@ -101,11 +100,11 @@ func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 			},
 		},
 		Pipelines: pipelines.Config{
-			component.MustNewID("traces"): {
+			pipeline.NewID(pipeline.SignalTraces): {
 				Receivers: []component.ID{component.NewID(component.MustNewType("test"))},
 				Exporters: []component.ID{component.NewID(nopType)},
 			},
-			component.MustNewID("metrics"): {
+			pipeline.NewID(pipeline.SignalMetrics): {
 				Receivers: []component.ID{component.NewID(component.MustNewType("test"))},
 				Exporters: []component.ID{component.NewID(nopType)},
 			},
@@ -127,34 +126,37 @@ func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 
 	for instanceID, events := range eventsReceived {
 		pipelineIDs := ""
-		instanceID.AllPipelineIDs(func(id component.ID) bool {
+		instanceID.AllPipelineIDs(func(id pipeline.ID) bool {
 			pipelineIDs += id.String() + ","
 			return true
 		})
 
 		t.Logf("checking errors for %v - %v - %v", pipelineIDs, instanceID.Kind().String(), instanceID.ComponentID().String())
 
+		var expectedEvents []componentstatus.Status
+		// The StatusOk is not guaranteed to be in the slice, set it according to the number of captured states
+		assert.True(t, len(events) == 4 || len(events) == 5)
+		if len(events) == 4 {
+			expectedEvents = []componentstatus.Status{
+				componentstatus.StatusStarting,
+				componentstatus.StatusRecoverableError,
+				componentstatus.StatusStopping,
+				componentstatus.StatusStopped,
+			}
+		} else {
+			expectedEvents = []componentstatus.Status{
+				componentstatus.StatusStarting,
+				componentstatus.StatusRecoverableError,
+				componentstatus.StatusOK,
+				componentstatus.StatusStopping,
+				componentstatus.StatusStopped,
+			}
+		}
+
 		eventStr := ""
 		for i, e := range events {
 			eventStr += fmt.Sprintf("%v,", e.Status())
-			if i == 0 {
-				assert.Equal(t, componentstatus.StatusStarting, e.Status())
-			}
-			if i == 1 {
-				assert.Equal(t, componentstatus.StatusRecoverableError, e.Status())
-			}
-			if i == 2 {
-				assert.Equal(t, componentstatus.StatusOK, e.Status())
-			}
-			if i == 3 {
-				assert.Equal(t, componentstatus.StatusStopping, e.Status())
-			}
-			if i == 4 {
-				assert.Equal(t, componentstatus.StatusStopped, e.Status())
-			}
-			if i >= 5 {
-				assert.Fail(t, "received too many events")
-			}
+			assert.Equal(t, expectedEvents[i], e.Status())
 		}
 		t.Logf("events received: %v", eventStr)
 	}
@@ -192,7 +194,7 @@ func createDefaultReceiverConfig() component.Config {
 
 func createTraces(
 	_ context.Context,
-	set receiver.Settings,
+	_ receiver.Settings,
 	cfg component.Config,
 	_ consumer.Traces,
 ) (receiver.Traces, error) {
@@ -202,7 +204,6 @@ func createTraces(
 		func() (*testReceiver, error) {
 			return &testReceiver{}, nil
 		},
-		&set.TelemetrySettings,
 	)
 	if err != nil {
 		return nil, err
@@ -213,7 +214,7 @@ func createTraces(
 
 func createMetrics(
 	_ context.Context,
-	set receiver.Settings,
+	_ receiver.Settings,
 	cfg component.Config,
 	_ consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -223,7 +224,6 @@ func createMetrics(
 		func() (*testReceiver, error) {
 			return &testReceiver{}, nil
 		},
-		&set.TelemetrySettings,
 	)
 	if err != nil {
 		return nil, err
@@ -238,12 +238,12 @@ func newExtensionFactory() extension.Factory {
 	return extension.NewFactory(
 		component.MustNewType("watcher"),
 		createDefaultExtensionConfig,
-		createExtension,
+		create,
 		component.StabilityLevelStable,
 	)
 }
 
-func createExtension(_ context.Context, _ extension.Settings, cfg component.Config) (extension.Extension, error) {
+func create(_ context.Context, _ extension.Settings, cfg component.Config) (extension.Extension, error) {
 	oCfg := cfg.(*extensionConfig)
 	return &testExtension{
 		eventsReceived: oCfg.eventsReceived,

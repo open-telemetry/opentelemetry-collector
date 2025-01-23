@@ -132,3 +132,8 @@ func TestNewFlag(t *testing.T) {
 		})
 	}
 }
+
+func TestFlagStringNotInitialize(t *testing.T) {
+	flag := &flagValue{}
+	assert.Empty(t, flag.String())
+}

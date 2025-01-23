@@ -25,7 +25,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-func TestCreateExtension(t *testing.T) {
+func TestCreate(t *testing.T) {
 	factory := NewFactory()
 	require.NotNil(t, factory)
 
@@ -37,7 +37,7 @@ func TestCreateExtension(t *testing.T) {
 	pCfg.MemorySpikeLimitMiB = 1907
 	pCfg.CheckInterval = 100 * time.Millisecond
 
-	tp, err := factory.CreateExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
+	tp, err := factory.Create(context.Background(), extensiontest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, tp)
 	// test if we can shutdown a monitoring routine that has not started

@@ -5,6 +5,8 @@ package internal // import "go.opentelemetry.io/collector/exporter/internal"
 
 import (
 	"context"
+
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 )
 
 // Request represents a single request that can be sent to an external endpoint.
@@ -17,6 +19,16 @@ type Request interface {
 	// sent. For example, for OTLP exporter, this value represents the number of spans,
 	// metric data points or log records.
 	ItemsCount() int
+	// MergeSplit is a function that merge and/or splits this request with another one into multiple requests based on the
+	// configured limit provided in MaxSizeConfig.
+	// MergeSplit does not split if all fields in MaxSizeConfig are not initialized (zero).
+	// All the returned requests MUST have a number of items that does not exceed the maximum number of items.
+	// Size of the last returned request MUST be less or equal than the size of any other returned request.
+	// The original request MUST not be mutated if error is returned after mutation or if the exporter is
+	// marked as not mutable. The length of the returned slice MUST not be 0.
+	// Experimental: This API is at the early stage of development and may change without backward compatibility
+	// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+	MergeSplit(context.Context, exporterbatcher.MaxSizeConfig, Request) ([]Request, error)
 }
 
 // RequestErrorHandler is an optional interface that can be implemented by Request to provide a way handle partial
@@ -30,13 +42,4 @@ type RequestErrorHandler interface {
 	// OnError returns a new Request may contain the items left to be sent if some items failed to process and can be retried.
 	// Otherwise, it should return the original Request.
 	OnError(error) Request
-}
-
-// extractPartialRequest returns a new Request that may contain the items left to be sent
-// if only some items failed to process and can be retried. Otherwise, it returns the original Request.
-func ExtractPartialRequest(req Request, err error) Request {
-	if errReq, ok := req.(RequestErrorHandler); ok {
-		return errReq.OnError(err)
-	}
-	return req
 }

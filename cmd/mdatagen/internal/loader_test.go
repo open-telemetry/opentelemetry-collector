@@ -22,9 +22,10 @@ func TestLoadMetadata(t *testing.T) {
 		{
 			name: "samplereceiver/metadata.yaml",
 			want: Metadata{
-				GithubProject:  "open-telemetry/opentelemetry-collector",
-				Type:           "sample",
-				SemConvVersion: "1.9.0",
+				GithubProject:        "open-telemetry/opentelemetry-collector",
+				GeneratedPackageName: "metadata",
+				Type:                 "sample",
+				SemConvVersion:       "1.9.0",
 				Status: &Status{
 					Class: "receiver",
 					Stability: map[component.StabilityLevel][]string{
@@ -83,7 +84,7 @@ func TestLoadMetadata(t *testing.T) {
 					},
 					"string.resource.attr_disable_warning": {
 						Description: "Resource attribute with any string value.",
-						Warnings: warnings{
+						Warnings: Warnings{
 							IfEnabledNotSet: "This resource_attribute will be disabled by default soon.",
 						},
 						Enabled: true,
@@ -94,7 +95,7 @@ func TestLoadMetadata(t *testing.T) {
 					},
 					"string.resource.attr_remove_warning": {
 						Description: "Resource attribute with any string value.",
-						Warnings: warnings{
+						Warnings: Warnings{
 							IfConfigured: "This resource_attribute is deprecated and will be removed soon.",
 						},
 						Enabled: false,
@@ -105,7 +106,7 @@ func TestLoadMetadata(t *testing.T) {
 					},
 					"string.resource.attr_to_be_removed": {
 						Description: "Resource attribute with any string value.",
-						Warnings: warnings{
+						Warnings: Warnings{
 							IfEnabled: "This resource_attribute is deprecated and will be removed soon.",
 						},
 						Enabled: true,
@@ -176,11 +177,11 @@ func TestLoadMetadata(t *testing.T) {
 						Enabled:               true,
 						Description:           "Monotonic cumulative sum int metric enabled by default.",
 						ExtendedDocumentation: "The metric will be become optional soon.",
-						Warnings: warnings{
+						Warnings: Warnings{
 							IfEnabledNotSet: "This metric will be disabled by default soon.",
 						},
 						Unit: strPtr("s"),
-						Sum: &sum{
+						Sum: &Sum{
 							MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
 							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
 							Mono:                   Mono{Monotonic: true},
@@ -190,11 +191,11 @@ func TestLoadMetadata(t *testing.T) {
 					"optional.metric": {
 						Enabled:     false,
 						Description: "[DEPRECATED] Gauge double metric disabled by default.",
-						Warnings: warnings{
+						Warnings: Warnings{
 							IfConfigured: "This metric is deprecated and will be removed soon.",
 						},
 						Unit: strPtr("1"),
-						Gauge: &gauge{
+						Gauge: &Gauge{
 							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
 						},
 						Attributes: []AttributeName{"string_attr", "boolean_attr", "boolean_attr2"},
@@ -202,11 +203,11 @@ func TestLoadMetadata(t *testing.T) {
 					"optional.metric.empty_unit": {
 						Enabled:     false,
 						Description: "[DEPRECATED] Gauge double metric disabled by default.",
-						Warnings: warnings{
+						Warnings: Warnings{
 							IfConfigured: "This metric is deprecated and will be removed soon.",
 						},
 						Unit: strPtr(""),
-						Gauge: &gauge{
+						Gauge: &Gauge{
 							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
 						},
 						Attributes: []AttributeName{"string_attr", "boolean_attr"},
@@ -216,11 +217,11 @@ func TestLoadMetadata(t *testing.T) {
 						Enabled:               true,
 						Description:           "[DEPRECATED] Non-monotonic delta sum double metric enabled by default.",
 						ExtendedDocumentation: "The metric will be will be removed soon.",
-						Warnings: warnings{
+						Warnings: Warnings{
 							IfEnabled: "This metric is deprecated and will be removed soon.",
 						},
 						Unit: strPtr("s"),
-						Sum: &sum{
+						Sum: &Sum{
 							MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeDouble},
 							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityDelta},
 							Mono:                   Mono{Monotonic: false},
@@ -230,7 +231,7 @@ func TestLoadMetadata(t *testing.T) {
 						Enabled:     true,
 						Description: "Monotonic cumulative sum int metric with string input_type enabled by default.",
 						Unit:        strPtr("s"),
-						Sum: &sum{
+						Sum: &Sum{
 							MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
 							MetricInputType:        MetricInputType{InputType: "string"},
 							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
@@ -239,34 +240,34 @@ func TestLoadMetadata(t *testing.T) {
 						Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
 					},
 				},
-				Telemetry: telemetry{
+				Telemetry: Telemetry{
 					Metrics: map[MetricName]Metric{
 						"batch_size_trigger_send": {
 							Enabled:     true,
-							Stability:   stability{Level: "deprecated", From: "v0.110.0"},
+							Stability:   Stability{Level: "deprecated", From: "v0.110.0"},
 							Description: "Number of times the batch was sent due to a size trigger",
 							Unit:        strPtr("{times}"),
-							Sum: &sum{
+							Sum: &Sum{
 								MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeInt},
 								Mono:            Mono{Monotonic: true},
 							},
 						},
 						"request_duration": {
 							Enabled:     true,
-							Stability:   stability{Level: "alpha"},
+							Stability:   Stability{Level: "alpha"},
 							Description: "Duration of request",
 							Unit:        strPtr("s"),
-							Histogram: &histogram{
+							Histogram: &Histogram{
 								MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
 								Boundaries:      []float64{1, 10, 100},
 							},
 						},
 						"process_runtime_total_alloc_bytes": {
 							Enabled:     true,
-							Stability:   stability{Level: "stable"},
+							Stability:   Stability{Level: "stable"},
 							Description: "Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')",
 							Unit:        strPtr("By"),
-							Sum: &sum{
+							Sum: &Sum{
 								Mono: Mono{true},
 								MetricValueType: MetricValueType{
 									ValueType: pmetric.NumberDataPointValueTypeInt,
@@ -280,28 +281,57 @@ func TestLoadMetadata(t *testing.T) {
 							ExtendedDocumentation: "For example this metric only exists if feature A is enabled.",
 							Unit:                  strPtr("{items}"),
 							Optional:              true,
-							Gauge: &gauge{
+							Gauge: &Gauge{
 								MetricValueType: MetricValueType{
 									ValueType: pmetric.NumberDataPointValueTypeInt,
 								},
 								Async: true,
 							},
 						},
+						"queue_capacity": {
+							Enabled:     true,
+							Description: "Queue capacity - sync gauge example.",
+							Unit:        strPtr("{items}"),
+							Gauge: &Gauge{
+								MetricValueType: MetricValueType{
+									ValueType: pmetric.NumberDataPointValueTypeInt,
+								},
+							},
+						},
 					},
 				},
 				ScopeName:       "go.opentelemetry.io/collector/internal/receiver/samplereceiver",
 				ShortFolderName: "sample",
-				Tests:           tests{Host: "componenttest.NewNopHost()"},
+				Tests:           Tests{Host: "componenttest.NewNopHost()"},
 			},
 		},
 		{
 			name: "testdata/parent.yaml",
 			want: Metadata{
-				Type:            "subcomponent",
-				Parent:          "parentComponent",
-				ScopeName:       "go.opentelemetry.io/collector/cmd/mdatagen/internal",
-				ShortFolderName: "testdata",
-				Tests:           tests{Host: "componenttest.NewNopHost()"},
+				Type:                 "subcomponent",
+				Parent:               "parentComponent",
+				GeneratedPackageName: "metadata",
+				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal",
+				ShortFolderName:      "testdata",
+				Tests:                Tests{Host: "componenttest.NewNopHost()"},
+			},
+		},
+		{
+			name: "testdata/generated_package_name.yaml",
+			want: Metadata{
+				Type:                 "custom",
+				GeneratedPackageName: "customname",
+				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal",
+				ShortFolderName:      "testdata",
+				Tests:                Tests{Host: "componenttest.NewNopHost()"},
+				Status: &Status{
+					Class: "receiver",
+					Stability: map[component.StabilityLevel][]string{
+						component.StabilityLevelDevelopment: {"logs"},
+						component.StabilityLevelBeta:        {"traces"},
+						component.StabilityLevelStable:      {"metrics"},
+					},
+				},
 			},
 		},
 		{
