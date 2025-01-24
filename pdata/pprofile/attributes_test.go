@@ -4,6 +4,7 @@
 package pprofile
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -46,4 +47,24 @@ func TestBuildAttributes(t *testing.T) {
 	m = pcommon.NewMap()
 	require.NoError(t, m.FromRaw(map[string]any{"hello": "world", "bonjour": "monde"}))
 	assert.Equal(t, attrs, m)
+}
+
+func BenchmarkBuildAttributes(b *testing.B) {
+	profile := NewProfile()
+
+	for i := range 10 {
+		att := profile.AttributeTable().AppendEmpty()
+		att.SetKey(fmt.Sprintf("key_%d", i))
+		att.Value().SetStr(fmt.Sprintf("value_%d", i))
+	}
+
+	obj := NewLocation()
+	obj.AttributeIndices().Append(1, 3, 7)
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for n := 0; n < b.N; n++ {
+		_, _ = BuildAttributes(profile, obj)
+	}
 }
