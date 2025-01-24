@@ -34,8 +34,8 @@ func TestComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
 
 	tests := []struct {
-		name     string
 		createFn func(ctx context.Context, set processor.Settings, cfg component.Config) (component.Component, error)
+		name     string
 	}{
 
 		{
