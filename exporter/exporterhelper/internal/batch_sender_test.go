@@ -263,16 +263,27 @@ func TestBatchSender_Disabled(t *testing.T) {
 			require.NotNil(t, be)
 			require.NoError(t, err)
 
-			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
+			// Add explicit error checking for Start
+			if err := be.Start(context.Background(), componenttest.NewNopHost()); err != nil {
+				t.Fatalf("Failed to start exporter: %v", err)
+			}
+
 			t.Cleanup(func() {
 				require.NoError(t, be.Shutdown(context.Background()))
 			})
 
 			sink := requesttest.NewSink()
-			// should be sent right away without splitting because batching is disabled.
-			require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 8, Sink: sink}))
-			assert.Equal(t, int64(1), sink.RequestsCount())
-			assert.Equal(t, int64(8), sink.ItemsCount())
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
+			// Add more robust error handling and logging
+			if err := be.Send(ctx, &requesttest.FakeRequest{Items: 8, Sink: sink}); err != nil {
+				t.Fatalf("Send failed: %v", err)
+			}
+
+			// Add additional assertions with more context
+			assert.Equal(t, int64(1), sink.RequestsCount(), "Unexpected number of requests")
+			assert.Equal(t, int64(8), sink.ItemsCount(), "Unexpected number of items")
 		})
 	}
 	runTest("enable_queue_batcher", true)
