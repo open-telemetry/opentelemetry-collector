@@ -17,7 +17,7 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/contrib/config"
+	config "go.opentelemetry.io/contrib/config/v0.3.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -318,7 +318,7 @@ func testCollectorStartHelperWithReaders(t *testing.T, tc ownMetricsTestCase, ne
 	cfg.Telemetry.Metrics.Readers = []config.MetricReader{
 		{
 			Pull: &config.PullMetricReader{
-				Exporter: config.MetricExporter{
+				Exporter: config.PullMetricExporter{
 					Prometheus: metricsAddr,
 				},
 			},
@@ -497,7 +497,7 @@ func TestServiceInvalidTelemetryConfiguration(t *testing.T) {
 					},
 				},
 			},
-			wantErr: errors.New("unsupported protocol \"\""),
+			wantErr: errors.New("no valid log exporter"),
 		},
 	}
 	for _, tt := range tests {
@@ -556,12 +556,16 @@ func assertMetrics(t *testing.T, metricsAddr string, expectedLabels map[string]l
 		"otelcol_process_runtime_heap_alloc_bytes":       false,
 		"otelcol_process_runtime_total_alloc_bytes":      false,
 		"otelcol_process_uptime":                         false,
+		"promhttp_metric_handler_errors_total":           false,
 	}
 	for metricName, metricFamily := range parsed {
 		if _, ok := expectedMetrics[metricName]; !ok {
 			require.True(t, ok, "unexpected metric: %s", metricName)
 		}
 		expectedMetrics[metricName] = true
+		if metricName == "promhttp_metric_handler_errors_total" {
+			continue
+		}
 		if metricName != "target_info" {
 			// require is used here so test fails with a single message.
 			require.True(
@@ -691,7 +695,7 @@ func newNopConfigPipelineConfigs(pipelineCfgs pipelines.Config) Config {
 				Level: configtelemetry.LevelBasic,
 				Readers: []config.MetricReader{
 					{
-						Pull: &config.PullMetricReader{Exporter: config.MetricExporter{Prometheus: &config.Prometheus{
+						Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: &config.Prometheus{
 							Host: newPtr("localhost"),
 							Port: newPtr(8888),
 						}}},
