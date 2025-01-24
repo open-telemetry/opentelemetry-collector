@@ -20,7 +20,7 @@ func TestNewTelemetry(t *testing.T) {
 	assert.NotNil(t, tel.Reader)
 	assert.NotNil(t, tel.SpanRecorder)
 	set := tel.NewTelemetrySettings()
-	assert.Equal(t, configtelemetry.LevelDetailed, set.MetricsLevel)
+	assert.Equal(t, configtelemetry.LevelDetailed, set.MetricsLevel) //nolint:staticcheck //SA1019
 	assert.IsType(t, &sdktrace.TracerProvider{}, set.TracerProvider)
 	assert.IsType(t, &sdkmetric.MeterProvider{}, set.MeterProvider)
 	require.NoError(t, tel.Shutdown(context.Background()))
