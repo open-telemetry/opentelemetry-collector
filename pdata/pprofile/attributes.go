@@ -13,15 +13,38 @@ type attributable interface {
 
 // BuildAttributes builds a [pcommon.Map] containing the attributes of a record.
 // The record can by any struct that implements an `AttributeIndices` method.
-func BuildAttributes(profile Profile, record attributable) (pcommon.Map, error) {
-	attrs := map[string]any{}
+func BuildAttributes(profile Profile, record attributable) pcommon.Map {
+	m := pcommon.NewMap()
 
-	for i := range record.AttributeIndices().AsRaw() {
-		a := profile.AttributeTable().At(i)
-		attrs[a.Key()] = a.Value().AsRaw()
+	for i := 0; i < record.AttributeIndices().Len(); i++ {
+		id := int(record.AttributeIndices().At(i))
+		a := profile.AttributeTable().At(id)
+
+		key := a.Key()
+		val := a.Value()
+
+		switch val.Type() {
+		case pcommon.ValueTypeEmpty:
+			m.PutStr(key, "")
+		case pcommon.ValueTypeStr:
+			m.PutStr(key, val.AsString())
+		case pcommon.ValueTypeBool:
+			m.PutBool(key, val.Bool())
+		case pcommon.ValueTypeDouble:
+			m.PutDouble(key, val.Double())
+		case pcommon.ValueTypeInt:
+			m.PutInt(key, val.Int())
+		case pcommon.ValueTypeBytes:
+			bs := m.PutEmptyBytes(key)
+			val.Bytes().CopyTo(bs)
+		case pcommon.ValueTypeMap:
+			ma := m.PutEmptyMap(key)
+			val.Map().CopyTo(ma)
+		case pcommon.ValueTypeSlice:
+			sl := m.PutEmptySlice(key)
+			val.Slice().CopyTo(sl)
+		}
 	}
 
-	m := pcommon.NewMap()
-	err := m.FromRaw(attrs)
-	return m, err
+	return m
 }

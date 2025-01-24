@@ -22,16 +22,14 @@ func TestBuildAttributes(t *testing.T) {
 	att2.SetKey("bonjour")
 	att2.Value().SetStr("monde")
 
-	attrs, err := BuildAttributes(profile, profile)
-	require.NoError(t, err)
+	attrs := BuildAttributes(profile, profile)
 	assert.Equal(t, attrs, pcommon.NewMap())
 
 	// A Location with a single attribute
 	loc := NewLocation()
-	loc.AttributeIndices().Append(1)
+	loc.AttributeIndices().Append(0)
 
-	attrs, err = BuildAttributes(profile, loc)
-	require.NoError(t, err)
+	attrs = BuildAttributes(profile, loc)
 
 	m := pcommon.NewMap()
 	require.NoError(t, m.FromRaw(map[string]any{"hello": "world"}))
@@ -39,10 +37,9 @@ func TestBuildAttributes(t *testing.T) {
 
 	// A Mapping with two attributes
 	mapp := NewLocation()
-	mapp.AttributeIndices().Append(1, 2)
+	mapp.AttributeIndices().Append(0, 1)
 
-	attrs, err = BuildAttributes(profile, mapp)
-	require.NoError(t, err)
+	attrs = BuildAttributes(profile, mapp)
 
 	m = pcommon.NewMap()
 	require.NoError(t, m.FromRaw(map[string]any{"hello": "world", "bonjour": "monde"}))
@@ -65,6 +62,6 @@ func BenchmarkBuildAttributes(b *testing.B) {
 	b.ReportAllocs()
 
 	for n := 0; n < b.N; n++ {
-		_, _ = BuildAttributes(profile, obj)
+		_ = BuildAttributes(profile, obj)
 	}
 }
