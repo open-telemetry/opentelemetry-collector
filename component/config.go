@@ -117,7 +117,6 @@ func validate(v reflect.Value) []pathError {
 					path: path,
 				})
 			}
-
 		}
 		return errs
 	case reflect.Map:

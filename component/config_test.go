@@ -291,7 +291,7 @@ func TestValidateConfig(t *testing.T) {
 			if tt.expected != nil {
 				assert.EqualError(t, err, tt.expected.Error())
 			} else {
-				assert.Nil(t, err)
+				assert.NoError(t, err)
 			}
 		})
 	}
