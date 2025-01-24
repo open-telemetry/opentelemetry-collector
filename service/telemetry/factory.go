@@ -101,8 +101,14 @@ func createDefaultConfig() component.Config {
 			Readers: []config.MetricReader{
 				{
 					Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: &config.Prometheus{
-						Host: &metricsHost,
-						Port: newPtr(8888),
+						WithoutScopeInfo:  newPtr(true),
+						WithoutUnits:      newPtr(true),
+						WithoutTypeSuffix: newPtr(true),
+						Host:              &metricsHost,
+						Port:              newPtr(8888),
+						WithResourceConstantLabels: &config.IncludeExclude{
+							Included: []string{},
+						},
 					}}},
 				},
 			},
@@ -110,6 +116,6 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func newPtr[T int | string](str T) *T {
+func newPtr[T int | string | bool](str T) *T {
 	return &str
 }

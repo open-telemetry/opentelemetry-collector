@@ -87,8 +87,14 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 			Pull: &config.PullMetricReader{
 				Exporter: config.PullMetricExporter{
 					Prometheus: &config.Prometheus{
-						Host: &host,
-						Port: &portInt,
+						Host:              &host,
+						Port:              &portInt,
+						WithoutScopeInfo:  newPtr(true),
+						WithoutUnits:      newPtr(true),
+						WithoutTypeSuffix: newPtr(true),
+						WithResourceConstantLabels: &config.IncludeExclude{
+							Included: []string{},
+						},
 					},
 				},
 			},
