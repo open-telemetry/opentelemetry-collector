@@ -549,8 +549,9 @@ func TestQueueSenderNoStartShutdown(t *testing.T) {
 					ExporterSettings: set,
 				},
 				exporterqueue.NewDefaultConfig())
-			obsrep, err := NewExporter(ObsReportSettings{
+			obsrep, err := NewObsReport(ObsReportSettings{
 				ExporterSettings: set,
+				Signal:           pipeline.SignalTraces,
 			})
 			require.NoError(t, err)
 			qs := NewQueueSender(queue, set, 1, "", obsrep, exporterbatcher.NewDefaultConfig())

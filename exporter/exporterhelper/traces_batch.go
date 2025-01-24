@@ -24,6 +24,8 @@ func (req *tracesRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxS
 	}
 
 	if cfg.MaxSizeItems == 0 {
+		req.setCachedItemsCount(req.ItemsCount() + req2.ItemsCount())
+		req2.setCachedItemsCount(0)
 		req2.td.ResourceSpans().MoveAndAppendTo(req.td.ResourceSpans())
 		return []Request{req}, nil
 	}
@@ -43,7 +45,7 @@ func (req *tracesRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxS
 			if destReq == nil {
 				destReq = srcReq
 			} else {
-				destReq.setCachedItemsCount(srcCount)
+				destReq.setCachedItemsCount(destReq.ItemsCount() + srcCount)
 				srcReq.setCachedItemsCount(0)
 				srcReq.td.ResourceSpans().MoveAndAppendTo(destReq.td.ResourceSpans())
 			}

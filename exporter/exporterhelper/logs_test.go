@@ -433,7 +433,7 @@ func checkWrapSpanForLogs(t *testing.T, sr *tracetest.SpanRecorder, tracer trace
 			sentLogRecords = 0
 			failedToSendLogRecords = 1
 		}
-		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: internal.SentLogRecordsKey, Value: attribute.Int64Value(sentLogRecords)}, "SpanData %v", sd)
-		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: internal.FailedToSendLogRecordsKey, Value: attribute.Int64Value(failedToSendLogRecords)}, "SpanData %v", sd)
+		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: internal.ItemsSent, Value: attribute.Int64Value(sentLogRecords)}, "SpanData %v", sd)
+		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: internal.ItemsFailed, Value: attribute.Int64Value(failedToSendLogRecords)}, "SpanData %v", sd)
 	}
 }
