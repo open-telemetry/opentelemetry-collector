@@ -86,5 +86,26 @@ func TestSetupTelemetry(t *testing.T) {
 			},
 		},
 	}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
+	AssertEqualProcessorBatchBatchSendSize(t, testTel.Telemetry,
+		[]metricdata.HistogramDataPoint[int64]{{}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
+	AssertEqualProcessorBatchBatchSendSizeBytes(t, testTel.Telemetry,
+		[]metricdata.HistogramDataPoint[int64]{{}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
+	AssertEqualProcessorBatchBatchSizeTriggerSend(t, testTel.Telemetry,
+		[]metricdata.DataPoint[int64]{{}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
+	AssertEqualProcessorBatchMetadataCardinality(t, testTel.Telemetry,
+		[]metricdata.DataPoint[int64]{{}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
+	AssertEqualProcessorBatchTimeoutTriggerSend(t, testTel.Telemetry,
+		[]metricdata.DataPoint[int64]{{}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
 	require.NoError(t, testTel.Shutdown(context.Background()))
 }
