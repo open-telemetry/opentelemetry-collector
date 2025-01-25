@@ -60,8 +60,8 @@ func wrapObsLogs(sc scraper.Logs, receiverID component.ID, scraperID component.I
 			numScrapedLogs = md.LogRecordCount()
 		}
 
-		telemetryBuilder.ScraperScrapedLogRecords.Add(ctx, int64(numScrapedLogs), otelAttrs)
-		telemetryBuilder.ScraperErroredLogRecords.Add(ctx, int64(numErroredLogs), otelAttrs)
+		telemetryBuilder.RecordScraperScrapedLogRecords(ctx, int64(numScrapedLogs), otelAttrs)
+		telemetryBuilder.RecordScraperErroredLogRecords(ctx, int64(numErroredLogs), otelAttrs)
 
 		// end span according to errors
 		if span.IsRecording() {

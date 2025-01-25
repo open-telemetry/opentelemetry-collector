@@ -20,10 +20,10 @@ func TestSetupTelemetry(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.NotNil(t, tb)
-	tb.ScraperErroredLogRecords.Add(context.Background(), 1)
-	tb.ScraperErroredMetricPoints.Add(context.Background(), 1)
-	tb.ScraperScrapedLogRecords.Add(context.Background(), 1)
-	tb.ScraperScrapedMetricPoints.Add(context.Background(), 1)
+	tb.RecordScraperErroredLogRecords(context.Background(), 1)
+	tb.RecordScraperErroredMetricPoints(context.Background(), 1)
+	tb.RecordScraperScrapedLogRecords(context.Background(), 1)
+	tb.RecordScraperScrapedMetricPoints(context.Background(), 1)
 
 	testTel.AssertMetrics(t, []metricdata.Metrics{
 		{
