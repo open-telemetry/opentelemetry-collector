@@ -97,40 +97,23 @@ func TestCheckScraperLogs(t *testing.T) {
 }
 
 func checkScraperLogs(t *testing.T, tt metadatatest.Telemetry, receiver component.ID, scraper component.ID, scrapedLogRecords int64, erroredLogRecords int64) {
-	tt.AssertMetrics(t, []metricdata.Metrics{
-		{
-			Name:        "otelcol_scraper_scraped_log_records",
-			Description: "Number of log records successfully scraped. [alpha]",
-			Unit:        "{datapoints}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Attributes: attribute.NewSet(
-							attribute.String(receiverKey, receiver.String()),
-							attribute.String(scraperKey, scraper.String())),
-						Value: scrapedLogRecords,
-					},
-				},
+	metadatatest.AssertEqualScraperScrapedLogRecords(t, tt.Telemetry,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(receiverKey, receiver.String()),
+					attribute.String(scraperKey, scraper.String())),
+				Value: scrapedLogRecords,
 			},
-		},
-		{
-			Name:        "otelcol_scraper_errored_log_records",
-			Description: "Number of log records that were unable to be scraped. [alpha]",
-			Unit:        "{datapoints}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Attributes: attribute.NewSet(
-							attribute.String(receiverKey, receiver.String()),
-							attribute.String(scraperKey, scraper.String())),
-						Value: erroredLogRecords,
-					},
-				},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	metadatatest.AssertEqualScraperErroredLogRecords(t, tt.Telemetry,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(receiverKey, receiver.String()),
+					attribute.String(scraperKey, scraper.String())),
+				Value: erroredLogRecords,
 			},
-		},
-	}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }

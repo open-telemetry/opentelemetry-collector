@@ -30,39 +30,22 @@ func TestComponentTelemetry(t *testing.T) {
 	factory := NewFactory()
 	receiver, err := factory.CreateMetrics(context.Background(), tt.NewSettings(), componenttest.NewNopHost(), new(consumertest.MetricsSink))
 	require.NoError(t, err)
-	tt.AssertMetrics(t, []metricdata.Metrics{
-		{
-			Name:        "otelcol_batch_size_trigger_send",
-			Description: "Number of times the batch was sent due to a size trigger [deprecated since v0.110.0]",
-			Unit:        "{times}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value: 1,
-					},
-				},
+	metadatatest.AssertEqualBatchSizeTriggerSend(t, tt.Telemetry,
+		[]metricdata.DataPoint[int64]{
+			{
+				Value: 1,
 			},
-		},
-		{
-			Name:        "otelcol_process_runtime_total_alloc_bytes",
-			Description: "Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')",
-			Unit:        "By",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value: 2,
-					},
-				},
+		}, metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualProcessRuntimeTotalAllocBytes(t, tt.Telemetry,
+		[]metricdata.DataPoint[int64]{
+			{
+				Value: 2,
 			},
-		},
-	}, metricdatatest.IgnoreTimestamp())
+		}, metricdatatest.IgnoreTimestamp())
 	rcv, ok := receiver.(nopReceiver)
 	require.True(t, ok)
 	rcv.initOptionalMetric()
+	// TODO: this needs to be replaces once the optional metric is supported in AssertMetricEqual functions.
 	tt.AssertMetrics(t, []metricdata.Metrics{
 		{
 			Name:        "otelcol_batch_size_trigger_send",
