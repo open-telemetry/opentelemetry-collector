@@ -15,13 +15,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-func checkScraperMetrics(reader *sdkmetric.ManualReader, receiver component.ID, scraper component.ID, scrapedMetricPoints, erroredMetricPoints int64) error {
-	scraperAttrs := attributesForScraperMetrics(receiver, scraper)
-	return multierr.Combine(
-		checkIntSum(reader, "otelcol_scraper_scraped_metric_points", scrapedMetricPoints, scraperAttrs),
-		checkIntSum(reader, "otelcol_scraper_errored_metric_points", erroredMetricPoints, scraperAttrs))
-}
-
 func checkReceiverTraces(reader *sdkmetric.ManualReader, receiver component.ID, protocol string, accepted, dropped int64) error {
 	return checkReceiver(reader, receiver, "spans", protocol, accepted, dropped)
 }
@@ -148,13 +141,6 @@ func getMetric(reader *sdkmetric.ManualReader, expectedName string) (metricdata.
 		}
 	}
 	return metricdata.Metrics{}, fmt.Errorf("metric '%s' not found", expectedName)
-}
-
-func attributesForScraperMetrics(receiver component.ID, scraper component.ID) attribute.Set {
-	return attribute.NewSet(
-		attribute.String(receiverTag, receiver.String()),
-		attribute.String(scraperTag, scraper.String()),
-	)
 }
 
 // attributesForReceiverMetrics returns the attributes that are needed for the receiver metrics.
