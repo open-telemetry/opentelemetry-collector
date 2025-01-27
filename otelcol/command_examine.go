@@ -34,7 +34,7 @@ func newExamineSubCommand(set CollectorSettings, flagSet *flag.FlagSet) *cobra.C
 			}
 			b, err := yaml.Marshal(conf.ToStringMap())
 			if err != nil {
-				return fmt.Errorf("error while marshaling to yaml: %w", err)
+				return fmt.Errorf("error while marshaling to YAML: %w", err)
 			}
 			fmt.Printf("%s", b)
 			return nil
