@@ -17,7 +17,7 @@ import (
 func newExamineSubCommand(set CollectorSettings, flagSet *flag.FlagSet) *cobra.Command {
 	examineCmd := &cobra.Command{
 		Use:   "examine",
-		Short: "Prints the final yaml configuration after all --config sources are resolved and merged",
+		Short: "Prints the final YAML configuration after all --config sources are resolved and merged",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			err := updateSettingsUsingFlags(&set, flagSet)
