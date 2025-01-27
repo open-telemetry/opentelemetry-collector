@@ -65,6 +65,7 @@ service/internal/graph/                  @open-telemetry/collector-approvers @dj
 reports/distributions/core.yaml    @open-telemetry/collector-approvers
 reports/distributions/contrib.yaml @open-telemetry/collector-approvers
 reports/distributions/k8s.yaml     @open-telemetry/collector-approvers
+reports/distributions/otlp.yaml    @open-telemetry/collector-approvers
 #####################################################
 #
 ## UNMAINTAINED components
