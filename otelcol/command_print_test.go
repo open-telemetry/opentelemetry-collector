@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
-func TestExamineCommand(t *testing.T) {
+func TestPrintCommand(t *testing.T) {
 	tests := []struct {
 		name      string
 		set       confmap.ResolverSettings
@@ -75,7 +75,7 @@ func TestExamineCommand(t *testing.T) {
 				ResolverSettings: test.set,
 			}
 
-			cmd := newExamineSubCommand(CollectorSettings{ConfigProviderSettings: set}, flags(featuregate.GlobalRegistry()))
+			cmd := newConfigPrintSubCommand(CollectorSettings{ConfigProviderSettings: set}, flags(featuregate.GlobalRegistry()))
 			err := cmd.Execute()
 			if test.errString != "" {
 				require.ErrorContains(t, err, test.errString)
@@ -131,7 +131,7 @@ func TestConfig(t *testing.T) {
 			oldStdout := os.Stdout
 			os.Stdout = tmpFile
 
-			cmd := newExamineSubCommand(CollectorSettings{ConfigProviderSettings: set}, flags(featuregate.GlobalRegistry()))
+			cmd := newConfigPrintSubCommand(CollectorSettings{ConfigProviderSettings: set}, flags(featuregate.GlobalRegistry()))
 			require.NoError(t, cmd.Execute())
 
 			// restore os.Stdout

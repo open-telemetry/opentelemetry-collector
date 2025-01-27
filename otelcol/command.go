@@ -38,7 +38,7 @@ func NewCommand(set CollectorSettings) *cobra.Command {
 	}
 	rootCmd.AddCommand(newComponentsCommand(set))
 	rootCmd.AddCommand(newValidateSubCommand(set, flagSet))
-	rootCmd.AddCommand(newExamineSubCommand(set, flagSet))
+	rootCmd.AddCommand(newConfigPrintSubCommand(set, flagSet))
 	rootCmd.Flags().AddGoFlagSet(flagSet)
 	return rootCmd
 }

@@ -11,15 +11,26 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
-// newExamineSubCommand constructs a new examine sub command using the given CollectorSettings.
-func newExamineSubCommand(set CollectorSettings, flagSet *flag.FlagSet) *cobra.Command {
-	examineCmd := &cobra.Command{
-		Use:   "examine",
-		Short: "Prints the final YAML configuration after all --config sources are resolved and merged",
+var printCommandFeatureFlag = featuregate.GlobalRegistry().MustRegister(
+	"otelcol.printInitialConfig",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterFromVersion("v0.119.0"),
+	featuregate.WithRegisterDescription("if set to true, turns on the print-initial-config command"),
+)
+
+// newConfigPrintSubCommand constructs a new config print sub command using the given CollectorSettings.
+func newConfigPrintSubCommand(set CollectorSettings, flagSet *flag.FlagSet) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "print-initial-config",
+		Short: "Prints the final yaml configuration after all --config sources are resolved and merged",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if !printCommandFeatureFlag.IsEnabled() {
+				return fmt.Errorf("print-initial-config is currently experiemental, use otelcol.printInitialConfig feature gate to enable this command")
+			}
 			err := updateSettingsUsingFlags(&set, flagSet)
 			if err != nil {
 				return err
@@ -40,6 +51,6 @@ func newExamineSubCommand(set CollectorSettings, flagSet *flag.FlagSet) *cobra.C
 			return nil
 		},
 	}
-	examineCmd.Flags().AddGoFlagSet(flagSet)
-	return examineCmd
+	cmd.Flags().AddGoFlagSet(flagSet)
+	return cmd
 }
