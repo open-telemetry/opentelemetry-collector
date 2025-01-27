@@ -106,7 +106,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.117.0 // indirect
 	go.opentelemetry.io/collector/extension/extensiontest v0.117.0 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.117.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.23.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.24.0 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.117.0 // indirect
 	go.opentelemetry.io/collector/internal/memorylimiter v0.117.0 // indirect
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.117.0 // indirect

@@ -15,7 +15,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 )
@@ -445,7 +444,7 @@ type mergeTest struct {
 }
 
 func TestMergeFunctionality(t *testing.T) {
-	yamlFile, err := os.ReadFile("testdata/append_scenarios.yaml")
+	yamlFile, err := os.ReadFile("testdata/merge-append-scenarious.yaml")
 	require.NoError(t, err)
 	var testcases []*mergeTest
 	err = yaml.Unmarshal(yamlFile, &testcases)
