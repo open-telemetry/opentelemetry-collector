@@ -12,13 +12,17 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/metadatatest"
 )
 
 var (
@@ -35,11 +39,15 @@ type testParams struct {
 }
 
 func TestScrapeMetricsDataOp(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(receiverID)
-	require.NoError(t, err)
+	tt := metadatatest.SetupTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	parentCtx, parentSpan := tt.TelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+	tel := tt.NewTelemetrySettings()
+	// TODO: Add capability for tracing testing in metadatatest.
+	spanRecorder := new(tracetest.SpanRecorder)
+	tel.TracerProvider = sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spanRecorder))
+
+	parentCtx, parentSpan := tel.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
 	params := []testParams{
@@ -48,16 +56,17 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 		{items: 15, err: nil},
 	}
 	for i := range params {
-		var sf scraper.ScrapeMetricsFunc
-		sf, err = newObsMetrics(func(context.Context) (pmetric.Metrics, error) {
+		sm, err := scraper.NewMetrics(func(context.Context) (pmetric.Metrics, error) {
 			return testdata.GenerateMetrics(params[i].items), params[i].err
-		}, receiverID, scraperID, tt.TelemetrySettings())
+		})
+		require.NoError(t, err)
+		sf, err := wrapObsMetrics(sm, receiverID, scraperID, tel)
 		require.NoError(t, err)
 		_, err = sf.ScrapeMetrics(parentCtx)
 		require.ErrorIs(t, err, params[i].err)
 	}
 
-	spans := tt.SpanRecorder.Ended()
+	spans := spanRecorder.Ended()
 	require.Equal(t, len(params), len(spans))
 
 	var scrapedMetricPoints, erroredMetricPoints int
@@ -87,24 +96,42 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 		}
 	}
 
-	require.NoError(t, tt.CheckScraperMetrics(receiverID, scraperID, int64(scrapedMetricPoints), int64(erroredMetricPoints)))
+	checkScraperMetrics(t, tt, receiverID, scraperID, int64(scrapedMetricPoints), int64(erroredMetricPoints))
 }
 
 func TestCheckScraperMetrics(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(receiverID)
-	require.NoError(t, err)
+	tt := metadatatest.SetupTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	var sf scraper.ScrapeMetricsFunc
-	sf, err = newObsMetrics(func(context.Context) (pmetric.Metrics, error) {
+	sm, err := scraper.NewMetrics(func(context.Context) (pmetric.Metrics, error) {
 		return testdata.GenerateMetrics(7), nil
-	}, receiverID, scraperID, tt.TelemetrySettings())
+	})
+	require.NoError(t, err)
+	sf, err := wrapObsMetrics(sm, receiverID, scraperID, tt.NewTelemetrySettings())
 	require.NoError(t, err)
 	_, err = sf.ScrapeMetrics(context.Background())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	require.NoError(t, tt.CheckScraperMetrics(receiverID, scraperID, 7, 0))
-	require.Error(t, tt.CheckScraperMetrics(receiverID, scraperID, 7, 7))
-	require.Error(t, tt.CheckScraperMetrics(receiverID, scraperID, 0, 0))
-	require.Error(t, tt.CheckScraperMetrics(receiverID, scraperID, 0, 7))
+	checkScraperMetrics(t, tt, receiverID, scraperID, 7, 0)
+}
+
+func checkScraperMetrics(t *testing.T, tt metadatatest.Telemetry, receiver component.ID, scraper component.ID, scrapedMetricPoints, erroredMetricPoints int64) {
+	metadatatest.AssertEqualScraperScrapedMetricPoints(t, tt.Telemetry,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(receiverKey, receiver.String()),
+					attribute.String(scraperKey, scraper.String())),
+				Value: scrapedMetricPoints,
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+	metadatatest.AssertEqualScraperErroredMetricPoints(t, tt.Telemetry,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(receiverKey, receiver.String()),
+					attribute.String(scraperKey, scraper.String())),
+				Value: erroredMetricPoints,
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }

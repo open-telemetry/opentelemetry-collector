@@ -20,13 +20,39 @@ func TestSetupTelemetry(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.NotNil(t, tb)
+	tb.ScraperErroredLogRecords.Add(context.Background(), 1)
 	tb.ScraperErroredMetricPoints.Add(context.Background(), 1)
+	tb.ScraperScrapedLogRecords.Add(context.Background(), 1)
 	tb.ScraperScrapedMetricPoints.Add(context.Background(), 1)
 
 	testTel.AssertMetrics(t, []metricdata.Metrics{
 		{
+			Name:        "otelcol_scraper_errored_log_records",
+			Description: "Number of log records that were unable to be scraped. [alpha]",
+			Unit:        "{datapoints}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{},
+				},
+			},
+		},
+		{
 			Name:        "otelcol_scraper_errored_metric_points",
 			Description: "Number of metric points that were unable to be scraped. [alpha]",
+			Unit:        "{datapoints}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_scraper_scraped_log_records",
+			Description: "Number of log records successfully scraped. [alpha]",
 			Unit:        "{datapoints}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
@@ -49,5 +75,22 @@ func TestSetupTelemetry(t *testing.T) {
 			},
 		},
 	}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
+	AssertEqualScraperErroredLogRecords(t, testTel.Telemetry,
+		[]metricdata.DataPoint[int64]{{}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
+	AssertEqualScraperErroredMetricPoints(t, testTel.Telemetry,
+		[]metricdata.DataPoint[int64]{{}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
+	AssertEqualScraperScrapedLogRecords(t, testTel.Telemetry,
+		[]metricdata.DataPoint[int64]{{}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
+	AssertEqualScraperScrapedMetricPoints(t, testTel.Telemetry,
+		[]metricdata.DataPoint[int64]{{}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
 	require.NoError(t, testTel.Shutdown(context.Background()))
 }
