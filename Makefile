@@ -447,12 +447,12 @@ mdatagen-test:
 	cd cmd/mdatagen && $(GOCMD) test ./...
 
 .PHONY: generate-gh-issue-templates
-generate-gh-issue-templates:
+generate-gh-issue-templates: $(GITHUBGEN)
 	$(GITHUBGEN) issue-templates
 
 .PHONY: generate-codeowners
-generate-codeowners:
-	$(GITHUBGEN) --skipgithub --default-codeowner "open-telemetry/collector-approvers" codeowners
+generate-codeowners: $(GITHUBGEN)
+	$(GITHUBGEN) --default-codeowner "open-telemetry/collector-approvers" codeowners
 
 .PHONY: gengithub
 gengithub: $(GITHUBGEN) generate-codeowners generate-gh-issue-templates
