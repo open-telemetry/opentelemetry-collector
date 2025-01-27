@@ -72,5 +72,22 @@ func TestSetupTelemetry(t *testing.T) {
 			},
 		},
 	}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
+	AssertEqualBatchSizeTriggerSend(t, testTel.Telemetry,
+		[]metricdata.DataPoint[int64]{{}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
+	AssertEqualProcessRuntimeTotalAllocBytes(t, testTel.Telemetry,
+		[]metricdata.DataPoint[int64]{{}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
+	AssertEqualQueueCapacity(t, testTel.Telemetry,
+		[]metricdata.DataPoint[int64]{{}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
+	AssertEqualRequestDuration(t, testTel.Telemetry,
+		[]metricdata.HistogramDataPoint[float64]{{}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
 	require.NoError(t, testTel.Shutdown(context.Background()))
 }

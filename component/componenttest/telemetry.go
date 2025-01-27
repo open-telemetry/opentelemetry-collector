@@ -68,7 +68,7 @@ func NewTelemetry(opts ...TelemetryOption) Telemetry {
 func (tt *Telemetry) NewTelemetrySettings() component.TelemetrySettings {
 	set := NewNopTelemetrySettings()
 	set.MeterProvider = tt.meterProvider
-	set.MetricsLevel = configtelemetry.LevelDetailed
+	set.MetricsLevel = configtelemetry.LevelDetailed //nolint:staticcheck //SA1019
 	set.TracerProvider = tt.traceProvider
 	return set
 }

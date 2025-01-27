@@ -77,12 +77,6 @@ func (tts *TestTelemetry) CheckReceiverMetrics(protocol string, acceptedMetricPo
 	return checkReceiverMetrics(tts.Reader, tts.id, protocol, acceptedMetricPoints, droppedMetricPoints)
 }
 
-// Deprecated: [v0.118.0] use metadatatest.AssertMetrics instead.
-// CheckScraperMetrics checks that for the current exported values for metrics scraper metrics match given values.
-func (tts *TestTelemetry) CheckScraperMetrics(receiver component.ID, scraper component.ID, scrapedMetricPoints, erroredMetricPoints int64) error {
-	return checkScraperMetrics(tts.Reader, receiver, scraper, scrapedMetricPoints, erroredMetricPoints)
-}
-
 // TelemetrySettings returns the TestTelemetry's TelemetrySettings
 func (tts *TestTelemetry) TelemetrySettings() component.TelemetrySettings {
 	return tts.NewTelemetrySettings()
