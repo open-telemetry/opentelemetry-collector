@@ -27,7 +27,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.118.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.118.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.24.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.118.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.118.0 // indirect
