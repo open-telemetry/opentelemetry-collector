@@ -1,6 +1,7 @@
-type: experimental
+type: xconnector
 
 status:
+  class: connector
   codeowners:
     active:
       - mx-psi

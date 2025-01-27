@@ -1,6 +1,7 @@
-type: experimental
+type: xexporterhelper
 
 status:
+  class: exporter
   codeowners:
     active:
       - mx-psi

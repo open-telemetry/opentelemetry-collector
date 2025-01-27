@@ -1,6 +1,7 @@
-type: experimental
+type: xextension
 
 status:
+  class: extension
   codeowners:
     active:
       - swiatekm

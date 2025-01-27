@@ -1,6 +1,7 @@
-type: experimental
+type: xprocessor
 
 status:
+  class: processor
   codeowners:
     active:
       - mx-psi

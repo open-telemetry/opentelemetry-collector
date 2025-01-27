@@ -1,4 +1,4 @@
-type: experimental
+type: xreceiver
 
 status:
   class: receiver
