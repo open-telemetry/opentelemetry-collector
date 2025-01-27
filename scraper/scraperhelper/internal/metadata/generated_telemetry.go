@@ -6,11 +6,9 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/otel/metric"
-	noopmetric "go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -51,36 +49,29 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
-	builder.ScraperErroredLogRecords, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
+	builder.ScraperErroredLogRecords, err = builder.meter.Int64Counter(
 		"otelcol_scraper_errored_log_records",
 		metric.WithDescription("Number of log records that were unable to be scraped. [alpha]"),
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ScraperErroredMetricPoints, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
+	builder.ScraperErroredMetricPoints, err = builder.meter.Int64Counter(
 		"otelcol_scraper_errored_metric_points",
 		metric.WithDescription("Number of metric points that were unable to be scraped. [alpha]"),
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ScraperScrapedLogRecords, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
+	builder.ScraperScrapedLogRecords, err = builder.meter.Int64Counter(
 		"otelcol_scraper_scraped_log_records",
 		metric.WithDescription("Number of log records successfully scraped. [alpha]"),
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ScraperScrapedMetricPoints, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
+	builder.ScraperScrapedMetricPoints, err = builder.meter.Int64Counter(
 		"otelcol_scraper_scraped_metric_points",
 		metric.WithDescription("Number of metric points successfully scraped. [alpha]"),
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs
-}
-
-func getLeveledMeter(meter metric.Meter, cfgLevel, srvLevel configtelemetry.Level) metric.Meter {
-	if cfgLevel <= srvLevel {
-		return meter
-	}
-	return noopmetric.Meter{}
 }
