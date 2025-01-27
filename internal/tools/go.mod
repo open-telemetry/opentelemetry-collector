@@ -242,5 +242,3 @@ retract (
 	v0.57.1 // Release failed, use v0.57.2
 	v0.57.0 // Release failed, use v0.57.2
 )
-
-replace go.opentelemetry.io/build-tools/githubgen v0.0.0-20250113080240-74d4b2b12e5f => ../../../opentelemetry-go-build-tools/githubgen
