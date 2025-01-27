@@ -32,7 +32,7 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 }
 {{- if .Telemetry.Metrics }}
 
-// TelemetryBuilder provides an interface for components to report telemetry 
+// TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
     meter metric.Meter
@@ -59,11 +59,11 @@ func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 {{- range $name, $metric := .Telemetry.Metrics }}
 {{- if $metric.Optional }}
 // Init{{ $name.Render }} configures the {{ $name.Render }} metric.
-func (builder *TelemetryBuilder) Init{{ $name.Render }}({{ if $metric.Data.Async -}}cb func() {{ $metric.Data.BasicType }}{{- end }}, opts ...metric.ObserveOption) (metric.Registration, error) {
+func (builder *TelemetryBuilder) Init{{ $name.Render }}({{ if $metric.Data.Async -}}cb func() {{ $metric.Data.BasicType }}, {{- end }}opts ...metric.ObserveOption) (metric.Registration, error) {
     var err error
     builder.{{ $name.Render }}, err = builder.meter.{{ $metric.Data.Instrument }}(
         "otelcol_{{ $name }}",
-        metric.WithDescription("{{ $metric.Description }}"),
+        metric.WithDescription("{{ $metric.Description }}{{ $metric.Stability }}"),
         metric.WithUnit("{{ $metric.Unit }}"),
         {{- if eq $metric.Data.Type "Histogram" -}}
         {{ if $metric.Data.Boundaries -}}metric.WithExplicitBucketBoundaries([]float64{ {{- range $metric.Data.Boundaries }} {{.}}, {{- end }} }...),{{- end }}
