@@ -13,22 +13,22 @@ import (
 )
 
 func TestFromAttributeIndices(t *testing.T) {
-	profile := NewProfile()
-	att := profile.AttributeTable().AppendEmpty()
+	table := NewAttributeTableSlice()
+	att := table.AppendEmpty()
 	att.SetKey("hello")
 	att.Value().SetStr("world")
-	att2 := profile.AttributeTable().AppendEmpty()
+	att2 := table.AppendEmpty()
 	att2.SetKey("bonjour")
 	att2.Value().SetStr("monde")
 
-	attrs := FromAttributeIndices(profile, profile)
+	attrs := FromAttributeIndices(table, NewProfile())
 	assert.Equal(t, attrs, pcommon.NewMap())
 
 	// A Location with a single attribute
 	loc := NewLocation()
 	loc.AttributeIndices().Append(0)
 
-	attrs = FromAttributeIndices(profile, loc)
+	attrs = FromAttributeIndices(table, loc)
 
 	m := map[string]any{"hello": "world"}
 	assert.Equal(t, attrs.AsRaw(), m)
@@ -37,17 +37,17 @@ func TestFromAttributeIndices(t *testing.T) {
 	mapp := NewLocation()
 	mapp.AttributeIndices().Append(0, 1)
 
-	attrs = FromAttributeIndices(profile, mapp)
+	attrs = FromAttributeIndices(table, mapp)
 
 	m = map[string]any{"hello": "world", "bonjour": "monde"}
 	assert.Equal(t, attrs.AsRaw(), m)
 }
 
 func BenchmarkFromAttributeIndices(b *testing.B) {
-	profile := NewProfile()
+	table := NewAttributeTableSlice()
 
 	for i := range 10 {
-		att := profile.AttributeTable().AppendEmpty()
+		att := table.AppendEmpty()
 		att.SetKey(fmt.Sprintf("key_%d", i))
 		att.Value().SetStr(fmt.Sprintf("value_%d", i))
 	}
@@ -59,6 +59,6 @@ func BenchmarkFromAttributeIndices(b *testing.B) {
 	b.ReportAllocs()
 
 	for n := 0; n < b.N; n++ {
-		_ = FromAttributeIndices(profile, obj)
+		_ = FromAttributeIndices(table, obj)
 	}
 }
