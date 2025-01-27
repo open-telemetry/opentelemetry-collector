@@ -26,7 +26,7 @@ type TelemetryBuilder struct {
 	meter                                metric.Meter
 	BatchSizeTriggerSend                 metric.Int64Counter
 	ProcessRuntimeTotalAllocBytes        metric.Int64ObservableCounter
-	observeProcessRuntimeTotalAllocBytes func(context.Context, metric.Observer) error
+	observeProcessRuntimeTotalAllocBytes func(context.Context, metric.Int64Observer) error
 	QueueCapacity                        metric.Int64Gauge
 	QueueLength                          metric.Int64ObservableGauge
 	RequestDuration                      metric.Float64Histogram
@@ -46,8 +46,8 @@ func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 // WithProcessRuntimeTotalAllocBytesCallback sets callback for observable ProcessRuntimeTotalAllocBytes metric.
 func WithProcessRuntimeTotalAllocBytesCallback(cb func() int64, opts ...metric.ObserveOption) TelemetryBuilderOption {
 	return telemetryBuilderOptionFunc(func(builder *TelemetryBuilder) {
-		builder.observeProcessRuntimeTotalAllocBytes = func(_ context.Context, o metric.Observer) error {
-			o.ObserveInt64(builder.ProcessRuntimeTotalAllocBytes, cb(), opts...)
+		builder.observeProcessRuntimeTotalAllocBytes = func(_ context.Context, o metric.Int64Observer) error {
+			o.Observe(cb(), opts...)
 			return nil
 		}
 	})
@@ -90,9 +90,8 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_process_runtime_total_alloc_bytes",
 		metric.WithDescription("Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')"),
 		metric.WithUnit("By"),
+		metric.WithInt64Callback(builder.observeProcessRuntimeTotalAllocBytes),
 	)
-	errs = errors.Join(errs, err)
-	_, err = builder.meter.RegisterCallback(builder.observeProcessRuntimeTotalAllocBytes, builder.ProcessRuntimeTotalAllocBytes)
 	errs = errors.Join(errs, err)
 	builder.QueueCapacity, err = builder.meter.Int64Gauge(
 		"otelcol_queue_capacity",
