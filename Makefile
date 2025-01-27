@@ -456,3 +456,7 @@ generate-codeowners: $(GITHUBGEN)
 
 .PHONY: gengithub
 gengithub: $(GITHUBGEN) generate-codeowners generate-gh-issue-templates
+
+.PHONY: gendistributions
+gendistributions: $(GITHUBGEN)
+	$(GITHUBGEN) distributions
