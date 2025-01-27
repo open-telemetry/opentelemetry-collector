@@ -560,3 +560,54 @@
                 receivers: [nop, nop2, nop3]
                 processors: [processor, processor2]
                 exporters: [nop, nop2, nop3]
+- name: merge-mode-append-different-kinds
+  append_paths: ["receivers::nop"]
+  configs:
+    -
+        receivers:
+            nop:
+                key: val
+
+        processors:
+            nop:
+
+        exporters:
+            nop:
+                key: 2
+
+        extensions:
+            nop:
+
+        service:
+            extensions: [nop]
+            pipelines:
+                traces:
+                    receivers: [nop]
+                    processors: [nop]
+                    exporters: [nop]
+    -
+        receivers:
+            nop:
+                key: 1.2
+  expected: 
+    receivers:
+        nop:
+            key: 1.2
+
+    processors:
+        nop:
+
+    exporters:
+        nop:
+            key: 2
+
+    extensions:
+        nop:
+
+    service:
+        extensions: [nop]
+        pipelines:
+            traces:
+                receivers: [nop]
+                processors: [nop]
+                exporters: [nop]

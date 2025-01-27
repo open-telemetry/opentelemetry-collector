@@ -83,7 +83,7 @@ func mergeMaps(new, old map[string]any) {
 		nVal, newOk := new[oldKey]
 		if !newOk {
 			// old key is not present in new config, hence, add it
-			new[oldKey] = oVal
+			new[oldKey] = nVal
 			continue
 		}
 
@@ -92,7 +92,7 @@ func mergeMaps(new, old map[string]any) {
 
 		if newVal.Kind() != oldVal.Kind() {
 			// different kinds, override the old config
-			new[oldKey] = oVal
+			new[oldKey] = nVal
 			continue
 		}
 
@@ -105,7 +105,7 @@ func mergeMaps(new, old map[string]any) {
 			mergeMaps(nVal.(map[string]any), oVal.(map[string]any))
 		default:
 			// Default case, override the old config
-			new[oldKey] = oVal
+			new[oldKey] = nVal
 		}
 	}
 }
