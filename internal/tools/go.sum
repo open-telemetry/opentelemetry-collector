@@ -512,6 +512,8 @@ go.opentelemetry.io/build-tools/chloggen v0.16.0 h1:iuotHxlcK46JJtQLdwQPsC5dcAyg
 go.opentelemetry.io/build-tools/chloggen v0.16.0/go.mod h1:Wk92v9Wsv36sXYi7hOg3ndeeLKmKBu0/kgB7wcaeqJg=
 go.opentelemetry.io/build-tools/crosslink v0.16.0 h1:7Y5QPt5TR3qpiW5bwIOnsCJdt1yjZSFDPKtjt2g2zHw=
 go.opentelemetry.io/build-tools/crosslink v0.16.0/go.mod h1:xogE6iWmt53bsDazb81dQrZw9TQ30+9hc4D8QfVG9aA=
+go.opentelemetry.io/build-tools/githubgen v0.17.0 h1:2DFeHglGmrtTMoRDfJoR+iJd/I/3eCm8FtQJpZAb3W8=
+go.opentelemetry.io/build-tools/githubgen v0.17.0/go.mod h1:UBpPXtso7exy3VU5EH1ZFfSkYQANJWO/u1lO50qdKkE=
 go.opentelemetry.io/build-tools/multimod v0.16.0 h1:o205mGH61VXebXeiIPXwxeHRCm332TZqRb8gmypI6po=
 go.opentelemetry.io/build-tools/multimod v0.16.0/go.mod h1:dDZzMmgPYCVJOHbWDZP29DH/aLFiKdPclisVLylTIH0=
 go.opentelemetry.io/build-tools/semconvgen v0.16.0 h1:6ow53MkS63h99CqXPlXOZ3XhFsg8t2dqclwRdEKGHM4=
