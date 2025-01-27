@@ -26,6 +26,8 @@ var (
 	nameRegexp = regexp.MustCompile(`^[^\pZ\pC\pS]+$`)
 )
 
+var _ fmt.Stringer = Type{}
+
 // Type is the component type as it is used in the config.
 type Type struct {
 	name string
@@ -84,9 +86,10 @@ func NewID(typeVal Type) ID {
 }
 
 // MustNewID builds a Type and returns a new ID with the given Type and empty name.
+// This is equivalent to NewID(MustNewType(typeVal)).
 // See MustNewType to check the valid values of typeVal.
 func MustNewID(typeVal string) ID {
-	return ID{typeVal: MustNewType(typeVal)}
+	return NewID(MustNewType(typeVal))
 }
 
 // NewIDWithName returns a new ID with the given Type and name.
@@ -95,9 +98,10 @@ func NewIDWithName(typeVal Type, nameVal string) ID {
 }
 
 // MustNewIDWithName builds a Type and returns a new ID with the given Type and name.
+// This is equivalent to NewIDWithName(MustNewType(typeVal), nameVal).
 // See MustNewType to check the valid values of typeVal.
 func MustNewIDWithName(typeVal string, nameVal string) ID {
-	return ID{typeVal: MustNewType(typeVal), nameVal: nameVal}
+	return NewIDWithName(MustNewType(typeVal), nameVal)
 }
 
 // Type returns the type of the component.
@@ -119,23 +123,19 @@ func (id ID) MarshalText() (text []byte, err error) {
 // UnmarshalText implements the encoding.TextUnmarshaler interface.
 func (id *ID) UnmarshalText(text []byte) error {
 	idStr := string(text)
-	items := strings.SplitN(idStr, typeAndNameSeparator, 2)
-	var typeStr, nameStr string
-	if len(items) >= 1 {
-		typeStr = strings.TrimSpace(items[0])
-	}
+	typeStr, nameStr, hasName := strings.Cut(idStr, typeAndNameSeparator)
+	typeStr = strings.TrimSpace(typeStr)
 
-	if len(items) == 1 && typeStr == "" {
+	if typeStr == "" {
+		if hasName {
+			return fmt.Errorf("in %q id: the part before %s should not be empty", idStr, typeAndNameSeparator)
+		}
 		return errors.New("id must not be empty")
 	}
 
-	if typeStr == "" {
-		return fmt.Errorf("in %q id: the part before %s should not be empty", idStr, typeAndNameSeparator)
-	}
-
-	if len(items) > 1 {
+	if hasName {
 		// "name" part is present.
-		nameStr = strings.TrimSpace(items[1])
+		nameStr = strings.TrimSpace(nameStr)
 		if nameStr == "" {
 			return fmt.Errorf("in %q id: the part after %s should not be empty", idStr, typeAndNameSeparator)
 		}

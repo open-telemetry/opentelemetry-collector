@@ -13,12 +13,14 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/processor/processorhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
 
@@ -118,7 +120,7 @@ func TestMetrics_RecordInOut(t *testing.T) {
 	dps.AppendEmpty()
 	dps.AppendEmpty()
 
-	testTelemetry := setupTestTelemetry()
+	testTelemetry := metadatatest.SetupTelemetry()
 	mp, err := NewMetrics(context.Background(), testTelemetry.NewSettings(), &testMetricsCfg, consumertest.NewNop(), mockAggregate)
 	require.NoError(t, err)
 
@@ -126,38 +128,20 @@ func TestMetrics_RecordInOut(t *testing.T) {
 	assert.NoError(t, mp.ConsumeMetrics(context.Background(), incomingMetrics))
 	assert.NoError(t, mp.Shutdown(context.Background()))
 
-	testTelemetry.assertMetrics(t, []metricdata.Metrics{
-		{
-			Name:        "otelcol_processor_incoming_items",
-			Description: "Number of items passed to the processor. [alpha]",
-			Unit:        "{items}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value:      2,
-						Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "metrics")),
-					},
-				},
+	metadatatest.AssertEqualProcessorIncomingItems(t, testTelemetry.Telemetry,
+		[]metricdata.DataPoint[int64]{
+			{
+				Value:      2,
+				Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "metrics")),
 			},
-		},
-		{
-			Name:        "otelcol_processor_outgoing_items",
-			Description: "Number of items emitted from the processor. [alpha]",
-			Unit:        "{items}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value:      3,
-						Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "metrics")),
-					},
-				},
+		}, metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualProcessorOutgoingItems(t, testTelemetry.Telemetry,
+		[]metricdata.DataPoint[int64]{
+			{
+				Value:      3,
+				Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "metrics")),
 			},
-		},
-	})
+		}, metricdatatest.IgnoreTimestamp())
 }
 
 func TestMetrics_RecordIn_ErrorOut(t *testing.T) {
@@ -173,7 +157,7 @@ func TestMetrics_RecordIn_ErrorOut(t *testing.T) {
 	dps.AppendEmpty()
 	dps.AppendEmpty()
 
-	testTelemetry := setupTestTelemetry()
+	testTelemetry := metadatatest.SetupTelemetry()
 	mp, err := NewMetrics(context.Background(), testTelemetry.NewSettings(), &testMetricsCfg, consumertest.NewNop(), mockErr)
 	require.NoError(t, err)
 
@@ -181,36 +165,18 @@ func TestMetrics_RecordIn_ErrorOut(t *testing.T) {
 	require.Error(t, mp.ConsumeMetrics(context.Background(), incomingMetrics))
 	require.NoError(t, mp.Shutdown(context.Background()))
 
-	testTelemetry.assertMetrics(t, []metricdata.Metrics{
-		{
-			Name:        "otelcol_processor_incoming_items",
-			Description: "Number of items passed to the processor. [alpha]",
-			Unit:        "{items}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value:      2,
-						Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "metrics")),
-					},
-				},
+	metadatatest.AssertEqualProcessorIncomingItems(t, testTelemetry.Telemetry,
+		[]metricdata.DataPoint[int64]{
+			{
+				Value:      2,
+				Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "metrics")),
 			},
-		},
-		{
-			Name:        "otelcol_processor_outgoing_items",
-			Description: "Number of items emitted from the processor. [alpha]",
-			Unit:        "{items}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value:      0,
-						Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "metrics")),
-					},
-				},
+		}, metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualProcessorOutgoingItems(t, testTelemetry.Telemetry,
+		[]metricdata.DataPoint[int64]{
+			{
+				Value:      0,
+				Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "metrics")),
 			},
-		},
-	})
+		}, metricdatatest.IgnoreTimestamp())
 }

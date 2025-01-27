@@ -2,10 +2,12 @@
 
 ## Stability levels
 
-The collector components and implementation are in different stages of stability, and usually split between
-functionality and configuration. The status for each component is available in the README file for the component. While
-we intend to provide high-quality components as part of this repository, we acknowledge that not all of them are ready
-for prime time. As such, each component should list its current stability level for each telemetry signal, according to
+The Collector components and implementation are in different stages of stability, and usually split between
+functionality and configuration. While we intend to provide high-quality components as part of this repository,
+we acknowledge that not all of them are ready for prime time. Moreover, the stability of components that can
+handle multiple signals can depend on the signal in question.
+
+As such, each component should list its current stability level for each telemetry signal in its README file, according to
 the following definitions:
 
 ### Development
@@ -30,6 +32,10 @@ required for alpha components, although it is still recommended.
 - when removing a configuration option, components MAY keep the old option for a few minor releases and log a WARN level
   message instructing users to remove the option.
 
+#### Documentation requirements
+
+Alpha components should document how to use them in the most common situations, including:
+- One or more example configuration snippets for the most common use cases.
 
 ### Beta
 
@@ -56,6 +62,21 @@ When renaming or removing a configuration option:
 Additionally, when removing an option:
 - the option MAY be made non-operational already by the same version where it is deprecated
 
+#### Documentation requirements
+
+Beta components should have a set of documentation that documents its usage in most cases,
+including:
+- One or more example configuration snippets for the most common use cases.
+- Advanced configuration options that are known to be used in common environments.
+- All component-specific feature gates including a description for them and when they should be
+  used.
+- Warnings about known limitations and ways to misuse the component.
+
+Receivers that produce a fixed set of telemetry should document the telemetry they produce,
+including:
+- For all signals, the resource attributes that are expected to be present in telemetry.
+- For metrics, the name, description, type, units and attributes of each metric.
+
 ### Stable
 
 The component is ready for general availability. Bugs and performance problems should be reported and there's an expectation that the component owners will work on them. Breaking changes, including configuration options and the component's output are not expected to happen without prior notice, unless under special circumstances.
@@ -65,6 +86,24 @@ The component is ready for general availability. Bugs and performance problems s
 Stable components MUST be compatible between minor versions unless critical security issues are found. In that case, the
 component owner MUST provide a migration path and a reasonable time frame for users to upgrade. The same rules from beta
 components apply to stable when it comes to configuration changes.
+
+#### Documentation requirements
+
+Stable components should have a complete set of documentation, including:
+- One or more example configuration snippets for the most common use cases.
+- All configuration options supported by the component and a description for each of them.
+- All component-specific feature gates including a description for them and when they should be
+  used.
+- All component-specific self-observability features that are not available for other components and
+  what they provide.
+- Compatibility guarantees with external dependencies including the versions it is compatible with
+  and under what conditions.
+- Warnings about known limitations and ways to misuse the component.
+
+Receivers that produce a fixed set of telemetry should document the telemetry they produce,
+including:
+- For all signals, the resource attributes that are expected to be present in telemetry.
+- For metrics, the name, description, type, units and attributes of each metric.
 
 #### Observability requirements
 
@@ -220,9 +259,9 @@ To move within the 'Maintained' ladder ("graduate"), the process for doing so is
 
 ## Versioning
 
-Components are Go modules and as such follow [semantic versioning](https://semver.org/). Go API stability guarantees are covered in the [VERSIONING.md](../VERSIONING.md) document.
-The versioning of the components applies to all signals simultaneously. For a component to be marked as 1.x it MUST be stable for at least one signal.
-
+For a component to be marked as 1.x it MUST be stable for at least one signal.
 Even if a component has a 1.x or greater version, its behavior for specific signals might change in ways that break end users if the component is not stable for a particular signal.
-Go API stability guarantees apply to ALL signals, regardless of their stability level. 
-This means that signal-specific configuration options MUST NOT be removed or changed in a way that breaks our Go API compatibility promise, even if the signal is not stable.
+
+However, components are Go modules and as such follow [semantic versioning](https://semver.org/). Go API stability guarantees are covered in the [VERSIONING.md](../VERSIONING.md) document.
+The versioning of a component, and the Go API stability guarantees that come with it, apply to ALL signals simultaneously, regardless of their stability level.
+This means that, once a component is marked as 1.x, signal-specific configuration options MUST NOT be removed or changed in a way that breaks our Go API compatibility promise, even if the signal is not stable.

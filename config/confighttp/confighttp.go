@@ -18,8 +18,8 @@ import (
 	"github.com/rs/cors"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/noop"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/publicsuffix"
 
@@ -28,7 +28,6 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp/internal"
 	"go.opentelemetry.io/collector/config/configopaque"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/extension/auth"
 )
@@ -73,6 +72,9 @@ type ClientConfig struct {
 
 	// The compression key for supported compression types within collector.
 	Compression configcompression.Type `mapstructure:"compression"`
+
+	// Advanced configuration options for the Compression
+	CompressionParams configcompression.CompressionParams `mapstructure:"compression_params"`
 
 	// MaxIdleConns is used to set a limit to the maximum idle HTTP connections the client can keep open.
 	// By default, it is set to 100.
@@ -135,6 +137,15 @@ func NewDefaultClientConfig() ClientConfig {
 		MaxConnsPerHost:     &defaultTransport.MaxConnsPerHost,
 		IdleConnTimeout:     &defaultTransport.IdleConnTimeout,
 	}
+}
+
+func (hcs *ClientConfig) Validate() error {
+	if hcs.Compression.IsCompressed() {
+		if err := hcs.Compression.ValidateParams(hcs.CompressionParams); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // ToClient creates an HTTP client.
@@ -222,7 +233,11 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 	// Compress the body using specified compression methods if non-empty string is provided.
 	// Supporting gzip, zlib, deflate, snappy, and zstd; none is treated as uncompressed.
 	if hcs.Compression.IsCompressed() {
-		clientTransport, err = newCompressRoundTripper(clientTransport, hcs.Compression)
+		// If the compression level is not set, use the default level.
+		if hcs.CompressionParams.Level == 0 {
+			hcs.CompressionParams.Level = configcompression.DefaultCompressionLevel
+		}
+		clientTransport, err = newCompressRoundTripper(clientTransport, hcs.Compression, hcs.CompressionParams)
 		if err != nil {
 			return nil, err
 		}
@@ -231,7 +246,7 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 	otelOpts := []otelhttp.Option{
 		otelhttp.WithTracerProvider(settings.TracerProvider),
 		otelhttp.WithPropagators(otel.GetTextMapPropagator()),
-		otelhttp.WithMeterProvider(getLeveledMeterProvider(settings)),
+		otelhttp.WithMeterProvider(settings.MeterProvider),
 	}
 	// wrapping http transport with otelhttp transport to enable otel instrumentation
 	if settings.TracerProvider != nil && settings.MeterProvider != nil {
@@ -462,7 +477,7 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 			otelhttp.WithSpanNameFormatter(func(_ string, r *http.Request) string {
 				return r.URL.Path
 			}),
-			otelhttp.WithMeterProvider(getLeveledMeterProvider(settings)),
+			otelhttp.WithMeterProvider(settings.MeterProvider),
 		},
 		serverOpts.OtelhttpOpts...)
 
@@ -476,15 +491,21 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 		includeMetadata: hss.IncludeMetadata,
 	}
 
+	errorLog, err := zap.NewStdLogAt(settings.Logger, zapcore.ErrorLevel)
+	if err != nil {
+		return nil, err // If an error occurs while creating the logger, return nil and the error
+	}
+
 	server := &http.Server{
 		Handler:           handler,
 		ReadTimeout:       hss.ReadTimeout,
 		ReadHeaderTimeout: hss.ReadHeaderTimeout,
 		WriteTimeout:      hss.WriteTimeout,
 		IdleTimeout:       hss.IdleTimeout,
+		ErrorLog:          errorLog,
 	}
 
-	return server, nil
+	return server, err
 }
 
 func responseHeadersHandler(handler http.Handler, headers map[string]configopaque.String) http.Handler {
@@ -550,11 +571,4 @@ func maxRequestBodySizeInterceptor(next http.Handler, maxRecvSize int64) http.Ha
 		r.Body = http.MaxBytesReader(w, r.Body, maxRecvSize)
 		next.ServeHTTP(w, r)
 	})
-}
-
-func getLeveledMeterProvider(settings component.TelemetrySettings) metric.MeterProvider {
-	if configtelemetry.LevelDetailed <= settings.MetricsLevel {
-		return settings.MeterProvider
-	}
-	return noop.MeterProvider{}
 }

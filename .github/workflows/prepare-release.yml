@@ -18,9 +18,11 @@ on:
       current-beta:
         required: true
         description: Current version (beta, like 0.95.1). Don't include `v`.
+
+permissions: read-all
+
 jobs:
-  #validate-version format
-  validate-versions:
+  validate-versions-format:
     runs-on: ubuntu-latest
 
     steps:
@@ -58,10 +60,9 @@ jobs:
             exit 1
           fi
 
-  # Releasing opentelemetry-collector
-  prepare-release:
+  check-blockers:
     needs:
-      - validate-versions
+      - validate-versions-format
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -91,8 +92,43 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: open-telemetry/opentelemetry-collector-contrib
         run: ./.github/workflows/scripts/release-check-build-status.sh
+
+  create-release-issue:
+    needs:
+      - check-blockers
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+      # To keep track of the progress, it might be helpful to create a tracking issue similar to #6067. You are responsible
+      # for all of the steps under the "Performed by collector release manager" heading. Once the issue is created, you can
+      # create the individual ones by hovering them and clicking the "Convert to issue" button on the right hand side.
+      - name: Create issue for tracking release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CANDIDATE_BETA: ${{ inputs.candidate-beta }}
+          CANDIDATE_STABLE: ${{ inputs.candidate-stable }}
+          CURRENT_BETA: ${{ inputs.current-beta }}
+          CURRENT_STABLE: ${{ inputs.current-stable }}
+          REPO: open-telemetry/opentelemetry-collector
+        run: ./.github/workflows/scripts/release-create-tracking-issue.sh
+
+  # Releasing opentelemetry-collector
+  prepare-release:
+    needs:
+      - check-blockers
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
       - name: Setup Go
-        uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a # v5.2.0
+        uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
         with:
           go-version: ~1.22.9
       # Prepare Core for release.
@@ -108,15 +144,3 @@ jobs:
           CURRENT_BETA: ${{ inputs.current-beta }}
           CURRENT_STABLE: ${{ inputs.current-stable }}
         run: ./.github/workflows/scripts/release-prepare-release.sh
-      # To keep track of the progress, it might be helpful to create a tracking issue similar to #6067. You are responsible
-      # for all of the steps under the "Performed by collector release manager" heading. Once the issue is created, you can
-      # create the individual ones by hovering them and clicking the "Convert to issue" button on the right hand side.
-      - name: Create issue for tracking release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CANDIDATE_BETA: ${{ inputs.candidate-beta }}
-          CANDIDATE_STABLE: ${{ inputs.candidate-stable }}
-          CURRENT_BETA: ${{ inputs.current-beta }}
-          CURRENT_STABLE: ${{ inputs.current-stable }}
-          REPO: open-telemetry/opentelemetry-collector
-        run: ./.github/workflows/scripts/release-create-tracking-issue.sh

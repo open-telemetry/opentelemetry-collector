@@ -8,21 +8,21 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter/exporterqueue"
 )
 
 type Consumers[T any] struct {
-	queue        Queue[T]
+	queue        exporterqueue.Queue[T]
 	numConsumers int
 	consumeFunc  func(context.Context, T) error
 	stopWG       sync.WaitGroup
 }
 
-func NewQueueConsumers[T any](q Queue[T], numConsumers int, consumeFunc func(context.Context, T) error) *Consumers[T] {
+func NewQueueConsumers[T any](q exporterqueue.Queue[T], numConsumers int, consumeFunc func(context.Context, T) error) *Consumers[T] {
 	return &Consumers[T]{
 		queue:        q,
 		numConsumers: numConsumers,
 		consumeFunc:  consumeFunc,
-		stopWG:       sync.WaitGroup{},
 	}
 }
 

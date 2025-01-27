@@ -12,18 +12,17 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver"
+	{{- if or isReceiver isScraper }}
+	"go.opentelemetry.io/collector/{{ .Status.Class }}"
+	{{- end }}
 	{{- if .SemConvVersion }}
 	conventions "go.opentelemetry.io/collector/semconv/v{{ .SemConvVersion }}"
-	{{- end }}
-	{{ if .ResourceAttributes -}}
-	"go.opentelemetry.io/collector/filter"
 	{{- end }}
 )
 
 {{ range $name, $info := .Attributes }}
 {{- if $info.Enum -}}
-// Attribute{{ $name.Render }} specifies the a value {{ $name }} attribute.
+// Attribute{{ $name.Render }} specifies the value {{ $name }} attribute.
 type Attribute{{ $name.Render }} int
 
 const (
@@ -162,7 +161,9 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 	})
 }
 
-func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
+{{- if or isReceiver isScraper }}
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings {{ .Status.Class }}.Settings, options ...MetricBuilderOption) *MetricsBuilder {
+{{- end }}
 	{{- range $name, $metric := .Metrics }}
 	{{- if $metric.Warnings.IfEnabled }}
 	if mbc.Metrics.{{ $name.Render }}.Enabled {

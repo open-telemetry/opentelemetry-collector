@@ -5,8 +5,6 @@ package xexporterhelper
 
 import (
 	"context"
-	"fmt"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -19,18 +17,18 @@ import (
 )
 
 func TestMergeProfiles(t *testing.T) {
-	pr1 := &profilesRequest{pd: testdata.GenerateProfiles(2)}
-	pr2 := &profilesRequest{pd: testdata.GenerateProfiles(3)}
-	res, err := pr1.Merge(context.Background(), pr2)
+	pr1 := newProfilesRequest(testdata.GenerateProfiles(2), nil)
+	pr2 := newProfilesRequest(testdata.GenerateProfiles(3), nil)
+	res, err := pr1.MergeSplit(context.Background(), exporterbatcher.MaxSizeConfig{}, pr2)
 	require.NoError(t, err)
-	fmt.Fprintf(os.Stdout, "%#v\n", res.(*profilesRequest).pd)
-	assert.Equal(t, 5, res.(*profilesRequest).pd.SampleCount())
+	assert.Len(t, res, 1)
+	assert.Equal(t, 5, res[0].ItemsCount())
 }
 
 func TestMergeProfilesInvalidInput(t *testing.T) {
 	pr1 := &dummyRequest{}
-	pr2 := &profilesRequest{pd: testdata.GenerateProfiles(3)}
-	_, err := pr2.Merge(context.Background(), pr1)
+	pr2 := newProfilesRequest(testdata.GenerateProfiles(3), nil)
+	_, err := pr2.MergeSplit(context.Background(), exporterbatcher.MaxSizeConfig{}, pr1)
 	assert.Error(t, err)
 }
 
@@ -40,78 +38,78 @@ func TestMergeSplitProfiles(t *testing.T) {
 		cfg      exporterbatcher.MaxSizeConfig
 		pr1      exporterhelper.Request
 		pr2      exporterhelper.Request
-		expected []*profilesRequest
+		expected []exporterhelper.Request
 	}{
 		{
 			name:     "both_requests_empty",
 			cfg:      exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
-			pr1:      &profilesRequest{pd: pprofile.NewProfiles()},
-			pr2:      &profilesRequest{pd: pprofile.NewProfiles()},
-			expected: []*profilesRequest{{pd: pprofile.NewProfiles()}},
+			pr1:      newProfilesRequest(pprofile.NewProfiles(), nil),
+			pr2:      newProfilesRequest(pprofile.NewProfiles(), nil),
+			expected: []exporterhelper.Request{newProfilesRequest(pprofile.NewProfiles(), nil)},
 		},
 		{
 			name:     "first_request_empty",
 			cfg:      exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
-			pr1:      &profilesRequest{pd: pprofile.NewProfiles()},
-			pr2:      &profilesRequest{pd: testdata.GenerateProfiles(5)},
-			expected: []*profilesRequest{{pd: testdata.GenerateProfiles(5)}},
+			pr1:      newProfilesRequest(pprofile.NewProfiles(), nil),
+			pr2:      newProfilesRequest(testdata.GenerateProfiles(5), nil),
+			expected: []exporterhelper.Request{newProfilesRequest(testdata.GenerateProfiles(5), nil)},
 		},
 		{
 			name:     "first_empty_second_nil",
 			cfg:      exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
-			pr1:      &profilesRequest{pd: pprofile.NewProfiles()},
+			pr1:      newProfilesRequest(pprofile.NewProfiles(), nil),
 			pr2:      nil,
-			expected: []*profilesRequest{{pd: pprofile.NewProfiles()}},
+			expected: []exporterhelper.Request{newProfilesRequest(pprofile.NewProfiles(), nil)},
 		},
 		{
 			name: "merge_only",
 			cfg:  exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
-			pr1:  &profilesRequest{pd: testdata.GenerateProfiles(4)},
-			pr2:  &profilesRequest{pd: testdata.GenerateProfiles(6)},
-			expected: []*profilesRequest{{pd: func() pprofile.Profiles {
+			pr1:  newProfilesRequest(testdata.GenerateProfiles(4), nil),
+			pr2:  newProfilesRequest(testdata.GenerateProfiles(6), nil),
+			expected: []exporterhelper.Request{newProfilesRequest(func() pprofile.Profiles {
 				profiles := testdata.GenerateProfiles(4)
 				testdata.GenerateProfiles(6).ResourceProfiles().MoveAndAppendTo(profiles.ResourceProfiles())
 				return profiles
-			}()}},
+			}(), nil)},
 		},
 		{
 			name: "split_only",
 			cfg:  exporterbatcher.MaxSizeConfig{MaxSizeItems: 4},
-			pr1:  &profilesRequest{pd: testdata.GenerateProfiles(10)},
+			pr1:  newProfilesRequest(testdata.GenerateProfiles(10), nil),
 			pr2:  nil,
-			expected: []*profilesRequest{
-				{pd: testdata.GenerateProfiles(4)},
-				{pd: testdata.GenerateProfiles(4)},
-				{pd: testdata.GenerateProfiles(2)},
+			expected: []exporterhelper.Request{
+				newProfilesRequest(testdata.GenerateProfiles(4), nil),
+				newProfilesRequest(testdata.GenerateProfiles(4), nil),
+				newProfilesRequest(testdata.GenerateProfiles(2), nil),
 			},
 		},
 		{
 			name: "merge_and_split",
 			cfg:  exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
-			pr1:  &profilesRequest{pd: testdata.GenerateProfiles(8)},
-			pr2:  &profilesRequest{pd: testdata.GenerateProfiles(20)},
-			expected: []*profilesRequest{
-				{pd: func() pprofile.Profiles {
+			pr1:  newProfilesRequest(testdata.GenerateProfiles(8), nil),
+			pr2:  newProfilesRequest(testdata.GenerateProfiles(20), nil),
+			expected: []exporterhelper.Request{
+				newProfilesRequest(func() pprofile.Profiles {
 					profiles := testdata.GenerateProfiles(8)
 					testdata.GenerateProfiles(2).ResourceProfiles().MoveAndAppendTo(profiles.ResourceProfiles())
 					return profiles
-				}()},
-				{pd: testdata.GenerateProfiles(10)},
-				{pd: testdata.GenerateProfiles(8)},
+				}(), nil),
+				newProfilesRequest(testdata.GenerateProfiles(10), nil),
+				newProfilesRequest(testdata.GenerateProfiles(8), nil),
 			},
 		},
 		{
 			name: "scope_profiles_split",
 			cfg:  exporterbatcher.MaxSizeConfig{MaxSizeItems: 4},
-			pr1: &profilesRequest{pd: func() pprofile.Profiles {
+			pr1: newProfilesRequest(func() pprofile.Profiles {
 				return testdata.GenerateProfiles(6)
-			}()},
+			}(), nil),
 			pr2: nil,
-			expected: []*profilesRequest{
-				{pd: testdata.GenerateProfiles(4)},
-				{pd: func() pprofile.Profiles {
+			expected: []exporterhelper.Request{
+				newProfilesRequest(testdata.GenerateProfiles(4), nil),
+				newProfilesRequest(func() pprofile.Profiles {
 					return testdata.GenerateProfiles(2)
-				}()},
+				}(), nil),
 			},
 		},
 	}
@@ -121,7 +119,7 @@ func TestMergeSplitProfiles(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, len(tt.expected), len(res))
 			for i, r := range res {
-				assert.Equal(t, tt.expected[i], r.(*profilesRequest))
+				assert.Equal(t, tt.expected[i], r)
 			}
 		})
 	}
@@ -129,7 +127,7 @@ func TestMergeSplitProfiles(t *testing.T) {
 
 func TestMergeSplitProfilesInvalidInput(t *testing.T) {
 	r1 := &dummyRequest{}
-	r2 := &profilesRequest{pd: testdata.GenerateProfiles(3)}
+	r2 := newProfilesRequest(testdata.GenerateProfiles(3), nil)
 	_, err := r2.MergeSplit(context.Background(), exporterbatcher.MaxSizeConfig{}, r1)
 	assert.Error(t, err)
 }
@@ -152,10 +150,6 @@ func (req *dummyRequest) Export(_ context.Context) error {
 
 func (req *dummyRequest) ItemsCount() int {
 	return 1
-}
-
-func (req *dummyRequest) Merge(_ context.Context, _ exporterhelper.Request) (exporterhelper.Request, error) {
-	return nil, nil
 }
 
 func (req *dummyRequest) MergeSplit(_ context.Context, _ exporterbatcher.MaxSizeConfig, _ exporterhelper.Request) (

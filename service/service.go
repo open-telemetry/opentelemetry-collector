@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"runtime"
 
-	"go.opentelemetry.io/contrib/config"
+	config "go.opentelemetry.io/contrib/config/v0.3.0"
 	"go.opentelemetry.io/otel/log"
 	"go.opentelemetry.io/otel/metric"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
+	semconv118 "go.opentelemetry.io/collector/semconv/v1.18.0"
 	semconv "go.opentelemetry.io/collector/semconv/v1.26.0"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/builders"
@@ -46,6 +47,14 @@ var _ = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterToVersion("v0.110.0"),
 	featuregate.WithRegisterDescription("controls whether the collector supports extended OpenTelemetry"+
 		"configuration for internal telemetry"))
+
+// disableHighCardinalityMetricsFeatureGate is the feature gate that controls whether the collector should enable
+// potentially high cardinality metrics. The gate will be removed when the collector allows for view configuration.
+var disableHighCardinalityMetricsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"telemetry.disableHighCardinalityMetrics",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("controls whether the collector should enable potentially high"+
+		"cardinality metrics. The gate will be removed when the collector allows for view configuration."))
 
 // Settings holds configuration for building a new Service.
 type Settings struct {
@@ -120,9 +129,12 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	pcommonRes := pdataFromSdk(res)
 
 	sch := semconv.SchemaURL
-	cfgRes := config.Resource{
-		SchemaUrl:  &sch,
-		Attributes: attributes(res, cfg.Telemetry),
+
+	views := configureViews(cfg.Telemetry.Metrics.Level)
+
+	readers := cfg.Telemetry.Metrics.Readers
+	if cfg.Telemetry.Metrics.Level == configtelemetry.LevelNone {
+		readers = []config.MetricReader{}
 	}
 
 	sdk, err := config.NewSDK(
@@ -132,10 +144,17 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 				LoggerProvider: &config.LoggerProvider{
 					Processors: cfg.Telemetry.Logs.Processors,
 				},
+				MeterProvider: &config.MeterProvider{
+					Readers: readers,
+					Views:   views,
+				},
 				TracerProvider: &config.TracerProvider{
 					Processors: cfg.Telemetry.Traces.Processors,
 				},
-				Resource: &cfgRes,
+				Resource: &config.Resource{
+					SchemaUrl:  &sch,
+					Attributes: attributes(res, cfg.Telemetry),
+				},
 			},
 		),
 	)
@@ -145,19 +164,22 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 
 	telFactory := telemetry.NewFactory()
 	telset := telemetry.Settings{
-		BuildInfo:  set.BuildInfo,
-		ZapOptions: set.LoggingOptions,
-		SDK:        &sdk,
+		AsyncErrorChannel: set.AsyncErrorChannel,
+		BuildInfo:         set.BuildInfo,
+		ZapOptions:        set.LoggingOptions,
+		SDK:               &sdk,
 	}
 
 	logger, lp, err := telFactory.CreateLogger(ctx, telset, &cfg.Telemetry)
 	if err != nil {
+		err = multierr.Append(err, sdk.Shutdown(ctx))
 		return nil, fmt.Errorf("failed to create logger: %w", err)
 	}
 	srv.loggerProvider = lp
 
 	tracerProvider, err := telFactory.CreateTracerProvider(ctx, telset, &cfg.Telemetry)
 	if err != nil {
+		err = multierr.Append(err, sdk.Shutdown(ctx))
 		return nil, fmt.Errorf("failed to create tracer provider: %w", err)
 	}
 
@@ -165,6 +187,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 
 	mp, err := telFactory.CreateMeterProvider(ctx, telset, &cfg.Telemetry)
 	if err != nil {
+		err = multierr.Append(err, sdk.Shutdown(ctx))
 		return nil, fmt.Errorf("failed to create meter provider: %w", err)
 	}
 
@@ -208,8 +231,7 @@ func logsAboutMeterProvider(logger *zap.Logger, cfg telemetry.MetricsConfig, mp 
 		return
 	}
 
-	//nolint
-	if len(cfg.Address) != 0 {
+	if len(cfg.Address) != 0 { // SA1019
 		logger.Warn("service::telemetry::metrics::address is being deprecated in favor of service::telemetry::metrics::readers")
 	}
 
@@ -361,4 +383,137 @@ func pdataFromSdk(res *sdkresource.Resource) pcommon.Resource {
 		pcommonRes.Attributes().PutStr(string(keyValue.Key), keyValue.Value.AsString())
 	}
 	return pcommonRes
+}
+
+func dropViewOption(selector *config.ViewSelector) config.View {
+	return config.View{
+		Selector: selector,
+		Stream: &config.ViewStream{
+			Aggregation: &config.ViewStreamAggregation{
+				Drop: config.ViewStreamAggregationDrop{},
+			},
+		},
+	}
+}
+
+func configureViews(level configtelemetry.Level) []config.View {
+	views := []config.View{}
+
+	if disableHighCardinalityMetricsFeatureGate.IsEnabled() {
+		views = append(views, []config.View{
+			{
+				Selector: &config.ViewSelector{
+					MeterName: ptr("go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"),
+				},
+				Stream: &config.ViewStream{
+					AttributeKeys: &config.IncludeExclude{
+						Excluded: []string{
+							semconv118.AttributeNetSockPeerAddr,
+							semconv118.AttributeNetSockPeerPort,
+							semconv118.AttributeNetSockPeerName,
+						},
+					},
+				},
+			},
+			{
+				Selector: &config.ViewSelector{
+					MeterName: ptr("go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"),
+				},
+				Stream: &config.ViewStream{
+					AttributeKeys: &config.IncludeExclude{
+						Excluded: []string{
+							semconv118.AttributeNetHostName,
+							semconv118.AttributeNetHostPort,
+						},
+					},
+				},
+			},
+		}...)
+	}
+
+	if level < configtelemetry.LevelDetailed {
+		// Drop all otelhttp and otelgrpc metrics if the level is not detailed.
+		views = append(views,
+			dropViewOption(&config.ViewSelector{
+				MeterName: ptr("go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"),
+			}),
+			dropViewOption(&config.ViewSelector{
+				MeterName: ptr("go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"),
+			}),
+		)
+	}
+
+	// otel-arrow library metrics
+	// See https://github.com/open-telemetry/otel-arrow/blob/c39257/pkg/otel/arrow_record/consumer.go#L174-L176
+	if level < configtelemetry.LevelNormal {
+		scope := ptr("otel-arrow/pkg/otel/arrow_record")
+		views = append(views,
+			dropViewOption(&config.ViewSelector{
+				MeterName:      scope,
+				InstrumentName: ptr("arrow_batch_records"),
+			}),
+			dropViewOption(&config.ViewSelector{
+				MeterName:      scope,
+				InstrumentName: ptr("arrow_schema_resets"),
+			}),
+			dropViewOption(&config.ViewSelector{
+				MeterName:      scope,
+				InstrumentName: ptr("arrow_memory_inuse"),
+			}),
+		)
+	}
+
+	// contrib's internal/otelarrow/netstats metrics
+	// See
+	// - https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/a25f05/internal/otelarrow/netstats/netstats.go#L130
+	// - https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/a25f05/internal/otelarrow/netstats/netstats.go#L165
+	if level < configtelemetry.LevelDetailed {
+		scope := ptr("github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats")
+
+		views = append(views,
+			// Compressed size metrics.
+			dropViewOption(&config.ViewSelector{
+				MeterName:      scope,
+				InstrumentName: ptr("otelcol_*_compressed_size"),
+			}),
+			dropViewOption(&config.ViewSelector{
+				MeterName:      scope,
+				InstrumentName: ptr("otelcol_*_compressed_size"),
+			}),
+
+			// makeRecvMetrics for exporters.
+			dropViewOption(&config.ViewSelector{
+				MeterName:      scope,
+				InstrumentName: ptr("otelcol_exporter_recv"),
+			}),
+			dropViewOption(&config.ViewSelector{
+				MeterName:      scope,
+				InstrumentName: ptr("otelcol_exporter_recv_wire"),
+			}),
+
+			// makeSentMetrics for receivers.
+			dropViewOption(&config.ViewSelector{
+				MeterName:      scope,
+				InstrumentName: ptr("otelcol_receiver_sent"),
+			}),
+			dropViewOption(&config.ViewSelector{
+				MeterName:      scope,
+				InstrumentName: ptr("otelcol_receiver_sent_wire"),
+			}),
+		)
+	}
+
+	// Batch processor metrics
+	if level < configtelemetry.LevelDetailed {
+		scope := ptr("go.opentelemetry.io/collector/processor/batchprocessor")
+		views = append(views, dropViewOption(&config.ViewSelector{
+			MeterName:      scope,
+			InstrumentName: ptr("otelcol_processor_batch_batch_send_size_bytes"),
+		}))
+	}
+	return views
+}
+
+func ptr[T any](v T) *T {
+	return &v
 }

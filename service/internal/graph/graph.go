@@ -302,7 +302,7 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 				MutatesData: g.pipelines[n.pipelineID].fanOutNode.getConsumer().Capabilities().MutatesData,
 			}
 			for _, proc := range g.pipelines[n.pipelineID].processors {
-				capability.MutatesData = capability.MutatesData || proc.getConsumer().Capabilities().MutatesData
+				capability.MutatesData = capability.MutatesData || proc.(*processorNode).getConsumer().Capabilities().MutatesData
 			}
 			next := g.nextConsumers(n.ID())[0]
 			switch n.pipelineID.Signal() {
@@ -379,7 +379,7 @@ type pipelineNodes struct {
 	*capabilitiesNode
 
 	// The order of processors is very important. Therefore use a slice for processors.
-	processors []*processorNode
+	processors []graph.Node
 
 	// Emits to exporters.
 	*fanOutNode
