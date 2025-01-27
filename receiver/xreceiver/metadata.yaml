@@ -1,6 +1,7 @@
 type: experimental
 
 status:
+  class: receiver
   codeowners:
     active:
       - mx-psi
