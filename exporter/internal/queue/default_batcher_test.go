@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/internal"
+	"go.opentelemetry.io/collector/exporter/internal/requesttest"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -68,16 +69,16 @@ func TestDefaultBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T) {
 				require.NoError(t, ba.Shutdown(context.Background()))
 			})
 
-			sink := newFakeRequestSink()
+			sink := requesttest.NewSink()
 
-			require.NoError(t, q.Offer(context.Background(), &fakeRequest{items: 8, sink: sink}))
-			require.NoError(t, q.Offer(context.Background(), &fakeRequest{items: 8, exportErr: errors.New("transient error"), sink: sink}))
-			require.NoError(t, q.Offer(context.Background(), &fakeRequest{items: 17, sink: sink}))
-			require.NoError(t, q.Offer(context.Background(), &fakeRequest{items: 13, sink: sink}))
-			require.NoError(t, q.Offer(context.Background(), &fakeRequest{items: 35, sink: sink}))
-			require.NoError(t, q.Offer(context.Background(), &fakeRequest{items: 2, sink: sink}))
+			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 8, Sink: sink}))
+			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 8, ExportErr: errors.New("transient error"), Sink: sink}))
+			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 17, Sink: sink}))
+			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 13, Sink: sink}))
+			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 35, Sink: sink}))
+			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 2, Sink: sink}))
 			assert.Eventually(t, func() bool {
-				return sink.requestsCount.Load() == 5 && sink.itemsCount.Load() == 75
+				return sink.RequestsCount() == 5 && sink.ItemsCount() == 75
 			}, 30*time.Millisecond, 10*time.Millisecond)
 		})
 	}
@@ -130,22 +131,22 @@ func TestDefaultBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 				require.NoError(t, ba.Shutdown(context.Background()))
 			})
 
-			sink := newFakeRequestSink()
+			sink := requesttest.NewSink()
 
 			// These two requests will be dropped because of export error.
-			require.NoError(t, q.Offer(context.Background(), &fakeRequest{items: 8, sink: sink}))
-			require.NoError(t, q.Offer(context.Background(), &fakeRequest{items: 8, exportErr: errors.New("transient error"), sink: sink}))
+			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 8, Sink: sink}))
+			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 8, ExportErr: errors.New("transient error"), Sink: sink}))
 
-			require.NoError(t, q.Offer(context.Background(), &fakeRequest{items: 7, sink: sink}))
+			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 7, Sink: sink}))
 
 			// This request will be dropped because of merge error
-			require.NoError(t, q.Offer(context.Background(), &fakeRequest{items: 8, mergeErr: errors.New("transient error"), sink: sink}))
+			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 8, MergeErr: errors.New("transient error"), Sink: sink}))
 
-			require.NoError(t, q.Offer(context.Background(), &fakeRequest{items: 13, sink: sink}))
-			require.NoError(t, q.Offer(context.Background(), &fakeRequest{items: 35, sink: sink}))
-			require.NoError(t, q.Offer(context.Background(), &fakeRequest{items: 2, sink: sink}))
+			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 13, Sink: sink}))
+			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 35, Sink: sink}))
+			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 2, Sink: sink}))
 			assert.Eventually(t, func() bool {
-				return sink.requestsCount.Load() == 2 && sink.itemsCount.Load() == 55
+				return sink.RequestsCount() == 2 && sink.ItemsCount() == 55
 			}, 30*time.Millisecond, 10*time.Millisecond)
 		})
 	}
@@ -202,19 +203,19 @@ func TestDefaultBatcher_NoSplit_WithTimeout(t *testing.T) {
 				require.NoError(t, ba.Shutdown(context.Background()))
 			})
 
-			sink := newFakeRequestSink()
+			sink := requesttest.NewSink()
 
-			require.NoError(t, q.Offer(context.Background(), &fakeRequest{items: 8, sink: sink}))
-			require.NoError(t, q.Offer(context.Background(), &fakeRequest{items: 17, sink: sink}))
+			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 8, Sink: sink}))
+			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 17, Sink: sink}))
 
 			// This request will be dropped because of merge error
-			require.NoError(t, q.Offer(context.Background(), &fakeRequest{items: 8, mergeErr: errors.New("transient error"), sink: sink}))
+			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 8, MergeErr: errors.New("transient error"), Sink: sink}))
 
-			require.NoError(t, q.Offer(context.Background(), &fakeRequest{items: 13, sink: sink}))
-			require.NoError(t, q.Offer(context.Background(), &fakeRequest{items: 35, sink: sink}))
-			require.NoError(t, q.Offer(context.Background(), &fakeRequest{items: 2, sink: sink}))
+			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 13, Sink: sink}))
+			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 35, Sink: sink}))
+			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 2, Sink: sink}))
 			assert.Eventually(t, func() bool {
-				return sink.requestsCount.Load() == 1 && sink.itemsCount.Load() == 75
+				return sink.RequestsCount() == 1 && sink.ItemsCount() == 75
 			}, 100*time.Millisecond, 10*time.Millisecond)
 		})
 	}
@@ -274,25 +275,25 @@ func TestDefaultBatcher_Split_TimeoutDisabled(t *testing.T) {
 				require.NoError(t, ba.Shutdown(context.Background()))
 			})
 
-			sink := newFakeRequestSink()
+			sink := requesttest.NewSink()
 
-			require.NoError(t, q.Offer(context.Background(), &fakeRequest{items: 8, sink: sink}))
-			require.NoError(t, q.Offer(context.Background(), &fakeRequest{items: 17, sink: sink}))
+			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 8, Sink: sink}))
+			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 17, Sink: sink}))
 
 			// This request will be dropped because of merge error
-			require.NoError(t, q.Offer(context.Background(), &fakeRequest{items: 8, mergeErr: errors.New("transient error"), sink: sink}))
+			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 8, MergeErr: errors.New("transient error"), Sink: sink}))
 
-			require.NoError(t, q.Offer(context.Background(), &fakeRequest{items: 13, sink: sink}))
-			require.NoError(t, q.Offer(context.Background(), &fakeRequest{items: 35, sink: sink}))
-			require.NoError(t, q.Offer(context.Background(), &fakeRequest{items: 2, sink: sink}))
-			require.NoError(t, q.Offer(context.Background(), &fakeRequest{items: 30, sink: sink}))
+			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 13, Sink: sink}))
+			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 35, Sink: sink}))
+			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 2, Sink: sink}))
+			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 30, Sink: sink}))
 			assert.Eventually(t, func() bool {
-				return sink.requestsCount.Load() == 2 && sink.itemsCount.Load() == 105
+				return sink.RequestsCount() == 2 && sink.ItemsCount() == 105
 			}, 100*time.Millisecond, 10*time.Millisecond)
 
-			require.NoError(t, q.Offer(context.Background(), &fakeRequest{items: 900, sink: sink}))
+			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 900, Sink: sink}))
 			assert.Eventually(t, func() bool {
-				return sink.requestsCount.Load() == 11 && sink.itemsCount.Load() == 1005
+				return sink.RequestsCount() == 11 && sink.ItemsCount() == 1005
 			}, 100*time.Millisecond, 10*time.Millisecond)
 		})
 	}
@@ -319,20 +320,20 @@ func TestDefaultBatcher_Shutdown(t *testing.T) {
 	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 
-	sink := newFakeRequestSink()
+	sink := requesttest.NewSink()
 
-	require.NoError(t, q.Offer(context.Background(), &fakeRequest{items: 1, sink: sink}))
-	require.NoError(t, q.Offer(context.Background(), &fakeRequest{items: 2, sink: sink}))
+	require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 1, Sink: sink}))
+	require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 2, Sink: sink}))
 
 	// Give the batcher some time to read from queue
 	time.Sleep(100 * time.Millisecond)
 
-	assert.Equal(t, int64(0), sink.requestsCount.Load())
-	assert.Equal(t, int64(0), sink.itemsCount.Load())
+	assert.Equal(t, int64(0), sink.RequestsCount())
+	assert.Equal(t, int64(0), sink.ItemsCount())
 
 	require.NoError(t, q.Shutdown(context.Background()))
 	require.NoError(t, ba.Shutdown(context.Background()))
 
-	assert.Equal(t, int64(1), sink.requestsCount.Load())
-	assert.Equal(t, int64(3), sink.itemsCount.Load())
+	assert.Equal(t, int64(1), sink.RequestsCount())
+	assert.Equal(t, int64(3), sink.ItemsCount())
 }

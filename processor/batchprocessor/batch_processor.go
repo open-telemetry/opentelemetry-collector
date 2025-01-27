@@ -264,10 +264,17 @@ func (b *shard[T]) sendItems(trigger trigger) {
 		return
 	}
 	var bytes int
-	if b.processor.telemetry.detailed {
+	bpt := b.processor.telemetry
+
+	// Check if the instrument is enabled to calculate the size of the batch in bytes.
+	// See https://pkg.go.dev/go.opentelemetry.io/otel/sdk/metric/internal/x#readme-instrument-enabled
+	batchSendSizeBytes := bpt.telemetryBuilder.ProcessorBatchBatchSendSizeBytes
+	instr, ok := batchSendSizeBytes.(interface{ Enabled(context.Context) bool })
+	if !ok || instr.Enabled(bpt.exportCtx) {
 		bytes = b.batch.sizeBytes(req)
 	}
-	b.processor.telemetry.record(trigger, int64(sent), int64(bytes))
+
+	bpt.record(trigger, int64(sent), int64(bytes))
 }
 
 // singleShardBatcher is used when metadataKeys is empty, to avoid the

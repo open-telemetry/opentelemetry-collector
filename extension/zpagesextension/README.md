@@ -33,7 +33,7 @@ extensions:
   zpages:
 ```
 
-The full list of settings exposed for this exporter are documented [here](./config.go)
+The full list of settings exposed for this extension are documented [here](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
 
 ## Exposed zPages routes

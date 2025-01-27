@@ -164,7 +164,7 @@ foo
 				require.FileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_metrics.go"))
 				require.FileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_metrics_test.go"))
 				require.FileExists(t, filepath.Join(tmpdir, "documentation.md"))
-				contents, err = os.ReadFile(filepath.Join(tmpdir, generatedPackageDir, "generated_metrics.go")) // nolint: gosec
+				contents, err = os.ReadFile(filepath.Join(tmpdir, generatedPackageDir, "generated_metrics.go")) //nolint:gosec
 				require.NoError(t, err)
 				if tt.wantMetricsContext {
 					require.Contains(t, string(contents), "\"context\"")
@@ -188,7 +188,7 @@ foo
 				require.FileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_telemetry.go"))
 				require.FileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_telemetry_test.go"))
 				require.FileExists(t, filepath.Join(tmpdir, "documentation.md"))
-				contents, err = os.ReadFile(filepath.Join(tmpdir, generatedPackageDir, "generated_telemetry.go")) // nolint: gosec
+				contents, err = os.ReadFile(filepath.Join(tmpdir, generatedPackageDir, "generated_telemetry.go")) //nolint:gosec
 				require.NoError(t, err)
 				if tt.wantMetricsContext {
 					require.Contains(t, string(contents), "\"context\"")
@@ -206,25 +206,25 @@ foo
 
 			if tt.wantStatusGenerated {
 				require.FileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_status.go"))
-				contents, err = os.ReadFile(filepath.Join(tmpdir, "README.md")) // nolint: gosec
+				contents, err = os.ReadFile(filepath.Join(tmpdir, "README.md")) //nolint:gosec
 				require.NoError(t, err)
 				require.NotContains(t, string(contents), "foo")
 			} else {
 				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_status.go"))
-				contents, err = os.ReadFile(filepath.Join(tmpdir, "README.md")) // nolint: gosec
+				contents, err = os.ReadFile(filepath.Join(tmpdir, "README.md")) //nolint:gosec
 				require.NoError(t, err)
 				require.Contains(t, string(contents), "foo")
 			}
 
 			require.FileExists(t, filepath.Join(tmpdir, "generated_component_test.go"))
-			contents, err = os.ReadFile(filepath.Join(tmpdir, "generated_component_test.go")) // nolint: gosec
+			contents, err = os.ReadFile(filepath.Join(tmpdir, "generated_component_test.go")) //nolint:gosec
 			require.NoError(t, err)
 			require.Contains(t, string(contents), "func Test")
 			_, err = parser.ParseFile(token.NewFileSet(), "", contents, parser.DeclarationErrors)
 			require.NoError(t, err)
 
 			require.FileExists(t, filepath.Join(tmpdir, "generated_package_test.go"))
-			contents, err = os.ReadFile(filepath.Join(tmpdir, "generated_package_test.go")) // nolint: gosec
+			contents, err = os.ReadFile(filepath.Join(tmpdir, "generated_package_test.go")) //nolint:gosec
 			require.NoError(t, err)
 			require.Contains(t, string(contents), "func TestMain")
 			_, err = parser.ParseFile(token.NewFileSet(), "", contents, parser.DeclarationErrors)
@@ -481,7 +481,7 @@ Some info about a component
 			require.NoError(t, err)
 
 			require.FileExists(t, filepath.Join(tmpdir, "README.md"))
-			got, err := os.ReadFile(filepath.Join(tmpdir, "README.md")) // nolint: gosec
+			got, err := os.ReadFile(filepath.Join(tmpdir, "README.md")) //nolint:gosec
 			require.NoError(t, err)
 			got = bytes.ReplaceAll(got, []byte("\r\n"), []byte("\n"))
 			expected, err := os.ReadFile(filepath.Join("testdata", tt.outputFile))
@@ -569,7 +569,7 @@ const (
 			err := generateFile("templates/status.go.tmpl",
 				filepath.Join(tmpdir, "generated_status.go"), tt.md, "metadata")
 			require.NoError(t, err)
-			actual, err := os.ReadFile(filepath.Join(tmpdir, "generated_status.go")) // nolint: gosec
+			actual, err := os.ReadFile(filepath.Join(tmpdir, "generated_status.go")) //nolint:gosec
 			require.NoError(t, err)
 			require.Equal(t, tt.expected, string(actual))
 		})
@@ -657,7 +657,7 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 			err := generateFile("templates/telemetry.go.tmpl",
 				filepath.Join(tmpdir, "generated_telemetry.go"), tt.md, "metadata")
 			require.NoError(t, err)
-			actual, err := os.ReadFile(filepath.Join(tmpdir, "generated_telemetry.go")) // nolint: gosec
+			actual, err := os.ReadFile(filepath.Join(tmpdir, "generated_telemetry.go")) //nolint:gosec
 			require.NoError(t, err)
 			require.Equal(t, tt.expected, string(actual))
 		})

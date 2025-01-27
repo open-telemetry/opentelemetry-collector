@@ -234,6 +234,9 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 				"isConnector": func() bool {
 					return md.Status.Class == "connector"
 				},
+				"isScraper": func() bool {
+					return md.Status.Class == "scraper"
+				},
 				"isCommand": func() bool {
 					return md.Status.Class == "cmd"
 				},
@@ -380,7 +383,7 @@ func executeTemplate(tmplFile string, md Metadata, goPackage string) ([]byte, er
 func inlineReplace(tmplFile string, outputFile string, md Metadata, start string, end string, goPackage string) error {
 	var readmeContents []byte
 	var err error
-	if readmeContents, err = os.ReadFile(outputFile); err != nil { // nolint: gosec
+	if readmeContents, err = os.ReadFile(outputFile); err != nil { //nolint:gosec
 		return err
 	}
 

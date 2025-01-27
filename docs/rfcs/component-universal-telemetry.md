@@ -19,7 +19,7 @@ be automatically captured for each kind of pipeline component.
 
 ## Goals
 
-1. Define attributes that are (A) specific enough to describe individual component[_instances_](https://github.com/open-telemetry/opentelemetry-collector/issues/10534)
+1. Define attributes that are (A) specific enough to describe individual component [_instances_](https://github.com/open-telemetry/opentelemetry-collector/issues/10534)
    and (B) consistent enough for correlation across signals.
 2. Articulate a mechanism which enables us to _automatically_ capture telemetry from _all pipeline components_.
 3. Define specific metrics for each kind of pipeline component.
@@ -46,14 +46,14 @@ All signals should use the following attributes:
 
 - `otelcol.component.kind`: `exporter`
 - `otelcol.component.id`: The component ID
-- `otelcol.signal`: `logs`, `metrics` `traces`, `profiles`
+- `otelcol.signal`: `logs`, `metrics`, `traces`, `profiles`
 
 ### Connectors
 
 - `otelcol.component.kind`: `connector`
 - `otelcol.component.id`: The component ID
 - `otelcol.signal`: `logs`, `metrics` `traces`
-- `otelcol.signal.output`: `logs`, `metrics` `traces`, `profiles`
+- `otelcol.signal.output`: `logs`, `metrics`, `traces`, `profiles`
 
 Note: The `otelcol.signal`, `otelcol.signal.output`, or `otelcol.pipeline.id` attributes may be omitted if the corresponding component instances
 are unified by the component implementation. For example, the `otlp` receiver is a singleton, so its telemetry is not specific to a signal.
@@ -140,7 +140,7 @@ measurements will be recorded with `outcome` as `failure` when a call to the nex
         value_type: int
         monotonic: true
 
-   otelcol.receiver.produced.size:
+    otelcol.receiver.produced.size:
       enabled: false
       description: Size of items emitted from the receiver.
       unit: "By"
@@ -187,7 +187,7 @@ measurements will be recorded with `outcome` as `failure` when a call to the nex
 ### Auto-Instrumented Logs
 
 Metrics provide most of the observability we need but there are some gaps which logs can fill. Although metrics would describe the overall
-item counts, it is helpful in some cases to record more granular events. e.g. If a produced batch of 10,000 spans results in an error, but
+item counts, it is helpful in some cases to record more granular events. For example, if a produced batch of 10,000 spans results in an error, but
 100 batches of 100 spans succeed, this may be a matter of batch size that can be detected by analyzing logs, while the corresponding metric
 reports only that a 50% success rate is observed.
 

@@ -45,18 +45,16 @@ func NewThrottleRetry(err error, delay time.Duration) error {
 
 type retrySender struct {
 	BaseSender[internal.Request]
-	traceAttribute attribute.KeyValue
-	cfg            configretry.BackOffConfig
-	stopCh         chan struct{}
-	logger         *zap.Logger
+	cfg    configretry.BackOffConfig
+	stopCh chan struct{}
+	logger *zap.Logger
 }
 
 func newRetrySender(config configretry.BackOffConfig, set exporter.Settings) *retrySender {
 	return &retrySender{
-		traceAttribute: attribute.String(ExporterKey, set.ID.String()),
-		cfg:            config,
-		stopCh:         make(chan struct{}),
-		logger:         set.Logger,
+		cfg:    config,
+		stopCh: make(chan struct{}),
+		logger: set.Logger,
 	}
 }
 
@@ -84,7 +82,7 @@ func (rs *retrySender) Send(ctx context.Context, req internal.Request) error {
 	for {
 		span.AddEvent(
 			"Sending request.",
-			trace.WithAttributes(rs.traceAttribute, attribute.Int64("retry_num", retryNum)))
+			trace.WithAttributes(attribute.Int64("retry_num", retryNum)))
 
 		err := rs.NextSender.Send(ctx, req)
 		if err == nil {
@@ -120,7 +118,6 @@ func (rs *retrySender) Send(ctx context.Context, req internal.Request) error {
 		span.AddEvent(
 			"Exporting failed. Will retry the request after interval.",
 			trace.WithAttributes(
-				rs.traceAttribute,
 				attribute.String("interval", backoffDelayStr),
 				attribute.String("error", err.Error())))
 		rs.logger.Info(
