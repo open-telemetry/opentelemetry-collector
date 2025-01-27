@@ -76,9 +76,9 @@ func (*provider) Shutdown(context.Context) error {
 // returns (var name, default value)
 func parseEnvVarURI(uri string) (string, *string) {
 	const defaultSuffix = ":-"
-	if strings.Contains(uri, defaultSuffix) {
-		parts := strings.SplitN(uri, defaultSuffix, 2)
-		return parts[0], &parts[1]
+	name, defaultValue, hasDefault := strings.Cut(uri, defaultSuffix)
+	if hasDefault {
+		return name, &defaultValue
 	}
 	return uri, nil
 }
