@@ -24,6 +24,7 @@ type Resolver struct {
 	providers     map[string]Provider
 	defaultScheme string
 	converters    []Converter
+	mergePaths    []string
 
 	closers []CloseFunc
 	watcher chan error
@@ -55,6 +56,8 @@ type ResolverSettings struct {
 	// ConverterSettings contains settings that will be passed to Converter
 	// factories when instantiating Converters.
 	ConverterSettings ConverterSettings
+
+	MergePaths []string
 }
 
 // NewResolver returns a new Resolver that resolves configuration from multiple URIs.
@@ -145,6 +148,7 @@ func NewResolver(set ResolverSettings) (*Resolver, error) {
 		uris:          uris,
 		providers:     providers,
 		defaultScheme: set.DefaultScheme,
+		mergePaths:    set.MergePaths,
 		converters:    converters,
 		watcher:       make(chan error, 1),
 	}, nil

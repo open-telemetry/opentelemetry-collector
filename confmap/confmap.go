@@ -17,15 +17,7 @@ import (
 	"github.com/knadh/koanf/v2"
 
 	encoder "go.opentelemetry.io/collector/confmap/internal/mapstructure"
-	"go.opentelemetry.io/collector/featuregate"
 )
-
-const MergeComponentsAppendID = "confmap.MergeComponentsAppend"
-
-var MergeComponentsAppend = featuregate.GlobalRegistry().MustRegister(MergeComponentsAppendID,
-	featuregate.StageAlpha,
-	featuregate.WithRegisterFromVersion("v0.117.0"),
-	featuregate.WithRegisterDescription("Overrides default koanf merging strategy and combines slices."))
 
 const (
 	// KeyDelimiter is used as the default key delimiter in the default koanf instance.
@@ -165,12 +157,41 @@ func (l *Conf) IsSet(key string) bool {
 	return l.k.Exists(key)
 }
 
+type mergeOption struct {
+	mergePaths []string
+}
+
+// WithMergePaths sets an option to merge the lists instead of
+// overriding them.
+func WithMergePaths(paths []string) MergeOpts {
+	return mergeOptionFunc(func(uo *mergeOption) {
+		uo.mergePaths = paths
+	})
+}
+
+type MergeOpts interface {
+	apply(*mergeOption)
+}
+
+type mergeOptionFunc func(*mergeOption)
+
+func (fn mergeOptionFunc) apply(set *mergeOption) {
+	fn(set)
+}
+
 // Merge merges the input given configuration into the existing config.
 // Note that the given map may be modified.
 
-func (l *Conf) Merge(in *Conf) error {
-	if MergeComponentsAppend.IsEnabled() {
-		return l.mergeWithFunc(in, mergeComponentsAppend)
+func (l *Conf) Merge(in *Conf, opts ...MergeOpts) error {
+	set := mergeOption{}
+	for _, opt := range opts {
+		opt.apply(&set)
+	}
+	if len(set.mergePaths) > 0 {
+		m := mergeComponents{
+			mergePaths: set.mergePaths,
+		}
+		return l.mergeWithFunc(in, m.mergeComponentsAppend)
 	}
 	return l.merge(in)
 }
@@ -181,7 +202,7 @@ func (l *Conf) merge(in *Conf) error {
 
 // MergeWithFunc merges the input given configuration into the existing config.
 // Note that the given map may be modified.
-func (l *Conf) mergeWithFunc(in *Conf, mergeFunc MergeFunc) error {
+func (l *Conf) mergeWithFunc(in *Conf, mergeFunc func(map[string]any, map[string]any) error) error {
 	// Currently, custom merge functions are supported only via koanf.Load
 	return l.k.Load(confmap.Provider(in.ToStringMap(), ""), nil, koanf.WithMergeFunc(mergeFunc))
 }

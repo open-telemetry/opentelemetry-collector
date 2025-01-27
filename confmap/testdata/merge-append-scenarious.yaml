@@ -1,5 +1,4 @@
 - name: merge-mode-default
-  append: false
   configs:
     -
         receivers:
@@ -70,7 +69,7 @@
                 processors: [nop2]
                 exporters: [nop2]
 - name: merge-mode-append
-  append: true
+  append_paths: ["service"]
   configs:
     -
         receivers:
@@ -139,7 +138,7 @@
                 processors: [nop, nop2]
                 exporters: [nop, nop2]
 - name: merge-mode-append-override-old-values
-  append: true
+  append_paths: ["service"]
   configs:
     -
         receivers:
@@ -209,7 +208,7 @@
                 processors: [nop]
                 exporters: [nop, nop2]
 - name: merge-mode-append-name-aware
-  append: true
+  append_paths: ["service"]
   configs:
     -
         receivers:
@@ -268,7 +267,7 @@
                 receivers: [nop]
                 exporters: [nop]
 - name: merge-mode-append-multiple
-  append: true
+  append_paths: ["service"]
   configs:
     -
         receivers:
@@ -339,4 +338,225 @@
         pipelines:
             traces:
                 receivers: [nop, nop2, nop3]
+                exporters: [nop, nop2, nop3]
+- name: merge-mode-append-processor
+  append_paths: ["processors::processor::path"]
+  configs:
+    -
+        receivers:
+            nop:
+
+        exporters:
+            nop:
+
+        extensions:
+            nop:
+        processors:
+            processor:
+                path: [path]
+        service:
+            extensions: [nop]
+            pipelines:
+                traces:
+                    receivers: [nop]
+                    processors: [processor]
+                    exporters: [nop]
+    -
+        receivers:
+            nop2:
+
+        exporters:
+            nop2:
+
+        extensions:
+            nop2:
+        processors:
+            processor:
+                path: [path2]
+
+        service:
+            extensions: [nop2]
+            pipelines:
+                traces:
+                    receivers: [nop2]
+                    processors: [processor]
+                    exporters: [nop2]
+  expected: 
+    receivers:
+        nop:
+        nop2:
+
+    exporters:
+        nop:
+        nop2:
+
+    extensions:
+        nop:
+        nop2:
+    processors:
+        processor:
+            path: [path, path2]
+
+    service:
+        extensions: [nop2]
+        pipelines:
+            traces:
+                receivers: [nop2]
+                processors: [processor]
+                exporters: [nop2]
+- name: merge-mode-append-processor-service
+  append_paths: ["processors::processor::path", "service"]
+  configs:
+    -
+        receivers:
+            nop:
+
+        exporters:
+            nop:
+
+        extensions:
+            nop:
+        processors:
+            processor:
+                path: [path]
+        service:
+            extensions: [nop]
+            pipelines:
+                traces:
+                    receivers: [nop]
+                    processors: [processor]
+                    exporters: [nop]
+    -
+        receivers:
+            nop2:
+
+        exporters:
+            nop2:
+
+        extensions:
+            nop2:
+        processors:
+            processor:
+                path: [path2]
+
+        service:
+            extensions: [nop2]
+            pipelines:
+                traces:
+                    receivers: [nop2]
+                    processors: [processor]
+                    exporters: [nop2]
+  expected: 
+    receivers:
+        nop:
+        nop2:
+
+    exporters:
+        nop:
+        nop2:
+
+    extensions:
+        nop:
+        nop2:
+    processors:
+        processor:
+            path: [path, path2]
+
+    service:
+        extensions: [nop, nop2]
+        pipelines:
+            traces:
+                receivers: [nop, nop2]
+                processors: [processor]
+                exporters: [nop, nop2]
+- name: merge-mode-append-entire-config
+  append_paths: ["*"]
+  configs:
+    -
+        receivers:
+            nop:
+
+        exporters:
+            nop:
+
+        extensions:
+            nop:
+        processors:
+            processor:
+                path: [path]
+        service:
+            extensions: [nop]
+            pipelines:
+                traces:
+                    receivers: [nop]
+                    processors: [processor]
+                    exporters: [nop]
+    -
+        receivers:
+            nop2:
+
+        exporters:
+            nop2:
+
+        extensions:
+            nop2:
+        processors:
+            processor:
+                path: [path2]
+
+        service:
+            extensions: [nop2]
+            pipelines:
+                traces:
+                    receivers: [nop2]
+                    processors: [processor]
+                    exporters: [nop2]
+    -
+        receivers:
+            nop3:
+
+        exporters:
+            nop3:
+
+        extensions:
+            nop3:
+        processors:
+            processor:
+                path: [path3]
+            processor2:
+
+        service:
+            extensions: [nop3]
+            pipelines:
+                traces:
+                    receivers: [nop3]
+                    processors: [processor, processor2]
+                    exporters: [nop3]
+  expected: 
+    receivers:
+        nop:
+        nop2:
+        nop3:
+
+    exporters:
+        nop:
+        nop2:
+        nop3:
+
+    extensions:
+        nop:
+        nop2:
+        nop3:
+
+    processors:
+        processor:
+            path: [path, path2, path3]
+        processor2:
+
+    service:
+        extensions: [nop, nop2, nop3]
+        pipelines:
+            traces:
+                receivers: [nop, nop2, nop3]
+                processors: [processor, processor2]
                 exporters: [nop, nop2, nop3]
