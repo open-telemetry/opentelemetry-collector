@@ -53,7 +53,7 @@ func (builder *TelemetryBuilder) InitExporterQueueCapacity(cb func() int64, opts
 	var err error
 	builder.ExporterQueueCapacity, err = builder.meter.Int64ObservableGauge(
 		"otelcol_exporter_queue_capacity",
-		metric.WithDescription("Fixed capacity of the retry queue (in batches)"),
+		metric.WithDescription("Fixed capacity of the retry queue (in batches) [alpha]"),
 		metric.WithUnit("{batches}"),
 	)
 	if err != nil {
@@ -71,7 +71,7 @@ func (builder *TelemetryBuilder) InitExporterQueueSize(cb func() int64, opts ...
 	var err error
 	builder.ExporterQueueSize, err = builder.meter.Int64ObservableGauge(
 		"otelcol_exporter_queue_size",
-		metric.WithDescription("Current size of the retry queue (in batches)"),
+		metric.WithDescription("Current size of the retry queue (in batches) [alpha]"),
 		metric.WithUnit("{batches}"),
 	)
 	if err != nil {
