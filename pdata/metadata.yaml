@@ -1,6 +1,7 @@
-type: service
+type: pdata
 
 status:
+  class: pkg
   codeowners:
     active:
       - BogdanDrutu
