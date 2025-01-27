@@ -77,6 +77,6 @@ func getConfigFlag(flagSet *flag.FlagSet) []string {
 }
 
 func getMergePaths(flagSet *flag.FlagSet) []string {
-	cfv := flagSet.Lookup(mergePathsAppendFlag).Value.(*configFlagValue)
-	return cfv.values
+	mfv := flagSet.Lookup(mergePathsAppendFlag).Value.(*mergePathsValue)
+	return mfv.values
 }
