@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/testdata"
+	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/metadatatest"
 )
 
@@ -36,9 +37,11 @@ func TestScrapeLogsDataOp(t *testing.T) {
 		{items: 15, err: nil},
 	}
 	for i := range params {
-		sf, err := newObsLogs(func(context.Context) (plog.Logs, error) {
+		sm, err := scraper.NewLogs(func(context.Context) (plog.Logs, error) {
 			return testdata.GenerateLogs(params[i].items), params[i].err
-		}, receiverID, scraperID, tel)
+		})
+		require.NoError(t, err)
+		sf, err := wrapObsLogs(sm, receiverID, scraperID, tel)
 		require.NoError(t, err)
 		_, err = sf.ScrapeLogs(parentCtx)
 		require.ErrorIs(t, err, params[i].err)
@@ -81,9 +84,11 @@ func TestCheckScraperLogs(t *testing.T) {
 	tt := metadatatest.SetupTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	sf, err := newObsLogs(func(context.Context) (plog.Logs, error) {
+	sm, err := scraper.NewLogs(func(context.Context) (plog.Logs, error) {
 		return testdata.GenerateLogs(7), nil
-	}, receiverID, scraperID, tt.NewTelemetrySettings())
+	})
+	require.NoError(t, err)
+	sf, err := wrapObsLogs(sm, receiverID, scraperID, tt.NewTelemetrySettings())
 	require.NoError(t, err)
 	_, err = sf.ScrapeLogs(context.Background())
 	require.NoError(t, err)
@@ -92,40 +97,23 @@ func TestCheckScraperLogs(t *testing.T) {
 }
 
 func checkScraperLogs(t *testing.T, tt metadatatest.Telemetry, receiver component.ID, scraper component.ID, scrapedLogRecords int64, erroredLogRecords int64) {
-	tt.AssertMetrics(t, []metricdata.Metrics{
-		{
-			Name:        "otelcol_scraper_scraped_log_records",
-			Description: "Number of log records successfully scraped. [alpha]",
-			Unit:        "{datapoints}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Attributes: attribute.NewSet(
-							attribute.String(receiverKey, receiver.String()),
-							attribute.String(scraperKey, scraper.String())),
-						Value: scrapedLogRecords,
-					},
-				},
+	metadatatest.AssertEqualScraperScrapedLogRecords(t, tt.Telemetry,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(receiverKey, receiver.String()),
+					attribute.String(scraperKey, scraper.String())),
+				Value: scrapedLogRecords,
 			},
-		},
-		{
-			Name:        "otelcol_scraper_errored_log_records",
-			Description: "Number of log records that were unable to be scraped. [alpha]",
-			Unit:        "{datapoints}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Attributes: attribute.NewSet(
-							attribute.String(receiverKey, receiver.String()),
-							attribute.String(scraperKey, scraper.String())),
-						Value: erroredLogRecords,
-					},
-				},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	metadatatest.AssertEqualScraperErroredLogRecords(t, tt.Telemetry,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(receiverKey, receiver.String()),
+					attribute.String(scraperKey, scraper.String())),
+				Value: erroredLogRecords,
 			},
-		},
-	}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }

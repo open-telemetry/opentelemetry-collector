@@ -109,7 +109,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 
     {{- range $name, $metric := .Telemetry.Metrics }}
     {{- if not $metric.Optional }}
-    builder.{{ $name.Render }}, err = getLeveledMeter(builder.meter, configtelemetry.Level{{ $metric.Level }}, settings.MetricsLevel).{{ $metric.Data.Instrument }}(
+    builder.{{ $name.Render }}, err = builder.meter.{{ $metric.Data.Instrument }}(
         "otelcol_{{ $name }}",
         metric.WithDescription("{{ $metric.Description }}{{ $metric.Stability }}"),
         metric.WithUnit("{{ $metric.Unit }}"),
@@ -119,19 +119,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
     )
     errs = errors.Join(errs, err)
     {{- if $metric.Data.Async }}
-    _, err = getLeveledMeter(builder.meter, configtelemetry.Level{{ $metric.Level }}, settings.MetricsLevel).RegisterCallback(builder.observe{{ $name.Render }}, builder.{{ $name.Render }})
+    _, err = builder.meter.RegisterCallback(builder.observe{{ $name.Render }}, builder.{{ $name.Render }})
     errs = errors.Join(errs, err)
     {{- end }}
     {{- end }}
     {{- end }}
     return &builder, errs
-}
-
-func getLeveledMeter(meter metric.Meter, cfgLevel, srvLevel configtelemetry.Level) metric.Meter {
-	if cfgLevel <= srvLevel {
-		return meter
-	}
-	return noopmetric.Meter{}
 }
 
 {{- end }}

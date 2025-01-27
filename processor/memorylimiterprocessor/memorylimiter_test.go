@@ -52,7 +52,7 @@ func TestNoDataLoss(t *testing.T) {
 	runtime.ReadMemStats(&ms)
 
 	// Set the limit to current usage plus expected increase. This means initially we will not be limited.
-	// nolint:gosec
+	//nolint:gosec
 	cfg.MemoryLimitMiB = uint32(ms.Alloc/(1024*1024) + expectedMemoryIncreaseMiB)
 	cfg.MemorySpikeLimitMiB = 1
 
@@ -227,53 +227,14 @@ func TestMetricsTelemetry(t *testing.T) {
 	}
 	require.NoError(t, metrics.Shutdown(context.Background()))
 
-	tel.AssertMetrics(t, []metricdata.Metrics{
-		{
-			Name:        "otelcol_processor_accepted_metric_points",
-			Description: "Number of metric points successfully pushed into the next component in the pipeline. [deprecated since v0.110.0]",
-			Unit:        "{datapoints}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value:      10,
-						Attributes: attribute.NewSet(attribute.String("processor", "memory_limiter")),
-					},
-				},
+	metadatatest.AssertEqualProcessorAcceptedMetricPoints(t, tel.Telemetry,
+		[]metricdata.DataPoint[int64]{
+			{
+				Value:      10,
+				Attributes: attribute.NewSet(attribute.String("processor", "memory_limiter")),
 			},
-		},
-		{
-			Name:        "otelcol_processor_incoming_items",
-			Description: "Number of items passed to the processor. [alpha]",
-			Unit:        "{items}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value:      10,
-						Attributes: attribute.NewSet(attribute.String("processor", "memory_limiter"), attribute.String("otel.signal", "metrics")),
-					},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_processor_outgoing_items",
-			Description: "Number of items emitted from the processor. [alpha]",
-			Unit:        "{items}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value:      10,
-						Attributes: attribute.NewSet(attribute.String("processor", "memory_limiter"), attribute.String("otel.signal", "metrics")),
-					},
-				},
-			},
-		},
-	}, metricdatatest.IgnoreTimestamp())
+		}, metricdatatest.IgnoreTimestamp())
+
 	require.NoError(t, tel.Shutdown(context.Background()))
 }
 

@@ -4,13 +4,13 @@
 change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: mdatagen
+component: service-telemetry
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: apply fieldalignment to generated code
+note: pass the missing async error channel into service telemetry settings
 
 # One or more tracking issues or pull requests related to the change
-issues: [12121]
+issues: [11417]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.

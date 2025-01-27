@@ -40,7 +40,7 @@ func TestSetupTelemetry(t *testing.T) {
 		},
 		{
 			Name:        "otelcol_processor_batch_batch_send_size_bytes",
-			Description: "Number of bytes in batch that was sent",
+			Description: "Number of bytes in batch that was sent. Only available on detailed level.",
 			Unit:        "By",
 			Data: metricdata.Histogram[int64]{
 				Temporality: metricdata.CumulativeTemporality,
@@ -86,5 +86,26 @@ func TestSetupTelemetry(t *testing.T) {
 			},
 		},
 	}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
+	AssertEqualProcessorBatchBatchSendSize(t, testTel.Telemetry,
+		[]metricdata.HistogramDataPoint[int64]{{}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
+	AssertEqualProcessorBatchBatchSendSizeBytes(t, testTel.Telemetry,
+		[]metricdata.HistogramDataPoint[int64]{{}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
+	AssertEqualProcessorBatchBatchSizeTriggerSend(t, testTel.Telemetry,
+		[]metricdata.DataPoint[int64]{{}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
+	AssertEqualProcessorBatchMetadataCardinality(t, testTel.Telemetry,
+		[]metricdata.DataPoint[int64]{{}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
+	AssertEqualProcessorBatchTimeoutTriggerSend(t, testTel.Telemetry,
+		[]metricdata.DataPoint[int64]{{}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
 	require.NoError(t, testTel.Shutdown(context.Background()))
 }

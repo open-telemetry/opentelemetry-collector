@@ -6,11 +6,9 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/otel/metric"
-	noopmetric "go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -49,24 +47,17 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
-	builder.ProcessorIncomingItems, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
+	builder.ProcessorIncomingItems, err = builder.meter.Int64Counter(
 		"otelcol_processor_incoming_items",
 		metric.WithDescription("Number of items passed to the processor. [alpha]"),
 		metric.WithUnit("{items}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorOutgoingItems, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
+	builder.ProcessorOutgoingItems, err = builder.meter.Int64Counter(
 		"otelcol_processor_outgoing_items",
 		metric.WithDescription("Number of items emitted from the processor. [alpha]"),
 		metric.WithUnit("{items}"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs
-}
-
-func getLeveledMeter(meter metric.Meter, cfgLevel, srvLevel configtelemetry.Level) metric.Meter {
-	if cfgLevel <= srvLevel {
-		return meter
-	}
-	return noopmetric.Meter{}
 }
