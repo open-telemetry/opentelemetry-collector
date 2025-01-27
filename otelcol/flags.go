@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	configFlag    = "config"
-	mergeListFlag = "merge-lists"
+	configFlag           = "config"
+	mergePathsAppendFlag = "merge-paths-append"
 )
 
 type configFlagValue struct {
@@ -65,7 +65,7 @@ func flags(reg *featuregate.Registry) *flag.FlagSet {
 
 	mergePaths := new(mergePathsValue)
 
-	flagSet.Var(mergePaths, mergeListFlag, "Specify config paths you want merged")
+	flagSet.Var(mergePaths, mergePathsAppendFlag, "Specify config paths you want merged")
 
 	reg.RegisterFlags(flagSet)
 	return flagSet
@@ -77,6 +77,6 @@ func getConfigFlag(flagSet *flag.FlagSet) []string {
 }
 
 func getMergePaths(flagSet *flag.FlagSet) []string {
-	cfv := flagSet.Lookup(mergeListFlag).Value.(*configFlagValue)
+	cfv := flagSet.Lookup(mergePathsAppendFlag).Value.(*configFlagValue)
 	return cfv.values
 }
