@@ -52,6 +52,7 @@ func (tts *TestTelemetry) CheckExporterEnqueueFailedLogs(enqueueFailed int64) er
 	return checkExporterEnqueueFailed(tts.Reader, tts.id, "log_records", enqueueFailed)
 }
 
+// Deprecated: [v0.119.0] use the metadatatest.AssertEqualMetric series of functions instead.
 // CheckExporterLogs checks that for the current exported values for logs exporter metrics match given values.
 func (tts *TestTelemetry) CheckExporterLogs(sentLogRecords, sendFailedLogRecords int64) error {
 	return checkExporterLogs(tts.Reader, tts.id, sentLogRecords, sendFailedLogRecords)

@@ -58,7 +58,7 @@ func (builder *TelemetryBuilder) InitQueueLength(cb func() int64, opts ...metric
 	var err error
 	builder.QueueLength, err = builder.meter.Int64ObservableGauge(
 		"otelcol_queue_length",
-		metric.WithDescription("This metric is optional and therefore not initialized in NewTelemetryBuilder."),
+		metric.WithDescription("This metric is optional and therefore not initialized in NewTelemetryBuilder. [alpha]"),
 		metric.WithUnit("{items}"),
 	)
 	if err != nil {
