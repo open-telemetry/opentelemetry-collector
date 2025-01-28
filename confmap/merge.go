@@ -56,8 +56,7 @@ func merge(path string, src, dest map[string]any) {
 	destVal := reflect.ValueOf(dVal)
 
 	if srcVal.Kind() != destVal.Kind() {
-		// different kinds, override the old config
-		src[path] = sVal
+		// different kinds, maps.Merge will override the old config
 		return
 	}
 	switch destVal.Kind() {
@@ -72,40 +71,33 @@ func merge(path string, src, dest map[string]any) {
 	case reflect.Map:
 		// both of them are maps. Recursively call the mergeMaps
 		mergeMaps(sVal.(map[string]any), dVal.(map[string]any))
-	default:
-		// Default case, override the old config
-		src[path] = sVal
 	}
 }
 
-func mergeMaps(new, old map[string]any) {
-	for oldKey, oVal := range old {
-		nVal, newOk := new[oldKey]
-		if !newOk {
-			// old key is not present in new config, hence, add it
-			new[oldKey] = nVal
+func mergeMaps(src, dest map[string]any) {
+	for dKey, dVal := range dest {
+		sVal, sOk := src[dKey]
+		if !sOk {
+			// old key is not present in new config. Hence, add it to src
+			src[dKey] = dVal
 			continue
 		}
 
-		newVal := reflect.ValueOf(nVal)
-		oldVal := reflect.ValueOf(oVal)
+		newVal := reflect.ValueOf(sVal)
+		oldVal := reflect.ValueOf(dVal)
 
 		if newVal.Kind() != oldVal.Kind() {
-			// different kinds, override the old config
-			new[oldKey] = nVal
+			// different kinds, maps.Merge will override the old config
 			continue
 		}
 
 		switch oldVal.Kind() {
 		case reflect.Array, reflect.Slice:
 			// both of them are array. Merge them
-			new[oldKey] = mergeSlice(oldVal, newVal)
+			src[dKey] = mergeSlice(oldVal, newVal)
 		case reflect.Map:
 			// both of them are maps. Recursively call the mergeMaps
-			mergeMaps(nVal.(map[string]any), oVal.(map[string]any))
-		default:
-			// Default case, override the old config
-			new[oldKey] = nVal
+			mergeMaps(sVal.(map[string]any), dVal.(map[string]any))
 		}
 	}
 }
