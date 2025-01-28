@@ -14,11 +14,29 @@ const (
 	mergeAllAlias = "*"
 )
 
-type mergeComponents struct {
+type mergeOption struct {
 	mergePaths []string
 }
 
-func (m *mergeComponents) mergeComponentsAppend(src, dest map[string]any) error {
+// WithMergePaths sets an option to merge the lists instead of
+// overriding them.
+func WithMergePaths(paths []string) MergeOpts {
+	return mergeOptionFunc(func(uo *mergeOption) {
+		uo.mergePaths = paths
+	})
+}
+
+type MergeOpts interface {
+	apply(*mergeOption)
+}
+
+type mergeOptionFunc func(*mergeOption)
+
+func (fn mergeOptionFunc) apply(set *mergeOption) {
+	fn(set)
+}
+
+func (m *mergeOption) mergeComponentsAppend(src, dest map[string]any) error {
 	// mergeComponentsAppend recursively merges the src map into the dest map (left to right),
 	// modifying and expanding the dest map in the process.
 	// This function does not overwrite lists, and ensures that the final value is a name-aware
@@ -67,7 +85,7 @@ func merge(path string, src, dest map[string]any) {
 		maps.Delete(src, pathSplit)
 
 		// Note: path is a delimited by KeyDelimiter. We will call "Unflatten" later to get the final config
-		src[path] = mergeSlice(destVal, srcVal)
+		src[path] = mergeSlice(srcVal, destVal)
 	case reflect.Map:
 		// both of them are maps. Recursively call the mergeMaps
 		mergeMaps(sVal.(map[string]any), dVal.(map[string]any))
@@ -83,18 +101,18 @@ func mergeMaps(src, dest map[string]any) {
 			continue
 		}
 
-		newVal := reflect.ValueOf(sVal)
-		oldVal := reflect.ValueOf(dVal)
+		srcVal := reflect.ValueOf(sVal)
+		destVal := reflect.ValueOf(dVal)
 
-		if newVal.Kind() != oldVal.Kind() {
+		if destVal.Kind() != srcVal.Kind() {
 			// different kinds, maps.Merge will override the old config
 			continue
 		}
 
-		switch oldVal.Kind() {
+		switch srcVal.Kind() {
 		case reflect.Array, reflect.Slice:
 			// both of them are array. Merge them
-			src[dKey] = mergeSlice(oldVal, newVal)
+			src[dKey] = mergeSlice(srcVal, destVal)
 		case reflect.Map:
 			// both of them are maps. Recursively call the mergeMaps
 			mergeMaps(sVal.(map[string]any), dVal.(map[string]any))
@@ -102,23 +120,23 @@ func mergeMaps(src, dest map[string]any) {
 	}
 }
 
-func mergeSlice(old, new reflect.Value) any {
-	if old.Type() != new.Type() {
-		return new
+func mergeSlice(src, dest reflect.Value) any {
+	if src.Type() != dest.Type() {
+		return src
 	}
-	slice := reflect.MakeSlice(old.Type(), 0, old.Cap()+new.Cap())
-	for i := 0; i < old.Len(); i++ {
-		slice = reflect.Append(slice, old.Index(i))
+	slice := reflect.MakeSlice(src.Type(), 0, src.Cap()+dest.Cap())
+	for i := 0; i < dest.Len(); i++ {
+		slice = reflect.Append(slice, dest.Index(i))
 	}
 
 OUTER2:
-	for i := 0; i < new.Len(); i++ {
+	for i := 0; i < src.Len(); i++ {
 		for j := 0; j < slice.Len(); j++ {
-			if slice.Index(j).Equal(new.Index(i)) {
+			if slice.Index(j).Equal(src.Index(i)) {
 				continue OUTER2
 			}
 		}
-		slice = reflect.Append(slice, new.Index(i))
+		slice = reflect.Append(slice, src.Index(i))
 	}
 	return slice.Interface()
 }

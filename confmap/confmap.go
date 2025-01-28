@@ -157,28 +157,6 @@ func (l *Conf) IsSet(key string) bool {
 	return l.k.Exists(key)
 }
 
-type mergeOption struct {
-	mergePaths []string
-}
-
-// WithMergePaths sets an option to merge the lists instead of
-// overriding them.
-func WithMergePaths(paths []string) MergeOpts {
-	return mergeOptionFunc(func(uo *mergeOption) {
-		uo.mergePaths = paths
-	})
-}
-
-type MergeOpts interface {
-	apply(*mergeOption)
-}
-
-type mergeOptionFunc func(*mergeOption)
-
-func (fn mergeOptionFunc) apply(set *mergeOption) {
-	fn(set)
-}
-
 // Merge merges the input given configuration into the existing config.
 // Note that the given map may be modified.
 
@@ -188,10 +166,7 @@ func (l *Conf) Merge(in *Conf, opts ...MergeOpts) error {
 		opt.apply(&set)
 	}
 	if len(set.mergePaths) > 0 {
-		m := mergeComponents{
-			mergePaths: set.mergePaths,
-		}
-		return l.mergeWithFunc(in, m.mergeComponentsAppend)
+		return l.mergeWithFunc(in, set.mergeComponentsAppend)
 	}
 	return l.merge(in)
 }

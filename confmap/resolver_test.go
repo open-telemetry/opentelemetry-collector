@@ -451,7 +451,6 @@ func TestMergeFunctionality(t *testing.T) {
 	require.NoError(t, err)
 	for _, tt := range testcases {
 		t.Run(tt.Name, func(t *testing.T) {
-
 			conf := New()
 			for _, c := range tt.Configs {
 				require.NoError(t, conf.Merge(NewFromStringMap(c), WithMergePaths(tt.AppendPaths)))
