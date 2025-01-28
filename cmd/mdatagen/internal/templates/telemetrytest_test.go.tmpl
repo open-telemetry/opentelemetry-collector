@@ -67,6 +67,20 @@ func TestSetupTelemetry(t *testing.T) {
         {{- end }}
     {{- end }}
     }, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
+    {{- range $name, $metric := .Telemetry.Metrics }}
+    {{ if not $metric.Optional }}
+    AssertEqual{{ $name.Render }}(t, testTel.Telemetry,
+        {{ if eq $metric.Data.Type "Gauge" -}}
+        []metricdata.DataPoint[{{ $metric.Gauge.MetricValueType.BasicType }}]{{"{{}}"}},
+        {{- else if eq $metric.Data.Type "Sum" -}}
+        []metricdata.DataPoint[{{ $metric.Sum.MetricValueType.BasicType }}]{{"{{}}"}},
+        {{- else if eq $metric.Data.Type "Histogram" -}}
+        []metricdata.HistogramDataPoint[{{ $metric.Histogram.MetricValueType.BasicType }}]{{"{{}}"}},
+        {{- end }}
+        metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+    {{- end }}
+    {{- end }}
+
 	require.NoError(t, testTel.Shutdown(context.Background()))
 }
-

@@ -28,7 +28,7 @@ func SetupTelemetry(opts ...componenttest.TelemetryOption) Telemetry {
 	return Telemetry{ Telemetry: componenttest.NewTelemetry(opts...) }
 }
 
-{{- if or isConnector isExporter isExtension isProcessor isReceiver isScraper }}
+{{ if or isConnector isExporter isExtension isProcessor isReceiver isScraper }}
 func (tt *Telemetry) NewSettings() {{ .Status.Class }}.Settings {
 	set := {{ .Status.Class }}test.NewNopSettings()
 	set.ID = component.NewID(component.MustNewType("{{ .Type }}"))
@@ -42,7 +42,7 @@ func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, 
 	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
 	// ensure all required metrics are present
 	for _, want := range expected {
-		got := getMetric(want.Name, md)
+		got := getMetricFromResource(want.Name, md)
 		metricdatatest.AssertEqual(t, want, got, opts...)
 	}
 
@@ -50,7 +50,37 @@ func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, 
 	require.Equal(t, len(expected), lenMetrics(md))
 }
 
-func getMetric(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
+{{ range $name, $metric := .Telemetry.Metrics }}
+{{ if not $metric.Optional }}
+func AssertEqual{{ $name.Render }}(t *testing.T, tt componenttest.Telemetry, dps []metricdata.{{- if eq $metric.Data.Type "Histogram" }} {{$metric.Data.Type}} {{- end }}DataPoint[{{ $metric.Data.BasicType }}], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_{{ $name }}",
+		Description: "{{ $metric.Description }}{{ $metric.Stability }}",
+		Unit:        "{{ $metric.Unit }}",
+		Data:        metricdata.{{ $metric.Data.Type }}[{{ $metric.Data.BasicType }}]{
+			{{- if $metric.Data.HasAggregated }}
+			Temporality: metricdata.CumulativeTemporality,
+			{{- end }}
+			{{- if $metric.Data.HasMonotonic }}
+			IsMonotonic: {{ $metric.Data.Monotonic }},
+			{{- end }}
+			DataPoints: dps,
+		},
+	}
+	got := getMetric(t, tt, "otelcol_{{ $name }}")
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+{{- end }}
+{{- end }}
+
+func getMetric(t *testing.T, tt componenttest.Telemetry, name string) metricdata.Metrics {
+	var md metricdata.ResourceMetrics
+	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
+	return getMetricFromResource(name, md)
+}
+
+func getMetricFromResource(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
 	for _, sm := range got.ScopeMetrics {
 		for _, m := range sm.Metrics {
 			if m.Name == name {
@@ -70,4 +100,3 @@ func lenMetrics(got metricdata.ResourceMetrics) int {
 
 	return metricsCount
 }
-
