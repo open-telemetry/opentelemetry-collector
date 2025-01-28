@@ -169,39 +169,39 @@ func (c *Config) SetGoPath() error {
 
 // ParseModules will parse the Modules entries and populate the missing values
 func (c *Config) ParseModules() error {
-	var usedNames = make(map[string]int)
 	var err error
+	usedNames := make(map[string]int)
 
-	c.Extensions, usedNames, err = parseModules(c.Extensions, usedNames)
+	c.Extensions, err = parseModules(c.Extensions, usedNames)
 	if err != nil {
 		return err
 	}
 
-	c.Receivers, usedNames, err = parseModules(c.Receivers, usedNames)
+	c.Receivers, err = parseModules(c.Receivers, usedNames)
 	if err != nil {
 		return err
 	}
 
-	c.Exporters, usedNames, err = parseModules(c.Exporters, usedNames)
+	c.Exporters, err = parseModules(c.Exporters, usedNames)
 	if err != nil {
 		return err
 	}
 
-	c.Processors, usedNames, err = parseModules(c.Processors, usedNames)
+	c.Processors, err = parseModules(c.Processors, usedNames)
 	if err != nil {
 		return err
 	}
 
-	c.Connectors, usedNames, err = parseModules(c.Connectors, usedNames)
+	c.Connectors, err = parseModules(c.Connectors, usedNames)
 	if err != nil {
 		return err
 	}
 
-	c.ConfmapProviders, usedNames, err = parseModules(c.ConfmapProviders, usedNames)
+	c.ConfmapProviders, err = parseModules(c.ConfmapProviders, usedNames)
 	if err != nil {
 		return err
 	}
-	c.ConfmapConverters, _, err = parseModules(c.ConfmapConverters, usedNames)
+	c.ConfmapConverters, err = parseModules(c.ConfmapConverters, usedNames)
 	if err != nil {
 		return err
 	}
@@ -221,7 +221,7 @@ func validateModules(name string, mods []Module) error {
 	return nil
 }
 
-func parseModules(mods []Module, usedNames map[string]int) ([]Module, map[string]int, error) {
+func parseModules(mods []Module, usedNames map[string]int) ([]Module, error) {
 	var parsedModules []Module
 	for _, mod := range mods {
 		if mod.Import == "" {
@@ -253,16 +253,16 @@ func parseModules(mods []Module, usedNames map[string]int) ([]Module, map[string
 			var err error
 			mod.Path, err = filepath.Abs(mod.Path)
 			if err != nil {
-				return mods, usedNames, fmt.Errorf("module has a relative \"path\" element, but we couldn't resolve the current working dir: %w", err)
+				return mods, fmt.Errorf("module has a relative \"path\" element, but we couldn't resolve the current working dir: %w", err)
 			}
 			// Check if the path exists
 			if _, err := os.Stat(mod.Path); os.IsNotExist(err) {
-				return mods, usedNames, fmt.Errorf("filepath does not exist: %s", mod.Path)
+				return mods, fmt.Errorf("filepath does not exist: %s", mod.Path)
 			}
 		}
 
 		parsedModules = append(parsedModules, mod)
 	}
 
-	return parsedModules, usedNames, nil
+	return parsedModules, nil
 }
