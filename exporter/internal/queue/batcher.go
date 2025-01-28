@@ -13,9 +13,9 @@ import (
 	"go.opentelemetry.io/collector/exporter/internal"
 )
 
-type batch struct {
+type batch[K any] struct {
 	ctx     context.Context
-	req     internal.Request
+	req     K
 	idxList []uint64
 }
 
@@ -24,13 +24,14 @@ type Batcher interface {
 	component.Component
 }
 
-type BaseBatcher struct {
+type BaseBatcher[K any] struct {
 	batchCfg exporterbatcher.Config
-	queue    exporterqueue.Queue[internal.Request]
+	queue    exporterqueue.Queue[K]
 	// TODO: Remove when the -1 hack for testing is removed.
+	merger     Merger[K]
 	maxWorkers int
 	workerPool chan bool
-	exportFunc func(ctx context.Context, req internal.Request) error
+	exportFunc func(ctx context.Context, req K) error
 	stopWG     sync.WaitGroup
 }
 
@@ -40,16 +41,16 @@ func NewBatcher(batchCfg exporterbatcher.Config,
 	maxWorkers int,
 ) (Batcher, error) {
 	if !batchCfg.Enabled {
-		return &DisabledBatcher{BaseBatcher: newBaseBatcher(batchCfg, queue, exportFunc, maxWorkers)}, nil
+		return &DisabledBatcher[internal.Request]{BaseBatcher: newBaseBatcher(batchCfg, queue, exportFunc, maxWorkers)}, nil
 	}
-	return &DefaultBatcher{BaseBatcher: newBaseBatcher(batchCfg, queue, exportFunc, maxWorkers)}, nil
+	return &DefaultBatcher[internal.Request]{BaseBatcher: newBaseBatcher(batchCfg, queue, exportFunc, maxWorkers)}, nil
 }
 
 func newBaseBatcher(batchCfg exporterbatcher.Config,
 	queue exporterqueue.Queue[internal.Request],
 	exportFunc func(ctx context.Context, req internal.Request) error,
 	maxWorkers int,
-) BaseBatcher {
+) BaseBatcher[internal.Request] {
 	var workerPool chan bool
 	if maxWorkers > 0 {
 		workerPool = make(chan bool, maxWorkers)
@@ -57,9 +58,10 @@ func newBaseBatcher(batchCfg exporterbatcher.Config,
 			workerPool <- true
 		}
 	}
-	return BaseBatcher{
+	return BaseBatcher[internal.Request]{
 		batchCfg:   batchCfg,
 		queue:      queue,
+		merger:     requestMerger{},
 		maxWorkers: maxWorkers,
 		workerPool: workerPool,
 		exportFunc: exportFunc,
@@ -68,19 +70,19 @@ func newBaseBatcher(batchCfg exporterbatcher.Config,
 }
 
 // flush starts a goroutine that calls exportFunc. It blocks until a worker is available if necessary.
-func (qb *BaseBatcher) flush(batchToFlush batch) {
-	qb.stopWG.Add(1)
-	if qb.workerPool != nil {
-		<-qb.workerPool
+func (qb *BaseBatcher[K]) flush(batchToFlush batch[K]) {
+	err := qb.exportFunc(batchToFlush.ctx, batchToFlush.req)
+	for _, idx := range batchToFlush.idxList {
+		qb.queue.OnProcessingFinished(idx, err)
 	}
-	go func() {
-		defer qb.stopWG.Done()
-		err := qb.exportFunc(batchToFlush.ctx, batchToFlush.req)
-		for _, idx := range batchToFlush.idxList {
-			qb.queue.OnProcessingFinished(idx, err)
-		}
-		if qb.workerPool != nil {
-			qb.workerPool <- true
-		}
-	}()
+}
+
+type Merger[K any] interface {
+	MergeSplit(src, dst K, cfg exporterbatcher.MaxSizeConfig) ([]K, error)
+}
+
+type requestMerger struct{}
+
+func (requestMerger) MergeSplit(src, dst internal.Request, cfg exporterbatcher.MaxSizeConfig) ([]internal.Request, error) {
+	return src.MergeSplit(context.Background(), cfg, dst)
 }
