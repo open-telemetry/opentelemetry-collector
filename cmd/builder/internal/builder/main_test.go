@@ -361,7 +361,7 @@ func TestReplaceStatementsAreComplete(t *testing.T) {
 	// Configure all components that we want to use elsewhere in these tests.
 	// This ensures the resulting go.mod file has maximum coverage of modules
 	// that exist in the Core repository.
-	var usedNames = make(map[string]int)
+	usedNames := make(map[string]int)
 	cfg.Exporters, err = parseModules([]Module{
 		{
 			GoMod: "go.opentelemetry.io/collector/exporter/debugexporter v1.9999.9999",
