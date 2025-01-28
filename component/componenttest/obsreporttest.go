@@ -35,23 +35,28 @@ func (tts *TestTelemetry) CheckExporterTraces(sentSpans, sendFailedSpans int64) 
 	return checkExporterTraces(tts.Reader, tts.id, sentSpans, sendFailedSpans)
 }
 
+// Deprecated: [v0.119.0] use the metadatatest.AssertEqualMetric series of functions instead.
 // CheckExporterMetrics checks that for the current exported values for metrics exporter metrics match given values.
 func (tts *TestTelemetry) CheckExporterMetrics(sentMetricsPoints, sendFailedMetricsPoints int64) error {
 	return checkExporterMetrics(tts.Reader, tts.id, sentMetricsPoints, sendFailedMetricsPoints)
 }
 
+// Deprecated: [v0.119.0] use the metadatatest.AssertEqualMetric series of functions instead.
 func (tts *TestTelemetry) CheckExporterEnqueueFailedMetrics(enqueueFailed int64) error {
 	return checkExporterEnqueueFailed(tts.Reader, tts.id, "metric_points", enqueueFailed)
 }
 
+// Deprecated: [v0.119.0] use the metadatatest.AssertEqualMetric series of functions instead.
 func (tts *TestTelemetry) CheckExporterEnqueueFailedTraces(enqueueFailed int64) error {
 	return checkExporterEnqueueFailed(tts.Reader, tts.id, "spans", enqueueFailed)
 }
 
+// Deprecated: [v0.119.0] use the metadatatest.AssertEqualMetric series of functions instead.
 func (tts *TestTelemetry) CheckExporterEnqueueFailedLogs(enqueueFailed int64) error {
 	return checkExporterEnqueueFailed(tts.Reader, tts.id, "log_records", enqueueFailed)
 }
 
+// Deprecated: [v0.119.0] use the metadatatest.AssertEqualMetric series of functions instead.
 // CheckExporterLogs checks that for the current exported values for logs exporter metrics match given values.
 func (tts *TestTelemetry) CheckExporterLogs(sentLogRecords, sendFailedLogRecords int64) error {
 	return checkExporterLogs(tts.Reader, tts.id, sentLogRecords, sendFailedLogRecords)
@@ -67,6 +72,7 @@ func (tts *TestTelemetry) CheckReceiverTraces(protocol string, acceptedSpans, dr
 	return checkReceiverTraces(tts.Reader, tts.id, protocol, acceptedSpans, droppedSpans)
 }
 
+// Deprecated: [v0.119.0] use the metadatatest.AssertEqualMetric series of functions instead.
 // CheckReceiverLogs checks that for the current exported values for logs receiver metrics match given values.
 func (tts *TestTelemetry) CheckReceiverLogs(protocol string, acceptedLogRecords, droppedLogRecords int64) error {
 	return checkReceiverLogs(tts.Reader, tts.id, protocol, acceptedLogRecords, droppedLogRecords)
