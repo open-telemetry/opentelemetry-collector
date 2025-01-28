@@ -13,6 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
@@ -26,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/internal/storagetest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -270,7 +273,14 @@ func TestTraces_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	}
 
 	// 2 batched must be in queue, and 5 batches (10 spans) rejected due to queue overflow
-	require.NoError(t, tt.CheckExporterEnqueueFailedTraces(int64(10)))
+	metadatatest.AssertEqualExporterEnqueueFailedSpans(t, tt.Telemetry,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("exporter", fakeTracesName.String())),
+				Value: int64(10),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
 func TestTraces_WithSpan(t *testing.T) {
