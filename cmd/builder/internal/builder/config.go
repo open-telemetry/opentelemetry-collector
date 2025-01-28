@@ -235,9 +235,18 @@ func parseModules(mods []Module, usedNames map[string]int) ([]Module, map[string
 
 		originalModName := mod.Name
 		if count, exists := usedNames[mod.Name]; exists {
-			mod.Name = fmt.Sprintf("%s%d", mod.Name, count+1)
+			var newName string
+			for {
+				newName = fmt.Sprintf("%s%d", mod.Name, count+1)
+				if _, transformedExists := usedNames[newName]; !transformedExists {
+					break
+				}
+				count++
+			}
+			mod.Name = newName
+			usedNames[newName] = 1
 		}
-		usedNames[originalModName]++
+		usedNames[originalModName] = 1
 
 		// Check if path is empty, otherwise filepath.Abs replaces it with current path ".".
 		if mod.Path != "" {

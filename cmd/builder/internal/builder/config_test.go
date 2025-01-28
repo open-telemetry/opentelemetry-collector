@@ -51,6 +51,25 @@ func TestAliases(t *testing.T) {
 				GoMod: "github.com/org/repo5/impl v0.1.2",
 			},
 		},
+		Processors: []Module{
+			{
+				GoMod: "github.com/another/module2 v0.1.2",
+			},
+			{
+				GoMod: "github.com/another2/module v0.1.2",
+			},
+		},
+		Connectors: []Module{
+			{
+				GoMod: "github.com/another/module3 v0.1.2",
+			},
+			{
+				GoMod: "github.com/another2/module4 v0.1.2",
+			},
+			{
+				GoMod: "github.com/another3/module v0.1.2",
+			},
+		},
 	}
 
 	// test
@@ -89,6 +108,26 @@ func TestAliases(t *testing.T) {
 	assert.Equal(t, "github.com/org/repo5/impl v0.1.2", cfg.Exporters[1].GoMod)
 	assert.Equal(t, "github.com/org/repo5/impl", cfg.Exporters[1].Import)
 	assert.Equal(t, "impl5", cfg.Exporters[1].Name)
+
+	assert.Equal(t, "github.com/another/module2 v0.1.2", cfg.Processors[0].GoMod)
+	assert.Equal(t, "github.com/another/module2", cfg.Processors[0].Import)
+	assert.Equal(t, "module2", cfg.Processors[0].Name)
+
+	assert.Equal(t, "github.com/another2/module v0.1.2", cfg.Processors[1].GoMod)
+	assert.Equal(t, "github.com/another2/module", cfg.Processors[1].Import)
+	assert.Equal(t, "module3", cfg.Processors[1].Name)
+
+	assert.Equal(t, "github.com/another/module3 v0.1.2", cfg.Connectors[0].GoMod)
+	assert.Equal(t, "github.com/another/module3", cfg.Connectors[0].Import)
+	assert.Equal(t, "module32", cfg.Connectors[0].Name)
+
+	assert.Equal(t, "github.com/another2/module4 v0.1.2", cfg.Connectors[1].GoMod)
+	assert.Equal(t, "github.com/another2/module4", cfg.Connectors[1].Import)
+	assert.Equal(t, "module4", cfg.Connectors[1].Name)
+
+	assert.Equal(t, "github.com/another3/module v0.1.2", cfg.Connectors[2].GoMod)
+	assert.Equal(t, "github.com/another3/module", cfg.Connectors[2].Import)
+	assert.Equal(t, "module5", cfg.Connectors[2].Name)
 }
 
 func TestParseModules(t *testing.T) {
