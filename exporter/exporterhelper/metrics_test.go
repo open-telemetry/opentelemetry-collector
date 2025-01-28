@@ -13,6 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
@@ -26,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/internal/storagetest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -273,7 +276,14 @@ func TestMetrics_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	}
 
 	// 2 batched must be in queue, and 10 metric points rejected due to queue overflow
-	require.NoError(t, tt.CheckExporterEnqueueFailedMetrics(int64(10)))
+	metadatatest.AssertEqualExporterEnqueueFailedMetricPoints(t, tt.Telemetry,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("exporter", fakeMetricsName.String())),
+				Value: int64(10),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
 func TestMetrics_WithSpan(t *testing.T) {
@@ -440,7 +450,7 @@ func checkWrapSpanForMetrics(t *testing.T, sr *tracetest.SpanRecorder, tracer tr
 			sentMetricPoints = 0
 			failedToSendMetricPoints = 2
 		}
-		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: internal.SentMetricPointsKey, Value: attribute.Int64Value(sentMetricPoints)}, "SpanData %v", sd)
-		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: internal.FailedToSendMetricPointsKey, Value: attribute.Int64Value(failedToSendMetricPoints)}, "SpanData %v", sd)
+		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: internal.ItemsSent, Value: attribute.Int64Value(sentMetricPoints)}, "SpanData %v", sd)
+		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: internal.ItemsFailed, Value: attribute.Int64Value(failedToSendMetricPoints)}, "SpanData %v", sd)
 	}
 }

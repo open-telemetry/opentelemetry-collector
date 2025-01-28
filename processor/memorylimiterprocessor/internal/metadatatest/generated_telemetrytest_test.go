@@ -101,5 +101,30 @@ func TestSetupTelemetry(t *testing.T) {
 			},
 		},
 	}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
+	AssertEqualProcessorAcceptedLogRecords(t, testTel.Telemetry,
+		[]metricdata.DataPoint[int64]{{}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
+	AssertEqualProcessorAcceptedMetricPoints(t, testTel.Telemetry,
+		[]metricdata.DataPoint[int64]{{}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
+	AssertEqualProcessorAcceptedSpans(t, testTel.Telemetry,
+		[]metricdata.DataPoint[int64]{{}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
+	AssertEqualProcessorRefusedLogRecords(t, testTel.Telemetry,
+		[]metricdata.DataPoint[int64]{{}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
+	AssertEqualProcessorRefusedMetricPoints(t, testTel.Telemetry,
+		[]metricdata.DataPoint[int64]{{}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
+	AssertEqualProcessorRefusedSpans(t, testTel.Telemetry,
+		[]metricdata.DataPoint[int64]{{}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
 	require.NoError(t, testTel.Shutdown(context.Background()))
 }

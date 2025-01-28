@@ -23,6 +23,7 @@ type Telemetry struct {
 func SetupTelemetry(opts ...componenttest.TelemetryOption) Telemetry {
 	return Telemetry{Telemetry: componenttest.NewTelemetry(opts...)}
 }
+
 func (tt *Telemetry) NewSettings() processor.Settings {
 	set := processortest.NewNopSettings()
 	set.ID = component.NewID(component.MustNewType("batch"))
@@ -35,7 +36,7 @@ func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, 
 	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
 	// ensure all required metrics are present
 	for _, want := range expected {
-		got := getMetric(want.Name, md)
+		got := getMetricFromResource(want.Name, md)
 		metricdatatest.AssertEqual(t, want, got, opts...)
 	}
 
@@ -43,7 +44,86 @@ func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, 
 	require.Equal(t, len(expected), lenMetrics(md))
 }
 
-func getMetric(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
+func AssertEqualProcessorBatchBatchSendSize(t *testing.T, tt componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_processor_batch_batch_send_size",
+		Description: "Number of units in the batch",
+		Unit:        "{units}",
+		Data: metricdata.Histogram[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			DataPoints:  dps,
+		},
+	}
+	got := getMetric(t, tt, "otelcol_processor_batch_batch_send_size")
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualProcessorBatchBatchSendSizeBytes(t *testing.T, tt componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_processor_batch_batch_send_size_bytes",
+		Description: "Number of bytes in batch that was sent. Only available on detailed level.",
+		Unit:        "By",
+		Data: metricdata.Histogram[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			DataPoints:  dps,
+		},
+	}
+	got := getMetric(t, tt, "otelcol_processor_batch_batch_send_size_bytes")
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualProcessorBatchBatchSizeTriggerSend(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_processor_batch_batch_size_trigger_send",
+		Description: "Number of times the batch was sent due to a size trigger",
+		Unit:        "{times}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got := getMetric(t, tt, "otelcol_processor_batch_batch_size_trigger_send")
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualProcessorBatchMetadataCardinality(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_processor_batch_metadata_cardinality",
+		Description: "Number of distinct metadata value combinations being processed",
+		Unit:        "{combinations}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: false,
+			DataPoints:  dps,
+		},
+	}
+	got := getMetric(t, tt, "otelcol_processor_batch_metadata_cardinality")
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualProcessorBatchTimeoutTriggerSend(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_processor_batch_timeout_trigger_send",
+		Description: "Number of times the batch was sent due to a timeout trigger",
+		Unit:        "{times}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got := getMetric(t, tt, "otelcol_processor_batch_timeout_trigger_send")
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func getMetric(t *testing.T, tt componenttest.Telemetry, name string) metricdata.Metrics {
+	var md metricdata.ResourceMetrics
+	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
+	return getMetricFromResource(name, md)
+}
+
+func getMetricFromResource(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
 	for _, sm := range got.ScopeMetrics {
 		for _, m := range sm.Metrics {
 			if m.Name == name {

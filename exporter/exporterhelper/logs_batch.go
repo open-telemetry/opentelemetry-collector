@@ -24,6 +24,8 @@ func (req *logsRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSiz
 	}
 
 	if cfg.MaxSizeItems == 0 {
+		req.setCachedItemsCount(req.ItemsCount() + req2.ItemsCount())
+		req2.setCachedItemsCount(0)
 		req2.ld.ResourceLogs().MoveAndAppendTo(req.ld.ResourceLogs())
 		return []Request{req}, nil
 	}
@@ -43,9 +45,9 @@ func (req *logsRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSiz
 			if destReq == nil {
 				destReq = srcReq
 			} else {
-				srcReq.ld.ResourceLogs().MoveAndAppendTo(destReq.ld.ResourceLogs())
-				destReq.setCachedItemsCount(srcCount)
+				destReq.setCachedItemsCount(destReq.ItemsCount() + srcCount)
 				srcReq.setCachedItemsCount(0)
+				srcReq.ld.ResourceLogs().MoveAndAppendTo(destReq.ld.ResourceLogs())
 			}
 			capacityLeft -= srcCount
 			continue

@@ -140,5 +140,42 @@ func TestSetupTelemetry(t *testing.T) {
 			},
 		},
 	}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
+	AssertEqualExporterEnqueueFailedLogRecords(t, testTel.Telemetry,
+		[]metricdata.DataPoint[int64]{{}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
+	AssertEqualExporterEnqueueFailedMetricPoints(t, testTel.Telemetry,
+		[]metricdata.DataPoint[int64]{{}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
+	AssertEqualExporterEnqueueFailedSpans(t, testTel.Telemetry,
+		[]metricdata.DataPoint[int64]{{}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
+	AssertEqualExporterSendFailedLogRecords(t, testTel.Telemetry,
+		[]metricdata.DataPoint[int64]{{}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
+	AssertEqualExporterSendFailedMetricPoints(t, testTel.Telemetry,
+		[]metricdata.DataPoint[int64]{{}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
+	AssertEqualExporterSendFailedSpans(t, testTel.Telemetry,
+		[]metricdata.DataPoint[int64]{{}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
+	AssertEqualExporterSentLogRecords(t, testTel.Telemetry,
+		[]metricdata.DataPoint[int64]{{}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
+	AssertEqualExporterSentMetricPoints(t, testTel.Telemetry,
+		[]metricdata.DataPoint[int64]{{}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
+	AssertEqualExporterSentSpans(t, testTel.Telemetry,
+		[]metricdata.DataPoint[int64]{{}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
 	require.NoError(t, testTel.Shutdown(context.Background()))
 }

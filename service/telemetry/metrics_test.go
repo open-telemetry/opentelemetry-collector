@@ -14,16 +14,13 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/contrib/config"
+	config "go.opentelemetry.io/contrib/config/v0.3.0"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.opentelemetry.io/collector/service/internal/promtest"
-	"go.opentelemetry.io/collector/service/internal/resource"
-	"go.opentelemetry.io/collector/service/telemetry/internal/otelinit"
 )
 
 const (
@@ -44,7 +41,6 @@ func TestTelemetryInit(t *testing.T) {
 
 	for _, tt := range []struct {
 		name            string
-		disableHighCard bool
 		expectedMetrics map[string]metricValue
 	}{
 		{
@@ -87,42 +83,10 @@ func TestTelemetryInit(t *testing.T) {
 						"service_instance_id": testInstanceID,
 					},
 				},
-			},
-		},
-		{
-			name:            "DisableHighCardinalityWithOtel",
-			disableHighCard: true,
-			expectedMetrics: map[string]metricValue{
-				metricPrefix + otelPrefix + counterName: {
-					value: 13,
-					labels: map[string]string{
-						"service_name":        "otelcol",
-						"service_version":     "latest",
-						"service_instance_id": testInstanceID,
-					},
-				},
-				metricPrefix + grpcPrefix + counterName: {
-					value: 11,
-					labels: map[string]string{
-						"service_name":        "otelcol",
-						"service_version":     "latest",
-						"service_instance_id": testInstanceID,
-					},
-				},
-				metricPrefix + httpPrefix + counterName: {
-					value: 10,
-					labels: map[string]string{
-						"service_name":        "otelcol",
-						"service_version":     "latest",
-						"service_instance_id": testInstanceID,
-					},
-				},
-				"target_info": {
+				"promhttp_metric_handler_errors_total": {
 					value: 0,
 					labels: map[string]string{
-						"service_name":        "otelcol",
-						"service_version":     "latest",
-						"service_instance_id": testInstanceID,
+						"cause": "encoding",
 					},
 				},
 			},
@@ -130,35 +94,36 @@ func TestTelemetryInit(t *testing.T) {
 	} {
 		prom := promtest.GetAvailableLocalAddressPrometheus(t)
 		endpoint := fmt.Sprintf("http://%s:%d/metrics", *prom.Host, *prom.Port)
+		cfg := Config{
+			Metrics: MetricsConfig{
+				Level: configtelemetry.LevelDetailed,
+				Readers: []config.MetricReader{{
+					Pull: &config.PullMetricReader{
+						Exporter: config.PullMetricExporter{Prometheus: prom},
+					},
+				}},
+			},
+		}
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := &Config{
-				Metrics: MetricsConfig{
-					Level: configtelemetry.LevelDetailed,
-					Readers: []config.MetricReader{{
-						Pull: &config.PullMetricReader{Exporter: config.MetricExporter{Prometheus: prom}},
-					}},
-				},
-				Traces: TracesConfig{
-					Processors: []config.SpanProcessor{
-						{
-							Batch: &config.BatchSpanProcessor{
-								Exporter: config.SpanExporter{
-									Console: config.Console{},
-								},
-							},
+			sdk, err := config.NewSDK(
+				config.WithContext(context.Background()),
+				config.WithOpenTelemetryConfiguration(config.OpenTelemetryConfiguration{
+					MeterProvider: &config.MeterProvider{
+						Readers: cfg.Metrics.Readers,
+					},
+					Resource: &config.Resource{
+						SchemaUrl: ptr(""),
+						Attributes: []config.AttributeNameValue{
+							{Name: semconv.AttributeServiceInstanceID, Value: testInstanceID},
+							{Name: semconv.AttributeServiceName, Value: "otelcol"},
+							{Name: semconv.AttributeServiceVersion, Value: "latest"},
 						},
 					},
-				},
-				Resource: map[string]*string{
-					semconv.AttributeServiceInstanceID: &testInstanceID,
-				},
-			}
-			set := meterProviderSettings{
-				res:               resource.New(component.NewDefaultBuildInfo(), cfg.Resource),
-				cfg:               cfg.Metrics,
-				asyncErrorChannel: make(chan error),
-			}
-			mp, err := newMeterProvider(set, tt.disableHighCard)
+				}),
+			)
+			require.NoError(t, err)
+
+			mp, err := newMeterProvider(Settings{SDK: &sdk}, cfg)
 			require.NoError(t, err)
 			defer func() {
 				if prov, ok := mp.(interface{ Shutdown(context.Context) error }); ok {
@@ -169,11 +134,14 @@ func TestTelemetryInit(t *testing.T) {
 			createTestMetrics(t, mp)
 
 			metrics := getMetricsFromPrometheus(t, endpoint)
-			require.Equal(t, len(tt.expectedMetrics), len(metrics))
+			require.Len(t, metrics, len(tt.expectedMetrics))
 
 			for metricName, metricValue := range tt.expectedMetrics {
 				mf, present := metrics[metricName]
 				require.True(t, present, "expected metric %q was not present", metricName)
+				if metricName == "promhttp_metric_handler_errors_total" {
+					continue
+				}
 				require.Len(t, mf.Metric, 1, "only one measure should exist for metric %q", metricName)
 
 				labels := make(map[string]string)
@@ -194,13 +162,20 @@ func createTestMetrics(t *testing.T, mp metric.MeterProvider) {
 	require.NoError(t, err)
 	counter.Add(context.Background(), 13)
 
-	grpcExampleCounter, err := mp.Meter(otelinit.GRPCInstrumentation).Int64Counter(metricPrefix + grpcPrefix + counterName)
+	grpcExampleCounter, err := mp.Meter("go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc").Int64Counter(metricPrefix + grpcPrefix + counterName)
 	require.NoError(t, err)
-	grpcExampleCounter.Add(context.Background(), 11, metric.WithAttributeSet(otelinit.GRPCUnacceptableKeyValues))
+	grpcExampleCounter.Add(context.Background(), 11, metric.WithAttributeSet(attribute.NewSet(
+		attribute.String(semconv.AttributeNetSockPeerAddr, ""),
+		attribute.String(semconv.AttributeNetSockPeerPort, ""),
+		attribute.String(semconv.AttributeNetSockPeerName, ""),
+	)))
 
-	httpExampleCounter, err := mp.Meter(otelinit.HTTPInstrumentation).Int64Counter(metricPrefix + httpPrefix + counterName)
+	httpExampleCounter, err := mp.Meter("go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp").Int64Counter(metricPrefix + httpPrefix + counterName)
 	require.NoError(t, err)
-	httpExampleCounter.Add(context.Background(), 10, metric.WithAttributeSet(otelinit.HTTPUnacceptableKeyValues))
+	httpExampleCounter.Add(context.Background(), 10, metric.WithAttributeSet(attribute.NewSet(
+		attribute.String(semconv.AttributeNetHostName, ""),
+		attribute.String(semconv.AttributeNetHostPort, ""),
+	)))
 }
 
 func getMetricsFromPrometheus(t *testing.T, endpoint string) map[string]*io_prometheus_client.MetricFamily {
@@ -239,17 +214,32 @@ func getMetricsFromPrometheus(t *testing.T, endpoint string) map[string]*io_prom
 // See https://pkg.go.dev/go.opentelemetry.io/otel/sdk/metric/internal/x#readme-instrument-enabled.
 func TestInstrumentEnabled(t *testing.T) {
 	prom := promtest.GetAvailableLocalAddressPrometheus(t)
-	set := meterProviderSettings{
-		res: sdkresource.Default(),
-		cfg: MetricsConfig{
+	cfg := Config{
+		Metrics: MetricsConfig{
 			Level: configtelemetry.LevelDetailed,
 			Readers: []config.MetricReader{{
-				Pull: &config.PullMetricReader{Exporter: config.MetricExporter{Prometheus: prom}},
+				Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: prom}},
 			}},
 		},
-		asyncErrorChannel: make(chan error),
 	}
-	meterProvider, err := newMeterProvider(set, false)
+	sdk, err := config.NewSDK(
+		config.WithContext(context.Background()),
+		config.WithOpenTelemetryConfiguration(config.OpenTelemetryConfiguration{
+			MeterProvider: &config.MeterProvider{
+				Readers: cfg.Metrics.Readers,
+			},
+			Resource: &config.Resource{
+				SchemaUrl: ptr(""),
+				Attributes: []config.AttributeNameValue{
+					{Name: semconv.AttributeServiceInstanceID, Value: testInstanceID},
+					{Name: semconv.AttributeServiceName, Value: "otelcol"},
+					{Name: semconv.AttributeServiceVersion, Value: "latest"},
+				},
+			},
+		}),
+	)
+	require.NoError(t, err)
+	meterProvider, err := newMeterProvider(Settings{SDK: &sdk}, cfg)
 	defer func() {
 		if prov, ok := meterProvider.(interface{ Shutdown(context.Context) error }); ok {
 			require.NoError(t, prov.Shutdown(context.Background()))
@@ -300,4 +290,8 @@ func TestInstrumentEnabled(t *testing.T) {
 	require.NoError(t, err)
 	_, ok = floatGauge.(enabledInstrument)
 	assert.True(t, ok, "Float64Gauge does not implement the experimental 'Enabled' method")
+}
+
+func ptr[T any](v T) *T {
+	return &v
 }

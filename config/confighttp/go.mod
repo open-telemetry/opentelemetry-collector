@@ -14,7 +14,6 @@ require (
 	go.opentelemetry.io/collector/config/configauth v0.118.0
 	go.opentelemetry.io/collector/config/configcompression v1.24.0
 	go.opentelemetry.io/collector/config/configopaque v1.24.0
-	go.opentelemetry.io/collector/config/configtelemetry v0.118.0
 	go.opentelemetry.io/collector/config/configtls v1.24.0
 	go.opentelemetry.io/collector/extension/auth v0.118.0
 	go.opentelemetry.io/collector/extension/auth/authtest v0.118.0
@@ -35,6 +34,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.118.0 // indirect
 	go.opentelemetry.io/collector/extension v0.118.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.24.0 // indirect
 	go.opentelemetry.io/otel/metric v1.34.0 // indirect
@@ -46,7 +46,7 @@ require (
 	golang.org/x/text v0.21.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241015192408-796eee8c2d53 // indirect
 	google.golang.org/grpc v1.69.4 // indirect
-	google.golang.org/protobuf v1.36.3 // indirect
+	google.golang.org/protobuf v1.36.4 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
