@@ -29,34 +29,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-func TestCreateSameReceiver(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPC.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
-	cfg.HTTP.Endpoint = testutil.GetAvailableLocalAddress(t)
-
-	creationSet := receivertest.NewNopSettings()
-	tReceiver, err := factory.CreateTraces(context.Background(), creationSet, cfg, consumertest.NewNop())
-	assert.NotNil(t, tReceiver)
-	require.NoError(t, err)
-
-	mReceiver, err := factory.CreateMetrics(context.Background(), creationSet, cfg, consumertest.NewNop())
-	assert.NotNil(t, mReceiver)
-	require.NoError(t, err)
-
-	lReceiver, err := factory.CreateMetrics(context.Background(), creationSet, cfg, consumertest.NewNop())
-	assert.NotNil(t, lReceiver)
-	require.NoError(t, err)
-
-	pReceiver, err := factory.(xreceiver.Factory).CreateProfiles(context.Background(), creationSet, cfg, consumertest.NewNop())
-	assert.NotNil(t, pReceiver)
-	require.NoError(t, err)
-
-	assert.Same(t, tReceiver, mReceiver)
-	assert.Same(t, tReceiver, lReceiver)
-	assert.Same(t, tReceiver, pReceiver)
-}
-
 func TestCreateTraces(t *testing.T) {
 	factory := NewFactory()
 	defaultGRPCSettings := &configgrpc.ServerConfig{

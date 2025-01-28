@@ -25,7 +25,7 @@ var fallbackMsg = []byte(`{"code": 13, "message": "failed to marshal error messa
 
 const fallbackContentType = "application/json"
 
-func handleTraces(resp http.ResponseWriter, req *http.Request, tracesReceiver *trace.Receiver) {
+func handleTraces(resp http.ResponseWriter, req *http.Request, recv *trace.Receiver) {
 	enc, ok := readContentType(resp, req)
 	if !ok {
 		return
@@ -42,7 +42,7 @@ func handleTraces(resp http.ResponseWriter, req *http.Request, tracesReceiver *t
 		return
 	}
 
-	otlpResp, err := tracesReceiver.Export(req.Context(), otlpReq)
+	otlpResp, err := recv.Export(req.Context(), otlpReq)
 	if err != nil {
 		writeError(resp, enc, err, http.StatusInternalServerError)
 		return
@@ -56,7 +56,7 @@ func handleTraces(resp http.ResponseWriter, req *http.Request, tracesReceiver *t
 	writeResponse(resp, enc.contentType(), http.StatusOK, msg)
 }
 
-func handleMetrics(resp http.ResponseWriter, req *http.Request, metricsReceiver *metrics.Receiver) {
+func handleMetrics(resp http.ResponseWriter, req *http.Request, recv *metrics.Receiver) {
 	enc, ok := readContentType(resp, req)
 	if !ok {
 		return
@@ -73,7 +73,7 @@ func handleMetrics(resp http.ResponseWriter, req *http.Request, metricsReceiver 
 		return
 	}
 
-	otlpResp, err := metricsReceiver.Export(req.Context(), otlpReq)
+	otlpResp, err := recv.Export(req.Context(), otlpReq)
 	if err != nil {
 		writeError(resp, enc, err, http.StatusInternalServerError)
 		return
@@ -87,7 +87,7 @@ func handleMetrics(resp http.ResponseWriter, req *http.Request, metricsReceiver 
 	writeResponse(resp, enc.contentType(), http.StatusOK, msg)
 }
 
-func handleLogs(resp http.ResponseWriter, req *http.Request, logsReceiver *logs.Receiver) {
+func handleLogs(resp http.ResponseWriter, req *http.Request, recv *logs.Receiver) {
 	enc, ok := readContentType(resp, req)
 	if !ok {
 		return
@@ -104,7 +104,7 @@ func handleLogs(resp http.ResponseWriter, req *http.Request, logsReceiver *logs.
 		return
 	}
 
-	otlpResp, err := logsReceiver.Export(req.Context(), otlpReq)
+	otlpResp, err := recv.Export(req.Context(), otlpReq)
 	if err != nil {
 		writeError(resp, enc, err, http.StatusInternalServerError)
 		return
@@ -118,7 +118,7 @@ func handleLogs(resp http.ResponseWriter, req *http.Request, logsReceiver *logs.
 	writeResponse(resp, enc.contentType(), http.StatusOK, msg)
 }
 
-func handleProfiles(resp http.ResponseWriter, req *http.Request, profilesReceiver *profiles.Receiver) {
+func handleProfiles(resp http.ResponseWriter, req *http.Request, recv *profiles.Receiver) {
 	enc, ok := readContentType(resp, req)
 	if !ok {
 		return
@@ -135,7 +135,7 @@ func handleProfiles(resp http.ResponseWriter, req *http.Request, profilesReceive
 		return
 	}
 
-	otlpResp, err := profilesReceiver.Export(req.Context(), otlpReq)
+	otlpResp, err := recv.Export(req.Context(), otlpReq)
 	if err != nil {
 		writeError(resp, enc, err, http.StatusInternalServerError)
 		return

@@ -12,7 +12,6 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
-	"go.opentelemetry.io/collector/internal/sharedcomponent"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/xreceiver"
@@ -23,6 +22,9 @@ const (
 	defaultMetricsURLPath  = "/v1/metrics"
 	defaultLogsURLPath     = "/v1/logs"
 	defaultProfilesURLPath = "/v1development/profiles"
+
+	transportHTTP = "http"
+	transportGRPC = "grpc"
 )
 
 // NewFactory creates a new OTLP receiver factory.
@@ -62,97 +64,25 @@ func createDefaultConfig() component.Config {
 }
 
 // createTraces creates a trace receiver based on provided config.
-func createTraces(
-	_ context.Context,
-	set receiver.Settings,
-	cfg component.Config,
-	nextConsumer consumer.Traces,
-) (receiver.Traces, error) {
+func createTraces(_ context.Context, set receiver.Settings, cfg component.Config, next consumer.Traces) (receiver.Traces, error) {
 	oCfg := cfg.(*Config)
-	r, err := receivers.LoadOrStore(
-		oCfg,
-		func() (*otlpReceiver, error) {
-			return newOtlpReceiver(oCfg, &set)
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	r.Unwrap().registerTraceConsumer(nextConsumer)
-	return r, nil
+	return newTraces(set, oCfg, next)
 }
 
 // createMetrics creates a metrics receiver based on provided config.
-func createMetrics(
-	_ context.Context,
-	set receiver.Settings,
-	cfg component.Config,
-	consumer consumer.Metrics,
-) (receiver.Metrics, error) {
+func createMetrics(_ context.Context, set receiver.Settings, cfg component.Config, next consumer.Metrics) (receiver.Metrics, error) {
 	oCfg := cfg.(*Config)
-	r, err := receivers.LoadOrStore(
-		oCfg,
-		func() (*otlpReceiver, error) {
-			return newOtlpReceiver(oCfg, &set)
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	r.Unwrap().registerMetricsConsumer(consumer)
-	return r, nil
+	return newMetrics(set, oCfg, next)
 }
 
 // createLog creates a log receiver based on provided config.
-func createLog(
-	_ context.Context,
-	set receiver.Settings,
-	cfg component.Config,
-	consumer consumer.Logs,
-) (receiver.Logs, error) {
+func createLog(_ context.Context, set receiver.Settings, cfg component.Config, next consumer.Logs) (receiver.Logs, error) {
 	oCfg := cfg.(*Config)
-	r, err := receivers.LoadOrStore(
-		oCfg,
-		func() (*otlpReceiver, error) {
-			return newOtlpReceiver(oCfg, &set)
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	r.Unwrap().registerLogsConsumer(consumer)
-	return r, nil
+	return newLogs(set, oCfg, next)
 }
 
 // createProfiles creates a trace receiver based on provided config.
-func createProfiles(
-	_ context.Context,
-	set receiver.Settings,
-	cfg component.Config,
-	nextConsumer xconsumer.Profiles,
-) (xreceiver.Profiles, error) {
+func createProfiles(_ context.Context, set receiver.Settings, cfg component.Config, next xconsumer.Profiles) (xreceiver.Profiles, error) {
 	oCfg := cfg.(*Config)
-	r, err := receivers.LoadOrStore(
-		oCfg,
-		func() (*otlpReceiver, error) {
-			return newOtlpReceiver(oCfg, &set)
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	r.Unwrap().registerProfilesConsumer(nextConsumer)
-	return r, nil
+	return newProfiles(set, oCfg, next)
 }
-
-// This is the map of already created OTLP receivers for particular configurations.
-// We maintain this map because the receiver.Factory is asked trace and metric receivers separately
-// when it gets CreateTraces() and CreateMetrics() but they must not
-// create separate objects, they must use one otlpReceiver object per configuration.
-// When the receiver is shutdown it should be removed from this map so the same configuration
-// can be recreated successfully.
-var receivers = sharedcomponent.NewMap[*Config, *otlpReceiver]()

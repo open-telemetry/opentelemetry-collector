@@ -22,7 +22,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/testdata"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
@@ -93,13 +92,8 @@ func otlpReceiverOnGRPCServer(t *testing.T, lc consumer.Logs) net.Addr {
 
 	set := receivertest.NewNopSettings()
 	set.ID = component.MustNewIDWithName("otlp", "log")
-	obsreport, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
-		ReceiverID:             set.ID,
-		Transport:              "grpc",
-		ReceiverCreateSettings: set,
-	})
+	r, err := New(lc, set, "grpc")
 	require.NoError(t, err)
-	r := New(lc, obsreport)
 	// Now run it as a gRPC server
 	srv := grpc.NewServer()
 	plogotlp.RegisterGRPCServer(srv, r)

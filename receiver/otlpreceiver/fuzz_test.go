@@ -9,6 +9,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/logs"
@@ -20,9 +22,7 @@ import (
 func FuzzReceiverHandlers(f *testing.F) {
 	f.Fuzz(func(_ *testing.T, data []byte, pb bool, handler int) {
 		req, err := http.NewRequest(http.MethodPost, "", bytes.NewReader(data))
-		if err != nil {
-			return
-		}
+		require.NoError(f, err)
 		if pb {
 			req.Header.Add("Content-Type", pbContentType)
 		} else {
@@ -31,25 +31,19 @@ func FuzzReceiverHandlers(f *testing.F) {
 		set := receivertest.NewNopSettings()
 		set.TelemetrySettings = componenttest.NewNopTelemetrySettings()
 		set.ID = otlpReceiverID
-		cfg := createDefaultConfig().(*Config)
-		r, err := newOtlpReceiver(cfg, &set)
-		if err != nil {
-			panic(err)
-		}
-		r.nextTraces = consumertest.NewNop()
-		r.nextLogs = consumertest.NewNop()
-		r.nextMetrics = consumertest.NewNop()
-		r.nextProfiles = consumertest.NewNop()
 		resp := httptest.NewRecorder()
 		switch handler % 3 {
 		case 0:
-			httpTracesReceiver := trace.New(r.nextTraces, r.obsrepHTTP)
+			httpTracesReceiver, err := trace.New(consumertest.NewNop(), set, transportHTTP)
+			require.NoError(f, err)
 			handleTraces(resp, req, httpTracesReceiver)
 		case 1:
-			httpMetricsReceiver := metrics.New(r.nextMetrics, r.obsrepHTTP)
+			httpMetricsReceiver, err := metrics.New(consumertest.NewNop(), set, transportHTTP)
+			require.NoError(f, err)
 			handleMetrics(resp, req, httpMetricsReceiver)
 		case 2:
-			httpLogsReceiver := logs.New(r.nextLogs, r.obsrepHTTP)
+			httpLogsReceiver, err := logs.New(consumertest.NewNop(), set, transportHTTP)
+			require.NoError(f, err)
 			handleLogs(resp, req, httpLogsReceiver)
 		}
 	})

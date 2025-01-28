@@ -8,6 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
@@ -22,11 +23,20 @@ type Receiver struct {
 }
 
 // New creates a new Receiver reference.
-func New(nextConsumer consumer.Logs, obsreport *receiverhelper.ObsReport) *Receiver {
+func New(nextConsumer consumer.Logs, set receiver.Settings, transport string) (*Receiver, error) {
+	obsreport, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             set.ID,
+		Transport:              transport,
+		ReceiverCreateSettings: set,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return &Receiver{
 		nextConsumer: nextConsumer,
 		obsreport:    obsreport,
-	}
+	}, nil
 }
 
 // Export implements the service Export logs func.
