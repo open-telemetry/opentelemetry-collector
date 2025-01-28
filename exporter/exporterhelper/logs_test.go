@@ -282,7 +282,14 @@ func TestLogs_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	}
 
 	// 2 batched must be in queue, and 5 batches (15 log records) rejected due to queue overflow
-	require.NoError(t, tt.CheckExporterEnqueueFailedLogs(int64(15)))
+	metadatatest.AssertEqualExporterEnqueueFailedLogRecords(t, tt.Telemetry,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("exporter", fakeLogsName.String())),
+				Value: int64(15),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
 func TestLogs_WithSpan(t *testing.T) {
