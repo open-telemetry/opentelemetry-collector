@@ -13,6 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
@@ -26,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/internal/storagetest"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -190,7 +193,7 @@ func TestLogs_WithRecordMetrics(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, le)
 
-	checkRecordedMetricsForLogs(t, tt, le, nil)
+	checkRecordedMetricsForLogs(t, tt, fakeLogsName, le, nil)
 }
 
 func TestLogs_pLogModifiedDownStream_WithRecordMetrics(t *testing.T) {
@@ -205,7 +208,15 @@ func TestLogs_pLogModifiedDownStream_WithRecordMetrics(t *testing.T) {
 
 	require.NoError(t, le.ConsumeLogs(context.Background(), ld))
 	assert.Equal(t, 0, ld.LogRecordCount())
-	require.NoError(t, tt.CheckExporterLogs(int64(2), 0))
+
+	metadatatest.AssertEqualExporterSentLogRecords(t, tt.Telemetry,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("exporter", fakeLogsName.String())),
+				Value: int64(2),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
 func TestLogsRequest_WithRecordMetrics(t *testing.T) {
@@ -219,7 +230,7 @@ func TestLogsRequest_WithRecordMetrics(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, le)
 
-	checkRecordedMetricsForLogs(t, tt, le, nil)
+	checkRecordedMetricsForLogs(t, tt, fakeLogsName, le, nil)
 }
 
 func TestLogs_WithRecordMetrics_ReturnError(t *testing.T) {
@@ -232,7 +243,7 @@ func TestLogs_WithRecordMetrics_ReturnError(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, le)
 
-	checkRecordedMetricsForLogs(t, tt, le, want)
+	checkRecordedMetricsForLogs(t, tt, fakeLogsName, le, want)
 }
 
 func TestLogsRequest_WithRecordMetrics_ExportError(t *testing.T) {
@@ -246,7 +257,7 @@ func TestLogsRequest_WithRecordMetrics_ExportError(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, le)
 
-	checkRecordedMetricsForLogs(t, tt, le, want)
+	checkRecordedMetricsForLogs(t, tt, fakeLogsName, le, want)
 }
 
 func TestLogs_WithRecordEnqueueFailedMetrics(t *testing.T) {
@@ -271,7 +282,14 @@ func TestLogs_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	}
 
 	// 2 batched must be in queue, and 5 batches (15 log records) rejected due to queue overflow
-	require.NoError(t, tt.CheckExporterEnqueueFailedLogs(int64(15)))
+	metadatatest.AssertEqualExporterEnqueueFailedLogRecords(t, tt.Telemetry,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("exporter", fakeLogsName.String())),
+				Value: int64(15),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
 func TestLogs_WithSpan(t *testing.T) {
@@ -389,7 +407,7 @@ func newPushLogsData(retError error) consumer.ConsumeLogsFunc {
 	}
 }
 
-func checkRecordedMetricsForLogs(t *testing.T, tt componenttest.TestTelemetry, le exporter.Logs, wantError error) {
+func checkRecordedMetricsForLogs(t *testing.T, tt componenttest.TestTelemetry, id component.ID, le exporter.Logs, wantError error) {
 	ld := testdata.GenerateLogs(2)
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
@@ -398,9 +416,23 @@ func checkRecordedMetricsForLogs(t *testing.T, tt componenttest.TestTelemetry, l
 
 	// TODO: When the new metrics correctly count partial dropped fix this.
 	if wantError != nil {
-		require.NoError(t, tt.CheckExporterLogs(0, int64(numBatches*ld.LogRecordCount())))
+		metadatatest.AssertEqualExporterSendFailedLogRecords(t, tt.Telemetry,
+			[]metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String("exporter", id.String())),
+					Value: int64(numBatches * ld.LogRecordCount()),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 	} else {
-		require.NoError(t, tt.CheckExporterLogs(int64(numBatches*ld.LogRecordCount()), 0))
+		metadatatest.AssertEqualExporterSentLogRecords(t, tt.Telemetry,
+			[]metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String("exporter", id.String())),
+					Value: int64(numBatches * ld.LogRecordCount()),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 	}
 }
 
