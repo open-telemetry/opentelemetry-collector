@@ -40,14 +40,17 @@ func (tts *TestTelemetry) CheckExporterMetrics(sentMetricsPoints, sendFailedMetr
 	return checkExporterMetrics(tts.Reader, tts.id, sentMetricsPoints, sendFailedMetricsPoints)
 }
 
+// Deprecated: [v0.119.0] use the metadatatest.AssertEqualMetric series of functions instead.
 func (tts *TestTelemetry) CheckExporterEnqueueFailedMetrics(enqueueFailed int64) error {
 	return checkExporterEnqueueFailed(tts.Reader, tts.id, "metric_points", enqueueFailed)
 }
 
+// Deprecated: [v0.119.0] use the metadatatest.AssertEqualMetric series of functions instead.
 func (tts *TestTelemetry) CheckExporterEnqueueFailedTraces(enqueueFailed int64) error {
 	return checkExporterEnqueueFailed(tts.Reader, tts.id, "spans", enqueueFailed)
 }
 
+// Deprecated: [v0.119.0] use the metadatatest.AssertEqualMetric series of functions instead.
 func (tts *TestTelemetry) CheckExporterEnqueueFailedLogs(enqueueFailed int64) error {
 	return checkExporterEnqueueFailed(tts.Reader, tts.id, "log_records", enqueueFailed)
 }

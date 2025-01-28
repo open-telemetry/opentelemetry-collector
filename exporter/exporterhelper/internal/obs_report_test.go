@@ -209,7 +209,15 @@ func TestExportEnqueueFailure(t *testing.T) {
 	})
 	require.NoError(t, err)
 	obsrep.RecordEnqueueFailure(context.Background(), int64(7))
-	require.NoError(t, tt.CheckExporterEnqueueFailedLogs(int64(7)))
+
+	metadatatest.AssertEqualExporterEnqueueFailedLogRecords(t, tt.Telemetry,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("exporter", exporterID.String())),
+				Value: int64(7),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
 	obsrep, err = NewObsReport(ObsReportSettings{
 		ExporterSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
@@ -217,7 +225,15 @@ func TestExportEnqueueFailure(t *testing.T) {
 	})
 	require.NoError(t, err)
 	obsrep.RecordEnqueueFailure(context.Background(), int64(12))
-	require.NoError(t, tt.CheckExporterEnqueueFailedTraces(int64(12)))
+
+	metadatatest.AssertEqualExporterEnqueueFailedSpans(t, tt.Telemetry,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("exporter", exporterID.String())),
+				Value: int64(12),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
 	obsrep, err = NewObsReport(ObsReportSettings{
 		ExporterSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
@@ -225,7 +241,15 @@ func TestExportEnqueueFailure(t *testing.T) {
 	})
 	require.NoError(t, err)
 	obsrep.RecordEnqueueFailure(context.Background(), int64(21))
-	require.NoError(t, tt.CheckExporterEnqueueFailedMetrics(int64(21)))
+
+	metadatatest.AssertEqualExporterEnqueueFailedMetricPoints(t, tt.Telemetry,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("exporter", exporterID.String())),
+				Value: int64(21),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
 type testParams struct {
