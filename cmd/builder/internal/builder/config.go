@@ -25,8 +25,6 @@ const (
 // errMissingGoMod indicates an empty gomod field
 var errMissingGoMod = errors.New("missing gomod specification for module")
 
-var usedNames = make(map[string]int)
-
 // Config holds the builder's configuration
 type Config struct {
 	Logger *zap.Logger
@@ -171,38 +169,39 @@ func (c *Config) SetGoPath() error {
 
 // ParseModules will parse the Modules entries and populate the missing values
 func (c *Config) ParseModules() error {
+	var usedNames = make(map[string]int)
 	var err error
 
-	c.Extensions, err = parseModules(c.Extensions)
+	c.Extensions, usedNames, err = parseModules(c.Extensions, usedNames)
 	if err != nil {
 		return err
 	}
 
-	c.Receivers, err = parseModules(c.Receivers)
+	c.Receivers, usedNames, err = parseModules(c.Receivers, usedNames)
 	if err != nil {
 		return err
 	}
 
-	c.Exporters, err = parseModules(c.Exporters)
+	c.Exporters, usedNames, err = parseModules(c.Exporters, usedNames)
 	if err != nil {
 		return err
 	}
 
-	c.Processors, err = parseModules(c.Processors)
+	c.Processors, usedNames, err = parseModules(c.Processors, usedNames)
 	if err != nil {
 		return err
 	}
 
-	c.Connectors, err = parseModules(c.Connectors)
+	c.Connectors, usedNames, err = parseModules(c.Connectors, usedNames)
 	if err != nil {
 		return err
 	}
 
-	c.ConfmapProviders, err = parseModules(c.ConfmapProviders)
+	c.ConfmapProviders, usedNames, err = parseModules(c.ConfmapProviders, usedNames)
 	if err != nil {
 		return err
 	}
-	c.ConfmapConverters, err = parseModules(c.ConfmapConverters)
+	c.ConfmapConverters, _, err = parseModules(c.ConfmapConverters, usedNames)
 	if err != nil {
 		return err
 	}
@@ -222,7 +221,7 @@ func validateModules(name string, mods []Module) error {
 	return nil
 }
 
-func parseModules(mods []Module) ([]Module, error) {
+func parseModules(mods []Module, usedNames map[string]int) ([]Module, map[string]int, error) {
 	var parsedModules []Module
 	for _, mod := range mods {
 		if mod.Import == "" {
@@ -245,16 +244,16 @@ func parseModules(mods []Module) ([]Module, error) {
 			var err error
 			mod.Path, err = filepath.Abs(mod.Path)
 			if err != nil {
-				return mods, fmt.Errorf("module has a relative \"path\" element, but we couldn't resolve the current working dir: %w", err)
+				return mods, usedNames, fmt.Errorf("module has a relative \"path\" element, but we couldn't resolve the current working dir: %w", err)
 			}
 			// Check if the path exists
 			if _, err := os.Stat(mod.Path); os.IsNotExist(err) {
-				return mods, fmt.Errorf("filepath does not exist: %s", mod.Path)
+				return mods, usedNames, fmt.Errorf("filepath does not exist: %s", mod.Path)
 			}
 		}
 
 		parsedModules = append(parsedModules, mod)
 	}
 
-	return parsedModules, nil
+	return parsedModules, usedNames, nil
 }
