@@ -877,6 +877,7 @@ func TestCurvePreferences(t *testing.T) {
 		name             string
 		preferences      []string
 		expectedCurveIDs []tls.CurveID
+		expectedErr      string
 	}{
 		{
 			name:             "X25519",
@@ -898,6 +899,12 @@ func TestCurvePreferences(t *testing.T) {
 			preferences:      []string{"P-256", "P-521", "X25519"},
 			expectedCurveIDs: []tls.CurveID{tls.CurveP256, tls.CurveP521, tls.X25519},
 		},
+		{
+			name:             "invalid-curve",
+			preferences:      []string{"P-25223236"},
+			expectedCurveIDs: []tls.CurveID{},
+			expectedErr:      "invalid curve type",
+		},
 	}
 	for _, test := range tests {
 		tlsSetting := ClientConfig{
@@ -906,7 +913,11 @@ func TestCurvePreferences(t *testing.T) {
 			},
 		}
 		config, err := tlsSetting.LoadTLSConfig(context.Background())
-		require.NoError(t, err)
-		require.ElementsMatchf(t, test.expectedCurveIDs, config.CurvePreferences, "expected %v, got %v", test.expectedCurveIDs, config.CurvePreferences)
+		if test.expectedErr == "" {
+			require.NoError(t, err)
+			require.ElementsMatchf(t, test.expectedCurveIDs, config.CurvePreferences, "expected %v, got %v", test.expectedCurveIDs, config.CurvePreferences)
+		} else {
+			require.ErrorContains(t, err, test.expectedErr)
+		}
 	}
 }
