@@ -18,6 +18,79 @@ import (
 	"go.opentelemetry.io/collector/cmd/builder/internal/config"
 )
 
+func TestAliases(t *testing.T) {
+	// prepare
+	cfg := Config{
+		Extensions: []Module{
+			{
+				GoMod: "github.com/org/repo/impl v0.1.2",
+			},
+			{
+				GoMod: "github.com/org/repo2/impl v0.1.2",
+			},
+			{
+				GoMod: "github.com/org/repo3/impl v0.1.2",
+			},
+		},
+		Receivers: []Module{
+			{
+				GoMod: "github.com/org/repo v0.1.2",
+			},
+			{
+				GoMod: "github.com/org2/repo v0.1.2",
+			},
+			{
+				GoMod: "github.com/org/repo4/impl v0.1.2",
+			},
+		},
+		Exporters: []Module{
+			{
+				GoMod: "github.com/another/module v0.1.2",
+			},
+			{
+				GoMod: "github.com/org/repo5/impl v0.1.2",
+			},
+		},
+	}
+
+	// test
+	err := cfg.ParseModules()
+	require.NoError(t, err)
+
+	// verify
+	assert.Equal(t, "github.com/org/repo/impl v0.1.2", cfg.Extensions[0].GoMod)
+	assert.Equal(t, "github.com/org/repo/impl", cfg.Extensions[0].Import)
+	assert.Equal(t, "impl", cfg.Extensions[0].Name)
+
+	assert.Equal(t, "github.com/org/repo2/impl v0.1.2", cfg.Extensions[1].GoMod)
+	assert.Equal(t, "github.com/org/repo2/impl", cfg.Extensions[1].Import)
+	assert.Equal(t, "impl2", cfg.Extensions[1].Name)
+
+	assert.Equal(t, "github.com/org/repo3/impl v0.1.2", cfg.Extensions[2].GoMod)
+	assert.Equal(t, "github.com/org/repo3/impl", cfg.Extensions[2].Import)
+	assert.Equal(t, "impl3", cfg.Extensions[2].Name)
+
+	assert.Equal(t, "github.com/org/repo v0.1.2", cfg.Receivers[0].GoMod)
+	assert.Equal(t, "github.com/org/repo", cfg.Receivers[0].Import)
+	assert.Equal(t, "repo", cfg.Receivers[0].Name)
+
+	assert.Equal(t, "github.com/org2/repo v0.1.2", cfg.Receivers[1].GoMod)
+	assert.Equal(t, "github.com/org2/repo", cfg.Receivers[1].Import)
+	assert.Equal(t, "repo2", cfg.Receivers[1].Name)
+
+	assert.Equal(t, "github.com/org/repo4/impl v0.1.2", cfg.Receivers[2].GoMod)
+	assert.Equal(t, "github.com/org/repo4/impl", cfg.Receivers[2].Import)
+	assert.Equal(t, "impl4", cfg.Receivers[2].Name)
+
+	assert.Equal(t, "github.com/another/module v0.1.2", cfg.Exporters[0].GoMod)
+	assert.Equal(t, "github.com/another/module", cfg.Exporters[0].Import)
+	assert.Equal(t, "module", cfg.Exporters[0].Name)
+
+	assert.Equal(t, "github.com/org/repo5/impl v0.1.2", cfg.Exporters[1].GoMod)
+	assert.Equal(t, "github.com/org/repo5/impl", cfg.Exporters[1].Import)
+	assert.Equal(t, "impl5", cfg.Exporters[1].Name)
+}
+
 func TestParseModules(t *testing.T) {
 	// prepare
 	cfg := Config{

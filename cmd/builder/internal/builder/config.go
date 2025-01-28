@@ -25,6 +25,8 @@ const (
 // errMissingGoMod indicates an empty gomod field
 var errMissingGoMod = errors.New("missing gomod specification for module")
 
+var usedNames = make(map[string]int)
+
 // Config holds the builder's configuration
 type Config struct {
 	Logger *zap.Logger
@@ -231,6 +233,12 @@ func parseModules(mods []Module) ([]Module, error) {
 			parts := strings.Split(mod.Import, "/")
 			mod.Name = parts[len(parts)-1]
 		}
+
+		originalModName := mod.Name
+		if count, exists := usedNames[mod.Name]; exists {
+			mod.Name = fmt.Sprintf("%s%d", mod.Name, count+1)
+		}
+		usedNames[originalModName]++
 
 		// Check if path is empty, otherwise filepath.Abs replaces it with current path ".".
 		if mod.Path != "" {
