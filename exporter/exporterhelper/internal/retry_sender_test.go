@@ -318,10 +318,10 @@ func TestQueueRetryWithDisabledRetires(t *testing.T) {
 			ocs.run(func() {
 				require.Error(t, be.Send(context.Background(), mockR))
 			})
+			ocs.awaitAsyncProcessing()
 			assert.Len(t, observed.All(), 1)
 			assert.Equal(t, "Exporting failed. Rejecting data. "+
 				"Try enabling retry_on_failure config option to retry on retryable errors.", observed.All()[0].Message)
-			ocs.awaitAsyncProcessing()
 			mockR.checkNumRequests(t, 1)
 			ocs.checkSendItemsCount(t, 0)
 			ocs.checkDroppedItemsCount(t, 2)
@@ -367,15 +367,13 @@ func TestRetryWithContextTimeout(t *testing.T) {
 			ocs.run(func() {
 				ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
 				defer cancel()
-				err := be.Send(ctx, mockR)
-				require.Error(t, err)
-				require.Equal(t, "request will be cancelled before next retry: transient error", err.Error())
+				require.EqualError(t, be.Send(ctx, mockR), "request will be cancelled before next retry: transient error")
 			})
+			ocs.awaitAsyncProcessing()
 			assert.Len(t, observed.All(), 2)
 			assert.Equal(t, "Exporting failed. Will retry the request after interval.", observed.All()[0].Message)
 			assert.Equal(t, "Exporting failed. Rejecting data. "+
 				"Try enabling sending_queue to survive temporary failures.", observed.All()[1].Message)
-			ocs.awaitAsyncProcessing()
 			ocs.checkDroppedItemsCount(t, 7)
 			require.Equal(t, 2, mockR.(*mockErrorRequest).getNumRequests())
 			require.NoError(t, be.Shutdown(context.Background()))

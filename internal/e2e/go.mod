@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/internal/e2e
 
-go 1.22.0
+go 1.23
 
 require (
 	github.com/stretchr/testify v1.10.0
@@ -39,6 +39,7 @@ require (
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
+	github.com/cenkalti/backoff/v5 v5.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/ebitengine/purego v0.8.1 // indirect
