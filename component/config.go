@@ -37,13 +37,7 @@ func ValidateConfig(cfg Config) error {
 	errs := validate(reflect.ValueOf(cfg))
 
 	for _, suberr := range errs {
-		if suberr.err != nil {
-			if suberr.path != "" {
-				err = errors.Join(err, fmt.Errorf("%s: %w", suberr.path, suberr.err))
-			} else {
-				err = errors.Join(err, suberr.err)
-			}
-		}
+		err = errors.Join(err, suberr.toError())
 	}
 
 	return err
@@ -51,7 +45,25 @@ func ValidateConfig(cfg Config) error {
 
 type pathError struct {
 	err  error
-	path string
+	path []string
+}
+
+func (pe pathError) toError() error {
+	if len(pe.path) > 0 {
+		var path string
+		sb := strings.Builder{}
+
+		_, _ = sb.WriteString(pe.path[len(pe.path)-1])
+		for i := len(pe.path) - 2; i >= 0; i-- {
+			_, _ = sb.WriteString("::")
+			_, _ = sb.WriteString(pe.path[i])
+		}
+		path = sb.String()
+
+		return fmt.Errorf("%s: %w", path, pe.err)
+	}
+
+	return pe.err
 }
 
 func validate(v reflect.Value) []pathError {
@@ -63,64 +75,52 @@ func validate(v reflect.Value) []pathError {
 	case reflect.Ptr, reflect.Interface:
 		return validate(v.Elem())
 	case reflect.Struct:
-		errs = append(errs, pathError{err: callValidateIfPossible(v), path: ""})
+		err := callValidateIfPossible(v)
+		if err != nil {
+			errs = append(errs, pathError{err: err})
+		}
+
 		// Reflect on the pointed data and check each of its fields.
 		for i := 0; i < v.NumField(); i++ {
 			if !v.Type().Field(i).IsExported() {
 				continue
 			}
+			field := v.Type().Field(i)
+			path := fieldName(field)
+
 			subpathErrs := validate(v.Field(i))
 			for _, err := range subpathErrs {
-				field := v.Type().Field(i)
-				var fieldName string
-				if tag, ok := field.Tag.Lookup("mapstructure"); ok {
-					tags := strings.Split(tag, ",")
-					if len(tags) > 0 {
-						fieldName = tags[0]
-					}
-				}
-				// Even if the mapstructure tag exists, the field name may not
-				// be available, so set it if it is still blank.
-				if len(fieldName) == 0 {
-					fieldName = strings.ToLower(field.Name)
-				}
-
-				var path string
-				if len(err.path) > 0 {
-					path = strings.Join([]string{fieldName, err.path}, "::")
-				} else {
-					path = fieldName
-				}
 				errs = append(errs, pathError{
 					err:  err.err,
-					path: path,
+					path: append(err.path, path),
 				})
 			}
 		}
 		return errs
 	case reflect.Slice, reflect.Array:
-		errs = append(errs, pathError{err: callValidateIfPossible(v), path: ""})
+		err := callValidateIfPossible(v)
+		if err != nil {
+			errs = append(errs, pathError{err: err})
+		}
+
 		// Reflect on the pointed data and check each of its fields.
 		for i := 0; i < v.Len(); i++ {
 			subPathErrs := validate(v.Index(i))
 
 			for _, err := range subPathErrs {
-				var path string
-				if len(err.path) > 0 {
-					path = strings.Join([]string{strconv.Itoa(i), err.path}, "::")
-				} else {
-					path = strconv.Itoa(i)
-				}
-
 				errs = append(errs, pathError{
 					err:  err.err,
-					path: path,
+					path: append(err.path, strconv.Itoa(i)),
 				})
 			}
 		}
 		return errs
 	case reflect.Map:
-		errs = append(errs, pathError{err: callValidateIfPossible(v), path: ""})
+		err := callValidateIfPossible(v)
+		if err != nil {
+			errs = append(errs, pathError{err: err})
+		}
+
 		iter := v.MapRange()
 		for iter.Next() {
 			keyErrs := validate(iter.Key())
@@ -136,28 +136,21 @@ func validate(v reflect.Value) []pathError {
 			}
 
 			for _, err := range keyErrs {
-				var path string
-				if len(err.path) > 0 {
-					path = strings.Join([]string{key, err.path}, "::")
-				} else {
-					path = key
-				}
-				errs = append(errs, pathError{err: err.err, path: path})
+				errs = append(errs, pathError{err: err.err, path: append(err.path, key)})
 			}
 
 			for _, err := range valueErrs {
-				var path string
-				if len(err.path) > 0 {
-					path = strings.Join([]string{key, err.path}, "::")
-				} else {
-					path = key
-				}
-				errs = append(errs, pathError{err: err.err, path: path})
+				errs = append(errs, pathError{err: err.err, path: append(err.path, key)})
 			}
 		}
 		return errs
 	default:
-		return []pathError{{err: callValidateIfPossible(v), path: ""}}
+		err := callValidateIfPossible(v)
+		if err != nil {
+			return []pathError{{err: err}}
+		}
+
+		return nil
 	}
 }
 
@@ -179,4 +172,21 @@ func callValidateIfPossible(v reflect.Value) error {
 	}
 
 	return nil
+}
+
+func fieldName(field reflect.StructField) string {
+	var fieldName string
+	if tag, ok := field.Tag.Lookup("mapstructure"); ok {
+		tags := strings.Split(tag, ",")
+		if len(tags) > 0 {
+			fieldName = tags[0]
+		}
+	}
+	// Even if the mapstructure tag exists, the field name may not
+	// be available, so set it if it is still blank.
+	if len(fieldName) == 0 {
+		fieldName = strings.ToLower(field.Name)
+	}
+
+	return fieldName
 }

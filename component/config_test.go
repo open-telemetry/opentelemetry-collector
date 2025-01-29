@@ -101,6 +101,12 @@ type configDeeplyNested struct {
 	SliceChild    []configChildSlice
 }
 
+type sliceTypeAlias []configChildSlice
+
+func (sliceTypeAlias) Validate() error {
+	return errors.New("sliceTypeAlias error")
+}
+
 func TestValidateConfig(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -281,6 +287,11 @@ func TestValidateConfig(t *testing.T) {
 			name:     "nested slice value error",
 			cfg:      configDeeplyNested{SliceChild: []configChildSlice{{Child: []errConfig{{err: errors.New("child key error")}}}}},
 			expected: errors.New("slicechild::0::child::0: child key error"),
+		},
+		{
+			name:     "slice type alias",
+			cfg:      sliceTypeAlias{},
+			expected: errors.New("sliceTypeAlias error"),
 		},
 	}
 
