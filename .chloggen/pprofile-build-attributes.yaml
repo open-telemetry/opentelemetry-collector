@@ -7,7 +7,7 @@ change_type: enhancement
 component: pdata/pprofile
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add new helper method `BuildAttributes` to build a `pcommon.Map` out of `AttributeIndices`.
+note: Add new helper method `FromAttributeIndices` to build a `pcommon.Map` out of `AttributeIndices`.
 
 # One or more tracking issues or pull requests related to the change
 issues: [12176]
