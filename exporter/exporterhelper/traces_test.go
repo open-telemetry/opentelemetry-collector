@@ -42,10 +42,12 @@ var (
 )
 
 func TestTracesRequest(t *testing.T) {
-	mr := newTracesRequest(testdata.GenerateTraces(1), nil)
+	tr := newTracesRequest(testdata.GenerateTraces(1), nil)
+	assert.Equal(t, 1, tr.ItemsCount())
+	assert.Equal(t, tracesMarshaler.TracesSize(testdata.GenerateTraces(1)), tr.ByteSize())
 
 	traceErr := consumererror.NewTraces(errors.New("some error"), ptrace.NewTraces())
-	assert.EqualValues(t, newTracesRequest(ptrace.NewTraces(), nil), mr.(RequestErrorHandler).OnError(traceErr))
+	assert.EqualValues(t, newTracesRequest(ptrace.NewTraces(), nil), tr.(RequestErrorHandler).OnError(traceErr))
 }
 
 func TestTraces_InvalidName(t *testing.T) {

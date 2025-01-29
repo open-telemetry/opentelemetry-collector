@@ -43,6 +43,8 @@ var (
 
 func TestLogsRequest(t *testing.T) {
 	lr := newLogsRequest(testdata.GenerateLogs(1), nil)
+	assert.Equal(t, 1, lr.ItemsCount())
+	assert.Equal(t, logsMarshaler.LogsSize(testdata.GenerateLogs(1)), lr.ByteSize())
 
 	logErr := consumererror.NewLogs(errors.New("some error"), plog.NewLogs())
 	assert.EqualValues(
