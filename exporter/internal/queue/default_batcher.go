@@ -52,7 +52,7 @@ func (qb *DefaultBatcher) startReadingFlushingGoroutine() {
 				reqList, mergeSplitErr = qb.currentBatch.req.MergeSplit(ctx, qb.batchCfg.MaxSizeConfig, req)
 			}
 
-			if mergeSplitErr != nil || reqList == nil {
+			if mergeSplitErr != nil || len(reqList) == 0 {
 				qb.queue.OnProcessingFinished(idx, mergeSplitErr)
 				qb.currentBatchMu.Unlock()
 				continue
