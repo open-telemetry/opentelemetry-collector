@@ -191,7 +191,7 @@ func TestTraces_WithRecordMetrics(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
-	checkRecordedMetricsForTraces(t, tt, te, nil)
+	checkRecordedMetricsForTraces(t, tt, fakeTracesName, te, nil)
 }
 
 func TestTraces_pLogModifiedDownStream_WithRecordMetrics(t *testing.T) {
@@ -206,7 +206,15 @@ func TestTraces_pLogModifiedDownStream_WithRecordMetrics(t *testing.T) {
 
 	require.NoError(t, te.ConsumeTraces(context.Background(), td))
 	assert.Equal(t, 0, td.SpanCount())
-	require.NoError(t, tt.CheckExporterTraces(int64(2), 0))
+
+	metadatatest.AssertEqualExporterSentSpans(t, tt.Telemetry,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(internal.ExporterKey, fakeTracesName.String())),
+				Value: int64(2),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
 func TestTracesRequest_WithRecordMetrics(t *testing.T) {
@@ -220,7 +228,7 @@ func TestTracesRequest_WithRecordMetrics(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
-	checkRecordedMetricsForTraces(t, tt, te, nil)
+	checkRecordedMetricsForTraces(t, tt, fakeTracesName, te, nil)
 }
 
 func TestTraces_WithRecordMetrics_ReturnError(t *testing.T) {
@@ -233,7 +241,7 @@ func TestTraces_WithRecordMetrics_ReturnError(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
-	checkRecordedMetricsForTraces(t, tt, te, want)
+	checkRecordedMetricsForTraces(t, tt, fakeTracesName, te, want)
 }
 
 func TestTracesRequest_WithRecordMetrics_RequestSenderError(t *testing.T) {
@@ -248,7 +256,7 @@ func TestTracesRequest_WithRecordMetrics_RequestSenderError(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
-	checkRecordedMetricsForTraces(t, tt, te, want)
+	checkRecordedMetricsForTraces(t, tt, fakeTracesName, te, want)
 }
 
 func TestTraces_WithRecordEnqueueFailedMetrics(t *testing.T) {
@@ -406,7 +414,7 @@ func newTraceDataPusherModifiedDownstream(retError error) consumer.ConsumeTraces
 	}
 }
 
-func checkRecordedMetricsForTraces(t *testing.T, tt componenttest.TestTelemetry, te exporter.Traces, wantError error) {
+func checkRecordedMetricsForTraces(t *testing.T, tt componenttest.TestTelemetry, id component.ID, te exporter.Traces, wantError error) {
 	td := testdata.GenerateTraces(2)
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
@@ -415,9 +423,23 @@ func checkRecordedMetricsForTraces(t *testing.T, tt componenttest.TestTelemetry,
 
 	// TODO: When the new metrics correctly count partial dropped fix this.
 	if wantError != nil {
-		require.NoError(t, tt.CheckExporterTraces(0, int64(numBatches*td.SpanCount())))
+		metadatatest.AssertEqualExporterSendFailedSpans(t, tt.Telemetry,
+			[]metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String(internal.ExporterKey, id.String())),
+					Value: int64(numBatches * td.SpanCount()),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 	} else {
-		require.NoError(t, tt.CheckExporterTraces(int64(numBatches*td.SpanCount()), 0))
+		metadatatest.AssertEqualExporterSentSpans(t, tt.Telemetry,
+			[]metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String(internal.ExporterKey, id.String())),
+					Value: int64(numBatches * td.SpanCount()),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 	}
 }
 

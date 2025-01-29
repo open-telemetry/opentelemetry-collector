@@ -30,11 +30,13 @@ type TestTelemetry struct {
 	id component.ID
 }
 
+// Deprecated: [v0.119.0] use the metadatatest.AssertEqualMetric series of functions instead.
 // CheckExporterTraces checks that for the current exported values for trace exporter metrics match given values.
 func (tts *TestTelemetry) CheckExporterTraces(sentSpans, sendFailedSpans int64) error {
 	return checkExporterTraces(tts.Reader, tts.id, sentSpans, sendFailedSpans)
 }
 
+// Deprecated: [v0.119.0] use the metadatatest.AssertEqualMetric series of functions instead.
 // CheckExporterMetrics checks that for the current exported values for metrics exporter metrics match given values.
 func (tts *TestTelemetry) CheckExporterMetrics(sentMetricsPoints, sendFailedMetricsPoints int64) error {
 	return checkExporterMetrics(tts.Reader, tts.id, sentMetricsPoints, sendFailedMetricsPoints)
