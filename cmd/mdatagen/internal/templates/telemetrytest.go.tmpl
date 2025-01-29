@@ -51,7 +51,7 @@ func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, 
 }
 
 {{ range $name, $metric := .Telemetry.Metrics }}
-{{ if not $metric.Optional }}
+
 func AssertEqual{{ $name.Render }}(t *testing.T, tt componenttest.Telemetry, dps []metricdata.{{- if eq $metric.Data.Type "Histogram" }} {{$metric.Data.Type}} {{- end }}DataPoint[{{ $metric.Data.BasicType }}], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_{{ $name }}",
@@ -71,7 +71,6 @@ func AssertEqual{{ $name.Render }}(t *testing.T, tt componenttest.Telemetry, dps
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-{{- end }}
 {{- end }}
 
 func getMetric(t *testing.T, tt componenttest.Telemetry, name string) metricdata.Metrics {
