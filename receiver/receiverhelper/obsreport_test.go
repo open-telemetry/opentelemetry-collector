@@ -131,7 +131,24 @@ func TestReceiveLogsOp(t *testing.T) {
 				t.Fatalf("unexpected param: %v", params[i])
 			}
 		}
-		require.NoError(t, tt.CheckReceiverLogs(transport, int64(acceptedLogRecords), int64(refusedLogRecords)))
+		metadatatest.AssertEqualReceiverAcceptedLogRecords(t, tt.Telemetry,
+			[]metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String("receiver", receiverID.String()),
+						attribute.String("transport", transport)),
+					Value: int64(acceptedLogRecords),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+		metadatatest.AssertEqualReceiverRefusedLogRecords(t, tt.Telemetry,
+			[]metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String("receiver", receiverID.String()),
+						attribute.String("transport", transport)),
+					Value: int64(refusedLogRecords),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 	})
 }
 
@@ -292,10 +309,24 @@ func TestCheckReceiverLogsViews(t *testing.T) {
 	require.NotNil(t, ctx)
 	rec.EndLogsOp(ctx, format, 7, nil)
 
-	require.NoError(t, tt.CheckReceiverLogs(transport, 7, 0))
-	require.Error(t, tt.CheckReceiverLogs(transport, 7, 7))
-	require.Error(t, tt.CheckReceiverLogs(transport, 0, 0))
-	assert.Error(t, tt.CheckReceiverLogs(transport, 0, 7))
+	metadatatest.AssertEqualReceiverAcceptedLogRecords(t, tt.Telemetry,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("receiver", receiverID.String()),
+					attribute.String("transport", transport)),
+				Value: int64(7),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+	metadatatest.AssertEqualReceiverRefusedLogRecords(t, tt.Telemetry,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("receiver", receiverID.String()),
+					attribute.String("transport", transport)),
+				Value: int64(0),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
 func testTelemetry(t *testing.T, id component.ID, testFunc func(t *testing.T, tt componenttest.TestTelemetry)) {

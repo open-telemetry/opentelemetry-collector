@@ -13,6 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
@@ -26,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/internal/storagetest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -191,7 +194,7 @@ func TestMetrics_WithRecordMetrics(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, me)
 
-	checkRecordedMetricsForMetrics(t, tt, me, nil)
+	checkRecordedMetricsForMetrics(t, tt, fakeMetricsName, me, nil)
 }
 
 func TestMetrics_pMetricModifiedDownStream_WithRecordMetrics(t *testing.T) {
@@ -206,7 +209,15 @@ func TestMetrics_pMetricModifiedDownStream_WithRecordMetrics(t *testing.T) {
 
 	require.NoError(t, me.ConsumeMetrics(context.Background(), md))
 	assert.Equal(t, 0, md.MetricCount())
-	require.NoError(t, tt.CheckExporterMetrics(int64(4), 0))
+
+	metadatatest.AssertEqualExporterSentMetricPoints(t, tt.Telemetry,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(internal.ExporterKey, fakeMetricsName.String())),
+				Value: int64(4),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
 func TestMetricsRequest_WithRecordMetrics(t *testing.T) {
@@ -220,7 +231,7 @@ func TestMetricsRequest_WithRecordMetrics(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, me)
 
-	checkRecordedMetricsForMetrics(t, tt, me, nil)
+	checkRecordedMetricsForMetrics(t, tt, fakeMetricsName, me, nil)
 }
 
 func TestMetrics_WithRecordMetrics_ReturnError(t *testing.T) {
@@ -233,7 +244,7 @@ func TestMetrics_WithRecordMetrics_ReturnError(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, me)
 
-	checkRecordedMetricsForMetrics(t, tt, me, want)
+	checkRecordedMetricsForMetrics(t, tt, fakeMetricsName, me, want)
 }
 
 func TestMetricsRequest_WithRecordMetrics_ExportError(t *testing.T) {
@@ -248,7 +259,7 @@ func TestMetricsRequest_WithRecordMetrics_ExportError(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, me)
 
-	checkRecordedMetricsForMetrics(t, tt, me, want)
+	checkRecordedMetricsForMetrics(t, tt, fakeMetricsName, me, want)
 }
 
 func TestMetrics_WithRecordEnqueueFailedMetrics(t *testing.T) {
@@ -273,7 +284,14 @@ func TestMetrics_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	}
 
 	// 2 batched must be in queue, and 10 metric points rejected due to queue overflow
-	require.NoError(t, tt.CheckExporterEnqueueFailedMetrics(int64(10)))
+	metadatatest.AssertEqualExporterEnqueueFailedMetricPoints(t, tt.Telemetry,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("exporter", fakeMetricsName.String())),
+				Value: int64(10),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
 func TestMetrics_WithSpan(t *testing.T) {
@@ -395,7 +413,7 @@ func newPushMetricsDataModifiedDownstream(retError error) consumer.ConsumeMetric
 	}
 }
 
-func checkRecordedMetricsForMetrics(t *testing.T, tt componenttest.TestTelemetry, me exporter.Metrics, wantError error) {
+func checkRecordedMetricsForMetrics(t *testing.T, tt componenttest.TestTelemetry, id component.ID, me exporter.Metrics, wantError error) {
 	md := testdata.GenerateMetrics(2)
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
@@ -405,9 +423,23 @@ func checkRecordedMetricsForMetrics(t *testing.T, tt componenttest.TestTelemetry
 	// TODO: When the new metrics correctly count partial dropped fix this.
 	numPoints := int64(numBatches * md.MetricCount() * 2) /* 2 points per metric*/
 	if wantError != nil {
-		require.NoError(t, tt.CheckExporterMetrics(0, numPoints))
+		metadatatest.AssertEqualExporterSendFailedMetricPoints(t, tt.Telemetry,
+			[]metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String(internal.ExporterKey, id.String())),
+					Value: numPoints,
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 	} else {
-		require.NoError(t, tt.CheckExporterMetrics(numPoints, 0))
+		metadatatest.AssertEqualExporterSentMetricPoints(t, tt.Telemetry,
+			[]metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String(internal.ExporterKey, id.String())),
+					Value: numPoints,
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 	}
 }
 
