@@ -39,7 +39,7 @@ type TelemetryBuilder struct {
 	{{- range $name, $metric := .Telemetry.Metrics }}
 	{{ $name.Render }} metric.{{ $metric.Data.Instrument }}
     {{- if and ($metric.Data.Async) (not $metric.Optional) }}
-    observe{{ $name.Render }} func(context.Context, metric.Observer) error
+    observe{{ $name.Render }} func(context.Context, metric.{{ casesTitle $metric.Data.BasicType }}Observer) error
     {{- end }}
 	{{- end }}
 }
@@ -86,8 +86,8 @@ func (builder *TelemetryBuilder) Init{{ $name.Render }}({{ if $metric.Data.Async
 // With{{ $name.Render }}Callback sets callback for observable {{ $name.Render }} metric.
 func With{{ $name.Render }}Callback(cb func() {{ $metric.Data.BasicType }}, opts ...metric.ObserveOption) TelemetryBuilderOption {
     return telemetryBuilderOptionFunc(func(builder *TelemetryBuilder) {
-        builder.observe{{ $name.Render }} = func(_ context.Context, o metric.Observer) error {
-            o.Observe{{ casesTitle $metric.Data.BasicType }}(builder.{{ $name.Render }}, cb(), opts...)
+        builder.observe{{ $name.Render }} = func(_ context.Context, o metric.{{ casesTitle $metric.Data.BasicType }}Observer) error {
+            o.Observe(cb(), opts...)
             return nil
         }
     })
@@ -116,12 +116,9 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
         {{ if eq $metric.Data.Type "Histogram" -}}
         {{- if $metric.Data.Boundaries -}}metric.WithExplicitBucketBoundaries([]float64{ {{- range $metric.Data.Boundaries }} {{.}}, {{- end }} }...),{{- end }}
         {{- end }}
+        {{- if $metric.Data.Async -}}metric.With{{ casesTitle $metric.Data.BasicType }}Callback(builder.observe{{ $name.Render }}),{{- end }}
     )
     errs = errors.Join(errs, err)
-    {{- if $metric.Data.Async }}
-    _, err = builder.meter.RegisterCallback(builder.observe{{ $name.Render }}, builder.{{ $name.Render }})
-    errs = errors.Join(errs, err)
-    {{- end }}
     {{- end }}
     {{- end }}
     return &builder, errs

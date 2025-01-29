@@ -28,7 +28,7 @@ type TelemetryBuilder struct {
 	ProcessorBatchBatchSendSizeBytes         metric.Int64Histogram
 	ProcessorBatchBatchSizeTriggerSend       metric.Int64Counter
 	ProcessorBatchMetadataCardinality        metric.Int64ObservableUpDownCounter
-	observeProcessorBatchMetadataCardinality func(context.Context, metric.Observer) error
+	observeProcessorBatchMetadataCardinality func(context.Context, metric.Int64Observer) error
 	ProcessorBatchTimeoutTriggerSend         metric.Int64Counter
 }
 
@@ -46,8 +46,8 @@ func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 // WithProcessorBatchMetadataCardinalityCallback sets callback for observable ProcessorBatchMetadataCardinality metric.
 func WithProcessorBatchMetadataCardinalityCallback(cb func() int64, opts ...metric.ObserveOption) TelemetryBuilderOption {
 	return telemetryBuilderOptionFunc(func(builder *TelemetryBuilder) {
-		builder.observeProcessorBatchMetadataCardinality = func(_ context.Context, o metric.Observer) error {
-			o.ObserveInt64(builder.ProcessorBatchMetadataCardinality, cb(), opts...)
+		builder.observeProcessorBatchMetadataCardinality = func(_ context.Context, o metric.Int64Observer) error {
+			o.Observe(cb(), opts...)
 			return nil
 		}
 	})
@@ -86,9 +86,8 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_processor_batch_metadata_cardinality",
 		metric.WithDescription("Number of distinct metadata value combinations being processed"),
 		metric.WithUnit("{combinations}"),
+		metric.WithInt64Callback(builder.observeProcessorBatchMetadataCardinality),
 	)
-	errs = errors.Join(errs, err)
-	_, err = builder.meter.RegisterCallback(builder.observeProcessorBatchMetadataCardinality, builder.ProcessorBatchMetadataCardinality)
 	errs = errors.Join(errs, err)
 	builder.ProcessorBatchTimeoutTriggerSend, err = builder.meter.Int64Counter(
 		"otelcol_processor_batch_timeout_trigger_send",
