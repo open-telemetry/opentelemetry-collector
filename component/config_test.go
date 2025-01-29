@@ -99,6 +99,8 @@ type configDeeplyNested struct {
 	MapKeyChild   map[configChildStruct]string
 	MapValueChild map[string]configChildStruct
 	SliceChild    []configChildSlice
+	MapIntKey     map[int]errConfig
+	MapFloatKey   map[float64]errConfig
 }
 
 type sliceTypeAlias []configChildSlice
@@ -225,13 +227,13 @@ func TestValidateConfig(t *testing.T) {
 		},
 		{
 			name:     "child map key",
-			cfg:      configChildMapKey{Child: map[errType]string{"child map key": ""}},
-			expected: errors.New("child::[component.errType key]: child map key"),
+			cfg:      configChildMapKey{Child: map[errType]string{"child_map_key": ""}},
+			expected: errors.New("child::child_map_key: child_map_key"),
 		},
 		{
 			name:     "pointer child map key",
-			cfg:      &configChildMapKey{Child: map[errType]string{"pointer child map key": ""}},
-			expected: errors.New("child::[component.errType key]: pointer child map key"),
+			cfg:      &configChildMapKey{Child: map[errType]string{"pointer_child_map_key": ""}},
+			expected: errors.New("child::pointer_child_map_key: pointer_child_map_key"),
 		},
 		{
 			name:     "child map key pointer",
@@ -287,6 +289,16 @@ func TestValidateConfig(t *testing.T) {
 			name:     "nested slice value error",
 			cfg:      configDeeplyNested{SliceChild: []configChildSlice{{Child: []errConfig{{err: errors.New("child key error")}}}}},
 			expected: errors.New("slicechild::0::child::0: child key error"),
+		},
+		{
+			name:     "nested map with int key",
+			cfg:      configDeeplyNested{MapIntKey: map[int]errConfig{1: {err: errors.New("int key error")}}},
+			expected: errors.New("mapintkey::1: int key error"),
+		},
+		{
+			name:     "nested map with float key",
+			cfg:      configDeeplyNested{MapFloatKey: map[float64]errConfig{1.2: {err: errors.New("float key error")}}},
+			expected: errors.New("mapfloatkey::1.2: float key error"),
 		},
 		{
 			name:     "slice type alias",

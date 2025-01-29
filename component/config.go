@@ -125,15 +125,7 @@ func validate(v reflect.Value) []pathError {
 		for iter.Next() {
 			keyErrs := validate(iter.Key())
 			valueErrs := validate(iter.Value())
-			var key string
-
-			if str, ok := iter.Key().Interface().(string); ok {
-				key = str
-			} else if stringer, ok := iter.Key().Interface().(fmt.Stringer); ok {
-				key = stringer.String()
-			} else {
-				key = fmt.Sprintf("[%T key]", iter.Key().Interface())
-			}
+			key := stringifyMapKey(iter.Key())
 
 			for _, err := range keyErrs {
 				errs = append(errs, pathError{err: err.err, path: append(err.path, key)})
@@ -189,4 +181,23 @@ func fieldName(field reflect.StructField) string {
 	}
 
 	return fieldName
+}
+
+func stringifyMapKey(val reflect.Value) string {
+	var key string
+
+	if str, ok := val.Interface().(string); ok {
+		key = str
+	} else if stringer, ok := val.Interface().(fmt.Stringer); ok {
+		key = stringer.String()
+	} else {
+		switch val.Kind() {
+		case reflect.Ptr, reflect.Interface, reflect.Struct, reflect.Slice, reflect.Array, reflect.Map:
+			key = fmt.Sprintf("[%T key]", val.Interface())
+		default:
+			key = fmt.Sprintf("%v", val.Interface())
+		}
+	}
+
+	return key
 }
