@@ -75,7 +75,25 @@ func TestExportTraceDataOp(t *testing.T) {
 		}
 	}
 
-	require.NoError(t, tt.CheckExporterTraces(int64(sentSpans), int64(failedToSendSpans)))
+	metadatatest.AssertEqualExporterSentSpans(t, tt.Telemetry,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("exporter", exporterID.String())),
+				Value: int64(sentSpans),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	if failedToSendSpans > 0 {
+		metadatatest.AssertEqualExporterSendFailedSpans(t, tt.Telemetry,
+			[]metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String("exporter", exporterID.String())),
+					Value: int64(failedToSendSpans),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+	}
 }
 
 func TestExportMetricsOp(t *testing.T) {
@@ -126,7 +144,25 @@ func TestExportMetricsOp(t *testing.T) {
 		}
 	}
 
-	require.NoError(t, tt.CheckExporterMetrics(int64(sentMetricPoints), int64(failedToSendMetricPoints)))
+	metadatatest.AssertEqualExporterSentMetricPoints(t, tt.Telemetry,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("exporter", exporterID.String())),
+				Value: int64(sentMetricPoints),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	if failedToSendMetricPoints > 0 {
+		metadatatest.AssertEqualExporterSendFailedMetricPoints(t, tt.Telemetry,
+			[]metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String("exporter", exporterID.String())),
+					Value: int64(failedToSendMetricPoints),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+	}
 }
 
 func TestExportLogsOp(t *testing.T) {
