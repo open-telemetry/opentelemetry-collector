@@ -33,14 +33,7 @@ type ConfigValidator interface {
 // ValidateConfig validates a config, by doing this:
 //   - Call Validate on the config itself if the config implements ConfigValidator.
 func ValidateConfig(cfg Config) error {
-	var err error
-	errs := validate(reflect.ValueOf(cfg))
-
-	for _, suberr := range errs {
-		err = errors.Join(err, suberr.toError())
-	}
-
-	return err
+	return errors.Join(validate(reflect.ValueOf(cfg)))
 }
 
 type pathError struct {
@@ -48,7 +41,7 @@ type pathError struct {
 	path []string
 }
 
-func (pe pathError) toError() error {
+func (pe pathError) Error() string {
 	if len(pe.path) > 0 {
 		var path string
 		sb := strings.Builder{}
@@ -60,9 +53,13 @@ func (pe pathError) toError() error {
 		}
 		path = sb.String()
 
-		return fmt.Errorf("%s: %w", path, pe.err)
+		return fmt.Sprintf("%s: %s", path, pe.err)
 	}
 
+	return pe.err.Error()
+}
+
+func (pe pathError) Unwrap() error {
 	return pe.err
 }
 
