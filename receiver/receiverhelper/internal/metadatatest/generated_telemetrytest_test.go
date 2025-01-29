@@ -20,12 +20,12 @@ func TestSetupTelemetry(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.NotNil(t, tb)
-	tb.ReceiverAcceptedLogRecords.Add(context.Background(), 1)
-	tb.ReceiverAcceptedMetricPoints.Add(context.Background(), 1)
-	tb.ReceiverAcceptedSpans.Add(context.Background(), 1)
-	tb.ReceiverRefusedLogRecords.Add(context.Background(), 1)
-	tb.ReceiverRefusedMetricPoints.Add(context.Background(), 1)
-	tb.ReceiverRefusedSpans.Add(context.Background(), 1)
+	tb.RecordReceiverAcceptedLogRecords(context.Background(), 1)
+	tb.RecordReceiverAcceptedMetricPoints(context.Background(), 1)
+	tb.RecordReceiverAcceptedSpans(context.Background(), 1)
+	tb.RecordReceiverRefusedLogRecords(context.Background(), 1)
+	tb.RecordReceiverRefusedMetricPoints(context.Background(), 1)
+	tb.RecordReceiverRefusedSpans(context.Background(), 1)
 
 	testTel.AssertMetrics(t, []metricdata.Metrics{
 		{

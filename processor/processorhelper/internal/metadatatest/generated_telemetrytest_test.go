@@ -20,8 +20,8 @@ func TestSetupTelemetry(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.NotNil(t, tb)
-	tb.ProcessorIncomingItems.Add(context.Background(), 1)
-	tb.ProcessorOutgoingItems.Add(context.Background(), 1)
+	tb.RecordProcessorIncomingItems(context.Background(), 1)
+	tb.RecordProcessorOutgoingItems(context.Background(), 1)
 
 	testTel.AssertMetrics(t, []metricdata.Metrics{
 		{

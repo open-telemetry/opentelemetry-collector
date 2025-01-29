@@ -21,10 +21,10 @@ func TestSetupTelemetry(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.NotNil(t, tb)
-	tb.ProcessorBatchBatchSendSize.Record(context.Background(), 1)
-	tb.ProcessorBatchBatchSendSizeBytes.Record(context.Background(), 1)
-	tb.ProcessorBatchBatchSizeTriggerSend.Add(context.Background(), 1)
-	tb.ProcessorBatchTimeoutTriggerSend.Add(context.Background(), 1)
+	tb.RecordProcessorBatchBatchSendSize(context.Background(), 1)
+	tb.RecordProcessorBatchBatchSendSizeBytes(context.Background(), 1)
+	tb.RecordProcessorBatchBatchSizeTriggerSend(context.Background(), 1)
+	tb.RecordProcessorBatchTimeoutTriggerSend(context.Background(), 1)
 
 	testTel.AssertMetrics(t, []metricdata.Metrics{
 		{

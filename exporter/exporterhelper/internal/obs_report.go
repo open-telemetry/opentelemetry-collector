@@ -38,12 +38,9 @@ type ObsReport struct {
 	tracer   trace.Tracer
 	Signal   pipeline.Signal
 
-	spanAttrs         trace.SpanStartEventOption
-	metricAttr        metric.MeasurementOption
-	TelemetryBuilder  *metadata.TelemetryBuilder
-	enqueueFailedInst metric.Int64Counter
-	itemsSentInst     metric.Int64Counter
-	itemsFailedInst   metric.Int64Counter
+	spanAttrs        trace.SpanStartEventOption
+	metricAttr       metric.MeasurementOption
+	TelemetryBuilder *metadata.TelemetryBuilder
 }
 
 // ObsReportSettings are settings for creating an ObsReport.
@@ -70,23 +67,6 @@ func NewObsReport(set ObsReportSettings) (*ObsReport, error) {
 		TelemetryBuilder: telemetryBuilder,
 	}
 
-	switch set.Signal {
-	case pipeline.SignalTraces:
-		or.enqueueFailedInst = or.TelemetryBuilder.ExporterEnqueueFailedSpans
-		or.itemsSentInst = or.TelemetryBuilder.ExporterSentSpans
-		or.itemsFailedInst = or.TelemetryBuilder.ExporterSendFailedSpans
-
-	case pipeline.SignalMetrics:
-		or.enqueueFailedInst = or.TelemetryBuilder.ExporterEnqueueFailedMetricPoints
-		or.itemsSentInst = or.TelemetryBuilder.ExporterSentMetricPoints
-		or.itemsFailedInst = or.TelemetryBuilder.ExporterSendFailedMetricPoints
-
-	case pipeline.SignalLogs:
-		or.enqueueFailedInst = or.TelemetryBuilder.ExporterEnqueueFailedLogRecords
-		or.itemsSentInst = or.TelemetryBuilder.ExporterSentLogRecords
-		or.itemsFailedInst = or.TelemetryBuilder.ExporterSendFailedLogRecords
-	}
-
 	return or, nil
 }
 
@@ -102,12 +82,16 @@ func (or *ObsReport) EndOp(ctx context.Context, numLogRecords int, err error) {
 	numSent, numFailedToSend := toNumItems(numLogRecords, err)
 
 	// No metrics recorded for profiles.
-	if or.itemsSentInst != nil {
-		or.itemsSentInst.Add(ctx, numSent, or.metricAttr)
-	}
-	// No metrics recorded for profiles.
-	if or.itemsFailedInst != nil {
-		or.itemsFailedInst.Add(ctx, numFailedToSend, or.metricAttr)
+	switch or.Signal {
+	case pipeline.SignalTraces:
+		or.TelemetryBuilder.RecordExporterSentSpans(ctx, numSent, or.metricAttr)
+		or.TelemetryBuilder.RecordExporterSendFailedSpans(ctx, numFailedToSend, or.metricAttr)
+	case pipeline.SignalMetrics:
+		or.TelemetryBuilder.RecordExporterSentMetricPoints(ctx, numSent, or.metricAttr)
+		or.TelemetryBuilder.RecordExporterSendFailedMetricPoints(ctx, numFailedToSend, or.metricAttr)
+	case pipeline.SignalLogs:
+		or.TelemetryBuilder.RecordExporterSentLogRecords(ctx, numSent, or.metricAttr)
+		or.TelemetryBuilder.RecordExporterSendFailedLogRecords(ctx, numFailedToSend, or.metricAttr)
 	}
 
 	span := trace.SpanFromContext(ctx)
@@ -133,9 +117,12 @@ func toNumItems(numExportedItems int, err error) (int64, int64) {
 
 func (or *ObsReport) RecordEnqueueFailure(ctx context.Context, failed int64) {
 	// No metrics recorded for profiles.
-	if or.enqueueFailedInst == nil {
-		return
+	switch or.Signal {
+	case pipeline.SignalTraces:
+		or.TelemetryBuilder.RecordExporterEnqueueFailedSpans(ctx, failed, or.metricAttr)
+	case pipeline.SignalMetrics:
+		or.TelemetryBuilder.RecordExporterEnqueueFailedMetricPoints(ctx, failed, or.metricAttr)
+	case pipeline.SignalLogs:
+		or.TelemetryBuilder.RecordExporterEnqueueFailedLogRecords(ctx, failed, or.metricAttr)
 	}
-
-	or.enqueueFailedInst.Add(ctx, failed, or.metricAttr)
 }
