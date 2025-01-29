@@ -15,7 +15,11 @@ By default, TLS is enabled:
   [grpc.WithInsecure()](https://godoc.org/google.golang.org/grpc#WithInsecure)
   for gRPC.
 - `curve_preferences` (default = []): specify your curve preferences  that will
-	 be used in an ECDHE handshake, in preference order.
+	 be used in an ECDHE handshake, in preference order. Accepted values are:
+  - X25519
+  - P521
+  - P256
+  - P384
 
 As a result, the following parameters are also required:
 

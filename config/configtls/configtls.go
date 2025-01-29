@@ -464,8 +464,8 @@ var tlsVersions = map[string]uint16{
 }
 
 var tlsCurveTypes = map[string]tls.CurveID{
-	"P-256":  tls.CurveP256,
-	"P-384":  tls.CurveP384,
-	"P-521":  tls.CurveP521,
+	"P256":   tls.CurveP256,
+	"P384":   tls.CurveP384,
+	"P521":   tls.CurveP521,
 	"X25519": tls.X25519,
 }

@@ -885,23 +885,23 @@ func TestCurvePreferences(t *testing.T) {
 			expectedCurveIDs: []tls.CurveID{tls.X25519},
 		},
 		{
-			name:             "P-521",
-			preferences:      []string{"P-521"},
+			name:             "P521",
+			preferences:      []string{"P521"},
 			expectedCurveIDs: []tls.CurveID{tls.CurveP521},
 		},
 		{
 			name:             "P-256",
-			preferences:      []string{"P-256"},
+			preferences:      []string{"P256"},
 			expectedCurveIDs: []tls.CurveID{tls.CurveP256},
 		},
 		{
 			name:             "multiple",
-			preferences:      []string{"P-256", "P-521", "X25519"},
+			preferences:      []string{"P256", "P521", "X25519"},
 			expectedCurveIDs: []tls.CurveID{tls.CurveP256, tls.CurveP521, tls.X25519},
 		},
 		{
 			name:             "invalid-curve",
-			preferences:      []string{"P-25223236"},
+			preferences:      []string{"P25223236"},
 			expectedCurveIDs: []tls.CurveID{},
 			expectedErr:      "invalid curve type",
 		},
