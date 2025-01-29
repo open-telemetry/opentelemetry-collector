@@ -15,11 +15,9 @@ import (
 
 func TestSetupTelemetry(t *testing.T) {
 	testTel := SetupTelemetry()
-	tb, err := metadata.NewTelemetryBuilder(
-		testTel.NewTelemetrySettings(),
-	)
+	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
-	require.NotNil(t, tb)
+	defer tb.Shutdown()
 	tb.ProcessorIncomingItems.Add(context.Background(), 1)
 	tb.ProcessorOutgoingItems.Add(context.Background(), 1)
 
@@ -49,14 +47,12 @@ func TestSetupTelemetry(t *testing.T) {
 			},
 		},
 	}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
-
 	AssertEqualProcessorIncomingItems(t, testTel.Telemetry,
-		[]metricdata.DataPoint[int64]{{}},
-		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
-
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorOutgoingItems(t, testTel.Telemetry,
-		[]metricdata.DataPoint[int64]{{}},
-		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 
 	require.NoError(t, testTel.Shutdown(context.Background()))
 }

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
@@ -15,12 +16,13 @@ import (
 
 func TestSetupTelemetry(t *testing.T) {
 	testTel := SetupTelemetry()
-	tb, err := metadata.NewTelemetryBuilder(
-		testTel.NewTelemetrySettings(),
-		metadata.WithProcessorBatchMetadataCardinalityCallback(func() int64 { return 1 }),
-	)
+	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
-	require.NotNil(t, tb)
+	defer tb.Shutdown()
+	require.NoError(t, tb.RegisterProcessorBatchMetadataCardinalityCallback(func(_ context.Context, observer metric.Int64Observer) error {
+		observer.Observe(1)
+		return nil
+	}))
 	tb.ProcessorBatchBatchSendSize.Record(context.Background(), 1)
 	tb.ProcessorBatchBatchSendSizeBytes.Record(context.Background(), 1)
 	tb.ProcessorBatchBatchSizeTriggerSend.Add(context.Background(), 1)
@@ -86,26 +88,21 @@ func TestSetupTelemetry(t *testing.T) {
 			},
 		},
 	}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
-
 	AssertEqualProcessorBatchBatchSendSize(t, testTel.Telemetry,
-		[]metricdata.HistogramDataPoint[int64]{{}},
-		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
-
+		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorBatchBatchSendSizeBytes(t, testTel.Telemetry,
-		[]metricdata.HistogramDataPoint[int64]{{}},
-		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
-
+		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorBatchBatchSizeTriggerSend(t, testTel.Telemetry,
-		[]metricdata.DataPoint[int64]{{}},
-		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
-
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorBatchMetadataCardinality(t, testTel.Telemetry,
-		[]metricdata.DataPoint[int64]{{}},
-		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
-
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorBatchTimeoutTriggerSend(t, testTel.Telemetry,
-		[]metricdata.DataPoint[int64]{{}},
-		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 
 	require.NoError(t, testTel.Shutdown(context.Background()))
 }

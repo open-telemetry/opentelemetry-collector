@@ -136,25 +136,15 @@ func (qs *QueueSender) Start(ctx context.Context, host component.Host) error {
 	exporterAttr := attribute.String(ExporterKey, qs.exporterID.String())
 	dataTypeAttr := attribute.String(DataTypeKey, qs.obsrep.Signal.String())
 
-	reg1, err1 := qs.obsrep.TelemetryBuilder.InitExporterQueueSize(func() int64 { return qs.queue.Size() },
-		metric.WithAttributeSet(attribute.NewSet(exporterAttr, dataTypeAttr)))
-
-	if reg1 != nil {
-		qs.shutdownFns = append(qs.shutdownFns, func(context.Context) error {
-			return reg1.Unregister()
-		})
-	}
-
-	reg2, err2 := qs.obsrep.TelemetryBuilder.InitExporterQueueCapacity(func() int64 { return qs.queue.Capacity() },
-		metric.WithAttributeSet(attribute.NewSet(exporterAttr)))
-
-	if reg2 != nil {
-		qs.shutdownFns = append(qs.shutdownFns, func(context.Context) error {
-			return reg2.Unregister()
-		})
-	}
-
-	return errors.Join(err1, err2)
+	return errors.Join(
+		qs.obsrep.TelemetryBuilder.RegisterExporterQueueSizeCallback(func(_ context.Context, o metric.Int64Observer) error {
+			o.Observe(qs.queue.Size(), metric.WithAttributeSet(attribute.NewSet(exporterAttr, dataTypeAttr)))
+			return nil
+		}),
+		qs.obsrep.TelemetryBuilder.RegisterExporterQueueCapacityCallback(func(_ context.Context, o metric.Int64Observer) error {
+			o.Observe(qs.queue.Capacity(), metric.WithAttributeSet(attribute.NewSet(exporterAttr)))
+			return nil
+		}))
 }
 
 // Shutdown is invoked during service shutdown.
@@ -162,13 +152,8 @@ func (qs *QueueSender) Shutdown(ctx context.Context) error {
 	// Stop the queue and consumers, this will drain the queue and will call the retry (which is stopped) that will only
 	// try once every request.
 
-	for _, fn := range qs.shutdownFns {
-		err := fn(ctx)
-		if err != nil {
-			qs.logger.Warn("Error while shutting down QueueSender", zap.Error(err))
-		}
-	}
-	qs.shutdownFns = nil
+	// At the end, make sure metrics are un-registered since we want to free this object.
+	defer qs.obsrep.TelemetryBuilder.Shutdown()
 
 	if err := qs.queue.Shutdown(ctx); err != nil {
 		return err
@@ -176,7 +161,8 @@ func (qs *QueueSender) Shutdown(ctx context.Context) error {
 	if usePullingBasedExporterQueueBatcher.IsEnabled() {
 		return qs.batcher.Shutdown(ctx)
 	}
-	return qs.consumers.Shutdown(ctx)
+	err := qs.consumers.Shutdown(ctx)
+	return err
 }
 
 // send implements the requestSender interface. It puts the request in the queue.
