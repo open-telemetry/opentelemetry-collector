@@ -14,7 +14,7 @@ import (
 )
 
 type Telemetry struct {
-	componenttest.Telemetry
+	*componenttest.Telemetry
 }
 
 func SetupTelemetry(opts ...componenttest.TelemetryOption) Telemetry {
@@ -34,7 +34,7 @@ func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, 
 	require.Equal(t, len(expected), lenMetrics(md))
 }
 
-func AssertEqualProcessCPUSeconds(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[float64], opts ...metricdatatest.Option) {
+func AssertEqualProcessCPUSeconds(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[float64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_process_cpu_seconds",
 		Description: "Total CPU user and system time in seconds [alpha]",
@@ -50,7 +50,7 @@ func AssertEqualProcessCPUSeconds(t *testing.T, tt componenttest.Telemetry, dps 
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessMemoryRss(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessMemoryRss(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_process_memory_rss",
 		Description: "Total physical memory (resident set size) [alpha]",
@@ -64,7 +64,7 @@ func AssertEqualProcessMemoryRss(t *testing.T, tt componenttest.Telemetry, dps [
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessRuntimeHeapAllocBytes(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessRuntimeHeapAllocBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_process_runtime_heap_alloc_bytes",
 		Description: "Bytes of allocated heap objects (see 'go doc runtime.MemStats.HeapAlloc') [alpha]",
@@ -78,7 +78,7 @@ func AssertEqualProcessRuntimeHeapAllocBytes(t *testing.T, tt componenttest.Tele
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessRuntimeTotalAllocBytes(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessRuntimeTotalAllocBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_process_runtime_total_alloc_bytes",
 		Description: "Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc') [alpha]",
@@ -94,7 +94,7 @@ func AssertEqualProcessRuntimeTotalAllocBytes(t *testing.T, tt componenttest.Tel
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessRuntimeTotalSysMemoryBytes(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessRuntimeTotalSysMemoryBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_process_runtime_total_sys_memory_bytes",
 		Description: "Total bytes of memory obtained from the OS (see 'go doc runtime.MemStats.Sys') [alpha]",
@@ -108,7 +108,7 @@ func AssertEqualProcessRuntimeTotalSysMemoryBytes(t *testing.T, tt componenttest
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessUptime(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[float64], opts ...metricdatatest.Option) {
+func AssertEqualProcessUptime(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[float64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_process_uptime",
 		Description: "Uptime of the process [alpha]",

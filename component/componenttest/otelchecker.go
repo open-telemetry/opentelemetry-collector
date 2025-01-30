@@ -13,35 +13,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-func checkReceiverTraces(tel *Telemetry, receiver component.ID, protocol string, accepted, dropped int64) error {
-	return checkReceiver(tel, receiver, "spans", protocol, accepted, dropped)
-}
-
-func checkReceiverLogs(tel *Telemetry, receiver component.ID, protocol string, accepted, dropped int64) error {
-	return checkReceiver(tel, receiver, "log_records", protocol, accepted, dropped)
-}
-
-func checkReceiverMetrics(tel *Telemetry, receiver component.ID, protocol string, accepted, dropped int64) error {
-	return checkReceiver(tel, receiver, "metric_points", protocol, accepted, dropped)
-}
-
 func checkReceiver(tel *Telemetry, receiver component.ID, datatype, protocol string, acceptedMetricPoints, droppedMetricPoints int64) error {
 	receiverAttrs := attributesForReceiverMetrics(receiver, protocol)
 	return multierr.Combine(
 		checkIntSum(tel, "otelcol_receiver_accepted_"+datatype, acceptedMetricPoints, receiverAttrs),
 		checkIntSum(tel, "otelcol_receiver_refused_"+datatype, droppedMetricPoints, receiverAttrs))
-}
-
-func checkExporterTraces(tel *Telemetry, exporter component.ID, sent, sendFailed int64) error {
-	return checkExporter(tel, exporter, "spans", sent, sendFailed)
-}
-
-func checkExporterLogs(tel *Telemetry, exporter component.ID, sent, sendFailed int64) error {
-	return checkExporter(tel, exporter, "log_records", sent, sendFailed)
-}
-
-func checkExporterMetrics(tel *Telemetry, exporter component.ID, sent, sendFailed int64) error {
-	return checkExporter(tel, exporter, "metric_points", sent, sendFailed)
 }
 
 func checkExporter(tel *Telemetry, exporter component.ID, datatype string, sent, sendFailed int64) error {
