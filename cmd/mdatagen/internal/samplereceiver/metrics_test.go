@@ -45,48 +45,11 @@ func TestComponentTelemetry(t *testing.T) {
 	rcv, ok := receiver.(nopReceiver)
 	require.True(t, ok)
 	rcv.initOptionalMetric()
-	// TODO: this needs to be replaces once the optional metric is supported in AssertMetricEqual functions.
-	tt.AssertMetrics(t, []metricdata.Metrics{
-		{
-			Name:        "otelcol_batch_size_trigger_send",
-			Description: "Number of times the batch was sent due to a size trigger [deprecated since v0.110.0]",
-			Unit:        "{times}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value: 1,
-					},
-				},
+	metadatatest.AssertEqualQueueLength(t, tt.Telemetry,
+		[]metricdata.DataPoint[int64]{
+			{
+				Value: 3,
 			},
-		},
-		{
-			Name:        "otelcol_process_runtime_total_alloc_bytes",
-			Description: "Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')",
-			Unit:        "By",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value: 2,
-					},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_queue_length",
-			Description: "This metric is optional and therefore not initialized in NewTelemetryBuilder. [alpha]",
-			Unit:        "{items}",
-			Data: metricdata.Gauge[int64]{
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value: 1,
-					},
-				},
-			},
-		},
-	}, metricdatatest.IgnoreTimestamp())
+		}, metricdatatest.IgnoreTimestamp())
 	require.NoError(t, tt.Shutdown(context.Background()))
 }
