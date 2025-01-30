@@ -14,6 +14,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/go-playground/validator/v10"
+
 	"go.opentelemetry.io/collector/config/configopaque"
 )
 
@@ -33,34 +35,34 @@ type Config struct {
 	// Path to the CA cert. For a client this verifies the server certificate.
 	// For a server this verifies client certificates. If empty uses system root CA.
 	// (optional)
-	CAFile string `mapstructure:"ca_file"`
+	CAFile string `mapstructure:"ca_file" validate:"omitempty,file,excluded_with=CAPem"`
 
 	// In memory PEM encoded cert. (optional)
-	CAPem configopaque.String `mapstructure:"ca_pem"`
+	CAPem configopaque.String `mapstructure:"ca_pem" validate:"omitempty,excluded_with=CAFile"`
 
 	// If true, load system CA certificates pool in addition to the certificates
 	// configured in this struct.
 	IncludeSystemCACertsPool bool `mapstructure:"include_system_ca_certs_pool"`
 
 	// Path to the TLS cert to use for TLS required connections. (optional)
-	CertFile string `mapstructure:"cert_file"`
+	CertFile string `mapstructure:"cert_file" validate:"omitempty,file"`
 
 	// In memory PEM encoded TLS cert to use for TLS required connections. (optional)
 	CertPem configopaque.String `mapstructure:"cert_pem"`
 
 	// Path to the TLS key to use for TLS required connections. (optional)
-	KeyFile string `mapstructure:"key_file"`
+	KeyFile string `mapstructure:"key_file" validate:"omitempty,file"`
 
 	// In memory PEM encoded TLS key to use for TLS required connections. (optional)
 	KeyPem configopaque.String `mapstructure:"key_pem"`
 
 	// MinVersion sets the minimum TLS version that is acceptable.
 	// If not set, TLS 1.2 will be used. (optional)
-	MinVersion string `mapstructure:"min_version"`
+	MinVersion string `mapstructure:"min_version" validate:"omitempty,oneof=1.0 1.1 1.2 1.3"`
 
 	// MaxVersion sets the maximum TLS version that is acceptable.
 	// If not set, refer to crypto/tls for defaults. (optional)
-	MaxVersion string `mapstructure:"max_version"`
+	MaxVersion string `mapstructure:"max_version" validate:"omitempty,oneof=1.0 1.1 1.2 1.3"`
 
 	// CipherSuites is a list of TLS cipher suites that the TLS transport can use.
 	// If left blank, a safe default list is used.
@@ -69,7 +71,7 @@ type Config struct {
 
 	// ReloadInterval specifies the duration after which the certificate will be reloaded
 	// If not set, it will never be reloaded (optional)
-	ReloadInterval time.Duration `mapstructure:"reload_interval"`
+	ReloadInterval time.Duration `mapstructure:"reload_interval" validate:"gte=0"`
 }
 
 // NewDefaultConfig creates a new TLSSetting with any default values set.
@@ -178,8 +180,31 @@ func (r *certReloader) GetCertificate() (*tls.Certificate, error) {
 }
 
 func (c Config) Validate() error {
-	if c.hasCAFile() && c.hasCAPem() {
-		return errors.New("provide either a CA file or the PEM-encoded string, but not both")
+	validate := validator.New(validator.WithRequiredStructEnabled())
+	if err := validate.Struct(c); err != nil {
+
+		verr := make([]error, 0, len(err.(validator.ValidationErrors)))
+		for _, err := range err.(validator.ValidationErrors) {
+			var e error
+			switch err.Tag() {
+			case "excluded_with":
+				if err.Field() == "CAFile" || err.Field() == "CAPem" {
+					e = errors.New("provide either a CA file or the PEM-encoded string, but not both")
+				}
+			case "oneof":
+				if err.Field() == "MaxVersion" {
+					e = fmt.Errorf("invalid TLS max_version: unsupported TLS version: %q", err.Value())
+				}
+				if err.Field() == "MinVersion" {
+					e = fmt.Errorf("invalid TLS min_version: unsupported TLS version: %q", err.Value())
+				}
+			default:
+				e = err
+			}
+			verr = append(verr, e)
+		}
+
+		return errors.Join(verr...)
 	}
 
 	minTLS, err := convertVersion(c.MinVersion, defaultMinTLSVersion)
