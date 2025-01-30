@@ -71,14 +71,19 @@ func TestConfigValidate(t *testing.T) {
 				cfg.Telemetry.Metrics.Readers = nil
 				return cfg
 			},
-			expected: nil,
+			expected: errors.New("service::telemetry config validation failed: collector telemetry metrics reader should exist when metric level is not none"),
 		},
 	}
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := tt.cfgFn()
-			assert.Equal(t, tt.expected, cfg.Validate())
+			err := cfg.Validate()
+			if tt.expected != nil {
+				assert.EqualError(t, err, tt.expected.Error())
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }
