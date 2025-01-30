@@ -23,10 +23,8 @@ import (
 )
 
 const (
-	receiverKey  = "receiver"
-	transportKey = "transport"
-	transport    = "fakeTransport"
-	format       = "fakeFormat"
+	transport = "fakeTransport"
+	format    = "fakeFormat"
 )
 
 var (
@@ -153,9 +151,8 @@ func TestReceiveLogsOp(t *testing.T) {
 }
 
 func TestReceiveMetricsOp(t *testing.T) {
-	testMetadataTelemetry(t, func(t *testing.T, tt metadatatest.Telemetry) {
-		tel := tt.NewTelemetrySettings()
-		parentCtx, parentSpan := tel.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+	testTelemetry(t, receiverID, func(t *testing.T, tt componenttest.TestTelemetry) {
+		parentCtx, parentSpan := tt.TelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
 		params := []testParams{
@@ -166,7 +163,7 @@ func TestReceiveMetricsOp(t *testing.T) {
 			rec, err := newReceiver(ObsReportSettings{
 				ReceiverID:             receiverID,
 				Transport:              transport,
-				ReceiverCreateSettings: receiver.Settings{ID: receiverID, TelemetrySettings: tel, BuildInfo: component.NewDefaultBuildInfo()},
+				ReceiverCreateSettings: receiver.Settings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 			})
 			require.NoError(t, err)
 
@@ -198,7 +195,7 @@ func TestReceiveMetricsOp(t *testing.T) {
 			}
 		}
 
-		assertMetrics(t, tt, receiverID, transport, int64(acceptedMetricPoints), int64(refusedMetricPoints))
+		assertMetrics(t, tt.Telemetry, receiverID, transport, int64(acceptedMetricPoints), int64(refusedMetricPoints))
 	})
 }
 
@@ -278,20 +275,21 @@ func TestCheckReceiverTracesViews(t *testing.T) {
 }
 
 func TestCheckReceiverMetricsViews(t *testing.T) {
-	tt := metadatatest.SetupTelemetry()
+	tt, err := componenttest.SetupTelemetry(receiverID)
+	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	rec, err := NewObsReport(ObsReportSettings{
 		ReceiverID:             receiverID,
 		Transport:              transport,
-		ReceiverCreateSettings: receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		ReceiverCreateSettings: receiver.Settings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 	})
 	require.NoError(t, err)
 	ctx := rec.StartMetricsOp(context.Background())
 	require.NotNil(t, ctx)
 	rec.EndMetricsOp(ctx, format, 7, nil)
 
-	assertMetrics(t, tt, receiverID, transport, 7, 0)
+	assertMetrics(t, tt.Telemetry, receiverID, transport, 7, 0)
 }
 
 func TestCheckReceiverLogsViews(t *testing.T) {
@@ -337,47 +335,23 @@ func testTelemetry(t *testing.T, id component.ID, testFunc func(t *testing.T, tt
 	testFunc(t, tt)
 }
 
-func testMetadataTelemetry(t *testing.T, testFunc func(t *testing.T, tt metadatatest.Telemetry)) {
-	tt := metadatatest.SetupTelemetry()
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
-	testFunc(t, tt)
-}
-
-func assertMetrics(t *testing.T, tt metadatatest.Telemetry, receiver component.ID, transport string, expectedAccepted int64, expectedRefused int64) {
-	tt.AssertMetrics(t, []metricdata.Metrics{
-		{
-			Name:        "otelcol_receiver_accepted_metric_points",
-			Description: "Number of metric points successfully pushed into the pipeline. [alpha]",
-			Unit:        "{datapoints}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Attributes: attribute.NewSet(
-							attribute.String(receiverKey, receiver.String()),
-							attribute.String(transportKey, transport)),
-						Value: expectedAccepted,
-					},
-				},
+func assertMetrics(t *testing.T, tt componenttest.Telemetry, receiver component.ID, transport string, expectedAccepted int64, expectedRefused int64) {
+	metadatatest.AssertEqualReceiverAcceptedMetricPoints(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(internal.ReceiverKey, receiver.String()),
+					attribute.String(internal.TransportKey, transport)),
+				Value: expectedAccepted,
 			},
-		},
-		{
-			Name:        "otelcol_receiver_refused_metric_points",
-			Description: "Number of metric points that could not be pushed into the pipeline. [alpha]",
-			Unit:        "{datapoints}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Attributes: attribute.NewSet(
-							attribute.String(receiverKey, receiver.String()),
-							attribute.String(transportKey, transport)),
-						Value: expectedRefused,
-					},
-				},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+	metadatatest.AssertEqualReceiverRefusedMetricPoints(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(internal.ReceiverKey, receiver.String()),
+					attribute.String(internal.TransportKey, transport)),
+				Value: expectedRefused,
 			},
-		},
-	}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
