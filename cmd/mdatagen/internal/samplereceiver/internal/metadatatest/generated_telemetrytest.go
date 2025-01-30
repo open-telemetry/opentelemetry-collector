@@ -55,7 +55,8 @@ func AssertEqualBatchSizeTriggerSend(t *testing.T, tt componenttest.Telemetry, d
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_batch_size_trigger_send")
+	got, err := tt.GetMetric("otelcol_batch_size_trigger_send")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
@@ -70,7 +71,8 @@ func AssertEqualProcessRuntimeTotalAllocBytes(t *testing.T, tt componenttest.Tel
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_process_runtime_total_alloc_bytes")
+	got, err := tt.GetMetric("otelcol_process_runtime_total_alloc_bytes")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
@@ -83,7 +85,8 @@ func AssertEqualQueueCapacity(t *testing.T, tt componenttest.Telemetry, dps []me
 			DataPoints: dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_queue_capacity")
+	got, err := tt.GetMetric("otelcol_queue_capacity")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
@@ -96,7 +99,8 @@ func AssertEqualQueueLength(t *testing.T, tt componenttest.Telemetry, dps []metr
 			DataPoints: dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_queue_length")
+	got, err := tt.GetMetric("otelcol_queue_length")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
@@ -110,14 +114,9 @@ func AssertEqualRequestDuration(t *testing.T, tt componenttest.Telemetry, dps []
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_request_duration")
+	got, err := tt.GetMetric("otelcol_request_duration")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func getMetric(t *testing.T, tt componenttest.Telemetry, name string) metricdata.Metrics {
-	var md metricdata.ResourceMetrics
-	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
-	return getMetricFromResource(name, md)
 }
 
 func getMetricFromResource(name string, got metricdata.ResourceMetrics) metricdata.Metrics {

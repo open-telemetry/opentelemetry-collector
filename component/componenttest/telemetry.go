@@ -6,8 +6,10 @@ package componenttest // import "go.opentelemetry.io/collector/component/compone
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 
@@ -71,6 +73,22 @@ func (tt *Telemetry) NewTelemetrySettings() component.TelemetrySettings {
 	set.MetricsLevel = configtelemetry.LevelDetailed //nolint:staticcheck //SA1019
 	set.TracerProvider = tt.traceProvider
 	return set
+}
+
+func (tt *Telemetry) GetMetric(name string) (metricdata.Metrics, error) {
+	var rm metricdata.ResourceMetrics
+	if err := tt.Reader.Collect(context.Background(), &rm); err != nil {
+		return metricdata.Metrics{}, err
+	}
+
+	for _, sm := range rm.ScopeMetrics {
+		for _, m := range sm.Metrics {
+			if m.Name == name {
+				return m, nil
+			}
+		}
+	}
+	return metricdata.Metrics{}, fmt.Errorf("metric '%s' not found", name)
 }
 
 func (tt *Telemetry) Shutdown(ctx context.Context) error {

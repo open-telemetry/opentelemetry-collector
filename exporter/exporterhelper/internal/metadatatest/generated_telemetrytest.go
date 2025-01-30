@@ -55,7 +55,8 @@ func AssertEqualExporterEnqueueFailedLogRecords(t *testing.T, tt componenttest.T
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_exporter_enqueue_failed_log_records")
+	got, err := tt.GetMetric("otelcol_exporter_enqueue_failed_log_records")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
@@ -70,7 +71,8 @@ func AssertEqualExporterEnqueueFailedMetricPoints(t *testing.T, tt componenttest
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_exporter_enqueue_failed_metric_points")
+	got, err := tt.GetMetric("otelcol_exporter_enqueue_failed_metric_points")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
@@ -85,7 +87,8 @@ func AssertEqualExporterEnqueueFailedSpans(t *testing.T, tt componenttest.Teleme
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_exporter_enqueue_failed_spans")
+	got, err := tt.GetMetric("otelcol_exporter_enqueue_failed_spans")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
@@ -98,7 +101,8 @@ func AssertEqualExporterQueueCapacity(t *testing.T, tt componenttest.Telemetry, 
 			DataPoints: dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_exporter_queue_capacity")
+	got, err := tt.GetMetric("otelcol_exporter_queue_capacity")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
@@ -111,7 +115,8 @@ func AssertEqualExporterQueueSize(t *testing.T, tt componenttest.Telemetry, dps 
 			DataPoints: dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_exporter_queue_size")
+	got, err := tt.GetMetric("otelcol_exporter_queue_size")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
@@ -126,7 +131,8 @@ func AssertEqualExporterSendFailedLogRecords(t *testing.T, tt componenttest.Tele
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_exporter_send_failed_log_records")
+	got, err := tt.GetMetric("otelcol_exporter_send_failed_log_records")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
@@ -141,7 +147,8 @@ func AssertEqualExporterSendFailedMetricPoints(t *testing.T, tt componenttest.Te
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_exporter_send_failed_metric_points")
+	got, err := tt.GetMetric("otelcol_exporter_send_failed_metric_points")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
@@ -156,7 +163,8 @@ func AssertEqualExporterSendFailedSpans(t *testing.T, tt componenttest.Telemetry
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_exporter_send_failed_spans")
+	got, err := tt.GetMetric("otelcol_exporter_send_failed_spans")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
@@ -171,7 +179,8 @@ func AssertEqualExporterSentLogRecords(t *testing.T, tt componenttest.Telemetry,
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_exporter_sent_log_records")
+	got, err := tt.GetMetric("otelcol_exporter_sent_log_records")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
@@ -186,7 +195,8 @@ func AssertEqualExporterSentMetricPoints(t *testing.T, tt componenttest.Telemetr
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_exporter_sent_metric_points")
+	got, err := tt.GetMetric("otelcol_exporter_sent_metric_points")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
@@ -201,14 +211,9 @@ func AssertEqualExporterSentSpans(t *testing.T, tt componenttest.Telemetry, dps 
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_exporter_sent_spans")
+	got, err := tt.GetMetric("otelcol_exporter_sent_spans")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func getMetric(t *testing.T, tt componenttest.Telemetry, name string) metricdata.Metrics {
-	var md metricdata.ResourceMetrics
-	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
-	return getMetricFromResource(name, md)
 }
 
 func getMetricFromResource(name string, got metricdata.ResourceMetrics) metricdata.Metrics {

@@ -54,7 +54,8 @@ func AssertEqualProcessorBatchBatchSendSize(t *testing.T, tt componenttest.Telem
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_processor_batch_batch_send_size")
+	got, err := tt.GetMetric("otelcol_processor_batch_batch_send_size")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
@@ -68,7 +69,8 @@ func AssertEqualProcessorBatchBatchSendSizeBytes(t *testing.T, tt componenttest.
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_processor_batch_batch_send_size_bytes")
+	got, err := tt.GetMetric("otelcol_processor_batch_batch_send_size_bytes")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
@@ -83,7 +85,8 @@ func AssertEqualProcessorBatchBatchSizeTriggerSend(t *testing.T, tt componenttes
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_processor_batch_batch_size_trigger_send")
+	got, err := tt.GetMetric("otelcol_processor_batch_batch_size_trigger_send")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
@@ -98,7 +101,8 @@ func AssertEqualProcessorBatchMetadataCardinality(t *testing.T, tt componenttest
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_processor_batch_metadata_cardinality")
+	got, err := tt.GetMetric("otelcol_processor_batch_metadata_cardinality")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
@@ -113,14 +117,9 @@ func AssertEqualProcessorBatchTimeoutTriggerSend(t *testing.T, tt componenttest.
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_processor_batch_timeout_trigger_send")
+	got, err := tt.GetMetric("otelcol_processor_batch_timeout_trigger_send")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func getMetric(t *testing.T, tt componenttest.Telemetry, name string) metricdata.Metrics {
-	var md metricdata.ResourceMetrics
-	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
-	return getMetricFromResource(name, md)
 }
 
 func getMetricFromResource(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
