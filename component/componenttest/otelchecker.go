@@ -4,68 +4,66 @@
 package componenttest // import "go.opentelemetry.io/collector/component/componenttest"
 
 import (
-	"context"
 	"fmt"
 
 	"go.opentelemetry.io/otel/attribute"
-	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/component"
 )
 
-func checkReceiverTraces(reader *sdkmetric.ManualReader, receiver component.ID, protocol string, accepted, dropped int64) error {
-	return checkReceiver(reader, receiver, "spans", protocol, accepted, dropped)
+func checkReceiverTraces(tel *Telemetry, receiver component.ID, protocol string, accepted, dropped int64) error {
+	return checkReceiver(tel, receiver, "spans", protocol, accepted, dropped)
 }
 
-func checkReceiverLogs(reader *sdkmetric.ManualReader, receiver component.ID, protocol string, accepted, dropped int64) error {
-	return checkReceiver(reader, receiver, "log_records", protocol, accepted, dropped)
+func checkReceiverLogs(tel *Telemetry, receiver component.ID, protocol string, accepted, dropped int64) error {
+	return checkReceiver(tel, receiver, "log_records", protocol, accepted, dropped)
 }
 
-func checkReceiverMetrics(reader *sdkmetric.ManualReader, receiver component.ID, protocol string, accepted, dropped int64) error {
-	return checkReceiver(reader, receiver, "metric_points", protocol, accepted, dropped)
+func checkReceiverMetrics(tel *Telemetry, receiver component.ID, protocol string, accepted, dropped int64) error {
+	return checkReceiver(tel, receiver, "metric_points", protocol, accepted, dropped)
 }
 
-func checkReceiver(reader *sdkmetric.ManualReader, receiver component.ID, datatype, protocol string, acceptedMetricPoints, droppedMetricPoints int64) error {
+func checkReceiver(tel *Telemetry, receiver component.ID, datatype, protocol string, acceptedMetricPoints, droppedMetricPoints int64) error {
 	receiverAttrs := attributesForReceiverMetrics(receiver, protocol)
 	return multierr.Combine(
-		checkIntSum(reader, "otelcol_receiver_accepted_"+datatype, acceptedMetricPoints, receiverAttrs),
-		checkIntSum(reader, "otelcol_receiver_refused_"+datatype, droppedMetricPoints, receiverAttrs))
+		checkIntSum(tel, "otelcol_receiver_accepted_"+datatype, acceptedMetricPoints, receiverAttrs),
+		checkIntSum(tel, "otelcol_receiver_refused_"+datatype, droppedMetricPoints, receiverAttrs))
 }
 
-func checkExporterTraces(reader *sdkmetric.ManualReader, exporter component.ID, sent, sendFailed int64) error {
-	return checkExporter(reader, exporter, "spans", sent, sendFailed)
+func checkExporterTraces(tel *Telemetry, exporter component.ID, sent, sendFailed int64) error {
+	return checkExporter(tel, exporter, "spans", sent, sendFailed)
 }
 
-func checkExporterLogs(reader *sdkmetric.ManualReader, exporter component.ID, sent, sendFailed int64) error {
-	return checkExporter(reader, exporter, "log_records", sent, sendFailed)
+func checkExporterLogs(tel *Telemetry, exporter component.ID, sent, sendFailed int64) error {
+	return checkExporter(tel, exporter, "log_records", sent, sendFailed)
 }
 
-func checkExporterMetrics(reader *sdkmetric.ManualReader, exporter component.ID, sent, sendFailed int64) error {
-	return checkExporter(reader, exporter, "metric_points", sent, sendFailed)
+func checkExporterMetrics(tel *Telemetry, exporter component.ID, sent, sendFailed int64) error {
+	return checkExporter(tel, exporter, "metric_points", sent, sendFailed)
 }
 
-func checkExporter(reader *sdkmetric.ManualReader, exporter component.ID, datatype string, sent, sendFailed int64) error {
+func checkExporter(tel *Telemetry, exporter component.ID, datatype string, sent, sendFailed int64) error {
 	exporterAttrs := attributesForExporterMetrics(exporter)
-	errs := checkIntSum(reader, "otelcol_exporter_sent_"+datatype, sent, exporterAttrs)
+	errs := checkIntSum(tel, "otelcol_exporter_sent_"+datatype, sent, exporterAttrs)
 	if sendFailed > 0 {
 		errs = multierr.Append(errs,
-			checkIntSum(reader, "otelcol_exporter_send_failed_"+datatype, sendFailed, exporterAttrs))
+			checkIntSum(tel, "otelcol_exporter_send_failed_"+datatype, sendFailed, exporterAttrs))
 	}
 	return errs
 }
 
-func checkExporterEnqueueFailed(reader *sdkmetric.ManualReader, exporter component.ID, datatype string, enqueueFailed int64) error {
+func checkExporterEnqueueFailed(tel *Telemetry, exporter component.ID, datatype string, enqueueFailed int64) error {
 	if enqueueFailed == 0 {
 		return nil
 	}
 	exporterAttrs := attributesForExporterMetrics(exporter)
-	return checkIntSum(reader, "otelcol_exporter_enqueue_failed_"+datatype, enqueueFailed, exporterAttrs)
+	return checkIntSum(tel, "otelcol_exporter_enqueue_failed_"+datatype, enqueueFailed, exporterAttrs)
 }
 
-func checkIntGauge(reader *sdkmetric.ManualReader, metric string, expected int64, expectedAttrs attribute.Set) error {
-	dp, err := getGaugeDataPoint[int64](reader, metric, expectedAttrs)
+func checkIntGauge(tel *Telemetry, metric string, expected int64, expectedAttrs attribute.Set) error {
+	dp, err := getGaugeDataPoint[int64](tel, metric, expectedAttrs)
 	if err != nil {
 		return err
 	}
@@ -77,8 +75,8 @@ func checkIntGauge(reader *sdkmetric.ManualReader, metric string, expected int64
 	return nil
 }
 
-func checkIntSum(reader *sdkmetric.ManualReader, expectedMetric string, expected int64, expectedAttrs attribute.Set) error {
-	dp, err := getSumDataPoint[int64](reader, expectedMetric, expectedAttrs)
+func checkIntSum(tel *Telemetry, expectedMetric string, expected int64, expectedAttrs attribute.Set) error {
+	dp, err := getSumDataPoint[int64](tel, expectedMetric, expectedAttrs)
 	if err != nil {
 		return err
 	}
@@ -90,8 +88,8 @@ func checkIntSum(reader *sdkmetric.ManualReader, expectedMetric string, expected
 	return nil
 }
 
-func getSumDataPoint[N int64 | float64](reader *sdkmetric.ManualReader, expectedName string, expectedAttrs attribute.Set) (metricdata.DataPoint[N], error) {
-	m, err := getMetric(reader, expectedName)
+func getSumDataPoint[N int64 | float64](tel *Telemetry, expectedName string, expectedAttrs attribute.Set) (metricdata.DataPoint[N], error) {
+	m, err := tel.GetMetric(expectedName)
 	if err != nil {
 		return metricdata.DataPoint[N]{}, err
 	}
@@ -104,8 +102,8 @@ func getSumDataPoint[N int64 | float64](reader *sdkmetric.ManualReader, expected
 	}
 }
 
-func getGaugeDataPoint[N int64 | float64](reader *sdkmetric.ManualReader, expectedName string, expectedAttrs attribute.Set) (metricdata.DataPoint[N], error) {
-	m, err := getMetric(reader, expectedName)
+func getGaugeDataPoint[N int64 | float64](tel *Telemetry, expectedName string, expectedAttrs attribute.Set) (metricdata.DataPoint[N], error) {
+	m, err := tel.GetMetric(expectedName)
 	if err != nil {
 		return metricdata.DataPoint[N]{}, err
 	}
@@ -125,22 +123,6 @@ func getDataPoint[N int64 | float64](dps []metricdata.DataPoint[N], expectedName
 		}
 	}
 	return metricdata.DataPoint[N]{}, fmt.Errorf("metric '%s' doesn't have a data point with the given attributes: %s", expectedName, expectedAttrs.Encoded(attribute.DefaultEncoder()))
-}
-
-func getMetric(reader *sdkmetric.ManualReader, expectedName string) (metricdata.Metrics, error) {
-	var rm metricdata.ResourceMetrics
-	if err := reader.Collect(context.Background(), &rm); err != nil {
-		return metricdata.Metrics{}, err
-	}
-
-	for _, sm := range rm.ScopeMetrics {
-		for _, m := range sm.Metrics {
-			if m.Name == expectedName {
-				return m, nil
-			}
-		}
-	}
-	return metricdata.Metrics{}, fmt.Errorf("metric '%s' not found", expectedName)
 }
 
 // attributesForReceiverMetrics returns the attributes that are needed for the receiver metrics.

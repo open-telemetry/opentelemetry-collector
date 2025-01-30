@@ -45,7 +45,8 @@ func AssertEqualProcessCPUSeconds(t *testing.T, tt componenttest.Telemetry, dps 
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_process_cpu_seconds")
+	got, err := tt.GetMetric("otelcol_process_cpu_seconds")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
@@ -58,7 +59,8 @@ func AssertEqualProcessMemoryRss(t *testing.T, tt componenttest.Telemetry, dps [
 			DataPoints: dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_process_memory_rss")
+	got, err := tt.GetMetric("otelcol_process_memory_rss")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
@@ -71,7 +73,8 @@ func AssertEqualProcessRuntimeHeapAllocBytes(t *testing.T, tt componenttest.Tele
 			DataPoints: dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_process_runtime_heap_alloc_bytes")
+	got, err := tt.GetMetric("otelcol_process_runtime_heap_alloc_bytes")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
@@ -86,7 +89,8 @@ func AssertEqualProcessRuntimeTotalAllocBytes(t *testing.T, tt componenttest.Tel
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_process_runtime_total_alloc_bytes")
+	got, err := tt.GetMetric("otelcol_process_runtime_total_alloc_bytes")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
@@ -99,7 +103,8 @@ func AssertEqualProcessRuntimeTotalSysMemoryBytes(t *testing.T, tt componenttest
 			DataPoints: dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_process_runtime_total_sys_memory_bytes")
+	got, err := tt.GetMetric("otelcol_process_runtime_total_sys_memory_bytes")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
@@ -114,14 +119,9 @@ func AssertEqualProcessUptime(t *testing.T, tt componenttest.Telemetry, dps []me
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_process_uptime")
+	got, err := tt.GetMetric("otelcol_process_uptime")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func getMetric(t *testing.T, tt componenttest.Telemetry, name string) metricdata.Metrics {
-	var md metricdata.ResourceMetrics
-	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
-	return getMetricFromResource(name, md)
 }
 
 func getMetricFromResource(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
