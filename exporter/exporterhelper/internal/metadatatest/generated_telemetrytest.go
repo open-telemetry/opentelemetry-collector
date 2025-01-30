@@ -89,6 +89,32 @@ func AssertEqualExporterEnqueueFailedSpans(t *testing.T, tt componenttest.Teleme
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
+func AssertEqualExporterQueueCapacity(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_exporter_queue_capacity",
+		Description: "Fixed capacity of the retry queue (in batches) [alpha]",
+		Unit:        "{batches}",
+		Data: metricdata.Gauge[int64]{
+			DataPoints: dps,
+		},
+	}
+	got := getMetric(t, tt, "otelcol_exporter_queue_capacity")
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualExporterQueueSize(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_exporter_queue_size",
+		Description: "Current size of the retry queue (in batches) [alpha]",
+		Unit:        "{batches}",
+		Data: metricdata.Gauge[int64]{
+			DataPoints: dps,
+		},
+	}
+	got := getMetric(t, tt, "otelcol_exporter_queue_size")
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
 func AssertEqualExporterSendFailedLogRecords(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_send_failed_log_records",
