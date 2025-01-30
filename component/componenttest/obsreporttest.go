@@ -63,6 +63,7 @@ func (tts *TestTelemetry) CheckExporterLogs(sentLogRecords, sendFailedLogRecords
 	return checkExporter(tts.Telemetry, tts.id, "log_records", sentLogRecords, sendFailedLogRecords)
 }
 
+// Deprecated: [v0.119.0] use the metadatatest.AssertEqualMetric series of functions instead.
 func (tts *TestTelemetry) CheckExporterMetricGauge(metric string, val int64, extraAttrs ...attribute.KeyValue) error {
 	attrs := attributesForExporterMetrics(tts.id, extraAttrs...)
 	return checkIntGauge(tts.Telemetry, metric, val, attrs)
