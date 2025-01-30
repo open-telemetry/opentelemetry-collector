@@ -26,17 +26,17 @@ func TestGeneratedMetrics(t *testing.T) {
 }
 
 func TestComponentTelemetry(t *testing.T) {
-	tt := metadatatest.SetupTelemetry()
+	tt := componenttest.NewTelemetry()
 	factory := NewFactory()
-	receiver, err := factory.CreateMetrics(context.Background(), tt.NewSettings(), componenttest.NewNopHost(), new(consumertest.MetricsSink))
+	receiver, err := factory.CreateMetrics(context.Background(), metadatatest.NewSettings(tt), componenttest.NewNopHost(), new(consumertest.MetricsSink))
 	require.NoError(t, err)
-	metadatatest.AssertEqualBatchSizeTriggerSend(t, tt.Telemetry,
+	metadatatest.AssertEqualBatchSizeTriggerSend(t, tt,
 		[]metricdata.DataPoint[int64]{
 			{
 				Value: 1,
 			},
 		}, metricdatatest.IgnoreTimestamp())
-	metadatatest.AssertEqualProcessRuntimeTotalAllocBytes(t, tt.Telemetry,
+	metadatatest.AssertEqualProcessRuntimeTotalAllocBytes(t, tt,
 		[]metricdata.DataPoint[int64]{
 			{
 				Value: 2,
@@ -45,7 +45,7 @@ func TestComponentTelemetry(t *testing.T) {
 	rcv, ok := receiver.(nopReceiver)
 	require.True(t, ok)
 	rcv.initOptionalMetric()
-	metadatatest.AssertEqualQueueLength(t, tt.Telemetry,
+	metadatatest.AssertEqualQueueLength(t, tt,
 		[]metricdata.DataPoint[int64]{
 			{
 				Value: 3,

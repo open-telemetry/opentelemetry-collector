@@ -120,22 +120,22 @@ func TestMetrics_RecordInOut(t *testing.T) {
 	dps.AppendEmpty()
 	dps.AppendEmpty()
 
-	testTelemetry := metadatatest.SetupTelemetry()
-	mp, err := NewMetrics(context.Background(), testTelemetry.NewSettings(), &testMetricsCfg, consumertest.NewNop(), mockAggregate)
+	tel := componenttest.NewTelemetry()
+	mp, err := NewMetrics(context.Background(), metadatatest.NewSettings(tel), &testMetricsCfg, consumertest.NewNop(), mockAggregate)
 	require.NoError(t, err)
 
 	assert.NoError(t, mp.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, mp.ConsumeMetrics(context.Background(), incomingMetrics))
 	assert.NoError(t, mp.Shutdown(context.Background()))
 
-	metadatatest.AssertEqualProcessorIncomingItems(t, testTelemetry.Telemetry,
+	metadatatest.AssertEqualProcessorIncomingItems(t, tel,
 		[]metricdata.DataPoint[int64]{
 			{
 				Value:      2,
 				Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "metrics")),
 			},
 		}, metricdatatest.IgnoreTimestamp())
-	metadatatest.AssertEqualProcessorOutgoingItems(t, testTelemetry.Telemetry,
+	metadatatest.AssertEqualProcessorOutgoingItems(t, tel,
 		[]metricdata.DataPoint[int64]{
 			{
 				Value:      3,
@@ -157,22 +157,22 @@ func TestMetrics_RecordIn_ErrorOut(t *testing.T) {
 	dps.AppendEmpty()
 	dps.AppendEmpty()
 
-	testTelemetry := metadatatest.SetupTelemetry()
-	mp, err := NewMetrics(context.Background(), testTelemetry.NewSettings(), &testMetricsCfg, consumertest.NewNop(), mockErr)
+	tel := componenttest.NewTelemetry()
+	mp, err := NewMetrics(context.Background(), metadatatest.NewSettings(tel), &testMetricsCfg, consumertest.NewNop(), mockErr)
 	require.NoError(t, err)
 
 	require.NoError(t, mp.Start(context.Background(), componenttest.NewNopHost()))
 	require.Error(t, mp.ConsumeMetrics(context.Background(), incomingMetrics))
 	require.NoError(t, mp.Shutdown(context.Background()))
 
-	metadatatest.AssertEqualProcessorIncomingItems(t, testTelemetry.Telemetry,
+	metadatatest.AssertEqualProcessorIncomingItems(t, tel,
 		[]metricdata.DataPoint[int64]{
 			{
 				Value:      2,
 				Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "metrics")),
 			},
 		}, metricdatatest.IgnoreTimestamp())
-	metadatatest.AssertEqualProcessorOutgoingItems(t, testTelemetry.Telemetry,
+	metadatatest.AssertEqualProcessorOutgoingItems(t, tel,
 		[]metricdata.DataPoint[int64]{
 			{
 				Value:      0,
