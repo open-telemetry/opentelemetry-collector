@@ -120,9 +120,10 @@ func run(ymlPath string) error {
 	if len(md.Telemetry.Metrics) != 0 { // if there are telemetry metrics, generate telemetry specific files
 		toGenerate[filepath.Join(tmplDir, "telemetry.go.tmpl")] = filepath.Join(codeDir, "generated_telemetry.go")
 		toGenerate[filepath.Join(tmplDir, "telemetry_test.go.tmpl")] = filepath.Join(codeDir, "generated_telemetry_test.go")
-		toGenerate[filepath.Join(tmplDir, "telemetrytest.go.tmpl")] = filepath.Join(testDir, "generated_telemetrytest.go")
-		toGenerate[filepath.Join(tmplDir, "telemetrytest_test.go.tmpl")] = filepath.Join(testDir, "generated_telemetrytest_test.go")
 	}
+
+	toGenerate[filepath.Join(tmplDir, "telemetrytest.go.tmpl")] = filepath.Join(testDir, "generated_telemetrytest.go")
+	toGenerate[filepath.Join(tmplDir, "telemetrytest_test.go.tmpl")] = filepath.Join(testDir, "generated_telemetrytest_test.go")
 
 	if len(md.Metrics) != 0 || len(md.Telemetry.Metrics) != 0 || len(md.ResourceAttributes) != 0 { // if there's metrics or internal metrics, generate documentation for them
 		toGenerate[filepath.Join(tmplDir, "documentation.md.tmpl")] = filepath.Join(ymlDir, "documentation.md")

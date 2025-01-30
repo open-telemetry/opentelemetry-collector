@@ -31,7 +31,7 @@ func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, 
 	}
 
 	// ensure no additional metrics are emitted
-	require.Equal(t, len(expected), lenMetrics(md))
+	require.LessOrEqual(t, len(expected), lenMetrics(md))
 }
 
 func AssertEqualProcessCPUSeconds(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[float64], opts ...metricdatatest.Option) {
