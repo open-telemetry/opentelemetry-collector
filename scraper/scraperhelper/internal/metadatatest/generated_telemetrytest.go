@@ -45,7 +45,8 @@ func AssertEqualScraperErroredLogRecords(t *testing.T, tt componenttest.Telemetr
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_scraper_errored_log_records")
+	got, err := tt.GetMetric("otelcol_scraper_errored_log_records")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
@@ -60,7 +61,8 @@ func AssertEqualScraperErroredMetricPoints(t *testing.T, tt componenttest.Teleme
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_scraper_errored_metric_points")
+	got, err := tt.GetMetric("otelcol_scraper_errored_metric_points")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
@@ -75,7 +77,8 @@ func AssertEqualScraperScrapedLogRecords(t *testing.T, tt componenttest.Telemetr
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_scraper_scraped_log_records")
+	got, err := tt.GetMetric("otelcol_scraper_scraped_log_records")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
@@ -90,14 +93,9 @@ func AssertEqualScraperScrapedMetricPoints(t *testing.T, tt componenttest.Teleme
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_scraper_scraped_metric_points")
+	got, err := tt.GetMetric("otelcol_scraper_scraped_metric_points")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func getMetric(t *testing.T, tt componenttest.Telemetry, name string) metricdata.Metrics {
-	var md metricdata.ResourceMetrics
-	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
-	return getMetricFromResource(name, md)
 }
 
 func getMetricFromResource(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
