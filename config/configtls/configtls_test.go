@@ -871,3 +871,53 @@ func TestSystemCertPool_loadCert(t *testing.T) {
 		})
 	}
 }
+
+func TestCurvePreferences(t *testing.T) {
+	tests := []struct {
+		name             string
+		preferences      []string
+		expectedCurveIDs []tls.CurveID
+		expectedErr      string
+	}{
+		{
+			name:             "X25519",
+			preferences:      []string{"X25519"},
+			expectedCurveIDs: []tls.CurveID{tls.X25519},
+		},
+		{
+			name:             "P521",
+			preferences:      []string{"P521"},
+			expectedCurveIDs: []tls.CurveID{tls.CurveP521},
+		},
+		{
+			name:             "P-256",
+			preferences:      []string{"P256"},
+			expectedCurveIDs: []tls.CurveID{tls.CurveP256},
+		},
+		{
+			name:             "multiple",
+			preferences:      []string{"P256", "P521", "X25519"},
+			expectedCurveIDs: []tls.CurveID{tls.CurveP256, tls.CurveP521, tls.X25519},
+		},
+		{
+			name:             "invalid-curve",
+			preferences:      []string{"P25223236"},
+			expectedCurveIDs: []tls.CurveID{},
+			expectedErr:      "invalid curve type",
+		},
+	}
+	for _, test := range tests {
+		tlsSetting := ClientConfig{
+			Config: Config{
+				CurvePreferences: test.preferences,
+			},
+		}
+		config, err := tlsSetting.LoadTLSConfig(context.Background())
+		if test.expectedErr == "" {
+			require.NoError(t, err)
+			require.ElementsMatchf(t, test.expectedCurveIDs, config.CurvePreferences, "expected %v, got %v", test.expectedCurveIDs, config.CurvePreferences)
+		} else {
+			require.ErrorContains(t, err, test.expectedErr)
+		}
+	}
+}
