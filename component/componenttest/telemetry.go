@@ -49,7 +49,7 @@ type Telemetry struct {
 	traceProvider *sdktrace.TracerProvider
 }
 
-func NewTelemetry(opts ...TelemetryOption) Telemetry {
+func NewTelemetry(opts ...TelemetryOption) *Telemetry {
 	reader := sdkmetric.NewManualReader()
 	spanRecorder := new(tracetest.SpanRecorder)
 	tOpts := telemetryOption{
@@ -59,7 +59,7 @@ func NewTelemetry(opts ...TelemetryOption) Telemetry {
 	for _, opt := range opts {
 		opt.apply(&tOpts)
 	}
-	return Telemetry{
+	return &Telemetry{
 		Reader:        reader,
 		SpanRecorder:  spanRecorder,
 		meterProvider: sdkmetric.NewMeterProvider(tOpts.metricOpts...),

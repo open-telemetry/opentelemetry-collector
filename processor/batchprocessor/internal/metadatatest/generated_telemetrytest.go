@@ -17,7 +17,7 @@ import (
 )
 
 type Telemetry struct {
-	componenttest.Telemetry
+	*componenttest.Telemetry
 }
 
 func SetupTelemetry(opts ...componenttest.TelemetryOption) Telemetry {
@@ -44,7 +44,14 @@ func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, 
 	require.Equal(t, len(expected), lenMetrics(md))
 }
 
-func AssertEqualProcessorBatchBatchSendSize(t *testing.T, tt componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
+func NewSettings(tt *componenttest.Telemetry) processor.Settings {
+	set := processortest.NewNopSettings()
+	set.ID = component.NewID(component.MustNewType("batch"))
+	set.TelemetrySettings = tt.NewTelemetrySettings()
+	return set
+}
+
+func AssertEqualProcessorBatchBatchSendSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_batch_batch_send_size",
 		Description: "Number of units in the batch",
@@ -59,7 +66,7 @@ func AssertEqualProcessorBatchBatchSendSize(t *testing.T, tt componenttest.Telem
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessorBatchBatchSendSizeBytes(t *testing.T, tt componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessorBatchBatchSendSizeBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_batch_batch_send_size_bytes",
 		Description: "Number of bytes in batch that was sent. Only available on detailed level.",
@@ -74,7 +81,7 @@ func AssertEqualProcessorBatchBatchSendSizeBytes(t *testing.T, tt componenttest.
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessorBatchBatchSizeTriggerSend(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessorBatchBatchSizeTriggerSend(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_batch_batch_size_trigger_send",
 		Description: "Number of times the batch was sent due to a size trigger",
@@ -90,7 +97,7 @@ func AssertEqualProcessorBatchBatchSizeTriggerSend(t *testing.T, tt componenttes
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessorBatchMetadataCardinality(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessorBatchMetadataCardinality(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_batch_metadata_cardinality",
 		Description: "Number of distinct metadata value combinations being processed",
@@ -106,7 +113,7 @@ func AssertEqualProcessorBatchMetadataCardinality(t *testing.T, tt componenttest
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessorBatchTimeoutTriggerSend(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessorBatchTimeoutTriggerSend(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_batch_timeout_trigger_send",
 		Description: "Number of times the batch was sent due to a timeout trigger",

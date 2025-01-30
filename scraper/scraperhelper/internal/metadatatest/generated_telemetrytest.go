@@ -14,7 +14,7 @@ import (
 )
 
 type Telemetry struct {
-	componenttest.Telemetry
+	*componenttest.Telemetry
 }
 
 func SetupTelemetry(opts ...componenttest.TelemetryOption) Telemetry {
@@ -34,7 +34,7 @@ func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, 
 	require.Equal(t, len(expected), lenMetrics(md))
 }
 
-func AssertEqualScraperErroredLogRecords(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualScraperErroredLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_scraper_errored_log_records",
 		Description: "Number of log records that were unable to be scraped. [alpha]",
@@ -50,7 +50,7 @@ func AssertEqualScraperErroredLogRecords(t *testing.T, tt componenttest.Telemetr
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualScraperErroredMetricPoints(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualScraperErroredMetricPoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_scraper_errored_metric_points",
 		Description: "Number of metric points that were unable to be scraped. [alpha]",
@@ -66,7 +66,7 @@ func AssertEqualScraperErroredMetricPoints(t *testing.T, tt componenttest.Teleme
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualScraperScrapedLogRecords(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualScraperScrapedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_scraper_scraped_log_records",
 		Description: "Number of log records successfully scraped. [alpha]",
@@ -82,7 +82,7 @@ func AssertEqualScraperScrapedLogRecords(t *testing.T, tt componenttest.Telemetr
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualScraperScrapedMetricPoints(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualScraperScrapedMetricPoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_scraper_scraped_metric_points",
 		Description: "Number of metric points successfully scraped. [alpha]",

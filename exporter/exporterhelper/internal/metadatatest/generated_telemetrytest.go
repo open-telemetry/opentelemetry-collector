@@ -17,7 +17,7 @@ import (
 )
 
 type Telemetry struct {
-	componenttest.Telemetry
+	*componenttest.Telemetry
 }
 
 func SetupTelemetry(opts ...componenttest.TelemetryOption) Telemetry {
@@ -44,7 +44,14 @@ func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, 
 	require.Equal(t, len(expected), lenMetrics(md))
 }
 
-func AssertEqualExporterEnqueueFailedLogRecords(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func NewSettings(tt *componenttest.Telemetry) exporter.Settings {
+	set := exportertest.NewNopSettings()
+	set.ID = component.NewID(component.MustNewType("exporterhelper"))
+	set.TelemetrySettings = tt.NewTelemetrySettings()
+	return set
+}
+
+func AssertEqualExporterEnqueueFailedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_enqueue_failed_log_records",
 		Description: "Number of log records failed to be added to the sending queue. [alpha]",
@@ -60,7 +67,7 @@ func AssertEqualExporterEnqueueFailedLogRecords(t *testing.T, tt componenttest.T
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualExporterEnqueueFailedMetricPoints(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualExporterEnqueueFailedMetricPoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_enqueue_failed_metric_points",
 		Description: "Number of metric points failed to be added to the sending queue. [alpha]",
@@ -76,7 +83,7 @@ func AssertEqualExporterEnqueueFailedMetricPoints(t *testing.T, tt componenttest
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualExporterEnqueueFailedSpans(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualExporterEnqueueFailedSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_enqueue_failed_spans",
 		Description: "Number of spans failed to be added to the sending queue. [alpha]",
@@ -92,7 +99,7 @@ func AssertEqualExporterEnqueueFailedSpans(t *testing.T, tt componenttest.Teleme
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualExporterQueueCapacity(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualExporterQueueCapacity(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_queue_capacity",
 		Description: "Fixed capacity of the retry queue (in batches) [alpha]",
@@ -106,7 +113,7 @@ func AssertEqualExporterQueueCapacity(t *testing.T, tt componenttest.Telemetry, 
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualExporterQueueSize(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualExporterQueueSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_queue_size",
 		Description: "Current size of the retry queue (in batches) [alpha]",
@@ -120,7 +127,7 @@ func AssertEqualExporterQueueSize(t *testing.T, tt componenttest.Telemetry, dps 
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualExporterSendFailedLogRecords(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualExporterSendFailedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_send_failed_log_records",
 		Description: "Number of log records in failed attempts to send to destination. [alpha]",
@@ -136,7 +143,7 @@ func AssertEqualExporterSendFailedLogRecords(t *testing.T, tt componenttest.Tele
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualExporterSendFailedMetricPoints(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualExporterSendFailedMetricPoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_send_failed_metric_points",
 		Description: "Number of metric points in failed attempts to send to destination. [alpha]",
@@ -152,7 +159,7 @@ func AssertEqualExporterSendFailedMetricPoints(t *testing.T, tt componenttest.Te
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualExporterSendFailedSpans(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualExporterSendFailedSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_send_failed_spans",
 		Description: "Number of spans in failed attempts to send to destination. [alpha]",
@@ -168,7 +175,7 @@ func AssertEqualExporterSendFailedSpans(t *testing.T, tt componenttest.Telemetry
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualExporterSentLogRecords(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualExporterSentLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_sent_log_records",
 		Description: "Number of log record successfully sent to destination. [alpha]",
@@ -184,7 +191,7 @@ func AssertEqualExporterSentLogRecords(t *testing.T, tt componenttest.Telemetry,
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualExporterSentMetricPoints(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualExporterSentMetricPoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_sent_metric_points",
 		Description: "Number of metric points successfully sent to destination. [alpha]",
@@ -200,7 +207,7 @@ func AssertEqualExporterSentMetricPoints(t *testing.T, tt componenttest.Telemetr
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualExporterSentSpans(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualExporterSentSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_sent_spans",
 		Description: "Number of spans successfully sent to destination. [alpha]",
