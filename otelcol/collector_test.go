@@ -145,7 +145,7 @@ func NewStatusWatcherExtensionFactory(
 		func() component.Config {
 			return &struct{}{}
 		},
-		func(context.Context, extension.Settings, component.Config) (component.Component, error) {
+		func(context.Context, extension.Settings, component.Config) (extension.Extension, error) {
 			return &statusWatcherExtension{onStatusChanged: onStatusChanged}, nil
 		},
 		component.StabilityLevelStable)
