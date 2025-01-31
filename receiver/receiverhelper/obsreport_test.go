@@ -315,6 +315,15 @@ func TestCheckReceiverMetricsViews(t *testing.T) {
 				Value: int64(7),
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+	metadatatest.AssertEqualReceiverRefusedMetricPoints(t, tt.Telemetry,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(internal.ReceiverKey, receiverID.String()),
+					attribute.String(internal.TransportKey, transport)),
+				Value: int64(0),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
 func TestCheckReceiverLogsViews(t *testing.T) {
