@@ -47,7 +47,7 @@ func newConfigPrintSubCommand(set CollectorSettings, flagSet *flag.FlagSet) *cob
 			if err != nil {
 				return fmt.Errorf("error while marshaling to YAML: %w", err)
 			}
-			fmt.Printf("%s", b)
+			fmt.Printf("%s\n", b)
 			return nil
 		},
 	}
