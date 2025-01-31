@@ -39,6 +39,9 @@ type SizerType struct {
 	Sizer string `mapstructure:"sizer"`
 }
 
+const SizerTypeItems = "items"
+const SizerTypeBytes = "bytes"
+
 // MinSizeConfig defines the configuration for the minimum number of items in a batch.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
@@ -93,7 +96,7 @@ func (c SizeConfig) Validate() error {
 }
 
 func (c SizerType) Validate() error {
-	if c.Sizer != "bytes" && c.Sizer != "items" {
+	if c.Sizer != SizerTypeItems && c.Sizer != SizerTypeBytes {
 		return errors.New("sizer should either be bytes or items")
 	}
 	return nil
