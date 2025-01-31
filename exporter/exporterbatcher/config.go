@@ -28,32 +28,15 @@ type Config struct {
 }
 
 type SizeConfig struct {
-	// Sizer should either be bytes or items.
-	Sizer string `mapstructure:"sizer"`
+	SizerType SizerType `mapstructure:",squash"`
 
 	MinSize int `mapstructure:"mix_size"`
 	MaxSize int `mapstructure:"max_size"`
 }
 
-func (c SizeConfig) Validate() error {
-	if c.Sizer == "" && c.MinSize == 0 && c.MaxSize == 0 {
-		return nil
-	}
-
-	if c.Sizer != "bytes" && c.Sizer != "items" {
-		return errors.New("sizer should either be bytes or items")
-	}
-
-	if c.MinSize < 0 {
-		return errors.New("min_size must be greater than or equal to zero")
-	}
-	if c.MaxSize < 0 {
-		return errors.New("max_size must be greater than or equal to zero")
-	}
-	if c.MaxSize != 0 && c.MaxSize < c.MinSize {
-		return errors.New("max_size must be greater than or equal to mix_size")
-	}
-	return nil
+type SizerType struct {
+	// Sizer should either be bytes or items.
+	Sizer string `mapstructure:"sizer"`
 }
 
 // MinSizeConfig defines the configuration for the minimum number of items in a batch.
@@ -77,11 +60,6 @@ type MaxSizeConfig struct {
 }
 
 func (c Config) Validate() error {
-	err := c.SizeConfig.Validate()
-	if err != nil {
-		return err
-	}
-
 	if c.MinSizeItems < 0 {
 		return errors.New("min_size_items must be greater than or equal to zero")
 	}
@@ -93,6 +71,30 @@ func (c Config) Validate() error {
 	}
 	if c.FlushTimeout <= 0 {
 		return errors.New("timeout must be greater than zero")
+	}
+	return nil
+}
+
+func (c SizeConfig) Validate() error {
+	if c.SizerType.Sizer == "" && c.MinSize == 0 && c.MaxSize == 0 {
+		return nil
+	}
+
+	if c.MinSize < 0 {
+		return errors.New("min_size must be greater than or equal to zero")
+	}
+	if c.MaxSize < 0 {
+		return errors.New("max_size must be greater than or equal to zero")
+	}
+	if c.MaxSize != 0 && c.MaxSize < c.MinSize {
+		return errors.New("max_size must be greater than or equal to mix_size")
+	}
+	return nil
+}
+
+func (c SizerType) Validate() error {
+	if c.Sizer != "bytes" && c.Sizer != "items" {
+		return errors.New("sizer should either be bytes or items")
 	}
 	return nil
 }
