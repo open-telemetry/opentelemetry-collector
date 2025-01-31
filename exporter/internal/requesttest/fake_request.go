@@ -10,6 +10,9 @@ import (
 
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/internal"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 type Sink struct {
@@ -119,4 +122,22 @@ func (r *FakeRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSizeC
 	}
 
 	return res, nil
+}
+
+func RequestFromMetricsFunc(reqErr error) func(context.Context, pmetric.Metrics) (internal.Request, error) {
+	return func(_ context.Context, md pmetric.Metrics) (internal.Request, error) {
+		return &FakeRequest{Items: md.DataPointCount(), ExportErr: reqErr}, nil
+	}
+}
+
+func RequestFromTracesFunc(reqErr error) func(context.Context, ptrace.Traces) (internal.Request, error) {
+	return func(_ context.Context, td ptrace.Traces) (internal.Request, error) {
+		return &FakeRequest{Items: td.SpanCount(), ExportErr: reqErr}, nil
+	}
+}
+
+func RequestFromLogsFunc(reqErr error) func(context.Context, plog.Logs) (internal.Request, error) {
+	return func(_ context.Context, ld plog.Logs) (internal.Request, error) {
+		return &FakeRequest{Items: ld.LogRecordCount(), ExportErr: reqErr}, nil
+	}
 }
