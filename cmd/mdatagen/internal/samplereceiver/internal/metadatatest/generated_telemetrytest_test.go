@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
@@ -15,12 +16,17 @@ import (
 
 func TestSetupTelemetry(t *testing.T) {
 	testTel := SetupTelemetry()
-	tb, err := metadata.NewTelemetryBuilder(
-		testTel.NewTelemetrySettings(),
-		metadata.WithProcessRuntimeTotalAllocBytesCallback(func() int64 { return 1 }),
-	)
+	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
-	require.NotNil(t, tb)
+	defer tb.Shutdown()
+	require.NoError(t, tb.RegisterProcessRuntimeTotalAllocBytesCallback(func(_ context.Context, observer metric.Int64Observer) error {
+		observer.Observe(1)
+		return nil
+	}))
+	require.NoError(t, tb.RegisterQueueLengthCallback(func(_ context.Context, observer metric.Int64Observer) error {
+		observer.Observe(1)
+		return nil
+	}))
 	tb.BatchSizeTriggerSend.Add(context.Background(), 1)
 	tb.QueueCapacity.Record(context.Background(), 1)
 	tb.RequestDuration.Record(context.Background(), 1)
@@ -61,6 +67,16 @@ func TestSetupTelemetry(t *testing.T) {
 			},
 		},
 		{
+			Name:        "otelcol_queue_length",
+			Description: "This metric is optional and therefore not initialized in NewTelemetryBuilder. [alpha]",
+			Unit:        "{items}",
+			Data: metricdata.Gauge[int64]{
+				DataPoints: []metricdata.DataPoint[int64]{
+					{},
+				},
+			},
+		},
+		{
 			Name:        "otelcol_request_duration",
 			Description: "Duration of request [alpha]",
 			Unit:        "s",
@@ -72,22 +88,21 @@ func TestSetupTelemetry(t *testing.T) {
 			},
 		},
 	}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
-
 	AssertEqualBatchSizeTriggerSend(t, testTel.Telemetry,
-		[]metricdata.DataPoint[int64]{{}},
-		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
-
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessRuntimeTotalAllocBytes(t, testTel.Telemetry,
-		[]metricdata.DataPoint[int64]{{}},
-		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
-
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualQueueCapacity(t, testTel.Telemetry,
-		[]metricdata.DataPoint[int64]{{}},
-		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
-
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualQueueLength(t, testTel.Telemetry,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualRequestDuration(t, testTel.Telemetry,
-		[]metricdata.HistogramDataPoint[float64]{{}},
-		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+		[]metricdata.HistogramDataPoint[float64]{{}}, metricdatatest.IgnoreValue(),
+		metricdatatest.IgnoreTimestamp())
 
 	require.NoError(t, testTel.Shutdown(context.Background()))
 }

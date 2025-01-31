@@ -15,11 +15,9 @@ import (
 
 func TestSetupTelemetry(t *testing.T) {
 	testTel := SetupTelemetry()
-	tb, err := metadata.NewTelemetryBuilder(
-		testTel.NewTelemetrySettings(),
-	)
+	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
-	require.NotNil(t, tb)
+	defer tb.Shutdown()
 	tb.ProcessorAcceptedLogRecords.Add(context.Background(), 1)
 	tb.ProcessorAcceptedMetricPoints.Add(context.Background(), 1)
 	tb.ProcessorAcceptedSpans.Add(context.Background(), 1)
@@ -101,30 +99,24 @@ func TestSetupTelemetry(t *testing.T) {
 			},
 		},
 	}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
-
 	AssertEqualProcessorAcceptedLogRecords(t, testTel.Telemetry,
-		[]metricdata.DataPoint[int64]{{}},
-		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
-
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorAcceptedMetricPoints(t, testTel.Telemetry,
-		[]metricdata.DataPoint[int64]{{}},
-		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
-
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorAcceptedSpans(t, testTel.Telemetry,
-		[]metricdata.DataPoint[int64]{{}},
-		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
-
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorRefusedLogRecords(t, testTel.Telemetry,
-		[]metricdata.DataPoint[int64]{{}},
-		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
-
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorRefusedMetricPoints(t, testTel.Telemetry,
-		[]metricdata.DataPoint[int64]{{}},
-		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
-
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorRefusedSpans(t, testTel.Telemetry,
-		[]metricdata.DataPoint[int64]{{}},
-		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 
 	require.NoError(t, testTel.Shutdown(context.Background()))
 }

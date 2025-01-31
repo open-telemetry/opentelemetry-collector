@@ -6,8 +6,10 @@ package componenttest // import "go.opentelemetry.io/collector/component/compone
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 
@@ -46,7 +48,7 @@ type Telemetry struct {
 	traceProvider *sdktrace.TracerProvider
 }
 
-func NewTelemetry(opts ...TelemetryOption) Telemetry {
+func NewTelemetry(opts ...TelemetryOption) *Telemetry {
 	reader := sdkmetric.NewManualReader()
 	spanRecorder := new(tracetest.SpanRecorder)
 	tOpts := telemetryOption{
@@ -56,7 +58,7 @@ func NewTelemetry(opts ...TelemetryOption) Telemetry {
 	for _, opt := range opts {
 		opt.apply(&tOpts)
 	}
-	return Telemetry{
+	return &Telemetry{
 		Reader:        reader,
 		SpanRecorder:  spanRecorder,
 		meterProvider: sdkmetric.NewMeterProvider(tOpts.metricOpts...),
@@ -69,6 +71,22 @@ func (tt *Telemetry) NewTelemetrySettings() component.TelemetrySettings {
 	set.MeterProvider = tt.meterProvider
 	set.TracerProvider = tt.traceProvider
 	return set
+}
+
+func (tt *Telemetry) GetMetric(name string) (metricdata.Metrics, error) {
+	var rm metricdata.ResourceMetrics
+	if err := tt.Reader.Collect(context.Background(), &rm); err != nil {
+		return metricdata.Metrics{}, err
+	}
+
+	for _, sm := range rm.ScopeMetrics {
+		for _, m := range sm.Metrics {
+			if m.Name == name {
+				return m, nil
+			}
+		}
+	}
+	return metricdata.Metrics{}, fmt.Errorf("metric '%s' not found", name)
 }
 
 func (tt *Telemetry) Shutdown(ctx context.Context) error {

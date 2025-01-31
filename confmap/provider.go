@@ -64,7 +64,7 @@ type Provider interface {
 	//   - For testing, all implementation MUST check that confmaptest.ValidateProviderScheme returns no error.
 	//
 	// `watcher` callback is called when the config changes. watcher may be called from
-	// a different go routine. After watcher is called Retrieved.Get should be called
+	// a different go routine. After watcher is called, Provider.Retrieve should be called
 	// to get the new config. See description of Retrieved for more details.
 	// watcher may be nil, which indicates that the caller is not interested in
 	// knowing about the changes.

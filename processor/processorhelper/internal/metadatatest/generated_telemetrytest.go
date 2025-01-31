@@ -17,7 +17,7 @@ import (
 )
 
 type Telemetry struct {
-	componenttest.Telemetry
+	*componenttest.Telemetry
 }
 
 func SetupTelemetry(opts ...componenttest.TelemetryOption) Telemetry {
@@ -44,7 +44,14 @@ func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, 
 	require.Equal(t, len(expected), lenMetrics(md))
 }
 
-func AssertEqualProcessorIncomingItems(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func NewSettings(tt *componenttest.Telemetry) processor.Settings {
+	set := processortest.NewNopSettings()
+	set.ID = component.NewID(component.MustNewType("processorhelper"))
+	set.TelemetrySettings = tt.NewTelemetrySettings()
+	return set
+}
+
+func AssertEqualProcessorIncomingItems(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_incoming_items",
 		Description: "Number of items passed to the processor. [alpha]",
@@ -55,11 +62,12 @@ func AssertEqualProcessorIncomingItems(t *testing.T, tt componenttest.Telemetry,
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_processor_incoming_items")
+	got, err := tt.GetMetric("otelcol_processor_incoming_items")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessorOutgoingItems(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessorOutgoingItems(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_outgoing_items",
 		Description: "Number of items emitted from the processor. [alpha]",
@@ -70,14 +78,9 @@ func AssertEqualProcessorOutgoingItems(t *testing.T, tt componenttest.Telemetry,
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_processor_outgoing_items")
+	got, err := tt.GetMetric("otelcol_processor_outgoing_items")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func getMetric(t *testing.T, tt componenttest.Telemetry, name string) metricdata.Metrics {
-	var md metricdata.ResourceMetrics
-	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
-	return getMetricFromResource(name, md)
 }
 
 func getMetricFromResource(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
