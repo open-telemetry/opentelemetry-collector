@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 )
 
 func TestValidateConfig(t *testing.T) {
@@ -70,4 +71,15 @@ func TestValidateSizer(t *testing.T) {
 
 	cfg.Sizer = "items"
 	require.NoError(t, cfg.Validate())
+}
+
+func TestValidateConfigInvokedOnNestedFieldsAutomatically(t *testing.T) {
+	cfg := SizeConfig{
+		SizerType: SizerType{
+			Sizer: "invalid",
+		},
+		MaxSize: 100,
+		MinSize: 0,
+	}
+	require.EqualError(t, component.ValidateConfig(cfg), "sizer should either be bytes or items")
 }
