@@ -241,7 +241,12 @@ func TestConfigValidate(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := tt.cfgFn()
-			assert.Equal(t, tt.expected, cfg.Validate())
+			err := cfg.Validate()
+			if tt.expected != nil {
+				assert.EqualError(t, err, tt.expected.Error())
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }
