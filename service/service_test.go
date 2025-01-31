@@ -207,7 +207,7 @@ func TestServiceGetFactory(t *testing.T) {
 	assert.Equal(t, srv.host.Extensions.Factory(nopType), srv.host.GetFactory(component.KindExtension, nopType))
 
 	// Try retrieve non existing component.Kind.
-	assert.Nil(t, srv.host.GetFactory(42, nopType))
+	assert.Nil(t, srv.host.GetFactory(component.Kind{}, nopType))
 }
 
 func TestServiceGetExtensions(t *testing.T) {
