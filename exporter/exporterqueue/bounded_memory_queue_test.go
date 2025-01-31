@@ -183,11 +183,11 @@ func TestZeroSizeNoConsumers(t *testing.T) {
 }
 
 func consume[T any](q Queue[T], consumeFunc func(context.Context, T) error) bool {
-	index, ctx, req, ok := q.Read(context.Background())
+	ctx, req, done, ok := q.Read(context.Background())
 	if !ok {
 		return false
 	}
-	q.OnProcessingFinished(index, consumeFunc(ctx, req))
+	done(consumeFunc(ctx, req))
 	return true
 }
 
@@ -203,11 +203,11 @@ func newAsyncConsumer[T any](q Queue[T], numConsumers int, consumeFunc func(cont
 		go func() {
 			defer ac.stopWG.Done()
 			for {
-				index, ctx, req, ok := q.Read(context.Background())
+				ctx, req, done, ok := q.Read(context.Background())
 				if !ok {
 					return
 				}
-				q.OnProcessingFinished(index, consumeFunc(ctx, req))
+				done(consumeFunc(ctx, req))
 			}
 		}()
 	}

@@ -12,10 +12,17 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 )
 
-// ErrQueueIsFull is the error returned when an item is offered to the Queue and the queue is full.
+// ErrQueueIsFull is the error returned when an item is offered to the Queue and the queue is full and setup to
+// not block.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 var ErrQueueIsFull = errors.New("sending queue is full")
+
+// DoneCallback represents the callback that will be called when the read request is completely processed by the
+// downstream components.
+// Experimental: This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+type DoneCallback func(processErr error)
 
 // Queue defines a producer-consumer exchange which can be backed by e.g. the memory-based ring buffer queue
 // (boundedMemoryQueue) or via a disk-based queue (persistentQueue)
@@ -31,13 +38,11 @@ type Queue[T any] interface {
 	Size() int64
 	// Capacity returns the capacity of the queue.
 	Capacity() int64
-	// Read pulls the next available item from the queue along with its index. Once processing is
-	// finished, the index should be called with OnProcessingFinished to clean up the storage.
+	// Read pulls the next available item from the queue along with its done callback. Once processing is
+	// finished, the done callback must be called to clean up the storage.
 	// The function blocks until an item is available or if the queue is stopped.
-	// Returns false if reading failed or if the queue is stopped.
-	Read(context.Context) (uint64, context.Context, T, bool)
-	// OnProcessingFinished should be called to remove the item of the given index from the queue once processing is finished.
-	OnProcessingFinished(index uint64, consumeErr error)
+	// If the queue is stopped returns false, otherwise true.
+	Read(context.Context) (context.Context, T, DoneCallback, bool)
 }
 
 // Settings defines settings for creating a queue.

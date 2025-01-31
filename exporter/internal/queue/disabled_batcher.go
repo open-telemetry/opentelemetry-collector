@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter/exporterqueue"
 )
 
 // DisabledBatcher is a special-case of Batcher that has no size limit for sending. Any items read from the queue will
@@ -29,15 +30,11 @@ func (qb *DisabledBatcher) Start(_ context.Context, _ component.Host) error {
 	go func() {
 		defer qb.stopWG.Done()
 		for {
-			idx, _, req, ok := qb.queue.Read(context.Background())
+			_, req, done, ok := qb.queue.Read(context.Background())
 			if !ok {
 				return
 			}
-			qb.flush(batch{
-				req:     req,
-				ctx:     context.Background(),
-				idxList: []uint64{idx},
-			})
+			qb.flush(context.Background(), req, []exporterqueue.DoneCallback{done})
 		}
 	}()
 	return nil

@@ -11,6 +11,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var noopDone DoneCallback = func(error) {}
+
 // boundedMemoryQueue implements a producer-consumer exchange similar to a ring buffer queue,
 // where the queue is bounded and if it fills up due to slow consumers, the new items written by
 // the producer are dropped.
@@ -34,11 +36,7 @@ func newBoundedMemoryQueue[T any](set memoryQueueSettings[T]) Queue[T] {
 	}
 }
 
-func (q *boundedMemoryQueue[T]) Read(context.Context) (uint64, context.Context, T, bool) {
+func (q *boundedMemoryQueue[T]) Read(context.Context) (context.Context, T, DoneCallback, bool) {
 	ctx, req, ok := q.sizedQueue.pop()
-	return 0, ctx, req, ok
+	return ctx, req, noopDone, ok
 }
-
-// OnProcessingFinished should be called to remove the item of the given index from the queue once processing is finished.
-// For in memory queue, this function is noop.
-func (q *boundedMemoryQueue[T]) OnProcessingFinished(uint64, error) {}
