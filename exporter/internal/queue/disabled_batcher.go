@@ -29,13 +29,13 @@ func (qb *DisabledBatcher) Start(_ context.Context, _ component.Host) error {
 	go func() {
 		defer qb.stopWG.Done()
 		for {
-			idx, _, req, ok := qb.queue.Read(context.Background())
+			idx, ctx, req, ok := qb.queue.Read(context.Background())
 			if !ok {
 				return
 			}
 			qb.flush(batch{
 				req:     req,
-				ctx:     context.Background(),
+				ctx:     ctx,
 				idxList: []uint64{idx},
 			})
 		}
