@@ -44,6 +44,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.opentelemetry.io/collector/pdata/testdata"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
@@ -120,16 +121,16 @@ func TestJsonHttp(t *testing.T) {
 	}
 	addr := testutil.GetAvailableLocalAddress(t)
 	sink := newErrOrSinkConsumer()
-	recv := newHTTPReceiver(t, componenttest.NewNopTelemetrySettings(), addr, sink)
-	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
-	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink.Reset()
 			sink.SetConsumeError(tt.err)
 
 			for _, dr := range generateDataRequests(t) {
+				recv := newHTTPReceiver(t, receivertest.NewNopSettings(), addr, sink)
+				require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
+				t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
+
 				url := "http://" + addr + dr.path
 				respBytes := doHTTPRequest(t, url, tt.encoding, tt.contentType, dr.jsonBytes, tt.expectedStatusCode)
 				if tt.err == nil {
@@ -155,7 +156,7 @@ func TestJsonHttp(t *testing.T) {
 func TestHandleInvalidRequests(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	sink := newErrOrSinkConsumer()
-	recv := newHTTPReceiver(t, componenttest.NewNopTelemetrySettings(), addr, sink)
+	recv := newHTTPReceiver(t, receivertest.NewNopSettings(), addr, sink)
 	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
 	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
 
@@ -376,7 +377,7 @@ func TestProtoHttp(t *testing.T) {
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
 	sink := newErrOrSinkConsumer()
-	recv := newHTTPReceiver(t, componenttest.NewNopTelemetrySettings(), addr, sink)
+	recv := newHTTPReceiver(t, receivertest.NewNopSettings(), addr, sink)
 
 	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
 	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
@@ -457,7 +458,7 @@ func TestOTLPReceiverInvalidContentEncoding(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
-	recv := newHTTPReceiver(t, componenttest.NewNopTelemetrySettings(), addr, consumertest.NewNop())
+	recv := newHTTPReceiver(t, receivertest.NewNopSettings(), addr, consumertest.NewNop())
 
 	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
 	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
@@ -498,7 +499,7 @@ func TestGRPCNewPortAlreadyUsed(t *testing.T) {
 		assert.NoError(t, ln.Close())
 	})
 
-	r := newGRPCReceiver(t, componenttest.NewNopTelemetrySettings(), addr, consumertest.NewNop())
+	r := newGRPCReceiver(t, receivertest.NewNopSettings(), addr, consumertest.NewNop())
 	require.NotNil(t, r)
 
 	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
@@ -512,7 +513,7 @@ func TestHTTPNewPortAlreadyUsed(t *testing.T) {
 		assert.NoError(t, ln.Close())
 	})
 
-	r := newHTTPReceiver(t, componenttest.NewNopTelemetrySettings(), addr, consumertest.NewNop())
+	r := newHTTPReceiver(t, receivertest.NewNopSettings(), addr, consumertest.NewNop())
 	require.NotNil(t, r)
 
 	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
@@ -562,7 +563,10 @@ func TestOTLPReceiverGRPCTracesIngestTest(t *testing.T) {
 
 	sink := &errOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
 
-	recv := newGRPCReceiver(t, tt.TelemetrySettings(), addr, sink)
+	set := receivertest.NewNopSettings()
+	set.TelemetrySettings = tt.TelemetrySettings()
+	set.ID = otlpReceiverID
+	recv := newGRPCReceiver(t, set, addr, sink)
 	require.NotNil(t, recv)
 	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
@@ -643,7 +647,10 @@ func TestOTLPReceiverHTTPTracesIngestTest(t *testing.T) {
 
 	sink := &errOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
 
-	recv := newHTTPReceiver(t, tt.TelemetrySettings(), addr, sink)
+	set := receivertest.NewNopSettings()
+	set.TelemetrySettings = tt.TelemetrySettings()
+	set.ID = otlpReceiverID
+	recv := newHTTPReceiver(t, set, addr, sink)
 	require.NotNil(t, recv)
 	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
@@ -720,7 +727,8 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = addr
 	cfg.HTTP = nil
-	recv := newReceiver(t, componenttest.NewNopTelemetrySettings(), cfg, otlpReceiverID, sink)
+	recv, err := newTraces(receivertest.NewNopSettings(), cfg, sink)
+	require.NoError(t, err)
 	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
 
 	cc, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -733,7 +741,8 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 	require.NoError(t, recv.Shutdown(context.Background()))
 
 	cfg.GRPC.MaxRecvMsgSizeMiB = 100
-	recv = newReceiver(t, componenttest.NewNopTelemetrySettings(), cfg, otlpReceiverID, sink)
+	recv, err = newTraces(receivertest.NewNopSettings(), cfg, sink)
+	require.NoError(t, err)
 	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
 
@@ -797,7 +806,8 @@ func testHTTPMaxRequestBodySize(t *testing.T, path string, contentType string, p
 		},
 	}
 
-	recv := newReceiver(t, componenttest.NewNopTelemetrySettings(), cfg, otlpReceiverID, consumertest.NewNop())
+	recv, err := newTraces(receivertest.NewNopSettings(), cfg, consumertest.NewNop())
+	require.NoError(t, err)
 	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
 
 	req := createHTTPRequest(t, url, "", contentType, payload)
@@ -811,9 +821,7 @@ func testHTTPMaxRequestBodySize(t *testing.T, path string, contentType string, p
 }
 
 func TestHTTPMaxRequestBodySize(t *testing.T) {
-	dataReqs := generateDataRequests(t)
-
-	for _, dr := range dataReqs {
+	for _, dr := range generateDataRequests(t) {
 		testHTTPMaxRequestBodySize(t, dr.path, "application/json", dr.jsonBytes, len(dr.jsonBytes), 200)
 		testHTTPMaxRequestBodySize(t, dr.path, "application/json", dr.jsonBytes, len(dr.jsonBytes)-1, 400)
 
@@ -822,38 +830,30 @@ func TestHTTPMaxRequestBodySize(t *testing.T) {
 	}
 }
 
-func newGRPCReceiver(t *testing.T, settings component.TelemetrySettings, endpoint string, c consumertest.Consumer) component.Component {
+func newGRPCReceiver(t *testing.T, set receiver.Settings, endpoint string, next consumertest.Consumer) component.Component {
 	cfg := createDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = endpoint
 	cfg.HTTP = nil
-	return newReceiver(t, settings, cfg, otlpReceiverID, c)
+	r, err := newTraces(set, cfg, next)
+	require.NoError(t, err)
+	return r
 }
 
-func newHTTPReceiver(t *testing.T, settings component.TelemetrySettings, endpoint string, c consumertest.Consumer) component.Component {
+func newHTTPReceiver(t *testing.T, set receiver.Settings, endpoint string, next consumertest.Consumer) component.Component {
 	cfg := createDefaultConfig().(*Config)
 	cfg.HTTP.Endpoint = endpoint
 	cfg.GRPC = nil
-	return newReceiver(t, settings, cfg, otlpReceiverID, c)
-}
-
-func newReceiver(t *testing.T, settings component.TelemetrySettings, cfg *Config, id component.ID, c consumertest.Consumer) component.Component {
-	set := receivertest.NewNopSettings()
-	set.TelemetrySettings = settings
-	set.ID = id
-	r, err := newOtlpReceiver(cfg, &set)
+	r, err := newTraces(set, cfg, next)
 	require.NoError(t, err)
-	r.registerTraceConsumer(c)
-	r.registerMetricsConsumer(c)
-	r.registerLogsConsumer(c)
-	r.registerProfilesConsumer(c)
 	return r
 }
 
 type dataRequest struct {
-	data       any
-	path       string
-	jsonBytes  []byte
-	protoBytes []byte
+	data        any
+	path        string
+	jsonBytes   []byte
+	protoBytes  []byte
+	newReceiver func(cfg *Config) (component.Component, error)
 }
 
 func generateDataRequests(t *testing.T) []dataRequest {
