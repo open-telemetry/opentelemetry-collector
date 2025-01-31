@@ -293,5 +293,3 @@ replace go.opentelemetry.io/collector/receiver/xreceiver => ../../receiver/xrece
 replace go.opentelemetry.io/collector/semconv => ../../semconv
 
 replace go.opentelemetry.io/collector/service => ../../service
-
-replace go.opentelemetry.io/collector/scraper => ../../scraper
