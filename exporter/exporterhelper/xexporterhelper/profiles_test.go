@@ -46,7 +46,7 @@ var fakeProfilesExporterConfig = struct{}{}
 func TestProfilesRequest(t *testing.T) {
 	pr := newProfilesRequest(testdata.GenerateProfiles(1), nil)
 	assert.Equal(t, 1, pr.ItemsCount())
-	assert.Equal(t, profilesMarshaler.ProfilesSize(testdata.GenerateProfiles(1)), pr.ByteSize())
+	assert.Equal(t, 122, pr.ByteSize())
 
 	profileErr := xconsumererror.NewProfiles(errors.New("some error"), pprofile.NewProfiles())
 	assert.EqualValues(
