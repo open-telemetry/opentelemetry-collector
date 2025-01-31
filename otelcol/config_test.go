@@ -234,14 +234,14 @@ func TestConfigValidate(t *testing.T) {
 				cfg.Service.Pipelines = nil
 				return cfg
 			},
-			expected: fmt.Errorf(`service::pipelines config validation failed: %w`, errors.New(`service must have at least one pipeline`)),
+			expected: fmt.Errorf(`service::pipelines: %w`, errors.New(`service must have at least one pipeline`)),
 		},
 	}
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := tt.cfgFn()
-			err := cfg.Validate()
+			err := component.ValidateConfig(cfg)
 			if tt.expected != nil {
 				assert.EqualError(t, err, tt.expected.Error())
 			} else {
