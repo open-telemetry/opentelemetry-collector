@@ -17,7 +17,7 @@ import (
 )
 
 type Telemetry struct {
-	componenttest.Telemetry
+	*componenttest.Telemetry
 }
 
 func SetupTelemetry(opts ...componenttest.TelemetryOption) Telemetry {
@@ -44,7 +44,14 @@ func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, 
 	require.Equal(t, len(expected), lenMetrics(md))
 }
 
-func AssertEqualProcessorAcceptedLogRecords(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func NewSettings(tt *componenttest.Telemetry) processor.Settings {
+	set := processortest.NewNopSettings()
+	set.ID = component.NewID(component.MustNewType("memory_limiter"))
+	set.TelemetrySettings = tt.NewTelemetrySettings()
+	return set
+}
+
+func AssertEqualProcessorAcceptedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_accepted_log_records",
 		Description: "Number of log records successfully pushed into the next component in the pipeline. [deprecated since v0.110.0]",
@@ -55,11 +62,12 @@ func AssertEqualProcessorAcceptedLogRecords(t *testing.T, tt componenttest.Telem
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_processor_accepted_log_records")
+	got, err := tt.GetMetric("otelcol_processor_accepted_log_records")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessorAcceptedMetricPoints(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessorAcceptedMetricPoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_accepted_metric_points",
 		Description: "Number of metric points successfully pushed into the next component in the pipeline. [deprecated since v0.110.0]",
@@ -70,11 +78,12 @@ func AssertEqualProcessorAcceptedMetricPoints(t *testing.T, tt componenttest.Tel
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_processor_accepted_metric_points")
+	got, err := tt.GetMetric("otelcol_processor_accepted_metric_points")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessorAcceptedSpans(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessorAcceptedSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_accepted_spans",
 		Description: "Number of spans successfully pushed into the next component in the pipeline. [deprecated since v0.110.0]",
@@ -85,11 +94,12 @@ func AssertEqualProcessorAcceptedSpans(t *testing.T, tt componenttest.Telemetry,
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_processor_accepted_spans")
+	got, err := tt.GetMetric("otelcol_processor_accepted_spans")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessorRefusedLogRecords(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessorRefusedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_refused_log_records",
 		Description: "Number of log records that were rejected by the next component in the pipeline. [deprecated since v0.110.0]",
@@ -100,11 +110,12 @@ func AssertEqualProcessorRefusedLogRecords(t *testing.T, tt componenttest.Teleme
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_processor_refused_log_records")
+	got, err := tt.GetMetric("otelcol_processor_refused_log_records")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessorRefusedMetricPoints(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessorRefusedMetricPoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_refused_metric_points",
 		Description: "Number of metric points that were rejected by the next component in the pipeline. [deprecated since v0.110.0]",
@@ -115,11 +126,12 @@ func AssertEqualProcessorRefusedMetricPoints(t *testing.T, tt componenttest.Tele
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_processor_refused_metric_points")
+	got, err := tt.GetMetric("otelcol_processor_refused_metric_points")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessorRefusedSpans(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessorRefusedSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_refused_spans",
 		Description: "Number of spans that were rejected by the next component in the pipeline. [deprecated since v0.110.0]",
@@ -130,14 +142,9 @@ func AssertEqualProcessorRefusedSpans(t *testing.T, tt componenttest.Telemetry, 
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_processor_refused_spans")
+	got, err := tt.GetMetric("otelcol_processor_refused_spans")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func getMetric(t *testing.T, tt componenttest.Telemetry, name string) metricdata.Metrics {
-	var md metricdata.ResourceMetrics
-	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
-	return getMetricFromResource(name, md)
 }
 
 func getMetricFromResource(name string, got metricdata.ResourceMetrics) metricdata.Metrics {

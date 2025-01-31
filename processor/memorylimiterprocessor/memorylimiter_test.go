@@ -210,13 +210,13 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 }
 
 func TestMetricsTelemetry(t *testing.T) {
-	tel := metadatatest.SetupTelemetry()
+	tel := componenttest.NewTelemetry()
 	cfg := &Config{
 		CheckInterval:         time.Second,
 		MemoryLimitPercentage: 50,
 		MemorySpikePercentage: 10,
 	}
-	metrics, err := NewFactory().CreateMetrics(context.Background(), tel.NewSettings(), cfg, consumertest.NewNop())
+	metrics, err := NewFactory().CreateMetrics(context.Background(), metadatatest.NewSettings(tel), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NoError(t, metrics.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -227,7 +227,7 @@ func TestMetricsTelemetry(t *testing.T) {
 	}
 	require.NoError(t, metrics.Shutdown(context.Background()))
 
-	metadatatest.AssertEqualProcessorAcceptedMetricPoints(t, tel.Telemetry,
+	metadatatest.AssertEqualProcessorAcceptedMetricPoints(t, tel,
 		[]metricdata.DataPoint[int64]{
 			{
 				Value:      10,
