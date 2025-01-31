@@ -15,27 +15,13 @@ import (
 // NopFactories returns a otelcol.Factories with all nop factories.
 func NopFactories() (otelcol.Factories, error) {
 	var factories otelcol.Factories
-	var err error
 
-	if factories.Extensions, err = otelcol.MakeFactoryMap(extensiontest.NewNopFactory()); err != nil {
-		return otelcol.Factories{}, err
-	}
+	// MakeFactoryMap can never return an error with a single Factory
+	factories.Extensions, _ = otelcol.MakeFactoryMap(extensiontest.NewNopFactory())
+	factories.Receivers, _ = otelcol.MakeFactoryMap(receivertest.NewNopFactory())
+	factories.Exporters, _ = otelcol.MakeFactoryMap(exportertest.NewNopFactory())
+	factories.Processors, _ = otelcol.MakeFactoryMap(processortest.NewNopFactory())
+	factories.Connectors, _ = otelcol.MakeFactoryMap(connectortest.NewNopFactory())
 
-	if factories.Receivers, err = otelcol.MakeFactoryMap(receivertest.NewNopFactory()); err != nil {
-		return otelcol.Factories{}, err
-	}
-
-	if factories.Exporters, err = otelcol.MakeFactoryMap(exportertest.NewNopFactory()); err != nil {
-		return otelcol.Factories{}, err
-	}
-
-	if factories.Processors, err = otelcol.MakeFactoryMap(processortest.NewNopFactory()); err != nil {
-		return otelcol.Factories{}, err
-	}
-
-	if factories.Connectors, err = otelcol.MakeFactoryMap(connectortest.NewNopFactory()); err != nil {
-		return otelcol.Factories{}, err
-	}
-
-	return factories, err
+	return factories, nil
 }
