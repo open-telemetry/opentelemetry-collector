@@ -1237,7 +1237,7 @@ func (esc *errOrSinkConsumer) checkData(t *testing.T, data any, dataLen int) {
 
 func assertReceiverTraces(t *testing.T, tt componenttest.TestTelemetry, id component.ID, transport string, accepted, refused int64) {
 	got, err := tt.GetMetric("otelcol_receiver_accepted_spans")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t,
 		metricdata.Metrics{
 			Name:        "otelcol_receiver_accepted_spans",
@@ -1250,7 +1250,7 @@ func assertReceiverTraces(t *testing.T, tt componenttest.TestTelemetry, id compo
 					{
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
-							attribute.String("transport", "grpc")),
+							attribute.String("transport", transport)),
 						Value: accepted,
 					},
 				},
@@ -1258,7 +1258,7 @@ func assertReceiverTraces(t *testing.T, tt componenttest.TestTelemetry, id compo
 		}, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
 	got, err = tt.GetMetric("otelcol_receiver_refused_spans")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t,
 		metricdata.Metrics{
 			Name:        "otelcol_receiver_refused_spans",
@@ -1271,7 +1271,7 @@ func assertReceiverTraces(t *testing.T, tt componenttest.TestTelemetry, id compo
 					{
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
-							attribute.String("transport", "grpc")),
+							attribute.String("transport", transport)),
 						Value: refused,
 					},
 				},
