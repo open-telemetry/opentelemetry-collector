@@ -195,7 +195,24 @@ func TestReceiveMetricsOp(t *testing.T) {
 			}
 		}
 
-		assertMetrics(t, tt.Telemetry, receiverID, transport, int64(acceptedMetricPoints), int64(refusedMetricPoints))
+		metadatatest.AssertEqualReceiverAcceptedMetricPoints(t, tt.Telemetry,
+			[]metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String(internal.ReceiverKey, receiverID.String()),
+						attribute.String(internal.TransportKey, transport)),
+					Value: int64(acceptedMetricPoints),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+		metadatatest.AssertEqualReceiverRefusedMetricPoints(t, tt.Telemetry,
+			[]metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String(internal.ReceiverKey, receiverID.String()),
+						attribute.String(internal.TransportKey, transport)),
+					Value: int64(refusedMetricPoints),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 	})
 }
 
@@ -289,7 +306,15 @@ func TestCheckReceiverMetricsViews(t *testing.T) {
 	require.NotNil(t, ctx)
 	rec.EndMetricsOp(ctx, format, 7, nil)
 
-	assertMetrics(t, tt.Telemetry, receiverID, transport, 7, 0)
+	metadatatest.AssertEqualReceiverAcceptedMetricPoints(t, tt.Telemetry,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(internal.ReceiverKey, receiverID.String()),
+					attribute.String(internal.TransportKey, transport)),
+				Value: int64(7),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
 func TestCheckReceiverLogsViews(t *testing.T) {
@@ -333,25 +358,4 @@ func testTelemetry(t *testing.T, id component.ID, testFunc func(t *testing.T, tt
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	testFunc(t, tt)
-}
-
-func assertMetrics(t *testing.T, tt componenttest.Telemetry, receiver component.ID, transport string, expectedAccepted int64, expectedRefused int64) {
-	metadatatest.AssertEqualReceiverAcceptedMetricPoints(t, tt,
-		[]metricdata.DataPoint[int64]{
-			{
-				Attributes: attribute.NewSet(
-					attribute.String(internal.ReceiverKey, receiver.String()),
-					attribute.String(internal.TransportKey, transport)),
-				Value: expectedAccepted,
-			},
-		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
-	metadatatest.AssertEqualReceiverRefusedMetricPoints(t, tt,
-		[]metricdata.DataPoint[int64]{
-			{
-				Attributes: attribute.NewSet(
-					attribute.String(internal.ReceiverKey, receiver.String()),
-					attribute.String(internal.TransportKey, transport)),
-				Value: expectedRefused,
-			},
-		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
