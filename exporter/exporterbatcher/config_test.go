@@ -5,13 +5,12 @@ package exporterbatcher
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestConfig_ValidateOldConfiguration(t *testing.T) {
+func TestValidateConfig(t *testing.T) {
 	cfg := NewDefaultConfig()
 	require.NoError(t, cfg.Validate())
 
@@ -31,48 +30,44 @@ func TestConfig_ValidateOldConfiguration(t *testing.T) {
 	assert.EqualError(t, cfg.Validate(), "max_size_items must be greater than or equal to min_size_items")
 }
 
-func TestConfig(t *testing.T) {
-	cfg := Config{
-		Enabled:      true,
-		FlushTimeout: 200 * time.Millisecond,
-		SizeConfig: SizeConfig{
-			Sizer:   "invalidsizer",
-			MaxSize: 100,
-			MinSize: 100,
+func TestValidateSizeConfig(t *testing.T) {
+	cfg := SizeConfig{
+		SizerType: SizerType{
+			Sizer: "bytes",
 		},
-	}
-	require.EqualError(t, cfg.Validate(), "sizer should either be bytes or items")
-
-	cfg = Config{
-		Enabled:      true,
-		FlushTimeout: 200 * time.Millisecond,
-		SizeConfig: SizeConfig{
-			Sizer:   "bytes",
-			MaxSize: -100,
-			MinSize: 100,
-		},
+		MaxSize: -100,
+		MinSize: 100,
 	}
 	require.EqualError(t, cfg.Validate(), "max_size must be greater than or equal to zero")
 
-	cfg = Config{
-		Enabled:      true,
-		FlushTimeout: 200 * time.Millisecond,
-		SizeConfig: SizeConfig{
-			Sizer:   "bytes",
-			MaxSize: 100,
-			MinSize: -100,
+	cfg = SizeConfig{
+		SizerType: SizerType{
+			Sizer: "bytes",
 		},
+		MaxSize: 100,
+		MinSize: -100,
 	}
 	require.EqualError(t, cfg.Validate(), "min_size must be greater than or equal to zero")
 
-	cfg = Config{
-		Enabled:      true,
-		FlushTimeout: 200 * time.Millisecond,
-		SizeConfig: SizeConfig{
-			Sizer:   "bytes",
-			MaxSize: 100,
-			MinSize: 200,
+	cfg = SizeConfig{
+		SizerType: SizerType{
+			Sizer: "bytes",
 		},
+		MaxSize: 100,
+		MinSize: 200,
 	}
 	require.EqualError(t, cfg.Validate(), "max_size must be greater than or equal to mix_size")
+}
+
+func TestValidateSizer(t *testing.T) {
+	cfg := SizerType{
+		Sizer: "invalid",
+	}
+	require.EqualError(t, cfg.Validate(), "sizer should either be bytes or items")
+
+	cfg.Sizer = "bytes"
+	require.NoError(t, cfg.Validate())
+
+	cfg.Sizer = "items"
+	require.NoError(t, cfg.Validate())
 }
