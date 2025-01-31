@@ -7,7 +7,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
@@ -109,9 +108,9 @@ func TestConfigValidate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := tt.cfgFn(t)
 			if tt.expected != nil {
-				assert.ErrorContains(t, component.ValidateConfig(cfg), tt.expected.Error())
+				require.ErrorContains(t, component.ValidateConfig(cfg), tt.expected.Error())
 			} else {
-				assert.NoError(t, component.ValidateConfig(cfg))
+				require.NoError(t, component.ValidateConfig(cfg))
 			}
 
 			// Clean up the profiles support gate, which may have been enabled in `cfgFn`.

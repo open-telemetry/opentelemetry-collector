@@ -5,7 +5,6 @@ package service
 
 import (
 	"errors"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -48,7 +47,7 @@ func TestConfigValidate(t *testing.T) {
 				pipe.Processors = append(pipe.Processors, pipe.Processors...)
 				return cfg
 			},
-			expected: fmt.Errorf(`pipeline "traces": %w`, errors.New(`references processor "nop" multiple times`)),
+			expected: errors.New(`references processor "nop" multiple times`),
 		},
 		{
 			name: "invalid-service-pipeline-type",
