@@ -4,7 +4,7 @@ module go.opentelemetry.io/collector/cmd/otelcorecol
 
 go 1.22.0
 
-toolchain go1.22.11
+toolchain go1.22.9
 
 require (
 	go.opentelemetry.io/collector/component v0.118.0
@@ -293,3 +293,5 @@ replace go.opentelemetry.io/collector/receiver/xreceiver => ../../receiver/xrece
 replace go.opentelemetry.io/collector/semconv => ../../semconv
 
 replace go.opentelemetry.io/collector/service => ../../service
+
+replace go.opentelemetry.io/collector/scraper => ../../scraper
