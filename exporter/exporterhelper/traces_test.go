@@ -44,7 +44,7 @@ var (
 func TestTracesRequest(t *testing.T) {
 	tr := newTracesRequest(testdata.GenerateTraces(1), nil)
 	assert.Equal(t, 1, tr.ItemsCount())
-	assert.Equal(t, tracesMarshaler.TracesSize(testdata.GenerateTraces(1)), tr.ByteSize())
+	assert.Equal(t, 240, tr.ByteSize())
 
 	traceErr := consumererror.NewTraces(errors.New("some error"), ptrace.NewTraces())
 	assert.EqualValues(t, newTracesRequest(ptrace.NewTraces(), nil), tr.(RequestErrorHandler).OnError(traceErr))
