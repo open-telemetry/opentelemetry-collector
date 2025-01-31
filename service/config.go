@@ -29,7 +29,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	if err := cfg.Telemetry.Validate(); err != nil {
-		fmt.Printf("service::telemetry config validation failed: %v\n", err)
+		return fmt.Errorf("service::telemetry config validation failed: %w", err)
 	}
 
 	return nil
