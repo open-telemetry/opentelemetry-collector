@@ -91,7 +91,7 @@ func TestReceiveTraceDataOp(t *testing.T) {
 					Value: int64(acceptedSpans),
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
-		metadatatest.AssertEqualReceiverRefusedLogRecords(t, tt.Telemetry,
+		metadatatest.AssertEqualReceiverRefusedSpans(t, tt.Telemetry,
 			[]metricdata.DataPoint[int64]{
 				{
 					Attributes: attribute.NewSet(
