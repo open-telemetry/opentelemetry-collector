@@ -139,7 +139,7 @@ func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefa
 // MakeFactoryMap takes a list of receiver factories and returns a map with factory type as keys.
 // It returns a non-nil error when there are factories with duplicate type.
 //
-// Deprecated: Use otelcol.MakeFactoryMap[extension.Factory] instead
+// Deprecated: [v0.119.0] Use otelcol.MakeFactoryMap[scraper.Factory] instead
 func MakeFactoryMap(factories ...Factory) (map[component.Type]Factory, error) {
 	fMap := map[component.Type]Factory{}
 	for _, f := range factories {
