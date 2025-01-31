@@ -38,7 +38,7 @@ func (cfg Config) Validate() error {
 
 	// Check that all pipelines have at least one receiver and one exporter, and they reference
 	// only configured components.
-	for pipelineID, p := range cfg {
+	for pipelineID := range cfg {
 		switch pipelineID.Signal() {
 		case pipeline.SignalTraces, pipeline.SignalMetrics, pipeline.SignalLogs:
 			// Continue
@@ -52,11 +52,6 @@ func (cfg Config) Validate() error {
 			}
 		default:
 			return fmt.Errorf("pipeline %q: unknown signal %q", pipelineID.String(), pipelineID.Signal())
-		}
-
-		// Validate pipeline has at least one receiver.
-		if err := p.Validate(); err != nil {
-			return fmt.Errorf("pipeline %q: %w", pipelineID.String(), err)
 		}
 	}
 
