@@ -16,7 +16,7 @@ Number of units in the batch
 
 ### otelcol_processor_batch_batch_send_size_bytes
 
-Number of bytes in batch that was sent
+Number of bytes in batch that was sent. Only available on detailed level.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |

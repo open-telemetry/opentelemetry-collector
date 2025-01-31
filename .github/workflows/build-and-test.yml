@@ -23,7 +23,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
         with:
-          go-version: ~1.22.9
+          go-version: ~1.22.11
           cache: false
       - name: Cache Go
         id: go-cache
@@ -46,7 +46,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
         with:
-          go-version: ~1.22.9
+          go-version: ~1.22.11
           cache: false
       - name: Cache Go
         id: go-cache
@@ -70,7 +70,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
         with:
-          go-version: ~1.22.9
+          go-version: ~1.22.11
           cache: false
       - name: Cache Go
         id: go-cache
@@ -95,7 +95,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
         with:
-          go-version: ~1.22.9
+          go-version: ~1.22.11
           cache: false
       - name: Cache Go
         id: go-cache
@@ -200,7 +200,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
         with:
-          go-version: ~1.22.9
+          go-version: ~1.22.11
           cache: false
       - name: Cache Go
         id: go-cache
@@ -218,7 +218,7 @@ jobs:
       - name: Run Unit Tests With Coverage
         run: make gotest-with-cover
       - name: Upload coverage report
-        uses: codecov/codecov-action@1e68e06f1dbfde0e4cefc87efeba9e4643565303 # 5.1.2
+        uses: codecov/codecov-action@13ce06bfc6bbe3ecf90edbbf1bc32fe5978ca1d3 # 5.3.1
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
@@ -262,7 +262,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
         with:
-          go-version: ~1.22.9
+          go-version: ~1.22.11
           cache: false
       - name: Cache Go
         id: go-cache

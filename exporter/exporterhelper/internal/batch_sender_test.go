@@ -374,6 +374,14 @@ func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
 			expectedItems:    51,
 		},
 	}
+
+	// Why do we not expect the same behavior when usePullingBasedExporterQueueBatcher is true?
+	// This test checks that when concurrency limit of batch_sender is reached, the batch_sender will flush immediately.
+	// To avoid blocking, the concurrency limit is set to the number of concurrent goroutines that are in charge of
+	// reading from the queue and adding to batch. With the new model, we are pulling instead of pushing so we don't
+	// block the reading goroutine anymore.
+	defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, false)()
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			qCfg := exporterqueue.NewDefaultConfig()

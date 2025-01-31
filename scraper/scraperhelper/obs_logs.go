@@ -29,28 +29,28 @@ const (
 	erroredLogRecordsKey = "errored_log_records"
 )
 
-func newObsLogs(delegate scraper.ScrapeLogsFunc, receiverID component.ID, scraperID component.ID, telSettings component.TelemetrySettings) (scraper.ScrapeLogsFunc, error) {
-	telemetryBuilder, errBuilder := metadata.NewTelemetryBuilder(telSettings)
+func wrapObsLogs(sc scraper.Logs, receiverID component.ID, scraperID component.ID, set component.TelemetrySettings) (scraper.Logs, error) {
+	telemetryBuilder, errBuilder := metadata.NewTelemetryBuilder(set)
 	if errBuilder != nil {
 		return nil, errBuilder
 	}
 
-	tracer := metadata.Tracer(telSettings)
+	tracer := metadata.Tracer(set)
 	spanName := scraperKey + spanNameSep + scraperID.String() + spanNameSep + "ScrapeLogs"
 	otelAttrs := metric.WithAttributeSet(attribute.NewSet(
 		attribute.String(receiverKey, receiverID.String()),
 		attribute.String(scraperKey, scraperID.String()),
 	))
 
-	return func(ctx context.Context) (plog.Logs, error) {
+	scraperFuncs := func(ctx context.Context) (plog.Logs, error) {
 		ctx, span := tracer.Start(ctx, spanName)
 		defer span.End()
 
-		md, err := delegate(ctx)
+		md, err := sc.ScrapeLogs(ctx)
 		numScrapedLogs := 0
 		numErroredLogs := 0
 		if err != nil {
-			telSettings.Logger.Error("Error scraping logs", zap.Error(err))
+			set.Logger.Error("Error scraping logs", zap.Error(err))
 			var partialErr scrapererror.PartialScrapeError
 			if errors.As(err, &partialErr) {
 				numErroredLogs = partialErr.Failed
@@ -77,5 +77,7 @@ func newObsLogs(delegate scraper.ScrapeLogsFunc, receiverID component.ID, scrape
 		}
 
 		return md, err
-	}, nil
+	}
+
+	return scraper.NewLogs(scraperFuncs, scraper.WithStart(sc.Start), scraper.WithShutdown(sc.Shutdown))
 }

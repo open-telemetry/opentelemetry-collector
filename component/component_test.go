@@ -10,13 +10,12 @@ import (
 )
 
 func TestKindString(t *testing.T) {
-	assert.Equal(t, "", Kind(0).String())
+	assert.Equal(t, "", Kind{}.String())
 	assert.Equal(t, "Receiver", KindReceiver.String())
 	assert.Equal(t, "Processor", KindProcessor.String())
 	assert.Equal(t, "Exporter", KindExporter.String())
 	assert.Equal(t, "Extension", KindExtension.String())
 	assert.Equal(t, "Connector", KindConnector.String())
-	assert.Equal(t, "", Kind(100).String())
 }
 
 func TestStabilityLevelUnmarshal(t *testing.T) {

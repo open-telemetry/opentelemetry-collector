@@ -5,13 +5,13 @@ package metadata
 import (
 	"context"
 	"errors"
+	"sync"
 
 	"go.opentelemetry.io/otel/metric"
-	noopmetric "go.opentelemetry.io/otel/metric/noop"
+	"go.opentelemetry.io/otel/metric/embedded"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -26,17 +26,23 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
 	meter                             metric.Meter
+	mu                                sync.Mutex
+	registrations                     []metric.Registration
 	ExporterEnqueueFailedLogRecords   metric.Int64Counter
 	ExporterEnqueueFailedMetricPoints metric.Int64Counter
 	ExporterEnqueueFailedSpans        metric.Int64Counter
 	ExporterQueueCapacity             metric.Int64ObservableGauge
-	ExporterQueueSize                 metric.Int64ObservableGauge
-	ExporterSendFailedLogRecords      metric.Int64Counter
-	ExporterSendFailedMetricPoints    metric.Int64Counter
-	ExporterSendFailedSpans           metric.Int64Counter
-	ExporterSentLogRecords            metric.Int64Counter
-	ExporterSentMetricPoints          metric.Int64Counter
-	ExporterSentSpans                 metric.Int64Counter
+	// TODO: Remove in v0.119.0 when remove deprecated funcs.
+	observeExporterQueueCapacity func(context.Context, metric.Observer) error
+	ExporterQueueSize            metric.Int64ObservableGauge
+	// TODO: Remove in v0.119.0 when remove deprecated funcs.
+	observeExporterQueueSize       func(context.Context, metric.Observer) error
+	ExporterSendFailedLogRecords   metric.Int64Counter
+	ExporterSendFailedMetricPoints metric.Int64Counter
+	ExporterSendFailedSpans        metric.Int64Counter
+	ExporterSentLogRecords         metric.Int64Counter
+	ExporterSentMetricPoints       metric.Int64Counter
+	ExporterSentSpans              metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -50,40 +56,73 @@ func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 	tbof(mb)
 }
 
-// InitExporterQueueCapacity configures the ExporterQueueCapacity metric.
-func (builder *TelemetryBuilder) InitExporterQueueCapacity(cb func() int64, opts ...metric.ObserveOption) (metric.Registration, error) {
-	var err error
-	builder.ExporterQueueCapacity, err = builder.meter.Int64ObservableGauge(
-		"otelcol_exporter_queue_capacity",
-		metric.WithDescription("Fixed capacity of the retry queue (in batches)"),
-		metric.WithUnit("{batches}"),
-	)
-	if err != nil {
-		return nil, err
-	}
-	reg, err := builder.meter.RegisterCallback(func(_ context.Context, o metric.Observer) error {
-		o.ObserveInt64(builder.ExporterQueueCapacity, cb(), opts...)
-		return nil
-	}, builder.ExporterQueueCapacity)
-	return reg, err
+// Deprecated: [v0.119.0] use RegisterExporterQueueCapacityCallback.
+func WithExporterQueueCapacityCallback(cb func() int64, opts ...metric.ObserveOption) TelemetryBuilderOption {
+	return telemetryBuilderOptionFunc(func(builder *TelemetryBuilder) {
+		builder.observeExporterQueueCapacity = func(_ context.Context, o metric.Observer) error {
+			o.ObserveInt64(builder.ExporterQueueCapacity, cb(), opts...)
+			return nil
+		}
+	})
 }
 
-// InitExporterQueueSize configures the ExporterQueueSize metric.
-func (builder *TelemetryBuilder) InitExporterQueueSize(cb func() int64, opts ...metric.ObserveOption) (metric.Registration, error) {
-	var err error
-	builder.ExporterQueueSize, err = builder.meter.Int64ObservableGauge(
-		"otelcol_exporter_queue_size",
-		metric.WithDescription("Current size of the retry queue (in batches)"),
-		metric.WithUnit("{batches}"),
-	)
+// RegisterExporterQueueCapacityCallback sets callback for observable ExporterQueueCapacity metric.
+func (builder *TelemetryBuilder) RegisterExporterQueueCapacityCallback(cb metric.Int64Callback) error {
+	reg, err := builder.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
+		cb(ctx, &observerInt64{inst: builder.ExporterQueueCapacity, obs: o})
+		return nil
+	}, builder.ExporterQueueCapacity)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	reg, err := builder.meter.RegisterCallback(func(_ context.Context, o metric.Observer) error {
-		o.ObserveInt64(builder.ExporterQueueSize, cb(), opts...)
+	builder.mu.Lock()
+	defer builder.mu.Unlock()
+	builder.registrations = append(builder.registrations, reg)
+	return nil
+}
+
+// Deprecated: [v0.119.0] use RegisterExporterQueueSizeCallback.
+func WithExporterQueueSizeCallback(cb func() int64, opts ...metric.ObserveOption) TelemetryBuilderOption {
+	return telemetryBuilderOptionFunc(func(builder *TelemetryBuilder) {
+		builder.observeExporterQueueSize = func(_ context.Context, o metric.Observer) error {
+			o.ObserveInt64(builder.ExporterQueueSize, cb(), opts...)
+			return nil
+		}
+	})
+}
+
+// RegisterExporterQueueSizeCallback sets callback for observable ExporterQueueSize metric.
+func (builder *TelemetryBuilder) RegisterExporterQueueSizeCallback(cb metric.Int64Callback) error {
+	reg, err := builder.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
+		cb(ctx, &observerInt64{inst: builder.ExporterQueueSize, obs: o})
 		return nil
 	}, builder.ExporterQueueSize)
-	return reg, err
+	if err != nil {
+		return err
+	}
+	builder.mu.Lock()
+	defer builder.mu.Unlock()
+	builder.registrations = append(builder.registrations, reg)
+	return nil
+}
+
+type observerInt64 struct {
+	embedded.Int64Observer
+	inst metric.Int64Observable
+	obs  metric.Observer
+}
+
+func (oi *observerInt64) Observe(value int64, opts ...metric.ObserveOption) {
+	oi.obs.ObserveInt64(oi.inst, value, opts...)
+}
+
+// Shutdown unregister all registered callbacks for async instruments.
+func (builder *TelemetryBuilder) Shutdown() {
+	builder.mu.Lock()
+	defer builder.mu.Unlock()
+	for _, reg := range builder.registrations {
+		reg.Unregister()
+	}
 }
 
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
@@ -95,66 +134,85 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
-	builder.ExporterEnqueueFailedLogRecords, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
+	builder.ExporterEnqueueFailedLogRecords, err = builder.meter.Int64Counter(
 		"otelcol_exporter_enqueue_failed_log_records",
 		metric.WithDescription("Number of log records failed to be added to the sending queue. [alpha]"),
 		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ExporterEnqueueFailedMetricPoints, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
+	builder.ExporterEnqueueFailedMetricPoints, err = builder.meter.Int64Counter(
 		"otelcol_exporter_enqueue_failed_metric_points",
 		metric.WithDescription("Number of metric points failed to be added to the sending queue. [alpha]"),
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ExporterEnqueueFailedSpans, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
+	builder.ExporterEnqueueFailedSpans, err = builder.meter.Int64Counter(
 		"otelcol_exporter_enqueue_failed_spans",
 		metric.WithDescription("Number of spans failed to be added to the sending queue. [alpha]"),
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ExporterSendFailedLogRecords, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
+	builder.ExporterQueueCapacity, err = builder.meter.Int64ObservableGauge(
+		"otelcol_exporter_queue_capacity",
+		metric.WithDescription("Fixed capacity of the retry queue (in batches) [alpha]"),
+		metric.WithUnit("{batches}"),
+	)
+	errs = errors.Join(errs, err)
+	if builder.observeExporterQueueCapacity != nil {
+		reg, err := builder.meter.RegisterCallback(builder.observeExporterQueueCapacity, builder.ExporterQueueCapacity)
+		errs = errors.Join(errs, err)
+		if err == nil {
+			builder.registrations = append(builder.registrations, reg)
+		}
+	}
+	builder.ExporterQueueSize, err = builder.meter.Int64ObservableGauge(
+		"otelcol_exporter_queue_size",
+		metric.WithDescription("Current size of the retry queue (in batches) [alpha]"),
+		metric.WithUnit("{batches}"),
+	)
+	errs = errors.Join(errs, err)
+	if builder.observeExporterQueueSize != nil {
+		reg, err := builder.meter.RegisterCallback(builder.observeExporterQueueSize, builder.ExporterQueueSize)
+		errs = errors.Join(errs, err)
+		if err == nil {
+			builder.registrations = append(builder.registrations, reg)
+		}
+	}
+	builder.ExporterSendFailedLogRecords, err = builder.meter.Int64Counter(
 		"otelcol_exporter_send_failed_log_records",
 		metric.WithDescription("Number of log records in failed attempts to send to destination. [alpha]"),
 		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ExporterSendFailedMetricPoints, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
+	builder.ExporterSendFailedMetricPoints, err = builder.meter.Int64Counter(
 		"otelcol_exporter_send_failed_metric_points",
 		metric.WithDescription("Number of metric points in failed attempts to send to destination. [alpha]"),
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ExporterSendFailedSpans, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
+	builder.ExporterSendFailedSpans, err = builder.meter.Int64Counter(
 		"otelcol_exporter_send_failed_spans",
 		metric.WithDescription("Number of spans in failed attempts to send to destination. [alpha]"),
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ExporterSentLogRecords, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
+	builder.ExporterSentLogRecords, err = builder.meter.Int64Counter(
 		"otelcol_exporter_sent_log_records",
 		metric.WithDescription("Number of log record successfully sent to destination. [alpha]"),
 		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ExporterSentMetricPoints, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
+	builder.ExporterSentMetricPoints, err = builder.meter.Int64Counter(
 		"otelcol_exporter_sent_metric_points",
 		metric.WithDescription("Number of metric points successfully sent to destination. [alpha]"),
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ExporterSentSpans, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
+	builder.ExporterSentSpans, err = builder.meter.Int64Counter(
 		"otelcol_exporter_sent_spans",
 		metric.WithDescription("Number of spans successfully sent to destination. [alpha]"),
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs
-}
-
-func getLeveledMeter(meter metric.Meter, cfgLevel, srvLevel configtelemetry.Level) metric.Meter {
-	if cfgLevel <= srvLevel {
-		return meter
-	}
-	return noopmetric.Meter{}
 }

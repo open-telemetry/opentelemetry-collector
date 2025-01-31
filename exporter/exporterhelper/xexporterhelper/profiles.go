@@ -28,14 +28,16 @@ var (
 )
 
 type profilesRequest struct {
-	pd     pprofile.Profiles
-	pusher xconsumer.ConsumeProfilesFunc
+	pd               pprofile.Profiles
+	pusher           xconsumer.ConsumeProfilesFunc
+	cachedItemsCount int
 }
 
 func newProfilesRequest(pd pprofile.Profiles, pusher xconsumer.ConsumeProfilesFunc) exporterhelper.Request {
 	return &profilesRequest{
-		pd:     pd,
-		pusher: pusher,
+		pd:               pd,
+		pusher:           pusher,
+		cachedItemsCount: pd.SampleCount(),
 	}
 }
 
@@ -66,7 +68,11 @@ func (req *profilesRequest) Export(ctx context.Context) error {
 }
 
 func (req *profilesRequest) ItemsCount() int {
-	return req.pd.SampleCount()
+	return req.cachedItemsCount
+}
+
+func (req *profilesRequest) setCachedItemsCount(count int) {
+	req.cachedItemsCount = count
 }
 
 type profileExporter struct {
@@ -123,7 +129,7 @@ func NewProfilesRequestExporter(
 		return nil, errNilProfilesConverter
 	}
 
-	be, err := internal.NewBaseExporter(set, xpipeline.SignalProfiles, newProfilesExporterWithObservability, options...)
+	be, err := internal.NewBaseExporter(set, xpipeline.SignalProfiles, internal.NewObsReportSender, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -143,22 +149,4 @@ func NewProfilesRequestExporter(
 		BaseExporter: be,
 		Profiles:     tc,
 	}, err
-}
-
-type profilesExporterWithObservability struct {
-	internal.BaseSender[exporterhelper.Request]
-	obsrep *internal.ObsReport
-}
-
-func newProfilesExporterWithObservability(obsrep *internal.ObsReport) internal.Sender[exporterhelper.Request] {
-	return &profilesExporterWithObservability{obsrep: obsrep}
-}
-
-func (tewo *profilesExporterWithObservability) Send(ctx context.Context, req exporterhelper.Request) error {
-	c := tewo.obsrep.StartProfilesOp(ctx)
-	numSamples := req.ItemsCount()
-	// Forward the data to the next consumer (this pusher is the next).
-	err := tewo.NextSender.Send(c, req)
-	tewo.obsrep.EndProfilesOp(c, numSamples, err)
-	return err
 }

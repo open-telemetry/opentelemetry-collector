@@ -190,6 +190,8 @@ telemetry:
         monotonic: true
     queue_length:
       enabled: true
+      stability:
+        level: alpha
       description: This metric is optional and therefore not initialized in NewTelemetryBuilder.
       extended_documentation: For example this metric only exists if feature A is enabled.
       unit: "{items}"

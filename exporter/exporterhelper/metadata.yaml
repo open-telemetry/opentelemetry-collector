@@ -105,7 +105,6 @@ telemetry:
         level: alpha
       description: Current size of the retry queue (in batches)
       unit: "{batches}"
-      optional: true
       gauge:
         value_type: int
         async: true
@@ -116,7 +115,6 @@ telemetry:
         level: alpha
       description: Fixed capacity of the retry queue (in batches)
       unit: "{batches}"
-      optional: true
       gauge:
         value_type: int
         async: true

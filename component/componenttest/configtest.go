@@ -122,6 +122,9 @@ func checkStructFieldTags(f reflect.StructField) error {
 	default:
 		fieldTag := tagParts[0]
 		if !configFieldTagRegExp.MatchString(fieldTag) {
+			if f.Name == "AdditionalProperties" {
+				return nil
+			}
 			return fmt.Errorf(
 				"field %q has config tag %q which doesn't satisfy %q",
 				f.Name,

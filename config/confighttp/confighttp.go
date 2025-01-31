@@ -18,8 +18,8 @@ import (
 	"github.com/rs/cors"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/noop"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/publicsuffix"
 
@@ -28,7 +28,6 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp/internal"
 	"go.opentelemetry.io/collector/config/configopaque"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/extension/auth"
 )
@@ -247,7 +246,7 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 	otelOpts := []otelhttp.Option{
 		otelhttp.WithTracerProvider(settings.TracerProvider),
 		otelhttp.WithPropagators(otel.GetTextMapPropagator()),
-		otelhttp.WithMeterProvider(getLeveledMeterProvider(settings)),
+		otelhttp.WithMeterProvider(settings.MeterProvider),
 	}
 	// wrapping http transport with otelhttp transport to enable otel instrumentation
 	if settings.TracerProvider != nil && settings.MeterProvider != nil {
@@ -478,7 +477,7 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 			otelhttp.WithSpanNameFormatter(func(_ string, r *http.Request) string {
 				return r.URL.Path
 			}),
-			otelhttp.WithMeterProvider(getLeveledMeterProvider(settings)),
+			otelhttp.WithMeterProvider(settings.MeterProvider),
 		},
 		serverOpts.OtelhttpOpts...)
 
@@ -492,15 +491,21 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 		includeMetadata: hss.IncludeMetadata,
 	}
 
+	errorLog, err := zap.NewStdLogAt(settings.Logger, zapcore.ErrorLevel)
+	if err != nil {
+		return nil, err // If an error occurs while creating the logger, return nil and the error
+	}
+
 	server := &http.Server{
 		Handler:           handler,
 		ReadTimeout:       hss.ReadTimeout,
 		ReadHeaderTimeout: hss.ReadHeaderTimeout,
 		WriteTimeout:      hss.WriteTimeout,
 		IdleTimeout:       hss.IdleTimeout,
+		ErrorLog:          errorLog,
 	}
 
-	return server, nil
+	return server, err
 }
 
 func responseHeadersHandler(handler http.Handler, headers map[string]configopaque.String) http.Handler {
@@ -566,11 +571,4 @@ func maxRequestBodySizeInterceptor(next http.Handler, maxRecvSize int64) http.Ha
 		r.Body = http.MaxBytesReader(w, r.Body, maxRecvSize)
 		next.ServeHTTP(w, r)
 	})
-}
-
-func getLeveledMeterProvider(settings component.TelemetrySettings) metric.MeterProvider {
-	if configtelemetry.LevelDetailed <= settings.MetricsLevel {
-		return settings.MeterProvider
-	}
-	return noop.MeterProvider{}
 }

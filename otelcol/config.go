@@ -54,39 +54,14 @@ func (cfg *Config) Validate() error {
 		return errMissingReceivers
 	}
 
-	// Validate the receiver configuration.
-	for recvID, recvCfg := range cfg.Receivers {
-		if err := component.ValidateConfig(recvCfg); err != nil {
-			return fmt.Errorf("receivers::%s: %w", recvID, err)
-		}
-	}
-
 	// Currently, there is no default exporter enabled.
 	// The configuration must specify at least one exporter to be valid.
 	if len(cfg.Exporters) == 0 {
 		return errMissingExporters
 	}
 
-	// Validate the exporter configuration.
-	for expID, expCfg := range cfg.Exporters {
-		if err := component.ValidateConfig(expCfg); err != nil {
-			return fmt.Errorf("exporters::%s: %w", expID, err)
-		}
-	}
-
-	// Validate the processor configuration.
-	for procID, procCfg := range cfg.Processors {
-		if err := component.ValidateConfig(procCfg); err != nil {
-			return fmt.Errorf("processors::%s: %w", procID, err)
-		}
-	}
-
 	// Validate the connector configuration.
-	for connID, connCfg := range cfg.Connectors {
-		if err := component.ValidateConfig(connCfg); err != nil {
-			return fmt.Errorf("connectors::%s: %w", connID, err)
-		}
-
+	for connID := range cfg.Connectors {
 		if _, ok := cfg.Exporters[connID]; ok {
 			return fmt.Errorf("connectors::%s: ambiguous ID: Found both %q exporter and %q connector. "+
 				"Change one of the components' IDs to eliminate ambiguity (e.g. rename %q connector to %q)",
@@ -97,17 +72,6 @@ func (cfg *Config) Validate() error {
 				"Change one of the components' IDs to eliminate ambiguity (e.g. rename %q connector to %q)",
 				connID, connID, connID, connID, connID.String()+"/connector")
 		}
-	}
-
-	// Validate the extension configuration.
-	for extID, extCfg := range cfg.Extensions {
-		if err := component.ValidateConfig(extCfg); err != nil {
-			return fmt.Errorf("extensions::%s: %w", extID, err)
-		}
-	}
-
-	if err := cfg.Service.Validate(); err != nil {
-		return err
 	}
 
 	// Check that all enabled extensions in the service are configured.

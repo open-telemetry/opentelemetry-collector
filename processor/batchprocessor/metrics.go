@@ -9,7 +9,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/batchprocessor/internal/metadata"
 	"go.opentelemetry.io/collector/processor/internal"
@@ -23,8 +22,6 @@ const (
 )
 
 type batchProcessorTelemetry struct {
-	detailed bool
-
 	exportCtx context.Context
 
 	processorAttr    metric.MeasurementOption
@@ -34,17 +31,20 @@ type batchProcessorTelemetry struct {
 func newBatchProcessorTelemetry(set processor.Settings, currentMetadataCardinality func() int) (*batchProcessorTelemetry, error) {
 	attrs := metric.WithAttributeSet(attribute.NewSet(attribute.String(internal.ProcessorKey, set.ID.String())))
 
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(
-		set.TelemetrySettings,
-		metadata.WithProcessorBatchMetadataCardinalityCallback(func() int64 { return int64(currentMetadataCardinality()) }, attrs),
-	)
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
+	err = telemetryBuilder.RegisterProcessorBatchMetadataCardinalityCallback(func(_ context.Context, observer metric.Int64Observer) error {
+		observer.Observe(int64(currentMetadataCardinality()), attrs)
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
 
 	return &batchProcessorTelemetry{
 		exportCtx:        context.Background(),
-		detailed:         set.MetricsLevel == configtelemetry.LevelDetailed,
 		telemetryBuilder: telemetryBuilder,
 		processorAttr:    attrs,
 	}, nil

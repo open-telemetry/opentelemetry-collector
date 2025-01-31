@@ -81,7 +81,11 @@ may become valid after a change to the validation rules.
 The following are explicitly considered to be breaking changes:
 * **Modifying struct tags related to serialization**. Struct tags used to configure serialization mechanisms (`yaml:`, 
 `mapstructure:`, etc) are part of the structure definition and must maintain compatibility to the same extent as the 
-structure.
+structure. However, changes are allowed when tag modifications produce a
+functionally-equivalent result when serializing or deserializing the structure.
+For example, adding a tag to a field so it will not be emitted during serialization
+if it has a default value would not alter its value if the serialized representation
+were again deserialized, so such a change would be permitted.
 * **Making validation rules more strict**. A valid configuration struct as defined by its `Validate` method return value
 must continue to be valid after a change to the validation rules, except when the configuration struct would cause an error
 on its intended usage (e.g. when calling a method or when passed to any method or function in any module under opentelemetry-collector).

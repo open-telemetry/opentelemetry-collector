@@ -22,6 +22,6 @@ func TestNewNopTelemetrySettings(t *testing.T) {
 	assert.NotPanics(t, func() {
 		nts.MeterProvider.Meter("test")
 	})
-	assert.Equal(t, configtelemetry.LevelNone, nts.MetricsLevel)
+	assert.Equal(t, configtelemetry.LevelNone, nts.MetricsLevel) //nolint:staticcheck
 	assert.Equal(t, 0, nts.Resource.Attributes().Len())
 }

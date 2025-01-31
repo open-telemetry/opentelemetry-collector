@@ -24,6 +24,8 @@ func (req *profilesRequest) MergeSplit(_ context.Context, cfg exporterbatcher.Ma
 	}
 
 	if cfg.MaxSizeItems == 0 {
+		req.setCachedItemsCount(req.ItemsCount() + req2.ItemsCount())
+		req2.setCachedItemsCount(0)
 		req2.pd.ResourceProfiles().MoveAndAppendTo(req.pd.ResourceProfiles())
 		return []exporterhelper.Request{req}, nil
 	}
@@ -43,6 +45,8 @@ func (req *profilesRequest) MergeSplit(_ context.Context, cfg exporterbatcher.Ma
 			if destReq == nil {
 				destReq = srcReq
 			} else {
+				destReq.setCachedItemsCount(destReq.ItemsCount() + srcCount)
+				srcReq.setCachedItemsCount(0)
 				srcReq.pd.ResourceProfiles().MoveAndAppendTo(destReq.pd.ResourceProfiles())
 			}
 			capacityLeft -= srcCount
@@ -51,13 +55,17 @@ func (req *profilesRequest) MergeSplit(_ context.Context, cfg exporterbatcher.Ma
 
 		for {
 			extractedProfiles := extractProfiles(srcReq.pd, capacityLeft)
-			if extractedProfiles.SampleCount() == 0 {
+			extractedCount := extractedProfiles.SampleCount()
+			if extractedCount == 0 {
 				break
 			}
+
 			capacityLeft -= extractedProfiles.SampleCount()
 			if destReq == nil {
-				destReq = &profilesRequest{pd: extractedProfiles, pusher: srcReq.pusher}
+				destReq = newProfilesRequest(extractedProfiles, srcReq.pusher).(*profilesRequest)
 			} else {
+				destReq.setCachedItemsCount(destReq.ItemsCount() + extractedCount)
+				srcReq.setCachedItemsCount(srcReq.ItemsCount() - extractedCount)
 				extractedProfiles.ResourceProfiles().MoveAndAppendTo(destReq.pd.ResourceProfiles())
 			}
 			// Create new batch once capacity is reached.

@@ -70,18 +70,16 @@ func (qCfg *QueueConfig) Validate() error {
 
 type QueueSender struct {
 	BaseSender[internal.Request]
-	queue          exporterqueue.Queue[internal.Request]
-	numConsumers   int
-	traceAttribute attribute.KeyValue
-	batcher        queue.Batcher
-	consumers      *queue.Consumers[internal.Request]
+	queue        exporterqueue.Queue[internal.Request]
+	numConsumers int
+	batcher      queue.Batcher
+	consumers    *queue.Consumers[internal.Request]
+  
+  enabled bool
 
-	enabled bool
-
-	obsrep      *ObsReport
-	exporterID  component.ID
-	logger      *zap.Logger
-	shutdownFns []component.ShutdownFunc
+	obsrep     *ObsReport
+	exporterID component.ID
+	logger     *zap.Logger
 }
 
 func NewQueueSender(
@@ -94,13 +92,12 @@ func NewQueueSender(
 	enabled bool,
 ) *QueueSender {
 	qs := &QueueSender{
-		queue:          q,
-		numConsumers:   numConsumers,
-		traceAttribute: attribute.String(ExporterKey, set.ID.String()),
-		obsrep:         obsrep,
-		exporterID:     set.ID,
-		logger:         set.Logger,
-		enabled:        enabled,
+		queue:        q,
+		numConsumers: numConsumers,
+		obsrep:       obsrep,
+		exporterID:   set.ID,
+		logger:       set.Logger,
+    enabled:        enabled,
 	}
 
 	exportFunc := func(ctx context.Context, req internal.Request) error {
@@ -135,27 +132,18 @@ func (qs *QueueSender) Start(ctx context.Context, host component.Host) error {
 		}
 	}
 
+	exporterAttr := attribute.String(ExporterKey, qs.exporterID.String())
 	dataTypeAttr := attribute.String(DataTypeKey, qs.obsrep.Signal.String())
 
-	reg1, err1 := qs.obsrep.TelemetryBuilder.InitExporterQueueSize(func() int64 { return qs.queue.Size() },
-		metric.WithAttributeSet(attribute.NewSet(qs.traceAttribute, dataTypeAttr)))
-
-	if reg1 != nil {
-		qs.shutdownFns = append(qs.shutdownFns, func(context.Context) error {
-			return reg1.Unregister()
-		})
-	}
-
-	reg2, err2 := qs.obsrep.TelemetryBuilder.InitExporterQueueCapacity(func() int64 { return qs.queue.Capacity() },
-		metric.WithAttributeSet(attribute.NewSet(qs.traceAttribute)))
-
-	if reg2 != nil {
-		qs.shutdownFns = append(qs.shutdownFns, func(context.Context) error {
-			return reg2.Unregister()
-		})
-	}
-
-	return errors.Join(err1, err2)
+	return errors.Join(
+		qs.obsrep.TelemetryBuilder.RegisterExporterQueueSizeCallback(func(_ context.Context, o metric.Int64Observer) error {
+			o.Observe(qs.queue.Size(), metric.WithAttributeSet(attribute.NewSet(exporterAttr, dataTypeAttr)))
+			return nil
+		}),
+		qs.obsrep.TelemetryBuilder.RegisterExporterQueueCapacityCallback(func(_ context.Context, o metric.Int64Observer) error {
+			o.Observe(qs.queue.Capacity(), metric.WithAttributeSet(attribute.NewSet(exporterAttr)))
+			return nil
+		}))
 }
 
 // Shutdown is invoked during service shutdown.
@@ -163,13 +151,8 @@ func (qs *QueueSender) Shutdown(ctx context.Context) error {
 	// Stop the queue and consumers, this will drain the queue and will call the retry (which is stopped) that will only
 	// try once every request.
 
-	for _, fn := range qs.shutdownFns {
-		err := fn(ctx)
-		if err != nil {
-			qs.logger.Warn("Error while shutting down QueueSender", zap.Error(err))
-		}
-	}
-	qs.shutdownFns = nil
+	// At the end, make sure metrics are un-registered since we want to free this object.
+	defer qs.obsrep.TelemetryBuilder.Shutdown()
 
 	if err := qs.queue.Shutdown(ctx); err != nil {
 		return err
@@ -177,7 +160,8 @@ func (qs *QueueSender) Shutdown(ctx context.Context) error {
 	if usePullingBasedExporterQueueBatcher.IsEnabled() {
 		return qs.batcher.Shutdown(ctx)
 	}
-	return qs.consumers.Shutdown(ctx)
+	err := qs.consumers.Shutdown(ctx)
+	return err
 }
 
 // send implements the requestSender interface. It puts the request in the queue.
@@ -188,13 +172,13 @@ func (qs *QueueSender) Send(ctx context.Context, req internal.Request) error {
 		ctx = context.WithoutCancel(ctx)
 	}
 
-	span := trace.SpanFromContext(ctx)
-	if err := qs.queue.Offer(ctx, req); err != nil {
-		span.AddEvent("Failed to enqueue item.", trace.WithAttributes(qs.traceAttribute))
+	span := trace.SpanFromContext(c)
+	if err := qs.queue.Offer(c, req); err != nil {
+		span.AddEvent("Failed to enqueue item.")
 		return err
 	}
 
-	span.AddEvent("Enqueued item.", trace.WithAttributes(qs.traceAttribute))
+	span.AddEvent("Enqueued item.")
 	return nil
 }
 
