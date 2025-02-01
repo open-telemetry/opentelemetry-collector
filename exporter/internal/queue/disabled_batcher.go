@@ -30,11 +30,11 @@ func (qb *DisabledBatcher) Start(_ context.Context, _ component.Host) error {
 	go func() {
 		defer qb.stopWG.Done()
 		for {
-			_, req, done, ok := qb.queue.Read(context.Background())
+			ctx, req, done, ok := qb.queue.Read(context.Background())
 			if !ok {
 				return
 			}
-			qb.flush(context.Background(), req, []exporterqueue.DoneCallback{done})
+			qb.flush(ctx, req, []exporterqueue.DoneCallback{done})
 		}
 	}()
 	return nil
