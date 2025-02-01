@@ -19,7 +19,7 @@ type DefaultBatcher struct {
 	currentBatchMu sync.Mutex
 	currentBatch   *batch
 	timer          *time.Timer
-	shutdownCh     chan bool
+	shutdownCh     chan struct{}
 }
 
 func (qb *DefaultBatcher) resetTimer() {
@@ -37,7 +37,7 @@ func (qb *DefaultBatcher) startReadingFlushingGoroutine() {
 			// Read() blocks until the queue is non-empty or until the queue is stopped.
 			idx, ctx, req, ok := qb.queue.Read(context.Background())
 			if !ok {
-				qb.shutdownCh <- true
+				close(qb.shutdownCh)
 				return
 			}
 
@@ -142,7 +142,7 @@ func (qb *DefaultBatcher) Start(_ context.Context, _ component.Host) error {
 		return nil
 	}
 
-	qb.shutdownCh = make(chan bool, 1)
+	qb.shutdownCh = make(chan struct{}, 1)
 
 	if qb.batchCfg.FlushTimeout == 0 {
 		qb.timer = time.NewTimer(math.MaxInt)
