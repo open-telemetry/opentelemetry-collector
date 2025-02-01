@@ -11,7 +11,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/internal"
@@ -67,43 +66,42 @@ func (qCfg *QueueConfig) Validate() error {
 }
 
 type QueueSender struct {
-	BaseSender[internal.Request]
-	queue        exporterqueue.Queue[internal.Request]
-	numConsumers int
-	batcher      queue.Batcher
-	consumers    *queue.Consumers[internal.Request]
-	exporterID   component.ID
-	logger       *zap.Logger
+	queue     exporterqueue.Queue[internal.Request]
+	batcher   queue.Batcher
+	consumers *queue.Consumers[internal.Request]
 }
 
 func NewQueueSender(
-	q exporterqueue.Queue[internal.Request],
-	set exporter.Settings,
-	numConsumers int,
+	qf exporterqueue.Factory[internal.Request],
+	qSet exporterqueue.Settings,
+	qCfg exporterqueue.Config,
+	bCfg exporterbatcher.Config,
 	exportFailureMessage string,
-	batcherCfg exporterbatcher.Config,
-) *QueueSender {
+	next Sender[internal.Request],
+) (*QueueSender, error) {
+	q, err := newObsQueue(qSet, qf(context.Background(), qSet, qCfg))
+	if err != nil {
+		return nil, err
+	}
+
 	qs := &QueueSender{
-		queue:        q,
-		numConsumers: numConsumers,
-		exporterID:   set.ID,
-		logger:       set.Logger,
+		queue: q,
 	}
 
 	exportFunc := func(ctx context.Context, req internal.Request) error {
-		err := qs.NextSender.Send(ctx, req)
+		err := next.Send(ctx, req)
 		if err != nil {
-			set.Logger.Error("Exporting failed. Dropping data."+exportFailureMessage,
+			qSet.ExporterSettings.Logger.Error("Exporting failed. Dropping data."+exportFailureMessage,
 				zap.Error(err), zap.Int("dropped_items", req.ItemsCount()))
 		}
 		return err
 	}
 	if usePullingBasedExporterQueueBatcher.IsEnabled() {
-		qs.batcher, _ = queue.NewBatcher(batcherCfg, q, exportFunc, numConsumers)
+		qs.batcher, _ = queue.NewBatcher(bCfg, q, exportFunc, qCfg.NumConsumers)
 	} else {
-		qs.consumers = queue.NewQueueConsumers[internal.Request](q, numConsumers, exportFunc)
+		qs.consumers = queue.NewQueueConsumers[internal.Request](q, qCfg.NumConsumers, exportFunc)
 	}
-	return qs
+	return qs, nil
 }
 
 // Start is invoked during service startup.

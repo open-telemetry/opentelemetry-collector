@@ -33,8 +33,14 @@ var (
 	}()
 )
 
-func newNoopObsrepSender(*ObsReport) Sender[internal.Request] {
-	return &BaseSender[internal.Request]{}
+type noopSender struct {
+	component.StartFunc
+	component.ShutdownFunc
+	SendFunc[internal.Request]
+}
+
+func newNoopObsrepSender(_ *ObsReport, next Sender[internal.Request]) Sender[internal.Request] {
+	return &noopSender{SendFunc: next.Send}
 }
 
 func TestBaseExporter(t *testing.T) {
