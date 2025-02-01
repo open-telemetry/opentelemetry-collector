@@ -28,10 +28,6 @@ func TestDefaultBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T) {
 		maxWorkers int
 	}{
 		{
-			name:       "infinate_workers",
-			maxWorkers: 0,
-		},
-		{
 			name:       "one_worker",
 			maxWorkers: 1,
 		},
@@ -89,10 +85,6 @@ func TestDefaultBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 		name       string
 		maxWorkers int
 	}{
-		{
-			name:       "infinate_workers",
-			maxWorkers: 0,
-		},
 		{
 			name:       "one_worker",
 			maxWorkers: 1,
@@ -162,10 +154,6 @@ func TestDefaultBatcher_NoSplit_WithTimeout(t *testing.T) {
 		maxWorkers int
 	}{
 		{
-			name:       "infinate_workers",
-			maxWorkers: 0,
-		},
-		{
 			name:       "one_worker",
 			maxWorkers: 1,
 		},
@@ -230,10 +218,6 @@ func TestDefaultBatcher_Split_TimeoutDisabled(t *testing.T) {
 		name       string
 		maxWorkers int
 	}{
-		{
-			name:       "infinate_workers",
-			maxWorkers: 0,
-		},
 		{
 			name:       "one_worker",
 			maxWorkers: 1,

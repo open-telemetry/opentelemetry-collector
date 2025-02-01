@@ -25,10 +25,8 @@ type Batcher interface {
 }
 
 type BaseBatcher struct {
-	batchCfg exporterbatcher.Config
-	queue    exporterqueue.Queue[internal.Request]
-	// TODO: Remove when the -1 hack for testing is removed.
-	maxWorkers int
+	batchCfg   exporterbatcher.Config
+	queue      exporterqueue.Queue[internal.Request]
 	workerPool chan struct{}
 	exportFunc func(ctx context.Context, req internal.Request) error
 	stopWG     sync.WaitGroup
@@ -50,17 +48,13 @@ func newBaseBatcher(batchCfg exporterbatcher.Config,
 	exportFunc func(ctx context.Context, req internal.Request) error,
 	maxWorkers int,
 ) BaseBatcher {
-	var workerPool chan struct{}
-	if maxWorkers > 0 {
-		workerPool = make(chan struct{}, maxWorkers)
-		for i := 0; i < maxWorkers; i++ {
-			workerPool <- struct{}{}
-		}
+	workerPool := make(chan struct{}, maxWorkers)
+	for i := 0; i < maxWorkers; i++ {
+		workerPool <- struct{}{}
 	}
 	return BaseBatcher{
 		batchCfg:   batchCfg,
 		queue:      queue,
-		maxWorkers: maxWorkers,
 		workerPool: workerPool,
 		exportFunc: exportFunc,
 		stopWG:     sync.WaitGroup{},
@@ -70,17 +64,13 @@ func newBaseBatcher(batchCfg exporterbatcher.Config,
 // flush starts a goroutine that calls exportFunc. It blocks until a worker is available if necessary.
 func (qb *BaseBatcher) flush(ctx context.Context, req internal.Request, dones []exporterqueue.DoneCallback) {
 	qb.stopWG.Add(1)
-	if qb.workerPool != nil {
-		<-qb.workerPool
-	}
+	<-qb.workerPool
 	go func() {
 		defer qb.stopWG.Done()
 		err := qb.exportFunc(ctx, req)
 		for _, done := range dones {
 			done(err)
 		}
-		if qb.workerPool != nil {
-			qb.workerPool <- struct{}{}
-		}
+		qb.workerPool <- struct{}{}
 	}()
 }
