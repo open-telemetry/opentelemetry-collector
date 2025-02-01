@@ -70,10 +70,8 @@ func (qCfg *QueueConfig) Validate() error {
 
 type QueueSender struct {
 	BaseSender[internal.Request]
-	queue        exporterqueue.Queue[internal.Request]
-	numConsumers int
-	batcher      queue.Batcher
-	consumers    *queue.Consumers[internal.Request]
+	queue   exporterqueue.Queue[internal.Request]
+	batcher queue.Batcher
 
 	obsrep     *ObsReport
 	exporterID component.ID
@@ -89,11 +87,10 @@ func NewQueueSender(
 	batcherCfg exporterbatcher.Config,
 ) *QueueSender {
 	qs := &QueueSender{
-		queue:        q,
-		numConsumers: numConsumers,
-		obsrep:       obsrep,
-		exporterID:   set.ID,
-		logger:       set.Logger,
+		queue:      q,
+		obsrep:     obsrep,
+		exporterID: set.ID,
+		logger:     set.Logger,
 	}
 
 	exportFunc := func(ctx context.Context, req internal.Request) error {
@@ -104,11 +101,7 @@ func NewQueueSender(
 		}
 		return err
 	}
-	if usePullingBasedExporterQueueBatcher.IsEnabled() {
-		qs.batcher, _ = queue.NewBatcher(batcherCfg, q, exportFunc, numConsumers)
-	} else {
-		qs.consumers = queue.NewQueueConsumers[internal.Request](q, numConsumers, exportFunc)
-	}
+	qs.batcher, _ = queue.NewBatcher(batcherCfg, q, exportFunc, numConsumers)
 	return qs
 }
 
@@ -118,14 +111,8 @@ func (qs *QueueSender) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 
-	if usePullingBasedExporterQueueBatcher.IsEnabled() {
-		if err := qs.batcher.Start(ctx, host); err != nil {
-			return err
-		}
-	} else {
-		if err := qs.consumers.Start(ctx, host); err != nil {
-			return err
-		}
+	if err := qs.batcher.Start(ctx, host); err != nil {
+		return err
 	}
 
 	exporterAttr := attribute.String(ExporterKey, qs.exporterID.String())
@@ -150,17 +137,13 @@ func (qs *QueueSender) Shutdown(ctx context.Context) error {
 	// At the end, make sure metrics are un-registered since we want to free this object.
 	defer qs.obsrep.TelemetryBuilder.Shutdown()
 
-	if err := qs.queue.Shutdown(ctx); err != nil {
-		return err
-	}
-	if usePullingBasedExporterQueueBatcher.IsEnabled() {
-		return qs.batcher.Shutdown(ctx)
-	}
-	err := qs.consumers.Shutdown(ctx)
-	return err
+	return errors.Join(
+		qs.queue.Shutdown(ctx),
+		qs.batcher.Shutdown(ctx),
+	)
 }
 
-// send implements the requestSender interface. It puts the request in the queue.
+// Send implements the requestSender interface. It puts the request in the queue.
 func (qs *QueueSender) Send(ctx context.Context, req internal.Request) error {
 	// Prevent cancellation and deadline to propagate to the context stored in the queue.
 	// The grpc/http based receivers will cancel the request context after this function returns.
