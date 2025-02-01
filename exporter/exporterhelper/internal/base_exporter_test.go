@@ -63,8 +63,8 @@ func TestBaseExporterWithOptions(t *testing.T) {
 				WithTimeout(NewDefaultTimeoutConfig()),
 			)
 			require.NoError(t, err)
-			require.Equal(t, want, be.Start(context.Background(), componenttest.NewNopHost()))
-			require.Equal(t, want, be.Shutdown(context.Background()))
+			require.ErrorIs(t, want, be.Start(context.Background(), componenttest.NewNopHost()))
+			require.ErrorIs(t, want, be.Shutdown(context.Background()))
 		})
 	}
 	runTest("enable_queue_batcher", true)

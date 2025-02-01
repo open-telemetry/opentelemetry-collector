@@ -43,7 +43,7 @@ type BatchSender struct {
 	stopped            *atomic.Bool
 }
 
-// newBatchSender returns a new batch consumer component.
+// NewBatchSender returns a new batch consumer component.
 func NewBatchSender(cfg exporterbatcher.Config, set exporter.Settings) *BatchSender {
 	bs := &BatchSender{
 		activeBatch:        newEmptyBatch(),
@@ -168,7 +168,7 @@ func (bs *BatchSender) sendMergeSplitBatch(ctx context.Context, req internal.Req
 	if len(reqs) == 1 {
 		bs.activeBatch.requestsBlocked++
 	} else {
-		// if there was a split, we want to make sure that bs.activeRequests is released once all of the parts are sent instead of using batch.requestsBlocked
+		// if there was a split, we want to make sure that batchSender.activeRequests is released once all of the parts are sent instead of using batch.requestsBlocked
 		defer bs.activeRequests.Add(-1)
 	}
 	if len(reqs) == 1 || bs.activeBatch.request != nil {
