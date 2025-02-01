@@ -36,12 +36,11 @@ func (qc *Consumers[T]) Start(_ context.Context, _ component.Host) error {
 			startWG.Done()
 			defer qc.stopWG.Done()
 			for {
-				index, ctx, req, ok := qc.queue.Read(context.Background())
+				ctx, req, done, ok := qc.queue.Read(context.Background())
 				if !ok {
 					return
 				}
-				consumeErr := qc.consumeFunc(ctx, req)
-				qc.queue.OnProcessingFinished(index, consumeErr)
+				done(qc.consumeFunc(ctx, req))
 			}
 		}()
 	}

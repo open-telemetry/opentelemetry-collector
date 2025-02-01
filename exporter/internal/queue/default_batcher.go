@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/internal"
 )
 
@@ -35,7 +36,7 @@ func (qb *DefaultBatcher) startReadingFlushingGoroutine() {
 		defer qb.stopWG.Done()
 		for {
 			// Read() blocks until the queue is non-empty or until the queue is stopped.
-			idx, ctx, req, ok := qb.queue.Read(context.Background())
+			ctx, req, done, ok := qb.queue.Read(context.Background())
 			if !ok {
 				qb.shutdownCh <- true
 				return
@@ -54,7 +55,7 @@ func (qb *DefaultBatcher) startReadingFlushingGoroutine() {
 				}
 
 				if mergeSplitErr != nil || reqList == nil {
-					qb.queue.OnProcessingFinished(idx, mergeSplitErr)
+					done(mergeSplitErr)
 					qb.currentBatchMu.Unlock()
 					continue
 				}
@@ -64,19 +65,15 @@ func (qb *DefaultBatcher) startReadingFlushingGoroutine() {
 					qb.currentBatch = nil
 					qb.currentBatchMu.Unlock()
 					for i := 0; i < len(reqList); i++ {
-						qb.flush(batch{
-							req:     reqList[i],
-							ctx:     ctx,
-							idxList: []uint64{idx},
-						})
+						qb.flush(ctx, reqList[i], []exporterqueue.DoneCallback{done})
 						// TODO: handle partial failure
 					}
 					qb.resetTimer()
 				} else {
 					qb.currentBatch = &batch{
-						req:     reqList[0],
-						ctx:     ctx,
-						idxList: []uint64{idx},
+						req:   reqList[0],
+						ctx:   ctx,
+						dones: []exporterqueue.DoneCallback{done},
 					}
 					qb.currentBatchMu.Unlock()
 				}
@@ -84,22 +81,22 @@ func (qb *DefaultBatcher) startReadingFlushingGoroutine() {
 				if qb.currentBatch == nil || qb.currentBatch.req == nil {
 					qb.resetTimer()
 					qb.currentBatch = &batch{
-						req:     req,
-						ctx:     ctx,
-						idxList: []uint64{idx},
+						req:   req,
+						ctx:   ctx,
+						dones: []exporterqueue.DoneCallback{done},
 					}
 				} else {
 					// TODO: consolidate implementation for the cases where MaxSizeConfig is specified and the case where it is not specified
 					mergedReq, mergeErr := qb.currentBatch.req.MergeSplit(qb.currentBatch.ctx, qb.batchCfg.MaxSizeConfig, req)
 					if mergeErr != nil {
-						qb.queue.OnProcessingFinished(idx, mergeErr)
+						done(mergeErr)
 						qb.currentBatchMu.Unlock()
 						continue
 					}
 					qb.currentBatch = &batch{
-						req:     mergedReq[0],
-						ctx:     qb.currentBatch.ctx,
-						idxList: append(qb.currentBatch.idxList, idx),
+						req:   mergedReq[0],
+						ctx:   qb.currentBatch.ctx,
+						dones: append(qb.currentBatch.dones, done),
 					}
 				}
 
@@ -109,7 +106,7 @@ func (qb *DefaultBatcher) startReadingFlushingGoroutine() {
 					qb.currentBatchMu.Unlock()
 
 					// flush() blocks until successfully started a goroutine for flushing.
-					qb.flush(batchToFlush)
+					qb.flush(batchToFlush.ctx, batchToFlush.req, batchToFlush.dones)
 					qb.resetTimer()
 				} else {
 					qb.currentBatchMu.Unlock()
@@ -168,7 +165,7 @@ func (qb *DefaultBatcher) flushCurrentBatchIfNecessary() {
 	qb.currentBatchMu.Unlock()
 
 	// flush() blocks until successfully started a goroutine for flushing.
-	qb.flush(batchToFlush)
+	qb.flush(batchToFlush.ctx, batchToFlush.req, batchToFlush.dones)
 	qb.resetTimer()
 }
 

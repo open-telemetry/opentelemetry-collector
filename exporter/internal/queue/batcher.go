@@ -14,9 +14,9 @@ import (
 )
 
 type batch struct {
-	ctx     context.Context
-	req     internal.Request
-	idxList []uint64
+	ctx   context.Context
+	req   internal.Request
+	dones []exporterqueue.DoneCallback
 }
 
 // Batcher is in charge of reading items from the queue and send them out asynchronously.
@@ -68,16 +68,16 @@ func newBaseBatcher(batchCfg exporterbatcher.Config,
 }
 
 // flush starts a goroutine that calls exportFunc. It blocks until a worker is available if necessary.
-func (qb *BaseBatcher) flush(batchToFlush batch) {
+func (qb *BaseBatcher) flush(ctx context.Context, req internal.Request, dones []exporterqueue.DoneCallback) {
 	qb.stopWG.Add(1)
 	if qb.workerPool != nil {
 		<-qb.workerPool
 	}
 	go func() {
 		defer qb.stopWG.Done()
-		err := qb.exportFunc(batchToFlush.ctx, batchToFlush.req)
-		for _, idx := range batchToFlush.idxList {
-			qb.queue.OnProcessingFinished(idx, err)
+		err := qb.exportFunc(ctx, req)
+		for _, done := range dones {
+			done(err)
 		}
 		if qb.workerPool != nil {
 			qb.workerPool <- true
