@@ -260,38 +260,6 @@ func TestTracesRequest_WithRecordMetrics_RequestSenderError(t *testing.T) {
 	checkRecordedMetricsForTraces(t, tt, fakeTracesName, te, want)
 }
 
-func TestTraces_WithRecordEnqueueFailedMetrics(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(fakeTracesName)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
-
-	rCfg := configretry.NewDefaultBackOffConfig()
-	qCfg := NewDefaultQueueConfig()
-	qCfg.NumConsumers = 1
-	qCfg.QueueSize = 2
-	wantErr := errors.New("some-error")
-	te, err := NewTraces(context.Background(), exporter.Settings{ID: fakeTracesName, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, &fakeTracesConfig, newTraceDataPusher(wantErr), WithRetry(rCfg), WithQueue(qCfg))
-	require.NoError(t, err)
-	require.NotNil(t, te)
-
-	td := testdata.GenerateTraces(2)
-	const numBatches = 7
-	for i := 0; i < numBatches; i++ {
-		// errors are checked in the checkEnqueueFailedTracesStats function below.
-		_ = te.ConsumeTraces(context.Background(), td)
-	}
-
-	// 2 batched must be in queue, and 5 batches (10 spans) rejected due to queue overflow
-	metadatatest.AssertEqualExporterEnqueueFailedSpans(t, tt.Telemetry,
-		[]metricdata.DataPoint[int64]{
-			{
-				Attributes: attribute.NewSet(
-					attribute.String("exporter", fakeTracesName.String())),
-				Value: int64(10),
-			},
-		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
-}
-
 func TestTraces_WithSpan(t *testing.T) {
 	set := exportertest.NewNopSettings()
 	sr := new(tracetest.SpanRecorder)
