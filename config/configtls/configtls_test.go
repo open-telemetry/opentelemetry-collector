@@ -456,7 +456,7 @@ func overwriteClientCA(t *testing.T, targetFilePath string, testdataFileName str
 }
 
 func createTempClientCaFile(t *testing.T) string {
-	tmpCa, err := os.CreateTemp("", "ca-tmp.crt")
+	tmpCa, err := os.CreateTemp(t.TempDir(), "ca-tmp.crt")
 	require.NoError(t, err)
 	tmpCaPath, err := filepath.Abs(tmpCa.Name())
 	assert.NoError(t, err)
@@ -533,11 +533,11 @@ func TestCertificateReload(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// Copy certs into a temp dir so we can safely modify them
-			certFile, err := os.CreateTemp("", "cert")
+			certFile, err := os.CreateTemp(t.TempDir(), "cert")
 			require.NoError(t, err)
 			defer os.Remove(certFile.Name())
 
-			keyFile, err := os.CreateTemp("", "key")
+			keyFile, err := os.CreateTemp(t.TempDir(), "key")
 			require.NoError(t, err)
 			defer os.Remove(keyFile.Name())
 

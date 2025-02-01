@@ -50,7 +50,7 @@ func answerGet(w http.ResponseWriter, _ *http.Request) {
 
 // Generate a self signed certificate specific for the tests. Based on
 // https://go.dev/src/crypto/tls/generate_cert.go
-func generateCertificate(hostname string) (cert string, key string, err error) {
+func generateCertificate(t *testing.T, hostname string) (cert string, key string, err error) {
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		return "", "", fmt.Errorf("Failed to generate private key: %w", err)
@@ -83,7 +83,7 @@ func generateCertificate(hostname string) (cert string, key string, err error) {
 		return "", "", fmt.Errorf("Failed to create certificate: %w", err)
 	}
 
-	certOut, err := os.CreateTemp("", "cert*.pem")
+	certOut, err := os.CreateTemp(t.TempDir(), "cert*.pem")
 	if err != nil {
 		return "", "", fmt.Errorf("Failed to open cert.pem for writing: %w", err)
 	}
@@ -96,7 +96,7 @@ func generateCertificate(hostname string) (cert string, key string, err error) {
 		return "", "", fmt.Errorf("Error closing cert.pem: %w", err)
 	}
 
-	keyOut, err := os.CreateTemp("", "key*.pem")
+	keyOut, err := os.CreateTemp(t.TempDir(), "key*.pem")
 	if err != nil {
 		return "", "", fmt.Errorf("Failed to open key.pem for writing: %w", err)
 	}
@@ -127,10 +127,10 @@ func TestFunctionalityDownloadFileHTTP(t *testing.T) {
 }
 
 func TestFunctionalityDownloadFileHTTPS(t *testing.T) {
-	certPath, keyPath, err := generateCertificate("localhost")
+	certPath, keyPath, err := generateCertificate(t, "localhost")
 	require.NoError(t, err)
 
-	invalidCert, err := os.CreateTemp("", "cert*.crt")
+	invalidCert, err := os.CreateTemp(t.TempDir(), "cert*.crt")
 	require.NoError(t, err)
 	_, err = invalidCert.Write([]byte{0, 1, 2})
 	require.NoError(t, err)
