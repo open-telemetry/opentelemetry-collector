@@ -47,6 +47,8 @@ var (
 
 func TestMetricsRequest(t *testing.T) {
 	mr := newMetricsRequest(testdata.GenerateMetrics(1), nil)
+	assert.Equal(t, 2, mr.ItemsCount())
+	assert.Equal(t, 183, mr.ByteSize())
 
 	metricsErr := consumererror.NewMetrics(errors.New("some error"), pmetric.NewMetrics())
 	assert.EqualValues(

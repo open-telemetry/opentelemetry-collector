@@ -72,6 +72,10 @@ func (req *tracesRequest) setCachedItemsCount(count int) {
 	req.cachedItemsCount = count
 }
 
+func (req *tracesRequest) ByteSize() int {
+	return tracesMarshaler.TracesSize(req.td)
+}
+
 type tracesExporter struct {
 	*internal.BaseExporter
 	consumer.Traces

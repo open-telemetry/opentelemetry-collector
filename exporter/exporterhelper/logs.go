@@ -72,6 +72,10 @@ func (req *logsRequest) setCachedItemsCount(count int) {
 	req.cachedItemsCount = count
 }
 
+func (req *logsRequest) ByteSize() int {
+	return logsMarshaler.LogsSize(req.ld)
+}
+
 type logsExporter struct {
 	*internal.BaseExporter
 	consumer.Logs

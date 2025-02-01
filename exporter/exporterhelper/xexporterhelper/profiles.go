@@ -75,6 +75,10 @@ func (req *profilesRequest) setCachedItemsCount(count int) {
 	req.cachedItemsCount = count
 }
 
+func (req *profilesRequest) ByteSize() int {
+	return profilesMarshaler.ProfilesSize(req.pd)
+}
+
 type profileExporter struct {
 	*internal.BaseExporter
 	xconsumer.Profiles
