@@ -84,7 +84,7 @@ func run(ymlPath string) error {
 		return fmt.Errorf("unable to create output test directory %q: %w", codeDir, err)
 	}
 	if md.Status != nil {
-		if md.Status.Class != "cmd" && md.Status.Class != "pkg" && !md.Status.NotComponent {
+		if md.Status.Class != "cmd" && md.Status.Class != "pkg" {
 			if err = generateFile(filepath.Join(tmplDir, "status.go.tmpl"),
 				filepath.Join(codeDir, "generated_status.go"), md, "metadata"); err != nil {
 				return err
