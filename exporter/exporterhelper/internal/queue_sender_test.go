@@ -502,14 +502,12 @@ func TestQueueSenderNoStartShutdown(t *testing.T) {
 			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
 			set := exportertest.NewNopSettings()
 			set.ID = exporterID
-			queue := exporterqueue.NewMemoryQueueFactory[internal.Request]()(
-				context.Background(),
-				exporterqueue.Settings{
-					Signal:           pipeline.SignalTraces,
-					ExporterSettings: set,
-				},
-				exporterqueue.NewDefaultConfig())
-			qs := NewQueueSender(queue, set, 1, "", exporterbatcher.NewDefaultConfig())
+			qSet := exporterqueue.Settings{
+				Signal:           pipeline.SignalTraces,
+				ExporterSettings: set,
+			}
+			qs, err := NewQueueSender(exporterqueue.NewMemoryQueueFactory[internal.Request](), qSet, exporterqueue.NewDefaultConfig(), exporterbatcher.NewDefaultConfig(), "")
+			require.NoError(t, err)
 			assert.NoError(t, qs.Shutdown(context.Background()))
 		})
 	}
