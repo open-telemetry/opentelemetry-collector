@@ -44,8 +44,7 @@ type BaseExporter struct {
 	Marshaler   exporterqueue.Marshaler[internal.Request]
 	Unmarshaler exporterqueue.Unmarshaler[internal.Request]
 
-	Set    exporter.Settings
-	Obsrep *ObsReport
+	Set exporter.Settings
 
 	// Message for the user to be added with an export failure message.
 	ExportFailureMessage string
@@ -79,8 +78,7 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSe
 		RetrySender:   &BaseSender[internal.Request]{},
 		TimeoutSender: &TimeoutSender{cfg: NewDefaultTimeoutConfig()},
 
-		Set:    set,
-		Obsrep: obsReport,
+		Set: set,
 	}
 
 	for _, op := range options {
@@ -91,14 +89,16 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSe
 	}
 
 	if be.queueCfg.Enabled {
-		q := be.queueFactory(
-			context.Background(),
-			exporterqueue.Settings{
-				Signal:           signal,
-				ExporterSettings: be.Set,
-			},
-			be.queueCfg)
-		be.QueueSender = NewQueueSender(q, be.Set, be.queueCfg.NumConsumers, be.ExportFailureMessage, be.Obsrep, be.BatcherCfg)
+		qSet := exporterqueue.Settings{
+			Signal:           signal,
+			ExporterSettings: be.Set,
+		}
+		q := be.queueFactory(context.Background(), qSet, be.queueCfg)
+		q, err = newObsQueue(qSet, q)
+		if err != nil {
+			return nil, err
+		}
+		be.QueueSender = NewQueueSender(q, be.Set, be.queueCfg.NumConsumers, be.ExportFailureMessage, be.BatcherCfg)
 	}
 
 	if !usePullingBasedExporterQueueBatcher.IsEnabled() && be.BatcherCfg.Enabled ||

@@ -7,8 +7,6 @@ import (
 	"context"
 	"errors"
 
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
@@ -74,10 +72,8 @@ type QueueSender struct {
 	numConsumers int
 	batcher      queue.Batcher
 	consumers    *queue.Consumers[internal.Request]
-
-	obsrep     *ObsReport
-	exporterID component.ID
-	logger     *zap.Logger
+	exporterID   component.ID
+	logger       *zap.Logger
 }
 
 func NewQueueSender(
@@ -85,13 +81,11 @@ func NewQueueSender(
 	set exporter.Settings,
 	numConsumers int,
 	exportFailureMessage string,
-	obsrep *ObsReport,
 	batcherCfg exporterbatcher.Config,
 ) *QueueSender {
 	qs := &QueueSender{
 		queue:        q,
 		numConsumers: numConsumers,
-		obsrep:       obsrep,
 		exporterID:   set.ID,
 		logger:       set.Logger,
 	}
@@ -119,36 +113,15 @@ func (qs *QueueSender) Start(ctx context.Context, host component.Host) error {
 	}
 
 	if usePullingBasedExporterQueueBatcher.IsEnabled() {
-		if err := qs.batcher.Start(ctx, host); err != nil {
-			return err
-		}
-	} else {
-		if err := qs.consumers.Start(ctx, host); err != nil {
-			return err
-		}
+		return qs.batcher.Start(ctx, host)
 	}
-
-	exporterAttr := attribute.String(ExporterKey, qs.exporterID.String())
-	dataTypeAttr := attribute.String(DataTypeKey, qs.obsrep.Signal.String())
-
-	return errors.Join(
-		qs.obsrep.TelemetryBuilder.RegisterExporterQueueSizeCallback(func(_ context.Context, o metric.Int64Observer) error {
-			o.Observe(qs.queue.Size(), metric.WithAttributeSet(attribute.NewSet(exporterAttr, dataTypeAttr)))
-			return nil
-		}),
-		qs.obsrep.TelemetryBuilder.RegisterExporterQueueCapacityCallback(func(_ context.Context, o metric.Int64Observer) error {
-			o.Observe(qs.queue.Capacity(), metric.WithAttributeSet(attribute.NewSet(exporterAttr)))
-			return nil
-		}))
+	return qs.consumers.Start(ctx, host)
 }
 
 // Shutdown is invoked during service shutdown.
 func (qs *QueueSender) Shutdown(ctx context.Context) error {
 	// Stop the queue and consumers, this will drain the queue and will call the retry (which is stopped) that will only
 	// try once every request.
-
-	// At the end, make sure metrics are un-registered since we want to free this object.
-	defer qs.obsrep.TelemetryBuilder.Shutdown()
 
 	if err := qs.queue.Shutdown(ctx); err != nil {
 		return err

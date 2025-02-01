@@ -11,9 +11,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/sdk/metric/metricdata"
-	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -22,7 +19,6 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/internal"
@@ -243,60 +239,6 @@ func TestQueuedRetryHappyPath(t *testing.T) {
 		runTest(tt.name+"_enable_queue_batcher", true, tt)
 		runTest(tt.name+"_disable_queue_batcher", false, tt)
 	}
-}
-
-func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
-	runTest := func(testName string, enableQueueBatcher bool) {
-		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
-			dataTypes := []pipeline.Signal{pipeline.SignalLogs, pipeline.SignalTraces, pipeline.SignalMetrics}
-			for _, dataType := range dataTypes {
-				tt, err := componenttest.SetupTelemetry(defaultID)
-				require.NoError(t, err)
-
-				qCfg := NewDefaultQueueConfig()
-				qCfg.NumConsumers = -1 // to make QueueMetricsReportedvery request go straight to the queue
-				rCfg := configretry.NewDefaultBackOffConfig()
-				set := exporter.Settings{ID: defaultID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}
-				be, err := NewBaseExporter(set, dataType, newObservabilityConsumerSender,
-					WithMarshaler(mockRequestMarshaler), WithUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
-					WithRetry(rCfg), WithQueue(qCfg))
-				require.NoError(t, err)
-				require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
-
-				metadatatest.AssertEqualExporterQueueCapacity(t, tt.Telemetry,
-					[]metricdata.DataPoint[int64]{
-						{
-							Attributes: attribute.NewSet(
-								attribute.String("exporter", defaultID.String())),
-							Value: int64(1000),
-						},
-					}, metricdatatest.IgnoreTimestamp())
-
-				for i := 0; i < 7; i++ {
-					require.NoError(t, be.Send(context.Background(), newErrorRequest()))
-				}
-				metadatatest.AssertEqualExporterQueueSize(t, tt.Telemetry,
-					[]metricdata.DataPoint[int64]{
-						{
-							Attributes: attribute.NewSet(
-								attribute.String("exporter", defaultID.String()),
-								attribute.String(DataTypeKey, dataType.String())),
-							Value: int64(7),
-						},
-					}, metricdatatest.IgnoreTimestamp())
-
-				assert.NoError(t, be.Shutdown(context.Background()))
-
-				// metrics should be unregistered at shutdown to prevent memory leak
-				var md metricdata.ResourceMetrics
-				require.NoError(t, tt.Reader.Collect(context.Background(), &md))
-				assert.Empty(t, md.ScopeMetrics)
-			}
-		})
-	}
-	runTest("enable_queue_batcher", true)
-	runTest("disable_queue_batcher", false)
 }
 
 func TestNoCancellationContext(t *testing.T) {
@@ -567,12 +509,7 @@ func TestQueueSenderNoStartShutdown(t *testing.T) {
 					ExporterSettings: set,
 				},
 				exporterqueue.NewDefaultConfig())
-			obsrep, err := NewObsReport(ObsReportSettings{
-				ExporterSettings: set,
-				Signal:           pipeline.SignalTraces,
-			})
-			require.NoError(t, err)
-			qs := NewQueueSender(queue, set, 1, "", obsrep, exporterbatcher.NewDefaultConfig())
+			qs := NewQueueSender(queue, set, 1, "", exporterbatcher.NewDefaultConfig())
 			assert.NoError(t, qs.Shutdown(context.Background()))
 		})
 	}
