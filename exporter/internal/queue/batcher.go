@@ -29,7 +29,7 @@ type BaseBatcher struct {
 	queue    exporterqueue.Queue[internal.Request]
 	// TODO: Remove when the -1 hack for testing is removed.
 	maxWorkers int
-	workerPool chan bool
+	workerPool chan struct{}
 	exportFunc func(ctx context.Context, req internal.Request) error
 	stopWG     sync.WaitGroup
 }
@@ -50,11 +50,11 @@ func newBaseBatcher(batchCfg exporterbatcher.Config,
 	exportFunc func(ctx context.Context, req internal.Request) error,
 	maxWorkers int,
 ) BaseBatcher {
-	var workerPool chan bool
+	var workerPool chan struct{}
 	if maxWorkers > 0 {
-		workerPool = make(chan bool, maxWorkers)
+		workerPool = make(chan struct{}, maxWorkers)
 		for i := 0; i < maxWorkers; i++ {
-			workerPool <- true
+			workerPool <- struct{}{}
 		}
 	}
 	return BaseBatcher{
@@ -80,7 +80,7 @@ func (qb *BaseBatcher) flush(ctx context.Context, req internal.Request, dones []
 			done(err)
 		}
 		if qb.workerPool != nil {
-			qb.workerPool <- true
+			qb.workerPool <- struct{}{}
 		}
 	}()
 }
