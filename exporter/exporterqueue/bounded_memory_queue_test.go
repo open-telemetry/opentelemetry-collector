@@ -74,11 +74,11 @@ func TestBoundedQueue(t *testing.T) {
 func TestShutdownWhileNotEmpty(t *testing.T) {
 	q := newBoundedMemoryQueue[string](memoryQueueSettings[string]{sizer: &requestSizer[string]{}, capacity: 1000})
 
-	assert.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 	for i := 0; i < 10; i++ {
 		require.NoError(t, q.Offer(context.Background(), strconv.FormatInt(int64(i), 10)))
 	}
-	assert.NoError(t, q.Shutdown(context.Background()))
+	require.NoError(t, q.Shutdown(context.Background()))
 
 	assert.Equal(t, int64(10), q.Size())
 	numConsumed := 0
@@ -115,16 +115,15 @@ func TestQueueUsage(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			q := newBoundedMemoryQueue[uint64](memoryQueueSettings[uint64]{sizer: tt.sizer, capacity: int64(100)})
 			consumed := &atomic.Int64{}
-			require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
-			ac := newAsyncConsumer(q, 1, func(context.Context, uint64) error {
+			ac := newConsumerQueue(q, 1, func(_ context.Context, _ uint64, done DoneCallback) {
 				consumed.Add(1)
-				return nil
+				done(nil)
 			})
+			require.NoError(t, ac.Start(context.Background(), componenttest.NewNopHost()))
 			for j := 0; j < 10; j++ {
 				require.NoError(t, q.Offer(context.Background(), uint64(10)))
 			}
-			assert.NoError(t, q.Shutdown(context.Background()))
-			assert.NoError(t, ac.Shutdown(context.Background()))
+			require.NoError(t, ac.Shutdown(context.Background()))
 			assert.Equal(t, int64(10), consumed.Load())
 		})
 	}
@@ -148,11 +147,11 @@ func TestBlockingQueueUsage(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			q := newBoundedMemoryQueue[uint64](memoryQueueSettings[uint64]{sizer: tt.sizer, capacity: int64(100), blocking: true})
 			consumed := &atomic.Int64{}
-			require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
-			ac := newAsyncConsumer(q, 10, func(context.Context, uint64) error {
+			ac := newConsumerQueue(q, 10, func(_ context.Context, _ uint64, done DoneCallback) {
 				consumed.Add(1)
-				return nil
+				done(nil)
 			})
+			require.NoError(t, ac.Start(context.Background(), componenttest.NewNopHost()))
 			wg := &sync.WaitGroup{}
 			for i := 0; i < 10; i++ {
 				wg.Add(1)
@@ -164,8 +163,7 @@ func TestBlockingQueueUsage(t *testing.T) {
 				}()
 			}
 			wg.Wait()
-			assert.NoError(t, q.Shutdown(context.Background()))
-			assert.NoError(t, ac.Shutdown(context.Background()))
+			require.NoError(t, ac.Shutdown(context.Background()))
 			assert.Equal(t, int64(1_000_000), consumed.Load())
 		})
 	}
@@ -173,51 +171,19 @@ func TestBlockingQueueUsage(t *testing.T) {
 
 func TestZeroSizeNoConsumers(t *testing.T) {
 	q := newBoundedMemoryQueue[string](memoryQueueSettings[string]{sizer: &requestSizer[string]{}, capacity: 0})
-
 	err := q.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
-
 	require.ErrorIs(t, q.Offer(context.Background(), "a"), ErrQueueIsFull) // in process
-
 	assert.NoError(t, q.Shutdown(context.Background()))
 }
 
-func consume[T any](q Queue[T], consumeFunc func(context.Context, T) error) bool {
+func consume[T any](q readableQueue[T], consumeFunc func(context.Context, T) error) bool {
 	ctx, req, done, ok := q.Read(context.Background())
 	if !ok {
 		return false
 	}
 	done(consumeFunc(ctx, req))
 	return true
-}
-
-type asyncConsumer struct {
-	stopWG sync.WaitGroup
-}
-
-func newAsyncConsumer[T any](q Queue[T], numConsumers int, consumeFunc func(context.Context, T) error) *asyncConsumer {
-	ac := &asyncConsumer{}
-
-	ac.stopWG.Add(numConsumers)
-	for i := 0; i < numConsumers; i++ {
-		go func() {
-			defer ac.stopWG.Done()
-			for {
-				ctx, req, done, ok := q.Read(context.Background())
-				if !ok {
-					return
-				}
-				done(consumeFunc(ctx, req))
-			}
-		}()
-	}
-	return ac
-}
-
-// Shutdown ensures that queue and all consumers are stopped.
-func (qc *asyncConsumer) Shutdown(_ context.Context) error {
-	qc.stopWG.Wait()
-	return nil
 }
 
 func BenchmarkOffer(b *testing.B) {
@@ -236,20 +202,20 @@ func BenchmarkOffer(b *testing.B) {
 	}
 	for _, tt := range tests {
 		b.Run(tt.name, func(b *testing.B) {
-			q := newBoundedMemoryQueue[uint64](memoryQueueSettings[uint64]{sizer: &requestSizer[uint64]{}, capacity: int64(10 * b.N)})
+			q := newBoundedMemoryQueue[uint64](memoryQueueSettings[uint64]{sizer: tt.sizer, capacity: int64(10 * b.N)})
 			consumed := &atomic.Int64{}
 			require.NoError(b, q.Start(context.Background(), componenttest.NewNopHost()))
-			ac := newAsyncConsumer(q, 1, func(context.Context, uint64) error {
+			ac := newConsumerQueue(q, 1, func(_ context.Context, _ uint64, done DoneCallback) {
 				consumed.Add(1)
-				return nil
+				done(nil)
 			})
+			require.NoError(b, ac.Start(context.Background(), componenttest.NewNopHost()))
 			b.ResetTimer()
 			b.ReportAllocs()
 			for j := 0; j < b.N; j++ {
 				require.NoError(b, q.Offer(context.Background(), uint64(10)))
 			}
-			assert.NoError(b, q.Shutdown(context.Background()))
-			assert.NoError(b, ac.Shutdown(context.Background()))
+			require.NoError(b, ac.Shutdown(context.Background()))
 			assert.Equal(b, int64(b.N), consumed.Load())
 		})
 	}

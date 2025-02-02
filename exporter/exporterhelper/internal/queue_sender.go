@@ -66,9 +66,8 @@ func (qCfg *QueueConfig) Validate() error {
 }
 
 type QueueSender struct {
-	queue     exporterqueue.Queue[internal.Request]
-	batcher   queue.Batcher
-	consumers *queue.Consumers[internal.Request]
+	queue   exporterqueue.Queue[internal.Request]
+	batcher component.Component
 }
 
 func NewQueueSender(
@@ -79,15 +78,6 @@ func NewQueueSender(
 	exportFailureMessage string,
 	next Sender[internal.Request],
 ) (*QueueSender, error) {
-	q, err := newObsQueue(qSet, qf(context.Background(), qSet, qCfg))
-	if err != nil {
-		return nil, err
-	}
-
-	qs := &QueueSender{
-		queue: q,
-	}
-
 	exportFunc := func(ctx context.Context, req internal.Request) error {
 		err := next.Send(ctx, req)
 		if err != nil {
@@ -96,12 +86,30 @@ func NewQueueSender(
 		}
 		return err
 	}
-	if usePullingBasedExporterQueueBatcher.IsEnabled() {
-		qs.batcher, _ = queue.NewBatcher(bCfg, q, exportFunc, qCfg.NumConsumers)
-	} else {
-		qs.consumers = queue.NewQueueConsumers[internal.Request](q, qCfg.NumConsumers, exportFunc)
+	if !usePullingBasedExporterQueueBatcher.IsEnabled() {
+		q, err := newObsQueue(qSet, qf(context.Background(), qSet, qCfg, func(ctx context.Context, req internal.Request, done exporterqueue.DoneCallback) {
+			done(exportFunc(ctx, req))
+		}))
+		if err != nil {
+			return nil, err
+		}
+		return &QueueSender{queue: q}, nil
 	}
-	return qs, nil
+
+	b, err := queue.NewBatcher(bCfg, exportFunc, qCfg.NumConsumers)
+	if err != nil {
+		return nil, err
+	}
+	// TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/12244
+	if bCfg.Enabled {
+		qCfg.NumConsumers = 1
+	}
+	q, err := newObsQueue(qSet, qf(context.Background(), qSet, qCfg, b.Consume))
+	if err != nil {
+		return nil, err
+	}
+
+	return &QueueSender{queue: q, batcher: b}, nil
 }
 
 // Start is invoked during service startup.
@@ -113,25 +121,22 @@ func (qs *QueueSender) Start(ctx context.Context, host component.Host) error {
 	if usePullingBasedExporterQueueBatcher.IsEnabled() {
 		return qs.batcher.Start(ctx, host)
 	}
-	return qs.consumers.Start(ctx, host)
+
+	return nil
 }
 
 // Shutdown is invoked during service shutdown.
 func (qs *QueueSender) Shutdown(ctx context.Context) error {
-	// Stop the queue and consumers, this will drain the queue and will call the retry (which is stopped) that will only
+	// Stop the queue and batcher, this will drain the queue and will call the retry (which is stopped) that will only
 	// try once every request.
-
-	if err := qs.queue.Shutdown(ctx); err != nil {
-		return err
-	}
+	err := qs.queue.Shutdown(ctx)
 	if usePullingBasedExporterQueueBatcher.IsEnabled() {
-		return qs.batcher.Shutdown(ctx)
+		return errors.Join(err, qs.batcher.Shutdown(ctx))
 	}
-	err := qs.consumers.Shutdown(ctx)
 	return err
 }
 
-// send implements the requestSender interface. It puts the request in the queue.
+// Send implements the requestSender interface. It puts the request in the queue.
 func (qs *QueueSender) Send(ctx context.Context, req internal.Request) error {
 	// Prevent cancellation and deadline to propagate to the context stored in the queue.
 	// The grpc/http based receivers will cancel the request context after this function returns.

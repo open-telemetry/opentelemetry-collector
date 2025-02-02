@@ -40,18 +40,19 @@ func TestDisabledBatcher_Basic(t *testing.T) {
 			cfg := exporterbatcher.NewDefaultConfig()
 			cfg.Enabled = false
 
+			ba, err := NewBatcher(cfg,
+				func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },
+				tt.maxWorkers)
+			require.NoError(t, err)
+
 			q := exporterqueue.NewMemoryQueueFactory[internal.Request]()(
 				context.Background(),
 				exporterqueue.Settings{
 					Signal:           pipeline.SignalTraces,
 					ExporterSettings: exportertest.NewNopSettings(),
 				},
-				exporterqueue.NewDefaultConfig())
-
-			ba, err := NewBatcher(cfg, q,
-				func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },
-				tt.maxWorkers)
-			require.NoError(t, err)
+				exporterqueue.NewDefaultConfig(),
+				ba.Consume)
 
 			require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
