@@ -92,7 +92,7 @@ type persistentQueue[T any] struct {
 }
 
 // newPersistentQueue creates a new queue backed by file storage; name and signal must be a unique combination that identifies the queue storage
-func newPersistentQueue[T any](set persistentQueueSettings[T]) Queue[T] {
+func newPersistentQueue[T any](set persistentQueueSettings[T]) readableQueue[T] {
 	_, isRequestSized := set.sizer.(*requestSizer[T])
 	pq := &persistentQueue[T]{
 		set:            set,

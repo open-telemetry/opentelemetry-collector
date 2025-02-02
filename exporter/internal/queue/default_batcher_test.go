@@ -45,18 +45,22 @@ func TestDefaultBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T) {
 				MinSizeItems: 0,
 			}
 
+			ba, err := NewBatcher(cfg,
+				func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },
+				tt.maxWorkers)
+			require.NoError(t, err)
+
+			// TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/12244
+			qCfg := exporterqueue.NewDefaultConfig()
+			qCfg.NumConsumers = 1
 			q := exporterqueue.NewMemoryQueueFactory[internal.Request]()(
 				context.Background(),
 				exporterqueue.Settings{
 					Signal:           pipeline.SignalTraces,
 					ExporterSettings: exportertest.NewNopSettings(),
 				},
-				exporterqueue.NewDefaultConfig())
-
-			ba, err := NewBatcher(cfg, q,
-				func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },
-				tt.maxWorkers)
-			require.NoError(t, err)
+				qCfg,
+				ba.Consume)
 
 			require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
@@ -103,18 +107,22 @@ func TestDefaultBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 				MinSizeItems: 10,
 			}
 
+			ba, err := NewBatcher(cfg,
+				func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },
+				tt.maxWorkers)
+			require.NoError(t, err)
+
+			// TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/12244
+			qCfg := exporterqueue.NewDefaultConfig()
+			qCfg.NumConsumers = 1
 			q := exporterqueue.NewMemoryQueueFactory[internal.Request]()(
 				context.Background(),
 				exporterqueue.Settings{
 					Signal:           pipeline.SignalTraces,
 					ExporterSettings: exportertest.NewNopSettings(),
 				},
-				exporterqueue.NewDefaultConfig())
-
-			ba, err := NewBatcher(cfg, q,
-				func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },
-				tt.maxWorkers)
-			require.NoError(t, err)
+				qCfg,
+				ba.Consume)
 
 			require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
@@ -171,18 +179,22 @@ func TestDefaultBatcher_NoSplit_WithTimeout(t *testing.T) {
 				MinSizeItems: 100,
 			}
 
+			ba, err := NewBatcher(cfg,
+				func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },
+				tt.maxWorkers)
+			require.NoError(t, err)
+
+			// TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/12244
+			qCfg := exporterqueue.NewDefaultConfig()
+			qCfg.NumConsumers = 1
 			q := exporterqueue.NewMemoryQueueFactory[internal.Request]()(
 				context.Background(),
 				exporterqueue.Settings{
 					Signal:           pipeline.SignalTraces,
 					ExporterSettings: exportertest.NewNopSettings(),
 				},
-				exporterqueue.NewDefaultConfig())
-
-			ba, err := NewBatcher(cfg, q,
-				func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },
-				tt.maxWorkers)
-			require.NoError(t, err)
+				qCfg,
+				ba.Consume)
 
 			require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
@@ -239,18 +251,22 @@ func TestDefaultBatcher_Split_TimeoutDisabled(t *testing.T) {
 				MaxSizeItems: 100,
 			}
 
+			ba, err := NewBatcher(cfg,
+				func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },
+				tt.maxWorkers)
+			require.NoError(t, err)
+
+			// TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/12244
+			qCfg := exporterqueue.NewDefaultConfig()
+			qCfg.NumConsumers = 1
 			q := exporterqueue.NewMemoryQueueFactory[internal.Request]()(
 				context.Background(),
 				exporterqueue.Settings{
 					Signal:           pipeline.SignalTraces,
 					ExporterSettings: exportertest.NewNopSettings(),
 				},
-				exporterqueue.NewDefaultConfig())
-
-			ba, err := NewBatcher(cfg, q,
-				func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },
-				tt.maxWorkers)
-			require.NoError(t, err)
+				qCfg,
+				ba.Consume)
 
 			require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
@@ -288,18 +304,22 @@ func TestDefaultBatcher_Shutdown(t *testing.T) {
 	batchCfg.MinSizeItems = 10
 	batchCfg.FlushTimeout = 100 * time.Second
 
+	ba, err := NewBatcher(batchCfg,
+		func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },
+		2)
+	require.NoError(t, err)
+
+	// TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/12244
+	qCfg := exporterqueue.NewDefaultConfig()
+	qCfg.NumConsumers = 1
 	q := exporterqueue.NewMemoryQueueFactory[internal.Request]()(
 		context.Background(),
 		exporterqueue.Settings{
 			Signal:           pipeline.SignalTraces,
 			ExporterSettings: exportertest.NewNopSettings(),
 		},
-		exporterqueue.NewDefaultConfig())
-
-	ba, err := NewBatcher(batchCfg, q,
-		func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },
-		2)
-	require.NoError(t, err)
+		qCfg,
+		ba.Consume)
 
 	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))

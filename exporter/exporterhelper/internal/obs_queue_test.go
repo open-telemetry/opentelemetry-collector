@@ -24,8 +24,7 @@ import (
 )
 
 type fakeQueue[T any] struct {
-	component.StartFunc
-	component.ShutdownFunc
+	exporterqueue.Queue[T]
 	offerErr error
 	size     int64
 	capacity int64
@@ -37,10 +36,6 @@ func (fq *fakeQueue[T]) Size() int64 {
 
 func (fq *fakeQueue[T]) Capacity() int64 {
 	return fq.capacity
-}
-
-func (fq *fakeQueue[T]) Read(context.Context) (context.Context, T, exporterqueue.DoneCallback, bool) {
-	panic("implement me")
 }
 
 func (fq *fakeQueue[T]) Offer(context.Context, T) error {

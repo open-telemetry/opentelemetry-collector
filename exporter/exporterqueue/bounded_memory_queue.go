@@ -30,7 +30,7 @@ type memoryQueueSettings[T any] struct {
 
 // newBoundedMemoryQueue constructs the new queue of specified capacity, and with an optional
 // callback for dropped items (e.g. useful to emit metrics).
-func newBoundedMemoryQueue[T any](set memoryQueueSettings[T]) Queue[T] {
+func newBoundedMemoryQueue[T any](set memoryQueueSettings[T]) readableQueue[T] {
 	return &boundedMemoryQueue[T]{
 		sizedQueue: newSizedQueue[T](set.capacity, set.sizer, set.blocking),
 	}
