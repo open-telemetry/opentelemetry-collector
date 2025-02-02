@@ -38,9 +38,13 @@ func newDefaultBatcher(batchCfg exporterbatcher.Config,
 	exportFunc func(ctx context.Context, req internal.Request) error,
 	maxWorkers int,
 ) *defaultBatcher {
-	workerPool := make(chan struct{}, maxWorkers)
-	for i := 0; i < maxWorkers; i++ {
-		workerPool <- struct{}{}
+	// TODO: Determine what is the right behavior for this in combination with async queue.
+	var workerPool chan struct{}
+	if maxWorkers != 0 {
+		workerPool = make(chan struct{}, maxWorkers)
+		for i := 0; i < maxWorkers; i++ {
+			workerPool <- struct{}{}
+		}
 	}
 	return &defaultBatcher{
 		batchCfg:   batchCfg,
@@ -199,11 +203,15 @@ func (qb *defaultBatcher) flushCurrentBatchIfNecessary() {
 // flush starts a goroutine that calls exportFunc. It blocks until a worker is available if necessary.
 func (qb *defaultBatcher) flush(ctx context.Context, req internal.Request, done exporterqueue.Done) {
 	qb.stopWG.Add(1)
-	<-qb.workerPool
+	if qb.workerPool != nil {
+		<-qb.workerPool
+	}
 	go func() {
 		defer qb.stopWG.Done()
 		done.OnDone(qb.exportFunc(ctx, req))
-		qb.workerPool <- struct{}{}
+		if qb.workerPool != nil {
+			qb.workerPool <- struct{}{}
+		}
 	}()
 }
 
