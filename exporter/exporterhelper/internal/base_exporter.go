@@ -100,8 +100,7 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSe
 		be.ConsumerOptions = append(be.ConsumerOptions, consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}))
 	}
 
-	if !usePullingBasedExporterQueueBatcher.IsEnabled() && be.batcherCfg.Enabled ||
-		usePullingBasedExporterQueueBatcher.IsEnabled() && be.batcherCfg.Enabled && !be.queueCfg.Enabled {
+	if be.batcherCfg.Enabled && !(usePullingBasedExporterQueueBatcher.IsEnabled() && be.queueCfg.Enabled) {
 		concurrencyLimit := int64(0)
 		if be.queueCfg.Enabled {
 			concurrencyLimit = int64(be.queueCfg.NumConsumers)
