@@ -5,6 +5,8 @@ package requesttest // import "go.opentelemetry.io/collector/exporter/internal/r
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"sync/atomic"
 	"time"
 
@@ -35,10 +37,19 @@ func NewSink() *Sink {
 	}
 }
 
+type errorPartial struct {
+	fr *FakeRequest
+}
+
+func (e errorPartial) Error() string {
+	return fmt.Sprintf("items: %d", e.fr.Items)
+}
+
 type FakeRequest struct {
 	Items     int
 	Sink      *Sink
 	ExportErr error
+	Partial   int
 	MergeErr  error
 	Delay     time.Duration
 }
@@ -50,13 +61,37 @@ func (r *FakeRequest) Export(ctx context.Context) error {
 	case <-time.After(r.Delay):
 	}
 	if r.ExportErr != nil {
-		return r.ExportErr
+		err := r.ExportErr
+		r.ExportErr = nil
+		return err
+	}
+	if r.Partial > 0 {
+		if r.Sink != nil {
+			r.Sink.requestsCount.Add(1)
+			r.Sink.itemsCount.Add(int64(r.Items - r.Partial))
+		}
+		return errorPartial{fr: &FakeRequest{
+			Items:     r.Partial,
+			Sink:      r.Sink,
+			ExportErr: r.ExportErr,
+			Partial:   0,
+			MergeErr:  r.MergeErr,
+			Delay:     r.Delay,
+		}}
 	}
 	if r.Sink != nil {
 		r.Sink.requestsCount.Add(1)
 		r.Sink.itemsCount.Add(int64(r.Items))
 	}
 	return nil
+}
+
+func (r *FakeRequest) OnError(err error) internal.Request {
+	var pErr errorPartial
+	if errors.As(err, &pErr) {
+		return pErr.fr
+	}
+	return r
 }
 
 func (r *FakeRequest) ItemsCount() int {

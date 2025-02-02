@@ -133,7 +133,7 @@ func (rs *retrySender) Send(ctx context.Context, req internal.Request) error {
 		// back-off, but get interrupted when shutting down or request is cancelled or timed out.
 		select {
 		case <-ctx.Done():
-			return fmt.Errorf("request is cancelled or timed out %w", err)
+			return fmt.Errorf("request is cancelled or timed out: %w", err)
 		case <-rs.stopCh:
 			return experr.NewShutdownErr(err)
 		case <-time.After(backoffDelay):

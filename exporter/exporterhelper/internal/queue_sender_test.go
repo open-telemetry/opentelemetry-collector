@@ -40,7 +40,7 @@ func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
 			ocs := be.ObsrepSender.(*observabilityConsumerSender)
 			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 
-			firstMockR := newErrorRequest()
+			firstMockR := newErrorRequest(errors.New("transient error"))
 			ocs.run(func() {
 				// This is asynchronous so it should just enqueue, no errors expected.
 				require.NoError(t, be.Send(context.Background(), firstMockR))
@@ -57,7 +57,7 @@ func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
 
 			require.NoError(t, be.Shutdown(context.Background()))
 
-			secondMockR.checkNumRequests(t, 1)
+			secondMockR.checkOneRequests(t)
 			ocs.checkSendItemsCount(t, 3)
 			ocs.checkDroppedItemsCount(t, 7)
 			require.Zero(t, be.QueueSender.(*QueueSender).queue.Size())
@@ -94,7 +94,7 @@ func TestQueuedRetry_DoNotPreserveCancellation(t *testing.T) {
 			})
 			ocs.awaitAsyncProcessing()
 
-			mockR.checkNumRequests(t, 1)
+			mockR.checkOneRequests(t)
 			ocs.checkSendItemsCount(t, 2)
 			ocs.checkDroppedItemsCount(t, 0)
 			require.Zero(t, be.QueueSender.(*QueueSender).queue.Size())
@@ -228,7 +228,7 @@ func TestQueuedRetryHappyPath(t *testing.T) {
 
 			require.Len(t, reqs, wantRequests)
 			for _, req := range reqs {
-				req.checkNumRequests(t, 1)
+				req.checkOneRequests(t)
 			}
 
 			ocs.checkSendItemsCount(t, 2*wantRequests)
@@ -340,7 +340,7 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 			assert.Len(t, observed.All(), 1)
 			assert.Equal(t, "Exporting failed. Rejecting data. Try enabling sending_queue to survive temporary failures.", observed.All()[0].Message)
 			ocs.awaitAsyncProcessing()
-			mockR.checkNumRequests(t, 1)
+			mockR.checkOneRequests(t)
 			ocs.checkSendItemsCount(t, 0)
 			ocs.checkDroppedItemsCount(t, 2)
 			require.NoError(t, be.Shutdown(context.Background()))
@@ -366,7 +366,7 @@ func TestQueueFailedRequestDropped(t *testing.T) {
 			mockR := newMockRequest(2, errors.New("some error"))
 			require.NoError(t, be.Send(context.Background(), mockR))
 			require.NoError(t, be.Shutdown(context.Background()))
-			mockR.checkNumRequests(t, 1)
+			mockR.checkOneRequests(t)
 			assert.Len(t, observed.All(), 1)
 			assert.Equal(t, "Exporting failed. Dropping data.", observed.All()[0].Message)
 		})
@@ -454,7 +454,7 @@ func TestQueuedRetryPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 			rCfg.InitialInterval = time.Millisecond
 			rCfg.MaxElapsedTime = 0 // retry infinitely so shutdown can be triggered
 
-			mockReq := newErrorRequest()
+			mockReq := newErrorRequest(errors.New("transient error"))
 			be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender, WithMarshaler(mockRequestMarshaler),
 				WithUnmarshaler(mockRequestUnmarshaler(mockReq)), WithRetry(rCfg), WithQueue(qCfg))
 			require.NoError(t, err)
@@ -489,7 +489,7 @@ func TestQueuedRetryPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 			})
 
 			// wait for the item to be consumed from the queue
-			replacedReq.checkNumRequests(t, 1)
+			replacedReq.checkOneRequests(t)
 		})
 	}
 	runTest("enable_queue_batcher", true)

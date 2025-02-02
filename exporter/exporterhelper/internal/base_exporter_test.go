@@ -39,6 +39,12 @@ type noopSender struct {
 	SendFunc[internal.Request]
 }
 
+func newNoopExportSender() Sender[internal.Request] {
+	return &noopSender{SendFunc: func(ctx context.Context, req internal.Request) error {
+		return req.Export(ctx)
+	}}
+}
+
 func newNoopObsrepSender(_ *ObsReport, next Sender[internal.Request]) Sender[internal.Request] {
 	return &noopSender{SendFunc: next.Send}
 }
@@ -112,7 +118,7 @@ func TestBaseExporterLogging(t *testing.T) {
 			rCfg.Enabled = false
 			bs, err := NewBaseExporter(set, defaultSignal, newNoopObsrepSender, WithRetry(rCfg))
 			require.NoError(t, err)
-			sendErr := bs.Send(context.Background(), newErrorRequest())
+			sendErr := bs.Send(context.Background(), newErrorRequest(errors.New("my error")))
 			require.Error(t, sendErr)
 
 			require.Len(t, observed.FilterLevelExact(zap.ErrorLevel).All(), 1)
