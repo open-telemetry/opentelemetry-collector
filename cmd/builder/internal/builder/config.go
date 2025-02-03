@@ -170,37 +170,38 @@ func (c *Config) SetGoPath() error {
 // ParseModules will parse the Modules entries and populate the missing values
 func (c *Config) ParseModules() error {
 	var err error
+	usedNames := make(map[string]int)
 
-	c.Extensions, err = parseModules(c.Extensions)
+	c.Extensions, err = parseModules(c.Extensions, usedNames)
 	if err != nil {
 		return err
 	}
 
-	c.Receivers, err = parseModules(c.Receivers)
+	c.Receivers, err = parseModules(c.Receivers, usedNames)
 	if err != nil {
 		return err
 	}
 
-	c.Exporters, err = parseModules(c.Exporters)
+	c.Exporters, err = parseModules(c.Exporters, usedNames)
 	if err != nil {
 		return err
 	}
 
-	c.Processors, err = parseModules(c.Processors)
+	c.Processors, err = parseModules(c.Processors, usedNames)
 	if err != nil {
 		return err
 	}
 
-	c.Connectors, err = parseModules(c.Connectors)
+	c.Connectors, err = parseModules(c.Connectors, usedNames)
 	if err != nil {
 		return err
 	}
 
-	c.ConfmapProviders, err = parseModules(c.ConfmapProviders)
+	c.ConfmapProviders, err = parseModules(c.ConfmapProviders, usedNames)
 	if err != nil {
 		return err
 	}
-	c.ConfmapConverters, err = parseModules(c.ConfmapConverters)
+	c.ConfmapConverters, err = parseModules(c.ConfmapConverters, usedNames)
 	if err != nil {
 		return err
 	}
@@ -220,7 +221,7 @@ func validateModules(name string, mods []Module) error {
 	return nil
 }
 
-func parseModules(mods []Module) ([]Module, error) {
+func parseModules(mods []Module, usedNames map[string]int) ([]Module, error) {
 	var parsedModules []Module
 	for _, mod := range mods {
 		if mod.Import == "" {
@@ -231,6 +232,21 @@ func parseModules(mods []Module) ([]Module, error) {
 			parts := strings.Split(mod.Import, "/")
 			mod.Name = parts[len(parts)-1]
 		}
+
+		originalModName := mod.Name
+		if count, exists := usedNames[mod.Name]; exists {
+			var newName string
+			for {
+				newName = fmt.Sprintf("%s%d", mod.Name, count+1)
+				if _, transformedExists := usedNames[newName]; !transformedExists {
+					break
+				}
+				count++
+			}
+			mod.Name = newName
+			usedNames[newName] = 1
+		}
+		usedNames[originalModName] = 1
 
 		// Check if path is empty, otherwise filepath.Abs replaces it with current path ".".
 		if mod.Path != "" {
