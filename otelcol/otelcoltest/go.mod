@@ -219,5 +219,3 @@ replace go.opentelemetry.io/collector/confmap => ../../confmap
 replace go.opentelemetry.io/collector/processor/processortest => ../../processor/processortest
 
 replace go.opentelemetry.io/collector/pdata/testdata => ../../pdata/testdata
-
-replace go.opentelemetry.io/collector/scraper => ../../scraper

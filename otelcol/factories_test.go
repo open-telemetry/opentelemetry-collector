@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/scraper"
 )
 
 func nopFactories() (Factories, error) {
@@ -79,7 +78,6 @@ func TestMakeFactoryMap(t *testing.T) {
 
 	fRec := receiver.NewFactory(component.MustNewType("rec"), nil)
 	fRec2 := receiver.NewFactory(component.MustNewType("rec"), nil)
-	fScr := scraper.NewFactory(component.MustNewType("scr"), nil)
 	fPro := processor.NewFactory(component.MustNewType("pro"), nil)
 	fCon := connector.NewFactory(component.MustNewType("con"), nil)
 	fExp := exporter.NewFactory(component.MustNewType("exp"), nil)
@@ -87,10 +85,9 @@ func TestMakeFactoryMap(t *testing.T) {
 	testCases := []testCase{
 		{
 			name: "different names",
-			in:   []component.Factory{fRec, fScr, fPro, fCon, fExp, fExt},
+			in:   []component.Factory{fRec, fPro, fCon, fExp, fExt},
 			out: map[component.Type]component.Factory{
 				fRec.Type(): fRec,
-				fScr.Type(): fScr,
 				fPro.Type(): fPro,
 				fCon.Type(): fCon,
 				fExp.Type(): fExp,
@@ -99,7 +96,7 @@ func TestMakeFactoryMap(t *testing.T) {
 		},
 		{
 			name: "same name",
-			in:   []component.Factory{fRec, fScr, fPro, fCon, fExp, fExt, fRec2},
+			in:   []component.Factory{fRec, fPro, fCon, fExp, fExt, fRec2},
 		},
 	}
 

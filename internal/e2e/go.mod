@@ -244,5 +244,3 @@ replace go.opentelemetry.io/collector/extension/auth/authtest => ../../extension
 replace go.opentelemetry.io/collector/extension/xextension => ../../extension/xextension
 
 replace go.opentelemetry.io/collector/otelcol => ../../otelcol
-
-replace go.opentelemetry.io/collector/scraper => ../../scraper
