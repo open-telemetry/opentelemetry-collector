@@ -327,7 +327,9 @@ func TestBatchSender_PostShutdown(t *testing.T) {
 			assert.Equal(t, int64(8), sink.ItemsCount())
 		})
 	}
-	runTest("enable_queue_batcher", true)
+	// This test is disabled because in the new batching, we still do the batching while shutdown because that will
+	// limit the number of request sent.
+	// runTest("enable_queue_batcher", true)
 	runTest("disable_queue_batcher", false)
 }
 
@@ -436,8 +438,7 @@ func TestBatchSender_BatchBlocking(t *testing.T) {
 			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
 			bCfg := exporterbatcher.NewDefaultConfig()
 			bCfg.MinSizeItems = 3
-			be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender,
-				WithBatcher(bCfg))
+			be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender, WithBatcher(bCfg))
 			require.NotNil(t, be)
 			require.NoError(t, err)
 			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
