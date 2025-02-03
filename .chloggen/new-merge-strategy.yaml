@@ -7,7 +7,7 @@ change_type: enhancement
 component: confmap
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Introduce a new feature gate to allow for merging lists instead of discarding the existing ones.
+note: Introduce a new command line option to allow for merging lists instead of discarding the existing ones.
 
 # One or more tracking issues or pull requests related to the change
 issues: [8394, 8754, 10370]
