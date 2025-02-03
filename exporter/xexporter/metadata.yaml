@@ -1,0 +1,10 @@
+type: xexporter
+
+status:
+  class: exporter
+  codeowners:
+    active:
+      - mx-psi
+      - dmathieu
+  stability:
+    development: [profiles]

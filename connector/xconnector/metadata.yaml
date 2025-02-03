@@ -1,0 +1,10 @@
+type: xconnector
+
+status:
+  class: connector
+  codeowners:
+    active:
+      - mx-psi
+      - dmathieu
+  stability:
+    development: [profiles]

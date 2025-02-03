@@ -2,6 +2,10 @@ type: exporterhelper
 github_project: open-telemetry/opentelemetry-collector
 
 status:
+  codeowners:
+    active:
+      - BogdanDrutu
+      - dmitryax
   class: pkg
   stability:
     beta: [traces, metrics, logs]

@@ -1,0 +1,8 @@
+type: nop
+
+status:
+  codeowners:
+    active:
+      - mx-psi
+      - evan-bradley
+  class: confmap

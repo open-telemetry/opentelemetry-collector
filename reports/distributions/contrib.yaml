@@ -1,0 +1,21 @@
+name: contrib
+url: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+maintainers: []
+components:
+    connector:
+        - forward
+    exporter:
+        - debug
+        - nop
+        - otlp
+        - otlphttp
+    extension:
+        - zpages
+    pkg:
+        - service
+    processor:
+        - batch
+        - memory_limiter
+    receiver:
+        - nop
+        - otlp

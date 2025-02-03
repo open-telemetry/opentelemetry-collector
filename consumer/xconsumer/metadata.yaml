@@ -1,0 +1,10 @@
+type: xconsumer
+
+status:
+  class: consumer
+  codeowners:
+    active:
+      - mx-psi
+      - dmathieu
+  stability:
+    development: [profiles]

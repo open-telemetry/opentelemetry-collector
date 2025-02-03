@@ -30,6 +30,7 @@ CHECKFILE    := $(TOOLS_BIN_DIR)/checkfile
 CHLOGGEN     := $(TOOLS_BIN_DIR)/chloggen
 CROSSLINK    := $(TOOLS_BIN_DIR)/crosslink
 ENVSUBST     := $(TOOLS_BIN_DIR)/envsubst
+GITHUBGEN     := $(TOOLS_BIN_DIR)/githubgen
 GOFUMPT      := $(TOOLS_BIN_DIR)/gofumpt
 GOIMPORTS    := $(TOOLS_BIN_DIR)/goimports
 GOVULNCHECK  := $(TOOLS_BIN_DIR)/govulncheck

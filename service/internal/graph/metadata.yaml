@@ -1,0 +1,7 @@
+type: graph
+
+status:
+  class: service
+  codeowners:
+    active:
+      - djaglowski
