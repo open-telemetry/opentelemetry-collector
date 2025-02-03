@@ -13,9 +13,12 @@ import (
 
 func TestSetupTelemetry(t *testing.T) {
 	testTel := SetupTelemetry()
+
+	{{- if .Telemetry.Metrics }}
 	tb, err := {{ .Package }}.NewTelemetryBuilder(testTel.NewTelemetrySettings())
     require.NoError(t, err)
 	defer tb.Shutdown()
+    {{- end }}
 
     {{- range $name, $metric := .Telemetry.Metrics }}
     {{- if $metric.Data.Async }}
