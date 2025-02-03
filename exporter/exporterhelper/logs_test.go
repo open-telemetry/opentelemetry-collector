@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/exporter/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/internal/storagetest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/testdata"
@@ -68,7 +69,7 @@ func TestLogs_NilLogger(t *testing.T) {
 }
 
 func TestLogsRequest_NilLogger(t *testing.T) {
-	le, err := NewLogsRequest(context.Background(), exporter.Settings{}, internal.RequestFromLogsFunc(nil))
+	le, err := NewLogsRequest(context.Background(), exporter.Settings{}, requesttest.RequestFromLogsFunc(nil))
 	require.Nil(t, le)
 	require.Equal(t, errNilLogger, err)
 }
@@ -100,7 +101,7 @@ func TestLogs_Default(t *testing.T) {
 func TestLogsRequest_Default(t *testing.T) {
 	ld := plog.NewLogs()
 	le, err := NewLogsRequest(context.Background(), exportertest.NewNopSettings(),
-		internal.RequestFromLogsFunc(nil))
+		requesttest.RequestFromLogsFunc(nil))
 	assert.NotNil(t, le)
 	require.NoError(t, err)
 
@@ -122,7 +123,7 @@ func TestLogs_WithCapabilities(t *testing.T) {
 func TestLogsRequest_WithCapabilities(t *testing.T) {
 	capabilities := consumer.Capabilities{MutatesData: true}
 	le, err := NewLogsRequest(context.Background(), exportertest.NewNopSettings(),
-		internal.RequestFromLogsFunc(nil), WithCapabilities(capabilities))
+		requesttest.RequestFromLogsFunc(nil), WithCapabilities(capabilities))
 	require.NoError(t, err)
 	require.NotNil(t, le)
 
@@ -154,7 +155,7 @@ func TestLogsRequest_Default_ExportError(t *testing.T) {
 	ld := plog.NewLogs()
 	want := errors.New("export_error")
 	le, err := NewLogsRequest(context.Background(), exportertest.NewNopSettings(),
-		internal.RequestFromLogsFunc(want))
+		requesttest.RequestFromLogsFunc(want))
 	require.NoError(t, err)
 	require.NotNil(t, le)
 	require.Equal(t, want, le.ConsumeLogs(context.Background(), ld))
@@ -226,7 +227,7 @@ func TestLogsRequest_WithRecordMetrics(t *testing.T) {
 
 	le, err := NewLogsRequest(context.Background(),
 		exporter.Settings{ID: fakeLogsName, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-		internal.RequestFromLogsFunc(nil))
+		requesttest.RequestFromLogsFunc(nil))
 	require.NoError(t, err)
 	require.NotNil(t, le)
 
@@ -253,43 +254,11 @@ func TestLogsRequest_WithRecordMetrics_ExportError(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	le, err := NewLogsRequest(context.Background(), exporter.Settings{ID: fakeLogsName, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-		internal.RequestFromLogsFunc(want))
+		requesttest.RequestFromLogsFunc(want))
 	require.NoError(t, err)
 	require.NotNil(t, le)
 
 	checkRecordedMetricsForLogs(t, tt, fakeLogsName, le, want)
-}
-
-func TestLogs_WithRecordEnqueueFailedMetrics(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(fakeLogsName)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
-
-	rCfg := configretry.NewDefaultBackOffConfig()
-	qCfg := NewDefaultQueueConfig()
-	qCfg.NumConsumers = 1
-	qCfg.QueueSize = 2
-	wantErr := errors.New("some-error")
-	te, err := NewLogs(context.Background(), exporter.Settings{ID: fakeLogsName, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, &fakeLogsConfig, newPushLogsData(wantErr), WithRetry(rCfg), WithQueue(qCfg))
-	require.NoError(t, err)
-	require.NotNil(t, te)
-
-	md := testdata.GenerateLogs(3)
-	const numBatches = 7
-	for i := 0; i < numBatches; i++ {
-		// errors are checked in the checkEnqueueFailedLogsStats function below.
-		_ = te.ConsumeLogs(context.Background(), md)
-	}
-
-	// 2 batched must be in queue, and 5 batches (15 log records) rejected due to queue overflow
-	metadatatest.AssertEqualExporterEnqueueFailedLogRecords(t, tt.Telemetry,
-		[]metricdata.DataPoint[int64]{
-			{
-				Attributes: attribute.NewSet(
-					attribute.String("exporter", fakeLogsName.String())),
-				Value: int64(15),
-			},
-		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
 func TestLogs_WithSpan(t *testing.T) {
@@ -312,7 +281,7 @@ func TestLogsRequest_WithSpan(t *testing.T) {
 	otel.SetTracerProvider(set.TracerProvider)
 	defer otel.SetTracerProvider(nooptrace.NewTracerProvider())
 
-	le, err := NewLogsRequest(context.Background(), set, internal.RequestFromLogsFunc(nil))
+	le, err := NewLogsRequest(context.Background(), set, requesttest.RequestFromLogsFunc(nil))
 	require.NoError(t, err)
 	require.NotNil(t, le)
 	checkWrapSpanForLogs(t, sr, set.TracerProvider.Tracer("test"), le, nil)
@@ -340,7 +309,7 @@ func TestLogsRequest_WithSpan_ReturnError(t *testing.T) {
 	defer otel.SetTracerProvider(nooptrace.NewTracerProvider())
 
 	want := errors.New("my_error")
-	le, err := NewLogsRequest(context.Background(), set, internal.RequestFromLogsFunc(want))
+	le, err := NewLogsRequest(context.Background(), set, requesttest.RequestFromLogsFunc(want))
 	require.NoError(t, err)
 	require.NotNil(t, le)
 	checkWrapSpanForLogs(t, sr, set.TracerProvider.Tracer("test"), le, want)
@@ -363,7 +332,7 @@ func TestLogsRequest_WithShutdown(t *testing.T) {
 	shutdown := func(context.Context) error { shutdownCalled = true; return nil }
 
 	le, err := NewLogsRequest(context.Background(), exportertest.NewNopSettings(),
-		internal.RequestFromLogsFunc(nil), WithShutdown(shutdown))
+		requesttest.RequestFromLogsFunc(nil), WithShutdown(shutdown))
 	assert.NotNil(t, le)
 	assert.NoError(t, err)
 
@@ -387,7 +356,7 @@ func TestLogsRequest_WithShutdown_ReturnError(t *testing.T) {
 	shutdownErr := func(context.Context) error { return want }
 
 	le, err := NewLogsRequest(context.Background(), exportertest.NewNopSettings(),
-		internal.RequestFromLogsFunc(nil), WithShutdown(shutdownErr))
+		requesttest.RequestFromLogsFunc(nil), WithShutdown(shutdownErr))
 	assert.NotNil(t, le)
 	require.NoError(t, err)
 

@@ -13,7 +13,9 @@ import (
 // Extension is the interface for objects hosted by the OpenTelemetry Collector that
 // don't participate directly on data pipelines but provide some functionality
 // to the service, examples: health check endpoint, z-pages, etc.
-type Extension = component.Component
+type Extension interface {
+	component.Component
+}
 
 // ModuleInfo describes the go module for each component.
 type ModuleInfo struct {

@@ -36,14 +36,11 @@ const (
 type ObsReport struct {
 	spanName string
 	tracer   trace.Tracer
-	Signal   pipeline.Signal
 
-	spanAttrs         trace.SpanStartEventOption
-	metricAttr        metric.MeasurementOption
-	TelemetryBuilder  *metadata.TelemetryBuilder
-	enqueueFailedInst metric.Int64Counter
-	itemsSentInst     metric.Int64Counter
-	itemsFailedInst   metric.Int64Counter
+	spanAttrs       trace.SpanStartEventOption
+	metricAttr      metric.MeasurementOption
+	itemsSentInst   metric.Int64Counter
+	itemsFailedInst metric.Int64Counter
 }
 
 // ObsReportSettings are settings for creating an ObsReport.
@@ -62,29 +59,24 @@ func NewObsReport(set ObsReportSettings) (*ObsReport, error) {
 	expAttr := attribute.String(ExporterKey, idStr)
 
 	or := &ObsReport{
-		spanName:         ExporterKey + spanNameSep + idStr + spanNameSep + set.Signal.String(),
-		tracer:           metadata.Tracer(set.ExporterSettings.TelemetrySettings),
-		Signal:           set.Signal,
-		spanAttrs:        trace.WithAttributes(expAttr, attribute.String(DataTypeKey, set.Signal.String())),
-		metricAttr:       metric.WithAttributeSet(attribute.NewSet(expAttr)),
-		TelemetryBuilder: telemetryBuilder,
+		spanName:   ExporterKey + spanNameSep + idStr + spanNameSep + set.Signal.String(),
+		tracer:     metadata.Tracer(set.ExporterSettings.TelemetrySettings),
+		spanAttrs:  trace.WithAttributes(expAttr, attribute.String(DataTypeKey, set.Signal.String())),
+		metricAttr: metric.WithAttributeSet(attribute.NewSet(expAttr)),
 	}
 
 	switch set.Signal {
 	case pipeline.SignalTraces:
-		or.enqueueFailedInst = or.TelemetryBuilder.ExporterEnqueueFailedSpans
-		or.itemsSentInst = or.TelemetryBuilder.ExporterSentSpans
-		or.itemsFailedInst = or.TelemetryBuilder.ExporterSendFailedSpans
+		or.itemsSentInst = telemetryBuilder.ExporterSentSpans
+		or.itemsFailedInst = telemetryBuilder.ExporterSendFailedSpans
 
 	case pipeline.SignalMetrics:
-		or.enqueueFailedInst = or.TelemetryBuilder.ExporterEnqueueFailedMetricPoints
-		or.itemsSentInst = or.TelemetryBuilder.ExporterSentMetricPoints
-		or.itemsFailedInst = or.TelemetryBuilder.ExporterSendFailedMetricPoints
+		or.itemsSentInst = telemetryBuilder.ExporterSentMetricPoints
+		or.itemsFailedInst = telemetryBuilder.ExporterSendFailedMetricPoints
 
 	case pipeline.SignalLogs:
-		or.enqueueFailedInst = or.TelemetryBuilder.ExporterEnqueueFailedLogRecords
-		or.itemsSentInst = or.TelemetryBuilder.ExporterSentLogRecords
-		or.itemsFailedInst = or.TelemetryBuilder.ExporterSendFailedLogRecords
+		or.itemsSentInst = telemetryBuilder.ExporterSentLogRecords
+		or.itemsFailedInst = telemetryBuilder.ExporterSendFailedLogRecords
 	}
 
 	return or, nil
@@ -129,13 +121,4 @@ func toNumItems(numExportedItems int, err error) (int64, int64) {
 		return 0, int64(numExportedItems)
 	}
 	return int64(numExportedItems), 0
-}
-
-func (or *ObsReport) RecordEnqueueFailure(ctx context.Context, failed int64) {
-	// No metrics recorded for profiles.
-	if or.enqueueFailedInst == nil {
-		return
-	}
-
-	or.enqueueFailedInst.Add(ctx, failed, or.metricAttr)
 }

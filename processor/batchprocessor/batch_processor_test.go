@@ -173,14 +173,14 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 		expectedBatchingFactor = sendBatchSize / spansPerRequest
 	)
 
-	tel := metadatatest.SetupTelemetry()
+	tel := componenttest.NewTelemetry()
 	sizer := &ptrace.ProtoMarshaler{}
 	sink := new(consumertest.TracesSink)
 	cfg := createDefaultConfig().(*Config)
 	cfg.SendBatchSize = sendBatchSize
 	cfg.Timeout = 500 * time.Millisecond
 
-	traces, err := NewFactory().CreateTraces(context.Background(), tel.NewSettings(), cfg, sink)
+	traces, err := NewFactory().CreateTraces(context.Background(), metadatatest.NewSettings(tel), cfg, sink)
 	require.NoError(t, err)
 	require.NoError(t, traces.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -209,7 +209,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 		}
 	}
 
-	metadatatest.AssertEqualProcessorBatchBatchSendSizeBytes(t, tel.Telemetry,
+	metadatatest.AssertEqualProcessorBatchBatchSendSizeBytes(t, tel,
 		[]metricdata.HistogramDataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(attribute.String("processor", "batch")),
@@ -226,7 +226,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 			},
 		}, metricdatatest.IgnoreTimestamp())
 
-	metadatatest.AssertEqualProcessorBatchBatchSendSize(t, tel.Telemetry,
+	metadatatest.AssertEqualProcessorBatchBatchSendSize(t, tel,
 		[]metricdata.HistogramDataPoint[int64]{
 			{
 				Attributes:   attribute.NewSet(attribute.String("processor", "batch")),
@@ -239,7 +239,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 			},
 		}, metricdatatest.IgnoreTimestamp())
 
-	metadatatest.AssertEqualProcessorBatchBatchSizeTriggerSend(t, tel.Telemetry,
+	metadatatest.AssertEqualProcessorBatchBatchSizeTriggerSend(t, tel,
 		[]metricdata.DataPoint[int64]{
 			{
 				Value:      int64(expectedBatchesNum),
@@ -247,7 +247,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 			},
 		}, metricdatatest.IgnoreTimestamp())
 
-	metadatatest.AssertEqualProcessorBatchMetadataCardinality(t, tel.Telemetry,
+	metadatatest.AssertEqualProcessorBatchMetadataCardinality(t, tel,
 		[]metricdata.DataPoint[int64]{
 			{
 				Value:      1,
@@ -267,7 +267,7 @@ func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
 		totalSpans       = requestCount * spansPerRequest
 	)
 
-	tel := metadatatest.SetupTelemetry()
+	tel := componenttest.NewTelemetry()
 	sizer := &ptrace.ProtoMarshaler{}
 	sink := new(consumertest.TracesSink)
 	cfg := createDefaultConfig().(*Config)
@@ -275,7 +275,7 @@ func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
 	cfg.SendBatchMaxSize = uint32(sendBatchMaxSize)
 	cfg.Timeout = 500 * time.Millisecond
 
-	traces, err := NewFactory().CreateTraces(context.Background(), tel.NewSettings(), cfg, sink)
+	traces, err := NewFactory().CreateTraces(context.Background(), metadatatest.NewSettings(tel), cfg, sink)
 	require.NoError(t, err)
 	require.NoError(t, traces.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -308,7 +308,7 @@ func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
 		sizeSum += sizer.TracesSize(td)
 	}
 
-	metadatatest.AssertEqualProcessorBatchBatchSendSizeBytes(t, tel.Telemetry,
+	metadatatest.AssertEqualProcessorBatchBatchSendSizeBytes(t, tel,
 		[]metricdata.HistogramDataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(attribute.String("processor", "batch")),
@@ -325,7 +325,7 @@ func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
 			},
 		}, metricdatatest.IgnoreTimestamp())
 
-	metadatatest.AssertEqualProcessorBatchBatchSendSize(t, tel.Telemetry,
+	metadatatest.AssertEqualProcessorBatchBatchSendSize(t, tel,
 		[]metricdata.HistogramDataPoint[int64]{
 			{
 				Attributes:   attribute.NewSet(attribute.String("processor", "batch")),
@@ -338,7 +338,7 @@ func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
 			},
 		}, metricdatatest.IgnoreTimestamp())
 
-	metadatatest.AssertEqualProcessorBatchBatchSizeTriggerSend(t, tel.Telemetry,
+	metadatatest.AssertEqualProcessorBatchBatchSizeTriggerSend(t, tel,
 		[]metricdata.DataPoint[int64]{
 			{
 				Value:      int64(expectedBatchesNum - 1),
@@ -346,7 +346,7 @@ func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
 			},
 		}, metricdatatest.IgnoreTimestamp())
 
-	metadatatest.AssertEqualProcessorBatchMetadataCardinality(t, tel.Telemetry,
+	metadatatest.AssertEqualProcessorBatchMetadataCardinality(t, tel,
 		[]metricdata.DataPoint[int64]{
 			{
 				Value:      1,
@@ -478,7 +478,7 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 }
 
 func TestBatchMetricProcessorBatchSize(t *testing.T) {
-	tel := metadatatest.SetupTelemetry()
+	tel := componenttest.NewTelemetry()
 	sizer := &pmetric.ProtoMarshaler{}
 
 	// Instantiate the batch processor with low config values to test data
@@ -496,7 +496,7 @@ func TestBatchMetricProcessorBatchSize(t *testing.T) {
 	)
 	sink := new(consumertest.MetricsSink)
 
-	metrics, err := NewFactory().CreateMetrics(context.Background(), tel.NewSettings(), cfg, sink)
+	metrics, err := NewFactory().CreateMetrics(context.Background(), metadatatest.NewSettings(tel), cfg, sink)
 	require.NoError(t, err)
 	require.NoError(t, metrics.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -525,7 +525,7 @@ func TestBatchMetricProcessorBatchSize(t *testing.T) {
 		}
 	}
 
-	metadatatest.AssertEqualProcessorBatchBatchSendSizeBytes(t, tel.Telemetry,
+	metadatatest.AssertEqualProcessorBatchBatchSendSizeBytes(t, tel,
 		[]metricdata.HistogramDataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(attribute.String("processor", "batch")),
@@ -542,7 +542,7 @@ func TestBatchMetricProcessorBatchSize(t *testing.T) {
 			},
 		}, metricdatatest.IgnoreTimestamp())
 
-	metadatatest.AssertEqualProcessorBatchBatchSendSize(t, tel.Telemetry,
+	metadatatest.AssertEqualProcessorBatchBatchSendSize(t, tel,
 		[]metricdata.HistogramDataPoint[int64]{
 			{
 				Attributes:   attribute.NewSet(attribute.String("processor", "batch")),
@@ -555,7 +555,7 @@ func TestBatchMetricProcessorBatchSize(t *testing.T) {
 			},
 		}, metricdatatest.IgnoreTimestamp())
 
-	metadatatest.AssertEqualProcessorBatchBatchSizeTriggerSend(t, tel.Telemetry,
+	metadatatest.AssertEqualProcessorBatchBatchSizeTriggerSend(t, tel,
 		[]metricdata.DataPoint[int64]{
 			{
 				Value:      int64(expectedBatchesNum),
@@ -563,7 +563,7 @@ func TestBatchMetricProcessorBatchSize(t *testing.T) {
 			},
 		}, metricdatatest.IgnoreTimestamp())
 
-	metadatatest.AssertEqualProcessorBatchMetadataCardinality(t, tel.Telemetry,
+	metadatatest.AssertEqualProcessorBatchMetadataCardinality(t, tel,
 		[]metricdata.DataPoint[int64]{
 			{
 				Value:      1,
@@ -828,7 +828,7 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 }
 
 func TestBatchLogProcessor_BatchSize(t *testing.T) {
-	tel := metadatatest.SetupTelemetry()
+	tel := componenttest.NewTelemetry()
 	sizer := &plog.ProtoMarshaler{}
 
 	// Instantiate the batch processor with low config values to test data
@@ -844,7 +844,7 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 	)
 	sink := new(consumertest.LogsSink)
 
-	logs, err := NewFactory().CreateLogs(context.Background(), tel.NewSettings(), cfg, sink)
+	logs, err := NewFactory().CreateLogs(context.Background(), metadatatest.NewSettings(tel), cfg, sink)
 	require.NoError(t, err)
 	require.NoError(t, logs.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -873,7 +873,7 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 		}
 	}
 
-	metadatatest.AssertEqualProcessorBatchBatchSendSizeBytes(t, tel.Telemetry,
+	metadatatest.AssertEqualProcessorBatchBatchSendSizeBytes(t, tel,
 		[]metricdata.HistogramDataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(attribute.String("processor", "batch")),
@@ -890,7 +890,7 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 			},
 		}, metricdatatest.IgnoreTimestamp())
 
-	metadatatest.AssertEqualProcessorBatchBatchSendSize(t, tel.Telemetry,
+	metadatatest.AssertEqualProcessorBatchBatchSendSize(t, tel,
 		[]metricdata.HistogramDataPoint[int64]{
 			{
 				Attributes:   attribute.NewSet(attribute.String("processor", "batch")),
@@ -903,7 +903,7 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 			},
 		}, metricdatatest.IgnoreTimestamp())
 
-	metadatatest.AssertEqualProcessorBatchBatchSizeTriggerSend(t, tel.Telemetry,
+	metadatatest.AssertEqualProcessorBatchBatchSizeTriggerSend(t, tel,
 		[]metricdata.DataPoint[int64]{
 			{
 				Value:      int64(expectedBatchesNum),
@@ -911,7 +911,7 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 			},
 		}, metricdatatest.IgnoreTimestamp())
 
-	metadatatest.AssertEqualProcessorBatchMetadataCardinality(t, tel.Telemetry,
+	metadatatest.AssertEqualProcessorBatchMetadataCardinality(t, tel,
 		[]metricdata.DataPoint[int64]{
 			{
 				Value:      1,

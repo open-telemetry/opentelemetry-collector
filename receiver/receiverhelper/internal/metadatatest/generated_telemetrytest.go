@@ -16,21 +16,29 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
+// Deprecated: [v0.119.0] Use componenttest.Telemetry
 type Telemetry struct {
-	componenttest.Telemetry
+	*componenttest.Telemetry
 }
 
+// Deprecated: [v0.119.0] Use componenttest.NewTelemetry
 func SetupTelemetry(opts ...componenttest.TelemetryOption) Telemetry {
 	return Telemetry{Telemetry: componenttest.NewTelemetry(opts...)}
 }
 
+// Deprecated: [v0.119.0] Use metadatatest.NewSettings
 func (tt *Telemetry) NewSettings() receiver.Settings {
+	return NewSettings(tt.Telemetry)
+}
+
+func NewSettings(tt *componenttest.Telemetry) receiver.Settings {
 	set := receivertest.NewNopSettings()
 	set.ID = component.NewID(component.MustNewType("receiverhelper"))
 	set.TelemetrySettings = tt.NewTelemetrySettings()
 	return set
 }
 
+// Deprecated: [v0.119.0] Use metadatatest.AssertEqual*
 func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, opts ...metricdatatest.Option) {
 	var md metricdata.ResourceMetrics
 	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
@@ -44,7 +52,7 @@ func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, 
 	require.Equal(t, len(expected), lenMetrics(md))
 }
 
-func AssertEqualReceiverAcceptedLogRecords(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualReceiverAcceptedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_accepted_log_records",
 		Description: "Number of log records successfully pushed into the pipeline. [alpha]",
@@ -55,11 +63,12 @@ func AssertEqualReceiverAcceptedLogRecords(t *testing.T, tt componenttest.Teleme
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_receiver_accepted_log_records")
+	got, err := tt.GetMetric("otelcol_receiver_accepted_log_records")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualReceiverAcceptedMetricPoints(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualReceiverAcceptedMetricPoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_accepted_metric_points",
 		Description: "Number of metric points successfully pushed into the pipeline. [alpha]",
@@ -70,11 +79,12 @@ func AssertEqualReceiverAcceptedMetricPoints(t *testing.T, tt componenttest.Tele
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_receiver_accepted_metric_points")
+	got, err := tt.GetMetric("otelcol_receiver_accepted_metric_points")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualReceiverAcceptedSpans(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualReceiverAcceptedSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_accepted_spans",
 		Description: "Number of spans successfully pushed into the pipeline. [alpha]",
@@ -85,11 +95,12 @@ func AssertEqualReceiverAcceptedSpans(t *testing.T, tt componenttest.Telemetry, 
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_receiver_accepted_spans")
+	got, err := tt.GetMetric("otelcol_receiver_accepted_spans")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualReceiverRefusedLogRecords(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualReceiverRefusedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_refused_log_records",
 		Description: "Number of log records that could not be pushed into the pipeline. [alpha]",
@@ -100,11 +111,12 @@ func AssertEqualReceiverRefusedLogRecords(t *testing.T, tt componenttest.Telemet
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_receiver_refused_log_records")
+	got, err := tt.GetMetric("otelcol_receiver_refused_log_records")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualReceiverRefusedMetricPoints(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualReceiverRefusedMetricPoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_refused_metric_points",
 		Description: "Number of metric points that could not be pushed into the pipeline. [alpha]",
@@ -115,11 +127,12 @@ func AssertEqualReceiverRefusedMetricPoints(t *testing.T, tt componenttest.Telem
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_receiver_refused_metric_points")
+	got, err := tt.GetMetric("otelcol_receiver_refused_metric_points")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualReceiverRefusedSpans(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualReceiverRefusedSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_refused_spans",
 		Description: "Number of spans that could not be pushed into the pipeline. [alpha]",
@@ -130,14 +143,9 @@ func AssertEqualReceiverRefusedSpans(t *testing.T, tt componenttest.Telemetry, d
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_receiver_refused_spans")
+	got, err := tt.GetMetric("otelcol_receiver_refused_spans")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func getMetric(t *testing.T, tt componenttest.Telemetry, name string) metricdata.Metrics {
-	var md metricdata.ResourceMetrics
-	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
-	return getMetricFromResource(name, md)
 }
 
 func getMetricFromResource(name string, got metricdata.ResourceMetrics) metricdata.Metrics {

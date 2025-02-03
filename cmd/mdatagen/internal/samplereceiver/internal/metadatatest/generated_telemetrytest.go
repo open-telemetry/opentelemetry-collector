@@ -16,21 +16,29 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
+// Deprecated: [v0.119.0] Use componenttest.Telemetry
 type Telemetry struct {
-	componenttest.Telemetry
+	*componenttest.Telemetry
 }
 
+// Deprecated: [v0.119.0] Use componenttest.NewTelemetry
 func SetupTelemetry(opts ...componenttest.TelemetryOption) Telemetry {
 	return Telemetry{Telemetry: componenttest.NewTelemetry(opts...)}
 }
 
+// Deprecated: [v0.119.0] Use metadatatest.NewSettings
 func (tt *Telemetry) NewSettings() receiver.Settings {
+	return NewSettings(tt.Telemetry)
+}
+
+func NewSettings(tt *componenttest.Telemetry) receiver.Settings {
 	set := receivertest.NewNopSettings()
 	set.ID = component.NewID(component.MustNewType("sample"))
 	set.TelemetrySettings = tt.NewTelemetrySettings()
 	return set
 }
 
+// Deprecated: [v0.119.0] Use metadatatest.AssertEqual*
 func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, opts ...metricdatatest.Option) {
 	var md metricdata.ResourceMetrics
 	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
@@ -44,7 +52,7 @@ func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, 
 	require.Equal(t, len(expected), lenMetrics(md))
 }
 
-func AssertEqualBatchSizeTriggerSend(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualBatchSizeTriggerSend(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_batch_size_trigger_send",
 		Description: "Number of times the batch was sent due to a size trigger [deprecated since v0.110.0]",
@@ -55,11 +63,12 @@ func AssertEqualBatchSizeTriggerSend(t *testing.T, tt componenttest.Telemetry, d
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_batch_size_trigger_send")
+	got, err := tt.GetMetric("otelcol_batch_size_trigger_send")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessRuntimeTotalAllocBytes(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessRuntimeTotalAllocBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_process_runtime_total_alloc_bytes",
 		Description: "Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')",
@@ -70,11 +79,12 @@ func AssertEqualProcessRuntimeTotalAllocBytes(t *testing.T, tt componenttest.Tel
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_process_runtime_total_alloc_bytes")
+	got, err := tt.GetMetric("otelcol_process_runtime_total_alloc_bytes")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualQueueCapacity(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualQueueCapacity(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_queue_capacity",
 		Description: "Queue capacity - sync gauge example.",
@@ -83,11 +93,26 @@ func AssertEqualQueueCapacity(t *testing.T, tt componenttest.Telemetry, dps []me
 			DataPoints: dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_queue_capacity")
+	got, err := tt.GetMetric("otelcol_queue_capacity")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualRequestDuration(t *testing.T, tt componenttest.Telemetry, dps []metricdata.HistogramDataPoint[float64], opts ...metricdatatest.Option) {
+func AssertEqualQueueLength(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_queue_length",
+		Description: "This metric is optional and therefore not initialized in NewTelemetryBuilder. [alpha]",
+		Unit:        "{items}",
+		Data: metricdata.Gauge[int64]{
+			DataPoints: dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_queue_length")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualRequestDuration(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[float64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_request_duration",
 		Description: "Duration of request [alpha]",
@@ -97,14 +122,9 @@ func AssertEqualRequestDuration(t *testing.T, tt componenttest.Telemetry, dps []
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_request_duration")
+	got, err := tt.GetMetric("otelcol_request_duration")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func getMetric(t *testing.T, tt componenttest.Telemetry, name string) metricdata.Metrics {
-	var md metricdata.ResourceMetrics
-	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
-	return getMetricFromResource(name, md)
 }
 
 func getMetricFromResource(name string, got metricdata.ResourceMetrics) metricdata.Metrics {

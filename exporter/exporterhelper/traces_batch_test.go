@@ -163,10 +163,11 @@ func TestExtractTraces(t *testing.T) {
 func BenchmarkSplittingBasedOnItemCountManySmallTraces(b *testing.B) {
 	// All requests merge into a single batch.
 	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 10000}
+	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		merged := []Request{&tracesRequest{td: testdata.GenerateTraces(10)}}
+		merged := []Request{newTracesRequest(testdata.GenerateTraces(10), nil)}
 		for j := 0; j < 1000; j++ {
-			lr2 := &tracesRequest{td: testdata.GenerateTraces(10)}
+			lr2 := newTracesRequest(testdata.GenerateTraces(10), nil)
 			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), cfg, lr2)
 			merged = append(merged[0:len(merged)-1], res...)
 		}
@@ -177,10 +178,11 @@ func BenchmarkSplittingBasedOnItemCountManySmallTraces(b *testing.B) {
 func BenchmarkSplittingBasedOnItemCountManyTracesSlightlyAboveLimit(b *testing.B) {
 	// Every incoming request results in a split.
 	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 10000}
+	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		merged := []Request{&tracesRequest{td: testdata.GenerateTraces(0)}}
+		merged := []Request{newTracesRequest(testdata.GenerateTraces(0), nil)}
 		for j := 0; j < 10; j++ {
-			lr2 := &tracesRequest{td: testdata.GenerateTraces(10001)}
+			lr2 := newTracesRequest(testdata.GenerateTraces(10001), nil)
 			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), cfg, lr2)
 			merged = append(merged[0:len(merged)-1], res...)
 		}
@@ -192,8 +194,8 @@ func BenchmarkSplittingBasedOnItemCountHugeTraces(b *testing.B) {
 	// One request splits into many batches.
 	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 10000}
 	for i := 0; i < b.N; i++ {
-		merged := []Request{&tracesRequest{td: testdata.GenerateTraces(0)}}
-		lr2 := &tracesRequest{td: testdata.GenerateTraces(100000)}
+		merged := []Request{newTracesRequest(testdata.GenerateTraces(0), nil)}
+		lr2 := newTracesRequest(testdata.GenerateTraces(100000), nil)
 		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), cfg, lr2)
 		merged = append(merged[0:len(merged)-1], res...)
 		assert.Len(b, merged, 10)
