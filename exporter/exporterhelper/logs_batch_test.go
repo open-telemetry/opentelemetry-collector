@@ -153,9 +153,22 @@ func TestExtractLogs(t *testing.T) {
 	}
 }
 
-func BenchmarkSplittingBasedOnItemCountManySmallLogs(b *testing.B) {
+func TestMergeSplitManySmallLogs(t *testing.T) {
 	// All requests merge into a single batch.
 	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 10000}
+	merged := []Request{newLogsRequest(testdata.GenerateLogs(1), nil)}
+	for j := 0; j < 1000; j++ {
+		lr2 := newLogsRequest(testdata.GenerateLogs(10), nil)
+		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), cfg, lr2)
+		merged = append(merged[0:len(merged)-1], res...)
+	}
+	assert.Len(t, merged, 2)
+}
+
+func BenchmarkSplittingBasedOnItemCountManySmallLogs(b *testing.B) {
+	// All requests merge into a single batch.
+	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 10010}
+	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		merged := []Request{newLogsRequest(testdata.GenerateLogs(10), nil)}
 		for j := 0; j < 1000; j++ {
@@ -170,6 +183,7 @@ func BenchmarkSplittingBasedOnItemCountManySmallLogs(b *testing.B) {
 func BenchmarkSplittingBasedOnItemCountManyLogsSlightlyAboveLimit(b *testing.B) {
 	// Every incoming request results in a split.
 	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 10000}
+	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		merged := []Request{newLogsRequest(testdata.GenerateLogs(0), nil)}
 		for j := 0; j < 10; j++ {
@@ -184,6 +198,7 @@ func BenchmarkSplittingBasedOnItemCountManyLogsSlightlyAboveLimit(b *testing.B) 
 func BenchmarkSplittingBasedOnItemCountHugeLogs(b *testing.B) {
 	// One request splits into many batches.
 	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 10000}
+	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		merged := []Request{newLogsRequest(testdata.GenerateLogs(0), nil)}
 		lr2 := newLogsRequest(testdata.GenerateLogs(100000), nil)
