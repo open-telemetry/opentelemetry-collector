@@ -101,7 +101,6 @@ var replaceModules = []string{
 	"/receiver/otlpreceiver",
 	"/receiver/receivertest",
 	"/receiver/xreceiver",
-	"/scraper",
 	"/semconv",
 	"/service",
 }
