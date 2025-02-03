@@ -5,6 +5,8 @@ package otelcol
 
 import (
 	"context"
+	"io"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -158,4 +160,60 @@ func Test_UseUnifiedEnvVarExpansionRules(t *testing.T) {
 			require.Equal(t, tt.expected, set.ConfigProviderSettings.ResolverSettings.DefaultScheme)
 		})
 	}
+}
+
+func TestNewFeatureGateCommand(t *testing.T) {
+	t.Run("list all featuregates", func(t *testing.T) {
+		cmd := newFeatureGateCommand()
+		require.NotNil(t, cmd)
+
+		// Capture stdout
+		oldStdout := os.Stdout
+		r, w, _ := os.Pipe()
+		os.Stdout = w
+
+		err := cmd.RunE(cmd, []string{})
+		require.NoError(t, err)
+
+		w.Close()
+		out, _ := io.ReadAll(r)
+		os.Stdout = oldStdout
+
+		output := string(out)
+		assert.Contains(t, output, "ID")
+		assert.Contains(t, output, "Enabled")
+		assert.Contains(t, output, "Stage")
+		assert.Contains(t, output, "Description")
+	})
+	t.Run("specific featuregate details", func(t *testing.T) {
+		cmd := newFeatureGateCommand()
+
+		// Register a test feature gate in the global registry
+		featuregate.GlobalRegistry().MustRegister("test.feature", featuregate.StageBeta,
+			featuregate.WithRegisterDescription("Test feature description"))
+
+		// Capture stdout
+		oldStdout := os.Stdout
+		r, w, _ := os.Pipe()
+		os.Stdout = w
+
+		err := cmd.RunE(cmd, []string{"test.feature"})
+		require.NoError(t, err)
+
+		w.Close()
+		out, _ := io.ReadAll(r)
+		os.Stdout = oldStdout
+
+		output := string(out)
+		assert.Contains(t, output, "Feature: test.feature")
+		assert.Contains(t, output, "Description: Test feature description")
+		assert.Contains(t, output, "Stage: Beta")
+	})
+
+	t.Run("non-existent featuregate", func(t *testing.T) {
+		cmd := newFeatureGateCommand()
+		err := cmd.RunE(cmd, []string{"non.existent.feature"})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "feature \"non.existent.feature\" not found")
+	})
 }
