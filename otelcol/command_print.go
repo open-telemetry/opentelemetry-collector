@@ -26,6 +26,7 @@ func newConfigPrintSubCommand(set CollectorSettings, flagSet *flag.FlagSet) *cob
 	cmd := &cobra.Command{
 		Use:   "print-initial-config",
 		Short: "Prints the final yaml configuration after all --config sources are resolved and merged",
+		Long:  `Note: This command prints the raw config provided by user. This may include sensitive values.`,
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if !printCommandFeatureFlag.IsEnabled() {
