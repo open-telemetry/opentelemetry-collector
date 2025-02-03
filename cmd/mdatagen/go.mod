@@ -49,7 +49,6 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.118.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.118.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.118.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.118.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.118.0 // indirect

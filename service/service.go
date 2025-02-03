@@ -196,7 +196,6 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		Logger:         logger,
 		MeterProvider:  mp,
 		TracerProvider: tracerProvider,
-		MetricsLevel:   cfg.Telemetry.Metrics.Level,
 		// Construct telemetry attributes from build info and config's resource attributes.
 		Resource: pcommonRes,
 	}
