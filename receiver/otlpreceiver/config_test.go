@@ -193,7 +193,7 @@ func TestUnmarshalConfigEmptyProtocols(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	require.NoError(t, cm.Unmarshal(&cfg))
-	assert.EqualError(t, component.ValidateConfig(cfg), "must specify at least one protocol when using the OTLP receiver")
+	assert.EqualError(t, confmap.Validate(cfg), "must specify at least one protocol when using the OTLP receiver")
 }
 
 func TestUnmarshalConfigInvalidSignalPath(t *testing.T) {
@@ -230,5 +230,5 @@ func TestUnmarshalConfigEmpty(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	require.NoError(t, confmap.New().Unmarshal(&cfg))
-	assert.EqualError(t, component.ValidateConfig(cfg), "must specify at least one protocol when using the OTLP receiver")
+	assert.EqualError(t, confmap.Validate(cfg), "must specify at least one protocol when using the OTLP receiver")
 }

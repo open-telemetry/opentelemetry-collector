@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
@@ -28,7 +27,7 @@ func TestUnmarshalDefaultConfig(t *testing.T) {
 	require.NoError(t, confmap.New().Unmarshal(&cfg))
 	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
 	// Default/Empty config is invalid.
-	assert.Error(t, component.ValidateConfig(cfg))
+	assert.Error(t, confmap.Validate(cfg))
 }
 
 func TestUnmarshalConfig(t *testing.T) {

@@ -136,7 +136,7 @@ func TestUnmarshalInvalidConfig(t *testing.T) {
 			sub, err := cm.Sub(tt.name)
 			require.NoError(t, err)
 			assert.NoError(t, sub.Unmarshal(&cfg))
-			assert.ErrorContains(t, component.ValidateConfig(cfg), tt.errorMsg)
+			assert.ErrorContains(t, confmap.Validate(cfg), tt.errorMsg)
 		})
 	}
 }

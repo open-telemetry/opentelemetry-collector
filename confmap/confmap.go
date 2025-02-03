@@ -24,6 +24,10 @@ const (
 	KeyDelimiter = "::"
 )
 
+const (
+	mapstructureTag = "mapstructure"
+)
+
 // New creates a new empty confmap.Conf instance.
 func New() *Conf {
 	return &Conf{k: koanf.New(KeyDelimiter)}
@@ -79,7 +83,7 @@ func (fn unmarshalOptionFunc) apply(set *unmarshalOption) {
 
 // Unmarshal unmarshalls the config into a struct using the given options.
 // Tags on the fields of the structure must be properly set.
-func (l *Conf) Unmarshal(result any, opts ...UnmarshalOption) error {
+func (l *Conf) Unmarshal(result Config, opts ...UnmarshalOption) error {
 	set := unmarshalOption{}
 	for _, opt := range opts {
 		opt.apply(&set)
@@ -94,7 +98,7 @@ type MarshalOption interface {
 }
 
 // Marshal encodes the config and merges it into the Conf.
-func (l *Conf) Marshal(rawVal any, _ ...MarshalOption) error {
+func (l *Conf) Marshal(rawVal Config, _ ...MarshalOption) error {
 	enc := encoder.New(encoderConfig(rawVal))
 	data, err := enc.Encode(rawVal)
 	if err != nil {
@@ -205,7 +209,7 @@ func decodeConfig(m *Conf, result any, errorUnused bool, skipTopLevelUnmarshaler
 	dc := &mapstructure.DecoderConfig{
 		ErrorUnused:      errorUnused,
 		Result:           result,
-		TagName:          "mapstructure",
+		TagName:          mapstructureTag,
 		WeaklyTypedInput: false,
 		MatchName:        caseSensitiveMatchName,
 		DecodeHook: mapstructure.ComposeDecodeHookFunc(
@@ -407,7 +411,7 @@ func unmarshalerEmbeddedStructsHookFunc() mapstructure.DecodeHookFuncValue {
 		for i := 0; i < to.Type().NumField(); i++ {
 			// embedded structs passed in via `squash` cannot be pointers. We just check if they are structs:
 			f := to.Type().Field(i)
-			if f.IsExported() && slices.Contains(strings.Split(f.Tag.Get("mapstructure"), ","), "squash") {
+			if f.IsExported() && slices.Contains(strings.Split(f.Tag.Get(mapstructureTag), ","), "squash") {
 				if unmarshaler, ok := to.Field(i).Addr().Interface().(Unmarshaler); ok {
 					c := NewFromStringMap(fromAsMap)
 					c.skipTopLevelUnmarshaler = true
