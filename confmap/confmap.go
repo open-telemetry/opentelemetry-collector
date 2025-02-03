@@ -159,8 +159,27 @@ func (l *Conf) IsSet(key string) bool {
 
 // Merge merges the input given configuration into the existing config.
 // Note that the given map may be modified.
-func (l *Conf) Merge(in *Conf) error {
+
+func (l *Conf) Merge(in *Conf, opts ...MergeOpts) error {
+	set := mergeOption{}
+	for _, opt := range opts {
+		opt.apply(&set)
+	}
+	if len(set.mergePaths) > 0 {
+		return l.mergeWithFunc(in, set.mergeComponentsAppend)
+	}
+	return l.merge(in)
+}
+
+func (l *Conf) merge(in *Conf) error {
 	return l.k.Merge(in.k)
+}
+
+// MergeWithFunc merges the input given configuration into the existing config.
+// Note that the given map may be modified.
+func (l *Conf) mergeWithFunc(in *Conf, mergeFunc func(map[string]any, map[string]any) error) error {
+	// Currently, custom merge functions are supported only via koanf.Load
+	return l.k.Load(confmap.Provider(in.ToStringMap(), ""), nil, koanf.WithMergeFunc(mergeFunc))
 }
 
 // Sub returns new Conf instance representing a sub-config of this instance.
