@@ -13,7 +13,7 @@ import (
 
 var (
 	errNilNextConsumer = errors.New("nil next Consumer")
-	nopType            = component.MustNewType("nop")
+	NopType            = component.MustNewType("nop")
 )
 
 // logStabilityLevel logs the stability level of a component. The log level is set to info for

@@ -118,10 +118,10 @@ func (b *ReceiverBuilder) Factory(componentType component.Type) component.Factor
 func NewNopReceiverConfigsAndFactories() (map[component.ID]component.Config, map[component.Type]receiver.Factory) {
 	nopFactory := receivertest.NewNopFactory()
 	configs := map[component.ID]component.Config{
-		component.NewID(nopType): nopFactory.CreateDefaultConfig(),
+		component.NewID(NopType): nopFactory.CreateDefaultConfig(),
 	}
 	factories := map[component.Type]receiver.Factory{
-		nopType: nopFactory,
+		NopType: nopFactory,
 	}
 
 	return configs, factories

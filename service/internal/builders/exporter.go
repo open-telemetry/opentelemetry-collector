@@ -102,10 +102,10 @@ func (b *ExporterBuilder) Factory(componentType component.Type) component.Factor
 func NewNopExporterConfigsAndFactories() (map[component.ID]component.Config, map[component.Type]exporter.Factory) {
 	nopFactory := exportertest.NewNopFactory()
 	configs := map[component.ID]component.Config{
-		component.NewID(nopType): nopFactory.CreateDefaultConfig(),
+		component.NewID(NopType): nopFactory.CreateDefaultConfig(),
 	}
 	factories := map[component.Type]exporter.Factory{
-		nopType: nopFactory,
+		NopType: nopFactory,
 	}
 
 	return configs, factories
