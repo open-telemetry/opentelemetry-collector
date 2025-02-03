@@ -87,8 +87,6 @@ replace go.opentelemetry.io/collector/semconv => ../../semconv
 
 replace go.opentelemetry.io/collector/consumer => ../../consumer
 
-replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
-
 replace go.opentelemetry.io/collector/receiver/receivertest => ../../receiver/receivertest
 
 retract (

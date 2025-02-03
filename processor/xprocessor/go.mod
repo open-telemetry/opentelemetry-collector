@@ -37,8 +37,6 @@ require (
 
 replace go.opentelemetry.io/collector/processor => ../
 
-replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
-
 replace go.opentelemetry.io/collector/pdata/pprofile => ../../pdata/pprofile
 
 replace go.opentelemetry.io/collector/consumer => ../../consumer

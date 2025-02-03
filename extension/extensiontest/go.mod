@@ -38,8 +38,6 @@ require (
 
 replace go.opentelemetry.io/collector/pdata => ../../pdata
 
-replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
-
 replace go.opentelemetry.io/collector/component => ../../component
 
 replace go.opentelemetry.io/collector/component/componenttest => ../../component/componenttest

@@ -64,8 +64,6 @@ replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/co
 
 replace go.opentelemetry.io/collector/connector/xconnector => ../xconnector
 
-replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
-
 replace go.opentelemetry.io/collector/pdata/testdata => ../../pdata/testdata
 
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline

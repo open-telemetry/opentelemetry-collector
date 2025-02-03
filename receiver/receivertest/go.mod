@@ -55,8 +55,6 @@ replace go.opentelemetry.io/collector/component => ../../component
 
 replace go.opentelemetry.io/collector/component/componenttest => ../../component/componenttest
 
-replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
-
 replace go.opentelemetry.io/collector/receiver/xreceiver => ../xreceiver
 
 replace go.opentelemetry.io/collector/consumer/xconsumer => ../../consumer/xconsumer

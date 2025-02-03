@@ -87,8 +87,6 @@ replace go.opentelemetry.io/collector/pdata => ../../../pdata
 
 replace go.opentelemetry.io/collector/exporter/xexporter => ../../xexporter
 
-replace go.opentelemetry.io/collector/config/configtelemetry => ../../../config/configtelemetry
-
 replace go.opentelemetry.io/collector/config/configretry => ../../../config/configretry
 
 replace go.opentelemetry.io/collector/pipeline/xpipeline => ../../../pipeline/xpipeline
