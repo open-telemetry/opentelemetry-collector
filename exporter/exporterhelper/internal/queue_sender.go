@@ -87,8 +87,8 @@ func NewQueueSender(
 		return err
 	}
 	if !usePullingBasedExporterQueueBatcher.IsEnabled() {
-		q, err := newObsQueue(qSet, qf(context.Background(), qSet, qCfg, func(ctx context.Context, req internal.Request, done exporterqueue.DoneCallback) {
-			done(exportFunc(ctx, req))
+		q, err := newObsQueue(qSet, qf(context.Background(), qSet, qCfg, func(ctx context.Context, req internal.Request, done exporterqueue.Done) {
+			done.OnDone(exportFunc(ctx, req))
 		}))
 		if err != nil {
 			return nil, err

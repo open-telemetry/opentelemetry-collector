@@ -273,7 +273,7 @@ func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
 	return nil
 }
 
-func (pq *persistentQueue[T]) Read(ctx context.Context) (context.Context, T, DoneCallback, bool) {
+func (pq *persistentQueue[T]) Read(ctx context.Context) (context.Context, T, Done, bool) {
 	pq.mu.Lock()
 	defer pq.mu.Unlock()
 
@@ -301,7 +301,7 @@ func (pq *persistentQueue[T]) Read(ctx context.Context) (context.Context, T, Don
 				}
 				pq.hasMoreSpace.Signal()
 
-				return context.Background(), req, func(processErr error) { pq.onDone(index, processErr) }, true
+				return context.Background(), req, indexDone[T]{index: index, pq: pq}, true
 			}
 		}
 
@@ -553,4 +553,13 @@ func bytesToItemIndexArray(buf []byte) ([]uint64, error) {
 		buf = buf[8:]
 	}
 	return val, nil
+}
+
+type indexDone[T any] struct {
+	index uint64
+	pq    *persistentQueue[T]
+}
+
+func (id indexDone[T]) OnDone(err error) {
+	id.pq.onDone(id.index, err)
 }
