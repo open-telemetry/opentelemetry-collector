@@ -8,19 +8,19 @@ require (
 	go.opentelemetry.io/collector/component v0.118.0
 	go.opentelemetry.io/collector/component/componenttest v0.118.0
 	go.opentelemetry.io/collector/config/configauth v0.118.0
-	go.opentelemetry.io/collector/config/configcompression v1.24.0
+	go.opentelemetry.io/collector/config/configcompression v1.25.0
 	go.opentelemetry.io/collector/config/configgrpc v0.118.0
-	go.opentelemetry.io/collector/config/configopaque v1.24.0
-	go.opentelemetry.io/collector/config/configretry v1.24.0
-	go.opentelemetry.io/collector/config/configtls v1.24.0
-	go.opentelemetry.io/collector/confmap v1.24.0
-	go.opentelemetry.io/collector/consumer v1.24.0
+	go.opentelemetry.io/collector/config/configopaque v1.25.0
+	go.opentelemetry.io/collector/config/configretry v1.25.0
+	go.opentelemetry.io/collector/config/configtls v1.25.0
+	go.opentelemetry.io/collector/confmap v1.25.0
+	go.opentelemetry.io/collector/consumer v1.25.0
 	go.opentelemetry.io/collector/consumer/consumererror v0.118.0
 	go.opentelemetry.io/collector/exporter v0.118.0
 	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.118.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.118.0
 	go.opentelemetry.io/collector/exporter/xexporter v0.118.0
-	go.opentelemetry.io/collector/pdata v1.24.0
+	go.opentelemetry.io/collector/pdata v1.25.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.118.0
 	go.opentelemetry.io/collector/pdata/testdata v0.118.0
 	go.uber.org/goleak v1.3.0
@@ -53,8 +53,8 @@ require (
 	github.com/mostynb/go-grpc-compression v1.2.3 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/client v1.24.0 // indirect
-	go.opentelemetry.io/collector/config/confignet v1.24.0 // indirect
+	go.opentelemetry.io/collector/client v1.25.0 // indirect
+	go.opentelemetry.io/collector/config/confignet v1.25.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.118.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.118.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.118.0 // indirect
@@ -62,7 +62,7 @@ require (
 	go.opentelemetry.io/collector/extension v0.118.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.118.0 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.118.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.24.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.25.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.118.0 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.118.0 // indirect
 	go.opentelemetry.io/collector/receiver v0.118.0 // indirect
