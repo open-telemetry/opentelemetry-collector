@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/exporter/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/internal/storagetest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/testdata"
@@ -69,7 +70,7 @@ func TestMetrics_NilLogger(t *testing.T) {
 
 func TestMetricsRequest_NilLogger(t *testing.T) {
 	me, err := NewMetricsRequest(context.Background(), exporter.Settings{},
-		internal.RequestFromMetricsFunc(nil))
+		requesttest.RequestFromMetricsFunc(nil))
 	require.Nil(t, me)
 	require.Equal(t, errNilLogger, err)
 }
@@ -101,7 +102,7 @@ func TestMetrics_Default(t *testing.T) {
 func TestMetricsRequest_Default(t *testing.T) {
 	md := pmetric.NewMetrics()
 	me, err := NewMetricsRequest(context.Background(), exportertest.NewNopSettings(),
-		internal.RequestFromMetricsFunc(nil))
+		requesttest.RequestFromMetricsFunc(nil))
 	require.NoError(t, err)
 	assert.NotNil(t, me)
 
@@ -123,7 +124,7 @@ func TestMetrics_WithCapabilities(t *testing.T) {
 func TestMetricsRequest_WithCapabilities(t *testing.T) {
 	capabilities := consumer.Capabilities{MutatesData: true}
 	me, err := NewMetricsRequest(context.Background(), exportertest.NewNopSettings(),
-		internal.RequestFromMetricsFunc(nil), WithCapabilities(capabilities))
+		requesttest.RequestFromMetricsFunc(nil), WithCapabilities(capabilities))
 	require.NoError(t, err)
 	assert.NotNil(t, me)
 
@@ -155,7 +156,7 @@ func TestMetricsRequest_Default_ExportError(t *testing.T) {
 	md := pmetric.NewMetrics()
 	want := errors.New("export_error")
 	me, err := NewMetricsRequest(context.Background(), exportertest.NewNopSettings(),
-		internal.RequestFromMetricsFunc(want))
+		requesttest.RequestFromMetricsFunc(want))
 	require.NoError(t, err)
 	require.NotNil(t, me)
 	require.Equal(t, want, me.ConsumeMetrics(context.Background(), md))
@@ -227,7 +228,7 @@ func TestMetricsRequest_WithRecordMetrics(t *testing.T) {
 
 	me, err := NewMetricsRequest(context.Background(),
 		exporter.Settings{ID: fakeMetricsName, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-		internal.RequestFromMetricsFunc(nil))
+		requesttest.RequestFromMetricsFunc(nil))
 	require.NoError(t, err)
 	require.NotNil(t, me)
 
@@ -255,43 +256,11 @@ func TestMetricsRequest_WithRecordMetrics_ExportError(t *testing.T) {
 
 	me, err := NewMetricsRequest(context.Background(),
 		exporter.Settings{ID: fakeMetricsName, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-		internal.RequestFromMetricsFunc(want))
+		requesttest.RequestFromMetricsFunc(want))
 	require.NoError(t, err)
 	require.NotNil(t, me)
 
 	checkRecordedMetricsForMetrics(t, tt, fakeMetricsName, me, want)
-}
-
-func TestMetrics_WithRecordEnqueueFailedMetrics(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(fakeMetricsName)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
-
-	rCfg := configretry.NewDefaultBackOffConfig()
-	qCfg := NewDefaultQueueConfig()
-	qCfg.NumConsumers = 1
-	qCfg.QueueSize = 2
-	wantErr := errors.New("some-error")
-	te, err := NewMetrics(context.Background(), exporter.Settings{ID: fakeMetricsName, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, &fakeMetricsConfig, newPushMetricsData(wantErr), WithRetry(rCfg), WithQueue(qCfg))
-	require.NoError(t, err)
-	require.NotNil(t, te)
-
-	md := testdata.GenerateMetrics(1)
-	const numBatches = 7
-	for i := 0; i < numBatches; i++ {
-		// errors are checked in the checkExporterEnqueueFailedMetricsStats function below.
-		_ = te.ConsumeMetrics(context.Background(), md)
-	}
-
-	// 2 batched must be in queue, and 10 metric points rejected due to queue overflow
-	metadatatest.AssertEqualExporterEnqueueFailedMetricPoints(t, tt.Telemetry,
-		[]metricdata.DataPoint[int64]{
-			{
-				Attributes: attribute.NewSet(
-					attribute.String("exporter", fakeMetricsName.String())),
-				Value: int64(10),
-			},
-		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
 func TestMetrics_WithSpan(t *testing.T) {
@@ -314,7 +283,7 @@ func TestMetricsRequest_WithSpan(t *testing.T) {
 	otel.SetTracerProvider(set.TracerProvider)
 	defer otel.SetTracerProvider(nooptrace.NewTracerProvider())
 
-	me, err := NewMetricsRequest(context.Background(), set, internal.RequestFromMetricsFunc(nil))
+	me, err := NewMetricsRequest(context.Background(), set, requesttest.RequestFromMetricsFunc(nil))
 	require.NoError(t, err)
 	require.NotNil(t, me)
 	checkWrapSpanForMetrics(t, sr, set.TracerProvider.Tracer("test"), me, nil)
@@ -342,7 +311,7 @@ func TestMetricsRequest_WithSpan_ExportError(t *testing.T) {
 	defer otel.SetTracerProvider(nooptrace.NewTracerProvider())
 
 	want := errors.New("my_error")
-	me, err := NewMetricsRequest(context.Background(), set, internal.RequestFromMetricsFunc(want))
+	me, err := NewMetricsRequest(context.Background(), set, requesttest.RequestFromMetricsFunc(want))
 	require.NoError(t, err)
 	require.NotNil(t, me)
 	checkWrapSpanForMetrics(t, sr, set.TracerProvider.Tracer("test"), me, want)
@@ -366,7 +335,7 @@ func TestMetricsRequest_WithShutdown(t *testing.T) {
 	shutdown := func(context.Context) error { shutdownCalled = true; return nil }
 
 	me, err := NewMetricsRequest(context.Background(), exportertest.NewNopSettings(),
-		internal.RequestFromMetricsFunc(nil), WithShutdown(shutdown))
+		requesttest.RequestFromMetricsFunc(nil), WithShutdown(shutdown))
 	assert.NotNil(t, me)
 	assert.NoError(t, err)
 
@@ -392,7 +361,7 @@ func TestMetricsRequest_WithShutdown_ReturnError(t *testing.T) {
 	shutdownErr := func(context.Context) error { return want }
 
 	me, err := NewMetricsRequest(context.Background(), exportertest.NewNopSettings(),
-		internal.RequestFromMetricsFunc(nil), WithShutdown(shutdownErr))
+		requesttest.RequestFromMetricsFunc(nil), WithShutdown(shutdownErr))
 	assert.NotNil(t, me)
 	assert.NoError(t, err)
 

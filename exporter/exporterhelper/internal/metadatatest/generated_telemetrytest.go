@@ -10,27 +10,20 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
+// Deprecated: [v0.119.0] Use componenttest.Telemetry
 type Telemetry struct {
 	*componenttest.Telemetry
 }
 
+// Deprecated: [v0.119.0] Use componenttest.NewTelemetry
 func SetupTelemetry(opts ...componenttest.TelemetryOption) Telemetry {
 	return Telemetry{Telemetry: componenttest.NewTelemetry(opts...)}
 }
 
-func (tt *Telemetry) NewSettings() exporter.Settings {
-	set := exportertest.NewNopSettings()
-	set.ID = component.NewID(component.MustNewType("exporterhelper"))
-	set.TelemetrySettings = tt.NewTelemetrySettings()
-	return set
-}
-
+// Deprecated: [v0.119.0] Use metadatatest.AssertEqual*
 func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, opts ...metricdatatest.Option) {
 	var md metricdata.ResourceMetrics
 	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
@@ -42,13 +35,6 @@ func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, 
 
 	// ensure no additional metrics are emitted
 	require.Equal(t, len(expected), lenMetrics(md))
-}
-
-func NewSettings(tt *componenttest.Telemetry) exporter.Settings {
-	set := exportertest.NewNopSettings()
-	set.ID = component.NewID(component.MustNewType("exporterhelper"))
-	set.TelemetrySettings = tt.NewTelemetrySettings()
-	return set
 }
 
 func AssertEqualExporterEnqueueFailedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {

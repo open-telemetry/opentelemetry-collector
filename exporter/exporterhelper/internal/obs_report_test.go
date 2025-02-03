@@ -234,60 +234,6 @@ func TestExportLogsOp(t *testing.T) {
 	}
 }
 
-func TestExportEnqueueFailure(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(exporterID)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
-
-	obsrep, err := NewObsReport(ObsReportSettings{
-		ExporterSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-		Signal:           pipeline.SignalLogs,
-	})
-	require.NoError(t, err)
-	obsrep.RecordEnqueueFailure(context.Background(), int64(7))
-
-	metadatatest.AssertEqualExporterEnqueueFailedLogRecords(t, tt.Telemetry,
-		[]metricdata.DataPoint[int64]{
-			{
-				Attributes: attribute.NewSet(
-					attribute.String("exporter", exporterID.String())),
-				Value: int64(7),
-			},
-		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
-
-	obsrep, err = NewObsReport(ObsReportSettings{
-		ExporterSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-		Signal:           pipeline.SignalTraces,
-	})
-	require.NoError(t, err)
-	obsrep.RecordEnqueueFailure(context.Background(), int64(12))
-
-	metadatatest.AssertEqualExporterEnqueueFailedSpans(t, tt.Telemetry,
-		[]metricdata.DataPoint[int64]{
-			{
-				Attributes: attribute.NewSet(
-					attribute.String("exporter", exporterID.String())),
-				Value: int64(12),
-			},
-		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
-
-	obsrep, err = NewObsReport(ObsReportSettings{
-		ExporterSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-		Signal:           pipeline.SignalMetrics,
-	})
-	require.NoError(t, err)
-	obsrep.RecordEnqueueFailure(context.Background(), int64(21))
-
-	metadatatest.AssertEqualExporterEnqueueFailedMetricPoints(t, tt.Telemetry,
-		[]metricdata.DataPoint[int64]{
-			{
-				Attributes: attribute.NewSet(
-					attribute.String("exporter", exporterID.String())),
-				Value: int64(21),
-			},
-		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
-}
-
 type testParams struct {
 	items int
 	err   error

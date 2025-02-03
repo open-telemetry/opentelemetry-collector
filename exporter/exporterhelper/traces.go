@@ -139,11 +139,7 @@ func NewTracesRequest(
 				zap.Error(err))
 			return consumererror.NewPermanent(cErr)
 		}
-		sErr := be.Send(ctx, req)
-		if errors.Is(sErr, exporterqueue.ErrQueueIsFull) {
-			be.Obsrep.RecordEnqueueFailure(ctx, int64(req.ItemsCount()))
-		}
-		return sErr
+		return be.Send(ctx, req)
 	}, be.ConsumerOptions...)
 
 	return &tracesExporter{
