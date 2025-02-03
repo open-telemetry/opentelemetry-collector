@@ -111,10 +111,6 @@ github.com/yusufpapurcu/wmi v1.2.4 h1:zFUKzehAFReQwLys1b/iSMl+JQGSCSjtVqQn9bBrPo
 github.com/yusufpapurcu/wmi v1.2.4/go.mod h1:SBZ9tNy3G9/m5Oi98Zks0QjeHVDvuK0qfxQmPyzfmi0=
 go.opentelemetry.io/auto/sdk v1.1.0 h1:cH53jehLUN6UFLY71z+NDOiNJqDdPRaXzTel0sJySYA=
 go.opentelemetry.io/auto/sdk v1.1.0/go.mod h1:3wSPjt5PWp2RhlCcmmOial7AvC4DQqZb7a7wCow3W8A=
-go.opentelemetry.io/collector/confmap/provider/fileprovider v1.24.0 h1:QoQulv9L20MhD1TFWH1scbRoo0bxbZqF2quh1VRNMh4=
-go.opentelemetry.io/collector/confmap/provider/fileprovider v1.24.0/go.mod h1:ljIH/rWIUHJeWIDEKMRU/ufol/bcgC7ufamchtuTAwM=
-go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.24.0 h1:Ncr7a3HbVpmjAvPHd0yQM/MV2p7HqJe+zvDPmHdjSCI=
-go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.24.0/go.mod h1:i7omVh3uK8efpr7/fSAcOh8Xiv3FLYL26wUuON9i1WI=
 go.opentelemetry.io/contrib/bridges/otelzap v0.9.0 h1:f+xpAfhQTjR8beiSMe1bnT/25PkeyWmOcI+SjXWguNw=
 go.opentelemetry.io/contrib/bridges/otelzap v0.9.0/go.mod h1:T1Z1jyS5FttgQoF6UcGhnM+gF9wU32B4lHO69nXw4FE=
 go.opentelemetry.io/contrib/config v0.14.0 h1:QAG8uHNp5ZiCkpT7XggSmg5AyW1sA0LgypMoXgBB1+4=
