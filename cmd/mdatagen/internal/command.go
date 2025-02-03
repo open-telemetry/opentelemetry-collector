@@ -128,6 +128,10 @@ func run(ymlPath string) error {
 		toGenerate[filepath.Join(tmplDir, "documentation.md.tmpl")] = filepath.Join(ymlDir, "documentation.md")
 	}
 
+	if len(md.FeatureGates) != 0 {
+		toGenerate[filepath.Join(tmplDir, "feature_gates.go.tmpl")] = filepath.Join(ymlDir, "generated_feature_gates.go")
+	}
+
 	for tmpl, dst := range toGenerate {
 		if err = generateFile(tmpl, dst, md, "metadata"); err != nil {
 			return err
