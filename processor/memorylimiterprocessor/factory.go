@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentattribute"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor/internal/metadata"
@@ -103,6 +104,14 @@ func (f *factory) getMemoryLimiter(set processor.Settings, cfg component.Config)
 
 	if memLimiter, ok := f.memoryLimiters[cfg]; ok {
 		return memLimiter, nil
+	}
+
+	if c, ok := set.Logger.Core().(*componentattribute.Core); ok {
+		set.Logger = c.Without(
+			componentattribute.SignalKey,
+			componentattribute.PipelineIDKey,
+			componentattribute.ComponentIDKey,
+		)
 	}
 
 	memLimiter, err := newMemoryLimiterProcessor(set, cfg.(*Config))

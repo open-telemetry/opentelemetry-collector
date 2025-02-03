@@ -7,9 +7,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/collector/service/internal/attribute"
 )
-
-const capabilitiesSeed = "capabilities"
 
 var _ consumerNode = (*capabilitiesNode)(nil)
 
@@ -19,7 +18,7 @@ var _ consumerNode = (*capabilitiesNode)(nil)
 // 2. Present a consistent "first consumer" for each pipeline.
 // The nodeID is derived from "pipeline ID".
 type capabilitiesNode struct {
-	nodeID
+	attribute.Attributes
 	pipelineID pipeline.ID
 	baseConsumer
 	consumer.ConsumeTracesFunc
@@ -30,7 +29,7 @@ type capabilitiesNode struct {
 
 func newCapabilitiesNode(pipelineID pipeline.ID) *capabilitiesNode {
 	return &capabilitiesNode{
-		nodeID:     newNodeID(capabilitiesSeed, pipelineID.String()),
+		Attributes: attribute.Capabilities(pipelineID),
 		pipelineID: pipelineID,
 	}
 }
