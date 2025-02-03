@@ -7,27 +7,18 @@ import (
 	"context" // Sender is an abstraction of a sender for a request independent of the type of the data (traces, metrics, logs).
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/exporter/internal"
 )
 
 type Sender[K any] interface {
 	component.Component
 	Send(context.Context, K) error
-	SetNextSender(nextSender Sender[K])
 }
 
-type BaseSender[K any] struct {
-	component.StartFunc
-	component.ShutdownFunc
-	NextSender Sender[K]
-}
+type SendFunc[K any] func(context.Context, K) error
 
-var _ Sender[internal.Request] = (*BaseSender[internal.Request])(nil)
-
-func (b *BaseSender[K]) Send(ctx context.Context, req K) error {
-	return b.NextSender.Send(ctx, req)
-}
-
-func (b *BaseSender[K]) SetNextSender(nextSender Sender[K]) {
-	b.NextSender = nextSender
+func (f SendFunc[K]) Send(ctx context.Context, k K) error {
+	if f == nil {
+		return nil
+	}
+	return f(ctx, k)
 }
