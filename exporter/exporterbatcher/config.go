@@ -19,9 +19,28 @@ type Config struct {
 	// FlushTimeout sets the time after which a batch will be sent regardless of its size.
 	FlushTimeout time.Duration `mapstructure:"flush_timeout"`
 
+	SizeConfig `mapstructure:",squash"`
+
+	// Deprecated. Ignored if SizeConfig is set.
 	MinSizeConfig `mapstructure:",squash"`
+	// Deprecated. Ignored if SizeConfig is set.
 	MaxSizeConfig `mapstructure:",squash"`
 }
+
+type SizeConfig struct {
+	SizerType SizerType `mapstructure:",squash"`
+
+	MinSize int `mapstructure:"mix_size"`
+	MaxSize int `mapstructure:"max_size"`
+}
+
+type SizerType struct {
+	// Sizer should either be bytes or items.
+	Sizer string `mapstructure:"sizer"`
+}
+
+const SizerTypeItems = "items"
+const SizerTypeBytes = "bytes"
 
 // MinSizeConfig defines the configuration for the minimum number of items in a batch.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
@@ -55,6 +74,30 @@ func (c Config) Validate() error {
 	}
 	if c.FlushTimeout <= 0 {
 		return errors.New("timeout must be greater than zero")
+	}
+	return nil
+}
+
+func (c SizeConfig) Validate() error {
+	if c.SizerType.Sizer == "" && c.MinSize == 0 && c.MaxSize == 0 {
+		return nil
+	}
+
+	if c.MinSize < 0 {
+		return errors.New("min_size must be greater than or equal to zero")
+	}
+	if c.MaxSize < 0 {
+		return errors.New("max_size must be greater than or equal to zero")
+	}
+	if c.MaxSize != 0 && c.MaxSize < c.MinSize {
+		return errors.New("max_size must be greater than or equal to mix_size")
+	}
+	return nil
+}
+
+func (c SizerType) Validate() error {
+	if c.Sizer != SizerTypeItems && c.Sizer != SizerTypeBytes {
+		return errors.New("sizer should either be bytes or items")
 	}
 	return nil
 }
