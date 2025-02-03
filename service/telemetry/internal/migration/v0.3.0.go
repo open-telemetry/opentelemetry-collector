@@ -39,6 +39,19 @@ func (c *TracesConfigV030) Unmarshal(conf *confmap.Conf) error {
 		// TODO: add a warning log to tell users to migrate their config
 		return tracesConfigV02ToV03(v2TracesConfig, c)
 	}
+	// ensure endpoint normalization occurs
+	for _, r := range c.Processors {
+		if r.Batch != nil {
+			if r.Batch.Exporter.OTLP != nil {
+				r.Batch.Exporter.OTLP.Endpoint = normalizeEndpoint(*r.Batch.Exporter.OTLP.Endpoint)
+			}
+		}
+		if r.Simple != nil {
+			if r.Simple.Exporter.OTLP != nil && r.Simple.Exporter.OTLP.Endpoint != nil {
+				r.Simple.Exporter.OTLP.Endpoint = normalizeEndpoint(*r.Simple.Exporter.OTLP.Endpoint)
+			}
+		}
+	}
 	return nil
 }
 
@@ -69,6 +82,14 @@ func (c *MetricsConfigV030) Unmarshal(conf *confmap.Conf) error {
 		}
 		// TODO: add a warning log to tell users to migrate their config
 		return metricsConfigV02ToV03(v02, c)
+	}
+	// ensure endpoint normalization occurs
+	for _, r := range c.Readers {
+		if r.Periodic != nil {
+			if r.Periodic.Exporter.OTLP != nil && r.Periodic.Exporter.OTLP.Endpoint != nil {
+				r.Periodic.Exporter.OTLP.Endpoint = normalizeEndpoint(*r.Periodic.Exporter.OTLP.Endpoint)
+			}
+		}
 	}
 	return nil
 }
@@ -169,6 +190,18 @@ func (c *LogsConfigV030) Unmarshal(conf *confmap.Conf) error {
 		// TODO: add a warning log to tell users to migrate their config
 		return logsConfigV02ToV03(v02, c)
 	}
-	//
+	// ensure endpoint normalization occurs
+	for _, r := range c.Processors {
+		if r.Batch != nil {
+			if r.Batch.Exporter.OTLP != nil {
+				r.Batch.Exporter.OTLP.Endpoint = normalizeEndpoint(*r.Batch.Exporter.OTLP.Endpoint)
+			}
+		}
+		if r.Simple != nil {
+			if r.Simple.Exporter.OTLP != nil && r.Simple.Exporter.OTLP.Endpoint != nil {
+				r.Simple.Exporter.OTLP.Endpoint = normalizeEndpoint(*r.Simple.Exporter.OTLP.Endpoint)
+			}
+		}
+	}
 	return nil
 }
