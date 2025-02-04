@@ -5,5 +5,5 @@
 // a gRPC client and server.
 //
 // The configuration structs in this package may be shared across signals, but
-// assume each struct is used for a single protocol and receiver.
+// assume each struct is used for a single protocol and component.
 package configgrpc // import "go.opentelemetry.io/collector/config/configgrpc"
