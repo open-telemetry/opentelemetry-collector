@@ -57,6 +57,9 @@ type ResolverSettings struct {
 	// factories when instantiating Converters.
 	ConverterSettings ConverterSettings
 
+	// MergePaths contains the paths specified by the user.
+	// This paths will be used while merging the configs and all the lists under the
+	// specified paths will be merged rather than overridden.
 	MergePaths []string
 }
 
@@ -174,10 +177,10 @@ func (mr *Resolver) Resolve(ctx context.Context) (*Conf, error) {
 		if err != nil {
 			return nil, err
 		}
-		if len(mr.mergePaths) > 0 {
-			err = retMap.MergeAppend(retCfgMap, mr.mergePaths)
-		} else {
+		if len(mr.mergePaths) == 0 {
 			err = retMap.Merge(retCfgMap)
+		} else {
+			err = retMap.MergeAppend(retCfgMap, mr.mergePaths)
 		}
 		if err != nil {
 			return nil, err
