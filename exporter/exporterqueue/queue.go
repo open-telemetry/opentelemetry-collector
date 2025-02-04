@@ -86,7 +86,7 @@ func NewMemoryQueueFactory[T any]() Factory[T] {
 			capacity: int64(cfg.QueueSize),
 			blocking: cfg.Blocking,
 		})
-		return newConsumerQueue(q, cfg.NumConsumers, consume)
+		return newAsyncQueue(q, cfg.NumConsumers, consume)
 	}
 }
 
@@ -119,6 +119,6 @@ func NewPersistentQueueFactory[T any](storageID *component.ID, factorySettings P
 			unmarshaler: factorySettings.Unmarshaler,
 			set:         set.ExporterSettings,
 		})
-		return newConsumerQueue(q, cfg.NumConsumers, consume)
+		return newAsyncQueue(q, cfg.NumConsumers, consume)
 	}
 }

@@ -229,7 +229,7 @@ func createAndStartTestPersistentQueue(t *testing.T, sizer sizer[uint64], capaci
 		unmarshaler: uint64Unmarshaler,
 		set:         exportertest.NewNopSettings(),
 	})
-	ac := newConsumerQueue(pq, numConsumers, func(ctx context.Context, item uint64, done Done) {
+	ac := newAsyncQueue(pq, numConsumers, func(ctx context.Context, item uint64, done Done) {
 		done.OnDone(consumeFunc(ctx, item))
 	})
 	host := &mockHost{ext: map[component.ID]component.Component{
@@ -425,7 +425,7 @@ func TestPersistentBlockingQueue(t *testing.T) {
 				set:         exportertest.NewNopSettings(),
 			})
 			consumed := &atomic.Int64{}
-			ac := newConsumerQueue(pq, 10, func(_ context.Context, _ uint64, done Done) {
+			ac := newAsyncQueue(pq, 10, func(_ context.Context, _ uint64, done Done) {
 				consumed.Add(1)
 				done.OnDone(nil)
 			})
