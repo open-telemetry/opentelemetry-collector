@@ -115,9 +115,9 @@ func TestQueueUsage(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			q := newBoundedMemoryQueue[uint64](memoryQueueSettings[uint64]{sizer: tt.sizer, capacity: int64(100)})
 			consumed := &atomic.Int64{}
-			ac := newConsumerQueue(q, 1, func(_ context.Context, _ uint64, done DoneCallback) {
+			ac := newConsumerQueue(q, 1, func(_ context.Context, _ uint64, done Done) {
 				consumed.Add(1)
-				done(nil)
+				done.OnDone(nil)
 			})
 			require.NoError(t, ac.Start(context.Background(), componenttest.NewNopHost()))
 			for j := 0; j < 10; j++ {
@@ -147,9 +147,9 @@ func TestBlockingQueueUsage(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			q := newBoundedMemoryQueue[uint64](memoryQueueSettings[uint64]{sizer: tt.sizer, capacity: int64(100), blocking: true})
 			consumed := &atomic.Int64{}
-			ac := newConsumerQueue(q, 10, func(_ context.Context, _ uint64, done DoneCallback) {
+			ac := newConsumerQueue(q, 10, func(_ context.Context, _ uint64, done Done) {
 				consumed.Add(1)
-				done(nil)
+				done.OnDone(nil)
 			})
 			require.NoError(t, ac.Start(context.Background(), componenttest.NewNopHost()))
 			wg := &sync.WaitGroup{}
@@ -182,7 +182,7 @@ func consume[T any](q readableQueue[T], consumeFunc func(context.Context, T) err
 	if !ok {
 		return false
 	}
-	done(consumeFunc(ctx, req))
+	done.OnDone(consumeFunc(ctx, req))
 	return true
 }
 
@@ -205,9 +205,9 @@ func BenchmarkOffer(b *testing.B) {
 			q := newBoundedMemoryQueue[uint64](memoryQueueSettings[uint64]{sizer: tt.sizer, capacity: int64(10 * b.N)})
 			consumed := &atomic.Int64{}
 			require.NoError(b, q.Start(context.Background(), componenttest.NewNopHost()))
-			ac := newConsumerQueue(q, 1, func(_ context.Context, _ uint64, done DoneCallback) {
+			ac := newConsumerQueue(q, 1, func(_ context.Context, _ uint64, done Done) {
 				consumed.Add(1)
-				done(nil)
+				done.OnDone(nil)
 			})
 			require.NoError(b, ac.Start(context.Background(), componenttest.NewNopHost()))
 			b.ResetTimer()
