@@ -22,6 +22,8 @@ func NewObsReportSender[K internal.Request](obsrep *ObsReport, next Sender[K]) S
 }
 
 func (ors *obsReportSender[K]) Send(ctx context.Context, req K) error {
+	// Have to read the number of items before sending the request since the request can
+	// be modified by the downstream components like the batcher.
 	c := ors.obsrep.StartOp(ctx)
 	items := req.ItemsCount()
 	// Forward the data to the next consumer (this pusher is the next).

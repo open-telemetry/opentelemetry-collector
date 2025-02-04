@@ -78,10 +78,13 @@ func NewQueueSender(
 	next Sender[internal.Request],
 ) (*QueueSender, error) {
 	exportFunc := func(ctx context.Context, req internal.Request) error {
+		// Have to read the number of items before sending the request since the request can
+		// be modified by the downstream components like the batcher.
+		itemsCount := req.ItemsCount()
 		err := next.Send(ctx, req)
 		if err != nil {
 			qSet.ExporterSettings.Logger.Error("Exporting failed. Dropping data."+exportFailureMessage,
-				zap.Error(err), zap.Int("dropped_items", req.ItemsCount()))
+				zap.Error(err), zap.Int("dropped_items", itemsCount))
 		}
 		return err
 	}
