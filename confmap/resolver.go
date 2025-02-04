@@ -174,7 +174,12 @@ func (mr *Resolver) Resolve(ctx context.Context) (*Conf, error) {
 		if err != nil {
 			return nil, err
 		}
-		if err = retMap.Merge(retCfgMap); err != nil {
+		if len(mr.mergePaths) > 0 {
+			err = retMap.MergeAppend(retCfgMap, mr.mergePaths)
+		} else {
+			err = retMap.Merge(retCfgMap)
+		}
+		if err != nil {
 			return nil, err
 		}
 	}

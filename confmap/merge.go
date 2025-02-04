@@ -14,48 +14,28 @@ const (
 	mergeAllAlias = "*"
 )
 
-type mergeOption struct {
-	mergePaths []string
-}
+func mergeComponentsAppend(mergePaths []string) func(src, dest map[string]any) error {
+	return func(src, dest map[string]any) error {
+		// mergeComponentsAppend recursively merges the src map into the dest map (left to right),
+		// modifying and expanding the dest map in the process.
+		// This function does not overwrite lists, and ensures that the final value is a name-aware
+		// copy of lists from src and dest.
 
-// WithMergePaths sets an option to merge the lists instead of
-// overriding them.
-func WithMergePaths(paths []string) MergeOpts {
-	return mergeOptionFunc(func(uo *mergeOption) {
-		uo.mergePaths = paths
-	})
-}
-
-type MergeOpts interface {
-	apply(*mergeOption)
-}
-
-type mergeOptionFunc func(*mergeOption)
-
-func (fn mergeOptionFunc) apply(set *mergeOption) {
-	fn(set)
-}
-
-func (m *mergeOption) mergeComponentsAppend(src, dest map[string]any) error {
-	// mergeComponentsAppend recursively merges the src map into the dest map (left to right),
-	// modifying and expanding the dest map in the process.
-	// This function does not overwrite lists, and ensures that the final value is a name-aware
-	// copy of lists from src and dest.
-
-	// loop through all the paths specified by the user and merge the lists under the specified path
-	for _, path := range m.mergePaths {
-		merge(path, src, dest)
-		if path == mergeAllAlias {
-			// every list in the config is now merged, we can exit early.
-			break
+		// loop through all the paths specified by the user and merge the lists under the specified path
+		for _, path := range mergePaths {
+			merge(path, src, dest)
+			if path == mergeAllAlias {
+				// every list in the config is now merged, we can exit early.
+				break
+			}
 		}
-	}
-	// unflatten the new config
-	src = maps.Unflatten(src, KeyDelimiter)
+		// unflatten the new config
+		src = maps.Unflatten(src, KeyDelimiter)
 
-	// merge rest of the config.
-	maps.Merge(src, dest)
-	return nil
+		// merge rest of the config.
+		maps.Merge(src, dest)
+		return nil
+	}
 }
 
 func merge(path string, src, dest map[string]any) {
