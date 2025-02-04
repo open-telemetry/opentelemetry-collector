@@ -11,7 +11,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-var noopDone DoneCallback = func(error) {}
+type noopDone struct{}
+
+func (*noopDone) OnDone(error) {}
+
+var noopDoneInst = &noopDone{}
 
 // boundedMemoryQueue implements a producer-consumer exchange similar to a ring buffer queue,
 // where the queue is bounded and if it fills up due to slow consumers, the new items written by
@@ -36,7 +40,7 @@ func newBoundedMemoryQueue[T any](set memoryQueueSettings[T]) readableQueue[T] {
 	}
 }
 
-func (q *boundedMemoryQueue[T]) Read(context.Context) (context.Context, T, DoneCallback, bool) {
+func (q *boundedMemoryQueue[T]) Read(context.Context) (context.Context, T, Done, bool) {
 	ctx, req, ok := q.sizedQueue.pop()
-	return ctx, req, noopDone, ok
+	return ctx, req, noopDoneInst, ok
 }

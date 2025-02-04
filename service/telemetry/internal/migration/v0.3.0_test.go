@@ -18,7 +18,11 @@ func TestUnmarshalLogsConfigV030(t *testing.T) {
 
 	cfg := LogsConfigV030{}
 	require.NoError(t, cm.Unmarshal(&cfg))
-	require.Len(t, cfg.Processors, 2)
+	require.Len(t, cfg.Processors, 3)
+	// check the endpoint is prefixed w/ http
+	require.Equal(t, "http://127.0.0.1:4317", *cfg.Processors[0].Batch.Exporter.OTLP.Endpoint)
+	// check the endpoint is prefixed w/ http
+	require.Equal(t, "http://127.0.0.1:4317", *cfg.Processors[2].Simple.Exporter.OTLP.Endpoint)
 }
 
 func TestUnmarshalTracesConfigV030(t *testing.T) {
@@ -27,7 +31,11 @@ func TestUnmarshalTracesConfigV030(t *testing.T) {
 
 	cfg := TracesConfigV030{}
 	require.NoError(t, cm.Unmarshal(&cfg))
-	require.Len(t, cfg.Processors, 2)
+	require.Len(t, cfg.Processors, 3)
+	// check the endpoint is prefixed w/ http
+	require.Equal(t, "http://127.0.0.1:4317", *cfg.Processors[0].Batch.Exporter.OTLP.Endpoint)
+	// check the endpoint is prefixed w/ http
+	require.Equal(t, "http://127.0.0.1:4317", *cfg.Processors[2].Simple.Exporter.OTLP.Endpoint)
 }
 
 func TestUnmarshalMetricsConfigV030(t *testing.T) {
@@ -37,4 +45,7 @@ func TestUnmarshalMetricsConfigV030(t *testing.T) {
 	cfg := MetricsConfigV030{}
 	require.NoError(t, cm.Unmarshal(&cfg))
 	require.Len(t, cfg.Readers, 2)
+
+	// check the endpoint is prefixed w/ http
+	require.Equal(t, "http://127.0.0.1:4317", *cfg.Readers[0].Periodic.Exporter.OTLP.Endpoint)
 }
