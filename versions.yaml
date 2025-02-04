@@ -32,6 +32,7 @@ module-sets:
       - go.opentelemetry.io/collector/component
       - go.opentelemetry.io/collector/component/componenttest
       - go.opentelemetry.io/collector/component/componentstatus
+      - go.opentelemetry.io/collector/confmap/xconfmap
       - go.opentelemetry.io/collector/config/configauth
       - go.opentelemetry.io/collector/config/configgrpc
       - go.opentelemetry.io/collector/config/confighttp

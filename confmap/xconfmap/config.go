@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package component // import "go.opentelemetry.io/collector/component"
+package xconfmap // import "go.opentelemetry.io/collector/confmap/xconfmap"
 
 import (
 	"errors"
@@ -9,34 +9,23 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-)
 
-// Config defines the configuration for a component.Component.
-//
-// Implementations and/or any sub-configs (other types embedded or included in the Config implementation)
-// MUST implement xconfmap.Validator if any validation is required for that part of the configuration
-// (e.g. check if a required field is present).
-//
-// A valid implementation MUST pass the check componenttest.CheckConfigStruct (return nil error).
-type Config any
+	"go.opentelemetry.io/collector/confmap"
+)
 
 // As interface types are only used for static typing, a common idiom to find the reflection Type
 // for an interface type Foo is to use a *Foo value.
-var configValidatorType = reflect.TypeOf((*ConfigValidator)(nil)).Elem()
+var configValidatorType = reflect.TypeOf((*Validator)(nil)).Elem()
 
-// ConfigValidator defines an optional interface for configurations to implement to do validation.
-//
-// Deprecated: [v0.120.0] use xconfmap.Validator.
-type ConfigValidator interface {
+// Validator defines an optional interface for configurations to implement to do validation.
+type Validator interface {
 	// Validate the configuration and returns an error if invalid.
 	Validate() error
 }
 
-// ValidateConfig validates a config, by doing this:
+// Validate validates a config, by doing this:
 //   - Call Validate on the config itself if the config implements ConfigValidator.
-//
-// Deprecated: [v0.120.0] use xconfmap.Validate.
-func ValidateConfig(cfg Config) error {
+func Validate(cfg any) error {
 	var err error
 
 	for _, validationErr := range validate(reflect.ValueOf(cfg)) {
@@ -58,7 +47,7 @@ func (pe pathError) Error() string {
 
 		_, _ = sb.WriteString(pe.path[len(pe.path)-1])
 		for i := len(pe.path) - 2; i >= 0; i-- {
-			_, _ = sb.WriteString("::")
+			_, _ = sb.WriteString(confmap.KeyDelimiter)
 			_, _ = sb.WriteString(pe.path[i])
 		}
 		path = sb.String()
@@ -156,7 +145,7 @@ func validate(v reflect.Value) []pathError {
 func callValidateIfPossible(v reflect.Value) error {
 	// If the value type implements ConfigValidator just call Validate
 	if v.Type().Implements(configValidatorType) {
-		return v.Interface().(ConfigValidator).Validate()
+		return v.Interface().(Validator).Validate()
 	}
 
 	// If the pointer type implements ConfigValidator call Validate on the pointer to the current value.
@@ -167,7 +156,7 @@ func callValidateIfPossible(v reflect.Value) error {
 			pv.Elem().Set(v)
 			v = pv.Elem()
 		}
-		return v.Addr().Interface().(ConfigValidator).Validate()
+		return v.Addr().Interface().(Validator).Validate()
 	}
 
 	return nil
@@ -175,7 +164,7 @@ func callValidateIfPossible(v reflect.Value) error {
 
 func fieldName(field reflect.StructField) string {
 	var fieldName string
-	if tag, ok := field.Tag.Lookup("mapstructure"); ok {
+	if tag, ok := field.Tag.Lookup(confmap.MapstructureTag); ok {
 		tags := strings.Split(tag, ",")
 		if len(tags) > 0 {
 			fieldName = tags[0]
