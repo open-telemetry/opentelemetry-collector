@@ -28,19 +28,11 @@ type Config struct {
 }
 
 type SizeConfig struct {
-	SizerType SizerType `mapstructure:",squash"`
+	Sizer SizerType `mapstructure:"sizer"`
 
 	MinSize int `mapstructure:"mix_size"`
 	MaxSize int `mapstructure:"max_size"`
 }
-
-type SizerType struct {
-	// Sizer should either be bytes or items.
-	Sizer string `mapstructure:"sizer"`
-}
-
-const SizerTypeItems = "items"
-const SizerTypeBytes = "bytes"
 
 // MinSizeConfig defines the configuration for the minimum number of items in a batch.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
@@ -79,7 +71,7 @@ func (c Config) Validate() error {
 }
 
 func (c SizeConfig) Validate() error {
-	if c.SizerType.Sizer == "" && c.MinSize == 0 && c.MaxSize == 0 {
+	if c.Sizer.string == "" && c.MinSize == 0 && c.MaxSize == 0 {
 		return nil
 	}
 
@@ -91,13 +83,6 @@ func (c SizeConfig) Validate() error {
 	}
 	if c.MaxSize != 0 && c.MaxSize < c.MinSize {
 		return errors.New("max_size must be greater than or equal to mix_size")
-	}
-	return nil
-}
-
-func (c SizerType) Validate() error {
-	if c.Sizer != SizerTypeItems && c.Sizer != SizerTypeBytes {
-		return errors.New("sizer should either be bytes or items")
 	}
 	return nil
 }
