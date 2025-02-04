@@ -55,9 +55,7 @@ func (qc *asyncQueue[T]) Start(ctx context.Context, host component.Host) error {
 
 func (qc *asyncQueue[T]) Offer(ctx context.Context, req T) error {
 	span := trace.SpanFromContext(ctx)
-	// Prevent cancellation and deadline to propagate to the context stored in the queue.
-	// The grpc/http based receivers will cancel the request context after this function returns.
-	if err := qc.readableQueue.Offer(context.WithoutCancel(ctx), req); err != nil {
+	if err := qc.readableQueue.Offer(ctx, req); err != nil {
 		span.AddEvent("Failed to enqueue item.")
 		return err
 	}

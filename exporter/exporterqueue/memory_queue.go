@@ -75,7 +75,9 @@ func (sq *memoryQueue[T]) Offer(ctx context.Context, el T) error {
 	}
 
 	sq.size += elSize
-	sq.items.push(ctx, el, elSize)
+	// Prevent cancellation and deadline to propagate to the context stored in the queue.
+	// The grpc/http based receivers will cancel the request context after this function returns.
+	sq.items.push(context.WithoutCancel(ctx), el, elSize)
 	// Signal one consumer if any.
 	sq.hasMoreElements.Signal()
 	return nil
