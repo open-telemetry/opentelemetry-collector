@@ -179,7 +179,7 @@ Here is a list of community roles with current and previous members:
    - [Antoine Toulme](https://github.com/atoulme), Splunk
    - [Daniel Jaglowski](https://github.com/djaglowski), observIQ
    - [Evan Bradley](https://github.com/evan-bradley), Dynatrace
-   - [Juraci Paixão Kröhling](https://github.com/jpkrohling), Grafana Labs
+   - [Juraci Paixão Kröhling](https://github.com/jpkrohling), OllyGarden
    - [Tyler Helmuth](https://github.com/TylerHelmuth), Honeycomb
    - [Yang Song](https://github.com/songy23), Datadog
 
