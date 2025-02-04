@@ -58,13 +58,10 @@ func TestValueType_UnitStrindex(t *testing.T) {
 
 func TestValueType_AggregationTemporality(t *testing.T) {
 	ms := NewValueType()
-	assert.Equal(t, otlpprofiles.AggregationTemporality(0), ms.AggregationTemporality())
-	ms.SetAggregationTemporality(otlpprofiles.AggregationTemporality(1))
-	assert.Equal(t, otlpprofiles.AggregationTemporality(1), ms.AggregationTemporality())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() {
-		newValueType(&otlpprofiles.ValueType{}, &sharedState).SetAggregationTemporality(otlpprofiles.AggregationTemporality(1))
-	})
+	assert.Equal(t, AggregationTemporality(otlpprofiles.AggregationTemporality(0)), ms.AggregationTemporality())
+	testValAggregationTemporality := AggregationTemporality(otlpprofiles.AggregationTemporality(1))
+	ms.SetAggregationTemporality(testValAggregationTemporality)
+	assert.Equal(t, testValAggregationTemporality, ms.AggregationTemporality())
 }
 
 func generateTestValueType() ValueType {
