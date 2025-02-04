@@ -46,8 +46,6 @@ type Conf struct {
 	// This avoids running into an infinite recursion where Unmarshaler.Unmarshal and
 	// Conf.Unmarshal would call each other.
 	skipTopLevelUnmarshaler bool
-
-	mergePaths []string
 }
 
 // AllKeys returns all keys holding a value, regardless of where they are set.

@@ -453,7 +453,11 @@ func TestMergeFunctionality(t *testing.T) {
 		t.Run(tt.Name, func(t *testing.T) {
 			conf := New()
 			for _, c := range tt.Configs {
-				require.NoError(t, conf.MergeAppend(NewFromStringMap(c), conf.mergePaths))
+				if len(tt.AppendPaths) == 0 {
+					require.NoError(t, conf.Merge(NewFromStringMap(c)))
+				} else {
+					require.NoError(t, conf.MergeAppend(NewFromStringMap(c), tt.AppendPaths))
+				}
 			}
 			mergedConf := conf.ToStringMap()
 			require.Truef(t, reflect.DeepEqual(mergedConf, tt.Expected), "Exp: %s\nGot: %s", tt.Expected, mergedConf)
