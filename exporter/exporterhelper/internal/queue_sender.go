@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -138,18 +137,7 @@ func (qs *QueueSender) Shutdown(ctx context.Context) error {
 
 // Send implements the requestSender interface. It puts the request in the queue.
 func (qs *QueueSender) Send(ctx context.Context, req internal.Request) error {
-	// Prevent cancellation and deadline to propagate to the context stored in the queue.
-	// The grpc/http based receivers will cancel the request context after this function returns.
-	c := context.WithoutCancel(ctx)
-
-	span := trace.SpanFromContext(c)
-	if err := qs.queue.Offer(c, req); err != nil {
-		span.AddEvent("Failed to enqueue item.")
-		return err
-	}
-
-	span.AddEvent("Enqueued item.")
-	return nil
+	return qs.queue.Offer(ctx, req)
 }
 
 type MockHost struct {
