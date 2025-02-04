@@ -18,13 +18,16 @@ import (
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 var ErrQueueIsFull = errors.New("sending queue is full")
 
-// DoneCallback represents the callback that will be called when the read request is completely processed by the
+// Done represents the callback that will be called when the read request is completely processed by the
 // downstream components.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-type DoneCallback func(processErr error)
+type Done interface {
+	// OnDone needs to be called when processing of the queue item is done.
+	OnDone(error)
+}
 
-type ConsumeFunc[T any] func(context.Context, T, DoneCallback)
+type ConsumeFunc[T any] func(context.Context, T, Done)
 
 // Queue defines a producer-consumer exchange which can be backed by e.g. the memory-based ring buffer queue
 // (boundedMemoryQueue) or via a disk-based queue (persistentQueue)
@@ -49,7 +52,7 @@ type readableQueue[T any] interface {
 	// finished, the done callback must be called to clean up the storage.
 	// The function blocks until an item is available or if the queue is stopped.
 	// If the queue is stopped returns false, otherwise true.
-	Read(context.Context) (context.Context, T, DoneCallback, bool)
+	Read(context.Context) (context.Context, T, Done, bool)
 }
 
 // Settings defines settings for creating a queue.

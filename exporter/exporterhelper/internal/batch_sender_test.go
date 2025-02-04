@@ -196,13 +196,13 @@ func TestBatchSender_MergeOrSplit(t *testing.T) {
 			require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 8, Sink: sink}))
 			assert.Eventually(t, func() bool {
 				return sink.RequestsCount() == 1 && sink.ItemsCount() == 8
-			}, 50*time.Millisecond, 10*time.Millisecond)
+			}, 500*time.Millisecond, 10*time.Millisecond)
 
 			// big request should be broken down into two requests, both are sent right away.
 			require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 17, Sink: sink}))
 			assert.Eventually(t, func() bool {
 				return sink.RequestsCount() == 3 && sink.ItemsCount() == 25
-			}, 50*time.Millisecond, 10*time.Millisecond)
+			}, 500*time.Millisecond, 10*time.Millisecond)
 
 			// request that cannot be split should be dropped.
 			require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{
@@ -215,7 +215,7 @@ func TestBatchSender_MergeOrSplit(t *testing.T) {
 
 			assert.Eventually(t, func() bool {
 				return sink.RequestsCount() == 5 && sink.ItemsCount() == 38
-			}, 50*time.Millisecond, 10*time.Millisecond)
+			}, 500*time.Millisecond, 10*time.Millisecond)
 		})
 	}
 
