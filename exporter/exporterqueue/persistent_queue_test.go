@@ -229,8 +229,8 @@ func createAndStartTestPersistentQueue(t *testing.T, sizer sizer[uint64], capaci
 		unmarshaler: uint64Unmarshaler,
 		set:         exportertest.NewNopSettings(),
 	})
-	ac := newConsumerQueue(pq, numConsumers, func(ctx context.Context, item uint64, done DoneCallback) {
-		done(consumeFunc(ctx, item))
+	ac := newConsumerQueue(pq, numConsumers, func(ctx context.Context, item uint64, done Done) {
+		done.OnDone(consumeFunc(ctx, item))
 	})
 	host := &mockHost{ext: map[component.ID]component.Component{
 		{}: storagetest.NewMockStorageExtension(nil),
@@ -425,9 +425,9 @@ func TestPersistentBlockingQueue(t *testing.T) {
 				set:         exportertest.NewNopSettings(),
 			})
 			consumed := &atomic.Int64{}
-			ac := newConsumerQueue(pq, 10, func(_ context.Context, _ uint64, done DoneCallback) {
+			ac := newConsumerQueue(pq, 10, func(_ context.Context, _ uint64, done Done) {
 				consumed.Add(1)
-				done(nil)
+				done.OnDone(nil)
 			})
 			host := &mockHost{ext: map[component.ID]component.Component{
 				{}: storagetest.NewMockStorageExtension(nil),
@@ -671,7 +671,7 @@ func TestPersistentQueue_CurrentlyProcessedItems(t *testing.T) {
 	requireCurrentlyDispatchedItemsEqual(t, ps, []uint64{0, 1})
 
 	// Lets mark item 1 as finished, it will remove it from the currently dispatched items list.
-	secondDone(nil)
+	secondDone.OnDone(nil)
 	requireCurrentlyDispatchedItemsEqual(t, ps, []uint64{0})
 
 	// Reload the storage. Since items 0 was not finished, this should be re-enqueued at the end.
@@ -915,7 +915,7 @@ func TestPersistentQueue_ShutdownWhileConsuming(t *testing.T) {
 	assert.False(t, ps.client.(*storagetest.MockStorageClient).IsClosed())
 	require.NoError(t, ps.Shutdown(context.Background()))
 	assert.False(t, ps.client.(*storagetest.MockStorageClient).IsClosed())
-	done(nil)
+	done.OnDone(nil)
 	assert.True(t, ps.client.(*storagetest.MockStorageClient).IsClosed())
 }
 
