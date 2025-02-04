@@ -109,9 +109,9 @@ func TestConfigValidate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := tt.cfgFn(t)
 			if tt.expected != nil {
-				require.ErrorContains(t, confmap.Validate(cfg), tt.expected.Error())
+				require.ErrorContains(t, xconfmap.Validate(cfg), tt.expected.Error())
 			} else {
-				require.NoError(t, confmap.Validate(cfg))
+				require.NoError(t, xconfmap.Validate(cfg))
 			}
 
 			// Clean up the profiles support gate, which may have been enabled in `cfgFn`.

@@ -40,5 +40,5 @@ func LoadConfigAndValidate(fileName string, factories otelcol.Factories) (*otelc
 	if err != nil {
 		return nil, err
 	}
-	return cfg, confmap.Validate(cfg)
+	return cfg, xconfmap.Validate(cfg)
 }

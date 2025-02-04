@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -136,7 +137,7 @@ func TestUnmarshalInvalidConfig(t *testing.T) {
 			sub, err := cm.Sub(tt.name)
 			require.NoError(t, err)
 			assert.NoError(t, sub.Unmarshal(&cfg))
-			assert.ErrorContains(t, confmap.Validate(cfg), tt.errorMsg)
+			assert.ErrorContains(t, xconfmap.Validate(cfg), tt.errorMsg)
 		})
 	}
 }

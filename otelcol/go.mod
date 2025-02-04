@@ -9,6 +9,7 @@ require (
 	go.opentelemetry.io/collector/component/componentstatus v0.119.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.119.0
 	go.opentelemetry.io/collector/confmap v1.25.0
+	go.opentelemetry.io/collector/confmap/xconfmap v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/connector v0.119.0
 	go.opentelemetry.io/collector/connector/connectortest v0.119.0
 	go.opentelemetry.io/collector/exporter v0.119.0
@@ -140,6 +141,8 @@ replace go.opentelemetry.io/collector/extension => ../extension
 replace go.opentelemetry.io/collector/exporter => ../exporter
 
 replace go.opentelemetry.io/collector/confmap => ../confmap
+
+replace go.opentelemetry.io/collector/confmap/xconfmap => ../confmap/xconfmap
 
 replace go.opentelemetry.io/collector/config/configtelemetry => ../config/configtelemetry
 

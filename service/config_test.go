@@ -13,7 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/pipelines"
@@ -78,7 +78,7 @@ func TestConfigValidate(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := tt.cfgFn()
-			err := confmap.Validate(cfg)
+			err := xconfmap.Validate(cfg)
 			if tt.expected != nil {
 				assert.ErrorContains(t, err, tt.expected.Error())
 			} else {
