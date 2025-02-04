@@ -112,6 +112,7 @@ func (f *factory) getMemoryLimiter(set processor.Settings, cfg component.Config)
 			componentattribute.PipelineIDKey,
 			componentattribute.ComponentIDKey,
 		)
+		set.Logger.Debug("created singleton logger")
 	}
 
 	memLimiter, err := newMemoryLimiterProcessor(set, cfg.(*Config))

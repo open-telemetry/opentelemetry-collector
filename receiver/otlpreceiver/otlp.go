@@ -55,6 +55,7 @@ type otlpReceiver struct {
 func newOtlpReceiver(cfg *Config, set *receiver.Settings) (*otlpReceiver, error) {
 	if c, ok := set.Logger.Core().(*componentattribute.Core); ok {
 		set.Logger = c.Without(componentattribute.SignalKey)
+		set.Logger.Debug("created signal-agnostic logger")
 	}
 	r := &otlpReceiver{
 		cfg:          cfg,

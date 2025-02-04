@@ -19,12 +19,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
-
-replace go.opentelemetry.io/collector/component => ../
-
-replace go.opentelemetry.io/collector/pdata => ../../pdata
-
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
-
-replace go.opentelemetry.io/collector/pipeline/xpipeline => ../../pipeline/xpipeline
