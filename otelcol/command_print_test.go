@@ -71,12 +71,17 @@ func TestPrintCommand(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			err := featuregate.GlobalRegistry().Set(printCommandFeatureFlag.ID(), true)
+			require.NoError(t, err)
+			defer func() {
+				_ = featuregate.GlobalRegistry().Set(printCommandFeatureFlag.ID(), false)
+			}()
+
 			set := ConfigProviderSettings{
 				ResolverSettings: test.set,
 			}
-
 			cmd := newConfigPrintSubCommand(CollectorSettings{ConfigProviderSettings: set}, flags(featuregate.GlobalRegistry()))
-			err := cmd.Execute()
+			err = cmd.Execute()
 			if test.errString != "" {
 				require.ErrorContains(t, err, test.errString)
 			} else {
@@ -105,7 +110,7 @@ func TestConfig(t *testing.T) {
 			configs: []string{
 				"file:testdata/configs/1-config-first.yaml",
 				"file:testdata/configs/1-config-second.yaml",
-				"yaml:service::pipelines::logs::receviers: [foo,bar]",
+				"yaml:service::pipelines::logs::receivers: [foo,bar]",
 				"yaml:service::pipelines::logs::exporters: [foo,bar]",
 			},
 			finalConfig: "testdata/configs/2-config-output.yaml",
@@ -113,6 +118,11 @@ func TestConfig(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			err := featuregate.GlobalRegistry().Set(printCommandFeatureFlag.ID(), true)
+			require.NoError(t, err)
+			defer func() {
+				_ = featuregate.GlobalRegistry().Set(printCommandFeatureFlag.ID(), false)
+			}()
 			set := ConfigProviderSettings{
 				ResolverSettings: confmap.ResolverSettings{
 					URIs: test.configs,
