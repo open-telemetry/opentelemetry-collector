@@ -4,6 +4,7 @@
 package otelcol // import "go.opentelemetry.io/collector/otelcol"
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 
@@ -30,7 +31,7 @@ func newConfigPrintSubCommand(set CollectorSettings, flagSet *flag.FlagSet) *cob
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if !printCommandFeatureFlag.IsEnabled() {
-				return fmt.Errorf("print-initial-config is currently experimental, use otelcol.printInitialConfig feature gate to enable this command")
+				return errors.New("print-initial-config is currently experimental, use otelcol.printInitialConfig feature gate to enable this command")
 			}
 			err := updateSettingsUsingFlags(&set, flagSet)
 			if err != nil {
