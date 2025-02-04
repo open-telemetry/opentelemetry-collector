@@ -14,64 +14,36 @@ import (
 
 // MergeSplit splits and/or merges the profiles into multiple requests based on the MaxSizeConfig.
 func (req *profilesRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSizeConfig, r2 exporterhelper.Request) ([]exporterhelper.Request, error) {
-	var req2 *profilesRequest
 	if r2 != nil {
-		var ok bool
-		req2, ok = r2.(*profilesRequest)
+		req2, ok := r2.(*profilesRequest)
 		if !ok {
 			return nil, errors.New("invalid input type")
 		}
+		req2.mergeTo(req)
 	}
 
+	// If no limit we can simply merge the new request into the current and return.
 	if cfg.MaxSizeItems == 0 {
-		req2.pd.ResourceProfiles().MoveAndAppendTo(req.pd.ResourceProfiles())
 		return []exporterhelper.Request{req}, nil
 	}
+	return req.split(cfg)
+}
 
-	var (
-		res          []exporterhelper.Request
-		destReq      *profilesRequest
-		capacityLeft = cfg.MaxSizeItems
-	)
-	for _, srcReq := range []*profilesRequest{req, req2} {
-		if srcReq == nil {
-			continue
-		}
+func (req *profilesRequest) mergeTo(dst *profilesRequest) {
+	dst.setCachedItemsCount(dst.ItemsCount() + req.ItemsCount())
+	req.setCachedItemsCount(0)
+	req.pd.ResourceProfiles().MoveAndAppendTo(dst.pd.ResourceProfiles())
+}
 
-		srcCount := srcReq.pd.SampleCount()
-		if srcCount <= capacityLeft {
-			if destReq == nil {
-				destReq = srcReq
-			} else {
-				srcReq.pd.ResourceProfiles().MoveAndAppendTo(destReq.pd.ResourceProfiles())
-			}
-			capacityLeft -= srcCount
-			continue
-		}
-
-		for {
-			extractedProfiles := extractProfiles(srcReq.pd, capacityLeft)
-			if extractedProfiles.SampleCount() == 0 {
-				break
-			}
-			capacityLeft -= extractedProfiles.SampleCount()
-			if destReq == nil {
-				destReq = &profilesRequest{pd: extractedProfiles, pusher: srcReq.pusher}
-			} else {
-				extractedProfiles.ResourceProfiles().MoveAndAppendTo(destReq.pd.ResourceProfiles())
-			}
-			// Create new batch once capacity is reached.
-			if capacityLeft == 0 {
-				res = append(res, destReq)
-				destReq = nil
-				capacityLeft = cfg.MaxSizeItems
-			}
-		}
+func (req *profilesRequest) split(cfg exporterbatcher.MaxSizeConfig) ([]exporterhelper.Request, error) {
+	var res []exporterhelper.Request
+	for req.ItemsCount() > cfg.MaxSizeItems {
+		pd := extractProfiles(req.pd, cfg.MaxSizeItems)
+		size := pd.SampleCount()
+		req.setCachedItemsCount(req.ItemsCount() - size)
+		res = append(res, &profilesRequest{pd: pd, pusher: req.pusher, cachedItemsCount: size})
 	}
-
-	if destReq != nil {
-		res = append(res, destReq)
-	}
+	res = append(res, req)
 	return res, nil
 }
 

@@ -7,13 +7,10 @@ import (
 	"context"
 	"errors"
 
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/internal"
@@ -69,50 +66,50 @@ func (qCfg *QueueConfig) Validate() error {
 }
 
 type QueueSender struct {
-	BaseSender[internal.Request]
-	queue          exporterqueue.Queue[internal.Request]
-	numConsumers   int
-	traceAttribute attribute.KeyValue
-	batcher        queue.Batcher
-	consumers      *queue.Consumers[internal.Request]
-
-	obsrep      *ObsReport
-	exporterID  component.ID
-	logger      *zap.Logger
-	shutdownFns []component.ShutdownFunc
+	queue   exporterqueue.Queue[internal.Request]
+	batcher component.Component
 }
 
 func NewQueueSender(
-	q exporterqueue.Queue[internal.Request],
-	set exporter.Settings,
-	numConsumers int,
+	qf exporterqueue.Factory[internal.Request],
+	qSet exporterqueue.Settings,
+	qCfg exporterqueue.Config,
+	bCfg exporterbatcher.Config,
 	exportFailureMessage string,
-	obsrep *ObsReport,
-	batcherCfg exporterbatcher.Config,
-) *QueueSender {
-	qs := &QueueSender{
-		queue:          q,
-		numConsumers:   numConsumers,
-		traceAttribute: attribute.String(ExporterKey, set.ID.String()),
-		obsrep:         obsrep,
-		exporterID:     set.ID,
-		logger:         set.Logger,
-	}
-
+	next Sender[internal.Request],
+) (*QueueSender, error) {
 	exportFunc := func(ctx context.Context, req internal.Request) error {
-		err := qs.NextSender.Send(ctx, req)
+		err := next.Send(ctx, req)
 		if err != nil {
-			set.Logger.Error("Exporting failed. Dropping data."+exportFailureMessage,
+			qSet.ExporterSettings.Logger.Error("Exporting failed. Dropping data."+exportFailureMessage,
 				zap.Error(err), zap.Int("dropped_items", req.ItemsCount()))
 		}
 		return err
 	}
-	if usePullingBasedExporterQueueBatcher.IsEnabled() {
-		qs.batcher, _ = queue.NewBatcher(batcherCfg, q, exportFunc, numConsumers)
-	} else {
-		qs.consumers = queue.NewQueueConsumers[internal.Request](q, numConsumers, exportFunc)
+	if !usePullingBasedExporterQueueBatcher.IsEnabled() {
+		q, err := newObsQueue(qSet, qf(context.Background(), qSet, qCfg, func(ctx context.Context, req internal.Request, done exporterqueue.DoneCallback) {
+			done(exportFunc(ctx, req))
+		}))
+		if err != nil {
+			return nil, err
+		}
+		return &QueueSender{queue: q}, nil
 	}
-	return qs
+
+	b, err := queue.NewBatcher(bCfg, exportFunc, qCfg.NumConsumers)
+	if err != nil {
+		return nil, err
+	}
+	// TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/12244
+	if bCfg.Enabled {
+		qCfg.NumConsumers = 1
+	}
+	q, err := newObsQueue(qSet, qf(context.Background(), qSet, qCfg, b.Consume))
+	if err != nil {
+		return nil, err
+	}
+
+	return &QueueSender{queue: q, batcher: b}, nil
 }
 
 // Start is invoked during service startup.
@@ -122,61 +119,24 @@ func (qs *QueueSender) Start(ctx context.Context, host component.Host) error {
 	}
 
 	if usePullingBasedExporterQueueBatcher.IsEnabled() {
-		if err := qs.batcher.Start(ctx, host); err != nil {
-			return err
-		}
-	} else {
-		if err := qs.consumers.Start(ctx, host); err != nil {
-			return err
-		}
+		return qs.batcher.Start(ctx, host)
 	}
 
-	dataTypeAttr := attribute.String(DataTypeKey, qs.obsrep.Signal.String())
-
-	reg1, err1 := qs.obsrep.TelemetryBuilder.InitExporterQueueSize(func() int64 { return qs.queue.Size() },
-		metric.WithAttributeSet(attribute.NewSet(qs.traceAttribute, dataTypeAttr)))
-
-	if reg1 != nil {
-		qs.shutdownFns = append(qs.shutdownFns, func(context.Context) error {
-			return reg1.Unregister()
-		})
-	}
-
-	reg2, err2 := qs.obsrep.TelemetryBuilder.InitExporterQueueCapacity(func() int64 { return qs.queue.Capacity() },
-		metric.WithAttributeSet(attribute.NewSet(qs.traceAttribute)))
-
-	if reg2 != nil {
-		qs.shutdownFns = append(qs.shutdownFns, func(context.Context) error {
-			return reg2.Unregister()
-		})
-	}
-
-	return errors.Join(err1, err2)
+	return nil
 }
 
 // Shutdown is invoked during service shutdown.
 func (qs *QueueSender) Shutdown(ctx context.Context) error {
-	// Stop the queue and consumers, this will drain the queue and will call the retry (which is stopped) that will only
+	// Stop the queue and batcher, this will drain the queue and will call the retry (which is stopped) that will only
 	// try once every request.
-
-	for _, fn := range qs.shutdownFns {
-		err := fn(ctx)
-		if err != nil {
-			qs.logger.Warn("Error while shutting down QueueSender", zap.Error(err))
-		}
-	}
-	qs.shutdownFns = nil
-
-	if err := qs.queue.Shutdown(ctx); err != nil {
-		return err
-	}
+	err := qs.queue.Shutdown(ctx)
 	if usePullingBasedExporterQueueBatcher.IsEnabled() {
-		return qs.batcher.Shutdown(ctx)
+		return errors.Join(err, qs.batcher.Shutdown(ctx))
 	}
-	return qs.consumers.Shutdown(ctx)
+	return err
 }
 
-// send implements the requestSender interface. It puts the request in the queue.
+// Send implements the requestSender interface. It puts the request in the queue.
 func (qs *QueueSender) Send(ctx context.Context, req internal.Request) error {
 	// Prevent cancellation and deadline to propagate to the context stored in the queue.
 	// The grpc/http based receivers will cancel the request context after this function returns.
@@ -184,11 +144,11 @@ func (qs *QueueSender) Send(ctx context.Context, req internal.Request) error {
 
 	span := trace.SpanFromContext(c)
 	if err := qs.queue.Offer(c, req); err != nil {
-		span.AddEvent("Failed to enqueue item.", trace.WithAttributes(qs.traceAttribute))
+		span.AddEvent("Failed to enqueue item.")
 		return err
 	}
 
-	span.AddEvent("Enqueued item.", trace.WithAttributes(qs.traceAttribute))
+	span.AddEvent("Enqueued item.")
 	return nil
 }
 

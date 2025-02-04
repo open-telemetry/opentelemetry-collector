@@ -25,14 +25,16 @@ var (
 )
 
 type logsRequest struct {
-	ld     plog.Logs
-	pusher consumer.ConsumeLogsFunc
+	ld               plog.Logs
+	pusher           consumer.ConsumeLogsFunc
+	cachedItemsCount int
 }
 
 func newLogsRequest(ld plog.Logs, pusher consumer.ConsumeLogsFunc) Request {
 	return &logsRequest{
-		ld:     ld,
-		pusher: pusher,
+		ld:               ld,
+		pusher:           pusher,
+		cachedItemsCount: ld.LogRecordCount(),
 	}
 }
 
@@ -63,7 +65,11 @@ func (req *logsRequest) Export(ctx context.Context) error {
 }
 
 func (req *logsRequest) ItemsCount() int {
-	return req.ld.LogRecordCount()
+	return req.cachedItemsCount
+}
+
+func (req *logsRequest) setCachedItemsCount(count int) {
+	req.cachedItemsCount = count
 }
 
 type logsExporter struct {
@@ -120,7 +126,7 @@ func NewLogsRequest(
 		return nil, errNilLogsConverter
 	}
 
-	be, err := internal.NewBaseExporter(set, pipeline.SignalLogs, newLogsWithObservability, options...)
+	be, err := internal.NewBaseExporter(set, pipeline.SignalLogs, internal.NewObsReportSender, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -133,32 +139,11 @@ func NewLogsRequest(
 				zap.Error(err))
 			return consumererror.NewPermanent(cErr)
 		}
-		sErr := be.Send(ctx, req)
-		if errors.Is(sErr, exporterqueue.ErrQueueIsFull) {
-			be.Obsrep.RecordEnqueueFailure(ctx, pipeline.SignalLogs, int64(req.ItemsCount()))
-		}
-		return sErr
+		return be.Send(ctx, req)
 	}, be.ConsumerOptions...)
 
 	return &logsExporter{
 		BaseExporter: be,
 		Logs:         lc,
 	}, err
-}
-
-type logsExporterWithObservability struct {
-	internal.BaseSender[Request]
-	obsrep *internal.ObsReport
-}
-
-func newLogsWithObservability(obsrep *internal.ObsReport) internal.Sender[Request] {
-	return &logsExporterWithObservability{obsrep: obsrep}
-}
-
-func (lewo *logsExporterWithObservability) Send(ctx context.Context, req Request) error {
-	c := lewo.obsrep.StartLogsOp(ctx)
-	numLogRecords := req.ItemsCount()
-	err := lewo.NextSender.Send(c, req)
-	lewo.obsrep.EndLogsOp(c, numLogRecords, err)
-	return err
 }

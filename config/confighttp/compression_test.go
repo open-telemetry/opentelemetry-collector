@@ -189,7 +189,7 @@ func TestHTTPCustomDecompression(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 	decoders := map[string]func(io.ReadCloser) (io.ReadCloser, error){
-		"custom-encoding": func(io.ReadCloser) (io.ReadCloser, error) { // nolint: unparam
+		"custom-encoding": func(io.ReadCloser) (io.ReadCloser, error) { //nolint:unparam
 			return io.NopCloser(strings.NewReader("decompressed body")), nil
 		},
 	}

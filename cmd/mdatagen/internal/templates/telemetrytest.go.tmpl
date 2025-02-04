@@ -7,65 +7,50 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/sdk/trace/tracetest"
-    "go.uber.org/multierr"
 
+	{{- if or isConnector isExporter isExtension isProcessor isReceiver isScraper }}
 	"go.opentelemetry.io/collector/component"
+	{{- end }}
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	{{- if or isConnector isExporter isExtension isProcessor isReceiver isScraper }}
 	"go.opentelemetry.io/collector/{{ .Status.Class }}"
 	"go.opentelemetry.io/collector/{{ .Status.Class }}/{{ .Status.Class }}test"
 	{{- end }}
 )
 
+// Deprecated: [v0.119.0] Use componenttest.Telemetry
 type Telemetry struct {
-	Reader        *sdkmetric.ManualReader
-	SpanRecorder  *tracetest.SpanRecorder
-
-	meterProvider *sdkmetric.MeterProvider
-	traceProvider *sdktrace.TracerProvider
+	*componenttest.Telemetry
 }
 
-func SetupTelemetry() Telemetry {
-	reader := sdkmetric.NewManualReader()
-	spanRecorder := new(tracetest.SpanRecorder)
-	return Telemetry{
-		Reader:        reader,
-		SpanRecorder:  spanRecorder,
-
-		meterProvider: sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader)),
-		traceProvider: sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spanRecorder)),
-	}
+// Deprecated: [v0.119.0] Use componenttest.NewTelemetry
+func SetupTelemetry(opts ...componenttest.TelemetryOption) Telemetry {
+	return Telemetry{ Telemetry: componenttest.NewTelemetry(opts...) }
 }
 
-{{- if or isConnector isExporter isExtension isProcessor isReceiver isScraper }}
+{{ if or isConnector isExporter isExtension isProcessor isReceiver isScraper }}
+// Deprecated: [v0.119.0] Use {{ .Package }}test.NewSettings
 func (tt *Telemetry) NewSettings() {{ .Status.Class }}.Settings {
-	set := {{ .Status.Class }}test.NewNopSettings()
-	set.ID = component.NewID(component.MustNewType("{{ .Type }}"))
-	set.TelemetrySettings = tt.NewTelemetrySettings()
-	return set
+	return NewSettings(tt.Telemetry)
+}
+
+func NewSettings(tt *componenttest.Telemetry) {{ .Status.Class }}.Settings {
+set := {{ .Status.Class }}test.NewNopSettings()
+set.ID = component.NewID(component.MustNewType("{{ .Type }}"))
+set.TelemetrySettings = tt.NewTelemetrySettings()
+return set
 }
 {{- end }}
 
-func (tt *Telemetry) NewTelemetrySettings() component.TelemetrySettings {
-	set := componenttest.NewNopTelemetrySettings()
-	set.MeterProvider = tt.meterProvider
-	set.MetricsLevel = configtelemetry.LevelDetailed
-	set.TracerProvider = tt.traceProvider
-	return set
-}
-
+// Deprecated: [v0.119.0] Use {{ .Package }}test.AssertEqual*
 func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, opts ...metricdatatest.Option) {
 	var md metricdata.ResourceMetrics
 	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
 	// ensure all required metrics are present
 	for _, want := range expected {
-		got := getMetric(want.Name, md)
+		got := getMetricFromResource(want.Name, md)
 		metricdatatest.AssertEqual(t, want, got, opts...)
 	}
 
@@ -73,14 +58,31 @@ func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, 
 	require.Equal(t, len(expected), lenMetrics(md))
 }
 
-func (tt *Telemetry) Shutdown(ctx context.Context) error {
-	return multierr.Combine(
-		tt.meterProvider.Shutdown(ctx),
-		tt.traceProvider.Shutdown(ctx),
-	)
+{{ range $name, $metric := .Telemetry.Metrics }}
+
+func AssertEqual{{ $name.Render }}(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.{{- if eq $metric.Data.Type "Histogram" }} {{$metric.Data.Type}} {{- end }}DataPoint[{{ $metric.Data.BasicType }}], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_{{ $name }}",
+		Description: "{{ $metric.Description }}{{ $metric.Stability }}",
+		Unit:        "{{ $metric.Unit }}",
+		Data:        metricdata.{{ $metric.Data.Type }}[{{ $metric.Data.BasicType }}]{
+			{{- if $metric.Data.HasAggregated }}
+			Temporality: metricdata.CumulativeTemporality,
+			{{- end }}
+			{{- if $metric.Data.HasMonotonic }}
+			IsMonotonic: {{ $metric.Data.Monotonic }},
+			{{- end }}
+			DataPoints: dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_{{ $name }}")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func getMetric(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
+{{- end }}
+
+func getMetricFromResource(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
 	for _, sm := range got.ScopeMetrics {
 		for _, m := range sm.Metrics {
 			if m.Name == name {
@@ -100,4 +102,3 @@ func lenMetrics(got metricdata.ResourceMetrics) int {
 
 	return metricsCount
 }
-
