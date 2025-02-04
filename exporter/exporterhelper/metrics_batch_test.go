@@ -161,9 +161,22 @@ func TestExtractMetricsInvalidMetric(t *testing.T) {
 	assert.Equal(t, 0, md.ResourceMetrics().Len())
 }
 
-func BenchmarkSplittingBasedOnItemCountManySmallMetrics(b *testing.B) {
+func TestMergeSplitManySmallMetrics(t *testing.T) {
 	// All requests merge into a single batch.
 	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 20000}
+	merged := []Request{newMetricsRequest(testdata.GenerateMetrics(1), nil)}
+	for j := 0; j < 1000; j++ {
+		lr2 := newMetricsRequest(testdata.GenerateMetrics(10), nil)
+		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), cfg, lr2)
+		merged = append(merged[0:len(merged)-1], res...)
+	}
+	assert.Len(t, merged, 2)
+}
+
+func BenchmarkSplittingBasedOnItemCountManySmallMetrics(b *testing.B) {
+	// All requests merge into a single batch.
+	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 20020}
+	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		merged := []Request{newMetricsRequest(testdata.GenerateMetrics(10), nil)}
 		for j := 0; j < 1000; j++ {
@@ -178,6 +191,7 @@ func BenchmarkSplittingBasedOnItemCountManySmallMetrics(b *testing.B) {
 func BenchmarkSplittingBasedOnItemCountManyMetricsSlightlyAboveLimit(b *testing.B) {
 	// Every incoming request results in a split.
 	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 20000}
+	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		merged := []Request{newMetricsRequest(testdata.GenerateMetrics(0), nil)}
 		for j := 0; j < 10; j++ {
@@ -192,6 +206,7 @@ func BenchmarkSplittingBasedOnItemCountManyMetricsSlightlyAboveLimit(b *testing.
 func BenchmarkSplittingBasedOnItemCountHugeMetrics(b *testing.B) {
 	// One request splits into many batches.
 	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 20000}
+	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		merged := []Request{newMetricsRequest(testdata.GenerateMetrics(0), nil)}
 		lr2 := newMetricsRequest(testdata.GenerateMetrics(100000), nil)
