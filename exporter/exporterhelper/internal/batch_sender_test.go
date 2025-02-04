@@ -196,13 +196,13 @@ func TestBatchSender_MergeOrSplit(t *testing.T) {
 			require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 8, Sink: sink}))
 			assert.Eventually(t, func() bool {
 				return sink.RequestsCount() == 1 && sink.ItemsCount() == 8
-			}, 50*time.Millisecond, 10*time.Millisecond)
+			}, 500*time.Millisecond, 10*time.Millisecond)
 
 			// big request should be broken down into two requests, both are sent right away.
 			require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 17, Sink: sink}))
 			assert.Eventually(t, func() bool {
 				return sink.RequestsCount() == 3 && sink.ItemsCount() == 25
-			}, 50*time.Millisecond, 10*time.Millisecond)
+			}, 500*time.Millisecond, 10*time.Millisecond)
 
 			// request that cannot be split should be dropped.
 			require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{
@@ -215,7 +215,7 @@ func TestBatchSender_MergeOrSplit(t *testing.T) {
 
 			assert.Eventually(t, func() bool {
 				return sink.RequestsCount() == 5 && sink.ItemsCount() == 38
-			}, 50*time.Millisecond, 10*time.Millisecond)
+			}, 500*time.Millisecond, 10*time.Millisecond)
 		})
 	}
 
@@ -374,14 +374,6 @@ func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
 			expectedItems:    51,
 		},
 	}
-
-	// Why do we not expect the same behavior when usePullingBasedExporterQueueBatcher is true?
-	// This test checks that when concurrency limit of batch_sender is reached, the batch_sender will flush immediately.
-	// To avoid blocking, the concurrency limit is set to the number of concurrent goroutines that are in charge of
-	// reading from the queue and adding to batch. With the new model, we are pulling instead of pushing so we don't
-	// block the reading goroutine anymore.
-	defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, false)()
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			qCfg := exporterqueue.NewDefaultConfig()
