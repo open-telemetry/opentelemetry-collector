@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package confmap // import "go.opentelemetry.io/collector/confmap"
+package xconfmap // import "go.opentelemetry.io/collector/confmap/xconfmap"
 
 import (
 	"errors"
@@ -9,16 +9,9 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-)
 
-// Config represents an interface for a configuration struct.
-//
-// Implementations and/or any sub-configs (other types embedded or included in the Config implementation)
-// MUST implement the Validator if any validation is required for that part of the configuration
-// (e.g. check if a required field is present).
-//
-// A valid implementation MUST pass the check componenttest.CheckConfigStruct (return nil error).
-type Config any
+	"go.opentelemetry.io/collector/confmap"
+)
 
 // As interface types are only used for static typing, a common idiom to find the reflection Type
 // for an interface type Foo is to use a *Foo value.
@@ -32,7 +25,7 @@ type Validator interface {
 
 // Validate validates a config, by doing this:
 //   - Call Validate on the config itself if the config implements ConfigValidator.
-func Validate(cfg Config) error {
+func Validate(cfg any) error {
 	var err error
 
 	for _, validationErr := range validate(reflect.ValueOf(cfg)) {
@@ -54,7 +47,7 @@ func (pe pathError) Error() string {
 
 		_, _ = sb.WriteString(pe.path[len(pe.path)-1])
 		for i := len(pe.path) - 2; i >= 0; i-- {
-			_, _ = sb.WriteString(KeyDelimiter)
+			_, _ = sb.WriteString(confmap.KeyDelimiter)
 			_, _ = sb.WriteString(pe.path[i])
 		}
 		path = sb.String()
@@ -171,7 +164,7 @@ func callValidateIfPossible(v reflect.Value) error {
 
 func fieldName(field reflect.StructField) string {
 	var fieldName string
-	if tag, ok := field.Tag.Lookup(mapstructureTag); ok {
+	if tag, ok := field.Tag.Lookup(confmap.MapstructureTag); ok {
 		tags := strings.Split(tag, ",")
 		if len(tags) > 0 {
 			fieldName = tags[0]

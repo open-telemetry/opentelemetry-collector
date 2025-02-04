@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package confmap
+package xconfmap
 
 import (
 	"errors"
@@ -35,8 +35,10 @@ type configChildTypeDef struct {
 	ChildPtr *errType
 }
 
+type config any
+
 type configChildInterface struct {
-	Child Config
+	Child config
 }
 
 type errValidateConfig struct {

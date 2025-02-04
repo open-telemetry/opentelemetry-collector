@@ -26,7 +26,7 @@ var configValidatorType = reflect.TypeOf((*ConfigValidator)(nil)).Elem()
 
 // ConfigValidator defines an optional interface for configurations to implement to do validation.
 //
-// Deprecated: [v0.121.0] use confmap.Validator.
+// Deprecated: [v0.120.0] use xconfmap.Validator.
 type ConfigValidator interface {
 	// Validate the configuration and returns an error if invalid.
 	Validate() error
@@ -35,7 +35,7 @@ type ConfigValidator interface {
 // ValidateConfig validates a config, by doing this:
 //   - Call Validate on the config itself if the config implements ConfigValidator.
 //
-// Deprecated: [v0.121.0] use confmap.Validate.
+// Deprecated: [v0.120.0] use xconfmap.Validate.
 func ValidateConfig(cfg Config) error {
 	var err error
 
