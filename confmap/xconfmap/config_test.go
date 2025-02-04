@@ -240,7 +240,7 @@ func TestValidateConfig(t *testing.T) {
 		{
 			name:     "child map key pointer",
 			cfg:      &configChildMapKey{ChildPtr: map[*errType]string{newErrType("child map key pointer"): ""}},
-			expected: errors.New("childptr::[*confmap.errType key]: child map key pointer"),
+			expected: errors.New("childptr::[*xconfmap.errType key]: child map key pointer"),
 		},
 		{
 			name:     "map with stringified non-string key type",
@@ -280,7 +280,7 @@ func TestValidateConfig(t *testing.T) {
 		{
 			name:     "nested map key error",
 			cfg:      configDeeplyNested{MapKeyChild: map[configChildStruct]string{{Child: errValidateConfig{err: errors.New("child key error")}}: "val"}},
-			expected: errors.New("mapkeychild::[confmap.configChildStruct key]::child: child key error"),
+			expected: errors.New("mapkeychild::[xconfmap.configChildStruct key]::child: child key error"),
 		},
 		{
 			name:     "nested map value error",
