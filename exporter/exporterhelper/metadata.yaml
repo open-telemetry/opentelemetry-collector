@@ -2,8 +2,7 @@ type: exporterhelper
 github_project: open-telemetry/opentelemetry-collector
 
 status:
-  class: exporter
-  not_component: true
+  class: pkg
   stability:
     beta: [traces, metrics, logs]
 
@@ -105,7 +104,6 @@ telemetry:
         level: alpha
       description: Current size of the retry queue (in batches)
       unit: "{batches}"
-      optional: true
       gauge:
         value_type: int
         async: true
@@ -116,7 +114,6 @@ telemetry:
         level: alpha
       description: Fixed capacity of the retry queue (in batches)
       unit: "{batches}"
-      optional: true
       gauge:
         value_type: int
         async: true
