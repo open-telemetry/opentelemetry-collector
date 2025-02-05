@@ -75,8 +75,9 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSe
 	}
 
 	be := &BaseExporter{
-		timeoutCfg: NewDefaultTimeoutConfig(),
-		Set:        set,
+		Set:          set,
+		timeoutCfg:   NewDefaultTimeoutConfig(),
+		queueFactory: exporterqueue.NewMemoryQueueFactory[internal.Request](),
 	}
 
 	for _, op := range options {
@@ -100,7 +101,7 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSe
 		be.ConsumerOptions = append(be.ConsumerOptions, consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}))
 	}
 
-	if be.batcherCfg.Enabled && !(usePullingBasedExporterQueueBatcher.IsEnabled() && be.queueCfg.Enabled) {
+	if !usePullingBasedExporterQueueBatcher.IsEnabled() && be.batcherCfg.Enabled {
 		concurrencyLimit := int64(0)
 		if be.queueCfg.Enabled {
 			concurrencyLimit = int64(be.queueCfg.NumConsumers)
@@ -109,7 +110,7 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSe
 		be.firstSender = be.BatchSender
 	}
 
-	if be.queueCfg.Enabled {
+	if be.queueCfg.Enabled || usePullingBasedExporterQueueBatcher.IsEnabled() && be.batcherCfg.Enabled {
 		qSet := exporterqueue.Settings{
 			Signal:           signal,
 			ExporterSettings: set,
@@ -126,10 +127,13 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSe
 
 // Send sends the request using the first sender in the chain.
 func (be *BaseExporter) Send(ctx context.Context, req internal.Request) error {
+	// Have to read the number of items before sending the request since the request can
+	// be modified by the downstream components like the batcher.
+	itemsCount := req.ItemsCount()
 	err := be.firstSender.Send(ctx, req)
 	if err != nil {
 		be.Set.Logger.Error("Exporting failed. Rejecting data."+be.ExportFailureMessage,
-			zap.Error(err), zap.Int("rejected_items", req.ItemsCount()))
+			zap.Error(err), zap.Int("rejected_items", itemsCount))
 	}
 	return err
 }

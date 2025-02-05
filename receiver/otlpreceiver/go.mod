@@ -17,6 +17,7 @@ require (
 	go.opentelemetry.io/collector/config/confignet v1.25.0
 	go.opentelemetry.io/collector/config/configtls v1.25.0
 	go.opentelemetry.io/collector/confmap v1.25.0
+	go.opentelemetry.io/collector/confmap/xconfmap v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/consumer v1.25.0
 	go.opentelemetry.io/collector/consumer/consumererror v0.119.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.119.0
@@ -61,7 +62,6 @@ require (
 	go.opentelemetry.io/collector/client v1.25.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.25.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.25.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.119.0 // indirect
 	go.opentelemetry.io/collector/extension v0.119.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.119.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.119.0 // indirect
@@ -96,11 +96,11 @@ replace go.opentelemetry.io/collector/config/confignet => ../../config/confignet
 
 replace go.opentelemetry.io/collector/config/configopaque => ../../config/configopaque
 
-replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
-
 replace go.opentelemetry.io/collector/config/configtls => ../../config/configtls
 
 replace go.opentelemetry.io/collector/confmap => ../../confmap
+
+replace go.opentelemetry.io/collector/confmap/xconfmap => ../../confmap/xconfmap
 
 replace go.opentelemetry.io/collector/extension => ../../extension
 
