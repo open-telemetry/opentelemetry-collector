@@ -57,8 +57,11 @@ var disableHighCardinalityMetricsFeatureGate = featuregate.GlobalRegistry().Must
 	featuregate.WithRegisterDescription("controls whether the collector should enable potentially high"+
 		"cardinality metrics. The gate will be removed when the collector allows for view configuration."))
 
-// ModuleInfo describes the go module for each component.
+// ModuleInfo describes the Go module for a particular component.
 type ModuleInfo = moduleinfo.ModuleInfo
+
+// ModuleInfo describes the go module for all components.
+type ModuleInfos = moduleinfo.ModuleInfos
 
 // Settings holds configuration for building a new Service.
 type Settings struct {
@@ -92,7 +95,7 @@ type Settings struct {
 	ExtensionsFactories map[component.Type]extension.Factory
 
 	// ModuleInfo describes the go module for each component.
-	ModuleInfo ModuleInfo
+	ModuleInfos ModuleInfos
 
 	// AsyncErrorChannel is the channel that is used to report fatal errors.
 	AsyncErrorChannel chan error
@@ -121,7 +124,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 			Connectors: builders.NewConnector(set.ConnectorsConfigs, set.ConnectorsFactories),
 			Extensions: builders.NewExtension(set.ExtensionsConfigs, set.ExtensionsFactories),
 
-			ModuleInfo:        set.ModuleInfo,
+			ModuleInfos:       set.ModuleInfos,
 			BuildInfo:         set.BuildInfo,
 			AsyncErrorChannel: set.AsyncErrorChannel,
 		},

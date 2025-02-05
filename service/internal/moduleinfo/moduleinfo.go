@@ -5,11 +5,16 @@ package moduleinfo // import "go.opentelemetry.io/collector/service/internal/mod
 
 import "go.opentelemetry.io/collector/component"
 
-// ModuleInfo describes the go module for each component.
 type ModuleInfo struct {
-	Receiver  map[component.Type]string
-	Processor map[component.Type]string
-	Exporter  map[component.Type]string
-	Extension map[component.Type]string
-	Connector map[component.Type]string
+	// BuilderRef is the raw string passed in the builder configuration used to build this service.
+	BuilderRef string
+}
+
+// ModuleInfos describes the go module for each component.
+type ModuleInfos struct {
+	Receiver  map[component.Type]ModuleInfo
+	Processor map[component.Type]ModuleInfo
+	Exporter  map[component.Type]ModuleInfo
+	Extension map[component.Type]ModuleInfo
+	Connector map[component.Type]ModuleInfo
 }

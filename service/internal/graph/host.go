@@ -26,15 +26,15 @@ type getExporters interface {
 }
 
 // TODO: expose GetModuleInfo as part of a service/hostcapabilities package.
-type getModuleInfo interface {
+type getModuleInfos interface {
 	// GetModuleInfo returns the module information for the host.
-	GetModuleInfo() moduleinfo.ModuleInfo
+	GetModuleInfos() moduleinfo.ModuleInfos
 }
 
 var (
 	_ getExporters   = (*Host)(nil)
 	_ component.Host = (*Host)(nil)
-	_ getModuleInfo  = (*Host)(nil)
+	_ getModuleInfos = (*Host)(nil)
 )
 
 type Host struct {
@@ -45,8 +45,8 @@ type Host struct {
 	Connectors        *builders.ConnectorBuilder
 	Extensions        *builders.ExtensionBuilder
 
-	ModuleInfo moduleinfo.ModuleInfo
-	BuildInfo  component.BuildInfo
+	ModuleInfos moduleinfo.ModuleInfos
+	BuildInfo   component.BuildInfo
 
 	Pipelines         *Graph
 	ServiceExtensions *extensions.Extensions
@@ -74,8 +74,8 @@ func (host *Host) GetExtensions() map[component.ID]component.Component {
 	return host.ServiceExtensions.GetExtensions()
 }
 
-func (host *Host) GetModuleInfo() moduleinfo.ModuleInfo {
-	return host.ModuleInfo
+func (host *Host) GetModuleInfos() moduleinfo.ModuleInfos {
+	return host.ModuleInfos
 }
 
 // Deprecated: [0.79.0] This function will be removed in the future.
