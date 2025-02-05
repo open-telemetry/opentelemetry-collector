@@ -6,6 +6,7 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 import (
 	"context"
 	"errors"
+	math_bits "math/bits"
 
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -23,7 +24,7 @@ func (req *logsRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSiz
 	}
 
 	// If no limit we can simply merge the new request into the current and return.
-	if cfg.MaxSizeItems == 0 {
+	if cfg.MaxSizeItems == 0 && cfg.MaxSizeBytes == 0 {
 		return []Request{req}, nil
 	}
 	return req.split(cfg)
@@ -32,16 +33,27 @@ func (req *logsRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSiz
 func (req *logsRequest) mergeTo(dst *logsRequest) {
 	dst.setCachedItemsCount(dst.ItemsCount() + req.ItemsCount())
 	req.setCachedItemsCount(0)
+	dst.setCachedByteSize(dst.ByteSize() + req.ByteSize())
+	req.setCachedByteSize(0)
 	req.ld.ResourceLogs().MoveAndAppendTo(dst.ld.ResourceLogs())
 }
 
 func (req *logsRequest) split(cfg exporterbatcher.MaxSizeConfig) ([]Request, error) {
 	var res []Request
-	for req.ItemsCount() > cfg.MaxSizeItems {
-		ld := extractLogs(req.ld, cfg.MaxSizeItems)
-		size := ld.LogRecordCount()
-		req.setCachedItemsCount(req.ItemsCount() - size)
-		res = append(res, &logsRequest{ld: ld, pusher: req.pusher, cachedItemsCount: size})
+	if cfg.MaxSizeItems != 0 {
+		for req.ItemsCount() > cfg.MaxSizeItems {
+			ld := extractLogs(req.ld, cfg.MaxSizeItems)
+			size := ld.LogRecordCount()
+			req.setCachedItemsCount(req.ItemsCount() - size)
+			res = append(res, &logsRequest{ld: ld, pusher: req.pusher, cachedItemsCount: size})
+		}
+	} else if cfg.MaxSizeBytes != 0 {
+		for req.ByteSize() > cfg.MaxSizeBytes {
+			ld := extractLogsBasedOnByteSize(req.ld, cfg.MaxSizeBytes)
+			size := logsMarshaler.LogsSize(ld)
+			req.setCachedByteSize(req.ByteSize() - size)
+			res = append(res, &logsRequest{ld: ld, pusher: req.pusher, cachedByteSize: size})
+		}
 	}
 	res = append(res, req)
 	return res, nil
@@ -108,4 +120,90 @@ func resourceLogsCount(rl plog.ResourceLogs) int {
 		count += rl.ScopeLogs().At(k).LogRecords().Len()
 	}
 	return count
+}
+
+func (req *logsRequest) splitBasedOnByteSize(maxByteSize int) ([]Request, error) {
+	var res []Request
+	for req.ByteSize() > maxByteSize {
+		ld := extractLogsBasedOnByteSize(req.ld, maxByteSize)
+		size := ld.LogRecordCount()
+		req.setCachedItemsCount(req.ItemsCount() - size)
+		res = append(res, &logsRequest{ld: ld, pusher: req.pusher, cachedItemsCount: size})
+	}
+	res = append(res, req)
+	return res, nil
+}
+
+// extractLogs extracts logs from the input logs and returns a new logs with the specified number of log records.
+func extractLogsBasedOnByteSize(srcLogs plog.Logs, capacity int) plog.Logs {
+	capacityReached := false
+	destLogs := plog.NewLogs()
+	capacityLeft := capacity - logsMarshaler.LogsSize(destLogs)
+	srcLogs.ResourceLogs().RemoveIf(func(srcRL plog.ResourceLogs) bool {
+		if capacityReached {
+			return false
+		}
+		needToExtract := logsMarshaler.ResourceLogsSize(srcRL) > capacityLeft
+		if needToExtract {
+			srcRL, capacityReached = extractResourceLogsBasedOnByteSize(srcRL, capacityLeft)
+			if srcRL.ScopeLogs().Len() == 0 {
+				return false
+			}
+		}
+		capacityLeft -= deltaCapacity(logsMarshaler.ResourceLogsSize(srcRL))
+		srcRL.MoveTo(destLogs.ResourceLogs().AppendEmpty())
+		return !needToExtract
+	})
+	return destLogs
+}
+
+// extractResourceLogs extracts resource logs and returns a new resource logs with the specified number of log records.
+func extractResourceLogsBasedOnByteSize(srcRL plog.ResourceLogs, capacity int) (plog.ResourceLogs, bool) {
+	capacityReached := false
+	destRL := plog.NewResourceLogs()
+	destRL.SetSchemaUrl(srcRL.SchemaUrl())
+	srcRL.Resource().CopyTo(destRL.Resource())
+	capacityLeft := capacity - logsMarshaler.ResourceLogsSize(destRL)
+	srcRL.ScopeLogs().RemoveIf(func(srcSL plog.ScopeLogs) bool {
+		if capacityReached {
+			return false
+		}
+		needToExtract := logsMarshaler.ScopeLogsSize(srcSL) > capacityLeft
+		if needToExtract {
+			srcSL, capacityReached = extractScopeLogsBasedOnByteSize(srcSL, capacityLeft)
+			if srcSL.LogRecords().Len() == 0 {
+				return false
+			}
+		}
+
+		capacityLeft -= deltaCapacity(logsMarshaler.ScopeLogsSize(srcSL))
+		srcSL.MoveTo(destRL.ScopeLogs().AppendEmpty())
+		return !needToExtract
+	})
+	return destRL, capacityReached
+}
+
+// extractScopeLogs extracts scope logs and returns a new scope logs with the specified number of log records.
+func extractScopeLogsBasedOnByteSize(srcSL plog.ScopeLogs, capacity int) (plog.ScopeLogs, bool) {
+	capacityReached := false
+	destSL := plog.NewScopeLogs()
+	destSL.SetSchemaUrl(srcSL.SchemaUrl())
+	srcSL.Scope().CopyTo(destSL.Scope())
+	capacityLeft := capacity - logsMarshaler.ScopeLogsSize(destSL)
+
+	srcSL.LogRecords().RemoveIf(func(srcLR plog.LogRecord) bool {
+		if capacityReached || logsMarshaler.LogRecordSize(srcLR) > capacityLeft {
+			capacityReached = true
+			return false
+		}
+		capacityLeft -= deltaCapacity(logsMarshaler.LogRecordSize(srcLR))
+		srcLR.MoveTo(destSL.LogRecords().AppendEmpty())
+		return true
+	})
+	return destSL, capacityReached
+}
+
+// deltaCapacity() returns the delta size of a proto slice when a new item is added.
+func deltaCapacity(newItemSize int) int {
+	return 1 + newItemSize + int(math_bits.Len64(uint64(newItemSize|1)+6)/7)
 }
