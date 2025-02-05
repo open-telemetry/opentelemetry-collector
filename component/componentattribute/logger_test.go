@@ -17,11 +17,10 @@ import (
 )
 
 type loggerCore interface {
-	zapcore.Core
-	Without(fields ...string) *zap.Logger
+	Without(fields ...string) zapcore.Core
 }
 
-func TestLogger(t *testing.T) {
+func TestCore(t *testing.T) {
 	core, observed := observer.New(zap.DebugLevel)
 	logger := zap.New(core).With(zap.String("preexisting", "value"))
 
@@ -32,7 +31,8 @@ func TestLogger(t *testing.T) {
 
 	parent := componentattribute.NewLogger(logger, &attrs)
 	parent.Info("test parent before child")
-	child := parent.Core().(loggerCore).Without(string(componentattribute.SignalKey))
+	childCore := parent.Core().(loggerCore).Without(string(componentattribute.SignalKey))
+	child := zap.New(childCore)
 	child.Info("test child")
 	parent.Info("test parent after child")
 

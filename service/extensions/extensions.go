@@ -40,9 +40,7 @@ func (bes *Extensions) Start(ctx context.Context, host component.Host) error {
 	bes.telemetry.Logger.Info("Starting extensions...")
 	for _, extID := range bes.extensionIDs {
 		extLogger := componentattribute.NewLogger(
-			bes.telemetry.Logger,
-			attribute.Extension(extID).Set(),
-		)
+			bes.telemetry.Logger, attribute.Extension(extID).Set())
 		extLogger.Info("Extension is starting...")
 		instanceID := bes.instanceIDs[extID]
 		ext := bes.extMap[extID]
@@ -221,9 +219,7 @@ func New(ctx context.Context, set Settings, cfg Config, options ...Option) (*Ext
 			ModuleInfo:        set.ModuleInfo,
 		}
 		extSet.TelemetrySettings.Logger = componentattribute.NewLogger(
-			set.Telemetry.Logger,
-			attribute.Extension(extID).Set(),
-		)
+			extSet.TelemetrySettings.Logger, attribute.Extension(extID).Set())
 
 		ext, err := set.Extensions.Create(ctx, extSet)
 		if err != nil {

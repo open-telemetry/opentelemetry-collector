@@ -13,42 +13,34 @@ var _ zapcore.Core = (*coreWithout)(nil)
 
 type coreWithout struct {
 	zapcore.Core
-	from  *zap.Logger
-	attrs attribute.Set
+	from   zapcore.Core
+	fields []zap.Field
 }
 
-func NewLogger(from *zap.Logger, attrs *attribute.Set) *zap.Logger {
+func NewLogger(logger *zap.Logger, attrs *attribute.Set) *zap.Logger {
 	fields := []zap.Field{}
 	for _, kv := range attrs.ToSlice() {
 		fields = append(fields, zap.String(string(kv.Key), kv.Value.AsString()))
 	}
-	return from.WithOptions(
-		zap.Fields(fields...),
+	return logger.WithOptions(
 		zap.WrapCore(func(core zapcore.Core) zapcore.Core {
-			return &coreWithout{Core: core, from: from, attrs: *attrs}
+			return &coreWithout{Core: core.With(fields), from: core, fields: fields}
 		}),
 	)
 }
 
-func (l *coreWithout) Without(keys ...string) *zap.Logger {
+func (l *coreWithout) Without(keys ...string) zapcore.Core {
 	excludeKeys := make(map[string]struct{})
 	for _, key := range keys {
 		excludeKeys[key] = struct{}{}
 	}
 
-	newAttrs := []attribute.KeyValue{}
-	fields := []zap.Field{}
-	for _, kv := range l.attrs.ToSlice() {
-		if _, excluded := excludeKeys[string(kv.Key)]; !excluded {
-			newAttrs = append(newAttrs, kv)
-			fields = append(fields, zap.String(string(kv.Key), kv.Value.AsString()))
+	fieldsWithout := []zap.Field{}
+	for _, field := range l.fields {
+		if _, excluded := excludeKeys[field.Key]; !excluded {
+			fieldsWithout = append(fieldsWithout, field)
 		}
 	}
 
-	return l.from.WithOptions(
-		zap.Fields(fields...),
-		zap.WrapCore(func(core zapcore.Core) zapcore.Core {
-			return &coreWithout{Core: core, from: l.from, attrs: attribute.NewSet(newAttrs...)}
-		}),
-	)
+	return &coreWithout{Core: l.from.With(fieldsWithout), from: l.from, fields: fieldsWithout}
 }

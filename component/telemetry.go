@@ -29,12 +29,15 @@ type TelemetrySettings struct {
 }
 
 func (ts *TelemetrySettings) LoggerWithout(fields ...string) *zap.Logger {
-	type loggerCore interface {
-		zapcore.Core
-		Without(fields ...string) *zap.Logger
+	type coreWithout interface {
+		Without(fields ...string) zapcore.Core
 	}
-	if _, ok := ts.Logger.Core().(loggerCore); !ok {
+	if _, ok := ts.Logger.Core().(coreWithout); !ok {
 		return ts.Logger
 	}
-	return ts.Logger.Core().(loggerCore).Without(fields...)
+	return ts.Logger.WithOptions(
+		zap.WrapCore(func(from zapcore.Core) zapcore.Core {
+			return from.(coreWithout).Without(fields...)
+		}),
+	)
 }
