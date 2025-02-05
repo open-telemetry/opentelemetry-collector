@@ -144,7 +144,7 @@ Queue capacity - sync gauge example.
 
 ### otelcol_queue_length
 
-This metric is optional and therefore not initialized in NewTelemetryBuilder.
+This metric is optional and therefore not initialized in NewTelemetryBuilder. [alpha]
 
 For example this metric only exists if feature A is enabled.
 

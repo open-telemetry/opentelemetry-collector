@@ -27,11 +27,6 @@ type Authentication struct {
 	AuthenticatorID component.ID `mapstructure:"authenticator"`
 }
 
-// NewDefaultAuthentication returns a default authentication configuration.
-func NewDefaultAuthentication() *Authentication {
-	return &Authentication{}
-}
-
 // GetServerAuthenticator attempts to select the appropriate auth.Server from the list of extensions,
 // based on the requested extension name. If an authenticator is not found, an error is returned.
 func (a Authentication) GetServerAuthenticator(_ context.Context, extensions map[component.ID]component.Component) (auth.Server, error) {

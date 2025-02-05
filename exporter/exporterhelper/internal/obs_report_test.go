@@ -12,10 +12,13 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -72,7 +75,25 @@ func TestExportTraceDataOp(t *testing.T) {
 		}
 	}
 
-	require.NoError(t, tt.CheckExporterTraces(int64(sentSpans), int64(failedToSendSpans)))
+	metadatatest.AssertEqualExporterSentSpans(t, tt.Telemetry,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("exporter", exporterID.String())),
+				Value: int64(sentSpans),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	if failedToSendSpans > 0 {
+		metadatatest.AssertEqualExporterSendFailedSpans(t, tt.Telemetry,
+			[]metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String("exporter", exporterID.String())),
+					Value: int64(failedToSendSpans),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+	}
 }
 
 func TestExportMetricsOp(t *testing.T) {
@@ -123,7 +144,25 @@ func TestExportMetricsOp(t *testing.T) {
 		}
 	}
 
-	require.NoError(t, tt.CheckExporterMetrics(int64(sentMetricPoints), int64(failedToSendMetricPoints)))
+	metadatatest.AssertEqualExporterSentMetricPoints(t, tt.Telemetry,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("exporter", exporterID.String())),
+				Value: int64(sentMetricPoints),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	if failedToSendMetricPoints > 0 {
+		metadatatest.AssertEqualExporterSendFailedMetricPoints(t, tt.Telemetry,
+			[]metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String("exporter", exporterID.String())),
+					Value: int64(failedToSendMetricPoints),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+	}
 }
 
 func TestExportLogsOp(t *testing.T) {
@@ -174,37 +213,25 @@ func TestExportLogsOp(t *testing.T) {
 		}
 	}
 
-	require.NoError(t, tt.CheckExporterLogs(int64(sentLogRecords), int64(failedToSendLogRecords)))
-}
+	metadatatest.AssertEqualExporterSentLogRecords(t, tt.Telemetry,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("exporter", exporterID.String())),
+				Value: int64(sentLogRecords),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
-func TestExportEnqueueFailure(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(exporterID)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
-
-	obsrep, err := NewObsReport(ObsReportSettings{
-		ExporterSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-		Signal:           pipeline.SignalLogs,
-	})
-	require.NoError(t, err)
-	obsrep.RecordEnqueueFailure(context.Background(), int64(7))
-	require.NoError(t, tt.CheckExporterEnqueueFailedLogs(int64(7)))
-
-	obsrep, err = NewObsReport(ObsReportSettings{
-		ExporterSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-		Signal:           pipeline.SignalTraces,
-	})
-	require.NoError(t, err)
-	obsrep.RecordEnqueueFailure(context.Background(), int64(12))
-	require.NoError(t, tt.CheckExporterEnqueueFailedTraces(int64(12)))
-
-	obsrep, err = NewObsReport(ObsReportSettings{
-		ExporterSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-		Signal:           pipeline.SignalMetrics,
-	})
-	require.NoError(t, err)
-	obsrep.RecordEnqueueFailure(context.Background(), int64(21))
-	require.NoError(t, tt.CheckExporterEnqueueFailedMetrics(int64(21)))
+	if failedToSendLogRecords > 0 {
+		metadatatest.AssertEqualExporterSendFailedLogRecords(t, tt.Telemetry,
+			[]metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String("exporter", exporterID.String())),
+					Value: int64(failedToSendLogRecords),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+	}
 }
 
 type testParams struct {

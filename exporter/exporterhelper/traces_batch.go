@@ -14,73 +14,36 @@ import (
 // MergeSplit splits and/or merges the provided traces request and the current request into one or more requests
 // conforming with the MaxSizeConfig.
 func (req *tracesRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSizeConfig, r2 Request) ([]Request, error) {
-	var req2 *tracesRequest
 	if r2 != nil {
-		var ok bool
-		req2, ok = r2.(*tracesRequest)
+		req2, ok := r2.(*tracesRequest)
 		if !ok {
 			return nil, errors.New("invalid input type")
 		}
+		req2.mergeTo(req)
 	}
 
+	// If no limit we can simply merge the new request into the current and return.
 	if cfg.MaxSizeItems == 0 {
-		req.setCachedItemsCount(req.ItemsCount() + req2.ItemsCount())
-		req2.setCachedItemsCount(0)
-		req2.td.ResourceSpans().MoveAndAppendTo(req.td.ResourceSpans())
 		return []Request{req}, nil
 	}
+	return req.split(cfg)
+}
 
-	var (
-		res          []Request
-		destReq      *tracesRequest
-		capacityLeft = cfg.MaxSizeItems
-	)
-	for _, srcReq := range []*tracesRequest{req, req2} {
-		if srcReq == nil {
-			continue
-		}
+func (req *tracesRequest) mergeTo(dst *tracesRequest) {
+	dst.setCachedItemsCount(dst.ItemsCount() + req.ItemsCount())
+	req.setCachedItemsCount(0)
+	req.td.ResourceSpans().MoveAndAppendTo(dst.td.ResourceSpans())
+}
 
-		srcCount := srcReq.ItemsCount()
-		if srcCount <= capacityLeft {
-			if destReq == nil {
-				destReq = srcReq
-			} else {
-				destReq.setCachedItemsCount(destReq.ItemsCount() + srcCount)
-				srcReq.setCachedItemsCount(0)
-				srcReq.td.ResourceSpans().MoveAndAppendTo(destReq.td.ResourceSpans())
-			}
-			capacityLeft -= srcCount
-			continue
-		}
-
-		for {
-			extractedTraces := extractTraces(srcReq.td, capacityLeft)
-			extractedCount := extractedTraces.SpanCount()
-			if extractedCount == 0 {
-				break
-			}
-
-			if destReq == nil {
-				destReq = &tracesRequest{td: extractedTraces, pusher: srcReq.pusher, cachedItemsCount: extractedCount}
-			} else {
-				destReq.setCachedItemsCount(destReq.ItemsCount() + extractedCount)
-				srcReq.setCachedItemsCount(srcReq.ItemsCount() - extractedCount)
-				extractedTraces.ResourceSpans().MoveAndAppendTo(destReq.td.ResourceSpans())
-			}
-
-			// Create new batch once capacity is reached.
-			capacityLeft -= extractedCount
-			if capacityLeft == 0 {
-				res = append(res, destReq)
-				destReq = nil
-				capacityLeft = cfg.MaxSizeItems
-			}
-		}
+func (req *tracesRequest) split(cfg exporterbatcher.MaxSizeConfig) ([]Request, error) {
+	var res []Request
+	for req.ItemsCount() > cfg.MaxSizeItems {
+		td := extractTraces(req.td, cfg.MaxSizeItems)
+		size := td.SpanCount()
+		req.setCachedItemsCount(req.ItemsCount() - size)
+		res = append(res, &tracesRequest{td: td, pusher: req.pusher, cachedItemsCount: size})
 	}
-
-	if destReq != nil {
-		res = append(res, destReq)
-	}
+	res = append(res, req)
 	return res, nil
 }
 

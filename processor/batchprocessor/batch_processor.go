@@ -177,6 +177,7 @@ func (bp *batchProcessor[T]) Shutdown(context.Context) error {
 
 	// Wait until all goroutines are done.
 	bp.goroutines.Wait()
+
 	return nil
 }
 

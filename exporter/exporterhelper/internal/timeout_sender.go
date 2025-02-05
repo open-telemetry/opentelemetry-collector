@@ -8,6 +8,7 @@ import (
 	"errors"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/internal"
 )
 
@@ -35,7 +36,8 @@ func NewDefaultTimeoutConfig() TimeoutConfig {
 
 // TimeoutSender is a requestSender that adds a `timeout` to every request that passes this sender.
 type TimeoutSender struct {
-	BaseSender[internal.Request]
+	component.StartFunc
+	component.ShutdownFunc
 	cfg TimeoutConfig
 }
 

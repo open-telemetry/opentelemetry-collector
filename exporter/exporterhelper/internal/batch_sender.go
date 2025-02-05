@@ -23,8 +23,8 @@ import (
 // - cfg.FlushTimeout is elapsed since the timestamp when the previous batch was sent out.
 // - concurrencyLimit is reached.
 type BatchSender struct {
-	BaseSender[internal.Request]
-	cfg exporterbatcher.Config
+	cfg  exporterbatcher.Config
+	next Sender[internal.Request]
 
 	// concurrencyLimit is the maximum number of goroutines that can be blocked by the batcher.
 	// If this number is reached and all the goroutines are busy, the batch will be sent right away.
@@ -43,11 +43,13 @@ type BatchSender struct {
 	stopped            *atomic.Bool
 }
 
-// newBatchSender returns a new batch consumer component.
-func NewBatchSender(cfg exporterbatcher.Config, set exporter.Settings) *BatchSender {
+// NewBatchSender returns a new batch consumer component.
+func NewBatchSender(cfg exporterbatcher.Config, set exporter.Settings, concurrencyLimit int64, next Sender[internal.Request]) *BatchSender {
 	bs := &BatchSender{
-		activeBatch:        newEmptyBatch(),
 		cfg:                cfg,
+		next:               next,
+		concurrencyLimit:   concurrencyLimit,
+		activeBatch:        newEmptyBatch(),
 		logger:             set.Logger,
 		shutdownCh:         nil,
 		shutdownCompleteCh: make(chan struct{}),
@@ -119,7 +121,7 @@ func newEmptyBatch() *batch {
 // Caller must hold the lock.
 func (bs *BatchSender) exportActiveBatch() {
 	go func(b *batch) {
-		b.err = bs.NextSender.Send(b.ctx, b.request)
+		b.err = bs.next.Send(b.ctx, b.request)
 		close(b.done)
 		bs.activeRequests.Add(-b.requestsBlocked)
 	}(bs.activeBatch)
@@ -138,7 +140,7 @@ func (bs *BatchSender) isActiveBatchReady() bool {
 func (bs *BatchSender) Send(ctx context.Context, req internal.Request) error {
 	// Stopped batch sender should act as pass-through to allow the queue to be drained.
 	if bs.stopped.Load() {
-		return bs.NextSender.Send(ctx, req)
+		return bs.next.Send(ctx, req)
 	}
 
 	if bs.cfg.MaxSizeItems > 0 {
@@ -190,7 +192,7 @@ func (bs *BatchSender) sendMergeSplitBatch(ctx context.Context, req internal.Req
 	// Intentionally do not put the last request in the active batch to not block it.
 	// TODO: Consider including the partial request in the error to avoid double publishing.
 	for _, r := range reqs {
-		if err := bs.NextSender.Send(ctx, r); err != nil {
+		if err := bs.next.Send(ctx, r); err != nil {
 			return err
 		}
 	}

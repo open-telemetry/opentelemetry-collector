@@ -9,7 +9,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -19,7 +18,6 @@ func NewNopTelemetrySettings() component.TelemetrySettings {
 		Logger:         zap.NewNop(),
 		TracerProvider: nooptrace.NewTracerProvider(),
 		MeterProvider:  noopmetric.NewMeterProvider(),
-		MetricsLevel:   configtelemetry.LevelNone,
 		Resource:       pcommon.NewResource(),
 	}
 }

@@ -5,8 +5,10 @@ package metadata
 import (
 	"context"
 	"errors"
+	"sync"
 
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/embedded"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
@@ -23,9 +25,12 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                                metric.Meter
-	BatchSizeTriggerSend                 metric.Int64Counter
-	ProcessRuntimeTotalAllocBytes        metric.Int64ObservableCounter
+	meter                         metric.Meter
+	mu                            sync.Mutex
+	registrations                 []metric.Registration
+	BatchSizeTriggerSend          metric.Int64Counter
+	ProcessRuntimeTotalAllocBytes metric.Int64ObservableCounter
+	// TODO: Remove in v0.119.0 when remove deprecated funcs.
 	observeProcessRuntimeTotalAllocBytes func(context.Context, metric.Observer) error
 	QueueCapacity                        metric.Int64Gauge
 	QueueLength                          metric.Int64ObservableGauge
@@ -43,7 +48,7 @@ func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 	tbof(mb)
 }
 
-// WithProcessRuntimeTotalAllocBytesCallback sets callback for observable ProcessRuntimeTotalAllocBytes metric.
+// Deprecated: [v0.119.0] use RegisterProcessRuntimeTotalAllocBytesCallback.
 func WithProcessRuntimeTotalAllocBytesCallback(cb func() int64, opts ...metric.ObserveOption) TelemetryBuilderOption {
 	return telemetryBuilderOptionFunc(func(builder *TelemetryBuilder) {
 		builder.observeProcessRuntimeTotalAllocBytes = func(_ context.Context, o metric.Observer) error {
@@ -53,22 +58,62 @@ func WithProcessRuntimeTotalAllocBytesCallback(cb func() int64, opts ...metric.O
 	})
 }
 
-// InitQueueLength configures the QueueLength metric.
-func (builder *TelemetryBuilder) InitQueueLength(cb func() int64, opts ...metric.ObserveOption) (metric.Registration, error) {
-	var err error
-	builder.QueueLength, err = builder.meter.Int64ObservableGauge(
-		"otelcol_queue_length",
-		metric.WithDescription("This metric is optional and therefore not initialized in NewTelemetryBuilder."),
-		metric.WithUnit("{items}"),
-	)
+// RegisterProcessRuntimeTotalAllocBytesCallback sets callback for observable ProcessRuntimeTotalAllocBytes metric.
+func (builder *TelemetryBuilder) RegisterProcessRuntimeTotalAllocBytesCallback(cb metric.Int64Callback) error {
+	reg, err := builder.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
+		cb(ctx, &observerInt64{inst: builder.ProcessRuntimeTotalAllocBytes, obs: o})
+		return nil
+	}, builder.ProcessRuntimeTotalAllocBytes)
 	if err != nil {
-		return nil, err
+		return err
 	}
+	builder.mu.Lock()
+	defer builder.mu.Unlock()
+	builder.registrations = append(builder.registrations, reg)
+	return nil
+}
+
+// Deprecated: [v0.119.0] use RegisterQueueLengthCallback.
+func (builder *TelemetryBuilder) InitQueueLength(cb func() int64, opts ...metric.ObserveOption) (metric.Registration, error) {
 	reg, err := builder.meter.RegisterCallback(func(_ context.Context, o metric.Observer) error {
 		o.ObserveInt64(builder.QueueLength, cb(), opts...)
 		return nil
 	}, builder.QueueLength)
 	return reg, err
+}
+
+// RegisterQueueLengthCallback sets callback for observable QueueLength metric.
+func (builder *TelemetryBuilder) RegisterQueueLengthCallback(cb metric.Int64Callback) error {
+	reg, err := builder.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
+		cb(ctx, &observerInt64{inst: builder.QueueLength, obs: o})
+		return nil
+	}, builder.QueueLength)
+	if err != nil {
+		return err
+	}
+	builder.mu.Lock()
+	defer builder.mu.Unlock()
+	builder.registrations = append(builder.registrations, reg)
+	return nil
+}
+
+type observerInt64 struct {
+	embedded.Int64Observer
+	inst metric.Int64Observable
+	obs  metric.Observer
+}
+
+func (oi *observerInt64) Observe(value int64, opts ...metric.ObserveOption) {
+	oi.obs.ObserveInt64(oi.inst, value, opts...)
+}
+
+// Shutdown unregister all registered callbacks for async instruments.
+func (builder *TelemetryBuilder) Shutdown() {
+	builder.mu.Lock()
+	defer builder.mu.Unlock()
+	for _, reg := range builder.registrations {
+		reg.Unregister()
+	}
 }
 
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
@@ -92,11 +137,22 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
-	_, err = builder.meter.RegisterCallback(builder.observeProcessRuntimeTotalAllocBytes, builder.ProcessRuntimeTotalAllocBytes)
-	errs = errors.Join(errs, err)
+	if builder.observeProcessRuntimeTotalAllocBytes != nil {
+		reg, err := builder.meter.RegisterCallback(builder.observeProcessRuntimeTotalAllocBytes, builder.ProcessRuntimeTotalAllocBytes)
+		errs = errors.Join(errs, err)
+		if err == nil {
+			builder.registrations = append(builder.registrations, reg)
+		}
+	}
 	builder.QueueCapacity, err = builder.meter.Int64Gauge(
 		"otelcol_queue_capacity",
 		metric.WithDescription("Queue capacity - sync gauge example."),
+		metric.WithUnit("{items}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.QueueLength, err = builder.meter.Int64ObservableGauge(
+		"otelcol_queue_length",
+		metric.WithDescription("This metric is optional and therefore not initialized in NewTelemetryBuilder. [alpha]"),
 		metric.WithUnit("{items}"),
 	)
 	errs = errors.Join(errs, err)
