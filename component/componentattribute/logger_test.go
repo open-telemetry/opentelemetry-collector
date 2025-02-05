@@ -9,11 +9,17 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component/componentattribute"
 	"go.opentelemetry.io/collector/pipeline"
 )
+
+type loggerCore interface {
+	zapcore.Core
+	Without(fields ...string) *zap.Logger
+}
 
 func TestLogger(t *testing.T) {
 	core, observed := observer.New(zap.DebugLevel)
@@ -26,7 +32,7 @@ func TestLogger(t *testing.T) {
 
 	parent := componentattribute.NewLogger(logger, &attrs)
 	parent.Info("test parent before child")
-	child := parent.Core().(*componentattribute.Core).Without(string(componentattribute.SignalKey))
+	child := parent.Core().(loggerCore).Without(string(componentattribute.SignalKey))
 	child.Info("test child")
 	parent.Info("test parent after child")
 

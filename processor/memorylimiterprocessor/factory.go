@@ -106,14 +106,12 @@ func (f *factory) getMemoryLimiter(set processor.Settings, cfg component.Config)
 		return memLimiter, nil
 	}
 
-	if c, ok := set.Logger.Core().(*componentattribute.Core); ok {
-		set.Logger = c.Without(
-			componentattribute.SignalKey,
-			componentattribute.PipelineIDKey,
-			componentattribute.ComponentIDKey,
-		)
-		set.Logger.Debug("created singleton logger")
-	}
+	set.Logger = set.TelemetrySettings.LoggerWithout(
+		componentattribute.SignalKey,
+		componentattribute.PipelineIDKey,
+		componentattribute.ComponentIDKey,
+	)
+	set.Logger.Debug("created singleton logger")
 
 	memLimiter, err := newMemoryLimiterProcessor(set, cfg.(*Config))
 	if err != nil {
