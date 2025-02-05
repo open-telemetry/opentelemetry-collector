@@ -10,10 +10,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 // Deprecated: [v0.119.0] Use componenttest.Telemetry
@@ -24,18 +21,6 @@ type Telemetry struct {
 // Deprecated: [v0.119.0] Use componenttest.NewTelemetry
 func SetupTelemetry(opts ...componenttest.TelemetryOption) Telemetry {
 	return Telemetry{Telemetry: componenttest.NewTelemetry(opts...)}
-}
-
-// Deprecated: [v0.119.0] Use metadatatest.NewSettings
-func (tt *Telemetry) NewSettings() receiver.Settings {
-	return NewSettings(tt.Telemetry)
-}
-
-func NewSettings(tt *componenttest.Telemetry) receiver.Settings {
-	set := receivertest.NewNopSettings()
-	set.ID = component.NewID(component.MustNewType("receiverhelper"))
-	set.TelemetrySettings = tt.NewTelemetrySettings()
-	return set
 }
 
 // Deprecated: [v0.119.0] Use metadatatest.AssertEqual*

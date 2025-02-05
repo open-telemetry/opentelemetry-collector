@@ -123,7 +123,7 @@ func TestTraces_RecordInOut(t *testing.T) {
 	incomingSpans.AppendEmpty()
 
 	tel := componenttest.NewTelemetry()
-	tp, err := NewTraces(context.Background(), metadatatest.NewSettings(tel), &testLogsCfg, consumertest.NewNop(), mockAggregate)
+	tp, err := NewTraces(context.Background(), newSettings(tel), &testLogsCfg, consumertest.NewNop(), mockAggregate)
 	require.NoError(t, err)
 
 	assert.NoError(t, tp.Start(context.Background(), componenttest.NewNopHost()))
@@ -162,7 +162,7 @@ func TestTraces_RecordIn_ErrorOut(t *testing.T) {
 	incomingSpans.AppendEmpty()
 
 	tel := componenttest.NewTelemetry()
-	tp, err := NewTraces(context.Background(), metadatatest.NewSettings(tel), &testLogsCfg, consumertest.NewNop(), mockErr)
+	tp, err := NewTraces(context.Background(), newSettings(tel), &testLogsCfg, consumertest.NewNop(), mockErr)
 	require.NoError(t, err)
 
 	require.NoError(t, tp.Start(context.Background(), componenttest.NewNopHost()))
