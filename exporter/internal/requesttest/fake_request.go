@@ -5,11 +5,16 @@ package requesttest // import "go.opentelemetry.io/collector/exporter/internal/r
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"sync/atomic"
 	"time"
 
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/internal"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 type Sink struct {
@@ -32,10 +37,19 @@ func NewSink() *Sink {
 	}
 }
 
+type errorPartial struct {
+	fr *FakeRequest
+}
+
+func (e errorPartial) Error() string {
+	return fmt.Sprintf("items: %d", e.fr.Items)
+}
+
 type FakeRequest struct {
 	Items     int
 	Sink      *Sink
 	ExportErr error
+	Partial   int
 	MergeErr  error
 	Delay     time.Duration
 }
@@ -47,13 +61,37 @@ func (r *FakeRequest) Export(ctx context.Context) error {
 	case <-time.After(r.Delay):
 	}
 	if r.ExportErr != nil {
-		return r.ExportErr
+		err := r.ExportErr
+		r.ExportErr = nil
+		return err
+	}
+	if r.Partial > 0 {
+		if r.Sink != nil {
+			r.Sink.requestsCount.Add(1)
+			r.Sink.itemsCount.Add(int64(r.Items - r.Partial))
+		}
+		return errorPartial{fr: &FakeRequest{
+			Items:     r.Partial,
+			Sink:      r.Sink,
+			ExportErr: r.ExportErr,
+			Partial:   0,
+			MergeErr:  r.MergeErr,
+			Delay:     r.Delay,
+		}}
 	}
 	if r.Sink != nil {
 		r.Sink.requestsCount.Add(1)
 		r.Sink.itemsCount.Add(int64(r.Items))
 	}
 	return nil
+}
+
+func (r *FakeRequest) OnError(err error) internal.Request {
+	var pErr errorPartial
+	if errors.As(err, &pErr) {
+		return pErr.fr
+	}
+	return r
 }
 
 func (r *FakeRequest) ItemsCount() int {
@@ -67,18 +105,14 @@ func (r *FakeRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSizeC
 
 	maxItems := cfg.MaxSizeItems
 	if maxItems == 0 {
-		fr2 := r2.(*FakeRequest)
-		if fr2.MergeErr != nil {
-			return nil, fr2.MergeErr
+		if r2 != nil {
+			fr2 := r2.(*FakeRequest)
+			if fr2.MergeErr != nil {
+				return nil, fr2.MergeErr
+			}
+			fr2.mergeTo(r)
 		}
-		return []internal.Request{
-			&FakeRequest{
-				Items:     r.Items + fr2.Items,
-				Sink:      r.Sink,
-				ExportErr: fr2.ExportErr,
-				Delay:     r.Delay + fr2.Delay,
-			},
-		}, nil
+		return []internal.Request{r}, nil
 	}
 
 	var fr2 *FakeRequest
@@ -89,20 +123,15 @@ func (r *FakeRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSizeC
 			return nil, r2.(*FakeRequest).MergeErr
 		}
 		fr2 = r2.(*FakeRequest)
-		fr2 = &FakeRequest{Items: fr2.Items, Sink: fr2.Sink, ExportErr: fr2.ExportErr, Delay: fr2.Delay}
 	}
+
 	var res []internal.Request
-
-	// fill fr1 to maxItems if it's not nil
-
-	r = &FakeRequest{Items: r.Items, Sink: r.Sink, ExportErr: r.ExportErr, Delay: r.Delay}
-	if fr2.Items <= maxItems-r.Items {
-		r.Items += fr2.Items
-		if fr2.ExportErr != nil {
-			r.ExportErr = fr2.ExportErr
-		}
+	// No split, then just simple merge
+	if r.Items+fr2.Items <= maxItems {
+		fr2.mergeTo(r)
 		return []internal.Request{r}, nil
 	}
+
 	// if split is needed, we don't propagate ExportErr from fr2 to fr1 to test more cases
 	fr2.Items -= maxItems - r.Items
 	r.Items = maxItems
@@ -119,4 +148,28 @@ func (r *FakeRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSizeC
 	}
 
 	return res, nil
+}
+
+func (r *FakeRequest) mergeTo(dst *FakeRequest) {
+	dst.Items += r.Items
+	dst.ExportErr = errors.Join(dst.ExportErr, r.ExportErr)
+	dst.Delay += r.Delay
+}
+
+func RequestFromMetricsFunc(reqErr error) func(context.Context, pmetric.Metrics) (internal.Request, error) {
+	return func(_ context.Context, md pmetric.Metrics) (internal.Request, error) {
+		return &FakeRequest{Items: md.DataPointCount(), ExportErr: reqErr}, nil
+	}
+}
+
+func RequestFromTracesFunc(reqErr error) func(context.Context, ptrace.Traces) (internal.Request, error) {
+	return func(_ context.Context, td ptrace.Traces) (internal.Request, error) {
+		return &FakeRequest{Items: td.SpanCount(), ExportErr: reqErr}, nil
+	}
+}
+
+func RequestFromLogsFunc(reqErr error) func(context.Context, plog.Logs) (internal.Request, error) {
+	return func(_ context.Context, ld plog.Logs) (internal.Request, error) {
+		return &FakeRequest{Items: ld.LogRecordCount(), ExportErr: reqErr}, nil
+	}
 }

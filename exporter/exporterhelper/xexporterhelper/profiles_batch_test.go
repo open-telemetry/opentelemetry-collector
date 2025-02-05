@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/internal/requesttest"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
@@ -26,9 +27,8 @@ func TestMergeProfiles(t *testing.T) {
 }
 
 func TestMergeProfilesInvalidInput(t *testing.T) {
-	pr1 := &dummyRequest{}
 	pr2 := newProfilesRequest(testdata.GenerateProfiles(3), nil)
-	_, err := pr2.MergeSplit(context.Background(), exporterbatcher.MaxSizeConfig{}, pr1)
+	_, err := pr2.MergeSplit(context.Background(), exporterbatcher.MaxSizeConfig{}, &requesttest.FakeRequest{Items: 1})
 	assert.Error(t, err)
 }
 
@@ -125,13 +125,6 @@ func TestMergeSplitProfiles(t *testing.T) {
 	}
 }
 
-func TestMergeSplitProfilesInvalidInput(t *testing.T) {
-	r1 := &dummyRequest{}
-	r2 := newProfilesRequest(testdata.GenerateProfiles(3), nil)
-	_, err := r2.MergeSplit(context.Background(), exporterbatcher.MaxSizeConfig{}, r1)
-	assert.Error(t, err)
-}
-
 func TestExtractProfiles(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		ld := testdata.GenerateProfiles(10)
@@ -141,19 +134,14 @@ func TestExtractProfiles(t *testing.T) {
 	}
 }
 
-// dummyRequest implements Request. It is for checking that merging two request types would fail
-type dummyRequest struct{}
-
-func (req *dummyRequest) Export(_ context.Context) error {
-	return nil
-}
-
-func (req *dummyRequest) ItemsCount() int {
-	return 1
-}
-
-func (req *dummyRequest) MergeSplit(_ context.Context, _ exporterbatcher.MaxSizeConfig, _ exporterhelper.Request) (
-	[]exporterhelper.Request, error,
-) {
-	return nil, nil
+func TestMergeSplitManySmallLogs(t *testing.T) {
+	// All requests merge into a single batch.
+	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 10000}
+	merged := []exporterhelper.Request{newProfilesRequest(testdata.GenerateProfiles(1), nil)}
+	for j := 0; j < 1000; j++ {
+		lr2 := newProfilesRequest(testdata.GenerateProfiles(10), nil)
+		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), cfg, lr2)
+		merged = append(merged[0:len(merged)-1], res...)
+	}
+	assert.Len(t, merged, 2)
 }

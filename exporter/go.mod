@@ -5,19 +5,19 @@ go 1.22.0
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v0.118.0
-	go.opentelemetry.io/collector/component/componenttest v0.118.0
-	go.opentelemetry.io/collector/config/configretry v1.24.0
-	go.opentelemetry.io/collector/consumer v1.24.0
-	go.opentelemetry.io/collector/consumer/consumererror v0.118.0
-	go.opentelemetry.io/collector/consumer/consumertest v0.118.0
-	go.opentelemetry.io/collector/exporter/exportertest v0.118.0
-	go.opentelemetry.io/collector/extension/extensiontest v0.118.0
-	go.opentelemetry.io/collector/extension/xextension v0.118.0
-	go.opentelemetry.io/collector/featuregate v1.24.0
-	go.opentelemetry.io/collector/pdata v1.24.0
-	go.opentelemetry.io/collector/pdata/testdata v0.118.0
-	go.opentelemetry.io/collector/pipeline v0.118.0
+	go.opentelemetry.io/collector/component v0.119.0
+	go.opentelemetry.io/collector/component/componenttest v0.119.0
+	go.opentelemetry.io/collector/config/configretry v1.25.0
+	go.opentelemetry.io/collector/consumer v1.25.0
+	go.opentelemetry.io/collector/consumer/consumererror v0.119.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.119.0
+	go.opentelemetry.io/collector/exporter/exportertest v0.119.0
+	go.opentelemetry.io/collector/extension/extensiontest v0.119.0
+	go.opentelemetry.io/collector/extension/xextension v0.119.0
+	go.opentelemetry.io/collector/featuregate v1.25.0
+	go.opentelemetry.io/collector/pdata v1.25.0
+	go.opentelemetry.io/collector/pdata/testdata v0.119.0
+	go.opentelemetry.io/collector/pipeline v0.119.0
 	go.opentelemetry.io/otel v1.34.0
 	go.opentelemetry.io/otel/metric v1.34.0
 	go.opentelemetry.io/otel/sdk v1.34.0
@@ -40,14 +40,13 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.118.0 // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.118.0 // indirect
-	go.opentelemetry.io/collector/exporter/xexporter v0.118.0 // indirect
-	go.opentelemetry.io/collector/extension v0.118.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.118.0 // indirect
-	go.opentelemetry.io/collector/receiver v0.118.0 // indirect
-	go.opentelemetry.io/collector/receiver/receivertest v0.118.0 // indirect
-	go.opentelemetry.io/collector/receiver/xreceiver v0.118.0 // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.119.0 // indirect
+	go.opentelemetry.io/collector/exporter/xexporter v0.119.0 // indirect
+	go.opentelemetry.io/collector/extension v0.119.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.119.0 // indirect
+	go.opentelemetry.io/collector/receiver v0.119.0 // indirect
+	go.opentelemetry.io/collector/receiver/receivertest v0.119.0 // indirect
+	go.opentelemetry.io/collector/receiver/xreceiver v0.119.0 // indirect
 	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/sys v0.29.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
@@ -78,8 +77,6 @@ replace go.opentelemetry.io/collector/receiver => ../receiver
 retract v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module
 
 replace go.opentelemetry.io/collector/config/configretry => ../config/configretry
-
-replace go.opentelemetry.io/collector/config/configtelemetry => ../config/configtelemetry
 
 replace go.opentelemetry.io/collector/consumer/xconsumer => ../consumer/xconsumer
 

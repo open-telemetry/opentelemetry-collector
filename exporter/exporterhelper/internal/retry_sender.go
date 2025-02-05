@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
@@ -44,17 +45,19 @@ func NewThrottleRetry(err error, delay time.Duration) error {
 }
 
 type retrySender struct {
-	BaseSender[internal.Request]
+	component.StartFunc
 	cfg    configretry.BackOffConfig
 	stopCh chan struct{}
 	logger *zap.Logger
+	next   Sender[internal.Request]
 }
 
-func newRetrySender(config configretry.BackOffConfig, set exporter.Settings) *retrySender {
+func newRetrySender(config configretry.BackOffConfig, set exporter.Settings, next Sender[internal.Request]) *retrySender {
 	return &retrySender{
 		cfg:    config,
 		stopCh: make(chan struct{}),
 		logger: set.Logger,
+		next:   next,
 	}
 }
 
@@ -84,7 +87,7 @@ func (rs *retrySender) Send(ctx context.Context, req internal.Request) error {
 			"Sending request.",
 			trace.WithAttributes(attribute.Int64("retry_num", retryNum)))
 
-		err := rs.NextSender.Send(ctx, req)
+		err := rs.next.Send(ctx, req)
 		if err == nil {
 			return nil
 		}
@@ -130,7 +133,7 @@ func (rs *retrySender) Send(ctx context.Context, req internal.Request) error {
 		// back-off, but get interrupted when shutting down or request is cancelled or timed out.
 		select {
 		case <-ctx.Done():
-			return fmt.Errorf("request is cancelled or timed out %w", err)
+			return fmt.Errorf("request is cancelled or timed out: %w", err)
 		case <-rs.stopCh:
 			return experr.NewShutdownErr(err)
 		case <-time.After(backoffDelay):

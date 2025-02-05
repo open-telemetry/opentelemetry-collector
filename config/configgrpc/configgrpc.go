@@ -110,7 +110,6 @@ func NewDefaultClientConfig() *ClientConfig {
 	return &ClientConfig{
 		TLSSetting:   configtls.NewDefaultClientConfig(),
 		Keepalive:    NewDefaultKeepaliveClientConfig(),
-		Auth:         configauth.NewDefaultAuthentication(),
 		BalancerName: BalancerName(),
 	}
 }
@@ -196,7 +195,6 @@ type ServerConfig struct {
 func NewDefaultServerConfig() *ServerConfig {
 	return &ServerConfig{
 		Keepalive: NewDefaultKeepaliveServerConfig(),
-		Auth:      configauth.NewDefaultAuthentication(),
 	}
 }
 
