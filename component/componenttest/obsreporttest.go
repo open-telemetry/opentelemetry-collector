@@ -69,6 +69,7 @@ func (tts *TestTelemetry) CheckExporterMetricGauge(metric string, val int64, ext
 	return checkIntGauge(tts.Telemetry, metric, val, attrs)
 }
 
+// Deprecated: [v0.120.0] use the metadatatest.AssertEqualMetric series of functions instead.
 // CheckReceiverTraces checks that for the current exported values for trace receiver metrics match given values.
 func (tts *TestTelemetry) CheckReceiverTraces(protocol string, acceptedSpans, droppedSpans int64) error {
 	return checkReceiver(tts.Telemetry, tts.id, "spans", protocol, acceptedSpans, droppedSpans)
