@@ -170,9 +170,8 @@ func (bes *Extensions) HandleZPages(w http.ResponseWriter, r *http.Request) {
 
 // Settings holds configuration for building Extensions.
 type Settings struct {
-	Telemetry  component.TelemetrySettings
-	BuildInfo  component.BuildInfo
-	ModuleInfo extension.ModuleInfo
+	Telemetry component.TelemetrySettings
+	BuildInfo component.BuildInfo
 
 	// Extensions builder for extensions.
 	Extensions builders.Extension
@@ -214,7 +213,6 @@ func New(ctx context.Context, set Settings, cfg Config, options ...Option) (*Ext
 			ID:                extID,
 			TelemetrySettings: set.Telemetry,
 			BuildInfo:         set.BuildInfo,
-			ModuleInfo:        set.ModuleInfo,
 		}
 		extSet.TelemetrySettings.Logger = components.ExtensionLogger(set.Telemetry.Logger, extID)
 

@@ -22,7 +22,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
-	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/otelcol/internal/grpclog"
 	"go.opentelemetry.io/collector/service"
 )
@@ -199,7 +198,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		ExtensionsConfigs:   cfg.Extensions,
 		ExtensionsFactories: factories.Extensions,
 
-		ModuleInfo: extension.ModuleInfo{
+		ModuleInfo: service.ModuleInfo{
 			Receiver:  factories.ReceiverModules,
 			Processor: factories.ProcessorModules,
 			Exporter:  factories.ExporterModules,

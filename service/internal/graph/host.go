@@ -11,11 +11,11 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
-	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/builders"
+	"go.opentelemetry.io/collector/service/internal/moduleinfo"
 	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/internal/zpages"
 )
@@ -25,9 +25,16 @@ type getExporters interface {
 	GetExporters() map[pipeline.Signal]map[component.ID]component.Component
 }
 
+// TODO: expose GetModuleInfo as part of a service/hostcapabilities package.
+type getModuleInfo interface {
+	// GetModuleInfo returns the module information for the host.
+	GetModuleInfo() moduleinfo.ModuleInfo
+}
+
 var (
 	_ getExporters   = (*Host)(nil)
 	_ component.Host = (*Host)(nil)
+	_ getModuleInfo  = (*Host)(nil)
 )
 
 type Host struct {
@@ -38,7 +45,7 @@ type Host struct {
 	Connectors        *builders.ConnectorBuilder
 	Extensions        *builders.ExtensionBuilder
 
-	ModuleInfo extension.ModuleInfo
+	ModuleInfo moduleinfo.ModuleInfo
 	BuildInfo  component.BuildInfo
 
 	Pipelines         *Graph
@@ -65,6 +72,10 @@ func (host *Host) GetFactory(kind component.Kind, componentType component.Type) 
 
 func (host *Host) GetExtensions() map[component.ID]component.Component {
 	return host.ServiceExtensions.GetExtensions()
+}
+
+func (host *Host) GetModuleInfo() moduleinfo.ModuleInfo {
+	return host.ModuleInfo
 }
 
 // Deprecated: [0.79.0] This function will be removed in the future.
