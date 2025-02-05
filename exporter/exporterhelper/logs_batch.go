@@ -204,6 +204,16 @@ func extractScopeLogsBasedOnByteSize(srcSL plog.ScopeLogs, capacity int) (plog.S
 }
 
 // deltaCapacity() returns the delta size of a proto slice when a new item is added.
+// Example:
+//
+//	prevSize := proto1.Size()
+//	proto1.RepeatedField().AppendEmpty() = proto2
+//
+// Then currSize of proto1 can be calculated as
+//
+//	currSize := (prevSize + deltaCapacity(proto2.Size()))
+//
+// This is derived from gogo/protobuf 's Size() function
 func deltaCapacity(newItemSize int) int {
 	return 1 + newItemSize + int(math_bits.Len64(uint64(newItemSize|1)+6)/7)
 }
