@@ -28,4 +28,8 @@ func TestConfig_Validate(t *testing.T) {
 	cfg.MaxSizeItems = 20000
 	cfg.MinSizeItems = 20001
 	assert.EqualError(t, cfg.Validate(), "max_size_items must be greater than or equal to min_size_items")
+
+	cfg = NewDefaultConfig()
+	cfg.MaxSizeBytes = 1
+	assert.EqualError(t, cfg.Validate(), "max_size_bytes is not yet supported")
 }

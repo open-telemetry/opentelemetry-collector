@@ -122,18 +122,6 @@ func resourceLogsCount(rl plog.ResourceLogs) int {
 	return count
 }
 
-func (req *logsRequest) splitBasedOnByteSize(maxByteSize int) ([]Request, error) {
-	var res []Request
-	for req.ByteSize() > maxByteSize {
-		ld := extractLogsBasedOnByteSize(req.ld, maxByteSize)
-		size := ld.LogRecordCount()
-		req.setCachedItemsCount(req.ItemsCount() - size)
-		res = append(res, &logsRequest{ld: ld, pusher: req.pusher, cachedItemsCount: size})
-	}
-	res = append(res, req)
-	return res, nil
-}
-
 // extractLogs extracts logs from the input logs and returns a new logs with the specified number of log records.
 func extractLogsBasedOnByteSize(srcLogs plog.Logs, capacity int) plog.Logs {
 	capacityReached := false
