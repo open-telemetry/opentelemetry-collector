@@ -13,40 +13,40 @@
 
 # Start components list
 
-cmd/mdatagen/                            @open-telemetry/collector-contrib-approvers @dmitryax
-cmd/mdatagen/internal/sampleprocessor/   @open-telemetry/collector-contrib-approvers
-cmd/mdatagen/internal/samplereceiver/    @open-telemetry/collector-contrib-approvers @dmitryax
-cmd/mdatagen/internal/samplescraper/     @open-telemetry/collector-contrib-approvers @dmitryax
-confmap/                                 @open-telemetry/collector-contrib-approvers @mx-psi @evan-bradley
-connector/forwardconnector/              @open-telemetry/collector-contrib-approvers
-connector/xconnector/                    @open-telemetry/collector-contrib-approvers @mx-psi @dmathieu
-consumer/xconsumer/                      @open-telemetry/collector-contrib-approvers @mx-psi @dmathieu
-docs/rfcs/                               @open-telemetry/collector-contrib-approvers @codeboten @BogdanDrutu @dmitryax @mx-psi
-exporter/debugexporter/                  @open-telemetry/collector-contrib-approvers @andrzej-stencel
-exporter/exporterhelper/                 @open-telemetry/collector-contrib-approvers @BogdanDrutu @dmitryax
-exporter/exporterhelper/xexporterhelper/ @open-telemetry/collector-contrib-approvers @mx-psi @dmathieu
-exporter/exporterqueue/                  @open-telemetry/collector-contrib-approvers
-exporter/nopexporter/                    @open-telemetry/collector-contrib-approvers @evan-bradley
-exporter/otlpexporter/                   @open-telemetry/collector-contrib-approvers
-exporter/otlphttpexporter/               @open-telemetry/collector-contrib-approvers
-exporter/xexporter/                      @open-telemetry/collector-contrib-approvers @mx-psi @dmathieu
-extension/memorylimiterextension/        @open-telemetry/collector-contrib-approvers
-extension/xextension/                    @open-telemetry/collector-contrib-approvers @swiatekm
-extension/zpagesextension/               @open-telemetry/collector-contrib-approvers
-pdata/                                   @open-telemetry/collector-contrib-approvers @BogdanDrutu @dmitryax
-pdata/pprofile/                          @open-telemetry/collector-contrib-approvers @mx-psi @dmathieu
-processor/batchprocessor/                @open-telemetry/collector-contrib-approvers
-processor/memorylimiterprocessor/        @open-telemetry/collector-contrib-approvers
-processor/processorhelper/               @open-telemetry/collector-contrib-approvers
-processor/xprocessor/                    @open-telemetry/collector-contrib-approvers @mx-psi @dmathieu
-receiver/nopreceiver/                    @open-telemetry/collector-contrib-approvers @evan-bradley
-receiver/otlpreceiver/                   @open-telemetry/collector-contrib-approvers
-receiver/receiverhelper/                 @open-telemetry/collector-contrib-approvers
-receiver/xreceiver/                      @open-telemetry/collector-contrib-approvers @mx-psi @dmathieu
-scraper/                                 @open-telemetry/collector-contrib-approvers
-scraper/scraperhelper/                   @open-telemetry/collector-contrib-approvers
-service/                                 @open-telemetry/collector-contrib-approvers
-service/internal/graph/                  @open-telemetry/collector-contrib-approvers @djaglowski
+cmd/mdatagen/                            @open-telemetry/collector-approvers @dmitryax
+cmd/mdatagen/internal/sampleprocessor/   @open-telemetry/collector-approvers
+cmd/mdatagen/internal/samplereceiver/    @open-telemetry/collector-approvers @dmitryax
+cmd/mdatagen/internal/samplescraper/     @open-telemetry/collector-approvers @dmitryax
+confmap/                                 @open-telemetry/collector-approvers @mx-psi @evan-bradley
+connector/forwardconnector/              @open-telemetry/collector-approvers
+connector/xconnector/                    @open-telemetry/collector-approvers @mx-psi @dmathieu
+consumer/xconsumer/                      @open-telemetry/collector-approvers @mx-psi @dmathieu
+docs/rfcs/                               @open-telemetry/collector-approvers @codeboten @BogdanDrutu @dmitryax @mx-psi
+exporter/debugexporter/                  @open-telemetry/collector-approvers @andrzej-stencel
+exporter/exporterhelper/                 @open-telemetry/collector-approvers @BogdanDrutu @dmitryax
+exporter/exporterhelper/xexporterhelper/ @open-telemetry/collector-approvers @mx-psi @dmathieu
+exporter/exporterqueue/                  @open-telemetry/collector-approvers
+exporter/nopexporter/                    @open-telemetry/collector-approvers @evan-bradley
+exporter/otlpexporter/                   @open-telemetry/collector-approvers
+exporter/otlphttpexporter/               @open-telemetry/collector-approvers
+exporter/xexporter/                      @open-telemetry/collector-approvers @mx-psi @dmathieu
+extension/memorylimiterextension/        @open-telemetry/collector-approvers
+extension/xextension/                    @open-telemetry/collector-approvers @swiatekm
+extension/zpagesextension/               @open-telemetry/collector-approvers
+pdata/                                   @open-telemetry/collector-approvers @BogdanDrutu @dmitryax
+pdata/pprofile/                          @open-telemetry/collector-approvers @mx-psi @dmathieu
+processor/batchprocessor/                @open-telemetry/collector-approvers
+processor/memorylimiterprocessor/        @open-telemetry/collector-approvers
+processor/processorhelper/               @open-telemetry/collector-approvers
+processor/xprocessor/                    @open-telemetry/collector-approvers @mx-psi @dmathieu
+receiver/nopreceiver/                    @open-telemetry/collector-approvers @evan-bradley
+receiver/otlpreceiver/                   @open-telemetry/collector-approvers
+receiver/receiverhelper/                 @open-telemetry/collector-approvers
+receiver/xreceiver/                      @open-telemetry/collector-approvers @mx-psi @dmathieu
+scraper/                                 @open-telemetry/collector-approvers
+scraper/scraperhelper/                   @open-telemetry/collector-approvers
+service/                                 @open-telemetry/collector-approvers
+service/internal/graph/                  @open-telemetry/collector-approvers @djaglowski
 
 # End components list
 
@@ -58,10 +58,10 @@ service/internal/graph/                  @open-telemetry/collector-contrib-appro
 
 # Start distribution list
 
-reports/distributions/core.yaml    @open-telemetry/collector-contrib-approvers
-reports/distributions/contrib.yaml @open-telemetry/collector-contrib-approvers
-reports/distributions/k8s.yaml     @open-telemetry/collector-contrib-approvers
-reports/distributions/otlp.yaml    @open-telemetry/collector-contrib-approvers
+reports/distributions/core.yaml    @open-telemetry/collector-approvers
+reports/distributions/contrib.yaml @open-telemetry/collector-approvers
+reports/distributions/k8s.yaml     @open-telemetry/collector-approvers
+reports/distributions/otlp.yaml    @open-telemetry/collector-approvers
 
 # End distribution list
 
