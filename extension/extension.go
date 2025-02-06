@@ -51,7 +51,7 @@ type Factory interface {
 type factory struct {
 	cfgType component.Type
 	component.CreateDefaultConfigFunc
-	CreateFunc
+	createFunc         CreateFunc
 	extensionStability component.StabilityLevel
 }
 
@@ -65,6 +65,14 @@ func (f *factory) Stability() component.StabilityLevel {
 	return f.extensionStability
 }
 
+func (f *factory) Create(ctx context.Context, set Settings, cfg component.Config) (Extension, error) {
+	if set.ID.Type() != f.cfgType {
+		return nil, fmt.Errorf("component type mismatch: component ID %q does not have type %q", set.ID, f.cfgType)
+	}
+
+	return f.createFunc(ctx, set, cfg)
+}
+
 // NewFactory returns a new Factory  based on this configuration.
 func NewFactory(
 	cfgType component.Type,
@@ -75,7 +83,7 @@ func NewFactory(
 	return &factory{
 		cfgType:                 cfgType,
 		CreateDefaultConfigFunc: createDefaultConfig,
-		CreateFunc:              createServiceExtension,
+		createFunc:              createServiceExtension,
 		extensionStability:      sl,
 	}
 }
