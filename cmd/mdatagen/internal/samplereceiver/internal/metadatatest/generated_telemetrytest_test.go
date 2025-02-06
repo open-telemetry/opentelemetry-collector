@@ -12,10 +12,11 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/samplereceiver/internal/metadata"
+	"go.opentelemetry.io/collector/component/componenttest"
 )
 
 func TestSetupTelemetry(t *testing.T) {
-	testTel := SetupTelemetry()
+	testTel := componenttest.NewTelemetry()
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
@@ -30,77 +31,19 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.BatchSizeTriggerSend.Add(context.Background(), 1)
 	tb.QueueCapacity.Record(context.Background(), 1)
 	tb.RequestDuration.Record(context.Background(), 1)
-
-	testTel.AssertMetrics(t, []metricdata.Metrics{
-		{
-			Name:        "otelcol_batch_size_trigger_send",
-			Description: "Number of times the batch was sent due to a size trigger [deprecated since v0.110.0]",
-			Unit:        "{times}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_process_runtime_total_alloc_bytes",
-			Description: "Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')",
-			Unit:        "By",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_queue_capacity",
-			Description: "Queue capacity - sync gauge example.",
-			Unit:        "{items}",
-			Data: metricdata.Gauge[int64]{
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_queue_length",
-			Description: "This metric is optional and therefore not initialized in NewTelemetryBuilder. [alpha]",
-			Unit:        "{items}",
-			Data: metricdata.Gauge[int64]{
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_request_duration",
-			Description: "Duration of request [alpha]",
-			Unit:        "s",
-			Data: metricdata.Histogram[float64]{
-				Temporality: metricdata.CumulativeTemporality,
-				DataPoints: []metricdata.HistogramDataPoint[float64]{
-					{},
-				},
-			},
-		},
-	}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
-	AssertEqualBatchSizeTriggerSend(t, testTel.Telemetry,
+	AssertEqualBatchSizeTriggerSend(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessRuntimeTotalAllocBytes(t, testTel.Telemetry,
+	AssertEqualProcessRuntimeTotalAllocBytes(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualQueueCapacity(t, testTel.Telemetry,
+	AssertEqualQueueCapacity(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualQueueLength(t, testTel.Telemetry,
+	AssertEqualQueueLength(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualRequestDuration(t, testTel.Telemetry,
+	AssertEqualRequestDuration(t, testTel,
 		[]metricdata.HistogramDataPoint[float64]{{}}, metricdatatest.IgnoreValue(),
 		metricdatatest.IgnoreTimestamp())
 
