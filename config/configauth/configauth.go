@@ -24,7 +24,7 @@ var (
 // Authentication defines the auth settings for the receiver.
 type Authentication struct {
 	// AuthenticatorID specifies the name of the extension to use in order to authenticate the incoming data point.
-	AuthenticatorID component.ID `mapstructure:"authenticator"`
+	AuthenticatorID component.ID `mapstructure:"authenticator,omitempty"`
 }
 
 // GetServerAuthenticator attempts to select the appropriate auth.Server from the list of extensions,
