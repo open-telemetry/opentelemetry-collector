@@ -312,7 +312,7 @@ func TestCollectorStartInvalidConfig(t *testing.T) {
 		ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-invalid.yaml")}),
 	})
 	require.NoError(t, err)
-	assert.Error(t, col.Run(context.Background()))
+	assert.EqualError(t, col.Run(context.Background()), "invalid configuration: service::pipelines::traces: references processor \"invalid\" which is not configured")
 }
 
 func TestNewCollectorInvalidConfigProviderSettings(t *testing.T) {
