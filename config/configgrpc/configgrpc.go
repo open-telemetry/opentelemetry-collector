@@ -91,6 +91,9 @@ type ClientConfig struct {
 	WaitForReady bool `mapstructure:"wait_for_ready"`
 
 	// The headers associated with gRPC requests.
+	//
+	// The connection returned from ClientConfig.ToClientConn will not automatically set these headers.
+	// Make sure to use ClientConfig.EnhanceContextWithHeaders in your gRPC call.
 	Headers map[string]configopaque.String `mapstructure:"headers"`
 
 	// Sets the balancer in grpclb_policy to discover the servers. Default is pick_first.
@@ -346,6 +349,20 @@ func (gcs *ClientConfig) getGrpcDialOptions(
 	}
 
 	return opts, nil
+}
+
+// EnhanceContextWithHeaders returns a new derived Context which, when passed into a gRPC call,
+// will cause the gRPC library to append the configured headers to the request.
+func (gcs *ClientConfig) EnhanceContextWithHeaders(ctx context.Context) context.Context {
+	if len(gcs.Headers) > 0 {
+		kv := make([]string, 0, 2*len(gcs.Headers))
+		for k, v := range gcs.Headers {
+			kv = append(kv, k)
+			kv = append(kv, string(v))
+		}
+		return metadata.AppendToOutgoingContext(ctx, kv...)
+	}
+	return ctx
 }
 
 func (gss *ServerConfig) Validate() error {

@@ -13,7 +13,6 @@ import (
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/component"
@@ -41,7 +40,6 @@ type baseExporter struct {
 	logExporter     plogotlp.GRPCClient
 	profileExporter pprofileotlp.GRPCClient
 	clientConn      *grpc.ClientConn
-	metadata        metadata.MD
 	callOptions     []grpc.CallOption
 
 	settings component.TelemetrySettings
@@ -70,11 +68,6 @@ func (e *baseExporter) start(ctx context.Context, host component.Host) (err erro
 	e.metricExporter = pmetricotlp.NewGRPCClient(e.clientConn)
 	e.logExporter = plogotlp.NewGRPCClient(e.clientConn)
 	e.profileExporter = pprofileotlp.NewGRPCClient(e.clientConn)
-	headers := map[string]string{}
-	for k, v := range e.config.ClientConfig.Headers {
-		headers[k] = string(v)
-	}
-	e.metadata = metadata.New(headers)
 	e.callOptions = []grpc.CallOption{
 		grpc.WaitForReady(e.config.ClientConfig.WaitForReady),
 	}
@@ -154,10 +147,7 @@ func (e *baseExporter) pushProfiles(ctx context.Context, td pprofile.Profiles) e
 }
 
 func (e *baseExporter) enhanceContext(ctx context.Context) context.Context {
-	if e.metadata.Len() > 0 {
-		return metadata.NewOutgoingContext(ctx, e.metadata)
-	}
-	return ctx
+	return e.config.ClientConfig.EnhanceContextWithHeaders(ctx)
 }
 
 func processError(err error) error {
