@@ -14,6 +14,7 @@ import (
 	"google.golang.org/grpc"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentattribute"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
@@ -52,6 +53,8 @@ type otlpReceiver struct {
 // responsibility to invoke the respective Start*Reception methods as well
 // as the various Stop*Reception methods to end it.
 func newOtlpReceiver(cfg *Config, set *receiver.Settings) (*otlpReceiver, error) {
+	set.Logger = set.TelemetrySettings.LoggerWithout(componentattribute.SignalKey)
+	set.Logger.Debug("created signal-agnostic logger")
 	r := &otlpReceiver{
 		cfg:          cfg,
 		nextTraces:   nil,
