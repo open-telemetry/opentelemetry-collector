@@ -33,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/graph"
+	"go.opentelemetry.io/collector/service/internal/moduleinfo"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
 	"go.opentelemetry.io/collector/service/internal/resource"
 	"go.opentelemetry.io/collector/service/internal/status"
@@ -55,6 +56,12 @@ var disableHighCardinalityMetricsFeatureGate = featuregate.GlobalRegistry().Must
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("controls whether the collector should enable potentially high"+
 		"cardinality metrics. The gate will be removed when the collector allows for view configuration."))
+
+// ModuleInfo describes the Go module for a particular component.
+type ModuleInfo = moduleinfo.ModuleInfo
+
+// ModuleInfo describes the go module for all components.
+type ModuleInfos = moduleinfo.ModuleInfos
 
 // Settings holds configuration for building a new Service.
 type Settings struct {
@@ -88,7 +95,7 @@ type Settings struct {
 	ExtensionsFactories map[component.Type]extension.Factory
 
 	// ModuleInfo describes the go module for each component.
-	ModuleInfo extension.ModuleInfo
+	ModuleInfos ModuleInfos
 
 	// AsyncErrorChannel is the channel that is used to report fatal errors.
 	AsyncErrorChannel chan error
@@ -117,7 +124,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 			Connectors: builders.NewConnector(set.ConnectorsConfigs, set.ConnectorsFactories),
 			Extensions: builders.NewExtension(set.ExtensionsConfigs, set.ExtensionsFactories),
 
-			ModuleInfo:        set.ModuleInfo,
+			ModuleInfos:       set.ModuleInfos,
 			BuildInfo:         set.BuildInfo,
 			AsyncErrorChannel: set.AsyncErrorChannel,
 		},
@@ -196,7 +203,6 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		Logger:         logger,
 		MeterProvider:  mp,
 		TracerProvider: tracerProvider,
-		MetricsLevel:   cfg.Telemetry.Metrics.Level,
 		// Construct telemetry attributes from build info and config's resource attributes.
 		Resource: pcommonRes,
 	}
@@ -342,7 +348,6 @@ func (srv *Service) initExtensions(ctx context.Context, cfg extensions.Config) e
 		Telemetry:  srv.telemetrySettings,
 		BuildInfo:  srv.buildInfo,
 		Extensions: srv.host.Extensions,
-		ModuleInfo: srv.host.ModuleInfo,
 	}
 	if srv.host.ServiceExtensions, err = extensions.New(ctx, extensionsSettings, cfg, extensions.WithReporter(srv.host.Reporter)); err != nil {
 		return fmt.Errorf("failed to build extensions: %w", err)

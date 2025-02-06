@@ -160,9 +160,20 @@ func TestExtractTraces(t *testing.T) {
 	}
 }
 
+func TestMergeSplitManySmallTraces(t *testing.T) {
+	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 10000}
+	merged := []Request{newTracesRequest(testdata.GenerateTraces(1), nil)}
+	for j := 0; j < 1000; j++ {
+		lr2 := newTracesRequest(testdata.GenerateTraces(10), nil)
+		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), cfg, lr2)
+		merged = append(merged[0:len(merged)-1], res...)
+	}
+	assert.Len(t, merged, 2)
+}
+
 func BenchmarkSplittingBasedOnItemCountManySmallTraces(b *testing.B) {
 	// All requests merge into a single batch.
-	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 10000}
+	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 10010}
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		merged := []Request{newTracesRequest(testdata.GenerateTraces(10), nil)}
@@ -193,6 +204,7 @@ func BenchmarkSplittingBasedOnItemCountManyTracesSlightlyAboveLimit(b *testing.B
 func BenchmarkSplittingBasedOnItemCountHugeTraces(b *testing.B) {
 	// One request splits into many batches.
 	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 10000}
+	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		merged := []Request{newTracesRequest(testdata.GenerateTraces(0), nil)}
 		lr2 := newTracesRequest(testdata.GenerateTraces(100000), nil)

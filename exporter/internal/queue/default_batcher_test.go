@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"runtime"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -15,11 +16,8 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
-	"go.opentelemetry.io/collector/exporter/exporterqueue"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/internal"
 	"go.opentelemetry.io/collector/exporter/internal/requesttest"
-	"go.opentelemetry.io/collector/pipeline"
 )
 
 func TestDefaultBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T) {
@@ -49,37 +47,25 @@ func TestDefaultBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T) {
 				func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },
 				tt.maxWorkers)
 			require.NoError(t, err)
-
-			// TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/12244
-			qCfg := exporterqueue.NewDefaultConfig()
-			qCfg.NumConsumers = 1
-			q := exporterqueue.NewMemoryQueueFactory[internal.Request]()(
-				context.Background(),
-				exporterqueue.Settings{
-					Signal:           pipeline.SignalTraces,
-					ExporterSettings: exportertest.NewNopSettings(),
-				},
-				qCfg,
-				ba.Consume)
-
-			require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 			t.Cleanup(func() {
-				require.NoError(t, q.Shutdown(context.Background()))
 				require.NoError(t, ba.Shutdown(context.Background()))
 			})
 
+			done := newFakeDone()
 			sink := requesttest.NewSink()
-
-			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 8, Sink: sink}))
-			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 8, ExportErr: errors.New("transient error"), Sink: sink}))
-			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 17, Sink: sink}))
-			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 13, Sink: sink}))
-			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 35, Sink: sink}))
-			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 2, Sink: sink}))
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 8, Sink: sink}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 8, ExportErr: errors.New("transient error"), Sink: sink}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 17, Sink: sink}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 13, Sink: sink}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 35, Sink: sink}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 2, Sink: sink}, done)
 			assert.Eventually(t, func() bool {
 				return sink.RequestsCount() == 5 && sink.ItemsCount() == 75
 			}, 30*time.Millisecond, 10*time.Millisecond)
+			// Check that done callback is called for the right amount of times.
+			assert.EqualValues(t, 1, done.errors.Load())
+			assert.EqualValues(t, 5, done.success.Load())
 		})
 	}
 }
@@ -111,43 +97,36 @@ func TestDefaultBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 				func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },
 				tt.maxWorkers)
 			require.NoError(t, err)
-
-			// TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/12244
-			qCfg := exporterqueue.NewDefaultConfig()
-			qCfg.NumConsumers = 1
-			q := exporterqueue.NewMemoryQueueFactory[internal.Request]()(
-				context.Background(),
-				exporterqueue.Settings{
-					Signal:           pipeline.SignalTraces,
-					ExporterSettings: exportertest.NewNopSettings(),
-				},
-				qCfg,
-				ba.Consume)
-
-			require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
-			t.Cleanup(func() {
-				require.NoError(t, q.Shutdown(context.Background()))
-				require.NoError(t, ba.Shutdown(context.Background()))
-			})
 
+			done := newFakeDone()
 			sink := requesttest.NewSink()
-
 			// These two requests will be dropped because of export error.
-			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 8, Sink: sink}))
-			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 8, ExportErr: errors.New("transient error"), Sink: sink}))
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 8, Sink: sink}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 8, ExportErr: errors.New("transient error"), Sink: sink}, done)
 
-			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 7, Sink: sink}))
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 7, Sink: sink}, done)
+			// This requests will be dropped because of merge error.
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 8, MergeErr: errors.New("transient error"), Sink: sink}, done)
 
-			// This request will be dropped because of merge error
-			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 8, MergeErr: errors.New("transient error"), Sink: sink}))
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 13, Sink: sink}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 35, Sink: sink}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 2, Sink: sink}, done)
 
-			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 13, Sink: sink}))
-			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 35, Sink: sink}))
-			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 2, Sink: sink}))
+			// Only the requests with 13 and 35 will be flushed.
 			assert.Eventually(t, func() bool {
 				return sink.RequestsCount() == 2 && sink.ItemsCount() == 55
 			}, 30*time.Millisecond, 10*time.Millisecond)
+
+			require.NoError(t, ba.Shutdown(context.Background()))
+
+			// After shutdown the pending "current batch" is also flushed.
+			assert.EqualValues(t, 3, sink.RequestsCount())
+			assert.EqualValues(t, 57, sink.ItemsCount())
+
+			// Check that done callback is called for the right amount of times.
+			assert.EqualValues(t, 3, done.errors.Load())
+			assert.EqualValues(t, 4, done.success.Load())
 		})
 	}
 }
@@ -183,40 +162,28 @@ func TestDefaultBatcher_NoSplit_WithTimeout(t *testing.T) {
 				func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },
 				tt.maxWorkers)
 			require.NoError(t, err)
-
-			// TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/12244
-			qCfg := exporterqueue.NewDefaultConfig()
-			qCfg.NumConsumers = 1
-			q := exporterqueue.NewMemoryQueueFactory[internal.Request]()(
-				context.Background(),
-				exporterqueue.Settings{
-					Signal:           pipeline.SignalTraces,
-					ExporterSettings: exportertest.NewNopSettings(),
-				},
-				qCfg,
-				ba.Consume)
-
-			require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 			t.Cleanup(func() {
-				require.NoError(t, q.Shutdown(context.Background()))
 				require.NoError(t, ba.Shutdown(context.Background()))
 			})
 
+			done := newFakeDone()
 			sink := requesttest.NewSink()
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 8, Sink: sink}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 17, Sink: sink}, done)
+			// This requests will be dropped because of merge error.
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 8, MergeErr: errors.New("transient error"), Sink: sink}, done)
 
-			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 8, Sink: sink}))
-			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 17, Sink: sink}))
-
-			// This request will be dropped because of merge error
-			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 8, MergeErr: errors.New("transient error"), Sink: sink}))
-
-			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 13, Sink: sink}))
-			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 35, Sink: sink}))
-			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 2, Sink: sink}))
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 13, Sink: sink}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 35, Sink: sink}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 2, Sink: sink}, done)
 			assert.Eventually(t, func() bool {
 				return sink.RequestsCount() == 1 && sink.ItemsCount() == 75
 			}, 100*time.Millisecond, 10*time.Millisecond)
+
+			// Check that done callback is called for the right amount of times.
+			assert.EqualValues(t, 1, done.errors.Load())
+			assert.EqualValues(t, 5, done.success.Load())
 		})
 	}
 }
@@ -255,46 +222,42 @@ func TestDefaultBatcher_Split_TimeoutDisabled(t *testing.T) {
 				func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },
 				tt.maxWorkers)
 			require.NoError(t, err)
-
-			// TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/12244
-			qCfg := exporterqueue.NewDefaultConfig()
-			qCfg.NumConsumers = 1
-			q := exporterqueue.NewMemoryQueueFactory[internal.Request]()(
-				context.Background(),
-				exporterqueue.Settings{
-					Signal:           pipeline.SignalTraces,
-					ExporterSettings: exportertest.NewNopSettings(),
-				},
-				qCfg,
-				ba.Consume)
-
-			require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
-			t.Cleanup(func() {
-				require.NoError(t, q.Shutdown(context.Background()))
-				require.NoError(t, ba.Shutdown(context.Background()))
-			})
 
+			done := newFakeDone()
 			sink := requesttest.NewSink()
+			// This requests will be dropped because of merge error.
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 8, MergeErr: errors.New("transient error"), Sink: sink}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 8, Sink: sink}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 17, Sink: sink}, done)
+			// This requests will be dropped because of merge error.
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 8, MergeErr: errors.New("transient error"), Sink: sink}, done)
 
-			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 8, Sink: sink}))
-			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 17, Sink: sink}))
-
-			// This request will be dropped because of merge error
-			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 8, MergeErr: errors.New("transient error"), Sink: sink}))
-
-			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 13, Sink: sink}))
-			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 35, Sink: sink}))
-			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 2, Sink: sink}))
-			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 30, Sink: sink}))
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 13, Sink: sink}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 35, Sink: sink}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 2, Sink: sink}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 30, Sink: sink}, done)
 			assert.Eventually(t, func() bool {
-				return sink.RequestsCount() == 2 && sink.ItemsCount() == 105
+				return sink.RequestsCount() == 1 && sink.ItemsCount() == 100
 			}, 100*time.Millisecond, 10*time.Millisecond)
 
-			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 900, Sink: sink}))
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 900, Sink: sink}, done)
 			assert.Eventually(t, func() bool {
-				return sink.RequestsCount() == 11 && sink.ItemsCount() == 1005
+				return sink.RequestsCount() == 10 && sink.ItemsCount() == 1000
 			}, 100*time.Millisecond, 10*time.Millisecond)
+
+			// At this point the 7th not failing request is still pending.
+			assert.EqualValues(t, 6, done.success.Load())
+
+			require.NoError(t, ba.Shutdown(context.Background()))
+
+			// After shutdown the pending "current batch" is also flushed.
+			assert.EqualValues(t, 11, sink.RequestsCount())
+			assert.EqualValues(t, 1005, sink.ItemsCount())
+
+			// Check that done callback is called for the right amount of times.
+			assert.EqualValues(t, 2, done.errors.Load())
+			assert.EqualValues(t, 7, done.success.Load())
 		})
 	}
 }
@@ -308,36 +271,70 @@ func TestDefaultBatcher_Shutdown(t *testing.T) {
 		func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },
 		2)
 	require.NoError(t, err)
-
-	// TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/12244
-	qCfg := exporterqueue.NewDefaultConfig()
-	qCfg.NumConsumers = 1
-	q := exporterqueue.NewMemoryQueueFactory[internal.Request]()(
-		context.Background(),
-		exporterqueue.Settings{
-			Signal:           pipeline.SignalTraces,
-			ExporterSettings: exportertest.NewNopSettings(),
-		},
-		qCfg,
-		ba.Consume)
-
-	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 
+	done := newFakeDone()
 	sink := requesttest.NewSink()
+	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 1, Sink: sink}, done)
+	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 2, Sink: sink}, done)
 
-	require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 1, Sink: sink}))
-	require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 2, Sink: sink}))
+	assert.EqualValues(t, 0, sink.RequestsCount())
+	assert.EqualValues(t, 0, sink.ItemsCount())
 
-	// Give the batcher some time to read from queue
-	time.Sleep(100 * time.Millisecond)
-
-	assert.Equal(t, int64(0), sink.RequestsCount())
-	assert.Equal(t, int64(0), sink.ItemsCount())
-
-	require.NoError(t, q.Shutdown(context.Background()))
 	require.NoError(t, ba.Shutdown(context.Background()))
 
-	assert.Equal(t, int64(1), sink.RequestsCount())
-	assert.Equal(t, int64(3), sink.ItemsCount())
+	assert.EqualValues(t, 1, sink.RequestsCount())
+	assert.EqualValues(t, 3, sink.ItemsCount())
+
+	// Check that done callback is called for the right amount of times.
+	assert.EqualValues(t, 0, done.errors.Load())
+	assert.EqualValues(t, 2, done.success.Load())
+}
+
+func TestDefaultBatcher_MergeError(t *testing.T) {
+	batchCfg := exporterbatcher.NewDefaultConfig()
+	batchCfg.MinSizeItems = 5
+	batchCfg.MaxSizeItems = 7
+
+	ba, err := NewBatcher(batchCfg,
+		func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },
+		2)
+	require.NoError(t, err)
+	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, ba.Shutdown(context.Background()))
+	})
+
+	done := newFakeDone()
+	sink := requesttest.NewSink()
+	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 9, Sink: sink}, done)
+	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 4, Sink: sink, ExportErr: errors.New("transient error")}, done)
+
+	assert.Eventually(t, func() bool {
+		return sink.RequestsCount() == 1 && sink.ItemsCount() == 7
+	}, 100*time.Millisecond, 10*time.Millisecond)
+
+	// Check that done callback is called for the right amount of times.
+	assert.EqualValues(t, 2, done.errors.Load())
+	assert.EqualValues(t, 0, done.success.Load())
+}
+
+type fakeDone struct {
+	errors  *atomic.Int64
+	success *atomic.Int64
+}
+
+func newFakeDone() fakeDone {
+	return fakeDone{
+		errors:  &atomic.Int64{},
+		success: &atomic.Int64{},
+	}
+}
+
+func (fd fakeDone) OnDone(err error) {
+	if err != nil {
+		fd.errors.Add(1)
+	} else {
+		fd.success.Add(1)
+	}
 }

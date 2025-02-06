@@ -133,3 +133,15 @@ func TestExtractProfiles(t *testing.T) {
 		assert.Equal(t, 10-i, ld.SampleCount())
 	}
 }
+
+func TestMergeSplitManySmallLogs(t *testing.T) {
+	// All requests merge into a single batch.
+	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 10000}
+	merged := []exporterhelper.Request{newProfilesRequest(testdata.GenerateProfiles(1), nil)}
+	for j := 0; j < 1000; j++ {
+		lr2 := newProfilesRequest(testdata.GenerateProfiles(10), nil)
+		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), cfg, lr2)
+		merged = append(merged[0:len(merged)-1], res...)
+	}
+	assert.Len(t, merged, 2)
+}

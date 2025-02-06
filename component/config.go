@@ -14,7 +14,7 @@ import (
 // Config defines the configuration for a component.Component.
 //
 // Implementations and/or any sub-configs (other types embedded or included in the Config implementation)
-// MUST implement the ConfigValidator if any validation is required for that part of the configuration
+// MUST implement xconfmap.Validator if any validation is required for that part of the configuration
 // (e.g. check if a required field is present).
 //
 // A valid implementation MUST pass the check componenttest.CheckConfigStruct (return nil error).
@@ -25,6 +25,8 @@ type Config any
 var configValidatorType = reflect.TypeOf((*ConfigValidator)(nil)).Elem()
 
 // ConfigValidator defines an optional interface for configurations to implement to do validation.
+//
+// Deprecated: [v0.120.0] use xconfmap.Validator.
 type ConfigValidator interface {
 	// Validate the configuration and returns an error if invalid.
 	Validate() error
@@ -32,6 +34,8 @@ type ConfigValidator interface {
 
 // ValidateConfig validates a config, by doing this:
 //   - Call Validate on the config itself if the config implements ConfigValidator.
+//
+// Deprecated: [v0.120.0] use xconfmap.Validate.
 func ValidateConfig(cfg Config) error {
 	var err error
 

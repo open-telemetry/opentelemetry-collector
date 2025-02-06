@@ -71,6 +71,8 @@ func (or *obsQueue[T]) Shutdown(ctx context.Context) error {
 }
 
 func (or *obsQueue[T]) Offer(ctx context.Context, req T) error {
+	// Have to read the number of items before sending the request since the request can
+	// be modified by the downstream components like the batcher.
 	numItems := req.ItemsCount()
 	err := or.Queue.Offer(ctx, req)
 	// No metrics recorded for profiles, remove enqueueFailedInst check with nil when profiles metrics available.
