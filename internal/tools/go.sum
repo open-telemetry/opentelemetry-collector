@@ -205,6 +205,10 @@ github.com/google/go-cmp v0.5.8/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeN
 github.com/google/go-cmp v0.5.9/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
 github.com/google/go-cmp v0.6.0 h1:ofyhxvXcZhMsU5ulbFiLKl/XBFqE1GSq7atu8tAmTRI=
 github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
+github.com/google/go-github/v66 v66.0.0 h1:ADJsaXj9UotwdgK8/iFZtv7MLc8E8WBl62WLd/D/9+M=
+github.com/google/go-github/v66 v66.0.0/go.mod h1:+4SO9Zkuyf8ytMj0csN1NR/5OTR+MfqPp8P8dVlcvY4=
+github.com/google/go-querystring v1.1.0 h1:AnCroh3fv4ZBgVIf1Iwtovgjaw/GiKJo8M8yD/fhyJ8=
+github.com/google/go-querystring v1.1.0/go.mod h1:Kcdr2DB4koayq7X8pmAG4sNG59So17icRSOU623lUBU=
 github.com/google/pprof v0.0.0-20240827171923-fa2c70bbbfe5 h1:5iH8iuqE5apketRbSFBy+X1V0o+l+8NF1avt4HWl7cA=
 github.com/google/pprof v0.0.0-20240827171923-fa2c70bbbfe5/go.mod h1:vavhavw2zAxS5dIdcRluK6cSGGPlZynqzFM8NdvU144=
 github.com/google/renameio v0.1.0 h1:GOZbcHa3HfsPKPlmyPyN2KEohoMXOhdMbHrvbpl2QaA=
@@ -510,6 +514,8 @@ go.opentelemetry.io/build-tools/chloggen v0.17.0 h1:aOtA6MW67VoB1HYxcqYIlVxfiByp
 go.opentelemetry.io/build-tools/chloggen v0.17.0/go.mod h1:Wk92v9Wsv36sXYi7hOg3ndeeLKmKBu0/kgB7wcaeqJg=
 go.opentelemetry.io/build-tools/crosslink v0.17.0 h1:Ivjwh4qp4L+ivRccBOMPIXAVESBMbhbJFEJUGwKsiCM=
 go.opentelemetry.io/build-tools/crosslink v0.17.0/go.mod h1:rZRgZZ9uBe2IvR4fJY1kGIWIwiSLm+IvjFsSiPXGq4Q=
+go.opentelemetry.io/build-tools/githubgen v0.17.0 h1:2DFeHglGmrtTMoRDfJoR+iJd/I/3eCm8FtQJpZAb3W8=
+go.opentelemetry.io/build-tools/githubgen v0.17.0/go.mod h1:UBpPXtso7exy3VU5EH1ZFfSkYQANJWO/u1lO50qdKkE=
 go.opentelemetry.io/build-tools/multimod v0.17.0 h1:z0TWbNLcKu1eLx0Pgour/WFA0m+trsRkJ0llM5MsTug=
 go.opentelemetry.io/build-tools/multimod v0.17.0/go.mod h1:ImevmVCDyVInTn7L9lN+qVtGs/6cOMQA/Cf3jX1miQA=
 go.opentelemetry.io/build-tools/semconvgen v0.17.0 h1:vQk8RJPj9yOCe0cITb+WKMit1Mq9lK72Ws5tuq/KqzU=

@@ -1,0 +1,10 @@
+type: pprofile
+
+status:
+  class: pdata
+  codeowners:
+    active:
+      - mx-psi
+      - dmathieu
+  stability:
+    development: [profiles]
