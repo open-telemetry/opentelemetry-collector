@@ -339,6 +339,24 @@ func (gcs *ClientConfig) getGrpcDialOptions(
 	// Enable OpenTelemetry observability plugin.
 	opts = append(opts, grpc.WithStatsHandler(otelgrpc.NewClientHandler(otelOpts...)))
 
+	if len(gcs.Headers) > 0 {
+		var metadataKv = make([]string, 0, 2*len(gcs.Headers))
+		for k, v := range gcs.Headers {
+			metadataKv = append(metadataKv, k)
+			metadataKv = append(metadataKv, string(v))
+		}
+		opts = append(opts,
+			grpc.WithUnaryInterceptor(func(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+				ctx = metadata.AppendToOutgoingContext(ctx, metadataKv...)
+				return invoker(ctx, method, req, reply, cc, opts...)
+			}),
+			grpc.WithStreamInterceptor(func(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, streamer grpc.Streamer, opts ...grpc.CallOption) (grpc.ClientStream, error) {
+				ctx = metadata.AppendToOutgoingContext(ctx, metadataKv...)
+				return streamer(ctx, desc, cc, method, opts...)
+			}),
+		)
+	}
+
 	for _, opt := range extraOpts {
 		if wrapper, ok := opt.(grpcDialOptionWrapper); ok {
 			opts = append(opts, wrapper.opt)
