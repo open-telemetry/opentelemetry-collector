@@ -263,7 +263,7 @@ func (gcs *ClientConfig) ToClientConn(
 
 func (gcs *ClientConfig) addHeadersIfAbsent(ctx context.Context) context.Context {
 	kv := make([]string, 0, 2*len(gcs.Headers))
-	existingMd, _ := metadata.FromIncomingContext(ctx)
+	existingMd, _ := metadata.FromOutgoingContext(ctx)
 	for k, v := range gcs.Headers {
 		if len(existingMd.Get(k)) == 0 {
 			kv = append(kv, k)
