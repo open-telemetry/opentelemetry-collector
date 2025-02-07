@@ -103,6 +103,10 @@ func TestDefaultGrpcClientSettings(t *testing.T) {
 	}
 	opts, err := gcs.getGrpcDialOptions(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), []ToClientConnOption{})
 	require.NoError(t, err)
+	/* Expecting 2 DialOptions:
+	 * - WithTransportCredentials (TLSSetting)
+	 * - WithStatsHandler (always, for self-telemetry)
+	 */
 	assert.Len(t, opts, 2)
 }
 
@@ -120,6 +124,11 @@ func TestGrpcClientExtraOption(t *testing.T) {
 		[]ToClientConnOption{WithGrpcDialOption(extraOpt)},
 	)
 	require.NoError(t, err)
+	/* Expecting 3 DialOptions:
+	 * - WithTransportCredentials (TLSSetting)
+	 * - WithStatsHandler (always, for self-telemetry)
+	 * - extraOpt
+	 */
 	assert.Len(t, opts, 3)
 	assert.Equal(t, opts[2], extraOpt)
 }
@@ -222,7 +231,19 @@ func TestAllGrpcClientSettings(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			opts, err := test.settings.getGrpcDialOptions(context.Background(), test.host, componenttest.NewNopTelemetrySettings(), []ToClientConnOption{})
 			require.NoError(t, err)
-			assert.Len(t, opts, 9)
+			/* Expecting 11 DialOptions:
+			 * - WithDefaultCallOptions (Compression)
+			 * - WithTransportCredentials (TLSSetting)
+			 * - WithDefaultServiceConfig (BalancerName)
+			 * - WithAuthority (Authority)
+			 * - WithStatsHandler (always, for self-telemetry)
+			 * - WithReadBufferSize (ReadBufferSize)
+			 * - WithWriteBufferSize (WriteBufferSize)
+			 * - WithKeepaliveParams (Keepalive)
+			 * - WithPerRPCCredentials (Auth)
+			 * - WithUnaryInterceptor/WithStreamInterceptor (Headers)
+			 */
+			assert.Len(t, opts, 11)
 		})
 	}
 }
