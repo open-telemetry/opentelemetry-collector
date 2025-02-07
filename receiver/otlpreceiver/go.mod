@@ -8,6 +8,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector v0.119.0
 	go.opentelemetry.io/collector/component v0.119.0
+	go.opentelemetry.io/collector/component/componentattribute v0.119.0
 	go.opentelemetry.io/collector/component/componentstatus v0.119.0
 	go.opentelemetry.io/collector/component/componenttest v0.119.0
 	go.opentelemetry.io/collector/config/configauth v0.119.0
@@ -34,7 +35,7 @@ require (
 	go.uber.org/zap v1.27.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f
 	google.golang.org/grpc v1.70.0
-	google.golang.org/protobuf v1.36.4
+	google.golang.org/protobuf v1.36.5
 )
 
 require (
@@ -120,6 +121,8 @@ replace go.opentelemetry.io/collector/consumer/xconsumer => ../../consumer/xcons
 replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/consumertest
 
 replace go.opentelemetry.io/collector/client => ../../client
+
+replace go.opentelemetry.io/collector/component/componentattribute => ../../component/componentattribute
 
 replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
 
