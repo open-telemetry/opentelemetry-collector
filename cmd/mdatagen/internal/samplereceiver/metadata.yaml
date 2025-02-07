@@ -159,7 +159,7 @@ metrics:
 
   metric.with_interval:
     enabled: true
-    description: Monotonic cumulative sum int metric with string input_type enabled by default.
+    description: Monotonic cumulative sum int metric with string input_type enabled by default and contains a customized interval of 15 seconds.
     unit: s
     interval: 15
     sum:

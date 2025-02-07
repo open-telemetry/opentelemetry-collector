@@ -241,7 +241,7 @@ func TestLoadMetadata(t *testing.T) {
 					"metric.with_interval": {
 						Enabled:     true,
 						Interval:    15,
-						Description: "Monotonic cumulative sum int metric with string input_type enabled by default.",
+						Description: "Monotonic cumulative sum int metric with string input_type enabled by default and contains a customized interval of 15 seconds.",
 						Unit:        strPtr("s"),
 						Sum: &Sum{
 							MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
