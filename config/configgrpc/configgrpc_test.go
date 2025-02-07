@@ -274,7 +274,7 @@ func TestHeaders(t *testing.T) {
 	// Check received headers
 	md, ok := metadata.FromIncomingContext(traceServer.recordedContext)
 	require.True(t, ok)
-	assert.Equal(t, md.Get("testheader"), []string{"testvalue"})
+	assert.Equal(t, []string{"testvalue"}, md.Get("testheader"))
 }
 
 func TestDefaultGrpcServerSettings(t *testing.T) {
