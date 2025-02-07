@@ -60,6 +60,24 @@ Monotonic cumulative sum int metric with string input_type enabled by default.
 | slice_attr | Attribute with a slice value. | Any Slice |
 | map_attr | Attribute with a map value. | Any Map |
 
+### metric.with_interval
+
+Monotonic cumulative sum int metric with string input_type enabled by default.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| s | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| string_attr | Attribute with any string value. | Any Str |
+| state | Integer attribute with overridden name. | Any Int |
+| enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` |
+| slice_attr | Attribute with a slice value. | Any Slice |
+| map_attr | Attribute with a map value. | Any Map |
+
 ## Optional Metrics
 
 The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
