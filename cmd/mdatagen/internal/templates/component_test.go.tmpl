@@ -60,8 +60,10 @@ import (
 	{{- end }}
 )
 
+var typ = component.MustNewType("{{ .Type }}")
+
 func TestComponentFactoryType(t *testing.T) {
-	require.Equal(t, "{{ .Type }}", NewFactory().Type().String())
+	require.Equal(t, typ, NewFactory().Type())
 }
 
 func TestComponentConfigStruct(t *testing.T) {
@@ -400,12 +402,6 @@ func TestComponentLifecycle(t *testing.T) {
 {{ end }}
 
 {{ if isExtension }}
-func extensionNewSettings() extension.Settings {
-	set := extensiontest.NewNopSettings()
-	set.ID = component.MustNewIDWithName("{{ .Type }}", set.ID.Name())
-	return set
-}
-
 func TestComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
 
@@ -418,7 +414,7 @@ func TestComponentLifecycle(t *testing.T) {
 
 	{{- if not .Tests.SkipShutdown }}
 	t.Run("shutdown", func(t *testing.T) {
-		e, err := factory.Create(context.Background(), extensionNewSettings(), cfg)
+		e, err := factory.Create(context.Background(), extensiontest.NewNopSettingsWithType(typ), cfg)
 		require.NoError(t, err)
 		err = e.Shutdown(context.Background())
 		require.NoError(t, err)
@@ -427,12 +423,12 @@ func TestComponentLifecycle(t *testing.T) {
 
 	{{- if not .Tests.SkipLifecycle }}
 	t.Run("lifecycle", func(t *testing.T) {
-		firstExt, err := factory.Create(context.Background(), extensionNewSettings(), cfg)
+		firstExt, err := factory.Create(context.Background(), extensiontest.NewNopSettingsWithType(typ), cfg)
 		require.NoError(t, err)
 		require.NoError(t, firstExt.Start(context.Background(), {{ .Tests.Host }}))
 		require.NoError(t, firstExt.Shutdown(context.Background()))
 
-		secondExt, err := factory.Create(context.Background(), extensionNewSettings(), cfg)
+		secondExt, err := factory.Create(context.Background(), extensiontest.NewNopSettingsWithType(typ), cfg)
 		require.NoError(t, err)
 		require.NoError(t, secondExt.Start(context.Background(), {{ .Tests.Host }}))
 		require.NoError(t, secondExt.Shutdown(context.Background()))

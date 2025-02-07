@@ -32,6 +32,7 @@ type Settings struct {
 type CreateFunc func(context.Context, Settings, component.Config) (Extension, error)
 
 // Create implements Factory.Create.
+// Deprecated: [v0.120.0] No longer used, will be removed.
 func (f CreateFunc) Create(ctx context.Context, set Settings, cfg component.Config) (Extension, error) {
 	return f(ctx, set, cfg)
 }

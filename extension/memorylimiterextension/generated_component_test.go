@@ -11,22 +11,17 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 )
 
+var typ = component.MustNewType("memory_limiter")
+
 func TestComponentFactoryType(t *testing.T) {
-	require.Equal(t, "memory_limiter", NewFactory().Type().String())
+	require.Equal(t, typ, NewFactory().Type())
 }
 
 func TestComponentConfigStruct(t *testing.T) {
 	require.NoError(t, componenttest.CheckConfigStruct(NewFactory().CreateDefaultConfig()))
-}
-
-func extensionNewSettings() extension.Settings {
-	set := extensiontest.NewNopSettings()
-	set.ID = component.MustNewIDWithName("memory_limiter", set.ID.Name())
-	return set
 }
 
 func TestComponentLifecycle(t *testing.T) {
@@ -39,12 +34,12 @@ func TestComponentLifecycle(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(&cfg))
 	t.Run("lifecycle", func(t *testing.T) {
-		firstExt, err := factory.Create(context.Background(), extensionNewSettings(), cfg)
+		firstExt, err := factory.Create(context.Background(), extensiontest.NewNopSettingsWithType(typ), cfg)
 		require.NoError(t, err)
 		require.NoError(t, firstExt.Start(context.Background(), componenttest.NewNopHost()))
 		require.NoError(t, firstExt.Shutdown(context.Background()))
 
-		secondExt, err := factory.Create(context.Background(), extensionNewSettings(), cfg)
+		secondExt, err := factory.Create(context.Background(), extensiontest.NewNopSettingsWithType(typ), cfg)
 		require.NoError(t, err)
 		require.NoError(t, secondExt.Start(context.Background(), componenttest.NewNopHost()))
 		require.NoError(t, secondExt.Shutdown(context.Background()))
