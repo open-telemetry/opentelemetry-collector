@@ -4,9 +4,8 @@
 package internal
 
 import (
-	"testing"
-
 	"github.com/stretchr/testify/require"
+	"testing"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -229,6 +228,19 @@ func TestLoadMetadata(t *testing.T) {
 					},
 					"metric.input_type": {
 						Enabled:     true,
+						Description: "Monotonic cumulative sum int metric with string input_type enabled by default.",
+						Unit:        strPtr("s"),
+						Sum: &Sum{
+							MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
+							MetricInputType:        MetricInputType{InputType: "string"},
+							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
+							Mono:                   Mono{Monotonic: true},
+						},
+						Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
+					},
+					"metric.with_interval": {
+						Enabled:     true,
+						Interval:    15,
 						Description: "Monotonic cumulative sum int metric with string input_type enabled by default.",
 						Unit:        strPtr("s"),
 						Sum: &Sum{
