@@ -38,6 +38,9 @@ func TestNewFactory(t *testing.T) {
 	ext, err := factory.Create(context.Background(), Settings{ID: component.NewID(testType)}, &defaultCfg)
 	require.NoError(t, err)
 	assert.Same(t, nopExtensionInstance, ext)
+
+	_, err = factory.Create(context.Background(), Settings{ID: component.NewID(component.MustNewType("mismatch"))}, &defaultCfg)
+	require.Error(t, err)
 }
 
 func TestMakeFactoryMap(t *testing.T) {
