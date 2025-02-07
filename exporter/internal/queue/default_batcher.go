@@ -17,7 +17,7 @@ import (
 )
 
 type batch struct {
-	ctx  context.Context
+	ctx  mergedContext
 	req  internal.Request
 	done multiDone
 }
@@ -86,7 +86,7 @@ func (qb *defaultBatcher) Consume(ctx context.Context, req internal.Request, don
 			// Do not flush the last item and add it to the current batch.
 			reqList = reqList[:len(reqList)-1]
 			qb.currentBatch = &batch{
-				ctx:  ctx,
+				ctx:  NewMergedContext(ctx),
 				req:  lastReq,
 				done: multiDone{done},
 			}
@@ -120,9 +120,10 @@ func (qb *defaultBatcher) Consume(ctx context.Context, req internal.Request, don
 	// - Last result may not have enough data to be flushed.
 
 	// Logic on how to deal with the current batch:
-	// TODO: Deal with merging Context.
 	qb.currentBatch.req = reqList[0]
 	qb.currentBatch.done = append(qb.currentBatch.done, done)
+	qb.currentBatch.ctx.Merge(qb.currentBatch.ctx)
+
 	// Save the "currentBatch" if we need to flush it, because we want to execute flush without holding the lock, and
 	// cannot unlock and re-lock because we are not done processing all the responses.
 	var firstBatch *batch
@@ -141,7 +142,7 @@ func (qb *defaultBatcher) Consume(ctx context.Context, req internal.Request, don
 			// Do not flush the last item and add it to the current batch.
 			reqList = reqList[:len(reqList)-1]
 			qb.currentBatch = &batch{
-				ctx:  ctx,
+				ctx:  NewMergedContext(ctx),
 				req:  lastReq,
 				done: multiDone{done},
 			}
