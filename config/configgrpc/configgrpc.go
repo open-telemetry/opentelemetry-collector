@@ -340,7 +340,7 @@ func (gcs *ClientConfig) getGrpcDialOptions(
 	opts = append(opts, grpc.WithStatsHandler(otelgrpc.NewClientHandler(otelOpts...)))
 
 	if len(gcs.Headers) > 0 {
-		var metadataKv = make([]string, 0, 2*len(gcs.Headers))
+		metadataKv := make([]string, 0, 2*len(gcs.Headers))
 		for k, v := range gcs.Headers {
 			metadataKv = append(metadataKv, k)
 			metadataKv = append(metadataKv, string(v))
