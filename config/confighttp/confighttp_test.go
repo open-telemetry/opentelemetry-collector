@@ -77,10 +77,10 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				},
 				ReadBufferSize:       1024,
 				WriteBufferSize:      512,
-				MaxIdleConns:         &maxIdleConns,
-				MaxIdleConnsPerHost:  &maxIdleConnsPerHost,
-				MaxConnsPerHost:      &maxConnsPerHost,
-				IdleConnTimeout:      &idleConnTimeout,
+				MaxIdleConns:         maxIdleConns,
+				MaxIdleConnsPerHost:  maxIdleConnsPerHost,
+				MaxConnsPerHost:      maxConnsPerHost,
+				IdleConnTimeout:      idleConnTimeout,
 				Compression:          "",
 				DisableKeepAlives:    true,
 				Cookies:              &CookiesConfig{Enabled: true},
@@ -98,10 +98,10 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				},
 				ReadBufferSize:       1024,
 				WriteBufferSize:      512,
-				MaxIdleConns:         &maxIdleConns,
-				MaxIdleConnsPerHost:  &maxIdleConnsPerHost,
-				MaxConnsPerHost:      &maxConnsPerHost,
-				IdleConnTimeout:      &idleConnTimeout,
+				MaxIdleConns:         maxIdleConns,
+				MaxIdleConnsPerHost:  maxIdleConnsPerHost,
+				MaxConnsPerHost:      maxConnsPerHost,
+				IdleConnTimeout:      idleConnTimeout,
 				Compression:          "none",
 				DisableKeepAlives:    true,
 				HTTP2ReadIdleTimeout: idleConnTimeout,
@@ -118,10 +118,10 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				},
 				ReadBufferSize:       1024,
 				WriteBufferSize:      512,
-				MaxIdleConns:         &maxIdleConns,
-				MaxIdleConnsPerHost:  &maxIdleConnsPerHost,
-				MaxConnsPerHost:      &maxConnsPerHost,
-				IdleConnTimeout:      &idleConnTimeout,
+				MaxIdleConns:         maxIdleConns,
+				MaxIdleConnsPerHost:  maxIdleConnsPerHost,
+				MaxConnsPerHost:      maxConnsPerHost,
+				IdleConnTimeout:      idleConnTimeout,
 				Compression:          "gzip",
 				DisableKeepAlives:    true,
 				HTTP2ReadIdleTimeout: idleConnTimeout,
@@ -138,10 +138,10 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				},
 				ReadBufferSize:       1024,
 				WriteBufferSize:      512,
-				MaxIdleConns:         &maxIdleConns,
-				MaxIdleConnsPerHost:  &maxIdleConnsPerHost,
-				MaxConnsPerHost:      &maxConnsPerHost,
-				IdleConnTimeout:      &idleConnTimeout,
+				MaxIdleConns:         maxIdleConns,
+				MaxIdleConnsPerHost:  maxIdleConnsPerHost,
+				MaxConnsPerHost:      maxConnsPerHost,
+				IdleConnTimeout:      idleConnTimeout,
 				Compression:          "gzip",
 				DisableKeepAlives:    true,
 				HTTP2ReadIdleTimeout: idleConnTimeout,
@@ -223,8 +223,8 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 
 func TestDefaultHTTPClientSettings(t *testing.T) {
 	httpClientSettings := NewDefaultClientConfig()
-	assert.EqualValues(t, 100, *httpClientSettings.MaxIdleConns)
-	assert.EqualValues(t, 90*time.Second, *httpClientSettings.IdleConnTimeout)
+	assert.EqualValues(t, 100, httpClientSettings.MaxIdleConns)
+	assert.EqualValues(t, 90*time.Second, httpClientSettings.IdleConnTimeout)
 }
 
 func TestProxyURL(t *testing.T) {
