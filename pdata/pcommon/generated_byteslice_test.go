@@ -81,3 +81,18 @@ func TestByteSliceEnsureCapacity(t *testing.T) {
 	ms.EnsureCapacity(2)
 	assert.Equal(t, 4, cap(*ms.getOrig()))
 }
+
+func TestByteSliceIncrementFrom(t *testing.T) {
+	ms := NewByteSlice()
+	ms.FromRaw([]byte{10, 9})
+
+	ms2 := NewByteSlice()
+	ms2.FromRaw([]byte{1, 10})
+
+	assert.False(t, ms.IncrementFrom(ms2, 1))
+	ms.EnsureCapacity(4)
+	assert.True(t, ms.IncrementFrom(ms2, 1))
+	assert.Equal(t, byte(10), ms.At(0))
+	assert.Equal(t, byte(10), ms.At(1))
+	assert.Equal(t, byte(10), ms.At(2))
+}

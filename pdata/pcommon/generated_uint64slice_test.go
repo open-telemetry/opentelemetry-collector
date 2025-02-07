@@ -81,3 +81,18 @@ func TestUInt64SliceEnsureCapacity(t *testing.T) {
 	ms.EnsureCapacity(2)
 	assert.Equal(t, 4, cap(*ms.getOrig()))
 }
+
+func TestUInt64SliceIncrementFrom(t *testing.T) {
+	ms := NewUInt64Slice()
+	ms.FromRaw([]uint64{10, 9})
+
+	ms2 := NewUInt64Slice()
+	ms2.FromRaw([]uint64{1, 10})
+
+	assert.False(t, ms.IncrementFrom(ms2, 1))
+	ms.EnsureCapacity(4)
+	assert.True(t, ms.IncrementFrom(ms2, 1))
+	assert.Equal(t, uint64(10), ms.At(0))
+	assert.Equal(t, uint64(10), ms.At(1))
+	assert.Equal(t, uint64(10), ms.At(2))
+}

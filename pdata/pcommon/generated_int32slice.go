@@ -106,3 +106,23 @@ func copyInt32Slice(dst, src []int32) []int32 {
 	dst = dst[:0]
 	return append(dst, src...)
 }
+
+// IncrementFrom increments all elements by the elements from another slice.
+func (ms Int32Slice) IncrementFrom(other Int32Slice, offset int) bool {
+	if offset < 0 {
+		return false
+	}
+	ms.getState().AssertMutable()
+	newLen := max(ms.Len(), other.Len()+offset)
+	ours := *ms.getOrig()
+	if cap(ours) < newLen {
+		return false
+	}
+	ours = ours[:newLen]
+	theirs := *other.getOrig()
+	for i := 0; i < len(theirs); i++ {
+		ours[i+offset] += theirs[i]
+	}
+	*ms.getOrig() = ours
+	return true
+}
