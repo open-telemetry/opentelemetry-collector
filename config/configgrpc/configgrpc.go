@@ -261,6 +261,18 @@ func (gcs *ClientConfig) ToClientConn(
 	return grpc.DialContext(ctx, gcs.sanitizedEndpoint(), grpcOpts...)
 }
 
+func (gcs *ClientConfig) addHeadersIfAbsent(ctx context.Context) context.Context {
+	kv := make([]string, 0, 2*len(gcs.Headers))
+	existingMd, _ := metadata.FromIncomingContext(ctx)
+	for k, v := range gcs.Headers {
+		if len(existingMd.Get(k)) == 0 {
+			kv = append(kv, k)
+			kv = append(kv, string(v))
+		}
+	}
+	return metadata.AppendToOutgoingContext(ctx, kv...)
+}
+
 func (gcs *ClientConfig) getGrpcDialOptions(
 	ctx context.Context,
 	host component.Host,
@@ -340,19 +352,12 @@ func (gcs *ClientConfig) getGrpcDialOptions(
 	opts = append(opts, grpc.WithStatsHandler(otelgrpc.NewClientHandler(otelOpts...)))
 
 	if len(gcs.Headers) > 0 {
-		metadataKv := make([]string, 0, 2*len(gcs.Headers))
-		for k, v := range gcs.Headers {
-			metadataKv = append(metadataKv, k)
-			metadataKv = append(metadataKv, string(v))
-		}
 		opts = append(opts,
 			grpc.WithUnaryInterceptor(func(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
-				ctx = metadata.AppendToOutgoingContext(ctx, metadataKv...)
-				return invoker(ctx, method, req, reply, cc, opts...)
+				return invoker(gcs.addHeadersIfAbsent(ctx), method, req, reply, cc, opts...)
 			}),
 			grpc.WithStreamInterceptor(func(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, streamer grpc.Streamer, opts ...grpc.CallOption) (grpc.ClientStream, error) {
-				ctx = metadata.AppendToOutgoingContext(ctx, metadataKv...)
-				return streamer(ctx, desc, cc, method, opts...)
+				return streamer(gcs.addHeadersIfAbsent(ctx), desc, cc, method, opts...)
 			}),
 		)
 	}
