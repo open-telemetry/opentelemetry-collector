@@ -48,16 +48,6 @@ func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 	tbof(mb)
 }
 
-// Deprecated: [v0.119.0] use RegisterProcessorBatchMetadataCardinalityCallback.
-func WithProcessorBatchMetadataCardinalityCallback(cb func() int64, opts ...metric.ObserveOption) TelemetryBuilderOption {
-	return telemetryBuilderOptionFunc(func(builder *TelemetryBuilder) {
-		builder.observeProcessorBatchMetadataCardinality = func(_ context.Context, o metric.Observer) error {
-			o.ObserveInt64(builder.ProcessorBatchMetadataCardinality, cb(), opts...)
-			return nil
-		}
-	})
-}
-
 // RegisterProcessorBatchMetadataCardinalityCallback sets callback for observable ProcessorBatchMetadataCardinality metric.
 func (builder *TelemetryBuilder) RegisterProcessorBatchMetadataCardinalityCallback(cb metric.Int64Callback) error {
 	reg, err := builder.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {

@@ -177,9 +177,8 @@ Here is a list of community roles with current and previous members:
 - Approvers ([@open-telemetry/collector-approvers](https://github.com/orgs/open-telemetry/teams/collector-approvers)):
 
    - [Antoine Toulme](https://github.com/atoulme), Splunk
-   - [Daniel Jaglowski](https://github.com/djaglowski), observIQ
    - [Evan Bradley](https://github.com/evan-bradley), Dynatrace
-   - [Juraci Paixão Kröhling](https://github.com/jpkrohling), Grafana Labs
+   - [Juraci Paixão Kröhling](https://github.com/jpkrohling), OllyGarden
    - [Tyler Helmuth](https://github.com/TylerHelmuth), Honeycomb
    - [Yang Song](https://github.com/songy23), Datadog
 
@@ -192,6 +191,7 @@ Here is a list of community roles with current and previous members:
    - [Rahul Patel](https://github.com/rghetia)
    - [Steven Karis](https://github.com/sjkaris)
    - [Anthony Mirabella](https://github.com/Aneurysm9)
+   - [Daniel Jaglowski](https://github.com/djaglowski)
 
 - Maintainers ([@open-telemetry/collector-maintainers](https://github.com/orgs/open-telemetry/teams/collector-maintainers)):
 

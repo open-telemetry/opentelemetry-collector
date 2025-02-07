@@ -2,6 +2,9 @@ type: debug
 github_project: open-telemetry/opentelemetry-collector
 
 status:
+  codeowners:
+    active:
+      - andrzej-stencel
   class: exporter
   stability:
     development: [traces, metrics, logs, profiles]
