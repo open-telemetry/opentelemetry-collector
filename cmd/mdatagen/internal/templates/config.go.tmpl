@@ -13,7 +13,12 @@ import (
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+	{{- range $_, $metric := .Metrics }}
+	{{- if ne $metric.Interval 0 }}
 	Interval uint64 `mapstructure:"interval"`
+	{{- break }}
+	{{- end }}
+	{{- end }}
 	enabledSetByUser bool
 }
 
@@ -41,7 +46,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		{{- range $name, $metric := .Metrics }}
 		{{ $name.Render }}: MetricConfig{
 			Enabled: {{ $metric.Enabled }},
+			{{- if ne $metric.Interval  0 }}
 			Interval: {{ $metric.Interval }},
+			{{- end }}
 		},
 		{{- end }}
 	}

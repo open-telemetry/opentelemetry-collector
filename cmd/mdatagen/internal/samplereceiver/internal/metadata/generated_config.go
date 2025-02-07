@@ -39,28 +39,23 @@ type MetricsConfig struct {
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		DefaultMetric: MetricConfig{
-			Enabled:  true,
-			Interval: 0,
+			Enabled: true,
 		},
 		DefaultMetricToBeRemoved: MetricConfig{
-			Enabled:  true,
-			Interval: 0,
+			Enabled: true,
 		},
 		MetricInputType: MetricConfig{
-			Enabled:  true,
-			Interval: 0,
+			Enabled: true,
 		},
 		MetricWithInterval: MetricConfig{
 			Enabled:  true,
 			Interval: 15,
 		},
 		OptionalMetric: MetricConfig{
-			Enabled:  false,
-			Interval: 0,
+			Enabled: false,
 		},
 		OptionalMetricEmptyUnit: MetricConfig{
-			Enabled:  false,
-			Interval: 0,
+			Enabled: false,
 		},
 	}
 }

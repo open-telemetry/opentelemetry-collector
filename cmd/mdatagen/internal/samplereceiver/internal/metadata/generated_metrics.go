@@ -218,7 +218,7 @@ type metricMetricWithInterval struct {
 // init fills metric.with_interval metric with initial data.
 func (m *metricMetricWithInterval) init() {
 	m.data.SetName("metric.with_interval")
-	m.data.SetDescription("Monotonic cumulative sum int metric with string input_type enabled by default.")
+	m.data.SetDescription("Monotonic cumulative sum int metric with string input_type enabled by default and contains a customized interval of 15 seconds.")
 	m.data.SetUnit("s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)

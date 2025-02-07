@@ -62,7 +62,7 @@ Monotonic cumulative sum int metric with string input_type enabled by default.
 
 ### metric.with_interval
 
-Monotonic cumulative sum int metric with string input_type enabled by default.
+Monotonic cumulative sum int metric with string input_type enabled by default and contains a customized interval of 15 seconds.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |

@@ -9,8 +9,7 @@ import (
 
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
-	Enabled          bool   `mapstructure:"enabled"`
-	Interval         uint64 `mapstructure:"interval"`
+	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
@@ -38,24 +37,19 @@ type MetricsConfig struct {
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		DefaultMetric: MetricConfig{
-			Enabled:  true,
-			Interval: 0,
+			Enabled: true,
 		},
 		DefaultMetricToBeRemoved: MetricConfig{
-			Enabled:  true,
-			Interval: 0,
+			Enabled: true,
 		},
 		MetricInputType: MetricConfig{
-			Enabled:  true,
-			Interval: 0,
+			Enabled: true,
 		},
 		OptionalMetric: MetricConfig{
-			Enabled:  false,
-			Interval: 0,
+			Enabled: false,
 		},
 		OptionalMetricEmptyUnit: MetricConfig{
-			Enabled:  false,
-			Interval: 0,
+			Enabled: false,
 		},
 	}
 }

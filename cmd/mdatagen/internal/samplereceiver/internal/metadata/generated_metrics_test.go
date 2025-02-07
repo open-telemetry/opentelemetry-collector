@@ -226,7 +226,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["metric.with_interval"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Monotonic cumulative sum int metric with string input_type enabled by default.", ms.At(i).Description())
+					assert.Equal(t, "Monotonic cumulative sum int metric with string input_type enabled by default and contains a customized interval of 15 seconds.", ms.At(i).Description())
 					assert.Equal(t, "s", ms.At(i).Unit())
 					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
