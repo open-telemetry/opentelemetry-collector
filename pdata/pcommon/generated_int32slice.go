@@ -135,7 +135,7 @@ func (ms Int32Slice) IncrementFrom(other Int32Slice, offset int) bool {
 //	before:  1  1 1  1 1  1 1  1
 //	        V    V    V    V    V
 //	after:  1    2    2    2    1
-func (ms Int32Slice) Collapse(n int, offset int) {
+func (ms Int32Slice) Collapse(n, offset int) {
 	ms.getState().AssertMutable()
 	if offset >= n || offset < 0 {
 		panic(fmt.Sprintf("offset %d must be positive and smaller than n %d", offset, n))

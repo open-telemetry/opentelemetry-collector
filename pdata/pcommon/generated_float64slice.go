@@ -135,7 +135,7 @@ func (ms Float64Slice) IncrementFrom(other Float64Slice, offset int) bool {
 //	before:  1  1 1  1 1  1 1  1
 //	        V    V    V    V    V
 //	after:  1    2    2    2    1
-func (ms Float64Slice) Collapse(n int, offset int) {
+func (ms Float64Slice) Collapse(n, offset int) {
 	ms.getState().AssertMutable()
 	if offset >= n || offset < 0 {
 		panic(fmt.Sprintf("offset %d must be positive and smaller than n %d", offset, n))
