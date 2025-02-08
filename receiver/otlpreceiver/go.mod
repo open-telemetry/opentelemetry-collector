@@ -17,7 +17,7 @@ require (
 	go.opentelemetry.io/collector/config/confignet v1.25.0
 	go.opentelemetry.io/collector/config/configtls v1.25.0
 	go.opentelemetry.io/collector/confmap v1.25.0
-	go.opentelemetry.io/collector/confmap/xconfmap v0.0.0-20250205001856-68ff067415c1
+	go.opentelemetry.io/collector/confmap/xconfmap v0.0.0-20250207221750-83d93cd7cf86
 	go.opentelemetry.io/collector/consumer v1.25.0
 	go.opentelemetry.io/collector/consumer/consumererror v0.119.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.119.0
