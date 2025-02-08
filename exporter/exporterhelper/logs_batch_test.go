@@ -183,7 +183,8 @@ func TestMergeSplitLogsBasedOnByteSize(t *testing.T) {
 		{
 			name: "merge_and_split",
 			cfg: exporterbatcher.MaxSizeConfig{
-				MaxSizeBytes: logsMarshaler.LogsSize(testdata.GenerateLogs(10))/2 + logsMarshaler.LogsSize(testdata.GenerateLogs(11))/2},
+				MaxSizeBytes: logsMarshaler.LogsSize(testdata.GenerateLogs(10))/2 + logsMarshaler.LogsSize(testdata.GenerateLogs(11))/2,
+			},
 			lr1: newLogsRequest(testdata.GenerateLogs(8), nil),
 			lr2: newLogsRequest(testdata.GenerateLogs(20), nil),
 			expected: []Request{
@@ -278,6 +279,7 @@ func BenchmarkSplittingBasedOnItemCountManySmallLogs(b *testing.B) {
 		assert.Len(b, merged, 1)
 	}
 }
+
 func BenchmarkSplittingBasedOnByteSizeManySmallLogs(b *testing.B) {
 	// All requests merge into a single batch.
 	cfg := exporterbatcher.MaxSizeConfig{MaxSizeBytes: logsMarshaler.LogsSize(testdata.GenerateLogs(11000))}
@@ -307,6 +309,7 @@ func BenchmarkSplittingBasedOnItemCountManyLogsSlightlyAboveLimit(b *testing.B) 
 		assert.Len(b, merged, 11)
 	}
 }
+
 func BenchmarkSplittingBasedOnByteSizeManyLogsSlightlyAboveLimit(b *testing.B) {
 	// Every incoming request results in a split.
 	cfg := exporterbatcher.MaxSizeConfig{MaxSizeBytes: logsMarshaler.LogsSize(testdata.GenerateLogs(10000))}

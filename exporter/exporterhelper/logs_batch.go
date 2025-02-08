@@ -203,5 +203,5 @@ func extractScopeLogsBasedOnByteSize(srcSL plog.ScopeLogs, capacity int) (plog.S
 //
 // This is derived from gogo/protobuf 's Size() function
 func deltaCapacity(newItemSize int) int {
-	return 1 + newItemSize + int(math_bits.Len64(uint64(newItemSize|1)+6)/7)
+	return 1 + newItemSize + math_bits.Len64(uint64(newItemSize|1)+6)/7 //nolint:gosec // disable G115
 }
