@@ -96,3 +96,26 @@ func TestInt32SliceIncrementFrom(t *testing.T) {
 	assert.Equal(t, int32(10), ms.At(1))
 	assert.Equal(t, int32(10), ms.At(2))
 }
+
+func TestInt32SliceCollapse(t *testing.T) {
+	ms := NewInt32Slice()
+	ms.FromRaw([]int32{1, 1, 1, 1, 1, 1})
+
+	ms.Collapse(4, 0)
+
+	assert.Equal(t, 2, ms.Len())
+	assert.Equal(t, int32(4), ms.At(0))
+	assert.Equal(t, int32(2), ms.At(1))
+}
+
+func TestInt32SliceCollapseOffset(t *testing.T) {
+	ms := NewInt32Slice()
+	ms.FromRaw([]int32{1, 1, 1, 1, 1, 1})
+
+	ms.Collapse(4, 3)
+
+	assert.Equal(t, 3, ms.Len())
+	assert.Equal(t, int32(1), ms.At(0))
+	assert.Equal(t, int32(4), ms.At(1))
+	assert.Equal(t, int32(1), ms.At(2))
+}

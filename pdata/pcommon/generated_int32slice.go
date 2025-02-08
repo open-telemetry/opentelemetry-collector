@@ -7,6 +7,8 @@
 package pcommon
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/pdata/internal"
 )
 
@@ -125,4 +127,38 @@ func (ms Int32Slice) IncrementFrom(other Int32Slice, offset int) bool {
 	}
 	*ms.getOrig() = ours
 	return true
+}
+
+// Collapse merges (sums) n adjacent buckets and reslices to account for the decreased length
+//
+//	n=2 offset=1
+//	before:  1  1 1  1 1  1 1  1
+//	        V    V    V    V    V
+//	after:  1    2    2    2    1
+func (ms Int32Slice) Collapse(n int, offset int) {
+	ms.getState().AssertMutable()
+	if offset >= n || offset < 0 {
+		panic(fmt.Sprintf("offset %d must be positive and smaller than n %d", offset, n))
+	}
+	if n < 2 {
+		return
+	}
+	orig := *ms.getOrig()
+	newLen := (len(orig) + offset) / n
+	if (len(orig)+offset)%n != 0 {
+		newLen++
+	}
+
+	for i := 0; i < newLen; i++ {
+		if offset == 0 || i > 0 {
+			orig[i] = orig[i*n-offset]
+		}
+		for j := i*n + 1 - offset; j < i*n+n-offset && j < len(orig); j++ {
+			if j > 0 {
+				orig[i] += orig[j]
+			}
+		}
+	}
+
+	*ms.getOrig() = orig[:newLen]
 }

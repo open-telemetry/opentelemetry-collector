@@ -96,3 +96,26 @@ func TestInt64SliceIncrementFrom(t *testing.T) {
 	assert.Equal(t, int64(10), ms.At(1))
 	assert.Equal(t, int64(10), ms.At(2))
 }
+
+func TestInt64SliceCollapse(t *testing.T) {
+	ms := NewInt64Slice()
+	ms.FromRaw([]int64{1, 1, 1, 1, 1, 1})
+
+	ms.Collapse(4, 0)
+
+	assert.Equal(t, 2, ms.Len())
+	assert.Equal(t, int64(4), ms.At(0))
+	assert.Equal(t, int64(2), ms.At(1))
+}
+
+func TestInt64SliceCollapseOffset(t *testing.T) {
+	ms := NewInt64Slice()
+	ms.FromRaw([]int64{1, 1, 1, 1, 1, 1})
+
+	ms.Collapse(4, 3)
+
+	assert.Equal(t, 3, ms.Len())
+	assert.Equal(t, int64(1), ms.At(0))
+	assert.Equal(t, int64(4), ms.At(1))
+	assert.Equal(t, int64(1), ms.At(2))
+}

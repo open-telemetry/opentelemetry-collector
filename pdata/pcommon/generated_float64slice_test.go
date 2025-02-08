@@ -96,3 +96,26 @@ func TestFloat64SliceIncrementFrom(t *testing.T) {
 	assert.InDelta(t, float64(10), ms.At(1), 0.01)
 	assert.InDelta(t, float64(10), ms.At(2), 0.01)
 }
+
+func TestFloat64SliceCollapse(t *testing.T) {
+	ms := NewFloat64Slice()
+	ms.FromRaw([]float64{1, 1, 1, 1, 1, 1})
+
+	ms.Collapse(4, 0)
+
+	assert.Equal(t, 2, ms.Len())
+	assert.InDelta(t, float64(4), ms.At(0), 0.01)
+	assert.InDelta(t, float64(2), ms.At(1), 0.01)
+}
+
+func TestFloat64SliceCollapseOffset(t *testing.T) {
+	ms := NewFloat64Slice()
+	ms.FromRaw([]float64{1, 1, 1, 1, 1, 1})
+
+	ms.Collapse(4, 3)
+
+	assert.Equal(t, 3, ms.Len())
+	assert.InDelta(t, float64(1), ms.At(0), 0.01)
+	assert.InDelta(t, float64(4), ms.At(1), 0.01)
+	assert.InDelta(t, float64(1), ms.At(2), 0.01)
+}

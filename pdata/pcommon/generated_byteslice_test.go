@@ -96,3 +96,26 @@ func TestByteSliceIncrementFrom(t *testing.T) {
 	assert.Equal(t, byte(10), ms.At(1))
 	assert.Equal(t, byte(10), ms.At(2))
 }
+
+func TestByteSliceCollapse(t *testing.T) {
+	ms := NewByteSlice()
+	ms.FromRaw([]byte{1, 1, 1, 1, 1, 1})
+
+	ms.Collapse(4, 0)
+
+	assert.Equal(t, 2, ms.Len())
+	assert.Equal(t, byte(4), ms.At(0))
+	assert.Equal(t, byte(2), ms.At(1))
+}
+
+func TestByteSliceCollapseOffset(t *testing.T) {
+	ms := NewByteSlice()
+	ms.FromRaw([]byte{1, 1, 1, 1, 1, 1})
+
+	ms.Collapse(4, 3)
+
+	assert.Equal(t, 3, ms.Len())
+	assert.Equal(t, byte(1), ms.At(0))
+	assert.Equal(t, byte(4), ms.At(1))
+	assert.Equal(t, byte(1), ms.At(2))
+}
