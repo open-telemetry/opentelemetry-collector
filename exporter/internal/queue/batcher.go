@@ -15,7 +15,7 @@ import (
 // Batcher is in charge of reading items from the queue and send them out asynchronously.
 type Batcher interface {
 	component.Component
-	Consume(context.Context, internal.Request, exporterqueue.DoneCallback)
+	Consume(context.Context, internal.Request, exporterqueue.Done)
 }
 
 func NewBatcher(batchCfg exporterbatcher.Config,

@@ -40,8 +40,9 @@ require (
 var replaceModules = []string{
 	"",
 	"/component",
-	"/component/componenttest",
+	"/component/componentattribute",
 	"/component/componentstatus",
+	"/component/componenttest",
 	"/client",
 	"/config/configauth",
 	"/config/configcompression",
@@ -53,6 +54,7 @@ var replaceModules = []string{
 	"/config/configtelemetry",
 	"/config/configtls",
 	"/confmap",
+	"/confmap/xconfmap",
 	"/confmap/provider/envprovider",
 	"/confmap/provider/fileprovider",
 	"/confmap/provider/httpprovider",

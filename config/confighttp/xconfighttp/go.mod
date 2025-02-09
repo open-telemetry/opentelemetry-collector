@@ -30,7 +30,6 @@ require (
 	go.opentelemetry.io/collector/config/configauth v0.119.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.25.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.25.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.119.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.25.0 // indirect
 	go.opentelemetry.io/collector/extension v0.119.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.119.0 // indirect
@@ -45,13 +44,11 @@ require (
 	golang.org/x/text v0.21.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241202173237-19429a94021a // indirect
 	google.golang.org/grpc v1.70.0 // indirect
-	google.golang.org/protobuf v1.36.4 // indirect
+	google.golang.org/protobuf v1.36.5 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 replace go.opentelemetry.io/collector/config/confighttp => ../../confighttp
-
-replace go.opentelemetry.io/collector/config/configtelemetry => ../../configtelemetry
 
 replace go.opentelemetry.io/collector/client => ../../../client
 

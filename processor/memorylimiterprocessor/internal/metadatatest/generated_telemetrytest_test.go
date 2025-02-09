@@ -10,11 +10,12 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor/internal/metadata"
 )
 
 func TestSetupTelemetry(t *testing.T) {
-	testTel := SetupTelemetry()
+	testTel := componenttest.NewTelemetry()
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
@@ -24,97 +25,22 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.ProcessorRefusedLogRecords.Add(context.Background(), 1)
 	tb.ProcessorRefusedMetricPoints.Add(context.Background(), 1)
 	tb.ProcessorRefusedSpans.Add(context.Background(), 1)
-
-	testTel.AssertMetrics(t, []metricdata.Metrics{
-		{
-			Name:        "otelcol_processor_accepted_log_records",
-			Description: "Number of log records successfully pushed into the next component in the pipeline. [deprecated since v0.110.0]",
-			Unit:        "{records}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_processor_accepted_metric_points",
-			Description: "Number of metric points successfully pushed into the next component in the pipeline. [deprecated since v0.110.0]",
-			Unit:        "{datapoints}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_processor_accepted_spans",
-			Description: "Number of spans successfully pushed into the next component in the pipeline. [deprecated since v0.110.0]",
-			Unit:        "{spans}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_processor_refused_log_records",
-			Description: "Number of log records that were rejected by the next component in the pipeline. [deprecated since v0.110.0]",
-			Unit:        "{records}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_processor_refused_metric_points",
-			Description: "Number of metric points that were rejected by the next component in the pipeline. [deprecated since v0.110.0]",
-			Unit:        "{datapoints}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_processor_refused_spans",
-			Description: "Number of spans that were rejected by the next component in the pipeline. [deprecated since v0.110.0]",
-			Unit:        "{spans}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-	}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
-	AssertEqualProcessorAcceptedLogRecords(t, testTel.Telemetry,
+	AssertEqualProcessorAcceptedLogRecords(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorAcceptedMetricPoints(t, testTel.Telemetry,
+	AssertEqualProcessorAcceptedMetricPoints(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorAcceptedSpans(t, testTel.Telemetry,
+	AssertEqualProcessorAcceptedSpans(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorRefusedLogRecords(t, testTel.Telemetry,
+	AssertEqualProcessorRefusedLogRecords(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorRefusedMetricPoints(t, testTel.Telemetry,
+	AssertEqualProcessorRefusedMetricPoints(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorRefusedSpans(t, testTel.Telemetry,
+	AssertEqualProcessorRefusedSpans(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 

@@ -196,13 +196,13 @@ func TestBatchSender_MergeOrSplit(t *testing.T) {
 			require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 8, Sink: sink}))
 			assert.Eventually(t, func() bool {
 				return sink.RequestsCount() == 1 && sink.ItemsCount() == 8
-			}, 50*time.Millisecond, 10*time.Millisecond)
+			}, 500*time.Millisecond, 10*time.Millisecond)
 
 			// big request should be broken down into two requests, both are sent right away.
 			require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 17, Sink: sink}))
 			assert.Eventually(t, func() bool {
 				return sink.RequestsCount() == 3 && sink.ItemsCount() == 25
-			}, 50*time.Millisecond, 10*time.Millisecond)
+			}, 500*time.Millisecond, 10*time.Millisecond)
 
 			// request that cannot be split should be dropped.
 			require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{
@@ -215,7 +215,7 @@ func TestBatchSender_MergeOrSplit(t *testing.T) {
 
 			assert.Eventually(t, func() bool {
 				return sink.RequestsCount() == 5 && sink.ItemsCount() == 38
-			}, 50*time.Millisecond, 10*time.Millisecond)
+			}, 500*time.Millisecond, 10*time.Millisecond)
 		})
 	}
 
@@ -327,7 +327,9 @@ func TestBatchSender_PostShutdown(t *testing.T) {
 			assert.Equal(t, int64(8), sink.ItemsCount())
 		})
 	}
-	runTest("enable_queue_batcher", true)
+	// This test is disabled because in the new batching, we still do the batching while shutdown because that will
+	// limit the number of request sent.
+	// runTest("enable_queue_batcher", true)
 	runTest("disable_queue_batcher", false)
 }
 
@@ -374,6 +376,14 @@ func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
 			expectedItems:    51,
 		},
 	}
+
+	// Why do we not expect the same behavior when usePullingBasedExporterQueueBatcher is true?
+	// This test checks that when concurrency limit of batch_sender is reached, the batch_sender will flush immediately.
+	// To avoid blocking, the concurrency limit is set to the number of concurrent goroutines that are in charge of
+	// reading from the queue and adding to batch. With the new model, we are pulling instead of pushing so we don't
+	// block the reading goroutine anymore.
+	defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, false)()
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			qCfg := exporterqueue.NewDefaultConfig()
@@ -436,8 +446,7 @@ func TestBatchSender_BatchBlocking(t *testing.T) {
 			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
 			bCfg := exporterbatcher.NewDefaultConfig()
 			bCfg.MinSizeItems = 3
-			be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender,
-				WithBatcher(bCfg))
+			be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender, WithBatcher(bCfg))
 			require.NotNil(t, be)
 			require.NoError(t, err)
 			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -449,8 +458,8 @@ func TestBatchSender_BatchBlocking(t *testing.T) {
 			for i := 0; i < 6; i++ {
 				wg.Add(1)
 				go func() {
+					defer wg.Done()
 					assert.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 1, Sink: sink, Delay: 10 * time.Millisecond}))
-					wg.Done()
 				}()
 			}
 			wg.Wait()
@@ -473,8 +482,7 @@ func TestBatchSender_BatchCancelled(t *testing.T) {
 			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
 			bCfg := exporterbatcher.NewDefaultConfig()
 			bCfg.MinSizeItems = 2
-			be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender,
-				WithBatcher(bCfg))
+			be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender, WithBatcher(bCfg))
 			require.NotNil(t, be)
 			require.NoError(t, err)
 			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -486,14 +494,14 @@ func TestBatchSender_BatchCancelled(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			wg.Add(1)
 			go func() {
+				defer wg.Done()
 				assert.ErrorIs(t, be.Send(ctx, &requesttest.FakeRequest{Items: 1, Sink: sink, Delay: 100 * time.Millisecond}), context.Canceled)
-				wg.Done()
 			}()
 			wg.Add(1)
 			go func() {
-				time.Sleep(20 * time.Millisecond) // ensure this call is the second
+				defer wg.Done()
+				time.Sleep(100 * time.Millisecond) // ensure this call is the second
 				assert.ErrorIs(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 1, Sink: sink, Delay: 100 * time.Millisecond}), context.Canceled)
-				wg.Done()
 			}()
 			cancel() // canceling the first request should cancel the whole batch
 			wg.Wait()

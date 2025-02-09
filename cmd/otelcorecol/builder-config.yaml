@@ -41,6 +41,7 @@ replaces:
   - go.opentelemetry.io/collector/client => ../../client
   - go.opentelemetry.io/collector/component => ../../component
   - go.opentelemetry.io/collector/component/componenttest => ../../component/componenttest
+  - go.opentelemetry.io/collector/component/componentattribute => ../../component/componentattribute
   - go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
   - go.opentelemetry.io/collector/config/configauth => ../../config/configauth
   - go.opentelemetry.io/collector/config/configcompression => ../../config/configcompression
@@ -52,6 +53,7 @@ replaces:
   - go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
   - go.opentelemetry.io/collector/config/configtls => ../../config/configtls
   - go.opentelemetry.io/collector/confmap => ../../confmap
+  - go.opentelemetry.io/collector/confmap/xconfmap => ../../confmap/xconfmap
   - go.opentelemetry.io/collector/confmap/provider/envprovider => ../../confmap/provider/envprovider
   - go.opentelemetry.io/collector/confmap/provider/fileprovider => ../../confmap/provider/fileprovider
   - go.opentelemetry.io/collector/confmap/provider/httpprovider => ../../confmap/provider/httpprovider

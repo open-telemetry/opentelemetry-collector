@@ -11,11 +11,12 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/processor/batchprocessor/internal/metadata"
 )
 
 func TestSetupTelemetry(t *testing.T) {
-	testTel := SetupTelemetry()
+	testTel := componenttest.NewTelemetry()
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
@@ -27,80 +28,19 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.ProcessorBatchBatchSendSizeBytes.Record(context.Background(), 1)
 	tb.ProcessorBatchBatchSizeTriggerSend.Add(context.Background(), 1)
 	tb.ProcessorBatchTimeoutTriggerSend.Add(context.Background(), 1)
-
-	testTel.AssertMetrics(t, []metricdata.Metrics{
-		{
-			Name:        "otelcol_processor_batch_batch_send_size",
-			Description: "Number of units in the batch",
-			Unit:        "{units}",
-			Data: metricdata.Histogram[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				DataPoints: []metricdata.HistogramDataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_processor_batch_batch_send_size_bytes",
-			Description: "Number of bytes in batch that was sent. Only available on detailed level.",
-			Unit:        "By",
-			Data: metricdata.Histogram[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				DataPoints: []metricdata.HistogramDataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_processor_batch_batch_size_trigger_send",
-			Description: "Number of times the batch was sent due to a size trigger",
-			Unit:        "{times}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_processor_batch_metadata_cardinality",
-			Description: "Number of distinct metadata value combinations being processed",
-			Unit:        "{combinations}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: false,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_processor_batch_timeout_trigger_send",
-			Description: "Number of times the batch was sent due to a timeout trigger",
-			Unit:        "{times}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-	}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
-	AssertEqualProcessorBatchBatchSendSize(t, testTel.Telemetry,
+	AssertEqualProcessorBatchBatchSendSize(t, testTel,
 		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorBatchBatchSendSizeBytes(t, testTel.Telemetry,
+	AssertEqualProcessorBatchBatchSendSizeBytes(t, testTel,
 		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorBatchBatchSizeTriggerSend(t, testTel.Telemetry,
+	AssertEqualProcessorBatchBatchSizeTriggerSend(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorBatchMetadataCardinality(t, testTel.Telemetry,
+	AssertEqualProcessorBatchMetadataCardinality(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorBatchTimeoutTriggerSend(t, testTel.Telemetry,
+	AssertEqualProcessorBatchTimeoutTriggerSend(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 

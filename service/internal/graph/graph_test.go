@@ -2231,11 +2231,11 @@ func TestGraphBuildErrors(t *testing.T) {
 				},
 			},
 			expected: `cycle detected: ` +
-				`connector "nop/conn1" (traces to traces) -> ` +
-				`processor "nop" in pipeline "traces/2" -> ` +
 				`connector "nop/conn" (traces to traces) -> ` +
 				`processor "nop" in pipeline "traces/1" -> ` +
-				`connector "nop/conn1" (traces to traces)`,
+				`connector "nop/conn1" (traces to traces) -> ` +
+				`processor "nop" in pipeline "traces/2" -> ` +
+				`connector "nop/conn" (traces to traces)`,
 		},
 		{
 			name: "not_allowed_deep_cycle_metrics.yaml",

@@ -10,6 +10,7 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.119.0
 	go.opentelemetry.io/collector/config/configgrpc v0.119.0
 	go.opentelemetry.io/collector/config/confighttp v0.119.0
+	go.opentelemetry.io/collector/config/confignet v1.25.0
 	go.opentelemetry.io/collector/config/configopaque v1.25.0
 	go.opentelemetry.io/collector/config/configretry v1.25.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.119.0
@@ -21,17 +22,17 @@ require (
 	go.opentelemetry.io/collector/consumer/consumertest v0.119.0
 	go.opentelemetry.io/collector/exporter v0.119.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.119.0
-	go.opentelemetry.io/collector/exporter/otlpexporter v0.118.0
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.118.0
+	go.opentelemetry.io/collector/exporter/otlpexporter v0.119.0
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.119.0
 	go.opentelemetry.io/collector/extension v0.119.0
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.119.0
 	go.opentelemetry.io/collector/pdata v1.25.0
 	go.opentelemetry.io/collector/pdata/testdata v0.119.0
 	go.opentelemetry.io/collector/pipeline v0.119.0
 	go.opentelemetry.io/collector/receiver v0.119.0
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.118.0
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.119.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.119.0
-	go.opentelemetry.io/collector/service v0.118.0
+	go.opentelemetry.io/collector/service v0.119.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 )
@@ -41,7 +42,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/ebitengine/purego v0.8.1 // indirect
+	github.com/ebitengine/purego v0.8.2 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
@@ -73,15 +74,15 @@ require (
 	github.com/prometheus/common v0.62.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/rs/cors v1.11.1 // indirect
-	github.com/shirou/gopsutil/v4 v4.24.12 // indirect
+	github.com/shirou/gopsutil/v4 v4.25.1 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/client v1.25.0 // indirect
+	go.opentelemetry.io/collector/component/componentattribute v0.119.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.119.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.25.0 // indirect
-	go.opentelemetry.io/collector/config/confignet v1.25.0 // indirect
 	go.opentelemetry.io/collector/connector/xconnector v0.119.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.119.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.119.0 // indirect
@@ -133,7 +134,7 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20250115164207-1a7da9e5054f // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f // indirect
 	google.golang.org/grpc v1.70.0 // indirect
-	google.golang.org/protobuf v1.36.4 // indirect
+	google.golang.org/protobuf v1.36.5 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
@@ -176,6 +177,8 @@ replace go.opentelemetry.io/collector/receiver => ../../receiver
 replace go.opentelemetry.io/collector/extension => ../../extension
 
 replace go.opentelemetry.io/collector/confmap => ../../confmap
+
+replace go.opentelemetry.io/collector/confmap/xconfmap => ../../confmap/xconfmap
 
 replace go.opentelemetry.io/collector/component => ../../component
 
@@ -242,3 +245,5 @@ replace go.opentelemetry.io/collector/extension/extensiontest => ../../extension
 replace go.opentelemetry.io/collector/extension/auth/authtest => ../../extension/auth/authtest
 
 replace go.opentelemetry.io/collector/extension/xextension => ../../extension/xextension
+
+replace go.opentelemetry.io/collector/component/componentattribute => ../../component/componentattribute
