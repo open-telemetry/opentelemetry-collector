@@ -40,8 +40,6 @@ type TelemetryBuilder struct {
 	{{- range $name, $metric := .Telemetry.Metrics }}
 	{{ $name.Render }} metric.{{ $metric.Data.Instrument }}
     {{- if and ($metric.Data.Async) (not $metric.Optional) }}
-    // TODO: Remove in v0.119.0 when remove deprecated funcs.
-    observe{{ $name.Render }} func(context.Context, metric.Observer) error
     {{- end }}
 	{{- end }}
 }
@@ -140,15 +138,6 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
         {{- end }}
     )
     errs = errors.Join(errs, err)
-    {{- if and ($metric.Data.Async) (not $metric.Optional) }}
-	if builder.observe{{ $name.Render }} != nil {
-        reg, err := builder.meter.RegisterCallback(builder.observe{{ $name.Render }}, builder.{{ $name.Render }})
-        errs = errors.Join(errs, err)
-		if err == nil {
-            builder.registrations = append(builder.registrations, reg)
-        }
-	}
-    {{- end }}
     {{- end }}
     return &builder, errs
 }
